@@ -382,6 +382,47 @@ func escapeDouble(v string) string {
 	return b.String()
 }
 
+// SetRaw sets a field to a literal YAML scalar without quoting it. Used for
+// values that are unambiguous by construction — booleans and RFC3339 timestamps
+// — so tickets read idiomatically instead of carrying `ready: "false"`. Callers
+// are responsible for passing something valid; anything user-supplied should go
+// through SetScalar, which quotes defensively.
+func (d *Doc) SetRaw(key, literal string) error {
+	node, err := d.find(key)
+	if err != nil {
+		return err
+	}
+	if node == nil {
+		d.appendLine(key + ": " + literal)
+		return nil
+	}
+	switch node.Value.(type) {
+	case *ast.SequenceNode, *ast.MappingNode, *ast.MappingValueNode:
+		return fmt.Errorf("ticket: %q holds a collection, not a scalar", key)
+	}
+	tok := node.Value.GetToken()
+	if tok == nil || tok.Position == nil {
+		return fmt.Errorf("ticket: no source position for %q", key)
+	}
+	lines := strings.Split(d.fm, "\n")
+	li := tok.Position.Line - 1
+	if li < 0 || li >= len(lines) {
+		return fmt.Errorf("ticket: %q reports line %d, outside the frontmatter", key, tok.Position.Line)
+	}
+	line := lines[li]
+	col := tok.Position.Column - 1
+	if col < 0 || col > len(line) {
+		return fmt.Errorf("ticket: %q reports column %d, outside line %d", key, tok.Position.Column, tok.Position.Line)
+	}
+	oldLen, err := scalarSourceLen(line[col:], tok.Value)
+	if err != nil {
+		return fmt.Errorf("ticket: %q: %w", key, err)
+	}
+	lines[li] = line[:col] + literal + line[col+oldLen:]
+	d.fm = strings.Join(lines, "\n")
+	return nil
+}
+
 // SetList sets a top-level list field. The whole block for that key is replaced
 // (it necessarily spans multiple lines), but no other key is disturbed. A
 // trailing comment on the key line is carried over.
