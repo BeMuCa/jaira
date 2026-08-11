@@ -156,17 +156,98 @@
 
 ## Traceability
 
-Populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | Pending |
+| STORE-01 | Phase 1 | Pending |
+| STORE-02 | Phase 1 | Pending |
+| STORE-03 | Phase 1 | Pending |
+| STORE-04 | Phase 1 | Pending |
+| STORE-05 | Phase 1 | Pending |
+| STORE-06 | Phase 1 | Pending |
+| STORE-07 | Phase 1 | Pending |
+| STORE-08 | Phase 1 | Pending |
+| STORE-09 | Phase 1 | Pending |
+| STORE-10 | Phase 1 | Pending |
+| SCHEMA-01 | Phase 1 | Pending |
+| SCHEMA-02 | Phase 1 | Pending |
+| SCHEMA-03 | Phase 1 | Pending |
+| SCHEMA-04 | Phase 1 | Pending |
+| SCHEMA-05 | Phase 1 | Pending |
+| SCHEMA-06 | Phase 1 | Pending |
+| SCHEMA-07 | Phase 1 | Pending |
+| CLI-01 | Phase 1 | Pending |
+| CLI-02 | Phase 1 | Pending |
+| CLI-03 | Phase 1 | Pending |
+| CLI-04 | Phase 1 | Pending |
+| CLI-05 | Phase 1 | Pending |
+| CLI-06 | Phase 1 | Pending |
+| CLI-07 | Phase 1 | Pending |
+| CLI-08 | Phase 1 | Pending |
+| CLI-09 | Phase 1 | Pending |
+| CLI-10 | Phase 1 | Pending |
+| LANE-01 | Phase 1 | Pending |
+| DIST-01 | Phase 1 | Pending |
+| DIST-02 | Phase 1 | Pending |
+| DIST-03 | Phase 1 | Pending |
+| TUI-01 | Phase 2 | Pending |
+| TUI-02 | Phase 2 | Pending |
+| TUI-03 | Phase 2 | Pending |
+| TUI-04 | Phase 2 | Pending |
+| TUI-07 | Phase 2 | Pending |
+| TUI-08 | Phase 2 | Pending |
+| TUI-12 | Phase 2 | Pending |
+| TUI-13 | Phase 2 | Pending |
+| TUI-05 | Phase 3 | Pending |
+| TUI-06 | Phase 3 | Pending |
+| GATE-01 | Phase 3 | Pending |
+| GATE-02 | Phase 3 | Pending |
+| GATE-03 | Phase 3 | Pending |
+| GATE-04 | Phase 3 | Pending |
+| GATE-05 | Phase 3 | Pending |
+| GATE-06 | Phase 3 | Pending |
+| GATE-07 | Phase 3 | Pending |
+| MERGE-01 | Phase 4 | Pending |
+| MERGE-02 | Phase 4 | Pending |
+| MERGE-03 | Phase 4 | Pending |
+| MERGE-04 | Phase 4 | Pending |
+| MERGE-05 | Phase 4 | Pending |
+| MERGE-06 | Phase 4 | Pending |
+| TUI-11 | Phase 4 | Pending |
+| LANE-02 | Phase 5 | Pending |
+| LANE-03 | Phase 5 | Pending |
+| LANE-04 | Phase 5 | Pending |
+| LANE-05 | Phase 5 | Pending |
+| LANE-06 | Phase 5 | Pending |
+| LANE-07 | Phase 5 | Pending |
+| LANE-08 | Phase 5 | Pending |
+| PIPE-01 | Phase 6 | Pending |
+| PIPE-02 | Phase 6 | Pending |
+| PIPE-03 | Phase 6 | Pending |
+| PIPE-04 | Phase 6 | Pending |
+| PIPE-05 | Phase 6 | Pending |
+| PIPE-06 | Phase 6 | Pending |
+| PIPE-07 | Phase 6 | Pending |
+| PIPE-08 | Phase 6 | Pending |
+| SYNC-01 | Phase 7 | Pending |
+| SYNC-02 | Phase 7 | Pending |
+| SYNC-03 | Phase 7 | Pending |
+| SYNC-04 | Phase 7 | Pending |
+| SYNC-05 | Phase 7 | Pending |
+| SYNC-06 | Phase 7 | Pending |
+| SYNC-07 | Phase 7 | Pending |
+| SYNC-08 | Phase 7 | Pending |
+| SESSION-01 | Phase 8 | Pending |
+| SESSION-02 | Phase 8 | Pending |
+| SESSION-03 | Phase 8 | Pending |
+| SESSION-04 | Phase 8 | Pending |
+| TUI-09 | Phase 8 | Pending |
+| TUI-10 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 84 total
-- Mapped to phases: 0
-- Unmapped: 84 ⚠️
+- Mapped to phases: 84
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-11*
-*Last updated: 2026-08-11 after initial definition*
+*Last updated: 2026-08-11 after roadmap creation*
