@@ -32,17 +32,32 @@ session and lock state is never committed. Safe to run more than once.`,
 			if err != nil {
 				return err
 			}
+			attrsChanged, attrsErr := writeGitAttributes(s)
+			driverInstalled, driverErr := ensureMergeDriver(s.Root)
+
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
-					"root":        s.Root,
-					"tickets_dir": s.TicketsDir(),
-					"created":     created,
+					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
+					"gitattributes_written": attrsChanged, "merge_driver_installed": driverInstalled,
 				})
 			}
 			if created {
 				fmt.Fprintf(cmd.OutOrStdout(), "Initialized jaira in %s\n", filepath.Join(s.Root, ticket.DirName))
 			} else {
 				fmt.Fprintf(cmd.OutOrStdout(), "jaira already initialized in %s\n", filepath.Join(s.Root, ticket.DirName))
+			}
+			if attrsErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitattributes: %v\n", attrsErr)
+			}
+			if driverErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: %v\n", driverErr)
+				fmt.Fprintf(os.Stderr, "jaira: ticket merges will fall back to git's line-based merge\n")
+			} else if driverInstalled {
+				// Say this out loud: the tool just wrote to .git/config, which
+				// should never feel like something it did behind your back.
+				fmt.Fprintf(cmd.OutOrStdout(),
+					"Registered the jaira merge driver in .git/config for this clone,\n"+
+						"so two people moving the same ticket will not conflict.\n")
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Commit .jaira/ so your team shares the board.\n")
 			return nil

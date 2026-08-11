@@ -149,6 +149,12 @@ Exit codes:
 		newNextCmd(),
 		newLanesCmd(),
 		newBoardCmd(),
+		newMergeDriverCmd(),
+		newResolveCmd(),
+		newSyncTasksCmd(),
+		newTasksCmd(),
+		newCheckpointCmd(),
+		newSessionsCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {

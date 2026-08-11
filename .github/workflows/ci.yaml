@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    # Tested on all three platforms because the store touches the filesystem and
+    # shells out to git, both of which differ across them. WSL2's file-watch
+    # behaviour is not reproducible on a CI runner and is checked by hand.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Configure git for fixture repositories
+        run: |
+          git config --global user.name jaira-ci
+          git config --global user.email ci@example.invalid
+      - run: go vet ./...
+      - run: go test ./... -race
+      - run: go build ./cmd/jaira

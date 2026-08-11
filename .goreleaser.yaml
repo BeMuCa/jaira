@@ -1,0 +1,44 @@
+# Cross-platform release build.
+#
+# CGO is disabled everywhere on purpose: it is what keeps every artifact a single
+# static binary with no runtime dependency, and what makes cross-compiling from a
+# Linux box to macOS and Windows work with no extra toolchain.
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: jaira
+    main: ./cmd/jaira
+    binary: jaira
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'

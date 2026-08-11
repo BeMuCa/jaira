@@ -5,11 +5,13 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
 	"github.com/berk/jaira/core/gate"
+	"github.com/berk/jaira/core/session"
 	"github.com/berk/jaira/core/ticket"
 )
 
@@ -77,6 +79,9 @@ func (m *Model) renderBoard() string {
 	var b strings.Builder
 	b.WriteString(m.header())
 	b.WriteString("\n")
+	if panel := m.renderSessions(); panel != "" {
+		b.WriteString(panel)
+	}
 
 	if len(m.cols) == 0 {
 		b.WriteString("\n  No lanes are installed.\n")
@@ -95,7 +100,7 @@ func (m *Model) renderBoard() string {
 	}
 	end := min(len(m.cols), start+perScreen)
 
-	bodyHeight := m.height - 5
+	bodyHeight := m.height - 5 - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
 	}
@@ -108,6 +113,66 @@ func (m *Model) renderBoard() string {
 	b.WriteString("\n")
 	b.WriteString(m.statusBar(start, end))
 	return b.String()
+}
+
+// renderSessions shows what each agent session is working on: the board's
+// window onto memory that would otherwise vanish when a session ends.
+func (m *Model) renderSessions() string {
+	if len(m.sessions) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for _, x := range m.sessions {
+		if x.Focus == "" && x.TicketID == "" {
+			continue
+		}
+		marker, style := "●", styOK
+		if x.Stale() {
+			// Dimmed and labelled rather than removed: a crashed session's last
+			// known focus is still the most useful thing to show.
+			marker, style = "○", styMeta
+		}
+		line := style.Render(marker + " " + truncate(x.Focus, max(20, m.width/2)))
+		if x.TicketID != "" {
+			line += styHandle.Render(" " + ticket.Handle(x.TicketID))
+		}
+		if x.Model != "" {
+			line += styAgentic.Render(" " + x.Model)
+		}
+		if x.Reasoning != "" {
+			line += styMeta.Render("  — " + truncate(x.Reasoning, max(10, m.width/3)))
+		}
+		if x.Stale() {
+			line += styMeta.Render(fmt.Sprintf("  (quiet %s)", roughAge(x.Age())))
+		}
+		b.WriteString(truncate(line, m.width) + "\n")
+	}
+	if b.Len() == 0 {
+		return ""
+	}
+	return b.String()
+}
+
+func sessionPanelHeight(ss []session.Session) int {
+	n := 0
+	for _, x := range ss {
+		if x.Focus != "" || x.TicketID != "" {
+			n++
+		}
+	}
+	return n
+}
+
+func roughAge(d time.Duration) string {
+	switch {
+	case d < time.Minute:
+		return "moments"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	}
+	return fmt.Sprintf("%dd", int(d.Hours()/24))
 }
 
 func (m *Model) columnWidth() int {

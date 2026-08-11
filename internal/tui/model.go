@@ -15,10 +15,12 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/berk/jaira/core/gate"
 	"github.com/berk/jaira/core/gitrepo"
 	"github.com/berk/jaira/core/lane"
+	"github.com/berk/jaira/core/session"
 	"github.com/berk/jaira/core/ticket"
 )
 
@@ -65,9 +67,17 @@ type Model struct {
 
 	moveTarget int // lane index highlighted in the move picker
 
+	// sessions is what any agent working this tree last checkpointed — the
+	// board's view of agent memory.
+	sessions []session.Session
+
+	// watch carries filesystem events. A watcher is more responsive than the
+	// timer, but the timer stays as a backstop because change notifications are
+	// unreliable on some filesystems, notably Windows drives mounted into WSL2.
+	watch  chan struct{}
+	closer func()
+
 	width, height int
-	lastLoad      time.Time
-	quitting      bool
 }
 
 type column struct {
@@ -107,8 +117,10 @@ func (m *Model) reload() error {
 		m.warnings = append(m.warnings, pe.Problems...)
 	}
 	m.tickets = tickets
+	if sess, err := session.Load(m.store); err == nil {
+		m.sessions = sess
+	}
 	m.rebuild()
-	m.lastLoad = time.Now()
 	return nil
 }
 
@@ -223,7 +235,76 @@ func matches(t *ticket.Ticket, q string) bool {
 }
 
 // Init satisfies tea.Model.
-func (m *Model) Init() tea.Cmd { return tick() }
+func (m *Model) Init() tea.Cmd {
+	m.startWatching()
+	return tea.Batch(tick(), waitForChange(m.watch))
+}
+
+// startWatching subscribes to changes in the ticket and session directories.
+// Failure is not fatal: the periodic rescan already keeps the board correct, so a
+// platform without working notifications is merely less immediate.
+func (m *Model) startWatching() {
+	m.watch = make(chan struct{}, 1)
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return
+	}
+	for _, d := range []string{m.store.TicketsDir(), m.store.SessionsDir()} {
+		_ = w.Add(d)
+	}
+	m.closer = func() { _ = w.Close() }
+
+	go func() {
+		// Coalesce bursts: a git pull touches many files at once, and re-rendering
+		// per event would thrash the screen for one logical change.
+		var pending bool
+		debounce := time.NewTimer(time.Hour)
+		defer debounce.Stop()
+		for {
+			select {
+			case _, ok := <-w.Events:
+				if !ok {
+					return
+				}
+				if !pending {
+					pending = true
+					debounce.Reset(200 * time.Millisecond)
+				}
+			case <-debounce.C:
+				if pending {
+					pending = false
+					select {
+					case m.watch <- struct{}{}:
+					default:
+					}
+				}
+			case _, ok := <-w.Errors:
+				if !ok {
+					return
+				}
+			}
+		}
+	}()
+}
+
+// Close releases the watcher.
+func (m *Model) Close() {
+	if m.closer != nil {
+		m.closer()
+	}
+}
+
+type changeMsg struct{}
+
+func waitForChange(ch chan struct{}) tea.Cmd {
+	if ch == nil {
+		return nil
+	}
+	return func() tea.Msg {
+		<-ch
+		return changeMsg{}
+	}
+}
 
 type tickMsg time.Time
 
@@ -245,6 +326,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
 		return m, tick()
+
+	case changeMsg:
+		_ = m.reload()
+		return m, waitForChange(m.watch)
 
 	case tea.KeyPressMsg:
 		return m.key(msg)
@@ -371,7 +456,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// Board mode.
 	switch s {
 	case "q", "ctrl+c":
-		m.quitting = true
+		m.Close()
 		return m, tea.Quit
 	case "h", "left":
 		m.moveLane(-1)
