@@ -144,9 +144,40 @@ func Merge(base, ours, theirs []byte, lanes *lane.Set) (*Result, error) {
 		}
 	}
 
+	// Record any unresolved fields inside the file itself, as valid YAML rather
+	// than as conflict markers. Markers would make the frontmatter unparseable,
+	// which would blank the ticket on everyone's board until someone resolved it
+	// — a worse outcome than a parseable ticket carrying a visible note that two
+	// versions of one field are outstanding.
+	if len(res.Conflicts) > 0 {
+		var names []string
+		for _, c := range res.Conflicts {
+			names = append(names, c.Field)
+		}
+		sort.Strings(names)
+		if err := od.SetList(FieldConflicts, names); err != nil {
+			return nil, err
+		}
+		for _, c := range res.Conflicts {
+			if c.Field == "body" {
+				continue
+			}
+			if err := od.SetScalar(theirsKey(c.Field), c.Theirs); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	res.Merged = od.Bytes()
 	return res, nil
 }
+
+// FieldConflicts names the frontmatter key listing fields left unresolved.
+const FieldConflicts = "merge-conflicts"
+
+// theirsKey is where the losing side of a conflict is parked so nothing is lost
+// and a human can see both versions.
+func theirsKey(field string) string { return "conflict-theirs-" + field }
 
 func stampOf(d *ticket.Doc) time.Time {
 	v, _, err := d.Scalar(ticket.FieldUpdatedAt)

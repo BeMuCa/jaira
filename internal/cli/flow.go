@@ -10,6 +10,7 @@ import (
 	"github.com/berk/jaira/core/gate"
 	"github.com/berk/jaira/core/gitrepo"
 	"github.com/berk/jaira/core/lane"
+	"github.com/berk/jaira/core/session"
 	"github.com/berk/jaira/core/ticket"
 )
 
@@ -19,6 +20,7 @@ func newMoveCmd() *cobra.Command {
 		what, why, resolves              string
 		commits                          []string
 		force                            bool
+		fromLane                         string
 	)
 	cmd := &cobra.Command{
 		Use:     "move <id>",
@@ -49,6 +51,47 @@ command is safe to retry.`,
 			env, _, err := loadEnv(s)
 			if err != nil {
 				return err
+			}
+
+			// A lane's agent returns structured output; the tool validates it
+			// against what the lane declared it produces, and rejects malformed
+			// output with a reason the agent can read and retry against.
+			if fromLane != "" {
+				l, ok := env.Lanes.Get(fromLane)
+				if !ok {
+					return fail(ExitUsage, "no_such_lane", "no lane %q is installed", fromLane)
+				}
+				out, missing, err := readLaneOutput(cmd.InOrStdin(), l.OutputProduces)
+				if err != nil {
+					return fail(ExitValidation, "bad_lane_output", "%v", err)
+				}
+				if len(missing) > 0 {
+					return &codedError{
+						code:   ExitValidation,
+						reason: "incomplete_lane_output",
+						message: fmt.Sprintf("lane %q requires %s in its output",
+							l.ID, strings.Join(missing, ", ")),
+					}
+				}
+				if what == "" {
+					what = out.Outcome.What
+				}
+				if why == "" {
+					why = out.Outcome.Why
+				}
+				if resolves == "" {
+					resolves = out.Outcome.Resolves
+				}
+				if question == "" {
+					question = out.Question
+				}
+				if executedBy == "" {
+					executedBy = out.ExecutedBy
+				}
+				if signal == "" {
+					signal = out.Signal
+				}
+				commits = append(commits, out.Commits...)
 			}
 
 			// Idempotent: re-running a satisfied move is a no-op success rather
@@ -168,6 +211,8 @@ command is safe to retry.`,
 	f.StringVar(&resolves, "resolves", "", "outcome: how the change satisfies the definition of done")
 	f.StringSliceVar(&commits, "commits", nil, "commit SHAs produced for this ticket")
 	f.BoolVar(&force, "force", false, "override gate refusals; recorded in the output")
+	f.StringVar(&fromLane, "from-lane", "",
+		"read this lane's structured output as JSON on stdin and validate it against the lane's contract")
 	return cmd
 }
 
@@ -219,6 +264,11 @@ skipping this command.`,
 					continue
 				}
 				if !gate.Actionable(env, t) {
+					continue
+				}
+				// Skip work another live session has claimed, so two sessions are
+				// not handed the same ticket. Stale claims are ignored.
+				if _, active := ClaimActive(t, session.DefaultID()); active {
 					continue
 				}
 				ready = append(ready, t)

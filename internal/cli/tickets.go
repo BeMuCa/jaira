@@ -13,6 +13,7 @@ import (
 
 	"github.com/berk/jaira/core/gate"
 	"github.com/berk/jaira/core/lane"
+	"github.com/berk/jaira/core/project"
 	"github.com/berk/jaira/core/ticket"
 )
 
@@ -32,6 +33,10 @@ session and lock state is never committed. Safe to run more than once.`,
 			if err != nil {
 				return err
 			}
+			// Register the board here as well as on first open, so the switcher
+			// knows about a project before anyone has launched the TUI in it.
+			project.Remember(s.Root)
+
 			attrsChanged, attrsErr := writeGitAttributes(s)
 			driverInstalled, driverErr := ensureMergeDriver(s.Root)
 

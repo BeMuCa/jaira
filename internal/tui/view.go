@@ -69,6 +69,8 @@ func (m *Model) render() string {
 		return m.renderDetail()
 	case modeMessage:
 		return m.renderMessage()
+	case modeProjects:
+		return m.renderProjects()
 	case modeMove:
 		return m.renderBoard() // picker is drawn into the status bar
 	}
@@ -468,6 +470,28 @@ func (m *Model) renderMessage() string {
 	return b.String()
 }
 
+func (m *Model) renderProjects() string {
+	var b strings.Builder
+	b.WriteString(styLaneTitle.Render("Switch board") + "\n")
+	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 78))) + "\n\n")
+	for i, p := range m.projects {
+		marker := "  "
+		name := p.Name
+		if i == m.projIdx {
+			marker = stySelected.Render("▌ ")
+			name = stySelected.Render(name)
+		}
+		cur := ""
+		if p.Root == m.store.Root {
+			cur = styMeta.Render("  (current)")
+		}
+		b.WriteString(marker + name + cur + "\n")
+		b.WriteString("    " + styMeta.Render(truncate(p.Root, m.width-6)) + "\n")
+	}
+	b.WriteString("\n" + styMeta.Render("jk choose · enter switch · esc back"))
+	return b.String()
+}
+
 func (m *Model) renderHelp() string {
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render("jaira") + "\n")
@@ -492,6 +516,7 @@ func (m *Model) renderHelp() string {
 			{"n", "create a ticket in the backlog"},
 			{"m", "move the selected ticket to another lane"},
 			{"r", "reload from disk now"},
+			{"p", "switch to another board"},
 		}},
 	}
 	for _, s := range sections {

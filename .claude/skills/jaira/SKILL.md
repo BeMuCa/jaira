@@ -98,6 +98,29 @@ That returns the lane's prompt, only the fields the lane declared it needs, and
 the diff of the ticket's own commits. Spawn a subagent at the lane's `model_tier`
 with exactly that.
 
+## Working an agentic lane
+
+When several sessions may be running, take a claim first so two agents do not pick
+up the same ticket. Claims are 30-minute leases and expire on their own, so a
+crashed session never wedges the board:
+
+```bash
+jaira claim <handle>
+```
+
+Then let the tool assemble the input and hand back structured output:
+
+```bash
+jaira show <handle> --for-lane review --json     # prompt + declared fields + diff
+# … spawn a subagent at the lane's model_tier with exactly that …
+echo '{"outcome":{"what":"…","why":"…","resolves":"…"},"executed_by":"opus"}' \
+  | jaira move <handle> --to done --from-lane review
+```
+
+`--from-lane` validates your output against what the lane declared it produces and
+refuses it with the missing field names if incomplete. Fix and retry rather than
+working around it.
+
 ## Dependencies
 
 ```bash
@@ -114,6 +137,19 @@ even after this session ends:
 ```bash
 jaira checkpoint --focus "auth refactor" --why "session cookies leak on 302" --ticket <handle>
 ```
+
+## If a merge conflicted
+
+Concurrent lane moves, blockers and commit lists merge on their own. Only
+competing prose rewrites conflict:
+
+```bash
+jaira resolve <handle>                  # show both sides, per field
+jaira resolve <handle> --take-theirs    # or --take-ours
+```
+
+The ticket stays readable while a conflict is outstanding, so do not panic-edit
+the file.
 
 ## Exit codes
 

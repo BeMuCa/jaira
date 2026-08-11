@@ -20,6 +20,7 @@ import (
 	"github.com/berk/jaira/core/gate"
 	"github.com/berk/jaira/core/gitrepo"
 	"github.com/berk/jaira/core/lane"
+	"github.com/berk/jaira/core/project"
 	"github.com/berk/jaira/core/session"
 	"github.com/berk/jaira/core/ticket"
 )
@@ -35,6 +36,7 @@ const (
 	modeMove
 	modeCreate
 	modeMessage
+	modeProjects
 )
 
 // Model is the board's state.
@@ -66,6 +68,14 @@ type Model struct {
 	diffScroll int
 
 	moveTarget int // lane index highlighted in the move picker
+
+	// projects is the switcher's list; SwitchTo is set when the user picks one,
+	// and the caller reopens the board there. Reopening rather than swapping the
+	// store keeps every piece of per-board state (watcher, cursor, filter) from
+	// having to be individually reset.
+	projects []project.Project
+	projIdx  int
+	SwitchTo string
 
 	// sessions is what any agent working this tree last checkpointed — the
 	// board's view of agent memory.
@@ -412,6 +422,27 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeProjects:
+		switch s {
+		case "esc", "q", "p":
+			m.mode = modeBoard
+		case "j", "down":
+			if m.projIdx < len(m.projects)-1 {
+				m.projIdx++
+			}
+		case "k", "up":
+			if m.projIdx > 0 {
+				m.projIdx--
+			}
+		case "enter":
+			if m.projIdx < len(m.projects) {
+				m.SwitchTo = m.projects[m.projIdx].Root
+				m.Close()
+				return m, tea.Quit
+			}
+		}
+		return m, nil
+
 	case modeDiff:
 		switch s {
 		case "esc", "q", "d":
@@ -488,6 +519,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case "?":
 		m.mode = modeHelp
+	case "p":
+		m.projects = project.Load()
+		m.projIdx = 0
+		if len(m.projects) <= 1 {
+			m.notify("No other boards recorded yet.\n\nOpen jaira inside another repository and it will appear here.", false)
+		} else {
+			m.mode = modeProjects
+		}
 	case "n":
 		m.mode = modeCreate
 		m.input = ""

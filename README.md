@@ -165,6 +165,12 @@ So `jaira init` registers a **field-aware merge driver** for the clone:
 | other scalars | the more recent `updated-at` wins |
 | prose (`goal`, `outcome-*`, body) | a real conflict, scoped to that field |
 
+A conflicted ticket stays valid YAML — the contested value is parked in a
+`conflict-theirs-<field>` key and listed under `merge-conflicts`, rather than the
+file being filled with markers. Conflict markers would make the frontmatter
+unparseable and blank the ticket on everyone's board until someone resolved it.
+`jaira resolve` shows both sides and can take either.
+
 Registration writes to `.git/config`, because git deliberately does not let a
 clone configure an executable on your behalf. jaira says so when it does it rather
 than acting quietly.
@@ -201,12 +207,14 @@ jaira show <id>            show one ticket
 jaira set <id> k=v…        set fields
 jaira move <id> --to …     move lanes, applying the gates
 jaira next                 the next actionable ticket
+jaira claim <id>           take a 30-minute lease on a ticket
 jaira lanes                installed lanes
 jaira checkpoint           record what this session is doing
 jaira sessions             sessions working this tree
 jaira sync-tasks           mirror an agent task list into the backlog
 jaira tasks                emit the board as a task list
-jaira resolve <id>         inspect a conflicted ticket
+jaira resolve <id>         settle the fields a merge could not resolve
+jaira projects             boards you have opened
 ```
 
 Every read command takes `--json`. Exit codes are a stable contract:

@@ -69,3 +69,30 @@ Items acknowledged and carried forward from previous milestone close:
 Last session: 2026-08-11
 Stopped at: ROADMAP.md and STATE.md created; REQUIREMENTS.md traceability table updated
 Resume file: None
+
+## Build status — 2026-08-11
+
+All eight roadmap phases implemented in one pass. 83 of 84 v1 requirements met and
+verified by running code; TUI-11 deferred (see REQUIREMENTS.md) because the board
+has no in-place field editor, so there is no edit buffer for a background refresh
+to clobber.
+
+Verified rather than asserted:
+
+- byte-faithful single-field writes (16 unit tests; a real `git diff` showing a
+  one-line change)
+- field-aware merge driver under two real git branches: lane resolved by progress,
+  blockers and commits unioned, nothing lost, clean tree
+- competing prose rewrites conflict, ticket stays valid YAML, `jaira resolve`
+  settles it
+- 20 concurrent writers to one ticket: 20/20 writes landed, no corruption, all
+  locks released
+- promotion gate, dependency gate and the non-model Done signal all refuse with
+  documented exit codes
+- task-tool sync is idempotent and creates no duplicates on re-sync
+- six cross-compile targets build with CGO disabled
+- `go vet` clean, `go test ./... -race` green, `gofmt` clean
+
+Known unproven: adoption. File-based trackers have a poor track record and this
+one's bet — a field-aware merge driver plus a deliberately small surface — has not
+been tested by a real team yet.

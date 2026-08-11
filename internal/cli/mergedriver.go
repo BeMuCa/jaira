@@ -138,14 +138,19 @@ func writeGitAttributes(s *ticket.Store) (changed bool, err error) {
 }
 
 func newResolveCmd() *cobra.Command {
-	return &cobra.Command{
+	var takeOurs, takeTheirs bool
+	cmd := &cobra.Command{
 		Use:   "resolve <id>",
-		Short: "Show the conflicting fields of a ticket left in conflict",
-		Long: `Reports which fields git could not merge, side by side.
+		Short: "Settle the fields a merge could not resolve",
+		Long: `Shows the fields git could not merge, and can settle them.
 
 Most concurrent edits never reach this command: lanes, dependencies and commit
 lists are merged structurally. What lands here is the case no rule can settle —
-two people rewriting the same prose.`,
+two people rewriting the same prose.
+
+The ticket stays valid YAML while a conflict is outstanding, so the board keeps
+working. The losing value is parked in a conflict-theirs-<field> key rather than
+being discarded.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -156,26 +161,74 @@ two people rewriting the same prose.`,
 			if err != nil {
 				return err
 			}
-			raw, err := os.ReadFile(t.Path)
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(string(raw), "<<<<<<<") {
+			fields, _ := t.Doc().List(merge.FieldConflicts)
+			if len(fields) == 0 {
 				if g.jsonOut {
 					return emit(cmd.OutOrStdout(), map[string]any{"conflicted": false, "id": t.ID})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%s has no conflict markers.\n", ticket.Handle(t.ID))
+				fmt.Fprintf(cmd.OutOrStdout(), "%s has no outstanding conflicts.\n", ticket.Handle(t.ID))
 				return nil
+			}
+
+			if takeOurs || takeTheirs {
+				_, err := s.Mutate(t.ID, func(t *ticket.Ticket) error {
+					for _, f := range fields {
+						key := "conflict-theirs-" + f
+						theirs, ok, _ := t.Doc().Scalar(key)
+						if takeTheirs && ok {
+							if err := t.Doc().SetScalar(f, theirs); err != nil {
+								return err
+							}
+						}
+						// Either way the parked value is no longer needed.
+						if ok {
+							if err := t.Doc().SetScalar(key, ""); err != nil {
+								return err
+							}
+						}
+					}
+					return t.Doc().SetList(merge.FieldConflicts, nil)
+				})
+				if err != nil {
+					return err
+				}
+				side := "ours"
+				if takeTheirs {
+					side = "theirs"
+				}
+				if g.jsonOut {
+					return emit(cmd.OutOrStdout(), map[string]any{"resolved": true, "took": side, "fields": fields})
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Resolved %d field(s) in favour of %s.\n", len(fields), side)
+				return nil
+			}
+
+			type row struct {
+				Field  string `json:"field"`
+				Ours   string `json:"ours"`
+				Theirs string `json:"theirs"`
+			}
+			var rows []row
+			for _, f := range fields {
+				ours := fieldValue(t, f)
+				theirs, _, _ := t.Doc().Scalar("conflict-theirs-" + f)
+				rows = append(rows, row{Field: f, Ours: ours, Theirs: theirs})
 			}
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
-					"conflicted": true, "id": t.ID, "path": t.Path,
+					"conflicted": true, "id": t.ID, "fields": rows,
 				})
 			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s has %d unresolved field(s):\n\n", ticket.Handle(t.ID), len(rows))
+			for _, r := range rows {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %s\n    ours:   %s\n    theirs: %s\n\n", r.Field, r.Ours, r.Theirs)
+			}
 			fmt.Fprintf(cmd.OutOrStdout(),
-				"%s still contains conflict markers.\nEdit %s, then commit.\n",
-				ticket.Handle(t.ID), t.Path)
+				"Edit %s directly, or run this command with --take-ours or --take-theirs.\n", t.Path)
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&takeOurs, "take-ours", false, "keep this side's values")
+	cmd.Flags().BoolVar(&takeTheirs, "take-theirs", false, "adopt the incoming values")
+	return cmd
 }
