@@ -129,6 +129,12 @@ Exit codes:
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Args:          cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Bare `jaira` opens the board: glancing at it is the common case,
+			// and printing help to someone who already installed the tool is not.
+			return newBoardCmd().RunE(cmd, nil)
+		},
 	}
 	root.PersistentFlags().BoolVar(&g.jsonOut, "json", false, "emit JSON on stdout and structured errors on stderr")
 	root.PersistentFlags().StringVarP(&g.dir, "dir", "C", ".", "run as if jaira was started in this directory")
@@ -142,6 +148,7 @@ Exit codes:
 		newMoveCmd(),
 		newNextCmd(),
 		newLanesCmd(),
+		newBoardCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
