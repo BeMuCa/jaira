@@ -60,6 +60,7 @@ None yet.
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-08-12 | dod-verb | `jaira dod` plus a surgical checklist writer: one marker character changes, indexes are scoped to their section, one in-progress item per checklist |
 | 2026-08-12 | dod-checkbox-states | Three checklist states, `## Plan` section parsed separately, and the fix for `[~]` items being dropped by the parser — which let a ticket with outstanding work enter the terminal lane |
 
 ## Deferred Items

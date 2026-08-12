@@ -178,6 +178,7 @@ Exit codes:
 		newListCmd(),
 		newShowCmd(),
 		newSetCmd(),
+		newDoDCmd(),
 		newMoveCmd(),
 		newNextCmd(),
 		newLanesCmd(),
