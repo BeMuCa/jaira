@@ -92,6 +92,12 @@ func Remember(root string) {
 	}
 }
 
+// Canonical is exported because every caller that compares board paths has to
+// use the same reduction. The launcher deduping with filepath.Abs while the
+// registry stored a symlink-resolved path listed the same board twice on macOS,
+// where /var is a symlink to /private/var.
+func Canonical(p string) string { return canonical(p) }
+
 // canonical reduces a path to one spelling, so the same board added twice - once
 // with a trailing slash, once through a symlink, once relative - is recognised
 // as the same board rather than listed twice.

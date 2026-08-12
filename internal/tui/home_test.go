@@ -303,3 +303,21 @@ func TestScanReportsWhatItDid(t *testing.T) {
 		t.Error("the message is not shown on the home screen")
 	}
 }
+
+// The launcher must reduce paths the same way the registry does. macOS made this
+// visible: /var is a symlink to /private/var, so a board registered through one
+// spelling and discovered through the other was listed twice — deduping with
+// filepath.Abs is not enough when the two names resolve to one directory.
+func TestLauncherDedupesSymlinkedPaths(t *testing.T) {
+	root := t.TempDir()
+	makeBoard(t, root, "real")
+	link := filepath.Join(root, "link")
+	if err := os.Symlink(filepath.Join(root, "real"), link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+
+	h := newHome(t, []string{filepath.Join(root, "real"), link}, 120, 30)
+	if len(h.entries) != 1 {
+		t.Errorf("one board listed %d times: %+v", len(h.entries), h.entries)
+	}
+}

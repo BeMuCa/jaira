@@ -63,8 +63,8 @@ func (h *Home) refresh(extra []string) int {
 	seen := map[string]bool{}
 	var entries []HomeEntry
 	add := func(root string) {
-		abs, err := filepath.Abs(root)
-		if err != nil || seen[abs] {
+		abs := project.Canonical(root)
+		if seen[abs] {
 			return
 		}
 		seen[abs] = true
@@ -72,7 +72,7 @@ func (h *Home) refresh(extra []string) int {
 	}
 	before := map[string]bool{}
 	for _, e := range h.entries {
-		before[e.Root] = true
+		before[project.Canonical(e.Root)] = true
 	}
 	for _, p := range project.Load() {
 		add(p.Root)
@@ -86,7 +86,7 @@ func (h *Home) refresh(extra []string) int {
 	}
 	added := 0
 	for _, e := range entries {
-		if !before[e.Root] {
+		if !before[project.Canonical(e.Root)] {
 			added++
 		}
 	}
@@ -104,8 +104,8 @@ func NewHome(extraRoots []string) (*Home, error) {
 
 	seen := map[string]bool{}
 	add := func(root string) {
-		abs, err := filepath.Abs(root)
-		if err != nil || seen[abs] {
+		abs := project.Canonical(root)
+		if seen[abs] {
 			return
 		}
 		seen[abs] = true
