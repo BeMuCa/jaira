@@ -9,10 +9,11 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// The review lane stops for a person, and this is that person's screen: what was
-// wrong, what the agent did, why, and whether it holds. Those four questions are
-// the whole reason the step exists, so they are laid out in that order rather
-// than being left among the other twenty fields.
+// The sign-off lane stops for a person, and this is that person's screen: what
+// was wrong, what the agent did, why, whether it holds, and the reviewer's own
+// account of what shipped, what it found missing, and its verdict. Those
+// questions are the whole reason the step exists, so they are laid out in that
+// order rather than being left among the other twenty fields.
 func TestSignOffViewShowsTheFourQuestions(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 	tk := &ticket.Ticket{
@@ -24,17 +25,22 @@ func TestSignOffViewShowsTheFourQuestions(t *testing.T) {
 			Why:      "the endpoint had no limit at all",
 			Resolves: "429 now returned above 100/min",
 		},
+		ReviewSummary: "added a token-bucket rate limiter per client IP",
+		ReviewGaps:    "none",
 		ReviewVerdict: "the diff matches the criteria; no defects found",
 	}
 	m.detail = tk
 	out := stripANSI(m.renderSignOff())
 
 	for _, want := range []string{
-		"stop credential stuffing",         // the issue
-		"added a token bucket per IP",      // what the agent did
-		"the endpoint had no limit at all", // why
-		"429 now returned above 100/min",   // whether it solved it
-		"the diff matches the criteria",    // the reviewer's own verdict
+		"stop credential stuffing",                        // the issue
+		"added a token bucket per IP",                     // what the agent did
+		"the endpoint had no limit at all",                // why
+		"429 now returned above 100/min",                  // whether it solved it
+		"What the reviewer says it does",                  // the reviewer's summary, labelled
+		"added a token-bucket rate limiter per client IP", // the reviewer's own account
+		"What the reviewer found missing",                 // the reviewer's gaps, labelled
+		"the diff matches the criteria",                   // the reviewer's own verdict
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("sign-off view is missing %q:\n%s", want, out)
@@ -88,6 +94,23 @@ func TestHumanExitGate(t *testing.T) {
 	allowed := gate.CheckAdvance(env, tk, gate.Request{To: "done", Interactive: true})
 	if hasCode(allowed, gate.CodeNeedsHuman) {
 		t.Errorf("a person was blocked from signing off: %v", allowed)
+	}
+}
+
+// The sign-off screen is exactly where a ticked box without its evidence is a
+// claim nobody can check, so a proof must render under its item here too.
+func TestSignOffRendersProofUnderDoDItem(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	body := "## Definition of Done\n\n- [x] 429 returned above 100/min\n  proof: internal/x.go:12; TestRateLimit\n"
+	tk := &ticket.Ticket{
+		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "signoff",
+		Body: body,
+	}
+	tk.DoDItems = ticket.ParseDoDItems(body)
+	m.detail = tk
+	out := stripANSI(m.renderSignOff())
+	if !strings.Contains(out, "proof: internal/x.go:12; TestRateLimit") {
+		t.Errorf("proof did not render under its item on the sign-off screen:\n%s", out)
 	}
 }
 

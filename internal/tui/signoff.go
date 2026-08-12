@@ -11,11 +11,13 @@ import (
 
 // renderSignOff is the screen a person sees when a ticket is waiting on them.
 //
-// It answers four questions in order — what was wrong, what the agent did, why,
-// and whether it actually holds — because that is the judgement being asked for.
-// The implementer's account and the reviewer's verdict are shown side by side
-// rather than merged: they are different claims, and when they disagree that
-// disagreement is the most useful thing on the screen.
+// It answers these questions in order — what was wrong, what the agent did,
+// why, whether it actually holds, what the reviewer says it does, what the
+// reviewer found missing, and the reviewer's verdict — because that is the
+// judgement being asked for. The implementer's account and the reviewer's
+// reading of it are shown side by side rather than merged: they are different
+// claims, and when they disagree that disagreement is the most useful thing on
+// the screen.
 func (m *Model) renderSignOff() string {
 	t := m.detail
 	if t == nil {
@@ -40,6 +42,8 @@ func (m *Model) renderSignOff() string {
 	section("What was done", t.Outcome.What)
 	section("Why", t.Outcome.Why)
 	section("Does it solve it — the implementer's account", t.Outcome.Resolves)
+	section("What the reviewer says it does", t.ReviewSummary)
+	section("What the reviewer found missing", t.ReviewGaps)
 	section("The reviewer's verdict", t.ReviewVerdict)
 
 	if done, total := checklistProgress(t.DoDItems); total > 0 {
@@ -52,6 +56,11 @@ func (m *Model) renderSignOff() string {
 			}
 			fmt.Fprintf(&b, "  %s %s\n", sty.Render("["+it.State.Marker()+"]"),
 				truncate(it.Text, max(1, w-6)))
+			// A ticked box without its evidence is a claim nobody can check, and
+			// this is exactly the screen where that judgement is made.
+			if it.Proof != "" {
+				fmt.Fprintf(&b, "      %s\n", styMeta.Render(truncate("proof: "+it.Proof, max(1, w-6))))
+			}
 		}
 	}
 

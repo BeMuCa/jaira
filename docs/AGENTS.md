@@ -21,6 +21,7 @@ jaira show <id> --for-lane in-progress --json
 # 3. Say where you are, as you go.
 jaira dod <id> 2 --doing --plan
 jaira dod <id> 2 --done --plan
+jaira dod <id> 3 --done --proof "internal/x.go:12; TestX"   # tick it and record why in one call
 
 # 4. Record what a later session would have to rediscover.
 jaira note <id> "writeAll buffers the whole file; flushing per 5k rows works"
@@ -64,8 +65,9 @@ and the board's compact view (`v`) counts them per step.
 Two things, deliberately:
 
 - **Leave the sign-off lane.** It is a human checkpoint. A review agent writes
-  its verdict to `review-verdict` and stops; a person accepts the work in the
-  board or raises a follow-up. Attempting the move exits 3.
+  `review-summary`, `review-gaps` and `review-verdict`, then moves the ticket to
+  sign-off and stops; a person accepts the work in the board or raises a
+  follow-up. Attempting the move exits 3.
 - **Close a ticket without meeting its definition of done.** Every criterion must
   be marked done, and the plan finished if the ticket has one. There is no
   evidence flag to pass. `--force` exists, is recorded on the ticket, and is the

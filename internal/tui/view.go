@@ -344,6 +344,9 @@ func renderChecklist(b *strings.Builder, title string, items []ticket.DoDItem, w
 		}
 		fmt.Fprintf(b, "%s%s %s\n", lead,
 			sty.Render("["+it.State.Marker()+"]"), wrap(it.Text, max(1, width-6), 6))
+		if it.Proof != "" {
+			fmt.Fprintf(b, "      %s\n", styMeta.Render(wrap("proof: "+it.Proof, max(1, width-6), 13)))
+		}
 	}
 }
 
@@ -491,6 +494,12 @@ func (m *Model) renderDetail() string {
 		row("what", t.Outcome.What)
 		row("why", t.Outcome.Why)
 		row("resolves", t.Outcome.Resolves)
+	}
+	if t.ReviewSummary != "" || t.ReviewGaps != "" || t.ReviewVerdict != "" {
+		b.WriteString("\n" + styLaneTitle.Render("Review") + "\n")
+		row("summary", t.ReviewSummary)
+		row("gaps", t.ReviewGaps)
+		row("verdict", t.ReviewVerdict)
 	}
 	if len(t.Commits) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits") + "\n")

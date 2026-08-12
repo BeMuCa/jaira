@@ -17,7 +17,10 @@ Carry out the plan on this ticket.
 You are given the goal, the context, the definition of done, and the plan worked
 out in the previous step. Work through the plan in order. Mark the step you are
 on with `jaira dod <id> <n> --doing --plan`, and mark it done when it is done —
-that marker is how a person watching the board knows where you are.
+that marker is how a person watching the board knows where you are. When you
+mark a definition-of-done item done, record the evidence in the same call:
+`jaira dod <id> <n> --done --proof "<file:line or test name>"`, naming the
+specific code or test that makes it true.
 
 Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
@@ -30,4 +33,5 @@ When you are finished, report:
 - **how** the change satisfies the definition of done, referring to it directly
 
 Do not claim the definition of done is met unless you can point to the specific
-behaviour that now satisfies it.
+behaviour that now satisfies it — the `--proof` on each item is where that
+pointer goes.

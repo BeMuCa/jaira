@@ -106,6 +106,32 @@ func TestDetailRendersChecklists(t *testing.T) {
 	}
 }
 
+// A ticked box without its evidence is a claim nobody can check, so a proof
+// must render under its item in the detail pane, for both checklists.
+func TestDetailRendersProofUnderItsItem(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	body := `## Plan
+
+- [x] write the spec
+  proof: docs/spec.md
+
+## Definition of Done
+
+- [x] 429 returned above 100/min
+  proof: internal/x.go:12; TestRateLimit
+- [ ] documented in README
+`
+	m.detail = withChecklists(body)
+	out := stripANSI(m.renderDetail())
+
+	if !strings.Contains(out, "proof: docs/spec.md") {
+		t.Errorf("plan item's proof did not render:\n%s", out)
+	}
+	if !strings.Contains(out, "proof: internal/x.go:12; TestRateLimit") {
+		t.Errorf("definition-of-done item's proof did not render:\n%s", out)
+	}
+}
+
 // A narrow terminal must not be able to push a checklist line past the edge of
 // the pane. Measured with lipgloss.Width rather than len, because display width
 // is what actually wraps a terminal.

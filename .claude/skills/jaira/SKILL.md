@@ -53,14 +53,18 @@ Mark items as you go, with the command rather than by editing the file:
 
 ```bash
 jaira dod <handle> 2 --doing    # you are working on item 2 now
-jaira dod <handle> 2 --done     # you have satisfied it
+jaira dod <handle> 2 --done --proof "internal/x.go:12; TestX"   # satisfied, and here is why
 jaira dod <handle> 1 --todo     # you were wrong, put it back
 ```
 
 Only one item can be `--doing` at a time; marking a second moves the marker. That
 marker is how a person watching the board knows which criterion you are on.
 
-Do not mark an item done you have not verified.
+Do not mark an item done you have not verified. `--proof` records the evidence
+in the same call that ticks the item — a file:line or a test name, so the claim
+is checkable rather than taken on trust. Setting it again on the same item
+replaces the line rather than stacking a second one, and it can be passed on its
+own to record evidence without changing the marker.
 
 There is a second, optional checklist under a `## Plan` heading: the method you
 are following — write the spec, design it, implement it — as opposed to the
@@ -181,10 +185,11 @@ plus `blocked`.
 - **human** — you need a decision only the user can make. Move the ticket here
   with the question attached rather than guessing:
   `jaira move <handle> --to human --question "Should expired sessions redirect or 401?"`
-- **review** — implemented, awaiting sign-off. **You cannot move a ticket out of
-  this lane.** It is a human checkpoint: write your verdict with
-  `jaira set <handle> review-verdict="..."` and stop. The user accepts it in the
-  board, or raises a follow-up ticket. Attempting the move exits 3.
+- **review** — a second model judges the diff. Write, in this order:
+  `jaira set <handle> review-summary="..."` (what the change does, from the
+  diff), `jaira set <handle> review-gaps="..."` (what is missing — write
+  "none" if nothing is), then `jaira set <handle> review-verdict="..."` (your
+  conclusion). All three are required before the ticket can leave this lane.
 - **done** — requires the definition-of-done checklist to be fully marked, and
   the plan too if the ticket has one. There is no evidence flag to pass; you
   cannot certify your own work complete, and you should not try to route around
