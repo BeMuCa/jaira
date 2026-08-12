@@ -1,10 +1,10 @@
 ---
 id: human
-name: Human
+name: HITL
 after: in-progress
 precedence: 40
 agentic: false
 terminal: false
 requires-question: true
-description: Blocked on a decision only the assignee can make.
+description: Human in the loop. The agent stopped because it needs a decision only the assignee can make.
 ---

@@ -1,7 +1,7 @@
 ---
 id: done
 name: Done
-after: review
+after: signoff
 precedence: 60
 agentic: false
 terminal: true

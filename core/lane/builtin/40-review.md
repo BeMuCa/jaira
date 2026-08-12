@@ -8,8 +8,7 @@ terminal: false
 model-tier: strong
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
 output-produces: [review-verdict]
-requires-human-exit: true
-description: Implemented, awaiting sign-off.
+description: A second model has judged the diff. Not yet accepted by a person.
 ---
 # Prompt
 
@@ -27,6 +26,7 @@ Report specifically:
 
 Default to finding problems. A review that approves everything is worth nothing.
 
-Write your conclusion to review-verdict and stop there. You cannot move this
-ticket onward: the lane is a human checkpoint, and the person who owns the
-outcome accepts it in the board or raises a follow-up.
+Write your conclusion to review-verdict and move the ticket to sign-off. You are
+not the last word: a person reads your verdict alongside the implementer's
+account and decides. Say plainly when you are unsure rather than rounding up to
+approval.

@@ -41,11 +41,18 @@ session and lock state is never committed. Safe to run more than once.`,
 			// decides to publish them with 'jaira share'.
 			ignoredNow, ignoreErr := addIgnore(s.Root)
 
+			// Tell the agent the board is here. The skill's description already
+			// says to use jaira in a repository that has one, but that relies on
+			// the model noticing a directory; a line in the file it is handed at
+			// the start of every session does not.
+			notePath, noteAction, noteErr := announceInAgentFile(s.Root)
+
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
 					"private": true, "gitignore_written": ignoredNow,
-					"state_dir": s.SessionsDir(),
+					"state_dir":  s.SessionsDir(),
+					"agent_note": map[string]any{"path": notePath, "action": noteAction},
 				})
 			}
 			if created {
@@ -57,6 +64,11 @@ session and lock state is never committed. Safe to run more than once.`,
 				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", ignoreErr)
 			} else if ignoredNow {
 				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
+			}
+			if noteErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not update CLAUDE.md: %v\n", noteErr)
+			} else if line := announceLine(notePath, noteAction); line != "" {
+				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
 			return nil
@@ -101,10 +113,16 @@ an assignee, so supplying those now saves a round trip later.`,
 
 			now := time.Now()
 			me := identity()
+			tplBody, tplFields, tplLists, hasTemplate := templateBody(s, title)
+			// Ownership defaults to whoever created the ticket, but a board
+			// template naming an assignee is an explicit choice and outranks that
+			// default. An explicit --assignee outranks both.
 			if assignee == "" {
-				// Ownership defaults to whoever created the ticket. Attribution
-				// stays human even when an agent does the work.
-				assignee = me
+				if v, ok := tplFields[ticket.FieldAssignee]; ok && strings.TrimSpace(v) != "" {
+					assignee = v
+				} else {
+					assignee = me
+				}
 			}
 
 			fields := map[string]string{
@@ -139,7 +157,22 @@ an assignee, so supplying those now saves a round trip later.`,
 			// ticked box is a human act, which is what lets the terminal lane
 			// require evidence a model cannot manufacture.
 			if body == "" {
-				body = newTicketBody(title, dod)
+				if hasTemplate {
+					body = tplBody
+					for k, v := range tplFields {
+						// An explicit flag always beats a template default.
+						if cur, set := fields[k]; !set || strings.TrimSpace(cur) == "" {
+							fields[k] = v
+						}
+					}
+					for k, v := range tplLists {
+						if _, set := lists[k]; !set {
+							lists[k] = v
+						}
+					}
+				} else {
+					body = newTicketBody(title, dod)
+				}
 			}
 			t, err := s.Create(fields, lists, body)
 			if err != nil {
@@ -173,6 +206,77 @@ an assignee, so supplying those now saves a round trip later.`,
 	return cmd
 }
 
+// templateBody returns the board's own ticket template if it has one.
+//
+// A board that already has a house style for tickets — a Jira export, a team
+// convention, a different language — should keep it. jaira only requires the
+// frontmatter it manages and a recognisable definition-of-done heading, so the
+// rest of the shape is the board's business, not the tool's.
+//
+// The title placeholder is the first level-one heading, which is also what jaira
+// falls back to when a ticket has no title field.
+func templateBody(s *ticket.Store, title string) (string, map[string]string, map[string][]string, bool) {
+	for _, name := range []string{"template.md", "TEMPLATE.md"} {
+		raw, err := os.ReadFile(filepath.Join(s.Root, ticket.DirName, name))
+		if err != nil {
+			continue
+		}
+		body := string(raw)
+		// A template's frontmatter is the board's defaults — a Jira export's
+		// type, labels and epic link, say. Keys jaira manages itself are ignored;
+		// everything else is copied onto the new ticket, which is the only reason
+		// a template with frontmatter is worth having.
+		defaults := map[string]string{}
+		listDefaults := map[string][]string{}
+		if d, err := ticket.ParseDoc(raw); err == nil {
+			body = d.Body()
+			for _, k := range d.Keys() {
+				if managedField(k) {
+					continue
+				}
+				if v, ok, err := d.Scalar(k); err == nil && ok && strings.TrimSpace(v) != "" {
+					defaults[k] = v
+					continue
+				}
+				// Labels and similar collections are as much a board default as
+				// a scalar is, and dropping them would lose exactly the fields a
+				// Jira export exists to carry.
+				if items, err := d.List(k); err == nil && len(items) > 0 {
+					listDefaults[k] = items
+				}
+			}
+		}
+		out := make([]string, 0, 32)
+		replaced := false
+		for _, line := range strings.Split(body, "\n") {
+			if !replaced && strings.HasPrefix(line, "# ") {
+				out = append(out, "# "+title)
+				replaced = true
+				continue
+			}
+			out = append(out, line)
+		}
+		if !replaced {
+			out = append([]string{"# " + title, ""}, out...)
+		}
+		return strings.TrimLeft(strings.Join(out, "\n"), "\n"), defaults, listDefaults, true
+	}
+	return "", nil, nil, false
+}
+
+// managedField reports whether jaira writes this key itself, in which case a
+// template must not be able to preset it — an id or a status from a template
+// would be wrong on every ticket made from it.
+func managedField(k string) bool {
+	switch k {
+	case ticket.FieldID, ticket.FieldStatus, ticket.FieldReady,
+		ticket.FieldCreatedAt, ticket.FieldUpdatedAt, ticket.FieldTitle,
+		ticket.FieldCreator, ticket.FieldClaimedBy, ticket.FieldClaimedAt:
+		return true
+	}
+	return false
+}
+
 // newTicketBody is the starting shape of a ticket's markdown.
 func newTicketBody(title, dod string) string {
 	var b strings.Builder
@@ -185,6 +289,11 @@ func newTicketBody(title, dod string) string {
 	} else {
 		b.WriteString("- [ ] <A checkable statement, readable by someone who was not here>\n")
 	}
+	// The Plan is how the work will be done, as opposed to the criteria for
+	// accepting it. It is seeded empty rather than omitted: a heading that is
+	// already there gets filled in, and one that has to be remembered does not.
+	b.WriteString("\n## Plan\n\n")
+	b.WriteString("- [ ] <First step. Mark it [~] while you are on it.>\n")
 	b.WriteString("\n## Notes\n\n")
 	return b.String()
 }

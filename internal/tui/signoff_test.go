@@ -16,7 +16,7 @@ import (
 func TestSignOffViewShowsTheFourQuestions(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 	tk := &ticket.Ticket{
-		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "Rate limit login", Status: "review",
+		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "Rate limit login", Status: "signoff",
 		Goal:    "stop credential stuffing",
 		Context: "came up while reading the auth logs",
 		Outcome: ticket.Outcome{
@@ -51,7 +51,7 @@ func TestSignOffViewShowsTheFourQuestions(t *testing.T) {
 func TestVerdictIsSeparateFromTheOutcome(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 	m.detail = &ticket.Ticket{
-		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "review",
+		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "signoff",
 		Outcome:       ticket.Outcome{What: "w", Why: "y", Resolves: "the implementer says it works"},
 		ReviewVerdict: "the reviewer disagrees",
 	}
@@ -64,23 +64,25 @@ func TestVerdictIsSeparateFromTheOutcome(t *testing.T) {
 	}
 }
 
-// An agent must not be able to release a ticket from a lane that stops for a
-// human; a person pressing a key in the board must.
+// An agent must not be able to release a ticket from the lane that stops for a
+// human; a person pressing a key in the board must. Review is now the model's
+// own step and it may leave that freely — sign-off is the checkpoint.
 func TestHumanExitGate(t *testing.T) {
 	lanes, err := lane.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
 	tk := &ticket.Ticket{
-		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "review",
+		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "signoff",
 		Goal: "g", Context: "c", Assignee: "a",
-		Outcome: ticket.Outcome{What: "w", Why: "y", Resolves: "r"},
+		ReviewVerdict: "the diff holds",
+		Outcome:       ticket.Outcome{What: "w", Why: "y", Resolves: "r"},
 	}
 	env := gate.Env{Lanes: lanes}
 
 	blocked := gate.CheckAdvance(env, tk, gate.Request{To: "done"})
 	if !hasCode(blocked, gate.CodeNeedsHuman) {
-		t.Errorf("an agent was allowed out of the review lane: %v", blocked)
+		t.Errorf("an agent was allowed out of the sign-off lane: %v", blocked)
 	}
 
 	allowed := gate.CheckAdvance(env, tk, gate.Request{To: "done", Interactive: true})
