@@ -1,6 +1,8 @@
 package ticket
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -16,10 +18,12 @@ const (
 	DirName = ".jaira"
 	// TicketsSubdir holds one markdown file per ticket.
 	TicketsSubdir = "tickets"
-	// SessionsSubdir holds ephemeral, gitignored session state.
-	SessionsSubdir = ".sessions"
-	// locksSubdir holds advisory lock files. Gitignored; never committed.
-	locksSubdir = ".locks"
+	// SessionsSubdir and locksSubdir live under the user's home directory rather
+	// than inside the repository. Keeping them out means .jaira/ contains only
+	// content that is meant to be committed, so there is no mixed directory to
+	// explain and no per-repo gitignore needed to protect scratch state.
+	SessionsSubdir = "sessions"
+	locksSubdir    = "locks"
 
 	// frontmatterProbe caps how much of a file is read when only the
 	// frontmatter is needed. Listing the board reads every ticket, so reading
@@ -74,10 +78,33 @@ func At(dir string) (*Store, error) {
 	return &Store{Root: abs}, nil
 }
 
-func (s *Store) dir() string         { return filepath.Join(s.Root, DirName) }
-func (s *Store) TicketsDir() string  { return filepath.Join(s.dir(), TicketsSubdir) }
-func (s *Store) SessionsDir() string { return filepath.Join(s.dir(), SessionsSubdir) }
-func (s *Store) locksDir() string    { return filepath.Join(s.dir(), locksSubdir) }
+func (s *Store) dir() string        { return filepath.Join(s.Root, DirName) }
+func (s *Store) TicketsDir() string { return filepath.Join(s.dir(), TicketsSubdir) }
+
+// SessionsDir is where this working tree's session state lives, outside the repo.
+func (s *Store) SessionsDir() string { return filepath.Join(s.stateDir(), SessionsSubdir) }
+func (s *Store) locksDir() string    { return filepath.Join(s.stateDir(), locksSubdir) }
+
+// stateDir is a per-working-tree directory under the user's home.
+//
+// Keyed by working tree rather than by repository: two clones of the same project
+// are two separate sets of in-flight work, and a session focused on one has
+// nothing to say about the other.
+func (s *Store) stateDir() string {
+	home := os.Getenv("JAIRA_HOME")
+	if home == "" {
+		h, err := os.UserHomeDir()
+		if err != nil {
+			// No home directory to write to; fall back inside the repo so the
+			// tool still works, accepting the untracked directory.
+			return filepath.Join(s.dir(), "state")
+		}
+		home = filepath.Join(h, DirName)
+	}
+	sum := sha256.Sum256([]byte(s.Root))
+	key := filepath.Base(s.Root) + "-" + hex.EncodeToString(sum[:4])
+	return filepath.Join(home, "state", key)
+}
 
 // Init creates the store layout. Safe to run repeatedly.
 func (s *Store) Init() (created bool, err error) {
@@ -92,16 +119,6 @@ func (s *Store) Init() (created bool, err error) {
 		}
 	}
 
-	// Ephemeral state lives inside the working tree but must never be
-	// committed: session focus changes constantly and would swamp git history.
-	ignore := filepath.Join(s.dir(), ".gitignore")
-	if _, err := os.Stat(ignore); os.IsNotExist(err) {
-		body := "# Ephemeral, per-working-tree state. Never committed.\n" +
-			SessionsSubdir + "/\n" + locksSubdir + "/\n"
-		if err := os.WriteFile(ignore, []byte(body), 0o644); err != nil {
-			return created, err
-		}
-	}
 	return created, nil
 }
 
@@ -217,25 +234,29 @@ func (s *Store) Load(idOrPrefix string) (*Ticket, error) {
 
 // resolve maps a reference to exactly one ticket path.
 //
-// An exact ID wins outright. Otherwise a unique prefix or a unique suffix is
-// accepted. Suffix matching is not a convenience afterthought: a ULID's first
-// ten characters encode only its millisecond timestamp, so tickets created in
-// the same burst — the normal case when an agent decomposes one task into
-// several — share a long common prefix and differ only in their random tail.
-// Matching either end means the short handle shown on the board is always usable
-// as a reference.
+// Identity comes from the frontmatter `id`, never from the filename. The filename
+// is a human convenience that may be renamed or hand-written, and when the two
+// disagreed an earlier version of this code made the ticket unreachable by any
+// reference at all — invisible to every command while sitting in plain sight on
+// disk. The file content is the only thing that can be trusted to say what a
+// ticket is.
+//
+// An exact id wins outright. Otherwise a unique prefix or a unique suffix is
+// accepted. Suffix matching is not an afterthought: a ULID's first ten characters
+// encode only its millisecond timestamp, so tickets created in the same burst —
+// the normal case when an agent decomposes one task — share a long common prefix
+// and differ only in their random tail.
 func (s *Store) resolve(ref string) (string, error) {
 	want := NormalizeIDPrefix(ref)
 	if want == "" {
 		return "", ErrNotFound
 	}
-	paths, err := s.Paths()
+	ids, err := s.idIndex()
 	if err != nil {
 		return "", err
 	}
 	var matches []string
-	for _, p := range paths {
-		id := IDFromFilename(filepath.Base(p))
+	for id, p := range ids {
 		if id == want {
 			return p, nil // exact match always wins
 		}
@@ -243,6 +264,7 @@ func (s *Store) resolve(ref string) (string, error) {
 			matches = append(matches, p)
 		}
 	}
+	sort.Strings(matches)
 	switch len(matches) {
 	case 0:
 		return "", fmt.Errorf("%w: %s", ErrNotFound, ref)
@@ -251,11 +273,51 @@ func (s *Store) resolve(ref string) (string, error) {
 	default:
 		handles := make([]string, 0, len(matches))
 		for _, m := range matches {
-			handles = append(handles, Handle(IDFromFilename(filepath.Base(m))))
+			if id, err := s.idOf(m); err == nil {
+				handles = append(handles, Handle(id))
+			}
 		}
 		sort.Strings(handles)
 		return "", fmt.Errorf("%w: %q matches %s", ErrAmbiguous, ref, strings.Join(handles, ", "))
 	}
+}
+
+// idIndex maps each ticket's declared id to its path. Built by reading only the
+// frontmatter of each file, so it stays cheap as ticket bodies grow.
+func (s *Store) idIndex() (map[string]string, error) {
+	paths, err := s.Paths()
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(paths))
+	for _, p := range paths {
+		id, err := s.idOf(p)
+		if err != nil || id == "" {
+			continue // unreadable or unidentified files are reported by List
+		}
+		out[id] = p
+	}
+	return out, nil
+}
+
+// idOf reads just the id from a ticket file.
+func (s *Store) idOf(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	buf := make([]byte, frontmatterProbe)
+	n, err := io.ReadFull(f, buf)
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
+		return "", err
+	}
+	d, err := ParseDoc(buf[:n])
+	if err != nil {
+		return "", err
+	}
+	v, _, err := d.Scalar(FieldID)
+	return v, err
 }
 
 // Create writes a new ticket file and returns it.

@@ -12,12 +12,15 @@ board travels with the code — a teammate clones, runs `jaira`, and sees the sa
 board. No server, no accounts, no setup.
 
 ```
-repo/                        localhost is not involved
-├── .jaira/
-│   ├── tickets/             one markdown file per ticket, committed
-│   └── .gitignore           session + lock state stays local
-└── src/
+repo/                              ~/.jaira/
+├── .jaira/                        ├── lanes/       your custom lanes
+│   └── tickets/*.md               ├── projects.json
+└── src/                           └── state/<worktree>/   sessions, locks
 ```
+
+The repository holds only tickets. Everything ephemeral — what each session is
+focused on, write locks — lives under your home directory, so `.jaira/` never
+mixes committed content with scratch state.
 
 ## Install
 
@@ -33,11 +36,25 @@ repository for jaira to work in.
 
 ```bash
 cd your-repo
-jaira init      # creates .jaira/, registers the merge driver for this clone
+jaira init      # creates .jaira/ — private, gitignored
 jaira           # opens the board
 ```
 
-Commit `.jaira/` and your team has the board.
+**A board starts private.** `init` gitignores it, so your tickets are yours alone.
+When you want the team to have them:
+
+```bash
+jaira share
+git add .jaira .gitignore && git commit -m "share jaira board"
+```
+
+Publishing is a decision rather than a default — the tool cannot know whether your
+notes are ready to be read by everyone who can clone the repository. `jaira share
+--undo` makes it private again; nothing about the tickets changes either way, so
+it is not a migration.
+
+Teammates then clone and run any jaira command; the merge driver binds itself on
+first use.
 
 ## A ticket
 
@@ -52,7 +69,6 @@ assignee: berk
 executed-by: haiku
 goal: Session must survive the OAuth round-trip
 context: Reported in chat while debugging Safari logouts
-definition-of-done: "session survives OAuth round-trip, covered by a test"
 blocked-by: []
 commits:
   - 4f2a1c9
@@ -66,7 +82,18 @@ created-at: 2026-08-11T21:11:27Z
 updated-at: 2026-08-11T21:14:03Z
 ---
 
-Reproduced on Safari only.
+# Fix session cookie dropped on 302
+
+## Description
+
+The cookie is dropped cross-site on the OAuth redirect, so users are silently
+logged out mid-flow. Reproduced on Safari only.
+
+## Definition of Done
+
+- [x] session survives the OAuth round-trip
+- [x] covered by a test
+- [ ] reviewed and merged
 ```
 
 The file format *is* the API. It is hand-editable, and writing one field rewrites
@@ -81,6 +108,10 @@ Three details are load-bearing:
 - **`outcome-resolves`** is not a restatement of what changed. It is the argument
   that the change satisfies the definition of done — enough to review without
   opening the code.
+- **The definition of done is a checklist in the body**, not a frontmatter string,
+  because that is how acceptance criteria are actually written. It also earns its
+  keep at the terminal lane: a ticked box is a human editing a file, which is
+  evidence a model asserting "it works" cannot manufacture.
 - **`external:`** is reserved for a future Jira/YouTrack adapter. jaira never
   interprets it and never rewrites it.
 
@@ -101,7 +132,8 @@ should not be: an agent that starts work with no checkable target produces work
 you cannot review. Acquiring a definition of done is the price of admission to a
 run.
 
-`DONE` additionally requires a signal that did not come from a model:
+`DONE` additionally requires evidence that did not come from a model — either
+every checklist item ticked, or an explicit signal:
 
 ```bash
 jaira move JJN9KH --to done --signal "go test ./... passed; berk reviewed the diff"
@@ -215,6 +247,7 @@ jaira sync-tasks           mirror an agent task list into the backlog
 jaira tasks                emit the board as a task list
 jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
+jaira share                publish the board (--undo to make it private)
 ```
 
 Every read command takes `--json`. Exit codes are a stable contract:

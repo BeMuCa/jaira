@@ -43,9 +43,14 @@ That field is the whole point: it is what makes the ticket comprehensible later.
 A good context says what problem prompted this and what had already been ruled
 out. "User asked for it" is useless.
 
-The definition of done must be checkable by someone who was not here. "Works
-properly" is not a definition of done. "`go test ./auth` passes and the cookie
-survives a 302" is.
+The definition of done lives in the body as a **checklist**, and `create` writes
+the heading for you. Each item must be checkable by someone who was not here.
+"Works properly" is not a definition of done; "`go test ./auth` passes and the
+cookie survives a 302" is.
+
+Tick items as you satisfy them — that is what lets a ticket reach Done without a
+separate `--signal`, because a ticked box is a file edit rather than your opinion.
+Do not tick a box you have not verified.
 
 ## Working the board
 

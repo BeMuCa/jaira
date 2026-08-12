@@ -168,16 +168,34 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
-	// A model must not be able to certify its own work as finished. Review
-	// agents are measurably poor at catching real defects, so the terminal
-	// transition requires evidence that did not come from a model.
-	if target.RequiresNonModelSignal && strings.TrimSpace(req.NonModelSignal) == "" {
-		vs = append(vs, Violation{
-			Code: CodeNeedsSignal,
-			Message: fmt.Sprintf(
-				"lane %q cannot be entered on a model's own assessment; supply --signal with a passing command or an explicit human sign-off",
-				target.ID),
-		})
+	// A model must not be able to certify its own work as finished. Review agents
+	// are measurably poor at catching real defects, so the terminal transition
+	// needs evidence that did not come from a model.
+	//
+	// A fully ticked definition-of-done checklist is exactly that evidence:
+	// ticking a box is a human editing a file, which a model asserting "it works"
+	// cannot manufacture. So a complete checklist satisfies the requirement, and
+	// --signal remains available for tickets whose criteria live elsewhere.
+	if target.RequiresNonModelSignal {
+		complete, remaining := t.DoDComplete()
+		if !complete && strings.TrimSpace(req.NonModelSignal) == "" {
+			if len(remaining) > 0 {
+				for _, r := range remaining {
+					vs = append(vs, Violation{
+						Code:    CodeNeedsSignal,
+						Field:   ticket.FieldDoD,
+						Message: fmt.Sprintf("definition of done is not met: %s", r),
+					})
+				}
+			} else {
+				vs = append(vs, Violation{
+					Code: CodeNeedsSignal,
+					Message: fmt.Sprintf(
+						"lane %q cannot be entered on a model's own assessment; tick the definition-of-done checklist, or pass --signal with a passing command or a human sign-off",
+						target.ID),
+				})
+			}
+		}
 	}
 
 	// The lane being left must have produced what it promised, so a pipeline
@@ -218,6 +236,11 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 	case ticket.FieldGoal:
 		v = t.Goal
 	case ticket.FieldDoD:
+		// Either form counts: a checklist in the body, or a one-line scalar. The
+		// checklist is the form humans actually write, so it is checked first.
+		if len(t.DoDItems) > 0 {
+			return true
+		}
 		v = t.DoD
 	case ticket.FieldContext:
 		v = t.Context

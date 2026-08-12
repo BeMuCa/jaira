@@ -37,13 +37,15 @@ session and lock state is never committed. Safe to run more than once.`,
 			// knows about a project before anyone has launched the TUI in it.
 			project.Remember(s.Root)
 
-			attrsChanged, attrsErr := writeGitAttributes(s)
-			driverInstalled, driverErr := ensureMergeDriver(s.Root)
+			// A new board is private: the tickets stay out of git until the user
+			// decides to publish them with 'jaira share'.
+			ignoredNow, ignoreErr := addIgnore(s.Root)
 
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
-					"gitattributes_written": attrsChanged, "merge_driver_installed": driverInstalled,
+					"private": true, "gitignore_written": ignoredNow,
+					"state_dir": s.SessionsDir(),
 				})
 			}
 			if created {
@@ -51,20 +53,12 @@ session and lock state is never committed. Safe to run more than once.`,
 			} else {
 				fmt.Fprintf(cmd.OutOrStdout(), "jaira already initialized in %s\n", filepath.Join(s.Root, ticket.DirName))
 			}
-			if attrsErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitattributes: %v\n", attrsErr)
+			if ignoreErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", ignoreErr)
+			} else if ignoredNow {
+				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
 			}
-			if driverErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: %v\n", driverErr)
-				fmt.Fprintf(os.Stderr, "jaira: ticket merges will fall back to git's line-based merge\n")
-			} else if driverInstalled {
-				// Say this out loud: the tool just wrote to .git/config, which
-				// should never feel like something it did behind your back.
-				fmt.Fprintf(cmd.OutOrStdout(),
-					"Registered the jaira merge driver in .git/config for this clone,\n"+
-						"so two people moving the same ticket will not conflict.\n")
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Commit .jaira/ so your team shares the board.\n")
+			fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
 			return nil
 		},
 	}
@@ -134,9 +128,19 @@ an assignee, so supplying those now saves a round trip later.`,
 			// gate is satisfied, so the board can render without re-deriving. It
 			// is written up front to keep field order canonical; the gate itself
 			// remains the authority on every move.
+			// Readiness is recomputed from the written file below; this initial
+			// value only avoids an extra write for the common fully-specified case.
 			fields[ticket.FieldReady] = fmt.Sprintf("%t",
 				goalV != "" && dod != "" && contextV != "" && assignee != "")
 
+			// A new ticket is born with the section headings a human will fill in.
+			// The definition of done is a checklist rather than a sentence because
+			// that is how acceptance criteria are actually written — and because a
+			// ticked box is a human act, which is what lets the terminal lane
+			// require evidence a model cannot manufacture.
+			if body == "" {
+				body = newTicketBody(title, dod)
+			}
 			t, err := s.Create(fields, lists, body)
 			if err != nil {
 				return err
@@ -169,6 +173,22 @@ an assignee, so supplying those now saves a round trip later.`,
 	return cmd
 }
 
+// newTicketBody is the starting shape of a ticket's markdown.
+func newTicketBody(title, dod string) string {
+	var b strings.Builder
+	b.WriteString("# " + title + "\n\n")
+	b.WriteString("## Description\n\n")
+	b.WriteString("<What is wrong today, then what holds once this is done.>\n\n")
+	b.WriteString("## Definition of Done\n\n")
+	if strings.TrimSpace(dod) != "" {
+		b.WriteString("- [ ] " + strings.TrimSpace(dod) + "\n")
+	} else {
+		b.WriteString("- [ ] <A checkable statement, readable by someone who was not here>\n")
+	}
+	b.WriteString("\n## Notes\n\n")
+	return b.String()
+}
+
 func missingFields(t *ticket.Ticket) []string {
 	var out []string
 	for _, f := range gate.PromotionFields {
@@ -178,7 +198,7 @@ func missingFields(t *ticket.Ticket) []string {
 				out = append(out, f)
 			}
 		case ticket.FieldDoD:
-			if strings.TrimSpace(t.DoD) == "" {
+			if !t.HasDoD() {
 				out = append(out, f)
 			}
 		case ticket.FieldContext:
@@ -346,7 +366,18 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
 	row("tier", t.ModelTier)
 	row("goal", t.Goal)
 	row("context", t.Context)
-	row("dod", t.DoD)
+	if len(t.DoDItems) > 0 {
+		fmt.Fprintf(w, "%-10s\n", "done when")
+		for _, it := range t.DoDItems {
+			box := "[ ]"
+			if it.Checked {
+				box = "[x]"
+			}
+			fmt.Fprintf(w, "           %s %s\n", box, it.Text)
+		}
+	} else {
+		row("dod", t.DoD)
+	}
 	if len(t.BlockedBy) > 0 {
 		shorts := make([]string, 0, len(t.BlockedBy))
 		for _, b := range t.BlockedBy {

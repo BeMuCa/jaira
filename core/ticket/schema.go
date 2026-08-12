@@ -80,12 +80,109 @@ type Ticket struct {
 
 	Outcome Outcome
 
+	// DoDItems are the checkboxes under a "Definition of Done" heading in the
+	// body. A checklist is how people actually write acceptance criteria, and
+	// keeping it in the body means it stays readable and editable prose rather
+	// than being flattened into a single frontmatter string.
+	DoDItems []DoDItem
+
 	// Body is the markdown following the frontmatter.
 	Body string
 	// Path is where this ticket was loaded from.
 	Path string
 	// doc retains the original bytes so a mutation can be spliced back in.
 	doc *Doc
+}
+
+// DoDItem is one checkbox of a definition of done.
+type DoDItem struct {
+	Text    string
+	Checked bool
+}
+
+// HeadingTitle returns the first level-one heading of a markdown body.
+func HeadingTitle(body string) string {
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, "# ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "# "))
+		}
+	}
+	return ""
+}
+
+// dodHeadingRE matches a "Definition of Done" heading in either language, since
+// the section is what carries the meaning rather than its exact wording.
+var dodHeadings = []string{"definition of done", "definition-of-done", "done when", "akzeptanzkriterien"}
+
+// ParseDoDItems extracts the checkboxes under a Definition of Done heading.
+//
+// Only that section is read: checkboxes elsewhere in a ticket (an open-questions
+// list, say) are not acceptance criteria and must not be mistaken for them.
+func ParseDoDItems(body string) []DoDItem {
+	lines := strings.Split(body, "\n")
+	inSection := false
+	var out []DoDItem
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			heading := strings.ToLower(strings.TrimLeft(trimmed, "# "))
+			inSection = false
+			for _, h := range dodHeadings {
+				if strings.Contains(heading, h) {
+					inSection = true
+					break
+				}
+			}
+			continue
+		}
+		if !inSection {
+			continue
+		}
+		item, ok := parseCheckbox(trimmed)
+		if ok {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func parseCheckbox(line string) (DoDItem, bool) {
+	for _, bullet := range []string{"- ", "* ", "+ "} {
+		if !strings.HasPrefix(line, bullet) {
+			continue
+		}
+		rest := strings.TrimPrefix(line, bullet)
+		switch {
+		case strings.HasPrefix(rest, "[ ] "):
+			return DoDItem{Text: strings.TrimSpace(rest[4:]), Checked: false}, true
+		case strings.HasPrefix(rest, "[x] "), strings.HasPrefix(rest, "[X] "):
+			return DoDItem{Text: strings.TrimSpace(rest[4:]), Checked: true}, true
+		}
+	}
+	return DoDItem{}, false
+}
+
+// HasDoD reports whether a ticket declares a definition of done at all, in either
+// supported form.
+func (t *Ticket) HasDoD() bool {
+	return len(t.DoDItems) > 0 || strings.TrimSpace(t.DoD) != ""
+}
+
+// DoDComplete reports whether every checklist item is ticked.
+//
+// This is the non-model signal the terminal lane requires. Ticking a box is a
+// human editing a file — something a language model asserting "it works" cannot
+// manufacture, which is precisely why it is worth gating on.
+func (t *Ticket) DoDComplete() (complete bool, remaining []string) {
+	if len(t.DoDItems) == 0 {
+		return false, nil
+	}
+	for _, it := range t.DoDItems {
+		if !it.Checked {
+			remaining = append(remaining, it.Text)
+		}
+	}
+	return len(remaining) == 0, remaining
 }
 
 // Outcome is the three-part close-out: what changed, why it was needed, and the
@@ -131,6 +228,12 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 
 	t.ID = str(FieldID)
 	t.Title = str(FieldTitle)
+	if t.Title == "" {
+		// A hand-written ticket puts its title in the body's first heading rather
+		// than in frontmatter. Reading it from there means such a file shows a
+		// title on the board instead of a blank card.
+		t.Title = HeadingTitle(t.Body)
+	}
 	t.Status = str(FieldStatus)
 	t.Ready = str(FieldReady) == "true"
 	t.Creator = str(FieldCreator)
@@ -139,6 +242,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Goal = str(FieldGoal)
 	t.Context = str(FieldContext)
 	t.DoD = str(FieldDoD)
+	t.DoDItems = ParseDoDItems(t.Body)
 	t.ModelTier = str(FieldModelTier)
 	t.Question = str(FieldQuestion)
 	t.ClaimedBy = str(FieldClaimedBy)

@@ -157,6 +157,7 @@ Exit codes:
 		newSessionsCmd(),
 		newClaimCmd(),
 		newProjectsCmd(),
+		newShareCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
@@ -166,8 +167,17 @@ Exit codes:
 }
 
 // openStore finds the store for the current directory.
+//
+// Opening a store is also where a shared board gets its merge driver bound, since
+// this is the one path every command goes through — including the first command a
+// teammate runs after cloning.
 func openStore() (*ticket.Store, error) {
-	return ticket.Discover(g.dir)
+	s, err := ticket.Discover(g.dir)
+	if err != nil {
+		return nil, err
+	}
+	bindDriverIfShared(s)
+	return s, nil
 }
 
 // loadEnv assembles the state gates need.
