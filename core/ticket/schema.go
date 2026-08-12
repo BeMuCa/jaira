@@ -51,6 +51,18 @@ const (
 	// the reviewer judges the diff; storing both in one field destroys the pair
 	// the sign-off view exists to show.
 	FieldReviewVerdict = "review-verdict"
+
+	// FieldReviewSummary is what the change actually does, read off the diff.
+	// The verdict alone is a judgement with no account of what was judged; a
+	// later reader needs the summary to know what shipped without re-reading
+	// the diff themselves.
+	FieldReviewSummary = "review-summary"
+
+	// FieldReviewGaps is what the reviewer found missing or unconvincing. It
+	// must be filled even when there is nothing to report — "none" is a valid
+	// answer, an empty field is not — because an empty field must always mean
+	// "nobody looked", never "nothing found".
+	FieldReviewGaps = "review-gaps"
 )
 
 // canonicalOrder is the order in which fields are written into a new ticket.
@@ -94,6 +106,10 @@ type Ticket struct {
 	// ReviewVerdict is the reviewer's conclusion, distinct from the
 	// implementer's own account in Outcome.
 	ReviewVerdict string
+	// ReviewSummary is what the change does, in the reviewer's own words.
+	ReviewSummary string
+	// ReviewGaps is what the reviewer found missing; "none" is a valid value.
+	ReviewGaps string
 
 	Outcome Outcome
 
@@ -384,6 +400,8 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.DoD = str(FieldDoD)
 	t.Follows = str(FieldFollows)
 	t.ReviewVerdict = str(FieldReviewVerdict)
+	t.ReviewSummary = str(FieldReviewSummary)
+	t.ReviewGaps = str(FieldReviewGaps)
 	t.DoDItems = ParseDoDItems(t.Body)
 	t.PlanItems = ParsePlanItems(t.Body)
 	t.Options = ParseOptions(t.Body)

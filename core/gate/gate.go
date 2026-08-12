@@ -327,6 +327,10 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 		return len(t.PlanItems) > 0
 	case ticket.FieldReviewVerdict:
 		v = t.ReviewVerdict
+	case ticket.FieldReviewSummary:
+		v = t.ReviewSummary
+	case ticket.FieldReviewGaps:
+		v = t.ReviewGaps
 	case ticket.FieldFollows:
 		v = t.Follows
 	default:

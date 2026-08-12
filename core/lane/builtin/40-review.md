@@ -7,12 +7,16 @@ agentic: true
 terminal: false
 model-tier: strong
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
-output-produces: [review-verdict]
+output-produces: [review-summary, review-gaps, review-verdict]
 description: A second model has judged the diff. Not yet accepted by a person.
 ---
 # Prompt
 
 Review this change against its definition of done.
+
+This lane now also requires review-summary and review-gaps, not just
+review-verdict — that applies to every ticket leaving this lane, including one
+already sitting here. It will be refused its next move until both are filled in.
 
 You are given the ticket's goal, its definition of done, the implementer's
 account of what they did, and the actual diff. Judge the diff, not the account —
