@@ -39,6 +39,9 @@ var (
 	styAgentic   = lipgloss.NewStyle().Foreground(colAgentic)
 	styHelpKey   = lipgloss.NewStyle().Foreground(colAccent)
 	styBar       = lipgloss.NewStyle().Foreground(colDim)
+	styAsks      = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
+	styReview    = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
+	styDoing     = lipgloss.NewStyle().Foreground(colAgentic).Bold(true)
 )
 
 const (
@@ -258,6 +261,23 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	if len(t.BlockedBy) > 0 && !gate.Actionable(env, t) {
 		flags = append(flags, styErr.Render("■ blocked"))
 	}
+	// Two lanes both mean "waiting on you", but they ask for different things —
+	// answering a question, or signing off finished work — so they are labelled
+	// and coloured apart rather than collapsed into one "needs attention".
+	if l, ok := m.lanes.Get(t.Status); ok {
+		switch {
+		case l.RequiresQuestion:
+			flags = append(flags, styAsks.Render("▲ asks"))
+		case l.ID == "review":
+			flags = append(flags, styReview.Render("◆ sign off"))
+		}
+	}
+	if n, total := checklistProgress(t.PlanItems); total > 0 {
+		flags = append(flags, styMeta.Render(fmt.Sprintf("Plan %d/%d", n, total)))
+	}
+	if n, total := checklistProgress(t.DoDItems); total > 0 {
+		flags = append(flags, styMeta.Render(fmt.Sprintf("DoD %d/%d", n, total)))
+	}
 	if len(t.Commits) > 0 {
 		flags = append(flags, styOK.Render(fmt.Sprintf("✓ %d", len(t.Commits))))
 	}
@@ -278,6 +298,71 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 		out += "\n"
 	}
 	return out
+}
+
+// checklistProgress counts finished items. An item in progress counts as
+// unfinished, matching the gate: the point of the counter is to show how much is
+// actually done, not how much has been started.
+func checklistProgress(items []ticket.DoDItem) (done, total int) {
+	for _, it := range items {
+		if it.Checked() {
+			done++
+		}
+	}
+	return done, len(items)
+}
+
+// renderChecklist prints one checklist with its state markers, arrowing the item
+// being worked on. That arrow is the answer to "which step is the agent on",
+// which is the question the board exists to make answerable at a glance.
+func renderChecklist(b *strings.Builder, title string, items []ticket.DoDItem, width int) {
+	if len(items) == 0 {
+		return
+	}
+	done, total := checklistProgress(items)
+	count := fmt.Sprintf("%d/%d", done, total)
+	// The heading is truncated against the pane width like everything else: a
+	// narrow terminal must not be able to push a line past the edge.
+	fmt.Fprintf(b, "\n%s %s\n", styLaneTitle.Render(truncate(title, max(1, width-len(count)-1))),
+		styLaneCount.Render(count))
+	for _, it := range items {
+		lead, sty := "  ", styMeta
+		switch it.State {
+		case ticket.StateDoing:
+			lead, sty = styDoing.Render("→ "), styDoing
+		case ticket.StateDone:
+			sty = styOK
+		}
+		fmt.Fprintf(b, "%s%s %s\n", lead,
+			sty.Render("["+it.State.Marker()+"]"), wrap(it.Text, max(1, width-6), 6))
+	}
+}
+
+// stripChecklistSections removes the sections rendered above, so the remaining
+// body can be shown without printing the same checklists twice in two formats.
+func stripChecklistSections(body string) string {
+	var out []string
+	skipping := false
+	for _, line := range strings.Split(body, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			heading := strings.ToLower(strings.TrimLeft(trimmed, "# "))
+			skipping = false
+			for _, h := range append(append([]string{}, ticket.PlanHeadings()...), ticket.DoDHeadings()...) {
+				if strings.Contains(heading, h) {
+					skipping = true
+					break
+				}
+			}
+			if skipping {
+				continue
+			}
+		}
+		if !skipping {
+			out = append(out, line)
+		}
+	}
+	return strings.TrimSpace(strings.Join(out, "\n"))
 }
 
 func (m *Model) header() string {
@@ -364,7 +449,13 @@ func (m *Model) renderDetail() string {
 		}
 		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, min(m.width-14, 64), 13))
 	}
-	row("lane", t.Status)
+	if l, ok := m.lanes.Get(t.Status); ok && l.RequiresQuestion {
+		row("lane", t.Status+styAsks.Render("  ▲ waiting on your answer"))
+	} else if ok && l.ID == "review" {
+		row("lane", t.Status+styReview.Render("  ◆ waiting on your sign-off"))
+	} else {
+		row("lane", t.Status)
+	}
 	row("assignee", t.Assignee)
 	row("creator", t.Creator)
 	row("executed-by", t.ExecutedBy)
@@ -398,8 +489,12 @@ func (m *Model) renderDetail() string {
 	if miss := missing(t); len(miss) > 0 {
 		b.WriteString("\n" + styWarn.Render("Before this can start: "+strings.Join(miss, ", ")) + "\n")
 	}
-	if strings.TrimSpace(t.Body) != "" {
-		b.WriteString("\n" + strings.TrimSpace(t.Body) + "\n")
+	width := min(m.width, 78)
+	renderChecklist(&b, "Plan", t.PlanItems, width)
+	renderChecklist(&b, "Definition of Done", t.DoDItems, width)
+
+	if rest := stripChecklistSections(t.Body); rest != "" {
+		b.WriteString("\n" + rest + "\n")
 	}
 	b.WriteString("\n" + styMeta.Render("d diff · m lane · jk next/prev · esc back"))
 	return b.String()

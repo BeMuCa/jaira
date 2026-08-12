@@ -168,6 +168,11 @@ var dodHeadings = []string{"definition of done", "definition-of-done", "done whe
 // there — as opposed to the criteria that decide whether it worked.
 var planHeadings = []string{"plan", "steps", "vorgehen"}
 
+// DoDHeadings and PlanHeadings expose the recognised section names so a renderer
+// can tell which parts of a body it has already displayed as a checklist.
+func DoDHeadings() []string  { return dodHeadings }
+func PlanHeadings() []string { return planHeadings }
+
 // ParseDoDItems extracts the checkboxes under a Definition of Done heading.
 //
 // Only that section is read: checkboxes elsewhere in a ticket (an open-questions

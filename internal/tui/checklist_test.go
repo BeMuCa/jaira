@@ -1,0 +1,130 @@
+package tui
+
+import (
+	"strings"
+	"testing"
+
+	"charm.land/lipgloss/v2"
+	"github.com/berk/jaira/core/ticket"
+)
+
+func withChecklists(body string) *ticket.Ticket {
+	t := &ticket.Ticket{
+		ID:     "01KZTT3XZ2YQBX93TTSR7BVRCT",
+		Title:  "Rate limit the login endpoint",
+		Status: "in-progress",
+		Body:   body,
+	}
+	t.DoDItems = ticket.ParseDoDItems(body)
+	t.PlanItems = ticket.ParsePlanItems(body)
+	return t
+}
+
+const twoChecklists = `## Plan
+
+- [x] write the spec
+- [~] design the interface
+- [ ] implement
+
+## Definition of Done
+
+- [x] 429 returned above 100/min
+- [ ] documented in README
+`
+
+// The counts are the whole point: "designed but not built" has to be legible
+// without opening the ticket, because the failure being designed against is
+// believing a ticket is finished when only its first step is.
+func TestCardShowsChecklistProgress(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	out := stripANSI(m.renderCard(withChecklists(twoChecklists), 40, false))
+	if !strings.Contains(out, "Plan 1/3") {
+		t.Errorf("card does not show plan progress:\n%s", out)
+	}
+	if !strings.Contains(out, "DoD 1/2") {
+		t.Errorf("card does not show definition-of-done progress:\n%s", out)
+	}
+}
+
+// A ticket with neither checklist must not gain empty counters.
+func TestCardWithoutChecklistsIsUnchanged(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	out := stripANSI(m.renderCard(withChecklists("no checklists here\n"), 40, false))
+	if strings.Contains(out, "Plan ") || strings.Contains(out, "DoD ") {
+		t.Errorf("counters appeared on a ticket with no checklists:\n%s", out)
+	}
+}
+
+// Two different states both mean "this is waiting on you", but they call for
+// different actions — answering a question, versus signing off a review — so
+// they must be distinguishable rather than sharing one colour.
+func TestWaitingStatesAreDistinct(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+
+	human := withChecklists(twoChecklists)
+	human.Status = "human"
+	human.Question = "should this be per-IP or per-account?"
+	humanOut := stripANSI(m.renderCard(human, 40, false))
+
+	review := withChecklists(twoChecklists)
+	review.Status = "review"
+	reviewOut := stripANSI(m.renderCard(review, 40, false))
+
+	if !strings.Contains(humanOut, "asks") {
+		t.Errorf("a ticket waiting on an answer is not labelled:\n%s", humanOut)
+	}
+	if !strings.Contains(reviewOut, "sign off") {
+		t.Errorf("a ticket waiting on sign-off is not labelled:\n%s", reviewOut)
+	}
+	if humanOut == reviewOut {
+		t.Error("the two waiting states render identically")
+	}
+}
+
+// The detail pane must show the step being worked on, marked distinctly from the
+// rest, since "which one is the agent on" is the question it exists to answer.
+func TestDetailRendersChecklists(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.detail = withChecklists(twoChecklists)
+	out := stripANSI(m.renderDetail())
+
+	for _, want := range []string{
+		"Plan", "write the spec", "design the interface", "implement",
+		"Definition of Done", "documented in README",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("detail pane is missing %q:\n%s", want, out)
+		}
+	}
+	if !strings.Contains(out, "→") {
+		t.Errorf("the in-progress step is not marked:\n%s", out)
+	}
+	// The raw markdown must not also be dumped underneath the rendered lists.
+	if strings.Contains(out, "- [x] write the spec") {
+		t.Errorf("raw checklist markdown was printed as well as the rendered list:\n%s", out)
+	}
+}
+
+// A narrow terminal must not be able to push a checklist line past the edge of
+// the pane. Measured with lipgloss.Width rather than len, because display width
+// is what actually wraps a terminal.
+//
+// Note: other parts of the detail pane still overflow at narrow widths — that is
+// a known, separate bug. This test guards the checklist rendering only.
+func TestChecklistLinesDoNotOverflow(t *testing.T) {
+	m := newTestModel(t, 90, 32)
+	m.detail = withChecklists(twoChecklists)
+	for _, w := range []int{20, 24, 40, 80, 120} {
+		m.width = w
+		for _, line := range strings.Split(stripANSI(m.renderDetail()), "\n") {
+			isChecklistLine := strings.Contains(line, "[x]") ||
+				strings.Contains(line, "[~]") ||
+				strings.Contains(line, "[ ]") ||
+				strings.HasPrefix(strings.TrimSpace(line), "Plan ") ||
+				strings.HasPrefix(strings.TrimSpace(line), "Definition of Done")
+			if isChecklistLine && lipgloss.Width(line) > w {
+				t.Errorf("width %d: checklist line is %d cols: %q", w, lipgloss.Width(line), line)
+			}
+		}
+	}
+}
