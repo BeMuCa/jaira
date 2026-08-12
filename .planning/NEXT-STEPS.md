@@ -1,3 +1,33 @@
+# Home screen and multi-project — specified 2026-08-12, not built
+
+Decided in conversation, recorded here so it survives a context clear.
+
+- **Icon.** `icon/jAIra.png`, 311×286. It has **no alpha channel** — 88,946
+  pixels, all opaque; the dark ground is a baked-in gradient. "No background"
+  therefore means keying out by luminance, not honouring transparency.
+  `go run ./scripts/iconpreview` renders six candidate styles; **a style has not
+  been chosen yet**.
+- **A terminal tab icon is not achievable.** `OSC 0/1/2` set title text only.
+  In-terminal images need Sixel / Kitty / iTerm2 protocols, none universal, and
+  Windows Terminal under WSL2 is partial at best. The icon can only be drawn in
+  the viewport.
+- **Adding a project: all three ways.** A directory browser in the TUI, a
+  `jaira projects add <path>` command, and auto-discovery that scans **at most
+  two levels deep** below a chosen root — the user's code all lives under one
+  `code/` directory with boards two levels down, and an unbounded scan of a home
+  directory is slow enough to be a bug.
+- **Multiple projects open at once**, not just switching between them.
+- **Active agent sessions collected across projects** and marked in the project
+  list, so one board shows which projects have agents working and which are
+  waiting on a human. The `checkpoint` / `sessions` commands and
+  `~/.jaira/state/<worktree>/` are the existing foundation.
+- **Claude should be able to launch jaira** with a given project open — implies
+  something like `jaira --project <path>` or `jaira board -C <path>`.
+- **Open question, unanswered:** whether bare `jaira` shows the home screen
+  always, or only when the current directory is not itself a board. The board is
+  glanced at constantly, so a mandatory keypress on the common path has a real
+  cost.
+
 # Next steps — open tasks
 
 Ordered. Each has the command to start with and how you know it is done.
