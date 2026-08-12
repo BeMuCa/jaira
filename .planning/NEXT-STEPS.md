@@ -23,43 +23,30 @@ Decided in conversation, recorded here so it survives a context clear.
   `~/.jaira/state/<worktree>/` are the existing foundation.
 - **Claude should be able to launch jaira** with a given project open — implies
   something like `jaira --project <path>` or `jaira board -C <path>`.
-- **Open question, unanswered:** whether bare `jaira` shows the home screen
-  always, or only when the current directory is not itself a board. The board is
-  glanced at constantly, so a mandatory keypress on the common path has a real
-  cost.
+- **Decided:** bare `jaira` shows the home screen **always**, including inside a
+  board. The cost is one keypress on the common path; `jaira board` remains the
+  direct route and should be documented as such.
 
 # Next steps — open tasks
 
 Ordered. Each has the command to start with and how you know it is done.
 Background in `HANDOFF.md`; that file also lists decisions not to re-open.
 
-Always first:
-
-```bash
-export PATH=$HOME/.local/go/bin:$PATH
-```
+Go is now on the PATH for both login and interactive shells (added to
+`~/.bashrc` and `~/.profile` on 2026-08-12), so no export is needed first.
+`jaira` and `jaira-iconpreview` are built into `~/.local/bin`.
 
 ---
 
-## 1. Install the skill globally — blocks everything else
+## 1. Install the skill globally — DONE 2026-08-12
 
-**Why first:** the skill only exists at `/home/berk/git/jAIra/.claude/skills/jaira/`.
-Outside this repo Claude does not know jaira exists, so it will not use the board
-in requirementsgenie or anywhere else. Every other task assumes this is done.
+Copied to `~/.claude/skills/jaira/SKILL.md`; `diff -r` against the repo copy is
+identical.
 
-**Waiting on:** the user. Asked, not yet answered.
+**Still unverified:** that a Claude session in an unrelated repo actually
+discovers it. That needs a fresh session somewhere else to confirm.
 
-```bash
-mkdir -p ~/.claude/skills
-cp -r /home/berk/git/jAIra/.claude/skills/jaira ~/.claude/skills/jaira
-```
-
-**Done when:** `ls ~/.claude/skills/jaira/SKILL.md` exists, and a Claude session in
-an unrelated repo containing `.jaira/` reaches for `jaira` commands unprompted.
-
-**Note:** a copy goes stale. If the skill changes, re-copy — or symlink instead
-(`ln -s /home/berk/git/jAIra/.claude/skills/jaira ~/.claude/skills/jaira`) and
-accept that it breaks if the repo moves.
+**Note:** it is a copy, so it goes stale. Re-copy when the skill changes.
 
 ---
 
