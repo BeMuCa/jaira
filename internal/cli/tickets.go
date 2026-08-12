@@ -548,9 +548,34 @@ func dash(s string) string {
 	return s
 }
 
+// checklistJSON renders one checklist for machine consumption.
+//
+// Each item carries the number 'jaira dod' takes, so an agent acting on a gate
+// refusal has the argument in hand rather than having to infer it from array
+// position. The state is spelled out as a word, and "done" is kept alongside it
+// so a consumer can branch on completion without knowing the state vocabulary.
+func checklistJSON(items []ticket.DoDItem) []map[string]any {
+	out := make([]map[string]any, 0, len(items))
+	for i, it := range items {
+		out = append(out, map[string]any{
+			"n":     i + 1,
+			"text":  it.Text,
+			"state": it.State.String(),
+			"done":  it.Checked(),
+		})
+	}
+	return out
+}
+
 func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 	_, known := lanes.Get(t.Status)
+	dodComplete, _ := t.DoDComplete()
+	planComplete, _ := t.PlanComplete()
 	return map[string]any{
+		"plan_items":         checklistJSON(t.PlanItems),
+		"dod_items":          checklistJSON(t.DoDItems),
+		"plan_complete":      planComplete,
+		"dod_complete":       dodComplete,
 		"id":                 t.ID,
 		"handle":             ticket.Handle(t.ID),
 		"title":              t.Title,
