@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/berk/jaira/core/project"
 )
 
 func pipelineModel(t *testing.T, w, h int) *Model {
@@ -107,5 +108,37 @@ func TestPipelineDoesNotOverflow(t *testing.T) {
 				t.Errorf("width %d: line is %d cols: %q", w, lipgloss.Width(line), line)
 			}
 		}
+	}
+}
+
+// Number keys switch project. The switch works by setting SwitchTo and quitting;
+// the caller reopens the board there, which is how no per-board state survives
+// the move.
+func TestPipelineSwitchesProjectByNumber(t *testing.T) {
+	m := pipelineModel(t, 130, 34)
+	m.projects = []project.Project{
+		{Root: m.store.Root, Name: "current"},
+		{Root: "/somewhere/else", Name: "other"},
+	}
+	if quit := m.pipelineKey("2"); !quit {
+		t.Fatal("pressing 2 did not ask to switch")
+	}
+	if m.SwitchTo != "/somewhere/else" {
+		t.Errorf("SwitchTo = %q, want /somewhere/else", m.SwitchTo)
+	}
+
+	// Choosing the project already open is a no-op, not a pointless reopen.
+	m2 := pipelineModel(t, 130, 34)
+	m2.projects = []project.Project{{Root: m2.store.Root, Name: "current"}}
+	if quit := m2.pipelineKey("1"); quit {
+		t.Error("selecting the current project asked to switch")
+	}
+	if m2.SwitchTo != "" {
+		t.Errorf("SwitchTo was set to %q for the current project", m2.SwitchTo)
+	}
+
+	// A number with no project behind it does nothing.
+	if quit := m2.pipelineKey("9"); quit {
+		t.Error("an unused number asked to switch")
 	}
 }
