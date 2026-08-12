@@ -164,9 +164,10 @@ Exit codes:
 		SilenceErrors: true,
 		Args:          noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// Bare `jaira` opens the board: glancing at it is the common case,
-			// and printing help to someone who already installed the tool is not.
-			return newBoardCmd().RunE(cmd, nil)
+			// Bare `jaira` opens the launcher, so one window oversees every board
+			// rather than only the one you happen to be standing in. `jaira board`
+			// is the direct route when you already know where you are.
+			return runHome(cmd)
 		},
 	}
 	root.PersistentFlags().BoolVar(&g.jsonOut, "json", false, "emit JSON on stdout and structured errors on stderr")

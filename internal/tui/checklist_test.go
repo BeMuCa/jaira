@@ -128,3 +128,14 @@ func TestChecklistLinesDoNotOverflow(t *testing.T) {
 		}
 	}
 }
+
+// The board must not contradict the gate. A ticket whose definition of done is a
+// checklist in the body satisfies the promotion rule, so the detail pane must not
+// claim it is still missing one.
+func TestChecklistCountsAsADefinitionOfDone(t *testing.T) {
+	tk := withChecklists(twoChecklists)
+	tk.Goal, tk.Context, tk.Assignee = "g", "c", "berk"
+	if got := missing(tk); len(got) != 0 {
+		t.Errorf("detail pane reports missing fields %v for a ticket with a DoD checklist", got)
+	}
+}

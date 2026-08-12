@@ -9,7 +9,7 @@ import (
 )
 
 func newProjectsCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "projects",
 		Short: "List boards you have opened",
 		Args:  noArgs(),
@@ -28,4 +28,6 @@ func newProjectsCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.AddCommand(newProjectsAddCmd())
+	return cmd
 }

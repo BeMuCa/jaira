@@ -652,7 +652,10 @@ func missing(t *ticket.Ticket) []string {
 	if strings.TrimSpace(t.Goal) == "" {
 		out = append(out, "goal")
 	}
-	if strings.TrimSpace(t.DoD) == "" {
+	// A checklist in the body counts, exactly as it does for the gate. Checking
+	// only the scalar told a ticket carrying a full checklist that it still
+	// needed a definition of done — the board contradicting the rules it renders.
+	if !t.HasDoD() {
 		out = append(out, "definition-of-done")
 	}
 	if strings.TrimSpace(t.Context) == "" {
