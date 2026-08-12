@@ -260,6 +260,19 @@ func (t *Ticket) DoDComplete() (complete bool, remaining []string) {
 	return len(remaining) == 0, remaining
 }
 
+// PlanComplete reports whether every step of the method has been carried out.
+//
+// A ticket with no plan is vacuously complete: the plan is optional, and its
+// absence is not evidence of unfinished work.
+func (t *Ticket) PlanComplete() (complete bool, remaining []string) {
+	for _, it := range t.PlanItems {
+		if !it.Checked() {
+			remaining = append(remaining, it.Text)
+		}
+	}
+	return len(remaining) == 0, remaining
+}
+
 // Outcome is the three-part close-out: what changed, why it was needed, and the
 // causal link back to the Definition of Done. The third field exists because
 // "what changed" alone does not let a reviewer judge whether the work is done.

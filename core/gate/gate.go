@@ -29,6 +29,7 @@ const (
 	CodeNeedsQuestion   = "needs_question"
 	CodeSelfBlock       = "self_block"
 	CodeMissingProduces = "missing_lane_output"
+	CodePlanIncomplete  = "plan_incomplete"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -193,6 +194,26 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 					Message: fmt.Sprintf(
 						"lane %q cannot be entered on a model's own assessment; tick the definition-of-done checklist, or pass --signal with a passing command or a human sign-off",
 						target.ID),
+				})
+			}
+		}
+	}
+
+	// The plan and the definition of done are not independent. The plan is the
+	// method — write the spec, design it, implement it — and the criteria cannot
+	// have been met while the work that meets them is still under way. A ticket
+	// accepted with "implement" unfinished is the "I thought it was built, only
+	// the design was done" failure the board exists to prevent, so a terminal
+	// lane refuses it rather than merely noting it.
+	//
+	// This applies only at terminal lanes: a plan is expected to be in progress
+	// while the ticket moves through the pipeline.
+	if target.Terminal {
+		if complete, remaining := t.PlanComplete(); !complete {
+			for _, r := range remaining {
+				vs = append(vs, Violation{
+					Code:    CodePlanIncomplete,
+					Message: fmt.Sprintf("the plan still has unfinished steps: %s", r),
 				})
 			}
 		}
