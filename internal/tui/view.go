@@ -209,11 +209,13 @@ func (m *Model) renderColumn(idx, w, h int) string {
 		style = style.BorderForeground(colAccent)
 	}
 
+	// Lane headers carry no agentic marker. Every lane can be driven by an agent
+	// — creating, moving and filling in tickets are all CLI operations — so
+	// marking two of them said less than it implied. What is worth marking is on
+	// the cards: a ticket that needs an answer, or one waiting to be signed off.
 	title := col.lane.Name
 	if col.lane.Unknown {
 		title = "? " + title
-	} else if col.lane.Agentic {
-		title = styAgentic.Render("◆ ") + title
 	}
 	head := styLaneTitle.Render(truncate(title, w-6)) + " " + styLaneCount.Render(fmt.Sprintf("%d", len(col.tickets)))
 
@@ -580,6 +582,7 @@ func (m *Model) renderHelp() string {
 			{"E", "open the ticket body and checklists in $EDITOR"},
 			{"a f", "accept, or raise a follow-up (on a ticket awaiting sign-off)"},
 			{"m", "move the selected ticket to another lane"},
+			{"x", "archive the selected ticket (restore brings it back)"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
 		}},

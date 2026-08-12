@@ -73,6 +73,40 @@ The Plan does not gate anything on its own, but a terminal lane refuses a ticket
 whose plan is unfinished: the criteria cannot have been met while the work that
 meets them is still in progress.
 
+## Writing a good ticket from a request
+
+When the user describes work, do not invent the fields. Extract what they gave
+you and ask for what is missing — the gate will refuse the ticket later anyway,
+and asking now costs one message instead of a stalled run.
+
+From a request, take:
+
+- **title** — what is different afterwards, not what you will do
+- **goal** — the outcome, one sentence
+- **context** — where this came from, so it still makes sense in a month
+- **definition of done** — checkable statements a person who was not here could
+  verify. This is the one people skip and the one the gate blocks on.
+
+Ask when the definition of done is missing or unfalsifiable. "Works properly"
+and "is improved" are not criteria. A single question is enough:
+
+> Before I create this: how will we know it is done? I have "the export finishes
+> without the timeout" — is there anything else that has to be true?
+
+If the user is mid-flow and does not want to stop, create the ticket anyway with
+what you have. It sits in the backlog, which is exactly what the backlog is for,
+and `jaira validate` will list it as still needing a definition of done.
+
+```bash
+jaira create "Export survives a slow network" \
+  --goal "The CSV export completes on a 3G connection instead of timing out" \
+  --context "Reported while debugging the customer's failed month-end export" \
+  --dod "a 40MB export completes on a throttled connection"
+```
+
+A board may define its own ticket shape in `.jaira/TEMPLATE.md`; `create` uses it
+when it exists, so follow the headings you find rather than imposing these.
+
 ## Working the board
 
 ```bash

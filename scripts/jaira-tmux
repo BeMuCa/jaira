@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Open a tmux window with jaira watching on the left and agent panes on the right.
+#
+# jaira watches the filesystem, so the board pane repaints itself as agents in the
+# other panes write tickets — there is nothing to refresh by hand. Sessions are
+# recorded per worktree under ~/.jaira/state/, so every pane working the same
+# repository shows up in the board's session panel.
+#
+#   scripts/jaira-tmux [repo-path] [agent-count]
+#
+# Defaults to the current directory and two agent panes.
+set -euo pipefail
+
+repo=${1:-$PWD}
+agents=${2:-2}
+session=jaira-$(basename "$repo")
+
+if ! command -v tmux >/dev/null; then
+	echo "tmux is not installed" >&2
+	exit 1
+fi
+if [ ! -d "$repo/.jaira" ]; then
+	echo "$repo has no .jaira board — run 'jaira init' there first" >&2
+	exit 1
+fi
+
+if tmux has-session -t "$session" 2>/dev/null; then
+	exec tmux attach -t "$session"
+fi
+
+# Board on the left at 40% — wide enough for several lanes, narrow enough that
+# the agent panes stay usable, which is the ratio that matters when the point is
+# watching several sessions at once.
+tmux new-session -d -s "$session" -c "$repo" 'jaira board'
+tmux split-window -h -t "$session" -c "$repo" -p 60
+
+for ((i = 1; i < agents; i++)); do
+	tmux split-window -v -t "$session" -c "$repo"
+done
+tmux select-layout -t "$session" main-vertical
+tmux select-pane -t "$session".1
+
+exec tmux attach -t "$session"

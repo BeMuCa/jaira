@@ -11,6 +11,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -521,6 +522,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.clampCursor()
 	case "enter":
 		m.openDetail()
+	case "x":
+		m.archiveSelected()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -678,4 +681,30 @@ func (m *Model) createTicket(title string) {
 		m.detail = full
 		m.startEdit()
 	}
+}
+
+// archiveSelected takes a ticket off the board.
+//
+// It moves the file rather than deleting it, and it is offered here because the
+// board is where you notice that a done ticket has stopped being worth looking
+// at. Restoring is 'jaira restore', which is why nothing asks for confirmation:
+// the action is reversible.
+func (m *Model) archiveSelected() {
+	t := m.selected()
+	if t == nil {
+		return
+	}
+	dst, err := m.store.Archive(t.ID)
+	if err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	m.mode = modeBoard
+	m.detail = nil
+	m.notify(fmt.Sprintf("Archived %s.\n\nNothing was deleted — bring it back with:\n\n  jaira restore %s",
+		ticket.Handle(t.ID), filepath.Base(dst)), false)
 }

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -137,5 +138,27 @@ func TestChecklistCountsAsADefinitionOfDone(t *testing.T) {
 	tk.Goal, tk.Context, tk.Assignee = "g", "c", "berk"
 	if got := missing(tk); len(got) != 0 {
 		t.Errorf("detail pane reports missing fields %v for a ticket with a DoD checklist", got)
+	}
+}
+
+// Archiving from the board must move the file, not delete it, and the ticket
+// must leave the board.
+func TestArchiveFromTheBoard(t *testing.T) {
+	m := newTestModel(t, 120, 32)
+	m.laneIdx, m.cardIdx = 0, 0
+	before := len(m.tickets)
+	id := m.selected().ID
+
+	m.archiveSelected()
+
+	if len(m.tickets) != before-1 {
+		t.Errorf("board still has %d tickets, want %d", len(m.tickets), before-1)
+	}
+	if _, err := m.store.Load(id); err == nil {
+		t.Error("the ticket is still loadable from the board")
+	}
+	names, err := os.ReadDir(m.store.ArchiveDir())
+	if err != nil || len(names) != 1 {
+		t.Fatalf("archive holds %v (err %v), want one file", names, err)
 	}
 }
