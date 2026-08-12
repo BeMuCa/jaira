@@ -1,26 +1,55 @@
-# Done 2026-08-12 (this session)
+# Next tasks — 2026-08-12 evening
 
-- `[~]` no longer defeats the terminal gate — unknown markers parse as todo
-- `jaira dod` writes checklist state surgically; one `[~]` per checklist
-- `## Plan` checklist, parsed separately; a terminal lane refuses an unfinished plan
-- Gate refusals name the item and give the command that clears it, in text and JSON
-- Cards show `Plan n/m · DoD n/m`; detail pane renders both checklists
-- `e` edits fields (multiline, ctrl+s), `E` opens the body in $EDITOR
-- Creating a ticket hands straight to the editor instead of pointing at the CLI
-- Umlauts no longer dropped by the line editors
-- `jaira validate` checks the board at rest
-- `--json` carries the checklists an agent is told to act on
-- `--signal` removed (it accepted unchecked free text as evidence)
-- Review is an enforced human checkpoint; `review-verdict` and `follows:` added
-- Sign-off view: what was wrong / done / why / does it hold, accept or follow-up
-- `jaira archive` and `restore`; nothing deletes
-- Search covers bodies and checklists; listing reads whole files (16KB probe was
-  truncating checklists out of the card counts)
-- Quiet outside a git repo; `share` refuses instead of lying
-- Home screen on bare `jaira`: icon, boards, agent and waiting counts
-- `jaira projects add --scan`, two levels deep
-- Driven under a real pty for the first time — found and fixed the detail pane
-  claiming a checklist-bearing ticket had no definition of done
+Ordered. Background in `HANDOFF.md`, which also lists decisions not to re-open.
+
+## 1. Agent-agnostic support — the user's stated next topic
+
+The *integration* already is agent-independent: a CLI, JSON out, exit codes in,
+no SDK and no per-tool code path. What differs per tool is only **discovery** —
+which file each one reads to learn the board exists. `jaira init` writes
+`AGENTS.md` and `CLAUDE.md`; everything else is a paste of that markdown block.
+
+Open questions the user raised:
+- Confirm the file conventions actually used by Codex, Gemini CLI, Cursor and
+  Aider. The table in `docs/AGENTS.md` is from knowledge, **not tested**.
+- Decide whether `init` should write more of them, or stop at two and document.
+- Try driving the board from a non-Claude agent end to end, which is the only
+  thing that would prove the claim.
+
+## 2. Prove the release path
+
+- `go install github.com/BeMuCa/jaira/cmd/jaira@latest` has never been run.
+- No tagged release exists; `goreleaser` config is in the repo but unused.
+- Check the README renders on GitHub — every referenced image exists remotely,
+  but the rendered result is unseen.
+
+## 3. Migrate the 44 requirementsgenie tickets
+
+Unchanged and still approved. The blocker the user asked about is now gone:
+`.jaira/TEMPLATE.md` support exists and was tested against their real German
+template — headings kept, title substituted, `assignee`/`type`/`labels` carried
+onto new tickets, `--option planning` appends an `## Options` section cleanly.
+
+Still open: does the original `tickets/` directory stay or go after migrating?
+Do not run `jaira init` in that repository without asking.
+
+## 4. Windows
+
+CI passes, but nobody has run jaira on Windows. Until today no lanes loaded
+there at all, so other platform issues may be hiding behind that one.
+
+## 5. Smaller, carried forward
+
+- Detail pane still overflows at very narrow widths; only checklist and home
+  screen lines are guarded.
+- `--option` has no key in the TUI; it is CLI-only.
+- The compact view's lit arrow has never been seen with agents genuinely moving
+  tickets at the same time.
+- Ideas not built: `jaira why <id>` (walk `follows:` backwards), stale-claim
+  reaping, per-lane WIP limits, `jaira digest`, per-lane templates, the
+  reserved `external:` adapter.
+
+---
 
 # Home screen and multi-project — specified 2026-08-12, not built
 

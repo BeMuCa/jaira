@@ -1,113 +1,76 @@
-# Handoff — 2026-08-12
+# Handoff — 2026-08-12 (evening)
 
-State of jAIra after the v1 build and one adversarial test round. Written before a
-context clear; this file is the memory.
+State after the session that shipped jaira to GitHub. Written before a context
+clear; this file is the memory.
 
-## Environment (matters — nothing here is on PATH by default)
+## Where things are
 
-- Go 1.26.5 installed to `~/.local/go` (no sudo used). **Not on PATH.**
-  Every command needs `export PATH=$HOME/.local/go/bin:$PATH` first.
-- No system Go, no Rust, no passwordless sudo.
-- GSD CLI is `node ~/.claude/get-shit-done/bin/gsd-tools.cjs <cmd>` — the docs say
-  `gsd-sdk query <cmd>`, which does not exist here. Subcommands take no `query`.
-- Build: `go build -o ~/.local/bin/jaira ./cmd/jaira`
-- When testing, ALWAYS set `JAIRA_HOME` and `JAIRA_LANES_DIR` under `/tmp`.
-  Without them, test runs write into the real `~/.jaira`.
+- **Public: https://github.com/BeMuCa/jaira** — 53 commits, branch `master`,
+  CI green on linux/macOS/windows at `4d3cace`.
+- Module path is `github.com/BeMuCa/jaira`.
+- Go is on PATH now (`~/.bashrc` and `~/.profile` both, because `.bashrc`
+  returns early for non-interactive shells and a login shell reads `.profile`).
+- `jaira` and `jaira-iconpreview` are built into `~/.local/bin`.
+- The skill is installed globally at `~/.claude/skills/jaira/SKILL.md`, kept in
+  sync with the repo copy by hand — **re-copy it when the repo copy changes.**
 
-## Where things stand
+## Two bugs CI found that local testing could not
 
-HEAD `f46110c`. 8 roadmap phases implemented; 83 of 84 v1 requirements met
-(TUI-11 deferred — no in-place field editor exists, so there is no edit buffer to
-clobber). `gofmt`, `go vet`, `go test ./... -race` all clean.
+Both were invisible on Linux. This is the argument for keeping the CI matrix.
 
-Four adversarial agents ran. Everything below was reproduced first-hand before
-being acted on.
+1. **macOS**: `/var` is a symlink to `/private/var`, so a board registered
+   through one spelling and discovered through the other appeared twice on the
+   launcher. `project.Canonical` is now the single reduction every caller uses.
+2. **Windows**: `builtinFS.ReadFile(filepath.Join("builtin", n))` produced
+   `builtin\00-backlog.md`, which does not exist in an embedded filesystem —
+   those always use forward slashes. **No lanes loaded at all on Windows**, for
+   the whole life of the project until now. Fixed with `path.Join`.
 
-## Fixed and verified this round
+## What the pipeline looks like now
 
-| # | Problem | Fix |
-|---|---|---|
-| 1 | A self-written lane with `terminal: true` let an agent mark work done with no evidence, and counted as resolving blockers | `terminal` now implies `requires-outcome` + `requires-nonmodel-signal` unless explicitly opted out |
-| 2 | `set` ignored the read-only rule for tickets in unrecognized lanes (`move` honoured it) | `set` refuses too |
-| 3 | Missing positional arg exited 1, not the documented 2 | own `exactArgs`/`minArgs`/`noArgs` validators |
-| 4 | Frontmatter >16KB: ticket visible in `list` but unresolvable by `show`/`set` — two read paths disagreed | single `readHeader` with full-read fallback |
-| 5 | Ticket resolution used the *filename*, so a renamed file became unreachable by any reference | resolve by frontmatter `id` |
-| 6 | Merge driver only bound in `jaira init`, so a teammate who cloned and never ran init silently got line-based merging | binds on any command when a committed `.gitattributes` is present |
-| 7 | `sync-tasks` overwrote a human-written `goal`; a task could hijack any ticket via `metadata.jaira_id` | sync may only touch tickets it created (`source: agent-task`), and may only seed an *empty* goal |
-| 8 | CRLF files lost the CR on the opening `---` | opening line's exact ending preserved |
-| 9 | Writing a symlinked ticket replaced the link, forking content | `EvalSymlinks` before the atomic write |
-| 10 | Two files declaring one id: one silently shadowed | first wins deterministically, duplicate reported |
-| 11 | `~/.jaira` (global config) could be mistaken for a board by `Discover` | a board is identified by `.jaira/tickets/`, not the directory name |
-| 12 | Test suite wrote into the real `~/.jaira` | tests set `JAIRA_HOME` before touching the filesystem |
-
-Design changes the user asked for, implemented:
-
-- **Boards start private.** `init` gitignores `.jaira/`; `jaira share` publishes,
-  `--undo` reverses. Publishing is a decision, not a default.
-- **Ephemeral state left the repo.** Sessions and locks now live in
-  `~/.jaira/state/<worktree>/`, so `.jaira/` holds only committed content.
-- **Definition of done is a checklist in the body**, not a frontmatter scalar.
-  Ticking every box satisfies the Done gate with no `--signal` — a ticked box is a
-  human file edit, which is evidence a model cannot manufacture. Verified:
-  unticked → exit 3, ticked → exit 0.
-
-## Open — not yet done
-
-Ordered, with commands and acceptance criteria: **`.planning/NEXT-STEPS.md`**.
-Summarised here for context:
-
-1. **TUI layout overflow, 2 bugs.** The TUI agent reproduced these twice, at 20×20,
-   including with an ASCII-only fixture (so not a wide-char artifact). **I have not
-   reproduced or fixed them.** Its findings report never reached me — only its
-   audit did. Either re-derive by rendering at 20×20 and asserting no line exceeds
-   the width, or resume agent `ae2c189a2446fce69` and ask for the two findings.
-   Not stressed for overflow at all: diff view, projects switcher, message modal.
-
-2. **Migrate the 44 requirementsgenie tickets.** User approved ("you can migrate
-   them yes"). Script rescued to `scripts/migrate-tickets.py` (106 lines, written
-   by the sync agent, validated against copies — **I have not read or run it**).
-   Target: `~/git/requirementsgenie-feature-requirements-coverage-elicitation/tickets/`
-   (44 files, branch `feature/requirements-coverage-elicitation`, German, Jira
-   frontmatter, no `id`, no `status`, title in an H1, DoD already a checklist).
-   Migration must: add `id` (ULID) and `status`, rename to `<ulid>-<slug>.md`.
-   jaira already handles the H1-title fallback and the DoD checklist natively.
-   Jira fields (`jira`, `type`, `component`, `priority`, `labels`, `epic_link`)
-   survive writes byte-for-byte — verified on a real ticket.
-   **Work on copies first. Never run `jaira init` in that repo without asking.**
-
-3. **The skill is not installed globally.** It exists only at
-   `/home/berk/git/jAIra/.claude/skills/jaira/`, so Claude does not know jaira
-   exists in any other repo — including requirementsgenie. Copy to
-   `~/.claude/skills/jaira/` to fix. User was asked, has not answered.
-
-4. **Store-agent findings I never verified.** Titles only; the report did not reach
-   me: cherry-pick reverting a list deletion; octopus merge failure; an empty
-   `conflict-theirs-*` key left behind after resolve. Resume agent
-   `adb7f3391f65e3fac` for details, or re-derive.
-
-5. **Sync/share findings I never received** beyond the two I fixed. Areas covered
-   were `.gitignore` variants (`**/.jaira/`, `!.jaira/keep`, no trailing newline),
-   `share` in a non-git directory, and the tasks↔sync round-trip convergence.
-   Resume agent `a6a66be715bf53031`.
-
-## Things not to re-litigate
-
-- Tickets are committed *when shared* — that is the whole team-sync mechanism the
-  user specified. Private-by-default changes the timing, not the model.
-- The merge driver only matters for shared boards with more than one writer. For a
-  solo private board it never runs.
-- `assignee` is always a human; `executed-by` records the model. Never reassign a
-  ticket to a model.
-- ULID: first 10 chars are the timestamp, last 16 are random. The 6-char handle
-  comes from the **tail** — an earlier head-based handle collided for tickets
-  created in the same millisecond, which is the normal case for agent bursts.
-- Adoption risk is real and unproven: file-based trackers have a poor record, and
-  Fossil explicitly rejected mutable working-tree ticket files for the same
-  conflict reason. The bet is the field-aware merge driver plus a small surface.
-
-## Next command
-
-```bash
-export PATH=$HOME/.local/go/bin:$PATH
-cd /home/berk/git/jAIra && go test ./... && git log --oneline | head -5
 ```
+backlog → todo → pre-process → in-progress → human → review → signoff → done
+                  (optional)   (Implementing) (HITL)  (agent)  (human)   + blocked
+```
+
+- **pre-process** is opt-in per ticket: a ticket's `## Options` checklist must
+  tick `planning`. It produces the `## Plan` checklist and cannot be left
+  without one. Skipping it is free.
+- **review** is the model's step (writes `review-verdict`); **signoff** is the
+  human checkpoint no agent may leave (`requires-human-exit`).
+- `in-progress` and `human` keep their **ids** deliberately — those ids are
+  written into existing tickets, and renaming would strand them read-only.
+
+## Decisions not to re-open
+
+- Tickets are markdown, not JSON. JSON storage would break the field-aware merge
+  driver (a body becomes one escaped string) and make `git diff` unreadable.
+  `--json` is the *machine interface*, not the storage format.
+- `--signal` was removed. It accepted unchecked free text as evidence; an agent
+  could close any ticket by typing a sentence.
+- Progress notes live in the ticket body (`## Progress`), not a sidecar memory
+  file — a separate file is one more thing to lose and would not travel in git.
+- Checkbox position is load-bearing: an item only counts under its own heading.
+  Anything writing items must use `ticket.AddItem`, never append to the file.
+  This mistake was made three times while testing.
+- The board is glanced at constantly, so bare `jaira` opening the launcher costs
+  a keypress on the common path. `jaira board` is the documented direct route.
+
+## Verified this session
+
+120 tests green under `-race`, `gofmt`/`vet` clean, six cross-compile targets
+with CGO disabled, and a real pseudo-terminal exercised: home screen, board,
+detail pane, `e` field editing (write landed on disk, umlauts and newlines
+intact), `E` `$EDITOR` round-trip, the sign-off view, `a` accept (a person could,
+the CLI could not), `x` archive, the compact view and its serpentine layout.
+
+## Not verified
+
+- `go install github.com/BeMuCa/jaira/cmd/jaira@latest` — never run.
+- How GitHub renders the README; the referenced files all exist remotely.
+- The `GEMINI.md` / `.cursorrules` / Aider rows in `docs/AGENTS.md` are from
+  knowledge, not testing.
+- Windows beyond "CI passes" — nobody has run jaira there, and since no lanes
+  loaded at all until today, other Windows issues may be hiding behind that.
+- Whether the global skill is discovered by a session in another repository.
+- The 44 requirementsgenie tickets are still unmigrated.
