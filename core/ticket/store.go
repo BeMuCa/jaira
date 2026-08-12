@@ -48,7 +48,16 @@ var (
 type Store struct {
 	// Root is the directory containing .jaira.
 	Root string
+
+	// dupIDs accumulates tickets that declare an id another file already claimed.
+	// Two files with one id is an ambiguity a person has to settle, so it is
+	// surfaced rather than resolved by read order.
+	dupIDs []string
 }
+
+// DuplicateIDs reports ids claimed by more than one file, discovered during the
+// most recent lookup.
+func (s *Store) DuplicateIDs() []string { return s.dupIDs }
 
 // Discover walks up from dir looking for an existing .jaira directory.
 func Discover(dir string) (*Store, error) {
@@ -166,6 +175,11 @@ func (s *Store) List() ([]*Ticket, error) {
 		}
 		out = append(out, t)
 	}
+	// Duplicate ids are found by the id index, so build it here to surface them
+	// alongside unreadable files.
+	if _, err := s.idIndex(); err == nil {
+		problems = append(problems, s.dupIDs...)
+	}
 	if len(problems) > 0 {
 		return out, &PartialError{Problems: problems}
 	}
@@ -179,8 +193,15 @@ func (e *PartialError) Error() string {
 	return fmt.Sprintf("%d ticket(s) could not be read: %s", len(e.Problems), strings.Join(e.Problems, "; "))
 }
 
-// loadHeader reads a ticket's frontmatter without necessarily reading its body.
-func (s *Store) loadHeader(path string) (*Ticket, error) {
+// readHeader parses a ticket's frontmatter, reading only as much of the file as
+// necessary.
+//
+// Every path that needs frontmatter goes through here. When two paths each did
+// their own bounded read, they disagreed about tickets whose frontmatter exceeded
+// the probe: one fell back to a full read and listed the ticket, the other gave up
+// and could not resolve it — so the ticket was visible on the board yet impossible
+// to open or modify.
+func (s *Store) readHeader(path string) (*Doc, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -195,15 +216,20 @@ func (s *Store) loadHeader(path string) (*Ticket, error) {
 	buf = buf[:n]
 
 	if !hasClosingDelim(buf) {
-		// Rare: frontmatter longer than the probe. Fall back to a full read
-		// rather than failing.
+		// Frontmatter longer than the probe: read the whole file rather than
+		// failing. Rare, so the cost is acceptable.
 		all, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 		buf = all
 	}
-	d, err := ParseDoc(buf)
+	return ParseDoc(buf)
+}
+
+// loadHeader reads a ticket's frontmatter without necessarily reading its body.
+func (s *Store) loadHeader(path string) (*Ticket, error) {
+	d, err := s.readHeader(path)
 	if err != nil {
 		return nil, err
 	}
@@ -293,11 +319,21 @@ func (s *Store) idIndex() (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.dupIDs = nil
 	out := make(map[string]string, len(paths))
 	for _, p := range paths {
 		id, err := s.idOf(p)
 		if err != nil || id == "" {
 			continue // unreadable or unidentified files are reported by List
+		}
+		// Two files declaring the same id is a genuine ambiguity, not something to
+		// resolve by whichever happened to be read last: keep the first and let
+		// the duplicate be reported rather than silently shadowed.
+		if prev, dup := out[id]; dup {
+			out[id] = prev // first wins, deterministically
+			s.dupIDs = append(s.dupIDs, fmt.Sprintf("%s is declared by both %s and %s",
+				Handle(id), filepath.Base(prev), filepath.Base(p)))
+			continue
 		}
 		out[id] = p
 	}
@@ -306,22 +342,12 @@ func (s *Store) idIndex() (map[string]string, error) {
 
 // idOf reads just the id from a ticket file.
 func (s *Store) idOf(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	buf := make([]byte, frontmatterProbe)
-	n, err := io.ReadFull(f, buf)
-	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
-		return "", err
-	}
-	d, err := ParseDoc(buf[:n])
+	d, err := s.readHeader(path)
 	if err != nil {
 		return "", err
 	}
 	v, _, err := d.Scalar(FieldID)
-	return v, err
+	return NormalizeIDPrefix(v), err
 }
 
 // Create writes a new ticket file and returns it.
@@ -427,6 +453,13 @@ func (s *Store) lock(id string) (func(), error) {
 // into place, so a crash or a full disk leaves the previous file intact rather
 // than a truncated one (STORE-06).
 func writeAtomic(path string, data []byte) error {
+	// Follow a symlink to its target before writing. The tmp-file-plus-rename
+	// dance is what makes a write atomic, but rename replaces the link itself —
+	// so a symlinked ticket would quietly fork into two diverging files, the link
+	// holding new content and the target holding stale content.
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
 	dir := filepath.Dir(path)
 	tmp, err := os.CreateTemp(dir, ".jaira-tmp-*")
 	if err != nil {

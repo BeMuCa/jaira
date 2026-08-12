@@ -256,31 +256,53 @@ func digestOf(tasks []Task) string {
 	return hex.EncodeToString(sum[:12])
 }
 
-// resolve finds the ticket already mirroring a task, preferring an explicit id
-// carried in the task's own metadata since that survives anything local.
+// sourceField marks a ticket as having been created by the sync, which is what
+// makes it eligible to be updated by a later sync.
+const sourceField = "source"
+const sourceAgentTask = "agent-task"
+
+// syncOwned reports whether a ticket was created by mirroring a task.
+//
+// Sync may only modify what it created. A payload arrives from outside and is not
+// trustworthy about which tickets it owns: without this check, a task carrying
+// another ticket's id in its metadata could rename or rewrite a ticket a person
+// authored by hand, and a hand-edited goal could be clobbered by whatever an agent
+// happened to put in a task description.
+func syncOwned(t *ticket.Ticket) bool {
+	v, _, err := t.Doc().Scalar(sourceField)
+	return err == nil && v == sourceAgentTask
+}
+
+// resolve finds the ticket already mirroring a task.
+//
+// A candidate is accepted only if it is sync-owned. An id claimed in task
+// metadata is treated as a hint to verify, never as authority.
 func (m *taskMap) resolve(s *ticket.Store, task Task) string {
+	accept := func(id string) string {
+		if id == "" {
+			return ""
+		}
+		t, err := s.Load(id)
+		if err != nil || !syncOwned(t) {
+			return ""
+		}
+		return id
+	}
 	if task.Metadata != nil {
 		if v, ok := task.Metadata[metadataTicketKey]; ok {
-			if id, ok := v.(string); ok && id != "" {
-				if _, err := s.Load(id); err == nil {
-					return id
+			if id, ok := v.(string); ok {
+				if got := accept(id); got != "" {
+					return got
 				}
 			}
 		}
 	}
 	if task.ID != "" {
-		if id, ok := m.ByTaskID[task.ID]; ok {
-			if _, err := s.Load(id); err == nil {
-				return id
-			}
+		if got := accept(m.ByTaskID[task.ID]); got != "" {
+			return got
 		}
 	}
-	if id, ok := m.ByHash[taskHash(task)]; ok {
-		if _, err := s.Load(id); err == nil {
-			return id
-		}
-	}
-	return ""
+	return accept(m.ByHash[taskHash(task)])
 }
 
 func (m *taskMap) remember(task Task, ticketID string) {
@@ -297,12 +319,19 @@ func (m *taskMap) update(s *ticket.Store, id string, task Task) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if !syncOwned(cur) {
+		// Defence in depth: resolve should never have returned this ticket.
+		m.remember(task, id)
+		return false, nil
+	}
 	desc := strings.TrimSpace(task.Description)
 	titleSame := cur.Title == task.Subject
-	// The description only seeds the goal while the ticket is still unspecified;
-	// once someone has written a real goal, an external task list must not
-	// overwrite it.
-	goalSame := desc == "" || cur.Goal == desc || (cur.Goal != "" && gate.Ready(cur))
+	// A task description may only SEED an empty goal. Once any goal exists —
+	// whether a person wrote it or an earlier sync did — an external list does not
+	// get to replace it. The earlier version of this rule protected only tickets
+	// that already passed the promotion gate, which left a half-written goal, the
+	// most vulnerable state, wide open.
+	goalSame := desc == "" || cur.Goal != ""
 	if titleSame && goalSame {
 		m.remember(task, id)
 		return false, nil

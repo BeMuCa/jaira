@@ -58,6 +58,13 @@ func ParseDoc(src []byte) (*Doc, error) {
 	if !ok || strings.TrimRight(first, " \t\r") != delim {
 		return nil, ErrNoFrontmatter
 	}
+	// Preserve the opening line's exact ending. cutLine strips a trailing CR so
+	// the delimiter compares equal on CRLF files, but dropping it on write would
+	// be a byte-fidelity violation on the one line the whole format depends on.
+	eol := "\n"
+	if idx := strings.IndexByte(s, '\n'); idx > 0 && s[idx-1] == '\r' {
+		eol = "\r\n"
+	}
 
 	// Find the closing delimiter: the first line that is exactly "---".
 	offset := 0
@@ -68,7 +75,7 @@ func ParseDoc(src []byte) (*Doc, error) {
 		}
 		if strings.TrimRight(line, " \t\r") == delim {
 			return &Doc{
-				open: bom + first + "\n",
+				open: bom + first + eol,
 				fm:   rest[:offset],
 				tail: rest[offset:],
 			}, nil
