@@ -75,3 +75,26 @@ func TestDiscoverSkipsHeavyDirectories(t *testing.T) {
 		t.Errorf("scanned into a skipped directory: %v", got)
 	}
 }
+
+// The same board must not appear twice because it was named differently. A
+// trailing slash, a relative path and a symlink are all the same directory.
+func TestRememberIsIdempotentAcrossSpellings(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	root := t.TempDir()
+	board(t, filepath.Join(root, "repo"))
+	repo := filepath.Join(root, "repo")
+
+	Remember(repo)
+	Remember(repo + string(filepath.Separator))
+	Remember(filepath.Join(repo, ".", ""))
+
+	link := filepath.Join(root, "link-to-repo")
+	if err := os.Symlink(repo, link); err == nil {
+		Remember(link)
+	}
+
+	if got := Load(); len(got) != 1 {
+		t.Errorf("the same board was recorded %d times: %+v", len(got), got)
+	}
+}

@@ -67,11 +67,12 @@ func Remember(root string) {
 	if path == "" {
 		return
 	}
+	root = canonical(root)
 	ps := Load()
 	now := ticket.FormatTime(time.Now())
 	found := false
 	for i := range ps {
-		if ps[i].Root == root {
+		if canonical(ps[i].Root) == root {
 			ps[i].LastOpen = now
 			found = true
 		}
@@ -89,4 +90,19 @@ func Remember(root string) {
 	if b, err := json.MarshalIndent(ps, "", "  "); err == nil {
 		_ = os.WriteFile(path, append(b, '\n'), 0o644)
 	}
+}
+
+// canonical reduces a path to one spelling, so the same board added twice - once
+// with a trailing slash, once through a symlink, once relative - is recognised
+// as the same board rather than listed twice.
+func canonical(p string) string {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		abs = p
+	}
+	abs = filepath.Clean(abs)
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		return resolved
+	}
+	return abs
 }

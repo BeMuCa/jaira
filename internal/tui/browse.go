@@ -18,6 +18,10 @@ import (
 // that are actually candidates.
 type browser struct {
 	dir string
+	// results holds what a scan found, awaiting a choice. Adding everything a
+	// scan turns up would assume every board on disk belongs on the list.
+	results []string
+	chosen  []bool
 	// pending is a directory the user tried to add that has no board yet, held
 	// so that pressing i creates one there rather than somewhere else.
 	pending string
@@ -52,6 +56,7 @@ func (b *browser) goTo(dir string) {
 		return
 	}
 	b.dir, b.idx, b.msg, b.pending = abs, 0, "", ""
+	b.results, b.chosen = nil, nil
 	b.entries = nil
 	for _, e := range entries {
 		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
@@ -84,6 +89,9 @@ func (b *browser) selected() string {
 // key drives the browser. It reports the roots to register, if any, and whether
 // the browser is finished.
 func (b *browser) key(s string) (added []string, done bool) {
+	if b.results != nil {
+		return b.resultKey(s)
+	}
 	switch s {
 	case "esc", "q":
 		return nil, true
@@ -149,15 +157,24 @@ func (b *browser) key(s string) (added []string, done bool) {
 				project.MaxScanDepth, filepath.Base(b.dir))
 			return nil, false
 		}
-		for _, f := range found {
-			project.Remember(f)
+		// Show what was found and let the user choose. Registering everything a
+		// scan turns up assumes every board on disk is one you want on your list,
+		// and a directory of old experiments makes that plainly wrong.
+		b.results = found
+		b.chosen = make([]bool, len(found))
+		for i := range b.chosen {
+			b.chosen[i] = true
 		}
-		return found, true
+		b.idx, b.msg = 0, ""
+		return nil, false
 	}
 	return nil, false
 }
 
 func (b *browser) render(width, height int) string {
+	if b.results != nil {
+		return b.renderResults(width, height)
+	}
 	w := max(20, min(width, 78))
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Add a board") + "\n")
@@ -195,5 +212,87 @@ func (b *browser) render(width, height int) string {
 	}
 	sb.WriteString("\n" + styMeta.Render(truncate(
 		"enter open dir · h up · a add · i init a board · s scan here · esc cancel", w)))
+	return sb.String()
+}
+
+// resultKey drives the list of boards a scan found.
+func (b *browser) resultKey(s string) (added []string, done bool) {
+	switch s {
+	case "esc", "q":
+		b.results, b.chosen = nil, nil
+		return nil, false
+	case "j", "down":
+		if b.idx < len(b.results)-1 {
+			b.idx++
+		}
+	case "k", "up":
+		if b.idx > 0 {
+			b.idx--
+		}
+	case " ", "space", "x":
+		if b.idx < len(b.chosen) {
+			b.chosen[b.idx] = !b.chosen[b.idx]
+		}
+	case "a":
+		// Toggle everything, which is the fast path in both directions.
+		all := true
+		for _, c := range b.chosen {
+			if !c {
+				all = false
+			}
+		}
+		for i := range b.chosen {
+			b.chosen[i] = !all
+		}
+	case "enter":
+		var out []string
+		for i, c := range b.chosen {
+			if c {
+				project.Remember(b.results[i])
+				out = append(out, b.results[i])
+			}
+		}
+		b.results, b.chosen = nil, nil
+		if len(out) == 0 {
+			b.msg = "nothing selected, so nothing was added"
+			return nil, false
+		}
+		return out, true
+	}
+	return nil, false
+}
+
+// renderResults lists what a scan found, with what is selected.
+func (b *browser) renderResults(width, height int) string {
+	w := max(20, min(width, 78))
+	var sb strings.Builder
+	sb.WriteString(styLaneTitle.Render(fmt.Sprintf("Found %d board(s)", len(b.results))) + "\n")
+	sb.WriteString(styMeta.Render(truncate("under "+b.dir, w)) + "\n")
+	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+
+	visible := max(3, height-8)
+	first := 0
+	if b.idx >= visible {
+		first = b.idx - visible + 1
+	}
+	for i := first; i < len(b.results) && i < first+visible; i++ {
+		lead := "  "
+		if i == b.idx {
+			lead = stySelected.Render("▌ ")
+		}
+		mark := styMeta.Render("[ ]")
+		if b.chosen[i] {
+			mark = styOK.Render("[x]")
+		}
+		// The path is shown relative to where the scan started, because the part
+		// that differs is the part worth reading.
+		label := strings.TrimPrefix(b.results[i], b.dir+"/")
+		sb.WriteString(truncate(lead+mark+" "+label, w) + "\n")
+	}
+	if b.msg != "" {
+		sb.WriteString("\n" + styWarn.Render(truncate(b.msg, w)) + "\n")
+	}
+	sb.WriteString("\n" + styMeta.Render(truncate(
+		"space toggle · a all/none · enter add selected · esc back", w)))
 	return sb.String()
 }

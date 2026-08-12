@@ -174,8 +174,9 @@ func TestBrowserRefusesANonBoard(t *testing.T) {
 	}
 }
 
-// Scanning registers every board within the depth limit in one keypress.
-func TestBrowserScanAddsEverythingFound(t *testing.T) {
+// A scan presents what it found rather than registering it: a directory of old
+// experiments is not a list of boards you want on your launcher.
+func TestBrowserScanOffersAChoice(t *testing.T) {
 	root := t.TempDir()
 	makeBoard(t, root, "one")
 	makeBoard(t, filepath.Join(root, "nested"), "two")
@@ -184,8 +185,41 @@ func TestBrowserScanAddsEverythingFound(t *testing.T) {
 	h.browse.goTo(root)
 	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
 
-	if len(h.entries) != 2 {
-		t.Fatalf("scan registered %d boards, want 2: %+v", len(h.entries), h.entries)
+	if len(h.browse.results) != 2 {
+		t.Fatalf("scan found %d boards, want 2", len(h.browse.results))
+	}
+	if len(h.entries) != 0 {
+		t.Error("the scan registered boards before anything was chosen")
+	}
+	out := stripANSI(h.render())
+	if !strings.Contains(out, "Found 2 board(s)") || !strings.Contains(out, "space toggle") {
+		t.Errorf("the results were not shown for choosing:\n%s", out)
+	}
+
+	// Deselect the first, take the second.
+	h.Update(tea.KeyPressMsg{Code: ' ', Text: " "})
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if len(h.entries) != 1 {
+		t.Fatalf("added %d boards, want only the one left selected: %+v", len(h.entries), h.entries)
+	}
+}
+
+// Choosing none is a decision, not an error, and must say so.
+func TestBrowserScanWithNothingSelected(t *testing.T) {
+	root := t.TempDir()
+	makeBoard(t, root, "one")
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"}) // toggle all off
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	if len(h.entries) != 0 {
+		t.Error("boards were added despite nothing being selected")
+	}
+	if h.browse == nil || !strings.Contains(h.browse.msg, "nothing selected") {
+		t.Errorf("no explanation given")
 	}
 }
 
@@ -248,6 +282,7 @@ func TestScanReportsWhatItDid(t *testing.T) {
 	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	h.browse.goTo(root)
 	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	if len(h.entries) != 2 {
 		t.Fatalf("scan registered %d boards, want 2", len(h.entries))
@@ -260,6 +295,7 @@ func TestScanReportsWhatItDid(t *testing.T) {
 	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	h.browse.goTo(root)
 	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !strings.Contains(h.msg, "already") {
 		t.Errorf("a repeat scan said %q, expected it to say they were already listed", h.msg)
 	}
