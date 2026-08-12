@@ -70,6 +70,8 @@ func (m *Model) render() string {
 		return m.renderDiff()
 	case modeDetail:
 		return m.renderDetail()
+	case modeEdit:
+		return m.renderEdit()
 	case modeMessage:
 		return m.renderMessage()
 	case modeProjects:
@@ -496,7 +498,8 @@ func (m *Model) renderDetail() string {
 	if rest := stripChecklistSections(t.Body); rest != "" {
 		b.WriteString("\n" + rest + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render("d diff · m lane · jk next/prev · esc back"))
+	b.WriteString("\n" + styMeta.Render(truncate(
+		"e edit · d diff · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
 	return b.String()
 }
 
@@ -609,6 +612,7 @@ func (m *Model) renderHelp() string {
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket in the backlog"},
+			{"e", "edit the open ticket's fields (in the detail pane)"},
 			{"m", "move the selected ticket to another lane"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},

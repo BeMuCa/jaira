@@ -37,6 +37,7 @@ const (
 	modeCreate
 	modeMessage
 	modeProjects
+	modeEdit
 )
 
 // Model is the board's state.
@@ -68,6 +69,12 @@ type Model struct {
 	diffScroll int
 
 	moveTarget int // lane index highlighted in the move picker
+
+	// editIdx is the field being edited in the detail pane and editBuf its
+	// working value. The buffer is separate from the ticket so an abandoned edit
+	// leaves the file untouched.
+	editIdx int
+	editBuf string
 
 	// projects is the switcher's list; SwitchTo is set when the user picks one,
 	// and the caller reopens the board there. Reopening rather than swapping the
@@ -352,6 +359,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	// Line-editing modes consume most keys, so they are handled first.
 	switch m.mode {
+	case modeEdit:
+		return m.editKey(k)
+
 	case modeFilter:
 		switch s {
 		case "enter":
@@ -362,14 +372,16 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.input = ""
 			m.mode = modeBoard
 		case "backspace":
-			if m.input != "" {
-				m.input = m.input[:len(m.input)-1]
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
 				m.filter = m.input
 				m.rebuild()
 			}
 		default:
-			if len(s) == 1 {
-				m.input += s
+			// k.Text is what the key produced, so multi-byte characters survive.
+			// Gating on a one-byte string dropped every umlaut.
+			if k.Text != "" {
+				m.input += k.Text
 				m.filter = m.input
 				m.rebuild()
 			}
@@ -389,12 +401,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.input = ""
 			m.mode = modeBoard
 		case "backspace":
-			if m.input != "" {
-				m.input = m.input[:len(m.input)-1]
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
 			}
 		default:
-			if len(s) == 1 {
-				m.input += s
+			if k.Text != "" {
+				m.input += k.Text
 			}
 		}
 		return m, nil
@@ -468,6 +480,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "esc", "q", "enter":
 			m.mode = modeBoard
 			m.detail = nil
+		case "e":
+			m.startEdit()
 		case "d":
 			m.openDiff()
 		case "m":
