@@ -136,7 +136,14 @@ who owns the outcome — never reassign a ticket to a model.
 
 ## The lanes
 
-`backlog → todo → in-progress → human → review → done`, plus `blocked`.
+`backlog → todo → pre-process → in-progress → human → review → signoff → done`,
+plus `blocked`.
+
+- **pre-process** — work out *how*, before writing anything. Its output is a
+  `## Plan` checklist, and it cannot be left without one:
+  `jaira dod <handle> --plan --add "read the exporter" --add "implement"`
+- **in-progress** (shown as Implementing) — carry out that plan. Mark the step
+  you are on with `--doing --plan` so a watcher can see where you are.
 
 - **human** — you need a decision only the user can make. Move the ticket here
   with the question attached rather than guessing:

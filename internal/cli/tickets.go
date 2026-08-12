@@ -292,8 +292,11 @@ func newTicketBody(title, dod string) string {
 	// The Plan is how the work will be done, as opposed to the criteria for
 	// accepting it. It is seeded empty rather than omitted: a heading that is
 	// already there gets filled in, and one that has to be remembered does not.
+	// The heading is seeded but deliberately holds no checkbox. A placeholder
+	// item would count as a plan, which would make the pre-process lane's
+	// promise to produce one satisfied by every ticket the moment it is created.
 	b.WriteString("\n## Plan\n\n")
-	b.WriteString("- [ ] <First step. Mark it [~] while you are on it.>\n")
+	b.WriteString("<Steps, in order — filled in by the pre-process step, or by you.>\n")
 	b.WriteString("\n## Notes\n\n")
 	return b.String()
 }

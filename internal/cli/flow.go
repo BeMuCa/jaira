@@ -324,6 +324,16 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	var diff string
 	for _, want := range l.InputRequires {
 		switch want {
+		case "plan":
+			if len(t.PlanItems) == 0 {
+				missing = append(missing, "plan (the ticket has no Plan checklist)")
+				continue
+			}
+			var steps []string
+			for i, it := range t.PlanItems {
+				steps = append(steps, fmt.Sprintf("%d. [%s] %s", i+1, it.State.Marker(), it.Text))
+			}
+			fields["plan"] = strings.Join(steps, "\n")
 		case "diff":
 			repo := &gitrepo.Repo{Dir: s.Root}
 			if len(t.Commits) == 0 {

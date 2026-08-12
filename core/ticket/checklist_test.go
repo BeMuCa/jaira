@@ -123,3 +123,54 @@ func TestSetItemStateMissingSection(t *testing.T) {
 		t.Fatal("expected an error when the section does not exist")
 	}
 }
+
+func TestAddItemLandsInsideItsSection(t *testing.T) {
+	out, err := AddItem(checklistBody, SectionPlan, "refactor afterwards")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan := ParsePlanItems(out)
+	if len(plan) != 4 || plan[3].Text != "refactor afterwards" {
+		t.Fatalf("plan = %+v", plan)
+	}
+	// It must not have landed in another section on the way past.
+	if len(ParseDoDItems(out)) != 2 {
+		t.Errorf("the definition of done changed: %+v", ParseDoDItems(out))
+	}
+	if strings.Contains(out[strings.Index(out, "## Notes"):], "refactor afterwards") {
+		t.Error("the item landed under Notes")
+	}
+}
+
+// The seeded Plan heading has prose under it and no items. An item added there
+// must go below that prose, not above it.
+func TestAddItemToAnEmptySection(t *testing.T) {
+	body := "# t\n\n## Plan\n\n<Steps, in order.>\n\n## Notes\n\n"
+	out, err := AddItem(body, SectionPlan, "first step")
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := ParsePlanItems(out)
+	if len(items) != 1 || items[0].Text != "first step" {
+		t.Fatalf("items = %+v\n%s", items, out)
+	}
+	if !strings.Contains(out, "<Steps, in order.>") {
+		t.Error("the section's prose was destroyed")
+	}
+}
+
+func TestAddItemCreatesAMissingSection(t *testing.T) {
+	out, err := AddItem("# t\n\n## Notes\n\nnothing\n", SectionPlan, "only step")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items := ParsePlanItems(out); len(items) != 1 {
+		t.Fatalf("items = %+v\n%s", items, out)
+	}
+}
+
+func TestAddItemRefusesEmptyText(t *testing.T) {
+	if _, err := AddItem(checklistBody, SectionPlan, "   "); err == nil {
+		t.Error("an empty item was accepted")
+	}
+}

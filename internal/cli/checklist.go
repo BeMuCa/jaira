@@ -16,10 +16,11 @@ func newDoDCmd() *cobra.Command {
 		done  bool
 		todo  bool
 		plan  bool
+		add   []string
 	)
 	cmd := &cobra.Command{
-		Use:   "dod <id> <n>",
-		Short: "Mark a checklist item as in progress, done, or not started",
+		Use:   "dod <id> [n]",
+		Short: "Write or mark checklist items",
 		Long: `Sets the state of one checklist item, numbered as 'jaira show' displays it.
 
 Three states are recognised:
@@ -32,11 +33,37 @@ An item marked as in progress is outstanding work: it does not satisfy the
 definition of done, and a ticket carrying one cannot enter a terminal lane. Only
 one item per checklist can be in progress, so marking a second moves the marker.
 
+Add items with --add, which may be repeated. An added item lands inside the
+right section — a checkbox only counts under its own heading, so appending to
+the end of the file would put it somewhere it does not count:
+
+  jaira dod <id> --plan --add "read the exporter" --add "design the chunking"
+
 By default this addresses the Definition of Done. Use --plan for the Plan
 checklist, which records the method being followed rather than the criteria for
 acceptance.`,
-		Args: exactArgs(2),
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 || len(args) > 2 {
+				return fail(ExitUsage, "usage",
+					"dod takes a ticket id and, unless adding, an item number\n\nUsage: %s", cmd.UseLine())
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			sec := ticket.SectionDoD
+			if plan {
+				sec = ticket.SectionPlan
+			}
+			if len(add) > 0 {
+				if doing || done || todo || len(args) > 1 {
+					return fail(ExitUsage, "usage", "--add writes new items; it does not take a number or a state")
+				}
+				return addChecklistItems(cmd, args[0], sec, add)
+			}
+			if len(args) != 2 {
+				return fail(ExitUsage, "usage", "which item? pass its number, as 'jaira show' displays it")
+			}
+
 			var st ticket.State
 			switch {
 			case doing && !done && !todo:
@@ -52,11 +79,6 @@ acceptance.`,
 			n, err := strconv.Atoi(args[1])
 			if err != nil || n < 1 {
 				return fail(ExitUsage, "usage", "item number must be a positive integer, got %q", args[1])
-			}
-
-			sec := ticket.SectionDoD
-			if plan {
-				sec = ticket.SectionPlan
 			}
 
 			s, err := openStore()
@@ -131,5 +153,53 @@ acceptance.`,
 	f.BoolVar(&done, "done", false, "mark the item as finished")
 	f.BoolVar(&todo, "todo", false, "mark the item as not started")
 	f.BoolVar(&plan, "plan", false, "address the Plan checklist instead of the Definition of Done")
+	f.StringArrayVar(&add, "add", nil, "append a new item; repeat for several, in order")
 	return cmd
+}
+
+// addChecklistItems writes new items into a section.
+func addChecklistItems(cmd *cobra.Command, id string, sec ticket.Section, items []string) error {
+	s, err := openStore()
+	if err != nil {
+		return err
+	}
+	t, err := s.Mutate(id, func(t *ticket.Ticket) error {
+		body := t.Doc().Body()
+		for _, text := range items {
+			next, err := ticket.AddItem(body, sec, text)
+			if err != nil {
+				return fail(ExitUsage, "empty_item", "%v", err)
+			}
+			body = next
+		}
+		t.Doc().SetBody(body)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	// The definition of done feeds readiness, so it has to be recomputed.
+	t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
+		return ticket.SetReady(t.Doc(), gate.Ready(t))
+	})
+	if err != nil {
+		return err
+	}
+	if g.jsonOut {
+		env, _, err := loadEnv(s)
+		if err != nil {
+			return err
+		}
+		return emit(cmd.OutOrStdout(), ticketJSON(t, env.Lanes))
+	}
+	list := t.DoDItems
+	if sec == ticket.SectionPlan {
+		list = t.PlanItems
+	}
+	w := cmd.OutOrStdout()
+	fmt.Fprintf(w, "%s %s\n", ticket.Handle(t.ID), sec)
+	for i, it := range list {
+		fmt.Fprintf(w, "  %d. [%s] %s\n", i+1, it.State.Marker(), it.Text)
+	}
+	return nil
 }

@@ -90,7 +90,7 @@ func TestBoardRenders(t *testing.T) {
 		t.Fatal("empty render")
 	}
 	// Every built-in lane that holds a ticket must be visible.
-	for _, want := range []string{"Backlog", "Todo", "In Progress", "HITL"} {
+	for _, want := range []string{"Backlog", "Todo", "Implementing", "HITL"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("lane %q missing from board", want)
 		}

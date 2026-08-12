@@ -105,3 +105,72 @@ func replaceMarker(line string, st State) string {
 	}
 	return line[:open+1] + st.Marker() + line[open+2:]
 }
+
+// AddItem appends a checklist item to a section, creating the section if the
+// ticket has no such heading.
+//
+// This exists because there was no way to write a plan at all: frontmatter is
+// set with SetScalar and the body was only editable by hand, so the lane whose
+// entire output is a Plan checklist had no means to produce one. Appending to
+// the end of the file is not the same thing — a checkbox only counts inside its
+// heading, and the end of the file is usually some other section.
+func AddItem(body string, sec Section, text string) (string, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return "", fmt.Errorf("an empty checklist item says nothing; give it text")
+	}
+	lines := strings.Split(body, "\n")
+	idx := checklistLineIndexes(lines, sec)
+
+	// After the last existing item, so order is the order they were added.
+	if len(idx) > 0 {
+		at := idx[len(idx)-1] + 1
+		out := append([]string{}, lines[:at]...)
+		out = append(out, "- [ ] "+text)
+		out = append(out, lines[at:]...)
+		return strings.Join(out, "\n"), nil
+	}
+
+	// No items yet: find the heading and put it just inside.
+	if at := sectionHeadingLine(lines, sec); at >= 0 {
+		insert := at + 1
+		// Skip a blank line and any prose sitting under the heading, so the item
+		// lands below the section's own description rather than above it.
+		for insert < len(lines) {
+			t := strings.TrimSpace(lines[insert])
+			if t == "" || strings.HasPrefix(t, "<") {
+				insert++
+				continue
+			}
+			break
+		}
+		out := append([]string{}, lines[:insert]...)
+		out = append(out, "- [ ] "+text, "")
+		out = append(out, lines[insert:]...)
+		return strings.Join(out, "\n"), nil
+	}
+
+	// No such section at all: add one at the end.
+	heading := "## Definition of Done"
+	if sec == SectionPlan {
+		heading = "## Plan"
+	}
+	trimmed := strings.TrimRight(body, "\n")
+	return trimmed + "\n\n" + heading + "\n\n- [ ] " + text + "\n", nil
+}
+
+func sectionHeadingLine(lines []string, sec Section) int {
+	for n, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		heading := strings.ToLower(strings.TrimLeft(trimmed, "# "))
+		for _, h := range sec.headings() {
+			if strings.Contains(heading, h) {
+				return n
+			}
+		}
+	}
+	return -1
+}
