@@ -88,7 +88,13 @@ func newCreateCmd() *cobra.Command {
 
 Only a title is required — capture should be cheap. A ticket cannot leave the
 backlog until it has a goal, a definition of done, the context it came from, and
-an assignee, so supplying those now saves a round trip later.`,
+an assignee, so supplying those now saves a round trip later.
+
+The context is the only record of why this ticket exists — there is no separate
+description. Write it for someone who was not in the conversation, reading it
+weeks from now: what is wrong today, what triggered it, and what is already known
+or already ruled out. If acting on it would need a question answered first, it is
+not finished. It can span several lines; they are stored readably.`,
 		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -194,7 +200,7 @@ an assignee, so supplying those now saves a round trip later.`,
 	f.StringVar(&title, "title", "", "ticket title (defaults to the positional arguments)")
 	f.StringVar(&goalV, "goal", "", "what this ticket is for")
 	f.StringVar(&dod, "dod", "", "definition of done: the checkable target")
-	f.StringVar(&contextV, "context", "", "the conversation or problem that produced this ticket")
+	f.StringVar(&contextV, "context", "", "why this ticket exists: what is wrong now, what triggered it, what is already known")
 	f.StringVar(&assignee, "assignee", "", "human who owns the outcome (defaults to you)")
 	f.StringVar(&laneID, "lane", "", "lane to create in (default: backlog)")
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
@@ -280,8 +286,6 @@ func managedField(k string) bool {
 func newTicketBody(title, dod string) string {
 	var b strings.Builder
 	b.WriteString("# " + title + "\n\n")
-	b.WriteString("## Description\n\n")
-	b.WriteString("<What is wrong today, then what holds once this is done.>\n\n")
 	b.WriteString("## Definition of Done\n\n")
 	if strings.TrimSpace(dod) != "" {
 		b.WriteString("- [ ] " + strings.TrimSpace(dod) + "\n")

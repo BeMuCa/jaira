@@ -108,6 +108,22 @@ func (m *Model) accept() {
 	m.notify(fmt.Sprintf("Accepted %s into %s.", ticket.Handle(id), next.Name), false)
 }
 
+// followUpContext builds the new ticket's "why", replacing the previous body
+// prose so the reason for the ticket lives only in context, not split between
+// a frontmatter field and a body heading. It is naturally multi-line, which is
+// the end-to-end proof that a block scalar is readable in the file and in a
+// diff, not just in a unit test.
+func followUpContext(src *ticket.Ticket) string {
+	parts := []string{"Raised from the review of " + ticket.Handle(src.ID) + "."}
+	if why := firstNonEmpty(src.Context, src.Goal); strings.TrimSpace(why) != "" {
+		parts = append(parts, why)
+	}
+	if strings.TrimSpace(src.ReviewVerdict) != "" {
+		parts = append(parts, "The reviewer said:\n\n> "+strings.ReplaceAll(src.ReviewVerdict, "\n", "\n> "))
+	}
+	return strings.Join(parts, "\n\n")
+}
+
 // followUp creates a new backlog ticket carrying the reviewed ticket's context,
 // and links back to it. Rejecting work without recording what is left undone is
 // how the reason for a ticket gets lost, which is the failure this board exists
@@ -128,19 +144,15 @@ func (m *Model) followUp() {
 		ticket.FieldReady:     "false",
 		ticket.FieldCreator:   me,
 		ticket.FieldAssignee:  firstNonEmpty(src.Assignee, me),
-		ticket.FieldContext:   firstNonEmpty(src.Context, src.Goal),
+		ticket.FieldContext:   followUpContext(src),
 		ticket.FieldFollows:   src.ID,
 		ticket.FieldCreatedAt: ticket.FormatTime(now),
 		ticket.FieldUpdatedAt: ticket.FormatTime(now),
 	}
 	lists := map[string][]string{ticket.FieldBlockedBy: nil, ticket.FieldCommits: nil}
 
-	body := "# Follow-up: " + src.Title + "\n\n## Description\n\n" +
-		"Raised from the review of " + ticket.Handle(src.ID) + ".\n\n"
-	if strings.TrimSpace(src.ReviewVerdict) != "" {
-		body += "The reviewer said:\n\n> " + strings.ReplaceAll(src.ReviewVerdict, "\n", "\n> ") + "\n\n"
-	}
-	body += "## Definition of Done\n\n- [ ] <What must be true that is not true yet>\n\n## Notes\n\n"
+	body := "# Follow-up: " + src.Title + "\n\n" +
+		"## Definition of Done\n\n- [ ] <What must be true that is not true yet>\n\n## Notes\n\n"
 
 	t, err := m.store.Create(fields, lists, body)
 	if err != nil {

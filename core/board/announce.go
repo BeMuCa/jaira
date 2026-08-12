@@ -28,6 +28,10 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- `jaira create <title> --goal <...> --context <...> --dod <...>` — one call files a\n" +
 	"  complete ticket; without a goal, a definition of done, the context it came from\n" +
 	"  and an assignee it cannot leave the backlog\n" +
+	"- the context is the only record of why a ticket exists. Write it for someone who\n" +
+	"  was not in this conversation and reads it weeks from now: what is wrong today,\n" +
+	"  what triggered it, what is already known or ruled out. It may span several\n" +
+	"  lines. If acting on it would need a question answered first, it is not finished\n" +
 	"- `jaira list --actionable --json` — everything that could be started right now\n" +
 	"- `jaira next --json` — the single next actionable ticket\n" +
 	"\n" +

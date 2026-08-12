@@ -38,3 +38,8 @@ the feature" is not a step; it is the whole ticket restated.
 If the definition of done cannot be met as written — it is ambiguous, or it asks
 for something the codebase makes impossible — say so and move the ticket to the
 HITL lane with that question rather than planning around it.
+
+The context is the only record of why this ticket exists. If it does not explain
+that to someone who was not in the conversation — what is wrong today, what
+triggered it, what is already known — do not guess and do not plan around it. Say
+what is missing and move the ticket to the human lane.

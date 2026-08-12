@@ -41,7 +41,8 @@ jaira create "Fix session cookie dropped on 302" \
 Write the `--context` yourself from the conversation that produced the ticket.
 That field is the whole point: it is what makes the ticket comprehensible later.
 A good context says what problem prompted this and what had already been ruled
-out. "User asked for it" is useless.
+out. "User asked for it" is useless. Write it so someone who was not in the
+conversation can act on it weeks later, without asking anyone.
 
 The definition of done lives in the body as a **checklist**, and `create` writes
 the heading for you. Each item must be checkable by someone who was not here.

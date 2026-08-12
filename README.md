@@ -80,7 +80,10 @@ creator: berk
 assignee: berk
 executed-by: haiku
 goal: Session must survive the OAuth round-trip
-context: Reported in chat while debugging Safari logouts
+context: |-
+  Reported in chat while debugging Safari logouts. The cookie is dropped
+  cross-site on the OAuth redirect, so users are silently logged out
+  mid-flow. Reproduced on Safari only.
 blocked-by: []
 commits:
   - 4f2a1c9
@@ -95,11 +98,6 @@ updated-at: 2026-08-11T21:14:03Z
 ---
 
 # Fix session cookie dropped on 302
-
-## Description
-
-The cookie is dropped cross-site on the OAuth redirect, so users are silently
-logged out mid-flow. Reproduced on Safari only.
 
 ## Definition of Done
 
