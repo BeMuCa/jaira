@@ -10,6 +10,7 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -348,6 +349,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		_ = m.reload()
 		return m, waitForChange(m.watch)
 
+	case editorDoneMsg:
+		defer os.RemoveAll(msg.dir)
+		if msg.err != nil {
+			m.notify(msg.err.Error(), true)
+			return m, nil
+		}
+		if err := m.applyExternalEdit(msg.id, msg.path); err != nil {
+			m.notify(err.Error(), true)
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		return m.key(msg)
 	}
@@ -482,6 +494,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detail = nil
 		case "e":
 			m.startEdit()
+		case "E":
+			return m.openInEditor()
 		case "d":
 			m.openDiff()
 		case "m":

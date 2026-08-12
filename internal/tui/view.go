@@ -499,7 +499,7 @@ func (m *Model) renderDetail() string {
 		b.WriteString("\n" + rest + "\n")
 	}
 	b.WriteString("\n" + styMeta.Render(truncate(
-		"e edit · d diff · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
+		"e fields · E body · d diff · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
 	return b.String()
 }
 
@@ -613,6 +613,7 @@ func (m *Model) renderHelp() string {
 		{"Change things", [][2]string{
 			{"n", "create a ticket in the backlog"},
 			{"e", "edit the open ticket's fields (in the detail pane)"},
+			{"E", "open the ticket body and checklists in $EDITOR"},
 			{"m", "move the selected ticket to another lane"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
