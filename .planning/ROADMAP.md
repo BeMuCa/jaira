@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Read-Only TUI Board** - The board renders lanes, cards, detail, diffs, and filtering with no mutation path yet.
 - [ ] **Phase 3: TUI Mutation Parity & Gates** - The TUI becomes a full write surface, and the promotion/dependency/Done gates are enforced identically from both interfaces at the moment of mutation.
 - [ ] **Phase 4: Conflict-Tolerant Frontmatter** - Concurrent edits to the same ticket resolve automatically for the fields that change most, before any real concurrent writer exists.
-- [ ] **Phase 5: Custom & Portable Lanes** - Teams can extend the board with shareable, single-file lane definitions that degrade safely when a lane is missing.
+- [ ] **Phase 5: Custom & Portable Lanes** - Lanes become readable, writable, reorderable and shareable: a global catalogue, per-project copies that stay private, opt-in sharing through `.jaira/shared/`, and built-ins that may be overridden but never silently.
 - [ ] **Phase 6: Agent Pipeline** - Claude (or any bash-capable agent) can discover, claim, and advance tickets through lanes with tool-enforced, bounded I/O.
 - [ ] **Phase 7: Task Tool Sync** - Claude's structured Task-tool list and the Backlog stay consistent without duplicating tickets or breaking the user's session.
 - [ ] **Phase 8: Session Context & Live Refresh** - The board shows live session focus and picks up external changes automatically.
@@ -80,15 +80,20 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 5: Custom & Portable Lanes
 **Mode:** mvp
-**Goal**: Teams can extend the board beyond the seven built-in lanes with shareable, single-file lane definitions that order themselves safely and degrade to a visible passthrough when a lane definition is missing.
+**Goal**: A user can read, write, reorder and share lane definitions — the pipeline stops being a fixed thing baked into the binary and becomes something a person or an agent can inspect and change.
 **Depends on**: Phase 1, Phase 2
 **Requirements**: LANE-02, LANE-03, LANE-04, LANE-05, LANE-06, LANE-07, LANE-08
+**Design**: `.planning/lane-system-design.md` (agreed with the user 2026-08-13; supersedes the original criterion 4, which forbade overriding a built-in)
 **Success Criteria** (what must be TRUE):
-  1. A custom lane defined as a single markdown file in `~/.jaira/lanes/` loads and appears on the board with no repo config, and can be shared by sending that one file.
-  2. A lane definition's model-tier is a local alias, not a hardcoded model name, so a shared lane file survives a model rename.
-  3. Custom lanes anchor to an existing lane id (rather than a numeric position) and order correctly, including when a lane file's anchor isn't present locally.
-  4. A custom lane whose id collides with a base lane is rejected with a clear error at load time, never silently overriding the base lane.
-  5. A ticket sitting in a lane the local install doesn't recognize renders as a passthrough column instead of being hidden, and advancing a ticket into or out of an unrecognized lane is refused.
+  1. A lane is one markdown file. `~/.jaira/lanes/` is the global catalogue of everything this user built or adopted; a project's `.jaira/lanes/` holds copies of only the lanes that project actually uses.
+  2. A project's lanes stay private: `.jaira/lanes/` is gitignored even after `jaira share`, which commits `tickets/` and `shared/` but not `lanes/`.
+  3. A lane definition's model-tier is a local alias, not a hardcoded model name, so a shared lane file survives a model rename.
+  4. Custom lanes anchor to an existing lane id (rather than a numeric position) and order correctly, including when a lane file's anchor isn't present locally.
+  5. A custom lane MAY override a built-in, prompt included, and the override is always reported as a warning at load time — powerful, but never silent.
+  6. A ticket sitting in a lane the local install doesn't recognize renders as a passthrough column instead of being hidden, and advancing a ticket into or out of an unrecognized lane is refused.
+  7. A lane is legible without a ticket in hand: `jaira lanes show <id>` prints it in full including its prompt, `jaira lanes --json` carries the prompt, and `jaira lanes path` names the directory to write into — so an agent can read a lane, write a new one from a template, and verify the result with `jaira lanes`, without a second write path.
+  8. A lane can be exported to `.jaira/shared/<user>/` from the TUI lane settings screen; teammates' shared lanes are visible when picking lanes, and adopting one copies it into the adopter's catalogue.
+  9. Every lane records a `creator:` signature, so an adopted lane keeps its provenance.
 **Plans**: TBD
 
 ### Phase 6: Agent Pipeline
