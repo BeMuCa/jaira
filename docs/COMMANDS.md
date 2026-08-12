@@ -46,6 +46,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | Command | What it does |
 |---|---|
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md` |
+| `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it |
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--lane`, `--tier` |
 | `jaira set <id> k=v…` | set frontmatter fields |
 | `jaira dod <id> <n> --doing\|--done\|--todo` | mark a checklist item |

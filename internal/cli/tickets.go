@@ -15,6 +15,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -45,6 +46,9 @@ session and lock state is never committed. Safe to run more than once.`,
 			// directory; a line in the file it is handed at the start of every
 			// session does not.
 			p := board.Prepare(s.Root)
+			// A board just prepared by this binary must not immediately be
+			// nagged about being out of date.
+			_ = release.Stamp(s.StateDir())
 
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{

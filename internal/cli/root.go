@@ -21,6 +21,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -92,6 +93,10 @@ var g globals
 
 // Execute runs the CLI and returns the process exit code.
 func Execute(version string) int {
+	// The TUI creates boards too, and stamps them the same way, so this is set
+	// once here rather than threaded as a parameter through every call that
+	// might need it.
+	release.Current = version
 	root := newRoot(version)
 	err := root.Execute()
 	if err == nil {
@@ -198,6 +203,7 @@ Exit codes:
 		newClaimCmd(),
 		newProjectsCmd(),
 		newShareCmd(),
+		newUpdateCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
@@ -208,15 +214,17 @@ Exit codes:
 
 // openStore finds the store for the current directory.
 //
-// Opening a store is also where a shared board gets its merge driver bound, since
-// this is the one path every command goes through — including the first command a
-// teammate runs after cloning.
+// Opening a store is also where a shared board gets its merge driver bound, and
+// where a stale board is nudged toward 'jaira update', since this is the one
+// path every command goes through — including the first command a teammate
+// runs after cloning.
 func openStore() (*ticket.Store, error) {
 	s, err := ticket.Discover(g.dir)
 	if err != nil {
 		return nil, err
 	}
 	bindDriverIfShared(s)
+	nudgeIfStale(s)
 	return s, nil
 }
 

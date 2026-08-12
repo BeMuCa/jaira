@@ -9,6 +9,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -161,6 +162,9 @@ func (b *browser) key(s string) (added []string, done bool) {
 			}
 			return nil, false
 		}
+		// A board just prepared by this binary must not immediately be
+		// nagged about being out of date.
+		_ = release.Stamp(st.StateDir())
 		project.Remember(target)
 		b.pending = ""
 		return []string{target}, true

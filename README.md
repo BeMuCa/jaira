@@ -276,6 +276,7 @@ the most useful thing on the screen:
 jaira                      open the home screen: your boards, and what each needs
 jaira board                open the board here directly
 jaira init                 prepare a repository
+jaira update               re-apply setup after upgrading
 jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket
