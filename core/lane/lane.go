@@ -12,6 +12,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -249,7 +250,10 @@ func Builtins() ([]*Lane, error) {
 
 	var out []*Lane
 	for _, n := range names {
-		b, err := builtinFS.ReadFile(filepath.Join("builtin", n))
+		// path.Join, not filepath.Join: an embedded filesystem always uses forward
+		// slashes, so joining with the OS separator looks for "builtin\\00-backlog.md"
+		// on Windows and finds nothing.
+		b, err := builtinFS.ReadFile(path.Join("builtin", n))
 		if err != nil {
 			return nil, err
 		}
