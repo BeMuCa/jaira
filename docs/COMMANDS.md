@@ -86,6 +86,7 @@ In an open ticket:
 ```
 e   edit fields (enter newline, ctrl+s save)   a   accept (at a checkpoint)
 E   edit body and checklists in $EDITOR        f   raise a follow-up
+y   copy the full ticket id
 ```
 
 Home screen: `enter` open · `jk` move · `a` add a board · `r` refresh · `q` quit.
