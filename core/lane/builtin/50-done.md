@@ -7,5 +7,5 @@ agentic: false
 terminal: true
 requires-outcome: true
 requires-nonmodel-signal: true
-description: Accepted. Requires a non-model signal to enter.
+description: Accepted. Every definition-of-done item must be marked done, and the plan finished if there is one.
 ---

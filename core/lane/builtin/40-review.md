@@ -26,4 +26,7 @@ Report specifically:
 - Is anything claimed in the outcome not supported by the diff?
 
 Default to finding problems. A review that approves everything is worth nothing.
-Do not approve a transition to Done — that requires a signal you cannot produce.
+
+Write your conclusion to review-verdict and stop there. You cannot move this
+ticket onward: the lane is a human checkpoint, and the person who owns the
+outcome accepts it in the board or raises a follow-up.
