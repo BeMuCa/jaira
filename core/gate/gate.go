@@ -181,11 +181,16 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		complete, remaining := t.DoDComplete()
 		if !complete && strings.TrimSpace(req.NonModelSignal) == "" {
 			if len(remaining) > 0 {
-				for _, r := range remaining {
+				for i, it := range t.DoDItems {
+					if it.Checked() {
+						continue
+					}
 					vs = append(vs, Violation{
-						Code:    CodeNeedsSignal,
-						Field:   ticket.FieldDoD,
-						Message: fmt.Sprintf("definition of done is not met: %s", r),
+						Code:  CodeNeedsSignal,
+						Field: ticket.FieldDoD,
+						Message: fmt.Sprintf(
+							"the definition of done is not met: criterion %d (%q) is still open. Satisfy it, mark it with 'jaira dod %s %d --done', then try this move again",
+							i+1, it.Text, ticket.Handle(t.ID), i+1),
 					})
 				}
 			} else {
@@ -208,12 +213,21 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	//
 	// This applies only at terminal lanes: a plan is expected to be in progress
 	// while the ticket moves through the pipeline.
+	//
+	// The refusal names the step and the command that clears it. An agent reads
+	// this and can act on it; a message that only states what is wrong leaves it
+	// guessing at what to do next.
 	if target.Terminal {
-		if complete, remaining := t.PlanComplete(); !complete {
-			for _, r := range remaining {
+		if complete, _ := t.PlanComplete(); !complete {
+			for i, it := range t.PlanItems {
+				if it.Checked() {
+					continue
+				}
 				vs = append(vs, Violation{
-					Code:    CodePlanIncomplete,
-					Message: fmt.Sprintf("the plan still has unfinished steps: %s", r),
+					Code: CodePlanIncomplete,
+					Message: fmt.Sprintf(
+						"the plan is not finished: step %d (%q) is still open. Do that work, mark it with 'jaira dod %s %d --done --plan', then try this move again",
+						i+1, it.Text, ticket.Handle(t.ID), i+1),
 				})
 			}
 		}
