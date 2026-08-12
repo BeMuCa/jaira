@@ -227,13 +227,22 @@ func (d *Doc) SetScalar(key, val string) error {
 		return err
 	}
 	if node == nil {
-		d.appendLine(fmt.Sprintf("%s: %s", key, encodeScalar(val)))
+		if blockable(val) {
+			d.appendBlock(renderBlock(key, val, "", ""))
+		} else {
+			d.appendLine(fmt.Sprintf("%s: %s", key, encodeScalar(val)))
+		}
 		return nil
 	}
 
 	switch node.Value.(type) {
 	case *ast.SequenceNode, *ast.MappingNode, *ast.MappingValueNode:
 		return fmt.Errorf("ticket: %q holds a collection, not a scalar", key)
+	}
+
+	_, wasBlock := node.Value.(*ast.LiteralNode)
+	if blockable(val) || wasBlock {
+		return d.setScalarWholeEntry(key, val, node)
 	}
 
 	tok := node.Value.GetToken()
@@ -257,14 +266,48 @@ func (d *Doc) SetScalar(key, val string) error {
 		return fmt.Errorf("ticket: %q: %w", key, err)
 	}
 
-	// Multi-line scalars (block literals, folded) span lines the locator does
-	// not describe; refuse rather than truncate the remainder.
-	if strings.ContainsAny(line[col:col+oldLen], "|>") && oldLen <= 2 {
-		return fmt.Errorf("ticket: %q uses a multi-line block scalar; not supported by SetScalar", key)
-	}
-
 	lines[li] = line[:col] + encodeScalarLike(line[col:col+oldLen], val) + line[col+oldLen:]
 	d.fm = strings.Join(lines, "\n")
+	return nil
+}
+
+// setScalarWholeEntry replaces every source line an entry occupies, the same
+// shape of edit SetList uses: either val or the existing node is a block, so
+// the locator's line/column for the value token cannot describe a single
+// splice point. It is used instead of the byte-column splice above whenever a
+// block scalar is entering or leaving.
+func (d *Doc) setScalarWholeEntry(key, val string, node *ast.MappingValueNode) error {
+	keyTok := node.Key.GetToken()
+	if keyTok == nil || keyTok.Position == nil {
+		return fmt.Errorf("ticket: no source position for %q", key)
+	}
+	lines := strings.Split(d.fm, "\n")
+	start := keyTok.Position.Line - 1
+	if start < 0 || start >= len(lines) {
+		return fmt.Errorf("ticket: %q reports line %d, outside the frontmatter", key, keyTok.Position.Line)
+	}
+	end := blockExtent(lines, start)
+	if end >= len(lines) {
+		return fmt.Errorf("ticket: %q spans lines %d-%d, outside the frontmatter", key, start+1, end+1)
+	}
+
+	indent := leadingSpace(lines[start])
+	comment := trailingComment(lines[start])
+	var replacement string
+	if blockable(val) {
+		replacement = renderBlock(key, val, indent, comment)
+	} else {
+		suffix := ""
+		if comment != "" {
+			suffix = " " + comment
+		}
+		replacement = indent + key + ": " + encodeScalar(val) + suffix
+	}
+
+	out := append([]string{}, lines[:start]...)
+	out = append(out, strings.Split(replacement, "\n")...)
+	out = append(out, lines[end+1:]...)
+	d.fm = strings.Join(out, "\n")
 	return nil
 }
 
@@ -320,6 +363,115 @@ func encodeScalarLike(old, val string) string {
 		}
 	}
 	return encodeScalar(val)
+}
+
+// blockable reports whether v can be written as a YAML block literal without
+// changing what it round-trips to. Anything failing these checks keeps the
+// existing quoted-one-liner encoding, which is lossless — block form is only
+// ever a readability improvement, never a change in what a value decodes to:
+//
+//  1. it must contain a newline, or there is nothing to gain from block form;
+//  2. it must not end with two or more newlines — that needs keep-chomping
+//     ("|+"), whose end is ambiguous to a reader and fragile under editors
+//     that trim trailing blank lines;
+//  3. no line may have trailing whitespace — block scalars preserve it, but
+//     whitespace-trimming editors and pre-commit hooks do not, so the file
+//     would round-trip differently on different machines;
+//  4. no line may begin with a space or tab — an indented first content line
+//     needs an explicit indentation indicator ("|2"), not worth supporting;
+//  5. it must contain no '\r' and no control rune below 0x20 other than '\n'
+//     — neither is representable in a block scalar without loss.
+func blockable(v string) bool {
+	if !strings.Contains(v, "\n") {
+		return false
+	}
+	if strings.HasSuffix(v, "\n\n") {
+		return false
+	}
+	if strings.ContainsRune(v, '\r') {
+		return false
+	}
+	for _, line := range strings.Split(v, "\n") {
+		if line != strings.TrimRight(line, " \t") {
+			return false
+		}
+		if line != "" && (line[0] == ' ' || line[0] == '\t') {
+			return false
+		}
+	}
+	for _, r := range v {
+		if r < 0x20 && r != '\n' {
+			return false
+		}
+	}
+	return true
+}
+
+// renderBlock returns the source lines for one frontmatter entry written as a
+// block literal (no trailing newline), e.g. "context: |\n  first\n  second".
+// The caller must already have established blockable(val).
+func renderBlock(key, val, indent, comment string) string {
+	chomp := "|" // val ends with exactly one '\n': clip.
+	body := strings.TrimSuffix(val, "\n")
+	if body == val {
+		chomp = "|-" // no trailing '\n': strip.
+	}
+	suffix := ""
+	if comment != "" {
+		suffix = " " + comment
+	}
+	contentIndent := indent + "  "
+	var b strings.Builder
+	b.WriteString(indent + key + ": " + chomp + suffix)
+	for _, line := range strings.Split(body, "\n") {
+		b.WriteString("\n")
+		if line != "" {
+			// A blank line is written as genuinely empty, never as a line of
+			// indent-only spaces, which would reintroduce trailing whitespace.
+			b.WriteString(contentIndent + line)
+		}
+	}
+	return b.String()
+}
+
+// blockExtent returns the 0-based index of the last source line the entry
+// starting at lines[start] occupies. For an ordinary single-line entry this is
+// start itself. For a block scalar, everything more indented than the key
+// line, or blank, belongs to it — this is YAML's own block-scalar content
+// rule, so it also correctly stops at a comment sitting at the next key's
+// indentation rather than swallowing it.
+func blockExtent(lines []string, start int) int {
+	keyIndent := indentWidth(lines[start])
+	end := start
+	for i := start + 1; i < len(lines); i++ {
+		line := lines[i]
+		if strings.TrimSpace(line) == "" || indentWidth(line) > keyIndent {
+			end = i
+			continue
+		}
+		break
+	}
+	// Walk back off any trailing blank lines so the frontmatter's own spacing
+	// between entries is not swallowed into this one.
+	for end > start && strings.TrimSpace(lines[end]) == "" {
+		end--
+	}
+	return end
+}
+
+// indentWidth counts a line's leading spaces.
+func indentWidth(line string) int {
+	n := 0
+	for n < len(line) && line[n] == ' ' {
+		n++
+	}
+	return n
+}
+
+// leadingSpace returns a line's leading spaces as a string, for splicing a
+// replacement at the same indentation.
+func leadingSpace(line string) string {
+	return line[:indentWidth(line)]
 }
 
 // encodeScalar quotes only when a bare scalar would be ambiguous or invalid.

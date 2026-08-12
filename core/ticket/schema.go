@@ -443,9 +443,12 @@ func NewDoc(fields map[string]string, lists map[string][]string, body string) *D
 			return
 		}
 		if v, ok := fields[k]; ok && v != "" {
-			if rawLiteralFields[k] {
+			switch {
+			case rawLiteralFields[k]:
 				b.WriteString(k + ": " + v + "\n")
-			} else {
+			case blockable(v):
+				b.WriteString(renderBlock(k, v, "", "") + "\n")
+			default:
 				b.WriteString(k + ": " + encodeScalar(v) + "\n")
 			}
 			written[k] = true
