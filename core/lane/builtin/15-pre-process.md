@@ -43,3 +43,7 @@ The context is the only record of why this ticket exists. If it does not explain
 that to someone who was not in the conversation — what is wrong today, what
 triggered it, what is already known — do not guess and do not plan around it. Say
 what is missing and move the ticket to the human lane.
+
+If you rewrite or extend a context, write it as if the reader has mild ADHD: what
+is wrong first, short and concrete, names and paths rather than adjectives, no
+preamble. Someone should be able to act after the first two lines.
