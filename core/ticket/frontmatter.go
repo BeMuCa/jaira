@@ -491,11 +491,18 @@ func (d *Doc) Scalar(key string) (string, bool, error) {
 	if err != nil || node == nil {
 		return "", false, err
 	}
-	switch node.Value.(type) {
+	switch v := node.Value.(type) {
 	case *ast.SequenceNode, *ast.MappingNode, *ast.MappingValueNode:
 		return "", false, fmt.Errorf("ticket: %q holds a collection, not a scalar", key)
 	case *ast.NullNode:
 		return "", true, nil
+	case *ast.LiteralNode:
+		// A block scalar's own token is its header ("|", ">-", "|-"...), not its
+		// content — the block header is what GetToken() reports for both literal
+		// and folded styles (goccy uses LiteralNode for both). The decoded
+		// content lives on Value.Value instead; this is the one node type where
+		// reading through the token is wrong.
+		return v.Value.Value, true, nil
 	}
 	return node.Value.GetToken().Value, true, nil
 }
