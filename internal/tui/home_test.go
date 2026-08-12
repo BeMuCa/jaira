@@ -114,3 +114,77 @@ func TestHomeDoesNotOverflow(t *testing.T) {
 
 // the returns the runes of a line, so width is counted in characters.
 func the(s string) []rune { return []rune(s) }
+
+// The launcher must be able to add a board without dropping to a shell. This was
+// the one of the three chosen ways that did not exist, and it is the one a person
+// actually reaches for.
+func TestHomeOpensTheDirectoryBrowser(t *testing.T) {
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	if h.browse == nil {
+		t.Fatal("a did not open the directory browser")
+	}
+	out := stripANSI(h.render())
+	if !strings.Contains(out, "Add a board") || !strings.Contains(out, "esc cancel") {
+		t.Errorf("browser did not render:\n%s", out)
+	}
+}
+
+func TestBrowserAddsABoardAndItAppears(t *testing.T) {
+	root := t.TempDir()
+	makeBoard(t, root, "found-me")
+	h := newHome(t, nil, 120, 30)
+	if len(h.entries) != 0 {
+		t.Fatalf("expected an empty launcher, got %d entries", len(h.entries))
+	}
+
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	// The board sorts first, so it is already highlighted.
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+
+	if h.browse != nil {
+		t.Error("the browser stayed open after adding")
+	}
+	if len(h.entries) != 1 || h.entries[0].Name != "found-me" {
+		t.Fatalf("the added board did not appear on the home screen: %+v", h.entries)
+	}
+}
+
+// Adding a directory that is not a board must say so rather than registering
+// something that will never load.
+func TestBrowserRefusesANonBoard(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "just-a-folder"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+
+	if h.browse == nil {
+		t.Fatal("the browser closed on a directory that is not a board")
+	}
+	if !strings.Contains(h.browse.msg, "no .jaira board") {
+		t.Errorf("no explanation given: %q", h.browse.msg)
+	}
+	if len(h.entries) != 0 {
+		t.Error("a non-board was registered")
+	}
+}
+
+// Scanning registers every board within the depth limit in one keypress.
+func TestBrowserScanAddsEverythingFound(t *testing.T) {
+	root := t.TempDir()
+	makeBoard(t, root, "one")
+	makeBoard(t, filepath.Join(root, "nested"), "two")
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+
+	if len(h.entries) != 2 {
+		t.Fatalf("scan registered %d boards, want 2: %+v", len(h.entries), h.entries)
+	}
+}

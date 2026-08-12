@@ -19,7 +19,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/gitrepo"
 	"github.com/berk/jaira/core/lane"
 	"github.com/berk/jaira/core/project"
 	"github.com/berk/jaira/core/session"
@@ -33,7 +32,6 @@ const (
 	modeDetail
 	modeFilter
 	modeHelp
-	modeDiff
 	modeMove
 	modeCreate
 	modeMessage
@@ -65,9 +63,7 @@ type Model struct {
 
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
-	detail     *ticket.Ticket
-	diffText   string
-	diffScroll int
+	detail *ticket.Ticket
 
 	moveTarget int // lane index highlighted in the move picker
 
@@ -474,26 +470,6 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case modeDiff:
-		switch s {
-		case "esc", "q", "d":
-			m.mode = modeDetail
-		case "j", "down":
-			m.diffScroll++
-		case "k", "up":
-			if m.diffScroll > 0 {
-				m.diffScroll--
-			}
-		case "ctrl+d", "pgdown":
-			m.diffScroll += 10
-		case "ctrl+u", "pgup":
-			m.diffScroll -= 10
-			if m.diffScroll < 0 {
-				m.diffScroll = 0
-			}
-		}
-		return m, nil
-
 	case modeDetail:
 		switch s {
 		case "esc", "q", "enter":
@@ -511,8 +487,6 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			if m.atHumanCheckpoint() {
 				m.followUp()
 			}
-		case "d":
-			m.openDiff()
 		case "m":
 			m.openMove()
 		case "j", "down":
@@ -547,11 +521,6 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.clampCursor()
 	case "enter":
 		m.openDetail()
-	case "d":
-		m.openDetail()
-		if m.detail != nil {
-			m.openDiff()
-		}
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -616,23 +585,6 @@ func (m *Model) openDetail() {
 	}
 	m.detail = full
 	m.mode = modeDetail
-}
-
-func (m *Model) openDiff() {
-	if m.detail == nil {
-		return
-	}
-	if len(m.detail.Commits) == 0 {
-		m.notify("This ticket records no commits, so there is no diff to show.", false)
-		return
-	}
-	repo := &gitrepo.Repo{Dir: m.store.Root}
-	d, err := repo.Diff(m.detail.Commits)
-	if err != nil {
-		m.notify(err.Error(), true)
-		return
-	}
-	m.diffText, m.diffScroll, m.mode = d, 0, modeDiff
 }
 
 func (m *Model) openMove() {

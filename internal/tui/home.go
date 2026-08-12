@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -38,12 +39,42 @@ type Home struct {
 	idx     int
 	lanes   *lane.Set
 
+	// browse is the directory picker, non-nil while adding a board.
+	browse *browser
+
 	// Chosen is the board the user picked; the caller opens it.
 	Chosen string
 	// Quit is set when the user asked to leave rather than pick.
 	Quit bool
 
+	// startDir is where the directory picker opens, normally where jaira was run.
+	startDir string
+
 	width, height int
+}
+
+// refresh rebuilds the list, including anything just added.
+func (h *Home) refresh(extra []string) {
+	seen := map[string]bool{}
+	var entries []HomeEntry
+	add := func(root string) {
+		abs, err := filepath.Abs(root)
+		if err != nil || seen[abs] {
+			return
+		}
+		seen[abs] = true
+		entries = append(entries, describe(abs, h.lanes))
+	}
+	for _, p := range project.Load() {
+		add(p.Root)
+	}
+	for _, r := range extra {
+		add(r)
+	}
+	h.entries = entries
+	if h.idx >= len(h.entries) {
+		h.idx = max(0, len(h.entries)-1)
+	}
 }
 
 // NewHome builds the launcher from the registry plus anything discovered below
@@ -69,6 +100,9 @@ func NewHome(extraRoots []string) (*Home, error) {
 	}
 	for _, r := range extraRoots {
 		add(r)
+	}
+	if wd, err := os.Getwd(); err == nil {
+		h.startDir = wd
 	}
 	return h, nil
 }
@@ -119,7 +153,23 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h.width, h.height = msg.Width, msg.Height
 	case tea.KeyPressMsg:
+		if h.browse != nil {
+			added, done := h.browse.key(msg.String())
+			if len(added) > 0 {
+				h.refresh(added)
+			}
+			if done {
+				h.browse = nil
+			}
+			return h, nil
+		}
 		switch msg.String() {
+		case "a":
+			h.browse = newBrowser(h.startDir)
+			return h, nil
+		case "r":
+			h.refresh(nil)
+			return h, nil
 		case "q", "ctrl+c", "esc":
 			h.Quit = true
 			return h, tea.Quit
@@ -152,6 +202,9 @@ func (h *Home) render() string {
 	if h.width == 0 {
 		return "loading…"
 	}
+	if h.browse != nil {
+		return h.browse.render(h.width, h.height)
+	}
 	// Everything below is truncated against the pane, which is the list width
 	// when the icon is beside it and the whole terminal when it is not.
 	paneW := h.width
@@ -160,50 +213,73 @@ func (h *Home) render() string {
 	}
 	paneW = max(12, paneW)
 
-	var right strings.Builder
-	right.WriteString(styLaneTitle.Render("jaira") + "\n")
-	right.WriteString(styMeta.Render("your boards") + "\n\n")
+	var b strings.Builder
+
+	// Header: the wordmark with the icon beside it, centred as a block. This is
+	// the one screen that is looked at rather than worked in, so it is allowed
+	// to spend rows on identity — but only when they fit.
+	if head := h.header(); head != "" {
+		b.WriteString(head)
+		b.WriteString("\n")
+		b.WriteString(styBar.Render(strings.Repeat("─", h.width)) + "\n\n")
+	}
+
+	b.WriteString(styLaneTitle.Render("Projects:") + "\n\n")
 
 	if len(h.entries) == 0 {
-		right.WriteString(styWarn.Render(truncate("No boards yet.", paneW)) + "\n\n")
-		right.WriteString(styMeta.Render(truncate("Run 'jaira init' in a repository, or", paneW)) + "\n")
-		right.WriteString(styMeta.Render(truncate("'jaira projects add <path>' to register one.", paneW)) + "\n")
+		b.WriteString(styWarn.Render(truncate("  No boards yet.", h.width)) + "\n\n")
+		b.WriteString(styMeta.Render(truncate("  Press a to find one, or run 'jaira init' in a repository.", h.width)) + "\n")
 	}
 
 	for i, e := range h.entries {
-		lead := "  "
-		name := truncate(e.Name, max(1, paneW-2))
+		lead := "    "
+		name := truncate(e.Name, max(1, h.width-30))
 		if i == h.idx {
-			lead = stySelected.Render("▌ ")
+			lead = "  " + stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
-		right.WriteString(lead + name + "\n")
-
 		var bits []string
 		if e.Err != nil {
 			bits = append(bits, styErr.Render("unreadable"))
 		} else {
 			bits = append(bits, styMeta.Render(fmt.Sprintf("%d open / %d", e.Open, e.Total)))
 		}
-		// Two different colours because they ask for two different things: work
-		// is happening without you, versus it has stopped and is waiting on you.
+		// Two colours because they ask for two different things: work happening
+		// without you, versus work stopped and waiting on you.
 		if e.Agents > 0 {
 			bits = append(bits, styOK.Render(fmt.Sprintf("● %d agent(s)", e.Agents)))
 		}
 		if e.Waiting > 0 {
 			bits = append(bits, styReview.Render(fmt.Sprintf("◆ %d awaiting you", e.Waiting)))
 		}
-		right.WriteString("    " + truncate(strings.Join(bits, "  "), max(1, paneW-4)) + "\n")
+		b.WriteString(truncate(lead+padTo(name, 28)+strings.Join(bits, "  "), h.width) + "\n")
 	}
 
-	right.WriteString("\n" + styMeta.Render(truncate("enter open · jk move · q quit", paneW)))
+	b.WriteString("\n" + styMeta.Render(truncate(
+		"enter open · jk move · a add a board · r refresh · q quit", h.width)))
+	return b.String()
+}
 
-	// The icon sits beside the list when there is room for both, and is dropped
-	// entirely when there is not — a launcher that cannot show its list because
-	// of decoration would be a bad trade.
-	body := right.String()
-	if h.width >= iconWidth+34 {
-		return lipgloss.JoinHorizontal(lipgloss.Top, iconArt, "  ", body)
+// header renders the wordmark and icon side by side, centred, or nothing at all
+// when the terminal is too small to carry them without crowding the list.
+func (h *Home) header() string {
+	if h.width < wordmarkWidth+iconWidth+6 || h.height < 20 {
+		if h.width >= wordmarkWidth+2 && h.height >= 14 {
+			return lipgloss.NewStyle().Width(h.width).Align(lipgloss.Center).
+				Render(styLaneTitle.Render(wordmark))
+		}
+		return ""
 	}
-	return body
+	block := lipgloss.JoinHorizontal(lipgloss.Center,
+		styLaneTitle.Render(wordmark), "    ", iconArt)
+	return lipgloss.NewStyle().Width(h.width).Align(lipgloss.Center).Render(block)
+}
+
+// padTo pads a styled string to a column count, measuring display width so the
+// escape sequences in it are not counted.
+func padTo(s string, n int) string {
+	if w := lipgloss.Width(s); w < n {
+		return s + strings.Repeat(" ", n-w)
+	}
+	return s + " "
 }

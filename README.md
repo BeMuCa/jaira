@@ -278,9 +278,9 @@ supply — so an agent can fix and retry without parsing prose.
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            d       diff             m   move lane
-g G       first / last    /       filter           r   reload
-                          ?       help             q   quit
+j k ↓ ↑   card            /       filter           m   move lane
+g G       first / last    ?       help             r   reload
+                                                   q   quit
 
 In an open ticket:
 e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)

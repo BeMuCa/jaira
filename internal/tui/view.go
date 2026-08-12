@@ -66,8 +66,6 @@ func (m *Model) render() string {
 	switch m.mode {
 	case modeHelp:
 		return m.renderHelp()
-	case modeDiff:
-		return m.renderDiff()
 	case modeDetail:
 		// A ticket parked at a human checkpoint opens to the screen that asks for
 		// the decision, rather than to the generic field dump.
@@ -504,7 +502,7 @@ func (m *Model) renderDetail() string {
 		b.WriteString("\n" + rest + "\n")
 	}
 	b.WriteString("\n" + styMeta.Render(truncate(
-		"e fields · E body · d diff · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
+		"e fields · E body · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
 	return b.String()
 }
 
@@ -519,46 +517,8 @@ func (g *gitStat) of(shas []string) (string, error) {
 	return strings.TrimRight(string(out), "\n"), nil
 }
 
-func (m *Model) renderDiff() string {
-	lines := strings.Split(m.diffText, "\n")
-	h := m.height - 3
-	if h < 3 {
-		h = 3
-	}
-	if m.diffScroll > max(0, len(lines)-h) {
-		m.diffScroll = max(0, len(lines)-h)
-	}
-	var b strings.Builder
-	title := "diff"
-	if m.detail != nil {
-		title = fmt.Sprintf("diff · %s %s", ticket.Handle(m.detail.ID), m.detail.Title)
-	}
-	b.WriteString(styLaneTitle.Render(truncate(title, m.width)) + "\n")
-	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 78))) + "\n")
-	for i := m.diffScroll; i < len(lines) && i < m.diffScroll+h; i++ {
-		b.WriteString(colorizeDiff(truncate(lines[i], m.width)) + "\n")
-	}
-	b.WriteString(styMeta.Render(fmt.Sprintf("jk scroll · %d/%d · esc back", m.diffScroll+1, max(1, len(lines)))))
-	return b.String()
-}
-
 // colorizeDiff highlights a patch without pulling in a syntax-highlighting
 // dependency: for a diff, the leading character carries all the meaning.
-func colorizeDiff(l string) string {
-	switch {
-	case strings.HasPrefix(l, "+++"), strings.HasPrefix(l, "---"):
-		return styLaneTitle.Render(l)
-	case strings.HasPrefix(l, "+"):
-		return styOK.Render(l)
-	case strings.HasPrefix(l, "-"):
-		return styErr.Render(l)
-	case strings.HasPrefix(l, "@@"):
-		return styHelpKey.Render(l)
-	case strings.HasPrefix(l, "commit "):
-		return styLaneTitle.Render(l)
-	}
-	return l
-}
 
 func (m *Model) renderMessage() string {
 	style := styOK
@@ -611,7 +571,6 @@ func (m *Model) renderHelp() string {
 		}},
 		{"Look at things", [][2]string{
 			{"enter", "open the selected ticket"},
-			{"d", "show the combined diff of the ticket's commits"},
 			{"/", "filter tickets as you type"},
 			{"esc", "clear the filter"},
 		}},
