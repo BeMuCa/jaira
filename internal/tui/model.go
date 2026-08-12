@@ -67,6 +67,11 @@ type Model struct {
 	// frontmatter for speed.
 	detail *ticket.Ticket
 
+	// copied marks that the id was just put on the clipboard. OSC52 gives no
+	// feedback of its own, so the pane has to say the copy happened — it is
+	// transient and clears on the next keypress rather than being real state.
+	copied bool
+
 	moveTarget int // lane index highlighted in the move picker
 
 	// editIdx is the field being edited in the detail pane and editBuf its
@@ -484,6 +489,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeDetail:
+		m.copied = false
 		switch s {
 		case "esc", "q", "enter":
 			m.mode = modeBoard
@@ -499,6 +505,11 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "f":
 			if m.atHumanCheckpoint() {
 				m.followUp()
+			}
+		case "y":
+			if m.detail != nil {
+				m.copied = true
+				return m, tea.SetClipboard(m.detail.ID)
 			}
 		case "m":
 			m.openMove()

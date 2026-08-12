@@ -458,6 +458,11 @@ func (m *Model) renderDetail() string {
 		}
 		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, min(m.width-14, 64), 13))
 	}
+	if m.copied {
+		row("id", t.ID+styOK.Render("  copied"))
+	} else {
+		row("id", t.ID)
+	}
 	if l, ok := m.lanes.Get(t.Status); ok && l.RequiresQuestion {
 		row("lane", t.Status+styAsks.Render("  ▲ waiting on your answer"))
 	} else if ok && l.ID == "review" {
@@ -506,7 +511,7 @@ func (m *Model) renderDetail() string {
 		b.WriteString("\n" + rest + "\n")
 	}
 	b.WriteString("\n" + styMeta.Render(truncate(
-		"e fields · E body · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
+		"e fields · E body · y copy id · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
 	return b.String()
 }
 
@@ -577,6 +582,7 @@ func (m *Model) renderHelp() string {
 			{"enter", "open the selected ticket"},
 			{"/", "filter tickets as you type"},
 			{"esc", "clear the filter"},
+			{"y", "copy the full ticket id (detail pane)"},
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},
