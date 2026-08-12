@@ -369,11 +369,7 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
 	if len(t.DoDItems) > 0 {
 		fmt.Fprintf(w, "%-10s\n", "done when")
 		for _, it := range t.DoDItems {
-			box := "[ ]"
-			if it.Checked {
-				box = "[x]"
-			}
-			fmt.Fprintf(w, "           %s %s\n", box, it.Text)
+			fmt.Fprintf(w, "           [%s] %s\n", it.State.Marker(), it.Text)
 		}
 	} else {
 		row("dod", t.DoD)

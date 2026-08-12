@@ -86,6 +86,12 @@ type Ticket struct {
 	// than being flattened into a single frontmatter string.
 	DoDItems []DoDItem
 
+	// PlanItems are the checkboxes under a "Plan" heading: the method being
+	// followed rather than the criteria for acceptance. They carry the
+	// in-progress marker, which is what makes "designed but not yet built"
+	// visible instead of collapsing into a single in-progress lane.
+	PlanItems []DoDItem
+
 	// Body is the markdown following the frontmatter.
 	Body string
 	// Path is where this ticket was loaded from.
@@ -94,11 +100,55 @@ type Ticket struct {
 	doc *Doc
 }
 
-// DoDItem is one checkbox of a definition of done.
-type DoDItem struct {
-	Text    string
-	Checked bool
+// State is how far one checklist item has got.
+type State int
+
+const (
+	// StateTodo is an item not started, or one whose marker is not recognised.
+	// An unknown marker is read as unfinished rather than skipped: dropping it
+	// would shorten the list and make the checklist easier to complete than the
+	// author wrote it.
+	StateTodo State = iota
+	// StateDoing is the item currently being worked on, written as "[~]". It is
+	// progress, not a completion claim, so it does not satisfy the criterion.
+	StateDoing
+	// StateDone is a finished item, written as "[x]".
+	StateDone
+)
+
+func (s State) String() string {
+	switch s {
+	case StateDoing:
+		return "doing"
+	case StateDone:
+		return "done"
+	default:
+		return "todo"
+	}
 }
+
+// Marker is the character this state is written with inside the brackets.
+func (s State) Marker() string {
+	switch s {
+	case StateDoing:
+		return "~"
+	case StateDone:
+		return "x"
+	default:
+		return " "
+	}
+}
+
+// DoDItem is one checkbox of a checklist, in either the Plan or the definition
+// of done.
+type DoDItem struct {
+	Text  string
+	State State
+}
+
+// Checked reports whether this item is finished. Only StateDone counts: an item
+// in progress is outstanding work.
+func (i DoDItem) Checked() bool { return i.State == StateDone }
 
 // HeadingTitle returns the first level-one heading of a markdown body.
 func HeadingTitle(body string) string {
@@ -114,11 +164,24 @@ func HeadingTitle(body string) string {
 // the section is what carries the meaning rather than its exact wording.
 var dodHeadings = []string{"definition of done", "definition-of-done", "done when", "akzeptanzkriterien"}
 
+// planHeadings matches the section holding the method — the steps taken to get
+// there — as opposed to the criteria that decide whether it worked.
+var planHeadings = []string{"plan", "steps", "vorgehen"}
+
 // ParseDoDItems extracts the checkboxes under a Definition of Done heading.
 //
 // Only that section is read: checkboxes elsewhere in a ticket (an open-questions
 // list, say) are not acceptance criteria and must not be mistaken for them.
-func ParseDoDItems(body string) []DoDItem {
+func ParseDoDItems(body string) []DoDItem { return checklistUnder(body, dodHeadings) }
+
+// ParsePlanItems extracts the checkboxes under a Plan heading.
+//
+// The Plan is how the work is being done — write the spec, design it, implement
+// it — and carries the in-progress marker. It deliberately does not gate the
+// terminal lane: following a method is not the same as having met the criteria.
+func ParsePlanItems(body string) []DoDItem { return checklistUnder(body, planHeadings) }
+
+func checklistUnder(body string, headings []string) []DoDItem {
 	lines := strings.Split(body, "\n")
 	inSection := false
 	var out []DoDItem
@@ -127,7 +190,7 @@ func ParseDoDItems(body string) []DoDItem {
 		if strings.HasPrefix(trimmed, "#") {
 			heading := strings.ToLower(strings.TrimLeft(trimmed, "# "))
 			inSection = false
-			for _, h := range dodHeadings {
+			for _, h := range headings {
 				if strings.Contains(heading, h) {
 					inSection = true
 					break
@@ -146,18 +209,30 @@ func ParseDoDItems(body string) []DoDItem {
 	return out
 }
 
+// parseCheckbox reads one list item. Any bracketed single character is a
+// checkbox: " " and "x" have their usual meanings, "~" marks the item being
+// worked on, and anything else is treated as unstarted rather than discarded.
 func parseCheckbox(line string) (DoDItem, bool) {
 	for _, bullet := range []string{"- ", "* ", "+ "} {
 		if !strings.HasPrefix(line, bullet) {
 			continue
 		}
 		rest := strings.TrimPrefix(line, bullet)
-		switch {
-		case strings.HasPrefix(rest, "[ ] "):
-			return DoDItem{Text: strings.TrimSpace(rest[4:]), Checked: false}, true
-		case strings.HasPrefix(rest, "[x] "), strings.HasPrefix(rest, "[X] "):
-			return DoDItem{Text: strings.TrimSpace(rest[4:]), Checked: true}, true
+		if len(rest) < 4 || rest[0] != '[' || rest[2] != ']' || rest[3] != ' ' {
+			continue
 		}
+		var st State
+		switch rest[1] {
+		case ' ':
+			st = StateTodo
+		case '~':
+			st = StateDoing
+		case 'x', 'X':
+			st = StateDone
+		default:
+			st = StateTodo
+		}
+		return DoDItem{Text: strings.TrimSpace(rest[4:]), State: st}, true
 	}
 	return DoDItem{}, false
 }
@@ -168,17 +243,17 @@ func (t *Ticket) HasDoD() bool {
 	return len(t.DoDItems) > 0 || strings.TrimSpace(t.DoD) != ""
 }
 
-// DoDComplete reports whether every checklist item is ticked.
+// DoDComplete reports whether every checklist item is finished.
 //
-// This is the non-model signal the terminal lane requires. Ticking a box is a
-// human editing a file — something a language model asserting "it works" cannot
-// manufacture, which is precisely why it is worth gating on.
+// An item in progress counts as remaining. It is a statement that work is under
+// way, which is the opposite of the criterion being met, so treating it as
+// anything else would let a ticket close with its own checklist saying otherwise.
 func (t *Ticket) DoDComplete() (complete bool, remaining []string) {
 	if len(t.DoDItems) == 0 {
 		return false, nil
 	}
 	for _, it := range t.DoDItems {
-		if !it.Checked {
+		if !it.Checked() {
 			remaining = append(remaining, it.Text)
 		}
 	}
@@ -243,6 +318,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Context = str(FieldContext)
 	t.DoD = str(FieldDoD)
 	t.DoDItems = ParseDoDItems(t.Body)
+	t.PlanItems = ParsePlanItems(t.Body)
 	t.ModelTier = str(FieldModelTier)
 	t.Question = str(FieldQuestion)
 	t.ClaimedBy = str(FieldClaimedBy)

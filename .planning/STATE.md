@@ -56,6 +56,12 @@ None yet.
 - Phase 1: YAML round-trip fidelity via `goccy/go-yaml` AST editing is MEDIUM confidence per STACK.md — no Go/Rust library guarantees byte-perfect round-trip for every legal YAML construct. Mitigated by validating/rejecting anchors/aliases on read (STORE-10) rather than relying on the editor to survive them.
 - Phase 7: Claude Code's Task tool API is an external, moving surface (already replaced TodoWrite once). Sync adapter must stay isolated in one module per SYNC-07.
 
+## Quick Tasks Completed
+
+| Date | Task | Outcome |
+|------|------|---------|
+| 2026-08-12 | dod-checkbox-states | Three checklist states, `## Plan` section parsed separately, and the fix for `[~]` items being dropped by the parser — which let a ticket with outstanding work enter the terminal lane |
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
