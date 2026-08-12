@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
@@ -38,21 +39,19 @@ session and lock state is never committed. Safe to run more than once.`,
 			project.Remember(s.Root)
 
 			// A new board is private: the tickets stay out of git until the user
-			// decides to publish them with 'jaira share'.
-			ignoredNow, ignoreErr := addIgnore(s.Root)
-
-			// Tell the agent the board is here. The skill's description already
-			// says to use jaira in a repository that has one, but that relies on
-			// the model noticing a directory; a line in the file it is handed at
-			// the start of every session does not.
-			noteFiles, noteErr := announceInAgentFiles(s.Root)
+			// decides to publish them with 'jaira share'. Tell the agent the board
+			// is here too. The skill's description already says to use jaira in a
+			// repository that has one, but that relies on the model noticing a
+			// directory; a line in the file it is handed at the start of every
+			// session does not.
+			p := board.Prepare(s.Root)
 
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
-					"private": true, "gitignore_written": ignoredNow,
+					"private": true, "gitignore_written": p.Ignored,
 					"state_dir":   s.SessionsDir(),
-					"agent_notes": noteFiles,
+					"agent_notes": p.Notes,
 				})
 			}
 			if created {
@@ -60,14 +59,14 @@ session and lock state is never committed. Safe to run more than once.`,
 			} else {
 				fmt.Fprintf(cmd.OutOrStdout(), "jaira already initialized in %s\n", filepath.Join(s.Root, ticket.DirName))
 			}
-			if ignoreErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", ignoreErr)
-			} else if ignoredNow {
+			if p.IgnoreErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", p.IgnoreErr)
+			} else if p.Ignored {
 				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
 			}
-			if noteErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", noteErr)
-			} else if line := announceLine(noteFiles); line != "" {
+			if p.NoteErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", p.NoteErr)
+			} else if line := announceLine(p.Notes); line != "" {
 				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")

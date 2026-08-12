@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gitrepo"
 	"os"
 	"path/filepath"
@@ -12,87 +13,14 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// ignoreLine is the entry that keeps a board private.
-const ignoreLine = "/.jaira/"
-
-// A board starts private. Committing tickets is what makes a board visible to
-// everyone who can read the repository, and that should be a decision rather than
-// a default — the tool has no way to know whether these notes are ready to be
-// seen, or whether this repository is even yours to publish into.
-//
-// Private and shared differ only in whether `.jaira/` is gitignored. Nothing about
-// the tickets themselves changes, so going public later is not a migration.
-
 // isShared reports whether the board is committed rather than local-only.
 func isShared(s *ticket.Store) bool {
-	return !ignored(s.Root) && hasAttributes(s)
-}
-
-// ignored reports whether the root .gitignore excludes the board.
-func ignored(root string) bool {
-	b, err := os.ReadFile(filepath.Join(root, ".gitignore"))
-	if err != nil {
-		return false
-	}
-	for _, line := range strings.Split(string(b), "\n") {
-		switch strings.TrimSpace(line) {
-		case ignoreLine, ".jaira/", ".jaira":
-			return true
-		}
-	}
-	return false
+	return !board.Ignored(s.Root) && hasAttributes(s)
 }
 
 func hasAttributes(s *ticket.Store) bool {
 	b, err := os.ReadFile(filepath.Join(s.Root, ticket.DirName, ".gitattributes"))
 	return err == nil && strings.Contains(string(b), "merge="+mergeDriverName)
-}
-
-// addIgnore keeps the board out of git.
-func addIgnore(root string) (changed bool, err error) {
-	path := filepath.Join(root, ".gitignore")
-	existing, _ := os.ReadFile(path)
-	if ignored(root) {
-		return false, nil
-	}
-	body := string(existing)
-	if body != "" && !strings.HasSuffix(body, "\n") {
-		body += "\n"
-	}
-	body += "\n# jaira board — private to this machine. Run 'jaira share' to publish it.\n" + ignoreLine + "\n"
-	return true, os.WriteFile(path, []byte(body), 0o644)
-}
-
-// removeIgnore stops excluding the board.
-func removeIgnore(root string) (changed bool, err error) {
-	path := filepath.Join(root, ".gitignore")
-	existing, err := os.ReadFile(path)
-	if err != nil {
-		return false, nil
-	}
-	var out []string
-	var skipNextBlank bool
-	for _, line := range strings.Split(string(existing), "\n") {
-		t := strings.TrimSpace(line)
-		if t == ignoreLine || t == ".jaira/" || t == ".jaira" {
-			changed = true
-			continue
-		}
-		if strings.Contains(t, "jaira board — private") {
-			changed = true
-			skipNextBlank = true
-			continue
-		}
-		if skipNextBlank && t == "" {
-			skipNextBlank = false
-			continue
-		}
-		out = append(out, line)
-	}
-	if !changed {
-		return false, nil
-	}
-	return true, os.WriteFile(path, []byte(strings.Join(out, "\n")), 0o644)
 }
 
 func newShareCmd() *cobra.Command {
@@ -131,7 +59,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 			}
 
 			if undo {
-				changed, err := addIgnore(s.Root)
+				changed, err := board.AddIgnore(s.Root)
 				if err != nil {
 					return err
 				}
@@ -140,14 +68,14 @@ You still have to commit. jaira does not commit on your behalf.`,
 				}
 				fmt.Fprintf(w, "The board is private again.\n")
 				if changed {
-					fmt.Fprintf(w, "Added %s to .gitignore.\n", ignoreLine)
+					fmt.Fprintf(w, "Added %s to .gitignore.\n", board.IgnoreLine)
 				}
 				fmt.Fprintf(w, "\nTickets already committed stay in history. To remove them:\n"+
 					"  git rm -r --cached .jaira && git commit -m \"make jaira board private\"\n")
 				return nil
 			}
 
-			unignored, err := removeIgnore(s.Root)
+			unignored, err := board.RemoveIgnore(s.Root)
 			if err != nil {
 				return err
 			}
@@ -165,7 +93,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 			}
 			fmt.Fprintf(w, "The board is now part of the repository.\n")
 			if unignored {
-				fmt.Fprintf(w, "Removed %s from .gitignore.\n", ignoreLine)
+				fmt.Fprintf(w, "Removed %s from .gitignore.\n", board.IgnoreLine)
 			}
 			if attrs {
 				fmt.Fprintf(w, "Wrote .jaira/.gitattributes so git merges tickets field by field.\n")
@@ -198,7 +126,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 // attributes file is the signal that the board is shared, so its presence is what
 // triggers binding.
 func bindDriverIfShared(s *ticket.Store) {
-	if !hasAttributes(s) || ignored(s.Root) {
+	if !hasAttributes(s) || board.Ignored(s.Root) {
 		return
 	}
 	// Without a repository there is nothing to merge and nothing to configure.
