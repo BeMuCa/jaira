@@ -20,6 +20,7 @@ func TestTicketJSONCarriesChecklists(t *testing.T) {
 	body := `## Plan
 
 - [x] write the spec
+  proof: docs/spec.md
 - [~] implement
 
 ## Definition of Done
@@ -47,6 +48,15 @@ func TestTicketJSONCarriesChecklists(t *testing.T) {
 	if plan[0]["state"] != "done" || plan[0]["done"] != true {
 		t.Errorf("plan_items[0] = %#v", plan[0])
 	}
+	// Proof rides alongside text and state in every payload that carries a
+	// checklist, so an agent reading --json output can see the evidence
+	// without a second command.
+	if plan[0]["proof"] != "docs/spec.md" {
+		t.Errorf("plan_items[0][\"proof\"] = %#v, want %q", plan[0]["proof"], "docs/spec.md")
+	}
+	if plan[1]["proof"] != "" {
+		t.Errorf("plan_items[1][\"proof\"] = %#v, want empty", plan[1]["proof"])
+	}
 
 	dod, ok := out["dod_items"].([]map[string]any)
 	if !ok {
@@ -54,6 +64,9 @@ func TestTicketJSONCarriesChecklists(t *testing.T) {
 	}
 	if len(dod) != 1 || dod[0]["state"] != "todo" || dod[0]["done"] != false {
 		t.Errorf("dod_items = %#v", dod)
+	}
+	if dod[0]["proof"] != "" {
+		t.Errorf("dod_items[0][\"proof\"] = %#v, want empty", dod[0]["proof"])
 	}
 
 	if out["plan_complete"] != false {

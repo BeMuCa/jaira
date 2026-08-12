@@ -19,6 +19,7 @@ func newDoDCmd() *cobra.Command {
 		plan   bool
 		option string
 		add    []string
+		proof  string
 	)
 	cmd := &cobra.Command{
 		Use:   "dod <id> [n]",
@@ -43,7 +44,15 @@ the end of the file would put it somewhere it does not count:
 
 By default this addresses the Definition of Done. Use --plan for the Plan
 checklist, which records the method being followed rather than the criteria for
-acceptance.`,
+acceptance.
+
+Record the evidence for an item in the same call that ticks it, with --proof:
+
+  jaira dod <id> 2 --done --proof "internal/tui/browse.go:144 ... covered by TestX"
+
+--proof can also be passed on its own, with no state flag, to record evidence
+without changing the marker. Setting it again on the same item replaces the
+line rather than stacking a second one.`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 || len(args) > 2 {
 				return fail(ExitUsage, "usage",
@@ -55,6 +64,9 @@ acceptance.`,
 			sec := ticket.SectionDoD
 			if plan {
 				sec = ticket.SectionPlan
+			}
+			if proof != "" && (option != "" || len(add) > 0) {
+				return fail(ExitUsage, "usage", "--proof addresses a single existing item; it cannot be combined with --add or --option")
 			}
 			if option != "" {
 				return setOption(cmd, args[0], option, !todo)
@@ -69,15 +81,22 @@ acceptance.`,
 				return fail(ExitUsage, "usage", "which item? pass its number, as 'jaira show' displays it")
 			}
 
+			// With --proof present, a state flag is optional: passing none records
+			// only the proof and leaves the marker alone. Without --proof, the rule
+			// stays what it always was — exactly one state, so a plain 'dod <id> <n>'
+			// with nothing else is a usage error rather than a silent no-op.
+			hasState := doing || done || todo
 			var st ticket.State
 			switch {
-			case doing && !done && !todo:
+			case hasState && doing && !done && !todo:
 				st = ticket.StateDoing
-			case done && !doing && !todo:
+			case hasState && done && !doing && !todo:
 				st = ticket.StateDone
-			case todo && !doing && !done:
+			case hasState && todo && !doing && !done:
 				st = ticket.StateTodo
-			default:
+			case hasState:
+				return fail(ExitUsage, "usage", "pass exactly one of --doing, --done or --todo")
+			case proof == "":
 				return fail(ExitUsage, "usage", "pass exactly one of --doing, --done or --todo")
 			}
 
@@ -111,9 +130,20 @@ acceptance.`,
 			}
 
 			t, err := s.Mutate(args[0], func(t *ticket.Ticket) error {
-				body, err := ticket.SetItemState(t.Doc().Body(), sec, n-1, st)
-				if err != nil {
-					return &codedError{code: ExitValidation, reason: "no_such_item", message: err.Error()}
+				body := t.Doc().Body()
+				if hasState {
+					next, err := ticket.SetItemState(body, sec, n-1, st)
+					if err != nil {
+						return &codedError{code: ExitValidation, reason: "no_such_item", message: err.Error()}
+					}
+					body = next
+				}
+				if proof != "" {
+					next, err := ticket.SetItemProof(body, sec, n-1, proof)
+					if err != nil {
+						return &codedError{code: ExitValidation, reason: "no_such_item", message: err.Error()}
+					}
+					body = next
 				}
 				t.Doc().SetBody(body)
 				return nil
@@ -149,6 +179,9 @@ acceptance.`,
 					marker = "→"
 				}
 				fmt.Fprintf(w, "%s %d. [%s] %s\n", marker, i+1, it.State.Marker(), it.Text)
+				if it.Proof != "" {
+					fmt.Fprintf(w, "       proof: %s\n", it.Proof)
+				}
 			}
 			return nil
 		},
@@ -160,6 +193,7 @@ acceptance.`,
 	f.BoolVar(&plan, "plan", false, "address the Plan checklist instead of the Definition of Done")
 	f.StringArrayVar(&add, "add", nil, "append a new item; repeat for several, in order")
 	f.StringVar(&option, "option", "", "tick a step option for this ticket, e.g. --option planning (with --todo to untick)")
+	f.StringVar(&proof, "proof", "", "record evidence for the item; combine with --done to tick and record in one call")
 	return cmd
 }
 

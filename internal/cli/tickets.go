@@ -683,6 +683,7 @@ func checklistJSON(items []ticket.DoDItem) []map[string]any {
 			"text":  it.Text,
 			"state": it.State.String(),
 			"done":  it.Checked(),
+			"proof": it.Proof,
 		})
 	}
 	return out

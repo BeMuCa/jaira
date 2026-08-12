@@ -182,6 +182,11 @@ func (s State) Marker() string {
 type DoDItem struct {
 	Text  string
 	State State
+	// Proof is the evidence recorded for this item, written by SetItemProof and
+	// read back off the plain indented line directly beneath the item's own —
+	// never its own checkbox, since a checkbox there would be misread as
+	// another criterion to satisfy rather than support for this one.
+	Proof string
 }
 
 // Checked reports whether this item is finished. Only StateDone counts: an item
@@ -256,6 +261,16 @@ func checklistUnder(body string, headings []string) []DoDItem {
 		item, ok := parseCheckbox(trimmed)
 		if ok {
 			out = append(out, item)
+			continue
+		}
+		// A proof line is evidence for the item directly above it, not a
+		// checkbox of its own — that is the whole reason the format was chosen:
+		// parseCheckbox already drops any line that is not a bulleted "[ ]"/
+		// "[x]"/"[~]" marker, so this can never be mistaken for another
+		// criterion. Last one wins if a hand-edited file somehow carries two;
+		// the writer guarantees one.
+		if len(out) > 0 && isProofLine(trimmed) {
+			out[len(out)-1].Proof = proofText(trimmed)
 		}
 	}
 	return out

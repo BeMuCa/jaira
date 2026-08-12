@@ -28,6 +28,29 @@ func (s Section) String() string {
 	return "definition of done"
 }
 
+// proofPrefix marks a line as evidence for the checklist item directly above
+// it. Defined once and used by both the parser and the writer, because two
+// spellings of the same marker is how a format silently stops round-tripping.
+// It must never look like a checkbox — "- [ ] proof: ..." — or checklistUnder
+// would count it as another acceptance criterion, which is the one hard
+// constraint on this format.
+const proofPrefix = "proof:"
+
+// isProofLine reports whether a trimmed line is a proof sub-line.
+func isProofLine(trimmed string) bool {
+	return len(trimmed) >= len(proofPrefix) && strings.EqualFold(trimmed[:len(proofPrefix)], proofPrefix)
+}
+
+// proofText returns the evidence text following the prefix.
+func proofText(trimmed string) string {
+	return strings.TrimSpace(trimmed[len(proofPrefix):])
+}
+
+// leadingWhitespace returns the spaces and tabs a line opens with.
+func leadingWhitespace(line string) string {
+	return line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+}
+
 func (s Section) headings() []string {
 	switch s {
 	case SectionPlan:
@@ -71,6 +94,47 @@ func SetItemState(body string, sec Section, i int, st State) (string, error) {
 	}
 	lines[idx[i]] = replaceMarker(lines[idx[i]], st)
 	return strings.Join(lines, "\n"), nil
+}
+
+// SetItemProof attaches evidence to the i-th checkbox (0-based) of one section,
+// replacing any proof line already there, and returns the new body.
+//
+// The proof rides directly beneath its item rather than living in its own
+// section: that is what lets it survive SetItemState and AddItem acting on
+// other items, since neither touches a line it does not address by index. The
+// item's own line is left byte-identical, the same way SetItemState leaves it
+// — the point of a one-character or one-line diff applies here too.
+func SetItemProof(body string, sec Section, i int, proof string) (string, error) {
+	// Whitespace runs are collapsed to single spaces so a multi-line value
+	// cannot break the one-line sub-line model — a newline in the text would
+	// otherwise let it re-parse as a checkbox or a heading of its own.
+	proof = strings.Join(strings.Fields(proof), " ")
+	if proof == "" {
+		return "", fmt.Errorf("an empty proof says nothing; give it text")
+	}
+	lines := strings.Split(body, "\n")
+	idx := checklistLineIndexes(lines, sec)
+	if len(idx) == 0 {
+		return "", fmt.Errorf("this ticket has no %s checklist", sec)
+	}
+	if i < 0 || i >= len(idx) {
+		return "", fmt.Errorf("%s has %d item(s); there is no item %d", sec, len(idx), i+1)
+	}
+
+	// Derived from the item's own indentation plus two spaces, so a nested
+	// checklist keeps its shape.
+	indent := leadingWhitespace(lines[idx[i]]) + "  "
+	proofLine := indent + proofPrefix + " " + proof
+
+	next := idx[i] + 1
+	if next < len(lines) && isProofLine(strings.TrimSpace(lines[next])) {
+		lines[next] = proofLine
+		return strings.Join(lines, "\n"), nil
+	}
+	out := append([]string{}, lines[:next]...)
+	out = append(out, proofLine)
+	out = append(out, lines[next:]...)
+	return strings.Join(out, "\n"), nil
 }
 
 // checklistLineIndexes returns the line numbers of the checkboxes belonging to a
@@ -133,6 +197,13 @@ func AddItem(body string, sec Section, text string) (string, error) {
 	// After the last existing item, so order is the order they were added.
 	if len(idx) > 0 {
 		at := idx[len(idx)-1] + 1
+		// If the last item carries a proof line, the new item must land below
+		// it. Inserting between the item and its own evidence would leave the
+		// proof sitting directly under the new checkbox instead, and it would
+		// silently reattach to the wrong claim on the next parse.
+		if at < len(lines) && isProofLine(strings.TrimSpace(lines[at])) {
+			at++
+		}
 		out := append([]string{}, lines[:at]...)
 		out = append(out, "- [ ] "+text)
 		out = append(out, lines[at:]...)
