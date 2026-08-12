@@ -134,16 +134,19 @@ should not be: an agent that starts work with no checkable target produces work
 you cannot review. Acquiring a definition of done is the price of admission to a
 run.
 
-`DONE` additionally requires evidence that did not come from a model — either
-every checklist item ticked, or an explicit signal:
+`REVIEW` is a **human checkpoint**: no agent may move a ticket out of it. The
+review agent writes its verdict and stops; you accept the work in the board, or
+raise a follow-up ticket that carries the context across and links back.
 
-```bash
-jaira move JJN9KH --to done --signal "go test ./... passed; berk reviewed the diff"
-```
+`DONE` requires every checklist item marked done — and the plan finished too, if
+the ticket has one, since the criteria cannot have been met while the work that
+meets them is still in progress.
 
 A review agent cannot certify its own work. This is not politeness about AI — it
 is that LLM-as-judge is measurably poor at catching real defects, so a terminal
-state gated on a model's own assessment would mean nothing.
+state gated on a model's own assessment would mean nothing. There was once a
+`--signal` flag that accepted free text as evidence and never checked it; it was
+removed rather than repaired.
 
 ## Lanes are pipeline stages
 
@@ -233,12 +236,16 @@ board→tasks→board round trip settles instead of oscillating.
 ## Commands
 
 ```
-jaira                      open the board
+jaira                      open the home screen: your boards, and what each needs
+jaira board                open the board here directly
 jaira init                 prepare a repository
 jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket
 jaira set <id> k=v…        set fields
+jaira dod <id> <n>         mark a checklist item --doing / --done / --todo
+jaira validate             check every ticket on the board for damage
+jaira archive <id>         take a ticket off the board (restore puts it back)
 jaira move <id> --to …     move lanes, applying the gates
 jaira next                 the next actionable ticket
 jaira claim <id>           take a 30-minute lease on a ticket
@@ -249,6 +256,7 @@ jaira sync-tasks           mirror an agent task list into the backlog
 jaira tasks                emit the board as a task list
 jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
+jaira projects add <path>  register a board (--scan searches two levels down)
 jaira share                publish the board (--undo to make it private)
 ```
 
@@ -273,6 +281,10 @@ h l ← →   lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            d       diff             m   move lane
 g G       first / last    /       filter           r   reload
                           ?       help             q   quit
+
+In an open ticket:
+e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)
+E   edit body and checklists in $EDITOR          f   raise a follow-up
 ```
 
 ## What this deliberately is not

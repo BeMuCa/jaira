@@ -48,9 +48,30 @@ the heading for you. Each item must be checkable by someone who was not here.
 "Works properly" is not a definition of done; "`go test ./auth` passes and the
 cookie survives a 302" is.
 
-Tick items as you satisfy them — that is what lets a ticket reach Done without a
-separate `--signal`, because a ticked box is a file edit rather than your opinion.
-Do not tick a box you have not verified.
+Mark items as you go, with the command rather than by editing the file:
+
+```bash
+jaira dod <handle> 2 --doing    # you are working on item 2 now
+jaira dod <handle> 2 --done     # you have satisfied it
+jaira dod <handle> 1 --todo     # you were wrong, put it back
+```
+
+Only one item can be `--doing` at a time; marking a second moves the marker. That
+marker is how a person watching the board knows which criterion you are on.
+
+Do not mark an item done you have not verified.
+
+There is a second, optional checklist under a `## Plan` heading: the method you
+are following — write the spec, design it, implement it — as opposed to the
+criteria for acceptance. Address it with `--plan`:
+
+```bash
+jaira dod <handle> 3 --doing --plan
+```
+
+The Plan does not gate anything on its own, but a terminal lane refuses a ticket
+whose plan is unfinished: the criteria cannot have been met while the work that
+meets them is still in progress.
 
 ## Working the board
 
@@ -86,10 +107,14 @@ who owns the outcome — never reassign a ticket to a model.
 - **human** — you need a decision only the user can make. Move the ticket here
   with the question attached rather than guessing:
   `jaira move <handle> --to human --question "Should expired sessions redirect or 401?"`
-- **review** — implemented, awaiting sign-off.
-- **done** — requires `--signal` with evidence that is not a model's opinion: a
-  passing command, or the user's explicit sign-off. You cannot certify your own
-  work complete, and you should not try to route around this.
+- **review** — implemented, awaiting sign-off. **You cannot move a ticket out of
+  this lane.** It is a human checkpoint: write your verdict with
+  `jaira set <handle> review-verdict="..."` and stop. The user accepts it in the
+  board, or raises a follow-up ticket. Attempting the move exits 3.
+- **done** — requires the definition-of-done checklist to be fully marked, and
+  the plan too if the ticket has one. There is no evidence flag to pass; you
+  cannot certify your own work complete, and you should not try to route around
+  it. `--force` exists, is recorded on the ticket, and is the user's call.
 
 Some lanes are agentic: they carry a prompt and a model tier. To work one, ask the
 tool to assemble the bounded input rather than deciding for yourself what context
@@ -119,12 +144,31 @@ Then let the tool assemble the input and hand back structured output:
 jaira show <handle> --for-lane review --json     # prompt + declared fields + diff
 # … spawn a subagent at the lane's model_tier with exactly that …
 echo '{"outcome":{"what":"…","why":"…","resolves":"…"},"executed_by":"opus"}' \
-  | jaira move <handle> --to done --from-lane review
+  | jaira move <handle> --to review --from-lane in-progress
 ```
 
 `--from-lane` validates your output against what the lane declared it produces and
 refuses it with the missing field names if incomplete. Fix and retry rather than
 working around it.
+
+## Taking a ticket off the board
+
+```bash
+jaira archive <handle>      # moves it to .jaira/archive/, nothing is deleted
+jaira archive               # list what has been archived
+jaira restore <file>        # put it back
+```
+
+## Checking the board is intact
+
+```bash
+jaira validate              # exit 3 if any ticket is damaged
+jaira validate --json
+```
+
+Reports unparseable ids, lanes that are not installed, missing timestamps, and
+dependencies on tickets that do not exist. An unspecified backlog ticket is a
+warning, not an error.
 
 ## Dependencies
 
