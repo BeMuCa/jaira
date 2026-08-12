@@ -496,6 +496,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.startEdit()
 		case "E":
 			return m.openInEditor()
+		case "a":
+			if m.atHumanCheckpoint() {
+				m.accept()
+			}
+		case "f":
+			if m.atHumanCheckpoint() {
+				m.followUp()
+			}
 		case "d":
 			m.openDiff()
 		case "m":

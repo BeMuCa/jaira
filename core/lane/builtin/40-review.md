@@ -7,7 +7,8 @@ agentic: true
 terminal: false
 model-tier: strong
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
-output-produces: [outcome-resolves]
+output-produces: [review-verdict]
+requires-human-exit: true
 description: Implemented, awaiting sign-off.
 ---
 # Prompt

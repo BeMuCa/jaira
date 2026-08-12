@@ -69,6 +69,11 @@ func (m *Model) render() string {
 	case modeDiff:
 		return m.renderDiff()
 	case modeDetail:
+		// A ticket parked at a human checkpoint opens to the screen that asks for
+		// the decision, rather than to the generic field dump.
+		if m.atHumanCheckpoint() {
+			return m.renderSignOff()
+		}
 		return m.renderDetail()
 	case modeEdit:
 		return m.renderEdit()
@@ -614,6 +619,7 @@ func (m *Model) renderHelp() string {
 			{"n", "create a ticket, then fill it in straight away"},
 			{"e", "edit fields in the detail pane (enter newline, ctrl+s save)"},
 			{"E", "open the ticket body and checklists in $EDITOR"},
+			{"a f", "accept, or raise a follow-up (on a ticket awaiting sign-off)"},
 			{"m", "move the selected ticket to another lane"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},

@@ -30,6 +30,7 @@ const (
 	CodeSelfBlock       = "self_block"
 	CodeMissingProduces = "missing_lane_output"
 	CodePlanIncomplete  = "plan_incomplete"
+	CodeNeedsHuman      = "needs_human"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -90,6 +91,12 @@ type Request struct {
 
 	// Actor is who is performing the move, used only in messages.
 	Actor string
+
+	// Interactive marks a move a person made by hand, in the board. It is the
+	// only distinction available that an agent cannot simply assert: an agent
+	// drives the CLI, and cannot press a key in someone's terminal. Lanes that
+	// require a human to release a ticket rely on it.
+	Interactive bool
 }
 
 // Env is the surrounding state a decision needs.
@@ -199,6 +206,18 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
+	// A lane that stops for a human stops for a human. Without this the review
+	// step is decorative: the agent that did the work would decide its own work
+	// passed review, which is the one judgement it is least able to make.
+	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && req.To != t.Status && !req.Interactive {
+		vs = append(vs, Violation{
+			Code: CodeNeedsHuman,
+			Message: fmt.Sprintf(
+				"lane %q is a human checkpoint: open the board and sign this off, or accept it there. An agent cannot move a ticket out of it",
+				cur.ID),
+		})
+	}
+
 	// The plan and the definition of done are not independent. The plan is the
 	// method — write the spec, design it, implement it — and the criteria cannot
 	// have been met while the work that meets them is still under way. A ticket
@@ -288,7 +307,19 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 		v = t.Outcome.Resolves
 	case "diff", ticket.FieldCommits:
 		return len(t.Commits) > 0
+	case ticket.FieldReviewVerdict:
+		v = t.ReviewVerdict
+	case ticket.FieldFollows:
+		v = t.Follows
 	default:
+		// Falling back to the raw document covers fields this package does not
+		// model. A ticket built in memory rather than loaded from disk has no
+		// document, and dereferencing it there is a crash rather than a missing
+		// value — which is what happened the first time a lane declared an
+		// unmodelled field as its output.
+		if t.Doc() == nil {
+			return false
+		}
 		s, _, err := t.Doc().Scalar(field)
 		if err != nil {
 			return false

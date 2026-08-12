@@ -54,6 +54,12 @@ type Lane struct {
 	RequiresOutcome        bool
 	RequiresNonModelSignal bool
 
+	// RequiresHumanExit means no agent may move a ticket out of this lane. It is
+	// the difference between a review step that is conventionally respected and
+	// one that actually stops: an agent that decides its own work passed review
+	// would make the step decorative.
+	RequiresHumanExit bool
+
 	// Prompt is the markdown body: the instruction given to the subagent.
 	Prompt string
 
@@ -109,6 +115,17 @@ func (s *Set) Precedence(id string) int {
 		return l.Precedence
 	}
 	return -1
+}
+
+// Terminal is the lane a signed-off ticket lands in — the first lane declaring
+// itself terminal, which is where accepting work moves it to.
+func (s *Set) Terminal() *Lane {
+	for _, l := range s.Lanes {
+		if l.Terminal {
+			return l
+		}
+	}
+	return nil
 }
 
 // Default is the lane new tickets enter.
@@ -175,6 +192,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.Terminal = boolOf("terminal")
 	l.RequiresOutcome = boolOr("requires-outcome", l.Terminal)
 	l.RequiresNonModelSignal = boolOr("requires-nonmodel-signal", l.Terminal)
+	l.RequiresHumanExit = boolOf("requires-human-exit")
 
 	if l.ID == "" {
 		return nil, fmt.Errorf("lane %s: missing required field \"id\"", source)

@@ -40,6 +40,17 @@ const (
 
 	// Reserved for a future external tracker adapter. jaira never interprets it.
 	FieldExternal = "external"
+
+	// FieldFollows links a follow-up ticket back to the one whose review produced
+	// it, so the trail from "this was not finished" to "this is the rest" is not
+	// lost the moment the first ticket closes.
+	FieldFollows = "follows"
+
+	// FieldReviewVerdict is the reviewer's conclusion, kept separate from
+	// outcome-resolves. The implementer writes what it believes it achieved and
+	// the reviewer judges the diff; storing both in one field destroys the pair
+	// the sign-off view exists to show.
+	FieldReviewVerdict = "review-verdict"
 )
 
 // canonicalOrder is the order in which fields are written into a new ticket.
@@ -77,6 +88,12 @@ type Ticket struct {
 	ClaimedAt  time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+
+	// Follows is the ticket whose review produced this one.
+	Follows string
+	// ReviewVerdict is the reviewer's conclusion, distinct from the
+	// implementer's own account in Outcome.
+	ReviewVerdict string
 
 	Outcome Outcome
 
@@ -335,6 +352,8 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Goal = str(FieldGoal)
 	t.Context = str(FieldContext)
 	t.DoD = str(FieldDoD)
+	t.Follows = str(FieldFollows)
+	t.ReviewVerdict = str(FieldReviewVerdict)
 	t.DoDItems = ParseDoDItems(t.Body)
 	t.PlanItems = ParsePlanItems(t.Body)
 	t.ModelTier = str(FieldModelTier)
