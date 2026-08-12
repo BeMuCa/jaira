@@ -134,6 +134,122 @@ func asciiArt(img image.Image, cols int) string {
 	return out
 }
 
+// colourASCII is the ramp style with each character tinted by its own pixel.
+// The shape comes from the character, the shading from the colour, which reads
+// better than either alone at small sizes.
+func colourASCII(img image.Image, cols int, key bool) string {
+	ramp := []rune(" .:-=+*#%@")
+	b := img.Bounds()
+	rows := cols * b.Dy() / (2 * b.Dx())
+	var out string
+	for r := 0; r < rows; r++ {
+		for c := 0; c < cols; c++ {
+			px := sample(img, c, r, cols, rows)
+			l := luminance(px)
+			if key && l < keyThreshold {
+				out += " "
+				continue
+			}
+			i := int(l * float64(len(ramp)-1))
+			if i < 0 {
+				i = 0
+			}
+			if i >= len(ramp) {
+				i = len(ramp) - 1
+			}
+			cr, cg, cb := rgb(px)
+			out += fmt.Sprintf("\x1b[38;2;%d;%d;%dm%c\x1b[0m", cr, cg, cb, ramp[i])
+		}
+		out += "\n"
+	}
+	return out
+}
+
+// crescentOnly masks the image down to the moon.
+//
+// The crescent, the prompt glyphs and each ray are separate shapes, but at the
+// keying threshold they are bridged by the glow around them and merge into one
+// blob. Separating them needs a higher threshold — measured at 0.55, where the
+// crescent, ">", "_" and the six rays come apart into distinct components — and
+// the largest of those is the moon. The mask is then dilated and intersected
+// back with the ordinary threshold so the soft antialiased edge survives, which
+// a hard 0.55 cut would leave jagged.
+func crescentOnly(img image.Image) image.Image {
+	const separate = 0.55
+	const dilate = 2
+
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	hot := make([]bool, w*h)
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			hot[y*w+x] = luminance(img.At(b.Min.X+x, b.Min.Y+y)) >= separate
+		}
+	}
+
+	// Flood fill each component, remembering the largest.
+	seen := make([]bool, w*h)
+	var best []int
+	for i := range hot {
+		if !hot[i] || seen[i] {
+			continue
+		}
+		var comp []int
+		stack := []int{i}
+		seen[i] = true
+		for len(stack) > 0 {
+			p := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			comp = append(comp, p)
+			px, py := p%w, p/w
+			for dy := -1; dy <= 1; dy++ {
+				for dx := -1; dx <= 1; dx++ {
+					nx, ny := px+dx, py+dy
+					if nx < 0 || ny < 0 || nx >= w || ny >= h {
+						continue
+					}
+					q := ny*w + nx
+					if hot[q] && !seen[q] {
+						seen[q] = true
+						stack = append(stack, q)
+					}
+				}
+			}
+		}
+		if len(comp) > len(best) {
+			best = comp
+		}
+	}
+
+	keep := make([]bool, w*h)
+	for _, p := range best {
+		px, py := p%w, p/w
+		for dy := -dilate; dy <= dilate; dy++ {
+			for dx := -dilate; dx <= dilate; dx++ {
+				nx, ny := px+dx, py+dy
+				if nx < 0 || ny < 0 || nx >= w || ny >= h {
+					continue
+				}
+				keep[ny*w+nx] = true
+			}
+		}
+	}
+
+	out := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			src := img.At(b.Min.X+x, b.Min.Y+y)
+			if keep[y*w+x] && luminance(src) >= keyThreshold {
+				out.Set(x, y, src)
+			} else {
+				// Pure black reads as background to every style below.
+				out.Set(x, y, color.RGBA{0, 0, 0, 255})
+			}
+		}
+	}
+	return out
+}
+
 func main() {
 	path := "icon/jAIra.png"
 	if len(os.Args) > 1 {
@@ -178,6 +294,32 @@ func main() {
 	show(6, "ASCII ramp, 44 cols",
 		"No colour and no block glyphs. Works anywhere, including a plain log.",
 		asciiArt(img, 44))
+
+	moon := crescentOnly(img)
+
+	show(7, "Colour ASCII ramp, background kept, 60 cols",
+		"Style 6 with each character tinted by its own pixel — shape from the glyph, shading from the colour.",
+		colourASCII(img, 60, false))
+
+	show(8, "Colour ASCII ramp, background keyed out, 60 cols",
+		"As 7, with the gradient dropped so the terminal shows through.",
+		colourASCII(img, 60, true))
+
+	show(9, "Half-blocks, background kept, 60 cols",
+		"Style 2, larger.",
+		halfBlocks(img, 60, false))
+
+	show(10, "Half-blocks, background kept, 80 cols",
+		"Style 2, larger still. Needs a wide terminal.",
+		halfBlocks(img, 80, false))
+
+	show(11, "Crescent only, keyed out, 36 cols",
+		"The moon by itself: prompt glyphs and rays removed by component analysis.",
+		halfBlocks(moon, 36, true))
+
+	show(12, "Crescent only, silhouette in accent, 28 cols",
+		"The moon by itself, one colour, no gradient.",
+		silhouette(moon, 28, "\x1b[38;5;39m"))
 
 	fmt.Printf("\n\x1b[2mSource: %s\x1b[0m\n", path)
 }
