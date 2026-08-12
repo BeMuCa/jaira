@@ -62,6 +62,7 @@ None yet.
 |------|------|---------|
 | 2026-08-12 | dod-verb | `jaira dod` plus a surgical checklist writer: one marker character changes, indexes are scoped to their section, one in-progress item per checklist |
 | 2026-08-12 | dod-checkbox-states | Three checklist states, `## Plan` section parsed separately, and the fix for `[~]` items being dropped by the parser — which let a ticket with outstanding work enter the terminal lane |
+| 2026-08-13 | 260813-0z0 | The detail pane shows the full ticket id and `y` copies it to the clipboard over OSC52 (`tea.SetClipboard`, no new dependency), so an id can be pasted into an agent prompt. The full id is also rendered as selectable text, because a terminal with OSC52 disabled would otherwise leave no way to get it ([260813-0z0](./quick/260813-0z0-show-and-copy-the-full-ticket-id-in-the-/)) |
 | 2026-08-12 | 260812-wz3 | A board created from the TUI browse screen ("i") was neither gitignored nor announced to any agent — only `jaira init` did that. Privacy and agent-note logic moved into `core/board`, both init paths call `board.Prepare`, and the note now names the whole working loop instead of four commands ([260812-wz3](./quick/260812-wz3-fix-tui-board-creation-to-write-gitignor/)) |
 
 ## Deferred Items
