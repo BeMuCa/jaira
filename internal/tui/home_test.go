@@ -236,3 +236,34 @@ func TestBrowserScanOffersToInit(t *testing.T) {
 		t.Errorf("scan-then-init did not create a board: %v", err)
 	}
 }
+
+// A scan that registers boards already on the list changes nothing visible,
+// which reads as the key not working. It has to say what it did either way.
+func TestScanReportsWhatItDid(t *testing.T) {
+	root := t.TempDir()
+	makeBoard(t, root, "one")
+	makeBoard(t, root, "two")
+
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+
+	if len(h.entries) != 2 {
+		t.Fatalf("scan registered %d boards, want 2", len(h.entries))
+	}
+	if !strings.Contains(h.msg, "added 2") {
+		t.Errorf("scan said %q, expected it to report adding 2", h.msg)
+	}
+
+	// Scanning the same place again must say so rather than looking inert.
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	if !strings.Contains(h.msg, "already") {
+		t.Errorf("a repeat scan said %q, expected it to say they were already listed", h.msg)
+	}
+	if !strings.Contains(stripANSI(h.render()), "already") {
+		t.Error("the message is not shown on the home screen")
+	}
+}

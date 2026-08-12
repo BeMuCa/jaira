@@ -42,6 +42,10 @@ type Home struct {
 	// browse is the directory picker, non-nil while adding a board.
 	browse *browser
 
+	// msg reports what an action did. Registering boards silently looked like
+	// nothing had happened whenever they were already in the list.
+	msg string
+
 	// Chosen is the board the user picked; the caller opens it.
 	Chosen string
 	// Quit is set when the user asked to leave rather than pick.
@@ -53,8 +57,9 @@ type Home struct {
 	width, height int
 }
 
-// refresh rebuilds the list, including anything just added.
-func (h *Home) refresh(extra []string) {
+// refresh rebuilds the list, including anything just added, and reports how many
+// of them were not already known.
+func (h *Home) refresh(extra []string) int {
 	seen := map[string]bool{}
 	var entries []HomeEntry
 	add := func(root string) {
@@ -64,6 +69,10 @@ func (h *Home) refresh(extra []string) {
 		}
 		seen[abs] = true
 		entries = append(entries, describe(abs, h.lanes))
+	}
+	before := map[string]bool{}
+	for _, e := range h.entries {
+		before[e.Root] = true
 	}
 	for _, p := range project.Load() {
 		add(p.Root)
@@ -75,6 +84,13 @@ func (h *Home) refresh(extra []string) {
 	if h.idx >= len(h.entries) {
 		h.idx = max(0, len(h.entries)-1)
 	}
+	added := 0
+	for _, e := range entries {
+		if !before[e.Root] {
+			added++
+		}
+	}
+	return added
 }
 
 // NewHome builds the launcher from the registry plus anything discovered below
@@ -156,7 +172,19 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if h.browse != nil {
 			added, done := h.browse.key(msg.String())
 			if len(added) > 0 {
-				h.refresh(added)
+				// Say what happened. Registering boards that were already known
+				// changes nothing on screen, which reads as the key not working.
+				n := h.refresh(added)
+				switch {
+				case n == 0 && len(added) == 1:
+					h.msg = filepath.Base(added[0]) + " was already on the list"
+				case n == 0:
+					h.msg = fmt.Sprintf("all %d board(s) found were already on the list", len(added))
+				case n == len(added):
+					h.msg = fmt.Sprintf("added %d board(s)", n)
+				default:
+					h.msg = fmt.Sprintf("added %d of %d board(s); the rest were already listed", n, len(added))
+				}
 			}
 			if done {
 				h.browse = nil
@@ -165,10 +193,12 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch msg.String() {
 		case "a":
+			h.msg = ""
 			h.browse = newBrowser(h.startDir)
 			return h, nil
 		case "r":
 			h.refresh(nil)
+			h.msg = "reloaded"
 			return h, nil
 		case "q", "ctrl+c", "esc":
 			h.Quit = true
@@ -254,6 +284,10 @@ func (h *Home) render() string {
 			bits = append(bits, styReview.Render(fmt.Sprintf("◆ %d awaiting you", e.Waiting)))
 		}
 		b.WriteString(centre.Render(truncate(lead+padTo(name, 28)+strings.Join(bits, "  "), h.width)) + "\n")
+	}
+
+	if h.msg != "" {
+		b.WriteString("\n" + centre.Render(styOK.Render(truncate(h.msg, h.width))) + "\n")
 	}
 
 	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
