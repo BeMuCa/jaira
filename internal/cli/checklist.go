@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
 )
 

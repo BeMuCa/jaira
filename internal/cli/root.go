@@ -19,9 +19,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Exit codes are part of the contract with any agent driving this tool.

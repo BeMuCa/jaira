@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // recentMove is how long a lane counts as having just received something.

@@ -19,11 +19,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/project"
-	"github.com/berk/jaira/core/session"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 type mode int

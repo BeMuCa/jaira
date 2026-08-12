@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
 )
 

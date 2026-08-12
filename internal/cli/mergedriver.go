@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/merge"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/merge"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // mergeDriverName is the git merge driver identifier. It appears in both

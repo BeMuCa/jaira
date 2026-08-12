@@ -11,7 +11,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Project is one repository the user has opened a board in.

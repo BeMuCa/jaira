@@ -10,9 +10,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/session"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Colours are chosen from the 256-colour cube rather than truecolour so the

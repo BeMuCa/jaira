@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func testEnv(t *testing.T) Env {

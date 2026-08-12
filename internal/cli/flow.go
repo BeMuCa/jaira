@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/gitrepo"
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/session"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/gitrepo"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func newMoveCmd() *cobra.Command {

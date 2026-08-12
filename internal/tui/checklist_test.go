@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func withChecklists(body string) *ticket.Ticket {

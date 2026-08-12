@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // renderSignOff is the screen a person sees when a ticket is waiting on them.

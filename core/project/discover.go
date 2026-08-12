@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // MaxScanDepth is how many directory levels below a root are searched for

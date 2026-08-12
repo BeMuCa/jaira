@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
-	"github.com/berk/jaira/core/validate"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/validate"
 	"github.com/spf13/cobra"
 )
 

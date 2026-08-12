@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/berk/jaira/core/project"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // browser is the directory picker for adding a board without leaving jaira.

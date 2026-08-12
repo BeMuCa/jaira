@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // listFields union rather than pick a side: adding a blocker or recording a

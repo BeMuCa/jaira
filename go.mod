@@ -1,4 +1,4 @@
-module github.com/berk/jaira
+module github.com/BeMuCa/jaira
 
 go 1.26.5
 

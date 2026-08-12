@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // The review lane stops for a person, and this is that person's screen: what was

@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/berk/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/project"
 )
 
 func pipelineModel(t *testing.T, w, h int) *Model {

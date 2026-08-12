@@ -14,7 +14,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Session is one agent session's current focus.

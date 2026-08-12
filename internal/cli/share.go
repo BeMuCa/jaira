@@ -2,14 +2,14 @@ package cli
 
 import (
 	"fmt"
-	"github.com/berk/jaira/core/gitrepo"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // ignoreLine is the entry that keeps a board private.

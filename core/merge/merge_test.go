@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/berk/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/lane"
 )
 
 func lanes(t *testing.T) *lane.Set {

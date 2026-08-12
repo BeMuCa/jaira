@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/berk/jaira/internal/cli"
+	"github.com/BeMuCa/jaira/internal/cli"
 )
 
 // version is overridden at build time via -ldflags.

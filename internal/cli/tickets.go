@@ -11,10 +11,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/project"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func newInitCmd() *cobra.Command {

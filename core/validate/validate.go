@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Severities. A ticket can be incomplete without being broken: capture is meant

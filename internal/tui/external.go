@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/berk/jaira/core/gate"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // editorCommand resolves the editor to launch.

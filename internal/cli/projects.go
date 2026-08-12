@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/project"
 )
 
 func newProjectsCmd() *cobra.Command {

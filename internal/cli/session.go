@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/session"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func newCheckpointCmd() *cobra.Command {

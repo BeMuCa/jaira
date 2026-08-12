@@ -3,8 +3,8 @@ package cli
 import (
 	"testing"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // An agent driving the board through --json must be able to see the checklists.

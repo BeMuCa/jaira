@@ -1,4 +1,4 @@
-<img src="icon/jAIra.png" alt="jaira" width="160">
+<img src="icon/jAIra.png" alt="jaira" width="140" align="right">
 
 # jaira
 
@@ -20,6 +20,13 @@ repo/                              ~/.jaira/
 └── src/                           └── state/<worktree>/   sessions, locks
 ```
 
+<img src="docs/img/board.png" alt="The board" width="100%">
+
+One window over every project, with the whole flow on one screen — a dot per
+ticket, agents counted per step, and the arrow lit where work just moved:
+
+<img src="docs/img/pipeline.png" alt="The compact pipeline view" width="100%">
+
 The repository holds only tickets. Everything ephemeral — what each session is
 focused on, write locks — lives under your home directory, so `.jaira/` never
 mixes committed content with scratch state.
@@ -27,12 +34,15 @@ mixes committed content with scratch state.
 ## Install
 
 ```bash
-go install github.com/berk/jaira/cmd/jaira@latest
+go install github.com/BeMuCa/jaira/cmd/jaira@latest
 ```
 
-Or download a binary from the releases page. It is a single static executable with
-no runtime dependency; `git` must be on `PATH`, which it already is if you have a
-repository for jaira to work in.
+Or download a binary from the releases page and put it on your `PATH`. It is a
+single static executable with no runtime dependency — nothing to install
+alongside it, no daemon, no database.
+
+`git` is optional. jaira works fine in a directory that is not a repository; you
+only lose the parts that are about sharing (`jaira share`, the merge driver).
 
 ## Start
 
@@ -232,6 +242,36 @@ The sync is idempotent — a task already mapped to a ticket updates it rather t
 creating a second one, and an unchanged list writes nothing — so a
 board→tasks→board round trip settles instead of oscillating.
 
+## Working with an agent
+
+The whole integration surface is: run a command, read the JSON, branch on the
+exit code. Nothing is specific to one tool — Claude Code, Codex, Aider, a local
+model behind Ollama, or a shell script all drive it the same way.
+
+```bash
+jaira next --json                              # what should I work on?
+jaira show <id> --for-lane in-progress --json  # the prompt and bounded input
+jaira dod <id> 2 --doing --plan                # say where you are
+jaira note <id> "the exporter buffers everything in writeAll()"
+jaira move <id> --to review --what … --why … --resolves …
+```
+
+Starting a session, `jaira resume --json` returns everything left mid-flight with
+the notes written against it — a session that died to a usage limit leaves
+nothing behind except what was written down.
+
+Two things an agent deliberately cannot do: leave the sign-off lane, and close a
+ticket whose definition of done is unmet. See **[docs/AGENTS.md](docs/AGENTS.md)**.
+
+## Reviewing finished work
+
+A ticket in sign-off opens to the four questions the decision actually needs —
+what was wrong, what was done, why, and whether it holds — with the implementer's
+account and the reviewer's verdict kept apart, because when they disagree that is
+the most useful thing on the screen:
+
+<img src="docs/img/signoff.png" alt="The sign-off view" width="100%">
+
 ## Commands
 
 ```
@@ -258,6 +298,8 @@ jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira share                publish the board (--undo to make it private)
 ```
+
+Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.
 
 Every read command takes `--json`. Exit codes are a stable contract:
 

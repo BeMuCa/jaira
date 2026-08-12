@@ -7,9 +7,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/berk/jaira/core/project"
-	"github.com/berk/jaira/core/ticket"
-	"github.com/berk/jaira/internal/tui"
+	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/internal/tui"
 )
 
 // runHome opens the launcher, then the board of whatever was chosen.

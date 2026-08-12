@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/berk/jaira/core/lane"
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func lanes(t *testing.T) *lane.Set {

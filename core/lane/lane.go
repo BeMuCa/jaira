@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/berk/jaira/core/ticket"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 //go:embed builtin/*.md
