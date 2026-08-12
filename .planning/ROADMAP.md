@@ -94,7 +94,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   7. A lane is legible without a ticket in hand: `jaira lanes show <id>` prints it in full including its prompt, `jaira lanes --json` carries the prompt, and `jaira lanes path` names the directory to write into — so an agent can read a lane, write a new one from a template, and verify the result with `jaira lanes`, without a second write path.
   8. A lane can be exported to `.jaira/shared/<user>/` from the TUI lane settings screen; teammates' shared lanes are visible when picking lanes, and adopting one copies it into the adopter's catalogue.
   9. Every lane records a `creator:` signature, so an adopted lane keeps its provenance.
-**Plans**: TBD
+**Plans**: 1 plan, 7 tasks
+- [ ] `.planning/phase-5-custom-and-portable-lanes/PLAN.md` — decision checkpoint on three open questions, then root-aware lane loading, a legible `jaira lanes`, private project lanes through `share`, ordering/tier/unknown-lane proof, and the TUI publish + adopt screens
 
 ### Phase 6: Agent Pipeline
 **Mode:** mvp
