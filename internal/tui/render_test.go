@@ -355,3 +355,37 @@ func stripANSI(s string) string {
 }
 
 var _ = os.Getenv
+
+// A ticket captured in one session and picked up in another is only legible if
+// the board says when each of those happened.
+func TestDetailShowsWhenTheTicketAppearedAndWasTouched(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	tk := withChecklists(twoChecklists)
+	tk.CreatedAt = time.Now().Add(-72 * time.Hour)
+	tk.UpdatedAt = time.Now().Add(-2 * time.Hour)
+	m.detail = tk
+	m.mode = modeDetail
+
+	out := stripANSI(m.renderDetail())
+	if !strings.Contains(out, "when") {
+		t.Fatalf("detail pane has no when row:\n%s", out)
+	}
+	if !strings.Contains(out, "3d old") {
+		t.Fatalf("when row does not say how old the ticket is:\n%s", out)
+	}
+	if !strings.Contains(out, "touched 2h ago") {
+		t.Fatalf("when row does not say when it was last touched:\n%s", out)
+	}
+}
+
+// A ticket written the moment it was created must not claim it was touched
+// separately, or every card ever made carries a meaningless second timestamp.
+func TestWhenRowOmitsTouchedForAFreshTicket(t *testing.T) {
+	now := time.Now()
+	if got := timespan(now, now); strings.Contains(got, "touched") {
+		t.Fatalf("fresh ticket reported a separate touch: %q", got)
+	}
+	if got := timespan(time.Time{}, now); got != "" {
+		t.Fatalf("a ticket with no creation time should render nothing, got %q", got)
+	}
+}

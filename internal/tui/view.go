@@ -187,6 +187,24 @@ func roughAge(d time.Duration) string {
 	return fmt.Sprintf("%dd", int(d.Hours()/24))
 }
 
+// timespan says when a ticket appeared and when it was last touched. The two
+// answer different questions — how old the thought is, and whether anyone has
+// been near it since — and a ticket where those diverge is exactly the one worth
+// noticing.
+func timespan(created, updated time.Time) string {
+	if created.IsZero() {
+		return ""
+	}
+	s := created.Local().Format("2 Jan 2006") + " · " + roughAge(time.Since(created)) + " old"
+	// A minute of slack: every ticket is written a moment after it is created, and
+	// reporting that as a separate event would put "touched moments ago" on every
+	// card ever made.
+	if !updated.IsZero() && updated.After(created.Add(time.Minute)) {
+		s += ", touched " + roughAge(time.Since(updated)) + " ago"
+	}
+	return s
+}
+
 func (m *Model) columnWidth() int {
 	if len(m.cols) == 0 {
 		return minColWidth
@@ -475,6 +493,11 @@ func (m *Model) renderDetail() string {
 	}
 	row("assignee", t.Assignee)
 	row("creator", t.Creator)
+	// A ticket that sat in a lane for three weeks and one touched an hour ago look
+	// identical without this. The board is read to answer "where does this stand",
+	// and how long it has stood there is part of that answer — especially for a
+	// thought captured in one session and picked up in another.
+	row("when", timespan(t.CreatedAt, t.UpdatedAt))
 	row("executed-by", t.ExecutedBy)
 	row("tier", t.ModelTier)
 	row("goal", t.Goal)
