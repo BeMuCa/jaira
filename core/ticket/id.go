@@ -22,6 +22,16 @@ func NewID(now time.Time) string {
 	return ulid.MustNew(ulid.Timestamp(now), rand.Reader).String()
 }
 
+// ValidID reports whether id is a well-formed ULID.
+//
+// Every reference between tickets — dependencies, follow-ups, the handle shown
+// on a card — resolves through the id, so an id that does not parse makes the
+// ticket unreachable rather than merely untidy.
+func ValidID(id string) bool {
+	_, err := ulid.ParseStrict(id)
+	return err == nil
+}
+
 // Slug renders a title into a filename-safe breadcrumb. It is a static hint for
 // humans running ls or grep, deliberately not kept in sync with later title
 // edits: renaming files on every title change would churn git history for no
