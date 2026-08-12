@@ -9,7 +9,23 @@
 #   scripts/jaira-tmux [repo-path] [agent-count]
 #
 # Defaults to the current directory and two agent panes.
+#
+# To watch the board in one OS terminal window and work agents in another, open a
+# second terminal and run:
+#
+#   scripts/jaira-tmux --view [repo-path]
+#
+# That attaches a grouped session: the same windows, but each terminal keeps its
+# own current window, so one can sit on the board while another drives an agent.
+# Attaching the session normally in two terminals instead would mirror them,
+# which is not what you want here.
 set -euo pipefail
+
+view=0
+if [ "${1:-}" = "--view" ]; then
+	view=1
+	shift
+fi
 
 repo=${1:-$PWD}
 agents=${2:-2}
@@ -22,6 +38,17 @@ fi
 if [ ! -d "$repo/.jaira" ]; then
 	echo "$repo has no .jaira board — run 'jaira init' there first" >&2
 	exit 1
+fi
+
+if [ "$view" = 1 ]; then
+	if ! tmux has-session -t "$session" 2>/dev/null; then
+		echo "no jaira tmux session for $repo yet — run this without --view first" >&2
+		exit 1
+	fi
+	# A grouped session shares the windows but keeps its own current window, so
+	# this terminal can hold the board while the other drives an agent.
+	tmux new-session -d -t "$session" -s "$session-view-$$" 2>/dev/null || true
+	exec tmux attach -t "$session-view-$$"
 fi
 
 if tmux has-session -t "$session" 2>/dev/null; then
