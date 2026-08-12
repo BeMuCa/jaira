@@ -292,6 +292,44 @@ func TestKeyRoutingDoesNotPanic(t *testing.T) {
 	}
 }
 
+// The detail pane is the only place a human (or another agent) can find the
+// full id to hand to the CLI, so it has to print the whole thing, and y has
+// to put it on the clipboard without closing the pane the id came from. The
+// clipboard write itself (OSC52) goes straight to the terminal, so there is
+// nothing here to read back — the test stops at "a command was returned".
+func TestDetailShowsAndCopiesFullID(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	tk := withChecklists(twoChecklists)
+	m.detail = tk
+	m.mode = modeDetail
+
+	out := stripANSI(m.renderDetail())
+	if !strings.Contains(out, tk.ID) {
+		t.Fatalf("detail pane missing full id %q:\n%s", tk.ID, out)
+	}
+
+	_, cmd := m.key(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	if cmd == nil {
+		t.Fatal("y did not return a clipboard command")
+	}
+	if m.mode != modeDetail {
+		t.Fatal("y closed the detail pane")
+	}
+
+	out = stripANSI(m.renderDetail())
+	if !strings.Contains(out, "copied") {
+		t.Fatalf("no copy confirmation after y:\n%s", out)
+	}
+
+	// "x" is unbound in the detail pane, so this is purely "any other key",
+	// not a key that happens to also dismiss the pane.
+	m.key(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	out = stripANSI(m.renderDetail())
+	if strings.Contains(out, "copied") {
+		t.Fatalf("copy confirmation still present after next keypress:\n%s", out)
+	}
+}
+
 func idOf(t *ticket.Ticket) string {
 	if t == nil {
 		return "<nil>"
