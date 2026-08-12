@@ -1,3 +1,27 @@
+# Done 2026-08-12 (this session)
+
+- `[~]` no longer defeats the terminal gate — unknown markers parse as todo
+- `jaira dod` writes checklist state surgically; one `[~]` per checklist
+- `## Plan` checklist, parsed separately; a terminal lane refuses an unfinished plan
+- Gate refusals name the item and give the command that clears it, in text and JSON
+- Cards show `Plan n/m · DoD n/m`; detail pane renders both checklists
+- `e` edits fields (multiline, ctrl+s), `E` opens the body in $EDITOR
+- Creating a ticket hands straight to the editor instead of pointing at the CLI
+- Umlauts no longer dropped by the line editors
+- `jaira validate` checks the board at rest
+- `--json` carries the checklists an agent is told to act on
+- `--signal` removed (it accepted unchecked free text as evidence)
+- Review is an enforced human checkpoint; `review-verdict` and `follows:` added
+- Sign-off view: what was wrong / done / why / does it hold, accept or follow-up
+- `jaira archive` and `restore`; nothing deletes
+- Search covers bodies and checklists; listing reads whole files (16KB probe was
+  truncating checklists out of the card counts)
+- Quiet outside a git repo; `share` refuses instead of lying
+- Home screen on bare `jaira`: icon, boards, agent and waiting counts
+- `jaira projects add --scan`, two levels deep
+- Driven under a real pty for the first time — found and fixed the detail pane
+  claiming a checklist-bearing ticket had no definition of done
+
 # Home screen and multi-project — specified 2026-08-12, not built
 
 Decided in conversation, recorded here so it survives a context clear.
