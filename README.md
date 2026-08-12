@@ -1,3 +1,5 @@
+<img src="icon/jAIra.png" alt="jaira" width="160">
+
 # jaira
 
 A kanban board for the work you do with coding agents, stored as markdown files
