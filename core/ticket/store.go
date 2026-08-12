@@ -150,6 +150,11 @@ func (s *Store) Restore(name string) (string, error) {
 func (s *Store) SessionsDir() string { return filepath.Join(s.stateDir(), SessionsSubdir) }
 func (s *Store) locksDir() string    { return filepath.Join(s.stateDir(), locksSubdir) }
 
+// StateDir is the per-working-tree directory this store's session and lock
+// state lives under, exported so callers outside the package (the version
+// stamp, in particular) can address it too.
+func (s *Store) StateDir() string { return s.stateDir() }
+
 // stateDir is a per-working-tree directory under the user's home.
 //
 // Keyed by working tree rather than by repository: two clones of the same project
