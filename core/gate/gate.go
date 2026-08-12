@@ -88,11 +88,6 @@ type Request struct {
 	// Question accompanies a move into a lane that requires one.
 	Question string
 
-	// NonModelSignal is evidence that something other than a language model
-	// judged the work complete — a passing command, or an explicit human
-	// sign-off. Required to enter a lane that demands it.
-	NonModelSignal string
-
 	// Actor is who is performing the move, used only in messages.
 	Actor string
 }
@@ -169,17 +164,17 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
-	// A model must not be able to certify its own work as finished. Review agents
-	// are measurably poor at catching real defects, so the terminal transition
-	// needs evidence that did not come from a model.
+	// A model must not be able to certify its own work as finished on its own
+	// say-so, so a terminal lane requires the definition of done to be met.
 	//
-	// A fully ticked definition-of-done checklist is exactly that evidence:
-	// ticking a box is a human editing a file, which a model asserting "it works"
-	// cannot manufacture. So a complete checklist satisfies the requirement, and
-	// --signal remains available for tickets whose criteria live elsewhere.
+	// There used to be a --signal escape hatch here that took free text as
+	// "evidence" and never checked it, which meant an agent could close any
+	// ticket by typing a sentence. It was removed rather than repaired: the
+	// review lane is where a human actually looks at the work, and --force
+	// remains for a deliberate override, recorded on the ticket.
 	if target.RequiresNonModelSignal {
 		complete, remaining := t.DoDComplete()
-		if !complete && strings.TrimSpace(req.NonModelSignal) == "" {
+		if !complete {
 			if len(remaining) > 0 {
 				for i, it := range t.DoDItems {
 					if it.Checked() {
@@ -197,7 +192,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				vs = append(vs, Violation{
 					Code: CodeNeedsSignal,
 					Message: fmt.Sprintf(
-						"lane %q cannot be entered on a model's own assessment; tick the definition-of-done checklist, or pass --signal with a passing command or a human sign-off",
+						"lane %q cannot be entered on a model's own assessment, and this ticket has no definition-of-done checklist to satisfy. Add one to the body, or pass --force to override deliberately",
 						target.ID),
 				})
 			}

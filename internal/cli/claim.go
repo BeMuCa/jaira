@@ -136,7 +136,6 @@ type laneOutput struct {
 	Commits    []string `json:"commits"`
 	Question   string   `json:"question"`
 	ExecutedBy string   `json:"executed_by"`
-	Signal     string   `json:"signal"`
 }
 
 // readLaneOutput parses an agent's structured output and reports which fields the

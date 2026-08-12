@@ -16,11 +16,11 @@ import (
 
 func newMoveCmd() *cobra.Command {
 	var (
-		to, question, signal, executedBy string
-		what, why, resolves              string
-		commits                          []string
-		force                            bool
-		fromLane                         string
+		to, question, executedBy string
+		what, why, resolves      string
+		commits                  []string
+		force                    bool
+		fromLane                 string
 	)
 	cmd := &cobra.Command{
 		Use:     "move <id>",
@@ -88,9 +88,6 @@ command is safe to retry.`,
 				if executedBy == "" {
 					executedBy = out.ExecutedBy
 				}
-				if signal == "" {
-					signal = out.Signal
-				}
 				commits = append(commits, out.Commits...)
 			}
 
@@ -156,7 +153,7 @@ command is safe to retry.`,
 				return err
 			}
 
-			req := gate.Request{To: to, Question: question, NonModelSignal: signal, Actor: identity()}
+			req := gate.Request{To: to, Question: question, Actor: identity()}
 			vs := gate.CheckAdvance(env, t, req)
 			if len(vs) > 0 && !force {
 				code := ExitValidation
@@ -176,11 +173,6 @@ command is safe to retry.`,
 			t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
 				if err := t.Doc().SetScalar(ticket.FieldStatus, to); err != nil {
 					return err
-				}
-				if signal != "" {
-					if err := t.Doc().SetScalar("done-signal", signal); err != nil {
-						return err
-					}
 				}
 				return ticket.SetReady(t.Doc(), gate.Ready(t))
 			})
@@ -204,7 +196,6 @@ command is safe to retry.`,
 	f := cmd.Flags()
 	f.StringVar(&to, "to", "", "target lane (required)")
 	f.StringVar(&question, "question", "", "the question blocking progress, for the human lane")
-	f.StringVar(&signal, "signal", "", "non-model evidence the work is complete (a passing command, or a human sign-off)")
 	f.StringVar(&executedBy, "executed-by", "", "model that performed this run; ownership stays with the assignee")
 	f.StringVar(&what, "what", "", "outcome: what was changed")
 	f.StringVar(&why, "why", "", "outcome: why it was needed")
