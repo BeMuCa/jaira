@@ -57,7 +57,11 @@ func Discover(dir string) (*Store, error) {
 		return nil, err
 	}
 	for {
-		candidate := filepath.Join(abs, DirName)
+		// A board is identified by its tickets directory, not merely by a
+		// directory named .jaira. The user's global config lives at ~/.jaira, so
+		// matching on the name alone would make the home directory look like a
+		// board to anything run underneath it.
+		candidate := filepath.Join(abs, DirName, TicketsSubdir)
 		if fi, err := os.Stat(candidate); err == nil && fi.IsDir() {
 			return &Store{Root: abs}, nil
 		}

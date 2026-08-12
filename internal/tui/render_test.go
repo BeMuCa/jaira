@@ -16,6 +16,11 @@ import (
 func newTestStore(t *testing.T) *ticket.Store {
 	t.Helper()
 	dir := t.TempDir()
+	// Redirect BOTH the config and state locations before anything touches the
+	// filesystem, so a test run never writes into the real user's home.
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
+
 	s, err := ticket.At(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -23,9 +28,6 @@ func newTestStore(t *testing.T) *ticket.Store {
 	if _, err := s.Init(); err != nil {
 		t.Fatal(err)
 	}
-	// Custom lanes are read from the user's home directory; point that at an
-	// empty dir so the test only sees the built-ins.
-	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
 
 	now := time.Now()
 	mk := func(title, status string, ready bool, blockedBy []string, commits []string) *ticket.Ticket {

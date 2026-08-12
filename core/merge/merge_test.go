@@ -10,6 +10,7 @@ import (
 
 func lanes(t *testing.T) *lane.Set {
 	t.Helper()
+	t.Setenv("JAIRA_HOME", filepath.Join(t.TempDir(), "home"))
 	t.Setenv("JAIRA_LANES_DIR", filepath.Join(t.TempDir(), "none"))
 	s, err := lane.Load()
 	if err != nil {
