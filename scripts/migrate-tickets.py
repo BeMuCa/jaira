@@ -12,8 +12,13 @@ import sys
 import time
 import random
 
-SRC = "/tmp/jtest-sync/tickets-src"
-DST = "/tmp/jtest-sync/repoG/.jaira/tickets"
+USAGE = """usage: migrate-tickets.py <src-tickets-dir> <dst-tickets-dir>
+
+Reads every *.md except TEMPLATE.md from src, writes a migrated copy into dst.
+Never modifies src. dst is created if absent.
+
+  python3 scripts/migrate-tickets.py ~/git/PROJECT/tickets /tmp/mig/.jaira/tickets
+"""
 
 CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
@@ -24,14 +29,20 @@ def encode_b32(value, length):
         value >>= 5
     return "".join(reversed(chars))
 
-_last_ms = int(time.time() * 1000)
+_used_ms = set()
 
-def new_ulid():
-    global _last_ms
-    _last_ms += 1  # keep them strictly increasing / unique across the batch
-    ts_part = encode_b32(_last_ms, 10)
-    rand_part = encode_b32(random.getrandbits(80), 16)
-    return ts_part + rand_part
+def new_ulid(when_ms):
+    """A ULID whose timestamp reflects when the ticket was actually written.
+
+    ULIDs sort lexicographically by their timestamp, so using each file's mtime
+    makes `ls` show tickets in authoring order rather than in whatever order this
+    script happened to process them. Collisions within a millisecond are nudged
+    forward so every id stays unique.
+    """
+    while when_ms in _used_ms:
+        when_ms += 1
+    _used_ms.add(when_ms)
+    return encode_b32(when_ms, 10) + encode_b32(random.getrandbits(80), 16)
 
 def slugify(title):
     out = []
@@ -55,7 +66,7 @@ def h1_title(body):
             return line[2:].strip()
     return ""
 
-def migrate_one(path):
+def migrate_one(path, dst):
     with open(path, "r", encoding="utf-8") as f:
         raw = f.read()
 
@@ -71,7 +82,7 @@ def migrate_one(path):
     fm_lines = lines[1:end]
     body = "\n".join(lines[end + 1:])
 
-    tid = new_ulid()
+    tid = new_ulid(int(os.path.getmtime(path) * 1000))
     # Prepend id/status as the first two frontmatter lines; nothing else moves.
     new_fm = [f"id: {tid}", "status: backlog"] + fm_lines
 
@@ -80,7 +91,7 @@ def migrate_one(path):
     title = h1_title(body)
     slug = slugify(title)
     new_name = f"{tid}-{slug}.md"
-    new_path = os.path.join(DST, new_name)
+    new_path = os.path.join(dst, new_name)
 
     with open(new_path, "w", encoding="utf-8") as f:
         f.write(new_raw)
@@ -88,19 +99,24 @@ def migrate_one(path):
 
 
 def main():
-    os.makedirs(DST, exist_ok=True)
+    if len(sys.argv) != 3:
+        print(USAGE, file=sys.stderr)
+        return 2
+    src, dst = sys.argv[1], sys.argv[2]
+    if os.path.abspath(src) == os.path.abspath(dst):
+        print("refusing to migrate a directory onto itself", file=sys.stderr)
+        return 2
+    os.makedirs(dst, exist_ok=True)
     count = 0
-    for name in sorted(os.listdir(SRC)):
-        if name == "TEMPLATE.md":
+    for name in sorted(os.listdir(src)):
+        if name == "TEMPLATE.md" or not name.endswith(".md"):
             continue
-        if not name.endswith(".md"):
-            continue
-        src_path = os.path.join(SRC, name)
-        old, new, title = migrate_one(src_path)
+        old, new, title = migrate_one(os.path.join(src, name), dst)
         print(f"{os.path.basename(old)} -> {os.path.basename(new)}  [{title}]")
         count += 1
-    print(f"migrated {count} tickets")
+    print(f"migrated {count} tickets into {dst}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

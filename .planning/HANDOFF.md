@@ -53,6 +53,9 @@ Design changes the user asked for, implemented:
 
 ## Open — not yet done
 
+Ordered, with commands and acceptance criteria: **`.planning/NEXT-STEPS.md`**.
+Summarised here for context:
+
 1. **TUI layout overflow, 2 bugs.** The TUI agent reproduced these twice, at 20×20,
    including with an ASCII-only fixture (so not a wide-char artifact). **I have not
    reproduced or fixed them.** Its findings report never reached me — only its
