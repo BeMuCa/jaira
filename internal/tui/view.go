@@ -75,6 +75,8 @@ func (m *Model) render() string {
 		return m.renderDetail()
 	case modeEdit:
 		return m.renderEdit()
+	case modePipeline:
+		return m.renderPipeline()
 	case modeMessage:
 		return m.renderMessage()
 	case modeProjects:

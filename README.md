@@ -120,10 +120,9 @@ Three details are load-bearing:
 ## The lanes
 
 ```
-BACKLOG → TODO → IN PROGRESS → HUMAN → REVIEW → DONE        + BLOCKED
-                                 │        ▲
-                                 └ needs ─┘
-                                   you
+BACKLOG → TODO → PRE-PROCESS → IMPLEMENTING → HITL → REVIEW → SIGN-OFF → DONE
+                                                │                  ▲
+                                                └ needs you ───────┘        + BLOCKED
 ```
 
 Anything can be thrown into the backlog. Nothing *leaves* it without a goal, a
@@ -280,7 +279,11 @@ supply — so an agent can fix and retry without parsing prose.
 h l ← →   lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter           m   move lane
 g G       first / last    ?       help             r   reload
-                                                   q   quit
+v         compact view    x       archive          q   quit
+
+Compact view (v): the whole flow as steps with arrows, agents counted per step,
+an arrow lit when work just moved. ad/←→ pick a step, enter opens it, 1-9 switch
+project.
 
 In an open ticket:
 e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)

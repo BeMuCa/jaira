@@ -38,6 +38,7 @@ const (
 	modeMessage
 	modeProjects
 	modeEdit
+	modePipeline
 )
 
 // Model is the board's state.
@@ -444,6 +445,17 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modePipeline:
+		if s == "q" || s == "ctrl+c" {
+			m.Close()
+			return m, tea.Quit
+		}
+		if quit := m.pipelineKey(s); quit {
+			m.Close()
+			return m, tea.Quit
+		}
+		return m, nil
+
 	case modeHelp, modeMessage:
 		if s == "esc" || s == "q" || s == "enter" || s == "?" {
 			m.mode = modeBoard
@@ -524,6 +536,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.openDetail()
 	case "x":
 		m.archiveSelected()
+	case "v":
+		// The compact view: the whole flow on one screen, for watching several
+		// agents rather than working one ticket.
+		m.mode = modePipeline
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
