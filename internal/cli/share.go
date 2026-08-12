@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/berk/jaira/core/gitrepo"
 	"os"
 	"path/filepath"
 	"strings"
@@ -120,6 +121,15 @@ You still have to commit. jaira does not commit on your behalf.`,
 			}
 			w := cmd.OutOrStdout()
 
+			// Sharing is a git operation. Saying "the board is now part of the
+			// repository" where there is no repository is worse than refusing:
+			// it reports a state that does not exist and hands out git commands
+			// that cannot work.
+			if !(&gitrepo.Repo{Dir: s.Root}).IsRepo() {
+				return &codedError{code: ExitValidation, reason: "not_a_repo",
+					message: "this directory is not inside a git repository, so there is nothing to share the board through. Run 'git init' first, or keep using the board privately"}
+			}
+
 			if undo {
 				changed, err := addIgnore(s.Root)
 				if err != nil {
@@ -189,6 +199,12 @@ You still have to commit. jaira does not commit on your behalf.`,
 // triggers binding.
 func bindDriverIfShared(s *ticket.Store) {
 	if !hasAttributes(s) || ignored(s.Root) {
+		return
+	}
+	// Without a repository there is nothing to merge and nothing to configure.
+	// Warning about a merge driver on every single command in a directory that
+	// is not under git is noise about a feature that cannot apply.
+	if !(&gitrepo.Repo{Dir: s.Root}).IsRepo() {
 		return
 	}
 	installed, err := ensureMergeDriver(s.Root)

@@ -244,7 +244,14 @@ func (m *Model) currentLane() *lane.Lane {
 
 func matches(t *ticket.Ticket, q string) bool {
 	q = strings.ToLower(q)
-	for _, f := range []string{t.ID, t.Title, t.Goal, t.Context, t.DoD, t.Assignee, t.Status, t.ModelTier} {
+	// The body is included because half of what a ticket says lives there — the
+	// description and both checklists — and searching only the frontmatter meant
+	// the thing you remembered reading was the thing you could not find.
+	fields := []string{t.ID, t.Title, t.Goal, t.Context, t.DoD, t.Assignee, t.Status, t.ModelTier, t.Body}
+	for _, it := range append(append([]ticket.DoDItem{}, t.DoDItems...), t.PlanItems...) {
+		fields = append(fields, it.Text)
+	}
+	for _, f := range fields {
 		if strings.Contains(strings.ToLower(f), q) {
 			return true
 		}

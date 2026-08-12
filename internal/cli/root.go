@@ -180,6 +180,8 @@ Exit codes:
 		newSetCmd(),
 		newDoDCmd(),
 		newValidateCmd(),
+		newArchiveCmd(),
+		newRestoreCmd(),
 		newMoveCmd(),
 		newNextCmd(),
 		newLanesCmd(),

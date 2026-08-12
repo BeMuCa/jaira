@@ -18,6 +18,11 @@ const (
 	DirName = ".jaira"
 	// TicketsSubdir holds one markdown file per ticket.
 	TicketsSubdir = "tickets"
+	// ArchiveSubdir holds tickets taken off the board. They are moved rather
+	// than deleted: the whole point of the board is that you can still answer
+	// what a task was for months later, and a deleted file on a private board
+	// is not in git history to recover from.
+	ArchiveSubdir = "archive"
 	// SessionsSubdir and locksSubdir live under the user's home directory rather
 	// than inside the repository. Keeping them out means .jaira/ contains only
 	// content that is meant to be committed, so there is no mixed directory to
@@ -93,6 +98,53 @@ func At(dir string) (*Store, error) {
 
 func (s *Store) dir() string        { return filepath.Join(s.Root, DirName) }
 func (s *Store) TicketsDir() string { return filepath.Join(s.dir(), TicketsSubdir) }
+
+// ArchiveDir is where archived tickets live.
+func (s *Store) ArchiveDir() string { return filepath.Join(s.dir(), ArchiveSubdir) }
+
+// Archive moves a ticket out of the board, returning its new path.
+//
+// The file is moved, never removed. Restoring is moving it back, which is why
+// this returns the destination rather than swallowing it.
+func (s *Store) Archive(id string) (string, error) {
+	t, err := s.Load(id)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(s.ArchiveDir(), 0o755); err != nil {
+		return "", err
+	}
+	// Resolve symlinks first: archiving through a link would otherwise move the
+	// link and orphan the file it pointed at.
+	src, err := filepath.EvalSymlinks(t.Path)
+	if err != nil {
+		src = t.Path
+	}
+	dst := filepath.Join(s.ArchiveDir(), filepath.Base(src))
+	if _, err := os.Stat(dst); err == nil {
+		return "", fmt.Errorf("%s already exists in the archive", filepath.Base(dst))
+	}
+	if err := os.Rename(src, dst); err != nil {
+		return "", err
+	}
+	return dst, nil
+}
+
+// Restore moves an archived ticket back onto the board.
+func (s *Store) Restore(name string) (string, error) {
+	src := filepath.Join(s.ArchiveDir(), filepath.Base(name))
+	if _, err := os.Stat(src); err != nil {
+		return "", fmt.Errorf("%s is not in the archive", filepath.Base(name))
+	}
+	dst := filepath.Join(s.TicketsDir(), filepath.Base(name))
+	if _, err := os.Stat(dst); err == nil {
+		return "", fmt.Errorf("%s is already on the board", filepath.Base(name))
+	}
+	if err := os.Rename(src, dst); err != nil {
+		return "", err
+	}
+	return dst, nil
+}
 
 // SessionsDir is where this working tree's session state lives, outside the repo.
 func (s *Store) SessionsDir() string { return filepath.Join(s.stateDir(), SessionsSubdir) }
@@ -227,9 +279,21 @@ func (s *Store) readHeader(path string) (*Doc, error) {
 	return ParseDoc(buf)
 }
 
-// loadHeader reads a ticket's frontmatter without necessarily reading its body.
+// loadHeader reads a ticket for listing.
+//
+// It reads the whole file rather than probing the frontmatter. Half of what a
+// ticket says lives in the body — the description and both checklists — and the
+// board now renders checklist progress and searches body text, so a truncated
+// read produced cards that quietly disagreed with the gate: a ticket past the
+// probe showed no checklist at all while the gate saw two outstanding items.
+//
+// The probe remains where it is still correct: idOf only needs the id.
 func (s *Store) loadHeader(path string) (*Ticket, error) {
-	d, err := s.readHeader(path)
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	d, err := ParseDoc(raw)
 	if err != nil {
 		return nil, err
 	}
