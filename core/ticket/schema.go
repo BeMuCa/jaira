@@ -109,6 +109,11 @@ type Ticket struct {
 	// visible instead of collapsing into a single in-progress lane.
 	PlanItems []DoDItem
 
+	// Options are the checkboxes under an "Options" heading, each naming a step
+	// this ticket does or does not need. A lane can require one, which is how a
+	// ticket skips planning or review without those lanes being removed.
+	Options []DoDItem
+
 	// Body is the markdown following the frontmatter.
 	Body string
 	// Path is where this ticket was loaded from.
@@ -181,14 +186,20 @@ func HeadingTitle(body string) string {
 // the section is what carries the meaning rather than its exact wording.
 var dodHeadings = []string{"definition of done", "definition-of-done", "done when", "akzeptanzkriterien"}
 
+// optionHeadings matches the section that turns steps on and off for one
+// ticket. Not every ticket needs planning or review, and forcing every ticket
+// through every step is how a pipeline becomes ceremony.
+var optionHeadings = []string{"options", "steps needed", "optionen"}
+
 // planHeadings matches the section holding the method — the steps taken to get
 // there — as opposed to the criteria that decide whether it worked.
 var planHeadings = []string{"plan", "steps", "vorgehen"}
 
 // DoDHeadings and PlanHeadings expose the recognised section names so a renderer
 // can tell which parts of a body it has already displayed as a checklist.
-func DoDHeadings() []string  { return dodHeadings }
-func PlanHeadings() []string { return planHeadings }
+func DoDHeadings() []string    { return dodHeadings }
+func OptionHeadings() []string { return optionHeadings }
+func PlanHeadings() []string   { return planHeadings }
 
 // ParseDoDItems extracts the checkboxes under a Definition of Done heading.
 //
@@ -202,6 +213,9 @@ func ParseDoDItems(body string) []DoDItem { return checklistUnder(body, dodHeadi
 // it — and carries the in-progress marker. It deliberately does not gate the
 // terminal lane: following a method is not the same as having met the criteria.
 func ParsePlanItems(body string) []DoDItem { return checklistUnder(body, planHeadings) }
+
+// ParseOptions extracts the checkboxes under an Options heading.
+func ParseOptions(body string) []DoDItem { return checklistUnder(body, optionHeadings) }
 
 func checklistUnder(body string, headings []string) []DoDItem {
 	lines := strings.Split(body, "\n")
@@ -282,6 +296,22 @@ func (t *Ticket) DoDComplete() (complete bool, remaining []string) {
 	return len(remaining) == 0, remaining
 }
 
+// OptionSet reports whether a named option is ticked on this ticket.
+//
+// Matching is on the text, case-insensitively and ignoring surrounding space, so
+// "- [x] planning" and "- [x] Planning " both select the planning step. An
+// option that is absent is not selected: a step is opt-in, so a ticket that says
+// nothing about planning does not get planned.
+func (t *Ticket) OptionSet(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	for _, o := range t.Options {
+		if strings.ToLower(strings.TrimSpace(o.Text)) == name {
+			return o.Checked()
+		}
+	}
+	return false
+}
+
 // PlanComplete reports whether every step of the method has been carried out.
 //
 // A ticket with no plan is vacuously complete: the plan is optional, and its
@@ -356,6 +386,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.ReviewVerdict = str(FieldReviewVerdict)
 	t.DoDItems = ParseDoDItems(t.Body)
 	t.PlanItems = ParsePlanItems(t.Body)
+	t.Options = ParseOptions(t.Body)
 	t.ModelTier = str(FieldModelTier)
 	t.Question = str(FieldQuestion)
 	t.ClaimedBy = str(FieldClaimedBy)

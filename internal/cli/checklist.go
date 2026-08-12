@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/berk/jaira/core/gate"
 	"github.com/berk/jaira/core/lane"
@@ -12,11 +13,12 @@ import (
 
 func newDoDCmd() *cobra.Command {
 	var (
-		doing bool
-		done  bool
-		todo  bool
-		plan  bool
-		add   []string
+		doing  bool
+		done   bool
+		todo   bool
+		plan   bool
+		option string
+		add    []string
 	)
 	cmd := &cobra.Command{
 		Use:   "dod <id> [n]",
@@ -53,6 +55,9 @@ acceptance.`,
 			sec := ticket.SectionDoD
 			if plan {
 				sec = ticket.SectionPlan
+			}
+			if option != "" {
+				return setOption(cmd, args[0], option, !todo)
 			}
 			if len(add) > 0 {
 				if doing || done || todo || len(args) > 1 {
@@ -154,6 +159,7 @@ acceptance.`,
 	f.BoolVar(&todo, "todo", false, "mark the item as not started")
 	f.BoolVar(&plan, "plan", false, "address the Plan checklist instead of the Definition of Done")
 	f.StringArrayVar(&add, "add", nil, "append a new item; repeat for several, in order")
+	f.StringVar(&option, "option", "", "tick a step option for this ticket, e.g. --option planning (with --todo to untick)")
 	return cmd
 }
 
@@ -200,6 +206,61 @@ func addChecklistItems(cmd *cobra.Command, id string, sec ticket.Section, items 
 	fmt.Fprintf(w, "%s %s\n", ticket.Handle(t.ID), sec)
 	for i, it := range list {
 		fmt.Fprintf(w, "  %d. [%s] %s\n", i+1, it.State.Marker(), it.Text)
+	}
+	return nil
+}
+
+// setOption ticks or unticks one entry in a ticket's Options checklist, which is
+// what decides whether an optional step is part of that ticket's path.
+func setOption(cmd *cobra.Command, id, name string, on bool) error {
+	s, err := openStore()
+	if err != nil {
+		return err
+	}
+	t, err := s.Mutate(id, func(t *ticket.Ticket) error {
+		body := t.Doc().Body()
+		// Add the option if the ticket has never heard of it, so turning a step on
+		// does not require hand-editing the body first.
+		found := -1
+		for i, o := range ticket.ParseOptions(body) {
+			if strings.EqualFold(strings.TrimSpace(o.Text), strings.TrimSpace(name)) {
+				found = i
+				break
+			}
+		}
+		if found < 0 {
+			next, err := ticket.AddItem(body, ticket.SectionOptions, name)
+			if err != nil {
+				return err
+			}
+			body = next
+			found = len(ticket.ParseOptions(body)) - 1
+		}
+		st := ticket.StateDone
+		if !on {
+			st = ticket.StateTodo
+		}
+		next, err := ticket.SetItemState(body, ticket.SectionOptions, found, st)
+		if err != nil {
+			return err
+		}
+		t.Doc().SetBody(next)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if g.jsonOut {
+		env, _, err := loadEnv(s)
+		if err != nil {
+			return err
+		}
+		return emit(cmd.OutOrStdout(), ticketJSON(t, env.Lanes))
+	}
+	w := cmd.OutOrStdout()
+	fmt.Fprintf(w, "%s options\n", ticket.Handle(t.ID))
+	for _, o := range t.Options {
+		fmt.Fprintf(w, "  [%s] %s\n", o.State.Marker(), o.Text)
 	}
 	return nil
 }

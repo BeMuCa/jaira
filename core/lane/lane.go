@@ -60,6 +60,12 @@ type Lane struct {
 	// would make the step decorative.
 	RequiresHumanExit bool
 
+	// RequiresOption names an entry in a ticket's Options checklist. When set,
+	// this lane is only part of a ticket's path if that option is ticked — which
+	// is how one ticket is planned and reviewed while another goes straight to
+	// implementation, without either lane being uninstalled.
+	RequiresOption string
+
 	// Prompt is the markdown body: the instruction given to the subagent.
 	Prompt string
 
@@ -193,6 +199,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresOutcome = boolOr("requires-outcome", l.Terminal)
 	l.RequiresNonModelSignal = boolOr("requires-nonmodel-signal", l.Terminal)
 	l.RequiresHumanExit = boolOf("requires-human-exit")
+	l.RequiresOption = strings.TrimSpace(str("requires-option"))
 
 	if l.ID == "" {
 		return nil, fmt.Errorf("lane %s: missing required field \"id\"", source)

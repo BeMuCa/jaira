@@ -224,11 +224,12 @@ func (h *Home) render() string {
 		b.WriteString(styBar.Render(strings.Repeat("─", h.width)) + "\n\n")
 	}
 
-	b.WriteString(styLaneTitle.Render("Projects:") + "\n\n")
+	centre := lipgloss.NewStyle().Width(h.width).Align(lipgloss.Center)
+	b.WriteString(centre.Render(styLaneTitle.Render("Projects:")) + "\n\n")
 
 	if len(h.entries) == 0 {
-		b.WriteString(styWarn.Render(truncate("  No boards yet.", h.width)) + "\n\n")
-		b.WriteString(styMeta.Render(truncate("  Press a to find one, or run 'jaira init' in a repository.", h.width)) + "\n")
+		b.WriteString(centre.Render(styWarn.Render(truncate("No boards yet.", h.width))) + "\n\n")
+		b.WriteString(centre.Render(styMeta.Render(truncate("Press a to find or create one.", h.width))) + "\n")
 	}
 
 	for i, e := range h.entries {
@@ -252,11 +253,11 @@ func (h *Home) render() string {
 		if e.Waiting > 0 {
 			bits = append(bits, styReview.Render(fmt.Sprintf("◆ %d awaiting you", e.Waiting)))
 		}
-		b.WriteString(truncate(lead+padTo(name, 28)+strings.Join(bits, "  "), h.width) + "\n")
+		b.WriteString(centre.Render(truncate(lead+padTo(name, 28)+strings.Join(bits, "  "), h.width)) + "\n")
 	}
 
-	b.WriteString("\n" + styMeta.Render(truncate(
-		"enter open · jk move · a add a board · r refresh · q quit", h.width)))
+	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
+		"enter open · jk move · a add a board · r refresh · q quit", h.width))))
 	return b.String()
 }
 

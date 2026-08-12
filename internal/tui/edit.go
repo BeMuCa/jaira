@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/berk/jaira/core/gate"
 	"github.com/berk/jaira/core/ticket"
 )
@@ -114,34 +115,58 @@ func (m *Model) editKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// renderEdit draws the field editor over the detail pane.
+// renderEdit draws the field editor.
+//
+// The field being edited gets the whole width and as many rows as it needs. The
+// earlier version gave every field one truncated line, which made writing a
+// paragraph of context in a maximised terminal worse than writing it in the CLI
+// — the space was there and went unused.
 func (m *Model) renderEdit() string {
 	if m.detail == nil {
 		return m.renderBoard()
 	}
+	w := max(20, m.width-2)
 	var b strings.Builder
+
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(m.detail.ID)),
-		styLaneTitle.Render(truncate(m.detail.Title, max(1, min(m.width, 78)-10))))
-	b.WriteString(styBar.Render(strings.Repeat("─", max(1, min(m.width, 78)))) + "\n")
-	w := max(1, min(m.width, 78))
+		styLaneTitle.Render(truncate(m.detail.Title, max(1, w-10))))
+	b.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+
+	// Rows left for the editing box, once the other fields and the footer have
+	// taken theirs. One line each for the unfocused fields.
+	overhead := len(editableFields) + 6
+	boxRows := max(3, m.height-overhead)
+
 	for i, f := range editableFields {
-		val := f.get(m.detail)
-		lead, label := "  ", styMeta.Render(fmt.Sprintf("%-9s", f.name))
-		if i == m.editIdx {
-			lead = styDoing.Render("→ ")
-			val = m.editBuf + "▌"
-		}
-		// A multi-line value is printed line by line, indented under its label, so
-		// the shape of what was typed is what is shown.
-		for j, line := range strings.Split(val, "\n") {
-			if j == 0 {
-				fmt.Fprintf(&b, "%s%s %s\n", lead, label, truncate(line, max(1, w-13)))
-				continue
+		label := styMeta.Render(fmt.Sprintf("%-9s", f.name))
+		if i != m.editIdx {
+			val := strings.ReplaceAll(f.get(m.detail), "\n", " ⏎ ")
+			if strings.TrimSpace(val) == "" {
+				val = styMeta.Render("—")
 			}
-			fmt.Fprintf(&b, "  %s %s\n", strings.Repeat(" ", 9), truncate(line, max(1, w-13)))
+			fmt.Fprintf(&b, "  %s %s\n", label, truncate(val, max(1, w-13)))
+			continue
 		}
+
+		fmt.Fprintf(&b, "%s %s\n", styDoing.Render("→ "), styDoing.Render(f.name))
+		// The buffer is wrapped to the pane rather than truncated: this is where
+		// the text is being written, so all of it has to be visible.
+		lines := strings.Split(m.editBuf+"▌", "\n")
+		var shown []string
+		for _, ln := range lines {
+			shown = append(shown, strings.Split(wrap(ln, max(10, w-4), 0), "\n")...)
+		}
+		// Keep the end of what is being typed on screen.
+		if len(shown) > boxRows {
+			shown = shown[len(shown)-boxRows:]
+		}
+		box := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).BorderForeground(colAccent).
+			Width(max(10, w-2)).Height(min(boxRows, max(1, len(shown))))
+		b.WriteString(box.Render(strings.Join(shown, "\n")) + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render(truncate(
+
+	b.WriteString(styMeta.Render(truncate(
 		"enter newline · ctrl+s save · tab next field · esc cancel", w)))
 	return b.String()
 }

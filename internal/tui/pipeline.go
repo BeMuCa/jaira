@@ -148,29 +148,63 @@ func (m *Model) renderPipeline() string {
 		return "No lanes are installed."
 	}
 
-	// Rows of steps joined by arrows, wrapped to the terminal. A step cell is 15
-	// columns with its border, and an arrow is 5.
+	// Steps run in a serpentine: left to right, then down and back right to left,
+	// so the path stays continuous instead of jumping from the end of one row to
+	// the start of the next. A wrapped row reads as a break in the flow; a snake
+	// reads as the flow continuing.
 	const cellW, arrowW = 15, 5
 	perRow := max(1, (m.width+arrowW)/(cellW+arrowW))
 
+	var rows []string
 	for start := 0; start < len(steps); start += perRow {
 		end := min(len(steps), start+perRow)
-		var parts []string
+		idx := make([]int, 0, end-start)
 		for i := start; i < end; i++ {
-			if i > start {
-				// The arrow lights when the step it points into has just received
-				// something, so movement is visible without reading numbers.
-				arrow := styBar.Render(" ──▶ ")
-				if steps[i].fresh {
-					arrow = styOK.Render(" ━━▶ ")
+			idx = append(idx, i)
+		}
+		reversed := (start/perRow)%2 == 1
+		if reversed {
+			for l, r := 0, len(idx)-1; l < r; l, r = l+1, r-1 {
+				idx[l], idx[r] = idx[r], idx[l]
+			}
+		}
+
+		var parts []string
+		for n, i := range idx {
+			if n > 0 {
+				// The arrow points the way the row runs, and lights when the step it
+				// leads into has just received work.
+				glyph, lit := " ──▶ ", " ━━▶ "
+				if reversed {
+					glyph, lit = " ◀── ", " ◀━━ "
+				}
+				arrow := styBar.Render(glyph)
+				target := i
+				if reversed {
+					target = idx[n]
+				}
+				if steps[target].fresh {
+					arrow = styOK.Render(lit)
 				}
 				parts = append(parts, lipgloss.NewStyle().MarginTop(1).Render(arrow))
 			}
 			parts = append(parts, renderStep(steps[i], i == m.laneIdx))
 		}
-		b.WriteString(lipgloss.JoinHorizontal(lipgloss.Center, parts...))
-		b.WriteString("\n")
+		row := lipgloss.JoinHorizontal(lipgloss.Center, parts...)
+		rows = append(rows, row)
+
+		// The connector between rows sits under the end the snake turns at.
+		if end < len(steps) {
+			pad := 0
+			if !reversed {
+				pad = max(0, lipgloss.Width(row)-cellW/2-1)
+			} else {
+				pad = cellW / 2
+			}
+			rows = append(rows, strings.Repeat(" ", pad)+styBar.Render("▼"))
+		}
 	}
+	b.WriteString(strings.Join(rows, "\n") + "\n")
 
 	if st := m.focusedStep(steps); st != nil {
 		b.WriteString("\n" + styLaneTitle.Render(st.name) + " ")
@@ -187,9 +221,18 @@ func (m *Model) renderPipeline() string {
 		b.WriteString("\n")
 	}
 
-	b.WriteString("\n" + styMeta.Render(truncate(
-		"ad ← → step · enter open it · 1-9 project · v full board · q quit", m.width)))
-	return b.String()
+	body := b.String()
+	footer := styMeta.Render(truncate(
+		"a/d or ← → move · enter open step · 1-9 switch project · v full board · q quit", m.width))
+
+	// Push the hints to the bottom. Without this they sat directly under the
+	// diagram with the rest of the terminal blank beneath them, which reads as
+	// the view having failed to fill the screen.
+	used := strings.Count(body, "\n") + 1
+	if gap := m.height - used - 2; gap > 0 {
+		body += strings.Repeat("\n", gap)
+	}
+	return body + "\n" + footer
 }
 
 func (m *Model) focusedStep(steps []pipelineStep) *pipelineStep {

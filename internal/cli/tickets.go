@@ -289,6 +289,12 @@ func newTicketBody(title, dod string) string {
 	} else {
 		b.WriteString("- [ ] <A checkable statement, readable by someone who was not here>\n")
 	}
+	// Options turn steps on and off for this one ticket. Planning is unticked by
+	// default: most tickets do not need a separate planning pass, and a step
+	// every ticket must traverse stops being a decision and becomes ceremony.
+	b.WriteString("\n## Options\n\n")
+	b.WriteString("- [ ] planning\n")
+
 	// The Plan is how the work will be done, as opposed to the criteria for
 	// accepting it. It is seeded empty rather than omitted: a heading that is
 	// already there gets filled in, and one that has to be remembered does not.

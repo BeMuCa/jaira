@@ -93,7 +93,7 @@ func TestHomeQuits(t *testing.T) {
 func TestHomeWithNoProjectsExplainsItself(t *testing.T) {
 	h := newHome(t, nil, 120, 30)
 	out := stripANSI(h.render())
-	if !strings.Contains(out, "No boards yet") || !strings.Contains(out, "jaira init") {
+	if !strings.Contains(out, "No boards yet") || !strings.Contains(out, "Press a to find") {
 		t.Errorf("empty home screen gives no guidance:\n%s", out)
 	}
 }
@@ -166,7 +166,7 @@ func TestBrowserRefusesANonBoard(t *testing.T) {
 	if h.browse == nil {
 		t.Fatal("the browser closed on a directory that is not a board")
 	}
-	if !strings.Contains(h.browse.msg, "no .jaira board") {
+	if !strings.Contains(h.browse.msg, "no board yet") {
 		t.Errorf("no explanation given: %q", h.browse.msg)
 	}
 	if len(h.entries) != 0 {
@@ -186,5 +186,53 @@ func TestBrowserScanAddsEverythingFound(t *testing.T) {
 
 	if len(h.entries) != 2 {
 		t.Fatalf("scan registered %d boards, want 2: %+v", len(h.entries), h.entries)
+	}
+}
+
+// Being told "there is no board here, go and run a command" is the round trip
+// this screen exists to remove, so it offers to create one instead.
+func TestBrowserOffersToInitAndDoesIt(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "fresh-repo"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"}) // no board here
+
+	if h.browse == nil {
+		t.Fatal("the browser closed instead of offering to create a board")
+	}
+	if !strings.Contains(h.browse.msg, "press i") {
+		t.Fatalf("no offer to create one: %q", h.browse.msg)
+	}
+
+	h.Update(tea.KeyPressMsg{Code: 'i', Text: "i"})
+	if h.browse != nil {
+		t.Error("the browser stayed open after creating the board")
+	}
+	if _, err := os.Stat(filepath.Join(root, "fresh-repo", ".jaira", "tickets")); err != nil {
+		t.Errorf("no board was created: %v", err)
+	}
+	if len(h.entries) != 1 || h.entries[0].Name != "fresh-repo" {
+		t.Errorf("the new board did not appear: %+v", h.entries)
+	}
+}
+
+// A fruitless scan offers the same way out.
+func TestBrowserScanOffersToInit(t *testing.T) {
+	root := t.TempDir()
+	h := newHome(t, nil, 120, 30)
+	h.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	h.browse.goTo(root)
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+
+	if h.browse == nil || !strings.Contains(h.browse.msg, "press i") {
+		t.Fatalf("a fruitless scan gave no way forward: %q", h.browse.msg)
+	}
+	h.Update(tea.KeyPressMsg{Code: 'i', Text: "i"})
+	if _, err := os.Stat(filepath.Join(root, ".jaira", "tickets")); err != nil {
+		t.Errorf("scan-then-init did not create a board: %v", err)
 	}
 }

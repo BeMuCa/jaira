@@ -14,18 +14,26 @@ const (
 	SectionDoD Section = iota
 	// SectionPlan is the method being followed to get there.
 	SectionPlan
+	// SectionOptions names the steps this ticket does and does not need.
+	SectionOptions
 )
 
 func (s Section) String() string {
-	if s == SectionPlan {
+	switch s {
+	case SectionPlan:
 		return "plan"
+	case SectionOptions:
+		return "options"
 	}
 	return "definition of done"
 }
 
 func (s Section) headings() []string {
-	if s == SectionPlan {
+	switch s {
+	case SectionPlan:
 		return planHeadings
+	case SectionOptions:
+		return optionHeadings
 	}
 	return dodHeadings
 }
@@ -152,8 +160,11 @@ func AddItem(body string, sec Section, text string) (string, error) {
 
 	// No such section at all: add one at the end.
 	heading := "## Definition of Done"
-	if sec == SectionPlan {
+	switch sec {
+	case SectionPlan:
 		heading = "## Plan"
+	case SectionOptions:
+		heading = "## Options"
 	}
 	trimmed := strings.TrimRight(body, "\n")
 	return trimmed + "\n\n" + heading + "\n\n- [ ] " + text + "\n", nil

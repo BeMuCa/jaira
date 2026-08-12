@@ -31,6 +31,7 @@ const (
 	CodeMissingProduces = "missing_lane_output"
 	CodePlanIncomplete  = "plan_incomplete"
 	CodeNeedsHuman      = "needs_human"
+	CodeStepNotChosen   = "step_not_chosen"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -145,6 +146,19 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		vs = append(vs, blockedBy(env, t)...)
 	}
 
+	// A step a ticket did not opt into is not part of its path. Moving into it is
+	// refused rather than silently allowed, because a ticket sitting in a step it
+	// was never meant to enter is exactly the confusion the board exists to
+	// prevent — and moving past it is free, which is the point.
+	if target.RequiresOption != "" && !t.OptionSet(target.RequiresOption) {
+		vs = append(vs, Violation{
+			Code: CodeStepNotChosen,
+			Message: fmt.Sprintf(
+				"this ticket does not use the %q step: its Options checklist does not tick %q. Skip to the next step, or tick the option with 'jaira dod %s --option %s'",
+				target.ID, target.RequiresOption, ticket.Handle(t.ID), target.RequiresOption),
+		})
+	}
+
 	if target.RequiresQuestion && strings.TrimSpace(req.Question) == "" && strings.TrimSpace(t.Question) == "" {
 		vs = append(vs, Violation{
 			Code:    CodeNeedsQuestion,
@@ -249,7 +263,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 
 	// The lane being left must have produced what it promised, so a pipeline
 	// step cannot be skipped by simply advancing past it.
-	if cur, ok := env.Lanes.Get(t.Status); ok && to > from {
+	if cur, ok := env.Lanes.Get(t.Status); ok && to > from && !skipped(cur, t) {
 		for _, f := range cur.OutputProduces {
 			if !fieldFilled(t, f) {
 				vs = append(vs, Violation{
@@ -384,4 +398,10 @@ func Actionable(env Env, t *ticket.Ticket) bool {
 		return false
 	}
 	return len(blockedBy(env, t)) == 0
+}
+
+// skipped reports whether a lane is not part of this ticket's path, so its
+// output contract does not apply to a ticket passing through.
+func skipped(l *lane.Lane, t *ticket.Ticket) bool {
+	return l.RequiresOption != "" && !t.OptionSet(l.RequiresOption)
 }

@@ -8,7 +8,8 @@ terminal: false
 model-tier: strong
 input-requires: [goal, definition-of-done, context]
 output-produces: [plan]
-description: Working out how the change will be made, before any of it is made.
+requires-option: planning
+description: Working out how the change will be made. Only for tickets whose Options tick "planning".
 ---
 # Prompt
 

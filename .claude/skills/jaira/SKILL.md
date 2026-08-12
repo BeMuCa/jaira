@@ -107,6 +107,38 @@ jaira create "Export survives a slow network" \
 A board may define its own ticket shape in `.jaira/TEMPLATE.md`; `create` uses it
 when it exists, so follow the headings you find rather than imposing these.
 
+## Before you stop, and when you start
+
+A session that ends abruptly — a limit, a crash — leaves nothing behind except
+what was written down. Record what a later session would otherwise rediscover:
+
+```bash
+jaira note <handle> "writeAll buffers the whole file; flushing per 5k rows works
+  but the header assumes a single pass"
+```
+
+Starting a session, ask what was left mid-flight:
+
+```bash
+jaira resume --json
+```
+
+That returns every ticket with a step still marked in progress, an expired claim,
+or parked in a working lane — with its notes and the step it was on.
+
+## Optional steps
+
+A ticket's `## Options` checklist decides which steps it uses. Planning is
+opt-in, so most tickets go straight from todo to implementing:
+
+```bash
+jaira dod <handle> --option planning          # this ticket gets a planning pass
+jaira dod <handle> --option planning --todo   # it does not
+```
+
+Moving into a step the ticket did not opt into is refused; skipping past it is
+free.
+
 ## Working the board
 
 ```bash

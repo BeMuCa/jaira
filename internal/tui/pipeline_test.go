@@ -142,3 +142,31 @@ func TestPipelineSwitchesProjectByNumber(t *testing.T) {
 		t.Error("an unused number asked to switch")
 	}
 }
+
+// The hints belong at the bottom of the terminal. Sitting them directly under
+// the diagram left the rest of the screen blank beneath them, which reads as the
+// view having failed to fill the space.
+func TestPipelineFillsTheHeight(t *testing.T) {
+	for _, h := range []int{20, 30, 44} {
+		m := pipelineModel(t, 120, h)
+		lines := strings.Split(m.renderPipeline(), "\n")
+		if len(lines) < h-2 {
+			t.Errorf("height %d: rendered only %d lines, leaving a gap below the hints", h, len(lines))
+		}
+		if len(lines) > h {
+			t.Errorf("height %d: rendered %d lines, more than the terminal has", h, len(lines))
+		}
+	}
+}
+
+// The flow runs as a serpentine, so a wrapped row continues the path instead of
+// jumping back to the left edge.
+func TestPipelineSnakesBackOnTheSecondRow(t *testing.T) {
+	out := stripANSI(pipelineModel(t, 60, 30).renderPipeline())
+	if !strings.Contains(out, "◀") {
+		t.Errorf("the second row does not run backwards:\n%s", out)
+	}
+	if !strings.Contains(out, "▼") {
+		t.Errorf("no connector between rows:\n%s", out)
+	}
+}
