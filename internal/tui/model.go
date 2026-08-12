@@ -703,7 +703,12 @@ func (m *Model) createTicket(title string) {
 		return
 	}
 	m.selectByID(t.ID)
-	m.notify(fmt.Sprintf(
-		"Created %s in %s.\n\nIt needs a goal, a definition of done, context and an assignee\nbefore it can start. Use:\n\n  jaira set %s goal=… definition-of-done=… context=…",
-		ticket.Handle(t.ID), def.Name, ticket.Handle(t.ID)), false)
+	// Capture stays cheap — the prompt still asks only for a title — but a ticket
+	// with nothing but a title cannot leave the backlog, and sending the user to
+	// the CLI to fix that was the reason the board could capture work but not
+	// specify it. Hand straight over to the field editor instead.
+	if full, err := m.store.Load(t.ID); err == nil {
+		m.detail = full
+		m.startEdit()
+	}
 }

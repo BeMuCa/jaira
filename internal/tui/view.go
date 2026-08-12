@@ -611,8 +611,8 @@ func (m *Model) renderHelp() string {
 			{"esc", "clear the filter"},
 		}},
 		{"Change things", [][2]string{
-			{"n", "create a ticket in the backlog"},
-			{"e", "edit the open ticket's fields (in the detail pane)"},
+			{"n", "create a ticket, then fill it in straight away"},
+			{"e", "edit fields in the detail pane (enter newline, ctrl+s save)"},
 			{"E", "open the ticket body and checklists in $EDITOR"},
 			{"m", "move the selected ticket to another lane"},
 			{"r", "reload from disk now"},

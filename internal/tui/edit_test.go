@@ -15,6 +15,12 @@ func key(s string) tea.KeyPressMsg {
 	return tea.KeyPressMsg{Code: keyCodeFor(s), Text: ""}
 }
 
+// save is the key that commits an edit, distinct from enter now that enter
+// inserts a newline.
+func save() tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl}
+}
+
 func keyCodeFor(s string) rune {
 	switch s {
 	case "enter":
@@ -49,7 +55,7 @@ func TestEditingAFieldFromTheBoard(t *testing.T) {
 	for _, r := range "hello" {
 		m.key(key(string(r)))
 	}
-	m.key(key("enter"))
+	m.key(save())
 
 	reloaded, err := m.store.Load(before)
 	if err != nil {
@@ -113,7 +119,7 @@ func TestMultiByteInputIsAccepted(t *testing.T) {
 	for _, r := range "Knöpfe klären" {
 		m.key(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
-	m.key(key("enter"))
+	m.key(save())
 
 	reloaded, err := m.store.Load(id)
 	if err != nil {
@@ -125,3 +131,64 @@ func TestMultiByteInputIsAccepted(t *testing.T) {
 }
 
 var _ = ticket.FieldGoal
+
+// Fields are not all one-liners. A goal or a piece of context is often a few
+// sentences, and forcing them onto one line makes the board worse than the CLI
+// it replaced.
+func TestFieldEditingIsMultiLine(t *testing.T) {
+	m := newTestModel(t, 120, 32)
+	m.laneIdx, m.cardIdx = 0, 0
+	m.key(key("enter"))
+	id := m.detail.ID
+
+	m.key(key("e"))
+	for _, r := range "first" {
+		m.key(key(string(r)))
+	}
+	m.key(key("enter")) // a newline, not a save
+	if m.mode != modeEdit {
+		t.Fatalf("enter ended the edit instead of inserting a newline (mode=%v)", m.mode)
+	}
+	for _, r := range "second" {
+		m.key(key(string(r)))
+	}
+	m.key(save())
+
+	reloaded, err := m.store.Load(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reloaded.Goal != "first\nsecond" {
+		t.Errorf("goal = %q, want %q", reloaded.Goal, "first\nsecond")
+	}
+	if m.mode != modeDetail {
+		t.Errorf("saving did not return to the detail pane (mode=%v)", m.mode)
+	}
+}
+
+// Creating a ticket used to leave you with a title and a message telling you to
+// quit and use the CLI. Capture should stay cheap, so the title prompt is
+// unchanged — but it now hands straight over to the field editor instead of
+// sending you elsewhere.
+func TestCreateHandsOverToTheEditor(t *testing.T) {
+	m := newTestModel(t, 120, 32)
+	m.mode = modeBoard
+	m.key(key("n"))
+	if m.mode != modeCreate {
+		t.Fatalf("n did not open the create prompt (mode=%v)", m.mode)
+	}
+	for _, r := range "a new ticket" {
+		m.key(key(string(r)))
+	}
+	m.key(key("enter"))
+
+	if m.mode != modeEdit {
+		t.Fatalf("create did not hand over to the editor (mode=%v)", m.mode)
+	}
+	if m.detail == nil || m.detail.Title != "a new ticket" {
+		t.Fatalf("the editor is not open on the new ticket: %+v", m.detail)
+	}
+	if editableFields[m.editIdx].name != "goal" {
+		t.Errorf("editing started on %q, want goal", editableFields[m.editIdx].name)
+	}
+}

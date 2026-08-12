@@ -74,6 +74,11 @@ func (m *Model) commitEdit() {
 func (m *Model) editKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "enter":
+		// A goal or a piece of context is often a few sentences, so enter inserts
+		// a line rather than ending the edit. Saving is deliberate.
+		m.editBuf += "\n"
+		return m, nil
+	case "ctrl+s", "ctrl+d":
 		m.commitEdit()
 		m.mode = modeDetail
 		m.editBuf = ""
@@ -82,12 +87,12 @@ func (m *Model) editKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = modeDetail
 		m.editBuf = ""
 		return m, nil
-	case "tab", "down":
+	case "tab":
 		m.commitEdit()
 		m.editIdx = (m.editIdx + 1) % len(editableFields)
 		m.editBuf = editableFields[m.editIdx].get(m.detail)
 		return m, nil
-	case "shift+tab", "up":
+	case "shift+tab":
 		m.commitEdit()
 		m.editIdx = (m.editIdx - 1 + len(editableFields)) % len(editableFields)
 		m.editBuf = editableFields[m.editIdx].get(m.detail)
@@ -118,18 +123,25 @@ func (m *Model) renderEdit() string {
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(m.detail.ID)),
 		styLaneTitle.Render(truncate(m.detail.Title, max(1, min(m.width, 78)-10))))
 	b.WriteString(styBar.Render(strings.Repeat("─", max(1, min(m.width, 78)))) + "\n")
+	w := max(1, min(m.width, 78))
 	for i, f := range editableFields {
 		val := f.get(m.detail)
-		lead := "  "
+		lead, label := "  ", styMeta.Render(fmt.Sprintf("%-9s", f.name))
 		if i == m.editIdx {
 			lead = styDoing.Render("→ ")
 			val = m.editBuf + "▌"
 		}
-		fmt.Fprintf(&b, "%s%s %s\n", lead,
-			styMeta.Render(fmt.Sprintf("%-9s", f.name)),
-			truncate(val, max(1, min(m.width, 78)-13)))
+		// A multi-line value is printed line by line, indented under its label, so
+		// the shape of what was typed is what is shown.
+		for j, line := range strings.Split(val, "\n") {
+			if j == 0 {
+				fmt.Fprintf(&b, "%s%s %s\n", lead, label, truncate(line, max(1, w-13)))
+				continue
+			}
+			fmt.Fprintf(&b, "  %s %s\n", strings.Repeat(" ", 9), truncate(line, max(1, w-13)))
+		}
 	}
 	b.WriteString("\n" + styMeta.Render(truncate(
-		"tab next field · enter save · esc cancel", max(1, min(m.width, 78)))))
+		"enter newline · ctrl+s save · tab next field · esc cancel", w)))
 	return b.String()
 }
