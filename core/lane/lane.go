@@ -144,24 +144,38 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 		return v
 	}
 	boolOf := func(k string) bool { return strings.EqualFold(str(k), "true") }
+	// Distinguishing "absent" from "explicitly false" matters for the defaults
+	// below: a lane that says nothing about evidence must not thereby escape it.
+	boolOr := func(k string, def bool) bool {
+		if !d.Has(k) {
+			return def
+		}
+		return boolOf(k)
+	}
 
 	l := &Lane{
-		ID:                     str("id"),
-		Name:                   str("name"),
-		Description:            str("description"),
-		After:                  str("after"),
-		Agentic:                boolOf("agentic"),
-		Terminal:               boolOf("terminal"),
-		ModelTier:              str("model-tier"),
-		InputRequires:          list("input-requires"),
-		OutputProduces:         list("output-produces"),
-		RequiresQuestion:       boolOf("requires-question"),
-		RequiresOutcome:        boolOf("requires-outcome"),
-		RequiresNonModelSignal: boolOf("requires-nonmodel-signal"),
-		Prompt:                 strings.TrimSpace(d.Body()),
-		Builtin:                builtin,
-		Source:                 source,
+		ID:               str("id"),
+		Name:             str("name"),
+		Description:      str("description"),
+		After:            str("after"),
+		Agentic:          boolOf("agentic"),
+		ModelTier:        str("model-tier"),
+		InputRequires:    list("input-requires"),
+		OutputProduces:   list("output-produces"),
+		RequiresQuestion: boolOf("requires-question"),
+		Prompt:           strings.TrimSpace(d.Body()),
+		Builtin:          builtin,
+		Source:           source,
 	}
+	// A terminal lane is where work is declared finished, so by default it
+	// demands the same evidence the built-in Done lane does. Without this, anyone
+	// — including an agent writing its own lane file — could define a terminal
+	// lane with no requirements and use it to mark work complete on nothing but
+	// its own assessment. Opting out is possible but must be deliberate.
+	l.Terminal = boolOf("terminal")
+	l.RequiresOutcome = boolOr("requires-outcome", l.Terminal)
+	l.RequiresNonModelSignal = boolOr("requires-nonmodel-signal", l.Terminal)
+
 	if l.ID == "" {
 		return nil, fmt.Errorf("lane %s: missing required field \"id\"", source)
 	}

@@ -49,6 +49,39 @@ func fail(code int, reason, format string, args ...any) error {
 	return &codedError{code: code, reason: reason, message: fmt.Sprintf(format, args...)}
 }
 
+// exactArgs and minArgs mirror cobra's validators but report a usage error, so a
+// wrong argument count exits 2 like a bad flag does rather than 1. Agents branch
+// on these codes, so "usage mistake" and "something went wrong" must not collide.
+func exactArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) != n {
+			return fail(ExitUsage, "usage", "%s accepts %d argument(s), received %d\n\nUsage: %s",
+				cmd.Name(), n, len(args), cmd.UseLine())
+		}
+		return nil
+	}
+}
+
+func minArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) < n {
+			return fail(ExitUsage, "usage", "%s needs at least %d argument(s), received %d\n\nUsage: %s",
+				cmd.Name(), n, len(args), cmd.UseLine())
+		}
+		return nil
+	}
+}
+
+func noArgs() cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return fail(ExitUsage, "usage", "%s takes no arguments, received %d\n\nUsage: %s",
+				cmd.Name(), len(args), cmd.UseLine())
+		}
+		return nil
+	}
+}
+
 // globals are flags shared by every subcommand.
 type globals struct {
 	jsonOut bool
@@ -129,7 +162,7 @@ Exit codes:
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          cobra.NoArgs,
+		Args:          noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Bare `jaira` opens the board: glancing at it is the common case,
 			// and printing help to someone who already installed the tool is not.

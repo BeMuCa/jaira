@@ -35,7 +35,7 @@ to exactly the same rules.
 
 Moving to a lane the ticket is already in succeeds and changes nothing, so this
 command is safe to retry.`,
-		Args: cobra.ExactArgs(1),
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -245,7 +245,7 @@ in a terminal lane, and not waiting on an unresolved dependency.
 This is a convenience for the happy path. It is not the enforcement point —
 'jaira move' re-checks everything, because nothing prevents a caller from
 skipping this command.`,
-		Args: cobra.NoArgs,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {

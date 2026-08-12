@@ -112,7 +112,7 @@ tickets themselves are unchanged, so this is a decision you can reverse with
 --undo rather than a migration.
 
 You still have to commit. jaira does not commit on your behalf.`,
-		Args: cobra.NoArgs,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {

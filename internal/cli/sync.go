@@ -108,7 +108,7 @@ Three properties make this safe to run on every tool call:
 Mirrored tickets land in the backlog behind the promotion gate. Lane movement is
 deliberately not mirrored: letting an external status push a ticket into the
 pipeline would route around the gate that makes the pipeline worth having.`,
-		Args: cobra.NoArgs,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -382,7 +382,7 @@ func newTasksCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tasks",
 		Short: "Emit the board as a task list for an agent to adopt",
-		Args:  cobra.NoArgs,
+		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {

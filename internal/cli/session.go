@@ -24,7 +24,7 @@ when the topic changes rather than on every turn — the value is a readable tra
 not a transcript.
 
 Session state is per working tree and is never committed.`,
-		Args: cobra.NoArgs,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -91,7 +91,7 @@ func newSessionsCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "sessions",
 		Short: "List sessions working in this tree",
-		Args:  cobra.NoArgs,
+		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {

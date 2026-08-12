@@ -24,7 +24,7 @@ func newMergeDriverCmd() *cobra.Command {
 		Use:    "merge-driver <base> <ours> <theirs>",
 		Short:  "Internal: three-way merge for ticket files, invoked by git",
 		Hidden: true,
-		Args:   cobra.ExactArgs(3),
+		Args:   exactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			basePath, oursPath, theirsPath := args[0], args[1], args[2]
 
@@ -151,7 +151,7 @@ two people rewriting the same prose.
 The ticket stays valid YAML while a conflict is outstanding, so the board keeps
 working. The losing value is parked in a conflict-theirs-<field> key rather than
 being discarded.`,
-		Args: cobra.ExactArgs(1),
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {

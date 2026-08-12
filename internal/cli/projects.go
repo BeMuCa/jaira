@@ -12,7 +12,7 @@ func newProjectsCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "projects",
 		Short: "List boards you have opened",
-		Args:  cobra.NoArgs,
+		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ps := project.Load()
 			if g.jsonOut {

@@ -23,7 +23,7 @@ func newInitCmd() *cobra.Command {
 		Short: "Prepare this repository for jaira",
 		Long: `Creates .jaira/ with a tickets directory, plus a .gitignore so ephemeral
 session and lock state is never committed. Safe to run more than once.`,
-		Args: cobra.NoArgs,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := ticket.At(g.dir)
 			if err != nil {
@@ -78,7 +78,7 @@ func newCreateCmd() *cobra.Command {
 Only a title is required — capture should be cheap. A ticket cannot leave the
 backlog until it has a goal, a definition of done, the context it came from, and
 an assignee, so supplying those now saves a round trip later.`,
-		Args: cobra.MinimumNArgs(1),
+		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -220,7 +220,7 @@ func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List tickets",
-		Args:  cobra.NoArgs,
+		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -319,7 +319,7 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show one ticket in full",
-		Args:  cobra.ExactArgs(1),
+		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -416,7 +416,7 @@ blank lines are left exactly as they were, so a change shows up in git as a
 one-line diff.
 
 List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
-		Args: cobra.MinimumNArgs(2),
+		Args: minArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -425,6 +425,27 @@ List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
 			id := args[0]
 			assignments := args[1:]
 			listFields := map[string]bool{ticket.FieldBlockedBy: true, ticket.FieldCommits: true}
+
+			// A ticket in a lane this installation does not have is read-only, and
+			// that has to hold for every mutation path. Enforcing it only in `move`
+			// would leave the rule true in name and false in practice.
+			cur, err := s.Load(id)
+			if err != nil {
+				return err
+			}
+			lanes, err := lane.Load()
+			if err != nil {
+				return err
+			}
+			if _, known := lanes.Get(cur.Status); !known && cur.Status != "" {
+				return &codedError{
+					code:   ExitValidation,
+					reason: "unknown_lane",
+					message: fmt.Sprintf(
+						"%s sits in unrecognized lane %q and is read-only; install that lane file first",
+						ticket.Handle(cur.ID), cur.Status),
+				}
+			}
 
 			t, err := s.Mutate(id, func(t *ticket.Ticket) error {
 				for _, a := range assignments {
@@ -488,7 +509,7 @@ func newLanesCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "lanes",
 		Short: "List the installed lanes",
-		Args:  cobra.NoArgs,
+		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			lanes, err := lane.Load()
 			if err != nil {

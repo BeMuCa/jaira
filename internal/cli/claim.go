@@ -47,7 +47,7 @@ nothing to unlock by hand.
 
 Claiming is advisory. It keeps 'jaira next' from handing the same work to two
 sessions; it does not prevent a deliberate move.`,
-		Args: cobra.ExactArgs(1),
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
