@@ -5,7 +5,7 @@ package board
 
 // Prepared reports what preparing a new board did.
 type Prepared struct {
-	Ignored   bool     // .gitignore gained the entry on this run
+	Ignored   bool // .gitignore gained the entry on this run
 	IgnoreErr error
 	Notes     []string // agent files touched, as "NAME (action)"
 	NoteErr   error

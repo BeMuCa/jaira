@@ -18,18 +18,33 @@ const (
 // The skill's own description already says to use it in a repository with a
 // .jaira directory, but that relies on the model noticing. A line in the file
 // the agent is given at the start of every session does not.
-const agentNote = `## Task tracking: jaira
-
-This repository has a jaira board (` + "`.jaira/`" + `). Multi-step work is tracked
-there as markdown tickets so it survives session boundaries.
-
-- ` + "`jaira next --json`" + ` — the next actionable ticket
-- ` + "`jaira create <title>`" + ` — capture work; only a title is needed
-- ` + "`jaira dod <id> <n> --doing|--done`" + ` — mark checklist items as you go
-- ` + "`jaira show <id> --for-lane <lane> --json`" + ` — the prompt and bounded input for a step
-
-Do not edit files under ` + "`.jaira/tickets/`" + ` directly; the CLI is the write path.
-The sign-off lane cannot be left by an agent — a person accepts the work there.`
+const agentNote = "## Task tracking: jaira\n" +
+	"\n" +
+	"This repository has a jaira board (`.jaira/`). Multi-step work is tracked\n" +
+	"there as markdown tickets so it survives session boundaries.\n" +
+	"\n" +
+	"Capturing and picking work:\n" +
+	"\n" +
+	"- `jaira create <title> --goal <...> --context <...> --dod <...>` — one call files a\n" +
+	"  complete ticket; without a goal, a definition of done, the context it came from\n" +
+	"  and an assignee it cannot leave the backlog\n" +
+	"- `jaira list --actionable --json` — everything that could be started right now\n" +
+	"- `jaira next --json` — the single next actionable ticket\n" +
+	"\n" +
+	"Working a ticket:\n" +
+	"\n" +
+	"- `jaira claim <id>` — take it first; other sessions read this board too\n" +
+	"- `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,\n" +
+	"  the model tier, and the outputs the lane expects back\n" +
+	"- `jaira dod <id> <n> --doing|--done` — mark checklist items as you go\n" +
+	"- `jaira note <id> <text>` — record what you worked out, for whoever picks this up\n" +
+	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish the step\n" +
+	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
+	"\n" +
+	"`jaira <command> --help` for everything else.\n" +
+	"\n" +
+	"Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.\n" +
+	"The sign-off lane cannot be left by an agent — a person accepts the work there."
 
 // agentFiles are the instruction files coding agents read.
 //
