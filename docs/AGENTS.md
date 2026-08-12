@@ -73,9 +73,9 @@ Two things, deliberately:
 
 ## Telling an agent the board exists
 
-`jaira init` writes a section into `CLAUDE.md` between markers, so an agent
-handed that file at session start is told. For other tools, point them at the
-same text — it is a plain markdown block, not a Claude-specific format:
+There is no single convention for this. `jaira init` writes the same section
+into both **`AGENTS.md`** — the closest thing to a cross-tool standard, and what
+Codex reads — and **`CLAUDE.md`**, between markers:
 
 ```
 <!-- jaira:start -->
@@ -84,9 +84,18 @@ This repository has a jaira board (`.jaira/`) …
 <!-- jaira:end -->
 ```
 
-Copy that block into `AGENTS.md`, `.cursorrules`, a system prompt, or whatever
-your tool reads. Re-running `jaira init` updates the block in place and leaves
-the rest of the file alone.
+For anything else, copy that block into whatever your tool reads:
+
+| Tool | File |
+|---|---|
+| Codex, and increasingly others | `AGENTS.md` — written for you |
+| Claude Code | `CLAUDE.md` — written for you, plus a skill in `.claude/skills/jaira/` |
+| Gemini CLI | `GEMINI.md` |
+| Cursor | `.cursorrules` or `.cursor/rules/` |
+| Aider | the conventions file named in its config |
+
+Re-running `jaira init` updates the block in place and leaves the rest of each
+file alone.
 
 For Claude Code there is also a skill in `.claude/skills/jaira/`; copy it to
 `~/.claude/skills/jaira/` to have it available in every repository.

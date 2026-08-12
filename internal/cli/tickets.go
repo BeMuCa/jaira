@@ -45,14 +45,14 @@ session and lock state is never committed. Safe to run more than once.`,
 			// says to use jaira in a repository that has one, but that relies on
 			// the model noticing a directory; a line in the file it is handed at
 			// the start of every session does not.
-			notePath, noteAction, noteErr := announceInAgentFile(s.Root)
+			noteFiles, noteErr := announceInAgentFiles(s.Root)
 
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
 					"private": true, "gitignore_written": ignoredNow,
-					"state_dir":  s.SessionsDir(),
-					"agent_note": map[string]any{"path": notePath, "action": noteAction},
+					"state_dir":   s.SessionsDir(),
+					"agent_notes": noteFiles,
 				})
 			}
 			if created {
@@ -66,8 +66,8 @@ session and lock state is never committed. Safe to run more than once.`,
 				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
 			}
 			if noteErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: could not update CLAUDE.md: %v\n", noteErr)
-			} else if line := announceLine(notePath, noteAction); line != "" {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", noteErr)
+			} else if line := announceLine(noteFiles); line != "" {
 				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")

@@ -32,12 +32,34 @@ there as markdown tickets so it survives session boundaries.
 Do not edit files under ` + "`.jaira/tickets/`" + ` directly; the CLI is the write path.
 The sign-off lane cannot be left by an agent — a person accepts the work there.`
 
-// announceInAgentFile writes the note into CLAUDE.md, creating it if absent.
+// agentFiles are the instruction files coding agents read.
+//
+// There is no single convention. AGENTS.md is the closest thing to a cross-tool
+// standard and is what Codex and several others read; CLAUDE.md is Claude Code's.
+// Both are written, because a board nobody's agent knows about is a board that
+// does not get used, and the cost of an extra markdown section is nothing.
+var agentFiles = []string{"AGENTS.md", "CLAUDE.md"}
+
+// announceInAgentFiles writes the note into each agent instruction file.
+func announceInAgentFiles(root string) (written []string, err error) {
+	for _, name := range agentFiles {
+		path, action, ferr := announceInAgentFile(root, name)
+		if ferr != nil {
+			return written, ferr
+		}
+		if action != "unchanged" {
+			written = append(written, filepath.Base(path)+" ("+action+")")
+		}
+	}
+	return written, nil
+}
+
+// announceInAgentFile writes the note into one file, creating it if absent.
 //
 // It reports what it did rather than doing it quietly, because editing a file
 // the user wrote is not something a tool should do invisibly.
-func announceInAgentFile(root string) (path string, action string, err error) {
-	path = filepath.Join(root, "CLAUDE.md")
+func announceInAgentFile(root, name string) (path string, action string, err error) {
+	path = filepath.Join(root, name)
 	block := jairaMarkerStart + "\n" + agentNote + "\n" + jairaMarkerEnd + "\n"
 
 	existing, readErr := os.ReadFile(path)
@@ -77,14 +99,9 @@ func announceInAgentFile(root string) (path string, action string, err error) {
 	return path, "appended", nil
 }
 
-func announceLine(path, action string) string {
-	switch action {
-	case "created":
-		return fmt.Sprintf("Wrote %s so an agent knows this board exists.\n", filepath.Base(path))
-	case "appended":
-		return fmt.Sprintf("Added a jaira section to %s so an agent knows this board exists.\n", filepath.Base(path))
-	case "updated":
-		return fmt.Sprintf("Refreshed the jaira section of %s.\n", filepath.Base(path))
+func announceLine(written []string) string {
+	if len(written) == 0 {
+		return ""
 	}
-	return ""
+	return fmt.Sprintf("Told your agents about this board: %s\n", strings.Join(written, ", "))
 }
