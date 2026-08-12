@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -143,6 +144,21 @@ func (b *browser) key(s string) (added []string, done bool) {
 		}
 		if _, err := st.Init(); err != nil {
 			b.msg = err.Error()
+			return nil, false
+		}
+		// The board exists either way now, so a Prepare failure is not a failed
+		// creation — but a board that ends up committable when it should be
+		// private cannot be silent about it either.
+		p := board.Prepare(st.Root)
+		if p.IgnoreErr != nil || p.NoteErr != nil {
+			project.Remember(target)
+			b.pending = ""
+			b.goTo(b.dir)
+			if p.IgnoreErr != nil {
+				b.msg = filepath.Base(target) + ": board created but could not make it private: " + p.IgnoreErr.Error()
+			} else {
+				b.msg = filepath.Base(target) + ": board created but could not tell your agents about it: " + p.NoteErr.Error()
+			}
 			return nil, false
 		}
 		project.Remember(target)
