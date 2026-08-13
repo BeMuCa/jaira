@@ -272,6 +272,22 @@ chosen, say so, because criterion 1's wording then needs to change with it.
     </option>
   </options>
   <resume-signal>Answer all three: D-01 (identity / email / name+hash), D-02 (warn / sync / ignore), D-03 (authoritative / additive). Tasks 2, 6 and 7 are blocked until these are settled.</resume-signal>
+  <files>.planning/phase-5-custom-and-portable-lanes/PLAN.md</files>
+  <action>
+Put D-01, D-02 and D-03 to the user with the recommendation and the trade-off for
+each, then write the chosen answers into this task as a `&lt;decided&gt;` block naming
+the option id, the choice, and the date.
+
+This task writes no code. It exists as a task rather than as a note because the
+three answers change observable behaviour in tasks 2, 6 and 7, and an implementer
+who picks one silently would bury a product decision in a commit. D-03 in
+particular decides whether success criterion 1 in ROADMAP.md is deliverable as
+written or has to be reworded, so it must be settled before task 2 starts.
+  </action>
+  <verify>
+    <automated>grep -q "&lt;decided&gt;" .planning/phase-5-custom-and-portable-lanes/PLAN.md</automated>
+  </verify>
+  <done>All three decisions are recorded in this task as a `&lt;decided&gt;` block, and if D-03 went to "additive" then ROADMAP.md criterion 1 has been reworded to match.</done>
 </task>
 
 <task type="auto" tdd="true">
