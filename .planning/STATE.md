@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-08-11)
 Phase: 1 of 8 (Foundation — Ticket Store, Schema & CLI)
 Plan: TBD (not yet planned)
 Status: Ready to plan
-Last activity: 2026-08-13 — Five quick tasks landed (TUI board setup, ticket id copy, context consolidation, review traceability, version stamp and `jaira update`); phase 5 rewritten around the agreed lane system design and planned
+Last activity: 2026-08-13 — Phase 5 (Custom & Portable Lanes) complete, plus eight quick tasks: TUI board setup, ticket id copy, context consolidation, review traceability, version stamp and `jaira update`, the specified-zone gate with a brainstorm step, ticket ownership, and the progress-note contract
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -62,6 +62,7 @@ None yet.
 |------|------|---------|
 | 2026-08-12 | dod-verb | `jaira dod` plus a surgical checklist writer: one marker character changes, indexes are scoped to their section, one in-progress item per checklist |
 | 2026-08-12 | dod-checkbox-states | Three checklist states, `## Plan` section parsed separately, and the fix for `[~]` items being dropped by the parser — which let a ticket with outstanding work enter the terminal lane |
+| 2026-08-13 | 260813-nzq | The working lane never named `jaira note` at all, so nothing told an agent to leave a trail. All three working prompts, the `note` help and the agent note now say what a note contains — what you were doing, what you found and especially what did not work, what the next step is — and when one is due: before stopping, after something failed, when the plan turns out wrong. Deliberately no gate: a note written because a gate demanded one is worthless ([260813-nzq](./quick/260813-nzq-say-what-a-progress-note-must-contain-an/)) |
 | 2026-08-13 | 260813-mqy | A ticket belongs to its assignee: writing to someone else's is refused with exit 3, naming the owner. The human checkpoint lanes are exempt by contract (`requires-question`, `requires-human-exit`), because reviewing someone else's work is their purpose; a hand-over is always allowed so an absent owner cannot freeze a ticket; `--force` overrides and is recorded. Deliberately a guard rail, not a lock — git still merges files, so the merge rules are untouched ([260813-mqy](./quick/260813-mqy-a-ticket-belongs-to-its-assignee-and-the/)) |
 | 2026-08-13 | 260813-eir | The promotion gate fires on entering the specified zone rather than on leaving a lane named `backlog`, keyed on a new `requires-specified` lane contract that the built-in todo lane carries. That made a thinking lane possible, so a `brainstorm` step ships with it — optional per ticket, and it cannot be left until it produced a `goal` ([260813-eir](./quick/260813-eir-gate-on-entering-the-specified-zone-not-/)) |
 | 2026-08-13 | 260813-1br | A board now records which jaira version last prepared it, in the per-clone state directory so a shared board never conflicts on it. Any command whose binary is newer prints one line on stderr pointing at `jaira update`, which re-applies the setup and prints the change notes embedded in the binary; `--json` carries the same for an agent. A `dev` build never nags ([260813-1br](./quick/260813-1br-version-stamp-and-jaira-update-with-embe/)) |

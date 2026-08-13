@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Read-Only TUI Board** - The board renders lanes, cards, detail, diffs, and filtering with no mutation path yet.
 - [ ] **Phase 3: TUI Mutation Parity & Gates** - The TUI becomes a full write surface, and the promotion/dependency/Done gates are enforced identically from both interfaces at the moment of mutation.
 - [ ] **Phase 4: Conflict-Tolerant Frontmatter** - Concurrent edits to the same ticket resolve automatically for the fields that change most, before any real concurrent writer exists.
-- [ ] **Phase 5: Custom & Portable Lanes** - Lanes become readable, writable, reorderable and shareable: a global catalogue, per-project copies that stay private, opt-in sharing through `.jaira/shared/`, and built-ins that may be overridden but never silently.
+- [x] **Phase 5: Custom & Portable Lanes** - Lanes become readable, writable, reorderable and shareable: a global catalogue, per-project copies that stay private, opt-in sharing through `.jaira/shared/`, and built-ins that may be overridden but never silently.
 - [ ] **Phase 6: Agent Pipeline** - Claude (or any bash-capable agent) can discover, claim, and advance tickets through lanes with tool-enforced, bounded I/O.
 - [ ] **Phase 7: Task Tool Sync** - Claude's structured Task-tool list and the Backlog stay consistent without duplicating tickets or breaking the user's session.
 - [ ] **Phase 8: Session Context & Live Refresh** - The board shows live session focus and picks up external changes automatically.
@@ -150,7 +150,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Read-Only TUI Board | 0/TBD | Not started | - |
 | 3. TUI Mutation Parity & Gates | 0/TBD | Not started | - |
 | 4. Conflict-Tolerant Frontmatter | 0/TBD | Not started | - |
-| 5. Custom & Portable Lanes | 0/TBD | Not started | - |
+| 5. Custom & Portable Lanes | 1/1 | Complete | 2026-08-13 |
 | 6. Agent Pipeline | 0/TBD | Not started | - |
 | 7. Task Tool Sync | 0/TBD | Not started | - |
 | 8. Session Context & Live Refresh | 0/TBD | Not started | - |
