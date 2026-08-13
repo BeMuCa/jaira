@@ -647,6 +647,12 @@ func newLanesCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// The default board is a fourth source of lane-shaped trouble — a
+			// typo'd id or option — that nothing checked before this task. One
+			// warning channel: its findings are appended to the loader's own
+			// rather than reported through a second path.
+			db, _ := lane.LoadDefaultBoard()
+			warnings := append(append([]string{}, lanes.Warnings...), lane.Validate(db, lanes)...)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(lanes.Lanes))
 				for _, l := range lanes.Lanes {
@@ -658,7 +664,7 @@ func newLanesCmd() *cobra.Command {
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
 				}
-				return emit(cmd.OutOrStdout(), map[string]any{"lanes": arr, "warnings": lanes.Warnings})
+				return emit(cmd.OutOrStdout(), map[string]any{"lanes": arr, "warnings": warnings})
 			}
 			w := cmd.OutOrStdout()
 			// CREATOR is not a column here: the table is already six columns wide,
@@ -671,11 +677,19 @@ func newLanesCmd() *cobra.Command {
 				}
 				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), src)
 			}
-			for _, warn := range lanes.Warnings {
+			for _, warn := range warnings {
 				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", warn)
 			}
 			return nil
 		},
+		Long: `Lists the installed lanes.
+
+The loop for building a lane or a default board by hand, no TUI required:
+  1. 'jaira lanes path' to find where a file belongs.
+  2. 'jaira lanes template' (or 'template --board') for its shape.
+  3. Write the file with the tools you already have.
+  4. 'jaira lanes' to check the result — a bad id or a bad option is a
+     warning here, not a silent failure later.`,
 	}
 	cmd.AddCommand(newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd())
 	return cmd
@@ -786,25 +800,33 @@ func newLanesShowCmd() *cobra.Command {
 }
 
 // newLanesPathCmd names where a lane file belongs, so writing one is a
-// command an agent can run rather than something it has to guess at.
+// command an agent can run rather than something it has to guess at. It
+// names all three locations a lane-shaped file can go: the catalogue, the
+// project directory, and the default board — a path command that named only
+// two of the three would be a trap for whichever it left out.
 func newLanesPathCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "path",
-		Short: "Print the catalogue and project lane directories",
+		Short: "Print the catalogue, project and default board locations",
 		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			catalogue := lane.UserLanesDir()
 			root := bestEffortRoot()
 			w := cmd.OutOrStdout()
+			boardPath := lane.DefaultBoardPath()
+			_, statErr := os.Stat(boardPath)
+			boardExists := statErr == nil
 
 			if root == "" {
 				if g.jsonOut {
 					return emit(w, map[string]any{
 						"catalogue": catalogue, "project": "", "in_project": false, "active": "catalogue",
+						"default_board": boardPath, "default_board_exists": boardExists,
 					})
 				}
-				fmt.Fprintf(w, "Catalogue: %s (active)\n", catalogue)
-				fmt.Fprintf(w, "Project:   not in a project directory\n")
+				fmt.Fprintf(w, "Catalogue:     %s (active)\n", catalogue)
+				fmt.Fprintf(w, "Project:       not in a project directory\n")
+				fmt.Fprintf(w, "Default board: %s%s\n", boardPath, existsMark(boardExists))
 				return nil
 			}
 
@@ -816,6 +838,7 @@ func newLanesPathCmd() *cobra.Command {
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"catalogue": catalogue, "project": projDir, "in_project": true, "active": active,
+					"default_board": boardPath, "default_board_exists": boardExists,
 				})
 			}
 			mark := func(which string) string {
@@ -824,11 +847,21 @@ func newLanesPathCmd() *cobra.Command {
 				}
 				return ""
 			}
-			fmt.Fprintf(w, "Catalogue: %s%s\n", catalogue, mark("catalogue"))
-			fmt.Fprintf(w, "Project:   %s%s\n", projDir, mark("project"))
+			fmt.Fprintf(w, "Catalogue:     %s%s\n", catalogue, mark("catalogue"))
+			fmt.Fprintf(w, "Project:       %s%s\n", projDir, mark("project"))
+			fmt.Fprintf(w, "Default board: %s%s\n", boardPath, existsMark(boardExists))
 			return nil
 		},
 	}
+}
+
+// existsMark labels a path that has not been written yet, so 'lanes path'
+// doubles as "does my default board exist at all" without a second command.
+func existsMark(exists bool) string {
+	if exists {
+		return ""
+	}
+	return " (not written yet)"
 }
 
 // laneTemplate is the skeleton 'jaira lanes template' prints: every field
@@ -860,19 +893,47 @@ creator: you                     # optional provenance; left empty if you'd rath
 Write the instruction given to the subagent here.
 `
 
+// defaultBoardTemplate is the skeleton 'jaira lanes template --board' prints.
+// It states the two rules that are not visible from the fields alone: an
+// absent or empty lanes: means the built-ins, and options: names entries a
+// ticket's Options checklist already has — from the installed lanes'
+// requires-option fields, not a fixed list this file invents.
+const defaultBoardTemplate = `---
+lanes: [backlog, brainstorm, todo, pre-process, in-progress, human, review, signoff, done, blocked]
+                                  # which lanes a freshly initialised board gets.
+                                  # absent, or an empty list, means the built-ins — not "no lanes".
+options: [brainstorm]            # ticket Options to pre-tick on a new ticket. Names come from the
+                                  # installed lanes' requires-option fields, never a fixed list.
+---
+
+# Default board
+
+Decides which lanes a freshly initialised board gets, and which ticket
+Options start ticked. Edit this file directly, or from jaira's home screen
+with 'd'.
+`
+
 // newLanesTemplateCmd prints a lane skeleton to stdout and nothing else — no
 // file is created, no directory is scaffolded. 'jaira lanes template >
-// $(jaira lanes path)/my-lane.md' is the whole workflow.
+// $(jaira lanes path)/my-lane.md' is the whole workflow; --board does the
+// same for the default board file.
 func newLanesTemplateCmd() *cobra.Command {
-	return &cobra.Command{
+	var board bool
+	cmd := &cobra.Command{
 		Use:   "template",
 		Short: "Print a commented lane skeleton to stdout",
 		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if board {
+				fmt.Fprint(cmd.OutOrStdout(), defaultBoardTemplate)
+				return nil
+			}
 			fmt.Fprint(cmd.OutOrStdout(), laneTemplate)
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&board, "board", false, "print a default board skeleton instead of a lane")
+	return cmd
 }
 
 func dash(s string) string {

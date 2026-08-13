@@ -183,6 +183,37 @@ func Materialise(root string, set *Set, b *DefaultBoard) ([]string, error) {
 	return written, nil
 }
 
+// Validate checks a default board against the currently installed lanes,
+// returning warnings in the same shape core/lane's own loader already uses:
+// an unknown lane id, an unknown option, or (carried over from
+// LoadDefaultBoard) an unparseable file. There is one warning channel,
+// already surfaced by 'jaira lanes', --json, the TUI warnings block and
+// every command through loadEnv — a second reporting path for the same
+// class of problem would be the mistake here.
+//
+// board.Warnings is included as-is rather than re-derived: LoadDefaultBoard
+// is the only place that knows whether the file failed to parse.
+func Validate(board *DefaultBoard, set *Set) []string {
+	warnings := append([]string{}, board.Warnings...)
+	for _, id := range board.Lanes {
+		if _, ok := set.Get(id); !ok {
+			warnings = append(warnings, fmt.Sprintf(
+				"default board names lane %q, which is not installed", id))
+		}
+	}
+	known := make(map[string]bool, len(set.Options()))
+	for _, o := range set.Options() {
+		known[o] = true
+	}
+	for _, o := range board.Options {
+		if !known[o] {
+			warnings = append(warnings, fmt.Sprintf(
+				"default board names option %q, which no installed lane requires", o))
+		}
+	}
+	return warnings
+}
+
 // ResolveOptions turns a default board's option choices into the ticked/
 // unticked list a new ticket's Options checklist needs, against the options
 // this set's installed lanes actually declare. An option the board names

@@ -302,6 +302,138 @@ func TestLanesTemplateParses(t *testing.T) {
 	}
 }
 
+// TestLanesPathNamesDefaultBoard asserts 'lanes path' names the default
+// board file in both output modes, in and out of a project — task 3 only
+// required the two directories.
+func TestLanesPathNamesDefaultBoard(t *testing.T) {
+	lanesTestCatalogue(t)
+	board := filepath.Join(t.TempDir(), "default-board.md")
+	t.Setenv("JAIRA_DEFAULT_BOARD", board)
+
+	outside := t.TempDir()
+	out, err := runLanes(t, outside, "path")
+	if err != nil {
+		t.Fatalf("lanes path: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, board) {
+		t.Errorf("lanes path outside a project = %q, want it to name the default board file", out)
+	}
+	if !strings.Contains(out, "not written yet") {
+		t.Errorf("lanes path = %q, want it to say the default board has not been written", out)
+	}
+
+	jout, err := runLanes(t, outside, "path", "--json")
+	if err != nil {
+		t.Fatalf("lanes path --json: %v\n%s", err, jout)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jout)
+	}
+	if payload["default_board"] != board {
+		t.Errorf("lanes path --json default_board = %v, want %q", payload["default_board"], board)
+	}
+	if payload["default_board_exists"] != false {
+		t.Errorf("lanes path --json default_board_exists = %v, want false", payload["default_board_exists"])
+	}
+
+	if err := os.WriteFile(board, []byte("---\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	jout2, err := runLanes(t, outside, "path", "--json")
+	if err != nil {
+		t.Fatalf("lanes path --json (board exists): %v\n%s", err, jout2)
+	}
+	var payload2 map[string]any
+	if err := json.Unmarshal([]byte(jout2), &payload2); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jout2)
+	}
+	if payload2["default_board_exists"] != true {
+		t.Errorf("lanes path --json default_board_exists = %v, want true once written", payload2["default_board_exists"])
+	}
+}
+
+// TestLanesTemplateBoardParses asserts 'lanes template --board' prints a
+// file LoadDefaultBoard accepts.
+func TestLanesTemplateBoardParses(t *testing.T) {
+	lanesTestCatalogue(t)
+	board := filepath.Join(t.TempDir(), "default-board.md")
+	t.Setenv("JAIRA_DEFAULT_BOARD", board)
+
+	out, err := runLanes(t, t.TempDir(), "template", "--board")
+	if err != nil {
+		t.Fatalf("lanes template --board: %v\n%s", err, out)
+	}
+	if err := os.WriteFile(board, []byte(out), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	db, err := lane.LoadDefaultBoard()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(db.Warnings) != 0 {
+		t.Errorf("template --board output produced warnings: %v", db.Warnings)
+	}
+	if len(db.Lanes) == 0 {
+		t.Errorf("expected the template to name at least one lane, got none")
+	}
+}
+
+// TestLanesWarnsOnBadDefaultBoardLaneAndOption asserts a default board naming
+// an uninstalled lane and an unclaimed option are both warned about, on
+// stderr in human mode and in the warnings array under --json, and the
+// command still exits 0.
+func TestLanesWarnsOnBadDefaultBoardLaneAndOption(t *testing.T) {
+	lanesTestCatalogue(t)
+	board := filepath.Join(t.TempDir(), "default-board.md")
+	if err := os.WriteFile(board, []byte("---\nlanes: [backlog, nosuchlane]\noptions: [nosuchoption]\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_DEFAULT_BOARD", board)
+
+	// The warning line goes straight to os.Stderr (see captureStdio), not
+	// through the cobra command's own writers, so it has to be captured at
+	// the file-descriptor level rather than via runLanes' buffer.
+	dir := t.TempDir()
+	var out string
+	var err error
+	_, stderr := captureStdio(t, func() {
+		out, err = runLanes(t, dir)
+	})
+	if err != nil {
+		t.Fatalf("lanes must exit 0 even with a bad default board: %v\n%s", err, out)
+	}
+	if !strings.Contains(stderr, "nosuchlane") {
+		t.Errorf("lanes stderr = %q, want a warning naming nosuchlane", stderr)
+	}
+	if !strings.Contains(stderr, "nosuchoption") {
+		t.Errorf("lanes stderr = %q, want a warning naming nosuchoption", stderr)
+	}
+
+	jout, err := runLanes(t, t.TempDir(), "--json")
+	if err != nil {
+		t.Fatalf("lanes --json must exit 0 even with a bad default board: %v\n%s", err, jout)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jout)
+	}
+	warnings, _ := payload["warnings"].([]any)
+	found := map[string]bool{}
+	for _, w := range warnings {
+		s, _ := w.(string)
+		if strings.Contains(s, "nosuchlane") {
+			found["lane"] = true
+		}
+		if strings.Contains(s, "nosuchoption") {
+			found["option"] = true
+		}
+	}
+	if !found["lane"] || !found["option"] {
+		t.Errorf("lanes --json warnings = %v, want both the lane and option warnings", warnings)
+	}
+}
+
 // TestLanesSharedListsPublishedLanes covers the CLI half of criterion 8: an
 // agent has no way to press the TUI's adopt key, so 'lanes shared' is the
 // read path.

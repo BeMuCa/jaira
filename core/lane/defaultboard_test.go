@@ -261,6 +261,62 @@ func TestResolveOptionsTicksNamedOptions(t *testing.T) {
 	}
 }
 
+// TestValidateWarnsOnUnknownLaneAndOption asserts an id and an option name
+// the installed lanes do not recognise are both reported.
+func TestValidateWarnsOnUnknownLaneAndOption(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	board := &DefaultBoard{Lanes: []string{"backlog", "nosuchlane"}, Options: []string{"nosuchoption"}}
+	warnings := Validate(board, set)
+	if !containsWarning(warnings, "nosuchlane") {
+		t.Errorf("expected a warning naming nosuchlane, got: %v", warnings)
+	}
+	if !containsWarning(warnings, "nosuchoption") {
+		t.Errorf("expected a warning naming nosuchoption, got: %v", warnings)
+	}
+}
+
+// TestValidateSilentOnAGoodBoard asserts a board naming only installed ids
+// and options produces no warnings.
+func TestValidateSilentOnAGoodBoard(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	board := &DefaultBoard{Lanes: builtinIDList(t), Options: []string{"brainstorm"}}
+	if warnings := Validate(board, set); len(warnings) != 0 {
+		t.Errorf("expected no warnings, got: %v", warnings)
+	}
+}
+
+// TestValidateCarriesUnparseableFileWarning asserts LoadDefaultBoard's own
+// parse-failure warning is included, so a caller checking one place (Validate
+// on the loaded board) sees it too.
+func TestValidateCarriesUnparseableFileWarning(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "default-board.md")
+	if err := os.WriteFile(path, []byte("not frontmatter"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_DEFAULT_BOARD", path)
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+
+	board, err := LoadDefaultBoard()
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if warnings := Validate(board, set); len(warnings) == 0 {
+		t.Error("expected the unparseable-file warning to carry through Validate")
+	}
+}
+
 // TestSaveDefaultBoardRoundTrips asserts a saved board's lanes and options
 // come back unchanged through LoadDefaultBoard.
 func TestSaveDefaultBoardRoundTrips(t *testing.T) {
