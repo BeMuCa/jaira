@@ -26,24 +26,39 @@ Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
 plan rather than quietly doing something else.
 
-Write a note (`jaira note <id> <text>`) when you finish a plan step. That is the
-one trigger you can actually rely on: a session does not get a turn to write
-something down when a usage limit or a crash ends it, so "write one before you
-stop" fires exactly never in the case that matters most. Finishing a step
-happens on its own schedule and leaves the trail at a point someone else could
-pick up from.
+## Notes
 
-The note says what the checklist marker cannot: what you learned doing the step,
-and what the next one actually needs. If the plan alone is enough for the next
-reader, one line is enough — do not pad it. The value is a readable trail, not a
-transcript.
+Write a note with `jaira note <id> <text>`. You are writing to yourself, in a
+session that has lost this conversation and can read only the repository and this
+ticket.
 
-Write one outside that rhythm too when: something you tried did not work, which
-is the single most valuable line a later session can read and the one most often
-skipped; you learn something that contradicts the ticket's context or its plan —
-fix the plan too, but say what changed and why; you are about to start something
-long, so an interruption in the middle is recoverable; or you are handing the
-ticket over or stopping deliberately.
+**The rule: write down what the repository does not already say.**
+
+That test decides both what to write and what to leave out. Applied:
+
+- **a dead end** — "tried X, it does not work because Y". Nothing in the code
+  records a thing that was not done. Without it the next session spends its first
+  hour rediscovering it. This is the single most valuable line you can leave and
+  the one most often skipped.
+- **why this and not that** — the code shows the approach you took, never the one
+  you rejected or the reason. Without it someone later "fixes" it back.
+- **what you had to find out** — "the exporter buffers everything in writeAll()".
+  It cost you time to learn; it costs the next reader the same time again.
+- **work that is half done** — "callers in Y updated, Z still on the old shape".
+- **what you would do next**, when it is not simply the next line of the plan.
+
+And what to skip, because the board already carries it: which step you are on
+(the `--doing` marker says so), that a step is finished (the checklist says so),
+that a commit exists (git says so), that the definition of done is met (the
+`--proof` on the item says so). A note repeating those is a transcript, and a
+transcript is not read.
+
+**When to ask yourself the question:** at every natural pause — a plan step
+finished, a piece implemented, a test going green, before starting something
+long, on handover. Not on every turn.
+
+Do not save it for when you are about to stop. A session killed by a usage limit
+or a crash never gets that turn, which is exactly the case the note exists for.
 
 When you are finished, report:
 
