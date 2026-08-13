@@ -74,7 +74,7 @@
 - [x] **LANE-03**: A lane definition specifies its prompt, its model tier, and its input/output contract
 - [x] **LANE-04**: A lane's model tier is a local alias, not a hardcoded model name, so shared lane files survive model renames
 - [x] **LANE-05**: Custom lanes order themselves by anchoring to an existing lane rather than a numeric position
-- [x] **LANE-06**: A lane whose `id` collides with a base lane is rejected with a clear error, never silently overriding it
+- [x] **LANE-06**: A lane whose `id` collides with a base lane overrides it, and the override is always reported as a warning, never silent
 - [x] **LANE-07**: A ticket in a lane the local install does not have renders as a read-only passthrough column, never hidden
 - [x] **LANE-08**: Advancing a ticket into or out of an unrecognized lane is refused, since no contract exists to enforce
 
