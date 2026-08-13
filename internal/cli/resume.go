@@ -28,7 +28,13 @@ Write one when you learn something a later session would otherwise have to
 rediscover: what you tried, what did not work, what you were about to do next.
 A session that stops abruptly — a limit, a crash, a closed laptop — leaves
 nothing behind except what was written down, and the point of this board is that
-the work does not have to be reconstructed from memory.`,
+the work does not have to be reconstructed from memory.
+
+A note that holds up has three parts: what you were doing, what you found —
+especially what did not work, which is what saves the next session the most
+time and what everyone leaves out — and what the next concrete step is. Skip
+the third and you leave the reader to re-derive a decision you already made:
+"tried X, did not work" says less than "next: try Y, because X is ruled out."`,
 		Args: minArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
