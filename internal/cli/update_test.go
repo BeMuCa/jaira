@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -102,6 +103,14 @@ func TestNudgeIfStaleOnDifferingStampPrintsOneStderrLineOnly(t *testing.T) {
 }
 
 func TestNudgeIfStaleSkipsSilentlyWhenStateDirUnreadable(t *testing.T) {
+	// Windows has no equivalent of a directory whose permission bits deny a
+	// read: os.Chmod maps onto the read-only attribute and leaves the directory
+	// listable, so the condition under test cannot be created there. The nudge
+	// then fires correctly on an unstamped board, and the assertion below would
+	// be measuring the setup rather than the behaviour.
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod cannot make a directory unreadable on Windows")
+	}
 	if os.Geteuid() == 0 {
 		t.Skip("running as root: permission bits do not block reads")
 	}
