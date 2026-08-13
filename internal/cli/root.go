@@ -14,12 +14,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -276,18 +275,5 @@ func emit(w io.Writer, v any) error {
 // identity determines who is acting, preferring git's configured name so tickets
 // are attributed the same way commits are.
 func identity() string {
-	if v := strings.TrimSpace(os.Getenv("JAIRA_USER")); v != "" {
-		return v
-	}
-	if out, err := exec.Command("git", "-C", g.dir, "config", "user.name").Output(); err == nil {
-		if name := strings.TrimSpace(string(out)); name != "" {
-			return name
-		}
-	}
-	for _, k := range []string{"USER", "USERNAME", "LOGNAME"} {
-		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
-			return v
-		}
-	}
-	return "unknown"
+	return coreidentity.Current(g.dir)
 }
