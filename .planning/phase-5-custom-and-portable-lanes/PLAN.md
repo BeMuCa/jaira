@@ -272,6 +272,40 @@ chosen, say so, because criterion 1's wording then needs to change with it.
     </option>
   </options>
   <resume-signal>Answer all three: D-01 (identity / email / name+hash), D-02 (warn / sync / ignore), D-03 (authoritative / additive). Tasks 2, 6 and 7 are blocked until these are settled.</resume-signal>
+  <decided date="2026-08-13">
+
+**D-01 — `<user>` in `.jaira/shared/<user>/`: the existing `identity()`, slugified.**
+`JAIRA_USER` → `git config user.name` → `$USER` → `unknown`, lowercased and reduced
+to `[a-z0-9-]`. Moves to a `core/identity` package so `internal/tui` can reach it.
+Two teammates with the same configured name collide into one folder; `JAIRA_USER`
+is the one-line fix and is documented as such.
+
+**D-02 — drift: warn, and check it where the user is already looking.**
+Editing a lane writes through to the global catalogue immediately, so it is
+*other* projects that drift, and they drift silently. Rather than checking on
+every command, the lane settings screen runs the check when it opens: it compares
+the lanes this project uses against their catalogue copies and shows a small
+warning on the ones that differ, with a refresh action to pull the catalogue
+version in. Nothing syncs by itself — the direction is always the user's.
+
+**D-03 — `.jaira/lanes/` is authoritative.**
+It is the record of which lanes this project uses; without it nothing stores that
+selection at all. So the loader reads it as the project's lane list rather than as
+a set of overrides.
+
+Consequence that must be handled in Task 2, not discovered later: the export that
+populates the directory writes the full working set, built-ins included. A
+directory holding one hand-written file would otherwise leave a board with one
+lane. The loader warns when `.jaira/lanes/` exists but holds no lane declaring
+`requires-specified`, because that board can never move a ticket into work.
+
+**D-04 (new) — a brainstorm lane ships as a built-in optional step.**
+Already landed ahead of this phase: `core/lane/builtin/05-brainstorm.md`,
+`requires-option: brainstorm`, `output-produces: [goal]` so it cannot be left
+until the brainstorm reached an intent. The gate rework that made it possible is
+in `core/gate/gate.go` (`requires-specified`).
+
+  </decided>
   <files>.planning/phase-5-custom-and-portable-lanes/PLAN.md</files>
   <action>
 Put D-01, D-02 and D-03 to the user with the recommendation and the trade-off for

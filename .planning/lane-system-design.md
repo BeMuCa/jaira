@@ -72,9 +72,26 @@ so a project lane that has drifted from the catalogue copy can be recognised.
   `.jaira/shared/<user>/`
 - lane selection shows teammates' shared lanes and can adopt one
 
-## Open questions
+## Settled 2026-08-13
 
-- What identifies `<user>` for the shared folder — git `user.name`, or a jaira
-  setting? Two teammates with the same git name would collide.
-- What happens when a project lane and its catalogue original have drifted apart:
-  warn, offer to sync, or ignore?
+- `<user>` is the existing `identity()`, slugified (`JAIRA_USER` → git
+  `user.name` → `$USER`). `JAIRA_USER` is the escape hatch when two teammates
+  share a configured name.
+- Drift is checked when the lane settings screen opens, not on every command,
+  and shown as a per-lane warning with a refresh action. Editing a lane writes
+  through to the catalogue, so it is other projects that drift.
+- `.jaira/lanes/` is authoritative — it is the only record of which lanes a
+  project uses. The export writes the full working set, built-ins included.
+- A `brainstorm` lane ships as a built-in optional step (`requires-option:
+  brainstorm`, `output-produces: [goal]`).
+
+## Still open
+
+- A **default board**: which lanes a newly initialised board starts with, and
+  which ticket Options are pre-ticked. It is the init side of the same storage
+  decision — `.jaira/lanes/` has to be populated by something — so it belongs
+  here rather than in a phase of its own. Two distinct knobs hide in it: the
+  default lane set, and the default ticket Options (e.g. "always brainstorm").
+  A screen that *picks* which catalogue lanes go into a new board fits the
+  file-is-the-API decision; a screen that *authors* lane content is the CRUD
+  surface that was rejected.
