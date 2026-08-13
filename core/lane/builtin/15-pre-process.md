@@ -35,6 +35,10 @@ per step, in the order they should happen:
 Keep the steps at the size of a thing you can finish and mark done. "Implement
 the feature" is not a step; it is the whole ticket restated.
 
+When the plan rests on something you had to work out, put that reasoning in a
+note (`jaira note <id> <text>`), so the next reader knows why the plan looks
+like this rather than re-deriving it.
+
 If the definition of done cannot be met as written — it is ambiguous, or it asks
 for something the codebase makes impossible — say so and move the ticket to the
 HITL lane with that question rather than planning around it.

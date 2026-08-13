@@ -38,6 +38,10 @@ Write three things, in this order:
    - Are there defects introduced by this change?
    - Is anything claimed in the outcome not supported by the diff?
 
+   When a review sends work back, put the reason in a note too
+   (`jaira note <id> <text>`), so the implementer reading the ticket later sees
+   it in the trail rather than only in a field the next review overwrites.
+
 3. `review-verdict` — your conclusion.
 
        jaira set <handle> review-verdict="the diff matches the criteria; no defects found"
