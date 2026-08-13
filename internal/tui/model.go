@@ -42,6 +42,8 @@ const (
 	modePipeline
 	modeLanes
 	modeLaneFocus
+	modeSettings
+	modeDefaultBoard
 )
 
 // Model is the board's state.
@@ -98,6 +100,16 @@ type Model struct {
 
 	// laneScreen is the lane settings screen, non-nil while modeLanes is active.
 	laneScreen *laneScreen
+
+	// settingsScreen is the menu behind S, non-nil while modeSettings is
+	// active. Both laneScreen and board are opened from it and, on esc,
+	// return to it rather than straight to the board.
+	settingsScreen *settingsScreen
+
+	// board is the default board screen, non-nil while modeDefaultBoard is
+	// active. Reached only through settings — the launcher's own 'd' builds
+	// its own copy for the case where no board is open yet.
+	board *defaultBoardScreen
 
 	// sessions is what any agent working this tree last checkpointed — the
 	// board's view of agent memory.
@@ -381,6 +393,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case boardEditorDoneMsg:
+		if m.board != nil {
+			if msg.err != nil {
+				m.board.msg, m.board.isErr = msg.err.Error(), true
+			} else {
+				m.board.msg, m.board.isErr = "", false
+			}
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		return m.key(msg)
 	}
@@ -481,12 +503,41 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeLanes:
 		if done := m.laneScreen.key(s); done {
 			m.laneScreen = nil
-			m.mode = modeBoard
+			// Reached only through settings now, so closing it goes back one
+			// level to the menu, not all the way to the board.
+			m.mode = modeSettings
 			if err := m.reload(); err != nil {
 				m.notify(err.Error(), true)
 			}
 		}
 		return m, nil
+
+	case modeSettings:
+		switch action := m.settingsScreen.key(s); action {
+		case settingsActionBack:
+			m.settingsScreen = nil
+			m.mode = modeBoard
+		case settingsActionLanes:
+			m.laneScreen = newLaneScreen(m.store, m.lanes)
+			m.mode = modeLanes
+		case settingsActionDefaultBoard:
+			db, err := lane.LoadDefaultBoard()
+			if err != nil {
+				m.notify(err.Error(), true)
+			} else {
+				m.board = newDefaultBoardScreen(m.lanes, db)
+				m.mode = modeDefaultBoard
+			}
+		}
+		return m, nil
+
+	case modeDefaultBoard:
+		done, cmd := m.board.key(s)
+		if done {
+			m.board = nil
+			m.mode = modeSettings
+		}
+		return m, cmd
 
 	case modeProjects:
 		switch s {
@@ -609,9 +660,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.notify("Reloaded", false)
 		}
-	case "L":
-		m.laneScreen = newLaneScreen(m.store, m.lanes)
-		m.mode = modeLanes
+	case "S":
+		m.settingsScreen = newSettingsScreen()
+		m.mode = modeSettings
 	}
 	return m, nil
 }

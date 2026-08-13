@@ -85,6 +85,10 @@ func (m *Model) render() string {
 		return m.renderProjects()
 	case modeLanes:
 		return m.laneScreen.render(m.width, m.height)
+	case modeSettings:
+		return m.settingsScreen.render(m.width, m.height)
+	case modeDefaultBoard:
+		return m.board.render(m.width, m.height)
 	case modeMove:
 		return m.renderBoard() // picker is drawn into the status bar
 	}
@@ -451,7 +455,7 @@ func (m *Model) statusBar(start, end int) string {
 	}
 	// Hints are dropped from the right as the terminal narrows, rather than
 	// letting the bar wrap and push the board off-screen.
-	keys := []string{"hjkl move", "enter open", "n new", "m lane", "L lanes", "/ filter", "? help", "q quit"}
+	keys := []string{"hjkl move", "enter open", "n new", "m lane", "S settings", "/ filter", "? help", "q quit"}
 	prefix := hidden
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -629,7 +633,7 @@ func (m *Model) renderHelp() string {
 			{"x", "archive the selected ticket (restore brings it back)"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
-			{"L", "lane settings: read a lane's prompt, use it here, publish it"},
+			{"S", "settings: lanes (read a prompt, use it, publish it) and the default board"},
 		}},
 		{"Compact view", [][2]string{
 			{"v", "the whole flow at a glance, agents counted per step"},
