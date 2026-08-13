@@ -44,6 +44,14 @@ tickets that are not specified yet: a scrap, an idea, something being thought
 through. The promotion gate fires when a ticket crosses into that zone, not
 when it leaves a lane with a particular name.
 
+## Leaving a trail
+
+Write `jaira note <id> <text>` before you stop, or when something did not
+work — anything not written down is lost once the session ends. Three parts:
+what you were doing, what you found — especially what did not work — and what
+the next step is. Write it as if the reader has mild ADHD: what you were doing
+first, short and concrete, names and paths rather than adjectives, no preamble.
+
 ## Starting a session
 
 ```bash
