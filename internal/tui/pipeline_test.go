@@ -57,8 +57,8 @@ func TestPipelineNavigationAndOpening(t *testing.T) {
 		t.Errorf("a did not move left: %d", m.laneIdx)
 	}
 	m.pipelineKey("enter")
-	if m.mode != modeBoard {
-		t.Error("enter did not open the step as a board")
+	if m.mode != modeLaneFocus {
+		t.Error("enter did not open the step as a single-lane view")
 	}
 }
 

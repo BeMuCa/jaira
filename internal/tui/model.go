@@ -41,6 +41,7 @@ const (
 	modeEdit
 	modePipeline
 	modeLanes
+	modeLaneFocus
 )
 
 // Model is the board's state.
@@ -68,6 +69,11 @@ type Model struct {
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
 	detail *ticket.Ticket
+
+	// detailFrom is the mode the detail pane was opened from, so backing out of
+	// it returns there instead of always landing on the board. It defaults to
+	// modeBoard, which is correct for every caller that predates modeLaneFocus.
+	detailFrom mode
 
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
@@ -507,7 +513,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.copied = false
 		switch s {
 		case "esc", "q", "enter":
-			m.mode = modeBoard
+			m.mode = m.detailFrom
 			m.detail = nil
 		case "e":
 			m.startEdit()
@@ -529,14 +535,22 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "m":
 			m.openMove()
 		case "j", "down":
-			m.mode = modeBoard
+			m.mode = m.detailFrom
 			m.detail = nil
 			m.moveCard(1)
 		case "k", "up":
-			m.mode = modeBoard
+			m.mode = m.detailFrom
 			m.detail = nil
 			m.moveCard(-1)
 		}
+		return m, nil
+
+	case modeLaneFocus:
+		if s == "q" || s == "ctrl+c" {
+			m.Close()
+			return m, tea.Quit
+		}
+		m.laneFocusKey(s)
 		return m, nil
 	}
 
@@ -632,6 +646,7 @@ func (m *Model) openDetail() {
 		return
 	}
 	m.detail = full
+	m.detailFrom = m.mode
 	m.mode = modeDetail
 }
 

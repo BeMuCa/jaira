@@ -259,10 +259,10 @@ func (m *Model) pipelineKey(s string) bool {
 	case "s", "down", "j":
 		m.laneIdx = len(m.lanes.Lanes) - 1
 	case "enter":
-		// Opening a step is the full board with that lane focused, which is the
-		// block view of what is in it.
-		m.mode = modeBoard
-		m.rebuild()
+		// Opening a step goes deeper into that one lane, filling the screen — not
+		// sideways into the multi-column board, which is a different view of
+		// everything rather than more of what you picked.
+		m.mode = modeLaneFocus
 	case "v":
 		m.mode = modeBoard
 	default:
