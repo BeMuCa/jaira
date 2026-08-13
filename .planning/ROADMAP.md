@@ -96,7 +96,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   9. Every lane records a `creator:` signature, so an adopted lane keeps its provenance.
   10. A default board, set once per user from the home screen, decides which lanes a newly initialised board gets and which ticket Options start ticked; a project that changed nothing still carries no lane files, because an absent `.jaira/lanes/` means the built-ins.
   11. An agent can do all of it without the TUI: create a lane, change one, and edit the default board, using `jaira lanes path` to find where files belong, a template to write against, and `jaira lanes` to check the result — including validation of the default board file, not only of lanes.
-  12. The order lanes appear in is the order the `precedence` column claims. Today two lanes anchored to the same lane are ordered by which file was read first, so a lane with `precedence: 12` can render before one with `precedence: 5` — observed, not theoretical.
+  12. `precedence` decides the order and is freely editable; `after` stops being a second way to position a lane and becomes a constraint that is checked. A lane ordered before the lane that produces an input it requires is reported at load time, the way a cycle already is — today nothing compares the two contracts against the order at all.
 **Plans**: 1 plan, 7 tasks
 - [ ] `.planning/phase-5-custom-and-portable-lanes/PLAN.md` — decision checkpoint on three open questions, then root-aware lane loading, a legible `jaira lanes`, private project lanes through `share`, ordering/tier/unknown-lane proof, and the TUI publish + adopt screens
 

@@ -47,6 +47,14 @@ shadow a built-in, including its prompt. It must produce a warning, never a
 silent swap. The warning channel already exists and is surfaced everywhere
 (`jaira lanes`, `--json`, the TUI warnings block, `internal/cli/root.go:240`).
 
+**Nothing is off limits, including the protections** (decided 2026-08-13). An
+override may drop `requires-human-exit` from sign-off or
+`requires-nonmodel-signal` from done. That is a real hole — it lets an agent
+accept its own work — so dropping a protection gets its own distinct, explicit
+warning naming the protection that went away, separate from the ordinary "this
+overrides a built-in" line. The user asked for freedom over a lock; the tool's
+job is then to make sure the loss is impossible to miss.
+
 ## CLI surface
 
 Lanes become legible, and stay writable as files — the file format is the API.
@@ -68,11 +76,32 @@ directly. What an agent is missing is discoverability (where files belong, what
 shape they take) and the same loop for the default board, which has no validator
 at all.
 
-The same check turned up an ordering problem: display order follows the `after:`
-anchor, not `precedence`, so two lanes anchored to the same lane are ordered by
-whichever file was read first. A lane with `precedence: 12` rendering before one
-with `precedence: 5` was observed, not theorised. Either the column or the
-ordering has to give.
+## Ordering: the two fields have two different jobs (settled 2026-08-13)
+
+Display order follows the `after:` anchor today, not `precedence`, so two lanes
+anchored to the same lane are ordered by whichever file was read first — a lane
+with `precedence: 12` rendering before one with `precedence: 5` was observed, not
+theorised.
+
+The fix is not to pick a winner. The two fields are answering different
+questions, and only one of them is about position:
+
+- **`precedence` decides the order.** It sorts, with gaps, and it is freely
+  editable: a lane adopted into your catalogue is yours, so renumbering it — and
+  everything around it — is your business. The earlier objection that you cannot
+  renumber someone else's file does not hold, because adoption is a copy.
+- **`after` is a constraint, not a position.** It says this lane must come after
+  that one, because the pipeline breaks otherwise — "create the artifact" before
+  "test the artifact". It is validated, and a `precedence` that violates it is
+  reported.
+
+Most of those constraints are already written down and nobody reads them:
+`pre-process` declares `output-produces: [plan]` and `in-progress` declares
+`input-requires: [..., plan]`. Nothing today checks that the producer sorts
+before the consumer (verified — `InputRequires` and `OutputProduces` are parsed
+in `core/lane/lane.go:193-194` and never compared against the order). A lane
+ordered before its producer simply fails later with `missing: plan`. That check
+belongs at load time, next to the cycle check that already exists.
 
 ## Per-lane signature
 
