@@ -68,7 +68,7 @@ and the board's compact view (`v`) counts them per step.
 
 ## What an agent cannot do
 
-Two things, deliberately:
+Three things, deliberately:
 
 - **Leave the sign-off lane.** It is a human checkpoint. A review agent writes
   `review-summary`, `review-gaps` and `review-verdict`, then moves the ticket to
@@ -78,6 +78,17 @@ Two things, deliberately:
   be marked done, and the plan finished if the ticket has one. There is no
   evidence flag to pass. `--force` exists, is recorded on the ticket, and is the
   user's call rather than the agent's.
+- **Write to someone else's ticket.** A ticket belongs to its `assignee`; a move
+  by anyone else exits 3, naming the owner. The human checkpoint lanes are
+  exempt — reviewing and signing off someone else's work is the whole point of
+  them — and taking a ticket over with `jaira set <id> assignee=<you>` is always
+  allowed, so a ticket is never frozen by an owner who has gone quiet. `--force`
+  overrides and is recorded, same as any other gate refusal.
+
+Ownership here is a guard rail, not a lock: tickets are still plain markdown
+files in git, so a hand edit or an offline merge can produce two versions of a
+ticket regardless of what this binary would have refused. The merge rules
+handle that case and are unchanged by any of this.
 
 ## Telling an agent the board exists
 
