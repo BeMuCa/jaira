@@ -48,7 +48,10 @@ func newMergeDriverCmd() *cobra.Command {
 				return err
 			}
 
-			lanes, err := lane.Load()
+			// Git invokes the merge driver with the working tree as cwd, but there
+			// is no Store here — only three file paths — so the root has to be
+			// discovered rather than taken from one already in hand.
+			lanes, err := lane.Load(bestEffortRoot())
 			if err != nil {
 				return err
 			}

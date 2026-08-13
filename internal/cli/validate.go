@@ -29,7 +29,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load()
+			lanes, err := lane.Load(s.Root)
 			if err != nil {
 				return err
 			}

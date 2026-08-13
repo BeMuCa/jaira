@@ -11,7 +11,7 @@ import (
 
 func lanes(t *testing.T) *lane.Set {
 	t.Helper()
-	s, err := lane.Load()
+	s, err := lane.Load("")
 	if err != nil {
 		t.Fatal(err)
 	}

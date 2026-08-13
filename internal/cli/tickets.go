@@ -111,7 +111,7 @@ after the first two.`,
 			if title == "" {
 				title = strings.Join(args, " ")
 			}
-			lanes, err := lane.Load()
+			lanes, err := lane.Load(s.Root)
 			if err != nil {
 				return err
 			}
@@ -560,7 +560,7 @@ List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load()
+			lanes, err := lane.Load(s.Root)
 			if err != nil {
 				return err
 			}
@@ -638,7 +638,10 @@ func newLanesCmd() *cobra.Command {
 		Short: "List the installed lanes",
 		Args:  noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			lanes, err := lane.Load()
+			// jaira lanes must work outside a board too — that is what makes it
+			// useful for writing a project's first lane file — so the root is
+			// best-effort rather than required.
+			lanes, err := lane.Load(bestEffortRoot())
 			if err != nil {
 				return err
 			}

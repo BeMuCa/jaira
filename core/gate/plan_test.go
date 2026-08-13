@@ -10,7 +10,7 @@ import (
 
 func testEnv(t *testing.T) Env {
 	t.Helper()
-	lanes, err := lane.Load()
+	lanes, err := lane.Load("")
 	if err != nil {
 		t.Fatalf("lane.Load: %v", err)
 	}

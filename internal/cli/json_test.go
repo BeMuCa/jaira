@@ -13,7 +13,7 @@ import (
 // do exactly that. Rendering the checklists only in the human output would leave
 // the machine interface unable to act on the machine-readable error.
 func TestTicketJSONCarriesChecklists(t *testing.T) {
-	lanes, err := lane.Load()
+	lanes, err := lane.Load("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestTicketJSONCarriesChecklists(t *testing.T) {
 // A ticket with no checklists must emit empty arrays rather than null, so an
 // agent can iterate without a nil check.
 func TestTicketJSONChecklistsEmptyNotNull(t *testing.T) {
-	lanes, err := lane.Load()
+	lanes, err := lane.Load("")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -122,7 +122,7 @@ func New(s *ticket.Store) (*Model, error) {
 // source of truth that has to stay consistent with edits made entirely outside
 // this process (a git pull, another session, a hand edit).
 func (m *Model) reload() error {
-	lanes, err := lane.Load()
+	lanes, err := lane.Load(m.store.Root)
 	if err != nil {
 		return err
 	}

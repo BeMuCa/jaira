@@ -96,7 +96,9 @@ func (h *Home) refresh(extra []string) int {
 // NewHome builds the launcher from the registry plus anything discovered below
 // the working directory.
 func NewHome(extraRoots []string) (*Home, error) {
-	lanes, err := lane.Load()
+	// The launcher spans every registered board, not one project, so there is
+	// no single root to scope lanes to: it can only ever show the catalogue.
+	lanes, err := lane.Load("")
 	if err != nil {
 		return nil, err
 	}

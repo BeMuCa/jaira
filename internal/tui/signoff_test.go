@@ -74,7 +74,7 @@ func TestVerdictIsSeparateFromTheOutcome(t *testing.T) {
 // human; a person pressing a key in the board must. Review is now the model's
 // own step and it may leave that freely — sign-off is the checkpoint.
 func TestHumanExitGate(t *testing.T) {
-	lanes, err := lane.Load()
+	lanes, err := lane.Load("")
 	if err != nil {
 		t.Fatal(err)
 	}

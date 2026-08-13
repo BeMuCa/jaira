@@ -2,10 +2,17 @@
 //
 // Seven base lanes are compiled into the binary so a fresh clone renders a
 // working board with no repository configuration. Custom lanes are single
-// markdown files under ~/.jaira/lanes, which makes sharing one "send someone the
-// file" rather than "reproduce my config". Both kinds go through this same
-// parser: a built-in lane is not a special case, it is just a lane that happens
-// to ship inside the executable.
+// markdown files under ~/.jaira/lanes (the catalogue) or, when a project has
+// scoped itself down, under <root>/.jaira/lanes (see ProjectLanesDir) — which
+// makes sharing one "send someone the file" rather than "reproduce my config".
+// Both kinds go through this same parser: a built-in lane is not a special
+// case, it is just a lane that happens to ship inside the executable.
+//
+// A custom lane whose id matches a built-in overrides it, prompt included,
+// rather than being refused. That is deliberate: the user owns the pipeline
+// and nothing about it is off limits, including the protections a built-in
+// carries. The loader's job is not to stop an override, only to make sure it
+// is never quiet — see Load.
 package lane
 
 import (
@@ -273,7 +280,8 @@ func Builtins() ([]*Lane, error) {
 	return out, nil
 }
 
-// UserLanesDir is where custom lane files live.
+// UserLanesDir is where custom lane files live. This is the catalogue: every
+// lane a user has built or adopted, independent of any one project.
 func UserLanesDir() string {
 	if v := os.Getenv("JAIRA_LANES_DIR"); v != "" {
 		return v
@@ -285,19 +293,62 @@ func UserLanesDir() string {
 	return filepath.Join(home, ".jaira", "lanes")
 }
 
-// Load resolves the full lane set: built-ins first, then any custom lanes.
-func Load() (*Set, error) {
+// ProjectLanesDir is where a project scopes itself down to the lanes it
+// actually uses. Per D-03 it is authoritative when present and non-empty: it
+// replaces the catalogue as this project's second lane source rather than
+// adding to it, so a project directory holding only three lane files means a
+// three-lane board, not the catalogue plus three overrides.
+func ProjectLanesDir(root string) string {
+	return filepath.Join(root, ticket.DirName, "lanes")
+}
+
+// Load resolves the full lane set: built-ins first, then either the project's
+// own lane directory or the catalogue, per D-03.
+//
+// root is the board's root. An empty root means no project is in hand — the
+// launcher spans many boards and cannot scope to one — and Load falls back to
+// built-ins plus the catalogue, exactly as it would for any project with no
+// <root>/.jaira/lanes directory of its own.
+//
+// A custom lane whose id collides with a built-in overrides it, prompt
+// included, rather than being refused. The override is always reported as a
+// warning naming the file, the id and the built-in it displaced. If the
+// override also drops a protection the built-in carried — requires-human-exit,
+// terminal, requires-outcome or requires-nonmodel-signal — a second, separate
+// warning names which protection is gone: those exist to stop an agent
+// accepting its own work, and that is exactly what losing one silently would
+// allow.
+func Load(root string) (*Set, error) {
 	lanes, err := Builtins()
 	if err != nil {
 		return nil, err
 	}
-	builtinIDs := map[string]bool{}
+	builtinByID := make(map[string]*Lane, len(lanes))
 	for _, l := range lanes {
-		builtinIDs[l.ID] = true
+		builtinByID[l.ID] = l
 	}
 
 	var warnings []string
+
+	// D-03: a project's own lane directory, when present and non-empty, is
+	// authoritative over the catalogue for that project. Present-but-empty is
+	// treated the same as absent (falls back to the catalogue) but is worth a
+	// warning of its own: from the user's side it looks identical to "my lanes
+	// vanished", and nothing else would say why.
 	dir := UserLanesDir()
+	if root != "" {
+		projDir := ProjectLanesDir(root)
+		if fi, statErr := os.Stat(projDir); statErr == nil && fi.IsDir() {
+			matches, _ := filepath.Glob(filepath.Join(projDir, "*.md"))
+			if len(matches) > 0 {
+				dir = projDir
+			} else {
+				warnings = append(warnings, fmt.Sprintf(
+					"%s exists but holds no lane files; falling back to the catalogue", projDir))
+			}
+		}
+	}
+
 	if dir != "" {
 		matches, _ := filepath.Glob(filepath.Join(dir, "*.md"))
 		sort.Strings(matches)
@@ -313,32 +364,88 @@ func Load() (*Set, error) {
 				warnings = append(warnings, err.Error())
 				continue
 			}
-			// A custom lane must never shadow a built-in: the promise that a
-			// teammate's board behaves predictably depends on the base lanes
-			// meaning the same thing everywhere.
-			if builtinIDs[l.ID] {
-				warnings = append(warnings, fmt.Sprintf(
-					"lane %s: id %q collides with a built-in lane and was ignored", m, l.ID))
-				continue
-			}
 			if prev, dup := seen[l.ID]; dup {
 				warnings = append(warnings, fmt.Sprintf(
 					"lane %s: id %q already defined by %s and was ignored", m, l.ID, prev))
 				continue
 			}
 			seen[l.ID] = m
-			lanes = append(lanes, l)
+
+			if base, overrides := builtinByID[l.ID]; overrides {
+				warnings = append(warnings, fmt.Sprintf(
+					"lane %s: id %q overrides the built-in lane of the same name", m, l.ID))
+				if lost := droppedProtections(base, l); len(lost) > 0 {
+					warnings = append(warnings, fmt.Sprintf(
+						"lane %s: overriding %q drops %s — an agent could now accept its own work here undetected",
+						m, l.ID, strings.Join(lost, ", ")))
+				}
+				lanes = replaceLane(lanes, l)
+			} else {
+				lanes = append(lanes, l)
+			}
 		}
 	}
 
 	ordered, orderWarn := order(lanes)
 	warnings = append(warnings, orderWarn...)
 
+	if !anyRequiresSpecified(ordered) {
+		// An override could take requires-specified out of circulation entirely
+		// (there is no built-in fallback for it the way there is for terminal or
+		// requires-outcome): without it nothing marks the boundary between a
+		// half-formed ticket and one ready to work, and a ticket can never be
+		// promoted.
+		warnings = append(warnings,
+			"no installed lane declares requires-specified; a ticket can never be promoted into work")
+	}
+
 	set := &Set{Lanes: ordered, byID: map[string]*Lane{}, Warnings: warnings}
 	for _, l := range ordered {
 		set.byID[l.ID] = l
 	}
 	return set, nil
+}
+
+// droppedProtections reports which of a built-in's protections a replacement
+// no longer carries, in a fixed order so the warning is deterministic.
+func droppedProtections(base, replacement *Lane) []string {
+	var lost []string
+	if base.RequiresHumanExit && !replacement.RequiresHumanExit {
+		lost = append(lost, "requires-human-exit")
+	}
+	if base.Terminal && !replacement.Terminal {
+		lost = append(lost, "terminal")
+	}
+	if base.RequiresOutcome && !replacement.RequiresOutcome {
+		lost = append(lost, "requires-outcome")
+	}
+	if base.RequiresNonModelSignal && !replacement.RequiresNonModelSignal {
+		lost = append(lost, "requires-nonmodel-signal")
+	}
+	return lost
+}
+
+// replaceLane drops the lane sharing replacement's ID and appends replacement
+// in its place. The replacement is not itself marked Builtin, so order() will
+// position it by its own "after" like any other custom lane — an override
+// does not inherit the shipped slot of the lane it displaced.
+func replaceLane(lanes []*Lane, replacement *Lane) []*Lane {
+	out := make([]*Lane, 0, len(lanes))
+	for _, l := range lanes {
+		if l.ID != replacement.ID {
+			out = append(out, l)
+		}
+	}
+	return append(out, replacement)
+}
+
+func anyRequiresSpecified(lanes []*Lane) bool {
+	for _, l := range lanes {
+		if l.RequiresSpecified {
+			return true
+		}
+	}
+	return false
 }
 
 // order places each lane after its anchor, falling back to just before the

@@ -228,9 +228,22 @@ func openStore() (*ticket.Store, error) {
 	return s, nil
 }
 
+// bestEffortRoot returns the board root for the current directory, or "" if
+// there is none. It is for callers that want to scope lane loading to a
+// project when one is in hand (jaira lanes, the merge driver) but must still
+// work — catalogue only — outside any board, unlike openStore which requires
+// one.
+func bestEffortRoot() string {
+	s, err := ticket.Discover(g.dir)
+	if err != nil {
+		return ""
+	}
+	return s.Root
+}
+
 // loadEnv assembles the state gates need.
 func loadEnv(s *ticket.Store) (gate.Env, []*ticket.Ticket, error) {
-	lanes, err := lane.Load()
+	lanes, err := lane.Load(s.Root)
 	if err != nil {
 		return gate.Env{}, nil, err
 	}

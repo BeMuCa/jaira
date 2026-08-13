@@ -67,7 +67,7 @@ func TestReviewAllFieldsFilledDoesNotBlock(t *testing.T) {
 // stops declaring all three fields, the tests above would stop meaning
 // anything.
 func TestReviewLaneDeclaresAllThreeFields(t *testing.T) {
-	lanes, err := lane.Load()
+	lanes, err := lane.Load("")
 	if err != nil {
 		t.Fatal(err)
 	}
