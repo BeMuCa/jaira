@@ -2,6 +2,7 @@ package gate
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -110,4 +111,86 @@ func TestFallbackWithNoDeclaredBoundaryStillRefuses(t *testing.T) {
 	if !hasFieldViolation(vs, CodeMissingField, ticket.FieldGoal) {
 		t.Errorf("expected a %s violation naming %s, got %v", CodeMissingField, ticket.FieldGoal, vs)
 	}
+}
+
+// A ticket belongs to its assignee: a move by anyone else, in an ordinary
+// lane, is refused, and the refusal names the owner.
+func TestOwnershipRefusesWriteByOtherThanAssignee(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "in-progress"
+	tk.Assignee = "anna"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: "bob"})
+	found := findViolation(vs, CodeNotOwner)
+	if found == nil {
+		t.Fatalf("expected a %s violation, got %v", CodeNotOwner, vs)
+	}
+	if !strings.Contains(found.Message, "anna") {
+		t.Errorf("message %q does not name the owner", found.Message)
+	}
+}
+
+// The human checkpoint lanes are exempt: reviewing and signing off someone
+// else's work is the entire point of them.
+func TestOwnershipAllowsLeavingRequiresHumanExitLane(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "signoff"
+	tk.Assignee = "anna"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "done", Actor: "bob"})
+	if found := findViolation(vs, CodeNotOwner); found != nil {
+		t.Errorf("expected no ownership violation leaving a human-exit lane, got %v", found)
+	}
+}
+
+func TestOwnershipAllowsLeavingRequiresQuestionLane(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "human"
+	tk.Assignee = "anna"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: "bob"})
+	if found := findViolation(vs, CodeNotOwner); found != nil {
+		t.Errorf("expected no ownership violation leaving a requires-question lane, got %v", found)
+	}
+}
+
+// Taking a ticket over is always allowed, so a ticket is never frozen by an
+// absent owner.
+func TestOwnershipAllowsHandOver(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "in-progress"
+	tk.Assignee = "anna"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: "bob", NewAssignee: "bob"})
+	if found := findViolation(vs, CodeNotOwner); found != nil {
+		t.Errorf("expected a hand-over to be allowed, got %v", found)
+	}
+}
+
+// A ticket with no assignee belongs to nobody and is writable by anyone.
+func TestOwnershipAllowsWhenNoAssignee(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "in-progress"
+	tk.Assignee = ""
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: "bob"})
+	if found := findViolation(vs, CodeNotOwner); found != nil {
+		t.Errorf("expected an unassigned ticket to be writable by anyone, got %v", found)
+	}
+}
+
+// The comparison is case-insensitive and trimmed: the same person spelled
+// differently is still the owner.
+func TestOwnershipAllowsSameActorDifferentCase(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "in-progress"
+	tk.Assignee = "Anna"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "review", Actor: " anna "})
+	if found := findViolation(vs, CodeNotOwner); found != nil {
+		t.Errorf("expected the assignee to be able to write their own ticket, got %v", found)
+	}
+}
+
+func findViolation(vs Violations, code string) *Violation {
+	for i := range vs {
+		if vs[i].Code == code {
+			return &vs[i]
+		}
+	}
+	return nil
 }

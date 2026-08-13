@@ -32,6 +32,7 @@ const (
 	CodePlanIncomplete  = "plan_incomplete"
 	CodeNeedsHuman      = "needs_human"
 	CodeStepNotChosen   = "step_not_chosen"
+	CodeNotOwner        = "not_owner"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -98,6 +99,11 @@ type Request struct {
 	// drives the CLI, and cannot press a key in someone's terminal. Lanes that
 	// require a human to release a ticket rely on it.
 	Interactive bool
+
+	// NewAssignee accompanies a move that also hands the ticket to someone
+	// else. A hand-over is always allowed, regardless of who currently owns
+	// the ticket — otherwise an absent owner could freeze it forever.
+	NewAssignee string
 }
 
 // Env is the surrounding state a decision needs.
@@ -132,6 +138,34 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 
 	from := env.Lanes.Index(t.Status)
 	to := env.Lanes.Index(req.To)
+
+	// A ticket belongs to its assignee: two teammates working the same board
+	// should almost never edit the same ticket. This is a client-side guard
+	// rail, not a lock — it refuses a write here, in this binary, but does not
+	// touch the merge rules, which still apply once a file has more than one
+	// version.
+	//
+	// Three things make it not a trap: the human checkpoint lanes are exempt,
+	// since reviewing and signing off someone else's work is their entire
+	// purpose; a hand-over (NewAssignee) is always allowed, so a ticket is
+	// never frozen by an owner who no longer answers; and a ticket with no
+	// assignee belongs to nobody and is writable by anyone.
+	if owner := strings.TrimSpace(t.Assignee); owner != "" &&
+		!strings.EqualFold(owner, strings.TrimSpace(req.Actor)) &&
+		strings.TrimSpace(req.NewAssignee) == "" {
+		checkpoint := false
+		if cur, ok := env.Lanes.Get(t.Status); ok && (cur.RequiresQuestion || cur.RequiresHumanExit) {
+			checkpoint = true
+		}
+		if !checkpoint {
+			vs = append(vs, Violation{
+				Code: CodeNotOwner,
+				Message: fmt.Sprintf(
+					"%s belongs to %s — ask them, take it over with 'jaira set %s assignee=<you>', or override with --force",
+					ticket.Handle(t.ID), owner, ticket.Handle(t.ID)),
+			})
+		}
+	}
 
 	// enteringSpecifiedZone is the moment work becomes real: a ticket crossing
 	// from a lane where specification is optional into the first lane that

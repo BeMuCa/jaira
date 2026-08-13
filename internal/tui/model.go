@@ -646,7 +646,7 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
-	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID})
+	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: identity(m.store.Root)})
 	if len(vs) > 0 {
 		var b strings.Builder
 		fmt.Fprintf(&b, "Cannot move to %s:\n\n", target.Name)
