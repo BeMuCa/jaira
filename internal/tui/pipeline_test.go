@@ -21,7 +21,9 @@ func pipelineModel(t *testing.T, w, h int) *Model {
 // whole flow and its order must be on one screen.
 func TestPipelineShowsEveryStepInOrder(t *testing.T) {
 	out := stripANSI(pipelineModel(t, 130, 34).renderPipeline())
-	for _, want := range []string{"Backlog", "Todo", "Pre-process", "HITL", "Review", "Sign-off", "Done"} {
+	// "Human Review" does not fit the compact view's cell whole (see
+	// renderStep's truncation), so this checks the prefix that survives it.
+	for _, want := range []string{"Backlog", "Todo", "Pre-process", "HITL", "Review", "Human Rev", "Done"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("step %q missing:\n%s", want, out)
 		}

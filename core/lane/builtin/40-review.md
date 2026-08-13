@@ -48,6 +48,6 @@ Write three things, in this order:
 
 Default to finding problems. A review that approves everything is worth nothing.
 
-Then move the ticket to sign-off. You are not the last word: a person reads your
+Then move the ticket to human review. You are not the last word: a person reads your
 verdict alongside the implementer's account and decides. Say plainly when you
 are unsure rather than rounding up to approval.

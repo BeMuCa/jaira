@@ -1,6 +1,6 @@
 ---
 id: signoff
-name: Sign-off
+name: Human Review
 after: review
 precedence: 55
 agentic: false

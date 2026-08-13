@@ -128,9 +128,9 @@ Three details are load-bearing:
 ## The lanes
 
 ```
-BACKLOG → TODO → PRE-PROCESS → IMPLEMENTING → HITL → REVIEW → SIGN-OFF → DONE
-                                                │                  ▲
-                                                └ needs you ───────┘        + BLOCKED
+BACKLOG → TODO → PRE-PROCESS → IMPLEMENTING → HITL → REVIEW → HUMAN REVIEW → DONE
+                                                │                   ▲
+                                                └ needs you ────────┘        + BLOCKED
 ```
 
 Anything can be thrown into the backlog. Nothing *leaves* it without a goal, a
@@ -258,17 +258,17 @@ Starting a session, `jaira resume --json` returns everything left mid-flight wit
 the notes written against it — a session that died to a usage limit leaves
 nothing behind except what was written down.
 
-Two things an agent deliberately cannot do: leave the sign-off lane, and close a
+Two things an agent deliberately cannot do: leave the human review lane, and close a
 ticket whose definition of done is unmet. See **[docs/AGENTS.md](docs/AGENTS.md)**.
 
 ## Reviewing finished work
 
-A ticket in sign-off opens to the four questions the decision actually needs —
+A ticket in human review opens to the four questions the decision actually needs —
 what was wrong, what was done, why, and whether it holds — with the implementer's
 account and the reviewer's verdict kept apart, because when they disagree that is
 the most useful thing on the screen:
 
-<img src="docs/img/signoff.png" alt="The sign-off view" width="100%">
+<img src="docs/img/signoff.png" alt="The human review view" width="100%">
 
 ## Commands
 

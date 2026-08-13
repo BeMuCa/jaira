@@ -78,9 +78,9 @@ and the board's compact view (`v`) counts them per step.
 
 Three things, deliberately:
 
-- **Leave the sign-off lane.** It is a human checkpoint. A review agent writes
+- **Leave the human review lane.** It is a human checkpoint. A review agent writes
   `review-summary`, `review-gaps` and `review-verdict`, then moves the ticket to
-  sign-off and stops; a person accepts the work in the board or raises a
+  human review and stops; a person accepts the work in the board or raises a
   follow-up. Attempting the move exits 3.
 - **Close a ticket without meeting its definition of done.** Every criterion must
   be marked done, and the plan finished if the ticket has one. There is no

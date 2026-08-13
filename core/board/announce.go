@@ -54,7 +54,7 @@ const agentNote = "## Task tracking: jaira\n" +
 	"`jaira <command> --help` for everything else.\n" +
 	"\n" +
 	"Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.\n" +
-	"The sign-off lane cannot be left by an agent — a person accepts the work there."
+	"The human review lane cannot be left by an agent — a person accepts the work there."
 
 // agentFiles are the instruction files coding agents read.
 //
