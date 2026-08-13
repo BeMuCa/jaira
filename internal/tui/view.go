@@ -428,12 +428,19 @@ func (m *Model) boardProjectLine() string {
 }
 
 func (m *Model) header() string {
-	name := "jaira"
-	if root := m.store.Root; root != "" {
-		parts := strings.Split(root, string(os.PathSeparator))
-		name = parts[len(parts)-1]
+	// The board's name is dropped when the project line below already carries it,
+	// marked and in first position: the same word twice on two consecutive lines
+	// is noise. With a single recorded board that line does not render, so the
+	// name stays here rather than disappearing entirely.
+	var left string
+	if m.boardProjectLine() == "" {
+		name := "jaira"
+		if root := m.store.Root; root != "" {
+			parts := strings.Split(root, string(os.PathSeparator))
+			name = parts[len(parts)-1]
+		}
+		left = styLaneTitle.Render(name)
 	}
-	left := styLaneTitle.Render(name)
 	if m.filter != "" {
 		left += styMeta.Render(fmt.Sprintf("   filter: %q", m.filter))
 	}
