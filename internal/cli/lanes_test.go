@@ -504,6 +504,132 @@ func TestLanesAdoptUnknownPathIsErrorNotCrash(t *testing.T) {
 	}
 }
 
+// TestLanesDefaultPrintsBuiltinsWhenAbsent asserts reading an absent default
+// board prints the built-in state rather than failing.
+func TestLanesDefaultPrintsBuiltinsWhenAbsent(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "default-board.md"))
+
+	out, err := runLanes(t, t.TempDir(), "default")
+	if err != nil {
+		t.Fatalf("lanes default: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "backlog") {
+		t.Errorf("lanes default = %q, want it to list the built-in lanes", out)
+	}
+
+	jout, err := runLanes(t, t.TempDir(), "default", "--json")
+	if err != nil {
+		t.Fatalf("lanes default --json: %v\n%s", err, jout)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jout)
+	}
+	if payload["using_builtins"] != true {
+		t.Errorf("using_builtins = %v, want true", payload["using_builtins"])
+	}
+}
+
+// TestLanesDefaultRoundTrips asserts writing then reading the default board
+// carries the selection back.
+func TestLanesDefaultRoundTrips(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "default-board.md"))
+	dir := t.TempDir()
+
+	out, err := runLanes(t, dir, "default", "--lanes", "backlog,todo", "--options", "brainstorm")
+	if err != nil {
+		t.Fatalf("lanes default --lanes: %v\n%s", err, out)
+	}
+
+	jout, err := runLanes(t, dir, "default", "--json")
+	if err != nil {
+		t.Fatalf("lanes default --json: %v\n%s", err, jout)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jout)
+	}
+	if payload["using_builtins"] != false {
+		t.Errorf("using_builtins = %v, want false after setting --lanes", payload["using_builtins"])
+	}
+	lanesGot, _ := payload["lanes"].([]any)
+	if len(lanesGot) != 2 || lanesGot[0] != "backlog" || lanesGot[1] != "todo" {
+		t.Errorf("lanes = %v, want [backlog todo]", lanesGot)
+	}
+	optsGot, _ := payload["options"].([]any)
+	if len(optsGot) != 1 || optsGot[0] != "brainstorm" {
+		t.Errorf("options = %v, want [brainstorm]", optsGot)
+	}
+}
+
+// TestLanesDefaultRefusesUnknownLane asserts an id nothing installed claims
+// is refused rather than written.
+func TestLanesDefaultRefusesUnknownLane(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "default-board.md"))
+
+	_, err := runLanes(t, t.TempDir(), "default", "--lanes", "nosuchlane")
+	if err == nil {
+		t.Fatal("expected an error for an unknown lane id")
+	}
+	var ce *codedError
+	if !errors.As(err, &ce) {
+		t.Fatalf("error is not a codedError: %v", err)
+	}
+	if ce.code != ExitUsage {
+		t.Errorf("code = %d, want %d", ce.code, ExitUsage)
+	}
+}
+
+// TestLanesDefaultRefusesUnknownOption asserts an option name nothing
+// installed requires is refused rather than written.
+func TestLanesDefaultRefusesUnknownOption(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "default-board.md"))
+
+	_, err := runLanes(t, t.TempDir(), "default", "--options", "nosuchoption")
+	if err == nil {
+		t.Fatal("expected an error for an unknown option name")
+	}
+	var ce *codedError
+	if !errors.As(err, &ce) {
+		t.Fatalf("error is not a codedError: %v", err)
+	}
+	if ce.code != ExitUsage {
+		t.Errorf("code = %d, want %d", ce.code, ExitUsage)
+	}
+}
+
+// TestLanesDefaultClearRemovesFile asserts --clear removes a written default
+// board and is idempotent when there is nothing to remove.
+func TestLanesDefaultClearRemovesFile(t *testing.T) {
+	lanesTestCatalogue(t)
+	board := filepath.Join(t.TempDir(), "default-board.md")
+	t.Setenv("JAIRA_DEFAULT_BOARD", board)
+
+	if _, err := runLanes(t, t.TempDir(), "default", "--lanes", "backlog"); err != nil {
+		t.Fatalf("lanes default --lanes: %v", err)
+	}
+	if _, err := os.Stat(board); err != nil {
+		t.Fatalf("setup: expected %s to exist: %v", board, err)
+	}
+
+	if _, err := runLanes(t, t.TempDir(), "default", "--clear"); err != nil {
+		t.Fatalf("lanes default --clear: %v", err)
+	}
+	if _, err := os.Stat(board); !os.IsNotExist(err) {
+		t.Errorf("expected %s to be removed, stat err = %v", board, err)
+	}
+
+	// Idempotent: clearing an already-absent default board is a no-op
+	// success, not an error, matching the concurrency-safe-retry convention.
+	if _, err := runLanes(t, t.TempDir(), "default", "--clear"); err != nil {
+		t.Fatalf("lanes default --clear (already absent): %v", err)
+	}
+}
+
 // pathLines splits 'lanes path' human output into its Catalogue and Project
 // lines.
 func pathLines(t *testing.T, out string) (catalogueLine, projectLine string) {

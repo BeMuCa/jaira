@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -152,5 +153,130 @@ Refuses to overwrite an existing catalogue entry unless --force is given.`,
 		},
 	}
 	cmd.Flags().BoolVar(&force, "force", false, "overwrite an existing catalogue entry")
+	return cmd
+}
+
+// splitCSV splits a comma-separated flag value, trimming whitespace and
+// dropping empty entries — the same treatment tickets.go's list-field
+// assignments already give a comma-separated value.
+func splitCSV(s string) []string {
+	var out []string
+	for _, p := range strings.Split(s, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// newLanesDefaultCmd wraps LoadDefaultBoard/SaveDefaultBoard, the same calls
+// the launcher's 'd' screen makes, so a default board can be read and
+// written without opening the TUI.
+func newLanesDefaultCmd() *cobra.Command {
+	var lanesFlag, optionsFlag string
+	var clear bool
+	cmd := &cobra.Command{
+		Use:   "default",
+		Short: "Show or set which lanes and options a new board starts with",
+		Long: `With no flags, prints which lanes and which ticket Options a freshly
+initialised board gets, and the file's path.
+
+--lanes and --options set the selection (a comma-separated list of ids or
+option names); --clear removes the file, returning to the built-ins. An
+unknown lane id or option name is refused rather than written, since a
+default board naming something nobody has installed is how a board ends up
+looking empty.`,
+		Args: noArgs(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			w := cmd.OutOrStdout()
+
+			if clear {
+				path := lane.DefaultBoardPath()
+				if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+					return err
+				}
+				if g.jsonOut {
+					return emit(w, map[string]any{"cleared": true, "path": path})
+				}
+				fmt.Fprintf(w, "cleared the default board (%s)\n", path)
+				return nil
+			}
+
+			board, err := lane.LoadDefaultBoard()
+			if err != nil {
+				return err
+			}
+
+			lanesSet, optionsSet := cmd.Flags().Changed("lanes"), cmd.Flags().Changed("options")
+			if lanesSet || optionsSet {
+				set, err := lane.Load(bestEffortRoot())
+				if err != nil {
+					return err
+				}
+				if lanesSet {
+					ids := splitCSV(lanesFlag)
+					for _, id := range ids {
+						if _, ok := set.Get(id); !ok {
+							return fail(ExitUsage, "no_such_lane", "no lane %q is installed; available: %s",
+								id, strings.Join(set.IDs(), ", "))
+						}
+					}
+					board.Lanes = ids
+				}
+				if optionsSet {
+					opts := splitCSV(optionsFlag)
+					known := make(map[string]bool, len(set.Options()))
+					for _, o := range set.Options() {
+						known[o] = true
+					}
+					for _, o := range opts {
+						if !known[o] {
+							return fail(ExitUsage, "no_such_option", "no installed lane requires option %q; available: %s",
+								o, strings.Join(set.Options(), ", "))
+						}
+					}
+					board.Options = opts
+				}
+				if err := lane.SaveDefaultBoard(board); err != nil {
+					return err
+				}
+			}
+
+			usingBuiltins := len(board.Lanes) == 0
+			effectiveLanes := board.Lanes
+			if usingBuiltins {
+				builtins, err := lane.Builtins()
+				if err != nil {
+					return err
+				}
+				effectiveLanes = make([]string, 0, len(builtins))
+				for _, l := range builtins {
+					effectiveLanes = append(effectiveLanes, l.ID)
+				}
+			}
+
+			if g.jsonOut {
+				return emit(w, map[string]any{
+					"path": board.Path, "lanes": effectiveLanes, "options": board.Options,
+					"using_builtins": usingBuiltins,
+				})
+			}
+			fmt.Fprintf(w, "Default board: %s\n", board.Path)
+			if usingBuiltins {
+				fmt.Fprintf(w, "Lanes (built-in): %s\n", strings.Join(effectiveLanes, ", "))
+			} else {
+				fmt.Fprintf(w, "Lanes: %s\n", strings.Join(effectiveLanes, ", "))
+			}
+			if len(board.Options) == 0 {
+				fmt.Fprintf(w, "Options: none pre-ticked\n")
+			} else {
+				fmt.Fprintf(w, "Options: %s\n", strings.Join(board.Options, ", "))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&lanesFlag, "lanes", "", "comma-separated lane ids to set as the default board's lanes")
+	cmd.Flags().StringVar(&optionsFlag, "options", "", "comma-separated ticket options to pre-tick on a new board")
+	cmd.Flags().BoolVar(&clear, "clear", false, "remove the default board, returning to the built-ins")
 	return cmd
 }
