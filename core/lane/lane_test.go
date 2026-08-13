@@ -672,6 +672,157 @@ func idsOf(lanes []*Lane) []string {
 	return out
 }
 
+// TestBuiltinOrderIsUnchanged is the task 10 regression baseline: the ten
+// built-ins render in exactly the order the shipped binary prints them in
+// today, captured by running the binary rather than copied from a plan that
+// may be stale. Never delete this test — task 10's whole point is that
+// nothing here moved.
+func TestBuiltinOrderIsUnchanged(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"backlog", "brainstorm", "todo", "pre-process", "in-progress",
+		"human", "review", "signoff", "done", "blocked",
+	}
+	got := set.IDs()
+	if len(got) != len(want) {
+		t.Fatalf("got %d lanes, want %d: %v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("position %d: got %q, want %q (ids=%v)", i, got[i], want[i], got)
+		}
+	}
+}
+
+// TestBuiltinsProduceZeroWarnings is the bar the contract check must not
+// drop: a clean install's ten built-ins never warn, including the new
+// input-requires/output-produces check.
+func TestBuiltinsProduceZeroWarnings(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(set.Warnings) != 0 {
+		t.Errorf("a clean install must produce zero warnings, got: %v", set.Warnings)
+	}
+}
+
+// TestContractCheckWarnsWhenRequiredBeforeProducer asserts a custom lane
+// requiring "plan", ordered before pre-process (which produces it), warns
+// naming the field and both lanes.
+func TestContractCheckWarnsWhenRequiredBeforeProducer(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "early.md", `---
+id: early-consumer
+name: Early Consumer
+after: backlog
+precedence: 6
+agentic: true
+model-tier: cheap
+input-requires: [plan]
+---
+needs a plan
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.Index("early-consumer") >= set.Index("pre-process") {
+		t.Fatalf("test fixture must land before pre-process: ids=%v", set.IDs())
+	}
+	if !containsWarning(set.Warnings, `lane early-consumer: requires "plan", but pre-process (which produces it) is ordered after it`) {
+		t.Errorf("expected a warning naming the field and both lanes, got: %v", set.Warnings)
+	}
+}
+
+// TestContractCheckSilentWhenRequiredAfterProducer asserts the same lane,
+// anchored after pre-process instead, produces no warning.
+func TestContractCheckSilentWhenRequiredAfterProducer(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "late.md", `---
+id: late-consumer
+name: Late Consumer
+after: pre-process
+precedence: 26
+agentic: true
+model-tier: cheap
+input-requires: [plan]
+---
+needs a plan
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsWarning(set.Warnings, "late-consumer") {
+		t.Errorf("a lane ordered after its producer must not warn, got: %v", set.Warnings)
+	}
+}
+
+// TestContractCheckSilentForTicketSuppliedField asserts a lane requiring
+// "goal" — which the ticket itself can already carry from creation — never
+// warns, even positioned before anything that produces it.
+func TestContractCheckSilentForTicketSuppliedField(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "wants-goal.md", `---
+id: wants-goal
+name: Wants Goal
+after: backlog
+precedence: 1
+agentic: true
+model-tier: cheap
+input-requires: [goal]
+---
+needs a goal
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsWarning(set.Warnings, "wants-goal") {
+		t.Errorf("a field the ticket itself supplies must never warn, got: %v", set.Warnings)
+	}
+}
+
+// TestContractCheckWarnsWhenNothingProducesTheField asserts a lane requiring
+// a field no installed lane produces at all warns, rather than being
+// silently accepted.
+func TestContractCheckWarnsWhenNothingProducesTheField(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "wants-nothing.md", `---
+id: wants-mystery
+name: Wants Mystery
+after: backlog
+precedence: 2
+agentic: true
+model-tier: cheap
+input-requires: [some-field-nothing-produces]
+---
+needs the impossible
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `lane wants-mystery: requires "some-field-nothing-produces", which no installed lane produces`
+	if !containsList(set.Warnings, want) {
+		t.Errorf("missing exact warning %q, got: %v", want, set.Warnings)
+	}
+}
+
 // TestPrecedenceUnknownReturnsNegOne asserts a merge never promotes a ticket
 // into a lane this installation cannot reason about.
 func TestPrecedenceUnknownReturnsNegOne(t *testing.T) {

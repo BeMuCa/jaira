@@ -437,6 +437,7 @@ func Load(root string) (*Set, error) {
 
 	ordered, orderWarn := order(lanes)
 	warnings = append(warnings, orderWarn...)
+	warnings = append(warnings, checkContracts(ordered)...)
 
 	if !anyRequiresSpecified(ordered) {
 		// An override could take requires-specified out of circulation entirely
@@ -582,6 +583,56 @@ func terminalIndex(ls []*Lane) int {
 		}
 	}
 	return len(ls)
+}
+
+// checkContracts walks lanes in display order and warns when a lane's
+// input-requires names a field that nothing before it — the ticket itself,
+// per ticket.SuppliedFields, or an earlier lane's output-produces — supplies.
+// A lane ordered before its own producer otherwise fails later and opaquely,
+// with "missing: plan" at the moment an agent asks for its input; this is
+// the same load-time treatment the cycle check above already gives to a bad
+// anchor.
+//
+// column order still follows after:, unchanged by this check — precedence is
+// the merge rank (see Lane.Precedence), not a position, and this function
+// does not touch either.
+func checkContracts(lanes []*Lane) []string {
+	available := make(map[string]bool, len(ticket.SuppliedFields))
+	for _, f := range ticket.SuppliedFields {
+		available[f] = true
+	}
+	// A global producer lookup, independent of position, so a violation can
+	// name which installed lane produces the field — even when that lane is
+	// simply ordered too late to help the one asking for it yet.
+	producer := map[string]string{}
+	for _, l := range lanes {
+		for _, p := range l.OutputProduces {
+			if _, exists := producer[p]; !exists {
+				producer[p] = l.ID
+			}
+		}
+	}
+
+	var warnings []string
+	for _, l := range lanes {
+		for _, want := range l.InputRequires {
+			if available[want] {
+				continue
+			}
+			if prod, ok := producer[want]; ok {
+				warnings = append(warnings, fmt.Sprintf(
+					"lane %s: requires %q, but %s (which produces it) is ordered after it",
+					l.ID, want, prod))
+			} else {
+				warnings = append(warnings, fmt.Sprintf(
+					"lane %s: requires %q, which no installed lane produces", l.ID, want))
+			}
+		}
+		for _, p := range l.OutputProduces {
+			available[p] = true
+		}
+	}
+	return warnings
 }
 
 // Passthrough synthesises a read-only column for a status no installed lane

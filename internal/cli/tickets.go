@@ -669,7 +669,9 @@ func newLanesCmd() *cobra.Command {
 			w := cmd.OutOrStdout()
 			// CREATOR is not a column here: the table is already six columns wide,
 			// and 'lanes show <id>' is where it lives instead.
-			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %s\n", "ID", "NAME", "PREC", "AGENTIC", "TIER", "SOURCE")
+			// RANK, not PREC: column order follows after:, never this number — it
+			// is the rank a merge uses to decide which lane wins, nothing more.
+			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %s\n", "ID", "NAME", "RANK", "AGENTIC", "TIER", "SOURCE")
 			for _, l := range lanes.Lanes {
 				src := "built-in"
 				if !l.Builtin {
@@ -779,7 +781,9 @@ func newLanesShowCmd() *cobra.Command {
 			fmt.Fprintf(w, "ID:          %s\n", l.ID)
 			fmt.Fprintf(w, "Name:        %s\n", l.Name)
 			fmt.Fprintf(w, "Anchor:      %s\n", dash(l.After))
-			fmt.Fprintf(w, "Precedence:  %d\n", l.Precedence)
+			// Labelled as what it is, not as a position: column order follows
+			// Anchor, above, and never this number.
+			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)
 			fmt.Fprintf(w, "Tier:        %s\n", dash(l.ModelTier))
 			fmt.Fprintf(w, "Input:       %s\n", dash(strings.Join(l.InputRequires, ", ")))
 			fmt.Fprintf(w, "Output:      %s\n", dash(strings.Join(l.OutputProduces, ", ")))

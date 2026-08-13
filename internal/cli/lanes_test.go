@@ -93,7 +93,7 @@ func TestLanesShowPrintsFullContract(t *testing.T) {
 		"ID:          review",
 		"Name:        Review",
 		"Anchor:      human",
-		"Precedence:  50",
+		"Merge rank:  50",
 		"Tier:        strong",
 		"Creator:     jaira",
 		"Source:      built-in",
@@ -102,6 +102,23 @@ func TestLanesShowPrintsFullContract(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("lanes show review missing %q, got:\n%s", want, out)
 		}
+	}
+}
+
+// TestLanesTableLabelsRankNotPosition asserts the human table column header
+// no longer claims the number is a display position (task 10): the value is
+// a merge rank, and column order follows the after: anchor, not this field.
+func TestLanesTableLabelsRankNotPosition(t *testing.T) {
+	lanesTestCatalogue(t)
+	out, err := runLanes(t, t.TempDir())
+	if err != nil {
+		t.Fatalf("lanes: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "PREC") {
+		t.Errorf("lanes table = %q, must not label the column PREC (a position claim)", out)
+	}
+	if !strings.Contains(out, "RANK") {
+		t.Errorf("lanes table = %q, want a RANK column labelling the merge rank", out)
 	}
 }
 

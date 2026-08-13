@@ -77,6 +77,28 @@ var canonicalOrder = []string{
 	FieldCreatedAt, FieldUpdatedAt,
 }
 
+// SuppliedFields names the lane input-requires values a ticket already
+// carries — or that the tool assembling a lane's bounded input derives
+// itself — from the moment of creation, independent of any lane's
+// output-produces. "diff" is not a frontmatter scalar (it is assembled from
+// git commits at request time), so it is named here rather than with a Field
+// constant.
+//
+// "plan" is deliberately not in this set, even though the Plan heading is
+// seeded on every new ticket: an empty Plan checklist does not satisfy a
+// lane's input-requires (see flow.go's showForLane), so a lane requiring
+// "plan" genuinely depends on an earlier lane — pre-process — having
+// produced one. Exempting it here would make it impossible for the
+// load-order check below to ever catch a lane misordered relative to its
+// own producer, which is the one case this check exists for.
+//
+// core/lane's load-time contract check compares a lane's input-requires
+// against this set plus every earlier lane's output-produces, so this is the
+// one place both packages read rather than two lists that could drift apart.
+var SuppliedFields = []string{
+	FieldTitle, FieldGoal, FieldContext, FieldDoD, FieldAssignee, "diff",
+}
+
 // Ticket is the decoded view of a ticket, used for reads, filtering and
 // rendering. Writes never go through this struct — they go through Doc, so that
 // unknown fields survive. Anything read into here is a projection, not the

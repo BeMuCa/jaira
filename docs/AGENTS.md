@@ -125,3 +125,10 @@ A lane can declare `model-tier: cheap` or `strong`. jaira does not run models an
 does not know what those names mean on your setup — it passes the tier through in
 `--for-lane` output, and the thing driving the agent decides what to launch. That
 is the only place model choice appears.
+
+## A note on lane order
+
+A board's column order follows each lane's `after:` anchor, never `precedence`.
+`precedence` is the rank a merge uses to decide which lane wins when two clones
+moved the same ticket — `jaira lanes` and `jaira lanes show` label it accordingly,
+not as a position.
