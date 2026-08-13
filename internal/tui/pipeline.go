@@ -120,6 +120,43 @@ func renderStep(s pipelineStep, focused bool) string {
 	return box.Render(body)
 }
 
+// projectTabs renders each recorded board as "N name", numbered for the 1-9
+// switch and marking the open one. Shared by the compact view's banner and the
+// board view's thinner line above the columns, so the two agree on what a
+// number means without two copies to keep in step.
+func (m *Model) projectTabs() []string {
+	var tabs []string
+	for i, p := range m.projects {
+		if i >= 9 {
+			break
+		}
+		label := fmt.Sprintf("%d %s", i+1, p.Name)
+		if p.Root == m.store.Root {
+			tabs = append(tabs, stySelected.Render(label))
+		} else {
+			tabs = append(tabs, styMeta.Render(label))
+		}
+	}
+	return tabs
+}
+
+// switchToProject sets SwitchTo when n (1-based, as a person types it) names a
+// recorded board other than the one already open. Both the compact view and
+// the board view call this, so a number means the same board everywhere.
+// Switching to the board already open, or to a number beyond the list, is a
+// no-op rather than a reload.
+func (m *Model) switchToProject(n int) bool {
+	i := n - 1
+	if i < 0 || i >= len(m.projects) {
+		return false
+	}
+	if m.projects[i].Root == m.store.Root {
+		return false
+	}
+	m.SwitchTo = m.projects[i].Root
+	return true
+}
+
 // renderPipeline is the compact overview: the whole flow on one screen.
 func (m *Model) renderPipeline() string {
 	var b strings.Builder
@@ -127,18 +164,7 @@ func (m *Model) renderPipeline() string {
 	// Projects across the top, switchable by number. One keystroke per board is
 	// the point — this view exists to be glanced at while several agents run.
 	if len(m.projects) > 0 {
-		var tabs []string
-		for i, p := range m.projects {
-			if i >= 9 {
-				break
-			}
-			label := fmt.Sprintf("%d %s", i+1, p.Name)
-			if p.Root == m.store.Root {
-				tabs = append(tabs, stySelected.Render(label))
-			} else {
-				tabs = append(tabs, styMeta.Render(label))
-			}
-		}
+		tabs := m.projectTabs()
 		b.WriteString(truncate(strings.Join(tabs, styBar.Render("  │  ")), m.width) + "\n")
 		b.WriteString(styBar.Render(strings.Repeat("─", m.width)) + "\n\n")
 	}
@@ -267,13 +293,7 @@ func (m *Model) pipelineKey(s string) bool {
 		m.mode = modeBoard
 	default:
 		if len(s) == 1 && s[0] >= '1' && s[0] <= '9' {
-			if i := int(s[0] - '1'); i < len(m.projects) {
-				if m.projects[i].Root != m.store.Root {
-					m.SwitchTo = m.projects[i].Root
-					return true
-				}
-			}
-			return false
+			return m.switchToProject(int(s[0] - '0'))
 		}
 		return false
 	}

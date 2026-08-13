@@ -93,7 +93,9 @@ type Model struct {
 	// projects is the switcher's list; SwitchTo is set when the user picks one,
 	// and the caller reopens the board there. Reopening rather than swapping the
 	// store keeps every piece of per-board state (watcher, cursor, filter) from
-	// having to be individually reset.
+	// having to be individually reset. It is loaded when the model is built, not
+	// only when 'p' is pressed, so every screen that wants it has it from the
+	// first frame.
 	projects []project.Project
 	projIdx  int
 	SwitchTo string
@@ -131,7 +133,11 @@ type column struct {
 
 // New builds a board model.
 func New(s *ticket.Store) (*Model, error) {
-	m := &Model{store: s, scroll: map[string]int{}}
+	// Loaded here, not only inside the 'p' handler, so the switcher's tabs and
+	// its 1-9 binding work from the very first frame — a board that has to be
+	// opened once with 'p' before it knows its own neighbours is the bug this
+	// exists to fix.
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load()}
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
@@ -627,6 +633,15 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 
 	// Board mode.
+	// 1-9 switches board here exactly as it does in the compact view — both
+	// call switchToProject so "which board is number three" is decided once.
+	if len(s) == 1 && s[0] >= '1' && s[0] <= '9' {
+		if m.switchToProject(int(s[0] - '0')) {
+			m.Close()
+			return m, tea.Quit
+		}
+		return m, nil
+	}
 	switch s {
 	case "q", "ctrl+c":
 		m.Close()
@@ -663,6 +678,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "?":
 		m.mode = modeHelp
 	case "p":
+		// The list can change while the TUI is open (another board opened
+		// elsewhere), so this reload stays — it is just no longer the only place
+		// the list gets loaded.
 		m.projects = project.Load()
 		m.projIdx = 0
 		if len(m.projects) <= 1 {

@@ -99,6 +99,10 @@ func (m *Model) renderBoard() string {
 	var b strings.Builder
 	b.WriteString(m.header())
 	b.WriteString("\n")
+	tabs := m.boardProjectLine()
+	if tabs != "" {
+		b.WriteString(tabs + "\n")
+	}
 	if panel := m.renderSessions(); panel != "" {
 		b.WriteString(panel)
 	}
@@ -120,7 +124,11 @@ func (m *Model) renderBoard() string {
 	}
 	end := min(len(m.cols), start+perScreen)
 
-	bodyHeight := m.height - 5 - sessionPanelHeight(m.sessions)
+	tabsLine := 0
+	if tabs != "" {
+		tabsLine = 1
+	}
+	bodyHeight := m.height - 5 - tabsLine - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
 	}
@@ -401,6 +409,22 @@ func stripChecklistSections(body string) string {
 		}
 	}
 	return strings.TrimSpace(strings.Join(out, "\n"))
+}
+
+// boardProjectLine is a single line of numbered board names above the
+// columns, so 1-9 means the same board here as in the compact view. The board
+// has far less spare room than the compact view's own banner, so a line that
+// does not fit is dropped entirely rather than wrapped — a wrapped second line
+// would misalign the bordered columns drawn under it.
+func (m *Model) boardProjectLine() string {
+	if len(m.projects) < 2 {
+		return ""
+	}
+	line := strings.Join(m.projectTabs(), styBar.Render("  │  "))
+	if lipgloss.Width(line) > m.width {
+		return ""
+	}
+	return line
 }
 
 func (m *Model) header() string {
