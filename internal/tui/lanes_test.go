@@ -188,6 +188,42 @@ creator: sam
 	}
 }
 
+// TestLaneScreenShowsSharedSectionEvenWhenEmpty asserts the shared section and
+// its explanation are visible on a board where nobody has published a lane —
+// otherwise a user with an empty .jaira/shared/ has no way to learn the
+// feature exists.
+func TestLaneScreenShowsSharedSectionEvenWhenEmpty(t *testing.T) {
+	m := newTestModel(t, 150, 40)
+	ls := newLaneScreen(m.store, m.lanes)
+	if len(ls.shared) != 0 {
+		t.Fatalf("setup: shared = %v, want none", ls.shared)
+	}
+
+	out := ls.render(150, 40)
+	if !strings.Contains(out, "Shared by teammates") {
+		t.Error("shared section heading missing when there are no shared lanes")
+	}
+	if !strings.Contains(out, "publishes a lane with p") {
+		t.Error("empty-state explanation missing when there are no shared lanes")
+	}
+}
+
+// TestLaneScreenFooterSaysRefreshNotDrift asserts the footer names the action,
+// not the reason the key exists, whether or not the shared section has
+// anything in it.
+func TestLaneScreenFooterSaysRefreshNotDrift(t *testing.T) {
+	m := newTestModel(t, 150, 40)
+	ls := newLaneScreen(m.store, m.lanes)
+
+	out := ls.render(150, 40)
+	if !strings.Contains(out, "R refresh") {
+		t.Error("footer must say \"R refresh\"")
+	}
+	if strings.Contains(out, "refresh drift") {
+		t.Error("footer must not say \"refresh drift\"")
+	}
+}
+
 // TestLaneScreenAdoptWritesIntoCatalogue asserts pressing tab then a adopts
 // the selected shared lane into the catalogue, naming the path in the
 // message.

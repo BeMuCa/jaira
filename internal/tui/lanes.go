@@ -279,9 +279,12 @@ func (ls *laneScreen) render(width, height int) string {
 		sb.WriteString(styMeta.Render(fmt.Sprintf("  +%d more", rest)) + "\n")
 	}
 
-	if len(ls.shared) > 0 {
-		sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
-		sb.WriteString(styLaneTitle.Render("Shared by teammates") + "\n")
+	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+	sb.WriteString(styLaneTitle.Render("Shared by teammates") + "\n")
+	if len(ls.shared) == 0 {
+		sb.WriteString(styMeta.Render(truncate(
+			"  none yet — a teammate publishes a lane with p, then commits .jaira/shared/", w)) + "\n")
+	} else {
 		for i, sl := range ls.shared {
 			lead := "  "
 			label := fmt.Sprintf("%s/%s", sl.Folder, sl.Lane.ID)
@@ -324,9 +327,9 @@ func (ls *laneScreen) render(width, height int) string {
 		}
 		sb.WriteString("\n" + style.Render(truncate(ls.msg, w)) + "\n")
 	}
-	help := "jk select · u use here · p publish · R refresh drift · esc back"
+	help := "jk select · u use here · p publish · R refresh · esc back"
 	if len(ls.shared) > 0 {
-		help = "jk select · tab switch list · u use · p publish · a adopt · R refresh drift · esc back"
+		help = "jk select · tab switch list · u use · p publish · a adopt · R refresh · esc back"
 	}
 	sb.WriteString("\n" + styMeta.Render(truncate(help, w)))
 	return sb.String()
