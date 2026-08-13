@@ -76,7 +76,25 @@ directly. What an agent is missing is discoverability (where files belong, what
 shape they take) and the same loop for the default board, which has no validator
 at all.
 
-## Ordering: the two fields have two different jobs (settled 2026-08-13)
+## STOP — the ordering decision below is unsafe as written (found 2026-08-13)
+
+`precedence` is not a layout field. `core/merge/merge.go:346-350` uses it to
+decide which lane wins when two clones moved the same ticket: the higher
+precedence is treated as "further along" and overwrites the other side. That is
+why `blocked` carries `precedence: 10` and says so in its own description —
+"Lower precedence than active work, so a merge never reverts progress into
+Blocked."
+
+Renumbering `blocked` to 65 to preserve today's column order, as the extended
+plan's Task 10 requires, would therefore make a merge silently pull an
+in-progress ticket (30) back into Blocked (65). Quiet data loss across a team.
+
+So the conflict is not "number versus anchor". It is that one field is carrying
+two meanings — how far along a ticket is, and where its column sits — and those
+genuinely disagree for `blocked`. Resolving it needs a third answer, not a winner
+between the two. Do not run Task 10 until this is settled with the user.
+
+## Ordering: the two fields have two different jobs (settled 2026-08-13, SUPERSEDED — see above)
 
 Display order follows the `after:` anchor today, not `precedence`, so two lanes
 anchored to the same lane are ordered by whichever file was read first — a lane
