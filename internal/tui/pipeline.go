@@ -121,21 +121,27 @@ func renderStep(s pipelineStep, focused bool) string {
 }
 
 // projectTabs renders each recorded board as "N name", numbered for the 1-9
-// switch and marking the open one. Shared by the compact view's banner and the
-// board view's thinner line above the columns, so the two agree on what a
-// number means without two copies to keep in step.
+// switch, marking the open one and any board with a live session. Shared by
+// the compact view's banner and the board view's thinner line above the
+// columns, so the two agree on what a number means and on what "live" looks
+// like without two copies to keep in step.
 func (m *Model) projectTabs() []string {
 	var tabs []string
 	for i, p := range m.projects {
 		if i >= 9 {
 			break
 		}
-		label := fmt.Sprintf("%d %s", i+1, p.Name)
+		sty := styMeta
 		if p.Root == m.store.Root {
-			tabs = append(tabs, stySelected.Render(label))
-		} else {
-			tabs = append(tabs, styMeta.Render(label))
+			sty = stySelected
 		}
+		tab := sty.Render(fmt.Sprintf("%d %s", i+1, p.Name))
+		// Liveness is marked with a glyph, not colour alone, matching the rule
+		// the rest of the board follows for state.
+		if m.liveBoards[p.Root] {
+			tab += styAgentic.Render(" ◆")
+		}
+		tabs = append(tabs, tab)
 	}
 	return tabs
 }

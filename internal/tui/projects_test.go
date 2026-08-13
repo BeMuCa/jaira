@@ -2,12 +2,15 @@ package tui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/BeMuCa/jaira/core/project"
+	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -142,5 +145,106 @@ func TestBoardViewNumberBeyondListIsIgnored(t *testing.T) {
 	}
 	if m.mode != modeBoard {
 		t.Errorf("an unused number left board mode: %v", m.mode)
+	}
+}
+
+// A board that has a running agent is worth telling apart from one that does
+// not, at a glance — these tests cover boardHasLiveSession directly, since it
+// is what decides that.
+
+func TestBoardHasLiveSession(t *testing.T) {
+	t.Setenv("JAIRA_HOME", filepath.Join(t.TempDir(), "home"))
+	other := t.TempDir()
+	st, err := ticket.At(other)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if boardHasLiveSession(other) {
+		t.Fatal("a board with no session file must not read as live")
+	}
+
+	fresh := session.Session{ID: "s1", Focus: "doing work", UpdatedAt: ticket.FormatTime(time.Now())}
+	if err := session.Save(st, fresh); err != nil {
+		t.Fatal(err)
+	}
+	if !boardHasLiveSession(other) {
+		t.Error("a fresh session must mark the board live")
+	}
+
+	stale := session.Session{ID: "s1", Focus: "doing work", UpdatedAt: ticket.FormatTime(time.Now().Add(-2 * session.StaleAfter))}
+	if err := session.Save(st, stale); err != nil {
+		t.Fatal(err)
+	}
+	if boardHasLiveSession(other) {
+		t.Error("a stale session must not mark the board live — a crashed agent must not look busy")
+	}
+}
+
+// TestBoardHasLiveSessionUnreadableBoard covers a board that is gone, or was
+// never there: reading it must never fail, only report not-live.
+func TestBoardHasLiveSessionUnreadableBoard(t *testing.T) {
+	t.Setenv("JAIRA_HOME", filepath.Join(t.TempDir(), "home"))
+	gone := filepath.Join(t.TempDir(), "does-not-exist", "nested", "deeper")
+	if boardHasLiveSession(gone) {
+		t.Error("a board directory that does not exist cannot be live")
+	}
+}
+
+// TestRefreshLiveBoardsToleratesAGoneBoard covers the same requirement one
+// level up: refreshing the whole switcher must not fail render just because
+// one of several recorded boards can no longer be read.
+func TestRefreshLiveBoardsToleratesAGoneBoard(t *testing.T) {
+	m := newTestModel(t, 130, 34)
+	live := t.TempDir()
+	liveStore, err := ticket.At(live)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := session.Save(liveStore, session.Session{
+		ID: "s1", Focus: "working", UpdatedAt: ticket.FormatTime(time.Now()),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	gone := filepath.Join(t.TempDir(), "does-not-exist")
+
+	m.projects = []project.Project{
+		{Root: m.store.Root, Name: "current"},
+		{Root: live, Name: "live"},
+		{Root: gone, Name: "gone"},
+	}
+	m.refreshLiveBoards() // must not panic
+
+	if !m.liveBoards[live] {
+		t.Error("a board with a fresh session must be marked live")
+	}
+	if m.liveBoards[gone] {
+		t.Error("a board that cannot be read must render unmarked, not marked")
+	}
+}
+
+// TestProjectTabsMarkLiveBoards covers the rendering side: the marker is a
+// glyph, not colour alone, and only the live board carries it.
+func TestProjectTabsMarkLiveBoards(t *testing.T) {
+	m := newTestModel(t, 130, 34)
+	m.projects = []project.Project{
+		{Root: m.store.Root, Name: "current"},
+		{Root: "/somewhere/live", Name: "live"},
+		{Root: "/somewhere/stale", Name: "stale"},
+	}
+	m.liveBoards = map[string]bool{"/somewhere/live": true}
+
+	tabs := m.projectTabs()
+	if len(tabs) != 3 {
+		t.Fatalf("got %d tabs, want 3", len(tabs))
+	}
+	if strings.Contains(stripANSI(tabs[0]), "◆") {
+		t.Errorf("current board incorrectly marked live: %q", stripANSI(tabs[0]))
+	}
+	if !strings.Contains(stripANSI(tabs[1]), "◆") {
+		t.Errorf("live board not marked: %q", stripANSI(tabs[1]))
+	}
+	if strings.Contains(stripANSI(tabs[2]), "◆") {
+		t.Errorf("stale board incorrectly marked live: %q", stripANSI(tabs[2]))
 	}
 }

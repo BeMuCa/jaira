@@ -100,6 +100,12 @@ type Model struct {
 	projIdx  int
 	SwitchTo string
 
+	// liveBoards marks, by root, which recorded boards have a non-stale session
+	// working in them right now. It is recomputed whenever the project list
+	// loads or the board reloads — not on a timer, since this is a board that
+	// gets glanced at, not a monitor.
+	liveBoards map[string]bool
+
 	// laneScreen is the lane settings screen, non-nil while modeLanes is active.
 	laneScreen *laneScreen
 
@@ -171,7 +177,59 @@ func (m *Model) reload() error {
 		m.sessions = sess
 	}
 	m.rebuild()
+	m.refreshLiveBoards()
 	return nil
+}
+
+// refreshLiveBoards recomputes which recorded boards, this one included, have
+// a session actively working in them. It reads this board's own state from
+// m.sessions rather than the disk a second time — reload already loaded it.
+func (m *Model) refreshLiveBoards() {
+	live := make(map[string]bool, len(m.projects))
+	for _, p := range m.projects {
+		if p.Root == m.store.Root {
+			for _, s := range m.sessions {
+				if !s.Stale() {
+					live[p.Root] = true
+					break
+				}
+			}
+			continue
+		}
+		if boardHasLiveSession(p.Root) {
+			live[p.Root] = true
+		}
+	}
+	m.liveBoards = live
+}
+
+// boardHasLiveSession reads another board's session state to answer "is an
+// agent working there right now". It must never take the render down: a board
+// removed since it was recorded, or sitting on a disconnected drive, simply
+// reports not-live. ticket.At and session.Load already tolerate a missing or
+// unreadable directory (Glob on a directory that is not there matches
+// nothing, no error), so recover() here is a second line of defence against
+// anything neither of them anticipated, not the primary guard.
+func boardHasLiveSession(root string) (live bool) {
+	defer func() {
+		if recover() != nil {
+			live = false
+		}
+	}()
+	st, err := ticket.At(root)
+	if err != nil {
+		return false
+	}
+	sessions, err := session.Load(st)
+	if err != nil {
+		return false
+	}
+	for _, s := range sessions {
+		if !s.Stale() {
+			return true
+		}
+	}
+	return false
 }
 
 func asPartial(err error, target **ticket.PartialError) bool {
@@ -683,6 +741,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the list gets loaded.
 		m.projects = project.Load()
 		m.projIdx = 0
+		m.refreshLiveBoards()
 		if len(m.projects) <= 1 {
 			m.notify("No other boards recorded yet.\n\nOpen jaira inside another repository and it will appear here.", false)
 		} else {
