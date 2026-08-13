@@ -67,6 +67,12 @@ type Lane struct {
 	// implementation, without either lane being uninstalled.
 	RequiresOption string
 
+	// RequiresSpecified marks the first lane, in precedence order, that sets
+	// this: the boundary between thinking about a ticket and working on it.
+	// Everything before it is a place a half-formed ticket may sit; nothing at
+	// or after it may hold a ticket that is missing its promotion fields.
+	RequiresSpecified bool
+
 	// Prompt is the markdown body: the instruction given to the subagent.
 	Prompt string
 
@@ -178,18 +184,19 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	}
 
 	l := &Lane{
-		ID:               str("id"),
-		Name:             str("name"),
-		Description:      str("description"),
-		After:            str("after"),
-		Agentic:          boolOf("agentic"),
-		ModelTier:        str("model-tier"),
-		InputRequires:    list("input-requires"),
-		OutputProduces:   list("output-produces"),
-		RequiresQuestion: boolOf("requires-question"),
-		Prompt:           strings.TrimSpace(d.Body()),
-		Builtin:          builtin,
-		Source:           source,
+		ID:                str("id"),
+		Name:              str("name"),
+		Description:       str("description"),
+		After:             str("after"),
+		Agentic:           boolOf("agentic"),
+		ModelTier:         str("model-tier"),
+		InputRequires:     list("input-requires"),
+		OutputProduces:    list("output-produces"),
+		RequiresQuestion:  boolOf("requires-question"),
+		RequiresSpecified: boolOf("requires-specified"),
+		Prompt:            strings.TrimSpace(d.Body()),
+		Builtin:           builtin,
+		Source:            source,
 	}
 	// A terminal lane is where work is declared finished, so by default it
 	// demands the same evidence the built-in Done lane does. Without this, anyone
