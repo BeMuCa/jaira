@@ -62,6 +62,9 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira share` | publish the board; `--undo` makes it private again |
 | `jaira projects add <path>` | register a board; `--scan` searches two levels down |
 | `jaira lanes use <id>` | copy a catalogue lane into this project; `--force` |
+| `jaira lanes add <id>` | add a built-in or catalogue lane to this project's board, appending it to the column order; materialises the project's lane directory first if it has none yet |
+| `jaira lanes remove <id>` | remove a lane from this project's board (it stays in the catalogue); refused, naming them, if any ticket sits in it |
+| `jaira lanes move <id> --left\|--right` | shift a lane one column in this project's order, swapping it with its neighbour |
 | `jaira lanes publish <id>` | copy a lane into `.jaira/shared/<you>/` for teammates; `--force` |
 | `jaira lanes adopt <path>` | copy a teammate's shared lane (the path `lanes shared` prints) into your catalogue; `--force` |
 | `jaira lanes default` | show or set which lanes and options a new board starts with; `--lanes`, `--options`, `--clear` |
@@ -93,6 +96,20 @@ In an open ticket:
 e   edit fields (enter newline, ctrl+s save)   a   accept (at a checkpoint)
 E   edit body and checklists in $EDITOR        f   raise a follow-up
 y   copy the full ticket id
+```
+
+Lane settings (`S` then lanes): the project's lanes drawn as a small board,
+with a `+` column at the far right that opens the catalogue.
+
+```
+h l       select a column        x   remove the selected lane from this project
+H L       move the selected      enter (on +)   catalogue: choose a lane to add
+          lane one column        u   copy the selected lane into this project
+tab       switch to teammates'   p   publish it to teammates
+          shared lanes           n   write a new lane and open it in $EDITOR
+                                  R   pull a drifted lane's catalogue copy in
+                                  a   (shared list) adopt a teammate's lane
+esc       back
 ```
 
 Home screen: `enter` open · `jk` move · `a` add a board · `r` refresh · `q` quit.

@@ -8,20 +8,35 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// laneScreen is the lane settings screen: read a lane, see its prompt, use it
-// in this project, publish it to a teammate, adopt one of theirs. Following
-// browse.go's shape: its own state, a key method, a render method, no
-// bubbletea imports of its own.
+// laneColWidth is the width of one column in the small board this screen
+// draws — narrower than the main board's columns (view.go's minColWidth):
+// a column here shows only a lane's name and a short label, never a ticket
+// card, so it needs far less room.
+const laneColWidth = 16
+
+// laneScreen is the lane settings screen: the project's lanes drawn as the
+// board's own shape at a smaller size — narrow columns, navigable left and
+// right, with a '+' column at the far right that opens the catalogue. It
+// also carries the pre-existing use/publish/adopt/new-lane/drift-refresh
+// actions from before this screen became a board, all reusing the same
+// core/lane calls the CLI does — one implementation, not two.
 type laneScreen struct {
 	store *ticket.Store
+	// set is kept alongside lanes (set.Lanes, unpacked for convenience
+	// everywhere below) because lane.Add/Remove/MoveLane need the whole Set,
+	// not just its slice, to resolve an id — see core/lane.Set.Get.
+	set   *lane.Set
 	lanes []*lane.Lane
-	idx   int
+	// idx selects a column: 0..len(lanes)-1 is a lane, len(lanes) is the '+'
+	// column.
+	idx int
 
 	// drift implements D-02: lanes whose project copy no longer matches their
 	// catalogue copy of the same id, keyed by lane id. Computed once when the
@@ -35,9 +50,16 @@ type laneScreen struct {
 	sharedIdx      int
 	sharedWarnings []string
 
-	// focus picks which list j/k and the action keys apply to: 0 is this
-	// installation's own lanes, 1 is the shared section.
+	// focus picks which list h/l/j/k and the action keys apply to: 0 is this
+	// installation's own lanes (the board), 1 is the shared section.
 	focus int
+
+	// catalogue, catalogueIdx and catalogueOpen back the '+' column: pressing
+	// enter on it lists every lane not already part of this project
+	// (lane.Installable) for one to be chosen and added.
+	catalogue     []*lane.Lane
+	catalogueIdx  int
+	catalogueOpen bool
 
 	// confirmAdoptID is set when an adopt collided with an existing catalogue
 	// id, holding the id until the next 'a' confirms the overwrite or esc
@@ -54,7 +76,7 @@ type laneScreen struct {
 }
 
 func newLaneScreen(store *ticket.Store, set *lane.Set) *laneScreen {
-	ls := &laneScreen{store: store, lanes: set.Lanes}
+	ls := &laneScreen{store: store, set: set, lanes: set.Lanes}
 	if d, err := lane.Drift(store.Root, set); err == nil {
 		ls.drift = make(map[string]lane.DriftEntry, len(d))
 		for _, e := range d {
@@ -68,11 +90,32 @@ func newLaneScreen(store *ticket.Store, set *lane.Set) *laneScreen {
 	return ls
 }
 
+// reload re-Loads the lane set after add/remove/move so the board reflects
+// the write immediately, without waiting for the model's own reload (which
+// only runs when this screen closes).
+func (ls *laneScreen) reload() error {
+	set, err := lane.Load(ls.store.Root)
+	if err != nil {
+		return err
+	}
+	ls.set = set
+	ls.lanes = set.Lanes
+	if ls.idx > len(ls.lanes) {
+		ls.idx = len(ls.lanes)
+	}
+	return nil
+}
+
 func (ls *laneScreen) selected() *lane.Lane {
 	if ls.idx < 0 || ls.idx >= len(ls.lanes) {
 		return nil
 	}
 	return ls.lanes[ls.idx]
+}
+
+// isPlusColumn reports whether the far-right '+' column is selected.
+func (ls *laneScreen) isPlusColumn() bool {
+	return ls.idx == len(ls.lanes)
 }
 
 func (ls *laneScreen) selectedShared() *lane.SharedLane {
@@ -95,10 +138,38 @@ func (ls *laneScreen) sourceLabel(l *lane.Lane) string {
 	}
 }
 
+func indexOfLane(lanes []*lane.Lane, id string) int {
+	for i, l := range lanes {
+		if l.ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
 // key drives the screen. It reports whether the screen is finished (esc/q).
 func (ls *laneScreen) key(s string) (done bool) {
 	ls.msg = ""
 	ls.pendingCmd = nil
+
+	if ls.catalogueOpen {
+		switch s {
+		case "esc":
+			ls.catalogueOpen = false
+		case "j", "down":
+			if ls.catalogueIdx < len(ls.catalogue)-1 {
+				ls.catalogueIdx++
+			}
+		case "k", "up":
+			if ls.catalogueIdx > 0 {
+				ls.catalogueIdx--
+			}
+		case "enter":
+			ls.addFromCatalogue()
+		}
+		return false
+	}
+
 	switch s {
 	case "esc", "q":
 		if ls.confirmAdoptID != "" {
@@ -111,9 +182,37 @@ func (ls *laneScreen) key(s string) (done bool) {
 			ls.focus = 1 - ls.focus
 		}
 	case "j", "down":
-		ls.moveDown()
+		if ls.focus == 1 {
+			ls.moveSharedDown()
+		}
 	case "k", "up":
-		ls.moveUp()
+		if ls.focus == 1 {
+			ls.moveSharedUp()
+		}
+	case "h", "left":
+		if ls.focus == 0 {
+			ls.moveColumn(-1)
+		}
+	case "l", "right":
+		if ls.focus == 0 {
+			ls.moveColumn(1)
+		}
+	case "H":
+		if ls.focus == 0 {
+			ls.moveLane(-1)
+		}
+	case "L":
+		if ls.focus == 0 {
+			ls.moveLane(1)
+		}
+	case "x":
+		if ls.focus == 0 {
+			ls.remove()
+		}
+	case "enter":
+		if ls.focus == 0 && ls.isPlusColumn() {
+			ls.openCatalogue()
+		}
 	case "u":
 		if ls.focus == 0 {
 			ls.use()
@@ -138,30 +237,107 @@ func (ls *laneScreen) key(s string) (done bool) {
 	return false
 }
 
-func (ls *laneScreen) moveDown() {
+// moveColumn shifts which column (a lane, or the '+' column past the last
+// lane) is selected — h/l, the board's own navigation vocabulary.
+func (ls *laneScreen) moveColumn(delta int) {
 	ls.confirmAdoptID = ""
-	if ls.focus == 1 {
-		if ls.sharedIdx < len(ls.shared)-1 {
-			ls.sharedIdx++
-		}
+	next := ls.idx + delta
+	if next < 0 || next > len(ls.lanes) {
 		return
 	}
-	if ls.idx < len(ls.lanes)-1 {
-		ls.idx++
+	ls.idx = next
+}
+
+func (ls *laneScreen) moveSharedDown() {
+	if ls.sharedIdx < len(ls.shared)-1 {
+		ls.sharedIdx++
 	}
 }
 
-func (ls *laneScreen) moveUp() {
-	ls.confirmAdoptID = ""
-	if ls.focus == 1 {
-		if ls.sharedIdx > 0 {
-			ls.sharedIdx--
-		}
+func (ls *laneScreen) moveSharedUp() {
+	if ls.sharedIdx > 0 {
+		ls.sharedIdx--
+	}
+}
+
+// remove takes the selected lane out of this project through lane.Remove —
+// the same call 'jaira lanes remove' makes — refusing with the same message
+// when a ticket currently sits in it.
+func (ls *laneScreen) remove() {
+	l := ls.selected()
+	if l == nil {
 		return
 	}
-	if ls.idx > 0 {
-		ls.idx--
+	if _, err := lane.Remove(ls.store.Root, ls.set, ls.store, l.ID); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
 	}
+	id := l.ID
+	if err := ls.reload(); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	ls.msg, ls.isErr = "removed "+id, false
+}
+
+// moveLane shifts the selected lane one step through lane.MoveLane — the
+// same call 'jaira lanes move' makes — and keeps it selected at its new
+// position.
+func (ls *laneScreen) moveLane(delta int) {
+	l := ls.selected()
+	if l == nil {
+		return
+	}
+	id := l.ID
+	if err := lane.MoveLane(ls.store.Root, ls.set, id, delta); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	if err := ls.reload(); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	if i := indexOfLane(ls.lanes, id); i >= 0 {
+		ls.idx = i
+	}
+}
+
+// openCatalogue lists every lane not already part of this project
+// (lane.Installable) for the '+' column's enter key — the only way in for a
+// user who does not know 'jaira lanes template' exists.
+func (ls *laneScreen) openCatalogue() {
+	installable, err := lane.Installable(ls.set)
+	if err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	ls.catalogue = installable
+	ls.catalogueIdx = 0
+	ls.catalogueOpen = true
+}
+
+// addFromCatalogue adds the highlighted catalogue lane through lane.Add —
+// the same call 'jaira lanes add' makes — appending it at the end of the
+// order, and selects it.
+func (ls *laneScreen) addFromCatalogue() {
+	if ls.catalogueIdx < 0 || ls.catalogueIdx >= len(ls.catalogue) {
+		return
+	}
+	l := ls.catalogue[ls.catalogueIdx]
+	ls.catalogueOpen = false
+	if _, err := lane.Add(ls.store.Root, ls.set, l.ID); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	id := l.ID
+	if err := ls.reload(); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	if i := indexOfLane(ls.lanes, id); i >= 0 {
+		ls.idx = i
+	}
+	ls.msg, ls.isErr = "added "+id, false
 }
 
 // use exports the selected lane into this project's own lane directory —
@@ -315,36 +491,95 @@ func (ls *laneScreen) promptOf() (name, id, creator, prompt string, ok bool) {
 	return l.Name, l.ID, l.Creator, l.Prompt, true
 }
 
+// laneColumnStyle borders one column of the small board this screen draws.
+// It is a fresh, smaller-scale style rather than a reuse of view.go's
+// renderColumn: renderColumn draws a ticket card list from the main Model's
+// own state (tickets, scroll position, card styling), which has no
+// equivalent here — this screen has only lane names, never tickets.
+func laneColumnStyle(focused bool) lipgloss.Style {
+	st := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(colFaint).
+		Width(laneColWidth).Height(3)
+	if focused {
+		st = st.BorderForeground(colAccent)
+	}
+	return st
+}
+
+// renderBoard draws the project's lanes as narrow columns — the main
+// board's own shape (bordered columns joined horizontally, per view.go's
+// renderBoard) at a smaller size — plus one more column holding '+'. As many
+// columns as fit are shown, scrolled so the selection stays visible.
+func (ls *laneScreen) renderBoard(totalW int) string {
+	cols := make([]string, 0, len(ls.lanes)+1)
+	for i, l := range ls.lanes {
+		focused := ls.focus == 0 && i == ls.idx
+		name := truncate(l.Name, laneColWidth-2)
+		if focused {
+			name = stySelected.Render(name)
+		}
+		label := ls.sourceLabel(l)
+		if l.Overrides != "" {
+			label = "overrides"
+		}
+		if _, drifted := ls.drift[l.ID]; drifted {
+			label = "drifted"
+		}
+		body := name + "\n" + styMeta.Render(truncate(label, laneColWidth-2))
+		cols = append(cols, laneColumnStyle(focused).Render(body))
+	}
+	plusFocused := ls.focus == 0 && ls.isPlusColumn()
+	plusLabel := "+"
+	if plusFocused {
+		plusLabel = stySelected.Render("+")
+	}
+	cols = append(cols, laneColumnStyle(plusFocused).Render(plusLabel))
+
+	perScreen := max(1, totalW/(laneColWidth+2))
+	start := 0
+	if ls.idx >= perScreen {
+		start = ls.idx - perScreen + 1
+	}
+	end := min(len(cols), start+perScreen)
+	return lipgloss.JoinHorizontal(lipgloss.Top, cols[start:end]...)
+}
+
+// renderCatalogue lists the lanes the '+' column's enter key found
+// installable — every built-in and catalogue lane not already part of this
+// project.
+func (ls *laneScreen) renderCatalogue(w int) string {
+	var sb strings.Builder
+	sb.WriteString(styLaneTitle.Render("Add a lane") + "\n")
+	if len(ls.catalogue) == 0 {
+		sb.WriteString(styMeta.Render(truncate(
+			"  every installed lane is already part of this project", w)) + "\n")
+		return sb.String()
+	}
+	for i, l := range ls.catalogue {
+		lead := "  "
+		name := l.Name
+		if i == ls.catalogueIdx {
+			lead = stySelected.Render("▌ ")
+			name = stySelected.Render(name)
+		}
+		sb.WriteString(truncate(lead+name, w) + "\n")
+	}
+	return sb.String()
+}
+
 func (ls *laneScreen) render(width, height int) string {
 	w := max(20, min(width, 78))
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Lanes") + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
-	listHeight := max(3, (height-14)/3)
-	first := 0
-	if ls.idx >= listHeight {
-		first = ls.idx - listHeight + 1
-	}
-	for i := first; i < len(ls.lanes) && i < first+listHeight; i++ {
-		l := ls.lanes[i]
-		lead := "  "
-		name := l.Name
-		if ls.focus == 0 && i == ls.idx {
-			lead = stySelected.Render("▌ ")
-			name = stySelected.Render(name)
-		}
-		tail := styMeta.Render("  " + ls.sourceLabel(l))
-		if l.Overrides != "" {
-			tail += styWarn.Render("  overrides " + l.Overrides)
-		}
-		if _, drifted := ls.drift[l.ID]; drifted {
-			tail += styWarn.Render("  drifted from catalogue")
-		}
-		sb.WriteString(truncate(lead+name+tail, w) + "\n")
-	}
-	if rest := len(ls.lanes) - (first + listHeight); rest > 0 {
-		sb.WriteString(styMeta.Render(fmt.Sprintf("  +%d more", rest)) + "\n")
+	sb.WriteString(ls.renderBoard(w))
+	sb.WriteString("\n")
+
+	if ls.catalogueOpen {
+		sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+		sb.WriteString(ls.renderCatalogue(w))
+		sb.WriteString("\n" + styMeta.Render(truncate("jk select · enter add · esc cancel", w)))
+		return sb.String()
 	}
 
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
@@ -377,7 +612,7 @@ func (ls *laneScreen) render(width, height int) string {
 		if creator != "" {
 			sb.WriteString(styMeta.Render("creator: "+creator) + "\n")
 		}
-		promptHeight := max(3, height-listHeight-16)
+		promptHeight := max(3, height-16)
 		lines := strings.Split(prompt, "\n")
 		for i, ln := range lines {
 			if i >= promptHeight {
@@ -395,10 +630,15 @@ func (ls *laneScreen) render(width, height int) string {
 		}
 		sb.WriteString("\n" + style.Render(truncate(ls.msg, w)) + "\n")
 	}
-	help := "jk select · u use here · p publish · n new · R refresh · esc back"
+	// Not truncated to w like everything else on this screen: with add/move/
+	// remove now joining the pre-existing use/publish/new/refresh/adopt keys,
+	// the full footer runs longer than a narrow terminal's column width, and
+	// cutting it off would silently hide a key's name rather than the column
+	// content truncate exists to fit.
+	help := "hl select · HL move · x remove · u use · p publish · n new · R refresh · esc back"
 	if len(ls.shared) > 0 {
-		help = "jk select · tab switch list · u use · p publish · n new · a adopt · R refresh · esc back"
+		help = "hl select · HL move · x remove · tab switch · u use · p publish · a adopt · esc back"
 	}
-	sb.WriteString("\n" + styMeta.Render(truncate(help, w)))
+	sb.WriteString("\n" + styMeta.Render(help))
 	return sb.String()
 }

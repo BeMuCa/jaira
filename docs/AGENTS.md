@@ -136,10 +136,22 @@ is the only place model choice appears.
 
 ## A note on lane order
 
-A board's column order follows each lane's `after:` anchor, never `precedence`.
-`precedence` is the rank a merge uses to decide which lane wins when two clones
-moved the same ticket — `jaira lanes` and `jaira lanes show` label it accordingly,
-not as a position.
+A board's column order follows each lane's `after:` anchor, never `precedence`
+— unless the project has its own order file (see below), in which case the
+order file decides the position of every lane it names, and `after:` is no
+longer consulted for those. `precedence` is the rank a merge uses to decide
+which lane wins when two clones moved the same ticket — `jaira lanes` and
+`jaira lanes show` label it accordingly, not as a position.
+
+A project can also add, remove or reorder the lanes it uses, independently of
+its column order file's day-to-day up-keep: `jaira lanes add <id>`,
+`jaira lanes remove <id>` (refused, naming them, if a ticket is in it), and
+`jaira lanes move <id> --left|--right`. All three take `--json`, and all three
+are the exact calls the settings screen's board makes — a lane added,
+removed or moved from either place is the same fact from the other. If the
+project has no lane directory of its own yet, the first such change writes
+one holding every lane the board currently shows, so it never drops to a
+single column because one lane was touched.
 
 ## Building and sharing a lane without the TUI
 

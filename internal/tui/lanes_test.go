@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -20,23 +21,27 @@ func TestLaneScreenListsAllLoadedLanes(t *testing.T) {
 	}
 }
 
-// TestLaneScreenNavigationClamps asserts j/k move the selection and never run
-// off either end of the list.
+// TestLaneScreenNavigationClamps asserts h/l move the selected column and
+// never run off either end — the last column being the '+' one.
 func TestLaneScreenNavigationClamps(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	ls := newLaneScreen(m.store, m.lanes)
 
-	if done := ls.key("k"); done {
-		t.Fatal("k at the top must not finish the screen")
+	if done := ls.key("h"); done {
+		t.Fatal("h at the first column must not finish the screen")
 	}
 	if ls.idx != 0 {
-		t.Errorf("idx = %d, want 0 (clamped at top)", ls.idx)
+		t.Errorf("idx = %d, want 0 (clamped at the first column)", ls.idx)
 	}
 	for range ls.lanes {
-		ls.key("j")
+		ls.key("l")
 	}
-	if ls.idx != len(ls.lanes)-1 {
-		t.Errorf("idx = %d, want %d (clamped at bottom)", ls.idx, len(ls.lanes)-1)
+	ls.key("l") // one more than there are lanes: lands on '+', then clamps
+	if ls.idx != len(ls.lanes) {
+		t.Errorf("idx = %d, want %d (clamped at the '+' column)", ls.idx, len(ls.lanes))
+	}
+	if !ls.isPlusColumn() {
+		t.Error("idx at len(lanes) must report as the '+' column")
 	}
 }
 
@@ -495,5 +500,164 @@ precedence: 41
 	}
 	if string(got) != catBody {
 		t.Errorf("refresh did not pull the catalogue bytes:\ngot:  %q\nwant: %q", got, catBody)
+	}
+}
+
+// TestLaneScreenRendersBoardWithPlusColumn asserts the screen shows the
+// project's lane names and a '+' column, not a vertical list. The board only
+// fits a few columns at once (like the main board it mirrors, see
+// renderBoard), so this scrolls all the way across, collecting every frame,
+// rather than expecting one screen to hold every lane at once.
+func TestLaneScreenRendersBoardWithPlusColumn(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	ls := newLaneScreen(m.store, m.lanes)
+	var seen strings.Builder
+	seen.WriteString(ls.render(150, 32))
+	for range ls.lanes {
+		ls.key("l")
+		seen.WriteString(ls.render(150, 32))
+	}
+	out := seen.String()
+	for _, l := range ls.lanes {
+		if !strings.Contains(out, l.Name) {
+			t.Errorf("rendered board missing lane name %q", l.Name)
+		}
+	}
+	if !strings.Contains(out, "+") {
+		t.Error("rendered board missing the '+' column")
+	}
+}
+
+// TestLaneScreenLMovesSelectedLaneAndWritesOrderFile asserts 'L' moves the
+// selected lane one step right and persists it to the order file, through
+// the same lane.MoveLane the CLI's 'lanes move' calls.
+func TestLaneScreenLMovesSelectedLaneAndWritesOrderFile(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	ls := newLaneScreen(m.store, m.lanes)
+	firstID, secondID := ls.lanes[0].ID, ls.lanes[1].ID
+
+	ls.key("L")
+	if ls.isErr {
+		t.Fatalf("L produced an error: %s", ls.msg)
+	}
+	if ls.lanes[0].ID != secondID || ls.lanes[1].ID != firstID {
+		t.Fatalf("after L, lanes = %v, want %s then %s", ls.lanes[0:2], secondID, firstID)
+	}
+	ids, err := lane.LoadOrder(m.store.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) == 0 {
+		t.Fatal("L did not write an order file")
+	}
+	if ls.idx != 1 {
+		t.Errorf("idx = %d, want 1 (the moved lane stays selected at its new position)", ls.idx)
+	}
+}
+
+// TestLaneScreenXRemovesSelectedLane asserts 'x' removes the selected lane
+// from the project, through lane.Remove. Uses a fresh, ticketless store
+// (laneTestStore) rather than newTestModel's, which seeds sample tickets
+// into backlog and would otherwise make the very first lane refuse removal.
+func TestLaneScreenXRemovesSelectedLane(t *testing.T) {
+	s, _ := laneTestStore(t)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	before := len(ls.lanes)
+	id := ls.lanes[0].ID
+
+	ls.key("x")
+	if ls.isErr {
+		t.Fatalf("x produced an error: %s", ls.msg)
+	}
+	if len(ls.lanes) != before-1 {
+		t.Fatalf("lanes = %d after x, want %d", len(ls.lanes), before-1)
+	}
+	if _, ok := ls.set.Get(id); ok {
+		t.Errorf("removed lane %q still present", id)
+	}
+}
+
+// TestLaneScreenXRefusesWhenTicketPresent asserts 'x' is refused, naming the
+// ticket, when one currently sits in the selected lane — the same refusal
+// the CLI's 'lanes remove' gives.
+func TestLaneScreenXRefusesWhenTicketPresent(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	ls := newLaneScreen(m.store, m.lanes)
+	target := ls.lanes[0]
+
+	tk, err := m.store.Create(map[string]string{
+		ticket.FieldID:     ticket.NewID(time.Now()),
+		ticket.FieldTitle:  "occupies " + target.ID,
+		ticket.FieldStatus: target.ID,
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls.key("x")
+	if !ls.isErr {
+		t.Fatal("x on an occupied lane must refuse, not remove it")
+	}
+	if !strings.Contains(ls.msg, ticket.Handle(tk.ID)) {
+		t.Errorf("refusal %q does not name the occupying ticket", ls.msg)
+	}
+	if _, ok := ls.set.Get(target.ID); !ok {
+		t.Error("a refused removal must leave the lane in place")
+	}
+}
+
+// TestLaneScreenPlusColumnOpensCatalogueListingOnlyMissingLanes asserts enter
+// on the '+' column lists exactly the lanes not already in this project.
+//
+// The project is materialised (every built-in exported as its own lane
+// directory's copy) before the catalogue gains "extra": with no project
+// directory of its own, D-03's fallback already shows the whole catalogue,
+// so nothing would be missing from it to demonstrate the filter.
+func TestLaneScreenPlusColumnOpensCatalogueListingOnlyMissingLanes(t *testing.T) {
+	s, catalogue := laneTestStore(t)
+	builtins, err := lane.Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range builtins {
+		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeLaneFile(t, catalogue, "extra.md", `---
+id: extra
+name: Extra
+after: human
+precedence: 41
+---
+`)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	ls.idx = len(ls.lanes) // the '+' column
+
+	ls.key("enter")
+	if !ls.catalogueOpen {
+		t.Fatal("enter on the '+' column must open the catalogue")
+	}
+	if len(ls.catalogue) != 1 || ls.catalogue[0].ID != "extra" {
+		t.Fatalf("catalogue = %v, want exactly [extra]", ls.catalogue)
+	}
+
+	ls.key("enter")
+	if ls.isErr {
+		t.Fatalf("adding from the catalogue failed: %s", ls.msg)
+	}
+	if ls.catalogueOpen {
+		t.Error("choosing a lane must close the catalogue")
+	}
+	if _, ok := ls.set.Get("extra"); !ok {
+		t.Error("chosen lane was not added to the project")
 	}
 }
