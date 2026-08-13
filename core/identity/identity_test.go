@@ -1,6 +1,9 @@
 package identity
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCurrentHonoursJairaUserAboveEverything(t *testing.T) {
 	t.Setenv("JAIRA_USER", "berk")
@@ -54,5 +57,40 @@ func TestSlugOfOnlyPunctuationFallsBackToNonEmpty(t *testing.T) {
 	got := Slug("!!!")
 	if got == "" {
 		t.Error("Slug() of only punctuation returned empty, which would silently write to the parent directory")
+	}
+}
+
+// TestSlugOfPathTraversalIsSafe asserts a name built to escape its parent
+// directory cannot survive Slug — the result becomes a path component under
+// .jaira/shared/, so ".." and "/" must never appear in it (T-5-03).
+func TestSlugOfPathTraversalIsSafe(t *testing.T) {
+	got := Slug("../../etc/passwd")
+	if strings.Contains(got, "..") || strings.Contains(got, "/") {
+		t.Errorf("Slug(%q) = %q must not contain .. or /", "../../etc/passwd", got)
+	}
+	if got == "" {
+		t.Error("Slug() of a traversal string returned empty")
+	}
+}
+
+// TestSlugOfLeadingDotIsSafe asserts a leading dot does not survive into the
+// slug, since a leading-dot directory name has its own special meaning on
+// most filesystems.
+func TestSlugOfLeadingDotIsSafe(t *testing.T) {
+	got := Slug(".hidden")
+	if got == "" {
+		t.Fatal("Slug(\".hidden\") returned empty")
+	}
+	if strings.HasPrefix(got, ".") {
+		t.Errorf("Slug(%q) = %q must not start with a dot", ".hidden", got)
+	}
+}
+
+// TestSlugOfEmptyStringFallsBackToNonEmpty asserts an empty name still
+// yields a non-empty slug, since an empty path component would silently
+// write to the parent directory.
+func TestSlugOfEmptyStringFallsBackToNonEmpty(t *testing.T) {
+	if got := Slug(""); got == "" {
+		t.Error("Slug(\"\") returned empty, which would silently write to the parent directory")
 	}
 }

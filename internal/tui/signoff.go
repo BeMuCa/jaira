@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -93,7 +94,7 @@ func (m *Model) accept() {
 	}
 	env := gate.Env{Lanes: m.lanes, All: m.tickets}
 	if vs := gate.CheckAdvance(env, m.detail, gate.Request{
-		To: next.ID, Actor: identity(m.store.Root), Interactive: true,
+		To: next.ID, Actor: identity.Current(m.store.Root), Interactive: true,
 	}); len(vs) > 0 {
 		m.notify("Cannot accept yet:\n\n"+vs.Err().Error(), true)
 		return
@@ -143,7 +144,7 @@ func (m *Model) followUp() {
 	}
 	src := m.detail
 	now := time.Now()
-	me := identity(m.store.Root)
+	me := identity.Current(m.store.Root)
 	def := m.lanes.Default()
 
 	fields := map[string]string{

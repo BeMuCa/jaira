@@ -20,6 +20,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/session"
@@ -39,6 +40,7 @@ const (
 	modeProjects
 	modeEdit
 	modePipeline
+	modeLanes
 )
 
 // Model is the board's state.
@@ -87,6 +89,9 @@ type Model struct {
 	projects []project.Project
 	projIdx  int
 	SwitchTo string
+
+	// laneScreen is the lane settings screen, non-nil while modeLanes is active.
+	laneScreen *laneScreen
 
 	// sessions is what any agent working this tree last checkpointed — the
 	// board's view of agent memory.
@@ -467,6 +472,16 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeLanes:
+		if done := m.laneScreen.key(s); done {
+			m.laneScreen = nil
+			m.mode = modeBoard
+			if err := m.reload(); err != nil {
+				m.notify(err.Error(), true)
+			}
+		}
+		return m, nil
+
 	case modeProjects:
 		switch s {
 		case "esc", "q", "p":
@@ -580,6 +595,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.notify("Reloaded", false)
 		}
+	case "L":
+		m.laneScreen = newLaneScreen(m.store, m.lanes)
+		m.mode = modeLanes
 	}
 	return m, nil
 }
@@ -646,7 +664,7 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
-	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: identity(m.store.Root)})
+	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: identity.Current(m.store.Root)})
 	if len(vs) > 0 {
 		var b strings.Builder
 		fmt.Fprintf(&b, "Cannot move to %s:\n\n", target.Name)
@@ -677,7 +695,7 @@ func (m *Model) applyMove() {
 // createTicket adds a ticket to the default lane straight from the board.
 func (m *Model) createTicket(title string) {
 	now := time.Now()
-	me := identity(m.store.Root)
+	me := identity.Current(m.store.Root)
 	def := m.lanes.Default()
 	fields := map[string]string{
 		ticket.FieldID:        ticket.NewID(now),

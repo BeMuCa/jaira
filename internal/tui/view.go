@@ -81,6 +81,8 @@ func (m *Model) render() string {
 		return m.renderMessage()
 	case modeProjects:
 		return m.renderProjects()
+	case modeLanes:
+		return m.laneScreen.render(m.width, m.height)
 	case modeMove:
 		return m.renderBoard() // picker is drawn into the status bar
 	}
@@ -447,7 +449,7 @@ func (m *Model) statusBar(start, end int) string {
 	}
 	// Hints are dropped from the right as the terminal narrows, rather than
 	// letting the bar wrap and push the board off-screen.
-	keys := []string{"hjkl move", "enter open", "n new", "m lane", "/ filter", "? help", "q quit"}
+	keys := []string{"hjkl move", "enter open", "n new", "m lane", "L lanes", "/ filter", "? help", "q quit"}
 	prefix := hidden
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -625,6 +627,7 @@ func (m *Model) renderHelp() string {
 			{"x", "archive the selected ticket (restore brings it back)"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
+			{"L", "lane settings: read a lane's prompt, use it here, publish it"},
 		}},
 	}
 	for _, s := range sections {
@@ -724,21 +727,3 @@ func max(a, b int) int {
 	return b
 }
 
-// identity mirrors the CLI's rule so a ticket created from the board is
-// attributed the same way as one created from the command line.
-func identity(root string) string {
-	if v := strings.TrimSpace(os.Getenv("JAIRA_USER")); v != "" {
-		return v
-	}
-	if out, err := exec.Command("git", "-C", root, "config", "user.name").Output(); err == nil {
-		if n := strings.TrimSpace(string(out)); n != "" {
-			return n
-		}
-	}
-	for _, k := range []string{"USER", "USERNAME", "LOGNAME"} {
-		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
-			return v
-		}
-	}
-	return "unknown"
-}
