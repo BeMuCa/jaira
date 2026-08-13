@@ -312,7 +312,10 @@ func missingPromotionFields(t *ticket.Ticket) Violations {
 			vs = append(vs, Violation{
 				Code:    CodeMissingField,
 				Field:   f,
-				Message: fmt.Sprintf("%s is required before this ticket can leave the backlog", f),
+				// Not "before it can leave the backlog": a board may have several
+				// lanes before the specified zone, and a ticket refused here is
+				// often sitting in one of them rather than in the backlog.
+				Message: fmt.Sprintf("%s is required before this ticket can be worked on", f),
 			})
 		}
 	}
