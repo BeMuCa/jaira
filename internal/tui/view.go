@@ -421,10 +421,10 @@ func (m *Model) boardProjectLine() string {
 		return ""
 	}
 	line := strings.Join(m.projectTabs(), styBar.Render("  │  "))
-	if lipgloss.Width(line) > m.width {
-		return ""
-	}
-	return line
+	// Truncated rather than dropped: a narrow terminal used to hide the whole
+	// line, so the boards — and which one you are in — silently disappeared
+	// instead of merely being cut short.
+	return truncate(line, m.width)
 }
 
 func (m *Model) header() string {

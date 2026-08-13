@@ -132,10 +132,15 @@ func (m *Model) projectTabs() []string {
 			break
 		}
 		sty := styMeta
+		label := fmt.Sprintf("%d %s", i+1, p.Name)
 		if p.Root == m.store.Root {
+			// The board you are standing in is marked with a glyph, not only with
+			// a colour: the same rule the rest of the board follows, and colour
+			// alone is easy to miss on a line that also carries the live marker.
 			sty = stySelected
+			label = "▸ " + label
 		}
-		tab := sty.Render(fmt.Sprintf("%d %s", i+1, p.Name))
+		tab := sty.Render(label)
 		// Liveness is marked with a glyph, not colour alone, matching the rule
 		// the rest of the board follows for state.
 		if m.liveBoards[p.Root] {
