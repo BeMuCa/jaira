@@ -301,3 +301,64 @@ func TestLanesTemplateParses(t *testing.T) {
 		}
 	}
 }
+
+// TestLanesSharedListsPublishedLanes covers the CLI half of criterion 8: an
+// agent has no way to press the TUI's adopt key, so 'lanes shared' is the
+// read path.
+func TestLanesSharedListsPublishedLanes(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := t.TempDir()
+	s, err := ticket.At(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	sharedDir := filepath.Join(root, ".jaira", "shared", "sam")
+	if err := os.MkdirAll(sharedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sharedDir, "hitl.md"), []byte(
+		"---\nid: hitl\nname: HITL\nafter: human\nprecedence: 41\ncreator: sam\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, root, "shared")
+	if err != nil {
+		t.Fatalf("lanes shared: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "hitl") || !strings.Contains(out, "sam") {
+		t.Errorf("lanes shared = %q, want it to name the lane, folder and creator", out)
+	}
+
+	jout, err := runLanes(t, root, "shared", "--json")
+	if err != nil {
+		t.Fatalf("lanes shared --json: %v\n%s", err, jout)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jout)
+	}
+	arr, ok := payload["shared"].([]any)
+	if !ok || len(arr) != 1 {
+		t.Fatalf("lanes shared --json = %v, want exactly one shared lane", payload)
+	}
+	entry := arr[0].(map[string]any)
+	if entry["id"] != "hitl" || entry["folder"] != "sam" || entry["creator"] != "sam" {
+		t.Errorf("lanes shared --json entry = %v", entry)
+	}
+}
+
+// TestLanesSharedOutsideProjectSaysSo asserts the command does not crash or
+// misreport when there is no project to look inside.
+func TestLanesSharedOutsideProjectSaysSo(t *testing.T) {
+	lanesTestCatalogue(t)
+	out, err := runLanes(t, t.TempDir(), "shared")
+	if err != nil {
+		t.Fatalf("lanes shared (outside a project): %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "not in a project directory") {
+		t.Errorf("lanes shared outside a project = %q, want it to say there is no project", out)
+	}
+}

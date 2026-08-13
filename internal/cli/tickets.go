@@ -675,8 +675,57 @@ func newLanesCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.AddCommand(newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd())
+	cmd.AddCommand(newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd())
 	return cmd
+}
+
+// newLanesSharedCmd lists lanes teammates have published to this project's
+// .jaira/shared/ tree. An agent has no way to press the TUI's adopt key, and
+// "read what teammates published" is a read operation the CLI already
+// promises for everything else.
+//
+// Shared lanes are never loaded onto the board by this command or by
+// lane.Load — listing them is not adopting them.
+func newLanesSharedCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "shared",
+		Short: "List lanes teammates have published to this project",
+		Args:  noArgs(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			root := bestEffortRoot()
+			shared, warnings, err := lane.Shared(root)
+			if err != nil {
+				return err
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				arr := make([]map[string]any, 0, len(shared))
+				for _, sl := range shared {
+					arr = append(arr, map[string]any{
+						"folder": sl.Folder, "id": sl.Lane.ID, "name": sl.Lane.Name,
+						"creator": sl.Lane.Creator, "path": sl.Path,
+					})
+				}
+				return emit(w, map[string]any{"shared": arr, "warnings": warnings})
+			}
+			if root == "" {
+				fmt.Fprintln(w, "not in a project directory; nothing to list")
+				return nil
+			}
+			if len(shared) == 0 {
+				fmt.Fprintln(w, "no lanes have been published to this project")
+			} else {
+				fmt.Fprintf(w, "%-14s %-14s %-16s %s\n", "ID", "FOLDER", "CREATOR", "PATH")
+				for _, sl := range shared {
+					fmt.Fprintf(w, "%-14s %-14s %-16s %s\n", sl.Lane.ID, sl.Folder, dash(sl.Lane.Creator), sl.Path)
+				}
+			}
+			for _, warn := range warnings {
+				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", warn)
+			}
+			return nil
+		},
+	}
 }
 
 // newLanesShowCmd prints one lane in full, prompt included — this is the

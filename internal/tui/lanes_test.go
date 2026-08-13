@@ -162,6 +162,115 @@ func writeLaneFile(t *testing.T, dir, filename, body string) {
 	}
 }
 
+// TestLaneScreenListsSharedLanes asserts a lane published under
+// .jaira/shared/ shows up in the shared section, grouped by folder.
+func TestLaneScreenListsSharedLanes(t *testing.T) {
+	s, _ := laneTestStore(t)
+	writeLaneFile(t, filepath.Join(s.Root, ".jaira", "shared", "sam"), "hitl.md", `---
+id: hitl
+name: HITL
+after: human
+precedence: 41
+creator: sam
+---
+`)
+
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	if len(ls.shared) != 1 {
+		t.Fatalf("shared = %v, want exactly one lane", ls.shared)
+	}
+	if ls.shared[0].Folder != "sam" || ls.shared[0].Lane.ID != "hitl" {
+		t.Errorf("shared[0] = %+v, want folder sam, id hitl", ls.shared[0])
+	}
+}
+
+// TestLaneScreenAdoptWritesIntoCatalogue asserts pressing tab then a adopts
+// the selected shared lane into the catalogue, naming the path in the
+// message.
+func TestLaneScreenAdoptWritesIntoCatalogue(t *testing.T) {
+	s, catalogue := laneTestStore(t)
+	writeLaneFile(t, filepath.Join(s.Root, ".jaira", "shared", "sam"), "hitl.md", `---
+id: hitl
+name: HITL
+after: human
+precedence: 41
+---
+`)
+
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+
+	ls.key("tab")
+	if ls.focus != 1 {
+		t.Fatal("tab must switch focus to the shared section")
+	}
+	ls.key("a")
+	if ls.isErr {
+		t.Fatalf("adopt failed: %s", ls.msg)
+	}
+	if !strings.Contains(ls.msg, "adopted") {
+		t.Errorf("message %q does not report the adoption", ls.msg)
+	}
+	dst := filepath.Join(catalogue, "hitl.md")
+	if _, err := os.Stat(dst); err != nil {
+		t.Errorf("expected %s to exist: %v", dst, err)
+	}
+}
+
+// TestLaneScreenAdoptRefusesThenConfirms asserts an id collision is held for
+// confirmation rather than silently overwritten.
+func TestLaneScreenAdoptRefusesThenConfirms(t *testing.T) {
+	s, catalogue := laneTestStore(t)
+	writeLaneFile(t, catalogue, "hitl.md", `---
+id: hitl
+name: Existing catalogue HITL
+after: human
+precedence: 41
+---
+`)
+	writeLaneFile(t, filepath.Join(s.Root, ".jaira", "shared", "sam"), "hitl.md", `---
+id: hitl
+name: Sam's HITL
+after: human
+precedence: 41
+---
+`)
+
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	ls.key("tab")
+
+	ls.key("a")
+	if !ls.isErr {
+		t.Fatal("adopting a colliding id on the first press must refuse, not overwrite")
+	}
+	if ls.confirmAdoptID != "hitl" {
+		t.Fatalf("confirmAdoptID = %q, want %q", ls.confirmAdoptID, "hitl")
+	}
+
+	ls.key("a")
+	if ls.isErr {
+		t.Fatalf("the confirming press must succeed: %s", ls.msg)
+	}
+	got, err := os.ReadFile(filepath.Join(catalogue, "hitl.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "Sam's HITL") {
+		t.Errorf("confirmed adopt did not overwrite the catalogue file, got:\n%s", got)
+	}
+}
+
 // TestLaneScreenDetectsAndRefreshesDrift covers D-02: a project lane whose
 // bytes differ from its catalogue copy is flagged, and 'R' pulls the
 // catalogue version in.

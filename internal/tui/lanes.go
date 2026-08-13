@@ -11,8 +11,9 @@ import (
 )
 
 // laneScreen is the lane settings screen: read a lane, see its prompt, use it
-// in this project, publish it to a teammate. Following browse.go's shape: its
-// own state, a key method, a render method, no bubbletea imports of its own.
+// in this project, publish it to a teammate, adopt one of theirs. Following
+// browse.go's shape: its own state, a key method, a render method, no
+// bubbletea imports of its own.
 type laneScreen struct {
 	store *ticket.Store
 	lanes []*lane.Lane
@@ -22,6 +23,22 @@ type laneScreen struct {
 	// catalogue copy of the same id, keyed by lane id. Computed once when the
 	// screen opens, per the decided design — not on every command.
 	drift map[string]lane.DriftEntry
+
+	// shared is every lane found under .jaira/shared/, visible and adoptable
+	// but never loaded onto the board (see lane.Shared). sharedWarnings names
+	// the files that failed to parse and were skipped.
+	shared         []lane.SharedLane
+	sharedIdx      int
+	sharedWarnings []string
+
+	// focus picks which list j/k and the action keys apply to: 0 is this
+	// installation's own lanes, 1 is the shared section.
+	focus int
+
+	// confirmAdoptID is set when an adopt collided with an existing catalogue
+	// id, holding the id until the next 'a' confirms the overwrite or esc
+	// cancels it.
+	confirmAdoptID string
 
 	msg   string
 	isErr bool
@@ -35,6 +52,10 @@ func newLaneScreen(store *ticket.Store, set *lane.Set) *laneScreen {
 			ls.drift[e.ID] = e
 		}
 	}
+	if sh, warn, err := lane.Shared(store.Root); err == nil {
+		ls.shared = sh
+		ls.sharedWarnings = warn
+	}
 	return ls
 }
 
@@ -43,6 +64,13 @@ func (ls *laneScreen) selected() *lane.Lane {
 		return nil
 	}
 	return ls.lanes[ls.idx]
+}
+
+func (ls *laneScreen) selectedShared() *lane.SharedLane {
+	if ls.sharedIdx < 0 || ls.sharedIdx >= len(ls.shared) {
+		return nil
+	}
+	return &ls.shared[ls.sharedIdx]
 }
 
 // sourceLabel names where a lane came from, the same three sources core/lane
@@ -63,23 +91,63 @@ func (ls *laneScreen) key(s string) (done bool) {
 	ls.msg = ""
 	switch s {
 	case "esc", "q":
+		if ls.confirmAdoptID != "" {
+			ls.confirmAdoptID = ""
+			return false
+		}
 		return true
+	case "tab":
+		if len(ls.shared) > 0 {
+			ls.focus = 1 - ls.focus
+		}
 	case "j", "down":
-		if ls.idx < len(ls.lanes)-1 {
-			ls.idx++
-		}
+		ls.moveDown()
 	case "k", "up":
-		if ls.idx > 0 {
-			ls.idx--
-		}
+		ls.moveUp()
 	case "u":
-		ls.use()
+		if ls.focus == 0 {
+			ls.use()
+		}
 	case "p":
-		ls.publish()
+		if ls.focus == 0 {
+			ls.publish()
+		}
 	case "R":
-		ls.refreshDrift()
+		if ls.focus == 0 {
+			ls.refreshDrift()
+		}
+	case "a":
+		if ls.focus == 1 {
+			ls.adopt()
+		}
 	}
 	return false
+}
+
+func (ls *laneScreen) moveDown() {
+	ls.confirmAdoptID = ""
+	if ls.focus == 1 {
+		if ls.sharedIdx < len(ls.shared)-1 {
+			ls.sharedIdx++
+		}
+		return
+	}
+	if ls.idx < len(ls.lanes)-1 {
+		ls.idx++
+	}
+}
+
+func (ls *laneScreen) moveUp() {
+	ls.confirmAdoptID = ""
+	if ls.focus == 1 {
+		if ls.sharedIdx > 0 {
+			ls.sharedIdx--
+		}
+		return
+	}
+	if ls.idx > 0 {
+		ls.idx--
+	}
 }
 
 // use exports the selected lane into this project's own lane directory —
@@ -133,13 +201,59 @@ func (ls *laneScreen) refreshDrift() {
 	ls.msg, ls.isErr = "pulled the catalogue copy of " + l.ID, false
 }
 
+// adopt copies a teammate's shared lane into this catalogue. The prompt was
+// already shown before this key could be pressed — adopting means agreeing
+// to run someone else's instructions at whatever tier the file declares, and
+// that agreement has to come after reading it, not before.
+//
+// A collision with an existing catalogue id is not overwritten on the first
+// press: it is held in confirmAdoptID until the next 'a' confirms it, or esc
+// cancels.
+func (ls *laneScreen) adopt() {
+	sl := ls.selectedShared()
+	if sl == nil {
+		return
+	}
+	overwrite := ls.confirmAdoptID == sl.Lane.ID
+	_, dst, err := lane.Adopt(sl.Path, lane.UserLanesDir(), overwrite)
+	if err != nil {
+		if !overwrite {
+			ls.confirmAdoptID = sl.Lane.ID
+			ls.msg, ls.isErr = sl.Lane.ID+" already exists in your catalogue; press a again to overwrite, esc to cancel", true
+			return
+		}
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	ls.confirmAdoptID = ""
+	ls.msg, ls.isErr = "adopted into " + dst, false
+}
+
+// promptOf returns the name, id, creator and prompt to show in the bottom
+// pane for whichever list currently has focus, so the lane settings screen
+// and lane settings adoption preview read from exactly the same fields.
+func (ls *laneScreen) promptOf() (name, id, creator, prompt string, ok bool) {
+	if ls.focus == 1 {
+		sl := ls.selectedShared()
+		if sl == nil {
+			return "", "", "", "", false
+		}
+		return sl.Lane.Name, sl.Lane.ID, sl.Lane.Creator, sl.Lane.Prompt, true
+	}
+	l := ls.selected()
+	if l == nil {
+		return "", "", "", "", false
+	}
+	return l.Name, l.ID, l.Creator, l.Prompt, true
+}
+
 func (ls *laneScreen) render(width, height int) string {
 	w := max(20, min(width, 78))
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Lanes") + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
-	listHeight := max(3, (height-10)/2)
+	listHeight := max(3, (height-14)/3)
 	first := 0
 	if ls.idx >= listHeight {
 		first = ls.idx - listHeight + 1
@@ -148,7 +262,7 @@ func (ls *laneScreen) render(width, height int) string {
 		l := ls.lanes[i]
 		lead := "  "
 		name := l.Name
-		if i == ls.idx {
+		if ls.focus == 0 && i == ls.idx {
 			lead = stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
@@ -165,14 +279,35 @@ func (ls *laneScreen) render(width, height int) string {
 		sb.WriteString(styMeta.Render(fmt.Sprintf("  +%d more", rest)) + "\n")
 	}
 
-	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
-	if l := ls.selected(); l != nil {
-		sb.WriteString(styLaneTitle.Render(fmt.Sprintf("%s (%s)", l.Name, l.ID)) + "\n")
-		if l.Creator != "" {
-			sb.WriteString(styMeta.Render("creator: "+l.Creator) + "\n")
+	if len(ls.shared) > 0 {
+		sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+		sb.WriteString(styLaneTitle.Render("Shared by teammates") + "\n")
+		for i, sl := range ls.shared {
+			lead := "  "
+			label := fmt.Sprintf("%s/%s", sl.Folder, sl.Lane.ID)
+			if ls.focus == 1 && i == ls.sharedIdx {
+				lead = stySelected.Render("▌ ")
+				label = stySelected.Render(label)
+			}
+			tail := ""
+			if sl.Lane.Creator != "" {
+				tail = styMeta.Render("  creator: " + sl.Lane.Creator)
+			}
+			sb.WriteString(truncate(lead+label+tail, w) + "\n")
 		}
-		promptHeight := max(3, height-listHeight-12)
-		lines := strings.Split(l.Prompt, "\n")
+		for _, warn := range ls.sharedWarnings {
+			sb.WriteString(styWarn.Render(truncate("  ⚠ "+warn, w)) + "\n")
+		}
+	}
+
+	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+	if name, id, creator, prompt, ok := ls.promptOf(); ok {
+		sb.WriteString(styLaneTitle.Render(fmt.Sprintf("%s (%s)", name, id)) + "\n")
+		if creator != "" {
+			sb.WriteString(styMeta.Render("creator: "+creator) + "\n")
+		}
+		promptHeight := max(3, height-listHeight-16)
+		lines := strings.Split(prompt, "\n")
 		for i, ln := range lines {
 			if i >= promptHeight {
 				sb.WriteString(styMeta.Render(fmt.Sprintf("  … +%d more line(s)", len(lines)-promptHeight)) + "\n")
@@ -189,7 +324,10 @@ func (ls *laneScreen) render(width, height int) string {
 		}
 		sb.WriteString("\n" + style.Render(truncate(ls.msg, w)) + "\n")
 	}
-	sb.WriteString("\n" + styMeta.Render(truncate(
-		"jk select · u use here · p publish · R refresh drift · esc back", w)))
+	help := "jk select · u use here · p publish · R refresh drift · esc back"
+	if len(ls.shared) > 0 {
+		help = "jk select · tab switch list · u use · p publish · a adopt · R refresh drift · esc back"
+	}
+	sb.WriteString("\n" + styMeta.Render(truncate(help, w)))
 	return sb.String()
 }

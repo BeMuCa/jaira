@@ -6,7 +6,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Bytes returns a lane's file content verbatim: from the embedded binary for
@@ -167,4 +170,49 @@ func RefreshDrift(d DriftEntry) error {
 		return err
 	}
 	return os.WriteFile(d.ProjectPath, b, 0o644)
+}
+
+// SharedLane is one lane found under a project's .jaira/shared/ tree,
+// alongside the folder (normally the publisher's identity.Slug) it came
+// from.
+type SharedLane struct {
+	Lane   *Lane
+	Folder string
+	Path   string
+}
+
+// Shared walks <root>/.jaira/shared/*/*.md and returns every lane it can
+// parse, alongside the folder it came from and its path. A file that fails
+// to read or parse is skipped and reported in warnings rather than failing
+// the walk — one teammate's broken file must not hide everyone else's lanes.
+//
+// Shared lanes are never loaded by Load: they are visible here, adoptable
+// through Adopt, and otherwise inert. That separation is the whole security
+// story for T-5-02 — a committed shared lane is untrusted prompt content
+// that would otherwise run at whatever model-tier it declares — so nothing
+// should ever wire this function's result into Load.
+func Shared(root string) (lanes []SharedLane, warnings []string, err error) {
+	if root == "" {
+		return nil, nil, nil
+	}
+	sharedDir := filepath.Join(root, ticket.DirName, ticket.SharedSubdir)
+	matches, globErr := filepath.Glob(filepath.Join(sharedDir, "*", "*.md"))
+	if globErr != nil {
+		return nil, nil, globErr
+	}
+	sort.Strings(matches)
+	for _, p := range matches {
+		b, readErr := os.ReadFile(p)
+		if readErr != nil {
+			warnings = append(warnings, fmt.Sprintf("could not read shared lane %s: %v", p, readErr))
+			continue
+		}
+		l, parseErr := parse(b, p, false)
+		if parseErr != nil {
+			warnings = append(warnings, fmt.Sprintf("shared lane %s did not parse and was skipped: %v", p, parseErr))
+			continue
+		}
+		lanes = append(lanes, SharedLane{Lane: l, Folder: filepath.Base(filepath.Dir(p)), Path: p})
+	}
+	return lanes, warnings, nil
 }

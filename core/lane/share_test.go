@@ -398,6 +398,114 @@ precedence: 41
 	}
 }
 
+// TestSharedReturnsGoodLanesAndWarnsAboutBadOnes builds two shared folders,
+// one holding a broken file, and asserts Shared returns the parseable lanes
+// while naming the broken one in a warning rather than failing the walk.
+func TestSharedReturnsGoodLanesAndWarnsAboutBadOnes(t *testing.T) {
+	root := t.TempDir()
+	sharedDir := filepath.Join(root, ".jaira", "shared")
+	writeLane(t, filepath.Join(sharedDir, "alex"), "hitl.md", `---
+id: hitl
+name: HITL
+after: human
+precedence: 41
+creator: alex
+---
+A shared prompt.
+`)
+	if err := os.MkdirAll(filepath.Join(sharedDir, "sam"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sharedDir, "sam", "broken.md"), []byte("not frontmatter"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	lanes, warnings, err := Shared(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lanes) != 1 || lanes[0].Lane.ID != "hitl" {
+		t.Fatalf("Shared() lanes = %v, want exactly the hitl lane", lanes)
+	}
+	if lanes[0].Folder != "alex" {
+		t.Errorf("Folder = %q, want %q", lanes[0].Folder, "alex")
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "broken.md") {
+		t.Errorf("expected one warning naming broken.md, got: %v", warnings)
+	}
+}
+
+// TestSharedEmptyWhenNoDirectory asserts a project with no .jaira/shared/ at
+// all returns no lanes and no error — absent is the normal state.
+func TestSharedEmptyWhenNoDirectory(t *testing.T) {
+	lanes, warnings, err := Shared(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lanes) != 0 || len(warnings) != 0 {
+		t.Errorf("expected no lanes and no warnings, got lanes=%v warnings=%v", lanes, warnings)
+	}
+}
+
+// TestSharedLanesAreNeverLoaded is the T-5-02 regression: a lane sitting
+// under .jaira/shared/ must never appear on the board until it is adopted.
+func TestSharedLanesAreNeverLoaded(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	writeLane(t, filepath.Join(root, ".jaira", "shared", "alex"), "hitl.md", `---
+id: hitl
+name: HITL
+after: human
+precedence: 41
+---
+`)
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("hitl"); ok {
+		t.Error("a shared, unadopted lane must not be loaded onto the board")
+	}
+}
+
+// TestAdoptThenLoadFindsIt covers the round trip: adopting a shared lane
+// copies it into the catalogue, and Load then finds it.
+func TestAdoptThenLoadFindsIt(t *testing.T) {
+	root := t.TempDir()
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, filepath.Join(root, ".jaira", "shared", "alex"), "hitl.md", `---
+id: hitl
+name: HITL
+after: human
+precedence: 41
+---
+`)
+
+	lanes, warnings, err := Shared(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %v", warnings)
+	}
+	if len(lanes) != 1 {
+		t.Fatalf("expected one shared lane, got %v", lanes)
+	}
+
+	if _, _, err := Adopt(lanes[0].Path, UserLanesDir(), false); err != nil {
+		t.Fatal(err)
+	}
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("hitl"); !ok {
+		t.Error("an adopted lane must appear in Load from a different project")
+	}
+}
+
 // TestRefreshDriftPullsCatalogueVersion asserts RefreshDrift overwrites the
 // project's copy with the catalogue's, in that direction only.
 func TestRefreshDriftPullsCatalogueVersion(t *testing.T) {
