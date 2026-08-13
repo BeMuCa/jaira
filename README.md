@@ -323,8 +323,11 @@ g G       first / last    ?       help             r   reload
 v         compact view    x       archive          q   quit
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
-an arrow lit when work just moved. ad/←→ pick a step, enter opens it, 1-9 switch
-project.
+an arrow lit when work just moved. ad/←→ pick a step, enter opens it full width,
+1-9 switch project.
+
+In an opened step: jk ticket, gG first/last, hl next/previous lane (stays in
+this view), enter open ticket, esc/v back to the compact view.
 
 In an open ticket:
 e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)

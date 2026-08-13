@@ -94,5 +94,8 @@ Home screen: `enter` open · `jk` move · `a` add a board · `r` refresh · `q` 
 In the picker: `a` add · `i` create a board here · `s` scan two levels · `space`
 toggle a result · `enter` add what is selected.
 
-Compact view: `a`/`d` or `←`/`→` move · `enter` open the step · `1`-`9` switch
-project · `v` back to the board.
+Compact view: `a`/`d` or `←`/`→` move · `enter` open the step full width ·
+`1`-`9` switch project · `v` back to the board.
+
+In an opened step: `jk` ticket · `gG` first/last · `hl` next/previous lane
+(stays in this view) · `enter` open ticket · `esc`/`v` back to the compact view.
