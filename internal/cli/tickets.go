@@ -39,6 +39,25 @@ session and lock state is never committed. Safe to run more than once.`,
 			// knows about a project before anyone has launched the TUI in it.
 			project.Remember(s.Root)
 
+			// The default board decides which lanes this board starts with. A
+			// project that has already scoped its own .jaira/lanes/ — by hand or
+			// from an earlier init — is left alone: init must be safe to run more
+			// than once, and re-applying the default board over a project's own
+			// choices would silently discard them.
+			alreadyScoped := lane.ProjectLanesActive(s.Root)
+			var materialised []string
+			db, _ := lane.LoadDefaultBoard()
+			if !alreadyScoped {
+				lanesSet, err := lane.Load(s.Root)
+				if err != nil {
+					return err
+				}
+				materialised, err = lane.Materialise(s.Root, lanesSet, db)
+				if err != nil {
+					return err
+				}
+			}
+
 			// A new board is private: the tickets stay out of git until the user
 			// decides to publish them with 'jaira share'. Tell the agent the board
 			// is here too. The skill's description already says to use jaira in a
@@ -56,12 +75,25 @@ session and lock state is never committed. Safe to run more than once.`,
 					"private": true, "gitignore_written": p.Ignored,
 					"state_dir":   s.SessionsDir(),
 					"agent_notes": p.Notes,
+					"default_board": db.Path, "lanes_written": materialised,
+					"lane_warnings": db.Warnings,
 				})
 			}
 			if created {
 				fmt.Fprintf(cmd.OutOrStdout(), "Initialized jaira in %s\n", filepath.Join(s.Root, ticket.DirName))
 			} else {
 				fmt.Fprintf(cmd.OutOrStdout(), "jaira already initialized in %s\n", filepath.Join(s.Root, ticket.DirName))
+			}
+			switch {
+			case alreadyScoped:
+				fmt.Fprintf(cmd.OutOrStdout(), "This project already scopes its own lanes; the default board was not applied.\n")
+			case len(materialised) == 0:
+				fmt.Fprintf(cmd.OutOrStdout(), "Using the built-in lanes.\n")
+			default:
+				fmt.Fprintf(cmd.OutOrStdout(), "Wrote %d lane file(s) from your default board.\n", len(materialised))
+			}
+			for _, w := range db.Warnings {
+				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", w)
 			}
 			if p.IgnoreErr != nil {
 				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", p.IgnoreErr)
@@ -183,7 +215,8 @@ after the first two.`,
 						}
 					}
 				} else {
-					body = newTicketBody(title, dod)
+					db, _ := lane.LoadDefaultBoard()
+					body = ticket.NewBody(title, dod, lane.ResolveOptions(lanes, db))
 				}
 			}
 			t, err := s.Create(fields, lists, body)
@@ -287,37 +320,6 @@ func managedField(k string) bool {
 		return true
 	}
 	return false
-}
-
-// newTicketBody is the starting shape of a ticket's markdown.
-func newTicketBody(title, dod string) string {
-	var b strings.Builder
-	b.WriteString("# " + title + "\n\n")
-	b.WriteString("## Definition of Done\n\n")
-	if strings.TrimSpace(dod) != "" {
-		b.WriteString("- [ ] " + strings.TrimSpace(dod) + "\n")
-	} else {
-		b.WriteString("- [ ] <A checkable statement, readable by someone who was not here>\n")
-	}
-	// Options turn steps on and off for this one ticket. Both are unticked by
-	// default: most tickets need neither a brainstorm nor a separate planning
-	// pass, and a step every ticket must traverse stops being a decision and
-	// becomes ceremony. They are listed anyway, because an option nobody knows
-	// exists is one nobody ticks.
-	b.WriteString("\n## Options\n\n")
-	b.WriteString("- [ ] brainstorm\n")
-	b.WriteString("- [ ] planning\n")
-
-	// The Plan is how the work will be done, as opposed to the criteria for
-	// accepting it. It is seeded empty rather than omitted: a heading that is
-	// already there gets filled in, and one that has to be remembered does not.
-	// The heading is seeded but deliberately holds no checkbox. A placeholder
-	// item would count as a plan, which would make the pre-process lane's
-	// promise to produce one satisfied by every ticket the moment it is created.
-	b.WriteString("\n## Plan\n\n")
-	b.WriteString("<Steps, in order — filled in by the pre-process step, or by you.>\n")
-	b.WriteString("\n## Notes\n\n")
-	return b.String()
 }
 
 func missingFields(t *ticket.Ticket) []string {

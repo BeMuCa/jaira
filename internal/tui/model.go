@@ -708,7 +708,13 @@ func (m *Model) createTicket(title string) {
 		ticket.FieldUpdatedAt: ticket.FormatTime(now),
 	}
 	lists := map[string][]string{ticket.FieldBlockedBy: nil, ticket.FieldCommits: nil}
-	t, err := m.store.Create(fields, lists, "")
+	// NewBody is the one starting shape for a ticket, CLI or TUI: without this,
+	// a board-created ticket had no Options section at all, so a default
+	// board's "always brainstorm" setting silently did not apply to half the
+	// tickets created against it.
+	db, _ := lane.LoadDefaultBoard()
+	body := ticket.NewBody(title, "", lane.ResolveOptions(m.lanes, db))
+	t, err := m.store.Create(fields, lists, body)
 	if err != nil {
 		m.notify(err.Error(), true)
 		return

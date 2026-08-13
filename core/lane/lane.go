@@ -148,6 +148,23 @@ func (s *Set) Precedence(id string) int {
 	return -1
 }
 
+// Options lists the distinct RequiresOption values declared by the installed
+// lanes, in display order. A ticket's Options checklist is derived from what
+// is actually installed rather than a fixed list, so a user-written optional
+// lane shows up in it too, without the loader needing to know its name.
+func (s *Set) Options() []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, l := range s.Lanes {
+		if l.RequiresOption == "" || seen[l.RequiresOption] {
+			continue
+		}
+		seen[l.RequiresOption] = true
+		out = append(out, l.RequiresOption)
+	}
+	return out
+}
+
 // Terminal is the lane a signed-off ticket lands in — the first lane declaring
 // itself terminal, which is where accepting work moves it to.
 func (s *Set) Terminal() *Lane {

@@ -42,6 +42,11 @@ type Home struct {
 	// browse is the directory picker, non-nil while adding a board.
 	browse *browser
 
+	// board is the default board screen, non-nil while it is open. Home is
+	// the only per-user surface there is, which is why this hangs off it
+	// rather than off any one project's Model.
+	board *defaultBoardScreen
+
 	// msg reports what an action did. Registering boards silently looked like
 	// nothing had happened whenever they were already in the list.
 	msg string
@@ -170,7 +175,24 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h.width, h.height = msg.Width, msg.Height
+	case boardEditorDoneMsg:
+		if h.board != nil {
+			if msg.err != nil {
+				h.board.msg, h.board.isErr = msg.err.Error(), true
+			} else {
+				h.board.msg, h.board.isErr = "", false
+			}
+		}
+		return h, nil
+
 	case tea.KeyPressMsg:
+		if h.board != nil {
+			done, cmd := h.board.key(msg.String())
+			if done {
+				h.board = nil
+			}
+			return h, cmd
+		}
 		if h.browse != nil {
 			added, done := h.browse.key(msg.String())
 			if len(added) > 0 {
@@ -201,6 +223,15 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			h.refresh(nil)
 			h.msg = "reloaded"
+			return h, nil
+		case "d":
+			h.msg = ""
+			db, err := lane.LoadDefaultBoard()
+			if err != nil {
+				h.msg = err.Error()
+				return h, nil
+			}
+			h.board = newDefaultBoardScreen(h.lanes, db)
 			return h, nil
 		case "q", "ctrl+c", "esc":
 			h.Quit = true
@@ -233,6 +264,9 @@ func (h *Home) View() tea.View {
 func (h *Home) render() string {
 	if h.width == 0 {
 		return "loading…"
+	}
+	if h.board != nil {
+		return h.board.render(h.width, h.height)
 	}
 	if h.browse != nil {
 		return h.browse.render(h.width, h.height)
@@ -293,7 +327,7 @@ func (h *Home) render() string {
 	}
 
 	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
-		"enter open · jk move · a add a board · r refresh · q quit", h.width))))
+		"enter open · jk move · a add a board · d default board · r refresh · q quit", h.width))))
 	return b.String()
 }
 
