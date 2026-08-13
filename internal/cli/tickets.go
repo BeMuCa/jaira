@@ -97,8 +97,11 @@ an assignee, so supplying those now saves a round trip later.
 The context is the only record of why this ticket exists — there is no separate
 description. Write it for someone who was not in the conversation, reading it
 weeks from now: what is wrong today, what triggered it, and what is already known
-or already ruled out. If acting on it would need a question answered first, it is
-not finished. It can span several lines; they are stored readably.`,
+or already ruled out. Write it as if that reader has mild ADHD — what is wrong
+first, short and concrete, names and paths rather than adjectives, no preamble.
+If acting on it would need a question answered first, it is not finished. It can
+span several lines; they are stored readably, and someone should be able to act
+after the first two.`,
 		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
