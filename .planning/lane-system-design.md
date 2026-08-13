@@ -85,13 +85,25 @@ so a project lane that has drifted from the catalogue copy can be recognised.
 - A `brainstorm` lane ships as a built-in optional step (`requires-option:
   brainstorm`, `output-produces: [goal]`).
 
-## Still open
+## The default board (settled 2026-08-13)
 
-- A **default board**: which lanes a newly initialised board starts with, and
-  which ticket Options are pre-ticked. It is the init side of the same storage
-  decision — `.jaira/lanes/` has to be populated by something — so it belongs
-  here rather than in a phase of its own. Two distinct knobs hide in it: the
-  default lane set, and the default ticket Options (e.g. "always brainstorm").
-  A screen that *picks* which catalogue lanes go into a new board fits the
-  file-is-the-API decision; a screen that *authors* lane content is the CRUD
-  surface that was rejected.
+`.jaira/lanes/` being authoritative leaves a hole: something has to fill it. The
+default board is that something, and it is a per-user setting, so it lives
+globally at `~/.jaira/default-board.md` and is reachable from the home screen —
+the only per-user surface there is.
+
+It sets two things:
+
+- **which lanes** a newly initialised board gets
+- **which ticket Options are pre-ticked** in new tickets, so "always brainstorm"
+  is a setting rather than a habit
+
+A repo where nothing was changed still gets no lane files: **directory absent
+means the built-ins**, directory present means it is the project's lane list.
+Nobody ends up with ten lane files in `.jaira/` for having changed nothing.
+
+The screen selects and orders lanes and pre-ticks options; it does not contain a
+form for a lane's prompt, tier or contract. `e` opens the lane file in `$EDITOR`
+instead, which is full editing power without a second way to write the same file
+— and it is the pattern the TUI already uses for a ticket body
+(`internal/tui/external.go`, `VISUAL` then `EDITOR`).
