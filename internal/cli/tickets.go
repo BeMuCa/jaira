@@ -633,7 +633,7 @@ List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
 }
 
 func newLanesCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "lanes",
 		Short: "List the installed lanes",
 		Args:  noArgs(),
@@ -653,12 +653,14 @@ func newLanesCmd() *cobra.Command {
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
 						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
-						"source": l.Source,
+						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
 				}
 				return emit(cmd.OutOrStdout(), map[string]any{"lanes": arr, "warnings": lanes.Warnings})
 			}
 			w := cmd.OutOrStdout()
+			// CREATOR is not a column here: the table is already six columns wide,
+			// and 'lanes show <id>' is where it lives instead.
 			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %s\n", "ID", "NAME", "PREC", "AGENTIC", "TIER", "SOURCE")
 			for _, l := range lanes.Lanes {
 				src := "built-in"
@@ -670,6 +672,153 @@ func newLanesCmd() *cobra.Command {
 			for _, warn := range lanes.Warnings {
 				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", warn)
 			}
+			return nil
+		},
+	}
+	cmd.AddCommand(newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd())
+	return cmd
+}
+
+// newLanesShowCmd prints one lane in full, prompt included — this is the
+// surface an agent reads before deciding a lane needs changing, with no
+// ticket in hand and nothing to run.
+func newLanesShowCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show <id>",
+		Short: "Show one lane's full contract and prompt",
+		Args:  exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			lanes, err := lane.Load(bestEffortRoot())
+			if err != nil {
+				return err
+			}
+			l, ok := lanes.Get(args[0])
+			if !ok {
+				return fail(ExitUsage, "no_such_lane", "no lane %q is installed; available: %s", args[0], strings.Join(lanes.IDs(), ", "))
+			}
+			src := "built-in"
+			if !l.Builtin {
+				src = l.Source
+			}
+			if g.jsonOut {
+				return emit(cmd.OutOrStdout(), map[string]any{
+					"id": l.ID, "name": l.Name, "precedence": l.Precedence,
+					"agentic": l.Agentic, "terminal": l.Terminal,
+					"model_tier": l.ModelTier, "builtin": l.Builtin,
+					"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
+					"source": src, "prompt": l.Prompt, "creator": l.Creator,
+					"after": l.After, "description": l.Description, "overrides": l.Overrides,
+				})
+			}
+			w := cmd.OutOrStdout()
+			fmt.Fprintf(w, "ID:          %s\n", l.ID)
+			fmt.Fprintf(w, "Name:        %s\n", l.Name)
+			fmt.Fprintf(w, "Anchor:      %s\n", dash(l.After))
+			fmt.Fprintf(w, "Precedence:  %d\n", l.Precedence)
+			fmt.Fprintf(w, "Tier:        %s\n", dash(l.ModelTier))
+			fmt.Fprintf(w, "Input:       %s\n", dash(strings.Join(l.InputRequires, ", ")))
+			fmt.Fprintf(w, "Output:      %s\n", dash(strings.Join(l.OutputProduces, ", ")))
+			fmt.Fprintf(w, "Creator:     %s\n", dash(l.Creator))
+			fmt.Fprintf(w, "Source:      %s\n", src)
+			if l.Overrides != "" {
+				fmt.Fprintf(w, "Overrides:   %s\n", l.Overrides)
+			}
+			if l.Description != "" {
+				fmt.Fprintf(w, "\n%s\n", l.Description)
+			}
+			if l.Prompt != "" {
+				fmt.Fprintf(w, "\n%s\n", l.Prompt)
+			}
+			return nil
+		},
+	}
+}
+
+// newLanesPathCmd names where a lane file belongs, so writing one is a
+// command an agent can run rather than something it has to guess at.
+func newLanesPathCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "path",
+		Short: "Print the catalogue and project lane directories",
+		Args:  noArgs(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			catalogue := lane.UserLanesDir()
+			root := bestEffortRoot()
+			w := cmd.OutOrStdout()
+
+			if root == "" {
+				if g.jsonOut {
+					return emit(w, map[string]any{
+						"catalogue": catalogue, "project": "", "in_project": false, "active": "catalogue",
+					})
+				}
+				fmt.Fprintf(w, "Catalogue: %s (active)\n", catalogue)
+				fmt.Fprintf(w, "Project:   not in a project directory\n")
+				return nil
+			}
+
+			projDir := lane.ProjectLanesDir(root)
+			active := "catalogue"
+			if lane.ProjectLanesActive(root) {
+				active = "project"
+			}
+			if g.jsonOut {
+				return emit(w, map[string]any{
+					"catalogue": catalogue, "project": projDir, "in_project": true, "active": active,
+				})
+			}
+			mark := func(which string) string {
+				if which == active {
+					return " (active)"
+				}
+				return ""
+			}
+			fmt.Fprintf(w, "Catalogue: %s%s\n", catalogue, mark("catalogue"))
+			fmt.Fprintf(w, "Project:   %s%s\n", projDir, mark("project"))
+			return nil
+		},
+	}
+}
+
+// laneTemplate is the skeleton 'jaira lanes template' prints: every field
+// parse() reads, commented, plus a prompt body — a file this parses without
+// error, so the template cannot rot away from the parser it feeds.
+const laneTemplate = `---
+id: my-lane                      # required. lowercase letters, digits and dashes.
+name: My Lane                    # optional; defaults to id.
+description: One line saying what this lane is for.
+after: human                     # anchors ordering: this lane sits after the named lane.
+precedence: 42                   # optional. Merge order only — never display order (see 'after').
+agentic: true                    # true if a subagent works this lane; false for a human-only step.
+model-tier: strong               # a local alias (e.g. cheap, strong) — NOT a model name. This
+                                  # indirection is what lets a shared lane file survive a model rename.
+terminal: false                  # true marks the lane where signed-off work lands.
+requires-question: false         # true means a ticket needs an open question before entering.
+requires-specified: false        # true marks the first lane a ticket may not skip its promotion fields at.
+requires-outcome: false          # defaults to the value of terminal if this key is absent.
+requires-nonmodel-signal: false  # defaults to the value of terminal if this key is absent.
+requires-human-exit: false       # true means no agent may move a ticket out of this lane.
+requires-option: ""              # names a ticket Options entry; the lane only applies if it is ticked.
+input-requires: [goal]           # ticket fields assembled into a subagent's bounded input.
+output-produces: [outcome]       # ticket fields the subagent must return before it can move on.
+creator: you                     # optional provenance; left empty if you'd rather not say.
+---
+
+# Prompt
+
+Write the instruction given to the subagent here.
+`
+
+// newLanesTemplateCmd prints a lane skeleton to stdout and nothing else — no
+// file is created, no directory is scaffolded. 'jaira lanes template >
+// $(jaira lanes path)/my-lane.md' is the whole workflow.
+func newLanesTemplateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "template",
+		Short: "Print a commented lane skeleton to stdout",
+		Args:  noArgs(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			fmt.Fprint(cmd.OutOrStdout(), laneTemplate)
 			return nil
 		},
 	}

@@ -348,6 +348,54 @@ description: An override that drops requires-specified.
 	}
 }
 
+// TestCreatorParsedFromFrontmatter asserts creator: lands on Lane.Creator.
+func TestCreatorParsedFromFrontmatter(t *testing.T) {
+	l, err := parse([]byte(`---
+id: attributed
+name: Attributed
+creator: alex
+---
+`), "test", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l.Creator != "alex" {
+		t.Errorf("Creator = %q, want %q", l.Creator, "alex")
+	}
+}
+
+// TestBuiltinDefaultsCreatorToJaira asserts a built-in with no creator: field
+// reports "jaira" — the nine shipped files carry no such line, so this is the
+// default doing the work rather than the files.
+func TestBuiltinDefaultsCreatorToJaira(t *testing.T) {
+	lanes, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range lanes {
+		if l.Creator != "jaira" {
+			t.Errorf("built-in %q: Creator = %q, want %q", l.ID, l.Creator, "jaira")
+		}
+	}
+}
+
+// TestCustomLaneCreatorDefaultsEmpty asserts a custom lane with no creator:
+// field reports empty, not "jaira" — absent provenance and "shipped by the
+// tool" are different facts.
+func TestCustomLaneCreatorDefaultsEmpty(t *testing.T) {
+	l, err := parse([]byte(`---
+id: mine
+name: Mine
+---
+`), "test", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l.Creator != "" {
+		t.Errorf("Creator = %q, want empty for a custom lane with no creator: field", l.Creator)
+	}
+}
+
 // TestLoadUnknownAnchorWarnsAndOrders covers the shared-lane-file case: a
 // lane anchored to an id this installation does not have still loads, lands
 // before the terminal lane, and warns naming the missing anchor.

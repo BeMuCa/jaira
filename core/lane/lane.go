@@ -83,10 +83,21 @@ type Lane struct {
 	// Prompt is the markdown body: the instruction given to the subagent.
 	Prompt string
 
+	// Creator names who wrote this lane, for provenance once a lane has been
+	// adopted or copied between machines. A built-in with no creator: field
+	// defaults to "jaira" rather than having the field written into all nine
+	// shipped files; a custom lane with no creator: field is left empty, since
+	// "shipped by the tool" and "author unknown" are different facts.
+	Creator string
+
 	// Builtin distinguishes shipped lanes from user-installed ones.
 	Builtin bool
 	// Source is the path a custom lane came from, for error messages.
 	Source string
+	// Overrides names the built-in this lane displaced, empty if it does not
+	// override anything. Set by Load, not by parse: overriding is a fact about
+	// resolution, not about the file itself.
+	Overrides string
 	// Unknown marks a synthetic passthrough lane created for a ticket whose
 	// status names a lane this installation does not have.
 	Unknown bool
@@ -202,8 +213,15 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 		RequiresQuestion:  boolOf("requires-question"),
 		RequiresSpecified: boolOf("requires-specified"),
 		Prompt:            strings.TrimSpace(d.Body()),
+		Creator:           str("creator"),
 		Builtin:           builtin,
 		Source:            source,
+	}
+	if l.Creator == "" && builtin {
+		// The nine shipped lane files carry no creator: line — defaulting it
+		// here is the same observable result for none of the file churn, and
+		// no collision with lane files quick tasks are editing in parallel.
+		l.Creator = "jaira"
 	}
 	// A terminal lane is where work is declared finished, so by default it
 	// demands the same evidence the built-in Done lane does. Without this, anyone
@@ -302,6 +320,22 @@ func ProjectLanesDir(root string) string {
 	return filepath.Join(root, ticket.DirName, "lanes")
 }
 
+// ProjectLanesActive reports whether root's project lane directory is
+// currently authoritative per D-03: present and holding at least one lane
+// file. Load and 'jaira lanes path' both need this same test, so it lives
+// here once rather than as two copies that could drift apart.
+func ProjectLanesActive(root string) bool {
+	if root == "" {
+		return false
+	}
+	projDir := ProjectLanesDir(root)
+	if fi, err := os.Stat(projDir); err != nil || !fi.IsDir() {
+		return false
+	}
+	matches, _ := filepath.Glob(filepath.Join(projDir, "*.md"))
+	return len(matches) > 0
+}
+
 // Load resolves the full lane set: built-ins first, then either the project's
 // own lane directory or the catalogue, per D-03.
 //
@@ -338,14 +372,11 @@ func Load(root string) (*Set, error) {
 	dir := UserLanesDir()
 	if root != "" {
 		projDir := ProjectLanesDir(root)
-		if fi, statErr := os.Stat(projDir); statErr == nil && fi.IsDir() {
-			matches, _ := filepath.Glob(filepath.Join(projDir, "*.md"))
-			if len(matches) > 0 {
-				dir = projDir
-			} else {
-				warnings = append(warnings, fmt.Sprintf(
-					"%s exists but holds no lane files; falling back to the catalogue", projDir))
-			}
+		if ProjectLanesActive(root) {
+			dir = projDir
+		} else if fi, statErr := os.Stat(projDir); statErr == nil && fi.IsDir() {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s exists but holds no lane files; falling back to the catalogue", projDir))
 		}
 	}
 
@@ -372,6 +403,7 @@ func Load(root string) (*Set, error) {
 			seen[l.ID] = m
 
 			if base, overrides := builtinByID[l.ID]; overrides {
+				l.Overrides = base.ID
 				warnings = append(warnings, fmt.Sprintf(
 					"lane %s: id %q overrides the built-in lane of the same name", m, l.ID))
 				if lost := droppedProtections(base, l); len(lost) > 0 {
