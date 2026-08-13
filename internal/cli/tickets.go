@@ -697,6 +697,7 @@ The loop for building a lane or a default board by hand, no TUI required:
 	cmd.AddCommand(
 		newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd(),
 		newLanesUseCmd(), newLanesPublishCmd(), newLanesAdoptCmd(), newLanesDefaultCmd(),
+		newLanesAddCmd(), newLanesRemoveCmd(), newLanesMoveCmd(),
 	)
 	return cmd
 }

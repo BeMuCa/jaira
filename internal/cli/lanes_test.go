@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -864,5 +865,200 @@ func TestLanesSharedOutsideProjectSaysSo(t *testing.T) {
 	}
 	if !strings.Contains(out, "not in a project directory") {
 		t.Errorf("lanes shared outside a project = %q, want it to say there is no project", out)
+	}
+}
+
+// TestLanesRemoveMaterialisesWorkingSetOnFirstChange is the failure mode
+// D-03 exists to prevent, run against the real CLI: a project with no lane
+// directory of its own must never end up dropping every other lane because
+// one lane was removed from it. 'remove', not 'add', is the operation that
+// can actually exercise this against a fresh project: before any project
+// lane directory exists, every built-in and catalogue lane is already
+// showing (D-03's fallback), so nothing is ever "addable" until something
+// has first been removed.
+func TestLanesRemoveMaterialisesWorkingSetOnFirstChange(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	if lane.ProjectLanesActive(root) {
+		t.Fatalf("precondition: project must start with no lane directory")
+	}
+	before, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, root, "remove", "blocked")
+	if err != nil {
+		t.Fatalf("lanes remove blocked: %v\n%s", err, out)
+	}
+
+	if !lane.ProjectLanesActive(root) {
+		t.Fatal("removing a lane from a project with no lane directory must materialise one")
+	}
+	after, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range before.Lanes {
+		if l.ID == "blocked" {
+			continue
+		}
+		if _, ok := after.Get(l.ID); !ok {
+			t.Errorf("lane %q present before 'remove' is missing after it: %v", l.ID, after.IDs())
+		}
+	}
+	if _, ok := after.Get("blocked"); ok {
+		t.Error("removed lane is still present after materialising")
+	}
+}
+
+// TestLanesAddAfterRemoveAppendsAtEnd asserts a lane made addable by a prior
+// removal comes back in via 'add', appended at the end of the order.
+func TestLanesAddAfterRemoveAppendsAtEnd(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	if out, err := runLanes(t, root, "remove", "blocked"); err != nil {
+		t.Fatalf("lanes remove blocked: %v\n%s", err, out)
+	}
+
+	out, err := runLanes(t, root, "add", "blocked")
+	if err != nil {
+		t.Fatalf("lanes add blocked: %v\n%s", err, out)
+	}
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := set.IDs()
+	if len(ids) == 0 || ids[len(ids)-1] != "blocked" {
+		t.Errorf("re-added lane not appended at the end: %v", ids)
+	}
+}
+
+// TestLanesAddRefusesAlreadyPresent asserts adding a lane already part of
+// this project is refused rather than silently re-exported.
+func TestLanesAddRefusesAlreadyPresent(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	out, err := runLanes(t, root, "add", "backlog")
+	if err == nil {
+		t.Fatalf("expected 'add' of an already-present lane to fail; got %s", out)
+	}
+}
+
+// TestLanesRemoveTakesLaneOutOfProjectOnly asserts 'remove' drops a lane from
+// this project's order without touching the catalogue.
+func TestLanesRemoveTakesLaneOutOfProjectOnly(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root, "remove", "blocked")
+	if err != nil {
+		t.Fatalf("lanes remove blocked: %v\n%s", err, out)
+	}
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("blocked"); ok {
+		t.Errorf("removed lane still present: %v", set.IDs())
+	}
+	// The catalogue's / built-in's own copy is untouched.
+	builtins, err := lane.Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, l := range builtins {
+		if l.ID == "blocked" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("'remove' must not delete the lane from the catalogue/built-ins")
+	}
+}
+
+// TestLanesRemoveRefusesWhenTicketPresentNamingIt asserts a lane holding a
+// ticket cannot be removed, and the refusal names the ticket.
+func TestLanesRemoveRefusesWhenTicketPresentNamingIt(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	s, err := ticket.At(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := s.Create(map[string]string{
+		ticket.FieldID:     ticket.NewID(time.Now()),
+		ticket.FieldTitle:  "in blocked",
+		ticket.FieldStatus: "blocked",
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, root, "remove", "blocked")
+	if err == nil {
+		t.Fatalf("expected removing an occupied lane to fail; got %s", out)
+	}
+	if !strings.Contains(err.Error(), ticket.Handle(tk.ID)) {
+		t.Errorf("refusal %q does not name the occupying ticket %s", err.Error(), ticket.Handle(tk.ID))
+	}
+	// The lane must still be part of the project after the refusal.
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("blocked"); !ok {
+		t.Error("a refused removal must leave the lane in place")
+	}
+}
+
+// TestLanesMoveWritesOrderFile asserts 'move --left'/'--right' swap the
+// named lane with its neighbour and persist it to the order file.
+func TestLanesMoveWritesOrderFile(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	before, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Move the second lane one step left; it should swap with the first.
+	target := before.IDs()[1]
+	firstBefore := before.IDs()[0]
+
+	out, err := runLanes(t, root, "move", target, "--left")
+	if err != nil {
+		t.Fatalf("lanes move --left: %v\n%s", err, out)
+	}
+
+	after, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.IDs()[0] != target || after.IDs()[1] != firstBefore {
+		t.Fatalf("after move --left, IDs = %v, want %s first and %s second", after.IDs(), target, firstBefore)
+	}
+
+	ids, err := lane.LoadOrder(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) == 0 {
+		t.Fatal("lanes move did not write an order file")
+	}
+}
+
+// TestLanesMoveRequiresExactlyOneDirection asserts the command refuses when
+// neither or both of --left/--right are given.
+func TestLanesMoveRequiresExactlyOneDirection(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	if out, err := runLanes(t, root, "move", "backlog"); err == nil {
+		t.Fatalf("expected 'move' with neither direction to fail; got %s", out)
+	}
+	if out, err := runLanes(t, root, "move", "backlog", "--left", "--right"); err == nil {
+		t.Fatalf("expected 'move' with both directions to fail; got %s", out)
 	}
 }

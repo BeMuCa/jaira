@@ -70,6 +70,140 @@ Refuses to overwrite an existing file unless --force is given.`,
 	return cmd
 }
 
+// newLanesAddCmd wraps lane.Add, the same call the settings screen's '+'
+// column makes once a lane is chosen from its catalogue — one implementation
+// of "add a lane to this project", not two.
+func newLanesAddCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "add <id>",
+		Short: "Add a built-in or catalogue lane to this project's board",
+		Long: `Adds the named lane to this project, appending it to the column order — the
+same move the lane settings screen's '+' column makes once a lane is chosen.
+
+If this project has no lane directory of its own yet, adding materialises
+the whole working set first (every lane currently on the board), so the
+project never drops to a single column because one lane was added.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			set, err := lane.Load(s.Root)
+			if err != nil {
+				return err
+			}
+			dst, err := lane.Add(s.Root, set, args[0])
+			if err != nil {
+				if strings.Contains(err.Error(), "already part of this project") ||
+					strings.Contains(err.Error(), "no lane") {
+					return fail(ExitUsage, "no_such_lane", "%v", err)
+				}
+				return err
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				return emit(w, map[string]any{"id": args[0], "path": dst})
+			}
+			fmt.Fprintf(w, "added %s to this project (%s)\n", args[0], dst)
+			return nil
+		},
+	}
+	return cmd
+}
+
+// newLanesRemoveCmd wraps lane.Remove, the same call the settings screen's
+// 'x' key makes.
+func newLanesRemoveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "remove <id>",
+		Short: "Remove a lane from this project (it stays in the catalogue)",
+		Long: `Removes the named lane from this project's board and its column order —
+the same move the lane settings screen's 'x' key makes. The lane itself is
+untouched in the catalogue; only this project stops using it.
+
+Refused, naming the tickets, when any ticket currently sits in the lane: a
+lane that vanishes under a ticket would leave it in a lane nothing knows.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			set, err := lane.Load(s.Root)
+			if err != nil {
+				return err
+			}
+			path, err := lane.Remove(s.Root, set, s, args[0])
+			if err != nil {
+				if strings.Contains(err.Error(), "cannot be removed") {
+					return fail(ExitValidation, "lane_occupied", "%v", err)
+				}
+				if strings.Contains(err.Error(), "is part of this project") {
+					return fail(ExitUsage, "no_such_lane", "%v", err)
+				}
+				return err
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				return emit(w, map[string]any{"id": args[0], "path": path})
+			}
+			fmt.Fprintf(w, "removed %s from this project\n", args[0])
+			return nil
+		},
+	}
+	return cmd
+}
+
+// newLanesMoveCmd wraps lane.MoveLane, the same call the settings screen's
+// H/L keys make.
+func newLanesMoveCmd() *cobra.Command {
+	var left, right bool
+	cmd := &cobra.Command{
+		Use:   "move <id> --left|--right",
+		Short: "Move a lane one column left or right in this project",
+		Long: `Shifts the named lane one step in this project's column order, swapping it
+with its neighbour — the same move the lane settings screen's H/L keys make.
+Moving past either end is a no-op, not an error.
+
+If this project has no lane directory of its own yet, moving materialises
+the whole working set first, for the same reason 'lanes add' does.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if left == right {
+				return fail(ExitUsage, "usage", "exactly one of --left or --right is required")
+			}
+			delta := 1
+			if left {
+				delta = -1
+			}
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			set, err := lane.Load(s.Root)
+			if err != nil {
+				return err
+			}
+			if err := lane.MoveLane(s.Root, set, args[0], delta); err != nil {
+				if strings.Contains(err.Error(), "is part of this project") {
+					return fail(ExitUsage, "no_such_lane", "%v", err)
+				}
+				return err
+			}
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				return emit(w, map[string]any{"id": args[0], "delta": delta})
+			}
+			fmt.Fprintf(w, "moved %s\n", args[0])
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&left, "left", false, "move one column left")
+	cmd.Flags().BoolVar(&right, "right", false, "move one column right")
+	return cmd
+}
+
 // newLanesPublishCmd wraps lane.Publish, the same call the lane settings
 // screen's 'p' key makes.
 func newLanesPublishCmd() *cobra.Command {

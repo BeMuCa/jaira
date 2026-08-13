@@ -443,6 +443,23 @@ func Load(root string) (*Set, error) {
 		}
 	}
 
+	// A project's removed-lanes tombstone excludes a lane even when it is a
+	// built-in — built-ins are always injected above, so a project has no
+	// file whose mere absence could mean "removed"; see removedFileName.
+	if removedIDs, err := LoadRemoved(root); err == nil && len(removedIDs) > 0 {
+		removedSet := make(map[string]bool, len(removedIDs))
+		for _, id := range removedIDs {
+			removedSet[id] = true
+		}
+		kept := lanes[:0:0]
+		for _, l := range lanes {
+			if !removedSet[l.ID] {
+				kept = append(kept, l)
+			}
+		}
+		lanes = kept
+	}
+
 	ordered, orderWarn := order(lanes)
 	warnings = append(warnings, orderWarn...)
 
