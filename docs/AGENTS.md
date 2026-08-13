@@ -38,6 +38,12 @@ jaira move <id> --to review \
 If a gate refuses, the message says what to do and exit code 3 says it was a
 refusal rather than a crash. An agent can act on it without a human translating.
 
+Lanes before the first lane that declares itself the start of the specified
+zone (`requires-specified: true` — the built-in `todo` lane, by default) are for
+tickets that are not specified yet: a scrap, an idea, something being thought
+through. The promotion gate fires when a ticket crosses into that zone, not
+when it leaves a lane with a particular name.
+
 ## Starting a session
 
 ```bash
