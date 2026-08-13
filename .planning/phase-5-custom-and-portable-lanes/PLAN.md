@@ -166,10 +166,9 @@ Three quick tasks are landing in parallel on `core/ticket/frontmatter.go`,
 `internal/cli/checklist.go`, `internal/tui/view.go`, `internal/tui/signoff.go`,
 `core/board/*` and three files under `core/lane/builtin/`. Do not trust line
 numbers quoted anywhere in this plan; locate code by identifier. Tasks 1-9
-deliberately edit no file under `core/lane/builtin/` (see task 3). Task 10 edits
-exactly one — `60-blocked.md` — and cannot avoid it; before starting task 10,
-check `git log --oneline -- core/lane/builtin/` and rebase onto whatever the
-quick tasks landed rather than resolving a conflict inside a lane definition.
+deliberately edit no file under `core/lane/builtin/` (see task 3). Task 10 was
+rescoped and no longer edits any of them either: it changes no lane's
+`precedence`, because that number drives the merge driver, not the column order.
 </execution_notes>
 
 <scope_discipline>
@@ -976,153 +975,67 @@ that is discoverable only by having been told about it is not discoverable.
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 10: `precedence` decides the order, `after` becomes a checked constraint, and contracts are checked against the order</name>
-  <files>core/lane/lane.go, core/lane/lane_test.go, core/lane/builtin/60-blocked.md, core/merge/merge.go, core/merge/merge_test.go, internal/cli/flow.go, internal/cli/tickets.go</files>
+  <name>Task 10: stop the column lying, and check contracts against the order</name>
+  <files>core/lane/lane.go, core/lane/lane_test.go, internal/cli/tickets.go, docs/AGENTS.md</files>
   <behavior>
-Closes success criterion 12. This is the riskiest task in the plan: it changes
-where every column appears on every board, so its first test is a regression
-test, not a feature test.
+Closes success criterion 12, in its **reduced** form. The original version of
+this task renumbered lanes so `precedence` would decide the column order. That
+was withdrawn after a finding recorded in `.planning/lane-system-design.md`:
+`precedence` is what `core/merge/merge.go` uses to decide which lane wins when
+two clones moved the same ticket, which is why `blocked` deliberately carries a
+low number and says so in its own description. Renumbering it would make a merge
+silently pull an in-progress ticket back into Blocked.
 
-**The regression test, written first and never deleted:** load the built-ins with
-an empty catalogue and assert `set.IDs()` equals exactly
+So nothing is reordered and no number changes. Two things happen instead.
 
-    backlog brainstorm todo pre-process in-progress human review signoff done blocked
+**1. The display stops claiming the number is a position.** Column order keeps
+following the `after:` anchor, exactly as today. `jaira lanes` and
+`jaira lanes show` stop labelling the number `Precedence`/`PREC` as if it were a
+column index and label it as what it is: the rank used to decide which lane wins
+a merge. Pick the wording; "Merge rank" is a suggestion, not a requirement. The
+frontmatter key stays `precedence` — renaming it would break every lane file in
+existence for a cosmetic gain.
 
-That is today's order, by id, and it must be identical after this change. Take
-the baseline by running the current binary before touching anything, not from
-this plan — if the quick tasks landed another built-in lane in the meantime, the
-baseline is whatever the binary prints today, and this plan's list is stale.
+**2. A lane whose input nothing upstream produces is reported.** This is new
+safety and is independent of the ordering question. At load time, in the same
+place the cycle check already runs, walk the lanes in display order and warn when
+a lane's `input-requires` names a field that no earlier lane's `output-produces`
+supplies. A lane ordered before its producer otherwise fails later and opaquely,
+with `missing: plan` at the moment an agent asks for its input.
 
-Then, in `core/lane/lane_test.go`:
-- Order follows `precedence` ascending. A custom lane with `precedence: 22`
-  lands between `todo` (20) and `pre-process` (25) regardless of filename and
-  regardless of what it anchors to.
-- Ties are stable and deterministic: two lanes at the same precedence keep
-  built-ins first, then custom lanes by sorted source path.
-- A lane with `after: X` and a `precedence` at or below X's is **reported**, not
-  moved. Assert the warning names both lanes and says which way to fix it.
-- A lane with `after: X` and a higher precedence than X produces no warning.
-- `after` naming a lane that is not installed warns that the constraint cannot be
-  checked, and the lane still orders by its precedence. **This replaces task 5's
-  test asserting it lands before the terminal lane** — update that test rather
-  than leaving two tests asserting opposite things.
-- Cyclic `after` between two lanes is reported as an unsatisfiable constraint and
-  both lanes still appear, each at its own precedence. No lane ever disappears
-  because a constraint is wrong.
-- A custom lane with `after:` and no `precedence` derives one just above its
-  anchor's instead of defaulting to 0 and jumping to the front of the board.
-- A custom lane with neither still parks just before the terminal lane, as today.
-- Contract check: a lane whose `input-requires` names a field that only a
-  later-ordered lane's `output-produces` supplies is reported at load time,
-  naming the field, the requiring lane and the producing lane.
-- Base ticket fields do not trigger it: a lane requiring `goal`, `title`,
-  `context`, `definition-of-done`, `assignee` or `diff` is silent even though
-  `brainstorm` also declares `output-produces: [goal]`.
-- A field no installed lane produces is silent — it is a ticket field this
-  package does not model, not a misordering.
-- **The ten built-ins produce zero warnings of either kind.** A shipped default
-  that warns on every load trains the user to ignore warnings.
-
-In `core/merge/merge_test.go`: a status collision between `done` and `blocked`
-still resolves to `done`, and one between `in-progress` and `blocked` still
-resolves to `in-progress`.
+Fields the ticket itself supplies must not trigger it. Derive that set from the
+ticket schema rather than hardcoding a list in the loader, and at minimum it
+covers title, goal, context, definition-of-done, assignee, plan and diff.
   </behavior>
   <action>
-Read this whole action before writing code. There is a conflict in it that has to
-be resolved deliberately.
+Write the regression test first and never delete it: load the built-ins with an
+empty catalogue and assert the id order is exactly what the current binary
+prints. Take that baseline by running the binary now — do not copy a list out of
+this plan, which may be stale.
 
-**The conflict.** `Lane.Precedence`'s doc comment says today, in as many words:
-"It is deliberately separate from display order: Blocked appears last on the
-board but must not outrank active work in a merge." Criterion 12 says precedence
-decides the order. Both cannot be true for `blocked`, which has `precedence: 10`
-and renders last. Sorting by precedence today moves Blocked to third — between
-Brainstorm and Todo — which fails the regression test above. And `blocked`
-declares `after: done` while sorting before it, so under the new rule the shipped
-board would report a constraint violation against itself on every load.
+Then add the contract check next to the existing cycle check in
+`core/lane/lane.go`, reporting through the same `Warnings` channel, and change
+the column label in `internal/cli/tickets.go`.
 
-**The resolution to implement:** split the two jobs by name, not by adding a
-second position field.
+Tests in `core/lane/lane_test.go`:
+- the built-in order is unchanged, by id
+- the shipped built-ins produce zero warnings, including the new check — this is
+  the bar that must not drop
+- a custom lane requiring `plan` and ordered before `pre-process` warns, and the
+  warning names the field and both lanes
+- the same lane ordered after `pre-process` produces no warning
+- a lane requiring `goal` produces no warning, because the ticket supplies it
+- a lane requiring a field nothing anywhere produces warns, rather than being
+  silently accepted
 
-1. `precedence` becomes display order. Change `core/lane/builtin/60-blocked.md`
-   to `precedence: 65` and add `off-pipeline: true`. Blocked then sorts last,
-   satisfies its own `after: done`, and the regression test passes with exactly
-   one built-in file edited.
-2. Parse `off-pipeline: true` onto `Lane.OffPipeline`: a parking lane, not a
-   step. Nothing is expected to progress *through* it.
-3. Add `Set.Progress(id string) int` returning `-1` for an off-pipeline lane and
-   for an unknown one, and the lane's precedence otherwise. Point
-   `mergeStatus` in `core/merge/merge.go` and `sortByProgress` in
-   `internal/cli/flow.go` at `Progress` instead of `Precedence`. Leave
-   `Set.Precedence` alone: it means display position now, and callers that want
-   position should keep getting it.
-
-That keeps merge's invariant exactly as Phase 4 built it — a parking lane never
-counts as further along, so a side moving a ticket to Blocked never overwrites a
-side moving it to Done — while making precedence the single answer to "where does
-this column go".
-
-**One behaviour change to state in the summary and the release note:** a status
-collision between `backlog` and `blocked` used to resolve to `blocked` (10 beat
-0) and now resolves to `backlog` (-1 loses to 0). The blocking information is not
-lost: `blocked-by` is a list and merges as a union, which is where the fact
-actually lives. Add a test that pins this, so the flip is recorded rather than
-discovered.
-
-**If this resolution is rejected**, stop and say so rather than improvising. The
-two alternatives both cost more: giving Blocked a precedence above Done without
-`off-pipeline` silently reverts Done to Blocked on a merge, and keeping a
-separate display field reintroduces the second positioning mechanism criterion 12
-exists to delete.
-
-Now the ordering itself. Rewrite `order()`:
-
-- Sort every lane by `(Precedence, builtin-first, source-path)` with a stable
-  sort over a deterministic input order. Delete the fixed-point anchor-insertion
-  loop: with precedence deciding position there is nothing to place iteratively,
-  and the loop's whole purpose was to be a positioning mechanism.
-- Derive a precedence for lanes that declare none: anchor's precedence + 1 if
-  `after` names an installed lane, otherwise the terminal lane's precedence
-  minus 1, which preserves today's "park before the terminal lane" behaviour for
-  a lane file that says nothing. Record the derived value on the lane so
-  `jaira lanes` shows what it actually used rather than a misleading 0.
-- Check `after` as a constraint and report violations. Report; do not repair.
-  Repairing would make `after` a positioning mechanism again by the back door,
-  and the user cannot fix what the tool silently corrected.
-- Keep the cycle detection that exists today, rewritten as a constraint check:
-  a cycle in `after` is a set of constraints that cannot all hold.
-
-Then the contract check, which is the part nobody has today. `InputRequires` and
-`OutputProduces` are parsed and never compared against anything (`core/lane/lane.go`,
-in `parse`). Add `checkContracts(ordered []*Lane) []string`: for each lane, for
-each `input-requires` field that is not a base ticket field, find every installed
-lane declaring it in `output-produces`; if there is at least one producer and
-every producer sorts at or after the consumer, warn — naming the field, the
-consumer and the producer. Run it next to the constraint check, in the same
-warnings slice.
-
-The base ticket fields are `title`, `goal`, `context`, `definition-of-done`,
-`assignee`, `diff` and `commits`: supplied by the ticket, not by any lane. The
-authority on what a field means is `fieldFilled` in `core/gate/gate.go`, but
-`core/gate` imports `core/lane`, so this list cannot live there without a cycle.
-Declare it in `core/lane` and add a test **in `core/gate`** — which may import
-lane — asserting every name in `lane.BaseTicketFields` is a case `fieldFilled`
-handles. That is what stops the two lists from drifting apart, and it is three
-lines.
-
-Finally, update the surfaces that describe ordering, or the new model is
-invisible: `lanes template` (task 3) must document `precedence` as the order,
-`after` as a checked constraint, and `off-pipeline` as "a parking lane, never
-counted as progress"; `lanes --json` gains `off_pipeline`; and `Lane.Precedence`'s
-doc comment must stop saying precedence is separate from display order, because
-after this task it is display order.
+Finally, add a sentence to `docs/AGENTS.md`: column order follows `after:`, and
+`precedence` is the merge rank, not a position.
   </action>
   <verify>
-    <automated>export PATH=$PATH:$HOME/.local/go/bin &amp;&amp; go build ./... &amp;&amp; go test ./core/lane/... ./core/merge/... ./core/gate/... ./internal/... 2>&amp;1 | tail -30</automated>
-    <automated>export PATH=$PATH:$HOME/.local/go/bin &amp;&amp; go build -o /tmp/jaira-p5 ./cmd/jaira &amp;&amp; JAIRA_LANES_DIR=$(mktemp -d) /tmp/jaira-p5 lanes | tail -n +2 | awk '{print $1}' | paste -sd' ' - | grep -qx "backlog brainstorm todo pre-process in-progress human review signoff done blocked" &amp;&amp; echo "built-in order unchanged"</automated>
-    <automated>export PATH=$PATH:$HOME/.local/go/bin &amp;&amp; go build -o /tmp/jaira-p5 ./cmd/jaira &amp;&amp; test -z "$(JAIRA_LANES_DIR=$(mktemp -d) /tmp/jaira-p5 lanes 2>&amp;1 >/dev/null)" &amp;&amp; echo "shipped board warns about nothing"</automated>
-    <automated>export PATH=$PATH:$HOME/.local/go/bin &amp;&amp; go build -o /tmp/jaira-p5 ./cmd/jaira &amp;&amp; d=$(mktemp -d) &amp;&amp; printf -- '---\nid: early-review\nname: Early\nafter: in-progress\nprecedence: 1\nagentic: false\ninput-requires: [plan]\n---\n' > "$d/early.md" &amp;&amp; JAIRA_LANES_DIR="$d" /tmp/jaira-p5 lanes 2>&amp;1 >/dev/null | grep -q "in-progress" &amp;&amp; JAIRA_LANES_DIR="$d" /tmp/jaira-p5 lanes 2>&amp;1 >/dev/null | grep -q "plan" &amp;&amp; echo "constraint and contract both reported"</automated>
+    <automated>export PATH=$PATH:$HOME/.local/go/bin && go build ./... && go vet ./... && go test ./... -count=1 2>&1 | grep -Ev "no test files" | tail -12</automated>
+    <automated>export PATH=$PATH:$HOME/.local/go/bin && go build -o /tmp/jaira-p5-t10 ./cmd/jaira && /tmp/jaira-p5-t10 lanes 2>&1 1>/dev/null | wc -l</automated>
   </verify>
-  <done>The ten built-in lanes come out of this change in exactly the order they went in, asserted by id in a test and by the second verify above; `precedence` is the only thing that decides display order; an `after` that the precedence violates is reported and not silently repaired; a lane requiring a field only a later lane produces is reported at load time next to the cycle check; base ticket fields never trigger it, guarded by a test in `core/gate` that keeps the base-field list from drifting from `fieldFilled`; and the shipped board produces no warnings at all.</done>
+  <done>Column order and every precedence value are byte-identical to before; the number is labelled as a merge rank rather than a position; a lane whose required input nothing upstream produces is reported at load; the shipped board still emits zero warnings.</done>
 </task>
 
 </tasks>
