@@ -132,6 +132,109 @@ func TestLaneScreenPublishRefusesSecondPublish(t *testing.T) {
 	}
 }
 
+// TestLaneScreenNewWritesSkeletonAndReloadsList asserts 'n' writes the lane
+// template into the catalogue and queues a command to open it in $EDITOR.
+// The editor launch itself cannot be driven from a test with no interactive
+// terminal; what is verified here is the file write and the reload that
+// follows the editor exiting, which is the part under this package's control.
+func TestLaneScreenNewWritesSkeletonAndReloadsList(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.laneScreen = newLaneScreen(m.store, m.lanes)
+	m.mode = modeLanes
+	before := len(m.laneScreen.lanes)
+
+	if done := m.laneScreen.key("n"); done {
+		t.Fatal("n must not finish the screen")
+	}
+	if m.laneScreen.pendingCmd == nil {
+		t.Fatal("n must queue a command to open the skeleton in $EDITOR")
+	}
+
+	path := filepath.Join(lane.UserLanesDir(), "new-lane.md")
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("expected %s to exist: %v", path, err)
+	}
+	if !strings.Contains(string(got), "id: my-lane") {
+		t.Errorf("skeleton content = %q, want the lane template", got)
+	}
+
+	// Simulate the editor exiting cleanly — the reload this triggers, and the
+	// list growing to include the new lane, is what is testable without a
+	// real $EDITOR.
+	updated, _ := m.Update(newLaneDoneMsg{})
+	m2, ok := updated.(*Model)
+	if !ok {
+		t.Fatalf("Update returned %T, want *Model", updated)
+	}
+	if len(m2.laneScreen.lanes) != before+1 {
+		t.Errorf("lane list has %d lanes after n, want %d", len(m2.laneScreen.lanes), before+1)
+	}
+}
+
+// TestLaneScreenNewTwiceWritesTwoFiles asserts a second 'n' never overwrites
+// the first skeleton: it picks the next free name instead.
+func TestLaneScreenNewTwiceWritesTwoFiles(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	ls := newLaneScreen(m.store, m.lanes)
+
+	ls.key("n")
+	first, err := os.ReadFile(filepath.Join(lane.UserLanesDir(), "new-lane.md"))
+	if err != nil {
+		t.Fatalf("expected new-lane.md to exist: %v", err)
+	}
+
+	ls.key("n")
+	second, err := os.ReadFile(filepath.Join(lane.UserLanesDir(), "new-lane-2.md"))
+	if err != nil {
+		t.Fatalf("expected new-lane-2.md to exist rather than overwriting new-lane.md: %v", err)
+	}
+	if string(first) != string(second) {
+		t.Errorf("the two skeletons should carry identical starting content:\nfirst:  %q\nsecond: %q", first, second)
+	}
+}
+
+// TestLaneScreenNewIgnoredWhenSharedFocused asserts 'n' only creates a lane
+// when the settings screen's own list has focus, not the shared list.
+func TestLaneScreenNewIgnoredWhenSharedFocused(t *testing.T) {
+	s, _ := laneTestStore(t)
+	writeLaneFile(t, filepath.Join(s.Root, ".jaira", "shared", "sam"), "hitl.md", `---
+id: hitl
+name: HITL
+after: human
+precedence: 41
+---
+`)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	ls.key("tab")
+	if ls.focus != 1 {
+		t.Fatal("tab must switch focus to the shared section")
+	}
+
+	ls.key("n")
+	if ls.pendingCmd != nil {
+		t.Error("n must be a no-op while the shared list has focus")
+	}
+	if _, err := os.Stat(filepath.Join(lane.UserLanesDir(), "new-lane.md")); !os.IsNotExist(err) {
+		t.Errorf("n must not write a skeleton while the shared list has focus, stat err = %v", err)
+	}
+}
+
+// TestLaneScreenFooterNamesNewKey asserts the footer names 'n' — without it
+// the key does not exist as far as any reader is concerned.
+func TestLaneScreenFooterNamesNewKey(t *testing.T) {
+	m := newTestModel(t, 150, 40)
+	ls := newLaneScreen(m.store, m.lanes)
+	out := ls.render(150, 40)
+	if !strings.Contains(out, "n new") {
+		t.Error("footer must say \"n new\"")
+	}
+}
+
 // laneTestStore builds a store rooted at a fresh project directory, pointed
 // at its own catalogue, for tests that need real catalogue/project drift —
 // unlike newTestStore, which deliberately points JAIRA_LANES_DIR at an empty

@@ -2,8 +2,12 @@ package tui
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
@@ -39,6 +43,11 @@ type laneScreen struct {
 	// id, holding the id until the next 'a' confirms the overwrite or esc
 	// cancels it.
 	confirmAdoptID string
+
+	// pendingCmd carries a tea.Cmd out of key() for the one action that needs
+	// one — 'n' launching $EDITOR — without changing key()'s existing
+	// bool-only signature that every caller and test already relies on.
+	pendingCmd tea.Cmd
 
 	msg   string
 	isErr bool
@@ -89,6 +98,7 @@ func (ls *laneScreen) sourceLabel(l *lane.Lane) string {
 // key drives the screen. It reports whether the screen is finished (esc/q).
 func (ls *laneScreen) key(s string) (done bool) {
 	ls.msg = ""
+	ls.pendingCmd = nil
 	switch s {
 	case "esc", "q":
 		if ls.confirmAdoptID != "" {
@@ -111,6 +121,10 @@ func (ls *laneScreen) key(s string) (done bool) {
 	case "p":
 		if ls.focus == 0 {
 			ls.publish()
+		}
+	case "n":
+		if ls.focus == 0 {
+			ls.pendingCmd = ls.newLane()
 		}
 	case "R":
 		if ls.focus == 0 {
@@ -180,6 +194,60 @@ func (ls *laneScreen) publish() {
 		return
 	}
 	ls.msg, ls.isErr = "published to " + dst, false
+}
+
+// newLaneDoneMsg reports that $EDITOR, opened on a freshly written lane
+// skeleton from the lane settings screen's 'n' key, has exited.
+type newLaneDoneMsg struct{ err error }
+
+// newLane writes a fresh lane skeleton into the catalogue and opens it in
+// $EDITOR — until now, doing this meant knowing 'jaira lanes template'
+// exists and combining it with tools outside jaira.
+func (ls *laneScreen) newLane() tea.Cmd {
+	path, err := writeLaneSkeleton(lane.UserLanesDir())
+	if err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return nil
+	}
+	argv := append(editorCommand(), path)
+	cmd := exec.Command(argv[0], argv[1:]...)
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		return newLaneDoneMsg{err: err}
+	})
+}
+
+// writeLaneSkeleton creates a new lane skeleton file in dir under the first
+// free name — "new-lane.md", then "new-lane-2.md", "new-lane-3.md", … — so
+// pressing n more than once writes another file rather than clobbering the
+// last one. O_EXCL makes the creation itself the collision check, so a race
+// with another writer cannot silently overwrite an existing lane.
+func writeLaneSkeleton(dir string) (string, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	for n := 1; ; n++ {
+		name := "new-lane.md"
+		if n > 1 {
+			name = fmt.Sprintf("new-lane-%d.md", n)
+		}
+		path := filepath.Join(dir, name)
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if os.IsExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		_, writeErr := f.WriteString(lane.Template)
+		closeErr := f.Close()
+		if writeErr != nil {
+			return "", writeErr
+		}
+		if closeErr != nil {
+			return "", closeErr
+		}
+		return path, nil
+	}
 }
 
 // refreshDrift pulls the catalogue's copy of the selected lane into the
@@ -327,9 +395,9 @@ func (ls *laneScreen) render(width, height int) string {
 		}
 		sb.WriteString("\n" + style.Render(truncate(ls.msg, w)) + "\n")
 	}
-	help := "jk select · u use here · p publish · R refresh · esc back"
+	help := "jk select · u use here · p publish · n new · R refresh · esc back"
 	if len(ls.shared) > 0 {
-		help = "jk select · tab switch list · u use · p publish · a adopt · R refresh · esc back"
+		help = "jk select · tab switch list · u use · p publish · n new · a adopt · R refresh · esc back"
 	}
 	sb.WriteString("\n" + styMeta.Render(truncate(help, w)))
 	return sb.String()

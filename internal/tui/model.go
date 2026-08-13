@@ -403,6 +403,25 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case newLaneDoneMsg:
+		if msg.err != nil {
+			if m.laneScreen != nil {
+				m.laneScreen.msg, m.laneScreen.isErr = msg.err.Error(), true
+			}
+			return m, nil
+		}
+		// The new file may parse to a fresh lane, or to a warning if it was
+		// left unedited (an id collision with the last skeleton, say) — either
+		// way a full reload is what makes the settings screen agree with it.
+		if err := m.reload(); err != nil {
+			m.notify(err.Error(), true)
+			return m, nil
+		}
+		if m.laneScreen != nil {
+			m.laneScreen = newLaneScreen(m.store, m.lanes)
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		return m.key(msg)
 	}
@@ -501,7 +520,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeLanes:
-		if done := m.laneScreen.key(s); done {
+		done := m.laneScreen.key(s)
+		cmd := m.laneScreen.pendingCmd
+		if done {
 			m.laneScreen = nil
 			// Reached only through settings now, so closing it goes back one
 			// level to the menu, not all the way to the board.
@@ -510,7 +531,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.notify(err.Error(), true)
 			}
 		}
-		return m, nil
+		return m, cmd
 
 	case modeSettings:
 		switch action := m.settingsScreen.key(s); action {
