@@ -61,6 +61,19 @@ file, and `order()` already detects cycles and reports them as warnings
 (`core/lane/lane.go:396`) — so "edit the file, then run `jaira lanes` to check"
 is a complete loop for an agent, without a second write path.
 
+That loop already works today for a custom lane in `~/.jaira/lanes/`: writing a
+file there makes the lane appear, `jaira lanes` names its source path, and a
+second file reusing an id is reported as a warning and ignored — all verified
+directly. What an agent is missing is discoverability (where files belong, what
+shape they take) and the same loop for the default board, which has no validator
+at all.
+
+The same check turned up an ordering problem: display order follows the `after:`
+anchor, not `precedence`, so two lanes anchored to the same lane are ordered by
+whichever file was read first. A lane with `precedence: 12` rendering before one
+with `precedence: 5` was observed, not theorised. Either the column or the
+ordering has to give.
+
 ## Per-lane signature
 
 Add a `creator:` frontmatter field so an adopted lane keeps its provenance, and
