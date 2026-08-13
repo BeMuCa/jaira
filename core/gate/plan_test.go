@@ -101,3 +101,42 @@ func TestUnfinishedPlanDoesNotBlockNonTerminalLanes(t *testing.T) {
 		}
 	}
 }
+
+// A ticket sitting in a lane this installation does not know about has no
+// contract to enforce, so moving it out is refused rather than guessed at.
+func TestMoveOutOfUnrecognizedLaneRefused(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "some-uninstalled-lane"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "todo"})
+	found := false
+	for _, v := range vs {
+		if v.Code == CodeUnknownLane {
+			found = true
+			if !strings.Contains(v.Message, "some-uninstalled-lane") {
+				t.Errorf("message %q does not name the unrecognized lane", v.Message)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected a %s violation, got %v", CodeUnknownLane, vs)
+	}
+}
+
+// Moving a ticket into an id no lane claims is refused with CodeNoSuchLane.
+func TestMoveIntoNoSuchLaneRefused(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "backlog"
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "not-a-real-lane"})
+	found := false
+	for _, v := range vs {
+		if v.Code == CodeNoSuchLane {
+			found = true
+			if !strings.Contains(v.Message, "not-a-real-lane") {
+				t.Errorf("message %q does not name the target lane", v.Message)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected a %s violation, got %v", CodeNoSuchLane, vs)
+	}
+}

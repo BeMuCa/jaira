@@ -1,6 +1,7 @@
 package lane
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -426,5 +427,260 @@ precedence: 999
 	}
 	if !containsWarning(set.Warnings, `anchor "not-installed" is not installed`) {
 		t.Errorf("missing-anchor warning must name the anchor, got: %v", set.Warnings)
+	}
+}
+
+// TestOrderChainResolvesRegardlessOfFilenameOrder covers a chain of two custom
+// lanes — B anchored to A, A anchored to a built-in — where the dependent
+// lane's file sorts before its dependency's. This is what the fixed-point
+// loop in order() is for: a single pass would place chained-b before
+// chained-a even existed.
+func TestOrderChainResolvesRegardlessOfFilenameOrder(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	// "a-" sorts before "b-", so chained-b (the dependent) is read first.
+	writeLane(t, catalogue, "a-dependent.md", `---
+id: chained-b
+name: Chained B
+after: chained-a
+precedence: 42
+---
+`)
+	writeLane(t, catalogue, "b-dependency.md", `---
+id: chained-a
+name: Chained A
+after: human
+precedence: 41
+---
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	humanIdx := set.Index("human")
+	aIdx := set.Index("chained-a")
+	bIdx := set.Index("chained-b")
+	if aIdx != humanIdx+1 {
+		t.Fatalf("chained-a should land immediately after human: ids=%v", set.IDs())
+	}
+	if bIdx != aIdx+1 {
+		t.Fatalf("chained-b should land immediately after chained-a: ids=%v", set.IDs())
+	}
+	if len(set.Warnings) != 0 {
+		t.Errorf("a resolvable chain must not warn, got: %v", set.Warnings)
+	}
+}
+
+// TestOrderCycleWarnsBothAppear covers two lanes anchored to each other: the
+// cycle is reported, but a bad file must never remove a column, so both
+// lanes still appear on the board.
+func TestOrderCycleWarnsBothAppear(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "cycle1.md", `---
+id: cycle1
+name: Cycle 1
+after: cycle2
+precedence: 41
+---
+`)
+	writeLane(t, catalogue, "cycle2.md", `---
+id: cycle2
+name: Cycle 2
+after: cycle1
+precedence: 42
+---
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("cycle1"); !ok {
+		t.Errorf("cycle1 must still appear: %v", set.IDs())
+	}
+	if _, ok := set.Get("cycle2"); !ok {
+		t.Errorf("cycle2 must still appear: %v", set.IDs())
+	}
+	if !containsWarning(set.Warnings, "forms a cycle") {
+		t.Errorf("a cyclic anchor must warn, got: %v", set.Warnings)
+	}
+}
+
+// TestOrderNoAnchorLandsBeforeTerminal covers a lane with no after: at all:
+// it must park before the terminal lane, the same place an unresolvable
+// anchor lands.
+func TestOrderNoAnchorLandsBeforeTerminal(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "unanchored.md", `---
+id: unanchored
+name: Unanchored
+precedence: 41
+---
+`)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := set.Terminal()
+	if terminal == nil {
+		t.Fatal("no terminal lane found")
+	}
+	if set.Index("unanchored") >= set.Index(terminal.ID) {
+		t.Errorf("a lane with no anchor must land before the terminal lane: ids=%v", set.IDs())
+	}
+}
+
+// TestAgenticLaneRequiresModelTier asserts parse rejects an agentic lane with
+// no model-tier — already true, this proves it rather than asserting it in a
+// summary.
+func TestAgenticLaneRequiresModelTier(t *testing.T) {
+	_, err := parse([]byte(`---
+id: agentic-no-tier
+name: Agentic No Tier
+agentic: true
+---
+a prompt
+`), "test", false)
+	if err == nil {
+		t.Fatal("expected an error for an agentic lane with no model-tier")
+	}
+	if !strings.Contains(err.Error(), "model-tier") {
+		t.Errorf("error must name model-tier, got: %v", err)
+	}
+}
+
+// TestModelTierRoundTripsExact asserts a lane's ModelTier is the exact alias
+// string given, not resolved, rewritten or validated against a fixed list —
+// a user is free to invent their own alias for their own runner.
+func TestModelTierRoundTripsExact(t *testing.T) {
+	l, err := parse([]byte(`---
+id: custom-tier
+name: Custom Tier
+agentic: true
+model-tier: my-local-nano
+---
+a prompt
+`), "test", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l.ModelTier != "my-local-nano" {
+		t.Errorf("ModelTier = %q, want the alias unchanged: %q", l.ModelTier, "my-local-nano")
+	}
+}
+
+// TestModelTierNeverComparedToModelName is a guard test: it reads the
+// non-test source tree rather than asserting an absence from memory. A
+// shared lane file surviving a model rename depends entirely on nothing in
+// this repo knowing what a model is called.
+func TestModelTierNeverComparedToModelName(t *testing.T) {
+	banned := []string{"claude", "gpt", "sonnet", "opus", "haiku"}
+	err := filepath.WalkDir("../..", func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			switch d.Name() {
+			case ".git", "node_modules", "builtin":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(p, ".go") || strings.HasSuffix(p, "_test.go") {
+			return nil
+		}
+		b, readErr := os.ReadFile(p)
+		if readErr != nil {
+			return readErr
+		}
+		for i, line := range strings.Split(string(b), "\n") {
+			if !strings.Contains(line, "ModelTier") {
+				continue
+			}
+			lower := strings.ToLower(line)
+			for _, name := range banned {
+				if strings.Contains(lower, name) {
+					t.Errorf("%s:%d: ModelTier compared against a model name %q: %s", p, i+1, name, line)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestColumnsPassthroughForUnknownStatus asserts Set.Columns appends a
+// read-only column for a status no lane claims.
+func TestColumnsPassthroughForUnknownStatus(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cols := set.Columns([]string{"backlog", "some-ghost-lane"})
+	found := false
+	for _, c := range cols {
+		if c.ID == "some-ghost-lane" {
+			found = true
+			if !c.Unknown {
+				t.Errorf("passthrough column must be marked Unknown")
+			}
+		}
+	}
+	if !found {
+		t.Errorf("Columns must append a passthrough column for an unrecognized status: %v", idsOf(cols))
+	}
+}
+
+// TestColumnsMultipleUnknownSorted asserts multiple unknown statuses are
+// appended in a deterministic (alphabetical) order.
+func TestColumnsMultipleUnknownSorted(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cols := set.Columns([]string{"zebra-lane", "alpha-lane", "backlog"})
+	var unknownIDs []string
+	for _, c := range cols {
+		if c.Unknown {
+			unknownIDs = append(unknownIDs, c.ID)
+		}
+	}
+	want := []string{"alpha-lane", "zebra-lane"}
+	if len(unknownIDs) != len(want) {
+		t.Fatalf("unknown columns = %v, want %v", unknownIDs, want)
+	}
+	for i := range want {
+		if unknownIDs[i] != want[i] {
+			t.Errorf("unknown columns = %v, want %v", unknownIDs, want)
+		}
+	}
+}
+
+func idsOf(lanes []*Lane) []string {
+	out := make([]string, 0, len(lanes))
+	for _, l := range lanes {
+		out = append(out, l.ID)
+	}
+	return out
+}
+
+// TestPrecedenceUnknownReturnsNegOne asserts a merge never promotes a ticket
+// into a lane this installation cannot reason about.
+func TestPrecedenceUnknownReturnsNegOne(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := set.Precedence("no-such-lane"); p != -1 {
+		t.Errorf("Precedence(unknown) = %d, want -1", p)
 	}
 }
