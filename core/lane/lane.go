@@ -445,6 +445,15 @@ func Load(root string) (*Set, error) {
 
 	ordered, orderWarn := order(lanes)
 	warnings = append(warnings, orderWarn...)
+
+	// A project's own order file, when present, decides column order for the
+	// lanes it names — after: is no longer consulted for those. See order.go.
+	if orderIDs, err := LoadOrder(root); err == nil && len(orderIDs) > 0 {
+		var applyWarn []string
+		ordered, applyWarn = applyOrder(ordered, orderIDs)
+		warnings = append(warnings, applyWarn...)
+	}
+
 	warnings = append(warnings, checkContracts(ordered)...)
 
 	if !anyRequiresSpecified(ordered) {

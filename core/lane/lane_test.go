@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -947,5 +948,101 @@ func TestPrecedenceUnknownReturnsNegOne(t *testing.T) {
 	}
 	if p := set.Precedence("no-such-lane"); p != -1 {
 		t.Errorf("Precedence(unknown) = %d, want -1", p)
+	}
+}
+
+// TestLoadWithNoOrderFileLeavesTodaysBehaviourUnchanged asserts a project
+// with no order file orders exactly as it always has, by after: anchors.
+func TestLoadWithNoOrderFileLeavesTodaysBehaviourUnchanged(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := t.TempDir()
+
+	withOrder, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withoutRoot, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(withOrder.IDs(), withoutRoot.IDs()) {
+		t.Fatalf("order = %v, want unchanged %v", withOrder.IDs(), withoutRoot.IDs())
+	}
+}
+
+// TestLoadOrderFileReordersColumns asserts an order file decides column
+// order for the lanes it names, overriding after:.
+func TestLoadOrderFileReordersColumns(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := t.TempDir()
+
+	base, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reversed := append([]string{}, base.IDs()...)
+	for i, j := 0, len(reversed)-1; i < j; i, j = i+1, j-1 {
+		reversed[i], reversed[j] = reversed[j], reversed[i]
+	}
+	if err := SaveOrder(root, reversed); err != nil {
+		t.Fatal(err)
+	}
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(set.IDs(), reversed) {
+		t.Fatalf("IDs = %v, want %v", set.IDs(), reversed)
+	}
+}
+
+// TestLoadOrderFileUnknownIDWarns asserts an order file entry with no lane
+// behind it produces a warning rather than failing to load.
+func TestLoadOrderFileUnknownIDWarns(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := t.TempDir()
+	if err := SaveOrder(root, []string{"backlog", "no-such-lane"}); err != nil {
+		t.Fatal(err)
+	}
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, w := range set.Warnings {
+		if strings.Contains(w, "no-such-lane") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("warnings %v do not mention the unknown order-file id", set.Warnings)
+	}
+}
+
+// TestLoadOrderFileMissingLaneStillAppears asserts a lane present in the
+// project but absent from the order file is never dropped from the board.
+func TestLoadOrderFileMissingLaneStillAppears(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := t.TempDir()
+	// Name only the first lane; every other installed lane is omitted.
+	base, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveOrder(root, base.IDs()[:1]); err != nil {
+		t.Fatal(err)
+	}
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(set.Lanes) != len(base.Lanes) {
+		t.Fatalf("Load with a partial order file dropped lanes: got %v, want all of %v", set.IDs(), base.IDs())
+	}
+	if set.IDs()[0] != base.IDs()[0] {
+		t.Fatalf("named lane not placed first: %v", set.IDs())
 	}
 }
