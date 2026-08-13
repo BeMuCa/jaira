@@ -275,6 +275,235 @@ func TestLanesPathNamesBothDirectoriesAndMarksActive(t *testing.T) {
 	}
 }
 
+// lanesTestProject initialises a board at a fresh directory, isolated from
+// the real ~/.jaira, for tests that exercise use/publish/adopt against a
+// project rather than only the catalogue.
+func lanesTestProject(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	s, err := ticket.At(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+// TestLanesUseWritesToProjectDir asserts 'lanes use <id>' copies the named
+// lane, verbatim, into the project's own lane directory — the same call the
+// lane settings screen's 'u' key makes.
+func TestLanesUseWritesToProjectDir(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root, "use", "review")
+	if err != nil {
+		t.Fatalf("lanes use review: %v\n%s", err, out)
+	}
+	dst := filepath.Join(lane.ProjectLanesDir(root), "review.md")
+	if _, statErr := os.Stat(dst); statErr != nil {
+		t.Errorf("expected %s to exist: %v", dst, statErr)
+	}
+	if !strings.Contains(out, dst) {
+		t.Errorf("lanes use output = %q, want it to name %s", out, dst)
+	}
+}
+
+// TestLanesUseRefusesThenOverwritesWithForce asserts a second 'use' of the
+// same lane refuses without --force and succeeds with it.
+func TestLanesUseRefusesThenOverwritesWithForce(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	if _, err := runLanes(t, root, "use", "review"); err != nil {
+		t.Fatalf("first use: %v", err)
+	}
+	_, err := runLanes(t, root, "use", "review")
+	if err == nil {
+		t.Fatal("expected a second 'use' of the same lane to refuse")
+	}
+	var ce *codedError
+	if !errors.As(err, &ce) {
+		t.Fatalf("error is not a codedError: %v", err)
+	}
+	if ce.code != ExitValidation {
+		t.Errorf("code = %d, want %d", ce.code, ExitValidation)
+	}
+
+	if _, err := runLanes(t, root, "use", "review", "--force"); err != nil {
+		t.Fatalf("use --force: %v", err)
+	}
+}
+
+// TestLanesUseJSONCarriesPath asserts --json reports the id and the path
+// written, for an agent to consume without scraping a sentence.
+func TestLanesUseJSONCarriesPath(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root, "use", "review", "--json")
+	if err != nil {
+		t.Fatalf("lanes use --json: %v\n%s", err, out)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, out)
+	}
+	if payload["id"] != "review" {
+		t.Errorf("id = %v, want %q", payload["id"], "review")
+	}
+	if payload["path"] != filepath.Join(lane.ProjectLanesDir(root), "review.md") {
+		t.Errorf("path = %v", payload["path"])
+	}
+}
+
+// TestLanesUseUnknownIsUsageError asserts an unrecognised id exits 2 rather
+// than crashing.
+func TestLanesUseUnknownIsUsageError(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	_, err := runLanes(t, root, "use", "nope")
+	if err == nil {
+		t.Fatal("expected an error for an unknown lane id")
+	}
+	var ce *codedError
+	if !errors.As(err, &ce) {
+		t.Fatalf("error is not a codedError: %v", err)
+	}
+	if ce.code != ExitUsage {
+		t.Errorf("code = %d, want %d", ce.code, ExitUsage)
+	}
+}
+
+// TestLanesPublishWritesUnderIdentitySlug asserts 'lanes publish <id>' writes
+// into .jaira/shared/<slug>/, stamping the acting identity as creator — the
+// same call the lane settings screen's 'p' key makes.
+func TestLanesPublishWritesUnderIdentitySlug(t *testing.T) {
+	t.Setenv("JAIRA_USER", "Alex Doe")
+	catalogue := lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	// A custom lane with no creator: line, since the built-in lanes default to
+	// creator "jaira" (see parse()) and would never show the stamp.
+	if err := os.WriteFile(filepath.Join(catalogue, "custom.md"), []byte(
+		"---\nid: custom\nname: Custom\nafter: human\nprecedence: 41\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, root, "publish", "custom")
+	if err != nil {
+		t.Fatalf("lanes publish custom: %v\n%s", err, out)
+	}
+	dst := filepath.Join(root, ".jaira", "shared", "alex-doe", "custom.md")
+	got, statErr := os.ReadFile(dst)
+	if statErr != nil {
+		t.Fatalf("expected %s to exist: %v", dst, statErr)
+	}
+	if !strings.Contains(string(got), "creator: alex-doe") {
+		t.Errorf("published file missing a stamped creator, got:\n%s", got)
+	}
+}
+
+// TestLanesPublishRefusesWithoutForce mirrors the 'use' overwrite refusal.
+func TestLanesPublishRefusesWithoutForce(t *testing.T) {
+	t.Setenv("JAIRA_USER", "alex")
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+
+	if _, err := runLanes(t, root, "publish", "review"); err != nil {
+		t.Fatalf("first publish: %v", err)
+	}
+	_, err := runLanes(t, root, "publish", "review")
+	if err == nil {
+		t.Fatal("expected a second 'publish' of the same lane to refuse")
+	}
+	if _, err := runLanes(t, root, "publish", "review", "--force"); err != nil {
+		t.Fatalf("publish --force: %v", err)
+	}
+}
+
+// TestLanesAdoptCopiesSharedLaneIntoCatalogue asserts 'lanes adopt <path>'
+// takes the path 'lanes shared' prints and copies it into the catalogue.
+func TestLanesAdoptCopiesSharedLaneIntoCatalogue(t *testing.T) {
+	catalogue := lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	sharedDir := filepath.Join(root, ".jaira", "shared", "sam")
+	if err := os.MkdirAll(sharedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	src := filepath.Join(sharedDir, "hitl.md")
+	if err := os.WriteFile(src, []byte(
+		"---\nid: hitl\nname: HITL\nafter: human\nprecedence: 41\ncreator: sam\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, root, "adopt", src)
+	if err != nil {
+		t.Fatalf("lanes adopt: %v\n%s", err, out)
+	}
+	dst := filepath.Join(catalogue, "hitl.md")
+	if _, statErr := os.Stat(dst); statErr != nil {
+		t.Errorf("expected %s to exist: %v", dst, statErr)
+	}
+}
+
+// TestLanesAdoptRefusesThenOverwritesWithForce mirrors the collision handling
+// the lane settings screen gives, minus the two-press confirmation (the CLI
+// has --force instead).
+func TestLanesAdoptRefusesThenOverwritesWithForce(t *testing.T) {
+	catalogue := lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	if err := os.WriteFile(filepath.Join(catalogue, "hitl.md"), []byte(
+		"---\nid: hitl\nname: Existing\nafter: human\nprecedence: 41\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sharedDir := filepath.Join(root, ".jaira", "shared", "sam")
+	if err := os.MkdirAll(sharedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	src := filepath.Join(sharedDir, "hitl.md")
+	if err := os.WriteFile(src, []byte(
+		"---\nid: hitl\nname: Sam's HITL\nafter: human\nprecedence: 41\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := runLanes(t, root, "adopt", src)
+	if err == nil {
+		t.Fatal("expected adopt to refuse an existing catalogue id without --force")
+	}
+	var ce *codedError
+	if !errors.As(err, &ce) {
+		t.Fatalf("error is not a codedError: %v", err)
+	}
+	if ce.code != ExitValidation {
+		t.Errorf("code = %d, want %d", ce.code, ExitValidation)
+	}
+
+	if _, err := runLanes(t, root, "adopt", src, "--force"); err != nil {
+		t.Fatalf("adopt --force: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(catalogue, "hitl.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "Sam's HITL") {
+		t.Errorf("adopt --force did not overwrite the catalogue file, got:\n%s", got)
+	}
+}
+
+// TestLanesAdoptUnknownPathIsErrorNotCrash asserts a path that does not exist
+// fails cleanly.
+func TestLanesAdoptUnknownPathIsErrorNotCrash(t *testing.T) {
+	lanesTestCatalogue(t)
+	root := lanesTestProject(t)
+	_, err := runLanes(t, root, "adopt", filepath.Join(root, "nope.md"))
+	if err == nil {
+		t.Fatal("expected an error for a nonexistent path")
+	}
+}
+
 // pathLines splits 'lanes path' human output into its Catalogue and Project
 // lines.
 func pathLines(t *testing.T, out string) (catalogueLine, projectLine string) {

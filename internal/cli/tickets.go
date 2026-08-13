@@ -693,7 +693,10 @@ The loop for building a lane or a default board by hand, no TUI required:
   4. 'jaira lanes' to check the result — a bad id or a bad option is a
      warning here, not a silent failure later.`,
 	}
-	cmd.AddCommand(newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd())
+	cmd.AddCommand(
+		newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd(),
+		newLanesUseCmd(), newLanesPublishCmd(), newLanesAdoptCmd(),
+	)
 	return cmd
 }
 
