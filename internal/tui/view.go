@@ -455,7 +455,9 @@ func (m *Model) statusBar(start, end int) string {
 	}
 	// Hints are dropped from the right as the terminal narrows, rather than
 	// letting the bar wrap and push the board off-screen.
-	keys := []string{"hjkl move", "enter open", "n new", "m lane", "S settings", "/ filter", "? help", "q quit"}
+	// "m move" rather than "m lane": the key moves the ticket, and calling it
+	// after its destination read as if m selected a lane to look at.
+	keys := []string{"hjkl navigate", "enter open", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := hidden
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -551,7 +553,7 @@ func (m *Model) renderDetail() string {
 		b.WriteString("\n" + rest + "\n")
 	}
 	b.WriteString("\n" + styMeta.Render(truncate(
-		"e fields · E body · y copy id · m lane · jk next/prev · esc back", max(1, min(m.width, 78)))))
+		"e fields · E body · y copy id · m move · jk next/prev · esc back", max(1, min(m.width, 78)))))
 	return b.String()
 }
 

@@ -77,7 +77,7 @@ Board:
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            /       filter           m   move lane
+j k ↓ ↑   card            /       filter           m   move ticket
 g G       first / last    ?       help             r   reload
 v         compact view    x       archive          q   quit
 S         settings: lanes and the default board
