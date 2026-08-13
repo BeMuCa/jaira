@@ -61,6 +61,10 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira resolve <id>` | settle the fields a merge could not |
 | `jaira share` | publish the board; `--undo` makes it private again |
 | `jaira projects add <path>` | register a board; `--scan` searches two levels down |
+| `jaira lanes use <id>` | copy a catalogue lane into this project; `--force` |
+| `jaira lanes publish <id>` | copy a lane into `.jaira/shared/<you>/` for teammates; `--force` |
+| `jaira lanes adopt <path>` | copy a teammate's shared lane (the path `lanes shared` prints) into your catalogue; `--force` |
+| `jaira lanes default` | show or set which lanes and options a new board starts with; `--lanes`, `--options`, `--clear` |
 
 ## Agent plumbing
 

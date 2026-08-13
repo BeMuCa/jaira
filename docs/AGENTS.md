@@ -140,3 +140,11 @@ A board's column order follows each lane's `after:` anchor, never `precedence`.
 `precedence` is the rank a merge uses to decide which lane wins when two clones
 moved the same ticket — `jaira lanes` and `jaira lanes show` label it accordingly,
 not as a position.
+
+## Building and sharing a lane without the TUI
+
+`jaira lanes path` finds where a lane file belongs, `jaira lanes template`
+prints its skeleton, and `jaira lanes` (or `jaira lanes show <id>`) confirms it
+loaded cleanly once written. `jaira lanes use <id>` puts it to work in this
+project, and `jaira lanes publish <id>` hands it to teammates, who pick it up
+with `jaira lanes adopt <path>` — the path `jaira lanes shared` prints.

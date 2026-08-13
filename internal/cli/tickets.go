@@ -691,7 +691,8 @@ The loop for building a lane or a default board by hand, no TUI required:
   2. 'jaira lanes template' (or 'template --board') for its shape.
   3. Write the file with the tools you already have.
   4. 'jaira lanes' to check the result — a bad id or a bad option is a
-     warning here, not a silent failure later.`,
+     warning here, not a silent failure later.
+  5. 'jaira lanes use <id>' to put it to work in this project.`,
 	}
 	cmd.AddCommand(
 		newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd(),
