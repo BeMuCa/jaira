@@ -44,8 +44,8 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,\n" +
 	"  the model tier, and the outputs the lane expects back\n" +
 	"- `jaira dod <id> <n> --doing|--done` — mark checklist items as you go\n" +
-	"- `jaira note <id> <text>` — before you stop, or when something did not work:\n" +
-	"  record it, for whoever picks this up\n" +
+	"- `jaira note <id> <text>` — after each finished step, and whenever something\n" +
+	"  did not work: a killed session never gets a turn to write anything down\n" +
 	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish the step\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
 	"\n" +
