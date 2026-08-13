@@ -23,10 +23,16 @@ const (
 	// what a task was for months later, and a deleted file on a private board
 	// is not in git history to recover from.
 	ArchiveSubdir = "archive"
+	// SharedSubdir holds lanes deliberately published to teammates. Unlike
+	// LanesSubdir it is committed: publishing a lane is an opt-in act through
+	// the lane settings screen, not a side effect of sharing the board.
+	SharedSubdir = "shared"
 	// SessionsSubdir and locksSubdir live under the user's home directory rather
-	// than inside the repository. Keeping them out means .jaira/ contains only
-	// content that is meant to be committed, so there is no mixed directory to
-	// explain and no per-repo gitignore needed to protect scratch state.
+	// than inside the repository. tickets/, archive/ and shared/ are the parts of
+	// .jaira/ meant to be committed; lanes/ (see core/lane.ProjectLanesDir) is
+	// this machine's own scoping and stays gitignored even on a shared board
+	// (see core/board.LanesIgnoreLine); sessions and locks stay out of the
+	// repository entirely.
 	SessionsSubdir = "sessions"
 	locksSubdir    = "locks"
 
@@ -101,6 +107,11 @@ func (s *Store) TicketsDir() string { return filepath.Join(s.dir(), TicketsSubdi
 
 // ArchiveDir is where archived tickets live.
 func (s *Store) ArchiveDir() string { return filepath.Join(s.dir(), ArchiveSubdir) }
+
+// SharedDir is where lanes published to teammates live. Nothing creates this
+// directory at init: an empty shared/ folder committed to every board that
+// never publishes a lane would be its own kind of confusion.
+func (s *Store) SharedDir() string { return filepath.Join(s.dir(), SharedSubdir) }
 
 // Archive moves a ticket out of the board, returning its new path.
 //

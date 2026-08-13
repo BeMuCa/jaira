@@ -63,8 +63,12 @@ You still have to commit. jaira does not commit on your behalf.`,
 				if err != nil {
 					return err
 				}
+				lanesRemoved, err := board.RemoveLanesIgnore(s.Root)
+				if err != nil {
+					return err
+				}
 				if g.jsonOut {
-					return emit(w, map[string]any{"shared": false, "changed": changed})
+					return emit(w, map[string]any{"shared": false, "changed": changed, "lanes_ignore_removed": lanesRemoved})
 				}
 				fmt.Fprintf(w, "The board is private again.\n")
 				if changed {
@@ -79,6 +83,10 @@ You still have to commit. jaira does not commit on your behalf.`,
 			if err != nil {
 				return err
 			}
+			lanesIgnored, err := board.AddLanesIgnore(s.Root)
+			if err != nil {
+				return err
+			}
 			attrs, err := writeGitAttributes(s)
 			if err != nil {
 				return err
@@ -87,7 +95,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 
 			if g.jsonOut {
 				return emit(w, map[string]any{
-					"shared": true, "unignored": unignored,
+					"shared": true, "unignored": unignored, "lanes_ignored": lanesIgnored,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
 				})
 			}
@@ -95,6 +103,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 			if unignored {
 				fmt.Fprintf(w, "Removed %s from .gitignore.\n", board.IgnoreLine)
 			}
+			fmt.Fprintf(w, "This project's lane files stay private: %s is still ignored.\n", board.LanesIgnoreLine)
 			if attrs {
 				fmt.Fprintf(w, "Wrote .jaira/.gitattributes so git merges tickets field by field.\n")
 			}
@@ -107,7 +116,8 @@ You still have to commit. jaira does not commit on your behalf.`,
 			if paths, err := s.Paths(); err == nil {
 				count = len(paths)
 			}
-			fmt.Fprintf(w, "\nCommit to publish %d ticket(s):\n  git add .jaira .gitignore && git commit -m \"share jaira board\"\n", count)
+			fmt.Fprintf(w, "\nCommit to publish %d ticket(s) (this project's lanes, if any, stay out of it):\n"+
+				"  git add .jaira .gitignore && git commit -m \"share jaira board\"\n", count)
 			fmt.Fprintf(w, "\nTeammates then clone, and jaira binds the merge driver on their first command.\n")
 			return nil
 		},

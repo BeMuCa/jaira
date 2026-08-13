@@ -60,3 +60,105 @@ func TestPrepareMakesANewBoardPrivateAndAnnounced(t *testing.T) {
 		t.Errorf(".gitignore contains %s %d times, want exactly 1: %q", IgnoreLine, n, gi2)
 	}
 }
+
+// TestAddLanesIgnoreOnFreshBoard asserts that on a shared board — one where
+// RemoveIgnore has already stopped ignoring the whole /.jaira/ tree —
+// AddLanesIgnore still ignores /.jaira/lanes/ on its own.
+func TestAddLanesIgnoreOnFreshBoard(t *testing.T) {
+	root := t.TempDir()
+
+	if _, err := RemoveIgnore(root); err != nil {
+		t.Fatalf("RemoveIgnore: %v", err)
+	}
+	changed, err := AddLanesIgnore(root)
+	if err != nil {
+		t.Fatalf("AddLanesIgnore: %v", err)
+	}
+	if !changed {
+		t.Errorf("AddLanesIgnore changed = false on a fresh board, want true")
+	}
+
+	gi, err := os.ReadFile(filepath.Join(root, ".gitignore"))
+	if err != nil {
+		t.Fatalf("reading .gitignore: %v", err)
+	}
+	for _, line := range strings.Split(string(gi), "\n") {
+		if strings.TrimSpace(line) == IgnoreLine {
+			t.Errorf(".gitignore = %q, must not ignore the whole board", gi)
+		}
+	}
+	if !strings.Contains(string(gi), LanesIgnoreLine) {
+		t.Errorf(".gitignore = %q, want it to contain %q", gi, LanesIgnoreLine)
+	}
+}
+
+// TestAddLanesIgnoreIsIdempotent asserts a second call reports changed=false
+// and does not duplicate the line.
+func TestAddLanesIgnoreIsIdempotent(t *testing.T) {
+	root := t.TempDir()
+
+	if _, err := AddLanesIgnore(root); err != nil {
+		t.Fatalf("AddLanesIgnore (first): %v", err)
+	}
+	changed, err := AddLanesIgnore(root)
+	if err != nil {
+		t.Fatalf("AddLanesIgnore (second): %v", err)
+	}
+	if changed {
+		t.Errorf("AddLanesIgnore changed = true on the second call, want false")
+	}
+	gi, err := os.ReadFile(filepath.Join(root, ".gitignore"))
+	if err != nil {
+		t.Fatalf("reading .gitignore: %v", err)
+	}
+	if n := strings.Count(string(gi), LanesIgnoreLine); n != 1 {
+		t.Errorf(".gitignore contains %s %d times, want exactly 1: %q", LanesIgnoreLine, n, gi)
+	}
+}
+
+// TestRemoveLanesIgnoreDropsTheLine asserts the share --undo path removes the
+// lanes-only line, since /.jaira/ already covers it once the board itself is
+// private again and a leftover line would be a puzzle for the next reader.
+func TestRemoveLanesIgnoreDropsTheLine(t *testing.T) {
+	root := t.TempDir()
+
+	if _, err := AddLanesIgnore(root); err != nil {
+		t.Fatalf("AddLanesIgnore: %v", err)
+	}
+	changed, err := RemoveLanesIgnore(root)
+	if err != nil {
+		t.Fatalf("RemoveLanesIgnore: %v", err)
+	}
+	if !changed {
+		t.Errorf("RemoveLanesIgnore changed = false, want true")
+	}
+	gi, err := os.ReadFile(filepath.Join(root, ".gitignore"))
+	if err != nil {
+		t.Fatalf("reading .gitignore: %v", err)
+	}
+	if strings.Contains(string(gi), LanesIgnoreLine) {
+		t.Errorf(".gitignore = %q, want the lanes-only line gone", gi)
+	}
+}
+
+// TestIgnoredNotFooledByLanesLine asserts Ignored(root) reports true only for
+// the whole-board entry. isShared and bindDriverIfShared both branch on this,
+// so a false positive would silently disable the merge driver on a shared
+// board that merely keeps its lanes private.
+func TestIgnoredNotFooledByLanesLine(t *testing.T) {
+	root := t.TempDir()
+
+	if _, err := AddLanesIgnore(root); err != nil {
+		t.Fatalf("AddLanesIgnore: %v", err)
+	}
+	if Ignored(root) {
+		t.Errorf("Ignored(root) = true with only the lanes-only line present, want false")
+	}
+
+	if _, err := AddIgnore(root); err != nil {
+		t.Fatalf("AddIgnore: %v", err)
+	}
+	if !Ignored(root) {
+		t.Errorf("Ignored(root) = false once the whole-board line is present, want true")
+	}
+}
