@@ -90,6 +90,43 @@ func TestLaneScreenUseRefusesSecondExport(t *testing.T) {
 	}
 }
 
+// TestLaneScreenUseThenReloadShowsNoOverrideLabel covers the settings-screen
+// side of the "copy is not an override" rule: exporting a built-in unchanged
+// with 'u', then reloading — exactly what happens after the editor closes —
+// must not show the orange "overrides" label, because the copy behaves
+// exactly like the built-in it shadows.
+func TestLaneScreenUseThenReloadShowsNoOverrideLabel(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	ls := newLaneScreen(m.store, m.lanes)
+	l := ls.selected()
+	if l == nil {
+		t.Fatal("no lane selected")
+	}
+	id := l.ID
+
+	ls.key("u")
+	if ls.isErr {
+		t.Fatalf("use produced an error: %s", ls.msg)
+	}
+
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, ok := m.lanes.Get(id)
+	if !ok {
+		t.Fatalf("%s lane missing after reload", id)
+	}
+	if reloaded.Overrides != "" {
+		t.Errorf("an unmodified copy must not be marked as overriding, got %q", reloaded.Overrides)
+	}
+
+	ls2 := newLaneScreen(m.store, m.lanes)
+	out := stripANSI(ls2.render(150, 32))
+	if strings.Contains(out, "overrides "+id) {
+		t.Errorf("settings screen shows an override label for an unmodified copy:\n%s", out)
+	}
+}
+
 // TestLaneScreenPublishWritesUnderIdentitySlug asserts 'p' writes into
 // .jaira/shared/<slug>/, keyed off the acting identity.
 func TestLaneScreenPublishWritesUnderIdentitySlug(t *testing.T) {

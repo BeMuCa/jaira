@@ -286,6 +286,120 @@ description: An override that drops every protection Done carries.
 	}
 }
 
+// builtinBytes returns the shipped bytes of the named built-in lane, exactly
+// what 'jaira lanes use' writes into a project's own lane directory.
+func builtinBytes(t *testing.T, id string) []byte {
+	t.Helper()
+	builtins, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range builtins {
+		if l.ID == id {
+			raw, err := Bytes(l)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return raw
+		}
+	}
+	t.Fatalf("no built-in lane %q", id)
+	return nil
+}
+
+// TestLoadOverrideEquivalentToBuiltinIsSilent covers the exact shape 'jaira
+// lanes use' produces: a shadowing file whose bytes are the built-in's own,
+// unchanged. That must warn about nothing and must not be marked Overrides —
+// it is a copy, not an override in any sense the reader cares about.
+func TestLoadOverrideEquivalentToBuiltinIsSilent(t *testing.T) {
+	raw := builtinBytes(t, "review")
+
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "review.md", string(raw))
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l, ok := set.Get("review")
+	if !ok {
+		t.Fatalf("review lane missing: %v", set.IDs())
+	}
+	if l.Overrides != "" {
+		t.Errorf("a byte-identical copy must not be marked as overriding, got %q", l.Overrides)
+	}
+	if containsWarning(set.Warnings, "overrides the built-in") {
+		t.Errorf("a byte-identical copy must not warn about overriding anything: %v", set.Warnings)
+	}
+}
+
+// TestLoadOverrideDifferingOnlyByCreatorIsSilent covers the field the
+// comparison must deliberately ignore: creator is stamped by
+// 'jaira lanes publish', so a copy differing only there is still a copy.
+func TestLoadOverrideDifferingOnlyByCreatorIsSilent(t *testing.T) {
+	raw := string(builtinBytes(t, "review"))
+	withCreator := strings.Replace(raw, "---\n", "---\ncreator: alice\n", 1)
+	if withCreator == raw {
+		t.Fatal("test fixture did not actually add a creator line")
+	}
+
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "review.md", withCreator)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l, ok := set.Get("review")
+	if !ok {
+		t.Fatalf("review lane missing: %v", set.IDs())
+	}
+	if l.Creator != "alice" {
+		t.Fatalf("test fixture broken: creator not parsed, got %q", l.Creator)
+	}
+	if l.Overrides != "" {
+		t.Errorf("a copy differing only by creator must not be marked as overriding, got %q", l.Overrides)
+	}
+	if containsWarning(set.Warnings, "overrides the built-in") {
+		t.Errorf("a copy differing only by creator must not warn about overriding anything: %v", set.Warnings)
+	}
+}
+
+// TestLoadOverrideChangedPromptStillWarns covers the other side: a shadowing
+// file identical to the built-in except for its prompt is a real behaviour
+// change and must warn exactly as before.
+func TestLoadOverrideChangedPromptStillWarns(t *testing.T) {
+	raw := string(builtinBytes(t, "review"))
+	const oldPrompt = "Review this change against its definition of done."
+	const newPrompt = "Review this change and reject it if you have any doubt at all."
+	changed := strings.Replace(raw, oldPrompt, newPrompt, 1)
+	if changed == raw {
+		t.Fatal("test fixture did not actually change the prompt")
+	}
+
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	src := writeLane(t, catalogue, "review.md", changed)
+
+	set, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l, ok := set.Get("review")
+	if !ok {
+		t.Fatalf("review lane missing: %v", set.IDs())
+	}
+	if l.Overrides != "review" {
+		t.Errorf("a changed prompt must still be marked as overriding, got %q", l.Overrides)
+	}
+	want := "lane " + src + ": id \"review\" overrides the built-in lane of the same name"
+	if !containsList(set.Warnings, want) {
+		t.Errorf("missing exact override warning %q, got: %v", want, set.Warnings)
+	}
+}
+
 // TestLoadDuplicateInDirectory asserts that two files in one directory
 // claiming the same non-built-in id still resolve deterministically to the
 // first by sorted filename, with a warning — unchanged from before this task.

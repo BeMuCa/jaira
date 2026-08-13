@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -420,13 +421,20 @@ func Load(root string) (*Set, error) {
 			seen[l.ID] = m
 
 			if base, overrides := builtinByID[l.ID]; overrides {
-				l.Overrides = base.ID
-				warnings = append(warnings, fmt.Sprintf(
-					"lane %s: id %q overrides the built-in lane of the same name", m, l.ID))
-				if lost := droppedProtections(base, l); len(lost) > 0 {
+				// A file that behaves exactly like the built-in it shadows is not an
+				// override in any sense the reader cares about — it is a copy, which
+				// is exactly what 'jaira lanes use' produces. Only warn, and only mark
+				// it as an override for the settings screen's label, when something
+				// that actually changes behaviour differs.
+				if !lanesEquivalent(base, l) {
+					l.Overrides = base.ID
 					warnings = append(warnings, fmt.Sprintf(
-						"lane %s: overriding %q drops %s — an agent could now accept its own work here undetected",
-						m, l.ID, strings.Join(lost, ", ")))
+						"lane %s: id %q overrides the built-in lane of the same name", m, l.ID))
+					if lost := droppedProtections(base, l); len(lost) > 0 {
+						warnings = append(warnings, fmt.Sprintf(
+							"lane %s: overriding %q drops %s — an agent could now accept its own work here undetected",
+							m, l.ID, strings.Join(lost, ", ")))
+					}
 				}
 				lanes = replaceLane(lanes, l)
 			} else {
@@ -454,6 +462,46 @@ func Load(root string) (*Set, error) {
 		set.byID[l.ID] = l
 	}
 	return set, nil
+}
+
+// lanesEquivalent reports whether replacement behaves exactly like base, so a
+// file that merely re-ships a built-in unchanged is not treated as an
+// override.
+//
+// Every field that can change what the lane actually does is compared: what
+// gates it (RequiresQuestion, RequiresOutcome, RequiresNonModelSignal,
+// RequiresHumanExit, RequiresOption, RequiresSpecified, Terminal), what it
+// takes and gives an agent (InputRequires, OutputProduces, ModelTier,
+// Agentic), what it says (Prompt, Name, Description — a person or an agent
+// reads these to decide what the lane is for, so a changed description is a
+// real change even though it does not touch a gate), and where it sits
+// (After, Precedence).
+//
+// Creator is deliberately excluded: it records who made the file, not what it
+// does, and a plain copy — 'jaira lanes use' — never carries the built-in's
+// "jaira" default forward, so comparing it would flag every unmodified copy as
+// changed. ID, Builtin, Source and Overrides are excluded for a different
+// reason: ID is what matched base and replacement to each other in the
+// caller, Builtin/Source describe provenance rather than behaviour, and
+// Overrides is set by the caller after this comparison returns, so it carries
+// no information yet on either side.
+func lanesEquivalent(base, replacement *Lane) bool {
+	return base.Name == replacement.Name &&
+		base.Description == replacement.Description &&
+		base.After == replacement.After &&
+		base.Precedence == replacement.Precedence &&
+		base.Agentic == replacement.Agentic &&
+		base.Terminal == replacement.Terminal &&
+		base.ModelTier == replacement.ModelTier &&
+		base.RequiresQuestion == replacement.RequiresQuestion &&
+		base.RequiresOutcome == replacement.RequiresOutcome &&
+		base.RequiresNonModelSignal == replacement.RequiresNonModelSignal &&
+		base.RequiresHumanExit == replacement.RequiresHumanExit &&
+		base.RequiresOption == replacement.RequiresOption &&
+		base.RequiresSpecified == replacement.RequiresSpecified &&
+		base.Prompt == replacement.Prompt &&
+		slices.Equal(base.InputRequires, replacement.InputRequires) &&
+		slices.Equal(base.OutputProduces, replacement.OutputProduces)
 }
 
 // droppedProtections reports which of a built-in's protections a replacement
