@@ -133,16 +133,31 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	from := env.Lanes.Index(t.Status)
 	to := env.Lanes.Index(req.To)
 
-	// Leaving the backlog is the moment work becomes real, so the promotion gate
-	// applies to any forward move out of it.
-	leavingBacklog := t.Status == "backlog" && req.To != "backlog"
-	if leavingBacklog {
+	// enteringSpecifiedZone is the moment work becomes real: a ticket crossing
+	// from a lane where specification is optional into the first lane that
+	// requires it. It fires once per crossing, not on every move inside the
+	// zone, because re-running it there would start refusing moves that work
+	// today.
+	//
+	// boundary is the display position of the first installed lane that
+	// declares requires-specified. If no installed lane declares one — an old
+	// or hand-built lane set — the gate fails closed rather than open: it falls
+	// back to today's rule, leaving a lane literally named "backlog", so an
+	// unspecified ticket still cannot walk into a working lane.
+	boundary := specifiedBoundary(env.Lanes.Lanes)
+	var enteringSpecifiedZone bool
+	if boundary >= 0 {
+		enteringSpecifiedZone = from < boundary && to >= boundary
+	} else {
+		enteringSpecifiedZone = t.Status == "backlog" && req.To != "backlog"
+	}
+	if enteringSpecifiedZone {
 		vs = append(vs, missingPromotionFields(t)...)
 		vs = append(vs, blockedBy(env, t)...)
 	}
 
 	// Any move that starts work also respects dependencies, not just the first.
-	if to > from && !leavingBacklog {
+	if to > from && !enteringSpecifiedZone {
 		vs = append(vs, blockedBy(env, t)...)
 	}
 
@@ -276,6 +291,17 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	}
 
 	return vs
+}
+
+// specifiedBoundary returns the display-order position of the first lane that
+// declares requires-specified, or -1 if no installed lane does.
+func specifiedBoundary(lanes []*lane.Lane) int {
+	for i, l := range lanes {
+		if l.RequiresSpecified {
+			return i
+		}
+	}
+	return -1
 }
 
 // missingPromotionFields reports which gate fields are absent.
