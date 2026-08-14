@@ -8,8 +8,8 @@ before a context clear; this file is the memory. The previous handoff
 
 ## Where things are
 
-- **Public: https://github.com/BeMuCa/jaira** — branch `master`, pushed through
-  `333e70f`, in sync with origin.
+- **Public: https://github.com/BeMuCa/jaira** — branch `master`, in sync with
+  origin; the session's last code commit is `333e70f`, this handoff sits on top.
 - `go test ./... -race` passes on all 11 packages; `go vet` clean.
 - The user's binary lives at `~/.local/bin/jaira`. **`go install` does not update
   it** — it writes `~/go/bin`. Use
