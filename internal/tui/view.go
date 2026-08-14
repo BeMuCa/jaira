@@ -554,6 +554,11 @@ func (m *Model) renderDetail() string {
 	if t.Follows != "" {
 		row("follows", ticket.Handle(t.Follows))
 	}
+	// Shown only while the ticket is parked, same as the CLI: a stale reason
+	// rendered on an active ticket reads as its current state.
+	if l, ok := m.lanes.Get(t.Status); ok && l.RequiresBlockedReason {
+		row("waiting on", t.BlockedReason)
+	}
 	row("question", t.Question)
 
 	if t.Outcome.What != "" || t.Outcome.Why != "" || t.Outcome.Resolves != "" {

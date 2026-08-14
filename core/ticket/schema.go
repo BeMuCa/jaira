@@ -46,6 +46,14 @@ const (
 	// lost the moment the first ticket closes.
 	FieldFollows = "follows"
 
+	// FieldBlockedReason is why a ticket is parked in the blocked lane. blocked-by
+	// covers the case where the blocker is another ticket; this covers everything
+	// else — a vendor, a decision, an environment — which is the majority and
+	// which the board otherwise records nowhere. A blocked ticket whose reason is
+	// unrecorded is the one a board loses: it looks the same on day one and on
+	// day ninety.
+	FieldBlockedReason = "blocked-reason"
+
 	// FieldReviewVerdict is the reviewer's conclusion, kept separate from
 	// outcome-resolves. The implementer writes what it believes it achieved and
 	// the reviewer judges the diff; storing both in one field destroys the pair
@@ -71,7 +79,7 @@ var canonicalOrder = []string{
 	FieldID, FieldTitle, FieldStatus, FieldReady,
 	FieldCreator, FieldAssignee, FieldExecutedBy,
 	FieldGoal, FieldContext, FieldDoD,
-	FieldBlockedBy, FieldFollows, FieldCommits, FieldModelTier,
+	FieldBlockedBy, FieldBlockedReason, FieldFollows, FieldCommits, FieldModelTier,
 	FieldOutcomeWhat, FieldOutcomeWhy, FieldOutcomeResolves,
 	FieldQuestion, FieldClaimedBy, FieldClaimedAt,
 	FieldCreatedAt, FieldUpdatedAt,
@@ -125,6 +133,9 @@ type Ticket struct {
 
 	// Follows is the ticket whose review produced this one.
 	Follows string
+	// BlockedReason is why the ticket is parked, when the blocker is not another
+	// ticket.
+	BlockedReason string
 	// ReviewVerdict is the reviewer's conclusion, distinct from the
 	// implementer's own account in Outcome.
 	ReviewVerdict string
@@ -436,6 +447,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Context = str(FieldContext)
 	t.DoD = str(FieldDoD)
 	t.Follows = str(FieldFollows)
+	t.BlockedReason = str(FieldBlockedReason)
 	t.ReviewVerdict = str(FieldReviewVerdict)
 	t.ReviewSummary = str(FieldReviewSummary)
 	t.ReviewGaps = str(FieldReviewGaps)

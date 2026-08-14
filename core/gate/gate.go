@@ -27,6 +27,7 @@ const (
 	CodeMissingOutcome  = "missing_outcome"
 	CodeNeedsSignal     = "needs_nonmodel_signal"
 	CodeNeedsQuestion   = "needs_question"
+	CodeNeedsReason     = "needs_blocked_reason"
 	CodeSelfBlock       = "self_block"
 	CodeMissingProduces = "missing_lane_output"
 	CodePlanIncomplete  = "plan_incomplete"
@@ -90,6 +91,10 @@ type Request struct {
 
 	// Question accompanies a move into a lane that requires one.
 	Question string
+
+	// Reason accompanies a move into a lane that will not take a ticket without
+	// knowing what it is waiting on.
+	Reason string
 
 	// Actor is who is performing the move, used only in messages.
 	Actor string
@@ -185,13 +190,21 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	} else {
 		enteringSpecifiedZone = t.Status == "backlog" && req.To != "backlog"
 	}
+	// The dependency check guards starting work, and parking a ticket is the
+	// opposite of that: a lane that demands a blocked reason exists to hold
+	// tickets whose blockers are unresolved, so refusing entry on those very
+	// blockers would lock the one ticket the lane is for out of it.
+	parking := target.RequiresBlockedReason
+
 	if enteringSpecifiedZone {
 		vs = append(vs, missingPromotionFields(t)...)
-		vs = append(vs, blockedBy(env, t)...)
+		if !parking {
+			vs = append(vs, blockedBy(env, t)...)
+		}
 	}
 
 	// Any move that starts work also respects dependencies, not just the first.
-	if to > from && !enteringSpecifiedZone {
+	if to > from && !enteringSpecifiedZone && !parking {
 		vs = append(vs, blockedBy(env, t)...)
 	}
 
@@ -213,6 +226,21 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 			Code:    CodeNeedsQuestion,
 			Field:   ticket.FieldQuestion,
 			Message: fmt.Sprintf("lane %q needs the question that is blocking progress", target.ID),
+		})
+	}
+
+	// Parking a ticket is the cheapest move on the board and the easiest to
+	// forget, so the lane that does it is the one that asks why. blocked-by
+	// already answers it when the blocker is another ticket, and is accepted
+	// here rather than demanding the same thing be typed out twice.
+	if target.RequiresBlockedReason && strings.TrimSpace(req.Reason) == "" &&
+		strings.TrimSpace(t.BlockedReason) == "" && len(t.BlockedBy) == 0 {
+		vs = append(vs, Violation{
+			Code:  CodeNeedsReason,
+			Field: ticket.FieldBlockedReason,
+			Message: fmt.Sprintf(
+				"lane %q needs to know what %s is waiting on: pass --reason \"<what>\", or record the blocking ticket with 'jaira set %s blocked-by=<id>'",
+				target.ID, ticket.Handle(t.ID), ticket.Handle(t.ID)),
 		})
 	}
 
@@ -311,8 +339,11 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	}
 
 	// The lane being left must have produced what it promised, so a pipeline
-	// step cannot be skipped by simply advancing past it.
-	if cur, ok := env.Lanes.Get(t.Status); ok && to > from && !skipped(cur, t) {
+	// step cannot be skipped by simply advancing past it. Parking is exempt for
+	// the same reason as the dependency check above: a ticket stopped mid-work
+	// has not produced its lane's output yet — that is what stopped it — and it
+	// returns to the lane it left, so nothing is being skipped.
+	if cur, ok := env.Lanes.Get(t.Status); ok && to > from && !skipped(cur, t) && !parking {
 		for _, f := range cur.OutputProduces {
 			if !fieldFilled(t, f) {
 				vs = append(vs, Violation{
@@ -396,6 +427,8 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 		v = t.ReviewGaps
 	case ticket.FieldFollows:
 		v = t.Follows
+	case ticket.FieldBlockedReason:
+		v = t.BlockedReason
 	default:
 		// Falling back to the raw document covers fields this package does not
 		// model. A ticket built in memory rather than loaded from disk has no

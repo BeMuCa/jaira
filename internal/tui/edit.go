@@ -25,6 +25,7 @@ var editableFields = []struct {
 	{"title", ticket.FieldTitle, func(t *ticket.Ticket) string { return t.Title }},
 	{"tier", ticket.FieldModelTier, func(t *ticket.Ticket) string { return t.ModelTier }},
 	{"question", ticket.FieldQuestion, func(t *ticket.Ticket) string { return t.Question }},
+	{"waiting on", ticket.FieldBlockedReason, func(t *ticket.Ticket) string { return t.BlockedReason }},
 }
 
 // startEdit opens the field editor on the ticket in the detail pane.

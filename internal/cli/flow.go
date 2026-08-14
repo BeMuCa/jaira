@@ -17,6 +17,7 @@ import (
 func newMoveCmd() *cobra.Command {
 	var (
 		to, question, executedBy string
+		reason                   string
 		what, why, resolves      string
 		commits                  []string
 		force                    bool
@@ -93,7 +94,7 @@ command is safe to retry.`,
 
 			// Idempotent: re-running a satisfied move is a no-op success rather
 			// than an error, because parallel agents retry.
-			if t.Status == to && question == "" && what == "" && why == "" && resolves == "" && len(commits) == 0 {
+			if t.Status == to && question == "" && reason == "" && what == "" && why == "" && resolves == "" && len(commits) == 0 {
 				if g.jsonOut {
 					return emit(cmd.OutOrStdout(), map[string]any{
 						"ticket": ticketJSON(t, env.Lanes), "moved": false, "reason": "already_in_lane",
@@ -114,6 +115,9 @@ command is safe to retry.`,
 					return t.Doc().SetScalar(field, val)
 				}
 				if err := set(ticket.FieldQuestion, question); err != nil {
+					return err
+				}
+				if err := set(ticket.FieldBlockedReason, reason); err != nil {
 					return err
 				}
 				if err := set(ticket.FieldOutcomeWhat, what); err != nil {
@@ -153,7 +157,7 @@ command is safe to retry.`,
 				return err
 			}
 
-			req := gate.Request{To: to, Question: question, Actor: identity()}
+			req := gate.Request{To: to, Question: question, Reason: reason, Actor: identity()}
 			vs := gate.CheckAdvance(env, t, req)
 			if len(vs) > 0 && !force {
 				code := ExitValidation
@@ -196,6 +200,7 @@ command is safe to retry.`,
 	f := cmd.Flags()
 	f.StringVar(&to, "to", "", "target lane (required)")
 	f.StringVar(&question, "question", "", "the question blocking progress, for the human lane")
+	f.StringVar(&reason, "reason", "", "what the ticket is waiting on, for the blocked lane")
 	f.StringVar(&executedBy, "executed-by", "", "model that performed this run; ownership stays with the assignee")
 	f.StringVar(&what, "what", "", "outcome: what was changed")
 	f.StringVar(&why, "why", "", "outcome: why it was needed")

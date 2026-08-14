@@ -532,6 +532,12 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
 	if t.Follows != "" {
 		row("follows", ticket.Handle(t.Follows))
 	}
+	// Shown only while the ticket is parked: after it moves on, yesterday's
+	// blocker rendered as "waiting on" would read as today's state. The field
+	// itself stays on the ticket as history.
+	if l, ok := env.Lanes.Get(t.Status); ok && l.RequiresBlockedReason && t.BlockedReason != "" {
+		row("waiting on", t.BlockedReason)
+	}
 	if t.Question != "" {
 		row("question", t.Question)
 	}
@@ -984,6 +990,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"definition_of_done": t.DoD,
 		"blocked_by":         t.BlockedBy,
 		"follows":            t.Follows,
+		"blocked_reason":     t.BlockedReason,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
 		"question":           t.Question,

@@ -63,6 +63,11 @@ type Lane struct {
 	RequiresOutcome        bool
 	RequiresNonModelSignal bool
 
+	// RequiresBlockedReason means a ticket may not be parked here without saying
+	// what it is waiting on. Parking is cheap and forgetting is silent, so this
+	// is the one place the board charges for it.
+	RequiresBlockedReason bool
+
 	// RequiresHumanExit means no agent may move a ticket out of this lane. It is
 	// the difference between a review step that is conventionally respected and
 	// one that actually stops: an agent that decides its own work passed review
@@ -250,6 +255,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresOutcome = boolOr("requires-outcome", l.Terminal)
 	l.RequiresNonModelSignal = boolOr("requires-nonmodel-signal", l.Terminal)
 	l.RequiresHumanExit = boolOf("requires-human-exit")
+	l.RequiresBlockedReason = boolOf("requires-blocked-reason")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
 
 	if l.ID == "" {
@@ -520,6 +526,7 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.Terminal == replacement.Terminal &&
 		base.ModelTier == replacement.ModelTier &&
 		base.RequiresQuestion == replacement.RequiresQuestion &&
+		base.RequiresBlockedReason == replacement.RequiresBlockedReason &&
 		base.RequiresOutcome == replacement.RequiresOutcome &&
 		base.RequiresNonModelSignal == replacement.RequiresNonModelSignal &&
 		base.RequiresHumanExit == replacement.RequiresHumanExit &&

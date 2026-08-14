@@ -271,6 +271,20 @@ jaira set <handle> blocked-by=<other-handle>
 
 A ticket with unresolved blockers cannot start. `jaira next` skips them.
 
+Parking a ticket in the blocked lane requires saying what it is waiting on —
+a blocked ticket with no recorded reason looks the same on day one and day
+ninety. Either the blocker is a ticket (`blocked-by`, accepted as the reason),
+or you say it on the move:
+
+```bash
+jaira move <handle> --to blocked --reason "vendor API returns 500s, ticket open with them"
+```
+
+Without either, the move exits 3 (`needs_blocked_reason`). Parking is exempt
+from the leaving lane's output contract and from the dependency check — a
+ticket stopped mid-work has not produced its output yet, and its open blockers
+are the reason it is here, not grounds to refuse entry.
+
 ## Keeping the board honest
 
 Record what you are doing when the topic changes, so the board reflects reality
