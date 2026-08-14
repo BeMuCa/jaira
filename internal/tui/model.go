@@ -68,6 +68,12 @@ type Model struct {
 	// without losing the cursor.
 	scroll map[string]int
 
+	// detailScroll is the first visible line of the open ticket. The detail pane
+	// is the one view whose content has no upper bound — several checklists, a
+	// body, notes — so it is the one view that must be clipped to the window and
+	// scrolled rather than rendered whole.
+	detailScroll int
+
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
 	detail *ticket.Ticket
@@ -670,6 +676,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		case "m":
 			m.openMove()
+		case "pgdown", "ctrl+d":
+			m.detailScroll += max(1, m.height-4)
+		case "pgup", "ctrl+u":
+			m.detailScroll -= max(1, m.height-4)
 		case "j", "down":
 			m.mode = m.detailFrom
 			m.detail = nil
@@ -796,6 +806,7 @@ func (m *Model) openDetail() {
 	}
 	m.detail = full
 	m.detailFrom = m.mode
+	m.detailScroll = 0
 	m.mode = modeDetail
 }
 

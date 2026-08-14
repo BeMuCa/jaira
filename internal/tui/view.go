@@ -586,9 +586,28 @@ func (m *Model) renderDetail() string {
 	if rest := stripChecklistSections(t.Body); rest != "" {
 		b.WriteString("\n" + rest + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render(truncate(
-		"e fields · E body · y copy id · m move · jk next/prev · esc back", max(1, min(m.width, 78)))))
-	return b.String()
+	// Everything above is the full ticket, which has no upper bound in length.
+	// Rendering it whole pushed the handle, the title and the goal off the top of
+	// the terminal with no key that could bring them back, so the pane is clipped
+	// to the window and scrolled. The offset is clamped here rather than in the
+	// key handler because only this function knows how long the content came out.
+	lines := strings.Split(strings.TrimRight(b.String(), "\n"), "\n")
+	// Two lines are reserved: the footer and the blank line above it.
+	visible := max(1, m.height-2)
+	if m.detailScroll > len(lines)-visible {
+		m.detailScroll = len(lines) - visible
+	}
+	if m.detailScroll < 0 {
+		m.detailScroll = 0
+	}
+	end := min(len(lines), m.detailScroll+visible)
+
+	hint := "e fields · E body · y copy id · m move · ctrl+d/u scroll · jk next/prev · esc back"
+	if end < len(lines) {
+		hint = fmt.Sprintf("+%d more · ", len(lines)-end) + hint
+	}
+	return strings.Join(lines[m.detailScroll:end], "\n") + "\n\n" +
+		styMeta.Render(truncate(hint, max(1, min(m.width, 78))))
 }
 
 type gitStat struct{ root string }
