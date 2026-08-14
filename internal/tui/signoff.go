@@ -125,6 +125,12 @@ func (m *Model) accept() {
 // diff, not just in a unit test.
 func followUpContext(src *ticket.Ticket) string {
 	parts := []string{"Raised from the review of " + ticket.Handle(src.ID) + "."}
+	// The commits are written into the prose as well as being reachable through
+	// follows:, because the context has to still answer "what was already done"
+	// after the predecessor has been archived off the board.
+	if len(src.Commits) > 0 {
+		parts = append(parts, "That work shipped in "+strings.Join(src.Commits, ", ")+".")
+	}
 	if why := firstNonEmpty(src.Context, src.Goal); strings.TrimSpace(why) != "" {
 		parts = append(parts, why)
 	}

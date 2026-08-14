@@ -38,6 +38,20 @@ jaira create "Fix session cookie dropped on 302" \
   --context "Reported while debugging Safari logouts"
 ```
 
+When the ticket exists *because of* another one — a review found a gap, the work
+turned out to need a second pass — say so with `--follows`, which takes a handle:
+
+```bash
+jaira create "Retry the export on a dropped connection" \
+  --follows DAHC06 \
+  --goal "..." --dod "..." --context "..."
+```
+
+Without it a follow-up looks like an unrelated ticket, and the chain of why is
+gone. It must resolve to a real ticket, so a typo exits 5 rather than writing a
+dead link. `jaira show` and the board's detail pane display it, and it rides in
+`--json` as `follows`.
+
 Write the `--context` yourself from the conversation that produced the ticket.
 That field is the whole point: it is what makes the ticket comprehensible later.
 A good context says what problem prompted this and what had already been ruled

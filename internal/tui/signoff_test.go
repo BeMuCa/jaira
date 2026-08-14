@@ -122,3 +122,53 @@ func hasCode(vs gate.Violations, code string) bool {
 	}
 	return false
 }
+
+// A follow-up outlives the ticket it came from: the predecessor gets archived
+// off the board, and then follows: points at a file that is no longer in
+// tickets/. The commits are therefore written into the context prose as well,
+// so "what was already done" is still answerable from the follow-up alone.
+func TestFollowUpContextCarriesTheCommits(t *testing.T) {
+	src := &ticket.Ticket{
+		ID:      "01KZZR4CBGDM5T35SZDR72PQYG",
+		Title:   "Rate limit login",
+		Context: "came up while reading the auth logs",
+		Commits: []string{"bc615031d54de4b369d66bfabe0adf8846adc409"},
+	}
+
+	got := followUpContext(src)
+
+	if !strings.Contains(got, "72PQYG") {
+		t.Errorf("context does not name the predecessor:\n%s", got)
+	}
+	if !strings.Contains(got, "bc615031d54de4b369d66bfabe0adf8846adc409") {
+		t.Errorf("context does not name the commit the work shipped in:\n%s", got)
+	}
+}
+
+// With no commits recorded there is nothing to say, and a dangling "shipped in
+// ." sentence would be worse than silence.
+func TestFollowUpContextWithoutCommits(t *testing.T) {
+	src := &ticket.Ticket{ID: "01KZZR4CBGDM5T35SZDR72PQYG", Title: "t"}
+
+	if got := followUpContext(src); strings.Contains(got, "shipped in") {
+		t.Errorf("context invented a commit sentence with no commits:\n%s", got)
+	}
+}
+
+// The board is where the link is read, so the detail pane has to show it. The
+// handle is what every command takes, so it is the form shown.
+func TestDetailRendersFollows(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.detail = &ticket.Ticket{
+		ID:      "01KZTT3XZ2YQBX93TTSR7BVRCT",
+		Title:   "Follow-up: rate limit login",
+		Status:  "backlog",
+		Follows: "01KZZR4CBGDM5T35SZDR72PQYG",
+	}
+
+	out := stripANSI(m.renderDetail())
+
+	if !strings.Contains(out, "follows") || !strings.Contains(out, "72PQYG") {
+		t.Errorf("detail pane does not show the predecessor:\n%s", out)
+	}
+}

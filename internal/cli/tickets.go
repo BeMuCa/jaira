@@ -113,9 +113,9 @@ session and lock state is never committed. Safe to run more than once.`,
 
 func newCreateCmd() *cobra.Command {
 	var (
-		title, goalV, dod, contextV, assignee, laneID, tier, body string
-		blockedBy                                                 []string
-		ready                                                     bool
+		title, goalV, dod, contextV, assignee, laneID, tier, body, follows string
+		blockedBy                                                          []string
+		ready                                                              bool
 	)
 	cmd := &cobra.Command{
 		Use:   "create <title>",
@@ -155,6 +155,19 @@ after the first two.`,
 				return fail(ExitUsage, "no_such_lane", "no lane %q is installed; available: %s", target, strings.Join(lanes.IDs(), ", "))
 			}
 
+			// A follows: link is only worth writing if it resolves: a dead
+			// reference is worse than none, because it looks like a trail exists.
+			// Load accepts an unambiguous prefix, so a handle works here, and it
+			// is normalised to the full id so the link matches on both sides.
+			followsID := ""
+			if strings.TrimSpace(follows) != "" {
+				src, err := s.Load(follows)
+				if err != nil {
+					return err
+				}
+				followsID = src.ID
+			}
+
 			now := time.Now()
 			me := identity()
 			tplBody, tplFields, tplLists, hasTemplate := templateBody(s, title)
@@ -178,6 +191,7 @@ after the first two.`,
 				ticket.FieldGoal:      goalV,
 				ticket.FieldContext:   contextV,
 				ticket.FieldDoD:       dod,
+				ticket.FieldFollows:   followsID,
 				ticket.FieldModelTier: tier,
 				ticket.FieldCreatedAt: ticket.FormatTime(now),
 				ticket.FieldUpdatedAt: ticket.FormatTime(now),
@@ -246,6 +260,7 @@ after the first two.`,
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
 	f.StringVar(&body, "body", "", "markdown body")
 	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
+	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from")
 	f.BoolVar(&ready, "ready", false, "unused; readiness is derived from the gate")
 	_ = f.MarkHidden("ready")
 	return cmd
@@ -513,6 +528,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
 			shorts = append(shorts, ticket.Handle(b))
 		}
 		row("blocked-by", strings.Join(shorts, ", "))
+	}
+	if t.Follows != "" {
+		row("follows", ticket.Handle(t.Follows))
 	}
 	if t.Question != "" {
 		row("question", t.Question)
@@ -965,6 +983,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"context":            t.Context,
 		"definition_of_done": t.DoD,
 		"blocked_by":         t.BlockedBy,
+		"follows":            t.Follows,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
 		"question":           t.Question,

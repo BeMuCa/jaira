@@ -551,6 +551,9 @@ func (m *Model) renderDetail() string {
 		}
 		row("blocked by", strings.Join(hs, ", "))
 	}
+	if t.Follows != "" {
+		row("follows", ticket.Handle(t.Follows))
+	}
 	row("question", t.Question)
 
 	if t.Outcome.What != "" || t.Outcome.Why != "" || t.Outcome.Resolves != "" {

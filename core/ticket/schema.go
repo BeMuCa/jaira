@@ -71,7 +71,7 @@ var canonicalOrder = []string{
 	FieldID, FieldTitle, FieldStatus, FieldReady,
 	FieldCreator, FieldAssignee, FieldExecutedBy,
 	FieldGoal, FieldContext, FieldDoD,
-	FieldBlockedBy, FieldCommits, FieldModelTier,
+	FieldBlockedBy, FieldFollows, FieldCommits, FieldModelTier,
 	FieldOutcomeWhat, FieldOutcomeWhy, FieldOutcomeResolves,
 	FieldQuestion, FieldClaimedBy, FieldClaimedAt,
 	FieldCreatedAt, FieldUpdatedAt,
