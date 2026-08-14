@@ -1,107 +1,125 @@
-# Handoff — 2026-08-13 (evening)
+# Handoff — 2026-08-15
 
-State after the session that closed Phase 5 and reworked the board's settings,
-lanes and notes. Written before a context clear; this file is the memory.
+State after the session that made commits and blocked-reasons mandatory lane
+output, made `follows:` real, and gave the open ticket a viewport. Written
+before a context clear; this file is the memory. The previous handoff
+(2026-08-13, Phase 5 close + settings/lanes/notes rework) is in git history at
+`d0a1b40` — its decisions are restated below where they still bind.
 
 ## Where things are
 
-- **Public: https://github.com/BeMuCa/jaira** — branch `master`, everything
-  pushed, CI green on linux/macOS/windows.
-- ~75 commits landed today. `go test ./... -race` passes locally on all
-  packages; CI runs the same on three operating systems.
+- **Public: https://github.com/BeMuCa/jaira** — branch `master`, pushed through
+  `333e70f`, in sync with origin.
+- `go test ./... -race` passes on all 11 packages; `go vet` clean.
 - The user's binary lives at `~/.local/bin/jaira`. **`go install` does not update
   it** — it writes `~/go/bin`. Use
-  `go build -o ~/.local/bin/jaira ./cmd/jaira`.
+  `go build -o ~/.local/bin/jaira ./cmd/jaira`. Rebuilt this session.
 
-## What landed today
+## What landed this session (4 commits)
 
-Data and format
-- A hand-written `context: |` block scalar used to read back as the string `"|"`,
-  losing the whole text. Block scalars are now read and written properly.
-- `## Description` is gone from the ticket template; nothing ever read it. The
-  problem statement lives in `context`, which every lane's bounded input carries.
+**`e426e73` — commits are mandatory implementing-lane output.**
+Trigger: real feedback — three accepted tickets (DAHC06, YDACKQ, PJFVD1 on the
+user's German-language "requirement" board) carried `commits: (keine)`, so at
+sign-off there was no way to see what was being accepted. The mechanism already
+existed end to end (`FieldCommits`, `fieldFilled`, the `--from-lane` decoder);
+the only change was adding `commits` to `20-in-progress.md`'s `output-produces`
+plus a prompt paragraph telling the agent to pass
+`--commits "$(git rev-parse HEAD)"`. Both move paths verified on the running
+binary: flags path and JSON-on-stdin path each refuse with exit 3 without
+commits and pass with them.
 
-Traceability
-- The review lane must produce `review-summary` and `review-gaps`; the gate
-  refuses to release a ticket from review without them.
-- Every definition-of-done and plan item can carry a `proof:` sub-line, written
-  with `jaira dod <id> <n> --done --proof "…"`.
-- The detail pane shows the full ticket id (`y` copies it over OSC52) and a
-  `when` row with created / last-touched.
+**`c605edb` — `follows:` is visible, settable and durable.**
+It was written by exactly one code path (the sign-off screen's follow-up
+action) and rendered nowhere — a write-only field. Now: `jaira create
+--follows <handle>` (resolves the prefix, refuses a dead link with exit 5,
+normalises to the full id), rendered in `jaira show`, the TUI detail pane and
+`--json` (`follows`), placed canonically after `blocked-by`. The sign-off
+follow-up also writes the predecessor's commits into the context prose
+("That work shipped in <sha>.") so the answer to "what was already done"
+survives the predecessor being archived.
 
-Gates and lanes
-- The promotion gate fires on entering the *specified zone* — a lane declaring
-  `requires-specified`, which the built-in `todo` carries — rather than on
-  leaving a lane literally named `backlog`. That made a thinking lane possible.
-- A `brainstorm` built-in lane ships, optional per ticket
-  (`requires-option: brainstorm`), and cannot be left until it produced a `goal`.
-- Built-in lanes may be overridden, including dropping a protection; two distinct
-  warnings fire, one naming the protection lost.
-- The `signoff` lane displays as **Human Review**; its id is unchanged.
-- A project's column order lives in `.jaira/lanes/order` as positions from 1;
-  moving a lane shifts its neighbour. `precedence` is untouched by it.
+**`5a47359` — the open ticket is clipped to the terminal and scrolls.**
+`renderDetail` never read `m.height`; a 41-line ticket rendered whole into a
+16-line terminal, pushing handle/title/goal off the top with no key to bring
+them back. Now: `detailScroll` offset, clamped in the renderer (only it knows
+the content length), `ctrl+d`/`ctrl+u`/`pgdown`/`pgup` to scroll, a
+`+N more ·` prefix on the footer when clipped, reset on open. `j`/`k` still
+switch tickets — untouched. Board-column scrolling was *not* the bug: verified
+correct across a 9×8 size matrix before touching anything.
 
-Surfaces
-- `S` opens settings, holding the lane screen and the default board. `L` is gone.
-- The lane settings screen is a small board: `h`/`l` navigate, `H`/`L` move the
-  selected lane, `x` removes it from the project, a `+` column adds one from the
-  catalogue.
-- `jaira lanes` gained `use`, `publish`, `adopt`, `add`, `remove`, `move`,
-  `default`, `show`, `path`, `template`, `shared` — so an agent can do everything
-  the screen can.
-- Boards are listed on the board and the compact view, `1`-`9` switches between
-  them from either, the one you are in is marked `▸`, and a board with a live
-  agent session is marked `◆`.
-- `jaira update` plus a per-command nudge when the binary is newer than the board.
+**`333e70f` — the blocked lane refuses a ticket that cannot say what it is
+waiting on.** New field `blocked-reason`, new lane flag
+`requires-blocked-reason` (on `60-blocked.md`), new violation
+`needs_blocked_reason` (exit 3), `jaira move --reason "…"`. `blocked-by` is
+accepted in place of a typed reason. Rendered as `waiting on` in show/TUI —
+**only while the ticket sits in a parking lane**; the field stays on the
+ticket as history after unparking. Editable in the TUI field editor.
 
-Ownership and notes
-- A ticket belongs to its assignee: writing to someone else's is refused with
-  exit 3. The human checkpoint lanes are exempt by contract, hand-over is always
-  allowed, `--force` overrides and is recorded. **A guard rail, not a lock** —
-  git still merges files, so the merge rules are untouched.
-- The working lane never named `jaira note` at all. It now says what a note
-  contains and when one is due: **write down what the repository does not already
-  say**, at every pause, never saved for the end.
+## Decisions made this session — do not silently reverse
 
-## Decisions that must not be silently reversed
+1. **Parking is exempt from the dependency check and from the leaving lane's
+   output contract** (`core/gate/gate.go`, the `parking` flag = target lane has
+   `requires-blocked-reason`). Both were found the hard way: the dependency
+   gate locked tickets with open blockers *out of Blocked* (exit 4 — the very
+   tickets the lane is for), and the new commits contract made a ticket stopped
+   mid-work with no commits yet unparkable. Tests:
+   `TestUnresolvedBlockerDoesNotBarTheBlockedLane`,
+   `TestParkingIsExemptFromTheLeavingLanesContract`.
+2. **`blocked-reason` is its own field, not a reuse of `question`.** Chosen by
+   the user over the one-line `requires-question: true` alternative, because a
+   ticket wandering HITL→Blocked would carry its stale question as a fake
+   reason, and `requires-question` also waives the owner guard.
+3. **A stale reason is not rendered on an active ticket.** `waiting on` shows
+   only while the current lane requires it; deleting the field on unpark was
+   rejected in favour of keeping history.
+4. **`create --follows` validates; `jaira set follows=` does not.** Deliberate:
+   `set` validates no field, and making `follows` its lone special case is
+   inconsistency in the other direction. Known consequence: `jaira set <id>
+   follows=NOPE99` writes a dead link, exit 0. Reopening this is a user
+   decision.
+5. **Archives are cheap; deletion buys nothing.** Measured: 1000 archived
+   tickets ≈ 320 KB in git after gc; the board scan never reads `archive/`
+   (sibling of `tickets/`, `store.go`). Deleting a committed file does not
+   shrink history. Any future "cleanup" feature should be a listing/filter
+   problem, not a deletion cascade.
 
-1. **`precedence` is a merge rank, not a column position.** `core/merge` uses it
-   to decide which lane wins when two clones moved the same ticket, which is why
-   `blocked` carries a deliberately low number. Renumbering it to fix display
-   order would make a merge pull an in-progress ticket back into Blocked. This
-   was nearly shipped as a "fix" and the plan for it was withdrawn.
-2. **Lanes are written as files**, not through a CRUD form. The CLI makes them
-   legible and actionable; the TUI's `n` writes a skeleton and opens `$EDITOR`.
-3. **A progress note is never gated.** A note written to satisfy a gate says
-   "work done, all good" and is worthless.
-4. **`.jaira/lanes/` is authoritative** when present — the project's whole lane
-   list, not a set of overrides. Any change to it must first materialise the full
-   working set, or the board drops to one column.
-5. **`jaira create` puts a ticket in the backlog even when fully specified.**
-   Decided 2026-08-13: capturing and deciding to start are two acts. `--lane todo`
-   is the direct route.
+The five standing decisions from 2026-08-13 (precedence is a merge rank; lanes
+are files; a progress note is never gated; `.jaira/lanes/` is authoritative;
+`create` lands in backlog) still bind — see `d0a1b40` for their full text.
+
+## The lane-copy trap, again
+
+`20-in-progress.md` and `60-blocked.md` both changed. **Every project copy of
+those lanes now warns as modified and does NOT have the new gates** until
+re-copied. This bit once before (sign-off → human review rename). If the
+user's "requirement" board has its own lane files, the commits gate is not
+active there — that board is where the original complaint came from.
 
 ## Open, needs the user
 
-- **Do the per-ticket `## Options` (brainstorm, planning) earn their keep** now
-  that lanes can be added or left out per project? The user's instinct is that
-  removing the lane is simpler; the counter-argument is that an agent driving
-  `jaira next` needs this ticket's *route*, and route is per ticket.
-- Four interactive checks nobody has run, all needing a real terminal: `S` and its
-  two entries, `1`-`9` switching and the `▸`/`◆` markers, the small board's
-  `H`/`L`/`x`/`+`, `y` copying over OSC52, and `$EDITOR` opening from `n`.
+- **DAHC06, YDACKQ, PJFVD1 still record no commits.** The gate only works
+  forward. The 07.08 commits need manual attribution:
+  `jaira set <handle> commits=<sha1>,<sha2>` (commits is a list field).
+- **Follow-up chains: archive protection / cascade.** The user sketched:
+  warn (but allow) archiving a predecessor with an open follow-up; cascading
+  archive along the `follows` chain. Deferred until the links are visible —
+  which they now are. Note: it is *archive*, reversible, not delete.
+- **The TUI move dialog does not prompt for a reason** when moving to Blocked;
+  it shows the gate message and points at the field editor — same contract as
+  `question` for HITL. Acceptable parity or a papercut worth a prompt?
+- Per-ticket `## Options` earning their keep — unchanged from last handoff.
 
-## Known and deliberately not fixed
+## Known and deliberately not touched
 
-- A cosmetic `anchor "" is not installed` warning can appear after materialising a
-  project's lanes. Non-corrupting; deferred rather than risk a rushed change to
-  `order()`'s bucketing.
-- **Renaming text inside a built-in lane makes every existing project copy of it
-  start warning**, because the copy now genuinely differs. Happened today when
-  "sign-off" became "human review". There is no migration; re-copy or accept it.
-- No way to forget a board: `jaira projects` has no removal, and the launcher has
-  no key for it. Six stale `/tmp` entries had to be edited out of
-  `~/.jaira/projects.json` by hand. `~/.jaira/state/` also grows without bound —
-  439 directories, never pruned.
-- `▸` (current board) and the header dropping its duplicate name have **no tests**.
-  The suite stays green either way.
+- `gofmt` flags `core/gate/gate.go`, `internal/cli/tickets.go`,
+  `internal/tui/lanes.go`, `internal/tui/view.go` — **pre-existing at
+  `d0a1b40`**, verified per file against HEAD before this session's edits; the
+  complaints sit in untouched map literals/alignment groups. Session edits are
+  clean. Reformatting them would pollute blame for no behaviour change.
+- Board render has a floor of 10 lines: terminals ≤ 9 rows overflow by ~2
+  lines regardless of selection. Found while chasing the scroll bug; cosmetic;
+  not fixed.
+- `jaira archive` (no args) lists everything unfiltered — the real "archive
+  gets full" cost is this listing, not storage.
+- No way to forget a board; `~/.jaira/state/` grows unbounded — unchanged from
+  last handoff.
