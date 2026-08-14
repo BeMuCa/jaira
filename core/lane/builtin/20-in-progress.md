@@ -7,7 +7,7 @@ agentic: true
 terminal: false
 model-tier: cheap
 input-requires: [goal, definition-of-done, context, plan]
-output-produces: [outcome-what, outcome-why, outcome-resolves]
+output-produces: [outcome-what, outcome-why, outcome-resolves, commits]
 description: Carrying out the plan.
 ---
 # Prompt
@@ -65,6 +65,11 @@ When you are finished, report:
 - **what** you changed, concretely
 - **why** the change was needed
 - **how** the change satisfies the definition of done, referring to it directly
+- **which commits** carry it: `--commits "$(git rev-parse HEAD)"` on the move,
+  naming every commit you made. This lane does not let go of a ticket without
+  them — at review and at sign-off the diff shown is the diff of exactly these
+  commits, and a ticket that names none is a change nobody can check, then or
+  months later.
 
 Do not claim the definition of done is met unless you can point to the specific
 behaviour that now satisfies it — the `--proof` on each item is where that
