@@ -1062,3 +1062,65 @@ func TestLanesMoveRequiresExactlyOneDirection(t *testing.T) {
 		t.Fatalf("expected 'move' with both directions to fail; got %s", out)
 	}
 }
+
+// 'lanes use --force' exists to refresh a project's copy of a lane after an
+// upgrade changed the built-in. It used to resolve the id through the project's
+// own lane set, where the stale copy shadows the built-in — so it copied the
+// stale file onto itself and reported success. The id must resolve through the
+// catalogue instead.
+func TestLanesUseForceRefreshesAStaleProjectCopy(t *testing.T) {
+	lanesTestCatalogue(t)
+	dir := lanesTestProject(t)
+
+	// A project copy of the implementing lane from before the commits
+	// contract: same id, older output-produces.
+	projDir := filepath.Join(dir, ".jaira", "lanes")
+	if err := os.MkdirAll(projDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stale := `---
+id: in-progress
+name: Implementing
+after: pre-process
+precedence: 30
+agentic: true
+model-tier: cheap
+input-requires: [goal, definition-of-done, context, plan]
+output-produces: [outcome-what, outcome-why, outcome-resolves]
+description: Carrying out the plan.
+---
+# Prompt
+
+Old copy.
+`
+	path := filepath.Join(projDir, "in-progress.md")
+	if err := os.WriteFile(path, []byte(stale), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := runLanes(t, dir, "use", "in-progress", "--force"); err != nil {
+		t.Fatalf("lanes use --force: %v\n%s", err, out)
+	}
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), "commits") {
+		t.Errorf("the project copy was not refreshed from the built-in; output-produces still lacks commits:\n%s", b)
+	}
+}
+
+// Without --force the same call must keep refusing, so a refresh is always a
+// deliberate act — the project copy may carry local edits.
+func TestLanesUseStillRefusesToOverwriteWithoutForce(t *testing.T) {
+	lanesTestCatalogue(t)
+	dir := lanesTestProject(t)
+
+	if out, err := runLanes(t, dir, "use", "in-progress"); err != nil {
+		t.Fatalf("first use: %v\n%s", err, out)
+	}
+	if _, err := runLanes(t, dir, "use", "in-progress"); err == nil {
+		t.Error("second use without --force overwrote the project copy")
+	}
+}

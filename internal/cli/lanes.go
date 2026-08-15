@@ -38,20 +38,26 @@ move the lane settings screen's 'u' key performs. Once a project has its own
 lane file, that directory becomes authoritative for the board (see 'jaira
 lanes path').
 
-Refuses to overwrite an existing file unless --force is given.`,
+Refuses to overwrite an existing file unless --force is given. With --force,
+this is also how a project's copy of a lane is brought up to date after a
+jaira upgrade changed the built-in.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load(s.Root)
+			// The catalogue, not this project's lane set: a project copy
+			// shadows the catalogue lane of the same id, so resolving through
+			// the project would make 'use --force' copy the stale file onto
+			// itself and call it a refresh.
+			lanes, err := lane.Load("")
 			if err != nil {
 				return err
 			}
 			l, ok := lanes.Get(args[0])
 			if !ok {
-				return fail(ExitUsage, "no_such_lane", "no lane %q is installed; available: %s",
+				return fail(ExitUsage, "no_such_lane", "no lane %q is in the catalogue; available: %s",
 					args[0], strings.Join(lanes.IDs(), ", "))
 			}
 			dst, err := lane.Export(l, lane.ProjectLanesDir(s.Root), force)
