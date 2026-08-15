@@ -48,7 +48,9 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  not already say: dead ends, why this and not that, what you had to find out.\n" +
 	"  Not what the checklist and git already record. A killed session never gets a\n" +
 	"  turn to write anything down, so do not save it for the end\n" +
-	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish the step\n" +
+	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>\n" +
+	"  --commits \"$(git rev-parse HEAD)\"` — finish the step, naming every commit you\n" +
+	"  made; the implementing lane refuses to let go of a ticket without them\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
 	"\n" +
 	"`jaira <command> --help` for everything else.\n" +

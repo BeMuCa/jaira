@@ -47,13 +47,13 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 |---|---|
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md` |
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it |
-| `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--lane`, `--tier` |
+| `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields |
 | `jaira dod <id> <n> --doing\|--done\|--todo` | mark a checklist item |
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
 | `jaira dod <id> --plan …` | address the Plan checklist instead of the definition of done |
 | `jaira dod <id> --option <name>` | turn an optional step on for this ticket (`--todo` turns it off) |
-| `jaira move <id> --to <lane>` | move lanes, applying the gates |
+| `jaira move <id> --to <lane>` | move lanes, applying the gates; `--what`, `--why`, `--resolves`, `--commits` (leaving the implementing lane), `--question` (entering the human lane), `--reason` (entering the blocked lane), `--from-lane` (validate piped lane output), `--force` |
 | `jaira note <id> "…"` | record progress a later session would otherwise rediscover |
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide |
 | `jaira archive <id>` | take a ticket off the board (nothing is deleted) |
@@ -95,7 +95,9 @@ In an open ticket:
 ```
 e   edit fields (enter newline, ctrl+s save)   a   accept (at a checkpoint)
 E   edit body and checklists in $EDITOR        f   raise a follow-up
-y   copy the full ticket id
+y   copy the full ticket id                    m   move it
+ctrl+d ctrl+u   scroll a ticket taller         jk  next / previous ticket
+                than the terminal
 ```
 
 Lane settings (`S` then lanes): the project's lanes drawn as a small board,

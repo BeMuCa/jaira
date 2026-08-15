@@ -38,6 +38,13 @@ jaira move <id> --to review \
 If a gate refuses, the message says what to do and exit code 3 says it was a
 refusal rather than a crash. An agent can act on it without a human translating.
 
+When something outside the repository stops the work, park the ticket rather
+than abandoning it: `jaira move <id> --to blocked --reason "<what it is waiting
+on>"`. The blocked lane refuses a ticket that cannot say what it is waiting on
+(`blocked-by` naming another ticket counts as the answer), and parking is exempt
+from the leaving lane's output contract — a ticket stopped mid-work has not
+produced its output yet, and that is not held against it.
+
 Lanes before the first lane that declares itself the start of the specified
 zone (`requires-specified: true` — the built-in `todo` lane, by default) are for
 tickets that are not specified yet: a scrap, an idea, something being thought

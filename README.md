@@ -251,7 +251,7 @@ jaira next --json                              # what should I work on?
 jaira show <id> --for-lane in-progress --json  # the prompt and bounded input
 jaira dod <id> 2 --doing --plan                # say where you are
 jaira note <id> "the exporter buffers everything in writeAll()"
-jaira move <id> --to review --what … --why … --resolves …
+jaira move <id> --to review --what … --why … --resolves … --commits "$(git rev-parse HEAD)"
 ```
 
 Starting a session, `jaira resume --json` returns everything left mid-flight with
@@ -333,7 +333,9 @@ this view), enter open ticket, esc/v back to the compact view.
 In an open ticket:
 e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)
 E   edit body and checklists in $EDITOR          f   raise a follow-up
-y   copy the full ticket id
+y   copy the full ticket id                      m   move it
+ctrl+d ctrl+u   scroll a ticket taller           jk  next / previous ticket
+                than the terminal
 ```
 
 ## What this deliberately is not
