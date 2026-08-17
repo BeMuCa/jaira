@@ -82,6 +82,6 @@ func (s *settingsScreen) render(width, height int) string {
 		sb.WriteString(truncate("      "+styMeta.Render(e.desc), w) + "\n")
 	}
 
-	sb.WriteString("\n" + styMeta.Render(truncate("jk move · enter open · esc back", w)))
+	sb.WriteString("\n" + styMeta.Render(truncate("enter open · esc back", w)))
 	return sb.String()
 }

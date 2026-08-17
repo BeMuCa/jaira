@@ -217,7 +217,7 @@ func (d *defaultBoardScreen) render(width, height int) string {
 		sb.WriteString("\n" + style.Render(truncate(d.msg, w)) + "\n")
 	}
 	sb.WriteString("\n" + styMeta.Render(truncate(
-		"jk move · tab switch list · space toggle · e edit file · s save · esc back "+
+		"tab switch list · space toggle · e edit file · s save · esc back "+
 			"(selects lanes, does not reorder them)", w)))
 	return sb.String()
 }

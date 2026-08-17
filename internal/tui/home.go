@@ -327,7 +327,7 @@ func (h *Home) render() string {
 	}
 
 	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
-		"enter open · jk move · a add a board · d default board · r refresh · q quit", h.width))))
+		"enter open · a add a board · d default board · r refresh · q quit", h.width))))
 	return b.String()
 }
 

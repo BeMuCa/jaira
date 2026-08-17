@@ -115,7 +115,7 @@ E         edit the selected lane in $EDITOR (a built-in gets an override copy fi
 esc       back
 ```
 
-Home screen: `enter` open · `jk` move · `a` add a board · `r` refresh · `q` quit.
+Home screen: `enter` open · `a` add a board · `r` refresh · `q` quit.
 In the picker: `a` add · `i` create a board here · `s` scan two levels · `space`
 toggle a result · `enter` add what is selected.
 
