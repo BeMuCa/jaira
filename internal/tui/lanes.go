@@ -637,7 +637,7 @@ func (ls *laneScreen) render(width, height int) string {
 	// content truncate exists to fit.
 	help := "HL move · x remove · u use · p publish · n new · R refresh · esc back"
 	if len(ls.shared) > 0 {
-		help = "hl select · HL move · x remove · tab switch · u use · p publish · a adopt · esc back"
+		help = "HL move · x remove · tab switch · u use · p publish · a adopt · esc back"
 	}
 	sb.WriteString("\n" + styMeta.Render(help))
 	return sb.String()
