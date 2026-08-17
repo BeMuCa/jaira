@@ -96,15 +96,11 @@ type Model struct {
 	editIdx int
 	editBuf string
 
-	// projects is the switcher's list; SwitchTo is set when the user picks one,
-	// and the caller reopens the board there. Reopening rather than swapping the
-	// store keeps every piece of per-board state (watcher, cursor, filter) from
-	// having to be individually reset. It is loaded when the model is built, not
+	// projects is the switcher's list, loaded when the model is built, not
 	// only when 'p' is pressed, so every screen that wants it has it from the
-	// first frame.
+	// first frame. Picking one swaps the store in place (switchBoard).
 	projects []project.Project
 	projIdx  int
-	SwitchTo string
 
 	// liveBoards marks, by root, which recorded boards have a non-stale session
 	// working in them right now. It is recomputed whenever the project list
@@ -154,6 +150,39 @@ func New(s *ticket.Store) (*Model, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// switchBoard swaps the store underneath the running program. This used to
+// quit the program and let the CLI loop start a new one, which dropped the
+// alternate screen between the two — the terminal flashing through on every
+// board switch. Swapping in place keeps the screen up; the price is resetting
+// the per-board view state by hand, which is exactly the state a restart
+// used to throw away.
+//
+// The old watcher's pending waitForChange command stays blocked on the old
+// channel forever — one parked goroutine per switch, the same leak profile the
+// process restart had, and bounded by how often a person can press a key.
+func (m *Model) switchBoard(root string) tea.Cmd {
+	s, err := ticket.Discover(root)
+	if err != nil {
+		m.notify(err.Error(), true)
+		return nil
+	}
+	project.Remember(s.Root)
+	m.Close()
+	m.store = s
+	m.scroll = map[string]int{}
+	m.laneIdx, m.cardIdx = 0, 0
+	m.detail = nil
+	m.detailScroll = 0
+	m.filter, m.input = "", ""
+	m.projects = project.Load()
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return nil
+	}
+	m.startWatching()
+	return waitForChange(m.watch)
 }
 
 // reload rebuilds the whole view from disk.
@@ -609,11 +638,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.Close()
 			return m, tea.Quit
 		}
-		if quit := m.pipelineKey(s); quit {
+		quit, cmd := m.pipelineKey(s)
+		if quit {
 			m.Close()
 			return m, tea.Quit
 		}
-		return m, nil
+		return m, cmd
 
 	case modeHelp, modeMessage:
 		if s == "esc" || s == "q" || s == "enter" || s == "?" {
@@ -676,9 +706,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			if m.projIdx < len(m.projects) {
-				m.SwitchTo = m.projects[m.projIdx].Root
-				m.Close()
-				return m, tea.Quit
+				cmd := m.switchBoard(m.projects[m.projIdx].Root)
+				m.mode = modeBoard
+				return m, cmd
 			}
 		}
 		return m, nil
@@ -755,11 +785,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// 1-9 switches board here exactly as it does in the compact view — both
 	// call switchToProject so "which board is number three" is decided once.
 	if len(s) == 1 && s[0] >= '1' && s[0] <= '9' {
-		if m.switchToProject(int(s[0] - '0')) {
-			m.Close()
-			return m, tea.Quit
-		}
-		return m, nil
+		return m, m.switchToProject(int(s[0] - '0'))
 	}
 	switch s {
 	case "q", "ctrl+c":

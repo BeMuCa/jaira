@@ -109,23 +109,28 @@ func TestBoardViewShowsBoardsWithoutP(t *testing.T) {
 func TestBoardViewNumberSwitchesProject(t *testing.T) {
 	m := newTestModel(t, 130, 34)
 	m.mode = modeBoard
+	other := newTestStore(t)
 	m.projects = []project.Project{
 		{Root: m.store.Root, Name: "current"},
-		{Root: "/somewhere/else", Name: "other"},
+		{Root: other.Root, Name: "other"},
 	}
 
 	m.key(tea.KeyPressMsg{Code: '2', Text: "2"})
-	if m.SwitchTo != "/somewhere/else" {
-		t.Errorf("SwitchTo = %q, want /somewhere/else", m.SwitchTo)
+	if m.store.Root != other.Root {
+		t.Errorf("store root = %q, want the other board %q", m.store.Root, other.Root)
+	}
+	if m.mode != modeBoard {
+		t.Errorf("switching boards left board mode: %v", m.mode)
 	}
 
 	// Choosing the board already open is a no-op, not a pointless reload.
 	m2 := newTestModel(t, 130, 34)
 	m2.mode = modeBoard
 	m2.projects = []project.Project{{Root: m2.store.Root, Name: "current"}}
+	before := m2.store
 	m2.key(tea.KeyPressMsg{Code: '1', Text: "1"})
-	if m2.SwitchTo != "" {
-		t.Errorf("SwitchTo was set to %q for the board already open", m2.SwitchTo)
+	if m2.store != before {
+		t.Error("choosing the current board swapped the store")
 	}
 	if m2.mode != modeBoard {
 		t.Errorf("choosing the current board left board mode: %v", m2.mode)
@@ -139,9 +144,10 @@ func TestBoardViewNumberBeyondListIsIgnored(t *testing.T) {
 	m.mode = modeBoard
 	m.projects = []project.Project{{Root: m.store.Root, Name: "current"}}
 
+	before := m.store
 	m.key(tea.KeyPressMsg{Code: '9', Text: "9"})
-	if m.SwitchTo != "" {
-		t.Errorf("SwitchTo was set for a number with no board behind it: %q", m.SwitchTo)
+	if m.store != before {
+		t.Error("a number with no board behind it swapped the store")
 	}
 	if m.mode != modeBoard {
 		t.Errorf("an unused number left board mode: %v", m.mode)

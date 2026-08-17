@@ -5,7 +5,9 @@ import (
 	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -151,21 +153,20 @@ func (m *Model) projectTabs() []string {
 	return tabs
 }
 
-// switchToProject sets SwitchTo when n (1-based, as a person types it) names a
+// switchToProject switches the board in place when n (1-based, as a person types it) names a
 // recorded board other than the one already open. Both the compact view and
 // the board view call this, so a number means the same board everywhere.
 // Switching to the board already open, or to a number beyond the list, is a
 // no-op rather than a reload.
-func (m *Model) switchToProject(n int) bool {
+func (m *Model) switchToProject(n int) tea.Cmd {
 	i := n - 1
 	if i < 0 || i >= len(m.projects) {
-		return false
+		return nil
 	}
 	if m.projects[i].Root == m.store.Root {
-		return false
+		return nil
 	}
-	m.SwitchTo = m.projects[i].Root
-	return true
+	return m.switchBoard(m.projects[i].Root)
 }
 
 // renderPipeline is the compact overview: the whole flow on one screen.
@@ -259,14 +260,19 @@ func (m *Model) renderPipeline() string {
 	}
 
 	body := b.String()
-	footer := styMeta.Render(truncate(
-		"enter open step · 1-9 switch project · v full board · q quit", m.width))
+	// Wrapped, never truncated: every key stays visible however narrow the
+	// terminal is.
+	lines := wrapHints([]string{"enter open step", "1-9 switch project", "v full board", "q quit"}, max(1, m.width))
+	for i, l := range lines {
+		lines[i] = styMeta.Render(l)
+	}
+	footer := strings.Join(lines, "\n")
 
 	// Push the hints to the bottom. Without this they sat directly under the
 	// diagram with the rest of the terminal blank beneath them, which reads as
 	// the view having failed to fill the screen.
 	used := strings.Count(body, "\n") + 1
-	if gap := m.height - used - 2; gap > 0 {
+	if gap := m.height - used - 1 - len(lines); gap > 0 {
 		body += strings.Repeat("\n", gap)
 	}
 	return body + "\n" + footer
@@ -281,7 +287,7 @@ func (m *Model) focusedStep(steps []pipelineStep) *pipelineStep {
 
 // pipelineKey handles the compact view. Navigation is wasd as well as the arrow
 // keys, because this is the view you sit in with one hand.
-func (m *Model) pipelineKey(s string) bool {
+func (m *Model) pipelineKey(s string) (bool, tea.Cmd) {
 	switch s {
 	case "a", "left", "h":
 		if m.laneIdx > 0 {
@@ -304,9 +310,9 @@ func (m *Model) pipelineKey(s string) bool {
 		m.mode = modeBoard
 	default:
 		if len(s) == 1 && s[0] >= '1' && s[0] <= '9' {
-			return m.switchToProject(int(s[0] - '0'))
+			return false, m.switchToProject(int(s[0] - '0'))
 		}
-		return false
+		return false, nil
 	}
-	return false
+	return false, nil
 }

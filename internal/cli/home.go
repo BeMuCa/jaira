@@ -43,29 +43,21 @@ func runHome(cmd *cobra.Command) error {
 	}
 }
 
-// openBoardAt runs the board loop for one project, following board switches.
+// openBoardAt runs the board for one project. Board switches happen inside
+// the program (Model.switchBoard), so there is nothing to loop over here.
 func openBoardAt(dir string) error {
-	for {
-		s, err := ticket.Discover(dir)
-		if err != nil {
-			return err
-		}
-		project.Remember(s.Root)
-
-		m, err := tui.New(s)
-		if err != nil {
-			return err
-		}
-		final, err := tea.NewProgram(m).Run()
-		if err != nil {
-			return err
-		}
-		if fm, ok := final.(*tui.Model); ok && fm.SwitchTo != "" {
-			dir = fm.SwitchTo
-			continue
-		}
-		return nil
+	s, err := ticket.Discover(dir)
+	if err != nil {
+		return err
 	}
+	project.Remember(s.Root)
+
+	m, err := tui.New(s)
+	if err != nil {
+		return err
+	}
+	_, err = tea.NewProgram(m).Run()
+	return err
 }
 
 func newProjectsAddCmd() *cobra.Command {

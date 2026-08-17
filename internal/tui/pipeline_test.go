@@ -113,34 +113,40 @@ func TestPipelineDoesNotOverflow(t *testing.T) {
 	}
 }
 
-// Number keys switch project. The switch works by setting SwitchTo and quitting;
-// the caller reopens the board there, which is how no per-board state survives
-// the move.
+// Number keys switch project — in place, inside the running program. Quitting
+// and restarting per switch dropped the alternate screen for a frame, which
+// flashed the terminal through on every switch.
 func TestPipelineSwitchesProjectByNumber(t *testing.T) {
 	m := pipelineModel(t, 130, 34)
+	other := newTestStore(t)
 	m.projects = []project.Project{
 		{Root: m.store.Root, Name: "current"},
-		{Root: "/somewhere/else", Name: "other"},
+		{Root: other.Root, Name: "other"},
 	}
-	if quit := m.pipelineKey("2"); !quit {
-		t.Fatal("pressing 2 did not ask to switch")
+	quit, _ := m.pipelineKey("2")
+	if quit {
+		t.Fatal("switching boards must not quit the program")
 	}
-	if m.SwitchTo != "/somewhere/else" {
-		t.Errorf("SwitchTo = %q, want /somewhere/else", m.SwitchTo)
+	if m.store.Root != other.Root {
+		t.Errorf("store root = %q, want the other board %q", m.store.Root, other.Root)
+	}
+	if m.mode != modePipeline {
+		t.Error("switching boards changed the view mode")
 	}
 
-	// Choosing the project already open is a no-op, not a pointless reopen.
+	// Choosing the project already open is a no-op, not a pointless reload.
 	m2 := pipelineModel(t, 130, 34)
 	m2.projects = []project.Project{{Root: m2.store.Root, Name: "current"}}
-	if quit := m2.pipelineKey("1"); quit {
-		t.Error("selecting the current project asked to switch")
+	before := m2.store
+	if _, cmd := m2.pipelineKey("1"); cmd != nil {
+		t.Error("selecting the current project produced a command")
 	}
-	if m2.SwitchTo != "" {
-		t.Errorf("SwitchTo was set to %q for the current project", m2.SwitchTo)
+	if m2.store != before {
+		t.Error("selecting the current project swapped the store")
 	}
 
 	// A number with no project behind it does nothing.
-	if quit := m2.pipelineKey("9"); quit {
+	if quit, cmd := m2.pipelineKey("9"); quit || cmd != nil {
 		t.Error("an unused number asked to switch")
 	}
 }

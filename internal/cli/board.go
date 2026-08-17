@@ -19,30 +19,21 @@ func newBoardCmd() *cobra.Command {
 		Short:   "Open the interactive board",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			dir := g.dir
-			for {
-				s, err := ticket.Discover(dir)
-				if err != nil {
-					return err
-				}
-				project.Remember(s.Root)
-
-				m, err := tui.New(s)
-				if err != nil {
-					return err
-				}
-				final, err := tea.NewProgram(m).Run()
-				if err != nil {
-					return err
-				}
-				// Switching boards reopens the program rather than swapping the
-				// store underneath it, so no per-board state survives the move.
-				if fm, ok := final.(*tui.Model); ok && fm.SwitchTo != "" {
-					dir = fm.SwitchTo
-					continue
-				}
-				return nil
+			s, err := ticket.Discover(g.dir)
+			if err != nil {
+				return err
 			}
+			project.Remember(s.Root)
+
+			m, err := tui.New(s)
+			if err != nil {
+				return err
+			}
+			// Board switches happen inside the program (Model.switchBoard):
+			// restarting the process per switch dropped the alternate screen
+			// for a frame, flashing the terminal through on every switch.
+			_, err = tea.NewProgram(m).Run()
+			return err
 		},
 	}
 }
