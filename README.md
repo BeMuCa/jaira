@@ -1,6 +1,6 @@
-<img src="icon/jAIra.png" alt="jaira" width="140" align="right">
-
-# jaira
+<p align="center">
+  <img src="docs/img/home.png" alt="jaira: the launcher, with every board and what each one needs" width="80%">
+</p>
 
 A kanban board for the work you do with coding agents, stored as markdown files
 inside your repository.
@@ -10,7 +10,7 @@ is fine. Across sessions it is not: what each sub-task was *for* and where it go
 to both evaporate, and there is no artifact left to reconstruct them from.
 
 jaira makes that state durable and visible. Tickets are files in the repo, so the
-board travels with the code — a teammate clones, runs `jaira`, and sees the same
+board travels with the code. A teammate clones, runs `jaira`, and sees the same
 board. No server, no accounts, no setup.
 
 ```
@@ -22,13 +22,13 @@ repo/                              ~/.jaira/
 
 <img src="docs/img/board.png" alt="The board" width="100%">
 
-One window over every project, with the whole flow on one screen — a dot per
+One window over every project, with the whole flow on one screen: a dot per
 ticket, agents counted per step, and the arrow lit where work just moved:
 
 <img src="docs/img/pipeline.png" alt="The compact pipeline view" width="100%">
 
-The repository holds only tickets. Everything ephemeral — what each session is
-focused on, write locks — lives under your home directory, so `.jaira/` never
+The repository holds only tickets. Everything ephemeral (what each session is
+focused on, write locks) lives under your home directory, so `.jaira/` never
 mixes committed content with scratch state.
 
 ## Install
@@ -46,7 +46,7 @@ go install github.com/BeMuCa/jaira/cmd/jaira@latest
 ```
 
 Or download a binary from the releases page and put it on your `PATH`. Either
-way it is a single static executable with no runtime dependency — nothing to
+way it is a single static executable with no runtime dependency: nothing to
 install alongside it, no daemon, no database.
 
 `git` is optional. jaira works fine in a directory that is not a repository; you
@@ -56,7 +56,7 @@ only lose the parts that are about sharing (`jaira share`, the merge driver).
 
 ```bash
 cd your-repo
-jaira init      # creates .jaira/ — private, gitignored
+jaira init      # creates .jaira/, private and gitignored
 jaira           # opens the board
 ```
 
@@ -68,7 +68,7 @@ jaira share
 git add .jaira .gitignore && git commit -m "share jaira board"
 ```
 
-Publishing is a decision rather than a default — the tool cannot know whether your
+Publishing is a decision rather than a default, because the tool cannot know whether your
 notes are ready to be read by everyone who can clone the repository. `jaira share
 --undo` makes it private again; nothing about the tickets changes either way, so
 it is not a migration.
@@ -115,7 +115,7 @@ updated-at: 2026-08-11T21:14:03Z
 ```
 
 The file format *is* the API. It is hand-editable, and writing one field rewrites
-only that field's bytes — so a lane change shows up in git as a one-line diff, not
+only that field's bytes, so a lane change shows up in git as a one-line diff, not
 a reformatted file.
 
 Three details are load-bearing:
@@ -124,7 +124,7 @@ Three details are load-bearing:
   recorded separately as `executed-by`. Ownership of an outcome does not transfer
   to a language model.
 - **`outcome-resolves`** is not a restatement of what changed. It is the argument
-  that the change satisfies the definition of done — enough to review without
+  that the change satisfies the definition of done, enough to review without
   opening the code.
 - **The definition of done is a checklist in the body**, not a frontmatter string,
   because that is how acceptance criteria are actually written. It also earns its
@@ -153,19 +153,19 @@ run.
 review agent writes its verdict and stops; you accept the work in the board, or
 raise a follow-up ticket that carries the context across and links back.
 
-`DONE` requires every checklist item marked done — and the plan finished too, if
+`DONE` requires every checklist item marked done, and the plan finished too, if
 the ticket has one, since the criteria cannot have been met while the work that
 meets them is still in progress. It also requires the commits that carry the
 change recorded on the ticket: the requirement sits where work is accepted, so
 a ticket can move through review before it is committed, but nothing is
 accepted that cannot be checked.
 
-`BLOCKED` refuses a ticket that cannot say what it is waiting on — pass
-`--reason "…"` on the move, or record the blocking ticket in `blocked-by`,
+`BLOCKED` refuses a ticket that cannot say what it is waiting on. Pass
+`--reason "..."` on the move, or record the blocking ticket in `blocked-by`,
 which counts as the answer.
 
-A review agent cannot certify its own work. This is not politeness about AI — it
-is that LLM-as-judge is measurably poor at catching real defects, so a terminal
+A review agent cannot certify its own work. This is not politeness about AI: LLM-as-judge
+is measurably poor at catching real defects, so a terminal
 state gated on a model's own assessment would mean nothing. There was once a
 `--signal` flag that accepted free text as evidence and never checked it; it was
 removed rather than repaired.
@@ -206,7 +206,7 @@ That returns the prompt, only the declared fields, and the diff of the ticket's
 own commits. If the agent chose its own context, the contract would be a
 suggestion.
 
-A teammate without your `critique` lane still sees those tickets — in a read-only
+A teammate without your `critique` lane still sees those tickets, in a read-only
 passthrough column. Hiding them would be the worse failure.
 
 ## Concurrency
@@ -219,12 +219,12 @@ So `jaira init` registers a **field-aware merge driver** for the clone:
 
 | Field | Resolution |
 |---|---|
-| `status` | whichever lane is further along — never revert progress |
+| `status` | whichever lane is further along; never revert progress |
 | `blocked-by`, `commits` | union; neither side's addition is lost |
 | other scalars | the more recent `updated-at` wins |
 | prose (`goal`, `outcome-*`, body) | a real conflict, scoped to that field |
 
-A conflicted ticket stays valid YAML — the contested value is parked in a
+A conflicted ticket stays valid YAML: the contested value is parked in a
 `conflict-theirs-<field>` key and listed under `merge-conflicts`, rather than the
 file being filled with markers. Conflict markers would make the frontmatter
 unparseable and blank the ticket on everyone's board until someone resolved it.
@@ -251,14 +251,14 @@ Mirrored tickets land in the backlog behind the gate. Lane movement is
 deliberately *not* mirrored: letting an external status push a ticket into the
 pipeline would route around the gate that makes the pipeline worth having.
 
-The sync is idempotent — a task already mapped to a ticket updates it rather than
-creating a second one, and an unchanged list writes nothing — so a
+The sync is idempotent. A task already mapped to a ticket updates it rather than
+creating a second one, and an unchanged list writes nothing, so a
 board→tasks→board round trip settles instead of oscillating.
 
 ## Working with an agent
 
 The whole integration surface is: run a command, read the JSON, branch on the
-exit code. Nothing is specific to one tool — Claude Code, Codex, Aider, a local
+exit code. Nothing is specific to one tool: Claude Code, Codex, Aider, a local
 model behind Ollama, or a shell script all drive it the same way.
 
 ```bash
@@ -266,11 +266,11 @@ jaira next --json                              # what should I work on?
 jaira show <id> --for-lane in-progress --json  # the prompt and bounded input
 jaira dod <id> 2 --doing --plan                # say where you are
 jaira note <id> "the exporter buffers everything in writeAll()"
-jaira move <id> --to review --what … --why … --resolves … --commits "$(git rev-parse HEAD)"
+jaira move <id> --to review --what ... --why ... --resolves ... --commits "$(git rev-parse HEAD)"
 ```
 
 Starting a session, `jaira resume --json` returns everything left mid-flight with
-the notes written against it — a session that died to a usage limit leaves
+the notes written against it. A session that died to a usage limit leaves
 nothing behind except what was written down.
 
 Two things an agent deliberately cannot do: leave the human review lane, and close a
@@ -278,8 +278,8 @@ ticket whose definition of done is unmet. See **[docs/AGENTS.md](docs/AGENTS.md)
 
 ## Reviewing finished work
 
-A ticket in human review opens to the four questions the decision actually needs —
-what was wrong, what was done, why, and whether it holds — with the implementer's
+A ticket in human review opens to the four questions the decision actually needs
+(what was wrong, what was done, why, and whether it holds), with the implementer's
 account and the reviewer's verdict kept apart, because when they disagree that is
 the most useful thing on the screen:
 
@@ -295,11 +295,11 @@ jaira update               re-apply setup after upgrading
 jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket
-jaira set <id> k=v…        set fields
+jaira set <id> k=v...      set fields
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo
 jaira validate             check every ticket on the board for damage
 jaira archive <id>         take a ticket off the board (restore puts it back)
-jaira move <id> --to …     move lanes, applying the gates
+jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket
 jaira claim <id>           take a 30-minute lease on a ticket
 jaira lanes                installed lanes
@@ -327,7 +327,7 @@ Every read command takes `--json`. Exit codes are a stable contract:
 | 5 | no such ticket, or an ambiguous id |
 
 Under `--json`, refusals are structured on stderr with a `field` naming what to
-supply — so an agent can fix and retry without parsing prose.
+supply, so an agent can fix and retry without parsing prose.
 
 ## Keys
 
@@ -366,7 +366,7 @@ following are excluded with reasons rather than left as future work:
 | Branch per ticket | Too heavy for small tasks; breaks down under parallel agents. |
 | Board-spawned background agents | Orchestration stays in your session. Process lifecycle is a large surface for little gain. |
 | Multi-type dependency graphs | A flat `blocked-by` covers the actual need. |
-| A CRDT ticket engine | Solves conflicts completely, but abandons hand-editable plain files — a worse trade than tolerating rare prose conflicts. |
+| A CRDT ticket engine | Solves conflicts completely, but abandons hand-editable plain files: a worse trade than tolerating rare prose conflicts. |
 | Jira / YouTrack sync | Deferred. The `external:` block reserves room so no migration is needed. |
 
 Worth knowing honestly: file-based issue trackers have a poor track record.
