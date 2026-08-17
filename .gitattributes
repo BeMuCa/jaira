@@ -1,0 +1,6 @@
+# The built-in lane files are compiled into the binary via go:embed, and the
+# lane tests patch their raw bytes with \n-anchored replacements. A Windows
+# checkout with core.autocrlf would hand go:embed CRLF bytes, which is how CI
+# failed on windows-latest only — so their line endings are pinned here rather
+# than left to the client's autocrlf setting.
+core/lane/builtin/*.md text eol=lf
