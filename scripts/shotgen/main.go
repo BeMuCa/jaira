@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -57,11 +58,17 @@ func main() {
 	case "pipeline":
 		key('v')
 	case "signoff":
-		// Walk to the sign-off lane and open the ticket waiting there.
-		for i := 0; i < 8; i++ {
+		// Walk right until opening the ticket lands on the sign-off screen,
+		// rather than counting lanes: a hardcoded count breaks the moment a
+		// lane is added to the default board.
+		for i := 0; i < 16; i++ {
+			m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+			if strings.Contains(m.View().Content, "sign-off") {
+				break
+			}
+			m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 			key('l')
 		}
-		m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	case "edit":
 		m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		key('e')
