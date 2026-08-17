@@ -84,10 +84,10 @@ Board:
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            /       filter           m   move ticket
-g G       first / last    ?       help             r   reload
-v         compact view    x       archive          q   quit
-S         settings: lanes and the default board
+j k ↓ ↑   card            /       filter (key:value narrows to one field)
+g G       first / last    m       move ticket      ?   help
+v         compact view    x       archive          r   reload
+q         quit            S   settings: lanes and the default board
 ```
 
 In an open ticket:

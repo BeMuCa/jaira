@@ -93,9 +93,10 @@ Three things, deliberately:
   `--force`, which is recorded on the ticket — the decision stays human, only
   the keystroke is delegated.
 - **Close a ticket without meeting its definition of done.** Every criterion must
-  be marked done, and the plan finished if the ticket has one. There is no
-  evidence flag to pass. `--force` exists, is recorded on the ticket, and is the
-  user's call rather than the agent's.
+  be marked done, the plan finished if the ticket has one, and the commits that
+  carry the change recorded on the ticket. There is no evidence flag to pass.
+  `--force` exists, is recorded on the ticket, and is the user's call rather
+  than the agent's.
 - **Write to someone else's ticket.** A ticket belongs to its `assignee`; a move
   by anyone else exits 3, naming the owner. The human checkpoint lanes are
   exempt — reviewing and signing off someone else's work is the whole point of

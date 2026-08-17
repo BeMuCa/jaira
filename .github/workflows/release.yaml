@@ -1,0 +1,36 @@
+name: release
+
+# Pushing a tag like v0.1.0 builds the six static binaries (.goreleaser.yaml)
+# and publishes them as a GitHub release — which is what scripts/install.sh
+# and the README's download instructions point at.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The changelog is derived from git history, so a shallow clone
+          # would produce an empty one.
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Configure git for fixture repositories
+        # goreleaser's before-hook runs the test suite, and the store tests
+        # build real git repos, which need an identity on a bare runner.
+        run: |
+          git config --global user.name jaira-ci
+          git config --global user.email ci@example.invalid
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

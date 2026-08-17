@@ -34,12 +34,20 @@ mixes committed content with scratch state.
 ## Install
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.sh | sh
+```
+
+That downloads the latest release for your OS, verifies its checksum, and puts
+the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). Or build from
+source:
+
+```bash
 go install github.com/BeMuCa/jaira/cmd/jaira@latest
 ```
 
-Or download a binary from the releases page and put it on your `PATH`. It is a
-single static executable with no runtime dependency — nothing to install
-alongside it, no daemon, no database.
+Or download a binary from the releases page and put it on your `PATH`. Either
+way it is a single static executable with no runtime dependency — nothing to
+install alongside it, no daemon, no database.
 
 `git` is optional. jaira works fine in a directory that is not a repository; you
 only lose the parts that are about sharing (`jaira share`, the merge driver).
@@ -147,7 +155,14 @@ raise a follow-up ticket that carries the context across and links back.
 
 `DONE` requires every checklist item marked done — and the plan finished too, if
 the ticket has one, since the criteria cannot have been met while the work that
-meets them is still in progress.
+meets them is still in progress. It also requires the commits that carry the
+change recorded on the ticket: the requirement sits where work is accepted, so
+a ticket can move through review before it is committed, but nothing is
+accepted that cannot be checked.
+
+`BLOCKED` refuses a ticket that cannot say what it is waiting on — pass
+`--reason "…"` on the move, or record the blocking ticket in `blocked-by`,
+which counts as the answer.
 
 A review agent cannot certify its own work. This is not politeness about AI — it
 is that LLM-as-judge is measurably poor at catching real defects, so a terminal
@@ -318,10 +333,10 @@ supply — so an agent can fix and retry without parsing prose.
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            /       filter           m   move ticket
-g G       first / last    ?       help             r   reload
-v         compact view    x       archive          q   quit
-S         settings: lanes and the default board
+j k ↓ ↑   card            /       filter (key:value narrows to one field)
+g G       first / last    m       move ticket      ?   help
+v         compact view    x       archive          r   reload
+q         quit            S   settings: lanes and the default board
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
 an arrow lit when work just moved. ad/←→ pick a step, enter opens it full width,
