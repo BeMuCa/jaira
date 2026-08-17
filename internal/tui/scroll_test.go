@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -175,5 +177,35 @@ func TestDetailScrollsToTheEndAndStops(t *testing.T) {
 	}
 	if !strings.Contains(out, "Streaming per 5k rows works.") {
 		t.Errorf("clamped scroll does not show the last page:\n%s", out)
+	}
+}
+
+// The arrow keys are the base movement vocabulary: pressed in an open ticket
+// they must scroll it, one line per press, and j/k must keep jumping between
+// tickets rather than scrolling. This drives the real key dispatch, not the
+// renderer.
+func TestArrowKeysScrollTheOpenTicket(t *testing.T) {
+	m := newTestModel(t, 100, 16)
+	m.detail = longTicket()
+	m.mode = modeDetail
+	m.detailFrom = modeBoard
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyDown})
+	m.key(tea.KeyPressMsg{Code: tea.KeyDown})
+	if m.detailScroll != 2 {
+		t.Errorf("two ↓ presses moved detailScroll to %d, want 2", m.detailScroll)
+	}
+	m.key(tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.detailScroll != 1 {
+		t.Errorf("↑ moved detailScroll to %d, want 1", m.detailScroll)
+	}
+	if m.mode != modeDetail || m.detail == nil {
+		t.Error("arrow keys left the open ticket, they must only scroll it")
+	}
+
+	// j leaves the pane and selects the neighbouring card — unchanged.
+	m.key(key("j"))
+	if m.mode == modeDetail {
+		t.Error("j did not leave the detail pane to jump to the next ticket")
 	}
 }
