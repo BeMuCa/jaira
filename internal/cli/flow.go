@@ -132,6 +132,15 @@ command is safe to retry.`,
 				if err := set(ticket.FieldExecutedBy, executedBy); err != nil {
 					return err
 				}
+				// Moving an unassigned ticket claims it: capture leaves the
+				// assignee empty, and pulling the ticket into work is the act
+				// that makes it yours. Staged before the gate so the promotion
+				// gate's assignee requirement is satisfied by the pull itself.
+				if strings.TrimSpace(t.Assignee) == "" {
+					if err := t.Doc().SetScalar(ticket.FieldAssignee, identity()); err != nil {
+						return err
+					}
+				}
 				if len(commits) > 0 {
 					merged := append([]string{}, t.Commits...)
 					for _, c := range commits {

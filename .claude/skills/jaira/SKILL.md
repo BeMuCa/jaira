@@ -27,9 +27,10 @@ outlive this session. Capture is cheap:
 jaira create "Fix session cookie dropped on 302"
 ```
 
-That lands in the backlog. It cannot *start* until it has a goal, a definition of
-done, the context it came from, and an assignee. Supply them at creation to save a
-round trip:
+That lands in the backlog, assigned to nobody: whoever pulls the ticket out of
+the backlog claims it in the same move. It cannot *start* until it has a goal, a
+definition of done, and the context it came from. Supply them at creation to
+save a round trip:
 
 ```bash
 jaira create "Fix session cookie dropped on 302" \

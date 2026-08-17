@@ -44,10 +44,7 @@ var (
 	styDoing     = lipgloss.NewStyle().Foreground(colAgentic).Bold(true)
 )
 
-const (
-	minColWidth = 22
-	maxColWidth = 34
-)
+const minColWidth = 22
 
 // View satisfies tea.Model.
 func (m *Model) View() tea.View {
@@ -228,20 +225,6 @@ func timespan(created, updated time.Time) string {
 	return s
 }
 
-func (m *Model) columnWidth() int {
-	if len(m.cols) == 0 {
-		return minColWidth
-	}
-	w := m.width/len(m.cols) - 1
-	if w > maxColWidth {
-		w = maxColWidth
-	}
-	if w < minColWidth {
-		w = minColWidth
-	}
-	return w
-}
-
 func (m *Model) renderColumn(idx, w, h int) string {
 	col := m.cols[idx]
 	focused := idx == m.laneIdx
@@ -337,7 +320,15 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 
 	meta := styHandle.Render(ticket.Handle(t.ID))
 	if t.Assignee != "" {
-		meta += styMeta.Render(" " + truncate(t.Assignee, max(3, w-14)))
+		// Someone else's ticket is marked, not merely named: after a pull the
+		// board can hold teammates' claims, and whose lane a card sits in is
+		// exactly what you scan for before touching it. @ plus colour, so the
+		// state never rests on colour alone.
+		if strings.EqualFold(t.Assignee, m.me) {
+			meta += styMeta.Render(" " + truncate(t.Assignee, max(3, w-14)))
+		} else {
+			meta += styWarn.Render(" @" + truncate(t.Assignee, max(3, w-15)))
+		}
 	}
 
 	out := marker + title + "\n"
@@ -401,6 +392,58 @@ func renderChecklist(b *strings.Builder, label string, items []ticket.DoDItem, w
 				styMeta.Render(wrap("proof: "+it.Proof, max(1, width-itemCol-6), itemCol+13)))
 		}
 	}
+}
+
+// renderBodySections renders what remains of the body — Options, Progress,
+// and whatever headings a hand edit added — in the same two-column shape as
+// every other field: the heading as the left label, its lines in the content
+// column. Raw "## Heading" markdown between styled fields read as a second
+// document glued below the ticket. A heading with nothing under it is skipped
+// entirely; the seeded empty Progress section says nothing yet.
+func renderBodySections(b *strings.Builder, body string, width int) {
+	label := ""
+	var content []string
+	flush := func() {
+		filled := false
+		for _, l := range content {
+			if strings.TrimSpace(l) != "" {
+				filled = true
+				break
+			}
+		}
+		if !filled {
+			label, content = "", nil
+			return
+		}
+		b.WriteString("\n")
+		first := true
+		for _, l := range content {
+			l = strings.TrimSpace(l)
+			if l == "" {
+				continue
+			}
+			// A bullet's dash is layout, not content, once the line sits in a
+			// column of its own.
+			l = strings.TrimPrefix(l, "- ")
+			lead := strings.Repeat(" ", 13)
+			if first {
+				lead = styMeta.Render(fmt.Sprintf("%-12s", strings.ToLower(label))) + " "
+				first = false
+			}
+			b.WriteString(lead + wrap(l, max(10, width-14), 13) + "\n")
+		}
+		label, content = "", nil
+	}
+	for _, line := range strings.Split(body, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			flush()
+			label = strings.TrimSpace(strings.TrimLeft(trimmed, "# "))
+			continue
+		}
+		content = append(content, line)
+	}
+	flush()
 }
 
 // dropLeadingTitle removes the body's opening "# <title>" heading. Every new
@@ -642,9 +685,7 @@ func (m *Model) renderDetail() string {
 	renderChecklist(&b, "plan", t.PlanItems, width)
 	renderChecklist(&b, "done when", t.DoDItems, width)
 
-	if rest := dropLeadingTitle(stripChecklistSections(t.Body)); rest != "" {
-		b.WriteString("\n" + rest + "\n")
-	}
+	renderBodySections(&b, dropLeadingTitle(stripChecklistSections(t.Body)), width)
 	// Basic movement (arrows, jk, paging) is deliberately not listed: the
 	// footer names actions, the help screen teaches movement. b appears only
 	// when there is a blocker to jump to.

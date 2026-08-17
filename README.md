@@ -76,6 +76,11 @@ it is not a migration.
 Teammates then clone and run any jaira command; the merge driver binds itself on
 first use.
 
+The team flow is pull-based. A captured ticket belongs to nobody; whoever pulls
+it out of the backlog becomes its assignee in the same move. Pull before you
+pick, push after you pick, and a teammate's claim shows on the card as an
+@-marked name in a colour of its own.
+
 ## A ticket
 
 ```markdown

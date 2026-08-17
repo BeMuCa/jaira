@@ -102,6 +102,10 @@ type Model struct {
 	projects []project.Project
 	projIdx  int
 
+	// me is this machine's identity (identity.Current), cached because it
+	// shells out to git config and the card renderer asks for it per card.
+	me string
+
 	// liveBoards marks, by root, which recorded boards have a non-stale session
 	// working in them right now. It is recomputed whenever the project list
 	// loads or the board reloads — not on a timer, since this is a board that
@@ -146,6 +150,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
 	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load()}
+	m.me = identity.Current(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
@@ -171,6 +176,7 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	project.Remember(s.Root)
 	m.Close()
 	m.store = s
+	m.me = identity.Current(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil
@@ -916,7 +922,15 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
-	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: identity.Current(m.store.Root)})
+	// Moving an unassigned ticket claims it — the same rule the CLI's move
+	// applies. Set before the gate check so the promotion gate's assignee
+	// requirement is satisfied by the pull itself.
+	me := identity.Current(m.store.Root)
+	claiming := strings.TrimSpace(full.Assignee) == ""
+	if claiming {
+		full.Assignee = me
+	}
+	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: me})
 	if len(vs) > 0 {
 		var b strings.Builder
 		fmt.Fprintf(&b, "Cannot move to %s:\n\n", target.Name)
@@ -928,6 +942,12 @@ func (m *Model) applyMove() {
 		return
 	}
 	if _, err := m.store.Mutate(full.ID, func(t *ticket.Ticket) error {
+		if claiming {
+			if err := t.Doc().SetScalar(ticket.FieldAssignee, me); err != nil {
+				return err
+			}
+			t.Assignee = me
+		}
 		if err := t.Doc().SetScalar(ticket.FieldStatus, target.ID); err != nil {
 			return err
 		}
@@ -950,12 +970,14 @@ func (m *Model) createTicket(title string) {
 	me := identity.Current(m.store.Root)
 	def := m.lanes.Default()
 	fields := map[string]string{
-		ticket.FieldID:        ticket.NewID(now),
-		ticket.FieldTitle:     title,
-		ticket.FieldStatus:    def.ID,
-		ticket.FieldReady:     "false",
-		ticket.FieldCreator:   me,
-		ticket.FieldAssignee:  me,
+		ticket.FieldID:      ticket.NewID(now),
+		ticket.FieldTitle:   title,
+		ticket.FieldStatus:  def.ID,
+		ticket.FieldReady:   "false",
+		ticket.FieldCreator: me,
+		// Unassigned on purpose, same as the CLI's create: capturing and
+		// claiming are two acts, and the claim happens when someone pulls the
+		// ticket into work.
 		ticket.FieldCreatedAt: ticket.FormatTime(now),
 		ticket.FieldUpdatedAt: ticket.FormatTime(now),
 	}

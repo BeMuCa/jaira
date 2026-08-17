@@ -171,14 +171,14 @@ after the first two.`,
 			now := time.Now()
 			me := identity()
 			tplBody, tplFields, tplLists, hasTemplate := templateBody(s, title)
-			// Ownership defaults to whoever created the ticket, but a board
-			// template naming an assignee is an explicit choice and outranks that
-			// default. An explicit --assignee outranks both.
+			// A captured ticket belongs to nobody: capturing and claiming are two
+			// acts, and the claim happens when someone pulls the ticket into work
+			// (the move assigns the mover, see the move command). A board template
+			// naming an assignee is an explicit choice and still wins here, as
+			// does an explicit --assignee.
 			if assignee == "" {
 				if v, ok := tplFields[ticket.FieldAssignee]; ok && strings.TrimSpace(v) != "" {
 					assignee = v
-				} else {
-					assignee = me
 				}
 			}
 
@@ -255,7 +255,7 @@ after the first two.`,
 	f.StringVar(&goalV, "goal", "", "what this ticket is for")
 	f.StringVar(&dod, "dod", "", "definition of done: the checkable target")
 	f.StringVar(&contextV, "context", "", "why this ticket exists: what is wrong now, what triggered it, what is already known")
-	f.StringVar(&assignee, "assignee", "", "human who owns the outcome (defaults to you)")
+	f.StringVar(&assignee, "assignee", "", "human who owns the outcome (otherwise set when someone pulls the ticket into work)")
 	f.StringVar(&laneID, "lane", "", "lane to create in (default: backlog)")
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
 	f.StringVar(&body, "body", "", "markdown body")
