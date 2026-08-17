@@ -195,7 +195,7 @@ func (b *browser) render(width, height int) string {
 	if b.results != nil {
 		return b.renderResults(width, height)
 	}
-	w := max(20, min(width, 78))
+	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Add a board") + "\n")
 	sb.WriteString(styMeta.Render(truncate(b.dir, w)) + "\n")
@@ -284,7 +284,7 @@ func (b *browser) resultKey(s string) (added []string, done bool) {
 
 // renderResults lists what a scan found, with what is selected.
 func (b *browser) renderResults(width, height int) string {
-	w := max(20, min(width, 78))
+	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render(fmt.Sprintf("Found %d board(s)", len(b.results))) + "\n")
 	sb.WriteString(styMeta.Render(truncate("under "+b.dir, w)) + "\n")

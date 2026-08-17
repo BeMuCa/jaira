@@ -337,12 +337,12 @@ func (h *Home) header() string {
 	if h.width < wordmarkWidth+iconWidth+6 || h.height < 20 {
 		if h.width >= wordmarkWidth+2 && h.height >= 14 {
 			return lipgloss.NewStyle().Width(h.width).Align(lipgloss.Center).
-				Render(styLaneTitle.Render(wordmark))
+				Render(styledWordmark())
 		}
 		return ""
 	}
 	block := lipgloss.JoinHorizontal(lipgloss.Center,
-		styLaneTitle.Render(wordmark), "    ", iconArt)
+		styledWordmark(), "    ", iconArt)
 	return lipgloss.NewStyle().Width(h.width).Align(lipgloss.Center).Render(block)
 }
 

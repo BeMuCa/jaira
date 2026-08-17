@@ -170,7 +170,7 @@ func (d *defaultBoardScreen) save() {
 }
 
 func (d *defaultBoardScreen) render(width, height int) string {
-	w := max(20, min(width, 78))
+	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Default board") + "\n")
 	sb.WriteString(styMeta.Render(truncate(d.board.Path, w)) + "\n")

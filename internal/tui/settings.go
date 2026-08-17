@@ -66,7 +66,7 @@ func (s *settingsScreen) key(k string) string {
 }
 
 func (s *settingsScreen) render(width, height int) string {
-	w := max(20, min(width, 78))
+	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Settings") + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")

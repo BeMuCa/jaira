@@ -24,7 +24,7 @@ func (m *Model) renderSignOff() string {
 	if t == nil {
 		return m.renderBoard()
 	}
-	w := max(20, min(m.width, 78))
+	w := max(20, m.width)
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)),

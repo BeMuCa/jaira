@@ -114,10 +114,13 @@ func (m *Model) renderBoard() string {
 
 	// Show as many lanes as fit, scrolled so the cursor stays visible. A board
 	// that silently truncates lanes would hide tickets, so the header always
-	// reports how many are off-screen.
-	colW := m.columnWidth()
+	// reports how many are off-screen. The columns that do fit stretch to fill
+	// the row: a capped column width left the right third of a wide terminal
+	// blank, which read as wasted screen rather than as a decision.
+	perScreen := max(1, m.width/(minColWidth+2))
+	shown := min(len(m.cols), perScreen)
 	// A bordered column occupies its content width plus two border cells.
-	perScreen := max(1, m.width/(colW+2))
+	colW := max(minColWidth, m.width/shown-2)
 	start := 0
 	if m.laneIdx >= perScreen {
 		start = m.laneIdx - perScreen + 1
@@ -549,13 +552,13 @@ func (m *Model) renderDetail() string {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styLaneTitle.Render(t.Title))
-	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 78))) + "\n")
+	b.WriteString(styBar.Render(strings.Repeat("─", max(1, m.width))) + "\n")
 
 	row := func(k, v string) {
 		if strings.TrimSpace(v) == "" {
 			return
 		}
-		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, min(m.width-14, 64), 13))
+		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, max(10, m.width-14), 13))
 	}
 	if m.copied {
 		row("id", t.ID+styOK.Render("  copied"))
@@ -635,7 +638,7 @@ func (m *Model) renderDetail() string {
 	if miss := missing(t); len(miss) > 0 {
 		b.WriteString("\n" + styWarn.Render("Before this can start: "+strings.Join(miss, ", ")) + "\n")
 	}
-	width := min(m.width, 78)
+	width := max(20, m.width)
 	renderChecklist(&b, "plan", t.PlanItems, width)
 	renderChecklist(&b, "done when", t.DoDItems, width)
 
@@ -665,7 +668,7 @@ func (m *Model) clipToWindow(content, hint string) string {
 	// The footer wraps rather than truncates — a key the terminal is too narrow
 	// to show is a key the reader does not know exists — so the space reserved
 	// for it is however many lines it needs, plus the blank line above it.
-	width := max(1, min(m.width, 78))
+	width := max(1, m.width)
 	items := strings.Split(hint, " · ")
 	footer := wrapHints(items, width)
 	visible := max(1, m.height-1-len(footer))

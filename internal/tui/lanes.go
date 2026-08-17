@@ -666,7 +666,7 @@ func (ls *laneScreen) renderCatalogue(w int) string {
 }
 
 func (ls *laneScreen) render(width, height int) string {
-	w := max(20, min(width, 78))
+	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Lanes") + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
