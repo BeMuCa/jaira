@@ -93,3 +93,28 @@ func TestBodySectionsRenderAsColumns(t *testing.T) {
 		t.Errorf("an empty section rendered its heading anyway:\n%s", out)
 	}
 }
+
+// The board's n key captures the same way the CLI does: unassigned, creator
+// recorded — the claim happens at the pull, not at the capture.
+func TestTUICreateLeavesTheTicketUnassigned(t *testing.T) {
+	t.Setenv("JAIRA_USER", "berk")
+	m := newTestModel(t, 120, 40)
+	m.createTicket("captured from the board")
+
+	ts, err := m.store.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tk := range ts {
+		if tk.Title == "captured from the board" {
+			if tk.Assignee != "" {
+				t.Errorf("assignee = %q, want nobody", tk.Assignee)
+			}
+			if tk.Creator != "berk" {
+				t.Errorf("creator = %q, want berk", tk.Creator)
+			}
+			return
+		}
+	}
+	t.Fatal("the created ticket is not in the store")
+}
