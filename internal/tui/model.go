@@ -708,6 +708,18 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		case "m":
 			m.openMove()
+		case "b":
+			// A blocked ticket names its blocker; the reader's next question is
+			// always "and what is that one waiting on" — so the link is walkable.
+			// Repeated presses follow the chain; esc returns to the board.
+			if m.detail != nil && len(m.detail.BlockedBy) > 0 {
+				if full, err := m.store.Load(m.detail.BlockedBy[0]); err != nil {
+					m.notify(err.Error(), true)
+				} else {
+					m.detail = full
+					m.detailScroll = 0
+				}
+			}
 		// Arrows scroll, j/k switch tickets: the arrows are the base movement
 		// vocabulary and must work on every screen a ticket can be read on,
 		// while jumping to the neighbouring ticket stays one key away.

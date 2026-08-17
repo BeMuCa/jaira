@@ -260,7 +260,7 @@ func (m *Model) renderPipeline() string {
 
 	body := b.String()
 	footer := styMeta.Render(truncate(
-		"a/d or ← → move · enter open step · 1-9 switch project · v full board · q quit", m.width))
+		"enter open step · 1-9 switch project · v full board · q quit", m.width))
 
 	// Push the hints to the bottom. Without this they sat directly under the
 	// diagram with the rest of the terminal blank beneath them, which reads as

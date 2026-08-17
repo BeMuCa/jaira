@@ -519,7 +519,7 @@ func (m *Model) statusBar(start, end int) string {
 	// letting the bar wrap and push the board off-screen.
 	// "m move" rather than "m lane": the key moves the ticket, and calling it
 	// after its destination read as if m selected a lane to look at.
-	keys := []string{"hjkl navigate", "enter open", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := hidden
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -636,8 +636,14 @@ func (m *Model) renderDetail() string {
 	if rest := dropLeadingTitle(stripChecklistSections(t.Body)); rest != "" {
 		b.WriteString("\n" + rest + "\n")
 	}
-	return m.clipToWindow(b.String(),
-		"e fields · E body · y copy id · m move · ↑↓ scroll · jk next/prev · esc back")
+	// Basic movement (arrows, jk, paging) is deliberately not listed: the
+	// footer names actions, the help screen teaches movement. b appears only
+	// when there is a blocker to jump to.
+	hint := "e fields · E body · y copy id · m move"
+	if len(t.BlockedBy) > 0 {
+		hint += " · b blocked-by"
+	}
+	return m.clipToWindow(b.String(), hint+" · esc back")
 }
 
 // clipToWindow clips an open ticket's content to the terminal, applying and
@@ -711,7 +717,7 @@ func (m *Model) renderProjects() string {
 		b.WriteString(marker + name + cur + "\n")
 		b.WriteString("    " + styMeta.Render(truncate(p.Root, m.width-6)) + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render("jk choose · enter switch · esc back"))
+	b.WriteString("\n" + styMeta.Render("enter switch · esc back"))
 	return b.String()
 }
 
@@ -732,7 +738,8 @@ func (m *Model) renderHelp() string {
 		{"Look at things", [][2]string{
 			{"enter", "open the selected ticket"},
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
-			{"/", "filter tickets as you type"},
+			{"b", "open the ticket this one is blocked by (follow the chain)"},
+			{"/", "filter tickets as you type; key:value narrows to one field"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 		}},

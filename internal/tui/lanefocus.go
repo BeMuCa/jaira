@@ -82,7 +82,7 @@ func (m *Model) renderLaneFocus() string {
 	}
 
 	footer := styMeta.Render(truncate(
-		"jk move · gG first/last · hl lane · enter open · esc/v back · q quit", m.width))
+		"enter open · esc/v back · q quit", m.width))
 	used := strings.Count(b.String(), "\n") + 1
 	if gap := m.height - used - 2; gap > 0 {
 		b.WriteString(strings.Repeat("\n", gap))

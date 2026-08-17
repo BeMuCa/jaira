@@ -635,7 +635,7 @@ func (ls *laneScreen) render(width, height int) string {
 	// the full footer runs longer than a narrow terminal's column width, and
 	// cutting it off would silently hide a key's name rather than the column
 	// content truncate exists to fit.
-	help := "hl select · HL move · x remove · u use · p publish · n new · R refresh · esc back"
+	help := "HL move · x remove · u use · p publish · n new · R refresh · esc back"
 	if len(ls.shared) > 0 {
 		help = "hl select · HL move · x remove · tab switch · u use · p publish · a adopt · esc back"
 	}

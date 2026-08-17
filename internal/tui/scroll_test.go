@@ -209,3 +209,52 @@ func TestArrowKeysScrollTheOpenTicket(t *testing.T) {
 		t.Error("j did not leave the detail pane to jump to the next ticket")
 	}
 }
+
+// A blocked ticket names its blocker, and the reader's next question is what
+// that one is waiting on — so b walks the link instead of making them filter
+// for the id by hand.
+func TestBOpensTheBlocker(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+
+	// The test store ships one blocked ticket; find it and open it.
+	var blocked *ticket.Ticket
+	for _, tk := range m.tickets {
+		if len(tk.BlockedBy) > 0 {
+			blocked = tk
+		}
+	}
+	if blocked == nil {
+		t.Fatal("test store has no blocked ticket")
+	}
+	full, err := m.store.Load(blocked.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.detail = full
+	m.mode = modeDetail
+	m.detailScroll = 3
+
+	if out := stripANSI(m.renderDetail()); !strings.Contains(out, "b blocked-by") {
+		t.Errorf("footer does not offer b on a blocked ticket:\n%s", out)
+	}
+
+	m.key(key("b"))
+
+	if m.detail == nil || m.detail.ID != blocked.BlockedBy[0] {
+		t.Fatalf("b did not open the blocker: detail is %v", m.detail)
+	}
+	if m.mode != modeDetail {
+		t.Error("b left the detail view instead of switching the open ticket")
+	}
+	if m.detailScroll != 0 {
+		t.Error("the blocker opened mid-scroll instead of at the top")
+	}
+
+	// The footer offers b only when there is a blocker to follow.
+	if out := stripANSI(m.renderDetail()); strings.Contains(out, "b blocked-by") {
+		t.Errorf("footer offers b on a ticket with no blocker:\n%s", out)
+	}
+}

@@ -95,9 +95,9 @@ In an open ticket:
 ```
 e   edit fields (enter newline, ctrl+s save)   a   accept (at a checkpoint)
 E   edit body and checklists in $EDITOR        f   raise a follow-up
-y   copy the full ticket id                    m   move it
-ctrl+d ctrl+u   scroll a ticket taller         jk  next / previous ticket
-                than the terminal
+y   copy the full ticket id                      m   move it
+b   open the ticket this one is blocked by       jk  next / previous ticket
+↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 ```
 
 Lane settings (`S` then lanes): the project's lanes drawn as a small board,
