@@ -72,6 +72,12 @@ type laneScreen struct {
 	// cancels it.
 	confirmAdoptID string
 
+	// confirm holds the yes/no question every 'x' now opens before removing
+	// anything, so hammering enter never deletes anything by accident: it
+	// starts unset, is set by x, and is cleared by enter (acting on it) or
+	// esc (cancelling).
+	confirm *confirmRemove
+
 	// pendingCmd carries a tea.Cmd out of key() for the one action that needs
 	// one — 'n' launching $EDITOR — without changing key()'s existing
 	// bool-only signature that every caller and test already relies on.
@@ -79,6 +85,16 @@ type laneScreen struct {
 
 	msg   string
 	isErr bool
+}
+
+// confirmRemove is the pending yes/no question a still-open 'x' has raised.
+// path empty means a board removal (lane.Remove, keyed by id); path
+// non-empty means a catalogue file delete (os.Remove on path). yes starts
+// false so a bare enter answers no.
+type confirmRemove struct {
+	id   string
+	path string
+	yes  bool
 }
 
 func newLaneScreen(store *ticket.Store, set *lane.Set) *laneScreen {
@@ -193,6 +209,33 @@ func (ls *laneScreen) key(s string) (done bool) {
 		return false
 	}
 
+	// Every 'x' opens this confirmation before anything is removed, so
+	// hammering enter never deletes anything: while it is open, h/l (and
+	// left/right) only switch the selected answer, enter acts on it, and
+	// esc/q cancel without finishing the screen. Every other key is ignored
+	// rather than falling through to the normal board navigation below.
+	if ls.confirm != nil {
+		switch s {
+		case "h", "left":
+			ls.confirm.yes = false
+		case "l", "right":
+			ls.confirm.yes = true
+		case "enter":
+			c := ls.confirm
+			ls.confirm = nil
+			if c.yes {
+				if c.path != "" {
+					ls.deleteCatalogueLane(c.path)
+				} else {
+					ls.removeBoardLane(c.id)
+				}
+			}
+		case "esc", "q":
+			ls.confirm = nil
+		}
+		return false
+	}
+
 	switch s {
 	case "esc", "q":
 		if ls.confirmAdoptID != "" {
@@ -230,7 +273,7 @@ func (ls *laneScreen) key(s string) (done bool) {
 		}
 	case "x":
 		if ls.focus == 0 {
-			ls.remove()
+			ls.startRemove()
 		}
 	case "enter":
 		if ls.focus == 0 && ls.isPlusColumn() {
@@ -289,24 +332,64 @@ func (ls *laneScreen) moveSharedUp() {
 	}
 }
 
-// remove takes the selected lane out of this project through lane.Remove —
-// the same call 'jaira lanes remove' makes — refusing with the same message
-// when a ticket currently sits in it.
-func (ls *laneScreen) remove() {
-	l := ls.selected()
+// startRemove opens the yes/no confirmation every 'x' now requires, for
+// either an installed lane under the cursor (board removal) or an available
+// (not-installed) catalogue lane (file delete). A built-in has no file — it
+// lives inside the binary — so it errors immediately rather than opening a
+// confirmation there is nothing to act on. The '+' column has nothing to
+// remove either.
+func (ls *laneScreen) startRemove() {
+	if ls.isPlusColumn() {
+		return
+	}
+	if l := ls.selected(); l != nil {
+		ls.confirm = &confirmRemove{id: l.ID}
+		return
+	}
+	l := ls.selectedAvailable()
 	if l == nil {
 		return
 	}
-	if _, err := lane.Remove(ls.store.Root, ls.set, ls.store, l.ID); err != nil {
+	if l.Builtin {
+		ls.msg, ls.isErr = fmt.Sprintf("built-in lane %q lives inside the binary — nothing to delete", l.ID), true
+		return
+	}
+	ls.confirm = &confirmRemove{id: l.ID, path: l.Source}
+}
+
+// removeBoardLane takes id out of this project through lane.Remove — the
+// same call 'jaira lanes remove' makes — refusing with the same message when
+// a ticket currently sits in it. Runs once the confirmation startRemove
+// opened for a board lane is answered yes.
+func (ls *laneScreen) removeBoardLane(id string) {
+	if _, err := lane.Remove(ls.store.Root, ls.set, ls.store, id); err != nil {
 		ls.msg, ls.isErr = err.Error(), true
 		return
 	}
-	id := l.ID
 	if err := ls.reload(); err != nil {
 		ls.msg, ls.isErr = err.Error(), true
 		return
 	}
 	ls.msg, ls.isErr = "removed "+id, false
+}
+
+// deleteCatalogueLane deletes path — an available (not-installed) catalogue
+// lane's file — from disk. Available lanes only come from builtins (which
+// have no file, and are refused before a confirmation ever opens, see
+// startRemove) and the UserLanesDir() glob (core/lane.Installable's other
+// source), so path is always a real catalogue file here — no extra path
+// guard needed. Runs once the confirmation startRemove opened for an
+// available lane is answered yes.
+func (ls *laneScreen) deleteCatalogueLane(path string) {
+	if err := os.Remove(path); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	if err := ls.reload(); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	ls.msg, ls.isErr = "deleted "+path, false
 }
 
 // moveLane shifts the selected lane one step through lane.MoveLane — the
@@ -729,6 +812,30 @@ func (ls *laneScreen) render(width, height int) string {
 		}
 		sb.WriteString("\n" + style.Render(truncate(ls.msg, w)) + "\n")
 	}
+
+	// While a removal is pending, the footer becomes the yes/no question
+	// itself rather than the normal key list — nothing else on this screen
+	// should be actionable until it is answered. "no" is always drawn first
+	// so hammering enter (default no) reads the same as it behaves.
+	if ls.confirm != nil {
+		question := "remove " + ls.confirm.id + " from this board?"
+		if ls.confirm.path != "" {
+			question = "delete " + ls.confirm.path + "?"
+		}
+		sb.WriteString("\n" + truncate(question, w) + "\n")
+		no, yes := "no", "yes"
+		if ls.confirm.yes {
+			no, yes = styMeta.Render(no), stySelected.Render(yes)
+		} else {
+			no, yes = stySelected.Render(no), styMeta.Render(yes)
+		}
+		sb.WriteString(no + "  " + yes + "\n")
+		for _, l := range wrapHints([]string{"←/→ choose", "enter confirm", "esc cancel"}, max(1, w)) {
+			sb.WriteString("\n" + styMeta.Render(l))
+		}
+		return sb.String()
+	}
+
 	// Not truncated to w like everything else on this screen: with add/move/
 	// remove now joining the pre-existing use/publish/new/refresh/adopt keys,
 	// the full footer runs longer than a narrow terminal's column width, and

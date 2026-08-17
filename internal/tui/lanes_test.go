@@ -555,10 +555,12 @@ func TestLaneScreenLMovesSelectedLaneAndWritesOrderFile(t *testing.T) {
 	}
 }
 
-// TestLaneScreenXRemovesSelectedLane asserts 'x' removes the selected lane
-// from the project, through lane.Remove. Uses a fresh, ticketless store
-// (laneTestStore) rather than newTestModel's, which seeds sample tickets
-// into backlog and would otherwise make the very first lane refuse removal.
+// TestLaneScreenXRemovesSelectedLane asserts 'x' opens a yes/no confirmation
+// (default no, so a bare enter removes nothing) and only removes the
+// selected lane from the project, through lane.Remove, once 'right'/'enter'
+// selects yes. Uses a fresh, ticketless store (laneTestStore) rather than
+// newTestModel's, which seeds sample tickets into backlog and would
+// otherwise make the very first lane refuse removal.
 func TestLaneScreenXRemovesSelectedLane(t *testing.T) {
 	s, _ := laneTestStore(t)
 	set, err := lane.Load(s.Root)
@@ -569,21 +571,43 @@ func TestLaneScreenXRemovesSelectedLane(t *testing.T) {
 	before := len(ls.lanes)
 	id := ls.lanes[0].ID
 
+	// A bare enter (default no) must remove nothing — the quick-enter
+	// protection the confirmation exists for.
 	ls.key("x")
+	if ls.confirm == nil {
+		t.Fatal("x must open a confirmation before removing anything")
+	}
+	if ls.confirm.yes {
+		t.Error("confirmation must default to no")
+	}
+	ls.key("enter")
+	if len(ls.lanes) != before {
+		t.Fatalf("lanes = %d after x+enter (default no), want %d (nothing removed)", len(ls.lanes), before)
+	}
+	if ls.confirm != nil {
+		t.Error("enter must clear the confirmation")
+	}
+
+	ls.key("x")
+	ls.key("right")
+	if !ls.confirm.yes {
+		t.Error("right must select yes")
+	}
+	ls.key("enter")
 	if ls.isErr {
 		t.Fatalf("x produced an error: %s", ls.msg)
 	}
 	if len(ls.lanes) != before-1 {
-		t.Fatalf("lanes = %d after x, want %d", len(ls.lanes), before-1)
+		t.Fatalf("lanes = %d after x,right,enter, want %d", len(ls.lanes), before-1)
 	}
 	if _, ok := ls.set.Get(id); ok {
 		t.Errorf("removed lane %q still present", id)
 	}
 }
 
-// TestLaneScreenXRefusesWhenTicketPresent asserts 'x' is refused, naming the
-// ticket, when one currently sits in the selected lane — the same refusal
-// the CLI's 'lanes remove' gives.
+// TestLaneScreenXRefusesWhenTicketPresent asserts 'x', right, enter is
+// refused, naming the ticket, when one currently sits in the selected lane —
+// the same refusal the CLI's 'lanes remove' gives.
 func TestLaneScreenXRefusesWhenTicketPresent(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	ls := newLaneScreen(m.store, m.lanes)
@@ -599,6 +623,8 @@ func TestLaneScreenXRefusesWhenTicketPresent(t *testing.T) {
 	}
 
 	ls.key("x")
+	ls.key("right")
+	ls.key("enter")
 	if !ls.isErr {
 		t.Fatal("x on an occupied lane must refuse, not remove it")
 	}
@@ -607,6 +633,172 @@ func TestLaneScreenXRefusesWhenTicketPresent(t *testing.T) {
 	}
 	if _, ok := ls.set.Get(target.ID); !ok {
 		t.Error("a refused removal must leave the lane in place")
+	}
+}
+
+// TestLaneScreenXDeletesAvailableCatalogueLane asserts x, right, enter on a
+// not-installed (available) catalogue lane deletes its file from disk and it
+// disappears from ls.available after the reload x triggers.
+func TestLaneScreenXDeletesAvailableCatalogueLane(t *testing.T) {
+	s, catalogue := laneTestStore(t)
+	// Materialise the project directory first: with no project directory of
+	// its own, D-03's fallback merges the whole catalogue into the board
+	// itself, and my-lane would never show up as merely available — see
+	// TestLaneScreenPlusColumnOpensCatalogueListingOnlyMissingLanes.
+	builtins, err := lane.Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range builtins {
+		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeLaneFile(t, catalogue, "new-lane.md", `---
+id: my-lane
+name: My Lane
+after: human
+precedence: 41
+---
+`)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	if len(ls.available) != 1 || ls.available[0].ID != "my-lane" {
+		t.Fatalf("setup: available = %v, want exactly [my-lane]", ls.available)
+	}
+	ls.idx = len(ls.lanes) // the available lane's column
+
+	path := ls.available[0].Source
+	ls.key("x")
+	if ls.confirm == nil || ls.confirm.path != path {
+		t.Fatalf("x on an available lane must open a confirmation naming its file, got confirm = %+v", ls.confirm)
+	}
+	ls.key("right")
+	ls.key("enter")
+	if ls.isErr {
+		t.Fatalf("deleting the catalogue lane produced an error: %s", ls.msg)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("expected %s to be deleted, stat err = %v", path, err)
+	}
+	for _, l := range ls.available {
+		if l.ID == "my-lane" {
+			t.Error("deleted lane must not still show up in available after reload")
+		}
+	}
+}
+
+// TestLaneScreenXOnAvailableDefaultNoLeavesFileOnDisk asserts a bare enter
+// (default no) after x on an available catalogue lane leaves its file in
+// place.
+func TestLaneScreenXOnAvailableDefaultNoLeavesFileOnDisk(t *testing.T) {
+	s, catalogue := laneTestStore(t)
+	builtins, err := lane.Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range builtins {
+		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeLaneFile(t, catalogue, "new-lane.md", `---
+id: my-lane
+name: My Lane
+after: human
+precedence: 41
+---
+`)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	if len(ls.available) != 1 || ls.available[0].ID != "my-lane" {
+		t.Fatalf("setup: available = %v, want exactly [my-lane]", ls.available)
+	}
+	ls.idx = len(ls.lanes)
+	path := ls.available[0].Source
+
+	ls.key("x")
+	ls.key("enter")
+	if _, err := os.Stat(path); err != nil {
+		t.Errorf("default no must leave %s in place, stat err = %v", path, err)
+	}
+}
+
+// TestLaneScreenXOnAvailableBuiltinRefusesWithoutConfirmation asserts x on an
+// available built-in lane (one removed from the board, so it reappears as
+// available with Builtin true) shows the "nothing to delete" error and opens
+// no confirmation, since a built-in has no file to delete.
+func TestLaneScreenXOnAvailableBuiltinRefusesWithoutConfirmation(t *testing.T) {
+	s, _ := laneTestStore(t)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	builtinID := ls.lanes[0].ID
+
+	ls.key("x")
+	ls.key("right")
+	ls.key("enter")
+	if ls.isErr {
+		t.Fatalf("removing the builtin from the board failed: %s", ls.msg)
+	}
+
+	var found *lane.Lane
+	for _, l := range ls.available {
+		if l.ID == builtinID {
+			found = l
+		}
+	}
+	if found == nil || !found.Builtin {
+		t.Fatalf("expected %q to reappear as an available builtin, available = %v", builtinID, ls.available)
+	}
+	ls.idx = indexOfLane(ls.available, builtinID) + len(ls.lanes)
+
+	ls.key("x")
+	if !ls.isErr {
+		t.Fatal("x on an available built-in must refuse, not open a confirmation")
+	}
+	if !strings.Contains(ls.msg, builtinID) {
+		t.Errorf("refusal %q does not name the built-in lane", ls.msg)
+	}
+	if ls.confirm != nil {
+		t.Error("x on a built-in must not open a confirmation")
+	}
+}
+
+// TestLaneScreenConfirmEscCancelsWithoutFinishing asserts esc while the
+// confirmation is open clears it without finishing the screen, and the
+// render before esc shows "no" before "yes".
+func TestLaneScreenConfirmEscCancelsWithoutFinishing(t *testing.T) {
+	s, _ := laneTestStore(t)
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	before := len(ls.lanes)
+
+	ls.key("x")
+	out := ls.render(150, 32)
+	if strings.Index(out, "no") > strings.Index(out, "yes") || !strings.Contains(out, "no") || !strings.Contains(out, "yes") {
+		t.Errorf("confirmation render must show \"no\" before \"yes\":\n%s", out)
+	}
+
+	if done := ls.key("esc"); done {
+		t.Fatal("esc while confirming must not finish the screen")
+	}
+	if ls.confirm != nil {
+		t.Error("esc must clear the confirmation")
+	}
+	if len(ls.lanes) != before {
+		t.Error("esc while confirming must not remove anything")
 	}
 }
 
