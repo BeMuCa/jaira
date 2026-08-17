@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-08-11)
 Phase: 1 of 8 (Foundation — Ticket Store, Schema & CLI)
 Plan: TBD (not yet planned)
 Status: Ready to plan
-Last activity: 2026-08-13 — Phase 5 (Custom & Portable Lanes) complete, plus eight quick tasks: TUI board setup, ticket id copy, context consolidation, review traceability, version stamp and `jaira update`, the specified-zone gate with a brainstorm step, ticket ownership, and the progress-note contract
+Last activity: 2026-08-18 — Quick task 260818-1o3: lane removal confirmation (default no) and catalogue-file delete via x. Before that: Phase 5 (Custom & Portable Lanes) complete, plus eight quick tasks: TUI board setup, ticket id copy, context consolidation, review traceability, version stamp and `jaira update`, the specified-zone gate with a brainstorm step, ticket ownership, and the progress-note contract
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ None yet.
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-08-18 | 260818-1o3 | Every `x` on the lane settings screen now asks yes/no first — no listed first and preselected, h/l or arrows switch, enter acts, esc cancels — so a hasty enter never deletes. And `x` finally reaches not-installed catalogue lanes: it deletes their file (the stale `my-lane` skeleton a closed-without-saving editor leaves behind was undeletable from the TUI); a built-in without a file errors instead ([260818-1o3](./quick/260818-1o3-lane-settings-x-deletes-catalogue-lane-f/)) |
 | 2026-08-12 | dod-verb | `jaira dod` plus a surgical checklist writer: one marker character changes, indexes are scoped to their section, one in-progress item per checklist |
 | 2026-08-12 | dod-checkbox-states | Three checklist states, `## Plan` section parsed separately, and the fix for `[~]` items being dropped by the parser — which let a ticket with outstanding work enter the terminal lane |
 | 2026-08-13 | 260813-nzq | The working lane never named `jaira note` at all, so nothing told an agent to leave a trail. All three working prompts, the `note` help and the agent note now say what a note contains — what you were doing, what you found and especially what did not work, what the next step is — and when one is due: before stopping, after something failed, when the plan turns out wrong. Deliberately no gate: a note written because a gate demanded one is worthless ([260813-nzq](./quick/260813-nzq-say-what-a-progress-note-must-contain-an/)) |
