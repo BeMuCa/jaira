@@ -88,7 +88,10 @@ Three things, deliberately:
 - **Leave the human review lane.** It is a human checkpoint. A review agent writes
   `review-summary`, `review-gaps` and `review-verdict`, then moves the ticket to
   human review and stops; a person accepts the work in the board or raises a
-  follow-up. Attempting the move exits 3.
+  follow-up. Attempting the move exits 3. When the person has reviewed the work
+  and says so, the agent may finish the acceptance on their behalf with
+  `--force`, which is recorded on the ticket — the decision stays human, only
+  the keystroke is delegated.
 - **Close a ticket without meeting its definition of done.** Every criterion must
   be marked done, and the plan finished if the ticket has one. There is no
   evidence flag to pass. `--force` exists, is recorded on the ticket, and is the

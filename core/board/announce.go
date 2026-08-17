@@ -50,7 +50,7 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  turn to write anything down, so do not save it for the end\n" +
 	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>\n" +
 	"  --commits \"$(git rev-parse HEAD)\"` — finish the step, naming every commit you\n" +
-	"  made; the implementing lane refuses to let go of a ticket without them\n" +
+	"  made; a ticket cannot be accepted as done without them\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
 	"\n" +
 	"`jaira <command> --help` for everything else.\n" +

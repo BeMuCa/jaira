@@ -28,6 +28,7 @@ const (
 	CodeNeedsSignal     = "needs_nonmodel_signal"
 	CodeNeedsQuestion   = "needs_question"
 	CodeNeedsReason     = "needs_blocked_reason"
+	CodeNeedsCommits    = "needs_commits"
 	CodeSelfBlock       = "self_block"
 	CodeMissingProduces = "missing_lane_output"
 	CodePlanIncomplete  = "plan_incomplete"
@@ -260,6 +261,21 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				})
 			}
 		}
+	}
+
+	// Accepted work must be checkable: a lane that demands commits refuses a
+	// ticket that names none, because the diff shown at review and recalled
+	// months later is the diff of exactly these commits. The requirement sits
+	// here at the accepting lane rather than on the implementing lane's way
+	// out, so work can move through review before it is committed.
+	if target.RequiresCommits && len(t.Commits) == 0 {
+		vs = append(vs, Violation{
+			Code:  CodeNeedsCommits,
+			Field: ticket.FieldCommits,
+			Message: fmt.Sprintf(
+				"lane %q requires the commits that carry this change: record them with 'jaira set %s commits=<sha>[,<sha>]' or pass --commits on the move",
+				target.ID, ticket.Handle(t.ID)),
+		})
 	}
 
 	// A model must not be able to certify its own work as finished on its own

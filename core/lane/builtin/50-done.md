@@ -7,5 +7,6 @@ agentic: false
 terminal: true
 requires-outcome: true
 requires-nonmodel-signal: true
-description: Accepted. Every definition-of-done item must be marked done, and the plan finished if there is one.
+requires-commits: true
+description: Accepted. Every definition-of-done item must be marked done, the plan finished if there is one, and the commits that carry the change recorded.
 ---

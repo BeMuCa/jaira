@@ -7,7 +7,7 @@ agentic: true
 terminal: false
 model-tier: cheap
 input-requires: [goal, definition-of-done, context, plan]
-output-produces: [outcome-what, outcome-why, outcome-resolves, commits]
+output-produces: [outcome-what, outcome-why, outcome-resolves]
 description: Carrying out the plan.
 ---
 # Prompt
@@ -26,7 +26,7 @@ Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
 plan rather than quietly doing something else.
 
-## Notes
+## Progress notes
 
 Write a note with `jaira note <id> <text>`. You are writing to yourself, in a
 session that has lost this conversation and can read only the repository and this
@@ -66,10 +66,10 @@ When you are finished, report:
 - **why** the change was needed
 - **how** the change satisfies the definition of done, referring to it directly
 - **which commits** carry it: `--commits "$(git rev-parse HEAD)"` on the move,
-  naming every commit you made. This lane does not let go of a ticket without
-  them — at review and at sign-off the diff shown is the diff of exactly these
-  commits, and a ticket that names none is a change nobody can check, then or
-  months later.
+  naming every commit you made. Record them now, while you still know which they
+  are — at review and at sign-off the diff shown is the diff of exactly these
+  commits, and the done lane refuses a ticket that names none, because a change
+  with no commits is a change nobody can check, then or months later.
 
 Do not claim the definition of done is met unless you can point to the specific
 behaviour that now satisfies it — the `--proof` on each item is where that

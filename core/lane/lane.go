@@ -68,6 +68,12 @@ type Lane struct {
 	// is the one place the board charges for it.
 	RequiresBlockedReason bool
 
+	// RequiresCommits means a ticket cannot enter this lane without naming the
+	// commits that carry its change. It sits on the done lane rather than on
+	// the implementing lane's output contract, so work can move through review
+	// uncommitted — but nothing is accepted that cannot be checked.
+	RequiresCommits bool
+
 	// RequiresHumanExit means no agent may move a ticket out of this lane. It is
 	// the difference between a review step that is conventionally respected and
 	// one that actually stops: an agent that decides its own work passed review
@@ -256,6 +262,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresNonModelSignal = boolOr("requires-nonmodel-signal", l.Terminal)
 	l.RequiresHumanExit = boolOf("requires-human-exit")
 	l.RequiresBlockedReason = boolOf("requires-blocked-reason")
+	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
 
 	if l.ID == "" {
@@ -527,6 +534,7 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.ModelTier == replacement.ModelTier &&
 		base.RequiresQuestion == replacement.RequiresQuestion &&
 		base.RequiresBlockedReason == replacement.RequiresBlockedReason &&
+		base.RequiresCommits == replacement.RequiresCommits &&
 		base.RequiresOutcome == replacement.RequiresOutcome &&
 		base.RequiresNonModelSignal == replacement.RequiresNonModelSignal &&
 		base.RequiresHumanExit == replacement.RequiresHumanExit &&

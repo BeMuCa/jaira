@@ -204,10 +204,17 @@ plus `blocked`.
   diff), `jaira set <handle> review-gaps="..."` (what is missing — write
   "none" if nothing is), then `jaira set <handle> review-verdict="..."` (your
   conclusion). All three are required before the ticket can leave this lane.
-- **done** — requires the definition-of-done checklist to be fully marked, and
-  the plan too if the ticket has one. There is no evidence flag to pass; you
-  cannot certify your own work complete, and you should not try to route around
-  it. `--force` exists, is recorded on the ticket, and is the user's call.
+- **done** — requires the definition-of-done checklist to be fully marked, the
+  plan too if the ticket has one, and the commits that carry the change
+  recorded on the ticket. There is no evidence flag to pass; you cannot certify
+  your own work complete, and you should not try to route around it.
+
+  The human review lane cannot be left by an agent on its own judgement — but
+  when the user has reviewed the work in this conversation and tells you it
+  passed, finishing the acceptance for them is legitimate:
+  `jaira move <handle> --to done --force`. The `--force` is recorded on the
+  ticket, so the trail shows a person decided and you executed. Never use it
+  because *you* judge the work done; only because they said so.
 
 Some lanes are agentic: they carry a prompt and a model tier. To work one, ask the
 tool to assemble the bounded input rather than deciding for yourself what context
