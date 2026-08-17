@@ -128,7 +128,11 @@ func (m *Model) renderBoard() string {
 	if tabs != "" {
 		tabsLine = 1
 	}
-	bodyHeight := m.height - 5 - tabsLine - sessionPanelHeight(m.sessions)
+	// The status bar is rendered first because it may wrap onto several lines
+	// on a narrow terminal, and the columns get whatever height remains.
+	sb := m.statusBar(start, end)
+	sbLines := strings.Count(sb, "\n") + 1
+	bodyHeight := m.height - 4 - sbLines - tabsLine - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
 	}
@@ -139,7 +143,7 @@ func (m *Model) renderBoard() string {
 	}
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, rendered...))
 	b.WriteString("\n")
-	b.WriteString(m.statusBar(start, end))
+	b.WriteString(sb)
 	return b.String()
 }
 
@@ -524,16 +528,18 @@ func (m *Model) statusBar(start, end int) string {
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
 	}
-	budget := m.width - lipgloss.Width(prefix)
-	var shown []string
-	for _, k := range keys {
-		candidate := strings.Join(append(shown, k), " · ")
-		if lipgloss.Width(candidate) > budget {
-			break
+	// Wrapped, never dropped: a key the bar has no room for is a key the reader
+	// does not know exists. renderBoard measures this bar and gives the columns
+	// whatever height is left.
+	lines := wrapHints(keys, max(1, m.width-lipgloss.Width(prefix)))
+	for i, l := range lines {
+		if i == 0 {
+			lines[i] = prefix + styMeta.Render(l)
+		} else {
+			lines[i] = styMeta.Render(l)
 		}
-		shown = append(shown, k)
 	}
-	return prefix + styMeta.Render(strings.Join(shown, " · "))
+	return strings.Join(lines, "\n")
 }
 
 func (m *Model) renderDetail() string {
@@ -639,7 +645,7 @@ func (m *Model) renderDetail() string {
 	// Basic movement (arrows, jk, paging) is deliberately not listed: the
 	// footer names actions, the help screen teaches movement. b appears only
 	// when there is a blocker to jump to.
-	hint := "e fields · E body · y copy id · m move"
+	hint := "e fields · E editor · y copy id · m move"
 	if len(t.BlockedBy) > 0 {
 		hint += " · b blocked-by"
 	}
@@ -656,8 +662,16 @@ func (m *Model) renderDetail() string {
 // came out.
 func (m *Model) clipToWindow(content, hint string) string {
 	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
-	// Two lines are reserved: the footer and the blank line above it.
-	visible := max(1, m.height-2)
+	// The footer wraps rather than truncates — a key the terminal is too narrow
+	// to show is a key the reader does not know exists — so the space reserved
+	// for it is however many lines it needs, plus the blank line above it.
+	width := max(1, min(m.width, 78))
+	items := strings.Split(hint, " · ")
+	footer := wrapHints(items, width)
+	visible := max(1, m.height-1-len(footer))
+
+	// The scroll range is defined against the plain footer: at the very bottom
+	// nothing is hidden below, so nothing extra is in the footer there.
 	if m.detailScroll > len(lines)-visible {
 		m.detailScroll = len(lines) - visible
 	}
@@ -665,11 +679,52 @@ func (m *Model) clipToWindow(content, hint string) string {
 		m.detailScroll = 0
 	}
 	end := min(len(lines), m.detailScroll+visible)
+
 	if end < len(lines) {
-		hint = fmt.Sprintf("+%d more · ", len(lines)-end) + hint
+		// Something is hidden below, so the footer leads with how much. The
+		// extra item can wrap the footer onto one more line, which shrinks the
+		// window again — one recomputation settles it, and the count is written
+		// against the window actually shown.
+		for range 2 {
+			more := fmt.Sprintf("+%d more", len(lines)-end)
+			footer = wrapHints(append([]string{more}, items...), width)
+			visible = max(1, m.height-1-len(footer))
+			end = min(len(lines), m.detailScroll+visible)
+		}
 	}
-	return strings.Join(lines[m.detailScroll:end], "\n") + "\n\n" +
-		styMeta.Render(truncate(hint, max(1, min(m.width, 78))))
+	var b strings.Builder
+	b.WriteString(strings.Join(lines[m.detailScroll:end], "\n") + "\n")
+	for _, l := range footer {
+		b.WriteString("\n" + styMeta.Render(l))
+	}
+	return b.String()
+}
+
+// wrapHints lays key hints into as many lines as the width needs, breaking at
+// the " · " separators, so a narrow terminal shows every key instead of
+// silently dropping or truncating the tail.
+func wrapHints(items []string, width int) []string {
+	var lines []string
+	cur := ""
+	for _, it := range items {
+		if it == "" {
+			continue
+		}
+		cand := it
+		if cur != "" {
+			cand = cur + " · " + it
+		}
+		if cur != "" && lipgloss.Width(cand) > width {
+			lines = append(lines, cur)
+			cur = it
+			continue
+		}
+		cur = cand
+	}
+	if cur != "" {
+		lines = append(lines, cur)
+	}
+	return lines
 }
 
 type gitStat struct{ root string }

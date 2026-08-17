@@ -640,7 +640,11 @@ precedence: 41
 		t.Fatal(err)
 	}
 	ls := newLaneScreen(s, set)
-	ls.idx = len(ls.lanes) // the '+' column
+	// The not-installed lane shows as its own dimmed column before '+'.
+	if len(ls.available) != 1 || ls.available[0].ID != "extra" {
+		t.Fatalf("available = %v, want exactly [extra]", ls.available)
+	}
+	ls.idx = len(ls.lanes) + len(ls.available) // the '+' column
 
 	ls.key("enter")
 	if !ls.catalogueOpen {

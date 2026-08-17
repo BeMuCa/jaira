@@ -54,6 +54,12 @@ type laneScreen struct {
 	// installation's own lanes (the board), 1 is the shared section.
 	focus int
 
+	// available is every catalogue lane not part of this board — shown as
+	// dimmed columns after the installed ones, because a lane that exists but
+	// is invisible until someone finds the '+' column is a lane nobody knows
+	// about. Selecting one offers enter to add it and E to edit it.
+	available []*lane.Lane
+
 	// catalogue, catalogueIdx and catalogueOpen back the '+' column: pressing
 	// enter on it lists every lane not already part of this project
 	// (lane.Installable) for one to be chosen and added.
@@ -77,6 +83,9 @@ type laneScreen struct {
 
 func newLaneScreen(store *ticket.Store, set *lane.Set) *laneScreen {
 	ls := &laneScreen{store: store, set: set, lanes: set.Lanes}
+	if av, err := lane.Installable(set); err == nil {
+		ls.available = av
+	}
 	if d, err := lane.Drift(store.Root, set); err == nil {
 		ls.drift = make(map[string]lane.DriftEntry, len(d))
 		for _, e := range d {
@@ -100,8 +109,12 @@ func (ls *laneScreen) reload() error {
 	}
 	ls.set = set
 	ls.lanes = set.Lanes
-	if ls.idx > len(ls.lanes) {
-		ls.idx = len(ls.lanes)
+	ls.available = nil
+	if av, err := lane.Installable(set); err == nil {
+		ls.available = av
+	}
+	if ls.idx > len(ls.lanes)+len(ls.available) {
+		ls.idx = len(ls.lanes) + len(ls.available)
 	}
 	return nil
 }
@@ -115,7 +128,17 @@ func (ls *laneScreen) selected() *lane.Lane {
 
 // isPlusColumn reports whether the far-right '+' column is selected.
 func (ls *laneScreen) isPlusColumn() bool {
-	return ls.idx == len(ls.lanes)
+	return ls.idx == len(ls.lanes)+len(ls.available)
+}
+
+// selectedAvailable returns the not-installed lane under the cursor, when the
+// cursor sits past the installed ones.
+func (ls *laneScreen) selectedAvailable() *lane.Lane {
+	i := ls.idx - len(ls.lanes)
+	if i < 0 || i >= len(ls.available) {
+		return nil
+	}
+	return ls.available[i]
 }
 
 func (ls *laneScreen) selectedShared() *lane.SharedLane {
@@ -212,6 +235,8 @@ func (ls *laneScreen) key(s string) (done bool) {
 	case "enter":
 		if ls.focus == 0 && ls.isPlusColumn() {
 			ls.openCatalogue()
+		} else if ls.focus == 0 && ls.selectedAvailable() != nil {
+			ls.addAvailable()
 		}
 	case "u":
 		if ls.focus == 0 {
@@ -229,6 +254,10 @@ func (ls *laneScreen) key(s string) (done bool) {
 		if ls.focus == 0 {
 			ls.refreshDrift()
 		}
+	case "E":
+		if ls.focus == 0 {
+			ls.pendingCmd = ls.editLane()
+		}
 	case "a":
 		if ls.focus == 1 {
 			ls.adopt()
@@ -242,7 +271,7 @@ func (ls *laneScreen) key(s string) (done bool) {
 func (ls *laneScreen) moveColumn(delta int) {
 	ls.confirmAdoptID = ""
 	next := ls.idx + delta
-	if next < 0 || next > len(ls.lanes) {
+	if next < 0 || next > len(ls.lanes)+len(ls.available) {
 		return
 	}
 	ls.idx = next
@@ -369,7 +398,7 @@ func (ls *laneScreen) publish() {
 		ls.msg, ls.isErr = err.Error(), true
 		return
 	}
-	ls.msg, ls.isErr = "published to " + dst, false
+	ls.msg, ls.isErr = "published to "+dst, false
 }
 
 // newLaneDoneMsg reports that $EDITOR, opened on a freshly written lane
@@ -379,6 +408,59 @@ type newLaneDoneMsg struct{ err error }
 // newLane writes a fresh lane skeleton into the catalogue and opens it in
 // $EDITOR — until now, doing this meant knowing 'jaira lanes template'
 // exists and combining it with tools outside jaira.
+// addAvailable installs the not-installed lane under the cursor, the same
+// call the '+' catalogue and 'jaira lanes add' make.
+func (ls *laneScreen) addAvailable() {
+	l := ls.selectedAvailable()
+	if l == nil {
+		return
+	}
+	if _, err := lane.Add(ls.store.Root, ls.set, l.ID); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	id := l.ID
+	if err := ls.reload(); err != nil {
+		ls.msg, ls.isErr = err.Error(), true
+		return
+	}
+	ls.idx = indexOfLane(ls.lanes, id)
+	ls.msg, ls.isErr = "added "+id, false
+}
+
+// editLane opens the selected lane's file in $EDITOR. A built-in has no file —
+// it lives inside the binary — so editing one first writes a catalogue
+// override copy under ~/.jaira/lanes (or opens the copy a previous edit left)
+// and edits that, which is the same override mechanism a hand-written file of
+// the same id uses.
+func (ls *laneScreen) editLane() tea.Cmd {
+	l := ls.selected()
+	if l == nil {
+		l = ls.selectedAvailable()
+	}
+	if l == nil {
+		return nil
+	}
+	path := l.Source
+	if l.Builtin {
+		dst := filepath.Join(lane.UserLanesDir(), l.ID+".md")
+		if _, err := os.Stat(dst); os.IsNotExist(err) {
+			exported, err := lane.Export(l, lane.UserLanesDir(), false)
+			if err != nil {
+				ls.msg, ls.isErr = err.Error(), true
+				return nil
+			}
+			dst = exported
+		}
+		path = dst
+	}
+	argv := append(editorCommand(), path)
+	cmd := exec.Command(argv[0], argv[1:]...)
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		return newLaneDoneMsg{err: err}
+	})
+}
+
 func (ls *laneScreen) newLane() tea.Cmd {
 	path, err := writeLaneSkeleton(lane.UserLanesDir())
 	if err != nil {
@@ -442,7 +524,7 @@ func (ls *laneScreen) refreshDrift() {
 		return
 	}
 	delete(ls.drift, l.ID)
-	ls.msg, ls.isErr = "pulled the catalogue copy of " + l.ID, false
+	ls.msg, ls.isErr = "pulled the catalogue copy of "+l.ID, false
 }
 
 // adopt copies a teammate's shared lane into this catalogue. The prompt was
@@ -470,7 +552,7 @@ func (ls *laneScreen) adopt() {
 		return
 	}
 	ls.confirmAdoptID = ""
-	ls.msg, ls.isErr = "adopted into " + dst, false
+	ls.msg, ls.isErr = "adopted into "+dst, false
 }
 
 // promptOf returns the name, id, creator and prompt to show in the bottom
@@ -527,6 +609,20 @@ func (ls *laneScreen) renderBoard(totalW int) string {
 		body := name + "\n" + styMeta.Render(truncate(label, laneColWidth-2))
 		cols = append(cols, laneColumnStyle(focused).Render(body))
 	}
+	// Lanes that exist but are not on this board are shown dimmed rather than
+	// hidden behind the '+' column: a lane nobody can see is a lane nobody
+	// knows exists. enter adds one, E edits it.
+	for i, l := range ls.available {
+		focused := ls.focus == 0 && ls.idx == len(ls.lanes)+i
+		name := truncate(l.Name, laneColWidth-2)
+		if focused {
+			name = stySelected.Render(name)
+		} else {
+			name = styMeta.Render(name)
+		}
+		body := name + "\n" + styMeta.Render(truncate("not on board", laneColWidth-2))
+		cols = append(cols, laneColumnStyle(focused).Render(body))
+	}
 	plusFocused := ls.focus == 0 && ls.isPlusColumn()
 	plusLabel := "+"
 	if plusFocused {
@@ -534,13 +630,16 @@ func (ls *laneScreen) renderBoard(totalW int) string {
 	}
 	cols = append(cols, laneColumnStyle(plusFocused).Render(plusLabel))
 
-	perScreen := max(1, totalW/(laneColWidth+2))
-	start := 0
-	if ls.idx >= perScreen {
-		start = ls.idx - perScreen + 1
+	// Columns wrap onto further rows rather than being clipped at the right
+	// edge: a narrow terminal used to silently hide the tail of the board —
+	// review, human review, done — which read as those lanes not existing.
+	perRow := max(1, totalW/(laneColWidth+2))
+	var rows []string
+	for start := 0; start < len(cols); start += perRow {
+		end := min(len(cols), start+perRow)
+		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, cols[start:end]...))
 	}
-	end := min(len(cols), start+perScreen)
-	return lipgloss.JoinHorizontal(lipgloss.Top, cols[start:end]...)
+	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }
 
 // renderCatalogue lists the lanes the '+' column's enter key found
@@ -635,10 +734,12 @@ func (ls *laneScreen) render(width, height int) string {
 	// the full footer runs longer than a narrow terminal's column width, and
 	// cutting it off would silently hide a key's name rather than the column
 	// content truncate exists to fit.
-	help := "HL move · x remove · u use · p publish · n new · R refresh · esc back"
+	help := []string{"E edit", "x remove", "u use", "p publish", "n new", "R refresh", "esc back"}
 	if len(ls.shared) > 0 {
-		help = "HL move · x remove · tab switch · u use · p publish · a adopt · esc back"
+		help = []string{"E edit", "x remove", "tab switch", "u use", "p publish", "a adopt", "esc back"}
 	}
-	sb.WriteString("\n" + styMeta.Render(help))
+	for _, l := range wrapHints(help, max(1, w)) {
+		sb.WriteString("\n" + styMeta.Render(l))
+	}
 	return sb.String()
 }

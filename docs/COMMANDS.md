@@ -109,6 +109,7 @@ H L       move the selected      enter (on +)   catalogue: choose a lane to add
           lane one column        u   copy the selected lane into this project
 tab       switch to teammates'   p   publish it to teammates
           shared lanes           n   write a new lane and open it in $EDITOR
+E         edit the selected lane in $EDITOR (a built-in gets an override copy first)
                                   R   pull a drifted lane's catalogue copy in
                                   a   (shared list) adopt a teammate's lane
 esc       back
