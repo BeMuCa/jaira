@@ -32,20 +32,25 @@ func (m *Model) renderSignOff() string {
 	b.WriteString(styReview.Render(truncate("◆ waiting on your sign-off", w)) + "\n")
 	b.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
+	// The same shape as the detail pane — label column left, text right, a
+	// blank line between fields — so the two screens read as one tool. The
+	// order is still the four questions a sign-off answers: what was wrong,
+	// what was done and why, does it solve it, and what the reviewer made of it.
 	section := func(label, body string) {
 		if strings.TrimSpace(body) == "" {
 			return
 		}
-		b.WriteString("\n" + styLaneTitle.Render(truncate(label, w)) + "\n")
-		b.WriteString(wrap(body, max(10, w-2), 2) + "\n")
+		b.WriteString("\n")
+		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", label)),
+			wrap(body, min(w-14, 64), 13))
 	}
-	section("What was wrong", firstNonEmpty(t.Goal, t.Context))
-	section("What was done", t.Outcome.What)
-	section("Why", t.Outcome.Why)
-	section("Does it solve it — the implementer's account", t.Outcome.Resolves)
-	section("What the reviewer says it does", t.ReviewSummary)
-	section("What the reviewer found missing", t.ReviewGaps)
-	section("The reviewer's verdict", t.ReviewVerdict)
+	section("problem", firstNonEmpty(t.Goal, t.Context))
+	section("what", t.Outcome.What)
+	section("why", t.Outcome.Why)
+	section("resolves", t.Outcome.Resolves)
+	section("summary", t.ReviewSummary)
+	section("gaps", t.ReviewGaps)
+	section("verdict", t.ReviewVerdict)
 
 	if done, total := checklistProgress(t.DoDItems); total > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Definition of Done") +
@@ -65,9 +70,11 @@ func (m *Model) renderSignOff() string {
 		}
 	}
 
-	b.WriteString("\n" + styMeta.Render(truncate(
-		"a accept → done · f follow-up ticket · e edit · E body · esc back", w)))
-	return b.String()
+	// Clipped and scrolled the same way the detail pane is: a review with a
+	// long verdict and a long checklist is exactly the ticket that outgrows a
+	// small terminal, and this is the screen where it must be readable.
+	return m.clipToWindow(b.String(),
+		"a accept → done · f follow-up ticket · e edit · E body · ↑↓ scroll · esc back")
 }
 
 func firstNonEmpty(vals ...string) string {
@@ -168,7 +175,7 @@ func (m *Model) followUp() {
 	lists := map[string][]string{ticket.FieldBlockedBy: nil, ticket.FieldCommits: nil}
 
 	body := "# Follow-up: " + src.Title + "\n\n" +
-		"## Definition of Done\n\n- [ ] <What must be true that is not true yet>\n\n## Notes\n\n"
+		"## Definition of Done\n\n- [ ] <What must be true that is not true yet>\n\n## Progress\n\n"
 
 	t, err := m.store.Create(fields, lists, body)
 	if err != nil {

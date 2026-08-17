@@ -90,8 +90,8 @@ func TestDetailRendersChecklists(t *testing.T) {
 	out := stripANSI(m.renderDetail())
 
 	for _, want := range []string{
-		"Plan", "write the spec", "design the interface", "implement",
-		"Definition of Done", "documented in README",
+		"plan", "write the spec", "design the interface", "implement",
+		"done when", "documented in README",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("detail pane is missing %q:\n%s", want, out)

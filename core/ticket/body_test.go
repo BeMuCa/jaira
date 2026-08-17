@@ -22,7 +22,7 @@ func TestNewBodyMatchesRegressionBaseline(t *testing.T) {
 		"- [ ] planning\n" +
 		"\n## Plan\n\n" +
 		"<Steps, in order — filled in by the pre-process step, or by you.>\n" +
-		"\n## Notes\n\n"
+		"\n## Progress\n\n"
 	if got != want {
 		t.Errorf("NewBody regressed from the baseline shape:\ngot:  %q\nwant: %q", got, want)
 	}

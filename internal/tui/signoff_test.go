@@ -37,10 +37,10 @@ func TestSignOffViewShowsTheFourQuestions(t *testing.T) {
 		"added a token bucket per IP",                     // what the agent did
 		"the endpoint had no limit at all",                // why
 		"429 now returned above 100/min",                  // whether it solved it
-		"What the reviewer says it does",                  // the reviewer's summary, labelled
+		"summary",                                         // the reviewer's summary, labelled
 		"added a token-bucket rate limiter per client IP", // the reviewer's own account
-		"What the reviewer found missing",                 // the reviewer's gaps, labelled
-		"the diff matches the criteria",                   // the reviewer's own verdict
+		"gaps",                          // the reviewer's gaps, labelled
+		"the diff matches the criteria", // the reviewer's own verdict
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("sign-off view is missing %q:\n%s", want, out)
@@ -170,5 +170,29 @@ func TestDetailRendersFollows(t *testing.T) {
 
 	if !strings.Contains(out, "follows") || !strings.Contains(out, "72PQYG") {
 		t.Errorf("detail pane does not show the predecessor:\n%s", out)
+	}
+}
+
+// The sign-off screen is read in the same terminals the detail pane is, and a
+// long review is exactly the content that outgrows a small one — it must clip
+// and scroll, not push the header off the top.
+func TestSignOffFitsTheTerminalAndScrolls(t *testing.T) {
+	m := newTestModel(t, 100, 14)
+	tk := longTicket()
+	tk.Status = "signoff"
+	m.detail = tk
+
+	out := stripANSI(m.renderSignOff())
+	if got := len(strings.Split(out, "\n")); got > 14 {
+		t.Errorf("terminal h=14: sign-off rendered %d lines", got)
+	}
+	if !strings.Contains(out, "more ·") {
+		t.Errorf("nothing told the reader there is more below:\n%s", out)
+	}
+
+	m.detailScroll = 10_000
+	out = stripANSI(m.renderSignOff())
+	if !strings.Contains(out, "verdict") && !strings.Contains(out, "Definition of Done") && !strings.Contains(out, "[") {
+		t.Errorf("clamped scroll does not show the last page:\n%s", out)
 	}
 }

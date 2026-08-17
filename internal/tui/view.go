@@ -358,16 +358,27 @@ func checklistProgress(items []ticket.DoDItem) (done, total int) {
 // renderChecklist prints one checklist with its state markers, arrowing the item
 // being worked on. That arrow is the answer to "which step is the agent on",
 // which is the question the board exists to make answerable at a glance.
-func renderChecklist(b *strings.Builder, title string, items []ticket.DoDItem, width int) {
+func renderChecklist(b *strings.Builder, label string, items []ticket.DoDItem, width int) {
 	if len(items) == 0 {
 		return
 	}
 	done, total := checklistProgress(items)
-	count := fmt.Sprintf("%d/%d", done, total)
-	// The heading is truncated against the pane width like everything else: a
-	// narrow terminal must not be able to push a line past the edge.
-	fmt.Fprintf(b, "\n%s %s\n", styLaneTitle.Render(truncate(title, max(1, width-len(count)-1))),
-		styLaneCount.Render(count))
+	// The same two-column shape as every other field: label left, content
+	// right, so the checklists read as fields of the ticket rather than as a
+	// second document below it. The label line carries the progress count; the
+	// items follow in the content column, keeping their state markers, the
+	// arrow on the item being worked on, and the proof line under its item.
+	//
+	// A pane too narrow for the label column falls back to items at the left
+	// edge — the column layout must never be the thing that pushes a line past
+	// the pane, which is what the width guard below is for.
+	itemCol := 13
+	if width < 40 {
+		itemCol = 0
+	}
+	pad := strings.Repeat(" ", itemCol)
+	fmt.Fprintf(b, "\n%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", label)),
+		styLaneCount.Render(fmt.Sprintf("%d/%d", done, total)))
 	for _, it := range items {
 		lead, sty := "  ", styMeta
 		switch it.State {
@@ -376,12 +387,32 @@ func renderChecklist(b *strings.Builder, title string, items []ticket.DoDItem, w
 		case ticket.StateDone:
 			sty = styOK
 		}
-		fmt.Fprintf(b, "%s%s %s\n", lead,
-			sty.Render("["+it.State.Marker()+"]"), wrap(it.Text, max(1, width-6), 6))
+		fmt.Fprintf(b, "%s%s%s %s\n", pad, lead,
+			sty.Render("["+it.State.Marker()+"]"), wrap(it.Text, max(1, width-itemCol-6), itemCol+6))
 		if it.Proof != "" {
-			fmt.Fprintf(b, "      %s\n", styMeta.Render(wrap("proof: "+it.Proof, max(1, width-6), 13)))
+			fmt.Fprintf(b, "%s      %s\n", pad,
+				styMeta.Render(wrap("proof: "+it.Proof, max(1, width-itemCol-6), itemCol+13)))
 		}
 	}
+}
+
+// dropLeadingTitle removes the body's opening "# <title>" heading. Every new
+// ticket's body starts with one (see ticket.NewBody), but the pane already
+// names the ticket in its header — rendered raw it reads as a mystery section
+// between the checklists and the notes.
+func dropLeadingTitle(rest string) string {
+	lines := strings.Split(rest, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "# ") {
+			return strings.TrimLeft(strings.Join(lines[i+1:], "\n"), "\n")
+		}
+		break
+	}
+	return rest
 }
 
 // stripChecklistSections removes the sections rendered above, so the remaining
@@ -541,25 +572,39 @@ func (m *Model) renderDetail() string {
 	row("when", timespan(t.CreatedAt, t.UpdatedAt))
 	row("executed-by", t.ExecutedBy)
 	row("tier", t.ModelTier)
-	row("goal", t.Goal)
-	row("context", t.Context)
-	row("done when", t.DoD)
+	// The identity rows above stay tight; the prose fields below each get a
+	// blank line, because two wrapped paragraphs with no gap between them read
+	// as one — which field a sentence belongs to should not need re-reading.
+	prose := func(k, v string) {
+		if strings.TrimSpace(v) == "" {
+			return
+		}
+		b.WriteString("\n")
+		row(k, v)
+	}
+	prose("goal", t.Goal)
+	prose("context", t.Context)
+	// The checklist below carries the same label; showing the one-line scalar
+	// too would print "done when" twice for every ticket that has both.
+	if len(t.DoDItems) == 0 {
+		prose("done when", t.DoD)
+	}
 	if len(t.BlockedBy) > 0 {
 		var hs []string
 		for _, d := range t.BlockedBy {
 			hs = append(hs, ticket.Handle(d))
 		}
-		row("blocked by", strings.Join(hs, ", "))
+		prose("blocked by", strings.Join(hs, ", "))
 	}
 	if t.Follows != "" {
-		row("follows", ticket.Handle(t.Follows))
+		prose("follows", ticket.Handle(t.Follows))
 	}
 	// Shown only while the ticket is parked, same as the CLI: a stale reason
 	// rendered on an active ticket reads as its current state.
 	if l, ok := m.lanes.Get(t.Status); ok && l.RequiresBlockedReason {
-		row("waiting on", t.BlockedReason)
+		prose("waiting on", t.BlockedReason)
 	}
-	row("question", t.Question)
+	prose("question", t.Question)
 
 	if t.Outcome.What != "" || t.Outcome.Why != "" || t.Outcome.Resolves != "" {
 		b.WriteString("\n" + styLaneTitle.Render("Outcome") + "\n")
@@ -585,18 +630,26 @@ func (m *Model) renderDetail() string {
 		b.WriteString("\n" + styWarn.Render("Before this can start: "+strings.Join(miss, ", ")) + "\n")
 	}
 	width := min(m.width, 78)
-	renderChecklist(&b, "Plan", t.PlanItems, width)
-	renderChecklist(&b, "Definition of Done", t.DoDItems, width)
+	renderChecklist(&b, "plan", t.PlanItems, width)
+	renderChecklist(&b, "done when", t.DoDItems, width)
 
-	if rest := stripChecklistSections(t.Body); rest != "" {
+	if rest := dropLeadingTitle(stripChecklistSections(t.Body)); rest != "" {
 		b.WriteString("\n" + rest + "\n")
 	}
-	// Everything above is the full ticket, which has no upper bound in length.
-	// Rendering it whole pushed the handle, the title and the goal off the top of
-	// the terminal with no key that could bring them back, so the pane is clipped
-	// to the window and scrolled. The offset is clamped here rather than in the
-	// key handler because only this function knows how long the content came out.
-	lines := strings.Split(strings.TrimRight(b.String(), "\n"), "\n")
+	return m.clipToWindow(b.String(),
+		"e fields · E body · y copy id · m move · ↑↓ scroll · jk next/prev · esc back")
+}
+
+// clipToWindow clips an open ticket's content to the terminal, applying and
+// clamping the scroll offset, and appends the footer hint — prefixed with how
+// much is hidden below, so a short terminal never silently swallows the rest.
+// The content of an open ticket has no upper bound in length; rendering it
+// whole pushed the handle, the title and the goal off the top of the terminal
+// with no key that could bring them back. The offset is clamped here rather
+// than in the key handler because only the renderer knows how long the content
+// came out.
+func (m *Model) clipToWindow(content, hint string) string {
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
 	// Two lines are reserved: the footer and the blank line above it.
 	visible := max(1, m.height-2)
 	if m.detailScroll > len(lines)-visible {
@@ -606,8 +659,6 @@ func (m *Model) renderDetail() string {
 		m.detailScroll = 0
 	}
 	end := min(len(lines), m.detailScroll+visible)
-
-	hint := "e fields · E body · y copy id · m move · ctrl+d/u scroll · jk next/prev · esc back"
 	if end < len(lines) {
 		hint = fmt.Sprintf("+%d more · ", len(lines)-end) + hint
 	}
@@ -680,6 +731,7 @@ func (m *Model) renderHelp() string {
 		}},
 		{"Look at things", [][2]string{
 			{"enter", "open the selected ticket"},
+			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"/", "filter tickets as you type"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},

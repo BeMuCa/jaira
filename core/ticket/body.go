@@ -49,6 +49,10 @@ func NewBody(title, dod string, options []BodyOption) string {
 	// promise to produce one satisfied by every ticket the moment it is created.
 	b.WriteString("\n## Plan\n\n")
 	b.WriteString("<Steps, in order — filled in by the pre-process step, or by you.>\n")
-	b.WriteString("\n## Notes\n\n")
+	// "Progress", not "Notes": this is where 'jaira note' appends its
+	// timestamped entries, and seeding the same heading the writer targets is
+	// what keeps them landing here instead of in a second section at the end
+	// of the file. A human wanting free-form notes can add their own heading.
+	b.WriteString("\n## Progress\n\n")
 	return b.String()
 }

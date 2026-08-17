@@ -340,6 +340,38 @@ func (m *Model) currentLane() *lane.Lane {
 
 func matches(t *ticket.Ticket, q string) bool {
 	q = strings.ToLower(q)
+
+	// A "key:value" query narrows the search to one field — "assignee:berk"
+	// finds berk's tickets without also matching every ticket whose prose
+	// mentions them. An unrecognized key is not an error: "http:" in a pasted
+	// URL is a search term, not a field, so it falls through to full text.
+	if key, val, ok := strings.Cut(q, ":"); ok {
+		val = strings.TrimSpace(val)
+		known := true
+		var field string
+		switch strings.TrimSpace(key) {
+		case "id", "ticket":
+			field = t.ID
+		case "title":
+			field = t.Title
+		case "goal":
+			field = t.Goal
+		case "context":
+			field = t.Context
+		case "assignee":
+			field = t.Assignee
+		case "lane", "status":
+			field = t.Status
+		case "body":
+			field = t.Body
+		default:
+			known = false
+		}
+		if known {
+			return strings.Contains(strings.ToLower(field), val)
+		}
+	}
+
 	// The body is included because half of what a ticket says lives there — the
 	// description and both checklists — and searching only the frontmatter meant
 	// the thing you remembered reading was the thing you could not find.
@@ -676,15 +708,22 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		case "m":
 			m.openMove()
+		// Arrows scroll, j/k switch tickets: the arrows are the base movement
+		// vocabulary and must work on every screen a ticket can be read on,
+		// while jumping to the neighbouring ticket stays one key away.
+		case "down":
+			m.detailScroll++
+		case "up":
+			m.detailScroll--
 		case "pgdown", "ctrl+d":
 			m.detailScroll += max(1, m.height-4)
 		case "pgup", "ctrl+u":
 			m.detailScroll -= max(1, m.height-4)
-		case "j", "down":
+		case "j":
 			m.mode = m.detailFrom
 			m.detail = nil
 			m.moveCard(1)
-		case "k", "up":
+		case "k":
 			m.mode = m.detailFrom
 			m.detail = nil
 			m.moveCard(-1)
