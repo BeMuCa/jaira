@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func laneFocusModel(t *testing.T, w, h int) *Model {
@@ -92,6 +94,77 @@ func TestLaneFocusEnterOpensDetail(t *testing.T) {
 	}
 	if m.detailFrom != modeLaneFocus {
 		t.Errorf("detailFrom = %v, want modeLaneFocus so esc comes back here", m.detailFrom)
+	}
+}
+
+// The single-lane view must never render taller than the terminal, whatever
+// the height — it used to render every ticket in the lane with no cap at all.
+func TestLaneFocusFitsTheTerminal(t *testing.T) {
+	s := flagHeavyReviewLane(t, 35)
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.mode = modeLaneFocus
+	m.laneIdx = laneIndex(t, m, "review")
+
+	for _, h := range []int{40, 30, 24, 20, 16, 12} {
+		m.width, m.height = 120, h
+		got := len(strings.Split(stripANSI(m.renderLaneFocus()), "\n"))
+		if got > h {
+			t.Errorf("terminal h=%d: lane focus rendered %d lines", h, got)
+		}
+	}
+}
+
+// Walking the cursor through a lane too long for the pane must keep the
+// selected ticket on screen at every step, the single-lane equivalent of
+// TestSelectionStaysVisibleWhenScrollingDown.
+func TestLaneFocusKeepsTheCursorVisible(t *testing.T) {
+	s := flagHeavyReviewLane(t, 35)
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.mode = modeLaneFocus
+	m.laneIdx = laneIndex(t, m, "review")
+	m.width, m.height = 120, 20
+
+	col := m.cols[m.laneIdx]
+	for i := 0; i < len(col.tickets); i++ {
+		m.cardIdx = i
+		out := stripANSI(m.renderLaneFocus())
+		want := ticket.Handle(col.tickets[i].ID)
+		if !strings.Contains(out, want) {
+			t.Fatalf("selection at index %d (%s) is not visible in the render:\n%s", i, want, out)
+		}
+	}
+}
+
+// A lane cut short by the terminal must say so — nothing is hidden silently.
+func TestLaneFocusSaysWhatIsOffScreen(t *testing.T) {
+	s := flagHeavyReviewLane(t, 35)
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.mode = modeLaneFocus
+	m.laneIdx = laneIndex(t, m, "review")
+	m.width, m.height = 120, 20
+	m.cardIdx = len(m.cols[m.laneIdx].tickets) / 2
+
+	out := stripANSI(m.renderLaneFocus())
+	if !strings.Contains(out, "more") {
+		t.Errorf("nothing told the reader there is more off-screen:\n%s", out)
 	}
 }
 

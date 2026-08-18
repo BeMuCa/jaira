@@ -75,9 +75,50 @@ func (m *Model) renderLaneFocus() string {
 		b.WriteString(styMeta.Render("no tickets") + "\n")
 	} else {
 		w := max(20, m.width-2)
+		cards := make([]string, len(col.tickets))
+		heights := make([]int, len(col.tickets))
 		for i, t := range col.tickets {
-			b.WriteString(m.renderLaneCard(t, w, i == m.cardIdx))
+			cards[i] = m.renderLaneCard(t, w, i == m.cardIdx)
+			// +1 for the blank separator line the loop below writes after each card.
+			heights[i] = strings.Count(cards[i], "\n") + 1
+		}
+
+		// The same budget the footer arithmetic below reserves — 2 lines for the
+		// gap and the footer itself — measured against what the header above has
+		// already used.
+		headerLines := strings.Count(b.String(), "\n")
+		budget := max(1, m.height-headerLines-2)
+
+		// Reuse the board's own scroll state for this lane: the board recomputes
+		// and clamps it for the focused lane on every render anyway, and the two
+		// views agreeing on where a long lane is scrolled to is the point.
+		first := m.scroll[col.lane.ID]
+		if m.cardIdx < first {
+			first = m.cardIdx
+		}
+		if first > len(cards) {
+			first = 0
+		}
+		last := laneFocusFit(heights, first, budget)
+		// Keep the cursor visible: page forward until it lands inside the window
+		// the budget allows — the same shape as the board's own scroll fix, just
+		// walked one card at a time because cards are not a fixed height here.
+		for m.cardIdx >= last && first < len(cards)-1 {
+			first++
+			last = laneFocusFit(heights, first, budget)
+		}
+		m.scroll[col.lane.ID] = first
+
+		// Nothing is hidden without saying so, above or below.
+		if first > 0 {
+			b.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", first)) + "\n")
+		}
+		for i := first; i < last; i++ {
+			b.WriteString(cards[i])
 			b.WriteString("\n")
+		}
+		if last < len(cards) {
+			b.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", len(cards)-last)) + "\n")
 		}
 	}
 
@@ -86,7 +127,49 @@ func (m *Model) renderLaneFocus() string {
 	if gap := m.height - used - 2; gap > 0 {
 		b.WriteString(strings.Repeat("\n", gap))
 	}
-	return b.String() + "\n" + footer
+	// Last line of defence: this view can no more spill past the terminal than
+	// a board column can.
+	return clampBlock(b.String()+"\n"+footer, m.width, m.height)
+}
+
+// laneFocusFit returns the index one past the last card, starting at first,
+// that fits within budget lines — reserving a line for each off-screen
+// indicator ("+N more" above and/or below) that ends up actually shown. That
+// reservation is a fixed point rather than a single pass, because whether the
+// "more below" indicator is needed can only be known after seeing how many
+// cards fit, the same way clipToWindow settles its own footer. At least one
+// card is always returned so a budget too small for even the first card still
+// shows something; clampBlock is the backstop if that pushes past the window.
+func laneFocusFit(heights []int, first, budget int) int {
+	reserve := 0
+	if first > 0 {
+		reserve = 1
+	}
+	last := first
+	for iter := 0; iter < 2; iter++ {
+		room := budget - reserve
+		last = first
+		sum := 0
+		for last < len(heights) {
+			if last > first && sum+heights[last] > room {
+				break
+			}
+			sum += heights[last]
+			last++
+		}
+		want := 0
+		if first > 0 {
+			want++
+		}
+		if last < len(heights) {
+			want++
+		}
+		if want == reserve {
+			break
+		}
+		reserve = want
+	}
+	return last
 }
 
 // renderLaneCard is renderCard widened out. The same status flags the board

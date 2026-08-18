@@ -274,7 +274,7 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	if rest := len(col.tickets) - (first + visible); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
 	}
-	return style.Render(body.String())
+	return style.Render(clampBlock(body.String(), w, h))
 }
 
 func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
@@ -332,9 +332,9 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	}
 
 	out := marker + title + "\n"
-	out += "  " + meta + "\n"
+	out += "  " + truncate(meta, w) + "\n"
 	if len(flags) > 0 {
-		out += "  " + truncate(strings.Join(flags, " "), w+24) + "\n"
+		out += "  " + truncate(strings.Join(flags, " "), w) + "\n"
 	} else {
 		out += "\n"
 	}
@@ -916,6 +916,26 @@ func truncate(s string, n int) string {
 		r = r[:len(r)-1]
 	}
 	return string(r) + "…"
+}
+
+// clampBlock cuts a rendered block to a hard w x h budget. lipgloss's Width()
+// wraps overlong lines onto extra rows and Height() pads without clipping, so
+// a block handed to a sized style can silently grow the layout around it —
+// which is exactly how a flag-heavy review lane once pushed the board past the
+// bottom of the terminal. Clamping here means over-tall content is cut, never
+// spilled.
+func clampBlock(s string, w, h int) string {
+	if w <= 0 || h <= 0 {
+		return ""
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) > h {
+		lines = lines[:h]
+	}
+	for i, l := range lines {
+		lines[i] = truncate(l, w)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func wrap(s string, width, indent int) string {

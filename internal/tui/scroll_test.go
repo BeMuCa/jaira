@@ -82,6 +82,82 @@ func TestSelectionStaysVisibleWhenScrollingDown(t *testing.T) {
 	}
 }
 
+// flagHeavyReviewLane fills a store with n review tickets that maximise the
+// flags row — every flag the board can show on one card, plus a title long
+// enough to matter — since that row is the one w+24 let overflow the column.
+func flagHeavyReviewLane(t *testing.T, n int) *ticket.Store {
+	t.Helper()
+	s := newTestStore(t)
+	now := time.Now()
+	body := `## Plan
+
+- [x] write the spec
+- [ ] implement
+- [ ] test
+
+## Definition of Done
+
+- [x] documented
+- [ ] reviewed
+`
+	for i := 0; i < n; i++ {
+		f := map[string]string{
+			ticket.FieldID:         ticket.NewID(now),
+			ticket.FieldTitle:      "Review item long title here " + string(rune('A'+i%26)),
+			ticket.FieldStatus:     "review",
+			ticket.FieldReady:      "true",
+			ticket.FieldCreator:    "berk",
+			ticket.FieldAssignee:   "someoneelse",
+			ticket.FieldExecutedBy: "claude-opus-5",
+			ticket.FieldGoal:       "g",
+			ticket.FieldDoD:        "d",
+			ticket.FieldContext:    "c",
+			ticket.FieldCreatedAt:  ticket.FormatTime(now),
+			ticket.FieldUpdatedAt:  ticket.FormatTime(now),
+		}
+		l := map[string][]string{ticket.FieldBlockedBy: nil, ticket.FieldCommits: {"abc1234", "def5678", "ghi9012"}}
+		if _, err := s.Create(f, l, body); err != nil {
+			t.Fatal(err)
+		}
+		now = now.Add(time.Millisecond)
+	}
+	return s
+}
+
+// A flag-heavy review lane (every flag the board can show, on every card) must
+// never push the board past the bottom of the terminal, whatever the terminal
+// size — this is the exact shape that used to overflow via the stale w+24
+// fudge on the flags line.
+func TestBoardFitsTheTerminal(t *testing.T) {
+	s := flagHeavyReviewLane(t, 30)
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.laneIdx = -1
+	for i, c := range m.cols {
+		if c.lane.ID == "review" {
+			m.laneIdx = i
+		}
+	}
+	if m.laneIdx < 0 {
+		t.Fatal("no review column on the board")
+	}
+
+	for _, h := range []int{40, 30, 24, 20, 16, 12, 10} {
+		for _, w := range []int{60, 80, 120, 200} {
+			m.width, m.height = w, h
+			got := len(strings.Split(stripANSI(m.render()), "\n"))
+			if got > h {
+				t.Errorf("terminal %dx%d: board rendered %d lines", w, h, got)
+			}
+		}
+	}
+}
+
 // longTicket is a ticket whose rendered detail is taller than any small
 // terminal: several checklists, an outcome, a review and a body.
 func longTicket() *ticket.Ticket {
