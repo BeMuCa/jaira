@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-08-11)
 Phase: 1 of 8 (Foundation — Ticket Store, Schema & CLI)
 Plan: TBD (not yet planned)
 Status: Ready to plan
-Last activity: 2026-08-18 — Quick task 260818-1o3: lane removal confirmation (default no) and catalogue-file delete via x. Before that: Phase 5 (Custom & Portable Lanes) complete, plus eight quick tasks: TUI board setup, ticket id copy, context consolidation, review traceability, version stamp and `jaira update`, the specified-zone gate with a brainstorm step, ticket ownership, and the progress-note contract
+Last activity: 2026-08-18 — Quick task 260818-lxx: board lanes cap to the terminal height (flags-row width fix + clampBlock) and the single-lane view scrolls. Before that: quick task 260818-1o3: lane removal confirmation (default no) and catalogue-file delete via x. Before that: Phase 5 (Custom & Portable Lanes) complete, plus eight quick tasks: TUI board setup, ticket id copy, context consolidation, review traceability, version stamp and `jaira update`, the specified-zone gate with a brainstorm step, ticket ownership, and the progress-note contract
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ None yet.
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-08-18 | 260818-lxx | A lane never grows past the terminal again. Root cause: `renderCard` truncated its flags row at `w+24` — a stale ANSI fudge from before `truncate` counted display width — so a flag-heavy review card wrapped to 4-5 lines while the scroll math assumed 3, and a full Review lane pushed the board off-screen. Fixed to `w` (meta line too), plus `clampBlock` as a hard w×h backstop on every column. The single-lane view (`v`), which rendered all tickets uncapped, now scrolls with the cursor, shares the board's scroll state, and says "+N more" above and below ([260818-lxx](./quick/260818-lxx-board-lanes-cap-their-height-to-the-term/)) |
 | 2026-08-18 | 260818-1o3 | Every `x` on the lane settings screen now asks yes/no first — no listed first and preselected, h/l or arrows switch, enter acts, esc cancels — so a hasty enter never deletes. And `x` finally reaches not-installed catalogue lanes: it deletes their file (the stale `my-lane` skeleton a closed-without-saving editor leaves behind was undeletable from the TUI); a built-in without a file errors instead ([260818-1o3](./quick/260818-1o3-lane-settings-x-deletes-catalogue-lane-f/)) |
 | 2026-08-12 | dod-verb | `jaira dod` plus a surgical checklist writer: one marker character changes, indexes are scoped to their section, one in-progress item per checklist |
 | 2026-08-12 | dod-checkbox-states | Three checklist states, `## Plan` section parsed separately, and the fix for `[~]` items being dropped by the parser — which let a ticket with outstanding work enter the terminal lane |
