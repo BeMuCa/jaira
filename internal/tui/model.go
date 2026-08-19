@@ -289,6 +289,13 @@ func (m *Model) rebuild() {
 	if t := m.selected(); t != nil {
 		selectedID = t.ID
 	}
+	// Remember the lane too, by ID, wherever the lane is the page rather than a
+	// cursor position. Lanes come and go between reloads, so an index would not
+	// survive; the ID does.
+	var heldLane string
+	if m.holdsLane() && m.laneIdx >= 0 && m.laneIdx < len(m.cols) {
+		heldLane = m.cols[m.laneIdx].lane.ID
+	}
 
 	statuses := make([]string, 0, len(m.tickets))
 	for _, t := range m.tickets {
@@ -318,6 +325,49 @@ func (m *Model) rebuild() {
 	}
 
 	m.clampCursor()
+	switch {
+	case heldLane != "":
+		m.holdLane(heldLane, selectedID)
+	case selectedID != "":
+		m.selectByID(selectedID)
+	}
+}
+
+// holdsLane reports whether the view showing right now is one lane rather than
+// all of them. In those views m.laneIdx is the page the user is on, so a ticket
+// moved elsewhere must not drag the screen along with it — on the multi-column
+// board the new lane is already visible and following the ticket is the point.
+func (m *Model) holdsLane() bool {
+	md := m.mode
+	if md == modeDetail {
+		// An open ticket belongs to whichever view it was opened from, which is
+		// where esc puts the user back.
+		md = m.detailFrom
+	}
+	return md == modePipeline || md == modeLaneFocus
+}
+
+// holdLane keeps a single-lane view pointed at the lane it was showing. Inside
+// that lane the cursor still follows the selected ticket — cards are sorted by
+// updated_at, so any unrelated edit reorders them — and if the ticket left the
+// lane the cursor stays at its index, landing on whatever slid into the gap.
+func (m *Model) holdLane(laneID, selectedID string) {
+	for li, c := range m.cols {
+		if c.lane.ID != laneID {
+			continue
+		}
+		m.laneIdx = li
+		for ci, t := range c.tickets {
+			if t.ID == selectedID {
+				m.cardIdx = ci
+				break
+			}
+		}
+		m.clampCursor()
+		return
+	}
+	// The lane itself is gone from the board. Pointing at a lane that no longer
+	// exists is worse than following the ticket.
 	if selectedID != "" {
 		m.selectByID(selectedID)
 	}
