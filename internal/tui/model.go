@@ -97,6 +97,12 @@ type Model struct {
 
 	moveTarget int // lane index highlighted in the move picker
 
+	// pending is a move the gate refused, kept so the refusal itself can offer
+	// to override it. Sending the user to the CLI for --force means leaving the
+	// board and retyping the move; the refusal is already on screen, so the
+	// override belongs here.
+	pending *pendingMove
+
 	// editIdx is the field being edited in the detail pane and editBuf its
 	// working value. The buffer is separate from the ticket so an abandoned edit
 	// leaves the file untouched.
@@ -150,6 +156,18 @@ type column struct {
 	tickets []*ticket.Ticket
 }
 
+// pendingMove is everything a refused move needs to be retried as a forced one.
+// confirm records that f has already been pressed: overriding a gate is not a
+// single keystroke, so the notice asks a second time before it writes.
+type pendingMove struct {
+	ticketID string
+	target   *lane.Lane
+	actor    string // who the gate was asked on behalf of, and who claims
+	claiming bool
+	refusals gate.Violations
+	confirm  bool
+}
+
 // New builds a board model.
 func New(s *ticket.Store) (*Model, error) {
 	// Loaded here, not only inside the 'p' handler, so the switcher's tabs and
@@ -188,6 +206,8 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil
 	m.detailScroll = 0
+	// A refused move names a ticket in the store being swapped out.
+	m.pending = nil
 	m.filter, m.input = "", ""
 	m.projects = project.Load()
 	if err := m.reload(); err != nil {
@@ -724,7 +744,26 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeMessage:
+		// A refused move offers its own way out. f arms the override and y takes
+		// it; every other exit drops the offer with the message, so a stale f can
+		// never fire a move the user has already walked away from. enter is not a
+		// yes — the second question needs a key of its own.
+		if p := m.pending; p != nil {
+			switch {
+			case s == "f" && !p.confirm:
+				m.armForce()
+				return m, nil
+			case s == "y" && p.confirm:
+				m.forceMove()
+				return m, nil
+			case s == "n":
+				m.pending = nil
+				m.mode = m.returnTo
+				return m, nil
+			}
+		}
 		if s == "esc" || s == "q" || s == "enter" || s == "?" {
+			m.pending = nil
 			m.mode = m.returnTo
 		}
 		return m, nil
@@ -1019,31 +1058,88 @@ func (m *Model) applyMove() {
 	}
 	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: me})
 	if len(vs) > 0 {
+		m.pending = &pendingMove{
+			ticketID: full.ID,
+			target:   target,
+			actor:    me,
+			claiming: claiming,
+			refusals: vs,
+		}
 		var b strings.Builder
 		fmt.Fprintf(&b, "Cannot move to %s:\n\n", target.Name)
-		for _, v := range vs {
-			fmt.Fprintf(&b, "  • %s\n", v.Message)
-		}
-		b.WriteString("\nEdit the ticket to supply what is missing, or use the CLI with --force.")
+		b.WriteString(refusalBullets(vs))
+		b.WriteString("\nEdit the ticket to supply what is missing, or press f to override — the same override the CLI spells --force.")
 		m.notify(b.String(), true)
 		return
 	}
-	if _, err := m.store.Mutate(full.ID, func(t *ticket.Ticket) error {
+	m.pending = nil
+	if _, err := m.store.Mutate(full.ID, moveMutation(target.ID, me, claiming)); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	m.finishMove(full.ID)
+}
+
+// moveMutation is the write a move performs. The gated path and the forced one
+// share it so a forced move leaves behind exactly what a clean one would.
+func moveMutation(to, me string, claiming bool) func(*ticket.Ticket) error {
+	return func(t *ticket.Ticket) error {
 		if claiming {
 			if err := t.Doc().SetScalar(ticket.FieldAssignee, me); err != nil {
 				return err
 			}
 			t.Assignee = me
 		}
-		if err := t.Doc().SetScalar(ticket.FieldStatus, target.ID); err != nil {
+		if err := t.Doc().SetScalar(ticket.FieldStatus, to); err != nil {
 			return err
 		}
 		return ticket.SetReady(t.Doc(), gate.Ready(t))
-	}); err != nil {
+	}
+}
+
+func refusalBullets(vs gate.Violations) string {
+	var b strings.Builder
+	for _, v := range vs {
+		fmt.Fprintf(&b, "  • %s\n", v.Message)
+	}
+	return b.String()
+}
+
+// armForce is the first f: it asks again rather than writing. A gate refusal is
+// the project's own opinion about the ticket, so overriding it takes two keys.
+func (m *Model) armForce() {
+	p := m.pending
+	p.confirm = true
+	var b strings.Builder
+	fmt.Fprintf(&b, "Move %s to %s anyway, overriding %d refusal(s)?\n\n",
+		ticket.Handle(p.ticketID), p.target.Name, len(p.refusals))
+	b.WriteString(refusalBullets(p.refusals))
+	m.notify(b.String(), true)
+}
+
+// forceMove carries out the move the gate refused. This is the TUI's --force:
+// the CLI overrides by simply not returning the refusal and then running the
+// same mutation (internal/cli/flow.go), so the two agree on what a forced move
+// leaves behind — including that nothing is written to record the override. What
+// it overrode is said out loud instead, the way the CLI prints it.
+func (m *Model) forceMove() {
+	p := m.pending
+	m.pending = nil
+	if _, err := m.store.Mutate(p.ticketID, moveMutation(p.target.ID, p.actor, p.claiming)); err != nil {
 		m.notify(err.Error(), true)
 		return
 	}
-	m.finishMove(full.ID)
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s → %s\n\nOverrode %d gate refusal(s):\n\n",
+		ticket.Handle(p.ticketID), p.target.Name, len(p.refusals))
+	b.WriteString(refusalBullets(p.refusals))
+
+	m.finishMove(p.ticketID)
+	if m.mode == modeMessage {
+		// finishMove has worse news of its own; do not paper over it.
+		return
+	}
+	m.notify(b.String(), false)
 }
 
 // finishMove puts the user back on the page the move was started from and

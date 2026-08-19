@@ -790,7 +790,14 @@ func (m *Model) renderMessage() string {
 	var b strings.Builder
 	b.WriteString(style.Render(strings.ToUpper(label)) + "\n\n")
 	b.WriteString(m.message + "\n\n")
-	b.WriteString(styMeta.Render("esc dismiss"))
+	switch {
+	case m.pending == nil:
+		b.WriteString(styMeta.Render("esc dismiss"))
+	case m.pending.confirm:
+		b.WriteString(styMeta.Render("y override · n cancel"))
+	default:
+		b.WriteString(styMeta.Render("f override · esc dismiss"))
+	}
 	return b.String()
 }
 
