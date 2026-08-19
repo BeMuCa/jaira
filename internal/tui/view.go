@@ -857,7 +857,7 @@ func (m *Model) renderHelp() string {
 			{"v", "the whole flow at a glance, agents counted per step"},
 			{"enter", "open the highlighted step: one lane, filling the screen"},
 			{"h l ← →", "in that view, next / previous lane, without leaving it"},
-			{"esc v", "back to the compact view"},
+			{"q esc v", "back to the compact view"},
 		}},
 	}
 	for _, s := range sections {

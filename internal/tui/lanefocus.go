@@ -31,9 +31,11 @@ func (m *Model) laneFocusKey(s string) {
 		m.moveLane(1)
 	case "enter":
 		m.openDetail()
-	case "esc", "v":
+	case "esc", "v", "q":
 		// Back to the compact view it was opened from, never to the board — the
-		// board is the sideways view this screen replaces.
+		// board is the sideways view this screen replaces. q joins esc/v here
+		// (rather than quitting, as it does on the board) because lane focus is
+		// one level deeper than the compact view, and q is always one back.
 		m.mode = modePipeline
 	}
 }
@@ -122,7 +124,7 @@ func (m *Model) renderLaneFocus() string {
 		}
 	}
 
-	footer := styMeta.Render("enter open · esc/v back · q quit")
+	footer := styMeta.Render("enter open · q/esc/v back")
 	used := strings.Count(b.String(), "\n") + 1
 	if gap := m.height - used - 2; gap > 0 {
 		b.WriteString(strings.Repeat("\n", gap))

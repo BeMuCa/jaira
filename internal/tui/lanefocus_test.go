@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -81,6 +83,30 @@ func TestLaneFocusEscReturnsToPipeline(t *testing.T) {
 	m.laneFocusKey("esc")
 	if m.mode != modePipeline {
 		t.Errorf("esc returned to mode %v, want modePipeline", m.mode)
+	}
+}
+
+// q must go through the dispatch in m.key, not laneFocusKey directly — the
+// bug lived in model.go intercepting q before laneFocusKey ever saw it.
+func TestLaneFocusQReturnsToPipeline(t *testing.T) {
+	m := laneFocusModel(t, 120, 34)
+	_, cmd := m.key(tea.KeyPressMsg{Code: 'q', Text: "q"})
+	if m.mode != modePipeline {
+		t.Errorf("q returned to mode %v, want modePipeline", m.mode)
+	}
+	if cmd != nil {
+		t.Error("q quit the program instead of going back")
+	}
+}
+
+func TestLaneFocusCtrlCStillQuits(t *testing.T) {
+	m := laneFocusModel(t, 120, 34)
+	_, cmd := m.key(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	if cmd == nil {
+		t.Error("ctrl+c did not return a quit cmd")
+	}
+	if m.mode == modePipeline {
+		t.Error("ctrl+c should not land on modePipeline")
 	}
 }
 

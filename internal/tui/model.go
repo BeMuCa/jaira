@@ -779,7 +779,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeLaneFocus:
-		if s == "q" || s == "ctrl+c" {
+		if s == "ctrl+c" {
 			m.Close()
 			return m, tea.Quit
 		}
