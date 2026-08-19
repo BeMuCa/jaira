@@ -34,8 +34,9 @@ Three parts, in order: what you were doing, what you found — especially what
 did not work, the part everyone skips — and what the next step is. Skip the
 third and the reader has to re-derive a decision you already made.
 
-Write it as if the reader has mild ADHD — what you were doing first, short and
-concrete, names and paths rather than adjectives, no preamble.`,
+Write it as if the reader has mild ADHD and knows none of what you know — what
+you were doing first, short concrete lines with one point each, names and paths
+rather than adjectives, no jargon and no preamble.`,
 		Args: minArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()

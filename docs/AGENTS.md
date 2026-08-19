@@ -88,8 +88,9 @@ agent to make it before writing.
 Write `jaira note <id> <text>` before you stop, or when something did not
 work — anything not written down is lost once the session ends. Three parts:
 what you were doing, what you found — especially what did not work — and what
-the next step is. Write it as if the reader has mild ADHD: what you were doing
-first, short and concrete, names and paths rather than adjectives, no preamble.
+the next step is. Write it as if the reader has mild ADHD and knows none of what
+you know: what you were doing first, short concrete lines with one point each,
+names and paths rather than adjectives, no jargon and no preamble.
 
 ## Starting a session
 

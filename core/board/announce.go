@@ -31,10 +31,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- the context is the only record of why a ticket exists. Write it for someone who\n" +
 	"  was not in this conversation and reads it weeks from now: what is wrong today,\n" +
 	"  what triggered it, what is already known or ruled out. Write it as if that\n" +
-	"  reader has mild ADHD — lead with what is wrong, keep it short and concrete,\n" +
-	"  names and paths rather than adjectives, no preamble. It may span several lines,\n" +
-	"  but someone should be able to act after the first two. If acting on it would\n" +
-	"  need a question answered first, it is not finished\n" +
+	"  reader has mild ADHD and knows none of what you know — lead with what is wrong,\n" +
+	"  short concrete lines with one point each, names and paths rather than\n" +
+	"  adjectives, no jargon and no preamble. It may span several lines, but someone\n" +
+	"  should be able to act after the first two. If acting on it would need a\n" +
+	"  question answered first, it is not finished\n" +
 	"- `jaira list --actionable --json` — everything that could be started right now\n" +
 	"- `jaira next --json` — the single next actionable ticket\n" +
 	"\n" +
