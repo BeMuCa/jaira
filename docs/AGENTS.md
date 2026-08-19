@@ -51,6 +51,30 @@ tickets that are not specified yet: a scrap, an idea, something being thought
 through. The promotion gate fires when a ticket crosses into that zone, not
 when it leaves a lane with a particular name.
 
+## Before creating a ticket
+
+Before `jaira create`, search the board for what it already decided.
+`jaira list -q <term> --json` matches over title, goal, context, definition of
+done, assignee and status — not just the title — and on a small board a single
+`jaira list --json` returns everything in one call. Read anything that looks
+close with `jaira show <id> --json` before judging it.
+
+```bash
+jaira list -q "session cookie" --json
+jaira show <id> --json
+```
+
+Related tickets are normal; a contradiction is not — an existing ticket whose
+goal, definition of done or context already decided the same question a
+different way. When one turns up, stop and put it to the user: name both ids,
+quote the line that contradicts, and offer the ways forward — adjust the new
+ticket to match the existing decision, create it anyway as a deliberate
+supersession with `--follows <id>`, or drop it. A pure duplicate is the same
+check's easy case: point at the existing ticket instead of writing a twin.
+
+Nothing in the binary enforces this. It is a judgment call, so it is on the
+agent to make it before writing.
+
 ## Leaving a trail
 
 Write `jaira note <id> <text>` before you stop, or when something did not

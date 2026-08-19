@@ -93,6 +93,33 @@ The Plan does not gate anything on its own, but a terminal lane refuses a ticket
 whose plan is unfinished: the criteria cannot have been met while the work that
 meets them is still in progress.
 
+## Before you create, check what the board already decided
+
+Before `jaira create`, search for what the board already says about this. One
+call per term that matters, or on a small board a single `jaira list --json`
+returns everything — goal, context and definition of done included:
+
+```bash
+jaira list -q "session cookie" --json   # -q matches title, goal, context, DoD, assignee, status — not just the title
+jaira show <handle> --json              # read anything close before judging it
+```
+
+Related tickets are normal and fine. What you are looking for is a
+**contradiction**: an existing ticket whose goal, definition of done or context
+already decided the same question the other way. A pure duplicate is the easy
+case of the same check — point at the existing ticket instead of creating a twin.
+
+When you find a contradiction, **stop and ask the user**. Name both handles,
+quote the line that contradicts, and give them the ways forward: adjust the new
+ticket to honor the existing decision, create it anyway as a deliberate
+supersession and pass `--follows <handle>` so the chain of why survives, or
+drop it. Never create over a contradiction silently — two tickets deciding a
+question opposite ways, with nothing recording which is current, is the exact
+failure this board exists to prevent.
+
+On an empty or small board this costs one command and the question never
+fires, so it does not read as ceremony.
+
 ## Writing a good ticket from a request
 
 When the user describes work, do not invent the fields. Extract what they gave
