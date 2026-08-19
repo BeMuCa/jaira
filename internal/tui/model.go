@@ -83,6 +83,13 @@ type Model struct {
 	// modeBoard, which is correct for every caller that predates modeLaneFocus.
 	detailFrom mode
 
+	// returnTo is the same idea for the overlays — the move picker and a
+	// message. A dialog is not a reason to lose the page you were on, and a
+	// refusal you can act on is worth nothing if acting on it moves you
+	// somewhere else. Zero value is modeBoard, which is what these dismissed to
+	// before.
+	returnTo mode
+
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
 	// transient and clears on the next keypress rather than being real state.
@@ -333,17 +340,26 @@ func (m *Model) rebuild() {
 	}
 }
 
+// viewMode resolves whatever is on screen down to the page underneath it: a
+// dialog or a message belongs to the page behind it, and an open ticket belongs
+// to the view it was opened from, which is where esc puts the user back.
+func (m *Model) viewMode() mode {
+	md := m.mode
+	if md == modeMove || md == modeMessage {
+		md = m.returnTo
+	}
+	if md == modeDetail {
+		md = m.detailFrom
+	}
+	return md
+}
+
 // holdsLane reports whether the view showing right now is one lane rather than
 // all of them. In those views m.laneIdx is the page the user is on, so a ticket
 // moved elsewhere must not drag the screen along with it — on the multi-column
 // board the new lane is already visible and following the ticket is the point.
 func (m *Model) holdsLane() bool {
-	md := m.mode
-	if md == modeDetail {
-		// An open ticket belongs to whichever view it was opened from, which is
-		// where esc puts the user back.
-		md = m.detailFrom
-	}
+	md := m.viewMode()
 	return md == modePipeline || md == modeLaneFocus
 }
 
@@ -677,7 +693,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.applyMove()
 		case "esc", "q":
-			m.mode = modeBoard
+			m.mode = m.returnTo
 		case "j", "down", "l", "right":
 			if m.moveTarget < len(m.lanes.Lanes)-1 {
 				m.moveTarget++
@@ -701,9 +717,15 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, cmd
 
-	case modeHelp, modeMessage:
+	case modeHelp:
 		if s == "esc" || s == "q" || s == "enter" || s == "?" {
 			m.mode = modeBoard
+		}
+		return m, nil
+
+	case modeMessage:
+		if s == "esc" || s == "q" || s == "enter" || s == "?" {
+			m.mode = m.returnTo
 		}
 		return m, nil
 
@@ -922,8 +944,22 @@ func (m *Model) moveCard(d int) {
 	m.clampCursor()
 }
 
+// notify puts a message on screen. Dismissing it goes back to the page it was
+// raised on. A message raised by the move picker keeps the picker's own answer:
+// the picker is on its way out, and the page behind it is what the message
+// belongs to. The screens that own their own state (settings, the lane editor,
+// the default-board picker) still dismiss to the board, which is what they did
+// before this existed.
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
+	switch m.mode {
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail:
+		m.returnTo = m.mode
+	case modeMove, modeMessage:
+		// Leave returnTo alone.
+	default:
+		m.returnTo = modeBoard
+	}
 	m.mode = modeMessage
 }
 
@@ -954,6 +990,7 @@ func (m *Model) openMove() {
 			m.moveTarget = i
 		}
 	}
+	m.returnTo = m.mode
 	m.mode = modeMove
 }
 
@@ -961,7 +998,7 @@ func (m *Model) openMove() {
 func (m *Model) applyMove() {
 	t := m.selected()
 	if t == nil || m.moveTarget >= len(m.lanes.Lanes) {
-		m.mode = modeBoard
+		m.mode = m.returnTo
 		return
 	}
 	target := m.lanes.Lanes[m.moveTarget]
@@ -1006,12 +1043,33 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
-	m.mode = modeBoard
+	m.finishMove(full.ID)
+}
+
+// finishMove puts the user back on the page the move was started from and
+// refreshes what that page shows. An open ticket is reloaded rather than closed:
+// the move was made while looking at it, so it has to show the lane it landed
+// in, not the one it left.
+func (m *Model) finishMove(id string) {
+	m.mode = m.returnTo
 	if err := m.reload(); err != nil {
 		m.notify(err.Error(), true)
 		return
 	}
-	m.selectByID(full.ID)
+	// A move the user made themselves still follows the ticket — unlike one made
+	// from another shell, this cursor jump is the answer to "where did it go".
+	m.selectByID(id)
+	if m.mode != modeDetail {
+		return
+	}
+	full, err := m.store.Load(id)
+	if err != nil {
+		// Closing the ticket is better than leaving a stale one on screen.
+		m.detail = nil
+		m.mode = m.detailFrom
+		return
+	}
+	m.detail = full
 }
 
 // createTicket adds a ticket to the default lane straight from the board.

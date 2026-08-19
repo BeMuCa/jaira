@@ -6,19 +6,24 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// focusBacklog points the model at the backlog lane with the cursor on the
-// named ticket, and returns that ticket.
-func focusBacklog(t *testing.T, m *Model, title string) *ticket.Ticket {
+// focusTicket points the model at a lane with the cursor on the named ticket,
+// and returns that ticket.
+func focusTicket(t *testing.T, m *Model, laneID, title string) *ticket.Ticket {
 	t.Helper()
-	m.laneIdx = laneIndex(t, m, "backlog")
+	m.laneIdx = laneIndex(t, m, laneID)
 	for ci, tk := range m.cols[m.laneIdx].tickets {
 		if tk.Title == title {
 			m.cardIdx = ci
 			return tk
 		}
 	}
-	t.Fatalf("no backlog ticket titled %q in fixture", title)
+	t.Fatalf("no %s ticket titled %q in fixture", laneID, title)
 	return nil
+}
+
+func focusBacklog(t *testing.T, m *Model, title string) *ticket.Ticket {
+	t.Helper()
+	return focusTicket(t, m, "backlog", title)
 }
 
 // backlogTicket finds a backlog ticket by title without moving the cursor.
