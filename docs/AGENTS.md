@@ -38,6 +38,14 @@ jaira move <id> --to review \
 If a gate refuses, the message says what to do and exit code 3 says it was a
 refusal rather than a crash. An agent can act on it without a human translating.
 
+The loop ends past the last lane, not at it: an accepted ticket comes off the
+board with `jaira archive <id>` once the work is pushed, and in that order. A
+board archived ahead of its push has forgotten a ticket whose code has not
+arrived at the teammate who pulls it. An agent does not push on its own
+initiative, so it does not archive on its own initiative either; when the user
+has pushed, or asks for it, take the ticket off the board. A follow-up keeps its
+`follows` link to an archived predecessor, so nothing is lost by clearing them.
+
 When something outside the repository stops the work, park the ticket rather
 than abandoning it: `jaira move <id> --to blocked --reason "<what it is waiting
 on>"`. The blocked lane refuses a ticket that cannot say what it is waiting on

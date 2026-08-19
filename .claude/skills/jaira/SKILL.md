@@ -282,6 +282,16 @@ working around it.
 
 ## Taking a ticket off the board
 
+An accepted ticket leaves the board once its work is pushed, and in that order.
+Archive it before the push and a teammate pulls a board that has forgotten the
+ticket while the code it describes has not arrived — which is the exact state
+this board exists to prevent. Do not push on your own initiative; the push is
+the user's call, so the archive waits on it.
+
+Leaving finished tickets on the board out of fear of losing the trail is not
+necessary: a follow-up keeps its `follows` link to an archived predecessor, and
+its context already carries that ticket's commits in prose for this reason.
+
 ```bash
 jaira archive <handle>      # moves it to .jaira/archive/, nothing is deleted
 jaira archive               # list what has been archived

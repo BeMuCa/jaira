@@ -290,6 +290,12 @@ the most useful thing on the screen:
 
 <img src="docs/img/signoff.png" alt="The human review view" width="100%">
 
+Accepting it moves the ticket to done. It leaves the board once you push the
+work, in that order: `jaira archive <id>` before the push would hand a teammate
+a board that has forgotten the ticket while the code it describes has not
+arrived. Nothing is deleted, `jaira restore` puts it back, and a follow-up keeps
+its link to an archived predecessor.
+
 ## Commands
 
 ```
