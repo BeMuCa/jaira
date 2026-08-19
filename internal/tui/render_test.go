@@ -261,14 +261,14 @@ func TestHelpRenders(t *testing.T) {
 
 func TestNarrowTerminalStillRenders(t *testing.T) {
 	// A board with seven lanes cannot fit in 40 columns; it must scroll rather
-	// than corrupt the layout, and must say so.
+	// than corrupt the layout.
 	m := newTestModel(t, 40, 20)
 	out := stripANSI(m.render())
 	if out == "" {
 		t.Fatal("empty render at 40 columns")
 	}
-	if !strings.Contains(out, "off-screen") {
-		t.Error("did not disclose that lanes were off-screen")
+	if strings.Contains(out, "off-screen") {
+		t.Error("off-screen notice should be gone")
 	}
 	for _, line := range strings.Split(out, "\n") {
 		if len([]rune(line)) > 60 {

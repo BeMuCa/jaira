@@ -109,11 +109,11 @@ func (m *Model) renderBoard() string {
 		return b.String()
 	}
 
-	// Show as many lanes as fit, scrolled so the cursor stays visible. A board
-	// that silently truncates lanes would hide tickets, so the header always
-	// reports how many are off-screen. The columns that do fit stretch to fill
-	// the row: a capped column width left the right third of a wide terminal
-	// blank, which read as wasted screen rather than as a decision.
+	// Show as many lanes as fit, scrolled so the focused lane stays visible;
+	// how many lanes are off-screen is not reported. The columns that do fit
+	// stretch to fill the row: a capped column width left the right third of
+	// a wide terminal blank, which read as wasted screen rather than as a
+	// decision.
 	perScreen := max(1, m.width/(minColWidth+2))
 	shown := min(len(m.cols), perScreen)
 	// A bordered column occupies its content width plus two border cells.
@@ -561,16 +561,12 @@ func (m *Model) statusBar(start, end int) string {
 		return truncate(styHelpKey.Render("new: ")+m.input+stySelected.Render("▏"), m.width)
 	}
 
-	var hidden string
-	if end-start < len(m.cols) {
-		hidden = styWarn.Render(fmt.Sprintf(" %d lane(s) off-screen ", len(m.cols)-(end-start)))
-	}
 	// Hints are dropped from the right as the terminal narrows, rather than
 	// letting the bar wrap and push the board off-screen.
 	// "m move" rather than "m lane": the key moves the ticket, and calling it
 	// after its destination read as if m selected a lane to look at.
-	keys := []string{"enter open", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
-	prefix := hidden
+	keys := []string{"enter open", "v compact", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
 	}
@@ -976,4 +972,3 @@ func max(a, b int) int {
 	}
 	return b
 }
-
