@@ -114,19 +114,20 @@ Three things, deliberately:
   human review and stops; a person accepts the work in the board or raises a
   follow-up. Attempting the move exits 3. When the person has reviewed the work
   and says so, the agent may finish the acceptance on their behalf with
-  `--force`, which is recorded on the ticket — the decision stays human, only
-  the keystroke is delegated.
+  `--force`, which is reported in that command's output rather than written to
+  the ticket — the decision stays human, only the keystroke is delegated.
 - **Close a ticket without meeting its definition of done.** Every criterion must
   be marked done, the plan finished if the ticket has one, and the commits that
   carry the change recorded on the ticket. There is no evidence flag to pass.
-  `--force` exists, is recorded on the ticket, and is the user's call rather
-  than the agent's.
+  `--force` exists, is reported in the command's output, and is the user's call
+  rather than the agent's.
 - **Write to someone else's ticket.** A ticket belongs to its `assignee`; a move
   by anyone else exits 3, naming the owner. The human checkpoint lanes are
   exempt — reviewing and signing off someone else's work is the whole point of
   them — and taking a ticket over with `jaira set <id> assignee=<you>` is always
   allowed, so a ticket is never frozen by an owner who has gone quiet. `--force`
-  overrides and is recorded, same as any other gate refusal.
+  overrides and is reported in the output, same as any other gate refusal. In the
+  board the same override is `f`, which asks once more before it writes.
 
 Ownership here is a guard rail, not a lock: tickets are still plain markdown
 files in git, so a hand edit or an offline merge can produce two versions of a

@@ -71,3 +71,11 @@ The seeded body carries a placeholder definition of done
 saved follow-up is marked `ready` even though nobody has said what done means.
 This is pre-existing: the `f`-at-sign-off path has created follow-ups this way all
 along. Out of scope here; worth a decision.
+
+## Docs
+
+README.md and docs/COMMANDS.md key tables gained `n` (follow-up beside the
+ticket) and `tab` (the other pane), plus a paragraph each on the draft, the
+chain, `shift+↓↑` while typing, and the 80-column / 20-row floor. The stale
+`esc/v back to the compact view` from 260819-djm was corrected to `q/esc/v` in
+both.

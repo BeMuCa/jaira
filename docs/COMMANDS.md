@@ -94,11 +94,23 @@ In an open ticket:
 
 ```
 e   edit fields (enter newline, ctrl+s save)   a   accept (at a checkpoint)
-E   edit body and checklists in $EDITOR        f   raise a follow-up
-y   copy the full ticket id                      m   move it
-b   open the ticket this one is blocked by       jk  next / previous ticket
+E   edit body and checklists in $EDITOR        f   follow-up from the review
+y   copy the full ticket id                    n   follow-up beside this one
+b   open the ticket this one is blocked by     m   move it
+jk  next / previous ticket                     tab other pane, in the split
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 ```
+
+`n` splits the screen: the ticket it follows on the left, the follow-up written
+on the right. Nothing is written until `ctrl+s`, which creates it in the default
+lane with `follows` set; `esc` discards the draft. `n` again chains from the
+ticket just written. The editor keeps `tab` for its fields, so `shift+↓↑` scrolls
+the left pane while you type; after saving, `tab` moves between panes. No split
+below 80 columns or 20 rows.
+
+A refused move offers `f` to override it and asks again before writing, which is
+the TUI's `--force`: any refusal, reported in the output, nothing written to the
+ticket.
 
 Lane settings (`S` then lanes): the project's lanes drawn as a small board,
 with a `+` column at the far right that opens the catalogue.
@@ -123,4 +135,5 @@ Compact view: `a`/`d` or `←`/`→` move · `enter` open the step full width ·
 `1`-`9` switch project · `v` back to the board.
 
 In an opened step: `jk` ticket · `gG` first/last · `hl` next/previous lane
-(stays in this view) · `enter` open ticket · `esc`/`v` back to the compact view.
+(stays in this view) · `enter` open ticket · `q`/`esc`/`v` back to the compact
+view.

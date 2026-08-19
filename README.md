@@ -348,15 +348,30 @@ an arrow lit when work just moved. ad/←→ pick a step, enter opens it full wi
 1-9 switch project.
 
 In an opened step: jk ticket, gG first/last, hl next/previous lane (stays in
-this view), enter open ticket, esc/v back to the compact view.
+this view), enter open ticket, q/esc/v back to the compact view.
 
 In an open ticket:
 e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)
-E   edit body and checklists in $EDITOR          f   raise a follow-up
-y   copy the full ticket id                      m   move it
-b   open the ticket this one is blocked by       jk  next / previous ticket
+E   edit body and checklists in $EDITOR          f   follow-up from the review
+y   copy the full ticket id                      n   follow-up beside this one
+b   open the ticket this one is blocked by       m   move it
+jk  next / previous ticket                       tab other pane, in the split
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 ```
+
+Writing a follow-up (`n`): the screen splits, the ticket it follows stays on the
+left, and the new one is written on the right, so the reason for it is still
+visible while you write it. It is a draft until `ctrl+s` writes it into the
+backlog with `follows` pointing back; `esc` discards it and the board never saw
+it. `n` again chains from the ticket just written, which slides left. While you
+type, `tab` belongs to the editor's fields, so `shift+↓↑` scrolls the ticket on
+the left; once saved, `tab` moves between the two panes. Below 80 columns or 20
+rows there is no split and the follow-up takes the screen.
+
+A move the gates refuse says why and offers `f` to override, then asks once more
+before it writes. That is the same override the CLI spells `--force`: it is
+reported in the output, not recorded on the ticket, and it covers any refusal
+rather than only ownership.
 
 ## What this deliberately is not
 

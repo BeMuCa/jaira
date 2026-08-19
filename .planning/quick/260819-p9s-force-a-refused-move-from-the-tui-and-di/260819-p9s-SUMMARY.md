@@ -72,3 +72,14 @@ footer matches the state.
 Only one fixture ticket can move legally (the human-checkpoint one) — everything
 else trips the promotion gate or its blocker. That is why the move-succeeds test
 uses the human lane.
+
+## Docs, and one thing they had wrong
+
+README.md and docs/COMMANDS.md describe `f` on a refused move. While writing that
+up, docs/AGENTS.md (twice) and .claude/skills/jaira/SKILL.md (twice) turned out to
+claim `--force` "is recorded on the ticket". It is not, and never was:
+`internal/cli/flow.go` writes only `status` and `ready`, and the flag's own help
+says "recorded in the output". Agents were being told a trail exists that does
+not. Corrected to "reported in the command's output", and SKILL.md now tells an
+agent finishing a human's acceptance to say so in the conversation and in the
+progress note, since the file will not say it for them.

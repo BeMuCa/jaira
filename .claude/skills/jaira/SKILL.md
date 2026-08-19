@@ -240,8 +240,9 @@ plus `blocked`.
   The human review lane cannot be left by an agent on its own judgement — but
   when the user has reviewed the work in this conversation and tells you it
   passed, finishing the acceptance for them is legitimate:
-  `jaira move <handle> --to done --force`. The `--force` is recorded on the
-  ticket, so the trail shows a person decided and you executed. Never use it
+  `jaira move <handle> --to done --force`. The override is reported in that
+  command's output, not written to the ticket, so say in the conversation that
+  they decided and you executed, and put it in the progress note. Never use it
   because *you* judge the work done; only because they said so.
 
 Some lanes are agentic: they carry a prompt and a model tier. To work one, ask the
@@ -361,4 +362,6 @@ on stderr. Read `field` to learn what to supply, fix it, and retry.
 ## When a gate refuses
 
 It is telling you something is genuinely missing. Supply it. Do not reach for
-`--force` — it exists for the user, not for you, and every use is recorded.
+`--force` — it exists for the user, not for you, and every use is reported in the
+output for them to see. In the board the same override is `f`, which asks once
+more before it writes: also theirs, not yours.
