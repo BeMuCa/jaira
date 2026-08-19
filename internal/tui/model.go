@@ -97,6 +97,10 @@ type Model struct {
 
 	moveTarget int // lane index highlighted in the move picker
 
+	// follow is the split view: a follow-up being written beside the ticket it
+	// follows. Non-nil means both halves of the screen are in use.
+	follow *follow
+
 	// pending is a move the gate refused, kept so the refusal itself can offer
 	// to override it. Sending the user to the CLI for --force means leaving the
 	// board and retyping the move; the refusal is already on screen, so the
@@ -206,8 +210,10 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil
 	m.detailScroll = 0
-	// A refused move names a ticket in the store being swapped out.
+	// A refused move and an unwritten follow-up both name tickets in the store
+	// being swapped out.
 	m.pending = nil
+	m.follow = nil
 	m.filter, m.input = "", ""
 	m.projects = project.Load()
 	if err := m.reload(); err != nil {
@@ -834,8 +840,24 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.copied = false
 		switch s {
 		case "esc", "q", "enter":
+			// One level back: out of the split first, onto the ticket the follow-up
+			// was written for, and only then out of the ticket.
+			if m.follow != nil {
+				m.closeFollowUp()
+				return m, nil
+			}
 			m.mode = m.detailFrom
 			m.detail = nil
+		case "n":
+			m.startFollowUp()
+		case "tab":
+			if m.follow != nil {
+				m.follow.focusLeft = !m.follow.focusLeft
+			}
+		case "shift+down":
+			m.scrollSrc(1)
+		case "shift+up":
+			m.scrollSrc(-1)
 		case "e":
 			m.startEdit()
 		case "E":
@@ -869,22 +891,21 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		// Arrows scroll, j/k switch tickets: the arrows are the base movement
 		// vocabulary and must work on every screen a ticket can be read on,
-		// while jumping to the neighbouring ticket stays one key away.
+		// while jumping to the neighbouring ticket stays one key away. In the
+		// split they move whichever pane tab has focused.
 		case "down":
-			m.detailScroll++
+			m.scrollFocused(1)
 		case "up":
-			m.detailScroll--
+			m.scrollFocused(-1)
 		case "pgdown", "ctrl+d":
-			m.detailScroll += max(1, m.height-4)
+			m.scrollFocused(max(1, m.height-4))
 		case "pgup", "ctrl+u":
-			m.detailScroll -= max(1, m.height-4)
+			m.scrollFocused(-max(1, m.height-4))
 		case "j":
-			m.mode = m.detailFrom
-			m.detail = nil
+			m.leaveDetail()
 			m.moveCard(1)
 		case "k":
-			m.mode = m.detailFrom
-			m.detail = nil
+			m.leaveDetail()
 			m.moveCard(-1)
 		}
 		return m, nil

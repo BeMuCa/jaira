@@ -135,7 +135,7 @@ func TestFollowUpContextCarriesTheCommits(t *testing.T) {
 		Commits: []string{"bc615031d54de4b369d66bfabe0adf8846adc409"},
 	}
 
-	got := followUpContext(src)
+	got := followUpContext(src, "Raised from the review of "+ticket.Handle(src.ID)+".")
 
 	if !strings.Contains(got, "72PQYG") {
 		t.Errorf("context does not name the predecessor:\n%s", got)
@@ -150,7 +150,7 @@ func TestFollowUpContextCarriesTheCommits(t *testing.T) {
 func TestFollowUpContextWithoutCommits(t *testing.T) {
 	src := &ticket.Ticket{ID: "01KZZR4CBGDM5T35SZDR72PQYG", Title: "t"}
 
-	if got := followUpContext(src); strings.Contains(got, "shipped in") {
+	if got := followUpContext(src, "Raised from the review of "+ticket.Handle(src.ID)+"."); strings.Contains(got, "shipped in") {
 		t.Errorf("context invented a commit sentence with no commits:\n%s", got)
 	}
 }

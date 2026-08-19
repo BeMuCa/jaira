@@ -60,6 +60,11 @@ func (m *Model) render() string {
 	if m.width == 0 {
 		return "loading…"
 	}
+	// A follow-up being written beside its predecessor owns both halves of the
+	// screen, whether the right half is still the editor or already a ticket.
+	if m.follow != nil && (m.mode == modeDetail || m.mode == modeEdit) {
+		return m.renderSplit()
+	}
 	switch m.mode {
 	case modeHelp:
 		return m.renderHelp()
@@ -584,20 +589,37 @@ func (m *Model) statusBar(start, end int) string {
 	return strings.Join(lines, "\n")
 }
 
+// renderDetail draws the open ticket at the full width of the terminal.
 func (m *Model) renderDetail() string {
-	t := m.detail
-	if t == nil {
+	if m.detail == nil {
 		return m.renderBoard()
 	}
+	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.detailHints(m.detail)+" · esc back")
+}
+
+// detailHints names the actions an open ticket offers. Basic movement (arrows,
+// jk, paging) is deliberately not listed: the footer names actions, the help
+// screen teaches movement. b appears only when there is a blocker to jump to.
+func (m *Model) detailHints(t *ticket.Ticket) string {
+	hint := "e fields · E editor · y copy id · m move · n follow-up"
+	if len(t.BlockedBy) > 0 {
+		hint += " · b blocked-by"
+	}
+	return hint
+}
+
+// detailBody builds an open ticket's content at a given width, so the same
+// rendering serves the full screen and one half of the split follow-up view.
+func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styLaneTitle.Render(t.Title))
-	b.WriteString(styBar.Render(strings.Repeat("─", max(1, m.width))) + "\n")
+	b.WriteString(styBar.Render(strings.Repeat("─", max(1, width))) + "\n")
 
 	row := func(k, v string) {
 		if strings.TrimSpace(v) == "" {
 			return
 		}
-		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, max(10, m.width-14), 13))
+		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, max(10, width-14), 13))
 	}
 	if m.copied {
 		row("id", t.ID+styOK.Render("  copied"))
@@ -677,19 +699,53 @@ func (m *Model) renderDetail() string {
 	if miss := missing(t); len(miss) > 0 {
 		b.WriteString("\n" + styWarn.Render("Before this can start: "+strings.Join(miss, ", ")) + "\n")
 	}
-	width := max(20, m.width)
 	renderChecklist(&b, "plan", t.PlanItems, width)
 	renderChecklist(&b, "done when", t.DoDItems, width)
 
 	renderBodySections(&b, dropLeadingTitle(stripChecklistSections(t.Body)), width)
-	// Basic movement (arrows, jk, paging) is deliberately not listed: the
-	// footer names actions, the help screen teaches movement. b appears only
-	// when there is a blocker to jump to.
-	hint := "e fields · E editor · y copy id · m move"
-	if len(t.BlockedBy) > 0 {
-		hint += " · b blocked-by"
+	return b.String()
+}
+
+// clipPane clips one pane of the split to a fixed height, clamping the scroll it
+// is handed and padding short content so two panes joined side by side keep
+// their rows lined up. It returns the clamped scroll, because only the renderer
+// knows how long the content came out. The last row is spent saying how much is
+// below rather than showing one more line of it — nothing off-screen goes
+// unnamed here either.
+// The block comes out exactly width x height, for the reason clampBlock spells
+// out: a sized lipgloss style wraps overlong lines onto extra rows and pads
+// without clipping, so a pane that is not already the right shape silently
+// changes the shape of the layout around it.
+func clipPane(content string, width, height, scroll int) (string, int) {
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	height = max(1, height)
+	if scroll > len(lines)-height {
+		scroll = len(lines) - height
 	}
-	return m.clipToWindow(b.String(), hint+" · esc back")
+	if scroll < 0 {
+		scroll = 0
+	}
+	out := make([]string, 0, height)
+	if len(lines) > scroll+height {
+		end := scroll + height - 1
+		out = append(out, lines[scroll:end]...)
+		out = append(out, styMeta.Render(fmt.Sprintf(" +%d more", len(lines)-end)))
+	} else {
+		out = append(out, lines[scroll:min(len(lines), scroll+height)]...)
+	}
+	for len(out) < height {
+		out = append(out, "")
+	}
+	// Every row is cut and then padded to exactly width, so the block is a true
+	// rectangle and the border drawn around it cannot be ragged.
+	for i, l := range out {
+		l = truncate(l, width)
+		if pad := width - lipgloss.Width(l); pad > 0 {
+			l += strings.Repeat(" ", pad)
+		}
+		out[i] = l
+	}
+	return strings.Join(out, "\n"), scroll
 }
 
 // clipToWindow clips an open ticket's content to the terminal, applying and
@@ -847,10 +903,13 @@ func (m *Model) renderHelp() string {
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},
+			{"n", "on an open ticket: write its follow-up beside it (esc discards)"},
+			{"tab", "in that split: the other pane; shift+↓↑ scrolls the left one"},
 			{"e", "edit fields in the detail pane (enter newline, ctrl+s save)"},
 			{"E", "open the ticket body and checklists in $EDITOR"},
 			{"a f", "accept, or raise a follow-up (on a ticket awaiting sign-off)"},
 			{"m", "move the selected ticket to another lane"},
+			{"f", "override a move the gate refused, after confirming with y"},
 			{"x", "archive the selected ticket (restore brings it back)"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},

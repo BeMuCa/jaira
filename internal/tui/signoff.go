@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/identity"
@@ -130,8 +129,9 @@ func (m *Model) accept() {
 // a frontmatter field and a body heading. It is naturally multi-line, which is
 // the end-to-end proof that a block scalar is readable in the file and in a
 // diff, not just in a unit test.
-func followUpContext(src *ticket.Ticket) string {
-	parts := []string{"Raised from the review of " + ticket.Handle(src.ID) + "."}
+// lead is the first sentence: only the sign-off path may claim a review happened.
+func followUpContext(src *ticket.Ticket, lead string) string {
+	parts := []string{lead}
 	// The commits are written into the prose as well as being reachable through
 	// follows:, because the context has to still answer "what was already done"
 	// after the predecessor has been archived off the board.
@@ -156,26 +156,7 @@ func (m *Model) followUp() {
 		return
 	}
 	src := m.detail
-	now := time.Now()
-	me := identity.Current(m.store.Root)
-	def := m.lanes.Default()
-
-	fields := map[string]string{
-		ticket.FieldID:        ticket.NewID(now),
-		ticket.FieldTitle:     "Follow-up: " + src.Title,
-		ticket.FieldStatus:    def.ID,
-		ticket.FieldReady:     "false",
-		ticket.FieldCreator:   me,
-		ticket.FieldAssignee:  firstNonEmpty(src.Assignee, me),
-		ticket.FieldContext:   followUpContext(src),
-		ticket.FieldFollows:   src.ID,
-		ticket.FieldCreatedAt: ticket.FormatTime(now),
-		ticket.FieldUpdatedAt: ticket.FormatTime(now),
-	}
-	lists := map[string][]string{ticket.FieldBlockedBy: nil, ticket.FieldCommits: nil}
-
-	body := "# Follow-up: " + src.Title + "\n\n" +
-		"## Definition of Done\n\n- [ ] <What must be true that is not true yet>\n\n## Progress\n\n"
+	fields, lists, body := m.followUpFields(src, "Raised from the review of "+ticket.Handle(src.ID)+".")
 
 	t, err := m.store.Create(fields, lists, body)
 	if err != nil {
