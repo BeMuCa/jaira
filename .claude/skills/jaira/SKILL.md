@@ -213,6 +213,24 @@ change satisfies the definition of done. A reviewer reads it instead of the code
 `--executed-by` records which model did the work. The `assignee` stays the human
 who owns the outcome — never reassign a ticket to a model.
 
+**The ticket rides in the same commit as the code.** Move it first, then stage
+the changed file under `.jaira/tickets/` alongside your source changes and commit
+them together:
+
+```bash
+jaira move <handle> --to review --what "..." --why "..." --resolves "..." --commits "$(git rev-parse HEAD)"
+git add .jaira/tickets/ <the files you changed>
+git commit
+```
+
+A reviewer reading that commit then sees the change *and* what it was for. Split
+across two commits, they get a diff whose ticket is still in whatever state the
+previous commit left it, and have to go looking. The same applies to a ticket you
+create and hand to someone else: commit it, or nobody but you knows it exists.
+
+jaira never commits for you. It reads git (`Diff`, `Commits`, `HeadSHA`) and
+writes only files — staging is yours, deliberately.
+
 ## The lanes
 
 `backlog → todo → pre-process → in-progress → human → review → signoff → done`,

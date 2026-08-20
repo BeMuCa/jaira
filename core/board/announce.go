@@ -53,6 +53,12 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  --commits \"$(git rev-parse HEAD)\"` — finish the step, naming every commit you\n" +
 	"  made; a ticket cannot be accepted as done without them\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
+	"- **the ticket rides in the same commit as the code.** Move the ticket first,\n" +
+	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
+	"  changes and commit them together. A reviewer then sees the change and what it\n" +
+	"  was for in one place, instead of a diff whose ticket is still in whatever\n" +
+	"  state the last commit left it. Same for a ticket you create and hand to\n" +
+	"  someone else: commit it, or nobody but you knows it exists\n" +
 	"\n" +
 	"`jaira <command> --help` for everything else.\n" +
 	"\n" +

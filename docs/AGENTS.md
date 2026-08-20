@@ -38,6 +38,14 @@ jaira move <id> --to review \
 If a gate refuses, the message says what to do and exit code 3 says it was a
 refusal rather than a crash. An agent can act on it without a human translating.
 
+**The ticket rides in the same commit as the code.** Move it first, then stage the
+changed file under `.jaira/tickets/` next to your source changes and commit them
+together. A reviewer reading that commit sees the change and what it was for at
+once; split across two commits they get a diff whose ticket is still in the state
+the previous commit left it. The same goes for a ticket created and handed to
+someone else: commit it, or nobody but its author knows it exists. jaira never
+commits for you — it reads git and writes only files.
+
 The loop ends past the last lane, not at it: an accepted ticket comes off the
 board with `jaira archive <id>` once the work is pushed, and in that order. A
 board archived ahead of its push has forgotten a ticket whose code has not
