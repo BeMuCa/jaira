@@ -86,6 +86,17 @@ type Lane struct {
 	// implementation, without either lane being uninstalled.
 	RequiresOption string
 
+	// RejectsTo names the lane a ticket goes back to when this lane finds the
+	// work wanting: the loop's back edge, written down. Moving backwards has
+	// always been allowed — the gate only checks a move that advances (see
+	// core/gate) — but nothing declared where back was, so the route lived in
+	// the prompt's prose and an agent reading the board could not see it.
+	//
+	// It is documentation the tool validates, not a rail: nothing forces a
+	// rejection to go here, exactly as nothing forces a lane's prompt to be
+	// followed.
+	RejectsTo string
+
 	// RequiresSpecified marks the first lane, in precedence order, that sets
 	// this: the boundary between thinking about a ticket and working on it.
 	// Everything before it is a place a half-formed ticket may sit; nothing at
@@ -264,6 +275,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresBlockedReason = boolOf("requires-blocked-reason")
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
+	l.RejectsTo = strings.TrimSpace(str("rejects-to"))
 
 	if l.ID == "" {
 		return nil, fmt.Errorf("lane %s: missing required field \"id\"", source)
@@ -539,6 +551,7 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.RequiresNonModelSignal == replacement.RequiresNonModelSignal &&
 		base.RequiresHumanExit == replacement.RequiresHumanExit &&
 		base.RequiresOption == replacement.RequiresOption &&
+		base.RejectsTo == replacement.RejectsTo &&
 		base.RequiresSpecified == replacement.RequiresSpecified &&
 		base.Prompt == replacement.Prompt &&
 		slices.Equal(base.InputRequires, replacement.InputRequires) &&
@@ -702,8 +715,27 @@ func checkContracts(lanes []*Lane) []string {
 		}
 	}
 
+	installed := make(map[string]bool, len(lanes))
+	for _, l := range lanes {
+		installed[l.ID] = true
+	}
+
 	var warnings []string
 	for _, l := range lanes {
+		// A back edge is only useful if it points somewhere a ticket can actually
+		// go, and a lane that sends work back to itself is not a loop, it is a
+		// stall.
+		if l.RejectsTo != "" {
+			switch {
+			case l.RejectsTo == l.ID:
+				warnings = append(warnings, fmt.Sprintf(
+					"lane %s: rejects-to names itself, which would stall rather than loop", l.ID))
+			case !installed[l.RejectsTo]:
+				warnings = append(warnings, fmt.Sprintf(
+					"lane %s: rejects-to %q is not installed, so rejected work has nowhere to go",
+					l.ID, l.RejectsTo))
+			}
+		}
 		for _, want := range l.InputRequires {
 			if available[want] {
 				continue

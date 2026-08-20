@@ -22,6 +22,8 @@ requires-outcome: false          # defaults to the value of terminal if this key
 requires-nonmodel-signal: false  # defaults to the value of terminal if this key is absent.
 requires-human-exit: false       # true means no agent may move a ticket out of this lane.
 requires-option: ""              # names a ticket Options entry; the lane only applies if it is ticked.
+rejects-to: ""                   # the lane work goes back to when this one finds it wanting: the loop's
+                                  # back edge. Must name an installed lane, and not this one.
 input-requires: [goal]           # ticket fields assembled into a subagent's bounded input.
 output-produces: [outcome]       # ticket fields the subagent must return before it can move on.
 creator: you                     # optional provenance; left empty if you'd rather not say.

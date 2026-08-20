@@ -805,12 +805,17 @@ func newLanesShowCmd() *cobra.Command {
 					"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
+					"rejects_to": l.RejectsTo,
 				})
 			}
 			w := cmd.OutOrStdout()
 			fmt.Fprintf(w, "ID:          %s\n", l.ID)
 			fmt.Fprintf(w, "Name:        %s\n", l.Name)
 			fmt.Fprintf(w, "Anchor:      %s\n", dash(l.After))
+			// The back edge is printed next to the anchor because the two together
+			// are the lane's place in the flow: where it sits, and where it sends
+			// work that is not good enough yet.
+			fmt.Fprintf(w, "Rejects to:  %s\n", dash(l.RejectsTo))
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)
