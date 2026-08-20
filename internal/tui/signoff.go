@@ -50,6 +50,9 @@ func (m *Model) renderSignOff() string {
 	section("summary", t.ReviewSummary)
 	section("gaps", t.ReviewGaps)
 	section("verdict", t.ReviewVerdict)
+	// Last, because it is the one section that asks the reader to do something
+	// rather than to read: everything above is the account, this is the check.
+	section("check", t.ReviewCheck)
 
 	if done, total := checklistProgress(t.DoDItems); total > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Definition of Done") +

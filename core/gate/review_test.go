@@ -48,12 +48,28 @@ func TestReviewGapsNoneCountsAsFilled(t *testing.T) {
 	}
 }
 
-// All three fields filled must produce no missing-produces violation at all.
+// A review with no check cannot leave either: the check is the one field the
+// reader acts on, so it is enforced like the rest of the lane's output.
+func TestReviewCheckRequiredToLeaveReview(t *testing.T) {
+	tk := ticketWith("")
+	tk.ReviewVerdict = "the diff matches the criteria"
+	tk.ReviewSummary = "streamed the writer instead of buffering the whole file"
+	tk.ReviewGaps = "none"
+	// ReviewCheck deliberately left empty.
+
+	vs := CheckAdvance(testEnv(t), tk, Request{To: "signoff"})
+	if !hasFieldViolation(vs, CodeMissingProduces, ticket.FieldReviewCheck) {
+		t.Errorf("expected a %s violation naming %s, got %v", CodeMissingProduces, ticket.FieldReviewCheck, vs)
+	}
+}
+
+// Every field filled must produce no missing-produces violation at all.
 func TestReviewAllFieldsFilledDoesNotBlock(t *testing.T) {
 	tk := ticketWith("")
 	tk.ReviewVerdict = "the diff matches the criteria"
 	tk.ReviewSummary = "streamed the writer instead of buffering the whole file"
 	tk.ReviewGaps = "none"
+	tk.ReviewCheck = "1. go run ./cmd/app  2. open /export  3. the download starts at once"
 
 	vs := CheckAdvance(testEnv(t), tk, Request{To: "signoff"})
 	for _, v := range vs {
@@ -64,9 +80,8 @@ func TestReviewAllFieldsFilledDoesNotBlock(t *testing.T) {
 }
 
 // The review lane's contract is the source of the enforcement above; if it
-// stops declaring all three fields, the tests above would stop meaning
-// anything.
-func TestReviewLaneDeclaresAllThreeFields(t *testing.T) {
+// stops declaring every field, the tests above would stop meaning anything.
+func TestReviewLaneDeclaresEveryReviewField(t *testing.T) {
 	lanes, err := lane.Load("")
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +90,10 @@ func TestReviewLaneDeclaresAllThreeFields(t *testing.T) {
 	if !ok {
 		t.Fatal("no review lane installed")
 	}
-	for _, f := range []string{ticket.FieldReviewSummary, ticket.FieldReviewGaps, ticket.FieldReviewVerdict} {
+	for _, f := range []string{
+		ticket.FieldReviewSummary, ticket.FieldReviewGaps,
+		ticket.FieldReviewVerdict, ticket.FieldReviewCheck,
+	} {
 		found := false
 		for _, p := range review.OutputProduces {
 			if p == f {

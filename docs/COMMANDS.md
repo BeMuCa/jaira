@@ -16,6 +16,15 @@ Agents branch on these, so they are a contract rather than an accident.
 | 4 | unresolved dependencies |
 | 5 | no such ticket, or an ambiguous id prefix |
 
+Every ticket in a `--json` payload carries `next_lane`: where it goes when the
+step it is in is finished, with the ticket's own Options applied and parking and
+question lanes left out. Empty means there is nowhere left to go, and also
+whenever the ticket is parked or waiting on an answer: such a ticket resumes
+where it stopped, which the board does not record. It is a
+convenience, not a rail — `jaira move` re-checks the gates whatever route the
+caller took. The same payload carries `review` (`summary`, `gaps`, `verdict`,
+`check`), so a reader can be handed the review without opening the board.
+
 Under `--json`, a refusal is structured on stderr with a `code` and often a
 `field`, so nothing has to be parsed out of a sentence:
 

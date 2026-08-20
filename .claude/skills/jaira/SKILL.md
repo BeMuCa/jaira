@@ -248,8 +248,12 @@ plus `blocked`.
 - **review** — a second model judges the diff. Write, in this order:
   `jaira set <handle> review-summary="..."` (what the change does, from the
   diff), `jaira set <handle> review-gaps="..."` (what is missing — write
-  "none" if nothing is), then `jaira set <handle> review-verdict="..."` (your
-  conclusion). All three are required before the ticket can leave this lane.
+  "none" if nothing is), `jaira set <handle> review-verdict="..."` (your
+  conclusion), and `jaira set <handle> review-check="..."` — how a person checks
+  this themselves, as a flow: numbered steps, one action each, exact commands and
+  exact paths, and what they should see. Every other field is an account of what
+  happened; the check is the only one the reader can act on. All four are
+  required before the ticket can leave this lane.
 - **done** — requires the definition-of-done checklist to be fully marked, the
   plan too if the ticket has one, and the commits that carry the change
   recorded on the ticket. There is no evidence flag to pass; you cannot certify

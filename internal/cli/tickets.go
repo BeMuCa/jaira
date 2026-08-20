@@ -548,6 +548,13 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
 		row("  why", t.Outcome.Why)
 		row("  resolves", t.Outcome.Resolves)
 	}
+	if t.ReviewSummary != "" || t.ReviewGaps != "" || t.ReviewVerdict != "" || t.ReviewCheck != "" {
+		fmt.Fprintf(w, "\nReview\n")
+		row("  summary", t.ReviewSummary)
+		row("  gaps", t.ReviewGaps)
+		row("  verdict", t.ReviewVerdict)
+		row("  check", t.ReviewCheck)
+	}
 	if len(t.Commits) > 0 {
 		row("commits", strings.Join(t.Commits, " "))
 	}
@@ -973,6 +980,18 @@ func checklistJSON(items []ticket.DoDItem) []map[string]any {
 	return out
 }
 
+// nextLaneID is Set.Next as a JSON value: the id, or empty when the ticket has
+// nowhere left to go.
+func nextLaneID(t *ticket.Ticket, lanes *lane.Set) string {
+	if lanes == nil {
+		return ""
+	}
+	if l := lanes.Next(t); l != nil {
+		return l.ID
+	}
+	return ""
+}
+
 func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 	_, known := lanes.Get(t.Status)
 	dodComplete, _ := t.DoDComplete()
@@ -1003,6 +1022,16 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"outcome": map[string]string{
 			"what": t.Outcome.What, "why": t.Outcome.Why, "resolves": t.Outcome.Resolves,
 		},
+		// The review fields were reachable only from the TUI, so an agent asked to
+		// hand a reader the review could not read it.
+		"review": map[string]string{
+			"summary": t.ReviewSummary, "gaps": t.ReviewGaps,
+			"verdict": t.ReviewVerdict, "check": t.ReviewCheck,
+		},
+		// Where this goes when the current step is finished, so the route is not
+		// re-derived by every caller from the column order and the ticket's
+		// Options. Empty when there is nowhere left to go.
+		"next_lane": nextLaneID(t, lanes),
 		"created_at": nonZero(t.CreatedAt),
 		"updated_at": nonZero(t.UpdatedAt),
 	}

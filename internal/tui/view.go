@@ -682,11 +682,12 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		row("why", t.Outcome.Why)
 		row("resolves", t.Outcome.Resolves)
 	}
-	if t.ReviewSummary != "" || t.ReviewGaps != "" || t.ReviewVerdict != "" {
+	if t.ReviewSummary != "" || t.ReviewGaps != "" || t.ReviewVerdict != "" || t.ReviewCheck != "" {
 		b.WriteString("\n" + styLaneTitle.Render("Review") + "\n")
 		row("summary", t.ReviewSummary)
 		row("gaps", t.ReviewGaps)
 		row("verdict", t.ReviewVerdict)
+		row("check", t.ReviewCheck)
 	}
 	if len(t.Commits) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits") + "\n")

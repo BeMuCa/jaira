@@ -71,6 +71,14 @@ const (
 	// answer, an empty field is not — because an empty field must always mean
 	// "nobody looked", never "nothing found".
 	FieldReviewGaps = "review-gaps"
+
+	// FieldReviewCheck is how to check the change by hand: run this, then that,
+	// then look at this. Every other review field is an account of what
+	// happened; this one is the only thing the reader can act on, and without it
+	// signing off means either trusting the account or reconstructing the steps
+	// from the diff. Written for someone who knows none of what the reviewer
+	// knows — see the writing register the create and note helps carry.
+	FieldReviewCheck = "review-check"
 )
 
 // canonicalOrder is the order in which fields are written into a new ticket.
@@ -143,6 +151,8 @@ type Ticket struct {
 	ReviewSummary string
 	// ReviewGaps is what the reviewer found missing; "none" is a valid value.
 	ReviewGaps string
+	// ReviewCheck is the steps a person follows to check the change themselves.
+	ReviewCheck string
 
 	Outcome Outcome
 
@@ -451,6 +461,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.ReviewVerdict = str(FieldReviewVerdict)
 	t.ReviewSummary = str(FieldReviewSummary)
 	t.ReviewGaps = str(FieldReviewGaps)
+	t.ReviewCheck = str(FieldReviewCheck)
 	t.DoDItems = ParseDoDItems(t.Body)
 	t.PlanItems = ParsePlanItems(t.Body)
 	t.Options = ParseOptions(t.Body)

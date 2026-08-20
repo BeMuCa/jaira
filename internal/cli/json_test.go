@@ -103,3 +103,55 @@ func TestTicketJSONChecklistsEmptyNotNull(t *testing.T) {
 		t.Errorf("dod_complete = %v, want false for a ticket with no criteria", out["dod_complete"])
 	}
 }
+
+// The review fields existed only in the TUI: an agent asked to hand a reader the
+// review could not read one. review-check especially, since it is the only field
+// the reader acts on.
+func TestTicketJSONCarriesTheReview(t *testing.T) {
+	lanes, err := lane.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := &ticket.Ticket{
+		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "signoff",
+		ReviewSummary: "streamed the writer",
+		ReviewGaps:    "none",
+		ReviewVerdict: "matches the criteria",
+		ReviewCheck:   "1. go run ./cmd/app  2. open /export  3. the download starts at once",
+	}
+
+	out := ticketJSON(tk, lanes)
+
+	rev, ok := out["review"].(map[string]string)
+	if !ok {
+		t.Fatalf("review missing or wrong type: %#v", out["review"])
+	}
+	for field, want := range map[string]string{
+		"summary": "streamed the writer",
+		"gaps":    "none",
+		"verdict": "matches the criteria",
+		"check":   "1. go run ./cmd/app  2. open /export  3. the download starts at once",
+	} {
+		if rev[field] != want {
+			t.Errorf("review[%q] = %q, want %q", field, rev[field], want)
+		}
+	}
+}
+
+// The route stops being something every caller derives for itself.
+func TestTicketJSONNamesTheNextLane(t *testing.T) {
+	lanes, err := lane.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ status, want string }{
+		{"todo", "in-progress"},
+		{"review", "signoff"},
+		{"done", ""},
+	} {
+		tk := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: c.status}
+		if got := ticketJSON(tk, lanes)["next_lane"]; got != c.want {
+			t.Errorf("from %s: next_lane = %v, want %q", c.status, got, c.want)
+		}
+	}
+}

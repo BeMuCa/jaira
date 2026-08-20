@@ -38,6 +38,17 @@ jaira move <id> --to review \
 If a gate refuses, the message says what to do and exit code 3 says it was a
 refusal rather than a crash. An agent can act on it without a human translating.
 
+Do not work out the route from the column order. Every `--json` ticket names
+`next_lane` — the lane this ticket goes to next, with its own Options applied and
+the parking and question lanes left out. It is empty for a ticket that is itself
+parked or waiting on an answer, because such a ticket goes back to whatever
+raised the question rather than onward. A lane that sends work back also names
+where: `rejects-to` in `jaira lanes show <id>`.
+
+A review hands the reader something they can act on. `review-check` is the steps
+a person follows to check the change themselves, as a flow, and the review lane
+declares it as an output — so a review that skips it cannot leave the lane.
+
 **The ticket rides in the same commit as the code.** Move it first, then stage the
 changed file under `.jaira/tickets/` next to your source changes and commit them
 together. A reviewer reading that commit sees the change and what it was for at

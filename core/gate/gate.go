@@ -441,6 +441,8 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 		v = t.ReviewSummary
 	case ticket.FieldReviewGaps:
 		v = t.ReviewGaps
+	case ticket.FieldReviewCheck:
+		v = t.ReviewCheck
 	case ticket.FieldFollows:
 		v = t.Follows
 	case ticket.FieldBlockedReason:
