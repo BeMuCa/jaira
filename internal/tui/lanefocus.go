@@ -208,7 +208,7 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 		switch {
 		case l.RequiresQuestion:
 			flags = append(flags, styAsks.Render("▲ asks"))
-		case l.ID == "review":
+		case l.RequiresHumanExit:
 			flags = append(flags, styReview.Render("◆ sign off"))
 		}
 	}

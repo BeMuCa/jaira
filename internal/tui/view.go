@@ -306,7 +306,7 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 		switch {
 		case l.RequiresQuestion:
 			flags = append(flags, styAsks.Render("▲ asks"))
-		case l.ID == "review":
+		case l.RequiresHumanExit:
 			flags = append(flags, styReview.Render("◆ sign off"))
 		}
 	}
@@ -628,7 +628,7 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	}
 	if l, ok := m.lanes.Get(t.Status); ok && l.RequiresQuestion {
 		row("lane", t.Status+styAsks.Render("  ▲ waiting on your answer"))
-	} else if ok && l.ID == "review" {
+	} else if ok && l.RequiresHumanExit {
 		row("lane", t.Status+styReview.Render("  ◆ waiting on your sign-off"))
 	} else {
 		row("lane", t.Status)

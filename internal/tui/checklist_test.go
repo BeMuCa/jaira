@@ -67,17 +67,19 @@ func TestWaitingStatesAreDistinct(t *testing.T) {
 	human.Question = "should this be per-IP or per-account?"
 	humanOut := stripANSI(m.renderCard(human, 40, false))
 
-	review := withChecklists(twoChecklists)
-	review.Status = "review"
-	reviewOut := stripANSI(m.renderCard(review, 40, false))
+	// The sign-off state is the lane a person has to get the ticket out of, which
+	// is signoff — not the model's review lane, which is the agent's.
+	signoff := withChecklists(twoChecklists)
+	signoff.Status = "signoff"
+	signoffOut := stripANSI(m.renderCard(signoff, 40, false))
 
 	if !strings.Contains(humanOut, "asks") {
 		t.Errorf("a ticket waiting on an answer is not labelled:\n%s", humanOut)
 	}
-	if !strings.Contains(reviewOut, "sign off") {
-		t.Errorf("a ticket waiting on sign-off is not labelled:\n%s", reviewOut)
+	if !strings.Contains(signoffOut, "sign off") {
+		t.Errorf("a ticket waiting on sign-off is not labelled:\n%s", signoffOut)
 	}
-	if humanOut == reviewOut {
+	if humanOut == signoffOut {
 		t.Error("the two waiting states render identically")
 	}
 }
