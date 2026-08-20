@@ -21,11 +21,11 @@ prompt says, at whatever model tier it declares.
 | Lane | Sits | Sends work back to | For |
 |---|---|---|---|
 | `critique` | after implementing | implementing | Judging whether this is the right implementation, not whether it works |
-| `optimise` | after critique | implementing | Removing duplication, dead code and fluff the change left behind |
+| `optimize` | after critique | implementing | Removing duplication, dead code and fluff the change left behind |
 
 Together they make a loop: implementing writes it, critique says what is wrong
 with the approach, implementing fixes it, and that repeats until critique has
-nothing left to say. Then optimise strips what is not needed, and only then does
+nothing left to say. Then optimize strips what is not needed, and only then does
 the work reach review. A decision that is genuinely the user's goes to the HITL
 lane on the way, rather than being taken by whichever agent noticed it.
 

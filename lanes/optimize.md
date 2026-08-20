@@ -1,6 +1,6 @@
 ---
-id: optimise
-name: Optimise
+id: optimize
+name: Optimize
 description: Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
 after: critique
 precedence: 48
@@ -56,5 +56,5 @@ Then move the ticket on to review.
 second implementation, and it belongs back in the implementing lane with the
 reason in a note:
 
-    jaira note <handle> "optimise: <what would have changed and why it is not a cleanup>"
+    jaira note <handle> "optimize: <what would have changed and why it is not a cleanup>"
     jaira move <handle> --to in-progress
