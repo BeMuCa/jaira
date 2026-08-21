@@ -59,6 +59,11 @@ type Home struct {
 	// startDir is where the directory picker opens, normally where jaira was run.
 	startDir string
 
+	// versionLine is the persistent "which version, is there an update"
+	// indicator, computed once at construction — see versionLine() in
+	// updatecheck.go for why not on every render.
+	versionLine string
+
 	width, height int
 }
 
@@ -107,7 +112,7 @@ func NewHome(extraRoots []string) (*Home, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Home{lanes: lanes}
+	h := &Home{lanes: lanes, versionLine: versionLine()}
 
 	seen := map[string]bool{}
 	add := func(root string) {
@@ -328,6 +333,9 @@ func (h *Home) render() string {
 
 	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
 		"enter open · a add a board · d default board · r refresh · q quit", h.width))))
+	if h.versionLine != "" {
+		b.WriteString("\n" + centre.Render(truncate(h.versionLine, h.width)))
+	}
 	return b.String()
 }
 

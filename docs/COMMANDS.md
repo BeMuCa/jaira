@@ -63,6 +63,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 |---|---|
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md` |
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it |
+| `jaira self upgrade` | replace the running jaira binary with the latest release, verifying its checksum first; `--check` reports without installing, `--version vX.Y.Z` pins or downgrades; refuses a Homebrew or `go install` build, naming the right way to upgrade that install instead. Whether a newer release exists is checked at most once a day in the background and shown as a status line in the launcher's and the board's footer — never printed by a CLI command, which stay quiet on purpose. `JAIRA_NO_UPDATE_CHECK=1` turns the check off. |
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields |
 | `jaira dod <id> <n> --doing\|--done\|--todo` | mark a checklist item |
@@ -103,7 +104,8 @@ h l ← →   lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
-q         quit            S   settings: lanes and the default board
+z         hide empty lanes        q   quit
+S         settings: lanes and the default board
 ```
 
 In an open ticket:

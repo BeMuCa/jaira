@@ -152,6 +152,28 @@ type Model struct {
 	watch  chan struct{}
 	closer func()
 
+	// hideEmpty is whether lanes holding no tickets are drawn on the
+	// multi-column board. Session-only, reset on every launch: nothing about
+	// the board's *view* is persisted today — the filter, the cursor and the
+	// per-lane scroll all start fresh — and the only saved per-user state
+	// (lane.SaveDefaultBoard) is a workflow definition rather than a view
+	// preference. A new file, or a new key in someone else's file, for one
+	// boolean would be a second write path bought for nothing.
+	hideEmpty bool
+
+	// laneStart is the first rendered column: the window, stored rather than
+	// recomputed from the cursor every frame, which is what lets the columns
+	// hold still while the cursor moves across them. boardFit reads and
+	// clamps it on every render.
+	laneStart int
+
+	// versionLine is the persistent "which version, is there an update"
+	// indicator, computed once at construction — see versionLine() in
+	// updatecheck.go for why not on every render. It survives switchBoard,
+	// since which jaira binary is running is a machine-level fact, not a
+	// per-board one.
+	versionLine string
+
 	width, height int
 }
 
@@ -178,7 +200,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine()}
 	m.me = identity.Current(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
@@ -950,6 +972,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// The compact view: the whole flow on one screen, for watching several
 		// agents rather than working one ticket.
 		m.mode = modePipeline
+	case "z":
+		// Next to v: both are about what the screen shows, not about a ticket.
+		m.toggleEmptyLanes()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -995,7 +1020,45 @@ func (m *Model) moveLane(d int) {
 		return
 	}
 	m.laneIdx = (m.laneIdx + d + len(m.cols)) % len(m.cols)
+	// The toggle is a board preference: laneFocusKey shares this function for
+	// h/l in the single-lane views, where the toggle is never shown, so it
+	// must not silently change what those views land on. !m.holdsLane() is
+	// what keeps it board-only. The loop is bounded by len(m.cols) iterations
+	// so a board where every lane is empty terminates instead of spinning.
+	if m.hideEmpty && !m.holdsLane() {
+		for i := 0; i < len(m.cols) && len(m.cols[m.laneIdx].tickets) == 0; i++ {
+			m.laneIdx = (m.laneIdx + d + len(m.cols)) % len(m.cols)
+		}
+	}
 	m.cardIdx = 0
+	m.clampCursor()
+}
+
+// toggleEmptyLanes flips whether lanes holding no tickets are drawn on the
+// board. Turning it on while parked on the very lane it is about to hide
+// would otherwise leave the cursor pointing at the one lane the toggle was
+// pressed to get rid of, so the cursor is moved to the nearest lane that still
+// holds tickets first — searching right from the current lane, then left, and
+// left alone if every lane on the board is empty.
+func (m *Model) toggleEmptyLanes() {
+	m.hideEmpty = !m.hideEmpty
+	if m.hideEmpty && len(m.cols) > 0 && len(m.cols[m.laneIdx].tickets) == 0 {
+		moved := false
+		for i := m.laneIdx + 1; i < len(m.cols); i++ {
+			if len(m.cols[i].tickets) > 0 {
+				m.laneIdx, m.cardIdx, moved = i, 0, true
+				break
+			}
+		}
+		if !moved {
+			for i := m.laneIdx - 1; i >= 0; i-- {
+				if len(m.cols[i].tickets) > 0 {
+					m.laneIdx, m.cardIdx = i, 0
+					break
+				}
+			}
+		}
+	}
 	m.clampCursor()
 }
 
