@@ -240,7 +240,7 @@ func bullets(vs gate.Violations) string {
 
 func newNextCmd() *cobra.Command {
 	var laneFilter, assigneeFilter string
-	var all bool
+	var all, perLane bool
 	cmd := &cobra.Command{
 		Use:   "next",
 		Short: "Show the next actionable ticket",
@@ -282,6 +282,10 @@ skipping this command.`,
 			// are finished before new ones are started.
 			sortByProgress(ready, env)
 
+			if perLane {
+				return emitPerLane(cmd, env, ready)
+			}
+
 			if !all && len(ready) > 1 {
 				ready = ready[:1]
 			}
@@ -305,7 +309,68 @@ skipping this command.`,
 	cmd.Flags().StringVar(&laneFilter, "lane", "", "only consider this lane")
 	cmd.Flags().StringVar(&assigneeFilter, "assignee", "", "only consider this assignee")
 	cmd.Flags().BoolVar(&all, "all", false, "list every actionable ticket instead of just the next one")
+	cmd.Flags().BoolVar(&perLane, "per-lane", false,
+		"one ticket per lane that has work waiting, in pipeline order")
 	return cmd
+}
+
+// emitPerLane answers "where is work waiting", one line per lane, instead of
+// "what is the single furthest-along ticket".
+//
+// Both questions are real and they have different answers. A board with a deep
+// queue in a late lane starves every earlier lane under the default ordering: an
+// agent driving 'jaira next' is handed the late ticket every time, and a step
+// inserted in the middle of the pipeline never sees traffic until the queue
+// ahead of it drains. Measured on a real board: 28 tickets waiting in one lane
+// hid two waiting in another entirely.
+//
+// Lanes are reported in pipeline order, not by how far along they are, because
+// this is a map of the front line rather than a recommendation. Each entry
+// carries the lane's own agentic flag, so the caller can tell which of them it
+// is allowed to work at all.
+func emitPerLane(cmd *cobra.Command, env gate.Env, ready []*ticket.Ticket) error {
+	byLane := map[string][]*ticket.Ticket{}
+	for _, t := range ready {
+		byLane[t.Status] = append(byLane[t.Status], t)
+	}
+
+	type entry struct {
+		lane    *lane.Lane
+		waiting int
+		first   *ticket.Ticket
+	}
+	var entries []entry
+	for _, l := range env.Lanes.Lanes {
+		ts := byLane[l.ID]
+		if len(ts) == 0 {
+			continue
+		}
+		entries = append(entries, entry{lane: l, waiting: len(ts), first: ts[0]})
+	}
+
+	if g.jsonOut {
+		out := make([]map[string]any, 0, len(entries))
+		for _, e := range entries {
+			out = append(out, map[string]any{
+				"lane": e.lane.ID, "name": e.lane.Name, "agentic": e.lane.Agentic,
+				"model_tier": e.lane.ModelTier, "waiting": e.waiting,
+				"ticket": ticketJSON(e.first, env.Lanes),
+			})
+		}
+		return emit(cmd.OutOrStdout(), map[string]any{"lanes": out, "count": len(out)})
+	}
+
+	w := cmd.OutOrStdout()
+	if len(entries) == 0 {
+		fmt.Fprintln(w, "Nothing is actionable. Either everything is done, blocked, or still needs a spec.")
+		return nil
+	}
+	fmt.Fprintf(w, "%-14s %-7s %8s  %s\n", "LANE", "AGENTIC", "WAITING", "NEXT")
+	for _, e := range entries {
+		fmt.Fprintf(w, "%-14s %-7v %8d  %s  %s\n", e.lane.ID, e.lane.Agentic, e.waiting,
+			ticket.Handle(e.first.ID), e.first.Title)
+	}
+	return nil
 }
 
 func sortByProgress(ts []*ticket.Ticket, env gate.Env) {

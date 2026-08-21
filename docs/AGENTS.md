@@ -38,6 +38,18 @@ jaira move <id> --to review \
 If a gate refuses, the message says what to do and exit code 3 says it was a
 refusal rather than a crash. An agent can act on it without a human translating.
 
+`jaira next` hands back the furthest-along ticket, which is the right answer when
+you are finishing work and the wrong one when you are looking for it: a deep
+queue in a late lane hides every earlier lane. `jaira next --per-lane --json`
+reports every lane that has work, in pipeline order, with its `agentic` flag —
+use it to find the front line, then `--lane <id>` to work one.
+
+Carry a started ticket forward rather than stopping at each lane: after finishing
+a step, move it to its `next_lane` and keep going until the next lane is a human
+step (`requires-human-exit` or `requires-question` in `jaira lanes show <id>`),
+a gate refuses, or the work is blocked. Those are the only three places an agent
+should hand a ticket back.
+
 Do not work out the route from the column order. Every `--json` ticket names
 `next_lane` — the lane this ticket goes to next, with its own Options applied and
 the parking and question lanes left out. It is empty for a ticket that is itself

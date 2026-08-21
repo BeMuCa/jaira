@@ -16,6 +16,13 @@ Agents branch on these, so they are a contract rather than an accident.
 | 4 | unresolved dependencies |
 | 5 | no such ticket, or an ambiguous id prefix |
 
+`jaira next` answers "what is the single furthest-along ticket"; `jaira next
+--per-lane` answers "where is work waiting", one entry per lane that has any, in
+pipeline order, each carrying the lane's `agentic` flag and one ticket. The two
+are different questions: under the default ordering a deep queue in a late lane
+hides every earlier lane, so a step inserted mid-pipeline never sees traffic
+until the queue ahead of it drains.
+
 Every ticket in a `--json` payload carries `next_lane`: where it goes when the
 step it is in is finished, with the ticket's own Options applied and parking and
 question lanes left out. Empty means there is nowhere left to go, and also
@@ -43,7 +50,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira list` | list tickets; `--lane`, `--assignee`, `--query`, `--actionable` |
 | `jaira show <id>` | one ticket in full |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |
-| `jaira next` | the next actionable ticket |
+| `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
 | `jaira lanes` | the installed lanes |
 | `jaira projects` | boards you have opened |
 | `jaira sessions` | sessions working this tree |
