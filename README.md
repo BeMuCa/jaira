@@ -375,7 +375,8 @@ h l ← →   lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
-q         quit            S   settings: lanes and the default board
+z         hide empty lanes        q   quit
+S         settings: lanes and the default board
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
 an arrow lit when work just moved. ad/←→ pick a step, enter opens it full width,

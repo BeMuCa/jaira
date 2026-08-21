@@ -17,7 +17,7 @@ func TestFocusedLaneIsCentred(t *testing.T) {
 
 	mid := len(m.cols) / 2
 	m.laneIdx = mid
-	start, end := m.laneWindow(perScreen)
+	start, end := laneWindow(m.laneIdx, len(m.cols), perScreen)
 	if end-start != perScreen {
 		t.Fatalf("window %d..%d is not a full row of %d", start, end, perScreen)
 	}
@@ -40,7 +40,7 @@ func TestTheWindowStaysFullAndHoldsTheFocusedLane(t *testing.T) {
 	for _, perScreen := range []int{1, 2, 3, 4} {
 		for at := range m.cols {
 			m.laneIdx = at
-			start, end := m.laneWindow(perScreen)
+			start, end := laneWindow(m.laneIdx, len(m.cols), perScreen)
 			if end-start != min(perScreen, len(m.cols)) {
 				t.Errorf("perScreen=%d lane=%d: window %d..%d is not full", perScreen, at, start, end)
 			}

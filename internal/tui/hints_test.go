@@ -12,7 +12,7 @@ import (
 // A key the terminal is too narrow to show is a key the reader does not know
 // exists — hints wrap onto more lines instead of dropping the tail.
 func TestWrapHintsKeepsEveryItem(t *testing.T) {
-	items := []string{"enter open", "v compact", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	items := []string{"enter open", "v compact", "z hide empty", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	lines := wrapHints(items, 24)
 	if len(lines) < 2 {
 		t.Fatalf("width 24 must force wrapping, got %d line(s): %v", len(lines), lines)
@@ -36,7 +36,7 @@ func TestWrapHintsKeepsEveryItem(t *testing.T) {
 func TestNarrowBoardShowsAllKeysAndFits(t *testing.T) {
 	m := newTestModel(t, 30, 24)
 	out := stripANSI(m.render())
-	for _, key := range []string{"enter open", "v compact", "n new", "m move", "S settings", "/ filter", "? help", "q quit"} {
+	for _, key := range []string{"enter open", "v compact", "z hide empty", "n new", "m move", "S settings", "/ filter", "? help", "q quit"} {
 		if !strings.Contains(out, key) {
 			t.Errorf("narrow board lost the %q hint", key)
 		}
