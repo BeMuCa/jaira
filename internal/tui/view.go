@@ -586,6 +586,9 @@ func (m *Model) statusBar(start, end int) string {
 			lines[i] = styMeta.Render(l)
 		}
 	}
+	if m.versionLine != "" {
+		lines = append(lines, truncate(m.versionLine, m.width))
+	}
 	return strings.Join(lines, "\n")
 }
 

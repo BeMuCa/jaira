@@ -103,13 +103,14 @@ pins (or downgrades to) an exact release.`,
 			// re-invoking a command that has nothing left to do is not an
 			// error, because agents retry.
 			upToDate := rel.Version == release.Current
+			now := time.Now().UTC()
 
 			w := cmd.OutOrStdout()
 			payload := func(upgraded bool) map[string]any {
 				p := map[string]any{
 					"current": release.Current, "latest": rel.Version,
 					"up_to_date": upToDate, "upgraded": upgraded, "target": target,
-					"install_method": string(kind), "checked_at": time.Now().UTC().Format(time.RFC3339),
+					"install_method": string(kind), "checked_at": now.Format(time.RFC3339),
 				}
 				if dev {
 					p["dev"] = true
@@ -118,6 +119,12 @@ pins (or downgrades to) an exact release.`,
 			}
 
 			if check {
+				// --check is the only path (besides a successful upgrade,
+				// below) that ever populates the cache, which keeps the
+				// "what did we last learn" logic in exactly one place. The
+				// write error is ignored: a best-effort cache must never
+				// turn a successful --check into a failure.
+				_ = selfupdate.Write(selfupdate.Check{CheckedAt: now, Latest: rel.Version})
 				if g.jsonOut {
 					return emit(w, payload(false))
 				}
@@ -147,6 +154,7 @@ pins (or downgrades to) an exact release.`,
 			if err := selfupdate.Replace(target, bin); err != nil {
 				return err
 			}
+			_ = selfupdate.Write(selfupdate.Check{CheckedAt: now, Latest: rel.Version})
 
 			if g.jsonOut {
 				return emit(w, payload(true))

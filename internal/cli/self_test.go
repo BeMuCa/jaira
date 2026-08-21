@@ -85,6 +85,12 @@ func selfSHA256Hex(b []byte) string {
 // to releases/latest, so a test can assert '--version' never makes one.
 func selfTestRelease(t *testing.T, latestTag, latestContent, pinTag, pinContent string) (latestHits *int32) {
 	t.Helper()
+	// self upgrade / self upgrade --check write the release-check cache
+	// (core/selfupdate/cache.go) on success. Without this, every test here
+	// would write straight into the real user's ~/.jaira — exactly the kind
+	// of test-writes-to-the-real-home bug the rest of this project isolates
+	// against everywhere else.
+	t.Setenv("JAIRA_HOME", t.TempDir())
 	latestAsset := selfupdate.AssetName(strings.TrimPrefix(latestTag, "v"), runtime.GOOS, runtime.GOARCH)
 	pinAsset := selfupdate.AssetName(strings.TrimPrefix(pinTag, "v"), runtime.GOOS, runtime.GOARCH)
 	latestArchive := selfArchiveContent(t, latestContent)
