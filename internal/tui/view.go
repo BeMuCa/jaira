@@ -97,6 +97,65 @@ func (m *Model) render() string {
 	return m.renderBoard()
 }
 
+// boardWindow is what boardFit decides: which of m.cols render, in what
+// slice, and how wide. Its doc lives on boardFit, since the two are one
+// decision split only for return-type reasons.
+type boardWindow struct {
+	cols   []int // indices into m.cols, in board order, with hidden lanes already dropped
+	start  int   // first rendered position within cols
+	end    int   // one past the last rendered position within cols
+	hidden int   // how many lanes were dropped because they hold no tickets
+	colW   int
+}
+
+// boardFit is the single place that decides which lanes render and how wide.
+// Empty lanes are dropped first, and the window applies to what remains —
+// one function, so the order is a fact of the code rather than a convention
+// two call sites have to remember.
+func (m *Model) boardFit(width int) boardWindow {
+	var cols []int
+	hidden := 0
+	for i, c := range m.cols {
+		// The focused lane is kept even when it is empty: switching the
+		// toggle on must not make the cursor point at something invisible.
+		if !m.hideEmpty || len(c.tickets) > 0 || i == m.laneIdx {
+			cols = append(cols, i)
+			continue
+		}
+		hidden++
+	}
+
+	// The columns that do fit stretch to fill the row: a capped column width
+	// left the right third of a wide terminal blank, which read as wasted
+	// screen rather than as a decision.
+	perScreen := max(1, width/(minColWidth+2))
+	shown := min(len(cols), perScreen)
+	// A bordered column occupies its content width plus two border cells.
+	colW := max(minColWidth, width/shown-2)
+
+	// cursor is m.laneIdx's position within cols, not within m.cols — the
+	// window is measured over the lanes actually on the board. Absent only if
+	// the keep-rule above somehow missed it, which it does not.
+	cursor := 0
+	for i, ci := range cols {
+		if ci == m.laneIdx {
+			cursor = i
+			break
+		}
+	}
+
+	// Stateless for now — the cursor's position within cols, pinned to the
+	// right edge past the fold. This is what Task 2 replaces with a stored,
+	// margin-respecting window.
+	start := 0
+	if cursor >= perScreen {
+		start = cursor - perScreen + 1
+	}
+	end := min(len(cols), start+perScreen)
+
+	return boardWindow{cols: cols, start: start, end: end, hidden: hidden, colW: colW}
+}
+
 func (m *Model) renderBoard() string {
 	var b strings.Builder
 	b.WriteString(m.header())
@@ -114,20 +173,7 @@ func (m *Model) renderBoard() string {
 		return b.String()
 	}
 
-	// Show as many lanes as fit, scrolled so the focused lane stays visible;
-	// how many lanes are off-screen is not reported. The columns that do fit
-	// stretch to fill the row: a capped column width left the right third of
-	// a wide terminal blank, which read as wasted screen rather than as a
-	// decision.
-	perScreen := max(1, m.width/(minColWidth+2))
-	shown := min(len(m.cols), perScreen)
-	// A bordered column occupies its content width plus two border cells.
-	colW := max(minColWidth, m.width/shown-2)
-	start := 0
-	if m.laneIdx >= perScreen {
-		start = m.laneIdx - perScreen + 1
-	}
-	end := min(len(m.cols), start+perScreen)
+	win := m.boardFit(m.width)
 
 	tabsLine := 0
 	if tabs != "" {
@@ -135,16 +181,16 @@ func (m *Model) renderBoard() string {
 	}
 	// The status bar is rendered first because it may wrap onto several lines
 	// on a narrow terminal, and the columns get whatever height remains.
-	sb := m.statusBar(start, end)
+	sb := m.statusBar(win)
 	sbLines := strings.Count(sb, "\n") + 1
 	bodyHeight := m.height - 4 - sbLines - tabsLine - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
 	}
 
-	rendered := make([]string, 0, end-start)
-	for i := start; i < end; i++ {
-		rendered = append(rendered, m.renderColumn(i, colW, bodyHeight))
+	rendered := make([]string, 0, win.end-win.start)
+	for _, ci := range win.cols[win.start:win.end] {
+		rendered = append(rendered, m.renderColumn(ci, win.colW, bodyHeight))
 	}
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, rendered...))
 	b.WriteString("\n")
@@ -545,7 +591,7 @@ func (m *Model) header() string {
 	return left + strings.Repeat(" ", gap) + right
 }
 
-func (m *Model) statusBar(start, end int) string {
+func (m *Model) statusBar(win boardWindow) string {
 	if m.mode == modeMove {
 		var parts []string
 		for i, l := range m.lanes.Lanes {
@@ -570,7 +616,13 @@ func (m *Model) statusBar(start, end int) string {
 	// letting the bar wrap and push the board off-screen.
 	// "m move" rather than "m lane": the key moves the ticket, and calling it
 	// after its destination read as if m selected a lane to look at.
-	keys := []string{"enter open", "v compact", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	// A toggle names what the next press will do, which is the only way a
+	// hint bar can describe one honestly.
+	zHint := "z hide empty"
+	if m.hideEmpty {
+		zHint = "z show empty"
+	}
+	keys := []string{"enter open", "v compact", zHint, "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -586,10 +638,28 @@ func (m *Model) statusBar(start, end int) string {
 			lines[i] = styMeta.Render(l)
 		}
 	}
+	// The window/hidden-lanes notice, if either applies. Nothing is appended
+	// when neither does, so a wide terminal with nothing hidden renders
+	// byte-for-byte what it renders today. This sits above m.versionLine,
+	// which stays last.
+	if notice := boardNotice(win); notice != "" {
+		lines = append(lines, styMeta.Render(truncate(notice, m.width)))
+	}
 	if m.versionLine != "" {
 		lines = append(lines, truncate(m.versionLine, m.width))
 	}
 	return strings.Join(lines, "\n")
+}
+
+// boardNotice states what boardFit hid or scrolled off-screen. A reader who
+// cannot see the blocked lane, or the ninth of ten lanes, must not be left to
+// infer nothing is there — this is the one line that says so, and it is
+// empty when nothing was hidden and nothing was scrolled.
+func boardNotice(win boardWindow) string {
+	if win.hidden == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d lane(s) hidden — z to show", win.hidden)
 }
 
 // renderDetail draws the open ticket at the full width of the terminal.
@@ -904,6 +974,7 @@ func (m *Model) renderHelp() string {
 			{"/", "filter tickets as you type; key:value narrows to one field"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
+			{"z", "hide lanes with no tickets (press again to bring them back)"},
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},
