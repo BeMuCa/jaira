@@ -393,6 +393,11 @@ jk  next / previous ticket                       tab other pane, in the split
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 ```
 
+A terminal too narrow for every lane shows as many as fit and scrolls with
+`h`/`l`: the active lane stays in the middle, two lanes either side of it,
+except at the ends of the board where it cannot, and the status bar names
+which lanes are on screen.
+
 Writing a follow-up (`n`): the screen splits, the ticket it follows stays on the
 left, and the new one is written on the right, so the reason for it is still
 visible while you write it. It is a draft until `ctrl+s` writes it into the

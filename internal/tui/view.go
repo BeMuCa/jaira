@@ -44,6 +44,14 @@ var (
 	styDoing     = lipgloss.NewStyle().Foreground(colAgentic).Bold(true)
 )
 
+// minColWidth is the smallest column width a lane may render at. renderColumn
+// hands renderCard w-4, and renderCard indents by two, so a column of width w
+// gives a card w-4 usable cells; 22 is the smallest w that leaves room for the
+// six-cell handle plus a short assignee on the meta line, a two-flag row such
+// as "○ spec  ◆ sign off", and roughly sixteen cells of title after the
+// selection marker. Below that a card loses its handle, which is the one
+// field that makes a card actionable — so the board stops shrinking there and
+// scrolls instead.
 const minColWidth = 22
 
 // View satisfies tea.Model.
@@ -108,6 +116,55 @@ type boardWindow struct {
 	colW   int
 }
 
+// scrolloff returns how many lanes stay visible either side of the active
+// one. Expressed as a margin rather than as hard centring: two each side is
+// what the user asked for and, at the five-lane fit of their 125-column
+// terminal, it *is* centring — but stated as centring the rule becomes
+// impossible the moment fewer columns fit. As a margin it degrades on its
+// own: 2 at five lanes or more, 1 at three or four, 0 at one or two, where it
+// is simply a no-op.
+func scrolloff(perScreen int) int {
+	return min(2, (perScreen-1)/2)
+}
+
+// windowStart returns the first visible position of a window of perScreen
+// lanes out of total, given where the window currently starts and where the
+// cursor sits. Everything fits (perScreen >= total) needs no window at all,
+// so it returns 0 — there is nothing to scroll.
+//
+// Otherwise scrolloff defines the band of starts that keep the cursor at
+// least that many lanes from either edge: at most cursor-off, at least
+// cursor+off-perScreen+1. start moves only when it falls outside that band,
+// and then only to the nearest edge of it; a start already inside is
+// returned exactly as given. That "only when outside the band" rule is the
+// whole user-visible point: the board used to derive start from the cursor on
+// every frame, so every h/l press past the fold slid every column on screen
+// and the cursor never appeared to move. Storing the window and leaving it
+// alone means the columns hold still while the cursor walks across them, and
+// move only when it runs out of margin.
+//
+// The clamp into [0, total-perScreen] happens last, and deliberately so:
+// satisfying the margin must never win over staying inside the board, because
+// the only ways to do that are scrolling past the end or padding the row with
+// blank columns, and a blank column that exists to flatter a scroll rule is a
+// lie about the board's shape. Near either end there is nothing further to
+// scroll to, so the cursor legitimately sits off-centre there instead.
+func windowStart(total, perScreen, start, cursor int) int {
+	if perScreen >= total {
+		return 0
+	}
+	off := scrolloff(perScreen)
+	lo := cursor + off - perScreen + 1
+	hi := cursor - off
+	switch {
+	case start < lo:
+		start = lo
+	case start > hi:
+		start = hi
+	}
+	return max(0, min(start, total-perScreen))
+}
+
 // boardFit is the single place that decides which lanes render and how wide.
 // Empty lanes are dropped first, and the window applies to what remains —
 // one function, so the order is a fact of the code rather than a convention
@@ -134,8 +191,9 @@ func (m *Model) boardFit(width int) boardWindow {
 	colW := max(minColWidth, width/shown-2)
 
 	// cursor is m.laneIdx's position within cols, not within m.cols — the
-	// window is measured over the lanes actually on the board. Absent only if
-	// the keep-rule above somehow missed it, which it does not.
+	// window is measured over the lanes actually on the board rather than
+	// over the ones the toggle removed. Absent only if the keep-rule above
+	// somehow missed it, which it does not.
 	cursor := 0
 	for i, ci := range cols {
 		if ci == m.laneIdx {
@@ -144,13 +202,15 @@ func (m *Model) boardFit(width int) boardWindow {
 		}
 	}
 
-	// Stateless for now — the cursor's position within cols, pinned to the
-	// right edge past the fold. This is what Task 2 replaces with a stored,
-	// margin-respecting window.
-	start := 0
-	if cursor >= perScreen {
-		start = cursor - perScreen + 1
-	}
+	// m.laneStart is the stored window, moved only when the cursor runs out
+	// of its margin — this is the same render-writes-view-state pattern as
+	// renderColumn's m.scroll, not a new one. Clamping here is what makes
+	// tea.WindowSizeMsg need no handler of its own: perScreen is recomputed
+	// from the live width every frame, so a resize re-clamps m.laneStart on
+	// the next render whether the terminal grew until the window vanished or
+	// shrank until the stored start fell out of range.
+	m.laneStart = windowStart(len(cols), perScreen, m.laneStart, cursor)
+	start := m.laneStart
 	end := min(len(cols), start+perScreen)
 
 	return boardWindow{cols: cols, start: start, end: end, hidden: hidden, colW: colW}
@@ -655,11 +715,23 @@ func (m *Model) statusBar(win boardWindow) string {
 // cannot see the blocked lane, or the ninth of ten lanes, must not be left to
 // infer nothing is there — this is the one line that says so, and it is
 // empty when nothing was hidden and nothing was scrolled.
+//
+// The window part is counted over len(win.cols), not the lane total before
+// hiding: with the toggle on, the hidden lanes are already accounted for by
+// their own half of the line, and counting them twice would make the two
+// halves contradict each other.
 func boardNotice(win boardWindow) string {
-	if win.hidden == 0 {
+	var parts []string
+	if win.end-win.start < len(win.cols) {
+		parts = append(parts, fmt.Sprintf("‹ h  l ›  lanes %d–%d of %d", win.start+1, win.end, len(win.cols)))
+	}
+	if win.hidden > 0 {
+		parts = append(parts, fmt.Sprintf("%d lane(s) hidden — z to show", win.hidden))
+	}
+	if len(parts) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%d lane(s) hidden — z to show", win.hidden)
+	return strings.Join(parts, " · ")
 }
 
 // renderDetail draws the open ticket at the full width of the terminal.
