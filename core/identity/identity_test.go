@@ -1,6 +1,9 @@
 package identity
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -92,5 +95,79 @@ func TestSlugOfLeadingDotIsSafe(t *testing.T) {
 func TestSlugOfEmptyStringFallsBackToNonEmpty(t *testing.T) {
 	if got := Slug(""); got == "" {
 		t.Error("Slug(\"\") returned empty, which would silently write to the parent directory")
+	}
+}
+
+// A person is not one string. jaira knew an identity as exactly one, so a ticket
+// whose assignee carried a work email read as somebody else's while git carried
+// a user.name — and every move on your own ticket needed --force, which trains
+// the override rather than protecting anything.
+func TestAliasesIncludeTheGitEmail(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	t.Setenv("JAIRA_USER", "")
+	gitInit(t, dir, "BeMuCa", "berk@example.test")
+
+	got := Aliases(dir)
+
+	if len(got) == 0 || got[0] != "BeMuCa" {
+		t.Fatalf("aliases = %v, want the canonical name first", got)
+	}
+	if !IsMe(dir, "berk@example.test") {
+		t.Errorf("the git email is not recognised as me: %v", got)
+	}
+	if !IsMe(dir, "BeMuCa") {
+		t.Errorf("the git name is not recognised as me: %v", got)
+	}
+}
+
+// The alias file is how a name jaira cannot discover — a work address used by a
+// teammate's tooling — becomes yours.
+func TestAliasesReadTheAliasFile(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	t.Setenv("JAIRA_USER", "")
+	gitInit(t, dir, "BeMuCa", "berk@example.test")
+	if err := os.WriteFile(filepath.Join(home, "identity"),
+		[]byte("# other names\n\nberk.calabakan@partner.example\n  BeMuCa  \n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if !IsMe(dir, "berk.calabakan@partner.example") {
+		t.Errorf("a configured alias is not recognised: %v", Aliases(dir))
+	}
+	// Comments, blanks and a duplicate of a name already known add nothing.
+	if got := Aliases(dir); len(got) != 3 {
+		t.Errorf("aliases = %v, want three distinct names", got)
+	}
+}
+
+func TestSomeoneElseIsNotMe(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	t.Setenv("JAIRA_USER", "")
+	gitInit(t, dir, "BeMuCa", "berk@example.test")
+
+	if IsMe(dir, "alexander@example.test") {
+		t.Error("a teammate reads as me")
+	}
+	// An unassigned ticket belongs to nobody, not to everybody.
+	if Same("", "") || IsMe(dir, "") {
+		t.Error("the empty string reads as a person")
+	}
+}
+
+func gitInit(t *testing.T, dir, name, email string) {
+	t.Helper()
+	for _, args := range [][]string{
+		{"init", "-q"},
+		{"config", "user.name", name},
+		{"config", "user.email", email},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
 	}
 }

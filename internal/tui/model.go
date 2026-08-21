@@ -1077,7 +1077,9 @@ func (m *Model) applyMove() {
 	if claiming {
 		full.Assignee = me
 	}
-	vs := gate.CheckAdvance(env, full, gate.Request{To: target.ID, Actor: me})
+	vs := gate.CheckAdvance(env, full, gate.Request{
+		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root),
+	})
 	if len(vs) > 0 {
 		m.pending = &pendingMove{
 			ticketID: full.ID,

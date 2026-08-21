@@ -166,7 +166,10 @@ command is safe to retry.`,
 				return err
 			}
 
-			req := gate.Request{To: to, Question: question, Reason: reason, Actor: identity()}
+			req := gate.Request{
+				To: to, Question: question, Reason: reason,
+				Actor: identity(), ActorAliases: identityAliases(),
+			}
 			vs := gate.CheckAdvance(env, t, req)
 			if len(vs) > 0 && !force {
 				code := ExitValidation

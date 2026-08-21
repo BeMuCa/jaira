@@ -53,9 +53,23 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
 | `jaira lanes` | the installed lanes |
 | `jaira projects` | boards you have opened |
+| `jaira whoami` | the identity jaira acts as, and the other names that mean you |
 | `jaira sessions` | sessions working this tree |
 | `jaira resume` | everything left mid-flight, with its notes |
 | `jaira validate` | check every ticket for damage; `--strict` fails on warnings |
+
+### Being one person under several names
+
+A ticket belongs to its `assignee`, and the gates compare that string to who is
+acting. A person is not one string: a `user.name` on one machine, a work address
+in a ticket a teammate's tooling assigned, a personal address in another
+repository. jaira treats git's `user.email` as you as well as `user.name`, and
+reads `~/.jaira/identity` (one name per line, `#` comments allowed) for the rest.
+`jaira whoami` prints the resolved list.
+
+Names not on that list are somebody else, so their tickets are refused. That is
+the point of the rail — but a rail that refuses your own tickets only teaches you
+to pass `--force` to everything, which protects nothing.
 
 ## Writing
 

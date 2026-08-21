@@ -103,7 +103,8 @@ func (m *Model) accept() {
 	}
 	env := gate.Env{Lanes: m.lanes, All: m.tickets}
 	if vs := gate.CheckAdvance(env, m.detail, gate.Request{
-		To: next.ID, Actor: identity.Current(m.store.Root), Interactive: true,
+		To: next.ID, Actor: identity.Current(m.store.Root),
+		ActorAliases: identity.Aliases(m.store.Root), Interactive: true,
 	}); len(vs) > 0 {
 		m.notify("Cannot accept yet:\n\n"+vs.Err().Error(), true)
 		return

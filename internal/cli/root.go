@@ -201,6 +201,7 @@ Exit codes:
 		newSessionsCmd(),
 		newClaimCmd(),
 		newProjectsCmd(),
+		newWhoamiCmd(),
 		newShareCmd(),
 		newUpdateCmd(),
 	)
@@ -276,4 +277,11 @@ func emit(w io.Writer, v any) error {
 // are attributed the same way commits are.
 func identity() string {
 	return coreidentity.Current(g.dir)
+}
+
+// identityAliases are the other names that mean the same person, so the
+// ownership rail does not refuse a move on your own ticket because the assignee
+// carries your email and git carries your name.
+func identityAliases() []string {
+	return coreidentity.Aliases(g.dir)
 }

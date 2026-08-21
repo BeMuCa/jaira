@@ -97,8 +97,17 @@ type Request struct {
 	// knowing what it is waiting on.
 	Reason string
 
-	// Actor is who is performing the move, used only in messages.
+	// Actor is who is performing the move.
 	Actor string
+
+	// ActorAliases are the other names that mean the same person as Actor: a
+	// git user.email as well as a user.name, a work address as well as a
+	// personal one. A person is not one string, and the ownership rail below
+	// compares strings — without this, your own tickets read as someone
+	// else's and every move needs --force, which trains the override rather
+	// than protecting anything. Callers fill it from identity.Aliases; empty
+	// means "Actor is the only name I go by".
+	ActorAliases []string
 
 	// Interactive marks a move a person made by hand, in the board. It is the
 	// only distinction available that an agent cannot simply assert: an agent
@@ -110,6 +119,24 @@ type Request struct {
 	// else. A hand-over is always allowed, regardless of who currently owns
 	// the ticket — otherwise an absent owner could freeze it forever.
 	NewAssignee string
+}
+
+// isActor reports whether who is the person making this request, under any of
+// the names they go by.
+func (r Request) isActor(who string) bool {
+	who = strings.TrimSpace(who)
+	if who == "" {
+		return false
+	}
+	if strings.EqualFold(who, strings.TrimSpace(r.Actor)) {
+		return true
+	}
+	for _, a := range r.ActorAliases {
+		if strings.EqualFold(who, strings.TrimSpace(a)) {
+			return true
+		}
+	}
+	return false
 }
 
 // Env is the surrounding state a decision needs.
@@ -157,7 +184,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// never frozen by an owner who no longer answers; and a ticket with no
 	// assignee belongs to nobody and is writable by anyone.
 	if owner := strings.TrimSpace(t.Assignee); owner != "" &&
-		!strings.EqualFold(owner, strings.TrimSpace(req.Actor)) &&
+		!req.isActor(owner) &&
 		strings.TrimSpace(req.NewAssignee) == "" {
 		checkpoint := false
 		if cur, ok := env.Lanes.Get(t.Status); ok && (cur.RequiresQuestion || cur.RequiresHumanExit) {
