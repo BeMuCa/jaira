@@ -294,9 +294,15 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 			vs = append(vs, Violation{
 				Code:  CodeNeedsCommits,
 				Field: ticket.FieldCommits,
+				// The message leads with the normal path rather than the escape
+				// hatch. Now that the list is derived, being told to transcribe
+				// shas by hand is the very habit this stopped requiring — and a
+				// refusal that names only the manual fix teaches the manual fix.
+				// What actually went wrong is that git cannot see this ticket in
+				// any commit yet, so that is what is said first.
 				Message: fmt.Sprintf(
-					"lane %q requires the commits that carry this change: record them with 'jaira set %s commits=<sha>[,<sha>]' or pass --commits on the move",
-					target.ID, ticket.Handle(t.ID)),
+					"lane %q requires the commits that carry this change, and git has none for %s yet. Commit the change with the ticket file alongside it, or name %s in the commit message, and the list fills itself in. To record it by hand instead: 'jaira set %s commits=<sha>[,<sha>]', or pass --commits on the move",
+					target.ID, ticket.Handle(t.ID), ticket.Handle(t.ID), ticket.Handle(t.ID)),
 			})
 		}
 	}
