@@ -20,6 +20,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
@@ -1054,6 +1055,27 @@ func (m *Model) openMove() {
 	m.mode = modeMove
 }
 
+// gateEnv assembles the state gate.CheckAdvance needs, the same way the CLI's
+// loadEnv does, so both interfaces enforce identically — the promise
+// core/gate's own package doc makes. The two render sites below (renderCard,
+// renderDetail) pay nothing extra for the DeriveCommits closure: gate.Ready
+// and gate.Actionable never call it, only CheckAdvance does, and that only
+// runs at the moment a move is actually attempted.
+func (m *Model) gateEnv() gate.Env {
+	repo := &gitrepo.Repo{Dir: m.store.Root}
+	return gate.Env{
+		Lanes: m.lanes,
+		All:   m.tickets,
+		DeriveCommits: func(t *ticket.Ticket) []string {
+			shas, err := repo.CommitsForTicket(t.Path, t.ID)
+			if err != nil {
+				return nil
+			}
+			return shas
+		},
+	}
+}
+
 // applyMove runs the same gate checks and the same core mutation the CLI uses.
 func (m *Model) applyMove() {
 	t := m.selected()
@@ -1062,7 +1084,7 @@ func (m *Model) applyMove() {
 		return
 	}
 	target := m.lanes.Lanes[m.moveTarget]
-	env := gate.Env{Lanes: m.lanes, All: m.tickets}
+	env := m.gateEnv()
 
 	full, err := m.store.Load(t.ID)
 	if err != nil {

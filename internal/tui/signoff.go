@@ -101,7 +101,7 @@ func (m *Model) accept() {
 		m.notify("no terminal lane is installed, so there is nowhere to accept this to", true)
 		return
 	}
-	env := gate.Env{Lanes: m.lanes, All: m.tickets}
+	env := m.gateEnv()
 	if vs := gate.CheckAdvance(env, m.detail, gate.Request{
 		To: next.ID, Actor: identity.Current(m.store.Root), Interactive: true,
 	}); len(vs) > 0 {

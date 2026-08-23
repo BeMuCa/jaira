@@ -117,6 +117,15 @@ type Env struct {
 	Lanes *lane.Set
 	// All is every ticket, used to evaluate blockers. Only id and status are read.
 	All []*ticket.Ticket
+
+	// DeriveCommits works out which commits carry a ticket, by asking git,
+	// when the ticket records none of its own. It is injected rather than
+	// this package importing core/gitrepo directly, so gate stays the pure,
+	// filesystem-free package its doc comment promises and its tests can keep
+	// building Env without a git repository on disk. nil means no derivation
+	// is on offer, and the requires-commits refusal below stands exactly as
+	// it did before this existed.
+	DeriveCommits func(t *ticket.Ticket) []string
 }
 
 // CheckAdvance decides whether t may move to req.To.
@@ -268,14 +277,28 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// months later is the diff of exactly these commits. The requirement sits
 	// here at the accepting lane rather than on the implementing lane's way
 	// out, so work can move through review before it is committed.
+	//
+	// A ticket recording no commits of its own is given one more chance
+	// before it is refused: DeriveCommits asks git directly. Explicit always
+	// wins over derived, so this only runs when t.Commits is empty, and an
+	// empty or nil result — no derivation on offer, or git found nothing —
+	// lands on exactly today's refusal with today's message. The gate records
+	// nothing on the ticket itself; stamping what was found happens at the
+	// moment the ticket actually leaves the board.
 	if target.RequiresCommits && len(t.Commits) == 0 {
-		vs = append(vs, Violation{
-			Code:  CodeNeedsCommits,
-			Field: ticket.FieldCommits,
-			Message: fmt.Sprintf(
-				"lane %q requires the commits that carry this change: record them with 'jaira set %s commits=<sha>[,<sha>]' or pass --commits on the move",
-				target.ID, ticket.Handle(t.ID)),
-		})
+		var derived []string
+		if env.DeriveCommits != nil {
+			derived = env.DeriveCommits(t)
+		}
+		if len(derived) == 0 {
+			vs = append(vs, Violation{
+				Code:  CodeNeedsCommits,
+				Field: ticket.FieldCommits,
+				Message: fmt.Sprintf(
+					"lane %q requires the commits that carry this change: record them with 'jaira set %s commits=<sha>[,<sha>]' or pass --commits on the move",
+					target.ID, ticket.Handle(t.ID)),
+			})
+		}
 	}
 
 	// A model must not be able to certify its own work as finished on its own
@@ -391,8 +414,8 @@ func missingPromotionFields(t *ticket.Ticket) Violations {
 	for _, f := range PromotionFields {
 		if !fieldFilled(t, f) {
 			vs = append(vs, Violation{
-				Code:    CodeMissingField,
-				Field:   f,
+				Code:  CodeMissingField,
+				Field: f,
 				// Not "before it can leave the backlog": a board may have several
 				// lanes before the specified zone, and a ticket refused here is
 				// often sitting in one of them rather than in the backlog.
