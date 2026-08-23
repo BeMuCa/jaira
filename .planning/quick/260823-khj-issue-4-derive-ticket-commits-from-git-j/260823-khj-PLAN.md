@@ -32,6 +32,7 @@ files_modified:
 must_haves:
   truths:
     - "A ticket that records no commits still enters a requires-commits lane, because jaira works the commits out from git itself (D-01)."
+    - "The message query matches both the full ULID and ticket.Handle, case-insensitively, each bounded by a non-alphanumeric character or the line edge, so a commit naming the handle in a scope is found and the same six characters inside a longer word are not (D-01)."
     - "A ticket that records commits, or a move that passes --commits, is untouched by the derivation (D-01)."
     - "With no git, or with a derivation that finds nothing, the requires-commits refusal is exactly today's refusal with today's message (D-01)."
     - "jaira sync <id> stamps the derived commit list on a terminal-lane ticket and moves the file into .jaira/sync/<initials>-<yyyymmdd>/ (D-02)."
@@ -109,8 +110,25 @@ list reads as the history of the ticket. Stated in a comment on the derivation
 and honoured by both callers.
 
 **Union (D-01).** `git log --follow -- <ticket file>` catches every commit the
-ticket file rode in; `git log --grep=<full ULID>` catches commits that name the
-ticket without touching its file. Neither alone is the answer, so the union is.
+ticket file rode in; a `--grep` over the commit messages catches commits that
+name the ticket without touching its file. Neither alone is the answer, so the
+union is.
+
+**What the grep matches (D-01).** Both forms of the id, as alternatives in one
+extended regular expression, case-insensitively: the full 26-character ULID and
+`ticket.Handle` — its last six characters. The handle is not an optional extra.
+It is the only form the tool ever shows a person: every gate refusal, every
+card, every line the CLI prints. A human or an agent writing a commit message
+writes the handle, not the 26-character ULID, so grepping the ULID alone would
+leave the `--grep` half of the union finding almost nothing and quietly reduce
+two sources to one.
+
+Six random characters are a real false-positive risk, so the handle is matched
+as a reference and not as a substring: on both sides it must be bounded by a
+non-alphanumeric character or the edge of the line. Case-insensitive because a
+ULID is uppercase Crockford base32 and nobody types it that way — the same
+reason `ticket.NormalizeIDPrefix` exists. The boundary is `[^0-9A-Za-z]` rather
+than "anything outside base32", which is both stricter and more portable.
 
 **Injection (D-01).** `gate.Env` gains a `DeriveCommits func(*ticket.Ticket)
 []string`. The gate calls it; it never imports `core/gitrepo`. `nil` means "no
@@ -140,7 +158,7 @@ parses untrusted markup.
 <task type="tracer" tdd="true">
   <name>Task 1: git answers "which commits carry this ticket", end to end, from the gate</name>
   <files>core/gitrepo/derive.go, core/gitrepo/derive_test.go, core/gate/gate.go, core/gate/commits_test.go, internal/cli/root.go, internal/tui/model.go, internal/tui/signoff.go, internal/tui/view.go, internal/tui/lanefocus.go</files>
-  <read_first>core/gitrepo/git.go (the run() pattern and how Commits/Diff/Stat swallow per-sha failures), core/gate/gate.go:1-9 and :115-121 and :271-279, core/gate/plan_test.go:11-18 (testEnv builds Env{Lanes:...} with no git), internal/cli/root.go:243-266 (loadEnv), internal/tui/model.go:1057-1082 and internal/tui/signoff.go:96-112</read_first>
+  <read_first>core/gitrepo/git.go (the run() pattern and how Commits/Diff/Stat swallow per-sha failures), core/ticket/id.go:78-95 (Handle and NormalizeIDPrefix, and why the handle is the ULID's tail), core/gate/gate.go:1-9 and :115-121 and :271-279, core/gate/plan_test.go:11-18 (testEnv builds Env{Lanes:...} with no git), internal/cli/root.go:243-266 (loadEnv), internal/tui/model.go:1057-1082 and internal/tui/signoff.go:96-112</read_first>
   <behavior>
     - `CommitsForTicket` on a fixture repo where commit A only names the ULID in
       its message, commit B only touches the ticket file, and commit C does both:
@@ -149,6 +167,15 @@ parses untrusted markup.
     - The fixture proves the order is global, not per-query: A (message only) is
       the OLDEST commit, so a naive "follow-list then grep-list" concatenation
       would put B first and fail this test.
+    - The handle is matched, not just the full ULID: a commit whose message is
+      `fix(A3K9QP): narrow the lane` — handle in a scope, touching no ticket file
+      — IS in the list. Assert this with a handle taken from the fixture ticket's
+      own id via `ticket.Handle`, so the test cannot drift from the real format.
+    - The handle is matched as a reference, not as a substring: a commit whose
+      message embeds those same six characters inside a longer alphanumeric run
+      (`refs XA3K9QPZ1 upstream`) is NOT in the list. Also assert the
+      case-insensitive direction: a message writing the handle in lowercase
+      (`fix(a3k9qp): ...`) IS in the list.
     - A ticket file that was `git mv`d is still followed back through the rename.
     - A repo with no commits at all: empty list, no error. Same for a ticket file
       that was never committed.
@@ -168,12 +195,31 @@ parses untrusted markup.
     ticketID string) ([]string, error)`, using the existing private `run()`.
 
     Three git calls, in this order. First `log --format=%H --follow -- <ticketPath>`.
-    Second `log --format=%H --grep=<ticketID>`, passing the full ULID and not the
-    six-character handle — a comment must say why: the handle is a random tail
-    short enough to collide with ordinary hex and prose across a whole history,
-    so grepping it would attach other people's commits to this ticket. Collect
-    both results into one deduped set, preserving nothing about per-query order.
-    Third, when the set holds more than one sha, `rev-list --no-walk=sorted <shas...>`,
+
+    Second, ONE message query covering both forms of the id as alternatives in a
+    single extended regular expression:
+
+        log --format=%H --extended-regexp --regexp-ignore-case
+            --grep=(^|[^0-9A-Za-z])(<FULL_ULID>|<HANDLE>)([^0-9A-Za-z]|$)
+
+    Build `<HANDLE>` with `ticket.Handle(ticketID)` rather than slicing the
+    string here, so there is one definition of what a handle is. Two comments are
+    required and neither is optional. The first says why the handle is in the
+    pattern at all: it is the only form of the id the tool ever shows a person, so
+    it is the form that actually appears in commit messages, and a query for the
+    26-character ULID alone would find almost nothing and leave the union with one
+    real source instead of two. The second says why the boundary is there: this
+    list is what somebody reads months later to recover why a change was made, and
+    a stranger's commit sitting in it is worse than a missing one — so six random
+    characters are matched as a reference bounded by a non-alphanumeric character
+    or the edge of the line, never as a bare substring. Note in passing that the
+    match is case-insensitive because a ULID is uppercase Crockford base32 and
+    nobody types it that way, which is the same reason
+    `ticket.NormalizeIDPrefix` exists.
+
+    Collect both results into one deduped set, preserving nothing about per-query
+    order. Third, when the set holds more than one sha,
+    `rev-list --no-walk=sorted <shas...>`,
     which returns them sorted by commit date newest-first, then reverse the slice
     in Go. Reversing here rather than asking git for it keeps the flag combination
     boring and the ordering visible in one place. Write the comment that says the
@@ -216,9 +262,9 @@ parses untrusted markup.
     git tests when git is not on PATH.
   </action>
   <verify>
-    <automated>go build ./... &amp;&amp; go test ./core/gitrepo/... ./core/gate/... ./internal/cli/... ./internal/tui/... -race 2>&amp;1 | tail -12</automated>
+    <automated>go build ./... &amp;&amp; go test ./core/gitrepo/... ./core/gate/... ./internal/cli/... ./internal/tui/... -race 2>&amp;1 | tail -12 &amp;&amp; test "$(go test ./core/gitrepo/ -run Handle -v -count=1 2>&amp;1 | grep -c '^--- PASS')" -ge 2</automated>
   </verify>
-  <done>Derivation returns the deduped union oldest-first over a runtime-built repo; the requires-commits lane accepts a ticket whose commits git can find; a nil or empty derivation still refuses with today's message; recorded commits are never overridden; both the CLI and the TUI hand the gate the same derivation.</done>
+  <done>Derivation returns the deduped union oldest-first over a runtime-built repo, matching both the full ULID and the handle as a bounded reference and neither as a substring; the requires-commits lane accepts a ticket whose commits git can find; a nil or empty derivation still refuses with today's message; recorded commits are never overridden; both the CLI and the TUI hand the gate the same derivation.</done>
 </task>
 
 <task type="auto" tdd="true">
