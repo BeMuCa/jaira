@@ -27,6 +27,13 @@ const (
 	// LanesSubdir it is committed: publishing a lane is an opt-in act through
 	// the lane settings screen, not a side effect of sharing the board.
 	SharedSubdir = "shared"
+	// SyncSubdir holds tickets whose work is finished and whose commit list is
+	// final, grouped into dated folders by who took them off the board. A
+	// folder under here is a readable record of one person's sweep — unlike
+	// ArchiveSubdir, every ticket that lands here has already had its commits
+	// stamped, because leaving the board is the point at which every commit
+	// is finally known.
+	SyncSubdir = "sync"
 	// SessionsSubdir and locksSubdir live under the user's home directory rather
 	// than inside the repository. tickets/, archive/ and shared/ are the parts of
 	// .jaira/ meant to be committed; lanes/ (see core/lane.ProjectLanesDir) is
@@ -113,6 +120,10 @@ func (s *Store) ArchiveDir() string { return filepath.Join(s.dir(), ArchiveSubdi
 // never publishes a lane would be its own kind of confusion.
 func (s *Store) SharedDir() string { return filepath.Join(s.dir(), SharedSubdir) }
 
+// SyncDir is where tickets taken off the board with their commits stamped
+// live, grouped into dated per-person folders.
+func (s *Store) SyncDir() string { return filepath.Join(s.dir(), SyncSubdir) }
+
 // Archive moves a ticket out of the board, returning its new path.
 //
 // The file is moved, never removed. Restoring is moving it back, which is why
@@ -141,15 +152,95 @@ func (s *Store) Archive(id string) (string, error) {
 	return dst, nil
 }
 
-// Restore moves an archived ticket back onto the board.
-func (s *Store) Restore(name string) (string, error) {
-	src := filepath.Join(s.ArchiveDir(), filepath.Base(name))
-	if _, err := os.Stat(src); err != nil {
-		return "", fmt.Errorf("%s is not in the archive", filepath.Base(name))
+// Sync moves a ticket out of the board and into a dated sync folder, returning
+// its new path. Like Archive, the file is moved rather than deleted, and a
+// name collision inside the destination folder is refused by name rather than
+// silently overwritten — this only happens if the same ticket is synced into
+// the same folder twice, which a caller should treat as a bug to look into,
+// not a state to paper over.
+func (s *Store) Sync(id, folder string) (string, error) {
+	t, err := s.Load(id)
+	if err != nil {
+		return "", err
 	}
-	dst := filepath.Join(s.TicketsDir(), filepath.Base(name))
+	dir := filepath.Join(s.SyncDir(), filepath.Base(folder))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	// Resolve symlinks first: syncing through a link would otherwise move the
+	// link and orphan the file it pointed at.
+	src, err := filepath.EvalSymlinks(t.Path)
+	if err != nil {
+		src = t.Path
+	}
+	dst := filepath.Join(dir, filepath.Base(src))
 	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s is already on the board", filepath.Base(name))
+		return "", fmt.Errorf("%s already exists in %s", filepath.Base(dst), filepath.Join(SyncSubdir, filepath.Base(folder)))
+	}
+	if err := os.Rename(src, dst); err != nil {
+		return "", err
+	}
+	return dst, nil
+}
+
+// syncFolders lists the per-person dated folders under SyncDir, in
+// deterministic order.
+func (s *Store) syncFolders() ([]string, error) {
+	entries, err := os.ReadDir(s.SyncDir())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() {
+			out = append(out, e.Name())
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// Restore moves an archived or synced ticket back onto the board, resolving
+// name from the bare filename in either case — never from a caller-supplied
+// path, so a name built to escape the store (e.g. "../../etc/passwd") cannot
+// walk it anywhere but back into TicketsDir.
+func (s *Store) Restore(name string) (string, error) {
+	base := filepath.Base(name)
+
+	var src string
+	if _, err := os.Stat(filepath.Join(s.ArchiveDir(), base)); err == nil {
+		src = filepath.Join(s.ArchiveDir(), base)
+	}
+
+	folders, err := s.syncFolders()
+	if err != nil {
+		return "", err
+	}
+	var syncMatches []string
+	for _, folder := range folders {
+		candidate := filepath.Join(s.SyncDir(), folder, base)
+		if _, err := os.Stat(candidate); err == nil {
+			syncMatches = append(syncMatches, folder)
+		}
+	}
+
+	switch {
+	case src != "" && len(syncMatches) > 0:
+		return "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(syncMatches, ", "))
+	case len(syncMatches) > 1:
+		return "", fmt.Errorf("%s is in more than one sync folder (%s) — remove one before restoring", base, strings.Join(syncMatches, ", "))
+	case len(syncMatches) == 1:
+		src = filepath.Join(s.SyncDir(), syncMatches[0], base)
+	case src == "":
+		return "", fmt.Errorf("%s is not in the archive or in .jaira/sync/", base)
+	}
+
+	dst := filepath.Join(s.TicketsDir(), base)
+	if _, err := os.Stat(dst); err == nil {
+		return "", fmt.Errorf("%s is already on the board", base)
 	}
 	if err := os.Rename(src, dst); err != nil {
 		return "", err

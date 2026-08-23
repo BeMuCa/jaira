@@ -94,3 +94,25 @@ func TestSlugOfEmptyStringFallsBackToNonEmpty(t *testing.T) {
 		t.Error("Slug(\"\") returned empty, which would silently write to the parent directory")
 	}
 }
+
+// TestInitials is table-driven: a sync folder is stamped with whoever took the
+// ticket off the board, and a folder name should tell a teammate who that was
+// at a glance.
+func TestInitials(t *testing.T) {
+	cases := []struct {
+		name, want string
+	}{
+		{"Alexander Sacharov", "as"},
+		{"  anna   marie  ross ", "amr"},
+		// A single word has no initials to take, so its slug is used instead —
+		// a folder named "b-20260823" tells a teammate nothing, but one named
+		// "berk-20260823" does.
+		{"berk", "berk"},
+		{"", "unnamed"},
+	}
+	for _, c := range cases {
+		if got := Initials(c.name); got != c.want {
+			t.Errorf("Initials(%q) = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
