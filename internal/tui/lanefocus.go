@@ -197,7 +197,7 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 	// Same computation as renderCard's flags, so a ticket does not look
 	// different depending on which screen it is read from.
 	var flags []string
-	env := gate.Env{Lanes: m.lanes, All: m.tickets}
+	env := m.gateEnv()
 	if !gate.Ready(t) {
 		flags = append(flags, styWarn.Render("○ spec"))
 	}

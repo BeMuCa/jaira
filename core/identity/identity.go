@@ -29,6 +29,33 @@ func Current(dir string) string {
 	return "unknown"
 }
 
+// Initials renders name as the first letter of each word, lowercased — the
+// form used to stamp a sync folder, so a teammate can tell whose sweep it was
+// at a glance rather than reading a full slug. A name with only one word has
+// no initials to take, so its whole Slug is used instead: a folder named
+// "b-20260823" tells a teammate nothing, but one named "berk-20260823" does.
+// Reuses Slug for that single-word case and for the empty-name fallback, so
+// there is one definition of "no usable characters" rather than two.
+func Initials(name string) string {
+	fields := strings.Fields(name)
+	if len(fields) < 2 {
+		return Slug(name)
+	}
+	var b strings.Builder
+	for _, f := range fields {
+		for _, r := range strings.ToLower(f) {
+			if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+				b.WriteRune(r)
+				break
+			}
+		}
+	}
+	if b.Len() == 0 {
+		return Slug(name)
+	}
+	return b.String()
+}
+
 // Slug reduces name to a string safe as a path component: lowercase,
 // [a-z0-9-] only, with runs of anything else collapsed to a single dash and
 // no leading or trailing dash. A name that reduces to nothing gets a
