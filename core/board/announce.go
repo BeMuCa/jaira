@@ -11,6 +11,16 @@ import (
 const (
 	jairaMarkerStart = "<!-- jaira:start -->"
 	jairaMarkerEnd   = "<!-- jaira:end -->"
+
+	// jairaMarkerLocal opens a project's own area inside the otherwise
+	// wholesale-regenerated block. Before this existed, a project's own rules
+	// had nowhere to live but outside the managed block, where the next
+	// regeneration could not touch them — but they ended up contradicting the
+	// note instead, since the two were never written with each other in mind.
+	// Everything from this marker to the end marker is now preserved verbatim
+	// across regeneration, so project rules belong there instead of fighting
+	// the block from outside it.
+	jairaMarkerLocal = "<!-- jaira:local -->"
 )
 
 // agentNote is what an agent reads on entering the repository.
@@ -49,21 +59,32 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  not already say: dead ends, why this and not that, what you had to find out.\n" +
 	"  Not what the checklist and git already record. A killed session never gets a\n" +
 	"  turn to write anything down, so do not save it for the end\n" +
-	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>\n" +
-	"  --commits \"$(git rev-parse HEAD)\"` — finish the step, naming every commit you\n" +
-	"  made; a ticket cannot be accepted as done without them\n" +
+	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish\n" +
+	"  the step. jaira works out the commit list itself from git history — the union\n" +
+	"  of the ticket file's own history and commits naming its id — so nothing needs\n" +
+	"  to be typed here; it is written onto the ticket once, when the ticket leaves\n" +
+	"  the board\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
 	"- **the ticket rides in the same commit as the code.** Move the ticket first,\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +
 	"  was for in one place, instead of a diff whose ticket is still in whatever\n" +
 	"  state the last commit left it. Same for a ticket you create and hand to\n" +
-	"  someone else: commit it, or nobody but you knows it exists\n" +
+	"  someone else: commit it, or nobody but you knows it exists — and now this is\n" +
+	"  also what makes the commit list derivable at all: that shared commit is how\n" +
+	"  git ties the ticket to the change\n" +
+	"- `jaira sync <id>` — once a ticket reaches the terminal lane, stamps its\n" +
+	"  commits and files it under `.jaira/sync/<you>-<date>/`, taking it off the\n" +
+	"  board. `jaira restore <file>` brings it back\n" +
 	"\n" +
 	"`jaira <command> --help` for everything else.\n" +
 	"\n" +
 	"Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.\n" +
-	"The human review lane cannot be left by an agent — a person accepts the work there."
+	"The human review lane cannot be left by an agent — a person accepts the work there.\n" +
+	"\n" +
+	"Anything written after the `jaira:local` marker (see below) and before the end\n" +
+	"marker survives the next time this section is regenerated, so project-specific\n" +
+	"rules belong there rather than fighting this note from outside it."
 
 // agentFiles are the instruction files coding agents read.
 //
@@ -110,7 +131,16 @@ func announceInAgentFile(root, name string) (path string, action string, err err
 	start := strings.Index(s, jairaMarkerStart)
 	end := strings.Index(s, jairaMarkerEnd)
 	if start >= 0 && end > start {
-		updated := s[:start] + strings.TrimSuffix(block, "\n") + s[end+len(jairaMarkerEnd):]
+		newBlock := strings.TrimSuffix(block, "\n")
+		// The local marker only counts when it sits strictly inside the
+		// managed block; one written before the start marker or after the end
+		// marker is ordinary user text, not the boundary, and is left alone.
+		if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
+			localIdx := start + localRel
+			preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\n")
+			newBlock = jairaMarkerStart + "\n" + agentNote + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
+		}
+		updated := s[:start] + newBlock + s[end+len(jairaMarkerEnd):]
 		if updated == s {
 			return path, "unchanged", nil
 		}
