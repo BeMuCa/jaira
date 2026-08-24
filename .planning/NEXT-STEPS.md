@@ -20,7 +20,7 @@ that starts with "go" works this list top to bottom.
   `berks-req-board`.
 - `go test ./... -race` with the cache cleared, before claiming anything.
 
-## 1. The critique prompt contradicts itself
+## 1. The critique prompt contradicts itself — DONE (`260824-pgj`)
 
 **The problem, in his words:** "finde standardmäßig etwas" against "loope bis die
 Kritisier-Lane nix mehr zu meckern hat". If the lane always finds something the

@@ -58,11 +58,20 @@ Then:
 - **Nothing left to say.** Write `review-summary="none"` explicitly — an empty
   field means nobody looked — and move the ticket on to the next lane.
 
-Two rules for this lane:
+Three rules for this lane:
 
-**Default to finding something.** A critique that approves everything is worth
-nothing. If you genuinely find nothing on the fourth pass, say so plainly rather
-than inventing a finding to look useful.
+**A finding names a file and a concrete alternative.** "Could be cleaner",
+"consider extracting this", "this may not scale" are not findings. If you cannot
+say which file and what to put there instead, you have not found anything. Do not
+approve a diff you did not read, and do not manufacture a finding to look
+thorough — both produce a critique nobody can act on.
+
+**The loop ends when a pass finds nothing.** Every pass after the first reads a
+diff that already answers the last pass's findings. A pass that produces no
+finding — by the rule above — is where this lane is done: write
+`review-summary="none"` and move the ticket on. That is the expected way out, not
+a failure of nerve. Do not re-raise a finding the implementer addressed, and do
+not re-open a trade-off you let stand on an earlier pass.
 
 **Do not fix it yourself.** This lane says what is wrong; the implementing lane
 changes it. Reviewing your own repair in the same breath is how a critique stops
