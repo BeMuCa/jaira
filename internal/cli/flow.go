@@ -378,10 +378,32 @@ func emitPerLane(cmd *cobra.Command, env gate.Env, ready []*ticket.Ticket) error
 
 func sortByProgress(ts []*ticket.Ticket, env gate.Env) {
 	prec := func(t *ticket.Ticket) int { return env.Lanes.Precedence(t.Status) }
+	// Within one lane, a ticket that still owes the lane's declared output is
+	// the one waiting to be worked; one that has produced it is waiting to be
+	// *moved*, and handing it back means doing the lane's work twice. Across
+	// lanes this changes nothing — precedence still finishes in-flight work
+	// first — so it only decides who goes first inside a single lane, which is
+	// what lets 'next --lane <id>' drain one.
+	owes := func(t *ticket.Ticket) bool {
+		l, ok := env.Lanes.Get(t.Status)
+		return ok && l.Agentic && len(gate.OutputOwed(l, t)) > 0
+	}
+	// Later keys only break ties in the earlier ones: lane precedence, then
+	// unworked before worked, then oldest first.
+	ahead := func(b, a *ticket.Ticket) bool {
+		switch {
+		case prec(b) != prec(a):
+			return prec(b) > prec(a)
+		case owes(b) != owes(a):
+			return owes(b)
+		default:
+			return b.ID < a.ID
+		}
+	}
 	for i := 1; i < len(ts); i++ {
 		for j := i; j > 0; j-- {
 			a, b := ts[j-1], ts[j]
-			if prec(b) > prec(a) || (prec(b) == prec(a) && b.ID < a.ID) {
+			if ahead(b, a) {
 				ts[j-1], ts[j] = b, a
 				continue
 			}

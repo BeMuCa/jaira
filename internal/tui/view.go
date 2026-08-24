@@ -309,6 +309,18 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 		case l.RequiresHumanExit:
 			flags = append(flags, styReview.Render("◆ sign off"))
 		}
+		// A lane that still owes its declared output has not been run on this
+		// ticket. Without this, nine tickets sitting in a critique lane
+		// uncritiqued looked exactly like the two that had been through it, and
+		// the only way to tell was to open each one and find the field empty.
+		//
+		// Only for a lane whose work an agent does: 'todo' and 'backlog' declare
+		// no output and would never light up anyway, but a hand-written lane may,
+		// and the claim being made here is specifically that the agent has not
+		// run.
+		if l.Agentic && len(gate.OutputOwed(l, t)) > 0 {
+			flags = append(flags, styAgentic.Render("◇ unworked"))
+		}
 	}
 	if n, total := checklistProgress(t.PlanItems); total > 0 {
 		flags = append(flags, styMeta.Render(fmt.Sprintf("Plan %d/%d", n, total)))

@@ -211,6 +211,9 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 		case l.RequiresHumanExit:
 			flags = append(flags, styReview.Render("◆ sign off"))
 		}
+		if l.Agentic && len(gate.OutputOwed(l, t)) > 0 {
+			flags = append(flags, styAgentic.Render("◇ unworked"))
+		}
 	}
 	if n, total := checklistProgress(t.PlanItems); total > 0 {
 		flags = append(flags, styMeta.Render(fmt.Sprintf("Plan %d/%d", n, total)))

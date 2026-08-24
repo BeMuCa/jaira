@@ -43,7 +43,7 @@ catalogue and `jaira lanes use critique --force` on his board.
 **Done when:** the prompt cannot be read as "always find something", and
 `core/lane/shipped_test.go` still passes.
 
-## 2. Show whether a lane has been run
+## 2. Show whether a lane has been run — DONE (`260824-piz`)
 
 **The evidence:** another session found nine tickets sitting in `critique`
 uncritiqued, rendered identically to the two that had been through it. To know

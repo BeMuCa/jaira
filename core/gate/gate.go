@@ -386,19 +386,42 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// the same reason as the dependency check above: a ticket stopped mid-work
 	// has not produced its lane's output yet — that is what stopped it — and it
 	// returns to the lane it left, so nothing is being skipped.
-	if cur, ok := env.Lanes.Get(t.Status); ok && to > from && !skipped(cur, t) && !parking {
-		for _, f := range cur.OutputProduces {
-			if !fieldFilled(t, f) {
-				vs = append(vs, Violation{
-					Code:    CodeMissingProduces,
-					Field:   f,
-					Message: fmt.Sprintf("lane %q declares it produces %s, which is still empty", cur.ID, f),
-				})
-			}
+	if cur, ok := env.Lanes.Get(t.Status); ok && to > from && !parking {
+		for _, f := range OutputOwed(cur, t) {
+			vs = append(vs, Violation{
+				Code:    CodeMissingProduces,
+				Field:   f,
+				Message: fmt.Sprintf("lane %q declares it produces %s, which is still empty", cur.ID, f),
+			})
 		}
 	}
 
 	return vs
+}
+
+// OutputOwed lists the fields lane l declares it produces that ticket t has not
+// filled in yet — in other words, what the lane still owes before the ticket may
+// advance past it.
+//
+// This is the same computation that refuses a forward move above, exported
+// because it answers a second question the board needs: whether the lane has
+// been run on this ticket at all. Nine tickets once sat in a critique lane
+// uncritiqued and looked exactly like the two that had been through it, because
+// nothing but the empty field said so.
+//
+// A lane the ticket has opted out of owes nothing, for the same reason the move
+// is not refused: the step does not apply to this ticket.
+func OutputOwed(l *lane.Lane, t *ticket.Ticket) []string {
+	if l == nil || t == nil || skipped(l, t) {
+		return nil
+	}
+	var owed []string
+	for _, f := range l.OutputProduces {
+		if !fieldFilled(t, f) {
+			owed = append(owed, f)
+		}
+	}
+	return owed
 }
 
 // specifiedBoundary returns the display-order position of the first lane that
