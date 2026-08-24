@@ -1,15 +1,21 @@
 # Handoff — 2026-08-24
 
 State before a context clear; this file is the memory. The previous handoff
-(2026-08-18, the release and the team flow) is at `9cf71cc`. Everything below
-landed after it and is pushed; CI green at `e51f9ae`. Longer-lived decisions
-also live in the agent memory file `jaira-design-invariants`.
+(2026-08-18, the release and the team flow) is at `9cf71cc`. Longer-lived
+decisions also live in the agent memory file `jaira-design-invariants`.
+
+**Updated after the session of 2026-08-24 that worked the list of seven.** All
+seven are done (`96462ea`..`3067c44`, eleven commits). What that session landed
+is the first section below; what it did *not* touch is `NEXT-STEPS.md`, which is
+now a second, shorter list.
 
 ## Where things are
 
-- **Public: https://github.com/BeMuCa/jaira** — `master` = origin, clean tree,
-  CI green.
-- The user's binary: `~/.local/bin/jaira`, built from `e51f9ae`.
+- **Public: https://github.com/BeMuCa/jaira** — clean tree. **`master` is 11
+  commits ahead of origin** (`96462ea`..`3067c44`): the session that worked the
+  list of seven did not push, because pushing is the user's call. CI was last
+  green at `e51f9ae`; the eleven have not been through it.
+- The user's binary: `~/.local/bin/jaira`, built from `3067c44`.
   `go build -o ~/.local/bin/jaira ./cmd/jaira` — never `go install`. **Rebuild
   it after every change**: a stale binary made `jaira whoami` look broken.
 - `gofmt -l core internal` lists `core/gate/gate.go` and
@@ -112,31 +118,48 @@ branch `feature/requirements-coverage-elicitation`. Confirmed pipeline:
 
 ## What to do next
 
-`NEXT-STEPS.md` is the execution list: the seven items below, each with the
-decision already made, the file and line to change, the traps, and what proves it
-done. A session starting from "go" works it top to bottom, one `/gsd:quick` per
-item.
+**First: the eleven commits are unpushed.** Ask before pushing.
 
-## Queue, agreed with him and not started
+`NEXT-STEPS.md` is the execution list. It now holds three items — dependencies
+that live in prose rather than in `blocked-by`, the stale `board.png`, and the
+uncut v0.1.1 — plus two open questions with no decision yet. A session starting
+from "go" works it top to bottom, one `/gsd:quick` per item.
 
-1. **Critique prompt contradiction.** "Default to finding something" against
-   "loop until nothing left to say" — his objection, and he is right. The escape
-   clause exists but the headline overshadows it. Sharpen so termination is
-   explicit and a finding must name a file and a concrete alternative.
-2. **Show whether a lane has been run.** Nine tickets sat in critique
-   uncritiqued and looked identical to the two that had been through. Derive it
-   from the lane's `output-produces` (no new field) and surface it on the card;
-   then `next --lane critique` can prefer unworked ones.
-3. **`dod --text` and a `[-]` state for superseded.** There is no way to reword a
-   checklist item, so items got ticked with "obsolete, replaced by 6" as proof —
-   which destroys the meaning of the ticks.
-4. **Small package:** `move --dry-run`, `show --notes-last N` (one ticket is 263
-   lines), a DoD counter in `jaira list`, a warning when a claim expires, and the
-   lane warning to stderr so it stops polluting listings.
-5. **Delete a ticket**, with a double confirmation.
-6. **Set yourself as assignee when creating** a ticket.
-7. **Keep the selected lane centred** on the board so the following lanes stay
-   visible.
+## The list of seven, all done (2026-08-24)
+
+Each went through `/gsd:quick`; each has a SUMMARY under `.planning/quick/` and a
+row in `.planning/STATE.md` with the reasoning. Short version:
+
+1. **`96462ea` — the critique prompt can terminate.** "Default to finding
+   something" sat above a lane whose back edge is `rejects-to: in-progress`. Now
+   a finding must name a file and a concrete alternative, and the end condition
+   is written in the prompt. Copies refreshed in the catalogue and on his board.
+2. **`610e33a` — a lane that has not been run says so.** `gate.OutputOwed` is the
+   gate's own private computation, exported; `◇ unworked` on the card in both
+   renderers, agentic lanes only; `next` prefers an unworked ticket inside a
+   lane. **Measured: all 12 tickets in his `critique` lane are unworked.**
+3. **`0620c9e` — `dod --text` and `[-]`.** Reword an item without touching its
+   state or proof; retire one that will not happen. `Checked()` still means only
+   `[x]`; the new `Settled()` is what completion, the gate and the counters use.
+   Behaviour change: a hand-written `[-]` used to parse as todo.
+4. **`a942ad0`, `8c195a5`, `a49c6fe`, `0043cb8` — the small package.**
+   `move --dry-run` (stages in memory, writes nothing, same exit code),
+   `show --notes-last N` (default deliberately unchanged), `[DoD n/m]` on every
+   `list` row, and a warning when an abandoned claim is stepped over.
+5. **`1c8884f` — `jaira delete`,** confirmed by typing the handle back, `X` on
+   the open ticket in the TUI, refused while another ticket still points at it
+   (a dangling `blocked-by` is a `validate` **error**).
+6. **`f529c68` — `create --mine`,** an opt-in that must never become the default;
+   a test guards the invariant.
+7. **`3067c44` — the focused lane sits in the middle of the board,** clamped so
+   the row stays full at both ends. The window is now `laneWindow()`.
+
+Two things worth carrying forward from that session:
+
+- **`--dry-run` removes the last reason to probe a gate on his board.** The rule
+  in `berks-req-board` stands, but the workaround it asked for is gone.
+- **`archive`'s help said "nothing here removes anything"**, which `delete` made
+  false. Corrected. Watch for the same in any doc that predates `1c8884f`.
 
 ## Feedback from another session, triaged
 
