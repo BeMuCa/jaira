@@ -48,7 +48,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira` | the home screen: every board, and what each needs |
 | `jaira board` | open the board here directly |
 | `jaira list` | list tickets; `--lane`, `--assignee`, `--query`, `--actionable` |
-| `jaira show <id>` | one ticket in full |
+| `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |
 | `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
 | `jaira lanes` | the installed lanes |

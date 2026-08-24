@@ -46,7 +46,7 @@ func TestPrintDetailShowsFollows(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	printDetail(&b, tk, gate.Env{Lanes: lanes})
+	printDetail(&b, tk, gate.Env{Lanes: lanes}, 0)
 
 	// The handle, not the full id: it is what every other command takes as an
 	// argument, so it is what a reader can act on.
@@ -65,7 +65,7 @@ func TestPrintDetailOmitsEmptyFollows(t *testing.T) {
 	tk := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "todo"}
 
 	var b bytes.Buffer
-	printDetail(&b, tk, gate.Env{Lanes: lanes})
+	printDetail(&b, tk, gate.Env{Lanes: lanes}, 0)
 
 	if strings.Contains(b.String(), "follows") {
 		t.Errorf("printDetail showed a follows row on a ticket with none:\n%s", b.String())

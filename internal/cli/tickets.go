@@ -465,10 +465,18 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 
 func newShowCmd() *cobra.Command {
 	var forLane string
+	var notesLast int
 	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show one ticket in full",
-		Args:  exactArgs(1),
+		Long: `Prints one ticket: its fields, its checklists, and its body.
+
+Notes append without bound, and the body is printed last, so on a long-running
+ticket the note that says where the work stands ends up furthest down the page.
+--notes-last <n> keeps the newest n and says how many it hid. Nothing is removed
+from the ticket, and the count is always printed, so a reader is never left
+thinking they have seen everything.`,
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -491,15 +499,20 @@ func newShowCmd() *cobra.Command {
 				j["path"] = t.Path
 				return emit(cmd.OutOrStdout(), j)
 			}
-			printDetail(cmd.OutOrStdout(), t, env)
+			printDetail(cmd.OutOrStdout(), t, env, notesLast)
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&forLane, "for-lane", "", "assemble the bounded input a lane's agent should receive")
+	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
 	return cmd
 }
 
-func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
+// printDetail renders one ticket for a person. notesLast caps how many Progress
+// entries the body carries — 0 means all of them, which is the default
+// everywhere: this board's promise is that nothing is lost, so hiding a note
+// happens only when the reader asks for it.
+func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int) {
 	fmt.Fprintf(w, "%s  %s\n", ticket.Handle(t.ID), t.Title)
 	fmt.Fprintf(w, "%s\n", strings.Repeat("─", 64))
 	row := func(k, v string) {
@@ -562,8 +575,52 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env) {
 		fmt.Fprintf(w, "\nBefore this can leave the backlog: %s\n", strings.Join(miss, ", "))
 	}
 	if t.Body != "" {
-		fmt.Fprintf(w, "\n%s\n", strings.TrimSpace(t.Body))
+		body, hidden := trimNotes(t.Body, notesLast)
+		fmt.Fprintf(w, "\n%s\n", strings.TrimSpace(body))
+		if hidden > 0 {
+			fmt.Fprintf(w, "\n%d earlier note(s) hidden; drop --notes-last to read them all\n", hidden)
+		}
 	}
+}
+
+// trimNotes keeps the last n entries of the Progress section and reports how
+// many it dropped.
+//
+// Notes append without bound — one real ticket reached 263 lines and 56 KB — and
+// the whole body is printed last, so the newest note, the one that says where
+// the work actually stands, ends up furthest from the reader's eye.
+//
+// Only the Progress section is touched. Every other section is criteria, plan or
+// outcome: none of it is an append-only log, and losing a line of it would be
+// losing the ticket.
+func trimNotes(body string, n int) (string, int) {
+	if n <= 0 {
+		return body, 0
+	}
+	lines := strings.Split(body, "\n")
+	// Collected exactly as progressNotes reads them, so "a note" means the same
+	// thing to the reader and to the trimmer.
+	in := false
+	var entries []int
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			in = strings.EqualFold(trimmed, noteHeading)
+			continue
+		}
+		if in && strings.HasPrefix(trimmed, "- ") {
+			entries = append(entries, i)
+		}
+	}
+	if len(entries) <= n {
+		return body, 0
+	}
+	// From the first kept entry, not from the heading: a continuation line under
+	// a kept note belongs to it and must travel with it.
+	cut := entries[len(entries)-n]
+	out := append([]string{}, lines[:entries[0]]...)
+	out = append(out, lines[cut:]...)
+	return strings.Join(out, "\n"), len(entries) - n
 }
 
 func newSetCmd() *cobra.Command {

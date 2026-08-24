@@ -361,7 +361,7 @@ skipping this command.`,
 				return nil
 			}
 			for _, t := range ready {
-				printDetail(cmd.OutOrStdout(), t, env)
+				printDetail(cmd.OutOrStdout(), t, env, 0)
 			}
 			return nil
 		},
