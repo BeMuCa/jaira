@@ -79,7 +79,8 @@ to pass `--force` to everything, which protects nothing.
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it |
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields |
-| `jaira dod <id> <n> --doing\|--done\|--todo` | mark a checklist item |
+| `jaira dod <id> <n> --doing\|--done\|--todo\|--superseded` | mark a checklist item; `[-]` superseded is retired, not achieved — it stops blocking completion and never reports as done |
+| `jaira dod <id> <n> --text "…"` | reword one item, leaving its state and its proof alone |
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
 | `jaira dod <id> --plan …` | address the Plan checklist instead of the definition of done |
 | `jaira dod <id> --option <name>` | turn an optional step on for this ticket (`--todo` turns it off) |

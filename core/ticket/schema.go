@@ -195,6 +195,13 @@ const (
 	StateDoing
 	// StateDone is a finished item, written as "[x]".
 	StateDone
+	// StateSuperseded is an item that did not happen and will not, written as
+	// "[-]". It is not a quieter [x]: the work was never done, so nothing may
+	// report it as achieved. It exists because the only way to retire a
+	// criterion used to be ticking it with the proof "obsolete, replaced by item
+	// 6" — which leaves ticked items that were never met, and a tick that can
+	// mean "never happened" means nothing anywhere on the board.
+	StateSuperseded
 )
 
 func (s State) String() string {
@@ -203,6 +210,8 @@ func (s State) String() string {
 		return "doing"
 	case StateDone:
 		return "done"
+	case StateSuperseded:
+		return "superseded"
 	default:
 		return "todo"
 	}
@@ -215,6 +224,8 @@ func (s State) Marker() string {
 		return "~"
 	case StateDone:
 		return "x"
+	case StateSuperseded:
+		return "-"
 	default:
 		return " "
 	}
@@ -233,8 +244,14 @@ type DoDItem struct {
 }
 
 // Checked reports whether this item is finished. Only StateDone counts: an item
-// in progress is outstanding work.
+// in progress is outstanding work, and a superseded one was never done at all.
 func (i DoDItem) Checked() bool { return i.State == StateDone }
+
+// Settled reports whether this item is off the outstanding list — done, or
+// retired as superseded. This is the question completion asks; Checked is the
+// question "was this achieved", and the two are deliberately different for a
+// superseded item.
+func (i DoDItem) Settled() bool { return i.State == StateDone || i.State == StateSuperseded }
 
 // HeadingTitle returns the first level-one heading of a markdown body.
 func HeadingTitle(body string) string {
@@ -339,6 +356,8 @@ func parseCheckbox(line string) (DoDItem, bool) {
 			st = StateDoing
 		case 'x', 'X':
 			st = StateDone
+		case '-':
+			st = StateSuperseded
 		default:
 			st = StateTodo
 		}
@@ -363,7 +382,7 @@ func (t *Ticket) DoDComplete() (complete bool, remaining []string) {
 		return false, nil
 	}
 	for _, it := range t.DoDItems {
-		if !it.Checked() {
+		if !it.Settled() {
 			remaining = append(remaining, it.Text)
 		}
 	}
@@ -392,7 +411,7 @@ func (t *Ticket) OptionSet(name string) bool {
 // absence is not evidence of unfinished work.
 func (t *Ticket) PlanComplete() (complete bool, remaining []string) {
 	for _, it := range t.PlanItems {
-		if !it.Checked() {
+		if !it.Settled() {
 			remaining = append(remaining, it.Text)
 		}
 	}

@@ -132,3 +132,75 @@ func TestDodProofRejectsAddAndOption(t *testing.T) {
 		t.Error("expected a usage error combining --proof with --option")
 	}
 }
+
+// Rewording is the whole point of --text: the criterion changed, its state and
+// its evidence did not. Ticking the stale item with the proof "obsolete,
+// replaced by item 6" was the only route before, and it leaves a [x] beside work
+// nobody ever did.
+func TestDodTextRewordsWithoutTouchingTheState(t *testing.T) {
+	dir, id := dodTestStore(t)
+	if out, err := runDoD(t, dir, id, "1", "--done", "--proof", "internal/x.go:12; TestX"); err != nil {
+		t.Fatalf("setup: %v\n%s", err, out)
+	}
+	out, err := runDoD(t, dir, id, "1", "--text", "one, said properly")
+	if err != nil {
+		t.Fatalf("dod --text: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "[x] one, said properly") {
+		t.Errorf("reworded item lost its tick:\n%s", out)
+	}
+	if !strings.Contains(out, "proof: internal/x.go:12; TestX") {
+		t.Errorf("reworded item lost its proof:\n%s", out)
+	}
+	if !strings.Contains(out, "[ ] two") {
+		t.Errorf("the other item was disturbed:\n%s", out)
+	}
+}
+
+// --superseded retires an item: not achieved, and no longer in the way.
+func TestDodSupersededRetiresAnItem(t *testing.T) {
+	dir, id := dodTestStore(t)
+	out, err := runDoD(t, dir, id, "2", "--superseded")
+	if err != nil {
+		t.Fatalf("dod --superseded: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "[-] two") {
+		t.Errorf("item was not marked superseded:\n%s", out)
+	}
+
+	// Ticking what is left completes the ticket, which is what distinguishes a
+	// superseded item from an open one.
+	if out, err := runDoD(t, dir, id, "1", "--done"); err != nil {
+		t.Fatalf("dod --done: %v\n%s", err, out)
+	}
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := s.Load(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	complete, remaining := tk.DoDComplete()
+	if !complete {
+		t.Errorf("a superseded item still blocks completion; remaining: %v", remaining)
+	}
+	for _, it := range tk.DoDItems {
+		if it.Text == "two" && it.Checked() {
+			t.Error("a superseded item reports as done")
+		}
+	}
+}
+
+// Two states are a contradiction, and the message must name every state so the
+// caller does not have to go looking for the fourth one.
+func TestDodRefusesTwoStates(t *testing.T) {
+	dir, id := dodTestStore(t)
+	out, err := runDoD(t, dir, id, "1", "--done", "--superseded")
+	if err == nil {
+		t.Fatalf("two state flags were accepted:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "--superseded") {
+		t.Errorf("the refusal does not mention the new state: %v", err)
+	}
+}

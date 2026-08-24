@@ -32,7 +32,7 @@ func TestUnknownMarkerParsesAsTodo(t *testing.T) {
 	body := `## Definition of Done
 
 - [x] done
-- [-] cancelled?
+- [/] cancelled?
 - [?] unsure
 `
 	items := ParseDoDItems(body)

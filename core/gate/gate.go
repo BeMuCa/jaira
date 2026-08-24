@@ -318,7 +318,9 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		if !complete {
 			if len(remaining) > 0 {
 				for i, it := range t.DoDItems {
-					if it.Checked() {
+					// Settled, not Checked: a superseded criterion is retired, and
+					// naming it here would ask for work that was explicitly dropped.
+					if it.Settled() {
 						continue
 					}
 					vs = append(vs, Violation{
@@ -368,7 +370,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	if target.Terminal {
 		if complete, _ := t.PlanComplete(); !complete {
 			for i, it := range t.PlanItems {
-				if it.Checked() {
+				if it.Settled() {
 					continue
 				}
 				vs = append(vs, Violation{

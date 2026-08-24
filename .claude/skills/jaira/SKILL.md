@@ -75,6 +75,19 @@ jaira dod <handle> 1 --todo     # you were wrong, put it back
 Only one item can be `--doing` at a time; marking a second moves the marker. That
 marker is how a person watching the board knows which criterion you are on.
 
+When a criterion turns out to be wrong, do not tick it. Two commands exist so
+you never have to:
+
+```bash
+jaira dod <handle> 2 --text "the wording it should have had"   # same state, same proof
+jaira dod <handle> 2 --superseded                              # [-] it will not happen
+```
+
+A superseded item stops blocking completion and never reports as done. Ticking a
+stale item with the proof "obsolete, replaced by item 6" is the thing these
+replace: it leaves a `[x]` beside work nobody did, and then no tick on the board
+means anything.
+
 Do not mark an item done you have not verified. `--proof` records the evidence
 in the same call that ticks the item — a file:line or a test name, so the claim
 is checkable rather than taken on trust. Setting it again on the same item

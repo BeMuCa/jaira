@@ -13,28 +13,39 @@ import (
 
 func newDoDCmd() *cobra.Command {
 	var (
-		doing  bool
-		done   bool
-		todo   bool
-		plan   bool
-		option string
-		add    []string
-		proof  string
+		doing      bool
+		done       bool
+		todo       bool
+		superseded bool
+		plan       bool
+		option     string
+		add        []string
+		proof      string
+		text       string
 	)
 	cmd := &cobra.Command{
 		Use:   "dod <id> [n]",
 		Short: "Write or mark checklist items",
 		Long: `Sets the state of one checklist item, numbered as 'jaira show' displays it.
 
-Three states are recognised:
+Four states are recognised:
 
-  --doing   the item being worked on right now, written as [~]
-  --done    finished, written as [x]
-  --todo    not started, written as [ ]
+  --doing        the item being worked on right now, written as [~]
+  --done         finished, written as [x]
+  --todo         not started, written as [ ]
+  --superseded   it did not happen and will not, written as [-]
 
 An item marked as in progress is outstanding work: it does not satisfy the
 definition of done, and a ticket carrying one cannot enter a terminal lane. Only
 one item per checklist can be in progress, so marking a second moves the marker.
+
+A superseded item is retired, not achieved: it stops blocking completion, and
+nothing reports it as done. Use it when a criterion was replaced or dropped —
+ticking it instead leaves a [x] beside work nobody ever did.
+
+Reword an item with --text, which leaves its state and its proof alone:
+
+  jaira dod <id> 3 --text "the counter shows n of m, superseded items included"
 
 Add items with --add, which may be repeated. An added item lands inside the
 right section — a checkbox only counts under its own heading, so appending to
@@ -65,14 +76,14 @@ line rather than stacking a second one.`,
 			if plan {
 				sec = ticket.SectionPlan
 			}
-			if proof != "" && (option != "" || len(add) > 0) {
-				return fail(ExitUsage, "usage", "--proof addresses a single existing item; it cannot be combined with --add or --option")
+			if (proof != "" || text != "") && (option != "" || len(add) > 0) {
+				return fail(ExitUsage, "usage", "--proof and --text address a single existing item; they cannot be combined with --add or --option")
 			}
 			if option != "" {
 				return setOption(cmd, args[0], option, !todo)
 			}
 			if len(add) > 0 {
-				if doing || done || todo || len(args) > 1 {
+				if doing || done || todo || superseded || len(args) > 1 {
 					return fail(ExitUsage, "usage", "--add writes new items; it does not take a number or a state")
 				}
 				return addChecklistItems(cmd, args[0], sec, add)
@@ -81,24 +92,34 @@ line rather than stacking a second one.`,
 				return fail(ExitUsage, "usage", "which item? pass its number, as 'jaira show' displays it")
 			}
 
-			// With --proof present, a state flag is optional: passing none records
-			// only the proof and leaves the marker alone. Without --proof, the rule
-			// stays what it always was — exactly one state, so a plain 'dod <id> <n>'
-			// with nothing else is a usage error rather than a silent no-op.
-			hasState := doing || done || todo
+			// With --proof or --text present, a state flag is optional: passing none
+			// records only that and leaves the marker alone. Without either, the
+			// rule stays what it always was — exactly one state, so a plain
+			// 'dod <id> <n>' with nothing else is a usage error rather than a
+			// silent no-op.
+			states := 0
+			for _, on := range []bool{doing, done, todo, superseded} {
+				if on {
+					states++
+				}
+			}
+			const oneState = "pass exactly one of --doing, --done, --todo or --superseded"
 			var st ticket.State
 			switch {
-			case hasState && doing && !done && !todo:
+			case states > 1:
+				return fail(ExitUsage, "usage", oneState)
+			case doing:
 				st = ticket.StateDoing
-			case hasState && done && !doing && !todo:
+			case done:
 				st = ticket.StateDone
-			case hasState && todo && !doing && !done:
+			case todo:
 				st = ticket.StateTodo
-			case hasState:
-				return fail(ExitUsage, "usage", "pass exactly one of --doing, --done or --todo")
-			case proof == "":
-				return fail(ExitUsage, "usage", "pass exactly one of --doing, --done or --todo")
+			case superseded:
+				st = ticket.StateSuperseded
+			case proof == "" && text == "":
+				return fail(ExitUsage, "usage", oneState)
 			}
+			hasState := states == 1
 
 			n, err := strconv.Atoi(args[1])
 			if err != nil || n < 1 {
@@ -133,6 +154,15 @@ line rather than stacking a second one.`,
 				body := t.Doc().Body()
 				if hasState {
 					next, err := ticket.SetItemState(body, sec, n-1, st)
+					if err != nil {
+						return &codedError{code: ExitValidation, reason: "no_such_item", message: err.Error()}
+					}
+					body = next
+				}
+				// Before the proof, so evidence recorded in the same call attaches to
+				// the wording it was written against.
+				if text != "" {
+					next, err := ticket.SetItemText(body, sec, n-1, text)
 					if err != nil {
 						return &codedError{code: ExitValidation, reason: "no_such_item", message: err.Error()}
 					}
@@ -190,10 +220,12 @@ line rather than stacking a second one.`,
 	f.BoolVar(&doing, "doing", false, "mark the item as being worked on right now")
 	f.BoolVar(&done, "done", false, "mark the item as finished")
 	f.BoolVar(&todo, "todo", false, "mark the item as not started")
+	f.BoolVar(&superseded, "superseded", false, "retire the item: it did not happen and will not, written as [-]")
 	f.BoolVar(&plan, "plan", false, "address the Plan checklist instead of the Definition of Done")
 	f.StringArrayVar(&add, "add", nil, "append a new item; repeat for several, in order")
 	f.StringVar(&option, "option", "", "tick a step option for this ticket, e.g. --option planning (with --todo to untick)")
 	f.StringVar(&proof, "proof", "", "record evidence for the item; combine with --done to tick and record in one call")
+	f.StringVar(&text, "text", "", "reword the item, leaving its state and its proof alone")
 	return cmd
 }
 

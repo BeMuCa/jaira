@@ -137,6 +137,47 @@ func SetItemProof(body string, sec Section, i int, proof string) (string, error)
 	return strings.Join(out, "\n"), nil
 }
 
+// SetItemText rewrites the words of the i-th checkbox (0-based) of one section,
+// leaving its marker and its proof line exactly as they were.
+//
+// Without this there was no way to reword a criterion at all: the only route was
+// to tick the stale one with the proof "obsolete, replaced by item 6" and append
+// a new one, which leaves ticked items that were never met. Rewording is the
+// honest form of that edit; SetItemState with StateSuperseded is the other.
+func SetItemText(body string, sec Section, i int, text string) (string, error) {
+	// Collapsed for the same reason SetItemProof collapses its value: a newline
+	// in the text would re-parse as a line of its own, and a line beginning with
+	// a bullet would come back as another criterion.
+	text = strings.Join(strings.Fields(text), " ")
+	if text == "" {
+		return "", fmt.Errorf("an empty checklist item says nothing; give it text")
+	}
+	lines := strings.Split(body, "\n")
+	idx := checklistLineIndexes(lines, sec)
+	if len(idx) == 0 {
+		return "", fmt.Errorf("this ticket has no %s checklist", sec)
+	}
+	if i < 0 || i >= len(idx) {
+		return "", fmt.Errorf("%s has %d item(s); there is no item %d", sec, len(idx), i+1)
+	}
+	lines[idx[i]] = replaceText(lines[idx[i]], text)
+	return strings.Join(lines, "\n"), nil
+}
+
+// replaceText swaps what follows the checkbox, keeping the indentation, the
+// bullet, the marker and any trailing carriage return — the same surgical
+// contract replaceMarker keeps in the other direction.
+func replaceText(line, text string) string {
+	open := strings.Index(line, "[")
+	if open < 0 || open+3 >= len(line) || line[open+2] != ']' || line[open+3] != ' ' {
+		return line
+	}
+	if strings.HasSuffix(line, "\r") {
+		text += "\r"
+	}
+	return line[:open+4] + text
+}
+
 // checklistLineIndexes returns the line numbers of the checkboxes belonging to a
 // section, in order. Indexes are per-section, so a definition-of-done index can
 // never address a checkbox that lives under some other heading.

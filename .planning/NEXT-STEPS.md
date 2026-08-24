@@ -71,7 +71,7 @@ is "not worked yet".
 distinct from one that has it, on the board and in lane focus; `next --lane
 critique` hands back an unworked one first; tests cover both states.
 
-## 3. `dod --text` and a `[-]` state for superseded
+## 3. `dod --text` and a `[-]` state for superseded — DONE (`260824-pow`)
 
 **The evidence:** there is no way to reword a checklist item. When two items were
 redefined, the only route was ticking the old ones with the proof "obsolete,

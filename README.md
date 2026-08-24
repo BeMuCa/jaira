@@ -307,7 +307,7 @@ jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket
 jaira set <id> k=v...      set fields
-jaira dod <id> <n>         mark a checklist item --doing / --done / --todo
+jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira validate             check every ticket on the board for damage
 jaira archive <id>         take a ticket off the board (restore puts it back)
 jaira move <id> --to ...   move lanes, applying the gates

@@ -22,6 +22,8 @@ jaira show <id> --for-lane in-progress --json
 jaira dod <id> 2 --doing --plan
 jaira dod <id> 2 --done --plan
 jaira dod <id> 3 --done --proof "internal/x.go:12; TestX"   # tick it and record why in one call
+jaira dod <id> 3 --text "the wording it should have had"    # reword it; state and proof stay
+jaira dod <id> 4 --superseded                               # [-] it will not happen; never tick a stale item instead
 
 # 4. Record what a later session would have to rediscover.
 jaira note <id> "writeAll buffers the whole file; flushing per 5k rows works"

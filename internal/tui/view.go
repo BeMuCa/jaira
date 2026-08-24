@@ -358,12 +358,14 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	return out
 }
 
-// checklistProgress counts finished items. An item in progress counts as
-// unfinished, matching the gate: the point of the counter is to show how much is
-// actually done, not how much has been started.
+// checklistProgress counts items that are no longer outstanding. An item in
+// progress counts as unfinished and a superseded one counts as settled, matching
+// the gate: the point of the counter is to show how much work is left, not how
+// much has been started. Counting only ticks would leave a ticket that can be
+// completed sitting at 4/5 for good.
 func checklistProgress(items []ticket.DoDItem) (done, total int) {
 	for _, it := range items {
-		if it.Checked() {
+		if it.Settled() {
 			done++
 		}
 	}
