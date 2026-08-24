@@ -125,11 +125,7 @@ func (m *Model) renderBoard() string {
 	shown := min(len(m.cols), perScreen)
 	// A bordered column occupies its content width plus two border cells.
 	colW := max(minColWidth, m.width/shown-2)
-	start := 0
-	if m.laneIdx >= perScreen {
-		start = m.laneIdx - perScreen + 1
-	}
-	end := min(len(m.cols), start+perScreen)
+	start, end := m.laneWindow(perScreen)
 
 	tabsLine := 0
 	if tabs != "" {
@@ -230,6 +226,21 @@ func timespan(created, updated time.Time) string {
 		s += ", touched " + roughAge(time.Since(updated)) + " ago"
 	}
 	return s
+}
+
+// laneWindow is the run of lanes drawn when perScreen of them fit.
+//
+// The focused lane sits in the middle of the row, not at its right edge.
+// Edge-anchoring meant the lanes *after* the focused one were never on screen —
+// and what comes after a lane is where its work goes next, which is the question
+// the board is being read to answer.
+//
+// Clamped at both ends so the row is always full: padding one side with blanks
+// to centre a first or last lane would trade the same information away again,
+// for symmetry nobody asked for.
+func (m *Model) laneWindow(perScreen int) (start, end int) {
+	start = max(0, min(m.laneIdx-perScreen/2, len(m.cols)-perScreen))
+	return start, min(len(m.cols), start+perScreen)
 }
 
 func (m *Model) renderColumn(idx, w, h int) string {

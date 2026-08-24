@@ -159,7 +159,7 @@ default.
 **Done when:** `--mine` assigns you, plain `create` still leaves it empty (a test
 asserts that, because it is the invariant), and `--mine --assignee x` is x.
 
-## 7. Keep the selected lane centred on the board
+## 7. Keep the selected lane centred on the board — DONE (`260824-q9k`)
 
 **His words:** the selected lane should always be in the middle, so the lanes
 after it stay visible while the window allows.
