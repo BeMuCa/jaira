@@ -142,7 +142,7 @@ created by mistake or a throwaway probe leaves a file that only `rm` removes.
 file, `jaira validate` is clean afterwards, and no other command starts treating
 a missing ticket as an error.
 
-## 6. Assign yourself when creating
+## 6. Assign yourself when creating — DONE (`260824-q7x`)
 
 **Careful — invariant 12:** capture belongs to nobody, and the pull claims. That
 is deliberate and must not be reversed: `create` leaves `assignee` empty, and

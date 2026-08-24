@@ -77,7 +77,7 @@ to pass `--force` to everything, which protects nothing.
 |---|---|
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md` |
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it |
-| `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
+| `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields |
 | `jaira dod <id> <n> --doing\|--done\|--todo\|--superseded` | mark a checklist item; `[-]` superseded is retired, not achieved — it stops blocking completion and never reports as done |
 | `jaira dod <id> <n> --text "…"` | reword one item, leaving its state and its proof alone |
