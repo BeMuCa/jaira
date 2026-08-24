@@ -89,6 +89,7 @@ to pass `--force` to everything, which protects nothing.
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide; taking over a lease that has expired is allowed and is reported, on stderr and as `took_over` in `--json` |
 | `jaira archive <id>` | take a ticket off the board (nothing is deleted) |
 | `jaira restore <file>` | put an archived ticket back |
+| `jaira delete <id>` | remove a ticket's file for good; asks for the handle typed back, `--force` skips it. Refused while another ticket still points at it. Archive is almost always what you want |
 | `jaira resolve <id>` | settle the fields a merge could not |
 | `jaira share` | publish the board; `--undo` makes it private again |
 | `jaira projects add <path>` | register a board; `--scan` searches two levels down |

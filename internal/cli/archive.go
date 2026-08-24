@@ -19,8 +19,11 @@ func newArchiveCmd() *cobra.Command {
 
 The file is moved, not deleted. The board exists so you can still answer what a
 task was for months later, and on a private board a deleted file is not in git
-history to recover from — so nothing here removes anything. 'jaira restore' moves
-a ticket back.`,
+history to recover from — so this command removes nothing, ever. 'jaira restore'
+moves a ticket back.
+
+'jaira delete' is the one command that does remove a file, for a ticket that
+should never have existed. It asks for the handle typed back first.`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 1 {
 				return fail(ExitUsage, "usage", "archive takes at most one ticket id, received %d", len(args))

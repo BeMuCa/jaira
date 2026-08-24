@@ -141,6 +141,36 @@ func (s *Store) Archive(id string) (string, error) {
 	return dst, nil
 }
 
+// Delete removes a ticket's file and returns the path it was at.
+//
+// The only irreversible operation in the store, and it exists because archiving
+// is the wrong answer for a ticket that should never have been written: a
+// mistyped create or a throwaway probe leaves a file that otherwise only 'rm'
+// removes, and 'rm' means the caller has to know the file layout. Whether the
+// caller is sure is decided above this line — the CLI asks for the handle typed
+// back, and the board asks for it again.
+//
+// Symlinks are resolved for the same reason Archive resolves them: deleting the
+// link alone would leave the ticket on disk but off the board. Both go, since a
+// half-deleted ticket is worse than either outcome.
+func (s *Store) Delete(id string) (string, error) {
+	t, err := s.Load(id)
+	if err != nil {
+		return "", err
+	}
+	real, err := filepath.EvalSymlinks(t.Path)
+	if err != nil {
+		real = t.Path
+	}
+	if err := os.Remove(real); err != nil {
+		return "", err
+	}
+	if real != t.Path {
+		os.Remove(t.Path)
+	}
+	return t.Path, nil
+}
+
 // Restore moves an archived ticket back onto the board.
 func (s *Store) Restore(name string) (string, error) {
 	src := filepath.Join(s.ArchiveDir(), filepath.Base(name))

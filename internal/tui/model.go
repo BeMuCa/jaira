@@ -44,6 +44,7 @@ const (
 	modeLaneFocus
 	modeSettings
 	modeDefaultBoard
+	modeDelete
 )
 
 // Model is the board's state.
@@ -714,6 +715,24 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeDelete:
+		switch s {
+		case "enter":
+			m.confirmDelete()
+		case "esc":
+			m.input = ""
+			m.mode = modeDetail
+		case "backspace":
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
+			}
+		default:
+			if k.Text != "" {
+				m.input += k.Text
+			}
+		}
+		return m, nil
+
 	case modeMove:
 		switch s {
 		case "enter":
@@ -877,6 +896,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		case "m":
 			m.openMove()
+		case "X":
+			// Not x: x is archive on the board and must keep meaning that
+			// everywhere. Shift, then the handle typed back — the only
+			// irreversible thing the board can do costs two deliberate acts.
+			if m.detail != nil {
+				m.mode = modeDelete
+				m.input = ""
+			}
 		case "b":
 			// A blocked ticket names its blocker; the reader's next question is
 			// always "and what is that one waiting on" — so the link is walkable.
@@ -1233,6 +1260,42 @@ func (m *Model) createTicket(title string) {
 		m.detail = full
 		m.startEdit()
 	}
+}
+
+// confirmDelete removes the open ticket if what was typed is its handle.
+//
+// A yes/no dialog would be wrong here. Everything else the board does is
+// reversible — an archived ticket is restored, a forced move is reported and can
+// be moved back — and this is not, so the second step asks for something only
+// someone looking at the ticket can supply.
+func (m *Model) confirmDelete() {
+	t := m.detail
+	if t == nil {
+		m.mode = modeBoard
+		return
+	}
+	handle := ticket.Handle(t.ID)
+	typed := strings.TrimSpace(m.input)
+	m.input = ""
+	if !strings.EqualFold(typed, handle) {
+		m.mode = modeDetail
+		m.notify(fmt.Sprintf("That is not %s. Nothing was deleted.", handle), true)
+		return
+	}
+	path, err := m.store.Delete(t.ID)
+	if err != nil {
+		m.mode = modeDetail
+		m.notify(err.Error(), true)
+		return
+	}
+	m.mode = modeBoard
+	m.detail = nil
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	m.notify(fmt.Sprintf("Deleted %s.\n\n%s is gone; there is no restore for this one.",
+		handle, filepath.Base(path)), false)
 }
 
 // archiveSelected takes a ticket off the board.

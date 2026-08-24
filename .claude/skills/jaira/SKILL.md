@@ -333,6 +333,10 @@ jaira archive               # list what has been archived
 jaira restore <file>        # put it back
 ```
 
+`jaira delete` also exists and removes the file for good. It is the user's, not
+yours: archiving is how a ticket leaves the board. If you made a ticket by
+mistake, say so and let them decide.
+
 ## Checking the board is intact
 
 ```bash

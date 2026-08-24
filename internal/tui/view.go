@@ -93,6 +93,8 @@ func (m *Model) render() string {
 		return m.board.render(m.width, m.height)
 	case modeMove:
 		return m.renderBoard() // picker is drawn into the status bar
+	case modeDelete:
+		return m.renderDelete()
 	}
 	return m.renderBoard()
 }
@@ -611,11 +613,22 @@ func (m *Model) renderDetail() string {
 	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.detailHints(m.detail)+" · esc back")
 }
 
+// renderDelete keeps the ticket on screen while its handle is typed back. What
+// is about to be destroyed stays in front of the person destroying it.
+func (m *Model) renderDelete() string {
+	if m.detail == nil {
+		return m.renderBoard()
+	}
+	handle := ticket.Handle(m.detail.ID)
+	prompt := styWarn.Render("delete "+handle+" — type the handle: ") + m.input + stySelected.Render("▏")
+	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), prompt+" · esc cancel")
+}
+
 // detailHints names the actions an open ticket offers. Basic movement (arrows,
 // jk, paging) is deliberately not listed: the footer names actions, the help
 // screen teaches movement. b appears only when there is a blocker to jump to.
 func (m *Model) detailHints(t *ticket.Ticket) string {
-	hint := "e fields · E editor · y copy id · m move · n follow-up"
+	hint := "e fields · E editor · y copy id · m move · n follow-up · X delete"
 	if len(t.BlockedBy) > 0 {
 		hint += " · b blocked-by"
 	}
@@ -926,6 +939,7 @@ func (m *Model) renderHelp() string {
 			{"m", "move the selected ticket to another lane"},
 			{"f", "override a move the gate refused, after confirming with y"},
 			{"x", "archive the selected ticket (restore brings it back)"},
+			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
 			{"S", "settings: lanes (read a prompt, use it, publish it) and the default board"},

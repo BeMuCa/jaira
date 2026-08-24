@@ -187,6 +187,7 @@ Exit codes:
 		newValidateCmd(),
 		newArchiveCmd(),
 		newRestoreCmd(),
+		newDeleteCmd(),
 		newNoteCmd(),
 		newResumeCmd(),
 		newMoveCmd(),

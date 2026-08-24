@@ -310,6 +310,7 @@ jaira set <id> k=v...      set fields
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira validate             check every ticket on the board for damage
 jaira archive <id>         take a ticket off the board (restore puts it back)
+jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket
 jaira claim <id>           take a 30-minute lease on a ticket

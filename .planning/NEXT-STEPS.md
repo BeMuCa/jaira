@@ -123,7 +123,7 @@ Four separate frictions, one quick task, one commit each.
 session's feedback was wrong on this, and on two more points recorded in
 HANDOFF.md.
 
-## 5. Delete a ticket, with a double check
+## 5. Delete a ticket, with a double check — DONE (`260824-q2i`)
 
 **Today:** `Store` has `Archive` (`core/ticket/store.go:120`) and `Restore`
 (`:145`) and no delete at all. Archiving is right for finished work; a ticket
