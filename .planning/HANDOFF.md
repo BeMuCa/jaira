@@ -110,6 +110,13 @@ branch `feature/requirements-coverage-elicitation`. Confirmed pipeline:
   Moved back and `git checkout`ed; verified identical to HEAD. Lesson: there is
   no `--dry-run`, so never probe a gate with a live `move` on his board.
 
+## What to do next
+
+`NEXT-STEPS.md` is the execution list: the seven items below, each with the
+decision already made, the file and line to change, the traps, and what proves it
+done. A session starting from "go" works it top to bottom, one `/gsd:quick` per
+item.
+
 ## Queue, agreed with him and not started
 
 1. **Critique prompt contradiction.** "Default to finding something" against
