@@ -32,6 +32,40 @@ func ClaimActive(t *ticket.Ticket, sessionID string) (holder string, active bool
 	return t.ClaimedBy, true
 }
 
+// StaleClaim reports a claim that has expired and is therefore about to be
+// stepped over: who held it, and how long ago it was last renewed.
+//
+// Expiry is deliberate — there is no server to notice a session died, so a lease
+// that outlived its holder would wedge the board — but until now it happened in
+// silence. Two sessions could work the same ticket with nothing anywhere saying
+// the second one walked over the first.
+func StaleClaim(t *ticket.Ticket, sessionID string) (holder string, since time.Duration, stale bool) {
+	if t.ClaimedBy == "" || t.ClaimedBy == sessionID {
+		return "", 0, false
+	}
+	if t.ClaimedAt.IsZero() {
+		// A claim with no timestamp cannot be aged, so it is treated as
+		// abandoned by ClaimActive. Report it as such rather than saying "0m".
+		return t.ClaimedBy, 0, true
+	}
+	if d := time.Since(t.ClaimedAt); d > ClaimTTL {
+		return t.ClaimedBy, d, true
+	}
+	return "", 0, false
+}
+
+// staleClaimLine is the one-line warning, or "" when there is nothing to say.
+func staleClaimLine(t *ticket.Ticket, sessionID string) string {
+	holder, since, stale := StaleClaim(t, sessionID)
+	if !stale {
+		return ""
+	}
+	if since == 0 {
+		return fmt.Sprintf("%s carries an abandoned claim by %s (no timestamp)", ticket.Handle(t.ID), holder)
+	}
+	return fmt.Sprintf("%s carries an abandoned claim by %s, last renewed %s ago", ticket.Handle(t.ID), holder, rough(since))
+}
+
 func newClaimCmd() *cobra.Command {
 	var release, steal bool
 	var sessionID string
@@ -46,7 +80,11 @@ so a crashed session never leaves work permanently unreachable and there is
 nothing to unlock by hand.
 
 Claiming is advisory. It keeps 'jaira next' from handing the same work to two
-sessions; it does not prevent a deliberate move.`,
+sessions; it does not prevent a deliberate move.
+
+Taking over a claim that has expired is allowed and needs no flag, but it is
+reported: whose claim it was and how long ago it was last renewed. Silence there
+would let two sessions work the same ticket with nothing anywhere saying so.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -88,6 +126,9 @@ sessions; it does not prevent a deliberate move.`,
 				}
 			}
 
+			// Read before the write, since claiming overwrites the evidence.
+			tookOver := staleClaimLine(t, sessionID)
+
 			now := time.Now()
 			t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
 				if err := t.Doc().SetScalar(ticket.FieldClaimedBy, sessionID); err != nil {
@@ -99,13 +140,20 @@ sessions; it does not prevent a deliberate move.`,
 				return err
 			}
 			if g.jsonOut {
-				return emit(cmd.OutOrStdout(), map[string]any{
+				out := map[string]any{
 					"claimed": true, "id": t.ID, "session": sessionID,
 					"expires_at": ticket.FormatTime(now.Add(ClaimTTL)),
-				})
+				}
+				if tookOver != "" {
+					out["took_over"] = tookOver
+				}
+				return emit(cmd.OutOrStdout(), out)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Claimed %s until %s\n",
 				ticket.Handle(t.ID), now.Add(ClaimTTL).Format("15:04"))
+			if tookOver != "" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", tookOver)
+			}
 			return nil
 		},
 	}

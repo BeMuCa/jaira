@@ -349,6 +349,7 @@ skipping this command.`,
 			if !all && len(ready) > 1 {
 				ready = ready[:1]
 			}
+			warnStaleClaims(cmd, ready)
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(ready))
 				for _, t := range ready {
@@ -408,6 +409,12 @@ func emitPerLane(cmd *cobra.Command, env gate.Env, ready []*ticket.Ticket) error
 		entries = append(entries, entry{lane: l, waiting: len(ts), first: ts[0]})
 	}
 
+	firsts := make([]*ticket.Ticket, 0, len(entries))
+	for _, e := range entries {
+		firsts = append(firsts, e.first)
+	}
+	warnStaleClaims(cmd, firsts)
+
 	if g.jsonOut {
 		out := make([]map[string]any, 0, len(entries))
 		for _, e := range entries {
@@ -431,6 +438,23 @@ func emitPerLane(cmd *cobra.Command, env gate.Env, ready []*ticket.Ticket) error
 			ticket.Handle(e.first.ID), e.first.Title)
 	}
 	return nil
+}
+
+// warnStaleClaims says, on stderr, when a ticket being handed out still carries
+// a claim that has expired.
+//
+// 'next' skips a ticket another live session holds and steps straight over an
+// abandoned one, which is the behaviour that keeps a dead session from wedging
+// the board. It used to do it in silence, so two sessions could work the same
+// ticket with nothing anywhere saying the second had walked over the first.
+// Stderr, so it cannot corrupt --json on stdout.
+func warnStaleClaims(cmd *cobra.Command, ts []*ticket.Ticket) {
+	id := session.DefaultID()
+	for _, t := range ts {
+		if line := staleClaimLine(t, id); line != "" {
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", line)
+		}
+	}
 }
 
 func sortByProgress(ts []*ticket.Ticket, env gate.Env) {
