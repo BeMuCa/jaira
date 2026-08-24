@@ -98,7 +98,7 @@ never met and destroys the meaning of the ticks.
 item does not read as achieved, `dod --done` on all remaining items still
 completes the ticket, and the round-trip tests cover `[-]`.
 
-## 4. The small package
+## 4. The small package — DONE (`260824-pvd`)
 
 Four separate frictions, one quick task, one commit each.
 
