@@ -97,3 +97,31 @@ func TestShowNotesLastReportsWhatItHid(t *testing.T) {
 		t.Errorf("the default show is no longer complete:\n%s", full)
 	}
 }
+
+// A listing row said who owns a ticket and nothing about how far it had got.
+func TestListShowsTheDoDCounter(t *testing.T) {
+	dir, id := dodTestStore(t)
+	if out, err := runCLI(t, dir, "dod", id, "1", "--done"); err != nil {
+		t.Fatalf("setup: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "list")
+	if err != nil {
+		t.Fatalf("list: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "[DoD 1/2]") {
+		t.Errorf("no DoD counter in the listing:\n%s", out)
+	}
+
+	// A superseded item counts as settled, the same way it does for the gate
+	// and for the board — otherwise a ticket that can be completed reads as 1/2
+	// for good.
+	if out, err := runCLI(t, dir, "dod", id, "2", "--superseded"); err != nil {
+		t.Fatalf("supersede: %v\n%s", err, out)
+	}
+	if out, err = runCLI(t, dir, "list"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "[DoD 2/2]") {
+		t.Errorf("a superseded item is not counted as settled:\n%s", out)
+	}
+}

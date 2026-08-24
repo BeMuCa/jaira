@@ -428,6 +428,17 @@ func matches(t *ticket.Ticket, q string) bool {
 	return false
 }
 
+// settledCount counts checklist items that are no longer outstanding — done or
+// superseded — matching the gate and the board's own counter.
+func settledCount(items []ticket.DoDItem) (done, total int) {
+	for _, it := range items {
+		if it.Settled() {
+			done++
+		}
+	}
+	return done, len(items)
+}
+
 func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 	// Group by lane in board order so the text output reads like the board.
 	byLane := map[string][]*ticket.Ticket{}
@@ -451,6 +462,12 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 		sort.Slice(group, func(i, j int) bool { return group[i].ID < group[j].ID })
 		for _, t := range group {
 			flags := ""
+			// How much of the definition of done is settled, which is the one
+			// thing this listing was missing that the board already showed: a
+			// row said who owns a ticket and nothing about how far it had got.
+			if done, total := settledCount(t.DoDItems); total > 0 {
+				flags += fmt.Sprintf(" [DoD %d/%d]", done, total)
+			}
 			if !gate.Ready(t) {
 				flags += " [needs spec]"
 			}
