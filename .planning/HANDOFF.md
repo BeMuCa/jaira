@@ -1,4 +1,4 @@
-# Handoff — 2026-08-21
+# Handoff — 2026-08-24
 
 State before a context clear; this file is the memory. The previous handoff
 (2026-08-18, the release and the team flow) is at `9cf71cc`. Everything below
@@ -94,7 +94,7 @@ branch `feature/requirements-coverage-elicitation`. Confirmed pipeline:
 
     backlog → todo → in-progress → critique ⇄ in-progress → optimize → review (he checks) → done
 
-- `.jaira/lanes/review.md` was rewritten there as a **human** lane
+- `.jaira/lanes/review.md` was rewritten there (on 2026-08-21) as a **human** lane
   (`agentic: false`, no contract, `requires-human-exit: true`, after optimize),
   and `signoff` was removed from that board. Reason, measured: 28 tickets sat in
   `review` with **zero** review fields and **zero** commits, and nothing had ever
