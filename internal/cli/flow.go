@@ -21,6 +21,7 @@ func newMoveCmd() *cobra.Command {
 		what, why, resolves      string
 		commits                  []string
 		force                    bool
+		dryRun                   bool
 		fromLane                 string
 	)
 	cmd := &cobra.Command{
@@ -35,7 +36,11 @@ is discovered. An agent that skips 'jaira next' and calls this directly is held
 to exactly the same rules.
 
 Moving to a lane the ticket is already in succeeds and changes nothing, so this
-command is safe to retry.`,
+command is safe to retry.
+
+--dry-run answers "would this be refused, and why" without writing anything: the
+same fields are staged in memory, the same gates run, and the exit code is the
+one the real move would have returned.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -155,11 +160,27 @@ command is safe to retry.`,
 				return nil
 			}
 
-			if _, err := s.Mutate(t.ID, staged); err != nil {
-				return err
-			}
-			if t, err = s.Load(t.ID); err != nil {
-				return err
+			// A dry run stages the same fields the real move would, in memory,
+			// and re-decodes so the gate sees exactly the ticket it would have
+			// seen. Nothing reaches the disk. This exists because the only way
+			// to ask "would this be refused, and why" used to be to try it: an
+			// agent created and deleted a throwaway ticket to find out, and one
+			// of the user's tickets was moved by accident probing a gate that
+			// turned out not to refuse.
+			if dryRun {
+				if err := staged(t); err != nil {
+					return err
+				}
+				if t, err = ticket.Decode(t.Doc(), t.Path); err != nil {
+					return err
+				}
+			} else {
+				if _, err := s.Mutate(t.ID, staged); err != nil {
+					return err
+				}
+				if t, err = s.Load(t.ID); err != nil {
+					return err
+				}
 			}
 			env, _, err = loadEnv(s)
 			if err != nil {
@@ -171,15 +192,12 @@ command is safe to retry.`,
 				Actor: identity(), ActorAliases: identityAliases(),
 			}
 			vs := gate.CheckAdvance(env, t, req)
+			if dryRun {
+				return reportDryRun(cmd, env, t, to, vs, force)
+			}
 			if len(vs) > 0 && !force {
-				code := ExitValidation
-				for _, v := range vs {
-					if v.Code == gate.CodeBlocked || v.Code == gate.CodeSelfBlock {
-						code = ExitBlocked
-					}
-				}
 				return &codedError{
-					code:       code,
+					code:       refusalCode(vs),
 					reason:     "gate_refused",
 					message:    fmt.Sprintf("cannot move %s to %s:\n%s", ticket.Handle(t.ID), to, bullets(vs)),
 					violations: vs,
@@ -219,6 +237,7 @@ command is safe to retry.`,
 	f.StringVar(&resolves, "resolves", "", "outcome: how the change satisfies the definition of done")
 	f.StringSliceVar(&commits, "commits", nil, "commit SHAs produced for this ticket")
 	f.BoolVar(&force, "force", false, "override gate refusals; recorded in the output")
+	f.BoolVar(&dryRun, "dry-run", false, "run the gates and report, writing nothing")
 	f.StringVar(&fromLane, "from-lane", "",
 		"read this lane's structured output as JSON on stdin and validate it against the lane's contract")
 	return cmd
@@ -231,6 +250,44 @@ func contains(xs []string, v string) bool {
 		}
 	}
 	return false
+}
+
+// reportDryRun says what the move would have done. The refusal is byte-identical
+// to the real one, down to the exit code, so a caller branches on a dry run
+// exactly as it branches on the move itself — the only difference is the line
+// saying nothing was written.
+func reportDryRun(cmd *cobra.Command, env gate.Env, t *ticket.Ticket, to string, vs gate.Violations, force bool) error {
+	if len(vs) > 0 && !force {
+		return &codedError{
+			code:       refusalCode(vs),
+			reason:     "gate_refused",
+			message:    fmt.Sprintf("cannot move %s to %s:\n%s\n\nnothing was written (--dry-run)", ticket.Handle(t.ID), to, bullets(vs)),
+			violations: vs,
+		}
+	}
+	if g.jsonOut {
+		return emit(cmd.OutOrStdout(), map[string]any{
+			"ticket": ticketJSON(t, env.Lanes), "moved": false, "reason": "dry_run",
+			"would_move": true, "overridden": force && len(vs) > 0,
+		})
+	}
+	w := cmd.OutOrStdout()
+	fmt.Fprintf(w, "%s → %s would be allowed; nothing was written (--dry-run)\n", ticket.Handle(t.ID), to)
+	if force && len(vs) > 0 {
+		fmt.Fprintf(w, "It would override %d gate refusal(s):\n%s\n", len(vs), bullets(vs))
+	}
+	return nil
+}
+
+// refusalCode maps a refusal to its exit code, so a dry run and the move it
+// stands in for cannot report different ones.
+func refusalCode(vs gate.Violations) int {
+	for _, v := range vs {
+		if v.Code == gate.CodeBlocked || v.Code == gate.CodeSelfBlock {
+			return ExitBlocked
+		}
+	}
+	return ExitValidation
 }
 
 func bullets(vs gate.Violations) string {

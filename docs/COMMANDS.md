@@ -84,7 +84,7 @@ to pass `--force` to everything, which protects nothing.
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
 | `jaira dod <id> --plan …` | address the Plan checklist instead of the definition of done |
 | `jaira dod <id> --option <name>` | turn an optional step on for this ticket (`--todo` turns it off) |
-| `jaira move <id> --to <lane>` | move lanes, applying the gates; `--what`, `--why`, `--resolves`, `--commits` (leaving the implementing lane), `--question` (entering the human lane), `--reason` (entering the blocked lane), `--from-lane` (validate piped lane output), `--force` |
+| `jaira move <id> --to <lane>` | move lanes, applying the gates; `--what`, `--why`, `--resolves`, `--commits` (leaving the implementing lane), `--question` (entering the human lane), `--reason` (entering the blocked lane), `--from-lane` (validate piped lane output), `--force`, `--dry-run` (run the gates and report, writing nothing — same exit code the real move would return) |
 | `jaira note <id> "…"` | record progress a later session would otherwise rediscover |
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide |
 | `jaira archive <id>` | take a ticket off the board (nothing is deleted) |

@@ -406,7 +406,17 @@ on stderr. Read `field` to learn what to supply, fix it, and retry.
 
 ## When a gate refuses
 
-It is telling you something is genuinely missing. Supply it. Do not reach for
-`--force` — it exists for the user, not for you, and every use is reported in the
+To ask first, add `--dry-run`: it stages the same fields, runs the same gates and
+returns the same exit code, and writes nothing.
+
+```bash
+jaira move <handle> --to review --dry-run
+```
+
+Use it instead of trying a move to find out — a move that turns out to be allowed
+has already happened.
+
+A refusal is telling you something is genuinely missing. Supply it. Do not reach
+for `--force` — it exists for the user, not for you, and every use is reported in the
 output for them to see. In the board the same override is `f`, which asks once
 more before it writes: also theirs, not yours.
