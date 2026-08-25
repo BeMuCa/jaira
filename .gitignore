@@ -1,0 +1,22 @@
+# `go build ./cmd/jaira` — the command CI itself runs — drops the binary here in
+# the repository root, so the one artifact a contributor is most likely to
+# produce is also the one most likely to be committed by accident.
+/jaira
+/jaira.exe
+
+# goreleaser writes its cross-platform matrix here.
+/dist/
+
+# Test binaries left behind by `go test -c`, and the coverage profile.
+*.test
+/coverage.out
+
+# Editor state. Not a judgement on anyone's editor: these files record window
+# layouts and cursor positions, which change on every click and belong to a
+# person rather than to the project.
+/.idea/
+/.vscode/
+
+# Finder and Explorer leave these in any directory a contributor happens to open.
+.DS_Store
+Thumbs.db
