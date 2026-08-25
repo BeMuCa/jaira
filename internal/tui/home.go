@@ -36,8 +36,13 @@ type HomeEntry struct {
 // Home is the launcher: the icon, and every board with what it is doing.
 type Home struct {
 	entries []HomeEntry
-	idx     int
-	lanes   *lane.Set
+
+	// drop is the board-removal screen, non-nil while it is up. The launcher is
+	// where a board most obviously wants removing — it is the list you are
+	// looking at when you notice one should not be on it.
+	drop  *dropBoard
+	idx   int
+	lanes *lane.Set
 
 	// browse is the directory picker, non-nil while adding a board.
 	browse *browser
@@ -191,6 +196,21 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return h, nil
 
 	case tea.KeyPressMsg:
+		if h.drop != nil {
+			done, removed := h.drop.key(msg.String())
+			if done {
+				name := h.drop.name
+				h.drop = nil
+				if removed {
+					h.refresh(nil)
+					if h.idx >= len(h.entries) {
+						h.idx = max(0, len(h.entries)-1)
+					}
+					h.msg = "removed " + name
+				}
+			}
+			return h, nil
+		}
 		if h.board != nil {
 			done, cmd := h.board.key(msg.String())
 			if done {
@@ -228,6 +248,15 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			h.refresh(nil)
 			h.msg = "reloaded"
+			return h, nil
+		case "x":
+			// Opens a screen rather than acting: removing a board is the one
+			// key on this list that cannot be taken back.
+			if h.idx < len(h.entries) {
+				e := h.entries[h.idx]
+				h.msg = ""
+				h.drop = newDropBoard(e.Root, e.Name, false)
+			}
 			return h, nil
 		case "d":
 			h.msg = ""
@@ -269,6 +298,9 @@ func (h *Home) View() tea.View {
 func (h *Home) render() string {
 	if h.width == 0 {
 		return "loading…"
+	}
+	if h.drop != nil {
+		return h.drop.render(h.width, h.height)
 	}
 	if h.board != nil {
 		return h.board.render(h.width, h.height)
@@ -332,7 +364,7 @@ func (h *Home) render() string {
 	}
 
 	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
-		"enter open · a add a board · d default board · r refresh · q quit", h.width))))
+		"enter open · a add a board · x remove a board · d default board · r refresh · q quit", h.width))))
 	if h.versionLine != "" {
 		b.WriteString("\n" + centre.Render(truncate(h.versionLine, h.width)))
 	}

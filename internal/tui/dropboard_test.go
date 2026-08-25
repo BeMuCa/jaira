@@ -7,12 +7,17 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func boardOnDisk(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(root, "home"))
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(root, "no-lanes"))
 	s, err := ticket.At(root)
 	if err != nil {
 		t.Fatal(err)
@@ -122,5 +127,48 @@ func TestDropBoardSaysTheCatalogueIsSafe(t *testing.T) {
 	out := stripANSI(newDropBoard(boardOnDisk(t), "demo", false).render(90, 30))
 	if !strings.Contains(out, "~/.jaira/lanes are never touched") {
 		t.Errorf("the screen does not say the catalogue is safe:\n%s", out)
+	}
+}
+
+// The launcher is the list you are looking at when you notice a board should
+// not be on it, and it is a different screen from the board's own switcher —
+// which is how x came to exist on one and not the other.
+func TestLauncherRemovesABoard(t *testing.T) {
+	root := boardOnDisk(t)
+	// The launcher shows the catalogue, since it spans every board rather than
+	// one project. NewHome refuses to build without it, so a test that skips it
+	// tests something production cannot reach.
+	lanes, err := lane.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &Home{width: 100, height: 30, lanes: lanes, entries: []HomeEntry{{Root: root, Name: "demo"}}}
+
+	if out := stripANSI(h.render()); !strings.Contains(out, "x remove a board") {
+		t.Errorf("the launcher does not offer it:\n%s", out)
+	}
+
+	h.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	if h.drop == nil {
+		t.Fatal("x did not open the removal screen")
+	}
+	if out := stripANSI(h.render()); !strings.Contains(out, "Remove board") {
+		t.Errorf("the removal screen is not shown:\n%s", out)
+	}
+
+	// Still starts on No.
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if _, err := os.Stat(filepath.Join(root, ticket.DirName)); err != nil {
+		t.Fatalf("enter on No removed the board: %v", err)
+	}
+
+	h.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	h.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	h.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if _, err := os.Stat(filepath.Join(root, ticket.DirName)); !os.IsNotExist(err) {
+		t.Errorf("the board survived: %v", err)
+	}
+	if h.drop != nil {
+		t.Error("the removal screen is still up")
 	}
 }
