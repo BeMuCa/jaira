@@ -154,6 +154,13 @@ type Model struct {
 	watch  chan struct{}
 	closer func()
 
+	// versionLine is the persistent "which version, is there an update"
+	// indicator, computed once at construction — see versionLine() in
+	// updatecheck.go for why not on every render. It survives switchBoard,
+	// since which jaira binary is running is a machine-level fact, not a
+	// per-board one.
+	versionLine string
+
 	width, height int
 }
 
@@ -180,7 +187,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine()}
 	m.me = identity.Current(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err

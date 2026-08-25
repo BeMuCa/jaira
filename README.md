@@ -52,6 +52,32 @@ install alongside it, no daemon, no database.
 `git` is optional. jaira works fine in a directory that is not a repository; you
 only lose the parts that are about sharing (`jaira share`, the merge driver).
 
+### Upgrading
+
+```bash
+jaira self upgrade
+```
+
+Replaces the binary in place with the latest release, verifying its checksum
+first, the same way the install script does. `--check` reports what is
+available without installing anything; `--version vX.Y.Z` installs that exact
+release, including going back to an older one. A Homebrew or `go install`
+build is refused with the right command for that install instead — jaira
+never overwrites a file another tool owns.
+
+jaira checks for a new release at most once a day, in the background, and
+never on the command path: nothing you run ever waits on the network for
+this. The result shows up as a small status line in the footer of the
+launcher and the board — `jaira v0.1.0 · up to date` or
+`jaira v0.1.0 · v0.2.0 available — run: jaira self upgrade` — never as a
+line from a CLI command, which stay quiet so a script or an agent driving
+jaira is never interrupted by it. Set `JAIRA_NO_UPDATE_CHECK=1` to turn the
+check off entirely; the version still shows, just without the "up to
+date"/"available" half.
+
+This is different from `jaira update`, just below, which is about a
+*repository's* board setup and downloads nothing.
+
 ## Start
 
 ```bash
@@ -303,6 +329,7 @@ jaira                      open the home screen: your boards, and what each need
 jaira board                open the board here directly
 jaira init                 prepare a repository
 jaira update               re-apply setup after upgrading
+jaira self upgrade         replace the jaira binary with the latest release
 jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket

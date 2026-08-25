@@ -27,6 +27,13 @@ var updateInProgress bool
 // cmd's streams, matching bindDriverIfShared, because it must reach the
 // terminal regardless of --json — stdout is reserved for the payload an agent
 // parses.
+//
+// Whether a newer *release* is published is a separate question this
+// function deliberately does not answer: that lives in the TUI's persistent
+// version indicator (internal/tui) instead, so CLI commands — the surface
+// agents and scripts drive — stay silent about it. See core/selfupdate/
+// cache.go for the cache both surfaces would read if a CLI-side nudge were
+// ever wanted again.
 func nudgeIfStale(s *ticket.Store) {
 	if release.Current == "dev" || updateInProgress {
 		return
