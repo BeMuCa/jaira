@@ -107,6 +107,11 @@ func (m *Model) render() string {
 		return m.renderBoard() // picker is drawn into the status bar
 	case modeDelete:
 		return m.renderDelete()
+	case modeDropBoard:
+		if m.drop != nil {
+			return m.drop.render(m.width, m.height)
+		}
+		return m.renderProjects()
 	}
 	return m.renderBoard()
 }
@@ -1009,7 +1014,7 @@ func (m *Model) renderProjects() string {
 		b.WriteString(marker + name + cur + "\n")
 		b.WriteString("    " + styMeta.Render(truncate(p.Root, m.width-6)) + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render("enter switch · esc back"))
+	b.WriteString("\n" + styMeta.Render("enter switch · x remove a board · esc back"))
 	return b.String()
 }
 
@@ -1049,6 +1054,7 @@ func (m *Model) renderHelp() string {
 			{"X", "on an open ticket: delete its file, after typing the handle back"},
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
+			{"x", "in that list: remove a board, choosing what goes (default no)"},
 			{"S", "settings: lanes (read a prompt, use it, publish it) and the default board"},
 		}},
 		{"Compact view", [][2]string{

@@ -46,6 +46,7 @@ const (
 	modeSettings
 	modeDefaultBoard
 	modeDelete
+	modeDropBoard
 )
 
 // Model is the board's state.
@@ -143,6 +144,9 @@ type Model struct {
 	// active. Both laneScreen and board are opened from it and, on esc,
 	// return to it rather than straight to the board.
 	settingsScreen *settingsScreen
+
+	// drop is the board-removal screen, non-nil while modeDropBoard is active.
+	drop *dropBoard
 
 	// board is the default board screen, non-nil while modeDefaultBoard is
 	// active. Reached only through settings — the launcher's own 'd' builds
@@ -902,6 +906,37 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.mode = modeBoard
 				return m, cmd
 			}
+		case "x":
+			// Removing a board is offered where you already stand looking at
+			// the list of them, and it opens a screen rather than acting: this
+			// is the one key on this screen that cannot be taken back.
+			if m.projIdx < len(m.projects) {
+				p := m.projects[m.projIdx]
+				m.drop = newDropBoard(p.Root, p.Name, p.Root == m.store.Root)
+				m.mode = modeDropBoard
+			}
+		}
+		return m, nil
+
+	case modeDropBoard:
+		if m.drop == nil {
+			m.mode = modeProjects
+			return m, nil
+		}
+		done, removed := m.drop.key(s)
+		if !done {
+			return m, nil
+		}
+		m.drop = nil
+		m.mode = modeProjects
+		if removed {
+			// Load drops any board whose .jaira is gone, so a fully removed one
+			// leaves the list by itself; a partly removed one stays, correctly.
+			m.projects = project.Load()
+			if m.projIdx >= len(m.projects) {
+				m.projIdx = max(0, len(m.projects)-1)
+			}
+			m.refreshLiveBoards()
 		}
 		return m, nil
 
