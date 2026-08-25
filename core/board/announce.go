@@ -65,6 +65,10 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  to be typed here; it is written onto the ticket once, when the ticket leaves\n" +
 	"  the board\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
+	"- on a board that has not been shared yet (`jaira init` gitignores `.jaira/`\n" +
+	"  until `jaira share`), the ticket file is untracked, so the only thing tying a\n" +
+	"  commit to a ticket is its handle in the commit message. Name it there —\n" +
+	"  `fix(A3K9QP): ...` — or the derived list stays empty and the move is refused\n" +
 	"- **the ticket rides in the same commit as the code.** Move the ticket first,\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +
@@ -82,9 +86,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.\n" +
 	"The human review lane cannot be left by an agent — a person accepts the work there.\n" +
 	"\n" +
-	"Anything written after the `jaira:local` marker (see below) and before the end\n" +
-	"marker survives the next time this section is regenerated, so project-specific\n" +
-	"rules belong there rather than fighting this note from outside it."
+	"A `jaira:local` marker — an HTML comment of that name — added by hand anywhere\n" +
+	"inside this block makes everything between it and the end marker survive the\n" +
+	"next regeneration. Nothing writes it for you, and there is none here until\n" +
+	"somebody adds one; project-specific rules belong behind it rather than fighting\n" +
+	"this note from outside the block."
 
 // agentFiles are the instruction files coding agents read.
 //

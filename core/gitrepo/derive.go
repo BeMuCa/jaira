@@ -20,6 +20,20 @@ func (r *Repo) CommitsForTicket(ticketPath, ticketID string) ([]string, error) {
 	if !Available() {
 		return nil, ErrNoGit
 	}
+	// An id this tool would not have written is not searched for. Both forms go
+	// into an extended regular expression below, and nothing escapes them —
+	// a hand-edited "id: .*" would match every commit in the repository and
+	// stamp the lot onto the ticket, silently, since archive derives
+	// best-effort and discards its error. Load does not reject a malformed id
+	// (only 'jaira validate' reports one, as an error), so the file format
+	// being hand-editable makes this reachable rather than theoretical.
+	//
+	// Deriving nothing is the right answer here, not deriving something: an id
+	// that is not a ULID is damage, and this list is what somebody reads months
+	// later to recover why a change was made.
+	if !ticket.ValidID(ticketID) {
+		return nil, nil
+	}
 
 	found := map[string]bool{}
 

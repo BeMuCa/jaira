@@ -243,3 +243,26 @@ func equalSlices(a, b []string) bool {
 	}
 	return true
 }
+
+// Both forms of the id are interpolated into an extended regular expression, so
+// an id carrying metacharacters would match commits that have nothing to do
+// with the ticket — and archive stamps what this returns without asking. A
+// hand-edited ticket is the reachable path: Load accepts any id, and only
+// 'jaira validate' reports a non-ULID one, as an error.
+func TestCommitsForTicketRefusesAnIDItWouldNotHaveWritten(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	base := time.Date(2026, 8, 23, 10, 0, 0, 0, time.UTC)
+	for i, msg := range []string{"unrelated one", "unrelated two", "unrelated three"} {
+		fixtureCommit(t, dir, map[string]string{fmt.Sprintf("f%d.txt", i): "x"}, msg, base.Add(time.Duration(i)*time.Minute))
+	}
+
+	for _, id := range []string{".*", "^", "[A-Z]", "x|y", ""} {
+		shas, err := repo.CommitsForTicket(filepath.Join(dir, ".jaira", "tickets", "x.md"), id)
+		if err != nil {
+			t.Fatalf("id %q: %v", id, err)
+		}
+		if len(shas) != 0 {
+			t.Errorf("id %q derived %d commit(s) it has nothing to do with: %v", id, len(shas), shas)
+		}
+	}
+}
