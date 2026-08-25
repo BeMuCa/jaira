@@ -41,7 +41,7 @@ const repo = "BeMuCa/jaira"
 // is not something a user should be choosing per invocation, and a flag
 // would let it be slipped into a copy-pasted command line.
 func apiBase() string {
-	if v := os.Getenv("JAIRA_RELEASE_API"); v != "" {
+	if v := overrideOf("JAIRA_RELEASE_API"); v != "" {
 		return v
 	}
 	return "https://api.github.com/repos/" + repo
@@ -51,10 +51,58 @@ func apiBase() string {
 // downloaded from. Same env-only override and the same reasoning as
 // apiBase.
 func downloadBase() string {
-	if v := os.Getenv("JAIRA_RELEASE_DOWNLOADS"); v != "" {
+	if v := overrideOf("JAIRA_RELEASE_DOWNLOADS"); v != "" {
 		return v
 	}
 	return "https://github.com/" + repo + "/releases/download"
+}
+
+// overrideOf reads one of the two host overrides, refusing any scheme that is
+// not https or a loopback http address.
+//
+// These overrides move the trust root, not just the address: checksums.txt is
+// fetched from the same base as the archive it certifies, so pointing them
+// somewhere else means the verification compares an archive against that same
+// host's own digest. The end of that path is Replace() writing over the running
+// binary.
+//
+// They exist because the test suite serves a whole release from an
+// httptest.Server rather than requiring network access, which is why plain http
+// on a loopback address is still allowed. Everything else must be https: a
+// downgrade to cleartext would leave the one remaining protection — TLS to a
+// host somebody chose deliberately — with nothing behind it.
+//
+// Overriding is also reported by the commands that act on it, so a value set in
+// a shell profile or a CI job cannot redirect an upgrade silently.
+func overrideOf(name string) string {
+	v := strings.TrimSpace(os.Getenv(name))
+	if v == "" {
+		return ""
+	}
+	if strings.HasPrefix(v, "https://") {
+		return v
+	}
+	if rest, ok := strings.CutPrefix(v, "http://"); ok {
+		host, _, _ := strings.Cut(rest, "/")
+		if h, _, found := strings.Cut(host, ":"); found || h == host {
+			if h == "localhost" || h == "127.0.0.1" || h == "[::1]" || h == "::1" {
+				return v
+			}
+		}
+	}
+	return ""
+}
+
+// Overridden reports which of the two host overrides are in effect, so a
+// command can name them before it replaces a binary with what they served.
+func Overridden() []string {
+	var out []string
+	for _, name := range []string{"JAIRA_RELEASE_API", "JAIRA_RELEASE_DOWNLOADS"} {
+		if v := overrideOf(name); v != "" {
+			out = append(out, name+"="+v)
+		}
+	}
+	return out
 }
 
 // maxDownload bounds every remote response body this package reads. An

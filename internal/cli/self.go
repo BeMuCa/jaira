@@ -66,7 +66,7 @@ pins (or downgrades to) an exact release.`,
 			if err != nil {
 				return err
 			}
-			selfupdate.Sweep(filepath.Dir(target))
+			selfupdate.Sweep(target)
 
 			// Every guard below runs before any network call, because a
 			// refusal must be reachable on a machine with no network at
@@ -124,7 +124,14 @@ pins (or downgrades to) an exact release.`,
 				// "what did we last learn" logic in exactly one place. The
 				// write error is ignored: a best-effort cache must never
 				// turn a successful --check into a failure.
-				_ = selfupdate.Write(selfupdate.Check{CheckedAt: now, Latest: rel.Version})
+				//
+				// Not from a dev build, though: the cache exists to feed the
+				// TUI's version line, and a dev build cannot be compared to a
+				// published version at all. Writing it there would have the
+				// footer report an answer to a question this build cannot ask.
+				if !dev {
+					_ = selfupdate.Write(selfupdate.Check{CheckedAt: now, Latest: rel.Version})
+				}
 				if g.jsonOut {
 					return emit(w, payload(false))
 				}
@@ -135,6 +142,9 @@ pins (or downgrades to) an exact release.`,
 					fmt.Fprintf(w, "jaira %s is already the latest release\n", release.Current)
 				default:
 					fmt.Fprintf(w, "jaira %s is available (you have %s)\n", rel.Version, release.Current)
+				}
+				for _, o := range selfupdate.Overridden() {
+					fmt.Fprintf(cmd.ErrOrStderr(), "warning: release host overridden by %s\n", o)
 				}
 				return nil
 			}
@@ -160,6 +170,14 @@ pins (or downgrades to) an exact release.`,
 				return emit(w, payload(true))
 			}
 			fmt.Fprintf(w, "upgraded jaira %s -> %s (%s)\n", release.Current, rel.Version, target)
+			// A binary was just replaced with bytes from somewhere other than
+			// the default host. That is allowed, and it is not going to happen
+			// quietly: an override lives in a shell profile or a CI job, where
+			// nobody reads it, and unlike a flag it does not appear in the
+			// command anyone ran.
+			for _, o := range selfupdate.Overridden() {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: release host overridden by %s\n", o)
+			}
 			fmt.Fprintf(w, "run 'jaira update' in each repository to bring its board setup in step.\n")
 			return nil
 		},

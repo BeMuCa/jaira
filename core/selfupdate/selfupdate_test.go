@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -219,7 +220,11 @@ func TestFullFetchAndReplaceOverwritesTargetAtomically(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fi.Mode().Perm()&0o111 == 0 {
+	// Windows has no POSIX permission bits: os.Chmod there toggles the
+	// read-only attribute and Perm() comes back 0666, so this bit can never be
+	// set and asserting it says nothing about whether the file runs. The
+	// content and atomicity assertions above are the portable part.
+	if runtime.GOOS != "windows" && fi.Mode().Perm()&0o111 == 0 {
 		t.Errorf("target mode = %v, want it executable", fi.Mode())
 	}
 

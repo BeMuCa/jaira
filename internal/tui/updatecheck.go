@@ -29,6 +29,16 @@ import (
 // alone rather than claiming "up to date": that would assert a fact nobody
 // has actually verified.
 func versionLine() string {
+	// A build that is not a published release has nothing to compare itself to.
+	// release.Current is "dev" in every source build — which is what every
+	// contributor runs — and comparing that string to a published version can
+	// only ever say "different", so the footer would advertise an upgrade to
+	// code *older* than the code being run, pointing at a command that then
+	// refuses with dev_build. Saying only which build this is follows the same
+	// rule as the !known case below: never assert a fact nobody has checked.
+	if release.Current == "dev" {
+		return styMeta.Render("jaira dev")
+	}
 	latest, known := selfupdate.PollCache()
 	switch {
 	case !known:

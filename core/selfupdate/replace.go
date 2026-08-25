@@ -25,5 +25,6 @@ func Replace(target string, bin []byte) error {
 
 // Sweep is a no-op on unix. There is nothing to sweep because Replace never
 // needs to rename anything out of the way before it can write — unix simply
-// does not need this.
-func Sweep(dir string) int { return 0 }
+// does not need this. It takes the target, not a directory, so the Windows
+// build can anchor its pattern to jaira's own name.
+func Sweep(target string) int { return 0 }

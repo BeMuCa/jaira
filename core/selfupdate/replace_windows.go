@@ -17,7 +17,7 @@ import (
 // fails, the old file is renamed back so a failed upgrade leaves the install
 // exactly as it was rather than half-swapped.
 func Replace(target string, bin []byte) error {
-	Sweep(filepath.Dir(target))
+	Sweep(target)
 
 	tmp, err := stage(target, bin)
 	if err != nil {
@@ -36,12 +36,18 @@ func Replace(target string, bin []byte) error {
 	return nil
 }
 
-// Sweep removes the *.old-* files a previous Replace left behind. The
-// previous run's process is no longer running by the time a later run
+// Sweep removes the .old-<pid> files a previous Replace of target left behind.
+// The previous run's process is no longer running by the time a later run
 // starts, so this is where those leftovers actually get to die. Removal
 // errors are ignored — a still-locked file simply gets swept next time.
-func Sweep(dir string) int {
-	matches, err := filepath.Glob(filepath.Join(dir, "*.old-*"))
+//
+// It takes the target rather than its directory so the pattern can be anchored
+// to jaira's own name. Renaming the running image aside as .old-<pid> is the
+// standard way this is done on Windows, so a shared bin directory can hold
+// another self-updating tool's backup — and an unanchored "*.old-*" would
+// delete it.
+func Sweep(target string) int {
+	matches, err := filepath.Glob(target + ".old-*")
 	if err != nil {
 		return 0
 	}

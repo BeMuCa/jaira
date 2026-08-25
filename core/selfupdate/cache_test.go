@@ -24,6 +24,11 @@ func TestPathHonorsJairaHome(t *testing.T) {
 func TestPathNeverLandsInARepository(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	// os.UserHomeDir reads USERPROFILE on Windows and HOME everywhere else, so
+	// setting only HOME let this walk straight past the temp home to the real
+	// one and fail on the Windows runner — the assertion could not see what it
+	// was asserting about.
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("JAIRA_HOME", "")
 	repo := t.TempDir()
 	restore := chdir(t, repo)
