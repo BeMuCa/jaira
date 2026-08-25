@@ -46,9 +46,21 @@ var (
 
 const minColWidth = 22
 
-// View satisfies tea.Model.
+// View satisfies tea.Model, and is where every screen is clamped to the
+// terminal.
+//
+// The clamp lives here, once, rather than being trusted to each screen. A line
+// wider than the terminal does not spill — it wraps, silently pushing
+// everything below it down a line, so one long warning could shove a footer off
+// the bottom of a screen that had carefully measured its own height. Screens
+// that already fit themselves lose nothing to this; the ones that never did
+// stop being able to break the layout at all.
 func (m *Model) View() tea.View {
-	v := tea.NewView(m.render())
+	out := m.render()
+	if m.width > 0 && m.height > 0 {
+		out = clampBlock(out, m.width, m.height)
+	}
+	v := tea.NewView(out)
 	// In v2 the alternate screen is declared on the view rather than requested
 	// with a command.
 	v.AltScreen = true
@@ -1049,14 +1061,42 @@ func (m *Model) renderHelp() string {
 	for _, s := range sections {
 		b.WriteString(styLaneTitle.Render(s.name) + "\n")
 		for _, k := range s.keys {
-			fmt.Fprintf(&b, "  %s  %s\n", styHelpKey.Render(fmt.Sprintf("%-9s", k[0])), styMeta.Render(k[1]))
+			// Wrapped to the terminal rather than left to run past it. The
+			// clamp in View would otherwise cut these descriptions off, and a
+			// key whose explanation ends mid-sentence teaches nothing.
+			fmt.Fprintf(&b, "  %s  %s\n", styHelpKey.Render(fmt.Sprintf("%-9s", k[0])),
+				styledWrap(styMeta, k[1], max(9, m.width-15), 13))
 		}
 		b.WriteString("\n")
 	}
 
-	b.WriteString(styMeta.Render(
-		"Gates are enforced here exactly as on the command line: a ticket needs a goal,\n" +
-			"a definition of done, context and an assignee before it can leave the backlog.\n"))
+	// The marks a card can carry. They are the board's whole vocabulary for
+	// state — every one of them is a glyph plus a word, never colour alone —
+	// and until now the only place that explained them was the source. Styled
+	// exactly as the cards style them, so this reads as a key to the board
+	// rather than as a list of names for things.
+	b.WriteString(styLaneTitle.Render("What a card can say") + "\n")
+	for _, k := range [][2]string{
+		{styWarn.Render("○ spec"), "not specified enough to leave the backlog"},
+		{styErr.Render("■ blocked"), "waiting on a ticket that is not done"},
+		{styAsks.Render("▲ asks"), "a question is waiting for you to answer it"},
+		{styReview.Render("◆ sign off"), "finished work waiting for a person to accept it"},
+		{styAgentic.Render("◇ unworked"), "its lane has not produced what it declares yet"},
+		{styAsks.Render("✎ name"), "somebody else wrote this ticket last"},
+		{styMeta.Render("Plan 2/5"), "checklist progress: settled steps of the plan"},
+		{styMeta.Render("DoD 2/5"), "the same for the definition of done; [-] counts as settled"},
+		{styOK.Render("✓ 3"), "commits recorded on the ticket"},
+		{styAgentic.Render("sonnet"), "the model that last ran a lane on it"},
+		{styMeta.Render("@name"), "who owns the outcome"},
+	} {
+		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
+	}
+	b.WriteString("\n")
+
+	b.WriteString(styledWrap(styMeta,
+		"Gates are enforced here exactly as on the command line: a ticket needs a goal, "+
+			"a definition of done, context and an assignee before it can leave the backlog.",
+		max(20, m.width-2), 0) + "\n")
 
 	if len(m.warnings) > 0 {
 		b.WriteString("\n" + styWarn.Render("Warnings") + "\n")
@@ -1064,8 +1104,11 @@ func (m *Model) renderHelp() string {
 			b.WriteString("  " + styWarn.Render("⚠ ") + truncate(w, m.width-4) + "\n")
 		}
 	}
-	b.WriteString("\n" + styMeta.Render("esc back"))
-	return b.String()
+	// Scrolled, not dumped: this screen is longer than most terminals — longer
+	// still since it explains the card marks — and a help page whose top half
+	// has scrolled out of reach, taking its own "esc back" with it, is the one
+	// screen where being unreadable is unforgivable.
+	return m.clipToWindow(b.String(), "↓ ↑ scroll · esc back")
 }
 
 func missing(t *ticket.Ticket) []string {
@@ -1086,6 +1129,35 @@ func missing(t *ticket.Ticket) []string {
 		out = append(out, "assignee")
 	}
 	return out
+}
+
+// padDisplay right-pads to a display width, counting what the terminal shows
+// rather than bytes. fmt's %-11s counts bytes, so a string carrying ANSI colour
+// or a wide glyph — which every card mark does — would be padded to the wrong
+// place and the column behind it would stagger.
+// styledWrap wraps text to a width and styles each line on its own.
+//
+// lipgloss pads a multi-line block out to its widest line, so styling the
+// wrapped text in one call leaves trailing spaces on every short line —
+// invisible until something counts them, which the clamp in View does.
+func styledWrap(sty lipgloss.Style, text string, width, indent int) string {
+	pad := strings.Repeat(" ", indent)
+	lines := strings.Split(wrap(text, width, 0), "\n")
+	for i, l := range lines {
+		if i == 0 {
+			lines[i] = sty.Render(l)
+			continue
+		}
+		lines[i] = pad + sty.Render(l)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func padDisplay(s string, n int) string {
+	if w := lipgloss.Width(s); w < n {
+		return s + strings.Repeat(" ", n-w)
+	}
+	return s
 }
 
 // truncate cuts to a display width, counting grapheme width rather than bytes so

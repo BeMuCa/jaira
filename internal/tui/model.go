@@ -797,8 +797,24 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case modeHelp:
-		if s == "esc" || s == "q" || s == "enter" || s == "?" {
+		switch s {
+		case "esc", "q", "enter", "?":
 			m.mode = modeBoard
+			m.detailScroll = 0
+		// The help is taller than most terminals, so it scrolls with the same
+		// keys an open ticket does rather than inventing a second vocabulary.
+		case "down", "j":
+			m.detailScroll++
+		case "up", "k":
+			if m.detailScroll > 0 {
+				m.detailScroll--
+			}
+		case "pgdown", "ctrl+d":
+			m.detailScroll += max(1, m.height-4)
+		case "pgup", "ctrl+u":
+			m.detailScroll = max(0, m.detailScroll-max(1, m.height-4))
+		case "g":
+			m.detailScroll = 0
 		}
 		return m, nil
 
@@ -1024,6 +1040,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case "?":
 		m.mode = modeHelp
+		m.detailScroll = 0
 	case "p":
 		// The list can change while the TUI is open (another board opened
 		// elsewhere), so this reload stays — it is just no longer the only place

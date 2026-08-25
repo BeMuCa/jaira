@@ -252,10 +252,18 @@ func TestHelpRenders(t *testing.T) {
 	m := newTestModel(t, 100, 40)
 	m.mode = modeHelp
 	out := stripANSI(m.render())
-	for _, want := range []string{"Move around", "filter", "create a ticket", "Gates are enforced"} {
+	for _, want := range []string{"Move around", "filter", "create a ticket"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("help missing %q", want)
 		}
+	}
+	// The help is taller than the terminal and scrolls, so the closing note is
+	// below the fold rather than absent. Scroll to it: the assertion is that it
+	// is reachable, which is the property that matters once a screen has more
+	// to say than a screen can hold.
+	m.detailScroll = 200
+	if bottom := stripANSI(m.render()); !strings.Contains(bottom, "Gates are enforced") {
+		t.Errorf("help missing %q even at the bottom:\n%s", "Gates are enforced", bottom)
 	}
 }
 
