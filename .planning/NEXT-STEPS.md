@@ -1,8 +1,8 @@
-# Next tasks — 2026-08-24 (second list)
+# Next tasks — 2026-08-25 (third list)
 
-**Read `HANDOFF.md` first.** The previous list of seven is finished; every item
-is marked DONE in the git history and in `.planning/STATE.md`. This is what is
-left, and none of it has been started.
+**Read `HANDOFF.md` first.** The list of seven is finished, and so is the first
+round of outside contributions: PRs #1, #2, #3 (reduced) and #5 are merged, and
+issue #4 is answered by #5. This is what is left.
 
 ## Ground rules (unchanged)
 
@@ -52,6 +52,22 @@ commits landed on 2026-08-24 alone. Cutting it means a `## 0.1.1` block in
 **Worth deciding first:** `[-]` changes what an existing hand-written `[-]` means
 (it used to parse as todo and now stops blocking completion). That belongs in the
 release notes as a behaviour change, not buried in a feature list.
+
+## 4. The contributor's two open threads
+
+Both were merged with my fixes on top rather than waiting for a reply, so the
+next session should expect a response and read it as review, not as noise.
+
+- **#3's second commit was deliberately not taken.** It makes the board window
+  state and gives it a `scrolloff` margin — a different answer to the problem
+  `3067c44` solved by centring. If he makes the case that the margin still buys
+  something once he sees centring running, that is its own PR. `z` and the
+  hidden-lane notice are in.
+- **#2's `--version` pin can still downgrade**, and `versionLine` compares
+  versions by string equality, so a yanked release or one older than the running
+  binary reads as "available" on a real release. Called out in the review,
+  deliberately not fixed: ordering versions needs a comparison this project does
+  not have yet.
 
 ## Also open, no decision
 

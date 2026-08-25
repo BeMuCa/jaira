@@ -11,10 +11,12 @@ now a second, shorter list.
 
 ## Where things are
 
-- **Public: https://github.com/BeMuCa/jaira** — clean tree. **`master` is 11
-  commits ahead of origin** (`96462ea`..`3067c44`): the session that worked the
-  list of seven did not push, because pushing is the user's call. CI was last
-  green at `e51f9ae`; the eleven have not been through it.
+- **Public: https://github.com/BeMuCa/jaira** — clean tree, pushed, CI green.
+- **The first outside contributions are in** (2026-08-25): PRs #1, #2, #5 merged
+  whole, #3 reduced to its `z` half. Issue #4 is answered by #5. Every one of
+  them was merged with my review fixes as a commit on top, named
+  `fix(#N review): ...`, so what I changed about someone else's work is legible
+  as its own diff rather than folded into the merge.
 - The user's binary: `~/.local/bin/jaira`, built from `3067c44`.
   `go build -o ~/.local/bin/jaira ./cmd/jaira` — never `go install`. **Rebuild
   it after every change**: a stale binary made `jaira whoami` look broken.
@@ -116,14 +118,31 @@ branch `feature/requirements-coverage-elicitation`. Confirmed pipeline:
   Moved back and `git checkout`ed; verified identical to HEAD. Lesson: there is
   no `--dry-run`, so never probe a gate with a live `move` on his board.
 
+## The agent block now describes the board (`0e7db74`)
+
+Worth knowing before touching `core/board`: the generated block in `CLAUDE.md`
+and `AGENTS.md` used to be one `const string`. It taught the commands and said
+nothing about *this* board's lanes, so an agent had to discover the route by
+running `jaira lanes` — and would often not. That is the mechanism behind the
+twelve uncritiqued tickets, not a lazy model.
+
+It now renders the board's own lanes: order, any declared loop, and per lane
+whose it is. `core/board` still imports only the stdlib — it takes plain
+`LaneFact` values and the two packages that already load lanes do the
+translation. Empty facts render nothing, so the lane-less note is still exactly
+reproducible.
+
+**Nothing runs by itself, and that has not changed.** Board-spawned agents are a
+non-goal in the README, and the only `exec.Command` calls in the whole codebase
+launch the user's `$EDITOR`. What was missing was never a runner; it was the
+board telling the session what to do next, which is what this writes down.
+
 ## What to do next
 
-**First: the eleven commits are unpushed.** Ask before pushing.
-
-`NEXT-STEPS.md` is the execution list. It now holds three items — dependencies
-that live in prose rather than in `blocked-by`, the stale `board.png`, and the
-uncut v0.1.1 — plus two open questions with no decision yet. A session starting
-from "go" works it top to bottom, one `/gsd:quick` per item.
+`NEXT-STEPS.md` is the execution list: dependencies that live in prose rather
+than in `blocked-by`, the stale `board.png`, the uncut v0.1.1, and the two
+threads left open with the contributor. A session starting from "go" works it
+top to bottom, one `/gsd:quick` per item.
 
 ## The list of seven, all done (2026-08-24)
 
