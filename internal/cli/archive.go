@@ -60,6 +60,13 @@ should never have existed. It asks for the handle typed back first.`,
 			if err != nil {
 				return err
 			}
+			// Stamp what git can find before the ticket leaves the board —
+			// the same moment 'jaira sync' stamps at. Best-effort here:
+			// archive has never required commits and must not start
+			// refusing because a derivation found nothing.
+			if env, _, envErr := loadEnv(s); envErr == nil {
+				_, _ = stampCommits(s, t, env.DeriveCommits)
+			}
 			dst, err := s.Archive(args[0])
 			if err != nil {
 				return err

@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/release"
@@ -188,6 +189,7 @@ Exit codes:
 		newArchiveCmd(),
 		newRestoreCmd(),
 		newDeleteCmd(),
+		newSyncOutCmd(),
 		newNoteCmd(),
 		newResumeCmd(),
 		newMoveCmd(),
@@ -264,7 +266,21 @@ func loadEnv(s *ticket.Store) (gate.Env, []*ticket.Ticket, error) {
 			fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", w)
 		}
 	}
-	return gate.Env{Lanes: lanes, All: all}, all, nil
+	repo := &gitrepo.Repo{Dir: s.Root}
+	return gate.Env{
+		Lanes: lanes,
+		All:   all,
+		// Reaches git only when the gate actually needs it: CheckAdvance calls
+		// this closure only for a ticket recording no commits of its own, at
+		// the requires-commits lane, never merely to render the board.
+		DeriveCommits: func(t *ticket.Ticket) []string {
+			shas, err := repo.CommitsForTicket(t.Path, t.ID)
+			if err != nil {
+				return nil
+			}
+			return shas
+		},
+	}, all, nil
 }
 
 // emit writes a value as JSON.

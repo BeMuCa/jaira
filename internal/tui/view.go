@@ -305,7 +305,7 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 
 	// State is shown with a glyph plus a word, never colour alone.
 	var flags []string
-	env := gate.Env{Lanes: m.lanes, All: m.tickets}
+	env := m.gateEnv()
 	if !gate.Ready(t) {
 		flags = append(flags, styWarn.Render("○ spec"))
 	}

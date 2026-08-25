@@ -23,6 +23,13 @@ are different questions: under the default ordering a deep queue in a late lane
 hides every earlier lane, so a step inserted mid-pipeline never sees traffic
 until the queue ahead of it drains.
 
+A lane that requires commits is normally satisfied without typing a sha: jaira
+derives the list itself, as the union of the ticket file's own git history and
+any commit naming the ticket's id in its message, recorded oldest-first. The
+derivation runs only when the ticket records no commits of its own, and it is
+written onto the ticket for good the moment the ticket leaves the board —
+`jaira sync` or `jaira archive`, whichever comes first.
+
 Every ticket in a `--json` payload carries `next_lane`: where it goes when the
 step it is in is finished, with the ticket's own Options applied and parking and
 question lanes left out. Empty means there is nowhere left to go, and also
@@ -84,11 +91,12 @@ to pass `--force` to everything, which protects nothing.
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
 | `jaira dod <id> --plan …` | address the Plan checklist instead of the definition of done |
 | `jaira dod <id> --option <name>` | turn an optional step on for this ticket (`--todo` turns it off) |
-| `jaira move <id> --to <lane>` | move lanes, applying the gates; `--what`, `--why`, `--resolves`, `--commits` (leaving the implementing lane), `--question` (entering the human lane), `--reason` (entering the blocked lane), `--from-lane` (validate piped lane output), `--force`, `--dry-run` (run the gates and report, writing nothing — same exit code the real move would return) |
+| `jaira move <id> --to <lane>` | move lanes, applying the gates; `--what`, `--why`, `--resolves`, `--commits` (an override — the commits requirement is normally satisfied by jaira's own git-derived list; pass this only to force a specific set), `--question` (entering the human lane), `--reason` (entering the blocked lane), `--from-lane` (validate piped lane output), `--force`, `--dry-run` (run the gates and report, writing nothing — same exit code the real move would return) |
 | `jaira note <id> "…"` | record progress a later session would otherwise rediscover |
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide; taking over a lease that has expired is allowed and is reported, on stderr and as `took_over` in `--json` |
-| `jaira archive <id>` | take a ticket off the board (nothing is deleted) |
-| `jaira restore <file>` | put an archived ticket back |
+| `jaira archive <id>` | take a ticket off the board (nothing is deleted); stamps derived commits first, best-effort |
+| `jaira sync [id]` | take a terminal-lane ticket off the board into `.jaira/sync/<initials>-<yyyymmdd>/`, stamping its derived commits first; with no argument, lists what has been synced. Exit codes: 3 if the ticket has not reached the terminal lane, 5 for an unknown id, 2 for too many arguments |
+| `jaira restore <file>` | put an archived or synced ticket back |
 | `jaira delete <id>` | remove a ticket's file for good; asks for the handle typed back, `--force` skips it. Refused while another ticket still points at it. Archive is almost always what you want |
 | `jaira resolve <id>` | settle the fields a merge could not |
 | `jaira share` | publish the board; `--undo` makes it private again |
