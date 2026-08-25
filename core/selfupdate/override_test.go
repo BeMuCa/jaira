@@ -41,3 +41,30 @@ func TestReleaseHostOverrideHonoursHTTPSAndLoopback(t *testing.T) {
 		}
 	}
 }
+
+// The refresher re-execs the running binary as "<exe> self upgrade --check",
+// which only means anything if that binary is jaira. Inside a Go test binary it
+// runs the whole suite again, detached — reaching the network the test suite
+// promises not to touch, and on Windows holding its own image open so 'go test'
+// cannot remove it after every test has passed. That is how this was found:
+// master went red on the Windows runner with every package reporting ok.
+func TestSpawnRefreshDoesNothingFromATestBinary(t *testing.T) {
+	if err := SpawnRefresh(); err != nil {
+		t.Fatalf("SpawnRefresh from a test binary: %v", err)
+	}
+	// The guard is what makes the call above a no-op; assert it directly too,
+	// on both platforms' naming.
+	for _, exe := range []string{
+		"/tmp/go-build123/b001/tui.test",
+		`C:\Users\x\AppData\Local\Temp\go-build1\b301\tui.test.exe`,
+	} {
+		if !isTestBinary(exe) {
+			t.Errorf("isTestBinary(%q) = false, want true", exe)
+		}
+	}
+	for _, exe := range []string{"/home/berk/.local/bin/jaira", `C:\bin\jaira.exe`, "/usr/local/bin/jaira-dev"} {
+		if isTestBinary(exe) {
+			t.Errorf("isTestBinary(%q) = true, want false — a real install must still refresh", exe)
+		}
+	}
+}

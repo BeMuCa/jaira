@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -130,6 +131,15 @@ func SpawnRefresh() error {
 	if err != nil {
 		return err
 	}
+	// Never from inside a test binary. The child is invoked as
+	// "<exe> self upgrade --check --json", which only means anything if exe is
+	// jaira; a Go test binary has no such command and simply runs its whole
+	// suite again, detached, reaching the network on the way. On Windows it
+	// then holds its own image open and 'go test' fails to remove it after
+	// every test has passed — which is exactly how this was found.
+	if isTestBinary(exe) {
+		return nil
+	}
 	devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
 	if err != nil {
 		return err
@@ -140,6 +150,14 @@ func SpawnRefresh() error {
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = devNull, devNull, devNull
 	cmd.Env = append(os.Environ(), "JAIRA_NO_UPDATE_CHECK=1")
 	return cmd.Start()
+}
+
+// isTestBinary reports whether exe is a Go test binary, which 'go test' names
+// <package>.test (plus .exe on Windows).
+func isTestBinary(exe string) bool {
+	base := filepath.Base(exe)
+	base = strings.TrimSuffix(base, ".exe")
+	return strings.HasSuffix(base, ".test")
 }
 
 // PollCache returns the last known "latest published release" answer,
