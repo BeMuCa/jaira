@@ -237,6 +237,12 @@ That returns the prompt, only the declared fields, and the diff of the ticket's
 own commits. If the agent chose its own context, the contract would be a
 suggestion.
 
+Both agent files (`CLAUDE.md`, `AGENTS.md`) carry a generated block naming this
+board's lanes in order, any loop a lane declares, and for each lane whether an
+agent may work it at all. It also says the thing that is easy to assume wrong:
+nothing runs by itself. A lane's prompt fires because a session ran it, and
+`jaira next --per-lane` is how that session finds the lane with work waiting.
+
 A teammate without your `critique` lane still sees those tickets, in a read-only
 passthrough column. Hiding them would be the worse failure.
 

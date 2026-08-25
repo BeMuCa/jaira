@@ -83,7 +83,7 @@ to pass `--force` to everything, which protects nothing.
 | Command | What it does |
 |---|---|
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md` |
-| `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it |
+| `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it. Regenerates the agent block, including the section describing this board's own lanes, so adopting a lane is when the note catches up with the board |
 | `jaira self upgrade` | replace the running jaira binary with the latest release, verifying its checksum first; `--check` reports without installing, `--version vX.Y.Z` pins or downgrades; refuses a Homebrew or `go install` build, naming the right way to upgrade that install instead. Whether a newer release exists is checked at most once a day in the background and shown as a status line in the launcher's and the board's footer — never printed by a CLI command, which stay quiet on purpose. `JAIRA_NO_UPDATE_CHECK=1` turns the check off. |
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields |
