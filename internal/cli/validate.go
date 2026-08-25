@@ -2,7 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/validate"
@@ -48,6 +50,15 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 
 			problems := validate.Tickets(tickets, lanes)
 
+			// The board at rest includes what it tells its agents. A lane file
+			// edited by hand changes the pipeline without going through any
+			// command that would regenerate the note — which is exactly how a
+			// board ends up handing an agent a route that no longer exists.
+			noteStale := []string{}
+			if current, stale := board.NoteIsCurrent(s.Root, laneFacts(lanes)); !current {
+				noteStale = stale
+			}
+
 			if g.jsonOut {
 				out := make([]map[string]any, 0, len(problems))
 				for _, p := range problems {
@@ -58,7 +69,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				}
 				if err := emit(cmd.OutOrStdout(), map[string]any{
 					"checked": len(tickets), "problems": out,
-					"errors": validate.HasErrors(problems),
+					"errors": validate.HasErrors(problems), "agent_note_stale": noteStale,
 				}); err != nil {
 					return err
 				}
@@ -83,6 +94,12 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 					fmt.Fprintf(w, "%d ticket(s) checked, nothing wrong.\n", len(tickets))
 				} else {
 					fmt.Fprintf(w, "\n%d ticket(s) checked, %d problem(s).\n", len(tickets), len(problems))
+				}
+				// A warning, not an error: a stale note misleads an agent, it
+				// does not damage a ticket, and 'jaira update' fixes it.
+				if len(noteStale) > 0 {
+					fmt.Fprintf(w, "\nwarning the jaira block in %s no longer matches this board's lanes; run 'jaira update'\n",
+						strings.Join(noteStale, " and "))
 				}
 			}
 

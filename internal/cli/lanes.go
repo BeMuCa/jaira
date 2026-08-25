@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/board"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 )
@@ -64,6 +65,7 @@ jaira upgrade changed the built-in.`,
 			if err != nil {
 				return writeConflictError(err)
 			}
+			refreshAgentNote(cmd, s.Root)
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, map[string]any{"id": l.ID, "path": dst})
@@ -107,6 +109,7 @@ project never drops to a single column because one lane was added.`,
 				}
 				return err
 			}
+			refreshAgentNote(cmd, s.Root)
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, map[string]any{"id": args[0], "path": dst})
@@ -150,6 +153,7 @@ lane that vanishes under a ticket would leave it in a lane nothing knows.`,
 				}
 				return err
 			}
+			refreshAgentNote(cmd, s.Root)
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, map[string]any{"id": args[0], "path": path})
@@ -197,6 +201,7 @@ the whole working set first, for the same reason 'lanes add' does.`,
 				}
 				return err
 			}
+			refreshAgentNote(cmd, s.Root)
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				return emit(w, map[string]any{"id": args[0], "delta": delta})
@@ -419,4 +424,26 @@ looking empty.`,
 	cmd.Flags().StringVar(&optionsFlag, "options", "", "comma-separated ticket options to pre-tick on a new board")
 	cmd.Flags().BoolVar(&clear, "clear", false, "remove the default board, returning to the built-ins")
 	return cmd
+}
+
+// refreshAgentNote regenerates the jaira block in CLAUDE.md and AGENTS.md after
+// the board's lanes changed.
+//
+// The block names this board's lanes, so adopting, adding, removing or
+// reordering one is exactly the moment it stops being true. Leaving that to
+// whoever remembers to run 'jaira update' means the note is wrong precisely
+// when someone changed the pipeline — the case where an agent most needs it to
+// be right.
+//
+// Best-effort and quiet: a lane command's own success does not depend on an
+// agent file being writable, and a failure here is reported rather than turned
+// into a failed lane operation.
+func refreshAgentNote(cmd *cobra.Command, root string) {
+	lanes, err := lane.Load(root)
+	if err != nil {
+		return
+	}
+	if _, err := board.AnnounceInAgentFiles(root, laneFacts(lanes)); err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: the lanes changed but the agent note could not be updated: %v\n", err)
+	}
 }

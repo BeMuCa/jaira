@@ -198,6 +198,56 @@ func firstSentence(s string) string {
 	return s
 }
 
+// NoteIsCurrent reports whether every agent file's managed block already says
+// what lanes would generate today, and names the ones that do not.
+//
+// The block is regenerated whenever a lane command changes the board, but a
+// lane file edited by hand — which is how a board's own review lane came to be
+// a human lane on one real project — changes nothing that would trigger that.
+// This is what lets 'jaira validate' say the note has drifted rather than
+// leaving an agent to read a pipeline that no longer exists.
+func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string) {
+	for _, name := range agentFiles {
+		path := filepath.Join(root, name)
+		existing, err := os.ReadFile(path)
+		if err != nil {
+			// A file that is not there is not out of date. 'jaira update'
+			// creates it; nothing here should nag about a file nobody wrote.
+			continue
+		}
+		want, ok := managedBlock(string(existing), noteFor(lanes))
+		if !ok {
+			continue // no managed block: this file is somebody else's entirely
+		}
+		if want != string(existing) {
+			stale = append(stale, name)
+		}
+	}
+	return len(stale) == 0, stale
+}
+
+// noteFor is the note as it would be written for these lanes.
+func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
+
+// managedBlock returns what s would become if its managed block were rewritten
+// with note, and whether s has such a block at all. One definition, used by the
+// writer and by the drift check, so the two can never disagree about what
+// "already current" means.
+func managedBlock(s, note string) (string, bool) {
+	start := strings.Index(s, jairaMarkerStart)
+	end := strings.Index(s, jairaMarkerEnd)
+	if start < 0 || end <= start {
+		return "", false
+	}
+	newBlock := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd
+	if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
+		localIdx := start + localRel
+		preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\n")
+		newBlock = jairaMarkerStart + "\n" + note + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
+	}
+	return s[:start] + newBlock + s[end+len(jairaMarkerEnd):], true
+}
+
 // agentFiles are the instruction files coding agents read.
 //
 // There is no single convention. AGENTS.md is the closest thing to a cross-tool
@@ -241,19 +291,11 @@ func announceInAgentFile(root, name string, lanes []LaneFact) (path string, acti
 	}
 
 	s := string(existing)
-	start := strings.Index(s, jairaMarkerStart)
-	end := strings.Index(s, jairaMarkerEnd)
-	if start >= 0 && end > start {
-		newBlock := strings.TrimSuffix(block, "\n")
-		// The local marker only counts when it sits strictly inside the
-		// managed block; one written before the start marker or after the end
-		// marker is ordinary user text, not the boundary, and is left alone.
-		if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
-			localIdx := start + localRel
-			preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\n")
-			newBlock = jairaMarkerStart + "\n" + note + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
-		}
-		updated := s[:start] + newBlock + s[end+len(jairaMarkerEnd):]
+	// The local marker only counts when it sits strictly inside the managed
+	// block; one written before the start marker or after the end marker is
+	// ordinary user text, not the boundary, and is left alone. That rule lives
+	// in managedBlock, which the drift check reads too.
+	if updated, ok := managedBlock(s, note); ok {
 		if updated == s {
 			return path, "unchanged", nil
 		}

@@ -63,7 +63,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira whoami` | the identity jaira acts as, and the other names that mean you |
 | `jaira sessions` | sessions working this tree |
 | `jaira resume` | everything left mid-flight, with its notes |
-| `jaira validate` | check every ticket for damage; `--strict` fails on warnings |
+| `jaira validate` | check every ticket for damage; `--strict` fails on warnings. Also warns when the generated agent block no longer matches this board's lanes — which happens when a lane file is edited by hand rather than through `jaira lanes` |
 
 ### Being one person under several names
 
@@ -102,7 +102,7 @@ to pass `--force` to everything, which protects nothing.
 | `jaira resolve <id>` | settle the fields a merge could not |
 | `jaira share` | publish the board; `--undo` makes it private again |
 | `jaira projects add <path>` | register a board; `--scan` searches two levels down |
-| `jaira lanes use <id>` | copy a catalogue lane into this project; `--force` |
+| `jaira lanes use <id>` | copy a catalogue lane into this project; `--force`. Like `add`, `remove` and `move`, it regenerates the agent block, since changing the pipeline is when the note stops being true |
 | `jaira lanes add <id>` | add a built-in or catalogue lane to this project's board, appending it to the column order; materialises the project's lane directory first if it has none yet |
 | `jaira lanes remove <id>` | remove a lane from this project's board (it stays in the catalogue); refused, naming them, if any ticket sits in it |
 | `jaira lanes move <id> --left\|--right` | shift a lane one column in this project's order, swapping it with its neighbour |

@@ -86,3 +86,43 @@ func TestLaneSectionKeepsDescriptionsToTheirFirstClaim(t *testing.T) {
 		t.Errorf("the whole description was inlined:\n%s", got)
 	}
 }
+
+// A lane file edited by hand changes the pipeline without going through any
+// command that would regenerate the note — which is how a board ends up handing
+// an agent a route that no longer exists.
+func TestNoteIsCurrentSpotsAHandEditedBoard(t *testing.T) {
+	root := t.TempDir()
+	facts := demoFacts()
+	if _, err := AnnounceInAgentFiles(root, facts); err != nil {
+		t.Fatal(err)
+	}
+	if current, stale := NoteIsCurrent(root, facts); !current {
+		t.Errorf("a note just written reports as stale: %v", stale)
+	}
+
+	// The board gains a lane without the note being rewritten.
+	changed := append(facts, LaneFact{ID: "optimize", Agentic: true, Description: "Strips what the change does not need."})
+	current, stale := NoteIsCurrent(root, changed)
+	if current {
+		t.Fatal("a board that gained a lane still reports its note as current")
+	}
+	if len(stale) != 2 {
+		t.Errorf("stale = %v, want both agent files", stale)
+	}
+
+	// And regenerating settles it.
+	if _, err := AnnounceInAgentFiles(root, changed); err != nil {
+		t.Fatal(err)
+	}
+	if current, stale := NoteIsCurrent(root, changed); !current {
+		t.Errorf("still stale after regenerating: %v", stale)
+	}
+}
+
+// A repository with no agent file is not out of date; nothing should nag about
+// a file nobody wrote.
+func TestNoteIsCurrentIgnoresMissingFiles(t *testing.T) {
+	if current, stale := NoteIsCurrent(t.TempDir(), demoFacts()); !current {
+		t.Errorf("an empty repository reports a stale note: %v", stale)
+	}
+}

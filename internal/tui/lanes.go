@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -131,6 +132,15 @@ func (ls *laneScreen) reload() error {
 	}
 	if ls.idx > len(ls.lanes)+len(ls.available) {
 		ls.idx = len(ls.lanes) + len(ls.available)
+	}
+	// The agent note names this board's lanes, and this function runs after
+	// every change this screen makes to them — adding, removing, reordering,
+	// adopting. Regenerating here is what keeps the note true at the moment the
+	// pipeline changes rather than at the next 'jaira update'. It writes only
+	// when the content actually differs, so the reload that merely opens this
+	// screen costs nothing.
+	if _, err := board.AnnounceInAgentFiles(ls.store.Root, laneFacts(set)); err != nil {
+		ls.msg, ls.isErr = "the lanes changed but the agent note could not be updated: "+err.Error(), true
 	}
 	return nil
 }
