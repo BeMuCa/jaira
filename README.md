@@ -134,6 +134,7 @@ outcome-resolves: >-
   redirect closes the gap, verified by session_test.go
 created-at: 2026-08-11T21:11:27Z
 updated-at: 2026-08-11T21:14:03Z
+updated-by: berk
 ---
 
 # Fix session cookie dropped on 302
@@ -242,6 +243,14 @@ board's lanes in order, any loop a lane declares, and for each lane whether an
 agent may work it at all. It also says the thing that is easy to assume wrong:
 nothing runs by itself. A lane's prompt fires because a session ran it, and
 `jaira next --per-lane` is how that session finds the lane with work waiting.
+
+That block follows the board rather than waiting to be refreshed: adding,
+adopting, removing or reordering a lane rewrites it, from the CLI and from the
+settings screen alike. A lane file edited by hand goes through neither, so
+`jaira validate` reports when the block and the lanes have drifted apart. Text
+after a `jaira:local` marker you add inside the block survives every rewrite, so
+a project's own rules live with the note instead of contradicting it from
+outside.
 
 A teammate without your `critique` lane still sees those tickets, in a read-only
 passthrough column. Hiding them would be the worse failure.
@@ -396,9 +405,18 @@ e   edit fields (enter newline, ctrl+s save)     a   accept (at a checkpoint)
 E   edit body and checklists in $EDITOR          f   follow-up from the review
 y   copy the full ticket id                      n   follow-up beside this one
 b   open the ticket this one is blocked by       m   move it
-jk  next / previous ticket                       tab other pane, in the split
+X   delete its file (type the handle back)       tab other pane, in the split
+jk  next / previous ticket
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
+
+On the board list (p, and the launcher):
+x   remove a board — choose what goes, the cursor starts on No
 ```
+
+Every screen is clamped to the terminal: a line wider than the window is cut
+rather than wrapped, because a wrapped line pushes everything under it down and
+shoves a footer off the bottom. Screens with more to say than fits — the help,
+an open ticket — scroll with `↓↑`.
 
 Writing a follow-up (`n`): the screen splits, the ticket it follows stays on the
 left, and the new one is written on the right, so the reason for it is still
@@ -408,6 +426,28 @@ it. `n` again chains from the ticket just written, which slides left. While you
 type, `tab` belongs to the editor's fields, so `shift+↓↑` scrolls the ticket on
 the left; once saved, `tab` moves between the two panes. Below 80 columns or 20
 rows there is no split and the follow-up takes the screen.
+
+### What a card can say
+
+Every state is a glyph plus a word, never colour alone, so the board reads the
+same to anyone. `?` lists them with the same styling the cards use.
+
+| | |
+|---|---|
+| `○ spec` | not specified enough to leave the backlog |
+| `■ blocked` | waiting on a ticket that is not done |
+| `▲ asks` | a question is waiting for a person to answer |
+| `◆ sign off` | finished work waiting for a person to accept it |
+| `◇ unworked` | its lane has not produced what it declares yet |
+| `✎ name` | somebody else wrote this ticket last |
+| `Plan 2/5` `DoD 2/5` | checklist progress; `[-]` superseded counts as settled |
+| `✓ 3` | commits recorded on the ticket |
+| `sonnet` | the model that last ran a lane on it |
+| `@name` | who owns the outcome |
+
+`✎` comes from `updated-by`, written on every change. It marks somebody else's
+change, never your own, and "you" means any name you go by — the alias list, not
+one string.
 
 A move the gates refuse says why and offers `f` to override, then asks once more
 before it writes. That is the same override the CLI spells `--force`: it is

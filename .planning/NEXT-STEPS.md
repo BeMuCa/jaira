@@ -1,4 +1,4 @@
-# Next tasks — 2026-08-25 (third list)
+# Next tasks — 2026-08-25 (third list, revised after his review)
 
 **Read `HANDOFF.md` first.** The list of seven is finished, and so is the first
 round of outside contributions: PRs #1, #2, #3 (reduced) and #5 are merged, and
@@ -68,6 +68,28 @@ next session should expect a response and read it as review, not as noise.
   binary reads as "available" on a real release. Called out in the review,
   deliberately not fixed: ordering versions needs a comparison this project does
   not have yet.
+
+## 5. Asked for and not built
+
+Each of these he raised and I did not build, either because it was a question
+rather than an instruction or because it changes something already merged.
+
+- **A thin empty lane instead of a hidden one.** His words: hiding can confuse.
+  `z` currently drops empty lanes from `boardFit`; the alternative is to keep
+  them and render them at a minimal width, so "empty" is visible rather than
+  absent. Touches `boardFit`, `renderColumn` and the contributor's tests for
+  `z`. I asked and got no answer; it is his call, not a defect.
+- **`overrides: <id>` on a lane file.** His board's `review.md` deliberately
+  replaces the built-in lane, and the warning about it fires on every command.
+  A declared override would silence it and make the remaining warnings mean
+  something again.
+- **A second back edge.** `rejects-to` names one lane and validates that it is
+  installed and not itself, so `rejects-to: human` already works — but a lane
+  cannot declare both "back to implementing" and "to the human for a decision".
+  Today the prompt carries that (critique's does). Two edges would be a schema
+  change.
+- **Hiding the version line when it has nothing to say.** On a source build the
+  footer reads `jaira dev`, which is decoration. One line to drop it.
 
 ## Also open, no decision
 

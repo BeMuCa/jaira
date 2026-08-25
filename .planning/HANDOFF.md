@@ -11,7 +11,10 @@ now a second, shorter list.
 
 ## Where things are
 
-- **Public: https://github.com/BeMuCa/jaira** — clean tree, pushed, CI green.
+- **Public: https://github.com/BeMuCa/jaira** — clean tree, pushed, CI green at
+  `ff9ae1b`. The user's binary is rebuilt from it; check with
+  `go version -m ~/.local/bin/jaira` that `vcs.revision` matches HEAD, since
+  building before committing stamps it `+dirty`.
 - **The first outside contributions are in** (2026-08-25): PRs #1, #2, #5 merged
   whole, #3 reduced to its `z` half. Issue #4 is answered by #5. Every one of
   them was merged with my review fixes as a commit on top, named
@@ -117,6 +120,34 @@ branch `feature/requirements-coverage-elicitation`. Confirmed pipeline:
   `move`, expected to be refused, went through once ownership no longer blocked).
   Moved back and `git checkout`ed; verified identical to HEAD. Lesson: there is
   no `--dry-run`, so never probe a gate with a live `move` on his board.
+
+## The session of 2026-08-25, after the merges
+
+Seven things landed on top of the merged contributions. Each has its own commit
+message with the reasoning; the short version:
+
+- **`ff505dc`** — master went red on Windows with every package reporting `ok`.
+  `SpawnRefresh` re-execs `os.Executable()`, which inside a test binary is
+  `tui.test.exe`: it re-ran the whole suite detached and held its own image open,
+  so `go test` could not delete it. Guarded on the `<pkg>.test` name.
+- **`931df55`** — `updated-by`, written in `Mutate` beside `updated-at`, and
+  `✎ name` on the card when the last writer was not you. "You" is the alias set,
+  cached on the model; a card renderer must not shell out to git per card.
+- **`f4bd770`** — the help explains every card mark, and **every screen is
+  clamped to the terminal in `View()`**. Without the clamp the new test catches
+  the detail pane at 56 columns in a 40-column terminal and the compact view
+  drawing 29 lines into 12. The help wraps its own text first and scrolls.
+- **`a2d90f6`** — the block follows the board: `lanes use|add|remove|move` and
+  the settings screen regenerate it; `validate` reports drift from a hand-edited
+  lane file. Writer and drift check share one `managedBlock()`.
+- **`6cfe0ab` + `ff9ae1b`** — `x` removes a board, with checkboxes for what goes
+  and the cursor starting on No. It landed on the board's own switcher first and
+  had to be added to the launcher too — **they are two screens with two key
+  handlers**, which is worth remembering before adding a third key to either.
+
+Also done, outside the repository: `jaira update` on both of his active boards,
+and the two empty demo boards (`requirementsgenie`, `scratch-jaira-probe`)
+removed.
 
 ## The agent block now describes the board (`0e7db74`)
 
