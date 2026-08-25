@@ -64,7 +64,12 @@ session and lock state is never committed. Safe to run more than once.`,
 			// repository that has one, but that relies on the model noticing a
 			// directory; a line in the file it is handed at the start of every
 			// session does not.
-			p := board.Prepare(s.Root)
+			// The board's own lanes go into the note, so the agent that opens this
+			// repository next reads the route it is actually on rather than a
+			// generic description of what a lane is. A load failure falls back to
+			// the lane-less note rather than failing the init.
+			boardLanes, _ := lane.Load(s.Root)
+			p := board.Prepare(s.Root, laneFacts(boardLanes))
 			// A board just prepared by this binary must not immediately be
 			// nagged about being out of date.
 			_ = release.Stamp(s.StateDir())
@@ -1138,4 +1143,26 @@ func truncate(s string, n int) string {
 	}
 	r := []rune(s)
 	return string(r[:n-1]) + "…"
+}
+
+// laneFacts reads a board's pipeline into the plain form core/board renders.
+//
+// The translation lives here rather than in core/board because that package is
+// stdlib-only on purpose — both the CLI and the TUI call it, and it must not
+// pull core/lane behind them.
+func laneFacts(lanes *lane.Set) []board.LaneFact {
+	if lanes == nil {
+		return nil
+	}
+	out := make([]board.LaneFact, 0, len(lanes.Lanes))
+	for _, l := range lanes.Lanes {
+		out = append(out, board.LaneFact{
+			ID: l.ID, Name: l.Name, Description: l.Description,
+			ModelTier: l.ModelTier, Agentic: l.Agentic, Terminal: l.Terminal,
+			HumanExit: l.RequiresHumanExit, Question: l.RequiresQuestion,
+			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo,
+			Produces: l.OutputProduces,
+		})
+	}
+	return out
 }

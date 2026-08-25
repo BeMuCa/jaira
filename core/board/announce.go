@@ -1,6 +1,7 @@
 package board
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -92,6 +93,111 @@ const agentNote = "## Task tracking: jaira\n" +
 	"somebody adds one; project-specific rules belong behind it rather than fighting\n" +
 	"this note from outside the block."
 
+// LaneFact is what the generated note says about one lane of this board.
+//
+// A struct of plain fields rather than *lane.Lane, so this package keeps the
+// stdlib-only promise its own doc comment makes and stays callable from both
+// internal/cli and internal/tui without a cycle. The caller reads the board and
+// hands the facts over; nothing here knows how a lane is stored.
+type LaneFact struct {
+	ID          string
+	Name        string
+	Description string
+	ModelTier   string
+	Agentic     bool
+	Terminal    bool
+	HumanExit   bool
+	Question    bool
+	Parking     bool
+	RejectsTo   string
+	Produces    []string
+}
+
+// laneSection renders this board's own lanes into the note.
+//
+// The static half of the note teaches the commands; it cannot teach the board,
+// because every board's lanes are different — a project that adopted critique
+// and optimize has a loop that a stock board does not, and nothing in a
+// generated-once text could say so. An agent that has to discover the route by
+// running 'jaira lanes' will often not run it, and then work stops at whatever
+// lane it happens to land in. That is not hypothetical: twelve tickets sat in a
+// critique lane with nothing ever produced for them.
+//
+// Empty facts render nothing at all, so a caller that has no board yet writes
+// exactly the note it wrote before this existed.
+func laneSection(facts []LaneFact) string {
+	if len(facts) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\n## This board's lanes\n\n")
+
+	// The route first, on one line, because "where does this go next" is the
+	// question being answered and a reader should not have to assemble it from
+	// the list below.
+	names := make([]string, 0, len(facts))
+	for _, f := range facts {
+		names = append(names, f.ID)
+	}
+	b.WriteString("Order: " + strings.Join(names, " → ") + "\n")
+
+	// A declared back edge is the loop, and the loop is the part a reader
+	// cannot infer from an ordered list.
+	for _, f := range facts {
+		if f.RejectsTo != "" {
+			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.\n",
+				f.ID, f.RejectsTo, f.ID)
+		}
+	}
+
+	b.WriteString("\n")
+	for _, f := range facts {
+		var marks []string
+		switch {
+		case f.Agentic:
+			marks = append(marks, "yours to work")
+		case f.HumanExit, f.Question:
+			marks = append(marks, "**a person's, not yours** — you may move work in, never out")
+		default:
+			marks = append(marks, "no agent step; move through it")
+		}
+		if f.ModelTier != "" {
+			marks = append(marks, "tier "+f.ModelTier)
+		}
+		if len(f.Produces) > 0 {
+			marks = append(marks, "must produce "+strings.Join(f.Produces, ", "))
+		}
+		if f.Terminal {
+			marks = append(marks, "terminal")
+		}
+		if f.Parking {
+			marks = append(marks, "parking: work returns to the lane it left")
+		}
+		fmt.Fprintf(&b, "- `%s` — %s\n", f.ID, strings.Join(marks, "; "))
+		if d := strings.TrimSpace(f.Description); d != "" {
+			fmt.Fprintf(&b, "  %s\n", firstSentence(d))
+		}
+	}
+
+	b.WriteString("\nNothing moves a ticket for you. There is no daemon and no runner: a lane's\n" +
+		"prompt runs because a session ran it. Drive the board from the session you are\n" +
+		"in — `jaira next --per-lane --json` says which lanes have work waiting and\n" +
+		"which of them you are allowed to work, `jaira show <id> --for-lane <lane> --json`\n" +
+		"hands you that lane's prompt and its bounded input, and `jaira move` puts the\n" +
+		"result in the next lane. Work one lane to empty before starting the next, or\n" +
+		"the lane nobody drives is the one that fills up.")
+	return b.String()
+}
+
+// firstSentence keeps a lane description to its opening claim, so a lane with a
+// paragraph of prose does not push the rest of the section off the screen.
+func firstSentence(s string) string {
+	if i := strings.Index(s, ". "); i > 0 {
+		return s[:i+1]
+	}
+	return s
+}
+
 // agentFiles are the instruction files coding agents read.
 //
 // There is no single convention. AGENTS.md is the closest thing to a cross-tool
@@ -101,9 +207,9 @@ const agentNote = "## Task tracking: jaira\n" +
 var agentFiles = []string{"AGENTS.md", "CLAUDE.md"}
 
 // AnnounceInAgentFiles writes the note into each agent instruction file.
-func AnnounceInAgentFiles(root string) (written []string, err error) {
+func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
 	for _, name := range agentFiles {
-		path, action, ferr := announceInAgentFile(root, name)
+		path, action, ferr := announceInAgentFile(root, name, lanes)
 		if ferr != nil {
 			return written, ferr
 		}
@@ -118,9 +224,10 @@ func AnnounceInAgentFiles(root string) (written []string, err error) {
 //
 // It reports what it did rather than doing it quietly, because editing a file
 // the user wrote is not something a tool should do invisibly.
-func announceInAgentFile(root, name string) (path string, action string, err error) {
+func announceInAgentFile(root, name string, lanes []LaneFact) (path string, action string, err error) {
 	path = filepath.Join(root, name)
-	block := jairaMarkerStart + "\n" + agentNote + "\n" + jairaMarkerEnd + "\n"
+	note := agentNote + laneSection(lanes)
+	block := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd + "\n"
 
 	existing, readErr := os.ReadFile(path)
 	if readErr != nil {
@@ -144,7 +251,7 @@ func announceInAgentFile(root, name string) (path string, action string, err err
 		if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
 			localIdx := start + localRel
 			preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\n")
-			newBlock = jairaMarkerStart + "\n" + agentNote + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
+			newBlock = jairaMarkerStart + "\n" + note + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
 		}
 		updated := s[:start] + newBlock + s[end+len(jairaMarkerEnd):]
 		if updated == s {

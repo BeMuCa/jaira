@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -75,7 +76,10 @@ installed.`,
 			previous := release.Stamped(s.StateDir())
 			notes := release.Since(previous)
 
-			p := board.Prepare(s.Root)
+			// Re-generated with this board's current lanes: adopting a lane is
+			// exactly when the note stops matching the board.
+			boardLanes, _ := lane.Load(s.Root)
+			p := board.Prepare(s.Root, laneFacts(boardLanes))
 			if p.IgnoreErr != nil {
 				return fail(ExitError, "prepare_failed", "could not write .gitignore: %v", p.IgnoreErr)
 			}

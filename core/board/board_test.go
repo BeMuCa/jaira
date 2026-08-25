@@ -10,7 +10,7 @@ import (
 func TestPrepareMakesANewBoardPrivateAndAnnounced(t *testing.T) {
 	root := t.TempDir()
 
-	p := Prepare(root)
+	p := Prepare(root, nil)
 	if !p.Ignored {
 		t.Errorf("Ignored = false, want true on a fresh board")
 	}
@@ -44,7 +44,7 @@ func TestPrepareMakesANewBoardPrivateAndAnnounced(t *testing.T) {
 
 	// Preparing an already-prepared board is a no-op: nothing new is ignored,
 	// nothing new is announced, and the gitignore entry does not duplicate.
-	p2 := Prepare(root)
+	p2 := Prepare(root, nil)
 	if p2.Ignored {
 		t.Errorf("Ignored = true on a second Prepare, want false")
 	}

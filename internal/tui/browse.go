@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -150,7 +151,11 @@ func (b *browser) key(s string) (added []string, done bool) {
 		// The board exists either way now, so a Prepare failure is not a failed
 		// creation — but a board that ends up committable when it should be
 		// private cannot be silent about it either.
-		p := board.Prepare(st.Root)
+		// The board's own lanes go into the note, so the agent that opens this
+		// repository next reads the route it is actually on. A load failure is
+		// not a failed creation: the note falls back to the lane-less text.
+		newLanes, _ := lane.Load(st.Root)
+		p := board.Prepare(st.Root, laneFacts(newLanes))
 		if p.IgnoreErr != nil || p.NoteErr != nil {
 			project.Remember(target)
 			b.pending = ""
@@ -315,4 +320,26 @@ func (b *browser) renderResults(width, height int) string {
 	sb.WriteString("\n" + styMeta.Render(truncate(
 		"space toggle · a all/none · enter add selected · esc back", w)))
 	return sb.String()
+}
+
+// laneFacts reads a board's pipeline into the plain form core/board renders.
+//
+// The translation lives here rather than in core/board because that package is
+// stdlib-only on purpose — both the CLI and the TUI call it, and it must not
+// pull core/lane behind them.
+func laneFacts(lanes *lane.Set) []board.LaneFact {
+	if lanes == nil {
+		return nil
+	}
+	out := make([]board.LaneFact, 0, len(lanes.Lanes))
+	for _, l := range lanes.Lanes {
+		out = append(out, board.LaneFact{
+			ID: l.ID, Name: l.Name, Description: l.Description,
+			ModelTier: l.ModelTier, Agentic: l.Agentic, Terminal: l.Terminal,
+			HumanExit: l.RequiresHumanExit, Question: l.RequiresQuestion,
+			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo,
+			Produces: l.OutputProduces,
+		})
+	}
+	return out
 }

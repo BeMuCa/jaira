@@ -12,9 +12,14 @@ type Prepared struct {
 }
 
 // Prepare makes a freshly created board private and tells the agents about it.
-func Prepare(root string) Prepared {
+//
+// lanes is this board's own pipeline, which the note renders so an agent reads
+// the route it is actually on rather than a generic description of lanes. A nil
+// slice writes exactly the note that was written before boards could describe
+// themselves, which is what a caller with no board loaded yet should pass.
+func Prepare(root string, lanes []LaneFact) Prepared {
 	var p Prepared
 	p.Ignored, p.IgnoreErr = AddIgnore(root)
-	p.Notes, p.NoteErr = AnnounceInAgentFiles(root)
+	p.Notes, p.NoteErr = AnnounceInAgentFiles(root, lanes)
 	return p
 }

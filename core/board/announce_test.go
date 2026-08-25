@@ -18,7 +18,7 @@ func TestAnnounceRegeneratesByteForByteWithNoLocalMarker(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, action, err := announceInAgentFile(root, "AGENTS.md"); err != nil {
+	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil); err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	} else if action != "appended" {
 		t.Fatalf("action = %q, want appended", action)
@@ -48,7 +48,7 @@ func TestAnnounceSurvivesLocalMarkerVerbatim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, action, err := announceInAgentFile(root, "AGENTS.md"); err != nil {
+	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil); err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	} else if action != "updated" {
 		t.Fatalf("action = %q, want updated", action)
@@ -68,7 +68,7 @@ func TestAnnounceSurvivesLocalMarkerVerbatim(t *testing.T) {
 	}
 
 	// A second regeneration is idempotent.
-	_, action2, err := announceInAgentFile(root, "AGENTS.md")
+	_, action2, err := announceInAgentFile(root, "AGENTS.md", nil)
 	if err != nil {
 		t.Fatalf("announceInAgentFile (second): %v", err)
 	}
@@ -82,7 +82,7 @@ func TestAnnounceSurvivesLocalMarkerVerbatim(t *testing.T) {
 func TestAnnounceCreatesFreshFileWithoutLocalMarker(t *testing.T) {
 	root := t.TempDir()
 
-	path, action, err := announceInAgentFile(root, "CLAUDE.md")
+	path, action, err := announceInAgentFile(root, "CLAUDE.md", nil)
 	if err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestAnnounceIgnoresLocalMarkerOutsideBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, _, err := announceInAgentFile(root, "AGENTS.md"); err != nil {
+	if _, _, err := announceInAgentFile(root, "AGENTS.md", nil); err != nil {
 		t.Fatalf("announceInAgentFile: %v", err)
 	}
 
