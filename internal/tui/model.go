@@ -125,6 +125,11 @@ type Model struct {
 	// shells out to git config and the card renderer asks for it per card.
 	me string
 
+	// myAliases is every name this person goes by, cached for the same reason
+	// and refreshed with me. identity.Aliases shells out to git twice and reads
+	// a file; asking it per card per frame would be paid on every keypress.
+	myAliases []string
+
 	// liveBoards marks, by root, which recorded boards have a non-stale session
 	// working in them right now. It is recomputed whenever the project list
 	// loads or the board reloads — not on a timer, since this is a board that
@@ -204,6 +209,9 @@ func New(s *ticket.Store) (*Model, error) {
 	// exists to fix.
 	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine()}
 	m.me = identity.Current(s.Root)
+	// Mutations from the board record who made them, the same as the CLI's.
+	s.Actor = m.me
+	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
@@ -230,6 +238,9 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.Close()
 	m.store = s
 	m.me = identity.Current(s.Root)
+	// Mutations from the board record who made them, the same as the CLI's.
+	s.Actor = m.me
+	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil
@@ -1128,6 +1139,23 @@ func (m *Model) openDetail() {
 	m.detailFrom = m.mode
 	m.detailScroll = 0
 	m.mode = modeDetail
+}
+
+// isMe reports whether a recorded name is this person, under any of the names
+// they go by. One person is not one string — a work address in one ticket, a
+// git user.name in another — and a marker that called your own change somebody
+// else's would be worse than no marker at all.
+func (m *Model) isMe(who string) bool {
+	who = strings.TrimSpace(who)
+	if who == "" {
+		return false
+	}
+	for _, a := range m.myAliases {
+		if identity.Same(a, who) {
+			return true
+		}
+	}
+	return identity.Same(m.me, who)
 }
 
 func (m *Model) openMove() {

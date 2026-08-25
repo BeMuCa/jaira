@@ -67,6 +67,13 @@ type Store struct {
 	// Root is the directory containing .jaira.
 	Root string
 
+	// Actor is who this process writes as, recorded on every mutation as
+	// updated-by. It is a field rather than a package-level value because a
+	// process can hold two stores at once — the board switcher does — and it is
+	// set by the caller that already knows the identity, so core/ticket does
+	// not have to depend on core/identity. Empty records nothing.
+	Actor string
+
 	// dupIDs accumulates tickets that declare an id another file already claimed.
 	// Two files with one id is an ambiguity a person has to settle, so it is
 	// surfaced rather than resolved by read order.
@@ -607,6 +614,9 @@ func (s *Store) Mutate(idOrPrefix string, fn func(*Ticket) error) (*Ticket, erro
 		return nil, err
 	}
 	if err := Touch(t.doc, time.Now()); err != nil {
+		return nil, err
+	}
+	if err := TouchBy(t.doc, s.Actor); err != nil {
 		return nil, err
 	}
 	if err := writeAtomic(path, t.doc.Bytes()); err != nil {

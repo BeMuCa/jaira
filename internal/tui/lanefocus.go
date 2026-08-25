@@ -215,6 +215,9 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 			flags = append(flags, styAgentic.Render("◇ unworked"))
 		}
 	}
+	if !m.isMe(t.UpdatedBy) && strings.TrimSpace(t.UpdatedBy) != "" {
+		flags = append(flags, styAsks.Render("✎ "+truncate(t.UpdatedBy, 10)))
+	}
 	if n, total := checklistProgress(t.PlanItems); total > 0 {
 		flags = append(flags, styMeta.Render(fmt.Sprintf("Plan %d/%d", n, total)))
 	}

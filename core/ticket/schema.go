@@ -26,9 +26,14 @@ const (
 	FieldExecutedBy = "executed-by"
 	FieldCreatedAt  = "created-at"
 	FieldUpdatedAt  = "updated-at"
-	FieldQuestion   = "question"
-	FieldClaimedBy  = "claimed-by"
-	FieldClaimedAt  = "claimed-at"
+	// FieldUpdatedBy is who wrote the most recent change, beside when it
+	// happened. Several people and several agent sessions write the same store,
+	// and updated-at alone says a ticket moved under you without saying who
+	// moved it — which is the thing you actually need before touching it.
+	FieldUpdatedBy = "updated-by"
+	FieldQuestion  = "question"
+	FieldClaimedBy = "claimed-by"
+	FieldClaimedAt = "claimed-at"
 
 	// The outcome is three flat keys rather than a nested mapping. Nesting would
 	// force the writer to rewrite an indented block to change one field, and the
@@ -138,6 +143,10 @@ type Ticket struct {
 	ClaimedAt  time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	// UpdatedBy is who made that most recent change. Empty on a ticket last
+	// written by a version that did not record it, which reads as "unknown"
+	// rather than as anybody.
+	UpdatedBy string
 
 	// Follows is the ticket whose review produced this one.
 	Follows string
@@ -496,6 +505,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	}
 	t.CreatedAt = parseTime(str(FieldCreatedAt))
 	t.UpdatedAt = parseTime(str(FieldUpdatedAt))
+	t.UpdatedBy = str(FieldUpdatedBy)
 	t.ClaimedAt = parseTime(str(FieldClaimedAt))
 
 	if t.ID == "" {
@@ -594,6 +604,16 @@ func NewDoc(fields map[string]string, lists map[string][]string, body string) *D
 // conflict resolution has something to work with.
 func Touch(d *Doc, now time.Time) error {
 	return d.SetRaw(FieldUpdatedAt, FormatTime(now))
+}
+
+// TouchBy records who made a change, beside when Touch records that it
+// happened. An empty actor writes nothing: a caller that does not know who it
+// is must not claim the change was nobody's.
+func TouchBy(d *Doc, actor string) error {
+	if strings.TrimSpace(actor) == "" {
+		return nil
+	}
+	return d.SetScalar(FieldUpdatedBy, actor)
 }
 
 // SetReady records whether the promotion gate is currently satisfied. It is a

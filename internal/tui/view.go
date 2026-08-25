@@ -383,6 +383,14 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 			flags = append(flags, styAgentic.Render("◇ unworked"))
 		}
 	}
+	// Somebody else wrote this ticket last. Several people and several agent
+	// sessions write the same store, and a ticket that moved under you is the
+	// one thing you want to know before touching it — updated-at said when,
+	// never who. Your own changes are not marked: the marker is about the other
+	// person, and one that fired on everything would be read as decoration.
+	if !m.isMe(t.UpdatedBy) && strings.TrimSpace(t.UpdatedBy) != "" {
+		flags = append(flags, styAsks.Render("✎ "+truncate(t.UpdatedBy, 10)))
+	}
 	if n, total := checklistProgress(t.PlanItems); total > 0 {
 		flags = append(flags, styMeta.Render(fmt.Sprintf("Plan %d/%d", n, total)))
 	}

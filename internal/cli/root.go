@@ -227,6 +227,10 @@ func openStore() (*ticket.Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Every mutation through this store records who made it. Set here rather
+	// than per command, because "who is writing" is a property of the process,
+	// and a command that forgot to set it would silently write anonymously.
+	s.Actor = identity()
 	bindDriverIfShared(s)
 	nudgeIfStale(s)
 	return s, nil
