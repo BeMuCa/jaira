@@ -186,6 +186,39 @@ The board is private: `.jaira/` is gitignored, `AGENTS.md` is new and
   whose whole job is judging a diff being handed "records no commits", because
   the derivation was wired into the gate and not into `show --for-lane`.
 
+## Where this session stopped (2026-08-26)
+
+Written down because the session was cleared here on purpose, to think about the
+two open decisions with a fresh head.
+
+**Two decisions waiting on him, both on the board:**
+
+- **`2MM32Y` — archive or sync for a finished ticket.** Four places disagree
+  today. `archive` now stamps commits too, so the only differences left are the
+  destination folder and that `sync` refuses outside the terminal lane. The
+  reason `sync` exists is quoted in issue #4: *"archive reads as abandoned"*, and
+  a folder named `<initials>-<date>` is what an hours entry is filed under —
+  which is the contributor's practice, not necessarily his. If he does not book
+  hours per person-day, `archive` is enough and `sync` should be documented as
+  the special case rather than as the way.
+- **`SGPDYK` — the done lane holds at most ten.** His idea. Two questions were
+  recorded rather than skipped: *when* does it run (on load? on a command? on the
+  move into done?), and may it happen *silently* — nothing else in this tool
+  moves a file unasked. That archiving is reversible argues for allowing it.
+
+**State when it stopped:** master at `596b2a8`, CI green, clean tree, nothing
+unpushed. The binary at `~/.local/bin/jaira` is stamped `b7b922c`; the two
+commits after it changed no Go file.
+
+**One caveat to carry:** `4DQPMS` (lanes remove writes a lane file with no
+`after:`) records a **hypothesis**, not a diagnosis. The warning and the file
+were seen; `lane.Export`/`lane.Remove` were not read. Whoever picks it up should
+confirm the cause before fixing what the ticket guesses at.
+
+**The board here is capture only.** Ten tickets, none moved through a lane. The
+critique/optimize walkthrough that found `b7b922c` happened on a throwaway board,
+not on this one.
+
 ## What to do next
 
 `NEXT-STEPS.md` is the execution list: dependencies that live in prose rather
