@@ -1046,3 +1046,35 @@ func TestLoadOrderFileMissingLaneStillAppears(t *testing.T) {
 		t.Fatalf("named lane not placed first: %v", set.IDs())
 	}
 }
+
+// TestMaterialisedWorkingSetLoadsWithoutAnchorWarning covers what 'jaira lanes
+// remove' leaves behind: MaterialiseWorkingSet writes every lane out as a file,
+// and replaceLane deliberately does not mark a replacement Builtin, so on the
+// next load nothing is Builtin and order() starts with an empty list. A lane
+// that deliberately has no anchor — backlog, the first lane — must still be
+// placed silently there; it used to fall into the unresolved-anchor branch,
+// because terminalIndex of an empty list is 0 and present[""] is false, and
+// every subsequent command printed 'anchor "" is not installed'.
+func TestMaterialisedWorkingSetLoadsWithoutAnchorWarning(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := t.TempDir()
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := MaterialiseWorkingSet(root, set); err != nil {
+		t.Fatal(err)
+	}
+
+	again, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsWarning(again.Warnings, "anchor") {
+		t.Errorf("a materialised working set must load without an anchor warning, got: %v", again.Warnings)
+	}
+	if got := again.IDs(); len(got) == 0 || got[0] != "backlog" {
+		t.Errorf("the unanchored lane must stay at the front: %v", got)
+	}
+}
