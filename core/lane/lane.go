@@ -632,6 +632,7 @@ func order(lanes []*Lane) ([]*Lane, []string) {
 		progress = false
 		var still []*Lane
 		for _, l := range pending {
+			idx := indexOf(out, l.After)
 			// No anchor is a statement, not a broken reference: park before
 			// the terminal lane, or at the front when nothing is placed yet.
 			// That last case is what a materialised lane directory looks like
@@ -640,12 +641,8 @@ func order(lanes []*Lane) ([]*Lane, []string) {
 			// branch below, because terminalIndex of an empty list is 0 and
 			// present[""] is false.
 			if l.After == "" {
-				out = insertAt(out, l, terminalIndex(out))
-				progress = true
-				continue
-			}
-			idx := indexOf(out, l.After)
-			if idx < 0 {
+				idx = terminalIndex(out) - 1
+			} else if idx < 0 {
 				if !present[l.After] {
 					warnings = append(warnings, fmt.Sprintf(
 						"lane %s: anchor %q is not installed; placed before the terminal lane",
@@ -656,7 +653,11 @@ func order(lanes []*Lane) ([]*Lane, []string) {
 					continue
 				}
 			}
-			out = insertAt(out, l, idx+1)
+			at := idx + 1
+			if at > len(out) {
+				at = len(out)
+			}
+			out = append(out[:at], append([]*Lane{l}, out[at:]...)...)
 			progress = true
 		}
 		pending = still
@@ -667,18 +668,6 @@ func order(lanes []*Lane) ([]*Lane, []string) {
 		out = append(out, l)
 	}
 	return out, warnings
-}
-
-// insertAt places l at index at, clamped to the list, copying the tail before
-// it is overwritten.
-func insertAt(ls []*Lane, l *Lane, at int) []*Lane {
-	if at < 0 {
-		at = 0
-	}
-	if at > len(ls) {
-		at = len(ls)
-	}
-	return append(ls[:at], append([]*Lane{l}, ls[at:]...)...)
 }
 
 func indexOf(ls []*Lane, id string) int {
