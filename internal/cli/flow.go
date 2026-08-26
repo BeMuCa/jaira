@@ -521,11 +521,21 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			fields["plan"] = strings.Join(steps, "\n")
 		case "diff":
 			repo := &gitrepo.Repo{Dir: s.Root}
-			if len(t.Commits) == 0 {
-				missing = append(missing, "diff (ticket records no commits)")
+			// The same fallback the gate uses: a ticket that records no commits
+			// of its own gets them derived from git. Without this the lane whose
+			// whole job is judging a diff was handed "records no commits" while
+			// the move it is working towards would have found them — the
+			// derivation was wired into the gate and into the exits, and not
+			// into the one place an agent actually reads its input.
+			shas := t.Commits
+			if len(shas) == 0 && env.DeriveCommits != nil {
+				shas = env.DeriveCommits(t)
+			}
+			if len(shas) == 0 {
+				missing = append(missing, "diff (git has no commits for this ticket yet)")
 				continue
 			}
-			d, err := repo.Diff(t.Commits)
+			d, err := repo.Diff(shas)
 			if err != nil {
 				missing = append(missing, fmt.Sprintf("diff (%v)", err))
 				continue
