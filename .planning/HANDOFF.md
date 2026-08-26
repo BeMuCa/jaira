@@ -168,6 +168,24 @@ non-goal in the README, and the only `exec.Command` calls in the whole codebase
 launch the user's `$EDITOR`. What was missing was never a runner; it was the
 board telling the session what to do next, which is what this writes down.
 
+## The board now lives in this repository (2026-08-26)
+
+`jaira init` was run here at his request, so the open work is on the board
+instead of in a list. Ten tickets in the backlog, all still `[needs spec]`
+because capture leaves the assignee empty and the pull is what claims them.
+
+The board is private: `.jaira/` is gitignored, `AGENTS.md` is new and
+`CLAUDE.md` gained the managed block. None of that is committed yet.
+
+**Two things the board found within a minute of existing**, both now tickets:
+
+- `4DQPMS` — `jaira lanes remove` materialised the project's lane directory and
+  wrote `backlog.md` with no `after:`, so every command since warns about an
+  empty anchor.
+- `b7b922c` (already fixed) — walking a ticket through `critique` showed the lane
+  whose whole job is judging a diff being handed "records no commits", because
+  the derivation was wired into the gate and not into `show --for-lane`.
+
 ## What to do next
 
 `NEXT-STEPS.md` is the execution list: dependencies that live in prose rather

@@ -20,3 +20,6 @@
 # Finder and Explorer leave these in any directory a contributor happens to open.
 .DS_Store
 Thumbs.db
+
+# jaira board — private to this machine. Run 'jaira share' to publish it.
+/.jaira/
