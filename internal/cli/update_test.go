@@ -174,7 +174,7 @@ func TestUpdateJSONCarriesTheDocumentedFieldsOnStdoutOnly(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &payload); err != nil {
 		t.Fatalf("stdout was not a single JSON payload: %v\n%s", err, out)
 	}
-	for _, key := range []string{"version", "previous", "gitignore_written", "agent_notes", "notes"} {
+	for _, key := range []string{"version", "previous", "agent_notes", "notes"} {
 		if _, ok := payload[key]; !ok {
 			t.Errorf("payload missing %q: %#v", key, payload)
 		}
@@ -184,5 +184,31 @@ func TestUpdateJSONCarriesTheDocumentedFieldsOnStdoutOnly(t *testing.T) {
 	}
 	if payload["previous"] != "" {
 		t.Errorf("previous = %#v, want empty on a never-stamped board", payload["previous"])
+	}
+}
+
+// TestUpdateLeavesASharedBoardShared covers the measured defect: a board whose
+// owner shared it by hand — the ignore line commented out, 'jaira share' never
+// run — got "/.jaira/" appended again by every 'jaira update', so new tickets
+// silently stopped reaching teammates. update writes the agent note only.
+func TestUpdateLeavesASharedBoardShared(t *testing.T) {
+	setCurrent(t, "1.0.0")
+	dir, _ := updateTestStore(t)
+	ignore := filepath.Join(dir, ".gitignore")
+	before := "# jaira board — private to this machine. Run 'jaira share' to publish it.\n#/.jaira/\n"
+	if err := os.WriteFile(ignore, []byte(before), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := runUpdate(t, dir); err != nil {
+		t.Fatalf("jaira update: %v\n%s", err, out)
+	}
+
+	after, err := os.ReadFile(ignore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != before {
+		t.Errorf("update changed .gitignore:\n before %q\n after  %q", before, string(after))
 	}
 }

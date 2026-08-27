@@ -57,9 +57,13 @@ func newUpdateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "update",
 		Short: "Re-apply this repository's jaira setup",
-		Long: `Re-runs the same setup 'jaira init' performs — the .gitignore entry and the
-jaira section in AGENTS.md/CLAUDE.md — and prints what changed since the
-version that last ran it here.
+		Long: `Regenerates the jaira section in AGENTS.md/CLAUDE.md for this board's
+current lanes, and prints what changed since the version that last ran it
+here.
+
+It does not touch .gitignore. 'jaira init' makes a new board private; whether
+this board is shared is a decision already taken, and re-adding the ignore
+entry to a shared board would silently stop new tickets reaching teammates.
 
 This neither downloads anything nor upgrades the jaira binary itself; it
 brings a board's own setup up to date with whichever binary you already have
@@ -79,14 +83,11 @@ installed.`,
 			// Re-generated with this board's current lanes: adopting a lane is
 			// exactly when the note stops matching the board.
 			boardLanes, _ := lane.Load(s.Root)
-			p := board.Prepare(s.Root, laneFacts(boardLanes))
-			if p.IgnoreErr != nil {
-				return fail(ExitError, "prepare_failed", "could not write .gitignore: %v", p.IgnoreErr)
+			notesWritten, noteErr := board.AnnounceInAgentFiles(s.Root, laneFacts(boardLanes))
+			if noteErr != nil {
+				return fail(ExitError, "prepare_failed", "could not update an agent instruction file: %v", noteErr)
 			}
-			if p.NoteErr != nil {
-				return fail(ExitError, "prepare_failed", "could not update an agent instruction file: %v", p.NoteErr)
-			}
-			// Stamp last: if Prepare had failed, the board would not actually
+			// Stamp last: if the note had failed, the board would not actually
 			// be prepared by this version, and must not claim to be.
 			if err := release.Stamp(s.StateDir()); err != nil {
 				return err
@@ -96,16 +97,13 @@ installed.`,
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"root": s.Root, "version": release.Current, "previous": previous,
-					"gitignore_written": p.Ignored, "agent_notes": p.Notes,
-					"notes": entriesJSON(notes),
+					"agent_notes": notesWritten,
+					"notes":       entriesJSON(notes),
 				})
 			}
 
-			if line := announceLine(p.Notes); line != "" {
+			if line := announceLine(notesWritten); line != "" {
 				fmt.Fprint(w, line)
-			}
-			if p.Ignored {
-				fmt.Fprintf(w, "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
 			}
 			if len(notes) == 0 {
 				fmt.Fprintf(w, "\nNothing has changed since the version that last set this board up.\n")
