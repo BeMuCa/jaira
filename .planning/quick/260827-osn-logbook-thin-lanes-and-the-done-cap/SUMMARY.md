@@ -90,6 +90,30 @@ for when a ticket entered its lane.
   req board (`git rm --cached` in another repository). He has the two
   commands to run himself.
 
+## Third message: the injection is gone
+
+- **`ETR0PX` (`ef8f2d9`), at signoff.** `jaira update` re-added `/.jaira/` to a
+  shared board's .gitignore — measured on two scratch boards. It writes the
+  agent note only now. This was the blocker for deploying the board-aware
+  block to his req board, whose CLAUDE.md still carries the old block.
+- **`BNZERQ` (`743737f`, `61789a2`), at signoff.** A board is its lane directory.
+  `Load` no longer injects the ten shipped lanes under a board's files; a
+  board opened for the first time gets its files written (default board or
+  shipped lanes) with an order file, once, reported. Legacy directories — a
+  `removed` file or a missing order file — are migrated in place. Gone:
+  `removed`, `MaterialiseWorkingSet`, `Differs`, the "overrides" warning, the
+  settings screen's `u`. Kept and re-pointed: `lanes use` (reset a lane to the
+  shipped one with `--force`), `n` writes into the board's own directory.
+  Verified on four scratch scenarios and on this repository's own board,
+  which migrated (deleted its `removed`) and was silent on the second run.
+  **His req board will migrate on its next jaira command** — eight shipped
+  lane files written beside its three, `removed` deleted, one message.
+- `QA3GN1` is a symptom of the above: parked, `blocked-by BNZERQ`.
+- His req board's `.jaira/lanes/` untracked and ignored — staged there, not
+  committed (his call).
+- The brainstorm on the schema (lanes, ticket shape, TUI forms) is postponed
+  at his request: too much clutter in one go.
+
 ## Also this session
 
 - `human` is marked "a person's, never out" in the managed block but only
