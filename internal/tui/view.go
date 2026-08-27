@@ -337,10 +337,7 @@ func fitWindow(idx int, costs []int, budget int) (start, end int) {
 // — being drawn thin is what says zero.
 func (m *Model) renderThinColumn(idx, h int) string {
 	col := m.cols[idx]
-	style := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(colFaint).Width(thinColWidth).Height(h)
-	if idx == m.laneIdx {
-		style = style.BorderForeground(colAccent)
-	}
+	style := m.columnStyle(idx, thinColWidth, h)
 	title := col.lane.Name
 	if col.lane.Unknown {
 		title = "? " + title
@@ -355,15 +352,20 @@ func (m *Model) renderThinColumn(idx, h int) string {
 	return style.Render(clampBlock(body.String(), thinColWidth, h))
 }
 
+// columnStyle is the bordered box every lane is drawn in, full or thin: faint,
+// and accented when the lane holds the cursor.
+func (m *Model) columnStyle(idx, w, h int) lipgloss.Style {
+	style := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(colFaint).Width(w).Height(h)
+	if idx == m.laneIdx {
+		style = style.BorderForeground(colAccent)
+	}
+	return style
+}
+
 func (m *Model) renderColumn(idx, w, h int) string {
 	col := m.cols[idx]
 	focused := idx == m.laneIdx
-
-	border := lipgloss.NormalBorder()
-	style := lipgloss.NewStyle().Border(border).BorderForeground(colFaint).Width(w).Height(h)
-	if focused {
-		style = style.BorderForeground(colAccent)
-	}
+	style := m.columnStyle(idx, w, h)
 
 	// Lane headers carry no agentic marker. Every lane can be driven by an agent
 	// — creating, moving and filling in tickets are all CLI operations — so
