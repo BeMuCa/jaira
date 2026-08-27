@@ -401,9 +401,7 @@ func (h *Home) renderStats(centre lipgloss.Style) string {
 	days := make([]int, logbookDays)
 	for _, e := range h.entries {
 		for i, n := range e.Logged {
-			if i < len(days) {
-				days[i] += n
-			}
+			days[i] += n
 		}
 	}
 	peak := 0
