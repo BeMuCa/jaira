@@ -90,3 +90,21 @@ func TestOverrideRefusesCleartextOffLoopback(t *testing.T) {
 		t.Error("a refused override must not be reported as in effect")
 	}
 }
+
+// TestFetchReturnsTheFileAsServed: what adopt copies is byte-for-byte what
+// the repository holds.
+func TestFetchReturnsTheFileAsServed(t *testing.T) {
+	serve(t, map[string]string{"critique.md": critique})
+	c := New()
+	entries, _, err := c.List(context.Background())
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("List = %v, %v", entries, err)
+	}
+	raw, err := c.Fetch(context.Background(), entries[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw) != critique {
+		t.Errorf("Fetch = %q, want the served file", raw)
+	}
+}

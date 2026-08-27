@@ -85,7 +85,8 @@ a teammate's file. Refuses to overwrite an existing catalogue entry unless
 --force is given. Then 'jaira lanes add <id>' puts it on a board.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			entries, _, err := market.New().List(context.Background())
+			client := market.New()
+			entries, _, err := client.List(context.Background())
 			if err != nil {
 				return fail(ExitError, "market_unreachable", "%v", err)
 			}
@@ -100,6 +101,10 @@ a teammate's file. Refuses to overwrite an existing catalogue entry unless
 			if pick == nil {
 				return fail(ExitUsage, "no_such_lane", "no lane %q in the marketplace; available: %v", args[0], ids)
 			}
+			raw, err := client.Fetch(context.Background(), *pick)
+			if err != nil {
+				return fail(ExitError, "market_unreachable", "%v", err)
+			}
 			// Adopt parses a file and copies it under the parsed id; the download
 			// goes through a temporary file so that one code path owns "a lane
 			// from outside enters the catalogue".
@@ -108,7 +113,7 @@ a teammate's file. Refuses to overwrite an existing catalogue entry unless
 				return err
 			}
 			defer os.Remove(tmp.Name())
-			if _, err := tmp.Write(pick.Raw); err != nil {
+			if _, err := tmp.Write(raw); err != nil {
 				tmp.Close()
 				return err
 			}

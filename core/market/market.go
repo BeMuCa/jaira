@@ -55,11 +55,12 @@ func Overridden() string {
 }
 
 // Entry is one lane on offer: the parsed lane, and where its file lives.
+// List shows; Fetch fetches — an Entry carries what the listing needs and
+// nothing that only an adoption needs.
 type Entry struct {
 	Lane *lane.Lane
 	Path string // path inside the repository, e.g. lanes/critique.md
 	URL  string // where the raw file is fetched from
-	Raw  []byte // the file as served, parsed into Lane
 }
 
 // Client talks to the catalogue host.
@@ -114,10 +115,22 @@ func (c *Client) List(ctx context.Context) ([]Entry, []string, error) {
 			warnings = append(warnings, fmt.Sprintf("%s did not parse and was skipped: %v", it.Path, err))
 			continue
 		}
-		entries = append(entries, Entry{Lane: l, Path: it.Path, URL: it.DownloadURL, Raw: raw})
+		entries = append(entries, Entry{Lane: l, Path: it.Path, URL: it.DownloadURL})
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Lane.ID < entries[j].Lane.ID })
 	return entries, warnings, nil
+}
+
+// Fetch downloads one listed lane's file, as served — what an adoption
+// parses and copies. List has read the file once to describe it; fetching it
+// again here costs one request and keeps the listing free of payloads that
+// only one caller ever wanted.
+func (c *Client) Fetch(ctx context.Context, e Entry) ([]byte, error) {
+	raw, err := c.fetch(ctx, e.URL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching %s: %w", e.Path, err)
+	}
+	return raw, nil
 }
 
 // errNotFound distinguishes a missing file from any other failure.
