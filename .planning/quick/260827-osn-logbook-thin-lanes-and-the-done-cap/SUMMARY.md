@@ -70,6 +70,26 @@ the per-day stat); declare the cap as `holds: 10` on the done lane file
 rather than in code; oldest = smallest `updated-at`, there being no field
 for when a ticket entered its lane.
 
+## Second message, same day
+
+- **`2MM32Y` closed at signoff (`7173a45`).** One rule, now in the same words
+  in the skill, the README, `docs/AGENTS.md` and `archive --help`: finished →
+  logbook; not being worked → archive, from any lane. Decided by the only
+  enforced difference (logbook refuses a ticket short of the terminal lane)
+  and by the dated folder finally having a reader.
+- **`SPDWGH` built and at signoff (`b91ecb1`).** `s` on the home screen charts
+  logbook entries per day over the last week, all boards summed. The folder
+  name is the data: `Store.LoggedPerDay` lists directories, reads no ticket.
+  Caught before commit: trimming trailing blanks made chart rows different
+  widths, and centring shifted the columns by a cell.
+- **Five tickets filed from his message:** `88H1P4` the session drives an
+  agentic lane by itself (three mechanisms laid out, decision his), `FCMP17`
+  lane artifacts, `NFJCTK` a lane schema, `B4MGTP` a ticket's foldable
+  history, and `SPDWGH` above.
+- **Blocked by the permission classifier:** untracking `.jaira/lanes/` on his
+  req board (`git rm --cached` in another repository). He has the two
+  commands to run himself.
+
 ## Also this session
 
 - `human` is marked "a person's, never out" in the managed block but only
