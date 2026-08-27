@@ -332,10 +332,13 @@ the most useful thing on the screen:
 <img src="docs/img/signoff.png" alt="The human review view" width="100%">
 
 Accepting it moves the ticket to done. It leaves the board once you push the
-work, in that order: `jaira archive <id>` before the push would hand a teammate
-a board that has forgotten the ticket while the code it describes has not
-arrived. Nothing is deleted, `jaira restore` puts it back, and a follow-up keeps
-its link to an archived predecessor.
+work, in that order: `jaira logbook <id>` files it under the day you finished
+it, with its commits stamped, and doing that before the push would hand a
+teammate a board that has forgotten the ticket while the code it describes has
+not arrived. `jaira archive <id>` is for a ticket that is *not* being worked —
+abandoned, duplicate, obsolete — and works from any lane. Nothing is deleted,
+`jaira restore` puts either back, and a follow-up keeps its link to a logged
+predecessor.
 
 ## Commands
 
@@ -351,7 +354,8 @@ jaira show <id>            show one ticket
 jaira set <id> k=v...      set fields
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira validate             check every ticket on the board for damage
-jaira archive <id>         take a ticket off the board (restore puts it back)
+jaira logbook <id>         file a finished ticket under today, commits stamped
+jaira archive <id>         take a ticket that is not being worked off the board
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket

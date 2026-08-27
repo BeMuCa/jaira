@@ -77,7 +77,7 @@ board archived ahead of its push has forgotten a ticket whose code has not
 arrived at the teammate who pulls it. An agent does not push on its own
 initiative, so it does not archive on its own initiative either; when the user
 has pushed, or asks for it, take the ticket off the board. A follow-up keeps its
-`follows` link to an archived predecessor, so nothing is lost by clearing them.
+`follows` link to a logged or archived predecessor, so nothing is lost by clearing them.
 
 When something outside the repository stops the work, park the ticket rather
 than abandoning it: `jaira move <id> --to blocked --reason "<what it is waiting

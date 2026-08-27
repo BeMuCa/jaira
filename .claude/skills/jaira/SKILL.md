@@ -317,20 +317,31 @@ working around it.
 
 ## Taking a ticket off the board
 
+Two commands, one rule: **finished work goes into the logbook; a ticket that is
+not being worked goes into the archive.**
+
+`jaira logbook <handle>` takes an accepted ticket off the board into
+`.jaira/logbook/<initials>-<date>/` — who finished what, on which day — after
+stamping every commit git can find for it. It refuses a ticket short of the
+terminal lane. `jaira archive <handle>` takes any ticket off the board, from any
+lane, into `.jaira/archive/`: abandoned, duplicate, obsolete. Neither deletes
+anything; `jaira restore <file>` brings either back.
+
 An accepted ticket leaves the board once its work is pushed, and in that order.
-Archive it before the push and a teammate pulls a board that has forgotten the
+Log it before the push and a teammate pulls a board that has forgotten the
 ticket while the code it describes has not arrived — which is the exact state
 this board exists to prevent. Do not push on your own initiative; the push is
-the user's call, so the archive waits on it.
+the user's call, so the logbook waits on it.
 
 Leaving finished tickets on the board out of fear of losing the trail is not
-necessary: a follow-up keeps its `follows` link to an archived predecessor, and
+necessary: a follow-up keeps its `follows` link to a logged predecessor, and
 its context already carries that ticket's commits in prose for this reason.
 
 ```bash
-jaira archive <handle>      # moves it to .jaira/archive/, nothing is deleted
-jaira archive               # list what has been archived
-jaira restore <file>        # put it back
+jaira logbook <handle>      # finished: into .jaira/logbook/<you>-<date>/, commits stamped
+jaira logbook               # list the logbook
+jaira archive <handle>      # not being worked: into .jaira/archive/
+jaira restore <file>        # put either back
 ```
 
 `jaira delete` also exists and removes the file for good. It is the user's, not
