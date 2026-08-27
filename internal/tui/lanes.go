@@ -679,7 +679,7 @@ func (ls *laneScreen) renderBoard(totalW int) string {
 		}
 		label := ls.sourceLabel(l)
 		if l.Overrides != "" {
-			label = "overrides"
+			label = "changed"
 		}
 		if _, drifted := ls.drift[l.ID]; drifted {
 			label = "drifted"
