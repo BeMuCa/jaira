@@ -78,8 +78,8 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  someone else: commit it, or nobody but you knows it exists — and now this is\n" +
 	"  also what makes the commit list derivable at all: that shared commit is how\n" +
 	"  git ties the ticket to the change\n" +
-	"- `jaira sync <id>` — once a ticket reaches the terminal lane, stamps its\n" +
-	"  commits and files it under `.jaira/sync/<you>-<date>/`, taking it off the\n" +
+	"- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its\n" +
+	"  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the\n" +
 	"  board. `jaira restore <file>` brings it back\n" +
 	"\n" +
 	"`jaira <command> --help` for everything else.\n" +

@@ -143,7 +143,7 @@ func TestAgentNoteExplainsTheLocalArea(t *testing.T) {
 	if !strings.Contains(agentNote, "jaira:local") {
 		t.Errorf("agentNote does not mention the jaira:local marker")
 	}
-	if !strings.Contains(agentNote, "jaira sync") {
-		t.Errorf("agentNote does not mention 'jaira sync'")
+	if !strings.Contains(agentNote, "jaira logbook") {
+		t.Errorf("agentNote does not mention 'jaira logbook'")
 	}
 }

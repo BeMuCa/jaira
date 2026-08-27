@@ -32,7 +32,7 @@ func syncTestStore(t *testing.T) (s *Store, id string) {
 	return s, tk.ID
 }
 
-func TestSyncMovesTicketIntoDatedFolder(t *testing.T) {
+func TestLogbookMovesTicketIntoDatedFolder(t *testing.T) {
 	s, id := syncTestStore(t)
 	tk, err := s.Load(id)
 	if err != nil {
@@ -40,12 +40,12 @@ func TestSyncMovesTicketIntoDatedFolder(t *testing.T) {
 	}
 	base := filepath.Base(tk.Path)
 
-	dst, err := s.Sync(id, "as-20260823")
+	dst, err := s.Logbook(id, "as-20260823")
 	if err != nil {
-		t.Fatalf("Sync: %v", err)
+		t.Fatalf("Logbook: %v", err)
 	}
-	if dst != filepath.Join(s.SyncDir(), "as-20260823", base) {
-		t.Errorf("Sync() = %q, want the file under %s", dst, filepath.Join(s.SyncDir(), "as-20260823"))
+	if dst != filepath.Join(s.LogbookDir(), "as-20260823", base) {
+		t.Errorf("Logbook() = %q, want the file under %s", dst, filepath.Join(s.LogbookDir(), "as-20260823"))
 	}
 	if _, err := os.Stat(tk.Path); !os.IsNotExist(err) {
 		t.Errorf("original ticket path %q still exists after Sync", tk.Path)
@@ -55,7 +55,7 @@ func TestSyncMovesTicketIntoDatedFolder(t *testing.T) {
 	}
 }
 
-func TestSyncRefusesNameCollision(t *testing.T) {
+func TestLogbookRefusesNameCollision(t *testing.T) {
 	s, id := syncTestStore(t)
 	tk, err := s.Load(id)
 	if err != nil {
@@ -63,9 +63,9 @@ func TestSyncRefusesNameCollision(t *testing.T) {
 	}
 	base := filepath.Base(tk.Path)
 
-	dst, err := s.Sync(id, "as-20260823")
+	dst, err := s.Logbook(id, "as-20260823")
 	if err != nil {
-		t.Fatalf("Sync: %v", err)
+		t.Fatalf("Logbook: %v", err)
 	}
 	// Recreate a ticket with the same filename so a second sync into the same
 	// folder collides.
@@ -76,7 +76,7 @@ func TestSyncRefusesNameCollision(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := s.Sync(id, "as-20260823"); err == nil {
+	if _, err := s.Logbook(id, "as-20260823"); err == nil {
 		t.Fatal("expected Sync to refuse a name collision, got nil error")
 	} else if !strings.Contains(err.Error(), base) {
 		t.Errorf("collision error %q does not name the file %q", err, base)
@@ -104,11 +104,11 @@ func TestRestoreFindsArchivedTicket(t *testing.T) {
 	}
 }
 
-func TestRestoreFindsSyncedTicket(t *testing.T) {
+func TestRestoreFindsLoggedTicket(t *testing.T) {
 	s, id := syncTestStore(t)
-	dst, err := s.Sync(id, "as-20260823")
+	dst, err := s.Logbook(id, "as-20260823")
 	if err != nil {
-		t.Fatalf("Sync: %v", err)
+		t.Fatalf("Logbook: %v", err)
 	}
 	base := filepath.Base(dst)
 
@@ -127,12 +127,12 @@ func TestRestoreOfUnknownNameNamesBothPlaces(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected Restore of an unknown name to fail")
 	}
-	if !strings.Contains(err.Error(), "archive") || !strings.Contains(err.Error(), "sync") {
-		t.Errorf("Restore error %q does not name both the archive and sync as possible places", err)
+	if !strings.Contains(err.Error(), "archive") || !strings.Contains(err.Error(), "logbook") {
+		t.Errorf("Restore error %q does not name both the archive and the logbook as possible places", err)
 	}
 }
 
-func TestRestoreAmbiguousAcrossSyncFoldersIsRefused(t *testing.T) {
+func TestRestoreAmbiguousAcrossLogbookFoldersIsRefused(t *testing.T) {
 	s, id := syncTestStore(t)
 	tk, err := s.Load(id)
 	if err != nil {
@@ -140,13 +140,13 @@ func TestRestoreAmbiguousAcrossSyncFoldersIsRefused(t *testing.T) {
 	}
 	base := filepath.Base(tk.Path)
 
-	dst, err := s.Sync(id, "as-20260823")
+	dst, err := s.Logbook(id, "as-20260823")
 	if err != nil {
-		t.Fatalf("Sync: %v", err)
+		t.Fatalf("Logbook: %v", err)
 	}
 	// Place a second file with the same base name in a different sync folder,
 	// so Restore has two candidates and must refuse rather than guess.
-	otherDir := filepath.Join(s.SyncDir(), "amr-20260824")
+	otherDir := filepath.Join(s.LogbookDir(), "amr-20260824")
 	if err := os.MkdirAll(otherDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -177,13 +177,13 @@ func TestRestoreCannotEscapeStore(t *testing.T) {
 	}
 }
 
-// TestPathsAndListIgnoreSyncDir asserts a populated .jaira/sync/ is invisible
+// TestPathsAndListIgnoreLogbookDir asserts a populated .jaira/sync/ is invisible
 // to Paths (and therefore List and core/validate): a synced ticket is not a
 // board ticket.
-func TestPathsAndListIgnoreSyncDir(t *testing.T) {
+func TestPathsAndListIgnoreLogbookDir(t *testing.T) {
 	s, id := syncTestStore(t)
-	if _, err := s.Sync(id, "as-20260823"); err != nil {
-		t.Fatalf("Sync: %v", err)
+	if _, err := s.Logbook(id, "as-20260823"); err != nil {
+		t.Fatalf("Logbook: %v", err)
 	}
 
 	paths, err := s.Paths()
@@ -191,7 +191,7 @@ func TestPathsAndListIgnoreSyncDir(t *testing.T) {
 		t.Fatalf("Paths: %v", err)
 	}
 	if len(paths) != 0 {
-		t.Errorf("Paths() = %v after the only ticket was synced off the board, want empty", paths)
+		t.Errorf("Paths() = %v after the only ticket was logged off the board, want empty", paths)
 	}
 
 	all, err := s.List()
@@ -199,6 +199,34 @@ func TestPathsAndListIgnoreSyncDir(t *testing.T) {
 		t.Fatalf("List: %v", err)
 	}
 	if len(all) != 0 {
-		t.Errorf("List() = %v after the only ticket was synced off the board, want empty", all)
+		t.Errorf("List() = %v after the only ticket was logged off the board, want empty", all)
+	}
+}
+
+// TestRestoreFindsTicketInLegacySyncFolder covers the folder name the logbook
+// had before it was called one: a board written by an earlier build has
+// .jaira/sync/<who>-<date>/, and restore must still find a ticket there.
+// Nothing writes that folder any more, so the test builds it by hand.
+func TestRestoreFindsTicketInLegacySyncFolder(t *testing.T) {
+	s, id := syncTestStore(t)
+	tk, err := s.Load(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy := filepath.Join(s.dir(), legacyLogbookSubdir, "as-20260823")
+	if err := os.MkdirAll(legacy, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	base := filepath.Base(tk.Path)
+	if err := os.Rename(tk.Path, filepath.Join(legacy, base)); err != nil {
+		t.Fatal(err)
+	}
+
+	restored, err := s.Restore(base)
+	if err != nil {
+		t.Fatalf("Restore from the legacy sync folder: %v", err)
+	}
+	if restored != filepath.Join(s.TicketsDir(), base) {
+		t.Errorf("Restore() = %q, want it back under %s", restored, s.TicketsDir())
 	}
 }

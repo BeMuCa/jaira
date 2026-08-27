@@ -28,7 +28,7 @@ derives the list itself, as the union of the ticket file's own git history and
 any commit naming the ticket's id in its message, recorded oldest-first. The
 derivation runs only when the ticket records no commits of its own, and it is
 written onto the ticket for good the moment the ticket leaves the board —
-`jaira sync` or `jaira archive`, whichever comes first.
+`jaira logbook` or `jaira archive`, whichever comes first.
 
 Every ticket in a `--json` payload carries `next_lane`: where it goes when the
 step it is in is finished, with the ticket's own Options applied and parking and
@@ -96,8 +96,8 @@ to pass `--force` to everything, which protects nothing.
 | `jaira note <id> "…"` | record progress a later session would otherwise rediscover |
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide; taking over a lease that has expired is allowed and is reported, on stderr and as `took_over` in `--json` |
 | `jaira archive <id>` | take a ticket off the board (nothing is deleted); stamps derived commits first, best-effort |
-| `jaira sync [id]` | take a terminal-lane ticket off the board into `.jaira/sync/<initials>-<yyyymmdd>/`, stamping its derived commits first; with no argument, lists what has been synced. Exit codes: 3 if the ticket has not reached the terminal lane, 5 for an unknown id, 2 for too many arguments |
-| `jaira restore <file>` | put an archived or synced ticket back |
+| `jaira logbook [id]` | take a terminal-lane ticket off the board into `.jaira/logbook/<initials>-<yyyymmdd>/`, stamping its derived commits first; with no argument, lists the logbook. Exit codes: 3 if the ticket has not reached the terminal lane, 5 for an unknown id, 2 for too many arguments |
+| `jaira restore <file>` | put an archived or logged ticket back |
 | `jaira delete <id>` | remove a ticket's file for good; asks for the handle typed back, `--force` skips it. Refused while another ticket still points at it. Archive is almost always what you want |
 | `jaira resolve <id>` | settle the fields a merge could not |
 | `jaira share` | publish the board; `--undo` makes it private again |

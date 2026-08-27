@@ -22,6 +22,11 @@ task was for months later, and on a private board a deleted file is not in git
 history to recover from — so this command removes nothing, ever. 'jaira restore'
 moves a ticket back.
 
+Before the move, every commit git can find for the ticket is stamped onto it,
+best-effort: a ticket with no commits is archived all the same. This works
+from any lane; for finished work, 'jaira logbook' files the ticket under the
+day it was finished and refuses one that has not reached the terminal lane.
+
 'jaira delete' is the one command that does remove a file, for a ticket that
 should never have existed. It asks for the handle typed back first.`,
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +66,7 @@ should never have existed. It asks for the handle typed back first.`,
 				return err
 			}
 			// Stamp what git can find before the ticket leaves the board —
-			// the same moment 'jaira sync' stamps at. Best-effort here:
+			// the same moment 'jaira logbook' stamps at. Best-effort here:
 			// archive has never required commits and must not start
 			// refusing because a derivation found nothing.
 			if env, _, envErr := loadEnv(s); envErr == nil {

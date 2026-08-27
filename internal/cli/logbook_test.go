@@ -16,7 +16,7 @@ import (
 
 // syncoutFixture builds a real git repository with a jaira store at its root
 // and one ticket sitting in the terminal lane, its file committed alongside a
-// commit naming the ticket by id — so 'jaira sync' has something for git to
+// commit naming the ticket by id — so 'jaira logbook' has something for git to
 // find. Built at test runtime rather than as a committed fixture, per this
 // repo's test conventions.
 func syncoutFixture(t *testing.T) (dir, id string) {
@@ -45,7 +45,7 @@ func syncoutFixture(t *testing.T) (dir, id string) {
 	if _, err := s.Init(); err != nil {
 		t.Fatal(err)
 	}
-	// Bypasses the gate deliberately: this test exercises 'jaira sync', not
+	// Bypasses the gate deliberately: this test exercises 'jaira logbook', not
 	// the pipeline that gets a ticket into the terminal lane.
 	id = ticket.NewID(time.Now())
 	tk, err := s.Create(map[string]string{
@@ -62,15 +62,15 @@ func syncoutFixture(t *testing.T) (dir, id string) {
 	return dir, tk.ID
 }
 
-func TestSyncStampsCommitsBeforeMoving(t *testing.T) {
+func TestLogbookStampsCommitsBeforeMoving(t *testing.T) {
 	dir, id := syncoutFixture(t)
 
-	out, err := runCLI(t, dir, "sync", id, "--json")
+	out, err := runCLI(t, dir, "logbook", id, "--json")
 	if err != nil {
-		t.Fatalf("sync: %v\n%s", err, out)
+		t.Fatalf("logbook: %v\n%s", err, out)
 	}
 	var payload struct {
-		Synced  bool     `json:"synced"`
+		Logged  bool     `json:"logged"`
 		ID      string   `json:"id"`
 		Handle  string   `json:"handle"`
 		Path    string   `json:"path"`
@@ -80,8 +80,8 @@ func TestSyncStampsCommitsBeforeMoving(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &payload); err != nil {
 		t.Fatalf("unmarshal %q: %v", out, err)
 	}
-	if !payload.Synced {
-		t.Errorf("synced = false, want true")
+	if !payload.Logged {
+		t.Errorf("logged = false, want true")
 	}
 	if payload.ID != id {
 		t.Errorf("id = %q, want %q", payload.ID, id)
@@ -93,10 +93,10 @@ func TestSyncStampsCommitsBeforeMoving(t *testing.T) {
 		t.Errorf("commits = %v, want at least the commit naming the ticket", payload.Commits)
 	}
 	if _, err := os.Stat(payload.Path); err != nil {
-		t.Errorf("synced file not found at %q: %v", payload.Path, err)
+		t.Errorf("logged file not found at %q: %v", payload.Path, err)
 	}
-	if !strings.Contains(payload.Path, filepath.Join(".jaira", "sync")) {
-		t.Errorf("path = %q, want it under .jaira/sync/", payload.Path)
+	if !strings.Contains(payload.Path, filepath.Join(".jaira", "logbook")) {
+		t.Errorf("path = %q, want it under .jaira/logbook/", payload.Path)
 	}
 
 	// The commits are on the file BEFORE it moves: read the moved file's raw
@@ -112,19 +112,19 @@ func TestSyncStampsCommitsBeforeMoving(t *testing.T) {
 	}
 }
 
-func TestSyncFolderIsInitialsAndDate(t *testing.T) {
+func TestLogbookFolderIsInitialsAndDate(t *testing.T) {
 	dir, id := syncoutFixture(t)
 
-	if out, err := runCLI(t, dir, "sync", id); err != nil {
-		t.Fatalf("sync: %v\n%s", err, out)
+	if out, err := runCLI(t, dir, "logbook", id); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
 	}
 	wantFolder := "as-" + time.Now().Format("20060102")
-	if _, err := os.Stat(filepath.Join(dir, ".jaira", "sync", wantFolder)); err != nil {
-		t.Errorf(".jaira/sync/%s does not exist: %v", wantFolder, err)
+	if _, err := os.Stat(filepath.Join(dir, ".jaira", "logbook", wantFolder)); err != nil {
+		t.Errorf(".jaira/logbook/%s does not exist: %v", wantFolder, err)
 	}
 }
 
-func TestSyncRefusesNonTerminalTicket(t *testing.T) {
+func TestLogbookRefusesNonTerminalTicket(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
 	s, err := ticket.At(dir)
@@ -143,9 +143,9 @@ func TestSyncRefusesNonTerminalTicket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := runCLI(t, dir, "sync", tk.ID, "--json")
+	out, err := runCLI(t, dir, "logbook", tk.ID, "--json")
 	if err == nil {
-		t.Fatalf("expected sync of a non-terminal ticket to fail, got %s", out)
+		t.Fatalf("expected logbook of a non-terminal ticket to fail, got %s", out)
 	}
 	var ce *codedError
 	if !errors.As(err, &ce) {
@@ -162,44 +162,44 @@ func TestSyncRefusesNonTerminalTicket(t *testing.T) {
 	}
 }
 
-func TestSyncWithNoArgumentListsLikeArchive(t *testing.T) {
+func TestLogbookWithNoArgumentListsLikeArchive(t *testing.T) {
 	dir, id := syncoutFixture(t)
 
-	if out, err := runCLI(t, dir, "sync"); err != nil {
-		t.Fatalf("bare sync on an empty area: %v\n%s", err, out)
-	} else if !strings.Contains(out, "Nothing has been synced") {
-		t.Errorf("bare sync on an empty area = %q, want it to say the area is empty", out)
+	if out, err := runCLI(t, dir, "logbook"); err != nil {
+		t.Fatalf("bare logbook on an empty area: %v\n%s", err, out)
+	} else if !strings.Contains(out, "logbook is empty") {
+		t.Errorf("bare logbook on an empty area = %q, want it to say the area is empty", out)
 	}
 
-	if out, err := runCLI(t, dir, "sync", id); err != nil {
-		t.Fatalf("sync: %v\n%s", err, out)
+	if out, err := runCLI(t, dir, "logbook", id); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
 	}
 
-	out, err := runCLI(t, dir, "sync")
+	out, err := runCLI(t, dir, "logbook")
 	if err != nil {
-		t.Fatalf("bare sync: %v\n%s", err, out)
+		t.Fatalf("bare logbook: %v\n%s", err, out)
 	}
 	if !strings.Contains(out, "jaira restore") {
-		t.Errorf("bare sync listing = %q, want it to end with the restore hint", out)
+		t.Errorf("bare logbook listing = %q, want it to end with the restore hint", out)
 	}
 
-	jout, err := runCLI(t, dir, "sync", "--json")
+	jout, err := runCLI(t, dir, "logbook", "--json")
 	if err != nil {
-		t.Fatalf("bare sync --json: %v\n%s", err, jout)
+		t.Fatalf("bare logbook --json: %v\n%s", err, jout)
 	}
 	var payload struct {
-		Synced []string `json:"synced"`
-		Count  int      `json:"count"`
+		Logbook []string `json:"logbook"`
+		Count   int      `json:"count"`
 	}
 	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
 		t.Fatalf("unmarshal %q: %v", jout, err)
 	}
-	if payload.Count != 1 || len(payload.Synced) != 1 {
-		t.Errorf("bare sync --json = %+v, want exactly one entry", payload)
+	if payload.Count != 1 || len(payload.Logbook) != 1 {
+		t.Errorf("bare logbook --json = %+v, want exactly one entry", payload)
 	}
 }
 
-func TestSyncTwoArgumentsIsUsageError(t *testing.T) {
+func TestLogbookTwoArgumentsIsUsageError(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
 	s, err := ticket.At(dir)
@@ -210,7 +210,7 @@ func TestSyncTwoArgumentsIsUsageError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = runCLI(t, dir, "sync", "a", "b")
+	_, err = runCLI(t, dir, "logbook", "a", "b")
 	if err == nil {
 		t.Fatal("expected 'sync a b' to fail")
 	}
@@ -250,9 +250,9 @@ func TestArchiveStampsCommitsBeforeMoving(t *testing.T) {
 	}
 }
 
-func TestSyncAndSyncTasksBothResolve(t *testing.T) {
+func TestLogbookAndSyncTasksBothResolve(t *testing.T) {
 	dir := t.TempDir()
-	if out, err := runCLI(t, dir, "sync", "--help"); err != nil {
+	if out, err := runCLI(t, dir, "logbook", "--help"); err != nil {
 		t.Fatalf("sync --help: %v\n%s", err, out)
 	}
 	if out, err := runCLI(t, dir, "sync-tasks", "--help"); err != nil {

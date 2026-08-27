@@ -254,8 +254,8 @@ Working a ticket:
   someone else: commit it, or nobody but you knows it exists — and now this is
   also what makes the commit list derivable at all: that shared commit is how
   git ties the ticket to the change
-- `jaira sync <id>` — once a ticket reaches the terminal lane, stamps its
-  commits and files it under `.jaira/sync/<you>-<date>/`, taking it off the
+- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
+  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back
 
 `jaira <command> --help` for everything else.

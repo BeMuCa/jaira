@@ -1,10 +1,11 @@
 package cli
 
-// This file implements 'jaira sync <id>' — taking a finished ticket off the
-// board with its commits stamped down. It is not 'jaira sync-tasks', which
-// mirrors an agent's task list into the backlog and lives in sync.go; the two
-// commands share a prefix by coincidence of English, not by relation, and
-// neither shadows the other.
+// This file implements 'jaira logbook <id>' — taking a finished ticket off
+// the board with its commits stamped down, into a dated folder that records
+// who finished what on which day. It was called 'jaira sync' before it was
+// released: that name implied a server this tool does not have, and collided
+// with 'jaira sync-tasks' (sync.go), which mirrors an agent's task list into
+// the backlog and is unrelated.
 
 import (
 	"fmt"
@@ -21,22 +22,25 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-func newSyncOutCmd() *cobra.Command {
+func newLogbookCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "sync [id]",
-		Short: "Take a finished ticket off the board with its commits stamped down, or list what has been synced",
-		Long: `Moves a terminal-lane ticket into .jaira/sync/<initials>-<yyyymmdd>/, after
+		Use:   "logbook [id]",
+		Short: "Take a finished ticket off the board with its commits stamped down, or list the logbook",
+		Long: `Moves a terminal-lane ticket into .jaira/logbook/<initials>-<yyyymmdd>/, after
 stamping it with every commit git can find for it. With no argument, lists
-what has already been synced.
+the logbook.
 
-Leaving the board is the moment every commit is finally known, so it is
-stamped here rather than left to whoever remembers to run 'jaira set'.
-'jaira restore <file>' brings a synced ticket back, the same as an archived
-one. Not to be confused with 'jaira sync-tasks', a different command that
-mirrors an agent's task list into the backlog.`,
+The folder is the record: who finished what, on which day. Leaving the board
+is the moment every commit is finally known, so it is stamped here rather
+than left to whoever remembers to run 'jaira set'. 'jaira restore <file>'
+brings a logged ticket back, the same as an archived one.
+
+'jaira archive' is for a ticket that is not being worked — abandoned,
+duplicate, obsolete — and works from any lane. This command is for finished
+work and refuses a ticket that has not reached the terminal lane.`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 1 {
-				return fail(ExitUsage, "usage", "sync takes at most one ticket id, received %d", len(args))
+				return fail(ExitUsage, "usage", "logbook takes at most one ticket id, received %d", len(args))
 			}
 			return nil
 		},
@@ -48,34 +52,34 @@ mirrors an agent's task list into the backlog.`,
 			w := cmd.OutOrStdout()
 
 			if len(args) == 0 {
-				return listSynced(s, w)
+				return listLogbook(s, w)
 			}
-			return syncOut(s, args[0], w)
+			return logbookOut(s, args[0], w)
 		},
 	}
 	return cmd
 }
 
-func listSynced(s *ticket.Store, w io.Writer) error {
-	names, err := syncedNames(s)
+func listLogbook(s *ticket.Store, w io.Writer) error {
+	names, err := logbookNames(s)
 	if err != nil {
 		return err
 	}
 	if g.jsonOut {
-		return emit(w, map[string]any{"synced": names, "count": len(names)})
+		return emit(w, map[string]any{"logbook": names, "count": len(names)})
 	}
 	if len(names) == 0 {
-		fmt.Fprintf(w, "Nothing has been synced off the board yet.\n")
+		fmt.Fprintf(w, "The logbook is empty.\n")
 		return nil
 	}
 	for _, n := range names {
 		fmt.Fprintf(w, "%s\n", n)
 	}
-	fmt.Fprintf(w, "\n%d synced. Bring one back with 'jaira restore <file>'.\n", len(names))
+	fmt.Fprintf(w, "\n%d in the logbook. Bring one back with 'jaira restore <file>'.\n", len(names))
 	return nil
 }
 
-func syncOut(s *ticket.Store, idArg string, w io.Writer) error {
+func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 	t, err := s.Load(idArg)
 	if err != nil {
 		return err
@@ -91,7 +95,7 @@ func syncOut(s *ticket.Store, idArg string, w io.Writer) error {
 			code:   ExitValidation,
 			reason: "not_terminal",
 			message: fmt.Sprintf(
-				"no terminal lane is installed, so there is nowhere for %s to sync from", ticket.Handle(t.ID)),
+				"no terminal lane is installed, so there is nowhere for %s to be logged from", ticket.Handle(t.ID)),
 		}
 	}
 	if t.Status != term.ID {
@@ -112,21 +116,21 @@ func syncOut(s *ticket.Store, idArg string, w io.Writer) error {
 		return err
 	}
 
-	folder := syncFolder()
-	dst, err := s.Sync(t.ID, folder)
+	folder := logbookFolder()
+	dst, err := s.Logbook(t.ID, folder)
 	if err != nil {
 		return err
 	}
 
 	if g.jsonOut {
 		return emit(w, map[string]any{
-			"synced": true, "id": t.ID, "handle": ticket.Handle(t.ID),
+			"logged": true, "id": t.ID, "handle": ticket.Handle(t.ID),
 			"path": dst, "file": filepath.Base(dst), "commits": merged,
 		})
 	}
-	fmt.Fprintf(w, "Synced %s  %s\n", ticket.Handle(t.ID), t.Title)
+	fmt.Fprintf(w, "Logged %s  %s\n", ticket.Handle(t.ID), t.Title)
 	fmt.Fprintf(w, "Stamped %d commit(s). Moved to %s — restore it with 'jaira restore %s'.\n",
-		len(merged), filepath.Join(ticket.DirName, ticket.SyncSubdir, folder), filepath.Base(dst))
+		len(merged), filepath.Join(ticket.DirName, ticket.LogbookSubdir, folder), filepath.Base(dst))
 	if len(merged) == 0 {
 		fmt.Fprintf(w, "No commits were found for this ticket. Record them by hand with 'jaira set %s commits=<sha>'.\n",
 			ticket.Handle(t.ID))
@@ -134,10 +138,10 @@ func syncOut(s *ticket.Store, idArg string, w io.Writer) error {
 	return nil
 }
 
-// syncFolder names the dated folder a sync lands in: who took the ticket off
-// and when, so the folder is a readable record of one person's sweep rather
-// than a bare filename nobody can attribute.
-func syncFolder() string {
+// logbookFolder names the dated folder a ticket lands in: who took the ticket
+// off and when, so the folder is a readable record of one person's sweep
+// rather than a bare filename nobody can attribute.
+func logbookFolder() string {
 	return fmt.Sprintf("%s-%s", coreidentity.Initials(identity()), time.Now().Format("20060102"))
 }
 
@@ -166,8 +170,8 @@ func stampCommits(s *ticket.Store, t *ticket.Ticket, derive func(*ticket.Ticket)
 	return merged, nil
 }
 
-func syncedNames(s *ticket.Store) ([]string, error) {
-	entries, err := os.ReadDir(s.SyncDir())
+func logbookNames(s *ticket.Store) ([]string, error) {
+	entries, err := os.ReadDir(s.LogbookDir())
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -179,7 +183,7 @@ func syncedNames(s *ticket.Store) ([]string, error) {
 		if !e.IsDir() {
 			continue
 		}
-		sub, err := os.ReadDir(filepath.Join(s.SyncDir(), e.Name()))
+		sub, err := os.ReadDir(filepath.Join(s.LogbookDir(), e.Name()))
 		if err != nil {
 			continue
 		}

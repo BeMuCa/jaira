@@ -27,13 +27,17 @@ const (
 	// LanesSubdir it is committed: publishing a lane is an opt-in act through
 	// the lane settings screen, not a side effect of sharing the board.
 	SharedSubdir = "shared"
-	// SyncSubdir holds tickets whose work is finished and whose commit list is
-	// final, grouped into dated folders by who took them off the board. A
+	// LogbookSubdir holds tickets whose work is finished and whose commit list
+	// is final, grouped into dated folders by who took them off the board. A
 	// folder under here is a readable record of one person's sweep — unlike
 	// ArchiveSubdir, every ticket that lands here has already had its commits
 	// stamped, because leaving the board is the point at which every commit
 	// is finally known.
-	SyncSubdir = "sync"
+	LogbookSubdir = "logbook"
+	// legacyLogbookSubdir is what the logbook was called before it was one.
+	// Nothing writes here any more; Restore still reads it so a folder written
+	// by an earlier build stays restorable.
+	legacyLogbookSubdir = "sync"
 	// SessionsSubdir and locksSubdir live under the user's home directory rather
 	// than inside the repository. tickets/, archive/ and shared/ are the parts of
 	// .jaira/ meant to be committed; lanes/ (see core/lane.ProjectLanesDir) is
@@ -127,9 +131,9 @@ func (s *Store) ArchiveDir() string { return filepath.Join(s.dir(), ArchiveSubdi
 // never publishes a lane would be its own kind of confusion.
 func (s *Store) SharedDir() string { return filepath.Join(s.dir(), SharedSubdir) }
 
-// SyncDir is where tickets taken off the board with their commits stamped
+// LogbookDir is where tickets taken off the board with their commits stamped
 // live, grouped into dated per-person folders.
-func (s *Store) SyncDir() string { return filepath.Join(s.dir(), SyncSubdir) }
+func (s *Store) LogbookDir() string { return filepath.Join(s.dir(), LogbookSubdir) }
 
 // Archive moves a ticket out of the board, returning its new path.
 //
@@ -189,22 +193,22 @@ func (s *Store) Delete(id string) (string, error) {
 	return t.Path, nil
 }
 
-// Sync moves a ticket out of the board and into a dated sync folder, returning
-// its new path. Like Archive, the file is moved rather than deleted, and a
-// name collision inside the destination folder is refused by name rather than
-// silently overwritten — this only happens if the same ticket is synced into
-// the same folder twice, which a caller should treat as a bug to look into,
-// not a state to paper over.
-func (s *Store) Sync(id, folder string) (string, error) {
+// Logbook moves a ticket out of the board and into a dated logbook folder,
+// returning its new path. Like Archive, the file is moved rather than deleted,
+// and a name collision inside the destination folder is refused by name rather
+// than silently overwritten — this only happens if the same ticket is logged
+// into the same folder twice, which a caller should treat as a bug to look
+// into, not a state to paper over.
+func (s *Store) Logbook(id, folder string) (string, error) {
 	t, err := s.Load(id)
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(s.SyncDir(), filepath.Base(folder))
+	dir := filepath.Join(s.LogbookDir(), filepath.Base(folder))
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
-	// Resolve symlinks first: syncing through a link would otherwise move the
+	// Resolve symlinks first: moving through a link would otherwise move the
 	// link and orphan the file it pointed at.
 	src, err := filepath.EvalSymlinks(t.Path)
 	if err != nil {
@@ -212,7 +216,7 @@ func (s *Store) Sync(id, folder string) (string, error) {
 	}
 	dst := filepath.Join(dir, filepath.Base(src))
 	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s already exists in %s", filepath.Base(dst), filepath.Join(SyncSubdir, filepath.Base(folder)))
+		return "", fmt.Errorf("%s already exists in %s", filepath.Base(dst), filepath.Join(LogbookSubdir, filepath.Base(folder)))
 	}
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
@@ -220,27 +224,36 @@ func (s *Store) Sync(id, folder string) (string, error) {
 	return dst, nil
 }
 
-// syncFolders lists the per-person dated folders under SyncDir, in
-// deterministic order.
-func (s *Store) syncFolders() ([]string, error) {
-	entries, err := os.ReadDir(s.SyncDir())
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
+// logbookFolders lists the per-person dated folders of the logbook as full
+// paths, in deterministic order — those under LogbookDir and, after them,
+// those under the name the logbook used to have, so a folder written by an
+// earlier build is still found.
+func (s *Store) logbookFolders() ([]string, error) {
 	var out []string
-	for _, e := range entries {
-		if e.IsDir() {
-			out = append(out, e.Name())
+	for _, sub := range []string{LogbookSubdir, legacyLogbookSubdir} {
+		root := filepath.Join(s.dir(), sub)
+		entries, err := os.ReadDir(root)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		var names []string
+		for _, e := range entries {
+			if e.IsDir() {
+				names = append(names, e.Name())
+			}
+		}
+		sort.Strings(names)
+		for _, n := range names {
+			out = append(out, filepath.Join(root, n))
 		}
 	}
-	sort.Strings(out)
 	return out, nil
 }
 
-// Restore moves an archived or synced ticket back onto the board, resolving
+// Restore moves an archived or logged ticket back onto the board, resolving
 // name from the bare filename in either case — never from a caller-supplied
 // path, so a name built to escape the store (e.g. "../../etc/passwd") cannot
 // walk it anywhere but back into TicketsDir.
@@ -252,27 +265,30 @@ func (s *Store) Restore(name string) (string, error) {
 		src = filepath.Join(s.ArchiveDir(), base)
 	}
 
-	folders, err := s.syncFolders()
+	folders, err := s.logbookFolders()
 	if err != nil {
 		return "", err
 	}
-	var syncMatches []string
+	var logMatches []string
 	for _, folder := range folders {
-		candidate := filepath.Join(s.SyncDir(), folder, base)
-		if _, err := os.Stat(candidate); err == nil {
-			syncMatches = append(syncMatches, folder)
+		if _, err := os.Stat(filepath.Join(folder, base)); err == nil {
+			logMatches = append(logMatches, folder)
 		}
+	}
+	names := make([]string, 0, len(logMatches))
+	for _, m := range logMatches {
+		names = append(names, filepath.Base(m))
 	}
 
 	switch {
-	case src != "" && len(syncMatches) > 0:
-		return "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(syncMatches, ", "))
-	case len(syncMatches) > 1:
-		return "", fmt.Errorf("%s is in more than one sync folder (%s) — remove one before restoring", base, strings.Join(syncMatches, ", "))
-	case len(syncMatches) == 1:
-		src = filepath.Join(s.SyncDir(), syncMatches[0], base)
+	case src != "" && len(logMatches) > 0:
+		return "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(names, ", "))
+	case len(logMatches) > 1:
+		return "", fmt.Errorf("%s is in more than one logbook folder (%s) — remove one before restoring", base, strings.Join(names, ", "))
+	case len(logMatches) == 1:
+		src = filepath.Join(logMatches[0], base)
 	case src == "":
-		return "", fmt.Errorf("%s is not in the archive or in .jaira/sync/", base)
+		return "", fmt.Errorf("%s is not in the archive or in .jaira/logbook/", base)
 	}
 
 	dst := filepath.Join(s.TicketsDir(), base)

@@ -46,7 +46,7 @@ func newDropBoard(root, name string, current bool) *dropBoard {
 	for _, p := range []struct{ label, dir string }{
 		{"tickets", filepath.Join(jaira, ticket.TicketsSubdir)},
 		{"archive", filepath.Join(jaira, ticket.ArchiveSubdir)},
-		{"synced tickets", filepath.Join(jaira, ticket.SyncSubdir)},
+		{"logbook", filepath.Join(jaira, ticket.LogbookSubdir)},
 		{"lanes published to teammates", filepath.Join(jaira, ticket.SharedSubdir)},
 		{"this project's lane files", lane.ProjectLanesDir(root)},
 	} {

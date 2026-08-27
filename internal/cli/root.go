@@ -189,7 +189,7 @@ Exit codes:
 		newArchiveCmd(),
 		newRestoreCmd(),
 		newDeleteCmd(),
-		newSyncOutCmd(),
+		newLogbookCmd(),
 		newNoteCmd(),
 		newResumeCmd(),
 		newMoveCmd(),
