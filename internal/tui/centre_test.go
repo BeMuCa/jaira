@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+// laneWindow is fitWindow with every lane costing the same — the shape these
+// tests ask their question in: perScreen of n lanes fit, where is the row?
+func laneWindow(idx, n, perScreen int) (start, end int) {
+	costs := make([]int, n)
+	for i := range costs {
+		costs[i] = 1
+	}
+	return fitWindow(idx, costs, perScreen)
+}
+
 // His words: the selected lane should be in the middle, so the lanes after it
 // stay visible while the window allows. Anchoring it to the right edge meant
 // what comes next — where the work goes — was never on screen.

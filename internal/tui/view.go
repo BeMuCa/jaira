@@ -293,35 +293,22 @@ func timespan(created, updated time.Time) string {
 	return s
 }
 
-// laneWindow is the run of lanes drawn when perScreen of n of them fit, with
-// idx — the focused one — inside it.
+// fitWindow is the run of lanes drawn around idx — the focused one — when each
+// lane has a cost in cells and budget cells are available. It grows from the
+// focused lane outward, one lane to the left and then one to the right, as
+// long as the next lane still fits.
 //
-// The focused lane sits in the middle of the row, not at its right edge.
-// Edge-anchoring meant the lanes *after* the focused one were never on screen —
-// and what comes after a lane is where its work goes next, which is the question
-// the board is being read to answer.
-//
-// Clamped at both ends so the row is always full: padding one side with blanks
-// to centre a first or last lane would trade the same information away again,
-// for symmetry nobody asked for.
-func laneWindow(idx, n, perScreen int) (start, end int) {
-	costs := make([]int, n)
-	for i := range costs {
-		costs[i] = 1
-	}
-	return fitWindow(idx, costs, perScreen)
-}
-
-// fitWindow is laneWindow for lanes of unequal width: each lane has a cost in
-// cells and budget cells are available. It grows from the focused lane
-// outward, one lane to the left and then one to the right, as long as the
-// next lane still fits. With equal costs that is exactly the centred, clamped
-// row laneWindow describes; with thin lanes in the mix it is what turns "how
-// many fit" back into a question with an answer.
-//
-// The focused lane is inside the window even when it alone exceeds the
-// budget: a row that scrolled past the lane you are on would be worse than
+// So the focused lane sits in the middle of the row, not at its right edge.
+// Edge-anchoring meant the lanes *after* the focused one were never on screen
+// — and what comes after a lane is where its work goes next, which is the
+// question the board is being read to answer. At either end the row stays
+// full rather than padded with blanks: centring a first or last lane would
+// trade the same information away again, for symmetry nobody asked for. And
+// the focused lane is inside the window even when it alone exceeds the
+// budget — a row that scrolled past the lane you are on would be worse than
 // one that is too wide.
+//
+// With thin lanes in the mix this is the only definition of "how many fit".
 func fitWindow(idx int, costs []int, budget int) (start, end int) {
 	if len(costs) == 0 {
 		return 0, 0
