@@ -120,7 +120,7 @@ func TestBoardStatusBarCarriesTheVersionIndicator(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.width, m.height = 150, 32
-	out := m.statusBar(m.boardFit(m.width))
+	out := m.statusBar()
 	if !strings.Contains(out, "1.3.0") || !strings.Contains(out, "jaira self upgrade") {
 		t.Errorf("status bar = %q, want the version indicator naming the available release", out)
 	}

@@ -24,28 +24,51 @@ func TestWideBoardShowsAllTenLanesByDefault(t *testing.T) {
 	}
 }
 
-// z hides the five lanes holding no tickets and keeps the five that do, and
-// says how many went and how to bring them back.
-func TestZHidesEmptyLanesAndNotices(t *testing.T) {
+// z keeps every lane on the board and draws the five holding no tickets thin:
+// the process is still all there, and a thin lane is how it says "nothing in
+// here". The lanes with tickets get the room the thin ones give up.
+func TestZDrawsEmptyLanesThinAndKeepsThemAll(t *testing.T) {
 	m := newTestModel(t, 240, 40)
+	before := m.boardFit(240)
 	m.key(key("z"))
-	out := stripANSI(m.render())
+	win := m.boardFit(240)
 
-	for _, name := range emptyLaneNames {
-		if strings.Contains(out, name) {
-			t.Errorf("empty lane %q still rendered after z:\n%s", name, out)
+	if win.start != 0 || win.end != len(m.cols) {
+		t.Errorf("window %d..%d after z, want every one of the %d lanes", win.start, win.end, len(m.cols))
+	}
+	for i, c := range m.cols {
+		if got, want := win.thin[i], len(c.tickets) == 0; got != want {
+			t.Errorf("lane %q: thin = %v, want %v (it holds %d tickets)", c.lane.ID, got, want, len(c.tickets))
 		}
 	}
+	if win.colW <= before.colW {
+		t.Errorf("full columns did not widen: %d before z, %d after", before.colW, win.colW)
+	}
+
+	out := stripANSI(m.render())
 	for _, name := range filledLaneNames {
 		if !strings.Contains(out, name) {
 			t.Errorf("filled lane %q disappeared after z:\n%s", name, out)
 		}
 	}
-	if !strings.Contains(out, "5 lane(s) hidden") {
-		t.Errorf("notice does not name the count 5 and the word 'hidden':\n%s", out)
+	if strings.Contains(out, "hidden") {
+		t.Errorf("nothing is hidden any more, yet the render says so:\n%s", out)
 	}
-	if !strings.Contains(out, "z to show") {
-		t.Errorf("notice does not name z as the way back:\n%s", out)
+}
+
+// The reason to press z at all: at 200 columns only eight full lanes fit, so
+// two are off-screen; drawn thin, all ten fit (5×24 + 5×6 = 150 cells).
+func TestZMakesRoomForLanesThatWereOffScreen(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	win := m.boardFit(200)
+	if win.end-win.start >= len(m.cols) {
+		t.Skipf("all %d lanes already fit at 200 columns; the fixture changed", len(m.cols))
+	}
+
+	m.key(key("z"))
+	win = m.boardFit(200)
+	if win.start != 0 || win.end != len(m.cols) {
+		t.Errorf("window %d..%d after z at 200 columns, want all %d lanes", win.start, win.end, len(m.cols))
 	}
 }
 
@@ -61,8 +84,8 @@ func TestSecondZRestoresEverything(t *testing.T) {
 			t.Errorf("lane %q missing after the second z:\n%s", name, out)
 		}
 	}
-	if strings.Contains(out, "hidden") {
-		t.Errorf("notice survived the second z:\n%s", out)
+	if win := m.boardFit(240); len(win.thin) != 0 {
+		t.Errorf("lanes still drawn thin after the second z: %v", win.thin)
 	}
 }
 
@@ -137,74 +160,42 @@ func equalStringSets(a, b map[string]bool) bool {
 	return true
 }
 
-// With the toggle on, l must never land the cursor on a hidden lane — it
-// steps to the next lane that holds tickets.
-func TestLWithToggleOnSkipsHiddenLanes(t *testing.T) {
+// A thin lane is still a lane: l steps onto it like any other, because what
+// is on the board is what the cursor can reach.
+func TestLWithToggleOnStepsOntoThinLanes(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	m.laneIdx = laneIndex(t, m, "backlog")
 	m.key(key("z"))
 
 	m.moveLane(1)
-	if got := m.cols[m.laneIdx].lane.ID; got != "todo" {
-		t.Errorf("l from backlog with empty lanes hidden landed on %q, want todo (skipping brainstorm)", got)
+	if got := m.cols[m.laneIdx].lane.ID; got != "brainstorm" {
+		t.Errorf("l from backlog with empty lanes thin landed on %q, want brainstorm (the adjacent lane)", got)
 	}
 }
 
-// The focused lane renders even when it holds nothing, because the cursor
-// must never point at something invisible — and the notice counts only the
-// lanes that actually went, not the one kept for the cursor. The cursor lands
-// on the empty lane the way another shell's move would (a direct index
-// assignment, bypassing moveLane's own skip), the case boardFit's keep-rule
-// exists for.
-func TestFocusedEmptyLaneStaysVisibleAndIsNotCountedHidden(t *testing.T) {
+// Toggling on while parked on an empty lane leaves the cursor where it is:
+// the lane is drawn thin, not removed, so there is nothing to move away from.
+func TestTogglingOnLeavesTheCursorOnAnEmptyLane(t *testing.T) {
 	m := newTestModel(t, 240, 40)
-	m.key(key("z")) // toggle on first, while the cursor sits on non-empty backlog
-	m.laneIdx = laneIndex(t, m, "blocked")
-	out := stripANSI(m.render())
-
-	if !strings.Contains(out, "Blocked") {
-		t.Errorf("focused empty lane disappeared:\n%s", out)
-	}
-	if !strings.Contains(out, "4 lane(s) hidden") {
-		t.Errorf("notice should count 4 hidden lanes (blocked kept for the cursor):\n%s", out)
-	}
-}
-
-// Turning the toggle on while parked on an empty lane moves the cursor to the
-// nearest lane that holds tickets, searching right first — otherwise the
-// toggle would leave the cursor stuck on the one lane it was pressed to get
-// rid of, kept on screen forever by boardFit's own keep-rule.
-func TestTogglingOnMovesCursorOffEmptyLaneSearchingRightFirst(t *testing.T) {
-	m := newTestModel(t, 240, 40)
-	m.laneIdx = laneIndex(t, m, "pre-process") // empty; in-progress (filled) is immediately right
+	m.laneIdx = laneIndex(t, m, "pre-process")
 	m.key(key("z"))
 
-	got := m.cols[m.laneIdx].lane.ID
-	if got != "in-progress" {
-		t.Errorf("cursor landed on %q after toggling on from an empty lane, want in-progress (search right)", got)
+	if got := m.cols[m.laneIdx].lane.ID; got != "pre-process" {
+		t.Errorf("cursor moved to %q on toggling from an empty lane, want it to stay on pre-process", got)
+	}
+	if win := m.boardFit(240); !win.thin[m.laneIdx] {
+		t.Errorf("the focused empty lane is not drawn thin")
 	}
 }
 
-// When nothing sits to the right, the search continues left.
-func TestTogglingOnMovesCursorOffEmptyLaneSearchingLeftAsFallback(t *testing.T) {
-	m := newTestModel(t, 240, 40)
-	m.laneIdx = laneIndex(t, m, "blocked") // empty, and the last lane: nothing to its right
-	m.key(key("z"))
-
-	got := m.cols[m.laneIdx].lane.ID
-	if got != "done" {
-		t.Errorf("cursor landed on %q after toggling on from the last (empty) lane, want done (search left fallback)", got)
-	}
-}
-
-// The toggle is a board preference: laneFocusKey's h/l must step to the
-// immediately adjacent lane regardless of hideEmpty, since that view never
+// The toggle is a board preference: laneFocusKey's h/l step to the
+// immediately adjacent lane regardless of thinEmpty, since that view never
 // shows the toggle at all.
 func TestLaneFocusIgnoresTheToggle(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	m.mode = modeLaneFocus
 	m.laneIdx = laneIndex(t, m, "backlog")
-	m.hideEmpty = true
+	m.thinEmpty = true
 
 	m.key(key("h"))
 	if got := m.cols[m.laneIdx].lane.ID; got != "blocked" {
@@ -218,14 +209,14 @@ func TestLaneFocusIgnoresTheToggle(t *testing.T) {
 func TestHintBarNamesTheToggleInBothStates(t *testing.T) {
 	m := newTestModel(t, 240, 40)
 	out := stripANSI(m.render())
-	if !strings.Contains(out, "z hide empty") {
-		t.Errorf("hint bar does not offer 'z hide empty':\n%s", out)
+	if !strings.Contains(out, "z thin empty") {
+		t.Errorf("hint bar does not offer 'z thin empty':\n%s", out)
 	}
 
 	m.key(key("z"))
 	out = stripANSI(m.render())
-	if !strings.Contains(out, "z show empty") {
-		t.Errorf("hint bar does not offer 'z show empty' once lanes are hidden:\n%s", out)
+	if !strings.Contains(out, "z widen empty") {
+		t.Errorf("hint bar does not offer 'z widen empty' once lanes are thin:\n%s", out)
 	}
 }
 
