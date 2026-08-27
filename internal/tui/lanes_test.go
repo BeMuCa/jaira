@@ -54,123 +54,26 @@ func TestLaneScreenEscFinishes(t *testing.T) {
 	}
 }
 
-// TestLaneScreenUseExportsToProjectDir asserts 'u' writes the selected lane
-// into this project's own lane directory, and the file matches the lane's
-// bytes.
-func TestLaneScreenUseExportsToProjectDir(t *testing.T) {
+// TestLaneScreenEveryBoardLaneIsAFileOfThisBoard covers the rule the screen
+// now sits on: a board is its lane directory, so every lane listed has a file
+// there, and an unchanged copy of a shipped lane is not marked as differing.
+func TestLaneScreenEveryBoardLaneIsAFileOfThisBoard(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	ls := newLaneScreen(m.store, m.lanes)
-	l := ls.selected()
-	if l == nil {
-		t.Fatal("no lane selected")
+	dir := lane.ProjectLanesDir(m.store.Root)
+	if len(ls.lanes) == 0 {
+		t.Fatal("no lanes on the board")
 	}
-
-	ls.key("u")
-	if ls.isErr {
-		t.Fatalf("use produced an error: %s", ls.msg)
-	}
-	if !strings.Contains(ls.msg, "wrote") {
-		t.Errorf("message %q does not report what was written", ls.msg)
-	}
-
-	dst := filepath.Join(lane.ProjectLanesDir(m.store.Root), l.ID+".md")
-	if _, err := os.Stat(dst); err != nil {
-		t.Errorf("expected %s to exist: %v", dst, err)
-	}
-}
-
-// TestLaneScreenUseRefusesSecondExport asserts a repeated 'u' on the same
-// lane refuses rather than silently overwriting.
-func TestLaneScreenUseRefusesSecondExport(t *testing.T) {
-	m := newTestModel(t, 150, 32)
-	ls := newLaneScreen(m.store, m.lanes)
-
-	ls.key("u")
-	if ls.isErr {
-		t.Fatalf("first use failed: %s", ls.msg)
-	}
-	ls.key("u")
-	if !ls.isErr {
-		t.Error("a second 'u' on the same lane must refuse, not overwrite silently")
-	}
-}
-
-// TestLaneScreenUseThenReloadShowsNoOverrideLabel covers the settings-screen
-// side of the "copy is not an override" rule: exporting a built-in unchanged
-// with 'u', then reloading — exactly what happens after the editor closes —
-// must not show the orange "overrides" label, because the copy behaves
-// exactly like the built-in it shadows.
-func TestLaneScreenUseThenReloadShowsNoOverrideLabel(t *testing.T) {
-	m := newTestModel(t, 150, 32)
-	ls := newLaneScreen(m.store, m.lanes)
-	l := ls.selected()
-	if l == nil {
-		t.Fatal("no lane selected")
-	}
-	id := l.ID
-
-	ls.key("u")
-	if ls.isErr {
-		t.Fatalf("use produced an error: %s", ls.msg)
-	}
-
-	if err := m.reload(); err != nil {
-		t.Fatal(err)
-	}
-	reloaded, ok := m.lanes.Get(id)
-	if !ok {
-		t.Fatalf("%s lane missing after reload", id)
-	}
-	if reloaded.Overrides != "" {
-		t.Errorf("an unmodified copy must not be marked as overriding, got %q", reloaded.Overrides)
-	}
-
-	ls2 := newLaneScreen(m.store, m.lanes)
-	out := stripANSI(ls2.render(150, 32))
-	if strings.Contains(out, "overrides "+id) {
-		t.Errorf("settings screen shows an override label for an unmodified copy:\n%s", out)
-	}
-}
-
-// TestLaneScreenPublishWritesUnderIdentitySlug asserts 'p' writes into
-// .jaira/shared/<slug>/, keyed off the acting identity.
-func TestLaneScreenPublishWritesUnderIdentitySlug(t *testing.T) {
-	t.Setenv("JAIRA_USER", "Alex Doe")
-	m := newTestModel(t, 150, 32)
-	ls := newLaneScreen(m.store, m.lanes)
-	l := ls.selected()
-	if l == nil {
-		t.Fatal("no lane selected")
-	}
-
-	ls.key("p")
-	if ls.isErr {
-		t.Fatalf("publish produced an error: %s", ls.msg)
-	}
-
-	dst := filepath.Join(m.store.SharedDir(), "alex-doe", l.ID+".md")
-	got, err := os.ReadFile(dst)
-	if err != nil {
-		t.Fatalf("expected %s to exist: %v", dst, err)
-	}
-	if l.Creator == "" && !strings.Contains(string(got), "creator: alex-doe") {
-		t.Errorf("published file missing a stamped creator, got:\n%s", got)
-	}
-}
-
-// TestLaneScreenPublishRefusesSecondPublish mirrors the export refusal.
-func TestLaneScreenPublishRefusesSecondPublish(t *testing.T) {
-	t.Setenv("JAIRA_USER", "alex")
-	m := newTestModel(t, 150, 32)
-	ls := newLaneScreen(m.store, m.lanes)
-
-	ls.key("p")
-	if ls.isErr {
-		t.Fatalf("first publish failed: %s", ls.msg)
-	}
-	ls.key("p")
-	if !ls.isErr {
-		t.Error("a second 'p' on the same lane must refuse, not overwrite silently")
+	for _, l := range ls.lanes {
+		if !strings.HasPrefix(l.Source, dir) {
+			t.Errorf("lane %q comes from %s, want a file under %s", l.ID, l.Source, dir)
+		}
+		if l.Overrides != "" {
+			t.Errorf("unchanged copy %q is marked as differing from the shipped lane", l.ID)
+		}
+		if l.Builtin {
+			t.Errorf("lane %q is marked Builtin on a board; nothing is injected any more", l.ID)
+		}
 	}
 }
 
@@ -192,7 +95,7 @@ func TestLaneScreenNewWritesSkeletonAndReloadsList(t *testing.T) {
 		t.Fatal("n must queue a command to open the skeleton in $EDITOR")
 	}
 
-	path := filepath.Join(lane.UserLanesDir(), "new-lane.md")
+	path := filepath.Join(lane.ProjectLanesDir(m.store.Root), "new-lane.md")
 	got, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("expected %s to exist: %v", path, err)
@@ -221,13 +124,13 @@ func TestLaneScreenNewTwiceWritesTwoFiles(t *testing.T) {
 	ls := newLaneScreen(m.store, m.lanes)
 
 	ls.key("n")
-	first, err := os.ReadFile(filepath.Join(lane.UserLanesDir(), "new-lane.md"))
+	first, err := os.ReadFile(filepath.Join(lane.ProjectLanesDir(m.store.Root), "new-lane.md"))
 	if err != nil {
 		t.Fatalf("expected new-lane.md to exist: %v", err)
 	}
 
 	ls.key("n")
-	second, err := os.ReadFile(filepath.Join(lane.UserLanesDir(), "new-lane-2.md"))
+	second, err := os.ReadFile(filepath.Join(lane.ProjectLanesDir(m.store.Root), "new-lane-2.md"))
 	if err != nil {
 		t.Fatalf("expected new-lane-2.md to exist rather than overwriting new-lane.md: %v", err)
 	}
@@ -261,7 +164,7 @@ precedence: 41
 	if ls.pendingCmd != nil {
 		t.Error("n must be a no-op while the shared list has focus")
 	}
-	if _, err := os.Stat(filepath.Join(lane.UserLanesDir(), "new-lane.md")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(lane.ProjectLanesDir(ls.store.Root), "new-lane.md")); !os.IsNotExist(err) {
 		t.Errorf("n must not write a skeleton while the shared list has focus, stat err = %v", err)
 	}
 }

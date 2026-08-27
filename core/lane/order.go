@@ -19,14 +19,10 @@ import (
 // that collides with the importing project's own layout.
 const orderFileName = "order"
 
-// removedFileName holds the ids of lanes explicitly removed from this
-// project, one per line, beside orderFileName. It exists because Load always
-// injects built-ins first (see Load's own doc comment: "built-ins first,
-// then either the project's own lane directory or the catalogue") — a
-// built-in has no project file to delete, so removal has nothing else to
-// record it against. A removed custom lane's project copy is also deleted by
-// Remove, but the tombstone is still the single source Load consults, so one
-// rule governs both kinds of lane.
+// removedFileName is the file a board from before "a board is its lane
+// directory" used to list the built-ins it left out — needed then because Load
+// injected every built-in under the directory's files. Nothing writes it any
+// more; migrateLegacy reads it once and deletes it.
 const removedFileName = "removed"
 
 func orderPath(root string) string   { return filepath.Join(ProjectLanesDir(root), orderFileName) }
@@ -79,19 +75,6 @@ func LoadOrder(root string) ([]string, error) {
 // SaveOrder writes a project's column order file, one id per line.
 func SaveOrder(root string, ids []string) error {
 	return writeIDList(root, orderPath(root), ids)
-}
-
-// LoadRemoved reads the ids explicitly removed from this project.
-func LoadRemoved(root string) ([]string, error) {
-	if root == "" {
-		return nil, nil
-	}
-	return readIDList(removedPath(root))
-}
-
-// SaveRemoved writes the ids explicitly removed from this project.
-func SaveRemoved(root string, ids []string) error {
-	return writeIDList(root, removedPath(root), ids)
 }
 
 // Move returns a copy of ids with id shifted delta positions — -1 is one
@@ -156,32 +139,8 @@ func applyOrder(lanes []*Lane, ids []string) ([]*Lane, []string) {
 	return out, warnings
 }
 
-// MaterialiseWorkingSet writes every currently loaded lane into this
-// project's own lane directory, verbatim, via Export — but only when that
-// directory is not yet authoritative per D-03 (ProjectLanesActive is false).
-// Add, Remove and MoveLane all call this before making their own change, so
-// a project's first lane change can never leave it with only the one lane
-// that change touched: the failure mode "directory present means the whole
-// list" exists to prevent.
-//
-// It is a no-op once the directory is authoritative, which also makes it
-// safe to call on every mutation without double-writing.
-func MaterialiseWorkingSet(root string, set *Set) error {
-	if ProjectLanesActive(root) {
-		return nil
-	}
-	dir := ProjectLanesDir(root)
-	for _, l := range set.Lanes {
-		if _, err := Export(l, dir, false); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // effectiveOrder is the column order a mutation should build on: the order
-// file if one exists, otherwise the currently loaded set's own order (which,
-// after MaterialiseWorkingSet, is exactly what just got written to disk).
+// file if one exists, otherwise the currently loaded set's own order.
 func effectiveOrder(root string, set *Set) ([]string, error) {
 	ids, err := LoadOrder(root)
 	if err != nil {
@@ -248,11 +207,10 @@ func Installable(set *Set) ([]*Lane, error) {
 	return out, nil
 }
 
-// Add brings a built-in or catalogue lane into this project: materialising
-// the working set first when the project has no lane directory yet, then
-// exporting the lane's file and appending its id to the order file. It
-// refuses a lane already part of set — "already in this project" — rather
-// than re-exporting it.
+// Add brings a built-in or catalogue lane onto this board: the lane's file
+// is written into the board's lane directory and its id appended to the order
+// file. It refuses a lane already part of set — "already in this project" —
+// rather than re-exporting it.
 func Add(root string, set *Set, id string) (string, error) {
 	if _, already := set.Get(id); already {
 		return "", fmt.Errorf("lane %q is already part of this project", id)
@@ -271,9 +229,6 @@ func Add(root string, set *Set, id string) (string, error) {
 	if l == nil {
 		return "", fmt.Errorf("no lane %q is installed or in the catalogue", id)
 	}
-	if err := MaterialiseWorkingSet(root, set); err != nil {
-		return "", err
-	}
 	dst, err := Export(l, ProjectLanesDir(root), false)
 	if err != nil {
 		return "", err
@@ -284,16 +239,6 @@ func Add(root string, set *Set, id string) (string, error) {
 	}
 	ids = append(ids, l.ID)
 	if err := SaveOrder(root, ids); err != nil {
-		return "", err
-	}
-	// Clearing any earlier removal of the same id lets a lane be removed and
-	// later added back — otherwise Load's tombstone check (see removedFileName)
-	// would keep hiding it even after this export.
-	removed, err := LoadRemoved(root)
-	if err != nil {
-		return "", err
-	}
-	if err := SaveRemoved(root, withoutID(removed, l.ID)); err != nil {
 		return "", err
 	}
 	return dst, nil
@@ -315,16 +260,12 @@ func ticketsIn(store *ticket.Store, id string) ([]string, error) {
 	return out, nil
 }
 
-// Remove takes a lane out of this project — never the catalogue — refusing
+// Remove takes a lane off this board — never out of the catalogue — refusing
 // when any ticket currently sits in it, naming them: a lane that vanishes
-// under a ticket leaves it in a lane nothing knows. It materialises the
-// working set first when the project has no lane directory yet, for the
-// same reason Add does.
-//
-// A removed lane's project copy, if any, is deleted, and its id is recorded
-// in the removed-lanes tombstone (see removedFileName) so Load excludes it
-// even when it is a built-in — Load always injects built-ins first, so a
-// built-in has no file whose absence alone could mean "removed".
+// under a ticket leaves it in a lane nothing knows. The board is its lane
+// directory, so removing is deleting the file and its line in the order file;
+// a shipped lane stays on offer in the catalogue and 'jaira lanes add' brings
+// it back.
 func Remove(root string, set *Set, store *ticket.Store, id string) (string, error) {
 	held, err := ticketsIn(store, id)
 	if err != nil {
@@ -338,9 +279,6 @@ func Remove(root string, set *Set, store *ticket.Store, id string) (string, erro
 	if !ok {
 		return "", fmt.Errorf("no lane %q is part of this project", id)
 	}
-	if err := MaterialiseWorkingSet(root, set); err != nil {
-		return "", err
-	}
 	path := filepath.Join(ProjectLanesDir(root), l.ID+".md")
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return "", err
@@ -353,27 +291,16 @@ func Remove(root string, set *Set, store *ticket.Store, id string) (string, erro
 	if err := SaveOrder(root, ids); err != nil {
 		return "", err
 	}
-	removed, err := LoadRemoved(root)
-	if err != nil {
-		return "", err
-	}
-	if err := SaveRemoved(root, append(withoutID(removed, l.ID), l.ID)); err != nil {
-		return "", err
-	}
 	return path, nil
 }
 
 // MoveLane shifts id one step in this project's column order and writes the
 // order file — the one implementation the CLI's 'lanes move' and the
 // settings screen's H/L keys both call, so "move a lane" never has two
-// bodies to drift apart. It materialises the working set first when the
-// project has no lane directory yet, for the same reason Add does.
+// bodies to drift apart.
 func MoveLane(root string, set *Set, id string, delta int) error {
 	if _, ok := set.Get(id); !ok {
 		return fmt.Errorf("no lane %q is part of this project", id)
-	}
-	if err := MaterialiseWorkingSet(root, set); err != nil {
-		return err
 	}
 	ids, err := effectiveOrder(root, set)
 	if err != nil {

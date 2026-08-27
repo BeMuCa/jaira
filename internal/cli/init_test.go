@@ -45,7 +45,7 @@ func initTestHome(t *testing.T) {
 // TestInitWithNoDefaultBoardWritesNoLaneFiles is the criterion's load-bearing
 // half at the CLI boundary: a project whose owner changed nothing carries no
 // .jaira/lanes/ directory at all.
-func TestInitWithNoDefaultBoardWritesNoLaneFiles(t *testing.T) {
+func TestInitWithNoDefaultBoardWritesTheBuiltinsAsFiles(t *testing.T) {
 	initTestHome(t)
 	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "does-not-exist.md"))
 	dir := t.TempDir()
@@ -54,11 +54,17 @@ func TestInitWithNoDefaultBoardWritesNoLaneFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init: %v\n%s", err, out)
 	}
-	if _, statErr := os.Stat(filepath.Join(dir, ".jaira", "lanes")); !os.IsNotExist(statErr) {
-		t.Errorf("expected no .jaira/lanes directory, stat err = %v", statErr)
+	// A board is its lane directory: init writes the built-ins as this
+	// board's own files, plus the order file, so nothing is implied later.
+	files, _ := filepath.Glob(filepath.Join(lane.ProjectLanesDir(dir), "*.md"))
+	if len(files) != 10 {
+		t.Errorf("%d lane files written, want the 10 built-ins: %v", len(files), files)
+	}
+	if _, statErr := os.Stat(filepath.Join(lane.ProjectLanesDir(dir), "order")); statErr != nil {
+		t.Errorf("expected an order file: %v", statErr)
 	}
 	if !strings.Contains(out, "built-in") {
-		t.Errorf("init output = %q, want it to say the built-in lanes are in use", out)
+		t.Errorf("init output = %q, want it to say the built-in lanes were written", out)
 	}
 }
 
@@ -118,8 +124,8 @@ func TestInitTwiceDoesNotReapplyDefaultBoardOverProjectChoices(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second init: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "already scopes its own lanes") {
-		t.Errorf("second init output = %q, want it to say the project already has its own lanes", out)
+	if !strings.Contains(out, "already has its own lanes") {
+		t.Errorf("second init output = %q, want it to say the board already has its own lanes", out)
 	}
 	got, err := os.ReadFile(filepath.Join(projDir, "todo.md"))
 	if err != nil {

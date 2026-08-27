@@ -3,6 +3,7 @@ package lane
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -83,94 +84,30 @@ func builtinIDList(t *testing.T) []string {
 	return ids
 }
 
-// TestDiffersFalseWhenSelectionMatchesBuiltins asserts naming exactly the
-// built-in ids, with every one resolving to the built-in, is not a
-// difference.
-func TestDiffersFalseWhenSelectionMatchesBuiltins(t *testing.T) {
-	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	set, err := Load("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	board := &DefaultBoard{Lanes: builtinIDList(t)}
-	if Differs(board, set) {
-		t.Error("a selection matching the built-ins exactly must not differ")
-	}
-}
-
-// TestDiffersFalseWhenBoardIsEmpty asserts an absent or empty selection means
-// the built-ins.
-func TestDiffersFalseWhenBoardIsEmpty(t *testing.T) {
-	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	set, err := Load("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if Differs(&DefaultBoard{}, set) {
-		t.Error("an empty board selection must not differ")
-	}
-}
-
-// TestDiffersTrueWhenALaneIsDropped asserts a shorter selection differs.
-func TestDiffersTrueWhenALaneIsDropped(t *testing.T) {
-	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	set, err := Load("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	all := builtinIDList(t)
-	board := &DefaultBoard{Lanes: all[:len(all)-1]}
-	if !Differs(board, set) {
-		t.Error("dropping a lane must differ from the built-ins")
-	}
-}
-
-// TestDiffersTrueWhenSelectedLaneIsAnOverride asserts a selection naming
-// exactly the built-in ids, but where one resolves to a catalogue override,
-// still differs.
-func TestDiffersTrueWhenSelectedLaneIsAnOverride(t *testing.T) {
-	catalogue := t.TempDir()
-	t.Setenv("JAIRA_LANES_DIR", catalogue)
-	writeLane(t, catalogue, "review.md", `---
-id: review
-name: My Review
-after: human
-precedence: 50
-agentic: true
-model-tier: strong
----
-A different prompt.
-`)
-	set, err := Load("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	board := &DefaultBoard{Lanes: builtinIDList(t)}
-	if !Differs(board, set) {
-		t.Error("a selection resolving one id to an override must differ")
-	}
-}
-
-// TestMaterialiseWritesNothingWhenBoardMatchesBuiltins is the criterion's
-// load-bearing half: a repo whose owner changed nothing carries no lane
-// files at all.
-func TestMaterialiseWritesNothingWhenBoardMatchesBuiltins(t *testing.T) {
+// TestMaterialiseWritesTheSelectionAndItsOrder asserts the files and the order
+// file together are the board: loading the root afterwards yields exactly the
+// selection, in the selection's order, with nothing added.
+func TestMaterialiseWritesTheSelectionAndItsOrder(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
 	set, err := Load("")
 	if err != nil {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	board := &DefaultBoard{Lanes: builtinIDList(t)}
-	written, err := Materialise(root, set, board)
+	want := []string{"backlog", "done", "todo"} // deliberately not the shipped order
+	written, warnings, err := Materialise(root, set, want)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(written) != 0 {
-		t.Errorf("expected nothing written, got %v", written)
+	if len(written) != 3 || len(warnings) != 0 {
+		t.Fatalf("written = %v, warnings = %v", written, warnings)
 	}
-	if _, err := os.Stat(ProjectLanesDir(root)); !os.IsNotExist(err) {
-		t.Errorf("expected %s to not exist, stat err = %v", ProjectLanesDir(root), err)
+	board, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := board.IDs(); !reflect.DeepEqual(got, want) {
+		t.Errorf("a materialised board must load as exactly its selection, in order:\n want %v\n got  %v", want, got)
 	}
 }
 
@@ -183,8 +120,7 @@ func TestMaterialiseWritesOnlyTheSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	board := &DefaultBoard{Lanes: []string{"backlog", "todo", "done"}}
-	written, err := Materialise(root, set, board)
+	written, _, err := Materialise(root, set, []string{"backlog", "todo", "done"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,22 +155,15 @@ func TestMaterialiseWarnsOnUnknownLaneAndContinues(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	board := &DefaultBoard{Lanes: []string{"backlog", "nosuchlane", "done"}}
-	written, err := Materialise(root, set, board)
+	written, warnings, err := Materialise(root, set, []string{"backlog", "nosuchlane", "done"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(written) != 2 {
 		t.Fatalf("written = %v, want 2 files (the unknown lane skipped)", written)
 	}
-	found := false
-	for _, w := range board.Warnings {
-		if containsWarning([]string{w}, "nosuchlane") {
-			found = true
-		}
-	}
-	if !found {
-		t.Errorf("expected a warning naming nosuchlane, got: %v", board.Warnings)
+	if !containsWarning(warnings, "nosuchlane") {
+		t.Errorf("expected a warning naming nosuchlane, got: %v", warnings)
 	}
 }
 

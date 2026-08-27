@@ -208,8 +208,16 @@ A lane can bind a prompt, a model tier, and an input/output contract. That turns
 the board from a progress display into a pipeline you can watch: a cheap model
 implements, an expensive one reviews.
 
-Custom lanes are single files in `~/.jaira/lanes/`, so sharing one is sending
-someone the file.
+**A board is its lane directory.** Whatever lane files `.jaira/lanes/` holds
+are the board — all of it, in the order of the `order` file beside them, and
+nothing is added underneath. A new board gets its files written on first use:
+your default board's selection, or the ten shipped lanes. Remove a lane and its
+file goes; the shipped lanes stay on offer in the catalogue, and `jaira lanes
+add` brings one back. The directory is yours and gitignored, so two people on
+one shared board can run two different boards.
+
+Custom lanes are single files in `~/.jaira/lanes/`, the catalogue, so sharing
+one is sending someone the file.
 
 ```markdown
 ---

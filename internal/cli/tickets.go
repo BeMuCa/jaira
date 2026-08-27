@@ -39,23 +39,16 @@ session and lock state is never committed. Safe to run more than once.`,
 			// knows about a project before anyone has launched the TUI in it.
 			project.Remember(s.Root)
 
-			// The default board decides which lanes this board starts with. A
-			// project that has already scoped its own .jaira/lanes/ — by hand or
-			// from an earlier init — is left alone: init must be safe to run more
-			// than once, and re-applying the default board over a project's own
-			// choices would silently discard them.
+			// The board's lanes: loading the board just created writes its first
+			// lane directory (see lane.Load) — the default board's selection, or
+			// the built-ins — so init needs nothing more than to load it. A board
+			// that already has lanes of its own is left exactly as it is: init
+			// must be safe to run more than once.
 			alreadyScoped := lane.ProjectLanesActive(s.Root)
-			var materialised []string
 			db, _ := lane.LoadDefaultBoard()
-			if !alreadyScoped {
-				lanesSet, err := lane.Load(s.Root)
-				if err != nil {
-					return err
-				}
-				materialised, err = lane.Materialise(s.Root, lanesSet, db)
-				if err != nil {
-					return err
-				}
+			boardLanes, err := lane.Load(s.Root)
+			if err != nil {
+				return err
 			}
 
 			// A new board is private: the tickets stay out of git until the user
@@ -66,9 +59,7 @@ session and lock state is never committed. Safe to run more than once.`,
 			// session does not.
 			// The board's own lanes go into the note, so the agent that opens this
 			// repository next reads the route it is actually on rather than a
-			// generic description of what a lane is. A load failure falls back to
-			// the lane-less note rather than failing the init.
-			boardLanes, _ := lane.Load(s.Root)
+			// generic description of what a lane is.
 			p := board.Prepare(s.Root, laneFacts(boardLanes))
 			// A board just prepared by this binary must not immediately be
 			// nagged about being out of date.
@@ -80,7 +71,7 @@ session and lock state is never committed. Safe to run more than once.`,
 					"private": true, "gitignore_written": p.Ignored,
 					"state_dir":   s.SessionsDir(),
 					"agent_notes": p.Notes,
-					"default_board": db.Path, "lanes_written": materialised,
+					"default_board": db.Path, "lanes": boardLanes.IDs(),
 					"lane_warnings": db.Warnings,
 				})
 			}
@@ -91,11 +82,11 @@ session and lock state is never committed. Safe to run more than once.`,
 			}
 			switch {
 			case alreadyScoped:
-				fmt.Fprintf(cmd.OutOrStdout(), "This project already scopes its own lanes; the default board was not applied.\n")
-			case len(materialised) == 0:
-				fmt.Fprintf(cmd.OutOrStdout(), "Using the built-in lanes.\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "This board already has its own lanes; the default board was not applied.\n")
+			case len(db.Lanes) > 0:
+				fmt.Fprintf(cmd.OutOrStdout(), "Wrote %d lane file(s) from your default board into %s.\n", len(boardLanes.Lanes), lane.ProjectLanesDir(s.Root))
 			default:
-				fmt.Fprintf(cmd.OutOrStdout(), "Wrote %d lane file(s) from your default board.\n", len(materialised))
+				fmt.Fprintf(cmd.OutOrStdout(), "Wrote the %d built-in lanes into %s — this board's lanes are its own; 'jaira lanes' lists them.\n", len(boardLanes.Lanes), lane.ProjectLanesDir(s.Root))
 			}
 			for _, w := range db.Warnings {
 				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", w)
@@ -818,7 +809,9 @@ The loop for building a lane or a default board by hand, no TUI required:
   3. Write the file with the tools you already have.
   4. 'jaira lanes' to check the result — a bad id or a bad option is a
      warning here, not a silent failure later.
-  5. 'jaira lanes use <id>' to put it to work in this project.`,
+  5. A file written into this board's lane directory is on the board — that
+     directory is the board. A file written into the catalogue is on offer to
+     every board; 'jaira lanes add <id>' puts it on this one.`,
 	}
 	cmd.AddCommand(
 		newLanesShowCmd(), newLanesPathCmd(), newLanesTemplateCmd(), newLanesSharedCmd(),

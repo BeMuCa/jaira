@@ -292,38 +292,44 @@ func lanesTestProject(t *testing.T) string {
 	return root
 }
 
-// TestLanesUseWritesToProjectDir asserts 'lanes use <id>' copies the named
-// lane, verbatim, into the project's own lane directory — the same call the
-// lane settings screen's 'u' key makes.
+// TestLanesUseWritesToProjectDir asserts 'lanes use <id>' copies a catalogue
+// lane, verbatim, into the board's own lane directory and onto the board — a
+// board is its lane directory, so the file is the lane, and it takes the last
+// column like 'lanes add'.
 func TestLanesUseWritesToProjectDir(t *testing.T) {
-	lanesTestCatalogue(t)
+	catalogue := lanesTestCatalogue(t)
 	root := lanesTestProject(t)
-
-	out, err := runLanes(t, root, "use", "review")
-	if err != nil {
-		t.Fatalf("lanes use review: %v\n%s", err, out)
+	if err := os.WriteFile(filepath.Join(catalogue, "custom.md"), []byte(
+		"---\nid: custom\nname: Custom\nafter: human\nprecedence: 41\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	dst := filepath.Join(lane.ProjectLanesDir(root), "review.md")
+
+	out, err := runLanes(t, root, "use", "custom")
+	if err != nil {
+		t.Fatalf("lanes use custom: %v\n%s", err, out)
+	}
+	dst := filepath.Join(lane.ProjectLanesDir(root), "custom.md")
 	if _, statErr := os.Stat(dst); statErr != nil {
 		t.Errorf("expected %s to exist: %v", dst, statErr)
 	}
 	if !strings.Contains(out, dst) {
 		t.Errorf("lanes use output = %q, want it to name %s", out, dst)
 	}
+	if ids, _ := lane.LoadOrder(root); len(ids) == 0 || ids[len(ids)-1] != "custom" {
+		t.Errorf("order file = %v, want custom appended as the last column", ids)
+	}
 }
 
-// TestLanesUseRefusesThenOverwritesWithForce asserts a second 'use' of the
-// same lane refuses without --force and succeeds with it.
+// TestLanesUseRefusesThenOverwritesWithForce asserts 'use' of a lane the
+// board already has — every shipped lane, on a fresh board — refuses without
+// --force and overwrites with it.
 func TestLanesUseRefusesThenOverwritesWithForce(t *testing.T) {
 	lanesTestCatalogue(t)
 	root := lanesTestProject(t)
 
-	if _, err := runLanes(t, root, "use", "review"); err != nil {
-		t.Fatalf("first use: %v", err)
-	}
 	_, err := runLanes(t, root, "use", "review")
 	if err == nil {
-		t.Fatal("expected a second 'use' of the same lane to refuse")
+		t.Fatal("expected 'use' of a lane already on the board to refuse")
 	}
 	var ce *codedError
 	if !errors.As(err, &ce) {
@@ -344,7 +350,7 @@ func TestLanesUseJSONCarriesPath(t *testing.T) {
 	lanesTestCatalogue(t)
 	root := lanesTestProject(t)
 
-	out, err := runLanes(t, root, "use", "review", "--json")
+	out, err := runLanes(t, root, "use", "review", "--force", "--json")
 	if err != nil {
 		t.Fatalf("lanes use --json: %v\n%s", err, out)
 	}
@@ -393,6 +399,11 @@ func TestLanesPublishWritesUnderIdentitySlug(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// publish hands a board lane to teammates, so the catalogue lane goes onto
+	// the board first — the catalogue is an offer, not part of the board.
+	if out, err := runLanes(t, root, "add", "custom"); err != nil {
+		t.Fatalf("lanes add custom: %v\n%s", err, out)
+	}
 	out, err := runLanes(t, root, "publish", "custom")
 	if err != nil {
 		t.Fatalf("lanes publish custom: %v\n%s", err, out)
@@ -1112,15 +1123,12 @@ Old copy.
 }
 
 // Without --force the same call must keep refusing, so a refresh is always a
-// deliberate act — the project copy may carry local edits.
+// deliberate act — the board's copy may carry local edits.
 func TestLanesUseStillRefusesToOverwriteWithoutForce(t *testing.T) {
 	lanesTestCatalogue(t)
 	dir := lanesTestProject(t)
 
-	if out, err := runLanes(t, dir, "use", "in-progress"); err != nil {
-		t.Fatalf("first use: %v\n%s", err, out)
-	}
 	if _, err := runLanes(t, dir, "use", "in-progress"); err == nil {
-		t.Error("second use without --force overwrote the project copy")
+		t.Error("use without --force overwrote the board's copy")
 	}
 }

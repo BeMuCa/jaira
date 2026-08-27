@@ -291,10 +291,6 @@ func (ls *laneScreen) key(s string) (done bool) {
 		} else if ls.focus == 0 && ls.selectedAvailable() != nil {
 			ls.addAvailable()
 		}
-	case "u":
-		if ls.focus == 0 {
-			ls.use()
-		}
 	case "p":
 		if ls.focus == 0 {
 			ls.publish()
@@ -462,21 +458,6 @@ func (ls *laneScreen) addFromCatalogue() {
 	ls.msg, ls.isErr = "added "+id, false
 }
 
-// use exports the selected lane into this project's own lane directory —
-// "use this lane here" is a copy with a confirmation, not its own command.
-func (ls *laneScreen) use() {
-	l := ls.selected()
-	if l == nil {
-		return
-	}
-	dst, err := lane.Export(l, lane.ProjectLanesDir(ls.store.Root), false)
-	if err != nil {
-		ls.msg, ls.isErr = err.Error(), true
-		return
-	}
-	ls.msg, ls.isErr = "wrote "+dst, false
-}
-
 // publish copies the selected lane to .jaira/shared/<slug>/, the deliberate,
 // opt-in hand-off to teammates the design note describes.
 func (ls *laneScreen) publish() {
@@ -554,8 +535,12 @@ func (ls *laneScreen) editLane() tea.Cmd {
 	})
 }
 
+// newLane writes a lane skeleton into this board's own lane directory and
+// opens it: a board is its lane directory, so a file there is on the board
+// the moment the editor closes. To offer it to other boards, publish it or
+// copy it into the catalogue.
 func (ls *laneScreen) newLane() tea.Cmd {
-	path, err := writeLaneSkeleton(lane.UserLanesDir())
+	path, err := writeLaneSkeleton(lane.ProjectLanesDir(ls.store.Root))
 	if err != nil {
 		ls.msg, ls.isErr = err.Error(), true
 		return nil
@@ -851,9 +836,9 @@ func (ls *laneScreen) render(width, height int) string {
 	// the full footer runs longer than a narrow terminal's column width, and
 	// cutting it off would silently hide a key's name rather than the column
 	// content truncate exists to fit.
-	help := []string{"E edit", "x remove", "u use", "p publish", "n new", "R refresh", "esc back"}
+	help := []string{"E edit", "x remove", "p publish", "n new", "R refresh", "esc back"}
 	if len(ls.shared) > 0 {
-		help = []string{"E edit", "x remove", "tab switch", "u use", "p publish", "a adopt", "esc back"}
+		help = []string{"E edit", "x remove", "tab switch", "p publish", "a adopt", "esc back"}
 	}
 	for _, l := range wrapHints(help, max(1, w)) {
 		sb.WriteString("\n" + styMeta.Render(l))

@@ -138,10 +138,11 @@ precedence: 41
 	}
 }
 
-// TestLoadEmptyProjectDirWarns covers the D-03 mitigation: a project
-// directory that exists but holds no lane files falls back to the catalogue
-// (same as if it were absent) but must not do so silently.
-func TestLoadEmptyProjectDirWarns(t *testing.T) {
+// TestLoadEmptyProjectDirIsSetUp: a board whose lane directory exists but
+// holds no lane files is a board with no lanes yet, and gets set up — from
+// the built-ins here, since there is no default board — and says so, naming
+// the directory. The catalogue is an offer, not part of the board.
+func TestLoadEmptyProjectDirIsSetUp(t *testing.T) {
 	catalogue := t.TempDir()
 	t.Setenv("JAIRA_LANES_DIR", catalogue)
 	writeLane(t, catalogue, "fallback.md", `---
@@ -162,17 +163,21 @@ precedence: 41
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !containsWarning(set.Warnings, projDir) {
-		t.Errorf("empty project directory must warn, naming the directory; got: %v", set.Warnings)
+	if !containsWarning(set.Warnings, projDir) || !containsWarning(set.Warnings, "set up") {
+		t.Errorf("setting the board up must be reported, naming the directory; got: %v", set.Warnings)
 	}
-	if _, ok := set.Get("fallback"); !ok {
-		t.Errorf("an empty project directory must still fall back to the catalogue: %v", set.IDs())
+	if _, ok := set.Get("fallback"); ok {
+		t.Errorf("a catalogue lane must not land on the board by itself: %v", set.IDs())
+	}
+	if got := set.IDs(); !reflect.DeepEqual(got, builtinIDList(t)) {
+		t.Errorf("board = %v, want the built-ins", got)
 	}
 }
 
-// TestLoadOverride covers the reversed collision rule: a custom lane whose id
-// matches a built-in replaces it, prompt included, and the warning names the
-// file, the id and the built-in it displaced.
+// TestLoadOverride: in the offer, a catalogue lane whose id matches a built-in
+// stands in for it, prompt included. It is marked as differing from the
+// shipped lane — the settings screen labels it — but that is not a warning:
+// a lane the user wrote on purpose is not a problem to report.
 func TestLoadOverride(t *testing.T) {
 	catalogue := t.TempDir()
 	t.Setenv("JAIRA_LANES_DIR", catalogue)
@@ -203,9 +208,11 @@ A completely different prompt.
 		t.Errorf("an overriding lane must not be marked Builtin")
 	}
 
-	want := "lane " + src + ": id \"review\" overrides the built-in lane of the same name"
-	if !containsList(set.Warnings, want) {
-		t.Errorf("missing exact override warning %q, got: %v", want, set.Warnings)
+	if l.Overrides != "review" {
+		t.Errorf("Overrides = %q, want the shipped lane it differs from", l.Overrides)
+	}
+	if containsWarning(set.Warnings, "overrides") {
+		t.Errorf("a differing lane is not a warning, got: %v (file %s)", set.Warnings, src)
 	}
 }
 
@@ -247,15 +254,11 @@ description: An override that silently drops the human-exit gate.
 		t.Fatalf("test lane fixture must not declare requires-human-exit")
 	}
 
-	want := "lane " + src + ": overriding \"signoff\" drops requires-human-exit — an agent could now accept its own work here undetected"
+	want := "lane " + src + ": \"signoff\" drops requires-human-exit that the shipped lane of that name carries — an agent could now accept its own work here undetected"
 	if !containsList(set.Warnings, want) {
 		t.Errorf("missing exact gate-weakening warning %q, got: %v", want, set.Warnings)
 	}
 	// The ordinary override warning must also still be present, as its own line.
-	ordinary := "lane " + src + ": id \"signoff\" overrides the built-in lane of the same name"
-	if !containsList(set.Warnings, ordinary) {
-		t.Errorf("gate-weakening warning must be in addition to, not instead of, the ordinary override warning; got: %v", set.Warnings)
-	}
 }
 
 // TestLoadOverrideDropsMultipleProtections covers a "done" override that
@@ -281,7 +284,7 @@ description: An override that drops every protection Done carries.
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "lane " + src + ": overriding \"done\" drops terminal, requires-outcome, requires-nonmodel-signal — an agent could now accept its own work here undetected"
+	want := "lane " + src + ": \"done\" drops terminal, requires-outcome, requires-nonmodel-signal that the shipped lane of that name carries — an agent could now accept its own work here undetected"
 	if !containsList(set.Warnings, want) {
 		t.Errorf("missing exact multi-protection warning %q, got: %v", want, set.Warnings)
 	}
@@ -368,10 +371,11 @@ func TestLoadOverrideDifferingOnlyByCreatorIsSilent(t *testing.T) {
 	}
 }
 
-// TestLoadOverrideChangedPromptStillWarns covers the other side: a shadowing
-// file identical to the built-in except for its prompt is a real behaviour
-// change and must warn exactly as before.
-func TestLoadOverrideChangedPromptStillWarns(t *testing.T) {
+// TestLoadOverrideChangedPromptIsMarkedNotWarned covers the other side: a file
+// identical to the shipped lane except for its prompt differs from it, so the
+// settings screen labels it — but a prompt the user changed on purpose is not
+// a warning. Only a dropped protection is.
+func TestLoadOverrideChangedPromptIsMarkedNotWarned(t *testing.T) {
 	raw := string(builtinBytes(t, "review"))
 	const oldPrompt = "Review this change against its definition of done."
 	const newPrompt = "Review this change and reject it if you have any doubt at all."
@@ -393,11 +397,10 @@ func TestLoadOverrideChangedPromptStillWarns(t *testing.T) {
 		t.Fatalf("review lane missing: %v", set.IDs())
 	}
 	if l.Overrides != "review" {
-		t.Errorf("a changed prompt must still be marked as overriding, got %q", l.Overrides)
+		t.Errorf("a changed prompt must still be marked as differing, got %q", l.Overrides)
 	}
-	want := "lane " + src + ": id \"review\" overrides the built-in lane of the same name"
-	if !containsList(set.Warnings, want) {
-		t.Errorf("missing exact override warning %q, got: %v", want, set.Warnings)
+	if containsWarning(set.Warnings, "overrides") || containsWarning(set.Warnings, src) {
+		t.Errorf("a changed prompt is not a warning, got: %v", set.Warnings)
 	}
 }
 
@@ -974,7 +977,8 @@ func TestLoadWithNoOrderFileLeavesTodaysBehaviourUnchanged(t *testing.T) {
 // order for the lanes it names, overriding after:.
 func TestLoadOrderFileReordersColumns(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	root := t.TempDir()
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	root := newBoardRoot(t)
 
 	base, err := Load(root)
 	if err != nil {
@@ -1001,7 +1005,11 @@ func TestLoadOrderFileReordersColumns(t *testing.T) {
 // behind it produces a warning rather than failing to load.
 func TestLoadOrderFileUnknownIDWarns(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	root := t.TempDir()
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	root := newBoardRoot(t)
+	if _, err := Load(root); err != nil { // sets the board up
+		t.Fatal(err)
+	}
 	if err := SaveOrder(root, []string{"backlog", "no-such-lane"}); err != nil {
 		t.Fatal(err)
 	}
@@ -1025,7 +1033,8 @@ func TestLoadOrderFileUnknownIDWarns(t *testing.T) {
 // project but absent from the order file is never dropped from the board.
 func TestLoadOrderFileMissingLaneStillAppears(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	root := t.TempDir()
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	root := newBoardRoot(t)
 	// Name only the first lane; every other installed lane is omitted.
 	base, err := Load(root)
 	if err != nil {
@@ -1047,34 +1056,195 @@ func TestLoadOrderFileMissingLaneStillAppears(t *testing.T) {
 	}
 }
 
-// TestMaterialisedWorkingSetLoadsWithoutAnchorWarning covers what 'jaira lanes
-// remove' leaves behind: MaterialiseWorkingSet writes every lane out as a file,
-// and replaceLane deliberately does not mark a replacement Builtin, so on the
-// next load nothing is Builtin and order() starts with an empty list. A lane
-// that deliberately has no anchor — backlog, the first lane — must still be
-// placed silently there; it used to fall into the unresolved-anchor branch,
-// because terminalIndex of an empty list is 0 and present[""] is false, and
-// every subsequent command printed 'anchor "" is not installed'.
-func TestMaterialisedWorkingSetLoadsWithoutAnchorWarning(t *testing.T) {
+// TestFirstLoadSetsTheBoardUpFromTheBuiltins covers a board that has never
+// been opened: .jaira/ exists, .jaira/lanes/ does not. Load writes the
+// built-ins as files with an order file, says so once, and the next load
+// reads files — no anchor warning, backlog first, and no second "set up".
+func TestFirstLoadSetsTheBoardUpFromTheBuiltins(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	root := t.TempDir()
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	root := newBoardRoot(t)
 
-	set, err := Load(root)
+	first, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := MaterialiseWorkingSet(root, set); err != nil {
-		t.Fatal(err)
+	if !containsWarning(first.Warnings, "set up") {
+		t.Errorf("first load must say it set the board up, got: %v", first.Warnings)
+	}
+	files, _ := filepath.Glob(filepath.Join(ProjectLanesDir(root), "*.md"))
+	if len(files) != len(builtinIDList(t)) {
+		t.Errorf("%d lane files written, want %d", len(files), len(builtinIDList(t)))
+	}
+	if ids, _ := LoadOrder(root); !reflect.DeepEqual(ids, builtinIDList(t)) {
+		t.Errorf("order file = %v, want the shipped order %v", ids, builtinIDList(t))
 	}
 
 	again, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if containsWarning(again.Warnings, "anchor") {
-		t.Errorf("a materialised working set must load without an anchor warning, got: %v", again.Warnings)
+	if containsWarning(again.Warnings, "set up") || containsWarning(again.Warnings, "anchor") {
+		t.Errorf("second load must be silent about setup and anchors, got: %v", again.Warnings)
 	}
-	if got := again.IDs(); len(got) == 0 || got[0] != "backlog" {
-		t.Errorf("the unanchored lane must stay at the front: %v", got)
+	if got := again.IDs(); !reflect.DeepEqual(got, builtinIDList(t)) {
+		t.Errorf("board = %v, want %v", got, builtinIDList(t))
 	}
+}
+
+// TestFirstLoadUsesTheDefaultBoard: with a default board naming three lanes,
+// the board gets those three, in that order, and nothing else — the case that
+// used to load back as all ten.
+func TestFirstLoadUsesTheDefaultBoard(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	db := filepath.Join(t.TempDir(), "default-board.md")
+	if err := os.WriteFile(db, []byte("---\nlanes: [backlog, todo, done]\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_DEFAULT_BOARD", db)
+	root := newBoardRoot(t)
+
+	for pass := 1; pass <= 2; pass++ {
+		set, err := Load(root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := set.IDs(); !reflect.DeepEqual(got, []string{"backlog", "todo", "done"}) {
+			t.Errorf("pass %d: board = %v, want exactly the default board's three lanes", pass, got)
+		}
+	}
+}
+
+// TestABoardIsItsLaneDirectory: whatever files the directory holds are the
+// board. Delete a file and the lane is gone; nothing is injected back.
+func TestABoardIsItsLaneDirectory(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	root := newBoardRoot(t)
+	if _, err := Load(root); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"brainstorm", "pre-process", "signoff"} {
+		if err := os.Remove(filepath.Join(ProjectLanesDir(root), id+".md")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"brainstorm", "pre-process", "signoff"} {
+		if _, ok := set.Get(id); ok {
+			t.Errorf("lane %q came back although its file is gone: %v", id, set.IDs())
+		}
+	}
+	if len(set.Lanes) != len(builtinIDList(t))-3 {
+		t.Errorf("board has %d lanes, want %d", len(set.Lanes), len(builtinIDList(t))-3)
+	}
+}
+
+// TestNoBoardReturnsTheOffer: a root without .jaira/ is not a board, and
+// loading it must neither write anything nor pretend — it returns what
+// 'jaira lanes add' could offer: built-ins plus the catalogue.
+func TestNoBoardReturnsTheOffer(t *testing.T) {
+	catalogue := t.TempDir()
+	t.Setenv("JAIRA_LANES_DIR", catalogue)
+	writeLane(t, catalogue, "extra.md", "---\nid: extra\nname: Extra\nafter: human\nprecedence: 41\n---\n")
+	root := t.TempDir()
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("extra"); !ok {
+		t.Errorf("catalogue lane missing from the offer: %v", set.IDs())
+	}
+	if len(set.Lanes) != len(builtinIDList(t))+1 {
+		t.Errorf("offer has %d lanes, want built-ins plus one", len(set.Lanes))
+	}
+	if _, err := os.Stat(ProjectLanesDir(root)); !os.IsNotExist(err) {
+		t.Error("loading a non-board must not create a lane directory")
+	}
+}
+
+// TestLegacyDirectoryWithRemovedFileIsMigrated is Berk's real board: three
+// files (critique, optimize, a rewritten review), an order file naming every
+// lane, and a "removed" file naming signoff. Before, Load injected the other
+// built-ins underneath; now they are written as files once, signoff stays
+// out, "removed" is deleted, and the board looks as it did.
+func TestLegacyDirectoryWithRemovedFileIsMigrated(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := newBoardRoot(t)
+	dir := ProjectLanesDir(root)
+	writeLane(t, dir, "critique.md", "---\nid: critique\nname: Critique\nafter: in-progress\nprecedence: 45\n---\n")
+	writeLane(t, dir, "review.md", "---\nid: review\nname: Review\nafter: critique\nprecedence: 50\nrequires-human-exit: true\n---\n")
+	order := []string{"backlog", "brainstorm", "todo", "pre-process", "in-progress", "critique", "human", "review", "done", "blocked"}
+	if err := SaveOrder(root, order); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeIDList(root, removedPath(root), []string{"signoff"}); err != nil {
+		t.Fatal(err)
+	}
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsWarning(set.Warnings, "migrated") {
+		t.Errorf("migration must be reported, got: %v", set.Warnings)
+	}
+	if got := set.IDs(); !reflect.DeepEqual(got, order) {
+		t.Errorf("migrated board = %v, want the order file's %v", got, order)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "backlog.md")); err != nil {
+		t.Error("an implied built-in must now be a file")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "signoff.md")); !os.IsNotExist(err) {
+		t.Error("a lane in 'removed' must not be written")
+	}
+	if _, err := os.Stat(removedPath(root)); !os.IsNotExist(err) {
+		t.Error("the obsolete 'removed' file must be deleted")
+	}
+
+	again, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsWarning(again.Warnings, "migrated") {
+		t.Errorf("migration must run once, got again: %v", again.Warnings)
+	}
+}
+
+// TestLegacyDirectoryWithoutOrderFileIsMigrated: a hand-made directory holding
+// one custom lane, from when that meant "the built-ins plus this one". The
+// built-ins are written beside it, an order file is written, and the board
+// is the eleven lanes it always showed.
+func TestLegacyDirectoryWithoutOrderFileIsMigrated(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	root := newBoardRoot(t)
+	writeLane(t, ProjectLanesDir(root), "critique.md", "---\nid: critique\nname: Critique\nafter: in-progress\nprecedence: 45\n---\n")
+
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(set.Lanes) != len(builtinIDList(t))+1 {
+		t.Errorf("migrated board has %d lanes, want built-ins plus critique: %v", len(set.Lanes), set.IDs())
+	}
+	if ids, _ := LoadOrder(root); len(ids) != len(set.Lanes) {
+		t.Errorf("order file = %v, want every lane named", ids)
+	}
+	if set.Index("critique") != set.Index("in-progress")+1 {
+		t.Errorf("critique must sit after in-progress, its anchor: %v", set.IDs())
+	}
+}
+
+// newBoardRoot is a root that is a board — .jaira/ exists — with no lanes yet.
+func newBoardRoot(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira", "tickets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return root
 }

@@ -112,75 +112,46 @@ func yamlFlowList(items []string) string {
 	return "[" + strings.Join(items, ", ") + "]"
 }
 
-// Differs reports whether board's selection differs from the built-in set:
-// a different set of ids, or a selected lane that resolves — through set, the
-// catalogue-aware load already in hand — to something other than the
-// built-in of that id. Compared as a set, not a list: reordering alone must
-// not trigger materialisation, since order is precedence's business, not the
-// default board's.
-func Differs(board *DefaultBoard, set *Set) bool {
-	if len(board.Lanes) == 0 {
-		return false // absent or empty selection means the built-ins
-	}
-	builtins, err := Builtins()
-	if err != nil {
-		return true // cannot prove sameness; safer to materialise than to hide
-	}
-	if len(board.Lanes) != len(builtins) {
-		return true
-	}
-	builtinIDs := make(map[string]bool, len(builtins))
-	for _, b := range builtins {
-		builtinIDs[b.ID] = true
-	}
-	for _, id := range board.Lanes {
-		if !builtinIDs[id] {
-			return true
-		}
-		l, ok := set.Get(id)
-		if !ok || !l.Builtin {
-			return true // missing, or resolves to an override rather than the built-in
-		}
-	}
-	return false
-}
-
-// Materialise writes <root>/.jaira/lanes/ only when board's selection differs
-// from the built-in set — the point of the criterion is that a repo whose
-// owner changed nothing carries no lane files at all. set is used to resolve
-// each selected id to its lane (built-in or catalogue override) and to read
-// its bytes; an id the set does not have is warned about, on b, rather than
-// failing the whole write.
-func Materialise(root string, set *Set, b *DefaultBoard) ([]string, error) {
-	if !Differs(b, set) {
-		return nil, nil
-	}
+// Materialise writes the lanes named by ids — resolved against set, which is
+// the offer Load("") returns — into <root>/.jaira/lanes/ as files, and writes
+// the order file in that same order. Load calls it the first time a board is
+// opened with no lanes of its own; 'jaira init' therefore needs nothing more
+// than to load the board it just created. An id set does not have is a
+// warning, not a failure: one unknown name in a default board must not leave a
+// board without lanes.
+func Materialise(root string, set *Set, ids []string) (written []string, warnings []string, err error) {
 	dir := ProjectLanesDir(root)
-	var written []string
-	for _, id := range b.Lanes {
+	var order []string
+	for _, id := range ids {
 		l, ok := set.Get(id)
 		if !ok {
-			b.Warnings = append(b.Warnings, fmt.Sprintf(
+			warnings = append(warnings, fmt.Sprintf(
 				"default board names lane %q, which is not installed; skipped", id))
 			continue
 		}
 		raw, err := Bytes(l)
 		if err != nil {
-			return written, err
+			return written, warnings, err
 		}
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return written, err
+			return written, warnings, err
 		}
 		// Named from the resolved lane's own, already-validID-constrained ID —
 		// never from the string in the default board — so a default board
 		// naming something odd cannot escape dir (T-5-07).
 		dst := filepath.Join(dir, l.ID+".md")
 		if err := os.WriteFile(dst, raw, 0o644); err != nil {
-			return written, err
+			return written, warnings, err
 		}
 		written = append(written, dst)
+		order = append(order, l.ID)
 	}
-	return written, nil
+	if len(order) > 0 {
+		if err := SaveOrder(root, order); err != nil {
+			return written, warnings, err
+		}
+	}
+	return written, warnings, nil
 }
 
 // Validate checks a default board against the currently installed lanes,

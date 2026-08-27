@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -26,32 +27,37 @@ func writeConflictError(err error) error {
 	return err
 }
 
-// newLanesUseCmd wraps lane.Export, the same call the lane settings screen's
-// 'u' key makes — one implementation of "take a lane from the catalogue into
-// this project", not two.
+// newLanesUseCmd copies a lane's catalogue or shipped version onto this board,
+// verbatim. Without --force it is 'lanes add' for a lane the board does not
+// have; with --force it overwrites the board's copy — the way a board's lane
+// is reset to the shipped one, or brought up to date after an upgrade.
 func newLanesUseCmd() *cobra.Command {
 	var force bool
 	cmd := &cobra.Command{
 		Use:   "use <id>",
-		Short: "Copy a catalogue lane into this project's own lane directory",
-		Long: `Copies the named lane's file, verbatim, into <root>/.jaira/lanes — the same
-move the lane settings screen's 'u' key performs. Once a project has its own
-lane file, that directory becomes authoritative for the board (see 'jaira
-lanes path').
+		Short: "Copy a lane's catalogue or shipped version onto this board, --force to overwrite the board's copy",
+		Long: `Copies the named lane's file, verbatim, from the catalogue — or the binary,
+for a shipped lane — into <root>/.jaira/lanes, and puts it on the board if it
+was not. A board is its lane directory, so the copy is the lane from then on.
 
-Refuses to overwrite an existing file unless --force is given. With --force,
-this is also how a project's copy of a lane is brought up to date after a
-jaira upgrade changed the built-in.`,
+Refuses to overwrite a file already on the board unless --force is given. With
+--force, this is how a board's copy of a lane is reset to the shipped one, or
+brought up to date after a jaira upgrade changed it.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
-			// The catalogue, not this project's lane set: a project copy
-			// shadows the catalogue lane of the same id, so resolving through
-			// the project would make 'use --force' copy the stale file onto
-			// itself and call it a refresh.
+			// Load the board first: a board opened for the first time gets its
+			// lane files here, so 'use' of a lane it already has refuses like
+			// it should, instead of writing into an empty directory.
+			if _, err := lane.Load(s.Root); err != nil {
+				return err
+			}
+			// Resolve against the offer, not the board: the board's copy is
+			// what --force is meant to replace, so resolving through it would
+			// copy the stale file onto itself and call it a refresh.
 			lanes, err := lane.Load("")
 			if err != nil {
 				return err
@@ -64,6 +70,12 @@ jaira upgrade changed the built-in.`,
 			dst, err := lane.Export(l, lane.ProjectLanesDir(s.Root), force)
 			if err != nil {
 				return writeConflictError(err)
+			}
+			// A lane new to the board takes the last column, like 'lanes add'.
+			if ids, err := lane.LoadOrder(s.Root); err == nil && len(ids) > 0 && !slices.Contains(ids, l.ID) {
+				if err := lane.SaveOrder(s.Root, append(ids, l.ID)); err != nil {
+					return err
+				}
 			}
 			refreshAgentNote(cmd, s.Root)
 			w := cmd.OutOrStdout()
@@ -85,12 +97,10 @@ func newLanesAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <id>",
 		Short: "Add a built-in or catalogue lane to this project's board",
-		Long: `Adds the named lane to this project, appending it to the column order — the
+		Long: `Adds the named lane to this board, appending it to the column order — the
 same move the lane settings screen's '+' column makes once a lane is chosen.
-
-If this project has no lane directory of its own yet, adding materialises
-the whole working set first (every lane currently on the board), so the
-project never drops to a single column because one lane was added.`,
+A board is its lane directory: the lane's file is written there, and that is
+what puts it on the board.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -174,10 +184,7 @@ func newLanesMoveCmd() *cobra.Command {
 		Short: "Move a lane one column left or right in this project",
 		Long: `Shifts the named lane one step in this project's column order, swapping it
 with its neighbour — the same move the lane settings screen's H/L keys make.
-Moving past either end is a no-op, not an error.
-
-If this project has no lane directory of its own yet, moving materialises
-the whole working set first, for the same reason 'lanes add' does.`,
+Moving past either end is a no-op, not an error.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if left == right {

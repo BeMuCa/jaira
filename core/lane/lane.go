@@ -1,18 +1,20 @@
 // Package lane resolves the board's columns.
 //
-// Seven base lanes are compiled into the binary so a fresh clone renders a
-// working board with no repository configuration. Custom lanes are single
-// markdown files under ~/.jaira/lanes (the catalogue) or, when a project has
-// scoped itself down, under <root>/.jaira/lanes (see ProjectLanesDir) — which
-// makes sharing one "send someone the file" rather than "reproduce my config".
-// Both kinds go through this same parser: a built-in lane is not a special
-// case, it is just a lane that happens to ship inside the executable.
+// A board is its lane directory: the lane files under <root>/.jaira/lanes/
+// are the board, in the order of the order file beside them, and nothing is
+// added underneath. The shipped lanes are compiled into the binary as the
+// catalogue's standing offer, together with the files under ~/.jaira/lanes;
+// a board opened for the first time gets its files written from the default
+// board's selection or from the shipped lanes, and from then on 'jaira lanes
+// add' and 'remove' are what change it. Both kinds of file go through this
+// same parser: a shipped lane is not a special case, it is a lane that
+// happens to ship inside the executable.
 //
-// A custom lane whose id matches a built-in overrides it, prompt included,
-// rather than being refused. That is deliberate: the user owns the pipeline
-// and nothing about it is off limits, including the protections a built-in
-// carries. The loader's job is not to stop an override, only to make sure it
-// is never quiet — see Load.
+// A board's file that shares a shipped lane's id is that lane — the user
+// owns the pipeline and nothing about it is off limits. The loader's one
+// reservation is a protection the shipped lane carried and the file drops;
+// that is reported, because it is exactly what the protection guards against.
+// See Load.
 package lane
 
 import (
@@ -379,127 +381,87 @@ func ProjectLanesActive(root string) bool {
 	return len(matches) > 0
 }
 
-// Load resolves the full lane set: built-ins first, then either the project's
-// own lane directory or the catalogue, per D-03.
+// Load resolves this board's lanes.
 //
-// root is the board's root. An empty root means no project is in hand — the
-// launcher spans many boards and cannot scope to one — and Load falls back to
-// built-ins plus the catalogue, exactly as it would for any project with no
-// <root>/.jaira/lanes directory of its own.
+// A board is its lane directory. When <root>/.jaira/lanes/ holds lane files,
+// those files are the board — all of it, and nothing is added to them. The
+// built-ins are compiled into the binary as the catalogue's standing offer
+// (Installable lists them beside ~/.jaira/lanes); 'jaira lanes add' copies one
+// onto a board, and nothing else does. The directory is per person and
+// gitignored, so two people on one shared board may run two different boards.
 //
-// A custom lane whose id collides with a built-in overrides it, prompt
-// included, rather than being refused. The override is always reported as a
-// warning naming the file, the id and the built-in it displaced. If the
-// override also drops a protection the built-in carried — requires-human-exit,
-// terminal, requires-outcome or requires-nonmodel-signal — a second, separate
-// warning names which protection is gone: those exist to stop an agent
-// accepting its own work, and that is exactly what losing one silently would
-// allow.
+// A board whose lane directory is empty is set up on first load: the default
+// board's selection, or the built-ins when there is none, are written into the
+// directory as files with an order file — once, reported in Warnings. This is
+// the one place a read writes. It was asked for: a board must never sit
+// half-configured, and the next command reads files rather than a fallback.
+// Boards from before this rule are brought over by migrateLegacy.
+//
+// An empty root, or a root with no .jaira/ at all, means no board is in hand —
+// the launcher spans many, a test has none, 'jaira lanes template' needs the
+// shape only — and Load returns the offer: built-ins plus the catalogue.
+//
+// A file whose id matches a shipped lane is that lane, not an override of
+// anything: nothing is on the board to override. It is still compared with the
+// shipped lane of that name, for one reason — if it drops a protection the
+// shipped lane carried (requires-human-exit, terminal, requires-outcome,
+// requires-nonmodel-signal) a warning names which, because those exist to stop
+// an agent accepting its own work, and losing one silently is exactly what
+// they guard against.
 func Load(root string) (*Set, error) {
-	lanes, err := Builtins()
+	builtins, err := Builtins()
 	if err != nil {
 		return nil, err
 	}
-	builtinByID := make(map[string]*Lane, len(lanes))
-	for _, l := range lanes {
+	builtinByID := make(map[string]*Lane, len(builtins))
+	for _, l := range builtins {
 		builtinByID[l.ID] = l
 	}
 
 	var warnings []string
-
-	// D-03: a project's own lane directory, when present and non-empty, is
-	// authoritative over the catalogue for that project. Present-but-empty is
-	// treated the same as absent (falls back to the catalogue) but is worth a
-	// warning of its own: from the user's side it looks identical to "my lanes
-	// vanished", and nothing else would say why.
-	dir := UserLanesDir()
-	if root != "" {
-		projDir := ProjectLanesDir(root)
-		if ProjectLanesActive(root) {
-			dir = projDir
-		} else if fi, statErr := os.Stat(projDir); statErr == nil && fi.IsDir() {
-			warnings = append(warnings, fmt.Sprintf(
-				"%s exists but holds no lane files; falling back to the catalogue", projDir))
-		}
-	}
-
-	if dir != "" {
-		matches, _ := filepath.Glob(filepath.Join(dir, "*.md"))
-		sort.Strings(matches)
-		seen := map[string]string{}
-		for _, m := range matches {
-			b, err := os.ReadFile(m)
+	var lanes []*Lane
+	if root == "" || !boardExists(root) {
+		// The offer: built-ins, with the catalogue laid over them. A catalogue
+		// lane sharing a built-in's id stands in for it here, so what 'jaira
+		// lanes add' offers under that id is the file the user wrote.
+		lanes = builtins
+		var w []string
+		lanes, w = readLaneDir(UserLanesDir(), lanes, builtinByID)
+		warnings = append(warnings, w...)
+	} else {
+		if !ProjectLanesActive(root) {
+			w, err := setUp(root)
 			if err != nil {
-				warnings = append(warnings, fmt.Sprintf("could not read lane %s: %v", m, err))
-				continue
+				return nil, err
 			}
-			l, err := parse(b, m, false)
-			if err != nil {
-				warnings = append(warnings, err.Error())
-				continue
-			}
-			if prev, dup := seen[l.ID]; dup {
-				warnings = append(warnings, fmt.Sprintf(
-					"lane %s: id %q already defined by %s and was ignored", m, l.ID, prev))
-				continue
-			}
-			seen[l.ID] = m
-
-			if base, overrides := builtinByID[l.ID]; overrides {
-				// A file that behaves exactly like the built-in it shadows is not an
-				// override in any sense the reader cares about — it is a copy, which
-				// is exactly what 'jaira lanes use' produces. Only warn, and only mark
-				// it as an override for the settings screen's label, when something
-				// that actually changes behaviour differs.
-				if !lanesEquivalent(base, l) {
-					l.Overrides = base.ID
-					warnings = append(warnings, fmt.Sprintf(
-						"lane %s: id %q overrides the built-in lane of the same name", m, l.ID))
-					if lost := droppedProtections(base, l); len(lost) > 0 {
-						warnings = append(warnings, fmt.Sprintf(
-							"lane %s: overriding %q drops %s — an agent could now accept its own work here undetected",
-							m, l.ID, strings.Join(lost, ", ")))
-					}
-				}
-				lanes = replaceLane(lanes, l)
-			} else {
-				lanes = append(lanes, l)
-			}
+			warnings = append(warnings, w...)
+		} else {
+			warnings = append(warnings, migrateLegacy(root)...)
 		}
-	}
-
-	// A project's removed-lanes tombstone excludes a lane even when it is a
-	// built-in — built-ins are always injected above, so a project has no
-	// file whose mere absence could mean "removed"; see removedFileName.
-	if removedIDs, err := LoadRemoved(root); err == nil && len(removedIDs) > 0 {
-		removedSet := make(map[string]bool, len(removedIDs))
-		for _, id := range removedIDs {
-			removedSet[id] = true
-		}
-		kept := lanes[:0:0]
-		for _, l := range lanes {
-			if !removedSet[l.ID] {
-				kept = append(kept, l)
-			}
-		}
-		lanes = kept
+		var w []string
+		lanes, w = readLaneDir(ProjectLanesDir(root), nil, builtinByID)
+		warnings = append(warnings, w...)
 	}
 
 	ordered, orderWarn := order(lanes)
-	warnings = append(warnings, orderWarn...)
 
-	// A project's own order file, when present, decides column order for the
-	// lanes it names — after: is no longer consulted for those. See order.go.
+	// A board's order file decides column order — after: is a hint for where
+	// a lane first lands, consulted only for a lane the file does not name.
+	// So with an order file, a dangling anchor is not worth a warning: the
+	// lane it pointed at was removed, and the order file already says where
+	// everything goes. Without one, the anchors are all there is.
 	if orderIDs, err := LoadOrder(root); err == nil && len(orderIDs) > 0 {
 		var applyWarn []string
 		ordered, applyWarn = applyOrder(ordered, orderIDs)
 		warnings = append(warnings, applyWarn...)
+	} else {
+		warnings = append(warnings, orderWarn...)
 	}
 
 	warnings = append(warnings, checkContracts(ordered)...)
 
 	if !anyRequiresSpecified(ordered) {
-		// An override could take requires-specified out of circulation entirely
+		// A board could take requires-specified out of circulation entirely
 		// (there is no built-in fallback for it the way there is for terminal or
 		// requires-outcome): without it nothing marks the boundary between a
 		// half-formed ticket and one ready to work, and a ticket can never be
@@ -513,6 +475,201 @@ func Load(root string) (*Set, error) {
 		set.byID[l.ID] = l
 	}
 	return set, nil
+}
+
+// boardExists reports whether root carries a .jaira/ directory at all — the
+// difference between "this board has no lanes yet" and "this is not a board".
+func boardExists(root string) bool {
+	fi, err := os.Stat(filepath.Join(root, ticket.DirName))
+	return err == nil && fi.IsDir()
+}
+
+// readLaneDir parses every lane file in dir onto lanes, in filename order. A
+// file sharing an id with something already in lanes replaces it (that is how
+// the catalogue lays over the built-ins in the offer); on a board lanes starts
+// empty, so every file simply is a lane. Either way a file named like a shipped
+// lane is checked for protections it drops, per Load's doc comment.
+func readLaneDir(dir string, lanes []*Lane, builtinByID map[string]*Lane) ([]*Lane, []string) {
+	var warnings []string
+	if dir == "" {
+		return lanes, nil
+	}
+	matches, _ := filepath.Glob(filepath.Join(dir, "*.md"))
+	sort.Strings(matches)
+	seen := map[string]string{}
+	for _, m := range matches {
+		b, err := os.ReadFile(m)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("could not read lane %s: %v", m, err))
+			continue
+		}
+		l, err := parse(b, m, false)
+		if err != nil {
+			warnings = append(warnings, err.Error())
+			continue
+		}
+		if prev, dup := seen[l.ID]; dup {
+			warnings = append(warnings, fmt.Sprintf(
+				"lane %s: id %q already defined by %s and was ignored", m, l.ID, prev))
+			continue
+		}
+		seen[l.ID] = m
+
+		if base, shipped := builtinByID[l.ID]; shipped && !lanesEquivalent(base, l) {
+			// Overrides labels the file in the settings screen as differing
+			// from the shipped lane of that name. Only a dropped protection
+			// is worth a warning; a lane the user changed on purpose is not.
+			l.Overrides = base.ID
+			if lost := droppedProtections(base, l); len(lost) > 0 {
+				warnings = append(warnings, fmt.Sprintf(
+					"lane %s: %q drops %s that the shipped lane of that name carries — an agent could now accept its own work here undetected",
+					m, l.ID, strings.Join(lost, ", ")))
+			}
+		}
+		lanes = replaceLane(lanes, l)
+	}
+	return lanes, warnings
+}
+
+// setUp writes a board's first lane directory: the default board's selection
+// or, without one, the built-ins — each as a file, plus the order file. The
+// returned warning says what was written, because a command that quietly
+// creates a dozen files is a command whose output lies by omission.
+func setUp(root string) ([]string, error) {
+	offer, err := Load("")
+	if err != nil {
+		return nil, err
+	}
+	db, err := LoadDefaultBoard()
+	if err != nil {
+		return nil, err
+	}
+	ids, source := db.Lanes, "your default board"
+	if len(ids) == 0 {
+		source = "the built-in lanes"
+		for _, l := range offer.Lanes {
+			if l.Builtin {
+				ids = append(ids, l.ID)
+			}
+		}
+	}
+	written, warnings, err := Materialise(root, offer, ids)
+	if err != nil {
+		return nil, err
+	}
+	warnings = append(warnings, fmt.Sprintf(
+		"set up %s with %d lane(s) from %s — this board's lanes are its own now; 'jaira lanes' lists them, 'jaira lanes add|remove' changes them",
+		ProjectLanesDir(root), len(written), source))
+	return warnings, nil
+}
+
+// migrateLegacy brings a lane directory from before "a board is its lane
+// directory" over to it. Back then Load injected the built-ins under whatever
+// files the directory held, so a directory with three files was a
+// thirteen-lane board, a "removed" file listed the built-ins to leave out, and
+// the order file named lanes that had no file. Two signs mark such a
+// directory: a "removed" file, or no order file at all.
+//
+// For each shipped lane the board used — every id the order file names, or
+// every built-in when there is no order file — that has no file and is not in
+// "removed", the shipped file is written beside the others, so the board keeps
+// looking exactly as it did. Then the order file is written and "removed" is
+// deleted, so this runs once. Everything done is reported.
+func migrateLegacy(root string) []string {
+	dir := ProjectLanesDir(root)
+	_, orderErr := os.Stat(orderPath(root))
+	_, removedErr := os.Stat(removedPath(root))
+	if orderErr == nil && removedErr != nil {
+		return nil // set up under the current rule; nothing to do
+	}
+	builtins, err := Builtins()
+	if err != nil {
+		return []string{fmt.Sprintf("could not read the built-in lanes to migrate %s: %v", dir, err)}
+	}
+	builtinByID := make(map[string]*Lane, len(builtins))
+	for _, l := range builtins {
+		builtinByID[l.ID] = l
+	}
+	removed := map[string]bool{}
+	if ids, err := readIDList(removedPath(root)); err == nil {
+		for _, id := range ids {
+			removed[id] = true
+		}
+	}
+	used := map[string]bool{}
+	if ids, err := LoadOrder(root); err == nil && len(ids) > 0 {
+		for _, id := range ids {
+			used[id] = true
+		}
+	} else {
+		for _, l := range builtins {
+			used[l.ID] = true
+		}
+	}
+
+	var wrote []string
+	var warnings []string
+	for _, l := range builtins {
+		if !used[l.ID] || removed[l.ID] {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(dir, l.ID+".md")); err == nil {
+			continue
+		}
+		if _, err := Export(l, dir, false); err != nil {
+			warnings = append(warnings, fmt.Sprintf("migrating %s: could not write %s: %v", dir, l.ID, err))
+			continue
+		}
+		wrote = append(wrote, l.ID)
+	}
+	if orderErr != nil {
+		// Order it as the old board showed it: shipped lanes in shipped order,
+		// custom lanes by their anchors. readLaneDir returns filename order,
+		// so the shipped ones are re-sequenced by Builtins() first. These Lane
+		// values are for ordering only and are discarded; Load reads the
+		// directory afresh.
+		parsed, _ := readLaneDir(dir, nil, nil)
+		byID := make(map[string]*Lane, len(parsed))
+		for _, l := range parsed {
+			byID[l.ID] = l
+		}
+		var lanes []*Lane
+		for _, b := range builtins {
+			if l, ok := byID[b.ID]; ok {
+				l.Builtin = true
+				lanes = append(lanes, l)
+			}
+		}
+		for _, l := range parsed {
+			if _, shipped := builtinByID[l.ID]; !shipped {
+				lanes = append(lanes, l)
+			}
+		}
+		ordered, _ := order(lanes)
+		ids := make([]string, 0, len(ordered))
+		for _, l := range ordered {
+			ids = append(ids, l.ID)
+		}
+		if err := SaveOrder(root, ids); err != nil {
+			warnings = append(warnings, fmt.Sprintf("migrating %s: could not write the order file: %v", dir, err))
+		}
+	}
+	if removedErr == nil {
+		if err := os.Remove(removedPath(root)); err != nil {
+			warnings = append(warnings, fmt.Sprintf("migrating %s: could not delete the obsolete 'removed' file: %v", dir, err))
+		}
+	}
+	msg := fmt.Sprintf("migrated %s: a board is its lane directory now, nothing is implied", dir)
+	if len(wrote) > 0 {
+		msg += fmt.Sprintf("; wrote the %d shipped lane(s) this board used without a file: %s", len(wrote), strings.Join(wrote, ", "))
+	}
+	if orderErr != nil {
+		msg += "; wrote the order file"
+	}
+	if removedErr == nil {
+		msg += "; deleted the obsolete 'removed' file"
+	}
+	return append([]string{msg}, warnings...)
 }
 
 // lanesEquivalent reports whether replacement behaves exactly like base, so a

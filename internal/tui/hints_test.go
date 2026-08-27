@@ -106,9 +106,11 @@ precedence: 41
 	}
 }
 
-// E edits the lane under the cursor. A built-in has no file, so the edit
-// writes a catalogue override copy first and opens that.
-func TestEditBuiltinLaneWritesTheOverrideCopy(t *testing.T) {
+// TestEditBoardLaneOpensItsOwnFile: a board is its lane directory, so E on a
+// board lane opens that file — no copy is written anywhere, the catalogue
+// stays untouched. (The '+' column's built-ins still get a catalogue copy
+// first; they live inside the binary and cannot be edited in place.)
+func TestEditBoardLaneOpensItsOwnFile(t *testing.T) {
 	s, catalogue := laneTestStore(t)
 	set, err := lane.Load(s.Root)
 	if err != nil {
@@ -124,14 +126,11 @@ func TestEditBuiltinLaneWritesTheOverrideCopy(t *testing.T) {
 	if cmd := ls.editLane(); cmd == nil {
 		t.Fatalf("editLane returned no command: %v", ls.msg)
 	}
-	copy := filepath.Join(catalogue, "review.md")
-	if _, err := os.Stat(copy); err != nil {
-		t.Fatalf("no override copy was written at %s: %v", copy, err)
+	if _, err := os.Stat(filepath.Join(catalogue, "review.md")); !os.IsNotExist(err) {
+		t.Errorf("editing a board lane must not write a catalogue copy, stat err = %v", err)
 	}
-
-	// A second E must reuse the copy rather than refusing to overwrite it.
-	if cmd := ls.editLane(); cmd == nil {
-		t.Fatalf("second editLane refused: %v", ls.msg)
+	if want := filepath.Join(lane.ProjectLanesDir(s.Root), "review.md"); ls.lanes[ls.idx].Source != want {
+		t.Errorf("review lane's file = %s, want %s", ls.lanes[ls.idx].Source, want)
 	}
 }
 
