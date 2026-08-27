@@ -114,6 +114,24 @@ for when a ticket entered its lane.
 - The brainstorm on the schema (lanes, ticket shape, TUI forms) is postponed
   at his request: too much clutter in one go.
 
+## Fourth message: the marketplace, and the schema brainstorm begins
+
+- **`YM7QSA` (`0782f6e`, `94cc5bb`), at signoff.** `jaira lanes market` lists
+  the repository's `lanes/` directory from GitHub's contents API — each file
+  fetched and parsed so the table shows id, name, description — and
+  `jaira lanes market adopt <id>` puts one in the catalogue through the same
+  `lane.Adopt` a teammate's shared lane uses. The directory is the
+  marketplace: no registry, no index. `selfupdate.OverrideOf` exported for the
+  host override (same https-or-loopback rule), `lane.Parse` exported for bytes
+  that never touched a local file. README says where the lanes of others are
+  and that a PR with one file adds yours; `lanes/README.md` has "Adding
+  yours"; COMMANDS has both commands. Verified live against GitHub.
+- A research agent gathered lane ideas from popular prompt collections; the
+  report lands in `.planning/research/lane-ideas.md` (re-run after the session
+  broke and the first copy was lost with the scratchpad).
+- The schema brainstorm (lanes, tickets, TUI forms) starts with its first
+  question; nothing designed yet.
+
 ## Also this session
 
 - `human` is marked "a person's, never out" in the managed block but only
