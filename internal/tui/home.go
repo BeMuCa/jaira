@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -30,8 +31,16 @@ type HomeEntry struct {
 	Agents  int
 	Waiting int
 
+	// Logged is this board's logbook entries per day over the last
+	// logbookDays, oldest first, today last. Counted from the dated folder
+	// names, so listing a board costs no ticket read.
+	Logged []int
+
 	Err error
 }
+
+// logbookDays is how many days the launcher's activity chart covers.
+const logbookDays = 7
 
 // Home is the launcher: the icon, and every board with what it is doing.
 type Home struct {
@@ -55,6 +64,11 @@ type Home struct {
 	// msg reports what an action did. Registering boards silently looked like
 	// nothing had happened whenever they were already in the list.
 	msg string
+
+	// stats is whether the activity chart is shown under the list: logbook
+	// entries per day over the last week, every board added together. Off by
+	// default and session-only, like every other view preference.
+	stats bool
 
 	// Chosen is the board the user picked; the caller opens it.
 	Chosen string
@@ -160,6 +174,7 @@ func describe(root string, lanes *lane.Set) HomeEntry {
 		}
 	}
 	e.Total = len(tickets)
+	e.Logged = s.LoggedPerDay(time.Now(), logbookDays)
 	for _, t := range tickets {
 		l, known := lanes.Get(t.Status)
 		if !known || !l.Terminal {
@@ -248,6 +263,9 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			h.refresh(nil)
 			h.msg = "reloaded"
+			return h, nil
+		case "s":
+			h.stats = !h.stats
 			return h, nil
 		case "x":
 			// Opens a screen rather than acting: removing a board is the one
@@ -359,15 +377,88 @@ func (h *Home) render() string {
 		b.WriteString(centre.Render(truncate(lead+padTo(name, 28)+strings.Join(bits, "  "), h.width)) + "\n")
 	}
 
+	if h.stats {
+		b.WriteString("\n" + h.renderStats(centre))
+	}
+
 	if h.msg != "" {
 		b.WriteString("\n" + centre.Render(styOK.Render(truncate(h.msg, h.width))) + "\n")
 	}
 
 	b.WriteString("\n" + centre.Render(styMeta.Render(truncate(
-		"enter open · a add a board · x remove a board · d default board · r refresh · q quit", h.width))))
+		"enter open · s stats · a add a board · x remove a board · d default board · r refresh · q quit", h.width))))
 	if h.versionLine != "" {
 		b.WriteString("\n" + centre.Render(truncate(h.versionLine, h.width)))
 	}
+	return b.String()
+}
+
+// renderStats is the activity chart: logbook entries per day over the last
+// logbookDays, every board added together, today on the right and marked. It
+// counts what went into the logbook, not what was accepted — a ticket left in
+// done is not in it — and the title says so.
+func (h *Home) renderStats(centre lipgloss.Style) string {
+	days := make([]int, logbookDays)
+	for _, e := range h.entries {
+		for i, n := range e.Logged {
+			if i < len(days) {
+				days[i] += n
+			}
+		}
+	}
+	peak := 0
+	for _, n := range days {
+		peak = max(peak, n)
+	}
+
+	const rows = 4
+	const colW = 4
+	today := logbookDays - 1
+	// Every row is exactly logbookDays*colW wide, so centring lands each
+	// column in the same place on every line.
+	tone := func(i int) lipgloss.Style {
+		if i == today {
+			return stySelected
+		}
+		return styOK
+	}
+
+	var b strings.Builder
+	b.WriteString(centre.Render(styMeta.Render("logbook entries per day · last 7 days · all boards")) + "\n")
+
+	// Counts above the bars, so a day is readable without judging bar heights.
+	var line strings.Builder
+	for i, n := range days {
+		cell := ""
+		if n > 0 {
+			cell = fmt.Sprintf("%d", n)
+		}
+		line.WriteString(tone(i).Render(padTo(cell, colW)))
+	}
+	b.WriteString(centre.Render(line.String()) + "\n")
+
+	// Bars scale to the busiest day; a day with anything at all gets at least
+	// one row, so one ticket is never drawn as nothing.
+	for r := rows; r >= 1; r-- {
+		line.Reset()
+		for i, n := range days {
+			cell := "  "
+			if n > 0 && (n*rows+peak-1)/peak >= r {
+				cell = "██"
+			}
+			line.WriteString(tone(i).Render(padTo(cell, colW)))
+		}
+		b.WriteString(centre.Render(line.String()) + "\n")
+	}
+
+	// The day of the month under each bar; today is the marked one.
+	line.Reset()
+	now := time.Now()
+	for i := range days {
+		day := now.AddDate(0, 0, i-today).Format("2")
+		line.WriteString(tone(i).Render(padTo(day, colW)))
+	}
+	b.WriteString(centre.Render(line.String()) + "\n")
 	return b.String()
 }
 

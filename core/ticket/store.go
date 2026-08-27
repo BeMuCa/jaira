@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -251,6 +252,47 @@ func (s *Store) logbookFolders() ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// LoggedPerDay counts the logbook's tickets by the day of their folder, for
+// the days days ending today: out[days-1] is today, out[0] the oldest. The
+// folder name carries the date — <initials>-<yyyymmdd> — so no ticket is
+// read, and a folder whose name does not end in a date is skipped. A folder
+// under the logbook's old name counts too, the same way Restore finds it.
+func (s *Store) LoggedPerDay(now time.Time, days int) []int {
+	out := make([]int, days)
+	folders, err := s.logbookFolders()
+	if err != nil {
+		return out
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	for _, folder := range folders {
+		name := filepath.Base(folder)
+		i := strings.LastIndex(name, "-")
+		if i < 0 {
+			continue
+		}
+		day, err := time.ParseInLocation("20060102", name[i+1:], now.Location())
+		if err != nil {
+			continue
+		}
+		// Rounded, not truncated: across a DST change two midnights are 23 or
+		// 25 hours apart, and truncation would put that day off by one.
+		ago := int(math.Round(today.Sub(day).Hours() / 24))
+		if ago < 0 || ago >= days {
+			continue
+		}
+		entries, err := os.ReadDir(folder)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+				out[days-1-ago]++
+			}
+		}
+	}
+	return out
 }
 
 // Restore moves an archived or logged ticket back onto the board, resolving

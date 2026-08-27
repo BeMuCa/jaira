@@ -1,6 +1,7 @@
 package ticket
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -228,5 +229,36 @@ func TestRestoreFindsTicketInLegacySyncFolder(t *testing.T) {
 	}
 	if restored != filepath.Join(s.TicketsDir(), base) {
 		t.Errorf("Restore() = %q, want it back under %s", restored, s.TicketsDir())
+	}
+}
+
+// TestLoggedPerDayReadsTheFolderNames covers the launcher's activity count:
+// per day from the folder names alone, today last, the old folder name
+// included, and anything outside the window or without a date ignored.
+func TestLoggedPerDayReadsTheFolderNames(t *testing.T) {
+	s, _ := syncTestStore(t)
+	now := time.Now()
+	day := func(ago int) string { return now.AddDate(0, 0, -ago).Format("20060102") }
+	mk := func(sub, folder string, n int) {
+		dir := filepath.Join(s.dir(), sub, folder)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i < n; i++ {
+			if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("%d.md", i)), nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	mk(LogbookSubdir, "bc-"+day(0), 2)
+	mk(LogbookSubdir, "xy-"+day(0), 1)
+	mk(legacyLogbookSubdir, "as-"+day(3), 1)
+	mk(LogbookSubdir, "bc-"+day(7), 9)
+	mk(LogbookSubdir, "nodate", 9)
+
+	got := s.LoggedPerDay(now, 7)
+	want := []int{0, 0, 0, 1, 0, 0, 3}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("LoggedPerDay = %v, want %v", got, want)
 	}
 }

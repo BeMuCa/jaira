@@ -1,10 +1,12 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -319,5 +321,67 @@ func TestLauncherDedupesSymlinkedPaths(t *testing.T) {
 	h := newHome(t, []string{filepath.Join(root, "real"), link}, 120, 30)
 	if len(h.entries) != 1 {
 		t.Errorf("one board listed %d times: %+v", len(h.entries), h.entries)
+	}
+}
+
+// logged writes n ticket files into a board's logbook folder, creating it.
+func logged(t *testing.T, board, sub, folder string, n int) {
+	t.Helper()
+	dir := filepath.Join(board, ".jaira", sub, folder)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < n; i++ {
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("t%d.md", i)), []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// s shows a chart of logbook entries per day, every board added together and
+// only the last seven days; the folder name is the date, so nothing else is
+// read. The old folder name counts too, like restore still finds it.
+func TestHomeStatsCountLogbookEntriesPerDayAcrossBoards(t *testing.T) {
+	root := t.TempDir()
+	a := makeBoard(t, root, "alpha")
+	b := makeBoard(t, root, "beta")
+	day := func(ago int) string { return time.Now().AddDate(0, 0, -ago).Format("20060102") }
+	logged(t, a, "logbook", "bc-"+day(0), 2)
+	logged(t, b, "logbook", "bc-"+day(0), 1)
+	logged(t, a, "logbook", "bc-"+day(1), 1)
+	logged(t, b, "sync", "as-"+day(2), 1)    // the logbook's old name
+	logged(t, a, "logbook", "bc-"+day(7), 5) // a week ago: outside the window
+	logged(t, a, "logbook", "notadate", 3)   // skipped
+
+	h := newHome(t, []string{a, b}, 120, 40)
+	want := []int{0, 0, 0, 0, 1, 1, 3}
+	got := make([]int, logbookDays)
+	for _, e := range h.entries {
+		for i, n := range e.Logged {
+			got[i] += n
+		}
+	}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("logged per day = %v, want %v", got, want)
+	}
+
+	out := stripANSI(h.render())
+	if strings.Contains(out, "logbook entries per day") {
+		t.Fatalf("chart shown before s was pressed:\n%s", out)
+	}
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	out = stripANSI(h.render())
+	if !strings.Contains(out, "logbook entries per day") {
+		t.Fatalf("s did not show the chart:\n%s", out)
+	}
+	if !strings.Contains(out, "██") {
+		t.Errorf("chart has no bars:\n%s", out)
+	}
+	if !strings.Contains(out, time.Now().Format("2")) {
+		t.Errorf("chart does not label today (%s):\n%s", time.Now().Format("2"), out)
+	}
+	h.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	if out := stripANSI(h.render()); strings.Contains(out, "logbook entries per day") {
+		t.Errorf("second s did not hide the chart:\n%s", out)
 	}
 }
