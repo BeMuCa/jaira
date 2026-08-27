@@ -109,6 +109,8 @@ to pass `--force` to everything, which protects nothing.
 | `jaira lanes publish <id>` | copy a lane into `.jaira/shared/<you>/` for teammates; `--force` |
 | `jaira lanes adopt <path>` | copy a teammate's shared lane (the path `lanes shared` prints) into your catalogue; `--force` |
 | `jaira lanes default` | show or set which lanes and options a new board starts with; `--lanes`, `--options`, `--clear` |
+| `jaira lanes market` | list the lanes published in the jaira repository's `lanes/` directory on GitHub — id, name, description, fetched and parsed. Needs the network; says so otherwise. `JAIRA_MARKET_API` points it elsewhere (https, or loopback http for tests) and is named in the output when set |
+| `jaira lanes market adopt <id>` | download a marketplace lane into your catalogue under its own id; `--force` overwrites. Then `jaira lanes add <id>` puts it on a board. Exit 2 for an unknown id, naming what exists |
 
 ## Agent plumbing
 

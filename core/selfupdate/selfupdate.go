@@ -41,7 +41,7 @@ const repo = "BeMuCa/jaira"
 // is not something a user should be choosing per invocation, and a flag
 // would let it be slipped into a copy-pasted command line.
 func apiBase() string {
-	if v := overrideOf("JAIRA_RELEASE_API"); v != "" {
+	if v := OverrideOf("JAIRA_RELEASE_API"); v != "" {
 		return v
 	}
 	return "https://api.github.com/repos/" + repo
@@ -51,13 +51,13 @@ func apiBase() string {
 // downloaded from. Same env-only override and the same reasoning as
 // apiBase.
 func downloadBase() string {
-	if v := overrideOf("JAIRA_RELEASE_DOWNLOADS"); v != "" {
+	if v := OverrideOf("JAIRA_RELEASE_DOWNLOADS"); v != "" {
 		return v
 	}
 	return "https://github.com/" + repo + "/releases/download"
 }
 
-// overrideOf reads one of the two host overrides, refusing any scheme that is
+// OverrideOf reads a remote-host override from the environment, refusing any scheme that is
 // not https or a loopback http address.
 //
 // These overrides move the trust root, not just the address: checksums.txt is
@@ -74,7 +74,7 @@ func downloadBase() string {
 //
 // Overriding is also reported by the commands that act on it, so a value set in
 // a shell profile or a CI job cannot redirect an upgrade silently.
-func overrideOf(name string) string {
+func OverrideOf(name string) string {
 	v := strings.TrimSpace(os.Getenv(name))
 	if v == "" {
 		return ""
@@ -98,7 +98,7 @@ func overrideOf(name string) string {
 func Overridden() []string {
 	var out []string
 	for _, name := range []string{"JAIRA_RELEASE_API", "JAIRA_RELEASE_DOWNLOADS"} {
-		if v := overrideOf(name); v != "" {
+		if v := OverrideOf(name); v != "" {
 			out = append(out, name+"="+v)
 		}
 	}

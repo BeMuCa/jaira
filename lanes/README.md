@@ -5,12 +5,30 @@ compiled into the binary and appears on every board; these do not. They sit here
 to be read, copied and argued with, and they reach a board only because someone
 adopted them on purpose.
 
-To use one:
+To use one — no clone needed:
 
 ```bash
-jaira lanes adopt lanes/critique.md   # into your catalogue (~/.jaira/lanes)
-jaira lanes add critique              # onto this project's board
+jaira lanes market                    # what is here, fetched from GitHub
+jaira lanes market adopt critique     # into your catalogue (~/.jaira/lanes)
+jaira lanes add critique              # onto this board
 ```
+
+From a clone, `jaira lanes adopt lanes/critique.md` does the same as the
+second line.
+
+## Adding yours
+
+Open a pull request that adds **one file** here, `<id>.md`, in the shape
+`jaira lanes template` prints: frontmatter with at least `id`, `name`, `after`
+and `precedence`; `agentic: true` with a `model-tier` if a model works it, and
+then `input-requires` / `output-produces` for what it reads and must write back;
+the markdown body is the prompt. Add a row to the table below saying where it
+sits, where it sends work back to, and what it is for.
+
+Two things get your lane merged: it parses — `core/lane/shipped_test.go` loads
+every file in this directory on every CI run, so run `go test ./core/lane/`
+before you push — and the prompt says when the lane is *done*, so a loop it
+sits in can end.
 
 `jaira lanes show <id>` prints the whole contract and prompt once it is
 installed. Read it before adopting: adopting means agreeing to run whatever the

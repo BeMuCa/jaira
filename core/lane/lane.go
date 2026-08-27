@@ -212,6 +212,14 @@ func (s *Set) Default() *Lane {
 	return nil
 }
 
+// Parse reads one lane definition from bytes that did not come from a file
+// on this machine — a marketplace download, say — naming source in errors.
+// It is parse without the built-in flag: nothing arriving this way ships in
+// the binary.
+func Parse(b []byte, source string) (*Lane, error) {
+	return parse(b, source, false)
+}
+
 // parse reads one lane definition. The frontmatter carries the contract; the
 // markdown body is the prompt.
 func parse(src []byte, source string, builtin bool) (*Lane, error) {

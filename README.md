@@ -219,6 +219,15 @@ one shared board can run two different boards.
 Custom lanes are single files in `~/.jaira/lanes/`, the catalogue, so sharing
 one is sending someone the file.
 
+**Lanes other people made** live in this repository's [`lanes/`](lanes/)
+directory — the marketplace, which is nothing more than that directory.
+`jaira lanes market` lists them; `jaira lanes market adopt <id>` puts one in
+your catalogue; `jaira lanes add <id>` puts it on a board. **To add yours, open a
+pull request with one file under `lanes/`.** CI parses every file there, so a
+lane that does not load fails the build rather than the person who adopts it.
+Read a lane before you adopt it: adopting means running its prompt at the model
+tier it declares.
+
 ```markdown
 ---
 id: critique
