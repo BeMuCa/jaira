@@ -63,10 +63,13 @@ of 2026-08-30 and reproducible from the decisions above.
    understand the point — not prose walls, not bare keywords.
 
 10. **The reviewer's view**: a ticket in review/signoff shows, in this order:
-    problem (goal), what, why, resolves, summary, gaps, check. He liked that
-    shape and today's detail pane lost part of it — see the ticket filed for
-    the current gap, which is a defect to fix before or with cut 4, not only
-    spec content.
+    problem (goal), what, why, resolves, summary, gaps, check — concise
+    bullets. The detail pane already renders Outcome and Review blocks
+    (view.go ~848-860) but ONLY when non-empty, so a ticket that reached
+    review unworked shows just base + DoD and the reviewer cannot see what is
+    owed. Rule for the spec: a field a lane on this board declares is shown
+    even when empty (an empty row names the lane that owes it) — ticketed as
+    a defect to land with or before cut 4.
 
 ## Open
 
