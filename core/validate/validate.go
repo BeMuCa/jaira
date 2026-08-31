@@ -9,6 +9,7 @@ package validate
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/lane"
@@ -25,15 +26,23 @@ const (
 
 // Problem codes, stable so an agent can branch on them.
 const (
-	CodeBadID        = "bad_id"
-	CodeNoTitle      = "no_title"
-	CodeUnknownLane  = "unknown_lane"
-	CodeBadTimestamp = "bad_timestamp"
-	CodeDanglingDep  = "dangling_dependency"
-	CodeSelfDep      = "self_dependency"
-	CodeDuplicateID  = "duplicate_id"
-	CodeIncomplete   = "incomplete"
+	CodeBadID         = "bad_id"
+	CodeNoTitle       = "no_title"
+	CodeUnknownLane   = "unknown_lane"
+	CodeBadTimestamp  = "bad_timestamp"
+	CodeDanglingDep   = "dangling_dependency"
+	CodeSelfDep       = "self_dependency"
+	CodeDuplicateID   = "duplicate_id"
+	CodeIncomplete    = "incomplete"
+	CodeUndeclaredDep = "undeclared_dependency"
 )
+
+// handleRef matches a bare handle: the six-character tail ticket.Handle
+// prints, drawn from ULID's Crockford base32 alphabet (no I, L, O, U). Almost
+// no ordinary word survives that alphabet, which is what keeps this from
+// firing on prose; the resolve-against-the-store check below is the real
+// filter against the rest.
+var handleRef = regexp.MustCompile(`\b[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}\b`)
 
 // Problem is one finding about one ticket.
 type Problem struct {
@@ -63,10 +72,12 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 	var ps []Problem
 
 	byID := make(map[string]int, len(ts))
+	byHandle := make(map[string]*ticket.Ticket, len(ts))
 	for _, t := range ts {
 		if t.ID != "" {
 			byID[t.ID]++
 		}
+		byHandle[handleOf(t.ID)] = t
 	}
 	reported := map[string]bool{}
 
@@ -109,7 +120,9 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 				"updated-at is missing or unparseable; the merge driver resolves conflicts with it")
 		}
 
+		declared := make(map[string]bool, len(t.BlockedBy))
 		for _, dep := range t.BlockedBy {
+			declared[handleOf(dep)] = true
 			switch {
 			case dep == t.ID:
 				add(CodeSelfDep, SeverityError, ticket.FieldBlockedBy,
@@ -117,6 +130,35 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 			case byID[dep] == 0:
 				add(CodeDanglingDep, SeverityError, ticket.FieldBlockedBy,
 					"blocked by %s, which is not on this board; the dependency can never clear", handleOf(dep))
+			}
+		}
+
+		// A handle typed into prose reads as a dependency to a human but is
+		// invisible to the gates, which only read blocked-by. Reported only
+		// when the token also resolves to a real, non-terminal ticket, so an
+		// ordinary word that happens to share the six-character shape (say,
+		// GOLANG) cannot fire this.
+		own := handleOf(t.ID)
+		for _, src := range []struct{ name, text string }{
+			{"context", t.Context},
+			{"note", t.Body},
+		} {
+			seen := map[string]bool{}
+			for _, m := range handleRef.FindAllString(src.text, -1) {
+				if m == own || declared[m] || seen[m] {
+					continue
+				}
+				ref, ok := byHandle[m]
+				if !ok {
+					continue
+				}
+				if l, known := lanes.Get(ref.Status); known && l.Terminal {
+					continue
+				}
+				seen[m] = true
+				add(CodeUndeclaredDep, SeverityWarning, "",
+					"%s names %s which is not in blocked-by — add it with 'jaira set %s blocked-by=...' or ignore if it is not a dependency",
+					src.name, m, own)
 			}
 		}
 

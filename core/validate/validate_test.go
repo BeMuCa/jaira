@@ -160,6 +160,70 @@ func TestHasErrorsDistinguishesSeverity(t *testing.T) {
 	}
 }
 
+// A handle typed into prose reads as a dependency to a human, but the gates
+// only ever read blocked-by — this is the gap that makes the board lie about
+// a ticket being actionable.
+func TestUndeclaredDependencyMentionIsReported(t *testing.T) {
+	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	citing.Context = "waiting on the auth work, see " + ticket.Handle(dep.ID)
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	if !has(ps, CodeUndeclaredDep) {
+		t.Errorf("an undeclared handle mention was not reported: %v", codes(ps))
+	}
+	for _, p := range ps {
+		if p.Code == CodeUndeclaredDep && p.Severity != SeverityWarning {
+			t.Errorf("an undeclared dependency mention was not a warning: %+v", p)
+		}
+	}
+	if HasErrors(ps) {
+		t.Error("HasErrors reported true for a warning-only mention")
+	}
+}
+
+// Once the same handle is declared in blocked-by, the mention is exactly what
+// it looks like — an explanation, not a hidden dependency — and must stop
+// being reported.
+func TestDeclaredDependencyMentionIsNotReported(t *testing.T) {
+	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	citing.Context = "waiting on the auth work, see " + ticket.Handle(dep.ID)
+	citing.BlockedBy = []string{dep.ID}
+	if ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t)); has(ps, CodeUndeclaredDep) {
+		t.Errorf("a declared dependency's mention was reported: %v", codes(ps))
+	}
+}
+
+// A done ticket blocks nothing, so naming it in prose without a blocked-by
+// entry is not the gap this check exists to catch.
+func TestUndeclaredMentionOfTerminalTicketIsNotReported(t *testing.T) {
+	dep := tk(ticket.NewID(time.Now()), "dependency", "done")
+	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	citing.Context = "see " + ticket.Handle(dep.ID)
+	if ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t)); has(ps, CodeUndeclaredDep) {
+		t.Errorf("a mention of a done ticket was reported: %v", codes(ps))
+	}
+}
+
+// A token can share a handle's six-character shape without being one; only a
+// token that also resolves to a ticket actually on the board may warn.
+func TestShapeMatchThatResolvesToNothingIsNotReported(t *testing.T) {
+	a := tk(ticket.NewID(time.Now()), "note-writer", "todo")
+	a.Body = "spec says ABCDEF for the header, which is not a ticket"
+	if ps := Tickets([]*ticket.Ticket{a}, lanes(t)); has(ps, CodeUndeclaredDep) {
+		t.Errorf("a shape-matching token that resolves to no ticket was reported: %v", codes(ps))
+	}
+}
+
+// A ticket naming its own handle is not a dependency on itself.
+func TestOwnHandleMentionIsNotReported(t *testing.T) {
+	a := tk(ticket.NewID(time.Now()), "self-referential", "todo")
+	a.Context = "tracked as " + ticket.Handle(a.ID)
+	if ps := Tickets([]*ticket.Ticket{a}, lanes(t)); has(ps, CodeUndeclaredDep) {
+		t.Errorf("a ticket naming its own handle was reported: %v", codes(ps))
+	}
+}
+
 func TestProblemMessagesNameTheTicket(t *testing.T) {
 	bad := tk(ticket.NewID(time.Now()), "stranded", "nope-lane")
 	for _, p := range Tickets([]*ticket.Ticket{bad}, lanes(t)) {
