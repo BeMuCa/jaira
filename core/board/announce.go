@@ -109,8 +109,22 @@ type LaneFact struct {
 	HumanExit   bool
 	Question    bool
 	Parking     bool
-	RejectsTo   string
+	RejectsTo   []string
 	Produces    []string
+}
+
+// orList writes lane ids as a reader would say them — "in-progress",
+// "in-progress or human", "in-progress, human or blocked" — because a lane with
+// two back edges has two of them for a reason (a flaw goes back to be fixed, a
+// decision goes to a person) and "in-progress, human" reads like a sequence.
+func orList(ids []string) string {
+	switch len(ids) {
+	case 0:
+		return ""
+	case 1:
+		return ids[0]
+	}
+	return strings.Join(ids[:len(ids)-1], ", ") + " or " + ids[len(ids)-1]
 }
 
 // laneSection renders this board's own lanes into the note.
@@ -144,9 +158,9 @@ func laneSection(facts []LaneFact) string {
 	// A declared back edge is the loop, and the loop is the part a reader
 	// cannot infer from an ordered list.
 	for _, f := range facts {
-		if f.RejectsTo != "" {
+		if len(f.RejectsTo) > 0 {
 			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.\n",
-				f.ID, f.RejectsTo, f.ID)
+				f.ID, orList(f.RejectsTo), f.ID)
 		}
 	}
 

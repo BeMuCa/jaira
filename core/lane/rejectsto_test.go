@@ -3,6 +3,7 @@ package lane
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -44,8 +45,8 @@ Say what is wrong.
 	if !ok {
 		t.Fatal("lane did not load")
 	}
-	if l.RejectsTo != "in-progress" {
-		t.Errorf("RejectsTo = %q, want in-progress", l.RejectsTo)
+	if !slices.Equal(l.RejectsTo, []string{"in-progress"}) {
+		t.Errorf("RejectsTo = %q, want [in-progress]", l.RejectsTo)
 	}
 }
 
@@ -99,7 +100,7 @@ func TestRejectsToDefaultsEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, l := range bs {
-		if l.RejectsTo != "" {
+		if len(l.RejectsTo) > 0 {
 			t.Errorf("built-in %q declares rejects-to %q; no built-in should", l.ID, l.RejectsTo)
 		}
 	}
@@ -124,8 +125,64 @@ func TestRejectsToDoesNotMakeCopiesDrift(t *testing.T) {
 // reported like any other behaviour change.
 func TestRejectsToCountsAsDrift(t *testing.T) {
 	base := &Lane{ID: "critique", Name: "Critique"}
-	moved := &Lane{ID: "critique", Name: "Critique", RejectsTo: "todo"}
+	moved := &Lane{ID: "critique", Name: "Critique", RejectsTo: []string{"todo"}}
 	if lanesEquivalent(base, moved) {
 		t.Error("moving the back-edge did not register as a change")
 	}
+}
+
+// A rejection is not one kind of thing: a critique that found a flaw sends the
+// work back to be implemented, one that found a decision hands it to a person.
+// Both are the same lane's back edge, so a lane may name both.
+func TestRejectsToAcceptsAList(t *testing.T) {
+	s := catalogueWith(t, map[string]string{
+		"in-progress.md": laneFile("in-progress", ""),
+		"human.md":       laneFile("human", ""),
+		"critique.md":    laneFile("critique", "rejects-to: [in-progress, human]"),
+	})
+	l, ok := s.Get("critique")
+	if !ok {
+		t.Fatal("lane did not load")
+	}
+	if !slices.Equal(l.RejectsTo, []string{"in-progress", "human"}) {
+		t.Errorf("RejectsTo = %q, want [in-progress human]", l.RejectsTo)
+	}
+	for _, w := range s.Warnings {
+		if strings.Contains(w, "rejects-to") {
+			t.Errorf("a good back edge warned: %s", w)
+		}
+	}
+}
+
+// A list is validated target by target, so a lane that declares one good back
+// edge and two bad ones is told which of them is bad rather than that something
+// is.
+func TestRejectsToWarnsPerTarget(t *testing.T) {
+	s := catalogueWith(t, map[string]string{
+		"in-progress.md": laneFile("in-progress", ""),
+		"critique.md":    laneFile("critique", "rejects-to: [in-progress, nowhere-at-all, critique]"),
+	})
+	var dead, self bool
+	for _, w := range s.Warnings {
+		if strings.Contains(w, "rejects-to") && strings.Contains(w, "nowhere-at-all") {
+			dead = true
+		}
+		if strings.Contains(w, "itself") {
+			self = true
+		}
+	}
+	if !dead || !self {
+		t.Errorf("a list's bad targets were not both reported (dead=%v self=%v):\n%s",
+			dead, self, strings.Join(s.Warnings, "\n"))
+	}
+	for _, w := range s.Warnings {
+		if strings.Contains(w, "rejects-to") && strings.Contains(w, "in-progress") {
+			t.Errorf("the good target was reported too: %s", w)
+		}
+	}
+}
+
+// laneFile writes a minimal valid lane, with one extra frontmatter line to test.
+func laneFile(id, extra string) string {
+	return "---\nid: " + id + "\nname: " + id + "\ndescription: x\n" + extra + "\n---\n"
 }

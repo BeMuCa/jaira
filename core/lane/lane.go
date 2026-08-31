@@ -88,16 +88,21 @@ type Lane struct {
 	// implementation, without either lane being uninstalled.
 	RequiresOption string
 
-	// RejectsTo names the lane a ticket goes back to when this lane finds the
-	// work wanting: the loop's back edge, written down. Moving backwards has
+	// RejectsTo names the lanes a ticket goes back to when this lane finds the
+	// work wanting: the loop's back edges, written down. Moving backwards has
 	// always been allowed — the gate only checks a move that advances (see
 	// core/gate) — but nothing declared where back was, so the route lived in
 	// the prompt's prose and an agent reading the board could not see it.
 	//
+	// More than one is allowed because a rejection is not one kind of thing: a
+	// critique that found a flaw sends the work back to be implemented, while a
+	// critique that found a decision to make hands it to a person instead. Both
+	// are the same lane's back edge and a reader has to be able to see both.
+	//
 	// It is documentation the tool validates, not a rail: nothing forces a
 	// rejection to go here, exactly as nothing forces a lane's prompt to be
 	// followed.
-	RejectsTo string
+	RejectsTo []string
 
 	// RequiresSpecified marks the first lane, in precedence order, that sets
 	// this: the boundary between thinking about a ticket and working on it.
@@ -285,7 +290,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresBlockedReason = boolOf("requires-blocked-reason")
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
-	l.RejectsTo = strings.TrimSpace(str("rejects-to"))
+	l.RejectsTo = rejectsTo(d)
 
 	if l.ID == "" {
 		return nil, fmt.Errorf("lane %s: missing required field \"id\"", source)
@@ -310,6 +315,32 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 		return nil, fmt.Errorf("lane %s: agentic lane must declare a model-tier", source)
 	}
 	return l, nil
+}
+
+// rejectsTo reads the rejects-to field in either of its two written forms: the
+// scalar every lane file used before a lane could name more than one back edge
+// ("rejects-to: in-progress"), and the list ("rejects-to: [in-progress, human]").
+// Both are kept because the scalar is what is already committed in every
+// catalogue and project lane file, and the file format is the API.
+//
+// Doc.Scalar refuses a sequence and Doc.List refuses a scalar, so asking both
+// and taking whichever answered is the whole of it.
+func rejectsTo(d *ticket.Doc) []string {
+	var out []string
+	items, err := d.List("rejects-to")
+	if err != nil || len(items) == 0 {
+		v, _, err := d.Scalar("rejects-to")
+		if err != nil {
+			return nil
+		}
+		items = []string{v}
+	}
+	for _, it := range items {
+		if t := strings.TrimSpace(it); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func validID(s string) bool {
@@ -716,9 +747,9 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.RequiresNonModelSignal == replacement.RequiresNonModelSignal &&
 		base.RequiresHumanExit == replacement.RequiresHumanExit &&
 		base.RequiresOption == replacement.RequiresOption &&
-		base.RejectsTo == replacement.RejectsTo &&
 		base.RequiresSpecified == replacement.RequiresSpecified &&
 		base.Prompt == replacement.Prompt &&
+		slices.Equal(base.RejectsTo, replacement.RejectsTo) &&
 		slices.Equal(base.InputRequires, replacement.InputRequires) &&
 		slices.Equal(base.OutputProduces, replacement.OutputProduces)
 }
@@ -895,15 +926,17 @@ func checkContracts(lanes []*Lane) []string {
 		// A back edge is only useful if it points somewhere a ticket can actually
 		// go, and a lane that sends work back to itself is not a loop, it is a
 		// stall.
-		if l.RejectsTo != "" {
+		// Each target is judged on its own, so a lane that declares one good
+		// back edge and one bad one is told which of them is the bad one.
+		for _, target := range l.RejectsTo {
 			switch {
-			case l.RejectsTo == l.ID:
+			case target == l.ID:
 				warnings = append(warnings, fmt.Sprintf(
 					"lane %s: rejects-to names itself, which would stall rather than loop", l.ID))
-			case !installed[l.RejectsTo]:
+			case !installed[target]:
 				warnings = append(warnings, fmt.Sprintf(
 					"lane %s: rejects-to %q is not installed, so rejected work has nowhere to go",
-					l.ID, l.RejectsTo))
+					l.ID, target))
 			}
 		}
 		for _, want := range l.InputRequires {

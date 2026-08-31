@@ -57,8 +57,11 @@ two tickets in it in parallel do not conflict.
 
 The loop is not enforced. `rejects-to:` declares the back edge so an agent
 reading the board can see it, and a backwards move was always allowed — the gate
-only checks a move that advances. What stops a bad change is the lane's prompt
-and the gate on the lane it is trying to reach, not a state machine.
+only checks a move that advances. A lane may declare two of them —
+`rejects-to: [in-progress, human]` — when its rejection is not always the same
+kind of thing: a flaw goes back to be implemented, a decision goes to a person.
+What stops a bad change is the lane's prompt and the gate on the lane it is
+trying to reach, not a state machine.
 
 `core/lane/shipped_test.go` loads everything in this directory on every CI run,
 so a lane file here that does not parse fails the build rather than failing the

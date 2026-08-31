@@ -11,7 +11,7 @@ func demoFacts() []LaneFact {
 		{ID: "in-progress", Name: "Implementing", Description: "Carrying out the plan.",
 			Agentic: true, ModelTier: "cheap", Produces: []string{"outcome-what"}},
 		{ID: "critique", Name: "Critique", Description: "Judges the approach. Sends work back.",
-			Agentic: true, ModelTier: "strong", RejectsTo: "in-progress", Produces: []string{"review-summary"}},
+			Agentic: true, ModelTier: "strong", RejectsTo: []string{"in-progress"}, Produces: []string{"review-summary"}},
 		{ID: "signoff", Name: "Human Review", Description: "Waiting for a person.", HumanExit: true},
 		{ID: "done", Name: "Done", Description: "Accepted.", Terminal: true},
 	}
@@ -124,5 +124,21 @@ func TestNoteIsCurrentSpotsAHandEditedBoard(t *testing.T) {
 func TestNoteIsCurrentIgnoresMissingFiles(t *testing.T) {
 	if current, stale := NoteIsCurrent(t.TempDir(), demoFacts()); !current {
 		t.Errorf("an empty repository reports a stale note: %v", stale)
+	}
+}
+
+// A lane may hand work back to more than one place — a flaw goes back to be
+// implemented, a decision goes to a person — and the note has to name both, or
+// the second edge exists only in the lane file nobody generating this read.
+func TestLaneSectionNamesEveryBackEdge(t *testing.T) {
+	facts := demoFacts()
+	for i := range facts {
+		if facts[i].ID == "critique" {
+			facts[i].RejectsTo = []string{"in-progress", "signoff"}
+		}
+	}
+	got := laneSection(facts)
+	if !strings.Contains(got, "critique sends work back to in-progress or signoff") {
+		t.Errorf("both declared back edges are not named:\n%s", got)
 	}
 }
