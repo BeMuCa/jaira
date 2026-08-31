@@ -47,6 +47,11 @@ func TestHomeFooterOmitsVersionLineOnDevBuild(t *testing.T) {
 	if strings.Contains(out, "jaira dev") {
 		t.Errorf("home footer = %q, dev build must not show a version line", out)
 	}
+	// Anchor: the hint line must still be there, so a vanished "jaira dev"
+	// is the version line being omitted and not the whole footer.
+	if !strings.Contains(out, "q quit") {
+		t.Errorf("home footer = %q, want the hint line still present", out)
+	}
 }
 
 // TestBoardStatusBarOmitsVersionLineOnDevBuild is the board-footer analogue
@@ -65,5 +70,10 @@ func TestBoardStatusBarOmitsVersionLineOnDevBuild(t *testing.T) {
 	out := m.statusBar()
 	if strings.Contains(out, "jaira dev") {
 		t.Errorf("status bar = %q, dev build must not show a version line", out)
+	}
+	// Anchor: the help hint must still be there, so a vanished "jaira dev"
+	// is the version line being omitted and not the whole status bar.
+	if !strings.Contains(out, "? help") {
+		t.Errorf("status bar = %q, want the help hint still present", out)
 	}
 }
