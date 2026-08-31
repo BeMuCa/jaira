@@ -140,6 +140,21 @@ func TestWrapLinesLeavesFittingLinesAlone(t *testing.T) {
 	}
 }
 
+// Deep indentation gives way instead of collapsing the line into one rune
+// per row: the content budget keeps at least a readable line's worth.
+func TestWrapLinesBoundsDeepIndent(t *testing.T) {
+	out := wrapLines(strings.Repeat(" ", 40)+strings.Repeat("x", 120), 40)
+	lines := strings.Split(out, "\n")
+	if len(lines) > 20 {
+		t.Fatalf("deep indent exploded into %d lines", len(lines))
+	}
+	for _, l := range lines {
+		if len([]rune(l)) > 40 {
+			t.Errorf("line wider than 40: %q", l)
+		}
+	}
+}
+
 // Below wrap's readable minimum an over-wide line is still broken hard
 // rather than handed back wider than the pane.
 func TestWrapTinyWidthStillBreaksHard(t *testing.T) {

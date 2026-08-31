@@ -1310,7 +1310,9 @@ func wrapLines(s string, width int) string {
 			continue
 		}
 		trimmed := strings.TrimLeft(l, " ")
-		lead := len(l) - len(trimmed)
+		// Indentation gives way before the budget does: unbounded, a deeply
+		// indented line at a narrow pane collapses into one rune per row.
+		lead := min(len(l)-len(trimmed), max(0, width-9))
 		wrapped := strings.Repeat(" ", lead) + wrap(trimmed, width-lead, lead)
 		out = append(out, strings.Split(wrapped, "\n")...)
 	}
