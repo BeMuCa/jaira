@@ -22,7 +22,12 @@
 #     export JAIRA_HOME=<dir>/home JAIRA_LANES_DIR=<dir>/home/lanes
 #     export JAIRA_DEFAULT_BOARD=<dir>/home/default-board.md JAIRA_USER=Demo
 #     go run ./scripts/shotgen <dir>/checkout-service board 150 20 \
-#         | python3 scripts/termshot.py /dev/stdin docs/img/board.png --cols 150
+#         | python3 scripts/termshot.py /dev/stdin <dir>/board.png --cols 150
+#     cp <dir>/board.png docs/img/board.png     # once it looks right
+#
+# The render lands beside the world, not in docs/img/, so that trying a
+# different world does not dirty a committed asset on every attempt. Copying it
+# over is the separate, deliberate step.
 #
 # Views: home, board, pipeline, signoff, edit. The committed images are 150
 # columns for board and pipeline, 110 for home and signoff. termshot.py needs
@@ -62,11 +67,27 @@ newboard() {
 
 # Create a ticket and print its handle. Everything after a create addresses the
 # ticket by handle, since the ids are generated and cannot be written down here.
+#
+# The check belongs here rather than at each of the six call sites: extracting
+# the handle is a pipeline, so its status is sed's and not jaira's, and set -eu
+# would let a refused create through with an empty handle and then fail on some
+# later command with an error naming the wrong thing. sh has no pipefail to lean
+# on, so the output is captured first and judged on its own.
 mk() {
 	b=$1
+	title=$2
 	shift
-	"$jaira" -C "$dir/$b" create --json "$@" |
-		sed -n 's/.*"handle": "\([A-Z0-9]*\)".*/\1/p' | head -1
+	out=$("$jaira" -C "$dir/$b" create --json "$@") || {
+		echo "demoworld: jaira create refused \"$title\" on $b" >&2
+		exit 1
+	}
+	handle=$(printf '%s\n' "$out" |
+		sed -n 's/.*"handle": "\([A-Z0-9]*\)".*/\1/p' | head -1)
+	[ -n "$handle" ] || {
+		echo "demoworld: no handle in the create output for \"$title\" on $b" >&2
+		exit 1
+	}
+	printf '%s\n' "$handle"
 }
 
 newboard checkout-service
@@ -166,7 +187,8 @@ Demo world built in $dir
   export JAIRA_HOME=$dir/home JAIRA_LANES_DIR=$dir/home/lanes
   export JAIRA_DEFAULT_BOARD=$dir/home/default-board.md JAIRA_USER=Demo
   go run ./scripts/shotgen $dir/checkout-service board 150 20 \\
-      | python3 scripts/termshot.py /dev/stdin docs/img/board.png --cols 150
+      | python3 scripts/termshot.py /dev/stdin $dir/board.png --cols 150
+  cp $dir/board.png docs/img/board.png     # once it looks right
 
 Or open it: $jaira -C $dir/checkout-service board
 EOF
