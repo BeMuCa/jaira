@@ -101,6 +101,11 @@ func TestProjectPathsWrapInsteadOfTruncate(t *testing.T) {
 	if !strings.Contains(squashed, "very-long-repository-name") {
 		t.Errorf("tail of the path is missing:\n%s", out)
 	}
+	for _, l := range strings.Split(out, "\n") {
+		if n := len([]rune(l)); n > 36 {
+			t.Errorf("line wider than the terminal (%d): %q", n, l)
+		}
+	}
 }
 
 // Sign-off is where a person reads carefully: checklist items and their
@@ -118,5 +123,29 @@ func TestSignOffWrapsChecklistText(t *testing.T) {
 	joined := strings.ReplaceAll(out, "\n", " ")
 	if !strings.Contains(joined, "instead") {
 		t.Errorf("tail of the checklist item is missing:\n%s", out)
+	}
+	for _, l := range strings.Split(out, "\n") {
+		if n := len([]rune(l)); n > 38 {
+			t.Errorf("line wider than the terminal (%d): %q", n, l)
+		}
+	}
+}
+
+// A fitting line passes through wrapLines untouched — pre-aligned text like
+// a git --stat keeps its column alignment.
+func TestWrapLinesLeavesFittingLinesAlone(t *testing.T) {
+	in := " internal/tui/view.go         |  67 +++"
+	if out := wrapLines(in, 80); out != in {
+		t.Errorf("fitting line was rewritten:\n got %q\nwant %q", out, in)
+	}
+}
+
+// Below wrap's readable minimum an over-wide line is still broken hard
+// rather than handed back wider than the pane.
+func TestWrapTinyWidthStillBreaksHard(t *testing.T) {
+	for _, l := range strings.Split(wrap("abcdefghijklmnop", 6, 0), "\n") {
+		if len([]rune(l)) > 6 {
+			t.Errorf("line wider than 6: %q", l)
+		}
 	}
 }

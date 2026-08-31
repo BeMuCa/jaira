@@ -382,7 +382,10 @@ func (h *Home) render() string {
 	}
 
 	if h.msg != "" {
-		b.WriteString("\n" + centre.Render(styOK.Render(wrap(h.msg, max(10, h.width-2), 0))) + "\n")
+		b.WriteString("\n")
+		for _, l := range strings.Split(wrap(h.msg, max(10, h.width-2), 0), "\n") {
+			b.WriteString(centre.Render(styOK.Render(l)) + "\n")
+		}
 	}
 
 	for _, l := range wrapHints([]string{"enter open", "s stats", "a add a board", "x remove a board", "d default board", "r refresh", "q quit"}, max(1, h.width)) {

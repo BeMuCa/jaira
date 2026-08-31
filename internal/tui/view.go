@@ -543,7 +543,7 @@ func renderChecklist(b *strings.Builder, label string, items []ticket.DoDItem, w
 			sty.Render("["+it.State.Marker()+"]"), wrap(it.Text, max(1, width-itemCol-6), itemCol+6))
 		if it.Proof != "" {
 			fmt.Fprintf(b, "%s      %s\n", pad,
-				styMeta.Render(wrap("proof: "+it.Proof, max(1, width-itemCol-6), itemCol+13)))
+				styleLines(styMeta, wrap("proof: "+it.Proof, max(1, width-itemCol-13), itemCol+13)))
 		}
 	}
 }
@@ -781,7 +781,7 @@ func (m *Model) detailHints(t *ticket.Ticket) string {
 // rendering serves the full screen and one half of the split follow-up view.
 func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styLaneTitle.Render(wrap(t.Title, max(10, width-8), 8)))
+	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styleLines(styLaneTitle, wrap(t.Title, max(10, width-8), 8)))
 	b.WriteString(styBar.Render(strings.Repeat("─", max(1, width))) + "\n")
 
 	row := func(k, v string) {
@@ -1043,7 +1043,7 @@ func (m *Model) renderProjects() string {
 			cur = styMeta.Render("  (current)")
 		}
 		b.WriteString(marker + name + cur + "\n")
-		b.WriteString("    " + styMeta.Render(wrap(p.Root, max(10, m.width-6), 4)) + "\n")
+		b.WriteString("    " + styleLines(styMeta, wrap(p.Root, max(10, m.width-6), 4)) + "\n")
 	}
 	for _, l := range wrapHints([]string{"enter switch", "x remove a board", "esc back"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))
@@ -1237,7 +1237,9 @@ func clampBlock(s string, w, h int) string {
 
 func wrap(s string, width, indent int) string {
 	if width <= 8 {
-		return s
+		// Below a readable line there is nothing to lay out, but an over-wide
+		// line still must not escape the pane: break it hard instead.
+		return strings.Join(hardBreak(s, max(1, width)), "\n"+strings.Repeat(" ", indent))
 	}
 	words := strings.Fields(s)
 	var lines []string
@@ -1275,8 +1277,8 @@ func wrap(s string, width, indent int) string {
 }
 
 // hardBreak cuts one over-wide word into pieces of at most width display
-// cells, measuring graphemes the way truncate does so wide characters do not
-// overshoot the pane.
+// cells. It measures display cells via lipgloss but cuts on runes — the same
+// compromise truncate makes — so a ZWJ emoji sequence can split apart.
 func hardBreak(word string, width int) []string {
 	var parts []string
 	cur := ""
@@ -1301,7 +1303,9 @@ func wrapLines(s string, width int) string {
 	lines := strings.Split(s, "\n")
 	out := make([]string, 0, len(lines))
 	for _, l := range lines {
-		if strings.TrimSpace(l) == "" {
+		if strings.TrimSpace(l) == "" || lipgloss.Width(l) <= width {
+			// A line that already fits passes through untouched — wrap would
+			// collapse its internal spacing and destroy pre-aligned columns.
 			out = append(out, l)
 			continue
 		}
@@ -1311,6 +1315,18 @@ func wrapLines(s string, width int) string {
 		out = append(out, strings.Split(wrapped, "\n")...)
 	}
 	return strings.Join(out, "\n")
+}
+
+// styleLines styles each line of a wrapped block separately. Styling the
+// block as one string makes lipgloss pad every line to the widest one, and a
+// padded line rendered after a prefix — a handle, a label column — overshoots
+// the pane by exactly that padding.
+func styleLines(sty lipgloss.Style, s string) string {
+	lines := strings.Split(s, "\n")
+	for i, l := range lines {
+		lines[i] = sty.Render(l)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func min(a, b int) int {

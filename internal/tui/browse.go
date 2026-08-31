@@ -209,8 +209,10 @@ func (b *browser) render(width, height int) string {
 	if len(b.entries) == 0 {
 		sb.WriteString(styMeta.Render("  (no subdirectories)") + "\n")
 	}
-	// Keep the cursor on screen in a directory with many children.
-	visible := max(3, height-8)
+	hints := wrapHints([]string{"enter open dir", "h up", "a add", "i init a board", "s scan here", "esc cancel"}, max(1, w))
+	// Keep the cursor on screen in a directory with many children — and give
+	// up a row per extra hint line so the footer stays on screen too.
+	visible := max(3, height-8-(len(hints)-1))
 	first := 0
 	if b.idx >= visible {
 		first = b.idx - visible + 1
@@ -235,7 +237,7 @@ func (b *browser) render(width, height int) string {
 	if b.msg != "" {
 		sb.WriteString("\n" + styWarn.Render(wrap(b.msg, w, 0)) + "\n")
 	}
-	for _, l := range wrapHints([]string{"enter open dir", "h up", "a add", "i init a board", "s scan here", "esc cancel"}, max(1, w)) {
+	for _, l := range hints {
 		sb.WriteString("\n" + styMeta.Render(l))
 	}
 	return sb.String()
@@ -296,7 +298,8 @@ func (b *browser) renderResults(width, height int) string {
 	sb.WriteString(styMeta.Render(wrap("under "+b.dir, w, 0)) + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
-	visible := max(3, height-8)
+	hints := wrapHints([]string{"space toggle", "a all/none", "enter add selected", "esc back"}, max(1, w))
+	visible := max(3, height-8-(len(hints)-1))
 	first := 0
 	if b.idx >= visible {
 		first = b.idx - visible + 1
@@ -318,7 +321,7 @@ func (b *browser) renderResults(width, height int) string {
 	if b.msg != "" {
 		sb.WriteString("\n" + styWarn.Render(wrap(b.msg, w, 0)) + "\n")
 	}
-	for _, l := range wrapHints([]string{"space toggle", "a all/none", "enter add selected", "esc back"}, max(1, w)) {
+	for _, l := range hints {
 		sb.WriteString("\n" + styMeta.Render(l))
 	}
 	return sb.String()

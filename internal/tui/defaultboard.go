@@ -216,7 +216,7 @@ func (d *defaultBoardScreen) render(width, height int) string {
 		}
 		sb.WriteString("\n" + style.Render(wrap(d.msg, w, 0)) + "\n")
 	}
-	for _, l := range wrapHints([]string{"tab switch list", "space toggle", "e edit file", "s save", "esc back (selects lanes, does not reorder them)"}, max(1, w)) {
+	for _, l := range wrapHints([]string{"tab switch list", "space toggle", "e edit file", "s save", "esc back", "(selects lanes, does not reorder them)"}, max(1, w)) {
 		sb.WriteString("\n" + styMeta.Render(l))
 	}
 	return sb.String()
