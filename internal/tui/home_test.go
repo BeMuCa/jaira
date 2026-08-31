@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 func makeBoard(t *testing.T, root, name string) string {
@@ -107,15 +108,12 @@ func TestHomeDoesNotOverflow(t *testing.T) {
 	for _, w := range []int{20, 40, 80, 120} {
 		h := newHome(t, []string{a}, w, 30)
 		for _, line := range strings.Split(stripANSI(h.render()), "\n") {
-			if len(the(line)) > w {
-				t.Errorf("width %d: line is %d cols: %q", w, len(the(line)), line)
+			if got := lipgloss.Width(line); got > w {
+				t.Errorf("width %d: line is %d cols: %q", w, got, line)
 			}
 		}
 	}
 }
-
-// the returns the runes of a line, so width is counted in characters.
-func the(s string) []rune { return []rune(s) }
 
 // Before the first WindowSizeMsg both width and height are still their zero
 // value — width==0 alone already falls back to "loading…" above render()'s
