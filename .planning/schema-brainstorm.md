@@ -45,10 +45,32 @@ of 2026-08-30 and reproducible from the decisions above.
    immutable block to `## History`. Frontmatter answers "where does it
    stand?", History answers "how did it get here?".
 
-## Open — the next question to him
+## Decided (continued)
 
-**Q4: build order** (approaches presented, his pick pending) — see the chat of
-2026-08-31.
+7. **Q4, decided 2026-08-31: build order A** — grammar-first, six board-sized
+   cuts, each shippable alone: (1) shapes + validation + unknown-key warning,
+   (2) `## History`, (3) `routes-on`, (4) TUI folds + round view, (5) the
+   generated create form, (6) `docs/TICKET.md`, `docs/LANES.md`,
+   `jaira ticket template`. **Execution starts after a context clear, on his
+   "go" — not before.** The spec is written first
+   (`docs/superpowers/specs/…-schema-design.md`), he reviews it, then cut 1.
+
+8. **Base fields, always visible** (his requirement, 2026-08-31): every ticket
+   view leads with `id, lane, assignee, creator, when (created/updated), goal,
+   context` — regardless of lane, regardless of what else is set.
+
+9. **Display style**: concise bullet points that still carry enough to
+   understand the point — not prose walls, not bare keywords.
+
+10. **The reviewer's view**: a ticket in review/signoff shows, in this order:
+    problem (goal), what, why, resolves, summary, gaps, check. He liked that
+    shape and today's detail pane lost part of it — see the ticket filed for
+    the current gap, which is a defect to fix before or with cut 4, not only
+    spec content.
+
+## Open
+
+Nothing — the design questions are closed. Next artefact: the spec.
 
 ## Parked for the spec
 
