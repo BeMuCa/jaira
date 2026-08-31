@@ -604,3 +604,29 @@ func Actionable(env Env, t *ticket.Ticket) bool {
 func skipped(l *lane.Lane, t *ticket.Ticket) bool {
 	return l.RequiresOption != "" && !t.OptionSet(l.RequiresOption)
 }
+
+// OwedBy answers, for every field an installed lane declares it produces and
+// this ticket has not filled in, which lane still owes it. It is the display
+// side of OutputOwed: a renderer showing a field's value has to decide what to
+// put there when the value is empty, and "nothing" is the wrong answer — a
+// ticket that reached review without its outcome fields then looks exactly
+// like one that was worked, which is the state a reviewer most needs to see.
+//
+// Lanes are walked in board order and the first producer of a field wins, the
+// same precedence checkContracts uses when it names a producer, so a field two
+// lanes declare is attributed to the one that should have written it first. A
+// lane the ticket has opted out of owes nothing, because OutputOwed says so.
+func OwedBy(set *lane.Set, t *ticket.Ticket) map[string]string {
+	if set == nil || t == nil {
+		return nil
+	}
+	owed := map[string]string{}
+	for _, l := range set.Lanes {
+		for _, f := range OutputOwed(l, t) {
+			if _, exists := owed[f]; !exists {
+				owed[f] = l.ID
+			}
+		}
+	}
+	return owed
+}

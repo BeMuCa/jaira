@@ -777,6 +777,24 @@ func (m *Model) detailHints(t *ticket.Ticket) string {
 	return hint
 }
 
+// declaredField pairs the label a pane prints with the ticket field behind it,
+// so the renderer can ask which lane still owes the field as well as print its
+// value.
+type declaredField struct{ label, field, value string }
+
+// owedRow stands in for a declared field nobody has filled in yet: the label
+// column keeps its place in the reading order and the value names the lane
+// that owes it. One function so the wording is identical on every screen that
+// shows a ticket's fields.
+//
+// The wrapped text is styled line by line, per styleLines' comment: styling
+// the block as one string pads every line to the widest, and a padded line
+// printed after the label column overshoots the pane.
+func owedRow(b *strings.Builder, label, lane string, width int) {
+	fmt.Fprintf(b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", label)),
+		styleLines(styMeta, wrap("— owed by "+lane, width, 13)))
+}
+
 // detailBody builds an open ticket's content at a given width, so the same
 // rendering serves the full screen and one half of the split follow-up view.
 func (m *Model) detailBody(t *ticket.Ticket, width int) string {
@@ -845,18 +863,56 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	}
 	prose("question", t.Question)
 
-	if t.Outcome.What != "" || t.Outcome.Why != "" || t.Outcome.Resolves != "" {
-		b.WriteString("\n" + styLaneTitle.Render("Outcome") + "\n")
-		row("what", t.Outcome.What)
-		row("why", t.Outcome.Why)
-		row("resolves", t.Outcome.Resolves)
+	// A field an installed lane declares it produces belongs to this ticket
+	// whether or not anyone has filled it in yet, and an empty one is a debt.
+	// Suppressing it made a ticket that reached review unworked look exactly
+	// like one that had been through every lane — nothing on the screen said
+	// what was owed, which is the first thing a reviewer needs to know.
+	owed := gate.OwedBy(m.lanes, t)
+	// A section appears when any of its fields carries something to show: a
+	// value, or a debt.
+	shown := func(fs []declaredField) bool {
+		for _, f := range fs {
+			if strings.TrimSpace(f.value) != "" {
+				return true
+			}
+			if _, ok := owed[f.field]; ok {
+				return true
+			}
+		}
+		return false
 	}
-	if t.ReviewSummary != "" || t.ReviewGaps != "" || t.ReviewVerdict != "" || t.ReviewCheck != "" {
+	declared := func(f declaredField) {
+		if strings.TrimSpace(f.value) != "" {
+			row(f.label, f.value)
+			return
+		}
+		if l, ok := owed[f.field]; ok {
+			owedRow(&b, f.label, l, max(10, width-14))
+		}
+	}
+	outcome := []declaredField{
+		{"what", ticket.FieldOutcomeWhat, t.Outcome.What},
+		{"why", ticket.FieldOutcomeWhy, t.Outcome.Why},
+		{"resolves", ticket.FieldOutcomeResolves, t.Outcome.Resolves},
+	}
+	review := []declaredField{
+		{"summary", ticket.FieldReviewSummary, t.ReviewSummary},
+		{"gaps", ticket.FieldReviewGaps, t.ReviewGaps},
+		{"verdict", ticket.FieldReviewVerdict, t.ReviewVerdict},
+		{"check", ticket.FieldReviewCheck, t.ReviewCheck},
+	}
+	if shown(outcome) {
+		b.WriteString("\n" + styLaneTitle.Render("Outcome") + "\n")
+		for _, f := range outcome {
+			declared(f)
+		}
+	}
+	if shown(review) {
 		b.WriteString("\n" + styLaneTitle.Render("Review") + "\n")
-		row("summary", t.ReviewSummary)
-		row("gaps", t.ReviewGaps)
-		row("verdict", t.ReviewVerdict)
-		row("check", t.ReviewCheck)
+		for _, f := range review {
+			declared(f)
+		}
 	}
 	if len(t.Commits) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits") + "\n")

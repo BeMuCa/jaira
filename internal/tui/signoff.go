@@ -43,16 +43,31 @@ func (m *Model) renderSignOff() string {
 		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", label)),
 			wrap(body, min(w-14, 64), 13))
 	}
-	section("problem", firstNonEmpty(t.Goal, t.Context))
-	section("what", t.Outcome.What)
-	section("why", t.Outcome.Why)
-	section("resolves", t.Outcome.Resolves)
-	section("summary", t.ReviewSummary)
-	section("gaps", t.ReviewGaps)
-	section("verdict", t.ReviewVerdict)
+	// An empty section used to vanish, which on this screen is the worst
+	// possible answer: the person is being asked to accept work, and a lane
+	// that never ran left no trace at all. A field an installed lane declares
+	// it produces keeps its place and names the lane that owes it.
+	owed := gate.OwedBy(m.lanes, t)
+	declared := func(label, field, value string) {
+		if strings.TrimSpace(value) != "" {
+			section(label, value)
+			return
+		}
+		if l, ok := owed[field]; ok {
+			b.WriteString("\n")
+			owedRow(&b, label, l, min(w-14, 64))
+		}
+	}
+	declared("problem", ticket.FieldGoal, firstNonEmpty(t.Goal, t.Context))
+	declared("what", ticket.FieldOutcomeWhat, t.Outcome.What)
+	declared("why", ticket.FieldOutcomeWhy, t.Outcome.Why)
+	declared("resolves", ticket.FieldOutcomeResolves, t.Outcome.Resolves)
+	declared("summary", ticket.FieldReviewSummary, t.ReviewSummary)
+	declared("gaps", ticket.FieldReviewGaps, t.ReviewGaps)
+	declared("verdict", ticket.FieldReviewVerdict, t.ReviewVerdict)
 	// Last, because it is the one section that asks the reader to do something
 	// rather than to read: everything above is the account, this is the check.
-	section("check", t.ReviewCheck)
+	declared("check", ticket.FieldReviewCheck, t.ReviewCheck)
 
 	if done, total := checklistProgress(t.DoDItems); total > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Definition of Done") +
