@@ -58,6 +58,9 @@ func (m *Model) renderSignOff() string {
 			owedRow(&b, label, l, min(w-14, 64))
 		}
 	}
+	// A ticket with no goal but a context has a problem statement, so this row
+	// shows it and the goal's debt goes unmentioned here — deliberately: the
+	// question this screen asks is what was wrong, and it has an answer.
 	declared("problem", ticket.FieldGoal, firstNonEmpty(t.Goal, t.Context))
 	declared("what", ticket.FieldOutcomeWhat, t.Outcome.What)
 	declared("why", ticket.FieldOutcomeWhy, t.Outcome.Why)

@@ -839,7 +839,48 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		b.WriteString("\n")
 		row(k, v)
 	}
-	prose("goal", t.Goal)
+	// A field an installed lane declares it produces belongs to this ticket
+	// whether or not anyone has filled it in yet, and an empty one is a debt.
+	// Suppressing it made a ticket that reached review unworked look exactly
+	// like one that had been through every lane — nothing on the screen said
+	// what was owed, which is the first thing a reviewer needs to know.
+	owed := gate.OwedBy(m.lanes, t)
+	// A group appears when any of its fields carries something to show: a
+	// value, or a debt.
+	shown := func(fs []declaredField) bool {
+		for _, f := range fs {
+			if strings.TrimSpace(f.value) != "" {
+				return true
+			}
+			if _, ok := owed[f.field]; ok {
+				return true
+			}
+		}
+		return false
+	}
+	declared := func(f declaredField) {
+		if strings.TrimSpace(f.value) != "" {
+			row(f.label, f.value)
+			return
+		}
+		if l, ok := owed[f.field]; ok {
+			owedRow(&b, f.label, l, max(10, width-14))
+		}
+	}
+	// The same, in the prose rhythm: the blank line is written only when the
+	// row itself will be, or an unowed empty field leaves a gap behind.
+	declaredProse := func(f declaredField) {
+		if !shown([]declaredField{f}) {
+			return
+		}
+		b.WriteString("\n")
+		declared(f)
+	}
+	// The goal is a declared field like any other — a brainstorm lane produces
+	// it — so it goes through declared rather than prose: on a ticket that
+	// opted into brainstorming and has no goal, the debt is exactly what the
+	// row is for, and prose would suppress it as before.
+	declaredProse(declaredField{"goal", ticket.FieldGoal, t.Goal})
 	prose("context", t.Context)
 	// The checklist below carries the same label; showing the one-line scalar
 	// too would print "done when" twice for every ticket that has both.
@@ -863,34 +904,6 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	}
 	prose("question", t.Question)
 
-	// A field an installed lane declares it produces belongs to this ticket
-	// whether or not anyone has filled it in yet, and an empty one is a debt.
-	// Suppressing it made a ticket that reached review unworked look exactly
-	// like one that had been through every lane — nothing on the screen said
-	// what was owed, which is the first thing a reviewer needs to know.
-	owed := gate.OwedBy(m.lanes, t)
-	// A section appears when any of its fields carries something to show: a
-	// value, or a debt.
-	shown := func(fs []declaredField) bool {
-		for _, f := range fs {
-			if strings.TrimSpace(f.value) != "" {
-				return true
-			}
-			if _, ok := owed[f.field]; ok {
-				return true
-			}
-		}
-		return false
-	}
-	declared := func(f declaredField) {
-		if strings.TrimSpace(f.value) != "" {
-			row(f.label, f.value)
-			return
-		}
-		if l, ok := owed[f.field]; ok {
-			owedRow(&b, f.label, l, max(10, width-14))
-		}
-	}
 	outcome := []declaredField{
 		{"what", ticket.FieldOutcomeWhat, t.Outcome.What},
 		{"why", ticket.FieldOutcomeWhy, t.Outcome.Why},

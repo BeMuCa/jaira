@@ -13,6 +13,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -123,15 +124,67 @@ func TestDetailShowsTheValueRatherThanTheDebt(t *testing.T) {
 	}
 }
 
-// pre-process declares plan and is entered only by a ticket that opted into
-// planning, so a ticket that did not opt in owes it nothing — the same reason
-// the gate does not refuse the move.
-func TestDetailOwesNothingToALaneOffTheRoute(t *testing.T) {
+// The goal is a declared field too — a brainstorm lane produces it — and it
+// used to render through a helper that suppressed empty values, so a ticket
+// that opted into brainstorming and never got one showed no goal row at all:
+// the very defect this change exists to remove, still in place one row above
+// the rows it fixed.
+func TestDetailShowsTheGoalDebtWhenBrainstormIsOnTheRoute(t *testing.T) {
 	m := newTestModel(t, 120, 40)
-	out := stripANSI(m.detailBody(unworkedInReview(), 120))
-	for _, unwanted := range []string{"owed by pre-process", "owed by brainstorm"} {
-		if strings.Contains(out, unwanted) {
-			t.Errorf("a lane this ticket opted out of is owed something (%q):\n%s", unwanted, out)
+	tk := unworkedInReview()
+	tk.Goal = ""
+	tk.Body = "## Options\n\n- [x] brainstorm\n"
+	tk.Options = ticket.ParseOptions(tk.Body)
+
+	out := stripANSI(m.detailBody(tk, 120))
+	if !strings.Contains(out, "goal         — owed by brainstorm") {
+		t.Errorf("an empty goal a lane owes is invisible:\n%s", out)
+	}
+	// And the row keeps its place: still a base field, still above the rest.
+	if rowIndex(t, out, "goal") > rowIndex(t, out, "what") {
+		t.Errorf("the goal debt row is out of order:\n%s", out)
+	}
+}
+
+// plan is declared by pre-process and lives in the body as a checklist, not as
+// a label-and-value row. Its debt is the empty checklist itself; printing a
+// second, worse version of the same fact in the field rows is the thing being
+// pinned against here.
+func TestDetailShowsNoDebtRowForABodyChecklistField(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	tk := unworkedInReview()
+	tk.Body = "## Options\n\n- [x] planning\n"
+	tk.Options = ticket.ParseOptions(tk.Body)
+
+	out := stripANSI(m.detailBody(tk, 120))
+	if strings.Contains(out, "owed by pre-process") {
+		t.Errorf("a body-checklist field was rendered as a field row:\n%s", out)
+	}
+	// The lane does owe it, though — the renderer is choosing not to print a
+	// row, and that must stay a choice rather than becoming a silent gap.
+	if l := gate.OwedBy(m.lanes, tk)["plan"]; l != "pre-process" {
+		t.Errorf("plan is owed by %q, want pre-process", l)
+	}
+}
+
+// The rule is that a field an installed lane declares is shown even when
+// empty, which is board-wide: a backlog ticket carries the same debts, because
+// they are what the pipeline will ask of it. Pinned as a decision rather than
+// left as an accident — the compact first glance is the folds cut's job, and
+// whoever takes it should have to change this test on purpose.
+func TestBacklogDetailCarriesTheSameDebts(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	tk := unworkedInReview()
+	tk.Status = "backlog"
+
+	out := stripANSI(m.detailBody(tk, 120))
+	for _, want := range []string{
+		"what         — owed by in-progress",
+		"summary      — owed by review",
+		"check        — owed by review",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("a backlog ticket is missing %q:\n%s", want, out)
 		}
 	}
 }

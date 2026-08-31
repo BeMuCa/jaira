@@ -616,6 +616,14 @@ func skipped(l *lane.Lane, t *ticket.Ticket) bool {
 // same precedence checkContracts uses when it names a producer, so a field two
 // lanes declare is attributed to the one that should have written it first. A
 // lane the ticket has opted out of owes nothing, because OutputOwed says so.
+//
+// Some declared fields live in the body as a checklist rather than as one
+// frontmatter value — plan is the one shipped lane contract that does — and
+// they have no label-and-value row for a caller to stand a debt in. They are
+// reported here all the same, because the question "which lane owes this" has
+// the same answer either way; a renderer showing rows is expected to skip
+// them and let the empty checklist say it, rather than print a second, worse
+// version of the same fact.
 func OwedBy(set *lane.Set, t *ticket.Ticket) map[string]string {
 	if set == nil || t == nil {
 		return nil
