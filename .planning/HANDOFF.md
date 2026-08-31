@@ -1,81 +1,61 @@
-# Handoff — 2026-08-31
+# Handoff — 2026-08-31, Abend
 
-State before a context clear; this file is the memory. The previous handoff
-(2026-08-26, the board arriving in this repository) is at `7a861b3`. Longer-
-lived decisions also live in the agent memory file `jaira-design-invariants`.
+Stand nach der Backlog-Flotte; dieses File ist das Gedächtnis. Der vorige
+Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
 
-## Where things are
+## Wo alles steht
 
-- **Public: https://github.com/BeMuCa/jaira** — clean tree, pushed, master at
-  `e9cd386`. The user's binary is `~/.local/bin/jaira`; rebuild with
-  `go build -o ~/.local/bin/jaira ./cmd/jaira` after every change, never
-  `go install`. Check `go version -m` — a build before committing stamps
-  `+dirty`.
-- `gofmt -l core internal` lists exactly `internal/cli/tickets.go`
-  (pre-existing alignment group). `core/gate/gate.go` no longer appears.
-- `go test ./... -race` with the cache cleared before claiming anything.
-- **The board here is the work list.** `jaira next --per-lane` — not
-  `NEXT-STEPS.md`, which now only carries the ground rules.
-- Still unreleased: everything after `62989f1` (v0.1.0 is the only tag), now
-  ~40 commits including two renames of unreleased surface (`sync`→`logbook`,
-  JSON `synced`→`logged`). Ticket `7ZQ0ZN`.
+- **master gepusht** bis einschließlich des 0.1.1-NOTES-Blocks. ~17 Commits
+  heute: Schema-Spec, HREQJR (Wrap überall), dann die Flotte
+  (DNAEPN, MFD7P3, MR3CN8, A1TZ4N, YBC0MT, TQXBY5, 88H1P4, GEC3TK).
+  `go test ./... -race` (Cache geleert) grün auf dem Push-Stand;
+  `gofmt -l` nur das bekannte `internal/cli/tickets.go`.
+- **Binary** `~/.local/bin/jaira` neu gebaut; nach dem NOTES-Commit einmal
+  nachziehen, falls der Stempel nicht HEAD ist.
+- Zwei Spitzen-Commits wurden vor dem Push **re-splittet** (geteilter Index
+  zweier paralleler Agents hatte sie verheddert); Baum-Identität bewiesen.
 
-## What landed 2026-08-27 … 08-31 (all pushed)
+## Was Berk jetzt entscheidet (sein Inbox-Stand)
 
-- **`jaira sync` is `jaira logbook`** (`b93a85c`): dated per-person folders,
-  `restore` still reads the old `sync/` name, `archive --help` states the rule
-  — finished → logbook, not being worked → archive (`7173a45`, `2MM32Y`).
-- **`z` draws empty lanes thin** (`bd5b2ee`): four cells, name vertical;
-  `fitWindow` budgets per lane (unit costs = the old centred row, sweep-tested).
-  Measured: lipgloss v2 `Width` includes the border.
-- **`s` on the home screen**: logbook entries per day, last 7 days, all boards,
-  from folder names alone (`b91ecb1`, `SPDWGH`).
-- **`jaira update` no longer re-privatises a shared board** (`ef8f2d9`,
-  `ETR0PX`): it writes the agent note only, never .gitignore.
-- **A board is its lane directory** (`743737f`, `BNZERQ`): Load injects
-  nothing; first open writes the default board or the built-ins as files plus
-  `order`, once, reported; `removed`/`MaterialiseWorkingSet`/`Differs` and the
-  override warning are gone; legacy dirs (a `removed` file or no `order`)
-  migrate in place once. This board migrated itself. **His req board migrates
-  on its next jaira command** — 8 shipped files written beside its 3, wanted.
-- **`jaira lanes market`** (`0782f6e`): the repo's `lanes/` on GitHub, listed
-  via the contents API and adopted with `market adopt <id>`; README +
-  `lanes/README.md` say a PR with one file adds yours, CI parses it.
+1. **signoff: 18 Tickets** warten auf Abnahme im Board — `--force` kommt
+   nicht mehr aus der Lane heraus (`gate.go:377`, nur `req.Interactive`).
+2. **human: BDV0HM** — Doku (SKILL.md:275, docs/AGENTS.md:157) verspricht
+   den `--force`-Weg auf Zuruf, das Gate verweigert ihn. Welche Seite folgt?
+3. **human: CD9TCB** — drei Optionen (durch 743737f erledigt erklären /
+   Doku-Feld `overrides:` / Warnung bewusst reaktivieren).
+4. **human: 7ZQ0ZN** — NOTES-0.1.1-Block ist auf master; Release = zwei
+   Befehle: `git tag v0.1.1 && git push origin v0.1.1`.
+5. **Schema-Spec-Review**: `docs/superpowers/specs/2026-08-31-schema-design.md`
+   (`1e8fc57`) — Cut 1 startet erst auf sein Go. Offene Mini-Frage dazu:
+   Entscheidung 10 nennt `verdict` nicht in der Reviewer-Reihenfolge; der
+   Code zeigt es zwischen gaps und check.
+6. **backlog, neu**: „lanes add setzt neben den Anker statt ans Ende" —
+   Design-Frage (order.go ist Invarianten-Territorium), bewusst nicht gefixt;
+   README sagt inzwischen ehrlich „Belongs, not lands".
+7. **DoD-Klausel 3 von 88H1P4** ungetickt: frische Session + `jaira hook
+   print`-Snippet in settings.json → arbeitet nach „go" bis signoff. Nur er
+   kann das prüfen.
 
-## The user's req board (other repo, never probe with live moves)
+## Zurückgestellt, mit Grund
 
-He committed the untracking himself (`c688a93b`): `.jaira/lanes/` ignored and
-untracked. Its CLAUDE.md still carries the **old** agent block — `jaira update`
-there is now safe (ETR0PX) and brings the board-aware block + the lane-dir
-migration. His local "How that works here" section still says `.jaira/sync/`.
+- **NFJCTK, B4MGTP, FCMP17**: stecken wörtlich im Schema-Spec (Cuts 1/4/6
+  bzw. eigener Cut) — einzeln bauen hieße den abgestimmten Plan zerlegen.
+- **88H1P4 Mechanismus c** (Block-Satz für Subagents): wartet auf sein Go.
 
-## The board here (private, gitignored)
+## Arbeitsweise der Flotte (falls wiederholt)
 
-At signoff, his to accept: `4DQPMS QPJNQP 2MM32Y SPDWGH ETR0PX BNZERQ YM7QSA`.
-At human: `SGPDYK` (done-cap: logbook vs archive as target, `holds:` on the
-lane vs code, oldest = updated-at). Blocked: `QA3GN1` (subsumed by BNZERQ,
-close when accepted). Backlog worth knowing: `88H1P4` (sessions drive lanes —
-mechanism a: nudge in move output; block sentence for subagents awaits his go),
-`YBC0MT` (secrets-scan + changelog-writer lanes), `FCMP17`/`NFJCTK`/`B4MGTP`
-(artifacts, lane schema doc, foldable history — all folded into the schema
-brainstorm), `MFD7P3`, `GEC3TK` (board.png stale), `7ZQ0ZN` (cut v0.1.1),
-`TQXBY5`, `DNAEPN`, `CD9TCB` (mostly resolved by BNZERQ — verify then close).
+Sequenziell je Ticket: Subagent implementiert und fährt das Board selbst
+(claim → lanes → critique), Koordinator macht critique/optimize am selbst
+gelesenen Diff, unabhängiges Opus-Review in Batches, Funde als Schleife
+zurück. Lektionen (auch im Memory `jaira-code-learnings`): geteilter
+git-Index verschluckt fremde staged Files → file-genau adden und notfalls
+re-splitten; transiente FAILs ohne Testnamen = paralleler Schreiber
+mid-compile; lipgloss polstert mehrzeilige Blöcke (styleLines).
 
-## Known gaps, written down deliberately
+## Ungeprüft / bekannt offen
 
-- `human` is marked "never out" in the block but only `signoff` carries
-  `requires-human-exit`; the gate lets an agent leave `human`. Proven with
-  `--dry-run`. Not ticketed yet.
-- Lane files ignore unknown frontmatter keys silently (typo in
-  `output-produces` never surfaces). Goes with `NFJCTK`/the schema.
-- The "no subagents" line is this Claude Code build's default prompt, not any
-  file on the machine; a request in CLAUDE.md overrides it per session.
-
-## The schema brainstorm (running, architectural path)
-
-State in `.planning/schema-brainstorm.md`: decisions so far, the worked
-example, and the one open question (frontmatter = latest + `## History` per
-round, vs lane fields only in History). Spec not yet written — it goes to
-`docs/superpowers/specs/` only after he approves the design. Lane inspiration:
-`.planning/research/lane-ideas.md` (19 ideas; he likes `secrets-scan` and
-`changelog-writer` → `YBC0MT`).
+- `human`-Lane weiterhin nicht exit-gated (nur signoff trägt
+  requires-human-exit) — unverändert aus dem Morgen-Handoff, nicht ticketiert.
+- Die grüne Lücke aus Berks Screenshot: Code kann sie nicht erzeugen
+  (fitWindow-Repro leftover=0 auf jeder Breite); Diagnose: laufender Prozess
+  mit veralteter Breite (Resize-Event verloren). Sein Wiggle-Test steht aus.
