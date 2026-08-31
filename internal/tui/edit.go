@@ -188,11 +188,7 @@ func (m *Model) editBody(w, height int) string {
 		fmt.Fprintf(&b, "%s %s\n", styDoing.Render("→ "), styDoing.Render(f.name))
 		// The buffer is wrapped to the pane rather than truncated: this is where
 		// the text is being written, so all of it has to be visible.
-		lines := strings.Split(m.editBuf+"▌", "\n")
-		var shown []string
-		for _, ln := range lines {
-			shown = append(shown, strings.Split(wrap(ln, max(10, w-4), 0), "\n")...)
-		}
+		shown := strings.Split(wrapLines(m.editBuf+"▌", max(10, w-4)), "\n")
 		// Keep the end of what is being typed on screen.
 		if len(shown) > boxRows {
 			shown = shown[len(shown)-boxRows:]
