@@ -86,6 +86,11 @@ The hook stays out of the way when it cannot do its job: no board, no jaira on
 PATH, or an already-blocked stop and it lets the session end. It never blocks
 twice for the same stop, so it cannot trap you in a session.
 
+That last guard reads the hook payload on stdin and has no other source: run
+the command with stdin closed or pointed at /dev/null and it blocks every time,
+unconditionally. It is a guard, not defence in depth — keep the payload on
+stdin if you adapt the snippet.
+
 This is opt-in and Claude Code specific, which is why it is a snippet you paste
 rather than something 'jaira init' arranges for you.`,
 		Args: noArgs(),
