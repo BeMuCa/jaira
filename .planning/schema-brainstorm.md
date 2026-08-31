@@ -37,13 +37,18 @@ section holding one appended block per lane pass
 (`### critique · 1 · <ts> · <model>` … `→ in-progress`). In the chat transcript
 of 2026-08-30 and reproducible from the decisions above.
 
+## Decided (continued)
+
+6. **Q3, decided 2026-08-31: latest + History.** The ticket's frontmatter
+   keeps the newest value of every lane field — gates, `--json` and the merge
+   driver keep reading one field, unchanged — and every lane pass appends one
+   immutable block to `## History`. Frontmatter answers "where does it
+   stand?", History answers "how did it get here?".
+
 ## Open — the next question to him
 
-**Q3: rounds.** Frontmatter keeps the **latest** value of every lane field
-(gates, `--json`, merge driver unchanged) while `## History` appends every
-round — or lane fields live **only** in History and the frontmatter loses
-them. Recommendation on the table: latest + History, for backward
-compatibility.
+**Q4: build order** (approaches presented, his pick pending) — see the chat of
+2026-08-31.
 
 ## Parked for the spec
 
