@@ -10,6 +10,7 @@ package validate
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/lane"
@@ -176,7 +177,13 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 					continue
 				}
 				seen[m] = true
-				full = append(full, ref.ID)
+				// The same handle can turn up in both context and note; only
+				// list it once in the suggested command, or following the
+				// note's warning verbatim after the context's would write a
+				// duplicate blocked-by entry.
+				if !slices.Contains(full, ref.ID) {
+					full = append(full, ref.ID)
+				}
 				add(CodeUndeclaredDep, SeverityWarning, src.field,
 					"%s names %s which is not in blocked-by — declare it with 'jaira set %s blocked-by=%s' or ignore if it is not a dependency",
 					src.name, m, own, strings.Join(full, ","))

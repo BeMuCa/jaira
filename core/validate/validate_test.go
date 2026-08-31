@@ -221,6 +221,34 @@ func TestSecondMentionListsAllHandlesFoundSoFar(t *testing.T) {
 	}
 }
 
+// The same handle can appear in both context and the note. Each source still
+// earns its own warning — the source is information a fix needs — but the
+// handle must be listed only once in the suggested command, or following
+// the note's warning after the context's would write a duplicate blocked-by
+// entry.
+func TestHandleFoundInBothSourcesIsListedOnceInLastWarning(t *testing.T) {
+	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	h := ticket.Handle(dep.ID)
+	citing.Context = "waiting on " + h
+	citing.Body = "## Progress\n\n- still waiting on " + h + "\n"
+
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	var msgs []string
+	for _, p := range ps {
+		if p.Code == CodeUndeclaredDep {
+			msgs = append(msgs, p.Message)
+		}
+	}
+	if len(msgs) != 2 {
+		t.Fatalf("want one warning per source, got %d: %v", len(msgs), msgs)
+	}
+	last := msgs[len(msgs)-1]
+	if strings.Count(last, dep.ID) != 1 {
+		t.Errorf("last warning's suggested command lists the handle more than once: %q", last)
+	}
+}
+
 // The note (ticket body) is scanned the same as context, and this pins the
 // source label in the message so a later edit that drops the body source
 // cannot pass silently.
