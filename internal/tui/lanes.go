@@ -784,7 +784,7 @@ func (ls *laneScreen) render(width, height int) string {
 
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 	if name, id, creator, prompt, ok := ls.promptOf(); ok {
-		sb.WriteString(styLaneTitle.Render(fmt.Sprintf("%s (%s)", name, id)) + "\n")
+		sb.WriteString(styLaneTitle.Render(truncate(fmt.Sprintf("%s (%s)", name, id), w)) + "\n")
 		if creator != "" {
 			sb.WriteString(styMeta.Render("creator: "+creator) + "\n")
 		}
