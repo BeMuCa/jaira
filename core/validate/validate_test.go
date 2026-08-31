@@ -172,12 +172,62 @@ func TestUndeclaredDependencyMentionIsReported(t *testing.T) {
 		t.Errorf("an undeclared handle mention was not reported: %v", codes(ps))
 	}
 	for _, p := range ps {
-		if p.Code == CodeUndeclaredDep && p.Severity != SeverityWarning {
+		if p.Code != CodeUndeclaredDep {
+			continue
+		}
+		if p.Severity != SeverityWarning {
 			t.Errorf("an undeclared dependency mention was not a warning: %+v", p)
+		}
+		if p.Field != ticket.FieldContext {
+			t.Errorf("a mention found in context did not carry the context field: %+v", p)
 		}
 	}
 	if HasErrors(ps) {
 		t.Error("HasErrors reported true for a warning-only mention")
+	}
+}
+
+// The note (ticket body) is scanned the same as context, and this pins the
+// source label in the message so a later edit that drops the body source
+// cannot pass silently.
+func TestUndeclaredDependencyMentionInBodyIsReported(t *testing.T) {
+	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	citing.Body = "## Progress\n\n- waiting on " + ticket.Handle(dep.ID) + "\n"
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	var found *Problem
+	for i, p := range ps {
+		if p.Code == CodeUndeclaredDep {
+			found = &ps[i]
+		}
+	}
+	if found == nil {
+		t.Fatalf("an undeclared handle mention in the body was not reported: %v", codes(ps))
+	}
+	if !strings.HasPrefix(found.Message, "note names") {
+		t.Errorf("a body-sourced mention did not carry the note source label: %q", found.Message)
+	}
+	if found.Field != "" {
+		t.Errorf("a mention found in the body should carry no field (no constant covers it): %+v", found)
+	}
+}
+
+// The same handle typed twice in one field must produce one warning, not one
+// per occurrence.
+func TestRepeatedMentionIsReportedOnce(t *testing.T) {
+	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	h := ticket.Handle(dep.ID)
+	citing.Context = "see " + h + ", also see " + h + " again"
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	n := 0
+	for _, p := range ps {
+		if p.Code == CodeUndeclaredDep {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("a handle repeated twice in one field produced %d warnings, want 1: %v", n, codes(ps))
 	}
 }
 

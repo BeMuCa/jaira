@@ -42,6 +42,13 @@ const (
 // no ordinary word survives that alphabet, which is what keeps this from
 // firing on prose; the resolve-against-the-store check below is the real
 // filter against the rest.
+//
+// Deliberately blind to two things: a full 26-character ULID typed out in
+// prose (the \b boundaries never land six characters in from either end of
+// one unbroken run of word characters, so it never matches at all), and a
+// lowercase handle (the character class is uppercase only, matching what
+// ticket.Handle actually prints). Both are scope, not oversight — the case
+// this check exists for is the short handle a human actually types.
 var handleRef = regexp.MustCompile(`\b[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}\b`)
 
 // Problem is one finding about one ticket.
@@ -140,9 +147,11 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 		// GOLANG) cannot fire this.
 		own := handleOf(t.ID)
 		follows := handleOf(t.Follows)
-		for _, src := range []struct{ name, text string }{
-			{"context", t.Context},
-			{"note", t.Body},
+		for _, src := range []struct{ name, text, field string }{
+			{"context", t.Context, ticket.FieldContext},
+			// No frontmatter field constant covers the body, so this
+			// problem's Field is left empty rather than inventing one.
+			{"note", t.Body, ""},
 		} {
 			seen := map[string]bool{}
 			for _, m := range handleRef.FindAllString(src.text, -1) {
@@ -161,9 +170,17 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 					continue
 				}
 				seen[m] = true
-				add(CodeUndeclaredDep, SeverityWarning, "",
-					"%s names %s which is not in blocked-by — add it with 'jaira set %s blocked-by=...' or ignore if it is not a dependency",
-					src.name, m, own)
+				// 'jaira set' replaces a list field outright rather than
+				// appending to it, so the advice has to spell out the whole
+				// resulting list — the ticket's existing blocked-by plus the
+				// handle just found — or following it verbatim would drop
+				// every dependency already declared.
+				full := make([]string, 0, len(t.BlockedBy)+1)
+				full = append(full, t.BlockedBy...)
+				full = append(full, ref.ID)
+				add(CodeUndeclaredDep, SeverityWarning, src.field,
+					"%s names %s which is not in blocked-by — declare it with 'jaira set %s blocked-by=%s' or ignore if it is not a dependency",
+					src.name, m, own, strings.Join(full, ","))
 			}
 		}
 
