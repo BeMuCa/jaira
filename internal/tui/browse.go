@@ -203,7 +203,7 @@ func (b *browser) render(width, height int) string {
 	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Add a board") + "\n")
-	sb.WriteString(styMeta.Render(truncate(b.dir, w)) + "\n")
+	sb.WriteString(styMeta.Render(wrap(b.dir, w, 0)) + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
 	if len(b.entries) == 0 {
@@ -233,10 +233,11 @@ func (b *browser) render(width, height int) string {
 		sb.WriteString(styMeta.Render(fmt.Sprintf("  +%d more", rest)) + "\n")
 	}
 	if b.msg != "" {
-		sb.WriteString("\n" + styWarn.Render(truncate(b.msg, w)) + "\n")
+		sb.WriteString("\n" + styWarn.Render(wrap(b.msg, w, 0)) + "\n")
 	}
-	sb.WriteString("\n" + styMeta.Render(truncate(
-		"enter open dir · h up · a add · i init a board · s scan here · esc cancel", w)))
+	for _, l := range wrapHints([]string{"enter open dir", "h up", "a add", "i init a board", "s scan here", "esc cancel"}, max(1, w)) {
+		sb.WriteString("\n" + styMeta.Render(l))
+	}
 	return sb.String()
 }
 
@@ -292,7 +293,7 @@ func (b *browser) renderResults(width, height int) string {
 	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render(fmt.Sprintf("Found %d board(s)", len(b.results))) + "\n")
-	sb.WriteString(styMeta.Render(truncate("under "+b.dir, w)) + "\n")
+	sb.WriteString(styMeta.Render(wrap("under "+b.dir, w, 0)) + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
 	visible := max(3, height-8)
@@ -315,10 +316,11 @@ func (b *browser) renderResults(width, height int) string {
 		sb.WriteString(truncate(lead+mark+" "+label, w) + "\n")
 	}
 	if b.msg != "" {
-		sb.WriteString("\n" + styWarn.Render(truncate(b.msg, w)) + "\n")
+		sb.WriteString("\n" + styWarn.Render(wrap(b.msg, w, 0)) + "\n")
 	}
-	sb.WriteString("\n" + styMeta.Render(truncate(
-		"space toggle · a all/none · enter add selected · esc back", w)))
+	for _, l := range wrapHints([]string{"space toggle", "a all/none", "enter add selected", "esc back"}, max(1, w)) {
+		sb.WriteString("\n" + styMeta.Render(l))
+	}
 	return sb.String()
 }
 

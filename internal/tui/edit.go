@@ -149,8 +149,10 @@ func (m *Model) renderEdit() string {
 	if m.detail == nil && m.editDraft() == nil {
 		return m.renderBoard()
 	}
-	return m.editBody(max(20, m.width-2), m.height) + "\n" + styMeta.Render(truncate(
-		"enter newline · ctrl+s save · tab next field · esc cancel", max(20, m.width-2)))
+	hints := wrapHints([]string{"enter newline", "ctrl+s save", "tab next field", "esc cancel"}, max(20, m.width-2))
+	// The editor box gives up a row per extra hint line, so a narrow terminal
+	// keeps every key visible without pushing the box past the bottom.
+	return m.editBody(max(20, m.width-2), m.height-max(0, len(hints)-1)) + "\n" + styMeta.Render(strings.Join(hints, "\n"))
 }
 
 // editBody draws the field editor at a given size, so the same editor serves the

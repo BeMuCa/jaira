@@ -173,7 +173,7 @@ func (d *defaultBoardScreen) render(width, height int) string {
 	w := max(20, width)
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Default board") + "\n")
-	sb.WriteString(styMeta.Render(truncate(d.board.Path, w)) + "\n")
+	sb.WriteString(styMeta.Render(wrap(d.board.Path, w, 0)) + "\n")
 	sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
 	sb.WriteString(styLaneTitle.Render("Lanes") + "\n")
@@ -214,10 +214,10 @@ func (d *defaultBoardScreen) render(width, height int) string {
 		if d.isErr {
 			style = styErr
 		}
-		sb.WriteString("\n" + style.Render(truncate(d.msg, w)) + "\n")
+		sb.WriteString("\n" + style.Render(wrap(d.msg, w, 0)) + "\n")
 	}
-	sb.WriteString("\n" + styMeta.Render(truncate(
-		"tab switch list · space toggle · e edit file · s save · esc back "+
-			"(selects lanes, does not reorder them)", w)))
+	for _, l := range wrapHints([]string{"tab switch list", "space toggle", "e edit file", "s save", "esc back (selects lanes, does not reorder them)"}, max(1, w)) {
+		sb.WriteString("\n" + styMeta.Render(l))
+	}
 	return sb.String()
 }

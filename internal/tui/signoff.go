@@ -27,7 +27,7 @@ func (m *Model) renderSignOff() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)),
-		styLaneTitle.Render(truncate(t.Title, max(1, w-10))))
+		styLaneTitle.Render(wrap(t.Title, max(10, w-10), 8)))
 	b.WriteString(styReview.Render(truncate("◆ waiting on your sign-off", w)) + "\n")
 	b.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 
@@ -63,11 +63,11 @@ func (m *Model) renderSignOff() string {
 				sty = styOK
 			}
 			fmt.Fprintf(&b, "  %s %s\n", sty.Render("["+it.State.Marker()+"]"),
-				truncate(it.Text, max(1, w-6)))
+				wrap(it.Text, max(1, w-6), 6))
 			// A ticked box without its evidence is a claim nobody can check, and
 			// this is exactly the screen where that judgement is made.
 			if it.Proof != "" {
-				fmt.Fprintf(&b, "      %s\n", styMeta.Render(truncate("proof: "+it.Proof, max(1, w-6))))
+				fmt.Fprintf(&b, "      %s\n", styMeta.Render(wrap("proof: "+it.Proof, max(1, w-6), 13)))
 			}
 		}
 	}

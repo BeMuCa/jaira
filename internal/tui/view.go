@@ -781,7 +781,7 @@ func (m *Model) detailHints(t *ticket.Ticket) string {
 // rendering serves the full screen and one half of the split follow-up view.
 func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styLaneTitle.Render(t.Title))
+	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styLaneTitle.Render(wrap(t.Title, max(10, width-8), 8)))
 	b.WriteString(styBar.Render(strings.Repeat("─", max(1, width))) + "\n")
 
 	row := func(k, v string) {
@@ -861,13 +861,13 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	if len(t.Commits) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits") + "\n")
 		if stat, err := (&gitStat{root: m.store.Root}).of(t.Commits); err == nil && stat != "" {
-			b.WriteString(styMeta.Render(stat) + "\n")
+			b.WriteString(styMeta.Render(wrapLines(stat, max(10, width))) + "\n")
 		} else {
 			row("commits", strings.Join(t.Commits, " "))
 		}
 	}
 	if miss := missing(t); len(miss) > 0 {
-		b.WriteString("\n" + styWarn.Render("Before this can start: "+strings.Join(miss, ", ")) + "\n")
+		b.WriteString("\n" + styWarn.Render(wrap("Before this can start: "+strings.Join(miss, ", "), max(10, width), 0)) + "\n")
 	}
 	renderChecklist(&b, "plan", t.PlanItems, width)
 	renderChecklist(&b, "done when", t.DoDItems, width)
@@ -1015,7 +1015,7 @@ func (m *Model) renderMessage() string {
 	}
 	var b strings.Builder
 	b.WriteString(style.Render(strings.ToUpper(label)) + "\n\n")
-	b.WriteString(m.message + "\n\n")
+	b.WriteString(wrapLines(m.message, max(10, m.width-2)) + "\n\n")
 	switch {
 	case m.pending == nil:
 		b.WriteString(styMeta.Render("esc dismiss"))
@@ -1043,9 +1043,11 @@ func (m *Model) renderProjects() string {
 			cur = styMeta.Render("  (current)")
 		}
 		b.WriteString(marker + name + cur + "\n")
-		b.WriteString("    " + styMeta.Render(truncate(p.Root, m.width-6)) + "\n")
+		b.WriteString("    " + styMeta.Render(wrap(p.Root, max(10, m.width-6), 4)) + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render("enter switch · x remove a board · esc back"))
+	for _, l := range wrapHints([]string{"enter switch", "x remove a board", "esc back"}, max(1, m.width)) {
+		b.WriteString("\n" + styMeta.Render(l))
+	}
 	return b.String()
 }
 
@@ -1241,6 +1243,20 @@ func wrap(s string, width, indent int) string {
 	var lines []string
 	cur := ""
 	for _, w := range words {
+		// A word wider than the whole line — a path, a URL, an identifier —
+		// can never fit by moving it down a line, so it is the one case that
+		// breaks mid-word; prose still breaks at spaces only. Without this a
+		// long path stayed a single line and was cut off at the pane edge,
+		// unreadable on a terminal that cannot scroll sideways.
+		if lipgloss.Width(w) > width {
+			if cur != "" {
+				lines = append(lines, cur)
+			}
+			parts := hardBreak(w, width)
+			lines = append(lines, parts[:len(parts)-1]...)
+			cur = parts[len(parts)-1]
+			continue
+		}
 		if cur == "" {
 			cur = w
 			continue
@@ -1256,6 +1272,45 @@ func wrap(s string, width, indent int) string {
 		lines = append(lines, cur)
 	}
 	return strings.Join(lines, "\n"+strings.Repeat(" ", indent))
+}
+
+// hardBreak cuts one over-wide word into pieces of at most width display
+// cells, measuring graphemes the way truncate does so wide characters do not
+// overshoot the pane.
+func hardBreak(word string, width int) []string {
+	var parts []string
+	cur := ""
+	for _, r := range word {
+		if cur != "" && lipgloss.Width(cur+string(r)) > width {
+			parts = append(parts, cur)
+			cur = ""
+		}
+		cur += string(r)
+	}
+	if cur != "" {
+		parts = append(parts, cur)
+	}
+	return parts
+}
+
+// wrapLines wraps text that already has line structure — a lane prompt, a
+// git stat, a multi-sentence error — one line at a time, so paragraphs,
+// blank lines and leading indentation survive where wrap alone would flatten
+// them into one stream.
+func wrapLines(s string, width int) string {
+	lines := strings.Split(s, "\n")
+	out := make([]string, 0, len(lines))
+	for _, l := range lines {
+		if strings.TrimSpace(l) == "" {
+			out = append(out, l)
+			continue
+		}
+		trimmed := strings.TrimLeft(l, " ")
+		lead := len(l) - len(trimmed)
+		wrapped := strings.Repeat(" ", lead) + wrap(trimmed, width-lead, lead)
+		out = append(out, strings.Split(wrapped, "\n")...)
+	}
+	return strings.Join(out, "\n")
 }
 
 func min(a, b int) int {

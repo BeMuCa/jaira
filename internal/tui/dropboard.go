@@ -147,10 +147,10 @@ func (d *dropBoard) render(width, height int) string {
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render("Remove board") + "\n")
 	b.WriteString(styBar.Render(strings.Repeat("─", min(width, 78))) + "\n\n")
-	fmt.Fprintf(&b, "  %s\n  %s\n\n", stySelected.Render(d.name), styMeta.Render(truncate(d.root, max(10, width-4))))
+	fmt.Fprintf(&b, "  %s\n  %s\n\n", stySelected.Render(d.name), styMeta.Render(wrap(d.root, max(10, width-4), 2)))
 
 	if d.current {
-		b.WriteString(styWarn.Render("  This is the board you are looking at. Switch to another one first.") + "\n\n")
+		b.WriteString(styWarn.Render("  "+wrap("This is the board you are looking at. Switch to another one first.", max(10, width-2), 2)) + "\n\n")
 	}
 
 	for i, p := range d.parts {
@@ -185,11 +185,12 @@ func (d *dropBoard) render(width, height int) string {
 	}
 	fmt.Fprintf(&b, "  %s  %s   %s\n", no, yes, styWarn.Render("this cannot be undone"))
 
-	b.WriteString("\n" + styMeta.Render(
-		"Your catalogue lanes in ~/.jaira/lanes are never touched by this.") + "\n")
+	b.WriteString("\n" + styMeta.Render(wrap("Your catalogue lanes in ~/.jaira/lanes are never touched by this.", max(10, width), 0)) + "\n")
 	if d.msg != "" {
-		b.WriteString("\n" + styErr.Render(d.msg) + "\n")
+		b.WriteString("\n" + styErr.Render(wrap(d.msg, max(10, width), 0)) + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render("j k move · space toggle · h l no/yes · enter choose · esc cancel"))
+	for _, l := range wrapHints([]string{"j k move", "space toggle", "h l no/yes", "enter choose", "esc cancel"}, max(1, width)) {
+		b.WriteString("\n" + styMeta.Render(l))
+	}
 	return clampBlock(b.String(), width, height)
 }

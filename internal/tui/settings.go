@@ -79,9 +79,11 @@ func (s *settingsScreen) render(width, height int) string {
 			name = stySelected.Render(name)
 		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
-		sb.WriteString(truncate("      "+styMeta.Render(e.desc), w) + "\n")
+		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
 	}
 
-	sb.WriteString("\n" + styMeta.Render(truncate("enter open · esc back", w)))
+	for _, l := range wrapHints([]string{"enter open", "esc back"}, max(1, w)) {
+		sb.WriteString("\n" + styMeta.Render(l))
+	}
 	return sb.String()
 }

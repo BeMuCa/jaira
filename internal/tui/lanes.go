@@ -727,8 +727,7 @@ func (ls *laneScreen) renderCatalogue(w int) string {
 	var sb strings.Builder
 	sb.WriteString(styLaneTitle.Render("Add a lane") + "\n")
 	if len(ls.catalogue) == 0 {
-		sb.WriteString(styMeta.Render(truncate(
-			"  every installed lane is already part of this project", w)) + "\n")
+		sb.WriteString(styMeta.Render("  "+wrap("every installed lane is already part of this project", max(10, w-2), 2)) + "\n")
 		return sb.String()
 	}
 	for i, l := range ls.catalogue {
@@ -790,13 +789,13 @@ func (ls *laneScreen) render(width, height int) string {
 			sb.WriteString(styMeta.Render("creator: "+creator) + "\n")
 		}
 		promptHeight := max(3, height-16)
-		lines := strings.Split(prompt, "\n")
+		lines := strings.Split(wrapLines(prompt, w), "\n")
 		for i, ln := range lines {
 			if i >= promptHeight {
 				sb.WriteString(styMeta.Render(fmt.Sprintf("  … +%d more line(s)", len(lines)-promptHeight)) + "\n")
 				break
 			}
-			sb.WriteString(truncate(ln, w) + "\n")
+			sb.WriteString(ln + "\n")
 		}
 	}
 
