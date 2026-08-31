@@ -394,7 +394,13 @@ func (h *Home) render() string {
 	if h.versionLine != "" {
 		b.WriteString("\n" + centre.Render(truncate(h.versionLine, h.width)))
 	}
-	return b.String()
+	// Nothing above measures its own height, unlike every other self-contained
+	// screen (dropboard, follow-up, lane focus) — the stats panel plus a long
+	// message can run past the bottom of a short terminal and push the key
+	// hints off it. Clamped the same way those are, at the end of render()
+	// rather than in View(), so a direct call to render() already reflects
+	// the true, final output.
+	return clampBlock(b.String(), h.width, h.height)
 }
 
 // renderStats is the activity chart: logbook entries per day over the last

@@ -6,79 +6,89 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Every screen, at a terminal small enough to hurt. A line wider than the
 // terminal does not spill, it wraps — silently pushing everything below it down
 // a line, so one long warning can shove a footer off the bottom of a screen
 // that had measured its own height correctly.
+//
+// Each case gets its own fresh model: sharing one model across cases (as this
+// used to) leaves state from an earlier case — isErr, settingsScreen,
+// laneScreen, drop — set on later ones, so a failure could be the case named
+// in the error or a leftover from the one before it. With a fresh model per
+// case, ordering cannot matter — follow-up no longer has to run last.
 func TestEveryScreenFitsTheTerminal(t *testing.T) {
 	for _, size := range [][2]int{{40, 12}, {60, 20}, {80, 24}, {150, 32}} {
 		w, h := size[0], size[1]
-		m := newTestModel(t, w, h)
-		m.laneIdx, m.cardIdx = 0, 0
-		m.openDetail()
-		open := m.detail
 
 		screens := []struct {
 			name  string
-			setup func()
+			setup func(m *Model, open *ticket.Ticket)
 		}{
-			{"board", func() { m.mode, m.detail = modeBoard, nil }},
-			{"help", func() { m.mode = modeHelp }},
-			{"detail", func() { m.mode, m.detail = modeDetail, open }},
-			{"delete", func() { m.mode, m.detail, m.input = modeDelete, open, "" }},
-			{"lane focus", func() { m.mode, m.detail = modeLaneFocus, nil }},
-			{"compact", func() { m.mode, m.detail = modePipeline, nil }},
-			{"projects", func() { m.mode, m.detail = modeProjects, nil }},
-			{"move", func() { m.mode, m.detail = modeMove, nil }},
-			{"filter", func() { m.mode, m.input = modeFilter, "a very long filter string that keeps going and going and going" }},
-			{"create", func() { m.mode, m.input = modeCreate, strings.Repeat("title ", 40) }},
-			{"sign-off", func() {
+			{"board", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeBoard, nil }},
+			{"help", func(m *Model, open *ticket.Ticket) { m.mode = modeHelp }},
+			{"detail", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeDetail, open }},
+			{"delete", func(m *Model, open *ticket.Ticket) { m.mode, m.detail, m.input = modeDelete, open, "" }},
+			{"lane focus", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeLaneFocus, nil }},
+			{"compact", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modePipeline, nil }},
+			{"projects", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeProjects, nil }},
+			{"move", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeMove, nil }},
+			{"filter", func(m *Model, open *ticket.Ticket) {
+				m.mode, m.input = modeFilter, "a very long filter string that keeps going and going and going"
+			}},
+			{"create", func(m *Model, open *ticket.Ticket) { m.mode, m.input = modeCreate, strings.Repeat("title ", 40) }},
+			{"sign-off", func(m *Model, open *ticket.Ticket) {
 				tk := longTicket()
 				tk.Status = "signoff"
 				tk.DoDItems[0].Proof = strings.Repeat("a proof line that keeps going ", 6)
 				m.mode, m.detail = modeDetail, tk
 			}},
-			{"edit", func() {
+			{"edit", func(m *Model, open *ticket.Ticket) {
 				m.mode, m.detail = modeEdit, open
 				m.editIdx = 0
 				m.editBuf = strings.Repeat("a very long line being typed into the field ", 4)
 			}},
-			{"settings", func() { m.mode, m.settingsScreen = modeSettings, newSettingsScreen() }},
-			{"lanes", func() { m.mode, m.laneScreen = modeLanes, newLaneScreen(m.store, m.lanes) }},
-			{"drop-board", func() {
+			{"settings", func(m *Model, open *ticket.Ticket) { m.mode, m.settingsScreen = modeSettings, newSettingsScreen() }},
+			{"lanes", func(m *Model, open *ticket.Ticket) { m.mode, m.laneScreen = modeLanes, newLaneScreen(m.store, m.lanes) }},
+			{"drop-board", func(m *Model, open *ticket.Ticket) {
 				m.mode, m.drop = modeDropBoard, newDropBoard(m.store.Root, strings.Repeat("a very long board name ", 4), false)
 			}},
-			{"message", func() {
+			{"message", func(m *Model, open *ticket.Ticket) {
 				m.mode, m.message, m.isErr = modeMessage, strings.Repeat("a very long message that keeps going and going ", 3), true
 			}},
-			// follow-up last: it is entered by m.follow being non-nil rather
-			// than a mode of its own, and that state must not leak into the
-			// screens tested above it.
-			{"follow-up", func() {
+			{"follow-up", func(m *Model, open *ticket.Ticket) {
 				m.detail = open
 				m.startFollowUp()
 			}},
 		}
 		for _, sc := range screens {
-			sc.setup()
-			// A warning long enough to wrap on its own, since that is the real
-			// case: the board carries lane warnings it did not choose the
-			// length of.
-			m.warnings = []string{strings.Repeat("a lane file this installation does not understand ", 6)}
-			view := m.View()
-			out := stripANSI(view.Content)
+			t.Run(sc.name, func(t *testing.T) {
+				m := newTestModel(t, w, h)
+				m.laneIdx, m.cardIdx = 0, 0
+				m.openDetail()
+				open := m.detail
 
-			lines := strings.Split(out, "\n")
-			if len(lines) > h {
-				t.Errorf("%dx%d %s: %d lines, want at most %d", w, h, sc.name, len(lines), h)
-			}
-			for i, l := range lines {
-				if got := lipgloss.Width(l); got > w {
-					t.Errorf("%dx%d %s: line %d is %d wide, want at most %d: %q", w, h, sc.name, i+1, got, w, l)
+				sc.setup(m, open)
+				// A warning long enough to wrap on its own, since that is the real
+				// case: the board carries lane warnings it did not choose the
+				// length of.
+				m.warnings = []string{strings.Repeat("a lane file this installation does not understand ", 6)}
+				view := m.View()
+				out := stripANSI(view.Content)
+
+				lines := strings.Split(out, "\n")
+				if len(lines) > h {
+					t.Errorf("%dx%d: %d lines, want at most %d", w, h, len(lines), h)
 				}
-			}
+				for i, l := range lines {
+					if got := lipgloss.Width(l); got > w {
+						t.Errorf("%dx%d: line %d is %d wide, want at most %d: %q", w, h, i+1, got, w, l)
+					}
+				}
+			})
 		}
 	}
 }
@@ -136,17 +146,25 @@ func TestScreensWithNoOuterClampFitTheirOwnWidth(t *testing.T) {
 			checkLineWidths(t, w, "browse", stripANSI(b.render(w, 30)))
 		}
 
-		// home: the launcher's own message wraps under the board list, and
-		// nothing downstream of Home.render clamps it further.
+		// home: every line here already runs through a lipgloss style with
+		// Width(h.width), which wraps rather than overflows, so width was
+		// never what home could fail on. What nothing guarded was HEIGHT: the
+		// stats panel plus a long message can push the key hints off the
+		// bottom of a short terminal, and header() only makes room by giving
+		// up first (it self-suppresses below height 14).
 		{
 			t.Setenv("JAIRA_HOME", t.TempDir())
 			h, err := NewHome(nil)
 			if err != nil {
 				t.Fatal(err)
 			}
-			h.width, h.height = w, 30
+			h.width, h.height = w, 10
+			h.stats = true
 			h.msg = long
-			checkLineWidths(t, w, "home", stripANSI(h.render()))
+			out := strings.Split(stripANSI(h.render()), "\n")
+			if got := len(out); got > h.height {
+				t.Errorf("width %d home: %d lines, want at most %d", w, got, h.height)
+			}
 		}
 	}
 }
@@ -154,7 +172,7 @@ func TestScreensWithNoOuterClampFitTheirOwnWidth(t *testing.T) {
 func checkLineWidths(t *testing.T, w int, name, out string) {
 	t.Helper()
 	for i, l := range strings.Split(out, "\n") {
-		if n := len([]rune(l)); n > w {
+		if n := lipgloss.Width(l); n > w {
 			t.Errorf("width %d %s: line %d is %d wide, want at most %d: %q", w, name, i+1, n, w, l)
 		}
 	}
