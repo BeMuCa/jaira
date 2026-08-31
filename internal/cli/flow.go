@@ -224,6 +224,7 @@ one the real move would have returned.`,
 			if force && len(vs) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Overrode %d gate refusal(s):\n%s\n", len(vs), bullets(vs))
 			}
+			fmt.Fprint(cmd.OutOrStdout(), nextStepLine(env.Lanes, t.ID, to))
 			return nil
 		},
 	}
@@ -241,6 +242,28 @@ one the real move would have returned.`,
 	f.StringVar(&fromLane, "from-lane", "",
 		"read this lane's structured output as JSON on stdin and validate it against the lane's contract")
 	return cmd
+}
+
+// nextStepLine names the command that works the lane a ticket has just landed
+// in, so the move itself says what to do next.
+//
+// The lane's own prompt already ends by saying where the ticket goes, and the
+// agent block in AGENTS.md/CLAUDE.md already says to work a lane to empty. Both
+// were in place and measured not to be enough: the block is read once, at the
+// start of a session, and the moment a session should carry on is the move —
+// tickets sat unworked in critique on two boards until somebody told a session
+// to pick them up.
+//
+// Only an agentic lane gets the line. A lane with no prompt has no step to run,
+// and the human lanes are the ones a session must not work at all, so naming a
+// command for them would invite exactly the wrong thing.
+func nextStepLine(lanes *lane.Set, id, to string) string {
+	l, ok := lanes.Get(to)
+	if !ok || !l.Agentic {
+		return ""
+	}
+	return fmt.Sprintf("%s is an agentic lane. Next: jaira show %s --for-lane %s --json, then jaira move.\n",
+		to, ticket.Handle(id), to)
 }
 
 func contains(xs []string, v string) bool {

@@ -318,6 +318,13 @@ The sync is idempotent. A task already mapped to a ticket updates it rather than
 creating a second one, and an unchanged list writes nothing, so a
 board→tasks→board round trip settles instead of oscillating.
 
+`jaira hook print` emits a second, unrelated hook: a `Stop` hook that refuses to
+end a session while an agentic lane still holds work. A lane's prompt already
+says where a ticket goes next, and `jaira move` now names the command that works
+the lane it landed in — but both are advice a model can drop, and the hook is
+the environment refusing. It fails open (no board, no jaira on `PATH`, a stop it
+has already blocked once) so it cannot trap you in a session.
+
 ## Working with an agent
 
 The whole integration surface is: run a command, read the JSON, branch on the

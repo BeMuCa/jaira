@@ -120,6 +120,7 @@ to pass `--force` to everything, which protects nothing.
 | `jaira sync-tasks` | mirror an agent's task list into the backlog |
 | `jaira checkpoint` | record what this session is working on |
 | `jaira merge-driver` | called by git; not run by hand |
+| `jaira hook print` | print a Claude Code Stop-hook snippet for `~/.claude/settings.json` that refuses to end a session while an agentic lane still has work waiting. Opt-in: nothing is installed, and the hook lets the session end when it cannot read a board |
 
 ## Keys
 

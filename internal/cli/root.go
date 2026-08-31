@@ -208,6 +208,7 @@ Exit codes:
 		newShareCmd(),
 		newUpdateCmd(),
 		newSelfCmd(),
+		newHookCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
