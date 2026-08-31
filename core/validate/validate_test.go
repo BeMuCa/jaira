@@ -164,10 +164,12 @@ func TestHasErrorsDistinguishesSeverity(t *testing.T) {
 // only ever read blocked-by — this is the gap that makes the board lie about
 // a ticket being actionable.
 func TestUndeclaredDependencyMentionIsReported(t *testing.T) {
-	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
-	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
+	other := tk(ticket.NewID(time.Now()), "already-declared", "todo")
+	dep := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "dependency", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(2*time.Millisecond)), "citing", "todo")
+	citing.BlockedBy = []string{other.ID}
 	citing.Context = "waiting on the auth work, see " + ticket.Handle(dep.ID)
-	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{other, dep, citing}, lanes(t))
 	if !has(ps, CodeUndeclaredDep) {
 		t.Errorf("an undeclared handle mention was not reported: %v", codes(ps))
 	}
@@ -181,9 +183,41 @@ func TestUndeclaredDependencyMentionIsReported(t *testing.T) {
 		if p.Field != ticket.FieldContext {
 			t.Errorf("a mention found in context did not carry the context field: %+v", p)
 		}
+		// The suggested command must not just append — it must reproduce the
+		// whole resulting list, existing entries first, or following it
+		// verbatim would wipe out what is already declared.
+		if !strings.Contains(p.Message, "blocked-by="+other.ID+","+dep.ID) {
+			t.Errorf("suggested command dropped the already-declared dependency: %q", p.Message)
+		}
 	}
 	if HasErrors(ps) {
 		t.Error("HasErrors reported true for a warning-only mention")
+	}
+}
+
+// Two undeclared handles named in one ticket must each get their own
+// warning, and because 'jaira set' replaces the whole list, the second
+// warning's suggested command has to name every handle found so far — not
+// just the one it is about — or running the two commands in sequence would
+// drop the first.
+func TestSecondMentionListsAllHandlesFoundSoFar(t *testing.T) {
+	depA := tk(ticket.NewID(time.Now()), "dep-a", "todo")
+	depB := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "dep-b", "todo")
+	citing := tk(ticket.NewID(time.Now().Add(2*time.Millisecond)), "citing", "todo")
+	citing.Context = "waiting on " + ticket.Handle(depA.ID) + " and " + ticket.Handle(depB.ID)
+
+	ps := Tickets([]*ticket.Ticket{depA, depB, citing}, lanes(t))
+	var msgs []string
+	for _, p := range ps {
+		if p.Code == CodeUndeclaredDep {
+			msgs = append(msgs, p.Message)
+		}
+	}
+	if len(msgs) != 2 {
+		t.Fatalf("want 2 undeclared-dependency warnings, got %d: %v", len(msgs), msgs)
+	}
+	if !strings.Contains(msgs[1], "blocked-by="+depA.ID+","+depB.ID) {
+		t.Errorf("second warning's suggested command does not carry every handle found so far: %q", msgs[1])
 	}
 }
 

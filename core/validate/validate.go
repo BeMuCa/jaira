@@ -147,6 +147,12 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 		// GOLANG) cannot fire this.
 		own := handleOf(t.ID)
 		follows := handleOf(t.Follows)
+		// 'jaira set' replaces a list field outright rather than appending to
+		// it, so each suggested command has to spell out the whole resulting
+		// list — the ticket's existing blocked-by plus every handle found so
+		// far, across both sources — or following an earlier one verbatim
+		// would erase a dependency a later one just found.
+		full := append([]string(nil), t.BlockedBy...)
 		for _, src := range []struct{ name, text, field string }{
 			{"context", t.Context, ticket.FieldContext},
 			// No frontmatter field constant covers the body, so this
@@ -170,13 +176,6 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 					continue
 				}
 				seen[m] = true
-				// 'jaira set' replaces a list field outright rather than
-				// appending to it, so the advice has to spell out the whole
-				// resulting list — the ticket's existing blocked-by plus the
-				// handle just found — or following it verbatim would drop
-				// every dependency already declared.
-				full := make([]string, 0, len(t.BlockedBy)+1)
-				full = append(full, t.BlockedBy...)
 				full = append(full, ref.ID)
 				add(CodeUndeclaredDep, SeverityWarning, src.field,
 					"%s names %s which is not in blocked-by — declare it with 'jaira set %s blocked-by=%s' or ignore if it is not a dependency",
