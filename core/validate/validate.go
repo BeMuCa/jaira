@@ -139,13 +139,18 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 		// ordinary word that happens to share the six-character shape (say,
 		// GOLANG) cannot fire this.
 		own := handleOf(t.ID)
+		follows := handleOf(t.Follows)
 		for _, src := range []struct{ name, text string }{
 			{"context", t.Context},
 			{"note", t.Body},
 		} {
 			seen := map[string]bool{}
 			for _, m := range handleRef.FindAllString(src.text, -1) {
-				if m == own || declared[m] || seen[m] {
+				// A follow-up naming its parent is declaring the relation
+				// follows: already exists for, not a hidden dependency — and
+				// the parent does not block the follow-up, so the fix this
+				// warning suggests (adding it to blocked-by) would be wrong.
+				if m == own || declared[m] || seen[m] || (t.Follows != "" && m == follows) {
 					continue
 				}
 				ref, ok := byHandle[m]

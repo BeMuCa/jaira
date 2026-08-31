@@ -224,6 +224,29 @@ func TestOwnHandleMentionIsNotReported(t *testing.T) {
 	}
 }
 
+// A follow-up naming its parent in context is declaring the relation
+// follows: already exists for. The parent does not block the follow-up, so
+// this must not warn — and must not warn for any handle equal to follows,
+// while an unrelated undeclared handle alongside it still should.
+func TestFollowsMentionIsNotReported(t *testing.T) {
+	parent := tk(ticket.NewID(time.Now()), "parent", "todo")
+	other := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "other", "todo")
+	followUp := tk(ticket.NewID(time.Now().Add(2*time.Millisecond)), "follow-up", "todo")
+	followUp.Follows = parent.ID
+	followUp.Context = "review of " + ticket.Handle(parent.ID)
+
+	ps := Tickets([]*ticket.Ticket{parent, other, followUp}, lanes(t))
+	if has(ps, CodeUndeclaredDep) {
+		t.Errorf("a follow-up naming its parent was reported: %v", codes(ps))
+	}
+
+	followUp.Context += ", also see " + ticket.Handle(other.ID)
+	ps = Tickets([]*ticket.Ticket{parent, other, followUp}, lanes(t))
+	if !has(ps, CodeUndeclaredDep) {
+		t.Errorf("an unrelated undeclared handle next to a follows mention was not reported: %v", codes(ps))
+	}
+}
+
 func TestProblemMessagesNameTheTicket(t *testing.T) {
 	bad := tk(ticket.NewID(time.Now()), "stranded", "nope-lane")
 	for _, p := range Tickets([]*ticket.Ticket{bad}, lanes(t)) {
