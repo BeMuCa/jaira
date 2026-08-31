@@ -38,14 +38,22 @@ prompt says, at whatever model tier it declares.
 
 | Lane | Sits | Sends work back to | For |
 |---|---|---|---|
+| `secrets-scan` | after implementing, ahead of every other gate | implementing | Catching a credential that reached a commit — keys, tokens, private keys, a tracked `.env` |
 | `critique` | after implementing | implementing | Judging whether this is the right implementation, not whether it works |
 | `optimize` | after critique | implementing | Removing duplication, dead code and fluff the change left behind |
+| `changelog-writer` | after review | — | Writing the one changelog line for whoever installs the release, rather than for the next agent |
 
-Together they make a loop: implementing writes it, critique says what is wrong
+`critique` and `optimize` together make a loop: implementing writes it, critique says what is wrong
 with the approach, implementing fixes it, and that repeats until critique has
 nothing left to say. Then optimize strips what is not needed, and only then does
 the work reach review. A decision that is genuinely the user's goes to the HITL
 lane on the way, rather than being taken by whichever agent noticed it.
+
+`secrets-scan` sits ahead of that loop because it is the cheapest check on the
+board and the only one whose miss cannot be taken back — a pushed credential is
+already public. `changelog-writer` sits behind it, after review, once what
+actually shipped is settled; it writes one field on the ticket and no file, so
+two tickets in it in parallel do not conflict.
 
 The loop is not enforced. `rejects-to:` declares the back edge so an agent
 reading the board can see it, and a backwards move was always allowed — the gate
