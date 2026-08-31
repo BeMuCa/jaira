@@ -1,272 +1,81 @@
-# Handoff — 2026-08-24
+# Handoff — 2026-08-31
 
 State before a context clear; this file is the memory. The previous handoff
-(2026-08-18, the release and the team flow) is at `9cf71cc`. Longer-lived
-decisions also live in the agent memory file `jaira-design-invariants`.
-
-**Updated after the session of 2026-08-24 that worked the list of seven.** All
-seven are done (`96462ea`..`3067c44`, eleven commits). What that session landed
-is the first section below; what it did *not* touch is `NEXT-STEPS.md`, which is
-now a second, shorter list.
+(2026-08-26, the board arriving in this repository) is at `7a861b3`. Longer-
+lived decisions also live in the agent memory file `jaira-design-invariants`.
 
 ## Where things are
 
-- **Public: https://github.com/BeMuCa/jaira** — clean tree, pushed, CI green at
-  `ff9ae1b`. The user's binary is rebuilt from it; check with
-  `go version -m ~/.local/bin/jaira` that `vcs.revision` matches HEAD, since
-  building before committing stamps it `+dirty`.
-- **The first outside contributions are in** (2026-08-25): PRs #1, #2, #5 merged
-  whole, #3 reduced to its `z` half. Issue #4 is answered by #5. Every one of
-  them was merged with my review fixes as a commit on top, named
-  `fix(#N review): ...`, so what I changed about someone else's work is legible
-  as its own diff rather than folded into the merge.
-- The user's binary: `~/.local/bin/jaira`, built from `3067c44`.
-  `go build -o ~/.local/bin/jaira ./cmd/jaira` — never `go install`. **Rebuild
-  it after every change**: a stale binary made `jaira whoami` look broken.
-- `gofmt -l core internal` lists `core/gate/gate.go` and
-  `internal/cli/tickets.go` and always has (pre-existing alignment groups,
-  verified with `git stash`). Gate on those two being the only entries.
-- Still unreleased: everything after `62989f1`. Cutting v0.1.1 means a `## 0.1.1`
-  block in `core/release/NOTES.md`, tag, push the tag.
+- **Public: https://github.com/BeMuCa/jaira** — clean tree, pushed, master at
+  `e9cd386`. The user's binary is `~/.local/bin/jaira`; rebuild with
+  `go build -o ~/.local/bin/jaira ./cmd/jaira` after every change, never
+  `go install`. Check `go version -m` — a build before committing stamps
+  `+dirty`.
+- `gofmt -l core internal` lists exactly `internal/cli/tickets.go`
+  (pre-existing alignment group). `core/gate/gate.go` no longer appears.
+- `go test ./... -race` with the cache cleared before claiming anything.
+- **The board here is the work list.** `jaira next --per-lane` — not
+  `NEXT-STEPS.md`, which now only carries the ground rules.
+- Still unreleased: everything after `62989f1` (v0.1.0 is the only tag), now
+  ~40 commits including two renames of unreleased surface (`sync`→`logbook`,
+  JSON `synced`→`logged`). Ticket `7ZQ0ZN`.
 
-## What landed since the last handoff
+## What landed 2026-08-27 … 08-31 (all pushed)
 
-TUI, three fixes about not losing your place
-- **A single-lane view holds its lane** (`06a1433`). `rebuild()` re-selected by
-  ID and `selectByID` sets `m.laneIdx` too, but in the compact view and lane
-  focus that index *is* the page. `holdsLane()`/`holdLane()` keep it; the
-  multi-column board still follows the ticket.
-- **A dialog goes back to the page it was opened from** (`95a04de`). New
-  `returnTo` beside `detailFrom`; `modeHelp` still goes to the board.
-  `finishMove` reloads an open ticket so it shows the lane it landed in.
-- **`f` overrides a refused move** (`391f642`), then asks `y`. Same mutation and
-  wording as the CLI's `--force`, every refusal code, nothing written to the
-  ticket. Any other exit drops the offer.
-- **`n` writes a follow-up beside its ticket** (`ae6cee3`): split view, the
-  follow-up is a draft in memory until `ctrl+s` (esc discards, the board never
-  saw it), then it reads as a ticket. `n` again chains. `tab` swaps panes once
-  saved; while typing the editor owns tab, so the left pane scrolls with
-  shift+arrows. No split below 80 columns or 20 rows.
-- **The sign-off marker sits on the lane a person must empty** (`cfddf9d`).
-  Three places keyed it off the literal id `"review"`, so Review wore
-  "◆ sign off" and Human Review wore nothing. Now `RequiresHumanExit`, which is
-  what the compact view always used.
+- **`jaira sync` is `jaira logbook`** (`b93a85c`): dated per-person folders,
+  `restore` still reads the old `sync/` name, `archive --help` states the rule
+  — finished → logbook, not being worked → archive (`7173a45`, `2MM32Y`).
+- **`z` draws empty lanes thin** (`bd5b2ee`): four cells, name vertical;
+  `fitWindow` budgets per lane (unit costs = the old centred row, sweep-tested).
+  Measured: lipgloss v2 `Width` includes the border.
+- **`s` on the home screen**: logbook entries per day, last 7 days, all boards,
+  from folder names alone (`b91ecb1`, `SPDWGH`).
+- **`jaira update` no longer re-privatises a shared board** (`ef8f2d9`,
+  `ETR0PX`): it writes the agent note only, never .gitignore.
+- **A board is its lane directory** (`743737f`, `BNZERQ`): Load injects
+  nothing; first open writes the default board or the built-ins as files plus
+  `order`, once, reported; `removed`/`MaterialiseWorkingSet`/`Differs` and the
+  override warning are gone; legacy dirs (a `removed` file or no `order`)
+  migrate in place once. This board migrated itself. **His req board migrates
+  on its next jaira command** — 8 shipped files written beside its 3, wanted.
+- **`jaira lanes market`** (`0782f6e`): the repo's `lanes/` on GitHub, listed
+  via the contents API and adopted with `market adopt <id>`; README +
+  `lanes/README.md` say a PR with one file adds yours, CI parses it.
 
-Lanes and routing
-- **`rejects-to:`** (`f6015d1`) declares a loop's back edge. Validated (must
-  resolve, may not be itself), counted as drift, in `lanes show` and `--json`.
-  No built-in declares one, so existing project copies stay equivalent.
-- **`lanes/critique.md` and `lanes/optimize.md`** (`9ea9a64`, `90ff38d`) —
-  catalogue lanes, deliberately **not** built-ins, since built-ins are injected
-  into every board. `core/lane/shipped_test.go` parses everything in `lanes/` in
-  CI; it immediately caught an unquoted colon in a description that had cost the
-  lane its `id`.
-- **`review-check`** (`0994fc0`): the fourth review output, the steps a person
-  follows to check the change, as a flow. Enforced by the review lane's
-  contract, printed last on the sign-off screen. `optimize` also produces it
-  (`95d46d7`) — whichever lane is last before the human owes it.
-  **Discovered while wiring it up:** the review fields lived only in the TUI;
-  `ticketJSON` and `jaira show` carried none of them, so an agent could not hand
-  a reader a review at all. Both carry the whole block now.
-- **`next_lane`** on every `--json` ticket (`0994fc0`), and **`next --per-lane`**
-  (`95d46d7`) mapping every lane with work, in pipeline order, with its
-  `agentic` flag.
+## The user's req board (other repo, never probe with live moves)
 
-Identity
-- **One person, several names** (`e51f9ae`). The ownership rail compared one
-  string to one string. On the real board: 61 tickets assigned to a work email,
-  15 to a git user.name, 1 to another email, all the same person — so every move
-  needed `--force`, which trains the override. `identity.Aliases` collects
-  JAIRA_USER/user.name, git user.email, and `~/.jaira/identity` (one per line);
-  `gate.Request.ActorAliases` carries them. `jaira whoami` prints the list.
+He committed the untracking himself (`c688a93b`): `.jaira/lanes/` ignored and
+untracked. Its CLAUDE.md still carries the **old** agent block — `jaira update`
+there is now safe (ETR0PX) and brings the board-aware block + the lane-dir
+migration. His local "How that works here" section still says `.jaira/sync/`.
 
-Docs and contracts
-- The writing register now says **"and knows none of what you know"**, short
-  concrete lines with one point each, no jargon — in all five shipped copies
-  (`announce.go`, `create` help, `note` help, the pre-process prompt,
-  `docs/AGENTS.md`).
-- **An accepted ticket leaves the board once its work is pushed**, in that order
-  (the done lane's description, SKILL.md, AGENTS.md, README).
-- **The ticket rides in the same commit as the code** — in all three agent
-  contracts, together with the reason it must be a rule: jaira never commits.
-  `core/gitrepo` only reads; the sole git write anywhere is `git config --local`
-  for the merge driver.
-- **`--force` is reported in the command's output, not recorded on the ticket.**
-  AGENTS.md and SKILL.md claimed the opposite in four places. Corrected.
-- `docs/img/board.png` is **stale**: it shows "4 lane(s) off-screen" and no
-  "v compact", both changed in `c02e49c`. The other three screenshots were
-  checked against the code and are current. The demo world was never scripted,
-  so regenerating means building one first.
+## The board here (private, gitignored)
 
-## The user's own board (a different repo)
+At signoff, his to accept: `4DQPMS QPJNQP 2MM32Y SPDWGH ETR0PX BNZERQ YM7QSA`.
+At human: `SGPDYK` (done-cap: logbook vs archive as target, `holds:` on the
+lane vs code, oldest = updated-at). Blocked: `QA3GN1` (subsumed by BNZERQ,
+close when accepted). Backlog worth knowing: `88H1P4` (sessions drive lanes —
+mechanism a: nudge in move output; block sentence for subagents awaits his go),
+`YBC0MT` (secrets-scan + changelog-writer lanes), `FCMP17`/`NFJCTK`/`B4MGTP`
+(artifacts, lane schema doc, foldable history — all folded into the schema
+brainstorm), `MFD7P3`, `GEC3TK` (board.png stale), `7ZQ0ZN` (cut v0.1.1),
+`TQXBY5`, `DNAEPN`, `CD9TCB` (mostly resolved by BNZERQ — verify then close).
 
-`/home/berk/git/requirementsgenie-feature-requirements-coverage-elicitation`,
-branch `feature/requirements-coverage-elicitation`. Confirmed pipeline:
+## Known gaps, written down deliberately
 
-    backlog → todo → in-progress → critique ⇄ in-progress → optimize → review (he checks) → done
+- `human` is marked "never out" in the block but only `signoff` carries
+  `requires-human-exit`; the gate lets an agent leave `human`. Proven with
+  `--dry-run`. Not ticketed yet.
+- Lane files ignore unknown frontmatter keys silently (typo in
+  `output-produces` never surfaces). Goes with `NFJCTK`/the schema.
+- The "no subagents" line is this Claude Code build's default prompt, not any
+  file on the machine; a request in CLAUDE.md overrides it per session.
 
-- `.jaira/lanes/review.md` was rewritten there (on 2026-08-21) as a **human** lane
-  (`agentic: false`, no contract, `requires-human-exit: true`, after optimize),
-  and `signoff` was removed from that board. Reason, measured: 28 tickets sat in
-  `review` with **zero** review fields and **zero** commits, and nothing had ever
-  reached Human Review. He uses `review` as his own inbox while the tool held it
-  to be the model's lane, whose four outputs could never be produced without a
-  diff. The board now warns `id "review" overrides the built-in lane` — correct,
-  it genuinely does.
-- `critique` and `optimize` are installed there and committed by him.
-- `~/.jaira/identity` holds `berk.calabakan@partner.bmw.de` and
-  `berk.calabakan@esprit-engineering.com`.
-- **I moved GJB36F to done by accident** while measuring the identity fix (a real
-  `move`, expected to be refused, went through once ownership no longer blocked).
-  Moved back and `git checkout`ed; verified identical to HEAD. Lesson: there is
-  no `--dry-run`, so never probe a gate with a live `move` on his board.
+## The schema brainstorm (running, architectural path)
 
-## The session of 2026-08-25, after the merges
-
-Seven things landed on top of the merged contributions. Each has its own commit
-message with the reasoning; the short version:
-
-- **`ff505dc`** — master went red on Windows with every package reporting `ok`.
-  `SpawnRefresh` re-execs `os.Executable()`, which inside a test binary is
-  `tui.test.exe`: it re-ran the whole suite detached and held its own image open,
-  so `go test` could not delete it. Guarded on the `<pkg>.test` name.
-- **`931df55`** — `updated-by`, written in `Mutate` beside `updated-at`, and
-  `✎ name` on the card when the last writer was not you. "You" is the alias set,
-  cached on the model; a card renderer must not shell out to git per card.
-- **`f4bd770`** — the help explains every card mark, and **every screen is
-  clamped to the terminal in `View()`**. Without the clamp the new test catches
-  the detail pane at 56 columns in a 40-column terminal and the compact view
-  drawing 29 lines into 12. The help wraps its own text first and scrolls.
-- **`a2d90f6`** — the block follows the board: `lanes use|add|remove|move` and
-  the settings screen regenerate it; `validate` reports drift from a hand-edited
-  lane file. Writer and drift check share one `managedBlock()`.
-- **`6cfe0ab` + `ff9ae1b`** — `x` removes a board, with checkboxes for what goes
-  and the cursor starting on No. It landed on the board's own switcher first and
-  had to be added to the launcher too — **they are two screens with two key
-  handlers**, which is worth remembering before adding a third key to either.
-
-Also done, outside the repository: `jaira update` on both of his active boards,
-and the two empty demo boards (`requirementsgenie`, `scratch-jaira-probe`)
-removed.
-
-## The agent block now describes the board (`0e7db74`)
-
-Worth knowing before touching `core/board`: the generated block in `CLAUDE.md`
-and `AGENTS.md` used to be one `const string`. It taught the commands and said
-nothing about *this* board's lanes, so an agent had to discover the route by
-running `jaira lanes` — and would often not. That is the mechanism behind the
-twelve uncritiqued tickets, not a lazy model.
-
-It now renders the board's own lanes: order, any declared loop, and per lane
-whose it is. `core/board` still imports only the stdlib — it takes plain
-`LaneFact` values and the two packages that already load lanes do the
-translation. Empty facts render nothing, so the lane-less note is still exactly
-reproducible.
-
-**Nothing runs by itself, and that has not changed.** Board-spawned agents are a
-non-goal in the README, and the only `exec.Command` calls in the whole codebase
-launch the user's `$EDITOR`. What was missing was never a runner; it was the
-board telling the session what to do next, which is what this writes down.
-
-## The board now lives in this repository (2026-08-26)
-
-`jaira init` was run here at his request, so the open work is on the board
-instead of in a list. Ten tickets in the backlog, all still `[needs spec]`
-because capture leaves the assignee empty and the pull is what claims them.
-
-The board is private: `.jaira/` is gitignored, `AGENTS.md` is new and
-`CLAUDE.md` gained the managed block. None of that is committed yet.
-
-**Two things the board found within a minute of existing**, both now tickets:
-
-- `4DQPMS` — `jaira lanes remove` materialised the project's lane directory and
-  wrote `backlog.md` with no `after:`, so every command since warns about an
-  empty anchor.
-- `b7b922c` (already fixed) — walking a ticket through `critique` showed the lane
-  whose whole job is judging a diff being handed "records no commits", because
-  the derivation was wired into the gate and not into `show --for-lane`.
-
-## Where this session stopped (2026-08-26)
-
-Written down because the session was cleared here on purpose, to think about the
-two open decisions with a fresh head.
-
-**Two decisions waiting on him, both on the board:**
-
-- **`2MM32Y` — archive or sync for a finished ticket.** Four places disagree
-  today. `archive` now stamps commits too, so the only differences left are the
-  destination folder and that `sync` refuses outside the terminal lane. The
-  reason `sync` exists is quoted in issue #4: *"archive reads as abandoned"*, and
-  a folder named `<initials>-<date>` is what an hours entry is filed under —
-  which is the contributor's practice, not necessarily his. If he does not book
-  hours per person-day, `archive` is enough and `sync` should be documented as
-  the special case rather than as the way.
-- **`SGPDYK` — the done lane holds at most ten.** His idea. Two questions were
-  recorded rather than skipped: *when* does it run (on load? on a command? on the
-  move into done?), and may it happen *silently* — nothing else in this tool
-  moves a file unasked. That archiving is reversible argues for allowing it.
-
-**State when it stopped:** master at `596b2a8`, CI green, clean tree, nothing
-unpushed. The binary at `~/.local/bin/jaira` is stamped `b7b922c`; the two
-commits after it changed no Go file.
-
-**One caveat to carry:** `4DQPMS` (lanes remove writes a lane file with no
-`after:`) records a **hypothesis**, not a diagnosis. The warning and the file
-were seen; `lane.Export`/`lane.Remove` were not read. Whoever picks it up should
-confirm the cause before fixing what the ticket guesses at.
-
-**The board here is capture only.** Ten tickets, none moved through a lane. The
-critique/optimize walkthrough that found `b7b922c` happened on a throwaway board,
-not on this one.
-
-## What to do next
-
-`NEXT-STEPS.md` is the execution list: dependencies that live in prose rather
-than in `blocked-by`, the stale `board.png`, the uncut v0.1.1, and the two
-threads left open with the contributor. A session starting from "go" works it
-top to bottom, one `/gsd:quick` per item.
-
-## The list of seven, all done (2026-08-24)
-
-Each went through `/gsd:quick`; each has a SUMMARY under `.planning/quick/` and a
-row in `.planning/STATE.md` with the reasoning. Short version:
-
-1. **`96462ea` — the critique prompt can terminate.** "Default to finding
-   something" sat above a lane whose back edge is `rejects-to: in-progress`. Now
-   a finding must name a file and a concrete alternative, and the end condition
-   is written in the prompt. Copies refreshed in the catalogue and on his board.
-2. **`610e33a` — a lane that has not been run says so.** `gate.OutputOwed` is the
-   gate's own private computation, exported; `◇ unworked` on the card in both
-   renderers, agentic lanes only; `next` prefers an unworked ticket inside a
-   lane. **Measured: all 12 tickets in his `critique` lane are unworked.**
-3. **`0620c9e` — `dod --text` and `[-]`.** Reword an item without touching its
-   state or proof; retire one that will not happen. `Checked()` still means only
-   `[x]`; the new `Settled()` is what completion, the gate and the counters use.
-   Behaviour change: a hand-written `[-]` used to parse as todo.
-4. **`a942ad0`, `8c195a5`, `a49c6fe`, `0043cb8` — the small package.**
-   `move --dry-run` (stages in memory, writes nothing, same exit code),
-   `show --notes-last N` (default deliberately unchanged), `[DoD n/m]` on every
-   `list` row, and a warning when an abandoned claim is stepped over.
-5. **`1c8884f` — `jaira delete`,** confirmed by typing the handle back, `X` on
-   the open ticket in the TUI, refused while another ticket still points at it
-   (a dangling `blocked-by` is a `validate` **error**).
-6. **`f529c68` — `create --mine`,** an opt-in that must never become the default;
-   a test guards the invariant.
-7. **`3067c44` — the focused lane sits in the middle of the board,** clamped so
-   the row stays full at both ends. The window is now `laneWindow()`.
-
-Two things worth carrying forward from that session:
-
-- **`--dry-run` removes the last reason to probe a gate on his board.** The rule
-  in `berks-req-board` stands, but the workaround it asked for is gone.
-- **`archive`'s help said "nothing here removes anything"**, which `delete` made
-  false. Corrected. Watch for the same in any doc that predates `1c8884f`.
-
-## Feedback from another session, triaged
-
-Two of its points were wrong and worth not re-fixing: missing fields **do** come
-as one list (measured: 5 violations in one message), and `jaira list` **does**
-print a compact per-lane listing (what it lacks is a DoD counter). Its structural
-point stands but not as "a missing daemon" — orchestration is an explicit
-non-goal (README) — the real gap is item 2 above. `blocked_by` sitting empty
-while dependencies live in prose is real and unaddressed.
+State in `.planning/schema-brainstorm.md`: decisions so far, the worked
+example, and the one open question (frontmatter = latest + `## History` per
+round, vs lane fields only in History). Spec not yet written — it goes to
+`docs/superpowers/specs/` only after he approves the design. Lane inspiration:
+`.planning/research/lane-ideas.md` (19 ideas; he likes `secrets-scan` and
+`changelog-writer` → `YBC0MT`).
