@@ -399,8 +399,13 @@ func (h *Home) render() string {
 	// message can run past the bottom of a short terminal and push the key
 	// hints off it. Clamped the same way those are, at the end of render()
 	// rather than in View(), so a direct call to render() already reflects
-	// the true, final output.
-	return clampBlock(b.String(), h.width, h.height)
+	// the true, final output. Guarded exactly like Model.View() (view.go):
+	// clampBlock returns "" when either dimension is 0, and the width==0
+	// guard above the drop/board/browse checks does not also cover height.
+	if h.width > 0 && h.height > 0 {
+		return clampBlock(b.String(), h.width, h.height)
+	}
+	return b.String()
 }
 
 // renderStats is the activity chart: logbook entries per day over the last

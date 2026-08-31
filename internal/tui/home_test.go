@@ -117,6 +117,23 @@ func TestHomeDoesNotOverflow(t *testing.T) {
 // the returns the runes of a line, so width is counted in characters.
 func the(s string) []rune { return []rune(s) }
 
+// Before the first WindowSizeMsg both width and height are still their zero
+// value — width==0 alone already falls back to "loading…" above render()'s
+// clampBlock, but width and height are set together by the one place either
+// ever changes (Update's WindowSizeMsg case), so a fix guarding clampBlock
+// has nothing to prove at (0, 0) specifically. What it has to prove is a
+// non-zero width with height still 0: clampBlock returns "" for either
+// dimension at 0, and a blank screen looks like a crash, not a board that
+// has not been sized yet.
+func TestHomeRendersBeforeItKnowsItsSize(t *testing.T) {
+	for _, size := range [][2]int{{0, 0}, {80, 0}} {
+		h := newHome(t, nil, size[0], size[1])
+		if out := h.render(); out == "" {
+			t.Errorf("width %d height %d: home rendered nothing", size[0], size[1])
+		}
+	}
+}
+
 // The launcher must be able to add a board without dropping to a shell. This was
 // the one of the three chosen ways that did not exist, and it is the one a person
 // actually reaches for.
