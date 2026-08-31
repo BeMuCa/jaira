@@ -14,6 +14,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -194,6 +195,10 @@ func TestBacklogDetailCarriesTheSameDebts(t *testing.T) {
 func TestOwedRowsStayInsideTheWidth(t *testing.T) {
 	for _, w := range []int{30, 60, 120} {
 		m := newTestModel(t, w, 40)
+		// A lane's own key can be longer than the label column, which is the
+		// case that overshoots if the text budget is assumed rather than
+		// measured.
+		m.lanes = catalogueLanes()
 		out := m.detailBody(unworkedInReview(), w)
 		for i, l := range strings.Split(out, "\n") {
 			if got := lipgloss.Width(l); got > w {
@@ -222,5 +227,111 @@ func TestSignOffShowsOwedFieldsNamingTheLane(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("sign-off view is missing %q:\n%s", want, out)
 		}
+	}
+}
+
+// catalogueLanes is a board that installs lanes declaring fields of their own,
+// which is the case a hardcoded list of field groups cannot see: the gate
+// refuses the move on such a field, so a pane that does not render it hides a
+// debt the board is enforcing.
+func catalogueLanes() *lane.Set {
+	return &lane.Set{Lanes: []*lane.Lane{
+		{ID: "in-progress", OutputProduces: []string{ticket.FieldOutcomeWhat}},
+		{ID: "secrets-scan", OutputProduces: []string{"secrets-status", "secrets-findings"}},
+		{ID: "changelog-writer", OutputProduces: []string{"changelog-entry"}},
+		{ID: "planner", OutputProduces: []string{"plan"}},
+		// Declared last on purpose: a field the pane already has a group for
+		// belongs in that group wherever the lane sits in the order.
+		{ID: "review", OutputProduces: []string{ticket.FieldReviewCheck}},
+	}}
+}
+
+func TestDetailShowsDebtsForFieldsOnlyTheBoardDeclares(t *testing.T) {
+	m := newTestModel(t, 100, 40)
+	m.lanes = catalogueLanes()
+	out := stripANSI(m.detailBody(unworkedInReview(), 100))
+
+	if !strings.Contains(out, "Lane fields") {
+		t.Errorf("no heading for the board's own fields:\n%s", out)
+	}
+	for _, want := range []string{
+		"secrets-status — owed by secrets-scan",
+		"secrets-findings — owed by secrets-scan",
+		"changelog-entry — owed by changelog-writer",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	// Board order, then each lane's own declaration order — never the owed
+	// map's, or the pane reshuffles itself between renders.
+	prev := -1
+	for _, label := range []string{"secrets-status", "secrets-findings", "changelog-entry"} {
+		at := rowIndex(t, out, label)
+		if at <= prev {
+			t.Errorf("%q is out of order in:\n%s", label, out)
+		}
+		prev = at
+	}
+	// And they come after the groups the pane already knew about.
+	if rowIndex(t, out, "what") > rowIndex(t, out, "secrets-status") {
+		t.Errorf("the board's own fields are not last:\n%s", out)
+	}
+	// plan is declared here too and is a body checklist: no field row for it.
+	if strings.Contains(out, "owed by planner") {
+		t.Errorf("a body-checklist field was rendered as a field row:\n%s", out)
+	}
+	if gate.OwedBy(m.lanes, unworkedInReview())["plan"] != "planner" {
+		t.Error("the lane no longer owes plan, so this test proves nothing")
+	}
+}
+
+// A filled field the pane does not know about must show its value. Showing
+// only the empty ones would be the worse half of the same bug: the debt
+// visible, the answer to it invisible.
+func TestDetailShowsTheValueOfAFieldOnlyTheBoardDeclares(t *testing.T) {
+	m := newTestModel(t, 100, 40)
+	m.lanes = catalogueLanes()
+	created, err := m.store.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(time.Now()), ticket.FieldTitle: "Rate limit the login endpoint",
+		ticket.FieldStatus: "review", ticket.FieldGoal: "stop credential stuffing",
+		"secrets-status": "clean, 0 findings",
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := m.store.Load(created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := stripANSI(m.detailBody(tk, 100))
+	if !strings.Contains(out, "secrets-status clean, 0 findings") {
+		t.Errorf("a filled field only the board declares is invisible:\n%s", out)
+	}
+	if strings.Contains(out, "secrets-status — owed") {
+		t.Errorf("a filled field still shows a debt row:\n%s", out)
+	}
+	if !strings.Contains(out, "secrets-findings — owed by secrets-scan") {
+		t.Errorf("the rest of the lane's output stopped being owed:\n%s", out)
+	}
+}
+
+// The sign-off screen's seven labels are a deliberate reading order, so a
+// field the board added is appended after check rather than slotted in — but
+// it is on the screen, because the gate refuses the move on it.
+func TestSignOffAppendsFieldsOnlyTheBoardDeclares(t *testing.T) {
+	m := newTestModel(t, 100, 40)
+	m.lanes = catalogueLanes()
+	tk := unworkedInReview()
+	tk.Status = "signoff"
+	m.detail = tk
+
+	out := stripANSI(m.renderSignOff())
+	if !strings.Contains(out, "secrets-status — owed by secrets-scan") {
+		t.Errorf("the sign-off screen hides a debt the gate enforces:\n%s", out)
+	}
+	if rowIndex(t, out, "check") > rowIndex(t, out, "secrets-status") {
+		t.Errorf("the seven questions no longer come first:\n%s", out)
 	}
 }

@@ -782,6 +782,21 @@ func (m *Model) detailHints(t *ticket.Ticket) string {
 // value.
 type declaredField struct{ label, field, value string }
 
+// labelPad lays out the label column. The shipped fields all fit in twelve
+// columns, but a lane may declare a key of its own that does not, and assuming
+// twelve for it pushes the value past the pane edge — so the text budget is
+// measured from the label actually printed.
+func labelPad(label string) (string, int) {
+	pad := fmt.Sprintf("%-12s", label)
+	return pad, lipgloss.Width(pad) + 1
+}
+
+// fieldRow prints one label-and-value row at a pane width.
+func fieldRow(b *strings.Builder, label, text string, width int) {
+	pad, indent := labelPad(label)
+	fmt.Fprintf(b, "%s %s\n", styMeta.Render(pad), wrap(text, max(10, width-indent-1), indent))
+}
+
 // owedRow stands in for a declared field nobody has filled in yet: the label
 // column keeps its place in the reading order and the value names the lane
 // that owes it. One function so the wording is identical on every screen that
@@ -791,8 +806,76 @@ type declaredField struct{ label, field, value string }
 // the block as one string pads every line to the widest, and a padded line
 // printed after the label column overshoots the pane.
 func owedRow(b *strings.Builder, label, lane string, width int) {
-	fmt.Fprintf(b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", label)),
-		styleLines(styMeta, wrap("— owed by "+lane, width, 13)))
+	pad, indent := labelPad(label)
+	fmt.Fprintf(b, "%s %s\n", styMeta.Render(pad),
+		styleLines(styMeta, wrap("— owed by "+lane, max(10, width-indent-1), indent)))
+}
+
+// fieldsWithTheirOwnRow are the fields this pane already has a place for: the
+// base rows, the Outcome and Review groups, the checklists, the commit list.
+// The catch-all below skips them rather than printing a second copy.
+//
+// plan and diff are in here for a different reason than the rest: they are not
+// frontmatter values at all — plan is a body checklist and diff is assembled
+// from the commit list — so a label-and-value row could only ever be a worse
+// version of what the checklist and the Commits block already show.
+var fieldsWithTheirOwnRow = map[string]bool{
+	ticket.FieldID: true, ticket.FieldTitle: true, ticket.FieldStatus: true,
+	ticket.FieldReady: true, ticket.FieldCreator: true, ticket.FieldAssignee: true,
+	ticket.FieldExecutedBy: true, ticket.FieldModelTier: true,
+	ticket.FieldCreatedAt: true, ticket.FieldUpdatedAt: true, ticket.FieldUpdatedBy: true,
+	ticket.FieldClaimedBy: true, ticket.FieldClaimedAt: true,
+	ticket.FieldGoal: true, ticket.FieldContext: true, ticket.FieldDoD: true,
+	ticket.FieldBlockedBy: true, ticket.FieldBlockedReason: true,
+	ticket.FieldFollows: true, ticket.FieldCommits: true, ticket.FieldQuestion: true,
+	ticket.FieldExternal:    true,
+	ticket.FieldOutcomeWhat: true, ticket.FieldOutcomeWhy: true, ticket.FieldOutcomeResolves: true,
+	ticket.FieldReviewSummary: true, ticket.FieldReviewGaps: true,
+	ticket.FieldReviewVerdict: true, ticket.FieldReviewCheck: true,
+	"plan": true, "diff": true,
+}
+
+// laneFields lists the fields installed lanes declare that no row above
+// accounts for — a board that installs a lane producing a field of its own
+// (a secrets scan, a changelog writer) would otherwise have a debt the gate
+// enforces and no screen shows, which is the whole gap this pane closes.
+//
+// The order is the board's: lanes in display order, each lane's own
+// output-produces order within that, never the owed map's iteration order,
+// so the pane does not reshuffle itself between renders. A field is listed
+// when the ticket carries a value for it or a lane still owes it; a field
+// every declaring lane has been opted out of is listed by neither, the same
+// way the gate does not ask for it.
+//
+// The label is the key itself. Turning keys into prose labels is the schema
+// grammar's job, not this pane's, and a wrong guess at a label is worse here
+// than a key a reader can grep for.
+func (m *Model) laneFields(t *ticket.Ticket, owed map[string]string) []declaredField {
+	var out []declaredField
+	emitted := map[string]bool{}
+	for _, l := range m.lanes.Lanes {
+		for _, f := range l.OutputProduces {
+			if fieldsWithTheirOwnRow[f] || emitted[f] {
+				continue
+			}
+			v := ""
+			// An unmodelled field lives only in the document, and a ticket
+			// built in memory rather than loaded from disk has none.
+			if d := t.Doc(); d != nil {
+				if got, _, err := d.Scalar(f); err == nil {
+					v = got
+				}
+			}
+			// Empty and owed by a lane further along: leave it to that lane's
+			// turn, so the row appears where the board puts the debt.
+			if strings.TrimSpace(v) == "" && owed[f] != l.ID {
+				continue
+			}
+			emitted[f] = true
+			out = append(out, declaredField{f, f, v})
+		}
+	}
+	return out
 }
 
 // detailBody builds an open ticket's content at a given width, so the same
@@ -864,7 +947,7 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 			return
 		}
 		if l, ok := owed[f.field]; ok {
-			owedRow(&b, f.label, l, max(10, width-14))
+			owedRow(&b, f.label, l, width)
 		}
 	}
 	// The same, in the prose rhythm: the blank line is written only when the
@@ -925,6 +1008,16 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		b.WriteString("\n" + styLaneTitle.Render("Review") + "\n")
 		for _, f := range review {
 			declared(f)
+		}
+	}
+	if fs := m.laneFields(t, owed); len(fs) > 0 {
+		b.WriteString("\n" + styLaneTitle.Render("Lane fields") + "\n")
+		for _, f := range fs {
+			if strings.TrimSpace(f.value) != "" {
+				fieldRow(&b, f.label, f.value, width)
+				continue
+			}
+			owedRow(&b, f.label, owed[f.field], width)
 		}
 	}
 	if len(t.Commits) > 0 {

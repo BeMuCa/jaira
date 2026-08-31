@@ -48,6 +48,10 @@ func (m *Model) renderSignOff() string {
 	// that never ran left no trace at all. A field an installed lane declares
 	// it produces keeps its place and names the lane that owes it.
 	owed := gate.OwedBy(m.lanes, t)
+	// 78 is the pane width that leaves a debt row the 64 columns of text
+	// section() gives a value, beside the 13-column label — so the rows line
+	// up with the sections around them.
+	const paneWidth = 78
 	declared := func(label, field, value string) {
 		if strings.TrimSpace(value) != "" {
 			section(label, value)
@@ -55,7 +59,7 @@ func (m *Model) renderSignOff() string {
 		}
 		if l, ok := owed[field]; ok {
 			b.WriteString("\n")
-			owedRow(&b, label, l, min(w-14, 64))
+			owedRow(&b, label, l, min(w, paneWidth))
 		}
 	}
 	// A ticket with no goal but a context has a problem statement, so this row
@@ -71,6 +75,19 @@ func (m *Model) renderSignOff() string {
 	// Last, because it is the one section that asks the reader to do something
 	// rather than to read: everything above is the account, this is the check.
 	declared("check", ticket.FieldReviewCheck, t.ReviewCheck)
+	// After the seven, never among them: those labels are the order this
+	// judgement is made in, and a field a board's own lane declares cannot be
+	// slotted into it without guessing where it belongs. Appended, it is still
+	// on the screen — which is the point, because the gate refuses the move on
+	// it and the person accepting the work would otherwise never see it.
+	for _, f := range m.laneFields(t, owed) {
+		b.WriteString("\n")
+		if strings.TrimSpace(f.value) != "" {
+			fieldRow(&b, f.label, f.value, min(w, paneWidth))
+			continue
+		}
+		owedRow(&b, f.label, owed[f.field], min(w, paneWidth))
+	}
 
 	if done, total := checklistProgress(t.DoDItems); total > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Definition of Done") +
