@@ -106,6 +106,33 @@ func TestLanesShowPrintsFullContract(t *testing.T) {
 	}
 }
 
+// TestLanesShowSpeaksBothBackEdges asserts 'lanes show' says two back edges the
+// way the generated agent note says them — "in-progress or human". A comma-joined
+// list reads like a sequence (first back to in-progress, then to a person), which
+// is not what two back edges mean, and two renderings of one fact would leave a
+// reader working out that they are the same fact.
+func TestLanesShowSpeaksBothBackEdges(t *testing.T) {
+	cat := lanesTestCatalogue(t)
+	if err := os.WriteFile(filepath.Join(cat, "critique.md"), []byte(`---
+id: critique
+name: Critique
+after: in-progress
+rejects-to: [in-progress, human]
+description: Judges whether this is the right implementation.
+---
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, t.TempDir(), "show", "critique")
+	if err != nil {
+		t.Fatalf("lanes show critique: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "Rejects to:  in-progress or human") {
+		t.Errorf("lanes show critique missing %q, got:\n%s", "Rejects to:  in-progress or human", out)
+	}
+}
+
 // TestLanesTableLabelsRankNotPosition asserts the human table column header
 // no longer claims the number is a display position (task 10): the value is
 // a merge rank, and column order follows the after: anchor, not this field.

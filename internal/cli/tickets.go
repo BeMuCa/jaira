@@ -909,7 +909,7 @@ func newLanesShowCmd() *cobra.Command {
 			// The back edge is printed next to the anchor because the two together
 			// are the lane's place in the flow: where it sits, and where it sends
 			// work that is not good enough yet.
-			fmt.Fprintf(w, "Rejects to:  %s\n", dash(strings.Join(l.RejectsTo, ", ")))
+			fmt.Fprintf(w, "Rejects to:  %s\n", dash(board.OrList(l.RejectsTo)))
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)

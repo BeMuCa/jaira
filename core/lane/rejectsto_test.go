@@ -182,6 +182,28 @@ func TestRejectsToWarnsPerTarget(t *testing.T) {
 	}
 }
 
+// The template every hand-authored lane starts from writes rejects-to as an
+// empty string (core/lane/template.go), so that literal line is the most common
+// form of the field on any board: it must read as "no back edge" and warn about
+// nothing, not as one nameless target.
+func TestRejectsToEmptyStringDeclaresNothing(t *testing.T) {
+	s := catalogueWith(t, map[string]string{
+		"probe.md": laneFile("probe", `rejects-to: ""`),
+	})
+	l, ok := s.Get("probe")
+	if !ok {
+		t.Fatal("lane did not load")
+	}
+	if len(l.RejectsTo) != 0 {
+		t.Errorf(`rejects-to: "" parsed to %q, want no back edge at all`, l.RejectsTo)
+	}
+	for _, w := range s.Warnings {
+		if strings.Contains(w, "rejects-to") {
+			t.Errorf("the template's own empty form warned: %s", w)
+		}
+	}
+}
+
 // laneFile writes a minimal valid lane, with one extra frontmatter line to test.
 func laneFile(id, extra string) string {
 	return "---\nid: " + id + "\nname: " + id + "\ndescription: x\n" + extra + "\n---\n"

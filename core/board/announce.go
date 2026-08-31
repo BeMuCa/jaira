@@ -113,11 +113,16 @@ type LaneFact struct {
 	Produces    []string
 }
 
-// orList writes lane ids as a reader would say them — "in-progress",
+// OrList writes lane ids as a reader would say them — "in-progress",
 // "in-progress or human", "in-progress, human or blocked" — because a lane with
 // two back edges has two of them for a reason (a flaw goes back to be fixed, a
 // decision goes to a person) and "in-progress, human" reads like a sequence.
-func orList(ids []string) string {
+//
+// Exported for 'jaira lanes show', which prints the same back edges to a person
+// and must not describe them differently from the note generated here: one
+// rendering, or the two drift and a reader has to work out that "in-progress,
+// human" and "in-progress or human" are the same fact.
+func OrList(ids []string) string {
 	switch len(ids) {
 	case 0:
 		return ""
@@ -160,7 +165,7 @@ func laneSection(facts []LaneFact) string {
 	for _, f := range facts {
 		if len(f.RejectsTo) > 0 {
 			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.\n",
-				f.ID, orList(f.RejectsTo), f.ID)
+				f.ID, OrList(f.RejectsTo), f.ID)
 		}
 	}
 
