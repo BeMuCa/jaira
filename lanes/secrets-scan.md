@@ -29,8 +29,11 @@ Look for:
    the start of a three-part dotted string (a JWT), `Bearer ` followed by
    anything that is not a variable.
 2. **Private keys and certificates.** `-----BEGIN` followed by anything —
-   `RSA PRIVATE KEY`, `OPENSSH PRIVATE KEY`, `EC PRIVATE KEY`. A `.pem`, `.p12`,
-   `.pfx` or `id_rsa` file added at all is a finding regardless of its contents.
+   `RSA PRIVATE KEY`, `OPENSSH PRIVATE KEY`, `EC PRIVATE KEY`. A `.p12`, `.pfx`
+   or `id_rsa` file added at all is a finding regardless of its contents. A `.pem`
+   only when it actually contains a `-----BEGIN ... PRIVATE KEY-----` block — CA
+   bundles and public certificates are `.pem` files too, and flagging those is how
+   this lane earns a reputation for crying wolf.
 3. **Passwords and connection strings.** A URL with credentials in it
    (`postgres://user:hunter2@host`), or `password`, `passwd`, `secret`, `token`,
    `api_key` assigned a literal string rather than read from the environment or a
@@ -55,8 +58,9 @@ Write the verdict into `secrets-status`, one word, `clean` or `flagged`:
 
     jaira set <handle> secrets-status=flagged
 
-Write what you found into `secrets-findings`, one per line, each naming the file
-and line and what the value is:
+Write what you found into `secrets-findings`, one per finding, separated by `; `,
+each naming the file and line and what the value is. The field holds a single line,
+so keep each finding short enough to read in a row:
 
     jaira set <handle> secrets-findings="internal/api/client.go:41 hardcoded Slack bot token (xoxb-...); config/.env added to the repository"
 

@@ -38,7 +38,7 @@ prompt says, at whatever model tier it declares.
 
 | Lane | Sits | Sends work back to | For |
 |---|---|---|---|
-| `secrets-scan` | after implementing, ahead of every other gate | implementing | Catching a credential that reached a commit — keys, tokens, private keys, a tracked `.env` |
+| `secrets-scan` | after implementing, once you move the column there | implementing | Catching a credential that reached a commit — keys, tokens, private keys, a tracked `.env` |
 | `critique` | after implementing | implementing | Judging whether this is the right implementation, not whether it works |
 | `optimize` | after critique | implementing | Removing duplication, dead code and fluff the change left behind |
 | `changelog-writer` | after review | — | Writing the one changelog line for whoever installs the release, rather than for the next agent |
@@ -49,11 +49,18 @@ nothing left to say. Then optimize strips what is not needed, and only then does
 the work reach review. A decision that is genuinely the user's goes to the HITL
 lane on the way, rather than being taken by whichever agent noticed it.
 
-`secrets-scan` sits ahead of that loop because it is the cheapest check on the
-board and the only one whose miss cannot be taken back — a pushed credential is
-already public. `changelog-writer` sits behind it, after review, once what
-actually shipped is settled; it writes one field on the ticket and no file, so
-two tickets in it in parallel do not conflict.
+`secrets-scan` belongs ahead of that loop: it is the cheapest check on the board
+and the only one whose miss cannot be taken back — a pushed credential is already
+public. `changelog-writer` belongs behind it, after review, once what actually
+shipped is settled; it writes one field on the ticket and no file, so two tickets
+in it in parallel do not conflict.
+
+**Belongs, not lands.** The `Sits` column above and each lane's `after:` field say
+where the lane is *meant* to go; neither moves a column. `jaira lanes add` appends
+the lane as the last line of `.jaira/lanes/order`, so a freshly adopted lane is the
+rightmost column on the board until you move that line — `after:` is only consulted
+when there is no order file at all, and `jaira init` writes one. Rearranging that
+file is the adopter's job, and it is a one-line edit.
 
 The loop is not enforced. `rejects-to:` declares the back edge so an agent
 reading the board can see it, and a backwards move was always allowed — the gate
