@@ -28,16 +28,21 @@ import (
 // check is disabled via JAIRA_NO_UPDATE_CHECK — reports the running version
 // alone rather than claiming "up to date": that would assert a fact nobody
 // has actually verified.
+//
+// A dev build gets no line at all, in either caller: "jaira dev" answers
+// nothing a reader didn't already know, and both Home.render and the board's
+// statusBar already skip an empty versionLine.
 func versionLine() string {
 	// A build that is not a published release has nothing to compare itself to.
 	// release.Current is "dev" in every source build — which is what every
 	// contributor runs — and comparing that string to a published version can
 	// only ever say "different", so the footer would advertise an upgrade to
 	// code *older* than the code being run, pointing at a command that then
-	// refuses with dev_build. Saying only which build this is follows the same
-	// rule as the !known case below: never assert a fact nobody has checked.
+	// refuses with dev_build. Saying nothing follows the same rule as the
+	// !known case below: never assert a fact nobody has checked — and "jaira
+	// dev" was not even that, just noise every contributor sees on every run.
 	if release.Current == "dev" {
-		return styMeta.Render("jaira dev")
+		return ""
 	}
 	latest, known := selfupdate.PollCache()
 	switch {
