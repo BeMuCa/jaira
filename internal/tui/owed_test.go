@@ -7,6 +7,7 @@ package tui
 // lane that owes it.
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -388,6 +389,10 @@ func TestSignOffShowsTheCommits(t *testing.T) {
 // the screen derives the list from git and says it did.
 func TestSignOffDerivesUnrecordedCommits(t *testing.T) {
 	m := newTestModel(t, 100, 50)
+	// A developer's or CI's global git config (commit.gpgsign, hooksPath)
+	// must not reach a unit test's throwaway repo.
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_SYSTEM", os.DevNull)
 	run := func(args ...string) {
 		cmd := exec.Command("git", append([]string{"-C", m.store.Root}, args...)...)
 		if out, err := cmd.CombinedOutput(); err != nil {

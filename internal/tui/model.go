@@ -282,6 +282,11 @@ func (m *Model) reload() error {
 	}
 	m.lanes = lanes
 	m.warnings = lanes.Warnings
+	// A reload is exactly the moment the git state behind a derived commit
+	// list may have changed — a teammate's commit naming the handle arrives,
+	// the board refreshes, and a stale memo would keep the sign-off screen
+	// on yesterday's answer (or on "no commits" forever).
+	m.derivedFor = ""
 
 	tickets, err := m.store.List()
 	if err != nil {
