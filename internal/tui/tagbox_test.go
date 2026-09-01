@@ -331,3 +331,34 @@ func TestBoardKeyLineNamesT(t *testing.T) {
 		t.Errorf("board key line does not name t:\n%s", out)
 	}
 }
+
+// A hand-written "UI" works as "ui" in the filters and the count, so it must
+// wear ui's colour on the board and be one legend line, not a colourless twin.
+func TestHandWrittenCaseWearsTheRegistryColour(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	reg, err := tag.Load(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.Set("ui", 83); err != nil {
+		t.Fatal(err)
+	}
+	m.tags = reg
+
+	tk := m.tickets[0]
+	tk.Tags = []string{"UI"}
+	if c, ok := m.cardColor(tk); !ok || c != 83 {
+		t.Errorf("cardColor(UI) = %d,%v, want 83,true", c, ok)
+	}
+	m.tickets[1].Tags = []string{"ui"}
+	tags := m.activeTags()
+	n := 0
+	for _, name := range tags {
+		if name == "ui" {
+			n++
+		}
+	}
+	if n != 1 || len(tags) != 1 {
+		t.Errorf("activeTags = %v, want exactly [ui]", tags)
+	}
+}

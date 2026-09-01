@@ -1184,7 +1184,14 @@ func (m *Model) activeTags() []string {
 	seen := map[string]bool{}
 	var names []string
 	for _, t := range m.tickets {
-		for _, name := range t.Tags {
+		for _, raw := range t.Tags {
+			// Deduplicated on the normalized form, so a hand-written "UI"
+			// beside "ui" is one legend line, not a coloured one and a
+			// colourless twin.
+			name := raw
+			if n, _, err := tag.Normalize(raw); err == nil {
+				name = n
+			}
 			if !seen[name] {
 				seen[name] = true
 				names = append(names, name)

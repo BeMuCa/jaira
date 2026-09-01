@@ -251,7 +251,14 @@ func parseLine(line string) (name string, colour int, ok bool) {
 func ValidColour(n int) bool { return n >= 0 && n <= 255 }
 
 // Colour returns the colour recorded for a name, and whether there is one.
+// The lookup normalizes, like every other reader: the registry's keys are
+// normalized at Load, and a ticket may carry a hand-written "UI" — which
+// works as "ui" in the filters and the count, so it must wear ui's colour
+// too, or "works everywhere" stops being true at the one place it shows.
 func (r *Registry) Colour(name string) (int, bool) {
+	if n, _, err := Normalize(name); err == nil {
+		name = n
+	}
 	c, ok := r.colours[name]
 	return c, ok
 }
