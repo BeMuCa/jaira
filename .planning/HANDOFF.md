@@ -17,10 +17,13 @@ Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
 
 ## Was Berk jetzt entscheidet (sein Inbox-Stand)
 
-1. **signoff: 18 Tickets** warten auf Abnahme im Board — `--force` kommt
-   nicht mehr aus der Lane heraus (`gate.go:377`, nur `req.Interactive`).
-2. **human: BDV0HM** — Doku (SKILL.md:275, docs/AGENTS.md:157) verspricht
-   den `--force`-Weg auf Zuruf, das Gate verweigert ihn. Welche Seite folgt?
+1. **signoff: 9 Flotten-Tickets** warten auf Abnahme (DNAEPN, MFD7P3,
+   MR3CN8, A1TZ4N, YBC0MT, TQXBY5, GEC3TK, 88H1P4, QA3GN1). Die 8 vom
+   Zuruf des 31.08. sind seit dem 31.08. per `--force` in done — Invariante
+   11 gilt unveraendert; die angebliche Gate-Verweigerung war ein Fehllesen
+   von `tail -1` auf der Erfolgs-Ausgabe (Override-Bullet).
+2. **BDV0HM zurueckgezogen und archiviert** — Fehlpraemisse, Doku und Gate
+   stimmen ueberein; Korrektur-Notiz auf dem Ticket.
 3. **human: CD9TCB** — drei Optionen (durch 743737f erledigt erklären /
    Doku-Feld `overrides:` / Warnung bewusst reaktivieren).
 4. **human: 7ZQ0ZN** — NOTES-0.1.1-Block ist auf master; Release = zwei
