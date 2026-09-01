@@ -125,7 +125,12 @@ func ensureMergeDriver(root string) (installed bool, err error) {
 // entry win, and Set rewrites that same last line — so the duplicate resolves
 // itself the next time anybody touches the tag, and until then the file says one
 // colour.
-var tagsUnionLine = fmt.Sprintf("%s merge=union\n", tag.FileName)
+//
+// The pattern is anchored with a leading slash. Unanchored, "tags" is a
+// gitattributes glob that matches a file called tags at any depth below the
+// file's directory — so .jaira/tickets/tags and .jaira/logbook/<any>/tags would
+// have claimed union too, which git check-attr confirms.
+var tagsUnionLine = fmt.Sprintf("/%s merge=union\n", tag.FileName)
 
 // writeGitAttributes points the committed attributes file at the driver, so a
 // teammate's clone knows which files want structural merging.
@@ -136,32 +141,44 @@ var tagsUnionLine = fmt.Sprintf("%s merge=union\n", tag.FileName)
 func writeGitAttributes(s *ticket.Store) (changed bool, err error) {
 	path := filepath.Join(s.Root, ticket.DirName, ".gitattributes")
 	want := fmt.Sprintf("%s/*.md merge=%s\n", ticket.TicketsSubdir, mergeDriverName)
-	existing, err := os.ReadFile(path)
-	var missing string
-	if err == nil {
-		if !strings.Contains(string(existing), "merge="+mergeDriverName) {
-			missing += want
-		}
-		if !strings.Contains(string(existing), tagsUnionLine) {
-			missing += tagsUnionLine
-		}
-		if missing == "" {
-			return false, nil
-		}
-	}
 	header := "# Ticket files are merged field by field by the jaira merge driver.\n" +
 		"# Without it, two people moving the same ticket collide on the status line.\n" +
 		"# The tag registry is one line per tag, so union — keeping both sides — is\n" +
 		"# always right there.\n"
-	body := header + want + tagsUnionLine
-	if err == nil {
-		body = string(existing)
-		if !strings.HasSuffix(body, "\n") {
-			body += "\n"
+
+	existing, readErr := os.ReadFile(path)
+	if readErr != nil {
+		if err := os.WriteFile(path, []byte(header+want+tagsUnionLine), 0o644); err != nil {
+			return false, err
 		}
-		body += missing
+		return true, nil
 	}
-	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+
+	// Normalised before it is tested, not after. A hand-edited file whose last
+	// line is the one we are looking for but carries no trailing newline still
+	// contains it — and appending to that file, which is where the newline used
+	// to be added, wrote the same line a second time.
+	body := string(existing)
+	if body != "" && !strings.HasSuffix(body, "\n") {
+		body += "\n"
+	}
+
+	var missing string
+	// The driver name rather than the whole line: a board may have written a
+	// different path pattern for it, and re-adding ours would leave two rules
+	// where one is already doing the job. The union line has no such history,
+	// so it is matched exactly — an unanchored one is a different rule, not
+	// this one.
+	if !strings.Contains(body, "merge="+mergeDriverName) {
+		missing += want
+	}
+	if !strings.Contains(body, tagsUnionLine) {
+		missing += tagsUnionLine
+	}
+	if missing == "" {
+		return false, nil
+	}
+	if err := os.WriteFile(path, []byte(body+missing), 0o644); err != nil {
 		return false, err
 	}
 	return true, nil

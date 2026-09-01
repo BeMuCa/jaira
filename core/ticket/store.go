@@ -718,9 +718,13 @@ func (s *Store) lock(id string) (func(), error) {
 	}
 }
 
-// Lock takes the store's advisory lock under an arbitrary name, for state in
-// .jaira that is not one ticket. A name can never collide with a ticket's own
-// lock: ticket ids are 26-character ULIDs, so "tags" is not one.
+// Lock takes the store's advisory lock under a caller-chosen name, for state in
+// .jaira that is not one ticket.
+//
+// The name shares one namespace with the per-ticket locks, which are keyed by
+// id, so any name that is not a 26-character ULID is safe — "tags" is not one.
+// A name that IS a ULID would silently take that ticket's lock, and nothing here
+// checks for it: the callers are in this repository, not a plugin surface.
 //
 // The caller must call the returned function, normally with defer. Failure to
 // acquire within the timeout is an error, not a silent write.

@@ -440,3 +440,25 @@ func TestSuggestRepairsWhatNormalizeRefuses(t *testing.T) {
 		t.Errorf("Suggest(%q) = %q,true, want no suggestion", "///", got)
 	}
 }
+
+// Dashing a separator is a repair; dashing a letter is a deletion. The
+// suggestion is printed as a runnable command, so "über" repaired to "ber" is a
+// wrong tag one paste away — worse than no suggestion at all.
+func TestSuggestWithdrawsRatherThanDeleteALetter(t *testing.T) {
+	for _, raw := range []string{"über", "naïve", "日本語", "café"} {
+		if _, _, err := Normalize(raw); err == nil {
+			t.Errorf("Normalize(%q) no longer refuses; this test is about the ones it does", raw)
+		}
+		if got, ok := Suggest(raw); ok {
+			t.Errorf("Suggest(%q) = %q,true — it deleted a letter", raw, got)
+		}
+	}
+	// A separator is still repaired: the withdrawal is about letters, not about
+	// giving up on every refused name.
+	if got, ok := Suggest("front/end"); !ok || got != "front-end" {
+		t.Errorf("Suggest(%q) = %q,%v, want front-end,true", "front/end", got, ok)
+	}
+	if got, ok := Suggest("ui!"); !ok || got != "ui" {
+		t.Errorf("Suggest(%q) = %q,%v, want ui,true", "ui!", got, ok)
+	}
+}

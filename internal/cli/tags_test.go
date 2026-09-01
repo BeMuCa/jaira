@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -551,5 +552,119 @@ func TestGitAttributesGainsTheUnionLineOnAnOlderBoard(t *testing.T) {
 	}
 	if changed {
 		t.Errorf("writeGitAttributes rewrote a file that already said everything:\n%s", got)
+	}
+}
+
+// One ticket counts once per tag however the field spells it. "ui" and "UI" on
+// one ticket is one subject — and merge=union produces exactly that pair, since
+// it unions the raw strings without knowing they normalise to one name.
+func TestTagsCountsOneTicketOncePerTag(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "create", "double"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	h := firstHandle(t, dir)
+	if out, err := runCLI(t, dir, "set", h, "tags=ui,UI"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+
+	out, err := runCLI(t, dir, "tags")
+	if err != nil {
+		t.Fatalf("tags: %v\n%s", err, out)
+	}
+	if row := tagsRow(t, out, "ui"); !strings.Contains(row, "1 open") {
+		t.Errorf("one ticket spelling a tag twice counted twice: %q", row)
+	}
+	// And only one row: the two spellings are one name.
+	if n := strings.Count(out, "\n") - strings.Count(out, "no colour yet"); n < 1 {
+		t.Fatalf("unexpected listing shape:\n%s", out)
+	}
+	if strings.Contains(out, " UI ") {
+		t.Errorf("the raw spelling leaked into the listing:\n%s", out)
+	}
+}
+
+// Unanchored, "tags" is a gitattributes glob matching a file called tags at any
+// depth below the file's directory — so it claimed .jaira/tickets/tags and
+// .jaira/logbook/<any>/tags too. git itself is the only authority on that, so
+// this asks it.
+func TestGitAttributesUnionClaimsOnlyTheRegistry(t *testing.T) {
+	dir := emptyStore(t)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("no git on PATH")
+	}
+	for _, args := range [][]string{
+		{"init", "-q"},
+		{"config", "user.email", "t@example.test"},
+		{"config", "user.name", "t"},
+	} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writeGitAttributes(s); err != nil {
+		t.Fatal(err)
+	}
+
+	checkAttr := func(path string) string {
+		t.Helper()
+		cmd := exec.Command("git", "check-attr", "merge", "--", path)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git check-attr %s: %v\n%s", path, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	if got := checkAttr(".jaira/tags"); !strings.HasSuffix(got, "merge: union") {
+		t.Errorf("the registry itself is not union-merged: %s", got)
+	}
+	for _, impostor := range []string{".jaira/tickets/tags", ".jaira/logbook/berk-20260901/tags"} {
+		if got := checkAttr(impostor); strings.HasSuffix(got, "merge: union") {
+			t.Errorf("the union rule over-claims %s: %s", impostor, got)
+		}
+	}
+}
+
+// The idempotency test used to run before the trailing newline was added, so a
+// hand-edited file ending in the line it was looking for — without a final
+// newline — had that line appended a second time.
+func TestGitAttributesIsIdempotentWithoutAFinalNewline(t *testing.T) {
+	dir := emptyStore(t)
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, ticket.DirName, ".gitattributes")
+	full := "tickets/*.md merge=" + mergeDriverName + "\n" + tagsUnionLine
+	if err := os.WriteFile(path, []byte(strings.TrimSuffix(full, "\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Nothing is missing, so nothing is written — not even to add the newline
+	// the hand edit left off. Rewriting a file that already says everything is
+	// the churn this check exists to avoid.
+	for run := 1; run <= 2; run++ {
+		changed, err := writeGitAttributes(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if changed {
+			t.Errorf("run %d rewrote a file that already said everything", run)
+		}
+	}
+	b, _ := os.ReadFile(path)
+	line := strings.TrimSuffix(tagsUnionLine, "\n")
+	if n := strings.Count(string(b), line); n != 1 {
+		t.Errorf("the union line appears %d times, want 1:\n%s", n, b)
+	}
+	if got := string(b); got != strings.TrimSuffix(full, "\n") {
+		t.Errorf("the file was modified:\n%s", got)
 	}
 }

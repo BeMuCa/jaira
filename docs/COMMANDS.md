@@ -105,13 +105,14 @@ lines and lines jaira cannot parse are kept verbatim. A new tag is given a rando
 colour still free in a sixteen-colour palette; past sixteen tags colours repeat,
 chosen from the name itself so the repeat is at least stable across machines.
 
-The file is written with git's own `union` driver (`.jaira/.gitattributes` gains
-`tags merge=union`), so a merge keeps both sides rather than picking one. Union
-can leave two lines for one tag when both sides recolour it; that is harmless,
-because the file is read last-wins and the next write rewrites that same last
-line. Writes go through a temporary file and a rename, under the same lock the
-ticket store uses, so two sessions tagging at once cannot lose a tag between
-them.
+The file is written with git's own `union` driver: `.jaira/.gitattributes` gains
+`/tags merge=union`, anchored so it claims the registry and not every file named
+`tags` further down. A merge therefore keeps both sides rather than picking one.
+Union can leave two lines for one tag when both sides recolour it; that is
+harmless, because the file is read last-wins and the next write rewrites that
+same last line. Writes go through a temporary file and a rename, under the same
+lock the ticket store uses, so two sessions tagging at once cannot lose a tag
+between them.
 
 It travels with the board. Only `/.jaira/lanes/` is machine-scoped, so on a
 shared board `.jaira/tags` is committed like the tickets are and one tag looks

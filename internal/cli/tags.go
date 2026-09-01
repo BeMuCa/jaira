@@ -133,11 +133,17 @@ func countTags(all []*ticket.Ticket, lanes *lane.Set, reg *tag.Registry) []tagCo
 		if l, ok := lanes.Get(t.Status); ok && l.Terminal {
 			continue
 		}
+		// One ticket counts once per tag, however many ways the field spells it.
+		// "ui" and "UI" on one ticket are one subject — and that exact pair is
+		// what merge=union produces, since it unions the raw strings without
+		// knowing they normalise to the same name.
+		counted := map[string]bool{}
 		for _, raw := range t.Tags {
 			name, _, err := tag.Normalize(raw)
-			if err != nil {
+			if err != nil || counted[name] {
 				continue
 			}
+			counted[name] = true
 			open[name]++
 			seen[name] = true
 		}

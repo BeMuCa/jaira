@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -99,22 +100,32 @@ func Normalize(raw string) (name string, changed bool, err error) {
 	return name, name != raw, nil
 }
 
-// Suggest is a best-effort repair of a name Normalize refuses: every rune
-// outside [a-z0-9] becomes a dash, then the usual collapse and trim. It reports
-// false when nothing usable is left.
+// Suggest is a best-effort repair of a name Normalize refuses: a separator
+// becomes a dash, then the usual collapse and trim. It reports false when there
+// is no repair it can stand behind.
 //
-// This is exactly the silent trimming Normalize will not do — deliberately.
-// Offered to a person as "did you mean this", it is a fix; applied behind their
-// back it invents a second name for one subject, which is the whole failure the
-// vocabulary exists to prevent. So the write path refuses and this only advises.
+// Dashing a separator is a repair. Dashing a letter is a deletion, and this is
+// printed as a runnable command — "über" repaired to "ber" is a wrong tag one
+// paste away, which is worse than no suggestion at all. So any letter or digit
+// outside [a-z0-9] that survives ToLower withdraws the whole suggestion, and the
+// refusal stands on its own.
+//
+// What is left is exactly the silent trimming Normalize will not do —
+// deliberately. Offered to a person as "did you mean this" it is a fix; applied
+// behind their back it invents a second name for one subject, which is the whole
+// failure the vocabulary exists to prevent. So the write path refuses and this
+// only ever advises.
 func Suggest(raw string) (string, bool) {
 	var b strings.Builder
 	for _, r := range strings.ToLower(strings.TrimSpace(raw)) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'):
 			b.WriteRune(r)
-			continue
+		case unicode.IsLetter(r), unicode.IsDigit(r):
+			return "", false
+		default:
+			b.WriteRune('-')
 		}
-		b.WriteRune('-')
 	}
 	name := strings.Trim(collapseDashes(b.String()), "-")
 	return name, name != ""
