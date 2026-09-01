@@ -512,6 +512,11 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 		v = t.Outcome.Resolves
 	case "diff", ticket.FieldCommits:
 		return len(t.Commits) > 0
+	case ticket.FieldTags:
+		// A list, so "filled" is "has a member" — the same rule commits and the
+		// plan follow. A lane that declares it produces tags is otherwise owed a
+		// field the gate can never see satisfied.
+		return len(t.Tags) > 0
 	case "plan":
 		// The plan lives in the body as a checklist, so it is satisfied by having
 		// steps at all — the same way diff is satisfied by having commits.

@@ -630,7 +630,7 @@ func (s *Store) Create(fields map[string]string, lists map[string][]string, body
 		return nil, fmt.Errorf("ticket: %s already exists", filepath.Base(path))
 	}
 	d := NewDoc(fields, lists, body)
-	if err := writeAtomic(path, d.Bytes()); err != nil {
+	if err := WriteAtomic(path, d.Bytes()); err != nil {
 		return nil, err
 	}
 	return Decode(d, path)
@@ -677,7 +677,7 @@ func (s *Store) Mutate(idOrPrefix string, fn func(*Ticket) error) (*Ticket, erro
 	if err := TouchBy(t.doc, s.Actor); err != nil {
 		return nil, err
 	}
-	if err := writeAtomic(path, t.doc.Bytes()); err != nil {
+	if err := WriteAtomic(path, t.doc.Bytes()); err != nil {
 		return nil, err
 	}
 	return Decode(t.doc, path)
@@ -718,10 +718,22 @@ func (s *Store) lock(id string) (func(), error) {
 	}
 }
 
-// writeAtomic writes via a temporary file in the same directory and renames it
+// Lock takes the store's advisory lock under an arbitrary name, for state in
+// .jaira that is not one ticket. A name can never collide with a ticket's own
+// lock: ticket ids are 26-character ULIDs, so "tags" is not one.
+//
+// The caller must call the returned function, normally with defer. Failure to
+// acquire within the timeout is an error, not a silent write.
+func (s *Store) Lock(name string) (func(), error) { return s.lock(name) }
+
+// WriteAtomic writes via a temporary file in the same directory and renames it
 // into place, so a crash or a full disk leaves the previous file intact rather
 // than a truncated one (STORE-06).
-func writeAtomic(path string, data []byte) error {
+//
+// Exported because the ticket files are not the only thing in .jaira that two
+// sessions write at once: the tag registry (core/tag) needs the same guarantee,
+// and a second copy of this dance is a second place for it to be subtly wrong.
+func WriteAtomic(path string, data []byte) error {
 	// Follow a symlink to its target before writing. The tmp-file-plus-rename
 	// dance is what makes a write atomic, but rename replaces the link itself —
 	// so a symlinked ticket would quietly fork into two diverging files, the link
@@ -757,4 +769,4 @@ func writeAtomic(path string, data []byte) error {
 
 // Save writes a ticket that the caller already mutated, without taking a lock.
 // Used by the merge driver, which runs single-threaded under git.
-func (s *Store) Save(t *Ticket) error { return writeAtomic(t.Path, t.doc.Bytes()) }
+func (s *Store) Save(t *Ticket) error { return WriteAtomic(t.Path, t.doc.Bytes()) }

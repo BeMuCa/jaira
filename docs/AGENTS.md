@@ -116,6 +116,28 @@ check's easy case: point at the existing ticket instead of writing a twin.
 Nothing in the binary enforces this. It is a judgment call, so it is on the
 agent to make it before writing.
 
+## Before tagging anything
+
+A tag is the subject a ticket belongs to, so a backlog can be read one subject
+at a time. Read the vocabulary before adding to it:
+
+```bash
+jaira tags --json                     # name, color, open tickets per tag
+jaira tag <id> ui backend             # add tags; also 'jaira create --tag ui'
+jaira list --tag ui --json            # every ticket carrying it
+```
+
+Reuse the name that is already there for that subject. Never invent a synonym —
+"ui", "frontend" and "gui" on one board are three names for one thing, and a
+filter on any of them finds a third of the tickets. `jaira tag` reports each name
+as new or reused (`tags_new` / `tags_reused` under `--json`): if it says new and
+you expected it to exist, you have just invented a synonym, so check `jaira tags`
+and use the existing name.
+
+Names are stored lowercase-kebab; anything outside `[a-z0-9-]` is refused rather
+than trimmed down. Colors live once per board in `.jaira/tags`, one
+`name: <ansi256>` line per tag, hand-editable.
+
 ## Leaving a trail
 
 Write `jaira note <id> <text>` before you stop, or when something did not

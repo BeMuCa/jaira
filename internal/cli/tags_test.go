@@ -1,10 +1,15 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -31,6 +36,56 @@ func tagsRow(t *testing.T, out, name string) string {
 	}
 	t.Fatalf("no row for tag %q in:\n%s", name, out)
 	return ""
+}
+
+// firstTitledHandle finds the handle of the board's ticket with this title.
+func firstTitledHandle(t *testing.T, dir, title string) string {
+	t.Helper()
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	all, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tk := range all {
+		if tk.Title == title {
+			return ticket.Handle(tk.ID)
+		}
+	}
+	t.Fatalf("no ticket titled %q on the board", title)
+	return ""
+}
+
+// jsonCLI runs a command with --json and decodes the payload, so a test asserts
+// against the machine surface an agent actually reads rather than against prose.
+func jsonCLI(t *testing.T, dir string, args ...string) map[string]any {
+	t.Helper()
+	out, err := runCLI(t, dir, append(args, "--json")...)
+	if err != nil {
+		t.Fatalf("%v: %v\n%s", args, err, out)
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(out), &m); err != nil {
+		t.Fatalf("%v emitted unparseable JSON: %v\n%s", args, err, out)
+	}
+	return m
+}
+
+// strList reads a JSON string array, treating a missing key as absent rather
+// than as an empty list, so a test can tell the two apart.
+func strList(v any) []string {
+	arr, ok := v.([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(arr))
+	for _, e := range arr {
+		s, _ := e.(string)
+		out = append(out, s)
+	}
+	return out
 }
 
 func tagsFile(t *testing.T, dir string) string {
@@ -166,20 +221,7 @@ func TestTagsListsCountsAndUncolouredNames(t *testing.T) {
 	}
 	// Set by hand through the generic list-field writer, which is what makes
 	// tags a plain list field worth having: no colour line is created.
-	h := ""
-	s, err := ticket.At(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	all, err := s.List()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, tk := range all {
-		if tk.Title == "first" {
-			h = ticket.Handle(tk.ID)
-		}
-	}
+	h := firstTitledHandle(t, dir, "first")
 	if out, err := runCLI(t, dir, "set", h, "tags=ui,handset"); err != nil {
 		t.Fatalf("set tags=: %v\n%s", err, out)
 	}
@@ -199,10 +241,19 @@ func TestTagsListsCountsAndUncolouredNames(t *testing.T) {
 	if row := tagsRow(t, out, "handset"); !strings.Contains(row, "-") || !strings.Contains(row, "no colour yet") {
 		t.Errorf("a hand-set tag was not shown as uncoloured: %q", row)
 	}
-	// A coloured tag shows its number, so the file can be hand-edited from
-	// what the listing says.
-	if row := tagsRow(t, out, "ui"); !strings.ContainsAny(row, "0123456789") {
-		t.Errorf("a coloured tag does not show its colour: %q", row)
+	// A coloured tag shows the number the file actually holds, so the registry
+	// can be hand-edited from what the listing says. Read the colour out of the
+	// file rather than pinning one: the palette choice is random on purpose.
+	reg, err := tag.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	colour, ok := reg.Colour("ui")
+	if !ok {
+		t.Fatal("ui has no colour in .jaira/tags")
+	}
+	if row := tagsRow(t, out, "ui"); !strings.Contains(row, fmt.Sprintf("%3d", colour)) {
+		t.Errorf("row for ui does not carry its colour %d: %q", colour, row)
 	}
 	if !strings.Contains(out, "synonym") {
 		t.Errorf("the listing does not tell the reader to reuse a name:\n%s", out)
@@ -282,5 +333,223 @@ func TestShowPrintsTheTagsRow(t *testing.T) {
 	}
 	if !strings.Contains(out, "tags       ui backend") {
 		t.Errorf("no tags row in 'jaira show':\n%s", out)
+	}
+}
+
+// The listing is what an agent reads, and SKILL.md tells it to read --json. The
+// payload has to carry the same three facts the table does.
+func TestTagsJSONCarriesNameColorAndCount(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "create", "first", "--tag", "ui"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "create", "second", "--tag", "ui"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	h := firstTitledHandle(t, dir, "first")
+	if out, err := runCLI(t, dir, "set", h, "tags=ui,handset"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+
+	out := jsonCLI(t, dir, "tags")
+	rows, ok := out["tags"].([]any)
+	if !ok {
+		t.Fatalf("tags is not an array: %#v", out["tags"])
+	}
+	if n, _ := out["count"].(float64); int(n) != len(rows) {
+		t.Errorf("count = %v, want %d", out["count"], len(rows))
+	}
+	byName := map[string]map[string]any{}
+	for _, r := range rows {
+		m, _ := r.(map[string]any)
+		name, _ := m["name"].(string)
+		byName[name] = m
+	}
+	reg, err := tag.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, _ := reg.Colour("ui")
+	ui, found := byName["ui"]
+	if !found {
+		t.Fatalf("no ui row in %#v", byName)
+	}
+	// "color", not "colour": one spelling on the machine surface, matching the
+	// --color flag.
+	if got, _ := ui["color"].(float64); int(got) != want {
+		t.Errorf("ui color = %v, want %d", ui["color"], want)
+	}
+	if _, wrongKey := ui["colour"]; wrongKey {
+		t.Error("the payload still carries the old 'colour' key")
+	}
+	if got, _ := ui["open"].(float64); int(got) != 2 {
+		t.Errorf("ui open = %v, want 2", ui["open"])
+	}
+	hand, found := byName["handset"]
+	if !found {
+		t.Fatalf("a hand-set tag is missing from the payload: %#v", byName)
+	}
+	if hand["color"] != nil {
+		t.Errorf("an uncoloured tag reports a colour: %#v", hand["color"])
+	}
+}
+
+// The new-versus-reused signal is what makes an invented synonym visible, and
+// --json is the surface the skill tells agents to drive. It has to be there.
+func TestTagJSONCarriesNewAndReused(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "create", "something"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	h := firstHandle(t, dir)
+
+	out := jsonCLI(t, dir, "tag", h, "ui")
+	if got := strList(out["tags_new"]); len(got) != 1 || got[0] != "ui" {
+		t.Errorf("tags_new = %#v, want [ui]", out["tags_new"])
+	}
+	if got := strList(out["tags_reused"]); len(got) != 0 {
+		t.Errorf("tags_reused = %#v, want empty", out["tags_reused"])
+	}
+	// Empty arrays, never null: an agent branching on length must not have to
+	// handle both.
+	if out["tags_reused"] == nil {
+		t.Error("tags_reused is null rather than an empty array")
+	}
+	if got := strList(out["tags"]); len(got) != 1 || got[0] != "ui" {
+		t.Errorf("tags = %#v, want [ui]", out["tags"])
+	}
+
+	out = jsonCLI(t, dir, "tag", h, "ui", "backend")
+	if got := strList(out["tags_reused"]); len(got) != 1 || got[0] != "ui" {
+		t.Errorf("tags_reused = %#v, want [ui]", out["tags_reused"])
+	}
+	if got := strList(out["tags_new"]); len(got) != 1 || got[0] != "backend" {
+		t.Errorf("tags_new = %#v, want [backend]", out["tags_new"])
+	}
+}
+
+// Two sessions tagging at the same moment both read the file, both add their own
+// line to what they read, and the second save writes a file assembled before the
+// first one's line existed — one tag lost, silently. The reviewer proved that.
+// The lock is what orders them; this is the regression test.
+func TestRegisterTagsLosesNoTagUnderConcurrentWriters(t *testing.T) {
+	dir := emptyStore(t)
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const writers = 8
+	var wg sync.WaitGroup
+	errs := make(chan error, writers)
+	for i := range writers {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			name := fmt.Sprintf("tag%d", i)
+			if _, _, err := registerTags(s, []string{name}, -1); err != nil {
+				errs <- err
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Fatalf("registerTags: %v", err)
+	}
+
+	reg, err := tag.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range writers {
+		name := fmt.Sprintf("tag%d", i)
+		if _, ok := reg.Colour(name); !ok {
+			t.Errorf("%s was lost; the file holds %v", name, reg.Names())
+		}
+	}
+}
+
+// And the ordering really is a lock, not luck: while the store's "tags" lock is
+// held, registerTags waits rather than reading a file somebody else is about to
+// replace.
+func TestRegisterTagsWaitsForTheTagsLock(t *testing.T) {
+	dir := emptyStore(t)
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock, err := s.Lock(tagsLockName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := registerTags(s, []string{"ui"}, -1)
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		unlock()
+		t.Fatalf("registerTags did not wait for the tags lock (returned %v)", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+
+	unlock()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("registerTags after unlock: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("registerTags never completed after the lock was released")
+	}
+	if reg, err := tag.Load(dir); err != nil {
+		t.Fatal(err)
+	} else if _, ok := reg.Colour("ui"); !ok {
+		t.Error("ui was never written")
+	}
+}
+
+// The tag registry is one independent line per tag, so git's own union driver is
+// right for it — and a board configured before the registry existed already
+// names the ticket driver, so a single "is anything configured" test would leave
+// it without the union line for good.
+func TestGitAttributesGainsTheUnionLineOnAnOlderBoard(t *testing.T) {
+	dir := emptyStore(t)
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, ticket.DirName, ".gitattributes")
+	old := "tickets/*.md merge=" + mergeDriverName + "\n"
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	changed, err := writeGitAttributes(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !changed {
+		t.Fatal("an older board's attributes file was left without the union line")
+	}
+	b, _ := os.ReadFile(path)
+	got := string(b)
+	if !strings.Contains(got, "tags merge=union") {
+		t.Errorf("no union line for the registry:\n%s", got)
+	}
+	if strings.Count(got, "merge="+mergeDriverName) != 1 {
+		t.Errorf("the ticket driver line was duplicated:\n%s", got)
+	}
+
+	// Idempotent: a second run has nothing left to add.
+	changed, err = writeGitAttributes(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed {
+		t.Errorf("writeGitAttributes rewrote a file that already said everything:\n%s", got)
 	}
 }

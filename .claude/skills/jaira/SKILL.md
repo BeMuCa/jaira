@@ -197,8 +197,9 @@ down, because a silently shortened name is a second name for one subject.
 
 A name the board has never seen is reported as new and given a colour in
 `.jaira/tags` — one `name: <ansi256>` line per tag, shared by the whole board and
-hand-editable. If the output says a tag is new and you expected it to exist, you
-have just invented a synonym: check `jaira tags` and use the existing name.
+hand-editable. Under `--json`, `jaira tag` carries that signal as `tags_new` and
+`tags_reused`. If a name comes back new and you expected it to exist, you have
+just invented a synonym: check `jaira tags` and use the existing name.
 
 ## Before you stop, and when you start
 

@@ -14,23 +14,6 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// hasTag reports whether a ticket carries a tag, comparing normalized names so
-// a hand-edited "UI" still answers to --tag ui. A name that cannot normalize
-// matches nothing rather than failing the listing: a filter is a question, and a
-// question about an impossible name has the answer "no".
-func hasTag(t *ticket.Ticket, want string) bool {
-	name, _, err := tag.Normalize(want)
-	if err != nil {
-		return false
-	}
-	for _, have := range t.Tags {
-		if n, _, err := tag.Normalize(have); err == nil && n == name {
-			return true
-		}
-	}
-	return false
-}
-
 // normalizeTags puts written names into the one stored form, dropping repeats,
 // and returns a line per name it had to change — because a tag filed under a
 // different name than the one typed is exactly the kind of silent difference
@@ -54,6 +37,10 @@ func normalizeTags(raw []string) (names []string, notes []string, err error) {
 	return names, notes, nil
 }
 
+// tagsLockName keys the store lock this registry is written under. One name for
+// the whole file, because the write is a read-modify-write of every line in it.
+const tagsLockName = "tags"
+
 // registerTags gives every name a colour line in .jaira/tags, and reports which
 // names the board had never seen. colour is the one explicitly asked for, or -1
 // to let the registry pick a free palette colour.
@@ -61,10 +48,23 @@ func normalizeTags(raw []string) (names []string, notes []string, err error) {
 // An explicit colour is applied whether or not the name is new: "jaira tag <id>
 // ui --color 40" reads as "ui is colour 40", and refusing to recolour an
 // existing tag would leave hand-editing the file as the only way to do it.
-func registerTags(root string, names []string, colour int) (added, reused []string, err error) {
+//
+// The whole Load→Set→Save runs under the store's lock. Two sessions tagging at
+// the same moment both read the file, both add their own line to what they read,
+// and the second save then writes a file assembled before the first one's line
+// existed — one tag lost, silently. An atomic write does not fix that: it makes
+// each write whole, not the pair of them ordered. The lock is what orders them.
+func registerTags(s *ticket.Store, names []string, colour int) (added, reused []string, err error) {
 	if len(names) == 0 {
 		return nil, nil, nil
 	}
+	unlock, err := s.Lock(tagsLockName)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer unlock()
+
+	root := s.Root
 	reg, err := tag.Load(root)
 	if err != nil {
 		return nil, nil, err
@@ -96,6 +96,15 @@ func registerTags(root string, names []string, colour int) (added, reused []stri
 		return nil, nil, err
 	}
 	return added, reused, nil
+}
+
+// strOrEmpty renders a nil slice as an empty JSON array rather than null, so a
+// caller can iterate the field without a nil check.
+func strOrEmpty(v []string) []string {
+	if v == nil {
+		return []string{}
+	}
+	return v
 }
 
 // tagCount is one row of 'jaira tags': a name, the colour the board gives it,
@@ -215,8 +224,10 @@ colour.`,
 					if r.known {
 						colour = r.colour
 					}
+					// "color", matching --color: one spelling on the machine
+					// surface, whatever the prose around it says.
 					arr = append(arr, map[string]any{
-						"name": r.name, "colour": colour, "open": r.open,
+						"name": r.name, "color": colour, "open": r.open,
 					})
 				}
 				return emit(w, map[string]any{
@@ -338,14 +349,22 @@ colour cannot be meant for several.`,
 			if err != nil {
 				return err
 			}
-			added, reused, err := registerTags(s.Root, names, chosen)
+			added, reused, err := registerTags(s, names, chosen)
 			if err != nil {
 				return err
 			}
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, ticketJSON(t, lanes))
+				// The new-versus-reused signal is the point of this command, and
+				// --json is the surface the skill tells agents to use — so it
+				// travels beside the ticket rather than only in the prose an
+				// agent never sees. Always arrays, never null: an agent
+				// branching on length must not have to handle both.
+				j := ticketJSON(t, lanes)
+				j["tags_new"] = strOrEmpty(added)
+				j["tags_reused"] = strOrEmpty(reused)
+				return emit(w, j)
 			}
 			for _, n := range notes {
 				fmt.Fprintln(w, n)

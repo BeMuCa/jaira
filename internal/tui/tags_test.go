@@ -83,6 +83,22 @@ func TestFilterTagHitsAndMisses(t *testing.T) {
 			t.Errorf("%q matched a ticket tagged %v", q, tk.Tags)
 		}
 	}
+	// Exact, unlike every other filter key, and deliberately: a tag is a name
+	// from a closed vocabulary. "tag:cur" answering with everything tagged
+	// "security" is a wrong answer rather than a loose one, and it would have
+	// made the board filter disagree with 'jaira list --tag', which is exact.
+	for _, q := range []string{"tag:cur", "tag:sec", "tag:security-review", "tag:back"} {
+		if matches(tk, q) {
+			t.Errorf("%q matched %v: the tag filter is substring, not exact", q, tk.Tags)
+		}
+	}
+	// A hand-edited name still answers to its stored form, since both sides are
+	// normalised before comparing.
+	shouty := taggedTicket()
+	shouty.Tags = []string{"My UI"}
+	if !matches(shouty, "tag:my-ui") {
+		t.Error("tag:my-ui did not match a ticket carrying \"My UI\"")
+	}
 	// A known key on an untagged ticket matches nothing rather than leaking
 	// back into full text — the rule every other key here follows.
 	untagged := taggedTicket()

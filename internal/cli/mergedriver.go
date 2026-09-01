@@ -11,6 +11,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/merge"
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -115,24 +116,50 @@ func ensureMergeDriver(root string) (installed bool, err error) {
 	return true, nil
 }
 
+// tagsUnionLine merges the tag registry with git's own union driver rather than
+// jaira's: the file is one independent line per tag, so keeping both sides is
+// always the right answer and needs no field awareness.
+//
+// Union can leave two lines for one tag when both sides recolour it. That is
+// harmless by construction: Load reads the file top to bottom and lets the last
+// entry win, and Set rewrites that same last line — so the duplicate resolves
+// itself the next time anybody touches the tag, and until then the file says one
+// colour.
+var tagsUnionLine = fmt.Sprintf("%s merge=union\n", tag.FileName)
+
 // writeGitAttributes points the committed attributes file at the driver, so a
 // teammate's clone knows which files want structural merging.
+//
+// The two lines are checked for separately. A board set up before the tag
+// registry existed already names the ticket driver, and a single "is anything
+// configured" test would leave it without the union line for good.
 func writeGitAttributes(s *ticket.Store) (changed bool, err error) {
 	path := filepath.Join(s.Root, ticket.DirName, ".gitattributes")
 	want := fmt.Sprintf("%s/*.md merge=%s\n", ticket.TicketsSubdir, mergeDriverName)
 	existing, err := os.ReadFile(path)
-	if err == nil && strings.Contains(string(existing), "merge="+mergeDriverName) {
-		return false, nil
+	var missing string
+	if err == nil {
+		if !strings.Contains(string(existing), "merge="+mergeDriverName) {
+			missing += want
+		}
+		if !strings.Contains(string(existing), tagsUnionLine) {
+			missing += tagsUnionLine
+		}
+		if missing == "" {
+			return false, nil
+		}
 	}
 	header := "# Ticket files are merged field by field by the jaira merge driver.\n" +
-		"# Without it, two people moving the same ticket collide on the status line.\n"
-	body := header + want
+		"# Without it, two people moving the same ticket collide on the status line.\n" +
+		"# The tag registry is one line per tag, so union — keeping both sides — is\n" +
+		"# always right there.\n"
+	body := header + want + tagsUnionLine
 	if err == nil {
 		body = string(existing)
 		if !strings.HasSuffix(body, "\n") {
 			body += "\n"
 		}
-		body += want
+		body += missing
 	}
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		return false, err

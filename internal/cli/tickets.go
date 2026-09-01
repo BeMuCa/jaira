@@ -16,6 +16,7 @@ import (
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/release"
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -256,7 +257,7 @@ already know it is yours; --assignee wins over it.`,
 			if err != nil {
 				return err
 			}
-			added, _, err := registerTags(s.Root, tagNames, -1)
+			added, _, err := registerTags(s, tagNames, -1)
 			if err != nil {
 				return err
 			}
@@ -418,7 +419,7 @@ func newListCmd() *cobra.Command {
 				if assigneeFilter != "" && !strings.EqualFold(t.Assignee, assigneeFilter) {
 					continue
 				}
-				if tagFilter != "" && !hasTag(t, tagFilter) {
+				if tagFilter != "" && !tag.Matches(t.Tags, tagFilter) {
 					continue
 				}
 				if query != "" && !matches(t, query) {

@@ -19,6 +19,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -96,6 +97,50 @@ func Normalize(raw string) (name string, changed bool, err error) {
 		return "", false, fmt.Errorf("tag name %q has nothing left once normalized", raw)
 	}
 	return name, name != raw, nil
+}
+
+// Suggest is a best-effort repair of a name Normalize refuses: every rune
+// outside [a-z0-9] becomes a dash, then the usual collapse and trim. It reports
+// false when nothing usable is left.
+//
+// This is exactly the silent trimming Normalize will not do — deliberately.
+// Offered to a person as "did you mean this", it is a fix; applied behind their
+// back it invents a second name for one subject, which is the whole failure the
+// vocabulary exists to prevent. So the write path refuses and this only advises.
+func Suggest(raw string) (string, bool) {
+	var b strings.Builder
+	for _, r := range strings.ToLower(strings.TrimSpace(raw)) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteRune('-')
+	}
+	name := strings.Trim(collapseDashes(b.String()), "-")
+	return name, name != ""
+}
+
+// Matches reports whether a list of written tag names contains want.
+//
+// Both sides are normalized before comparing, so a hand-edited "UI" still
+// answers to "ui". The comparison is equality, not substring: a tag is a name
+// from a closed vocabulary, and "cur" matching "security" is a wrong answer
+// rather than a loose one. One implementation so the CLI's --tag and the board
+// filter's tag: can never disagree about what carrying a tag means.
+//
+// A want that cannot normalize matches nothing rather than erroring: a filter is
+// a question, and the answer to a question about an impossible name is "no".
+func Matches(have []string, want string) bool {
+	name, _, err := Normalize(want)
+	if err != nil {
+		return false
+	}
+	for _, raw := range have {
+		if n, _, err := Normalize(raw); err == nil && n == name {
+			return true
+		}
+	}
+	return false
 }
 
 // collapseDashes squeezes runs of dashes, so "ui  ux" does not become "ui--ux".
@@ -238,11 +283,19 @@ func (r *Registry) Assign(name string) int {
 // to conflict.
 func (r *Registry) Set(name string, colour int) {
 	if _, known := r.colours[name]; known {
+		// The LAST matching line, not the first: Load reads the file top to
+		// bottom and lets the last entry win, so rewriting an earlier duplicate
+		// would change a line nothing reads and leave the colour untouched. A
+		// duplicate is not hypothetical — `merge=union` on this file is exactly
+		// what produces one when two sides recolour the same tag.
+		at := -1
 		for i, line := range r.lines {
 			if n, _, ok := parseLine(line); ok && n == name {
-				r.lines[i] = entryLine(name, colour) + trailingComment(line)
-				break
+				at = i
 			}
+		}
+		if at >= 0 {
+			r.lines[at] = entryLine(name, colour) + trailingComment(r.lines[at])
 		}
 		r.colours[name] = colour
 		return
@@ -275,30 +328,52 @@ func trailingComment(line string) string {
 // before the first entry that sorts after it. A file whose entries are not
 // sorted is not reordered: the new line lands after the last entry instead, so
 // hand-grouped tags stay grouped.
+//
+// The second half of that is the reason the whole file is scanned before
+// anything is inserted. Sorting into a file somebody grouped by hand puts a
+// backend tag under a "# frontend" heading, which is worse than an unsorted
+// file: the comment above a line stops describing it. Sorted insertion buys
+// merge-friendliness, and it is only offered where the file already shows it is
+// wanted.
 func insertEntry(lines []string, name, line string) []string {
-	last := -1
+	var at []int
+	var names []string
 	for i, l := range lines {
-		n, _, ok := parseLine(l)
-		if !ok {
-			continue
-		}
-		last = i
-		if n > name {
-			out := append([]string{}, lines[:i]...)
-			out = append(out, line)
-			return append(out, lines[i:]...)
+		if n, _, ok := parseLine(l); ok {
+			at = append(at, i)
+			names = append(names, n)
 		}
 	}
-	if last < 0 {
+	if len(at) == 0 {
 		return append(append([]string{}, lines...), line)
 	}
-	out := append([]string{}, lines[:last+1]...)
+	if !sort.StringsAreSorted(names) {
+		return spliceAt(lines, at[len(at)-1]+1, line)
+	}
+	for i, n := range names {
+		if n > name {
+			return spliceAt(lines, at[i], line)
+		}
+	}
+	return spliceAt(lines, at[len(at)-1]+1, line)
+}
+
+// spliceAt returns lines with one new line inserted at index i.
+func spliceAt(lines []string, i int, line string) []string {
+	out := append([]string{}, lines[:i]...)
 	out = append(out, line)
-	return append(out, lines[last+1:]...)
+	return append(out, lines[i:]...)
 }
 
 // Save writes the registry back, creating .jaira and the header if this is the
 // board's first tag colour.
+//
+// The write goes through ticket.WriteAtomic — a temporary file in the same
+// directory and a rename — so a reader never sees a half-written registry and a
+// crash mid-write leaves the previous file intact rather than a truncated one.
+// Atomicity is not exclusion: two writers still have to be serialised by a lock
+// around Load→Set→Save, or the later one saves a file assembled before the
+// earlier one's line existed. That lock is the caller's (see registerTags).
 func (r *Registry) Save(root string) error {
 	if err := os.MkdirAll(filepath.Join(root, ticket.DirName), 0o755); err != nil {
 		return err
@@ -312,7 +387,7 @@ func (r *Registry) Save(root string) error {
 		b.WriteString(l)
 		b.WriteByte('\n')
 	}
-	if err := os.WriteFile(Path(root), []byte(b.String()), 0o644); err != nil {
+	if err := ticket.WriteAtomic(Path(root), []byte(b.String())); err != nil {
 		return err
 	}
 	r.exists = true

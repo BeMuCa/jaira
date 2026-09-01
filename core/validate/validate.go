@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -36,6 +37,7 @@ const (
 	CodeDuplicateID   = "duplicate_id"
 	CodeIncomplete    = "incomplete"
 	CodeUndeclaredDep = "undeclared_dependency"
+	CodeBadTag        = "bad_tag"
 )
 
 // handleRef matches a bare handle: the six-character tail ticket.Handle
@@ -126,6 +128,33 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 		if t.UpdatedAt.IsZero() {
 			add(CodeBadTimestamp, SeverityError, ticket.FieldUpdatedAt,
 				"updated-at is missing or unparseable; the merge driver resolves conflicts with it")
+		}
+
+		// A tag that cannot be normalised is on the ticket and reachable by
+		// nothing: 'jaira tags' skips it when counting, and --tag and the board
+		// filter both compare normalised names, so it is a label only a reader
+		// of the raw file ever sees. The same shape as the dangling dependency
+		// above — the value is written, the thing it points at is not there.
+		//
+		// A case difference is not this problem: "UI" normalises to "ui", so the
+		// listing counts it and the filters match it. Only a name Normalize
+		// refuses outright is inert.
+		//
+		// A warning, not an error: the ticket itself is intact, and capture must
+		// stay cheap.
+		for _, raw := range t.Tags {
+			_, _, badTag := tag.Normalize(raw)
+			if badTag == nil {
+				continue
+			}
+			msg := "tag %q cannot be stored, so nothing can filter on it: %v"
+			args := []any{raw, badTag}
+			if fixed, ok := tag.Suggest(raw); ok {
+				msg += "; rename it with 'jaira set %s tags=%s'"
+				args = append(args, handleOf(t.ID),
+					strings.Join(normalizedTags(t.Tags, raw, fixed), ","))
+			}
+			add(CodeBadTag, SeverityWarning, ticket.FieldTags, msg, args...)
 		}
 
 		declared := make(map[string]bool, len(t.BlockedBy))
@@ -222,4 +251,26 @@ func handleOf(id string) string {
 		return id
 	}
 	return ticket.Handle(id)
+}
+
+// normalizedTags is the ticket's whole tag list with one member replaced by its
+// normalised form, so the suggested command can be followed verbatim.
+//
+// 'jaira set' replaces a list field outright rather than appending to it, so a
+// suggestion naming only the offending tag would erase every other tag on the
+// ticket — the same trap the blocked-by suggestion above spells the full list to
+// avoid. A member that cannot normalise at all is dropped from the suggestion:
+// there is nothing to put in its place.
+func normalizedTags(all []string, offender, replacement string) []string {
+	out := make([]string, 0, len(all))
+	for _, raw := range all {
+		if raw == offender {
+			out = append(out, replacement)
+			continue
+		}
+		if n, _, err := tag.Normalize(raw); err == nil {
+			out = append(out, n)
+		}
+	}
+	return out
 }

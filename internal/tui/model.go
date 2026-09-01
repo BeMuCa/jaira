@@ -25,6 +25,7 @@ import (
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -538,9 +539,12 @@ func matches(t *ticket.Ticket, q string) bool {
 		case "assignee":
 			field = t.Assignee
 		case "tag", "tags":
-			// Joined rather than matched per tag, so "tag:ui" also finds
-			// "ui-polish" — the same substring rule every other key here uses.
-			field = strings.Join(t.Tags, " ")
+			// Exact, unlike every other key here, and deliberately: a tag is a
+			// name from a closed vocabulary, not prose. Substring matching made
+			// "tag:cur" answer with every ticket tagged "security", which is a
+			// wrong answer rather than a loose one — and it would have made the
+			// board filter disagree with 'jaira list --tag', which is exact.
+			return tag.Matches(t.Tags, val)
 		case "lane", "status":
 			field = t.Status
 		case "body":

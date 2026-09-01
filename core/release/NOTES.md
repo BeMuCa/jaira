@@ -15,6 +15,8 @@ Format rules — read before editing:
 
 ## 0.1.1
 
+- Tickets carry `tags`: run `jaira tags` FIRST to see the board's vocabulary and reuse a name for that subject rather than inventing a synonym, then `jaira tag <id> <name>...` or `jaira create --tag <name>`; filter with `jaira list --tag <name>` or `tag:<name>` in the board's `/` filter, and hand-edit the shared colours in `.jaira/tags`.
+- Every board's generated agent block is now out of date, so `jaira validate` reports `AGENTS.md`/`CLAUDE.md` as stale until you run `jaira update` once per board and commit the result.
 - A hand-written `[-]` in any checklist now reads as withdrawn, not open: it stops blocking completion and nothing reports it as done — retick it to `[ ]` if the item is still wanted.
 - `jaira sync` is now `jaira logbook`, and finished tickets file under `.jaira/logbook/<you>-<date>/`; `restore` still reads the old `sync/` folder, and the JSON field `synced` is now `logged`.
 - A board is its lane directory: the first command on a board writes the default board or the built-ins as lane files plus an `order` file, once, and says so; a legacy board (a `removed` file, or no `order`) migrates in place on its next command — expect that one-time write and commit it on shared boards.

@@ -268,3 +268,175 @@ func TestPaletteEntriesAreDistinctAnsi256Colours(t *testing.T) {
 		}
 	}
 }
+
+// Load lets the last entry for a name win, so Set must rewrite that same last
+// line. Rewriting the first would change a line nothing reads and leave the
+// colour exactly as it was — and duplicates are not hypothetical: merge=union on
+// this file is what produces one when two sides recolour the same tag.
+func TestSetRewritesTheLastDuplicateLine(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(root), []byte("ui: 33\ndocs: 178\nui: 45\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	reg, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := reg.Colour("ui"); c != 45 {
+		t.Fatalf("Load read %d for a duplicated name, want the last line's 45", c)
+	}
+	reg.Set("ui", 100)
+	if err := reg.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(Path(root))
+	if got := string(b); got != "ui: 33\ndocs: 178\nui: 100\n" {
+		t.Errorf("Set rewrote the wrong line:\n%s", got)
+	}
+	again, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := again.Colour("ui"); c != 100 {
+		t.Errorf("colour after reload = %d, want 100", c)
+	}
+}
+
+// Sorted insertion buys merge-friendliness and is only offered where the file
+// already shows it is wanted. Sorting into a hand-grouped file puts a backend
+// tag under a "# frontend" heading, which makes the comment above a line stop
+// describing it — worse than an unsorted file.
+func TestInsertionRespectsAHandGroupedFile(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	grouped := "# frontend\nui: 33\ncss: 45\n\n# backend\nsql: 73\napi: 100\n"
+	if err := os.WriteFile(Path(root), []byte(grouped), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	reg, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reg.Set("docs", 208)
+	if err := reg.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(Path(root))
+	if got := string(b); got != grouped+"docs: 208\n" {
+		t.Errorf("an unsorted file was sorted into instead of appended to:\n%s", got)
+	}
+
+	// A sorted file still gets sorted insertion — that is what keeps two
+	// teammates' additions off the same last line.
+	root2 := t.TempDir()
+	if err := os.MkdirAll(root2+"/.jaira", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(root2), []byte("api: 33\nui: 45\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	reg2, err := Load(root2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reg2.Set("docs", 208)
+	if err := reg2.Save(root2); err != nil {
+		t.Fatal(err)
+	}
+	b2, _ := os.ReadFile(Path(root2))
+	if got := string(b2); got != "api: 33\ndocs: 208\nui: 45\n" {
+		t.Errorf("a sorted file did not get sorted insertion:\n%s", got)
+	}
+}
+
+// A reader must never see a half-written registry, and a crash mid-write must
+// leave the previous file intact rather than a truncated one. That is what
+// tmp-file-plus-rename buys; this pins that Save uses it, by watching the
+// directory for the temporary file and by proving the old bytes survive a
+// replacement.
+func TestSaveWritesViaTempFileAndRename(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(root), []byte("ui: 33\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.Stat(Path(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reg, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reg.Set("docs", 178)
+	if err := reg.Save(root); err != nil {
+		t.Fatal(err)
+	}
+
+	// A rename replaces the inode; an in-place truncate-and-write would keep it.
+	after, err := os.Stat(Path(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if os.SameFile(before, after) {
+		t.Error("Save wrote in place: the file was not replaced by a rename")
+	}
+	// And no temporary file is left behind in .jaira.
+	ents, err := os.ReadDir(root + "/.jaira")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range ents {
+		if strings.HasPrefix(e.Name(), ".jaira-tmp-") {
+			t.Errorf("Save left a temporary file behind: %s", e.Name())
+		}
+	}
+	if b, _ := os.ReadFile(Path(root)); !strings.Contains(string(b), "docs: 178") {
+		t.Errorf("the new entry is missing:\n%s", b)
+	}
+}
+
+// Both filters — 'jaira list --tag' and the board's 'tag:' — go through this, so
+// exactness is pinned once. A tag is a name from a closed vocabulary: "cur"
+// answering with everything tagged "security" is a wrong answer, not a loose one.
+func TestMatchesIsExactAndCaseFolded(t *testing.T) {
+	have := []string{"security", "My UI"}
+	for _, want := range []string{"security", "SECURITY", "my-ui", "My UI"} {
+		if !Matches(have, want) {
+			t.Errorf("Matches(%v, %q) = false, want true", have, want)
+		}
+	}
+	for _, want := range []string{"cur", "ui", "sec", "securit", "", "front/end"} {
+		if Matches(have, want) {
+			t.Errorf("Matches(%v, %q) = true, want false", have, want)
+		}
+	}
+}
+
+// Suggest advises the repair Normalize refuses to make silently.
+func TestSuggestRepairsWhatNormalizeRefuses(t *testing.T) {
+	for raw, want := range map[string]string{
+		"front/end": "front-end",
+		"ui!":       "ui",
+		"a.b.c":     "a-b-c",
+	} {
+		if _, _, err := Normalize(raw); err == nil {
+			t.Errorf("Normalize(%q) no longer refuses; this test is about the ones it does", raw)
+		}
+		got, ok := Suggest(raw)
+		if !ok || got != want {
+			t.Errorf("Suggest(%q) = %q,%v, want %q,true", raw, got, ok, want)
+		}
+	}
+	if got, ok := Suggest("///"); ok {
+		t.Errorf("Suggest(%q) = %q,true, want no suggestion", "///", got)
+	}
+}
