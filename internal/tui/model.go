@@ -48,12 +48,19 @@ const (
 	modeDefaultBoard
 	modeDelete
 	modeDropBoard
+	modeLegend
 )
 
 // Model is the board's state.
 type Model struct {
 	store *ticket.Store
 	lanes *lane.Set
+
+	// tags is the board's colour registry (.jaira/tags), loaded once per
+	// reload alongside lanes and tickets rather than once per card — the
+	// registry is one small file shared by every card on the board, not a
+	// per-card fact.
+	tags *tag.Registry
 
 	tickets []*ticket.Ticket
 	cols    []column
@@ -283,6 +290,11 @@ func (m *Model) reload() error {
 	}
 	m.lanes = lanes
 	m.warnings = lanes.Warnings
+	tags, err := tag.Load(m.store.Root)
+	if err != nil {
+		return err
+	}
+	m.tags = tags
 	// A reload is exactly the moment the git state behind a derived commit
 	// list may have changed — a teammate's commit naming the handle arrives,
 	// the board refreshes, and a stale memo would keep the sign-off screen
@@ -842,6 +854,13 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeLegend:
+		switch s {
+		case "esc", "t", "q":
+			m.mode = modeBoard
+		}
+		return m, nil
+
 	case modeMessage:
 		// A refused move offers its own way out. f arms the override and y takes
 		// it; every other exit drops the offer with the message, so a stale f can
@@ -1085,6 +1104,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "z":
 		// Next to v: both are about what the screen shows, not about a ticket.
 		m.toggleEmptyLanes()
+	case "t":
+		// The legend for the colour a tagged card's box is drawn in.
+		m.mode = modeLegend
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -1140,6 +1162,37 @@ func (m *Model) moveLane(d int) {
 // sit on it and h/l step onto it like any other.
 func (m *Model) toggleEmptyLanes() {
 	m.thinEmpty = !m.thinEmpty
+}
+
+// cardColor is the colour a ticket's card is boxed in: the registry's colour
+// for its first tag. A ticket with no tags, or whose first tag has no line in
+// the registry, has no colour — the card renders unboxed either way, so a tag
+// nobody has assigned a colour to costs nothing on the board, only a
+// colourless line in the legend.
+func (m *Model) cardColor(t *ticket.Ticket) (int, bool) {
+	if len(t.Tags) == 0 || m.tags == nil {
+		return 0, false
+	}
+	return m.tags.Colour(t.Tags[0])
+}
+
+// activeTags is every tag carried by a ticket on the board, deduplicated and
+// sorted. It reads m.tickets — every ticket the board holds, not only the
+// ones a lane happens to have on screen — so the legend does not change
+// underneath a scroll or a narrow terminal that hides a lane.
+func (m *Model) activeTags() []string {
+	seen := map[string]bool{}
+	var names []string
+	for _, t := range m.tickets {
+		for _, name := range t.Tags {
+			if !seen[name] {
+				seen[name] = true
+				names = append(names, name)
+			}
+		}
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (m *Model) moveCard(d int) {

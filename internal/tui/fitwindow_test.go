@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -29,6 +30,40 @@ func TestEveryScreenFitsTheTerminal(t *testing.T) {
 			setup func(m *Model, open *ticket.Ticket)
 		}{
 			{"board", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeBoard, nil }},
+			{"board-tags", func(m *Model, open *ticket.Ticket) {
+				m.mode, m.detail = modeBoard, nil
+				reg, err := tag.Load(t.TempDir())
+				if err != nil {
+					t.Fatal(err)
+				}
+				reg.Set("ui", 83)
+				m.tags = reg
+				// A mix of a coloured tag (boxed), a tag with no registry
+				// colour (unboxed, same as untagged) and plain tickets — the
+				// column has to budget for taller and shorter cards side by
+				// side, not a single constant row count.
+				for i, tk := range m.tickets {
+					switch i % 3 {
+					case 0:
+						tk.Tags = []string{"ui"}
+					case 1:
+						tk.Tags = []string{"backend"}
+					}
+				}
+				m.rebuild()
+			}},
+			{"legend", func(m *Model, open *ticket.Ticket) {
+				m.mode, m.detail = modeLegend, nil
+				reg, err := tag.Load(t.TempDir())
+				if err != nil {
+					t.Fatal(err)
+				}
+				reg.Set("ui", 83)
+				m.tags = reg
+				for _, tk := range m.tickets {
+					tk.Tags = []string{"ui"}
+				}
+			}},
 			{"help", func(m *Model, open *ticket.Ticket) { m.mode = modeHelp }},
 			{"detail", func(m *Model, open *ticket.Ticket) { m.mode, m.detail = modeDetail, open }},
 			{"delete", func(m *Model, open *ticket.Ticket) { m.mode, m.detail, m.input = modeDelete, open, "" }},

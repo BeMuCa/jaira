@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -101,6 +102,8 @@ func (m *Model) render() string {
 		return m.renderLaneFocus()
 	case modeMessage:
 		return m.renderMessage()
+	case modeLegend:
+		return m.renderLegend()
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:
@@ -384,29 +387,84 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	}
 	body.WriteString(styBar.Render(strings.Repeat("─", max(1, w-4))) + "\n")
 
-	// Keep the cursor visible within a lane taller than the pane.
-	visible := max(1, (h-4)/3)
+	// Keep the cursor visible within a lane taller than the pane. Cards are no
+	// longer a fixed height: a tagged card whose first tag has a registry
+	// colour grows a border, costing two extra rows. Dividing the budget by a
+	// constant (the old "/3") would overcount how many fit whenever a taller
+	// card is in the window, and clampBlock below would silently cut its
+	// bottom border off rather than the column showing "+N more" honestly —
+	// so the window is grown by summing each card's own height instead.
+	budget := max(1, h-4)
 	first := m.scroll[col.lane.ID]
+	if first > len(col.tickets) {
+		first = 0
+	}
 	if focused {
 		if m.cardIdx < first {
 			first = m.cardIdx
 		}
-		if m.cardIdx >= first+visible {
-			first = m.cardIdx - visible + 1
+		// Bounded by the ticket count: cardIdx is kept in range elsewhere, but
+		// the bound here means a stale cardIdx can never spin this forever.
+		for i := 0; i < len(col.tickets) && m.cardIdx >= first+m.cardsInBudget(col.tickets, first, budget); i++ {
+			first++
 		}
 		m.scroll[col.lane.ID] = first
 	}
-	if first > len(col.tickets) {
-		first = 0
-	}
 
-	for i := first; i < len(col.tickets) && i < first+visible; i++ {
-		body.WriteString(m.renderCard(col.tickets[i], w-4, focused && i == m.cardIdx))
+	shown := m.cardsInBudget(col.tickets, first, budget)
+	for i := first; i < first+shown; i++ {
+		body.WriteString(m.renderCardBlock(col.tickets[i], w-4, focused && i == m.cardIdx))
 	}
-	if rest := len(col.tickets) - (first + visible); rest > 0 {
+	if rest := len(col.tickets) - (first + shown); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
 	}
 	return style.Render(clampBlock(body.String(), w, h))
+}
+
+// cardHeight is the rows renderCardBlock will draw a ticket's card in: three
+// for a plain card, five for one boxed in its first tag's colour (the three
+// content rows plus a top and bottom border row).
+func (m *Model) cardHeight(t *ticket.Ticket) int {
+	if _, ok := m.cardColor(t); ok {
+		return 5
+	}
+	return 3
+}
+
+// cardsInBudget is how many tickets starting at first fit within budget rows,
+// each counted at its own renderCardBlock height. At least one card always
+// counts, even one that alone would not fit, so the cursor is never on a
+// card the "+N more" line hides instead of showing.
+func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
+	if first >= len(tickets) {
+		return 0
+	}
+	used, n := 0, 0
+	for i := first; i < len(tickets); i++ {
+		ch := m.cardHeight(tickets[i])
+		if n > 0 && used+ch > budget {
+			break
+		}
+		used += ch
+		n++
+	}
+	return n
+}
+
+// renderCardBlock draws one card, boxed in its first tag's colour when the
+// registry has one and left exactly as renderCard draws it otherwise —
+// untagged cards, and tagged cards whose first tag carries no colour, are
+// unchanged.
+func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
+	color, ok := m.cardColor(t)
+	if !ok {
+		return m.renderCard(t, w, selected)
+	}
+	inner := max(1, w-2)
+	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
+	box := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color(strconv.Itoa(color))).Width(inner)
+	return box.Render(content) + "\n"
 }
 
 func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
@@ -725,7 +783,7 @@ func (m *Model) statusBar() string {
 	if m.thinEmpty {
 		zHint = "z widen empty"
 	}
-	keys := []string{"enter open", "v compact", zHint, "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "v compact", zHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1210,6 +1268,31 @@ func (m *Model) renderMessage() string {
 		b.WriteString(styMeta.Render("y override · n cancel"))
 	default:
 		b.WriteString(styMeta.Render("f override · esc dismiss"))
+	}
+	return b.String()
+}
+
+// renderLegend maps every tag in use on the board to the swatch its cards are
+// boxed in. A tag with no registry colour still gets a line — it is real, it
+// just costs no box on the card and no swatch here, matching renderCardBlock.
+func (m *Model) renderLegend() string {
+	var b strings.Builder
+	b.WriteString(styLaneTitle.Render("Tags") + "\n")
+	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 40))) + "\n\n")
+	tags := m.activeTags()
+	if len(tags) == 0 {
+		b.WriteString(styMeta.Render("No tags on this board.") + "\n")
+	}
+	for _, name := range tags {
+		if c, ok := m.tags.Colour(name); ok {
+			swatch := lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(c))).Render("■")
+			b.WriteString(swatch + " " + name + "\n")
+		} else {
+			b.WriteString(styMeta.Render("· "+name+" (no colour)") + "\n")
+		}
+	}
+	for _, l := range wrapHints([]string{"esc close", "t close"}, max(1, m.width)) {
+		b.WriteString("\n" + styMeta.Render(l))
 	}
 	return b.String()
 }
