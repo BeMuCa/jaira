@@ -90,6 +90,20 @@ func (m *Model) renderSignOff() string {
 		owedRow(&b, f.label, owed[f.field], min(w, paneWidth))
 	}
 
+	// What is being accepted: the same Commits block the detail pane shows.
+	// This is the screen where a person judges shipped work, and an account
+	// with no pointer to the change sends them back out to find it. Recorded
+	// commits only, exactly like the detail pane — deriving from git here
+	// would shell out on every render, and the gate derives at the move.
+	if len(t.Commits) > 0 {
+		b.WriteString("\n" + styLaneTitle.Render("Commits") + "\n")
+		if stat, err := (&gitStat{root: m.store.Root}).of(t.Commits); err == nil && stat != "" {
+			b.WriteString(styMeta.Render(wrapLines(stat, max(10, w))) + "\n")
+		} else {
+			fieldRow(&b, "commits", strings.Join(t.Commits, " "), min(w, paneWidth))
+		}
+	}
+
 	if done, total := checklistProgress(t.DoDItems); total > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Definition of Done") +
 			" " + styLaneCount.Render(fmt.Sprintf("%d/%d", done, total)) + "\n")

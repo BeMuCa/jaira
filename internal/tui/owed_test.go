@@ -361,3 +361,24 @@ func TestFilledDeclaredFieldsNameTheirLane(t *testing.T) {
 		t.Errorf("sign-off misses the source label:\n%s", sign)
 	}
 }
+
+// The sign-off screen shows the commits being accepted, like the detail pane;
+// without any recorded commit there is no empty block pretending otherwise.
+func TestSignOffShowsTheCommits(t *testing.T) {
+	m := newTestModel(t, 100, 50)
+	tk := longTicket()
+	tk.Status = "signoff"
+	// The store root is no git repository, so the stat fails and the SHA
+	// fallback row renders — the same fallback the detail pane has.
+	tk.Commits = []string{"0123abc", "4567def"}
+	m.detail = tk
+	out := stripANSI(m.renderSignOff())
+	if !strings.Contains(out, "Commits") || !strings.Contains(out, "0123abc 4567def") {
+		t.Errorf("sign-off misses the commits block:\n%s", out)
+	}
+
+	tk.Commits = nil
+	if out := stripANSI(m.renderSignOff()); strings.Contains(out, "Commits") {
+		t.Errorf("a ticket with no commits grew a Commits block:\n%s", out)
+	}
+}
