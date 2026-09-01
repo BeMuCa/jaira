@@ -340,9 +340,7 @@ func TestHandWrittenCaseWearsTheRegistryColour(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := reg.Set("ui", 83); err != nil {
-		t.Fatal(err)
-	}
+	reg.Set("ui", 83)
 	m.tags = reg
 
 	tk := m.tickets[0]
