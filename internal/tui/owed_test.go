@@ -306,8 +306,8 @@ func TestDetailShowsTheValueOfAFieldOnlyTheBoardDeclares(t *testing.T) {
 	}
 
 	out := stripANSI(m.detailBody(tk, 100))
-	if !strings.Contains(out, "secrets-status clean, 0 findings") {
-		t.Errorf("a filled field only the board declares is invisible:\n%s", out)
+	if !strings.Contains(out, "secrets-status (secrets-scan) clean, 0 findings") {
+		t.Errorf("a filled field only the board declares is invisible or unlabelled:\n%s", out)
 	}
 	if strings.Contains(out, "secrets-status — owed") {
 		t.Errorf("a filled field still shows a debt row:\n%s", out)
