@@ -415,3 +415,15 @@ func TestSignOffDerivesUnrecordedCommits(t *testing.T) {
 		t.Errorf("a ticket with no commits anywhere grew a Commits block:\n%s", out)
 	}
 }
+
+// Two declarers render joined, in board order: the file cannot say which one
+// wrote the value, so the label names both.
+func TestTwoDeclarersRenderJoined(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	m.lanes.Lanes = append(m.lanes.Lanes, &lane.Lane{ID: "critique", OutputProduces: []string{ticket.FieldReviewSummary}})
+	tk := unworkedInReview()
+	tk.ReviewSummary = "none"
+	if out := stripANSI(m.detailBody(tk, 120)); !strings.Contains(out, "(review/critique) none") {
+		t.Errorf("two declarers not joined in board order:\n%s", out)
+	}
+}
