@@ -646,7 +646,6 @@ func DeclaredBy(set *lane.Set) map[string][]string {
 // the same answer either way; a renderer showing rows is expected to skip
 // them and let the empty checklist say it, rather than print a second, worse
 // version of the same fact.
-
 func OwedBy(set *lane.Set, t *ticket.Ticket) map[string]string {
 	if set == nil || t == nil {
 		return nil
