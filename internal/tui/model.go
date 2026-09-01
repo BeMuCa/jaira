@@ -76,6 +76,12 @@ type Model struct {
 	// body, notes — so it is the one view that must be clipped to the window and
 	// scrolled rather than rendered whole.
 	detailScroll int
+	// derivedFor/derivedShas memoise one git derivation per open ticket: the
+	// sign-off screen falls back to deriving commits when none are recorded
+	// (the normal case — only done demands recording), and doing that per
+	// render would shell out on every keypress.
+	derivedFor  string
+	derivedShas []string
 
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.

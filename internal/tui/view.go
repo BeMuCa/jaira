@@ -1174,7 +1174,10 @@ func wrapHints(items []string, width int) []string {
 type gitStat struct{ root string }
 
 func (g *gitStat) of(shas []string) (string, error) {
-	args := append([]string{"-C", g.root, "show", "--stat=120", "--format=%h %s"}, shas[0])
+	// Every sha, not the first: the heading over this block says "Commits",
+	// and a five-commit ticket whose stat shows one misrepresents the change
+	// more politely than the plain sha list ever would.
+	args := append([]string{"-C", g.root, "show", "--stat=120", "--format=%h %s"}, shas...)
 	out, err := exec.Command("git", args...).Output()
 	if err != nil {
 		return "", err

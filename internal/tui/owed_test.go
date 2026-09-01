@@ -7,6 +7,7 @@ package tui
 // lane that owes it.
 
 import (
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -380,5 +381,37 @@ func TestSignOffShowsTheCommits(t *testing.T) {
 	tk.Commits = nil
 	if out := stripANSI(m.renderSignOff()); strings.Contains(out, "Commits") {
 		t.Errorf("a ticket with no commits grew a Commits block:\n%s", out)
+	}
+}
+
+// A sign-off ticket normally records no commits — only done demands them — so
+// the screen derives the list from git and says it did.
+func TestSignOffDerivesUnrecordedCommits(t *testing.T) {
+	m := newTestModel(t, 100, 50)
+	run := func(args ...string) {
+		cmd := exec.Command("git", append([]string{"-C", m.store.Root}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	run("init", "-q")
+	run("config", "user.email", "t@example.com")
+	run("config", "user.name", "t")
+	tk := longTicket()
+	tk.Status = "signoff"
+	run("commit", "--allow-empty", "-q", "-m", "fix("+ticket.Handle(tk.ID)+"): the change")
+	m.detail = tk
+
+	out := stripANSI(m.renderSignOff())
+	if !strings.Contains(out, "derived from git") {
+		t.Errorf("an unrecorded but derivable commit list is not shown:\n%s", out)
+	}
+
+	// And a ticket git knows nothing about still gets no block.
+	other := longTicket()
+	other.ID = ticket.NewID(time.Now())
+	m.detail = other
+	if out := stripANSI(m.renderSignOff()); strings.Contains(out, "Commits") {
+		t.Errorf("a ticket with no commits anywhere grew a Commits block:\n%s", out)
 	}
 }

@@ -43,6 +43,9 @@ func TestEveryScreenFitsTheTerminal(t *testing.T) {
 			{"sign-off", func(m *Model, open *ticket.Ticket) {
 				tk := longTicket()
 				tk.Status = "signoff"
+				// The store root is no git repository, so these exercise the
+				// sha fallback row of the Commits block at every width.
+				tk.Commits = []string{"0123abc", "4567def"}
 				tk.DoDItems[0].Proof = strings.Repeat("a proof line that keeps going ", 6)
 				m.mode, m.detail = modeDetail, tk
 			}},

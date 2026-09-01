@@ -92,15 +92,30 @@ func (m *Model) renderSignOff() string {
 
 	// What is being accepted: the same Commits block the detail pane shows.
 	// This is the screen where a person judges shipped work, and an account
-	// with no pointer to the change sends them back out to find it. Recorded
-	// commits only, exactly like the detail pane — deriving from git here
-	// would shell out on every render, and the gate derives at the move.
-	if len(t.Commits) > 0 {
-		b.WriteString("\n" + styLaneTitle.Render("Commits") + "\n")
-		if stat, err := (&gitStat{root: m.store.Root}).of(t.Commits); err == nil && stat != "" {
-			b.WriteString(styMeta.Render(wrapLines(stat, max(10, w))) + "\n")
+	// with no pointer to the change sends them back out to find it. A ticket
+	// here normally has NO commits recorded — only the done lane demands
+	// them, so the field fills at acceptance, after this screen — which is
+	// why an empty field falls back to deriving the list from git, once per
+	// ticket (memoised on the model; per render it would exec on every
+	// keypress). The heading says so: a derived list is git's account, not
+	// the ticket's.
+	shas, derived := t.Commits, false
+	if len(shas) == 0 {
+		if m.derivedFor != t.ID {
+			m.derivedFor, m.derivedShas = t.ID, m.gateEnv().DeriveCommits(t)
+		}
+		shas, derived = m.derivedShas, len(m.derivedShas) > 0
+	}
+	if len(shas) > 0 {
+		b.WriteString("\n" + styLaneTitle.Render("Commits"))
+		if derived {
+			b.WriteString(styMeta.Render("  derived from git — recorded at acceptance"))
+		}
+		b.WriteString("\n")
+		if stat, err := (&gitStat{root: m.store.Root}).of(shas); err == nil && stat != "" {
+			b.WriteString(styMeta.Render(wrapLines(stat, max(10, min(w, paneWidth)))) + "\n")
 		} else {
-			fieldRow(&b, "commits", strings.Join(t.Commits, " "), min(w, paneWidth))
+			fieldRow(&b, "commits", strings.Join(shas, " "), min(w, paneWidth))
 		}
 	}
 
