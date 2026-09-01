@@ -624,6 +624,29 @@ func skipped(l *lane.Lane, t *ticket.Ticket) bool {
 // the same answer either way; a renderer showing rows is expected to skip
 // them and let the empty checklist say it, rather than print a second, worse
 // version of the same fact.
+// DeclaredBy answers which installed lane declares each producible field —
+// the schema owner: board order, first declarer wins, the same attribution
+// OwedBy gives a debt. It is what a renderer labels a FILLED value with. The
+// declaration is the only provenance the frontmatter carries — which lane
+// actually wrote the latest value is the History's job once the schema grows
+// one, and where two lanes declare the same field (critique and review both
+// produce review-summary on some boards) this names the first, not the last
+// writer.
+func DeclaredBy(set *lane.Set) map[string]string {
+	if set == nil {
+		return nil
+	}
+	src := map[string]string{}
+	for _, l := range set.Lanes {
+		for _, f := range l.OutputProduces {
+			if _, exists := src[f]; !exists {
+				src[f] = l.ID
+			}
+		}
+	}
+	return src
+}
+
 func OwedBy(set *lane.Set, t *ticket.Ticket) map[string]string {
 	if set == nil || t == nil {
 		return nil

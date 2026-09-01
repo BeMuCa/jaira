@@ -335,3 +335,29 @@ func TestSignOffAppendsFieldsOnlyTheBoardDeclares(t *testing.T) {
 		t.Errorf("the seven questions no longer come first:\n%s", out)
 	}
 }
+
+// A filled declared field says where its value comes from, the way an empty
+// one says who owes it. goal stays bare: the creator writes it at capture,
+// and a label there would claim a provenance the file does not carry.
+func TestFilledDeclaredFieldsNameTheirLane(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	tk := unworkedInReview()
+	tk.Outcome.What = "streamed the writer"
+	tk.ReviewSummary = "none"
+	out := stripANSI(m.detailBody(tk, 120))
+	for _, want := range []string{"(in-progress) streamed the writer", "(review) none"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "(brainstorm)") {
+		t.Errorf("goal must stay bare, got a brainstorm label:\n%s", out)
+	}
+
+	m.detail = tk
+	tk.Status = "signoff"
+	sign := stripANSI(m.renderSignOff())
+	if !strings.Contains(sign, "(in-progress) streamed the writer") {
+		t.Errorf("sign-off misses the source label:\n%s", sign)
+	}
+}

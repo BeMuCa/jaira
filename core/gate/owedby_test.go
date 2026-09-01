@@ -92,3 +92,22 @@ func TestOwedByIsNilSafe(t *testing.T) {
 		t.Errorf("a nil ticket owed %v", owed)
 	}
 }
+
+// DeclaredBy is the label a renderer puts on a filled value, so it must use
+// the same first-declarer attribution OwedBy gives a debt.
+func TestDeclaredByNamesTheFirstDeclarer(t *testing.T) {
+	set := &lane.Set{Lanes: []*lane.Lane{
+		{ID: "critique", OutputProduces: []string{ticket.FieldReviewSummary}},
+		{ID: "review", OutputProduces: []string{ticket.FieldReviewSummary, ticket.FieldReviewCheck}},
+	}}
+	src := DeclaredBy(set)
+	if src[ticket.FieldReviewSummary] != "critique" {
+		t.Errorf("review-summary declared by %q, want critique", src[ticket.FieldReviewSummary])
+	}
+	if src[ticket.FieldReviewCheck] != "review" {
+		t.Errorf("review-check declared by %q, want review", src[ticket.FieldReviewCheck])
+	}
+	if DeclaredBy(nil) != nil {
+		t.Error("a nil set declared something")
+	}
+}

@@ -797,6 +797,21 @@ func fieldRow(b *strings.Builder, label, text string, width int) {
 	fmt.Fprintf(b, "%s %s\n", styMeta.Render(pad), wrap(text, max(10, width-indent-1), indent))
 }
 
+// sourced prefixes a filled declared value with the lane that declares the
+// field — "(critique) none" — so a filled field says where its value comes
+// from the way an empty one says who owes it. goal is exempt: it is a base
+// field the creator writes at capture (a brainstorm lane only sometimes),
+// and a label there would claim a provenance the file does not carry.
+func sourced(srcs map[string]string, field, value string) string {
+	if field == ticket.FieldGoal {
+		return value
+	}
+	if l, ok := srcs[field]; ok {
+		return "(" + l + ") " + value
+	}
+	return value
+}
+
 // owedRow stands in for a declared field nobody has filled in yet: the label
 // column keeps its place in the reading order and the value names the lane
 // that owes it. One function so the wording is identical on every screen that
@@ -928,6 +943,7 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	// like one that had been through every lane — nothing on the screen said
 	// what was owed, which is the first thing a reviewer needs to know.
 	owed := gate.OwedBy(m.lanes, t)
+	srcs := gate.DeclaredBy(m.lanes)
 	// A group appears when any of its fields carries something to show: a
 	// value, or a debt.
 	shown := func(fs []declaredField) bool {
@@ -943,7 +959,7 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	}
 	declared := func(f declaredField) {
 		if strings.TrimSpace(f.value) != "" {
-			row(f.label, f.value)
+			row(f.label, sourced(srcs, f.field, f.value))
 			return
 		}
 		if l, ok := owed[f.field]; ok {
@@ -1014,7 +1030,7 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		b.WriteString("\n" + styLaneTitle.Render("Lane fields") + "\n")
 		for _, f := range fs {
 			if strings.TrimSpace(f.value) != "" {
-				fieldRow(&b, f.label, f.value, width)
+				fieldRow(&b, f.label, sourced(srcs, f.field, f.value), width)
 				continue
 			}
 			owedRow(&b, f.label, owed[f.field], width)

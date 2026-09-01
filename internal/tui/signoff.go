@@ -48,13 +48,14 @@ func (m *Model) renderSignOff() string {
 	// that never ran left no trace at all. A field an installed lane declares
 	// it produces keeps its place and names the lane that owes it.
 	owed := gate.OwedBy(m.lanes, t)
+	srcs := gate.DeclaredBy(m.lanes)
 	// 78 is the pane width that leaves a debt row the 64 columns of text
 	// section() gives a value, beside the 13-column label — so the rows line
 	// up with the sections around them.
 	const paneWidth = 78
 	declared := func(label, field, value string) {
 		if strings.TrimSpace(value) != "" {
-			section(label, value)
+			section(label, sourced(srcs, field, value))
 			return
 		}
 		if l, ok := owed[field]; ok {
@@ -83,7 +84,7 @@ func (m *Model) renderSignOff() string {
 	for _, f := range m.laneFields(t, owed) {
 		b.WriteString("\n")
 		if strings.TrimSpace(f.value) != "" {
-			fieldRow(&b, f.label, f.value, min(w, paneWidth))
+			fieldRow(&b, f.label, sourced(srcs, f.field, f.value), min(w, paneWidth))
 			continue
 		}
 		owedRow(&b, f.label, owed[f.field], min(w, paneWidth))
