@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/lane"
@@ -101,11 +102,13 @@ func TestDeclaredByNamesTheFirstDeclarer(t *testing.T) {
 		{ID: "review", OutputProduces: []string{ticket.FieldReviewSummary, ticket.FieldReviewCheck}},
 	}}
 	src := DeclaredBy(set)
-	if src[ticket.FieldReviewSummary] != "critique" {
-		t.Errorf("review-summary declared by %q, want critique", src[ticket.FieldReviewSummary])
+	// Both declarers, in board order: picking one would assert a provenance
+	// the frontmatter cannot back.
+	if got := strings.Join(src[ticket.FieldReviewSummary], "/"); got != "critique/review" {
+		t.Errorf("review-summary declared by %q, want critique/review", got)
 	}
-	if src[ticket.FieldReviewCheck] != "review" {
-		t.Errorf("review-check declared by %q, want review", src[ticket.FieldReviewCheck])
+	if got := strings.Join(src[ticket.FieldReviewCheck], "/"); got != "review" {
+		t.Errorf("review-check declared by %q, want review", got)
 	}
 	if DeclaredBy(nil) != nil {
 		t.Error("a nil set declared something")

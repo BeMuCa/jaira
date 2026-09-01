@@ -108,7 +108,7 @@ func TestDetailShowsTheValueRatherThanTheDebt(t *testing.T) {
 	tk.ReviewSummary = "the limiter is per client IP"
 	out := stripANSI(m.detailBody(tk, 120))
 
-	for _, want := range []string{"added a token bucket per IP", "the limiter is per client IP"} {
+	for _, want := range []string{"(in-progress) added a token bucket per IP", "(review) the limiter is per client IP"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing value %q:\n%s", want, out)
 		}

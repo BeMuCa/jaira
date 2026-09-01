@@ -802,12 +802,12 @@ func fieldRow(b *strings.Builder, label, text string, width int) {
 // from the way an empty one says who owes it. goal is exempt: it is a base
 // field the creator writes at capture (a brainstorm lane only sometimes),
 // and a label there would claim a provenance the file does not carry.
-func sourced(srcs map[string]string, field, value string) string {
+func sourced(srcs map[string][]string, field, value string) string {
 	if field == ticket.FieldGoal {
 		return value
 	}
-	if l, ok := srcs[field]; ok {
-		return "(" + l + ") " + value
+	if ls := srcs[field]; len(ls) > 0 {
+		return "(" + strings.Join(ls, "/") + ") " + value
 	}
 	return value
 }
