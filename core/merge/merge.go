@@ -32,6 +32,10 @@ import (
 var listFields = map[string]bool{
 	ticket.FieldBlockedBy: true,
 	ticket.FieldCommits:   true,
+	// Two sessions tagging the same ticket from two subjects are both right,
+	// and picking a side would drop one of them silently — the failure mode a
+	// union exists to rule out.
+	ticket.FieldTags: true,
 }
 
 // proseFields carry human writing. Two different rewrites of the same sentence

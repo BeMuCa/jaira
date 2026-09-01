@@ -184,6 +184,8 @@ Exit codes:
 		newListCmd(),
 		newShowCmd(),
 		newSetCmd(),
+		newTagsCmd(),
+		newTagCmd(),
 		newDoDCmd(),
 		newValidateCmd(),
 		newArchiveCmd(),

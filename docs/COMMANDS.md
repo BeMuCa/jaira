@@ -54,10 +54,11 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 |---|---|
 | `jaira` | the home screen: every board, and what each needs |
 | `jaira board` | open the board here directly |
-| `jaira list` | list tickets; `--lane`, `--assignee`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
+| `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
 | `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |
 | `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
+| `jaira tags` | the tags this board already uses: name, colour swatch and how many open tickets carry each. **Read this before tagging** and reuse the name already there for that subject — never invent a synonym, since "ui", "frontend" and "gui" on one board are three names for one thing and filter to nothing. Writes nothing: a listing that edited the board would race every other session reading it, so a tag with no colour is shown without one |
 | `jaira lanes` | the installed lanes |
 | `jaira projects` | boards you have opened |
 | `jaira whoami` | the identity jaira acts as, and the other names that mean you |
@@ -78,6 +79,35 @@ Names not on that list are somebody else, so their tickets are refused. That is
 the point of the rail — but a rail that refuses your own tickets only teaches you
 to pass `--force` to everything, which protects nothing.
 
+### Tag colours
+
+`tags` is a plain list field on the ticket. The colours are not: they live once
+per board in `.jaira/tags`, one line per tag, so a colour is a fact about the
+tag rather than about every ticket wearing it and recolouring one is a one-line
+diff instead of a rewrite of every ticket.
+
+```
+# jaira tag colours — one "name: <ansi256>" line per tag.
+# The number is an ANSI-256 colour, 0-255. Hand-edit it freely: jaira only ever
+# adds a line for a name it has not seen yet, rewrites the one line whose colour
+# you change, and never reorders or reformats the rest of this file.
+# A tag with no line here is real; it just renders without a colour.
+backend: 73
+ui: 33
+```
+
+New entries are inserted in alphabetical position rather than appended, so two
+teammates adding two tags at once do not both write the last line — the one
+place their commits are guaranteed to conflict. Comments, blank lines and lines
+jaira cannot parse are kept verbatim. A new tag is given a random colour still
+free in a sixteen-colour palette; past sixteen tags colours repeat, chosen from
+the name itself so the repeat is at least stable across machines.
+
+It travels with the board. Only `/.jaira/lanes/` is machine-scoped, so on a
+shared board `.jaira/tags` is committed like the tickets are and one tag looks
+the same to everybody — which is the reason it is one file per board and not a
+field per ticket.
+
 ## Writing
 
 | Command | What it does |
@@ -85,8 +115,9 @@ to pass `--force` to everything, which protects nothing.
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md` |
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it. Regenerates the agent block, including the section describing this board's own lanes, so adopting a lane is when the note catches up with the board |
 | `jaira self upgrade` | replace the running jaira binary with the latest release, verifying its checksum first; `--check` reports without installing, `--version vX.Y.Z` pins or downgrades; refuses a Homebrew or `go install` build, naming the right way to upgrade that install instead. Whether a newer release exists is checked at most once a day in the background and shown as a status line in the launcher's and the board's footer — never printed by a CLI command, which stay quiet on purpose. `JAIRA_NO_UPDATE_CHECK=1` turns the check off. |
-| `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
-| `jaira set <id> k=v…` | set frontmatter fields |
+| `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--tag` (repeatable; run `jaira tags` first), `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
+| `jaira set <id> k=v…` | set frontmatter fields; list fields take a comma-separated value, `tags=ui,backend` included |
+| `jaira tag <id> <name>…` | add topic tags to a ticket. Run `jaira tags` first. A name the board knows is reused and said to be; a new one gets a free colour from the palette. Names are stored lowercase-kebab — "My UI" is filed as `my-ui`, and you are told so; anything outside `[a-z0-9-]` is refused rather than trimmed down, because a quietly shortened name is a second name for one subject. `--color <0-255>` picks the colour instead, and recolours a tag that already has one; it takes exactly one name |
 | `jaira dod <id> <n> --doing\|--done\|--todo\|--superseded` | mark a checklist item; `[-]` superseded is retired, not achieved — it stops blocking completion and never reports as done |
 | `jaira dod <id> <n> --text "…"` | reword one item, leaving its state and its proof alone |
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
@@ -128,7 +159,8 @@ Board:
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            /       filter (key:value narrows to one field)
+j k ↓ ↑   card            /       filter (key:value narrows to one field:
+                                  id title goal context assignee lane tag body)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit

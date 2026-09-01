@@ -167,6 +167,39 @@ jaira create "Export survives a slow network" \
 A board may define its own ticket shape in `.jaira/TEMPLATE.md`; `create` uses it
 when it exists, so follow the headings you find rather than imposing these.
 
+## Tags: read the vocabulary before you add to it
+
+A tag is the subject a ticket belongs to — `ui`, `backend`, `docs` — so a backlog
+can be read one subject at a time instead of one lane at a time.
+
+**Before you tag anything, run `jaira tags`.**
+
+```bash
+jaira tags --json    # name, colour, and how many open tickets carry it
+```
+
+Then reuse the name that is already there for that subject. Never invent a
+synonym: `ui`, `frontend` and `gui` on one board are three names for one thing,
+and a filter on any of them finds a third of the tickets. This is the entire
+reason the listing exists — a tag vocabulary nobody reads grows one name per
+session and then filters nothing.
+
+```bash
+jaira tag <handle> ui backend         # add tags to an existing ticket
+jaira create "..." --tag ui           # or set them at capture; repeat --tag
+jaira list --tag ui --json            # every ticket carrying it
+jaira set <handle> tags=ui,backend    # replace the whole list
+```
+
+Names are stored lowercase-kebab. `jaira tag <handle> "My UI"` files it as
+`my-ui` and says so; anything outside `[a-z0-9-]` is refused rather than trimmed
+down, because a silently shortened name is a second name for one subject.
+
+A name the board has never seen is reported as new and given a colour in
+`.jaira/tags` — one `name: <ansi256>` line per tag, shared by the whole board and
+hand-editable. If the output says a tag is new and you expected it to exist, you
+have just invented a synonym: check `jaira tags` and use the existing name.
+
 ## Before you stop, and when you start
 
 A session that ends abruptly — a limit, a crash — leaves nothing behind except

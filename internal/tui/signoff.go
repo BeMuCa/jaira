@@ -63,6 +63,10 @@ func (m *Model) renderSignOff() string {
 			owedRow(&b, label, l, min(w, paneWidth))
 		}
 	}
+	// Before the seven questions, not among them: a tag says which subject the
+	// work belongs to, which is context for every answer below rather than one
+	// of them.
+	section("tags", strings.Join(t.Tags, " "))
 	// A ticket with no goal but a context has a problem statement, so this row
 	// shows it and the goal's debt goes unmentioned here — deliberately: the
 	// question this screen asks is what was wrong, and it has an answer.

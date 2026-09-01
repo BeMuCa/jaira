@@ -49,6 +49,14 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  question answered first, it is not finished\n" +
 	"- `jaira list --actionable --json` — everything that could be started right now\n" +
 	"- `jaira next --json` — the single next actionable ticket\n" +
+	"- `jaira tags` — the tags this board already uses, with how many open tickets\n" +
+	"  carry each. **Read it before you tag anything** and reuse the name that is\n" +
+	"  already there for that subject; never invent a synonym — \"ui\", \"frontend\" and\n" +
+	"  \"gui\" on one board are three names for one thing and filter to nothing.\n" +
+	"  `jaira tag <id> <name>...` adds tags, and `jaira create --tag <name>` sets them\n" +
+	"  at capture. A name jaira has not seen is new and gets a colour in the\n" +
+	"  hand-editable `.jaira/tags`; the board filter and `jaira list --tag <name>`\n" +
+	"  read them back\n" +
 	"\n" +
 	"Working a ticket:\n" +
 	"\n" +

@@ -84,6 +84,17 @@ const (
 	// from the diff. Written for someone who knows none of what the reviewer
 	// knows — see the writing register the create and note helps carry.
 	FieldReviewCheck = "review-check"
+
+	// FieldTags is a plain list of topic labels — "ui", "backend" — so a
+	// backlog can be read one subject at a time instead of one lane at a time.
+	// A list rather than a comma-joined scalar because that is what every other
+	// multi-valued field here is, which is what makes 'jaira set tags=a,b' and
+	// the merge driver's union-instead-of-pick behaviour come for free.
+	//
+	// Colours are deliberately not here: they live once per board in .jaira/tags
+	// (core/tag), because a colour is a fact about the tag rather than about the
+	// ticket wearing it.
+	FieldTags = "tags"
 )
 
 // canonicalOrder is the order in which fields are written into a new ticket.
@@ -92,7 +103,7 @@ var canonicalOrder = []string{
 	FieldID, FieldTitle, FieldStatus, FieldReady,
 	FieldCreator, FieldAssignee, FieldExecutedBy,
 	FieldGoal, FieldContext, FieldDoD,
-	FieldBlockedBy, FieldBlockedReason, FieldFollows, FieldCommits, FieldModelTier,
+	FieldTags, FieldBlockedBy, FieldBlockedReason, FieldFollows, FieldCommits, FieldModelTier,
 	FieldOutcomeWhat, FieldOutcomeWhy, FieldOutcomeResolves,
 	FieldQuestion, FieldClaimedBy, FieldClaimedAt,
 	FieldCreatedAt, FieldUpdatedAt,
@@ -147,6 +158,12 @@ type Ticket struct {
 	// written by a version that did not record it, which reads as "unknown"
 	// rather than as anybody.
 	UpdatedBy string
+
+	// Tags are the ticket's topic labels, normalized to lowercase kebab by the
+	// write path. Read here as written: a hand-edited file may carry anything,
+	// and a reader that silently rewrote it would hide the fact rather than fix
+	// it.
+	Tags []string
 
 	// Follows is the ticket whose review produced this one.
 	Follows string
@@ -497,6 +514,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Question = str(FieldQuestion)
 	t.ClaimedBy = str(FieldClaimedBy)
 	t.BlockedBy = list(FieldBlockedBy)
+	t.Tags = list(FieldTags)
 	t.Commits = list(FieldCommits)
 	t.Outcome = Outcome{
 		What:     str(FieldOutcomeWhat),

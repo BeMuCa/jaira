@@ -537,6 +537,10 @@ func matches(t *ticket.Ticket, q string) bool {
 			field = t.Context
 		case "assignee":
 			field = t.Assignee
+		case "tag", "tags":
+			// Joined rather than matched per tag, so "tag:ui" also finds
+			// "ui-polish" — the same substring rule every other key here uses.
+			field = strings.Join(t.Tags, " ")
 		case "lane", "status":
 			field = t.Status
 		case "body":
@@ -553,6 +557,7 @@ func matches(t *ticket.Ticket, q string) bool {
 	// description and both checklists — and searching only the frontmatter meant
 	// the thing you remembered reading was the thing you could not find.
 	fields := []string{t.ID, t.Title, t.Goal, t.Context, t.DoD, t.Assignee, t.Status, t.ModelTier, t.Body}
+	fields = append(fields, t.Tags...)
 	for _, it := range append(append([]ticket.DoDItem{}, t.DoDItems...), t.PlanItems...) {
 		fields = append(fields, it.Text)
 	}

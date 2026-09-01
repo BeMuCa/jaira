@@ -841,7 +841,7 @@ var fieldsWithTheirOwnRow = map[string]bool{
 	ticket.FieldCreatedAt: true, ticket.FieldUpdatedAt: true, ticket.FieldUpdatedBy: true,
 	ticket.FieldClaimedBy: true, ticket.FieldClaimedAt: true,
 	ticket.FieldGoal: true, ticket.FieldContext: true, ticket.FieldDoD: true,
-	ticket.FieldBlockedBy: true, ticket.FieldBlockedReason: true,
+	ticket.FieldBlockedBy: true, ticket.FieldBlockedReason: true, ticket.FieldTags: true,
 	ticket.FieldFollows: true, ticket.FieldCommits: true, ticket.FieldQuestion: true,
 	ticket.FieldExternal:    true,
 	ticket.FieldOutcomeWhat: true, ticket.FieldOutcomeWhy: true, ticket.FieldOutcomeResolves: true,
@@ -927,6 +927,12 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	row("when", timespan(t.CreatedAt, t.UpdatedAt))
 	row("executed-by", t.ExecutedBy)
 	row("tier", t.ModelTier)
+	// A base row, shown whenever the ticket carries tags: what subject a ticket
+	// belongs to is read as often as who owns it, and a tag nothing displays is
+	// a tag nobody reuses. Plain text, not coloured — the colours in .jaira/tags
+	// exist for 'jaira tags', and styling a wrapped block after a label column
+	// pads every line to the widest and overshoots the pane (see styleLines).
+	row("tags", strings.Join(t.Tags, " "))
 	// The identity rows above stay tight; the prose fields below each get a
 	// blank line, because two wrapped paragraphs with no gap between them read
 	// as one — which field a sentence belongs to should not need re-reading.

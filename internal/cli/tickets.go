@@ -110,7 +110,7 @@ session and lock state is never committed. Safe to run more than once.`,
 func newCreateCmd() *cobra.Command {
 	var (
 		title, goalV, dod, contextV, assignee, laneID, tier, body, follows string
-		blockedBy                                                          []string
+		blockedBy, tags                                                    []string
 		ready                                                              bool
 		mine                                                               bool
 	)
@@ -206,8 +206,17 @@ already know it is yours; --assignee wins over it.`,
 				ticket.FieldCreatedAt: ticket.FormatTime(now),
 				ticket.FieldUpdatedAt: ticket.FormatTime(now),
 			}
+			// Tags are normalized before they are written, so the board never
+			// carries "UI" and "ui" as two subjects, and registered before the
+			// ticket exists — a name typed here is a name the vocabulary now has,
+			// exactly as if 'jaira tag' had been used.
+			tagNames, tagNotes, err := normalizeTags(tags)
+			if err != nil {
+				return err
+			}
 			lists := map[string][]string{
 				ticket.FieldBlockedBy: blockedBy,
+				ticket.FieldTags:      tagNames,
 				ticket.FieldCommits:   nil,
 			}
 			// `ready` is a derived convenience recording whether the promotion
@@ -247,10 +256,21 @@ already know it is yours; --assignee wins over it.`,
 			if err != nil {
 				return err
 			}
+			added, _, err := registerTags(s.Root, tagNames, -1)
+			if err != nil {
+				return err
+			}
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), ticketJSON(t, lanes))
 			}
+			for _, n := range tagNotes {
+				fmt.Fprintln(cmd.OutOrStdout(), n)
+			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Created %s  %s\n", ticket.Handle(t.ID), t.Title)
+			if len(added) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "New on this board: %s. Run 'jaira tags' before naming a tag, and reuse one for the same subject.\n",
+					strings.Join(added, ", "))
+			}
 			if !gate.Ready(t) {
 				missing := gate.Violations(nil)
 				fmt.Fprintf(cmd.OutOrStdout(), "In %s. Still needed before it can start: %s\n",
@@ -271,6 +291,7 @@ already know it is yours; --assignee wins over it.`,
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
 	f.StringVar(&body, "body", "", "markdown body")
 	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
+	f.StringArrayVar(&tags, "tag", nil, "topic tag; repeat for several. Run 'jaira tags' first and reuse an existing name")
 	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from")
 	f.BoolVar(&ready, "ready", false, "unused; readiness is derived from the gate")
 	_ = f.MarkHidden("ready")
@@ -374,7 +395,7 @@ func missingFields(t *ticket.Ticket) []string {
 }
 
 func newListCmd() *cobra.Command {
-	var laneFilter, assigneeFilter, query string
+	var laneFilter, assigneeFilter, query, tagFilter string
 	var actionableOnly bool
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -395,6 +416,9 @@ func newListCmd() *cobra.Command {
 					continue
 				}
 				if assigneeFilter != "" && !strings.EqualFold(t.Assignee, assigneeFilter) {
+					continue
+				}
+				if tagFilter != "" && !hasTag(t, tagFilter) {
 					continue
 				}
 				if query != "" && !matches(t, query) {
@@ -423,6 +447,7 @@ func newListCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringVar(&laneFilter, "lane", "", "only tickets in this lane")
 	f.StringVar(&assigneeFilter, "assignee", "", "only tickets assigned to this person")
+	f.StringVar(&tagFilter, "tag", "", "only tickets carrying this tag")
 	f.StringVarP(&query, "query", "q", "", "substring match over title, goal and id")
 	f.BoolVar(&actionableOnly, "actionable", false, "only tickets that could be started right now")
 	return cmd
@@ -554,6 +579,7 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int) {
 	row("updated by", t.UpdatedBy)
 	row("executed", t.ExecutedBy)
 	row("tier", t.ModelTier)
+	row("tags", strings.Join(t.Tags, " "))
 	row("goal", t.Goal)
 	row("context", t.Context)
 	if len(t.DoDItems) > 0 {
@@ -670,7 +696,7 @@ List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
 			}
 			id := args[0]
 			assignments := args[1:]
-			listFields := map[string]bool{ticket.FieldBlockedBy: true, ticket.FieldCommits: true}
+			listFields := map[string]bool{ticket.FieldBlockedBy: true, ticket.FieldCommits: true, ticket.FieldTags: true}
 
 			// A ticket in a lane this installation does not have is read-only, and
 			// that has to hold for every mutation path. Enforcing it only in `move`
@@ -1101,6 +1127,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"context":            t.Context,
 		"definition_of_done": t.DoD,
 		"blocked_by":         t.BlockedBy,
+		"tags":               t.Tags,
 		"follows":            t.Follows,
 		"blocked_reason":     t.BlockedReason,
 		"commits":            t.Commits,
