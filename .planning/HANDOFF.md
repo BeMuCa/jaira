@@ -39,6 +39,26 @@ Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
    print`-Snippet in settings.json → arbeitet nach „go" bis signoff. Nur er
    kann das prüfen.
 
+## Tags (01.09., Berks Wunsch) — komplett, in signoff
+
+- **79GEPW** (Feld, `.jaira/tags`-Farb-Registry, `jaira tags`/`jaira tag`,
+  Filter `tag:`, Doku): drei Commits, zwei adversariale Opus-Reviews mit
+  eigenen Proben, 17 Funde gefixt (Concurrency-Verlust, /tags-Anker,
+  Zaehl-Dedup, Suggest-Rueckzug …). Implementierer starb am Opus-Limit nach
+  fertigen Edits; Koordinator hat verifiziert und committet.
+- **AXTFG3** (Karten-Boxen in Tag-Farbe, `t`-Legende, Karten-Budget nach
+  echter Hoehe statt /3): Sonnet-Implementierung, Koordinator-Review
+  (Opus gedeckelt bis 19:00); ein Fund (Colour-Lookup unnormalisiert)
+  koordinator-gefixt.
+- **Zwei Koordinator-Pannen, beide fix-forward und dokumentiert:**
+  84df2a4 ging mit nicht kompilierendem TESTfile auf master (set -e-Kette
+  stoppte nicht; seitdem explizite || exit-Guards); am Vortag ein per
+  tail -1 fehlgelesener Erfolg (BDV0HM-Fehlalarm, zurueckgezogen).
+- Neu im Backlog: WriteAtomic fuer die uebrigen geteilten Board-Dateien
+  (L19 des Tag-Reviews, v.a. core/lane/order.go).
+- Der Agent-Block ist auf JEDEM Board stale bis `jaira update` (steht im
+  0.1.1-NOTES-Block).
+
 ## Zurückgestellt, mit Grund
 
 - **NFJCTK, B4MGTP, FCMP17**: stecken wörtlich im Schema-Spec (Cuts 1/4/6
