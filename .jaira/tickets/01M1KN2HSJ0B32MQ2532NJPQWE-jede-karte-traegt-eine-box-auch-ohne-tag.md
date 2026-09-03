@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: critique
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T18:49:35Z
+updated-at: 2026-09-03T18:50:32Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
 updated-by: BeMuCa
@@ -20,15 +20,16 @@ outcome-what: "Gestapelte Karten teilen sich eine Border-Reihe: ab der zweiten K
 outcome-why: "Berks 4. Screenshot: Luecken zwischen den Boxen halbieren; Messung zeigte keine Leerzeile, sondern zwei aneinanderstossende Border-Reihen, deren Glyphen nur die halbe Zelle fuellen"
 outcome-resolves: "TestStackedCardsShareOneBorderRow verbietet Bottom-ueber-Top-Border boardweit; der Box-Balance-Waechter zaehlt jetzt exakt (1 Stack-Top + 1 Bottom je Karte + Spaltenrahmen, positionsgenau gegen cardsInBudget); Budget-Tests neu gerechnet (5+4+4...); go test ./... -race RC=0"
 executed-by: fable
-review-summary: "Runde 4 (Berks 3. Screenshot): Selektions-Balken entfernt - Selektion ist die gefaerbte Titel-Schrift (Tag-Farbe der Karte, sonst Akzent; Bold bleibt als zweiter Kanal, Zustand haengt nie an Farbe allein); Innen-Einzug der Box von 2 auf 1 Spalte, Budgets folgen (w-1). Der Board-Umschalter behaelt seinen Balken - andere Liste, keine Box. Kein einfacherer Schnitt: beide Aenderungen leben in renderCard, wo die Zeilen entstehen."
+review-summary: "Runde 5 (Luecken zwischen Boxen): Der Schnitt sitzt in renderColumn (wo Karten gestapelt werden), nicht in renderCardBlock - Einzelkarten-Renderer und alle seine Tests bleiben unberuehrt; nur Stapelung und Budget wissen von der geteilten Reihe. Trenner traegt die Farbe der OBEREN Karte (deren Bottom-Border bleibt) - bewusst: eine Misch-Logik fuer zwei Tag-Farben waere Erfindung ohne Auftrag. Der alte Balance-Waechter (Zaehlgleichheit) war mit geteilten Reihen strukturell falsch und ist jetzt STRENGER: exakte Soll-Zahlen positionsgenau gegen cardsInBudget statt blosser Gleichheit."
 review-gaps: "Nichts entfernt. Gelassen: cardHeight behaelt Receiver+Parameter (Signatur-Kompatibilitaet aller Aufrufer, und die Hoehe kann wieder dynamisch werden); der '✎ someo'-Pin wurde zum Glyph-Pin gelockert statt die Boardbreite im Test zu schrauben - Begruendung in der Ticket-Note."
 review-check: |-
-  1. Neu bauen, Board oeffnen: jede Karte gerahmt (tag-los matt, getaggt farbig), exakt 5 Zeilen.
-  2. Abstand: Box endet EINE Spalte vor dem rechten Spaltenrand; innen EIN Leerzeichen Einzug (dein 3. Screenshot).
-  3. Selektierte Karte: kein blauer Balken mehr - der Titel selbst ist gefaerbt (Tag-Farbe, sonst blau) und fett.
-  4. Terminal auf ~12 Zeilen stauchen: Deckel und Boden der Boxen bleiben.
-  5. Spalte mit Ueberlauf: die +N-more-Zahl stimmt mit dem Fehlenden ueberein.
-review-verdict: "accept - Runden 3+4 koordinator-verifiziert (Opus-Reviewer seit zwei 529s nicht erneut bemueht; Deltas: eine Konstante in renderColumn, dann Balken->Titel-Farbe und Einzug 2->1 in renderCard). Die Box-Arithmetik aus Runde 2 (kausal gemessen, TestACardHeavyWithFlagsStaysFiveRows) budgetiert relativ und blieb unangetastet; Suite -race nach Cache-Loeschung RC=0 (15 Pakete) nach JEDER Runde. Zustand haengt weiter nie an Farbe allein (Bold bleibt auf dem selektierten Titel). Optik - Einzug, Abstand rechts, Selektion ohne Balken - ist deine Signoff-Abnahme; review-check zaehlt die Schritte."
+  1. Neu bauen, Board oeffnen: jede Karte gerahmt (tag-los matt, getaggt farbig).
+  2. Gestapelte Karten: zwischen zwei Karten genau EINE Border-Linie (vorher zwei mit optischer Luecke) - dein 4. Screenshot-Fall.
+  3. Box endet eine Spalte vor dem rechten Spaltenrand; innen ein Leerzeichen Einzug.
+  4. Selektierte Karte: Titel gefaerbt (Tag-Farbe, sonst blau) und fett, kein Balken.
+  5. Terminal auf ~12 Zeilen stauchen: oberste Karte behaelt Deckel, unterste ihren Boden.
+  6. +N-more stimmt mit dem Fehlenden ueberein; pro Spalte passt jetzt ca. eine Karte mehr.
+review-verdict: "accept - Runde 5 koordinator-verifiziert und offengelegt (wie Runden 3+4; das Opus-Review deckte die Box-Arithmetik in Runde 2 kausal, danach je kleine Deltas): Stacking lebt allein in renderColumn+cardsInBudget, renderCardBlock und seine gesamte Testbatterie unveraendert; TestStackedCardsShareOneBorderRow verbietet die Doppel-Border boardweit, der Balance-Waechter zaehlt exakte Soll-Werte positionsgenau; go test ./... -race RC=0 (15 Pakete, Cache geleert). Optik - genau eine Linie zwischen Karten - ist deine Signoff-Abnahme (review-check Schritt 2)."
 ---
 
 # Jede Karte traegt eine Box, auch ohne Tag

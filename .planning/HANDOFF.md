@@ -71,8 +71,14 @@ Stand nach der go-Session; dieses File ist das Gedächtnis. Der vorige Handoff
 ## Der eine Satz, der Berk überraschen könnte
 
 ERLEDIGT am Abend: done.md ist drift-refreshed, der Cap greift, done hält 10 —
-die 12 ältesten liegen im Logbuch (bemuca-20260903/, je mit restore-Zeile im
-Commit-Log). In signoff warten NJPQWE, 76WCCW und KA9CFA.
+die 12 ältesten liegen im Logbuch (bemuca-20260903/). In signoff warten
+NJPQWE, 76WCCW und KA9CFA. Später am Abend dazu: NJPQWE Runde 5 (gestapelte
+Karten teilen sich eine Border-Reihe — die "Lücke" waren zwei Glyph-Reihen;
+pro weiterer Karte wird eine Zeile frei); Board-Registry von 7 Dummy-Boards
+bereinigt (bleiben: LHChecker, jAIra, localhtml — requirementsgenie liegt
+nicht unter ~/git und war nie registriert); LHChecker + localhtml per
+'jaira update' refreshed (Babysit-Sätze drin, dort NICHT committet — Berks
+Repos). Deren done.md hat noch KEIN holds — Cap dort ist Berks Zuruf.
 
 ## Was Berk jetzt entscheidet
 
