@@ -1,7 +1,7 @@
 ---
 id: 01M0YT4RYWWAAYV8J8VKSGPDYK
 title: Die done-Lane haelt hoechstens zehn Tickets
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 goal: "Aeltere Tickets in done wandern selbsttaetig ins Archiv, die zehn neuesten bleiben"
@@ -10,7 +10,7 @@ definition-of-done: "Bei mehr als zehn Tickets in done wird das aelteste archivi
 blocked-by: []
 commits: []
 created-at: 2026-08-26T10:34:07Z
-updated-at: 2026-09-03T12:11:47Z
+updated-at: 2026-09-03T12:48:53Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-2180407
 claimed-at: 2026-09-03T11:14:22Z
