@@ -472,11 +472,16 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
 }
 
 func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
-	marker := "  "
-	title := truncate(t.Title, w-2)
+	// Selection is the coloured title, not a bar: the card's own tag colour
+	// when the registry has one, the accent otherwise (Berk, 03.09. — the
+	// ▌ marker cost a column and doubled what the box already frames).
+	title := truncate(t.Title, w-1)
 	if selected {
-		marker = stySelected.Render("▌ ")
-		title = stySelected.Render(title)
+		if c, ok := m.cardColor(t); ok {
+			title = lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(c))).Bold(true).Render(title)
+		} else {
+			title = stySelected.Render(title)
+		}
 	}
 
 	// State is shown with a glyph plus a word, never colour alone.
@@ -545,13 +550,13 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 		}
 	}
 
-	out := marker + title + "\n"
-	// The two-space indent lives inside the width budget: a line wider than w
+	// The one-space inset lives inside the width budget: a line wider than w
 	// wraps inside the card's box and breaks the three-content-row contract
 	// cardHeight promises — unboxed cards used to hide this behind clampBlock.
-	out += "  " + truncate(meta, w-2) + "\n"
+	out := " " + title + "\n"
+	out += " " + truncate(meta, w-1) + "\n"
 	if len(flags) > 0 {
-		out += "  " + truncate(strings.Join(flags, " "), w-2) + "\n"
+		out += " " + truncate(strings.Join(flags, " "), w-1) + "\n"
 	} else {
 		out += "\n"
 	}

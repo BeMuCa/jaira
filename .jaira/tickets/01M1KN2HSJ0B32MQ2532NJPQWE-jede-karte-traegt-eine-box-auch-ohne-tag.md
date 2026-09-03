@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: optimize
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T15:48:38Z
+updated-at: 2026-09-03T15:49:45Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
 updated-by: BeMuCa
@@ -28,7 +28,7 @@ review-check: |-
   3. Selektierte Karte: kein blauer Balken mehr - der Titel selbst ist gefaerbt (Tag-Farbe, sonst blau) und fett.
   4. Terminal auf ~12 Zeilen stauchen: Deckel und Boden der Boxen bleiben.
   5. Spalte mit Ueberlauf: die +N-more-Zahl stimmt mit dem Fehlenden ueberein.
-review-verdict: "accept - Runde 3 (Abstands-Feedback) koordinator-verifiziert und offengelegt: die Aenderung ist eine Zahl in renderColumn (w-1 statt w-4); die gesamte Box-Arithmetik aus Runde 2 (vom Opus-Reviewer kausal gemessen, inkl. seiner nachgepinnten Probe TestACardHeavyWithFlagsStaysFiveRows) budgetiert relativ zum Parameter und blieb unangetastet - Suite -race nach Cache-Loeschung RC=0, 15 Pakete. Ein weiterer Opus-Durchgang wurde nicht angefragt (Reviewer zweimal am 529 gestorben; Delta = eine Konstante). Die Optik - eine Spalte Luft rechts statt vier - ist genau das, was im Signoff mit deinem Screenshot verglichen wird."
+review-verdict: "accept - Runden 3+4 koordinator-verifiziert (Opus-Reviewer seit zwei 529s nicht erneut bemueht; Deltas: eine Konstante in renderColumn, dann Balken->Titel-Farbe und Einzug 2->1 in renderCard). Die Box-Arithmetik aus Runde 2 (kausal gemessen, TestACardHeavyWithFlagsStaysFiveRows) budgetiert relativ und blieb unangetastet; Suite -race nach Cache-Loeschung RC=0 (15 Pakete) nach JEDER Runde. Zustand haengt weiter nie an Farbe allein (Bold bleibt auf dem selektierten Titel). Optik - Einzug, Abstand rechts, Selektion ohne Balken - ist deine Signoff-Abnahme; review-check zaehlt die Schritte."
 ---
 
 # Jede Karte traegt eine Box, auch ohne Tag
