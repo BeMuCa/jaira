@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:02Z
-updated-at: 2026-09-03T15:47:56Z
+updated-at: 2026-09-03T15:55:46Z
 claimed-by: EE-3NX6GL3-2626905
 claimed-at: 2026-09-03T15:47:55Z
 updated-by: BeMuCa
@@ -22,7 +22,8 @@ updated-by: BeMuCa
 
 ## Definition of Done
 
-- [ ] Der verwaltete Block enthaelt die Regel (Start -> durchfahren bis Human-Lane inkl. Loops, nach Klaerung weiter, 'Agent soll' -> Subagent babysittet); 'jaira update' schreibt sie; ein Test pinnt den neuen Blocktext
+- [x] Der verwaltete Block enthaelt die Regel (Start -> durchfahren bis Human-Lane inkl. Loops, nach Klaerung weiter, 'Agent soll' -> Subagent babysittet); 'jaira update' schreibt sie; ein Test pinnt den neuen Blocktext
+  proof: core/board/announce.go:208-220 (laneSection tail, new sentences at 217-220); core/board/lanesection_test.go TestLaneSectionSaysHowToDriveAStartedTicket; regeneration verified on scratch board /tmp/claude-1000/-home-berk-git-jAIra/390b21fd-53c2-4182-9086-cad5a083b878/scratchpad/76wccw-verify/CLAUDE.md:107-109
 
 ## Options
 
@@ -34,4 +35,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-03 15:55 · BeMuCa** — Placed the new rule in laneSection's tail (core/board/announce.go), not in the static agentNote block at the top. Reason: this rule is about driving lane-by-lane, which is exactly what the preceding 'Work one lane to empty...' sentence already covers, and that sentence lives in laneSection (only rendered when the board has lanes) — putting the new rule in agentNote would separate two sentences that belong together and would also show even on a board with zero lanes, where there is nothing to drive. Wording chosen: 'Told to start or work a ticket, drive it this way yourself — lane by lane, loops included — until it sits in a human lane, then continue once the human has answered. Told an agent should work it, hand it to a subagent that babysits the ticket through the same route.' Deliberately did not name critique/optimize specifically (unlike the German ticket text which says 'Loops (critique/optimize)') because laneSection is generic across boards — a board without those lane names still has loops via RejectsTo, and the existing Loop: sentences above already name the actual lanes for this board. Ruled out: touching agentNote's static text (wrong section, see above); touching internal/tui (out of scope per task constraints, and its test only checks 'This board's lanes'/'Order: ' substrings, not this tail, so unaffected). Verified end-to-end by building a scratch jaira binary into the scratchpad and running 'jaira init' in a fresh temp git repo outside this repo — confirmed the two new sentences render correctly in the generated CLAUDE.md. Did NOT run 'jaira update' in this repo per instructions; this repo's own CLAUDE.md/AGENTS.md remain stale until the user accepts and runs it themselves.

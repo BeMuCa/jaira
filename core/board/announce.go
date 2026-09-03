@@ -212,7 +212,12 @@ func laneSection(facts []LaneFact) string {
 		"which of them you are allowed to work, `jaira show <id> --for-lane <lane> --json`\n" +
 		"hands you that lane's prompt and its bounded input, and `jaira move` puts the\n" +
 		"result in the next lane. Work one lane to empty before starting the next, or\n" +
-		"the lane nobody drives is the one that fills up.")
+		"the lane nobody drives is the one that fills up.\n" +
+		"\n" +
+		"Told to start or work a ticket, drive it this way yourself — lane by lane,\n" +
+		"loops included — until it sits in a human lane, then continue once the human\n" +
+		"has answered. Told an agent should work it, hand it to a subagent that\n" +
+		"babysits the ticket through the same route.")
 	return b.String()
 }
 

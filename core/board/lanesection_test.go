@@ -64,6 +64,24 @@ func TestLaneSectionSaysNothingRunsOnItsOwn(t *testing.T) {
 	}
 }
 
+// A ticket started by name has to be driven lane by lane — loops included —
+// until it reaches a human, and picked back up once the human has answered;
+// handed to an agent, a subagent does the same driving. Without this line
+// nothing in the note tells an agent to keep going past the first move.
+func TestLaneSectionSaysHowToDriveAStartedTicket(t *testing.T) {
+	got := laneSection(demoFacts())
+	for _, want := range []string{
+		"Told to start or work a ticket, drive it this way yourself",
+		"lane by lane,\nloops included — until it sits in a human lane",
+		"continue once the human\nhas answered",
+		"Told an agent should work it, hand it to a subagent",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q:\n%s", want, got)
+		}
+	}
+}
+
 // A caller with no board loaded writes exactly the note that existed before
 // boards could describe themselves.
 func TestLaneSectionIsEmptyWithoutLanes(t *testing.T) {
