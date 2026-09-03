@@ -3,6 +3,16 @@
 Stand nach der Backlog-Flotte; dieses File ist das Gedächtnis. Der vorige
 Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
 
+## Kontrakt: Berks erstes "go" nach dem Clear (03.09.)
+
+= die saubere Auflistung aller offenen Punkte, Learnings und Fragen zeigen
+(dieses File + Memory jaira-open-decisions), NICHT bauen. Der Schema-Bau
+startet weiterhin erst nach seinem Spec-Review.
+
+Neu eingefangen (todo, 8W1R94): Update-Prozess durchspielen und vereinfachen;
+Share-Zustand bleibt auf JEDEM Update-Pfad erhalten (ETR0PX deckte nur
+'jaira update'+.gitignore; self upgrade, Binary-Wechsel, Migration offen).
+
 ## Wo alles steht
 
 - **master gepusht** bis einschließlich des 0.1.1-NOTES-Blocks. ~17 Commits
