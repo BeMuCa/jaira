@@ -363,3 +363,29 @@ func TestHandWrittenCaseWearsTheRegistryColour(t *testing.T) {
 		t.Errorf("activeTags = %v, want exactly [ui]", tags)
 	}
 }
+
+// The wrap class the review caught: a card heavy with flags must still render
+// exactly five rows in its box — a line wider than the box's content area
+// wraps, the card outgrows cardHeight, and the column hides cards behind an
+// honest-looking count. Pins the reviewer's probe as a permanent test.
+func TestACardHeavyWithFlagsStaysFiveRows(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.tags = registryWith(t, "ui", 83)
+	tk := &ticket.Ticket{
+		ID: "a", Title: "A realistically long ticket title that will truncate",
+		Tags: []string{"ui"}, Assignee: "someone-with-a-name", UpdatedBy: "someone-else",
+		ExecutedBy: "opus", Commits: []string{"a1", "b2"},
+		PlanItems: []ticket.DoDItem{{Text: "a", State: ticket.StateDone}, {Text: "b"}},
+		DoDItems:  []ticket.DoDItem{{Text: "c"}},
+	}
+	for _, w := range []int{12, 18, 24, 40} {
+		out := stripANSI(m.renderCardBlock(tk, w, false))
+		lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+		if len(lines) != 5 {
+			t.Errorf("w=%d: card renders %d rows, want 5:\n%s", w, len(lines), out)
+		}
+		for _, l := range lines {
+			checkLineWidths(t, w, fmt.Sprintf("flag-heavy card w=%d", w), l)
+		}
+	}
+}
