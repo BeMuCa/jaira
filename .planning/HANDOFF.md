@@ -51,12 +51,28 @@ Stand nach der go-Session; dieses File ist das Gedächtnis. Der vorige Handoff
   soll es bearbeiten" = Subagent babysittet. Gehört in den GENERATOR des
   Blocks (nie Handedit); noch nicht gebaut — liegt spezifiziert im Backlog.
 
+- **Zweite Tageshälfte (nach Berks Feedback-Schleifen):** NJPQWE bekam drei
+  weitere Runden — Boxen bis eine Spalte vor den Rand, Innen-Einzug 1,
+  Selektions-Balken raus (Selektion = Titel in Tag-Farbe/Akzent, bold bleibt).
+  Dabei zwei verdeckte Render-Bugs gefixt (meta/flags w+2 übers Budget;
+  renderCard bekam die Box-GESAMTbreite — lipgloss Width ist total). **Der
+  done-Cap ist auf DIESEM Board aktiv**: done.md drift-refreshed, die 12
+  ältesten done-Tickets per `jaira logbook` gestempelt und abgelegt
+  (bemuca-20260903/), done hält exakt 10. **76WCCW gebaut** (Sonnet-Subagent,
+  babysittet): der Block-Satz „Ticket starten = bis zur Human-Lane
+  durchfahren, Agent = Subagent babysittet" sitzt im laneSection-Tail
+  (core/board/announce.go), Test pinnt ihn — dieses Boards CLAUDE.md-Block
+  bekommt ihn erst mit `jaira update`. **KA9CFA gebaut**: mehrzeilige Felder
+  (review-check!) rendern als Liste — wrapField in ALLEN DREI Label-Renderern
+  (row, section, fieldRow). Ein ehrlicher Zwischenfall: NJPQWE-Runde-4-Hunks
+  ritten ungebündelt im KA9CFA-Commit — vom Review gefunden, vor dem Push
+  re-splittet (Baum byte-identisch verifiziert).
+
 ## Der eine Satz, der Berk überraschen könnte
 
-Die Projektkopie `.jaira/lanes/done.md` hat **noch kein holds** — der Cap
-greift auf DIESEM Board erst nach dem Drift-Refresh (Lane-Settings im TUI).
-done hält 21: der erste done-Move oder Accept NACH dem Refresh schickt 11
-Tickets ins Logbuch — laut Meldung, mit restore-Weg, aber eben elf auf einmal.
+ERLEDIGT am Abend: done.md ist drift-refreshed, der Cap greift, done hält 10 —
+die 12 ältesten liegen im Logbuch (bemuca-20260903/, je mit restore-Zeile im
+Commit-Log). In signoff warten NJPQWE, 76WCCW und KA9CFA.
 
 ## Was Berk jetzt entscheidet
 

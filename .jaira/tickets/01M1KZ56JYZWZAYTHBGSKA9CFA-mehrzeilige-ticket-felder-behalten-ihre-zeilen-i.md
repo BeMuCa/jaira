@@ -1,7 +1,7 @@
 ---
 id: 01M1KZ56JYZWZAYTHBGSKA9CFA
 title: Mehrzeilige Ticket-Felder behalten ihre Zeilen in der Detailansicht
-status: review
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T15:45:47Z
-updated-at: 2026-09-03T16:11:04Z
+updated-at: 2026-09-03T16:14:58Z
 claimed-by: EE-3NX6GL3-2629914
 claimed-at: 2026-09-03T15:49:13Z
 updated-by: BeMuCa
@@ -26,6 +26,7 @@ review-check: |-
   1. Neu bauen, ein Ticket mit mehrzeiligem review-check oeffnen (NJPQWE in signoff hat einen): jeder Schritt auf eigener Zeile, buendig unter der Label-Spalte.
   2. Dasselbe auf dem Signoff-Screen des Tickets.
   3. Ein einzeiliges Feld (z.B. assignee, goal) sieht aus wie vorher.
+review-verdict: "accept (Zweitmodell: Sonnet-Review am selbst gelesenen Diff, eigene Laeufe; Implementierung Fable). Beide Funde umgesetzt: (F1) Commit-Buendelung mit NJPQWE-Hunks vor dem Push re-splittet (52732e1 + 8e74d58, Code-Baum byte-identisch zum reviewten Stand, diff=0); (F2) fieldRow als dritter Label-Renderer plaettete weiter -> wrapField + TestFieldRowKeepsTheAuthorsLines. Suite -race nach Cache-Loeschung RC=0 (15 Pakete) nach jedem Schritt. String-Level-Verifikation wie die Repo-Tests selbst; der Blick ins echte Terminal ist deine Signoff-Abnahme."
 ---
 
 # Mehrzeilige Ticket-Felder behalten ihre Zeilen in der Detailansicht
