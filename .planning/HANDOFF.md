@@ -42,7 +42,9 @@ Stand nach der go-Session; dieses File ist das Gedächtnis. Der vorige Handoff
   Höhe 13. Jetzt: 11/11 Karten auf 150x32 statt 11/10, eine Karte MEHR auf
   150x40. Commits 84c13ca + a3aca3a + Pin-Test; Opus-Review fand den Breiten-
   fehler kausal, starb beim finalen Re-Check zweimal am 529 — Koordinator-
-  Verifikation im review-verdict offengelegt. **In signoff.**
+  Verifikation im review-verdict offengelegt. Runde 3 nach Berks zweitem
+  Screenshot: Boxen enden jetzt EINE Spalte vor dem Spaltenrand statt vier
+  (renderColumn reicht w-1), Titel gewinnen 3 Zeichen. **In signoff.**
 - **76WCCW eingefangen (Berks Babysit-Frage = Go für 88H1P4-Mechanismus c):**
   der verwaltete Block soll sagen: "Ticket starten" = durchfahren bis zur
   nächsten Human-Lane (Loops inklusive), nach Klärung weiter; "ein Agent

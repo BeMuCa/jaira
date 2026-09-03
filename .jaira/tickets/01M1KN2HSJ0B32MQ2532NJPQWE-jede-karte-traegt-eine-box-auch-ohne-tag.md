@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: critique
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T14:41:37Z
+updated-at: 2026-09-03T14:42:31Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
 updated-by: BeMuCa
@@ -20,10 +20,10 @@ outcome-what: "Kartenbreite in der Spalte: renderColumn reicht w-1 statt w-4 an 
 outcome-why: "Berks Signoff-Feedback mit Screenshot: 'mach die abstaende kleiner, rechts von den boxen kann es fast bis zum rand'"
 outcome-resolves: "Eine Zeile plus Kommentar; alle Breiten-Invarianten haengen an renderCardBlock/renderCard, die unveraendert budgetieren (Box-Gesamt = Parameter-2, Inhalt = -4) - Suite -race RC=0 bestaetigt; Optik selbst ist die Signoff-Abnahme"
 executed-by: fable
-review-summary: "Runde 2 nach dem Review-Fund. Kritik am Fix-Diff: eine Zeile Verhalten (renderCard erhaelt inner-2) + erklaerender Kommentar an der Stelle, an der der naechste Leser denselben Fehler machen wuerde - kein Workaround weiter aussen, keine doppelte Breitenrechnung. Die Titel-Repins pinnen einen Praefix statt des exakten Schnitts, damit der Test Feinjustagen der Budgets ueberlebt und trotzdem faellt, wenn der Titel ganz verschwindet."
+review-summary: "Runde 3 (Signoff-Feedback Abstaende): Ein-Zahlen-Aenderung am richtigen Ort - renderColumn bestimmt, wieviel Spaltenbreite eine Karte bekommt; renderCardBlock/renderCard budgetieren relativ zum Parameter und bleiben unangetastet, also gilt die gesamte Breiten-Arithmetik aus Runde 2 unveraendert. Kein einfacherer Schnitt moeglich."
 review-gaps: "Nichts entfernt. Gelassen: cardHeight behaelt Receiver+Parameter (Signatur-Kompatibilitaet aller Aufrufer, und die Hoehe kann wieder dynamisch werden); der '✎ someo'-Pin wurde zum Glyph-Pin gelockert statt die Boardbreite im Test zu schrauben - Begruendung in der Ticket-Note."
-review-check: "1. Neu bauen, Board oeffnen: JEDE Karte gerahmt (tag-los matt, getaggt farbig), exakt 5 Zeilen je Karte, kein abgeschnittener unterer Rand. 2. Terminal auf ~12 Zeilen stauchen: Boxen behalten ihren Deckel UND Boden (vorher deckellos). 3. Spalte mit vielen Karten: die '+N more'-Zahl stimmt mit dem ueberein, was fehlt (vorher '+0 more' bei versteckten Karten). 4. Auf 150x40 passt eine Karte mehr als vorher - Hoehen sind jetzt ehrlich."
-review-verdict: "accept - mit offengelegtem Ausweich: der Opus-Reviewer hatte den Breitenfehler kausal gemessen und den Fix VORAB im Overlay verifiziert (alle seine Proben gruen: Kartenhoehe 5 auf w=16..44, Spalten 11/11 statt 11/10 auf 150x32, +N-more ehrlich, Deckel unter Hoehe 13); beim finalen Re-Check starb er zweimal am 529 Overloaded. Der Koordinator hat den Einzeiler wortgleich uebernommen (diff selbst gelesen), die volle Suite -race nach Cache-Loeschung gefahren (RC=0, 15 Pakete) und die eine ungepinnte Reviewer-Probe als Dauertest nachgepinnt (TestACardHeavyWithFlagsStaysFiveRows: exakt 5 Zeilen bei w=12/18/24/40, keine Zeile ueberbreit). Nicht maschinell geprueft bleibt der Blick ins echte Terminal - review-check Schritt 1-4 ist Berks Abnahme."
+review-check: "1. Neu bauen, Board oeffnen: JEDE Karte gerahmt (tag-los matt, getaggt farbig), exakt 5 Zeilen, kein abgeschnittener Rand. 2. ABSTAND: Box endet eine Spalte vor dem rechten Spaltenrand (vorher vier) - dein Screenshot-Fall. 3. Terminal auf ~12 Zeilen stauchen: Deckel und Boden bleiben. 4. '+N more' stimmt mit dem ueberein, was fehlt. 5. Titel zeigen ~3 Zeichen mehr als vorher."
+review-verdict: "accept - Runde 3 (Abstands-Feedback) koordinator-verifiziert und offengelegt: die Aenderung ist eine Zahl in renderColumn (w-1 statt w-4); die gesamte Box-Arithmetik aus Runde 2 (vom Opus-Reviewer kausal gemessen, inkl. seiner nachgepinnten Probe TestACardHeavyWithFlagsStaysFiveRows) budgetiert relativ zum Parameter und blieb unangetastet - Suite -race nach Cache-Loeschung RC=0, 15 Pakete. Ein weiterer Opus-Durchgang wurde nicht angefragt (Reviewer zweimal am 529 gestorben; Delta = eine Konstante). Die Optik - eine Spalte Luft rechts statt vier - ist genau das, was im Signoff mit deinem Screenshot verglichen wird."
 ---
 
 # Jede Karte traegt eine Box, auch ohne Tag
