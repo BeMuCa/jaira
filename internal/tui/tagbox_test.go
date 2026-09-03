@@ -101,7 +101,7 @@ func TestCardColorIsAbsentWithoutTagsOrWithoutARegistryEntry(t *testing.T) {
 	}
 }
 
-func TestCardHeightGrowsByTwoRowsOnlyWhenColoured(t *testing.T) {
+func TestCardHeightIsUniformNowThatEveryCardIsBoxed(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 
@@ -109,14 +109,10 @@ func TestCardHeightGrowsByTwoRowsOnlyWhenColoured(t *testing.T) {
 	coloured := &ticket.Ticket{ID: "b", Title: "t", Tags: []string{"ui"}}
 	uncoloured := &ticket.Ticket{ID: "c", Title: "t", Tags: []string{"backend"}}
 
-	if h := m.cardHeight(plain); h != 3 {
-		t.Errorf("untagged cardHeight = %d, want 3", h)
-	}
-	if h := m.cardHeight(uncoloured); h != 3 {
-		t.Errorf("colourless-tag cardHeight = %d, want 3", h)
-	}
-	if h := m.cardHeight(coloured); h != 5 {
-		t.Errorf("coloured-tag cardHeight = %d, want 5 (3 content + 2 border)", h)
+	for _, tk := range []*ticket.Ticket{plain, coloured, uncoloured} {
+		if h := m.cardHeight(tk); h != 5 {
+			t.Errorf("cardHeight(%s) = %d, want 5 (3 content + 2 border)", tk.ID, h)
+		}
 	}
 }
 
@@ -127,8 +123,8 @@ func TestCardsInBudgetCountsEachCardsOwnHeight(t *testing.T) {
 	m.tags = registryWith(t, "ui", 83)
 	tickets := []*ticket.Ticket{
 		{ID: "a", Title: "t", Tags: []string{"ui"}}, // 5
-		{ID: "b", Title: "t"},                       // 3
-		{ID: "c", Title: "t"},                       // 3
+		{ID: "b", Title: "t"},                       // 5 — boxed too, just neutral
+		{ID: "c", Title: "t"},                       // 5
 		{ID: "d", Title: "t", Tags: []string{"ui"}}, // 5
 	}
 	cases := []struct {
@@ -136,10 +132,11 @@ func TestCardsInBudgetCountsEachCardsOwnHeight(t *testing.T) {
 		want   int
 	}{
 		{budget: 0, want: 1},   // a lone card always counts, however tight
-		{budget: 5, want: 1},   // exactly the first (5-row) card, no room for the next
-		{budget: 8, want: 2},   // 5 + 3
-		{budget: 11, want: 3},  // 5 + 3 + 3
-		{budget: 16, want: 4},  // every card fits
+		{budget: 5, want: 1},   // exactly the first card, no room for the next
+		{budget: 9, want: 1},   // one row short of two cards
+		{budget: 10, want: 2},  // 5 + 5
+		{budget: 15, want: 3},  // 5 + 5 + 5
+		{budget: 20, want: 4},  // every card fits
 		{budget: 100, want: 4}, // more than enough
 	}
 	for _, c := range cases {
@@ -167,35 +164,41 @@ func TestCardsInBudgetFromANonZeroStart(t *testing.T) {
 
 // --- renderCardBlock ---------------------------------------------------------
 
-// Untagged rendering must not move: renderCardBlock has to be byte-identical
-// to what renderCard alone produced before this feature existed.
-func TestUntaggedCardRenderingIsUnchanged(t *testing.T) {
+// Every card is boxed — an untagged one too, in the neutral frame colour,
+// never in a tag's registry colour (Berks Screenshot vom 03.09.: gemischte
+// Spalten aus gerahmten und rahmenlosen Karten lasen sich als zwei Sorten).
+func TestUntaggedCardIsBoxedNeutrally(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 	tk := &ticket.Ticket{ID: "a", Title: "Untagged ticket", Assignee: "berk"}
 
-	plain := m.renderCard(tk, 40, false)
-	boxed := m.renderCardBlock(tk, 40, false)
-	if boxed != plain {
-		t.Errorf("renderCardBlock changed an untagged card:\nplain: %q\nboxed: %q", plain, boxed)
+	raw := m.renderCardBlock(tk, 40, false)
+	stripped := stripANSI(raw)
+	if got := strings.Count(stripped, "\n"); got != 5 {
+		t.Errorf("untagged card is %d lines (incl. trailing newline), want 5:\n%s", got, stripped)
 	}
-	if strings.Count(plain, "\n") != 3 {
-		t.Errorf("an untagged card is not three lines: %q", plain)
+	if !strings.Contains(stripped, "\u250c") || !strings.Contains(stripped, "\u2514") {
+		t.Errorf("untagged card has no border:\n%s", stripped)
+	}
+	if strings.Contains(raw, "38;5;83") {
+		t.Errorf("untagged card borrowed a tag colour:\n%q", raw)
 	}
 }
 
-// A tag with no registry colour costs nothing on the card: same rendering as
-// no tag at all, and the tag still exists (checked separately in the legend
-// tests) — it just draws no box.
-func TestTaggedCardWithoutColourIsUnboxed(t *testing.T) {
+// A tag with no registry colour draws the neutral box, not a coloured one —
+// the tag still exists (checked separately in the legend tests).
+func TestTaggedCardWithoutColourIsBoxedNeutrally(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83) // registry knows "ui", not "backend"
 	tk := &ticket.Ticket{ID: "a", Title: "Uncoloured tag", Tags: []string{"backend"}}
 
-	plain := m.renderCard(tk, 40, false)
-	boxed := m.renderCardBlock(tk, 40, false)
-	if boxed != plain {
-		t.Error("a card whose tag has no registry colour was still boxed")
+	raw := m.renderCardBlock(tk, 40, false)
+	stripped := stripANSI(raw)
+	if !strings.Contains(stripped, "\u250c") {
+		t.Error("a card whose tag has no registry colour is not boxed")
+	}
+	if strings.Contains(raw, "38;5;83") {
+		t.Errorf("a colourless tag borrowed colour 83:\n%q", raw)
 	}
 }
 

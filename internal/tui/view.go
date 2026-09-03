@@ -421,14 +421,12 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	return style.Render(clampBlock(body.String(), w, h))
 }
 
-// cardHeight is the rows renderCardBlock will draw a ticket's card in: three
-// for a plain card, five for one boxed in its first tag's colour (the three
-// content rows plus a top and bottom border row).
-func (m *Model) cardHeight(t *ticket.Ticket) int {
-	if _, ok := m.cardColor(t); ok {
-		return 5
-	}
-	return 3
+// cardHeight is the rows renderCardBlock will draw a ticket's card in: the
+// three content rows plus the box's top and bottom border. Every card is
+// boxed — coloured by its first tag when the registry has a colour, neutral
+// otherwise — so the height is uniform.
+func (m *Model) cardHeight(*ticket.Ticket) int {
+	return 5
 }
 
 // cardsInBudget is how many tickets starting at first fit within budget rows,
@@ -451,19 +449,19 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 	return n
 }
 
-// renderCardBlock draws one card, boxed in its first tag's colour when the
-// registry has one and left exactly as renderCard draws it otherwise —
-// untagged cards, and tagged cards whose first tag carries no colour, are
-// unchanged.
+// renderCardBlock draws one card in a box: bordered in its first tag's
+// colour when the registry has one, in the neutral frame colour otherwise.
+// Every card is boxed — a mixed column of framed and frameless cards read
+// as two different kinds of thing, and they are not.
 func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
-	color, ok := m.cardColor(t)
-	if !ok {
-		return m.renderCard(t, w, selected)
-	}
 	inner := max(1, w-2)
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
-	box := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color(strconv.Itoa(color))).Width(inner)
+	box := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Width(inner)
+	if color, ok := m.cardColor(t); ok {
+		box = box.BorderForeground(lipgloss.Color(strconv.Itoa(color)))
+	} else {
+		box = box.BorderForeground(colFaint)
+	}
 	return box.Render(content) + "\n"
 }
 
@@ -542,9 +540,12 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	}
 
 	out := marker + title + "\n"
-	out += "  " + truncate(meta, w) + "\n"
+	// The two-space indent lives inside the width budget: a line wider than w
+	// wraps inside the card's box and breaks the three-content-row contract
+	// cardHeight promises — unboxed cards used to hide this behind clampBlock.
+	out += "  " + truncate(meta, w-2) + "\n"
 	if len(flags) > 0 {
-		out += "  " + truncate(strings.Join(flags, " "), w) + "\n"
+		out += "  " + truncate(strings.Join(flags, " "), w-2) + "\n"
 	} else {
 		out += "\n"
 	}
@@ -1274,7 +1275,8 @@ func (m *Model) renderMessage() string {
 
 // renderLegend maps every tag in use on the board to the swatch its cards are
 // boxed in. A tag with no registry colour still gets a line — it is real, it
-// just costs no box on the card and no swatch here, matching renderCardBlock.
+// just gets the neutral frame on the card and no swatch here, matching
+// renderCardBlock.
 func (m *Model) renderLegend() string {
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render("Tags") + "\n")

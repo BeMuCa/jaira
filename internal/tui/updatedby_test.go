@@ -28,9 +28,10 @@ func TestSomeoneElsesChangeIsMarkedOnTheCard(t *testing.T) {
 	if err := m.reload(); err != nil {
 		t.Fatal(err)
 	}
-	// The glyph, not the whole name: a card is as wide as its column, and a
-	// long name is truncated there like every other flag.
-	if out := stripANSI(m.render()); !strings.Contains(out, "✎ someo") {
+	// The glyph, not the name: a card is as wide as its column, every card is
+	// boxed (two columns narrower inside), and a long name is truncated there
+	// like every other flag — how much of it survives depends on the width.
+	if out := stripANSI(m.render()); !strings.Contains(out, "✎") {
 		t.Errorf("a ticket last written by somebody else is not marked:\n%s", out)
 	}
 
