@@ -51,7 +51,7 @@ func TestTrimHoldsFilesTheOldestAndSaysSo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msg, err := m.trimHolds("done")
+	msg, err := m.trimHolds("done", "")
 	if err != nil {
 		t.Fatalf("trimHolds: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestTrimHoldsAtTheCapMovesNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msg, err := m.trimHolds("done")
+	msg, err := m.trimHolds("done", "")
 	if err != nil {
 		t.Fatalf("trimHolds: %v", err)
 	}

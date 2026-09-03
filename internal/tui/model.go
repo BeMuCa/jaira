@@ -1341,14 +1341,17 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
-	trimMsg, trimErr := m.trimHolds(target.ID)
+	trimMsg, trimErr := m.trimHolds(target.ID, full.ID)
 	m.finishMove(full.ID)
 	if m.mode == modeMessage {
 		// finishMove has worse news of its own; do not paper over it.
 		return
 	}
 	if trimErr != nil {
-		m.notify(trimErr.Error(), true)
+		if trimMsg != "" {
+			trimMsg += "\n"
+		}
+		m.notify(trimMsg+"trimming the "+target.ID+" lane failed: "+trimErr.Error(), true)
 		return
 	}
 	if trimMsg != "" {
@@ -1410,35 +1413,38 @@ func (m *Model) forceMove() {
 		ticket.Handle(p.ticketID), p.target.Name, len(p.refusals))
 	b.WriteString(refusalBullets(p.refusals))
 
-	trimMsg, trimErr := m.trimHolds(p.target.ID)
+	trimMsg, trimErr := m.trimHolds(p.target.ID, p.ticketID)
 	m.finishMove(p.ticketID)
 	if m.mode == modeMessage {
 		// finishMove has worse news of its own; do not paper over it.
 		return
 	}
-	if trimErr != nil {
-		m.notify(trimErr.Error(), true)
-		return
-	}
 	if trimMsg != "" {
 		b.WriteString("\n" + trimMsg)
+	}
+	if trimErr != nil {
+		b.WriteString("\ntrimming the " + p.target.ID + " lane failed: " + trimErr.Error())
+		m.notify(b.String(), true)
+		return
 	}
 	m.notify(b.String(), false)
 }
 
 // trimHolds enforces the just-entered lane's cap: the oldest tickets beyond
 // the newest Holds leave for the logbook, exactly as the CLI's move does it.
-// The returned message names every ticket that left — the one rule that
-// moves files never runs silently.
-func (m *Model) trimHolds(laneID string) (string, error) {
+// moved names the ticket whose arrival triggered the trim; it is pinned as
+// newest and never the one trimmed. The returned message names every ticket
+// that left — including the ones already gone when an error stopped the
+// loop, so even a partial trim is never silent.
+func (m *Model) trimHolds(laneID, moved string) (string, error) {
 	l, ok := m.lanes.Get(laneID)
 	if !ok || l.Holds <= 0 {
 		return "", nil
 	}
 	folder := fmt.Sprintf("%s-%s",
 		identity.Initials(identity.Current(m.store.Root)), time.Now().Format("20060102"))
-	trimmed, err := m.store.TrimLane(laneID, l.Holds, folder)
-	if err != nil || len(trimmed) == 0 {
+	trimmed, err := m.store.TrimLane(laneID, l.Holds, folder, moved)
+	if len(trimmed) == 0 {
 		return "", err
 	}
 	var b strings.Builder
@@ -1446,7 +1452,7 @@ func (m *Model) trimHolds(laneID string) (string, error) {
 		fmt.Fprintf(&b, "%s left for the logbook (%s holds %d) — restore it with 'jaira restore %s'.\n",
 			ticket.Handle(tr.ID), laneID, l.Holds, filepath.Base(tr.Path))
 	}
-	return b.String(), nil
+	return b.String(), err
 }
 
 // finishMove puts the user back on the page the move was started from and

@@ -6,7 +6,7 @@ import (
 )
 
 func TestHoldsParsesAndDefaultsToUnlimited(t *testing.T) {
-	l, err := parse([]byte("---\nid: closed\nholds: 7\n---\n"), "closed.md", false)
+	l, err := parse([]byte("---\nid: closed\nterminal: true\nholds: 7\n---\n"), "closed.md", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,10 +24,24 @@ func TestHoldsParsesAndDefaultsToUnlimited(t *testing.T) {
 
 func TestHoldsRefusesWhatIsNotACount(t *testing.T) {
 	for _, v := range []string{"ten", "-1"} {
-		_, err := parse([]byte("---\nid: closed\nholds: "+v+"\n---\n"), "closed.md", false)
+		_, err := parse([]byte("---\nid: closed\nterminal: true\nholds: "+v+"\n---\n"), "closed.md", false)
 		if err == nil || !strings.Contains(err.Error(), "holds") {
 			t.Errorf("holds: %s was accepted, want a refusal naming holds (got %v)", v, err)
 		}
+	}
+}
+
+// A cap on a working lane would file unfinished tickets into the logbook —
+// past the terminal-lane guard 'jaira logbook' enforces, and without their
+// commits. Refused at parse, where the lane author can read why.
+func TestHoldsRefusesANonTerminalLane(t *testing.T) {
+	_, err := parse([]byte("---\nid: busy\nholds: 3\n---\n"), "busy.md", false)
+	if err == nil || !strings.Contains(err.Error(), "terminal") {
+		t.Errorf("holds on a non-terminal lane was accepted, want a refusal naming terminal (got %v)", err)
+	}
+	// holds: 0 stays legal anywhere — it declares nothing.
+	if _, err := parse([]byte("---\nid: busy\nholds: 0\n---\n"), "busy.md", false); err != nil {
+		t.Errorf("holds: 0 on a non-terminal lane refused: %v", err)
 	}
 }
 

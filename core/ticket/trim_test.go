@@ -40,9 +40,42 @@ func trimStore(t *testing.T, n int) (*Store, []*Ticket) {
 	return s, out
 }
 
+// tiedStore builds a store with n done tickets created a second apart but all
+// carrying the SAME updated-at — the routine case: several moves inside the
+// stamp's one-second resolution.
+func tiedStore(t *testing.T, n int) (*Store, []*Ticket) {
+	t.Helper()
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	s, err := At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	stamp := FormatTime(base.Add(time.Hour))
+	var out []*Ticket
+	for i := 0; i < n; i++ {
+		tk, err := s.Create(map[string]string{
+			FieldID:        NewID(base.Add(time.Duration(i) * time.Second)),
+			FieldTitle:     fmt.Sprintf("tie%d", i),
+			FieldStatus:    "done",
+			FieldCreatedAt: stamp,
+			FieldUpdatedAt: stamp,
+		}, nil, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, tk)
+	}
+	return s, out
+}
+
 func TestOverflowReturnsExactlyTheOldestBeyondTheCap(t *testing.T) {
 	s, ts := trimStore(t, 12)
-	over, err := s.Overflow("done", 10)
+	over, err := s.Overflow("done", 10, "")
 	if err != nil {
 		t.Fatalf("Overflow: %v", err)
 	}
@@ -57,7 +90,7 @@ func TestOverflowReturnsExactlyTheOldestBeyondTheCap(t *testing.T) {
 
 func TestOverflowAtOrUnderTheCapIsEmpty(t *testing.T) {
 	s, _ := trimStore(t, 10)
-	over, err := s.Overflow("done", 10)
+	over, err := s.Overflow("done", 10, "")
 	if err != nil {
 		t.Fatalf("Overflow: %v", err)
 	}
@@ -65,7 +98,7 @@ func TestOverflowAtOrUnderTheCapIsEmpty(t *testing.T) {
 		t.Errorf("exactly 10 over a cap of 10 overflows %d tickets, want none", len(over))
 	}
 	// keep <= 0 means no cap at all.
-	over, err = s.Overflow("done", 0)
+	over, err = s.Overflow("done", 0, "")
 	if err != nil {
 		t.Fatalf("Overflow: %v", err)
 	}
@@ -74,9 +107,45 @@ func TestOverflowAtOrUnderTheCapIsEmpty(t *testing.T) {
 	}
 }
 
+// updated-at has second resolution, so scripted moves tie routinely. Among
+// ties the newer ULID is the newer ticket — the oldest-created leaves, never
+// the latest arrival.
+func TestOverflowBreaksTiesTowardTheNewerULID(t *testing.T) {
+	s, ts := tiedStore(t, 3)
+	over, err := s.Overflow("done", 2, "")
+	if err != nil {
+		t.Fatalf("Overflow: %v", err)
+	}
+	if len(over) != 1 {
+		t.Fatalf("overflow of 3 tied over 2 = %d tickets, want 1", len(over))
+	}
+	if over[0].ID != ts[0].ID {
+		t.Errorf("overflow picked %s, want the oldest-created %s", over[0].Title, ts[0].Title)
+	}
+}
+
+// The ticket whose arrival triggered the trim is pinned as newest: even with
+// the oldest ULID and a tied stamp, it never leaves.
+func TestOverflowNeverPicksTheJustMovedTicket(t *testing.T) {
+	s, ts := tiedStore(t, 3)
+	over, err := s.Overflow("done", 2, ts[0].ID)
+	if err != nil {
+		t.Fatalf("Overflow: %v", err)
+	}
+	if len(over) != 1 {
+		t.Fatalf("overflow = %d tickets, want 1", len(over))
+	}
+	if over[0].ID == ts[0].ID {
+		t.Fatalf("the just-moved ticket was trimmed")
+	}
+	if over[0].ID != ts[1].ID {
+		t.Errorf("overflow picked %s, want the oldest unpinned %s", over[0].Title, ts[1].Title)
+	}
+}
+
 func TestTrimLaneFilesTheOverflowAndRestoreBringsItBack(t *testing.T) {
 	s, ts := trimStore(t, 11)
-	trimmed, err := s.TrimLane("done", 10, "bc-20260903")
+	trimmed, err := s.TrimLane("done", 10, "bc-20260903", "")
 	if err != nil {
 		t.Fatalf("TrimLane: %v", err)
 	}

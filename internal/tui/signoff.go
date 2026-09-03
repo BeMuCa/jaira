@@ -187,6 +187,10 @@ func (m *Model) accept() {
 		m.notify(err.Error(), true)
 		return
 	}
+	// The accept key is the fourth way a ticket lands in a lane, and the
+	// usual one for the capped terminal lane — it enforces the cap exactly
+	// as the other three move write-sites do.
+	trimMsg, trimErr := m.trimHolds(next.ID, id)
 	if err := m.reload(); err != nil {
 		m.notify(err.Error(), true)
 		return
@@ -194,7 +198,15 @@ func (m *Model) accept() {
 	m.mode = modeBoard
 	m.detail = nil
 	m.selectByID(id)
-	m.notify(fmt.Sprintf("Accepted %s into %s.", ticket.Handle(id), next.Name), false)
+	msg := fmt.Sprintf("Accepted %s into %s.", ticket.Handle(id), next.Name)
+	if trimMsg != "" {
+		msg += "\n\n" + trimMsg
+	}
+	if trimErr != nil {
+		m.notify(msg+"\n\ntrimming the "+next.ID+" lane failed: "+trimErr.Error(), true)
+		return
+	}
+	m.notify(msg, false)
 }
 
 // followUpContext builds the new ticket's "why", replacing the previous body

@@ -119,3 +119,46 @@ func TestMoveJSONCarriesTheTrim(t *testing.T) {
 		t.Errorf("--json output lacks the trimmed ticket %s:\n%s", ticket.Handle(done[0].ID), out)
 	}
 }
+
+// A failed trim must not fail a move that landed: exit stays 0, the success
+// line and next step survive, and the failure is named on stderr. A non-zero
+// exit would send an agent into a retry that short-circuits already-in-lane
+// and never trims — the lane would stay over cap for good.
+func TestMoveSurvivesATrimFailureAndSaysSo(t *testing.T) {
+	dir, s, _, mover := holdsFixture(t, 10)
+	// One unreadable ticket makes List refuse, so the trim aborts by design.
+	if err := os.WriteFile(filepath.Join(s.TicketsDir(), "broken.md"), []byte("not frontmatter at all"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force")
+	if err != nil {
+		t.Fatalf("a trim failure failed the move: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "→ done") {
+		t.Errorf("the move's success line is missing:\n%s", out)
+	}
+	if !strings.Contains(out, "trimming the done lane failed") {
+		t.Errorf("the trim failure is not reported:\n%s", out)
+	}
+	after, err := s.Load(mover.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Status != "done" {
+		t.Errorf("mover is in %q, want done", after.Status)
+	}
+}
+
+func TestMoveJSONCarriesTheTrimError(t *testing.T) {
+	dir, s, _, mover := holdsFixture(t, 10)
+	if err := os.WriteFile(filepath.Join(s.TicketsDir(), "broken.md"), []byte("not frontmatter at all"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force", "--json")
+	if err != nil {
+		t.Fatalf("move --json: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, `"trim_error"`) || !strings.Contains(out, `"moved"`) {
+		t.Errorf("--json output lacks trim_error next to the successful move:\n%s", out)
+	}
+}

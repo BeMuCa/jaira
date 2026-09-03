@@ -322,6 +322,9 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 		if n < 0 {
 			return nil, fmt.Errorf("lane %s: holds must not be negative, got %d", source, n)
 		}
+		if n > 0 && !l.Terminal {
+			return nil, fmt.Errorf("lane %s: holds needs terminal: true — the logbook records finished work, and trimming a working lane would file unfinished tickets as done", source)
+		}
 		l.Holds = n
 	}
 	if l.Agentic && l.Prompt == "" {

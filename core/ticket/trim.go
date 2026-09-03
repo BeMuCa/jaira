@@ -14,10 +14,15 @@ type Trimmed struct {
 
 // Overflow returns the tickets of a lane beyond the newest keep, oldest first.
 // "Newest" is measured by updated-at: a ticket in a terminal lane is normally
-// never touched again, so updated-at is its acceptance time. keep <= 0 means
-// the lane has no cap, so nothing ever overflows. A board with unreadable
-// tickets refuses to answer rather than guess at which ticket is oldest.
-func (s *Store) Overflow(lane string, keep int) ([]*Ticket, error) {
+// never touched again, so updated-at is its acceptance time. newest names the
+// ticket whose arrival is being accounted for — it is pinned to the top
+// regardless of its stamp, so the ticket that triggered a trim is never the
+// one trimmed. Ties in updated-at are routine (the stamp has second
+// resolution) and break toward the newer ULID: among tickets touched in the
+// same second, the most recently created counts as newer. keep <= 0 means the
+// lane has no cap, so nothing ever overflows. A board with unreadable tickets
+// refuses to answer rather than guess at which ticket is oldest.
+func (s *Store) Overflow(lane string, keep int, newest string) ([]*Ticket, error) {
 	if keep <= 0 {
 		return nil, nil
 	}
@@ -34,10 +39,15 @@ func (s *Store) Overflow(lane string, keep int) ([]*Ticket, error) {
 	if len(ts) <= keep {
 		return nil, nil
 	}
-	// Newest first, ties broken by id — the same order the board displays.
 	sort.Slice(ts, func(i, j int) bool {
+		if ts[i].ID == newest {
+			return true
+		}
+		if ts[j].ID == newest {
+			return false
+		}
 		if ts[i].UpdatedAt.Equal(ts[j].UpdatedAt) {
-			return ts[i].ID < ts[j].ID
+			return ts[i].ID > ts[j].ID
 		}
 		return ts[i].UpdatedAt.After(ts[j].UpdatedAt)
 	})
@@ -50,11 +60,12 @@ func (s *Store) Overflow(lane string, keep int) ([]*Ticket, error) {
 }
 
 // TrimLane enforces a lane's cap after something new landed in it: the tickets
-// beyond the newest keep leave for the given logbook folder, oldest first. It
-// returns what moved — including on error, so a caller can still report the
-// tickets that had already left before the failure.
-func (s *Store) TrimLane(lane string, keep int, folder string) ([]Trimmed, error) {
-	over, err := s.Overflow(lane, keep)
+// beyond the newest keep leave for the given logbook folder, oldest first.
+// newest is passed through to Overflow so the just-landed ticket is never
+// trimmed. It returns what moved — including on error, so a caller can still
+// report the tickets that had already left before the failure.
+func (s *Store) TrimLane(lane string, keep int, folder, newest string) ([]Trimmed, error) {
+	over, err := s.Overflow(lane, keep, newest)
 	if err != nil {
 		return nil, err
 	}

@@ -217,21 +217,28 @@ one the real move would have returned.`,
 
 			// A lane with a cap is trimmed by the move that lands here, and the
 			// move says so — the one rule that moves files never runs silently.
+			// A trim failure is reported without failing the move: the status
+			// write has already landed, and a non-zero exit would send an agent
+			// into a retry that short-circuits as already-in-lane and never
+			// trims. Whatever left before the failure is still named.
 			var trimmed []ticket.Trimmed
+			var trimErr error
 			var holds int
 			if l, ok := env.Lanes.Get(to); ok && l.Holds > 0 {
 				holds = l.Holds
-				if trimmed, err = s.TrimLane(to, holds, logbookFolder()); err != nil {
-					return fmt.Errorf("moved %s to %s, but trimming the lane failed: %w", ticket.Handle(t.ID), to, err)
-				}
+				trimmed, trimErr = s.TrimLane(to, holds, logbookFolder(), t.ID)
 			}
 
 			if g.jsonOut {
-				return emit(cmd.OutOrStdout(), map[string]any{
+				out := map[string]any{
 					"ticket": ticketJSON(t, env.Lanes), "moved": true,
 					"overridden": force && len(vs) > 0,
 					"trimmed":    trimmedJSON(trimmed),
-				})
+				}
+				if trimErr != nil {
+					out["trim_error"] = trimErr.Error()
+				}
+				return emit(cmd.OutOrStdout(), out)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s → %s\n", ticket.Handle(t.ID), to)
 			if force && len(vs) > 0 {
@@ -240,6 +247,9 @@ one the real move would have returned.`,
 			for _, tr := range trimmed {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s left for the logbook (%s holds %d) — restore it with 'jaira restore %s'.\n",
 					ticket.Handle(tr.ID), to, holds, filepath.Base(tr.Path))
+			}
+			if trimErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "trimming the %s lane failed: %v\n", to, trimErr)
 			}
 			fmt.Fprint(cmd.OutOrStdout(), nextStepLine(env.Lanes, t.ID, to))
 			return nil
