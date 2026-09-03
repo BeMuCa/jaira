@@ -1,7 +1,7 @@
 ---
 id: 01M1KZ56JYZWZAYTHBGSKA9CFA
 title: Mehrzeilige Ticket-Felder behalten ihre Zeilen in der Detailansicht
-status: backlog
+status: review
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,14 +12,28 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T15:45:47Z
-updated-at: 2026-09-03T15:45:47Z
+updated-at: 2026-09-03T15:59:06Z
+claimed-by: EE-3NX6GL3-2629914
+claimed-at: 2026-09-03T15:49:13Z
+updated-by: BeMuCa
+outcome-what: "wrapField-Helper: Feldwerte behalten die Zeilen des Autors (je Eingabezeile gewrappt, haengender Einzug 13); Detail-Pane row() und Signoff section() nutzen ihn - ein mehrzeiliger review-check rendert als nummerierte Liste"
+outcome-why: "Berk am 03.09.: check soll durchnummerierte Schritte als Liste zeigen, nicht als Prosa; row() jagte jeden Wert durch wrap(), das \\n plaettet"
+outcome-resolves: TestAMultilineCheckKeepsItsLines prueft beide Screens (Zeile beginnt unter der Label-Spalte); einzeilige Werte gehen durch den Passthrough-Zweig unveraendert (alte reviewcheck-Tests gruen); go test ./... -race RC=0
+executed-by: fable
+review-summary: "Ein Helper statt zweier Sonderfaelle; sitzt in view.go neben den anderen Umbruch-Helfern (wrap/wrapLines seit HREQJR), Signoff teilt ihn - die zwei Screens bleiben 'ein Werkzeug' (Kommentar in signoff.go verlangt das explizit). Kein Feld-Sonderfall: JEDES mehrzeilig geschriebene Feld profitiert (question, gaps), einzeilige bleiben byte-gleich."
+review-gaps: "Nichts entfernt. Gelassen: Leerzeilen im Feldwert werden zu reinen Einzug-Zeilen (kosmetisch); wrapLines nicht wiederverwendet - es hat keinen Einzug-Parameter und sein Passthrough-Kontrakt (byte-identische Zeilen) ist ein anderer Job."
+review-check: |-
+  1. Neu bauen, ein Ticket mit mehrzeiligem review-check oeffnen (NJPQWE in signoff hat einen): jeder Schritt auf eigener Zeile, buendig unter der Label-Spalte.
+  2. Dasselbe auf dem Signoff-Screen des Tickets.
+  3. Ein einzeiliges Feld (z.B. assignee, goal) sieht aus wie vorher.
 ---
 
 # Mehrzeilige Ticket-Felder behalten ihre Zeilen in der Detailansicht
 
 ## Definition of Done
 
-- [ ] Ein review-check mit einem Schritt je Zeile zeigt im TUI-Detail eine Zeile je Schritt (haengender Einzug unter der Label-Spalte); bestehende einzeilige Felder rendern unveraendert; ein Test deckt ein mehrzeiliges Feld ab
+- [x] Ein review-check mit einem Schritt je Zeile zeigt im TUI-Detail eine Zeile je Schritt (haengender Einzug unter der Label-Spalte); bestehende einzeilige Felder rendern unveraendert; ein Test deckt ein mehrzeiliges Feld ab
+  proof: internal/tui/view.go wrapField (Zeilen erhalten, haengender Einzug 13) + row() nutzt ihn; internal/tui/signoff.go section() ebenso; TestAMultilineCheckKeepsItsLines deckt Detail UND Signoff; einzeilige Felder: wrap-Passthrough, bestehende reviewcheck-Tests unveraendert gruen; go test ./... -race RC=0
 
 ## Options
 
@@ -31,4 +45,4 @@ updated-at: 2026-09-03T15:45:47Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-03 15:57 · BeMuCa** — Entscheidung: EIN Helper (wrapField) fuer beide Screens statt zweier Sonderfaelle; einzeilige Werte gehen unveraendert durch wrap (Passthrough-Zweig), also keine Aenderung an bestehenden Renderings - die alten reviewcheck-Tests pinnen das. Leerzeilen im Feld werden zu Einzug-Zeilen (kosmetisch, bewusst nicht behandelt). CLI (jaira show) erhielt Umbrueche schon immer - der Fix betrifft nur die TUI-Label-Spalten-Renderer.

@@ -61,3 +61,28 @@ func TestReviewBlockAppearsForACheckAlone(t *testing.T) {
 		t.Errorf("no Review heading for a ticket carrying only a check:\n%s", out)
 	}
 }
+
+// Steps written one per line stay one per line — a numbered check must read
+// as a list, not as a flattened paragraph, on both screens that show it.
+func TestAMultilineCheckKeepsItsLines(t *testing.T) {
+	steps := "1. build it\n2. open the board\n3. squint at the cards"
+	indent := "\n             " // a following line starts under the label column
+
+	m := newTestModel(t, 140, 40)
+	tk := &ticket.Ticket{
+		ID: "01M0F84EW52Y5HGH84R74VEH6C", Title: "t", Status: "review",
+		ReviewCheck: steps,
+	}
+	out := stripANSI(m.detailBody(tk, 100))
+	if !strings.Contains(out, indent+"2. open the board") || !strings.Contains(out, indent+"3. squint at the cards") {
+		t.Errorf("detail pane flattened the check's lines:\n%s", out)
+	}
+
+	tk.Status = "signoff"
+	tk.ReviewVerdict = "fine"
+	m.detail = tk
+	sign := stripANSI(m.renderSignOff())
+	if !strings.Contains(sign, indent+"2. open the board") {
+		t.Errorf("sign-off screen flattened the check's lines:\n%s", sign)
+	}
+}

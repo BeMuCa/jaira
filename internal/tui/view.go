@@ -963,6 +963,22 @@ func (m *Model) laneFields(t *ticket.Ticket, owed map[string]string) []declaredF
 	return out
 }
 
+// wrapField wraps one field value for the label-column layout, keeping the
+// author's own line breaks: a field written as numbered steps (review-check)
+// renders one step per line instead of a flattened paragraph (Berk, 03.09.).
+// A single-line value passes through wrap unchanged.
+func wrapField(v string, width, indent int) string {
+	lines := strings.Split(v, "\n")
+	if len(lines) == 1 {
+		return wrap(v, width, indent)
+	}
+	out := make([]string, 0, len(lines))
+	for _, l := range lines {
+		out = append(out, wrap(l, width, indent))
+	}
+	return strings.Join(out, "\n"+strings.Repeat(" ", indent))
+}
+
 // detailBody builds an open ticket's content at a given width, so the same
 // rendering serves the full screen and one half of the split follow-up view.
 func (m *Model) detailBody(t *ticket.Ticket, width int) string {
@@ -974,7 +990,7 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		if strings.TrimSpace(v) == "" {
 			return
 		}
-		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrap(v, max(10, width-14), 13))
+		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrapField(v, max(10, width-14), 13))
 	}
 	if m.copied {
 		row("id", t.ID+styOK.Render("  copied"))

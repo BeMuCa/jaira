@@ -41,7 +41,7 @@ func (m *Model) renderSignOff() string {
 		}
 		b.WriteString("\n")
 		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", label)),
-			wrap(body, min(w-14, 64), 13))
+			wrapField(body, min(w-14, 64), 13))
 	}
 	// An empty section used to vanish, which on this screen is the worst
 	// possible answer: the person is being asked to accept work, and a lane
