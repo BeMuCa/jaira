@@ -1,0 +1,6 @@
+# Ticket files are merged field by field by the jaira merge driver.
+# Without it, two people moving the same ticket collide on the status line.
+# The tag registry is one line per tag, so union — keeping both sides — is
+# always right there.
+tickets/*.md merge=jaira
+/tags merge=union
