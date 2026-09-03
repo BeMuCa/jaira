@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T15:45:47Z
-updated-at: 2026-09-03T15:59:06Z
+updated-at: 2026-09-03T16:11:04Z
 claimed-by: EE-3NX6GL3-2629914
 claimed-at: 2026-09-03T15:49:13Z
 updated-by: BeMuCa
@@ -46,3 +46,4 @@ review-check: |-
 
 ## Progress
 - **2026-09-03 15:57 · BeMuCa** — Entscheidung: EIN Helper (wrapField) fuer beide Screens statt zweier Sonderfaelle; einzeilige Werte gehen unveraendert durch wrap (Passthrough-Zweig), also keine Aenderung an bestehenden Renderings - die alten reviewcheck-Tests pinnen das. Leerzeilen im Feld werden zu Einzug-Zeilen (kosmetisch, bewusst nicht behandelt). CLI (jaira show) erhielt Umbrueche schon immer - der Fix betrifft nur die TUI-Label-Spalten-Renderer.
+- **2026-09-03 16:11 · BeMuCa** — Zweitmodell-Review (Sonnet) fand zwei Dinge: (F1) im KA9CFA-Commit ritten die uncommitteten NJPQWE-Runde-4-Hunks mit -> Re-Split vor dem Push (52732e1 + 8e74d58, Baum byte-identisch, diff=0). (F2) fieldRow (view.go:864) ist ein DRITTER Label-Renderer - Lane-declared-Felder auf Detail- UND Signoff-Screen - und plaettete weiter; gleicher wrapField-Fix plus TestFieldRowKeepsTheAuthorsLines. Merke: die Label-Spalte hat drei Renderer (row, section, fieldRow) - wer einen anfasst, prueft alle drei.

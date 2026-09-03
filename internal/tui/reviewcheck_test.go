@@ -86,3 +86,15 @@ func TestAMultilineCheckKeepsItsLines(t *testing.T) {
 		t.Errorf("sign-off screen flattened the check's lines:\n%s", sign)
 	}
 }
+
+// The third label-column renderer: lane-declared fields go through fieldRow on
+// both screens, and it has to keep the author's lines exactly like the others —
+// the review that accepted wrapField found this one still flattening.
+func TestFieldRowKeepsTheAuthorsLines(t *testing.T) {
+	var b strings.Builder
+	fieldRow(&b, "check", "1. build\n2. look", 80)
+	out := stripANSI(b.String())
+	if !strings.Contains(out, "\n             2. look") {
+		t.Errorf("fieldRow flattened the lines:\n%s", out)
+	}
+}

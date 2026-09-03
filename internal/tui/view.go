@@ -861,10 +861,12 @@ func labelPad(label string) (string, int) {
 	return pad, lipgloss.Width(pad) + 1
 }
 
-// fieldRow prints one label-and-value row at a pane width.
+// fieldRow prints one label-and-value row at a pane width. Like row and the
+// sign-off section it keeps the author's own line breaks (wrapField), so a
+// lane field written as steps reads as steps here too.
 func fieldRow(b *strings.Builder, label, text string, width int) {
 	pad, indent := labelPad(label)
-	fmt.Fprintf(b, "%s %s\n", styMeta.Render(pad), wrap(text, max(10, width-indent-1), indent))
+	fmt.Fprintf(b, "%s %s\n", styMeta.Render(pad), wrapField(text, max(10, width-indent-1), indent))
 }
 
 // sourced prefixes a filled declared value with the lane that declares the
