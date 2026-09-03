@@ -413,7 +413,10 @@ func (m *Model) renderColumn(idx, w, h int) string {
 
 	shown := m.cardsInBudget(col.tickets, first, budget)
 	for i := first; i < first+shown; i++ {
-		body.WriteString(m.renderCardBlock(col.tickets[i], w-4, focused && i == m.cardIdx))
+		// w-1: the box sits flush left and stops one column short of the
+		// column's right border — the old w-4 left four blank columns there
+		// (Berks Screenshot, 03.09.), width the titles can use instead.
+		body.WriteString(m.renderCardBlock(col.tickets[i], w-1, focused && i == m.cardIdx))
 	}
 	if rest := len(col.tickets) - (first + shown); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
