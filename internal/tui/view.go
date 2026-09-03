@@ -455,7 +455,10 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 // as two different kinds of thing, and they are not.
 func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
 	inner := max(1, w-2)
-	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
+	// lipgloss Width is the box's TOTAL width, border included, so the content
+	// area inside Width(inner) is inner-2 — renderCard must budget for that,
+	// or its lines wrap inside the box and the card outgrows cardHeight.
+	content := strings.TrimSuffix(m.renderCard(t, max(1, inner-2), selected), "\n")
 	box := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Width(inner)
 	if color, ok := m.cardColor(t); ok {
 		box = box.BorderForeground(lipgloss.Color(strconv.Itoa(color)))

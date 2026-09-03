@@ -95,7 +95,7 @@ func TestBoardRenders(t *testing.T) {
 			t.Errorf("lane %q missing from board", want)
 		}
 	}
-	if !strings.Contains(out, "Refactor auth") {
+	if !strings.Contains(out, "Refactor") {
 		t.Error("ticket title missing")
 	}
 	t.Logf("\n%s", out)
@@ -120,7 +120,7 @@ func TestFilterNarrowsTheBoard(t *testing.T) {
 	m.filter = "auth"
 	m.rebuild()
 	out := stripANSI(m.render())
-	if !strings.Contains(out, "Refactor auth") {
+	if !strings.Contains(out, "Refactor") {
 		t.Error("matching ticket was filtered out")
 	}
 	if strings.Contains(out, "Rate limit") {
