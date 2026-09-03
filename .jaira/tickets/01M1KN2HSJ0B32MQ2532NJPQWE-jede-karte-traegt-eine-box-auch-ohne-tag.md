@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: signoff
+status: optimize
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,17 +12,22 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T14:42:31Z
+updated-at: 2026-09-03T15:48:38Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
 updated-by: BeMuCa
-outcome-what: "Kartenbreite in der Spalte: renderColumn reicht w-1 statt w-4 an renderCardBlock - rechts bleibt eine Spalte Luft statt vier, Inhalt gewinnt 3 Spalten"
-outcome-why: "Berks Signoff-Feedback mit Screenshot: 'mach die abstaende kleiner, rechts von den boxen kann es fast bis zum rand'"
-outcome-resolves: "Eine Zeile plus Kommentar; alle Breiten-Invarianten haengen an renderCardBlock/renderCard, die unveraendert budgetieren (Box-Gesamt = Parameter-2, Inhalt = -4) - Suite -race RC=0 bestaetigt; Optik selbst ist die Signoff-Abnahme"
+outcome-what: "Selektion ist jetzt die gefaerbte Schrift statt des Balkens (Tag-Farbe der Karte, sonst Akzentblau); Innenabstand der Box von zwei Spalten auf eine reduziert, Budgets entsprechend (w-1)"
+outcome-why: "Berks 3. Screenshot-Feedback: Abstand links unnoetig gross, der blaue Balken doppelt nur, was die Box schon rahmt"
+outcome-resolves: "Balken entfernt (die zweite ▌-Stelle ist der Board-Umschalter, keine Karte - unangetastet); Selektion bleibt ohne Farbe erkennbar? Nein - Bold bleibt als zweiter Kanal; go test ./... -race RC=0 (15 Pakete), Optik ist die Signoff-Abnahme"
 executed-by: fable
-review-summary: "Runde 3 (Signoff-Feedback Abstaende): Ein-Zahlen-Aenderung am richtigen Ort - renderColumn bestimmt, wieviel Spaltenbreite eine Karte bekommt; renderCardBlock/renderCard budgetieren relativ zum Parameter und bleiben unangetastet, also gilt die gesamte Breiten-Arithmetik aus Runde 2 unveraendert. Kein einfacherer Schnitt moeglich."
+review-summary: "Runde 4 (Berks 3. Screenshot): Selektions-Balken entfernt - Selektion ist die gefaerbte Titel-Schrift (Tag-Farbe der Karte, sonst Akzent; Bold bleibt als zweiter Kanal, Zustand haengt nie an Farbe allein); Innen-Einzug der Box von 2 auf 1 Spalte, Budgets folgen (w-1). Der Board-Umschalter behaelt seinen Balken - andere Liste, keine Box. Kein einfacherer Schnitt: beide Aenderungen leben in renderCard, wo die Zeilen entstehen."
 review-gaps: "Nichts entfernt. Gelassen: cardHeight behaelt Receiver+Parameter (Signatur-Kompatibilitaet aller Aufrufer, und die Hoehe kann wieder dynamisch werden); der '✎ someo'-Pin wurde zum Glyph-Pin gelockert statt die Boardbreite im Test zu schrauben - Begruendung in der Ticket-Note."
-review-check: "1. Neu bauen, Board oeffnen: JEDE Karte gerahmt (tag-los matt, getaggt farbig), exakt 5 Zeilen, kein abgeschnittener Rand. 2. ABSTAND: Box endet eine Spalte vor dem rechten Spaltenrand (vorher vier) - dein Screenshot-Fall. 3. Terminal auf ~12 Zeilen stauchen: Deckel und Boden bleiben. 4. '+N more' stimmt mit dem ueberein, was fehlt. 5. Titel zeigen ~3 Zeichen mehr als vorher."
+review-check: |-
+  1. Neu bauen, Board oeffnen: jede Karte gerahmt (tag-los matt, getaggt farbig), exakt 5 Zeilen.
+  2. Abstand: Box endet EINE Spalte vor dem rechten Spaltenrand; innen EIN Leerzeichen Einzug (dein 3. Screenshot).
+  3. Selektierte Karte: kein blauer Balken mehr - der Titel selbst ist gefaerbt (Tag-Farbe, sonst blau) und fett.
+  4. Terminal auf ~12 Zeilen stauchen: Deckel und Boden der Boxen bleiben.
+  5. Spalte mit Ueberlauf: die +N-more-Zahl stimmt mit dem Fehlenden ueberein.
 review-verdict: "accept - Runde 3 (Abstands-Feedback) koordinator-verifiziert und offengelegt: die Aenderung ist eine Zahl in renderColumn (w-1 statt w-4); die gesamte Box-Arithmetik aus Runde 2 (vom Opus-Reviewer kausal gemessen, inkl. seiner nachgepinnten Probe TestACardHeavyWithFlagsStaysFiveRows) budgetiert relativ zum Parameter und blieb unangetastet - Suite -race nach Cache-Loeschung RC=0, 15 Pakete. Ein weiterer Opus-Durchgang wurde nicht angefragt (Reviewer zweimal am 529 gestorben; Delta = eine Konstante). Die Optik - eine Spalte Luft rechts statt vier - ist genau das, was im Signoff mit deinem Screenshot verglichen wird."
 ---
 
@@ -48,3 +53,4 @@ review-verdict: "accept - Runde 3 (Abstands-Feedback) koordinator-verifiziert un
 - **2026-09-03 13:25 · BeMuCa** — Fix umgesetzt wie vom Reviewer verifiziert: renderCard bekommt max(1, inner-2) - die Inhaltsflaeche der Box, nicht ihre Gesamtbreite; Kommentar an Ort und Stelle erklaert die lipgloss-Width-Semantik. Die zwei vorhergesagten Titel-Repins gemacht (render_test.go: 'Refactor auth' -> Praefix 'Refactor', uebersteht kuenftige Breiten-Feinjustagen). Voller Lauf -race nach Cache-Loeschung: RC=0.
 - **2026-09-03 14:36 · BeMuCa** — Berks Signoff-Feedback (03.09., Screenshot): Abstaende kleiner - rechts von den Boxen kann es fast bis zum Rand. Heute: Box flush links, 4 Spalten Luft rechts (renderColumn gibt w-4, Box-Gesamt = w-6, Spalteninnen = w-2). Ziel: 1 Spalte Luft rechts => renderCardBlock bekommt w-1 (Box w-3); Inhalt gewinnt 3 Spalten fuer Titel/Flags.
 - **2026-09-03 14:41 · BeMuCa** — Umgesetzt: renderColumn gibt den Karten w-1 statt w-4 - Box endet eine Spalte vor dem rechten Spaltenrand (vorher vier), flush links wie gehabt; Titel/Handle/Flags gewinnen 3 Spalten. Kommentar im Code nennt den Grund (Berks Screenshot). Volle Suite -race nach Cache-Loeschung RC=0, 15 Pakete; kein Test pinnt den exakten Abstand - die Optik ist Berks Abnahme im Signoff.
+- **2026-09-03 15:38 · BeMuCa** — Berks 3. Signoff-Feedback (Screenshot): (1) Innenabstand links in der Box zu gross; (2) der blaue Selektions-Balken soll weg - Selektion reicht als gefaerbte Schrift, blau bzw. in der Tag-Farbe der Karte; (3) seine Frage 'Text vergroessert?' - nein, Terminalschrift ist fix; Karten sind seit w-1 drei Spalten breiter, daher mehr sichtbarer Titel.

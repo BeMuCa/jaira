@@ -8,9 +8,12 @@ goal: "Beide Lanes liegen als Dateien in lanes/, parsen in CI, und ihr Prompt sa
 context: "Berk am 27.08. nach der Lane-Recherche (.planning/research/lane-ideas.md, Ideen 5 und 12): diese zwei gefallen ihm. secrets-scan: billigste Pruefung, faengt den schlimmsten Einzelfehler (ein committetes Credential), laeuft auf jedem Ticket, Tier cheap, Eingabe diff, Ausgabe secrets-status. changelog-writer: klein, billig, dient direkt dem Kernwert 'man verliert nie, wofuer eine Aufgabe war' - fuer Endnutzer, nicht nur Agenten; Eingabe outcome-what/-why, Ausgabe changelog-entry; Tier cheap. Beide Prompt-Entwuerfe stehen im Recherchebericht. Offen: wo sie im Ablauf sitzen (secrets-scan nach in-progress vor critique; changelog-writer nach review vor signoff?) und ob changelog-entry in core/release/NOTES.md geschrieben werden soll oder nur auf dem Ticket steht."
 definition-of-done: "lanes/secrets-scan.md und lanes/changelog-writer.md existieren, go test ./core/lane/ parst sie, jaira lanes market listet sie, jede hat after:, model-tier, input-requires, output-produces und einen Prompt mit Endbedingung, lanes/README.md hat je eine Tabellenzeile"
 blocked-by: []
-commits: []
+commits:
+  - 5f61f35019444a5c6f7b8aa9fd970c70512b3ed4
+  - 158d4732e3d36d64af147b163ce8fb035af2ad4f
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-27T23:28:57Z
-updated-at: 2026-09-03T10:27:44Z
+updated-at: 2026-09-03T15:48:36Z
 claimed-by: EE-3NX6GL3-2809077
 claimed-at: 2026-08-31T17:58:21Z
 updated-by: BeMuCa

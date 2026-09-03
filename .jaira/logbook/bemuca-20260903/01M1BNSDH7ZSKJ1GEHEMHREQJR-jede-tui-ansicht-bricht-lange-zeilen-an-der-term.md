@@ -8,9 +8,14 @@ goal: "Fliesstext in jedem TUI-Fenster bricht an der verfuegbaren Breite um, sta
 context: "Berk am 31.08.: bei verkleinertem Terminalfenster sind Saetze zum Teil nicht lesbar, und nach rechts scrollen geht nicht. internal/tui hat wrap() (view.go:1236) und wrapHints() (view.go:972), genutzt u.a. in edit.go:192, signoff.go:44, view.go:543/587. Viele Ansichten nutzen stattdessen truncate(): browse.go (206,230,236,238,295,315,318,320), defaultboard.go (176,191,208,217,219), lanes.go (676,687,695,701,730), edit.go (152,167,182), dropboard.go (150). Bewusste Einzeiler (Kartentitel in Board-Spalten, Statuszeilen, Tabellenzellen) duerfen gekuerzt bleiben; Fliesstext (goal, context, outcome, review, notes, question, Fehlermeldungen, Pfade in Meldungen) muss umbrechen. Ein Explore-Audit ueber alle 17 Dateien laeuft; sein Befund gehoert in den Plan."
 definition-of-done: In jedem TUI-Fenster ist bei schmalem Terminal jeder Satz vollstaendig lesbar (umgebrochen statt abgeschnitten); bewusste Einzeiler-Kuerzungen bleiben begruendet stehen; Tests fuer schmale Breiten; go test ./... -race gruen
 blocked-by: []
-commits: []
+commits:
+  - 45f78f2cb9fc231aa961cc75ebe15582204e0116
+  - 07022b7ccf807a0d3c4de39a8599aa0cb450e20f
+  - 8f93bbc4f1f538501c05a737fd823f6ceeb10807
+  - 8ba0eb270c012c14b97fa16cde83d7bf7f2fd699
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-31T10:28:08Z
-updated-at: 2026-08-31T16:21:34Z
+updated-at: 2026-09-03T15:48:32Z
 claimed-by: EE-3NX6GL3-2143723
 claimed-at: 2026-08-31T10:28:19Z
 updated-by: BeMuCa

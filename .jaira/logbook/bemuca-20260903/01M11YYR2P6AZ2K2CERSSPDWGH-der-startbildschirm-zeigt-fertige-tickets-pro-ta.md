@@ -15,9 +15,12 @@ context: |-
   Vorsicht: die Taste s ist auf dem Browse-Bildschirm (internal/tui/browse.go:177) schon belegt - pruefen, ob Projektauswahl und Browse dieselbe Tastenbelegung teilen. Die Projektauswahl ist internal/tui/home.go.
 definition-of-done: "Auf der Projektauswahl blendet s eine Grafik mit sieben Balken ein und wieder aus; heute ist farblich markiert; die Hoehe entspricht der Zahl der Logbuch-Eintraege des Tages ueber alle registrierten Boards; ein Test mit gebauten Logbuch-Ordnern prueft die Zaehlung an der Tagesgrenze; die Grafik sagt, dass sie Logbuch-Eintraege zaehlt"
 blocked-by: []
-commits: []
+commits:
+  - b91ecb11d5c8f9b560cd7c8a740ca06b1a37f3fb
+  - cfb45f0e9ada1aa3518ad814861eb6b6e5892508
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-27T15:55:56Z
-updated-at: 2026-08-31T16:21:34Z
+updated-at: 2026-09-03T15:48:32Z
 claimed-by: EE-3NX6GL3-3495447
 claimed-at: 2026-08-27T15:58:19Z
 updated-by: BeMuCa

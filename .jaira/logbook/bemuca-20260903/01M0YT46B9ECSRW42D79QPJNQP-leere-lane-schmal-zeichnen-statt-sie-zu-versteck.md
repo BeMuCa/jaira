@@ -8,9 +8,13 @@ goal: "z laesst leere Lanes stehen, nur schmal, statt sie vom Board zu nehmen"
 context: "Berk am 25.08.: verstecken kann verwirren - man sieht nicht, dass die Lane existiert. Heute nimmt boardFit (internal/tui/view.go) leere Lanes aus der Spaltenliste, wenn hideEmpty gesetzt ist, und die Statuszeile sagt wie viele weg sind. Alternative: Lane bleibt stehen, colW auf ein Minimum klemmen, Titel gekuerzt. Betrifft boardFit, renderColumn und die z-Tests des Beitragenden in internal/tui/lanewindow_test.go."
 definition-of-done: Eine leere Lane ist mit z sichtbar aber schmal; kein Ticket verschwindet vom Board; die bestehenden z-Tests sind angepasst statt geloescht
 blocked-by: []
-commits: []
+commits:
+  - bd5b2eec3587b869a89c7b2db233efd71ea595db
+  - f629024b168fe45d1d760a1d438c3a78e28ef760
+  - 0c5423cb76c8576413d7cd4868a4602ea16ecf76
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-26T10:33:48Z
-updated-at: 2026-08-31T16:21:33Z
+updated-at: 2026-09-03T15:48:25Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3443569
 claimed-at: 2026-08-27T15:35:25Z

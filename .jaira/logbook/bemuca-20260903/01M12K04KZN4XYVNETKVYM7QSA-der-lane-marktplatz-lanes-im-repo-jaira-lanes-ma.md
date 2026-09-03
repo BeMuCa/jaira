@@ -13,9 +13,12 @@ context: |-
   Kein Server, keine Registry, kein eigenes Format: das Verzeichnis IST der Marktplatz.
 definition-of-done: "jaira lanes market listet die Lanes aus lanes/ des GitHub-Repos mit id, Name, Beschreibung (Test gegen einen httptest-Server); jaira lanes market adopt <id> legt die Datei im Katalog ab und lanes add findet sie danach; ohne Netz eine klare Fehlermeldung, kein Absturz; README-Absatz und lanes/README.md nennen den PR-Weg und die CI-Pruefung; docs/COMMANDS.md hat beide Befehle"
 blocked-by: []
-commits: []
+commits:
+  - 0782f6e35f1612b803bb495cbdee051b17bdf5e0
+  - 94cc5bb2c17676dc2a3459f64b3e30e7dec29b3b
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-27T21:46:13Z
-updated-at: 2026-08-31T16:21:33Z
+updated-at: 2026-09-03T15:48:29Z
 claimed-by: EE-3NX6GL3-4119427
 claimed-at: 2026-08-27T21:46:32Z
 updated-by: BeMuCa

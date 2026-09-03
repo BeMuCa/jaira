@@ -17,9 +17,11 @@ context: |-
   Warum das jetzt zaehlt: der board-beschreibende Block (0e7db74) ist auf Berks req-Board nie angekommen - dort steht noch der alte Block ohne 'This board's lanes' und ohne 'Work one lane to empty'. Ihn per jaira update zu holen wuerde das Board heute wieder privat machen.
 definition-of-done: "Nach 'jaira init && jaira share && jaira update' enthaelt .gitignore keinen /.jaira/-Eintrag (Test); auf einem Board mit auskommentierter Zeile ebenso; jaira init schreibt ihn weiterhin; die update-Hilfe sagt nicht mehr, dass sie den Ignore-Eintrag schreibt"
 blocked-by: []
-commits: []
+commits:
+  - ef8f2d9b946bbbbef8d29940ac818c60cb5d0dbd
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-27T16:37:48Z
-updated-at: 2026-08-31T16:21:33Z
+updated-at: 2026-09-03T15:48:26Z
 claimed-by: EE-3NX6GL3-3987890
 claimed-at: 2026-08-27T20:41:37Z
 updated-by: BeMuCa

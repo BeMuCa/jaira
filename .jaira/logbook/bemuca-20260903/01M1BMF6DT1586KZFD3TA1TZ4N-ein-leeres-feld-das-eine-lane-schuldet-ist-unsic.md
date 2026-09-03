@@ -15,9 +15,13 @@ context: |-
   Gehoert zum Schema-Umbau (Schnitt 4, TUI-Falten), kann aber davor als eigener Fix landen; .planning/schema-brainstorm.md Punkte 8-10.
 definition-of-done: "Ein Ticket in review ohne gefuellte Outcome/Review-Felder zeigt die sieben Zeilen in der genannten Reihenfolge, leere mit der schuldenden Lane; die Basisfelder stehen in jeder Lane darueber; ein Golden-/View-Test deckt den leeren und den gefuellten Fall ab"
 blocked-by: []
-commits: []
+commits:
+  - 8783751acd32719271085712a478ade67562fced
+  - 847db93f570d67991c1271ce6070f0a8aab9eaa7
+  - 2570a2a230528c84d45e5bf83bd3d990856bc719
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-31T10:05:05Z
-updated-at: 2026-09-03T10:26:38Z
+updated-at: 2026-09-03T15:48:35Z
 claimed-by: EE-3NX6GL3-2715187
 claimed-at: 2026-08-31T17:14:04Z
 updated-by: BeMuCa

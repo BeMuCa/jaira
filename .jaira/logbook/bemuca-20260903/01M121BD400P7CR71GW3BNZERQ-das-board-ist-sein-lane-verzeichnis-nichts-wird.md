@@ -23,9 +23,12 @@ context: |-
   Betroffen: core/lane (Load, order, defaultboard, Installable), internal/cli/tickets.go init, lanes.go, core/lane-Tests (viele setzen die Einspritzung voraus), docs (README Abschnitt Lanes, docs/COMMANDS.md, Block-Text).
 definition-of-done: "Ein Board mit vier Lane-Dateien in .jaira/lanes/ zeigt vier Lanes, bei jedem Befehl; jaira init mit einem Default-Board von vier Lanes schreibt vier Dateien plus order und der naechste Befehl zeigt vier; die Datei removed wird nirgends mehr gelesen oder geschrieben (grep leer); ein Verzeichnis mit Lanes aber ohne order wird einmal migriert und meldet es; lanes add bietet Builtins und Katalog an; lanes remove loescht nur die Datei und den order-Eintrag; go test ./... -race gruen"
 blocked-by: []
-commits: []
+commits:
+  - 743737f7a731e097c7ab26396293086fae83d3e6
+  - 61789a2bdc42d70a3338b9645a3c09b24b4cdf50
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-27T16:37:48Z
-updated-at: 2026-08-31T16:21:33Z
+updated-at: 2026-09-03T15:48:28Z
 claimed-by: EE-3NX6GL3-3987890
 claimed-at: 2026-08-27T20:41:37Z
 updated-by: BeMuCa

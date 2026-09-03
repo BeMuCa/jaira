@@ -8,9 +8,15 @@ goal: "Ein Handle in einer Notiz, der nicht in blocked-by steht, wird gemeldet"
 context: "Aeltester offener Punkt aus dem Handoff. Tickets schreiben 'wartet auf die Auth-Arbeit' in eine Notiz oder in context, und blocked-by - das Feld, das die Gates lesen - bleibt leer. Das Board meldet die Arbeit dann als machbar, obwohl ein Mensch weiss, dass sie es nicht ist. Kandidat: jaira validate warnt, wenn body oder context ein Handle nennen, das nicht in blocked-by steht. Warnung, kein Fehler: ein Ticket zu erwaehnen heisst nicht, davon abzuhaengen. Vor dem Bauen klaeren, was ein Treffer auf ein archiviertes Ticket bedeutet."
 definition-of-done: "Ein Handle in Notiz oder Kontext, der nicht in blocked-by steht, erscheint als Warnung; ein Handle, der drinsteht, nicht; --strict macht daraus einen Fehler"
 blocked-by: []
-commits: []
+commits:
+  - 6fcab8eaf42b39bef9daeced3ba9ed38f69c8f2e
+  - dc0941b7d11dfb0a124fe542b7bd21200ed08302
+  - 980f59dd14fc170c24cc2486f834517b3a029950
+  - 320c4143718a1814cdb7225061e6f87d7950f788
+  - 3dc9b7f5f39feece0897b5c7e252945d0abeab48
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-26T10:34:43Z
-updated-at: 2026-09-03T10:24:11Z
+updated-at: 2026-09-03T15:48:35Z
 claimed-by: EE-3NX6GL3-2654148
 claimed-at: 2026-08-31T16:39:23Z
 updated-by: BeMuCa

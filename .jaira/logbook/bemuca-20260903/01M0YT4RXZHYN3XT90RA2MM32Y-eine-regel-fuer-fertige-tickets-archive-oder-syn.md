@@ -8,9 +8,12 @@ goal: "Vier Doku-Stellen sagen dasselbe darueber, wo ein fertiges Ticket hingeht
 context: "Widerspruch, entstanden beim Mergen von PR #5. Die done-Lane, SKILL.md und docs/AGENTS.md sagen 'jaira archive, sobald gepusht'. Der generierte Block in CLAUDE.md sagt 'jaira sync'. Beide stempeln inzwischen die Commit-Liste; Unterschied ist nur der Zielordner und dass sync die Endlane verlangt. Begruendung fuer sync stand in Issue #4: 'archive reads as abandoned' und ein Tagesordner pro Person fuer die Stundenbuchung - das ist die Praxis des Beitragenden, nicht zwingend Berks. Berk entscheidet die Regel, dann werden vier Stellen gleichgezogen."
 definition-of-done: "done-Lane, SKILL.md, docs/AGENTS.md und der generierte Block nennen denselben Weg; der jeweils andere Befehl wird als Sonderfall benannt, nicht verschwiegen"
 blocked-by: []
-commits: []
+commits:
+  - 7173a454706067eadd531b1d1d378dec76affe0d
+  - 5170c917295b35a83823d2c353bdf13b4539d5ab
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-26T10:34:07Z
-updated-at: 2026-08-31T16:21:33Z
+updated-at: 2026-09-03T15:48:25Z
 claimed-by: EE-3NX6GL3-3492202
 claimed-at: 2026-08-27T15:56:35Z
 updated-by: BeMuCa

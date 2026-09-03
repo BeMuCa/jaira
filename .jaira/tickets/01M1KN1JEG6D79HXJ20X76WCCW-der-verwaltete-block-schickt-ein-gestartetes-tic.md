@@ -1,7 +1,7 @@
 ---
 id: 01M1KN1JEG6D79HXJ20X76WCCW
 title: Der verwaltete Block schickt ein gestartetes Ticket bis zum naechsten Human-Step
-status: backlog
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,10 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:02Z
-updated-at: 2026-09-03T12:49:02Z
+updated-at: 2026-09-03T15:47:56Z
+claimed-by: EE-3NX6GL3-2626905
+claimed-at: 2026-09-03T15:47:55Z
+updated-by: BeMuCa
 ---
 
 # Der verwaltete Block schickt ein gestartetes Ticket bis zum naechsten Human-Step

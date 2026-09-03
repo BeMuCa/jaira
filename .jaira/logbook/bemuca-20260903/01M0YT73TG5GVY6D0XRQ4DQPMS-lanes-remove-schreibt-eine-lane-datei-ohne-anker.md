@@ -8,9 +8,14 @@ goal: Nach jaira lanes remove warnt das Board nicht mehr ueber einen leeren afte
 context: "Gefunden am 26.08. beim Einrichten des Boards im jaira-Repo selbst. 'jaira lanes remove my-lane' materialisiert das Projekt-Lane-Verzeichnis und schreibt dabei alle eingebauten Lanes als Dateien heraus - backlog.md bekommt dabei kein 'after:'. Seither meldet jeder Befehl: 'lane .jaira/lanes/backlog.md: anchor \"\" is not installed; placed before the terminal lane'. Die Lane funktioniert, aber die Warnung steht bei jedem Aufruf da. Vermutlich schreibt der Export die eingebaute Lane heraus, ohne dass die eingebaute ueberhaupt ein after hat - dann muss der Export das Feld weglassen statt es leer zu schreiben."
 definition-of-done: Nach lanes remove auf einem frischen Board kommt keine Anker-Warnung; eine schon geschriebene backlog.md ohne after loest ebenfalls keine Warnung aus
 blocked-by: []
-commits: []
+commits:
+  - 7a861b32c0b1cd8a9cc73b221ed773c2ae7819a3
+  - 9b8b9818a0ebfa81963fc514cdb46617975edbf7
+  - 0f1142e65c6c62d14e357780b2213d29e87ff850
+  - 743737f7a731e097c7ab26396293086fae83d3e6
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
 created-at: 2026-08-26T10:35:24Z
-updated-at: 2026-08-31T16:21:34Z
+updated-at: 2026-09-03T15:48:29Z
 claimed-by: EE-3NX6GL3-2087828
 claimed-at: 2026-08-26T15:48:43Z
 updated-by: BeMuCa
