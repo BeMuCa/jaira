@@ -1,7 +1,7 @@
 ---
 id: 01M0YT4RYWWAAYV8J8VKSGPDYK
 title: Die done-Lane haelt hoechstens zehn Tickets
-status: critique
+status: signoff
 ready: true
 creator: BeMuCa
 goal: "Aeltere Tickets in done wandern selbsttaetig ins Archiv, die zehn neuesten bleiben"
@@ -10,7 +10,7 @@ definition-of-done: "Bei mehr als zehn Tickets in done wird das aelteste archivi
 blocked-by: []
 commits: []
 created-at: 2026-08-26T10:34:07Z
-updated-at: 2026-09-03T11:59:24Z
+updated-at: 2026-09-03T12:11:47Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-2180407
 claimed-at: 2026-09-03T11:14:22Z
@@ -27,9 +27,10 @@ outcome-what: "Review-Funde umgesetzt: accept() als vierte Schreibstelle trimmt,
 outcome-why: "Das unabhaengige Opus-Review fand 5 reproduzierte Funde - darunter die vierte Move-Schreibstelle (menschlicher Accept-Weg), auf der der Cap gar nicht feuerte"
 outcome-resolves: "Alle 5 Funde geschlossen und je mit Test gepinnt (accept-Pfad, Ties, Pin, trim_error, terminal-Guard); go test ./... -race RC=0, Cache geleert; Binary neu gebaut"
 executed-by: fable
-review-summary: "Kein Rueckweiser. Geprueft: (1) einfachere Form - Overflow+TrimLane getrennt ist Plan-Schritt 2 wortwoertlich (Store-Methode einzeln testbar), eine Fusion spart nichts; (2) Muster - Store.Logbook wiederverwendet statt neuem Beweger, Meldung zitiert die restore-Zeile des logbook-Befehls, TUI nutzt notify wie forceMove; (3) nichts Spekulatives - holds ist generisch, aber genau so vom Plan verlangt (Lane-File deklariert, 0=unbegrenzt); (4) richtiger Ort - Trim im core, Aufruf an den drei bekannten Move-Schreibstellen (deren Vereinheitlichung ist laut Ticket-Note ein eigener Schnitt). Einziger Preis: der Meldungssatz existiert doppelt (flow.go + model.go) - gleicher bewusster Zustand wie die drei Move-Stellen selbst."
-review-gaps: "Nichts entfernt. Gelassen: Negativ-Check auf holds (ein handgeschriebenes 'holds: -1' soll laut sagen was falsch ist, nicht still unbegrenzt werden); 'trimmed' im --json immer praesent auch wenn leer (stabiles Schema, Projektregel); Abbruch des Trims bei PartialError von List (auf einem Board mit unlesbaren Tickets nicht raten, welches das aelteste ist); Fixture-Helfer dreifach (drei Packages, kein gemeinsamer Testort)."
-review-check: "1. Neu bauen. In einem frischen Board (jaira init): 'jaira lanes show done' -> Zeile 'Holds: 10'. 2. Elf Tickets nach done zwingen -> der elfte Move meldet 'XXXXXX left for the logbook (done holds 10) - restore it with jaira restore ...'; .jaira/logbook/<initialen>-<datum>/ enthaelt die Datei; der genannte restore-Befehl bringt sie zurueck. 3. Auf DIESEM Board passiert noch nichts: .jaira/lanes/done.md hat holds erst nach dem Drift-Refresh (Lane-Settings im TUI) - danach schickt der naechste done-Move 11 der 21 ins Logbuch, mit Meldung. 4. move --json -> Feld 'trimmed'."
+review-summary: "Zweite Runde nach 5 Review-Funden. Kritik am Fix-Diff: jeder Fund minimal geschlossen, kein Beifang - accept() ruft denselben trimHolds wie die Move-Pfade (kein neues Muster), der newest-Pin ist ein Parameter statt einer zweiten Sortierlogik, der CLI-Fehlerpfad aendert nur Meldeweg (stderr + trim_error), nicht Semantik des Moves. Terminal-Guard sitzt im parse, wo der Lane-Autor die Begruendung liest. Der Meldungssatz existiert weiterhin doppelt (flow.go/model.go) - unveraendert bewusster Zustand."
+review-gaps: "Nichts entfernt. Gelassen: Negativ-Check auf holds; 'trimmed' im --json immer praesent (stabiles Schema), trim_error nur bei Fehler; Abbruch bei PartialError von List (nicht raten, welches Ticket das aelteste ist); Fixture-Helfer je Package. Bekannte Restluecke: Logbook-Namenskollision MITTEN im Trim (Partial-Fall) ohne deterministischen Test - das Melde-Verhalten ist implementiert, die Kollision aber nicht stabil zu inszenieren ohne logbookFolder()-Interna im Test nachzubauen."
+review-check: "1. Neu bauen; frisches Board: 'jaira lanes show done' -> 'Holds: 10'. 2. Elf Tickets nach done zwingen -> der elfte Move meldet die Logbuch-Zeile mit restore-Befehl; genauso beim Accept mit 'a' im signoff (vierte Schreibstelle, jetzt gedeckt). 3. Drei Moves in EINER Sekunde in eine holds-Lane -> es geht das aelteste, nie der Neuankoemmling. 4. move --json -> 'trimmed'; bei kaputtem Ticket auf dem Board zusaetzlich 'trim_error', Exit bleibt 0, der Move steht. 5. holds: 3 auf einer nicht-terminalen Lane -> 'jaira lanes' verweigert mit Begruendung. 6. Auf DIESEM Board greift der Cap erst nach Drift-Refresh von done.md - done haelt 21: der naechste done-Move/Accept danach schickt 11 ins Logbuch, gemeldet."
+review-verdict: "accept (Opus-End-Review auf b1c4ecb, zweiter Durchgang nach 5 Funden aus dem ersten - alle mit eigenen Proben verifiziert gefixt: accept-Pfad per Overlay-Test ausgefuehrt, Tie/Pin ueber 550 Kombinationen gemessen, trim_error/stderr-Verhalten am echten Binary probiert, 'grep trimHolds' bestaetigt alle vier Schreibstellen). Restnotizen des Reviewers, nicht blockierend: der Partial-Trim-Fall (Kollision mitten im Trim) ist nur per Probe gepinnt, nicht als Test; Board-Anzeige tie't auf ID< waehrend der Trim auf ID> tie't - kosmetisch. Nicht geprueft: echtes Tastendruecken im Terminal (nur ueber Go-Tests) und dieses Board selbst (holds erst nach Drift-Refresh)."
 ---
 
 # Die done-Lane haelt hoechstens zehn Tickets

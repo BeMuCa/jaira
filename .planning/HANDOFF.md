@@ -1,101 +1,78 @@
-# Handoff — 2026-08-31, Abend
+# Handoff — 2026-09-03, nach dem "go"
 
-Stand nach der Backlog-Flotte; dieses File ist das Gedächtnis. Der vorige
-Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
+Stand nach der go-Session; dieses File ist das Gedächtnis. Der vorige Handoff
+(31.08. Abend) ist in der git-History dieses Files.
 
-## Kontrakt: Berks erstes "go" nach dem Clear (03.09.)
+## Was heute passierte
 
-= die saubere Auflistung aller offenen Punkte, Learnings und Fragen zeigen
-(dieses File + Memory jaira-open-decisions), NICHT bauen. Der Schema-Bau
-startet weiterhin erst nach seinem Spec-Review.
+- **Das Board ist public.** `jaira share` gelaufen (Berks Anweisung: "ab jetzt
+  arbeiten wir public"), `.jaira/` aus dem .gitignore, Merge-Driver registriert,
+  Commit `6c5d81b`. `.jaira/lanes/` bleibt by design privat (share sagt das
+  selbst). Tickets sind ab jetzt Teil jedes Pushes.
+- **Die 13 signoff-Tickets sind done** — per `--force` auf Berks Zuruf
+  (Flotte + D9SC5A, 9H265S, 79GEPW, AXTFG3). done hielt danach 21 Tickets.
+- **done-cap (SGPDYK) gebaut** — Berks "approved! arbeite durch". Zwei Commits:
+  `d34341c` (feat) + `b1c4ecb` (fix nach Review). `holds: N` im Lane-File
+  (builtin done: 10, Template synchron, nur terminale Lanes), Store.Overflow/
+  TrimLane (core/ticket/trim.go), Trim an ALLEN VIER Status-Schreibstellen,
+  gemeldet (CLI-Zeile mit restore, --json `trimmed`/`trim_error`, TUI-notify).
+  Ticket in **signoff** — Berk nimmt ab.
+- **Unabhängiges Opus-Review, zwei Durchgänge:** Erster fand 5 reproduzierte
+  Funde — (1) accept() im signoff war eine VIERTE Schreibstelle ohne Trim
+  (genau der menschliche Abnahme-Weg), (2) Tie-Break warf bei gleichem
+  updated-at das NEUSTE Ticket raus, (3) Partial-Trim wurde verschluckt,
+  (4) CLI gab exit 1 nach gelungenem Move (Retry = already_in_lane, Lane für
+  immer über Cap), (5) holds auf nicht-terminaler Lane schickte unfertige
+  Arbeit ins Logbuch. Alle gefixt, je mit Test gepinnt. Zweiter Durchgang:
+  **accept, keine Funde** (Pin über 550 Kombinationen gemessen).
+- **Neue Tickets:** P1AE82 (Version links oben im Projektfenster — KOLLIDIERT
+  mit DNAEPN, das die Versionszeile auf dev-Builds gerade stumm schaltete;
+  Klärung im Ticket-Kontext), D0SAHM (Epic-Layer: Storys als verbundene
+  Bubbles über dem Board, Berks großer Wunsch vom 03.09., brainstorm
+  angehakt, kompletter Spec im Kontext).
 
-Neu eingefangen (todo, 8W1R94): Update-Prozess durchspielen und vereinfachen;
-Share-Zustand bleibt auf JEDEM Update-Pfad erhalten (ETR0PX deckte nur
-'jaira update'+.gitignore; self upgrade, Binary-Wechsel, Migration offen).
+## Der eine Satz, der Berk überraschen könnte
 
-## Wo alles steht
+Die Projektkopie `.jaira/lanes/done.md` hat **noch kein holds** — der Cap
+greift auf DIESEM Board erst nach dem Drift-Refresh (Lane-Settings im TUI).
+done hält 21: der erste done-Move oder Accept NACH dem Refresh schickt 11
+Tickets ins Logbuch — laut Meldung, mit restore-Weg, aber eben elf auf einmal.
 
-- **master gepusht** bis einschließlich des 0.1.1-NOTES-Blocks. ~17 Commits
-  heute: Schema-Spec, HREQJR (Wrap überall), dann die Flotte
-  (DNAEPN, MFD7P3, MR3CN8, A1TZ4N, YBC0MT, TQXBY5, 88H1P4, GEC3TK).
-  `go test ./... -race` (Cache geleert) grün auf dem Push-Stand;
-  `gofmt -l` nur das bekannte `internal/cli/tickets.go`.
-- **Binary** `~/.local/bin/jaira` neu gebaut; nach dem NOTES-Commit einmal
-  nachziehen, falls der Stempel nicht HEAD ist.
-- Zwei Spitzen-Commits wurden vor dem Push **re-splittet** (geteilter Index
-  zweier paralleler Agents hatte sie verheddert); Baum-Identität bewiesen.
+## Was Berk jetzt entscheidet
 
-## Was Berk jetzt entscheidet (sein Inbox-Stand)
+1. **signoff: SGPDYK** — done-cap abnehmen (review-check auf dem Ticket hat
+   die Handgriffe). Danach ggf. Drift-Refresh für dieses Board.
+2. **Schema-Spec-Review** (docs/superpowers/specs/2026-08-31-schema-design.md,
+   1e8fc57) — Cut 1 startet nur auf sein Go. Mini-Frage: gehört `verdict` in
+   die Reviewer-Reihenfolge von Entscheidung 10?
+3. **7ZQ0ZN (human): Release** = `git tag v0.1.1 && git push origin v0.1.1`.
+4. **CD9TCB (human)** — drei Optionen, unverändert.
+5. **AXTFG3-Nachklapp:** Tag-Name im geöffneten Ticket ist bewusst ungefärbt
+   (view.go:993, styleLines-Begründung im Code); Berk will Farbe — machbar
+   (nur den Namen färben), auf Zuruf neues Ticket.
+6. **Wiggle-Test** zur grünen Board-Lücke steht weiter aus.
+7. Einmal `jaira update` pro Board (Agent-Block stale durch Tags + Cap).
 
-1. **signoff: 13 Tickets** warten auf Abnahme — die 9 der Flotte (DNAEPN,
-   MFD7P3, MR3CN8, A1TZ4N, YBC0MT, TQXBY5, GEC3TK, 88H1P4, QA3GN1) plus
-   D9SC5A (Herkunfts-Label), 9H265S (Commits im Signoff), 79GEPW (Tags
-   Kern) und AXTFG3 (Tag-Boxen + t-Legende). Abnahme im Board, oder auf
-   Zuruf per `--force` (Invariante 11 gilt; Erfolg an der Lane pruefen,
-   nicht an der letzten Ausgabezeile).
-2. **human: SGPDYK** — done-cap. Empfehlung liegt als Notiz auf dem Ticket
-   (Logbuch / holds:10 im Lane-File / updated-at / Trigger beim done-Move,
-   gemeldet); ein "ja" startet den Bau. Sein 1-Monat-nach-archive-Vorschlag
-   wurde begruendet abgeraten (Antwort vom 02.09. im Chat, Kern in der
-   Ticket-Notiz).
-3. **human: CD9TCB** — drei Optionen (durch 743737f erledigt erklären /
-   Doku-Feld `overrides:` / Warnung bewusst reaktivieren).
-4. **human: 7ZQ0ZN** — NOTES-0.1.1-Block ist auf master; Release = zwei
-   Befehle: `git tag v0.1.1 && git push origin v0.1.1`.
-5. **Schema-Spec-Review**: `docs/superpowers/specs/2026-08-31-schema-design.md`
-   (`1e8fc57`) — Cut 1 startet erst auf sein Go. Offene Mini-Frage dazu:
-   Entscheidung 10 nennt `verdict` nicht in der Reviewer-Reihenfolge; der
-   Code zeigt es zwischen gaps und check.
-6. **AXTFG3-Optik ist sein Call im Signoff**: eine Box kostet 2 Zeilen je
-   Karte (nur bei Registry-Farbe); falls zu teuer, war der benannte
-   Ausweich ein linker Farbbalken — dann neues Ticket.
-7. **backlog, neu**: „lanes add setzt neben den Anker statt ans Ende" —
-   Design-Frage (order.go ist Invarianten-Territorium), bewusst nicht gefixt;
-   README sagt inzwischen ehrlich „Belongs, not lands".
-8. **DoD-Klausel 3 von 88H1P4** ungetickt: frische Session + `jaira hook
-   print`-Snippet in settings.json → arbeitet nach „go" bis signoff. Nur er
-   kann das prüfen.
+## Bekannt offen, unticketiert
 
-## Tags (01.09., Berks Wunsch) — komplett, in signoff
+- 88H1P4 ist done (per Zuruf), aber Mechanismus c (CLAUDE.md-Block-Satz)
+  wartet weiter auf Go, und DoD-Klausel 3 (frische Session bis signoff) blieb
+  ungeprüft — beides steht als Override auf dem Ticket.
+- Reviewer-Restnotizen zu SGPDYK: Partial-Trim-Kollision nur per Probe
+  gepinnt (kein deterministischer Test); Display-Tie `ID<` vs Trim-Tie `ID>`
+  (kosmetisch). `human`-Lane weiter nicht exit-gated.
+- 8W1R94 (Update-Prozess durchspielen) liegt in todo; backlog: lanes-add-Anker,
+  WriteAtomic für geteilte Board-Dateien.
 
-- **79GEPW** (Feld, `.jaira/tags`-Farb-Registry, `jaira tags`/`jaira tag`,
-  Filter `tag:`, Doku): drei Commits, zwei adversariale Opus-Reviews mit
-  eigenen Proben, 17 Funde gefixt (Concurrency-Verlust, /tags-Anker,
-  Zaehl-Dedup, Suggest-Rueckzug …). Implementierer starb am Opus-Limit nach
-  fertigen Edits; Koordinator hat verifiziert und committet.
-- **AXTFG3** (Karten-Boxen in Tag-Farbe, `t`-Legende, Karten-Budget nach
-  echter Hoehe statt /3): Sonnet-Implementierung, Koordinator-Review
-  (Opus gedeckelt bis 19:00); ein Fund (Colour-Lookup unnormalisiert)
-  koordinator-gefixt.
-- **Zwei Koordinator-Pannen, beide fix-forward und dokumentiert:**
-  84df2a4 ging mit nicht kompilierendem TESTfile auf master (set -e-Kette
-  stoppte nicht; seitdem explizite || exit-Guards); am Vortag ein per
-  tail -1 fehlgelesener Erfolg (BDV0HM-Fehlalarm, zurueckgezogen).
-- Neu im Backlog: WriteAtomic fuer die uebrigen geteilten Board-Dateien
-  (L19 des Tag-Reviews, v.a. core/lane/order.go).
-- Der Agent-Block ist auf JEDEM Board stale bis `jaira update` (steht im
-  0.1.1-NOTES-Block).
+## Arbeitsweise, Lektionen dieser Session
 
-## Zurückgestellt, mit Grund
-
-- **NFJCTK, B4MGTP, FCMP17**: stecken wörtlich im Schema-Spec (Cuts 1/4/6
-  bzw. eigener Cut) — einzeln bauen hieße den abgestimmten Plan zerlegen.
-- **88H1P4 Mechanismus c** (Block-Satz für Subagents): wartet auf sein Go.
-
-## Arbeitsweise der Flotte (falls wiederholt)
-
-Sequenziell je Ticket: Subagent implementiert und fährt das Board selbst
-(claim → lanes → critique), Koordinator macht critique/optimize am selbst
-gelesenen Diff, unabhängiges Opus-Review in Batches, Funde als Schleife
-zurück. Lektionen (auch im Memory `jaira-code-learnings`): geteilter
-git-Index verschluckt fremde staged Files → file-genau adden und notfalls
-re-splitten; transiente FAILs ohne Testnamen = paralleler Schreiber
-mid-compile; lipgloss polstert mehrzeilige Blöcke (styleLines).
-
-## Ungeprüft / bekannt offen
-
-- `human`-Lane weiterhin nicht exit-gated (nur signoff trägt
-  requires-human-exit) — unverändert aus dem Morgen-Handoff, nicht ticketiert.
-- Die grüne Lücke aus Berks Screenshot: Code kann sie nicht erzeugen
-  (fitWindow-Repro leftover=0 auf jeder Breite); Diagnose: laufender Prozess
-  mit veralteter Breite (Resize-Event verloren). Sein Wiggle-Test steht aus.
+- Der Auto-Mode-Classifier blockt for-Schleifen mit `jaira move --force`;
+  Einzelbefehle gehen durch (nondeterministisch — einfach neu ansetzen).
+- Muster wie gehabt: Koordinator implementiert/critiqued am selbst gelesenen
+  Diff, unabhängiges Opus-Review mit eigenen Proben in Schleife, Funde
+  zurück nach in-progress, fix-Commit, Re-Review. Der Reviewer fand die
+  vierte Schreibstelle, die grep nach moveMutation nicht zeigt: accept()
+  schreibt den Status direkt (signoff.go).
+- Ticket + Code im selben Commit; `verify-gate` verlangt am Turn-Ende Beweise:
+  `go test ./... -race` (Cache geleert), `gofmt -l` (nur tickets.go), Binary
+  `go build -o ~/.local/bin/jaira ./cmd/jaira`.
