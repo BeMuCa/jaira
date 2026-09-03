@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -214,15 +215,31 @@ one the real move would have returned.`,
 				return err
 			}
 
+			// A lane with a cap is trimmed by the move that lands here, and the
+			// move says so — the one rule that moves files never runs silently.
+			var trimmed []ticket.Trimmed
+			var holds int
+			if l, ok := env.Lanes.Get(to); ok && l.Holds > 0 {
+				holds = l.Holds
+				if trimmed, err = s.TrimLane(to, holds, logbookFolder()); err != nil {
+					return fmt.Errorf("moved %s to %s, but trimming the lane failed: %w", ticket.Handle(t.ID), to, err)
+				}
+			}
+
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"ticket": ticketJSON(t, env.Lanes), "moved": true,
 					"overridden": force && len(vs) > 0,
+					"trimmed":    trimmedJSON(trimmed),
 				})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s → %s\n", ticket.Handle(t.ID), to)
 			if force && len(vs) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Overrode %d gate refusal(s):\n%s\n", len(vs), bullets(vs))
+			}
+			for _, tr := range trimmed {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s left for the logbook (%s holds %d) — restore it with 'jaira restore %s'.\n",
+					ticket.Handle(tr.ID), to, holds, filepath.Base(tr.Path))
 			}
 			fmt.Fprint(cmd.OutOrStdout(), nextStepLine(env.Lanes, t.ID, to))
 			return nil
@@ -659,3 +676,16 @@ func laneOf(set *lane.Set, id string) *lane.Lane {
 
 var _ = laneOf
 var _ = time.Now
+
+// trimmedJSON renders what a lane cap moved out, for the move's --json output.
+// The key is always present so the schema is stable: empty means nothing left.
+func trimmedJSON(ts []ticket.Trimmed) []map[string]any {
+	out := make([]map[string]any, 0, len(ts))
+	for _, tr := range ts {
+		out = append(out, map[string]any{
+			"id": tr.ID, "handle": ticket.Handle(tr.ID),
+			"title": tr.Title, "file": filepath.Base(tr.Path),
+		})
+	}
+	return out
+}

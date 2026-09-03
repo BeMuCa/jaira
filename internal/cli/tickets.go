@@ -926,7 +926,7 @@ func newLanesShowCmd() *cobra.Command {
 					"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
-					"rejects_to": l.RejectsTo,
+					"rejects_to": l.RejectsTo, "holds": l.Holds,
 				})
 			}
 			w := cmd.OutOrStdout()
@@ -943,6 +943,9 @@ func newLanesShowCmd() *cobra.Command {
 			fmt.Fprintf(w, "Tier:        %s\n", dash(l.ModelTier))
 			fmt.Fprintf(w, "Input:       %s\n", dash(strings.Join(l.InputRequires, ", ")))
 			fmt.Fprintf(w, "Output:      %s\n", dash(strings.Join(l.OutputProduces, ", ")))
+			if l.Holds > 0 {
+				fmt.Fprintf(w, "Holds:       %d (older tickets leave for the logbook)\n", l.Holds)
+			}
 			fmt.Fprintf(w, "Creator:     %s\n", dash(l.Creator))
 			fmt.Fprintf(w, "Source:      %s\n", src)
 			if l.Overrides != "" {

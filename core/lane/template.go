@@ -16,6 +16,7 @@ agentic: true                    # true if a subagent works this lane; false for
 model-tier: strong               # a local alias (e.g. cheap, strong) — NOT a model name. This
                                   # indirection is what lets a shared lane file survive a model rename.
 terminal: false                  # true marks the lane where signed-off work lands.
+holds: 0                         # optional. A move landing a ticket here files the oldest beyond the newest N into the logbook. 0 = unlimited.
 requires-question: false         # true means a ticket needs an open question before entering.
 requires-specified: false        # true marks the first lane a ticket may not skip its promotion fields at.
 requires-outcome: false          # defaults to the value of terminal if this key is absent.

@@ -56,6 +56,12 @@ type Lane struct {
 	Terminal  bool
 	ModelTier string
 
+	// Holds caps how many tickets the lane keeps. After a move lands a ticket
+	// here, the oldest beyond the newest Holds leave for the logbook — reported,
+	// never silent. 0 or absent means unlimited. Declared in the lane file so the
+	// one rule that moves files can be read, changed or switched off there.
+	Holds int
+
 	// InputRequires names the ticket fields assembled into a subagent's bounded
 	// input. OutputProduces names the fields it must return.
 	InputRequires  []string
@@ -307,6 +313,16 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 			return nil, fmt.Errorf("lane %s: precedence %q is not a number", source, p)
 		}
 		l.Precedence = n
+	}
+	if h := str("holds"); h != "" {
+		n, err := strconv.Atoi(h)
+		if err != nil {
+			return nil, fmt.Errorf("lane %s: holds %q is not a number", source, h)
+		}
+		if n < 0 {
+			return nil, fmt.Errorf("lane %s: holds must not be negative, got %d", source, n)
+		}
+		l.Holds = n
 	}
 	if l.Agentic && l.Prompt == "" {
 		return nil, fmt.Errorf("lane %s: lane is marked agentic but has no prompt body", source)

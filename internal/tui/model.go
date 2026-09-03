@@ -1341,7 +1341,19 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
+	trimMsg, trimErr := m.trimHolds(target.ID)
 	m.finishMove(full.ID)
+	if m.mode == modeMessage {
+		// finishMove has worse news of its own; do not paper over it.
+		return
+	}
+	if trimErr != nil {
+		m.notify(trimErr.Error(), true)
+		return
+	}
+	if trimMsg != "" {
+		m.notify(trimMsg, false)
+	}
 }
 
 // moveMutation is the write a move performs. The gated path and the forced one
@@ -1398,12 +1410,43 @@ func (m *Model) forceMove() {
 		ticket.Handle(p.ticketID), p.target.Name, len(p.refusals))
 	b.WriteString(refusalBullets(p.refusals))
 
+	trimMsg, trimErr := m.trimHolds(p.target.ID)
 	m.finishMove(p.ticketID)
 	if m.mode == modeMessage {
 		// finishMove has worse news of its own; do not paper over it.
 		return
 	}
+	if trimErr != nil {
+		m.notify(trimErr.Error(), true)
+		return
+	}
+	if trimMsg != "" {
+		b.WriteString("\n" + trimMsg)
+	}
 	m.notify(b.String(), false)
+}
+
+// trimHolds enforces the just-entered lane's cap: the oldest tickets beyond
+// the newest Holds leave for the logbook, exactly as the CLI's move does it.
+// The returned message names every ticket that left — the one rule that
+// moves files never runs silently.
+func (m *Model) trimHolds(laneID string) (string, error) {
+	l, ok := m.lanes.Get(laneID)
+	if !ok || l.Holds <= 0 {
+		return "", nil
+	}
+	folder := fmt.Sprintf("%s-%s",
+		identity.Initials(identity.Current(m.store.Root)), time.Now().Format("20060102"))
+	trimmed, err := m.store.TrimLane(laneID, l.Holds, folder)
+	if err != nil || len(trimmed) == 0 {
+		return "", err
+	}
+	var b strings.Builder
+	for _, tr := range trimmed {
+		fmt.Fprintf(&b, "%s left for the logbook (%s holds %d) — restore it with 'jaira restore %s'.\n",
+			ticket.Handle(tr.ID), laneID, l.Holds, filepath.Base(tr.Path))
+	}
+	return b.String(), nil
 }
 
 // finishMove puts the user back on the page the move was started from and
