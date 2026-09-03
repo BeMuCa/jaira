@@ -17,13 +17,17 @@ Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
 
 ## Was Berk jetzt entscheidet (sein Inbox-Stand)
 
-1. **signoff: 9 Flotten-Tickets** warten auf Abnahme (DNAEPN, MFD7P3,
-   MR3CN8, A1TZ4N, YBC0MT, TQXBY5, GEC3TK, 88H1P4, QA3GN1). Die 8 vom
-   Zuruf des 31.08. sind seit dem 31.08. per `--force` in done — Invariante
-   11 gilt unveraendert; die angebliche Gate-Verweigerung war ein Fehllesen
-   von `tail -1` auf der Erfolgs-Ausgabe (Override-Bullet).
-2. **BDV0HM zurueckgezogen und archiviert** — Fehlpraemisse, Doku und Gate
-   stimmen ueberein; Korrektur-Notiz auf dem Ticket.
+1. **signoff: 13 Tickets** warten auf Abnahme — die 9 der Flotte (DNAEPN,
+   MFD7P3, MR3CN8, A1TZ4N, YBC0MT, TQXBY5, GEC3TK, 88H1P4, QA3GN1) plus
+   D9SC5A (Herkunfts-Label), 9H265S (Commits im Signoff), 79GEPW (Tags
+   Kern) und AXTFG3 (Tag-Boxen + t-Legende). Abnahme im Board, oder auf
+   Zuruf per `--force` (Invariante 11 gilt; Erfolg an der Lane pruefen,
+   nicht an der letzten Ausgabezeile).
+2. **human: SGPDYK** — done-cap. Empfehlung liegt als Notiz auf dem Ticket
+   (Logbuch / holds:10 im Lane-File / updated-at / Trigger beim done-Move,
+   gemeldet); ein "ja" startet den Bau. Sein 1-Monat-nach-archive-Vorschlag
+   wurde begruendet abgeraten (Antwort vom 02.09. im Chat, Kern in der
+   Ticket-Notiz).
 3. **human: CD9TCB** — drei Optionen (durch 743737f erledigt erklären /
    Doku-Feld `overrides:` / Warnung bewusst reaktivieren).
 4. **human: 7ZQ0ZN** — NOTES-0.1.1-Block ist auf master; Release = zwei
@@ -32,10 +36,13 @@ Handoff (Morgen desselben Tags) ist in der git-History dieses Files.
    (`1e8fc57`) — Cut 1 startet erst auf sein Go. Offene Mini-Frage dazu:
    Entscheidung 10 nennt `verdict` nicht in der Reviewer-Reihenfolge; der
    Code zeigt es zwischen gaps und check.
-6. **backlog, neu**: „lanes add setzt neben den Anker statt ans Ende" —
+6. **AXTFG3-Optik ist sein Call im Signoff**: eine Box kostet 2 Zeilen je
+   Karte (nur bei Registry-Farbe); falls zu teuer, war der benannte
+   Ausweich ein linker Farbbalken — dann neues Ticket.
+7. **backlog, neu**: „lanes add setzt neben den Anker statt ans Ende" —
    Design-Frage (order.go ist Invarianten-Territorium), bewusst nicht gefixt;
    README sagt inzwischen ehrlich „Belongs, not lands".
-7. **DoD-Klausel 3 von 88H1P4** ungetickt: frische Session + `jaira hook
+8. **DoD-Klausel 3 von 88H1P4** ungetickt: frische Session + `jaira hook
    print`-Snippet in settings.json → arbeitet nach „go" bis signoff. Nur er
    kann das prüfen.
 
