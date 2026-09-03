@@ -416,7 +416,17 @@ func (m *Model) renderColumn(idx, w, h int) string {
 		// w-1: the box sits flush left and stops one column short of the
 		// column's right border — the old w-4 left four blank columns there
 		// (Berks Screenshot, 03.09.), width the titles can use instead.
-		body.WriteString(m.renderCardBlock(col.tickets[i], w-1, focused && i == m.cardIdx))
+		card := m.renderCardBlock(col.tickets[i], w-1, focused && i == m.cardIdx)
+		// Stacked cards share one border row: from the second card on the top
+		// border is dropped and the card above ends the pair — two adjacent
+		// border rows read as a blank gap, because the glyphs only ink half
+		// their cell (Berks vierter Screenshot, 03.09.).
+		if i > first {
+			if _, rest, ok := strings.Cut(card, "\n"); ok {
+				card = rest
+			}
+		}
+		body.WriteString(card)
 	}
 	if rest := len(col.tickets) - (first + shown); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
@@ -443,6 +453,11 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 	used, n := 0, 0
 	for i := first; i < len(tickets); i++ {
 		ch := m.cardHeight(tickets[i])
+		if i > first {
+			// Stacked below another card it sheds its top border row — the
+			// same row renderColumn drops when drawing it.
+			ch--
+		}
 		if n > 0 && used+ch > budget {
 			break
 		}

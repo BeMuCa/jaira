@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: signoff
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,13 +12,13 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T16:11:05Z
+updated-at: 2026-09-03T18:49:35Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
 updated-by: BeMuCa
-outcome-what: "Selektion ist jetzt die gefaerbte Schrift statt des Balkens (Tag-Farbe der Karte, sonst Akzentblau); Innenabstand der Box von zwei Spalten auf eine reduziert, Budgets entsprechend (w-1)"
-outcome-why: "Berks 3. Screenshot-Feedback: Abstand links unnoetig gross, der blaue Balken doppelt nur, was die Box schon rahmt"
-outcome-resolves: "Balken entfernt (die zweite ▌-Stelle ist der Board-Umschalter, keine Karte - unangetastet); Selektion bleibt ohne Farbe erkennbar? Nein - Bold bleibt als zweiter Kanal; go test ./... -race RC=0 (15 Pakete), Optik ist die Signoff-Abnahme"
+outcome-what: "Gestapelte Karten teilen sich eine Border-Reihe: ab der zweiten Karte im Fenster faellt deren Top-Border weg (renderColumn), cardsInBudget rechnet gestapelte Karten mit 4 statt 5 Zeilen - der optische Abstand zwischen Boxen ist halbiert und pro weiterer Karte wird eine Zeile frei"
+outcome-why: "Berks 4. Screenshot: Luecken zwischen den Boxen halbieren; Messung zeigte keine Leerzeile, sondern zwei aneinanderstossende Border-Reihen, deren Glyphen nur die halbe Zelle fuellen"
+outcome-resolves: "TestStackedCardsShareOneBorderRow verbietet Bottom-ueber-Top-Border boardweit; der Box-Balance-Waechter zaehlt jetzt exakt (1 Stack-Top + 1 Bottom je Karte + Spaltenrahmen, positionsgenau gegen cardsInBudget); Budget-Tests neu gerechnet (5+4+4...); go test ./... -race RC=0"
 executed-by: fable
 review-summary: "Runde 4 (Berks 3. Screenshot): Selektions-Balken entfernt - Selektion ist die gefaerbte Titel-Schrift (Tag-Farbe der Karte, sonst Akzent; Bold bleibt als zweiter Kanal, Zustand haengt nie an Farbe allein); Innen-Einzug der Box von 2 auf 1 Spalte, Budgets folgen (w-1). Der Board-Umschalter behaelt seinen Balken - andere Liste, keine Box. Kein einfacherer Schnitt: beide Aenderungen leben in renderCard, wo die Zeilen entstehen."
 review-gaps: "Nichts entfernt. Gelassen: cardHeight behaelt Receiver+Parameter (Signatur-Kompatibilitaet aller Aufrufer, und die Hoehe kann wieder dynamisch werden); der '✎ someo'-Pin wurde zum Glyph-Pin gelockert statt die Boardbreite im Test zu schrauben - Begruendung in der Ticket-Note."
@@ -55,3 +55,4 @@ review-verdict: "accept - Runden 3+4 koordinator-verifiziert (Opus-Reviewer seit
 - **2026-09-03 14:41 · BeMuCa** — Umgesetzt: renderColumn gibt den Karten w-1 statt w-4 - Box endet eine Spalte vor dem rechten Spaltenrand (vorher vier), flush links wie gehabt; Titel/Handle/Flags gewinnen 3 Spalten. Kommentar im Code nennt den Grund (Berks Screenshot). Volle Suite -race nach Cache-Loeschung RC=0, 15 Pakete; kein Test pinnt den exakten Abstand - die Optik ist Berks Abnahme im Signoff.
 - **2026-09-03 15:38 · BeMuCa** — Berks 3. Signoff-Feedback (Screenshot): (1) Innenabstand links in der Box zu gross; (2) der blaue Selektions-Balken soll weg - Selektion reicht als gefaerbte Schrift, blau bzw. in der Tag-Farbe der Karte; (3) seine Frage 'Text vergroessert?' - nein, Terminalschrift ist fix; Karten sind seit w-1 drei Spalten breiter, daher mehr sichtbarer Titel.
 - **2026-09-03 16:11 · BeMuCa** — Nachtrag: die Runde-4-Hunks (Balken raus, Einzug 1) waren nie eigenstaendig committet und ritten im KA9CFA-Commit mit - vom Zweitmodell-Review gefunden (bekannte Buendelungs-Klasse). Re-Split vor dem Push: eigener Commit 52732e1, Code-Baum danach byte-identisch zum reviewten Stand (diff=0 verifiziert).
+- **2026-09-03 18:37 · BeMuCa** — Berks 4. Feedback: Luecken ZWISCHEN den Boxen halbieren. Messung (TestBoardRenders-Log): es gibt KEINE Leerzeile - der Eindruck entsteht durch zwei aneinanderstossende Border-Reihen (Glyphen zeichnen halbe Zellhoehe). Halbieren = gestapelte Karten teilen sich EINE Border-Reihe: ab der zweiten Karte im Fenster faellt die eigene Top-Border weg, die Bottom-Border der vorigen ist der Trenner (traegt deren Tag-Farbe). Hoehen: erste Karte 5, jede weitere 4 - cardsInBudget rechnet positionsabhaengig.

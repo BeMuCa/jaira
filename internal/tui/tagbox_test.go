@@ -133,10 +133,10 @@ func TestCardsInBudgetCountsEachCardsOwnHeight(t *testing.T) {
 	}{
 		{budget: 0, want: 1},   // a lone card always counts, however tight
 		{budget: 5, want: 1},   // exactly the first card, no room for the next
-		{budget: 9, want: 1},   // one row short of two cards
-		{budget: 10, want: 2},  // 5 + 5
-		{budget: 15, want: 3},  // 5 + 5 + 5
-		{budget: 20, want: 4},  // every card fits
+		{budget: 8, want: 1},   // one row short of two stacked cards
+		{budget: 9, want: 2},   // 5 + 4 — the second shares the border row
+		{budget: 13, want: 3},  // 5 + 4 + 4
+		{budget: 17, want: 4},  // every card fits
 		{budget: 100, want: 4}, // more than enough
 	}
 	for _, c := range cases {
@@ -154,8 +154,8 @@ func TestCardsInBudgetFromANonZeroStart(t *testing.T) {
 		{ID: "b", Title: "t", Tags: []string{"ui"}}, // 5
 		{ID: "c", Title: "t", Tags: []string{"ui"}}, // 5
 	}
-	if got := m.cardsInBudget(tickets, 1, 10); got != 2 {
-		t.Errorf("cardsInBudget(start=1, budget=10) = %d, want 2", got)
+	if got := m.cardsInBudget(tickets, 1, 9); got != 2 {
+		t.Errorf("cardsInBudget(start=1, budget=9) = %d, want 2 (5 + 4 stacked)", got)
 	}
 	if got := m.cardsInBudget(tickets, 3, 10); got != 0 {
 		t.Errorf("cardsInBudget(start past the end) = %d, want 0", got)
@@ -240,25 +240,6 @@ func TestTaggedCardBoxFitsTheWidthItIsGiven(t *testing.T) {
 
 // --- column budgeting: no card is ever cut mid-border -----------------------
 
-// borderGlyphsBalance reports whether every opened border in s is closed —
-// the invariant that must hold however renderColumn's height budget is
-// computed. clampBlock cuts a column's body at a hard line count; if the
-// budget under-counts a tall card's height, clampBlock lands inside that
-// card's box instead of before it, and an opening corner survives with no
-// matching closing one. This is the assertion that actually fails when the
-// budgeting regresses to a fixed rows-per-card constant — unlike a bare
-// width/height bound, which the outer clamp satisfies by construction no
-// matter what renderColumn does internally.
-func borderGlyphsBalance(t *testing.T, s string) {
-	t.Helper()
-	if strings.Count(s, "┌") != strings.Count(s, "└") {
-		t.Errorf("a box was opened without a matching close:\n%s", s)
-	}
-	if strings.Count(s, "┐") != strings.Count(s, "┘") {
-		t.Errorf("a box's right side was opened without a matching close:\n%s", s)
-	}
-}
-
 func TestColumnNeverCutsATaggedCardInHalf(t *testing.T) {
 	for _, w := range []int{40, 80} {
 		for _, h := range []int{8, 9, 10, 11, 12, 14, 18, 24, 32} {
@@ -270,7 +251,24 @@ func TestColumnNeverCutsATaggedCardInHalf(t *testing.T) {
 			}
 			win := m.boardFit(m.width)
 			out := stripANSI(m.renderColumn(idx, win.colW, h))
-			borderGlyphsBalance(t, out)
+			// Stacked cards share their border rows: one top border per stack,
+			// one bottom border per card, plus the column's own frame. Any other
+			// count means a card was cut in half by the height budget.
+			shown := m.cardsInBudget(m.cols[idx].tickets, 0, max(1, h-4))
+			wantOpen := 1 // the column frame
+			if shown > 0 {
+				wantOpen++ // the stack's single top border
+			}
+			wantClose := 1 + shown
+			if got := strings.Count(out, "┌"); got != wantOpen {
+				t.Errorf("w=%d h=%d: %d top borders, want %d (shown=%d):\n%s", w, h, got, wantOpen, shown, out)
+			}
+			if got := strings.Count(out, "└"); got != wantClose {
+				t.Errorf("w=%d h=%d: %d bottom borders, want %d (shown=%d):\n%s", w, h, got, wantClose, shown, out)
+			}
+			if strings.Count(out, "┐") != wantOpen || strings.Count(out, "┘") != wantClose {
+				t.Errorf("w=%d h=%d: left and right border glyphs disagree:\n%s", w, h, out)
+			}
 			for _, l := range strings.Split(out, "\n") {
 				if got := len([]rune(l)); got > win.colW+2 {
 					t.Errorf("w=%d h=%d: column line %d wide, want at most %d: %q", w, h, got, win.colW+2, l)
@@ -386,6 +384,26 @@ func TestACardHeavyWithFlagsStaysFiveRows(t *testing.T) {
 		}
 		for _, l := range lines {
 			checkLineWidths(t, w, fmt.Sprintf("flag-heavy card w=%d", w), l)
+		}
+	}
+}
+
+// Two border rows back to back read as a blank gap — box glyphs ink only half
+// their cell — so stacked cards share one border row: nowhere on the board may
+// a card's bottom border sit directly above another card's top border.
+func TestStackedCardsShareOneBorderRow(t *testing.T) {
+	m := newTestModel(t, 150, 40) // the fixture's backlog holds two cards
+	lines := strings.Split(stripANSI(m.render()), "\n")
+	rows := make([][]rune, len(lines))
+	for i, l := range lines {
+		rows[i] = []rune(l)
+	}
+	for k := 0; k+1 < len(rows); k++ {
+		for c := 0; c < len(rows[k]) && c < len(rows[k+1]); c++ {
+			if rows[k][c] == '└' && rows[k+1][c] == '┌' {
+				t.Fatalf("row %d column %d: a bottom border sits directly above a top border:\n%s\n%s",
+					k, c, lines[k], lines[k+1])
+			}
 		}
 	}
 }
