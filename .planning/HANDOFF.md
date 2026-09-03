@@ -31,6 +31,24 @@ Stand nach der go-Session; dieses File ist das Gedächtnis. Der vorige Handoff
   Bubbles über dem Board, Berks großer Wunsch vom 03.09., brainstorm
   angehakt, kompletter Spec im Kontext).
 
+- **SGPDYK ist done** — Berk nahm es im Chat ab ("a#2 kann auf done, und push").
+- **NJPQWE gebaut (Berks Screenshot): JEDE Karte trägt eine Box** — Tag-Farbe
+  wenn die Registry eine kennt, sonst neutral (colFaint). Zwei echte Funde auf
+  dem Weg, beide gefixt und gepinnt: (a) meta/flags-Zeilen waren 2 Spalten
+  übers Budget gebaut (`"  "+truncate(w)`), (b) renderCard bekam die BOX-
+  Gesamtbreite statt der Innenfläche (lipgloss Width = total; die Lektion
+  stand schon im Memory und wurde trotzdem verletzt). Symptome vorher: Karten
+  wrappten auf 6 Zeilen, '+0 more' versteckte Karten, deckellose Boxen unter
+  Höhe 13. Jetzt: 11/11 Karten auf 150x32 statt 11/10, eine Karte MEHR auf
+  150x40. Commits 84c13ca + a3aca3a + Pin-Test; Opus-Review fand den Breiten-
+  fehler kausal, starb beim finalen Re-Check zweimal am 529 — Koordinator-
+  Verifikation im review-verdict offengelegt. **In signoff.**
+- **76WCCW eingefangen (Berks Babysit-Frage = Go für 88H1P4-Mechanismus c):**
+  der verwaltete Block soll sagen: "Ticket starten" = durchfahren bis zur
+  nächsten Human-Lane (Loops inklusive), nach Klärung weiter; "ein Agent
+  soll es bearbeiten" = Subagent babysittet. Gehört in den GENERATOR des
+  Blocks (nie Handedit); noch nicht gebaut — liegt spezifiziert im Backlog.
+
 ## Der eine Satz, der Berk überraschen könnte
 
 Die Projektkopie `.jaira/lanes/done.md` hat **noch kein holds** — der Cap

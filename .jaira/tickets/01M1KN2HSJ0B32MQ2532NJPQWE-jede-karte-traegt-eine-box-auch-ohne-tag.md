@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: critique
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T13:25:08Z
+updated-at: 2026-09-03T13:39:39Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
 updated-by: BeMuCa
@@ -20,9 +20,10 @@ outcome-what: "Breiten-Fix aus dem Review: renderCard budgetiert auf die Inhalts
 outcome-why: "Das Opus-Review mass den Wrap kausal: Inhaltszeilen waren 2 Spalten breiter als die Box-Innenflaeche - deckellose Boxen unter Hoehe 13, versteckte Karten hinter '+0 more'; betraf auch die alten AXTFG3-Farbboxen"
 outcome-resolves: "Reviewer-Fix 1:1 uebernommen (von ihm im Overlay vorab verifiziert: alle seine Proben gruen); go test ./... -race RC=0 nach Cache-Loeschung, Binary neu gebaut"
 executed-by: fable
-review-summary: "Kritik am Diff: (1) einfachste Form - kein neuer Renderer, renderCardBlock verliert nur den Nicht-Box-Zweig, cardHeight wird konstant; (2) Muster gehalten - Fallback-Farbe ist colFaint, dieselbe wie der Spaltenrahmen (view.go:361), keine neue Farbe erfunden; (3) nichts Spekulatives; (4) richtiger Ort - der Overflow-Fix sitzt in renderCard, wo die Zeile gebaut wird, nicht als Nach-Klammerung. Preis, benannt: alle Karten sind innen 2 Spalten schmaler und je 2 Zeilen hoeher - weniger Karten pro Spalte sichtbar; das war Berks explizite Abwaegung ('das ist ok, ich will den rahmen')."
+review-summary: "Runde 2 nach dem Review-Fund. Kritik am Fix-Diff: eine Zeile Verhalten (renderCard erhaelt inner-2) + erklaerender Kommentar an der Stelle, an der der naechste Leser denselben Fehler machen wuerde - kein Workaround weiter aussen, keine doppelte Breitenrechnung. Die Titel-Repins pinnen einen Praefix statt des exakten Schnitts, damit der Test Feinjustagen der Budgets ueberlebt und trotzdem faellt, wenn der Titel ganz verschwindet."
 review-gaps: "Nichts entfernt. Gelassen: cardHeight behaelt Receiver+Parameter (Signatur-Kompatibilitaet aller Aufrufer, und die Hoehe kann wieder dynamisch werden); der '✎ someo'-Pin wurde zum Glyph-Pin gelockert statt die Boardbreite im Test zu schrauben - Begruendung in der Ticket-Note."
-review-check: "1. Neu bauen, Board oeffnen: JEDE Karte hat einen Rahmen - tag-lose in der matten Spaltenrahmen-Farbe, getaggte (mit Registry-Farbe) farbig. Dein Screenshot-Fall (Backlog, F7K9MF etc.) ist der Testfall. 2. Karte mit vielen Flags (blocked + unworked + fremder ✎) ansehen: genau 3 Inhaltszeilen in der Box, kein Umbruch, unterer Rand intakt. 3. Spalten scrollen: '+N more' rechnet mit der neuen Hoehe."
+review-check: "1. Neu bauen, Board oeffnen: JEDE Karte gerahmt (tag-los matt, getaggt farbig), exakt 5 Zeilen je Karte, kein abgeschnittener unterer Rand. 2. Terminal auf ~12 Zeilen stauchen: Boxen behalten ihren Deckel UND Boden (vorher deckellos). 3. Spalte mit vielen Karten: die '+N more'-Zahl stimmt mit dem ueberein, was fehlt (vorher '+0 more' bei versteckten Karten). 4. Auf 150x40 passt eine Karte mehr als vorher - Hoehen sind jetzt ehrlich."
+review-verdict: "accept - mit offengelegtem Ausweich: der Opus-Reviewer hatte den Breitenfehler kausal gemessen und den Fix VORAB im Overlay verifiziert (alle seine Proben gruen: Kartenhoehe 5 auf w=16..44, Spalten 11/11 statt 11/10 auf 150x32, +N-more ehrlich, Deckel unter Hoehe 13); beim finalen Re-Check starb er zweimal am 529 Overloaded. Der Koordinator hat den Einzeiler wortgleich uebernommen (diff selbst gelesen), die volle Suite -race nach Cache-Loeschung gefahren (RC=0, 15 Pakete) und die eine ungepinnte Reviewer-Probe als Dauertest nachgepinnt (TestACardHeavyWithFlagsStaysFiveRows: exakt 5 Zeilen bei w=12/18/24/40, keine Zeile ueberbreit). Nicht maschinell geprueft bleibt der Blick ins echte Terminal - review-check Schritt 1-4 ist Berks Abnahme."
 ---
 
 # Jede Karte traegt eine Box, auch ohne Tag
