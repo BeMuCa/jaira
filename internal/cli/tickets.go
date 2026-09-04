@@ -679,6 +679,7 @@ func trimNotes(body string, n int) (string, int) {
 }
 
 func newSetCmd() *cobra.Command {
+	var appendVal bool
 	cmd := &cobra.Command{
 		Use:   "set <id> <field=value>...",
 		Short: "Set ticket fields",
@@ -688,7 +689,11 @@ Writing a field rewrites only that field's bytes: unrelated fields, comments and
 blank lines are left exactly as they were, so a change shows up in git as a
 one-line diff.
 
-List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
+List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.
+
+--append keeps what is already there instead of overwriting it: a scalar gains
+the new value on its own line below the old one, a list gains the new items at
+its end. Review fields keep their history across loop rounds that way.`,
 		Args: minArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -740,10 +745,20 @@ List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
 								items = append(items, p)
 							}
 						}
+						if appendVal {
+							if old, err := t.Doc().List(k); err == nil && len(old) > 0 {
+								items = append(append([]string{}, old...), items...)
+							}
+						}
 						if err := t.Doc().SetList(k, items); err != nil {
 							return err
 						}
 						continue
+					}
+					if appendVal {
+						if old, _, oldErr := t.Doc().Scalar(k); oldErr == nil && strings.TrimSpace(old) != "" {
+							v = old + "\n" + v
+						}
 					}
 					if err := t.Doc().SetScalar(k, v); err != nil {
 						return err
@@ -775,6 +790,7 @@ List fields take a comma-separated value, for example blocked-by=01AAA,01BBB.`,
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&appendVal, "append", false, "append to the field's current value instead of overwriting it")
 	return cmd
 }
 
