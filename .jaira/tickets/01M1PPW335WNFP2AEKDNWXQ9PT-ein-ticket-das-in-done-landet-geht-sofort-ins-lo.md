@@ -1,7 +1,7 @@
 ---
 id: 01M1PPW335WNFP2AEKDNWXQ9PT
 title: "Ein Ticket, das in done landet, geht sofort ins Logbuch"
-status: critique
+status: review
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-04T17:18:43Z
-updated-at: 2026-09-04T17:31:13Z
+updated-at: 2026-09-04T17:31:54Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:09Z
 updated-by: BeMuCa
@@ -20,6 +20,14 @@ outcome-what: "Lane-Flag logbook-on-entry (nur terminal): der Move/Accept nach d
 outcome-why: "Berk am 04.09.: alle Tickets, die auf done landen, gehoeren sofort ins Logbuch - das Logbuch ist die Chronik, done nur der Durchgang; revidiert bewusst die gestrige 10-bleiben-Abnahme (im Kontext dokumentiert)"
 outcome-resolves: "CLI-Move, TUI-Accept und settleLane je mit Test (Commits-Erhalt am abgelegten File verifiziert, Altbestand-Sweep mit drin), Parse-Guard gegen nicht-terminale Doorways; go test ./... -race RC=0, 15 Pakete; live: dieses Board ist umgestellt, done leer, 10 Restbewohner gefegt"
 executed-by: fable
+review-summary: "Kritik: richtiger Ort und kein neues Muster - FileLane/StampCommits sitzen neben TrimLane/Logbook im core, die vier Schreibstellen laufen durch die zwei existierenden Sammelpunkte (flow-Switch, settleLane); der Entry-Zweig ist ein Switch-Arm neben dem Cap, keine Parallelmechanik. Ein Preis benannt: done ist auf dem Board immer leer - 'zuletzt fertig' liest man im Startbildschirm (Fertiges pro Tag, SPDWGH) und im Logbuch, nicht mehr in der Spalte. Berks explizite Richtungsentscheidung."
+review-gaps: "Nichts entfernt. Gelassen: holds als Feature samt Tests (via Fixture-Patch statt builtin); die doppelte Meldezeile (filed vs. left-for) statt einer generischen - zwei verschiedene Ereignisse sollen verschieden klingen; kein Stempeln in TrimLane (Cap-Tickets behalten Gate-gepruefte Commits)."
+review-check: |-
+  1. Ein Ticket im signoff mit a akzeptieren: Meldung Accepted + je eine filed-Zeile mit restore-Datei; done bleibt leer.
+  2. .jaira/logbook/<initialen>-<datum>/ enthaelt die Datei, Commits stehen drin.
+  3. jaira restore <datei> bringt es zurueck (landet wieder in done -> beim naechsten Landen wird es erneut gefegt).
+  4. jaira lanes show done -> logbook-on-entry statt Holds.
+  5. move --json -> filed_on_entry: true neben trimmed.
 ---
 
 # Ein Ticket, das in done landet, geht sofort ins Logbuch
