@@ -1341,7 +1341,7 @@ func (m *Model) applyMove() {
 		m.notify(err.Error(), true)
 		return
 	}
-	trimMsg, trimErr := m.trimHolds(target.ID, full.ID)
+	trimMsg, trimErr := m.settleLane(target.ID, full.ID)
 	m.finishMove(full.ID)
 	if m.mode == modeMessage {
 		// finishMove has worse news of its own; do not paper over it.
@@ -1413,7 +1413,7 @@ func (m *Model) forceMove() {
 		ticket.Handle(p.ticketID), p.target.Name, len(p.refusals))
 	b.WriteString(refusalBullets(p.refusals))
 
-	trimMsg, trimErr := m.trimHolds(p.target.ID, p.ticketID)
+	trimMsg, trimErr := m.settleLane(p.target.ID, p.ticketID)
 	m.finishMove(p.ticketID)
 	if m.mode == modeMessage {
 		// finishMove has worse news of its own; do not paper over it.
@@ -1430,25 +1430,46 @@ func (m *Model) forceMove() {
 	m.notify(b.String(), false)
 }
 
-// trimHolds enforces the just-entered lane's cap: the oldest tickets beyond
-// the newest Holds leave for the logbook, exactly as the CLI's move does it.
-// moved names the ticket whose arrival triggered the trim; it is pinned as
-// newest and never the one trimmed. The returned message names every ticket
-// that left — including the ones already gone when an error stopped the
-// loop, so even a partial trim is never silent.
-func (m *Model) trimHolds(laneID, moved string) (string, error) {
+// settleLane enforces the just-entered lane's file rules, exactly as the
+// CLI's move does it: a doorway lane (logbook-on-entry) files everything
+// straight into the logbook with commits stamped first, a capped lane (holds)
+// trims the oldest beyond the newest Holds. moved names the ticket whose
+// arrival triggered this; a cap never trims it. The returned message names
+// every ticket that left — including the ones already gone when an error
+// stopped the loop, so even a partial sweep is never silent.
+func (m *Model) settleLane(laneID, moved string) (string, error) {
 	l, ok := m.lanes.Get(laneID)
-	if !ok || l.Holds <= 0 {
+	if !ok {
 		return "", nil
 	}
 	folder := fmt.Sprintf("%s-%s",
 		identity.Initials(identity.Current(m.store.Root)), time.Now().Format("20060102"))
-	trimmed, err := m.store.TrimLane(laneID, l.Holds, folder, moved)
+	var trimmed []ticket.Trimmed
+	var err error
+	var filed bool
+	switch {
+	case l.LogbookOnEntry:
+		filed = true
+		derive := m.gateEnv().DeriveCommits
+		trimmed, err = m.store.FileLane(laneID, folder, func(tk *ticket.Ticket) error {
+			_, serr := m.store.StampCommits(tk, derive)
+			return serr
+		})
+	case l.Holds > 0:
+		trimmed, err = m.store.TrimLane(laneID, l.Holds, folder, moved)
+	default:
+		return "", nil
+	}
 	if len(trimmed) == 0 {
 		return "", err
 	}
 	var b strings.Builder
 	for _, tr := range trimmed {
+		if filed {
+			fmt.Fprintf(&b, "%s filed to the logbook — restore it with 'jaira restore %s'.\n",
+				ticket.Handle(tr.ID), filepath.Base(tr.Path))
+			continue
+		}
 		fmt.Fprintf(&b, "%s left for the logbook (%s holds %d) — restore it with 'jaira restore %s'.\n",
 			ticket.Handle(tr.ID), laneID, l.Holds, filepath.Base(tr.Path))
 	}

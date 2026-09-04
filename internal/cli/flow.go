@@ -215,18 +215,30 @@ one the real move would have returned.`,
 				return err
 			}
 
-			// A lane with a cap is trimmed by the move that lands here, and the
-			// move says so — the one rule that moves files never runs silently.
-			// A trim failure is reported without failing the move: the status
-			// write has already landed, and a non-zero exit would send an agent
-			// into a retry that short-circuits as already-in-lane and never
-			// trims. Whatever left before the failure is still named.
+			// A doorway lane (logbook-on-entry) files everything straight into
+			// the logbook, commits stamped first; a capped lane (holds) trims
+			// its overflow. Either way the move says so — the one rule that
+			// moves files never runs silently — and a failure is reported
+			// without failing the move: the status write has already landed,
+			// and a non-zero exit would send an agent into a retry that
+			// short-circuits as already-in-lane. What left before a failure is
+			// still named.
 			var trimmed []ticket.Trimmed
 			var trimErr error
 			var holds int
-			if l, ok := env.Lanes.Get(to); ok && l.Holds > 0 {
-				holds = l.Holds
-				trimmed, trimErr = s.TrimLane(to, holds, logbookFolder(), t.ID)
+			var filed bool
+			if l, ok := env.Lanes.Get(to); ok {
+				switch {
+				case l.LogbookOnEntry:
+					filed = true
+					trimmed, trimErr = s.FileLane(to, logbookFolder(), func(tk *ticket.Ticket) error {
+						_, err := s.StampCommits(tk, env.DeriveCommits)
+						return err
+					})
+				case l.Holds > 0:
+					holds = l.Holds
+					trimmed, trimErr = s.TrimLane(to, holds, logbookFolder(), t.ID)
+				}
 			}
 
 			if g.jsonOut {
@@ -234,6 +246,9 @@ one the real move would have returned.`,
 					"ticket": ticketJSON(t, env.Lanes), "moved": true,
 					"overridden": force && len(vs) > 0,
 					"trimmed":    trimmedJSON(trimmed),
+				}
+				if filed {
+					out["filed_on_entry"] = true
 				}
 				if trimErr != nil {
 					out["trim_error"] = trimErr.Error()
@@ -245,6 +260,11 @@ one the real move would have returned.`,
 				fmt.Fprintf(cmd.OutOrStdout(), "Overrode %d gate refusal(s):\n%s\n", len(vs), bullets(vs))
 			}
 			for _, tr := range trimmed {
+				if filed {
+					fmt.Fprintf(cmd.OutOrStdout(), "%s filed to the logbook — restore it with 'jaira restore %s'.\n",
+						ticket.Handle(tr.ID), filepath.Base(tr.Path))
+					continue
+				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s left for the logbook (%s holds %d) — restore it with 'jaira restore %s'.\n",
 					ticket.Handle(tr.ID), to, holds, filepath.Base(tr.Path))
 			}

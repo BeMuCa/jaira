@@ -62,6 +62,12 @@ type Lane struct {
 	// one rule that moves files can be read, changed or switched off there.
 	Holds int
 
+	// LogbookOnEntry files a ticket straight into the logbook the moment a
+	// move lands it here — commits stamped first, reported, never silent. The
+	// lane is a doorway, not a shelf: the logbook is the record of finished
+	// work, so it gets everything immediately. Terminal lanes only.
+	LogbookOnEntry bool
+
 	// InputRequires names the ticket fields assembled into a subagent's bounded
 	// input. OutputProduces names the fields it must return.
 	InputRequires  []string
@@ -326,6 +332,10 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 			return nil, fmt.Errorf("lane %s: holds needs terminal: true — the logbook records finished work, and trimming a working lane would file unfinished tickets as done", source)
 		}
 		l.Holds = n
+	}
+	l.LogbookOnEntry = boolOf("logbook-on-entry")
+	if l.LogbookOnEntry && !l.Terminal {
+		return nil, fmt.Errorf("lane %s: logbook-on-entry needs terminal: true — the logbook records finished work", source)
 	}
 	if l.Agentic && l.Prompt == "" {
 		return nil, fmt.Errorf("lane %s: lane is marked agentic but has no prompt body", source)

@@ -190,7 +190,7 @@ func (m *Model) accept() {
 	// The accept key is the fourth way a ticket lands in a lane, and the
 	// usual one for the capped terminal lane — it enforces the cap exactly
 	// as the other three move write-sites do.
-	trimMsg, trimErr := m.trimHolds(next.ID, id)
+	trimMsg, trimErr := m.settleLane(next.ID, id)
 	if err := m.reload(); err != nil {
 		m.notify(err.Error(), true)
 		return

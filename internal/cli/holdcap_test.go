@@ -27,6 +27,20 @@ func holdsFixture(t *testing.T, inDone int) (string, *ticket.Store, []*ticket.Ti
 	if _, err := s.Init(); err != nil {
 		t.Fatal(err)
 	}
+	// These tests pin the holds mechanics, but the builtin done is a doorway
+	// (logbook-on-entry) — materialise the board's lane files and give done a
+	// cap instead.
+	if out, err := runCLI(t, dir, "list"); err != nil {
+		t.Fatalf("materialise lanes: %v\n%s", err, out)
+	}
+	laneFile := filepath.Join(dir, ".jaira", "lanes", "done.md")
+	if _, err := os.Stat(laneFile); err != nil {
+		t.Fatalf("lane files not materialised: %v", err)
+	}
+	capped := "---\nid: done\nname: Done\nafter: signoff\nprecedence: 60\nagentic: false\nterminal: true\nrequires-outcome: true\nrequires-nonmodel-signal: true\nrequires-commits: true\nholds: 10\ndescription: capped for these tests\n---\n"
+	if err := os.WriteFile(laneFile, []byte(capped), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	base := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
 	var done []*ticket.Ticket
 	for i := 0; i < inDone; i++ {
@@ -160,5 +174,65 @@ func TestMoveJSONCarriesTheTrimError(t *testing.T) {
 	}
 	if !strings.Contains(out, `"trim_error"`) || !strings.Contains(out, `"moved"`) {
 		t.Errorf("--json output lacks trim_error next to the successful move:\n%s", out)
+	}
+}
+
+// The builtin done is a doorway: the move that lands a ticket there stamps its
+// commits and files it — and anything still sitting in the lane — straight
+// into the logbook. The lane holds nothing; the logbook is the record.
+func TestMoveIntoDoneFilesEverythingToTheLogbook(t *testing.T) {
+	t.Setenv("JAIRA_USER", "berk")
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	for i := 0; i < 3; i++ {
+		stamp := base.Add(time.Duration(i) * time.Minute)
+		if _, err := s.Create(map[string]string{
+			ticket.FieldID: ticket.NewID(stamp), ticket.FieldTitle: fmt.Sprintf("t%02d", i),
+			ticket.FieldStatus: "done", ticket.FieldCreatedAt: ticket.FormatTime(stamp),
+			ticket.FieldUpdatedAt: ticket.FormatTime(stamp),
+		}, nil, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	stamp := base.Add(time.Hour)
+	mover, err := s.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(stamp), ticket.FieldTitle: "mover",
+		ticket.FieldStatus: "todo", ticket.FieldCreatedAt: ticket.FormatTime(stamp),
+		ticket.FieldUpdatedAt: ticket.FormatTime(stamp),
+	}, map[string][]string{ticket.FieldCommits: {"deadbeef"}}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force")
+	if err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+	if got := strings.Count(out, "filed to the logbook"); got != 4 {
+		t.Errorf("%d filing lines, want 4 (three residents + the mover):\n%s", got, out)
+	}
+	if n := countInLane(t, s, "done"); n != 0 {
+		t.Errorf("done still holds %d tickets, want 0 — it is a doorway", n)
+	}
+	// The mover's commits survived the filing, stamped onto the filed copy.
+	matches, err := filepath.Glob(filepath.Join(s.LogbookDir(), "*", filepath.Base(mover.Path)))
+	if err != nil || len(matches) != 1 {
+		t.Fatalf("mover not found in the logbook: %v (%d matches)", err, len(matches))
+	}
+	filed, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(filed), "deadbeef") {
+		t.Errorf("the filed ticket lost its commits:\n%s", filed)
 	}
 }

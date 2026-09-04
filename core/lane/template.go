@@ -17,6 +17,7 @@ model-tier: strong               # a local alias (e.g. cheap, strong) — NOT a 
                                   # indirection is what lets a shared lane file survive a model rename.
 terminal: false                  # true marks the lane where signed-off work lands.
 holds: 0                         # optional, terminal lane only: a move landing here files the oldest beyond the newest N into the logbook. 0 = unlimited.
+logbook-on-entry: false          # optional, terminal lane only: a move landing here files the ticket straight into the logbook, commits stamped.
 requires-question: false         # true means a ticket needs an open question before entering.
 requires-specified: false        # true marks the first lane a ticket may not skip its promotion fields at.
 requires-outcome: false          # defaults to the value of terminal if this key is absent.

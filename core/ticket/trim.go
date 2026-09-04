@@ -1,6 +1,9 @@
 package ticket
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 // Trimmed records one ticket a lane cap moved off the board, so the caller can
 // say what happened — the cap is allowed to move files only because it never
@@ -71,6 +74,81 @@ func (s *Store) TrimLane(lane string, keep int, folder, newest string) ([]Trimme
 	}
 	var out []Trimmed
 	for _, t := range over {
+		dst, err := s.Logbook(t.ID, folder)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, Trimmed{ID: t.ID, Title: t.Title, Path: dst})
+	}
+	return out, nil
+}
+
+// StampCommits writes the derived commit union onto the ticket and returns
+// what was written. Derived shas come first, in git order; any sha already
+// recorded that the derivation did not find is appended rather than dropped —
+// a sha a person wrote down deliberately is evidence this tool has no business
+// discarding. derive may be nil, the same "no derivation on offer" convention
+// core/gate uses.
+func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string, error) {
+	var derived []string
+	if derive != nil {
+		derived = derive(t)
+	}
+	merged := append([]string{}, derived...)
+	for _, c := range t.Commits {
+		c = strings.TrimSpace(c)
+		if c == "" {
+			continue
+		}
+		seen := false
+		for _, m := range merged {
+			if m == c {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			merged = append(merged, c)
+		}
+	}
+	if _, err := s.Mutate(t.ID, func(t *Ticket) error {
+		return t.Doc().SetList(FieldCommits, merged)
+	}); err != nil {
+		return nil, err
+	}
+	return merged, nil
+}
+
+// FileLane empties a lane into the given logbook folder, oldest first — the
+// lane is a doorway (logbook-on-entry), so the just-landed ticket goes along
+// with anything still sitting there from before the doorway existed. prepare
+// runs on each ticket before its file moves (the callers stamp commits there);
+// nil skips it. Like TrimLane it returns what moved even on error, so a
+// partial sweep is never silent.
+func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Trimmed, error) {
+	all, err := s.List()
+	if err != nil {
+		return nil, err
+	}
+	var ts []*Ticket
+	for _, t := range all {
+		if t.Status == lane {
+			ts = append(ts, t)
+		}
+	}
+	sort.Slice(ts, func(i, j int) bool {
+		if ts[i].UpdatedAt.Equal(ts[j].UpdatedAt) {
+			return ts[i].ID < ts[j].ID
+		}
+		return ts[i].UpdatedAt.Before(ts[j].UpdatedAt)
+	})
+	var out []Trimmed
+	for _, t := range ts {
+		if prepare != nil {
+			if err := prepare(t); err != nil {
+				return out, err
+			}
+		}
 		dst, err := s.Logbook(t.ID, folder)
 		if err != nil {
 			return out, err

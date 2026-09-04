@@ -43,49 +43,42 @@ func holdsStore(t *testing.T, n int) (*ticket.Store, []*ticket.Ticket) {
 	return s, out
 }
 
-// The TUI's move enforces the same cap the CLI's does, and says so the same
-// way: which ticket left, and the restore command that brings it back.
-func TestTrimHoldsFilesTheOldestAndSaysSo(t *testing.T) {
+// The builtin done is a doorway: settleLane files the just-landed ticket and
+// everything still sitting in the lane straight into the logbook — the lane
+// is self-migrating, and the message names every file with its restore path.
+// The holds (cap) branch of settleLane is pinned at the core and CLI layers.
+func TestSettleLaneFilesTheDoorwayLane(t *testing.T) {
 	s, ts := holdsStore(t, 11)
 	m, err := New(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	msg, err := m.trimHolds("done", "")
+	msg, err := m.settleLane("done", "")
 	if err != nil {
-		t.Fatalf("trimHolds: %v", err)
+		t.Fatalf("settleLane: %v", err)
 	}
-	oldest := ts[0]
-	if !strings.Contains(msg, ticket.Handle(oldest.ID)) || !strings.Contains(msg, "logbook") {
-		t.Errorf("trim message %q does not name %s and the logbook", msg, ticket.Handle(oldest.ID))
+	if got := strings.Count(msg, "filed to the logbook"); got != 11 {
+		t.Errorf("%d filing lines, want 11:\n%s", got, msg)
+	}
+	if !strings.Contains(msg, ticket.Handle(ts[0].ID)) {
+		t.Errorf("message does not name the oldest resident:\n%s", msg)
 	}
 	left, err := s.List()
 	if err != nil {
-		t.Fatalf("List: %v", err)
+		t.Fatal(err)
 	}
-	if len(left) != 10 {
-		t.Errorf("%d tickets remain on the board, want 10", len(left))
+	if len(left) != 0 {
+		t.Errorf("%d tickets remain on the board, want 0 — done is a doorway", len(left))
 	}
 }
 
-func TestTrimHoldsAtTheCapMovesNothing(t *testing.T) {
-	s, _ := holdsStore(t, 10)
+func TestSettleLaneIgnoresAnUnknownLane(t *testing.T) {
+	s, _ := holdsStore(t, 1)
 	m, err := New(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	msg, err := m.trimHolds("done", "")
-	if err != nil {
-		t.Fatalf("trimHolds: %v", err)
-	}
-	if msg != "" {
-		t.Errorf("a lane at its cap reported a trim: %q", msg)
-	}
-	left, err := s.List()
-	if err != nil {
-		t.Fatalf("List: %v", err)
-	}
-	if len(left) != 10 {
-		t.Errorf("%d tickets remain on the board, want 10", len(left))
+	if msg, err := m.settleLane("nosuch", ""); msg != "" || err != nil {
+		t.Errorf("settleLane on an unknown lane = %q, %v; want silence", msg, err)
 	}
 }

@@ -152,22 +152,7 @@ func logbookFolder() string {
 // business discarding. derive may be nil, the same "no derivation on offer"
 // convention core/gate uses.
 func stampCommits(s *ticket.Store, t *ticket.Ticket, derive func(*ticket.Ticket) []string) ([]string, error) {
-	var derived []string
-	if derive != nil {
-		derived = derive(t)
-	}
-	merged := append([]string{}, derived...)
-	for _, c := range t.Commits {
-		if c = strings.TrimSpace(c); c != "" && !contains(merged, c) {
-			merged = append(merged, c)
-		}
-	}
-	if _, err := s.Mutate(t.ID, func(t *ticket.Ticket) error {
-		return t.Doc().SetList(ticket.FieldCommits, merged)
-	}); err != nil {
-		return nil, err
-	}
-	return merged, nil
+	return s.StampCommits(t, derive)
 }
 
 func logbookNames(s *ticket.Store) ([]string, error) {

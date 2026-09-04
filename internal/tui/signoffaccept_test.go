@@ -12,9 +12,9 @@ import (
 )
 
 // The accept key is the fourth status write-site and the usual way a person
-// lands a ticket in done — the cap must fire there exactly as it does on a
-// move. This test came out of the review that found accept() skipping it.
-func TestAcceptEnforcesTheCap(t *testing.T) {
+// lands a ticket in done — since done is a doorway, accepting files the ticket
+// (and any residents) straight into the logbook, commits kept, and says so.
+func TestAcceptFilesTheTicketIntoTheLogbook(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
 	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
@@ -27,19 +27,16 @@ func TestAcceptEnforcesTheCap(t *testing.T) {
 		t.Fatal(err)
 	}
 	base := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
-	// Ten already in done, a minute apart, oldest first.
-	var done []*ticket.Ticket
-	for i := 0; i < 10; i++ {
+	// Two residents from before the doorway existed — they go along.
+	for i := 0; i < 2; i++ {
 		stamp := base.Add(time.Duration(i) * time.Minute)
-		tk, err := s.Create(map[string]string{
+		if _, err := s.Create(map[string]string{
 			ticket.FieldID: ticket.NewID(stamp), ticket.FieldTitle: fmt.Sprintf("t%02d", i),
 			ticket.FieldStatus: "done", ticket.FieldCreatedAt: ticket.FormatTime(stamp),
 			ticket.FieldUpdatedAt: ticket.FormatTime(stamp),
-		}, nil, "")
-		if err != nil {
+		}, nil, ""); err != nil {
 			t.Fatal(err)
 		}
-		done = append(done, tk)
 	}
 	// One at signoff, fully gated so accept() is not refused.
 	stamp := base.Add(time.Hour)
@@ -67,30 +64,32 @@ func TestAcceptEnforcesTheCap(t *testing.T) {
 	m.detail = full
 	m.accept()
 
-	after, err := s.Load(sg.ID)
-	if err != nil {
-		t.Fatalf("reload after accept: %v", err)
+	if !strings.Contains(m.message, "Accepted") {
+		t.Fatalf("accept() did not accept (message: %q)", m.message)
 	}
-	if after.Status != "done" {
-		t.Fatalf("accept() was refused, ticket still in %q (message: %q)", after.Status, m.message)
+	if got := strings.Count(m.message, "filed to the logbook"); got != 3 {
+		t.Errorf("%d filing lines in the accept message, want 3:\n%s", got, m.message)
+	}
+	if _, err := os.Stat(full.Path); !os.IsNotExist(err) {
+		t.Errorf("the accepted ticket is still on the board at %q", full.Path)
 	}
 	all, err := s.List()
 	if err != nil {
 		t.Fatal(err)
 	}
-	n := 0
-	for _, tk := range all {
-		if tk.Status == "done" {
-			n++
-		}
+	if len(all) != 0 {
+		t.Errorf("%d tickets remain on the board, want 0", len(all))
 	}
-	if n != 10 {
-		t.Errorf("done holds %d after accept, want 10 — the cap did not fire on the accept path", n)
+	// The commits survived the filing.
+	matches, err := filepath.Glob(filepath.Join(s.LogbookDir(), "*", filepath.Base(full.Path)))
+	if err != nil || len(matches) != 1 {
+		t.Fatalf("accepted ticket not found in the logbook: %v (%d matches)", err, len(matches))
 	}
-	if _, err := os.Stat(done[0].Path); !os.IsNotExist(err) {
-		t.Errorf("oldest ticket %s is still on the board", ticket.Handle(done[0].ID))
+	filed, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(m.message, "logbook") || !strings.Contains(m.message, ticket.Handle(done[0].ID)) {
-		t.Errorf("accept message does not say who left for the logbook: %q", m.message)
+	if !strings.Contains(string(filed), "deadbeef") {
+		t.Errorf("the filed ticket lost its commits:\n%s", filed)
 	}
 }
