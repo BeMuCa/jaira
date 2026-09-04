@@ -1,7 +1,7 @@
 ---
 id: 01M1PPW335WNFP2AEKDNWXQ9PT
 title: "Ein Ticket, das in done landet, geht sofort ins Logbuch"
-status: review
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-04T17:18:43Z
-updated-at: 2026-09-04T17:31:54Z
+updated-at: 2026-09-04T17:43:36Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:09Z
 updated-by: BeMuCa
@@ -48,3 +48,4 @@ review-check: |-
 
 ## Progress
 - **2026-09-04 17:30 · BeMuCa** — Entscheidungen: (1) holds bleibt als Feature (andere Lanes/Boards), builtin done tauscht es gegen logbook-on-entry - SGPDYK-Mechanik nicht rueckgebaut, nur nicht mehr von done genutzt (Berks Revision vom 04.09. dokumentiert im Kontext). (2) FileLane fegt die GANZE Lane (Altbestand mit) - selbstmigrierend, kein Sonderpfad. (3) Commit-Stempeln vor dem Ablegen an allen vier Schreibstellen via env.DeriveCommits; stampCommits (CLI) delegiert jetzt an core StampCommits (drei Nutzer: logbook-Cmd, archive, Entry-Filing beidseitig). (4) TUI-Cap-Branch-Test entfaellt - der Zweig ist ein Switch-Arm auf dem core-/CLI-getesteten TrimLane; CLI-Cap-Tests patchen die Lane-Kopie ihres Fixture-Boards auf holds:10 (builtin ist jetzt Doorway). (5) Board live: done.md-Kopie refreshed, die 10 Restbewohner per jaira logbook gefegt - done ist leer und bleibt Durchgang.
+- **2026-09-04 17:43 · BeMuCa** — Review-Fund F1 (live reproduziert, zweimal): die Doorway verklemmt - schlaegt der Sweep fehl (z.B. PartialError durch ein unlesbares Ticket, oder eine Logbuch-Kollision beim aeltesten Bewohner), bleibt AUCH das ankommende Ticket ungefiled in done liegen, und jede weitere Landung scheitert am selben Fehler: kein Selbstheilen. Ursache: FileLane bricht beim ersten Fehler ab (List-Fehler ganz, Einzel-Fehler mitten in der oldest-first-Reihe - das ankommende ist das NEUSTE und damit als letztes dran). Fix: continue-on-error - unlesbare/kollidierende Tickets ueberspringen und benennen (PartialError), alles andere filen; das ankommende kommt damit immer durch, der Problemfall wird bei jeder Landung erneut gemeldet statt alles zu blockieren. Gleiche Philosophie wie List selbst ('one malformed ticket must not blank the whole board').

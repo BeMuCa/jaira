@@ -236,3 +236,46 @@ func TestMoveIntoDoneFilesEverythingToTheLogbook(t *testing.T) {
 		t.Errorf("the filed ticket lost its commits:\n%s", filed)
 	}
 }
+
+// The doorway must not jam: with an unreadable ticket on the board the sweep
+// reports it — and still files the arriving ticket. Before this, the arrival
+// stayed in done and every later landing failed identically.
+func TestDoorwayKeepsFilingPastAProblem(t *testing.T) {
+	t.Setenv("JAIRA_USER", "berk")
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	mover, err := s.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(stamp), ticket.FieldTitle: "mover",
+		ticket.FieldStatus: "todo", ticket.FieldCreatedAt: ticket.FormatTime(stamp),
+		ticket.FieldUpdatedAt: ticket.FormatTime(stamp),
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(s.TicketsDir(), "broken.md"), []byte("not frontmatter at all"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force")
+	if err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "filed to the logbook") {
+		t.Errorf("the arriving ticket was not filed:\n%s", out)
+	}
+	if !strings.Contains(out, "trimming the done lane failed") {
+		t.Errorf("the problem was not reported:\n%s", out)
+	}
+	if _, statErr := os.Stat(mover.Path); !os.IsNotExist(statErr) {
+		t.Errorf("the arriving ticket is still on the board — the doorway jammed")
+	}
+}

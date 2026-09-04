@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -175,5 +176,39 @@ func TestTrimLaneFilesTheOverflowAndRestoreBringsItBack(t *testing.T) {
 	}
 	if len(left) != 11 {
 		t.Errorf("%d tickets after restore, want 11", len(left))
+	}
+}
+
+// A doorway must not jam: what cannot be filed is skipped and named, the rest
+// leaves anyway — otherwise one bad ticket blocks every later landing with the
+// same error, and the lane never heals (found live by the WXQ9PT review).
+func TestFileLaneSkipsWhatItCannotFileAndFilesTheRest(t *testing.T) {
+	s, ts := trimStore(t, 3)
+	// An unreadable ticket on the board: List reports it, the sweep continues.
+	if err := os.WriteFile(filepath.Join(s.TicketsDir(), "broken.md"), []byte("not frontmatter at all"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// A name collision for the middle ticket: filed once already today.
+	dir := filepath.Join(s.LogbookDir(), "bc-20260904")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, filepath.Base(ts[1].Path)), []byte("occupied"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := s.FileLane("done", "bc-20260904", nil)
+	if err == nil {
+		t.Fatal("a sweep with a broken ticket and a collision reported no problem")
+	}
+	if len(out) != 2 || out[0].ID != ts[0].ID || out[1].ID != ts[2].ID {
+		t.Fatalf("filed %d tickets, want the two fileable ones (t00, t02): %v", len(out), out)
+	}
+	if !strings.Contains(err.Error(), "broken.md") || !strings.Contains(err.Error(), Handle(ts[1].ID)) {
+		t.Errorf("the problems do not name both the unreadable file and the collision: %v", err)
+	}
+	// The collided ticket is still on the board — skipped, not lost.
+	if _, statErr := os.Stat(ts[1].Path); statErr != nil {
+		t.Errorf("the skipped ticket left the board: %v", statErr)
 	}
 }

@@ -1,6 +1,8 @@
 package ticket
 
 import (
+	"errors"
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -123,12 +125,22 @@ func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string
 // lane is a doorway (logbook-on-entry), so the just-landed ticket goes along
 // with anything still sitting there from before the doorway existed. prepare
 // runs on each ticket before its file moves (the callers stamp commits there);
-// nil skips it. Like TrimLane it returns what moved even on error, so a
-// partial sweep is never silent.
+// nil skips it. A ticket that cannot be filed — unreadable, a stamp failure, a
+// name collision in the folder — is skipped and named rather than allowed to
+// jam the doorway: a sweep aborts on nothing, because the same failure would
+// repeat on every later landing and the lane would block for good. What moved
+// and what was skipped are both always reported.
 func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Trimmed, error) {
 	all, err := s.List()
+	var problems []string
 	if err != nil {
-		return nil, err
+		var perr *PartialError
+		if !errors.As(err, &perr) {
+			return nil, err
+		}
+		// Unlike a cap, a doorway makes no ordering decision an unreadable
+		// ticket could corrupt — the readable ones still leave.
+		problems = append(problems, perr.Problems...)
 	}
 	var ts []*Ticket
 	for _, t := range all {
@@ -146,14 +158,19 @@ func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Tr
 	for _, t := range ts {
 		if prepare != nil {
 			if err := prepare(t); err != nil {
-				return out, err
+				problems = append(problems, fmt.Sprintf("%s: %v", Handle(t.ID), err))
+				continue
 			}
 		}
 		dst, err := s.Logbook(t.ID, folder)
 		if err != nil {
-			return out, err
+			problems = append(problems, fmt.Sprintf("%s: %v", Handle(t.ID), err))
+			continue
 		}
 		out = append(out, Trimmed{ID: t.ID, Title: t.Title, Path: dst})
+	}
+	if len(problems) > 0 {
+		return out, &PartialError{Problems: problems}
 	}
 	return out, nil
 }
