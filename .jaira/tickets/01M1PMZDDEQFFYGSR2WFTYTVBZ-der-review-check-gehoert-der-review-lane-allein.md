@@ -1,7 +1,7 @@
 ---
 id: 01M1PMZDDEQFFYGSR2WFTYTVBZ
 title: Der review-check gehoert der review-Lane allein
-status: critique
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-04T16:45:35Z
-updated-at: 2026-09-04T16:49:40Z
+updated-at: 2026-09-04T16:50:35Z
 claimed-by: EE-3NX6GL3-4183114
 claimed-at: 2026-09-04T16:46:02Z
 updated-by: BeMuCa
@@ -20,6 +20,13 @@ outcome-what: "review-check aus der optimize-Lane entfernt (Katalog lanes/optimi
 outcome-why: "Berk am 04.09.: der check gehoert der review-Lane allein - zwei deklarierende Lanes erzeugten das verwirrende (optimize/review)-Provenienz-Label und doppelte Schreibpflicht"
 outcome-resolves: "lanes show optimize zeigt Output: review-gaps; shipped-Parsing gruen; go test ./... -race RC=0; der Gate-Beweis (optimize ohne check verlassen) ist der Weg dieses Tickets selbst"
 executed-by: fable
+review-summary: "Kein Rueckweiser: kleinstmoeglicher Schnitt (eine Frontmatter-Zeile + ein Prompt-Absatz, in beiden Kopien identisch - diff bewiesen); der Ersatzsatz im Prompt sagt WOHIN die Pruefung gewandert ist, statt sie stillschweigend zu streichen; kein Code betroffen."
+review-gaps: "Nichts entfernt daruber hinaus. Gelassen: reviews eigener check-Abschnitt unveraendert (dorthin ist die Pflicht gewandert); bestehende Tickets mit (optimize)-gelabeltem check behalten ihr Label bis zum naechsten Schreiben des Felds - Historie, kein Bug."
+review-check: |-
+  1. jaira lanes show optimize -> Output: review-gaps (kein review-check mehr).
+  2. Ein Ticket im Detail oeffnen, das NUR review einen check schrieb -> Label davor ist (review), nicht (optimize/review).
+  3. Naechstes Ticket durch optimize fahren: der Move nach human/review geht ohne check durch - dieses Ticket selbst kam so durch.
+review-verdict: "accept (koordinator-verifiziert, offengelegt: Content-only-Aenderung an zwei Lane-Dateien, kein Code; Beweise am lebenden Board: 'lanes show optimize' zeigt Output review-gaps, und dieses Ticket verliess optimize ohne check - das Gate verlangt ihn dort nicht mehr; shipped-Parsing und volle Suite -race RC=0)."
 ---
 
 # Der review-check gehoert der review-Lane allein

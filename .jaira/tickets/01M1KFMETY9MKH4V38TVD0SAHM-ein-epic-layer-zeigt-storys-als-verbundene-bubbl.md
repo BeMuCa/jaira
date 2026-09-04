@@ -1,7 +1,7 @@
 ---
 id: 01M1KFMETY9MKH4V38TVD0SAHM
 title: Ein Epic-Layer zeigt Storys als verbundene Bubbles ueber dem Board
-status: backlog
+status: brainstorm
 ready: true
 creator: BeMuCa
 goal: "Mit L wechselt das TUI auf einen Epic/Story-Layer: Bubbles (eine je Epic, in Tag-Farbe) bilden einen Flow von 'erst A, dann B'; jede Bubble sammelt die Tickets ihres Tags, fuellt sich mit deren Fertigstellungsgrad, und Enter springt vom Bubble-Detail zum Ticket aufs Board"
@@ -11,9 +11,11 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-09-03T11:15:04Z
+updated-at: 2026-09-04T16:44:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-4179675
+claimed-at: 2026-09-04T16:44:21Z
 ---
 
 # Ein Epic-Layer zeigt Storys als verbundene Bubbles ueber dem Board
