@@ -11,7 +11,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-09-04T16:44:22Z
+updated-at: 2026-09-04T16:50:53Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-4179675
@@ -34,4 +34,4 @@ claimed-at: 2026-09-04T16:44:21Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-04 16:50 · BeMuCa** — Brainstorm-Entscheidungspunkte (an Berk gestellt, 04.09.): K1 Speicherung: eine Markdown-Datei je Epic unter .jaira/epics/ (Frontmatter: name, tag, goal, after: [Vorgaenger-Epics] als Kanten) - hand-editierbar, diff-bar, Kantenliste merge=union. K2 Bindung: Epic HAT einen Tag (Feld) statt Epic==Tag - umbenennbar, Farbe bleibt allein in .jaira/tags; Fuellstand = fertige/alle Tickets des Tags. K3 Parallel-Sessions: WriteAtomic + Store-Lock wie core/tag. K4 Layout: Ebene = laengster Pfad von den Wurzeln; erste Reihe = Sammelreihe (parallel), darunter Nachfolger; Kanten als einfache Linien. K5 Split-Geste: Vorschlag 'v'=Kante-ziehen-Modus (deckt Split UND Merge) statt nur y; Berks y als Alternative. K6 Loeschen: Dialog Bubble-only (Default) vs. 'mit Tickets' = Tickets ARCHIVIEREN (umkehrbar), nie hart loeschen. K7 Anlage: L toggelt Layer, Plus-Bubbles rechts (parallel) und unten (Nachfolger), Enter -> TUI-Formular (name, ziel, tag, farbe optional, Default random).
