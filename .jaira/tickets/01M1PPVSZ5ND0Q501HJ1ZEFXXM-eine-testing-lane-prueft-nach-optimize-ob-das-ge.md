@@ -1,7 +1,7 @@
 ---
 id: 01M1PPVSZ5ND0Q501HJ1ZEFXXM
 title: "Eine Testing-Lane prueft nach optimize, ob das Geforderte existiert und funktioniert"
-status: review
+status: signoff
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -12,7 +12,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-04T17:18:34Z
-updated-at: 2026-09-04T17:34:41Z
+updated-at: 2026-09-04T17:35:11Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:10Z
 updated-by: BeMuCa
@@ -24,6 +24,11 @@ review-summary: "Kritik: exakt das critique/optimize-Muster (Katalog-Datei, adop
 review-gaps: "Nichts entfernt. Gelassen: test-verdict als EIN Feld (pass/fail + Kurzbefund) statt Feld-Paar - die Detailtiefe traegt die Note; kein eigener Farb-/UI-Support - Lane-Felder rendern generisch (KA9CFA haelt Zeilen)."
 test-verdict: "pass: Gates gruen (core/lane -race nach Katalog-Erweiterung, Build ok), DoD am Baum verifiziert (Datei, Reihenfolge, Kontrakt), Verhalten exerziert - der Exit-Gate-Beweis lief an diesem Ticket selbst"
 review-verdict: "accept (koordinator-verifiziert, offengelegt: Content-only - eine Katalog-Lane-Datei plus Board-Adoption, kein Go-Code; Beweise am lebenden Board: Reihenfolge in 'jaira lanes', Exit-Gate verweigerte den Move ohne test-verdict woertlich, shipped-Parsing -race gruen). Das erste echte Ticket durch die Lane ist die eigentliche Feuertaufe - sein Weg zeigt, ob der Prompt traegt."
+review-check: |-
+  1. jaira lanes -> Testing steht zwischen Optimize und HITL, tier cheap.
+  2. jaira lanes show testing -> Prompt mit den drei Paessen, Output test-verdict, rejects-to in-progress.
+  3. Naechstes echtes Ticket beobachten: aus optimize landet es in testing; ohne test-verdict verweigert der Move weiter (Meldung nennt das Feld).
+  4. Ein fail-Fall: test-verdict beginnt mit fail:, eine testing:-Note traegt Befund+Loesungsvorschlag, das Ticket liegt wieder in Implementing.
 ---
 
 # Eine Testing-Lane prueft nach optimize, ob das Geforderte existiert und funktioniert
