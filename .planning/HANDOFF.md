@@ -1,4 +1,35 @@
-# Handoff — 2026-09-03, nach dem "go"
+# Handoff — 2026-09-04, Abend
+
+## Der 04.09. in Kürze (Details in den Tickets, alle in signoff)
+
+- **TYTVBZ**: review-check gehört der review-Lane allein (optimize-Lane in
+  Katalog + Board-Kopie geändert; Gate-Beweis am eigenen Weg).
+- **ZEFXXM**: **Testing-Lane** installiert — optimize → testing → human →
+  review; drei Pässe (Gates, DoD am Baum, Verhalten ausführen), Findings als
+  test-verdict + Note zurück nach Implementing; Exit-Gate live bewiesen.
+  lanes add hängte sie ans order-Ende (bekannter Anker-Fall) — von Hand
+  hinter optimize gestellt.
+- **WXQ9PT**: **done ist ein Durchgang** (logbook-on-entry, nur terminal):
+  Landen stempelt Commits und fegt die ganze Lane ins Logbuch, gemeldet mit
+  restore-Weg; builtin done tauscht holds gegen das Flag (holds bleibt
+  Feature). Review fand live einen **Doorway-Jam** (ein Unfilebares blockierte
+  alles, kein Selbstheilen) → FileLane skippt+benennt jetzt (PartialError),
+  der Ankömmling kommt immer durch; Re-Proben des Reviewers grün. Dieses
+  Board: done.md umgestellt, done LEER, Logbuch 12+10 Dateien.
+- **Berks Richtungswechsel dokumentiert**: revidiert SGPDYKs "10 bleiben
+  sichtbar" von gestern — Fertiges liest man jetzt im Startbildschirm und
+  Logbuch.
+- **D0SAHM** in brainstorm: K1–K7-Entscheidungspunkte als Note auf dem Ticket,
+  warten auf Berks Antworten (Speicherung .jaira/epics/, Epic-hat-Tag,
+  WriteAtomic, Ebenen-Layout, Split-Geste v, Löschen=archivieren, L+Formular).
+- **jaira-Feedback-Liste** an Berk gegeben (L119–L123: set --append,
+  notes im bounded input, --force-Ausgabe, gemeinsame Move-Funktion,
+  Claim-Lease) — Capture auf Zuruf.
+- signoff hält jetzt SECHS: NJPQWE, 76WCCW, KA9CFA, TYTVBZ, ZEFXXM, WXQ9PT.
+
+---
+
+# Archiv: Handoff — 2026-09-03, nach dem "go"
 
 Stand nach der go-Session; dieses File ist das Gedächtnis. Der vorige Handoff
 (31.08. Abend) ist in der git-History dieses Files.
