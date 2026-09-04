@@ -225,6 +225,14 @@ Capturing and picking work:
   question answered first, it is not finished
 - `jaira list --actionable --json` — everything that could be started right now
 - `jaira next --json` — the single next actionable ticket
+- `jaira tags` — the tags this board already uses, with how many open tickets
+  carry each. **Read it before you tag anything** and reuse the name that is
+  already there for that subject; never invent a synonym — "ui", "frontend" and
+  "gui" on one board are three names for one thing and filter to nothing.
+  `jaira tag <id> <name>...` adds tags, and `jaira create --tag <name>` sets them
+  at capture. A name jaira has not seen is new and gets a colour in the
+  hand-editable `.jaira/tags`; the board filter and `jaira list --tag <name>`
+  read them back
 
 Working a ticket:
 
@@ -271,9 +279,10 @@ this note from outside the block.
 
 ## This board's lanes
 
-Order: backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → human → review → signoff → done → blocked
+Order: backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
 Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say.
 Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say.
+Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say.
 
 - `backlog` — no agent step; move through it
   Captured but not yet specified enough to work on.
@@ -287,8 +296,10 @@ Loop: optimize sends work back to in-progress, and that repeats until optimize h
   Carrying out the plan.
 - `critique` — yours to work; tier strong; must produce review-summary
   Judges whether this is the right implementation, not whether it works.
-- `optimize` — yours to work; tier strong; must produce review-gaps, review-check
+- `optimize` — yours to work; tier strong; must produce review-gaps
   Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
+- `testing` — yours to work; tier cheap; must produce test-verdict
+  Runs the change and checks it against the ticket - does the demanded thing exist, and does it work.
 - `human` — **a person's, not yours** — you may move work in, never out
   Human in the loop.
 - `review` — yours to work; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
@@ -307,4 +318,9 @@ which of them you are allowed to work, `jaira show <id> --for-lane <lane> --json
 hands you that lane's prompt and its bounded input, and `jaira move` puts the
 result in the next lane. Work one lane to empty before starting the next, or
 the lane nobody drives is the one that fills up.
+
+Told to start or work a ticket, drive it this way yourself — lane by lane,
+loops included — until it sits in a human lane, then continue once the human
+has answered. Told an agent should work it, hand it to a subagent that
+babysits the ticket through the same route.
 <!-- jaira:end -->
