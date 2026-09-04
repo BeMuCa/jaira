@@ -8,7 +8,7 @@ agentic: true
 model-tier: strong
 rejects-to: in-progress
 input-requires: [goal, definition-of-done, outcome-what, diff]
-output-produces: [review-gaps, review-check]
+output-produces: [review-gaps]
 creator: BeMuCa
 ---
 
@@ -50,22 +50,8 @@ what was considered rather than only what happened:
 If nothing needed doing, write `review-gaps="none"` — explicitly, because an
 empty field means nobody looked.
 
-Then write `review-check`: how the person who reads this next checks it by hand.
-You are the last agent that touches the ticket, so this is the handover.
-
-    jaira set <handle> review-check="1. go run ./cmd/app  2. open /export and pick a 40MB range  3. the download starts within a second instead of hanging"
-
-Numbered steps, one action each, exact commands and exact paths rather than "run
-the tests", and name what they should see — a step whose outcome is unstated
-cannot be failed. Write it as if the reader has mild ADHD and knows none of what
-you know: no jargon, no preamble. The ticket's goal already says what it was
-supposed to do; this says how to tell whether it does.
-
-If it cannot be checked by hand, say so and say why. A test name is a legitimate
-answer ("go test ./auth -run TestSameSite covers it; there is no UI path").
-"Review the diff" is not.
-
-Then move the ticket on to review.
+Then move the ticket on. The hand-check (`review-check`) is the review lane's
+to write: it judges last, so it hands over.
 
 **If cleaning up would change behaviour**, stop. That is not a cleanup, it is a
 second implementation, and it belongs back in the implementing lane with the
