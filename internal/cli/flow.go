@@ -228,17 +228,11 @@ one the real move would have returned.`,
 			var holds int
 			var filed bool
 			if l, ok := env.Lanes.Get(to); ok {
-				switch {
-				case l.LogbookOnEntry:
-					filed = true
-					trimmed, trimErr = s.FileLane(to, logbookFolder(), func(tk *ticket.Ticket) error {
-						_, err := s.StampCommits(tk, env.DeriveCommits)
-						return err
-					})
-				case l.Holds > 0:
-					holds = l.Holds
-					trimmed, trimErr = s.TrimLane(to, holds, logbookFolder(), t.ID)
-				}
+				holds = l.Holds
+				trimmed, filed, trimErr = lane.Settle(s, l, logbookFolder(), t.ID, func(tk *ticket.Ticket) error {
+					_, err := s.StampCommits(tk, env.DeriveCommits)
+					return err
+				})
 			}
 
 			if g.jsonOut {

@@ -1444,22 +1444,11 @@ func (m *Model) settleLane(laneID, moved string) (string, error) {
 	}
 	folder := fmt.Sprintf("%s-%s",
 		identity.Initials(identity.Current(m.store.Root)), time.Now().Format("20060102"))
-	var trimmed []ticket.Trimmed
-	var err error
-	var filed bool
-	switch {
-	case l.LogbookOnEntry:
-		filed = true
-		derive := m.gateEnv().DeriveCommits
-		trimmed, err = m.store.FileLane(laneID, folder, func(tk *ticket.Ticket) error {
-			_, serr := m.store.StampCommits(tk, derive)
-			return serr
-		})
-	case l.Holds > 0:
-		trimmed, err = m.store.TrimLane(laneID, l.Holds, folder, moved)
-	default:
-		return "", nil
-	}
+	derive := m.gateEnv().DeriveCommits
+	trimmed, filed, err := lane.Settle(m.store, l, folder, moved, func(tk *ticket.Ticket) error {
+		_, serr := m.store.StampCommits(tk, derive)
+		return serr
+	})
 	if len(trimmed) == 0 {
 		return "", err
 	}
