@@ -1,4 +1,35 @@
-# Handoff — 2026-09-04, Abend
+# Handoff — 2026-09-05, früh
+
+## Die Feedback-Runde (Berks Auftrag: Tickets direkt bis done)
+
+Fünf Verbesserungen aus meinem eigenen jaira-Feedback, je als Ticket durch
+alle Lanes inkl. der neuen Testing-Lane, per --force durch signoff (Berks
+stehender Auftrag, je protokolliert), via Doorway ins Logbuch:
+
+- **K97RAV** `jaira set --append`: Skalare stapeln per Leerzeile, Listen
+  hängen an — Review-Runden behalten ihre Historie im Feld.
+- **HVHZ7Q** Forcierter Move endet auf der Erfolgszeile (Bullets zuerst) —
+  die BDV0HM-tail-1-Falle ist zu.
+- **7WY0YT** `claim --release`: existierte schon (!), war aber undokumentiert
+  und löste fremde AKTIVE Claims — jetzt Guard (nur eigene/abgelaufene) +
+  Hilfetext + drei Tests.
+- **6BFHJ4** `lane.Settle` im core: Doorway/Cap-Entscheidung einmal
+  (Doorway gewinnt, getestet); CLI/TUI-Switches weg. Bestandstests liefen
+  UNANGEPASST grün (Byte-Gleichheits-Beweis).
+- **RFMQ4K** `notes` als input-requires: `show --for-lane` liefert das
+  Progress-Journal (leer = weggelassen, nie missing); builtin in-progress
+  deklariert es → fremde Board-Kopien driften bis zum Refresh (dieses Board
+  refreshed). notes steht in ticket.SuppliedFields (Validator-Regression im
+  eigenen Lauf gefangen).
+- **JJ32B4** (volle Move-Vereinheitlichung) bewusst im Backlog — zu
+  invariantennah für den Schnelldurchlauf.
+
+**Kontrakt fürs nächste "go" nach einem Clear:** die Lane-Doku L104–L117
+wortgetreu wieder ausgeben — Volltext im Memory `go-contract-lane-doku`.
+
+---
+
+# Archiv: Handoff — 2026-09-04, Abend
 
 ## Der 04.09. in Kürze (Details in den Tickets, alle in signoff)
 
