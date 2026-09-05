@@ -1,7 +1,7 @@
 ---
 id: 01M1Q59ATPCREV9W8FNW6BFHJ4
 title: CLI und TUI teilen EINE Settle-Funktion im core
-status: critique
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -10,9 +10,10 @@ context: "Berk am 04.09. (Feedback L122): vier Status-Schreibstellen bedeuten, d
 definition-of-done: Eine core-Funktion entscheidet Doorway/Cap und liefert Trimmed+filed+Fehler; flow.go und tui settleLane rufen sie (kein doppelter Switch mehr); Verhalten byte-gleich (bestehende Tests gruen ohne Anpassung)
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 0592b6e6a38fe91b6b528a613aef99668b913555
 created-at: 2026-09-04T21:30:37Z
-updated-at: 2026-09-05T02:33:02Z
+updated-at: 2026-09-05T02:33:55Z
 claimed-by: EE-3NX6GL3-404958
 claimed-at: 2026-09-05T02:29:45Z
 updated-by: BeMuCa
@@ -20,6 +21,14 @@ outcome-what: "lane.Settle im core: die Doorway/Cap-Entscheidung samt Vorrang le
 outcome-why: "Feedback L122, erster Schnitt: vier Schreibstellen hiessen bisher zwei identische Regel-Switches, die auseinanderdriften koennen - das Review fand accept() nur durch Suchen; die Regel gehoert dahin, wo lane und ticket sich treffen (lane importiert ticket, nicht umgekehrt - daher core/lane)"
 outcome-resolves: "Bestehende Doorway/Cap/Jam-Tests alle gruen ohne eine Zeile Anpassung (byte-gleiches Verhalten), plus Routing-Unit-Test inkl. Doorway-schlaegt-Cap; die volle Move-Vereinheitlichung ist als JJ32B4 im Backlog eingefangen, bewusst nicht hier"
 executed-by: fable
+review-summary: "Kritik: richtiger Ort per Import-Richtung erzwungen (ticket kann lane nicht kennen - Zyklus); Vorrang Doorway>Cap ist jetzt AUSGESPROCHEN und getestet statt implizit in zwei Switch-Reihenfolgen; die UIs verlieren Logik, keine Faehigkeit. Kein neues Muster: Settle steht neben Load/Drift als Lane-Verhalten."
+review-gaps: "Nichts entfernt daruber hinaus. Gelassen: prepare als Parameter (die Stempel-Ableitung braucht env/gitrepo, das core/lane nichts angeht); holds-Variable im CLI bleibt fuer die Meldezeile."
+review-check: |-
+  1. Verhalten unveraendert: ein done-Landen filed wie gestern, ein holds-Board trimmt wie gestern (alle bestehenden Tests liefen UNANGEPASST gruen).
+  2. grep -rn "LogbookOnEntry" internal/ -> keine Switch-Logik mehr in den UIs, nur noch lane.Settle-Aufrufe.
+  3. go test ./core/lane -run TestSettle zeigt das Routing inkl. Doorway-schlaegt-Cap.
+test-verdict: "pass: voller Lauf -race nach Cache-Loeschung RC=0 (test18) mit UNANGEPASSTEN Bestandstests - der Byte-Gleichheits-Beweis; Routing-Unit-Test -v gruen; grep bestaetigt: keine Doorway/Cap-Switch-Logik mehr ausserhalb von core/lane"
+review-verdict: "accept (koordinator-verifiziert, Direktdurchlauf per Berks Auftrag: Refactor mit Byte-Gleichheits-Beweis - alle Bestandstests ohne Anpassung gruen, Vorrang explizit gepinnt; das grosse Geschwister JJ32B4 wartet bewusst im Backlog auf einen ruhigen Schnitt)"
 ---
 
 # CLI und TUI teilen EINE Settle-Funktion im core
