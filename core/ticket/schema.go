@@ -129,6 +129,9 @@ var canonicalOrder = []string{
 // one place both packages read rather than two lists that could drift apart.
 var SuppliedFields = []string{
 	FieldTitle, FieldGoal, FieldContext, FieldDoD, FieldAssignee, "diff",
+	// notes is the ticket's own Progress journal, written by jaira note —
+	// no lane produces it, every ticket carries it.
+	"notes",
 }
 
 // Ticket is the decoded view of a ticket, used for reads, filtering and

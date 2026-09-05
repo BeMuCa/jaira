@@ -586,6 +586,14 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				steps = append(steps, fmt.Sprintf("%d. [%s] %s", i+1, it.State.Marker(), it.Text))
 			}
 			fields["plan"] = strings.Join(steps, "\n")
+		case "notes":
+			// The ticket's Progress entries: dead ends, findings, and — on a
+			// loop board — the testing/critique handover for the implementer.
+			// A journal is not a promise, so an empty one is omitted rather
+			// than reported missing: a fresh ticket legitimately has none.
+			if ns := progressNotes(t.Body); len(ns) > 0 {
+				fields["notes"] = "- " + strings.Join(ns, "\n- ")
+			}
 		case "diff":
 			repo := &gitrepo.Repo{Dir: s.Root}
 			// The same fallback the gate uses: a ticket that records no commits

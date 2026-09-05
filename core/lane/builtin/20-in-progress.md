@@ -6,7 +6,7 @@ precedence: 30
 agentic: true
 terminal: false
 model-tier: cheap
-input-requires: [goal, definition-of-done, context, plan]
+input-requires: [goal, definition-of-done, context, plan, notes]
 output-produces: [outcome-what, outcome-why, outcome-resolves]
 description: Carrying out the plan.
 ---
