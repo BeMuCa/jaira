@@ -84,7 +84,11 @@ sessions; it does not prevent a deliberate move.
 
 Taking over a claim that has expired is allowed and needs no flag, but it is
 reported: whose claim it was and how long ago it was last renewed. Silence there
-would let two sessions work the same ticket with nothing anywhere saying so.`,
+would let two sessions work the same ticket with nothing anywhere saying so.
+
+--release gives a claim up: your own at any time, somebody else's only once it
+has expired — that clears an abandoned claim's warning without waiting. A claim
+another session is actively renewing is refused.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -100,6 +104,19 @@ would let two sessions work the same ticket with nothing anywhere saying so.`,
 			}
 
 			if release {
+				// Your own claim goes at will; somebody else's only once it has
+				// expired. A live claim is another session mid-work — releasing
+				// it from outside would invite exactly the double-work claims
+				// exist to prevent.
+				if holder, active := ClaimActive(t, sessionID); active {
+					return &codedError{
+						code:   ExitValidation,
+						reason: "claimed",
+						message: fmt.Sprintf(
+							"%s is claimed by %s and the claim is still live (renewed %s ago); only an expired claim may be released by someone else",
+							ticket.Handle(t.ID), holder, rough(time.Since(t.ClaimedAt))),
+					}
+				}
 				t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
 					if err := t.Doc().SetScalar(ticket.FieldClaimedBy, ""); err != nil {
 						return err
