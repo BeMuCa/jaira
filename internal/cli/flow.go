@@ -255,10 +255,13 @@ one the real move would have returned.`,
 				}
 				return emit(cmd.OutOrStdout(), out)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s → %s\n", ticket.Handle(t.ID), to)
 			if force && len(vs) > 0 {
+				// Refusals first, success last: a trailing bullet reads like a
+				// refusal, and 'move --force | tail -1' once cost a day that way
+				// (BDV0HM, 31.08.). The last line of a successful move is the move.
 				fmt.Fprintf(cmd.OutOrStdout(), "Overrode %d gate refusal(s):\n%s\n", len(vs), bullets(vs))
 			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s → %s\n", ticket.Handle(t.ID), to)
 			for _, tr := range trimmed {
 				if filed {
 					fmt.Fprintf(cmd.OutOrStdout(), "%s filed to the logbook — restore it with 'jaira restore %s'.\n",
