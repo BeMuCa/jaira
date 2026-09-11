@@ -18,7 +18,7 @@ func TestUnstorableTagIsReportedWithTheRename(t *testing.T) {
 	bad.Goal, bad.Context, bad.Assignee, bad.DoD = "g", "c", "berk", "d"
 	bad.Tags = []string{"ui", "front/end"}
 
-	ps := Tickets([]*ticket.Ticket{bad}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{bad}, lanes(t), nil)
 	if !has(ps, CodeBadTag) {
 		t.Fatalf("an unstorable tag produced %v", codes(ps))
 	}
@@ -52,7 +52,7 @@ func TestCaseOnlyTagIsNotReported(t *testing.T) {
 	fine.Goal, fine.Context, fine.Assignee, fine.DoD = "g", "c", "berk", "d"
 	fine.Tags = []string{"UI", "My UI"}
 
-	if ps := Tickets([]*ticket.Ticket{fine}, lanes(t)); has(ps, CodeBadTag) {
+	if ps := Tickets([]*ticket.Ticket{fine}, lanes(t), nil); has(ps, CodeBadTag) {
 		t.Errorf("a tag that only needs case folding was reported: %v", codes(ps))
 	}
 }
@@ -61,7 +61,7 @@ func TestCaseOnlyTagIsNotReported(t *testing.T) {
 func TestNoTagsIsNotAProblem(t *testing.T) {
 	fine := tk(ticket.NewID(time.Now()), "untagged", "todo")
 	fine.Goal, fine.Context, fine.Assignee, fine.DoD = "g", "c", "berk", "d"
-	if ps := Tickets([]*ticket.Ticket{fine}, lanes(t)); has(ps, CodeBadTag) {
+	if ps := Tickets([]*ticket.Ticket{fine}, lanes(t), nil); has(ps, CodeBadTag) {
 		t.Errorf("an untagged ticket was reported: %v", codes(ps))
 	}
 }

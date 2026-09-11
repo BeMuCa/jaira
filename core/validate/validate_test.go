@@ -50,18 +50,18 @@ func TestValidReturnsNothing(t *testing.T) {
 	good := tk(ticket.NewID(time.Now()), "fine", "todo")
 	good.Goal, good.Context, good.Assignee = "g", "c", "berk"
 	good.DoD = "a test covers it"
-	if ps := Tickets([]*ticket.Ticket{good}, lanes(t)); len(ps) != 0 {
+	if ps := Tickets([]*ticket.Ticket{good}, lanes(t), nil); len(ps) != 0 {
 		t.Errorf("a valid ticket produced problems: %v", codes(ps))
 	}
 }
 
 func TestIDMustBeAULID(t *testing.T) {
 	bad := tk("not-a-ulid", "bad id", "todo")
-	if !has(Tickets([]*ticket.Ticket{bad}, lanes(t)), CodeBadID) {
+	if !has(Tickets([]*ticket.Ticket{bad}, lanes(t), nil), CodeBadID) {
 		t.Error("a malformed id was accepted")
 	}
 	missing := tk("", "no id", "todo")
-	if !has(Tickets([]*ticket.Ticket{missing}, lanes(t)), CodeBadID) {
+	if !has(Tickets([]*ticket.Ticket{missing}, lanes(t), nil), CodeBadID) {
 		t.Error("a missing id was accepted")
 	}
 }
@@ -70,7 +70,7 @@ func TestIDMustBeAULID(t *testing.T) {
 // nothing tells you it is there until you try to touch it.
 func TestUnknownLaneIsReported(t *testing.T) {
 	bad := tk(ticket.NewID(time.Now()), "stranded", "some-lane-nobody-installed")
-	ps := Tickets([]*ticket.Ticket{bad}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{bad}, lanes(t), nil)
 	if !has(ps, CodeUnknownLane) {
 		t.Errorf("an unknown lane was accepted: %v", codes(ps))
 	}
@@ -79,7 +79,7 @@ func TestUnknownLaneIsReported(t *testing.T) {
 func TestMissingTitleIsReported(t *testing.T) {
 	bad := tk(ticket.NewID(time.Now()), "", "todo")
 	bad.Path = "/tmp/x.md"
-	if !has(Tickets([]*ticket.Ticket{bad}, lanes(t)), CodeNoTitle) {
+	if !has(Tickets([]*ticket.Ticket{bad}, lanes(t), nil), CodeNoTitle) {
 		t.Error("a ticket with no title was accepted")
 	}
 }
@@ -89,7 +89,7 @@ func TestMissingTitleIsReported(t *testing.T) {
 func TestDanglingDependencyIsReported(t *testing.T) {
 	a := tk(ticket.NewID(time.Now()), "depends", "todo")
 	a.BlockedBy = []string{"01ZZZZZZZZZZZZZZZZZZZZZZZZ"}
-	ps := Tickets([]*ticket.Ticket{a}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{a}, lanes(t), nil)
 	if !has(ps, CodeDanglingDep) {
 		t.Errorf("a dangling dependency was accepted: %v", codes(ps))
 	}
@@ -99,7 +99,7 @@ func TestResolvedDependencyIsFine(t *testing.T) {
 	b := tk(ticket.NewID(time.Now()), "dependency", "todo")
 	a := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "depends", "todo")
 	a.BlockedBy = []string{b.ID}
-	if ps := Tickets([]*ticket.Ticket{a, b}, lanes(t)); has(ps, CodeDanglingDep) {
+	if ps := Tickets([]*ticket.Ticket{a, b}, lanes(t), nil); has(ps, CodeDanglingDep) {
 		t.Errorf("a resolvable dependency was reported: %v", codes(ps))
 	}
 }
@@ -109,7 +109,7 @@ func TestResolvedDependencyIsFine(t *testing.T) {
 func TestDuplicateIDIsReported(t *testing.T) {
 	id := ticket.NewID(time.Now())
 	a, b := tk(id, "first", "todo"), tk(id, "second", "todo")
-	ps := Tickets([]*ticket.Ticket{a, b}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{a, b}, lanes(t), nil)
 	if !has(ps, CodeDuplicateID) {
 		t.Errorf("a duplicate id was accepted: %v", codes(ps))
 	}
@@ -119,7 +119,7 @@ func TestDuplicateIDIsReported(t *testing.T) {
 func TestSelfDependencyIsReported(t *testing.T) {
 	a := tk(ticket.NewID(time.Now()), "loop", "todo")
 	a.BlockedBy = []string{a.ID}
-	if !has(Tickets([]*ticket.Ticket{a}, lanes(t)), CodeSelfDep) {
+	if !has(Tickets([]*ticket.Ticket{a}, lanes(t), nil), CodeSelfDep) {
 		t.Error("a self-dependency was accepted")
 	}
 }
@@ -129,7 +129,7 @@ func TestSelfDependencyIsReported(t *testing.T) {
 func TestMissingTimestampIsReported(t *testing.T) {
 	a := tk(ticket.NewID(time.Now()), "no dates", "todo")
 	a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
-	ps := Tickets([]*ticket.Ticket{a}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{a}, lanes(t), nil)
 	if !has(ps, CodeBadTimestamp) {
 		t.Errorf("missing timestamps were accepted: %v", codes(ps))
 	}
@@ -139,7 +139,7 @@ func TestMissingTimestampIsReported(t *testing.T) {
 // backlog is normal and a corrupt one is not.
 func TestIncompleteBacklogTicketIsOnlyAWarning(t *testing.T) {
 	a := tk(ticket.NewID(time.Now()), "just captured", "backlog")
-	ps := Tickets([]*ticket.Ticket{a}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{a}, lanes(t), nil)
 	for _, p := range ps {
 		if p.Severity == SeverityError {
 			t.Errorf("a normal backlog ticket produced an error: %+v", p)
@@ -155,7 +155,7 @@ func TestIncompleteBacklogTicketIsOnlyAWarning(t *testing.T) {
 
 func TestHasErrorsDistinguishesSeverity(t *testing.T) {
 	bad := tk("nope", "bad", "todo")
-	if !HasErrors(Tickets([]*ticket.Ticket{bad}, lanes(t))) {
+	if !HasErrors(Tickets([]*ticket.Ticket{bad}, lanes(t), nil)) {
 		t.Error("HasErrors did not report a real error")
 	}
 }
@@ -169,7 +169,7 @@ func TestUndeclaredDependencyMentionIsReported(t *testing.T) {
 	citing := tk(ticket.NewID(time.Now().Add(2*time.Millisecond)), "citing", "todo")
 	citing.BlockedBy = []string{other.ID}
 	citing.Context = "waiting on the auth work, see " + ticket.Handle(dep.ID)
-	ps := Tickets([]*ticket.Ticket{other, dep, citing}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{other, dep, citing}, lanes(t), nil)
 	if !has(ps, CodeUndeclaredDep) {
 		t.Errorf("an undeclared handle mention was not reported: %v", codes(ps))
 	}
@@ -206,7 +206,7 @@ func TestSecondMentionListsAllHandlesFoundSoFar(t *testing.T) {
 	citing := tk(ticket.NewID(time.Now().Add(2*time.Millisecond)), "citing", "todo")
 	citing.Context = "waiting on " + ticket.Handle(depA.ID) + " and " + ticket.Handle(depB.ID)
 
-	ps := Tickets([]*ticket.Ticket{depA, depB, citing}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{depA, depB, citing}, lanes(t), nil)
 	var msgs []string
 	for _, p := range ps {
 		if p.Code == CodeUndeclaredDep {
@@ -233,7 +233,7 @@ func TestHandleFoundInBothSourcesIsListedOnceInLastWarning(t *testing.T) {
 	citing.Context = "waiting on " + h
 	citing.Body = "## Progress\n\n- still waiting on " + h + "\n"
 
-	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t), nil)
 	var msgs []string
 	for _, p := range ps {
 		if p.Code == CodeUndeclaredDep {
@@ -256,7 +256,7 @@ func TestUndeclaredDependencyMentionInBodyIsReported(t *testing.T) {
 	dep := tk(ticket.NewID(time.Now()), "dependency", "todo")
 	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
 	citing.Body = "## Progress\n\n- waiting on " + ticket.Handle(dep.ID) + "\n"
-	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t), nil)
 	var found *Problem
 	for i, p := range ps {
 		if p.Code == CodeUndeclaredDep {
@@ -281,7 +281,7 @@ func TestRepeatedMentionIsReportedOnce(t *testing.T) {
 	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
 	h := ticket.Handle(dep.ID)
 	citing.Context = "see " + h + ", also see " + h + " again"
-	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t), nil)
 	n := 0
 	for _, p := range ps {
 		if p.Code == CodeUndeclaredDep {
@@ -301,7 +301,7 @@ func TestDeclaredDependencyMentionIsNotReported(t *testing.T) {
 	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
 	citing.Context = "waiting on the auth work, see " + ticket.Handle(dep.ID)
 	citing.BlockedBy = []string{dep.ID}
-	if ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t)); has(ps, CodeUndeclaredDep) {
+	if ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t), nil); has(ps, CodeUndeclaredDep) {
 		t.Errorf("a declared dependency's mention was reported: %v", codes(ps))
 	}
 }
@@ -312,7 +312,7 @@ func TestUndeclaredMentionOfTerminalTicketIsNotReported(t *testing.T) {
 	dep := tk(ticket.NewID(time.Now()), "dependency", "done")
 	citing := tk(ticket.NewID(time.Now().Add(time.Millisecond)), "citing", "todo")
 	citing.Context = "see " + ticket.Handle(dep.ID)
-	if ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t)); has(ps, CodeUndeclaredDep) {
+	if ps := Tickets([]*ticket.Ticket{dep, citing}, lanes(t), nil); has(ps, CodeUndeclaredDep) {
 		t.Errorf("a mention of a done ticket was reported: %v", codes(ps))
 	}
 }
@@ -322,7 +322,7 @@ func TestUndeclaredMentionOfTerminalTicketIsNotReported(t *testing.T) {
 func TestShapeMatchThatResolvesToNothingIsNotReported(t *testing.T) {
 	a := tk(ticket.NewID(time.Now()), "note-writer", "todo")
 	a.Body = "spec says ABCDEF for the header, which is not a ticket"
-	if ps := Tickets([]*ticket.Ticket{a}, lanes(t)); has(ps, CodeUndeclaredDep) {
+	if ps := Tickets([]*ticket.Ticket{a}, lanes(t), nil); has(ps, CodeUndeclaredDep) {
 		t.Errorf("a shape-matching token that resolves to no ticket was reported: %v", codes(ps))
 	}
 }
@@ -331,7 +331,7 @@ func TestShapeMatchThatResolvesToNothingIsNotReported(t *testing.T) {
 func TestOwnHandleMentionIsNotReported(t *testing.T) {
 	a := tk(ticket.NewID(time.Now()), "self-referential", "todo")
 	a.Context = "tracked as " + ticket.Handle(a.ID)
-	if ps := Tickets([]*ticket.Ticket{a}, lanes(t)); has(ps, CodeUndeclaredDep) {
+	if ps := Tickets([]*ticket.Ticket{a}, lanes(t), nil); has(ps, CodeUndeclaredDep) {
 		t.Errorf("a ticket naming its own handle was reported: %v", codes(ps))
 	}
 }
@@ -347,13 +347,13 @@ func TestFollowsMentionIsNotReported(t *testing.T) {
 	followUp.Follows = parent.ID
 	followUp.Context = "review of " + ticket.Handle(parent.ID)
 
-	ps := Tickets([]*ticket.Ticket{parent, other, followUp}, lanes(t))
+	ps := Tickets([]*ticket.Ticket{parent, other, followUp}, lanes(t), nil)
 	if has(ps, CodeUndeclaredDep) {
 		t.Errorf("a follow-up naming its parent was reported: %v", codes(ps))
 	}
 
 	followUp.Context += ", also see " + ticket.Handle(other.ID)
-	ps = Tickets([]*ticket.Ticket{parent, other, followUp}, lanes(t))
+	ps = Tickets([]*ticket.Ticket{parent, other, followUp}, lanes(t), nil)
 	if !has(ps, CodeUndeclaredDep) {
 		t.Errorf("an unrelated undeclared handle next to a follows mention was not reported: %v", codes(ps))
 	}
@@ -361,7 +361,7 @@ func TestFollowsMentionIsNotReported(t *testing.T) {
 
 func TestProblemMessagesNameTheTicket(t *testing.T) {
 	bad := tk(ticket.NewID(time.Now()), "stranded", "nope-lane")
-	for _, p := range Tickets([]*ticket.Ticket{bad}, lanes(t)) {
+	for _, p := range Tickets([]*ticket.Ticket{bad}, lanes(t), nil) {
 		if p.Handle == "" && p.Path == "" {
 			t.Errorf("problem is not attributable to a ticket: %+v", p)
 		}

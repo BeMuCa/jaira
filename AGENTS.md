@@ -33,7 +33,13 @@ Working a ticket:
 - `jaira claim <id>` — take it first; other sessions read this board too
 - `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,
   the model tier, and the outputs the lane expects back
-- `jaira dod <id> <n> --doing|--done` — mark checklist items as you go
+- `jaira dod <id> <n> --done --proof "<file:line or test name>"` — tick an
+  acceptance criterion and say what makes it true. These are what the terminal
+  lane's gate reads: one left unticked refuses the move however finished the
+  work is, and it refuses it at the end, when the cost of finding out is
+  highest
+- `jaira dod <id> <n> --doing|--done --plan` — the method, a second and
+  separate list. Ticking the plan does not tick the definition of done
 - `jaira note <id> <text>` — at every pause, write down what the repository does
   not already say: dead ends, why this and not that, what you had to find out.
   Not what the checklist and git already record. A killed session never gets a

@@ -63,7 +63,13 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- `jaira claim <id>` — take it first; other sessions read this board too\n" +
 	"- `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,\n" +
 	"  the model tier, and the outputs the lane expects back\n" +
-	"- `jaira dod <id> <n> --doing|--done` — mark checklist items as you go\n" +
+	"- `jaira dod <id> <n> --done --proof \"<file:line or test name>\"` — tick an\n" +
+	"  acceptance criterion and say what makes it true. These are what the terminal\n" +
+	"  lane's gate reads: one left unticked refuses the move however finished the\n" +
+	"  work is, and it refuses it at the end, when the cost of finding out is\n" +
+	"  highest\n" +
+	"- `jaira dod <id> <n> --doing|--done --plan` — the method, a second and\n" +
+	"  separate list. Ticking the plan does not tick the definition of done\n" +
 	"- `jaira note <id> <text>` — at every pause, write down what the repository does\n" +
 	"  not already say: dead ends, why this and not that, what you had to find out.\n" +
 	"  Not what the checklist and git already record. A killed session never gets a\n" +

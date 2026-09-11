@@ -24,6 +24,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/move"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
@@ -52,6 +53,7 @@ const (
 	modeDelete
 	modeDropBoard
 	modeLegend
+	modeLinks
 )
 
 // Model is the board's state.
@@ -133,6 +135,17 @@ type Model struct {
 	copied bool
 
 	moveTarget int // lane index highlighted in the move picker
+
+	// index answers what is linked to what, across the board, the logbook
+	// and the archive. Built once per reload rather than per render: every
+	// card on screen asks the gate whether it is blocked, and rebuilding
+	// this for each of them would list the logbook once per card.
+	index *link.Index
+
+	// links is the open link window, nil when it is closed. It holds its own
+	// rows because building them reads the logbook, which must not happen
+	// per keypress.
+	links *linkView
 
 	// follow is the split view: a follow-up being written beside the ticket it
 	// follows. Non-nil means both halves of the screen are in use.
@@ -341,6 +354,9 @@ func (m *Model) reload() error {
 		return err
 	}
 	m.tags = tags
+	// The relation index is built from the tickets this reload is about to
+	// read, so it goes with them rather than outliving them.
+	m.index = nil
 	// A reload is exactly the moment the git state behind a derived commit
 	// list may have changed — a teammate's commit naming the handle arrives,
 	// the board refreshes, and a stale memo would keep the sign-off screen
@@ -525,16 +541,20 @@ func (m *Model) holdLane(laneID, selectedID string) {
 	}
 }
 
-func (m *Model) selectByID(id string) {
+// selectByID puts the cursor on a ticket and reports whether it found one.
+// A filter can hide a card that is genuinely on the board, and a caller that
+// could not tell the difference moved nothing and said nothing.
+func (m *Model) selectByID(id string) bool {
 	for li, c := range m.cols {
 		for ci, t := range c.tickets {
 			if t.ID == id {
 				m.laneIdx, m.cardIdx = li, ci
-				return
+				return true
 			}
 		}
 	}
 	m.clampCursor()
+	return false
 }
 
 func (m *Model) clampCursor() {
@@ -979,8 +999,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeLegend:
 		switch s {
 		case "esc", "t", "q":
-			m.mode = modeBoard
+			m.mode = m.returnTo
 		}
+		return m, nil
+
+	case modeLinks:
+		m.keyLinks(s)
 		return m, nil
 
 	case modeMessage:
@@ -1115,6 +1139,11 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detail = nil
 		case "n":
 			m.startFollowUp()
+		case "L":
+			// The same window, over the open ticket rather than over the
+			// board. This is where it is wanted most: reading one ticket is
+			// exactly when "what else is this attached to" comes up.
+			m.openLinks()
 		case "tab":
 			if m.follow != nil {
 				m.follow.focusLeft = !m.follow.focusLeft
@@ -1229,8 +1258,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "c":
 		m.toggleGlow()
 	case "t":
-		// The legend for the colour a tagged card's box is drawn in.
+		// The legend for the colour a tagged card's box is drawn in. It is
+		// drawn over the board, so it has to record what it is covering.
+		m.returnTo = m.mode
 		m.mode = modeLegend
+	case "L":
+		// Everything connected to this card, wherever the other end now
+		// lives — the board, a ref, the logbook, the archive.
+		m.openLinks()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -1347,7 +1382,7 @@ func (m *Model) moveCard(d int) {
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
 	switch m.mode {
-	case modeBoard, modePipeline, modeLaneFocus, modeDetail:
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks:
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.
@@ -1405,6 +1440,15 @@ func (m *Model) openMove() {
 	m.mode = modeMove
 }
 
+// linkIndex is this reload's relation index, built on first use so a board
+// that never asks about a link never reads the logbook at all.
+func (m *Model) linkIndex() *link.Index {
+	if m.index == nil {
+		m.index = link.Build(m.store, m.lanes, m.tickets)
+	}
+	return m.index
+}
+
 // gateEnv assembles the state gate.CheckAdvance needs, the same way the CLI's
 // loadEnv does, so both interfaces enforce identically — the promise
 // core/gate's own package doc makes. The two render sites below (renderCard,
@@ -1416,6 +1460,11 @@ func (m *Model) gateEnv() gate.Env {
 	return gate.Env{
 		Lanes: m.lanes,
 		All:   m.tickets,
+		// Without this the board and the command line disagree about the
+		// one thing this pair of fields exists for: a blocker that finished
+		// and was filed away clears the dependency in the CLI and went on
+		// blocking here.
+		Satisfied: m.linkIndex().Satisfied,
 		DeriveCommits: func(t *ticket.Ticket) []string {
 			shas, err := repo.CommitsForTicket(t.Path, t.ID)
 			if err != nil {

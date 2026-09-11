@@ -17,11 +17,23 @@ Format rules — read before editing:
 
 - Read whole titles: cards have no frame any more. Each one is a filled band across the lane with its tag's colour in a solid cell down the left, and the shade alternates so stacked cards stay apart. Titles gain two columns and every card gives two rows back to the lane, so more of the lane fits on screen.
 - Press `c` to fill the selected card in its tag's colour instead of neutral grey, and `c` again for plain. It ships on; where your terminal shows 24-bit colour the tint is a quiet one, and on a palette-only terminal it is mixed further so the tag's colour survives rather than snapping to grey.
-- Look for the filled card to find the cursor: the selected ticket is now painted one step off your terminal background, frame included, instead of only marking itself with a bold title that vanished on a column of coloured cards. The fill follows a light terminal the other way, and the selected card keeps a closed top edge wherever it sits in the lane.
+- Look for the filled card to find the cursor: the selected ticket is painted a clear step above the lane's own shades, instead of only marking itself with a bold title that vanished on a column of coloured cards. On a light terminal the fill goes the other way, darker rather than lighter.
 - Finishing a ticket no longer files anything: it stays in `done` with everybody else's until you cut. Run `jaira logbook --all` when you account for your hours and the whole lane goes into today's folder; `jaira logbook <id>` still files one, and `jaira logbook` alone still only lists. A board holding more than ten finished tickets says so in its hint bar and files nothing on its own.
 - If you want the old doorway back, set `logbook-on-entry: true` on your terminal lane yourself — it ships off, because filing on entry means finishing one ticket files everybody's.
 - Work in the board reaches the team by itself now: it sends what it queued on its own background run, so a day spent in the board no longer leaves everybody else looking at yesterday's tickets.
 - A ticket you file into the logbook stays off the board — it used to come back as a card, because its ref outlives the filing by design and nothing skipped it.
+- Re-read the `jaira dod` lines in the jaira section of `AGENTS.md` and `CLAUDE.md` (run `jaira update` to refresh it): they now say that the numbered criteria are what the terminal lane's gate reads, and that `--plan` is a second, separate list whose ticks do not count towards it.
+
+- Dialogs now float over the board instead of replacing it: the link window, the tag legend and every refusal or note are drawn as a centred box with the board still visible behind, so you keep the card and the lane you were looking at.
+- Press `L` on a card, or on an open ticket, to see every ticket linked to it — what it waits on, what waits on it, what it is part of, what it contains, what it relates to and what follows it — with the logbook and the archive searched too, so a link no longer dies when the work behind it finishes. `enter` jumps to a linked card — and opens it, when you pressed `L` while reading a ticket — and `esc` puts back exactly the screen you came from.
+- Record containment with the new `parent` field: a ticket names the one it is part of (`jaira set <id> parent=<id>`, or `jaira create --parent <id>`), and children — and their children, to any depth — are read back from that. There is no `children` field to keep in step.
+- Record a loose connection with the new `related` field (`jaira set <id> related=<id>,<id>`, or `jaira create --related <id>`). Write it on either side; both sides show it.
+- Run `jaira links <id>` for the same picture on the command line, with `--json` for a machine.
+- `jaira show <id>` now prints what a ticket is part of, what it contains (children at every depth, the filed ones included) and what it relates to; `--json` carries the same as `parent`, `related` and `filed_away`.
+- Write a link with a handle: `jaira set <id> blocked-by=<handle>`, `parent=` and `related=` now resolve whatever reference you can read off the board into the full ticket id, and refuse a reference that names no ticket. A handle used to be stored verbatim and the link then resolved to nothing forever after.
+- Stop working around a blocker that finished: a `blocked-by` whose ticket has been filed into the logbook, or archived from a terminal lane, now counts as cleared instead of blocking forever and dropping the ticket out of `jaira list --actionable`.
+- `jaira validate` now reports a dependency or a parent as dangling only when the id exists nowhere at all, and reports a ticket that is its own parent or sits in a parent ring as an error.
+- `jaira show <id>` now finds a ticket that has left the board, printing where it is filed instead of "not found".
 
 ## 0.1.3
 

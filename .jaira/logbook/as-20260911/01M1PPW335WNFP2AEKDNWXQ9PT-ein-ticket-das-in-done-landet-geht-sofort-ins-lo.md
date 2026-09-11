@@ -1,7 +1,7 @@
 ---
 id: 01M1PPW335WNFP2AEKDNWXQ9PT
 title: "Ein Ticket, das in done landet, geht sofort ins Logbuch"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -10,9 +10,14 @@ context: "Berk am 04.09.: 'Alle Tickets die auf Done landen gehen direkt ins Log
 definition-of-done: "Move und Accept nach done melden die Logbuch-Ablage mit restore-Datei; die abgelegte Datei traegt gestempelte Commits; done ist danach leer (Altbestand mitgenommen); logbook-on-entry auf nicht-terminaler Lane wird beim Parsen verweigert; Tests decken CLI-Move, TUI-Accept und den Parse-Guard; go test ./... -race gruen"
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 2ecc670dd718a8c7fc0eebb4259f61330aaff6cd
+  - 94b26294da973739cb3f419e3bef085cd1046cdb
+  - b82f8d36e0f12f16b0574d7aaaa02ff4e3d7a7d6
+  - c737cab893f093af44a52cf0298cd2f87138a391
+  - 69e2eb5dae93ddcf4973803e27f1485604efaf9b
 created-at: 2026-09-04T17:18:43Z
-updated-at: 2026-09-11T21:05:55Z
+updated-at: 2026-09-11T21:09:45Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:09Z
 updated-by: Alexander Sacharov
@@ -52,10 +57,8 @@ review-verdict: "accept (Zweitmodell Sonnet, zwei Durchgaenge). Runde 1 fand den
 - **2026-09-04 17:30 · BeMuCa** — Entscheidungen: (1) holds bleibt als Feature (andere Lanes/Boards), builtin done tauscht es gegen logbook-on-entry - SGPDYK-Mechanik nicht rueckgebaut, nur nicht mehr von done genutzt (Berks Revision vom 04.09. dokumentiert im Kontext). (2) FileLane fegt die GANZE Lane (Altbestand mit) - selbstmigrierend, kein Sonderpfad. (3) Commit-Stempeln vor dem Ablegen an allen vier Schreibstellen via env.DeriveCommits; stampCommits (CLI) delegiert jetzt an core StampCommits (drei Nutzer: logbook-Cmd, archive, Entry-Filing beidseitig). (4) TUI-Cap-Branch-Test entfaellt - der Zweig ist ein Switch-Arm auf dem core-/CLI-getesteten TrimLane; CLI-Cap-Tests patchen die Lane-Kopie ihres Fixture-Boards auf holds:10 (builtin ist jetzt Doorway). (5) Board live: done.md-Kopie refreshed, die 10 Restbewohner per jaira logbook gefegt - done ist leer und bleibt Durchgang.
 - **2026-09-04 17:43 · BeMuCa** — Review-Fund F1 (live reproduziert, zweimal): die Doorway verklemmt - schlaegt der Sweep fehl (z.B. PartialError durch ein unlesbares Ticket, oder eine Logbuch-Kollision beim aeltesten Bewohner), bleibt AUCH das ankommende Ticket ungefiled in done liegen, und jede weitere Landung scheitert am selben Fehler: kein Selbstheilen. Ursache: FileLane bricht beim ersten Fehler ab (List-Fehler ganz, Einzel-Fehler mitten in der oldest-first-Reihe - das ankommende ist das NEUSTE und damit als letztes dran). Fix: continue-on-error - unlesbare/kollidierende Tickets ueberspringen und benennen (PartialError), alles andere filen; das ankommende kommt damit immer durch, der Problemfall wird bei jeder Landung erneut gemeldet statt alles zu blockieren. Gleiche Philosophie wie List selbst ('one malformed ticket must not blank the whole board').
 - **2026-09-04 17:50 · BeMuCa** — F1 gefixt: FileLane ueberspringt und benennt (PartialError) statt abzubrechen - das ankommende Ticket kommt immer durch, Problemfaelle werden bei jeder Landung erneut gemeldet. Gepinnt: core (unlesbares Board-File + Logbuch-Kollision in EINEM Sweep: genau die zwei fileable gehen, der Rest bleibt benannt liegen) und CLI (TestDoorwayKeepsFilingPastAProblem: Ankoemmling gefiled trotz broken.md). Reviewer-Restnotizen: Probe c (selectByID nach Filing) nur code-verifiziert - Fallback-Logik model.go greift; restore->resweep am selben Tag live gruen (restore MOVED die Datei zurueck, keine Kollision).
-- **2026-09-11 21:05 · Alexander Sacharov** — Der Claim von EE-3NX6GL3-34378 vom 04.09. war seit 171 Stunden nicht erneuert und ist freigegeben - niemand arbeitete daran, er stand nur im Weg.
+- **2026-09-11 15:53 · Alexander Sacharov** — NICHT abnehmen, bis Issue #6 entschieden ist. Der review-check dieses Tickets beschreibt genau das Verhalten, ueber das #6 geschrieben wurde: 'done bleibt leer', 'das naechste Landen fegt es erneut' - also der Sweep, der dort einen Move mit 49 fremden Tickets im selben Commit erzeugt hat. Bestaetigt im Code: core/lane/settle.go ruft bei logbook-on-entry s.FileLane(lane), und core/ticket/trim.go:133 nimmt jeden Ticket mit t.Status == lane, nicht nur den bewegten.
 
-Zum Inhalt, Alex am 11.09.: dieses Ticket ist nicht mehr ganz gueltig. Es hat gebaut, was damals galt - 'logbook-on-entry', jedes Ticket wandert beim Landen in done sofort ins Logbuch (Berk, 04.09.: 'wir wollen im logbook ja alles speichern was gemacht wurde direkt'). So hat es auch funktioniert, und die Arbeit daran ist nicht umsonst gewesen.
+Alexander hat entschieden, #6 zu bauen. Damit wird dieses Ticket in seiner jetzigen Form abgeloest: Eintritt in die terminale Lane legt nur das eingetretene Ticket ab, und wer wirklich fegen will, sagt es ausdruecklich.
 
-Inzwischen ist der Code weiter: 74VM40 macht das Ablegen zu einer Entscheidung statt zu dem, was Fertigwerden nebenbei tut. 'logbook-on-entry' ist damit ein Flag, das man selbst setzt, und es ist ab Werk aus - weil ein Ticket abzuschliessen sonst das Logbuch aller anderen mit ablegt.
-
-Was daraus praktisch folgt und in QF08G3 als Punkt 2 steht: dieses Board traegt die Zeile noch in .jaira/lanes/done.md. Sie stammt von hier. Wer sie stehen laesst, bekommt weiter das alte Verhalten; wer sie entfernt, bekommt das von 74VM40. Beides ist zulaessig - es ist genau die Entscheidung, die 74VM40 dem Benutzer in die Hand gegeben hat.
+- **2026-09-11 21:05 · Alexander Sacharov** — Zwei Nachtraege zur Notiz von 15:53. Erstens: der Claim von EE-3NX6GL3-34378 vom 04.09. ist seit 171 Stunden nicht erneuert, aber NICHT freigegeben — 'jaira release' verweigert ihn, weil er BeMuCa gehört und das Ticket im signoff steht, und ihn mit --force zu brechen, während Berk im Urlaub ist, war nicht meine Entscheidung. Zweitens, das praktisch Folgende: dieses Board trägt 'logbook-on-entry: true' noch in .jaira/lanes/done.md, und die Zeile stammt von hier. Sie hat heute drei Tickets beim Übergang nach done sofort ins Logbuch gefegt. Wer sie stehen lässt, bekommt weiter das Verhalten dieses Tickets; wer sie entfernt, bekommt das von 74VM40. Steht als Punkt 2 in QF08G3, dort ist es zu entscheiden.
