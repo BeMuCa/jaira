@@ -147,3 +147,29 @@ func TestEnterOnAFiledTicketExplainsItself(t *testing.T) {
 		t.Fatalf("enter on a filed ticket must explain itself, mode = %v", m.mode)
 	}
 }
+
+// The window is a modal: the board stays visible behind it. A dialog that
+// replaces the screen costs the reader the thing they were reasoning about —
+// which card they were on, and which lane it sat in.
+func TestLinkWindowIsDrawnOverTheBoard(t *testing.T) {
+	m, _ := linksModel(t)
+	board := m.render()
+	m.key(key("L"))
+	out := m.render()
+
+	// A lane header from the board behind, and the box's own border, on one
+	// screen.
+	for _, want := range []string{"Backlog", "Implementing", "\u256d", "Links · "} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the modal must leave %q visible\n%s", want, out)
+		}
+	}
+	if out == board {
+		t.Error("L must change what is on screen")
+	}
+	// And closing it puts the board back exactly as it was.
+	m.key(key("esc"))
+	if got := m.render(); got != board {
+		t.Errorf("esc must restore the board unchanged\n%s", got)
+	}
+}

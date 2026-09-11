@@ -926,7 +926,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeLegend:
 		switch s {
 		case "esc", "t", "q":
-			m.mode = modeBoard
+			m.mode = m.returnTo
 		}
 		return m, nil
 
@@ -1178,7 +1178,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Next to v: both are about what the screen shows, not about a ticket.
 		m.toggleEmptyLanes()
 	case "t":
-		// The legend for the colour a tagged card's box is drawn in.
+		// The legend for the colour a tagged card's box is drawn in. It is
+		// drawn over the board, so it has to record what it is covering.
+		m.returnTo = m.mode
 		m.mode = modeLegend
 	case "L":
 		// Everything connected to this card, wherever the other end now

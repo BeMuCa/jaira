@@ -101,11 +101,11 @@ func (m *Model) render() string {
 	case modeLaneFocus:
 		return m.renderLaneFocus()
 	case modeMessage:
-		return m.renderMessage()
+		return m.modal(m.renderMessage())
 	case modeLegend:
-		return m.renderLegend()
+		return m.modal(m.renderLegend())
 	case modeLinks:
-		return m.renderLinks()
+		return m.modal(m.renderLinks())
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:

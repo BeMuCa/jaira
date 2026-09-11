@@ -15,6 +15,7 @@ Format rules — read before editing:
 
 ## Unreleased
 
+- Dialogs now float over the board instead of replacing it: the link window, the tag legend and every refusal or note are drawn as a centred box with the board still visible behind, so you keep the card and the lane you were looking at.
 - Press `L` on a card to see every ticket linked to it — what it waits on, what waits on it, what it is part of, what it contains, what it relates to and what follows it — with the logbook and the archive searched too, so a link no longer dies when the work behind it finishes. `enter` jumps to a linked card, `esc` closes.
 - Record containment with the new `parent` field: a ticket names the one it is part of (`jaira set <id> parent=<id>`, or `jaira create --parent <id>`), and children — and their children, to any depth — are read back from that. There is no `children` field to keep in step.
 - Record a loose connection with the new `related` field (`jaira set <id> related=<id>,<id>`, or `jaira create --related <id>`). Write it on either side; both sides show it.
