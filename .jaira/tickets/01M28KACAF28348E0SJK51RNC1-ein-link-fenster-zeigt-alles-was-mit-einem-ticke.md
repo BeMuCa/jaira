@@ -24,7 +24,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T20:03:28Z
+updated-at: 2026-09-11T20:10:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
@@ -50,15 +50,15 @@ review-check: |-
 
 ## Definition of Done
 
-- [ ] Feld `related` (Liste von ids) und `parent` (eine id) im Schema, in der kanonischen Reihenfolge, im Merge-Driver als Union bzw. Skalar (core/ticket/schema.go, core/merge/merge.go:34)
-- [ ] Ein Beziehungs-Index, der Board, Logbuch, Archiv (Store.FiledAwayIDs) und git-refs zusammenfasst und jede Beziehung in beide Richtungen aufloest: blocked-by/blockiert, parent/Kinder (rekursiv), related, follows/gefolgt-von
-- [ ] Ein Blocker, der im Logbuch oder Archiv in einer terminalen Lane liegt, gilt als erfuellt: core/gate/gate.go:572 blockiert nicht mehr, core/validate/validate.go:174 meldet keinen Fehler mehr
-- [ ] `jaira show <id>` findet auch ein abgelegtes Ticket und sagt dazu, wo es liegt
-- [ ] CLI: Beziehungen setzbar (`jaira set <id> parent=<id>`, `related=<id>,<id>`) und lesbar (`jaira links <id>` mit --json)
-- [ ] TUI: eine Taste auf einer Karte oeffnet ein Link-Fenster, gruppiert nach Beziehungsart, mit Lane und Ablageort je Eintrag; Enter springt auf ein Ticket, das hier ein File hat; Esc schliesst
-- [ ] Ein Ticket kann nicht sein eigener Elternteil sein und keinen Zyklus bilden; validate meldet beides
-- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased je sichtbarer Aenderung
-- [ ] Tests: Beziehungsindex ueber alle vier Quellen, Blocker-im-Logbuch loest den Block, Zyklus wird gemeldet, Golden-Test fuer das Link-Fenster
+- [x] Feld `related` (Liste von ids) und `parent` (eine id) im Schema, in der kanonischen Reihenfolge, im Merge-Driver als Union bzw. Skalar (core/ticket/schema.go, core/merge/merge.go:34)
+- [x] Ein Beziehungs-Index, der Board, Logbuch, Archiv (Store.FiledAwayIDs) und git-refs zusammenfasst und jede Beziehung in beide Richtungen aufloest: blocked-by/blockiert, parent/Kinder (rekursiv), related, follows/gefolgt-von
+- [x] Ein Blocker, der im Logbuch oder Archiv in einer terminalen Lane liegt, gilt als erfuellt: core/gate/gate.go:572 blockiert nicht mehr, core/validate/validate.go:174 meldet keinen Fehler mehr
+- [x] `jaira show <id>` findet auch ein abgelegtes Ticket und sagt dazu, wo es liegt
+- [x] CLI: Beziehungen setzbar (`jaira set <id> parent=<id>`, `related=<id>,<id>`) und lesbar (`jaira links <id>` mit --json)
+- [x] TUI: eine Taste auf einer Karte oeffnet ein Link-Fenster, gruppiert nach Beziehungsart, mit Lane und Ablageort je Eintrag; Enter springt auf ein Ticket, das hier ein File hat; Esc schliesst
+- [x] Ein Ticket kann nicht sein eigener Elternteil sein und keinen Zyklus bilden; validate meldet beides
+- [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased je sichtbarer Aenderung
+- [x] Tests: Beziehungsindex ueber alle vier Quellen, Blocker-im-Logbuch loest den Block, Zyklus wird gemeldet, Golden-Test fuer das Link-Fenster
 
 ## Options
 
