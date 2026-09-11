@@ -24,8 +24,8 @@ blocked-by:
 follows: 01M1KN2HSJ0B32MQ2532NJPQWE
 commits: []
 created-at: 2026-09-08T23:44:43Z
-updated-at: 2026-09-08T23:48:28Z
-updated-by: BeMuCa
+updated-at: 2026-09-11T20:37:34Z
+updated-by: Alexander Sacharov
 ---
 
 # Nur die linke Kante traegt die Tag-Farbe, die ausgewaehlte Karte wird ganz farbig
@@ -44,4 +44,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-11 20:37 · Alexander Sacharov** — UEBERHOLT durch QQ3EX4, entschieden von Alex am 11.09.: die Tag-Farbe sitzt jetzt in einer ganzen gefuellten Zelle links, nicht in der linken Kante eines Rahmens - es gibt keinen Rahmen mehr. Berks Wunsch vom 08.09. ist inhaltlich erfuellt (die Farbe steht links, nicht rundum), aber anders umgesetzt als beschrieben. Im Mockup war die Rahmenkanten-Variante Nummer 2 und fiel durch: ein Border-Glyph faerbt etwa eine halbe Zelle und liest sich als 'der Rahmen hat eine andere Farbe', nicht als Markierung. Der zusaetzlich gewuenschte Balken neben der ausgewaehlten Karte entfaellt ebenfalls - die Auswahl ist jetzt ganzflaechig gefuellt und im Ton ihres Tags (ANX7Y5, XK4124), ein Balken daneben waere das dritte Merkmal fuer dieselbe Sache.

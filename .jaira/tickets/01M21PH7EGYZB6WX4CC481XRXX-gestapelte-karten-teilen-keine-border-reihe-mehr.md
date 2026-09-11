@@ -22,7 +22,8 @@ blocked-by: []
 follows: 01M1KN2HSJ0B32MQ2532NJPQWE
 commits: []
 created-at: 2026-09-08T23:44:26Z
-updated-at: 2026-09-08T23:44:26Z
+updated-at: 2026-09-11T20:37:31Z
+updated-by: Alexander Sacharov
 ---
 
 # Gestapelte Karten teilen keine Border-Reihe mehr
@@ -41,4 +42,4 @@ updated-at: 2026-09-08T23:44:26Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-11 20:37 · Alexander Sacharov** — UEBERHOLT durch QQ3EX4, entschieden von Alex am 11.09.: Karten tragen gar keinen Rahmen mehr, es gibt also keine Border-Reihe mehr zu teilen. Berks Anforderung vom 08.09. ('die kaestchen sollen nicht overlappen', 'das mit den 2 zeilen ist ok, ich will den rahmen') ist damit nicht erfuellt, sondern verworfen - der Rahmen kostete zwei Spalten pro Zeile und schnitt jeden Titel bei 17 Zeichen ab. Wer den Rahmen zurueckholt, holt dieses Ticket mit zurueck. Der Test TestStackedCardsShareOneBorderRow ist durch TestStackedCardsAlternateTheirShade ersetzt: was zwei gestapelte Karten trennt, ist jetzt der Wechsel der Fuelltoene.

@@ -41,33 +41,6 @@ func TestUnselectedCardsAreNotFilled(t *testing.T) {
 	}
 }
 
-// Stacked cards share one border row, and the row has to belong to the
-// selected card: given to the card above, the selection is a box open at the
-// top whose fill starts mid-card.
-func TestSelectedCardKeepsItsTopEdge(t *testing.T) {
-	m := newTestModel(t, 120, 40)
-
-	// Onto the second card of the lane, the first position where the top
-	// border is the shared one.
-	m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
-	if m.cardIdx != 1 {
-		t.Skipf("lane holds no second card to select (cardIdx=%d)", m.cardIdx)
-	}
-
-	dark := fillMark(selBgDark)
-	for _, line := range strings.Split(m.View().Content, "\n") {
-		if !strings.Contains(line, dark) {
-			continue
-		}
-		// The first filled row is the selected card's top border.
-		if !strings.Contains(line, "┌") {
-			t.Errorf("first filled row carries no top border, so the selection is open at the top: %q", line)
-		}
-		return
-	}
-	t.Error("selected card carries no fill at all")
-}
-
 // A light terminal has nothing lighter than its background to offer, so the
 // fill goes the other way. Without this the fill on a light theme is a black
 // block.
