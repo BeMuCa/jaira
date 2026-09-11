@@ -93,9 +93,16 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 
 	for _, t := range ts {
 		add := func(code, severity, field, format string, args ...any) {
+			where := t.Path
+			if where == "" {
+				// A ticket the board can see but has no file for. Naming that
+				// instead of leaving the path blank is the difference between
+				// "go and fix this file" and "this is not yours to fix here".
+				where = "(on its ref; pull it to work on it)"
+			}
 			ps = append(ps, Problem{
 				Code: code, Severity: severity, Field: field,
-				ID: t.ID, Handle: handleOf(t.ID), Path: t.Path,
+				ID: t.ID, Handle: handleOf(t.ID), Path: where,
 				Message: fmt.Sprintf(format, args...),
 			})
 		}

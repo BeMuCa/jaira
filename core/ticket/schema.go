@@ -173,6 +173,12 @@ type Ticket struct {
 	// BlockedReason is why the ticket is parked, when the blocker is not another
 	// ticket.
 	BlockedReason string
+
+	// ReadOnly means this board can see the ticket but has no file for it: it
+	// is still travelling on its own git ref and nobody here has pulled it into
+	// work. It is shown like any other ticket and refused by every write, so a
+	// reader never has half a board and a writer never half-applies a change.
+	ReadOnly bool
 	// ReviewVerdict is the reviewer's conclusion, distinct from the
 	// implementer's own account in Outcome.
 	ReviewVerdict string

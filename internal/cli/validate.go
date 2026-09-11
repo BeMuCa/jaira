@@ -59,6 +59,13 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				noteStale = stale
 			}
 
+			// A ticket somebody else has taken off the board while a file for
+			// it is still here. Reported by validate as well as by fetch,
+			// because this is the one check somebody runs when the board looks
+			// wrong and they do not know why.
+			departed := refs.Departed()
+			stranded := strandedHere()
+
 			if g.jsonOut {
 				out := make([]map[string]any, 0, len(problems))
 				for _, p := range problems {
@@ -70,6 +77,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				if err := emit(cmd.OutOrStdout(), map[string]any{
 					"checked": len(tickets), "problems": out,
 					"errors": validate.HasErrors(problems), "agent_note_stale": noteStale,
+					"departed": departed, "stranded": stranded,
 				}); err != nil {
 					return err
 				}
@@ -95,6 +103,8 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				} else {
 					fmt.Fprintf(w, "\n%d ticket(s) checked, %d problem(s).\n", len(tickets), len(problems))
 				}
+				printDeparted(w, departed)
+				printStranded(w, stranded)
 				// A warning, not an error: a stale note misleads an agent, it
 				// does not damage a ticket, and 'jaira update' fixes it.
 				if len(noteStale) > 0 {

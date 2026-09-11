@@ -324,3 +324,40 @@ loops included — until it sits in a human lane, then continue once the human
 has answered. Told an agent should work it, hand it to a subagent that
 babysits the ticket through the same route.
 <!-- jaira:end -->
+
+## Client-facing changes go in core/release/NOTES.md
+
+Every change a user of jaira can notice gets a line in `core/release/NOTES.md`,
+in the same commit as the change itself. Not a changelog generated from git
+later — a line written while you still know why it matters. The file is
+embedded into the binary with go:embed and is what `jaira update` reads back to
+someone whose board was last touched by an older build, so an unwritten change
+is a change nobody is ever told about.
+
+Counts as client-facing: a new or renamed command or flag, changed CLI output or
+exit codes, a new or changed field in the ticket frontmatter, anything that
+alters the TUI, a changed default, and anything that makes an existing
+invocation behave differently.
+
+Does not count: refactors, tests, internal helpers, and anything a user cannot
+observe from outside the binary.
+
+The format is a line scan, and breaking it silently corrupts what users read:
+
+- One change is exactly one line starting `- `. Never wrap it across two lines —
+  a wrapped line is read as two separate, incomplete changes.
+- A section heading is `## ` followed by the version a build reports: the git
+  tag with its leading `v` stripped, so tag `v0.1.0` is `## 0.1.0`.
+- Newest section first. Everything else — prose, blank lines, HTML comments — is
+  ignored, so explaining yourself in the file is free.
+
+Write each line as an instruction: what the reader must DO differently, not a
+record of what a commit did.
+
+New entries go under `## Unreleased` at the top. A version heading is written
+when that version is tagged, never before: once a tag exists for a version, that
+section is closed history and nothing may be added to it — a released note that
+grows after the fact describes a binary nobody has. Releasing means renaming
+`## Unreleased` to the version number being tagged and opening a fresh empty
+`## Unreleased` above it. If no `## Unreleased` section is there when you need
+one, add it.

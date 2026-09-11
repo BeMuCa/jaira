@@ -79,10 +79,128 @@ type Store struct {
 	// not have to depend on core/identity. Empty records nothing.
 	Actor string
 
+	// Recorder is told about every ticket write, so a ticket can also travel
+	// on a git ref of its own and reach someone who does not have the writer's
+	// branch. It is an interface set by the caller for the same reason Actor
+	// is a field: core/ticket must not know about git, refs or queues, and the
+	// package that does (core/refsync) needs to read tickets. Nil records
+	// nothing, which is the case for every board without a remote.
+	Recorder WriteRecorder
+
+	// Source supplies tickets this board can see but has no file for — a
+	// ticket that is still travelling on its own git ref and has not been
+	// pulled into work here.
+	//
+	// It is the mirror of Recorder, and it exists for the same reason: every
+	// reader in this program goes through List and Load, and a reader that had
+	// to remember to ask a second place would be a reader that silently shows
+	// half the board. core/ticket stays unaware of git; the package that knows
+	// (core/refsync) fills this in.
+	Source TicketSource
+
 	// dupIDs accumulates tickets that declare an id another file already claimed.
 	// Two files with one id is an ambiguity a person has to settle, so it is
 	// surfaced rather than resolved by read order.
 	dupIDs []string
+}
+
+// TicketSource hands over tickets that exist for this board without a file
+// here.
+type TicketSource interface {
+	// Extra returns those tickets, skipping any id in have. Implementations
+	// mark what they return as ReadOnly: there is no file to write to, so a
+	// mutation has to be refused rather than half-applied.
+	Extra(have map[string]bool) ([]*Ticket, error)
+}
+
+// ErrOnRefOnly means the ticket exists for this board but not as a file here,
+// so it cannot be written to until somebody pulls it.
+//
+// It is separate from ErrNotFound because the two ask different things of the
+// user: one means the id is wrong, the other means the ticket is real and one
+// command away.
+var ErrOnRefOnly = errors.New("ticket: on its ref and not on your disk; pull it first")
+
+// WriteRecorder is told what a ticket now says, after the file has been written.
+type WriteRecorder interface {
+	// Record is handed the ticket's id and its complete bytes. It is called
+	// after the local write has succeeded, so it must never be understood as
+	// a veto: by the time it runs, the ticket on disk has already changed.
+	Record(id string, content []byte) error
+
+	// RecordFiled says the ticket has been filed away here — logged or
+	// archived — and hands over its final bytes.
+	//
+	// Filing is deliberately not a deletion. The ticket file is at that moment
+	// only in the filer's own branch, and until that branch is merged nobody
+	// else can see the ticket at all: taking it off the shared channel too
+	// would open a window, as long as a review takes, in which somebody
+	// notices the same problem and writes it down a second time. So the final
+	// state goes onto the channel and stays there until the ticket has
+	// arrived somewhere everybody can see.
+	RecordFiled(id string, content []byte) error
+
+	// RecordDelete says the ticket is gone for good. Only 'jaira delete' does
+	// this: deleting is an intention, not a stage of finishing.
+	RecordDelete(id string) error
+}
+
+// ErrNotRecorded means the local write went through but the recorder did not
+// take it — the ticket is correct on this machine and has not left it.
+//
+// It is a separate sentinel rather than a plain error because the two halves
+// need opposite handling by the caller: the mutation must be reported as done
+// (it is), while the failure to hand it on is worth a line to the user. A
+// recorder that returns nothing but this is still a working board.
+var ErrNotRecorded = errors.New("ticket: the write was not recorded for the remote")
+
+// onlyOnRef refuses an operation that needs a file for a ticket that has none.
+//
+// Every command that moves or removes a ticket file goes through Archive,
+// Delete or Logbook, so the check sits in those three rather than in each
+// command. Without it the empty path turns into nonsense — filepath.Base("")
+// is ".", and archiving a ticket that is not here reported "already exists in
+// the archive".
+func onlyOnRef(t *Ticket) error {
+	if t != nil && t.ReadOnly {
+		return fmt.Errorf("%s: %w", Handle(t.ID), ErrOnRefOnly)
+	}
+	return nil
+}
+
+func (s *Store) recordDelete(id string) error {
+	if s.Recorder == nil {
+		return nil
+	}
+	if err := s.Recorder.RecordDelete(id); err != nil {
+		return fmt.Errorf("%w: %w", ErrNotRecorded, err)
+	}
+	return nil
+}
+
+// recordFiled reports a ticket filed away, with the bytes it ended up with.
+func (s *Store) recordFiled(id, path string) error {
+	if s.Recorder == nil {
+		return nil
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrNotRecorded, err)
+	}
+	if err := s.Recorder.RecordFiled(id, content); err != nil {
+		return fmt.Errorf("%w: %w", ErrNotRecorded, err)
+	}
+	return nil
+}
+
+func (s *Store) record(id string, content []byte) error {
+	if s.Recorder == nil {
+		return nil
+	}
+	if err := s.Recorder.Record(id, content); err != nil {
+		return fmt.Errorf("%w: %w", ErrNotRecorded, err)
+	}
+	return nil
 }
 
 // DuplicateIDs reports ids claimed by more than one file, discovered during the
@@ -145,6 +263,9 @@ func (s *Store) Archive(id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := onlyOnRef(t); err != nil {
+		return "", err
+	}
 	if err := os.MkdirAll(s.ArchiveDir(), 0o755); err != nil {
 		return "", err
 	}
@@ -161,7 +282,7 @@ func (s *Store) Archive(id string) (string, error) {
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
 	}
-	return dst, nil
+	return dst, s.recordFiled(t.ID, dst)
 }
 
 // Delete removes a ticket's file and returns the path it was at.
@@ -181,6 +302,9 @@ func (s *Store) Delete(id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := onlyOnRef(t); err != nil {
+		return "", err
+	}
 	real, err := filepath.EvalSymlinks(t.Path)
 	if err != nil {
 		real = t.Path
@@ -191,7 +315,7 @@ func (s *Store) Delete(id string) (string, error) {
 	if real != t.Path {
 		os.Remove(t.Path)
 	}
-	return t.Path, nil
+	return t.Path, s.recordDelete(t.ID)
 }
 
 // Logbook moves a ticket out of the board and into a dated logbook folder,
@@ -203,6 +327,9 @@ func (s *Store) Delete(id string) (string, error) {
 func (s *Store) Logbook(id, folder string) (string, error) {
 	t, err := s.Load(id)
 	if err != nil {
+		return "", err
+	}
+	if err := onlyOnRef(t); err != nil {
 		return "", err
 	}
 	dir := filepath.Join(s.LogbookDir(), filepath.Base(folder))
@@ -222,7 +349,7 @@ func (s *Store) Logbook(id, folder string) (string, error) {
 	if err := os.Rename(src, dst); err != nil {
 		return "", err
 	}
-	return dst, nil
+	return dst, s.recordFiled(t.ID, dst)
 }
 
 // logbookFolders lists the per-person dated folders of the logbook as full
@@ -434,10 +561,102 @@ func (s *Store) List() ([]*Ticket, error) {
 	if _, err := s.idIndex(); err == nil {
 		problems = append(problems, s.dupIDs...)
 	}
+	problems = append(problems, s.offBoardDuplicates(out)...)
+	// And then whatever the board can see without having a file for it. Added
+	// here rather than by each caller: list, next, the board and the task
+	// mirror all read through this one function, and a caller that forgot would
+	// show half the board.
+	have := make(map[string]bool, len(out))
+	for _, t := range out {
+		have[t.ID] = true
+	}
+	out = append(out, s.extra(have)...)
 	if len(problems) > 0 {
 		return out, &PartialError{Problems: problems}
 	}
 	return out, nil
+}
+
+// offBoardDuplicates reports a ticket that is on the board here and also filed
+// away — in the logbook or the archive — at the same time.
+//
+// It happens without anybody doing anything wrong: one clone logs a finished
+// ticket while another still has it under tickets/, and the merge of those two
+// branches is a rename on one side and a modification on the other, which git
+// resolves by keeping both paths. The ticket then lives twice, closed and open.
+//
+// The existing duplicate check cannot see this, because it compares ids only
+// within tickets/. Nothing here moves a file: which of the two copies is right
+// is a question for the person, and a tool that guessed would sometimes reopen
+// finished work.
+func (s *Store) offBoardDuplicates(onBoard []*Ticket) []string {
+	if len(onBoard) == 0 {
+		return nil
+	}
+	here := make(map[string]string, len(onBoard))
+	for _, t := range onBoard {
+		if t.ReadOnly {
+			continue // no file here; there is nothing to be a duplicate of
+		}
+		here[t.ID] = filepath.Base(t.Path)
+	}
+	var problems []string
+	for _, dir := range s.filedAwayDirs() {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			id := IDFromFilename(e.Name())
+			if id == "" {
+				continue
+			}
+			if base, ok := here[id]; ok {
+				problems = append(problems, fmt.Sprintf(
+					"%s is on the board as %s and also filed away in %s — one of the two has to go, and only you can say which",
+					Handle(id), base, filepath.Join(filepath.Base(filepath.Dir(dir)), filepath.Base(dir), e.Name())))
+			}
+		}
+	}
+	sort.Strings(problems)
+	return problems
+}
+
+// FiledAwayIDs maps the ids of tickets filed away here — logged or archived —
+// to the file that holds them.
+//
+// Exported because two questions need it and neither belongs in this package:
+// whether a ticket is on the board and filed away at once, and whether a
+// finished ticket has arrived anywhere everybody can see it.
+func (s *Store) FiledAwayIDs() map[string]string {
+	out := map[string]string{}
+	for _, dir := range s.filedAwayDirs() {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			if id := IDFromFilename(e.Name()); id != "" {
+				out[id] = filepath.Join(dir, e.Name())
+			}
+		}
+	}
+	return out
+}
+
+// filedAwayDirs are the directories a ticket lands in when it leaves the board.
+func (s *Store) filedAwayDirs() []string {
+	dirs := []string{s.ArchiveDir()}
+	if folders, err := s.logbookFolders(); err == nil {
+		dirs = append(dirs, folders...)
+	}
+	return dirs
 }
 
 // PartialError reports tickets that could not be read while others succeeded.
@@ -511,9 +730,31 @@ func hasClosingDelim(b []byte) bool {
 	return i >= 0
 }
 
+// extra asks the source for tickets with no file here, skipping the ids given.
+func (s *Store) extra(have map[string]bool) []*Ticket {
+	if s.Source == nil {
+		return nil
+	}
+	out, err := s.Source.Extra(have)
+	if err != nil {
+		return nil
+	}
+	for _, t := range out {
+		t.ReadOnly = true
+	}
+	return out
+}
+
 // Load reads one ticket in full, resolving an exact ID or unambiguous prefix.
 func (s *Store) Load(idOrPrefix string) (*Ticket, error) {
 	path, err := s.resolve(idOrPrefix)
+	if errors.Is(err, ErrNotFound) {
+		// Not here as a file — but the board may still know it, and showing a
+		// ticket that is one command away is worth more than "not found".
+		if t, ok := s.fromSource(idOrPrefix); ok {
+			return t, nil
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -526,6 +767,28 @@ func (s *Store) Load(idOrPrefix string) (*Ticket, error) {
 		return nil, err
 	}
 	return Decode(d, path)
+}
+
+// fromSource looks up a ticket the board can see but has no file for, by exact
+// id or unambiguous prefix, the same way resolve does for files.
+func (s *Store) fromSource(idOrPrefix string) (*Ticket, bool) {
+	want := NormalizeIDPrefix(idOrPrefix)
+	if want == "" {
+		return nil, false
+	}
+	var match *Ticket
+	for _, t := range s.extra(nil) {
+		switch {
+		case t.ID == want:
+			return t, true
+		case strings.HasPrefix(t.ID, want), strings.HasSuffix(t.ID, want):
+			if match != nil {
+				return nil, false // ambiguous: let the caller report not found
+			}
+			match = t
+		}
+	}
+	return match, match != nil
 }
 
 // resolve maps a reference to exactly one ticket path.
@@ -633,7 +896,11 @@ func (s *Store) Create(fields map[string]string, lists map[string][]string, body
 	if err := WriteAtomic(path, d.Bytes()); err != nil {
 		return nil, err
 	}
-	return Decode(d, path)
+	t, err := Decode(d, path)
+	if err != nil {
+		return nil, err
+	}
+	return t, s.record(id, d.Bytes())
 }
 
 // Mutate applies fn to a ticket under an exclusive lock, then writes it back
@@ -644,6 +911,14 @@ func (s *Store) Create(fields map[string]string, lists map[string][]string, body
 func (s *Store) Mutate(idOrPrefix string, fn func(*Ticket) error) (*Ticket, error) {
 	path, err := s.resolve(idOrPrefix)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			// The board may still know this ticket: it is on its ref and has
+			// not been pulled. Saying so is the difference between "your id is
+			// wrong" and "you are one command away".
+			if t, ok := s.fromSource(idOrPrefix); ok {
+				return nil, fmt.Errorf("%s: %w", Handle(t.ID), ErrOnRefOnly)
+			}
+		}
 		return nil, err
 	}
 	id := IDFromFilename(filepath.Base(path))
@@ -680,7 +955,15 @@ func (s *Store) Mutate(idOrPrefix string, fn func(*Ticket) error) (*Ticket, erro
 	if err := WriteAtomic(path, t.doc.Bytes()); err != nil {
 		return nil, err
 	}
-	return Decode(t.doc, path)
+	out, err := Decode(t.doc, path)
+	if err != nil {
+		return nil, err
+	}
+	// Recorded inside the lock, and only after the file is on disk: the queued
+	// bytes are then exactly the bytes a reader of this repository sees, and no
+	// second mutation can slip between the write and the record and queue an
+	// older state on top of a newer one.
+	return out, s.record(id, t.doc.Bytes())
 }
 
 // lock takes an advisory per-ticket lock. A lock file is used rather than flock

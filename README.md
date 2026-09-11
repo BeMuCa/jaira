@@ -9,9 +9,9 @@ Hand a coding agent one task and it reliably becomes five. Within a session that
 is fine. Across sessions it is not: what each sub-task was *for* and where it got
 to both evaporate, and there is no artifact left to reconstruct them from.
 
-jaira makes that state durable and visible. Tickets are files in the repo, so the
-board travels with the code. A teammate clones, runs `jaira`, and sees the same
-board. No server, no accounts, no setup.
+jaira makes that state durable and visible. Tickets travel with the code: a
+teammate clones, runs `jaira fetch`, and sees the same board. No server, no
+accounts, no setup.
 
 ```
 repo/                              ~/.jaira/
@@ -99,8 +99,8 @@ notes are ready to be read by everyone who can clone the repository. `jaira shar
 --undo` makes it private again; nothing about the tickets changes either way, so
 it is not a migration.
 
-Teammates then clone and run any jaira command; the merge driver binds itself on
-first use.
+Teammates then clone, run `jaira fetch`, and have the board; the merge driver
+binds itself on first use.
 
 The team flow is pull-based. A captured ticket belongs to nobody; whoever pulls
 it out of the backlog becomes its assignee in the same move. Pull before you
@@ -272,6 +272,246 @@ outside.
 A teammate without your `critique` lane still sees those tickets, in a read-only
 passthrough column. Hiding them would be the worse failure.
 
+## Tickets travel on their own git refs
+
+Hand someone a ticket today and they learn nothing: the ticket file lives in
+the branch of whoever wrote it, and if that branch is unpushed, stale or
+force-pushed, the assignee sees neither the title nor the id. Scanning every
+branch for ticket files is expensive and still wrong.
+
+So every write also puts the ticket on a ref of its own:
+
+```
+refs/jaira/tickets/<id>      one ref per ticket, its tree carries <id>.md
+```
+
+That ref belongs to no branch. The default refspec does not fetch it, so a
+teammate who does not use jaira sees none of it, and it never shows up as a
+branch or in a hosting provider's web UI. The tree carries the whole ticket
+file rather than just an id, so the other side reads it with no checkout and
+nothing to merge:
+
+```bash
+jaira fetch                                     # one round trip, no branch
+git show refs/jaira/tickets/<id>:<id>.md        # or read it by hand
+```
+
+`jaira fetch` marks each card `@you`, `new`, and `ref-only` — the last being
+the property that matters: this ticket is in no branch you have. A ticket that
+has just become yours also raises a desktop notification, once, and the board
+fetches on its own every minute.
+
+<img src="docs/img/demo-machines.gif" alt="Two machines, two clones, one remote: a ticket filed on one turns up on the other" width="100%">
+
+Two containers, two hostnames, two sets of branches, and nothing in common but
+the remote. Nobody pushed a branch and nobody sent a message.
+
+**The push is a compare-and-swap.** Each ref commit takes the SHA you read as
+its parent, so a stale write is a non-fast-forward that git rejects by itself,
+and `--force-with-lease` covers the first write, where no commit has a parent
+to compare. A race is detected on the spot rather than three days later at a
+merge, and the message names who was quicker and where the ticket now is.
+
+**Writing works offline.** A write is queued, not pushed: sending happens
+after the command, and only in a process that actually wrote something, so
+`jaira list` never waits for a remote. If there is no route, the ticket is
+correct locally, the card says `unsent`, and it goes out with your next
+command. This is also why the board and the git merge driver can write tickets
+at all — neither may block on a network.
+
+**The ticket file stays in the code commit as well**, and the two answer
+different questions:
+
+| | File in the commit | Ref |
+|---|---|---|
+| Answers | what this change was, and why | where the ticket stands now, and with whom |
+| Read by | the reviewer of the diff | the board, notifications, another machine |
+| Changes | once, with the code | on every move, claim, note |
+| Lives | permanently, in the history | while the ticket is on the board |
+
+On the board it is one story per ticket, not two panes to compare: the local
+file and the ref are merged field by field by the same resolver the merge
+driver uses (see **Concurrency** below), with the ref's parent blob as the
+merge base. Progress is never reverted — a local edit made a minute ago cannot
+drag a ticket back out of review because a reviewer touched it first.
+
+`~/.jaira/settings.json` holds the three choices this needs, all optional:
+
+```json
+{ "remote": "origin", "notify-off": false, "hook": "/path/to/script" }
+```
+
+The hook is called on `move` and `claim` for delivery that does not wait for
+the other side to fetch. jaira only calls it and brings no dependency of its
+own: the script gets `JAIRA_EVENT`, `JAIRA_TICKET`, `JAIRA_TITLE`,
+`JAIRA_STATUS`, `JAIRA_ASSIGNEE`, `JAIRA_ACTOR` and `JAIRA_ROOT` in its
+environment, and what it does with them — a Slack webhook, ntfy.sh, Telegram —
+is yours.
+
+**The fork limit, stated plainly:** refs do not travel across forks. Everyone
+taking part pushes to the same board repository, which means participation
+requires push access to it. A contributor without push access keeps the ticket
+file in their branch and their pull request; they lose the ref channel, not the
+board. A board in a directory that is not a repository, or with no remote,
+simply does not use refs and behaves exactly as before.
+
+## What git is actually doing
+
+No part of this is a protocol of its own. Every step is a git command you could
+type yourself, which is the reason it works against GitHub, GitLab or a bare
+repository on a shared drive without any of them knowing what jaira is.
+
+| Step | The git underneath |
+|---|---|
+| write a ticket to its ref | `hash-object -w`, `mktree`, `commit-tree` — a commit whose tree holds `<id>.md`, with the SHA you read as its parent |
+| send it | `push --force-with-lease=<ref>:<the SHA you read>` — refused if anybody wrote since |
+| see what exists | `ls-remote origin 'refs/jaira/tickets/*'` — the whole board in one round trip |
+| collect it | `fetch --prune origin '+refs/jaira/tickets/*:refs/jaira/tickets/*'` |
+| read one without a checkout | `show refs/jaira/tickets/<id>:<id>.md` |
+| a ticket's history | `log refs/jaira/tickets/<id>` — every move it ever made |
+| has it landed | `rev-list -1 <branch> -- .jaira/logbook/*/<id>* .jaira/archive/<id>*` |
+| the backup branch | the same three plumbing commands, one tree with every ticket in it |
+
+Two consequences worth stating, because both are load-bearing:
+
+**The compare-and-swap is git's, not ours.** A ref update is atomic at the
+hosting provider, and `--force-with-lease` refuses when the ref moved since you
+read it. That is the whole concurrency mechanism: no server decides who wins,
+the remote's own ref lock does.
+
+**Nothing here is visible to anyone who does not want it.** `refs/jaira/*` is
+outside `refs/heads`, so the default refspec never fetches it, it is not a
+branch, and it does not appear in a hosting provider's web UI. A teammate who
+does not use jaira clones the repository and sees an ordinary project.
+
+## How two people hand work over
+
+<img src="docs/img/demo-split.gif" alt="Ada writes a problem down without assigning it; Grace takes it; Ada finds out from the board" width="100%">
+
+Ada writes a problem down and says nothing about who should fix it. Grace looks
+at the board because she felt like it, decides to take it, and pulls. Ada looks
+again and the board tells her. Not a word was exchanged.
+
+A ticket nobody is working lives on its ref and nowhere else. Pulling it is
+what puts it on your disk, and that pull is a compare-and-swap, so exactly one
+person can be holding it:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Ada
+    participant R as origin<br/>refs/jaira/tickets/*
+    actor B as Grace
+
+    A->>R: jaira create "fix the 302" --assignee grace
+    Note over A: no file on Ada's disk:<br/>the ticket is on its ref
+    B->>R: jaira fetch
+    R-->>B: "fix the 302  @you new ref-only"
+    Note over B: a desktop notification, once
+    B->>R: jaira pull  (assignee = grace, compare-and-swap)
+    R-->>B: accepted
+    Note over B: now, and only now, the file<br/>exists under .jaira/tickets — here
+    A->>R: jaira pull  (same ticket)
+    R-->>A: refused: "grace has it"
+    Note over A: nothing written on Ada's disk
+    B->>B: work, commit the ticket with the code
+    B->>R: jaira move --to review
+    B->>R: jaira release  (optional)
+    Note over B: assignee cleared, file removed:<br/>anybody can pull it again
+```
+
+Reading the board needs no pull: `jaira list`, `jaira next` and `jaira show`
+include tickets that are still on their refs and mark them `[pull it]`. Every
+write refuses them with exit 3 and says which command changes that — a ticket
+you have not pulled is one you are not holding, and half-writing it is the one
+thing this rules out.
+
+**What each step buys**
+
+| Step | Why it is that way |
+|---|---|
+| `create` writes only the ref | While nobody is working it, a file in somebody's checkout is a copy a merge can duplicate, and it hides who the ticket belongs to |
+| an assignment does not materialise anything | Assigning reserves the ticket; the assignee still pulls it themselves, and which branch they work in is not the assigner's business |
+| `pull` pushes first, writes the file second | The other order leaves the loser of a race holding a file that belongs to somebody else |
+| the ref's `assignee` gates the pull | The compare-and-swap only rules out two writes in the same instant; it cannot say "this is not yours", because a pull re-reads the ref right before writing |
+| `release` clears the ref, then removes the file | Without it an assignment is a reservation nobody can hand back |
+
+<img src="docs/img/demo-board.gif" alt="An open board on one machine grows a card when somebody files a ticket on another" width="100%">
+
+The board on the right is on another machine, opened with `jaira` and nobody
+touching it. A ticket filed on the left turns up as a card, with the line at the
+bottom saying which one became yours.
+
+A board with no remote behaves exactly as it always did: the file is the board.
+That branch is decided in one place, so no command has to know which mode it is
+in.
+
+## The backup branch, and when a ref dies
+
+A ticket nobody is working lives only on its ref, so an untouched backlog lives
+only on the remote. Every participant's clone holds the refs it has fetched, so
+the board survives any one machine — but somebody cloning for the first time has
+no refs at all. For them there is a branch:
+
+```
+jaira/board            parentless, never merged, one commit per change
+└── board/<id>.md      the same ticket files, at a path of their own
+```
+
+It is built with git plumbing and never checked out, so a run cannot disturb
+whatever you are in the middle of, and it is rebuilt from the current set of
+refs each time — so a ticket that has gone is simply not in the next snapshot
+and stays readable in the previous ones. `git log jaira/board` is the board's
+history and `git diff` between two snapshots says what moved.
+
+```bash
+jaira snapshot                # normally nobody runs this
+```
+
+It happens by itself, in a detached background process, when the last snapshot
+is more than three days old — never on the command path, so nothing you type
+waits for it. Three days is not thrift: the working state is always on the refs
+and every clone has them, so this is the backup for the slow cases only. The
+files live under `board/`, not `.jaira/tickets/`, because at the same path the
+first accidental merge of this branch would collide with every working ticket at
+once.
+
+**A ref is removed only once its ticket has arrived somewhere everybody can
+see.** Filing a ticket away — `jaira logbook`, `jaira archive` — writes its
+final state to the ref and leaves it standing. At that moment the ticket file is
+only in your branch, and taking the shared copy down too would hide the ticket
+from everybody for as long as a review takes; somebody would notice the same
+problem and write it down a second time.
+
+The ref goes in the snapshot run, immediately after the write, for tickets that
+are filed away in a landing branch. That order is the point: at the moment of
+deletion the ticket is in the snapshot *and* in the branch it landed in, so
+there is nothing left to lose.
+
+```json
+{
+  "landing-branches": ["main", "develop", "release/*"],
+  "fetch-every": "10m",
+  "snapshot-every": "72h",
+  "landing-grace": "72h"
+}
+```
+
+The three intervals are durations, so the same field says `3s` for a screen
+recording and `72h` for a backup. An unreadable one falls back to the default
+rather than refusing to open the board.
+
+A list rather than one "main branch", because there is no answer to what the
+important branch is called. With nothing configured, the remote's own HEAD is
+used; if even that cannot be resolved, **nothing is ever removed** — a ref left
+standing costs nothing, one removed by mistake takes away exactly the visibility
+this is for.
+
+A branch that never gets merged would otherwise keep its ref for ever, so
+`jaira fetch` and `jaira validate` name any ticket that was finished here and
+has not arrived after three days. `jaira snapshot --drop <id>` is the way out, and
+it is deliberately a person's decision.
+
 ## Concurrency
 
 Two people moving the same ticket both rewrite the same `status:` line. Line-based
@@ -383,6 +623,10 @@ jaira archive <id>         take a ticket that is not being worked off the board
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket
+jaira fetch                fetch the tickets travelling on their own git refs
+jaira pull <id>            take a ticket over and put it on your disk
+jaira release <id>         hand a ticket back so somebody else can take it
+jaira snapshot             write the board's backup branch and clear landed refs
 jaira claim <id>           take a 30-minute lease on a ticket
 jaira lanes                installed lanes
 jaira checkpoint           record what this session is doing
@@ -504,6 +748,33 @@ rejected mutable working-tree ticket files for exactly the merge-conflict reason
 above. jaira's bet is that a field-aware merge driver plus a deliberately small
 surface makes the plain-file approach work where those attempts did not. That bet
 is not yet proven by adoption.
+
+## The recordings
+
+The three GIFs above are recorded from scripts in `scripts/`, not captured by
+hand, so they can be re-shot when the behaviour changes instead of quietly
+describing an older version:
+
+```bash
+CGO_ENABLED=0 go build -o /tmp/jaira-static ./cmd/jaira
+vhs scripts/demo-split.tape        # the handover
+vhs scripts/demo-machines.tape     # two machines, one remote
+vhs scripts/demo-board.tape        # the board updating itself
+```
+
+Needs `vhs`, `ttyd`, `ffmpeg`, `tmux` and `docker`. **Use vhs v0.11.0**: v0.12.0
+runs the tape, prints "Creating …", exits 0 and writes no file at all
+([charmbracelet/vhs#787](https://github.com/charmbracelet/vhs/issues/787)).
+
+Both sides of every recording are containers with hostnames of their own, so
+"another machine" is something you can check on screen with `hostname` rather
+than a label. `scripts/demo-machines-start.sh` builds that: a bare repository
+plus two clones, each with its own branches, sharing nothing else. It runs tmux
+on a socket of its own — a recording must never be able to reach the panes
+somebody is working in.
+
+To see the same behaviour without recording anything, `scripts/try-everything.sh`
+walks seventeen checks through a sandbox and prints what to expect at each one.
 
 ## Development
 

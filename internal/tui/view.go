@@ -550,6 +550,20 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	if !m.isMe(t.UpdatedBy) && strings.TrimSpace(t.UpdatedBy) != "" {
 		flags = append(flags, styAsks.Render("✎ "+truncate(t.UpdatedBy, 10)))
 	}
+	// On its ref and not on this disk. It is shown like any other card, and
+	// deliberately so — hiding a ticket somebody assigned you would make the
+	// board the last place to learn about it — but nothing here can be changed
+	// until it is pulled, so the card says which command does that.
+	if t.ReadOnly {
+		flags = append(flags, styAsks.Render("⇢ pull"))
+	}
+	// Written here, not yet on the remote. It is not an error and not a
+	// conflict: the ticket is correct on this machine and has not left it, and
+	// the next command with a route sends it. Saying so is what keeps the
+	// offline case from looking like a lost write.
+	if m.unsent[t.ID] {
+		flags = append(flags, styMeta.Render("⇅ unsent"))
+	}
 	if n, total := checklistProgress(t.PlanItems); total > 0 {
 		flags = append(flags, styMeta.Render(fmt.Sprintf("Plan %d/%d", n, total)))
 	}
@@ -826,6 +840,11 @@ func (m *Model) statusBar() string {
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
 	}
+	// Something arrived while you were looking at something else.
+	if line := m.flashLine(); line != "" {
+		prefix += styAsks.Render("● " + line + " ")
+	}
+
 	// Wrapped, never dropped: a key the bar has no room for is a key the reader
 	// does not know exists. renderBoard measures this bar and gives the columns
 	// whatever height is left.

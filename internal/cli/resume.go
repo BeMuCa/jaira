@@ -10,13 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// noteHeading is where progress notes are written.
-//
-// They go in the ticket body rather than a sidecar file on purpose. A separate
-// memory file would be one more thing to lose, would not travel with the ticket
-// through git, and could drift out of sync with it. The ticket already is the
-// memory; this just gives an agent a way to add to it mid-run.
-const noteHeading = "## Progress"
+// noteHeading is where progress notes are written. The rule for putting one
+// there lives in core/ticket.AppendNote, which this command and a ticket
+// take-over both use; this alias is kept for the readers in this package.
+const noteHeading = ticket.NoteHeading
 
 func newNoteCmd() *cobra.Command {
 	return &cobra.Command{
@@ -47,27 +44,10 @@ rather than adjectives, no jargon and no preamble.`,
 			if text == "" {
 				return fail(ExitUsage, "usage", "a note with no text records nothing")
 			}
-			stamp := time.Now().UTC().Format("2006-01-02 15:04")
 			who := identity()
 
 			t, err := s.Mutate(args[0], func(t *ticket.Ticket) error {
-				body := t.Doc().Body()
-				entry := fmt.Sprintf("- **%s · %s** — %s", stamp, who, text)
-				if idx := strings.Index(body, noteHeading); idx >= 0 {
-					// Append under the existing heading, after anything already there.
-					rest := body[idx:]
-					nextHeading := strings.Index(rest[len(noteHeading):], "\n## ")
-					if nextHeading < 0 {
-						body = strings.TrimRight(body, "\n") + "\n" + entry + "\n"
-					} else {
-						at := idx + len(noteHeading) + nextHeading
-						body = strings.TrimRight(body[:at], "\n") + "\n" + entry + "\n" + body[at:]
-					}
-				} else {
-					body = strings.TrimRight(body, "\n") + "\n\n" + noteHeading + "\n\n" + entry + "\n"
-				}
-				t.Doc().SetBody(body)
-				return nil
+				return ticket.AppendNote(t.Doc(), text, time.Now(), who)
 			})
 			if err != nil {
 				return err

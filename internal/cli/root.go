@@ -99,6 +99,10 @@ func Execute(version string) int {
 	release.Current = version
 	root := newRoot(version)
 	err := root.Execute()
+	// After the command, not during it: sending happens once, and it happens
+	// even when the command failed, because a ticket that was written is a
+	// ticket the team should see.
+	afterCommand()
 	if err == nil {
 		return ExitOK
 	}
@@ -116,6 +120,11 @@ func report(err error) int {
 		switch {
 		case errors.Is(err, ticket.ErrNotFound), errors.Is(err, ticket.ErrAmbiguous):
 			code, reason = ExitNotFound, "not_found"
+		case errors.Is(err, ticket.ErrOnRefOnly):
+			// A refusal, not a failure: the ticket is real and one command
+			// away, so it gets the gate's exit code rather than the
+			// unexpected-error one.
+			code, reason = ExitValidation, "on_ref_only"
 		case errors.Is(err, ticket.ErrNoStore):
 			code, reason = ExitError, "no_store"
 		case errors.Is(err, ticket.ErrUnsafeYAML):
@@ -211,6 +220,10 @@ Exit codes:
 		newUpdateCmd(),
 		newSelfCmd(),
 		newHookCmd(),
+		newFetchCmd(),
+		newPullCmd(),
+		newReleaseCmd(),
+		newSnapshotCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
@@ -234,6 +247,9 @@ func openStore() (*ticket.Store, error) {
 	// than per command, because "who is writing" is a property of the process,
 	// and a command that forgot to set it would silently write anonymously.
 	s.Actor = identity()
+	// Every write through this store is also queued for the ticket's own ref,
+	// so a ticket reaches whoever it was assigned to without a shared branch.
+	attachRefs(s)
 	bindDriverIfShared(s)
 	nudgeIfStale(s)
 	return s, nil

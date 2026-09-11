@@ -18,6 +18,7 @@
 package merge
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -52,6 +53,11 @@ var proseFields = map[string]bool{
 	ticket.FieldOutcomeResolves: true,
 }
 
+// emptyDoc is a ticket file with nothing in it, used to stand in for an absent
+// merge base. It is the smallest thing ParseDoc accepts, so the merge rules see
+// a base that simply has no fields rather than a parse failure.
+var emptyDoc = []byte("---\n---\n")
+
 // Conflict describes one unresolvable field.
 type Conflict struct {
 	Field  string
@@ -78,6 +84,22 @@ func (r *Result) Clean() bool { return len(r.Conflicts) == 0 }
 // ours is used as the structural base for the output so its formatting, comments
 // and key order survive; only resolved values are spliced in.
 func Merge(base, ours, theirs []byte, lanes *lane.Set) (*Result, error) {
+	// An empty base means there is no common ancestor, and it is not a broken
+	// file: git hands the merge driver an empty %O for an add/add conflict,
+	// which is what two branches that each created the same ticket file look
+	// like — the normal shape once a ticket received on its ref lands here as
+	// a file too.
+	//
+	// Rejecting it used to fail the driver, and the damage was silent: git left
+	// "ours" in place with no conflict markers, so it read as a clean merge
+	// while the other side's lane and updated-by were gone. An absent ancestor
+	// is instead treated as one that said nothing, which makes every rule below
+	// behave the way it does for a field neither side inherited: the further
+	// lane wins, lists union, and prose that differs on both sides is a real
+	// conflict.
+	if len(bytes.TrimSpace(base)) == 0 {
+		base = emptyDoc
+	}
 	bd, err := ticket.ParseDoc(base)
 	if err != nil {
 		return nil, fmt.Errorf("merge: base: %w", err)

@@ -156,6 +156,7 @@ another session is actively renewing is refused.`,
 			if err != nil {
 				return err
 			}
+			fireHook("claim", s, t)
 			if g.jsonOut {
 				out := map[string]any{
 					"claimed": true, "id": t.ID, "session": sessionID,

@@ -1,6 +1,11 @@
 package ticket
 
-import "strings"
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+)
 
 // BodyOption is one entry in a new ticket's Options checklist.
 type BodyOption struct {
@@ -55,4 +60,43 @@ func NewBody(title, dod string, options []BodyOption) string {
 	// of the file. A human wanting free-form notes can add their own heading.
 	b.WriteString("\n## Progress\n\n")
 	return b.String()
+}
+
+// NoteHeading is the body section progress notes live under.
+//
+// Notes go in the ticket body rather than a sidecar file on purpose: a separate
+// memory file would be one more thing to lose, would not travel with the ticket
+// through git, and could drift out of sync with it.
+const NoteHeading = "## Progress"
+
+// AppendNote adds one timestamped note under the Progress heading, creating the
+// heading if the body has none.
+//
+// It lives here rather than in the command that types notes because it now has
+// two callers — a person writing one, and a take-over recording that it
+// happened — and two copies of "where does a note go" would eventually disagree
+// about the answer.
+func AppendNote(d *Doc, text string, now time.Time, who string) error {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return errors.New("ticket: a note with no text records nothing")
+	}
+	entry := fmt.Sprintf("- **%s · %s** — %s", now.UTC().Format("2006-01-02 15:04"), who, text)
+	body := d.Body()
+	if idx := strings.Index(body, NoteHeading); idx >= 0 {
+		// Append under the existing heading, after anything already there, and
+		// before whatever section follows it.
+		rest := body[idx:]
+		next := strings.Index(rest[len(NoteHeading):], "\n## ")
+		if next < 0 {
+			body = strings.TrimRight(body, "\n") + "\n" + entry + "\n"
+		} else {
+			at := idx + len(NoteHeading) + next
+			body = strings.TrimRight(body[:at], "\n") + "\n" + entry + "\n" + body[at:]
+		}
+	} else {
+		body = strings.TrimRight(body, "\n") + "\n\n" + NoteHeading + "\n\n" + entry + "\n"
+	}
+	d.SetBody(body)
+	return nil
 }

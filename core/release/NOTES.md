@@ -13,6 +13,27 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## 0.1.3
+
+- Tickets now travel on a git ref of their own (`refs/jaira/tickets/<id>`), so a ticket reaches whoever it is assigned to without anybody sharing a branch: run `jaira fetch` after cloning, and again whenever you want to see what the team has moved.
+- Run `jaira pull <id>` to take a ticket over: it records you as its assignee on the ref and only then writes the file here, so exactly one clone holds a ticket at a time — a ticket somebody else has pulled is refused, naming them, and `--steal` takes it anyway and writes a note on the ticket saying so.
+- Run `jaira release <id>` to hand a ticket back: it clears you as assignee on the ref and removes the local file, and until you do, nobody else can pull it — an assignment is a reservation.
+- On a board with a remote, `jaira create` no longer leaves a ticket file on your disk: the ticket lives on its ref until somebody pulls it, so commit nothing for a ticket you only filed. A board with no remote behaves exactly as before.
+- `jaira list`, `jaira next` and `jaira show` include tickets that are still on their refs and mark them `[pull it]`; every write refuses them with exit 3 and names the command that changes that.
+- The refs are now brought up to date by themselves every ten minutes — in a detached process beside whatever command you ran, and on the open board — so a ticket assigned to you reaches you even if you never open the board and only ever read; no command waits for it, `"fetch-every": "10m"` in `~/.jaira/settings.json` changes the interval for both, and `JAIRA_NO_FETCH=1` turns it off.
+- A ticket that arrives while the board is open says so on a line of the board, not on a screen you have to dismiss — it was the other way round and it interrupted whatever you were doing.
+- `jaira logbook` and `jaira archive` no longer remove the ticket's ref — they write its final state to it, so the ticket stays visible to everybody while your branch waits to be merged; the ref is cleared later, once the ticket has arrived in a landing branch.
+- Run `jaira snapshot` to write the board as files to the `jaira/board` branch and clear the refs of landed tickets; it otherwise happens by itself in the background every three days, so a first-time cloner has the board even before fetching refs.
+- Set `landing-branches` in `~/.jaira/settings.json` (a list, globs allowed) to say which branches mean a ticket has arrived — without it the remote's own HEAD is used, and if even that cannot be resolved no ref is ever removed.
+- A finished ticket that never reached a landing branch is named by `jaira fetch` and `jaira validate` after three days (`"landing-grace": "72h"` in `~/.jaira/settings.json`); push the branch that holds it, or give up on it with `jaira snapshot --drop <id>`.
+- A ticket newly assigned to you raises a desktop notification once; turn it off with `"notify-off": true` in `~/.jaira/settings.json`.
+- Point `hook` in `~/.jaira/settings.json` at a script to be told about `move` and `claim` immediately: it gets `JAIRA_EVENT`, `JAIRA_TICKET`, `JAIRA_TITLE`, `JAIRA_STATUS`, `JAIRA_ASSIGNEE`, `JAIRA_ACTOR` and `JAIRA_ROOT`, and what it does with them — Slack, ntfy, Telegram — is yours.
+- A write made with no route to the remote is kept and sent with your next command; the card says `⇅ unsent` until it goes, so being offline no longer looks like a lost write.
+- Merging two branches that each created the same ticket file no longer loses one side silently: an add/add merge is resolved field by field like any other, keeping the further lane and both sides' lists.
+- `jaira validate` and `jaira list` now report a ticket that is on the board and filed away in the logbook or archive at once, and a ticket somebody else has taken off the board while a file for it is still here — nothing is moved for you, because which copy is right is yours to say.
+- Set `remote`, `snapshot-branch`, `snapshot-every`, `fetch-every` and `landing-grace` in `~/.jaira/settings.json` if the defaults (`origin`, `jaira/board`, `72h`, `10m`, `72h`) do not suit — the three intervals are durations, so `3s` and `72h` are both said the same way, and a missing, damaged or unreadable value means the default rather than a refusal to start.
+- Read the new README sections before using any of this: what git is actually doing underneath, how two people hand a ticket over, and three recordings of it happening between two machines.
+
 ## 0.1.2
 
 - Look for the running version in the top-left corner of the board and the launcher; the footer no longer carries it, so a script or a screenshot that read the last line for it must read the first instead.

@@ -187,3 +187,55 @@ func TestBodyConflictIsReported(t *testing.T) {
 		t.Errorf("expected a body conflict, got %+v", r.Conflicts)
 	}
 }
+
+// git hands the merge driver an empty base for an add/add conflict: two
+// branches that each created the same ticket file. Rejecting that used to fail
+// the driver, and the damage was silent — git left "ours" behind with no
+// conflict markers, so it read as a clean merge while the other side's lane was
+// gone.
+func TestAnEmptyBaseIsAnAbsentAncestorNotABrokenFile(t *testing.T) {
+	ls := lanes(t)
+	ours := []byte("---\nid: 01AAA\nstatus: backlog\nassignee: ada\nupdated-by: ada\nupdated-at: 2026-09-10T12:00:00Z\ntags:\n  - concurrency\n---\n\n# a ticket\n")
+	theirs := []byte("---\nid: 01AAA\nstatus: todo\nassignee: berk\nupdated-by: berk\nupdated-at: 2026-09-09T12:00:00Z\ntags:\n  - cli\n---\n\n# a ticket\n")
+
+	for _, base := range [][]byte{nil, {}, []byte("   \n"), []byte("\n\n")} {
+		res, err := Merge(base, ours, theirs, ls)
+		if err != nil {
+			t.Fatalf("empty base (%q) was rejected: %v", base, err)
+		}
+		got := string(res.Merged)
+		// Progress is never reverted, even though ours carries the newer stamp.
+		if !strings.Contains(got, "status: todo") {
+			t.Errorf("base %q: the further lane was lost:\n%s", base, got)
+		}
+		// Neither side's tag is dropped: with no ancestor, nothing was removed
+		// by anyone, so both are additions.
+		for _, tag := range []string{"concurrency", "cli"} {
+			if !strings.Contains(got, tag) {
+				t.Errorf("base %q: tag %q was lost:\n%s", base, tag, got)
+			}
+		}
+	}
+
+	// Prose is the one thing no rule can settle, and an absent ancestor does
+	// not change that: two different sentences in the same field stay a real
+	// conflict for a person, rather than one of them being picked.
+	oursProse := []byte("---\nid: 01AAA\nstatus: todo\ngoal: the cookie survives the redirect\nupdated-at: 2026-09-10T12:00:00Z\n---\n\nbody\n")
+	theirsProse := []byte("---\nid: 01AAA\nstatus: todo\ngoal: sessions must not be dropped on 302\nupdated-at: 2026-09-09T12:00:00Z\n---\n\nbody\n")
+	res, err := Merge(nil, oursProse, theirsProse, ls)
+	if err != nil {
+		t.Fatalf("empty base with differing prose: %v", err)
+	}
+	if res.Clean() {
+		t.Error("two different goals merged silently; one of them was picked")
+	}
+	var found bool
+	for _, c := range res.Conflicts {
+		if c.Field == "goal" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("the conflict is not on goal: %+v", res.Conflicts)
+	}
+}

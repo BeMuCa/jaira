@@ -213,6 +213,10 @@ one the real move would have returned.`,
 					violations: res.Refused,
 				}
 			}
+			// A move is the event the other side wants to hear about now
+			// rather than at their next fetch, so the user's own script gets
+			// called with it.
+			fireHook("move", s, res.Ticket)
 			t = res.Ticket
 
 			if g.jsonOut {
