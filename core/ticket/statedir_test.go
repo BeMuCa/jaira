@@ -3,6 +3,7 @@ package ticket_test
 import (
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +43,16 @@ func TestSnapshotClockIsSharedAcrossWorktrees(t *testing.T) {
 	}
 	if second := (&ticket.Store{Root: tree}).RepoStateDir(); snapshot.Due(second, time.Hour) {
 		t.Fatal("a fresh worktree started its own clock: the snapshot is due again")
+	}
+}
+
+// TestRepoStateDirIsVisible keeps the directory findable by hand: a repository's
+// common dir is <checkout>/.git, and naming the state directory after its last
+// segment would hide it from 'ls'.
+func TestRepoStateDirIsVisible(t *testing.T) {
+	main, _ := clonePair(t)
+	if name := filepath.Base((&ticket.Store{Root: main}).RepoStateDir()); strings.HasPrefix(name, ".") {
+		t.Fatalf("repository state dir %q is hidden", name)
 	}
 }
 

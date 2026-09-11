@@ -70,12 +70,12 @@ is older than three days.`,
 			// Stamped before the run, not after: a run that fails must not make
 			// the next command try again at once, or an unreachable remote turns
 			// into a retry on every command.
-			_ = snapshot.WriteStamp(s.StateDir(), snapshot.Stamp{RanAt: time.Now().UTC()})
+			_ = snapshot.WriteStamp(s.RepoStateDir(), snapshot.Stamp{RanAt: time.Now().UTC()})
 			res, err := runner.Run()
 			if err != nil {
 				return err
 			}
-			_ = snapshot.WriteStamp(s.StateDir(), snapshot.Stamp{RanAt: time.Now().UTC(), Note: res.Commit})
+			_ = snapshot.WriteStamp(s.RepoStateDir(), snapshot.Stamp{RanAt: time.Now().UTC(), Note: res.Commit})
 
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), res)

@@ -560,9 +560,20 @@ func (s *Store) stateHome() (home string, ok bool) {
 
 // stateKey names a directory after a path: readable enough to recognise, hashed
 // enough that two paths never collide.
+//
+// The name comes from the path's last segment, except when that segment is
+// ".git" — a repository's common dir ends there, and a directory whose name
+// starts with a dot is one 'ls' hides from whoever goes looking for it. The
+// checkout's own name is both visible and the one a person would recognise.
 func stateKey(path string) string {
 	sum := sha256.Sum256([]byte(path))
-	return filepath.Base(path) + "-" + hex.EncodeToString(sum[:4])
+	name := filepath.Base(path)
+	if name == ".git" {
+		if parent := filepath.Base(filepath.Dir(path)); parent != "" && parent != "." && parent != string(filepath.Separator) {
+			name = parent
+		}
+	}
+	return name + "-" + hex.EncodeToString(sum[:4])
 }
 
 // Init creates the store layout. Safe to run repeatedly.

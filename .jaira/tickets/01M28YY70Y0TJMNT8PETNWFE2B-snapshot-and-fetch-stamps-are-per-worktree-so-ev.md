@@ -24,7 +24,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T19:26:01Z
-updated-at: 2026-09-11T19:46:24Z
+updated-at: 2026-09-11T20:03:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1116663
 claimed-at: 2026-09-11T19:26:19Z
@@ -66,3 +66,10 @@ review-check: "1. Run: go test ./core/ticket -run StateDir -v -- four tests pass
 - **2026-09-11 19:44 · Alexander Sacharov** — core/ticket cannot import core/gitrepo: gitrepo/derive.go already imports core/ticket, so the obvious Repo.CommonDir helper is an import cycle. RepoStateDir therefore shells out to git itself in store.go (commonGitDir), which is ten lines and no new package edge. Rejected alternatives: reading .git by hand (a worktree points at the main checkout through a gitdir: file, a submodule points elsewhere again — a second, divergent resolver) and hanging the helper off core/gitrepo with a Store argument (inverts who owns the state-dir concept).
 
 Only the two background stamps moved. outbox, refs-seen, sessions and locks stay per working tree on purpose: those are about in-flight work in this checkout, not about the board.
+- **2026-09-11 20:03 · Alexander Sacharov** — Running the check end to end turned up two things the first pass missed.
+
+1. The snapshot command wrote its own stamp to StateDir (internal/cli/snapshot.go:73,78), so the run that actually happened - and the commit sha it noted - landed in the per-checkout directory while the scheduler read the repository one. Both writes now go to RepoStateDir.
+
+2. A repository common dir ends in .git, so the state directory was named .git-<hash> and ls hid it. stateKey now names it after the checkout instead: main-c5dc6324. TestRepoStateDirIsVisible holds that.
+
+A/B in a throwaway clone (scratchpad/check3.sh): fresh second checkout, board changed since the last snapshot. jaira 0.1.3 writes a second board commit and its own state dir; this build writes neither, and the stamp under ~/.jaira/repo keeps the time from the first checkout.
