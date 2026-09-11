@@ -1,7 +1,7 @@
 ---
 id: 01M28YY70Y0TJMNT8PETNWFE2B
 title: "Snapshot and fetch stamps are per worktree, so every new worktree snapshots at once"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T19:26:01Z
-updated-at: 2026-09-11T19:44:28Z
+updated-at: 2026-09-11T19:46:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1116663
 claimed-at: 2026-09-11T19:26:19Z
@@ -41,6 +41,10 @@ body: |-
 outcome-what: "Keyed the snapshot and fetch stamps by repository: Store.RepoStateDir (core/ticket/store.go) resolves git rev-parse --git-common-dir and keys ~/.jaira/repo/<key> by it, while StateDir stays per working tree; internal/cli/snapshot.go and internal/cli/refs.go spawn against it."
 outcome-why: "A git worktree is a new path, so it got a new state dir with no stamp, and bgrun.Due read a missing stamp as never-ran and fired at once — every worktree-agent-* took a full snapshot on its first command, turning a 72h backup into a commit every 20 minutes."
 outcome-resolves: "jaira/board gets one snapshot per clone per interval; sessions, locks, outbox and refs-seen stay per checkout; four tests in core/ticket/statedir_test.go cover the shared clock, the per-tree split, two clones and the no-git fallback; go test ./... -race green."
+review-summary: "RepoStateDir keys the two background stamps by git --git-common-dir, which is one value per clone and the answer git itself gives; StateDir is untouched, so sessions, locks, outbox and refs-seen stay per checkout. core/bgrun and core/snapshot are unchanged - only the directory handed to them moves - so the spawn, the recursion guard and the tree-identity guard did not have to be re-reasoned. The shell-out sits in core/ticket rather than core/gitrepo because gitrepo/derive.go already imports core/ticket."
+review-gaps: "Adds one git rev-parse per command, on the path that already decides whether to spawn a background job - once per process, not per ticket. Upgrading fires one snapshot per clone, because the old per-tree stamps are not migrated: correct once, then quiet. The 2694 stale ~/.jaira/state directories are not cleaned up; separate ticket."
+review-verdict: Ready. The change matches the diagnosed cause and leaves the state that is rightly per checkout alone.
+review-check: "1. Run: go test ./core/ticket -run StateDir -v -- four tests pass. 2. Add a second checkout of this repo at /tmp/wt-check (worktree add). 3. In /tmp/wt-check run: jaira list. 4. Look at the log of branch jaira/board -- no new 'board: N ticket(s)' commit appeared from that checkout. 5. Run: ls ~/.jaira/repo -- one directory for this clone, holding snapshot.json and fetch.json."
 ---
 
 # Snapshot and fetch stamps are per worktree, so every new worktree snapshots at once
