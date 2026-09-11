@@ -800,3 +800,49 @@ func TestAFinishedTicketThatNeverLandedIsReported(t *testing.T) {
 		t.Errorf("reported with no landing branch configured: %+v", none)
 	}
 }
+
+// A ticket filed away here is off this board on purpose, and its ref outlives
+// the filing — it goes only when the ticket lands. Without this, the logbook
+// hands every finished ticket straight back as a card.
+func TestAFiledTicketDoesNotComeBackAsARefCard(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := create(t, ada, "finished and filed")
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+
+	// On the board while it is a ticket here.
+	before, err := ada.store.List()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !listed(before, id) {
+		t.Fatal("the ticket is not on the board before filing")
+	}
+
+	if _, err := ada.store.Archive(id); err != nil {
+		t.Fatalf("archive: %v", err)
+	}
+	// The ref is still there — that is the design, it goes when the ticket
+	// lands — so this is exactly the case that used to bring it back.
+	if _, err := ada.syncer.Repo.SHA(id); err != nil {
+		t.Fatalf("the ref should outlive the filing: %v", err)
+	}
+
+	after, err := ada.store.List()
+	if err != nil {
+		t.Fatalf("list after filing: %v", err)
+	}
+	if listed(after, id) {
+		t.Error("a filed ticket came back onto the board as a ref card")
+	}
+}
+
+func listed(ts []*ticket.Ticket, id string) bool {
+	for _, t := range ts {
+		if t.ID == id {
+			return true
+		}
+	}
+	return false
+}

@@ -70,6 +70,14 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 		return nil
 	}
 	return func() tea.Msg {
+		// Send before reading. The board queues every write it makes and had
+		// no other moment to send them: Flush ran only after a CLI command, so
+		// somebody working a whole day in the board left the team looking at
+		// yesterday's tickets — and their own accepted work came back as a
+		// card, because the ref still said what it said this morning.
+		if _, err := y.Flush(); err != nil {
+			return refFetchedMsg{err: err}
+		}
 		arrivals, err := y.Incoming()
 		return refFetchedMsg{arrivals: arrivals, err: err}
 	}
