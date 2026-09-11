@@ -45,10 +45,17 @@ func TestHoldsRefusesANonTerminalLane(t *testing.T) {
 	}
 }
 
-// TestBuiltinDoneIsADoorway pins the shipped default: a ticket landing in done
-// goes straight to the logbook. The rule lives in the lane file, not the code,
-// so this is the test that notices if the declaration is ever lost.
-func TestBuiltinDoneIsADoorway(t *testing.T) {
+// TestBuiltinDoneIsNotADoorway pins the shipped default: a ticket landing in
+// done stays there until somebody files it. The rule lives in the lane file,
+// not the code, so this is the test that notices if a doorway is ever declared
+// there again.
+//
+// It was the other way round, and that is what this pins against: filing on
+// entry meant one person finishing one ticket swept forty-nine of other
+// people's into the logbook, in a commit named after a single handle. Filing is
+// a statement about bookkeeping, made days later about a set somebody
+// assembles; reaching a terminal lane is a statement about the work.
+func TestBuiltinDoneIsNotADoorway(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
 	set, err := Load("")
 	if err != nil {
@@ -58,11 +65,11 @@ func TestBuiltinDoneIsADoorway(t *testing.T) {
 	if !ok {
 		t.Fatal("built-in done lane missing")
 	}
-	if !l.LogbookOnEntry {
-		t.Error("built-in done does not file on entry")
+	if l.LogbookOnEntry {
+		t.Error("built-in done files on entry: finishing one ticket would file everybody's")
 	}
 	if l.Holds != 0 {
-		t.Errorf("built-in done still carries a cap (%d) beside the doorway", l.Holds)
+		t.Errorf("built-in done carries a cap (%d), which would file the oldest without being asked", l.Holds)
 	}
 }
 

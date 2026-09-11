@@ -8,6 +8,7 @@ package cli
 // the backlog and is unrelated.
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,16 +20,28 @@ import (
 	"github.com/spf13/cobra"
 
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
+	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 func newLogbookCmd() *cobra.Command {
+	var all bool
 	cmd := &cobra.Command{
 		Use:   "logbook [id]",
-		Short: "Take a finished ticket off the board with its commits stamped down, or list the logbook",
+		Short: "Take finished tickets off the board with their commits stamped down, or list the logbook",
 		Long: `Moves a terminal-lane ticket into .jaira/logbook/<initials>-<yyyymmdd>/, after
 stamping it with every commit git can find for it. With no argument, lists
 the logbook.
+
+--all files everything that has reached the terminal lane into today's folder,
+which is the usual way: finished tickets pile up there, and whoever enters
+their hours cuts them in one go.
+
+Filing is a decision, and nothing does it for you. Reaching a terminal lane
+says the work is accepted; it says nothing about whether anybody is ready to
+account for it, which happens days later and covers a set somebody assembles.
+A board that filed on its own once swept forty-nine other people's tickets
+into a commit named after a single handle.
 
 The folder is the record: who finished what, on which day. Leaving the board
 is the moment every commit is finally known, so it is stamped here rather
@@ -51,13 +64,72 @@ work and refuses a ticket that has not reached the terminal lane.`,
 			}
 			w := cmd.OutOrStdout()
 
-			if len(args) == 0 {
+			switch {
+			case all && len(args) > 0:
+				return fail(ExitUsage, "usage", "--all files the whole terminal lane; naming a ticket as well says two different things")
+			case all:
+				return logbookAll(s, w, cmd.ErrOrStderr())
+			case len(args) == 0:
 				return listLogbook(s, w)
 			}
 			return logbookOut(s, args[0], w)
 		},
 	}
+	cmd.Flags().BoolVar(&all, "all", false, "file everything in the terminal lane into today's folder")
 	return cmd
+}
+
+// logbookAll files the whole terminal lane, which is the cut somebody makes
+// when they enter their hours.
+//
+// It is the same sweep a lane can be told to do on entry, moved to where a
+// person asks for it: the set is the same, the moment is not, and the moment
+// was the problem.
+func logbookAll(s *ticket.Store, w, errw io.Writer) error {
+	lanes, err := lane.Load(s.Root)
+	if err != nil {
+		return err
+	}
+	terminal := lanes.Terminal()
+	if terminal == nil {
+		return fail(ExitValidation, "no_terminal_lane", "this board has no terminal lane, so nothing can be finished into the logbook")
+	}
+	env, _, err := loadEnv(s)
+	if err != nil {
+		return err
+	}
+	filed, err := s.FileLane(terminal.ID, logbookFolder(), func(t *ticket.Ticket) error {
+		_, err := s.StampCommits(t, env.DeriveCommits)
+		return err
+	})
+	if err != nil {
+		// One unreadable file must not hold the rest of the cut hostage: the
+		// readable tickets still leave, and the problem is reported rather
+		// than swallowed. Refusing the whole cut would leave somebody entering
+		// hours with no way through but 'git mv'.
+		var pe *ticket.PartialError
+		if !errors.As(err, &pe) {
+			return err
+		}
+		fmt.Fprintf(errw, "jaira: warning: %v\n", pe)
+	}
+	if g.jsonOut {
+		out := make([]map[string]any, 0, len(filed))
+		for _, f := range filed {
+			out = append(out, map[string]any{"id": f.ID, "file": filepath.Base(f.Path)})
+		}
+		return emit(w, map[string]any{"filed": out, "count": len(filed), "lane": terminal.ID})
+	}
+	if len(filed) == 0 {
+		fmt.Fprintf(w, "nothing in %s to file\n", terminal.ID)
+		return nil
+	}
+	fmt.Fprintf(w, "filed %d ticket(s) from %s:\n", len(filed), terminal.ID)
+	for _, f := range filed {
+		fmt.Fprintf(w, "  %-8s %s\n", ticket.Handle(f.ID), filepath.Base(f.Path))
+	}
+	fmt.Fprintf(w, "restore one with 'jaira restore <file>'\n")
+	return nil
 }
 
 func listLogbook(s *ticket.Store, w io.Writer) error {

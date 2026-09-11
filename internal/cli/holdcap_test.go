@@ -177,10 +177,14 @@ func TestMoveJSONCarriesTheTrimError(t *testing.T) {
 	}
 }
 
-// The builtin done is a doorway: the move that lands a ticket there stamps its
-// commits and files it — and anything still sitting in the lane — straight
-// into the logbook. The lane holds nothing; the logbook is the record.
-func TestMoveIntoDoneFilesEverythingToTheLogbook(t *testing.T) {
+// Finishing a ticket files nothing, and cutting files the lot. The two halves
+// are one test because the point is the order: tickets pile up in done while
+// people work, and one person decides, once, to account for them.
+//
+// It used to be one act. A move into done filed everything standing there, so
+// somebody finishing their own ticket swept forty-nine of other people's into a
+// commit named after a single handle, and undoing it was all or nothing.
+func TestFinishingFilesNothingAndCuttingFilesTheLot(t *testing.T) {
 	t.Setenv("JAIRA_USER", "berk")
 	dir := t.TempDir()
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
@@ -217,11 +221,23 @@ func TestMoveIntoDoneFilesEverythingToTheLogbook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("move: %v\n%s", err, out)
 	}
-	if got := strings.Count(out, "filed to the logbook"); got != 4 {
-		t.Errorf("%d filing lines, want 4 (three residents + the mover):\n%s", got, out)
+	if got := strings.Count(out, "filed to the logbook"); got != 0 {
+		t.Errorf("the move filed %d ticket(s); finishing work files nothing:\n%s", got, out)
+	}
+	if n := countInLane(t, s, "done"); n != 4 {
+		t.Errorf("done holds %d tickets, want 4 — three residents and the one just finished", n)
+	}
+
+	// The cut: one person, one command, today's folder, the whole set.
+	out, err = runCLI(t, dir, "logbook", "--all")
+	if err != nil {
+		t.Fatalf("logbook --all: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "filed 4 ticket(s)") {
+		t.Errorf("the cut did not report four filings:\n%s", out)
 	}
 	if n := countInLane(t, s, "done"); n != 0 {
-		t.Errorf("done still holds %d tickets, want 0 — it is a doorway", n)
+		t.Errorf("done still holds %d tickets after the cut", n)
 	}
 	// The mover's commits survived the filing, stamped onto the filed copy.
 	matches, err := filepath.Glob(filepath.Join(s.LogbookDir(), "*", filepath.Base(mover.Path)))
@@ -240,7 +256,7 @@ func TestMoveIntoDoneFilesEverythingToTheLogbook(t *testing.T) {
 // The doorway must not jam: with an unreadable ticket on the board the sweep
 // reports it — and still files the arriving ticket. Before this, the arrival
 // stayed in done and every later landing failed identically.
-func TestDoorwayKeepsFilingPastAProblem(t *testing.T) {
+func TestTheCutKeepsFilingPastAProblem(t *testing.T) {
 	t.Setenv("JAIRA_USER", "berk")
 	dir := t.TempDir()
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
@@ -265,17 +281,20 @@ func TestDoorwayKeepsFilingPastAProblem(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force")
-	if err != nil {
+	if out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force"); err != nil {
 		t.Fatalf("move: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "filed to the logbook") {
+	out, err := runCLI(t, dir, "logbook", "--all")
+	if err != nil {
+		t.Fatalf("logbook --all: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "filed 1 ticket(s)") {
 		t.Errorf("the arriving ticket was not filed:\n%s", out)
 	}
-	if !strings.Contains(out, "trimming the done lane failed") {
-		t.Errorf("the problem was not reported:\n%s", out)
+	if !strings.Contains(out, "could not be read") {
+		t.Errorf("the unreadable file was not reported:\n%s", out)
 	}
 	if _, statErr := os.Stat(mover.Path); !os.IsNotExist(statErr) {
-		t.Errorf("the arriving ticket is still on the board — the doorway jammed")
+		t.Errorf("the finished ticket is still on the board — one bad file jammed the cut")
 	}
 }

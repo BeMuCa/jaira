@@ -15,6 +15,10 @@ Format rules — read before editing:
 
 ## Unreleased
 
+- Finishing a ticket no longer files anything: it stays in `done` with everybody else's until you cut. Run `jaira logbook --all` when you account for your hours and the whole lane goes into today's folder; `jaira logbook <id>` still files one, and `jaira logbook` alone still only lists. A board holding more than ten finished tickets says so in its hint bar and files nothing on its own.
+- If you want the old doorway back, set `logbook-on-entry: true` on your terminal lane yourself — it ships off, because filing on entry means finishing one ticket files everybody's.
+- Work in the board reaches the team by itself now: it sends what it queued on its own background run, so a day spent in the board no longer leaves everybody else looking at yesterday's tickets.
+- A ticket you file into the logbook stays off the board — it used to come back as a card, because its ref outlives the filing by design and nothing skipped it.
 - Re-read the `jaira dod` lines in the jaira section of `AGENTS.md` and `CLAUDE.md` (run `jaira update` to refresh it): they now say that the numbered criteria are what the terminal lane's gate reads, and that `--plan` is a second, separate list whose ticks do not count towards it.
 
 - Dialogs now float over the board instead of replacing it: the link window, the tag legend and every refusal or note are drawn as a centred box with the board still visible behind, so you keep the card and the lane you were looking at.
