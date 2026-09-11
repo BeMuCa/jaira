@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"image/color"
 	"os"
 	"os/exec"
 	"strconv"
@@ -517,13 +516,14 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
 	// or its lines wrap inside the box and the card outgrows cardHeight.
 	content := strings.TrimSuffix(m.renderCard(t, max(1, inner-2), selected), "\n")
 	box := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Width(inner)
-	if color, ok := m.cardColor(t); ok {
-		box = box.BorderForeground(lipgloss.Color(strconv.Itoa(color)))
+	tag, tagged := m.cardColor(t)
+	if tagged {
+		box = box.BorderForeground(lipgloss.Color(strconv.Itoa(tag)))
 	} else {
 		box = box.BorderForeground(colFaint)
 	}
 	if selected {
-		bg, code := m.selBg()
+		bg, code := m.selectionFill(tag, tagged)
 		box = box.Background(bg).BorderBackground(bg)
 		// The card's own spans (styMeta, styWarn, …) each end in a full SGR
 		// reset, which clears the box's background as well as their colour, so
@@ -553,23 +553,18 @@ func dropLastLine(s string) string {
 	return ""
 }
 
-// selBg is the selection fill for the terminal this board is drawn on, as both
-// a lipgloss Color and the raw 256-colour index refill needs.
-func (m *Model) selBg() (color.Color, string) {
-	if m.darkBG {
-		return colSelBgDark, selBgDark
-	}
-	return colSelBgLight, selBgLight
-}
-
-// refill re-applies background colour code after every SGR reset inside s, so a
-// block whose content carries its own styling stays filled end to end.
+// refill re-applies a background after every SGR reset inside s, so a block
+// whose content carries its own styling stays filled end to end.
+//
+// params is an SGR parameter list rather than a palette index — "5;236" for a
+// palette colour, "2;49;82;87" for a 24-bit one — because the glow is mixed and
+// has no palette index to name on a terminal that can show it.
 //
 // A reset at the end of a line is left alone: re-opening the background there
 // would paint the rest of the terminal row, past the card's right edge.
-func refill(s, code string) string {
+func refill(s, params string) string {
 	const reset = "\x1b[m"
-	bg := "\x1b[48;5;" + code + "m"
+	bg := "\x1b[48;" + params + "m"
 	lines := strings.Split(s, "\n")
 	for i, line := range lines {
 		trailing := strings.HasSuffix(line, reset)
@@ -923,7 +918,11 @@ func (m *Model) statusBar() string {
 	if m.thinEmpty {
 		zHint = "z widen empty"
 	}
-	keys := []string{"enter open", "v compact", zHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	cHint := "c glow"
+	if m.glow {
+		cHint = "c plain"
+	}
+	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1512,6 +1511,7 @@ func (m *Model) renderHelp() string {
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
+			{"c", "fill the selected card in its tag's colour (press again for plain grey)"},
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},

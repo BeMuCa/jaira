@@ -74,13 +74,13 @@ func TestSelectedCardKeepsItsTopEdge(t *testing.T) {
 func TestFillFollowsTerminalBackground(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 
-	if _, code := m.selBg(); code != selBgDark {
-		t.Errorf("default fill is %q, want the dark-terminal one %q", code, selBgDark)
+	if _, code := m.selectionFill(0, false); code != "5;"+selBgDark {
+		t.Errorf("default fill is %q, want the dark-terminal one %q", code, "5;"+selBgDark)
 	}
 
 	m.Update(tea.BackgroundColorMsg{Color: white{}})
-	if _, code := m.selBg(); code != selBgLight {
-		t.Errorf("fill on a light terminal is %q, want %q", code, selBgLight)
+	if _, code := m.selectionFill(0, false); code != "5;"+selBgLight {
+		t.Errorf("fill on a light terminal is %q, want %q", code, "5;"+selBgLight)
 	}
 	if strings.Contains(m.View().Content, fillMark(selBgDark)) {
 		t.Error("board still paints the dark fill after the terminal reported a light background")
@@ -91,7 +91,7 @@ func TestFillFollowsTerminalBackground(t *testing.T) {
 // paint the terminal row past the card's right edge.
 func TestRefillLeavesTrailingResetAlone(t *testing.T) {
 	in := "\x1b[38;5;244mmeta\x1b[m plain\x1b[m"
-	got := refill(in, selBgDark)
+	got := refill(in, "5;"+selBgDark)
 	if !strings.HasSuffix(got, "\x1b[m") {
 		t.Fatalf("refill(%q) = %q, want it to end on a bare reset", in, got)
 	}

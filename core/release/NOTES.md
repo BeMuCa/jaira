@@ -15,6 +15,7 @@ Format rules — read before editing:
 
 ## Unreleased
 
+- Press `c` to fill the selected card in its tag's colour instead of neutral grey, and `c` again for plain. It ships on; where your terminal shows 24-bit colour the tint is a quiet one, and on a palette-only terminal it is mixed further so the tag's colour survives rather than snapping to grey.
 - Look for the filled card to find the cursor: the selected ticket is now painted one step off your terminal background, frame included, instead of only marking itself with a bold title that vanished on a column of coloured cards. The fill follows a light terminal the other way, and the selected card keeps a closed top edge wherever it sits in the lane.
 - Finishing a ticket no longer files anything: it stays in `done` with everybody else's until you cut. Run `jaira logbook --all` when you account for your hours and the whole lane goes into today's folder; `jaira logbook <id>` still files one, and `jaira logbook` alone still only lists. A board holding more than ten finished tickets says so in its hint bar and files nothing on its own.
 - If you want the old doorway back, set `logbook-on-entry: true` on your terminal lane yourself — it ships off, because filing on entry means finishing one ticket files everybody's.
