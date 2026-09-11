@@ -1,7 +1,7 @@
 ---
 id: 01M1PPW335WNFP2AEKDNWXQ9PT
 title: "Ein Ticket, das in done landet, geht sofort ins Logbuch"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -10,9 +10,14 @@ context: "Berk am 04.09.: 'Alle Tickets die auf Done landen gehen direkt ins Log
 definition-of-done: "Move und Accept nach done melden die Logbuch-Ablage mit restore-Datei; die abgelegte Datei traegt gestempelte Commits; done ist danach leer (Altbestand mitgenommen); logbook-on-entry auf nicht-terminaler Lane wird beim Parsen verweigert; Tests decken CLI-Move, TUI-Accept und den Parse-Guard; go test ./... -race gruen"
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 2ecc670dd718a8c7fc0eebb4259f61330aaff6cd
+  - 94b26294da973739cb3f419e3bef085cd1046cdb
+  - b82f8d36e0f12f16b0574d7aaaa02ff4e3d7a7d6
+  - c737cab893f093af44a52cf0298cd2f87138a391
+  - 69e2eb5dae93ddcf4973803e27f1485604efaf9b
 created-at: 2026-09-04T17:18:43Z
-updated-at: 2026-09-11T15:53:28Z
+updated-at: 2026-09-11T21:09:45Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:09Z
 updated-by: Alexander Sacharov
@@ -55,3 +60,5 @@ review-verdict: "accept (Zweitmodell Sonnet, zwei Durchgaenge). Runde 1 fand den
 - **2026-09-11 15:53 · Alexander Sacharov** — NICHT abnehmen, bis Issue #6 entschieden ist. Der review-check dieses Tickets beschreibt genau das Verhalten, ueber das #6 geschrieben wurde: 'done bleibt leer', 'das naechste Landen fegt es erneut' - also der Sweep, der dort einen Move mit 49 fremden Tickets im selben Commit erzeugt hat. Bestaetigt im Code: core/lane/settle.go ruft bei logbook-on-entry s.FileLane(lane), und core/ticket/trim.go:133 nimmt jeden Ticket mit t.Status == lane, nicht nur den bewegten.
 
 Alexander hat entschieden, #6 zu bauen. Damit wird dieses Ticket in seiner jetzigen Form abgeloest: Eintritt in die terminale Lane legt nur das eingetretene Ticket ab, und wer wirklich fegen will, sagt es ausdruecklich.
+
+- **2026-09-11 21:05 · Alexander Sacharov** — Zwei Nachtraege zur Notiz von 15:53. Erstens: der Claim von EE-3NX6GL3-34378 vom 04.09. ist seit 171 Stunden nicht erneuert, aber NICHT freigegeben — 'jaira release' verweigert ihn, weil er BeMuCa gehört und das Ticket im signoff steht, und ihn mit --force zu brechen, während Berk im Urlaub ist, war nicht meine Entscheidung. Zweitens, das praktisch Folgende: dieses Board trägt 'logbook-on-entry: true' noch in .jaira/lanes/done.md, und die Zeile stammt von hier. Sie hat heute drei Tickets beim Übergang nach done sofort ins Logbuch gefegt. Wer sie stehen lässt, bekommt weiter das Verhalten dieses Tickets; wer sie entfernt, bekommt das von 74VM40. Steht als Punkt 2 in QF08G3, dort ist es zu entscheiden.

@@ -101,7 +101,7 @@ func TestCardColorIsAbsentWithoutTagsOrWithoutARegistryEntry(t *testing.T) {
 	}
 }
 
-func TestCardHeightIsUniformNowThatEveryCardIsBoxed(t *testing.T) {
+func TestCardHeightIsTheThreeContentRows(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 
@@ -110,8 +110,8 @@ func TestCardHeightIsUniformNowThatEveryCardIsBoxed(t *testing.T) {
 	uncoloured := &ticket.Ticket{ID: "c", Title: "t", Tags: []string{"backend"}}
 
 	for _, tk := range []*ticket.Ticket{plain, coloured, uncoloured} {
-		if h := m.cardHeight(tk); h != 5 {
-			t.Errorf("cardHeight(%s) = %d, want 5 (3 content + 2 border)", tk.ID, h)
+		if h := m.cardHeight(tk); h != 3 {
+			t.Errorf("cardHeight(%s) = %d, want 3 — a band has no border rows", tk.ID, h)
 		}
 	}
 }
@@ -122,21 +122,21 @@ func TestCardsInBudgetCountsEachCardsOwnHeight(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 	tickets := []*ticket.Ticket{
-		{ID: "a", Title: "t", Tags: []string{"ui"}}, // 5
-		{ID: "b", Title: "t"},                       // 5 — boxed too, just neutral
-		{ID: "c", Title: "t"},                       // 5
-		{ID: "d", Title: "t", Tags: []string{"ui"}}, // 5
+		{ID: "a", Title: "t", Tags: []string{"ui"}}, // 3
+		{ID: "b", Title: "t"},                       // 3 — a band too, just unmarked
+		{ID: "c", Title: "t"},                       // 3
+		{ID: "d", Title: "t", Tags: []string{"ui"}}, // 3
 	}
 	cases := []struct {
 		budget int
 		want   int
 	}{
 		{budget: 0, want: 1},   // a lone card always counts, however tight
-		{budget: 5, want: 1},   // exactly the first card, no room for the next
-		{budget: 8, want: 1},   // one row short of two stacked cards
-		{budget: 9, want: 2},   // 5 + 4 — the second shares the border row
-		{budget: 13, want: 3},  // 5 + 4 + 4
-		{budget: 17, want: 4},  // every card fits
+		{budget: 3, want: 1},   // exactly the first card, no room for the next
+		{budget: 5, want: 1},   // one row short of two
+		{budget: 6, want: 2},   // 3 + 3
+		{budget: 9, want: 3},   // 3 + 3 + 3
+		{budget: 12, want: 4},  // every card fits
 		{budget: 100, want: 4}, // more than enough
 	}
 	for _, c := range cases {
@@ -154,8 +154,8 @@ func TestCardsInBudgetFromANonZeroStart(t *testing.T) {
 		{ID: "b", Title: "t", Tags: []string{"ui"}}, // 5
 		{ID: "c", Title: "t", Tags: []string{"ui"}}, // 5
 	}
-	if got := m.cardsInBudget(tickets, 1, 9); got != 2 {
-		t.Errorf("cardsInBudget(start=1, budget=9) = %d, want 2 (5 + 4 stacked)", got)
+	if got := m.cardsInBudget(tickets, 1, 6); got != 2 {
+		t.Errorf("cardsInBudget(start=1, budget=6) = %d, want 2 (3 + 3)", got)
 	}
 	if got := m.cardsInBudget(tickets, 3, 10); got != 0 {
 		t.Errorf("cardsInBudget(start past the end) = %d, want 0", got)
@@ -164,83 +164,93 @@ func TestCardsInBudgetFromANonZeroStart(t *testing.T) {
 
 // --- renderCardBlock ---------------------------------------------------------
 
-// Every card is boxed — an untagged one too, in the neutral frame colour,
-// never in a tag's registry colour (Berks Screenshot vom 03.09.: gemischte
-// Spalten aus gerahmten und rahmenlosen Karten lasen sich als zwei Sorten).
-func TestUntaggedCardIsBoxedNeutrally(t *testing.T) {
+// No card is framed any more. A card with no colour to show simply has nothing
+// in the bar cell — its own shade goes there, so its text still lines up with
+// every other card in the lane.
+func TestUntaggedCardCarriesNoColour(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 	tk := &ticket.Ticket{ID: "a", Title: "Untagged ticket", Assignee: "berk"}
 
-	raw := m.renderCardBlock(tk, 40, false)
+	raw := m.renderCardBlock(tk, 40, false, false)
 	stripped := stripANSI(raw)
-	if got := strings.Count(stripped, "\n"); got != 5 {
-		t.Errorf("untagged card is %d lines (incl. trailing newline), want 5:\n%s", got, stripped)
+	if got := strings.Count(stripped, "\n"); got != 3 {
+		t.Errorf("untagged card is %d lines, want 3:\n%s", got, stripped)
 	}
-	if !strings.Contains(stripped, "\u250c") || !strings.Contains(stripped, "\u2514") {
-		t.Errorf("untagged card has no border:\n%s", stripped)
+	if strings.ContainsAny(stripped, "┌└│─") {
+		t.Errorf("untagged card still draws a frame:\n%s", stripped)
 	}
-	if strings.Contains(raw, "38;5;83") {
+	if strings.Contains(raw, ";83m") {
 		t.Errorf("untagged card borrowed a tag colour:\n%q", raw)
 	}
 }
 
-// A tag with no registry colour draws the neutral box, not a coloured one —
-// the tag still exists (checked separately in the legend tests).
-func TestTaggedCardWithoutColourIsBoxedNeutrally(t *testing.T) {
+// A tag with no registry colour is the same case: the tag exists (the legend
+// tests cover that), but there is no colour to put in the bar.
+func TestTaggedCardWithoutColourCarriesNoColour(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83) // registry knows "ui", not "backend"
 	tk := &ticket.Ticket{ID: "a", Title: "Uncoloured tag", Tags: []string{"backend"}}
 
-	raw := m.renderCardBlock(tk, 40, false)
-	stripped := stripANSI(raw)
-	if !strings.Contains(stripped, "\u250c") {
-		t.Error("a card whose tag has no registry colour is not boxed")
+	raw := m.renderCardBlock(tk, 40, false, false)
+	if strings.ContainsAny(stripANSI(raw), "┌└│─") {
+		t.Error("a card whose tag has no registry colour is framed")
 	}
-	if strings.Contains(raw, "38;5;83") {
+	if strings.Contains(raw, ";83m") {
 		t.Errorf("a colourless tag borrowed colour 83:\n%q", raw)
 	}
 }
 
-func TestTaggedCardWithColourIsBoxedInThatColour(t *testing.T) {
+// The tag's colour fills a whole cell as a background. As a border glyph it
+// inked about half a cell and read as a differently-coloured frame rather than
+// as a marker, which is why it moved.
+func TestTaggedCardCarriesItsColourAsAFilledCell(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 	tk := &ticket.Ticket{ID: "a", Title: "Coloured", Tags: []string{"ui"}}
 
-	raw := m.renderCardBlock(tk, 40, false)
+	raw := m.renderCardBlock(tk, 40, false, false)
 	stripped := stripANSI(raw)
 
-	if got := strings.Count(stripped, "\n"); got != 5 {
-		t.Errorf("boxed card is %d lines (incl. trailing newline), want 5:\n%s", got, stripped)
-	}
-	if !strings.Contains(stripped, "┌") || !strings.Contains(stripped, "└") {
-		t.Errorf("boxed card has no border:\n%s", stripped)
+	if got := strings.Count(stripped, "\n"); got != 3 {
+		t.Errorf("card is %d lines, want 3:\n%s", got, stripped)
 	}
 	if !strings.Contains(stripped, "Coloured") {
-		t.Errorf("boxed card lost the title:\n%s", stripped)
+		t.Errorf("card lost the title:\n%s", stripped)
 	}
-	// The border is drawn in the registry's colour, not left to the default.
-	if !strings.Contains(raw, "38;5;83") {
-		t.Errorf("boxed card border is not in colour 83:\n%q", raw)
+	// A background, not a foreground: 48, not 38.
+	if !strings.Contains(raw, "48;5;83m") {
+		t.Errorf("the tag's colour is not filling a cell:\n%q", raw)
+	}
+	// Every row of the card carries the bar, not only the first.
+	for i, l := range strings.Split(strings.TrimSuffix(raw, "\n"), "\n") {
+		if !strings.Contains(l, "48;5;83m") {
+			t.Errorf("row %d has no bar cell:\n%q", i, l)
+		}
 	}
 }
 
-func TestTaggedCardBoxFitsTheWidthItIsGiven(t *testing.T) {
+func TestCardBandFitsTheWidthItIsGiven(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 	tk := &ticket.Ticket{ID: "a", Title: strings.Repeat("a very long title ", 5), Tags: []string{"ui"}}
 
 	for _, w := range []int{10, 18, 24, 40, 80} {
-		out := stripANSI(m.renderCardBlock(tk, w, false))
+		out := stripANSI(m.renderCardBlock(tk, w, false, false))
 		for _, l := range strings.Split(strings.TrimSuffix(out, "\n"), "\n") {
-			checkLineWidths(t, w, fmt.Sprintf("tagged card w=%d", w), l)
+			checkLineWidths(t, w, fmt.Sprintf("card band w=%d", w), l)
 		}
 	}
 }
 
-// --- column budgeting: no card is ever cut mid-border -----------------------
+// --- column budgeting: no card is ever cut short ---------------------------
 
-func TestColumnNeverCutsATaggedCardInHalf(t *testing.T) {
+// A band has no border rows to count, so what pins the budget now is that every
+// card the column claims to show is drawn whole: exactly cardHeight rows of it,
+// no card ending halfway down the lane. A card cut short is worse here than it
+// was with frames — with nothing outlining it, half a card reads as a whole
+// one, and the lane silently lies about what it holds.
+func TestColumnDrawsEveryCardItCountsInFull(t *testing.T) {
 	for _, w := range []int{40, 80} {
 		for _, h := range []int{8, 9, 10, 11, 12, 14, 18, 24, 32} {
 			m := manyTodoTicketsModel(t, 8, w, h)
@@ -250,24 +260,15 @@ func TestColumnNeverCutsATaggedCardInHalf(t *testing.T) {
 				tk.Tags = []string{"ui"}
 			}
 			win := m.boardFit(m.width)
-			out := stripANSI(m.renderColumn(idx, win.colW, h))
-			// Stacked cards share their border rows: one top border per stack,
-			// one bottom border per card, plus the column's own frame. Any other
-			// count means a card was cut in half by the height budget.
+			raw := m.renderColumn(idx, win.colW, h)
+			out := stripANSI(raw)
 			shown := m.cardsInBudget(m.cols[idx].tickets, 0, max(1, h-4))
-			wantOpen := 1 // the column frame
-			if shown > 0 {
-				wantOpen++ // the stack's single top border
-			}
-			wantClose := 1 + shown
-			if got := strings.Count(out, "┌"); got != wantOpen {
-				t.Errorf("w=%d h=%d: %d top borders, want %d (shown=%d):\n%s", w, h, got, wantOpen, shown, out)
-			}
-			if got := strings.Count(out, "└"); got != wantClose {
-				t.Errorf("w=%d h=%d: %d bottom borders, want %d (shown=%d):\n%s", w, h, got, wantClose, shown, out)
-			}
-			if strings.Count(out, "┐") != wantOpen || strings.Count(out, "┘") != wantClose {
-				t.Errorf("w=%d h=%d: left and right border glyphs disagree:\n%s", w, h, out)
+
+			// The bar cell is drawn once per card row, so counting it counts
+			// the rows that actually reached the screen.
+			if got := strings.Count(raw, "48;5;83m"); got != shown*3 {
+				t.Errorf("w=%d h=%d: %d card rows drawn, want %d (%d cards × 3):\n%s",
+					w, h, got, shown*3, shown, out)
 			}
 			for _, l := range strings.Split(out, "\n") {
 				if got := len([]rune(l)); got > win.colW+2 {
@@ -363,10 +364,10 @@ func TestHandWrittenCaseWearsTheRegistryColour(t *testing.T) {
 }
 
 // The wrap class the review caught: a card heavy with flags must still render
-// exactly five rows in its box — a line wider than the box's content area
-// wraps, the card outgrows cardHeight, and the column hides cards behind an
-// honest-looking count. Pins the reviewer's probe as a permanent test.
-func TestACardHeavyWithFlagsStaysFiveRows(t *testing.T) {
+// exactly its three rows — a line wider than the band wraps, the card outgrows
+// cardHeight, and the column hides cards behind an honest-looking count. Pins
+// the reviewer's probe as a permanent test.
+func TestACardHeavyWithFlagsStaysThreeRows(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
 	tk := &ticket.Ticket{
@@ -377,10 +378,10 @@ func TestACardHeavyWithFlagsStaysFiveRows(t *testing.T) {
 		DoDItems:  []ticket.DoDItem{{Text: "c"}},
 	}
 	for _, w := range []int{12, 18, 24, 40} {
-		out := stripANSI(m.renderCardBlock(tk, w, false))
+		out := stripANSI(m.renderCardBlock(tk, w, false, false))
 		lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
-		if len(lines) != 5 {
-			t.Errorf("w=%d: card renders %d rows, want 5:\n%s", w, len(lines), out)
+		if len(lines) != 3 {
+			t.Errorf("w=%d: card renders %d rows, want 3:\n%s", w, len(lines), out)
 		}
 		for _, l := range lines {
 			checkLineWidths(t, w, fmt.Sprintf("flag-heavy card w=%d", w), l)
@@ -388,22 +389,22 @@ func TestACardHeavyWithFlagsStaysFiveRows(t *testing.T) {
 	}
 }
 
-// Two border rows back to back read as a blank gap — box glyphs ink only half
-// their cell — so stacked cards share one border row: nowhere on the board may
-// a card's bottom border sit directly above another card's top border.
-func TestStackedCardsShareOneBorderRow(t *testing.T) {
+// Two stacked cards are told apart by their shades alternating and by nothing
+// else, so two neighbours must never land on the same one — there is no frame
+// left to fall back on if they do.
+func TestStackedCardsAlternateTheirShade(t *testing.T) {
 	m := newTestModel(t, 150, 40) // the fixture's backlog holds two cards
-	lines := strings.Split(stripANSI(m.render()), "\n")
-	rows := make([][]rune, len(lines))
-	for i, l := range lines {
-		rows[i] = []rune(l)
+
+	_, a := m.laneShade(false)
+	_, b := m.laneShade(true)
+	if a == b {
+		t.Fatalf("both lane shades are %q, so stacked cards merge", a)
 	}
-	for k := 0; k+1 < len(rows); k++ {
-		for c := 0; c < len(rows[k]) && c < len(rows[k+1]); c++ {
-			if rows[k][c] == '└' && rows[k+1][c] == '┌' {
-				t.Fatalf("row %d column %d: a bottom border sits directly above a top border:\n%s\n%s",
-					k, c, lines[k], lines[k+1])
-			}
-		}
+
+	// And the selection sits above both, or the cursor is lost on whichever
+	// shade happens to match it.
+	_, sel := m.selectionFill(0, false)
+	if sel == a || sel == b {
+		t.Errorf("the neutral selection fill %q is also a lane shade", sel)
 	}
 }
