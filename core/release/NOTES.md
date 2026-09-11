@@ -13,6 +13,11 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## Unreleased
+
+- Work in the board reaches the team by itself now: it sends what it queued on its own background run, so a day spent in the board no longer leaves everybody else looking at yesterday's tickets.
+- A ticket you file into the logbook stays off the board — it used to come back as a card, because its ref outlives the filing by design and nothing skipped it.
+
 ## 0.1.3
 
 - Tickets now travel on a git ref of their own (`refs/jaira/tickets/<id>`), so a ticket reaches whoever it is assigned to without anybody sharing a branch: run `jaira fetch` after cloning, and again whenever you want to see what the team has moved.
