@@ -694,6 +694,36 @@ func waitForChange(ch chan struct{}) tea.Cmd {
 // before it becomes part of the furniture.
 const flashFor = 30 * time.Second
 
+// fileReminder is how many finished tickets may sit in the terminal lane before
+// the board mentions them.
+//
+// A number, not a rule: nothing happens at the threshold except a line in the
+// hint bar. Ten is enough that a normal day does not trip it and a forgotten
+// fortnight does.
+const fileReminder = 10
+
+// readyToFile counts what is waiting in the terminal lane, or 0 when there is
+// not enough of it to be worth a word.
+func (m *Model) readyToFile() int {
+	if m.lanes == nil {
+		return 0
+	}
+	terminal := m.lanes.Terminal()
+	if terminal == nil {
+		return 0
+	}
+	n := 0
+	for _, t := range m.tickets {
+		if t.Status == terminal.ID && !t.ReadOnly {
+			n++
+		}
+	}
+	if n < fileReminder {
+		return 0
+	}
+	return n
+}
+
 // flash puts a line on the board without taking the screen.
 func (m *Model) flash(msg string) { m.flashMsg, m.flashAt = msg, time.Now() }
 

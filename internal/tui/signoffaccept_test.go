@@ -67,29 +67,29 @@ func TestAcceptFilesTheTicketIntoTheLogbook(t *testing.T) {
 	if !strings.Contains(m.message, "Accepted") {
 		t.Fatalf("accept() did not accept (message: %q)", m.message)
 	}
-	if got := strings.Count(m.message, "filed to the logbook"); got != 3 {
-		t.Errorf("%d filing lines in the accept message, want 3:\n%s", got, m.message)
+	// Accepting files nothing. It says the work is accepted, which is not a
+	// statement about anybody's bookkeeping: the ticket waits in the terminal
+	// lane with the others until somebody cuts with 'jaira logbook --all'.
+	if got := strings.Count(m.message, "filed to the logbook"); got != 0 {
+		t.Errorf("accepting filed %d ticket(s):\n%s", got, m.message)
 	}
-	if _, err := os.Stat(full.Path); !os.IsNotExist(err) {
-		t.Errorf("the accepted ticket is still on the board at %q", full.Path)
+	if _, err := os.Stat(full.Path); err != nil {
+		t.Errorf("the accepted ticket left the board: %v", err)
 	}
 	all, err := s.List()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(all) != 0 {
-		t.Errorf("%d tickets remain on the board, want 0", len(all))
+	if len(all) == 0 {
+		t.Error("the board is empty after an accept; the finished tickets should still be there")
 	}
-	// The commits survived the filing.
-	matches, err := filepath.Glob(filepath.Join(s.LogbookDir(), "*", filepath.Base(full.Path)))
-	if err != nil || len(matches) != 1 {
-		t.Fatalf("accepted ticket not found in the logbook: %v (%d matches)", err, len(matches))
-	}
-	filed, err := os.ReadFile(matches[0])
+	// And nothing was filed by the accept at all — the logbook is untouched
+	// until somebody cuts.
+	matches, err := filepath.Glob(filepath.Join(s.LogbookDir(), "*", "*.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(filed), "deadbeef") {
-		t.Errorf("the filed ticket lost its commits:\n%s", filed)
+	if len(matches) != 0 {
+		t.Errorf("accepting put %d ticket(s) in the logbook", len(matches))
 	}
 }

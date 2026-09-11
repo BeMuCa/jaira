@@ -13,6 +13,11 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## Unreleased
+
+- Finishing a ticket no longer files anything: it stays in `done` with everybody else's until you cut. Run `jaira logbook --all` when you account for your hours and the whole lane goes into today's folder; `jaira logbook <id>` still files one, and `jaira logbook` alone still only lists. A board holding more than ten finished tickets says so in its hint bar and files nothing on its own.
+- If you want the old doorway back, set `logbook-on-entry: true` on your terminal lane yourself — it ships off, because filing on entry means finishing one ticket files everybody's.
+
 ## 0.1.3
 
 - Tickets now travel on a git ref of their own (`refs/jaira/tickets/<id>`), so a ticket reaches whoever it is assigned to without anybody sharing a branch: run `jaira fetch` after cloning, and again whenever you want to see what the team has moved.

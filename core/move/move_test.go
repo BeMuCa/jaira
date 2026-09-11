@@ -122,9 +122,17 @@ func TestMoveStagePersistsThroughARefusal(t *testing.T) {
 	}
 }
 
-// Landing in the doorway settles it: the move files the ticket to the logbook.
+// Landing in a doorway settles it: the move files the ticket to the logbook.
+//
+// The doorway is declared here rather than taken from the shipped lanes,
+// because the lanes this tool ships no longer have one — filing is a decision
+// somebody makes with 'jaira logbook', not something finishing a ticket does.
+// The mechanism stays for a board that asks for it, and this is what pins it.
 func TestMoveSettlesTheDoorway(t *testing.T) {
 	s, env := fixture(t)
+	if done, ok := env.Lanes.Get("done"); ok {
+		done.LogbookOnEntry = true
+	}
 	tk := mk(t, s, map[string]string{ticket.FieldStatus: "signoff"})
 	res, err := Move(s, env, tk.ID, Request{
 		To: "done", Actor: "berk", Force: true, Folder: "bc-20260906",
@@ -137,5 +145,28 @@ func TestMoveSettlesTheDoorway(t *testing.T) {
 	}
 	if _, err := os.Stat(res.Trimmed[0].Path); err != nil {
 		t.Fatalf("filed ticket not in the logbook: %v", err)
+	}
+}
+
+// And the shipped default is the opposite: landing in done files nothing, so a
+// ticket waits there with everybody else's until somebody cuts.
+func TestMoveIntoDoneFilesNothingByItself(t *testing.T) {
+	s, env := fixture(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "signoff"})
+	res, err := Move(s, env, tk.ID, Request{
+		To: "done", Actor: "berk", Force: true, Folder: "bc-20260906",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Filed || len(res.Trimmed) != 0 {
+		t.Fatalf("filed=%v trimmed=%d, want a move that files nothing", res.Filed, len(res.Trimmed))
+	}
+	after, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatalf("the ticket left the board anyway: %v", err)
+	}
+	if after.Status != "done" {
+		t.Errorf("status is %q, want done", after.Status)
 	}
 }

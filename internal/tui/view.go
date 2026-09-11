@@ -844,6 +844,14 @@ func (m *Model) statusBar() string {
 	if line := m.flashLine(); line != "" {
 		prefix += styAsks.Render("● " + line + " ")
 	}
+	// Finished tickets waiting to be filed. The board says how many and which
+	// command cuts them; it never files anything itself, because filing is a
+	// statement about bookkeeping that somebody makes days after the work — and
+	// a board that decided it for them once swept forty-nine people's tickets
+	// into one commit.
+	if n := m.readyToFile(); n > 0 {
+		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file ", n))
+	}
 
 	// Wrapped, never dropped: a key the bar has no room for is a key the reader
 	// does not know exists. renderBoard measures this bar and gives the columns

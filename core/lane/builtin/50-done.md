@@ -8,6 +8,5 @@ terminal: true
 requires-outcome: true
 requires-nonmodel-signal: true
 requires-commits: true
-logbook-on-entry: true
-description: Accepted. Every definition-of-done item must be marked done, the plan finished if there is one, and the commits that carry the change recorded. The move that lands here stamps the commits and files the ticket straight into the logbook — 'jaira restore' brings it back.
+description: Accepted. Every definition-of-done item must be marked done, the plan finished if there is one, and the commits that carry the change recorded. Finished tickets stay here until somebody files them — 'jaira logbook --all' puts the lot into today's folder, 'jaira logbook <id>' files one.
 ---
