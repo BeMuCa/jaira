@@ -13,7 +13,7 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
-## Unreleased
+## 0.1.4
 
 - Expect one snapshot and one fetch per clone rather than per checkout: their clocks now live with the repository, so adding a git worktree no longer starts a fresh interval and no longer writes a snapshot commit on its first command.
 - Read whole titles: cards have no frame any more. Each one is a filled band across the lane with its tag's colour in a solid cell down the left, and the shade alternates so stacked cards stay apart. Titles gain two columns and every card gives two rows back to the lane, so more of the lane fits on screen.
