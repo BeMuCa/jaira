@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"image/color"
 	"os"
 	"os/exec"
 	"strconv"
@@ -20,6 +21,13 @@ import (
 // board stays legible in terminals that do not advertise 24-bit colour, and
 // every foreground is paired with a shape or label so the UI never depends on
 // colour alone to convey state.
+// The 256-colour indices behind the selection fill, kept as plain strings
+// because refilling needs them as an SGR parameter, not only as a Color.
+const (
+	selBgDark  = "236"
+	selBgLight = "253"
+)
+
 var (
 	colDim     = lipgloss.Color("244")
 	colFaint   = lipgloss.Color("240")
@@ -28,6 +36,15 @@ var (
 	colErr     = lipgloss.Color("203")
 	colOK      = lipgloss.Color("78")
 	colAgentic = lipgloss.Color("141")
+
+	// The selected card is filled, one step off the terminal's own background:
+	// a coloured title alone was not findable on a full column, which is what
+	// the fill answers. "One step off" has a direction, so it needs to know
+	// which background it sits on — lighter on a dark terminal, darker on a
+	// light one. Both are neutral greys: the fill must not compete with the
+	// tag colours the same card already carries.
+	colSelBgDark  = lipgloss.Color(selBgDark)
+	colSelBgLight = lipgloss.Color(selBgLight)
 
 	styLaneTitle = lipgloss.NewStyle().Bold(true)
 	styLaneCount = lipgloss.NewStyle().Foreground(colFaint)
@@ -423,20 +440,31 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	}
 
 	shown := m.cardsInBudget(col.tickets, first, budget)
+	cards := make([]string, 0, shown)
 	for i := first; i < first+shown; i++ {
 		// w-1: the box sits flush left and stops one column short of the
 		// column's right border — the old w-4 left four blank columns there
 		// (Berks Screenshot, 03.09.), width the titles can use instead.
-		card := m.renderCardBlock(col.tickets[i], w-1, focused && i == m.cardIdx)
-		// Stacked cards share one border row: from the second card on the top
-		// border is dropped and the card above ends the pair — two adjacent
-		// border rows read as a blank gap, because the glyphs only ink half
-		// their cell (Berks vierter Screenshot, 03.09.).
-		if i > first {
-			if _, rest, ok := strings.Cut(card, "\n"); ok {
-				card = rest
-			}
+		cards = append(cards, m.renderCardBlock(col.tickets[i], w-1, focused && i == m.cardIdx))
+	}
+	// Stacked cards share one border row: two adjacent border rows read as a
+	// blank gap, because the glyphs only ink half their cell (Berks vierter
+	// Screenshot, 03.09.).
+	//
+	// Which of the pair gives up its row is what decides whether the selected
+	// card has a top edge. Dropping it from the lower card, as this did for
+	// every pair, left the selected card open at the top and its fill starting
+	// mid-box. So the shared row goes to the selected card and the card above
+	// gives up its bottom instead — same one row per pair, same height budget,
+	// and the selection is a closed, filled box wherever it sits in the lane.
+	for i := 1; i < len(cards); i++ {
+		if focused && first+i == m.cardIdx {
+			cards[i-1] = dropLastLine(cards[i-1])
+			continue
 		}
+		cards[i] = dropFirstLine(cards[i])
+	}
+	for _, card := range cards {
 		body.WriteString(card)
 	}
 	if rest := len(col.tickets) - (first + shown); rest > 0 {
@@ -494,7 +522,67 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
 	} else {
 		box = box.BorderForeground(colFaint)
 	}
+	if selected {
+		bg, code := m.selBg()
+		box = box.Background(bg).BorderBackground(bg)
+		// The card's own spans (styMeta, styWarn, …) each end in a full SGR
+		// reset, which clears the box's background as well as their colour, so
+		// everything after the first span would sit on the bare terminal again.
+		// Refilling after every reset is what makes the fill reach the whole
+		// card instead of only its first word.
+		return refill(box.Render(content), code) + "\n"
+	}
 	return box.Render(content) + "\n"
+}
+
+// dropFirstLine and dropLastLine remove one rendered row from a card, which is
+// how a stacked pair comes to share a single border row. Both keep the trailing
+// newline the column body is written with.
+func dropFirstLine(s string) string {
+	if _, rest, ok := strings.Cut(s, "\n"); ok {
+		return rest
+	}
+	return s
+}
+
+func dropLastLine(s string) string {
+	body := strings.TrimSuffix(s, "\n")
+	if i := strings.LastIndex(body, "\n"); i >= 0 {
+		return body[:i+1]
+	}
+	return ""
+}
+
+// selBg is the selection fill for the terminal this board is drawn on, as both
+// a lipgloss Color and the raw 256-colour index refill needs.
+func (m *Model) selBg() (color.Color, string) {
+	if m.darkBG {
+		return colSelBgDark, selBgDark
+	}
+	return colSelBgLight, selBgLight
+}
+
+// refill re-applies background colour code after every SGR reset inside s, so a
+// block whose content carries its own styling stays filled end to end.
+//
+// A reset at the end of a line is left alone: re-opening the background there
+// would paint the rest of the terminal row, past the card's right edge.
+func refill(s, code string) string {
+	const reset = "\x1b[m"
+	bg := "\x1b[48;5;" + code + "m"
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		trailing := strings.HasSuffix(line, reset)
+		if trailing {
+			line = strings.TrimSuffix(line, reset)
+		}
+		line = strings.ReplaceAll(line, reset, reset+bg)
+		if trailing {
+			line += reset
+		}
+		lines[i] = line
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {

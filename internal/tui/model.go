@@ -81,6 +81,12 @@ type Model struct {
 	// without losing the cursor.
 	scroll map[string]int
 
+	// darkBG says which way the selection fill has to go to read as "one step
+	// off the background". Bubble Tea reports it on start and again whenever
+	// the terminal's background changes; a terminal that answers neither leaves
+	// the dark default, which is what the rest of the palette already assumes.
+	darkBG bool
+
 	// detailScroll is the first visible line of the open ticket. The detail pane
 	// is the one view whose content has no upper bound — several checklists, a
 	// body, notes — so it is the one view that must be clipped to the window and
@@ -246,7 +252,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine(), darkBG: true}
 	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
 	s.Actor = m.me
@@ -620,7 +626,10 @@ func (m *Model) Init() tea.Cmd {
 	// The ref fetch runs once at startup and then on its own slower timer:
 	// being handed a ticket should show up without the user asking, but not at
 	// the cadence of the local rescan.
-	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick())
+	// Asked for explicitly: the selection fill has a direction, and without an
+	// answer the board keeps the dark default and would paint a black block on
+	// a light terminal.
+	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick(), tea.RequestBackgroundColor)
 }
 
 // startWatching subscribes to changes in the ticket and session directories.
@@ -749,6 +758,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		return m, nil
+
+	case tea.BackgroundColorMsg:
+		m.darkBG = msg.IsDark()
 		return m, nil
 
 	case tickMsg:

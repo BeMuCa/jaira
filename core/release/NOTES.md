@@ -15,6 +15,7 @@ Format rules — read before editing:
 
 ## Unreleased
 
+- Look for the filled card to find the cursor: the selected ticket is now painted one step off your terminal background, frame included, instead of only marking itself with a bold title that vanished on a column of coloured cards. The fill follows a light terminal the other way, and the selected card keeps a closed top edge wherever it sits in the lane.
 - Finishing a ticket no longer files anything: it stays in `done` with everybody else's until you cut. Run `jaira logbook --all` when you account for your hours and the whole lane goes into today's folder; `jaira logbook <id>` still files one, and `jaira logbook` alone still only lists. A board holding more than ten finished tickets says so in its hint bar and files nothing on its own.
 - If you want the old doorway back, set `logbook-on-entry: true` on your terminal lane yourself — it ships off, because filing on entry means finishing one ticket files everybody's.
 - Work in the board reaches the team by itself now: it sends what it queued on its own background run, so a day spent in the board no longer leaves everybody else looking at yesterday's tickets.
