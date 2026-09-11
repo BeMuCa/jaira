@@ -13,8 +13,9 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
-## Unreleased
+## 0.1.4
 
+- Expect one snapshot and one fetch per clone rather than per checkout: their clocks now live with the repository, so adding a git worktree no longer starts a fresh interval and no longer writes a snapshot commit on its first command.
 - Read whole titles: cards have no frame any more. Each one is a filled band across the lane with its tag's colour in a solid cell down the left, and the shade alternates so stacked cards stay apart. Titles gain two columns and every card gives two rows back to the lane, so more of the lane fits on screen.
 - Press `c` to fill the selected card in its tag's colour instead of neutral grey, and `c` again for plain. It ships on; where your terminal shows 24-bit colour the tint is a quiet one, and on a palette-only terminal it is mixed further so the tag's colour survives rather than snapping to grey.
 - Look for the filled card to find the cursor: the selected ticket is painted a clear step above the lane's own shades, instead of only marking itself with a bold title that vanished on a column of coloured cards. On a light terminal the fill goes the other way, darker rather than lighter.

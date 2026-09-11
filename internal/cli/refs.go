@@ -119,7 +119,7 @@ func maybeFetch(s *ticket.Store) {
 	if s == nil || refs.Usable() != nil {
 		return
 	}
-	refs.SpawnFetch(s.StateDir(), s.Root, settings.Load().FetchInterval())
+	refs.SpawnFetch(s.RepoStateDir(), s.Root, settings.Load().FetchInterval())
 }
 
 // resolveID turns whatever the user typed — a full id, a prefix, or the
