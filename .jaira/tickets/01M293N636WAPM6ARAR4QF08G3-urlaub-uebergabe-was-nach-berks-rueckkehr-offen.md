@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T20:48:28Z
-updated-at: 2026-09-11T21:01:12Z
+updated-at: 2026-09-11T21:19:56Z
 updated-by: Alexander Sacharov
 ---
 
@@ -45,3 +45,10 @@ Was offen bleibt und nicht zu diesem Ticket gehoert: ob das Kopieren-statt-Versc
 Damit bleibt fuer 733df8f nur eine Erklaerung, die zu allen Befunden passt: dort wurden die Additionen gestaged und die Loeschungen nicht. Auf der Platte war die Datei weg, im Commit nicht - und beim naechsten Checkout war sie wieder da. Das ist ein Bedienfehler beim Committen, kein Fehler im Ablegen, und es erklaert auch, warum git fuer die Board-Kopien nie eine Loeschung kennt.
 
 Wer das kuenftig vermeiden will: 'git add -A .jaira' statt einzelner Pfade, oder vor dem Commit einmal 'git status' auf Loeschungen ansehen.
+- **2026-09-11 21:19 · Alexander Sacharov** — PUNKT 2 ist entschieden und erledigt, von Alex am 11.09.: die Zeile 'logbook-on-entry: true' ist aus .jaira/lanes/done.md raus. Dieses Board verhaelt sich damit wie 74VM40 es gebaut hat - Fertigwerden legt nichts mehr ab, die Tickets bleiben in done liegen bis jemand 'jaira logbook --all' sagt.
+
+Nicht nur die Zeile gestrichen, sondern die ganze Datei durch core/lane/builtin/50-done.md ersetzt. Grund: die description der Board-Kopie versprach woertlich 'The move that lands here stamps the commits and files the ticket straight into the logbook' - nur die Zeile zu loeschen haette eine Lane hinterlassen, die etwas anderes beschreibt als sie tut. Die builtin-Fassung sagt schon das Richtige ('Finished tickets stay here until somebody files them'), also ist sie jetzt die Board-Fassung, und die beiden koennen nicht mehr auseinanderlaufen.
+
+Geprueft: 'jaira lanes --json' zeigt fuer done kein logbook_on_entry mehr, terminal steht weiter auf true.
+
+Damit bleibt an diesem Ticket nur noch Punkt 1: Berk nach seinem Urlaub sagen, dass die Karten keinen Rahmen mehr haben.
