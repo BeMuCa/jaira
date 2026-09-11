@@ -13,6 +13,10 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## Unreleased
+
+- Expect one snapshot and one fetch per clone rather than per checkout: their clocks now live with the repository, so adding a git worktree no longer starts a fresh interval and no longer writes a snapshot commit on its first command.
+
 ## 0.1.3
 
 - Tickets now travel on a git ref of their own (`refs/jaira/tickets/<id>`), so a ticket reaches whoever it is assigned to without anybody sharing a branch: run `jaira fetch` after cloning, and again whenever you want to see what the team has moved.

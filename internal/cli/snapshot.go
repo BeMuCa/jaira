@@ -123,7 +123,7 @@ func maybeSnapshot(s *ticket.Store) {
 	if s == nil || refs.Usable() != nil {
 		return
 	}
-	snapshot.SpawnRun(s.StateDir(), s.Root, settings.Load().SnapshotInterval())
+	snapshot.SpawnRun(s.RepoStateDir(), s.Root, settings.Load().SnapshotInterval())
 }
 
 func handles(ids []string) []string {

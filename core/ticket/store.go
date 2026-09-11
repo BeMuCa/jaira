@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -485,19 +486,83 @@ func (s *Store) StateDir() string { return s.stateDir() }
 // are two separate sets of in-flight work, and a session focused on one has
 // nothing to say about the other.
 func (s *Store) stateDir() string {
-	home := os.Getenv("JAIRA_HOME")
-	if home == "" {
-		h, err := os.UserHomeDir()
-		if err != nil {
-			// No home directory to write to; fall back inside the repo so the
-			// tool still works, accepting the untracked directory.
-			return filepath.Join(s.dir(), "state")
-		}
-		home = filepath.Join(h, DirName)
+	home, ok := s.stateHome()
+	if !ok {
+		return home
 	}
-	sum := sha256.Sum256([]byte(s.Root))
-	key := filepath.Base(s.Root) + "-" + hex.EncodeToString(sum[:4])
-	return filepath.Join(home, "state", key)
+	return filepath.Join(home, "state", stateKey(s.Root))
+}
+
+// RepoStateDir is the state directory every working tree of one clone shares,
+// for state that belongs to the repository rather than to one checkout.
+//
+// The background jobs' stamps live here and the per-tree state does not. When
+// a snapshot last ran is a fact about the board, not about the checkout that
+// happened to trigger it: keyed per tree, every new git worktree started its
+// own clock at zero and took a full snapshot on its first command, which is how
+// a three-day backup turned into a commit every twenty minutes.
+//
+// Falls back to the per-tree directory when git cannot answer — a board outside
+// a repository has one working tree anyway, so there the two are the same
+// directory.
+func (s *Store) RepoStateDir() string {
+	home, ok := s.stateHome()
+	if !ok {
+		return home
+	}
+	common := commonGitDir(s.Root)
+	if common == "" {
+		return s.stateDir()
+	}
+	return filepath.Join(home, "repo", stateKey(common))
+}
+
+// commonGitDir is the .git directory every working tree of one clone shares, as
+// an absolute path, or "" when this is not a repository or git is missing.
+//
+// Asked of git rather than read off the disk: a worktree's .git is a file
+// pointing into the main checkout, a submodule's is somewhere else again, and
+// reimplementing that resolution here would be a second, quietly divergent
+// answer to a question git already answers in one call.
+//
+// Shelled out from this package rather than through core/gitrepo, which
+// already imports this one.
+func commonGitDir(root string) string {
+	if _, err := exec.LookPath("git"); err != nil {
+		return ""
+	}
+	out, err := exec.Command("git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
+	if err != nil {
+		return ""
+	}
+	dir := strings.TrimSpace(string(out))
+	if dir == "" {
+		return ""
+	}
+	return filepath.Clean(dir)
+}
+
+// stateHome is the directory both the per-tree and the per-repository state
+// live under. ok is false when there is no home directory to write to, and home
+// is then the in-repo fallback to use as it stands.
+func (s *Store) stateHome() (home string, ok bool) {
+	if h := os.Getenv("JAIRA_HOME"); h != "" {
+		return h, true
+	}
+	h, err := os.UserHomeDir()
+	if err != nil {
+		// No home directory to write to; fall back inside the repo so the
+		// tool still works, accepting the untracked directory.
+		return filepath.Join(s.dir(), "state"), false
+	}
+	return filepath.Join(h, DirName), true
+}
+
+// stateKey names a directory after a path: readable enough to recognise, hashed
+// enough that two paths never collide.
+func stateKey(path string) string {
+	sum := sha256.Sum256([]byte(path))
+	return filepath.Base(path) + "-" + hex.EncodeToString(sum[:4])
 }
 
 // Init creates the store layout. Safe to run repeatedly.
