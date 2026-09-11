@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T20:48:28Z
-updated-at: 2026-09-11T20:48:42Z
+updated-at: 2026-09-11T21:01:12Z
 updated-by: Alexander Sacharov
 ---
 
@@ -21,7 +21,7 @@ updated-by: Alexander Sacharov
 
 ## Definition of Done
 
-- [ ] Berk hat den Layout-Wechsel gesehen und gesagt was gilt; 'logbook-on-entry' auf diesem Board ist entschieden; die sieben doppelt oder gar nicht abgelegten Tickets sind aufgeloest und jaira meldet beim Start keine unlesbaren Tickets mehr
+- [~] Berk hat den Layout-Wechsel gesehen und gesagt was gilt; 'logbook-on-entry' auf diesem Board ist entschieden; die sieben doppelt oder gar nicht abgelegten Tickets sind aufgeloest und jaira meldet beim Start keine unlesbaren Tickets mehr
 
 ## Options
 
@@ -33,4 +33,15 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
+- **2026-09-11 21:00 · Alexander Sacharov** — PUNKT 3 ist erledigt, und die Ursache ist gefunden - sie war nicht das, wonach es aussah. Die Board-Kopien sind nicht 'nochmal aufgetaucht': sie lagen seit dem 03.09. ununterbrochen dort, git kennt fuer sie kein einziges Loeschen ('git log --diff-filter=D' auf die Pfade ist leer). Was am 11.09. passierte, war das Gegenteil - Commit 733df8f legte fuenf Logbuch-Kopien DANEBEN, als reine Additionen: '5 files changed, 290 insertions(+)', keine einzige Loeschung. P1AE82 kam genauso in 4feaf14. Das Ablegen hat also kopiert statt verschoben, und ausgerechnet in dem Commit, der 'a filed ticket stays filed' im Titel traegt.
 
+Geloescht wurden die sechs Board-Kopien. Vorher geprueft, dass dabei nichts verlorengeht: der Diff jeder Board-Kopie gegen ihre Logbuch-Kopie enthielt ausschliesslich aeltere Werte von vier Feldern - status (signoff bzw. human gegen done), commits (leer gegen gestempelt), updated-at und updated-by. Keine Zeile Text, kein Feld, das nur auf dem Board stand. Die Logbuch-Kopie war ueberall echt die vollstaendigere.
+
+Danach meldet jaira nichts mehr, weder auf stderr noch als Zaehler in der Fusszeile des Boards.
+
+Was offen bleibt und nicht zu diesem Ticket gehoert: ob das Kopieren-statt-Verschieben noch im Code steckt. Geprueft ist nur, dass die Dateien weg sind, nicht dass ein naechstes 'jaira logbook' es nicht wieder tut. Dafuer steht jetzt ein eigenes Ticket.
+- **2026-09-11 21:01 · Alexander Sacharov** — Korrektur zur vorigen Notiz: es gibt KEIN eigenes Ticket fuer 'kopiert statt verschoben', weil es nichts zu tun gibt. Nachgesehen, wie die drei heute abgelegten Tickets in git liegen - Commit a860e46 zeigt sie als 'rename .jaira/{tickets => logbook/as-20260911}/...', nicht als Add plus stehengebliebene Datei. Der Code verschiebt also korrekt.
+
+Damit bleibt fuer 733df8f nur eine Erklaerung, die zu allen Befunden passt: dort wurden die Additionen gestaged und die Loeschungen nicht. Auf der Platte war die Datei weg, im Commit nicht - und beim naechsten Checkout war sie wieder da. Das ist ein Bedienfehler beim Committen, kein Fehler im Ablegen, und es erklaert auch, warum git fuer die Board-Kopien nie eine Loeschung kennt.
+
+Wer das kuenftig vermeiden will: 'git add -A .jaira' statt einzelner Pfade, oder vor dem Commit einmal 'git status' auf Loeschungen ansehen.
