@@ -14,6 +14,7 @@ import (
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/tag"
@@ -70,8 +71,8 @@ session and lock state is never committed. Safe to run more than once.`,
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
 					"private": true, "gitignore_written": p.Ignored,
-					"state_dir":   s.SessionsDir(),
-					"agent_notes": p.Notes,
+					"state_dir":     s.SessionsDir(),
+					"agent_notes":   p.Notes,
 					"default_board": db.Path, "lanes": boardLanes.IDs(),
 					"lane_warnings": db.Warnings,
 				})
@@ -110,10 +111,10 @@ session and lock state is never committed. Safe to run more than once.`,
 
 func newCreateCmd() *cobra.Command {
 	var (
-		title, goalV, dod, contextV, assignee, laneID, tier, body, follows string
-		blockedBy, tags                                                    []string
-		ready                                                              bool
-		mine                                                               bool
+		title, goalV, dod, contextV, assignee, laneID, tier, body, follows, parent string
+		blockedBy, tags, related                                                   []string
+		ready                                                                      bool
+		mine                                                                       bool
 	)
 	cmd := &cobra.Command{
 		Use:   "create <title>",
@@ -171,6 +172,31 @@ already know it is yours; --assignee wins over it.`,
 				}
 				followsID = src.ID
 			}
+			// Same rule for parent and related: a link is worth writing only
+			// once it resolves, and it is stored as the full id so both sides
+			// match however it was typed.
+			parentID := ""
+			if strings.TrimSpace(parent) != "" {
+				src, err := s.Load(parent)
+				if err != nil {
+					return err
+				}
+				if src.ID == "" {
+					return fail(ExitValidation, "bad_parent", "parent does not resolve to a ticket")
+				}
+				parentID = src.ID
+			}
+			relatedIDs := make([]string, 0, len(related))
+			for _, ref := range related {
+				if strings.TrimSpace(ref) == "" {
+					continue
+				}
+				src, err := s.Load(ref)
+				if err != nil {
+					return err
+				}
+				relatedIDs = append(relatedIDs, src.ID)
+			}
 
 			now := time.Now()
 			me := identity()
@@ -203,6 +229,7 @@ already know it is yours; --assignee wins over it.`,
 				ticket.FieldContext:   contextV,
 				ticket.FieldDoD:       dod,
 				ticket.FieldFollows:   followsID,
+				ticket.FieldParent:    parentID,
 				ticket.FieldModelTier: tier,
 				ticket.FieldCreatedAt: ticket.FormatTime(now),
 				ticket.FieldUpdatedAt: ticket.FormatTime(now),
@@ -218,6 +245,7 @@ already know it is yours; --assignee wins over it.`,
 			lists := map[string][]string{
 				ticket.FieldBlockedBy: blockedBy,
 				ticket.FieldTags:      tagNames,
+				ticket.FieldRelated:   relatedIDs,
 				ticket.FieldCommits:   nil,
 			}
 			// `ready` is a derived convenience recording whether the promotion
@@ -303,6 +331,8 @@ already know it is yours; --assignee wins over it.`,
 	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
 	f.StringArrayVar(&tags, "tag", nil, "topic tag; repeat for several. Run 'jaira tags' first and reuse an existing name")
 	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from")
+	f.StringVar(&parent, "parent", "", "id of the ticket this one is a part of")
+	f.StringSliceVar(&related, "related", nil, "ticket ids this one merely has to do with")
 	f.BoolVar(&ready, "ready", false, "unused; readiness is derived from the gate")
 	_ = f.MarkHidden("ready")
 	return cmd
@@ -550,7 +580,10 @@ thinking they have seen everything.`,
 			if err != nil {
 				return err
 			}
-			t, err := s.Load(args[0])
+			// Past the board on purpose: a link followed to a finished
+			// ticket used to answer "not found" for a file sitting in plain
+			// sight under .jaira/logbook/.
+			t, path, err := s.LoadAnywhere(args[0])
 			if err != nil {
 				return err
 			}
@@ -564,10 +597,14 @@ thinking they have seen everything.`,
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
 				j["body"] = t.Body
-				j["path"] = t.Path
+				j["path"] = path
+				j["filed_away"] = filedAway(s, t)
 				return emit(cmd.OutOrStdout(), j)
 			}
-			printDetail(cmd.OutOrStdout(), t, env, notesLast)
+			if where := filedAway(s, t); where != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "off the board: %s\n", where)
+			}
+			printDetail(cmd.OutOrStdout(), t, env, notesLast, children(s, env, t)...)
 			return nil
 		},
 	}
@@ -580,7 +617,26 @@ thinking they have seen everything.`,
 // entries the body carries — 0 means all of them, which is the default
 // everywhere: this board's promise is that nothing is lost, so hiding a note
 // happens only when the reader asks for it.
-func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int) {
+// children lists what this ticket contains, at every depth. It is derived
+// from the parent field on each child rather than stored, so it has to be
+// asked for; a ticket cannot tell you its children by reading it alone.
+func children(s *ticket.Store, env gate.Env, t *ticket.Ticket) []link.Entry {
+	all := env.All
+	if len(all) == 0 {
+		return nil
+	}
+	var out []link.Entry
+	for _, e := range link.Build(s, env.Lanes, all).Relations(t.ID) {
+		if e.Kind == link.KindChild {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// printDetail renders one ticket. kids is what it contains, passed in because
+// it is derived from other tickets rather than read off this one.
+func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kids ...link.Entry) {
 	fmt.Fprintf(w, "%s  %s\n", ticket.Handle(t.ID), t.Title)
 	fmt.Fprintf(w, "%s\n", strings.Repeat("─", 64))
 	row := func(k, v string) {
@@ -615,6 +671,23 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int) {
 	}
 	if t.Follows != "" {
 		row("follows", ticket.Handle(t.Follows))
+	}
+	if t.Parent != "" {
+		row("part of", ticket.Handle(t.Parent))
+	}
+	if len(kids) > 0 {
+		fmt.Fprintf(w, "%-10s\n", "contains")
+		for _, e := range kids {
+			fmt.Fprintf(w, "           %s%s  — %s\n",
+				strings.Repeat("  ", e.Ref.Depth), e.Ref.Label(), e.Ref.Whereabouts())
+		}
+	}
+	if len(t.Related) > 0 {
+		shorts := make([]string, 0, len(t.Related))
+		for _, r := range t.Related {
+			shorts = append(shorts, ticket.Handle(r))
+		}
+		row("related", strings.Join(shorts, ", "))
 	}
 	// Shown only while the ticket is parked: after it moves on, yesterday's
 	// blocker rendered as "waiting on" would read as today's state. The field
@@ -717,7 +790,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 			}
 			id := args[0]
 			assignments := args[1:]
-			listFields := map[string]bool{ticket.FieldBlockedBy: true, ticket.FieldCommits: true, ticket.FieldTags: true}
+			listFields := map[string]bool{ticket.FieldBlockedBy: true, ticket.FieldCommits: true, ticket.FieldTags: true, ticket.FieldRelated: true}
 
 			// A ticket in a lane this installation does not have is read-only, and
 			// that has to hold for every mutation path. Enforcing it only in `move`
@@ -1165,6 +1238,8 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"blocked_by":         t.BlockedBy,
 		"tags":               t.Tags,
 		"follows":            t.Follows,
+		"parent":             t.Parent,
+		"related":            t.Related,
 		"blocked_reason":     t.BlockedReason,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
@@ -1181,7 +1256,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		// Where this goes when the current step is finished, so the route is not
 		// re-derived by every caller from the column order and the ticket's
 		// Options. Empty when there is nowhere left to go.
-		"next_lane": nextLaneID(t, lanes),
+		"next_lane":  nextLaneID(t, lanes),
 		"created_at": nonZero(t.CreatedAt),
 		"updated_at": nonZero(t.UpdatedAt),
 		"updated_by": t.UpdatedBy,
@@ -1223,4 +1298,19 @@ func laneFacts(lanes *lane.Set) []board.LaneFact {
 		})
 	}
 	return out
+}
+
+// filedAway says where a ticket lives once it has left the board, and nothing
+// at all while it is still on it. Printed above the detail so a reader is
+// never shown a finished ticket as though it were still in play.
+func filedAway(s *ticket.Store, t *ticket.Ticket) string {
+	if t == nil || t.Path == "" {
+		return ""
+	}
+	for id, path := range s.FiledAwayIDs() {
+		if id == t.ID && path == t.Path {
+			return path
+		}
+	}
+	return ""
 }

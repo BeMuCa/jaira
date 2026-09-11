@@ -104,6 +104,8 @@ func (m *Model) render() string {
 		return m.renderMessage()
 	case modeLegend:
 		return m.renderLegend()
+	case modeLinks:
+		return m.renderLinks()
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:
@@ -1412,6 +1414,7 @@ func (m *Model) renderHelp() string {
 			{"enter", "open the selected ticket"},
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
+			{"L", "every ticket linked to this one, logbook and archive included"},
 			{"/", "filter tickets as you type; key:value narrows to one field"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},

@@ -769,6 +769,69 @@ func (s *Store) Load(idOrPrefix string) (*Ticket, error) {
 	return Decode(d, path)
 }
 
+// LoadAnywhere reads one ticket from wherever it still exists: the board
+// first, then the logbook and the archive.
+//
+// Load deliberately sees only the board, because every write path goes
+// through it and a filed ticket must not be writable by accident. Reading is
+// the opposite case: a ticket the board points at — a blocker, a parent, a
+// follow-up — keeps being asked about long after it was filed, and answering
+// "not found" for a file sitting in plain sight under .jaira/logbook/ is what
+// made every link rot the moment the work behind it finished.
+//
+// The second result is the file it was read from, so a caller can say where
+// it lives rather than implying it is still on the board.
+func (s *Store) LoadAnywhere(idOrPrefix string) (*Ticket, string, error) {
+	t, err := s.Load(idOrPrefix)
+	if err == nil {
+		return t, t.Path, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return nil, "", err
+	}
+	path, ok := s.filedPath(idOrPrefix)
+	if !ok {
+		return nil, "", err
+	}
+	raw, rerr := os.ReadFile(path)
+	if rerr != nil {
+		return nil, "", rerr
+	}
+	d, derr := ParseDoc(raw)
+	if derr != nil {
+		return nil, "", derr
+	}
+	filed, derr := Decode(d, path)
+	if derr != nil {
+		return nil, "", derr
+	}
+	return filed, path, nil
+}
+
+// filedPath finds a filed-away ticket by exact id or unambiguous prefix or
+// suffix, matching how resolve treats a reference on the board — a reference
+// that works for a ticket must not stop working when it is filed.
+func (s *Store) filedPath(idOrPrefix string) (string, bool) {
+	want := NormalizeIDPrefix(idOrPrefix)
+	if want == "" {
+		return "", false
+	}
+	filed := s.FiledAwayIDs()
+	if p, ok := filed[want]; ok {
+		return p, true
+	}
+	var match string
+	for id, p := range filed {
+		if strings.HasPrefix(id, want) || strings.HasSuffix(id, want) {
+			if match != "" {
+				return "", false // ambiguous: no guessing
+			}
+			match = p
+		}
+	}
+	return match, match != ""
+}
+
 // fromSource looks up a ticket the board can see but has no file for, by exact
 // id or unambiguous prefix, the same way resolve does for files.
 func (s *Store) fromSource(idOrPrefix string) (*Ticket, bool) {

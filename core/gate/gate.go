@@ -153,6 +153,18 @@ type Env struct {
 	// is on offer, and the requires-commits refusal below stands exactly as
 	// it did before this existed.
 	DeriveCommits func(t *ticket.Ticket) []string
+
+	// Satisfied answers whether a ticket that is not in All has nevertheless
+	// been finished and filed away — in the logbook, or in the archive in a
+	// terminal lane. It is injected for the same reason DeriveCommits is:
+	// finding that out means reading directories, and this package stays
+	// free of the filesystem.
+	//
+	// Without it, a dependency that completed and was filed read as "does not
+	// exist in this store" and blocked the ticket waiting on it forever —
+	// finishing the blocker was the thing that broke the board. nil keeps the
+	// old behaviour, which is right for a caller that has no store.
+	Satisfied func(id string) bool
 }
 
 // CheckAdvance decides whether t may move to req.To.
@@ -571,6 +583,12 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 		}
 		other, ok := byID[dep]
 		if !ok {
+			// Not on the board is not the same as not done. The usual reason
+			// a blocker is missing is that it was finished and filed, and
+			// that is the case where the dependency has cleared.
+			if env.Satisfied != nil && env.Satisfied(dep) {
+				continue
+			}
 			vs = append(vs, Violation{
 				Code:    CodeBlocked,
 				Message: fmt.Sprintf("blocked by %s, which does not exist in this store", ticket.Handle(dep)),

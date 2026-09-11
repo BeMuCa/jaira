@@ -51,6 +51,7 @@ const (
 	modeDelete
 	modeDropBoard
 	modeLegend
+	modeLinks
 )
 
 // Model is the board's state.
@@ -115,6 +116,11 @@ type Model struct {
 	copied bool
 
 	moveTarget int // lane index highlighted in the move picker
+
+	// links is the open link window, nil when it is closed. It holds its own
+	// rows because building them reads the logbook, which must not happen
+	// per keypress.
+	links *linkView
 
 	// follow is the split view: a follow-up being written beside the ticket it
 	// follows. Non-nil means both halves of the screen are in use.
@@ -924,6 +930,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeLinks:
+		m.keyLinks(s)
+		return m, nil
+
 	case modeMessage:
 		// A refused move offers its own way out. f arms the override and y takes
 		// it; every other exit drops the offer with the message, so a stale f can
@@ -1170,6 +1180,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "t":
 		// The legend for the colour a tagged card's box is drawn in.
 		m.mode = modeLegend
+	case "L":
+		// Everything connected to this card, wherever the other end now
+		// lives — the board, a ref, the logbook, the archive.
+		m.openLinks()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter

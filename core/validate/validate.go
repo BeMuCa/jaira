@@ -38,6 +38,13 @@ const (
 	CodeIncomplete    = "incomplete"
 	CodeUndeclaredDep = "undeclared_dependency"
 	CodeBadTag        = "bad_tag"
+	// CodeDanglingParent, CodeSelfParent and CodeParentCycle guard the parent
+	// chain. It is followed recursively wherever children are rendered, so a
+	// ring in it is a hung view rather than a wrong one — which is why a
+	// cycle is an error and not a warning.
+	CodeDanglingParent = "dangling_parent"
+	CodeSelfParent     = "self_parent"
+	CodeParentCycle    = "parent_cycle"
 )
 
 // handleRef matches a bare handle: the six-character tail ticket.Handle
@@ -78,7 +85,18 @@ func HasErrors(ps []Problem) bool {
 // Tickets validates a whole board. Cross-ticket checks — duplicate ids and
 // unresolvable dependencies — need the full set, which is why this takes a slice
 // rather than validating one ticket at a time.
-func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
+// Tickets checks every ticket it is given.
+//
+// known answers whether an id exists anywhere this repository can see it —
+// on the board, on a ref, or filed away in the logbook or the archive. It is
+// injected because finding that out means reading directories and this
+// package is pure. nil means only the given tickets are known, which is the
+// right answer for a caller that has no store and the reason a filed-away
+// blocker used to be reported as unreachable.
+func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) []Problem {
+	if known == nil {
+		known = func(string) bool { return false }
+	}
 	var ps []Problem
 
 	byID := make(map[string]int, len(ts))
@@ -90,6 +108,12 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 		byHandle[handleOf(t.ID)] = t
 	}
 	reported := map[string]bool{}
+	byParent := make(map[string]*ticket.Ticket, len(ts))
+	for _, t := range ts {
+		if t.ID != "" {
+			byParent[t.ID] = t
+		}
+	}
 
 	for _, t := range ts {
 		add := func(code, severity, field, format string, args ...any) {
@@ -171,9 +195,9 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 			case dep == t.ID:
 				add(CodeSelfDep, SeverityError, ticket.FieldBlockedBy,
 					"blocked by itself, which can never be satisfied")
-			case byID[dep] == 0:
+			case byID[dep] == 0 && !known(dep):
 				add(CodeDanglingDep, SeverityError, ticket.FieldBlockedBy,
-					"blocked by %s, which is not on this board; the dependency can never clear", handleOf(dep))
+					"blocked by %s, which exists nowhere here; the dependency can never clear", handleOf(dep))
 			}
 		}
 
@@ -223,6 +247,21 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set) []Problem {
 				add(CodeUndeclaredDep, SeverityWarning, src.field,
 					"%s names %s which is not in blocked-by — declare it with 'jaira set %s blocked-by=%s' or ignore if it is not a dependency",
 					src.name, m, own, strings.Join(full, ","))
+			}
+		}
+
+		switch {
+		case t.Parent == "":
+		case t.Parent == t.ID:
+			add(CodeSelfParent, SeverityError, ticket.FieldParent,
+				"is its own parent")
+		case byID[t.Parent] == 0 && !known(t.Parent):
+			add(CodeDanglingParent, SeverityError, ticket.FieldParent,
+				"part of %s, which exists nowhere here", handleOf(t.Parent))
+		default:
+			if ring := parentCycle(t, byParent); len(ring) > 0 {
+				add(CodeParentCycle, SeverityError, ticket.FieldParent,
+					"parent chain runs in a circle: %s", strings.Join(ring, " → "))
 			}
 		}
 
@@ -280,4 +319,26 @@ func normalizedTags(all []string, offender, replacement string) []string {
 		}
 	}
 	return out
+}
+
+// parentCycle walks a ticket's parent chain and returns the handles on it
+// once it comes back to something already seen. A parent outside the given
+// set ends the walk: this package only sees the tickets it was handed, and
+// inventing a verdict about a file it cannot read would be worse than
+// staying quiet.
+func parentCycle(t *ticket.Ticket, byID map[string]*ticket.Ticket) []string {
+	seen := map[string]bool{}
+	var chain []string
+	for cur := t; cur != nil; {
+		if seen[cur.ID] {
+			return append(chain, handleOf(cur.ID))
+		}
+		seen[cur.ID] = true
+		chain = append(chain, handleOf(cur.ID))
+		if cur.Parent == "" {
+			return nil
+		}
+		cur = byID[cur.Parent]
+	}
+	return nil
 }
