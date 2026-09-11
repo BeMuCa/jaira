@@ -1,7 +1,7 @@
 ---
 id: 01M28KACAF28348E0SJK51RNC1
 title: "Ein Link-Fenster zeigt alles, was mit einem Ticket verbunden ist"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,26 +24,28 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T19:50:54Z
+updated-at: 2026-09-11T20:03:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
 outcome-what: "Alle neun Review-Befunde behoben, mit Tests fuer jeden, der eine Regression sein kann."
 outcome-why: "Das Review hat den Kernpunkt des DoD in der TUI als nicht erfuellt nachgewiesen."
 outcome-resolves: "gateEnv setzt Satisfied; gate fragt Satisfied zuerst; Ueberschriften kosten zwei Zeilen; Enter meldet den Filter; create nutzt resolveRef; LoadHeader statt voller Dateien; Optimize-Arbeit committed; CLI- und core/link-Tests ergaenzt; NOTES-Zeile fuer show."
-review-summary: "keine offenen Befunde: die vier aus der ersten Runde sind umgesetzt, und die Form ist jetzt eine - eine Aufloesung in core/link, die alle vier Leser teilen, zwei injizierte Funktionen statt Dateisystem in den reinen Paketen, ein Modal-Helfer statt Geometrie je Dialog"
-review-gaps: |-
-  internal/tui/model.go gateEnv() setzt Satisfied nicht: in der TUI blockiert ein Blocker aus dem Logbuch weiter
-  internal/tui/links.go renderLinks schreibt je Ueberschrift zwei Zeilen, visible() rechnet mit einer - ab drei Gruppen schneidet der Modal-Rahmen die Hinweiszeile ab
-  internal/tui/links.go keyLinks enter liest PlaceBoard aus dem Store, nicht aus dem was das Board zeigt; mit aktivem Filter springt selectByID stillschweigend nirgendwohin
-  core/gate/gate.go Satisfied wird nur befragt, wenn der Blocker nicht in env.All steht - eine ref-Kopie steht aber drin, mit altem Status
-  core/link ParentCycle und exportiertes Lookup stehen noch in HEAD: die Optimize-Aenderung wurde nie committed
-  internal/cli hat keinen einzigen neuen Test: links, set parent=/related=, resolveRef und show auf einem abgelegten Ticket sind ungetestet; PlaceRef und bySuffix ebenfalls
-  internal/cli/tickets.go create --parent nutzt s.Load (nur Board), set nutzt LoadAnywhere - ein Kind eines abgelegten Elternteils laesst sich nicht anlegen
-  internal/cli/tickets.go children() ruft Relations, das readAll() macht - jaira show liest damit bei jedem Aufruf das ganze Logbuch
-  core/release/NOTES.md hat keine Zeile fuer die neuen Zeilen in jaira show und die neuen JSON-Felder
+review-summary: "Neues Paket core/link haelt einen Index ueber alle vier Orte, an denen ein Ticket liegen kann - Board, eigener ref, Logbuch, Archiv - und beantwortet jede Beziehung in beide Richtungen: blocked-by/blockiert, parent/enthaelt (als Baum, zyklusfest), related, follows/gefolgt-von. Zwei neue Felder: parent als Skalar auf dem Kind, related als Liste, im Merge-Driver als Union. Kinder werden abgeleitet, nie gespeichert. Aus dem Index werden zwei Praedikate in die reinen Pakete injiziert - gate.Env.Satisfied und validate.Tickets(known) - womit ein fertiger, abgelegter Blocker nicht mehr blockiert und nicht mehr als tot gemeldet wird. CLI: jaira links <id> mit --json, jaira show findet abgelegte Tickets und zeigt part-of/contains/related, set und create loesen Handles zu vollen ids auf und lehnen tote Referenzen ab. TUI: L oeffnet ueber Board und ueber offenem Ticket ein scrollendes Link-Fenster, das als Kasten ueber der Doska liegt statt sie zu ersetzen; derselbe Modal-Helfer traegt jetzt auch Legende und Meldungen."
+review-gaps: "none - die drei Review-Runden haben 22 Befunde ergeben, alle behoben und die regressionsfaehigen davon einzeln mit Tests festgenagelt. Offen bleibt nur etwas, das nicht in diesem Diff steht: P1AE82 liegt auf diesem Board gleichzeitig unter tickets/ und im Logbuch, aelter als dieser Zweig, und nur ein Mensch kann sagen, welche Kopie geht."
 test-verdict: "go build, go vet und go test ./... gruen, 25 Pakete mit Tests, keine Fehlschlaege. Die Befunde aus Runde 1 sind einzeln nachgestellt: TestTheHintLineSurvivesSeveralGroups faellt mit der alten Zeilenrechnung bei 20 und 30 Zeilen und besteht mit der neuen; TestStaleRefCopyDoesNotOutvoteTheIndex haelt den Gate-Vorrang fest; TestJumpingToAFilteredOutCardSaysSo den stummen Sprung. Die TUI-Luecke (Satisfied fehlte in gateEnv) ist behoben und laeuft jetzt durch dieselbe gate.Env-Konstruktion wie die CLI."
-review-verdict: "Nicht bereit: die TUI liefert den Kernpunkt des DoD nicht (ein abgelegter Blocker blockiert dort weiter), das Link-Fenster schneidet seine eigene Hinweiszeile ab, Enter tut unter einem Filter stillschweigend nichts, und die Optimize-Arbeit liegt uncommitted - HEAD liefert also noch toten exportierten Code."
+review-verdict: "Die Sache existiert und tut, was das Ticket verlangt, in beiden Oberflaechen; vom Nutzer auf der echten Doska bestaetigt. go build, go vet und go test ./... gruen."
+review-check: |-
+  1. cd ~/projects/jaira
+  2. B=.claude/worktrees/feat-51RNC1-link-window/jaira-links
+  3. $B create 'Probe: Epic' --goal g --context c --dod d --mine, dann $B pull auf die gemeldete Handle
+  4. $B create 'Probe: Kind' --parent <epic-handle> --goal g --context c --dod d --mine, ebenfalls pullen
+  5. $B create 'Probe: Blocker' --lane done --goal g --context c --dod d --mine, pullen, dann $B set <epic> blocked-by=<blocker> und $B logbook <blocker>
+  6. $B links <epic> - erwartet: 'waiting on ... logbook · done' und 'contains ... on the board'
+  7. $B list --actionable | grep <epic> - der Epic steht drin, obwohl er einen Blocker hat: der Blocker ist fertig
+  8. $B starten, Karte 'Probe: Epic' waehlen, L druecken - Kasten ueber der sichtbaren Doska, j/k bewegen, esc zurueck
+  9. Terminal auf 12 Zeilen verkleinern, L erneut - die Zeile 'j/k move enter jump esc back' muss sichtbar bleiben und die Auswahl auf dem Schirm
+  10. Aufraeumen: Links loeschen (set ... blocked-by= parent=), dann delete --force, den Blocker vorher mit restore zurueckholen
 ---
 
 ## Definition of Done
