@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -310,7 +311,7 @@ func TestLongLinkListScrollsWithTheCursor(t *testing.T) {
 // one. Charging it one let the box overrun its own space, and what the modal
 // then clipped was the hint line that says which keys do anything.
 func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
-	for _, h := range []int{16, 17, 19, 20, 21, 23, 25, 30, 31, 40} {
+	for h := 10; h <= 45; h++ {
 		m, epic := linksModel(t)
 		// Four groups, so four headings: waiting on, contains, related to,
 		// followed by.
@@ -349,20 +350,57 @@ func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
 		if got := len(groupsIn(m.links)); got < 4 {
 			t.Fatalf("the fixture must have four groups, got %d", got)
 		}
-		// Once, and again after scrolling: both indicator lines print only
-		// when something is hidden above as well as below, and that is the
-		// case the row budget kept forgetting.
-		for _, moves := range []int{0, 1, 2, 3, 4, 5, 6} {
-			for i := 0; i < moves; i++ {
-				m.key(key("j"))
-			}
+		// Down the whole list and back up again. Both directions, because a
+		// run that is computed differently depending on which way the cursor
+		// came from is a list that jumps under the reader.
+		seen := map[int]string{}
+		check := func(where string) {
+			t.Helper()
 			out := m.render()
 			if !strings.Contains(out, "esc  back") {
-				t.Fatalf("at %d rows, after %d moves, the hint line was clipped\n%s", h, moves, out)
+				t.Fatalf("at %d rows, %s, the hint line was clipped\n%s", h, where, out)
 			}
-			if e, ok := m.links.current(); ok && !strings.Contains(out, e.Ref.Title) {
-				t.Fatalf("at %d rows, after %d moves, the selected %q is off screen\n%s", h, moves, e.Ref.Title, out)
+			e, ok := m.links.current()
+			if !ok {
+				t.Fatalf("at %d rows, %s, nothing is selected", h, where)
 			}
+			if !strings.Contains(out, e.Ref.Title) {
+				t.Fatalf("at %d rows, %s, the selected %q is off screen\n%s", h, where, e.Ref.Title, out)
+			}
+			// What the window says is hidden has to match where it starts
+			// and ends.
+			_, first, above, _ := m.links.frame(m.content() - 1)
+			if (above > 0) != (first > 0) {
+				t.Fatalf("at %d rows, %s, above=%d but the run starts at %d", h, where, above, first)
+			}
+			if above == 0 && first > 0 && strings.Contains(out, "more above") {
+				t.Fatalf("at %d rows, %s, the window claims rows above that it does not count", h, where)
+			}
+			// The run may follow the selection, never overtake it: one
+			// keypress scrolls at most as far as the cursor itself moved.
+			// More than that is the list teleporting under the reader.
+			if prevTop, ok := seen[-1]; ok {
+				movedTop := abs(m.links.top - atoi(prevTop))
+				movedCursor := abs(m.links.cursor - atoi(seen[-2]))
+				// One row of slack: the line that says what is hidden
+				// appears and disappears, and the list gains or loses a row
+				// with it.
+				if movedTop > max(1, movedCursor)+1 {
+					t.Fatalf("at %d rows, %s, the run moved %d rows while the cursor moved %d",
+						h, where, movedTop, movedCursor)
+				}
+			}
+			seen[-1] = itoa(m.links.top)
+			seen[-2] = itoa(m.links.cursor)
+		}
+		check("on open")
+		for i := 0; i < len(m.links.rows); i++ {
+			m.key(key("j"))
+			check(fmt.Sprintf("after %d down", i+1))
+		}
+		for i := 0; i < len(m.links.rows); i++ {
+			m.key(key("k"))
+			check(fmt.Sprintf("after %d up", i+1))
 		}
 	}
 }
@@ -468,4 +506,18 @@ func (m *Model) byIDForTest(t *testing.T, id string) *ticket.Ticket {
 	}
 	t.Fatalf("%s is not on the board", ticket.Handle(id))
 	return nil
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+func itoa(n int) string { return strconv.Itoa(n) }
+
+func atoi(s string) int {
+	n, _ := strconv.Atoi(s)
+	return n
 }

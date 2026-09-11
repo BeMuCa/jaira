@@ -74,10 +74,6 @@ func (m *Model) openLinks() {
 	}
 	v.cursor = v.next(-1, 1)
 	v.from = m.mode
-	// A short window can be smaller than the first group, so the scroll has
-	// to be settled before the first render rather than on the first
-	// keypress — otherwise the window opens with its selection off screen.
-	v.scrollInto(m.linkLines())
 	m.links = v
 	m.mode = modeLinks
 }
@@ -124,12 +120,10 @@ func (m *Model) keyLinks(s string) {
 		if n := v.next(v.cursor, 1); n >= 0 {
 			v.cursor = n
 		}
-		v.scrollInto(m.linkLines())
 	case "k", "up":
 		if n := v.next(v.cursor, -1); n >= 0 {
 			v.cursor = n
 		}
-		v.scrollInto(m.linkLines())
 	case "enter":
 		e, ok := v.current()
 		if !ok {
@@ -162,94 +156,83 @@ func (m *Model) keyLinks(s string) {
 	}
 }
 
-// linkLines is how many lines the list may use, indicator lines included.
+// The window's layout is one calculation, done in one place, because three
+// rounds of review found the same defect three times: the lines were being
+// budgeted in one function and spent in another, and the two disagreed.
 //
-// It has to agree with what modalOver leaves for content — the box keeps a
-// margin off the window and a line of border each side — minus this window's
-// fixed furniture: the title, the rule under it and the blank line after it,
-// then the blank line and the hint line at the bottom. When this number is
-// too large the modal clips the list itself, and a clip cannot scroll; what
-// it eats first is the hint line that says which keys do anything.
-//
-// The floor is two lines, one entry, because a window that shows nothing is
-// worse than one that shows a little and says so.
-func (m *Model) linkLines() int {
-	const fixed = 3 + 2
-	return max(2, m.height-8-fixed)
-}
+// Everything here is stated in rendered lines. A row costs two — an entry is
+// the ticket and where it lives, a heading is a blank line and the heading
+// itself — and the only caller that may move the visible run is frame(),
+// which writes back the top it decided on, so what the reader sees and what
+// the next keypress reasons about are always the same thing.
 
-// scrollInto moves the visible run so the cursor is inside it, and no
-// further — a window that recentred on every keypress makes the whole list
-// move under the reader.
-func (v *linkView) scrollInto(lines int) {
-	// A heading belongs to the entry under it, so scrolling to an entry
-	// shows the heading that names it rather than starting mid-group.
-	want := v.cursor
-	if want > 0 && want < len(v.rows) && v.rows[want-1].heading != "" {
-		want--
-	}
-	if want < v.top {
-		v.top = want
-	}
-	// Every row prints two lines: an entry is the ticket and where it lives,
-	// a heading is a blank line and the heading itself.
-	if span := (v.cursor - v.top + 1) * 2; span > lines {
-		v.top = max(0, v.cursor-lines/4)
-	}
-	v.top = max(0, min(v.top, max(0, len(v.rows)-1)))
-}
+// content is how many lines modalOver leaves for this window to fill. Going
+// over it means the modal clips, and a clip cannot scroll — what it eats
+// first is the hint line that says which keys do anything.
+func (m *Model) content() int { return m.modalContent() }
 
-// visible is the run of rows on screen, and how much is hidden above and
-// below it.
+// frame decides what is on screen: it moves top so the selection is inside
+// the run, then reports the run and how much is hidden either side.
 //
-// Three things want the same lines and they are not equally important: the
-// selected row has to be on screen or the window is unusable, the list is
-// what the reader came for, and the two lines that say how much is hidden
-// are a courtesy. So the markers are offered the space first and give it up
-// again as soon as keeping them would push the selection off the screen —
-// and when nothing fits, the run starts at the selection itself.
-func (v *linkView) visible(lines int) (out []linkRow, first, above, below int) {
-	pack := func(top, budget int) ([]linkRow, int) {
-		var rows []linkRow
-		used := 0
-		for i := top; i < len(v.rows); i++ {
-			// Every row prints two lines: an entry is the ticket and where
-			// it lives, a heading is a blank line and the heading itself.
-			if used+2 > budget {
-				return rows, len(v.rows) - i
-			}
-			used += 2
-			rows = append(rows, v.rows[i])
-		}
-		return rows, 0
+// The claims on the space are ranked, because they are not equally
+// important. The hint line is always drawn — a window whose keys are a
+// secret is unusable. The selected row is next: losing it is what makes the
+// list feel stuck. The heading above the selection, the rest of the list,
+// the title, and finally the two lines that say how much is hidden, take
+// what is left in that order.
+func (v *linkView) frame(lines int) (rows []linkRow, first, above, below int) {
+	if len(v.rows) == 0 {
+		return nil, 0, 0, 0
 	}
-	for _, reserve := range []int{2, 1, 0} {
-		rows, left := pack(v.top, lines-reserve)
-		if v.top+len(rows) <= v.cursor {
-			continue // the selection would be off screen
+	// Reserve nothing for the markers yet: whether they are drawn depends on
+	// whether anything is hidden, which is what this is working out.
+	fit := func(reserve int) (int, int) {
+		capacity := max(1, (lines-reserve)/2)
+		top := v.top
+		if v.cursor < top {
+			top = v.cursor
 		}
-		above, below = 0, 0
-		if v.top > 0 {
-			above = v.top
+		if v.cursor >= top+capacity {
+			top = v.cursor - capacity + 1
 		}
-		if left > 0 {
-			below = left
+		// A heading names the entry under it, so keep the two together when
+		// the extra row is affordable.
+		if top > 0 && top == v.cursor && capacity >= 2 && v.rows[top-1].heading != "" {
+			top--
 		}
-		need := 0
-		if above > 0 {
-			need++
-		}
-		if below > 0 {
-			need++
-		}
-		if need > reserve {
-			continue // not enough room to say what is hidden
-		}
-		return rows, v.top, above, below
+		return top, min(len(v.rows), top+capacity)
 	}
-	// Nothing fits around the selection: start at it and show what there is.
-	rows, _ := pack(v.cursor, lines)
-	return rows, v.cursor, 0, 0
+	top, end := fit(0)
+	hidden := 0
+	if top > 0 {
+		hidden++
+	}
+	if end < len(v.rows) {
+		hidden++
+	}
+	if hidden > 0 {
+		// Now that it is known how many marker lines would be drawn, redo the
+		// fit paying for them. If that costs the selection its place, the
+		// markers are the ones that go: the reader can live without being
+		// told how much is left over.
+		if t2, e2 := fit(hidden); v.cursor >= t2 && v.cursor < e2 {
+			top, end = t2, e2
+		}
+	}
+	v.top = top
+	// Whatever the fit worked out, the markers are drawn only out of lines
+	// that are genuinely spare. The row capacity has a floor of one, so a
+	// very short window can have no spare line at all — and a marker drawn
+	// there is a line over budget, which the modal takes off the bottom.
+	spare := lines - (end-top)*2
+	above, below = 0, 0
+	if top > 0 && spare > 0 {
+		above, spare = top, spare-1
+	}
+	if end < len(v.rows) && spare > 0 {
+		below = len(v.rows) - end
+	}
+	return v.rows[top:end], top, above, below
 }
 
 // renderLinks draws the link window.
@@ -258,19 +241,29 @@ func (m *Model) renderLinks() string {
 	if v == nil {
 		return m.renderBoard()
 	}
+	avail := m.content()
+	hint := styMeta.Render("j/k  move    enter  jump    esc  back")
+
 	var b strings.Builder
-	title := "Links"
-	if v.title != "" {
-		title = "Links · " + v.title
+	// The title and the rule under it are the first thing to go when the
+	// window is short: they say what the reader already knows, having just
+	// pressed the key that opened it.
+	if avail >= 9 {
+		title := "Links"
+		if v.title != "" {
+			title = "Links · " + v.title
+		}
+		b.WriteString(styLaneTitle.Render(title) + "\n")
+		b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 72))) + "\n")
+		avail -= 2
 	}
-	b.WriteString(styLaneTitle.Render(title) + "\n")
-	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 72))) + "\n\n")
 	if len(v.rows) == 0 {
 		b.WriteString(styMeta.Render("Nothing is linked to this ticket yet.") + "\n")
-		b.WriteString("\n" + styMeta.Render("esc  back") + "\n")
+		b.WriteString(styMeta.Render("esc  back"))
 		return b.String()
 	}
-	rows, first, above, below := v.visible(m.linkLines())
+
+	rows, first, above, below := v.frame(avail - 1) // the hint line
 	if above > 0 {
 		b.WriteString(styMeta.Render(fmt.Sprintf("↑ %d more above", above)) + "\n")
 	}
@@ -292,6 +285,6 @@ func (m *Model) renderLinks() string {
 	if below > 0 {
 		b.WriteString(styMeta.Render(fmt.Sprintf("↓ %d more below", below)) + "\n")
 	}
-	b.WriteString("\n" + styMeta.Render("j/k  move    enter  jump    esc  back") + "\n")
+	b.WriteString(hint)
 	return b.String()
 }

@@ -102,3 +102,50 @@ func TestPlainParentChainIsFine(t *testing.T) {
 		t.Errorf("a → b → c is a normal chain, got %v", ps)
 	}
 }
+
+// A child explaining itself names its epic — that is what the context is
+// for. Telling it to put the epic in blocked-by would contradict the rule
+// that a parent is not a gate, and would make the warning fire on every
+// well-written child.
+func TestAParentNamedInTheContextIsNotAnUndeclaredDependency(t *testing.T) {
+	epic := ok1(idB)
+	child := parented(idA, idB)
+	child.Context = "part of " + handleOf(idB) + ", which sets the direction"
+
+	ps := Tickets([]*ticket.Ticket{epic, child}, lanes(t), nil)
+	if has(ps, CodeUndeclaredDep) {
+		t.Errorf("naming the parent is not a hidden dependency, got %v", ps)
+	}
+}
+
+// Same for a ticket this one merely relates to.
+func TestARelatedTicketNamedInTheContextIsNotADependency(t *testing.T) {
+	other := ok1(idB)
+	a := ok1(idA)
+	a.Related = []string{idB}
+	a.Context = "see also " + handleOf(idB)
+
+	ps := Tickets([]*ticket.Ticket{other, a}, lanes(t), nil)
+	if has(ps, CodeUndeclaredDep) {
+		t.Errorf("naming a related ticket is not a hidden dependency, got %v", ps)
+	}
+}
+
+// A handle is six characters, so two different ids can end with the same
+// one. A parent written as a full id that exists nowhere is dangling — it
+// must not be resolved to whichever ticket shares that tail, or validate
+// reports a ring that does not exist.
+func TestAHandleCollisionDoesNotInventACycle(t *testing.T) {
+	// idC and ghost share their last six characters.
+	ghost := "01ZZZZZZZZZZZZZZZZZZZ" + idC[len(idC)-5:]
+	a := parented(idA, ghost)
+	c := parented(idC, idA)
+
+	ps := Tickets([]*ticket.Ticket{a, c}, lanes(t), nil)
+	if has(ps, CodeParentCycle) {
+		t.Errorf("a full id that names nothing is dangling, not a ring: %v", ps)
+	}
+	if !has(ps, CodeDanglingParent) {
+		t.Errorf("and it must be reported as dangling, got %v", ps)
+	}
+}

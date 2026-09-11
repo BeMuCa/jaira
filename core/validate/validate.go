@@ -207,7 +207,20 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 		// ordinary word that happens to share the six-character shape (say,
 		// GOLANG) cannot fire this.
 		own := handleOf(t.ID)
-		follows := handleOf(t.Follows)
+		// Relations this ticket already declares. A handle in the prose that
+		// names one of them is the relation being explained, not a
+		// dependency somebody forgot: telling a child to put its epic in
+		// blocked-by would contradict the rule that a parent is not a gate.
+		stated := map[string]bool{}
+		if t.Follows != "" {
+			stated[handleOf(t.Follows)] = true
+		}
+		if t.Parent != "" {
+			stated[handleOf(t.Parent)] = true
+		}
+		for _, r := range t.Related {
+			stated[handleOf(r)] = true
+		}
 		// 'jaira set' replaces a list field outright rather than appending to
 		// it, so each suggested command has to spell out the whole resulting
 		// list — the ticket's existing blocked-by plus every handle found so
@@ -226,7 +239,7 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 				// follows: already exists for, not a hidden dependency — and
 				// the parent does not block the follow-up, so the fix this
 				// warning suggests (adding it to blocked-by) would be wrong.
-				if m == own || declared[m] || seen[m] || (t.Follows != "" && m == follows) {
+				if m == own || declared[m] || seen[m] || stated[m] {
 					continue
 				}
 				ref, ok := byHandle[m]
@@ -339,12 +352,14 @@ func parentCycle(t *ticket.Ticket, byID, byHandle map[string]*ticket.Ticket) []s
 			return nil
 		}
 		next, ok := byID[cur.Parent]
-		if !ok {
+		if !ok && !ticket.ValidID(cur.Parent) {
 			// The file is hand-editable and a handle is what a person reads
 			// off the board, so a chain written in handles is a chain that
-			// exists. Following only full ids meant a ring written that way
-			// was never reported — and it is a ring either way, because the
-			// index resolves the handle when it draws the tree.
+			// exists. Only a reference that is not already a full id is
+			// widened this way: a full id that names nothing here is a
+			// dangling parent, reported as such, and resolving it to
+			// whichever ticket happens to share its last six characters
+			// would invent a ring that is not there.
 			next = byHandle[handleOf(cur.Parent)]
 		}
 		cur = next

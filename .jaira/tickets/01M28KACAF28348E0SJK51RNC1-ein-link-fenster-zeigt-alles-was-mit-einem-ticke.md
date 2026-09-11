@@ -24,7 +24,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T19:29:00Z
+updated-at: 2026-09-11T19:50:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
@@ -143,3 +143,14 @@ validate.parentCycle folgt der Kette auch ueber Handles, sonst blieb ein so gesc
 openLinks nimmt den Index des Models statt einen neuen zu bauen.
 
 Neu festgenagelt: der Kernpunkt des DoD auf dem Board selbst (TestAFiledBlockerDoesNotBlockOnTheBoard - faellt, wenn man Satisfied aus gateEnv entfernt, geprueft), related als Union und parent als Skalar im Merge-Driver.
+- **2026-09-11 19:50 · Alexander Sacharov** — review-Runde 3: fuenf Befunde. Die Zeilenrechnung des Fensters war zum dritten Mal falsch, also ist sie nicht noch einmal geflickt, sondern ersetzt.
+
+Vorher lag das Budget in linkLines(), der Ausschnitt in visible() und die Verschiebung in scrollInto() - drei Stellen, die sich gegenseitig nicht glaubten. Der Ausweichzweig in visible() zeichnete sogar ab der Auswahl, ohne v.top zu schreiben: danach stand top auf 0, waehrend Zeile 9 oben stand, und der naechste Tastendruck riss die Liste neun Zeilen zurueck.
+
+Jetzt gibt es frame(): es verschiebt top selbst, schreibt es zurueck und liefert denselben Ausschnitt, ueber den es entschieden hat. Die Rangfolge steht im Kommentar und im Code an einer Stelle: Hinweiszeile immer, dann die Auswahl, dann die Ueberschrift darueber, dann der Rest der Liste, dann Titel und Trennlinie, zuletzt die beiden Zeilen ueber Verborgenes - und die werden nur aus Zeilen gezeichnet, die wirklich uebrig sind.
+
+Die Hoehe des Kastens kommt nicht mehr aus zwei Rechnungen: modalHeight()/modalContent() in modal.go sind die einzige Quelle, das Fenster fragt dort. Genau diese Doppelrechnung war die Ursache in allen drei Runden.
+
+validate: eine Handle-Erwaehnung des Elternteils oder eines related-Tickets im Kontext ist keine verschwiegene Abhaengigkeit mehr. Vorher bekam jedes ordentlich geschriebene Kind den Rat, sein Epic in blocked-by einzutragen - im Widerspruch zur Entscheidung dieses Tickets, dass parent kein Gate ist. Und parentCycle weitet nur noch Referenzen, die keine vollstaendige id sind: sonst haette eine Handle-Kollision einen Ring erfunden, den es nicht gibt.
+
+Der Test laeuft jetzt ueber jede Hoehe von 10 bis 45, einmal die ganze Liste hinunter und wieder hinauf, und prueft bei jedem Schritt: Hinweiszeile da, Auswahl sichtbar, die Zaehler stimmen mit dem Ausschnitt ueberein, und der Ausschnitt folgt dem Cursor, ohne ihn zu ueberholen. Mit der alten Markerrechnung faellt er bei 10 Zeilen.

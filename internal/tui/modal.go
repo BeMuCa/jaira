@@ -47,7 +47,7 @@ func (m *Model) modalOver(content string, under mode) string {
 	// margin is what says "this is on top of something", not "this is the
 	// screen now".
 	maxW := max(20, m.width-8)
-	maxH := max(6, m.height-6)
+	maxH := m.modalHeight()
 	// The trailing newline every view ends with counts as a line once the
 	// content is split, and one line over the budget is what the clip then
 	// eats — the hint line at the bottom, which is the one part of a window
@@ -66,6 +66,16 @@ func (m *Model) modalOver(content string, under mode) string {
 		),
 	).Render()
 }
+
+// modalHeight is how tall the box may be, and modalContent how many lines
+// fit inside its border. A window that budgets its own lines has to ask
+// here rather than repeat the arithmetic: three rounds of review found the
+// same defect, each time because the lines were counted in one place and
+// spent in another.
+func (m *Model) modalHeight() int { return max(6, m.height-6) }
+
+// modalContent is modalHeight less the two border lines.
+func (m *Model) modalContent() int { return m.modalHeight() - 2 }
 
 // underlying renders the view a modal sits on, so closing the modal changes
 // nothing but the box going away.
