@@ -783,6 +783,12 @@ go test ./...
 go build ./cmd/jaira
 ```
 
+**Nothing lands on `master` directly.** A change is made on a branch of its own,
+the ticket rides in the same commits as the code, and the branch arrives through
+a pull request — which is what makes the diff readable: the change and what it
+was for in one place. Opening the pull request is the contributor's job;
+accepting it is the maintainer's.
+
 Layering is enforced by the module graph: `core/` imports nothing from `cmd/` or
 `internal/`. The CLI and the TUI are peers over the same core, which is the only
 reason "both interfaces enforce the same rules" is true rather than aspirational.

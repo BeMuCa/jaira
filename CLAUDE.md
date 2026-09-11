@@ -323,6 +323,24 @@ Told to start or work a ticket, drive it this way yourself — lane by lane,
 loops included — until it sits in a human lane, then continue once the human
 has answered. Told an agent should work it, hand it to a subagent that
 babysits the ticket through the same route.
+
+<!-- jaira:local -->
+
+## Work rides on a branch and arrives through a PR
+
+Nothing lands on `master` directly. A change is made on a branch of its own, the
+ticket rides in the same commits as the code it belongs to, and the branch
+reaches `master` through a pull request.
+
+The ticket travelling with the code is what makes the pull request readable: a
+reviewer sees the change and what it was for in one place, instead of a diff
+whose ticket is still in whatever state the last commit left it.
+
+**Opening the pull request is the contributor's job. Accepting it is the
+maintainer's.** An agent may open a pull request, push to it, and answer review
+comments; it never merges one, and it never approves its own. This is the same
+rule the board already applies to lanes — a review agent cannot certify its own
+work — said once more where it also has to hold.
 <!-- jaira:end -->
 
 ## Client-facing changes go in core/release/NOTES.md
