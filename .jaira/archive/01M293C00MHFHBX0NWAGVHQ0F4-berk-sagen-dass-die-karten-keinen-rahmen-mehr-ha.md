@@ -24,9 +24,10 @@ definition-of-done: Berk hat den Stand gesehen und gesagt was gilt; je nach Antw
 tags:
   - tui
 blocked-by: []
-commits: []
+commits:
+  - a860e46458d57d2ce80666aed710cba2a8fee06a
 created-at: 2026-09-11T20:43:27Z
-updated-at: 2026-09-11T20:43:59Z
+updated-at: 2026-09-11T20:48:52Z
 updated-by: Alexander Sacharov
 ---
 
