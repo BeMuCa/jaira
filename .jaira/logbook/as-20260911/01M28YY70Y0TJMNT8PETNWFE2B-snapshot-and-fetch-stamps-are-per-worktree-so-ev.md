@@ -1,7 +1,7 @@
 ---
 id: 01M28YY70Y0TJMNT8PETNWFE2B
 title: "Snapshot and fetch stamps are per worktree, so every new worktree snapshots at once"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,9 +22,12 @@ definition-of-done: snapshot.json and fetch.json are keyed by repository (shared
 tags:
   - concurrency
 blocked-by: []
-commits: []
+commits:
+  - 487aeed9d35435a08127efb9b702fa745ab986dc
+  - 4ec96ad177f5329c8a21e7b3f3def338e2ed2d9d
+  - 00708b2653313f41d779012c0eface740537d94e
 created-at: 2026-09-11T19:26:01Z
-updated-at: 2026-09-11T20:03:33Z
+updated-at: 2026-09-11T20:51:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1116663
 claimed-at: 2026-09-11T19:26:19Z
