@@ -12,10 +12,10 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-04T17:18:34Z
-updated-at: 2026-09-04T17:35:11Z
+updated-at: 2026-09-11T15:53:19Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:10Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "Katalog-Lane lanes/testing.md (agentic, tier cheap, rejects-to in-progress, Output test-verdict): drei Paesse - Gates bauen/Suite mit -race, DoD Punkt fuer Punkt am Baum verifizieren, das geaenderte Verhalten selbst exerzieren; Findings als test-verdict fail + Note mit Befund/Beleg/Loesungsvorschlag zurueck nach Implementing; auf diesem Board adoptiert und zwischen optimize und human eingeordnet"
 outcome-why: "Berk am 04.09.: nach optimize soll getestet werden, ob das Geforderte umgesetzt und funktional ist, mit Rueckweg samt Vermerk - der Loop laeuft danach erneut durch critique/optimize/testing"
 outcome-resolves: Kontrakt sichtbar in jaira lanes show testing; Reihenfolge in jaira lanes; shipped-Parsing gruen; das Verlassen-ohne-verdict-Gate beweist dieses Ticket auf seinem eigenen Weg durch testing gleich selbst
@@ -49,3 +49,4 @@ review-check: |-
 
 ## Progress
 - **2026-09-04 17:33 · BeMuCa** — Entscheidungen: tier cheap (die Lane fuehrt aus und vergleicht; Urteil liegt in critique/optimize/review) - eine Zeile im Lane-File, falls Berk strong will. Findings-Uebergabe: test-verdict-Feld + jaira note an den Implementing-Agenten; die builtin in-progress-Lane wurde bewusst NICHT angefasst (input-requires um test-verdict zu erweitern waere eine Zeile in .jaira/lanes/in-progress.md, kostet aber eine Dauer-Drift-Warnung gegen das builtin - Berks Zuruf). lanes add haengte testing ans Ende der order-Datei (bekannter Anker-Fall, backlog): von Hand hinter optimize gestellt.
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026): die Testing-Lane steht zwischen Optimize und HITL und deklariert test-verdict.

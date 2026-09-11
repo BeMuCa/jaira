@@ -12,10 +12,10 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T15:45:47Z
-updated-at: 2026-09-03T16:14:58Z
+updated-at: 2026-09-11T15:53:25Z
 claimed-by: EE-3NX6GL3-2629914
 claimed-at: 2026-09-03T15:49:13Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "wrapField-Helper: Feldwerte behalten die Zeilen des Autors (je Eingabezeile gewrappt, haengender Einzug 13); Detail-Pane row() und Signoff section() nutzen ihn - ein mehrzeiliger review-check rendert als nummerierte Liste"
 outcome-why: "Berk am 03.09.: check soll durchnummerierte Schritte als Liste zeigen, nicht als Prosa; row() jagte jeden Wert durch wrap(), das \\n plaettet"
 outcome-resolves: TestAMultilineCheckKeepsItsLines prueft beide Screens (Zeile beginnt unter der Label-Spalte); einzeilige Werte gehen durch den Passthrough-Zweig unveraendert (alte reviewcheck-Tests gruen); go test ./... -race RC=0
@@ -48,3 +48,4 @@ review-verdict: "accept (Zweitmodell: Sonnet-Review am selbst gelesenen Diff, ei
 ## Progress
 - **2026-09-03 15:57 · BeMuCa** — Entscheidung: EIN Helper (wrapField) fuer beide Screens statt zweier Sonderfaelle; einzeilige Werte gehen unveraendert durch wrap (Passthrough-Zweig), also keine Aenderung an bestehenden Renderings - die alten reviewcheck-Tests pinnen das. Leerzeilen im Feld werden zu Einzug-Zeilen (kosmetisch, bewusst nicht behandelt). CLI (jaira show) erhielt Umbrueche schon immer - der Fix betrifft nur die TUI-Label-Spalten-Renderer.
 - **2026-09-03 16:11 · BeMuCa** — Zweitmodell-Review (Sonnet) fand zwei Dinge: (F1) im KA9CFA-Commit ritten die uncommitteten NJPQWE-Runde-4-Hunks mit -> Re-Split vor dem Push (52732e1 + 8e74d58, Baum byte-identisch, diff=0). (F2) fieldRow (view.go:864) ist ein DRITTER Label-Renderer - Lane-declared-Felder auf Detail- UND Signoff-Screen - und plaettete weiter; gleicher wrapField-Fix plus TestFieldRowKeepsTheAuthorsLines. Merke: die Label-Spalte hat drei Renderer (row, section, fieldRow) - wer einen anfasst, prueft alle drei.
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026): mehrzeilige Felder stehen zeilenweise unter ihrem Label, einzeilige unveraendert.
