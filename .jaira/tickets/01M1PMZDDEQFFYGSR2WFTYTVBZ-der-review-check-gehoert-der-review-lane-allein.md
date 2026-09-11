@@ -12,10 +12,10 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-04T16:45:35Z
-updated-at: 2026-09-04T16:50:35Z
+updated-at: 2026-09-11T15:53:15Z
 claimed-by: EE-3NX6GL3-4183114
 claimed-at: 2026-09-04T16:46:02Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "review-check aus der optimize-Lane entfernt (Katalog lanes/optimize.md + Board-Kopie): output-produces nur noch review-gaps, der Prompt verweist die Hand-Pruefung an die review-Lane"
 outcome-why: "Berk am 04.09.: der check gehoert der review-Lane allein - zwei deklarierende Lanes erzeugten das verwirrende (optimize/review)-Provenienz-Label und doppelte Schreibpflicht"
 outcome-resolves: "lanes show optimize zeigt Output: review-gaps; shipped-Parsing gruen; go test ./... -race RC=0; der Gate-Beweis (optimize ohne check verlassen) ist der Weg dieses Tickets selbst"
@@ -46,4 +46,4 @@ review-verdict: "accept (koordinator-verifiziert, offengelegt: Content-only-Aend
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026): 'jaira lanes show optimize' fuehrt review-check nicht mehr.

@@ -12,10 +12,10 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T18:50:32Z
+updated-at: 2026-09-11T15:53:22Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "Gestapelte Karten teilen sich eine Border-Reihe: ab der zweiten Karte im Fenster faellt deren Top-Border weg (renderColumn), cardsInBudget rechnet gestapelte Karten mit 4 statt 5 Zeilen - der optische Abstand zwischen Boxen ist halbiert und pro weiterer Karte wird eine Zeile frei"
 outcome-why: "Berks 4. Screenshot: Luecken zwischen den Boxen halbieren; Messung zeigte keine Leerzeile, sondern zwei aneinanderstossende Border-Reihen, deren Glyphen nur die halbe Zelle fuellen"
 outcome-resolves: "TestStackedCardsShareOneBorderRow verbietet Bottom-ueber-Top-Border boardweit; der Box-Balance-Waechter zaehlt jetzt exakt (1 Stack-Top + 1 Bottom je Karte + Spaltenrahmen, positionsgenau gegen cardsInBudget); Budget-Tests neu gerechnet (5+4+4...); go test ./... -race RC=0"
@@ -57,3 +57,4 @@ review-verdict: "accept - Runde 5 koordinator-verifiziert und offengelegt (wie R
 - **2026-09-03 15:38 · BeMuCa** — Berks 3. Signoff-Feedback (Screenshot): (1) Innenabstand links in der Box zu gross; (2) der blaue Selektions-Balken soll weg - Selektion reicht als gefaerbte Schrift, blau bzw. in der Tag-Farbe der Karte; (3) seine Frage 'Text vergroessert?' - nein, Terminalschrift ist fix; Karten sind seit w-1 drei Spalten breiter, daher mehr sichtbarer Titel.
 - **2026-09-03 16:11 · BeMuCa** — Nachtrag: die Runde-4-Hunks (Balken raus, Einzug 1) waren nie eigenstaendig committet und ritten im KA9CFA-Commit mit - vom Zweitmodell-Review gefunden (bekannte Buendelungs-Klasse). Re-Split vor dem Push: eigener Commit 52732e1, Code-Baum danach byte-identisch zum reviewten Stand (diff=0 verifiziert).
 - **2026-09-03 18:37 · BeMuCa** — Berks 4. Feedback: Luecken ZWISCHEN den Boxen halbieren. Messung (TestBoardRenders-Log): es gibt KEINE Leerzeile - der Eindruck entsteht durch zwei aneinanderstossende Border-Reihen (Glyphen zeichnen halbe Zellhoehe). Halbieren = gestapelte Karten teilen sich EINE Border-Reihe: ab der zweiten Karte im Fenster faellt die eigene Top-Border weg, die Bottom-Border der vorigen ist der Trenner (traegt deren Tag-Farbe). Hoehen: erste Karte 5, jede weitere 4 - cardsInBudget rechnet positionsabhaengig.
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026): jede Karte gerahmt, auch ohne Tag, und zwischen zwei Karten genau eine Linie.

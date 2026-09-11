@@ -153,6 +153,18 @@ type Env struct {
 	// is on offer, and the requires-commits refusal below stands exactly as
 	// it did before this existed.
 	DeriveCommits func(t *ticket.Ticket) []string
+
+	// Satisfied answers whether a ticket that is not in All has nevertheless
+	// been finished and filed away — in the logbook, or in the archive in a
+	// terminal lane. It is injected for the same reason DeriveCommits is:
+	// finding that out means reading directories, and this package stays
+	// free of the filesystem.
+	//
+	// Without it, a dependency that completed and was filed read as "does not
+	// exist in this store" and blocked the ticket waiting on it forever —
+	// finishing the blocker was the thing that broke the board. nil keeps the
+	// old behaviour, which is right for a caller that has no store.
+	Satisfied func(id string) bool
 }
 
 // CheckAdvance decides whether t may move to req.To.
@@ -567,6 +579,15 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 				Code:    CodeSelfBlock,
 				Message: "ticket lists itself in blocked-by",
 			})
+			continue
+		}
+		// Asked first, and for every dependency rather than only for one
+		// that is missing from All. A ticket filed into the logbook here
+		// still travels on its own ref, so All can carry a stale copy of it
+		// with the lane it sat in before it was finished — and that copy
+		// would go on blocking work that is done. Whoever answers this
+		// knows which of the two is the live one; All does not.
+		if env.Satisfied != nil && env.Satisfied(dep) {
 			continue
 		}
 		other, ok := byID[dep]

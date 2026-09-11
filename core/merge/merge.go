@@ -37,6 +37,11 @@ var listFields = map[string]bool{
 	// and picking a side would drop one of them silently — the failure mode a
 	// union exists to rule out.
 	ticket.FieldTags: true,
+	// Two sessions relating the same ticket to two different neighbours are
+	// both right, the same way two taggers are. parent is absent from this
+	// list on purpose: a ticket is part of one thing, so there the newer
+	// answer wins like any other scalar.
+	ticket.FieldRelated: true,
 }
 
 // proseFields carry human writing. Two different rewrites of the same sentence
