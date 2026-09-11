@@ -17,8 +17,17 @@ import (
 // like the board does not.
 type linkView struct {
 	subject string
-	rows    []linkRow
-	cursor  int
+	// title is the subject's own title, kept because the window is opened
+	// from the ticket itself — looking it up again through the board would
+	// also fail for a ticket the board has no card for.
+	title  string
+	rows   []linkRow
+	cursor int
+	// top is the first row on screen. An epic with many children is longer
+	// than the box, and a window that clipped without scrolling could hold a
+	// selection the reader cannot see — which reads as the cursor being
+	// stuck.
+	top int
 	// from is the view this window was opened over, kept here rather than in
 	// the shared returnTo field: a refusal raised inside this window uses
 	// that field for itself, and the two would overwrite each other.
@@ -35,16 +44,6 @@ type linkRow struct {
 // not a destination.
 func (r linkRow) selectable() bool { return r.heading == "" }
 
-// linkKindOrder fixes the order the groups appear in, strongest obligation
-// first, so the window does not reshuffle between two openings of the same
-// ticket.
-var linkKindOrder = []link.Kind{
-	link.KindBlockedBy, link.KindBlocks,
-	link.KindParent, link.KindChild,
-	link.KindRelated,
-	link.KindFollows, link.KindFollowedBy,
-}
-
 // openLinks builds the link window for the selected card.
 func (m *Model) openLinks() {
 	// The open ticket when there is one: in the detail pane the card the
@@ -58,8 +57,8 @@ func (m *Model) openLinks() {
 	}
 	ix := link.Build(m.store, m.lanes, m.tickets)
 	entries := ix.Relations(t.ID)
-	v := &linkView{subject: t.ID}
-	for _, k := range linkKindOrder {
+	v := &linkView{subject: t.ID, title: t.Title}
+	for _, k := range link.Order {
 		var group []link.Entry
 		for _, e := range entries {
 			if e.Kind == k {
@@ -122,10 +121,12 @@ func (m *Model) keyLinks(s string) {
 		if n := v.next(v.cursor, 1); n >= 0 {
 			v.cursor = n
 		}
+		v.scrollInto(m.linkRows())
 	case "k", "up":
 		if n := v.next(v.cursor, -1); n >= 0 {
 			v.cursor = n
 		}
+		v.scrollInto(m.linkRows())
 	case "enter":
 		e, ok := v.current()
 		if !ok {
@@ -151,6 +152,62 @@ func (m *Model) keyLinks(s string) {
 	}
 }
 
+// linkRows is how many rows of the window fit on screen.
+//
+// It has to agree with what modalOver leaves for content — the box keeps a
+// margin off the window and a line of border each side — minus this window's
+// own furniture: the title, the rule under it and a blank line above the
+// list, the blank line and hint line under it, and the two lines that say
+// how much is hidden. When this number is too large the modal clips the
+// list itself, and the clip cannot scroll, which is the failure this window
+// exists to avoid.
+func (m *Model) linkRows() int {
+	const furniture = 7
+	return max(2, m.height-8-furniture)
+}
+
+// scrollInto moves the visible run so the cursor is inside it, and no
+// further — a window that recentred on every keypress makes the whole list
+// move under the reader.
+func (v *linkView) scrollInto(rows int) {
+	// A heading belongs to the entry under it, so scrolling to an entry
+	// shows the heading that names it rather than starting mid-group.
+	want := v.cursor
+	if want > 0 && v.rows[want-1].heading != "" {
+		want--
+	}
+	if want < v.top {
+		v.top = want
+	}
+	// Each entry prints two lines: the ticket and where it lives.
+	if span := (v.cursor - v.top + 1) * 2; span > rows {
+		v.top = v.cursor - rows/2 + 1
+	}
+	v.top = max(0, min(v.top, max(0, len(v.rows)-1)))
+}
+
+// visible is the run of rows on screen, and whether anything is hidden above
+// or below it. The counts are printed: a reader must never be left thinking
+// they have seen the whole list.
+func (v *linkView) visible(rows int) (out []linkRow, first int, above, below int) {
+	if v.top > 0 {
+		above = v.top
+	}
+	lines := 0
+	for i := v.top; i < len(v.rows); i++ {
+		cost := 1
+		if v.rows[i].selectable() {
+			cost = 2
+		}
+		if lines+cost > rows {
+			return out, v.top, above, len(v.rows) - i
+		}
+		lines += cost
+		out = append(out, v.rows[i])
+	}
+	return out, v.top, above, 0
+}
+
 // renderLinks draws the link window.
 func (m *Model) renderLinks() string {
 	v := m.links
@@ -159,8 +216,8 @@ func (m *Model) renderLinks() string {
 	}
 	var b strings.Builder
 	title := "Links"
-	if t := m.byID(v.subject); t != nil {
-		title = "Links · " + t.Title
+	if v.title != "" {
+		title = "Links · " + v.title
 	}
 	b.WriteString(styLaneTitle.Render(title) + "\n")
 	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 72))) + "\n\n")
@@ -169,7 +226,12 @@ func (m *Model) renderLinks() string {
 		b.WriteString("\n" + styMeta.Render("esc  back") + "\n")
 		return b.String()
 	}
-	for i, row := range v.rows {
+	rows, first, above, below := v.visible(m.linkRows())
+	if above > 0 {
+		b.WriteString(styMeta.Render(fmt.Sprintf("↑ %d more above", above)) + "\n")
+	}
+	for j, row := range rows {
+		i := first + j
 		if row.heading != "" {
 			b.WriteString("\n" + styMeta.Render(row.heading) + "\n")
 			continue
@@ -183,16 +245,9 @@ func (m *Model) renderLinks() string {
 		b.WriteString(marker + indent + e.Ref.Label() + "\n")
 		b.WriteString(styMeta.Render(fmt.Sprintf("  %s  %s", indent, e.Ref.Whereabouts())) + "\n")
 	}
+	if below > 0 {
+		b.WriteString(styMeta.Render(fmt.Sprintf("↓ %d more below", below)) + "\n")
+	}
 	b.WriteString("\n" + styMeta.Render("j/k  move    enter  jump    esc  back") + "\n")
 	return b.String()
-}
-
-// byID finds a listed ticket by id.
-func (m *Model) byID(id string) *ticket.Ticket {
-	for _, t := range m.tickets {
-		if t.ID == id {
-			return t
-		}
-	}
-	return nil
 }

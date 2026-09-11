@@ -65,6 +65,17 @@ const (
 	KindFollowedBy Kind = "followed-by"
 )
 
+// Order is the order the kinds are shown in, strongest obligation first. It
+// lives here rather than in each view because two copies of it drift, and a
+// reader comparing the CLI with the board would then see the same links in
+// two different orders.
+var Order = []Kind{
+	KindBlockedBy, KindBlocks,
+	KindParent, KindChild,
+	KindRelated,
+	KindFollows, KindFollowedBy,
+}
+
 // Title is how a kind is written out for a reader.
 func (k Kind) Title() string {
 	switch k {
@@ -354,9 +365,7 @@ func (ix *Index) Relations(id string) []Entry {
 	}
 	// Children come as a tree, deepest branch included, so an epic reads as
 	// one thing rather than as a list that has to be re-opened per level.
-	for _, c := range ix.childTree(id, all, map[string]bool{id: true}, 0) {
-		out = append(out, c)
-	}
+	out = append(out, ix.childTree(id, childrenOf(all), map[string]bool{id: true}, 0)...)
 	for _, otherID := range ix.relatedBoth(id, subject, all) {
 		add(KindRelated, otherID, 0)
 	}
@@ -371,13 +380,27 @@ func (ix *Index) Relations(id string) []Entry {
 	return out
 }
 
+// childrenOf groups every ticket by the parent it names, in one pass. Asking
+// each node for its children by scanning the whole board again made the walk
+// quadratic in the number of tickets, which the depth of the tree then
+// multiplies.
+func childrenOf(all []*ticket.Ticket) map[string][]*ticket.Ticket {
+	out := map[string][]*ticket.Ticket{}
+	for _, t := range all {
+		if t.Parent != "" {
+			out[t.Parent] = append(out[t.Parent], t)
+		}
+	}
+	return out
+}
+
 // childTree walks the children of id depth-first. seen carries every id on
 // the path from the root, so a parent ring — which a hand-edited file can
 // always produce — terminates instead of hanging the caller.
-func (ix *Index) childTree(id string, all []*ticket.Ticket, seen map[string]bool, depth int) []Entry {
+func (ix *Index) childTree(id string, kids map[string][]*ticket.Ticket, seen map[string]bool, depth int) []Entry {
 	var out []Entry
-	for _, t := range all {
-		if t.Parent != id || seen[t.ID] {
+	for _, t := range kids[id] {
+		if seen[t.ID] {
 			continue
 		}
 		seen[t.ID] = true
@@ -387,7 +410,7 @@ func (ix *Index) childTree(id string, all []*ticket.Ticket, seen map[string]bool
 		}
 		ref.Depth = depth
 		out = append(out, Entry{Kind: KindChild, Ref: ref})
-		out = append(out, ix.childTree(t.ID, all, seen, depth+1)...)
+		out = append(out, ix.childTree(t.ID, kids, seen, depth+1)...)
 	}
 	return out
 }

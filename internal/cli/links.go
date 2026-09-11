@@ -65,18 +65,9 @@ ticket having to be edited twice.`,
 	return cmd
 }
 
-// kindOrder fixes the order the groups are printed in, strongest obligation
-// first, so the same ticket never reads differently between two openings.
-var kindOrder = []link.Kind{
-	link.KindBlockedBy, link.KindBlocks,
-	link.KindParent, link.KindChild,
-	link.KindRelated,
-	link.KindFollows, link.KindFollowedBy,
-}
-
 func linksJSON(t *ticket.Ticket, entries []link.Entry) map[string]any {
 	groups := map[string][]map[string]any{}
-	for _, k := range kindOrder {
+	for _, k := range link.Order {
 		for _, e := range entries {
 			if e.Kind != k {
 				continue
@@ -105,7 +96,7 @@ func printLinks(w io.Writer, t *ticket.Ticket, entries []link.Entry) {
 	fmt.Fprintf(w, "%s  %s\n", ticket.Handle(t.ID), t.Title)
 	fmt.Fprintf(w, "%s\n", strings.Repeat("─", 64))
 	any := false
-	for _, k := range kindOrder {
+	for _, k := range link.Order {
 		var group []link.Entry
 		for _, e := range entries {
 			if e.Kind == k {

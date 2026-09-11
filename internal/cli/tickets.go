@@ -598,10 +598,10 @@ thinking they have seen everything.`,
 				j := ticketJSON(t, env.Lanes)
 				j["body"] = t.Body
 				j["path"] = path
-				j["filed_away"] = filedAway(s, t)
+				j["filed_away"] = filedAway(t, path)
 				return emit(cmd.OutOrStdout(), j)
 			}
-			if where := filedAway(s, t); where != "" {
+			if where := filedAway(t, path); where != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "off the board: %s\n", where)
 			}
 			printDetail(cmd.OutOrStdout(), t, env, notesLast, children(s, env, t)...)
@@ -1318,14 +1318,20 @@ func laneFacts(lanes *lane.Set) []board.LaneFact {
 // filedAway says where a ticket lives once it has left the board, and nothing
 // at all while it is still on it. Printed above the detail so a reader is
 // never shown a finished ticket as though it were still in play.
-func filedAway(s *ticket.Store, t *ticket.Ticket) string {
-	if t == nil || t.Path == "" {
+//
+// It reads the path LoadAnywhere already returned rather than listing the
+// logbook again: the caller has the answer in hand, and asking the
+// filesystem twice for one question is how the two answers start to differ.
+func filedAway(t *ticket.Ticket, path string) string {
+	if t == nil || path == "" {
 		return ""
 	}
-	for id, path := range s.FiledAwayIDs() {
-		if id == t.ID && path == t.Path {
-			return path
-		}
+	dir := filepath.Base(filepath.Dir(path))
+	switch {
+	case strings.Contains(filepath.ToSlash(path), "/"+ticket.ArchiveSubdir+"/"):
+		return path
+	case strings.Contains(filepath.ToSlash(path), "/"+ticket.LogbookSubdir+"/"+dir+"/"):
+		return path
 	}
 	return ""
 }

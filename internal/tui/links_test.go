@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -252,5 +253,54 @@ func TestRefusalInsideTheWindowKeepsIt(t *testing.T) {
 	m.key(key("esc"))
 	if m.mode != modeLinks {
 		t.Fatalf("dismissing the refusal must land back in the link window, mode = %v", m.mode)
+	}
+}
+
+// An epic with more children than the box is tall must still be readable:
+// the window scrolls with the cursor and says how much is hidden. A window
+// that clipped without scrolling would hold a selection nobody can see,
+// which reads as the cursor being stuck.
+func TestLongLinkListScrollsWithTheCursor(t *testing.T) {
+	m := newTestModel(t, 150, 20)
+	now := time.Now()
+	epic, err := m.store.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(now), ticket.FieldTitle: "Epic", ticket.FieldStatus: "todo",
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 20; i++ {
+		now = now.Add(time.Millisecond)
+		if _, err := m.store.Create(map[string]string{
+			ticket.FieldID:     ticket.NewID(now),
+			ticket.FieldTitle:  fmt.Sprintf("Child %02d", i),
+			ticket.FieldStatus: "todo",
+			ticket.FieldParent: epic.ID,
+		}, nil, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.selectByID(epic.ID)
+	m.key(key("L"))
+
+	if !strings.Contains(m.render(), "more below") {
+		t.Errorf("a list longer than the box must say what is hidden\n%s", m.render())
+	}
+	// Walk to the bottom; the selected row has to be on screen the whole way.
+	for i := 0; i < 25; i++ {
+		m.key(key("j"))
+		e, ok := m.links.current()
+		if !ok {
+			t.Fatalf("cursor left the entries after %d moves", i)
+		}
+		if !strings.Contains(m.render(), e.Ref.Title) {
+			t.Fatalf("selected %q is off screen after %d moves\n%s", e.Ref.Title, i, m.render())
+		}
+	}
+	if !strings.Contains(m.render(), "more above") {
+		t.Errorf("scrolled down, so something is hidden above\n%s", m.render())
 	}
 }

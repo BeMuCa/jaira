@@ -1,7 +1,7 @@
 ---
 id: 01M28KACAF28348E0SJK51RNC1
 title: "Ein Link-Fenster zeigt alles, was mit einem Ticket verbunden ist"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,18 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T16:25:33Z
+updated-at: 2026-09-11T18:54:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
 outcome-what: "Ein Link-Fenster im TUI (Taste L) und 'jaira links <id>' zeigen jede Verbindung eines Tickets in beide Richtungen, quer ueber Board, git-refs, Logbuch und Archiv. Neue Felder parent (Skalar, auf dem Kind) und related (Liste, beidseitig gelesen); Kinder werden rekursiv abgeleitet statt gespeichert. Ein Blocker, der fertig ist und abgelegt wurde, blockiert nicht mehr."
 outcome-why: "Jede Verbindung riss ab, sobald das andere Ticket fertig war: Store.Paths() kannte nur .jaira/tickets/, also war ein abgelegtes Ticket per 'jaira show' nicht auffindbar, und ein blocked-by darauf hielt das abhaengige Ticket fuer immer blockiert. Fertigwerden sah aus wie Kaputtgehen."
 outcome-resolves: "Neues Paket core/link als einzige Aufloesung fuer alle vier Leser; Store.LoadAnywhere; gate.Env.Satisfied und validate.Tickets(known) injiziert statt Dateisystem im reinen Paket; modeLinks im TUI; NOTES.md-Zeilen; Tests fuer alle vier Quellen, Blocker-im-Logbuch, parent-Zyklus und das Fenster."
+review-summary: |-
+  internal/cli/links.go kindOrder und internal/tui/links.go linkKindOrder sind zwei Kopien derselben Reihenfolge - sie gehoert einmal nach core/link, sonst zeigen CLI und TUI nach der naechsten Aenderung verschiedene Reihenfolgen
+  internal/cli/tickets.go filedAway() listet FiledAwayIDs() neu durch, um einen Pfad zu finden, den LoadAnywhere direkt daneben schon zurueckgegeben hat - den Rueckgabewert nehmen statt ein zweites Verzeichnis-Listing
+  internal/tui/modal.go clipHeight() schneidet den Inhalt hart ab, aber der Cursor in linkView laeuft weiter - bei einem Epic mit vielen Kindern zeigt das Fenster eine Auswahl, die nicht auf dem Schirm ist. Entweder das Fenster scrollt mit dem Cursor, oder der Cursor darf nicht unter die Abschneidekante
+  core/link Relations() ruft childTree() auf, das je Knoten alle Tickets durchlaeuft - bei tiefen Baeumen quadratisch. Einmal eine Map parent -> Kinder bauen und die verwenden
 ---
 
 ## Definition of Done
@@ -82,3 +87,19 @@ outcome-resolves: "Neues Paket core/link als einzige Aufloesung fuer alle vier L
 - Der Index liest das Logbuch faul: FiledAwayIDs ist nur ein Verzeichnis-Listing, und erst eine Frage, die nur die Datei beantworten kann, oeffnet sie. Rueckwaerts-Links (wer nennt mich als Elternteil) brauchen alle Dateien — das passiert nur beim Oeffnen des Fensters, nie beim Rendern des Boards.
 - Logbuch heisst fertig, ohne die Datei zu lesen: dort landet nur Arbeit aus einer terminalen Lane. Das Archiv ist eine Schublade und kein Urteil, deshalb wird dort die Lane nachgelesen.
 - Whereabouts und Label leben in core/link, nicht in CLI und TUI je einmal: 'logbook · done' ist der Unterschied zwischen erfuellter und offener Abhaengigkeit, und zwei Schreibweisen davon waeren zwei Antworten.
+- **2026-09-11 18:50 · Alexander Sacharov** — critique: vier Befunde, alle mit klarer Korrektur, also zurueck in die Implementierung statt in die HITL-Lane.
+
+1. Doppelte Reihenfolge: kindOrder (internal/cli/links.go) und linkKindOrder (internal/tui/links.go) sind dieselbe Liste zweimal. Gehoert nach core/link, wo schon Kind.Title() und Ref.Whereabouts() liegen - genau aus demselben Grund dorthin gezogen.
+2. filedAway() in internal/cli/tickets.go listet das Logbuch erneut durch, obwohl LoadAnywhere drei Zeilen darueber den Pfad schon geliefert hat. Zwei Verzeichnis-Listings fuer eine Frage.
+3. Der harte Schnitt in clipHeight() und der weiterlaufende Cursor in linkView widersprechen sich: ein Epic mit vielen Kindern kann eine Auswahl haben, die nicht sichtbar ist. Das ist der Fehler, den der Nutzer zuerst sehen wird.
+4. childTree() ist quadratisch, weil es je Knoten alle Tickets scannt. Eine Map parent -> Kinder einmal bauen kostet nichts und macht die Tiefe umsonst.
+
+Nicht beanstandet und bewusst so gelassen: parent auf dem Kind (die Begruendung steht in der Notiz davor), der injizierte Satisfied-Funktionszeiger in core/gate (folgt DeriveCommits) und das faule Lesen des Logbuchs.
+- **2026-09-11 18:54 · Alexander Sacharov** — in-progress nach critique: alle vier Befunde erledigt.
+
+1. link.Order liegt jetzt in core/link neben Kind.Title() und Ref.Whereabouts(); CLI und TUI lesen dieselbe Liste. Der TUI-eigene byID() ist ebenfalls weg - der Titel des Subjekts wird beim Oeffnen mitgenommen, was auch fuer ein Ticket funktioniert, fuer das das Board keine Karte hat.
+2. filedAway() nimmt den Pfad, den LoadAnywhere schon zurueckgibt, statt das Logbuch ein zweites Mal zu listen.
+3. Das Fenster scrollt jetzt mit dem Cursor und schreibt hin, wie viel oben und unten verborgen ist. Dabei kam heraus, dass die Zeilenzahl mit dem abstimmen muss, was modalOver fuer Inhalt uebrig laesst - sonst schneidet der Modal-Rahmen die Liste ab, und dieser Schnitt kann nicht scrollen. Die Konstante steht deshalb mit Begruendung an linkRows().
+4. childrenOf() baut die Map parent -> Kinder einmal; childTree() liest sie nur noch. Vorher quadratisch in der Ticketzahl.
+
+Der Test TestLongLinkListScrollsWithTheCursor haelt Befund 3 fest: er baut ein Epic mit 20 Kindern in einem 20 Zeilen hohen Fenster und prueft nach jedem j, dass die Auswahl sichtbar ist. Er ist beim ersten Lauf fehlgeschlagen und hat genau den Modal-Schnitt gefunden.
