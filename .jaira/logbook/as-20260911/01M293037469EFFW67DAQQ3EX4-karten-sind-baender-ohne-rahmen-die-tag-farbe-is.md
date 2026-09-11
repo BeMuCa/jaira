@@ -1,7 +1,7 @@
 ---
 id: 01M293037469EFFW67DAQQ3EX4
 title: "Karten sind Baender ohne Rahmen, die Tag-Farbe ist eine Zelle links"
-status: human
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,16 +29,17 @@ definition-of-done: Karten tragen keinen Rahmen mehr; die Tag-Farbe fuellt eine 
 tags:
   - tui
 blocked-by: []
-commits: []
+commits:
+  - 784ca787e627eec8e1c3f3fd8ac3006ba5afb748
 created-at: 2026-09-11T20:36:57Z
-updated-at: 2026-09-11T20:38:37Z
+updated-at: 2026-09-11T20:44:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1327969
 claimed-at: 2026-09-11T20:38:22Z
 question: "Das hier kippt zwei Entscheidungen von Berk: 81XRXX (jede Karte hat einen Rahmen, 'ich will den rahmen', 08.09.) und VS5DFW (die Tag-Farbe sitzt in der linken Rahmenkante). Beide sind auf ihren Tickets als ueberholt vermerkt, aber Berk hat davon noch nichts gehoert - er hat den Rahmen mit Screenshots eingefordert und zweimal nachgeschaerft. Wer sagt es ihm, und akzeptiert er den Tausch Rahmen gegen zwei Spalten Titel und zwei Zeilen Hoehe? Wenn nicht, kommen beide Tickets zurueck und dieses hier faellt."
-outcome-what: "Karten tragen keinen Rahmen mehr, sondern sind gefuellte Baender ueber die volle Lane-Innenbreite; die Tag-Farbe ist eine ganze Zelle links ueber alle drei Zeilen; der Fuellton wechselt von Karte zu Karte; cardHeight faellt von 5 auf 3 und die Fuelltoene sind neu verteilt (Lane 234/236, Auswahl 239) damit nichts zusammenfaellt"
-outcome-why: "Der Rahmen kostete zwei Spalten in jeder Zeile und schnitt jeden Titel auf dem Board bei 17 Zeichen ab; das Band sagt dasselbe - wo die Karte anfaengt und aufhoert - mit Zeilen, die ohnehin gezeichnet werden"
-outcome-resolves: "Titelbreite w-6 auf w-4, Kartenhoehe 5 auf 3, die Tag-Farbe fuellt eine ganze Zelle statt der halben eines Rahmen-Glyphs, und kein Auswahlton faellt mit einem Lane-Ton zusammen. go test ./... -race gruen, 24 Pakete"
+outcome-what: "Siehe outcome-what des Uebergangs nach human; seitdem unveraendert"
+outcome-why: "Siehe outcome-why des Uebergangs nach human"
+outcome-resolves: "Von Alex am 11.09. am laufenden Board abgenommen. review uebersprungen, siehe Notiz."
 ---
 
 # Karten sind Baender ohne Rahmen, die Tag-Farbe ist eine Zelle links
@@ -58,3 +59,5 @@ outcome-resolves: "Titelbreite w-6 auf w-4, Kartenhoehe 5 auf 3, die Tag-Farbe f
 
 ## Progress
 - **2026-09-11 20:38 · Alexander Sacharov** — Zwei Tests haben ihre Frage verloren, nicht ihre Antwort, und sind darum ersetzt statt geloescht: TestStackedCardsShareOneBorderRow fragte, ob zwei Border-Reihen aufeinandertreffen - jetzt fragt TestStackedCardsAlternateTheirShade, ob zwei Nachbarn denselben Fuellton bekommen, was dieselbe Gefahr ist ohne Rahmen. TestColumnNeverCutsATaggedCardInHalf zaehlte Rahmen-Glyphen; es zaehlt jetzt die Balken-Zellen, weil die pro Kartenzeile genau einmal gezeichnet werden und damit sagen, wieviele Zeilen wirklich auf den Schirm kamen.
+- **2026-09-11 20:44 · Alexander Sacharov** — Angenommen von Alex am 11.09. im Gespraech, Stueck fuer Stueck im laufenden Board angesehen. Die review-Lane wurde dabei uebersprungen, und das ist eine bewusste Luecke, keine erledigte Stufe: review heisst 'ein zweites Modell hat den Diff beurteilt', und der Autor des Codes war dasselbe Modell, das ihn haette pruefen sollen. Was stattfand, war menschliche Abnahme am laufenden Bild, nicht Modell-Review. Wer spaeter einen Fehler in diesen drei Tickets sucht: hier ist die Stelle, an der niemand mit frischen Augen draufgeschaut hat.
+- **2026-09-11 20:44 · Alexander Sacharov** — Die offene Frage dieses Tickets - wer sagt es Berk - hat jetzt einen Besitzer und einen Zeitpunkt: Alex, nach Berks Urlaub. Als eigenes Ticket VHQ0F4 auf der Bahn, damit es nicht an diesem hier haengt. 81XRXX und VS5DFW bleiben solange im Backlog mit ihrer Ueberholt-Notiz - nicht archiviert, weil das Wegraeumen seiner Tickets vor dem Gespraech die Spur loeschen wuerde.

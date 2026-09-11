@@ -1,7 +1,7 @@
 ---
 id: 01M291C5YMJWJBKDWVRAXK4124
 title: "Die ausgewaehlte Karte leuchtet in ihrer Tag-Farbe, c schaltet um"
-status: human
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -11,16 +11,17 @@ definition-of-done: "Die ausgewaehlte Karte mit farbigem Tag ist in dessen Ton g
 tags:
   - tui
 blocked-by: []
-commits: []
+commits:
+  - 39ea28fff1831164bf201b997642012325be7e0b
 created-at: 2026-09-11T20:08:36Z
-updated-at: 2026-09-11T20:09:56Z
+updated-at: 2026-09-11T20:44:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1258931
 claimed-at: 2026-09-11T20:08:53Z
 question: "Bleibt es bei 15% auf 24-Bit-Terminals? Alex hat im Mockup 20 (25% in der Palette) am besten gefunden, aber dort war die ausgewaehlte Karte zufaellig die mit dem Cyan-Tag - der einzigen der acht Farben, die bei 25% ueberhaupt eine Farbe bleibt. Bei 170 oder 111 waere derselbe Screenshot grau gewesen. Der Vergleich lief danach ueber 27 (24-Bit, 15%), wo alle Toene stehen; von dort kommt die 15%. Wer das leiser oder lauter will, aendert glowMixTrue in internal/tui/glow.go - glowMix256 haengt nicht daran und darf nicht mit heruntergezogen werden."
-outcome-what: "Die Fuellung der ausgewaehlten Karte wird aus der Farbe ihres Tags gemischt statt neutral grau zu bleiben; c schaltet um und die Fusszeile nennt den naechsten Druck; gemischt wird 15% auf einem 24-Bit-Terminal und 45% sonst, beides aufwaerts von Grau 237"
-outcome-why: "Die Fuellung sagte nur wo der Cursor steht, obwohl sie im selben Feld auch sagen kann worum es geht; und ein einzelner Mischwert geht nicht, weil unter etwa 45% jede Tag-Farbe auf die Graustufenleiter der 256er-Palette faellt"
-outcome-resolves: "Die ausgewaehlte Karte traegt den Ton ihres Tags, keine der acht vergebenen Tag-Farben landet auf einem Grau, eine Karte ohne farbiges Tag bleibt neutral, und c stellt das Ganze ab. go test ./... -race gruen, 24 Pakete"
+outcome-what: "Siehe outcome-what des Uebergangs nach human; seitdem unveraendert"
+outcome-why: "Siehe outcome-why des Uebergangs nach human"
+outcome-resolves: "Von Alex am 11.09. am laufenden Board abgenommen. review uebersprungen, siehe Notiz."
 ---
 
 # Die ausgewaehlte Karte leuchtet in ihrer Tag-Farbe, c schaltet um
@@ -40,3 +41,5 @@ outcome-resolves: "Die ausgewaehlte Karte traegt den Ton ihres Tags, keine der a
 
 ## Progress
 - **2026-09-11 20:09 · Alexander Sacharov** — Die Messung, auf der die zwei Mischwerte beruhen, steht im Context und ist der eigentliche Inhalt des Tickets - ohne sie sieht 15% wie eine Geschmacksfrage aus und jemand stellt es spaeter 'leiser', womit die Tag-Farbe auf jedem Palette-Terminal still verschwindet. Das Skript, das die Tabelle erzeugt hat, lag unter scratchpad/whichtints und ist nicht eingecheckt; die Rechnung steht jetzt als Test da (TestGlowKeepsItsColourOnAPaletteTerminal), was der bessere Ort ist.
+- **2026-09-11 20:44 · Alexander Sacharov** — Angenommen von Alex am 11.09. im Gespraech, Stueck fuer Stueck im laufenden Board angesehen. Die review-Lane wurde dabei uebersprungen, und das ist eine bewusste Luecke, keine erledigte Stufe: review heisst 'ein zweites Modell hat den Diff beurteilt', und der Autor des Codes war dasselbe Modell, das ihn haette pruefen sollen. Was stattfand, war menschliche Abnahme am laufenden Bild, nicht Modell-Review. Wer spaeter einen Fehler in diesen drei Tickets sucht: hier ist die Stelle, an der niemand mit frischen Augen draufgeschaut hat.
+- **2026-09-11 20:44 · Alexander Sacharov** — Die offene Frage dieses Tickets - bleibt es bei 15% auf 24-Bit-Terminals - ist beantwortet: ja. Alex am 11.09.: '15% на truecolor иначе не видно'. glowMix256 bleibt bei 45% und darf nicht mitgezogen werden.
