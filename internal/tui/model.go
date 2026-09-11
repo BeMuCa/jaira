@@ -17,6 +17,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/BeMuCa/jaira/core/gate"
@@ -82,6 +83,23 @@ type Model struct {
 	// scroll tracks the first visible card per lane so long lanes can be paged
 	// without losing the cursor.
 	scroll map[string]int
+
+	// darkBG says which way the selection fill has to go to read as "one step
+	// off the background". Bubble Tea reports it on start and again whenever
+	// the terminal's background changes; a terminal that answers neither leaves
+	// the dark default, which is what the rest of the palette already assumes.
+	darkBG bool
+
+	// glow fills the selected card in its tag's colour instead of a neutral
+	// grey. On by default: the fill is there either way, and carrying the tag's
+	// hue in it costs nothing and says more. Session-only, for the same reason
+	// thinEmpty is — see the note there.
+	glow bool
+
+	// trueColor says the terminal can show 24-bit colour, which decides how far
+	// the glow is mixed. Reported by Bubble Tea on start; a terminal that says
+	// nothing is treated as palette-only, the safe direction.
+	trueColor bool
 
 	// detailScroll is the first visible line of the open ticket. The detail pane
 	// is the one view whose content has no upper bound — several checklists, a
@@ -259,7 +277,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), versionLine: versionLine(), darkBG: true, glow: true}
 	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
 	s.Actor = m.me
@@ -640,7 +658,10 @@ func (m *Model) Init() tea.Cmd {
 	// The ref fetch runs once at startup and then on its own slower timer:
 	// being handed a ticket should show up without the user asking, but not at
 	// the cadence of the local rescan.
-	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick())
+	// Asked for explicitly: the selection fill has a direction, and without an
+	// answer the board keeps the dark default and would paint a black block on
+	// a light terminal.
+	return tea.Batch(tick(), waitForChange(m.watch), fetchRefs(m.refSync), refTick(), tea.RequestBackgroundColor)
 }
 
 // startWatching subscribes to changes in the ticket and session directories.
@@ -769,6 +790,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		return m, nil
+
+	case tea.BackgroundColorMsg:
+		m.darkBG = msg.IsDark()
+		return m, nil
+
+	case tea.ColorProfileMsg:
+		m.trueColor = msg.Profile == colorprofile.TrueColor
 		return m, nil
 
 	case tickMsg:
@@ -1226,6 +1255,8 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "z":
 		// Next to v: both are about what the screen shows, not about a ticket.
 		m.toggleEmptyLanes()
+	case "c":
+		m.toggleGlow()
 	case "t":
 		// The legend for the colour a tagged card's box is drawn in. It is
 		// drawn over the board, so it has to record what it is covering.
@@ -1283,6 +1314,13 @@ func (m *Model) moveLane(d int) {
 	m.laneIdx = (m.laneIdx + d + len(m.cols)) % len(m.cols)
 	m.cardIdx = 0
 	m.clampCursor()
+}
+
+// toggleGlow flips whether the selected card is filled in its tag's colour or
+// in neutral grey. The fill itself is not in question — only its hue — so the
+// cursor stays exactly as findable either way.
+func (m *Model) toggleGlow() {
+	m.glow = !m.glow
 }
 
 // toggleEmptyLanes flips whether lanes holding no tickets are drawn thin.

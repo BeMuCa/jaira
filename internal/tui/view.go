@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"image/color"
 	"os"
 	"os/exec"
 	"strconv"
@@ -20,6 +21,24 @@ import (
 // board stays legible in terminals that do not advertise 24-bit colour, and
 // every foreground is paired with a shape or label so the UI never depends on
 // colour alone to convey state.
+// The 256-colour indices the board fills cards with, kept as plain strings
+// because refilling needs them as an SGR parameter, not only as a Color.
+//
+// Cards carry no frame. What separates two of them is that their backgrounds
+// alternate — laneShadeA, laneShadeB, laneShadeA — so a card is a band of one
+// tone against its neighbours rather than a box drawn around text. The
+// selection sits a clear step above both, and must: it is read first as "the
+// cursor is here" and only then as a tone.
+const (
+	laneShadeADark  = "234"
+	laneShadeBDark  = "236"
+	laneShadeALight = "255"
+	laneShadeBLight = "253"
+
+	selBgDark  = "239"
+	selBgLight = "250"
+)
+
 var (
 	colDim     = lipgloss.Color("244")
 	colFaint   = lipgloss.Color("240")
@@ -28,6 +47,15 @@ var (
 	colErr     = lipgloss.Color("203")
 	colOK      = lipgloss.Color("78")
 	colAgentic = lipgloss.Color("141")
+
+	// The selected card is filled, one step off the terminal's own background:
+	// a coloured title alone was not findable on a full column, which is what
+	// the fill answers. "One step off" has a direction, so it needs to know
+	// which background it sits on — lighter on a dark terminal, darker on a
+	// light one. Both are neutral greys: the fill must not compete with the
+	// tag colours the same card already carries.
+	colSelBgDark  = lipgloss.Color(selBgDark)
+	colSelBgLight = lipgloss.Color(selBgLight)
 
 	styLaneTitle = lipgloss.NewStyle().Bold(true)
 	styLaneCount = lipgloss.NewStyle().Foreground(colFaint)
@@ -429,20 +457,15 @@ func (m *Model) renderColumn(idx, w, h int) string {
 
 	shown := m.cardsInBudget(col.tickets, first, budget)
 	for i := first; i < first+shown; i++ {
-		// w-1: the box sits flush left and stops one column short of the
-		// column's right border — the old w-4 left four blank columns there
-		// (Berks Screenshot, 03.09.), width the titles can use instead.
-		card := m.renderCardBlock(col.tickets[i], w-1, focused && i == m.cardIdx)
-		// Stacked cards share one border row: from the second card on the top
-		// border is dropped and the card above ends the pair — two adjacent
-		// border rows read as a blank gap, because the glyphs only ink half
-		// their cell (Berks vierter Screenshot, 03.09.).
-		if i > first {
-			if _, rest, ok := strings.Cut(card, "\n"); ok {
-				card = rest
-			}
-		}
-		body.WriteString(card)
+		// w-2 is the lane's inside: columnStyle's Width counts its own border.
+		// The band runs all of it — there is no box to centre any more, so the
+		// column that used to sit unpainted at the right goes to the title
+		// along with the two the frame gave back.
+		//
+		// The stripe follows the ticket's own index, not its position in the
+		// window, so scrolling a lane does not invert the pattern under the
+		// cursor.
+		body.WriteString(m.renderCardBlock(col.tickets[i], w-2, focused && i == m.cardIdx, i%2 == 1))
 	}
 	if rest := len(col.tickets) - (first + shown); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
@@ -451,11 +474,11 @@ func (m *Model) renderColumn(idx, w, h int) string {
 }
 
 // cardHeight is the rows renderCardBlock will draw a ticket's card in: the
-// three content rows plus the box's top and bottom border. Every card is
-// boxed — coloured by its first tag when the registry has a colour, neutral
-// otherwise — so the height is uniform.
+// three content rows, and nothing else. A card is a band of background now, not
+// a box, so there are no border rows to count — which is also two rows per card
+// given back to the lane.
 func (m *Model) cardHeight(*ticket.Ticket) int {
-	return 5
+	return 3
 }
 
 // cardsInBudget is how many tickets starting at first fit within budget rows,
@@ -469,11 +492,6 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 	used, n := 0, 0
 	for i := first; i < len(tickets); i++ {
 		ch := m.cardHeight(tickets[i])
-		if i > first {
-			// Stacked below another card it sheds its top border row — the
-			// same row renderColumn drops when drawing it.
-			ch--
-		}
 		if n > 0 && used+ch > budget {
 			break
 		}
@@ -483,36 +501,106 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 	return n
 }
 
-// renderCardBlock draws one card in a box: bordered in its first tag's
-// colour when the registry has one, in the neutral frame colour otherwise.
-// Every card is boxed — a mixed column of framed and frameless cards read
-// as two different kinds of thing, and they are not.
-func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected bool) string {
-	inner := max(1, w-2)
-	// lipgloss Width is the box's TOTAL width, border included, so the content
-	// area inside Width(inner) is inner-2 — renderCard must budget for that,
-	// or its lines wrap inside the box and the card outgrows cardHeight.
-	content := strings.TrimSuffix(m.renderCard(t, max(1, inner-2), selected), "\n")
-	box := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Width(inner)
-	if color, ok := m.cardColor(t); ok {
-		box = box.BorderForeground(lipgloss.Color(strconv.Itoa(color)))
+// renderCardBlock draws one card as a filled band, w columns wide: no frame, a
+// cell of its tag's colour down the left, and a background that alternates with
+// the card above.
+//
+// The frame is gone rather than recoloured. Two glyphs of it stood between the
+// lane's edges and the title on every row, and a title cut at eighteen
+// characters was the board's most-complained-of surface; the band says the same
+// thing — where this card starts and stops — using the colour of rows that were
+// being drawn anyway. The tag colour moves from the frame into a whole inked
+// cell, because a border glyph inks about half of one and read as "the frame is
+// a slightly different colour" rather than as a marker.
+func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) string {
+	tag, tagged := m.cardColor(t)
+
+	bgParams := ""
+	if selected {
+		_, bgParams = m.selectionFill(tag, tagged)
 	} else {
-		box = box.BorderForeground(colFaint)
+		_, bgParams = m.laneShade(alt)
 	}
-	return box.Render(content) + "\n"
+
+	// One cell goes to the bar, the rest to renderCard — which budgets its own
+	// leading space inside the width it is given, so that space is the air
+	// between the bar and the text.
+	inner := max(1, w-1)
+	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
+
+	// A card whose tag has no colour gets the card's own shade in the bar, so
+	// the text still lines up with every other card in the lane.
+	barParams := bgParams
+	if tagged {
+		barParams = "5;" + strconv.Itoa(tag)
+	}
+
+	var b strings.Builder
+	for _, line := range strings.Split(content, "\n") {
+		b.WriteString(paintRow(barParams, " "))
+		b.WriteString(paintRow(bgParams, padDisplay(line, inner)))
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+// laneShade is the background of an unselected card. alt alternates down the
+// lane, which is the whole of what tells two stacked cards apart now that
+// neither has a frame.
+func (m *Model) laneShade(alt bool) (color.Color, string) {
+	a, b := laneShadeADark, laneShadeBDark
+	if !m.darkBG {
+		a, b = laneShadeALight, laneShadeBLight
+	}
+	if alt {
+		return lipgloss.Color(b), "5;" + b
+	}
+	return lipgloss.Color(a), "5;" + a
+}
+
+// paintRow fills one rendered row with a background. The row's own spans each
+// end on a full SGR reset, which clears the background along with their colour,
+// so refill re-opens it after every reset inside the row — without that the
+// fill reaches only as far as the first styled word.
+func paintRow(params, s string) string {
+	return "\x1b[48;" + params + "m" + refill(s, params) + "\x1b[m"
+}
+
+// refill re-applies a background after every SGR reset inside s, so a block
+// whose content carries its own styling stays filled end to end.
+//
+// params is an SGR parameter list rather than a palette index — "5;236" for a
+// palette colour, "2;49;82;87" for a 24-bit one — because the glow is mixed and
+// has no palette index to name on a terminal that can show it.
+//
+// A reset at the end of a line is left alone: re-opening the background there
+// would paint the rest of the terminal row, past the card's right edge.
+func refill(s, params string) string {
+	const reset = "\x1b[m"
+	bg := "\x1b[48;" + params + "m"
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		trailing := strings.HasSuffix(line, reset)
+		if trailing {
+			line = strings.TrimSuffix(line, reset)
+		}
+		line = strings.ReplaceAll(line, reset, reset+bg)
+		if trailing {
+			line += reset
+		}
+		lines[i] = line
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
-	// Selection is the coloured title, not a bar: the card's own tag colour
-	// when the registry has one, the accent otherwise (Berk, 03.09. — the
-	// ▌ marker cost a column and doubled what the box already frames).
+	// Selection is the card's fill; the title only goes bold. It used to be
+	// coloured in the tag's own colour, which now names the same hue twice —
+	// the fill is mixed from that colour — and put bright text on a background
+	// of its own shade, where it read as muddy rather than as selected.
 	title := truncate(t.Title, w-1)
 	if selected {
-		if c, ok := m.cardColor(t); ok {
-			title = lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(c))).Bold(true).Render(title)
-		} else {
-			title = stySelected.Render(title)
-		}
+		title = lipgloss.NewStyle().Bold(true).Render(title)
 	}
 
 	// State is shown with a glyph plus a word, never colour alone.
@@ -840,7 +928,11 @@ func (m *Model) statusBar() string {
 	if m.thinEmpty {
 		zHint = "z widen empty"
 	}
-	keys := []string{"enter open", "v compact", zHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	cHint := "c glow"
+	if m.glow {
+		cHint = "c plain"
+	}
+	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1430,6 +1522,7 @@ func (m *Model) renderHelp() string {
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
+			{"c", "fill the selected card in its tag's colour (press again for plain grey)"},
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},
