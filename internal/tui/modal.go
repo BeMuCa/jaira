@@ -48,7 +48,11 @@ func (m *Model) modalOver(content string, under mode) string {
 	// screen now".
 	maxW := max(20, m.width-8)
 	maxH := max(6, m.height-6)
-	box := styModal.MaxWidth(maxW).Render(clipHeight(content, maxH-2))
+	// The trailing newline every view ends with counts as a line once the
+	// content is split, and one line over the budget is what the clip then
+	// eats — the hint line at the bottom, which is the one part of a window
+	// a reader cannot work without.
+	box := styModal.MaxWidth(maxW).Render(clipHeight(strings.TrimRight(content, "\n"), maxH-2))
 
 	x := max(0, (m.width-lipgloss.Width(box))/2)
 	y := max(0, (m.height-lipgloss.Height(box))/2)

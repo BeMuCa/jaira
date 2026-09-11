@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -309,7 +310,7 @@ func TestLongLinkListScrollsWithTheCursor(t *testing.T) {
 // one. Charging it one let the box overrun its own space, and what the modal
 // then clipped was the hint line that says which keys do anything.
 func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
-	for _, h := range []int{20, 30, 40} {
+	for _, h := range []int{16, 17, 19, 20, 21, 23, 25, 30, 31, 40} {
 		m, epic := linksModel(t)
 		// Four groups, so four headings: waiting on, contains, related to,
 		// followed by.
@@ -348,9 +349,20 @@ func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
 		if got := len(groupsIn(m.links)); got < 4 {
 			t.Fatalf("the fixture must have four groups, got %d", got)
 		}
-		out := m.render()
-		if !strings.Contains(out, "esc  back") {
-			t.Errorf("at %d rows the hint line was clipped\n%s", h, out)
+		// Once, and again after scrolling: both indicator lines print only
+		// when something is hidden above as well as below, and that is the
+		// case the row budget kept forgetting.
+		for _, moves := range []int{0, 1, 2, 3, 4, 5, 6} {
+			for i := 0; i < moves; i++ {
+				m.key(key("j"))
+			}
+			out := m.render()
+			if !strings.Contains(out, "esc  back") {
+				t.Fatalf("at %d rows, after %d moves, the hint line was clipped\n%s", h, moves, out)
+			}
+			if e, ok := m.links.current(); ok && !strings.Contains(out, e.Ref.Title) {
+				t.Fatalf("at %d rows, after %d moves, the selected %q is off screen\n%s", h, moves, e.Ref.Title, out)
+			}
 		}
 	}
 }
@@ -392,4 +404,68 @@ func groupsIn(v *linkView) []string {
 		}
 	}
 	return out
+}
+
+// The headline criterion of this ticket, on the board rather than on the
+// command line. The first review found it held only in the CLI: gateEnv
+// never received the predicate, so a blocker that had been finished and
+// filed went on blocking here. Nothing pinned that, so this does.
+func TestAFiledBlockerDoesNotBlockOnTheBoard(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	now := time.Now()
+	blocker, err := m.store.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(now), ticket.FieldTitle: "The blocker", ticket.FieldStatus: "in-progress",
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now = now.Add(time.Millisecond)
+	waiter, err := m.store.Create(map[string]string{
+		ticket.FieldID:       ticket.NewID(now),
+		ticket.FieldTitle:    "The waiter",
+		ticket.FieldStatus:   "todo",
+		ticket.FieldGoal:     "g",
+		ticket.FieldContext:  "c",
+		ticket.FieldDoD:      "d",
+		ticket.FieldAssignee: "berk",
+	}, map[string][]string{ticket.FieldBlockedBy: {blocker.ID}}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	if gate.Actionable(m.gateEnv(), m.byIDForTest(t, waiter.ID)) {
+		t.Fatal("while the blocker is on the board and unfinished, the waiter is blocked")
+	}
+
+	// Finish the blocker the way the board does: into a terminal lane, then
+	// into the logbook.
+	if _, err := m.store.Mutate(blocker.ID, func(tk *ticket.Ticket) error {
+		return tk.Doc().SetScalar(ticket.FieldStatus, "done")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.store.Logbook(blocker.ID, "as-20260911"); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !gate.Actionable(m.gateEnv(), m.byIDForTest(t, waiter.ID)) {
+		t.Error("the blocker is filed as done; the board must stop blocking the ticket waiting on it")
+	}
+}
+
+// byIDForTest finds a listed ticket, failing the test when it is gone.
+func (m *Model) byIDForTest(t *testing.T, id string) *ticket.Ticket {
+	t.Helper()
+	for _, tk := range m.tickets {
+		if tk.ID == id {
+			return tk
+		}
+	}
+	t.Fatalf("%s is not on the board", ticket.Handle(id))
+	return nil
 }

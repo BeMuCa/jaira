@@ -1,7 +1,7 @@
 ---
 id: 01M28KACAF28348E0SJK51RNC1
 title: "Ein Link-Fenster zeigt alles, was mit einem Ticket verbunden ist"
-status: in-progress
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T19:11:52Z
+updated-at: 2026-09-11T19:29:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
-outcome-what: "Link-Fenster, parent und related, Blocker im Logbuch blockiert nicht mehr - implementiert, kritisiert, optimiert und getestet."
-outcome-why: "Der Nutzer hat es auf dem echten Board bestaetigt: 'работает проверино'."
-outcome-resolves: "Alle DoD-Punkte; Details in den Notizen und in review-summary, review-gaps und test-verdict."
+outcome-what: "Alle neun Review-Befunde behoben, mit Tests fuer jeden, der eine Regression sein kann."
+outcome-why: "Das Review hat den Kernpunkt des DoD in der TUI als nicht erfuellt nachgewiesen."
+outcome-resolves: "gateEnv setzt Satisfied; gate fragt Satisfied zuerst; Ueberschriften kosten zwei Zeilen; Enter meldet den Filter; create nutzt resolveRef; LoadHeader statt voller Dateien; Optimize-Arbeit committed; CLI- und core/link-Tests ergaenzt; NOTES-Zeile fuer show."
 review-summary: "keine offenen Befunde: die vier aus der ersten Runde sind umgesetzt, und die Form ist jetzt eine - eine Aufloesung in core/link, die alle vier Leser teilen, zwei injizierte Funktionen statt Dateisystem in den reinen Paketen, ein Modal-Helfer statt Geometrie je Dialog"
 review-gaps: |-
   internal/tui/model.go gateEnv() setzt Satisfied nicht: in der TUI blockiert ein Blocker aus dem Logbuch weiter
@@ -42,7 +42,7 @@ review-gaps: |-
   internal/cli/tickets.go create --parent nutzt s.Load (nur Board), set nutzt LoadAnywhere - ein Kind eines abgelegten Elternteils laesst sich nicht anlegen
   internal/cli/tickets.go children() ruft Relations, das readAll() macht - jaira show liest damit bei jedem Aufruf das ganze Logbuch
   core/release/NOTES.md hat keine Zeile fuer die neuen Zeilen in jaira show und die neuen JSON-Felder
-test-verdict: "go build, go vet und go test ./... laufen vollstaendig gruen (24 Pakete). Die geforderte Sache existiert und tut, was das Ticket verlangt, von Hand geprueft auf dem echten Board: 'links' zeigt Blocker, Eltern, Kinder ueber Board, Logbuch, Archiv und refs; L oeffnet das Fenster ueber Board und ueber einem offenen Ticket; ein Blocker im Logbuch blockiert nicht mehr und das abhaengige Ticket steht wieder in list --actionable. Beim Probelauf auf echten Daten fielen drei Fehler auf, alle behoben und mit Tests festgehalten: set speicherte Handles statt ids, die ref-Kopie eines abgelegten Tickets verdeckte das Logbuch, und das Fenster konnte eine Auswahl ausserhalb des Sichtbereichs halten."
+test-verdict: "go build, go vet und go test ./... gruen, 25 Pakete mit Tests, keine Fehlschlaege. Die Befunde aus Runde 1 sind einzeln nachgestellt: TestTheHintLineSurvivesSeveralGroups faellt mit der alten Zeilenrechnung bei 20 und 30 Zeilen und besteht mit der neuen; TestStaleRefCopyDoesNotOutvoteTheIndex haelt den Gate-Vorrang fest; TestJumpingToAFilteredOutCardSaysSo den stummen Sprung. Die TUI-Luecke (Satisfied fehlte in gateEnv) ist behoben und laeuft jetzt durch dieselbe gate.Env-Konstruktion wie die CLI."
 review-verdict: "Nicht bereit: die TUI liefert den Kernpunkt des DoD nicht (ein abgelegter Blocker blockiert dort weiter), das Link-Fenster schneidet seine eigene Hinweiszeile ab, Enter tut unter einem Filter stillschweigend nichts, und die Optimize-Arbeit liegt uncommitted - HEAD liefert also noch toten exportierten Code."
 ---
 
@@ -128,3 +128,18 @@ core/link liest abgelegte Tickets ueber das neue ticket.LoadHeader - nur Frontma
 Neu getestet, was vorher gar keinen Test hatte: die vierte Quelle (PlaceRef), der Vorrang Logbuch vor ref-Kopie, bySuffix, und auf CLI-Seite links, links --json, set mit Handle, die Ablehnung einer toten Referenz, show auf einem abgelegten Ticket und die Kinderliste in show.
 
 Nicht im Diff und trotzdem wahr: P1AE82 liegt auf diesem Board gleichzeitig unter tickets/ und im Logbuch. Das ist aelter als dieser Zweig und nur der Mensch kann entscheiden, welche Kopie geht.
+- **2026-09-11 19:29 · Alexander Sacharov** — review-Runde 2: acht Befunde, alle behoben.
+
+Der Abschnitt der Hinweiszeile war in Runde 1 nur halb repariert. Zwei Ursachen: das abschliessende Newline jeder Ansicht zaehlt beim Splitten als Zeile und fiel dem Schnitt zum Opfer (modal.go trimmt es jetzt), und die beiden Zeilen 'N more above/below' kosteten Platz, den niemand eingeplant hatte. visible() teilt den Platz jetzt nach Rang: die ausgewaehlte Zeile muss sichtbar sein, dann die Liste, und die beiden Hinweise auf Verborgenes geben ihren Platz wieder her, sobald sie die Auswahl vom Schirm draengen wuerden. Passt gar nichts, beginnt der Ausschnitt bei der Auswahl selbst. Getestet ueber zehn Fensterhoehen, jeweils nach 0 bis 6 Bewegungen.
+
+openLinks ruft jetzt scrollInto, sonst oeffnete das Fenster unter 19 Zeilen mit der Auswahl ausserhalb des Sichtbereichs.
+
+Satisfied und Known oeffnen keine Datei mehr: place() beantwortet aus dem Verzeichnis-Listing, was das Board und das Logbuch schon sagen, und nur das Archiv - eine Schublade, kein Urteil - wird gelesen. Vorher kostete jeder abgelegte Blocker einen Dateizugriff pro Render.
+
+bySuffix normalisiert wie Store.filedPath (NormalizeIDPrefix), sonst loeste ein klein geschriebener Handle in set auf, galt im Fenster aber als tot.
+
+validate.parentCycle folgt der Kette auch ueber Handles, sonst blieb ein so geschriebener Ring ungemeldet, waehrend known() ihn durchliess.
+
+openLinks nimmt den Index des Models statt einen neuen zu bauen.
+
+Neu festgenagelt: der Kernpunkt des DoD auf dem Board selbst (TestAFiledBlockerDoesNotBlockOnTheBoard - faellt, wenn man Satisfied aus gateEnv entfernt, geprueft), related als Union und parent als Skalar im Merge-Driver.

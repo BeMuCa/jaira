@@ -227,7 +227,31 @@ func (ix *Index) loadFiled(id string) *ticket.Ticket {
 // which, unlike before, now genuinely means "nowhere", not merely "not on the
 // board".
 func (ix *Index) lookup(id string) (Ref, bool) {
-	if ix == nil || id == "" {
+	ref, ok := ix.place(id)
+	if !ok || (ref.Place != PlaceLogbook && ref.Place != PlaceArchive) {
+		return ref, ok
+	}
+	// A filed ticket is the one place() cannot answer in full: its title and
+	// its lane are in the file and nowhere else.
+	if t := ix.loadFiled(ref.ID); t != nil {
+		ref.Title = t.Title
+		ref.Lane = t.Status
+		if ref.Place == PlaceArchive {
+			ref.Done = ix.terminal(t.Status)
+		}
+	}
+	return ref, true
+}
+
+// place answers where a ticket is without reading it. Everything it needs is
+// either already in memory (the board) or in a directory listing (the
+// logbook and the archive).
+func (ix *Index) place(id string) (Ref, bool) {
+	if ix == nil {
+		return Ref{ID: id, Place: PlaceUnknown}, false
+	}
+	id = ticket.NormalizeIDPrefix(id)
+	if id == "" {
 		return Ref{ID: id, Place: PlaceUnknown}, false
 	}
 	if t, ok := ix.board[id]; ok {
@@ -252,23 +276,16 @@ func (ix *Index) lookup(id string) (Ref, bool) {
 		// link and one that silently points nowhere. Ambiguity resolves to
 		// nothing rather than to a guess.
 		if full, ok := ix.bySuffix(id); ok && full != id {
-			return ix.lookup(full)
+			return ix.place(full)
 		}
 		return Ref{ID: id, Place: PlaceUnknown}, false
 	}
 	ref := Ref{ID: id, Place: placeOf(path), Path: path}
 	// The logbook only ever receives finished work, so a ticket found there
-	// is done even before its file is read. The archive is a drawer, not a
-	// verdict, so that one has to be opened.
+	// is done before its file is read at all. The archive is a drawer, not a
+	// verdict, so that one has to be opened — by lookup, not here.
 	if ref.Place == PlaceLogbook {
 		ref.Done = true
-	}
-	if t := ix.loadFiled(id); t != nil {
-		ref.Title = t.Title
-		ref.Lane = t.Status
-		if ref.Place == PlaceArchive {
-			ref.Done = ix.terminal(t.Status)
-		}
 	}
 	return ref, true
 }
@@ -279,14 +296,26 @@ func (ix *Index) lookup(id string) (Ref, bool) {
 // This is the whole of what the gate needs, which is why it is a single
 // boolean: core/gate stays free of the filesystem and takes this as an
 // injected function.
+//
+// It is asked once per blocker on every board render, so it answers without
+// opening a file wherever it can: a ticket on the board is already in
+// memory, and one in the logbook is finished by the fact of being there.
+// Only the archive — a drawer, not a verdict — has to be read.
 func (ix *Index) Satisfied(id string) bool {
-	ref, ok := ix.lookup(id)
-	return ok && ref.Done
+	ref, ok := ix.place(id)
+	if !ok {
+		return false
+	}
+	if ref.Place == PlaceArchive {
+		ref, _ = ix.lookup(id)
+	}
+	return ref.Done
 }
 
-// Known reports whether the id resolves to a ticket anywhere.
+// Known reports whether the id resolves to a ticket anywhere. Existing is a
+// question the directory listing already answers, so nothing is read.
 func (ix *Index) Known(id string) bool {
-	_, ok := ix.lookup(id)
+	_, ok := ix.place(id)
 	return ok
 }
 
@@ -483,8 +512,9 @@ func (r Ref) Label() string {
 // match: the board would otherwise show a link to whichever happened to be
 // indexed first.
 func (ix *Index) bySuffix(ref string) (string, bool) {
-	if len(ref) >= 26 {
-		return "", false // already a full id; nothing to widen
+	ref = ticket.NormalizeIDPrefix(ref)
+	if ref == "" || len(ref) >= 26 {
+		return "", false // empty, or already a full id: nothing to widen
 	}
 	var match string
 	for id := range ix.board {

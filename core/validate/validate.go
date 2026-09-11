@@ -259,7 +259,7 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 			add(CodeDanglingParent, SeverityError, ticket.FieldParent,
 				"part of %s, which exists nowhere here", handleOf(t.Parent))
 		default:
-			if ring := parentCycle(t, byParent); len(ring) > 0 {
+			if ring := parentCycle(t, byParent, byHandle); len(ring) > 0 {
 				add(CodeParentCycle, SeverityError, ticket.FieldParent,
 					"parent chain runs in a circle: %s", strings.Join(ring, " → "))
 			}
@@ -326,7 +326,7 @@ func normalizedTags(all []string, offender, replacement string) []string {
 // set ends the walk: this package only sees the tickets it was handed, and
 // inventing a verdict about a file it cannot read would be worse than
 // staying quiet.
-func parentCycle(t *ticket.Ticket, byID map[string]*ticket.Ticket) []string {
+func parentCycle(t *ticket.Ticket, byID, byHandle map[string]*ticket.Ticket) []string {
 	seen := map[string]bool{}
 	var chain []string
 	for cur := t; cur != nil; {
@@ -338,7 +338,16 @@ func parentCycle(t *ticket.Ticket, byID map[string]*ticket.Ticket) []string {
 		if cur.Parent == "" {
 			return nil
 		}
-		cur = byID[cur.Parent]
+		next, ok := byID[cur.Parent]
+		if !ok {
+			// The file is hand-editable and a handle is what a person reads
+			// off the board, so a chain written in handles is a chain that
+			// exists. Following only full ids meant a ring written that way
+			// was never reported — and it is a ring either way, because the
+			// index resolves the handle when it draws the tree.
+			next = byHandle[handleOf(cur.Parent)]
+		}
+		cur = next
 	}
 	return nil
 }

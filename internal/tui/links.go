@@ -55,8 +55,7 @@ func (m *Model) openLinks() {
 	if t == nil {
 		return
 	}
-	ix := link.Build(m.store, m.lanes, m.tickets)
-	entries := ix.Relations(t.ID)
+	entries := m.linkIndex().Relations(t.ID)
 	v := &linkView{subject: t.ID, title: t.Title}
 	for _, k := range link.Order {
 		var group []link.Entry
@@ -75,6 +74,10 @@ func (m *Model) openLinks() {
 	}
 	v.cursor = v.next(-1, 1)
 	v.from = m.mode
+	// A short window can be smaller than the first group, so the scroll has
+	// to be settled before the first render rather than on the first
+	// keypress — otherwise the window opens with its selection off screen.
+	v.scrollInto(m.linkLines())
 	m.links = v
 	m.mode = modeLinks
 }
@@ -121,12 +124,12 @@ func (m *Model) keyLinks(s string) {
 		if n := v.next(v.cursor, 1); n >= 0 {
 			v.cursor = n
 		}
-		v.scrollInto(m.linkRows())
+		v.scrollInto(m.linkLines())
 	case "k", "up":
 		if n := v.next(v.cursor, -1); n >= 0 {
 			v.cursor = n
 		}
-		v.scrollInto(m.linkRows())
+		v.scrollInto(m.linkLines())
 	case "enter":
 		e, ok := v.current()
 		if !ok {
@@ -159,61 +162,94 @@ func (m *Model) keyLinks(s string) {
 	}
 }
 
-// linkRows is how many rows of the window fit on screen.
+// linkLines is how many lines the list may use, indicator lines included.
 //
 // It has to agree with what modalOver leaves for content — the box keeps a
 // margin off the window and a line of border each side — minus this window's
-// own furniture: the title, the rule under it and a blank line above the
-// list, the blank line and hint line under it, and the two lines that say
-// how much is hidden. When this number is too large the modal clips the
-// list itself, and the clip cannot scroll, which is the failure this window
-// exists to avoid.
-func (m *Model) linkRows() int {
-	const furniture = 7
-	return max(2, m.height-8-furniture)
+// fixed furniture: the title, the rule under it and the blank line after it,
+// then the blank line and the hint line at the bottom. When this number is
+// too large the modal clips the list itself, and a clip cannot scroll; what
+// it eats first is the hint line that says which keys do anything.
+//
+// The floor is two lines, one entry, because a window that shows nothing is
+// worse than one that shows a little and says so.
+func (m *Model) linkLines() int {
+	const fixed = 3 + 2
+	return max(2, m.height-8-fixed)
 }
 
 // scrollInto moves the visible run so the cursor is inside it, and no
 // further — a window that recentred on every keypress makes the whole list
 // move under the reader.
-func (v *linkView) scrollInto(rows int) {
+func (v *linkView) scrollInto(lines int) {
 	// A heading belongs to the entry under it, so scrolling to an entry
 	// shows the heading that names it rather than starting mid-group.
 	want := v.cursor
-	if want > 0 && v.rows[want-1].heading != "" {
+	if want > 0 && want < len(v.rows) && v.rows[want-1].heading != "" {
 		want--
 	}
 	if want < v.top {
 		v.top = want
 	}
-	// Each entry prints two lines: the ticket and where it lives.
-	if span := (v.cursor - v.top + 1) * 2; span > rows {
-		v.top = v.cursor - rows/2 + 1
+	// Every row prints two lines: an entry is the ticket and where it lives,
+	// a heading is a blank line and the heading itself.
+	if span := (v.cursor - v.top + 1) * 2; span > lines {
+		v.top = max(0, v.cursor-lines/4)
 	}
 	v.top = max(0, min(v.top, max(0, len(v.rows)-1)))
 }
 
-// visible is the run of rows on screen, and whether anything is hidden above
-// or below it. The counts are printed: a reader must never be left thinking
-// they have seen the whole list.
-func (v *linkView) visible(rows int) (out []linkRow, first int, above, below int) {
-	if v.top > 0 {
-		above = v.top
-	}
-	lines := 0
-	for i := v.top; i < len(v.rows); i++ {
-		// Both kinds of row print two lines: an entry is the ticket and
-		// where it lives, a heading is a blank line and the heading itself.
-		// Charging a heading one line let the box overrun its own space, and
-		// what the modal then clipped was the hint line at the bottom.
-		cost := 2
-		if lines+cost > rows {
-			return out, v.top, above, len(v.rows) - i
+// visible is the run of rows on screen, and how much is hidden above and
+// below it.
+//
+// Three things want the same lines and they are not equally important: the
+// selected row has to be on screen or the window is unusable, the list is
+// what the reader came for, and the two lines that say how much is hidden
+// are a courtesy. So the markers are offered the space first and give it up
+// again as soon as keeping them would push the selection off the screen —
+// and when nothing fits, the run starts at the selection itself.
+func (v *linkView) visible(lines int) (out []linkRow, first, above, below int) {
+	pack := func(top, budget int) ([]linkRow, int) {
+		var rows []linkRow
+		used := 0
+		for i := top; i < len(v.rows); i++ {
+			// Every row prints two lines: an entry is the ticket and where
+			// it lives, a heading is a blank line and the heading itself.
+			if used+2 > budget {
+				return rows, len(v.rows) - i
+			}
+			used += 2
+			rows = append(rows, v.rows[i])
 		}
-		lines += cost
-		out = append(out, v.rows[i])
+		return rows, 0
 	}
-	return out, v.top, above, 0
+	for _, reserve := range []int{2, 1, 0} {
+		rows, left := pack(v.top, lines-reserve)
+		if v.top+len(rows) <= v.cursor {
+			continue // the selection would be off screen
+		}
+		above, below = 0, 0
+		if v.top > 0 {
+			above = v.top
+		}
+		if left > 0 {
+			below = left
+		}
+		need := 0
+		if above > 0 {
+			need++
+		}
+		if below > 0 {
+			need++
+		}
+		if need > reserve {
+			continue // not enough room to say what is hidden
+		}
+		return rows, v.top, above, below
+	}
+	// Nothing fits around the selection: start at it and show what there is.
+	rows, _ := pack(v.cursor, lines)
+	return rows, v.cursor, 0, 0
 }
 
 // renderLinks draws the link window.
@@ -234,7 +270,7 @@ func (m *Model) renderLinks() string {
 		b.WriteString("\n" + styMeta.Render("esc  back") + "\n")
 		return b.String()
 	}
-	rows, first, above, below := v.visible(m.linkRows())
+	rows, first, above, below := v.visible(m.linkLines())
 	if above > 0 {
 		b.WriteString(styMeta.Render(fmt.Sprintf("↑ %d more above", above)) + "\n")
 	}
