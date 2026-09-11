@@ -829,9 +829,17 @@ its end. Review fields keep their history across loop rounds that way.`,
 					if listFields[k] {
 						var items []string
 						for _, p := range strings.Split(v, ",") {
-							if p = strings.TrimSpace(p); p != "" {
-								items = append(items, p)
+							if p = strings.TrimSpace(p); p == "" {
+								continue
 							}
+							if linkFields[k] {
+								full, rerr := resolveRef(s, p)
+								if rerr != nil {
+									return rerr
+								}
+								p = full
+							}
+							items = append(items, p)
 						}
 						if appendVal {
 							if old, err := t.Doc().List(k); err == nil && len(old) > 0 {
@@ -842,6 +850,13 @@ its end. Review fields keep their history across loop rounds that way.`,
 							return err
 						}
 						continue
+					}
+					if linkFields[k] && strings.TrimSpace(v) != "" {
+						full, rerr := resolveRef(s, v)
+						if rerr != nil {
+							return rerr
+						}
+						v = full
 					}
 					if appendVal {
 						if old, _, oldErr := t.Doc().Scalar(k); oldErr == nil && strings.TrimSpace(old) != "" {
@@ -1313,4 +1328,29 @@ func filedAway(s *ticket.Store, t *ticket.Ticket) string {
 		}
 	}
 	return ""
+}
+
+// linkFields are the fields whose value is another ticket. What is typed at
+// the command line is a handle — that is what every other command prints —
+// but what has to be stored is the full id, because that is what the other
+// end of the link is matched on. Storing the handle wrote a link that looked
+// right in the file and resolved to nothing forever after.
+var linkFields = map[string]bool{
+	ticket.FieldBlockedBy: true,
+	ticket.FieldParent:    true,
+	ticket.FieldRelated:   true,
+	ticket.FieldFollows:   true,
+}
+
+// resolveRef turns a handle, a prefix, or a full id into the full id of a
+// ticket that exists — on the board, on a ref, or filed away. A reference
+// that resolves to nothing is refused rather than written: a dead link is
+// worse than no link, because it looks like a trail exists.
+func resolveRef(s *ticket.Store, ref string) (string, error) {
+	t, _, err := s.LoadAnywhere(ref)
+	if err != nil {
+		return "", fail(ExitValidation, "no_such_ticket",
+			"%q does not name a ticket here, so the link would point at nothing", ref)
+	}
+	return t.ID, nil
 }

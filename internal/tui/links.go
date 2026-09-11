@@ -19,6 +19,10 @@ type linkView struct {
 	subject string
 	rows    []linkRow
 	cursor  int
+	// from is the view this window was opened over, kept here rather than in
+	// the shared returnTo field: a refusal raised inside this window uses
+	// that field for itself, and the two would overwrite each other.
+	from mode
 }
 
 // linkRow is one printed line: either a group heading or one linked ticket.
@@ -43,7 +47,12 @@ var linkKindOrder = []link.Kind{
 
 // openLinks builds the link window for the selected card.
 func (m *Model) openLinks() {
-	t := m.selected()
+	// The open ticket when there is one: in the detail pane the card the
+	// board cursor sits on is not necessarily what the reader is looking at.
+	t := m.detail
+	if m.mode != modeDetail || t == nil {
+		t = m.selected()
+	}
 	if t == nil {
 		return
 	}
@@ -66,8 +75,8 @@ func (m *Model) openLinks() {
 		}
 	}
 	v.cursor = v.next(-1, 1)
+	v.from = m.mode
 	m.links = v
-	m.returnTo = m.mode
 	m.mode = modeLinks
 }
 
@@ -107,7 +116,7 @@ func (m *Model) keyLinks(s string) {
 	}
 	switch s {
 	case "esc", "q", "L":
-		m.mode = m.returnTo
+		m.mode = v.from
 		m.links = nil
 	case "j", "down":
 		if n := v.next(v.cursor, 1); n >= 0 {
@@ -130,9 +139,15 @@ func (m *Model) keyLinks(s string) {
 				ticket.Handle(e.Ref.ID), e.Ref.Whereabouts()), false)
 			return
 		}
-		m.mode = modeBoard
+		from := v.from
 		m.links = nil
+		m.mode = modeBoard
 		m.selectByID(e.Ref.ID)
+		// Following a link out of an open ticket opens the ticket it leads
+		// to: the reader was reading, not navigating the board.
+		if from == modeDetail {
+			m.openDetail()
+		}
 	}
 }
 

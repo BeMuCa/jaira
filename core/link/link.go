@@ -149,10 +149,23 @@ func Build(s *ticket.Store, lanes *lane.Set, board []*ticket.Ticket) *Index {
 	}
 	if s != nil {
 		for id, path := range s.FiledAwayIDs() {
-			// A ticket that is both on the board and filed away is reported
-			// as a problem elsewhere; here the board copy is the live one.
-			if _, onBoard := ix.board[id]; !onBoard {
+			t, listed := ix.board[id]
+			switch {
+			case !listed:
 				ix.filed[id] = path
+			case t.ReadOnly:
+				// Filing a ticket away does not delete its ref, so the same
+				// ticket arrives twice: once from the ref with no file, and
+				// once out of the logbook. The filed copy is this clone's own
+				// record that the work is finished, and it is the one to
+				// believe — the ref would otherwise report a finished ticket
+				// as "pull it to work on it".
+				delete(ix.board, id)
+				ix.filed[id] = path
+			default:
+				// A real file on the board and a filed copy at once is a
+				// genuine conflict, reported where the board is listed. Here
+				// the live file wins rather than the drawer.
 			}
 		}
 	}
@@ -229,6 +242,14 @@ func (ix *Index) Lookup(id string) (Ref, bool) {
 	}
 	path, filed := ix.filed[id]
 	if !filed {
+		// The file is hand-editable, so a link may be written as the handle
+		// a person read off the board rather than as the full id. Accepting
+		// an unambiguous suffix here is the difference between a working
+		// link and one that silently points nowhere. Ambiguity resolves to
+		// nothing rather than to a guess.
+		if full, ok := ix.bySuffix(id); ok && full != id {
+			return ix.Lookup(full)
+		}
 		return Ref{ID: id, Place: PlaceUnknown}, false
 	}
 	ref := Ref{ID: id, Place: placeOf(path), Path: path}
@@ -467,4 +488,32 @@ func (r Ref) Label() string {
 		title = "(title unknown here)"
 	}
 	return ticket.Handle(r.ID) + "  " + title
+}
+
+// bySuffix resolves a handle — the tail of an id — to the one ticket that
+// ends with it, anywhere this index can see. More than one match is no
+// match: the board would otherwise show a link to whichever happened to be
+// indexed first.
+func (ix *Index) bySuffix(ref string) (string, bool) {
+	if len(ref) >= 26 {
+		return "", false // already a full id; nothing to widen
+	}
+	var match string
+	for id := range ix.board {
+		if strings.HasSuffix(id, ref) {
+			if match != "" {
+				return "", false
+			}
+			match = id
+		}
+	}
+	for id := range ix.filed {
+		if strings.HasSuffix(id, ref) {
+			if match != "" && match != id {
+				return "", false
+			}
+			match = id
+		}
+	}
+	return match, match != ""
 }

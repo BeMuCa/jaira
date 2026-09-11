@@ -173,3 +173,84 @@ func TestLinkWindowIsDrawnOverTheBoard(t *testing.T) {
 		t.Errorf("esc must restore the board unchanged\n%s", got)
 	}
 }
+
+// Reading one ticket is exactly when "what else is this attached to" comes
+// up, so L works in the detail pane too — and esc puts the reader back on
+// the ticket they were reading, not on the board.
+func TestLWorksOnAnOpenTicketAndReturnsToIt(t *testing.T) {
+	m, epic := linksModel(t)
+	m.key(key("enter"))
+	if m.mode != modeDetail {
+		t.Fatalf("enter must open the ticket, mode = %v", m.mode)
+	}
+	detail := m.render()
+
+	m.key(key("L"))
+	if m.mode != modeLinks {
+		t.Fatalf("L must open the link window from the detail pane, mode = %v", m.mode)
+	}
+	if m.links.subject != epic {
+		t.Errorf("the window is about the open ticket, got %s", ticket.Handle(m.links.subject))
+	}
+	// The open ticket, not the board, shows through behind the box.
+	if out := m.render(); !strings.Contains(out, "contains") {
+		t.Errorf("the link window must be on screen\n%s", out)
+	}
+
+	m.key(key("esc"))
+	if m.mode != modeDetail {
+		t.Fatalf("esc must return to the open ticket, mode = %v", m.mode)
+	}
+	if got := m.render(); got != detail {
+		t.Errorf("esc must restore the ticket unchanged\n%s", got)
+	}
+}
+
+// Following a link out of an open ticket opens the ticket it leads to: the
+// reader was reading, not navigating the board.
+func TestEnterFromAnOpenTicketOpensTheLinkedTicket(t *testing.T) {
+	m, _ := linksModel(t)
+	m.key(key("enter"))
+	m.key(key("L"))
+	e, ok := m.links.current()
+	if !ok {
+		t.Fatal("nothing selected in the link window")
+	}
+
+	m.key(key("enter"))
+	if m.mode != modeDetail {
+		t.Fatalf("enter must open the linked ticket, mode = %v", m.mode)
+	}
+	if m.detail == nil || m.detail.ID != e.Ref.ID {
+		t.Fatalf("the open ticket must be %s, got %v", ticket.Handle(e.Ref.ID), m.detail)
+	}
+}
+
+// A refusal raised inside the link window keeps the window under it, rather
+// than dropping the reader back to the board.
+func TestRefusalInsideTheWindowKeepsIt(t *testing.T) {
+	m, _ := linksModel(t)
+	m.key(key("L"))
+	for {
+		e, ok := m.links.current()
+		if !ok {
+			t.Fatal("no filed ticket in the window")
+		}
+		if strings.Contains(e.Ref.Title, "already shipped") {
+			break
+		}
+		before := m.links.cursor
+		m.key(key("j"))
+		if m.links.cursor == before {
+			t.Fatal("no filed ticket in the window")
+		}
+	}
+	m.key(key("enter"))
+	if m.mode != modeMessage {
+		t.Fatalf("mode = %v, want modeMessage", m.mode)
+	}
+	m.key(key("esc"))
+	if m.mode != modeLinks {
+		t.Fatalf("dismissing the refusal must land back in the link window, mode = %v", m.mode)
+	}
+}

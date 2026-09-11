@@ -31,7 +31,15 @@ var styModal = lipgloss.NewStyle().
 // than the terminal would push the board out of the frame and defeat the
 // point.
 func (m *Model) modal(content string) string {
-	behind := m.behind()
+	return m.modalOver(content, m.returnTo)
+}
+
+// modalOver draws content over a named view rather than over whatever the
+// last dialog happened to be returning to. A modal opened from a modal — a
+// refusal raised inside the link window — needs to say what it covers, or
+// the two dialogs fight over one field and the wrong screen shows through.
+func (m *Model) modalOver(content string, under mode) string {
+	behind := m.underlying(under)
 	if m.width <= 0 || m.height <= 0 {
 		return behind
 	}
@@ -55,16 +63,22 @@ func (m *Model) modal(content string) string {
 	).Render()
 }
 
-// behind is the view the modal is drawn over: the one the dialog will return
-// to, so closing it changes nothing but the box going away.
-func (m *Model) behind() string {
-	switch m.returnTo {
+// underlying renders the view a modal sits on, so closing the modal changes
+// nothing but the box going away.
+func (m *Model) underlying(md mode) string {
+	switch md {
 	case modeDetail:
 		return m.renderDetail()
 	case modeLaneFocus:
 		return m.renderLaneFocus()
 	case modePipeline:
 		return m.renderPipeline()
+	case modeLinks:
+		// A dialog raised from the link window keeps the window on screen
+		// under it, rather than dropping the reader back to the board.
+		if m.links != nil {
+			return m.modalOver(m.renderLinks(), m.links.from)
+		}
 	}
 	return m.renderBoard()
 }

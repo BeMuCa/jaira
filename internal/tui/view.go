@@ -105,7 +105,10 @@ func (m *Model) render() string {
 	case modeLegend:
 		return m.modal(m.renderLegend())
 	case modeLinks:
-		return m.modal(m.renderLinks())
+		if m.links != nil {
+			return m.modalOver(m.renderLinks(), m.links.from)
+		}
+		return m.renderBoard()
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:

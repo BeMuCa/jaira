@@ -16,10 +16,11 @@ Format rules — read before editing:
 ## Unreleased
 
 - Dialogs now float over the board instead of replacing it: the link window, the tag legend and every refusal or note are drawn as a centred box with the board still visible behind, so you keep the card and the lane you were looking at.
-- Press `L` on a card to see every ticket linked to it — what it waits on, what waits on it, what it is part of, what it contains, what it relates to and what follows it — with the logbook and the archive searched too, so a link no longer dies when the work behind it finishes. `enter` jumps to a linked card, `esc` closes.
+- Press `L` on a card, or on an open ticket, to see every ticket linked to it — what it waits on, what waits on it, what it is part of, what it contains, what it relates to and what follows it — with the logbook and the archive searched too, so a link no longer dies when the work behind it finishes. `enter` jumps to a linked card — and opens it, when you pressed `L` while reading a ticket — and `esc` puts back exactly the screen you came from.
 - Record containment with the new `parent` field: a ticket names the one it is part of (`jaira set <id> parent=<id>`, or `jaira create --parent <id>`), and children — and their children, to any depth — are read back from that. There is no `children` field to keep in step.
 - Record a loose connection with the new `related` field (`jaira set <id> related=<id>,<id>`, or `jaira create --related <id>`). Write it on either side; both sides show it.
 - Run `jaira links <id>` for the same picture on the command line, with `--json` for a machine.
+- Write a link with a handle: `jaira set <id> blocked-by=<handle>`, `parent=` and `related=` now resolve whatever reference you can read off the board into the full ticket id, and refuse a reference that names no ticket. A handle used to be stored verbatim and the link then resolved to nothing forever after.
 - Stop working around a blocker that finished: a `blocked-by` whose ticket has been filed into the logbook, or archived from a terminal lane, now counts as cleared instead of blocking forever and dropping the ticket out of `jaira list --actionable`.
 - `jaira validate` now reports a dependency or a parent as dangling only when the id exists nowhere at all, and reports a ticket that is its own parent or sits in a parent ring as an error.
 - `jaira show <id>` now finds a ticket that has left the board, printing where it is filed instead of "not found".

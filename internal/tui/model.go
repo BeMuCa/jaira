@@ -1066,6 +1066,11 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detail = nil
 		case "n":
 			m.startFollowUp()
+		case "L":
+			// The same window, over the open ticket rather than over the
+			// board. This is where it is wanted most: reading one ticket is
+			// exactly when "what else is this attached to" comes up.
+			m.openLinks()
 		case "tab":
 			if m.follow != nil {
 				m.follow.focusLeft = !m.follow.focusLeft
@@ -1295,7 +1300,7 @@ func (m *Model) moveCard(d int) {
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
 	switch m.mode {
-	case modeBoard, modePipeline, modeLaneFocus, modeDetail:
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks:
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.
