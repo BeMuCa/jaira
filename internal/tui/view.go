@@ -101,9 +101,14 @@ func (m *Model) render() string {
 	case modeLaneFocus:
 		return m.renderLaneFocus()
 	case modeMessage:
-		return m.renderMessage()
+		return m.modal(m.renderMessage())
 	case modeLegend:
-		return m.renderLegend()
+		return m.modal(m.renderLegend())
+	case modeLinks:
+		if m.links != nil {
+			return m.modalOver(m.renderLinks(), m.links.from)
+		}
+		return m.renderBoard()
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:
@@ -844,6 +849,14 @@ func (m *Model) statusBar() string {
 	if line := m.flashLine(); line != "" {
 		prefix += styAsks.Render("● " + line + " ")
 	}
+	// Finished tickets waiting to be filed. The board says how many and which
+	// command cuts them; it never files anything itself, because filing is a
+	// statement about bookkeeping that somebody makes days after the work — and
+	// a board that decided it for them once swept forty-nine people's tickets
+	// into one commit.
+	if n := m.readyToFile(); n > 0 {
+		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file ", n))
+	}
 
 	// Wrapped, never dropped: a key the bar has no room for is a key the reader
 	// does not know exists. renderBoard measures this bar and gives the columns
@@ -1412,6 +1425,7 @@ func (m *Model) renderHelp() string {
 			{"enter", "open the selected ticket"},
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
+			{"L", "every ticket linked to this one, logbook and archive included"},
 			{"/", "filter tickets as you type; key:value narrows to one field"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},

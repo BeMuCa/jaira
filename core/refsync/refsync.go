@@ -802,14 +802,26 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 	// this very function for a ticket with no file, and asking it here would
 	// recurse.
 	local := y.localIDs()
+
+	// A ticket filed away here is off this board on purpose. Its ref outlives
+	// the filing — it goes when the ticket lands in a landing branch — so
+	// without this the logbook would hand every finished ticket straight back
+	// as a card, which is the opposite of what filing it meant.
+	filed := map[string]bool{}
+	if y.Store != nil {
+		for id := range y.Store.FiledAwayIDs() {
+			filed[id] = true
+		}
+	}
 	wanted := make([]string, 0, len(ids))
 	for _, id := range ids {
 		if have[id] {
 			continue
 		}
-		if local[id] {
-			// A file for it exists here after all: the file is the board's
-			// copy, and the ref is not a second ticket.
+		if local[id] || filed[id] {
+			// Either a file for it exists here — the file is the board's copy,
+			// and the ref is not a second ticket — or it has been filed away,
+			// which means it left this board deliberately.
 			continue
 		}
 		wanted = append(wanted, id)

@@ -1,7 +1,7 @@
 ---
 id: 01M1KZ56JYZWZAYTHBGSKA9CFA
 title: Mehrzeilige Ticket-Felder behalten ihre Zeilen in der Detailansicht
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -10,12 +10,18 @@ context: "Berk am 03.09.: review-check soll durchnummerierte Schritte als Liste 
 definition-of-done: Ein review-check mit einem Schritt je Zeile zeigt im TUI-Detail eine Zeile je Schritt (haengender Einzug unter der Label-Spalte); bestehende einzeilige Felder rendern unveraendert; ein Test deckt ein mehrzeiliges Feld ab
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 4cf02494cf6622760d4a68b1cdf9079dfb1684fa
+  - 52732e16cd22612779fe5de1ffd097a550b7ffd3
+  - 8e74d5853f5958dbe981c0e3f067ea07fec7a2b5
+  - 93b6e13e3bb5812dd1610d51b73866441afeb0df
+  - 842e83709fe6b40494b39217b4cda2fb49b00046
+  - b36161b310fb80ef438c33fd1cbb0e881979a9ab
 created-at: 2026-09-03T15:45:47Z
-updated-at: 2026-09-03T16:14:58Z
+updated-at: 2026-09-11T16:04:10Z
 claimed-by: EE-3NX6GL3-2629914
 claimed-at: 2026-09-03T15:49:13Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "wrapField-Helper: Feldwerte behalten die Zeilen des Autors (je Eingabezeile gewrappt, haengender Einzug 13); Detail-Pane row() und Signoff section() nutzen ihn - ein mehrzeiliger review-check rendert als nummerierte Liste"
 outcome-why: "Berk am 03.09.: check soll durchnummerierte Schritte als Liste zeigen, nicht als Prosa; row() jagte jeden Wert durch wrap(), das \\n plaettet"
 outcome-resolves: TestAMultilineCheckKeepsItsLines prueft beide Screens (Zeile beginnt unter der Label-Spalte); einzeilige Werte gehen durch den Passthrough-Zweig unveraendert (alte reviewcheck-Tests gruen); go test ./... -race RC=0
@@ -48,3 +54,4 @@ review-verdict: "accept (Zweitmodell: Sonnet-Review am selbst gelesenen Diff, ei
 ## Progress
 - **2026-09-03 15:57 · BeMuCa** — Entscheidung: EIN Helper (wrapField) fuer beide Screens statt zweier Sonderfaelle; einzeilige Werte gehen unveraendert durch wrap (Passthrough-Zweig), also keine Aenderung an bestehenden Renderings - die alten reviewcheck-Tests pinnen das. Leerzeilen im Feld werden zu Einzug-Zeilen (kosmetisch, bewusst nicht behandelt). CLI (jaira show) erhielt Umbrueche schon immer - der Fix betrifft nur die TUI-Label-Spalten-Renderer.
 - **2026-09-03 16:11 · BeMuCa** — Zweitmodell-Review (Sonnet) fand zwei Dinge: (F1) im KA9CFA-Commit ritten die uncommitteten NJPQWE-Runde-4-Hunks mit -> Re-Split vor dem Push (52732e1 + 8e74d58, Baum byte-identisch, diff=0). (F2) fieldRow (view.go:864) ist ein DRITTER Label-Renderer - Lane-declared-Felder auf Detail- UND Signoff-Screen - und plaettete weiter; gleicher wrapField-Fix plus TestFieldRowKeepsTheAuthorsLines. Merke: die Label-Spalte hat drei Renderer (row, section, fieldRow) - wer einen anfasst, prueft alle drei.
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026): mehrzeilige Felder stehen zeilenweise unter ihrem Label, einzeilige unveraendert.

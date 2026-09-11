@@ -85,6 +85,28 @@ const (
 	// knows — see the writing register the create and note helps carry.
 	FieldReviewCheck = "review-check"
 
+	// FieldParent is the ticket this one is a part of — the child names the
+	// parent, never the other way round. A parent field on the child is the
+	// only direction that can always be written: the parent may be in the
+	// logbook, in the archive, or on a ref with no file here at all, and a
+	// children list would mean editing a file that does not exist. It also
+	// keeps one writer per file, which is what stops two sessions adding two
+	// children from colliding on one line.
+	//
+	// Children and the whole tree below them are derived by reading, not
+	// stored. Nesting is free that way, and there is no second copy of the
+	// relation to drift.
+	//
+	// parent is deliberately not a gate: an unfinished child does not hold its
+	// parent back. A dependency that must hold is blocked-by.
+	FieldParent = "parent"
+
+	// FieldRelated is a list of tickets this one merely has to do with —
+	// neither blocking it nor containing it. It is stored on whichever side
+	// somebody happened to edit and shown from both, because a relation that
+	// had to be written twice would be half-written most of the time.
+	FieldRelated = "related"
+
 	// FieldTags is a plain list of topic labels — "ui", "backend" — so a
 	// backlog can be read one subject at a time instead of one lane at a time.
 	// A list rather than a comma-joined scalar because that is what every other
@@ -103,7 +125,7 @@ var canonicalOrder = []string{
 	FieldID, FieldTitle, FieldStatus, FieldReady,
 	FieldCreator, FieldAssignee, FieldExecutedBy,
 	FieldGoal, FieldContext, FieldDoD,
-	FieldTags, FieldBlockedBy, FieldBlockedReason, FieldFollows, FieldCommits, FieldModelTier,
+	FieldTags, FieldBlockedBy, FieldBlockedReason, FieldParent, FieldRelated, FieldFollows, FieldCommits, FieldModelTier,
 	FieldOutcomeWhat, FieldOutcomeWhy, FieldOutcomeResolves,
 	FieldQuestion, FieldClaimedBy, FieldClaimedAt,
 	FieldCreatedAt, FieldUpdatedAt,
@@ -170,6 +192,12 @@ type Ticket struct {
 
 	// Follows is the ticket whose review produced this one.
 	Follows string
+	// Parent is the ticket this one is a part of. Children are never stored;
+	// they are found by asking which tickets name this one here.
+	Parent string
+	// Related are tickets this one has to do with, in no particular order and
+	// with no obligation in either direction.
+	Related []string
 	// BlockedReason is why the ticket is parked, when the blocker is not another
 	// ticket.
 	BlockedReason string
@@ -511,6 +539,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Context = str(FieldContext)
 	t.DoD = str(FieldDoD)
 	t.Follows = str(FieldFollows)
+	t.Parent = str(FieldParent)
 	t.BlockedReason = str(FieldBlockedReason)
 	t.ReviewVerdict = str(FieldReviewVerdict)
 	t.ReviewSummary = str(FieldReviewSummary)
@@ -524,6 +553,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.ClaimedBy = str(FieldClaimedBy)
 	t.BlockedBy = list(FieldBlockedBy)
 	t.Tags = list(FieldTags)
+	t.Related = list(FieldRelated)
 	t.Commits = list(FieldCommits)
 	t.Outcome = Outcome{
 		What:     str(FieldOutcomeWhat),

@@ -1,7 +1,7 @@
 ---
 id: 01M1KCKH0MCQ5P1BKTSHP1AE82
 title: Die jaira-Version steht links oben im Projektfenster
-status: human
+status: done
 ready: true
 creator: BeMuCa
 goal: "Das TUI zeigt die laufende Binary-Version sichtbar im Board, links oben in der Ecke des Projektfensters"
@@ -9,11 +9,18 @@ context: "Berk am 03.09.: beim Arbeiten mit mehreren Binary-Staenden (self upgra
 definition-of-done: "Das Board zeigt links oben die Version; ein Dev-Build zeigt 'dev'; ein Test deckt die Platzierung ab"
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
+  - fac61b4e92969a4b28a2584efb4ffd6504633e0c
+  - 8277d9585c33844fe8afa061e44e59fe99086486
+  - 596f1a58dcdfb536e67774ab1c2485b0a2a4b730
+  - ec2c861207e60b6c93894a637ef40b9ed60ee27e
+  - d952f0e3d27917fa6f5037b01d0aa158135245ae
+  - 6bd21c73399d119c3edd146759e47737c2828ef0
 created-at: 2026-09-03T10:21:34Z
-updated-at: 2026-09-09T08:19:39Z
+updated-at: 2026-09-11T14:51:51Z
 assignee: BeMuCa
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 claimed-by: EE-3NX6GL3-4099823
 claimed-at: 2026-09-08T23:46:46Z
 outcome-what: "Runde 2 nach Critique: versionHead() aufgeloest (renderBoard schreibt truncate(m.versionLine, m.width) direkt), die drei toten Leer-Wachen in view.go und home.go entfernt, h.render() im Home-Test einmal statt dreimal aufgerufen."
@@ -120,3 +127,4 @@ Wie das reproduzierbar ist, falls es nochmal gebraucht wird: der pty-Umweg ist n
 Danach view.go aus der Kopie zurueckgeholt, dieselben Tests gruen. Der Test deckt die Platzierung also wirklich ab und nicht nur die Anwesenheit des Strings irgendwo.
 Wichtig fuer die naechste Session: die Mutation lief, waehrend im Hintergrund schon ein 'go test ./... -race -count=1' unterwegs war. Dessen Ergebnis war damit wertlos - go test kompiliert das Paket beim Erreichen des Pakets, nicht am Anfang. Lauf abgebrochen und nach dem Zurueckholen neu gestartet.
 - **2026-09-09 08:19 · BeMuCa** — Nachtrag zur Verifikation: bestehende gofmt-Drift in internal/cli/tickets.go. Nicht von mir - 'git show 823fc81:internal/cli/tickets.go | gofmt -l' meldet sie schon vor meinen Commits, und die Datei steht nicht in 'git diff --name-only 823fc81..HEAD'. Liegen gelassen, wie es die Regel fuer fremden toten/schiefen Code verlangt. Wer sie anfasst, sollte es in einem eigenen Commit tun, sonst rauscht ein reiner Formatlauf in einen Feature-Diff.
+- **2026-09-11 14:51 · Alexander Sacharov** — Abgenommen von Alexander. Bestaetigt an zwei Stellen: internal/tui/home.go:81 setzt die Versionszeile, und auf den heute aufgenommenen Vorfuehrungen steht 'jaira dev' links oben im Board - ein Dev-Build, der sich als solcher nennt. Die Aenderung ist ausserdem seit 0.1.2 veroeffentlicht.

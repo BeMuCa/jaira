@@ -239,7 +239,13 @@ Working a ticket:
 - `jaira claim <id>` — take it first; other sessions read this board too
 - `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,
   the model tier, and the outputs the lane expects back
-- `jaira dod <id> <n> --doing|--done` — mark checklist items as you go
+- `jaira dod <id> <n> --done --proof "<file:line or test name>"` — tick an
+  acceptance criterion and say what makes it true. These are what the terminal
+  lane's gate reads: one left unticked refuses the move however finished the
+  work is, and it refuses it at the end, when the cost of finding out is
+  highest
+- `jaira dod <id> <n> --doing|--done --plan` — the method, a second and
+  separate list. Ticking the plan does not tick the definition of done
 - `jaira note <id> <text>` — at every pause, write down what the repository does
   not already say: dead ends, why this and not that, what you had to find out.
   Not what the checklist and git already record. A killed session never gets a
@@ -323,6 +329,24 @@ Told to start or work a ticket, drive it this way yourself — lane by lane,
 loops included — until it sits in a human lane, then continue once the human
 has answered. Told an agent should work it, hand it to a subagent that
 babysits the ticket through the same route.
+
+<!-- jaira:local -->
+
+## Work rides on a branch and arrives through a PR
+
+Nothing lands on `master` directly. A change is made on a branch of its own, the
+ticket rides in the same commits as the code it belongs to, and the branch
+reaches `master` through a pull request.
+
+The ticket travelling with the code is what makes the pull request readable: a
+reviewer sees the change and what it was for in one place, instead of a diff
+whose ticket is still in whatever state the last commit left it.
+
+**Opening the pull request is the contributor's job. Accepting it is the
+maintainer's.** An agent may open a pull request, push to it, and answer review
+comments; it never merges one, and it never approves its own. This is the same
+rule the board already applies to lanes — a review agent cannot certify its own
+work — said once more where it also has to hold.
 <!-- jaira:end -->
 
 ## Client-facing changes go in core/release/NOTES.md

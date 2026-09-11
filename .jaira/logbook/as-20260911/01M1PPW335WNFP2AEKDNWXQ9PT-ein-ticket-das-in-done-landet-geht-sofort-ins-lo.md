@@ -1,7 +1,7 @@
 ---
 id: 01M1PPW335WNFP2AEKDNWXQ9PT
 title: "Ein Ticket, das in done landet, geht sofort ins Logbuch"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -10,12 +10,16 @@ context: "Berk am 04.09.: 'Alle Tickets die auf Done landen gehen direkt ins Log
 definition-of-done: "Move und Accept nach done melden die Logbuch-Ablage mit restore-Datei; die abgelegte Datei traegt gestempelte Commits; done ist danach leer (Altbestand mitgenommen); logbook-on-entry auf nicht-terminaler Lane wird beim Parsen verweigert; Tests decken CLI-Move, TUI-Accept und den Parse-Guard; go test ./... -race gruen"
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 2ecc670dd718a8c7fc0eebb4259f61330aaff6cd
+  - 94b26294da973739cb3f419e3bef085cd1046cdb
+  - b82f8d36e0f12f16b0574d7aaaa02ff4e3d7a7d6
+  - c737cab893f093af44a52cf0298cd2f87138a391
 created-at: 2026-09-04T17:18:43Z
-updated-at: 2026-09-04T17:56:09Z
+updated-at: 2026-09-11T21:04:37Z
 claimed-by: EE-3NX6GL3-34378
 claimed-at: 2026-09-04T17:20:09Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "Jam-Fix: FileLane ueberspringt Unfilebares (unlesbar, Stempel-Fehler, Kollision), benennt es als PartialError und filed den Rest - der Ankoemmling kommt immer durch, das Problem wird bei jeder Landung erneut gemeldet"
 outcome-why: "Das Zweitmodell-Review reproduzierte live einen Dauerstau: ein Fehler mitten im oldest-first-Sweep liess das ankommende Ticket (als neustes zuletzt dran) ungefiled liegen, jede Folge-Landung scheiterte identisch"
 outcome-resolves: "Core-Test deckt broken.md UND Kollision in einem Sweep (genau die zwei fileable gehen), CLI-Test beweist den Ankoemmling trotz Problem; go test ./... -race RC=0, Binary neu"

@@ -21,6 +21,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitrepo"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -192,6 +193,7 @@ Exit codes:
 		newCreateCmd(),
 		newListCmd(),
 		newShowCmd(),
+		newLinksCmd(),
 		newSetCmd(),
 		newTagsCmd(),
 		newTagCmd(),
@@ -291,9 +293,14 @@ func loadEnv(s *ticket.Store) (gate.Env, []*ticket.Ticket, error) {
 		}
 	}
 	repo := &gitrepo.Repo{Dir: s.Root}
+	// The index knows the logbook and the archive as well as the board, which
+	// is what keeps a blocker from blocking forever once it is finished and
+	// filed.
+	ix := link.Build(s, lanes, all)
 	return gate.Env{
-		Lanes: lanes,
-		All:   all,
+		Lanes:     lanes,
+		All:       all,
+		Satisfied: ix.Satisfied,
 		// Reaches git only when the gate actually needs it: CheckAdvance calls
 		// this closure only for a ticket recording no commits of its own, at
 		// the requires-commits lane, never merely to render the board.

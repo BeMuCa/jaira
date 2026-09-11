@@ -1,7 +1,7 @@
 ---
 id: 01M1KN2HSJ0B32MQ2532NJPQWE
 title: "Jede Karte traegt eine Box, auch ohne Tag"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -10,12 +10,25 @@ context: "Berk am 03.09. mit Screenshot der Backlog-Spalte: tag-lose Karten (F7K
 definition-of-done: "Jede Karte ist umrandet (Tag-Farbe wenn vorhanden, sonst neutral); das Kartenbudget rechnet mit der einheitlichen Hoehe; Tests decken geboxte Karten mit und ohne Tag; go test ./... -race gruen"
 tags: []
 blocked-by: []
-commits: []
+commits:
+  - 84c13ca2585994d065cae1bd5b6955858a578e3d
+  - a3aca3ad9b66f39e75286b61244ff608ebca09d1
+  - 516160715f04ee7989c66312d50daa73655d102d
+  - eb269d13eae56c5f4867f417e3ac2abee07bf6bc
+  - 9f96e1bb4a5cecd15702e404e33c9c1f3865d707
+  - 9b342506551e1d032e33f4b1a581fb73cb86f4e2
+  - 4cf02494cf6622760d4a68b1cdf9079dfb1684fa
+  - 52732e16cd22612779fe5de1ffd097a550b7ffd3
+  - 842e83709fe6b40494b39217b4cda2fb49b00046
+  - 35f54ac070a2261875b0dc52edf882593270542c
+  - 60808430b77f92cf70be676dad6ba85e632ee248
+  - 6bd21c73399d119c3edd146759e47737c2828ef0
+  - b36161b310fb80ef438c33fd1cbb0e881979a9ab
 created-at: 2026-09-03T12:49:35Z
-updated-at: 2026-09-03T18:50:32Z
+updated-at: 2026-09-11T16:04:56Z
 claimed-by: EE-3NX6GL3-2382606
 claimed-at: 2026-09-03T12:49:52Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "Gestapelte Karten teilen sich eine Border-Reihe: ab der zweiten Karte im Fenster faellt deren Top-Border weg (renderColumn), cardsInBudget rechnet gestapelte Karten mit 4 statt 5 Zeilen - der optische Abstand zwischen Boxen ist halbiert und pro weiterer Karte wird eine Zeile frei"
 outcome-why: "Berks 4. Screenshot: Luecken zwischen den Boxen halbieren; Messung zeigte keine Leerzeile, sondern zwei aneinanderstossende Border-Reihen, deren Glyphen nur die halbe Zelle fuellen"
 outcome-resolves: "TestStackedCardsShareOneBorderRow verbietet Bottom-ueber-Top-Border boardweit; der Box-Balance-Waechter zaehlt jetzt exakt (1 Stack-Top + 1 Bottom je Karte + Spaltenrahmen, positionsgenau gegen cardsInBudget); Budget-Tests neu gerechnet (5+4+4...); go test ./... -race RC=0"
@@ -57,3 +70,4 @@ review-verdict: "accept - Runde 5 koordinator-verifiziert und offengelegt (wie R
 - **2026-09-03 15:38 · BeMuCa** — Berks 3. Signoff-Feedback (Screenshot): (1) Innenabstand links in der Box zu gross; (2) der blaue Selektions-Balken soll weg - Selektion reicht als gefaerbte Schrift, blau bzw. in der Tag-Farbe der Karte; (3) seine Frage 'Text vergroessert?' - nein, Terminalschrift ist fix; Karten sind seit w-1 drei Spalten breiter, daher mehr sichtbarer Titel.
 - **2026-09-03 16:11 · BeMuCa** — Nachtrag: die Runde-4-Hunks (Balken raus, Einzug 1) waren nie eigenstaendig committet und ritten im KA9CFA-Commit mit - vom Zweitmodell-Review gefunden (bekannte Buendelungs-Klasse). Re-Split vor dem Push: eigener Commit 52732e1, Code-Baum danach byte-identisch zum reviewten Stand (diff=0 verifiziert).
 - **2026-09-03 18:37 · BeMuCa** — Berks 4. Feedback: Luecken ZWISCHEN den Boxen halbieren. Messung (TestBoardRenders-Log): es gibt KEINE Leerzeile - der Eindruck entsteht durch zwei aneinanderstossende Border-Reihen (Glyphen zeichnen halbe Zellhoehe). Halbieren = gestapelte Karten teilen sich EINE Border-Reihe: ab der zweiten Karte im Fenster faellt die eigene Top-Border weg, die Bottom-Border der vorigen ist der Trenner (traegt deren Tag-Farbe). Hoehen: erste Karte 5, jede weitere 4 - cardsInBudget rechnet positionsabhaengig.
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026): jede Karte gerahmt, auch ohne Tag, und zwischen zwei Karten genau eine Linie.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/validate"
 	"github.com/spf13/cobra"
@@ -48,7 +49,12 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				}
 			}
 
-			problems := validate.Tickets(tickets, lanes)
+			// Known reaches past the board into the logbook and the archive:
+			// a dependency that finished and was filed is satisfied, not
+			// dangling, and reporting it as an error made finishing work look
+			// like breaking it.
+			ix := link.Build(s, lanes, tickets)
+			problems := validate.Tickets(tickets, lanes, ix.Known)
 
 			// The board at rest includes what it tells its agents. A lane file
 			// edited by hand changes the pipeline without going through any

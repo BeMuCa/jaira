@@ -5,15 +5,17 @@ import (
 	"testing"
 )
 
-// TestSettingsOpensFromBoardAndLNoLonger asserts S is the one door: it opens
-// the settings menu, and L — the old, removed binding — does nothing.
-func TestSettingsOpensFromBoardAndLNoLonger(t *testing.T) {
+// TestSettingsOpensFromBoardAndLNoLongerLanes asserts S is the one door to
+// settings, and that L does not reach the lane screen it used to open. L now
+// opens the link window instead, so the guard is about where it does not go.
+func TestSettingsOpensFromBoardAndLNoLongerLanes(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 
 	m.key(key("L"))
-	if m.mode != modeBoard {
-		t.Fatalf("L must no longer open anything, mode = %v, want modeBoard", m.mode)
+	if m.mode == modeLanes {
+		t.Fatal("L must no longer open the lane screen")
 	}
+	m.key(key("esc"))
 
 	m.key(key("S"))
 	if m.mode != modeSettings {

@@ -1,7 +1,7 @@
 ---
 id: 01M1KN1JEG6D79HXJ20X76WCCW
 title: Der verwaltete Block schickt ein gestartetes Ticket bis zum naechsten Human-Step
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -11,12 +11,17 @@ definition-of-done: "Der verwaltete Block enthaelt die Regel (Start -> durchfahr
 tags: []
 blocked-by: []
 commits:
+  - 454cbbc71df069e3508f807722142ba28d8005ec
+  - eb269d13eae56c5f4867f417e3ac2abee07bf6bc
+  - 4cf02494cf6622760d4a68b1cdf9079dfb1684fa
   - ddc6c7a0e611d4ba84f5101ad3260cbffbf450d1
+  - 842e83709fe6b40494b39217b4cda2fb49b00046
+  - b36161b310fb80ef438c33fd1cbb0e881979a9ab
 created-at: 2026-09-03T12:49:02Z
-updated-at: 2026-09-03T15:59:04Z
+updated-at: 2026-09-11T16:05:16Z
 claimed-by: EE-3NX6GL3-2626905
 claimed-at: 2026-09-03T15:47:55Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 outcome-what: "Added two sentences to laneSection's tail in core/board/announce.go (the generator of the managed CLAUDE.md/AGENTS.md block), placed right after the existing 'Work one lane to empty...' sentence: told to start/work a ticket, drive it lane by lane (loops included) until it sits in a human lane, then continue once the human has answered; told an agent should work it, hand it to a subagent that babysits the same route. Extended core/board/lanesection_test.go with TestLaneSectionSaysHowToDriveAStartedTicket pinning the new sentences."
 outcome-why: "Berk was typing this instruction by hand every time he started a ticket. This is mechanism c of 88H1P4 (the block-sentence half), which was waiting on his go-ahead — today's request. The stop-hook (jaira hook print) already enforces the agentic half; this closes the instruction half so the block itself tells a session/subagent to keep driving without being re-prompted."
 outcome-resolves: "DoD required: (1) the managed block contains the rule — true, core/board/announce.go:217-220 adds it to laneSection's static tail, which every board with lanes renders; (2) 'jaira update' writes it — verified by building a scratch jaira binary into the scratchpad, running 'git init' + 'jaira init' in a fresh temp repo outside this one, and confirming the two new sentences appear verbatim in the generated CLAUDE.md (lines 107-109 there); did not run 'jaira update' in this repo itself, per instructions, so this repo's own CLAUDE.md/AGENTS.md stay stale until the user accepts and regenerates; (3) a test pins the new block text — TestLaneSectionSaysHowToDriveAStartedTicket in core/board/lanesection_test.go, passing. All quality gates green: gofmt -l core internal cmd printed exactly internal/cli/tickets.go (pre-existing, untouched by this change); go build ./... RC=0; go clean -testcache && go test ./... -race RC=0 (all packages ok, internal/tui and internal/cli included, confirming no regression in the areas outside scope)."
@@ -44,3 +49,4 @@ review-verdict: "accept (Zweitmodell-Review: Implementierung Sonnet-Subagent, Re
 
 ## Progress
 - **2026-09-03 15:55 · BeMuCa** — Placed the new rule in laneSection's tail (core/board/announce.go), not in the static agentNote block at the top. Reason: this rule is about driving lane-by-lane, which is exactly what the preceding 'Work one lane to empty...' sentence already covers, and that sentence lives in laneSection (only rendered when the board has lanes) — putting the new rule in agentNote would separate two sentences that belong together and would also show even on a board with zero lanes, where there is nothing to drive. Wording chosen: 'Told to start or work a ticket, drive it this way yourself — lane by lane, loops included — until it sits in a human lane, then continue once the human has answered. Told an agent should work it, hand it to a subagent that babysits the ticket through the same route.' Deliberately did not name critique/optimize specifically (unlike the German ticket text which says 'Loops (critique/optimize)') because laneSection is generic across boards — a board without those lane names still has loops via RejectsTo, and the existing Loop: sentences above already name the actual lanes for this board. Ruled out: touching agentNote's static text (wrong section, see above); touching internal/tui (out of scope per task constraints, and its test only checks 'This board's lanes'/'Order: ' substrings, not this tail, so unaffected). Verified end-to-end by building a scratch jaira binary into the scratchpad and running 'jaira init' in a fresh temp git repo outside this repo — confirmed the two new sentences render correctly in the generated CLAUDE.md. Did NOT run 'jaira update' in this repo per instructions; this repo's own CLAUDE.md/AGENTS.md remain stale until the user accepts and runs it themselves.
+- **2026-09-11 15:53 · Alexander Sacharov** — Von Alexander geprueft und zur Abnahme freigegeben (11.09.2026), mit einer Beobachtung aus dem Betrieb, die im Ticket fehlte: nicht jede Lane-Etappe endet in einem Commit. Die Regel im Block sagt 'das Ticket faehrt im selben Commit wie der Code', und in der Praxis gilt das fuer die Etappen, die Code anfassen - eine Brainstorm- oder Pre-process-Etappe schreibt nur das Ticket. Die Agenten fahren die Strecke trotzdem ordentlich ab. Kein Mangel am Ticket, aber der naechste Leser der Regel sollte es wissen.

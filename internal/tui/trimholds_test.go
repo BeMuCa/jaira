@@ -44,11 +44,16 @@ func holdsStore(t *testing.T, n int) (*ticket.Store, []*ticket.Ticket) {
 	return s, out
 }
 
-// The builtin done is a doorway: lane.Settle files the just-landed ticket and
-// everything still sitting in the lane straight into the logbook — the lane
-// is self-migrating, and settleMessage names every file with its restore path.
-// The holds (cap) branch is pinned at the core and CLI layers.
-func TestSettleLaneFilesTheDoorwayLane(t *testing.T) {
+// A doorway lane files the just-landed ticket and everything still sitting in
+// the lane straight into the logbook, and settleMessage names every file with
+// its restore path. The holds (cap) branch is pinned at the core and CLI
+// layers.
+//
+// The doorway is switched on here rather than taken from the shipped lanes:
+// jaira ships done without one, because filing is a cut somebody makes with
+// 'jaira logbook --all' and not something finishing a ticket does to
+// everybody else's work.
+func TestSettleLaneFilesADoorwayLane(t *testing.T) {
 	s, ts := holdsStore(t, 11)
 	m, err := New(s)
 	if err != nil {
@@ -58,6 +63,7 @@ func TestSettleLaneFilesTheDoorwayLane(t *testing.T) {
 	if !ok {
 		t.Fatal(`"done" lane not found`)
 	}
+	l.LogbookOnEntry = true
 	trimmed, filed, err := lane.Settle(s, l, m.settleFolder(), "", m.settlePrepare())
 	if err != nil {
 		t.Fatalf("settle: %v", err)

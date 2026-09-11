@@ -1,7 +1,7 @@
 ---
 id: 01M2943H9MEYF2723ZSVJNYE3T
 title: Tests write their state into the real ~/.jaira
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,9 +18,10 @@ definition-of-done: go test ./... with HOME pointed at an empty directory create
 tags:
   - concurrency
 blocked-by: []
-commits: []
+commits:
+  - cc0b0f30aebd544c7c563eed2dd52386afcf0c3e
 created-at: 2026-09-11T20:56:18Z
-updated-at: 2026-09-11T21:01:21Z
+updated-at: 2026-09-11T21:06:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1358160
 claimed-at: 2026-09-11T20:56:31Z
