@@ -57,17 +57,45 @@ func TestNoSatisfiedFuncKeepsTheOldRefusal(t *testing.T) {
 	}
 }
 
-// A blocker that is on the board and unfinished is unaffected by any of this.
+// A blocker that is on the board and unfinished still blocks. Satisfied
+// speaks for the same tickets, so it says no for this one — the test builds
+// it that way rather than handing the gate a world that cannot occur.
 func TestOnBoardUnfinishedBlockerStillBlocks(t *testing.T) {
 	env := testEnv(t)
 	dep := ticketWith("")
 	dep.ID = absentDep
 	dep.Status = "in-progress"
 	env.All = []*ticket.Ticket{dep}
-	env.Satisfied = func(string) bool { return true }
+	env.Satisfied = func(id string) bool {
+		for _, o := range env.All {
+			if o.ID == id {
+				l, ok := env.Lanes.Get(o.Status)
+				return ok && l.Terminal
+			}
+		}
+		return false
+	}
 
 	vs := blockedBy(env, blocking(absentDep))
 	if len(vs) != 1 || vs[0].Code != CodeBlocked {
-		t.Errorf("a blocker sitting in a working lane blocks whatever the index says, got %v", vs)
+		t.Errorf("a blocker sitting in a working lane blocks, got %v", vs)
+	}
+}
+
+// The reverse of the review's finding: a ticket filed into the logbook keeps
+// travelling on its own ref, so All can still carry a copy of it in the lane
+// it sat in before it was finished. That stale copy must not outvote the
+// index, or finishing a blocker goes on blocking the work waiting for it.
+func TestStaleRefCopyDoesNotOutvoteTheIndex(t *testing.T) {
+	env := testEnv(t)
+	stale := ticketWith("")
+	stale.ID = absentDep
+	stale.Status = "in-progress" // what the ref still says
+	stale.ReadOnly = true
+	env.All = []*ticket.Ticket{stale}
+	env.Satisfied = func(id string) bool { return id == absentDep } // the logbook knows better
+
+	if vs := blockedBy(env, blocking(absentDep)); len(vs) != 0 {
+		t.Errorf("the filed copy is the live one; expected no violation, got %v", vs)
 	}
 }

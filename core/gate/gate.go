@@ -581,14 +581,17 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 			})
 			continue
 		}
+		// Asked first, and for every dependency rather than only for one
+		// that is missing from All. A ticket filed into the logbook here
+		// still travels on its own ref, so All can carry a stale copy of it
+		// with the lane it sat in before it was finished — and that copy
+		// would go on blocking work that is done. Whoever answers this
+		// knows which of the two is the live one; All does not.
+		if env.Satisfied != nil && env.Satisfied(dep) {
+			continue
+		}
 		other, ok := byID[dep]
 		if !ok {
-			// Not on the board is not the same as not done. The usual reason
-			// a blocker is missing is that it was finished and filed, and
-			// that is the case where the dependency has cleared.
-			if env.Satisfied != nil && env.Satisfied(dep) {
-				continue
-			}
 			vs = append(vs, Violation{
 				Code:    CodeBlocked,
 				Message: fmt.Sprintf("blocked by %s, which does not exist in this store", ticket.Handle(dep)),

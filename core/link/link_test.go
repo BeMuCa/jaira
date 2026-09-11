@@ -87,7 +87,7 @@ func TestBlockerInTheLogbookIsSatisfied(t *testing.T) {
 	if !ix.Satisfied(blocker) {
 		t.Errorf("a logbooked ticket is finished work; %s must count as satisfied", ticket.Handle(blocker))
 	}
-	ref, _ := ix.Lookup(blocker)
+	ref, _ := ix.lookup(blocker)
 	if ref.Place != PlaceLogbook {
 		t.Errorf("place = %q, want %q", ref.Place, PlaceLogbook)
 	}
@@ -216,22 +216,10 @@ func TestParentCycleTerminates(t *testing.T) {
 	}
 
 	ix := Build(s, lanes(t), list(t, s))
-	done := make(chan []string, 1)
-	go func() { done <- ix.ParentCycle(a) }()
+	done := make(chan int, 1)
+	go func() { done <- len(ix.Relations(a)) }()
 	select {
-	case ring := <-done:
-		if len(ring) == 0 {
-			t.Fatal("a ↔ b is a cycle and must be reported as one")
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("ParentCycle did not terminate on a parent ring")
-	}
-	// Rendering the tree must terminate as well.
-	ix2 := Build(s, lanes(t), list(t, s))
-	done2 := make(chan int, 1)
-	go func() { done2 <- len(ix2.Relations(a)) }()
-	select {
-	case <-done2:
+	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("Relations did not terminate on a parent ring")
 	}
@@ -254,4 +242,67 @@ func TestDanglingLinkIsStillListed(t *testing.T) {
 		}
 	}
 	t.Fatal("a dangling blocked-by must still be listed")
+}
+
+// A ticket travelling on its own ref, with no file here, is a fourth place a
+// link can point at. The store already folds those into its listing; the
+// index has to name the place so the reader is told to pull it rather than
+// told it is missing.
+func TestATicketOnlyOnARefIsNamedAsSuch(t *testing.T) {
+	s := store(t)
+	onRef := &ticket.Ticket{
+		ID:       ticket.NewID(time.Now()),
+		Title:    "only on a ref",
+		Status:   "todo",
+		ReadOnly: true,
+	}
+	ix := Build(s, lanes(t), []*ticket.Ticket{onRef})
+
+	ref, ok := ix.lookup(onRef.ID)
+	if !ok || ref.Place != PlaceRef {
+		t.Fatalf("place = %q (found %v), want %q", ref.Place, ok, PlaceRef)
+	}
+	if ix.Satisfied(onRef.ID) {
+		t.Error("a ticket in a working lane is not satisfied, ref or not")
+	}
+}
+
+// Filing a ticket into the logbook does not delete its ref, so the same
+// ticket arrives twice. The filed copy is this clone's own record that the
+// work is finished; the ref would otherwise report finished work as "pull it
+// to work on it".
+func TestTheFiledCopyBeatsTheRefCopy(t *testing.T) {
+	s := store(t)
+	id := make1(t, s, "finished here", "done", nil, nil)
+	if _, err := s.Logbook(id, "as-20260911"); err != nil {
+		t.Fatal(err)
+	}
+	stale := &ticket.Ticket{ID: id, Title: "finished here", Status: "in-progress", ReadOnly: true}
+
+	ix := Build(s, lanes(t), []*ticket.Ticket{stale})
+
+	ref, _ := ix.lookup(id)
+	if ref.Place != PlaceLogbook {
+		t.Errorf("place = %q, want %q — the filed copy is the live one", ref.Place, PlaceLogbook)
+	}
+	if !ix.Satisfied(id) {
+		t.Error("the work is filed as done; the stale ref must not keep it open")
+	}
+}
+
+// The file is hand-editable, so a link may be written as the handle somebody
+// read off the board. An unambiguous one resolves; an ambiguous one does not,
+// because a guess would show a link to whichever was indexed first.
+func TestAnUnambiguousHandleResolves(t *testing.T) {
+	s := store(t)
+	id := make1(t, s, "a", "todo", nil, nil)
+
+	ix := Build(s, lanes(t), list(t, s))
+	ref, ok := ix.lookup(ticket.Handle(id))
+	if !ok || ref.ID != id {
+		t.Errorf("handle %s resolved to %#v, want %s", ticket.Handle(id), ref, id)
+	}
+	if _, ok := ix.lookup("ZZZZZZ"); ok {
+		t.Error("a handle nothing carries must resolve to nothing")
+	}
 }

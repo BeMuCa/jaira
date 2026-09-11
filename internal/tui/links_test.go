@@ -304,3 +304,92 @@ func TestLongLinkListScrollsWithTheCursor(t *testing.T) {
 		t.Errorf("scrolled down, so something is hidden above\n%s", m.render())
 	}
 }
+
+// Several groups means several headings, and a heading prints two lines, not
+// one. Charging it one let the box overrun its own space, and what the modal
+// then clipped was the hint line that says which keys do anything.
+func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
+	for _, h := range []int{20, 30, 40} {
+		m, epic := linksModel(t)
+		// Four groups, so four headings: waiting on, contains, related to,
+		// followed by.
+		now := time.Now()
+		for _, extra := range []map[string]string{
+			{ticket.FieldFollows: epic},
+		} {
+			f := map[string]string{
+				ticket.FieldID: ticket.NewID(now), ticket.FieldTitle: "A follow-up", ticket.FieldStatus: "todo",
+			}
+			for k, v := range extra {
+				f[k] = v
+			}
+			if _, err := m.store.Create(f, nil, ""); err != nil {
+				t.Fatal(err)
+			}
+			now = now.Add(time.Millisecond)
+		}
+		blocker, err := m.store.Create(map[string]string{
+			ticket.FieldID: ticket.NewID(now), ticket.FieldTitle: "A blocker", ticket.FieldStatus: "todo",
+		}, nil, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := m.store.Mutate(epic, func(tk *ticket.Ticket) error {
+			return tk.Doc().SetList(ticket.FieldBlockedBy, []string{blocker.ID})
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := m.reload(); err != nil {
+			t.Fatal(err)
+		}
+		m.selectByID(epic)
+		m.width, m.height = 150, h
+		m.key(key("L"))
+		if got := len(groupsIn(m.links)); got < 4 {
+			t.Fatalf("the fixture must have four groups, got %d", got)
+		}
+		out := m.render()
+		if !strings.Contains(out, "esc  back") {
+			t.Errorf("at %d rows the hint line was clipped\n%s", h, out)
+		}
+	}
+}
+
+// A filter hides cards that are genuinely on the board. Jumping to one of
+// them moved nothing and said nothing, which reads as the key being broken.
+func TestJumpingToAFilteredOutCardSaysSo(t *testing.T) {
+	m, _ := linksModel(t)
+	m.key(key("L"))
+	e, ok := m.links.current()
+	if !ok {
+		t.Fatal("nothing selected in the link window")
+	}
+	m.key(key("esc"))
+
+	// A filter that keeps the epic and hides everything it links to.
+	m.filter = "Epic"
+	m.rebuild()
+	m.key(key("L"))
+	if m.links == nil {
+		t.Fatal("the subject is still on the board; the window must open")
+	}
+	m.key(key("enter"))
+	if m.mode != modeMessage {
+		t.Fatalf("a jump the filter blocks must say so, mode = %v", m.mode)
+	}
+	if !strings.Contains(m.message, ticket.Handle(e.Ref.ID)) && !strings.Contains(m.message, "filter") {
+		t.Errorf("the message must explain the filter, got %q", m.message)
+	}
+}
+
+// groupsIn lists the headings the window is showing, for tests that care how
+// many there are rather than what they say.
+func groupsIn(v *linkView) []string {
+	var out []string
+	for _, r := range v.rows {
+		if r.heading != "" {
+			out = append(out, r.heading)
+		}
+	}
+	return out
+}

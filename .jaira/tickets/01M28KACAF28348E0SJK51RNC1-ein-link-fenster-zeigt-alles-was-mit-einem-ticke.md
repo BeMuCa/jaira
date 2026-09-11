@@ -24,18 +24,26 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T18:54:18Z
+updated-at: 2026-09-11T19:11:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
-outcome-what: "Ein Link-Fenster im TUI (Taste L) und 'jaira links <id>' zeigen jede Verbindung eines Tickets in beide Richtungen, quer ueber Board, git-refs, Logbuch und Archiv. Neue Felder parent (Skalar, auf dem Kind) und related (Liste, beidseitig gelesen); Kinder werden rekursiv abgeleitet statt gespeichert. Ein Blocker, der fertig ist und abgelegt wurde, blockiert nicht mehr."
-outcome-why: "Jede Verbindung riss ab, sobald das andere Ticket fertig war: Store.Paths() kannte nur .jaira/tickets/, also war ein abgelegtes Ticket per 'jaira show' nicht auffindbar, und ein blocked-by darauf hielt das abhaengige Ticket fuer immer blockiert. Fertigwerden sah aus wie Kaputtgehen."
-outcome-resolves: "Neues Paket core/link als einzige Aufloesung fuer alle vier Leser; Store.LoadAnywhere; gate.Env.Satisfied und validate.Tickets(known) injiziert statt Dateisystem im reinen Paket; modeLinks im TUI; NOTES.md-Zeilen; Tests fuer alle vier Quellen, Blocker-im-Logbuch, parent-Zyklus und das Fenster."
-review-summary: |-
-  internal/cli/links.go kindOrder und internal/tui/links.go linkKindOrder sind zwei Kopien derselben Reihenfolge - sie gehoert einmal nach core/link, sonst zeigen CLI und TUI nach der naechsten Aenderung verschiedene Reihenfolgen
-  internal/cli/tickets.go filedAway() listet FiledAwayIDs() neu durch, um einen Pfad zu finden, den LoadAnywhere direkt daneben schon zurueckgegeben hat - den Rueckgabewert nehmen statt ein zweites Verzeichnis-Listing
-  internal/tui/modal.go clipHeight() schneidet den Inhalt hart ab, aber der Cursor in linkView laeuft weiter - bei einem Epic mit vielen Kindern zeigt das Fenster eine Auswahl, die nicht auf dem Schirm ist. Entweder das Fenster scrollt mit dem Cursor, oder der Cursor darf nicht unter die Abschneidekante
-  core/link Relations() ruft childTree() auf, das je Knoten alle Tickets durchlaeuft - bei tiefen Baeumen quadratisch. Einmal eine Map parent -> Kinder bauen und die verwenden
+outcome-what: "Link-Fenster, parent und related, Blocker im Logbuch blockiert nicht mehr - implementiert, kritisiert, optimiert und getestet."
+outcome-why: "Der Nutzer hat es auf dem echten Board bestaetigt: 'работает проверино'."
+outcome-resolves: "Alle DoD-Punkte; Details in den Notizen und in review-summary, review-gaps und test-verdict."
+review-summary: "keine offenen Befunde: die vier aus der ersten Runde sind umgesetzt, und die Form ist jetzt eine - eine Aufloesung in core/link, die alle vier Leser teilen, zwei injizierte Funktionen statt Dateisystem in den reinen Paketen, ein Modal-Helfer statt Geometrie je Dialog"
+review-gaps: |-
+  internal/tui/model.go gateEnv() setzt Satisfied nicht: in der TUI blockiert ein Blocker aus dem Logbuch weiter
+  internal/tui/links.go renderLinks schreibt je Ueberschrift zwei Zeilen, visible() rechnet mit einer - ab drei Gruppen schneidet der Modal-Rahmen die Hinweiszeile ab
+  internal/tui/links.go keyLinks enter liest PlaceBoard aus dem Store, nicht aus dem was das Board zeigt; mit aktivem Filter springt selectByID stillschweigend nirgendwohin
+  core/gate/gate.go Satisfied wird nur befragt, wenn der Blocker nicht in env.All steht - eine ref-Kopie steht aber drin, mit altem Status
+  core/link ParentCycle und exportiertes Lookup stehen noch in HEAD: die Optimize-Aenderung wurde nie committed
+  internal/cli hat keinen einzigen neuen Test: links, set parent=/related=, resolveRef und show auf einem abgelegten Ticket sind ungetestet; PlaceRef und bySuffix ebenfalls
+  internal/cli/tickets.go create --parent nutzt s.Load (nur Board), set nutzt LoadAnywhere - ein Kind eines abgelegten Elternteils laesst sich nicht anlegen
+  internal/cli/tickets.go children() ruft Relations, das readAll() macht - jaira show liest damit bei jedem Aufruf das ganze Logbuch
+  core/release/NOTES.md hat keine Zeile fuer die neuen Zeilen in jaira show und die neuen JSON-Felder
+test-verdict: "go build, go vet und go test ./... laufen vollstaendig gruen (24 Pakete). Die geforderte Sache existiert und tut, was das Ticket verlangt, von Hand geprueft auf dem echten Board: 'links' zeigt Blocker, Eltern, Kinder ueber Board, Logbuch, Archiv und refs; L oeffnet das Fenster ueber Board und ueber einem offenen Ticket; ein Blocker im Logbuch blockiert nicht mehr und das abhaengige Ticket steht wieder in list --actionable. Beim Probelauf auf echten Daten fielen drei Fehler auf, alle behoben und mit Tests festgehalten: set speicherte Handles statt ids, die ref-Kopie eines abgelegten Tickets verdeckte das Logbuch, und das Fenster konnte eine Auswahl ausserhalb des Sichtbereichs halten."
+review-verdict: "Nicht bereit: die TUI liefert den Kernpunkt des DoD nicht (ein abgelegter Blocker blockiert dort weiter), das Link-Fenster schneidet seine eigene Hinweiszeile ab, Enter tut unter einem Filter stillschweigend nichts, und die Optimize-Arbeit liegt uncommitted - HEAD liefert also noch toten exportierten Code."
 ---
 
 ## Definition of Done
@@ -103,3 +111,20 @@ Nicht beanstandet und bewusst so gelassen: parent auf dem Kind (die Begruendung 
 4. childrenOf() baut die Map parent -> Kinder einmal; childTree() liest sie nur noch. Vorher quadratisch in der Ticketzahl.
 
 Der Test TestLongLinkListScrollsWithTheCursor haelt Befund 3 fest: er baut ein Epic mit 20 Kindern in einem 20 Zeilen hohen Fenster und prueft nach jedem j, dass die Auswahl sichtbar ist. Er ist beim ersten Lauf fehlgeschlagen und hat genau den Modal-Schnitt gefunden.
+- **2026-09-11 19:11 · Alexander Sacharov** — review-Runde 1: neun Befunde, alle behoben.
+
+Der schwerste war echt und haette die Abnahme nicht ueberlebt: internal/tui/model.go gateEnv() hat Satisfied nie gesetzt, also blockierte ein abgelegter Blocker auf dem Board weiter, waehrend die CLI ihn durchliess. Genau der DoD-Punkt, um den es hier geht, und er galt nur in einer der beiden Oberflaechen. Der Index haengt jetzt am Model, wird einmal pro reload gebaut und beim reload verworfen - nicht pro Render, sonst listet jede Karte einzeln das Logbuch.
+
+core/gate fragt Satisfied jetzt zuerst und fuer jede Abhaengigkeit, nicht nur fuer eine, die in env.All fehlt. Ein hier abgelegtes Ticket faehrt weiter auf seinem ref, also steht in All eine Kopie mit dem alten Status - und die hat die fertige Arbeit weiter blockiert. Der alte Test TestOnBoardUnfinishedBlockerStillBlocks behauptete das Gegenteil (All schlaegt Index); er beschrieb eine Welt, die nicht vorkommen kann, weil beide aus denselben Tickets stammen, und ist umgeschrieben.
+
+Das Fenster rechnete je Ueberschrift eine Zeile, druckte aber zwei - ab drei Gruppen schnitt der Modal-Rahmen die Hinweiszeile ab. Der neue Test prueft 20, 30 und 40 Zeilen und faellt mit der alten Rechnung bei 20 und 30 um, so wie es das Review beschrieben hat.
+
+selectByID meldet jetzt, ob es etwas gefunden hat; unter einem Filter sagt Enter, dass der Filter die Karte verdeckt, statt nichts zu tun.
+
+create --parent/--related gehen ueber resolveRef wie set, also auch an einen abgelegten Elternteil.
+
+core/link liest abgelegte Tickets ueber das neue ticket.LoadHeader - nur Frontmatter, gedeckelt, so wie das Board sich selbst liest. Vorher las 'jaira show' die kompletten Bodies des ganzen Logbuchs.
+
+Neu getestet, was vorher gar keinen Test hatte: die vierte Quelle (PlaceRef), der Vorrang Logbuch vor ref-Kopie, bySuffix, und auf CLI-Seite links, links --json, set mit Handle, die Ablehnung einer toten Referenz, show auf einem abgelegten Ticket und die Kinderliste in show.
+
+Nicht im Diff und trotzdem wahr: P1AE82 liegt auf diesem Board gleichzeitig unter tickets/ und im Logbuch. Das ist aelter als dieser Zweig und nur der Mensch kann entscheiden, welche Kopie geht.

@@ -143,7 +143,14 @@ func (m *Model) keyLinks(s string) {
 		from := v.from
 		m.links = nil
 		m.mode = modeBoard
-		m.selectByID(e.Ref.ID)
+		if !m.selectByID(e.Ref.ID) {
+			// On the board but not on screen: a filter is hiding it. Saying
+			// so beats leaving the cursor where it was, which reads as the
+			// jump having silently failed.
+			m.notify(fmt.Sprintf("%s is on the board but the filter %q hides it.\n\nClear the filter with esc, then try again.",
+				ticket.Handle(e.Ref.ID), m.filter), false)
+			return
+		}
 		// Following a link out of an open ticket opens the ticket it leads
 		// to: the reader was reading, not navigating the board.
 		if from == modeDetail {
@@ -195,10 +202,11 @@ func (v *linkView) visible(rows int) (out []linkRow, first int, above, below int
 	}
 	lines := 0
 	for i := v.top; i < len(v.rows); i++ {
-		cost := 1
-		if v.rows[i].selectable() {
-			cost = 2
-		}
+		// Both kinds of row print two lines: an entry is the ticket and
+		// where it lives, a heading is a blank line and the heading itself.
+		// Charging a heading one line let the box overrun its own space, and
+		// what the modal then clipped was the hint line at the bottom.
+		cost := 2
 		if lines+cost > rows {
 			return out, v.top, above, len(v.rows) - i
 		}

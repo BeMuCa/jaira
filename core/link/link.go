@@ -23,7 +23,6 @@
 package link
 
 import (
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -210,17 +209,11 @@ func (ix *Index) loadFiled(id string) *ticket.Ticket {
 	if !ok {
 		return nil
 	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		ix.loaded[id] = nil
-		return nil
-	}
-	d, err := ticket.ParseDoc(raw)
-	if err != nil {
-		ix.loaded[id] = nil
-		return nil
-	}
-	t, err := ticket.Decode(d, path)
+	// Frontmatter only. Every question this index answers — the title, the
+	// lane, the parent, the related list — is a field, and reading the
+	// bodies of a whole logbook to get them is what made 'jaira show' pay
+	// for prose nobody asked to see.
+	t, err := ticket.LoadHeader(path)
 	if err != nil {
 		ix.loaded[id] = nil
 		return nil
@@ -229,11 +222,11 @@ func (ix *Index) loadFiled(id string) *ticket.Ticket {
 	return t
 }
 
-// Lookup resolves one id to everything a reader needs to see it, wherever it
+// lookup resolves one id to everything a reader needs to see it, wherever it
 // lives. The second result is false when the id is not known here at all —
 // which, unlike before, now genuinely means "nowhere", not merely "not on the
 // board".
-func (ix *Index) Lookup(id string) (Ref, bool) {
+func (ix *Index) lookup(id string) (Ref, bool) {
 	if ix == nil || id == "" {
 		return Ref{ID: id, Place: PlaceUnknown}, false
 	}
@@ -259,7 +252,7 @@ func (ix *Index) Lookup(id string) (Ref, bool) {
 		// link and one that silently points nowhere. Ambiguity resolves to
 		// nothing rather than to a guess.
 		if full, ok := ix.bySuffix(id); ok && full != id {
-			return ix.Lookup(full)
+			return ix.lookup(full)
 		}
 		return Ref{ID: id, Place: PlaceUnknown}, false
 	}
@@ -287,13 +280,13 @@ func (ix *Index) Lookup(id string) (Ref, bool) {
 // boolean: core/gate stays free of the filesystem and takes this as an
 // injected function.
 func (ix *Index) Satisfied(id string) bool {
-	ref, ok := ix.Lookup(id)
+	ref, ok := ix.lookup(id)
 	return ok && ref.Done
 }
 
 // Known reports whether the id resolves to a ticket anywhere.
 func (ix *Index) Known(id string) bool {
-	_, ok := ix.Lookup(id)
+	_, ok := ix.lookup(id)
 	return ok
 }
 
@@ -335,7 +328,7 @@ func (ix *Index) Relations(id string) []Entry {
 		if otherID == "" || otherID == id {
 			return
 		}
-		ref, ok := ix.Lookup(otherID)
+		ref, ok := ix.lookup(otherID)
 		if !ok {
 			// An id nothing here knows is still worth showing: a dangling
 			// link is a fact about this ticket, and hiding it is how a typo
@@ -404,7 +397,7 @@ func (ix *Index) childTree(id string, kids map[string][]*ticket.Ticket, seen map
 			continue
 		}
 		seen[t.ID] = true
-		ref, ok := ix.Lookup(t.ID)
+		ref, ok := ix.lookup(t.ID)
 		if !ok {
 			ref = Ref{ID: t.ID, Place: PlaceUnknown}
 		}
@@ -451,34 +444,6 @@ func (ix *Index) ticket(id string) *ticket.Ticket {
 		return t
 	}
 	return ix.loadFiled(id)
-}
-
-// ParentCycle reports the ring a ticket's parent chain runs into, if it runs
-// into one, as the ids on that ring starting from this ticket. Nil means the
-// chain terminates.
-//
-// Worth its own function because the chain is followed recursively wherever
-// it is rendered: a ring that nobody checked for is a hung board, not a bad
-// diagram.
-func (ix *Index) ParentCycle(id string) []string {
-	if ix == nil {
-		return nil
-	}
-	seen := map[string]bool{}
-	var chain []string
-	for cur := id; cur != ""; {
-		if seen[cur] {
-			return append(chain, cur)
-		}
-		seen[cur] = true
-		chain = append(chain, cur)
-		t := ix.ticket(cur)
-		if t == nil {
-			return nil
-		}
-		cur = t.Parent
-	}
-	return nil
 }
 
 // Whereabouts says where a linked ticket lives now, in the words a reader

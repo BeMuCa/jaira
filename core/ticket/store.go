@@ -769,6 +769,25 @@ func (s *Store) Load(idOrPrefix string) (*Ticket, error) {
 	return Decode(d, path)
 }
 
+// LoadHeader reads one ticket file's frontmatter and nothing more.
+//
+// The board already reads itself this way — a ticket's body has no upper
+// bound, and a reader that wanted only the fields would otherwise scale with
+// total prose. Anything that has to sweep a whole directory of tickets it
+// does not intend to display belongs here rather than on os.ReadFile: the
+// logbook grows without end, and it is swept to answer questions as small as
+// "who names this ticket as their parent".
+//
+// The body is not populated. Everything in the frontmatter is.
+func LoadHeader(path string) (*Ticket, error) {
+	s := &Store{}
+	d, err := s.readHeader(path)
+	if err != nil {
+		return nil, err
+	}
+	return Decode(d, path)
+}
+
 // LoadAnywhere reads one ticket from wherever it still exists: the board
 // first, then the logbook and the archive.
 //

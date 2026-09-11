@@ -20,6 +20,7 @@ Format rules — read before editing:
 - Record containment with the new `parent` field: a ticket names the one it is part of (`jaira set <id> parent=<id>`, or `jaira create --parent <id>`), and children — and their children, to any depth — are read back from that. There is no `children` field to keep in step.
 - Record a loose connection with the new `related` field (`jaira set <id> related=<id>,<id>`, or `jaira create --related <id>`). Write it on either side; both sides show it.
 - Run `jaira links <id>` for the same picture on the command line, with `--json` for a machine.
+- `jaira show <id>` now prints what a ticket is part of, what it contains (children at every depth, the filed ones included) and what it relates to; `--json` carries the same as `parent`, `related` and `filed_away`.
 - Write a link with a handle: `jaira set <id> blocked-by=<handle>`, `parent=` and `related=` now resolve whatever reference you can read off the board into the full ticket id, and refuse a reference that names no ticket. A handle used to be stored verbatim and the link then resolved to nothing forever after.
 - Stop working around a blocker that finished: a `blocked-by` whose ticket has been filed into the logbook, or archived from a terminal lane, now counts as cleared instead of blocking forever and dropping the ticket out of `jaira list --actionable`.
 - `jaira validate` now reports a dependency or a parent as dangling only when the id exists nowhere at all, and reports a ticket that is its own parent or sits in a parent ring as an error.

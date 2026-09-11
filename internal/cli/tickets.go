@@ -175,27 +175,28 @@ already know it is yours; --assignee wins over it.`,
 			// Same rule for parent and related: a link is worth writing only
 			// once it resolves, and it is stored as the full id so both sides
 			// match however it was typed.
+			// Resolved through the same path 'jaira set' uses, which reaches
+			// past the board: a finished epic is in the logbook, and being
+			// unable to file a child under it there would make the parent
+			// link useless exactly when the work grows.
 			parentID := ""
 			if strings.TrimSpace(parent) != "" {
-				src, err := s.Load(parent)
+				full, err := resolveRef(s, parent)
 				if err != nil {
 					return err
 				}
-				if src.ID == "" {
-					return fail(ExitValidation, "bad_parent", "parent does not resolve to a ticket")
-				}
-				parentID = src.ID
+				parentID = full
 			}
 			relatedIDs := make([]string, 0, len(related))
 			for _, ref := range related {
 				if strings.TrimSpace(ref) == "" {
 					continue
 				}
-				src, err := s.Load(ref)
+				full, err := resolveRef(s, ref)
 				if err != nil {
 					return err
 				}
-				relatedIDs = append(relatedIDs, src.ID)
+				relatedIDs = append(relatedIDs, full)
 			}
 
 			now := time.Now()
