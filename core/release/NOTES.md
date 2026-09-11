@@ -15,6 +15,8 @@ Format rules — read before editing:
 
 ## Unreleased
 
+- Re-read the `jaira dod` lines in the jaira section of `AGENTS.md` and `CLAUDE.md` (run `jaira update` to refresh it): they now say that the numbered criteria are what the terminal lane's gate reads, and that `--plan` is a second, separate list whose ticks do not count towards it.
+
 - Dialogs now float over the board instead of replacing it: the link window, the tag legend and every refusal or note are drawn as a centred box with the board still visible behind, so you keep the card and the lane you were looking at.
 - Press `L` on a card, or on an open ticket, to see every ticket linked to it — what it waits on, what waits on it, what it is part of, what it contains, what it relates to and what follows it — with the logbook and the archive searched too, so a link no longer dies when the work behind it finishes. `enter` jumps to a linked card — and opens it, when you pressed `L` while reading a ticket — and `esc` puts back exactly the screen you came from.
 - Record containment with the new `parent` field: a ticket names the one it is part of (`jaira set <id> parent=<id>`, or `jaira create --parent <id>`), and children — and their children, to any depth — are read back from that. There is no `children` field to keep in step.

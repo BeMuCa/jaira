@@ -1,7 +1,7 @@
 ---
 id: 01M28KACAF28348E0SJK51RNC1
 title: "Ein Link-Fenster zeigt alles, was mit einem Ticket verbunden ist"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,9 +22,18 @@ tags:
   - cli
   - gates
 blocked-by: []
-commits: []
+commits:
+  - ebe4305637eb7a38d99443d3985e6fa95caaf498
+  - 24fbb376a0b179f6fe6e6f00bf83972920653b77
+  - 28ff4ae23cdbb47d026b14fb328ca59f89876482
+  - 4a31d7b85482da16bae02eee09fd3f0dd30d7af8
+  - ba77d3781c03c9bfe88a00df8ffec2f611e3bb69
+  - 8292a2934e908695c11df5d3df3954e7101832c5
+  - 64e96a3a296630c8334ad31e1e270326c6af27bd
+  - cefa764e1fa45f8a70f50b8cde61bbd1d9cabc17
+  - 70c2e6240f6c45d6c0d702e53ffa8c785f8ff54e
 created-at: 2026-09-11T16:02:57Z
-updated-at: 2026-09-11T20:10:53Z
+updated-at: 2026-09-11T20:23:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-585885
 claimed-at: 2026-09-11T16:09:03Z
