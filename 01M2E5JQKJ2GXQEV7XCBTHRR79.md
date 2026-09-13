@@ -24,13 +24,14 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:28:44Z
+updated-at: 2026-09-13T20:28:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
 outcome-what: "Die Zeilen 27-159 aus CLAUDE.md (## Technology Stack bis zum letzten ## Sources-Punkt) stehen jetzt woertlich in docs/STACK.md. In CLAUDE.md bleibt die Ueberschrift und genau eine Verweiszeile, die docs/STACK.md und .planning/research/STACK.md als Vollfassung nennt; die GSD-Marker stack-start/stack-end bleiben stehen. CLAUDE.md faellt von 34993 auf 13968 Bytes."
 outcome-why: "CLAUDE.md wird von jeder frisch gestarteten Agenten-Sitzung komplett gelesen, bei acht Lanes acht Mal pro Ticket. Der Stack-Block ist fuer einen Menschen geschrieben, der die Technologie waehlt - ein Worker in einer Lane braucht ihn nicht, die Entscheidung steht im go.mod. Rund 5300 Token pro Lane fuers Wiederlesen einer Entscheidung, die niemand mehr trifft."
 outcome-resolves: "docs/STACK.md ist byte-identisch mit den alten Zeilen (diff gegen git show HEAD~1:CLAUDE.md leer); CLAUDE.md:29 ist die Verweiszeile; 13968 Bytes sind ca. 3450 Token, unter den geforderten 4000; git diff CLAUDE.md hat genau einen Hunk @@ -26,137 +26,7 @@, der jaira-Block und alles hinter jaira:local sind unberuehrt; jaira update lief fehlerfrei; go test ./... -race komplett gruen."
+review-summary: "docs/STACK.md:1 beginnt mit '## Technology Stack' und direkt darunter '## 1. Language: Go — not Rust'; die beiden anderen Dateien im selben Verzeichnis (docs/AGENTS.md:1, docs/COMMANDS.md:1) beginnen mit einem H1-Titel. Setz '# Technology Stack' als Zeile 1 darueber und darunter genau eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt - wer der Verweiszeile aus CLAUDE.md:29 folgt, landet sonst in einer gekuerzten Zweitfassung, der nicht anzusehen ist, dass sie gekuerzt ist. Der verschobene Text bleibt dabei unveraendert; es kommen nur zwei Zeilen davor."
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
