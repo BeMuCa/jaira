@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:20:05Z
+updated-at: 2026-09-13T20:20:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60480
 claimed-at: 2026-09-13T20:13:55Z
@@ -45,7 +45,7 @@ claimed-at: 2026-09-13T20:13:55Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] Inhalt der CLAUDE.md-Zeilen 27-160 (## Technology Stack bis zum letzten ## Sources-Punkt) 1:1 nach docs/STACK.md kopieren, ohne Titelzeile und ohne Umformulierung
-- [ ] In CLAUDE.md die Zeilen 28-160 loeschen; Ueberschrift ## Technology Stack stehen lassen und darunter genau eine Zeile setzen, die auf docs/STACK.md und auf .planning/research/STACK.md als Vollfassung verweist
+- [~] In CLAUDE.md die Zeilen 28-160 loeschen; Ueberschrift ## Technology Stack stehen lassen und darunter genau eine Zeile setzen, die auf docs/STACK.md und auf .planning/research/STACK.md als Vollfassung verweist
 - [ ] Die GSD-Marker <!-- GSD:stack-start source:research/STACK.md --> und <!-- GSD:stack-end --> stehen lassen und die Verweiszeile dazwischen setzen
 - [ ] Nachmessen: wc -c CLAUDE.md erwartet rund 13800 Bytes (ca. 3450 Token, unter 4000); grep pruefen, dass GSD:stack-start/end, jaira:start, jaira:local und jaira:end unveraendert vorhanden sind
 - [ ] go run ./cmd/jaira update ausfuehren, danach git diff CLAUDE.md: der Block zwischen jaira:start und jaira:end und alles hinter jaira:local muessen unveraendert sein
