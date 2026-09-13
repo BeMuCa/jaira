@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:37:55Z
+updated-at: 2026-09-13T21:38:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -53,3 +53,5 @@ review-summary: none
 - **2026-09-13 21:31 · Alexander Sacharov** — Uebernahme war reine Textkopie: nur 'name:' im frontmatter und die vier Querverweis-Zeilen (/role-lane, /role-tester) bekamen das jaira-Praefix, sonst kein Satz angefasst. Diff gegen ~/.claude/skills belegt genau diese vier Stellen.
 Nicht mitgenommen, bewusst: ~/.claude/skills/teamlead/scripts/spawn.sh. Das Skript liegt im Repository unter jaira-dispatcher/scripts/spawn.sh - da gehoert es hin, weil der Dispatcher-Prompt es als 'scripts/spawn.sh' aufruft - und die Repo-Fassung ist die neuere: sie ueberspringt den Port-Offset in einem Repo ohne .env und sendet '/jaira-role-lane'. Die Heimfassung haette beides zurueckgedreht.
 Die sieben unpraefixierten Ordner wurden erst geloescht, nachdem 'roles install --global --force' lief und 'diff -r' fuer alle sieben jaira-<id> Ordner keinen Unterschied zeigte.
+- **2026-09-13 21:38 · Alexander Sacharov** — critique: Uebernahme gegen die Vorher-Differenz geprueft (aus dem Transkript der Uebernahme-Session rekonstruiert, da die unpraefixierten Ordner geloescht sind). Jede Stelle, die ~/.claude/skills gegenueber core/role/builtin voraus hatte, steht jetzt im Repository: Dispatcher 'These instructions can change while you run', der Tab-Schliess-Absatz, 'A human typing in a worker's tab is not a fault', 'Your own tab is not yours to close', die Drei-Runden-Regel, 'Do not swallow what the human should hear', 'Three lines at the end'; Teamlead 'Close what you started' und 'Bringing one back'. Kein Rest der alten Fassung im Text, keine unpraefixierte /role-* Referenz mehr in core/role/builtin. Die fuenf role-* wurden vom Commit nicht angefasst (letzte Aenderung b9eae90). Kein Befund.
+Nebenbefund, nicht Teil des Diffs: die Zeilenzahlen im Ticket-Kontext (dispatcher 170, teamlead 92) waren schon beim Schreiben veraltet - die Heimfassungen hatten 180 und 120 Zeilen, und genau diese Zahlen haben die Repo-Dateien jetzt. Das ist ein Beleg fuer die Vollstaendigkeit, kein Fehler an der Uebernahme.
