@@ -24,7 +24,7 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:47:29Z
+updated-at: 2026-09-13T20:47:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
@@ -33,6 +33,7 @@ outcome-why: "sie stand direkt unter dem gleichlautenden H1 und machte eine leer
 outcome-resolves: "optimize"
 review-summary: "none"
 review-gaps: "Entfernt: die mitkopierte Ueberschrift '## Technology Stack' in docs/STACK.md, die direkt unter dem gleichlautenden H1 stand und eine leere Sektion aufmachte; kein Anker und kein Link zeigt darauf. Stehen gelassen: der Forschungstext selbst (woertlich verschoben, dieses Ticket formuliert nichts um); die Doppelnennung von .planning/research/STACK.md in CLAUDE.md und in docs/STACK.md - ein Hop auseinander und beide Male fuer einen anderen Leser; die vorbestehende Gliederung der Recherche ('## 1. Language' vor '## Recommended Stack'), die schon in CLAUDE.md so stand; CLAUDE.md sonst unaufgeraeumt, wie vom Zuschnitt verlangt. Kein Go-Code beruehrt, go test ./... -race gruen."
+test-verdict: "pass: go test ./... -race gruen (RC=0, 25 Pakete ok); alle DoD-Punkte am Baum nachgemessen statt uebernommen - CLAUDE.md 13968 Bytes (~3450 Token), alle fuenf Marker stehen, verschobener Text zeichengleich; 'jaira update' laeuft fehlerfrei und laesst CLAUDE.md und AGENTS.md zeichengleich (leerer Diff), 'jaira validate' meldet beide nicht als stale"
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
