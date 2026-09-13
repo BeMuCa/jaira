@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:55:44Z
+updated-at: 2026-09-13T19:06:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -96,3 +96,4 @@ review-check: |-
 - **2026-09-13 18:40 · Alexander Sacharov** — Mensch hat den dritten Stand bestaetigt: Board reagiert mit russischer Belegung, Windows Terminal unter WSL2.
 - **2026-09-13 18:43 · Alexander Sacharov** — review 3: NumLock. Der Guard war eine Zeile zu eng - ModNumLock kommt auf Kitty-Terminals bei jedem Tastendruck mit und wird von der Bibliothek selbst als 'beeinflusst den Text nicht' behandelt (decoder.go:1475). Mit NumLock an haette der Guard die ganze Funktion auf genau den Terminals ausgeschaltet, fuer die die BaseCode-Ebene gebaut wurde, und niemand haette es hier gemerkt. Lehre fuer den Kommentar: Lock-Zustaende sind keine Modifier.
 - **2026-09-13 18:51 · Alexander Sacharov** — Mensch hat den vierten Stand gegengeprueft.
+- **2026-09-13 19:06 · Alexander Sacharov** — Pull Request offen: https://github.com/BeMuCa/jaira/pull/17 (sashasoft90:feat/Z4W2BX-keys-layout-independent -> BeMuCa/jaira master, 14 Commits). Beschreibung steht aus dem Ticket, nicht aus dem Diff: Kontext, Ergebnis, Pruefanleitung und der bewusst nicht erledigte Teil (keine Tabellen fuer Griechisch/Hebraeisch/Arabisch, ctrl-Kombinationen bleiben Sache des Terminals, Satzzeichen lesen kein BaseCode).
