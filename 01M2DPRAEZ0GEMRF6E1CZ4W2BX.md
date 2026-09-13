@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T16:58:44Z
+updated-at: 2026-09-13T16:59:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -33,7 +33,7 @@ test-verdict: |-
   Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
   Nicht automatisch pruefbar und deshalb offen fuer den Menschen: die BaseCode-Ebene braucht ein Terminal mit Kitty-Protokoll, hier laeuft Windows Terminal unter WSL2, wo BaseCode nie ankommt. Ebenso ungeprueft: ob eine echte russische Systembelegung dieselben Zeichen sendet wie der Test sie baut
   Binary ist neu gebaut und unter /home/alex/.local/bin/jaira installiert, damit der Test mit echter Belegung sofort moeglich ist
-question: "Bitte einmal mit umgestellter russischer Belegung im Board pruefen: bewegen j/k/h/l (also о/л/р/д) den Cursor, beendet q (й), oeffnet enter ein Ticket, und oeffnet die Punkt-Taste den Filter? Und erscheint danach getippter russischer Text im Filter unveraendert? Das neu gebaute Binary liegt schon unter /home/alex/.local/bin/jaira. Zweite Frage nur, falls jemand ein Terminal mit Kitty-Protokoll hat (kitty, ghostty, WezTerm, foot): funktioniert dort Steuern UND Tippen weiterhin? Dort schaltet die neue KeyboardEnhancements-Anforderung den Klartext ab, und wenn das Terminal den Text nicht zurueckliefert, blieben Filter und Editfeld leer."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
