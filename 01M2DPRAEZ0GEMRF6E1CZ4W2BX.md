@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:07:47Z
+updated-at: 2026-09-13T17:08:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -29,10 +29,12 @@ review-gaps: |-
   internal/tui/keylayout.go:64 Die drei Ausstiegsbedingungen (keine einzelne Rune, Leerzeichen, nicht graphisch) sehen nach Gurt und Hosentraeger aus, sind es aber nicht: leerer Text faengt benannte Tasten, das Leerzeichen faengt space, dessen Text ' ' ist und dessen Kommandoname 'space' lautet
   Keine neuen Abhaengigkeiten, keine Konfiguration, kein Schalter; die Tabelle bleibt vollstaendig statt auf die heute gebundenen Tasten zugeschnitten, weil eine zugeschnittene Tabelle still bricht, sobald jemand '[' bindet
 test-verdict: |-
-  go build, go vet und go test ./... sind gruen (internal/tui 41s, internal/cli 9.7s, alle core-Pakete)
-  Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
-  Nicht automatisch pruefbar und deshalb offen fuer den Menschen: die BaseCode-Ebene braucht ein Terminal mit Kitty-Protokoll, hier laeuft Windows Terminal unter WSL2, wo BaseCode nie ankommt. Ebenso ungeprueft: ob eine echte russische Systembelegung dieselben Zeichen sendet wie der Test sie baut
-  Binary ist neu gebaut und unter /home/alex/.local/bin/jaira installiert, damit der Test mit echter Belegung sofort moeglich ist
+  go build, go vet, go test ./... gruen nach dem Shift-Fix
+  Neu: TestCmdKeyLeavesShiftedPunctuationAlone deckt shift+/ ('?'), shift+1 ('!') und shift+. ('>') mit gesetztem BaseCode ab - genau der Pfad, der die Hilfe-Taste in den Filter geschickt haette
+  Weiterhin gruen: TestBoardAnswersACyrillicLayout, TestTypingStaysCyrillicInTheFilter, TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyMapsCyrillicToItsPhysicalKey, TestCmdKeyKeepsCase, TestCmdKeyPrefersTheTerminalsOwnBaseCode
+  Von Hand bestaetigt (vor dem Shift-Fix, unveraendertem Pfad): russische Belegung steuert das Board auf Windows Terminal unter WSL2
+  Offen bleibt, was hier kein Terminal hergibt: der BaseCode-Pfad eines echten Kitty-Terminals
+  Binary neu gebaut unter /home/alex/.local/bin/jaira
 question: ""
 ---
 
