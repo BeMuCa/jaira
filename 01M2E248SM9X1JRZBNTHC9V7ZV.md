@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T19:57:18Z
+updated-at: 2026-09-13T19:58:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6599
 claimed-at: 2026-09-13T19:56:51Z
@@ -44,7 +44,7 @@ claimed-at: 2026-09-13T19:56:51Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] die sieben Prompts einfrieren: ~/.claude/skills/<id>/ nach core/role/builtin/jaira-<id>/ kopieren, im Frontmatter name: auf jaira-<id> setzen und jede Querverweis-Zeile (/role-lane, /role-tester, /role-research) auf den praefixierten Namen umschreiben
+- [x] die sieben Prompts einfrieren: ~/.claude/skills/<id>/ nach core/role/builtin/jaira-<id>/ kopieren, im Frontmatter name: auf jaira-<id> setzen und jede Querverweis-Zeile (/role-lane, /role-tester, /role-research) auf den praefixierten Namen umschreiben
 - [ ] core/role/role.go: //go:embed all:builtin, Typ Role{ID,Name,Description,Files}, Builtins() und Get(id) lesen name:/description: aus SKILL.md
 - [ ] core/role/target.go: Zielordner bestimmen - im Projekt die vorhandenen von .claude/ .codex/ .agents/, keiner da -> .claude/ anlegen; global immer ~/.claude/skills
 - [ ] core/role/install.go: Install(dstSkillsDir, force) schreibt je Datei und meldet written | unchanged | modified-skipped | overwritten; Vergleich gegen die eingebetteten Bytes, nicht blosses Stat wie lane.Export
