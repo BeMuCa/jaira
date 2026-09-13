@@ -22,8 +22,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T20:43:39Z
-updated-at: 2026-09-13T20:46:57Z
+updated-at: 2026-09-13T20:47:02Z
 updated-by: Alexander Sacharov
+parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 ---
 
 # Was die Tafel treibt, reist mit dem Binary
