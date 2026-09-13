@@ -152,8 +152,9 @@ Two workers must never share a directory. On a project with a container stack
 they also need distinct project names and ports — `scripts/spawn.sh` derives
 both from the worktree slug.
 
-Only remove a worktree or close a pane you created yourself, and only once the
-ticket is off the board.
+Only remove a worktree or close a pane you created yourself, and a worktree not
+before its ticket is in `done` — not when the work is committed, and not when
+the pull request merges.
 
 **Your own tab is not yours to close.** Whoever started you created it, and they
 close it once they have read your report. Do not close it, and do not keep

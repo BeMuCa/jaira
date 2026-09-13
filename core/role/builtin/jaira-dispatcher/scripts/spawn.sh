@@ -15,7 +15,6 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 
 if [ ! -d "$wt" ]; then
-  mkdir -p "$(dirname "$wt")"
   git -C "$root" worktree add "$wt" -b "feature/$slug" >&2
 
   # Only a repo that carries a container stack needs its own ports. A repo

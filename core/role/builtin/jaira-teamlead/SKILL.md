@@ -92,8 +92,10 @@ that is hours or days. A finished dispatcher left sitting there is a live
 session doing nothing, and on five tickets it is five of them — with nothing in
 the tab strip to tell a waiting one from a working one.
 
-Its worktree outlives it: leave that until the pull request is merged, because
-review comments come back to the branch and want somewhere to land.
+Its worktree outlives it, and by longer than the pull request: leave that until
+the ticket is in `done`. Review comments come back to the branch and want
+somewhere to land, and a merged pull request is not the end of that — a ticket
+that has not been accepted can still come back.
 
 ## Bringing one back
 
