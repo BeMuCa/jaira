@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:40:55Z
+updated-at: 2026-09-13T18:43:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -25,9 +25,9 @@ review-summary: |-
   internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
   Kein Fund mehr offen; die Einschraenkung auf Buchstaben und die beiden Guards erzaehlen im Kommentar dieselbe Geschichte wie im Code
 review-gaps: |-
-  Nichts Ueberfluessiges: physicalRune hat jetzt drei Ausstiege und zwei Zweige, jeder mit einem Fall, den ein Test umfallen laesst, wenn man ihn entfernt - TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyLeavesShiftedPunctuationAlone, TestCmdKeyIgnoresAltGr
-  internal/tui/keylayout_test.go:44 Die vier Faelle in TestCmdKeyLeavesShiftedPunctuationAlone sind nicht redundant: einer pinnt den pty-Pfad ohne Shift, einer den Kitty/Windows-Pfad mit BaseCode, einer die Ziffernreihe, einer den Shift-Guard selbst
-  Keine ungenutzten Symbole, keine Konfiguration, keine Abhaengigkeit dazugekommen
+  BLOCKER internal/tui/keylayout.go:70 Der Guard laesst nur ModShift und ModCapsLock durch, aber der Kitty-Decoder legt ModNumLock bei JEDEM Tastendruck in Key.Mod (decoder.go:1444 fromKittyMod) und raeumt es erst in einer lokalen Kopie wieder weg, weil es den Text nicht beeinflusst (decoder.go:1475). Mit eingeschaltetem NumLock - Standard auf Desktop-Tastaturen - faellt damit auf kitty, ghostty, WezTerm und foot jede Taste durch den Guard, cmdKey gibt das kyrillische Zeichen zurueck und das Board reagiert wieder auf nichts. Fix: ModNumLock und ModScrollLock in die Maske, sie sind Zustaende und keine Modifier
+  internal/tui/keylayout.go:65 Der Kommentar darueber behauptet, alles ausser Shift und CapsLock mache einen anderen Tastendruck - genau diese Annahme hat den Fehler erzeugt
+  Geprueft und in Ordnung: AltGr ist auf dem Windows-Pfad zu (decoder.go:2035 setzt Text, Mod traegt ModCtrl|ModAlt); Kitty leert Text bei ctrl/alt/super/meta selbst (decoder.go:1445); ModCapsLock neben Shift ist richtig, der Regisster kommt aus Text; beide neuen Tests fallen ohne ihren Guard um
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem AltGr-Fix
   Sieben Tabellentests plus zwei Board-Tests; die drei Guards sind jeweils von einem Fall gedeckt, der ohne den Guard umfaellt
