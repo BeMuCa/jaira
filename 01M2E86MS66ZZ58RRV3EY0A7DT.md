@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:03:03Z
+updated-at: 2026-09-13T22:03:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -136,3 +136,15 @@ Reihenfolge: Skript zuerst, dann Einbettung, dann Befehl, dann Tests. Umgekehrt 
 Deshalb traegt internal/cli/hook_example_test.go '//go:build unix'; Setsid gibt es unter Windows nicht.
 - **2026-09-13 21:56 · Alexander Sacharov** — Lane-Abweichung, damit es niemand zweimal sucht: CLAUDE.md beschreibt Lanes critique, optimize und testing - auf diesem Board sind sie nicht installiert. 'jaira lanes' kennt nur backlog, brainstorm, todo, pre-process, in-progress, human, review, signoff, done, blocked. Der Zug in-progress -> critique wurde abgelehnt. Ziel wurde deshalb review: human liegt zwar mit Rang 40 dazwischen, hat aber requires-question: true und ist die Lane fuer eine offene Entscheidung - es gab keine.
 Folgeticket 3MJNYS erfasst (Lane-Rollen statt harter Lane-Namen im Beispielskript). Es liegt nur auf seiner Ref, nicht auf der Platte: 'jaira pull 3MJNYS'.
+- **2026-09-13 22:03 · Alexander Sacharov** — Review schickt zurueck nach in-progress (gelesen: der ganze Diff 103f551^..0945a8a, dazu core/hook/hook.go und internal/cli/refs.go fuer den Aufrufweg; von Hand ausgefuehrt: das gedruckte Skript mit env -i und leerem PATH fuer human, signoff, done, in-progress, todo, einmal direkt ueber die Shebang-Zeile statt ueber sh; 'go test ./... -race' gruen).
+
+Was am Diff stimmt und nicht noch einmal geprueft werden muss: der Befehl druckt und schreibt nichts, die Einbettung ueber core/hook/example.go laesst core/hook/hook.go unberuehrt, das Skript benutzt ausschliesslich Shell-Builtins und laeuft mit leerem Environment fuer jede Lane mit exit 0 durch, die /dev/tty-Probe als Subshell ist richtig begruendet (core/hook verwirft stdout des Skripts), Prozentzeichen im Titel sind harmlos, es steht genau eine Zeile unter ## Unreleased, und der Diff enthaelt nichts Ueberfluessiges.
+
+Warum es trotzdem zurueckgeht - drei Textstellen, an denen das Skript der Regel widerspricht, die es beibringen soll:
+1. notify.sh:18-20 sagt 'only a state in which nothing moves without a person is worth a sound. Every other lane stays silent', notify.sh:47 laesst done klingeln. done ist die Endlane und wartet auf niemanden. Die Brainstorm-Notiz hat genau diese Falle fuer 'blocked' selbst benannt und die Ausnahme fuer done dann nicht in den Satz eingearbeitet. Der Abschluss-Ton ist eine bewusste Entscheidung und darf bleiben - er muss nur in der Regel stehen, statt sie zu widerlegen.
+2. core/release/NOTES.md:17 traegt denselben Fehler nach aussen: 'rings the terminal bell only for the lanes that wait on a person'. Das liest 'jaira update' einem Nutzer vor, und es beschreibt ein Verhalten, das das Binary nicht hat.
+3. outcome-resolves behauptet, human/signoff seien von done hoerbar unterscheidbar. Der Unterschied sind zwei BEL-Zeichen in einem einzigen printf ohne Pause (notify.sh:33-35). VTE/GNOME Terminal und iTerm2 drosseln oder verschmelzen Glocken in kurzem Abstand, das kommt dann als ein Ton an. Der Test zaehlt Bytes, nicht Toene, kann das also nicht widerlegen. Ohne externes Werkzeug ist die Pause in POSIX sh auch nicht herstellbar - die tragfaehige Fassung ist, dass die gedruckte Textzeile den Unterschied traegt und die Glockenzahl nur ein Hinweis ist. Das gehoert so ins Skript und ins outcome, statt behauptet zu werden.
+
+Nicht rueckweisend, aber beim naechsten Durchgang billig mitzunehmen: der Test fuehrt immer 'sh script' aus, nie das Skript direkt - Shebang und x-Bit, auf die hook.Run per exec.Command(script) angewiesen ist, deckt kein Test ab (ich habe den direkten Aufruf von Hand geprueft, er laeuft). Und 'jaira hook example' druckt unter Windows ein /bin/sh-Skript ohne jeden Hinweis darauf, waehrend der Test //go:build unix traegt und dort gar nicht laeuft; Windows wird laut .goreleaser.yaml gebaut.
+
+Nicht am Diff, aber fuer den naechsten Leser: critique, optimize und testing sind auf diesem Board nicht installiert, das Ticket kam von in-progress direkt hierher. Vor diesem Review hat niemand auf die Aenderung geschaut.
