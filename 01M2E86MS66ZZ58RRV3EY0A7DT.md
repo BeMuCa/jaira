@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
-goal: "jaira bringt ein Hook-Beispiel mit, das man mit einem Befehl einsetzt; danach meldet sich jeder Lane-Wechsel dort, wo der Mensch hinsieht"
+goal: "jaira bringt ein lauffaehiges Beispiel-Hookskript im Binary mit und druckt es auf Zuruf, damit der erste Lane-Wechsel ohne eigene Erfindung bei einem Menschen ankommt - und nur dann, wenn sich ohne ihn nichts bewegt."
 context: |-
   core/hook/hook.go ruft bei jedem move und jedem claim ein Skript auf und uebergibt JAIRA_EVENT, JAIRA_TICKET, JAIRA_TITLE, JAIRA_STATUS, JAIRA_ASSIGNEE, JAIRA_ACTOR und JAIRA_ROOT als Umgebungsvariablen. Der Mechanismus ist fertig und gut: jaira bringt bewusst keine eigene Abhaengigkeit mit, die Anbindung gehoert dem Nutzer.
   Was fehlt, ist der erste Schritt. Wer 'hook' in den Einstellungen sieht, hat ein leeres Feld und keinen Anhaltspunkt, was hineingehoert. Praktisch schreibt es deshalb niemand.
@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:43:40Z
+updated-at: 2026-09-13T21:43:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-55522
 claimed-at: 2026-09-13T21:42:41Z
