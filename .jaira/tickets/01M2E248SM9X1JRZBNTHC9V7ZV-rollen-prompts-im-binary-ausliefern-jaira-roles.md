@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,9 +22,41 @@ tags:
 blocked-by: []
 related: []
 commits:
+  - 3ad057d7d004fa5f062d021d4eb671179e823de9
+  - b9eae909ee58685118b7bc021eca4048d4b4bc79
+  - ee9fd1ac00f1addc23ad81a0869fe3da6c1c825c
+  - 7e889d4fd9f38f75190f73e444a456771f0421e0
+  - 92ac0f4a8642cc4f4b53f4c6a493c33f5d3c3ab0
+  - 6aabd35e8b68fd49ed1780e26e41a92f39019030
+  - 8e6398b8863663c63cd5c4a084a9c2081c6d23d0
+  - 0adc842fc342396b16ee8c648ccbfd73bbc0a5a6
+  - dd5e7bc66c3a57e56b8bb9304f1099bb0fc9fb08
+  - e360126250c4c25fcbca44a85d3449ca2ac6fe10
+  - 208aa5d97cacb0783fd3cd077dd393b66219cd49
+  - 8561b2cca2b4725b7d16155cd111f950adfb17a5
+  - f27ba511a0caaf856f72aab7a6f9936e9d636c72
+  - 82d7ab7889fbb9d66763900fbb9d04847e1cc017
+  - 3281dcf187c322951019ca84c826e675c8a77bdb
+  - e03f8f08e71752da054ea672fefa3d96a0d8a4ec
+  - 53c83b5179cc02691d84574728a5f96bd2582c8a
+  - 3f99c1bb097246e993462a591050c681fc6ed430
+  - 32c2ef740d794911c1e0fcf36114fb18b899ad65
+  - 09f80c5e90ae7140a0a3931c7bc21eaf34bb7bd1
+  - c632d964401e14609bb91f7ce60c320a60b335c7
+  - 7de9673dd189cdc6549ed2a45191a89d8e7957ea
+  - a620a1cc02f84766568a3d4b74d0fb0cd63d5e2d
+  - 6a75af824975234f05bc0cc32efea4acccf065ec
+  - 7b46087019400afcfa2bd0da3586089bc1ce30db
+  - 59d39fa23a7c54bda93d0ead80f073accbdd92bd
+  - 7966bc339cd224f188d247380435da4df30d9949
+  - f0b79b515db821afd32ac37ade5a79a889b6e836
+  - 310c7dfb0491e21b11be0a16c0971608f459d306
+  - e107fe0604ecd4ae262fe0981b1ad808a3112c31
+  - 28e6518e65d7ee095b841548a1e12fa2d36ed083
+  - f615f74538a34c0d5a56d272bb84dcad5c2bd44f
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T22:06:11Z
+updated-at: 2026-09-13T22:06:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
