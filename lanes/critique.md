@@ -58,7 +58,7 @@ Then:
 - **Nothing left to say.** Write `review-summary="none"` explicitly — an empty
   field means nobody looked — and move the ticket on to the next lane.
 
-Three rules for this lane:
+Four rules for this lane:
 
 **A finding names a file and a concrete alternative.** "Could be cleaner",
 "consider extracting this", "this may not scale" are not findings. If you cannot
@@ -72,6 +72,18 @@ finding — by the rule above — is where this lane is done: write
 `review-summary="none"` and move the ticket on. That is the expected way out, not
 a failure of nerve. Do not re-raise a finding the implementer addressed, and do
 not re-open a trade-off you let stand on an earlier pass.
+
+**The first pass fixes the surface.** Read the whole diff on it — every file,
+every hunk, including a shell script or a fixture that arrived alongside the
+code. What you did not read on the first pass, you do not raise later. Each pass
+after the first reads two things and nothing else: whether the last pass's
+findings were addressed, and what those repairs themselves changed.
+
+This is what stops a loop that is not oscillating from running for ever. A pass
+that opens a file for the first time on round four will find something — deeper
+is always available — and the finding is honest, but it cost three rounds of
+someone else's work to reach what was visible at the start. A file you skimmed
+counts as read. Holding a finding back for a later pass is not thoroughness.
 
 **Do not fix it yourself.** This lane says what is wrong; the implementing lane
 changes it. Reviewing your own repair in the same breath is how a critique stops

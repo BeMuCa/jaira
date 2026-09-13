@@ -14,7 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
-
+- The critique lane now reads the whole diff on its first pass; later passes only re-check what it already found, so a review loop cannot run for ever by reading deeper each round.
 - Steer the board with a Cyrillic keyboard: letter commands are read by the key's position, so `j`, `k`, `g`, `q` and the rest of them work through a Russian layout, where the board used to answer nothing at all. The key that is `/` on a US keyboard opens the filter under its Cyrillic-layout character too. Typed text is untouched — Russian still goes into filters and edit fields as Russian.
 - On a terminal that speaks the Kitty keyboard protocol (kitty, ghostty, WezTerm, foot), letter commands work under any layout, not only Cyrillic: the board asks the terminal for the physical key behind each press. Punctuation and shifted keys are left as the layout printed them, so `?` still opens the help; keys held with ctrl or alt are the terminal's business as before.
 
