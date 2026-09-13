@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T19:54:40Z
+updated-at: 2026-09-13T19:55:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99732
 claimed-at: 2026-09-13T19:54:40Z
@@ -43,6 +43,16 @@ claimed-at: 2026-09-13T19:54:40Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] die sieben Prompts einfrieren: ~/.claude/skills/<id>/ nach core/role/builtin/jaira-<id>/ kopieren, im Frontmatter name: auf jaira-<id> setzen und jede Querverweis-Zeile (/role-lane, /role-tester, /role-research) auf den praefixierten Namen umschreiben
+- [ ] core/role/role.go: //go:embed all:builtin, Typ Role{ID,Name,Description,Files}, Builtins() und Get(id) lesen name:/description: aus SKILL.md
+- [ ] core/role/target.go: Zielordner bestimmen - im Projekt die vorhandenen von .claude/ .codex/ .agents/, keiner da -> .claude/ anlegen; global immer ~/.claude/skills
+- [ ] core/role/install.go: Install(dstSkillsDir, force) schreibt je Datei und meldet written | unchanged | modified-skipped | overwritten; Vergleich gegen die eingebetteten Bytes, nicht blosses Stat wie lane.Export
+- [ ] Tests in core/role: Erstinstallation, zweiter Lauf komplett unchanged, handgeaenderte Datei ohne --force uebersprungen und gemeldet, mit --force ueberschrieben, Pfad kann dstDir nicht verlassen
+- [ ] internal/cli/roles.go: 'jaira roles list' und 'jaira roles install --project|--global [--force]', --json-Form, Exit 3 wenn eine geaenderte Datei uebersprungen wurde; in root.go registrieren
+- [ ] CLI-Tests: Textausgabe, --json, Exit-Codes
+- [ ] eine Zeile in core/release/NOTES.md unter ## Unreleased
+- [ ] go test ./... -race gruen
 
 ## Progress
 - **2026-09-13 19:01 · Alexander Sacharov** — Recherche 2026-09-13, code.claude.com/docs/en/skills (Primaerquelle, HIGH):
