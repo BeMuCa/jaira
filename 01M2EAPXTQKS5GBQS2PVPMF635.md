@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:38:19Z
+updated-at: 2026-09-13T21:40:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -31,6 +31,7 @@ outcome-what: "core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SK
 outcome-why: "Die ausgelieferten Prompts waren am Tag der Auslieferung schon veraltet: dem Binary fehlten die Drei-Runden-Regel, 'A human typing in a workers tab is not a fault', die Meldepflicht pro Lane, das Schliessen eines Worker-Tabs und 'Close what you started'. Solange die unpraefixierten Ordner danebenlagen, war unklar welche Fassung gilt; jetzt ist core/role/builtin die einzige Quelle."
 outcome-resolves: "Definition of Done Punkt 1 vollstaendig: Text uebernommen, TestCrossReferencesCarryThePrefix und go test ./... -race gruen, Installation deckungsgleich, alte Ordner weg, NOTES.md-Zeile geschrieben."
 review-summary: none
+test-verdict: "pass: go test ./... -race gruen (RC=0), TestCrossReferencesCarryThePrefix gruen, 'roles install --global --force' RC=0 und diff -r gegen core/role/builtin fuer alle sieben jaira-<id> Ordner ohne Unterschied, die sieben unpraefixierten Ordner sind weg, NOTES.md-Zeile unter ## Unreleased vorhanden"
 ---
 
 # Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis
