@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:47:28Z
+updated-at: 2026-09-13T20:49:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
-outcome-what: "Moved core/role/builtin/jaira-teamlead/scripts/ to core/role/builtin/jaira-dispatcher/scripts/ and renamed TestTeamleadShipsItsScript to TestDispatcherShipsItsScript, with the stat path and two source comments pulled along."
-outcome-why: "jaira-dispatcher/SKILL.md:95 is the only prompt that names scripts/spawn.sh, and that path is relative to its own skill folder, so after 'roles install' the reference pointed at nothing while jaira-teamlead carried a script its own prompt never mentions."
-outcome-resolves: "The shipped dispatcher role now finds scripts/spawn.sh where its prompt says it is; go test ./... -race green."
+outcome-what: "Guarded the project-specific container-stack block in core/role/builtin/jaira-dispatcher/scripts/spawn.sh behind 'if [ -f $root/.env ]' — the port offset moved inside it — and deleted the dead Unprefixed field from the JSON test struct in internal/cli/roles_test.go:217."
+outcome-why: "With 'set -euo pipefail' on line 5, the unconditional 'cp $root/.env' aborted the script with exit 1 in any repo without a .env — jaira itself included — before a pane ever existed; from this ticket on that file ships inside the binary, so the break would reach every teammate. The Unprefixed field was a leftover of the Twins() removal in round 1: nothing emits it, nothing reads it."
+outcome-resolves: "spawn.sh now creates the worktree, splits the pane, starts claude and types the prompt in a repo with no container stack, and still writes per-worker ports where a .env exists; go test ./... -race green."
 review-summary: |-
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:20 bricht in jedem Repo ohne .env hart ab. Zeile 5 setzt 'set -euo pipefail', Zeile 20 macht 'cp "$root/.env" "$wt/.env"' unbedingt - jaira selbst hat kein .env (ls im Repo-Root: kein .env, kein compose-File), also beendet sich das Skript mit Exit 1, bevor ueberhaupt eine Pane entsteht. Die Runden 1-3 haben nur geprueft, WO das Skript liegt, nie WAS darin steht; ab diesem Ticket wird der Inhalt mit dem Binary verteilt und ist auf jedem Rechner eines Teamkollegen die Wahrheit. Der projektspezifische Block (Zeilen 14-16 Port-Offset und 20-30 .env-Kopie mit COMPOSE_PROJECT_NAME/HTTP_PORT/DB_PORT_HOST/VITE_PORT_HOST/BACKEND_PORT_HOST) gehoert hinter ein 'if [ -f "$root/.env" ]', damit der generische Teil - Worktree anlegen, Pane splitten, claude starten, Prompt tippen - in einem Repo ohne Container-Stack durchlaeuft. jaira-dispatcher/SKILL.md:94 sagt selbst 'Auf einem Projekt mit einem Container-Stack', das Skript setzt einen aber voraus.
   internal/cli/roles_test.go:217 deklariert 'Unprefixed []string `json:"unprefixed"`' - ein Rest der in Runde 1 entfernten Twins(). reportRoleInstall in internal/cli/roles.go:121-129 gibt kein Feld 'unprefixed' mehr aus, und kein Test liest payload.Unprefixed. Die Zeile ersatzlos streichen.
@@ -117,3 +117,7 @@ Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleic
 
 Nicht als Befund gefuehrt, weil es ein eigenes Ticket waere: das Skript setzt herdr und python3 voraus, beides steht nirgends als Anforderung. Solange der Prompt es nur als Hilfe fuer einen Container-Stack nennt, traegt das - wer kein herdr hat, bekommt Zeile 10 als klare Meldung, kein stilles Scheitern.
 - **2026-09-13 20:47 · Alexander Sacharov** — Commit dieser Runde: 82d7ab7.
+- **2026-09-13 20:49 · Alexander Sacharov** — Vierte critique abgearbeitet, beide Befunde. Was der Diff nicht selbst sagt:
+- Der .env-Block in spawn.sh ist nicht nur eingerueckt, sondern auch der Port-Offset (off=...) ist mit hineingewandert. Er wird ausserhalb des Blocks von nichts mehr gelesen, und ein cksum auf jedem Lauf in einem Repo ohne Container-Stack zu berechnen waere Arbeit fuer eine Zahl, die niemand benutzt.
+- Bewusst NICHT generisch gemacht: die Variablennamen (COMPOSE_PROJECT_NAME, VITE_PORT_HOST, ...) und der Worktree-Name rg-$slug stammen aus genau einem Projekt. Sie bleiben stehen, weil ein Repo ohne .env den Block jetzt gar nicht mehr betritt - ein konfigurierbares Port-Schema waere Mechanik fuer einen Nutzer, den es nicht gibt. Wer ein zweites Projekt mit Stack anschliesst, entscheidet dann.
+- Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, spawn.sh war nie in einem Binary. Gleiche Begruendung wie in Runde 3.

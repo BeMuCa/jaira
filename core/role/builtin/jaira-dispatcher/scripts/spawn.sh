@@ -11,23 +11,27 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 
 wt="$(cd "$root/.." && pwd)/rg-$slug"
 
-# Deterministic per-slug port offset, so two workers never share a stack.
-# 0 stays free: it belongs to the main directory (80, 5432, 5433, 5173, 8000).
-off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
-
 if [ ! -d "$wt" ]; then
   git -C "$root" worktree add "$wt" -b "feature/$slug" >&2
-  cp "$root/.env" "$wt/.env"
-  {
-    echo
-    echo "# worker stack: slug=$slug offset=$off"
-    echo "COMPOSE_PROJECT_NAME=rg_$slug"
-    echo "HTTP_PORT=$((8080 + off))"
-    echo "DB_PORT_HOST=$((5500 + off * 2))"
-    echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
-    echo "VITE_PORT_HOST=$((5200 + off))"
-    echo "BACKEND_PORT_HOST=$((8100 + off))"
-  } >> "$wt/.env"
+
+  # Only a repo that carries a container stack needs its own ports. A repo
+  # without a .env has nothing to offset, and must not fail here.
+  if [ -f "$root/.env" ]; then
+    # Deterministic per-slug port offset, so two workers never share a stack.
+    # 0 stays free: it belongs to the main directory (80, 5432, 5433, 5173, 8000).
+    off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
+    cp "$root/.env" "$wt/.env"
+    {
+      echo
+      echo "# worker stack: slug=$slug offset=$off"
+      echo "COMPOSE_PROJECT_NAME=rg_$slug"
+      echo "HTTP_PORT=$((8080 + off))"
+      echo "DB_PORT_HOST=$((5500 + off * 2))"
+      echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
+      echo "VITE_PORT_HOST=$((5200 + off))"
+      echo "BACKEND_PORT_HOST=$((8100 + off))"
+    } >> "$wt/.env"
+  fi
 fi
 
 pane="$("$herdr" pane split --current --direction down --no-focus \

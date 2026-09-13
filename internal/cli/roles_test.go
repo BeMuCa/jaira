@@ -213,8 +213,7 @@ func TestRolesInstallJSONReportsEveryFile(t *testing.T) {
 			Path   string `json:"path"`
 			Action string `json:"action"`
 		} `json:"installed"`
-		Skipped    bool     `json:"skipped"`
-		Unprefixed []string `json:"unprefixed"`
+		Skipped bool `json:"skipped"`
 	}
 	if err := json.Unmarshal([]byte(out), &payload); err != nil {
 		t.Fatalf("invalid json: %v\n%s", err, out)
