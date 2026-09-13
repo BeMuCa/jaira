@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:43:42Z
+updated-at: 2026-09-13T20:43:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -105,3 +105,4 @@ Geprueft und in Ordnung befunden: kein exportierter Bezeichner in core/role hat 
 - Verschoben, nicht kopiert: das Skript gibt es genau einmal, und genannt wird es genau einmal (jaira-dispatcher/SKILL.md:95). Solange es keinen zweiten Nutzer gibt, wird auch keine Mechanik fuer Mehrfachnutzung gebaut - kein Sammelordner, kein Aufloesen von Pfaden ueber Rollengrenzen hinweg. Wer spaeter ein Skript aus zwei Rollen heraus braucht, entscheidet dann.
 - Der Testname hat mitgewandert: TestTeamleadShipsItsScript -> TestDispatcherShipsItsScript. Der alte Kommentar ('teamlead references a script') war schon vor diesem Ticket falsch und haette den Befund verdeckt, wenn ihn jemand als Beleg gelesen haette.
 - Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat also nie ein Binary gegeben, das spawn.sh unter jaira-teamlead ausgeliefert haette. Niemandem ist etwas zu erzaehlen, was er nie gesehen hat.
+- **2026-09-13 20:43 · Alexander Sacharov** — Commit dieser Runde: 8561b2c.
