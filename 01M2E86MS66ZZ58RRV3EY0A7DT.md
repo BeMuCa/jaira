@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:43:15Z
+updated-at: 2026-09-13T21:43:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-55522
 claimed-at: 2026-09-13T21:42:41Z
@@ -68,3 +68,14 @@ C) Eingebettet und der Befehl schreibt Datei plus ~/.jaira/settings.json.
 Gibt: null Handgriffe. Kostet: der Befehl fasst eine Datei an, die schon einen funktionierenden Hook eintragen kann, und ueberschreibt ihn im schlimmsten Fall. internal/cli/hook.go begruendet fuer den Claude-Code-Fall ausdruecklich das Gegenteil ("settings.json is the user's file"), und ~/.jaira/settings.json ist zwar jairas Datei, aber der eingetragene Hook ist es nicht.
 
 Empfehlung: B. Erreichbarkeit ist der ganze Zweck des Tickets, also faellt A. Der Unterschied zwischen B und C ist ein einziger cp-Handgriff, C bezahlt ihn mit einem Schreibzugriff auf fremde Konfiguration - das ist kein Tausch, den ein Beispiel wert ist.
+- **2026-09-13 21:43 · Alexander Sacharov** — Die drei offenen Fragen, entschieden.
+
+Frage 1 - eingebettet und per Befehl, oder nur im Repository: eingebettet, per Befehl auf stdout. Begruendung oben (Weg B). Der Befehl heisst nicht "jaira hook print" - das ist vergeben - sondern muss den move/claim-Hook benennen, Vorschlag "jaira hook example". Umbenennen von "hook print" ist kein Teil dieses Tickets.
+
+Frage 2 - wie viele Beispiele: genau eines, und zwar keines, das auf diesem Rechner haengt. ~/.jaira/notify.sh braucht HERDR_ENV und HERDR_BIN_PATH und beendet sich bei allen anderen mit exit 0 - als mitgeliefertes Beispiel waere es ein Skript, das fuer fast jeden nichts tut, und das ist schlimmer als keins, weil man den Fehler nicht sieht. Was ohne Konto, ohne URL und ohne Installation laeuft, ist die Terminal-Glocke; ntfy.sh braucht ein Topic und Slack eine Webhook-URL, beides ist Einrichtung und kein Beispiel. Also: ein Skript, dessen Zustellzeile die eine offensichtlich zu ersetzende Zeile ist, mit ntfy und einem Desktop-Toast als auskommentierte Einzeiler direkt darunter. Eine Datei, drei Zustellwege, kein Menue aus Befehlen - und damit auch die Antwort auf "ist das kleiner als paca".
+
+Frage 3 - schreibt der Befehl settings.json: nein. Er druckt und nennt die fehlende Zeile ("hook": "/home/<du>/.jaira/notify.sh"), so wie "jaira hook print" es vormacht. Kein --write in der ersten Fassung.
+
+Die Regel, die das Beispiel tragen muss, und was sie konkret heisst: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt. Das sind die Lanes mit requires-question oder requires-human-exit (human, signoff) - dort steht die Arbeit bis jemand entscheidet. done bekommt einen anderen, abschliessenden Ton, weil es das Ende ist und nicht die Bitte. blocked ist der Grenzfall: die Lane wartet laut Definition auf eine externe Abhaengigkeit, nicht auf den Menschen - das handgeschriebene notify.sh gibt ihr trotzdem request. Fuer das mitgelieferte Beispiel bleibt blocked stumm, weil sonst die Regel, die es lehren soll, im Beispiel selbst schon gebrochen ist. Alles andere - jeder Wechsel zwischen Agenten-Lanes - ist stumm.
+
+Offen und bewusst nicht hier geloest: dass die Lane-Namen im Beispiel hart stehen muessen, weil "jaira lanes --json" die Gates nicht ausgibt. Auf einem Board mit eigenen Lanes ist das Beispiel dann stumm statt falsch, was die ertraeglichere Richtung ist. Gehoert als eigenes Ticket erfasst, nicht hier.
