@@ -24,10 +24,10 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:08:00Z
+updated-at: 2026-09-13T21:10:50Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-71524
-claimed-at: 2026-09-13T20:55:10Z
+claimed-by: DESKTOP-RFTCH11-2196
+claimed-at: 2026-09-13T21:10:50Z
 outcome-what: "Walked every occurrence of a bare role name per line in TestCrossReferencesCarryThePrefix (core/role/role_test.go:98) instead of only the first, and deleted the .codex/.agents setup and its comment from TestProjectTargetIsTheClaudeSkillsDirectory (core/role/role_test.go:207)."
 outcome-why: "strings.Index finds /role-lane inside /jaira-role-lane, so the prefix exemption skipped the whole line and a second, genuinely unprefixed reference on it was never seen - the test guarding the invariant rounds 1 and 2 rest on could pass over the exact line a person writes. The deleted setup created directories ProjectTarget never looks at: it is a filepath.Join, so the setup asserted nothing and told the next reader the function probes for agent directories."
 outcome-resolves: "Both round-five findings are closed; go test ./... -race green."
