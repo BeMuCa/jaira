@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:44:55Z
+updated-at: 2026-09-13T18:45:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -21,9 +21,9 @@ outcome-what: "Num Lock und Scroll Lock zaehlen nicht mehr als gehaltener Modifi
 outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck; der Guard haette die Umsetzung dort komplett abgeschaltet"
 outcome-resolves: "Die Maske in physicalRune nimmt beide Lock-Zustaende aus, TestCmdKeyIgnoresTheLockStates haelt es fest, der Kommentar sagt jetzt warum"
 review-summary: |-
-  Vierter Durchgang: der AltGr-Guard sitzt als eine Bedingung in physicalRune (internal/tui/keylayout.go:69), direkt neben der Bedingung, die benannte Tasten aussortiert - keine neue Ebene, keine Verzweigung bei den Aufrufern
-  internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
-  Kein Fund mehr offen; die Einschraenkung auf Buchstaben und die beiden Guards erzaehlen im Kommentar dieselbe Geschichte wie im Code
+  Fuenfter Durchgang: die Maske nennt jetzt vier erlaubte Bits statt zwei, und der Kommentar darueber erklaert die Trennlinie (Modifier aendern den Tastendruck, Lock-Zustaende nicht) statt sie nur zu behaupten - der Fehler war eine falsche Praemisse im Kommentar, nicht eine falsche Zeile Code
+  internal/tui/keylayout.go:74 Maske statt Aufzaehlung der verbotenen Modifier bleibt richtig: die erlaubte Menge ist klein und benennbar, die verbotene waechst mit jedem Modifier, den bubbletea dazunimmt
+  Kein Muster daneben gebaut: die Guards stehen alle in physicalRune, die vier Aufrufer sehen weiterhin nur einen string
 review-gaps: |-
   BLOCKER internal/tui/keylayout.go:70 Der Guard laesst nur ModShift und ModCapsLock durch, aber der Kitty-Decoder legt ModNumLock bei JEDEM Tastendruck in Key.Mod (decoder.go:1444 fromKittyMod) und raeumt es erst in einer lokalen Kopie wieder weg, weil es den Text nicht beeinflusst (decoder.go:1475). Mit eingeschaltetem NumLock - Standard auf Desktop-Tastaturen - faellt damit auf kitty, ghostty, WezTerm und foot jede Taste durch den Guard, cmdKey gibt das kyrillische Zeichen zurueck und das Board reagiert wieder auf nichts. Fix: ModNumLock und ModScrollLock in die Maske, sie sind Zustaende und keine Modifier
   internal/tui/keylayout.go:65 Der Kommentar darueber behauptet, alles ausser Shift und CapsLock mache einen anderen Tastendruck - genau diese Annahme hat den Fehler erzeugt
