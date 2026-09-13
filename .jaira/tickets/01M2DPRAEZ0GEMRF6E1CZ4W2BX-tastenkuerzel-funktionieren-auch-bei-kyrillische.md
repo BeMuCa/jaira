@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: critique
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,31 +13,28 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:34:57Z
+updated-at: 2026-09-13T18:36:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "AltGr faellt nicht mehr in die Positions-Umsetzung; Shift-Guard und AltGr sind jetzt von Tests festgenagelt"
-outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr, und die Buchstaben-Ebene sah gar nicht auf k.Mod - AltGr+о waere als blankes j im Kommando-Handler gelandet"
-outcome-resolves: "physicalRune steigt aus, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt; TestCmdKeyIgnoresAltGr und der AZERTY-Fall in TestCmdKeyLeavesShiftedPunctuationAlone fallen ohne die Guards um; Kopfkommentar und NOTES-Zeile auf Buchstaben eingeschraenkt"
+outcome-what: "AltGr wird nicht mehr als Kommandotaste gelesen"
+outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr; ohne Guard waere AltGr+Buchstabe als Kommando im Board gelandet"
+outcome-resolves: "Alles was mehr traegt als Shift oder CapsLock bleibt unangetastet; drei Guards, drei Tests, die ohne sie umfallen"
 review-summary: |-
-  Dritter Durchgang nach dem Review-Fund: die Trennung sitzt jetzt an der richtigen Stelle - Buchstaben laufen ueber BaseCode und Tabelle, Satzzeichen nur ueber die Tabelle und nur ohne Shift, alles andere unveraendert durch. Das ist eine Bedingung in physicalRune, keine zweite Ebene
-  internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
-  Zwei Kommentare korrigiert, die nach dem Fix nicht mehr stimmten (keylayout.go:49 und :95): 'jede Belegung ueber BaseCode' gilt nur noch fuer Buchstaben
+  Vierter Durchgang: der AltGr-Guard sitzt als eine Bedingung in physicalRune (internal/tui/keylayout.go:69), direkt neben der Bedingung, die benannte Tasten aussortiert - keine neue Ebene, keine Verzweigung bei den Aufrufern
+  internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
+  Kein Fund mehr offen; die Einschraenkung auf Buchstaben und die beiden Guards erzaehlen im Kommentar dieselbe Geschichte wie im Code
 review-gaps: |-
-  internal/tui/keylayout.go:80 AltGr faellt auf dem Windows-Console-Pfad in die Buchstaben-Ebene: der Decoder setzt Key.Text auch bei AltGr (decoder.go:2035, LEFT_CTRL|RIGHT_ALT) und Mod traegt dann ModCtrl|ModAlt. AltGr+о wuerde als blankes 'j' im Kommando-Handler landen und den Cursor bewegen, wo auf master nichts passierte. Gleiches fuer AltGr-Buchstaben lateinischer Belegungen (polnisches AltGr+a = ą, BaseCode 'a')
-  internal/tui/keylayout_test.go:44 Der ModShift-Guard ist von keinem Test festgenagelt: '?', '!' und '>' stehen ohnehin nicht in usPosition, die Faelle bestehen auch ohne Guard. Der Fall, fuer den der Guard wirklich da ist, fehlt - auf AZERTY ist der Punkt shift+';', ohne Guard haette cmdKey '/' zurueckgegeben und beim Tippen eines Punktes den Filter geoeffnet
-  internal/tui/keylayout.go:20 Der Kopfkommentar sagt weiterhin, BaseCode sei fuer jede Belegung richtig und brauche keine Tabelle; nach der Einschraenkung gilt das nur noch fuer Buchstaben
-  core/release/NOTES.md:18 'and the rest' im ersten Punkt deckt auch ctrl+d/ctrl+u mit ab, die genau nicht mitkommen
-  Bestaetigt geschlossen: die Hilfe-Taste ist auf allen drei Pfaden wieder erreichbar (auf JZUKEN ist '?' shift+7 und laeuft unveraendert durch), shift+Ziffer schaltet keine Boards mehr um, der tote ctrl/alt-Zweig ist raus, die NOTES-Zeile stimmt
+  Nichts Ueberfluessiges: physicalRune hat jetzt drei Ausstiege und zwei Zweige, jeder mit einem Fall, den ein Test umfallen laesst, wenn man ihn entfernt - TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyLeavesShiftedPunctuationAlone, TestCmdKeyIgnoresAltGr
+  internal/tui/keylayout_test.go:44 Die vier Faelle in TestCmdKeyLeavesShiftedPunctuationAlone sind nicht redundant: einer pinnt den pty-Pfad ohne Shift, einer den Kitty/Windows-Pfad mit BaseCode, einer die Ziffernreihe, einer den Shift-Guard selbst
+  Keine ungenutzten Symbole, keine Konfiguration, keine Abhaengigkeit dazugekommen
 test-verdict: |-
-  go build, go vet, go test ./... gruen nach dem Shift-Fix
-  Neu: TestCmdKeyLeavesShiftedPunctuationAlone deckt shift+/ ('?'), shift+1 ('!') und shift+. ('>') mit gesetztem BaseCode ab - genau der Pfad, der die Hilfe-Taste in den Filter geschickt haette
-  Weiterhin gruen: TestBoardAnswersACyrillicLayout, TestTypingStaysCyrillicInTheFilter, TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyMapsCyrillicToItsPhysicalKey, TestCmdKeyKeepsCase, TestCmdKeyPrefersTheTerminalsOwnBaseCode
-  Von Hand bestaetigt (vor dem Shift-Fix, unveraendertem Pfad): russische Belegung steuert das Board auf Windows Terminal unter WSL2
-  Offen bleibt, was hier kein Terminal hergibt: der BaseCode-Pfad eines echten Kitty-Terminals
+  go build, go vet, go test ./... gruen nach dem AltGr-Fix
+  Sieben Tabellentests plus zwei Board-Tests; die drei Guards sind jeweils von einem Fall gedeckt, der ohne den Guard umfaellt
+  Zweimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
+  Weiterhin nicht pruefbar ohne passendes Terminal: der echte Kitty-Pfad und der Windows-Console-Pfad - beide nur ueber konstruierte KeyPressMsg abgedeckt
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: ""
+question: "Letzter Nachtest, 10 Sekunden: das Binary ist wieder neu gebaut, also einmal 'jaira board' oeffnen und mit russischer Belegung о/л bewegen und й beenden. Fuer deine Belegung hat sich nichts geaendert - der Fix betrifft AltGr, das du nicht benutzt -, aber getestet werden soll, was auch installiert ist."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
