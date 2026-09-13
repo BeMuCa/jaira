@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:16:17Z
+updated-at: 2026-09-13T20:16:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
-outcome-what: "core/role: seven role prompts embedded via go:embed all:builtin, plus target resolution and a three-way installer (written/unchanged/skipped/overwritten). internal/cli/roles.go: 'jaira roles list' and 'jaira roles install --project|--global [--force]', --json on both, exit 3 when an edited file is left alone. Prompts frozen from ~/.claude/skills with name: and every cross-reference rewritten to the jaira- prefix."
-outcome-why: "The role prompts lived in one person's ~/.claude/skills. A teammate who cloned got the board and nobody to drive it. Shipping them inside the binary makes them travel with the tool, the way the lanes already do."
-outcome-resolves: "jaira roles install --project writes .claude/skills/jaira-<id>/SKILL.md for all seven roles, --global writes ~/.claude/skills, a second run reports only unchanged and exits 0, an edited file is left alone, reported and exits 3, --force replaces it, jaira roles list names them, core/release/NOTES.md carries a line under ## Unreleased, and go test ./... -race is green."
+outcome-what: "core/role/target.go: ProjectTargets replaced by ProjectTarget — one directory, .claude/skills, instead of a copy in every agent directory that happens to exist; internal/cli/roles.go gained --into <dir> for a project whose agent reads elsewhere. Removed: Role.Name and the name: parse branch (the directory is the name), role.Twins() and the unprefixed JSON field, the within() guard on a compile-time-fixed path, and installDirs/skillsDirOf — the install target is now passed to reportRoleInstall instead of reconstructed from the written paths. Fixed the SkippedAny doc comment. core/release/NOTES.md: the install line now says .claude/skills and --into, and a second line tells anyone who wrote these prompts by hand that their bare-named copies still answer to the old command."
+outcome-why: "Critique returned the ticket with six findings. The load-bearing one was the fan-out: a harness that reads more than one agent directory would find jaira-teamlead registered twice under one command name, with nothing to say which copy answered, and the definition of done names exactly one target. The other five were weight the change did not need — a second name for the id, a guard against a state the compiler already rules out, paths rebuilt from paths the caller held, and a one-machine migration paying for a permanent JSON field."
+outcome-resolves: "Every finding in review-summary is addressed in the file it names. jaira roles install --project writes .claude/skills/jaira-<id>/SKILL.md for all seven roles and nowhere else (internal/cli/roles_test.go TestRolesInstallProjectIgnoresOtherAgentDirs), --into writes where it is told (TestRolesInstallIntoNamesTheDirectory), --global still writes ~/.claude/skills, a second run reports only unchanged, an edited file is left alone and exits 3, --force replaces it, jaira roles list names the roles, core/release/NOTES.md carries the line under ## Unreleased, and go test ./... -race is green."
 review-summary: |-
   core/role/target.go:20 ProjectTargets liefert bis zu drei Zielverzeichnisse (.claude, .codex, .agents), und internal/cli/roles.go:110 installiert in jedes davon dieselben sieben Rollen. Ein Harness liest Skills aus mehreren dieser Ordner, also steht jaira-teamlead dann doppelt registriert da, und das Repo traegt dreimal dieselben Prompts. Die DoD nennt genau ein Ziel. Auf ein Verzeichnis reduzieren: .claude/skills, und wenn ein anderer Ordner gewuenscht ist, per Flag statt per Fan-out.
   core/role/target.go:8-17 begruendet die Auswahl mit core/board/announce.go:295, macht aber das Gegenteil: announce.go schreibt AGENTS.md UND CLAUDE.md immer, target.go schreibt nur in existierende Ordner. Entweder die Regel uebernehmen oder den Verweis streichen und schreiben, warum ein Verzeichnisbaum anders behandelt wird als eine Markdown-Datei.
