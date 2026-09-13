@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:00:02Z
+updated-at: 2026-09-13T21:00:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-71524
 claimed-at: 2026-09-13T20:55:10Z
@@ -144,3 +144,4 @@ Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rech
 - Nichts an core/role/*.go geaendert. Vier Durchgaenge (Duplikat, tot, Ballast, Kosten) und jeder Kandidat traegt eine Begruendung, die in review-gaps steht. Der lauteste war role.File: exportiert, und von ausserhalb des Pakets ruft es nur ein Test. Nach dem Massstab, mit dem Runde 2 Get() gestrichen hat, muesste es weg - aber Get() war durch Builtins() ersetzbar, File() ist es nicht: es ist der einzige Weg an die eingebetteten Bytes, und ohne ihn kann internal/cli nicht mehr pruefen, dass installiert wurde, was eingebettet ist. Deshalb bleibt es.
 - Nicht angefasst, weil Verhaltensaenderung und damit keine Aufraeumarbeit: das fehlende os.Chmod nach os.WriteFile (Notiz von 20:54). Gehoert in die Testing-Lane, wie der Mensch entschieden hat.
 - go test ./... -race gruen, gofmt sauber.
+- **2026-09-13 21:00 · Alexander Sacharov** — Commit dieser Runde: 7de9673.
