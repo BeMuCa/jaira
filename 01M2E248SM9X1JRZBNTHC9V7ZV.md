@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T19:55:06Z
+updated-at: 2026-09-13T19:55:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99732
 claimed-at: 2026-09-13T19:54:40Z
@@ -62,3 +62,4 @@ claimed-at: 2026-09-13T19:54:40Z
 - Unterordner INNERHALB einer Rolle sind erlaubt (reference.md, scripts/). Falls eine Rolle spaeter Hilfsdateien braucht, ist das der Weg, nicht ein zweiter Skill.
 - Offener Punkt, nicht recherchiert: auf diesem Rechner liegen die sieben Rollen bereits unter ~/.claude/skills/teamlead, dispatcher, role-* ohne Praefix. Nach 'roles install --global' stehen sie doppelt da. Der Installer muss das erkennen und melden, statt stillschweigend ein zweites Paar anzulegen.
 - **2026-09-13 19:43 · Alexander Sacharov** — Board-Umzug am 2026-09-13: die Ticket-Refs liegen jetzt auf upstream (BeMuCa/jaira), nicht mehr nur im Fork. 24 Refs und der Snapshot-Zweig jaira/board sind hinueber gepusht, die Kopien im Fork bleiben vorerst als Backup liegen. ~/.jaira/settings.json traegt {"remote":"upstream"} - ohne diese Datei schreibt jaira wieder in den Fork, die Einstellung ist pro Rechner und wird nicht mitgeliefert.
+- **2026-09-13 19:55 · Alexander Sacharov** — Der jaira--Praefix ist nicht nur ein Ordnername. In Claude Code muss das Feld name: im Frontmatter dem Ordner entsprechen, sonst laedt der Skill nicht. Also wird beim Einfrieren auch name: teamlead -> name: jaira-teamlead umgeschrieben. Damit aendert sich der Aufruf: /jaira-role-lane statt /role-lane. Die Prompts rufen sich gegenseitig auf - dispatcher/SKILL.md:38 nennt /role-lane und /role-tester, role-brainstorm/SKILL.md:30 nennt /role-research. Diese Zeilen muessen mitgezogen werden, sonst ruft der Dispatcher eines Teamkollegen einen Namen auf, den es auf seinem Rechner nicht gibt. Das ist Schritt 1 des Plans und der Grund, warum er nicht blosses Kopieren ist.
