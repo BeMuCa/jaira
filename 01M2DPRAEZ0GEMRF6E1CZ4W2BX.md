@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:35:59Z
+updated-at: 2026-09-13T18:36:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "AltGr faellt nicht mehr in die Positions-Umsetzung; Shift-Guard und AltGr sind jetzt von Tests festgenagelt"
-outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr, und die Buchstaben-Ebene sah gar nicht auf k.Mod - AltGr+о waere als blankes j im Kommando-Handler gelandet"
-outcome-resolves: "physicalRune steigt aus, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt; TestCmdKeyIgnoresAltGr und der AZERTY-Fall in TestCmdKeyLeavesShiftedPunctuationAlone fallen ohne die Guards um; Kopfkommentar und NOTES-Zeile auf Buchstaben eingeschraenkt"
+outcome-what: "AltGr wird nicht mehr als Kommandotaste gelesen"
+outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr; ohne Guard waere AltGr+Buchstabe als Kommando im Board gelandet"
+outcome-resolves: "Alles was mehr traegt als Shift oder CapsLock bleibt unangetastet; drei Guards, drei Tests, die ohne sie umfallen"
 review-summary: |-
   Vierter Durchgang: der AltGr-Guard sitzt als eine Bedingung in physicalRune (internal/tui/keylayout.go:69), direkt neben der Bedingung, die benannte Tasten aussortiert - keine neue Ebene, keine Verzweigung bei den Aufrufern
   internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
@@ -34,7 +34,7 @@ test-verdict: |-
   Zweimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
   Weiterhin nicht pruefbar ohne passendes Terminal: der echte Kitty-Pfad und der Windows-Console-Pfad - beide nur ueber konstruierte KeyPressMsg abgedeckt
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: ""
+question: "Letzter Nachtest, 10 Sekunden: das Binary ist wieder neu gebaut, also einmal 'jaira board' oeffnen und mit russischer Belegung о/л bewegen und й beenden. Fuer deine Belegung hat sich nichts geaendert - der Fix betrifft AltGr, das du nicht benutzt -, aber getestet werden soll, was auch installiert ist."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
