@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:11:38Z
+updated-at: 2026-09-13T21:11:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -173,3 +173,4 @@ Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.Write
 - Der Modus liegt jetzt in modeOf(dst) statt inline, weil ihn zwei Zweige brauchen. Die Regel selbst (.sh -> 0755) ist unveraendert.
 - Der Test faellt ohne den Fix durch, beide Haelften geprueft: 'after a re-run the script is -rw-r--r--' und 'after --force ...'. Ein Test, der auch ohne Fix gruen ist, haette den Befund nur zugedeckt.
 - Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat nie ein Binary mit dem Fehler gegeben. Gleiche Begruendung wie in Runde 3 und 4.
+- **2026-09-13 21:11 · Alexander Sacharov** — Commit dieser Runde: 59d39fa.
