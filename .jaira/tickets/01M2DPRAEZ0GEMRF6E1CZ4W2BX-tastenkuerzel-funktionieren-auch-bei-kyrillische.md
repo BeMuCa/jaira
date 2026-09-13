@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: human
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:45:44Z
+updated-at: 2026-09-13T18:54:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -21,20 +21,33 @@ outcome-what: "Lock-Zustaende zaehlen nicht mehr als gehaltener Modifier"
 outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck - der Guard haette die Umsetzung dort ganz abgeschaltet"
 outcome-resolves: "physicalRune erlaubt Shift, CapsLock, NumLock und ScrollLock; TestCmdKeyIgnoresTheLockStates haelt es fest"
 review-summary: |-
-  Fuenfter Durchgang: die Maske nennt jetzt vier erlaubte Bits statt zwei, und der Kommentar darueber erklaert die Trennlinie (Modifier aendern den Tastendruck, Lock-Zustaende nicht) statt sie nur zu behaupten - der Fehler war eine falsche Praemisse im Kommentar, nicht eine falsche Zeile Code
-  internal/tui/keylayout.go:74 Maske statt Aufzaehlung der verbotenen Modifier bleibt richtig: die erlaubte Menge ist klein und benennbar, die verbotene waechst mit jedem Modifier, den bubbletea dazunimmt
-  Kein Muster daneben gebaut: die Guards stehen alle in physicalRune, die vier Aufrufer sehen weiterhin nur einen string
+  Kommandotasten werden nicht mehr als Zeichen gelesen, sondern als Taste. internal/tui/keylayout.go bringt cmdKey: es beantwortet, welche Taste auf einer US-PC-101-Tastatur gedrueckt worden waere, und alle vier Stellen, die vorher k.String() in einen Kommando-Switch gaben (model.go:877, home.go 215/230/237/258, edit.go:82), fragen jetzt cmdKey
+  Die Antwort kommt aus zwei Quellen: Key.BaseCode, das ein Terminal mit Kitty-Protokoll selbst meldet und das fuer Buchstaben jede Belegung abdeckt, und sonst der Tabelle usPosition mit der kyrillischen JZUKEN-Belegung. Windows Terminal - wo der Melder sitzt - meldet kein BaseCode, dort traegt die Tabelle
+  Vier Guards halten die Umsetzung von allem fern, wo sie schaden wuerde: benannte Tasten (enter, space, Pfeile), Satzzeichen mit Shift (shift+/ druckt '?' und meldet trotzdem '/'), gehaltene Modifier inklusive AltGr, und - als Ausnahme davon - die Lock-Zustaende, die Kitty bei jedem Tastendruck mitschickt
+  Texteingabe laeuft nicht durch cmdKey: Filter, Titel-Eingabe und Editor lesen weiter k.Text, russischer Text bleibt russisch
+  Dazu in beiden View()-Funktionen die KeyboardEnhancements, ohne die BaseCode gar nicht erst ankommt, und eine Zeile in core/release/NOTES.md
 review-gaps: |-
-  Nichts Ueberfluessiges: vier Guards in physicalRune, jeder mit einem Test, der ohne ihn umfaellt (benannte Tasten, Shift-Satzzeichen, AltGr, Lock-Zustaende)
-  internal/tui/keylayout_test.go:160 TestCmdKeyIgnoresTheLockStates traegt drei Faelle: NumLock allein, NumLock plus ScrollLock, und die Kombination aus dem ultraviolet-Testfile (NumLock|CapsLock|Shift) - keiner davon doppelt einen anderen
-  Keine neue Abhaengigkeit, keine Konfiguration, nichts Ungenutztes
+  none - vier Durchgaenge eines zweiten Modells, drei davon mit Fund (Shift-Satzzeichen, AltGr, NumLock), alle behoben und je mit einem Test festgenagelt, der ohne seinen Guard umfaellt. Der letzte Durchgang blockiert nichts mehr
+  Ehrlich offen, aber kein Mangel am Diff: der echte Kitty-Pfad und der Windows-Console-Pfad sind nur ueber konstruierte KeyPressMsg gedeckt, weil hier kein solches Terminal laeuft. Beide gefundenen Fehler in diesen Pfaden kamen aus dem Lesen des Decoders, nicht aus einem Test
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem Lock-Fix
   Acht Tabellentests und zwei Board-Tests; vier Guards, vier Faelle, die ohne ihren Guard umfallen
   Dreimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
   Unveraendert offen und nur ueber konstruierte KeyPressMsg gedeckt: der echte Kitty-Pfad und der Windows-Console-Pfad. Der NumLock-Fehler kam genau von dort, gefunden hat ihn das Lesen des Decoders, nicht ein Test - wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte es einmal mit eingeschaltetem NumLock ausprobieren
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: "Kurz gegenpruefen, das Binary ist wieder frisch: 'jaira board' mit russischer Belegung, о/л bewegen, й beenden. Fuer deinen Terminal aendert der Fix nichts - Windows Terminal meldet keine Lock-Zustaende -, aber getestet werden soll, was installiert ist. Falls du irgendwo ein kitty, ghostty, WezTerm oder foot hast: dort bitte mit eingeschaltetem NumLock probieren, das ist der Pfad, den hier kein Terminal hergibt."
+question: ""
+review-verdict: "Erfuellt die Definition of Done und ist merge-reif: der Melder hat es viermal an seinem Terminal bestaetigt, das zweite Modell blockiert nichts mehr"
+review-check: |-
+  1. go build -o /tmp/jaira-check ./cmd/jaira
+  2. /tmp/jaira-check board - das Board geht auf
+  3. Tastatur auf Russisch umstellen
+  4. о und л druecken - der Cursor geht im Lane runter und rauf (das sind die Tasten j und k)
+  5. р und д druecken - der Cursor springt in die Lane links und rechts
+  6. Punkt-Taste druecken - unten geht der Filter auf
+  7. русский ins Filterfeld tippen - es erscheint russisch, nicht als Kommando
+  8. esc, dann ? druecken - die Hilfe geht auf, nicht der Filter
+  9. esc, dann й - das Board schliesst
+  10. go test ./internal/tui/ -run TestCmdKey -v - acht Tests, alle PASS
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
@@ -82,3 +95,4 @@ question: "Kurz gegenpruefen, das Binary ist wieder frisch: 'jaira board' mit ru
 - **2026-09-13 18:33 · Alexander Sacharov** — review 2: AltGr ist das verbliebene Loch. Die Buchstaben-Ebene schaut gar nicht auf k.Mod, und der Windows-Decoder setzt Key.Text auch bei AltGr - also kommt AltGr+Buchstabe als blanke Kommandotaste an. Fix: vor beiden Zweigen aussteigen, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt. Dazu ein Test, der den Shift-Guard wirklich festnagelt (AZERTY: shift+';' druckt '.', darf nicht '/' werden), und zwei Kommentare/NOTES-Zeilen, die nach der Einschraenkung zu viel versprechen.
 - **2026-09-13 18:40 · Alexander Sacharov** — Mensch hat den dritten Stand bestaetigt: Board reagiert mit russischer Belegung, Windows Terminal unter WSL2.
 - **2026-09-13 18:43 · Alexander Sacharov** — review 3: NumLock. Der Guard war eine Zeile zu eng - ModNumLock kommt auf Kitty-Terminals bei jedem Tastendruck mit und wird von der Bibliothek selbst als 'beeinflusst den Text nicht' behandelt (decoder.go:1475). Mit NumLock an haette der Guard die ganze Funktion auf genau den Terminals ausgeschaltet, fuer die die BaseCode-Ebene gebaut wurde, und niemand haette es hier gemerkt. Lehre fuer den Kommentar: Lock-Zustaende sind keine Modifier.
+- **2026-09-13 18:51 · Alexander Sacharov** — Mensch hat den vierten Stand gegengeprueft.

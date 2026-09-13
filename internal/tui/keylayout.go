@@ -68,6 +68,11 @@ func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 	// ctrl and alt, so without this AltGr+о would reach the board as a bare "j"
 	// and move the cursor.
 	//
+	// The list is the full set of modifier bits ultraviolet defines (see
+	// uv.KeyMod in its key.go); a bit added there later lands on the refusing
+	// side by itself, which is the safe direction — the key then steers nothing
+	// instead of steering something it was never pressed for.
+	//
 	// The lock states are not modifiers and are exempt: caps lock only changes
 	// the case, which is read off the text anyway, and num lock and scroll lock
 	// change nothing at all — Kitty terminals report num lock with every single

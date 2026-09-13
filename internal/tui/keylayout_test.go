@@ -162,17 +162,16 @@ func TestCmdKeyIgnoresAltGr(t *testing.T) {
 // have switched the mapping off for everybody typing with num lock on — which
 // is most people, on most desktop keyboards.
 func TestCmdKeyIgnoresTheLockStates(t *testing.T) {
-	for _, k := range []tea.KeyPressMsg{
-		{Code: 'о', Text: "о", Mod: tea.ModNumLock},
-		{Code: 'о', Text: "о", Mod: tea.ModNumLock | tea.ModScrollLock},
-		{Code: 'ф', Text: "Ф", Mod: tea.ModNumLock | tea.ModCapsLock | tea.ModShift},
+	for _, tc := range []struct {
+		k    tea.KeyPressMsg
+		want string
+	}{
+		{tea.KeyPressMsg{Code: 'о', Text: "о", Mod: tea.ModNumLock}, "j"},
+		{tea.KeyPressMsg{Code: 'о', Text: "о", Mod: tea.ModNumLock | tea.ModScrollLock}, "j"},
+		{tea.KeyPressMsg{Code: 'ф', Text: "Ф", Mod: tea.ModNumLock | tea.ModCapsLock | tea.ModShift}, "A"},
 	} {
-		want := "j"
-		if k.Text == "Ф" {
-			want = "A"
-		}
-		if got := cmdKey(k); got != want {
-			t.Errorf("cmdKey(%q with %v) = %q, want %q", k.Text, k.Mod, got, want)
+		if got := cmdKey(tc.k); got != tc.want {
+			t.Errorf("cmdKey(%q with %v) = %q, want %q", tc.k.Text, tc.k.Mod, got, tc.want)
 		}
 	}
 }
