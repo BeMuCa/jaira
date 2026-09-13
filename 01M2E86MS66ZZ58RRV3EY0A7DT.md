@@ -23,10 +23,10 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:44:35Z
+updated-at: 2026-09-13T21:46:35Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-55522
-claimed-at: 2026-09-13T21:42:41Z
+claimed-by: DESKTOP-RFTCH11-60947
+claimed-at: 2026-09-13T21:46:35Z
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
