@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: human
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,27 +13,29 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:58:48Z
+updated-at: 2026-09-13T17:06:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Kyrillische Belegung steuert das Board, Texteingabe bleibt kyrillisch"
-outcome-why: "Die automatisierten Tests decken die Tabellen-Ebene ab; eine echte Systembelegung und die BaseCode-Ebene kann nur ein Mensch an seinem Terminal pruefen"
-outcome-resolves: "cmdKey liest Kommandos ueber die Tastenposition, Texteingabe liest weiter k.Text"
+outcome-what: "Satzzeichen und Shift-Kombinationen werden nicht mehr ueber die Tastenposition gelesen; der tote ctrl/alt-Zweig ist raus"
+outcome-why: "shift+/ meldet BaseCode '/' und druckt '?': die Hilfe-Taste oeffnete den Filter, auf dem Windows-Console-Pfad auch mit US-Belegung"
+outcome-resolves: "physicalRune setzt nur noch Buchstaben ueber BaseCode/Tabelle um; Satzzeichen laufen ausschliesslich ueber die Tabelle und nur ohne Shift; TestCmdKeyLeavesShiftedPunctuationAlone ersetzt den Test, der eine unmoegliche Nachricht baute; NOTES-Zeile auf Buchstaben-Kommandos eingeschraenkt"
 review-summary: |-
   Zweiter Durchgang: nichts mehr zu aendern. Die Einschraenkung auf gedruckte Zeichen sitzt in physicalRune (internal/tui/keylayout.go:59), also in der Funktion, die die Entscheidung trifft, nicht in den vier Aufrufern - richtige Stelle
   internal/tui/keylayout.go:41 cmdKey schreibt nur ctrl und alt vor die Rune, meta/hyper/super fallen weg; bewusst, weil das Board keine davon bindet und ein Zweig fuer einen Zustand, den es nicht gibt, nur Ballast waere
   Die vier Aufrufer bleiben einzeln verdrahtet statt hinter einer neuen Abstraktion: jeder Screen nimmt schon heute einen string entgegen (internal/tui/lanes.go:200, browse.go:94, dropboard.go:84), die Form ist die vorhandene
 review-gaps: |-
-  internal/tui/keylayout.go:59 physicalRune gab im Fehlerfall einmal 'typed' und einmal 0 zurueck, obwohl der Aufrufer nur das bool liest - auf 0 vereinheitlicht, der Rueckgabewert hat jetzt genau eine Bedeutung
-  internal/tui/keylayout.go:85 usPosition traegt auch Tasten, die das Board heute nicht bindet ('х','ъ','ж','э','ё' -> [ ] ; ' `). Bewusst behalten: eine auf die aktuellen Bindungen zugeschnittene Tabelle bricht still in dem Moment, in dem jemand '[' bindet, und das Auditieren aller Switches kostet mehr als fuenf Map-Eintraege
-  Nichts Ungenutztes sonst: cmdKey hat vier Aufrufer, physicalRune einen, usPosition einen; keine Konfiguration, kein Schalter, keine zweite Ebene, die nicht gebraucht wird
+  internal/tui/keylayout.go:60 physicalRune ersetzt das Zeichen auch dann durch BaseCode, wenn Shift im Spiel ist: shift+/ meldet Text '?' und BaseCode '/', cmdKey gibt '/' zurueck und oeffnet den Filter, wo das Board um seine Hilfe gebeten wurde (model.go:1280). Auf dem Windows-Console-Pfad ist BaseCode immer gesetzt, dort trifft es auch eine US-Belegung. Gleiche Wurzel: shift+1 kaeme als '1' an und schaltet die Board-Nummer um (model.go:1230)
+  internal/tui/keylayout.go:44 Der ctrl/alt-Zweig in cmdKey ist unerreichbar: der Decoder leert Key.Text, sobald ein Modifier ueber Shift hinaus anliegt, und physicalRune steigt bei leerem Text aus. Toter Code
+  internal/tui/keylayout_test.go:36 TestCmdKeyKeepsModifiers baut eine Nachricht, die kein Decoder erzeugt (Text gesetzt UND ModCtrl) - der Test prueft nichts
+  core/release/NOTES.md:18 'jede Belegung' ist zu stark und verschweigt die Shift-Regression - auf Buchstaben-Kommandotasten einschraenken
+  Geprueft und unbedenklich: die KeyboardEnhancements brechen das Tippen auf Kitty-Terminals nicht - faehlt Flag 16, stellt der Decoder Text aus Code wieder her (decoder.go:1503)
 test-verdict: |-
   go build, go vet und go test ./... sind gruen (internal/tui 41s, internal/cli 9.7s, alle core-Pakete)
   Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
   Nicht automatisch pruefbar und deshalb offen fuer den Menschen: die BaseCode-Ebene braucht ein Terminal mit Kitty-Protokoll, hier laeuft Windows Terminal unter WSL2, wo BaseCode nie ankommt. Ebenso ungeprueft: ob eine echte russische Systembelegung dieselben Zeichen sendet wie der Test sie baut
   Binary ist neu gebaut und unter /home/alex/.local/bin/jaira installiert, damit der Test mit echter Belegung sofort moeglich ist
-question: "Bitte einmal mit umgestellter russischer Belegung im Board pruefen: bewegen j/k/h/l (also о/л/р/д) den Cursor, beendet q (й), oeffnet enter ein Ticket, und oeffnet die Punkt-Taste den Filter? Und erscheint danach getippter russischer Text im Filter unveraendert? Das neu gebaute Binary liegt schon unter /home/alex/.local/bin/jaira. Zweite Frage nur, falls jemand ein Terminal mit Kitty-Protokoll hat (kitty, ghostty, WezTerm, foot): funktioniert dort Steuern UND Tippen weiterhin? Dort schaltet die neue KeyboardEnhancements-Anforderung den Klartext ab, und wenn das Terminal den Text nicht zurueckliefert, blieben Filter und Editfeld leer."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
@@ -75,3 +77,5 @@ question: "Bitte einmal mit umgestellter russischer Belegung im Board pruefen: b
 - **2026-09-13 15:46 · Alexander Sacharov** — Warum die Reihenfolge BaseCode-zuerst: bubbletea v2 fuellt Key.BaseCode (key.go:326) nur, wenn das Terminal das Kitty-Keyboard-Protokoll spricht oder die Windows Console API benutzt wird. Dort ist jede Belegung der Welt erledigt, ohne eine Tabelle. Windows Terminal - wo der Melder unter WSL2 sitzt - kann es nicht, deshalb ist die Positions-Tabelle keine Alternative sondern die zweite Ebene darunter. Latein-Belegungen (AZERTY, QWERTZ, Dvorak) brauchen gar nichts: sie liefern ASCII-Buchstaben, die Switches treffen schon heute. Kaputt sind ausschliesslich die Nicht-Latein-Schriften, und davon bekommt dieses Ticket nur Kyrillisch - Griechisch, Hebraeisch und Arabisch sind dieselbe Mechanik und eine Tabelle mehr, sobald jemand sie meldet. Zweite Erkenntnis: ReportAlternateKeys allein reicht nicht. Die bubbletea-Doku (tea.go:252) sagt, dass nur als Escape-Code gemeldete Tasten davon betroffen sind - normale Buchstaben kommen als Klartext. Ohne ReportAllKeysAsEscapeCodes bleibt BaseCode bei 'j' also leer, und die erste Ebene laeuft ins Nichts.
 - **2026-09-13 15:53 · Alexander Sacharov** — Zwei Entscheidungen beim Bauen, die man dem Code nicht ansieht. (1) Key.String() ist als Quelle unbrauchbar: ultraviolet/key.go:391 gibt Key.Text zurueck, sobald die Taste Text erzeugt hat, und ignoriert BaseCode genau dort, wo es gebraucht wird - bei Buchstaben. Keystroke() liest BaseCode zwar, schreibt Shift aber als 'shift+g' statt 'G', und das Board bindet 'G', 'E', 'X', 'S' als Grossbuchstaben. Deshalb baut cmdKey den String selbst zusammen. (2) '.' ist als einzige Latein-Taste in der Tabelle: auf JZUKEN sitzt der Punkt auf der Taste, die auf US-Layout '/' ist, und ohne diese Zeile ist der Filter mit russischer Belegung gar nicht erreichbar. Geprueft, dass '.' und ',' in keinem Screen als Kommando gebunden sind - ein US-Nutzer verliert also nichts, er bekommt einen zweiten Weg in den Filter. NICHT lokal verifizierbar: die KeyboardEnhancements-Ebene. Hier laeuft Windows Terminal unter WSL2, das kein Kitty-Protokoll spricht, also kommt BaseCode nie an und der Zweig bleibt ungetestet ausser im Unit-Test mit gesetztem BaseCode. Wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte einmal Tippen und Steuern pruefen: ReportAllKeysAsEscapeCodes schaltet Klartext ab, ReportAssociatedText muss den Text zurueckbringen - stimmt das in einem echten Terminal nicht, bleiben Filter und Editfeld leer.
 - **2026-09-13 15:54 · Alexander Sacharov** — critique: cmdKey darf nur bei gedruckten Zeichen eingreifen. Heute reicht ein gesetztes Key.BaseCode, und bubbletea setzt das auf einem Kitty-Terminal auch fuer benannte Tasten - dann liefert cmdKey die nackte Rune von enter oder space statt 'enter'/'space', und die Switches treffen nichts mehr. Auf Windows Terminal faellt das nie auf, weil BaseCode dort immer 0 ist: der Fehler waere genau auf den Terminals aufgetreten, fuer die die erste Ebene ueberhaupt gebaut wurde. Fix: in physicalRune zuerst k.Text pruefen - genau eine Rune, unicode.IsGraphic, kein Leerzeichen -, sonst k.String() unveraendert.
+- **2026-09-13 16:58 · Alexander Sacharov** — Mensch hat es an seinem Terminal bestaetigt: mit russischer Belegung steuert das Board wie mit englischer. Windows Terminal unter WSL2, also ueber die Positions-Tabelle, nicht ueber BaseCode - die Kitty-Ebene bleibt weiterhin unbestaetigt, sie schadet hier aber nachweislich nicht.
+- **2026-09-13 17:05 · Alexander Sacharov** — review: Shift ist das Loch. physicalRune darf Satzzeichen nicht ueber BaseCode ersetzen - shift+/ ist '?' und meldet trotzdem '/', also oeffnete die Hilfe-Taste den Filter, auf dem Windows-Console-Pfad sogar mit US-Belegung. Fix: nur Buchstaben ueber BaseCode/Tabelle umsetzen, Satzzeichen ausschliesslich ueber die Tabelle und nur ohne Shift. Zweitens: der ctrl/alt-Zweig in cmdKey kann nie laufen, weil der Decoder Key.Text bei jedem Modifier ueber Shift hinaus leert - raus damit, und ehrlich hinschreiben, dass ctrl-Kombinationen Sache des Terminals bleiben.

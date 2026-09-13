@@ -34,11 +34,19 @@ func TestCmdKeyKeepsCase(t *testing.T) {
 	}
 }
 
-// Mapping the character must not eat the modifier that was held with it.
-func TestCmdKeyKeepsModifiers(t *testing.T) {
-	got := cmdKey(tea.KeyPressMsg{Code: 'в', Text: "в", Mod: tea.ModCtrl})
-	if got != "ctrl+d" {
-		t.Errorf("cmdKey(ctrl+в) = %q, want %q", got, "ctrl+d")
+// Shift prints a different character than the key reports, so following the
+// physical key there sends the board somewhere else entirely: "?" asks for the
+// help and would have opened the filter, "!" would have switched the board to
+// number one.
+func TestCmdKeyLeavesShiftedPunctuationAlone(t *testing.T) {
+	for _, k := range []tea.KeyPressMsg{
+		{Code: '/', Text: "?", BaseCode: '/', Mod: tea.ModShift},
+		{Code: '1', Text: "!", BaseCode: '1', Mod: tea.ModShift},
+		{Code: '.', Text: ">", BaseCode: '.', Mod: tea.ModShift},
+	} {
+		if got, want := cmdKey(k), k.String(); got != want {
+			t.Errorf("cmdKey(%q) = %q, want it unchanged", want, got)
+		}
 	}
 }
 

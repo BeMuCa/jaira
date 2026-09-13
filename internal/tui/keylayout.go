@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"strings"
 	"unicode"
 
 	tea "charm.land/bubbletea/v2"
@@ -34,22 +33,17 @@ import (
 // Text input does not come through here. A Cyrillic letter typed into a filter
 // or an edit field has to stay a Cyrillic letter, so those paths keep reading
 // Key.Text.
+//
+// Keys held with ctrl or alt are not touched either, and cannot be: the decoder
+// clears Key.Text as soon as a modifier beyond shift is down, so there is no
+// character left to place. Whether ctrl+s saves on a Cyrillic layout is the
+// terminal's decision, and most terminals already take it by the Latin group.
 func cmdKey(k tea.KeyPressMsg) string {
 	r, ok := physicalRune(k)
 	if !ok {
 		return k.String()
 	}
-	// Named keys and modifier spellings come from String() unchanged; only the
-	// single character at the end of the keystroke is layout-dependent.
-	var b strings.Builder
-	if k.Mod.Contains(tea.ModCtrl) {
-		b.WriteString("ctrl+")
-	}
-	if k.Mod.Contains(tea.ModAlt) {
-		b.WriteString("alt+")
-	}
-	b.WriteRune(r)
-	return b.String()
+	return string(r)
 }
 
 // physicalRune returns the US-layout character of a keypress, and whether that
@@ -68,6 +62,21 @@ func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 	}
 	// Text is what the key produced, upper case included.
 	typed := rs[0]
+	if !unicode.IsLetter(typed) {
+		// Punctuation shifts differently on every layout, and the terminal
+		// reports the unshifted key: shift+/ prints "?" and comes with a
+		// BaseCode of "/". Following that would open the filter where the board
+		// was asked for its help. Punctuation therefore only moves through the
+		// table, and only unshifted.
+		if k.Mod.Contains(tea.ModShift) {
+			return 0, false
+		}
+		base, ok := usPosition[typed]
+		if !ok {
+			return 0, false
+		}
+		return base, base != typed
+	}
 	base := k.BaseCode
 	if base == 0 {
 		var ok bool

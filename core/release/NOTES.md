@@ -16,7 +16,7 @@ Format rules — read before editing:
 ## Unreleased
 
 - Steer the board with a Cyrillic keyboard: keys are read by their position, so `j`, `k`, `q`, `enter` and the rest work through a Russian layout, where the board used to answer nothing at all. The key that is `/` on a US keyboard opens the filter under its Cyrillic-layout character too. Typed text is untouched — Russian still goes into filters and edit fields as Russian.
-- On a terminal that speaks the Kitty keyboard protocol (kitty, ghostty, WezTerm, foot), every layout works, not only Cyrillic: the board asks the terminal for the physical key behind each press.
+- On a terminal that speaks the Kitty keyboard protocol (kitty, ghostty, WezTerm, foot), letter commands work under any layout, not only Cyrillic: the board asks the terminal for the physical key behind each press. Punctuation and shifted keys are left as the layout printed them, so `?` still opens the help; keys held with ctrl or alt are the terminal's business as before.
 
 ## 0.1.4
 
