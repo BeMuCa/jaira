@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T22:06:02Z
+updated-at: 2026-09-13T22:06:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
-outcome-what: "Restated the file mode after writing in core/role/install.go: writeFile now chmods the destination both after os.WriteFile and on the Unchanged branch, with the .sh -> 0755 rule pulled out into modeOf(dst). Added TestInstallRestoresTheExecuteBit (core/role/role_test.go:191) covering both halves: identical bytes at 0644 repaired by a plain re-run, edited bytes at 0644 repaired by --force."
-outcome-why: "os.WriteFile passes its mode to O_CREATE only, so an existing spawn.sh kept whatever permissions it had. A copy made by hand or an unzip lands without the execute bit, and neither a re-run nor 'roles install --force' put it back - the prompt in jaira-dispatcher/SKILL.md:95 then points at a script nobody can run."
-outcome-resolves: "The single testing-lane finding is closed; go test ./... -race green, gofmt clean."
+outcome-what: "Den Diff gegen die Definition of Done geprueft und die vier Review-Felder gesetzt."
+outcome-why: "Ein zweites Modell hat geurteilt; jetzt entscheidet ein Mensch."
+outcome-resolves: "review-summary, review-gaps, review-verdict und review-check stehen am Ticket; kein Befund, der zurueckgeht."
 review-summary: "Neues Paket core/role bettet die sieben Rollen-Ordner per //go:embed all:builtin ins Binary ein (core/role/role.go:33) - all:, weil jaira-dispatcher/scripts/spawn.sh in einem Unterordner liegt und ein blosses builtin/* den Prompt ohne sein Skript ausgeliefert haette. Builtins() liest je Ordner die Dateiliste (SKILL.md zuerst) und die description aus dem Frontmatter, und zwar mit ticket.ParseDoc, also demselben Parser wie die Lanes, nicht mit einem zweiten Handscanner. core/role/install.go vergleicht beim Schreiben Byte fuer Byte gegen das eingebettete Original statt nur os.Stat wie lane.Export: gleiche Bytes -> unchanged, andere Bytes -> skipped und unberuehrt, mit --force -> overwritten, nichts da -> written. Der Dateimodus wird aus der Endung abgeleitet (modeOf: .sh -> 0755, sonst 0644) und nach jedem Schreiben UND auf dem unchanged-Zweig noch einmal per os.Chmod gesetzt, weil os.WriteFile den Modus nur an O_CREATE weiterreicht - ohne das bliebe ein spawn.sh, das sein x-Bit verloren hat, kaputt. core/role/target.go legt genau ein Ziel fest (.claude/skills), kein Fan-out in .codex/.agents, weil ein Harness die Rolle sonst zweimal unter demselben Kommandonamen registriert findet; wer woanders liest, nennt den Ordner mit --into. internal/cli/roles.go haengt 'jaira roles list' und 'jaira roles install --project|--global|--into [--force]' daran, beides mit --json, und macht aus einer uebersprungenen Datei Exit 3 statt eines Fehlers. Nebenbei wurde board.firstSentence zu board.FirstSentence exportiert und schneidet an '. ', damit eine Beschreibung mit einem Pfad darin in der Liste nicht mitten im Pfad abbricht."
 review-gaps: "Keine Blocker. Die Definition of Done ist Punkt fuer Punkt von Hand nachgestellt und erfuellt: sieben Ordner .claude/skills/jaira-<id>/SKILL.md (acht Dateien, spawn.sh kommt mit), zweiter Lauf 8 unchanged / Exit 0, handgeaenderte Datei bleibt woertlich stehen, wird als skipped gemeldet und liefert Exit 3 (bei --json der Fehler als JSON auf stderr), --force stellt sie wieder her, --global schreibt nach ~/.claude/skills (gegen ein Ersatz-HOME geprueft, das echte nicht angefasst), 'roles list' nennt alle sieben, NOTES.md-Zeile steht unter ## Unreleased, go test ./... -race gruen und gofmt -l leer. Zwei Kleinigkeiten, beide bewusst kein Rueckversand: (1) 'roles install --project' braucht ein initialisiertes Board - ohne .jaira bricht es mit Exit 1 und 'no .jaira directory found; run jaira init' ab, obwohl die Rollen nichts aus dem Store lesen und nur der Repository-Wurzelpfad gebraucht wird; die Meldung schickt den Leser zu einem Befehl, der mit dem Installieren von Prompts nichts zu tun hat. Umgehung ist --into. (2) core/role/role_test.go:104 - der Wachposten 'idx >= 6 && strings.HasSuffix(line[:idx], \"/jaira\")' kann fuer die Form, die sein Kommentar beschreibt, nie greifen: in '/jaira-role-lane' steht vor 'role-lane' ein Bindestrich, kein Schraegstrich, also findet strings.Index das blanke '/role-lane' dort gar nicht erst. Der Test selbst ist richtig und faengt den Fall aus Runde 5 - mit einer testweise eingefuegten Zeile 'hand it to /jaira-role-lane, not to /role-tester' schlaegt er fehl, wie er soll; nur der Kommentar erklaert etwas anderes, als der Code tut. Nicht neu aufgerollt, weil in der human-Lane entschieden: dass ein Lauf ohne --force den Modus jeder unveraenderten Datei auf den eingebetteten Stand zuruecksetzt, ist so gewollt."
 test-verdict: "pass: Suite gruen (go test ./... -race, RC=0), gofmt/go vet sauber, DoD Punkt fuer Punkt im Baum geprueft, x-Bit-Befund der ersten Runde end-to-end nachgestellt und behoben"
