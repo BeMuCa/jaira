@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:08:51Z
+updated-at: 2026-09-13T17:08:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Satzzeichen und Shift-Kombinationen werden nicht mehr ueber die Tastenposition gelesen; der tote ctrl/alt-Zweig ist raus"
-outcome-why: "shift+/ meldet BaseCode '/' und druckt '?': die Hilfe-Taste oeffnete den Filter, auf dem Windows-Console-Pfad auch mit US-Belegung"
-outcome-resolves: "physicalRune setzt nur noch Buchstaben ueber BaseCode/Tabelle um; Satzzeichen laufen ausschliesslich ueber die Tabelle und nur ohne Shift; TestCmdKeyLeavesShiftedPunctuationAlone ersetzt den Test, der eine unmoegliche Nachricht baute; NOTES-Zeile auf Buchstaben-Kommandos eingeschraenkt"
+outcome-what: "Shift-Kombinationen und Satzzeichen folgen wieder der Belegung, nicht der Tastenposition"
+outcome-why: "Ein zweites Modell fand, dass shift+/ als '/' gelesen wurde: die Hilfe-Taste haette den Filter geoeffnet"
+outcome-resolves: "Nur Buchstaben laufen ueber BaseCode und Tabelle; Satzzeichen nur ueber die Tabelle und nur ohne Shift"
 review-summary: |-
   Dritter Durchgang nach dem Review-Fund: die Trennung sitzt jetzt an der richtigen Stelle - Buchstaben laufen ueber BaseCode und Tabelle, Satzzeichen nur ueber die Tabelle und nur ohne Shift, alles andere unveraendert durch. Das ist eine Bedingung in physicalRune, keine zweite Ebene
   internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
@@ -35,7 +35,7 @@ test-verdict: |-
   Von Hand bestaetigt (vor dem Shift-Fix, unveraendertem Pfad): russische Belegung steuert das Board auf Windows Terminal unter WSL2
   Offen bleibt, was hier kein Terminal hergibt: der BaseCode-Pfad eines echten Kitty-Terminals
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: ""
+question: "Kurzer Nachtest nach dem Review-Fund, das Binary ist schon aktualisiert: 1. jaira board oeffnen, '?' druecken - es muss die Hilfe aufgehen, nicht der Filter. 2. esc, dann mit russischer Belegung nochmal о/л/р/д, Punkt-Taste und й pruefen wie beim ersten Mal. Stimmt beides, geht das Ticket in die Modellpruefung und danach zu dir zum Abzeichnen."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
