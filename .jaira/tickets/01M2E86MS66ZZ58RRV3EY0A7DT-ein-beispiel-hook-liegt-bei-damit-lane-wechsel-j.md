@@ -1,11 +1,11 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: backlog
+status: todo
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
-goal: "jaira bringt ein Hook-Beispiel mit, das man mit einem Befehl einsetzt; danach meldet sich jeder Lane-Wechsel dort, wo der Mensch hinsieht"
+goal: "jaira bringt ein lauffaehiges Beispiel-Hookskript im Binary mit und druckt es auf Zuruf, damit der erste Lane-Wechsel ohne eigene Erfindung bei einem Menschen ankommt - und nur dann, wenn sich ohne ihn nichts bewegt."
 context: |-
   core/hook/hook.go ruft bei jedem move und jedem claim ein Skript auf und uebergibt JAIRA_EVENT, JAIRA_TICKET, JAIRA_TITLE, JAIRA_STATUS, JAIRA_ASSIGNEE, JAIRA_ACTOR und JAIRA_ROOT als Umgebungsvariablen. Der Mechanismus ist fertig und gut: jaira bringt bewusst keine eigene Abhaengigkeit mit, die Anbindung gehoert dem Nutzer.
   Was fehlt, ist der erste Schritt. Wer 'hook' in den Einstellungen sieht, hat ein leeres Feld und keinen Anhaltspunkt, was hineingehoert. Praktisch schreibt es deshalb niemand.
@@ -23,8 +23,10 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T20:47:06Z
+updated-at: 2026-09-13T21:43:57Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-55522
+claimed-at: 2026-09-13T21:42:41Z
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
@@ -35,12 +37,45 @@ updated-by: Alexander Sacharov
 
 ## Options
 
-- [ ] brainstorm
-- [ ] planning
+- [x] brainstorm
+- [x] planning
 
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
+- **2026-09-13 21:42 · Alexander Sacharov** — Befund im Code (Lane brainstorm; gelesen: core/hook/hook.go, core/settings/settings.go, internal/cli/hook.go, core/lane/lane.go, README.md 338-350 und 561-567, hooks/sync-tasks.sh).
 
+Der Vertrag steht wirklich: hook.Run nimmt einen Skriptpfad, setzt sieben JAIRA_*-Variablen, kappt bei 5s, verschluckt Ausgabe und Exit-Code. Daran fehlt nichts.
+
+Fehlend ist nicht Dokumentation, sondern ein erster Lauf. Ueber den Hook existiert heute: das Feld "hook" in core/settings/settings.go:43 und vier Zeilen README. Beides beschreibt die Schnittstelle und liefert keine einzige Zeile, die man starten koennte. Wer ein leeres Feld und eine Variablenliste sieht, muss das Skript selbst erfinden - und schreibt es deshalb nicht.
+
+Zwei Dinge aus dem Code, die die Ticket-Notiz nicht kennt:
+
+1. Der Name "hook" ist schon belegt. internal/cli/hook.go hat "jaira hook print", und das meint etwas ganz anderes: ein Claude-Code-Stop-Hook-Snippet fuer ~/.claude/settings.json. Ein Beispiel fuer den move/claim-Hook muss unter diesem Elternbefehl unterscheidbar heissen, sonst stehen zwei unverwandte Dinge unter einem Wort.
+
+2. Ein Skript kann heute nicht herausfinden, welche Lane einem Menschen gehoert. "jaira lanes --json" liefert agentic, terminal, precedence - aber nicht die Gates requires-question / requires-human-exit, die human und signoff erst zu Menschen-Lanes machen (core/lane/builtin/30-human.md, 45-signoff.md). agentic:false allein reicht nicht: backlog, todo, done und blocked sind ebenfalls agentic:false. Jedes Beispiel muss die Lane-Namen also hart hinschreiben und ist auf einem Board mit eigenen Lanes falsch.
+- **2026-09-13 21:43 · Alexander Sacharov** — Drei Wege, wie das Beispiel ausgeliefert werden kann.
+
+A) Nur im Repository, unter examples/ oder hooks/, in der README genannt.
+Kostet fast nichts und aendert kein Byte am Binary. Gibt auf, wen es erreicht: jaira wird als einzelne Datei verteilt, "jaira self update" holt ein Binary und kein Arbeitsverzeichnis. Wer nicht geklont hat, sieht die Datei nie - und das ist genau die Person, die das leere Feld anstarrt. Praezedenzfall hooks/sync-tasks.sh zeigt den Defekt: das Skript existiert seit Langem und muss in der README erklaert werden, weil es nirgends greifbar ist.
+
+B) Eingebettet (go:embed) und von einem Befehl auf stdout gedruckt.
+Kostet rund eine Seite Text im Binary und einen Befehl. Gibt: das Beispiel ist da, wo das Programm ist, und die Zeile "jaira <befehl> > ~/.jaira/notify.sh && chmod +x" ist der erste Lauf. Genau das Muster, das "jaira hook print" schon benutzt, und genau das Muster von core/lane/builtin/*.md - jaira bettet seine Vorlagen ein, das ist hier Hausstil und kein Sonderfall.
+
+C) Eingebettet und der Befehl schreibt Datei plus ~/.jaira/settings.json.
+Gibt: null Handgriffe. Kostet: der Befehl fasst eine Datei an, die schon einen funktionierenden Hook eintragen kann, und ueberschreibt ihn im schlimmsten Fall. internal/cli/hook.go begruendet fuer den Claude-Code-Fall ausdruecklich das Gegenteil ("settings.json is the user's file"), und ~/.jaira/settings.json ist zwar jairas Datei, aber der eingetragene Hook ist es nicht.
+
+Empfehlung: B. Erreichbarkeit ist der ganze Zweck des Tickets, also faellt A. Der Unterschied zwischen B und C ist ein einziger cp-Handgriff, C bezahlt ihn mit einem Schreibzugriff auf fremde Konfiguration - das ist kein Tausch, den ein Beispiel wert ist.
+- **2026-09-13 21:43 · Alexander Sacharov** — Die drei offenen Fragen, entschieden.
+
+Frage 1 - eingebettet und per Befehl, oder nur im Repository: eingebettet, per Befehl auf stdout. Begruendung oben (Weg B). Der Befehl heisst nicht "jaira hook print" - das ist vergeben - sondern muss den move/claim-Hook benennen, Vorschlag "jaira hook example". Umbenennen von "hook print" ist kein Teil dieses Tickets.
+
+Frage 2 - wie viele Beispiele: genau eines, und zwar keines, das auf diesem Rechner haengt. ~/.jaira/notify.sh braucht HERDR_ENV und HERDR_BIN_PATH und beendet sich bei allen anderen mit exit 0 - als mitgeliefertes Beispiel waere es ein Skript, das fuer fast jeden nichts tut, und das ist schlimmer als keins, weil man den Fehler nicht sieht. Was ohne Konto, ohne URL und ohne Installation laeuft, ist die Terminal-Glocke; ntfy.sh braucht ein Topic und Slack eine Webhook-URL, beides ist Einrichtung und kein Beispiel. Also: ein Skript, dessen Zustellzeile die eine offensichtlich zu ersetzende Zeile ist, mit ntfy und einem Desktop-Toast als auskommentierte Einzeiler direkt darunter. Eine Datei, drei Zustellwege, kein Menue aus Befehlen - und damit auch die Antwort auf "ist das kleiner als paca".
+
+Frage 3 - schreibt der Befehl settings.json: nein. Er druckt und nennt die fehlende Zeile ("hook": "/home/<du>/.jaira/notify.sh"), so wie "jaira hook print" es vormacht. Kein --write in der ersten Fassung.
+
+Die Regel, die das Beispiel tragen muss, und was sie konkret heisst: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt. Das sind die Lanes mit requires-question oder requires-human-exit (human, signoff) - dort steht die Arbeit bis jemand entscheidet. done bekommt einen anderen, abschliessenden Ton, weil es das Ende ist und nicht die Bitte. blocked ist der Grenzfall: die Lane wartet laut Definition auf eine externe Abhaengigkeit, nicht auf den Menschen - das handgeschriebene notify.sh gibt ihr trotzdem request. Fuer das mitgelieferte Beispiel bleibt blocked stumm, weil sonst die Regel, die es lehren soll, im Beispiel selbst schon gebrochen ist. Alles andere - jeder Wechsel zwischen Agenten-Lanes - ist stumm.
+
+Offen und bewusst nicht hier geloest: dass die Lane-Namen im Beispiel hart stehen muessen, weil "jaira lanes --json" die Gates nicht ausgibt. Auf einem Board mit eigenen Lanes ist das Beispiel dann stumm statt falsch, was die ertraeglichere Richtung ist. Gehoert als eigenes Ticket erfasst, nicht hier.
