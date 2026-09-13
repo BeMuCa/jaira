@@ -24,10 +24,10 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:25:36Z
+updated-at: 2026-09-13T20:28:44Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-60480
-claimed-at: 2026-09-13T20:13:55Z
+claimed-by: DESKTOP-RFTCH11-8635
+claimed-at: 2026-09-13T20:28:44Z
 outcome-what: "Die Zeilen 27-159 aus CLAUDE.md (## Technology Stack bis zum letzten ## Sources-Punkt) stehen jetzt woertlich in docs/STACK.md. In CLAUDE.md bleibt die Ueberschrift und genau eine Verweiszeile, die docs/STACK.md und .planning/research/STACK.md als Vollfassung nennt; die GSD-Marker stack-start/stack-end bleiben stehen. CLAUDE.md faellt von 34993 auf 13968 Bytes."
 outcome-why: "CLAUDE.md wird von jeder frisch gestarteten Agenten-Sitzung komplett gelesen, bei acht Lanes acht Mal pro Ticket. Der Stack-Block ist fuer einen Menschen geschrieben, der die Technologie waehlt - ein Worker in einer Lane braucht ihn nicht, die Entscheidung steht im go.mod. Rund 5300 Token pro Lane fuers Wiederlesen einer Entscheidung, die niemand mehr trifft."
 outcome-resolves: "docs/STACK.md ist byte-identisch mit den alten Zeilen (diff gegen git show HEAD~1:CLAUDE.md leer); CLAUDE.md:29 ist die Verweiszeile; 13968 Bytes sind ca. 3450 Token, unter den geforderten 4000; git diff CLAUDE.md hat genau einen Hunk @@ -26,137 +26,7 @@, der jaira-Block und alles hinter jaira:local sind unberuehrt; jaira update lief fehlerfrei; go test ./... -race komplett gruen."
