@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/role"
 )
 
@@ -49,22 +50,11 @@ func newRolesListCmd() *cobra.Command {
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
 			for _, r := range roles {
-				fmt.Fprintf(w, "%-24s %s\n", r.ID, firstSentence(r.Description))
+				fmt.Fprintf(w, "%-24s %s\n", r.ID, board.FirstSentence(r.Description))
 			}
 			return nil
 		},
 	}
-}
-
-// firstSentence keeps the listing to one line per role. The full description is
-// in --json and in the file itself.
-func firstSentence(s string) string {
-	for i, c := range s {
-		if c == '.' {
-			return s[:i+1]
-		}
-	}
-	return s
 }
 
 func newRolesInstallCmd() *cobra.Command {

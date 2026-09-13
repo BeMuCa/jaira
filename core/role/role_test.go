@@ -55,8 +55,17 @@ func TestBuiltinsAreTheSevenRoles(t *testing.T) {
 // A role's supporting files travel with it: teamlead references a script, and
 // shipping the prompt without the script ships a broken instruction.
 func TestTeamleadShipsItsScript(t *testing.T) {
-	r, ok := Get("jaira-teamlead")
-	if !ok {
+	roles, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var r Role
+	for _, b := range roles {
+		if b.ID == "jaira-teamlead" {
+			r = b
+		}
+	}
+	if r.ID == "" {
 		t.Fatal("no jaira-teamlead role")
 	}
 	found := false
@@ -97,12 +106,6 @@ func TestCrossReferencesCarryThePrefix(t *testing.T) {
 				}
 			}
 		}
-	}
-}
-
-func TestGetUnknownRole(t *testing.T) {
-	if _, ok := Get("jaira-nope"); ok {
-		t.Fatal("Get returned a role that does not exist")
 	}
 }
 

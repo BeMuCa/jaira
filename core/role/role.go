@@ -22,6 +22,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // all: rather than builtin/*, because a role's supporting files sit in
@@ -64,20 +66,6 @@ func Builtins() ([]Role, error) {
 	}
 	sort.Slice(roles, func(i, j int) bool { return roles[i].ID < roles[j].ID })
 	return roles, nil
-}
-
-// Get returns one embedded role by id.
-func Get(id string) (Role, bool) {
-	roles, err := Builtins()
-	if err != nil {
-		return Role{}, false
-	}
-	for _, r := range roles {
-		if r.ID == id {
-			return r, true
-		}
-	}
-	return Role{}, false
 }
 
 // File returns the embedded bytes of one file of a role. rel is a path
@@ -130,29 +118,18 @@ const skillFile = "SKILL.md"
 // Only description: — the frontmatter also carries name:, but a role's name is
 // its directory, so reading the field back would only ever restate the id.
 //
-// A line scan rather than a YAML parse: the field is a scalar on its own line
-// in every shipped role, and the header is not round-tripped or rewritten here
-// — pulling in a YAML dependency to read one string would buy nothing.
+// The same parser the lane definitions use (core/lane/lane.go), because a
+// SKILL.md header is the same frontmatter: a hand-rolled line scan would be a
+// second reader of one file format, and would hand back the escapes of a
+// quoted scalar verbatim.
 func frontmatterDescription(b []byte) string {
-	s := string(b)
-	if !strings.HasPrefix(s, "---\n") {
+	d, err := ticket.ParseDoc(b)
+	if err != nil {
 		return ""
 	}
-	end := strings.Index(s[4:], "\n---")
-	if end < 0 {
+	v, _, err := d.Scalar("description")
+	if err != nil {
 		return ""
 	}
-	for _, line := range strings.Split(s[4:4+end], "\n") {
-		if strings.HasPrefix(line, "description:") {
-			return unquote(strings.TrimSpace(strings.TrimPrefix(line, "description:")))
-		}
-	}
-	return ""
-}
-
-func unquote(s string) string {
-	if len(s) >= 2 && (s[0] == '"' && s[len(s)-1] == '"' || s[0] == '\'' && s[len(s)-1] == '\'') {
-		return s[1 : len(s)-1]
-	}
-	return s
+	return v
 }
