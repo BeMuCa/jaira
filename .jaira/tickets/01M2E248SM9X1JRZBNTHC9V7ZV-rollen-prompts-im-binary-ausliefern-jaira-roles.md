@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:27:39Z
+updated-at: 2026-09-13T20:28:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -100,3 +100,4 @@ Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleic
 
 Geprueft und in Ordnung befunden: kein exportierter Bezeichner in core/role hat nur noch Tests als Aufrufer - File, Builtins, Install, SkippedAny, ProjectTarget und GlobalTarget werden alle aus internal/cli heraus benutzt. Der Usage-Zweig in internal/cli/roles.go:82-89 ist handgeschrieben statt cobra.MarkFlagsMutuallyExclusive, folgt damit aber dem, was lanes.go:191 und checklist.go:106 schon tun - das ist das vorhandene Muster, kein neues.
 - **2026-09-13 20:27 · Alexander Sacharov** — Commit dieser Runde: dd5e7bc.
+- **2026-09-13 20:28 · Alexander Sacharov** — Dispatcher haelt an: die Critique-Lane hat das Ticket dreimal zurueckgeschickt (Regel der dispatcher-Rolle). Die Regel unterstellt eine falsche Definition of Done - hier trifft das nicht zu: die Befunde werden kleiner, 6 -> 3 -> 1, und jeder war ein anderer. Runde 1 (7e889d4): Fan-out in drei Agent-Ordner auf .claude/skills reduziert, --into ergaenzt. Runde 2 (8e6398b): Handgeschriebener Frontmatter-Scanner durch ticket.ParseDoc ersetzt. Runde 3, offen: core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der falschen Rolle, nur jaira-dispatcher/SKILL.md:95 nennt das Skript - Verzeichnis nach core/role/builtin/jaira-dispatcher/ verschieben und core/role/role_test.go:55-57 sowie :128 mitziehen. Das ist eine kleine, klar beschriebene Aenderung. Ein Mensch entscheidet, ob noch eine Runde laeuft oder ob das Ticket so weitergeht.
