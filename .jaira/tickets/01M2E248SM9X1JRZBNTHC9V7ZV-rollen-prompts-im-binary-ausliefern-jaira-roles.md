@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:08:00Z
+updated-at: 2026-09-13T21:11:38Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-71524
-claimed-at: 2026-09-13T20:55:10Z
-outcome-what: "Walked every occurrence of a bare role name per line in TestCrossReferencesCarryThePrefix (core/role/role_test.go:98) instead of only the first, and deleted the .codex/.agents setup and its comment from TestProjectTargetIsTheClaudeSkillsDirectory (core/role/role_test.go:207)."
-outcome-why: "strings.Index finds /role-lane inside /jaira-role-lane, so the prefix exemption skipped the whole line and a second, genuinely unprefixed reference on it was never seen - the test guarding the invariant rounds 1 and 2 rest on could pass over the exact line a person writes. The deleted setup created directories ProjectTarget never looks at: it is a filepath.Join, so the setup asserted nothing and told the next reader the function probes for agent directories."
-outcome-resolves: "Both round-five findings are closed; go test ./... -race green."
+claimed-by: DESKTOP-RFTCH11-2196
+claimed-at: 2026-09-13T21:10:50Z
+outcome-what: "Restated the file mode after writing in core/role/install.go: writeFile now chmods the destination both after os.WriteFile and on the Unchanged branch, with the .sh -> 0755 rule pulled out into modeOf(dst). Added TestInstallRestoresTheExecuteBit (core/role/role_test.go:191) covering both halves: identical bytes at 0644 repaired by a plain re-run, edited bytes at 0644 repaired by --force."
+outcome-why: "os.WriteFile passes its mode to O_CREATE only, so an existing spawn.sh kept whatever permissions it had. A copy made by hand or an unzip lands without the execute bit, and neither a re-run nor 'roles install --force' put it back - the prompt in jaira-dispatcher/SKILL.md:95 then points at a script nobody can run."
+outcome-resolves: "The single testing-lane finding is closed; go test ./... -race green, gofmt clean."
 review-summary: |-
   core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
@@ -43,7 +43,7 @@ test-verdict: "fail: Suite gruen (RC=0) und DoD vollstaendig verifiziert, aber '
 ## Definition of Done
 
 - [x] 'jaira roles install --project' legt sieben Ordner .claude/skills/jaira-<id>/SKILL.md an; ein zweiter Lauf aendert nichts; eine von Hand geaenderte Datei bleibt ohne --force unberuehrt und wird gemeldet; 'jaira roles install --global' schreibt nach ~/.claude/skills; 'jaira roles list' nennt die eingebetteten Rollen; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh; TestDispatcherShipsItsScript (core/role/role_test.go:56); go test ./... -race green
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh; TestDispatcherShipsItsScript (core/role/role_test.go:56); TestInstallRestoresTheExecuteBit (core/role/role_test.go:191); go test ./... -race green
 
 ## Options
 
@@ -167,3 +167,9 @@ Ursache in core/role/install.go:92: os.WriteFile uebergibt den Modus nur an O_CR
 Testluecke dazu: core/role/role_test.go:143 prueft das x-Bit nur nach einer Erstinstallation. Kein Test legt eine Zieldatei mit 0644 vor.
 
 Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.WriteFile ein os.Chmod(dst, mode). Zu beachten - der Unchanged-Zweig (install.go:73) kehrt vorher um, dort wird nichts geschrieben; damit --force auch die byte-identische Datei repariert, muss der Modus entweder vor dem Unchanged-Return geprueft werden oder --force den Unchanged-Zweig ueberspringen. Welche der beiden, entscheidet die Lane - der zweite Fall (identische Bytes, falsches Bit) ist der wahrscheinlichere auf einem echten Rechner. Dazu ein Fall in core/role, der eine Zieldatei mit 0644 vorlegt und nach --force auf 0755 prueft.
+- **2026-09-13 21:11 · Alexander Sacharov** — Der Befund der Testing-Lane ist behoben, aber an zwei Stellen statt an der einen, die die Notiz von 20:54 vorschlug. Was der Diff nicht selbst sagt:
+- Ein os.Chmod nur nach dem os.WriteFile haette den Fall nicht getroffen, der in der Praxis auftritt. Eine von Hand kopierte spawn.sh hat DIESELBEN Bytes wie die eingebettete, nur kein x-Bit - writeFile antwortet darauf mit Unchanged und schreibt gar nichts, auch mit --force nicht. Der Zweig Unchanged setzt jetzt ebenfalls den Modus: die Bytes sind unsere, also ist der Modus unserer. Das repariert das Bit auch ohne --force, was Absicht ist.
+- Nicht angefasst: der Zweig Skipped. Eine Datei mit abweichenden Bytes gehoert jemand anderem, an der wird auch der Modus nicht angefasst.
+- Der Modus liegt jetzt in modeOf(dst) statt inline, weil ihn zwei Zweige brauchen. Die Regel selbst (.sh -> 0755) ist unveraendert.
+- Der Test faellt ohne den Fix durch, beide Haelften geprueft: 'after a re-run the script is -rw-r--r--' und 'after --force ...'. Ein Test, der auch ohne Fix gruen ist, haette den Befund nur zugedeckt.
+- Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat nie ein Binary mit dem Fehler gegeben. Gleiche Begruendung wie in Runde 3 und 4.

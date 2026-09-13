@@ -202,6 +202,50 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 	}
 }
 
+// A spawn.sh that arrived without its execute bit — copied by hand, unzipped,
+// checked out on a filesystem that drops the bit — must come back executable.
+// os.WriteFile hands the mode to O_CREATE only, so an existing file keeps the
+// permissions it had and the repair has to be stated separately.
+func TestInstallRestoresTheExecuteBit(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+
+	// Same bytes, no execute bit: a plain re-run repairs it.
+	if err := os.Chmod(script, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Stat(script); err != nil {
+		t.Fatal(err)
+	} else if fi.Mode().Perm() != 0o755 {
+		t.Errorf("after a re-run the script is %v, want 0755", fi.Mode().Perm())
+	}
+
+	// Edited bytes and no execute bit: --force restores both.
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho mine\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Install(dir, true); err != nil {
+		t.Fatal(err)
+	}
+	fi, err := os.Stat(script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != 0o755 {
+		t.Errorf("after --force the script is %v, want 0755", fi.Mode().Perm())
+	}
+	want, _ := File("jaira-dispatcher", "scripts/spawn.sh")
+	if b, _ := os.ReadFile(script); string(b) != string(want) {
+		t.Error("--force did not restore the embedded script")
+	}
+}
+
 func actionFor(results []Result, path string) Action {
 	for _, r := range results {
 		if r.Path == path {

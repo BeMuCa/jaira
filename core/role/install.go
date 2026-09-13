@@ -71,31 +71,49 @@ func Install(dstSkillsDir string, force bool) ([]Result, error) {
 func writeFile(dst string, want []byte, force bool) (Action, error) {
 	have, readErr := os.ReadFile(dst)
 	existed := readErr == nil
+	if !existed && !errors.Is(readErr, os.ErrNotExist) {
+		return "", readErr
+	}
+	mode := modeOf(dst)
 	switch {
 	case existed && bytes.Equal(have, want):
-		return Unchanged, nil
+		// The bytes are ours, so the mode is ours: a copy that arrived without
+		// its execute bit — a plain cp, an unzip, a checkout on a filesystem
+		// that drops the bit — is repaired here, because nothing is written
+		// for it below.
+		return Unchanged, os.Chmod(dst, mode)
 	case existed && !force:
 		return Skipped, nil
-	case !existed && !errors.Is(readErr, os.ErrNotExist):
-		return "", readErr
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return "", err
 	}
-	// A role may ship a script beside its prompt (dispatcher/scripts/spawn.sh),
-	// and a script nobody can execute is a broken role. The embedded
-	// filesystem does not carry the permission bit, so the extension decides.
-	mode := os.FileMode(0o644)
-	if strings.HasSuffix(dst, ".sh") {
-		mode = 0o755
-	}
 	if err := os.WriteFile(dst, want, mode); err != nil {
+		return "", err
+	}
+	// os.WriteFile passes the mode to O_CREATE only, so an existing file keeps
+	// the permissions it already had. Say it again for the file we just
+	// replaced, or --force restores the content of a script and leaves it
+	// unexecutable.
+	if err := os.Chmod(dst, mode); err != nil {
 		return "", err
 	}
 	if existed {
 		return Overwritten, nil
 	}
 	return Written, nil
+}
+
+// modeOf picks the permissions one installed file gets.
+//
+// A role may ship a script beside its prompt (dispatcher/scripts/spawn.sh), and
+// a script nobody can execute is a broken role. The embedded filesystem does not
+// carry the permission bit, so the extension decides.
+func modeOf(dst string) os.FileMode {
+	if strings.HasSuffix(dst, ".sh") {
+		return 0o755
+	}
+	return 0o644
 }
 
 // SkippedAny reports whether any file was left alone because it had been edited —
