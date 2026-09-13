@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:11:26Z
+updated-at: 2026-09-13T21:11:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
-outcome-what: "Walked every occurrence of a bare role name per line in TestCrossReferencesCarryThePrefix (core/role/role_test.go:98) instead of only the first, and deleted the .codex/.agents setup and its comment from TestProjectTargetIsTheClaudeSkillsDirectory (core/role/role_test.go:207)."
-outcome-why: "strings.Index finds /role-lane inside /jaira-role-lane, so the prefix exemption skipped the whole line and a second, genuinely unprefixed reference on it was never seen - the test guarding the invariant rounds 1 and 2 rest on could pass over the exact line a person writes. The deleted setup created directories ProjectTarget never looks at: it is a filepath.Join, so the setup asserted nothing and told the next reader the function probes for agent directories."
-outcome-resolves: "Both round-five findings are closed; go test ./... -race green."
+outcome-what: "Restated the file mode after writing in core/role/install.go: writeFile now chmods the destination both after os.WriteFile and on the Unchanged branch, with the .sh -> 0755 rule pulled out into modeOf(dst). Added TestInstallRestoresTheExecuteBit (core/role/role_test.go:191) covering both halves: identical bytes at 0644 repaired by a plain re-run, edited bytes at 0644 repaired by --force."
+outcome-why: "os.WriteFile passes its mode to O_CREATE only, so an existing spawn.sh kept whatever permissions it had. A copy made by hand or an unzip lands without the execute bit, and neither a re-run nor 'roles install --force' put it back - the prompt in jaira-dispatcher/SKILL.md:95 then points at a script nobody can run."
+outcome-resolves: "The single testing-lane finding is closed; go test ./... -race green, gofmt clean."
 review-summary: |-
   core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
