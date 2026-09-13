@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:54:33Z
+updated-at: 2026-09-13T18:54:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -27,9 +27,8 @@ review-summary: |-
   Texteingabe laeuft nicht durch cmdKey: Filter, Titel-Eingabe und Editor lesen weiter k.Text, russischer Text bleibt russisch
   Dazu in beiden View()-Funktionen die KeyboardEnhancements, ohne die BaseCode gar nicht erst ankommt, und eine Zeile in core/release/NOTES.md
 review-gaps: |-
-  Nichts Ueberfluessiges: vier Guards in physicalRune, jeder mit einem Test, der ohne ihn umfaellt (benannte Tasten, Shift-Satzzeichen, AltGr, Lock-Zustaende)
-  internal/tui/keylayout_test.go:160 TestCmdKeyIgnoresTheLockStates traegt drei Faelle: NumLock allein, NumLock plus ScrollLock, und die Kombination aus dem ultraviolet-Testfile (NumLock|CapsLock|Shift) - keiner davon doppelt einen anderen
-  Keine neue Abhaengigkeit, keine Konfiguration, nichts Ungenutztes
+  none - vier Durchgaenge eines zweiten Modells, drei davon mit Fund (Shift-Satzzeichen, AltGr, NumLock), alle behoben und je mit einem Test festgenagelt, der ohne seinen Guard umfaellt. Der letzte Durchgang blockiert nichts mehr
+  Ehrlich offen, aber kein Mangel am Diff: der echte Kitty-Pfad und der Windows-Console-Pfad sind nur ueber konstruierte KeyPressMsg gedeckt, weil hier kein solches Terminal laeuft. Beide gefundenen Fehler in diesen Pfaden kamen aus dem Lesen des Decoders, nicht aus einem Test
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem Lock-Fix
   Acht Tabellentests und zwei Board-Tests; vier Guards, vier Faelle, die ohne ihren Guard umfallen
