@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:11:52Z
+updated-at: 2026-09-13T21:14:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -35,7 +35,7 @@ review-summary: |-
   core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
 review-gaps: "Removed boardAt (internal/cli/roles_test.go:17): byte-for-byte the same helper as lanesTestProject (internal/cli/lanes_test.go:309) in the same package - the roles tests now call that one, and the ticket import went with it. Left, each with a reason: role.File is exported and only internal/cli/roles_test.go:198 calls it from outside the package, but it is the package's only accessor for the embedded bytes and deleting it would take the CLI test's comparison of installed against built-in with it; exitCode() is a new helper over a pattern written out inline ten times elsewhere in internal/cli, so it duplicates no function and rewriting those ten is not this lane; Install() goes through Builtins(), which parses the frontmatter of all seven roles although only ID and Files are used, once per run of a command nobody runs in a loop; Install() returns its partial results beside an error and no caller reads them, which is an API shape rather than dead code. Checked and genuinely different, not merged: core/lane/share.go Export and core/lane/defaultboard.go:143 Materialise both write embedded files out, but neither has the three-way byte comparison this needs - the same conclusion round 1 reached."
-test-verdict: "fail: Suite gruen (RC=0) und DoD vollstaendig verifiziert, aber 'roles install --force' repariert ein fehlendes x-Bit an einer vorhandenen spawn.sh nicht (core/role/install.go:92, os.WriteFile setzt den Modus nur bei O_CREATE)"
+test-verdict: "pass: Suite gruen (go test ./... -race, RC=0), gofmt/go vet sauber, DoD Punkt fuer Punkt im Baum geprueft, x-Bit-Befund der ersten Runde end-to-end nachgestellt und behoben"
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
