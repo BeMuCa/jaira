@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:49:27Z
+updated-at: 2026-09-13T21:50:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -47,7 +47,7 @@ outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abg
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] Beispielskript core/hook/example/notify.sh schreiben: Zustellzeile ist die Terminal-Glocke, ntfy- und notify-send-Einzeiler auskommentiert direkt darunter; Lane-Tabelle human|signoff -> Bitte-Ton, done -> Abschluss-Ton, blocked und alle Agenten-Lanes stumm; Kopfkommentar englisch mit den JAIRA_*-Variablen, der 5s-Kappung und dem Satz, welche Zeile zu ersetzen ist
+- [x] Beispielskript core/hook/example/notify.sh schreiben: Zustellzeile ist die Terminal-Glocke, ntfy- und notify-send-Einzeiler auskommentiert direkt darunter; Lane-Tabelle human|signoff -> Bitte-Ton, done -> Abschluss-Ton, blocked und alle Agenten-Lanes stumm; Kopfkommentar englisch mit den JAIRA_*-Variablen, der 5s-Kappung und dem Satz, welche Zeile zu ersetzen ist
 - [ ] Skript einbetten: neue Datei core/hook/example.go mit go:embed example/notify.sh und einer Funktion ExampleScript() string; core/hook/hook.go bleibt unberuehrt, der Vertrag aendert sich nicht
 - [ ] Befehl 'jaira hook example' in internal/cli/hook.go ergaenzen: druckt das Skript auf stdout, schreibt keine Datei und keine Einstellung; Long-Text nennt 'jaira hook example > ~/.jaira/notify.sh && chmod +x ~/.jaira/notify.sh' und die fehlende Zeile "hook": "/home/<du>/.jaira/notify.sh"
 - [ ] Test internal/cli/hook_example_test.go nach dem Muster von runStopHook: Ausgabe von 'hook example' in eine Datei schreiben und mit sh und gesetzten JAIRA_*-Variablen ausfuehren; human, signoff und done geben hoerbare Ausgabe, in-progress, todo und blocked geben nichts, jeder Fall endet mit exit 0
