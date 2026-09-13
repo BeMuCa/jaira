@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:43:22Z
+updated-at: 2026-09-13T20:43:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -39,7 +39,7 @@ review-summary: "core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der 
 ## Definition of Done
 
 - [x] 'jaira roles install --project' legt sieben Ordner .claude/skills/jaira-<id>/SKILL.md an; ein zweiter Lauf aendert nichts; eine von Hand geaenderte Datei bleibt ohne --force unberuehrt und wird gemeldet; 'jaira roles install --global' schreibt nach ~/.claude/skills; 'jaira roles list' nennt die eingebetteten Rollen; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
-  proof: core/role/install.go:52 Install(); TestRolesInstallProjectWritesSevenRoles, TestRolesInstallGlobalWritesUnderHome, TestRolesInstallSecondRunExitsZero, TestRolesInstallLeavesAnEditedFileAloneAndExitsThree, TestRolesListNamesEveryBuiltin (internal/cli/roles_test.go); core/release/NOTES.md:18; go test ./... -race green
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh; TestDispatcherShipsItsScript (core/role/role_test.go:56); go test ./... -race green
 
 ## Options
 
