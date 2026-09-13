@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T22:05:31Z
+updated-at: 2026-09-13T22:05:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -36,6 +36,7 @@ review-gaps: "Keine Blocker. Die Definition of Done ist Punkt fuer Punkt von Han
 test-verdict: "pass: Suite gruen (go test ./... -race, RC=0), gofmt/go vet sauber, DoD Punkt fuer Punkt im Baum geprueft, x-Bit-Befund der ersten Runde end-to-end nachgestellt und behoben"
 question: "Testing ist gruen und der x-Bit-Befund ist nachgeprueft behoben. Bitte die Rollen-Installation abnehmen: passt es dir, dass ein normaler Lauf ohne --force den Dateimodus jeder unveraenderten Datei auf den eingebetteten Stand zurueckdreht (spawn.sh 0755, SKILL.md 0644)? Danach kann das Ticket weiter in review."
 review-verdict: "Angenommen. Der Diff deckt die Definition of Done vollstaendig, und die Angaben des Implementierers halten dem Diff stand - die Modus-Reparatur steht wirklich auf beiden Zweigen von writeFile (core/role/install.go:80 und :92), und TestInstallRestoresTheExecuteBit prueft wirklich beide Haelften. Defekte habe ich keine gefunden. Die zwei genannten Kleinigkeiten sind Verbesserungen, keine Maengel: die --project-Board-Pflicht ist eine Ergonomiefrage mit --into als Ausweg, der irrefuehrende Testkommentar aendert am Verhalten des Tests nichts. Beides waere ein eigenes kleines Ticket, kein Rueckversand. Unsicher bin ich bei genau einer Sache, und sie ist von Natur aus nicht pruefbar: ob der INHALT der sieben Prompts richtig ist. Getestet wird nur, dass name: zum Ordner passt und kein Querverweis ohne jaira-Praefix dasteht - was in den Prompts steht, ist Menschentext und braucht ein Menschenurteil."
+review-check: "1. export PATH=$PATH:/usr/local/go/bin  2. cd /home/alex/projects/jaira && go build -o /tmp/jaira ./cmd/jaira - es kommt keine Ausgabe, nur ein neues /tmp/jaira  3. /tmp/jaira roles list - es erscheint eine Tabelle mit genau sieben Zeilen, jaira-dispatcher bis jaira-teamlead, jede mit einem ganzen Satz als Beschreibung  4. mkdir -p /tmp/rollen && /tmp/jaira roles install --into /tmp/rollen - letzte Zaehlzeile sagt '8 written, 0 unchanged, 0 skipped, 0 overwritten'  5. find /tmp/rollen -type f - acht Dateien, sieben SKILL.md plus jaira-dispatcher/scripts/spawn.sh  6. stat -c '%a %n' /tmp/rollen/jaira-dispatcher/scripts/spawn.sh - es steht 755 davor, nicht 644  7. /tmp/jaira roles install --into /tmp/rollen; echo $? - '0 written, 8 unchanged', danach eine 0  8. echo meins >> /tmp/rollen/jaira-role-lane/SKILL.md und noch einmal /tmp/jaira roles install --into /tmp/rollen; echo $? - die Datei wird als skipped gemeldet, danach steht eine 3  9. tail -1 /tmp/rollen/jaira-role-lane/SKILL.md - da steht noch 'meins', die Datei wurde nicht angefasst  10. chmod 644 /tmp/rollen/jaira-dispatcher/scripts/spawn.sh && /tmp/jaira roles install --into /tmp/rollen --force && stat -c '%a' /tmp/rollen/jaira-dispatcher/scripts/spawn.sh - wieder 755, und die geaenderte SKILL.md ist als overwritten gemeldet  11. go test ./... -race - alle Pakete ok, kein FAIL  Nicht von Hand pruefbar: ob der Text der Prompts inhaltlich stimmt. Das ist dein Urteil, kein Test kann es ersetzen."
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
