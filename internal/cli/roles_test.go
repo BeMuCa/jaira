@@ -9,23 +9,7 @@ import (
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/role"
-	"github.com/BeMuCa/jaira/core/ticket"
 )
-
-// boardAt gives a test a real store, which 'roles install --project' needs to
-// find the repository root.
-func boardAt(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	s, err := ticket.At(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.Init(); err != nil {
-		t.Fatal(err)
-	}
-	return dir
-}
 
 func exitCode(err error) int {
 	if err == nil {
@@ -87,7 +71,7 @@ func TestRolesListJSON(t *testing.T) {
 // --project with no agent directory in the repository still lands somewhere an
 // agent looks: .claude/skills.
 func TestRolesInstallProjectWritesSevenRoles(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	out, err := runCLI(t, dir, "roles", "install", "--project")
 	if err != nil {
 		t.Fatalf("roles install --project: %v\n%s", err, out)
@@ -110,7 +94,7 @@ func TestRolesInstallProjectWritesSevenRoles(t *testing.T) {
 // exist beside it is not a second install target: a harness reading both would
 // find the same role registered twice under one command name.
 func TestRolesInstallProjectIgnoresOtherAgentDirs(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	if err := os.MkdirAll(filepath.Join(dir, ".codex"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +112,7 @@ func TestRolesInstallProjectIgnoresOtherAgentDirs(t *testing.T) {
 // --into is how a project whose agent reads somewhere else gets the roles,
 // rather than every candidate directory getting a copy.
 func TestRolesInstallIntoNamesTheDirectory(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	want := filepath.Join(dir, ".codex", "skills")
 	if out, err := runCLI(t, dir, "roles", "install", "--into", want); err != nil {
 		t.Fatalf("roles install --into: %v\n%s", err, out)
@@ -156,7 +140,7 @@ func TestRolesInstallGlobalWritesUnderHome(t *testing.T) {
 // An already-installed file is not an edited one: a second run must be quiet
 // and exit 0, or every 'jaira update' looks like a conflict.
 func TestRolesInstallSecondRunExitsZero(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	if out, err := runCLI(t, dir, "roles", "install", "--project"); err != nil {
 		t.Fatalf("first install: %v\n%s", err, out)
 	}
@@ -170,7 +154,7 @@ func TestRolesInstallSecondRunExitsZero(t *testing.T) {
 }
 
 func TestRolesInstallLeavesAnEditedFileAloneAndExitsThree(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	if out, err := runCLI(t, dir, "roles", "install", "--project"); err != nil {
 		t.Fatalf("first install: %v\n%s", err, out)
 	}
@@ -202,7 +186,7 @@ func TestRolesInstallLeavesAnEditedFileAloneAndExitsThree(t *testing.T) {
 }
 
 func TestRolesInstallJSONReportsEveryFile(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	out, err := runCLI(t, dir, "--json", "roles", "install", "--project")
 	if err != nil {
 		t.Fatalf("roles install --json: %v\n%s", err, out)
@@ -234,7 +218,7 @@ func TestRolesInstallJSONReportsEveryFile(t *testing.T) {
 // Neither flag, or both, is a usage mistake and must exit 2 rather than doing
 // something the caller did not ask for.
 func TestRolesInstallNeedsExactlyOneTarget(t *testing.T) {
-	dir := boardAt(t)
+	dir := lanesTestProject(t)
 	for _, args := range [][]string{
 		{"roles", "install"},
 		{"roles", "install", "--project", "--global"},
