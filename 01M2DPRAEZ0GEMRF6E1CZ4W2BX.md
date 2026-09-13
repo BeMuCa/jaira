@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:43:44Z
+updated-at: 2026-09-13T18:44:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "AltGr wird nicht mehr als Kommandotaste gelesen"
-outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr; ohne Guard waere AltGr+Buchstabe als Kommando im Board gelandet"
-outcome-resolves: "Alles was mehr traegt als Shift oder CapsLock bleibt unangetastet; drei Guards, drei Tests, die ohne sie umfallen"
+outcome-what: "Num Lock und Scroll Lock zaehlen nicht mehr als gehaltener Modifier"
+outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck; der Guard haette die Umsetzung dort komplett abgeschaltet"
+outcome-resolves: "Die Maske in physicalRune nimmt beide Lock-Zustaende aus, TestCmdKeyIgnoresTheLockStates haelt es fest, der Kommentar sagt jetzt warum"
 review-summary: |-
   Vierter Durchgang: der AltGr-Guard sitzt als eine Bedingung in physicalRune (internal/tui/keylayout.go:69), direkt neben der Bedingung, die benannte Tasten aussortiert - keine neue Ebene, keine Verzweigung bei den Aufrufern
   internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
