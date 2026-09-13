@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:06:29Z
+updated-at: 2026-09-13T20:09:51Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-6599
-claimed-at: 2026-09-13T19:56:51Z
+claimed-by: DESKTOP-RFTCH11-45975
+claimed-at: 2026-09-13T20:07:20Z
 outcome-what: "core/role: seven role prompts embedded via go:embed all:builtin, plus target resolution and a three-way installer (written/unchanged/skipped/overwritten). internal/cli/roles.go: 'jaira roles list' and 'jaira roles install --project|--global [--force]', --json on both, exit 3 when an edited file is left alone. Prompts frozen from ~/.claude/skills with name: and every cross-reference rewritten to the jaira- prefix."
 outcome-why: "The role prompts lived in one person's ~/.claude/skills. A teammate who cloned got the board and nobody to drive it. Shipping them inside the binary makes them travel with the tool, the way the lanes already do."
 outcome-resolves: "jaira roles install --project writes .claude/skills/jaira-<id>/SKILL.md for all seven roles, --global writes ~/.claude/skills, a second run reports only unchanged and exits 0, an edited file is left alone, reported and exits 3, --force replaces it, jaira roles list names them, core/release/NOTES.md carries a line under ## Unreleased, and go test ./... -race is green."
+review-summary: |-
+  core/role/target.go:20 ProjectTargets liefert bis zu drei Zielverzeichnisse (.claude, .codex, .agents), und internal/cli/roles.go:110 installiert in jedes davon dieselben sieben Rollen. Ein Harness liest Skills aus mehreren dieser Ordner, also steht jaira-teamlead dann doppelt registriert da, und das Repo traegt dreimal dieselben Prompts. Die DoD nennt genau ein Ziel. Auf ein Verzeichnis reduzieren: .claude/skills, und wenn ein anderer Ordner gewuenscht ist, per Flag statt per Fan-out.
+  core/role/target.go:8-17 begruendet die Auswahl mit core/board/announce.go:295, macht aber das Gegenteil: announce.go schreibt AGENTS.md UND CLAUDE.md immer, target.go schreibt nur in existierende Ordner. Entweder die Regel uebernehmen oder den Verweis streichen und schreiben, warum ein Verzeichnisbaum anders behandelt wird als eine Markdown-Datei.
+  internal/cli/roles.go:171-199 installDirs/skillsDirOf rekonstruiert die Skills-Verzeichnisse aus den geschriebenen Pfaden zurueck, obwohl RunE sie als targets bereits in der Hand hat. targets an reportRoleInstall durchreichen und beide Helfer loeschen.
+  core/role/role.go:40 Role.Name und der name:-Zweig in frontmatter() liefern nie etwas anderes als Role.ID - der Paketkommentar sagt selbst, dass das Verzeichnis die API ist, und internal/cli/roles_test.go:82 pinnt Name == ID fuer alle sieben Rollen fest. Feld, Parse-Zweig und das name-Feld in --json entfernen; description bleibt.
+  core/role/install.go:57-60 der within()-Check prueft einen Zustand, den sein eigener Kommentar als unmoeglich beschreibt: Rollen-ID und relativer Pfad kommen aus dem eingebetteten FS und stehen zur Compile-Zeit fest. Check, Helfer und core/role/role_test.go:208-213 streichen.
+  core/role/install.go:129 Twins() steht in Ziel und DoD nicht und loest eine einmalige Migration fuer genau die Rechner, auf denen die Prompts vorher von Hand lagen - also den einen. Es kostet jeden spaeteren Leser Code in install.go, eine Zeile CLI-Ausgabe und das dauerhafte JSON-Feld unprefixed. Streichen und die Umbenennung stattdessen als Zeile in core/release/NOTES.md erwaehnen.
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
@@ -75,3 +82,4 @@ outcome-resolves: "jaira roles install --project writes .claude/skills/jaira-<id
 - Das Ausfuehrbar-Bit ueberlebt embed.FS nicht: alles kommt als 0644 wieder heraus. install.go entscheidet deshalb an der Endung (.sh -> 0755). Ein spawn.sh ohne x-Bit ist eine kaputte Rolle, und nichts haette es gemeldet.
 - Der offene Punkt aus der Recherche ist erledigt, aber anders als 'stillschweigend ein zweites Paar anlegen': das Praefix macht jaira-teamlead und teamlead zu zwei verschiedenen Kommandos, es kollidiert also nichts. Gefaehrlich ist nur, dass jemand weiter den alten Namen tippt. role.Twins() meldet die unpraefixierte Kopie und loescht sie nie - ein Verzeichnis, das dieses Werkzeug nicht geschrieben hat, entfernt es auch nicht.
 Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue Rolle nach einem Upgrade muss man selbst holen. Das gehoert in ein eigenes Ticket, sobald jemand es vermisst.
+- **2026-09-13 20:09 · Alexander Sacharov** — critique: sechs Befunde, alle in review-summary mit Datei und Gegenvorschlag. Der gewichtigste ist das Fan-out in core/role/target.go: dieselben sieben Rollen landen in jedem existierenden Agent-Ordner, ein Harness liest mehrere davon, also ist jaira-teamlead danach doppelt registriert. Die DoD nennt genau ein Ziel - das ist kein Geschmacksurteil, sondern eine Abweichung von dem, was das Ticket verlangt. Die uebrigen fuenf sind Ballast: installDirs/skillsDirOf rekonstruiert Zielpfade, die der Aufrufer schon hat; Role.Name ist ein zweiter Name fuer Role.ID; within() prueft einen zur Compile-Zeit unmoeglichen Zustand; Twins() ist eine Einmal-Migration fuer genau einen Rechner und traegt dafuer ein dauerhaftes JSON-Feld. Nicht beanstandet und bewusst stehen gelassen: der Byte-Vergleich statt os.Stat wie lane.Export - drei Zustaende brauchen drei Antworten, die Begruendung im Commit traegt. Nebenbei, kein eigener Befund: der Doc-Kommentar ueber SkippedAny in core/role/install.go:152 beginnt mit 'Skipped reports', also mit dem falschen Namen.
