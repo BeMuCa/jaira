@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:07:35Z
+updated-at: 2026-09-13T17:07:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -25,11 +25,9 @@ review-summary: |-
   internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
   Zwei Kommentare korrigiert, die nach dem Fix nicht mehr stimmten (keylayout.go:49 und :95): 'jede Belegung ueber BaseCode' gilt nur noch fuer Buchstaben
 review-gaps: |-
-  internal/tui/keylayout.go:60 physicalRune ersetzt das Zeichen auch dann durch BaseCode, wenn Shift im Spiel ist: shift+/ meldet Text '?' und BaseCode '/', cmdKey gibt '/' zurueck und oeffnet den Filter, wo das Board um seine Hilfe gebeten wurde (model.go:1280). Auf dem Windows-Console-Pfad ist BaseCode immer gesetzt, dort trifft es auch eine US-Belegung. Gleiche Wurzel: shift+1 kaeme als '1' an und schaltet die Board-Nummer um (model.go:1230)
-  internal/tui/keylayout.go:44 Der ctrl/alt-Zweig in cmdKey ist unerreichbar: der Decoder leert Key.Text, sobald ein Modifier ueber Shift hinaus anliegt, und physicalRune steigt bei leerem Text aus. Toter Code
-  internal/tui/keylayout_test.go:36 TestCmdKeyKeepsModifiers baut eine Nachricht, die kein Decoder erzeugt (Text gesetzt UND ModCtrl) - der Test prueft nichts
-  core/release/NOTES.md:18 'jede Belegung' ist zu stark und verschweigt die Shift-Regression - auf Buchstaben-Kommandotasten einschraenken
-  Geprueft und unbedenklich: die KeyboardEnhancements brechen das Tippen auf Kitty-Terminals nicht - faehlt Flag 16, stellt der Decoder Text aus Code wieder her (decoder.go:1503)
+  Nichts Ueberfluessiges mehr: der tote ctrl/alt-Zweig ist im vorigen Schritt rausgeflogen, cmdKey hat vier Aufrufer, physicalRune einen, usPosition zwei
+  internal/tui/keylayout.go:64 Die drei Ausstiegsbedingungen (keine einzelne Rune, Leerzeichen, nicht graphisch) sehen nach Gurt und Hosentraeger aus, sind es aber nicht: leerer Text faengt benannte Tasten, das Leerzeichen faengt space, dessen Text ' ' ist und dessen Kommandoname 'space' lautet
+  Keine neuen Abhaengigkeiten, keine Konfiguration, kein Schalter; die Tabelle bleibt vollstaendig statt auf die heute gebundenen Tasten zugeschnitten, weil eine zugeschnittene Tabelle still bricht, sobald jemand '[' bindet
 test-verdict: |-
   go build, go vet und go test ./... sind gruen (internal/tui 41s, internal/cli 9.7s, alle core-Pakete)
   Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
