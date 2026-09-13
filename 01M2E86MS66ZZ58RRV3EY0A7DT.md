@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:46:54Z
+updated-at: 2026-09-13T21:47:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -89,3 +89,16 @@ Frage 3 - schreibt der Befehl settings.json: nein. Er druckt und nennt die fehle
 Die Regel, die das Beispiel tragen muss, und was sie konkret heisst: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt. Das sind die Lanes mit requires-question oder requires-human-exit (human, signoff) - dort steht die Arbeit bis jemand entscheidet. done bekommt einen anderen, abschliessenden Ton, weil es das Ende ist und nicht die Bitte. blocked ist der Grenzfall: die Lane wartet laut Definition auf eine externe Abhaengigkeit, nicht auf den Menschen - das handgeschriebene notify.sh gibt ihr trotzdem request. Fuer das mitgelieferte Beispiel bleibt blocked stumm, weil sonst die Regel, die es lehren soll, im Beispiel selbst schon gebrochen ist. Alles andere - jeder Wechsel zwischen Agenten-Lanes - ist stumm.
 
 Offen und bewusst nicht hier geloest: dass die Lane-Namen im Beispiel hart stehen muessen, weil "jaira lanes --json" die Gates nicht ausgibt. Auf einem Board mit eigenen Lanes ist das Beispiel dann stumm statt falsch, was die ertraeglichere Richtung ist. Gehoert als eigenes Ticket erfasst, nicht hier.
+- **2026-09-13 21:47 · Alexander Sacharov** — Warum der Plan so aussieht (Lane pre-process; gelesen: internal/cli/hook.go, internal/cli/hook_test.go, core/hook/hook.go, core/release/NOTES.md, README.md 338-350 und 550-567, ~/.jaira/notify.sh).
+
+Drei Entscheidungen, die die Brainstorm-Notizen offen gelassen haben und die der Plan jetzt festlegt:
+
+1. Wo das Skript liegt: core/hook/example/notify.sh, eingebettet von einer neuen Datei core/hook/example.go. Nicht in internal/cli, weil jaira seine Vorlagen in core/ einbettet (core/lane/builtin/*.md, core/release/NOTES.md) und internal/cli heute kein go:embed hat. core/hook/hook.go selbst wird nicht angefasst - das Ticket verbietet Aenderungen am Vertrag, eine zusaetzliche Datei im selben Paket ist keine.
+
+2. Warum die Terminal-Glocke die Zustellzeile ist und nicht nur ein Kommentar: sie ist das Einzige, was ohne Konto, URL und Installation wirklich etwas tut - und damit das Einzige, was ein Test beobachten kann. Ein Beispiel, dessen aktive Zeile auskommentiert ist, laeuft zwar fehlerfrei durch, aber die DoD-Zeile "ein Lane-Wechsel in eine Lane, die einem Menschen gehoert, ist hoerbar von einem gewoehnlichen unterscheidbar" waere dann nicht pruefbar. Mit der Glocke ist sie es: das Byte ist da oder nicht.
+
+3. Wie getestet wird: exakt nach dem Muster, das internal/cli/hook_test.go fuer 'hook print' schon aufgebaut hat - die Ausgabe des Befehls wird als das ausgefuehrt, was der Nutzer einfuegt, nicht eine Go-Umschreibung davon. Der Unterschied: hier gibt es keinen Stub auf PATH, sondern gesetzte JAIRA_*-Variablen und die Frage, ob Ausgabe entsteht.
+
+Was der Plan bewusst nicht tut: 'jaira hook print' umbenennen. Die zwei Befehle unter 'hook' meinen weiterhin Unterschiedliches (Claude-Code-Stop-Hook vs. move/claim-Hook); der Plan loest das mit einem Halbsatz in der README statt mit einer Umbenennung, die kein Teil dieses Tickets ist.
+
+Reihenfolge: Skript zuerst, dann Einbettung, dann Befehl, dann Tests. Umgekehrt haette man einen Befehl, der eine Datei druckt, deren Inhalt noch nicht entschieden ist - und die Zustellzeile ist die einzige echte Entscheidung im Skript.
