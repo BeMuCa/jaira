@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:53:06Z
+updated-at: 2026-09-13T20:53:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -130,3 +130,4 @@ Nicht als Befund gefuehrt, weil es ein eigenes Ticket waere: das Skript setzt he
 Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleich statt os.Stat (Runde 1), --into (Runde 1), ticket.ParseDoc und board.FirstSentence (Runde 2), der Ort von spawn.sh unter jaira-dispatcher (Runde 3), der .env-Wachposten in spawn.sh samt der bewusst projektspezifischen Variablennamen (Runde 4), role_test.go:39 mit der name:-Invariante, und der handgeschriebene Usage-Zweig in internal/cli/roles.go:82-89.
 
 Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rechners oder ein ~/.claude/skills als Quelle - was ausgeliefert wird, steht auf jedem Rechner gleich da. Nicht als Befund gefuehrt, weil es nicht diese Lane ist: os.WriteFile setzt bei einer bestehenden Datei den Modus nicht neu, ein --force auf ein schon vorhandenes spawn.sh ohne x-Bit repariert das Bit also nicht. Ob das je eintritt, gehoert in die Testing-Lane, nicht hierher.
+- **2026-09-13 20:53 · Alexander Sacharov** — Commit dieser Runde: 3f99c1b.
