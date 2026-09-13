@@ -24,14 +24,14 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:31:37Z
+updated-at: 2026-09-13T20:33:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
 outcome-what: "docs/STACK.md tragt jetzt einen eigenen H1-Titel und eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt"
 outcome-why: "die Datei war die gekuerzte Zweitfassung, sagte das aber nirgends - wer nur dem Link aus CLAUDE.md folgte, hielt sie fuer das Ganze"
 outcome-resolves: "die einzige Feststellung der critique vom 2026-09-13 20:29"
-review-summary: "docs/STACK.md:1 beginnt mit '## Technology Stack' und direkt darunter '## 1. Language: Go — not Rust'; die beiden anderen Dateien im selben Verzeichnis (docs/AGENTS.md:1, docs/COMMANDS.md:1) beginnen mit einem H1-Titel. Setz '# Technology Stack' als Zeile 1 darueber und darunter genau eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt - wer der Verweiszeile aus CLAUDE.md:29 folgt, landet sonst in einer gekuerzten Zweitfassung, der nicht anzusehen ist, dass sie gekuerzt ist. Der verschobene Text bleibt dabei unveraendert; es kommen nur zwei Zeilen davor."
+review-summary: "none"
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
