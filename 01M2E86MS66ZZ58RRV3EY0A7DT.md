@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:55:35Z
+updated-at: 2026-09-13T21:55:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -56,7 +56,7 @@ outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abg
 - [x] README.md: im Hook-Absatz bei Zeile 344-350 zwei Saetze auf 'jaira hook example'; bei Zeile 561 einen Halbsatz, dass 'hook print' und 'hook example' zwei unverwandte Dinge sind
 - [x] core/release/NOTES.md: eine englische Zeile unter ## Unreleased, als Anweisung formuliert
 - [x] go test ./... -race gruen, danach die DoD-Zeile mit --proof abhaken
-- [ ] Folgeticket erfassen: 'jaira lanes --json' gibt requires-question und requires-human-exit nicht aus, deshalb stehen die Lane-Namen im Beispiel hart und es ist auf einem Board mit eigenen Lanes stumm
+- [x] Folgeticket erfassen: 'jaira lanes --json' gibt requires-question und requires-human-exit nicht aus, deshalb stehen die Lane-Namen im Beispiel hart und es ist auf einem Board mit eigenen Lanes stumm
 
 ## Progress
 - **2026-09-13 21:42 · Alexander Sacharov** — Befund im Code (Lane brainstorm; gelesen: core/hook/hook.go, core/settings/settings.go, internal/cli/hook.go, core/lane/lane.go, README.md 338-350 und 561-567, hooks/sync-tasks.sh).
