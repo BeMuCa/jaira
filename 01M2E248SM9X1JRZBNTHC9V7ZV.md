@@ -24,14 +24,16 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:43:58Z
+updated-at: 2026-09-13T20:46:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
 outcome-what: "Moved core/role/builtin/jaira-teamlead/scripts/ to core/role/builtin/jaira-dispatcher/scripts/ and renamed TestTeamleadShipsItsScript to TestDispatcherShipsItsScript, with the stat path and two source comments pulled along."
 outcome-why: "jaira-dispatcher/SKILL.md:95 is the only prompt that names scripts/spawn.sh, and that path is relative to its own skill folder, so after 'roles install' the reference pointed at nothing while jaira-teamlead carried a script its own prompt never mentions."
 outcome-resolves: "The shipped dispatcher role now finds scripts/spawn.sh where its prompt says it is; go test ./... -race green."
-review-summary: "core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der falschen Rolle. Der einzige Prompt, der das Skript nennt, ist core/role/builtin/jaira-dispatcher/SKILL.md:95 ('scripts/spawn.sh derives both from the worktree slug') - und dieser Pfad ist relativ zum eigenen Skill-Ordner. Nach 'roles install' hat .claude/skills/jaira-dispatcher/ kein scripts/, der Verweis geht ins Leere; .claude/skills/jaira-teamlead/ traegt ein Skript, das sein eigenes SKILL.md mit keinem Wort erwaehnt (grep 'spawn|scripts' auf jaira-teamlead/SKILL.md ist leer). Der Dispatcher ist auch der, der Worktrees und Panes anlegt (jaira-dispatcher/SKILL.md:37,70,92), der Teamlead delegiert nur (jaira-teamlead/SKILL.md:40). Das Verzeichnis scripts/ nach core/role/builtin/jaira-dispatcher/ verschieben. Mitzuziehen: core/role/role_test.go:55-57 TestTeamleadShipsItsScript samt Kommentar ('teamlead references a script' ist heute schon falsch) und core/role/role_test.go:128 der Stat-Pfad fuer das x-Bit - beide auf jaira-dispatcher umschreiben."
+review-summary: |-
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:20 bricht in jedem Repo ohne .env hart ab. Zeile 5 setzt 'set -euo pipefail', Zeile 20 macht 'cp "$root/.env" "$wt/.env"' unbedingt - jaira selbst hat kein .env (ls im Repo-Root: kein .env, kein compose-File), also beendet sich das Skript mit Exit 1, bevor ueberhaupt eine Pane entsteht. Die Runden 1-3 haben nur geprueft, WO das Skript liegt, nie WAS darin steht; ab diesem Ticket wird der Inhalt mit dem Binary verteilt und ist auf jedem Rechner eines Teamkollegen die Wahrheit. Der projektspezifische Block (Zeilen 14-16 Port-Offset und 20-30 .env-Kopie mit COMPOSE_PROJECT_NAME/HTTP_PORT/DB_PORT_HOST/VITE_PORT_HOST/BACKEND_PORT_HOST) gehoert hinter ein 'if [ -f "$root/.env" ]', damit der generische Teil - Worktree anlegen, Pane splitten, claude starten, Prompt tippen - in einem Repo ohne Container-Stack durchlaeuft. jaira-dispatcher/SKILL.md:94 sagt selbst 'Auf einem Projekt mit einem Container-Stack', das Skript setzt einen aber voraus.
+  internal/cli/roles_test.go:217 deklariert 'Unprefixed []string `json:"unprefixed"`' - ein Rest der in Runde 1 entfernten Twins(). reportRoleInstall in internal/cli/roles.go:121-129 gibt kein Feld 'unprefixed' mehr aus, und kein Test liest payload.Unprefixed. Die Zeile ersatzlos streichen.
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
