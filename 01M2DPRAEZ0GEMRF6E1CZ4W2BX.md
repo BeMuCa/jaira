@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:35:30Z
+updated-at: 2026-09-13T18:35:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -25,11 +25,9 @@ review-summary: |-
   internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
   Kein Fund mehr offen; die Einschraenkung auf Buchstaben und die beiden Guards erzaehlen im Kommentar dieselbe Geschichte wie im Code
 review-gaps: |-
-  internal/tui/keylayout.go:80 AltGr faellt auf dem Windows-Console-Pfad in die Buchstaben-Ebene: der Decoder setzt Key.Text auch bei AltGr (decoder.go:2035, LEFT_CTRL|RIGHT_ALT) und Mod traegt dann ModCtrl|ModAlt. AltGr+о wuerde als blankes 'j' im Kommando-Handler landen und den Cursor bewegen, wo auf master nichts passierte. Gleiches fuer AltGr-Buchstaben lateinischer Belegungen (polnisches AltGr+a = ą, BaseCode 'a')
-  internal/tui/keylayout_test.go:44 Der ModShift-Guard ist von keinem Test festgenagelt: '?', '!' und '>' stehen ohnehin nicht in usPosition, die Faelle bestehen auch ohne Guard. Der Fall, fuer den der Guard wirklich da ist, fehlt - auf AZERTY ist der Punkt shift+';', ohne Guard haette cmdKey '/' zurueckgegeben und beim Tippen eines Punktes den Filter geoeffnet
-  internal/tui/keylayout.go:20 Der Kopfkommentar sagt weiterhin, BaseCode sei fuer jede Belegung richtig und brauche keine Tabelle; nach der Einschraenkung gilt das nur noch fuer Buchstaben
-  core/release/NOTES.md:18 'and the rest' im ersten Punkt deckt auch ctrl+d/ctrl+u mit ab, die genau nicht mitkommen
-  Bestaetigt geschlossen: die Hilfe-Taste ist auf allen drei Pfaden wieder erreichbar (auf JZUKEN ist '?' shift+7 und laeuft unveraendert durch), shift+Ziffer schaltet keine Boards mehr um, der tote ctrl/alt-Zweig ist raus, die NOTES-Zeile stimmt
+  Nichts Ueberfluessiges: physicalRune hat jetzt drei Ausstiege und zwei Zweige, jeder mit einem Fall, den ein Test umfallen laesst, wenn man ihn entfernt - TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyLeavesShiftedPunctuationAlone, TestCmdKeyIgnoresAltGr
+  internal/tui/keylayout_test.go:44 Die vier Faelle in TestCmdKeyLeavesShiftedPunctuationAlone sind nicht redundant: einer pinnt den pty-Pfad ohne Shift, einer den Kitty/Windows-Pfad mit BaseCode, einer die Ziffernreihe, einer den Shift-Guard selbst
+  Keine ungenutzten Symbole, keine Konfiguration, keine Abhaengigkeit dazugekommen
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem Shift-Fix
   Neu: TestCmdKeyLeavesShiftedPunctuationAlone deckt shift+/ ('?'), shift+1 ('!') und shift+. ('>') mit gesetztem BaseCode ab - genau der Pfad, der die Hilfe-Taste in den Filter geschickt haette
