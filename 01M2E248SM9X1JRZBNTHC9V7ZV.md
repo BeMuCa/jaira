@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:14:35Z
+updated-at: 2026-09-13T21:14:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -36,6 +36,7 @@ review-summary: |-
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
 review-gaps: "Removed boardAt (internal/cli/roles_test.go:17): byte-for-byte the same helper as lanesTestProject (internal/cli/lanes_test.go:309) in the same package - the roles tests now call that one, and the ticket import went with it. Left, each with a reason: role.File is exported and only internal/cli/roles_test.go:198 calls it from outside the package, but it is the package's only accessor for the embedded bytes and deleting it would take the CLI test's comparison of installed against built-in with it; exitCode() is a new helper over a pattern written out inline ten times elsewhere in internal/cli, so it duplicates no function and rewriting those ten is not this lane; Install() goes through Builtins(), which parses the frontmatter of all seven roles although only ID and Files are used, once per run of a command nobody runs in a loop; Install() returns its partial results beside an error and no caller reads them, which is an API shape rather than dead code. Checked and genuinely different, not merged: core/lane/share.go Export and core/lane/defaultboard.go:143 Materialise both write embedded files out, but neither has the three-way byte comparison this needs - the same conclusion round 1 reached."
 test-verdict: "pass: Suite gruen (go test ./... -race, RC=0), gofmt/go vet sauber, DoD Punkt fuer Punkt im Baum geprueft, x-Bit-Befund der ersten Runde end-to-end nachgestellt und behoben"
+question: "Testing ist gruen und der x-Bit-Befund ist nachgeprueft behoben. Bitte die Rollen-Installation abnehmen: passt es dir, dass ein normaler Lauf ohne --force den Dateimodus jeder unveraenderten Datei auf den eingebetteten Stand zurueckdreht (spawn.sh 0755, SKILL.md 0644)? Danach kann das Ticket weiter in review."
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
