@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:52:36Z
+updated-at: 2026-09-13T20:52:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -122,3 +122,11 @@ Nicht als Befund gefuehrt, weil es ein eigenes Ticket waere: das Skript setzt he
 - Bewusst NICHT generisch gemacht: die Variablennamen (COMPOSE_PROJECT_NAME, VITE_PORT_HOST, ...) und der Worktree-Name rg-$slug stammen aus genau einem Projekt. Sie bleiben stehen, weil ein Repo ohne .env den Block jetzt gar nicht mehr betritt - ein konfigurierbares Port-Schema waere Mechanik fuer einen Nutzer, den es nicht gibt. Wer ein zweites Projekt mit Stack anschliesst, entscheidet dann.
 - Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, spawn.sh war nie in einem Binary. Gleiche Begruendung wie in Runde 3.
 - **2026-09-13 20:49 · Alexander Sacharov** — Commit dieser Runde: e03f8f0.
+- **2026-09-13 20:52 · Alexander Sacharov** — critique, fuenfte Runde: zwei Befunde, beide in core/role/role_test.go, beide mit Datei und Gegenvorschlag in review-summary. Kein Wiederaufwaermen: die Tests selbst hat bisher keine Runde gelesen.
+
+- TestCrossReferencesCarryThePrefix (Zeile 99) haelt die Invariante, an der Runde 1 und 2 haengen - kein Querverweis darf auf dem blanken Namen stehen. Der Test prueft aber nur das erste Vorkommen je Zeile: strings.Index findet /role-lane innerhalb von /jaira-role-lane, die /jaira-Pruefung ueberspringt die Zeile, und ein zweiter, wirklich unpraefixierter Verweis in derselben Zeile faellt durch. Eine Zeile wie 'gib es an /jaira-role-lane, nicht an /role-lane' ist genau die, die jemand schreibt. Alle Vorkommen durchgehen statt nur das erste.
+- TestProjectTargetIsTheClaudeSkillsDirectory (Zeile 99-103) legt .codex und .agents an, bevor es ProjectTarget aufruft. ProjectTarget ist ein filepath.Join und sieht nie auf die Platte - der Aufbau prueft nichts und behauptet dem naechsten Leser gegenueber, die Funktion suche nach Agent-Ordnern. Rest des Fan-outs aus Runde 1. Der Aufbau samt Kommentar weg; die Aussage steht end-to-end schon in internal/cli/roles_test.go:112.
+
+Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleich statt os.Stat (Runde 1), --into (Runde 1), ticket.ParseDoc und board.FirstSentence (Runde 2), der Ort von spawn.sh unter jaira-dispatcher (Runde 3), der .env-Wachposten in spawn.sh samt der bewusst projektspezifischen Variablennamen (Runde 4), role_test.go:39 mit der name:-Invariante, und der handgeschriebene Usage-Zweig in internal/cli/roles.go:82-89.
+
+Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rechners oder ein ~/.claude/skills als Quelle - was ausgeliefert wird, steht auf jedem Rechner gleich da. Nicht als Befund gefuehrt, weil es nicht diese Lane ist: os.WriteFile setzt bei einer bestehenden Datei den Modus nicht neu, ein --force auf ein schon vorhandenes spawn.sh ohne x-Bit repariert das Bit also nicht. Ob das je eintritt, gehoert in die Testing-Lane, nicht hierher.
