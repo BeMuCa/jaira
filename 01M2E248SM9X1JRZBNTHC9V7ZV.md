@@ -23,10 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:06:29Z
+updated-at: 2026-09-13T20:07:20Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-6599
-claimed-at: 2026-09-13T19:56:51Z
+claimed-by: DESKTOP-RFTCH11-45975
+claimed-at: 2026-09-13T20:07:20Z
 outcome-what: "core/role: seven role prompts embedded via go:embed all:builtin, plus target resolution and a three-way installer (written/unchanged/skipped/overwritten). internal/cli/roles.go: 'jaira roles list' and 'jaira roles install --project|--global [--force]', --json on both, exit 3 when an edited file is left alone. Prompts frozen from ~/.claude/skills with name: and every cross-reference rewritten to the jaira- prefix."
 outcome-why: "The role prompts lived in one person's ~/.claude/skills. A teammate who cloned got the board and nobody to drive it. Shipping them inside the binary makes them travel with the tool, the way the lanes already do."
 outcome-resolves: "jaira roles install --project writes .claude/skills/jaira-<id>/SKILL.md for all seven roles, --global writes ~/.claude/skills, a second run reports only unchanged and exits 0, an edited file is left alone, reported and exits 3, --force replaces it, jaira roles list names them, core/release/NOTES.md carries a line under ## Unreleased, and go test ./... -race is green."
