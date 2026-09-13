@@ -1,7 +1,7 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,10 +23,13 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:47:14Z
+updated-at: 2026-09-13T21:47:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
+outcome-what: "Plan fuer das mitgelieferte Hook-Beispiel festgelegt: neun Schritte von Skript ueber go:embed und 'jaira hook example' bis README, NOTES.md und Tests"
+outcome-why: "Die Brainstorm-Lane hatte die drei offenen Fragen entschieden, aber nicht gesagt, wo die Datei liegt, was die Zustellzeile ist und wie das Hoerbare pruefbar wird"
+outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abgearbeitet werden kann"
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
