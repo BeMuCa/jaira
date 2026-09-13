@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:49:54Z
+updated-at: 2026-09-13T20:52:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -32,8 +32,8 @@ outcome-what: "Guarded the project-specific container-stack block in core/role/b
 outcome-why: "With 'set -euo pipefail' on line 5, the unconditional 'cp $root/.env' aborted the script with exit 1 in any repo without a .env — jaira itself included — before a pane ever existed; from this ticket on that file ships inside the binary, so the break would reach every teammate. The Unprefixed field was a leftover of the Twins() removal in round 1: nothing emits it, nothing reads it."
 outcome-resolves: "spawn.sh now creates the worktree, splits the pane, starts claude and types the prompt in a repo with no container stack, and still writes per-worker ports where a .env exists; go test ./... -race green."
 review-summary: |-
-  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:20 bricht in jedem Repo ohne .env hart ab. Zeile 5 setzt 'set -euo pipefail', Zeile 20 macht 'cp "$root/.env" "$wt/.env"' unbedingt - jaira selbst hat kein .env (ls im Repo-Root: kein .env, kein compose-File), also beendet sich das Skript mit Exit 1, bevor ueberhaupt eine Pane entsteht. Die Runden 1-3 haben nur geprueft, WO das Skript liegt, nie WAS darin steht; ab diesem Ticket wird der Inhalt mit dem Binary verteilt und ist auf jedem Rechner eines Teamkollegen die Wahrheit. Der projektspezifische Block (Zeilen 14-16 Port-Offset und 20-30 .env-Kopie mit COMPOSE_PROJECT_NAME/HTTP_PORT/DB_PORT_HOST/VITE_PORT_HOST/BACKEND_PORT_HOST) gehoert hinter ein 'if [ -f "$root/.env" ]', damit der generische Teil - Worktree anlegen, Pane splitten, claude starten, Prompt tippen - in einem Repo ohne Container-Stack durchlaeuft. jaira-dispatcher/SKILL.md:94 sagt selbst 'Auf einem Projekt mit einem Container-Stack', das Skript setzt einen aber voraus.
-  internal/cli/roles_test.go:217 deklariert 'Unprefixed []string `json:"unprefixed"`' - ein Rest der in Runde 1 entfernten Twins(). reportRoleInstall in internal/cli/roles.go:121-129 gibt kein Feld 'unprefixed' mehr aus, und kein Test liest payload.Unprefixed. Die Zeile ersatzlos streichen.
+  core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
+  core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
