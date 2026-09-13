@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:45:41Z
+updated-at: 2026-09-13T18:45:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Num Lock und Scroll Lock zaehlen nicht mehr als gehaltener Modifier"
-outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck; der Guard haette die Umsetzung dort komplett abgeschaltet"
-outcome-resolves: "Die Maske in physicalRune nimmt beide Lock-Zustaende aus, TestCmdKeyIgnoresTheLockStates haelt es fest, der Kommentar sagt jetzt warum"
+outcome-what: "Lock-Zustaende zaehlen nicht mehr als gehaltener Modifier"
+outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck - der Guard haette die Umsetzung dort ganz abgeschaltet"
+outcome-resolves: "physicalRune erlaubt Shift, CapsLock, NumLock und ScrollLock; TestCmdKeyIgnoresTheLockStates haelt es fest"
 review-summary: |-
   Fuenfter Durchgang: die Maske nennt jetzt vier erlaubte Bits statt zwei, und der Kommentar darueber erklaert die Trennlinie (Modifier aendern den Tastendruck, Lock-Zustaende nicht) statt sie nur zu behaupten - der Fehler war eine falsche Praemisse im Kommentar, nicht eine falsche Zeile Code
   internal/tui/keylayout.go:74 Maske statt Aufzaehlung der verbotenen Modifier bleibt richtig: die erlaubte Menge ist klein und benennbar, die verbotene waechst mit jedem Modifier, den bubbletea dazunimmt
@@ -34,7 +34,7 @@ test-verdict: |-
   Dreimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
   Unveraendert offen und nur ueber konstruierte KeyPressMsg gedeckt: der echte Kitty-Pfad und der Windows-Console-Pfad. Der NumLock-Fehler kam genau von dort, gefunden hat ihn das Lesen des Decoders, nicht ein Test - wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte es einmal mit eingeschaltetem NumLock ausprobieren
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: ""
+question: "Kurz gegenpruefen, das Binary ist wieder frisch: 'jaira board' mit russischer Belegung, о/л bewegen, й beenden. Fuer deinen Terminal aendert der Fix nichts - Windows Terminal meldet keine Lock-Zustaende -, aber getestet werden soll, was installiert ist. Falls du irgendwo ein kitty, ghostty, WezTerm oder foot hast: dort bitte mit eingeschaltetem NumLock probieren, das ist der Pfad, den hier kein Terminal hergibt."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
