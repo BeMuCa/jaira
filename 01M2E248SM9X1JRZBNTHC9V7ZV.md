@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T19:01:39Z
+updated-at: 2026-09-13T19:01:42Z
 updated-by: Alexander Sacharov
 ---
 
@@ -43,4 +43,9 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-13 19:01 · Alexander Sacharov** — Recherche 2026-09-13, code.claude.com/docs/en/skills (Primaerquelle, HIGH):
+- SKILL.md muss genau eine Ebene tief liegen: ~/.claude/skills/<name>/SKILL.md bzw. .claude/skills/<name>/SKILL.md. Verschachtelte Ordner sind kein Namensraum. skills/jaira/teamlead/SKILL.md wuerde nicht geladen - die Praefix-Entscheidung im Kontext ist damit bestaetigt.
+- Neu und wichtiger als erwartet: der Kommandoname kommt vom ORDNERNAMEN, nicht vom frontmatter 'name'. Bei einem Projekt- oder Personal-Skill ist 'name' nur ein Anzeigelabel. Nur Plugin-Skills bekommen ihren Namen aus dem Feld.
+- Folge fuer dieses Ticket: der Ordnername ist die API. Ordner jaira-teamlead -> Kommando /jaira-teamlead. Das frontmatter 'name' muss denselben String tragen, sonst zeigt die Liste etwas anderes an, als der Mensch tippen muss.
+- Unterordner INNERHALB einer Rolle sind erlaubt (reference.md, scripts/). Falls eine Rolle spaeter Hilfsdateien braucht, ist das der Weg, nicht ein zweiter Skill.
+- Offener Punkt, nicht recherchiert: auf diesem Rechner liegen die sieben Rollen bereits unter ~/.claude/skills/teamlead, dispatcher, role-* ohne Praefix. Nach 'roles install --global' stehen sie doppelt da. Der Installer muss das erkennen und melden, statt stillschweigend ein zweites Paar anzulegen.
