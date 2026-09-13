@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:26:59Z
+updated-at: 2026-09-13T20:27:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -94,3 +94,8 @@ Bewusst nicht beanstandet: --into (die erste Runde hat das Flag selbst vorgeschl
 - firstSentence lebt nur noch einmal, als board.FirstSentence, und schneidet an '. '. Die Rollenliste zeigt damit 'Talk to the human about a board: what to work next, why, and what needs a decision.' ganz, statt nach dem ersten Punkt in einem Pfad abzubrechen.
 - Get() ist weg; TestTeamleadShipsItsScript sucht die Rolle jetzt aus Builtins() heraus. Damit gibt es keine exportierte Funktion mehr, die nur ihr eigener Test benutzt - wer sie wieder einfuehrt, braucht einen Aufrufer ausserhalb der Tests.
 - **2026-09-13 20:24 · Alexander Sacharov** — Commit dieser Runde: 8e6398b.
+- **2026-09-13 20:27 · Alexander Sacharov** — critique, dritte Runde: ein Befund, in review-summary mit Datei und Gegenvorschlag. Das Skript spawn.sh liegt unter jaira-teamlead, genannt wird es nur von jaira-dispatcher/SKILL.md:95 - und der Pfad dort ist relativ zum eigenen Skill-Ordner, also zeigt er nach der Installation auf nichts. Die Notiz vom 19:55 hatte das als Nebenbefund abgetan ('Der Verweis geht schon heute ins Leere'), aber ab diesem Ticket liefert jaira die Datei selbst aus: was hier eingebettet wird, ist die Wahrheit auf jedem Rechner eines Teamkollegen, nicht mehr eine gewachsene Kopie in ~/.claude/skills. Ein kaputter Verweis wird damit von einem lokalen Schoenheitsfehler zu etwas, das mit dem Binary verteilt wird. Deshalb jetzt ein Befund und nicht wieder ein Nebensatz.
+
+Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleich statt os.Stat wie lane.Export (Runde 1 hat ihn ausdruecklich stehen lassen), --into, ticket.ParseDoc in frontmatterDescription, board.FirstSentence in internal/cli (Runde 2 hat beides selbst vorgeschlagen), und role_test.go:39, das name: gegen den Ordnernamen prueft.
+
+Geprueft und in Ordnung befunden: kein exportierter Bezeichner in core/role hat nur noch Tests als Aufrufer - File, Builtins, Install, SkippedAny, ProjectTarget und GlobalTarget werden alle aus internal/cli heraus benutzt. Der Usage-Zweig in internal/cli/roles.go:82-89 ist handgeschrieben statt cobra.MarkFlagsMutuallyExclusive, folgt damit aber dem, was lanes.go:191 und checklist.go:106 schon tun - das ist das vorhandene Muster, kein neues.
