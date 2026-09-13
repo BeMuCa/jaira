@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:09:24Z
+updated-at: 2026-09-13T20:09:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -82,3 +82,4 @@ review-summary: |-
 - Das Ausfuehrbar-Bit ueberlebt embed.FS nicht: alles kommt als 0644 wieder heraus. install.go entscheidet deshalb an der Endung (.sh -> 0755). Ein spawn.sh ohne x-Bit ist eine kaputte Rolle, und nichts haette es gemeldet.
 - Der offene Punkt aus der Recherche ist erledigt, aber anders als 'stillschweigend ein zweites Paar anlegen': das Praefix macht jaira-teamlead und teamlead zu zwei verschiedenen Kommandos, es kollidiert also nichts. Gefaehrlich ist nur, dass jemand weiter den alten Namen tippt. role.Twins() meldet die unpraefixierte Kopie und loescht sie nie - ein Verzeichnis, das dieses Werkzeug nicht geschrieben hat, entfernt es auch nicht.
 Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue Rolle nach einem Upgrade muss man selbst holen. Das gehoert in ein eigenes Ticket, sobald jemand es vermisst.
+- **2026-09-13 20:09 · Alexander Sacharov** — critique: sechs Befunde, alle in review-summary mit Datei und Gegenvorschlag. Der gewichtigste ist das Fan-out in core/role/target.go: dieselben sieben Rollen landen in jedem existierenden Agent-Ordner, ein Harness liest mehrere davon, also ist jaira-teamlead danach doppelt registriert. Die DoD nennt genau ein Ziel - das ist kein Geschmacksurteil, sondern eine Abweichung von dem, was das Ticket verlangt. Die uebrigen fuenf sind Ballast: installDirs/skillsDirOf rekonstruiert Zielpfade, die der Aufrufer schon hat; Role.Name ist ein zweiter Name fuer Role.ID; within() prueft einen zur Compile-Zeit unmoeglichen Zustand; Twins() ist eine Einmal-Migration fuer genau einen Rechner und traegt dafuer ein dauerhaftes JSON-Feld. Nicht beanstandet und bewusst stehen gelassen: der Byte-Vergleich statt os.Stat wie lane.Export - drei Zustaende brauchen drei Antworten, die Begruendung im Commit traegt. Nebenbei, kein eigener Befund: der Doc-Kommentar ueber SkippedAny in core/role/install.go:152 beginnt mit 'Skipped reports', also mit dem falschen Namen.
