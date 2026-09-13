@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: in-progress
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,28 +13,28 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:43:44Z
+updated-at: 2026-09-13T18:45:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "AltGr wird nicht mehr als Kommandotaste gelesen"
-outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr; ohne Guard waere AltGr+Buchstabe als Kommando im Board gelandet"
-outcome-resolves: "Alles was mehr traegt als Shift oder CapsLock bleibt unangetastet; drei Guards, drei Tests, die ohne sie umfallen"
+outcome-what: "Lock-Zustaende zaehlen nicht mehr als gehaltener Modifier"
+outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck - der Guard haette die Umsetzung dort ganz abgeschaltet"
+outcome-resolves: "physicalRune erlaubt Shift, CapsLock, NumLock und ScrollLock; TestCmdKeyIgnoresTheLockStates haelt es fest"
 review-summary: |-
-  Vierter Durchgang: der AltGr-Guard sitzt als eine Bedingung in physicalRune (internal/tui/keylayout.go:69), direkt neben der Bedingung, die benannte Tasten aussortiert - keine neue Ebene, keine Verzweigung bei den Aufrufern
-  internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
-  Kein Fund mehr offen; die Einschraenkung auf Buchstaben und die beiden Guards erzaehlen im Kommentar dieselbe Geschichte wie im Code
+  Fuenfter Durchgang: die Maske nennt jetzt vier erlaubte Bits statt zwei, und der Kommentar darueber erklaert die Trennlinie (Modifier aendern den Tastendruck, Lock-Zustaende nicht) statt sie nur zu behaupten - der Fehler war eine falsche Praemisse im Kommentar, nicht eine falsche Zeile Code
+  internal/tui/keylayout.go:74 Maske statt Aufzaehlung der verbotenen Modifier bleibt richtig: die erlaubte Menge ist klein und benennbar, die verbotene waechst mit jedem Modifier, den bubbletea dazunimmt
+  Kein Muster daneben gebaut: die Guards stehen alle in physicalRune, die vier Aufrufer sehen weiterhin nur einen string
 review-gaps: |-
-  BLOCKER internal/tui/keylayout.go:70 Der Guard laesst nur ModShift und ModCapsLock durch, aber der Kitty-Decoder legt ModNumLock bei JEDEM Tastendruck in Key.Mod (decoder.go:1444 fromKittyMod) und raeumt es erst in einer lokalen Kopie wieder weg, weil es den Text nicht beeinflusst (decoder.go:1475). Mit eingeschaltetem NumLock - Standard auf Desktop-Tastaturen - faellt damit auf kitty, ghostty, WezTerm und foot jede Taste durch den Guard, cmdKey gibt das kyrillische Zeichen zurueck und das Board reagiert wieder auf nichts. Fix: ModNumLock und ModScrollLock in die Maske, sie sind Zustaende und keine Modifier
-  internal/tui/keylayout.go:65 Der Kommentar darueber behauptet, alles ausser Shift und CapsLock mache einen anderen Tastendruck - genau diese Annahme hat den Fehler erzeugt
-  Geprueft und in Ordnung: AltGr ist auf dem Windows-Pfad zu (decoder.go:2035 setzt Text, Mod traegt ModCtrl|ModAlt); Kitty leert Text bei ctrl/alt/super/meta selbst (decoder.go:1445); ModCapsLock neben Shift ist richtig, der Regisster kommt aus Text; beide neuen Tests fallen ohne ihren Guard um
+  Nichts Ueberfluessiges: vier Guards in physicalRune, jeder mit einem Test, der ohne ihn umfaellt (benannte Tasten, Shift-Satzzeichen, AltGr, Lock-Zustaende)
+  internal/tui/keylayout_test.go:160 TestCmdKeyIgnoresTheLockStates traegt drei Faelle: NumLock allein, NumLock plus ScrollLock, und die Kombination aus dem ultraviolet-Testfile (NumLock|CapsLock|Shift) - keiner davon doppelt einen anderen
+  Keine neue Abhaengigkeit, keine Konfiguration, nichts Ungenutztes
 test-verdict: |-
-  go build, go vet, go test ./... gruen nach dem AltGr-Fix
-  Sieben Tabellentests plus zwei Board-Tests; die drei Guards sind jeweils von einem Fall gedeckt, der ohne den Guard umfaellt
-  Zweimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
-  Weiterhin nicht pruefbar ohne passendes Terminal: der echte Kitty-Pfad und der Windows-Console-Pfad - beide nur ueber konstruierte KeyPressMsg abgedeckt
+  go build, go vet, go test ./... gruen nach dem Lock-Fix
+  Acht Tabellentests und zwei Board-Tests; vier Guards, vier Faelle, die ohne ihren Guard umfallen
+  Dreimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
+  Unveraendert offen und nur ueber konstruierte KeyPressMsg gedeckt: der echte Kitty-Pfad und der Windows-Console-Pfad. Der NumLock-Fehler kam genau von dort, gefunden hat ihn das Lesen des Decoders, nicht ein Test - wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte es einmal mit eingeschaltetem NumLock ausprobieren
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: ""
+question: "Kurz gegenpruefen, das Binary ist wieder frisch: 'jaira board' mit russischer Belegung, о/л bewegen, й beenden. Fuer deinen Terminal aendert der Fix nichts - Windows Terminal meldet keine Lock-Zustaende -, aber getestet werden soll, was installiert ist. Falls du irgendwo ein kitty, ghostty, WezTerm oder foot hast: dort bitte mit eingeschaltetem NumLock probieren, das ist der Pfad, den hier kein Terminal hergibt."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
