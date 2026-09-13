@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:38:19Z
+updated-at: 2026-09-13T21:41:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -31,6 +31,7 @@ outcome-what: "core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SK
 outcome-why: "Die ausgelieferten Prompts waren am Tag der Auslieferung schon veraltet: dem Binary fehlten die Drei-Runden-Regel, 'A human typing in a workers tab is not a fault', die Meldepflicht pro Lane, das Schliessen eines Worker-Tabs und 'Close what you started'. Solange die unpraefixierten Ordner danebenlagen, war unklar welche Fassung gilt; jetzt ist core/role/builtin die einzige Quelle."
 outcome-resolves: "Definition of Done Punkt 1 vollstaendig: Text uebernommen, TestCrossReferencesCarryThePrefix und go test ./... -race gruen, Installation deckungsgleich, alte Ordner weg, NOTES.md-Zeile geschrieben."
 review-summary: none
+test-verdict: "pass: go test ./... -race gruen (RC=0), TestCrossReferencesCarryThePrefix gruen, 'roles install --global --force' RC=0 und diff -r gegen core/role/builtin fuer alle sieben jaira-<id> Ordner ohne Unterschied, die sieben unpraefixierten Ordner sind weg, NOTES.md-Zeile unter ## Unreleased vorhanden"
 ---
 
 # Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis
@@ -55,3 +56,8 @@ Nicht mitgenommen, bewusst: ~/.claude/skills/teamlead/scripts/spawn.sh. Das Skri
 Die sieben unpraefixierten Ordner wurden erst geloescht, nachdem 'roles install --global --force' lief und 'diff -r' fuer alle sieben jaira-<id> Ordner keinen Unterschied zeigte.
 - **2026-09-13 21:38 · Alexander Sacharov** — critique: Uebernahme gegen die Vorher-Differenz geprueft (aus dem Transkript der Uebernahme-Session rekonstruiert, da die unpraefixierten Ordner geloescht sind). Jede Stelle, die ~/.claude/skills gegenueber core/role/builtin voraus hatte, steht jetzt im Repository: Dispatcher 'These instructions can change while you run', der Tab-Schliess-Absatz, 'A human typing in a worker's tab is not a fault', 'Your own tab is not yours to close', die Drei-Runden-Regel, 'Do not swallow what the human should hear', 'Three lines at the end'; Teamlead 'Close what you started' und 'Bringing one back'. Kein Rest der alten Fassung im Text, keine unpraefixierte /role-* Referenz mehr in core/role/builtin. Die fuenf role-* wurden vom Commit nicht angefasst (letzte Aenderung b9eae90). Kein Befund.
 Nebenbefund, nicht Teil des Diffs: die Zeilenzahlen im Ticket-Kontext (dispatcher 170, teamlead 92) waren schon beim Schreiben veraltet - die Heimfassungen hatten 180 und 120 Zeilen, und genau diese Zahlen haben die Repo-Dateien jetzt. Das ist ein Beleg fuer die Vollstaendigkeit, kein Fehler an der Uebernahme.
+- **2026-09-13 21:41 · Alexander Sacharov** — testing: bestanden, am Arbeitsbaum auf feat/C9V7ZV-roles-install geprueft, nichts geaendert.
+Gates: 'go test ./... -race' gruen, kein einziges FAIL, alle Pakete ok (core/lane 5.4s, internal/cli 25.4s, core/release 1.0s). 'go test ./core/role -race -run TestCrossReferencesCarryThePrefix -count=1' PASS.
+Demand, Punkt fuer Punkt am Baum: (1) name: traegt in allen sieben SKILL.md denselben String wie der Ordner; (2) grep ueber core/role/builtin findet keine unpraefixierte Querverweis-Zeile mehr (/role-*, /dispatcher, /teamlead); (3) dispatcher 180 Zeilen, teamlead 120 - genau die Zahlen der geloeschten Heimfassungen, also die vollstaendige Uebernahme; (4) 'go run ./cmd/jaira roles install --global --force' RC=0, Ausgabe '0 written, 8 unchanged, 0 skipped, 0 overwritten', danach 'diff -r' fuer alle sieben jaira-<id> Ordner ohne Unterschied - auch schon vor dem Lauf deckungsgleich, die Installation ist also idempotent; (5) keiner der sieben unpraefixierten Ordner liegt noch in ~/.claude/skills; (6) core/release/NOTES.md:18 traegt die Zeile unter ## Unreleased, eine Zeile, nicht umgebrochen.
+Funktion: die Installation selbst war der Funktionstest - das Binary aus diesem Baum schreibt genau den Inhalt von core/role/builtin nach ~/.claude/skills, damit ist die im Goal geforderte Richtung belegt.
+Deckungsluecke, als Befund und nicht als Fehler: die Aenderung ist Prompt-Text, und der einzige Test darauf ist TestCrossReferencesCarryThePrefix - der prueft Praefixe, nicht Inhalt. Dass der verschaerfte Text vollstaendig und richtig uebernommen wurde, deckt kein Test ab; das bleibt die Sache der human-Lane.
