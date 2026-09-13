@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:14:05Z
+updated-at: 2026-09-13T21:14:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -174,3 +174,15 @@ Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.Write
 - Der Test faellt ohne den Fix durch, beide Haelften geprueft: 'after a re-run the script is -rw-r--r--' und 'after --force ...'. Ein Test, der auch ohne Fix gruen ist, haette den Befund nur zugedeckt.
 - Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat nie ein Binary mit dem Fehler gegeben. Gleiche Begruendung wie in Runde 3 und 4.
 - **2026-09-13 21:11 · Alexander Sacharov** — Commit dieser Runde: 59d39fa.
+- **2026-09-13 21:14 · Alexander Sacharov** — testing (2. Durchgang): pass. Gelaufen: go test ./... -race -> RC=0, alle Pakete ok; gofmt -l core internal cmd -> leer; go vet ./... -> leer.
+
+Der Befund der ersten Runde ist nachgeprueft, nicht nur nachgelesen. Gegenprobe: Arbeitsbaum nach /tmp kopiert, dort core/role/install.go auf den Stand vor 59d39fa zurueckgesetzt, Tests laufen lassen -> TestInstallRestoresTheExecuteBit faellt durch, und zwar in beiden Haelften (role_test.go:226 'after a re-run the script is -rw-r--r--, want 0755' und role_test.go:241 'after --force ...'). Der Test deckt den Befund also wirklich ab, statt nur gruen zu sein.
+
+End-to-end mit dem gebauten Binary in einem frischen Repo, spawn.sh jeweils auf 0644 gesetzt:
+- identische Bytes, normaler Zweitlauf -> '8 unchanged', Datei wieder -rwxr-xr-x. Das ist der Fall, der auf einem echten Rechner auftritt, und er braucht kein --force.
+- geaenderte Bytes, ohne --force -> Meldung 'some roles were edited here and left alone', Exit 3, Datei bleibt 0644 und unveraendert. Der Skipped-Zweig fasst den Modus weiterhin nicht an.
+- geaenderte Bytes, mit --force -> '1 overwritten', Datei wieder -rwxr-xr-x und mit Originalinhalt.
+
+Restliche DoD im Baum geprueft: --project legt sieben jaira-<id>/SKILL.md plus die spawn.sh an (8 Dateien), --global schreibt mit gesetztem HOME nach ~/.claude/skills, 'roles list' nennt alle sieben Rollen, die NOTES.md-Zeile steht unter ## Unreleased und beschreibt Exit 3 genau so, wie sich das Binary verhaelt.
+
+Eine Beobachtung, kein Befund: der Unchanged-Zweig setzt den Modus jetzt immer, auch ohne --force und auch fuer SKILL.md. Wer eine unveraenderte SKILL.md absichtlich auf 0600 setzt, bekommt sie beim naechsten Lauf auf 0644 zurueck. Das ist genau die Regel aus der Commit-Message ('die Bytes sind unsere, also ist der Modus unserer') und der Preis dafuer, dass der haeufige Fall ohne --force repariert wird. Fuer jaira-Prompts ist das folgenlos; falls jemand spaeter eine Rolle mit sensiblen Daten ausliefert, ist das die Stelle, die man noch einmal ansieht.
