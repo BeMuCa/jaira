@@ -24,10 +24,10 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:28:41Z
+updated-at: 2026-09-13T20:41:45Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-45975
-claimed-at: 2026-09-13T20:07:20Z
+claimed-by: DESKTOP-RFTCH11-34867
+claimed-at: 2026-09-13T20:41:45Z
 outcome-what: "core/role/role.go: frontmatterDescription() now reads the SKILL.md header with ticket.ParseDoc + Scalar(\"description\"), the same parser core/lane uses; the hand-rolled line scan and unquote() are gone. Get() removed — TestTeamleadShipsItsScript picks the role out of Builtins() and TestGetUnknownRole is gone with it. core/board/announce.go: firstSentence exported as FirstSentence and documented; internal/cli/roles.go deleted its own copy and calls it."
 outcome-why: "Second critique returned three findings. Two readers of one file format is the load-bearing one: a SKILL.md header is frontmatter, and the hand scan was also narrower than it looked — it handed back the escapes of a quoted scalar. The duplicate firstSentence was the only finding with visible output: cutting at every '.' truncated 'writes into .claude/skills' to 'writes into .'. Get() had no caller outside its own test."
 outcome-resolves: "All three findings in review-summary addressed in the files they name. go test ./... -race green; jaira roles list now prints each description up to its first full stop instead of breaking inside a path."
