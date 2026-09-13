@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:54:36Z
+updated-at: 2026-09-13T18:54:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -36,6 +36,7 @@ test-verdict: |-
   Unveraendert offen und nur ueber konstruierte KeyPressMsg gedeckt: der echte Kitty-Pfad und der Windows-Console-Pfad. Der NumLock-Fehler kam genau von dort, gefunden hat ihn das Lesen des Decoders, nicht ein Test - wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte es einmal mit eingeschaltetem NumLock ausprobieren
   Binary neu gebaut unter /home/alex/.local/bin/jaira
 question: ""
+review-verdict: "Erfuellt die Definition of Done und ist merge-reif: der Melder hat es viermal an seinem Terminal bestaetigt, das zweite Modell blockiert nichts mehr"
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
