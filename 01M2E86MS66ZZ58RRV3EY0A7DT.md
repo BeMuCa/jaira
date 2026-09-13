@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:52:37Z
+updated-at: 2026-09-13T21:52:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -53,7 +53,7 @@ outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abg
 - [x] Test internal/cli/hook_example_test.go nach dem Muster von runStopHook: Ausgabe von 'hook example' in eine Datei schreiben und mit sh und gesetzten JAIRA_*-Variablen ausfuehren; human, signoff und done geben hoerbare Ausgabe, in-progress, todo und blocked geben nichts, jeder Fall endet mit exit 0
 - [x] Test fuer den leeren Rechner: ohne jedes Zustellwerkzeug auf PATH laeuft das Skript fehlerfrei durch und tut nichts (das ist die DoD-Zeile 'laeuft ohne Herdr fehlerfrei durch')
 - [x] README.md: im Hook-Absatz bei Zeile 344-350 zwei Saetze auf 'jaira hook example'; bei Zeile 561 einen Halbsatz, dass 'hook print' und 'hook example' zwei unverwandte Dinge sind
-- [ ] core/release/NOTES.md: eine englische Zeile unter ## Unreleased, als Anweisung formuliert
+- [x] core/release/NOTES.md: eine englische Zeile unter ## Unreleased, als Anweisung formuliert
 - [ ] go test ./... -race gruen, danach die DoD-Zeile mit --proof abhaken
 - [ ] Folgeticket erfassen: 'jaira lanes --json' gibt requires-question und requires-human-exit nicht aus, deshalb stehen die Lane-Namen im Beispiel hart und es ist auf einem Board mit eigenen Lanes stumm
 
