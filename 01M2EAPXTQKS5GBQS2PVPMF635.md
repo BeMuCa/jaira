@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T22:04:49Z
+updated-at: 2026-09-13T22:05:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -75,3 +75,7 @@ Demand, Punkt fuer Punkt am Baum: (1) name: traegt in allen sieben SKILL.md dens
 Funktion: die Installation selbst war der Funktionstest - das Binary aus diesem Baum schreibt genau den Inhalt von core/role/builtin nach ~/.claude/skills, damit ist die im Goal geforderte Richtung belegt.
 Deckungsluecke, als Befund und nicht als Fehler: die Aenderung ist Prompt-Text, und der einzige Test darauf ist TestCrossReferencesCarryThePrefix - der prueft Praefixe, nicht Inhalt. Dass der verschaerfte Text vollstaendig und richtig uebernommen wurde, deckt kein Test ab; das bleibt die Sache der human-Lane.
 - **2026-09-13 22:01 · Alexander Sacharov** — Antwort aus der human-Lane am 2026-09-14: der Loeschzeitpunkt eines Worktrees ist "wenn der Ticket von der Tafel ist". Damit gilt jaira-dispatcher/SKILL.md:129 unveraendert weiter, und die letzte Zeile des Textentwurfs ("Remove a worktree once its pull request is merged") bleibt bewusst draussen - es gibt keine zweite, konkurrierende Regel im ausgelieferten Text. Keine Codeaenderung noetig, der Zustand entspricht der Entscheidung bereits. Uebernahme und f3bc433 sind damit abgenommen, das Ticket geht weiter nach review.
+- **2026-09-13 22:05 · Alexander Sacharov** — review: Gates selbst nachgestellt, nichts am Code geaendert. go test ./... -race ohne FAIL, TestCrossReferencesCarryThePrefix PASS, name: gleich Ordnername in allen sieben Rollen, kein unpraefixierter Querverweis mehr in core/role/builtin, diff -r builtin gegen ~/.claude/skills fuer alle sieben Ordner leer, die sieben unpraefixierten Ordner sind weg, zwei einzeilige NOTES-Eintraege unter ## Unreleased.
+Ein Befund, bewusst nicht zurueckgeschickt sondern der signoff-Lane vorgelegt: der in der human-Lane entschiedene Loeschzeitpunkt eines Worktrees ('wenn das Ticket von der Tafel ist') steht im Dispatcher (SKILL.md:155), aber jaira-teamlead/SKILL.md:95 - neu aus e107fe0 - sagt 'leave that until the pull request is merged'. Das ist derselbe frueher Zeitpunkt, der als letzte Zeile des Textentwurfs absichtlich draussen blieb, nur in der anderen Rolle. Zwei ausgelieferte Prompts, zwei Zeitpunkte. Eine Zeile Textaenderung, wenn es angeglichen werden soll - kein Testfall kann es finden.
+Kleinigkeit: spawn.sh:18 'mkdir -p' ist ueberfluessig, 'git worktree add' legt Elternverzeichnisse selbst an (hier nachgestellt). Harmlos, deshalb stehengelassen.
+Nicht pruefbar und deshalb nicht geprueft: ob der uebernommene Prompt-Text inhaltlich vollstaendig ist. Die Heimfassungen sind geloescht, ein Vorher-Nachher-Vergleich ist nicht mehr herstellbar - genau deshalb war das die human-Lane, und die hat abgenommen.
