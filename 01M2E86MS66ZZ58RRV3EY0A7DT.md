@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:42:54Z
+updated-at: 2026-09-13T21:43:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-55522
 claimed-at: 2026-09-13T21:42:41Z
@@ -56,3 +56,15 @@ Zwei Dinge aus dem Code, die die Ticket-Notiz nicht kennt:
 1. Der Name "hook" ist schon belegt. internal/cli/hook.go hat "jaira hook print", und das meint etwas ganz anderes: ein Claude-Code-Stop-Hook-Snippet fuer ~/.claude/settings.json. Ein Beispiel fuer den move/claim-Hook muss unter diesem Elternbefehl unterscheidbar heissen, sonst stehen zwei unverwandte Dinge unter einem Wort.
 
 2. Ein Skript kann heute nicht herausfinden, welche Lane einem Menschen gehoert. "jaira lanes --json" liefert agentic, terminal, precedence - aber nicht die Gates requires-question / requires-human-exit, die human und signoff erst zu Menschen-Lanes machen (core/lane/builtin/30-human.md, 45-signoff.md). agentic:false allein reicht nicht: backlog, todo, done und blocked sind ebenfalls agentic:false. Jedes Beispiel muss die Lane-Namen also hart hinschreiben und ist auf einem Board mit eigenen Lanes falsch.
+- **2026-09-13 21:43 · Alexander Sacharov** — Drei Wege, wie das Beispiel ausgeliefert werden kann.
+
+A) Nur im Repository, unter examples/ oder hooks/, in der README genannt.
+Kostet fast nichts und aendert kein Byte am Binary. Gibt auf, wen es erreicht: jaira wird als einzelne Datei verteilt, "jaira self update" holt ein Binary und kein Arbeitsverzeichnis. Wer nicht geklont hat, sieht die Datei nie - und das ist genau die Person, die das leere Feld anstarrt. Praezedenzfall hooks/sync-tasks.sh zeigt den Defekt: das Skript existiert seit Langem und muss in der README erklaert werden, weil es nirgends greifbar ist.
+
+B) Eingebettet (go:embed) und von einem Befehl auf stdout gedruckt.
+Kostet rund eine Seite Text im Binary und einen Befehl. Gibt: das Beispiel ist da, wo das Programm ist, und die Zeile "jaira <befehl> > ~/.jaira/notify.sh && chmod +x" ist der erste Lauf. Genau das Muster, das "jaira hook print" schon benutzt, und genau das Muster von core/lane/builtin/*.md - jaira bettet seine Vorlagen ein, das ist hier Hausstil und kein Sonderfall.
+
+C) Eingebettet und der Befehl schreibt Datei plus ~/.jaira/settings.json.
+Gibt: null Handgriffe. Kostet: der Befehl fasst eine Datei an, die schon einen funktionierenden Hook eintragen kann, und ueberschreibt ihn im schlimmsten Fall. internal/cli/hook.go begruendet fuer den Claude-Code-Fall ausdruecklich das Gegenteil ("settings.json is the user's file"), und ~/.jaira/settings.json ist zwar jairas Datei, aber der eingetragene Hook ist es nicht.
+
+Empfehlung: B. Erreichbarkeit ist der ganze Zweck des Tickets, also faellt A. Der Unterschied zwischen B und C ist ein einziger cp-Handgriff, C bezahlt ihn mit einem Schreibzugriff auf fremde Konfiguration - das ist kein Tausch, den ein Beispiel wert ist.
