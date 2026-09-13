@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:17:14Z
+updated-at: 2026-09-13T20:17:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60480
 claimed-at: 2026-09-13T20:13:55Z
@@ -57,3 +57,4 @@ Zwei Wege, die hier geprueft und verworfen sind, damit sie nicht wiederkommen:
 - AGENTS.md loeschen. Geht nicht: core/board/announce.go:291 haelt fest, dass AGENTS.md das ist, was Codex und andere Werkzeuge lesen, und die Projekt-Beschraenkung lautet 'CLI must be usable by any bash-capable agent, not only Claude Code'.
 - Den Installer so aendern, dass er nur CLAUDE.md schreibt, wenn es die gibt. Dasselbe Problem, nur stiller: auf einem Rechner mit beiden Clients verliert Codex unbemerkt den Zugang zur Tafel.
 Die beiden Dateien doppeln einander ohnehin kaum: AGENTS.md ist fast nur der erzeugte jaira-Block, CLAUDE.md ist derselbe Block plus alles von Hand Dazugeschriebene. Zu kuerzen ist der zweite Summand, nicht die zweite Datei.
+- **2026-09-13 20:17 · Alexander Sacharov** — Grenze praezisiert: die DoD nennt Zeilen 27-164, aber Zeile 161 ist <!-- GSD:stack-end -->, 163 ist GSD:conventions-start. Der eigentliche Inhalt sind die Zeilen 27-160, von '## Technology Stack' bis zum letzten Aufzaehlungspunkt unter '## Sources'. Der Plan verschiebt 27-160 und laesst die Marker stehen.
