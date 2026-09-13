@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:59:33Z
+updated-at: 2026-09-13T20:59:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-71524
 claimed-at: 2026-09-13T20:55:10Z
@@ -139,3 +139,8 @@ Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rech
 - Weiterhin offen und bewusst nicht angefasst (Entscheidung des Menschen, gehoert in die Testing-Lane): os.WriteFile setzt den Modus einer bereits vorhandenen Datei nicht neu, also repariert 'roles install --force' ein fehlendes x-Bit an einer vorliegenden spawn.sh nicht. Gegenvorschlag steht in der Notiz von 20:54.
 - Keine Zeile in core/release/NOTES.md: nur Tests geaendert, von aussen am Binary nichts zu beobachten.
 - **2026-09-13 20:56 · Alexander Sacharov** — Commit dieser Runde: 09f80c5.
+- **2026-09-13 20:59 · Alexander Sacharov** — optimize: eine Aenderung, der Rest begruendet stehen gelassen.
+- boardAt in internal/cli/roles_test.go war Zeile fuer Zeile lanesTestProject aus lanes_test.go. Geloescht statt umbenannt: lanesTestProject heisst nach der Lane, die es zuerst brauchte, aber es baut ein Board, kein Lane-Projekt - ein Umbenennen haette lanes_test.go breit angefasst, und das ist nicht diese Lane. Wer den Namen stoerend findet, benennt ihn in einem eigenen Ticket um.
+- Nichts an core/role/*.go geaendert. Vier Durchgaenge (Duplikat, tot, Ballast, Kosten) und jeder Kandidat traegt eine Begruendung, die in review-gaps steht. Der lauteste war role.File: exportiert, und von ausserhalb des Pakets ruft es nur ein Test. Nach dem Massstab, mit dem Runde 2 Get() gestrichen hat, muesste es weg - aber Get() war durch Builtins() ersetzbar, File() ist es nicht: es ist der einzige Weg an die eingebetteten Bytes, und ohne ihn kann internal/cli nicht mehr pruefen, dass installiert wurde, was eingebettet ist. Deshalb bleibt es.
+- Nicht angefasst, weil Verhaltensaenderung und damit keine Aufraeumarbeit: das fehlende os.Chmod nach os.WriteFile (Notiz von 20:54). Gehoert in die Testing-Lane, wie der Mensch entschieden hat.
+- go test ./... -race gruen, gofmt sauber.
