@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:53:29Z
+updated-at: 2026-09-13T15:53:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -45,6 +45,7 @@ claimed-at: 2026-09-13T15:44:03Z
 - [x] cmdKey in den Kommando-Switches einsetzen, Text-Eingabemodi (edit.go, Filter, Create) unangetastet lassen
   proof: internal/tui/model.go:877, home.go, edit.go:82
 - [x] KeyboardEnhancements.ReportAllKeysAsEscapeCodes + ReportAlternateKeys in beiden View()-Funktionen setzen, damit BaseCode ueberhaupt ankommt
+  proof: internal/tui/view.go, internal/tui/home.go View()
 - [x] TUI-Test: kyrillische Tasten steuern das Board (j/k/h/l/q//), und im Editfeld landen sie weiterhin als Text
 - [x] Zeile in core/release/NOTES.md unter ## Unreleased
 
