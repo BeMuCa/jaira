@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:43:37Z
+updated-at: 2026-09-13T18:43:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -81,3 +81,4 @@ question: ""
 - **2026-09-13 18:29 · Alexander Sacharov** — Mensch hat nachgetestet: '?' oeffnet wieder die Hilfe, russische Belegung steuert weiterhin. Windows Terminal unter WSL2.
 - **2026-09-13 18:33 · Alexander Sacharov** — review 2: AltGr ist das verbliebene Loch. Die Buchstaben-Ebene schaut gar nicht auf k.Mod, und der Windows-Decoder setzt Key.Text auch bei AltGr - also kommt AltGr+Buchstabe als blanke Kommandotaste an. Fix: vor beiden Zweigen aussteigen, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt. Dazu ein Test, der den Shift-Guard wirklich festnagelt (AZERTY: shift+';' druckt '.', darf nicht '/' werden), und zwei Kommentare/NOTES-Zeilen, die nach der Einschraenkung zu viel versprechen.
 - **2026-09-13 18:40 · Alexander Sacharov** — Mensch hat den dritten Stand bestaetigt: Board reagiert mit russischer Belegung, Windows Terminal unter WSL2.
+- **2026-09-13 18:43 · Alexander Sacharov** — review 3: NumLock. Der Guard war eine Zeile zu eng - ModNumLock kommt auf Kitty-Terminals bei jedem Tastendruck mit und wird von der Bibliothek selbst als 'beeinflusst den Text nicht' behandelt (decoder.go:1475). Mit NumLock an haette der Guard die ganze Funktion auf genau den Terminals ausgeschaltet, fuer die die BaseCode-Ebene gebaut wurde, und niemand haette es hier gemerkt. Lehre fuer den Kommentar: Lock-Zustaende sind keine Modifier.
