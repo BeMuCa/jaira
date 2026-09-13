@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:24:14Z
+updated-at: 2026-09-13T20:24:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60480
 claimed-at: 2026-09-13T20:13:55Z
@@ -33,7 +33,8 @@ claimed-at: 2026-09-13T20:13:55Z
 
 ## Definition of Done
 
-- [ ] docs/STACK.md enthaelt den Inhalt der bisherigen Zeilen 27-164 unveraendert; CLAUDE.md verweist an der Stelle mit einer Zeile darauf; CLAUDE.md ist danach unter 4000 Token; der erzeugte jaira-Block und alles hinter <!-- jaira:local --> sind unveraendert; 'go run ./cmd/jaira update' schreibt den Block fehlerfrei neu; go test ./... -race gruen
+- [x] docs/STACK.md enthaelt den Inhalt der bisherigen Zeilen 27-164 unveraendert; CLAUDE.md verweist an der Stelle mit einer Zeile darauf; CLAUDE.md ist danach unter 4000 Token; der erzeugte jaira-Block und alles hinter <!-- jaira:local --> sind unveraendert; 'go run ./cmd/jaira update' schreibt den Block fehlerfrei neu; go test ./... -race gruen
+  proof: docs/STACK.md:1-133 (diff <(git show HEAD:CLAUDE.md | sed -n '27,159p') docs/STACK.md leer); CLAUDE.md:29 Verweiszeile; wc -c CLAUDE.md = 13968 (~3450 Token); git diff CLAUDE.md hat genau einen Hunk @@ -26,137 +26,7 @@, jaira-Block und jaira:local unberuehrt; go test ./... -race grün
 
 ## Options
 
