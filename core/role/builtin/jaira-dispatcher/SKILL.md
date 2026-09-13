@@ -120,6 +120,32 @@ The one thing you owe afterwards: whatever was settled by hand in that tab has
 to reach the ticket, or the next round undoes it. If the worker did not record
 it, `jaira note` it yourself before moving on.
 
+## Where a worktree goes
+
+One per ticket, and all of them in one place beside the repository — never
+inside it:
+
+```bash
+root=$(git rev-parse --show-toplevel)
+dir="$(dirname "$root")/.worktrees/$(basename "$root")-<TICKET>"
+git worktree add "$dir" -b <branch> <base>
+```
+
+Derive it, do not write a path of your own: where someone keeps their
+repositories is their business, and a hard-coded directory is right on exactly
+one machine.
+
+**Not under the repository itself** — not `.claude/worktrees`, not anywhere else
+inside it. A worktree there is a second full copy of the sources at a path that
+looks like the real one, holding a *different branch*. `rg` honours `.gitignore`
+and walks past it, but `grep -r`, `find` and `ls -R` do not, and agents use all
+of them. The failure is silent: a worker searches, gets two hits, reads the one
+from someone else's branch, and believes it. Not an error — a plausible wrong
+file.
+
+Siblings outside the repository cannot do that: a search from the repository
+root never leaves it.
+
 ## One worktree per ticket
 
 Two workers must never share a directory. On a project with a container stack

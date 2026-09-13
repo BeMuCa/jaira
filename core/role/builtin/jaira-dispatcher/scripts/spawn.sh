@@ -9,9 +9,13 @@ root="${4:-$PWD}"
 herdr="${HERDR_BIN_PATH:-herdr}"
 [ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
 
-wt="$(cd "$root/.." && pwd)/rg-$slug"
+# Beside the repository, never inside it: a worktree under the repo is a second
+# copy of the sources on a different branch, and grep -r / find / ls -R walk
+# straight into it. Derived, so no path is baked in for one machine.
+wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 
 if [ ! -d "$wt" ]; then
+  mkdir -p "$(dirname "$wt")"
   git -C "$root" worktree add "$wt" -b "feature/$slug" >&2
 
   # Only a repo that carries a container stack needs its own ports. A repo
