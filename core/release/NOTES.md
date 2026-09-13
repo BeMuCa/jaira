@@ -15,7 +15,8 @@ Format rules — read before editing:
 
 ## Unreleased
 
-- Install the agent role prompts this binary now ships: `jaira roles install --project` writes them into the repository so they arrive with a clone, `--global` into `~/.claude/skills`; `jaira roles list` names them. A file you have edited is reported and left alone, and the command exits 3; `--force` replaces it.
+- Install the agent role prompts this binary now ships: `jaira roles install --project` writes them into `.claude/skills` so they arrive with a clone, `--global` into `~/.claude/skills`, `--into <dir>` anywhere else; `jaira roles list` names them. A file you have edited is reported and left alone, and the command exits 3; `--force` replaces it.
+- Invoke the shipped roles under their `jaira-` prefixed names — `/jaira-teamlead`, `/jaira-role-lane` and the rest. If you wrote these prompts by hand before under their bare names, those copies still answer to the old name; delete them yourself once you have switched.
 - Steer the board with a Cyrillic keyboard: letter commands are read by the key's position, so `j`, `k`, `g`, `q` and the rest of them work through a Russian layout, where the board used to answer nothing at all. The key that is `/` on a US keyboard opens the filter under its Cyrillic-layout character too. Typed text is untouched — Russian still goes into filters and edit fields as Russian.
 - On a terminal that speaks the Kitty keyboard protocol (kitty, ghostty, WezTerm, foot), letter commands work under any layout, not only Cyrillic: the board asks the terminal for the physical key behind each press. Punctuation and shifted keys are left as the layout printed them, so `?` still opens the help; keys held with ctrl or alt are the terminal's business as before.
 

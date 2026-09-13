@@ -5,43 +5,31 @@ import (
 	"path/filepath"
 )
 
-// agentDirs are the per-tool configuration directories a skills/ folder lives
-// under. There is no single convention — .claude/ is Claude Code's, .codex/ is
-// Codex's, .agents/ is the cross-tool attempt — and a project may have any
-// combination of them. Roles are written into the ones that exist, on the same
-// reasoning as the agent instruction files in core/board/announce.go: a role
-// nobody's agent can find is a role that does not get used, and an extra
-// markdown directory costs nothing.
-var agentDirs = []string{".claude", ".codex", ".agents"}
+// skillsDir is where an agent harness looks for skills. Only .claude/ is
+// written to by default, even though .codex/ and .agents/ hold the same kind of
+// directory: a harness that reads more than one of them would find the same
+// role registered twice under the same command name, and nothing would say
+// which copy answered. Installing into several places is not the same choice as
+// core/board/announce.go writing both AGENTS.md and CLAUDE.md — those are two
+// files one reader reads once, while these are two registrations of one
+// command. A project that keeps its skills elsewhere names that directory with
+// --into rather than getting a copy in every candidate.
+const skillsDir = ".claude/skills"
 
-const skillsSubdir = "skills"
-
-// ProjectTargets returns the skills directories to install into for a project
-// rooted at root: one per agent directory that already exists there, and
-// .claude/skills when none does — a project that has never configured an agent
-// still gets a working default rather than nothing.
+// ProjectTarget returns the skills directory to install into for a project
+// rooted at root.
 //
-// The directories are returned, not created; Install creates what it writes to.
-func ProjectTargets(root string) []string {
-	var out []string
-	for _, d := range agentDirs {
-		if fi, err := os.Stat(filepath.Join(root, d)); err == nil && fi.IsDir() {
-			out = append(out, filepath.Join(root, d, skillsSubdir))
-		}
-	}
-	if len(out) == 0 {
-		out = append(out, filepath.Join(root, agentDirs[0], skillsSubdir))
-	}
-	return out
+// The directory is returned, not created; Install creates what it writes to.
+func ProjectTarget(root string) string {
+	return filepath.Join(root, filepath.FromSlash(skillsDir))
 }
 
-// GlobalTarget returns ~/.claude/skills — the personal skills directory, which
-// is Claude Code's and has no per-tool spread to consider: a role installed
-// globally is installed for the person, and this is where that lives.
+// GlobalTarget returns ~/.claude/skills — the personal skills directory, for a
+// role installed for the person rather than for one repository.
 func GlobalTarget() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, agentDirs[0], skillsSubdir), nil
+	return filepath.Join(home, filepath.FromSlash(skillsDir)), nil
 }

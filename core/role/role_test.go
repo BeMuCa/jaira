@@ -32,11 +32,16 @@ func TestBuiltinsAreTheSevenRoles(t *testing.T) {
 		if r.ID != wantRoles[i] {
 			t.Errorf("role %d: got id %q, want %q", i, r.ID, wantRoles[i])
 		}
-		// The directory name is what the harness invokes; the frontmatter name
-		// is what it displays. They must agree or the listed name is not the
-		// name a person has to type.
-		if r.Name != r.ID {
-			t.Errorf("%s: frontmatter name is %q, want it to match the directory", r.ID, r.Name)
+		// The directory name is what the harness invokes, but Claude Code
+		// refuses to load a skill whose frontmatter name disagrees with it.
+		// Nothing in the package reads the field back, so this is the only
+		// thing keeping the two in step in the embedded files.
+		b, err := File(r.ID, skillFile)
+		if err != nil {
+			t.Fatalf("%s: %v", r.ID, err)
+		}
+		if want := "\nname: " + r.ID + "\n"; !strings.Contains(string(b), want) {
+			t.Errorf("%s: %s frontmatter does not carry %q", r.ID, skillFile, strings.TrimSpace(want))
 		}
 		if r.Description == "" {
 			t.Errorf("%s: no description", r.ID)
@@ -195,80 +200,17 @@ func actionFor(results []Result, path string) Action {
 	return ""
 }
 
-// Nothing a role ships may land outside the destination directory. The ids and
-// relative paths come from the embedded tree rather than from a caller, so this
-// asserts the property holds rather than probing an input.
-func TestNothingEscapesTheDestination(t *testing.T) {
-	dir := t.TempDir()
-	results, err := Install(dir, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, res := range results {
-		if !within(dir, res.Path) {
-			t.Errorf("%s is outside %s", res.Path, dir)
-		}
-	}
-	if within(dir, filepath.Join(dir, "..", "escaped")) {
-		t.Error("within accepted a path above the destination")
-	}
-}
-
-func TestProjectTargetsUsesTheDirectoriesThatExist(t *testing.T) {
+func TestProjectTargetIsTheClaudeSkillsDirectory(t *testing.T) {
 	root := t.TempDir()
-	// No agent directory at all: .claude/skills is the default, so a project
-	// that never configured an agent still gets a working install.
-	got := ProjectTargets(root)
-	want := []string{filepath.Join(root, ".claude", "skills")}
-	if len(got) != 1 || got[0] != want[0] {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-
+	// One directory, whether or not other agent directories are around: a
+	// harness that reads two of them would see the same role registered twice.
 	for _, d := range []string{".codex", ".agents"} {
 		if err := os.Mkdir(filepath.Join(root, d), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
-	got = ProjectTargets(root)
-	want = []string{
-		filepath.Join(root, ".codex", "skills"),
-		filepath.Join(root, ".agents", "skills"),
-	}
-	if len(got) != len(want) {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	}
-}
-
-func TestTwinsFindsAnUnprefixedCopy(t *testing.T) {
-	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
-		t.Fatal(err)
-	}
-	got, err := Twins(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 0 {
-		t.Fatalf("a clean install reported twins: %v", got)
-	}
-
-	bare := filepath.Join(dir, "teamlead")
-	if err := os.MkdirAll(bare, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(bare, skillFile), []byte("---\nname: teamlead\n---\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	got, err = Twins(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 1 || got[0] != bare {
-		t.Fatalf("got %v, want [%s]", got, bare)
+	got := ProjectTarget(root)
+	if want := filepath.Join(root, ".claude", "skills"); got != want {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }

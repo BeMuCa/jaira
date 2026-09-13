@@ -67,7 +67,6 @@ func TestRolesListJSON(t *testing.T) {
 	var payload struct {
 		Roles []struct {
 			ID          string   `json:"id"`
-			Name        string   `json:"name"`
 			Description string   `json:"description"`
 			Files       []string `json:"files"`
 		} `json:"roles"`
@@ -79,7 +78,7 @@ func TestRolesListJSON(t *testing.T) {
 		t.Fatal("no roles in json output")
 	}
 	for _, r := range payload.Roles {
-		if r.ID == "" || r.Name != r.ID || r.Description == "" || len(r.Files) == 0 {
+		if r.ID == "" || r.Description == "" || len(r.Files) == 0 {
 			t.Errorf("incomplete role entry: %+v", r)
 		}
 	}
@@ -107,9 +106,10 @@ func TestRolesInstallProjectWritesSevenRoles(t *testing.T) {
 	}
 }
 
-// Every agent directory that exists gets the roles, because a project may be
-// worked with more than one tool.
-func TestRolesInstallProjectFollowsExistingAgentDirs(t *testing.T) {
+// One directory, and only the one asked for. An agent directory that happens to
+// exist beside it is not a second install target: a harness reading both would
+// find the same role registered twice under one command name.
+func TestRolesInstallProjectIgnoresOtherAgentDirs(t *testing.T) {
 	dir := boardAt(t)
 	if err := os.MkdirAll(filepath.Join(dir, ".codex"), 0o755); err != nil {
 		t.Fatal(err)
@@ -117,11 +117,27 @@ func TestRolesInstallProjectFollowsExistingAgentDirs(t *testing.T) {
 	if out, err := runCLI(t, dir, "roles", "install", "--project"); err != nil {
 		t.Fatalf("roles install: %v\n%s", err, out)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".codex", "skills", "jaira-teamlead", "SKILL.md")); err != nil {
-		t.Errorf(".codex was not written to: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, ".codex", "skills")); !os.IsNotExist(err) {
+		t.Error(".codex/skills was written to; --project installs into .claude/skills only")
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".claude", "skills", "jaira-teamlead")); !os.IsNotExist(err) {
-		t.Error(".claude/skills was created although .codex already existed")
+	if _, err := os.Stat(filepath.Join(dir, ".claude", "skills", "jaira-teamlead", "SKILL.md")); err != nil {
+		t.Errorf(".claude/skills was not written to: %v", err)
+	}
+}
+
+// --into is how a project whose agent reads somewhere else gets the roles,
+// rather than every candidate directory getting a copy.
+func TestRolesInstallIntoNamesTheDirectory(t *testing.T) {
+	dir := boardAt(t)
+	want := filepath.Join(dir, ".codex", "skills")
+	if out, err := runCLI(t, dir, "roles", "install", "--into", want); err != nil {
+		t.Fatalf("roles install --into: %v\n%s", err, out)
+	}
+	if _, err := os.Stat(filepath.Join(want, "jaira-teamlead", "SKILL.md")); err != nil {
+		t.Errorf("--into did not write there: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".claude", "skills")); !os.IsNotExist(err) {
+		t.Error(".claude/skills was written to as well; --into replaces the default")
 	}
 }
 
@@ -228,28 +244,5 @@ func TestRolesInstallNeedsExactlyOneTarget(t *testing.T) {
 		if code := exitCode(err); code != ExitUsage {
 			t.Errorf("%v exited %d, want %d\n%s", args, code, ExitUsage, out)
 		}
-	}
-}
-
-// An older, unprefixed copy of a role answers to a different command name. It
-// is reported so nobody keeps invoking the stale one, and never deleted.
-func TestRolesInstallReportsAnUnprefixedCopy(t *testing.T) {
-	dir := boardAt(t)
-	bare := filepath.Join(dir, ".claude", "skills", "teamlead")
-	if err := os.MkdirAll(bare, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(bare, "SKILL.md"), []byte("---\nname: teamlead\n---\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	out, err := runCLI(t, dir, "roles", "install", "--project")
-	if err != nil {
-		t.Fatalf("roles install: %v\n%s", err, out)
-	}
-	if !strings.Contains(out, bare) {
-		t.Errorf("the unprefixed copy was not reported:\n%s", out)
-	}
-	if _, err := os.Stat(filepath.Join(bare, "SKILL.md")); err != nil {
-		t.Errorf("the unprefixed copy was removed: %v", err)
 	}
 }

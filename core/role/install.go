@@ -3,7 +3,6 @@ package role
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,14 +52,11 @@ func Install(dstSkillsDir string, force bool) ([]Result, error) {
 			if err != nil {
 				return out, err
 			}
-			// The destination is built from the role's own id and its embedded
-			// relative path, never from anything a caller supplied, so nothing
-			// can escape dstSkillsDir. The check below states that as a
-			// guarantee rather than trusting the construction of it.
+			// Both path elements come out of the embedded filesystem — the
+			// role's own directory name and its relative path — and never
+			// from a caller, so the destination is fixed at compile time and
+			// stays under dstSkillsDir by construction.
 			dst := filepath.Join(dstSkillsDir, r.ID, filepath.FromSlash(rel))
-			if !within(dstSkillsDir, dst) {
-				return out, fmt.Errorf("role %s: %s would write outside %s", r.ID, rel, dstSkillsDir)
-			}
 			action, err := writeFile(dst, want, force)
 			if err != nil {
 				return out, err
@@ -102,38 +98,7 @@ func writeFile(dst string, want []byte, force bool) (Action, error) {
 	return Written, nil
 }
 
-// Twins finds roles already present in dstSkillsDir under their unprefixed
-// name — a directory teamlead/ beside the installed jaira-teamlead/.
-//
-// The prefix is not decoration: an agent harness derives the command name from
-// the directory, so an unprefixed copy is a second, older command that answers
-// to a different name. Anyone who wrote these prompts by hand before this
-// command existed has exactly that, and will otherwise keep invoking the stale
-// one without ever being told there are two. Reported, never deleted: a
-// directory this tool did not write is not a directory it removes.
-func Twins(dstSkillsDir string) ([]string, error) {
-	roles, err := Builtins()
-	if err != nil {
-		return nil, err
-	}
-	var out []string
-	for _, r := range roles {
-		bare := strings.TrimPrefix(r.ID, Prefix)
-		if bare == r.ID {
-			continue
-		}
-		if _, err := os.Stat(filepath.Join(dstSkillsDir, bare, skillFile)); err == nil {
-			out = append(out, filepath.Join(dstSkillsDir, bare))
-		}
-	}
-	return out, nil
-}
-
-// Prefix is carried by every shipped role's directory name, and is what keeps
-// jaira's roles from colliding with a skill of the same name from elsewhere.
-const Prefix = "jaira-"
-
-// Skipped reports whether any file was left alone because it had been edited —
+// SkippedAny reports whether any file was left alone because it had been edited —
 // what the CLI turns into a non-zero exit, so a script can tell "installed" from
 // "installed except the ones you changed".
 func SkippedAny(results []Result) bool {
@@ -143,13 +108,4 @@ func SkippedAny(results []Result) bool {
 		}
 	}
 	return false
-}
-
-// within reports whether path is dir itself or below it.
-func within(dir, path string) bool {
-	rel, err := filepath.Rel(dir, path)
-	if err != nil {
-		return false
-	}
-	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }

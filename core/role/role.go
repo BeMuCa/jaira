@@ -38,7 +38,6 @@ type Role struct {
 	// ID is the directory name, and therefore the name the harness invokes:
 	// jaira-teamlead is /jaira-teamlead.
 	ID          string
-	Name        string
 	Description string
 
 	// Files are paths relative to the role's own directory, SKILL.md first
@@ -91,7 +90,7 @@ func File(id, rel string) ([]byte, error) {
 
 // load walks one embedded role directory and reads its SKILL.md frontmatter.
 func load(id string) (Role, error) {
-	r := Role{ID: id, Name: id}
+	r := Role{ID: id}
 	root := path.Join(builtinDir, id)
 	err := fs.WalkDir(builtinFS, root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -120,39 +119,35 @@ func load(id string) (Role, error) {
 	if err != nil {
 		return Role{}, err
 	}
-	name, desc := frontmatter(b)
-	if name != "" {
-		r.Name = name
-	}
-	r.Description = desc
+	r.Description = frontmatterDescription(b)
 	return r, nil
 }
 
 const skillFile = "SKILL.md"
 
-// frontmatter reads name: and description: out of a SKILL.md header.
+// frontmatterDescription reads description: out of a SKILL.md header.
 //
-// A line scan rather than a YAML parse: the two fields are scalars on their own
-// lines in every shipped role, and the header is not round-tripped or rewritten
-// here — pulling in a YAML dependency to read two strings would buy nothing.
-func frontmatter(b []byte) (name, description string) {
+// Only description: — the frontmatter also carries name:, but a role's name is
+// its directory, so reading the field back would only ever restate the id.
+//
+// A line scan rather than a YAML parse: the field is a scalar on its own line
+// in every shipped role, and the header is not round-tripped or rewritten here
+// — pulling in a YAML dependency to read one string would buy nothing.
+func frontmatterDescription(b []byte) string {
 	s := string(b)
 	if !strings.HasPrefix(s, "---\n") {
-		return "", ""
+		return ""
 	}
 	end := strings.Index(s[4:], "\n---")
 	if end < 0 {
-		return "", ""
+		return ""
 	}
 	for _, line := range strings.Split(s[4:4+end], "\n") {
-		switch {
-		case strings.HasPrefix(line, "name:"):
-			name = unquote(strings.TrimSpace(strings.TrimPrefix(line, "name:")))
-		case strings.HasPrefix(line, "description:"):
-			description = unquote(strings.TrimSpace(strings.TrimPrefix(line, "description:")))
+		if strings.HasPrefix(line, "description:") {
+			return unquote(strings.TrimSpace(strings.TrimPrefix(line, "description:")))
 		}
 	}
-	return name, description
+	return ""
 }
 
 func unquote(s string) string {

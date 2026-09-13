@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -42,8 +41,8 @@ func newRolesListCmd() *cobra.Command {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
 					arr = append(arr, map[string]any{
-						"id": r.ID, "name": r.Name,
-						"description": r.Description, "files": r.Files,
+						"id": r.ID, "description": r.Description,
+						"files": r.Files,
 					})
 				}
 				return emit(w, map[string]any{"roles": arr})
@@ -70,16 +69,17 @@ func firstSentence(s string) string {
 
 func newRolesInstallCmd() *cobra.Command {
 	var project, global, force bool
+	var into string
 	cmd := &cobra.Command{
-		Use:   "install --project|--global",
+		Use:   "install --project|--global|--into <dir>",
 		Short: "Write the role prompts into a skills directory",
 		Long: `Writes every built-in role as <skills>/<role-id>/SKILL.md, together with any
 files the role ships beside its prompt.
 
---project writes into this repository, so the roles arrive with a clone: into
-each of .claude/, .codex/ and .agents/ that already exists, and into .claude/
-when none does. --global writes into ~/.claude/skills, for every repository you
-work in.
+--project writes into .claude/skills in this repository, so the roles arrive
+with a clone. --global writes into ~/.claude/skills, for every repository you
+work in. --into names a skills directory instead, for an agent that reads
+somewhere else.
 
 A file you have edited is never replaced. It is left exactly as it is and
 reported, and the command exits 3 so a script can tell "installed" from
@@ -88,48 +88,44 @@ identical to the built-in one is not an edit — a second run reports it as
 unchanged and exits 0.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if project == global {
-				return fail(ExitUsage, "usage", "choose exactly one of --project or --global")
-			}
-			var targets []string
-			if global {
+			var target string
+			switch {
+			case into != "":
+				if project || global {
+					return fail(ExitUsage, "usage", "--into replaces --project and --global; pass one of the three")
+				}
+				target = into
+			case project == global:
+				return fail(ExitUsage, "usage", "choose exactly one of --project, --global or --into")
+			case global:
 				dir, err := role.GlobalTarget()
 				if err != nil {
 					return err
 				}
-				targets = []string{dir}
-			} else {
+				target = dir
+			default:
 				s, err := openStore()
 				if err != nil {
 					return err
 				}
-				targets = role.ProjectTargets(s.Root)
+				target = role.ProjectTarget(s.Root)
 			}
 
-			var all []role.Result
-			var twins []string
-			for _, dir := range targets {
-				results, err := role.Install(dir, force)
-				all = append(all, results...)
-				if err != nil {
-					return err
-				}
-				found, err := role.Twins(dir)
-				if err != nil {
-					return err
-				}
-				twins = append(twins, found...)
+			results, err := role.Install(target, force)
+			if err != nil {
+				return err
 			}
-			return reportRoleInstall(cmd, all, twins)
+			return reportRoleInstall(cmd, target, results)
 		},
 	}
-	cmd.Flags().BoolVar(&project, "project", false, "write into this repository's agent skills directories")
+	cmd.Flags().BoolVar(&project, "project", false, "write into .claude/skills in this repository")
 	cmd.Flags().BoolVar(&global, "global", false, "write into ~/.claude/skills")
+	cmd.Flags().StringVar(&into, "into", "", "write into this skills directory instead")
 	cmd.Flags().BoolVar(&force, "force", false, "replace a file you have edited")
 	return cmd
 }
 
-func reportRoleInstall(cmd *cobra.Command, results []role.Result, twins []string) error {
+func reportRoleInstall(cmd *cobra.Command, target string, results []role.Result) error {
 	w := cmd.OutOrStdout()
 	skipped := role.SkippedAny(results)
 	if g.jsonOut {
@@ -139,10 +135,7 @@ func reportRoleInstall(cmd *cobra.Command, results []role.Result, twins []string
 				"role": r.Role, "path": r.Path, "action": string(r.Action),
 			})
 		}
-		if twins == nil {
-			twins = []string{}
-		}
-		if err := emit(w, map[string]any{"installed": arr, "skipped": skipped, "unprefixed": twins}); err != nil {
+		if err := emit(w, map[string]any{"directory": target, "installed": arr, "skipped": skipped}); err != nil {
 			return err
 		}
 	} else {
@@ -160,12 +153,7 @@ func reportRoleInstall(cmd *cobra.Command, results []role.Result, twins []string
 		}
 		fmt.Fprintf(w, "%d written, %d unchanged, %d skipped, %d overwritten\n",
 			counts[role.Written], counts[role.Unchanged], counts[role.Skipped], counts[role.Overwritten])
-		for _, dir := range installDirs(results) {
-			fmt.Fprintf(w, "roles in %s\n", dir)
-		}
-		for _, t := range twins {
-			fmt.Fprintf(w, "note: %s is an older copy under its unprefixed name; it answers to a different command and was left alone\n", t)
-		}
+		fmt.Fprintf(w, "roles in %s\n", target)
 	}
 	if skipped {
 		// A refusal, not a failure: everything else was installed, and the
@@ -173,35 +161,4 @@ func reportRoleInstall(cmd *cobra.Command, results []role.Result, twins []string
 		return fail(ExitValidation, "edited", "some roles were edited here and left alone; --force to replace them")
 	}
 	return nil
-}
-
-// installDirs names each skills directory written to, once, in order.
-func installDirs(results []role.Result) []string {
-	var out []string
-	seen := map[string]bool{}
-	for _, r := range results {
-		// A role's supporting file sits one level deeper than its prompt, so
-		// the skills directory is found by climbing to the role id, not by
-		// counting parents.
-		dir := skillsDirOf(r.Path, r.Role)
-		if dir == "" || seen[dir] {
-			continue
-		}
-		seen[dir] = true
-		out = append(out, dir)
-	}
-	return out
-}
-
-// skillsDirOf walks up from an installed file to the skills directory that
-// holds the role, by finding the role-id element in the path.
-func skillsDirOf(path, roleID string) string {
-	dir := filepath.Dir(path)
-	for dir != "" && dir != string(filepath.Separator) && dir != "." {
-		if filepath.Base(dir) == roleID {
-			return filepath.Dir(dir)
-		}
-		dir = filepath.Dir(dir)
-	}
-	return ""
 }
