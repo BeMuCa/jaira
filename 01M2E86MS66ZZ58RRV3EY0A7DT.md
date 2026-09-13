@@ -24,7 +24,7 @@ related: []
 commits:
   - 0c5da60a7dfe4e552d2ce8c64712d8e4b0d257ac
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:11:08Z
+updated-at: 2026-09-13T22:11:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -157,3 +157,8 @@ Nicht am Diff, aber fuer den naechsten Leser: critique, optimize und testing sin
 - Die hoerbare Unterscheidung human/signoff gegen done kann die Glockenzahl nicht tragen. Zwei BEL gehen im selben printf ohne Pause raus, und VTE/iTerm2 fassen Glocken in kurzem Abstand zu einem Ton zusammen. Nicht reparierbar ohne externes Werkzeug: eine Pause dazwischen wuerde 'sleep' brauchen, also einen Prozess und eine Wartezeit in einem Skript, das jaira nach 5 s abschiesst - dafuer ist der Effekt zu klein. Die ehrliche Fassung steht jetzt in deliver(): den Unterschied traegt die gedruckte Zeile ('jaira human:' gegen 'jaira done:'), der Glockenzaehler ist ein Hinweis. Ein Kanal mit eigenem Titel (ntfy, notify-send) bekommt die Unterscheidung sauber zurueck.
 - NOTES.md:17 stand auf 'only for the lanes that wait on a person' und beschrieb damit ein Binary, das es nicht gibt. Jetzt nennt die Zeile beide Faelle und sagt, woran man sie auseinanderhaelt. Auf dieser Datei arbeitet parallel ein anderer Branch, deshalb nur diese eine Zeile ersetzt, nichts drumherum angefasst.
 Nicht angefasst, weil review es ausdruecklich fuer richtig befunden hat: Befehl, go:embed, /dev/tty-Probe, die drei Tests. Die zwei kleinen Anmerkungen von review (Windows druckt ein /bin/sh-Skript; kein Test ruft das Skript ueber die Shebang-Zeile auf) sind bewusst offen - sie waren nicht rueckweisend und gehoeren in ein eigenes Ticket.
+- **2026-09-13 22:11 · Alexander Sacharov** — Zweiter Review-Durchgang: freigegeben. Die drei Maengel sind an den benannten Stellen behoben und einzeln nachgeprueft - Kopfkommentar (notify.sh:18-24) deckt sich jetzt mit dem case-Zweig (55-59), NOTES.md:17 beschreibt das Verhalten des Binaries, und die Behauptung ueber zwei hoerbare Toene ist zurueckgenommen statt vorgetaeuscht. Geprueft wurde am Skript, das 'jaira hook example' wirklich druckt, nicht an der Quelldatei.
+
+Was fuer den naechsten Leser nicht im Diff steht: es gibt eine vierte Stelle mit derselben Aussage, README.md:353-357, und sie ist nicht mitgezogen worden. Dort steht weiterhin die Glockenzahl als die Unterscheidung und eine Begruendung, die nur human/signoff deckt, waehrend der Satz done mit aufzaehlt - genau der Bruch, wegen dessen das Ticket beim ersten Mal zurueckging, nur milder. Ich habe deswegen nicht zurueckgewiesen: der erste Durchgang hat diesen Absatz gesehen und abgenommen, und dieser Durchgang sollte ausdruecklich nur die drei benannten Stellen pruefen. Wer abnimmt, entscheidet, ob die Zeile noch hier nachgezogen wird oder ein eigenes Ticket bekommt - sie ist Nutzertext, also nicht folgenlos.
+
+Weiterhin offen und bewusst nicht angefasst: Windows druckt ein /bin/sh-Skript ohne Hinweis, und kein Test ruft das Skript ueber Shebang und x-Bit auf.
