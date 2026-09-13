@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,15 +21,16 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:24:11Z
+updated-at: 2026-09-13T20:24:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
-outcome-what: "core/role/target.go: ProjectTargets replaced by ProjectTarget — one directory, .claude/skills, instead of a copy in every agent directory that happens to exist; internal/cli/roles.go gained --into <dir> for a project whose agent reads elsewhere. Removed: Role.Name and the name: parse branch (the directory is the name), role.Twins() and the unprefixed JSON field, the within() guard on a compile-time-fixed path, and installDirs/skillsDirOf — the install target is now passed to reportRoleInstall instead of reconstructed from the written paths. Fixed the SkippedAny doc comment. core/release/NOTES.md: the install line now says .claude/skills and --into, and a second line tells anyone who wrote these prompts by hand that their bare-named copies still answer to the old command."
-outcome-why: "Critique returned the ticket with six findings. The load-bearing one was the fan-out: a harness that reads more than one agent directory would find jaira-teamlead registered twice under one command name, with nothing to say which copy answered, and the definition of done names exactly one target. The other five were weight the change did not need — a second name for the id, a guard against a state the compiler already rules out, paths rebuilt from paths the caller held, and a one-machine migration paying for a permanent JSON field."
-outcome-resolves: "Every finding in review-summary is addressed in the file it names. jaira roles install --project writes .claude/skills/jaira-<id>/SKILL.md for all seven roles and nowhere else (internal/cli/roles_test.go TestRolesInstallProjectIgnoresOtherAgentDirs), --into writes where it is told (TestRolesInstallIntoNamesTheDirectory), --global still writes ~/.claude/skills, a second run reports only unchanged, an edited file is left alone and exits 3, --force replaces it, jaira roles list names the roles, core/release/NOTES.md carries the line under ## Unreleased, and go test ./... -race is green."
+outcome-what: "core/role/role.go: frontmatterDescription() now reads the SKILL.md header with ticket.ParseDoc + Scalar(\"description\"), the same parser core/lane uses; the hand-rolled line scan and unquote() are gone. Get() removed — TestTeamleadShipsItsScript picks the role out of Builtins() and TestGetUnknownRole is gone with it. core/board/announce.go: firstSentence exported as FirstSentence and documented; internal/cli/roles.go deleted its own copy and calls it."
+outcome-why: "Second critique returned three findings. Two readers of one file format is the load-bearing one: a SKILL.md header is frontmatter, and the hand scan was also narrower than it looked — it handed back the escapes of a quoted scalar. The duplicate firstSentence was the only finding with visible output: cutting at every '.' truncated 'writes into .claude/skills' to 'writes into .'. Get() had no caller outside its own test."
+outcome-resolves: "All three findings in review-summary addressed in the files they name. go test ./... -race green; jaira roles list now prints each description up to its first full stop instead of breaking inside a path."
 review-summary: |-
   core/role/role.go:136 frontmatterDescription() und unquote() scannen das Frontmatter von Hand, obwohl der Parser dafuer schon im Modul liegt und genau fuer Frontmatter in einer .md-Datei benutzt wird: core/lane/lane.go:243 liest die Lane-Beschreibung mit ticket.ParseDoc(src) und d.Scalar("description"). Das ist keine neue Abhaengigkeit, core/lane haengt bereits daran. Der Handscanner ist ausserdem enger als er aussieht: unquote() streift nur die aeusseren Anfuehrungszeichen ab, ein \" in einer description kaeme mit Backslash in der Liste an. Beide Funktionen streichen und in load() ticket.ParseDoc + Scalar("description") verwenden.
   core/role/role.go:70 Get(id) hat keinen Aufrufer ausserhalb der eigenen Tests - core/role/role_test.go:58 und :104 sind die einzigen. Die CLI liest nur Builtins() und File(). Eine exportierte Funktion, die nur ihr eigener Test benutzt, ist Oberflaeche ohne Nutzer. Get() streichen, TestTeamleadShipsItsScript die Rolle aus Builtins() heraussuchen lassen, TestGetUnknownRole entfaellt mit.
