@@ -1,7 +1,7 @@
 ---
 id: 01M2EAPXTQKS5GBQS2PVPMF635
 title: "Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:57:23Z
+updated-at: 2026-09-13T21:57:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -32,6 +32,7 @@ outcome-why: "Die ausgelieferten Prompts waren am Tag der Auslieferung schon ver
 outcome-resolves: "Definition of Done Punkt 1 vollstaendig: Text uebernommen, TestCrossReferencesCarryThePrefix und go test ./... -race gruen, Installation deckungsgleich, alte Ordner weg, NOTES.md-Zeile geschrieben."
 review-summary: none
 test-verdict: "pass: go test ./... -race gruen (RC=0), TestCrossReferencesCarryThePrefix gruen, 'roles install --global --force' RC=0 und diff -r gegen core/role/builtin fuer alle sieben jaira-<id> Ordner ohne Unterschied, die sieben unpraefixierten Ordner sind weg, NOTES.md-Zeile unter ## Unreleased vorhanden"
+question: "Die Uebernahme ist geprueft: installierte jaira-* Dateien und core/role/builtin sind deckungsgleich, die sieben unpraefixierten Ordner sind weg, go test ./... -race gruen. Zwei Dinge brauchen dein Ja, weil kein Test sie abdecken kann. Erstens der Inhalt der Prompts: geprueft wurde nur, dass jedes name: und jeder Querverweis das jaira-Praefix traegt - ob der verschaerfte Text vollstaendig und richtig uebernommen wurde, sieht kein Test, das ist dein Text und deine Abnahme. Zweitens: nach der Testing-Runde kam auf denselben Zweig noch f3bc433 - der Abschnitt 'Where a worktree goes' in jaira-dispatcher, die .worktrees-Pfadformel in spawn.sh und eine NOTES-Zeile. Der war nicht Teil der geprueften Definition of Done und will separat abgenommen werden. Offen dabei geblieben und bewusst nicht entschieden: die letzte Zeile deines Textentwurfs ('Remove a worktree once its pull request is merged') ist nicht eingefuegt, weil sie einen frueheren Loeschzeitpunkt nennt als Zeile 129 des Dispatchers ('only once the ticket is off the board') - sag, welche der beiden gilt."
 ---
 
 # Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis
