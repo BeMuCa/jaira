@@ -1,7 +1,7 @@
 ---
 id: 01M2E5JQKJ2GXQEV7XCBTHRR79
 title: "CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:29:10Z
+updated-at: 2026-09-13T20:31:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
-outcome-what: "Die Zeilen 27-159 aus CLAUDE.md (## Technology Stack bis zum letzten ## Sources-Punkt) stehen jetzt woertlich in docs/STACK.md. In CLAUDE.md bleibt die Ueberschrift und genau eine Verweiszeile, die docs/STACK.md und .planning/research/STACK.md als Vollfassung nennt; die GSD-Marker stack-start/stack-end bleiben stehen. CLAUDE.md faellt von 34993 auf 13968 Bytes."
-outcome-why: "CLAUDE.md wird von jeder frisch gestarteten Agenten-Sitzung komplett gelesen, bei acht Lanes acht Mal pro Ticket. Der Stack-Block ist fuer einen Menschen geschrieben, der die Technologie waehlt - ein Worker in einer Lane braucht ihn nicht, die Entscheidung steht im go.mod. Rund 5300 Token pro Lane fuers Wiederlesen einer Entscheidung, die niemand mehr trifft."
-outcome-resolves: "docs/STACK.md ist byte-identisch mit den alten Zeilen (diff gegen git show HEAD~1:CLAUDE.md leer); CLAUDE.md:29 ist die Verweiszeile; 13968 Bytes sind ca. 3450 Token, unter den geforderten 4000; git diff CLAUDE.md hat genau einen Hunk @@ -26,137 +26,7 @@, der jaira-Block und alles hinter jaira:local sind unberuehrt; jaira update lief fehlerfrei; go test ./... -race komplett gruen."
+outcome-what: "docs/STACK.md tragt jetzt einen eigenen H1-Titel und eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt"
+outcome-why: "die Datei war die gekuerzte Zweitfassung, sagte das aber nirgends - wer nur dem Link aus CLAUDE.md folgte, hielt sie fuer das Ganze"
+outcome-resolves: "die einzige Feststellung der critique vom 2026-09-13 20:29"
 review-summary: "docs/STACK.md:1 beginnt mit '## Technology Stack' und direkt darunter '## 1. Language: Go — not Rust'; die beiden anderen Dateien im selben Verzeichnis (docs/AGENTS.md:1, docs/COMMANDS.md:1) beginnen mit einem H1-Titel. Setz '# Technology Stack' als Zeile 1 darueber und darunter genau eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt - wer der Verweiszeile aus CLAUDE.md:29 folgt, landet sonst in einer gekuerzten Zweitfassung, der nicht anzusehen ist, dass sie gekuerzt ist. Der verschobene Text bleibt dabei unveraendert; es kommen nur zwei Zeilen davor."
 ---
 
@@ -70,3 +70,4 @@ Die beiden Dateien doppeln einander ohnehin kaum: AGENTS.md ist fast nur der erz
 - **2026-09-13 20:21 · Alexander Sacharov** — Plan-Schritt 5 hat eine Falle: "go run ./cmd/jaira update" schreibt in diesem Worktree den jaira-Block KUERZER neu - die Lanes critique, optimize und testing verschwinden aus CLAUDE.md und AGENTS.md. Grund: .jaira/ ist gitignored und damit pro Worktree eigen; /home/alex/projects/jaira-THRR79/.jaira/lanes enthaelt diese drei Lane-Dateien nicht, /home/alex/projects/jaira/.jaira/lanes schon. update hat also fehlerfrei gearbeitet, nur aus einer aelteren Lane-Konfiguration heraus. Konsequenz hier: AGENTS.md und der jaira-Block in CLAUDE.md wurden nach dem Lauf per git checkout zurueckgesetzt, damit der Commit nur die Stack-Verschiebung traegt. Wer in einem Worktree "jaira update" laufen laesst, muss danach den Diff pruefen - sonst landet der Lane-Verlust still im Commit. Eigenes Thema, nicht dieses Ticket.
 - **2026-09-13 20:25 · Alexander Sacharov** — Der Worktree /home/alex/projects/jaira-THRR79 hatte eine veraltete .jaira/lanes-Konfiguration ohne critique, optimize und testing - .jaira/lanes ist nicht in git (nur .jaira/tickets ist getrackt), also faehrt jeder Worktree seine eigene Kopie. Deshalb schlug "jaira move --to critique" zuerst mit exit 3 fehl. Behoben durch cp der drei Lane-Dateien und der Datei order aus /home/alex/projects/jaira/.jaira/lanes. Wer hier einen neuen Worktree aufmacht, muss das wieder tun.
 - **2026-09-13 20:29 · Alexander Sacharov** — critique: Eine Feststellung, sonst nichts. docs/STACK.md ist jetzt die Datei, auf die CLAUDE.md:29 zeigt, sagt aber selbst nicht, was sie ist: Zeile 1 ist '## Technology Stack', direkt gefolgt von '## 1. Language: Go — not Rust'. docs/AGENTS.md und docs/COMMANDS.md beginnen beide mit einem H1-Titel; das ist das Muster im selben Verzeichnis. Zu aendern: '# Technology Stack' als neue Zeile 1 und darunter eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt. Grund: die Zweitfassung ist gekuerzt und traegt kein Zeichen davon - wer nur dem Link folgt, haelt sie fuer das Ganze. Der Hinweis auf die Vollfassung steht heute nur in CLAUDE.md, also genau in der Datei, die niemand mehr lesen soll. Zwei Zeilen davor, der verschobene Text bleibt unangetastet. Nicht aufgemacht: die Doppelung docs/STACK.md gegen .planning/research/STACK.md (in der Notiz von 20:17 bereits entschieden) und der GSD-Marker stack-start, dessen Quelle nicht mehr zum Inhalt passt (dort ebenfalls bewusst so gelassen).
+- **2026-09-13 20:31 · Alexander Sacharov** — in-progress nach critique: docs/STACK.md hat jetzt '# Technology Stack' als H1 und darunter eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt. Bewusst stehen gelassen: die Zeile '## Technology Stack' direkt darunter. Sie ist Teil des woertlich verschobenen Textes (CLAUDE.md Zeile 27) und die critique hat nur zwei Zeilen davor verlangt, nicht das Entfernen. Wirkung: H1 und H2 tragen denselben Titel. Wer das aufraeumen will, braucht dafuer eine Entscheidung, dass der verschobene Text doch angefasst werden darf - hier nicht getroffen.

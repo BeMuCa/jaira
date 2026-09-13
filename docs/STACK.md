@@ -1,3 +1,7 @@
+# Technology Stack
+
+This is the condensed version. The unabridged research is `.planning/research/STACK.md`, researched 2026-08-11.
+
 ## Technology Stack
 
 ## 1. Language: Go — not Rust
