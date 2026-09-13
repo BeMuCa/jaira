@@ -3,6 +3,7 @@ package role
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -135,13 +136,17 @@ func TestInstallWritesEveryFile(t *testing.T) {
 		}
 	}
 	// A shipped script must arrive executable, or the prompt that calls it is
-	// a broken instruction.
-	fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if fi.Mode().Perm()&0o111 == 0 {
-		t.Errorf("spawn.sh installed as %v, want the execute bit", fi.Mode().Perm())
+	// a broken instruction. Windows has no POSIX execute bit — os.Chmod there
+	// only toggles the read-only flag — so the claim is not one this platform
+	// can make either way.
+	if runtime.GOOS != "windows" {
+		fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fi.Mode().Perm()&0o111 == 0 {
+			t.Errorf("spawn.sh installed as %v, want the execute bit", fi.Mode().Perm())
+		}
 	}
 }
 
@@ -207,6 +212,12 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 // os.WriteFile hands the mode to O_CREATE only, so an existing file keeps the
 // permissions it had and the repair has to be stated separately.
 func TestInstallRestoresTheExecuteBit(t *testing.T) {
+	// Windows carries no POSIX permission bits: os.Chmod there only flips the
+	// read-only flag, so neither the damage this repairs nor the repair itself
+	// can be staged on that platform.
+	if runtime.GOOS == "windows" {
+		t.Skip("no POSIX execute bit on windows")
+	}
 	dir := t.TempDir()
 	if _, err := Install(dir, false); err != nil {
 		t.Fatal(err)
