@@ -23,7 +23,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T19:58:17Z
+updated-at: 2026-09-13T20:08:55Z
+updated-by: Alexander Sacharov
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
