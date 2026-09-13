@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:47:06Z
+updated-at: 2026-09-13T20:47:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -116,3 +116,4 @@ Geprueft und in Ordnung befunden: kein exportierter Bezeichner in core/role hat 
 Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleich statt os.Stat (Runde 1), --into (Runde 1), ticket.ParseDoc in frontmatterDescription und board.FirstSentence (Runde 2), der Ort von spawn.sh unter jaira-dispatcher (Runde 3), role_test.go:39 mit der name:-Invariante, und der handgeschriebene Usage-Zweig in internal/cli/roles.go:82-89, der dem Muster aus lanes.go:191 folgt.
 
 Nicht als Befund gefuehrt, weil es ein eigenes Ticket waere: das Skript setzt herdr und python3 voraus, beides steht nirgends als Anforderung. Solange der Prompt es nur als Hilfe fuer einen Container-Stack nennt, traegt das - wer kein herdr hat, bekommt Zeile 10 als klare Meldung, kein stilles Scheitern.
+- **2026-09-13 20:47 · Alexander Sacharov** — Commit dieser Runde: 82d7ab7.
