@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:05:19Z
+updated-at: 2026-09-13T17:06:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Kyrillische Belegung steuert das Board, Texteingabe bleibt kyrillisch"
-outcome-why: "Die automatisierten Tests decken die Tabellen-Ebene ab; eine echte Systembelegung und die BaseCode-Ebene kann nur ein Mensch an seinem Terminal pruefen"
-outcome-resolves: "cmdKey liest Kommandos ueber die Tastenposition, Texteingabe liest weiter k.Text"
+outcome-what: "Satzzeichen und Shift-Kombinationen werden nicht mehr ueber die Tastenposition gelesen; der tote ctrl/alt-Zweig ist raus"
+outcome-why: "shift+/ meldet BaseCode '/' und druckt '?': die Hilfe-Taste oeffnete den Filter, auf dem Windows-Console-Pfad auch mit US-Belegung"
+outcome-resolves: "physicalRune setzt nur noch Buchstaben ueber BaseCode/Tabelle um; Satzzeichen laufen ausschliesslich ueber die Tabelle und nur ohne Shift; TestCmdKeyLeavesShiftedPunctuationAlone ersetzt den Test, der eine unmoegliche Nachricht baute; NOTES-Zeile auf Buchstaben-Kommandos eingeschraenkt"
 review-summary: |-
   Zweiter Durchgang: nichts mehr zu aendern. Die Einschraenkung auf gedruckte Zeichen sitzt in physicalRune (internal/tui/keylayout.go:59), also in der Funktion, die die Entscheidung trifft, nicht in den vier Aufrufern - richtige Stelle
   internal/tui/keylayout.go:41 cmdKey schreibt nur ctrl und alt vor die Rune, meta/hyper/super fallen weg; bewusst, weil das Board keine davon bindet und ein Zweig fuer einen Zustand, den es nicht gibt, nur Ballast waere
