@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:54:40Z
+updated-at: 2026-09-13T18:54:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -37,6 +37,17 @@ test-verdict: |-
   Binary neu gebaut unter /home/alex/.local/bin/jaira
 question: ""
 review-verdict: "Erfuellt die Definition of Done und ist merge-reif: der Melder hat es viermal an seinem Terminal bestaetigt, das zweite Modell blockiert nichts mehr"
+review-check: |-
+  1. go build -o /tmp/jaira-check ./cmd/jaira
+  2. /tmp/jaira-check board - das Board geht auf
+  3. Tastatur auf Russisch umstellen
+  4. о und л druecken - der Cursor geht im Lane runter und rauf (das sind die Tasten j und k)
+  5. р und д druecken - der Cursor springt in die Lane links und rechts
+  6. Punkt-Taste druecken - unten geht der Filter auf
+  7. русский ins Filterfeld tippen - es erscheint russisch, nicht als Kommando
+  8. esc, dann ? druecken - die Hilfe geht auf, nicht der Filter
+  9. esc, dann й - das Board schliesst
+  10. go test ./internal/tui/ -run TestCmdKey -v - acht Tests, alle PASS
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
