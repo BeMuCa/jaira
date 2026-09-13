@@ -23,8 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:12:30Z
+updated-at: 2026-09-13T20:13:55Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-60480
+claimed-at: 2026-09-13T20:13:55Z
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
