@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:02:06Z
+updated-at: 2026-09-13T22:02:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -31,6 +31,20 @@ outcome-what: "Neuer Befehl 'jaira hook example' druckt ein lauffaehiges Benachr
 outcome-why: "Wer 'hook' in den Einstellungen sah, hatte ein leeres Feld und keinen Anhaltspunkt, was hineingehoert - praktisch schrieb es deshalb niemand. Jetzt gibt es einen ersten Schritt, der ohne jede Installation laeuft, und mit ihm die Regel, die das Beispiel transportieren soll: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt."
 outcome-resolves: "Die DoD-Zeile ist abgehakt: der Befehl legt das Beispiel ab und nennt die Scharfschalt-Zeile (internal/cli/hook.go, newHookExampleCmd), das Skript laeuft mit leerem PATH fehlerfrei durch und tut nichts (TestHookExampleRunsOnAMachineWithNothingInstalled), human/signoff sind von done hoerbar unterscheidbar (TestHookExampleSoundsOnlyForThePersonsLanes), der Hinweis steht im hook-Absatz der README, eine Zeile steht in core/release/NOTES.md, und go test ./... -race ist gruen (exit 0)."
 review-summary: "Neuer Unterbefehl 'jaira hook example' (internal/cli/hook.go:newHookExampleCmd) druckt ein 65-zeiliges POSIX-Shellskript auf stdout und sonst nichts - keine Datei, keine Einstellung. Das Skript liegt echt unter core/hook/example/notify.sh und wird von der neuen Datei core/hook/example.go per go:embed ins Binary gezogen; core/hook/hook.go ist unveraendert, der Vertrag steht. Das Skript beendet sich sofort bei JAIRA_EVENT=claim, waehlt dann nach JAIRA_STATUS: human und signoff geben zwei BEL-Zeichen plus eine Textzeile, done eines, jede andere Lane exit 0 ohne Ausgabe. Ausgegeben wird nach /dev/tty, sofern eine Subshell die tty oeffnen kann, sonst nach stdout - weil core/hook/hook.go Stdout und Stderr des Skripts auf nil setzt und alles nach stdout im echten Betrieb verschwindet. Drei Tests in internal/cli/hook_example_test.go (//go:build unix) fahren das gedruckte Skript wirklich aus, einer davon mit leerem PATH. README.md ergaenzt den hook-Absatz und grenzt 'hook example' gegen das unverwandte 'hook print' ab; eine Zeile steht unter ## Unreleased."
+review-gaps: |-
+  Drei Mangel, alle an derselben Stelle: die Regel, die das Beispiel transportieren soll, stimmt an drei Stellen nicht mit dem ueberein, was das Skript tut.
+
+  1. core/hook/example/notify.sh:18-20 sagt im Kopf: 'only a state in which nothing moves without a person is worth a sound. Every other lane stays silent.' Zeile 47 laesst 'done' klingeln. done ist die Endlane - dort bewegt sich weder mit noch ohne Menschen etwas, es ist keine Bitte. Die Kopfzeile wird also vom eigenen Code 27 Zeilen spaeter widerlegt. Das ist nicht kosmetisch: das Ticket existiert, um genau diese Regel weiterzugeben, und wer das Skript liest, liest zuerst die Regel und dann den Gegenbeweis. Die Brainstorm-Notiz hat die Gefahr fuer 'blocked' selbst benannt ('sonst ist die Regel, die es lehren soll, im Beispiel selbst schon gebrochen') und dieselbe Ausnahme fuer done dann nicht in den Satz eingearbeitet.
+
+  2. core/release/NOTES.md:17 sagt, das Skript klingele 'only for the lanes that wait on a person'. Es klingelt auch fuer done, und done wartet auf niemanden. Das ist die Zeile, die 'jaira update' einem Nutzer vorliest - sie beschreibt ein Verhalten, das das Binary nicht hat.
+
+  3. Die hoerbare Unterscheidung human/signoff gegen done haengt allein an der Anzahl der BEL-Zeichen, und beide gehen in einem einzigen printf ohne Pause hintereinander raus (notify.sh:33-35). Viele Terminals (VTE/GNOME Terminal, iTerm2) fassen Glocken in kurzem Abstand zusammen oder drosseln sie, sodass zwei BEL als ein Ton ankommen. Der Test zaehlt Bytes im String, nicht Toene - er kann diesen Unterschied nicht widerlegen. Die DoD-Zeile im engeren Sinn (Menschen-Lane gegen gewoehnlichen Wechsel = Ton gegen Stille) ist erfuellt; die feinere Unterscheidung, die outcome-resolves ausdruecklich behauptet ('human/signoff sind von done hoerbar unterscheidbar'), ist vom Diff nicht gedeckt. Ohne externes Werkzeug laesst sie sich auch nicht herstellen - die ehrliche Fassung ist, dass die Textzeile ('jaira human:' gegen 'jaira done:') den Unterschied traegt und der Glockenzaehler nur ein Hinweis ist. Das gehoert dann so ins Skript und ins outcome, statt behauptet zu werden.
+
+  Kleiner, nicht rueckweisend: 'jaira hook example' druckt auch unter Windows ein /bin/sh-Skript, ohne das irgendwo zu sagen (Windows wird gebaut, siehe .goreleaser.yaml und core/selfupdate/replace_windows.go); der Test traegt //go:build unix, dort ist der Befehl also ganz ungetestet. Und der Test fuehrt 'sh script' aus, nie das Skript direkt - die Shebang-Zeile und das x-Bit, auf die hook.Run per exec.Command(script) angewiesen ist, sind von keinem Test gedeckt (ich habe den direkten Aufruf von Hand geprueft, er laeuft).
+
+  Kein Defekt gefunden: das Skript laeuft mit leerem PATH und leerem Environment fehlerfrei durch (von Hand nachgestellt, exit 0 fuer alle Lanes), benutzt nur Shell-Builtins, ist gegen Prozentzeichen im Titel sicher, und 'go test ./... -race' ist gruen. Es steht genau eine Zeile fuer dieses Ticket unter ## Unreleased. Nichts im Diff ist ueberfluessig.
+
+  Anmerkung zum Weg, nicht zum Diff: critique, optimize und testing sind auf diesem Board nicht installiert, das Ticket ist von in-progress direkt nach review gegangen. Niemand hat vor mir draufgeschaut.
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
