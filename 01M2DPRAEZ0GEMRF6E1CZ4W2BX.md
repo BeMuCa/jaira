@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:30:06Z
+updated-at: 2026-09-13T18:33:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -25,9 +25,11 @@ review-summary: |-
   internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
   Zwei Kommentare korrigiert, die nach dem Fix nicht mehr stimmten (keylayout.go:49 und :95): 'jede Belegung ueber BaseCode' gilt nur noch fuer Buchstaben
 review-gaps: |-
-  Nichts Ueberfluessiges mehr: der tote ctrl/alt-Zweig ist im vorigen Schritt rausgeflogen, cmdKey hat vier Aufrufer, physicalRune einen, usPosition zwei
-  internal/tui/keylayout.go:64 Die drei Ausstiegsbedingungen (keine einzelne Rune, Leerzeichen, nicht graphisch) sehen nach Gurt und Hosentraeger aus, sind es aber nicht: leerer Text faengt benannte Tasten, das Leerzeichen faengt space, dessen Text ' ' ist und dessen Kommandoname 'space' lautet
-  Keine neuen Abhaengigkeiten, keine Konfiguration, kein Schalter; die Tabelle bleibt vollstaendig statt auf die heute gebundenen Tasten zugeschnitten, weil eine zugeschnittene Tabelle still bricht, sobald jemand '[' bindet
+  internal/tui/keylayout.go:80 AltGr faellt auf dem Windows-Console-Pfad in die Buchstaben-Ebene: der Decoder setzt Key.Text auch bei AltGr (decoder.go:2035, LEFT_CTRL|RIGHT_ALT) und Mod traegt dann ModCtrl|ModAlt. AltGr+о wuerde als blankes 'j' im Kommando-Handler landen und den Cursor bewegen, wo auf master nichts passierte. Gleiches fuer AltGr-Buchstaben lateinischer Belegungen (polnisches AltGr+a = ą, BaseCode 'a')
+  internal/tui/keylayout_test.go:44 Der ModShift-Guard ist von keinem Test festgenagelt: '?', '!' und '>' stehen ohnehin nicht in usPosition, die Faelle bestehen auch ohne Guard. Der Fall, fuer den der Guard wirklich da ist, fehlt - auf AZERTY ist der Punkt shift+';', ohne Guard haette cmdKey '/' zurueckgegeben und beim Tippen eines Punktes den Filter geoeffnet
+  internal/tui/keylayout.go:20 Der Kopfkommentar sagt weiterhin, BaseCode sei fuer jede Belegung richtig und brauche keine Tabelle; nach der Einschraenkung gilt das nur noch fuer Buchstaben
+  core/release/NOTES.md:18 'and the rest' im ersten Punkt deckt auch ctrl+d/ctrl+u mit ab, die genau nicht mitkommen
+  Bestaetigt geschlossen: die Hilfe-Taste ist auf allen drei Pfaden wieder erreichbar (auf JZUKEN ist '?' shift+7 und laeuft unveraendert durch), shift+Ziffer schaltet keine Boards mehr um, der tote ctrl/alt-Zweig ist raus, die NOTES-Zeile stimmt
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem Shift-Fix
   Neu: TestCmdKeyLeavesShiftedPunctuationAlone deckt shift+/ ('?'), shift+1 ('!') und shift+. ('>') mit gesetztem BaseCode ab - genau der Pfad, der die Hilfe-Taste in den Filter geschickt haette
