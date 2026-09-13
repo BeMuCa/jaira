@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:00:16Z
+updated-at: 2026-09-13T21:03:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-71524
 claimed-at: 2026-09-13T20:55:10Z
@@ -35,6 +35,7 @@ review-summary: |-
   core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
 review-gaps: "Removed boardAt (internal/cli/roles_test.go:17): byte-for-byte the same helper as lanesTestProject (internal/cli/lanes_test.go:309) in the same package - the roles tests now call that one, and the ticket import went with it. Left, each with a reason: role.File is exported and only internal/cli/roles_test.go:198 calls it from outside the package, but it is the package's only accessor for the embedded bytes and deleting it would take the CLI test's comparison of installed against built-in with it; exitCode() is a new helper over a pattern written out inline ten times elsewhere in internal/cli, so it duplicates no function and rewriting those ten is not this lane; Install() goes through Builtins(), which parses the frontmatter of all seven roles although only ID and Files are used, once per run of a command nobody runs in a loop; Install() returns its partial results beside an error and no caller reads them, which is an API shape rather than dead code. Checked and genuinely different, not merged: core/lane/share.go Export and core/lane/defaultboard.go:143 Materialise both write embedded files out, but neither has the three-way byte comparison this needs - the same conclusion round 1 reached."
+test-verdict: "fail: Suite gruen (RC=0) und DoD vollstaendig verifiziert, aber 'roles install --force' repariert ein fehlendes x-Bit an einer vorhandenen spawn.sh nicht (core/role/install.go:92, os.WriteFile setzt den Modus nur bei O_CREATE)"
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
@@ -145,3 +146,24 @@ Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rech
 - Nicht angefasst, weil Verhaltensaenderung und damit keine Aufraeumarbeit: das fehlende os.Chmod nach os.WriteFile (Notiz von 20:54). Gehoert in die Testing-Lane, wie der Mensch entschieden hat.
 - go test ./... -race gruen, gofmt sauber.
 - **2026-09-13 21:00 · Alexander Sacharov** — Commit dieser Runde: 7de9673.
+- **2026-09-13 21:03 · Alexander Sacharov** — testing: Gates gruen, DoD vollstaendig verifiziert, ein Befund - das x-Bit.
+
+Was ich gelaufen bin: go build ./... (RC=0), go test ./... -race (RC=0, alle Pakete ok, core/lane 5.7s, Rest cached). Danach das gebaute Binary gegen ein Wegwerf-Board unter /tmp: roles list nennt die sieben Rollen mit Beschreibung; install --project schreibt 8 Dateien (7x SKILL.md + jaira-dispatcher/scripts/spawn.sh), zweiter Lauf '0 written, 8 unchanged'; eine von Hand ergaenzte SKILL.md wird als 'skipped ... (edited here; --force to replace)' gemeldet, Exit 3, Datei unveraendert; --force macht daraus 'overwritten'; --global schreibt nach $HOME/.claude/skills (mit gesetztem HOME geprueft, nicht in mein echtes Home); --into schreibt in den genannten Ordner; --project --global und gar kein Flag enden beide mit Exit 2 und 'choose exactly one'. Eine Zeile unter ## Unreleased in core/release/NOTES.md ist da.
+
+Befund, genau der Punkt aus der Notiz von 20:54 - er tritt ein, in beiden Varianten:
+
+  chmod 644 .claude/skills/jaira-dispatcher/scripts/spawn.sh
+  jaira roles install --project --force   # -> '0 written, 8 unchanged'
+  stat -c %a  -> 644
+
+Und auch dann, wenn die Datei sich zusaetzlich in den Bytes unterscheidet, also der Schreibpfad wirklich laeuft:
+
+  printf '\n# edit\n' >> spawn.sh && chmod 644 spawn.sh
+  jaira roles install --project --force   # -> overwritten, RC=0
+  stat -c %a  -> 644
+
+Ursache in core/role/install.go:92: os.WriteFile uebergibt den Modus nur an O_CREATE. Bei einer vorhandenen Datei wird sie getrunct, der Modus bleibt der alte. Der berechnete mode=0o755 (install.go:90) verpufft also in genau dem Fall, in dem --force etwas reparieren soll. Folge: eine spawn.sh ohne x-Bit - aus einem Checkout, einer Kopie ueber eine Dateisystemgrenze, einem alten Lauf - bleibt kaputt, und nichts meldet es. Der Mensch tippt --force und bekommt 'overwritten' zu sehen.
+
+Testluecke dazu: core/role/role_test.go:143 prueft das x-Bit nur nach einer Erstinstallation. Kein Test legt eine Zieldatei mit 0644 vor.
+
+Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.WriteFile ein os.Chmod(dst, mode). Zu beachten - der Unchanged-Zweig (install.go:73) kehrt vorher um, dort wird nichts geschrieben; damit --force auch die byte-identische Datei repariert, muss der Modus entweder vor dem Unchanged-Return geprueft werden oder --force den Unchanged-Zweig ueberspringen. Welche der beiden, entscheidet die Lane - der zweite Fall (identische Bytes, falsches Bit) ist der wahrscheinlichere auf einem echten Rechner. Dazu ein Fall in core/role, der eine Zieldatei mit 0644 vorlegt und nach --force auf 0755 prueft.
