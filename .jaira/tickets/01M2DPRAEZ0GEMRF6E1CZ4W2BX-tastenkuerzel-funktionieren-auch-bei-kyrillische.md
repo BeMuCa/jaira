@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:57:10Z
+updated-at: 2026-09-13T15:58:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -28,6 +28,11 @@ review-gaps: |-
   internal/tui/keylayout.go:59 physicalRune gab im Fehlerfall einmal 'typed' und einmal 0 zurueck, obwohl der Aufrufer nur das bool liest - auf 0 vereinheitlicht, der Rueckgabewert hat jetzt genau eine Bedeutung
   internal/tui/keylayout.go:85 usPosition traegt auch Tasten, die das Board heute nicht bindet ('х','ъ','ж','э','ё' -> [ ] ; ' `). Bewusst behalten: eine auf die aktuellen Bindungen zugeschnittene Tabelle bricht still in dem Moment, in dem jemand '[' bindet, und das Auditieren aller Switches kostet mehr als fuenf Map-Eintraege
   Nichts Ungenutztes sonst: cmdKey hat vier Aufrufer, physicalRune einen, usPosition einen; keine Konfiguration, kein Schalter, keine zweite Ebene, die nicht gebraucht wird
+test-verdict: |-
+  go build, go vet und go test ./... sind gruen (internal/tui 41s, internal/cli 9.7s, alle core-Pakete)
+  Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
+  Nicht automatisch pruefbar und deshalb offen fuer den Menschen: die BaseCode-Ebene braucht ein Terminal mit Kitty-Protokoll, hier laeuft Windows Terminal unter WSL2, wo BaseCode nie ankommt. Ebenso ungeprueft: ob eine echte russische Systembelegung dieselben Zeichen sendet wie der Test sie baut
+  Binary ist neu gebaut und unter /home/alex/.local/bin/jaira installiert, damit der Test mit echter Belegung sofort moeglich ist
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
