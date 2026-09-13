@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:53:18Z
+updated-at: 2026-09-13T20:56:03Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-34867
-claimed-at: 2026-09-13T20:41:45Z
-outcome-what: "Guarded the project-specific container-stack block in core/role/builtin/jaira-dispatcher/scripts/spawn.sh behind 'if [ -f $root/.env ]' — the port offset moved inside it — and deleted the dead Unprefixed field from the JSON test struct in internal/cli/roles_test.go:217."
-outcome-why: "With 'set -euo pipefail' on line 5, the unconditional 'cp $root/.env' aborted the script with exit 1 in any repo without a .env — jaira itself included — before a pane ever existed; from this ticket on that file ships inside the binary, so the break would reach every teammate. The Unprefixed field was a leftover of the Twins() removal in round 1: nothing emits it, nothing reads it."
-outcome-resolves: "spawn.sh now creates the worktree, splits the pane, starts claude and types the prompt in a repo with no container stack, and still writes per-worker ports where a .env exists; go test ./... -race green."
+claimed-by: DESKTOP-RFTCH11-71524
+claimed-at: 2026-09-13T20:55:10Z
+outcome-what: "Walked every occurrence of a bare role name per line in TestCrossReferencesCarryThePrefix (core/role/role_test.go:98) instead of only the first, and deleted the .codex/.agents setup and its comment from TestProjectTargetIsTheClaudeSkillsDirectory (core/role/role_test.go:207)."
+outcome-why: "strings.Index finds /role-lane inside /jaira-role-lane, so the prefix exemption skipped the whole line and a second, genuinely unprefixed reference on it was never seen - the test guarding the invariant rounds 1 and 2 rest on could pass over the exact line a person writes. The deleted setup created directories ProjectTarget never looks at: it is a filepath.Join, so the setup asserted nothing and told the next reader the function probes for agent directories."
+outcome-resolves: "Both round-five findings are closed; go test ./... -race green."
 review-summary: |-
   core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
@@ -131,3 +131,9 @@ Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleic
 
 Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rechners oder ein ~/.claude/skills als Quelle - was ausgeliefert wird, steht auf jedem Rechner gleich da. Nicht als Befund gefuehrt, weil es nicht diese Lane ist: os.WriteFile setzt bei einer bestehenden Datei den Modus nicht neu, ein --force auf ein schon vorhandenes spawn.sh ohne x-Bit repariert das Bit also nicht. Ob das je eintritt, gehoert in die Testing-Lane, nicht hierher.
 - **2026-09-13 20:53 · Alexander Sacharov** — Commit dieser Runde: 3f99c1b.
+- **2026-09-13 20:54 · Alexander Sacharov** — Entscheidung des Menschen am 2026-09-13: die Critique-Schleife endet nach Runde 5. Keine sechste Runde, unabhaengig davon was sie faende. Begruendung fuers Protokoll: die Schleife oszilliert nicht - die Befunde werden kleiner und sind jedesmal neu (6 -> 3 -> 1 -> 1 -> 2, zuletzt nur noch Tests). Aber jede Runde liest tiefer als die vorige, und tiefer geht immer; das ist kein Zustand, den eine Schleife von selbst erreicht. Dazu ein Verfahrensfehler auf meiner Seite: ich habe um 20:28 selbst die Drei-Runden-Regel des dispatcher-Skills erreicht, sie notiert - und danach trotzdem weitergemacht. Die Regel ist im Skill inzwischen so geschaerft, dass sie nicht wegargumentiert werden darf. Beide Befunde aus Runde 5 liegen in core/role/role_test.go und sind Minutenarbeit, sie werden noch erledigt; danach geht das Ticket nach optimize. Offen und bewusst NICHT in dieser Lane erledigt, Gegenvorschlag fuer die Testing-Lane: os.WriteFile setzt bei einer bereits vorhandenen Datei den Dateimodus nicht neu. Liegt in .claude/skills/jaira-dispatcher/scripts/spawn.sh eine Kopie ohne x-Bit, repariert auch "roles install --force" das Bit nicht. Vorschlag: in core/role/install.go nach dem Schreiben ein os.Chmod auf den Zielmodus setzen, und in core/role/install_test.go einen Fall ergaenzen, der eine Zieldatei mit 0644 vorlegt und nach --force auf 0755 prueft.
+- **2026-09-13 20:55 · Alexander Sacharov** — Fuenfte critique abgearbeitet, beide Befunde. Was der Diff nicht selbst sagt:
+- TestCrossReferencesCarryThePrefix laeuft jetzt in einer inneren Schleife ueber alle Vorkommen je Zeile. Die Praefix-Ausnahme bleibt unveraendert (line[:idx] endet auf /jaira), nur wird sie nicht mehr fuer die ganze Zeile getroffen. Die Zeile 'gib es an /jaira-role-lane, nicht an /role-lane' faellt damit durch - vorher nicht.
+- Im Aufbau von TestProjectTargetIsTheClaudeSkillsDirectory sind .codex und .agents ersatzlos weg. Bewusst kein Ersatztest an dieser Stelle: ProjectTarget ist ein filepath.Join ohne Dateisystemzugriff, ein Aufbau kann darueber nichts behaupten. Die Aussage 'genau ein Zielordner' haengt an internal/cli/roles_test.go:112, end-to-end.
+- Weiterhin offen und bewusst nicht angefasst (Entscheidung des Menschen, gehoert in die Testing-Lane): os.WriteFile setzt den Modus einer bereits vorhandenen Datei nicht neu, also repariert 'roles install --force' ein fehlendes x-Bit an einer vorliegenden spawn.sh nicht. Gegenvorschlag steht in der Notiz von 20:54.
+- Keine Zeile in core/release/NOTES.md: nur Tests geaendert, von aussen am Binary nichts zu beobachten.

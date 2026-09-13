@@ -96,14 +96,21 @@ func TestCrossReferencesCarryThePrefix(t *testing.T) {
 			for _, other := range wantRoles {
 				bare := "/" + strings.TrimPrefix(other, "jaira-")
 				for _, line := range strings.Split(string(b), "\n") {
-					idx := strings.Index(line, bare)
-					if idx < 0 {
-						continue
+					// Every occurrence, not just the first: the first hit is
+					// often the tail of an already-prefixed name, and stopping
+					// there hides a bare reference later in the same line.
+					for at := 0; ; {
+						idx := strings.Index(line[at:], bare)
+						if idx < 0 {
+							break
+						}
+						idx += at
+						at = idx + len(bare)
+						if idx >= 6 && strings.HasSuffix(line[:idx], "/jaira") {
+							continue // already prefixed
+						}
+						t.Errorf("%s/%s references %s without the jaira- prefix: %s", r.ID, rel, bare, line)
 					}
-					if idx >= 6 && strings.HasSuffix(line[:idx], "/jaira") {
-						continue // already prefixed
-					}
-					t.Errorf("%s/%s references %s without the jaira- prefix: %s", r.ID, rel, bare, line)
 				}
 			}
 		}
@@ -206,13 +213,6 @@ func actionFor(results []Result, path string) Action {
 
 func TestProjectTargetIsTheClaudeSkillsDirectory(t *testing.T) {
 	root := t.TempDir()
-	// One directory, whether or not other agent directories are around: a
-	// harness that reads two of them would see the same role registered twice.
-	for _, d := range []string{".codex", ".agents"} {
-		if err := os.Mkdir(filepath.Join(root, d), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
 	got := ProjectTarget(root)
 	if want := filepath.Join(root, ".claude", "skills"); got != want {
 		t.Fatalf("got %q, want %q", got, want)
