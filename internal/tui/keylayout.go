@@ -48,9 +48,9 @@ func cmdKey(k tea.KeyPressMsg) string {
 
 // physicalRune returns the US-layout character of a keypress, and whether that
 // answer is worth using: false means the key already names its own position and
-// cmdKey should hand back what the terminal said. Case is carried over from what was
-// typed: shift+ф is Ф is "F", because the board binds "E" and "G" and "X" to
-// their own commands.
+// cmdKey should hand back what the terminal said. Case is carried over from
+// what was typed — shift+ф is Ф is "F" — because the board binds "E", "G" and
+// "X" to commands of their own.
 func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 	// Only a printed character can be layout-dependent. Enter, space and the
 	// arrows are already named after the physical key, and a terminal speaking
@@ -95,8 +95,10 @@ func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 //
 // Only the Cyrillic ЙЦУКЕН layout is in here. The other non-Latin scripts —
 // Greek, Armenian, Hebrew, Arabic — are the same mechanic and one more table
-// each, to be added when somebody runs the board in one of them; every layout
-// is already covered on a terminal that reports Key.BaseCode.
+// each, to be added when somebody runs the board in one of them. On a terminal
+// that reports Key.BaseCode the letters of every layout are already covered
+// without a table; the punctuation entry below is needed there too, because a
+// terminal reports the unshifted key and the board would read the wrong one.
 //
 // The one Latin entry is "." on the key that is "/" on a US keyboard: on ЙЦУКЕН
 // that key sends a full stop, and without this line the search the board opens
