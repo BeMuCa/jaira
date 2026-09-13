@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:29:20Z
+updated-at: 2026-09-13T21:31:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30768
 claimed-at: 2026-09-13T21:29:20Z
@@ -45,4 +45,6 @@ claimed-at: 2026-09-13T21:29:20Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-13 21:31 · Alexander Sacharov** — Uebernahme war reine Textkopie: nur 'name:' im frontmatter und die vier Querverweis-Zeilen (/role-lane, /role-tester) bekamen das jaira-Praefix, sonst kein Satz angefasst. Diff gegen ~/.claude/skills belegt genau diese vier Stellen.
+Nicht mitgenommen, bewusst: ~/.claude/skills/teamlead/scripts/spawn.sh. Das Skript liegt im Repository unter jaira-dispatcher/scripts/spawn.sh - da gehoert es hin, weil der Dispatcher-Prompt es als 'scripts/spawn.sh' aufruft - und die Repo-Fassung ist die neuere: sie ueberspringt den Port-Offset in einem Repo ohne .env und sendet '/jaira-role-lane'. Die Heimfassung haette beides zurueckgedreht.
+Die sieben unpraefixierten Ordner wurden erst geloescht, nachdem 'roles install --global --force' lief und 'diff -r' fuer alle sieben jaira-<id> Ordner keinen Unterschied zeigte.
