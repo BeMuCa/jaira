@@ -19,11 +19,11 @@ definition-of-done: "Ein Befehl legt ein lauffaehiges Hook-Beispiel ab und sagt,
 tags:
   - cli
 blocked-by: []
-parent: 01M2E85S75MEF7YJJRJ6C9QS8F
+parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T20:47:00Z
+updated-at: 2026-09-13T20:47:06Z
 updated-by: Alexander Sacharov
 ---
 
