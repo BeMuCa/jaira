@@ -13,7 +13,7 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
-## Unreleased
+## 0.2.0
 - Stop inventing your first notification hook: `jaira hook example` prints a working script for the `"hook"` setting that stays silent for every agent lane and rings the terminal bell only when a ticket reaches a person (`human`, `signoff`) or finishes (`done`), telling the two apart by the line it prints, and says which line to replace to deliver through ntfy.sh or a desktop notifier instead.
 - The critique lane now reads the whole diff on its first pass; later passes only re-check what it already found, so a review loop cannot run for ever by reading deeper each round.
 - Keep a ticket's worktree until the ticket reaches `done`, not until its pull request merges: both shipped prompts now name the same moment, where `jaira-teamlead` used to name the earlier one. Re-run `jaira roles install --global --force` to pick it up.
