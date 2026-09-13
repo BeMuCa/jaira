@@ -15,6 +15,7 @@ Format rules — read before editing:
 
 ## Unreleased
 
+- The critique lane now reads the whole diff on its first pass; later passes only re-check what it already found, so a review loop cannot run for ever by reading deeper each round.
 - Keep a ticket's worktree until the ticket reaches `done`, not until its pull request merges: both shipped prompts now name the same moment, where `jaira-teamlead` used to name the earlier one. Re-run `jaira roles install --global --force` to pick it up.
 - Put every worktree in `.worktrees/` beside the repository, never inside it: the `jaira-dispatcher` prompt now derives the path and `scripts/spawn.sh` creates it there, so `grep -r`, `find` and `ls -R` from the repository root can no longer walk into a second copy of the sources on someone else's branch and read the wrong file. Re-run `jaira roles install --global --force` to pick it up.
 - Re-run `jaira roles install --global --force` to pick up the sharpened `jaira-dispatcher` and `jaira-teamlead` prompts: a dispatcher now stops after three round-trips of one lane without arguing itself into a fourth, reports one line per finished lane instead of only at the end, closes each worker's tab as soon as its lane is read off the board, and leaves a worker alone when a human types in its tab; a teamlead now closes the dispatcher tab it opened once the pull request is open, and starts a fresh session rather than resuming a finished one. From here these prompts are edited in `core/role/builtin` and installed from there, never the other way round.
