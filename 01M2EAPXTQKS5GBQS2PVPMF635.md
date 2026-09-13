@@ -1,7 +1,7 @@
 ---
 id: 01M2EAPXTQKS5GBQS2PVPMF635
 title: "Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T22:05:06Z
+updated-at: 2026-09-13T22:05:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
