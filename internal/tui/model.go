@@ -871,7 +871,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	s := k.String()
+	// Commands are read by the key's position, not by the character the layout
+	// printed on it, so the board answers a Cyrillic keyboard too. Typed text
+	// keeps coming from k.Text further down and is not touched by this.
+	s := cmdKey(k)
 
 	// Line-editing modes consume most keys, so they are handled first.
 	switch m.mode {

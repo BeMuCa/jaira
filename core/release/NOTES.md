@@ -13,6 +13,11 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## Unreleased
+
+- Steer the board with a Cyrillic keyboard: keys are read by their position, so `j`, `k`, `q`, `enter` and the rest work through a Russian layout, where the board used to answer nothing at all. The key that is `/` on a US keyboard opens the filter under its Cyrillic-layout character too. Typed text is untouched — Russian still goes into filters and edit fields as Russian.
+- On a terminal that speaks the Kitty keyboard protocol (kitty, ghostty, WezTerm, foot), every layout works, not only Cyrillic: the board asks the terminal for the physical key behind each press.
+
 ## 0.1.4
 
 - Expect one snapshot and one fetch per clone rather than per checkout: their clocks now live with the repository, so adding a git worktree no longer starts a fresh interval and no longer writes a snapshot commit on its first command.

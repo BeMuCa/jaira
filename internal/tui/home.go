@@ -212,7 +212,7 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		if h.drop != nil {
-			done, removed := h.drop.key(msg.String())
+			done, removed := h.drop.key(cmdKey(msg))
 			if done {
 				name := h.drop.name
 				h.drop = nil
@@ -227,14 +227,14 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return h, nil
 		}
 		if h.board != nil {
-			done, cmd := h.board.key(msg.String())
+			done, cmd := h.board.key(cmdKey(msg))
 			if done {
 				h.board = nil
 			}
 			return h, cmd
 		}
 		if h.browse != nil {
-			added, done := h.browse.key(msg.String())
+			added, done := h.browse.key(cmdKey(msg))
 			if len(added) > 0 {
 				// Say what happened. Registering boards that were already known
 				// changes nothing on screen, which reads as the key not working.
@@ -255,7 +255,7 @@ func (h *Home) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return h, nil
 		}
-		switch msg.String() {
+		switch cmdKey(msg) {
 		case "a":
 			h.msg = ""
 			h.browse = newBrowser(h.startDir)
@@ -310,6 +310,14 @@ func (h *Home) View() tea.View {
 	v := tea.NewView(h.render())
 	v.AltScreen = true
 	v.WindowTitle = "jaira"
+	// Ask the terminal for the physical key behind each keypress, so cmdKey can
+	// read a command off a layout this package has no table for. Alternate keys
+	// are only reported for keys that arrive as escape codes, which plain
+	// letters do not — hence the second flag — and once they do, the text a key
+	// produced has to be asked for separately, or typing stops working.
+	v.KeyboardEnhancements.ReportAlternateKeys = true
+	v.KeyboardEnhancements.ReportAllKeysAsEscapeCodes = true
+	v.KeyboardEnhancements.ReportAssociatedText = true
 	return v
 }
 

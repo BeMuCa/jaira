@@ -79,7 +79,7 @@ func (m *Model) commitEdit() {
 
 // editKey handles a keypress while a field is being edited.
 func (m *Model) editKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	switch k.String() {
+	switch cmdKey(k) {
 	case "enter":
 		// A goal or a piece of context is often a few sentences, so enter inserts
 		// a line rather than ending the edit. Saving is deliberate.

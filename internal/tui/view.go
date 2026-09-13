@@ -100,6 +100,14 @@ func (m *Model) View() tea.View {
 	// with a command.
 	v.AltScreen = true
 	v.WindowTitle = "jaira"
+	// Ask the terminal for the physical key behind each keypress, so cmdKey can
+	// read a command off a layout this package has no table for. Alternate keys
+	// are only reported for keys that arrive as escape codes, which plain
+	// letters do not — hence the second flag — and once they do, the text a key
+	// produced has to be asked for separately, or typing stops working.
+	v.KeyboardEnhancements.ReportAlternateKeys = true
+	v.KeyboardEnhancements.ReportAllKeysAsEscapeCodes = true
+	v.KeyboardEnhancements.ReportAssociatedText = true
 	return v
 }
 
