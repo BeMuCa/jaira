@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:29:59Z
+updated-at: 2026-09-13T18:30:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -35,7 +35,7 @@ test-verdict: |-
   Von Hand bestaetigt (vor dem Shift-Fix, unveraendertem Pfad): russische Belegung steuert das Board auf Windows Terminal unter WSL2
   Offen bleibt, was hier kein Terminal hergibt: der BaseCode-Pfad eines echten Kitty-Terminals
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: "Kurzer Nachtest nach dem Review-Fund, das Binary ist schon aktualisiert: 1. jaira board oeffnen, '?' druecken - es muss die Hilfe aufgehen, nicht der Filter. 2. esc, dann mit russischer Belegung nochmal о/л/р/д, Punkt-Taste und й pruefen wie beim ersten Mal. Stimmt beides, geht das Ticket in die Modellpruefung und danach zu dir zum Abzeichnen."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
