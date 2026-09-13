@@ -52,8 +52,9 @@ func cmdKey(k tea.KeyPressMsg) string {
 	return b.String()
 }
 
-// physicalRune returns the US-layout character of a keypress, and whether it
-// differed from the one the key produced. Case is carried over from what was
+// physicalRune returns the US-layout character of a keypress, and whether that
+// answer is worth using: false means the key already names its own position and
+// cmdKey should hand back what the terminal said. Case is carried over from what was
 // typed: shift+ф is Ф is "F", because the board binds "E" and "G" and "X" to
 // their own commands.
 func physicalRune(k tea.KeyPressMsg) (rune, bool) {
@@ -71,7 +72,7 @@ func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 	if base == 0 {
 		var ok bool
 		if base, ok = usPosition[unicode.ToLower(typed)]; !ok {
-			return typed, false
+			return 0, false
 		}
 	}
 	if unicode.IsUpper(typed) {

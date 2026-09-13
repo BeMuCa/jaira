@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:56:11Z
+updated-at: 2026-09-13T15:57:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -21,9 +21,13 @@ outcome-what: "physicalRune greift nur noch bei gedruckten Zeichen ein"
 outcome-why: "Ein Terminal mit Kitty-Protokoll meldet BaseCode auch fuer enter, space und Pfeile; die Rune davon haette die Switches ins Leere laufen lassen"
 outcome-resolves: "k.Text muss genau eine graphische Nicht-Leerzeichen-Rune sein, sonst kommt k.String() unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt es ab"
 review-summary: |-
-  internal/tui/keylayout.go:70 physicalRune trusts Key.BaseCode for every keypress, also fuer benannte Tasten: spricht das Terminal das Kitty-Protokoll und meldet ein BaseCode fuer enter, space oder einen Pfeil, gibt cmdKey dessen Rune roh zurueck statt 'enter'/'space' - Abbruch nur auf gedruckte Zeichen einschraenken, indem k.Text genau eine graphische Nicht-Leerzeichen-Rune sein muss
-  internal/tui/home.go:215 vier Aufrufstellen bekamen cmdKey einzeln; das ist die vorhandene Form (jeder Screen nimmt einen string entgegen) und bleibt richtig - keine Aenderung
-  internal/tui/keylayout.go:85 usPosition traegt ausser Kyrillisch nur '.' - kein spekulativer Ausbau auf Griechisch/Hebraeisch, das ist so richtig
+  Zweiter Durchgang: nichts mehr zu aendern. Die Einschraenkung auf gedruckte Zeichen sitzt in physicalRune (internal/tui/keylayout.go:59), also in der Funktion, die die Entscheidung trifft, nicht in den vier Aufrufern - richtige Stelle
+  internal/tui/keylayout.go:41 cmdKey schreibt nur ctrl und alt vor die Rune, meta/hyper/super fallen weg; bewusst, weil das Board keine davon bindet und ein Zweig fuer einen Zustand, den es nicht gibt, nur Ballast waere
+  Die vier Aufrufer bleiben einzeln verdrahtet statt hinter einer neuen Abstraktion: jeder Screen nimmt schon heute einen string entgegen (internal/tui/lanes.go:200, browse.go:94, dropboard.go:84), die Form ist die vorhandene
+review-gaps: |-
+  internal/tui/keylayout.go:59 physicalRune gab im Fehlerfall einmal 'typed' und einmal 0 zurueck, obwohl der Aufrufer nur das bool liest - auf 0 vereinheitlicht, der Rueckgabewert hat jetzt genau eine Bedeutung
+  internal/tui/keylayout.go:85 usPosition traegt auch Tasten, die das Board heute nicht bindet ('х','ъ','ж','э','ё' -> [ ] ; ' `). Bewusst behalten: eine auf die aktuellen Bindungen zugeschnittene Tabelle bricht still in dem Moment, in dem jemand '[' bindet, und das Auditieren aller Switches kostet mehr als fuenf Map-Eintraege
+  Nichts Ungenutztes sonst: cmdKey hat vier Aufrufer, physicalRune einen, usPosition einen; keine Konfiguration, kein Schalter, keine zweite Ebene, die nicht gebraucht wird
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
