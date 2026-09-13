@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: optimize
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:07:38Z
+updated-at: 2026-09-13T17:08:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Satzzeichen und Shift-Kombinationen werden nicht mehr ueber die Tastenposition gelesen; der tote ctrl/alt-Zweig ist raus"
-outcome-why: "shift+/ meldet BaseCode '/' und druckt '?': die Hilfe-Taste oeffnete den Filter, auf dem Windows-Console-Pfad auch mit US-Belegung"
-outcome-resolves: "physicalRune setzt nur noch Buchstaben ueber BaseCode/Tabelle um; Satzzeichen laufen ausschliesslich ueber die Tabelle und nur ohne Shift; TestCmdKeyLeavesShiftedPunctuationAlone ersetzt den Test, der eine unmoegliche Nachricht baute; NOTES-Zeile auf Buchstaben-Kommandos eingeschraenkt"
+outcome-what: "Shift-Kombinationen und Satzzeichen folgen wieder der Belegung, nicht der Tastenposition"
+outcome-why: "Ein zweites Modell fand, dass shift+/ als '/' gelesen wurde: die Hilfe-Taste haette den Filter geoeffnet"
+outcome-resolves: "Nur Buchstaben laufen ueber BaseCode und Tabelle; Satzzeichen nur ueber die Tabelle und nur ohne Shift"
 review-summary: |-
   Dritter Durchgang nach dem Review-Fund: die Trennung sitzt jetzt an der richtigen Stelle - Buchstaben laufen ueber BaseCode und Tabelle, Satzzeichen nur ueber die Tabelle und nur ohne Shift, alles andere unveraendert durch. Das ist eine Bedingung in physicalRune, keine zweite Ebene
   internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
@@ -29,11 +29,13 @@ review-gaps: |-
   internal/tui/keylayout.go:64 Die drei Ausstiegsbedingungen (keine einzelne Rune, Leerzeichen, nicht graphisch) sehen nach Gurt und Hosentraeger aus, sind es aber nicht: leerer Text faengt benannte Tasten, das Leerzeichen faengt space, dessen Text ' ' ist und dessen Kommandoname 'space' lautet
   Keine neuen Abhaengigkeiten, keine Konfiguration, kein Schalter; die Tabelle bleibt vollstaendig statt auf die heute gebundenen Tasten zugeschnitten, weil eine zugeschnittene Tabelle still bricht, sobald jemand '[' bindet
 test-verdict: |-
-  go build, go vet und go test ./... sind gruen (internal/tui 41s, internal/cli 9.7s, alle core-Pakete)
-  Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
-  Nicht automatisch pruefbar und deshalb offen fuer den Menschen: die BaseCode-Ebene braucht ein Terminal mit Kitty-Protokoll, hier laeuft Windows Terminal unter WSL2, wo BaseCode nie ankommt. Ebenso ungeprueft: ob eine echte russische Systembelegung dieselben Zeichen sendet wie der Test sie baut
-  Binary ist neu gebaut und unter /home/alex/.local/bin/jaira installiert, damit der Test mit echter Belegung sofort moeglich ist
-question: ""
+  go build, go vet, go test ./... gruen nach dem Shift-Fix
+  Neu: TestCmdKeyLeavesShiftedPunctuationAlone deckt shift+/ ('?'), shift+1 ('!') und shift+. ('>') mit gesetztem BaseCode ab - genau der Pfad, der die Hilfe-Taste in den Filter geschickt haette
+  Weiterhin gruen: TestBoardAnswersACyrillicLayout, TestTypingStaysCyrillicInTheFilter, TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyMapsCyrillicToItsPhysicalKey, TestCmdKeyKeepsCase, TestCmdKeyPrefersTheTerminalsOwnBaseCode
+  Von Hand bestaetigt (vor dem Shift-Fix, unveraendertem Pfad): russische Belegung steuert das Board auf Windows Terminal unter WSL2
+  Offen bleibt, was hier kein Terminal hergibt: der BaseCode-Pfad eines echten Kitty-Terminals
+  Binary neu gebaut unter /home/alex/.local/bin/jaira
+question: "Kurzer Nachtest nach dem Review-Fund, das Binary ist schon aktualisiert: 1. jaira board oeffnen, '?' druecken - es muss die Hilfe aufgehen, nicht der Filter. 2. esc, dann mit russischer Belegung nochmal о/л/р/д, Punkt-Taste und й pruefen wie beim ersten Mal. Stimmt beides, geht das Ticket in die Modellpruefung und danach zu dir zum Abzeichnen."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
