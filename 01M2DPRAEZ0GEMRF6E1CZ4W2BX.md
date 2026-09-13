@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:40:48Z
+updated-at: 2026-09-13T18:40:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -34,7 +34,7 @@ test-verdict: |-
   Zweimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
   Weiterhin nicht pruefbar ohne passendes Terminal: der echte Kitty-Pfad und der Windows-Console-Pfad - beide nur ueber konstruierte KeyPressMsg abgedeckt
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: "Letzter Nachtest, 10 Sekunden: das Binary ist wieder neu gebaut, also einmal 'jaira board' oeffnen und mit russischer Belegung о/л bewegen und й beenden. Fuer deine Belegung hat sich nichts geaendert - der Fix betrifft AltGr, das du nicht benutzt -, aber getestet werden soll, was auch installiert ist."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
