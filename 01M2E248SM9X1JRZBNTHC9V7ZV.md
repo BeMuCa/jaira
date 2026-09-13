@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:19:36Z
+updated-at: 2026-09-13T20:19:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -86,3 +86,8 @@ Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue R
 - Twins() gestrichen wie verlangt, aber die Sache selbst bleibt wahr: wer die Prompts frueher von Hand unter den blanken Namen liegen hatte, hat sie weiter, und sie antworten auf ein anderes Kommando. Das steht jetzt als zweite Zeile in core/release/NOTES.md, weil ein Mensch es dort einmal liest, statt dass Code es bei jedem Lauf neu herausfindet.
 Nicht angefasst, bewusst: der Byte-Vergleich statt os.Stat. Die critique hat ihn ausdruecklich stehen lassen.
 - **2026-09-13 20:16 · Alexander Sacharov** — Commit dieser Runde: 7e889d4.
+- **2026-09-13 20:19 · Alexander Sacharov** — critique, zweite Runde: drei Befunde, alle in review-summary mit Datei und Gegenvorschlag. Keiner davon ist ein Wiederaufwaermen der ersten Runde - das Fan-out, Role.Name, within(), Twins() und installDirs sind erledigt und werden nicht erneut angefasst.
+- Der gewichtigste ist der handgeschriebene Frontmatter-Scanner in core/role/role.go:136. Der Kommentar dort begruendet ihn damit, dass eine YAML-Abhaengigkeit fuer einen String nichts einbringt - das stimmt, trifft aber nicht zu: ticket.ParseDoc liegt schon im Modul und core/lane/lane.go:243 liest die Lane-Beschreibung genau so. Es geht nicht um eine Abhaengigkeit, sondern um zwei Parser fuer dasselbe Dateiformat.
+- Get() ist keine Geschmacksfrage: ausser den eigenen Tests ruft es niemand.
+- firstSentence doppelt und mit abweichender Regel ist der kleinste der drei, aber der einzige mit sichtbarer Folge - jede Beschreibung mit einem Pfad darin wird in der Liste falsch gekuerzt.
+Bewusst nicht beanstandet: --into (die erste Runde hat das Flag selbst vorgeschlagen), der Byte-Vergleich statt os.Stat, und der Test in role_test.go:39, der name: gegen den Ordnernamen prueft - der haelt eine Invariante, die sonst niemand mehr haelt.
