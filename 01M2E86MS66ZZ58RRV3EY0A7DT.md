@@ -24,7 +24,7 @@ related: []
 commits:
   - 0c5da60a7dfe4e552d2ce8c64712d8e4b0d257ac
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:11:05Z
+updated-at: 2026-09-13T22:11:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -49,13 +49,15 @@ review-gaps: |-
   - Unveraendert offen aus dem ersten Durchgang: 'jaira hook example' druckt auch unter Windows ein /bin/sh-Skript ohne Hinweis, und der Test traegt //go:build unix; kein Test ruft das Skript ueber Shebang und x-Bit auf, worauf hook.Run per exec.Command angewiesen ist. Beides war schon damals nicht rueckweisend und gehoert in ein eigenes Ticket.
 review-verdict: "Freigabe zur Abnahme. Die drei Maengel, wegen derer das Ticket zurueckging, sind an genau den benannten Stellen behoben, und der Diff seit 0945a8a besteht nur aus diesen Korrekturen - keine Codezeile, kein Umbau, kein Nebeneffekt. Beachtenswert ist, wie Punkt 3 geloest wurde: nicht durch Erfinden einer hoerbaren Unterscheidung, die POSIX-Shell ohne externes Werkzeug nicht hergibt, sondern durch ehrliches Zuruecknehmen der Behauptung. Das ist die richtige Entscheidung fuer ein Beispiel, dessen Zweck das Weitergeben einer Regel ist. Ein Rest bleibt: README.md:353-357 traegt dieselbe Aussage in ihrer alten, jetzt ueberholten Form. Ich weise deswegen nicht zurueck - der Absatz war im ersten Durchgang abgenommen und lag ausserhalb dessen, was dieser Durchgang pruefen sollte - aber es ist Text, den ein Nutzer liest, und er sollte nachgezogen werden, bevor oder kurz nachdem das hier landet. Wer abnimmt, entscheidet, ob das noch in dieses Ticket gehoert oder in ein eigenes."
 review-check: |-
-  1. In /home/alex/projects/jaira-Y0A7DT: 'PATH=$PATH:/usr/local/go/bin go run ./cmd/jaira hook example > /tmp/notify.sh && chmod +x /tmp/notify.sh'. Es entsteht eine Datei, es erscheint keine Ausgabe.
-  2. Zeilen 18 bis 20 von /tmp/notify.sh lesen. Dort steht: nur ein Zustand, in dem sich ohne einen Menschen nichts bewegt, ist einen Ton wert - jede andere Lane bleibt stumm.
-  3. Jetzt Zeile 47 derselben Datei lesen. Dort steht 'done) tone=finished'. done ist die Endlane und wartet auf niemanden. Das ist der Widerspruch: der Kopf sagt stumm, der Code klingelt.
-  4. Zeile 17 von core/release/NOTES.md lesen: 'rings the terminal bell only for the lanes that wait on a person'. Das ist dieselbe Aussage, und sie ist genauso falsch - der Nutzer bekommt sie von 'jaira update' vorgelesen.
-  5. In einem echten Terminalfenster (nicht in einem Editor-Panel) nacheinander ausfuehren: 'env -i JAIRA_EVENT=move JAIRA_STATUS=human JAIRA_TITLE=Test /tmp/notify.sh', dann dasselbe mit JAIRA_STATUS=done. Hinhoeren: klingt der erste Aufruf hoerbar nach zwei Toenen und der zweite nach einem? Auf vielen Terminals verschmelzen die zwei zu einem - dann ist die Unterscheidung, die outcome-resolves behauptet, auf diesem Rechner nicht da, und nur die gedruckte Textzeile ('jaira human:' gegen 'jaira done:') trennt die Faelle.
-  6. Gegenprobe, dass sonst nichts kaputt ist: 'env -i PATH= JAIRA_EVENT=move JAIRA_STATUS=in-progress /tmp/notify.sh; echo $?'. Es erscheint keine Ausgabe und es steht 0 da - das Skript laeuft auf einer Maschine ohne jedes Werkzeug durch und tut nichts.
-  7. 'PATH=$PATH:/usr/local/go/bin go test ./... -race'. Alle Pakete melden ok, kein FAIL.
+  1. Im Verzeichnis /home/alex/projects/jaira-Y0A7DT ausfuehren: 'PATH=$PATH:/usr/local/go/bin go run ./cmd/jaira hook example > /tmp/notify.sh && chmod +x /tmp/notify.sh'. Es erscheint keine Ausgabe, die Datei entsteht.
+  2. 'sed -n "18,24p" /tmp/notify.sh' lesen. Dort muss stehen, dass die Regel genau zwei bewusste Ausnahmen hat: die Lane, die auf einen Menschen wartet (human, signoff), und die Lane, die das Ticket beendet (done). Das war der erste Mangel - frueher stand dort, jede andere Lane bleibe stumm, waehrend done klingelte.
+  3. 'sed -n "55,59p" /tmp/notify.sh' lesen. Dort muessen genau diese drei Lanes stehen: 'human | signoff' und 'done', alles andere 'exit 0'. Schritt 2 und Schritt 3 muessen sich decken - das ist der Kern der Pruefung.
+  4. 'sed -n "35,42p" /tmp/notify.sh' lesen. Dort muss stehen, dass die gedruckte Zeile den Unterschied traegt und die Glockenzahl nur ein Hinweis ist. Das war der dritte Mangel - frueher wurde die Glockenzahl als hoerbare Unterscheidung behauptet.
+  5. 'sed -n "17p" core/release/NOTES.md' lesen. Die Zeile muss human, signoff und done nennen und sagen, dass die Faelle an der gedruckten Zeile auseinanderzuhalten sind. Das war der zweite Mangel.
+  6. Das Skript wirklich laufen lassen, nacheinander: 'env -i JAIRA_EVENT=move JAIRA_STATUS=human JAIRA_TITLE=Test /tmp/notify.sh', dann dasselbe mit JAIRA_STATUS=done, dann mit JAIRA_STATUS=in-progress. Erwartet: 'jaira human: Test', 'jaira done: Test', und beim dritten gar nichts.
+  7. 'env -i PATH= JAIRA_EVENT=move JAIRA_STATUS=in-progress /tmp/notify.sh; echo $?' - keine Ausgabe, dann eine 0. Das Skript laeuft auf einer Maschine ohne jedes Werkzeug durch.
+  8. 'PATH=$PATH:/usr/local/go/bin go test ./... -race' - alle Pakete melden ok, kein FAIL.
+  9. Wenn Sie entscheiden wollen, ob der offene Punkt noch hier hineingehoert: 'sed -n "351,357p" README.md' lesen. Dort steht die alte Fassung der Aussage ('twice for a lane that belongs to a person, once for a finished ticket'), die Schritt 4 gerade zurueckgenommen hat.
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
