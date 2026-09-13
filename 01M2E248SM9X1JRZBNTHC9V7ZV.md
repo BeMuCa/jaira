@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:16:34Z
+updated-at: 2026-09-13T20:16:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -88,3 +88,4 @@ Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue R
 - Role.Name ist weg, aber die Invariante dahinter nicht: Claude Code laedt einen Skill nicht, wenn frontmatter name: vom Ordner abweicht. Da nichts im Paket das Feld mehr liest, wuerde ein Tippfehler in einer eingebetteten SKILL.md still durchgehen. core/role/role_test.go:39 prueft deshalb jetzt direkt die Bytes auf 'name: jaira-<id>'. Wer diesen Test fuer redundant haelt und loescht, macht genau das Loch auf.
 - Twins() gestrichen wie verlangt, aber die Sache selbst bleibt wahr: wer die Prompts frueher von Hand unter den blanken Namen liegen hatte, hat sie weiter, und sie antworten auf ein anderes Kommando. Das steht jetzt als zweite Zeile in core/release/NOTES.md, weil ein Mensch es dort einmal liest, statt dass Code es bei jedem Lauf neu herausfindet.
 Nicht angefasst, bewusst: der Byte-Vergleich statt os.Stat. Die critique hat ihn ausdruecklich stehen lassen.
+- **2026-09-13 20:16 · Alexander Sacharov** — Commit dieser Runde: 7e889d4.
