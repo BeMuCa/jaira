@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:28:41Z
+updated-at: 2026-09-13T20:43:42Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-45975
-claimed-at: 2026-09-13T20:07:20Z
-outcome-what: "core/role/role.go: frontmatterDescription() now reads the SKILL.md header with ticket.ParseDoc + Scalar(\"description\"), the same parser core/lane uses; the hand-rolled line scan and unquote() are gone. Get() removed — TestTeamleadShipsItsScript picks the role out of Builtins() and TestGetUnknownRole is gone with it. core/board/announce.go: firstSentence exported as FirstSentence and documented; internal/cli/roles.go deleted its own copy and calls it."
-outcome-why: "Second critique returned three findings. Two readers of one file format is the load-bearing one: a SKILL.md header is frontmatter, and the hand scan was also narrower than it looked — it handed back the escapes of a quoted scalar. The duplicate firstSentence was the only finding with visible output: cutting at every '.' truncated 'writes into .claude/skills' to 'writes into .'. Get() had no caller outside its own test."
-outcome-resolves: "All three findings in review-summary addressed in the files they name. go test ./... -race green; jaira roles list now prints each description up to its first full stop instead of breaking inside a path."
+claimed-by: DESKTOP-RFTCH11-34867
+claimed-at: 2026-09-13T20:41:45Z
+outcome-what: "Moved core/role/builtin/jaira-teamlead/scripts/ to core/role/builtin/jaira-dispatcher/scripts/ and renamed TestTeamleadShipsItsScript to TestDispatcherShipsItsScript, with the stat path and two source comments pulled along."
+outcome-why: "jaira-dispatcher/SKILL.md:95 is the only prompt that names scripts/spawn.sh, and that path is relative to its own skill folder, so after 'roles install' the reference pointed at nothing while jaira-teamlead carried a script its own prompt never mentions."
+outcome-resolves: "The shipped dispatcher role now finds scripts/spawn.sh where its prompt says it is; go test ./... -race green."
 review-summary: "core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der falschen Rolle. Der einzige Prompt, der das Skript nennt, ist core/role/builtin/jaira-dispatcher/SKILL.md:95 ('scripts/spawn.sh derives both from the worktree slug') - und dieser Pfad ist relativ zum eigenen Skill-Ordner. Nach 'roles install' hat .claude/skills/jaira-dispatcher/ kein scripts/, der Verweis geht ins Leere; .claude/skills/jaira-teamlead/ traegt ein Skript, das sein eigenes SKILL.md mit keinem Wort erwaehnt (grep 'spawn|scripts' auf jaira-teamlead/SKILL.md ist leer). Der Dispatcher ist auch der, der Worktrees und Panes anlegt (jaira-dispatcher/SKILL.md:37,70,92), der Teamlead delegiert nur (jaira-teamlead/SKILL.md:40). Das Verzeichnis scripts/ nach core/role/builtin/jaira-dispatcher/ verschieben. Mitzuziehen: core/role/role_test.go:55-57 TestTeamleadShipsItsScript samt Kommentar ('teamlead references a script' ist heute schon falsch) und core/role/role_test.go:128 der Stat-Pfad fuer das x-Bit - beide auf jaira-dispatcher umschreiben."
 ---
 
@@ -39,7 +39,7 @@ review-summary: "core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der 
 ## Definition of Done
 
 - [x] 'jaira roles install --project' legt sieben Ordner .claude/skills/jaira-<id>/SKILL.md an; ein zweiter Lauf aendert nichts; eine von Hand geaenderte Datei bleibt ohne --force unberuehrt und wird gemeldet; 'jaira roles install --global' schreibt nach ~/.claude/skills; 'jaira roles list' nennt die eingebetteten Rollen; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
-  proof: core/role/install.go:52 Install(); TestRolesInstallProjectWritesSevenRoles, TestRolesInstallGlobalWritesUnderHome, TestRolesInstallSecondRunExitsZero, TestRolesInstallLeavesAnEditedFileAloneAndExitsThree, TestRolesListNamesEveryBuiltin (internal/cli/roles_test.go); core/release/NOTES.md:18; go test ./... -race green
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh; TestDispatcherShipsItsScript (core/role/role_test.go:56); go test ./... -race green
 
 ## Options
 
@@ -101,3 +101,7 @@ Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleic
 Geprueft und in Ordnung befunden: kein exportierter Bezeichner in core/role hat nur noch Tests als Aufrufer - File, Builtins, Install, SkippedAny, ProjectTarget und GlobalTarget werden alle aus internal/cli heraus benutzt. Der Usage-Zweig in internal/cli/roles.go:82-89 ist handgeschrieben statt cobra.MarkFlagsMutuallyExclusive, folgt damit aber dem, was lanes.go:191 und checklist.go:106 schon tun - das ist das vorhandene Muster, kein neues.
 - **2026-09-13 20:27 · Alexander Sacharov** — Commit dieser Runde: dd5e7bc.
 - **2026-09-13 20:28 · Alexander Sacharov** — Dispatcher haelt an: die Critique-Lane hat das Ticket dreimal zurueckgeschickt (Regel der dispatcher-Rolle). Die Regel unterstellt eine falsche Definition of Done - hier trifft das nicht zu: die Befunde werden kleiner, 6 -> 3 -> 1, und jeder war ein anderer. Runde 1 (7e889d4): Fan-out in drei Agent-Ordner auf .claude/skills reduziert, --into ergaenzt. Runde 2 (8e6398b): Handgeschriebener Frontmatter-Scanner durch ticket.ParseDoc ersetzt. Runde 3, offen: core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der falschen Rolle, nur jaira-dispatcher/SKILL.md:95 nennt das Skript - Verzeichnis nach core/role/builtin/jaira-dispatcher/ verschieben und core/role/role_test.go:55-57 sowie :128 mitziehen. Das ist eine kleine, klar beschriebene Aenderung. Ein Mensch entscheidet, ob noch eine Runde laeuft oder ob das Ticket so weitergeht.
+- **2026-09-13 20:43 · Alexander Sacharov** — Dritte critique abgearbeitet, der eine Befund. Was der Diff nicht selbst sagt:
+- Verschoben, nicht kopiert: das Skript gibt es genau einmal, und genannt wird es genau einmal (jaira-dispatcher/SKILL.md:95). Solange es keinen zweiten Nutzer gibt, wird auch keine Mechanik fuer Mehrfachnutzung gebaut - kein Sammelordner, kein Aufloesen von Pfaden ueber Rollengrenzen hinweg. Wer spaeter ein Skript aus zwei Rollen heraus braucht, entscheidet dann.
+- Der Testname hat mitgewandert: TestTeamleadShipsItsScript -> TestDispatcherShipsItsScript. Der alte Kommentar ('teamlead references a script') war schon vor diesem Ticket falsch und haette den Befund verdeckt, wenn ihn jemand als Beleg gelesen haette.
+- Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat also nie ein Binary gegeben, das spawn.sh unter jaira-teamlead ausgeliefert haette. Niemandem ist etwas zu erzaehlen, was er nie gesehen hat.

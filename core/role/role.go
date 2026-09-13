@@ -27,7 +27,7 @@ import (
 )
 
 // all: rather than builtin/*, because a role's supporting files sit in
-// subdirectories (teamlead/scripts/spawn.sh) and a plain glob would ship the
+// subdirectories (dispatcher/scripts/spawn.sh) and a plain glob would ship the
 // prompt that references them without the files themselves.
 //
 //go:embed all:builtin

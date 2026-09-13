@@ -82,7 +82,7 @@ func writeFile(dst string, want []byte, force bool) (Action, error) {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return "", err
 	}
-	// A role may ship a script beside its prompt (teamlead/scripts/spawn.sh),
+	// A role may ship a script beside its prompt (dispatcher/scripts/spawn.sh),
 	// and a script nobody can execute is a broken role. The embedded
 	// filesystem does not carry the permission bit, so the extension decides.
 	mode := os.FileMode(0o644)

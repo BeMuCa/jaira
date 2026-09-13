@@ -52,21 +52,22 @@ func TestBuiltinsAreTheSevenRoles(t *testing.T) {
 	}
 }
 
-// A role's supporting files travel with it: teamlead references a script, and
-// shipping the prompt without the script ships a broken instruction.
-func TestTeamleadShipsItsScript(t *testing.T) {
+// A role's supporting files travel with it: the dispatcher prompt calls
+// scripts/spawn.sh by a path relative to its own skill folder, and shipping the
+// prompt without the script ships a broken instruction.
+func TestDispatcherShipsItsScript(t *testing.T) {
 	roles, err := Builtins()
 	if err != nil {
 		t.Fatal(err)
 	}
 	var r Role
 	for _, b := range roles {
-		if b.ID == "jaira-teamlead" {
+		if b.ID == "jaira-dispatcher" {
 			r = b
 		}
 	}
 	if r.ID == "" {
-		t.Fatal("no jaira-teamlead role")
+		t.Fatal("no jaira-dispatcher role")
 	}
 	found := false
 	for _, f := range r.Files {
@@ -128,7 +129,7 @@ func TestInstallWritesEveryFile(t *testing.T) {
 	}
 	// A shipped script must arrive executable, or the prompt that calls it is
 	// a broken instruction.
-	fi, err := os.Stat(filepath.Join(dir, "jaira-teamlead", "scripts", "spawn.sh"))
+	fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
