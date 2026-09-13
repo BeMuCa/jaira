@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:33:36Z
+updated-at: 2026-09-13T18:34:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Shift-Kombinationen und Satzzeichen folgen wieder der Belegung, nicht der Tastenposition"
-outcome-why: "Ein zweites Modell fand, dass shift+/ als '/' gelesen wurde: die Hilfe-Taste haette den Filter geoeffnet"
-outcome-resolves: "Nur Buchstaben laufen ueber BaseCode und Tabelle; Satzzeichen nur ueber die Tabelle und nur ohne Shift"
+outcome-what: "AltGr faellt nicht mehr in die Positions-Umsetzung; Shift-Guard und AltGr sind jetzt von Tests festgenagelt"
+outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr, und die Buchstaben-Ebene sah gar nicht auf k.Mod - AltGr+о waere als blankes j im Kommando-Handler gelandet"
+outcome-resolves: "physicalRune steigt aus, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt; TestCmdKeyIgnoresAltGr und der AZERTY-Fall in TestCmdKeyLeavesShiftedPunctuationAlone fallen ohne die Guards um; Kopfkommentar und NOTES-Zeile auf Buchstaben eingeschraenkt"
 review-summary: |-
   Dritter Durchgang nach dem Review-Fund: die Trennung sitzt jetzt an der richtigen Stelle - Buchstaben laufen ueber BaseCode und Tabelle, Satzzeichen nur ueber die Tabelle und nur ohne Shift, alles andere unveraendert durch. Das ist eine Bedingung in physicalRune, keine zweite Ebene
   internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
