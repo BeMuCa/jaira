@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,13 +24,13 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:43:31Z
+updated-at: 2026-09-13T20:43:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
-outcome-what: "core/role/role.go: frontmatterDescription() now reads the SKILL.md header with ticket.ParseDoc + Scalar(\"description\"), the same parser core/lane uses; the hand-rolled line scan and unquote() are gone. Get() removed — TestTeamleadShipsItsScript picks the role out of Builtins() and TestGetUnknownRole is gone with it. core/board/announce.go: firstSentence exported as FirstSentence and documented; internal/cli/roles.go deleted its own copy and calls it."
-outcome-why: "Second critique returned three findings. Two readers of one file format is the load-bearing one: a SKILL.md header is frontmatter, and the hand scan was also narrower than it looked — it handed back the escapes of a quoted scalar. The duplicate firstSentence was the only finding with visible output: cutting at every '.' truncated 'writes into .claude/skills' to 'writes into .'. Get() had no caller outside its own test."
-outcome-resolves: "All three findings in review-summary addressed in the files they name. go test ./... -race green; jaira roles list now prints each description up to its first full stop instead of breaking inside a path."
+outcome-what: "Moved core/role/builtin/jaira-teamlead/scripts/ to core/role/builtin/jaira-dispatcher/scripts/ and renamed TestTeamleadShipsItsScript to TestDispatcherShipsItsScript, with the stat path and two source comments pulled along."
+outcome-why: "jaira-dispatcher/SKILL.md:95 is the only prompt that names scripts/spawn.sh, and that path is relative to its own skill folder, so after 'roles install' the reference pointed at nothing while jaira-teamlead carried a script its own prompt never mentions."
+outcome-resolves: "The shipped dispatcher role now finds scripts/spawn.sh where its prompt says it is; go test ./... -race green."
 review-summary: "core/role/builtin/jaira-teamlead/scripts/spawn.sh liegt in der falschen Rolle. Der einzige Prompt, der das Skript nennt, ist core/role/builtin/jaira-dispatcher/SKILL.md:95 ('scripts/spawn.sh derives both from the worktree slug') - und dieser Pfad ist relativ zum eigenen Skill-Ordner. Nach 'roles install' hat .claude/skills/jaira-dispatcher/ kein scripts/, der Verweis geht ins Leere; .claude/skills/jaira-teamlead/ traegt ein Skript, das sein eigenes SKILL.md mit keinem Wort erwaehnt (grep 'spawn|scripts' auf jaira-teamlead/SKILL.md ist leer). Der Dispatcher ist auch der, der Worktrees und Panes anlegt (jaira-dispatcher/SKILL.md:37,70,92), der Teamlead delegiert nur (jaira-teamlead/SKILL.md:40). Das Verzeichnis scripts/ nach core/role/builtin/jaira-dispatcher/ verschieben. Mitzuziehen: core/role/role_test.go:55-57 TestTeamleadShipsItsScript samt Kommentar ('teamlead references a script' ist heute schon falsch) und core/role/role_test.go:128 der Stat-Pfad fuer das x-Bit - beide auf jaira-dispatcher umschreiben."
 ---
 
