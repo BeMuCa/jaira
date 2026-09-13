@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -11,9 +11,23 @@ definition-of-done: "Mit russischem Layout steuern j/k/h/l, q, enter, / und die 
 tags:
   - tui
 blocked-by: []
-commits: []
+commits:
+  - 401dbb12dd6c6cccc54ec365da9bbee39ee691fe
+  - 5f741efaf92470683f4184e7343c3637f9e7ad73
+  - 959e28e90bbf4ae47e6a1d5d2cb553c4fb3ee95f
+  - fd3071416eb0af64f95a23b0268c769209b111f8
+  - f6bc9d3d86d98a4c6f5950f802cda9943e350df2
+  - 2131091d083a4440c721923dac74728c484c835b
+  - 673d01004a815ebed38ceb74452aba1b5fc99df9
+  - 8a0ce8d4626c37ba2558186d7b51a37362c3031b
+  - 7729eb4c4bb128d9ad0f318c94d4b6f8f3b3570c
+  - 61d73da4a8dcb1a69f41835b0fccee40f8b39f63
+  - c1e4af3f4c501177cb96bf17e289797876317b9d
+  - 52fd9acc456525a239d6de87c65d218d678c83a0
+  - f5504c417d45a83995b2d78d529c91e7945d5737
+  - d80c8e7a0e704dc7148236c15c0af6415c6ad975
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:55:44Z
+updated-at: 2026-09-13T19:06:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -96,3 +110,4 @@ review-check: |-
 - **2026-09-13 18:40 · Alexander Sacharov** — Mensch hat den dritten Stand bestaetigt: Board reagiert mit russischer Belegung, Windows Terminal unter WSL2.
 - **2026-09-13 18:43 · Alexander Sacharov** — review 3: NumLock. Der Guard war eine Zeile zu eng - ModNumLock kommt auf Kitty-Terminals bei jedem Tastendruck mit und wird von der Bibliothek selbst als 'beeinflusst den Text nicht' behandelt (decoder.go:1475). Mit NumLock an haette der Guard die ganze Funktion auf genau den Terminals ausgeschaltet, fuer die die BaseCode-Ebene gebaut wurde, und niemand haette es hier gemerkt. Lehre fuer den Kommentar: Lock-Zustaende sind keine Modifier.
 - **2026-09-13 18:51 · Alexander Sacharov** — Mensch hat den vierten Stand gegengeprueft.
+- **2026-09-13 19:06 · Alexander Sacharov** — Pull Request offen: https://github.com/BeMuCa/jaira/pull/17 (sashasoft90:feat/Z4W2BX-keys-layout-independent -> BeMuCa/jaira master, 14 Commits). Beschreibung steht aus dem Ticket, nicht aus dem Diff: Kontext, Ergebnis, Pruefanleitung und der bewusst nicht erledigte Teil (keine Tabellen fuer Griechisch/Hebraeisch/Arabisch, ctrl-Kombinationen bleiben Sache des Terminals, Satzzeichen lesen kein BaseCode).
