@@ -208,6 +208,7 @@ Exit codes:
 		newMoveCmd(),
 		newNextCmd(),
 		newLanesCmd(),
+		newRolesCmd(),
 		newBoardCmd(),
 		newMergeDriverCmd(),
 		newResolveCmd(),

@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,17 +23,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T19:55:51Z
+updated-at: 2026-09-13T20:06:29Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-99732
-claimed-at: 2026-09-13T19:54:40Z
+claimed-by: DESKTOP-RFTCH11-6599
+claimed-at: 2026-09-13T19:56:51Z
+outcome-what: "core/role: seven role prompts embedded via go:embed all:builtin, plus target resolution and a three-way installer (written/unchanged/skipped/overwritten). internal/cli/roles.go: 'jaira roles list' and 'jaira roles install --project|--global [--force]', --json on both, exit 3 when an edited file is left alone. Prompts frozen from ~/.claude/skills with name: and every cross-reference rewritten to the jaira- prefix."
+outcome-why: "The role prompts lived in one person's ~/.claude/skills. A teammate who cloned got the board and nobody to drive it. Shipping them inside the binary makes them travel with the tool, the way the lanes already do."
+outcome-resolves: "jaira roles install --project writes .claude/skills/jaira-<id>/SKILL.md for all seven roles, --global writes ~/.claude/skills, a second run reports only unchanged and exits 0, an edited file is left alone, reported and exits 3, --force replaces it, jaira roles list names them, core/release/NOTES.md carries a line under ## Unreleased, and go test ./... -race is green."
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
 
 ## Definition of Done
 
-- [ ] 'jaira roles install --project' legt sieben Ordner .claude/skills/jaira-<id>/SKILL.md an; ein zweiter Lauf aendert nichts; eine von Hand geaenderte Datei bleibt ohne --force unberuehrt und wird gemeldet; 'jaira roles install --global' schreibt nach ~/.claude/skills; 'jaira roles list' nennt die eingebetteten Rollen; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
+- [x] 'jaira roles install --project' legt sieben Ordner .claude/skills/jaira-<id>/SKILL.md an; ein zweiter Lauf aendert nichts; eine von Hand geaenderte Datei bleibt ohne --force unberuehrt und wird gemeldet; 'jaira roles install --global' schreibt nach ~/.claude/skills; 'jaira roles list' nennt die eingebetteten Rollen; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
+  proof: core/role/install.go:52 Install(); TestRolesInstallProjectWritesSevenRoles, TestRolesInstallGlobalWritesUnderHome, TestRolesInstallSecondRunExitsZero, TestRolesInstallLeavesAnEditedFileAloneAndExitsThree, TestRolesListNamesEveryBuiltin (internal/cli/roles_test.go); core/release/NOTES.md:18; go test ./... -race green
 
 ## Options
 
@@ -44,15 +48,15 @@ claimed-at: 2026-09-13T19:54:40Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] die sieben Prompts einfrieren: ~/.claude/skills/<id>/ nach core/role/builtin/jaira-<id>/ kopieren, im Frontmatter name: auf jaira-<id> setzen und jede Querverweis-Zeile (/role-lane, /role-tester, /role-research) auf den praefixierten Namen umschreiben
-- [ ] core/role/role.go: //go:embed all:builtin, Typ Role{ID,Name,Description,Files}, Builtins() und Get(id) lesen name:/description: aus SKILL.md
-- [ ] core/role/target.go: Zielordner bestimmen - im Projekt die vorhandenen von .claude/ .codex/ .agents/, keiner da -> .claude/ anlegen; global immer ~/.claude/skills
-- [ ] core/role/install.go: Install(dstSkillsDir, force) schreibt je Datei und meldet written | unchanged | modified-skipped | overwritten; Vergleich gegen die eingebetteten Bytes, nicht blosses Stat wie lane.Export
-- [ ] Tests in core/role: Erstinstallation, zweiter Lauf komplett unchanged, handgeaenderte Datei ohne --force uebersprungen und gemeldet, mit --force ueberschrieben, Pfad kann dstDir nicht verlassen
-- [ ] internal/cli/roles.go: 'jaira roles list' und 'jaira roles install --project|--global [--force]', --json-Form, Exit 3 wenn eine geaenderte Datei uebersprungen wurde; in root.go registrieren
-- [ ] CLI-Tests: Textausgabe, --json, Exit-Codes
-- [ ] eine Zeile in core/release/NOTES.md unter ## Unreleased
-- [ ] go test ./... -race gruen
+- [x] die sieben Prompts einfrieren: ~/.claude/skills/<id>/ nach core/role/builtin/jaira-<id>/ kopieren, im Frontmatter name: auf jaira-<id> setzen und jede Querverweis-Zeile (/role-lane, /role-tester, /role-research) auf den praefixierten Namen umschreiben
+- [x] core/role/role.go: //go:embed all:builtin, Typ Role{ID,Name,Description,Files}, Builtins() und Get(id) lesen name:/description: aus SKILL.md
+- [x] core/role/target.go: Zielordner bestimmen - im Projekt die vorhandenen von .claude/ .codex/ .agents/, keiner da -> .claude/ anlegen; global immer ~/.claude/skills
+- [x] core/role/install.go: Install(dstSkillsDir, force) schreibt je Datei und meldet written | unchanged | modified-skipped | overwritten; Vergleich gegen die eingebetteten Bytes, nicht blosses Stat wie lane.Export
+- [x] Tests in core/role: Erstinstallation, zweiter Lauf komplett unchanged, handgeaenderte Datei ohne --force uebersprungen und gemeldet, mit --force ueberschrieben, Pfad kann dstDir nicht verlassen
+- [x] internal/cli/roles.go: 'jaira roles list' und 'jaira roles install --project|--global [--force]', --json-Form, Exit 3 wenn eine geaenderte Datei uebersprungen wurde; in root.go registrieren
+- [x] CLI-Tests: Textausgabe, --json, Exit-Codes
+- [x] eine Zeile in core/release/NOTES.md unter ## Unreleased
+- [x] go test ./... -race gruen
 
 ## Progress
 - **2026-09-13 19:01 · Alexander Sacharov** — Recherche 2026-09-13, code.claude.com/docs/en/skills (Primaerquelle, HIGH):
@@ -65,3 +69,9 @@ claimed-at: 2026-09-13T19:54:40Z
 - **2026-09-13 19:55 · Alexander Sacharov** — Der jaira--Praefix ist nicht nur ein Ordnername. In Claude Code muss das Feld name: im Frontmatter dem Ordner entsprechen, sonst laedt der Skill nicht. Also wird beim Einfrieren auch name: teamlead -> name: jaira-teamlead umgeschrieben. Damit aendert sich der Aufruf: /jaira-role-lane statt /role-lane. Die Prompts rufen sich gegenseitig auf - dispatcher/SKILL.md:38 nennt /role-lane und /role-tester, role-brainstorm/SKILL.md:30 nennt /role-research. Diese Zeilen muessen mitgezogen werden, sonst ruft der Dispatcher eines Teamkollegen einen Namen auf, den es auf seinem Rechner nicht gibt. Das ist Schritt 1 des Plans und der Grund, warum er nicht blosses Kopieren ist.
 - **2026-09-13 19:55 · Alexander Sacharov** — Eine Rolle ist nicht immer genau eine Datei. teamlead hat zusaetzlich scripts/spawn.sh, die uebrigen sechs nur SKILL.md. Die Definition of Done nennt nur SKILL.md, aber nur SKILL.md auszuliefern wuerde einen kaputten Verweis mitliefern. Deshalb Role.Files als Liste und //go:embed all:builtin ueber den ganzen Baum - die Kosten sind null, die DoD bleibt erfuellt. Nebenbefund, nicht Teil dieses Tickets: dispatcher/SKILL.md:95 verweist auf scripts/spawn.sh, das Skript liegt aber unter teamlead/scripts/. Der Verweis geht schon heute ins Leere.
 - **2026-09-13 19:55 · Alexander Sacharov** — lane.Export/copyLane (core/lane/share.go:34) kann hier nicht wiederverwendet werden, obwohl der Mechanismus gleich aussieht. Es prueft nur os.Stat: Datei da -> Abbruch. Die DoD verlangt drei Faelle statt zwei: zweiter Lauf aendert nichts (Bytes gleich -> unchanged, kein Fehler), handgeaenderte Datei bleibt unberuehrt und wird gemeldet (Bytes verschieden -> skipped), --force ueberschreibt. Das ist ein Byte-Vergleich gegen das eingebettete Original, kein Stat. Deshalb eigenes core/role/install.go und kein Umbau von lane.Export - lane haengt an 'lanes use' und soll sich nicht mitaendern.
+- **2026-09-13 19:58 · Alexander Sacharov** — Beim Einfrieren umgeschrieben, ueber blosses Kopieren hinaus: name: in allen sieben Frontmattern auf jaira-<id>, und jeder Querverweis auf einen Rollennamen mit /-Praefix. Betroffen waren mehr Stellen als die Notiz vom 19:55 nannte: zusaetzlich zu dispatcher:38 und role-brainstorm:30 auch fuenf description:-Zeilen ('Invoked as /role-lane ...') und teamlead/scripts/spawn.sh:47, das den Prompt per herdr in eine Pane tippt. Das Regex laesst /-Namen in Pfaden in Ruhe ((?<![\w/.-])), sonst waere ~/.claude/skills/role-lane mitgewandert. Die Quellen unter ~/.claude/skills bleiben unveraendert - sie sind ab jetzt nicht mehr die Wahrheit, core/role/builtin ist es.
+- **2026-09-13 20:06 · Alexander Sacharov** — Drei Dinge, die der Code nicht sagt:
+- go:embed all:builtin statt builtin/* - ohne all: laesst go:embed Unterverzeichnisse aus, teamlead/scripts/spawn.sh waere still verschwunden und der Prompt haette auf eine Datei gezeigt, die nicht mitkommt.
+- Das Ausfuehrbar-Bit ueberlebt embed.FS nicht: alles kommt als 0644 wieder heraus. install.go entscheidet deshalb an der Endung (.sh -> 0755). Ein spawn.sh ohne x-Bit ist eine kaputte Rolle, und nichts haette es gemeldet.
+- Der offene Punkt aus der Recherche ist erledigt, aber anders als 'stillschweigend ein zweites Paar anlegen': das Praefix macht jaira-teamlead und teamlead zu zwei verschiedenen Kommandos, es kollidiert also nichts. Gefaehrlich ist nur, dass jemand weiter den alten Namen tippt. role.Twins() meldet die unpraefixierte Kopie und loescht sie nie - ein Verzeichnis, das dieses Werkzeug nicht geschrieben hat, entfernt es auch nicht.
+Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue Rolle nach einem Upgrade muss man selbst holen. Das gehoert in ein eigenes Ticket, sobald jemand es vermisst.
