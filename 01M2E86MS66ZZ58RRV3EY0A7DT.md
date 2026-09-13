@@ -1,7 +1,7 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: brainstorm
+status: todo
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:43:50Z
+updated-at: 2026-09-13T21:43:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-55522
 claimed-at: 2026-09-13T21:42:41Z
