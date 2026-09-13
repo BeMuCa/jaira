@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:56:39Z
+updated-at: 2026-09-13T21:56:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -110,3 +110,5 @@ Reihenfolge: Skript zuerst, dann Einbettung, dann Befehl, dann Tests. Umgekehrt 
 1. Die Glocke geht nach /dev/tty, nicht nach stdout, weil core/hook/hook.go Stdout und Stderr des Skripts auf nil setzt - alles, was ein Hook nach stdout schreibt, ist im echten Betrieb weg. Wer das Beispiel spaeter auf 'echo' umstellt, macht es damit stumm.
 2. Der Test muss dem Skript das Controlling Terminal wegnehmen (SysProcAttr{Setsid:true}), sonst schreibt es genau deswegen nach /dev/tty und der Test sieht leeres stdout. Erster Versuch war '[ -w /dev/tty ]' als Probe: untauglich, weil access() nur den Geraeteknoten prueft und auch ohne Terminal wahr ist. Jetzt oeffnet eine Subshell die tty wirklich - '( : >/dev/tty ) 2>/dev/null' - und ein Fehlschlag kostet nur die Subshell, nicht das Skript.
 Deshalb traegt internal/cli/hook_example_test.go '//go:build unix'; Setsid gibt es unter Windows nicht.
+- **2026-09-13 21:56 · Alexander Sacharov** — Lane-Abweichung, damit es niemand zweimal sucht: CLAUDE.md beschreibt Lanes critique, optimize und testing - auf diesem Board sind sie nicht installiert. 'jaira lanes' kennt nur backlog, brainstorm, todo, pre-process, in-progress, human, review, signoff, done, blocked. Der Zug in-progress -> critique wurde abgelehnt. Ziel wurde deshalb review: human liegt zwar mit Rang 40 dazwischen, hat aber requires-question: true und ist die Lane fuer eine offene Entscheidung - es gab keine.
+Folgeticket 3MJNYS erfasst (Lane-Rollen statt harter Lane-Namen im Beispielskript). Es liegt nur auf seiner Ref, nicht auf der Platte: 'jaira pull 3MJNYS'.
