@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: human
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:26:43Z
+updated-at: 2026-09-13T22:01:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -188,3 +188,4 @@ Restliche DoD im Baum geprueft: --project legt sieben jaira-<id>/SKILL.md plus d
 
 Eine Beobachtung, kein Befund: der Unchanged-Zweig setzt den Modus jetzt immer, auch ohne --force und auch fuer SKILL.md. Wer eine unveraenderte SKILL.md absichtlich auf 0600 setzt, bekommt sie beim naechsten Lauf auf 0644 zurueck. Das ist genau die Regel aus der Commit-Message ('die Bytes sind unsere, also ist der Modus unserer') und der Preis dafuer, dass der haeufige Fall ohne --force repariert wird. Fuer jaira-Prompts ist das folgenlos; falls jemand spaeter eine Rolle mit sensiblen Daten ausliefert, ist das die Stelle, die man noch einmal ansieht.
 - **2026-09-13 21:26 · Alexander Sacharov** — Offen geblieben, direkt aus dem Umfang dieses Tickets: die ausgelieferten Prompts sind auf diesem Rechner bereits veraltet. ~/.claude/skills/dispatcher/SKILL.md hat 170 Zeilen, die eingefrorene Kopie core/role/builtin/jaira-dispatcher/SKILL.md nur 122; ~/.claude/skills/teamlead/SKILL.md 92 gegen 82. Die fuenf role-* stimmen byteweise ueberein. Inhaltlich fehlen im Binary: die verschaerfte Drei-Runden-Regel (Anhalten ist nicht wegargumentierbar, und drei Runden koennen auch eine Schleife bedeuten, die in der Groesse konvergiert und trotzdem nie endet, weil jede Runde tiefer liest), der Abschnitt "A human typing in a workers tab is not a fault", die Pflicht pro Lane eine Zeile nach oben zu melden, das Schliessen eines Worker-Tabs sobald seine Lane fertig ist statt am Ticketende, und in jaira-teamlead der Abschnitt "Close what you started". Gegenvorschlag: den aktuellen Text aus ~/.claude/skills/dispatcher/SKILL.md und ~/.claude/skills/teamlead/SKILL.md nach core/role/builtin/jaira-dispatcher/SKILL.md und core/role/builtin/jaira-teamlead/SKILL.md uebernehmen, dabei wie beim Einfrieren frontmatter name: auf jaira-<id> setzen und jede Querverweis-Zeile praefixieren, dann core/role/role_test.go TestCrossReferencesCarryThePrefix laufen lassen. Erst danach duerfen die unpraefixierten Ordner unter ~/.claude/skills geloescht werden - vorher wuerde das Binary die Fassung vor der Verschaerfung zurueckgeben. Passt thematisch unter C9QS8F, gehoert aber hierher vermerkt, weil dieses Ticket die Prompts eingefroren hat.
+- **2026-09-13 22:01 · Alexander Sacharov** — Antwort aus der human-Lane am 2026-09-14: der Dateimodus ist so gewollt. Ein Lauf ohne --force dreht den Modus jeder unveraenderten Datei auf den eingebetteten Stand zurueck (spawn.sh 0755, SKILL.md 0644) - das ist Absicht und kein Befund. Abgenommen, das Ticket geht weiter nach review.
