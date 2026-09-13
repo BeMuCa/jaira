@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:11:52Z
+updated-at: 2026-09-13T21:14:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -35,7 +35,8 @@ review-summary: |-
   core/role/role_test.go:99 TestCrossReferencesCarryThePrefix checks only the first occurrence of a bare name per line: strings.Index finds /role-lane inside /jaira-role-lane, the /jaira suffix check skips the line, and a second, genuinely unprefixed reference on the same line is never seen — walk every occurrence (advance the search past idx in a loop) instead of testing only the first
   core/role/role_test.go:99-103 TestProjectTargetIsTheClaudeSkillsDirectory creates .codex and .agents before calling ProjectTarget, but ProjectTarget is a filepath.Join that never touches the filesystem, so the setup asserts nothing and tells the next reader the function probes for agent directories — delete the mkdir loop and its comment; the end-to-end claim already has a home in internal/cli/roles_test.go:112
 review-gaps: "Removed boardAt (internal/cli/roles_test.go:17): byte-for-byte the same helper as lanesTestProject (internal/cli/lanes_test.go:309) in the same package - the roles tests now call that one, and the ticket import went with it. Left, each with a reason: role.File is exported and only internal/cli/roles_test.go:198 calls it from outside the package, but it is the package's only accessor for the embedded bytes and deleting it would take the CLI test's comparison of installed against built-in with it; exitCode() is a new helper over a pattern written out inline ten times elsewhere in internal/cli, so it duplicates no function and rewriting those ten is not this lane; Install() goes through Builtins(), which parses the frontmatter of all seven roles although only ID and Files are used, once per run of a command nobody runs in a loop; Install() returns its partial results beside an error and no caller reads them, which is an API shape rather than dead code. Checked and genuinely different, not merged: core/lane/share.go Export and core/lane/defaultboard.go:143 Materialise both write embedded files out, but neither has the three-way byte comparison this needs - the same conclusion round 1 reached."
-test-verdict: "fail: Suite gruen (RC=0) und DoD vollstaendig verifiziert, aber 'roles install --force' repariert ein fehlendes x-Bit an einer vorhandenen spawn.sh nicht (core/role/install.go:92, os.WriteFile setzt den Modus nur bei O_CREATE)"
+test-verdict: "pass: Suite gruen (go test ./... -race, RC=0), gofmt/go vet sauber, DoD Punkt fuer Punkt im Baum geprueft, x-Bit-Befund der ersten Runde end-to-end nachgestellt und behoben"
+question: "Testing ist gruen und der x-Bit-Befund ist nachgeprueft behoben. Bitte die Rollen-Installation abnehmen: passt es dir, dass ein normaler Lauf ohne --force den Dateimodus jeder unveraenderten Datei auf den eingebetteten Stand zurueckdreht (spawn.sh 0755, SKILL.md 0644)? Danach kann das Ticket weiter in review."
 ---
 
 # Rollen-Prompts im Binary ausliefern: jaira roles install
@@ -174,3 +175,15 @@ Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.Write
 - Der Test faellt ohne den Fix durch, beide Haelften geprueft: 'after a re-run the script is -rw-r--r--' und 'after --force ...'. Ein Test, der auch ohne Fix gruen ist, haette den Befund nur zugedeckt.
 - Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat nie ein Binary mit dem Fehler gegeben. Gleiche Begruendung wie in Runde 3 und 4.
 - **2026-09-13 21:11 · Alexander Sacharov** — Commit dieser Runde: 59d39fa.
+- **2026-09-13 21:14 · Alexander Sacharov** — testing (2. Durchgang): pass. Gelaufen: go test ./... -race -> RC=0, alle Pakete ok; gofmt -l core internal cmd -> leer; go vet ./... -> leer.
+
+Der Befund der ersten Runde ist nachgeprueft, nicht nur nachgelesen. Gegenprobe: Arbeitsbaum nach /tmp kopiert, dort core/role/install.go auf den Stand vor 59d39fa zurueckgesetzt, Tests laufen lassen -> TestInstallRestoresTheExecuteBit faellt durch, und zwar in beiden Haelften (role_test.go:226 'after a re-run the script is -rw-r--r--, want 0755' und role_test.go:241 'after --force ...'). Der Test deckt den Befund also wirklich ab, statt nur gruen zu sein.
+
+End-to-end mit dem gebauten Binary in einem frischen Repo, spawn.sh jeweils auf 0644 gesetzt:
+- identische Bytes, normaler Zweitlauf -> '8 unchanged', Datei wieder -rwxr-xr-x. Das ist der Fall, der auf einem echten Rechner auftritt, und er braucht kein --force.
+- geaenderte Bytes, ohne --force -> Meldung 'some roles were edited here and left alone', Exit 3, Datei bleibt 0644 und unveraendert. Der Skipped-Zweig fasst den Modus weiterhin nicht an.
+- geaenderte Bytes, mit --force -> '1 overwritten', Datei wieder -rwxr-xr-x und mit Originalinhalt.
+
+Restliche DoD im Baum geprueft: --project legt sieben jaira-<id>/SKILL.md plus die spawn.sh an (8 Dateien), --global schreibt mit gesetztem HOME nach ~/.claude/skills, 'roles list' nennt alle sieben Rollen, die NOTES.md-Zeile steht unter ## Unreleased und beschreibt Exit 3 genau so, wie sich das Binary verhaelt.
+
+Eine Beobachtung, kein Befund: der Unchanged-Zweig setzt den Modus jetzt immer, auch ohne --force und auch fuer SKILL.md. Wer eine unveraenderte SKILL.md absichtlich auf 0600 setzt, bekommt sie beim naechsten Lauf auf 0644 zurueck. Das ist genau die Regel aus der Commit-Message ('die Bytes sind unsere, also ist der Modus unserer') und der Preis dafuer, dass der haeufige Fall ohne --force repariert wird. Fuer jaira-Prompts ist das folgenlos; falls jemand spaeter eine Rolle mit sensiblen Daten ausliefert, ist das die Stelle, die man noch einmal ansieht.
