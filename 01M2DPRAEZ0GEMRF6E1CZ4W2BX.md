@@ -13,8 +13,10 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:44:01Z
+updated-at: 2026-09-13T15:44:03Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-4206
+claimed-at: 2026-09-13T15:44:03Z
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
