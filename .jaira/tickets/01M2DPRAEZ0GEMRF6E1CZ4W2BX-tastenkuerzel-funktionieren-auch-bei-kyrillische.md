@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: human
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:36:03Z
+updated-at: 2026-09-13T18:43:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -25,16 +25,16 @@ review-summary: |-
   internal/tui/keylayout.go:69 k.Mod&^(ModShift|ModCapsLock) statt einer Aufzaehlung von ModCtrl und ModAlt: die Frage ist 'aendert der Modifier nur das gedruckte Zeichen', und das ist bei genau diesen beiden der Fall - eine Liste der verbotenen Modifier waere unvollstaendig, sobald einer dazukommt
   Kein Fund mehr offen; die Einschraenkung auf Buchstaben und die beiden Guards erzaehlen im Kommentar dieselbe Geschichte wie im Code
 review-gaps: |-
-  Nichts Ueberfluessiges: physicalRune hat jetzt drei Ausstiege und zwei Zweige, jeder mit einem Fall, den ein Test umfallen laesst, wenn man ihn entfernt - TestCmdKeyIgnoresBaseCodeOnNamedKeys, TestCmdKeyLeavesShiftedPunctuationAlone, TestCmdKeyIgnoresAltGr
-  internal/tui/keylayout_test.go:44 Die vier Faelle in TestCmdKeyLeavesShiftedPunctuationAlone sind nicht redundant: einer pinnt den pty-Pfad ohne Shift, einer den Kitty/Windows-Pfad mit BaseCode, einer die Ziffernreihe, einer den Shift-Guard selbst
-  Keine ungenutzten Symbole, keine Konfiguration, keine Abhaengigkeit dazugekommen
+  BLOCKER internal/tui/keylayout.go:70 Der Guard laesst nur ModShift und ModCapsLock durch, aber der Kitty-Decoder legt ModNumLock bei JEDEM Tastendruck in Key.Mod (decoder.go:1444 fromKittyMod) und raeumt es erst in einer lokalen Kopie wieder weg, weil es den Text nicht beeinflusst (decoder.go:1475). Mit eingeschaltetem NumLock - Standard auf Desktop-Tastaturen - faellt damit auf kitty, ghostty, WezTerm und foot jede Taste durch den Guard, cmdKey gibt das kyrillische Zeichen zurueck und das Board reagiert wieder auf nichts. Fix: ModNumLock und ModScrollLock in die Maske, sie sind Zustaende und keine Modifier
+  internal/tui/keylayout.go:65 Der Kommentar darueber behauptet, alles ausser Shift und CapsLock mache einen anderen Tastendruck - genau diese Annahme hat den Fehler erzeugt
+  Geprueft und in Ordnung: AltGr ist auf dem Windows-Pfad zu (decoder.go:2035 setzt Text, Mod traegt ModCtrl|ModAlt); Kitty leert Text bei ctrl/alt/super/meta selbst (decoder.go:1445); ModCapsLock neben Shift ist richtig, der Regisster kommt aus Text; beide neuen Tests fallen ohne ihren Guard um
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem AltGr-Fix
   Sieben Tabellentests plus zwei Board-Tests; die drei Guards sind jeweils von einem Fall gedeckt, der ohne den Guard umfaellt
   Zweimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
   Weiterhin nicht pruefbar ohne passendes Terminal: der echte Kitty-Pfad und der Windows-Console-Pfad - beide nur ueber konstruierte KeyPressMsg abgedeckt
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: "Letzter Nachtest, 10 Sekunden: das Binary ist wieder neu gebaut, also einmal 'jaira board' oeffnen und mit russischer Belegung о/л bewegen und й beenden. Fuer deine Belegung hat sich nichts geaendert - der Fix betrifft AltGr, das du nicht benutzt -, aber getestet werden soll, was auch installiert ist."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
@@ -80,3 +80,5 @@ question: "Letzter Nachtest, 10 Sekunden: das Binary ist wieder neu gebaut, also
 - **2026-09-13 17:05 · Alexander Sacharov** — review: Shift ist das Loch. physicalRune darf Satzzeichen nicht ueber BaseCode ersetzen - shift+/ ist '?' und meldet trotzdem '/', also oeffnete die Hilfe-Taste den Filter, auf dem Windows-Console-Pfad sogar mit US-Belegung. Fix: nur Buchstaben ueber BaseCode/Tabelle umsetzen, Satzzeichen ausschliesslich ueber die Tabelle und nur ohne Shift. Zweitens: der ctrl/alt-Zweig in cmdKey kann nie laufen, weil der Decoder Key.Text bei jedem Modifier ueber Shift hinaus leert - raus damit, und ehrlich hinschreiben, dass ctrl-Kombinationen Sache des Terminals bleiben.
 - **2026-09-13 18:29 · Alexander Sacharov** — Mensch hat nachgetestet: '?' oeffnet wieder die Hilfe, russische Belegung steuert weiterhin. Windows Terminal unter WSL2.
 - **2026-09-13 18:33 · Alexander Sacharov** — review 2: AltGr ist das verbliebene Loch. Die Buchstaben-Ebene schaut gar nicht auf k.Mod, und der Windows-Decoder setzt Key.Text auch bei AltGr - also kommt AltGr+Buchstabe als blanke Kommandotaste an. Fix: vor beiden Zweigen aussteigen, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt. Dazu ein Test, der den Shift-Guard wirklich festnagelt (AZERTY: shift+';' druckt '.', darf nicht '/' werden), und zwei Kommentare/NOTES-Zeilen, die nach der Einschraenkung zu viel versprechen.
+- **2026-09-13 18:40 · Alexander Sacharov** — Mensch hat den dritten Stand bestaetigt: Board reagiert mit russischer Belegung, Windows Terminal unter WSL2.
+- **2026-09-13 18:43 · Alexander Sacharov** — review 3: NumLock. Der Guard war eine Zeile zu eng - ModNumLock kommt auf Kitty-Terminals bei jedem Tastendruck mit und wird von der Bibliothek selbst als 'beeinflusst den Text nicht' behandelt (decoder.go:1475). Mit NumLock an haette der Guard die ganze Funktion auf genau den Terminals ausgeschaltet, fuer die die BaseCode-Ebene gebaut wurde, und niemand haette es hier gemerkt. Lehre fuer den Kommentar: Lock-Zustaende sind keine Modifier.

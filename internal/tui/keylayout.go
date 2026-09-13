@@ -62,12 +62,18 @@ func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 	if len(rs) != 1 || rs[0] == ' ' || !unicode.IsGraphic(rs[0]) {
 		return 0, false
 	}
-	// Shift and caps lock only change which character the same key prints;
-	// anything else held with it makes a different keystroke entirely. AltGr is
-	// why this has to be checked: it prints a character like an ordinary key,
-	// and arrives carrying ctrl and alt, so without this AltGr+о would reach the
-	// board as a bare "j" and move the cursor.
-	if k.Mod&^(tea.ModShift|tea.ModCapsLock) != 0 {
+	// A modifier held down makes a different keystroke, and the character it
+	// printed no longer says which key was pressed. AltGr is why this has to be
+	// checked: it prints a character like an ordinary key and arrives carrying
+	// ctrl and alt, so without this AltGr+о would reach the board as a bare "j"
+	// and move the cursor.
+	//
+	// The lock states are not modifiers and are exempt: caps lock only changes
+	// the case, which is read off the text anyway, and num lock and scroll lock
+	// change nothing at all — Kitty terminals report num lock with every single
+	// keypress, so refusing it would switch this whole function off on the
+	// terminals the BaseCode branch exists for.
+	if k.Mod&^(tea.ModShift|tea.ModCapsLock|tea.ModNumLock|tea.ModScrollLock) != 0 {
 		return 0, false
 	}
 	// Text is what the key produced, upper case included.

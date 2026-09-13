@@ -156,3 +156,23 @@ func TestCmdKeyIgnoresAltGr(t *testing.T) {
 		}
 	}
 }
+
+// Kitty terminals report num lock with every keypress, and the library itself
+// treats it as something that does not touch the text. Refusing it here would
+// have switched the mapping off for everybody typing with num lock on — which
+// is most people, on most desktop keyboards.
+func TestCmdKeyIgnoresTheLockStates(t *testing.T) {
+	for _, k := range []tea.KeyPressMsg{
+		{Code: 'о', Text: "о", Mod: tea.ModNumLock},
+		{Code: 'о', Text: "о", Mod: tea.ModNumLock | tea.ModScrollLock},
+		{Code: 'ф', Text: "Ф", Mod: tea.ModNumLock | tea.ModCapsLock | tea.ModShift},
+	} {
+		want := "j"
+		if k.Text == "Ф" {
+			want = "A"
+		}
+		if got := cmdKey(k); got != want {
+			t.Errorf("cmdKey(%q with %v) = %q, want %q", k.Text, k.Mod, got, want)
+		}
+	}
+}
