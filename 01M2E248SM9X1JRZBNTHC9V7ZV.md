@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:00:16Z
+updated-at: 2026-09-13T21:03:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-71524
 claimed-at: 2026-09-13T20:55:10Z
@@ -145,3 +145,24 @@ Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rech
 - Nicht angefasst, weil Verhaltensaenderung und damit keine Aufraeumarbeit: das fehlende os.Chmod nach os.WriteFile (Notiz von 20:54). Gehoert in die Testing-Lane, wie der Mensch entschieden hat.
 - go test ./... -race gruen, gofmt sauber.
 - **2026-09-13 21:00 · Alexander Sacharov** — Commit dieser Runde: 7de9673.
+- **2026-09-13 21:03 · Alexander Sacharov** — testing: Gates gruen, DoD vollstaendig verifiziert, ein Befund - das x-Bit.
+
+Was ich gelaufen bin: go build ./... (RC=0), go test ./... -race (RC=0, alle Pakete ok, core/lane 5.7s, Rest cached). Danach das gebaute Binary gegen ein Wegwerf-Board unter /tmp: roles list nennt die sieben Rollen mit Beschreibung; install --project schreibt 8 Dateien (7x SKILL.md + jaira-dispatcher/scripts/spawn.sh), zweiter Lauf '0 written, 8 unchanged'; eine von Hand ergaenzte SKILL.md wird als 'skipped ... (edited here; --force to replace)' gemeldet, Exit 3, Datei unveraendert; --force macht daraus 'overwritten'; --global schreibt nach $HOME/.claude/skills (mit gesetztem HOME geprueft, nicht in mein echtes Home); --into schreibt in den genannten Ordner; --project --global und gar kein Flag enden beide mit Exit 2 und 'choose exactly one'. Eine Zeile unter ## Unreleased in core/release/NOTES.md ist da.
+
+Befund, genau der Punkt aus der Notiz von 20:54 - er tritt ein, in beiden Varianten:
+
+  chmod 644 .claude/skills/jaira-dispatcher/scripts/spawn.sh
+  jaira roles install --project --force   # -> '0 written, 8 unchanged'
+  stat -c %a  -> 644
+
+Und auch dann, wenn die Datei sich zusaetzlich in den Bytes unterscheidet, also der Schreibpfad wirklich laeuft:
+
+  printf '\n# edit\n' >> spawn.sh && chmod 644 spawn.sh
+  jaira roles install --project --force   # -> overwritten, RC=0
+  stat -c %a  -> 644
+
+Ursache in core/role/install.go:92: os.WriteFile uebergibt den Modus nur an O_CREATE. Bei einer vorhandenen Datei wird sie getrunct, der Modus bleibt der alte. Der berechnete mode=0o755 (install.go:90) verpufft also in genau dem Fall, in dem --force etwas reparieren soll. Folge: eine spawn.sh ohne x-Bit - aus einem Checkout, einer Kopie ueber eine Dateisystemgrenze, einem alten Lauf - bleibt kaputt, und nichts meldet es. Der Mensch tippt --force und bekommt 'overwritten' zu sehen.
+
+Testluecke dazu: core/role/role_test.go:143 prueft das x-Bit nur nach einer Erstinstallation. Kein Test legt eine Zieldatei mit 0644 vor.
+
+Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.WriteFile ein os.Chmod(dst, mode). Zu beachten - der Unchanged-Zweig (install.go:73) kehrt vorher um, dort wird nichts geschrieben; damit --force auch die byte-identische Datei repariert, muss der Modus entweder vor dem Unchanged-Return geprueft werden oder --force den Unchanged-Zweig ueberspringen. Welche der beiden, entscheidet die Lane - der zweite Fall (identische Bytes, falsches Bit) ist der wahrscheinlichere auf einem echten Rechner. Dazu ein Fall in core/role, der eine Zieldatei mit 0644 vorlegt und nach --force auf 0755 prueft.
