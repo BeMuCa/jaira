@@ -23,13 +23,13 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:55:49Z
+updated-at: 2026-09-13T21:56:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
-outcome-what: "Plan fuer das mitgelieferte Hook-Beispiel festgelegt: neun Schritte von Skript ueber go:embed und 'jaira hook example' bis README, NOTES.md und Tests"
-outcome-why: "Die Brainstorm-Lane hatte die drei offenen Fragen entschieden, aber nicht gesagt, wo die Datei liegt, was die Zustellzeile ist und wie das Hoerbare pruefbar wird"
-outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abgearbeitet werden kann"
+outcome-what: "Neuer Befehl 'jaira hook example' druckt ein lauffaehiges Benachrichtigungs-Skript fuer die Einstellung \"hook\". Das Skript liegt als echte Datei unter core/hook/example/notify.sh und wird per go:embed ueber core/hook/example.go ins Binary gezogen; core/hook/hook.go bleibt unberuehrt. Es klingelt zweimal fuer human und signoff, einmal fuer done und bleibt fuer alle Agenten-Lanes und fuer claim stumm. Tests in internal/cli/hook_example_test.go fahren das gedruckte Skript wirklich aus. README.md nennt das Beispiel im hook-Absatz und grenzt es gegen 'hook print' ab, eine Zeile steht unter ## Unreleased in core/release/NOTES.md."
+outcome-why: "Wer 'hook' in den Einstellungen sieht, hatte ein leeres Feld und keinen Anhaltspunkt, was hineingehoert - praktisch schrieb es deshalb niemand. Jetzt gibt es einen ersten Schritt, der ohne jede Installation laeuft, und mit ihm die Regel, die das Beispiel transportieren soll: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt."
+outcome-resolves: "Die DoD-Zeile ist abgehakt: der Befehl legt das Beispiel ab und nennt die Scharfschalt-Zeile (internal/cli/hook.go, newHookExampleCmd), das Skript laeuft mit leerem PATH fehlerfrei durch und tut nichts (TestHookExampleRunsOnAMachineWithNothingInstalled), human/signoff sind von done hoerbar unterscheidbar (TestHookExampleSoundsOnlyForThePersonsLanes), der Hinweis steht im hook-Absatz der README, eine Zeile steht in core/release/NOTES.md, und go test ./... -race ist gruen (exit 0)."
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
