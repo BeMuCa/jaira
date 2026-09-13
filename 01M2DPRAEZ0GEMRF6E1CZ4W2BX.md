@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,10 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:53:59Z
+updated-at: 2026-09-13T15:54:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
+outcome-what: "Tastenkommandos werden ueber die physische Tastenposition gelesen statt ueber das Zeichen, das die Belegung druckt"
+outcome-why: "Mit kyrillischer Belegung traf kein einziger case in den TUI-Switches, das Board reagierte auf gar nichts mehr"
+outcome-resolves: "cmdKey in internal/tui/keylayout.go: erst Key.BaseCode vom Terminal, sonst JZUKEN-Positionstabelle; eingesetzt in model.go, home.go, edit.go; Texteingabe liest weiter k.Text und bleibt kyrillisch"
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
