@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:45:23Z
+updated-at: 2026-09-13T18:45:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -29,10 +29,10 @@ review-gaps: |-
   internal/tui/keylayout_test.go:160 TestCmdKeyIgnoresTheLockStates traegt drei Faelle: NumLock allein, NumLock plus ScrollLock, und die Kombination aus dem ultraviolet-Testfile (NumLock|CapsLock|Shift) - keiner davon doppelt einen anderen
   Keine neue Abhaengigkeit, keine Konfiguration, nichts Ungenutztes
 test-verdict: |-
-  go build, go vet, go test ./... gruen nach dem AltGr-Fix
-  Sieben Tabellentests plus zwei Board-Tests; die drei Guards sind jeweils von einem Fall gedeckt, der ohne den Guard umfaellt
-  Zweimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
-  Weiterhin nicht pruefbar ohne passendes Terminal: der echte Kitty-Pfad und der Windows-Console-Pfad - beide nur ueber konstruierte KeyPressMsg abgedeckt
+  go build, go vet, go test ./... gruen nach dem Lock-Fix
+  Acht Tabellentests und zwei Board-Tests; vier Guards, vier Faelle, die ohne ihren Guard umfallen
+  Dreimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
+  Unveraendert offen und nur ueber konstruierte KeyPressMsg gedeckt: der echte Kitty-Pfad und der Windows-Console-Pfad. Der NumLock-Fehler kam genau von dort, gefunden hat ihn das Lesen des Decoders, nicht ein Test - wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte es einmal mit eingeschaltetem NumLock ausprobieren
   Binary neu gebaut unter /home/alex/.local/bin/jaira
 question: ""
 ---
