@@ -23,7 +23,8 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T20:44:07Z
+updated-at: 2026-09-13T20:47:00Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
