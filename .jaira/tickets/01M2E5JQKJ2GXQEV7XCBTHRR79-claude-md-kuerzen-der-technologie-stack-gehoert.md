@@ -1,7 +1,7 @@
 ---
 id: 01M2E5JQKJ2GXQEV7XCBTHRR79
 title: "CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:53:26Z
+updated-at: 2026-09-13T21:10:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
@@ -89,3 +89,4 @@ Restliche DoD gegen den Baum nachgemessen: wc -c CLAUDE.md = 13968 (rund 3450 To
 Funktion geprueft, soweit eine Doku-Verschiebung eine hat: 'jaira validate' RC=0 und meldet CLAUDE.md/AGENTS.md NICHT als stale - genau die Meldung, die ein kaputt geschriebener Block ausloesen wuerde. THRR79 taucht in den 11 Warnungen nicht auf; die betreffen andere Tickets (fehlende assignees, undeklarierte blocked-by) und sind aelter als dieses Ticket.
 Der Befund des Vorlaufs bleibt stehen und wird nicht durch Gruen widerlegt: kein Test beruehrt diese Aenderung, kein Go-Code kennt docs/STACK.md. Gruen heisst 'nichts kaputtgemacht'; geprueft ist die Verschiebung durch die Messungen oben und durch den leeren update-Diff, nicht durch die Suite.
 - **2026-09-13 20:53 · Alexander Sacharov** — review: Alle sechs DoD-Zusagen selbst nachgefahren statt übernommen - go test ./... -race RC=0, 'go run ./cmd/jaira update' RC=0 mit anschliessend leerem git diff (also auch AGENTS.md zeichengleich), jaira-Block und alles hinter jaira:local byte-identisch zu master, CLAUDE.md 13968 Bytes, genau ein Hunk, genau eine hinzugefügte Zeile. Zwei Dinge zusätzlich geprüft, die im Trail noch nicht standen: .planning/research/STACK.md ist in git getrackt (git ls-files), der Verweis läuft für Teamkollegen also nicht ins Leere; und das Datum 2026-08-11 in docs/STACK.md:3 stimmt mit '**Researched:** 2026-08-11' in .planning/research/STACK.md:4 überein. Kein Grund, zurück nach in-progress zu schicken. Zwei Folgeticket-Kandidaten, hier bewusst nicht angefasst: die leere Überschrift docs/STACK.md:5 ('## 1. Language: Go — not Rust' ohne Rumpf, wörtlich aus CLAUDE.md mitgewandert) und der GSD-Marker stack-start, dessen source-Attribut nicht mehr zum Inhalt zwischen den Markern passt. Keine Zeile in core/release/NOTES.md: kein Nutzer kann diese Änderung am Binary beobachten - CLAUDE.md ist Repository-Dokumentation, nicht CLI-Verhalten.
+- **2026-09-13 21:03 · Alexander Sacharov** — Signoff kam vom Menschen, nicht vom Board: Alexander Sacharov hat die Arbeit in der Sitzung abgenommen und den Move nach done ausdruecklich angewiesen, weil er die Tafel gerade nicht bedienen konnte. Damit ist auch die Auslegung der DoD-Formulierung 'Zeilen 27-164 unveraendert' angenommen - die drei bewussten Abweichungen am Kopf von docs/STACK.md (neuer H1, Hinweiszeile auf die Vollfassung, entfallene mitkopierte Ueberschrift) stehen so. Der Move ist mit --force gefahren, weil der signoff-Gate keinen Agenten herauslaesst.
