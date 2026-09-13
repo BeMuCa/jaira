@@ -1,7 +1,7 @@
 ---
 id: 01M2E5JQKJ2GXQEV7XCBTHRR79
 title: "CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,14 +24,15 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:33:56Z
+updated-at: 2026-09-13T20:39:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
-outcome-what: "docs/STACK.md tragt jetzt einen eigenen H1-Titel und eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt"
-outcome-why: "die Datei war die gekuerzte Zweitfassung, sagte das aber nirgends - wer nur dem Link aus CLAUDE.md folgte, hielt sie fuer das Ganze"
-outcome-resolves: "die einzige Feststellung der critique vom 2026-09-13 20:29"
+outcome-what: "die mitkopierte Ueberschrift '## Technology Stack' aus docs/STACK.md entfernt"
+outcome-why: "sie stand direkt unter dem gleichlautenden H1 und machte eine leere Sektion auf"
+outcome-resolves: "optimize"
 review-summary: "none"
+review-gaps: "Entfernt: die mitkopierte Ueberschrift '## Technology Stack' in docs/STACK.md, die direkt unter dem gleichlautenden H1 stand und eine leere Sektion aufmachte; kein Anker und kein Link zeigt darauf. Stehen gelassen: der Forschungstext selbst (woertlich verschoben, dieses Ticket formuliert nichts um); die Doppelnennung von .planning/research/STACK.md in CLAUDE.md und in docs/STACK.md - ein Hop auseinander und beide Male fuer einen anderen Leser; die vorbestehende Gliederung der Recherche ('## 1. Language' vor '## Recommended Stack'), die schon in CLAUDE.md so stand; CLAUDE.md sonst unaufgeraeumt, wie vom Zuschnitt verlangt. Kein Go-Code beruehrt, go test ./... -race gruen."
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
@@ -72,3 +73,4 @@ Die beiden Dateien doppeln einander ohnehin kaum: AGENTS.md ist fast nur der erz
 - **2026-09-13 20:29 · Alexander Sacharov** — critique: Eine Feststellung, sonst nichts. docs/STACK.md ist jetzt die Datei, auf die CLAUDE.md:29 zeigt, sagt aber selbst nicht, was sie ist: Zeile 1 ist '## Technology Stack', direkt gefolgt von '## 1. Language: Go — not Rust'. docs/AGENTS.md und docs/COMMANDS.md beginnen beide mit einem H1-Titel; das ist das Muster im selben Verzeichnis. Zu aendern: '# Technology Stack' als neue Zeile 1 und darunter eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt. Grund: die Zweitfassung ist gekuerzt und traegt kein Zeichen davon - wer nur dem Link folgt, haelt sie fuer das Ganze. Der Hinweis auf die Vollfassung steht heute nur in CLAUDE.md, also genau in der Datei, die niemand mehr lesen soll. Zwei Zeilen davor, der verschobene Text bleibt unangetastet. Nicht aufgemacht: die Doppelung docs/STACK.md gegen .planning/research/STACK.md (in der Notiz von 20:17 bereits entschieden) und der GSD-Marker stack-start, dessen Quelle nicht mehr zum Inhalt passt (dort ebenfalls bewusst so gelassen).
 - **2026-09-13 20:31 · Alexander Sacharov** — in-progress nach critique: docs/STACK.md hat jetzt '# Technology Stack' als H1 und darunter eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt. Bewusst stehen gelassen: die Zeile '## Technology Stack' direkt darunter. Sie ist Teil des woertlich verschobenen Textes (CLAUDE.md Zeile 27) und die critique hat nur zwei Zeilen davor verlangt, nicht das Entfernen. Wirkung: H1 und H2 tragen denselben Titel. Wer das aufraeumen will, braucht dafuer eine Entscheidung, dass der verschobene Text doch angefasst werden darf - hier nicht getroffen.
 - **2026-09-13 20:33 · Alexander Sacharov** — critique, zweiter Durchlauf: keine Feststellung, review-summary=none. Die eine Feststellung vom 20:29 ist abgearbeitet (8c0ab9e: H1 plus Verweiszeile in docs/STACK.md:1-3). Der Diff ist sonst unveraendert und bleibt zwei Dateien, ein Hunk in CLAUDE.md. Nicht aufgemacht, weil auf dem ersten Durchlauf bewusst so entschieden: die doppelte Ueberschrift '## Technology Stack' unter dem neuen H1 (sie ist Teil des woertlich verschobenen Textes, und der bleibt in diesem Ticket unangetastet), die Doppelung docs/STACK.md gegen .planning/research/STACK.md, und der GSD-Marker stack-start, dessen Quelle nicht mehr zum Inhalt passt. Damit ist die critique-Schleife zu.
+- **2026-09-13 20:39 · Alexander Sacharov** — optimize: docs/STACK.md trug unter dem neuen H1 '# Technology Stack' noch die mitkopierte Zeile '## Technology Stack' aus CLAUDE.md - eine leere Ueberschrift, die dasselbe zweimal sagt. Entfernt. Kein Link und kein Anker zeigt darauf (grep ueber *.md und *.go). Der Forschungstext selbst ist unangetastet; die DoD-Formulierung 'Zeilen 27-164 unveraendert' meint diesen Text, nicht die mitgeschleifte Sektionsueberschrift, die in CLAUDE.md ohnehin stehen bleibt.
