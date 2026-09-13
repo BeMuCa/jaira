@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:58:35Z
+updated-at: 2026-09-13T15:58:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
 outcome-what: "Kyrillische Belegung steuert das Board, Texteingabe bleibt kyrillisch"
-outcome-why: "Die automatisierten Tests decken die Tabellen-Ebene ab; die BaseCode-Ebene und eine echte Systembelegung kann nur ein Mensch an seinem Terminal pruefen"
-outcome-resolves: "Bitte mit umgestellter russischer Belegung: j/k/h/l bewegen den Cursor, q beendet, enter oeffnet, der Punkt oeffnet den Filter - und im Filter erscheint getippter russischer Text unveraendert"
+outcome-why: "Die automatisierten Tests decken die Tabellen-Ebene ab; eine echte Systembelegung und die BaseCode-Ebene kann nur ein Mensch an seinem Terminal pruefen"
+outcome-resolves: "cmdKey liest Kommandos ueber die Tastenposition, Texteingabe liest weiter k.Text"
 review-summary: |-
   Zweiter Durchgang: nichts mehr zu aendern. Die Einschraenkung auf gedruckte Zeichen sitzt in physicalRune (internal/tui/keylayout.go:59), also in der Funktion, die die Entscheidung trifft, nicht in den vier Aufrufern - richtige Stelle
   internal/tui/keylayout.go:41 cmdKey schreibt nur ctrl und alt vor die Rune, meta/hyper/super fallen weg; bewusst, weil das Board keine davon bindet und ein Zweig fuer einen Zustand, den es nicht gibt, nur Ballast waere
@@ -33,6 +33,7 @@ test-verdict: |-
   Neu und gezielt: TestBoardAnswersACyrillicLayout schickt 'о', 'л' und '.' durch den echten Dispatch und prueft Cursor und Filtermodus; TestTypingStaysCyrillicInTheFilter tippt 'отchёт' ins Filterfeld und liest es unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt enter/space/tab/pfeil ab
   Nicht automatisch pruefbar und deshalb offen fuer den Menschen: die BaseCode-Ebene braucht ein Terminal mit Kitty-Protokoll, hier laeuft Windows Terminal unter WSL2, wo BaseCode nie ankommt. Ebenso ungeprueft: ob eine echte russische Systembelegung dieselben Zeichen sendet wie der Test sie baut
   Binary ist neu gebaut und unter /home/alex/.local/bin/jaira installiert, damit der Test mit echter Belegung sofort moeglich ist
+question: "Bitte einmal mit umgestellter russischer Belegung im Board pruefen: bewegen j/k/h/l (also о/л/р/д) den Cursor, beendet q (й), oeffnet enter ein Ticket, und oeffnet die Punkt-Taste den Filter? Und erscheint danach getippter russischer Text im Filter unveraendert? Das neu gebaute Binary liegt schon unter /home/alex/.local/bin/jaira. Zweite Frage nur, falls jemand ein Terminal mit Kitty-Protokoll hat (kitty, ghostty, WezTerm, foot): funktioniert dort Steuern UND Tippen weiterhin? Dort schaltet die neue KeyboardEnhancements-Anforderung den Klartext ab, und wenn das Terminal den Text nicht zurueckliefert, blieben Filter und Editfeld leer."
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
