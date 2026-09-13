@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:09:51Z
+updated-at: 2026-09-13T20:16:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -83,3 +83,8 @@ review-summary: |-
 - Der offene Punkt aus der Recherche ist erledigt, aber anders als 'stillschweigend ein zweites Paar anlegen': das Praefix macht jaira-teamlead und teamlead zu zwei verschiedenen Kommandos, es kollidiert also nichts. Gefaehrlich ist nur, dass jemand weiter den alten Namen tippt. role.Twins() meldet die unpraefixierte Kopie und loescht sie nie - ein Verzeichnis, das dieses Werkzeug nicht geschrieben hat, entfernt es auch nicht.
 Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue Rolle nach einem Upgrade muss man selbst holen. Das gehoert in ein eigenes Ticket, sobald jemand es vermisst.
 - **2026-09-13 20:09 · Alexander Sacharov** — critique: sechs Befunde, alle in review-summary mit Datei und Gegenvorschlag. Der gewichtigste ist das Fan-out in core/role/target.go: dieselben sieben Rollen landen in jedem existierenden Agent-Ordner, ein Harness liest mehrere davon, also ist jaira-teamlead danach doppelt registriert. Die DoD nennt genau ein Ziel - das ist kein Geschmacksurteil, sondern eine Abweichung von dem, was das Ticket verlangt. Die uebrigen fuenf sind Ballast: installDirs/skillsDirOf rekonstruiert Zielpfade, die der Aufrufer schon hat; Role.Name ist ein zweiter Name fuer Role.ID; within() prueft einen zur Compile-Zeit unmoeglichen Zustand; Twins() ist eine Einmal-Migration fuer genau einen Rechner und traegt dafuer ein dauerhaftes JSON-Feld. Nicht beanstandet und bewusst stehen gelassen: der Byte-Vergleich statt os.Stat wie lane.Export - drei Zustaende brauchen drei Antworten, die Begruendung im Commit traegt. Nebenbei, kein eigener Befund: der Doc-Kommentar ueber SkippedAny in core/role/install.go:152 beginnt mit 'Skipped reports', also mit dem falschen Namen.
+- **2026-09-13 20:16 · Alexander Sacharov** — critique abgearbeitet, alle sechs Befunde. Drei Dinge, die der Diff nicht selbst sagt:
+- Statt Fan-out jetzt genau ein Ziel plus --into <dir>. Das Flag ist nicht Zierde: ein Projekt, dessen Agent unter .codex/skills liest, hatte vorher den Fan-out als einzigen Weg. Ohne --into waere der Befund nicht behebbar gewesen, ohne diese Nutzer auszusperren.
+- Role.Name ist weg, aber die Invariante dahinter nicht: Claude Code laedt einen Skill nicht, wenn frontmatter name: vom Ordner abweicht. Da nichts im Paket das Feld mehr liest, wuerde ein Tippfehler in einer eingebetteten SKILL.md still durchgehen. core/role/role_test.go:39 prueft deshalb jetzt direkt die Bytes auf 'name: jaira-<id>'. Wer diesen Test fuer redundant haelt und loescht, macht genau das Loch auf.
+- Twins() gestrichen wie verlangt, aber die Sache selbst bleibt wahr: wer die Prompts frueher von Hand unter den blanken Namen liegen hatte, hat sie weiter, und sie antworten auf ein anderes Kommando. Das steht jetzt als zweite Zeile in core/release/NOTES.md, weil ein Mensch es dort einmal liest, statt dass Code es bei jedem Lauf neu herausfindet.
+Nicht angefasst, bewusst: der Byte-Vergleich statt os.Stat. Die critique hat ihn ausdruecklich stehen lassen.
