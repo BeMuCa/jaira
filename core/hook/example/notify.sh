@@ -16,8 +16,12 @@
 # the delivery has to be quick and must never wait on a host that is down.
 #
 # The rule this example carries: only a state in which nothing moves without a
-# person is worth a sound. Every other lane stays silent, or the sound stops
-# meaning anything and gets switched off.
+# person is worth a sound. That rule has exactly two exceptions here, and both
+# are deliberate: a lane that waits on a person (human, signoff), and the lane
+# that ends the ticket (done). done waits on nobody -- it rings because a
+# finish is the other thing you would rather be told than have to go and look
+# for. Every other lane stays silent, or the sound stops meaning anything and
+# gets switched off.
 #
 # To deliver somewhere other than this terminal, replace the two printf lines in
 # deliver() below. Keep the request/finished split; that is the whole point.
@@ -29,7 +33,13 @@
 set -u
 
 # deliver <tone> <title> <body>. The terminal bell is the one channel every
-# machine already has: two rings ask for a person, one ring reports a finish.
+# machine already has. Read the printed line, not the ringing: "jaira human:"
+# against "jaira done:" is what actually tells a request from a finish. The
+# bell count -- two rings for a request, one for a finish -- is a hint and no
+# more, because plenty of terminals merge or throttle bells that arrive in the
+# same breath and sound both of them as one tone. A channel that carries a
+# title of its own, like the ntfy or notify-send line above, gets the
+# distinction back properly.
 deliver() {
 	case "$1" in
 	request) printf '\a\a%s: %s\n' "$2" "$3" ;;
