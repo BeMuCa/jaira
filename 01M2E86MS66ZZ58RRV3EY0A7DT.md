@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:52:44Z
+updated-at: 2026-09-13T21:55:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -36,7 +36,8 @@ outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abg
 
 ## Definition of Done
 
-- [ ] Ein Befehl legt ein lauffaehiges Hook-Beispiel ab und sagt, wie es scharfgeschaltet wird; das Beispiel laeuft ohne Herdr fehlerfrei durch und tut dann nichts; ein Lane-Wechsel in eine Lane, die einem Menschen gehoert, ist hoerbar von einem gewoehnlichen unterscheidbar; ein Hinweis auf das Beispiel steht dort, wo 'hook' dokumentiert ist; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
+- [x] Ein Befehl legt ein lauffaehiges Hook-Beispiel ab und sagt, wie es scharfgeschaltet wird; das Beispiel laeuft ohne Herdr fehlerfrei durch und tut dann nichts; ein Lane-Wechsel in eine Lane, die einem Menschen gehoert, ist hoerbar von einem gewoehnlichen unterscheidbar; ein Hinweis auf das Beispiel steht dort, wo 'hook' dokumentiert ist; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
+  proof: internal/cli/hook.go:newHookExampleCmd (der Befehl 'jaira hook example' und sein Long-Text mit der Scharfschalt-Zeile); TestHookExampleRunsOnAMachineWithNothingInstalled (laeuft mit leerem PATH fehlerfrei durch); TestHookExampleSoundsOnlyForThePersonsLanes (human/signoff zwei Glocken, done eine, Agenten-Lanes stumm); README.md:344-352 im hook-Absatz; core/release/NOTES.md:17; go test ./... -race exit 0
 
 ## Options
 
