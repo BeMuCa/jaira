@@ -114,3 +114,20 @@ func TestTypingStaysCyrillicInTheFilter(t *testing.T) {
 		t.Errorf("filter holds %q, want %q", m.input, "отчёт")
 	}
 }
+
+// A terminal that reports a BaseCode reports one for enter and space as well.
+// Reading it there would hand the switches a bare rune instead of the name they
+// match on, and the fault would only show up on the terminals the BaseCode
+// branch exists for.
+func TestCmdKeyIgnoresBaseCodeOnNamedKeys(t *testing.T) {
+	for _, k := range []tea.KeyPressMsg{
+		{Code: tea.KeyEnter, BaseCode: '\r'},
+		{Code: tea.KeySpace, Text: " ", BaseCode: ' '},
+		{Code: tea.KeyUp, BaseCode: tea.KeyUp},
+		{Code: tea.KeyTab, BaseCode: '\t'},
+	} {
+		if got, want := cmdKey(k), k.String(); got != want {
+			t.Errorf("cmdKey(%q) = %q, want it unchanged", want, got)
+		}
+	}
+}

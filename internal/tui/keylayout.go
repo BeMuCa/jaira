@@ -57,12 +57,16 @@ func cmdKey(k tea.KeyPressMsg) string {
 // typed: shift+ф is Ф is "F", because the board binds "E" and "G" and "X" to
 // their own commands.
 func physicalRune(k tea.KeyPressMsg) (rune, bool) {
-	typed := k.Code
-	if rs := []rune(k.Text); len(rs) == 1 {
-		// Text is what the key produced, upper case included. Code is the
-		// unshifted key on the layouts that distinguish the two.
-		typed = rs[0]
+	// Only a printed character can be layout-dependent. Enter, space and the
+	// arrows are already named after the physical key, and a terminal speaking
+	// the Kitty protocol reports a BaseCode for those too — taking it would
+	// turn "enter" into a bare rune no switch matches.
+	rs := []rune(k.Text)
+	if len(rs) != 1 || rs[0] == ' ' || !unicode.IsGraphic(rs[0]) {
+		return 0, false
 	}
+	// Text is what the key produced, upper case included.
+	typed := rs[0]
 	base := k.BaseCode
 	if base == 0 {
 		var ok bool
