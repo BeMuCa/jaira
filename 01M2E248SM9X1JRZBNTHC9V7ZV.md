@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:06:03Z
+updated-at: 2026-09-13T20:06:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6599
 claimed-at: 2026-09-13T19:56:51Z
@@ -66,3 +66,8 @@ claimed-at: 2026-09-13T19:56:51Z
 - **2026-09-13 19:55 · Alexander Sacharov** — Eine Rolle ist nicht immer genau eine Datei. teamlead hat zusaetzlich scripts/spawn.sh, die uebrigen sechs nur SKILL.md. Die Definition of Done nennt nur SKILL.md, aber nur SKILL.md auszuliefern wuerde einen kaputten Verweis mitliefern. Deshalb Role.Files als Liste und //go:embed all:builtin ueber den ganzen Baum - die Kosten sind null, die DoD bleibt erfuellt. Nebenbefund, nicht Teil dieses Tickets: dispatcher/SKILL.md:95 verweist auf scripts/spawn.sh, das Skript liegt aber unter teamlead/scripts/. Der Verweis geht schon heute ins Leere.
 - **2026-09-13 19:55 · Alexander Sacharov** — lane.Export/copyLane (core/lane/share.go:34) kann hier nicht wiederverwendet werden, obwohl der Mechanismus gleich aussieht. Es prueft nur os.Stat: Datei da -> Abbruch. Die DoD verlangt drei Faelle statt zwei: zweiter Lauf aendert nichts (Bytes gleich -> unchanged, kein Fehler), handgeaenderte Datei bleibt unberuehrt und wird gemeldet (Bytes verschieden -> skipped), --force ueberschreibt. Das ist ein Byte-Vergleich gegen das eingebettete Original, kein Stat. Deshalb eigenes core/role/install.go und kein Umbau von lane.Export - lane haengt an 'lanes use' und soll sich nicht mitaendern.
 - **2026-09-13 19:58 · Alexander Sacharov** — Beim Einfrieren umgeschrieben, ueber blosses Kopieren hinaus: name: in allen sieben Frontmattern auf jaira-<id>, und jeder Querverweis auf einen Rollennamen mit /-Praefix. Betroffen waren mehr Stellen als die Notiz vom 19:55 nannte: zusaetzlich zu dispatcher:38 und role-brainstorm:30 auch fuenf description:-Zeilen ('Invoked as /role-lane ...') und teamlead/scripts/spawn.sh:47, das den Prompt per herdr in eine Pane tippt. Das Regex laesst /-Namen in Pfaden in Ruhe ((?<![\w/.-])), sonst waere ~/.claude/skills/role-lane mitgewandert. Die Quellen unter ~/.claude/skills bleiben unveraendert - sie sind ab jetzt nicht mehr die Wahrheit, core/role/builtin ist es.
+- **2026-09-13 20:06 · Alexander Sacharov** — Drei Dinge, die der Code nicht sagt:
+- go:embed all:builtin statt builtin/* - ohne all: laesst go:embed Unterverzeichnisse aus, teamlead/scripts/spawn.sh waere still verschwunden und der Prompt haette auf eine Datei gezeigt, die nicht mitkommt.
+- Das Ausfuehrbar-Bit ueberlebt embed.FS nicht: alles kommt als 0644 wieder heraus. install.go entscheidet deshalb an der Endung (.sh -> 0755). Ein spawn.sh ohne x-Bit ist eine kaputte Rolle, und nichts haette es gemeldet.
+- Der offene Punkt aus der Recherche ist erledigt, aber anders als 'stillschweigend ein zweites Paar anlegen': das Praefix macht jaira-teamlead und teamlead zu zwei verschiedenen Kommandos, es kollidiert also nichts. Gefaehrlich ist nur, dass jemand weiter den alten Namen tippt. role.Twins() meldet die unpraefixierte Kopie und loescht sie nie - ein Verzeichnis, das dieses Werkzeug nicht geschrieben hat, entfernt es auch nicht.
+Nicht gemacht, bewusst: 'jaira update' ruft roles install nicht auf. Eine neue Rolle nach einem Upgrade muss man selbst holen. Das gehoert in ein eigenes Ticket, sobald jemand es vermisst.
