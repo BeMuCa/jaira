@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:51:14Z
+updated-at: 2026-09-13T18:51:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -34,7 +34,7 @@ test-verdict: |-
   Dreimal von Hand bestaetigt: russische Belegung steuert das Board, '?' oeffnet die Hilfe (Windows Terminal, WSL2)
   Unveraendert offen und nur ueber konstruierte KeyPressMsg gedeckt: der echte Kitty-Pfad und der Windows-Console-Pfad. Der NumLock-Fehler kam genau von dort, gefunden hat ihn das Lesen des Decoders, nicht ein Test - wer an einem kitty, ghostty, WezTerm oder foot sitzt, sollte es einmal mit eingeschaltetem NumLock ausprobieren
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: "Kurz gegenpruefen, das Binary ist wieder frisch: 'jaira board' mit russischer Belegung, о/л bewegen, й beenden. Fuer deinen Terminal aendert der Fix nichts - Windows Terminal meldet keine Lock-Zustaende -, aber getestet werden soll, was installiert ist. Falls du irgendwo ein kitty, ghostty, WezTerm oder foot hast: dort bitte mit eingeschaltetem NumLock probieren, das ist der Pfad, den hier kein Terminal hergibt."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
