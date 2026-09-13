@@ -348,6 +348,14 @@ own: the script gets `JAIRA_EVENT`, `JAIRA_TICKET`, `JAIRA_TITLE`,
 environment, and what it does with them — a Slack webhook, ntfy.sh, Telegram —
 is yours.
 
+`jaira hook example` prints a working script for that field, so the first one
+does not have to be invented: `jaira hook example > ~/.jaira/notify.sh && chmod
++x ~/.jaira/notify.sh`, then point `"hook"` at it. As printed it rings the
+terminal bell — twice for a lane that belongs to a person, once for a finished
+ticket, and not at all for the lanes an agent works, because only a state in
+which nothing moves without you is worth a sound. It installs nothing and needs
+nothing installed; the script marks the lines to replace to deliver elsewhere.
+
 **The fork limit, stated plainly:** refs do not travel across forks. Everyone
 taking part pushes to the same board repository, which means participation
 requires push access to it. A contributor without push access keeps the ticket
@@ -558,8 +566,10 @@ The sync is idempotent. A task already mapped to a ticket updates it rather than
 creating a second one, and an unchanged list writes nothing, so a
 board→tasks→board round trip settles instead of oscillating.
 
-`jaira hook print` emits a second, unrelated hook: a `Stop` hook that refuses to
-end a session while an agentic lane still holds work. A lane's prompt already
+`jaira hook print` emits a second, unrelated hook — unrelated to
+`jaira hook example` above as well, which prints a script jaira calls, where
+this one prints settings Claude Code reads: a `Stop` hook that refuses to end a
+session while an agentic lane still holds work. A lane's prompt already
 says where a ticket goes next, and `jaira move` now names the command that works
 the lane it landed in — but both are advice a model can drop, and the hook is
 the environment refusing. It fails open (no board, no jaira on `PATH`, a stop it

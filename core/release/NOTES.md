@@ -14,7 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
-
+- Stop inventing your first notification hook: `jaira hook example` prints a working script for the `"hook"` setting that rings the terminal bell only for the lanes that wait on a person, and says which line to replace to deliver through ntfy.sh or a desktop notifier instead.
 - The critique lane now reads the whole diff on its first pass; later passes only re-check what it already found, so a review loop cannot run for ever by reading deeper each round.
 - Keep a ticket's worktree until the ticket reaches `done`, not until its pull request merges: both shipped prompts now name the same moment, where `jaira-teamlead` used to name the earlier one. Re-run `jaira roles install --global --force` to pick it up.
 - Put every worktree in `.worktrees/` beside the repository, never inside it: the `jaira-dispatcher` prompt now derives the path and `scripts/spawn.sh` creates it there, so `grep -r`, `find` and `ls -R` from the repository root can no longer walk into a second copy of the sources on someone else's branch and read the wrong file. Re-run `jaira roles install --global --force` to pick it up.

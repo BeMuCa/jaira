@@ -1,7 +1,7 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: in-progress
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,20 +23,21 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:47:25Z
+updated-at: 2026-09-13T21:56:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
-outcome-what: "Plan fuer das mitgelieferte Hook-Beispiel festgelegt: neun Schritte von Skript ueber go:embed und 'jaira hook example' bis README, NOTES.md und Tests"
-outcome-why: "Die Brainstorm-Lane hatte die drei offenen Fragen entschieden, aber nicht gesagt, wo die Datei liegt, was die Zustellzeile ist und wie das Hoerbare pruefbar wird"
-outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abgearbeitet werden kann"
+outcome-what: "Neuer Befehl 'jaira hook example' druckt ein lauffaehiges Benachrichtigungs-Skript fuer die Einstellung \"hook\". Das Skript liegt als echte Datei unter core/hook/example/notify.sh und wird per go:embed ueber core/hook/example.go ins Binary gezogen; core/hook/hook.go bleibt unberuehrt, der Vertrag aendert sich nicht. Es klingelt zweimal fuer human und signoff, einmal fuer done und bleibt fuer alle Agenten-Lanes und fuer claim stumm; die Glocke geht nach /dev/tty, weil core/hook stdout des Skripts verwirft. Tests in internal/cli/hook_example_test.go fahren das gedruckte Skript wirklich aus. README.md nennt das Beispiel im hook-Absatz und grenzt es gegen 'hook print' ab, eine Zeile steht unter ## Unreleased in core/release/NOTES.md."
+outcome-why: "Wer 'hook' in den Einstellungen sah, hatte ein leeres Feld und keinen Anhaltspunkt, was hineingehoert - praktisch schrieb es deshalb niemand. Jetzt gibt es einen ersten Schritt, der ohne jede Installation laeuft, und mit ihm die Regel, die das Beispiel transportieren soll: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt."
+outcome-resolves: "Die DoD-Zeile ist abgehakt: der Befehl legt das Beispiel ab und nennt die Scharfschalt-Zeile (internal/cli/hook.go, newHookExampleCmd), das Skript laeuft mit leerem PATH fehlerfrei durch und tut nichts (TestHookExampleRunsOnAMachineWithNothingInstalled), human/signoff sind von done hoerbar unterscheidbar (TestHookExampleSoundsOnlyForThePersonsLanes), der Hinweis steht im hook-Absatz der README, eine Zeile steht in core/release/NOTES.md, und go test ./... -race ist gruen (exit 0)."
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
 
 ## Definition of Done
 
-- [ ] Ein Befehl legt ein lauffaehiges Hook-Beispiel ab und sagt, wie es scharfgeschaltet wird; das Beispiel laeuft ohne Herdr fehlerfrei durch und tut dann nichts; ein Lane-Wechsel in eine Lane, die einem Menschen gehoert, ist hoerbar von einem gewoehnlichen unterscheidbar; ein Hinweis auf das Beispiel steht dort, wo 'hook' dokumentiert ist; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
+- [x] Ein Befehl legt ein lauffaehiges Hook-Beispiel ab und sagt, wie es scharfgeschaltet wird; das Beispiel laeuft ohne Herdr fehlerfrei durch und tut dann nichts; ein Lane-Wechsel in eine Lane, die einem Menschen gehoert, ist hoerbar von einem gewoehnlichen unterscheidbar; ein Hinweis auf das Beispiel steht dort, wo 'hook' dokumentiert ist; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
+  proof: internal/cli/hook.go:newHookExampleCmd (der Befehl 'jaira hook example' und sein Long-Text mit der Scharfschalt-Zeile); TestHookExampleRunsOnAMachineWithNothingInstalled (laeuft mit leerem PATH fehlerfrei durch); TestHookExampleSoundsOnlyForThePersonsLanes (human/signoff zwei Glocken, done eine, Agenten-Lanes stumm); README.md:344-352 im hook-Absatz; core/release/NOTES.md:17; go test ./... -race exit 0
 
 ## Options
 
@@ -47,15 +48,15 @@ outcome-resolves: "Ticket hat eine Plan-Checkliste, die Schritt fuer Schritt abg
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Beispielskript core/hook/example/notify.sh schreiben: Zustellzeile ist die Terminal-Glocke, ntfy- und notify-send-Einzeiler auskommentiert direkt darunter; Lane-Tabelle human|signoff -> Bitte-Ton, done -> Abschluss-Ton, blocked und alle Agenten-Lanes stumm; Kopfkommentar englisch mit den JAIRA_*-Variablen, der 5s-Kappung und dem Satz, welche Zeile zu ersetzen ist
-- [ ] Skript einbetten: neue Datei core/hook/example.go mit go:embed example/notify.sh und einer Funktion ExampleScript() string; core/hook/hook.go bleibt unberuehrt, der Vertrag aendert sich nicht
-- [ ] Befehl 'jaira hook example' in internal/cli/hook.go ergaenzen: druckt das Skript auf stdout, schreibt keine Datei und keine Einstellung; Long-Text nennt 'jaira hook example > ~/.jaira/notify.sh && chmod +x ~/.jaira/notify.sh' und die fehlende Zeile "hook": "/home/<du>/.jaira/notify.sh"
-- [ ] Test internal/cli/hook_example_test.go nach dem Muster von runStopHook: Ausgabe von 'hook example' in eine Datei schreiben und mit sh und gesetzten JAIRA_*-Variablen ausfuehren; human, signoff und done geben hoerbare Ausgabe, in-progress, todo und blocked geben nichts, jeder Fall endet mit exit 0
-- [ ] Test fuer den leeren Rechner: ohne jedes Zustellwerkzeug auf PATH laeuft das Skript fehlerfrei durch und tut nichts (das ist die DoD-Zeile 'laeuft ohne Herdr fehlerfrei durch')
-- [ ] README.md: im Hook-Absatz bei Zeile 344-350 zwei Saetze auf 'jaira hook example'; bei Zeile 561 einen Halbsatz, dass 'hook print' und 'hook example' zwei unverwandte Dinge sind
-- [ ] core/release/NOTES.md: eine englische Zeile unter ## Unreleased, als Anweisung formuliert
-- [ ] go test ./... -race gruen, danach die DoD-Zeile mit --proof abhaken
-- [ ] Folgeticket erfassen: 'jaira lanes --json' gibt requires-question und requires-human-exit nicht aus, deshalb stehen die Lane-Namen im Beispiel hart und es ist auf einem Board mit eigenen Lanes stumm
+- [x] Beispielskript core/hook/example/notify.sh schreiben: Zustellzeile ist die Terminal-Glocke, ntfy- und notify-send-Einzeiler auskommentiert direkt darunter; Lane-Tabelle human|signoff -> Bitte-Ton, done -> Abschluss-Ton, blocked und alle Agenten-Lanes stumm; Kopfkommentar englisch mit den JAIRA_*-Variablen, der 5s-Kappung und dem Satz, welche Zeile zu ersetzen ist
+- [x] Skript einbetten: neue Datei core/hook/example.go mit go:embed example/notify.sh und einer Funktion ExampleScript() string; core/hook/hook.go bleibt unberuehrt, der Vertrag aendert sich nicht
+- [x] Befehl 'jaira hook example' in internal/cli/hook.go ergaenzen: druckt das Skript auf stdout, schreibt keine Datei und keine Einstellung; Long-Text nennt 'jaira hook example > ~/.jaira/notify.sh && chmod +x ~/.jaira/notify.sh' und die fehlende Zeile "hook": "/home/<du>/.jaira/notify.sh"
+- [x] Test internal/cli/hook_example_test.go nach dem Muster von runStopHook: Ausgabe von 'hook example' in eine Datei schreiben und mit sh und gesetzten JAIRA_*-Variablen ausfuehren; human, signoff und done geben hoerbare Ausgabe, in-progress, todo und blocked geben nichts, jeder Fall endet mit exit 0
+- [x] Test fuer den leeren Rechner: ohne jedes Zustellwerkzeug auf PATH laeuft das Skript fehlerfrei durch und tut nichts (das ist die DoD-Zeile 'laeuft ohne Herdr fehlerfrei durch')
+- [x] README.md: im Hook-Absatz bei Zeile 344-350 zwei Saetze auf 'jaira hook example'; bei Zeile 561 einen Halbsatz, dass 'hook print' und 'hook example' zwei unverwandte Dinge sind
+- [x] core/release/NOTES.md: eine englische Zeile unter ## Unreleased, als Anweisung formuliert
+- [x] go test ./... -race gruen, danach die DoD-Zeile mit --proof abhaken
+- [x] Folgeticket erfassen: 'jaira lanes --json' gibt requires-question und requires-human-exit nicht aus, deshalb stehen die Lane-Namen im Beispiel hart und es ist auf einem Board mit eigenen Lanes stumm
 
 ## Progress
 - **2026-09-13 21:42 · Alexander Sacharov** — Befund im Code (Lane brainstorm; gelesen: core/hook/hook.go, core/settings/settings.go, internal/cli/hook.go, core/lane/lane.go, README.md 338-350 und 561-567, hooks/sync-tasks.sh).
@@ -105,3 +106,9 @@ Drei Entscheidungen, die die Brainstorm-Notizen offen gelassen haben und die der
 Was der Plan bewusst nicht tut: 'jaira hook print' umbenennen. Die zwei Befehle unter 'hook' meinen weiterhin Unterschiedliches (Claude-Code-Stop-Hook vs. move/claim-Hook); der Plan loest das mit einem Halbsatz in der README statt mit einer Umbenennung, die kein Teil dieses Tickets ist.
 
 Reihenfolge: Skript zuerst, dann Einbettung, dann Befehl, dann Tests. Umgekehrt haette man einen Befehl, der eine Datei druckt, deren Inhalt noch nicht entschieden ist - und die Zustellzeile ist die einzige echte Entscheidung im Skript.
+- **2026-09-13 21:52 · Alexander Sacharov** — Umsetzung (Lane in-progress). Zwei Dinge, die der Code nicht sagt:
+1. Die Glocke geht nach /dev/tty, nicht nach stdout, weil core/hook/hook.go Stdout und Stderr des Skripts auf nil setzt - alles, was ein Hook nach stdout schreibt, ist im echten Betrieb weg. Wer das Beispiel spaeter auf 'echo' umstellt, macht es damit stumm.
+2. Der Test muss dem Skript das Controlling Terminal wegnehmen (SysProcAttr{Setsid:true}), sonst schreibt es genau deswegen nach /dev/tty und der Test sieht leeres stdout. Erster Versuch war '[ -w /dev/tty ]' als Probe: untauglich, weil access() nur den Geraeteknoten prueft und auch ohne Terminal wahr ist. Jetzt oeffnet eine Subshell die tty wirklich - '( : >/dev/tty ) 2>/dev/null' - und ein Fehlschlag kostet nur die Subshell, nicht das Skript.
+Deshalb traegt internal/cli/hook_example_test.go '//go:build unix'; Setsid gibt es unter Windows nicht.
+- **2026-09-13 21:56 · Alexander Sacharov** — Lane-Abweichung, damit es niemand zweimal sucht: CLAUDE.md beschreibt Lanes critique, optimize und testing - auf diesem Board sind sie nicht installiert. 'jaira lanes' kennt nur backlog, brainstorm, todo, pre-process, in-progress, human, review, signoff, done, blocked. Der Zug in-progress -> critique wurde abgelehnt. Ziel wurde deshalb review: human liegt zwar mit Rang 40 dazwischen, hat aber requires-question: true und ist die Lane fuer eine offene Entscheidung - es gab keine.
+Folgeticket 3MJNYS erfasst (Lane-Rollen statt harter Lane-Namen im Beispielskript). Es liegt nur auf seiner Ref, nicht auf der Platte: 'jaira pull 3MJNYS'.

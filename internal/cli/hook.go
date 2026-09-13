@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/BeMuCa/jaira/core/hook"
 )
 
 // stopHookSnippet is the settings.json fragment 'jaira hook print' emits.
@@ -59,6 +61,7 @@ func newHookCmd() *cobra.Command {
 		Args:  noArgs(),
 	}
 	cmd.AddCommand(newHookPrintCmd())
+	cmd.AddCommand(newHookExampleCmd())
 	return cmd
 }
 
@@ -96,6 +99,45 @@ rather than something 'jaira init' arranges for you.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			fmt.Fprint(cmd.OutOrStdout(), stopHookSnippet)
+			return nil
+		},
+	}
+}
+
+// newHookExampleCmd prints a working notification hook to stdout. Like 'hook
+// print' it writes no file and touches no settings: where the script lives and
+// whether it is switched on is the user's decision, and a command that edited
+// somebody's settings.json on their behalf would be the more unpleasant half of
+// this feature.
+//
+// The two 'hook' subcommands are unrelated. 'print' emits a Claude Code Stop
+// hook, which is jaira reading the board; this one emits a script jaira calls
+// on move and claim, which is the board reaching the user.
+func newHookExampleCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "example",
+		Short: "Print an example notification script for the \"hook\" setting",
+		Long: `Prints a working hook script to stdout. Nothing is installed and no
+setting is changed.
+
+	jaira hook example > ~/.jaira/notify.sh && chmod +x ~/.jaira/notify.sh
+
+Then arm it by adding the one line that is missing from ~/.jaira/settings.json:
+
+	"hook": "/home/<you>/.jaira/notify.sh"
+
+jaira calls the script on every move and every claim, handing it the ticket in
+JAIRA_EVENT, JAIRA_TICKET, JAIRA_TITLE, JAIRA_STATUS, JAIRA_ASSIGNEE,
+JAIRA_ACTOR and JAIRA_ROOT, and kills it after five seconds.
+
+As printed it rings the terminal bell, twice for a lane that belongs to a person
+and once for a finished ticket, and stays silent for everything else — because a
+sound is only worth the state in which nothing moves without you. It needs
+nothing installed, so it runs on any machine as it stands. The script says which
+lines to replace to deliver through ntfy.sh, notify-send or anything else.`,
+		Args: noArgs(),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			fmt.Fprint(cmd.OutOrStdout(), hook.ExampleScript())
 			return nil
 		},
 	}
