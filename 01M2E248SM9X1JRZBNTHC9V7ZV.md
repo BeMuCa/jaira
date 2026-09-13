@@ -1,7 +1,7 @@
 ---
 id: 01M2E248SM9X1JRZBNTHC9V7ZV
 title: "Rollen-Prompts im Binary ausliefern: jaira roles install"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:59:52Z
+updated-at: 2026-09-13T21:00:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-71524
 claimed-at: 2026-09-13T20:55:10Z
