@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:45:16Z
+updated-at: 2026-09-13T18:45:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -25,9 +25,9 @@ review-summary: |-
   internal/tui/keylayout.go:74 Maske statt Aufzaehlung der verbotenen Modifier bleibt richtig: die erlaubte Menge ist klein und benennbar, die verbotene waechst mit jedem Modifier, den bubbletea dazunimmt
   Kein Muster daneben gebaut: die Guards stehen alle in physicalRune, die vier Aufrufer sehen weiterhin nur einen string
 review-gaps: |-
-  BLOCKER internal/tui/keylayout.go:70 Der Guard laesst nur ModShift und ModCapsLock durch, aber der Kitty-Decoder legt ModNumLock bei JEDEM Tastendruck in Key.Mod (decoder.go:1444 fromKittyMod) und raeumt es erst in einer lokalen Kopie wieder weg, weil es den Text nicht beeinflusst (decoder.go:1475). Mit eingeschaltetem NumLock - Standard auf Desktop-Tastaturen - faellt damit auf kitty, ghostty, WezTerm und foot jede Taste durch den Guard, cmdKey gibt das kyrillische Zeichen zurueck und das Board reagiert wieder auf nichts. Fix: ModNumLock und ModScrollLock in die Maske, sie sind Zustaende und keine Modifier
-  internal/tui/keylayout.go:65 Der Kommentar darueber behauptet, alles ausser Shift und CapsLock mache einen anderen Tastendruck - genau diese Annahme hat den Fehler erzeugt
-  Geprueft und in Ordnung: AltGr ist auf dem Windows-Pfad zu (decoder.go:2035 setzt Text, Mod traegt ModCtrl|ModAlt); Kitty leert Text bei ctrl/alt/super/meta selbst (decoder.go:1445); ModCapsLock neben Shift ist richtig, der Regisster kommt aus Text; beide neuen Tests fallen ohne ihren Guard um
+  Nichts Ueberfluessiges: vier Guards in physicalRune, jeder mit einem Test, der ohne ihn umfaellt (benannte Tasten, Shift-Satzzeichen, AltGr, Lock-Zustaende)
+  internal/tui/keylayout_test.go:160 TestCmdKeyIgnoresTheLockStates traegt drei Faelle: NumLock allein, NumLock plus ScrollLock, und die Kombination aus dem ultraviolet-Testfile (NumLock|CapsLock|Shift) - keiner davon doppelt einen anderen
+  Keine neue Abhaengigkeit, keine Konfiguration, nichts Ungenutztes
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem AltGr-Fix
   Sieben Tabellentests plus zwei Board-Tests; die drei Guards sind jeweils von einem Fall gedeckt, der ohne den Guard umfaellt
