@@ -23,13 +23,14 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:37:52Z
+updated-at: 2026-09-13T21:37:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
 outcome-what: "core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SKILL.md tragen jetzt den Text aus ~/.claude/skills. Geaendert wurde daran nur 'name:' im frontmatter und vier Querverweis-Zeilen, die /role-lane und /role-tester auf /jaira-role-lane und /jaira-role-tester heben. Eine Zeile in core/release/NOTES.md unter ## Unreleased. Danach 'roles install --global --force' gelaufen, diff -r fuer alle sieben jaira-<id> Ordner sauber, und die sieben unpraefixierten Ordner aus ~/.claude/skills entfernt."
 outcome-why: "Die ausgelieferten Prompts waren am Tag der Auslieferung schon veraltet: dem Binary fehlten die Drei-Runden-Regel, 'A human typing in a workers tab is not a fault', die Meldepflicht pro Lane, das Schliessen eines Worker-Tabs und 'Close what you started'. Solange die unpraefixierten Ordner danebenlagen, war unklar welche Fassung gilt; jetzt ist core/role/builtin die einzige Quelle."
 outcome-resolves: "Definition of Done Punkt 1 vollstaendig: Text uebernommen, TestCrossReferencesCarryThePrefix und go test ./... -race gruen, Installation deckungsgleich, alte Ordner weg, NOTES.md-Zeile geschrieben."
+review-summary: none
 ---
 
 # Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis
