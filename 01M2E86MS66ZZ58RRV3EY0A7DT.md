@@ -1,7 +1,7 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: in-progress
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,15 +21,16 @@ tags:
 blocked-by: []
 parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
-commits: []
+commits:
+  - 0c5da60a7dfe4e552d2ce8c64712d8e4b0d257ac
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:06:59Z
+updated-at: 2026-09-13T22:07:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
-outcome-what: "Review hat den Diff gegen die DoD geprueft und schickt ihn zurueck: der Mechanismus laeuft, aber das Beispiel widerspricht an drei Textstellen der Regel, die es transportieren soll."
-outcome-why: "Der Zweck des Tickets ist die Regel 'einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt'. Der Kopfkommentar des Skripts behauptet sie, Zeile 47 bricht sie fuer done, und core/release/NOTES.md:17 traegt denselben falschen Satz nach aussen. Dazu behauptet outcome-resolves eine hoerbare Unterscheidung human gegen done, die nur aus zwei pausenlosen BEL-Zeichen besteht und die kein Test pruefen kann."
-outcome-resolves: "Nichts abgehakt. Zu tun: (1) notify.sh:18-20 so formulieren, dass der Abschluss-Ton fuer done die bewusste zweite Ausnahme ist statt ein Widerspruch; (2) core/release/NOTES.md:17 auf das korrigieren, was das Skript wirklich tut; (3) im Skript und im outcome sagen, dass die gedruckte Textzeile den Unterschied human gegen done traegt und die Glockenzahl nur ein Hinweis ist. Optional billig: einen Test, der das Skript direkt statt ueber 'sh' aufruft, und einen Satz, dass das Beispiel eine POSIX-Shell braucht."
+outcome-what: "Drei Textstellen korrigiert, kein Umbau. (1) core/hook/example/notify.sh: Der Kopfkommentar nennt jetzt zwei bewusste Ausnahmen von der Regel - die Lane, die auf einen Menschen wartet (human, signoff), und die Lane, die das Ticket beendet (done) - statt done stillschweigend auszunehmen und 27 Zeilen spaeter vom eigenen case-Zweig widerlegt zu werden. (2) Der Kommentar ueber deliver() sagt jetzt, dass die gedruckte Zeile ('jaira human:' gegen 'jaira done:') den Unterschied zwischen Bitte und Abschluss traegt und der Glockenzaehler nur ein Hinweis ist, weil viele Terminals zwei unmittelbar aufeinander folgende BEL zu einem Ton verschmelzen; ein Kanal mit eigenem Titel (ntfy, notify-send) bekommt die Unterscheidung sauber zurueck. (3) core/release/NOTES.md:17 sagt statt 'only for the lanes that wait on a person' nun, dass das Skript fuer jede Agenten-Lane stumm bleibt und bei human, signoff und done klingelt und die Faelle an der gedruckten Zeile auseinanderzuhalten sind - weiterhin genau eine Zeile, der Rest der Datei unberuehrt, weil dort parallel ein anderer Branch schreibt. Code, Befehl, go:embed, /dev/tty-Probe und die drei Tests sind unveraendert."
+outcome-why: "review hat das Ticket mit drei Maengeln zurueckgeschickt, die alle dasselbe sind: das Beispiel soll eine Regel weitergeben und widersprach ihr in seinem eigenen Kopfkommentar, in der Release-Notiz, die 'jaira update' dem Nutzer vorliest, und in einer Behauptung ueber hoerbare Unterscheidbarkeit, die kein Test decken kann und die auf gaengigen Terminals nicht stimmt. Wer das Skript liest, liest zuerst die Regel und dann den Gegenbeweis - damit verfehlt das Ticket genau den Zweck, fuer den es existiert."
+outcome-resolves: "DoD-Zeile 'ein Lane-Wechsel in eine Lane, die einem Menschen gehoert, ist hoerbar von einem gewoehnlichen unterscheidbar': erfuellt und jetzt ehrlich beschrieben - human/signoff/done geben Ton und Textzeile, jede Agenten-Lane bleibt stumm; die feinere Unterscheidung human/signoff gegen done traegt die gedruckte Textzeile, nicht die Glockenzahl, und genau das steht nun im Skript und hier statt einer Behauptung ueber zwei hoerbare Toene. DoD-Zeile 'eine Zeile in core/release/NOTES.md unter ## Unreleased': erfuellt, Zeile 17, und sie beschreibt jetzt das Verhalten, das das Binary wirklich hat. 'go test ./... -race gruen': exit 0, alle Pakete ok. Die uebrigen DoD-Teile (Befehl, Lauf ohne Werkzeug, README-Hinweis) hat review bereits abgenommen und sind unangetastet."
 review-summary: "Neuer Unterbefehl 'jaira hook example' (internal/cli/hook.go:newHookExampleCmd) druckt ein 65-zeiliges POSIX-Shellskript auf stdout und sonst nichts - keine Datei, keine Einstellung. Das Skript liegt echt unter core/hook/example/notify.sh und wird von der neuen Datei core/hook/example.go per go:embed ins Binary gezogen; core/hook/hook.go ist unveraendert, der Vertrag steht. Das Skript beendet sich sofort bei JAIRA_EVENT=claim, waehlt dann nach JAIRA_STATUS: human und signoff geben zwei BEL-Zeichen plus eine Textzeile, done eines, jede andere Lane exit 0 ohne Ausgabe. Ausgegeben wird nach /dev/tty, sofern eine Subshell die tty oeffnen kann, sonst nach stdout - weil core/hook/hook.go Stdout und Stderr des Skripts auf nil setzt und alles nach stdout im echten Betrieb verschwindet. Drei Tests in internal/cli/hook_example_test.go (//go:build unix) fahren das gedruckte Skript wirklich aus, einer davon mit leerem PATH. README.md ergaenzt den hook-Absatz und grenzt 'hook example' gegen das unverwandte 'hook print' ab; eine Zeile steht unter ## Unreleased."
 review-gaps: |-
   Drei Mangel, alle an derselben Stelle: die Regel, die das Beispiel transportieren soll, stimmt an drei Stellen nicht mit dem ueberein, was das Skript tut.
