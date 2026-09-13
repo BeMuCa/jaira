@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:58:23Z
+updated-at: 2026-09-13T15:58:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "physicalRune greift nur noch bei gedruckten Zeichen ein"
-outcome-why: "Ein Terminal mit Kitty-Protokoll meldet BaseCode auch fuer enter, space und Pfeile; die Rune davon haette die Switches ins Leere laufen lassen"
-outcome-resolves: "k.Text muss genau eine graphische Nicht-Leerzeichen-Rune sein, sonst kommt k.String() unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt es ab"
+outcome-what: "Kyrillische Belegung steuert das Board, Texteingabe bleibt kyrillisch"
+outcome-why: "Die automatisierten Tests decken die Tabellen-Ebene ab; die BaseCode-Ebene und eine echte Systembelegung kann nur ein Mensch an seinem Terminal pruefen"
+outcome-resolves: "Bitte mit umgestellter russischer Belegung: j/k/h/l bewegen den Cursor, q beendet, enter oeffnet, der Punkt oeffnet den Filter - und im Filter erscheint getippter russischer Text unveraendert"
 review-summary: |-
   Zweiter Durchgang: nichts mehr zu aendern. Die Einschraenkung auf gedruckte Zeichen sitzt in physicalRune (internal/tui/keylayout.go:59), also in der Funktion, die die Entscheidung trifft, nicht in den vier Aufrufern - richtige Stelle
   internal/tui/keylayout.go:41 cmdKey schreibt nur ctrl und alt vor die Rune, meta/hyper/super fallen weg; bewusst, weil das Board keine davon bindet und ein Zweig fuer einen Zustand, den es nicht gibt, nur Ballast waere
