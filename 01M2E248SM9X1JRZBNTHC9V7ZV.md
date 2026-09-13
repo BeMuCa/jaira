@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:47:28Z
+updated-at: 2026-09-13T20:49:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34867
 claimed-at: 2026-09-13T20:41:45Z
@@ -117,3 +117,7 @@ Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleic
 
 Nicht als Befund gefuehrt, weil es ein eigenes Ticket waere: das Skript setzt herdr und python3 voraus, beides steht nirgends als Anforderung. Solange der Prompt es nur als Hilfe fuer einen Container-Stack nennt, traegt das - wer kein herdr hat, bekommt Zeile 10 als klare Meldung, kein stilles Scheitern.
 - **2026-09-13 20:47 · Alexander Sacharov** — Commit dieser Runde: 82d7ab7.
+- **2026-09-13 20:49 · Alexander Sacharov** — Vierte critique abgearbeitet, beide Befunde. Was der Diff nicht selbst sagt:
+- Der .env-Block in spawn.sh ist nicht nur eingerueckt, sondern auch der Port-Offset (off=...) ist mit hineingewandert. Er wird ausserhalb des Blocks von nichts mehr gelesen, und ein cksum auf jedem Lauf in einem Repo ohne Container-Stack zu berechnen waere Arbeit fuer eine Zahl, die niemand benutzt.
+- Bewusst NICHT generisch gemacht: die Variablennamen (COMPOSE_PROJECT_NAME, VITE_PORT_HOST, ...) und der Worktree-Name rg-$slug stammen aus genau einem Projekt. Sie bleiben stehen, weil ein Repo ohne .env den Block jetzt gar nicht mehr betritt - ein konfigurierbares Port-Schema waere Mechanik fuer einen Nutzer, den es nicht gibt. Wer ein zweites Projekt mit Stack anschliesst, entscheidet dann.
+- Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, spawn.sh war nie in einem Binary. Gleiche Begruendung wie in Runde 3.
