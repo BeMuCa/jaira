@@ -23,10 +23,10 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:28:36Z
+updated-at: 2026-09-13T21:29:20Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-28207
-claimed-at: 2026-09-13T21:28:12Z
+claimed-by: DESKTOP-RFTCH11-30768
+claimed-at: 2026-09-13T21:29:20Z
 ---
 
 # Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis
