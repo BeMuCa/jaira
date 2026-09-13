@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:02:37Z
+updated-at: 2026-09-13T22:03:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -45,6 +45,15 @@ review-gaps: |-
   Kein Defekt gefunden: das Skript laeuft mit leerem PATH und leerem Environment fehlerfrei durch (von Hand nachgestellt, exit 0 fuer alle Lanes), benutzt nur Shell-Builtins, ist gegen Prozentzeichen im Titel sicher, und 'go test ./... -race' ist gruen. Es steht genau eine Zeile fuer dieses Ticket unter ## Unreleased. Nichts im Diff ist ueberfluessig.
 
   Anmerkung zum Weg, nicht zum Diff: critique, optimize und testing sind auf diesem Board nicht installiert, das Ticket ist von in-progress direkt nach review gegangen. Niemand hat vor mir draufgeschaut.
+review-verdict: "Zurueck nach in-progress. Der Mechanismus ist richtig gebaut und laeuft - der Befehl, die Einbettung, die Tests und die leere Maschine stimmen alle. Was nicht stimmt, ist genau das, wofuer das Ticket da ist: das Beispiel soll eine Regel weitergeben, und es widerspricht ihr in seinem eigenen Kopfkommentar (notify.sh:18-20 gegen :47) und in der Release-Notiz, die der Nutzer zu lesen bekommt (NOTES.md:17 behauptet 'only for the lanes that wait on a person', done klingelt trotzdem). Dazu behauptet outcome-resolves eine hoerbare Unterscheidung human/done, die nur aus zwei pausenlosen BEL-Zeichen besteht und die kein Test pruefen kann. Drei Textstellen, keine Architektur - aber es sind die drei Stellen, an denen das Ticket seinen Zweck erfuellt oder nicht. Zu reparieren in einer Sitzung: den Abschluss-Ton als bewusste zweite Ausnahme in die Regel schreiben, NOTES.md:17 auf das korrigieren, was das Skript tut, und im Skript sagen, dass die Textzeile den Unterschied traegt."
+review-check: |-
+  1. In /home/alex/projects/jaira-Y0A7DT: 'PATH=$PATH:/usr/local/go/bin go run ./cmd/jaira hook example > /tmp/notify.sh && chmod +x /tmp/notify.sh'. Es entsteht eine Datei, es erscheint keine Ausgabe.
+  2. Zeilen 18 bis 20 von /tmp/notify.sh lesen. Dort steht: nur ein Zustand, in dem sich ohne einen Menschen nichts bewegt, ist einen Ton wert - jede andere Lane bleibt stumm.
+  3. Jetzt Zeile 47 derselben Datei lesen. Dort steht 'done) tone=finished'. done ist die Endlane und wartet auf niemanden. Das ist der Widerspruch: der Kopf sagt stumm, der Code klingelt.
+  4. Zeile 17 von core/release/NOTES.md lesen: 'rings the terminal bell only for the lanes that wait on a person'. Das ist dieselbe Aussage, und sie ist genauso falsch - der Nutzer bekommt sie von 'jaira update' vorgelesen.
+  5. In einem echten Terminalfenster (nicht in einem Editor-Panel) nacheinander ausfuehren: 'env -i JAIRA_EVENT=move JAIRA_STATUS=human JAIRA_TITLE=Test /tmp/notify.sh', dann dasselbe mit JAIRA_STATUS=done. Hinhoeren: klingt der erste Aufruf hoerbar nach zwei Toenen und der zweite nach einem? Auf vielen Terminals verschmelzen die zwei zu einem - dann ist die Unterscheidung, die outcome-resolves behauptet, auf diesem Rechner nicht da, und nur die gedruckte Textzeile ('jaira human:' gegen 'jaira done:') trennt die Faelle.
+  6. Gegenprobe, dass sonst nichts kaputt ist: 'env -i PATH= JAIRA_EVENT=move JAIRA_STATUS=in-progress /tmp/notify.sh; echo $?'. Es erscheint keine Ausgabe und es steht 0 da - das Skript laeuft auf einer Maschine ohne jedes Werkzeug durch und tut nichts.
+  7. 'PATH=$PATH:/usr/local/go/bin go test ./... -race'. Alle Pakete melden ok, kein FAIL.
 ---
 
 # Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen
