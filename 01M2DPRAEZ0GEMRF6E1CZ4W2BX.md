@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,13 +13,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T15:55:03Z
+updated-at: 2026-09-13T15:56:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Tastenkommandos werden ueber die physische Tastenposition gelesen statt ueber das Zeichen, das die Belegung druckt"
-outcome-why: "Mit kyrillischer Belegung traf kein einziger case in den TUI-Switches, das Board reagierte auf gar nichts mehr"
-outcome-resolves: "cmdKey in internal/tui/keylayout.go: erst Key.BaseCode vom Terminal, sonst JZUKEN-Positionstabelle; eingesetzt in model.go, home.go, edit.go; Texteingabe liest weiter k.Text und bleibt kyrillisch"
+outcome-what: "physicalRune greift nur noch bei gedruckten Zeichen ein"
+outcome-why: "Ein Terminal mit Kitty-Protokoll meldet BaseCode auch fuer enter, space und Pfeile; die Rune davon haette die Switches ins Leere laufen lassen"
+outcome-resolves: "k.Text muss genau eine graphische Nicht-Leerzeichen-Rune sein, sonst kommt k.String() unveraendert zurueck; TestCmdKeyIgnoresBaseCodeOnNamedKeys deckt es ab"
 review-summary: |-
   internal/tui/keylayout.go:70 physicalRune trusts Key.BaseCode for every keypress, also fuer benannte Tasten: spricht das Terminal das Kitty-Protokoll und meldet ein BaseCode fuer enter, space oder einen Pfeil, gibt cmdKey dessen Rune roh zurueck statt 'enter'/'space' - Abbruch nur auf gedruckte Zeichen einschraenken, indem k.Text genau eine graphische Nicht-Leerzeichen-Rune sein muss
   internal/tui/home.go:215 vier Aufrufstellen bekamen cmdKey einzeln; das ist die vorhandene Form (jeder Screen nimmt einen string entgegen) und bleibt richtig - keine Aenderung
