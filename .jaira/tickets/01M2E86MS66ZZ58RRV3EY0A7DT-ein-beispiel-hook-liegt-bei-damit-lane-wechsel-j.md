@@ -1,7 +1,7 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 commits:
   - 0c5da60a7dfe4e552d2ce8c64712d8e4b0d257ac
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:11:41Z
+updated-at: 2026-09-13T22:12:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
