@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:19:56Z
+updated-at: 2026-09-13T20:24:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -91,3 +91,7 @@ Nicht angefasst, bewusst: der Byte-Vergleich statt os.Stat. Die critique hat ihn
 - Get() ist keine Geschmacksfrage: ausser den eigenen Tests ruft es niemand.
 - firstSentence doppelt und mit abweichender Regel ist der kleinste der drei, aber der einzige mit sichtbarer Folge - jede Beschreibung mit einem Pfad darin wird in der Liste falsch gekuerzt.
 Bewusst nicht beanstandet: --into (die erste Runde hat das Flag selbst vorgeschlagen), der Byte-Vergleich statt os.Stat, und der Test in role_test.go:39, der name: gegen den Ordnernamen prueft - der haelt eine Invariante, die sonst niemand mehr haelt.
+- **2026-09-13 20:24 · Alexander Sacharov** — Zweite critique abgearbeitet, alle drei Befunde. Was der Diff nicht selbst sagt:
+- Der Handscanner ist durch ticket.ParseDoc ersetzt, und das ist kein reiner Umbau: ParseDoc liest echtes YAML, also kommt eine description mit escaptem Anfuehrungszeichen jetzt richtig heraus statt mit Backslash. Kein eingebetteter Prompt hat heute so eine Zeile - der Unterschied faellt erst auf, wenn jemand eine schreibt.
+- firstSentence lebt nur noch einmal, als board.FirstSentence, und schneidet an '. '. Die Rollenliste zeigt damit 'Talk to the human about a board: what to work next, why, and what needs a decision.' ganz, statt nach dem ersten Punkt in einem Pfad abzubrechen.
+- Get() ist weg; TestTeamleadShipsItsScript sucht die Rolle jetzt aus Builtins() heraus. Damit gibt es keine exportierte Funktion mehr, die nur ihr eigener Test benutzt - wer sie wieder einfuehrt, braucht einen Aufrufer ausserhalb der Tests.
