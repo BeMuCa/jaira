@@ -1,7 +1,7 @@
 ---
 id: 01M2E86MS66ZZ58RRV3EY0A7DT
 title: "Ein Beispiel-Hook liegt bei, damit Lane-Wechsel jemanden erreichen"
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,13 +23,13 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:03:30Z
+updated-at: 2026-09-13T22:03:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
-outcome-what: "Neuer Befehl 'jaira hook example' druckt ein lauffaehiges Benachrichtigungs-Skript fuer die Einstellung \"hook\". Das Skript liegt als echte Datei unter core/hook/example/notify.sh und wird per go:embed ueber core/hook/example.go ins Binary gezogen; core/hook/hook.go bleibt unberuehrt, der Vertrag aendert sich nicht. Es klingelt zweimal fuer human und signoff, einmal fuer done und bleibt fuer alle Agenten-Lanes und fuer claim stumm; die Glocke geht nach /dev/tty, weil core/hook stdout des Skripts verwirft. Tests in internal/cli/hook_example_test.go fahren das gedruckte Skript wirklich aus. README.md nennt das Beispiel im hook-Absatz und grenzt es gegen 'hook print' ab, eine Zeile steht unter ## Unreleased in core/release/NOTES.md."
-outcome-why: "Wer 'hook' in den Einstellungen sah, hatte ein leeres Feld und keinen Anhaltspunkt, was hineingehoert - praktisch schrieb es deshalb niemand. Jetzt gibt es einen ersten Schritt, der ohne jede Installation laeuft, und mit ihm die Regel, die das Beispiel transportieren soll: einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt."
-outcome-resolves: "Die DoD-Zeile ist abgehakt: der Befehl legt das Beispiel ab und nennt die Scharfschalt-Zeile (internal/cli/hook.go, newHookExampleCmd), das Skript laeuft mit leerem PATH fehlerfrei durch und tut nichts (TestHookExampleRunsOnAMachineWithNothingInstalled), human/signoff sind von done hoerbar unterscheidbar (TestHookExampleSoundsOnlyForThePersonsLanes), der Hinweis steht im hook-Absatz der README, eine Zeile steht in core/release/NOTES.md, und go test ./... -race ist gruen (exit 0)."
+outcome-what: "Review hat den Diff gegen die DoD geprueft und schickt ihn zurueck: der Mechanismus laeuft, aber das Beispiel widerspricht an drei Textstellen der Regel, die es transportieren soll."
+outcome-why: "Der Zweck des Tickets ist die Regel 'einen Ton verdient nur der Zustand, in dem sich ohne den Menschen nichts bewegt'. Der Kopfkommentar des Skripts behauptet sie, Zeile 47 bricht sie fuer done, und core/release/NOTES.md:17 traegt denselben falschen Satz nach aussen. Dazu behauptet outcome-resolves eine hoerbare Unterscheidung human gegen done, die nur aus zwei pausenlosen BEL-Zeichen besteht und die kein Test pruefen kann."
+outcome-resolves: "Nichts abgehakt. Zu tun: (1) notify.sh:18-20 so formulieren, dass der Abschluss-Ton fuer done die bewusste zweite Ausnahme ist statt ein Widerspruch; (2) core/release/NOTES.md:17 auf das korrigieren, was das Skript wirklich tut; (3) im Skript und im outcome sagen, dass die gedruckte Textzeile den Unterschied human gegen done traegt und die Glockenzahl nur ein Hinweis ist. Optional billig: einen Test, der das Skript direkt statt ueber 'sh' aufruft, und einen Satz, dass das Beispiel eine POSIX-Shell braucht."
 review-summary: "Neuer Unterbefehl 'jaira hook example' (internal/cli/hook.go:newHookExampleCmd) druckt ein 65-zeiliges POSIX-Shellskript auf stdout und sonst nichts - keine Datei, keine Einstellung. Das Skript liegt echt unter core/hook/example/notify.sh und wird von der neuen Datei core/hook/example.go per go:embed ins Binary gezogen; core/hook/hook.go ist unveraendert, der Vertrag steht. Das Skript beendet sich sofort bei JAIRA_EVENT=claim, waehlt dann nach JAIRA_STATUS: human und signoff geben zwei BEL-Zeichen plus eine Textzeile, done eines, jede andere Lane exit 0 ohne Ausgabe. Ausgegeben wird nach /dev/tty, sofern eine Subshell die tty oeffnen kann, sonst nach stdout - weil core/hook/hook.go Stdout und Stderr des Skripts auf nil setzt und alles nach stdout im echten Betrieb verschwindet. Drei Tests in internal/cli/hook_example_test.go (//go:build unix) fahren das gedruckte Skript wirklich aus, einer davon mit leerem PATH. README.md ergaenzt den hook-Absatz und grenzt 'hook example' gegen das unverwandte 'hook print' ab; eine Zeile steht unter ## Unreleased."
 review-gaps: |-
   Drei Mangel, alle an derselben Stelle: die Regel, die das Beispiel transportieren soll, stimmt an drei Stellen nicht mit dem ueberein, was das Skript tut.
