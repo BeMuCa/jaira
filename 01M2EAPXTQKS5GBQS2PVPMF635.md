@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:31:23Z
+updated-at: 2026-09-13T21:32:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30768
 claimed-at: 2026-09-13T21:29:20Z
@@ -33,7 +33,8 @@ claimed-at: 2026-09-13T21:29:20Z
 
 ## Definition of Done
 
-- [ ] core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SKILL.md tragen den Text aus ~/.claude/skills, mit jaira-Praefix in name: und in jeder Querverweis-Zeile; core/role/role_test.go TestCrossReferencesCarryThePrefix gruen; go test ./... -race gruen; 'jaira roles install --global --force' legt die sieben jaira-<id> Ordner an und ein diff gegen core/role/builtin zeigt keinen Unterschied; die sieben unpraefixierten Ordner teamlead, dispatcher, role-brainstorm, role-lane, role-pr, role-research, role-tester sind aus ~/.claude/skills entfernt; eine Zeile in core/release/NOTES.md unter ## Unreleased
+- [x] core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SKILL.md tragen den Text aus ~/.claude/skills, mit jaira-Praefix in name: und in jeder Querverweis-Zeile; core/role/role_test.go TestCrossReferencesCarryThePrefix gruen; go test ./... -race gruen; 'jaira roles install --global --force' legt die sieben jaira-<id> Ordner an und ein diff gegen core/role/builtin zeigt keinen Unterschied; die sieben unpraefixierten Ordner teamlead, dispatcher, role-brainstorm, role-lane, role-pr, role-research, role-tester sind aus ~/.claude/skills entfernt; eine Zeile in core/release/NOTES.md unter ## Unreleased
+  proof: core/role/role_test.go TestCrossReferencesCarryThePrefix; go test ./... -race green; diff -r core/role/builtin/jaira-* ~/.claude/skills clean after 'roles install --global --force'; core/release/NOTES.md:18
 
 ## Options
 
