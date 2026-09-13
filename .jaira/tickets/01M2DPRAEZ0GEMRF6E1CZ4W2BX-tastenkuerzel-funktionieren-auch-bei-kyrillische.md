@@ -1,7 +1,7 @@
 ---
 id: 01M2DPRAEZ0GEMRF6E1CZ4W2BX
 title: Tastenkuerzel funktionieren auch bei kyrillischem Layout
-status: human
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,21 +13,23 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:08:55Z
+updated-at: 2026-09-13T18:34:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
-outcome-what: "Shift-Kombinationen und Satzzeichen folgen wieder der Belegung, nicht der Tastenposition"
-outcome-why: "Ein zweites Modell fand, dass shift+/ als '/' gelesen wurde: die Hilfe-Taste haette den Filter geoeffnet"
-outcome-resolves: "Nur Buchstaben laufen ueber BaseCode und Tabelle; Satzzeichen nur ueber die Tabelle und nur ohne Shift"
+outcome-what: "AltGr faellt nicht mehr in die Positions-Umsetzung; Shift-Guard und AltGr sind jetzt von Tests festgenagelt"
+outcome-why: "Der Windows-Decoder setzt Key.Text auch bei AltGr, und die Buchstaben-Ebene sah gar nicht auf k.Mod - AltGr+о waere als blankes j im Kommando-Handler gelandet"
+outcome-resolves: "physicalRune steigt aus, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt; TestCmdKeyIgnoresAltGr und der AZERTY-Fall in TestCmdKeyLeavesShiftedPunctuationAlone fallen ohne die Guards um; Kopfkommentar und NOTES-Zeile auf Buchstaben eingeschraenkt"
 review-summary: |-
   Dritter Durchgang nach dem Review-Fund: die Trennung sitzt jetzt an der richtigen Stelle - Buchstaben laufen ueber BaseCode und Tabelle, Satzzeichen nur ueber die Tabelle und nur ohne Shift, alles andere unveraendert durch. Das ist eine Bedingung in physicalRune, keine zweite Ebene
   internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
   Zwei Kommentare korrigiert, die nach dem Fix nicht mehr stimmten (keylayout.go:49 und :95): 'jede Belegung ueber BaseCode' gilt nur noch fuer Buchstaben
 review-gaps: |-
-  Nichts Ueberfluessiges mehr: der tote ctrl/alt-Zweig ist im vorigen Schritt rausgeflogen, cmdKey hat vier Aufrufer, physicalRune einen, usPosition zwei
-  internal/tui/keylayout.go:64 Die drei Ausstiegsbedingungen (keine einzelne Rune, Leerzeichen, nicht graphisch) sehen nach Gurt und Hosentraeger aus, sind es aber nicht: leerer Text faengt benannte Tasten, das Leerzeichen faengt space, dessen Text ' ' ist und dessen Kommandoname 'space' lautet
-  Keine neuen Abhaengigkeiten, keine Konfiguration, kein Schalter; die Tabelle bleibt vollstaendig statt auf die heute gebundenen Tasten zugeschnitten, weil eine zugeschnittene Tabelle still bricht, sobald jemand '[' bindet
+  internal/tui/keylayout.go:80 AltGr faellt auf dem Windows-Console-Pfad in die Buchstaben-Ebene: der Decoder setzt Key.Text auch bei AltGr (decoder.go:2035, LEFT_CTRL|RIGHT_ALT) und Mod traegt dann ModCtrl|ModAlt. AltGr+о wuerde als blankes 'j' im Kommando-Handler landen und den Cursor bewegen, wo auf master nichts passierte. Gleiches fuer AltGr-Buchstaben lateinischer Belegungen (polnisches AltGr+a = ą, BaseCode 'a')
+  internal/tui/keylayout_test.go:44 Der ModShift-Guard ist von keinem Test festgenagelt: '?', '!' und '>' stehen ohnehin nicht in usPosition, die Faelle bestehen auch ohne Guard. Der Fall, fuer den der Guard wirklich da ist, fehlt - auf AZERTY ist der Punkt shift+';', ohne Guard haette cmdKey '/' zurueckgegeben und beim Tippen eines Punktes den Filter geoeffnet
+  internal/tui/keylayout.go:20 Der Kopfkommentar sagt weiterhin, BaseCode sei fuer jede Belegung richtig und brauche keine Tabelle; nach der Einschraenkung gilt das nur noch fuer Buchstaben
+  core/release/NOTES.md:18 'and the rest' im ersten Punkt deckt auch ctrl+d/ctrl+u mit ab, die genau nicht mitkommen
+  Bestaetigt geschlossen: die Hilfe-Taste ist auf allen drei Pfaden wieder erreichbar (auf JZUKEN ist '?' shift+7 und laeuft unveraendert durch), shift+Ziffer schaltet keine Boards mehr um, der tote ctrl/alt-Zweig ist raus, die NOTES-Zeile stimmt
 test-verdict: |-
   go build, go vet, go test ./... gruen nach dem Shift-Fix
   Neu: TestCmdKeyLeavesShiftedPunctuationAlone deckt shift+/ ('?'), shift+1 ('!') und shift+. ('>') mit gesetztem BaseCode ab - genau der Pfad, der die Hilfe-Taste in den Filter geschickt haette
@@ -35,7 +37,7 @@ test-verdict: |-
   Von Hand bestaetigt (vor dem Shift-Fix, unveraendertem Pfad): russische Belegung steuert das Board auf Windows Terminal unter WSL2
   Offen bleibt, was hier kein Terminal hergibt: der BaseCode-Pfad eines echten Kitty-Terminals
   Binary neu gebaut unter /home/alex/.local/bin/jaira
-question: "Kurzer Nachtest nach dem Review-Fund, das Binary ist schon aktualisiert: 1. jaira board oeffnen, '?' druecken - es muss die Hilfe aufgehen, nicht der Filter. 2. esc, dann mit russischer Belegung nochmal о/л/р/д, Punkt-Taste und й pruefen wie beim ersten Mal. Stimmt beides, geht das Ticket in die Modellpruefung und danach zu dir zum Abzeichnen."
+question: ""
 ---
 
 # Tastenkuerzel funktionieren auch bei kyrillischem Layout
@@ -79,3 +81,5 @@ question: "Kurzer Nachtest nach dem Review-Fund, das Binary ist schon aktualisie
 - **2026-09-13 15:54 · Alexander Sacharov** — critique: cmdKey darf nur bei gedruckten Zeichen eingreifen. Heute reicht ein gesetztes Key.BaseCode, und bubbletea setzt das auf einem Kitty-Terminal auch fuer benannte Tasten - dann liefert cmdKey die nackte Rune von enter oder space statt 'enter'/'space', und die Switches treffen nichts mehr. Auf Windows Terminal faellt das nie auf, weil BaseCode dort immer 0 ist: der Fehler waere genau auf den Terminals aufgetreten, fuer die die erste Ebene ueberhaupt gebaut wurde. Fix: in physicalRune zuerst k.Text pruefen - genau eine Rune, unicode.IsGraphic, kein Leerzeichen -, sonst k.String() unveraendert.
 - **2026-09-13 16:58 · Alexander Sacharov** — Mensch hat es an seinem Terminal bestaetigt: mit russischer Belegung steuert das Board wie mit englischer. Windows Terminal unter WSL2, also ueber die Positions-Tabelle, nicht ueber BaseCode - die Kitty-Ebene bleibt weiterhin unbestaetigt, sie schadet hier aber nachweislich nicht.
 - **2026-09-13 17:05 · Alexander Sacharov** — review: Shift ist das Loch. physicalRune darf Satzzeichen nicht ueber BaseCode ersetzen - shift+/ ist '?' und meldet trotzdem '/', also oeffnete die Hilfe-Taste den Filter, auf dem Windows-Console-Pfad sogar mit US-Belegung. Fix: nur Buchstaben ueber BaseCode/Tabelle umsetzen, Satzzeichen ausschliesslich ueber die Tabelle und nur ohne Shift. Zweitens: der ctrl/alt-Zweig in cmdKey kann nie laufen, weil der Decoder Key.Text bei jedem Modifier ueber Shift hinaus leert - raus damit, und ehrlich hinschreiben, dass ctrl-Kombinationen Sache des Terminals bleiben.
+- **2026-09-13 18:29 · Alexander Sacharov** — Mensch hat nachgetestet: '?' oeffnet wieder die Hilfe, russische Belegung steuert weiterhin. Windows Terminal unter WSL2.
+- **2026-09-13 18:33 · Alexander Sacharov** — review 2: AltGr ist das verbliebene Loch. Die Buchstaben-Ebene schaut gar nicht auf k.Mod, und der Windows-Decoder setzt Key.Text auch bei AltGr - also kommt AltGr+Buchstabe als blanke Kommandotaste an. Fix: vor beiden Zweigen aussteigen, sobald k.Mod etwas ueber ModShift|ModCapsLock hinaus traegt. Dazu ein Test, der den Shift-Guard wirklich festnagelt (AZERTY: shift+';' druckt '.', darf nicht '/' werden), und zwei Kommentare/NOTES-Zeilen, die nach der Einschraenkung zu viel versprechen.

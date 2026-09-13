@@ -19,10 +19,12 @@ import (
 //
 //  1. Key.BaseCode, which the terminal reports itself when it speaks the Kitty
 //     keyboard protocol (kitty, ghostty, WezTerm, foot) or comes through the
-//     Windows Console API. It is correct for every layout in the world and
-//     needs no table here. Key.String() ignores it whenever the key produced
-//     text — which is every letter, the case that matters — so it is read
-//     directly rather than through String().
+//     Windows Console API. For letters it is correct on every layout in the
+//     world and needs no table here; punctuation does not use it, because a
+//     terminal reports the unshifted key and shift+/ prints "?". Key.String()
+//     ignores BaseCode whenever the key produced text — which is every letter,
+//     the case that matters — so it is read directly rather than through
+//     String().
 //  2. usPosition, for the terminals that report nothing. Windows Terminal, where
 //     most WSL2 users sit, is one of them, so this is the path that actually
 //     runs for the person who reported the fault.
@@ -58,6 +60,14 @@ func physicalRune(k tea.KeyPressMsg) (rune, bool) {
 	// turn "enter" into a bare rune no switch matches.
 	rs := []rune(k.Text)
 	if len(rs) != 1 || rs[0] == ' ' || !unicode.IsGraphic(rs[0]) {
+		return 0, false
+	}
+	// Shift and caps lock only change which character the same key prints;
+	// anything else held with it makes a different keystroke entirely. AltGr is
+	// why this has to be checked: it prints a character like an ordinary key,
+	// and arrives carrying ctrl and alt, so without this AltGr+о would reach the
+	// board as a bare "j" and move the cursor.
+	if k.Mod&^(tea.ModShift|tea.ModCapsLock) != 0 {
 		return 0, false
 	}
 	// Text is what the key produced, upper case included.

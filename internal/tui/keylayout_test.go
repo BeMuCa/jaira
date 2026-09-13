@@ -40,9 +40,13 @@ func TestCmdKeyKeepsCase(t *testing.T) {
 // number one.
 func TestCmdKeyLeavesShiftedPunctuationAlone(t *testing.T) {
 	for _, k := range []tea.KeyPressMsg{
-		{Code: '/', Text: "?", BaseCode: '/', Mod: tea.ModShift},
-		{Code: '1', Text: "!", BaseCode: '1', Mod: tea.ModShift},
-		{Code: '.', Text: ">", BaseCode: '.', Mod: tea.ModShift},
+		{Code: '?', Text: "?"}, // a plain pty reports no shift at all
+		{Code: '?', Text: "?", BaseCode: '7', Mod: tea.ModShift}, // "?" is shift+7 on ЙЦУКЕН
+		{Code: '!', Text: "!", BaseCode: '1', Mod: tea.ModShift},
+		// AZERTY prints a full stop with shift, and the table would have turned
+		// the key underneath it into "/" — the filter, on the way to typing a
+		// full stop.
+		{Code: '.', Text: ".", Mod: tea.ModShift},
 	} {
 		if got, want := cmdKey(k), k.String(); got != want {
 			t.Errorf("cmdKey(%q) = %q, want it unchanged", want, got)
@@ -133,6 +137,19 @@ func TestCmdKeyIgnoresBaseCodeOnNamedKeys(t *testing.T) {
 		{Code: tea.KeySpace, Text: " ", BaseCode: ' '},
 		{Code: tea.KeyUp, BaseCode: tea.KeyUp},
 		{Code: tea.KeyTab, BaseCode: '\t'},
+	} {
+		if got, want := cmdKey(k), k.String(); got != want {
+			t.Errorf("cmdKey(%q) = %q, want it unchanged", want, got)
+		}
+	}
+}
+
+// AltGr prints a character like an ordinary key and arrives carrying ctrl and
+// alt. Reading the key under it would turn typing ą into a command.
+func TestCmdKeyIgnoresAltGr(t *testing.T) {
+	for _, k := range []tea.KeyPressMsg{
+		{Code: 'о', Text: "о", Mod: tea.ModCtrl | tea.ModAlt},
+		{Code: 'ą', Text: "ą", BaseCode: 'a', Mod: tea.ModCtrl | tea.ModAlt},
 	} {
 		if got, want := cmdKey(k), k.String(); got != want {
 			t.Errorf("cmdKey(%q) = %q, want it unchanged", want, got)
