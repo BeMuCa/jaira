@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T18:51:21Z
+updated-at: 2026-09-13T18:54:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -21,9 +21,11 @@ outcome-what: "Lock-Zustaende zaehlen nicht mehr als gehaltener Modifier"
 outcome-why: "Kitty-Terminals melden NumLock bei jedem Tastendruck - der Guard haette die Umsetzung dort ganz abgeschaltet"
 outcome-resolves: "physicalRune erlaubt Shift, CapsLock, NumLock und ScrollLock; TestCmdKeyIgnoresTheLockStates haelt es fest"
 review-summary: |-
-  Fuenfter Durchgang: die Maske nennt jetzt vier erlaubte Bits statt zwei, und der Kommentar darueber erklaert die Trennlinie (Modifier aendern den Tastendruck, Lock-Zustaende nicht) statt sie nur zu behaupten - der Fehler war eine falsche Praemisse im Kommentar, nicht eine falsche Zeile Code
-  internal/tui/keylayout.go:74 Maske statt Aufzaehlung der verbotenen Modifier bleibt richtig: die erlaubte Menge ist klein und benennbar, die verbotene waechst mit jedem Modifier, den bubbletea dazunimmt
-  Kein Muster daneben gebaut: die Guards stehen alle in physicalRune, die vier Aufrufer sehen weiterhin nur einen string
+  Kommandotasten werden nicht mehr als Zeichen gelesen, sondern als Taste. internal/tui/keylayout.go bringt cmdKey: es beantwortet, welche Taste auf einer US-PC-101-Tastatur gedrueckt worden waere, und alle vier Stellen, die vorher k.String() in einen Kommando-Switch gaben (model.go:877, home.go 215/230/237/258, edit.go:82), fragen jetzt cmdKey
+  Die Antwort kommt aus zwei Quellen: Key.BaseCode, das ein Terminal mit Kitty-Protokoll selbst meldet und das fuer Buchstaben jede Belegung abdeckt, und sonst der Tabelle usPosition mit der kyrillischen JZUKEN-Belegung. Windows Terminal - wo der Melder sitzt - meldet kein BaseCode, dort traegt die Tabelle
+  Vier Guards halten die Umsetzung von allem fern, wo sie schaden wuerde: benannte Tasten (enter, space, Pfeile), Satzzeichen mit Shift (shift+/ druckt '?' und meldet trotzdem '/'), gehaltene Modifier inklusive AltGr, und - als Ausnahme davon - die Lock-Zustaende, die Kitty bei jedem Tastendruck mitschickt
+  Texteingabe laeuft nicht durch cmdKey: Filter, Titel-Eingabe und Editor lesen weiter k.Text, russischer Text bleibt russisch
+  Dazu in beiden View()-Funktionen die KeyboardEnhancements, ohne die BaseCode gar nicht erst ankommt, und eine Zeile in core/release/NOTES.md
 review-gaps: |-
   Nichts Ueberfluessiges: vier Guards in physicalRune, jeder mit einem Test, der ohne ihn umfaellt (benannte Tasten, Shift-Satzzeichen, AltGr, Lock-Zustaende)
   internal/tui/keylayout_test.go:160 TestCmdKeyIgnoresTheLockStates traegt drei Faelle: NumLock allein, NumLock plus ScrollLock, und die Kombination aus dem ultraviolet-Testfile (NumLock|CapsLock|Shift) - keiner davon doppelt einen anderen
