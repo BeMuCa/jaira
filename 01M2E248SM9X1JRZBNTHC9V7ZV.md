@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:11:04Z
+updated-at: 2026-09-13T21:11:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -43,7 +43,7 @@ test-verdict: "fail: Suite gruen (RC=0) und DoD vollstaendig verifiziert, aber '
 ## Definition of Done
 
 - [x] 'jaira roles install --project' legt sieben Ordner .claude/skills/jaira-<id>/SKILL.md an; ein zweiter Lauf aendert nichts; eine von Hand geaenderte Datei bleibt ohne --force unberuehrt und wird gemeldet; 'jaira roles install --global' schreibt nach ~/.claude/skills; 'jaira roles list' nennt die eingebetteten Rollen; eine Zeile in core/release/NOTES.md unter ## Unreleased; go test ./... -race gruen
-  proof: TestInstallRestoresTheExecuteBit (core/role/role_test.go:191); core/role/install.go:83; go test ./... -race green
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh; TestDispatcherShipsItsScript (core/role/role_test.go:56); TestInstallRestoresTheExecuteBit (core/role/role_test.go:191); go test ./... -race green
 
 ## Options
 
