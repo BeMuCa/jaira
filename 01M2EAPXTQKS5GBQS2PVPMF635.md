@@ -1,7 +1,7 @@
 ---
 id: 01M2EAPXTQKS5GBQS2PVPMF635
 title: "Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,9 +21,17 @@ tags:
 blocked-by: []
 parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
-commits: []
+commits:
+  - df7c6a375e16d43f2990b4f43cd8d4657b22d6a1
+  - e107fe0604ecd4ae262fe0981b1ad808a3112c31
+  - 01369504a3f8558af0048d1f02d43ed63f23e907
+  - 57c40ce1b5f5c87c0b68224e8089a9643984ce19
+  - f3bc4336a8fa07d7592ad03e33bb59a56c2627cb
+  - 5fe4c26bab129753b00328339e55bb37d93520b1
+  - 28e6518e65d7ee095b841548a1e12fa2d36ed083
+  - 9231d824262e98bec9fe710b7bfaf54706ed708b
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T22:05:30Z
+updated-at: 2026-09-13T22:07:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -79,3 +87,4 @@ Deckungsluecke, als Befund und nicht als Fehler: die Aenderung ist Prompt-Text, 
 Ein Befund, bewusst nicht zurueckgeschickt sondern der signoff-Lane vorgelegt: der in der human-Lane entschiedene Loeschzeitpunkt eines Worktrees ('wenn das Ticket von der Tafel ist') steht im Dispatcher (SKILL.md:155), aber jaira-teamlead/SKILL.md:95 - neu aus e107fe0 - sagt 'leave that until the pull request is merged'. Das ist derselbe frueher Zeitpunkt, der als letzte Zeile des Textentwurfs absichtlich draussen blieb, nur in der anderen Rolle. Zwei ausgelieferte Prompts, zwei Zeitpunkte. Eine Zeile Textaenderung, wenn es angeglichen werden soll - kein Testfall kann es finden.
 Kleinigkeit: spawn.sh:18 'mkdir -p' ist ueberfluessig, 'git worktree add' legt Elternverzeichnisse selbst an (hier nachgestellt). Harmlos, deshalb stehengelassen.
 Nicht pruefbar und deshalb nicht geprueft: ob der uebernommene Prompt-Text inhaltlich vollstaendig ist. Die Heimfassungen sind geloescht, ein Vorher-Nachher-Vergleich ist nicht mehr herstellbar - genau deshalb war das die human-Lane, und die hat abgenommen.
+- **2026-09-13 22:07 · Alexander Sacharov** — Fuer den Menschen, der hier abzeichnet: die review-Lane hat zwei Kleinigkeiten gefunden, beide bewusst NICHT mehr angefasst, weil das Ticket in signoff steht und ein Zweig sich unter einer laufenden Abnahme nicht aendern soll. (1) jaira-teamlead/SKILL.md:95 sagt "leave that until the pull request is merged", jaira-dispatcher/SKILL.md:155 sagt "only once the ticket is off the board". In der human-Lane ist der zweite Zeitpunkt entschieden worden. Zwei ausgelieferte Prompts nennen damit zwei verschiedene Momente fuer dieselbe Sache, und der Teamlead nennt den fruehen. Gegenvorschlag: in jaira-teamlead/SKILL.md:95-96 den Satz auf denselben Zeitpunkt umschreiben wie Zeile 155 des Dispatchers, eine Zeile. (2) core/role/builtin/jaira-dispatcher/scripts/spawn.sh:18 "mkdir -p $(dirname $wt)" ist tot: git worktree add legt fehlende Elternverzeichnisse selbst an, im Repository nachgestellt. Die Zeile kam mit f3bc433 von mir und kann ersatzlos weg - der Prompt-Schnipsel in SKILL.md:128-131 kommt schon ohne sie aus. Entweder vor dem Abzeichnen fixen lassen oder als Folgeticket fuehren.
