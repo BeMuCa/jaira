@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-13T15:39:12Z
-updated-at: 2026-09-13T17:06:51Z
+updated-at: 2026-09-13T17:07:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4206
 claimed-at: 2026-09-13T15:44:03Z
@@ -21,9 +21,9 @@ outcome-what: "Satzzeichen und Shift-Kombinationen werden nicht mehr ueber die T
 outcome-why: "shift+/ meldet BaseCode '/' und druckt '?': die Hilfe-Taste oeffnete den Filter, auf dem Windows-Console-Pfad auch mit US-Belegung"
 outcome-resolves: "physicalRune setzt nur noch Buchstaben ueber BaseCode/Tabelle um; Satzzeichen laufen ausschliesslich ueber die Tabelle und nur ohne Shift; TestCmdKeyLeavesShiftedPunctuationAlone ersetzt den Test, der eine unmoegliche Nachricht baute; NOTES-Zeile auf Buchstaben-Kommandos eingeschraenkt"
 review-summary: |-
-  Zweiter Durchgang: nichts mehr zu aendern. Die Einschraenkung auf gedruckte Zeichen sitzt in physicalRune (internal/tui/keylayout.go:59), also in der Funktion, die die Entscheidung trifft, nicht in den vier Aufrufern - richtige Stelle
-  internal/tui/keylayout.go:41 cmdKey schreibt nur ctrl und alt vor die Rune, meta/hyper/super fallen weg; bewusst, weil das Board keine davon bindet und ein Zweig fuer einen Zustand, den es nicht gibt, nur Ballast waere
-  Die vier Aufrufer bleiben einzeln verdrahtet statt hinter einer neuen Abstraktion: jeder Screen nimmt schon heute einen string entgegen (internal/tui/lanes.go:200, browse.go:94, dropboard.go:84), die Form ist die vorhandene
+  Dritter Durchgang nach dem Review-Fund: die Trennung sitzt jetzt an der richtigen Stelle - Buchstaben laufen ueber BaseCode und Tabelle, Satzzeichen nur ueber die Tabelle und nur ohne Shift, alles andere unveraendert durch. Das ist eine Bedingung in physicalRune, keine zweite Ebene
+  internal/tui/keylayout.go:41 cmdKey ist nach dem Entfernen des ctrl/alt-Zweigs drei Zeilen lang und koennte in physicalRune aufgehen; bleibt getrennt, weil die vier Aufrufer einen string wollen und die Entscheidung 'welche Rune' vom Bauen des Strings getrennt lesbar ist
+  Zwei Kommentare korrigiert, die nach dem Fix nicht mehr stimmten (keylayout.go:49 und :95): 'jede Belegung ueber BaseCode' gilt nur noch fuer Buchstaben
 review-gaps: |-
   internal/tui/keylayout.go:60 physicalRune ersetzt das Zeichen auch dann durch BaseCode, wenn Shift im Spiel ist: shift+/ meldet Text '?' und BaseCode '/', cmdKey gibt '/' zurueck und oeffnet den Filter, wo das Board um seine Hilfe gebeten wurde (model.go:1280). Auf dem Windows-Console-Pfad ist BaseCode immer gesetzt, dort trifft es auch eine US-Belegung. Gleiche Wurzel: shift+1 kaeme als '1' an und schaltet die Board-Nummer um (model.go:1230)
   internal/tui/keylayout.go:44 Der ctrl/alt-Zweig in cmdKey ist unerreichbar: der Decoder leert Key.Text, sobald ein Modifier ueber Shift hinaus anliegt, und physicalRune steigt bei leerem Text aus. Toter Code
