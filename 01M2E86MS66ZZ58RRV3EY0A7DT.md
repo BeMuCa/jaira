@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T22:03:45Z
+updated-at: 2026-09-13T22:06:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -148,3 +148,8 @@ Warum es trotzdem zurueckgeht - drei Textstellen, an denen das Skript der Regel 
 Nicht rueckweisend, aber beim naechsten Durchgang billig mitzunehmen: der Test fuehrt immer 'sh script' aus, nie das Skript direkt - Shebang und x-Bit, auf die hook.Run per exec.Command(script) angewiesen ist, deckt kein Test ab (ich habe den direkten Aufruf von Hand geprueft, er laeuft). Und 'jaira hook example' druckt unter Windows ein /bin/sh-Skript ohne jeden Hinweis darauf, waehrend der Test //go:build unix traegt und dort gar nicht laeuft; Windows wird laut .goreleaser.yaml gebaut.
 
 Nicht am Diff, aber fuer den naechsten Leser: critique, optimize und testing sind auf diesem Board nicht installiert, das Ticket kam von in-progress direkt hierher. Vor diesem Review hat niemand auf die Aenderung geschaut.
+- **2026-09-13 22:06 · Alexander Sacharov** — Zweiter Durchgang in-progress, nur die drei Textstellen aus review-gaps. Was dabei herauskam und nicht im Code steht:
+- Die Regel des Beispiels hat zwei Ausnahmen, nicht eine. 'Nur ein Zustand, in dem sich ohne einen Menschen nichts bewegt' beschreibt human/signoff, aber nicht done. done wartet auf niemanden und klingelt trotzdem, weil ein Abschluss das zweite ist, das man lieber gesagt bekommt als nachsieht. Der Kopfkommentar nennt das jetzt als bewusste zweite Ausnahme, statt sie 27 Zeilen spaeter vom eigenen case-Zweig widerlegen zu lassen. Wer hier spaeter kuerzt: der Satz muss beide Ausnahmen nennen, sonst ist der Widerspruch zurueck.
+- Die hoerbare Unterscheidung human/signoff gegen done kann die Glockenzahl nicht tragen. Zwei BEL gehen im selben printf ohne Pause raus, und VTE/iTerm2 fassen Glocken in kurzem Abstand zu einem Ton zusammen. Nicht reparierbar ohne externes Werkzeug: eine Pause dazwischen wuerde 'sleep' brauchen, also einen Prozess und eine Wartezeit in einem Skript, das jaira nach 5 s abschiesst - dafuer ist der Effekt zu klein. Die ehrliche Fassung steht jetzt in deliver(): den Unterschied traegt die gedruckte Zeile ('jaira human:' gegen 'jaira done:'), der Glockenzaehler ist ein Hinweis. Ein Kanal mit eigenem Titel (ntfy, notify-send) bekommt die Unterscheidung sauber zurueck.
+- NOTES.md:17 stand auf 'only for the lanes that wait on a person' und beschrieb damit ein Binary, das es nicht gibt. Jetzt nennt die Zeile beide Faelle und sagt, woran man sie auseinanderhaelt. Auf dieser Datei arbeitet parallel ein anderer Branch, deshalb nur diese eine Zeile ersetzt, nichts drumherum angefasst.
+Nicht angefasst, weil review es ausdruecklich fuer richtig befunden hat: Befehl, go:embed, /dev/tty-Probe, die drei Tests. Die zwei kleinen Anmerkungen von review (Windows druckt ein /bin/sh-Skript; kein Test ruft das Skript ueber die Shebang-Zeile auf) sind bewusst offen - sie waren nicht rueckweisend und gehoeren in ein eigenes Ticket.
