@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:56:03Z
+updated-at: 2026-09-13T20:56:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-71524
 claimed-at: 2026-09-13T20:55:10Z
@@ -137,3 +137,4 @@ Geprueft und ohne Befund: kein eingebetteter Prompt nennt einen Pfad dieses Rech
 - Im Aufbau von TestProjectTargetIsTheClaudeSkillsDirectory sind .codex und .agents ersatzlos weg. Bewusst kein Ersatztest an dieser Stelle: ProjectTarget ist ein filepath.Join ohne Dateisystemzugriff, ein Aufbau kann darueber nichts behaupten. Die Aussage 'genau ein Zielordner' haengt an internal/cli/roles_test.go:112, end-to-end.
 - Weiterhin offen und bewusst nicht angefasst (Entscheidung des Menschen, gehoert in die Testing-Lane): os.WriteFile setzt den Modus einer bereits vorhandenen Datei nicht neu, also repariert 'roles install --force' ein fehlendes x-Bit an einer vorliegenden spawn.sh nicht. Gegenvorschlag steht in der Notiz von 20:54.
 - Keine Zeile in core/release/NOTES.md: nur Tests geaendert, von aussen am Binary nichts zu beobachten.
+- **2026-09-13 20:56 · Alexander Sacharov** — Commit dieser Runde: 09f80c5.
