@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T21:11:22Z
+updated-at: 2026-09-13T21:11:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2196
 claimed-at: 2026-09-13T21:10:50Z
@@ -167,3 +167,9 @@ Ursache in core/role/install.go:92: os.WriteFile uebergibt den Modus nur an O_CR
 Testluecke dazu: core/role/role_test.go:143 prueft das x-Bit nur nach einer Erstinstallation. Kein Test legt eine Zieldatei mit 0644 vor.
 
 Vorschlag, wie in der Notiz von 20:54: in core/role/install.go nach dem os.WriteFile ein os.Chmod(dst, mode). Zu beachten - der Unchanged-Zweig (install.go:73) kehrt vorher um, dort wird nichts geschrieben; damit --force auch die byte-identische Datei repariert, muss der Modus entweder vor dem Unchanged-Return geprueft werden oder --force den Unchanged-Zweig ueberspringen. Welche der beiden, entscheidet die Lane - der zweite Fall (identische Bytes, falsches Bit) ist der wahrscheinlichere auf einem echten Rechner. Dazu ein Fall in core/role, der eine Zieldatei mit 0644 vorlegt und nach --force auf 0755 prueft.
+- **2026-09-13 21:11 · Alexander Sacharov** — Der Befund der Testing-Lane ist behoben, aber an zwei Stellen statt an der einen, die die Notiz von 20:54 vorschlug. Was der Diff nicht selbst sagt:
+- Ein os.Chmod nur nach dem os.WriteFile haette den Fall nicht getroffen, der in der Praxis auftritt. Eine von Hand kopierte spawn.sh hat DIESELBEN Bytes wie die eingebettete, nur kein x-Bit - writeFile antwortet darauf mit Unchanged und schreibt gar nichts, auch mit --force nicht. Der Zweig Unchanged setzt jetzt ebenfalls den Modus: die Bytes sind unsere, also ist der Modus unserer. Das repariert das Bit auch ohne --force, was Absicht ist.
+- Nicht angefasst: der Zweig Skipped. Eine Datei mit abweichenden Bytes gehoert jemand anderem, an der wird auch der Modus nicht angefasst.
+- Der Modus liegt jetzt in modeOf(dst) statt inline, weil ihn zwei Zweige brauchen. Die Regel selbst (.sh -> 0755) ist unveraendert.
+- Der Test faellt ohne den Fix durch, beide Haelften geprueft: 'after a re-run the script is -rw-r--r--' und 'after --force ...'. Ein Test, der auch ohne Fix gruen ist, haette den Befund nur zugedeckt.
+- Keine Zeile in core/release/NOTES.md: das roles-Feature steht komplett unter ## Unreleased, es hat nie ein Binary mit dem Fehler gegeben. Gleiche Begruendung wie in Runde 3 und 4.
