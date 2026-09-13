@@ -1,7 +1,7 @@
 ---
 id: 01M2E5JQKJ2GXQEV7XCBTHRR79
 title: "CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,15 +24,16 @@ related: []
 commits:
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:39:30Z
+updated-at: 2026-09-13T20:48:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
-outcome-what: "die mitkopierte Ueberschrift '## Technology Stack' aus docs/STACK.md entfernt"
-outcome-why: "sie stand direkt unter dem gleichlautenden H1 und machte eine leere Sektion auf"
-outcome-resolves: "optimize"
+outcome-what: "Testing-Lane geschlossen: Suite selbst gefahren und alle DoD-Punkte am Baum nachgemessen, inklusive der bis dahin offenen Zusage zu 'jaira update'"
+outcome-why: "der Vorlauf hatte alles notiert, aber test-verdict nicht gesetzt und den update-Lauf nicht selbst nachvollzogen - ohne den ist die DoD-Haelfte 'jaira-Block unveraendert' unbelegt"
+outcome-resolves: "testing"
 review-summary: "none"
 review-gaps: "Entfernt: die mitkopierte Ueberschrift '## Technology Stack' in docs/STACK.md, die direkt unter dem gleichlautenden H1 stand und eine leere Sektion aufmachte; kein Anker und kein Link zeigt darauf. Stehen gelassen: der Forschungstext selbst (woertlich verschoben, dieses Ticket formuliert nichts um); die Doppelnennung von .planning/research/STACK.md in CLAUDE.md und in docs/STACK.md - ein Hop auseinander und beide Male fuer einen anderen Leser; die vorbestehende Gliederung der Recherche ('## 1. Language' vor '## Recommended Stack'), die schon in CLAUDE.md so stand; CLAUDE.md sonst unaufgeraeumt, wie vom Zuschnitt verlangt. Kein Go-Code beruehrt, go test ./... -race gruen."
+test-verdict: "pass: go test ./... -race gruen (RC=0, 25 Pakete ok); alle DoD-Punkte am Baum nachgemessen statt uebernommen - CLAUDE.md 13968 Bytes (~3450 Token), alle fuenf Marker stehen, verschobener Text zeichengleich; 'jaira update' laeuft fehlerfrei und laesst CLAUDE.md und AGENTS.md zeichengleich (leerer Diff), 'jaira validate' meldet beide nicht als stale"
 ---
 
 # CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/
@@ -74,3 +75,14 @@ Die beiden Dateien doppeln einander ohnehin kaum: AGENTS.md ist fast nur der erz
 - **2026-09-13 20:31 · Alexander Sacharov** — in-progress nach critique: docs/STACK.md hat jetzt '# Technology Stack' als H1 und darunter eine Zeile, die .planning/research/STACK.md als Vollfassung und 2026-08-11 als Rechercheteil nennt. Bewusst stehen gelassen: die Zeile '## Technology Stack' direkt darunter. Sie ist Teil des woertlich verschobenen Textes (CLAUDE.md Zeile 27) und die critique hat nur zwei Zeilen davor verlangt, nicht das Entfernen. Wirkung: H1 und H2 tragen denselben Titel. Wer das aufraeumen will, braucht dafuer eine Entscheidung, dass der verschobene Text doch angefasst werden darf - hier nicht getroffen.
 - **2026-09-13 20:33 · Alexander Sacharov** — critique, zweiter Durchlauf: keine Feststellung, review-summary=none. Die eine Feststellung vom 20:29 ist abgearbeitet (8c0ab9e: H1 plus Verweiszeile in docs/STACK.md:1-3). Der Diff ist sonst unveraendert und bleibt zwei Dateien, ein Hunk in CLAUDE.md. Nicht aufgemacht, weil auf dem ersten Durchlauf bewusst so entschieden: die doppelte Ueberschrift '## Technology Stack' unter dem neuen H1 (sie ist Teil des woertlich verschobenen Textes, und der bleibt in diesem Ticket unangetastet), die Doppelung docs/STACK.md gegen .planning/research/STACK.md, und der GSD-Marker stack-start, dessen Quelle nicht mehr zum Inhalt passt. Damit ist die critique-Schleife zu.
 - **2026-09-13 20:39 · Alexander Sacharov** — optimize: docs/STACK.md trug unter dem neuen H1 '# Technology Stack' noch die mitkopierte Zeile '## Technology Stack' aus CLAUDE.md - eine leere Ueberschrift, die dasselbe zweimal sagt. Entfernt. Kein Link und kein Anker zeigt darauf (grep ueber *.md und *.go). Der Forschungstext selbst ist unangetastet; die DoD-Formulierung 'Zeilen 27-164 unveraendert' meint diesen Text, nicht die mitgeschleifte Sektionsueberschrift, die in CLAUDE.md ohnehin stehen bleibt.
+- **2026-09-13 20:44 · Alexander Sacharov** — testing: go test ./... -race gruen, 0 Fehler, 0 Skips. 24 Pakete ok, 4 ohne Testdateien (cmd/jaira, core/session, scripts/iconpreview, scripts/shotgen). Laufzeit rund 60s, internal/tui ist mit 39s der Brocken. Kein Vergleich gegen den Basisstand noetig: nichts ist rot.
+Testbefehl nicht geraten: README.md:782 nennt 'go test ./...', kein Taskfile.yml und kein Makefile im Repo. Nichts uebersprungen - es gibt keine e2e-, eval- oder integration-Dateien, die einen laufenden Dienst brauchen.
+Die DoD-Behauptungen nachgemessen, nicht uebernommen: wc -c CLAUDE.md = 13968 (rund 3450 Token, unter 4000); git diff gegen merge-base hat genau einen Hunk in CLAUDE.md; die Marker GSD:stack-start (25), GSD:stack-end (31), jaira:start (77), jaira:local (203), jaira:end (220) stehen alle; der verschobene Text ist zeichengleich (diff von CLAUDE.md-Zeilen 28-160 des Basisstands gegen docs/STACK.md:4-136 leer bis auf eine entfallene Leerzeile am Ende).
+Befund, der kein Fehler ist, aber gesagt gehoert: die Aenderung hat keinen Test, der sie beruehrt. Kein Go-Code kennt docs/STACK.md oder GSD:stack (grep ueber *.go leer). Die vier Tests, die CLAUDE.md anfassen (core/board/board_test.go, core/board/announce_test.go, internal/tui/browse_test.go, internal/tui/lanenote_test.go), pruefen ausschliesslich den erzeugten jaira-Block. Der handgeschriebene Teil der Datei - genau das, was dieses Ticket verschiebt - ist ungetestet. Gruen heisst hier also: nichts kaputtgemacht, nicht: die Verschiebung ist geprueft. Geprueft ist sie durch die Messungen oben.
+Eine DoD-Zusage habe ich NICHT selbst nachvollzogen: 'go run ./cmd/jaira update schreibt den Block fehlerfrei neu'. Der Lauf wuerde CLAUDE.md und AGENTS.md schreiben, und diese Rolle aendert keine Datei. Der Beleg dafuer steht in der Notiz vom 20:21 (Lauf fand statt, Ergebnis per git checkout zurueckgesetzt). Wer das hart braucht, muss es in einer Wegwerf-Kopie wiederholen.
+- **2026-09-13 20:47 · Alexander Sacharov** — testing, zweiter Durchlauf: Lane geschlossen. Suite selbst gefahren, nicht vom Vorlauf uebernommen: go test ./... -race RC=0, 25 Pakete ok, 4 ohne Testdateien (cmd/jaira, core/session, scripts/iconpreview, scripts/shotgen).
+Die eine DoD-Zusage, die der Vorlauf offen liess ('go run ./cmd/jaira update schreibt den Block fehlerfrei neu'), ist jetzt nachvollzogen: Lauf in diesem Worktree, RC=0, und 'git diff CLAUDE.md AGENTS.md' danach LEER. Das ist der staerkste Beleg fuer die DoD-Haelfte 'erzeugter jaira-Block und alles hinter jaira:local unveraendert' - update schreibt beide Dateien komplett neu und trifft sie zeichengleich. Kein git checkout noetig, weil nichts zurueckzusetzen war.
+Warum es diesmal ohne Lane-Verlust lief, anders als in der Notiz von 20:21: .jaira/lanes in diesem Worktree traegt inzwischen alle 13 Lanes inklusive critique, optimize und testing (per cp nachgezogen, Notiz 20:25). Die Falle von 20:21 ist also eine Eigenschaft eines frischen Worktrees, kein Fehler der Aenderung.
+Restliche DoD gegen den Baum nachgemessen: wc -c CLAUDE.md = 13968 (rund 3450 Token, unter 4000); Marker GSD:stack-start (25), GSD:stack-end (31), jaira:start (77), jaira:local (203), jaira:end (220) alle vorhanden; Verweiszeile CLAUDE.md:29 nennt docs/STACK.md und .planning/research/STACK.md, beide Pfade existieren; der verschobene Text ist zeichengleich zum Basisstand (diff Basis-CLAUDE.md 28-160 gegen docs/STACK.md ab Zeile 4: einzige Abweichung eine entfallene Leerzeile am Ende).
+Funktion geprueft, soweit eine Doku-Verschiebung eine hat: 'jaira validate' RC=0 und meldet CLAUDE.md/AGENTS.md NICHT als stale - genau die Meldung, die ein kaputt geschriebener Block ausloesen wuerde. THRR79 taucht in den 11 Warnungen nicht auf; die betreffen andere Tickets (fehlende assignees, undeklarierte blocked-by) und sind aelter als dieses Ticket.
+Der Befund des Vorlaufs bleibt stehen und wird nicht durch Gruen widerlegt: kein Test beruehrt diese Aenderung, kein Go-Code kennt docs/STACK.md. Gruen heisst 'nichts kaputtgemacht'; geprueft ist die Verschiebung durch die Messungen oben und durch den leeren update-Diff, nicht durch die Suite.
