@@ -24,10 +24,10 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:54:14Z
+updated-at: 2026-09-13T20:55:10Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-34867
-claimed-at: 2026-09-13T20:41:45Z
+claimed-by: DESKTOP-RFTCH11-71524
+claimed-at: 2026-09-13T20:55:10Z
 outcome-what: "Guarded the project-specific container-stack block in core/role/builtin/jaira-dispatcher/scripts/spawn.sh behind 'if [ -f $root/.env ]' — the port offset moved inside it — and deleted the dead Unprefixed field from the JSON test struct in internal/cli/roles_test.go:217."
 outcome-why: "With 'set -euo pipefail' on line 5, the unconditional 'cp $root/.env' aborted the script with exit 1 in any repo without a .env — jaira itself included — before a pane ever existed; from this ticket on that file ships inside the binary, so the break would reach every teammate. The Unprefixed field was a leftover of the Twins() removal in round 1: nothing emits it, nothing reads it."
 outcome-resolves: "spawn.sh now creates the worktree, splits the pane, starts claude and types the prompt in a repo with no container stack, and still writes per-worker ports where a .env exists; go test ./... -race green."
