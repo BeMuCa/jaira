@@ -23,7 +23,7 @@ parent: 01M2E248SM9X1JRZBNTHC9V7ZV
 related: []
 commits: []
 created-at: 2026-09-13T20:44:07Z
-updated-at: 2026-09-13T21:52:12Z
+updated-at: 2026-09-13T21:52:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60947
 claimed-at: 2026-09-13T21:46:35Z
@@ -105,3 +105,7 @@ Drei Entscheidungen, die die Brainstorm-Notizen offen gelassen haben und die der
 Was der Plan bewusst nicht tut: 'jaira hook print' umbenennen. Die zwei Befehle unter 'hook' meinen weiterhin Unterschiedliches (Claude-Code-Stop-Hook vs. move/claim-Hook); der Plan loest das mit einem Halbsatz in der README statt mit einer Umbenennung, die kein Teil dieses Tickets ist.
 
 Reihenfolge: Skript zuerst, dann Einbettung, dann Befehl, dann Tests. Umgekehrt haette man einen Befehl, der eine Datei druckt, deren Inhalt noch nicht entschieden ist - und die Zustellzeile ist die einzige echte Entscheidung im Skript.
+- **2026-09-13 21:52 · Alexander Sacharov** — Umsetzung (Lane in-progress). Zwei Dinge, die der Code nicht sagt:
+1. Die Glocke geht nach /dev/tty, nicht nach stdout, weil core/hook/hook.go Stdout und Stderr des Skripts auf nil setzt - alles, was ein Hook nach stdout schreibt, ist im echten Betrieb weg. Wer das Beispiel spaeter auf 'echo' umstellt, macht es damit stumm.
+2. Der Test muss dem Skript das Controlling Terminal wegnehmen (SysProcAttr{Setsid:true}), sonst schreibt es genau deswegen nach /dev/tty und der Test sieht leeres stdout. Erster Versuch war '[ -w /dev/tty ]' als Probe: untauglich, weil access() nur den Geraeteknoten prueft und auch ohne Terminal wahr ist. Jetzt oeffnet eine Subshell die tty wirklich - '( : >/dev/tty ) 2>/dev/null' - und ein Fehlschlag kostet nur die Subshell, nicht das Skript.
+Deshalb traegt internal/cli/hook_example_test.go '//go:build unix'; Setsid gibt es unter Windows nicht.
