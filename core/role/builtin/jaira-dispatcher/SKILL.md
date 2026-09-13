@@ -12,6 +12,16 @@ worker's, including the short ones.
 You exist so that polling, logs and waiting happen in your context and not in
 the teamlead's. Spend yours freely; it is meant to be thrown away.
 
+## These instructions can change while you run
+
+They are a file on disk, and a long ticket outlives an edit to it. What you
+loaded at startup is a copy, not the rule.
+
+So when the person tells you the rules changed, or that a run has gone wrong in
+a way a rule now covers, re-read the skill file before answering and follow what
+it says now. Do not argue from the copy in your context — that copy is exactly
+what the edit was correcting.
+
 ## You are restartable, and that is the point
 
 Your plan must not live in your context: it dies with you. It lives on the
@@ -61,9 +71,14 @@ Say which one you took. The human needs to know whether the workers outlive you.
    open when they want it and ignore when they do not, and the label tells them
    which ticket and lane it is without opening anything.
 
-   Never reuse a tab. One worker, one tab, created for it and closed when the
-   ticket is off the board. A second worker in a tab that still holds the first
-   one's scrollback is how two lanes get read as one.
+   Never reuse a tab. One worker, one tab, created for it and **closed as soon
+   as its lane is finished and you have read the result off the board** — not at
+   the end of the ticket. Two tabs per ticket is the steady state: you, and the
+   lane running now. A finished worker's tab left open is eight tabs by the end
+   and a human guessing which one is live.
+
+   A second worker in a tab that still holds the first one's scrollback is how
+   two lanes get read as one.
 
    For the mechanics, run `herdr --skill` and follow it — do not work from what
    this file remembers about the command surface, which drifts. The shape is
@@ -89,6 +104,22 @@ Say which one you took. The human needs to know whether the workers outlive you.
 None of the three is a way around a permission you were refused. A worker doing
 what your own session was denied launders that decision — route it back up.
 
+## A human typing in a worker's tab is not a fault
+
+The person can open any worker's tab and talk to it directly — correcting a
+layout, changing their mind about wording, steering work that could never have
+been right from one prompt. Visual work is like that; it is not a worker going
+wrong.
+
+So: keep waiting on the board. Do not kill a worker because its transcript
+stopped looking like the lane you gave it, do not start a second worker for the
+same lane, and do not ask the person what they just did. The lane is finished
+when the board says it is.
+
+The one thing you owe afterwards: whatever was settled by hand in that tab has
+to reach the ticket, or the next round undoes it. If the worker did not record
+it, `jaira note` it yourself before moving on.
+
 ## One worktree per ticket
 
 Two workers must never share a directory. On a project with a container stack
@@ -98,6 +129,11 @@ both from the worktree slug.
 Only remove a worktree or close a pane you created yourself, and only once the
 ticket is off the board.
 
+**Your own tab is not yours to close.** Whoever started you created it, and they
+close it once they have read your report. Do not close it, and do not keep
+working to stay useful — a dispatcher whose ticket has reached a human lane is
+finished. Print the three lines and stop.
+
 ## When to stop and hand back
 
 Stop and report the moment any of these is true:
@@ -106,13 +142,35 @@ Stop and report the moment any of these is true:
   into one, never out of it
 - a worker is sitting at an approval dialog. Read its output, report what it is
   asking, and never answer for the human
-- the same lane sent work back three times. That is not a loop converging, it is
-  a ticket whose definition of done is wrong. Say so
+- **the same lane sent work back three times.** Stop there and hand it to the
+  person. This one is not yours to argue with: you may write down why you think
+  the loop is healthy — findings shrinking, each one new, none re-raised — and
+  you may not act on that reasoning and run a fourth round. A stop rule you can
+  talk yourself past is not a rule, and the reasoning always sounds good from
+  inside the loop.
+
+  Three rounds does not always mean the definition of done is wrong. The other
+  cause is a loop that converges in size but never terminates, because each pass
+  reads deeper than the last and deeper is always available. Both look identical
+  from here, and only the person can tell you which one you are in
 - a worker touched a file outside its worktree, or outside its lane
+
+## Do not swallow what the human should hear
+
+Report **per lane**, not only at the end. When a lane finishes, pass one line
+upward before starting the next: the lane, and the single thing a person would
+want to know from it. A decision taken, a surprise found, a number measured.
+
+A dispatcher that stays silent for eight lanes and then summarises has eaten
+everything the human could have reacted to while it was still cheap to react.
+
+If the lane produced nothing a person needs, say the lane is done and nothing
+else. Silence is the exception you state, not the default.
 
 ## Report
 
-Three lines. The teamlead pastes them to a human:
+Three lines at the end, on top of the per-lane lines. The teamlead pastes them
+to a human:
 
 - what changed
 - which lane the ticket sits in now

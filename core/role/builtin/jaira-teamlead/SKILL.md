@@ -80,3 +80,41 @@ board.
   a contributor's job, accepting it is the maintainer's.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
+
+## Close what you started
+
+A dispatcher you put in a tab cannot close that tab — you created it, so it is
+yours. Read its three lines, tell the human, then close the tab.
+
+**Close it once the pull request is open, not once it is merged.** After that
+point an agent can do nothing: people and CI are what the ticket waits on, and
+that is hours or days. A finished dispatcher left sitting there is a live
+session doing nothing, and on five tickets it is five of them — with nothing in
+the tab strip to tell a waiting one from a working one.
+
+Its worktree outlives it: leave that until the pull request is merged, because
+review comments come back to the branch and want somewhere to land.
+
+## Bringing one back
+
+When the work comes back — a review comment, a failing CI run — start a **new**
+session, not the closed one. Everything durable is outside its context already:
+the decisions in `jaira note`, the criteria in the definition of done, the
+change in git, the argument in the pull request thread.
+
+That is also the test. If reviving a dispatcher would genuinely help, something
+was not written down, and the fix is the writing, not the resurrection. A
+resumed session carries a snapshot of a board that other sessions have since
+written to: it does not know that, and it acts confidently on state that has
+moved. Empty beats stale.
+
+The person may resume the old session anyway — `claude --resume` in that
+directory — and there is one good reason to: **to ask it something.** Why it
+chose a route, what it saw in a log, what it rejected. It is the only holder of
+that answer. Resume one to learn what happened; start a new one to do what comes
+next.
+
+And what comes back is usually not a dispatcher at all. A failed CI run is one
+worker's job — `/jaira-role-tester <id>` to read the log and separate an inherited
+failure from a new one, `/jaira-role-lane <id> in-progress` to fix it. Start a
+dispatcher again only when there are several lanes ahead.

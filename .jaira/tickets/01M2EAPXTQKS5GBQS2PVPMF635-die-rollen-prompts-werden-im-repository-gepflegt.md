@@ -1,7 +1,7 @@
 ---
 id: 01M2EAPXTQKS5GBQS2PVPMF635
 title: "Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,17 +23,21 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:28:36Z
+updated-at: 2026-09-13T21:32:30Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-28207
-claimed-at: 2026-09-13T21:28:12Z
+claimed-by: DESKTOP-RFTCH11-30768
+claimed-at: 2026-09-13T21:29:20Z
+outcome-what: "core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SKILL.md tragen jetzt den Text aus ~/.claude/skills. Geaendert wurde daran nur 'name:' im frontmatter und vier Querverweis-Zeilen, die /role-lane und /role-tester auf /jaira-role-lane und /jaira-role-tester heben. Eine Zeile in core/release/NOTES.md unter ## Unreleased. Danach 'roles install --global --force' gelaufen, diff -r fuer alle sieben jaira-<id> Ordner sauber, und die sieben unpraefixierten Ordner aus ~/.claude/skills entfernt."
+outcome-why: "Die ausgelieferten Prompts waren am Tag der Auslieferung schon veraltet: dem Binary fehlten die Drei-Runden-Regel, 'A human typing in a workers tab is not a fault', die Meldepflicht pro Lane, das Schliessen eines Worker-Tabs und 'Close what you started'. Solange die unpraefixierten Ordner danebenlagen, war unklar welche Fassung gilt; jetzt ist core/role/builtin die einzige Quelle."
+outcome-resolves: "Definition of Done Punkt 1 vollstaendig: Text uebernommen, TestCrossReferencesCarryThePrefix und go test ./... -race gruen, Installation deckungsgleich, alte Ordner weg, NOTES.md-Zeile geschrieben."
 ---
 
 # Die Rollen-Prompts werden im Repository gepflegt, nicht im Heimverzeichnis
 
 ## Definition of Done
 
-- [ ] core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SKILL.md tragen den Text aus ~/.claude/skills, mit jaira-Praefix in name: und in jeder Querverweis-Zeile; core/role/role_test.go TestCrossReferencesCarryThePrefix gruen; go test ./... -race gruen; 'jaira roles install --global --force' legt die sieben jaira-<id> Ordner an und ein diff gegen core/role/builtin zeigt keinen Unterschied; die sieben unpraefixierten Ordner teamlead, dispatcher, role-brainstorm, role-lane, role-pr, role-research, role-tester sind aus ~/.claude/skills entfernt; eine Zeile in core/release/NOTES.md unter ## Unreleased
+- [x] core/role/builtin/jaira-dispatcher/SKILL.md und jaira-teamlead/SKILL.md tragen den Text aus ~/.claude/skills, mit jaira-Praefix in name: und in jeder Querverweis-Zeile; core/role/role_test.go TestCrossReferencesCarryThePrefix gruen; go test ./... -race gruen; 'jaira roles install --global --force' legt die sieben jaira-<id> Ordner an und ein diff gegen core/role/builtin zeigt keinen Unterschied; die sieben unpraefixierten Ordner teamlead, dispatcher, role-brainstorm, role-lane, role-pr, role-research, role-tester sind aus ~/.claude/skills entfernt; eine Zeile in core/release/NOTES.md unter ## Unreleased
+  proof: core/role/role_test.go TestCrossReferencesCarryThePrefix; go test ./... -race green; diff -r core/role/builtin/jaira-* ~/.claude/skills clean after 'roles install --global --force'; core/release/NOTES.md:18
 
 ## Options
 
@@ -45,4 +49,6 @@ claimed-at: 2026-09-13T21:28:12Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-13 21:31 · Alexander Sacharov** — Uebernahme war reine Textkopie: nur 'name:' im frontmatter und die vier Querverweis-Zeilen (/role-lane, /role-tester) bekamen das jaira-Praefix, sonst kein Satz angefasst. Diff gegen ~/.claude/skills belegt genau diese vier Stellen.
+Nicht mitgenommen, bewusst: ~/.claude/skills/teamlead/scripts/spawn.sh. Das Skript liegt im Repository unter jaira-dispatcher/scripts/spawn.sh - da gehoert es hin, weil der Dispatcher-Prompt es als 'scripts/spawn.sh' aufruft - und die Repo-Fassung ist die neuere: sie ueberspringt den Port-Offset in einem Repo ohne .env und sendet '/jaira-role-lane'. Die Heimfassung haette beides zurueckgedreht.
+Die sieben unpraefixierten Ordner wurden erst geloescht, nachdem 'roles install --global --force' lief und 'diff -r' fuer alle sieben jaira-<id> Ordner keinen Unterschied zeigte.
