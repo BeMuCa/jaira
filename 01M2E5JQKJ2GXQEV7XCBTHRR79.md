@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T20:20:49Z
+updated-at: 2026-09-13T20:21:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-60480
 claimed-at: 2026-09-13T20:13:55Z
@@ -61,3 +61,4 @@ Die beiden Dateien doppeln einander ohnehin kaum: AGENTS.md ist fast nur der erz
 - **2026-09-13 20:17 · Alexander Sacharov** — Der Stack-Block steht nicht frei in CLAUDE.md, sondern zwischen <!-- GSD:stack-start source:research/STACK.md --> und <!-- GSD:stack-end -->. Das ist ein von GSD erzeugter Block, dessen Quelle .planning/research/STACK.md ist (30256 Bytes, die Vollfassung). Ein Generator dafuer ist hier aber nicht installiert: grep nach 'GSD:stack-start' in ~/.claude trifft nur Transcript-Dateien, kein Skill und kein Skript. Heute schreibt also nichts den Block neu. Deshalb: Marker stehen lassen und die Verweiszeile dazwischen setzen - laeuft irgendwann doch ein GSD-Docs-Lauf, ist das ein sichtbarer Diff und kein stiller Rueckfall.
 - **2026-09-13 20:17 · Alexander Sacharov** — docs/STACK.md wird damit eine gekuerzte Zweitfassung von .planning/research/STACK.md. Das ist Absicht, nicht Versehen: die DoD verlangt die Zeilen 27-164 unveraendert, und die CLAUDE.md-Fassung ist die bereits verdichtete. docs/ ist der Pfad, den ein Agent liest; .planning/research/ der des Recherchierenden. Die eine Verweiszeile in CLAUDE.md nennt beide, damit niemand die Vollfassung verliert.
 - **2026-09-13 20:17 · Alexander Sacharov** — Groessenrechnung gemessen, nicht geschaetzt: CLAUDE.md ist 34993 Bytes, die Zeilen 27-160 sind 21180 Bytes. Bleiben rund 13813 Bytes, also ca. 3450 Token. Das ist unter den geforderten 4000, ohne dass sonst noch etwas gekuerzt werden muss.
+- **2026-09-13 20:21 · Alexander Sacharov** — Plan-Schritt 5 hat eine Falle: "go run ./cmd/jaira update" schreibt in diesem Worktree den jaira-Block KUERZER neu - die Lanes critique, optimize und testing verschwinden aus CLAUDE.md und AGENTS.md. Grund: .jaira/ ist gitignored und damit pro Worktree eigen; /home/alex/projects/jaira-THRR79/.jaira/lanes enthaelt diese drei Lane-Dateien nicht, /home/alex/projects/jaira/.jaira/lanes schon. update hat also fehlerfrei gearbeitet, nur aus einer aelteren Lane-Konfiguration heraus. Konsequenz hier: AGENTS.md und der jaira-Block in CLAUDE.md wurden nach dem Lauf per git checkout zurueckgesetzt, damit der Commit nur die Stack-Verschiebung traegt. Wer in einem Worktree "jaira update" laufen laesst, muss danach den Diff pruefen - sonst landet der Lane-Verlust still im Commit. Eigenes Thema, nicht dieses Ticket.
