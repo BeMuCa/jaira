@@ -23,7 +23,7 @@ parent: 01M2E85S75MEF7YJJRJ6C9QS8F
 related: []
 commits: []
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-13T21:57:43Z
+updated-at: 2026-09-13T22:01:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -62,3 +62,4 @@ Gates: 'go test ./... -race' gruen, kein einziges FAIL, alle Pakete ok (core/lan
 Demand, Punkt fuer Punkt am Baum: (1) name: traegt in allen sieben SKILL.md denselben String wie der Ordner; (2) grep ueber core/role/builtin findet keine unpraefixierte Querverweis-Zeile mehr (/role-*, /dispatcher, /teamlead); (3) dispatcher 180 Zeilen, teamlead 120 - genau die Zahlen der geloeschten Heimfassungen, also die vollstaendige Uebernahme; (4) 'go run ./cmd/jaira roles install --global --force' RC=0, Ausgabe '0 written, 8 unchanged, 0 skipped, 0 overwritten', danach 'diff -r' fuer alle sieben jaira-<id> Ordner ohne Unterschied - auch schon vor dem Lauf deckungsgleich, die Installation ist also idempotent; (5) keiner der sieben unpraefixierten Ordner liegt noch in ~/.claude/skills; (6) core/release/NOTES.md:18 traegt die Zeile unter ## Unreleased, eine Zeile, nicht umgebrochen.
 Funktion: die Installation selbst war der Funktionstest - das Binary aus diesem Baum schreibt genau den Inhalt von core/role/builtin nach ~/.claude/skills, damit ist die im Goal geforderte Richtung belegt.
 Deckungsluecke, als Befund und nicht als Fehler: die Aenderung ist Prompt-Text, und der einzige Test darauf ist TestCrossReferencesCarryThePrefix - der prueft Praefixe, nicht Inhalt. Dass der verschaerfte Text vollstaendig und richtig uebernommen wurde, deckt kein Test ab; das bleibt die Sache der human-Lane.
+- **2026-09-13 22:01 · Alexander Sacharov** — Antwort aus der human-Lane am 2026-09-14: der Loeschzeitpunkt eines Worktrees ist "wenn der Ticket von der Tafel ist". Damit gilt jaira-dispatcher/SKILL.md:129 unveraendert weiter, und die letzte Zeile des Textentwurfs ("Remove a worktree once its pull request is merged") bleibt bewusst draussen - es gibt keine zweite, konkurrierende Regel im ausgelieferten Text. Keine Codeaenderung noetig, der Zustand entspricht der Entscheidung bereits. Uebernahme und f3bc433 sind damit abgenommen, das Ticket geht weiter nach review.
