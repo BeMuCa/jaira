@@ -24,7 +24,7 @@ related: []
 commits:
   - pending
 created-at: 2026-09-13T18:57:58Z
-updated-at: 2026-09-13T20:27:26Z
+updated-at: 2026-09-13T20:27:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45975
 claimed-at: 2026-09-13T20:07:20Z
@@ -99,3 +99,4 @@ Bewusst nicht beanstandet: --into (die erste Runde hat das Flag selbst vorgeschl
 Bewusst nicht beanstandet, nichts davon wird erneut angefasst: der Byte-Vergleich statt os.Stat wie lane.Export (Runde 1 hat ihn ausdruecklich stehen lassen), --into, ticket.ParseDoc in frontmatterDescription, board.FirstSentence in internal/cli (Runde 2 hat beides selbst vorgeschlagen), und role_test.go:39, das name: gegen den Ordnernamen prueft.
 
 Geprueft und in Ordnung befunden: kein exportierter Bezeichner in core/role hat nur noch Tests als Aufrufer - File, Builtins, Install, SkippedAny, ProjectTarget und GlobalTarget werden alle aus internal/cli heraus benutzt. Der Usage-Zweig in internal/cli/roles.go:82-89 ist handgeschrieben statt cobra.MarkFlagsMutuallyExclusive, folgt damit aber dem, was lanes.go:191 und checklist.go:106 schon tun - das ist das vorhandene Muster, kein neues.
+- **2026-09-13 20:27 · Alexander Sacharov** — Commit dieser Runde: dd5e7bc.
