@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:45:40Z
+updated-at: 2026-09-14T18:49:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -252,3 +252,4 @@ Bewusst NICHT als Befund erhoben:
 - Die proof-Zeile von DoD-Punkt 6 nennt 'core/release/NOTES.md:16'. Durch den Merge daf4312 steht die Zeile dieses Tickets inzwischen auf :22; :16 ist die 'jaira create'-Zeile. Anders als der tote Testname aus Runde 3 fuehrt das aber nicht ins Leere: die Datei und der Abschnitt '## Unreleased' stimmen, und die gemeinte Zeile ist dort die einzige, die von drei Tag-Farben spricht. Eine Zeilennummer in einer Datei, in die jeder Branch oben einfuegt, veraltet bei jedem Merge - das ist kein Befund dieses Diffs.
 - Die losen Prosa-Absaetze im Ticket-Body unter der Checkliste (Zeilen 74-82) tragen weiter den alten Satz. Runde 4 hat das schon geprueft: sie stammen aus der Ticketerstellung, sind ueber die CLI nicht erreichbar und gehoeren in ein eigenes jaira-Ticket. Wird nicht neu aufgemacht.
 - Die Ueberschneidung zwischen Modell- und Rendering-Tests hat schon Runde 1 stehen lassen.
+- **2026-09-14 18:49 · Alexander Sacharov** — optimize Runde 2: cardHeight() gab die 3 ein zweites Mal aus, neben der Konstante cardSlots. Genau diese zwei Zahlen muessen gleich sein, sonst indiziert renderCardBlock an den Slots vorbei und die Karte stuerzt das Board ab - der Kommentar an cardSlots bat bisher nur darum, beide zusammen zu aendern. cardHeight gibt jetzt cardSlots zurueck, damit sie nicht auseinanderlaufen koennen. Nicht angefasst: dass cardHeight sein Ticket-Argument ignoriert (aelter als dieser Diff), der pro Aufruf gebaute strings.NewReplacer in oneLine (nur auf dem seltenen Zweig, ContainsAny schirmt ihn ab), und die thematische Ueberschneidung von TestFourTaggedCardRendersWithTheExtraTagUncoloured mit der Vier-Tag-Zeile der Tabelle in TestThreeTaggedCardShowsAllThreeColoursInTicketOrder - verschiedene Schichten, beide bleiben.
