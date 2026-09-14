@@ -1,7 +1,7 @@
 ---
 id: 01M2E5JQKJ2GXQEV7XCBTHRR79
 title: "CLAUDE.md kuerzen: der Technologie-Stack gehoert nach docs/"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,9 +22,19 @@ tags:
 blocked-by: []
 related: []
 commits:
+  - d25617025594c20a472d34cbd8930fce079ff3ab
   - e3c99fc365eb431b0a29b8db53467dc805d02acc
+  - 40cec7d8b23b0a712d8c02620280a4492e793b98
+  - 5fcf41fc158fc5551a7c6785d03dd1732a08c871
+  - 8c0ab9ea09c0c39eddfc5a437fc7b25558f0b275
+  - a2fd3e6bf4dc4474c8d9d725608bc9f8c4f05bc9
+  - 864f2227a8a66c00a3488653fabb369067f1d1aa
+  - acf8ea0d73eb0ae7a6bbfb2577cd0b2cebd650e8
+  - 5a08aeaa103a3c54b88be6abe455767b7052646c
+  - 308c6f3a0d39a6f3fb6b40a3db23c90efc336fa2
+  - de5d0335aab596dea1c1b7d15202fb28a3853fb9
 created-at: 2026-09-13T19:58:17Z
-updated-at: 2026-09-13T21:03:56Z
+updated-at: 2026-09-14T15:15:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8635
 claimed-at: 2026-09-13T20:28:44Z
