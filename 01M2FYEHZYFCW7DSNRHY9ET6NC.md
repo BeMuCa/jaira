@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:46:07Z
+updated-at: 2026-09-14T12:46:23Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -93,3 +93,17 @@ Drei Wege standen zur Wahl:
 - .jaira/config, mitcommittet: faellt aus. Ein Remote-Name gehoert zum Clone, nicht zum Projekt. Auf diesem Rechner heisst BeMuCa/jaira 'upstream'; wer direkt von BeMuCa klont, hat dasselbe Repo als 'origin'. Ein mitgelieferter Wert waere fuer den naechsten Klon falsch. core/settings/settings.go sagt das im Kopfkommentar selbst.
 - boards-Abschnitt in ~/.jaira/settings.json, nach Pfad geschluesselt: geht, bringt aber Pfadschluessel mit sich, die bei git worktrees auseinanderlaufen (jedes worktree ist ein anderer Pfad, gemeint ist derselbe Clone).
 - git config des Clones: pro Clone per Konstruktion, von allen worktrees geteilt, nicht committebar, von Hand editierbar, und jaira schreibt dort schon (share.go traegt den Merge-Driver in .git/config ein). Damit ist auch die Abhilfe im Fehlertext ein gewoehnlicher git-Befehl und braucht kein neues jaira-Kommando.
+- **2026-09-14 12:46 · Alexander Sacharov** — Wie beide Bedingungen der DoD zusammenpassen, ohne still ins falsche Repository zu schreiben.
+
+Die DoD verlangt, dass 'jaira release' in einem Repo mit nur origin durchlaeuft, OBWOHL ~/.jaira/settings.json weiterhin upstream sagt - also ohne dass dort vorher etwas eingestellt wurde. Gleichzeitig darf die Loesung nicht ueberall still auf origin ausweichen.
+
+Die Trennlinie ist, WER den Namen gesetzt hat:
+- Der Name aus der git-config des Boards ist eine Entscheidung fuer genau dieses Repository. Fehlt der Remote, wird abgebrochen. Kein Ausweichen.
+- Der Name aus ~/.jaira/settings.json ist nur ein Vorgabewert fuer alle Boards. Hat dieses Repo ihn nicht, gilt er hier nicht.
+
+Und dann die Ausweichregel, die den stillen Datenverlust ausschliesst: ausgewichen wird nur, wenn das Repository GENAU EINEN Remote hat. Dann gibt es keine zweite Moeglichkeit, in die etwas fallen koennte.
+- requirementsgenie: nur origin -> laeuft, ohne dass jemand etwas einstellt.
+- jaira selbst: upstream ist da -> upstream, unveraendert.
+- Fork ohne upstream, aber mit origin und einem dritten Remote: mehrdeutig -> lauter Abbruch statt Fork.
+
+'Nimm origin, wenn der eingestellte Remote fehlt' waere genau der Fehler aus dem Kontext: origin ist hier der Fork.
