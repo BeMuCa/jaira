@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:35:30Z
+updated-at: 2026-09-14T20:35:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -115,3 +115,4 @@ Danach meldete der Zustands-Hook 'claude idle', und send-text/send-keys kamen sa
 Das gehoert in spawn.sh, und es ist der Grund, warum das Skript bisher nie einen Worker zum Laufen gebracht hat. Ein Dispatcher, der nur seinen Prompt liest und spawn.sh benutzt, bekommt auf diesem Rechner heute KEINEN laufenden Worker - DoD-Punkt 6 ist bis zu dieser Aenderung nicht erfuellbar.
 
 Transparenz: ich habe fuer diesen einen Start spawn.sh umgangen und die drei Befehle von Hand abgesetzt, weil das Skript sonst genau den Fehler wiederholt, den es zu beheben gilt. Das ist hier ausdruecklich festgehalten und nicht stillschweigend geschehen.
+- **2026-09-14 20:35 · Alexander Sacharov** — Noch ein Befund am Rande, der zum selben Absatz gehoert: spawn.sh schickt den Lane-Befehl ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet. Herdr kennt aber einen eigenen Zustand 'blocked' fuer erkannte Genehmigungs- und Rueckfrage-Dialoge. Wer spawn.sh anfasst: vor send-text auf 'blocked' pruefen und in dem Fall abbrechen statt Enter zu druecken. Sonst beantwortet das Skript Dialoge an Stelle des Menschen, und SKILL.md verbietet dem Dispatcher genau das ('never answer for the human').
