@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:59:13Z
+updated-at: 2026-09-14T12:59:31Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -62,6 +62,10 @@ review-summary: |-
 
 - [x] In einem Repository, dessen einziger Remote origin heisst, laeuft 'jaira release <id>' durch, waehrend ~/.jaira/settings.json weiterhin remote: upstream sagt. Nachgestellt an einem Fixture-Repository mit genau einem Remote.
   proof: internal/cli/boardremote_test.go TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote, TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt, TestABoardRemoteThatIsGoneStopsLoudly; core/settings/remotefor_test.go TestBoardRemoteWinsAndNeverFallsBack; core/gitref/gitref_test.go TestUsableExplainsAMissingRemote; core/release/NOTES.md:16
+- [ ] Im jaira-Repository selbst (origin = Fork, upstream = BeMuCa) geht der Ticket-Ref weiterhin nach upstream. Ein Test haelt das fest, damit die Loesung nicht darin bestehen kann, ueberall still auf origin auszuweichen.
+- [ ] Der Remote laesst sich pro Board festlegen, nicht nur pro Rechner - auf welchem Weg auch immer die Plan-Lane das loest.
+- [ ] Bricht eine ref-Operation doch am Remote ab, nennt die Meldung drei Dinge: den eingestellten Namen, die Remotes die dieses Repository tatsaechlich hat, und den Befehl der es geradezieht. Nicht nur: no remote "upstream".
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 Im jaira-Repository selbst (origin = Fork, upstream = BeMuCa) geht der Ticket-Ref weiterhin nach upstream. Ein Test haelt das fest, damit die Loesung nicht darin bestehen kann, ueberall still auf origin auszuweichen.
 
@@ -127,3 +131,12 @@ Kosten: RemoteFor macht bis zu zwei git-Aufrufe (config get, remote). attachRefs
 core/release/NOTES.md hat zur Zeit keinen Abschnitt '## Unreleased'; der oberste ist ## 0.2.0. Der Abschnitt muss neu angelegt werden.
 - **2026-09-14 12:50 · Alexander Sacharov** — Ablageort ist git config --local jaira.remote; gelesen von gitref.BoardRemote(dir). Warum nicht memoisieren: RemoteFor wird genau einmal je Prozess aufgerufen, in attachRefs. snapshot.go und fetch.go lesen den aufgeloesten Namen jetzt von refs.Repo.Remote ab, statt ihn ein zweites und drittes Mal aufzuloesen. Damit kosten die bis zu zwei git-Aufrufe nur einmal, und es braucht keinen Cache, der in Tests veraltet.
 - **2026-09-14 12:54 · Alexander Sacharov** — Gegenprobe gelaufen: settings.RemoteFor loest sowohl /home/alex/projects/jaira als auch das worktree .worktrees/jaira-9ET6NC auf 'upstream' auf - unveraendert. Verworfen: 'fehlt der eingestellte Remote, nimm origin'. In diesem Repo ist origin der Fork; das waere stiller Datenverlust. Stattdessen weicht nur der Rechner-Vorgabewert aus, und auch nur wenn das Repo genau EINEN Remote hat. Gegenprobe, dass der Test 1 den Fehler wirklich nachstellt: RemoteFor testweise auf RemoteName zurueckgedreht -> TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote faellt mit genau 'no remote "upstream"' um.
+- **2026-09-14 12:59 · Alexander Sacharov** — critique (1. Durchgang): Der Entwurf selbst bleibt stehen. git config jaira.remote als Ablageort ist begruendet (pro Clone, von worktrees geteilt, nicht committet, jaira schreibt in share.go schon in .git/config), die Reihenfolge in RemoteFor deckt beide Haelften der DoD ab, und die Schichtung stimmt: core/settings importiert core/gitref, nicht umgekehrt. Dass fetch.go und snapshot.go den aufgeloesten Namen von refs.Repo.Remote ablesen statt ein zweites Mal aufzuloesen, ist die richtige Stelle - nicht angefasst.
+
+Vier Befunde, alle lokal, keiner ruehrt an der Form:
+1. core/gitref/gitref.go:681-731 - Remotes/BoardRemote dupliziert die exec-Mechanik von run()/value() in derselben Datei. Ueber (&Repo{Dir: dir}).value(...) gehen, dann gilt auch dort GIT_TERMINAL_PROMPT=0 und die getrennte stderr-Behandlung.
+2. internal/cli/boardremote_test.go:51 - handleOf raet das Handle aus der stdout-Ausgabe (jedes sechsstellige Grossbuchstaben-Wort trifft). Die anderen cli-Tests legen das Ticket ueber ticket.At(dir).Create(...) an und nehmen ticket.Handle(tk.ID); diesem Muster folgen.
+3. core/settings/settings.go:175-177 - der dir==""-Zweig ist mit dem Durchlauf darunter gleichbedeutend.
+4. core/settings/settings.go:147 - RemoteName() hat keinen Aufrufer mehr ausser RemoteFor.
+
+Nicht beanstandet, damit es niemand nochmal aufmacht: dass ein Repo mit genau EINEM Remote diesen still nimmt, auch wenn settings.json etwas anderes sagt - das verlangt die DoD ausdruecklich (der Fall requirementsgenie soll ohne Einstellung laufen).
