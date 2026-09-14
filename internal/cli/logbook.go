@@ -173,27 +173,19 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 
 	term := env.Lanes.Terminal()
 	if term == nil {
-		return &codedError{
-			code:   ExitValidation,
-			reason: "not_terminal",
-			message: fmt.Sprintf(
-				"no terminal lane is installed, so there is nowhere for %s to be logged from", ticket.Handle(t.ID)),
-		}
+		return fail(ExitValidation, "not_terminal",
+			"no terminal lane is installed, so there is nowhere for %s to be logged from", ticket.Handle(t.ID))
 	}
 	if t.Status != term.ID {
-		return &codedError{
-			code:   ExitValidation,
-			reason: "not_terminal",
-			message: fmt.Sprintf(
-				"%s is in %q, not the terminal lane %q — move it there first with 'jaira move %s --to %s'",
-				ticket.Handle(t.ID), t.Status, term.ID, ticket.Handle(t.ID), term.ID),
-		}
+		return fail(ExitValidation, "not_terminal",
+			"%s is in %q, not the terminal lane %q — move it there first with 'jaira move %s --to %s'",
+			ticket.Handle(t.ID), t.Status, term.ID, ticket.Handle(t.ID), term.ID)
 	}
 
 	// Stamp before moving: this is the moment every commit is finally known,
 	// and the commits belong to the ticket record whether or not the move
 	// that follows succeeds.
-	merged, err := stampCommits(s, t, env.DeriveCommits)
+	merged, err := s.StampCommits(t, env.DeriveCommits)
 	if err != nil {
 		return err
 	}
@@ -225,16 +217,6 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 // rather than a bare filename nobody can attribute.
 func logbookFolder() string {
 	return fmt.Sprintf("%s-%s", coreidentity.Initials(identity()), time.Now().Format("20060102"))
-}
-
-// stampCommits writes the derived commit union onto the ticket and returns
-// what was written. Derived shas come first, in git order; any sha already
-// recorded that the derivation did not find is appended rather than dropped —
-// a sha a person wrote down deliberately is evidence this tool has no
-// business discarding. derive may be nil, the same "no derivation on offer"
-// convention core/gate uses.
-func stampCommits(s *ticket.Store, t *ticket.Ticket, derive func(*ticket.Ticket) []string) ([]string, error) {
-	return s.StampCommits(t, derive)
 }
 
 func logbookNames(s *ticket.Store) ([]string, error) {
