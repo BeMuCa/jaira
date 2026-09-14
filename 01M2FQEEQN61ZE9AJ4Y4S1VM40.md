@@ -37,14 +37,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:55:58Z
+updated-at: 2026-09-14T18:56:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
 claimed-at: 2026-09-14T18:34:27Z
-outcome-what: "optimize Runde 2: cardHeight() gibt jetzt cardSlots statt einer zweiten geschriebenen 3 zurueck; review-gaps beschreibt, was geprueft und was bewusst gelassen wurde"
-outcome-why: "Zeilenzahl und Slotzahl muessen gleich sein, sonst indiziert renderCardBlock an den Slots vorbei - das stand bisher nur als Bitte im Kommentar"
-outcome-resolves: "Die optimize-Lane hat nichts mehr zu entfernen: keine Duplikate, kein toter Code, nichts zu heben"
+outcome-what: "testing-Lane: Gates gruen, DoD 1-6 im Baum verifiziert, drei Tag-Farben am echten Binary gesehen"
+outcome-why: "Die Lane schuldet ein test-verdict; nur was wirklich gelaufen ist, darf durchgehen"
+outcome-resolves: "pass — nichts gefunden, das zurueck in in-progress muesste"
 review-summary: "none"
 review-gaps: "Entfernt: die doppelt geschriebene 3. cardHeight() (internal/tui/view.go:493) gab die Zeilenzahl als Literal zurueck, waehrend cardSlots (internal/tui/model.go:1340) dieselbe Zahl als Konstante haelt; renderCardBlock malt eine Balkenzelle je Zeile und liest ihre Farbe aus einem Slot, die beiden muessen also gleich sein, sonst indiziert die Schleife an den Slots vorbei. cardHeight gibt jetzt cardSlots zurueck - aus einer Kommentarbitte wird eine Kopplung, die nicht brechen kann. Keine Duplikate im Diff: cardColors ist die einzige Stelle, die Tag zu Kartenfarbe macht, cardColor hat keine Aufrufer hinterlassen (grep ueber das Repo), und tui.oneLine sieht core/merge/merge.go:445 nur im Namen aehnlich - merge markiert den Umbruch sichtbar mit ' <return> ' fuer eine Konfliktliste, die Karte ersetzt ihn durch ein Leerzeichen, weil ihr drei Zeilen und keine Spalte fuer ein Sonderzeichen bleiben; dasselbe gilt fuer internal/tui/edit.go:180. Kein toter Code: go vet und go build sauber, keine verwaisten Helfer, keine Zweige, die der Diff unerreichbar gemacht hat. Bewusst stehen gelassen: dass cardHeight sein Ticket-Argument ignoriert (aelter als dieser Diff, kein Befund dieses Tickets); der strings.NewReplacer, den oneLine je Aufruf baut - er liegt hinter einem ContainsAny-Waechter und laeuft nur, wenn ein Feld wirklich einen Umbruch traegt, also nicht auf dem Renderpfad jeder Karte; die Vier-Tag-Zeile der Tabelle in TestThreeTaggedCardShowsAllThreeColoursInTicketOrder neben TestFourTaggedCardRendersWithTheExtraTagUncoloured (die Tabelle pruefte die Slotordnung, der Einzeltest, dass der vierte Tag ueberhaupt nichts faerbt und der Titel steht). Kosten: cardColors laeuft einmal je Karte, je Zeile bleibt ein Arrayzugriff - nichts zu heben. go build ./... und go test ./... gruen."
 test-verdict: "pass: go build/vet/test -race -count=1 ./... alle gruen (RC=0), DoD 1-6 im Baum verifiziert, drei Balkenfarben im echten Binary auf einem Scratch-Board gesehen"
