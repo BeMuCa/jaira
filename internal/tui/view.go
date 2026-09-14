@@ -510,8 +510,14 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 }
 
 // renderCardBlock draws one card as a filled band, w columns wide: no frame, a
-// cell of its tag's colour down the left, and a background that alternates with
-// the card above.
+// one-cell bar of tag colour down the left, and a background that alternates
+// with the card above.
+//
+// The bar is one cell wide and cardHeight rows tall, and each of those rows is
+// a slot of cardColors: row 1 the ticket's first tag, row 2 its second, row 3
+// reserved and so far always the card's own shade. Stacking the slots down the
+// rows that were being drawn anyway is what lets a card show two tags at once
+// without becoming a row taller.
 //
 // The frame is gone rather than recoloured. Two glyphs of it stood between the
 // lane's edges and the title on every row, and a title cut at eighteen
@@ -521,11 +527,13 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 // cell, because a border glyph inks about half of one and read as "the frame is
 // a slightly different colour" rather than as a marker.
 func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) string {
-	tag, tagged := m.cardColor(t)
+	slots := m.cardColors(t)
 
+	// The selection fill and the glow still follow the first tag alone: the
+	// card is filled in one colour, and slot 1 is the ticket's primary one.
 	bgParams := ""
 	if selected {
-		_, bgParams = m.selectionFill(tag, tagged)
+		_, bgParams = m.selectionFill(slots[0].colour, slots[0].coloured)
 	} else {
 		_, bgParams = m.laneShade(alt)
 	}
@@ -536,15 +544,15 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	inner := max(1, w-1)
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
 
-	// A card whose tag has no colour gets the card's own shade in the bar, so
-	// the text still lines up with every other card in the lane.
-	barParams := bgParams
-	if tagged {
-		barParams = "5;" + strconv.Itoa(tag)
-	}
-
 	var b strings.Builder
-	for _, line := range strings.Split(content, "\n") {
+	for i, line := range strings.Split(content, "\n") {
+		// A slot with no colour — an absent tag, a tag with no registry line,
+		// or the reserved third — gets the card's own shade, so the text still
+		// lines up with every other card in the lane.
+		barParams := bgParams
+		if i < len(slots) && slots[i].coloured {
+			barParams = "5;" + strconv.Itoa(slots[i].colour)
+		}
 		b.WriteString(paintRow(barParams, " "))
 		b.WriteString(paintRow(bgParams, padDisplay(line, inner)))
 		b.WriteString("\n")

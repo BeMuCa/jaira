@@ -13,6 +13,9 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## Unreleased
+- Read a card's left bar as two tags instead of one: its top cell now shows the colour of the ticket's first tag and the cell below it the colour of the second, in the order the tags stand on the ticket, so a board can be read along two axes at once; the third cell stays reserved and uncoloured, a tag with no line in `.jaira/tags` leaves its cell in the lane's shade, and tags past the second stay on the ticket and in `jaira show` but colour nothing.
+
 ## 0.2.0
 - Stop inventing your first notification hook: `jaira hook example` prints a working script for the `"hook"` setting that stays silent for every agent lane and rings the terminal bell only when a ticket reaches a person (`human`, `signoff`) or finishes (`done`), telling the two apart by the line it prints, and says which line to replace to deliver through ntfy.sh or a desktop notifier instead.
 - The critique lane now reads the whole diff on its first pass; later passes only re-check what it already found, so a review loop cannot run for ever by reading deeper each round.
