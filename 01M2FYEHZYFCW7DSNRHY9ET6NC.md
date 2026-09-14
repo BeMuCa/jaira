@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:50:29Z
+updated-at: 2026-09-14T12:50:32Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -74,7 +74,7 @@ Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 - [x] core/gitref: Remotes(dir) ergaenzen - liest 'git remote' und liefert die Namen, die dieses Repository wirklich hat
 - [x] Ablageort festlegen und in core/settings dokumentieren: pro Board steht der Remote in der git-config des Clones (git config jaira.remote <name>)
 - [x] settings.RemoteFor(dir) schreiben: Reihenfolge git config jaira.remote > settings.json remote > einziger Remote des Repos > origin
-- [ ] Regel gegen stillen Rueckfall festschreiben: ein per Board gesetzter Name faellt nie zurueck; der Rechner-Vorgabewert weicht nur aus, wenn das Repo genau EINEN Remote hat
+- [x] Regel gegen stillen Rueckfall festschreiben: ein per Board gesetzter Name faellt nie zurueck; der Rechner-Vorgabewert weicht nur aus, wenn das Repo genau EINEN Remote hat
 - [ ] Fehlender Test 1: Fixture-Repo mit nur origin, JAIRA_HOME-settings sagt remote=upstream -> 'jaira release <id>' laeuft durch
 - [ ] Fehlender Test 2: Fixture-Repo mit origin=Fork und upstream, settings sagt upstream -> aufgeloest wird upstream, nicht origin
 - [ ] Fehlender Test 3: Fixture-Repo mit zwei Remotes, von denen keiner wie der eingestellte heisst -> Abbruch, kein Ausweichen
