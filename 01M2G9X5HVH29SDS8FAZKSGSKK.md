@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T19:54:42Z
+updated-at: 2026-09-14T19:54:45Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
@@ -45,7 +45,7 @@ updated-by: Alexander Sacharov
 - [ ] Der .env-Block in scripts/spawn.sh traegt keinen fest eingebauten Projektnamen eines fremden Repositories mehr - entweder abgeleitet oder aus dem Skript heraus.
 - [ ] Nachgestellt: ein Dispatcher, der nur seinen eigenen Prompt liest, startet einen Worker in einer eigenen Vorlage, ohne 'claude --permission-mode' selbst aufzurufen.
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased, weil die ausgelieferten Prompts sich aendern.
-- [ ] scripts/spawn.sh teilt die Vorlage standardmaessig nach RECHTS, nicht nach unten, und die Richtung ist einstellbar statt fest verdrahtet. Heute steht 'pane split --current --direction down' im Skript; herdr kennt nur 'right' und 'down', und 'down' stapelt die Vorlagen uebereinander, bis in jeder nur noch ein paar Zeilen stehen und niemand mehr etwas lesen kann.
+- [ ] scripts/spawn.sh gibt jedem Worker einen eigenen TAB statt einer geteilten Vorlage: 'herdr tab create --label <ticket>/<lane> --no-focus', die Pane-Id kommt aus result.root_pane.pane_id. Ein Split teilt die Hoehe eines Bildschirms - bei vier Workern bleiben je ein paar Zeilen und niemand kann lesen, was einer tut. --cwd nimmt Herdr nur fuer das Label entgegen und loest es gegen Windows auf, ein WSL-Pfad wird ignoriert; das echte Wechseln des Verzeichnisses bleibt das 'cd' im pane run.
 
 ## Options
 
