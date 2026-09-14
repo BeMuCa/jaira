@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,14 +33,14 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:59:25Z
+updated-at: 2026-09-14T13:59:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-191270
 claimed-at: 2026-09-14T13:55:19Z
-outcome-what: "Critique lane, second round: no findings. The five findings from round one are genuinely fixed — RemoteSourceFor is the single remote ladder with RemoteFor as a wrapper and whoami's remoteOrigin deleted, ErrNoGitRepo wraps ErrNoRepo so noRefReason can branch once for create and whoami, the release hint names its cost, the unused *ticket.Store is gone. The joint the implementer flagged is closed by construction: attachRefs builds refs.Repo.Remote from set.RemoteFor(s.Root) and RemoteFor is RemoteSourceFor, so whoami's name and source come from one function on one directory in one process."
-outcome-why: "A pass that finds nothing is where this lane ends. The three settled decisions - release instead of a new command, the board block in whoami, the first --dod into frontmatter - were not reopened, and nothing new in the second round rises to a defect or a design error."
-outcome-resolves: "review-summary=none"
+outcome-what: "Optimize lane: closed the two items critique handed over and cut what the change did not need. noRefReason is now the single rendering of 'why this ticket is not on a ref' for the printed line, the --json file-only-reason field and whoami; fileModeReason is gone; create's release hint is one Fprintf with an optional assignee tail instead of two that repeated the sentence, and it says 'once the remote works'; fileOnlyCount takes the ref mode from boardState rather than asking refs.Usable() again. TestCreateOutsideAGitRepositoryDoesNotBlameARemote now reads the --json field too."
+outcome-why: "A fact rendered three ways is maintained in three places by people who do not know about the other two, and the third rendering was the raw gitref error an agent would have read outside a git repository. 'once the remote is there' was simply untrue where the remote exists and the push failed."
+outcome-resolves: "review-gaps set; DoD 1's proof updated to name noRefReason instead of the deleted fileModeReason. go test ./..., go vet ./... and gofmt -l all clean."
 review-summary: none
 review-gaps: "Removed: fileModeReason (internal/cli/refs.go), a one-caller wrapper that only prefixed noRefReason, and with it the third rendering of the file-mode reason - the --json field now goes through noRefReason like the printed line and whoami do; the doubled canReachARef branch in internal/cli/tickets.go, two Fprintf calls repeating a whole sentence to append six words, now one call with an optional tail; and one of the two refs.Usable() questions in whoami, fileOnlyCount taking the ref mode from boardState instead of deciding it again. Changed: the release hint reads 'once the remote works', because 'once the remote is there' is false when the remote is there and the push failed. Left: the nil guards in fileOnRefOnly/putOnRef, unreachable from their callers but three lines against a panic; settings.RemoteFor as a wrapper over RemoteSourceFor, which critique settled and every caller uses; whoami's plural(); the pre-existing dead 'missing := gate.Violations(nil) ... _ = missing' in tickets.go, which this change did not orphan. Not fixed because it is outside this diff: fetch.go, pull.go, release.go and snapshot.go still print refs.Usable() errors raw, so 'gitref:' still reaches users from four other commands."
 ---
