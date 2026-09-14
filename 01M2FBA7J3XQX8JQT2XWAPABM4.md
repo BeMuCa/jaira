@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -41,10 +41,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:05:51Z
+updated-at: 2026-09-14T16:05:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273044
 claimed-at: 2026-09-14T15:48:01Z
+outcome-what: "Neues Paket internal/wintrap liest den Quelltext auf die fuenf Muster, an denen dieses Repository auf Windows bisher gebrochen ist, und nennt in jedem Fund die Abhilfe. TestRepositoryIsClean laesst go test ./... auf Linux rot werden, sobald eines davon wieder auftaucht; TestEachPatternFires beweist mit je einem testdata-Fixture, dass jede der fuenf Regeln anschlaegt. Der heutige Stand ist gruen gemacht: USERPROFILE in core/identity/identity_test.go, eol=lf-Zeilen fuer core/release/NOTES.md und core/hook/example/notify.sh in .gitattributes, filepath.Join in core/tag/tag_test.go und core/gate/gate_test.go, filepath.Rel in internal/tui/browse.go. Zwei Scheintreffer (core/role/role.go embed.FS, core/settings/settings.go git-Refname) sind mit //wintrap:ok plus Begruendung markiert statt umgeschrieben. Der ubuntu-latest-Job fuehrt zusaetzlich GOOS=windows go vet ./... und go build ./cmd/jaira aus, und README '## Development' nennt beide Zeilen zum Selberlaufen."
+outcome-why: "Der windows-latest-Job braucht 8 Minuten und meldet erst nach getaner Arbeit, dass sie kaputt ist. Alle sieben Windows-Fixes der Historie waren fuenf Muster, kein einziges neues Problem, und alle fuenf sind auf Linux im Quelltext sichtbar. Jetzt scheitern sie in Sekunden auf dem Rechner, an dem man sitzt."
+outcome-resolves: "Fuenf Muster mit je eigenem Unterfall und Abhilfetext; Repository-Lauf gruen ohne aufgeweichte Regel; GOOS=windows vet+build im ubuntu-Job, nachweislich fallend bei einem Windows-Uebersetzungsfehler; beide Zeilen in der Entwickler-Dokumentation; keine Zeile in core/release/NOTES.md."
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
