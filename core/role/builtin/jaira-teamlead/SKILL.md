@@ -41,9 +41,16 @@ One dispatcher per ticket. Hand it the id and nothing else — the dispatcher
 skill carries the rest.
 
 **If Herdr is here (`HERDR_ENV=1`), the dispatcher gets its own tab**, the same
-way its workers do. Run `herdr --skill` for the mechanics. A dispatcher in a tab
-outlives you: the human can kill your session, start a new teamlead, and the
-work is still running — which is the whole reason the board exists.
+way its workers do. Start it with `scripts/spawn.sh` from the dispatcher role's
+directory rather than assembling the calls yourself, and read `herdr --skill`
+only if you have to go around the script. Never call
+`claude --permission-mode ...` yourself: the permission classifier refuses it as
+"Create Unsafe Agents", and two dispatchers lost their tabs to that on
+2026-09-14. And `command -v herdr` is not the test for whether Herdr is here —
+on WSL the binary is `herdr.exe` under `/mnt/c` and never appears in `PATH`
+under that name; `$HERDR_BIN_PATH` names it. A dispatcher in a tab outlives you:
+the human can kill your session, start a new teamlead, and the work is still
+running — which is the whole reason the board exists.
 
 Without Herdr, start it as a subagent instead:
 
