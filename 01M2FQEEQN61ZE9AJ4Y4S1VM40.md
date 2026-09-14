@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T19:24:49Z
+updated-at: 2026-09-14T19:28:24Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-645421
@@ -53,6 +53,7 @@ merge-conflicts: []
 conflict-theirs-question: ""
 review-verdict: "Angenommen mit einem Vorbehalt am Ticket-Text, nicht am Code. Der Diff erfuellt alle sechs DoD-Punkte, ich habe sie einzeln im gemergten Baum nachgesehen statt sie aus dem Bericht zu uebernehmen, und die drei Commits nach der letzten Review halten: der dritte Slot nimmt wirklich den dritten Tag, cardHeight haengt wirklich an cardSlots, das Frontmatter-Feld stimmt mit der Checkliste ueberein. Keine Defekte gefunden; nichts im outcome-Text, was der Diff nicht deckt. Offen bleibt einzig, dass die Prosa-Absaetze im Ticket-Body weiter das alte Verhalten behaupten - eine Sache der Aufzeichnung, kein Grund, die Arbeit zurueckzuschicken, aber etwas, das beim Abnehmen in zwei Minuten erledigt oder als Ticket festgehalten gehoert."
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-9ET6NC  2. go test ./internal/tui -run \"TestTwoTaggedCardShowsBothColoursInTicketOrder|TestThreeTaggedCardShowsAllThreeColoursInTicketOrder|TestSlotsBelowTheLastTagStayUncoloured|TestFourTaggedCardRendersWithTheExtraTagUncoloured|TestUncolouredSecondTagFallsBackWithoutMovingTheText|TestCardHeightIsTheThreeContentRows\" -v  -> alle sechs sagen PASS und der Lauf endet mit ok  3. go build -o /tmp/jaira-s1vm40 ./cmd/jaira  4. /tmp/jaira-s1vm40 tags  -> notiere drei Tag-Namen, die eine Farbe haben  5. /tmp/jaira-s1vm40 tag D28H7V <tag1> <tag2> <tag3>  -> der Befehl endet ohne Fehler  6. /tmp/jaira-s1vm40 tag D28H7V <tag4>  -> auch der vierte wird angenommen, kein Fehler  7. /tmp/jaira-s1vm40 show D28H7V  -> alle vier Tags stehen in der Liste  8. /tmp/jaira-s1vm40  (das Board oeffnen)  -> die Karte D28H7V in Backlog hat links einen schmalen Balken aus DREI uebereinanderliegenden Farbzellen, von oben nach unten in der Reihenfolge tag1, tag2, tag3; tag4 faerbt nichts  9. auf derselben Karte zaehlen: sie ist genau drei Zeilen hoch, so hoch wie jede Karte ohne Tags daneben  10. q druecken zum Schliessen  11. sed -n \"70,82p\" .jaira/tickets/01M2FQEEQN61ZE9AJ4Y4S1VM40-eine-karte-zeigt-bis-zu-drei-tag-farben-nicht-nu.md  -> hier steht der Satz \"Platz 3 bleibt in diesem Ticket unbelegt\", der nicht mehr stimmt; das ist der Befund aus review-gaps"
+body: ""
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
