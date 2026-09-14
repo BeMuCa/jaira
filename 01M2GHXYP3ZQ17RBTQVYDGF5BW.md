@@ -2,7 +2,7 @@
 id: 01M2GHXYP3ZQ17RBTQVYDGF5BW
 title: "Ein Remote, den es gibt und der nicht funktioniert, wird wie ein fehlender gemeldet"
 status: backlog
-ready: false
+ready: true
 creator: Alexander Sacharov
 goal: "Ein Remote, der da ist aber nicht antwortet, wird als das gemeldet was er ist - nicht als fehlend, und nicht als funktionierend."
 context: |-
@@ -27,7 +27,7 @@ related:
   - 01M2G02EHTV6RJPPQKR5VM0A76
 commits: []
 created-at: 2026-09-14T18:12:37Z
-updated-at: 2026-09-14T18:12:51Z
+updated-at: 2026-09-14T18:12:53Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -37,6 +37,10 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Ein konfigurierter, aber unerreichbarer Remote erzeugt keine Meldung mehr, die sich selbst widerspricht: 'no remote "X" — this repository has X' kommt nicht mehr vor. Nachgestellt an einem Repository, dessen Remote auf eine tote URL zeigt.
+- [ ] 'jaira whoami' behauptet nicht 'Ref mode: yes', wenn ein 'jaira create' daneben eine Datei schreibt. Auskunft und Verhalten stimmen ueberein, in beide Richtungen nachgestellt.
+- [ ] Die drei Zustaende sind unterscheidbar und werden unterschiedlich benannt: kein Remote konfiguriert, Remote konfiguriert und unerreichbar, Remote arbeitet. Der zweite nennt nicht 'git remote add' als Abhilfe, denn das behebt ihn nicht.
+- [ ] Ein unerreichbarer Remote laesst ein Ticket nicht verschwinden: es bleibt als Datei liegen und geht mit dem naechsten Befehl hinaus, sobald der Remote wieder antwortet - wie die Outbox es fuer den Offline-Fall schon tut.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
