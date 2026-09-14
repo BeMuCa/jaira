@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:00:16Z
+updated-at: 2026-09-14T13:00:32Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -144,3 +144,4 @@ Vier Befunde, alle lokal, keiner ruehrt an der Form:
 4. core/settings/settings.go:147 - RemoteName() hat keinen Aufrufer mehr ausser RemoteFor.
 
 Nicht beanstandet, damit es niemand nochmal aufmacht: dass ein Repo mit genau EINEM Remote diesen still nimmt, auch wenn settings.json etwas anderes sagt - das verlangt die DoD ausdruecklich (der Fall requirementsgenie soll ohne Einstellung laufen).
+- **2026-09-14 13:00 · Alexander Sacharov** — DoD-Reparatur durch den Dispatcher: beim Anlegen sind vier der fuenf Kriterien verloren gegangen, weil "jaira create --dod" nur EIN Item nimmt - die Absaetze 2-5 landeten als Fliesstext im Body unter "## Definition of Done", ohne Checkbox. Damit hat das Gate der Terminal-Lane nur 1 von 5 Kriterien geprueft. Die vier fehlenden sind mit "jaira dod --add" nachgetragen und gegen die vorhandene Implementierung geprueft: alle vier waren bereits gebaut und sind mit Testnamen als Proof abgehakt. Nichts an der Implementierung widerspricht ihnen.
