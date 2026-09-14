@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: human
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:22:34Z
+updated-at: 2026-09-14T18:22:39Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
