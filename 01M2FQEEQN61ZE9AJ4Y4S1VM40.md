@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:28:22Z
+updated-at: 2026-09-14T18:28:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-483334
@@ -197,3 +197,12 @@ Mitzuziehen: (1) Tests fuer den Drei-Tag-Fall im Stil der bestehenden zehn; (2) 
 - **2026-09-14 18:22 · Alexander Sacharov** — Die alte human-Frage ('faerbt eine Karte mit genau einem Tag nur noch Zeile 1?') ist beantwortet: ja, so soll es sein. Eine Karte mit einem Tag faerbt nur die oberste Zelle. Der question-Eintrag ist deshalb geleert.
 
 Veraltet im context-Abschnitt oben: der Absatz 'Offen und absichtlich NICHT Teil dieses Tickets: was den dritten Platz fuellt ... bleibt Platz drei reserviert und leer'. Diese Frage ist entschieden - die Sprint-Markierung ist Ticket 0YGWXQ und liegt am rechten Kartenrand, der dritte linke Platz gehoert dem dritten Tag.
+- **2026-09-14 18:28 · Alexander Sacharov** — in-progress (Runde nach der human-Antwort): Slot 3 gehoert jetzt dem dritten Tag. Geaendert wurde genau eine Schleifengrenze - cardColors (internal/tui/model.go:1367) laeuft 'i < cardSlots' statt 'i < cardSlots-1'. renderCardBlock brauchte keine Codeaenderung: es las schon immer slots[i] je Zeile, der reservierte Slot war allein ein Modell-Detail. Nur die Kommentare dort und an cardColors sagten 'reserviert' und wurden nachgezogen.
+
+Tests umgeschrieben statt ergaenzt, weil drei von ihnen die alte Zusage FESTSCHRIEBEN und nach der Aenderung rot geworden waeren: TestThirdSlotStaysUncolouredHoweverManyTags (jetzt TestTagsPastTheThirdColourNoSlot - prueft, dass ein vierter Tag nichts faerbt und die ersten drei nicht verschiebt), TestThirdRowAlwaysCarriesTheLaneShade (jetzt TestThreeTaggedCardShowsAllThreeColoursInTicketOrder - Tabelle ueber 0/1/2/3/4 Tags plus umgekehrte Reihenfolge) und TestFourTaggedCardRendersWithTheExtraTagsUncoloured (prueft jetzt nur noch 5;111 als ungefaerbt; 5;200 ist der dritte Tag und MUSS erscheinen - genau das war die alte Zusage, die gekippt ist).
+
+Neu dazu: TestSlotsBelowTheLastTagStayUncoloured. Der Fall 'weniger Tags als Slots' war vorher nur nebenbei gedeckt, weil Slot 3 ohnehin immer leer war; jetzt ist er die einzige Stelle, die verhindert, dass eine Karte mit einem Tag den Balken wieder durchgehend faerbt.
+
+NOTES.md: die bestehende Zeile umgeschrieben, keine zweite daneben - eine Release-Zeile beschreibt, was der Leser sieht, und 'zwei Farben, dritte reserviert' hat nie ein Binary erreicht (Abschnitt ist ## Unreleased).
+
+Nicht angefasst, bewusst: selectionFill/Glow speisen sich weiter aus Slot 1 (Alex' Vorgabe), und in core/tag bleibt es bei einer reinen Anzeigegrenze ohne Validierung.
