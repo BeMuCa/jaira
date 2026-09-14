@@ -24,9 +24,9 @@ var refs *refsync.Syncer
 // ref.
 func attachRefs(s *ticket.Store) {
 	set := settings.Load()
-	// RemoteFor and not RemoteName: the machine-wide setting is only a default,
-	// and this is the one place per process that resolves it against the
-	// repository actually in front of us. Everything downstream reads the answer
+	// The machine-wide setting in settings.json is only a default, and this is
+	// the one place per process that resolves it against the repository actually
+	// in front of us. Everything downstream reads the answer
 	// off refs.Repo.Remote rather than resolving it again, so a command costs the
 	// git calls once.
 	refs = refsync.New(s, set.RemoteFor(s.Root), s.Actor)

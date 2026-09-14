@@ -17,8 +17,8 @@
 // name; and not a path-keyed section here, which git worktrees would split into
 // several entries for one clone.
 //
-// RemoteFor resolves the two against each other. See its comment for the order
-// and for why a per-board name never falls back.
+// RemoteFor is the only way to ask: it resolves the two against each other.
+// See its comment for the order and for why a per-board name never falls back.
 //
 // The file is ~/.jaira/settings.json, beside projects.json, and every field has
 // a working default: a missing file, an unreadable one and an empty one all mean
@@ -140,17 +140,6 @@ func Save(s Settings) error {
 	return os.WriteFile(path, append(b, '\n'), 0o644)
 }
 
-// RemoteName returns the machine-wide remote setting, or the default. It is the
-// answer without a board in front of it; anything that has a working tree
-// should ask RemoteFor instead, which is the only one that can tell whether the
-// name is true of this repository.
-func (s Settings) RemoteName() string {
-	if r := strings.TrimSpace(s.Remote); r != "" {
-		return r
-	}
-	return gitref.DefaultRemote
-}
-
 // RemoteFor returns the remote this board's ticket refs travel on.
 //
 // The order, and why each step is where it is:
@@ -172,13 +161,13 @@ func (s Settings) RemoteName() string {
 //     loud and names it. Several remotes and none of them the one asked for is
 //     ambiguous, and guessing among them is the fork case again.
 func (s Settings) RemoteFor(dir string) string {
-	if dir == "" {
-		return s.RemoteName()
-	}
 	if board := strings.TrimSpace(gitref.BoardRemote(dir)); board != "" {
 		return board
 	}
-	want := s.RemoteName()
+	want := strings.TrimSpace(s.Remote)
+	if want == "" {
+		want = gitref.DefaultRemote
+	}
 	have := gitref.Remotes(dir)
 	for _, name := range have {
 		if name == want {

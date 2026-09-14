@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // cloneWithRemotes builds a real clone whose first remote is origin and which
@@ -47,19 +50,46 @@ func gitRun(t *testing.T, dir string, args ...string) {
 	}
 }
 
-// handleOf picks the ticket handle out of what create printed.
-func handleOf(t *testing.T, out string) string {
+// ticketIn initialises a board in the clone and files one ticket in it,
+// answering with its handle.
+//
+// Both steps go through the CLI, because a created ticket lives on its git ref
+// and not on disk until somebody pulls it — which is exactly the mechanism
+// these tests are about. The handle is then read back off that ref rather than
+// picked out of what create printed: a six-character uppercase word turns up in
+// titles and lane names too, so scanning stdout for one finds the wrong word
+// sooner or later.
+func ticketIn(t *testing.T, clone, title string) string {
 	t.Helper()
-	for _, f := range strings.Fields(out) {
-		f = strings.Trim(f, ":,")
-		if len(f) == 6 && strings.ToUpper(f) == f && strings.IndexFunc(f, func(r rune) bool {
-			return !((r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9'))
-		}) < 0 {
-			return f
+	if out, err := runCLI(t, clone, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, clone, "create", title); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ids, err := (&gitref.Repo{Dir: clone}).List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) == 0 {
+		// No ref means the remote refused it, and create kept the ticket on
+		// disk instead — which is the very case the third test sets up.
+		st, err := ticket.At(clone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		all, err := st.List()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, tk := range all {
+			ids = append(ids, tk.ID)
 		}
 	}
-	t.Fatalf("no ticket handle in:\n%s", out)
-	return ""
+	if len(ids) != 1 {
+		t.Fatalf("expected one ticket on the board, found %d: %v", len(ids), ids)
+	}
+	return ticket.Handle(ids[0])
 }
 
 // The whole bug in one test: a repository whose only remote is origin, on a
@@ -70,14 +100,7 @@ func TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote(t *testing.T) {
 	clone := cloneWithRemotes(t, "upstream")
 	t.Setenv("JAIRA_USER", "ada")
 
-	if out, err := runCLI(t, clone, "init"); err != nil {
-		t.Fatalf("init: %v\n%s", err, out)
-	}
-	out, err := runCLI(t, clone, "create", "hand me back")
-	if err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
-	}
-	h := handleOf(t, out)
+	h := ticketIn(t, clone, "hand me back")
 	if out, err := runCLI(t, clone, "pull", h); err != nil {
 		t.Fatalf("pull: %v\n%s", err, out)
 	}
@@ -94,12 +117,9 @@ func TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt(t *testing.T) {
 	clone := cloneWithRemotes(t, "upstream", "upstream")
 	t.Setenv("JAIRA_USER", "ada")
 
-	if out, err := runCLI(t, clone, "init"); err != nil {
-		t.Fatalf("init: %v\n%s", err, out)
-	}
-	out, err := runCLI(t, clone, "create", "goes upstream")
-	if err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
+	h := ticketIn(t, clone, "goes upstream")
+	if out, err := runCLI(t, clone, "pull", h); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
 	}
 	if refs == nil || refs.Repo.Remote != "upstream" {
 		t.Fatalf("the ref was resolved to %q, not upstream", refs.Repo.Remote)
@@ -114,15 +134,8 @@ func TestABoardRemoteThatIsGoneStopsLoudly(t *testing.T) {
 	gitRun(t, clone, "config", "--local", "jaira.remote", "upstream")
 	t.Setenv("JAIRA_USER", "ada")
 
-	if out, err := runCLI(t, clone, "init"); err != nil {
-		t.Fatalf("init: %v\n%s", err, out)
-	}
-	out, err := runCLI(t, clone, "create", "nowhere to go")
-	if err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
-	}
-	h := handleOf(t, out)
-	out, err = runCLI(t, clone, "release", h)
+	h := ticketIn(t, clone, "nowhere to go")
+	out, err := runCLI(t, clone, "release", h)
 	if err == nil {
 		t.Fatalf("release went through with a remote that does not exist:\n%s", out)
 	}

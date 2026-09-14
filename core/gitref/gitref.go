@@ -692,17 +692,12 @@ func firstLine(s string) string {
 // answer is what decides which remote a Repo should be built with in the first
 // place.
 func Remotes(dir string) []string {
-	if _, err := exec.LookPath("git"); err != nil {
-		return nil
-	}
-	var out bytes.Buffer
-	cmd := exec.Command("git", "-C", dir, "remote")
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
+	out, err := (&Repo{Dir: dir}).value("remote")
+	if err != nil {
 		return nil
 	}
 	var names []string
-	for _, line := range strings.Split(out.String(), "\n") {
+	for _, line := range strings.Split(out, "\n") {
 		if line = strings.TrimSpace(line); line != "" {
 			names = append(names, line)
 		}
@@ -718,14 +713,9 @@ func Remotes(dir string) []string {
 // exists to correct, and worktrees share the clone's config, so every worktree
 // of a checkout answers the same without anybody repeating themselves.
 func BoardRemote(dir string) string {
-	if _, err := exec.LookPath("git"); err != nil {
+	out, err := (&Repo{Dir: dir}).value("config", "--local", "--get", "jaira.remote")
+	if err != nil {
 		return ""
 	}
-	var out bytes.Buffer
-	cmd := exec.Command("git", "-C", dir, "config", "--local", "--get", "jaira.remote")
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
-		return ""
-	}
-	return strings.TrimSpace(out.String())
+	return out
 }

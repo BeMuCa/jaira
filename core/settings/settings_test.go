@@ -15,7 +15,7 @@ func TestDefaultsWithNoFile(t *testing.T) {
 	t.Setenv("JAIRA_HOME", t.TempDir())
 
 	s := settings.Load()
-	if got := s.RemoteName(); got != "origin" {
+	if got := s.RemoteFor(t.TempDir()); got != "origin" {
 		t.Errorf("remote defaults to %q", got)
 	}
 	if !s.NotifyEnabled() {
@@ -41,8 +41,8 @@ func TestSaveAndLoadRoundTrip(t *testing.T) {
 	if got.Remote != want.Remote || got.NotifyOff != want.NotifyOff || got.Hook != want.Hook {
 		t.Errorf("round trip changed the settings: %+v", got)
 	}
-	if got.RemoteName() != "board" {
-		t.Errorf("remote is %q", got.RemoteName())
+	if name := got.RemoteFor(t.TempDir()); name != "board" {
+		t.Errorf("remote is %q", name)
 	}
 	if got.NotifyEnabled() {
 		t.Error("notify-off was not honoured")
@@ -59,7 +59,7 @@ func TestAMalformedFileFallsBackToDefaults(t *testing.T) {
 	}
 
 	s := settings.Load()
-	if s.RemoteName() != "origin" || !s.NotifyEnabled() {
+	if s.RemoteFor(t.TempDir()) != "origin" || !s.NotifyEnabled() {
 		t.Errorf("a malformed file changed behaviour: %+v", s)
 	}
 }
@@ -69,7 +69,7 @@ func TestBlankRemoteIsStillOrigin(t *testing.T) {
 	if err := settings.Save(settings.Settings{Remote: "   "}); err != nil {
 		t.Fatal(err)
 	}
-	if got := settings.Load().RemoteName(); got != "origin" {
+	if got := settings.Load().RemoteFor(t.TempDir()); got != "origin" {
 		t.Errorf("whitespace remote resolved to %q", got)
 	}
 }
