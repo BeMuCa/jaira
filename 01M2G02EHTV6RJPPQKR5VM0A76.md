@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T15:36:03Z
+updated-at: 2026-09-14T15:43:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-191270
@@ -110,3 +110,4 @@ Exercised by hand with a binary built from 859ebfd, on throwaway boards under /t
 
 Three observations, none of them a DoD failure and none fixed here. (1) whoami on a board with no git repository at all still prints 'Remote: origin (the default, nothing configured)' and 'Remotes: —', naming a remote exactly where create deliberately stopped naming one after critique round one — internal/cli/whoami.go prints the Remote/Remotes rows unconditionally while noRefReason branches on ErrNoGitRepo. (2) the NOTES.md whoami line says the reason 'is a sentence rather than a raw gitref: error'; for the missing-remote case it still reads 'this board has no usable "origin" — gitref: no repository or no such remote: no remote "origin" — this repository has no remotes', because noRefReason (internal/cli/refs.go:165) formats the gitref error with %v. True only for the no-repository case. (3) whoami --json emits "remotes": null rather than [] where the repository has none.
 - **2026-09-14 15:32 · Alexander Sacharov** — Diagnose 2026-09-14: 'jaira move --to in-progress' meldet EXIT=0 und 'moved', danach steht in der Datei weiterhin status: human.
+- **2026-09-14 15:43 · Alexander Sacharov** — Dieses Board hatte in .jaira/lanes/done.md noch 'logbook-on-entry: true' stehen, obwohl Ticket 74VM40 die Zeile aus den ausgelieferten Lanes entfernt hat. Dadurch hat 'jaira move --to done' das Ticket 9ET6NC und drei aeltere done-Tickets automatisch ins Logbuch gelegt. Die Zeile ist jetzt in beiden Checkouts von Hand entfernt; .jaira/lanes/ ist gitignored, also erreicht das keinen anderen Clone.
