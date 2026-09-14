@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -42,18 +42,14 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:13:29Z
+updated-at: 2026-09-14T16:17:11Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-273044
-claimed-at: 2026-09-14T15:48:01Z
+claimed-by: DESKTOP-RFTCH11-382690
+claimed-at: 2026-09-14T16:16:39Z
 outcome-what: "Vier critique-Funde abgearbeitet. Regel 4 verengt: checkExe meldet nur noch, wenn der Aufruf exec.Command/CommandContext mit erstem Literal \"go\" und \"build\"/\"install\"/\"test\" plus \"-o\" ist (neues isGoBuildOutput in internal/wintrap/wintrap_scan_test.go) - die Gegenproben sort -o und tar -c -o melden nicht mehr. Der CallExpr-Zweig aus mentionsExe ist geloescht, nur das \".exe\"-Literal zaehlt noch; die zwei Stellen, die davon lebten (internal/cli/mergebranches_test.go:34 und :194, beide rufen exeSuffix()), tragen jetzt //wintrap:ok mit Begruendung. Der \"://\"-Zweig in sepConcat ist geloescht. wintrap.go und gitattributes.go sind zu wintrap_scan_test.go und gitattributes_scan_test.go umbenannt, das Modul traegt kein exportiertes Scan mehr ausserhalb des Tests."
 outcome-why: "Jeder der drei Regelfunde war eine Meldung, die etwas anderes prueft als sie behauptet, oder ein Stummschalter, den man an der stummgeschalteten Stelle nicht sieht - beides macht den Waechter unglaubwuerdig, und ein Waechter, dem man nicht glaubt, wird abgeschaltet. Der vierte Fund nahm 640 Zeilen Entwickler-Werkzeug aus dem ausgelieferten Modul, ohne dass eine Zeile davon anders arbeitet."
 outcome-resolves: "go test ./... und go vet ./... gruen, GOOS=windows go vet ./... und go build ./cmd/jaira gruen. TestEachPatternFires laeuft unveraendert weiter - alle fuenf Fixtures schlagen an, Regel 4 also trotz der Verengung nicht vakuum. TestRepositoryIsClean gruen ohne aufgeweichte Regel: die zwei neuen Stellen sind mit //wintrap:ok plus Grund ausgenommen, nicht durch eine Lockerung. Kein Eintrag in core/release/NOTES.md, von aussen am Binary ist nichts davon zu beobachten."
-review-summary: |-
-  internal/wintrap/wintrap.go:406 rule 4 fires on any call with a "-o" string argument, then claims in the finding text that "a binary is built with go build -o". Probed: exec.Command("sort","-o",out,in) and exec.Command("tar","-c","-o","x.tar",dir) both report trap 4. Require the call to be exec.Command/exec.CommandContext whose first literal arg is "go" and whose args carry "build", so the check verifies what its own message asserts.
-  internal/wintrap/wintrap.go:517 sepConcat returns false for any concatenation carrying "://", to spare URLs — but a URL reaching os.*/filepath.*/strings.TrimPrefix-against-a-path is the state that cannot occur, and the one real URL site (core/selfupdate/selfupdate.go:208) is a bare return that checkSlash never looks at. Delete the "://" branch; the remedy text at wintrap.go:468 already tells URL sites to carry //wintrap:ok, which is the mechanism that works.
-  internal/wintrap/wintrap.go:435 mentionsExe silences a whole function when any called identifier contains "exe" — a third silencing mechanism beside //wintrap:ok and the hasGOOS whole-function skip, and one nobody can see at the site it silences. Drop the *ast.CallExpr branch, keep the literal ".exe" check, and let a helper-named site carry //wintrap:ok with its reason.
-  internal/wintrap/wintrap.go and internal/wintrap/gitattributes.go are non-test files (640 lines, exported Scan) with no caller anywhere but their own test, while this repository already has a guard test that reads the source tree: core/lane/lane_test.go:698 TestModelTierNeverComparedToModelName, inside the package it guards, in a _test.go. Rename both to _test.go files in the same package — the testdata fixtures, Scan and all four tests keep working unchanged, and the module stops carrying a dev-only exported API that nothing imports.
+review-summary: "internal/wintrap/wintrap_scan_test.go:442 isGoBuildOutput accepts \"install\" and \"test\" beside \"build\", but the finding text at wintrap_scan_test.go:413 asserts that \"a binary is built with go build -o\". Verified: \"go install -o\" does not exist (flag provided but not defined: -o), so that arm can never fire, and \"go test -o\" builds a test binary the message does not describe. Keep only \"build\" in the switch at :442, so the rule again verifies exactly what it claims."
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
@@ -126,3 +122,12 @@ Nicht gemeldet, absichtlich: gitattributes.go:30 liest nur root/.gitattributes, 
 - Der CallExpr-Zweig in mentionsExe ist raus. Folge, die vorher niemand sah: internal/cli/mergebranches_test.go:34 und :194 waren nur deshalb still, weil sie exeSuffix() rufen. Beide tragen jetzt //wintrap:ok mit Begruendung - die Stelle ist korrekt, aber die Stummschaltung steht jetzt dort, wo man sie liest.
 - Der "://"-Zweig in sepConcat ist geloescht. Kein neuer Treffer im Repository-Lauf, damit ist die Analyse der critique bestaetigt: eine URL erreicht os.*/filepath.*/TrimPrefix hier nirgends.
 - wintrap.go -> wintrap_scan_test.go, gitattributes.go -> gitattributes_scan_test.go. Die note vom 15:51 hat das eigene Nicht-Test-Paket mit "Scan muss eine beliebige Wurzel scannen koennen" begruendet - das war kein Argument, eine _test.go kann das genauso. Damit traegt das Modul kein exportiertes Scan mehr, das niemand importiert. README ## Development bleibt woertlich richtig, dort steht "internal/wintrap, das go test ./... schon laeuft" und nicht der Dateiname.
+- **2026-09-14 16:17 · Alexander Sacharov** — critique Runde 2: ein Fund, eine Zeile.
+
+wintrap_scan_test.go:442 - isGoBuildOutput nimmt neben "build" auch "install" und "test", der Fundtext auf :413 behauptet aber "a binary is built with go build -o". Nachgemessen: "go install -o" gibt es nicht (flag provided but not defined: -o), der Zweig kann also nie greifen; "go test -o" baut ein Testbinary, das die Meldung nicht beschreibt. Das ist der Fund aus Runde 1 in kleiner Form - die Regel prueft wieder etwas anderes, als sie meldet. Abhilfe: im switch auf :442 nur "build" stehen lassen.
+
+Geprueft und absichtlich NICHT gemeldet:
+- binaryExt (:235) sieht nach totem Code aus, verhindert aber echten Schaden: ohne die Liste bekaeme ein eingebettetes .png den Rat, eol=lf zu setzen. Bleibt.
+- Das Paket besteht jetzt nur noch aus _test.go-Dateien; go build ./..., go vet ./... und GOOS=windows go vet ./... laufen damit alle gruen. Die Umbenennung aus Runde 1 hat nichts kaputt gemacht.
+- mentionsExe schaltet weiter eine ganze Funktion stumm, sobald ein ".exe"-Literal darin steht. Das war in Runde 1 die bewusste Entscheidung und wird hier nicht neu aufgemacht.
+- README wiederholt die fuenf Muster aus dem Paketkommentar. Da der Paketkommentar jetzt in einer _test.go steht und go doc ihn nicht mehr zeigt, ist die README-Kopie die einzige auffindbare - kein Fund.
