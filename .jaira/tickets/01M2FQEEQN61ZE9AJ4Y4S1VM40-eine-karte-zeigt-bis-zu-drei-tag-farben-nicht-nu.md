@@ -1,7 +1,7 @@
 ---
 id: 01M2FQEEQN61ZE9AJ4Y4S1VM40
 title: "Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einer Karte sind bis zu drei Tag-Farben gleichzeitig zu sehen: die drei Plaetze der linken Randspalte tragen die Farben der ersten drei Tags des Tickets, in Ticket-Reihenfolge."
@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T19:24:49Z
+updated-at: 2026-09-14T19:30:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-645421
@@ -260,3 +260,4 @@ Bewusst NICHT als Befund erhoben:
 - **2026-09-14 18:55 · Alexander Sacharov** — testing: Gates gruen — go build ./..., go vet ./..., go test -race -count=1 ./... alle RC=0 (internal/tui ok 136s). DoD einzeln gegen den Baum geprueft, nicht gegen den outcome-Text: Slot-Reihenfolge in internal/tui/model.go:1360 cardColors, Balken-Rendering in internal/tui/view.go:534-562, cardHeight()=cardSlots in view.go:493. Tests TestTwoTaggedCardShowsBothColoursInTicketOrder, TestThreeTaggedCardShowsAllThreeColoursInTicketOrder, TestUncolouredSecondTagFallsBackWithoutMovingTheText, TestFourTaggedCardRendersWithTheExtraTagUncoloured, TestCardHeightIsTheThreeContentRows, TestColumnDrawsEveryCardItCountsInFull einzeln gelaufen und gruen. Funktion zusaetzlich am echten Binary: Scratch-Board, Ticket mit vier Tags (ui/cli/docs/vier); 'jaira tag' nahm den vierten ohne Fehler, 'jaira show --json' listet alle vier, .jaira/tags gab allen vieren eine Farbe. Im TUI-Mitschnitt traegt die Karte genau drei Zeilen und drei Balkenzellen 48;5;73, 48;5;45, 48;5;33 (ui, cli, docs) von oben nach unten in Ticket-Reihenfolge; vier=135 faerbt nichts. NOTES.md hat die Zeile unter ## Unreleased. Nichts gefunden, das zurueckgehen muesste.
 - **2026-09-14 19:16 · Alexander Sacharov** — Der Uebergang human -> review am 2026-09-14 ist von einem Agenten ausgefuehrt worden, nicht von einem Menschen. Die Entscheidung war Alex': er hat die Karte im Board angesehen und 'S1VM40 пойдёт' gesagt. Seine eigenen Aufrufe landeten dreimal im falschen Verzeichnis - die Ticket-Dateien liegen im Worktree .worktrees/jaira-9ET6NC, nicht im Hauptcheckout -, und auf seine Anweisung hin habe ich den Befehl gegeben. Festgehalten, weil die Regel der menschlichen Lane sonst still unterlaufen aussieht: entschieden hat der Mensch, getippt hat der Agent.
 - **2026-09-14 19:24 · Alexander Sacharov** — review-Lane, zweiter Durchgang (der erste lag vor der human-Lane). Geprueft wurden die drei Commits, die danach gelandet sind: 50f15a2 gibt den dritten Slot dem dritten Tag (cardColors laeuft bis cardSlots statt cardSlots-1), 82c111e raeumt den doppelten Slot-Test und den Sprint-Kommentar auf, 86bb3a8 laesst cardHeight() cardSlots statt einer zweiten geschriebenen 3 zurueckgeben. Alle drei halten im gemergten Baum. Die frueheren Befunde habe ich gegen diesen Baum nachgesehen statt neu herzuleiten - cardColor ohne Aufrufer, sechs Proof-Tests unter den genannten Namen vorhanden, NOTES-Zeile da. go test ./... -race selbst gefahren, Exit 0. Einziger neuer Befund: 50f15a2 hat goal und das Frontmatter-DoD auf drei Tags umgeschrieben, die Prosa-Absaetze im Ticket-Body aber nicht - Zeile 73 behauptet weiter, Platz 3 bleibe leer. Runde 4 hat das auf ein eigenes Ticket vertagt; ein solches Ticket steht nicht auf dem Board. Nicht aufgemacht: die Lesbarkeit der drei gestapelten Farbzellen, die Alex am echten Board angenommen hat. Nicht weiterbewegt: signoff ist eine Menschen-Lane.
+- **2026-09-14 19:29 · Alexander Sacharov** — Befund aus dem Abnehmen, kein Teil dieses Tickets: 'jaira set <id> body=<text>' schreibt einen Frontmatter-Schluessel 'body', waehrend 'jaira create --body' den Markdown-Rumpf schreibt. Derselbe Name, zwei Orte. Ich habe es beim Versuch ausgeloest, die veraltete Prosa im Rumpf zu entfernen, und den entstandenen leeren Schluessel von Hand wieder entfernt - mit der CLI ging es nicht, sie kann ein Feld setzen und keines loeschen. Die veraltete Prosa selbst ('Platz 3 bleibt in diesem Ticket unbelegt', Zeile 73) steht weiter da: sie ist der Rest des ersten --dod-Aufrufs, der nur seinen ersten Absatz zu einem Kaestchen machte. Auf APABM4, 9ET6NC und VM0A76 liegt derselbe Rest.
