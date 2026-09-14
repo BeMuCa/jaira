@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:19:17Z
+updated-at: 2026-09-14T20:31:20Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -77,3 +77,8 @@ Zusaetzlich, von den installierten Kopien nicht abgedeckt:
 - eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
+- **2026-09-14 20:31 · Alexander Sacharov** — Nachgestellt (DoD-Punkt 6), und zwar von diesem Dispatcher selbst: mein eigener Prompt sagt mir inzwischen, scripts/spawn.sh zu benutzen. Aufruf war 'bash ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh 13VMA8 KSGSKK in-progress /home/alex/projects/jaira'. Es lief beim ersten Versuch durch und gab die Pane-Id 'w2:p1W' zurueck - ein eigener Tab, kein Split. Ich habe 'claude --permission-mode' nirgends selbst aufgerufen, also gab es auch keine Ablehnung als 'Create Unsafe Agents'. Das Skript hat mir nicht widersprochen; es gibt aus diesem Lauf keinen neuen Befund gegen das Skript.
+
+Ein Detail fuer den, der spawn.sh anfasst: weil der Worktree schon existierte (.worktrees/jaira-13VMA8), lief der ganze Block mit 'git worktree add -b feature/$slug' und dem .env-Teil gar nicht erst an. Genau deshalb sind diese beiden Fehler bisher niemandem aufgefallen - sie liegen in dem Zweig, der nur beim allerersten Aufruf fuer einen Slug ausgefuehrt wird.
+
+Kleiner Stolperstein ohne Bezug zum Ticket: 'jaira show <id> --json' hat kein Feld 'lane', die Lane steht in 'status'.
