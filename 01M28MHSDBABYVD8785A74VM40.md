@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:25:37Z
+updated-at: 2026-09-14T19:25:40Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-646871
@@ -30,6 +30,7 @@ question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn f
 outcome-what: "logbook-on-entry aus den mitgelieferten Lanes entfernt, jaira logbook --all als Handschnitt, Board-Meldung ab zehn fertigen Tickets"
 outcome-why: "Ein Move nach done nahm 49 fremde fertige Tickets mit ins Logbuch (Issue #6) - Ablegen ist Buchhaltung und faellt Tage spaeter, Fertigwerden ist eine Aussage ueber die Arbeit"
 outcome-resolves: Jeder Teil der DoD mit Test belegt und von Hand gegengeprueft
+review-summary: "Das automatische Ablegen ist aus den ausgelieferten Lanes verschwunden, und der Schnitt ist ein Befehl geworden. core/lane/builtin/50-done.md traegt die Zeile logbook-on-entry nicht mehr - der Mechanismus selbst bleibt, er wird nur nicht mehr mitgeliefert, und core/lane/lane.go:337 verweigert ihn weiterhin auf einer nicht-terminalen Lane. Damit bleibt ein Ticket nach dem Move in done liegen (core/move: Result.Filed false, Trimmed leer, belegt durch TestMoveIntoDoneFilesNothingByItself), und die Meldung, die das Ablegen ankuendigt, entsteht erst gar nicht (settleMessage, internal/tui/model.go:1662, gibt bei leerem trimmed den leeren String zurueck). Der Schnitt heisst jetzt jaira logbook --all (internal/cli/logbook.go:88): er laedt die terminale Lane, stempelt je Ticket die Commits und legt den ganzen Satz in den Tagesordner, nennt danach jedes abgelegte Ticket mit Handle und Datei. jaira logbook <id> legt weiter genau eines ab, jaira logbook ohne Argument listet nur, und --all zusammen mit einem Ticketnamen ist ein Usage-Fehler. Eine unlesbare Datei blockiert den Schnitt nicht: FileLane meldet sie als PartialError, logbookAll behandelt das als Warnung in den Fehlerstrom des Kommandos und legt die lesbaren trotzdem ab. Das Board zaehlt, was sich angesammelt hat (readyToFile, internal/tui/model.go:748; Ref-only-Tickets zaehlen nicht mit) und blendet ab zehn (const fileReminder, model.go:744) eine Zeile in die Hinweisleiste ein (internal/tui/view.go:969) - es legt nichts selbst ab. Zwei Zeilen in core/release/NOTES.md unter ## 0.1.4 sagen es dem Benutzer."
 ---
 
 # Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird
