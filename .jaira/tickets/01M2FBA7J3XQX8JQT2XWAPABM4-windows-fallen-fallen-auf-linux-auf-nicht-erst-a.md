@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -42,14 +42,17 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:18:56Z
+updated-at: 2026-09-14T16:21:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-382690
 claimed-at: 2026-09-14T16:16:39Z
 outcome-what: "Regel 4 auf 'go build -o' verengt: isGoBuildOutput (internal/wintrap/wintrap_scan_test.go:443) akzeptiert nur noch das Literal \"build\", die Zweige \"install\" und \"test\" sind raus. Der Doc-Kommentar nennt jetzt die Form exec.Command(\"go\", \"build\", ..., \"-o\", ...) und sagt, warum die beiden anderen nicht dazugehoeren."
 outcome-why: "Der Fundtext behauptet 'a binary is built with go build -o'. 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, das der Text nicht beschreibt. Eine Regel, die etwas anderes prueft als sie meldet, ist genau der Fehler, den die critique-Runde davor schon dreimal gefunden hat."
 outcome-resolves: "go test ./... gruen, go vet ./... und GOOS=windows GOARCH=amd64 go vet ./... gruen. TestEachPatternFires laeuft unveraendert: das Fixture internal/wintrap/testdata/rule4/build.go:10 ist exec.Command(\"go\",\"build\",\"-o\",bin,...) und schlaegt weiter an, Regel 4 ist also nicht ins Leere verengt. TestRepositoryIsClean gruen ohne aufgeweichte Regel."
-review-summary: "internal/wintrap/wintrap_scan_test.go:442 isGoBuildOutput accepts \"install\" and \"test\" beside \"build\", but the finding text at wintrap_scan_test.go:413 asserts that \"a binary is built with go build -o\". Verified: \"go install -o\" does not exist (flag provided but not defined: -o), so that arm can never fire, and \"go test -o\" builds a test binary the message does not describe. Keep only \"build\" in the switch at :442, so the rule again verifies exactly what it claims."
+review-summary: |-
+  internal/wintrap/wintrap_scan_test.go:235 binaryExt is a 14-entry extension list guarding a case this module does not have: every //go:embed in it (core/role/role.go:33, core/lane/lane.go:34, core/release/release.go:17, core/hook/example.go:9) pulls only .md and .sh. Git already answers this with -text/binary, which gitattributes_scan_test.go:55 parses and then scores as NOT pinned. Delete binaryExt and let -text/binary count as covered in eolLF — one mechanism, and the one git owns.
+  internal/wintrap/wintrap_scan_test.go:185 selName2 is a seven-line adapter with exactly one caller (hasGOOS, line 177), existing only to widen selName's ast.Expr parameter to ast.Node; the numbered name is what you call a function you did not want to name. Inline it: in hasGOOS type-assert n.(*ast.SelectorExpr) and test X == runtime / Sel == GOOS, then delete selName2.
+  internal/wintrap/wintrap_scan_test.go:424 the isGoBuildOutput doc says "Anything narrower than this and the check fires on every unrelated tool that happens to take a -o flag". Narrower fires on less; it is looser that fires on sort -o and tar -o — the round-1 finding this function was written to answer. Write "looser".
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
@@ -132,3 +135,12 @@ Geprueft und absichtlich NICHT gemeldet:
 - mentionsExe schaltet weiter eine ganze Funktion stumm, sobald ein ".exe"-Literal darin steht. Das war in Runde 1 die bewusste Entscheidung und wird hier nicht neu aufgemacht.
 - README wiederholt die fuenf Muster aus dem Paketkommentar. Da der Paketkommentar jetzt in einer _test.go steht und go doc ihn nicht mehr zeigt, ist die README-Kopie die einzige auffindbare - kein Fund.
 - **2026-09-14 16:18 · Alexander Sacharov** — critique Runde 3: ein Fund, eine Zeile. isGoBuildOutput nimmt nur noch "build", nicht mehr "install"/"test". Nachgeprueft, warum der Fund stimmt: 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, und das beschreibt der Fundtext nicht. TestEachPatternFires bleibt gruen - das Fixture testdata/rule4/build.go:10 ist exec.Command("go","build","-o",...), also weiter im verengten Muster.
+- **2026-09-14 16:21 · Alexander Sacharov** — critique Runde 3: drei Funde, alle klein und alle mit klarer Abhilfe, kein Punkt fuer die Nutzerin zu entscheiden. Runde-1- und Runde-2-Funde sind abgearbeitet und werden nicht wiederholt.
+
+1. wintrap_scan_test.go:235 - binaryExt zaehlt 14 Endungen auf, fuer einen Fall, den dieses Modul nicht hat: nachgesehen, alle vier //go:embed (core/role/role.go:33 all:builtin, core/lane/lane.go:34, core/release/release.go:17, core/hook/example.go:9) ziehen ausschliesslich .md und .sh; unter core/role/builtin und core/lane/builtin liegen nur diese beiden Endungen. Git hat fuer eine Binaerdatei schon die Antwort - -text bzw. binary -, und gitattributes_scan_test.go:55 liest das Attribut bereits, wertet es dann aber ausdruecklich als 'nicht gepinnt'. binaryExt loeschen und -text/binary in eolLF als abgedeckt zaehlen: ein Mechanismus statt zweier, und der, den git selbst besitzt.
+
+2. wintrap_scan_test.go:185 - selName2 ist ein siebenzeiliger Adapter mit genau einem Aufrufer (hasGOOS, Zeile 177) und existiert nur, um selName von ast.Expr auf ast.Node zu weiten. Der durchnummerierte Name ist das, was man einer Funktion gibt, die man nicht benennen wollte. In hasGOOS direkt n.(*ast.SelectorExpr) pruefen und X == runtime / Sel == GOOS testen, selName2 raus.
+
+3. wintrap_scan_test.go:424 - der Doc-Kommentar zu isGoBuildOutput sagt 'Anything narrower than this and the check fires on every unrelated tool that happens to take a -o flag'. Enger trifft weniger; es ist weiter, was auf sort -o und tar -o anschlaegt - genau der Fund aus Runde 1, fuer den diese Funktion geschrieben wurde. 'looser' hinschreiben.
+
+Nicht gemeldet, absichtlich: (a) fsPackages enthaelt 'ioutil', das im ganzen Repository nirgends vorkommt, und skipDirs kennt 'vendor' und 'node_modules', die es in diesem reinen Go-Modul nicht gibt - drei Map-Eintraege, deren Entfernung nichts aendert und deren Verbleib nichts kostet. (b) TestMatchPattern steht in wintrap_test.go, waehrend matchPattern in gitattributes_scan_test.go liegt; beide sind _test.go-Dateien im selben Paket, das laeuft, und eine Runde dafuer lohnt nicht. (c) core/role/role.go:93 und core/settings/settings.go:213 tragen den Grund in einem Kommentar ueber dem //wintrap:ok statt auf der Markerzeile wie internal/cli/mergebranches_test.go:34 - der Grund steht direkt daneben und ist lesbar.
