@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:35:35Z
+updated-at: 2026-09-14T13:35:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -73,7 +73,7 @@ claimed-at: 2026-09-14T13:29:29Z
 - [x] implement the state command, text and --json
 - [x] make --dod repeatable (DoD 4): StringArray like --tag, ticket.NewBody takes several items, the frontmatter definition-of-done keeps the first and the body checklist carries all of them
 - [ ] failing test: create with three --dod in ref mode leaves three boxes without anybody pulling the ticket
-- [ ] implement the repeatable --dod, and check gate.Ready/missingFields still read it
+- [x] implement the repeatable --dod, and check gate.Ready/missingFields still read it
 - [ ] fix the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt (internal/cli/boardremote_test.go): both remotes point at the same bare repository, so the comment promises a check the test does not make
 - [ ] one line per externally visible change under ## Unreleased in core/release/NOTES.md (DoD 6)
 - [ ] go test ./... and tick each DoD box with its proof
