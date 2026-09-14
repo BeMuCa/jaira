@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:39:46Z
+updated-at: 2026-09-14T19:41:35Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-661099
@@ -89,3 +89,4 @@ Nicht angefasst: Befund 3 (lane.Load legt die Builtins nicht unter ein bestehend
 NICHT erhoben, weil bereits entschieden oder anderswo abgelegt: lane.go:479 laedt bei einem bestehenden Board nur dessen eigenes Lane-Verzeichnis, also behaelt ein aelteres Board logbook-on-entry - das ist Ticket 1K9KZS, samt seiner NOTES-Zeile. Die Schwelle bleibt bei zehn und meldet nur (Alex, 14.09.). WXQ9PT bekommt keine Abloese-Markierung. Dass logbook-on-entry als Flag erhalten bleibt, ist ausdruecklich gewollt. Dass die PartialError-Warnung in den Fehlerstrom des Kommandos geht statt nach os.Stderr, ist bewusst - damit ein Test sie sieht.
 
 Zur Form der Board-Zeile selbst: 'jaira logbook --all' steht als const fileCommand neben fileReminder, Test und Zeile lesen dieselbe Konstante - das ist die richtige Loesung fuer den Fehler, der vorher drin war, und dagegen habe ich nichts.
+- **2026-09-14 19:41 · Alexander Sacharov** — in-progress nach critique: die drei Befunde werden genau so umgesetzt, wie die critique sie beschrieben hat - doppeltes lane.Load raus, ein reason-Code fuer eine Lage, !t.ReadOnly in die Callee. Ausserhalb: lane.go:479 (Ticket 1K9KZS).
