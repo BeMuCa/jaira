@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T20:05:43Z
+updated-at: 2026-09-14T20:08:44Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Die Regel steht jetzt in CLAUDE.md, AGENTS.md und README: ein Agent pusht seinen Branch und macht den PR nicht auf. Die Rollen-Prompts in core/role/builtin sagen aber weiter das Gegenteil - jaira-role-pr/SKILL.md ist als ganze Rolle 'mach den PR auf' gebaut, jaira-teamlead/SKILL.md:79-80 traegt woertlich den alten Satz, und :89 laesst den Dispatcher schliessen, 'sobald der PR offen ist'. Deine Entscheidung, weil beides vertretbar ist: (A) Die Regel gilt nur fuer dieses Projekt - hinter jaira:local, wo sie steht. Dann bleibt core/role/builtin unangetastet, kostet aber, dass jeder Agent hier ein ausgeliefertes Prompt liest, das ihm das Gegenteil sagt. (B) Die Regel gilt jaira-weit. Dann muessen die drei Prompt-Stellen gedreht werden, jaira-role-pr wird auf reines Pushen zurueckgebaut oder abgeschafft, und es braucht eine NOTES.md-Zeile plus 'jaira roles install --global --force' fuer alle - das ist ein eigenes Ticket, nicht mehr dieses."
@@ -39,7 +39,8 @@ test-verdict: "fail: docs sind gedreht und konsistent, aber die ausgelieferten R
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und der PR gehoert von Anfang an dem Maintainer - ein Agent pusht seinen Branch und hoert dort auf, er macht den PR nicht auf, merged ihn nicht und gibt ihn nicht frei; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt
   proof: CLAUDE.md:156-169 und AGENTS.md:166-179 hinter dem jaira:local-Marker, README.md:842-851 unter Development
-- [ ] Die ausgelieferten Rollen-Prompts sagen dasselbe wie die Dokumentation: core/role/builtin/jaira-role-pr/SKILL.md:11 ('You are the contributor: you may open, push, and answer') und die entsprechenden Stellen in jaira-teamlead/SKILL.md tragen die neue Regel - der Agent schiebt den Zweig und haelt an, das Aufmachen gibt der Mensch frei. Nachgestellt: kein 'may open' mehr in core/role/builtin.
+- [x] Die ausgelieferten Rollen-Prompts sagen dasselbe wie die Dokumentation: core/role/builtin/jaira-role-pr/SKILL.md:11 ('You are the contributor: you may open, push, and answer') und die entsprechenden Stellen in jaira-teamlead/SKILL.md tragen die neue Regel - der Agent schiebt den Zweig und haelt an, das Aufmachen gibt der Mensch frei. Nachgestellt: kein 'may open' mehr in core/role/builtin.
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:10-13 and core/role/builtin/jaira-teamlead/SKILL.md:79-80,90-91; grep -rni 'may open' core/role/builtin returns nothing; go test ./... -race green
 
 ## Options
 
