@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T20:26:49Z
+updated-at: 2026-09-14T20:31:21Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -138,3 +138,8 @@ Ausserhalb des Auftrags gelassen: lane.go:479 legt die Builtins nicht unter ein 
 
 Gleichzeitig ist die Lane-Reihenfolge des Boards geaendert: human steht jetzt zwischen testing und review statt mit precedence 40 vor den drei Schleifen-Lanes. Das war die Ursache dafuer, dass heute viermal ein Ticket mit leerem test-verdict in human landete - jaira erzwingt keine Reihenfolge (core/lane/lane.go:43), also fand ein Agent, der die naechste Lane suchte, voellig regelkonform human. Die Aenderung liegt in allen drei Checkouts; .jaira/lanes/ ist gitignored und reist nicht mit.
 - **2026-09-14 20:26 · Alexander Sacharov** — Release-Notiz korrigiert. Gefunden dabei: die Zeile steht nicht unter '## Unreleased', sondern im Abschnitt '## 0.1.4' (core/release/NOTES.md:44) - 'git show v0.1.4:core/release/NOTES.md' zeigt sie dort, der Tag existiert also schon. Trotzdem an Ort und Stelle korrigiert statt eine zweite Zeile unter Unreleased anzulegen: der Auftrag war ausdruecklich, genau diese Zeile wahr zu machen und keinen zweiten Eintrag zu erzeugen, und wer von einer aelteren Version aktualisiert, liest genau diesen Abschnitt. Die CLAUDE.md-Regel verbietet dem Wortlaut nach das Hinzufuegen zu einem getaggten Abschnitt, nicht das Richtigstellen einer falschen Aussage. Zeile 45 ('old doorway back') bleibt unangetastet, sie ist weiterhin wahr. Keine Migration versprochen - das bleibt 1K9KZS.
+- **2026-09-14 20:31 · Alexander Sacharov** — Alex am 2026-09-14: die Korrektur innerhalb der geschlossenen Sektion ## 0.1.4 bleibt stehen - Geschichte richtigzustellen hilft, wo sie falsch war. Keine zusaetzliche Zeile unter ## Unreleased.
+
+Der Grund, warum keine: 1K9KZS steht als naechstes auf der Liste und behebt die Ursache. Faellt es vor dem Tag 0.2.1, gibt es kein aelteres Board mehr zu warnen, und eine Warnung unter ## Unreleased haette einen Zustand beschrieben, den kein ausgeliefertes Binary je hatte - genau das, was die Regel verbietet.
+
+ABHAENGIGKEIT, die daran haengt: wird 0.2.1 getaggt, BEVOR 1K9KZS drin ist, dann fehlt den Nutzern aelterer Boards jeder Hinweis darauf, dass ihre Doska weiterhin beim Fertigwerden ablegt. Dann braucht es die Zeile unter ## Unreleased doch, vor dem Tag. Wer den Release schneidet, muss das pruefen.
