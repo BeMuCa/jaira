@@ -212,3 +212,40 @@ func TestFileLaneSkipsWhatItCannotFileAndFilesTheRest(t *testing.T) {
 		t.Errorf("the skipped ticket left the board: %v", statErr)
 	}
 }
+
+// refSource hands the store a finished ticket that exists for this board but
+// has no file here — what a board on refs sees of somebody else's work.
+type refSource struct{ tickets []*Ticket }
+
+func (r refSource) Extra(have map[string]bool) ([]*Ticket, error) {
+	var out []*Ticket
+	for _, t := range r.tickets {
+		if !have[t.ID] {
+			out = append(out, t)
+		}
+	}
+	return out, nil
+}
+
+// A finished ticket that is only on a ref is not this clone's to file: there is
+// no file to move, so trying it only turns every one of them into a problem in
+// the cut's warning stream. The board's counter already knew this; the command
+// that does the filing has to know it too, or the two disagree about the set.
+func TestFileLaneLeavesRefOnlyTicketsWhereTheyAre(t *testing.T) {
+	s, ts := trimStore(t, 1)
+	stamp := time.Date(2026, 9, 2, 12, 0, 0, 0, time.UTC)
+	s.Source = refSource{tickets: []*Ticket{{
+		ID:        NewID(stamp),
+		Title:     "somebody else's finished work",
+		Status:    "done",
+		UpdatedAt: stamp,
+	}}}
+
+	out, err := s.FileLane("done", "bc-20260904", nil)
+	if err != nil {
+		t.Fatalf("a ref-only ticket in the lane made the cut report a problem: %v", err)
+	}
+	if len(out) != 1 || out[0].ID != ts[0].ID {
+		t.Fatalf("filed %d tickets, want only the one with a file here: %v", len(out), out)
+	}
+}

@@ -37,7 +37,7 @@ func (s *Store) Overflow(lane string, keep int, newest string) ([]*Ticket, error
 	}
 	var ts []*Ticket
 	for _, t := range all {
-		if t.Status == lane {
+		if t.Status == lane && !t.ReadOnly {
 			ts = append(ts, t)
 		}
 	}
@@ -121,9 +121,12 @@ func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string
 	return merged, nil
 }
 
-// FileLane empties a lane into the given logbook folder, oldest first — the
-// lane is a doorway (logbook-on-entry), so the just-landed ticket goes along
-// with anything still sitting there from before the doorway existed. prepare
+// FileLane empties a lane into the given logbook folder, oldest first. Two
+// callers reach it: a doorway lane (logbook-on-entry), where the just-landed
+// ticket goes along with anything still sitting there from before, and
+// 'jaira logbook --all', the cut somebody makes by hand. Ref-only tickets are
+// left where they are in both cases — this board can see them but has no file
+// for them, so they are not this clone's to file. prepare
 // runs on each ticket before its file moves (the callers stamp commits there);
 // nil skips it. A ticket that cannot be filed — unreadable, a stamp failure, a
 // name collision in the folder — is skipped and named rather than allowed to
@@ -144,7 +147,7 @@ func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Tr
 	}
 	var ts []*Ticket
 	for _, t := range all {
-		if t.Status == lane {
+		if t.Status == lane && !t.ReadOnly {
 			ts = append(ts, t)
 		}
 	}

@@ -20,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
-	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -86,17 +85,17 @@ work and refuses a ticket that has not reached the terminal lane.`,
 // person asks for it: the set is the same, the moment is not, and the moment
 // was the problem.
 func logbookAll(s *ticket.Store, w, errw io.Writer) error {
-	lanes, err := lane.Load(s.Root)
-	if err != nil {
-		return err
-	}
-	terminal := lanes.Terminal()
-	if terminal == nil {
-		return fail(ExitValidation, "no_terminal_lane", "this board has no terminal lane, so nothing can be finished into the logbook")
-	}
+	// loadEnv already loads the lanes, and it is the only loader that prints
+	// the warnings they carry. Loading them a second time here dropped those
+	// warnings on the floor and named the same condition differently from
+	// logbookOut below.
 	env, _, err := loadEnv(s)
 	if err != nil {
 		return err
+	}
+	terminal := env.Lanes.Terminal()
+	if terminal == nil {
+		return fail(ExitValidation, "not_terminal", "this board has no terminal lane, so nothing can be finished into the logbook")
 	}
 	filed, err := s.FileLane(terminal.ID, logbookFolder(), func(t *ticket.Ticket) error {
 		_, err := s.StampCommits(t, env.DeriveCommits)
