@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,13 +33,13 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:43:53Z
+updated-at: 2026-09-14T13:44:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
 claimed-at: 2026-09-14T13:29:29Z
-outcome-what: "jaira create now names the storage mode in both cases: a ticket that stays a file prints why, naming the remote it looked for and the git config line that fixes it, and --json carries it as file-only-reason beside on-ref-only. fileOnRefOnly returns that reason instead of a bare bool, and putOnRef is the same function for a ticket that already exists as a file. jaira release uses it: a ticket with no ref is put on one, the assignee cleared and the local file removed. jaira whoami gained a board block - remote and where the name came from, the repository's remotes, ref mode with the reason, and how many tickets lie on this disk and on no ref. jaira create --dod is repeatable like --tag: ticket.NewBody takes []string and writes one box per criterion, the first also filling the frontmatter. Four lines in core/release/NOTES.md, six new tests, and the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt now says what that test actually checks."
-outcome-why: "A board whose remote is not there stops carrying tickets on refs silently. Seventeen tickets went to disk unnoticed on requirementsgenie and there was no way back except recreating them under new ids. The diagnostic existed but only ran at the end of the chain, in jaira release. This puts it where the state is created, gives the state a way back, and makes the board's git state readable in one call."
+outcome-what: "Kritik-Lane gelaufen: fuenf Befunde, alle mit Datei und konkreter Alternative, im review-summary und als Notiz"
+outcome-why: "Eine zweite Kopie der Remote-Aufloesung in whoami und eine Modus-Zeile, die auf einem Board ohne git einen fehlenden Remote behauptet, sind Entwurfsfehler, keine Schoenheitsfragen"
 outcome-resolves: "Kein Befehl sagt, dass das Board im Datei-Modus laeuft; ein Datei-Ticket kommt nicht auf seinen Ref zurueck; kein Befehl zeigt den git-Zustand des Boards; --dod nimmt nur ein Kriterium."
 review-summary: |-
   internal/cli/whoami.go:169 remoteOrigin baut die Remote-Aufloesung ein zweites Mal nach; core/settings/settings.go:143 RemoteFor ist dieselbe Leiter und laut Paketkommentar (settings.go:20) 'the only way to ask' - stattdessen RemoteFor um die Herkunft erweitern (RemoteSourceFor(dir) (name, source string)) und remoteOrigin loeschen, sonst nennt ausgerechnet whoami beim naechsten Schritt einen anderen Remote als der Code, der scheitert
