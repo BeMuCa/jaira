@@ -126,6 +126,12 @@ func (r *Repo) noRemote() string {
 // RefName is the ref a ticket travels on.
 func RefName(id string) string { return Prefix + id }
 
+// RemoteName is the remote this repo actually talks to, with the default
+// filled in. Exported because a command that has to explain which remote was
+// looked for must not have to re-derive it and risk naming a different one than
+// the code that failed.
+func (r *Repo) RemoteName() string { return r.remote() }
+
 func (r *Repo) remote() string {
 	if strings.TrimSpace(r.Remote) == "" {
 		return DefaultRemote

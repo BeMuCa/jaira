@@ -110,9 +110,13 @@ func TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote(t *testing.T) {
 }
 
 // And the counter-check that keeps the fix from being "always fall back to
-// origin": where the configured remote exists, the ref goes there. origin here
-// is a fork with nothing in it, and a ticket ref landing in it would be the
-// silent loss this whole design is against.
+// origin": where the configured remote exists, that is the one resolved, not the
+// first remote in the list. This checks the resolution and nothing more — both
+// remotes here point at the same bare repository, so which one the push went
+// through is not observable from the outside. That the ref actually travels is
+// what TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote pulls and
+// releases through, and TestABoardRemoteThatIsGoneStopsLoudly is what keeps a
+// wrong name from being quietly swapped for a working one.
 func TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt(t *testing.T) {
 	clone := cloneWithRemotes(t, "upstream", "upstream")
 	t.Setenv("JAIRA_USER", "ada")

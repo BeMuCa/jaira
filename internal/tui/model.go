@@ -1697,7 +1697,7 @@ func (m *Model) createTicket(title string) {
 	// board's "always brainstorm" setting silently did not apply to half the
 	// tickets created against it.
 	db, _ := lane.LoadDefaultBoard()
-	body := ticket.NewBody(title, "", lane.ResolveOptions(m.lanes, db))
+	body := ticket.NewBody(title, nil, lane.ResolveOptions(m.lanes, db))
 	t, err := m.store.Create(fields, lists, body)
 	if err != nil {
 		m.notify(err.Error(), true)

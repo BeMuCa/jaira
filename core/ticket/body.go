@@ -22,13 +22,23 @@ type BodyOption struct {
 // start ticked. Passing nil options reproduces today's two-option shape with
 // nothing ticked — the regression baseline this function must not silently
 // drift from.
-func NewBody(title, dod string, options []BodyOption) string {
+func NewBody(title string, dod []string, options []BodyOption) string {
 	var b strings.Builder
 	b.WriteString("# " + title + "\n\n")
 	b.WriteString("## Definition of Done\n\n")
-	if strings.TrimSpace(dod) != "" {
-		b.WriteString("- [ ] " + strings.TrimSpace(dod) + "\n")
-	} else {
+	// Several criteria are several boxes. One box per criterion is the whole
+	// point: the terminal lane's gate counts boxes, so criteria folded into one
+	// line are criteria the gate cannot check separately, and a ticket created
+	// with six of them used to arrive carrying one.
+	wrote := false
+	for _, item := range dod {
+		if strings.TrimSpace(item) == "" {
+			continue
+		}
+		b.WriteString("- [ ] " + strings.TrimSpace(item) + "\n")
+		wrote = true
+	}
+	if !wrote {
 		b.WriteString("- [ ] <A checkable statement, readable by someone who was not here>\n")
 	}
 	// Options turn steps on and off for this one ticket. Unticked by default:

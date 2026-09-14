@@ -14,6 +14,10 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Read the mode off `jaira create` instead of guessing: a ticket that stays a file on your disk now says so on the same line, names the remote it looked for and why it is not usable, and `--json` carries it as `file-only-reason` beside `on-ref-only`.
+- Put a file-only ticket back on its ref with `jaira release <id>`: give the repository the remote it was missing, then release, and the ticket travels on its ref while the local file goes — no need to recreate it under a new id.
+- Ask `jaira whoami` where your tickets go: inside a board it now also prints the remote this board uses and where that name came from, the remotes the repository actually has, whether tickets travel on refs (with the reason when they do not), and how many tickets exist on this disk and on no ref. `--json` adds `board`, `remote`, `remote_source`, `remotes`, `ref_mode`, `ref_mode_reason` and `file_only`.
+- Pass `--dod` to `jaira create` once per acceptance criterion, the way `--tag` already works: every one becomes its own checkbox in the ticket body and the first also fills the `definition-of-done` frontmatter, so a ticket with six criteria no longer arrives carrying one and no longer has to be pulled to gain the rest.
 - Set the remote for one board with `git config jaira.remote <name>` instead of letting `~/.jaira/settings.json` decide for every checkout on the machine: the board setting wins and never falls back, `"remote"` in settings.json now applies only where the repository really has a remote by that name, a repository with exactly one remote uses it without any configuration, and a ref command that still cannot resolve a remote names the remotes the repository does have and the command that fixes it.
 
 ## 0.2.0

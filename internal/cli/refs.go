@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -56,8 +57,8 @@ func fireHook(name string, s *ticket.Store, t *ticket.Ticket) {
 	})
 }
 
-// fileOnRefOnly sends a freshly created ticket to its ref and, if the remote
-// accepted it, takes the local file away again.
+// fileOnRefOnly sends a ticket to its ref and, if the remote accepted it, takes
+// the local file away again.
 //
 // This is the one place the two storage modes are decided, and it is decided
 // once: a board with a remote keeps an unworked ticket on its ref only, a board
@@ -71,27 +72,77 @@ func fireHook(name string, s *ticket.Store, t *ticket.Ticket) {
 // A ticket that could not be sent keeps its file. It is then correct here,
 // carries the 'unsent' marker, and goes out with the next command — losing the
 // file for a write that never left the machine would lose the ticket.
-func fileOnRefOnly(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool) {
-	if refs.Usable() != nil || t == nil {
-		return false
+//
+// The second return value is why the file stayed, and it is the whole point of
+// the signature: a bare false is what let 'jaira create' choose the file mode in
+// silence, so that seventeen tickets were written to disk and no command said
+// so. The caller prints this.
+func fileOnRefOnly(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error) {
+	if t == nil {
+		return false, nil
+	}
+	if err := refs.Usable(); err != nil {
+		return false, err
 	}
 	reports, err := refs.Flush()
 	if err != nil {
-		return false
+		return false, err
 	}
 	for _, r := range reports {
 		if r.ID != t.ID {
 			continue
 		}
 		if r.Outcome != outbox.Sent {
-			return false
+			if r.Err != nil {
+				return false, fmt.Errorf("the write is %s: %w", r.Outcome, r.Err)
+			}
+			return false, fmt.Errorf("the write is %s", r.Outcome)
 		}
 		if err := os.Remove(t.Path); err != nil {
-			return false
+			return false, err
 		}
-		return true
+		return true, nil
 	}
-	return false
+	return false, errors.New("nothing was queued for this ticket")
+}
+
+// putOnRef is fileOnRefOnly for a ticket that already exists as a file: it
+// queues the bytes that are on disk now and then goes through the same send and
+// remove.
+//
+// It is the way back for a ticket created while the board had no usable remote.
+// Nothing about that is specific to how the ticket got here — Record leases the
+// empty string for a ticket with no ref, which is exactly "I expect this ref not
+// to exist", the same compare-and-swap a freshly created ticket makes.
+func putOnRef(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error) {
+	if t == nil {
+		return false, nil
+	}
+	if err := refs.Usable(); err != nil {
+		return false, err
+	}
+	content, err := os.ReadFile(t.Path)
+	if err != nil {
+		return false, err
+	}
+	if err := refs.Record(t.ID, content); err != nil {
+		return false, err
+	}
+	return fileOnRefOnly(s, t)
+}
+
+// fileModeReason renders why a ticket stayed on disk as the line a person can
+// act on: which remote was looked for, and what git said about it.
+//
+// The diagnostic itself is gitref's (Repo.noRemote names the remote, the remotes
+// this repository does have, and the git config line that sets it). This only
+// puts it where the state is created instead of at the end of the chain.
+func fileModeReason(why error) string {
+	name := "a remote"
+	if refs != nil && refs.Repo != nil {
+		name = fmt.Sprintf("%q", refs.Repo.RemoteName())
+	}
+	return fmt.Sprintf("as a file on your disk, not on a ref: this board has no usable %s — %v", name, why)
 }
 
 // openedStore is the store this command opened, remembered so the work that

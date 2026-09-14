@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,23 +33,32 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:28:13Z
+updated-at: 2026-09-14T13:39:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-152036
-claimed-at: 2026-09-14T13:23:44Z
+claimed-by: DESKTOP-RFTCH11-155812
+claimed-at: 2026-09-14T13:29:29Z
+outcome-what: "jaira create now names the storage mode in both cases: a ticket that stays a file prints why, naming the remote it looked for and the git config line that fixes it, and --json carries it as file-only-reason beside on-ref-only. fileOnRefOnly returns that reason instead of a bare bool, and putOnRef is the same function for a ticket that already exists as a file. jaira release uses it: a ticket with no ref is put on one, the assignee cleared and the local file removed. jaira whoami gained a board block - remote and where the name came from, the repository's remotes, ref mode with the reason, and how many tickets lie on this disk and on no ref. jaira create --dod is repeatable like --tag: ticket.NewBody takes []string and writes one box per criterion, the first also filling the frontmatter. Four lines in core/release/NOTES.md, six new tests, and the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt now says what that test actually checks."
+outcome-why: "A board whose remote is not there stops carrying tickets on refs silently. Seventeen tickets went to disk unnoticed on requirementsgenie and there was no way back except recreating them under new ids. The diagnostic existed but only ran at the end of the chain, in jaira release. This puts it where the state is created, gives the state a way back, and makes the board's git state readable in one call."
+outcome-resolves: "Kein Befehl sagt, dass das Board im Datei-Modus laeuft; ein Datei-Ticket kommt nicht auf seinen Ref zurueck; kein Befehl zeigt den git-Zustand des Boards; --dod nimmt nur ein Kriterium."
 ---
 
 # Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen
 
 ## Definition of Done
 
-- [ ] 'jaira create' nennt den Modus in beiden Faellen. Im Datei-Modus sagt es, dass das Ticket als Datei und nicht auf einem Ref liegt, nennt den Remote-Namen, nach dem gesucht wurde, und den Grund - nicht nur das Schweigen von heute.
-- [ ] Ein Datei-Ticket kommt mit einem Befehl auf seinen Ref und die lokale Datei verschwindet dabei. Die Logik dafuer ist die vorhandene fileOnRefOnly (internal/cli/refs.go:69), nicht eine zweite Kopie davon. Nachgestellt auf einem Fixture-Board, dessen Ticket im Datei-Modus entstanden ist.
-- [ ] Ein Befehl zeigt den git-Zustand des Boards in einem Aufruf: den eingestellten Remote-Namen, die Remotes die dieses Repository hat, ob der Ref-Modus laeuft, und wie viele Tickets nur als Datei liegen. Nachgestellt auf einem Board mit passendem und auf einem mit fehlendem Remote.
-- [ ] 'jaira create --dod' nimmt den Schalter mehrfach, wie --tag es tut. Nachgestellt: ein Ticket mit drei Kriterien wird im Ref-Modus mit einem Aufruf angelegt und traegt danach drei Kaestchen, ohne dass es dafuer gepullt wurde.
-- [ ] Der Diagnosetext, der heute nur aus 'jaira release' kommt, erscheint dort wo der Zustand entsteht. Nachgestellt: auf einem Board ohne passenden Remote nennt schon der erste 'jaira create' den Grund, nicht erst ein Befehl am Ende der Kette.
-- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer jede von aussen sichtbare Aenderung: die Modus-Zeile in create, der neue Befehl fuer den Ref-Nachtrag, der neue Zustandsbefehl, und der wiederholbare --dod.
+- [x] 'jaira create' nennt den Modus in beiden Faellen. Im Datei-Modus sagt es, dass das Ticket als Datei und nicht auf einem Ref liegt, nennt den Remote-Namen, nach dem gesucht wurde, und den Grund - nicht nur das Schweigen von heute.
+  proof: TestCreateSaysWhenTheTicketStaysAFile and TestCreateJSONCarriesTheFileModeReason (internal/cli/filemode_test.go); internal/cli/tickets.go, the else-branch after 'On its ref'
+- [x] Ein Datei-Ticket kommt mit einem Befehl auf seinen Ref und die lokale Datei verschwindet dabei. Die Logik dafuer ist die vorhandene fileOnRefOnly (internal/cli/refs.go:69), nicht eine zweite Kopie davon. Nachgestellt auf einem Fixture-Board, dessen Ticket im Datei-Modus entstanden ist.
+  proof: TestReleasePutsAFileTicketOnItsRef (internal/cli/filemode_test.go); releaseFromFile in internal/cli/release.go calls putOnRef, which is fileOnRefOnly itself
+- [x] Ein Befehl zeigt den git-Zustand des Boards in einem Aufruf: den eingestellten Remote-Namen, die Remotes die dieses Repository hat, ob der Ref-Modus laeuft, und wie viele Tickets nur als Datei liegen. Nachgestellt auf einem Board mit passendem und auf einem mit fehlendem Remote.
+  proof: TestWhoamiShowsTheBoardIsOnRefs and TestWhoamiShowsTheBoardIsInFileMode (internal/cli/filemode_test.go); boardState/remoteOrigin/fileOnlyCount in internal/cli/whoami.go
+- [x] 'jaira create --dod' nimmt den Schalter mehrfach, wie --tag es tut. Nachgestellt: ein Ticket mit drei Kriterien wird im Ref-Modus mit einem Aufruf angelegt und traegt danach drei Kaestchen, ohne dass es dafuer gepullt wurde.
+  proof: TestCreateTakesSeveralDoDItems (internal/cli/filemode_test.go) and TestNewBodyWritesOneBoxPerCriterion (core/ticket/body_test.go)
+- [x] Der Diagnosetext, der heute nur aus 'jaira release' kommt, erscheint dort wo der Zustand entsteht. Nachgestellt: auf einem Board ohne passenden Remote nennt schon der erste 'jaira create' den Grund, nicht erst ein Befehl am Ende der Kette.
+  proof: TestCreateSaysWhenTheTicketStaysAFile asserts the remote name and 'config jaira.remote' appear in the output of the first create (internal/cli/filemode_test.go)
+- [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer jede von aussen sichtbare Aenderung: die Modus-Zeile in create, der neue Befehl fuer den Ref-Nachtrag, der neue Zustandsbefehl, und der wiederholbare --dod.
+  proof: core/release/NOTES.md, the four lines under ## Unreleased
 
 ## Options
 
@@ -60,25 +69,28 @@ claimed-at: 2026-09-14T13:23:44Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] read how create picks the mode: fileOnRefOnly (internal/cli/refs.go:69) and its caller internal/cli/tickets.go:293-311, plus gitref Repo.Usable/noRemote — the diagnostic text already exists since 9ET6NC, only a caller at create is missing
-- [ ] make fileOnRefOnly answer with the reason, not a bare bool: return the mode and the refs.Usable() error, so create can say why it chose the file
-- [ ] failing test in internal/cli: 'create' on a board whose remote is absent prints a line naming the remote looked for and the reason; --json carries the same as a field
-- [ ] implement that create line and the json field (DoD 1 and DoD 5 are the same change)
-- [ ] decide the way back: extend 'jaira release' to a ticket with no ref, or add a new command — write the decision and its reason as a jaira note
-- [ ] generalise fileOnRefOnly so it also takes an existing ticket: Record() the current bytes with the empty lease, flush, then drop the file — one function, not a second copy
-- [ ] failing test: a fixture board whose ticket was created in file mode gets a remote; one command puts it on its ref and the local file is gone
-- [ ] implement the way back
-- [ ] design the state command (DoD 3): extend 'jaira whoami' with the git side, or add a separate command — and fix the four facts it prints: remote name and where it came from, remotes this repository has, ref mode yes/no with the reason, how many tickets lie as files only
-- [ ] failing test for the state command on a board with a matching remote and on one without
-- [ ] implement the state command, text and --json
-- [ ] make --dod repeatable (DoD 4): StringArray like --tag, ticket.NewBody takes several items, the frontmatter definition-of-done keeps the first and the body checklist carries all of them
-- [ ] failing test: create with three --dod in ref mode leaves three boxes without anybody pulling the ticket
-- [ ] implement the repeatable --dod, and check gate.Ready/missingFields still read it
-- [ ] fix the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt (internal/cli/boardremote_test.go): both remotes point at the same bare repository, so the comment promises a check the test does not make
-- [ ] one line per externally visible change under ## Unreleased in core/release/NOTES.md (DoD 6)
-- [ ] go test ./... and tick each DoD box with its proof
+- [x] read how create picks the mode: fileOnRefOnly (internal/cli/refs.go:69) and its caller internal/cli/tickets.go:293-311, plus gitref Repo.Usable/noRemote — the diagnostic text already exists since 9ET6NC, only a caller at create is missing
+- [x] make fileOnRefOnly answer with the reason, not a bare bool: return the mode and the refs.Usable() error, so create can say why it chose the file
+- [x] failing test in internal/cli: 'create' on a board whose remote is absent prints a line naming the remote looked for and the reason; --json carries the same as a field
+- [x] implement that create line and the json field (DoD 1 and DoD 5 are the same change)
+- [x] decide the way back: extend 'jaira release' to a ticket with no ref, or add a new command — write the decision and its reason as a jaira note
+- [x] generalise fileOnRefOnly so it also takes an existing ticket: Record() the current bytes with the empty lease, flush, then drop the file — one function, not a second copy
+- [x] failing test: a fixture board whose ticket was created in file mode gets a remote; one command puts it on its ref and the local file is gone
+- [x] implement the way back
+- [x] design the state command (DoD 3): extend 'jaira whoami' with the git side, or add a separate command — and fix the four facts it prints: remote name and where it came from, remotes this repository has, ref mode yes/no with the reason, how many tickets lie as files only
+- [x] failing test for the state command on a board with a matching remote and on one without
+- [x] implement the state command, text and --json
+- [x] make --dod repeatable (DoD 4): StringArray like --tag, ticket.NewBody takes several items, the frontmatter definition-of-done keeps the first and the body checklist carries all of them
+- [x] failing test: create with three --dod in ref mode leaves three boxes without anybody pulling the ticket
+- [x] implement the repeatable --dod, and check gate.Ready/missingFields still read it
+- [x] fix the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt (internal/cli/boardremote_test.go): both remotes point at the same bare repository, so the comment promises a check the test does not make
+- [x] one line per externally visible change under ## Unreleased in core/release/NOTES.md (DoD 6)
+- [x] go test ./... and tick each DoD box with its proof
 
 ## Progress
 - **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, Begruendung. DoD 1 und DoD 5 sind eine einzige Aenderung: 9ET6NC hat den Diagnosetext schon gebaut (gitref Repo.noRemote nennt gesuchten Remote, vorhandene Remotes und 'git config jaira.remote'). Er fehlt nur bei create, weil fileOnRefOnly (internal/cli/refs.go:75) bei refs.Usable() != nil ein nacktes false zurueckgibt und den Grund wegwirft. Also: Rueckgabe um den Grund erweitern, nicht einen zweiten Text schreiben.
 - **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, offene Entwurfsfragen, die in Schritt 5 und 9 entschieden werden. (a) Weg zurueck: 'jaira release' erweitern statt neuem Befehl - release heisst schon 'zurueck aufs Board', entfernt schon die Datei und laeuft heute nur deshalb ins Leere, weil es refs.Release() ohne Ref fragt. Gegen release spricht, dass es zusaetzlich den assignee loescht; fuer ein ungearbeitetes Datei-Ticket ist genau das richtig, fuer ein gerade bearbeitetes nicht. (b) Zustandsbefehl: 'jaira whoami' erweitern statt neuem Befehl - whoami ist schon 'was denkt jaira ueber diese Umgebung', und die Projektregel misst jedes Feature an 'kleiner als paca'. Beides bewusst als Option im Plan gelassen, weil die Kritik-Lane das umdrehen darf.
 - **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, zu DoD 4: das Frontmatter-Feld definition-of-done ist ein einzelner String, die Kaestchen im Rumpf sind die Wahrheit fuer den Gate (core/gate/gate.go:504-510 liest DoDItems, wenn es welche gibt, sonst DoD). Beide duerfen also auseinanderlaufen - dieses Ticket hier tut es bereits. Darum: --dod mehrfach, erstes Vorkommen ins Frontmatter, alle in ticket.NewBody (core/ticket/body.go:25, Signatur von string auf []string). Kein neues Feld, kein Listen-Frontmatter.
+- **2026-09-14 13:32 · Alexander Sacharov** — In-progress lane, decision on plan step 5 (the way back). 'jaira release' is extended; no new command. Reasons: release already means 'back onto the board', already removes the local file, and already clears the assignee — which is exactly the right end state for the case this ticket came from, seventeen unworked tickets sitting as files. The only thing missing was that refs.Release() asks the ref first and a file ticket has none, so it died on gitref.ErrNoRef. Rejected: a separate 'jaira publish/push'. It would need its own name, help, tests and NOTES line for a path a board takes once, and it would leave two commands whose difference is invisible from the outside ('the file goes away and the ticket is on its ref' in both). Cost of the choice, so nobody 'fixes' it back: release on a file ticket that somebody is actually working clears their assignee too. That is release's meaning, not a bug; 'jaira pull' takes it straight back.
+- **2026-09-14 13:32 · Alexander Sacharov** — In-progress lane, decision on plan step 9 (the state command). 'jaira whoami' is extended with a Board block; no new command. Reasons: whoami is already 'what does jaira think about this environment before I start', and the four git facts are the other half of that same question — identity decides whose tickets these are, the remote decides where they go. A second command ('jaira status') would be a second place to look for one answer, would read as a git-status lookalike it is not, and the project rule measures every feature against 'is this smaller than paca'. Cost: whoami now opens the store, which it did not. It is written so that a failure there prints the identity exactly as before — whoami outside a board must not start erroring.
+- **2026-09-14 13:38 · Alexander Sacharov** — In-progress lane, two things found on the way. (1) create now prints the file-mode line on a board with no git repository at all, not only on one whose remote is missing — the DoD asks for the mode 'in beiden Faellen' and refs.Usable() returns the same gitref.ErrNoRepo for both. Somebody who uses jaira without git therefore sees two extra lines per create. Left in deliberately; if the critique lane wants it gone, the place is fileModeReason/the else-branch in internal/cli/tickets.go, and the distinguishing test is whether the error string carries the noRemote tail. (2) releaseFromFile writes through s.Mutate rather than touching the file, because Mutate already takes the per-ticket lock, stamps updated-at/updated-by and calls Recorder.Record inside the lock — writing the file by hand here would have been a second, weaker write path for the one case where the ticket is about to leave the disk.
