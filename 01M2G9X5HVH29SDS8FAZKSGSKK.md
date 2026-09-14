@@ -29,7 +29,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T15:52:22Z
+updated-at: 2026-09-14T15:52:40Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
