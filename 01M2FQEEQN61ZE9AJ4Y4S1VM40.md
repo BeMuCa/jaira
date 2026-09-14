@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:22:52Z
+updated-at: 2026-09-14T18:22:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-471481
@@ -194,3 +194,6 @@ Endgueltige Regel: ein Tag faerbt nur die oberste Zelle, zwei Tags die oberen zw
 Konkret: cardColors (internal/tui/model.go:1369) laeuft heute 'i < cardSlots-1' und muss 'i < cardSlots' laufen. Die Gesamtfarbe der Karte (selectionFill, internal/tui/view.go:536) kommt weiterhin aus dem ERSTEN Tag - das ist richtig so und wird nicht angefasst.
 
 Mitzuziehen: (1) Tests fuer den Drei-Tag-Fall im Stil der bestehenden zehn; (2) die Zeile unter '## Unreleased' in core/release/NOTES.md verspricht heute 'the third cell stays reserved and uncoloured' - diese Zeile wird umgeschrieben, keine zweite daneben gestellt.
+- **2026-09-14 18:22 · Alexander Sacharov** — Die alte human-Frage ('faerbt eine Karte mit genau einem Tag nur noch Zeile 1?') ist beantwortet: ja, so soll es sein. Eine Karte mit einem Tag faerbt nur die oberste Zelle. Der question-Eintrag ist deshalb geleert.
+
+Veraltet im context-Abschnitt oben: der Absatz 'Offen und absichtlich NICHT Teil dieses Tickets: was den dritten Platz fuellt ... bleibt Platz drei reserviert und leer'. Diese Frage ist entschieden - die Sprint-Markierung ist Ticket 0YGWXQ und liegt am rechten Kartenrand, der dritte linke Platz gehoert dem dritten Tag.
