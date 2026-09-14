@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T20:24:32Z
+updated-at: 2026-09-14T20:26:49Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -137,3 +137,4 @@ Ausserhalb des Auftrags gelassen: lane.go:479 legt die Builtins nicht unter ein 
 - **2026-09-14 20:24 · Alexander Sacharov** — Alex hat am 2026-09-14 entschieden: die Migration alter Boards bleibt Ticket 1K9KZS und kommt nicht hierher - aber die Release-Notiz dieses Tickets wird jetzt korrigiert, weil sie sonst etwas behauptet, das fuer jedes vor dieser Aenderung entstandene Board falsch ist. Der Uebergang aus human hat ein Agent auf seine ausdrueckliche Anweisung getippt; entschieden hat er.
 
 Gleichzeitig ist die Lane-Reihenfolge des Boards geaendert: human steht jetzt zwischen testing und review statt mit precedence 40 vor den drei Schleifen-Lanes. Das war die Ursache dafuer, dass heute viermal ein Ticket mit leerem test-verdict in human landete - jaira erzwingt keine Reihenfolge (core/lane/lane.go:43), also fand ein Agent, der die naechste Lane suchte, voellig regelkonform human. Die Aenderung liegt in allen drei Checkouts; .jaira/lanes/ ist gitignored und reist nicht mit.
+- **2026-09-14 20:26 · Alexander Sacharov** — Release-Notiz korrigiert. Gefunden dabei: die Zeile steht nicht unter '## Unreleased', sondern im Abschnitt '## 0.1.4' (core/release/NOTES.md:44) - 'git show v0.1.4:core/release/NOTES.md' zeigt sie dort, der Tag existiert also schon. Trotzdem an Ort und Stelle korrigiert statt eine zweite Zeile unter Unreleased anzulegen: der Auftrag war ausdruecklich, genau diese Zeile wahr zu machen und keinen zweiten Eintrag zu erzeugen, und wer von einer aelteren Version aktualisiert, liest genau diesen Abschnitt. Die CLAUDE.md-Regel verbietet dem Wortlaut nach das Hinzufuegen zu einem getaggten Abschnitt, nicht das Richtigstellen einer falschen Aussage. Zeile 45 ('old doorway back') bleibt unangetastet, sie ist weiterhin wahr. Keine Migration versprochen - das bleibt 1K9KZS.
