@@ -37,12 +37,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:02:04Z
+updated-at: 2026-09-14T16:02:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
 claimed-at: 2026-09-14T15:48:04Z
 outcome-what: "Die Randspalte der Karte hat jetzt drei Farb-Slots statt einer Kartenfarbe. cardColor in internal/tui/model.go ist durch cardColors ersetzt: gibt [3]cardSlot zurueck, Slot 1 = erster Tag, Slot 2 = zweiter Tag, Slot 3 immer ungefaerbt und fuer die Sprint-Markierung reserviert. renderCardBlock (internal/tui/view.go) waehlt die barParams je Zeile aus dem Slot dieser Zeile; ein ungefaerbter Slot faellt wie bisher auf die Lane-Schattierung bzw. die Selektionsfuellung zurueck. selectionFill und Glow bleiben an Slot 1. cardHeight gibt weiterhin 3 zurueck. Neue Tests in internal/tui/tagbox_test.go fuer beide Farben in Ticket-Reihenfolge, die immer ungefaerbte Zeile 3, den ungefaerbten zweiten Tag ohne Textversatz und die Vier-Tag-Karte; registryWith nimmt jetzt mehrere name/colour-Paare. Eine Zeile unter neuem ## Unreleased in core/release/NOTES.md."
+outcome-why: "Ein Ticket kann viele Tags tragen, aber nur der erste faerbte die Karte; jeder weitere war auf dem Board unsichtbar. Beim Planen nach zwei Achsen (Thema plus Sprint) musste dafuer jedes Mal der Filter umgestellt werden. Die drei eingefaerbten Zellen der Randspalte waren schon da und trugen alle dieselbe Farbe - sie auf Slots aufzuteilen zeigt zwei Tags gleichzeitig, ohne dass die Karte eine Zeile waechst."
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
