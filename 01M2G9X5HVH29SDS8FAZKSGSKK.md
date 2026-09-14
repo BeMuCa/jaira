@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:31:48Z
+updated-at: 2026-09-14T20:32:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -83,3 +83,19 @@ Ein Detail fuer den, der spawn.sh anfasst: weil der Worktree schon existierte (.
 
 Kleiner Stolperstein ohne Bezug zum Ticket: 'jaira show <id> --json' hat kein Feld 'lane', die Lane steht in 'status'.
 - **2026-09-14 20:31 · Alexander Sacharov** — Zaehlung zur Sicherheit: das Ticket hat SIEBEN DoD-Punkte. Die Umschreibung von core/role/builtin/jaira-dispatcher/SKILL.md:157 ('not when the pull request merges' - unter der neuen Regel sieht ein Dispatcher nie einen offenen Pull Request) ist KEIN DoD-Punkt und wird deshalb von keinem Haken abgedeckt. Sie gehoert trotzdem in diesen Durchgang. Wer critique oder optimize arbeitet: ausdruecklich pruefen, ob dieser Satz angefasst wurde.
+- **2026-09-14 20:32 · Alexander Sacharov** — KORREKTUR meiner vorigen Notiz: spawn.sh hat den Tab angelegt, aber der Worker ist NICHT angelaufen. DoD-Punkt 6 ist damit noch nicht erfuellt. Was in Pane w2:p1W wirklich passiert ist (mit 'herdr pane read w2:p1W --source recent-unwrapped' ausgelesen):
+
+  $ cd '/home/alex/projects/.worktrees/jaira-13VMA8' && claude
+  zoxide: no match found
+  Accessing workspace: C:\Users\Alex
+  Quick safety check: Is this a project you created or one you trust?
+  > No, exit
+  (danach: Shell zurueck, Status error)
+
+Drei Befunde, alle in der Zeile 'herdr pane run $pane "cd '$wt' && claude"':
+
+1. In der interaktiven Shell dieses Rechners ist 'cd' von zoxide ueberschrieben. zoxide meldet 'no match found' fuer den WSL-Pfad, liefert aber Status 0 - also laeuft das '&& claude' trotzdem, nur im falschen Verzeichnis. Ein blankes 'cd' ist hier kein verlaesslicher Verzeichniswechsel.
+2. Der Tab startet in C:\Users\Alex, weil Herdr '--cwd' gegen Windows aufloest und einen WSL-Pfad verwirft - der Kommentar im Skript sagt das selbst und macht das 'cd' damit zum einzigen Punkt, an dem das Verzeichnis noch stimmen kann. Faellt das cd aus, startet claude im Windows-Home.
+3. Am schwersten: claude stand daraufhin vor dem Vertrauens-Dialog ('Is this a project you trust?'). spawn.sh wartet nur darauf, dass der Zustands-Hook idle meldet, und schickt dann blind send-text + enter. Das Enter hat den Dialog beantwortet und 'No, exit' ausgeloest. Damit beantwortet spawn.sh einen Genehmigungsdialog an Stelle des Menschen - genau das, was SKILL.md dem Dispatcher ausdruecklich verbietet ('never answer for the human').
+
+Vorschlag fuer die Behebung, gehoert in dieses Ticket: das Verzeichnis nicht ueber die Shell wechseln, sondern 'env -C "$wt" claude' benutzen (umgeht jede cd-Funktion), und vor dem send-text pruefen, dass der Pane-Zustand nicht 'blocked' ist - Herdr kennt diesen Zustand fuer erkannte Genehmigungsdialoge.
