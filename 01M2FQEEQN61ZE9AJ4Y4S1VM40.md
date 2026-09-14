@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:22:15Z
+updated-at: 2026-09-14T18:22:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-471481
@@ -187,3 +187,10 @@ DoD einzeln und mit eigenen Pruefungen nachgestellt, alle sechs halten:
 Zwei kosmetische Restpunkte, ausdruecklich kein Fehlschlag:
 - Ein per CLI geschriebenes \r\n kommt aus dem YAML als ' \n' zurueck; oneLine macht daraus zwei Leerzeichen statt einem. Sichtbar nur als doppeltes Leerzeichen im Titel.
 - Die neue NOTES-Zeile spricht nur vom Titel, der Fix deckt aber auch assignee, updated-by und executed-by ab.
+- **2026-09-14 18:22 · Alexander Sacharov** — Entscheidung von Alex (2026-09-14, Antwort der human-Lane): Platz 3 ist NICHT mehr reserviert. Die Sprint-Markierung ist als eigenes Ticket 0YGWXQ herausgeloest und wandert an den RECHTEN Kartenrand. Damit gehoert der dritte linke Platz dem dritten Tag.
+
+Endgueltige Regel: ein Tag faerbt nur die oberste Zelle, zwei Tags die oberen zwei, drei Tags alle drei; ab dem vierten bleiben die Tags auf dem Ticket und faerben nichts.
+
+Konkret: cardColors (internal/tui/model.go:1369) laeuft heute 'i < cardSlots-1' und muss 'i < cardSlots' laufen. Die Gesamtfarbe der Karte (selectionFill, internal/tui/view.go:536) kommt weiterhin aus dem ERSTEN Tag - das ist richtig so und wird nicht angefasst.
+
+Mitzuziehen: (1) Tests fuer den Drei-Tag-Fall im Stil der bestehenden zehn; (2) die Zeile unter '## Unreleased' in core/release/NOTES.md verspricht heute 'the third cell stays reserved and uncoloured' - diese Zeile wird umgeschrieben, keine zweite daneben gestellt.
