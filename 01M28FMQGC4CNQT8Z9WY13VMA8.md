@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:24:34Z
+updated-at: 2026-09-14T18:24:45Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
@@ -46,7 +46,7 @@ claimed-at: 2026-09-14T18:22:34Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] CLAUDE.md: turn the PR rule around behind the jaira:local marker - the agent pushes the branch and stops
+- [x] CLAUDE.md: turn the PR rule around behind the jaira:local marker - the agent pushes the branch and stops
 - [ ] AGENTS.md: add the same section behind the jaira:local marker, it is missing there entirely
 - [ ] README.md under Development: turn the same two sentences around so a reader who never uses an agent finds the rule
 
