@@ -120,7 +120,16 @@ func boardState() *boardGit {
 	if err != nil {
 		return nil
 	}
-	name, source := remoteOrigin(s.Root)
+	// The name comes off the repo this process actually talks to, never from a
+	// second walk down the ladder: whoami exists to say which remote is used,
+	// and a command that re-derived it could name a different one than the code
+	// that fails. Only the step of the ladder that answered is asked for
+	// separately, because the resolved Repo does not carry it.
+	_, source := settings.Load().RemoteSourceFor(s.Root)
+	name := gitref.DefaultRemote
+	if refs != nil && refs.Repo != nil {
+		name = refs.Repo.RemoteName()
+	}
 	st := &boardGit{
 		Root:    s.Root,
 		Remote:  name,
@@ -128,7 +137,7 @@ func boardState() *boardGit {
 		Remotes: gitref.Remotes(s.Root),
 	}
 	if err := refs.Usable(); err != nil {
-		st.Reason = err.Error()
+		st.Reason = noRefReason(err)
 	} else {
 		st.RefMode = true
 	}
@@ -163,29 +172,4 @@ func fileOnlyCount(s *ticket.Store) int {
 		}
 	}
 	return n
-}
-
-// remoteOrigin answers not just which remote is used but why that one, which is
-// the fact a person needs: the same board resolves to different remotes on two
-// machines, and the settings file that decides it is not in the repository.
-func remoteOrigin(root string) (name, source string) {
-	if name := strings.TrimSpace(gitref.BoardRemote(root)); name != "" {
-		return name, "from git config jaira.remote, set for this clone"
-	}
-	set := strings.TrimSpace(settings.Load().Remote)
-	have := gitref.Remotes(root)
-	if set != "" {
-		for _, n := range have {
-			if n == set {
-				return set, "from settings.json on this machine"
-			}
-		}
-	}
-	if len(have) == 1 {
-		return have[0], "the only remote this repository has"
-	}
-	if set != "" {
-		return set, "from settings.json on this machine, and not a remote here"
-	}
-	return gitref.DefaultRemote, "the default, nothing configured"
 }

@@ -99,3 +99,42 @@ func TestBoardRemoteIsSharedByWorktrees(t *testing.T) {
 		t.Errorf("the worktree resolved to %q instead of the clone's setting", got)
 	}
 }
+
+// RemoteSourceFor is RemoteFor plus the step that answered, and the two must be
+// one function: 'jaira whoami' says which remote this board uses and why, and a
+// second copy of the ladder is how that command ends up naming a different
+// remote than the code that fails.
+func TestRemoteSourceForNamesTheStepThatAnswered(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		remotes []string
+		board   string
+		set     string
+		want    string
+		source  string
+	}{
+		{"board config", []string{"origin", "upstream"}, "upstream", "", "upstream", "git config jaira.remote"},
+		{"settings, and true here", []string{"origin", "upstream"}, "", "upstream", "upstream", "settings.json on this machine"},
+		{"the only remote", []string{"origin"}, "", "upstream", "origin", "only remote"},
+		{"settings, not a remote here", []string{"a", "b"}, "", "upstream", "upstream", "not a remote here"},
+		{"nothing configured", []string{"a", "b"}, "", "", "origin", "the default"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			dir := repoWith(t, c.remotes...)
+			if c.board != "" {
+				git(t, dir, "config", "--local", "jaira.remote", c.board)
+			}
+			s := settings.Settings{Remote: c.set}
+			name, source := s.RemoteSourceFor(dir)
+			if name != c.want {
+				t.Errorf("resolved to %q, want %q", name, c.want)
+			}
+			if !strings.Contains(source, c.source) {
+				t.Errorf("source is %q, want it to mention %q", source, c.source)
+			}
+			if got := s.RemoteFor(dir); got != name {
+				t.Errorf("RemoteFor says %q where RemoteSourceFor says %q", got, name)
+			}
+		})
+	}
+}

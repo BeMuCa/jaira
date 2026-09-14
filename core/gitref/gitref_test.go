@@ -326,3 +326,22 @@ func TestBoardRemoteReadsTheClonesConfig(t *testing.T) {
 		t.Errorf("jaira.remote came back as %q", got)
 	}
 }
+
+// ErrNoGitRepo separates "there is no repository here" from "the remote is not
+// there", because only one of the two can be fixed by naming a remote. It wraps
+// ErrNoRepo so that every caller that only asks "does this board carry tickets
+// on refs" keeps getting the same answer.
+func TestNoGitRepoIsStillNoRepo(t *testing.T) {
+	if !errors.Is(gitref.ErrNoGitRepo, gitref.ErrNoRepo) {
+		t.Fatal("ErrNoGitRepo no longer satisfies errors.Is(.., ErrNoRepo)")
+	}
+	plain := &gitref.Repo{Dir: t.TempDir()}
+	if err := plain.Usable(); !errors.Is(err, gitref.ErrNoGitRepo) {
+		t.Errorf("a directory that is not a repository: want ErrNoGitRepo, got %v", err)
+	}
+	ada, _ := twoClones(t)
+	ada.Remote = "nowhere"
+	if err := ada.Usable(); errors.Is(err, gitref.ErrNoGitRepo) {
+		t.Errorf("a repository with a missing remote must not read as having no repository: %v", err)
+	}
+}

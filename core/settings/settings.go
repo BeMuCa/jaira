@@ -19,6 +19,8 @@
 //
 // RemoteFor is the only way to ask: it resolves the two against each other.
 // See its comment for the order and for why a per-board name never falls back.
+// RemoteSourceFor is the same ladder when the caller also has to say which step
+// answered.
 //
 // The file is ~/.jaira/settings.json, beside projects.json, and every field has
 // a working default: a missing file, an unreadable one and an empty one all mean
@@ -161,23 +163,43 @@ func Save(s Settings) error {
 //     loud and names it. Several remotes and none of them the one asked for is
 //     ambiguous, and guessing among them is the fork case again.
 func (s Settings) RemoteFor(dir string) string {
+	name, _ := s.RemoteSourceFor(dir)
+	return name
+}
+
+// RemoteSourceFor is RemoteFor with the step of the ladder that answered, in
+// words a person can read.
+//
+// The two are one function because a command that explains which remote is used
+// must not compute the name a second time: the ladder has four steps, it is
+// changed as one thing, and a second copy of it means the command whose only job
+// is to tell the truth about the remote is the command that names a different
+// one than the code that failed.
+func (s Settings) RemoteSourceFor(dir string) (name, source string) {
 	if board := strings.TrimSpace(gitref.BoardRemote(dir)); board != "" {
-		return board
+		return board, "from git config jaira.remote, set for this clone"
 	}
 	want := strings.TrimSpace(s.Remote)
-	if want == "" {
+	configured := want != ""
+	if !configured {
 		want = gitref.DefaultRemote
 	}
 	have := gitref.Remotes(dir)
-	for _, name := range have {
-		if name == want {
-			return want
+	for _, n := range have {
+		if n == want {
+			if configured {
+				return want, "from settings.json on this machine"
+			}
+			return want, "the default, nothing configured"
 		}
 	}
 	if len(have) == 1 {
-		return have[0]
+		return have[0], "the only remote this repository has"
 	}
-	return want
+	if configured {
+		return want, "from settings.json on this machine, and not a remote here"
+	}
+	return want, "the default, nothing configured"
 }
 
 // NotifyEnabled reports whether an assignment should raise a desktop

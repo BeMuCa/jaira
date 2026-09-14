@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/hook"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/outbox"
@@ -77,7 +78,7 @@ func fireHook(name string, s *ticket.Store, t *ticket.Ticket) {
 // the signature: a bare false is what let 'jaira create' choose the file mode in
 // silence, so that seventeen tickets were written to disk and no command said
 // so. The caller prints this.
-func fileOnRefOnly(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error) {
+func fileOnRefOnly(t *ticket.Ticket) (onRefOnly bool, why error) {
 	if t == nil {
 		return false, nil
 	}
@@ -114,7 +115,7 @@ func fileOnRefOnly(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error
 // Nothing about that is specific to how the ticket got here — Record leases the
 // empty string for a ticket with no ref, which is exactly "I expect this ref not
 // to exist", the same compare-and-swap a freshly created ticket makes.
-func putOnRef(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error) {
+func putOnRef(t *ticket.Ticket) (onRefOnly bool, why error) {
 	if t == nil {
 		return false, nil
 	}
@@ -128,7 +129,7 @@ func putOnRef(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error) {
 	if err := refs.Record(t.ID, content); err != nil {
 		return false, err
 	}
-	return fileOnRefOnly(s, t)
+	return fileOnRefOnly(t)
 }
 
 // fileModeReason renders why a ticket stayed on disk as the line a person can
@@ -138,11 +139,43 @@ func putOnRef(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool, why error) {
 // this repository does have, and the git config line that sets it). This only
 // puts it where the state is created instead of at the end of the chain.
 func fileModeReason(why error) string {
+	return "as a file on your disk, not on a ref: " + noRefReason(why)
+}
+
+// noRefReason is the same explanation without the create-time preamble, so the
+// text 'jaira create' prints and the one 'jaira whoami' prints cannot drift
+// apart.
+//
+// It branches on the two halves of gitref.ErrNoRepo because they need opposite
+// words. A repository whose remote is missing has a name that was looked for,
+// remotes it does have, and a git config line that settles it — all of which
+// gitref already writes. A directory that is no repository at all has none of
+// that: naming a remote there is an invented problem, and the raw
+// "gitref: no repository or no such remote" was the reader's only clue that the
+// advice did not apply.
+func noRefReason(why error) string {
+	if why == nil {
+		return "this board does not carry tickets on refs"
+	}
+	if errors.Is(why, gitref.ErrNoGitRepo) {
+		return "this board is not in a git repository, so there is no remote to carry a ref"
+	}
+	if errors.Is(why, gitref.ErrNoGit) {
+		return "git is not available on PATH, so nothing can be pushed to a ref"
+	}
 	name := "a remote"
 	if refs != nil && refs.Repo != nil {
 		name = fmt.Sprintf("%q", refs.Repo.RemoteName())
 	}
-	return fmt.Sprintf("as a file on your disk, not on a ref: this board has no usable %s — %v", name, why)
+	return fmt.Sprintf("this board has no usable %s — %v", name, why)
+}
+
+// canReachARef reports whether the board could carry tickets on refs once
+// somebody configures a remote. It is false where there is no repository, and
+// that is what keeps 'jaira create' from advising a command that cannot work
+// there however the user answers.
+func canReachARef(why error) bool {
+	return !errors.Is(why, gitref.ErrNoGitRepo) && !errors.Is(why, gitref.ErrNoGit)
 }
 
 // openedStore is the store this command opened, remembered so the work that

@@ -117,7 +117,7 @@ func releaseFromFile(s *ticket.Store, id string, force bool) (*refsync.Released,
 		return nil, err
 	}
 	out := &refsync.Released{ID: t.ID, Title: t.Title}
-	onRef, why := putOnRef(s, t)
+	onRef, why := putOnRef(t)
 	if !onRef {
 		if why == nil {
 			why = errors.New("the remote did not accept it")

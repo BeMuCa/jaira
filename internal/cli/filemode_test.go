@@ -209,3 +209,82 @@ func mustParse(t *testing.T, content []byte) *ticket.Doc {
 	}
 	return d
 }
+
+// The critique's case: a board that is not in a git repository at all. The mode
+// line still has to appear — the ticket really did stay a file — but everything
+// it used to say about it was wrong here. No remote is missing, so no remote may
+// be named; 'git config jaira.remote' fixes nothing; and 'jaira release' can
+// never work in a directory with no git.
+func TestCreateOutsideAGitRepositoryDoesNotBlameARemote(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "create", "no git here")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "not in a git repository") {
+		t.Errorf("create does not say why the ticket stayed a file:\n%s", out)
+	}
+	for _, unwanted := range []string{"config jaira.remote", "jaira release", "gitref:", "no usable"} {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("create still says %q where there is no repository:\n%s", unwanted, out)
+		}
+	}
+}
+
+// And the same directory through whoami: the reason it prints is the same
+// sentence, never the raw error value.
+func TestWhoamiOutsideAGitRepositorySaysSo(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "whoami")
+	if err != nil {
+		t.Fatalf("whoami: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "not in a git repository") {
+		t.Errorf("whoami does not say the board has no repository:\n%s", out)
+	}
+	if strings.Contains(out, "gitref:") {
+		t.Errorf("whoami leaks the raw error string:\n%s", out)
+	}
+}
+
+// 'jaira release' clears the assignee — that is what it is for. So advising it
+// straight after 'create --mine' would undo what the same command just did, and
+// the advice has to say so rather than read as a free way back.
+func TestCreateNamesTheCostOfReleasingATicketItJustAssigned(t *testing.T) {
+	clone := cloneWithRemotes(t, "")
+	gitRun(t, clone, "config", "--local", "jaira.remote", "nowhere")
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, clone, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "create", "mine for now", "--mine")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "jaira release") {
+		t.Fatalf("create no longer names the way back at all:\n%s", out)
+	}
+	if !strings.Contains(out, "clears ada as its assignee") {
+		t.Errorf("create advises release without saying it drops the assignee it just set:\n%s", out)
+	}
+
+	// And with no assignee the advice stays as short as it was.
+	plain, err := runCLI(t, clone, "create", "nobody's yet")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, plain)
+	}
+	if strings.Contains(plain, "clears") {
+		t.Errorf("create warns about an assignee that was never set:\n%s", plain)
+	}
+}

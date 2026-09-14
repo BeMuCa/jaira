@@ -304,7 +304,7 @@ already know it is yours; --assignee wins over it.`,
 			// On a board with a remote the ticket travels on its ref and the
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
-			onRefOnly, why := fileOnRefOnly(s, t)
+			onRefOnly, why := fileOnRefOnly(t)
 			if g.jsonOut {
 				payload := ticketJSON(t, lanes)
 				payload["on-ref-only"] = onRefOnly
@@ -331,7 +331,17 @@ already know it is yours; --assignee wins over it.`,
 				// the board had quietly stopped carrying tickets on refs and the
 				// only command that said so ran at the end of the chain.
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", fileModeReason(why))
-				fmt.Fprintf(cmd.OutOrStdout(), "  once the remote is there, 'jaira release %s' puts it on its ref\n", ticket.Handle(t.ID))
+				// The way back is only advice where it can be taken. Not in a
+				// git repository, 'jaira release' can never work; and on a
+				// ticket that already has an assignee it would undo the
+				// '--mine' or '--assignee' of this very command, because
+				// clearing the holder is what release means.
+				if canReachARef(why) && strings.TrimSpace(t.Assignee) == "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "  once the remote is there, 'jaira release %s' puts it on its ref\n", ticket.Handle(t.ID))
+				} else if canReachARef(why) {
+					fmt.Fprintf(cmd.OutOrStdout(), "  once the remote is there, 'jaira release %s' puts it on its ref — and clears %s as its assignee\n",
+						ticket.Handle(t.ID), t.Assignee)
+				}
 			}
 			if !gate.Ready(t) {
 				missing := gate.Violations(nil)

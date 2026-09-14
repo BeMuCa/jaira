@@ -61,6 +61,18 @@ var (
 	// simply does not carry tickets on refs.
 	ErrNoRepo = errors.New("gitref: no repository or no such remote")
 
+	// ErrNoGitRepo is the first of those two cases on its own: there is no git
+	// repository here at all, so no remote is missing and none can be
+	// configured.
+	//
+	// It wraps ErrNoRepo rather than replacing it so that every existing
+	// errors.Is(err, ErrNoRepo) keeps answering yes. The distinction exists for
+	// the one caller that has to say something: advice about a missing remote
+	// and about 'git config jaira.remote' is wrong where there is no
+	// repository, and pointing at a command that pushes a ref is worse than
+	// saying nothing.
+	ErrNoGitRepo = fmt.Errorf("%w: this board is not in a git repository", ErrNoRepo)
+
 	// ErrNoGit means the git binary is unavailable.
 	ErrNoGit = errors.New("gitref: git is not available on PATH")
 )
@@ -92,10 +104,10 @@ func (r *Repo) Usable() error {
 		if errors.Is(err, ErrNoGit) {
 			return err
 		}
-		return ErrNoRepo
+		return ErrNoGitRepo
 	}
 	if strings.TrimSpace(out) != "true" {
-		return ErrNoRepo
+		return ErrNoGitRepo
 	}
 	if _, _, err := r.run("", "remote", "get-url", r.remote()); err != nil {
 		if errors.Is(err, ErrNoGit) {
