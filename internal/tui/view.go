@@ -967,7 +967,7 @@ func (m *Model) statusBar() string {
 	// a board that decided it for them once swept forty-nine people's tickets
 	// into one commit.
 	if n := m.readyToFile(); n > 0 {
-		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file ", n))
+		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file: %s ", n, fileCommand))
 	}
 
 	// Wrapped, never dropped: a key the bar has no room for is a key the reader

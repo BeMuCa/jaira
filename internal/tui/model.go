@@ -743,6 +743,12 @@ const flashFor = 30 * time.Second
 // fortnight does.
 const fileReminder = 10
 
+// fileCommand is the cut itself, spelled out on the board. A count alone tells
+// a reader that something has piled up and leaves them no way to act on it —
+// and a reader who never sees the command never runs it, which is how a board
+// ends up filing on its own again.
+const fileCommand = "jaira logbook --all"
+
 // readyToFile counts what is waiting in the terminal lane, or 0 when there is
 // not enough of it to be worth a word.
 func (m *Model) readyToFile() int {
