@@ -109,7 +109,7 @@ func snapshotRunner() *snapshot.Runner {
 	return &snapshot.Runner{
 		Repo:            refs.Repo,
 		Branch:          set.SnapshotBranchName(),
-		LandingBranches: set.Landing(set.RemoteName(), refs.Repo.RemoteHead),
+		LandingBranches: set.Landing(refs.Repo.Remote, refs.Repo.RemoteHead),
 	}
 }
 

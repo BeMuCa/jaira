@@ -24,7 +24,12 @@ var refs *refsync.Syncer
 // ref.
 func attachRefs(s *ticket.Store) {
 	set := settings.Load()
-	refs = refsync.New(s, set.RemoteName(), s.Actor)
+	// RemoteFor and not RemoteName: the machine-wide setting is only a default,
+	// and this is the one place per process that resolves it against the
+	// repository actually in front of us. Everything downstream reads the answer
+	// off refs.Repo.Remote rather than resolving it again, so a command costs the
+	// git calls once.
+	refs = refsync.New(s, set.RemoteFor(s.Root), s.Actor)
 	// "Me" includes the aliases a person recorded, so core/identity answers it
 	// rather than this package holding a second opinion about who someone is.
 	refs.IsMine = func(assignee string) bool {

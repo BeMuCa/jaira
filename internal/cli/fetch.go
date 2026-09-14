@@ -100,7 +100,7 @@ func announceArrivals(arrivals []refsync.Arrival) {
 // the report and the reaping can never disagree about what counts as landed.
 func strandedHere() []refsync.Stranded {
 	set := settings.Load()
-	return refs.Stranded(set.Landing(set.RemoteName(), refs.Repo.RemoteHead), set.LandingGraceInterval())
+	return refs.Stranded(set.Landing(refs.Repo.Remote, refs.Repo.RemoteHead), set.LandingGraceInterval())
 }
 
 // printStranded names finished tickets whose branch never arrived. This is the

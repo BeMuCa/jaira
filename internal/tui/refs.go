@@ -32,7 +32,7 @@ type refFetchedMsg struct {
 // newSyncer wires the board's ticket writes to the refs they travel on, with
 // the same settings and the same idea of "me" the CLI uses.
 func newSyncer(s *ticket.Store, me string) *refsync.Syncer {
-	y := refsync.New(s, settings.Load().RemoteName(), me)
+	y := refsync.New(s, settings.Load().RemoteFor(s.Root), me)
 	y.IsMine = func(assignee string) bool {
 		return assignee != "" && identity.IsMe(s.Root, assignee)
 	}

@@ -6,6 +6,20 @@
 // belongs in the repository — one teammate wanting to be notified says nothing
 // about another, and a remote name is a property of a clone, not of the project.
 //
+// That last point is why the remote here is only a default. This file is read
+// by every board opened on the machine, so "remote": "upstream" — right for the
+// one checkout that has a fork as its origin — reached every other board too
+// and took down every ref command on repositories that have no upstream at all.
+// The name of a remote is a property of one clone, so that is where the answer
+// for one board lives: git config jaira.remote <name>, in the clone's own
+// config. Not a file in .jaira/, which would be committed and therefore wrong
+// for the next person, whose clone may know the same repository by another
+// name; and not a path-keyed section here, which git worktrees would split into
+// several entries for one clone.
+//
+// RemoteFor resolves the two against each other. See its comment for the order
+// and for why a per-board name never falls back.
+//
 // The file is ~/.jaira/settings.json, beside projects.json, and every field has
 // a working default: a missing file, an unreadable one and an empty one all mean
 // "the defaults", because settings a user never opened must never be the reason
@@ -126,12 +140,55 @@ func Save(s Settings) error {
 	return os.WriteFile(path, append(b, '\n'), 0o644)
 }
 
-// RemoteOr returns the configured remote, or the default.
+// RemoteName returns the machine-wide remote setting, or the default. It is the
+// answer without a board in front of it; anything that has a working tree
+// should ask RemoteFor instead, which is the only one that can tell whether the
+// name is true of this repository.
 func (s Settings) RemoteName() string {
 	if r := strings.TrimSpace(s.Remote); r != "" {
 		return r
 	}
 	return gitref.DefaultRemote
+}
+
+// RemoteFor returns the remote this board's ticket refs travel on.
+//
+// The order, and why each step is where it is:
+//
+//  1. git config jaira.remote in the clone. Somebody decided this for this
+//     repository, so it is used as given and never falls back. If that remote
+//     is gone, the ref command stops and says so — see Repo.Usable. A silent
+//     fallback here would be the expensive kind of wrong: in a fork, origin is
+//     the fork, and quietly pushing a ticket ref there loses it exactly where
+//     nobody looks.
+//  2. The machine-wide "remote" in settings.json, if this repository has a
+//     remote by that name. It is a default for every board, so it applies here
+//     only when it is true here.
+//  3. The repository's only remote, when it has exactly one. There is nothing
+//     to get wrong: one remote is where anything can go. This is what makes a
+//     plain single-remote checkout work without anybody configuring anything,
+//     even while settings.json names a remote it has never heard of.
+//  4. Otherwise the configured name is returned unchanged, so the failure is
+//     loud and names it. Several remotes and none of them the one asked for is
+//     ambiguous, and guessing among them is the fork case again.
+func (s Settings) RemoteFor(dir string) string {
+	if dir == "" {
+		return s.RemoteName()
+	}
+	if board := strings.TrimSpace(gitref.BoardRemote(dir)); board != "" {
+		return board
+	}
+	want := s.RemoteName()
+	have := gitref.Remotes(dir)
+	for _, name := range have {
+		if name == want {
+			return want
+		}
+	}
+	if len(have) == 1 {
+		return have[0]
+	}
+	return want
 }
 
 // NotifyEnabled reports whether an assignment should raise a desktop

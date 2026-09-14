@@ -101,9 +101,26 @@ func (r *Repo) Usable() error {
 		if errors.Is(err, ErrNoGit) {
 			return err
 		}
-		return fmt.Errorf("%w: no remote %q", ErrNoRepo, r.remote())
+		return fmt.Errorf("%w: %s", ErrNoRepo, r.noRemote())
 	}
 	return nil
+}
+
+// noRemote explains a missing remote the way somebody can act on it.
+//
+// "no remote \"upstream\"" was true and useless: it named the thing that is
+// absent and nothing else, so the reader still had to find out what this
+// checkout does have and where the name even came from — and the name usually
+// came from a machine-wide setting made for a different repository. So the
+// message carries all three: the name that was asked for, the remotes that are
+// really here, and the one command that settles it for this clone.
+func (r *Repo) noRemote() string {
+	have := "this repository has no remotes"
+	if names := Remotes(r.Dir); len(names) > 0 {
+		have = "this repository has " + strings.Join(names, ", ")
+	}
+	return fmt.Sprintf("no remote %q — %s\n  set the one this board uses: git -C %s config jaira.remote <name>",
+		r.remote(), have, r.Dir)
 }
 
 // RefName is the ref a ticket travels on.
@@ -663,4 +680,52 @@ func firstLine(s string) string {
 		}
 	}
 	return ""
+}
+
+// Remotes lists the remote names this repository actually has, in git's own
+// order. A directory that is not a repository, or one with no remotes at all,
+// answers with nothing — the question "which remotes are there" has an empty
+// answer in both cases, and the caller that needs to tell them apart asks
+// Usable.
+//
+// It is a function on a directory rather than a method on Repo because the
+// answer is what decides which remote a Repo should be built with in the first
+// place.
+func Remotes(dir string) []string {
+	if _, err := exec.LookPath("git"); err != nil {
+		return nil
+	}
+	var out bytes.Buffer
+	cmd := exec.Command("git", "-C", dir, "remote")
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return nil
+	}
+	var names []string
+	for _, line := range strings.Split(out.String(), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			names = append(names, line)
+		}
+	}
+	return names
+}
+
+// BoardRemote returns the remote this one clone was told to use for its ticket
+// refs, from git config jaira.remote, or "" when nothing was set.
+//
+// --local on purpose: the value has to belong to this clone and no other. A
+// global git config would be the same mistake as the machine-wide setting it
+// exists to correct, and worktrees share the clone's config, so every worktree
+// of a checkout answers the same without anybody repeating themselves.
+func BoardRemote(dir string) string {
+	if _, err := exec.LookPath("git"); err != nil {
+		return ""
+	}
+	var out bytes.Buffer
+	cmd := exec.Command("git", "-C", dir, "config", "--local", "--get", "jaira.remote")
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out.String())
 }

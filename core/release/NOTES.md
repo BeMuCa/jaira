@@ -13,6 +13,9 @@ Format rules — read before editing:
     not a record of what commit did what.
 -->
 
+## Unreleased
+- Set the remote for one board with `git config jaira.remote <name>` instead of letting `~/.jaira/settings.json` decide for every checkout on the machine: the board setting wins and never falls back, `"remote"` in settings.json now applies only where the repository really has a remote by that name, a repository with exactly one remote uses it without any configuration, and a ref command that still cannot resolve a remote names the remotes the repository does have and the command that fixes it.
+
 ## 0.2.0
 - Stop inventing your first notification hook: `jaira hook example` prints a working script for the `"hook"` setting that stays silent for every agent lane and rings the terminal bell only when a ticket reaches a person (`human`, `signoff`) or finishes (`done`), telling the two apart by the line it prints, and says which line to replace to deliver through ntfy.sh or a desktop notifier instead.
 - The critique lane now reads the whole diff on its first pass; later passes only re-check what it already found, so a review loop cannot run for ever by reading deeper each round.

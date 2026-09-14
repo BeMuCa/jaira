@@ -1,0 +1,135 @@
+package cli
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// cloneWithRemotes builds a real clone whose first remote is origin and which
+// carries whatever else is asked for, plus a settings.json of its own.
+func cloneWithRemotes(t *testing.T, machineRemote string, extra ...string) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_HOME", home)
+	if machineRemote != "" {
+		settings := `{"remote": "` + machineRemote + `"}` + "\n"
+		if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(settings), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bare := filepath.Join(root, "board.git")
+	gitRun(t, root, "init", "--bare", "--quiet", bare)
+	clone := filepath.Join(root, "clone")
+	gitRun(t, root, "clone", "--quiet", bare, clone)
+	gitRun(t, clone, "config", "user.name", "ada")
+	gitRun(t, clone, "config", "user.email", "ada@example.test")
+	for _, name := range extra {
+		gitRun(t, clone, "remote", "add", name, bare)
+	}
+	return clone
+}
+
+func gitRun(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+	}
+}
+
+// handleOf picks the ticket handle out of what create printed.
+func handleOf(t *testing.T, out string) string {
+	t.Helper()
+	for _, f := range strings.Fields(out) {
+		f = strings.Trim(f, ":,")
+		if len(f) == 6 && strings.ToUpper(f) == f && strings.IndexFunc(f, func(r rune) bool {
+			return !((r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9'))
+		}) < 0 {
+			return f
+		}
+	}
+	t.Fatalf("no ticket handle in:\n%s", out)
+	return ""
+}
+
+// The whole bug in one test: a repository whose only remote is origin, on a
+// machine whose settings.json says "upstream" because one other checkout needed
+// it. Every ref command used to stop here with no remote "upstream", which took
+// away the half of the mechanism a person needs most — handing a ticket back.
+func TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote(t *testing.T) {
+	clone := cloneWithRemotes(t, "upstream")
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, clone, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "create", "hand me back")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	h := handleOf(t, out)
+	if out, err := runCLI(t, clone, "pull", h); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, clone, "release", h); err != nil {
+		t.Fatalf("release refused on a single-remote repository: %v\n%s", err, out)
+	}
+}
+
+// And the counter-check that keeps the fix from being "always fall back to
+// origin": where the configured remote exists, the ref goes there. origin here
+// is a fork with nothing in it, and a ticket ref landing in it would be the
+// silent loss this whole design is against.
+func TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt(t *testing.T) {
+	clone := cloneWithRemotes(t, "upstream", "upstream")
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, clone, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "create", "goes upstream")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if refs == nil || refs.Repo.Remote != "upstream" {
+		t.Fatalf("the ref was resolved to %q, not upstream", refs.Repo.Remote)
+	}
+}
+
+// A name set for this clone is never second-guessed. With jaira.remote pointing
+// at a remote that is not there, the command stops and the message says what to
+// do about it — rather than quietly writing the ticket to origin.
+func TestABoardRemoteThatIsGoneStopsLoudly(t *testing.T) {
+	clone := cloneWithRemotes(t, "")
+	gitRun(t, clone, "config", "--local", "jaira.remote", "upstream")
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, clone, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "create", "nowhere to go")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	h := handleOf(t, out)
+	out, err = runCLI(t, clone, "release", h)
+	if err == nil {
+		t.Fatalf("release went through with a remote that does not exist:\n%s", out)
+	}
+	msg := err.Error() + out
+	for _, want := range []string{`"upstream"`, "origin", "config jaira.remote"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("the refusal does not mention %s:\n%s", want, msg)
+		}
+	}
+}
