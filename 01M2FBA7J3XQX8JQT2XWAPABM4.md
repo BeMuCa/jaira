@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:14:16Z
+updated-at: 2026-09-14T18:26:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
@@ -145,3 +145,21 @@ Geprueft und absichtlich NICHT gemeldet:
 
 Nicht gemeldet, absichtlich: (a) fsPackages enthaelt 'ioutil', das im ganzen Repository nirgends vorkommt, und skipDirs kennt 'vendor' und 'node_modules', die es in diesem reinen Go-Modul nicht gibt - drei Map-Eintraege, deren Entfernung nichts aendert und deren Verbleib nichts kostet. (b) TestMatchPattern steht in wintrap_test.go, waehrend matchPattern in gitattributes_scan_test.go liegt; beide sind _test.go-Dateien im selben Paket, das laeuft, und eine Runde dafuer lohnt nicht. (c) core/role/role.go:93 und core/settings/settings.go:213 tragen den Grund in einem Kommentar ueber dem //wintrap:ok statt auf der Markerzeile wie internal/cli/mergebranches_test.go:34 - der Grund steht direkt daneben und ist lesbar.
 - **2026-09-14 16:23 · Alexander Sacharov** — Dispatcher stopped here under the three-round rule: critique has sent the work back three times (round 1: rule 4 too wide plus the :// escape hatch; round 2: install/test arms of rule 4; round 3: binaryExt duplicates git's own -text/binary, and selName2 is a one-caller adapter). Findings shrink every round and none were re-raised, but the rule does not allow a fourth round on that reasoning. Round 3's two findings are dead-code removals - that is the optimize lane's job, not critique's, which may be the real reason the loop will not terminate. A person decides: run optimize next and let it take them, or accept and move on. Branch feat/APABM4-windows-traps is pushed to origin; no pull request opened, by instruction. go test ./... green, GOOS=windows vet and build green.
+- **2026-09-14 18:26 · Alexander Sacharov** — optimize: drei Funde der critique-Runde 3 geprueft, alle drei uebernommen, plus zwei eigene.
+
+1. binaryExt (14 Endungen) geloescht. Alle vier //go:embed im Repository ziehen nur .md und .sh - die Liste hat nie einen Treffer stumm geschaltet. An ihrer Stelle zaehlt jetzt das Attribut, das git selbst kennt: -text und binary zaehlen in loadAttributes als "gepinnt", weil beide git sagen, gar nichts umzuwandeln - die Bytes im Arbeitsbaum sind die committeten. Nachgemessen mit einem Wegwerf-Fixture: ein //go:embed assets/logo.png ohne .gitattributes meldet Falle 2, mit der Zeile "assets/*.png binary" schweigt sie. Die Methode heisst deshalb pinned statt eolLF - sie beantwortet nicht mehr nur die eol=lf-Frage. Ein Mechanismus statt zwei, und der, den git besitzt.
+
+2. Weil eine Binaerdatei jetzt ueberhaupt melden kann, musste der Abhilfetext mitwachsen: er nennt neben "text eol=lf" auch "binary". Sonst gaebe die Regel fuer eine .png eine falsche Anweisung - und "nennt die Abhilfe, nicht nur den Fund" ist der Kern dieses Tickets.
+
+3. selName2 geloescht. Sieben Zeilen Adapter mit genau einem Aufrufer. hasGOOS prueft jetzt direkt auf *ast.SelectorExpr mit runtime.GOOS.
+
+4. Eigener Fund: hasGOOS, mentionsExe und sepConcat hatten dreimal dasselbe ast.Inspect-Muster "finde den ersten Treffer, dann abbrechen", zweimal davon wortgleich "irgendein String-Literal enthaelt X". Zusammengelegt zu anyNode und litContains. mentionsExe selbst ist weg - es war danach nur noch eine Weiterleitung; die Begruendung steht jetzt als Kommentar an der Stelle in checkExe, die sie stumm schaltet, wo sie auch hingehoert.
+
+5. Wort im Doc-Kommentar von isGoBuildOutput: "Anything narrower than this" musste "looser" heissen.
+
+Nicht angefasst, absichtlich:
+- ioutil in fsPackages und vendor/node_modules in skipDirs sind im Repository heute ohne Treffer. Unterschied zu binaryExt: diese Eintraege erweitern die Suche, binaryExt hat sie stumm geschaltet. Spekulativ mehr finden ist harmlos, spekulativ schweigen nicht.
+- Die Fehlerbehandlung in relSlash (filepath.Rel kann unter WalkDir(root) nicht scheitern) bleibt: der Ersatz waere ein ignorierter Fehler, und das ist schlechter als drei Zeilen.
+- Der neue -text/binary-Zweig hat keinen dauerhaften Test. Bewusst mit einem Wegwerf-Fixture belegt statt ein Fixture einzubauen - das ist die Entscheidung der testing-Lane, nicht dieser.
+
+Nichts davon aendert das Verhalten auf einer Eingabe, die es in diesem Repository gibt: go test ./... -race, go vet ./..., GOOS=windows go vet ./... und GOOS=windows go build ./cmd/jaira sind gruen.
