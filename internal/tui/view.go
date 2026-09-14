@@ -515,9 +515,8 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 //
 // The bar is one cell wide and cardHeight rows tall, and each of those rows is
 // a slot of cardColors: row 1 the ticket's first tag, row 2 its second, row 3
-// reserved and so far always the card's own shade. Stacking the slots down the
-// rows that were being drawn anyway is what lets a card show two tags at once
-// without becoming a row taller.
+// its third. Stacking the slots down the rows that were being drawn anyway is
+// what lets a card show three tags at once without becoming a row taller.
 //
 // The frame is gone rather than recoloured. Two glyphs of it stood between the
 // lane's edges and the title on every row, and a title cut at eighteen
@@ -546,9 +545,9 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 
 	var b strings.Builder
 	for i, line := range strings.Split(content, "\n") {
-		// A slot with no colour — an absent tag, a tag with no registry line,
-		// or the reserved third — gets the card's own shade, so the text still
-		// lines up with every other card in the lane.
+		// A slot with no colour — an absent tag, or a tag with no registry
+		// line — gets the card's own shade, so the text still lines up with
+		// every other card in the lane.
 		barParams := bgParams
 		if slots[i].coloured {
 			barParams = "5;" + strconv.Itoa(slots[i].colour)

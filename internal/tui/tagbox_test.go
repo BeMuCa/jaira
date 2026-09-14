@@ -89,29 +89,47 @@ func todoLaneIdx(t *testing.T, m *Model) int {
 
 // --- cardColor / cardHeight -------------------------------------------------
 
-func TestCardColorsAreTheFirstTwoTagsInTicketOrder(t *testing.T) {
+func TestCardColorsAreTheFirstThreeTagsInTicketOrder(t *testing.T) {
 	m := newTestModel(t, 150, 32)
-	m.tags = registryWith(t, "ui", 83, "backend", 45)
-	tk := &ticket.Ticket{ID: "x", Title: "t", Tags: []string{"ui", "backend"}}
+	m.tags = registryWith(t, "ui", 83, "backend", 45, "docs", 200)
+	tk := &ticket.Ticket{ID: "x", Title: "t", Tags: []string{"ui", "backend", "docs"}}
 
 	slots := m.cardColors(tk)
-	if !slots[0].coloured || slots[0].colour != 83 {
-		t.Errorf("slot 1 = %+v; want colour 83", slots[0])
-	}
-	if !slots[1].coloured || slots[1].colour != 45 {
-		t.Errorf("slot 2 = %+v; want colour 45", slots[1])
+	for i, want := range []int{83, 45, 200} {
+		if !slots[i].coloured || slots[i].colour != want {
+			t.Errorf("slot %d = %+v; want colour %d", i+1, slots[i], want)
+		}
 	}
 }
 
-// Slot 3 is reserved for the sprint marker and stays empty until that decision
-// is taken — a third tag must not creep into it.
-func TestThirdSlotStaysUncolouredHoweverManyTags(t *testing.T) {
+// The display limit is three: a fourth tag stays on the ticket and colours
+// nothing, and it must not push any of the first three out of its slot.
+func TestTagsPastTheThirdColourNoSlot(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83, "backend", 45, "docs", 200, "ci", 111)
 	tk := &ticket.Ticket{ID: "x", Title: "t", Tags: []string{"ui", "backend", "docs", "ci"}}
 
-	if slots := m.cardColors(tk); slots[2].coloured {
-		t.Errorf("slot 3 took a colour: %+v", slots[2])
+	slots := m.cardColors(tk)
+	for i, want := range []int{83, 45, 200} {
+		if !slots[i].coloured || slots[i].colour != want {
+			t.Errorf("slot %d = %+v; want colour %d", i+1, slots[i], want)
+		}
+	}
+}
+
+// Fewer tags than slots leaves the slots below them uncoloured, so they fall
+// back to the lane's shade rather than repeating the tag above.
+func TestSlotsBelowTheLastTagStayUncoloured(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.tags = registryWith(t, "ui", 83, "backend", 45)
+
+	one := m.cardColors(&ticket.Ticket{ID: "a", Title: "t", Tags: []string{"ui"}})
+	if one[1].coloured || one[2].coloured {
+		t.Errorf("one tag coloured more than slot 1: %+v", one)
+	}
+	two := m.cardColors(&ticket.Ticket{ID: "b", Title: "t", Tags: []string{"ui", "backend"}})
+	if two[2].coloured {
+		t.Errorf("two tags coloured slot 3: %+v", two[2])
 	}
 }
 
@@ -245,7 +263,7 @@ func TestTaggedCardWithoutColourCarriesNoColour(t *testing.T) {
 // as a marker, which is why it moved.
 //
 // One tag now inks the first row alone: row 2 belongs to a second tag and row 3
-// is reserved, so both fall back to the lane's shade.
+// to a third, so with only one tag both fall back to the lane's shade.
 func TestTaggedCardCarriesItsColourInTheFirstRowOnly(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83)
@@ -519,29 +537,41 @@ func TestTwoTaggedCardShowsBothColoursInTicketOrder(t *testing.T) {
 	}
 }
 
-// Slot 3 belongs to the sprint marker, which is not decided yet, so it shows
-// the lane's shade on every card — including one carrying more tags than there
-// are slots.
-func TestThirdRowAlwaysCarriesTheLaneShade(t *testing.T) {
+// Three tags, three visible colours, top to bottom in ticket order — and a row
+// with no tag of its own keeps the lane's shade instead of repeating the one
+// above it.
+func TestThreeTaggedCardShowsAllThreeColoursInTicketOrder(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83, "backend", 45, "docs", 200, "ci", 111)
 	_, shade := m.laneShade(false)
 
-	for _, tags := range [][]string{
-		nil,
-		{"ui"},
-		{"ui", "backend"},
-		{"ui", "backend", "docs"},
-		{"ui", "backend", "docs", "ci"},
+	for _, c := range []struct {
+		tags []string
+		want [3]string
+	}{
+		{nil, [3]string{shade, shade, shade}},
+		{[]string{"ui"}, [3]string{"5;83", shade, shade}},
+		{[]string{"ui", "backend"}, [3]string{"5;83", "5;45", shade}},
+		{[]string{"ui", "backend", "docs"}, [3]string{"5;83", "5;45", "5;200"}},
+		{[]string{"ui", "backend", "docs", "ci"}, [3]string{"5;83", "5;45", "5;200"}},
 	} {
-		tk := &ticket.Ticket{ID: "a", Title: "Card", Tags: tags}
+		tk := &ticket.Ticket{ID: "a", Title: "Card", Tags: c.tags}
 		rows := barRows(t, m.renderCardBlock(tk, 40, false, false))
 		if len(rows) != 3 {
-			t.Fatalf("tags %v: card is %d rows, want 3", tags, len(rows))
+			t.Fatalf("tags %v: card is %d rows, want 3", c.tags, len(rows))
 		}
-		if rows[2] != shade {
-			t.Errorf("tags %v: row 3 bar = %q, want the lane shade %q", tags, rows[2], shade)
+		for i, want := range c.want {
+			if rows[i] != want {
+				t.Errorf("tags %v: row %d bar = %q, want %q", c.tags, i+1, rows[i], want)
+			}
 		}
+	}
+
+	// Reversed on the ticket, the three colours reverse with them.
+	rev := &ticket.Ticket{ID: "b", Title: "Card", Tags: []string{"docs", "backend", "ui"}}
+	rows := barRows(t, m.renderCardBlock(rev, 40, false, false))
+	if rows[0] != "5;200" || rows[1] != "5;45" || rows[2] != "5;83" {
+		t.Errorf("reversed tags render %q/%q/%q, want 5;200/5;45/5;83", rows[0], rows[1], rows[2])
 	}
 }
 
@@ -570,10 +600,10 @@ func TestUncolouredSecondTagFallsBackWithoutMovingTheText(t *testing.T) {
 	}
 }
 
-// Four tags render, and the two past the slots simply colour nothing. The limit
-// is a display limit: nothing rejects the fourth tag, so no existing ticket is
-// made invalid by it.
-func TestFourTaggedCardRendersWithTheExtraTagsUncoloured(t *testing.T) {
+// Four tags render, and the one past the slots simply colours nothing. The
+// limit is a display limit: nothing rejects the fourth tag, so no existing
+// ticket is made invalid by it.
+func TestFourTaggedCardRendersWithTheExtraTagUncoloured(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	m.tags = registryWith(t, "ui", 83, "backend", 45, "docs", 200, "ci", 111)
 	tk := &ticket.Ticket{ID: "a", Title: "Four tags", Tags: []string{"ui", "backend", "docs", "ci"}}
@@ -583,10 +613,8 @@ func TestFourTaggedCardRendersWithTheExtraTagsUncoloured(t *testing.T) {
 	if len(rows) != 3 {
 		t.Fatalf("a four-tag card is %d rows, want 3", len(rows))
 	}
-	for _, c := range []string{"5;200", "5;111"} {
-		if strings.Contains(raw, "48;"+c+"m") {
-			t.Errorf("a tag past the slots coloured the bar with %q:\n%q", c, raw)
-		}
+	if strings.Contains(raw, "48;5;111m") {
+		t.Errorf("the fourth tag coloured the bar with 5;111:\n%q", raw)
 	}
 	if !strings.Contains(stripANSI(raw), "Four tags") {
 		t.Errorf("a four-tag card lost its title:\n%s", stripANSI(raw))
