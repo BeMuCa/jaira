@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: critique
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,10 +19,10 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:28:56Z
+updated-at: 2026-09-14T18:29:10Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
-question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
+question: "Die Regel steht jetzt in CLAUDE.md, AGENTS.md und README: ein Agent pusht seinen Branch und macht den PR nicht auf. Die Rollen-Prompts in core/role/builtin sagen aber weiter das Gegenteil - jaira-role-pr/SKILL.md ist als ganze Rolle 'mach den PR auf' gebaut, jaira-teamlead/SKILL.md:79-80 traegt woertlich den alten Satz, und :89 laesst den Dispatcher schliessen, 'sobald der PR offen ist'. Deine Entscheidung, weil beides vertretbar ist: (A) Die Regel gilt nur fuer dieses Projekt - hinter jaira:local, wo sie steht. Dann bleibt core/role/builtin unangetastet, kostet aber, dass jeder Agent hier ein ausgeliefertes Prompt liest, das ihm das Gegenteil sagt. (B) Die Regel gilt jaira-weit. Dann muessen die drei Prompt-Stellen gedreht werden, jaira-role-pr wird auf reines Pushen zurueckgebaut oder abgeschafft, und es braucht eine NOTES.md-Zeile plus 'jaira roles install --global --force' fuer alle - das ist ein eigenes Ticket, nicht mehr dieses."
 outcome-what: "Die PR-Regel steht in CLAUDE.md, AGENTS.md und README - und jetzt in die richtige Richtung: ein Agent pusht seinen Branch und hoert dort auf"
 outcome-why: "Sie stand an allen drei Stellen als 'ein Agent macht den PR auf', was Alex am 14.09. umgedreht hat; ausserdem fehlte in AGENTS.md die Leerzeile vor der Ueberschrift"
 outcome-resolves: "Alle drei Stellen tragen die gedrehte Regel, in CLAUDE.md und AGENTS.md hinter dem jaira:local-Marker also regenerationsfest"
