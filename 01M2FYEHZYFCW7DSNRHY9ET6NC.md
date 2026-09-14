@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:21:19Z
+updated-at: 2026-09-14T13:21:34Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -181,3 +181,4 @@ Am Binary nachgestellt (Build aus diesem Worktree, JAIRA_HOME-Fixture, Wegwerf-R
 Beobachtung, kein Fehler: 'jaira create' bricht bei unaufloesbarem Remote nicht ab und zeigt die neue Meldung nicht - der Ref-Teil wird still uebersprungen (internal/cli/refs.go:75 fileOnRefOnly), das Ticket bleibt als Datei liegen. Das ist bestehendes Verhalten und nicht Teil dieses Tickets. Die Meldung kommt bei pull, fetch, release, snapshot.
 
 Naechster Schritt: nichts zu beheben. Ticket kann in die naechste Lane.
+- **2026-09-14 13:21 · Alexander Sacharov** — review-Lane: keine Ruecksendung. Der Diff selbst wurde unabhaengig nachgeprueft (go vet ./... sauber, go test core/settings, core/gitref, internal/cli gruen) und die beiden Kernfaelle von Hand am gebauten Binary nachgestellt: Repo mit nur origin und settings.json=upstream laeuft durch (Ref landet in origin.git, pull/claim/release Exit 0), und mit git config jaira.remote ghost bricht pull mit Exit 1 und der dreiteiligen Meldung ab. Zwei Beobachtungen stehen jetzt in review-gaps - wichtigste: internal/cli/boardremote_test.go TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt haengt origin und upstream an dasselbe bare-Repo und kann deshalb gar nicht bemerken, wenn der Ref im Fork landete; er prueft nur den aufgeloesten Namen. Abgedeckt ist die Aussage anderswo, deshalb kein Blocker - aber wer den Test spaeter anfasst, sollte upstream auf ein zweites bare-Repo zeigen lassen. Hinweis fuers Archiv: review-gaps trug vorher den ausfuehrlichen Optimize-Bericht; der steht in der Ticket-Historie (Commit 154b198 ff.) und in der Notiz vom 13:12.
