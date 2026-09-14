@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T20:05:40Z
+updated-at: 2026-09-14T20:05:43Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Die Regel steht jetzt in CLAUDE.md, AGENTS.md und README: ein Agent pusht seinen Branch und macht den PR nicht auf. Die Rollen-Prompts in core/role/builtin sagen aber weiter das Gegenteil - jaira-role-pr/SKILL.md ist als ganze Rolle 'mach den PR auf' gebaut, jaira-teamlead/SKILL.md:79-80 traegt woertlich den alten Satz, und :89 laesst den Dispatcher schliessen, 'sobald der PR offen ist'. Deine Entscheidung, weil beides vertretbar ist: (A) Die Regel gilt nur fuer dieses Projekt - hinter jaira:local, wo sie steht. Dann bleibt core/role/builtin unangetastet, kostet aber, dass jeder Agent hier ein ausgeliefertes Prompt liest, das ihm das Gegenteil sagt. (B) Die Regel gilt jaira-weit. Dann muessen die drei Prompt-Stellen gedreht werden, jaira-role-pr wird auf reines Pushen zurueckgebaut oder abgeschafft, und es braucht eine NOTES.md-Zeile plus 'jaira roles install --global --force' fuer alle - das ist ein eigenes Ticket, nicht mehr dieses."
@@ -82,3 +82,8 @@ DoD 2 NICHT ERFUELLT - das ist der Befund. Die Prompts tragen weiter die alte Re
 Damit ist genau der Zustand da, der schlimmer ist als vorher: Dokumentation sagt 'macht den PR nicht auf', der Prompt, den der Agent ausfuehrt, sagt 'you may open'. Ein Leser weiss nicht, was gilt.
 
 Vorschlag fuer in-progress: jaira-role-pr auf reines Pushen zurueckbauen (Name, description, Ueberschrift und Zeile 10-12 drehen: Branch pushen, anhalten, das Aufmachen gibt der Mensch in Auftrag; 'Never gh pr merge' bleibt), jaira-teamlead:79-80 auf dieselbe Formulierung drehen und :89 auf 'sobald der Branch gepusht und gemeldet ist'. Dazu eine NOTES.md-Zeile unter ## Unreleased - die Rollen-Prompts sind client-facing (jaira roles install). Kein Lane-Wechsel von mir: der Auftrag war nur testing.
+- **2026-09-14 20:05 · Alexander Sacharov** — testing hat mit fail zurueckgeschickt, und der Befund ist genau der, den ich beim Entscheiden der A/B-Frage benannt habe: die Dokumentation sagt, ein Agent macht keinen PR auf, und der Prompt, den derselbe Agent ausfuehrt, sagt 'you may open, push, and answer'. Das ist schlechter als der alte Zustand, weil ein Leser nicht mehr weiss, was gilt.
+
+Betroffen sind mehr Stellen als die eine, die ich genannt hatte: jaira-role-pr/SKILL.md Zeilen 3, 6, 10 und 11, jaira-teamlead/SKILL.md:79-80 ('Opening one is a contributor's job') und :89 ('Close it once the pull request is open') - der letzte Satz beschreibt einen Moment, den ein Agent unter der neuen Regel nie erreicht, der Abschnitt muss also umgeschrieben und nicht nur korrigiert werden.
+
+Reihenfolge, die eingehalten werden muss: dieses Ticket zuerst, KSGSKK danach. KSGSKK traegt die installierten Fassungen aus ~/.claude/skills nach core/role/builtin - und die installierten Fassungen tragen die alte PR-Regel immer noch, weil ich dort nur den Transport-Abschnitt gepatcht habe. Wer KSGSKK vor diesem Ticket macht, holt die alte Regel zurueck.
