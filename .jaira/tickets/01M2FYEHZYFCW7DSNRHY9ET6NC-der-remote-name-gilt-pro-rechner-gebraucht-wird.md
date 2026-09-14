@@ -1,7 +1,7 @@
 ---
 id: 01M2FYEHZYFCW7DSNRHY9ET6NC
 title: "Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einem Board, dessen Repository den eingestellten Remote nicht hat, funktionieren die ref-Befehle wieder - ohne dass ein Ticket dadurch im falschen Repository landet."
@@ -41,19 +41,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:05:50Z
+updated-at: 2026-09-14T13:09:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
 claimed-at: 2026-09-14T12:36:43Z
-outcome-what: "Der Remote fuer die Ticket-Refs wird jetzt pro Board aufgeloest statt pro Rechner: gitref.Remotes/BoardRemote lesen den Clone, settings.RemoteFor entscheidet in der Reihenfolge git config jaira.remote > settings.json (nur wenn das Repo den Remote hat) > einziger Remote > lauter Abbruch, und Repo.Usable nennt im Fehlerfall eingestellten Namen, vorhandene Remotes und den korrigierenden Befehl."
-outcome-why: "Ein einziges \"remote\": \"upstream\" in ~/.jaira/settings.json galt fuer jedes Board auf dem Rechner und hat auf jedem Repository ohne upstream (requirementsgenie) saemtliche ref-Befehle lahmgelegt - u. a. jaira release, also genau die Haelfte, die ein Mensch zum Zurueckgeben eines Tickets braucht."
-outcome-resolves: "jaira release und die uebrigen ref-Befehle laufen auf einem Board mit nur origin durch, waehrend settings.json weiterhin upstream sagt; im jaira-Repo selbst geht der Ref unveraendert nach upstream."
-review-summary: |-
-  core/gitref/gitref.go:681-731 - Remotes und BoardRemote bauen exec.LookPath, exec.Command und bytes.Buffer neu, obwohl run() in derselben Datei (Zeile 150) und value() (Zeile 174) genau das schon tun, inklusive GIT_TERMINAL_PROMPT=0 und getrenntem stderr; stattdessen (&Repo{Dir: dir}).value("remote") bzw. .value("config", "--local", "--get", "jaira.remote") benutzen - die Funktionen bleiben dabei Paketfunktionen auf einem Verzeichnis.
-  internal/cli/boardremote_test.go:51 - handleOf durchsucht die Ausgabe nach einem beliebigen sechsstelligen Grossbuchstaben-Wort; jeder solche Titel- oder Lane-Teil in der Ausgabe trifft genauso. Die uebrigen cli-Tests machen es andersherum: Ticket ueber ticket.At(dir).Create(...) anlegen und ticket.Handle(tk.ID) benutzen (internal/cli/checklist_test.go:14, internal/cli/claimrelease_test.go:34). Diesem Muster folgen und handleOf loeschen.
-  core/settings/settings.go:175-177 - der Zweig if dir == "" liefert genau dasselbe wie der Durchlauf darunter (BoardRemote("") ist leer, Remotes("") ist leer, also wird want == RemoteName() zurueckgegeben). Zweig streichen, oder wenn er nur die zwei git-Aufrufe sparen soll, das im Kommentar sagen - als Fall, den es geben kann, liest er sich falsch, s.Root ist nie leer.
-  core/settings/settings.go:147 - RemoteName() hat nach dieser Aenderung ausser RemoteFor und den Tests keinen Aufrufer mehr (geprueft mit grep ueber alle Nicht-Test-Dateien); der Kommentar begruendet es mit dem Fall ohne Verzeichnis, den es nicht gibt. Entweder in RemoteFor hineinziehen oder unexportieren.
+outcome-what: "Vier lokale Critique-Findings behoben: gitref.Remotes/BoardRemote nutzen jetzt Repo.value statt eigener exec-Aufrufe, der handle-Scan im cli-Test ist weg, der tote dir==\"\"-Zweig und RemoteName sind entfernt."
+outcome-why: "Die Critique-Lane hat den Entwurf angenommen, aber vier lokale Doppelungen und eine rateende Testhilfe beanstandet."
+outcome-resolves: "Critique-Runde 1, alle vier Findings."
+review-summary: none
 ---
 
 # Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board
@@ -151,3 +147,10 @@ Nicht beanstandet, damit es niemand nochmal aufmacht: dass ein Repo mit genau EI
 - RemoteName ist weg, nicht nur unexportiert: die vier Aufrufe in core/settings/settings_test.go pruefen jetzt ueber RemoteFor(t.TempDir()). Ein TempDir ist kein Repo, also liefern BoardRemote und Remotes nichts und RemoteFor faellt auf denselben Vorgabewert durch, den RemoteName geliefert hat. Dadurch braucht kein Test mehr eine zweite Einstiegstuer.
 - Der 'if dir == ""'-Zweig in RemoteFor ist weg. Kein Aufrufer uebergibt ""; s.Root ist nie leer.
 - Abweichung von der Kritik bei boardremote_test.go: ticket.At(dir).Create(...) allein reicht hier NICHT. 'jaira create' legt das Ticket auf seinem git-ref ab und nicht auf der Platte ('On its ref, not on your disk'), und genau dieser ref ist das, was die drei Tests pruefen. Store-Create baut keinen ref, und 'release' scheitert dann mit 'no ref for this ticket'. Deshalb bleibt das Anlegen ueber die CLI; nur das Raten des Handles aus stdout ist weg - der Handle kommt aus (&gitref.Repo{Dir: clone}).List(). Und weil im dritten Test der Board-Remote fehlt, kann create keinen ref schreiben und legt das Ticket auf die Platte; dafuer faellt der Helfer auf ticket.At(clone).List() zurueck.
+- **2026-09-14 13:08 · Alexander Sacharov** — critique (2. Durchgang): keine Befunde. Alle vier Findings aus Runde 1 sind zu: gitref.Remotes/BoardRemote gehen ueber (&Repo{Dir: dir}).value(...) und erben damit GIT_TERMINAL_PROMPT=0 und die getrennte stderr-Behandlung; der if dir==""-Zweig in RemoteFor ist weg; RemoteName ist ganz entfallen und in RemoteFor hineingezogen, die vier Aufrufe in settings_test.go gehen jetzt ueber RemoteFor(t.TempDir()); handleOf ist weg.
+
+Zur bewussten Abweichung bei Finding 2 (ticket.At(dir).Create statt CLI): die Begruendung traegt. internal/cli/refs.go:74 fileOnRefOnly loescht die lokale Datei, sobald der Flush den ref gesendet hat - auf einem Board mit brauchbarem Remote lebt ein frisches Ticket also NUR auf refs/jaira/tickets/<id>. Store-Create wuerde eine Datei ohne ref anlegen und damit genau den Mechanismus umgehen, den diese drei Tests pruefen. Die Muster-Tests (claimrelease_test.go) laufen in einem t.TempDir() ohne git, dort ist refsync ohnehin inert - deshalb passt ihr Muster hier nicht. Das Raten aus stdout ist das eigentliche Problem gewesen und ist weg; der Handle kommt aus gitref.Repo.List().
+
+Der Store-Rueckfall in ticketIn ist kein toter Zweig: im dritten Test scheitert Usable() am fehlenden Board-Remote, refsync ist inert, die Datei bleibt liegen und es gibt keinen ref.
+
+Nichts Neues eingeschleppt: go vet ./core/... ./internal/... laeuft sauber, Remotes/BoardRemote liefern bei fehlendem git, fehlendem Repo und leerer Ausgabe dasselbe wie vorher (nil bzw. ""), und value() trimmt bereits, was BoardRemote vorher von Hand tat.
