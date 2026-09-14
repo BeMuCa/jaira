@@ -1335,7 +1335,8 @@ func (m *Model) toggleEmptyLanes() {
 
 // cardSlots is how many colour slots a card's bar carries — one per row of
 // cardHeight, so the bar can show more than one tag without the card growing a
-// row. Changing it means changing cardHeight with it.
+// row. cardHeight returns this constant, so raising it makes the card taller
+// rather than leaving the bar short of the rows it has to paint.
 const cardSlots = 3
 
 // cardSlot is one cell of a card's bar: a registry colour, and whether there is

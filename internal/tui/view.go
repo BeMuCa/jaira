@@ -485,8 +485,13 @@ func (m *Model) renderColumn(idx, w, h int) string {
 // three content rows, and nothing else. A card is a band of background now, not
 // a box, so there are no border rows to count — which is also two rows per card
 // given back to the lane.
+//
+// It is cardSlots because it has to be: renderCardBlock paints one bar cell per
+// row and reads that cell's colour out of a slot, so a card taller than the bar
+// has slots it indexes past. Naming the same constant is what keeps the two
+// from drifting apart.
 func (m *Model) cardHeight(*ticket.Ticket) int {
-	return 3
+	return cardSlots
 }
 
 // cardsInBudget is how many tickets starting at first fit within budget rows,
