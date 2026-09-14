@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,14 +33,14 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T16:15:46Z
+updated-at: 2026-09-14T16:15:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
 claimed-at: 2026-09-14T15:57:55Z
-outcome-what: "Optimize round two over a38ae17 and 04f92e7: nothing to remove; one over-long doc comment in internal/cli/refs.go rewrapped after the NoRemoteHint rename."
-outcome-why: "The two commits add one exported method, one predicate and three tests; the sentence has a single owner, nothing was orphaned, and everything critique closed in rounds three and four stays closed."
-outcome-resolves: "review-gaps is written: what was considered and what was left standing, with the out-of-lane raw-error ticket named again."
+outcome-what: "Review lane: the whole branch diff judged against the ticket, all four gates re-run green and every DoD criterion checked by hand on throwaway boards."
+outcome-why: "Accept with one gap: a remote that exists but does not work makes create print a self-contradicting reason and whoami claim ref mode is on, which is the ticket's own failure one branch further along. Not implemented here — the review lane judges, and the fix is a shape change a person should authorise."
+outcome-resolves: "review-summary, review-gaps, review-verdict and review-check are written; the gap is in a note too, so it survives the next review overwriting the field."
 review-summary: "The branch makes the storage mode of a board visible, reversible and inspectable. gitref gains three exported pieces: ErrNoGitRepo (wrapping ErrNoRepo, so 'no repository at all' can be told apart from 'no such remote' without breaking any errors.Is), Repo.NoRemoteHint() (the actionable sentence: the remote looked for, the remotes this repository really has, and the 'git -C ... config jaira.remote <name>' line), and Remotes(dir)/BoardRemote(dir). settings.RemoteSourceFor(dir) becomes the single four-step remote ladder (clone git config, then settings.json when the remote exists here, then the only remote, else the asked-for name) and RemoteFor is a one-liner over it; internal/cli and internal/tui now resolve the remote per board instead of per machine. internal/cli/refs.go: fileOnRefOnly returns (bool, error) instead of a bare bool, so create can print why it chose the file; putOnRef reuses it for a ticket that already exists on disk; noRefReason(err) is the one renderer of that reason for create's text, create's --json field and whoami, and canReachARef(err) is the one predicate deciding whether advising 'jaira release' makes sense. 'jaira create' now prints 'as a file on your disk, not on a ref: <reason>' plus a way back, and carries the same sentence in --json as file-only-reason. 'jaira release' on a ticket with no ref no longer dies on ErrNoRef: releaseFromFile clears the assignee through the store's Mutate and puts the ticket on its ref through putOnRef, removing the file. 'jaira whoami' gains a Board block (board root, remote and where the name came from, the repository's remotes, ref mode with the reason, and how many tickets lie on disk and on no ref) and the matching JSON keys, with remote/remote_source omitted outside a repository and remotes always a list. --dod becomes a StringArray and ticket.NewBody takes []string, so one create writes one checkbox per criterion while the frontmatter keeps the first. Six lines under ## Unreleased in core/release/NOTES.md and a remote-resolution section in README.md."
 review-gaps: |-
   One gap, in two halves, both reproduced by hand on a throwaway board, both new — earlier rounds reasoned about the missing-remote case and did not weigh a remote that exists but does not work. The failure is: a configured remote whose URL is not a repository (offline, wrong path, no permission, non-fast-forward).
