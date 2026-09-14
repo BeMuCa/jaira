@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T20:24:27Z
+updated-at: 2026-09-14T20:24:32Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -134,3 +134,6 @@ Die Schwelle echt gerendert, nicht nur im Test: scripts/shotgen gegen ein Board 
 Die spaetere Runde im Baum nachgesehen: core/ticket/trim.go:150 filtert in FileLane 'Status == lane && !t.ReadOnly', Ref-only-Tickets sind damit fuer den Befehl selbst nicht mehr dieses Klons Sache, nicht nur fuer den Zaehler; internal/cli/logbook.go:93 laedt die Lanes einmal ueber loadEnv und benutzt env.Lanes, der zweite Ladeweg ist weg, und der reason-Code heisst in beiden Pfaden 'not_terminal'.
 
 Ausserhalb des Auftrags gelassen: lane.go:479 legt die Builtins nicht unter ein bestehendes Board, ein aelteres Board behaelt also logbook-on-entry - Ticket 1K9KZS, hier nicht geprueft und nicht gewertet. Nicht weiterbewegt: die naechste Lane einer Schleife entscheidet der Dispatcher.
+- **2026-09-14 20:24 · Alexander Sacharov** — Alex hat am 2026-09-14 entschieden: die Migration alter Boards bleibt Ticket 1K9KZS und kommt nicht hierher - aber die Release-Notiz dieses Tickets wird jetzt korrigiert, weil sie sonst etwas behauptet, das fuer jedes vor dieser Aenderung entstandene Board falsch ist. Der Uebergang aus human hat ein Agent auf seine ausdrueckliche Anweisung getippt; entschieden hat er.
+
+Gleichzeitig ist die Lane-Reihenfolge des Boards geaendert: human steht jetzt zwischen testing und review statt mit precedence 40 vor den drei Schleifen-Lanes. Das war die Ursache dafuer, dass heute viermal ein Ticket mit leerem test-verdict in human landete - jaira erzwingt keine Reihenfolge (core/lane/lane.go:43), also fand ein Agent, der die naechste Lane suchte, voellig regelkonform human. Die Aenderung liegt in allen drei Checkouts; .jaira/lanes/ ist gitignored und reist nicht mit.
