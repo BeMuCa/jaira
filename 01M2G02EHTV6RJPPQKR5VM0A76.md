@@ -33,9 +33,11 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:23:42Z
+updated-at: 2026-09-14T13:23:44Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-152036
+claimed-at: 2026-09-14T13:23:44Z
 ---
 
 # Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen
