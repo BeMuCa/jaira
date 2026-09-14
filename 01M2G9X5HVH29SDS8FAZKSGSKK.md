@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:35:52Z
+updated-at: 2026-09-14T20:36:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -116,3 +116,4 @@ Das gehoert in spawn.sh, und es ist der Grund, warum das Skript bisher nie einen
 
 Transparenz: ich habe fuer diesen einen Start spawn.sh umgangen und die drei Befehle von Hand abgesetzt, weil das Skript sonst genau den Fehler wiederholt, den es zu beheben gilt. Das ist hier ausdruecklich festgehalten und nicht stillschweigend geschehen.
 - **2026-09-14 20:35 · Alexander Sacharov** — Noch ein Befund am Rande, der zum selben Absatz gehoert: spawn.sh schickt den Lane-Befehl ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet. Herdr kennt aber einen eigenen Zustand 'blocked' fuer erkannte Genehmigungs- und Rueckfrage-Dialoge. Wer spawn.sh anfasst: vor send-text auf 'blocked' pruefen und in dem Fall abbrechen statt Enter zu druecken. Sonst beantwortet das Skript Dialoge an Stelle des Menschen, und SKILL.md verbietet dem Dispatcher genau das ('never answer for the human').
+- **2026-09-14 20:36 · Alexander Sacharov** — Die in-progress-Lane hat keine Plan-Checkliste; gearbeitet wird nach der Arbeitsanweisung des Dispatchers vom 2026-09-14 20:19 plus dem Grundursachen-Befund von 20:35 (wsl.exe --cd statt 'cd $wt &&'), der dort ausdruecklich in dieses Ticket gelegt wurde. Umfang: dispatcher/SKILL.md Transport-Absatz, teamlead/SKILL.md:44, spawn.sh (feat/, kein rg_, tab statt split, WSL-Start), dispatcher/SKILL.md:157, NOTES.md. NICHT angefasst: dass spawn.sh nur /jaira-role-lane starten kann und keinen /jaira-role-tester (Befund 4 vom 18:23) - das ist weder DoD noch in der Arbeitsanweisung und gehoert in ein eigenes Ticket.
