@@ -41,7 +41,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:32:09Z
+updated-at: 2026-09-14T12:36:21Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board
