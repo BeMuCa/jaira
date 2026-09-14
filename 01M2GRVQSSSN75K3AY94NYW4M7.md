@@ -28,7 +28,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T20:13:44Z
-updated-at: 2026-09-14T20:13:44Z
+updated-at: 2026-09-14T20:14:06Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Die Definition of Done steht an zwei Stellen und die CLI haelt sie nicht zusammen
