@@ -249,3 +249,34 @@ func TestFileLaneLeavesRefOnlyTicketsWhereTheyAre(t *testing.T) {
 		t.Fatalf("filed %d tickets, want only the one with a file here: %v", len(out), out)
 	}
 }
+
+// The holds cap reaches the same tickets the cut does, so it has to make the
+// same distinction: a ref-only ticket has no file here to move, and counting
+// it toward the cap would push a ticket that does have a file off the board to
+// make room for one that was never on it.
+func TestOverflowLeavesRefOnlyTicketsOutOfTheCap(t *testing.T) {
+	s, ts := trimStore(t, 2)
+	stamp := time.Date(2026, 9, 2, 12, 0, 0, 0, time.UTC)
+	s.Source = refSource{tickets: []*Ticket{{
+		ID:        NewID(stamp),
+		Title:     "somebody else's finished work",
+		Status:    "done",
+		UpdatedAt: stamp,
+	}}}
+
+	over, err := s.Overflow("done", 2, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(over) != 0 {
+		t.Fatalf("a ref-only ticket counted toward the cap and trimmed %d of ours: %v", len(over), over)
+	}
+
+	over, err = s.Overflow("done", 1, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(over) != 1 || over[0].ID != ts[0].ID {
+		t.Fatalf("with a cap of one, want only the oldest ticket that has a file here, got %v", over)
+	}
+}

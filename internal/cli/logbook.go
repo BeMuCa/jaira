@@ -1,8 +1,9 @@
 package cli
 
-// This file implements 'jaira logbook <id>' — taking a finished ticket off
-// the board with its commits stamped down, into a dated folder that records
-// who finished what on which day. It was called 'jaira sync' before it was
+// This file implements 'jaira logbook <id>' and 'jaira logbook --all' —
+// taking a finished ticket, or the whole terminal lane, off the board with
+// its commits stamped down, into a dated folder that records who finished
+// what on which day. It was called 'jaira sync' before it was
 // released: that name implied a server this tool does not have, and collided
 // with 'jaira sync-tasks' (sync.go), which mirrors an agent's task list into
 // the backlog and is unrelated.
@@ -97,6 +98,7 @@ func logbookAll(s *ticket.Store, w, errw io.Writer) error {
 	if terminal == nil {
 		return fail(ExitValidation, "not_terminal", "this board has no terminal lane, so nothing can be finished into the logbook")
 	}
+	var skipped string
 	filed, err := s.FileLane(terminal.ID, logbookFolder(), func(t *ticket.Ticket) error {
 		_, err := s.StampCommits(t, env.DeriveCommits)
 		return err
@@ -110,6 +112,7 @@ func logbookAll(s *ticket.Store, w, errw io.Writer) error {
 		if !errors.As(err, &pe) {
 			return err
 		}
+		skipped = pe.Error()
 		fmt.Fprintf(errw, "jaira: warning: %v\n", pe)
 	}
 	if g.jsonOut {
@@ -117,7 +120,15 @@ func logbookAll(s *ticket.Store, w, errw io.Writer) error {
 		for _, f := range filed {
 			out = append(out, map[string]any{"id": f.ID, "file": filepath.Base(f.Path)})
 		}
-		return emit(w, map[string]any{"filed": out, "count": len(filed), "lane": terminal.ID})
+		res := map[string]any{"filed": out, "count": len(filed), "lane": terminal.ID}
+		// A cut that skipped something is still a successful cut, so the
+		// skipping rides along with the result rather than replacing it.
+		// 'move' carries its sweep failure the same way (flow.go, trim_error),
+		// and prose on stderr is the one channel a --json reader does not read.
+		if skipped != "" {
+			res["trim_error"] = skipped
+		}
+		return emit(w, res)
 	}
 	if len(filed) == 0 {
 		fmt.Fprintf(w, "nothing in %s to file\n", terminal.ID)

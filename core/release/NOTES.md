@@ -14,7 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
-- Expect `jaira logbook --all` to leave finished tickets that live only on a ref where they are, instead of naming each one as a problem it could not file: a ticket with no file on this disk is not yours to file, and the count the board reminds you with now matches the set the command takes.
+- Expect `jaira logbook --all` and a lane's `holds` cap alike to leave tickets that live only on a ref where they are, instead of naming each one as a problem they could not file: a ticket with no file on this disk is not yours to file, so a lane full of other people's ref-only tickets no longer trims your own off the board, and the count the board reminds you with now matches the set the command takes.
 - Run the command the board now names: once ten or more finished tickets sit in the terminal lane, the hint bar reads `⌸ N to file: jaira logbook --all` instead of only the count, so you can act on the reminder without looking the command up.
 - Read the mode off `jaira create` instead of guessing: a ticket that stays a file on your disk now says so on the same line, names the remote it looked for and why it is not usable, and `--json` carries that same sentence as `file-only-reason` beside `on-ref-only`. Outside a git repository it says that instead, and names no remote and no way back, because neither exists there.
 - Put a file-only ticket back on its ref with `jaira release <id>`: give the repository the remote it was missing, then release, and the ticket travels on its ref while the local file goes — no need to recreate it under a new id. Where `create` advises it on a ticket that already has an assignee, it now also says that releasing clears them.
