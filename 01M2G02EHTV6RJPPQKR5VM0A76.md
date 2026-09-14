@@ -33,11 +33,11 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T15:55:18Z
+updated-at: 2026-09-14T15:57:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-275968
-claimed-at: 2026-09-14T15:50:11Z
+claimed-by: DESKTOP-RFTCH11-298475
+claimed-at: 2026-09-14T15:57:55Z
 outcome-what: "noRefReason asks gitref for the missing-remote sentence instead of cutting it out of the error text"
 outcome-why: "the strings.TrimPrefix tied internal/cli to how gitref concatenated its error; a changed format would have missed silently and printed a line with no remote name, no remotes and no git-config hint"
 outcome-resolves: "critique round three, finding 1"
