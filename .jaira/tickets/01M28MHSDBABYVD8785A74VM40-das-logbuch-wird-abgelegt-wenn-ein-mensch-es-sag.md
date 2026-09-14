@@ -1,7 +1,7 @@
 ---
 id: 01M28MHSDBABYVD8785A74VM40
 title: "Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Fertige Tickets sammeln sich in done, und wer seine Stunden eintraegt, legt sie mit einem Befehl als Tagesordner ab - das Board sagt Bescheid, wenn sich viel angesammelt hat, entscheidet aber nichts"
@@ -21,12 +21,12 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T20:08:16Z
+updated-at: 2026-09-14T20:09:25Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
 claimed-at: 2026-09-14T19:49:18Z
-question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn fertigen Tickets - passt das, oder lieber einstellbar? (2) WXQ9PT wartet in signoff und verlangt das Gegenteil (done ist danach leer) - markiere ich es als abgeloest, oder machst du das beim Abnehmen?"
+question: "Review hat dieses Ticket einmal abgelehnt, mit vier Gruenden. Drei sind behoben und von testing auf einer eigenen Scratch-Doska nachgestellt: die Board-Zeile nennt jetzt 'jaira logbook --all' woertlich, ein Test liest die gerenderte Zeile, und die Schwelle steht als feste Zehn da wie du entschieden hast. Der vierte ist Ticket 1K9KZS geworden: core/lane/lane.go:479 legt die eingebauten Lanes nicht unter ein Board, das es schon gibt, also behaelt jede vor dieser Aenderung entstandene Doska ihr 'logbook-on-entry' - auf dieser hier hat das heute zugeschlagen. Die Frage an dich ist diese Teilung: geht 74VM40 so durch und die Migration lebt als eigenes Ticket weiter, oder soll sie hier landen, weil die Release-Notiz dieses Tickets sonst etwas behauptet, das fuer aeltere Boards nicht gilt?"
 outcome-what: "cut a forwarder and two hand-built error literals out of internal/cli/logbook.go"
 outcome-why: "the change had the package spelling one call two ways; nothing else in the diff carried weight in nothing"
 outcome-resolves: "optimize lane: review-gaps written, no behaviour changed, suite green"
