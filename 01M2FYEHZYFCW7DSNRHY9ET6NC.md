@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:46:23Z
+updated-at: 2026-09-14T12:46:38Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -107,3 +107,12 @@ Und dann die Ausweichregel, die den stillen Datenverlust ausschliesst: ausgewich
 - Fork ohne upstream, aber mit origin und einem dritten Remote: mehrdeutig -> lauter Abbruch statt Fork.
 
 'Nimm origin, wenn der eingestellte Remote fehlt' waere genau der Fehler aus dem Kontext: origin ist hier der Fork.
+- **2026-09-14 12:46 · Alexander Sacharov** — Wo die Aufloesung hingehoert und was sie kostet.
+
+Heute faellt der Name an vier Stellen aus settings.RemoteName(), das Repository sieht keine davon: internal/cli/refs.go:27, internal/cli/snapshot.go:112, internal/cli/fetch.go:103, internal/tui/refs.go:35. Deshalb eine Funktion settings.RemoteFor(dir) statt vier Mal derselbe Sonderfall. RemoteName() bleibt fuer den Fall ohne Verzeichnis stehen.
+
+Das Lesen der Remotes gehoert nach core/gitref (kennt das Repo, schaltet schon git auf). core/settings importiert gitref bereits; umgekehrt darf es nicht sein.
+
+Kosten: RemoteFor macht bis zu zwei git-Aufrufe (config get, remote). attachRefs laeuft bei JEDEM Kommando, auch bei 'jaira list' - und 'Instant startup' ist eine Projektbedingung. Falls das messbar wird: entweder je Prozess einmal merken oder den Namen erst beim ersten Ref-Zugriff aufloesen (refsync.New nimmt dann eine Funktion statt eines Strings). Erst messen, dann entscheiden - Schritt 11.
+
+core/release/NOTES.md hat zur Zeit keinen Abschnitt '## Unreleased'; der oberste ist ## 0.2.0. Der Abschnitt muss neu angelegt werden.
