@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:34:24Z
+updated-at: 2026-09-14T18:40:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
@@ -179,3 +179,18 @@ Definition of Done Punkt fuer Punkt am Baum geprueft, nicht am outcome-Text: (1)
 Verhalten selbst ausgeloest, nicht nur behauptet: eine Probe-Datei internal/cli/probe_wintrap_test.go mit t.Setenv("HOME", t.TempDir()) ohne USERPROFILE eingesetzt - TestRepositoryIsClean faellt sofort mit 'internal/cli/probe_wintrap_test.go:6: windows trap 1' und der Abhilfe 'add t.Setenv("USERPROFILE", <the same directory>) next to it'. Probe wieder entfernt, Lauf wieder gruen.
 
 Nicht angefasst, absichtlich: die Fixture-Dateien unter testdata liegen in skipDirs, der Repository-Lauf sieht sie also nicht. Der Inhalt der .png ist bewusst reiner Text ohne CR - die Regel liest nur Namen und .gitattributes-Zeile, und eine Datei mit CRLF im Baum waere selbst eine Autocrlf-Falle.
+- **2026-09-14 18:40 · Alexander Sacharov** — review: der Pruefer wurde erstmals gegen die sieben historischen Windows-Fixes selbst gehalten - das, was bisher niemand end-to-end gemessen hat. Methode: den Scanner in ein Wegwerf-Modul kopiert, mit "git archive <fix>^" den Baum VOR jedem Fix ausgepackt und Scan darauf laufen lassen.
+
+Ergebnis 5 von 7, jeweils auf der exakten Zeile: f085553 -> Regel 1, internal/cli/roles_test.go:130. 1b3bf08 -> Regel 2, core/role/role.go:33 UND Regel 3, core/role/role_test.go:143/144/225/226/240/241 (beide Haelften des Fixes). 36f7055 -> Regel 4, internal/cli/mergebranches_test.go:30 und :190. 40dca0d -> Regel 2, core/lane/lane.go:32, benennt 00-backlog.md. 17912ba -> Regel 3, internal/cli/update_test.go:114.
+
+Zwei faengt keine der fuenf Regeln:
+
+4d3cace "read embedded lanes with forward slashes" - core/lane/lane.go hatte builtinFS.ReadFile(filepath.Join("builtin", n)). Das ist das SPIEGELBILD von Regel 5: nicht ein literales / wo filepath.Join hingehoert, sondern filepath.Join auf einem io/fs-Pfad, was auf Windows "builtin\\00-backlog.md" sucht und nichts findet. Der Ausfall war damals total ("no lanes could be loaded at all"). Bemerkenswert: genau dieses Muster begruenden die beiden //wintrap:ok in core/role/role.go:93 und core/settings/settings.go:281 - das Repository kennt die Falle und hat eine Regel nur fuer die eine Richtung.
+
+29ae82a "der Rename-Test prueft die alten Bytes statt der Inode" - os.Stat/os.SameFile-Identitaetssemantik auf Windows. Ein sechstes Muster, per Konstruktion ausserhalb der fuenf.
+
+Damit stimmt die Begruendung im Kontext und in outcome-why nicht wie geschrieben: "Alle sieben Windows-Fixes der Historie waren fuenf Muster, kein einziges neues Problem" ist 5 von 7. Das Feature traegt sich trotzdem - es faengt fuenf echte Regressionen auf der richtigen Zeile -, aber der Satz gehoert korrigiert statt in den signoff mitgenommen.
+
+Dazu ein Defekt am Ausnahme-Mechanismus, den critique in drei Runden nie angesehen hat, obwohl es genau sein Thema ist ("die Pruefung prueft etwas anderes als ihr Text behauptet"): //wintrap:ok ist nicht regel-gebunden. Nachgemessen mit einem Fixture - ein Kommentar mit der Begruendung "this path is a git refname" (eine Regel-5-Begruendung) schaltet einen Regel-4-Fund auf der Folgezeile stumm. exemptLines (wintrap_scan_test.go:122) merkt sich nur Zeilennummern; der Begruendungstext wird nie gegen die Regel gehalten, die er stummschaltet. Heute harmlos - es gibt vier Ausnahmestellen und alle vier tragen die richtige Begruendung -, aber die Ausnahme ist damit breiter als ihr eigener Satz.
+
+Geprueft und in Ordnung: alle drei critique-Funde sind im ausgelieferten Code wirklich behoben (isGoBuildOutput verlangt exec.Command mit Literal "go" plus "build" plus "-o"; der "://"-Zweig ist aus sepConcat raus; von mentionsExe bleibt nur litContains(body, ".exe")). Nichts ausserhalb des Pakets importierte das exportierte Scan, die Umbenennung auf _test.go bricht also keinen Aufrufer. Nebenwirkung, bisher nirgends notiert: "go doc ./internal/wintrap" sagt jetzt "no source-code package in directory", der 22-zeilige Paketkommentar ueber die fuenf Muster ist nur noch beim Oeffnen der Datei zu finden. README verspricht kein go doc, es wird also nichts unwahr.
