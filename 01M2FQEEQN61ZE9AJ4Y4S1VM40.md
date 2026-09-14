@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:10:04Z
+updated-at: 2026-09-14T16:15:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -137,3 +137,18 @@ Bewusst nicht als Befund erhoben:
 
 go build ./..., go vet ./internal/tui und go test ./... sind gruen, gofmt meldet nichts.
 - **2026-09-14 16:09 · Alexander Sacharov** — optimize: nur die tote Schranke 'i < len(slots)' entfernt, die die Critique-Lane uebergeben hatte. Der Bezug ist jetzt direkt: die Schleife indiziert slots[i] ueber die drei Zeilen von renderCard. Das haelt, solange cardHeight()==cardSlots gilt — genau das sagt der Kommentar an cardSlots bereits. Sonst nichts gefunden: keine Duplikate, kein verwaister Code, keine Arbeit in der Schleife, die sich heben liesse.
+- **2026-09-14 16:15 · Alexander Sacharov** — testing (Durchgang 1): FEHLGESCHLAGEN — eine neue Absturzquelle im Diff.
+
+Suite: go test ./... gruen, go test ./... -race gruen (Exit 0), go vet ./... gruen, gofmt -l meldet nichts. 0 Fehler, 0 Skips in der regulaeren Suite.
+
+Der Befund liegt nicht in der Suite, sondern in einem Fall, den sie nicht abdeckt:
+
+internal/tui/view.go:553 — 'panic: runtime error: index out of range [3] with length 3' in renderCardBlock. Die Schleife laeuft ueber die Zeilen von renderCard und indiziert slots[i] mit genau drei Slots. renderCard liefert normalerweise drei Zeilen, aber der Titel wird ungeprueft eingesetzt (internal/tui/view.go:617 truncate(t.Title, w-1)); enthaelt der Titel einen Zeilenumbruch, sind es vier Zeilen und die Karte laesst das Board abstuerzen.
+
+Der Fall ist erreichbar, nicht theoretisch: 'jaira create "Zeile eins<NL>Zeile zwei"' wird angenommen und schreibt title als YAML-Blockskalar (|-); Decode liest den Umbruch zurueck (nachgestellt ueber core/ticket.ParseDoc/Decode). Auch handgeschriebenes 'title: "a\\nb"' genuegt — das Format ist ausdruecklich handeditierbar.
+
+Regression, nicht geerbt: auf 1c6be9d (master) und auf 1276d7b (Implementierungs-Commit dieses Tickets) rendert derselbe Fall ohne Absturz; erst f2b0077 (optimize: Entfernen von 'i < len(slots)') macht daraus einen Panic. Nachgestellt ueber 'go test -overlay' mit einer Testdatei ausserhalb des Repos — im Arbeitsbaum wurde nichts geaendert.
+
+DoD-Belege sonst nachgeprueft und alle haltbar: TestTwoTaggedCardShowsBothColoursInTicketOrder, TestThirdRowAlwaysCarriesTheLaneShade, TestUncolouredSecondTagFallsBackWithoutMovingTheText, TestFourTaggedCardRendersWithTheExtraTagsUncoloured, TestACardHeavyWithFlagsStaysThreeRows und TestColumnDrawsEveryCardItCountsInFull laufen gruen. cardHeight gibt weiterhin 3 zurueck (internal/tui/view.go:488-490). Punkt 3 per CLI auf einem Wegwerf-Board geprueft: 'jaira tag <id> ui backend docs ci' Exit 0, 'jaira show --json' listet alle vier Tags, nur Farben fehlen keinem — .jaira/tags hat sogar fuer alle vier eine Zeile. Punkt 6: core/release/NOTES.md:16, eine Zeile unter neuem '## Unreleased'.
+
+Nicht abgedeckt: es gibt keinen Test, der renderCardBlock mit einer Karte konfrontiert, deren Inhalt mehr oder weniger Zeilen hat als es Slots gibt. Genau dort faellt der Diff um.
