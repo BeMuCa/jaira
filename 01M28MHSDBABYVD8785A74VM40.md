@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:56:15Z
+updated-at: 2026-09-14T19:56:29Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -113,3 +113,4 @@ Nicht angefasst, wie vom Dispatcher abgegrenzt: lane.go:479 / aeltere Boards beh
 
 go vet ./... und go test ./... -race: Exit 0.
 - **2026-09-14 19:53 · Alexander Sacharov** — Der in-progress-Lauf wurde nicht von dem Worker gemacht, den dieser Dispatcher gestartet hat: der sah den Claim und lehnte ab. Erledigt hat ihn ein noch lebender Worker des vorigen Dispatchers (Commit 78e3703, 21:52, gepusht). Ergebnis geprueft und uebernommen, nichts doppelt gearbeitet. Der abgelehnte Pane wurde geschlossen, damit nicht zwei Worker im selben Arbeitsbaum laufen.
+- **2026-09-14 19:56 · Alexander Sacharov** — critique round three: nothing to raise. Checked the three round-two fixes against HEAD and they hold: logbookAll carries trim_error beside filed/count/lane the same way flow.go:232 does for a move (verified, not just claimed), the !t.ReadOnly filter in Overflow and FileLane is pinned by TestOverflowLeavesRefOnlyTicketsOutOfTheCap and TestFileLaneLeavesRefOnlyTicketsWhereTheyAre with a counter-probe, and logbook.go:3 names both commands. Two things looked at and deliberately not raised: 'jaira logbook <id>' on a ref-only ticket needs no guard of its own - Store.Mutate (store.go:1076) and Store.Logbook via onlyOnRef (store.go:333) both already refuse with ErrOnRefOnly, so the stamp cannot half-apply; and the 'Status == lane && !ReadOnly' predicate standing in three places (trim.go:40, trim.go:150, model.go:756) is a shape round two read and let stand, so it is not reopened here. The stampCommits wrapper in logbook.go is a pure pass-through to s.StampCommits with one caller since WXQ9PT hollowed it out - pre-existing, outside this diff, left alone. lane.Load not layering the builtins under an existing board is recorded as ticket 1K9KZS and carried on past.
