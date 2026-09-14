@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:32:52Z
+updated-at: 2026-09-14T20:35:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -99,3 +99,19 @@ Drei Befunde, alle in der Zeile 'herdr pane run $pane "cd '$wt' && claude"':
 3. Am schwersten: claude stand daraufhin vor dem Vertrauens-Dialog ('Is this a project you trust?'). spawn.sh wartet nur darauf, dass der Zustands-Hook idle meldet, und schickt dann blind send-text + enter. Das Enter hat den Dialog beantwortet und 'No, exit' ausgeloest. Damit beantwortet spawn.sh einen Genehmigungsdialog an Stelle des Menschen - genau das, was SKILL.md dem Dispatcher ausdruecklich verbietet ('never answer for the human').
 
 Vorschlag fuer die Behebung, gehoert in dieses Ticket: das Verzeichnis nicht ueber die Shell wechseln, sondern 'env -C "$wt" claude' benutzen (umgeht jede cd-Funktion), und vor dem send-text pruefen, dass der Pane-Zustand nicht 'blocked' ist - Herdr kennt diesen Zustand fuer erkannte Genehmigungsdialoge.
+- **2026-09-14 20:35 · Alexander Sacharov** — GRUNDURSACHE gefunden, wichtigster Befund dieses Tickets - Alex hat darauf gestossen ('du oeffnest kein Fenster in WSL'):
+
+'herdr tab create' oeffnet auf diesem Rechner eine WINDOWS-Shell (Git Bash), keine WSL-Shell. Beweis aus Pane w3:p36: 'env -C /home/alex/projects/.worktrees/jaira-13VMA8 claude' antwortete '/usr/bin/env: cannot change directory ... No such file or directory' - /usr/bin/env gibt es dort also, /home/alex/... nicht. Das ist kein zoxide-Problem; mein erster Befund ('cd ist von zoxide ueberschrieben') war die falsche Erklaerung fuer das richtige Symptom. Der Pfad existiert in der Shell des Tabs schlicht nicht.
+
+Daraus folgt alles andere: 'cd <wsl-pfad> && claude' schlaegt fehl, claude startet im Windows-Home C:\Users\Alex, dort erscheint der Vertrauens-Dialog, und spawn.sh drueckt blind Enter darauf.
+
+'herdr tab create' hat KEINE Option fuer Shell oder Profil (nur --workspace, --cwd, --label, --env, --focus). Der Weg nach WSL fuehrt darum ueber den Befehl im Tab. Was funktioniert hat und womit der Worker fuer diese Lane jetzt laeuft:
+
+  herdr tab create --cwd <wt> --label '<ticket>/<lane>' --no-focus
+  herdr pane run <pane> "wsl.exe --cd <wt> -- bash -lic claude"
+
+Danach meldete der Zustands-Hook 'claude idle', und send-text/send-keys kamen sauber an. '--cd' von wsl.exe setzt das Verzeichnis, bevor ueberhaupt eine Shell laeuft, also greift weder zoxide noch ein falsches Home. 'bash -lic' ist noetig, damit claude im PATH liegt.
+
+Das gehoert in spawn.sh, und es ist der Grund, warum das Skript bisher nie einen Worker zum Laufen gebracht hat. Ein Dispatcher, der nur seinen Prompt liest und spawn.sh benutzt, bekommt auf diesem Rechner heute KEINEN laufenden Worker - DoD-Punkt 6 ist bis zu dieser Aenderung nicht erfuellbar.
+
+Transparenz: ich habe fuer diesen einen Start spawn.sh umgangen und die drei Befehle von Hand abgesetzt, weil das Skript sonst genau den Fehler wiederholt, den es zu beheben gilt. Das ist hier ausdruecklich festgehalten und nicht stillschweigend geschehen.
