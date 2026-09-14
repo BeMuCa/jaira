@@ -3,6 +3,7 @@
 # adds a line for a name it has not seen yet, rewrites the one line whose colour
 # you change, and never reorders or reformats the rest of this file.
 # A tag with no line here is real; it just renders without a colour.
+ci: 136
 cli: 111
 concurrency: 45
 docs: 33
