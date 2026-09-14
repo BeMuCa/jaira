@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:16:42Z
+updated-at: 2026-09-14T16:22:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -153,3 +153,14 @@ Regression, nicht geerbt: auf 1c6be9d (master) und auf 1276d7b (Implementierungs
 DoD-Belege sonst nachgeprueft und alle haltbar: TestTwoTaggedCardShowsBothColoursInTicketOrder, TestThirdRowAlwaysCarriesTheLaneShade, TestUncolouredSecondTagFallsBackWithoutMovingTheText, TestFourTaggedCardRendersWithTheExtraTagsUncoloured, TestACardHeavyWithFlagsStaysThreeRows und TestColumnDrawsEveryCardItCountsInFull laufen gruen. cardHeight gibt weiterhin 3 zurueck (internal/tui/view.go:488-490). Punkt 3 per CLI auf einem Wegwerf-Board geprueft: 'jaira tag <id> ui backend docs ci' Exit 0, 'jaira show --json' listet alle vier Tags, nur Farben fehlen keinem — .jaira/tags hat sogar fuer alle vier eine Zeile. Punkt 6: core/release/NOTES.md:16, eine Zeile unter neuem '## Unreleased'.
 
 Nicht abgedeckt: es gibt keinen Test, der renderCardBlock mit einer Karte konfrontiert, deren Inhalt mehr oder weniger Zeilen hat als es Slots gibt. Genau dort faellt der Diff um.
+- **2026-09-14 16:22 · Alexander Sacharov** — in-progress (Fixrunde nach testing): der Panic aus internal/tui/view.go:553 ist behoben, aber NICHT durch das Zurueckholen der Schranke 'i < len(slots)'.
+
+Warum nicht die Schranke: sie haette nur den Absturz weggenommen und den eigentlichen Schaden stehen lassen. Eine Karte mit vierzeiligem Inhalt ist vier Zeilen hoch, waehrend cardHeight() 3 zurueckgibt und cardsInBudget (internal/tui/view.go:497) mit 3 rechnet. Die vierte Zeile wird dann ueber die naechste Karte gemalt und die Lane rechnet ihr Zeilenbudget falsch - eine stille Layoutstoerung statt eines sichtbaren Absturzes. Der verlorene Balkenfarbe waere dabei noch das kleinste Problem.
+
+Stattdessen an der Quelle: neue Hilfsfunktion oneLine (internal/tui/view.go, bei truncate) faltet Zeilenumbrueche zu Leerzeichen, angewandt in renderCard auf alle drei Zeilen - Titel, meta (traegt Assignee) und die Flag-Zeile (traegt UpdatedBy und ExecutedBy). Damit haelt die Zusage 'renderCard gibt genau cardHeight Zeilen zurueck' fuer jeden Wert, den ein Ticket tragen kann, nicht nur fuer den Titel. \r\n wird mitgefaltet, ein einzelnes \r ebenso - sonst haette das CR die Zeile im Terminal zurueckgesetzt.
+
+Die tote Schranke bleibt entfernt: der Befund der optimize-Lane war richtig, sie war nur an der falschen Stelle geheilt worden.
+
+Gegenprobe gemacht: mit zurueckgedrehtem oneLine faellt TestACardWhoseFieldsCarryNewlinesStaysThreeRows/title mit genau 'index out of range [3] with length 3'; mit oneLine gruen.
+
+NOTES.md: eine zweite Zeile unter ## Unreleased. Gegen den letzten Release ist das sichtbar - auf master stuerzt derselbe Titel zwar nicht ab, malt aber eine vierzeilige Karte.
