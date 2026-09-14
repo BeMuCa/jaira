@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T16:02:13Z
+updated-at: 2026-09-14T16:02:28Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
@@ -131,3 +131,4 @@ Die eine Stelle, die ich absichtlich geprueft habe, weil sie nach einem Defekt a
 Ebenfalls geprueft, kein Befund: noRefReason liest den Satz jetzt aus dem Paket-Global refs statt aus dem uebergebenen Fehler - moeglich waere ein Auseinanderlaufen nur, wenn der Fehler von einem anderen Repo als refs.Repo kaeme; es gibt weiterhin genau einen Erzeuger (Repo.Usable ueber refs), wie Runde drei schon festgestellt hat. NoRemoteHint() ruft Remotes(r.Dir) beim Rendern erneut auf, also ein zusaetzlicher git-Unterprozess - nur im Fehlerpfad, im selben Prozess, gleiches Ergebnis, kein Thema fuer 'instant startup'. Der neue Test TestTheFileModeReasonDoesNotReadTheErrorText prueft vier Fehlerformen gegen repo.NoRemoteHint() und haette den alten TrimPrefix bei dreien gefangen - das ist genau die Zusage, die der Fix gibt. go build, go vet und gofmt -l sind sauber.
 
 Damit ist die Kritik-Schleife fuer dieses Ticket zu; alles aus Runde eins bis drei bleibt geschlossen.
+- **2026-09-14 16:02 · Alexander Sacharov** — Optimize lane, second round, scoped to what the human lane sent back and what came after it (a38ae17, 04f92e7). Verdict: nothing to remove. Details in review-gaps. The one edit is cosmetic: internal/cli/refs.go had a doc comment line left over-long by the Repo.noRemote -> NoRemoteHint rename; rewrapped, no code and no output touched, so no NOTES.md line. Checked and deliberately not reopened, so a later round does not rediscover them: everything critique round three listed as explicitly-not-a-finding (whoami InRepo from canReachARef, the two whoami tests over one setup, TestWhoamiJSONRemotesIsAlwaysAList building its repo by hand rather than through cloneWithRemotes, the nil fallback in noRefReason, the line break in NoRemoteHint) and everything round four cleared (the fallback text swallowing a foreign error, NoRemoteHint calling gitref.Remotes a second time). The nearest thing to a real finding is that a create in a remote-less repository runs 'git remote' twice and builds the hint twice, throwing the first copy away with the error text - but that is exactly what round four weighed and closed, it is one error path of one invocation, and undoing it would mean threading the sentence out of Usable, which is a change in shape and not a cleanup. Gates: go build ./..., gofmt -l ., go vet ./... clean; go test ./... green with internal/cli run uncached (16.1s).
