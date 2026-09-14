@@ -21,15 +21,15 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T20:02:32Z
+updated-at: 2026-09-14T20:02:42Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
 claimed-at: 2026-09-14T19:49:18Z
 question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn fertigen Tickets - passt das, oder lieber einstellbar? (2) WXQ9PT wartet in signoff und verlangt das Gegenteil (done ist danach leer) - markiere ich es als abgeloest, oder machst du das beim Abnehmen?"
-outcome-what: "critique round three read the tree at HEAD and found nothing to send back"
-outcome-why: "the three round-two findings are all answered in the tree and their claims check out; nothing new was found that names a file and a concrete alternative, which is where this lane is done"
-outcome-resolves: "review-summary=none"
+outcome-what: "cut a forwarder and two hand-built error literals out of internal/cli/logbook.go"
+outcome-why: "the change had the package spelling one call two ways; nothing else in the diff carried weight in nothing"
+outcome-resolves: "optimize lane: review-gaps written, no behaviour changed, suite green"
 review-summary: none
 review-gaps: "removed the stampCommits forwarder in internal/cli/logbook.go (pure 'return s.StampCommits(t, derive)' with a doc comment duplicating core/ticket/trim.go:88; the new logbookAll already called the store method directly) and pointed archive.go and logbookOut at s.StampCommits; folded logbookOut's two hand-built *codedError literals into fail(), which builds the identical value. Left alone with reasons: the four-line 'Status == lane && !ReadOnly' filter repeated in Overflow and FileLane (different sorts, different error handling - a shared helper costs more than it saves), readyToFile()'s single pass over m.tickets per status-bar render (same order of work the bar already does), and logbook-on-entry, which is not dead code - 50-done.md stopped setting it but core/lane/settle.go still honours it and NOTES.md documents switching it back on. No behaviour changed; go build, go vet and the full suite are green."
 review-verdict: "Der Kern stimmt und ist im heutigen Baum belegt: ein Move nach done legt nichts mehr ab, jaira logbook --all ist der Handschnitt, jaira logbook <id> und jaira logbook ohne Argument verhalten sich wie vorher, go test ./... -race ist gruen. Ich empfehle aber NICHT, so abzunehmen. Ein DoD-Punkt ist woertlich unerfuellt - die Board-Zeile nennt den Befehl nicht, sie zeigt nur eine Zahl -, und der zugehoerige Test prueft den Zaehler statt die Zeile, sodass die Luecke unbemerkt bleiben konnte. Beides ist zusammen weniger als eine Stunde Arbeit. Schwerer wiegt, dass die Aenderung nur die ausgelieferten Lanes erreicht: jedes vorher angelegte Board behaelt logbook-on-entry in seiner eigenen .jaira/lanes/done.md und damit genau das Verhalten aus Issue #6, und die Release-Notiz behauptet das Gegenteil. Das ist auf diesem Board zweimal eingetreten. Ob das als Nacharbeit in dieses Ticket gehoert oder als eigenes Ticket, ist eine Entscheidung fuer den Menschen in signoff - unbeantwortet lassen sollte man es nicht, denn genau dieser Fall ist die Beschwerde, aus der das Ticket entstanden ist. Ich bin mir bei (3) sicher im Befund und unsicher nur darin, wo er hingehoert."
