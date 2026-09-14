@@ -1,7 +1,7 @@
 ---
 id: 01M28MHSDBABYVD8785A74VM40
 title: "Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Fertige Tickets sammeln sich in done, und wer seine Stunden eintraegt, legt sie mit einem Befehl als Tagesordner ab - das Board sagt Bescheid, wenn sich viel angesammelt hat, entscheidet aber nichts"
@@ -21,15 +21,15 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:52:23Z
+updated-at: 2026-09-14T19:52:40Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
 claimed-at: 2026-09-14T19:49:18Z
 question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn fertigen Tickets - passt das, oder lieber einstellbar? (2) WXQ9PT wartet in signoff und verlangt das Gegenteil (done ist danach leer) - markiere ich es als abgeloest, oder machst du das beim Abnehmen?"
-outcome-what: "Die drei critique-Befunde behoben: logbookAll laedt die Lanes nur noch einmal ueber loadEnv, meldet die fehlende terminale Lane als 'not_terminal' wie logbookOut, und die Regel 'Ref-only-Tickets sind nicht dieses Klons zum Ablegen' steht jetzt in FileLane statt nur im TUI-Zaehler - mit Test und NOTES-Zeile."
-outcome-why: "Der Zaehler auf dem Board und der Befehl, der wirklich ablegt, waren sich ueber den Satz uneinig: das Board sagte 'N to file', 'jaira logbook --all' legte N ab und meldete jedes fertige Ref-only-Ticket als Problem. Dazu zwei maschinenlesbare Namen fuer eine Lage in einem Kommando und ein zweiter Ladeweg, der die lanes.Warnings verschluckte."
-outcome-resolves: "FileLane waehlt !t.ReadOnly (core/ticket/trim.go), belegt durch TestFileLaneLeavesRefOnlyTicketsWhereTheyAre mit Gegenprobe; logbookAll ohne core/lane-Import und mit reason 'not_terminal' (internal/cli/logbook.go); go test ./... -race Exit 0; NOTES-Zeile unter ## Unreleased."
+outcome-what: "Die drei Befunde der zweiten critique-Runde behoben: 'jaira logbook --all --json' traegt einen uebersprungenen Ticket jetzt als trim_error neben filed/count/lane, der !t.ReadOnly-Filter in Overflow ist mit einem Test und einer erweiterten NOTES-Zeile belegt statt unbelegt, und der Dateikopf von internal/cli/logbook.go nennt beide Kommandos."
+outcome-why: "Ein Agent, der den Schnitt mit --json fuehrt, las count=3 und erfuhr nie, dass zwei Tickets uebersprungen wurden - stderr-Prosa ist der eine Kanal, den --json-Leser nicht parsen. Und der Filter in Overflow aendert, was eine holds-Kappe wegnimmt: eine von aussen sichtbare Aenderung ohne Zeile in NOTES.md und ohne Test."
+outcome-resolves: "trim_error im --json-Zweig von logbookAll (internal/cli/logbook.go), belegt durch TestTheCutJSONCarriesWhatItSkipped mit Gegenprobe; TestOverflowLeavesRefOnlyTicketsOutOfTheCap (core/ticket/trim_test.go) mit Gegenprobe pinnt den Overflow-Hunk, NOTES-Zeile nennt jetzt --all und die holds-Kappe; Dateikopf logbook.go:3. go vet ./... und go test ./... -race Exit 0."
 review-summary: |-
   internal/cli/logbook.go:112 the --json branch of logbookAll emits only {filed,count,lane}: the PartialError is printed to stderr as prose and never reaches the JSON, so an agent running 'jaira logbook --all --json' sees count=3 and no sign that two tickets were skipped. internal/cli/flow.go:232 already has the pattern for exactly this shape - a successful result carrying the sweep's failure as out["trim_error"]; put the same key in the map here beside filed/count/lane.
   core/ticket/trim.go:40 Overflow now filters !t.ReadOnly, which changes what a lane's holds cap trims, not just what --all files. That is an existing invocation behaving differently with no line in core/release/NOTES.md (the one there names only 'jaira logbook --all') and no test - trim_test.go only covers FileLane. Either widen the NOTES line to say the cap no longer counts ref-only tickets and pin it with an Overflow test, or drop the hunk and leave this ticket to FileLane.
