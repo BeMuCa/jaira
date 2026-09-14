@@ -1,7 +1,7 @@
 ---
 id: 01M2FQEEQN61ZE9AJ4Y4S1VM40
 title: "Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einer Karte sind bis zu drei Tag-Farben gleichzeitig zu sehen: die drei Plaetze der linken Randspalte tragen die Farben der ersten drei Tags des Tickets, in Ticket-Reihenfolge."
@@ -37,14 +37,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:33:18Z
+updated-at: 2026-09-14T18:37:00Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-483334
-claimed-at: 2026-09-14T18:24:11Z
-outcome-what: "cardColors (internal/tui/model.go:1367) faerbt jetzt alle drei Slots: die Schleifengrenze ist 'i < cardSlots' statt 'i < cardSlots-1', damit traegt Slot 3 die Farbe des dritten Tags statt reserviert zu bleiben. renderCardBlock blieb unveraendert - es las bereits slots[i] je Zeile; nur die Kommentare an cardColors und renderCardBlock, die 'reserviert fuer die Sprint-Markierung' sagten, sind nachgezogen. Tests in internal/tui/tagbox_test.go: TestCardColorsAreTheFirstTwoTagsInTicketOrder -> ...FirstThreeTagsInTicketOrder, TestThirdSlotStaysUncolouredHoweverManyTags -> TestTagsPastTheThirdColourNoSlot, TestThirdRowAlwaysCarriesTheLaneShade -> TestThreeTaggedCardShowsAllThreeColoursInTicketOrder (Tabelle ueber 0-4 Tags plus umgekehrte Reihenfolge), TestFourTaggedCardRendersWithTheExtraTagsUncoloured -> ...ExtraTagUncoloured (nur noch 5;111 darf fehlen), neu TestSlotsBelowTheLastTagStayUncoloured. Die Zeile unter ## Unreleased in core/release/NOTES.md ist umgeschrieben, nicht ergaenzt."
-outcome-why: "Alex hat in der human-Lane entschieden, dass Platz 3 nicht mehr fuer die Sprint-Markierung reserviert bleibt: die ist als Ticket 0YGWXQ herausgeloest und wandert an den rechten Kartenrand. Damit gab es keinen Grund mehr, einen vorhandenen Farbplatz leer zu lassen, waehrend der dritte Tag eines Tickets auf dem Board unsichtbar ist."
-outcome-resolves: "DoD-Punkt 2 in seiner neuen Fassung ist belegt: TestThreeTaggedCardShowsAllThreeColoursInTicketOrder zeigt drei unterscheidbare Farbfelder in Ticket-Reihenfolge und - in derselben Tabelle - dass eine Karte mit einem Tag nur Platz 1 und eine mit zwei nur Platz 1 und 2 faerbt, unbelegte Plaetze in der Lane-Schattierung. Die uebrigen fuenf Punkte halten unveraendert: vier Tags bleiben ohne Validierung erhalten (TestFourTaggedCardRendersWithTheExtraTagUncoloured), ein ungefaerbter Tag versetzt den Text nicht (TestUncolouredSecondTagFallsBackWithoutMovingTheText), cardHeight bleibt 3, und die NOTES-Zeile steht unter ## Unreleased. go test ./..., go vet ./... und gofmt -l sind ohne Befund."
+claimed-by: DESKTOP-RFTCH11-521068
+claimed-at: 2026-09-14T18:34:27Z
+outcome-what: "Drei Critique-Befunde der dritten Runde abgearbeitet, ohne cardColors selbst anzufassen. (1) internal/tui/tagbox_test.go: TestCardColorsAreTheFirstThreeTagsInTicketOrder ersatzlos geloescht - nach dem Umschreiben der Vorrunde war er Zeile fuer Zeile in TestTagsPastTheThirdColourNoSlot enthalten, der zusaetzlich den vierten Tag traegt. (2) internal/tui/model.go:1351: der Kommentar an cardColors sagt nicht mehr im Praesens, die Sprint-Markierung stehe am rechten Kartenrand, sondern 'the sprint marker moved off this bar (ticket 0YGWXQ)'. (3) Ticketdatei: die proof-Zeilen von DoD-Punkt 2 und 3 zeigen wieder auf existierende Tests - Punkt 3 auf den umbenannten TestFourTaggedCardRendersWithTheExtraTagUncoloured (internal/tui/tagbox_test.go:593), Punkt 2 ohne den geloeschten Test."
+outcome-why: "Ein doppelter Test kostet Laufzeit und laesst beim Aendern offen, welcher der beiden die Zusage traegt. Ein Kommentar im Praesens ueber Code, den es nicht gibt, schickt den naechsten Leser an den rechten Kartenrand suchen und nennt nicht einmal das Ticket, in dem das entstehen soll. Und ein proof, der auf einen umbenannten Test zeigt, ist kein Beleg mehr - die Sign-off-Lane liest genau diese Zeilen."
+outcome-resolves: "Kein DoD-Punkt aendert sein Verhalten: die Belege zeigen jetzt auf Tests, die es gibt. Punkt 2 (dritter Tag faerbt Platz 3, weniger Tags lassen die Plaetze darunter leer) haelt ueber TestThreeTaggedCardShowsAllThreeColoursInTicketOrder und TestSlotsBelowTheLastTagStayUncoloured, Punkt 3 (vier Tags bleiben erhalten, nur die Farbe fehlt) ueber TestFourTaggedCardRendersWithTheExtraTagUncoloured. go test ./... Exit 0, go vet ./... und gofmt -l ohne Ausgabe."
 review-summary: |-
   internal/tui/tagbox_test.go:92 TestCardColorsAreTheFirstThreeTagsInTicketOrder und :107 TestTagsPastTheThirdColourNoSlot haben nach dieser Runde denselben Assertion-Block (Schleife ueber 83/45/200 auf cardColors) und dieselbe Schicht; der zweite Test ist eine echte Obermenge des ersten, weil er zusaetzlich den vierten Tag traegt. Vor dem Diff pruefte jeder etwas anderes (Slots 1+2 gefaerbt / Slot 3 ungefaerbt), die Verdopplung ist neu. Loeschen: TestCardColorsAreTheFirstThreeTagsInTicketOrder ersatzlos, TestTagsPastTheThirdColourNoSlot deckt beide Zusagen ab.
   internal/tui/model.go:1352 der Kommentar an cardColors behauptet im Praesens 'The sprint marker no longer waits for slot 3 - it goes to the card's right edge instead'. Am rechten Kartenrand steht nichts dergleichen im Binary, und der Kommentar nennt das Ticket 0YGWXQ nicht, in dem das erst entstehen soll. Stattdessen: den Satz streichen (das Warum steht auf dem Ticket) oder als 'the sprint marker moved off this bar (ticket 0YGWXQ)' schreiben.
@@ -61,9 +61,9 @@ question: ""
 - [x] Eine Karte mit zwei Tags zeigt zwei unterscheidbare Farbfelder: Platz 1 traegt die Farbe des ersten Tags des Tickets, Platz 2 die des zweiten, in genau der Reihenfolge, in der sie im Ticket stehen.
   proof: TestTwoTaggedCardShowsBothColoursInTicketOrder (internal/tui/tagbox_test.go)
 - [x] Platz 3 traegt die Farbe des dritten Tags: eine Karte mit drei gefaerbten Tags zeigt drei unterscheidbare Farbfelder in Ticket-Reihenfolge. Eine Karte mit einem Tag faerbt nur Platz 1, eine mit zwei nur Platz 1 und 2; unbelegte Plaetze zeigen weiter die Schattierung der Lane.
-  proof: TestThreeTaggedCardShowsAllThreeColoursInTicketOrder, TestCardColorsAreTheFirstThreeTagsInTicketOrder, TestSlotsBelowTheLastTagStayUncoloured (internal/tui/tagbox_test.go)
+  proof: TestThreeTaggedCardShowsAllThreeColoursInTicketOrder, TestSlotsBelowTheLastTagStayUncoloured (internal/tui/tagbox_test.go)
 - [x] Ein Ticket mit vier Tags behaelt alle vier: 'jaira tag' nimmt den vierten an und gibt keinen Fehler, 'jaira show' listet ihn, und nur die Farbe fehlt ihm.
-  proof: TestFourTaggedCardRendersWithTheExtraTagsUncoloured; CLI nachgestellt: jaira tag <id> ui backend docs ci exit 0, jaira show --json listet alle vier
+  proof: TestFourTaggedCardRendersWithTheExtraTagUncoloured (internal/tui/tagbox_test.go:593); CLI nachgestellt: jaira tag <id> ui backend docs ci exit 0, jaira show --json listet alle vier
 - [x] Ein Tag ohne Zeile in .jaira/tags laesst seinen Platz in der Lane-Schattierung, und die drei Textzeilen der Karte stehen an derselben Stelle wie bei einer Karte ohne jeden Tag - nachgestellt an einer Karte mit einem gefaerbten und einem ungefaerbten Tag.
   proof: TestUncolouredSecondTagFallsBackWithoutMovingTheText (internal/tui/tagbox_test.go)
 - [x] cardHeight() gibt weiterhin 3 zurueck: die Karte wird durch diese Aenderung keine Zeile hoeher, nachgestellt an einer Lane mit mehr Karten als Platz.
@@ -218,3 +218,10 @@ Nicht angefasst, bewusst: selectionFill/Glow speisen sich weiter aus Slot 1 (Ale
 3. Ticketdatei Zeile 63: die proof-Zeile von DoD-Punkt 3 nennt TestFourTaggedCardRendersWithTheExtraTagsUncoloured, den dieser Diff in ...ExtraTagUncoloured umbenannt hat. Fix: jaira dod S1VM40 3 --done --proof mit dem neuen Namen.
 
 Nicht beanstandet und bewusst stehen gelassen: die Aenderung selbst ist eine Schleifengrenze - kleiner geht die Form nicht; renderCardBlock unangetastet ist richtig, der reservierte Slot war nur ein Modell-Detail; selectionFill/Glow weiter aus Slot 1 ist Alex' Vorgabe; die eine umgeschriebene statt zweite NOTES-Zeile ist richtig, weil '## Unreleased' nie ein Binary erreicht hat; die Ueberschneidung zwischen Modell- und Rendering-Tests hat schon die vorige Runde stehen lassen und wird nicht neu aufgemacht.
+- **2026-09-14 18:36 · Alexander Sacharov** — in-progress (Fixrunde nach der dritten critique): alle drei Befunde behoben, keine Codeaenderung an cardColors selbst.
+
+1. TestCardColorsAreTheFirstThreeTagsInTicketOrder ersatzlos geloescht (internal/tui/tagbox_test.go). Nicht ersetzt oder umgeschrieben: TestTagsPastTheThirdColourNoSlot prueft denselben Aufruf mit einem zusaetzlichen vierten Tag und ist damit echte Obermenge; die Ticket-Reihenfolge deckt TestThreeTaggedCardShowsAllThreeColoursInTicketOrder samt Umkehrprobe.
+2. Der Kommentar an cardColors (internal/tui/model.go:1351) sagt jetzt 'the sprint marker moved off this bar (ticket 0YGWXQ)' statt im Praesens einen rechten Kartenrand zu versprechen, den kein Code traegt. Gegengeprueft: sonst nennt keine Stelle in internal/tui einen Sprint-Marker oder einen reservierten Slot (grep auf 'right edge|0YGWXQ|reserved').
+3. proof von DoD-Punkt 3 auf den umbenannten TestFourTaggedCardRendersWithTheExtraTagUncoloured (internal/tui/tagbox_test.go:593) gezogen. Punkt 2 nannte den geloeschten Test und ist mitgezogen - der Befund erwaehnte das; ohne wuerde Fix 1 einen zweiten toten Beleg hinterlassen.
+
+go test ./... Exit 0, go vet ./... und gofmt -l ohne Ausgabe.

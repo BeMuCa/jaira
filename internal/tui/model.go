@@ -1348,9 +1348,9 @@ type cardSlot struct {
 
 // cardColors is the bar down a card's left edge, read top to bottom: slot 1 is
 // the registry's colour for the ticket's first tag, slot 2 for its second and
-// slot 3 for its third, all in the order the tags stand on the ticket. The
-// sprint marker no longer waits for slot 3 — it goes to the card's right edge
-// instead — so all three slots belong to tags.
+// slot 3 for its third, all in the order the tags stand on the ticket. All
+// three slots belong to tags; the sprint marker moved off this bar (ticket
+// 0YGWXQ).
 //
 // A tag with no line in the registry, a missing tag, and any tag past the
 // third all leave their slot uncoloured: the card renders with the lane's

@@ -89,19 +89,6 @@ func todoLaneIdx(t *testing.T, m *Model) int {
 
 // --- cardColor / cardHeight -------------------------------------------------
 
-func TestCardColorsAreTheFirstThreeTagsInTicketOrder(t *testing.T) {
-	m := newTestModel(t, 150, 32)
-	m.tags = registryWith(t, "ui", 83, "backend", 45, "docs", 200)
-	tk := &ticket.Ticket{ID: "x", Title: "t", Tags: []string{"ui", "backend", "docs"}}
-
-	slots := m.cardColors(tk)
-	for i, want := range []int{83, 45, 200} {
-		if !slots[i].coloured || slots[i].colour != want {
-			t.Errorf("slot %d = %+v; want colour %d", i+1, slots[i], want)
-		}
-	}
-}
-
 // The display limit is three: a fourth tag stays on the ticket and colours
 // nothing, and it must not push any of the first three out of its slot.
 func TestTagsPastTheThirdColourNoSlot(t *testing.T) {
