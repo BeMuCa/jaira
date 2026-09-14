@@ -37,11 +37,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:33:18Z
+updated-at: 2026-09-14T18:34:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-483334
-claimed-at: 2026-09-14T18:24:11Z
+claimed-by: DESKTOP-RFTCH11-521068
+claimed-at: 2026-09-14T18:34:27Z
 outcome-what: "cardColors (internal/tui/model.go:1367) faerbt jetzt alle drei Slots: die Schleifengrenze ist 'i < cardSlots' statt 'i < cardSlots-1', damit traegt Slot 3 die Farbe des dritten Tags statt reserviert zu bleiben. renderCardBlock blieb unveraendert - es las bereits slots[i] je Zeile; nur die Kommentare an cardColors und renderCardBlock, die 'reserviert fuer die Sprint-Markierung' sagten, sind nachgezogen. Tests in internal/tui/tagbox_test.go: TestCardColorsAreTheFirstTwoTagsInTicketOrder -> ...FirstThreeTagsInTicketOrder, TestThirdSlotStaysUncolouredHoweverManyTags -> TestTagsPastTheThirdColourNoSlot, TestThirdRowAlwaysCarriesTheLaneShade -> TestThreeTaggedCardShowsAllThreeColoursInTicketOrder (Tabelle ueber 0-4 Tags plus umgekehrte Reihenfolge), TestFourTaggedCardRendersWithTheExtraTagsUncoloured -> ...ExtraTagUncoloured (nur noch 5;111 darf fehlen), neu TestSlotsBelowTheLastTagStayUncoloured. Die Zeile unter ## Unreleased in core/release/NOTES.md ist umgeschrieben, nicht ergaenzt."
 outcome-why: "Alex hat in der human-Lane entschieden, dass Platz 3 nicht mehr fuer die Sprint-Markierung reserviert bleibt: die ist als Ticket 0YGWXQ herausgeloest und wandert an den rechten Kartenrand. Damit gab es keinen Grund mehr, einen vorhandenen Farbplatz leer zu lassen, waehrend der dritte Tag eines Tickets auf dem Board unsichtbar ist."
 outcome-resolves: "DoD-Punkt 2 in seiner neuen Fassung ist belegt: TestThreeTaggedCardShowsAllThreeColoursInTicketOrder zeigt drei unterscheidbare Farbfelder in Ticket-Reihenfolge und - in derselben Tabelle - dass eine Karte mit einem Tag nur Platz 1 und eine mit zwei nur Platz 1 und 2 faerbt, unbelegte Plaetze in der Lane-Schattierung. Die uebrigen fuenf Punkte halten unveraendert: vier Tags bleiben ohne Validierung erhalten (TestFourTaggedCardRendersWithTheExtraTagUncoloured), ein ungefaerbter Tag versetzt den Text nicht (TestUncolouredSecondTagFallsBackWithoutMovingTheText), cardHeight bleibt 3, und die NOTES-Zeile steht unter ## Unreleased. go test ./..., go vet ./... und gofmt -l sind ohne Befund."
