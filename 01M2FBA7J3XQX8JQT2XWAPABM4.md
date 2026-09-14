@@ -41,13 +41,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:05:55Z
+updated-at: 2026-09-14T16:09:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273044
 claimed-at: 2026-09-14T15:48:01Z
 outcome-what: "Neues Paket internal/wintrap liest den Quelltext auf die fuenf Muster, an denen dieses Repository auf Windows bisher gebrochen ist, und nennt in jedem Fund die Abhilfe. TestRepositoryIsClean laesst go test ./... auf Linux rot werden, sobald eines davon wieder auftaucht; TestEachPatternFires beweist mit je einem testdata-Fixture, dass jede der fuenf Regeln anschlaegt. Der heutige Stand ist gruen gemacht: USERPROFILE in core/identity/identity_test.go, eol=lf-Zeilen fuer core/release/NOTES.md und core/hook/example/notify.sh in .gitattributes, filepath.Join in core/tag/tag_test.go und core/gate/gate_test.go, filepath.Rel in internal/tui/browse.go. Zwei Scheintreffer (core/role/role.go embed.FS, core/settings/settings.go git-Refname) sind mit //wintrap:ok plus Begruendung markiert statt umgeschrieben. Der ubuntu-latest-Job fuehrt zusaetzlich GOOS=windows go vet ./... und go build ./cmd/jaira aus, und README '## Development' nennt beide Zeilen zum Selberlaufen."
 outcome-why: "Der windows-latest-Job braucht 8 Minuten und meldet erst nach getaner Arbeit, dass sie kaputt ist. Alle sieben Windows-Fixes der Historie waren fuenf Muster, kein einziges neues Problem, und alle fuenf sind auf Linux im Quelltext sichtbar. Jetzt scheitern sie in Sekunden auf dem Rechner, an dem man sitzt."
 outcome-resolves: "Fuenf Muster mit je eigenem Unterfall und Abhilfetext; Repository-Lauf gruen ohne aufgeweichte Regel; GOOS=windows vet+build im ubuntu-Job, nachweislich fallend bei einem Windows-Uebersetzungsfehler; beide Zeilen in der Entwickler-Dokumentation; keine Zeile in core/release/NOTES.md."
+review-summary: |-
+  internal/wintrap/wintrap.go:406 rule 4 fires on any call with a "-o" string argument, then claims in the finding text that "a binary is built with go build -o". Probed: exec.Command("sort","-o",out,in) and exec.Command("tar","-c","-o","x.tar",dir) both report trap 4. Require the call to be exec.Command/exec.CommandContext whose first literal arg is "go" and whose args carry "build", so the check verifies what its own message asserts.
+  internal/wintrap/wintrap.go:517 sepConcat returns false for any concatenation carrying "://", to spare URLs — but a URL reaching os.*/filepath.*/strings.TrimPrefix-against-a-path is the state that cannot occur, and the one real URL site (core/selfupdate/selfupdate.go:208) is a bare return that checkSlash never looks at. Delete the "://" branch; the remedy text at wintrap.go:468 already tells URL sites to carry //wintrap:ok, which is the mechanism that works.
+  internal/wintrap/wintrap.go:435 mentionsExe silences a whole function when any called identifier contains "exe" — a third silencing mechanism beside //wintrap:ok and the hasGOOS whole-function skip, and one nobody can see at the site it silences. Drop the *ast.CallExpr branch, keep the literal ".exe" check, and let a helper-named site carry //wintrap:ok with its reason.
+  internal/wintrap/wintrap.go and internal/wintrap/gitattributes.go are non-test files (640 lines, exported Scan) with no caller anywhere but their own test, while this repository already has a guard test that reads the source tree: core/lane/lane_test.go:698 TestModelTierNeverComparedToModelName, inside the package it guards, in a _test.go. Rename both to _test.go files in the same package — the testdata fixtures, Scan and all four tests keep working unchanged, and the module stops carrying a dev-only exported API that nothing imports.
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
