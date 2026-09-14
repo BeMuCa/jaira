@@ -22,7 +22,7 @@ context: |-
 definition-of-done: |-
   Eine Karte mit zwei Tags zeigt zwei unterscheidbare Farbfelder: Platz 1 traegt die Farbe des ersten Tags des Tickets, Platz 2 die des zweiten, in genau der Reihenfolge, in der sie im Ticket stehen.
 
-  Platz 3 bleibt in diesem Ticket unbelegt und zeigt die Schattierung der Lane, so wie eine ungefaerbte Karte es heute tut.
+  Platz 3 traegt die Farbe des dritten Tags: eine Karte mit drei gefaerbten Tags zeigt drei unterscheidbare Farbfelder in Ticket-Reihenfolge. Eine Karte mit einem Tag faerbt nur Platz 1, eine mit zwei nur Platz 1 und 2; unbelegte Plaetze zeigen weiter die Schattierung der Lane.
 
   Ein Ticket mit vier Tags behaelt alle vier: 'jaira tag' nimmt den vierten an und gibt keinen Fehler, 'jaira show' listet ihn, und nur die Farbe fehlt ihm.
 
@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:42:27Z
+updated-at: 2026-09-14T18:43:09Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -235,3 +235,4 @@ Nicht als Befund erhoben:
 - Die Aenderung selbst bleibt unbeanstandet: eine Schleifengrenze cardSlots-1 -> cardSlots (internal/tui/model.go:1364), renderCardBlock unangetastet, eine umgeschriebene statt einer zweiten NOTES-Zeile. Kleiner geht die Form nicht.
 - Die drei Befunde aus Runde 3 sind erledigt und werden nicht neu aufgemacht: der doppelte Slot-Test ist weg, der Kommentar an cardColors (internal/tui/model.go:1350) nennt jetzt 'the sprint marker moved off this bar (ticket 0YGWXQ)', und die proof-Zeilen der Punkte 2 und 3 zeigen auf Tests, die es gibt.
 - Die veralteten Testnamen im Feld review-gaps (TestThirdSlotStaysUncolouredHoweverManyTags, TestThirdRowAlwaysCarriesTheLaneShade) sind Ausgabe der optimize-Lane und werden von deren naechstem Durchgang ueberschrieben - anders als die DoD, die der Vertrag des Tickets ist.
+- **2026-09-14 18:43 · Alexander Sacharov** — Befund der zweiten critique behoben, und zwar vom Dispatcher selbst, weil es sein eigener Fehler war: beim Wiedereroeffnen wurde DoD-Punkt 2 im Body umformuliert, das Frontmatter-Feld definition-of-done aber nicht. Absatz 2 dieses Feldes traegt jetzt denselben Wortlaut wie DoD-Punkt 2; die uebrigen fuenf Absaetze sind unveraendert. Keine Codeaenderung in dieser Runde - der Diff aus 50f15a2/82c111e steht unberuehrt.
