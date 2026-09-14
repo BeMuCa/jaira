@@ -1,7 +1,7 @@
 ---
 id: 01M28MHSDBABYVD8785A74VM40
 title: "Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Fertige Tickets sammeln sich in done, und wer seine Stunden eintraegt, legt sie mit einem Befehl als Tagesordner ab - das Board sagt Bescheid, wenn sich viel angesammelt hat, entscheidet aber nichts"
@@ -21,15 +21,15 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:45:05Z
+updated-at: 2026-09-14T19:45:19Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-661099
 claimed-at: 2026-09-14T19:36:30Z
 question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn fertigen Tickets - passt das, oder lieber einstellbar? (2) WXQ9PT wartet in signoff und verlangt das Gegenteil (done ist danach leer) - markiere ich es als abgeloest, oder machst du das beim Abnehmen?"
-outcome-what: "logbook-on-entry aus den mitgelieferten Lanes entfernt, jaira logbook --all als Handschnitt, Board-Meldung ab zehn fertigen Tickets"
-outcome-why: "Ein Move nach done nahm 49 fremde fertige Tickets mit ins Logbuch (Issue #6) - Ablegen ist Buchhaltung und faellt Tage spaeter, Fertigwerden ist eine Aussage ueber die Arbeit"
-outcome-resolves: Jeder Teil der DoD mit Test belegt und von Hand gegengeprueft
+outcome-what: "Die drei critique-Befunde behoben: logbookAll laedt die Lanes nur noch einmal ueber loadEnv, meldet die fehlende terminale Lane als 'not_terminal' wie logbookOut, und die Regel 'Ref-only-Tickets sind nicht dieses Klons zum Ablegen' steht jetzt in FileLane statt nur im TUI-Zaehler - mit Test und NOTES-Zeile."
+outcome-why: "Der Zaehler auf dem Board und der Befehl, der wirklich ablegt, waren sich ueber den Satz uneinig: das Board sagte 'N to file', 'jaira logbook --all' legte N ab und meldete jedes fertige Ref-only-Ticket als Problem. Dazu zwei maschinenlesbare Namen fuer eine Lage in einem Kommando und ein zweiter Ladeweg, der die lanes.Warnings verschluckte."
+outcome-resolves: "FileLane waehlt !t.ReadOnly (core/ticket/trim.go), belegt durch TestFileLaneLeavesRefOnlyTicketsWhereTheyAre mit Gegenprobe; logbookAll ohne core/lane-Import und mit reason 'not_terminal' (internal/cli/logbook.go); go test ./... -race Exit 0; NOTES-Zeile unter ## Unreleased."
 review-summary: |-
   internal/cli/logbook.go:89 laedt die Lanes ein zweites Mal: logbookAll ruft lane.Load(s.Root) und direkt danach loadEnv(s) (Zeile 97), das intern dasselbe lane.Load macht (internal/cli/root.go:276) und die Lanes als env.Lanes zurueckgibt. logbookOut in derselben Datei (Zeile 164) holt sich die terminale Lane genau so: env.Lanes.Terminal(). Stattdessen: loadEnv zuerst rufen, terminal := env.Lanes.Terminal() nehmen, lane.Load und den core/lane-Import streichen - nebenbei gehen dann auch die lanes.Warnings nicht mehr verloren, die nur loadEnv ausgibt.
   internal/cli/logbook.go:95 nennt dieselbe Lage anders als der Nachbar: fehlt die terminale Lane, meldet logbookAll reason 'no_terminal_lane', logbookOut an Zeile 168 und 176 'not_terminal'. Ein Aufrufer von --json bekommt fuer eine Bedingung zwei maschinenlesbare Namen aus einem Kommando. Stattdessen: in logbookAll 'not_terminal' verwenden.
