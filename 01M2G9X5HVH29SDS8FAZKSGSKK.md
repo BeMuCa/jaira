@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T18:37:14Z
+updated-at: 2026-09-14T18:37:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
@@ -45,6 +45,7 @@ updated-by: Alexander Sacharov
 - [ ] Der .env-Block in scripts/spawn.sh traegt keinen fest eingebauten Projektnamen eines fremden Repositories mehr - entweder abgeleitet oder aus dem Skript heraus.
 - [ ] Nachgestellt: ein Dispatcher, der nur seinen eigenen Prompt liest, startet einen Worker in einer eigenen Vorlage, ohne 'claude --permission-mode' selbst aufzurufen.
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased, weil die ausgelieferten Prompts sich aendern.
+- [ ] scripts/spawn.sh teilt die Vorlage standardmaessig nach RECHTS, nicht nach unten, und die Richtung ist einstellbar statt fest verdrahtet. Heute steht 'pane split --current --direction down' im Skript; herdr kennt nur 'right' und 'down', und 'down' stapelt die Vorlagen uebereinander, bis in jeder nur noch ein paar Zeilen stehen und niemand mehr etwas lesen kann.
 
 ## Options
 
