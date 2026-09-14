@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:32:47Z
+updated-at: 2026-09-14T18:33:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-483334
@@ -209,3 +209,12 @@ Neu dazu: TestSlotsBelowTheLastTagStayUncoloured. Der Fall 'weniger Tags als Slo
 NOTES.md: die bestehende Zeile umgeschrieben, keine zweite daneben - eine Release-Zeile beschreibt, was der Leser sieht, und 'zwei Farben, dritte reserviert' hat nie ein Binary erreicht (Abschnitt ist ## Unreleased).
 
 Nicht angefasst, bewusst: selectionFill/Glow speisen sich weiter aus Slot 1 (Alex' Vorgabe), und in core/tag bleibt es bei einer reinen Anzeigegrenze ohne Validierung.
+- **2026-09-14 18:33 · Alexander Sacharov** — critique (Runde nach der human-Antwort): drei Befunde, alle mit klarem Fix, deshalb zurueck nach in-progress.
+
+1. internal/tui/tagbox_test.go: TestCardColorsAreTheFirstThreeTagsInTicketOrder (:92) und TestTagsPastTheThirdColourNoSlot (:107) sind nach dem Umschreiben identisch - gleicher Aufruf, gleiche Schleife ueber 83/45/200, gleiche Schicht (cardColors). Der zweite haengt nur einen vierten Tag an und ist damit Obermenge. Vorher pruefte jeder etwas anderes (Slots 1+2 gefaerbt vs. Slot 3 ungefaerbt), die Verdopplung entsteht erst in diesem Diff. Fix: TestCardColorsAreTheFirstThreeTagsInTicketOrder loeschen; die Ticket-Reihenfolge ist ausserdem in TestThreeTaggedCardShowsAllThreeColoursInTicketOrder samt Umkehrprobe gedeckt. Dann auch die proof-Zeile von DoD-Punkt 2 nachziehen, die ihn nennt.
+
+2. internal/tui/model.go:1352: der Kommentar sagt 'The sprint marker no longer waits for slot 3 - it goes to the card's right edge instead'. Das ist Praesens fuer Code, den es nicht gibt; wer am rechten Rand danach sucht, findet nichts, und das Ticket 0YGWXQ steht nicht dabei. Fix: Satz streichen oder auf 'the sprint marker moved off this bar (ticket 0YGWXQ)' kuerzen.
+
+3. Ticketdatei Zeile 63: die proof-Zeile von DoD-Punkt 3 nennt TestFourTaggedCardRendersWithTheExtraTagsUncoloured, den dieser Diff in ...ExtraTagUncoloured umbenannt hat. Fix: jaira dod S1VM40 3 --done --proof mit dem neuen Namen.
+
+Nicht beanstandet und bewusst stehen gelassen: die Aenderung selbst ist eine Schleifengrenze - kleiner geht die Form nicht; renderCardBlock unangetastet ist richtig, der reservierte Slot war nur ein Modell-Detail; selectionFill/Glow weiter aus Slot 1 ist Alex' Vorgabe; die eine umgeschriebene statt zweite NOTES-Zeile ist richtig, weil '## Unreleased' nie ein Binary erreicht hat; die Ueberschneidung zwischen Modell- und Rendering-Tests hat schon die vorige Runde stehen lassen und wird nicht neu aufgemacht.
