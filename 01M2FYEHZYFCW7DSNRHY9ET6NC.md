@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:59:31Z
+updated-at: 2026-09-14T13:00:03Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -62,7 +62,8 @@ review-summary: |-
 
 - [x] In einem Repository, dessen einziger Remote origin heisst, laeuft 'jaira release <id>' durch, waehrend ~/.jaira/settings.json weiterhin remote: upstream sagt. Nachgestellt an einem Fixture-Repository mit genau einem Remote.
   proof: internal/cli/boardremote_test.go TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote, TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt, TestABoardRemoteThatIsGoneStopsLoudly; core/settings/remotefor_test.go TestBoardRemoteWinsAndNeverFallsBack; core/gitref/gitref_test.go TestUsableExplainsAMissingRemote; core/release/NOTES.md:16
-- [ ] Im jaira-Repository selbst (origin = Fork, upstream = BeMuCa) geht der Ticket-Ref weiterhin nach upstream. Ein Test haelt das fest, damit die Loesung nicht darin bestehen kann, ueberall still auf origin auszuweichen.
+- [x] Im jaira-Repository selbst (origin = Fork, upstream = BeMuCa) geht der Ticket-Ref weiterhin nach upstream. Ein Test haelt das fest, damit die Loesung nicht darin bestehen kann, ueberall still auf origin auszuweichen.
+  proof: core/settings/remotefor_test.go: TestRemoteForKeepsTheConfiguredRemoteWhereItExists und TestRemoteForDoesNotGuessBetweenSeveralRemotes; internal/cli/boardremote_test.go: TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt
 - [ ] Der Remote laesst sich pro Board festlegen, nicht nur pro Rechner - auf welchem Weg auch immer die Plan-Lane das loest.
 - [ ] Bricht eine ref-Operation doch am Remote ab, nennt die Meldung drei Dinge: den eingestellten Namen, die Remotes die dieses Repository tatsaechlich hat, und den Befehl der es geradezieht. Nicht nur: no remote "upstream".
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
