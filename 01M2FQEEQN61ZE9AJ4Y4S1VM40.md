@@ -37,7 +37,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T10:29:46Z
+updated-at: 2026-09-14T12:58:56Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
