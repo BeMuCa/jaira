@@ -42,10 +42,10 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:23:57Z
+updated-at: 2026-09-14T18:14:12Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-382690
-claimed-at: 2026-09-14T16:16:39Z
+claimed-by: DESKTOP-RFTCH11-463488
+claimed-at: 2026-09-14T18:14:12Z
 outcome-what: "Regel 4 auf 'go build -o' verengt: isGoBuildOutput (internal/wintrap/wintrap_scan_test.go:443) akzeptiert nur noch das Literal \"build\", die Zweige \"install\" und \"test\" sind raus. Der Doc-Kommentar nennt jetzt die Form exec.Command(\"go\", \"build\", ..., \"-o\", ...) und sagt, warum die beiden anderen nicht dazugehoeren."
 outcome-why: "Der Fundtext behauptet 'a binary is built with go build -o'. 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, das der Text nicht beschreibt. Eine Regel, die etwas anderes prueft als sie meldet, ist genau der Fehler, den die critique-Runde davor schon dreimal gefunden hat."
 outcome-resolves: "go test ./... gruen, go vet ./... und GOOS=windows GOARCH=amd64 go vet ./... gruen. TestEachPatternFires laeuft unveraendert: das Fixture internal/wintrap/testdata/rule4/build.go:10 ist exec.Command(\"go\",\"build\",\"-o\",bin,...) und schlaegt weiter an, Regel 4 ist also nicht ins Leere verengt. TestRepositoryIsClean gruen ohne aufgeweichte Regel."
