@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:01:23Z
+updated-at: 2026-09-14T16:01:26Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -58,7 +58,8 @@ claimed-at: 2026-09-14T15:48:04Z
   proof: TestUncolouredSecondTagFallsBackWithoutMovingTheText (internal/tui/tagbox_test.go)
 - [x] cardHeight() gibt weiterhin 3 zurueck: die Karte wird durch diese Aenderung keine Zeile hoeher, nachgestellt an einer Lane mit mehr Karten als Platz.
   proof: internal/tui/view.go:488 cardHeight returns 3; TestCardHeightIsTheThreeContentRows, TestACardHeavyWithFlagsStaysThreeRows, TestColumnDrawsEveryCardItCountsInFull
-- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+  proof: core/release/NOTES.md:16
 
 Platz 3 bleibt in diesem Ticket unbelegt und zeigt die Schattierung der Lane, so wie eine ungefaerbte Karte es heute tut.
 
