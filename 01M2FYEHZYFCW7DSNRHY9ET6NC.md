@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:50:32Z
+updated-at: 2026-09-14T12:50:35Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -80,7 +80,7 @@ Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 - [ ] Fehlender Test 3: Fixture-Repo mit zwei Remotes, von denen keiner wie der eingestellte heisst -> Abbruch, kein Ausweichen
 - [ ] gitref.Repo.Usable(): Fehlertext um die drei Angaben erweitern - eingestellter Name, vorhandene Remotes, 'git config jaira.remote <name>' als Abhilfe
 - [ ] Test 4: der Fehlertext enthaelt alle drei Angaben
-- [ ] Die vier Aufrufstellen auf RemoteFor(dir) umstellen: internal/cli/refs.go:27, internal/cli/snapshot.go:112, internal/cli/fetch.go:103, internal/tui/refs.go:35
+- [x] Die vier Aufrufstellen auf RemoteFor(dir) umstellen: internal/cli/refs.go:27, internal/cli/snapshot.go:112, internal/cli/fetch.go:103, internal/tui/refs.go:35
 - [ ] Startkosten pruefen: RemoteFor kostet bis zu zwei git-Aufrufe je Kommando - einmal je Prozess merken oder erst beim ersten Ref-Zugriff aufloesen
 - [ ] README.md:338 (settings.json-Block) um den Board-Remote und die Reihenfolge ergaenzen
 - [ ] core/release/NOTES.md: Abschnitt '## Unreleased' oben anlegen und eine Zeile schreiben
