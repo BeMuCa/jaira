@@ -42,10 +42,10 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:13:29Z
+updated-at: 2026-09-14T16:16:39Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-273044
-claimed-at: 2026-09-14T15:48:01Z
+claimed-by: DESKTOP-RFTCH11-382690
+claimed-at: 2026-09-14T16:16:39Z
 outcome-what: "Vier critique-Funde abgearbeitet. Regel 4 verengt: checkExe meldet nur noch, wenn der Aufruf exec.Command/CommandContext mit erstem Literal \"go\" und \"build\"/\"install\"/\"test\" plus \"-o\" ist (neues isGoBuildOutput in internal/wintrap/wintrap_scan_test.go) - die Gegenproben sort -o und tar -c -o melden nicht mehr. Der CallExpr-Zweig aus mentionsExe ist geloescht, nur das \".exe\"-Literal zaehlt noch; die zwei Stellen, die davon lebten (internal/cli/mergebranches_test.go:34 und :194, beide rufen exeSuffix()), tragen jetzt //wintrap:ok mit Begruendung. Der \"://\"-Zweig in sepConcat ist geloescht. wintrap.go und gitattributes.go sind zu wintrap_scan_test.go und gitattributes_scan_test.go umbenannt, das Modul traegt kein exportiertes Scan mehr ausserhalb des Tests."
 outcome-why: "Jeder der drei Regelfunde war eine Meldung, die etwas anderes prueft als sie behauptet, oder ein Stummschalter, den man an der stummgeschalteten Stelle nicht sieht - beides macht den Waechter unglaubwuerdig, und ein Waechter, dem man nicht glaubt, wird abgeschaltet. Der vierte Fund nahm 640 Zeilen Entwickler-Werkzeug aus dem ausgelieferten Modul, ohne dass eine Zeile davon anders arbeitet."
 outcome-resolves: "go test ./... und go vet ./... gruen, GOOS=windows go vet ./... und go build ./cmd/jaira gruen. TestEachPatternFires laeuft unveraendert weiter - alle fuenf Fixtures schlagen an, Regel 4 also trotz der Verengung nicht vakuum. TestRepositoryIsClean gruen ohne aufgeweichte Regel: die zwei neuen Stellen sind mit //wintrap:ok plus Grund ausgenommen, nicht durch eine Lockerung. Kein Eintrag in core/release/NOTES.md, von aussen am Binary ist nichts davon zu beobachten."
