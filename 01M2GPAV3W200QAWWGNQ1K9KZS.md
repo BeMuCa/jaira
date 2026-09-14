@@ -2,7 +2,7 @@
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
 status: backlog
-ready: false
+ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
 context: |-
@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-14T19:29:51Z
+updated-at: 2026-09-14T19:29:53Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -36,6 +36,10 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Ein Board, dessen done.md noch 'logbook-on-entry: true' traegt, fegt beim naechsten Move nach done keine fremden fertigen Tickets mehr ins Logbuch. Nachgestellt an einem Board-Fixture, das mit der alten Lane-Datei angelegt wurde.
+- [ ] Eine vom Nutzer selbst geaenderte Lane ueberlebt die Migration unveraendert: was er geschrieben hat, wird nicht zurueckgesetzt. Die Entscheidung von 743737f - ein Board ist sein Lane-Verzeichnis - bleibt gueltig.
+- [ ] Der Nutzer erfaehrt, dass eine seiner Lanes von einer Korrektur betroffen ist, statt es an seinem Verhalten zu merken. Nachgestellt an dem Board-Fixture aus Punkt 1.
+- [ ] Die Zeile in core/release/NOTES.md, die 'Finishing a ticket no longer files anything' behauptet, stimmt danach fuer alle Boards - oder sie sagt, fuer welche sie nicht gilt und was zu tun ist.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
