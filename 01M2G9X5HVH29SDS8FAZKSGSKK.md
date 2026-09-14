@@ -29,8 +29,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T15:52:47Z
-assignee: ""
+updated-at: 2026-09-14T18:23:45Z
+assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
 
