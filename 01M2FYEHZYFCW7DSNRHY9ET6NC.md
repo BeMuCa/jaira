@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:08:31Z
+updated-at: 2026-09-14T13:08:49Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -147,3 +147,10 @@ Nicht beanstandet, damit es niemand nochmal aufmacht: dass ein Repo mit genau EI
 - RemoteName ist weg, nicht nur unexportiert: die vier Aufrufe in core/settings/settings_test.go pruefen jetzt ueber RemoteFor(t.TempDir()). Ein TempDir ist kein Repo, also liefern BoardRemote und Remotes nichts und RemoteFor faellt auf denselben Vorgabewert durch, den RemoteName geliefert hat. Dadurch braucht kein Test mehr eine zweite Einstiegstuer.
 - Der 'if dir == ""'-Zweig in RemoteFor ist weg. Kein Aufrufer uebergibt ""; s.Root ist nie leer.
 - Abweichung von der Kritik bei boardremote_test.go: ticket.At(dir).Create(...) allein reicht hier NICHT. 'jaira create' legt das Ticket auf seinem git-ref ab und nicht auf der Platte ('On its ref, not on your disk'), und genau dieser ref ist das, was die drei Tests pruefen. Store-Create baut keinen ref, und 'release' scheitert dann mit 'no ref for this ticket'. Deshalb bleibt das Anlegen ueber die CLI; nur das Raten des Handles aus stdout ist weg - der Handle kommt aus (&gitref.Repo{Dir: clone}).List(). Und weil im dritten Test der Board-Remote fehlt, kann create keinen ref schreiben und legt das Ticket auf die Platte; dafuer faellt der Helfer auf ticket.At(clone).List() zurueck.
+- **2026-09-14 13:08 · Alexander Sacharov** — critique (2. Durchgang): keine Befunde. Alle vier Findings aus Runde 1 sind zu: gitref.Remotes/BoardRemote gehen ueber (&Repo{Dir: dir}).value(...) und erben damit GIT_TERMINAL_PROMPT=0 und die getrennte stderr-Behandlung; der if dir==""-Zweig in RemoteFor ist weg; RemoteName ist ganz entfallen und in RemoteFor hineingezogen, die vier Aufrufe in settings_test.go gehen jetzt ueber RemoteFor(t.TempDir()); handleOf ist weg.
+
+Zur bewussten Abweichung bei Finding 2 (ticket.At(dir).Create statt CLI): die Begruendung traegt. internal/cli/refs.go:74 fileOnRefOnly loescht die lokale Datei, sobald der Flush den ref gesendet hat - auf einem Board mit brauchbarem Remote lebt ein frisches Ticket also NUR auf refs/jaira/tickets/<id>. Store-Create wuerde eine Datei ohne ref anlegen und damit genau den Mechanismus umgehen, den diese drei Tests pruefen. Die Muster-Tests (claimrelease_test.go) laufen in einem t.TempDir() ohne git, dort ist refsync ohnehin inert - deshalb passt ihr Muster hier nicht. Das Raten aus stdout ist das eigentliche Problem gewesen und ist weg; der Handle kommt aus gitref.Repo.List().
+
+Der Store-Rueckfall in ticketIn ist kein toter Zweig: im dritten Test scheitert Usable() am fehlenden Board-Remote, refsync ist inert, die Datei bleibt liegen und es gibt keinen ref.
+
+Nichts Neues eingeschleppt: go vet ./core/... ./internal/... laeuft sauber, Remotes/BoardRemote liefern bei fehlendem git, fehlendem Repo und leerer Ausgabe dasselbe wie vorher (nil bzw. ""), und value() trimmt bereits, was BoardRemote vorher von Hand tat.
