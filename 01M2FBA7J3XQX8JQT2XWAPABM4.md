@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:33:59Z
+updated-at: 2026-09-14T18:34:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
@@ -57,6 +57,7 @@ review-gaps: |-
   Removed: binaryExt (a 14-extension allowlist in wintrap_scan_test.go that silenced a case this module does not have — all four //go:embed directives pull .md and .sh only) in favour of the attribute git already owns; loadAttributes now counts -text and binary as pinned, because both tell git to convert nothing, and the method is named pinned rather than eolLF to match. Removed: selName2, a seven-line ast.Expr/ast.Node adapter with one caller; hasGOOS now matches *ast.SelectorExpr directly. Removed: mentionsExe, which was one of three copies of the same "inspect until the first hit" loop — anyNode plus litContains now carry all three (hasGOOS, the .exe check in checkExe, sepConcat), and the reason the .exe check silences a function sits as a comment at the site that silences it. Fixed the word "narrower" (meant looser) in the isGoBuildOutput doc comment, and widened the rule 2 remedy to offer "binary" beside "text eol=lf", since a non-text embed can now produce a finding at all.
   Left alone, deliberately: "ioutil" in fsPackages and vendor/node_modules in skipDirs have no match in this repository, but they widen the search where binaryExt narrowed it — speculatively finding more is harmless, speculatively staying silent is not. The filepath.Rel error branch in relSlash guards a state WalkDir(root) cannot produce, but removing it means discarding an error, which is worse than three lines. The new -text/binary branch has no permanent fixture; it was proved with a throwaway one (an unpinned .png embed fires rule 2, "assets/*.png binary" silences it), and building a fixture is the testing lane's call.
   No behaviour changes on any input this repository contains: go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... and GOOS=windows GOARCH=amd64 go build ./cmd/jaira all green.
+test-verdict: "pass: go test ./... -race, go vet ./..., GOOS=windows vet und build alle RC=0; DoD 1-5 am Baum geprueft; die vom optimize-Lauf ungetestet gelassene -text/binary-Abzweigung ist jetzt mit zwei Fixtures und TestNonTextEmbedIsNotExempt abgedeckt, Mutationsprobe bestaetigt den Test"
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
