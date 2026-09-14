@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:56:29Z
+updated-at: 2026-09-14T12:59:13Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -49,6 +49,11 @@ claimed-at: 2026-09-14T12:36:43Z
 outcome-what: "Der Remote fuer die Ticket-Refs wird jetzt pro Board aufgeloest statt pro Rechner: gitref.Remotes/BoardRemote lesen den Clone, settings.RemoteFor entscheidet in der Reihenfolge git config jaira.remote > settings.json (nur wenn das Repo den Remote hat) > einziger Remote > lauter Abbruch, und Repo.Usable nennt im Fehlerfall eingestellten Namen, vorhandene Remotes und den korrigierenden Befehl."
 outcome-why: "Ein einziges \"remote\": \"upstream\" in ~/.jaira/settings.json galt fuer jedes Board auf dem Rechner und hat auf jedem Repository ohne upstream (requirementsgenie) saemtliche ref-Befehle lahmgelegt - u. a. jaira release, also genau die Haelfte, die ein Mensch zum Zurueckgeben eines Tickets braucht."
 outcome-resolves: "jaira release und die uebrigen ref-Befehle laufen auf einem Board mit nur origin durch, waehrend settings.json weiterhin upstream sagt; im jaira-Repo selbst geht der Ref unveraendert nach upstream."
+review-summary: |-
+  core/gitref/gitref.go:681-731 - Remotes und BoardRemote bauen exec.LookPath, exec.Command und bytes.Buffer neu, obwohl run() in derselben Datei (Zeile 150) und value() (Zeile 174) genau das schon tun, inklusive GIT_TERMINAL_PROMPT=0 und getrenntem stderr; stattdessen (&Repo{Dir: dir}).value("remote") bzw. .value("config", "--local", "--get", "jaira.remote") benutzen - die Funktionen bleiben dabei Paketfunktionen auf einem Verzeichnis.
+  internal/cli/boardremote_test.go:51 - handleOf durchsucht die Ausgabe nach einem beliebigen sechsstelligen Grossbuchstaben-Wort; jeder solche Titel- oder Lane-Teil in der Ausgabe trifft genauso. Die uebrigen cli-Tests machen es andersherum: Ticket ueber ticket.At(dir).Create(...) anlegen und ticket.Handle(tk.ID) benutzen (internal/cli/checklist_test.go:14, internal/cli/claimrelease_test.go:34). Diesem Muster folgen und handleOf loeschen.
+  core/settings/settings.go:175-177 - der Zweig if dir == "" liefert genau dasselbe wie der Durchlauf darunter (BoardRemote("") ist leer, Remotes("") ist leer, also wird want == RemoteName() zurueckgegeben). Zweig streichen, oder wenn er nur die zwei git-Aufrufe sparen soll, das im Kommentar sagen - als Fall, den es geben kann, liest er sich falsch, s.Root ist nie leer.
+  core/settings/settings.go:147 - RemoteName() hat nach dieser Aenderung ausser RemoteFor und den Tests keinen Aufrufer mehr (geprueft mit grep ueber alle Nicht-Test-Dateien); der Kommentar begruendet es mit dem Fall ohne Verzeichnis, den es nicht gibt. Entweder in RemoteFor hineinziehen oder unexportieren.
 ---
 
 # Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board
