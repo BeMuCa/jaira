@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:31:20Z
+updated-at: 2026-09-14T20:31:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -82,3 +82,4 @@ KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufho
 Ein Detail fuer den, der spawn.sh anfasst: weil der Worktree schon existierte (.worktrees/jaira-13VMA8), lief der ganze Block mit 'git worktree add -b feature/$slug' und dem .env-Teil gar nicht erst an. Genau deshalb sind diese beiden Fehler bisher niemandem aufgefallen - sie liegen in dem Zweig, der nur beim allerersten Aufruf fuer einen Slug ausgefuehrt wird.
 
 Kleiner Stolperstein ohne Bezug zum Ticket: 'jaira show <id> --json' hat kein Feld 'lane', die Lane steht in 'status'.
+- **2026-09-14 20:31 · Alexander Sacharov** — Zaehlung zur Sicherheit: das Ticket hat SIEBEN DoD-Punkte. Die Umschreibung von core/role/builtin/jaira-dispatcher/SKILL.md:157 ('not when the pull request merges' - unter der neuen Regel sieht ein Dispatcher nie einen offenen Pull Request) ist KEIN DoD-Punkt und wird deshalb von keinem Haken abgedeckt. Sie gehoert trotzdem in diesen Durchgang. Wer critique oder optimize arbeitet: ausdruecklich pruefen, ob dieser Satz angefasst wurde.
