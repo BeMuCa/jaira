@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:39:15Z
+updated-at: 2026-09-14T13:39:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -52,7 +52,8 @@ claimed-at: 2026-09-14T13:29:29Z
   proof: TestWhoamiShowsTheBoardIsOnRefs and TestWhoamiShowsTheBoardIsInFileMode (internal/cli/filemode_test.go); boardState/remoteOrigin/fileOnlyCount in internal/cli/whoami.go
 - [x] 'jaira create --dod' nimmt den Schalter mehrfach, wie --tag es tut. Nachgestellt: ein Ticket mit drei Kriterien wird im Ref-Modus mit einem Aufruf angelegt und traegt danach drei Kaestchen, ohne dass es dafuer gepullt wurde.
   proof: TestCreateTakesSeveralDoDItems (internal/cli/filemode_test.go) and TestNewBodyWritesOneBoxPerCriterion (core/ticket/body_test.go)
-- [ ] Der Diagnosetext, der heute nur aus 'jaira release' kommt, erscheint dort wo der Zustand entsteht. Nachgestellt: auf einem Board ohne passenden Remote nennt schon der erste 'jaira create' den Grund, nicht erst ein Befehl am Ende der Kette.
+- [x] Der Diagnosetext, der heute nur aus 'jaira release' kommt, erscheint dort wo der Zustand entsteht. Nachgestellt: auf einem Board ohne passenden Remote nennt schon der erste 'jaira create' den Grund, nicht erst ein Befehl am Ende der Kette.
+  proof: TestCreateSaysWhenTheTicketStaysAFile asserts the remote name and 'config jaira.remote' appear in the output of the first create (internal/cli/filemode_test.go)
 - [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer jede von aussen sichtbare Aenderung: die Modus-Zeile in create, der neue Befehl fuer den Ref-Nachtrag, der neue Zustandsbefehl, und der wiederholbare --dod.
 
 ## Options
