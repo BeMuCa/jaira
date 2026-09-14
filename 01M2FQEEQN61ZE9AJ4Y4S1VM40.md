@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:37:00Z
+updated-at: 2026-09-14T18:38:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -225,3 +225,4 @@ Nicht beanstandet und bewusst stehen gelassen: die Aenderung selbst ist eine Sch
 3. proof von DoD-Punkt 3 auf den umbenannten TestFourTaggedCardRendersWithTheExtraTagUncoloured (internal/tui/tagbox_test.go:593) gezogen. Punkt 2 nannte den geloeschten Test und ist mitgezogen - der Befund erwaehnte das; ohne wuerde Fix 1 einen zweiten toten Beleg hinterlassen.
 
 go test ./... Exit 0, go vet ./... und gofmt -l ohne Ausgabe.
+- **2026-09-14 18:38 · Alexander Sacharov** — Dispatcher-Hinweis: die Fixrunde nach der ersten critique hat ihre Aenderungen im Arbeitsbaum liegen lassen, ohne zu committen. Der Dispatcher hat sie unveraendert als 82c111e committet (fix(S1VM40): drop the duplicated slot test and correct the sprint-marker comment), zusammen mit der Ticketdatei. Es wurde nichts am Inhalt geaendert; go test ./internal/tui war vor dem Commit gruen und gofmt meldete nichts.
