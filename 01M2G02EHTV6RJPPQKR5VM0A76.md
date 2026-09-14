@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:59:05Z
+updated-at: 2026-09-14T13:59:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-191270
@@ -42,6 +42,7 @@ outcome-what: "Critique lane, second round: no findings. The five findings from 
 outcome-why: "A pass that finds nothing is where this lane ends. The three settled decisions - release instead of a new command, the board block in whoami, the first --dod into frontmatter - were not reopened, and nothing new in the second round rises to a defect or a design error."
 outcome-resolves: "review-summary=none"
 review-summary: none
+review-gaps: "Removed: fileModeReason (internal/cli/refs.go), a one-caller wrapper that only prefixed noRefReason, and with it the third rendering of the file-mode reason - the --json field now goes through noRefReason like the printed line and whoami do; the doubled canReachARef branch in internal/cli/tickets.go, two Fprintf calls repeating a whole sentence to append six words, now one call with an optional tail; and one of the two refs.Usable() questions in whoami, fileOnlyCount taking the ref mode from boardState instead of deciding it again. Changed: the release hint reads 'once the remote works', because 'once the remote is there' is false when the remote is there and the push failed. Left: the nil guards in fileOnRefOnly/putOnRef, unreachable from their callers but three lines against a panic; settings.RemoteFor as a wrapper over RemoteSourceFor, which critique settled and every caller uses; whoami's plural(); the pre-existing dead 'missing := gate.Violations(nil) ... _ = missing' in tickets.go, which this change did not orphan. Not fixed because it is outside this diff: fetch.go, pull.go, release.go and snapshot.go still print refs.Usable() errors raw, so 'gitref:' still reaches users from four other commands."
 ---
 
 # Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen
