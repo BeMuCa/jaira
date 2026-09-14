@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:39:18Z
+updated-at: 2026-09-14T13:39:22Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -54,7 +54,8 @@ claimed-at: 2026-09-14T13:29:29Z
   proof: TestCreateTakesSeveralDoDItems (internal/cli/filemode_test.go) and TestNewBodyWritesOneBoxPerCriterion (core/ticket/body_test.go)
 - [x] Der Diagnosetext, der heute nur aus 'jaira release' kommt, erscheint dort wo der Zustand entsteht. Nachgestellt: auf einem Board ohne passenden Remote nennt schon der erste 'jaira create' den Grund, nicht erst ein Befehl am Ende der Kette.
   proof: TestCreateSaysWhenTheTicketStaysAFile asserts the remote name and 'config jaira.remote' appear in the output of the first create (internal/cli/filemode_test.go)
-- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer jede von aussen sichtbare Aenderung: die Modus-Zeile in create, der neue Befehl fuer den Ref-Nachtrag, der neue Zustandsbefehl, und der wiederholbare --dod.
+- [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer jede von aussen sichtbare Aenderung: die Modus-Zeile in create, der neue Befehl fuer den Ref-Nachtrag, der neue Zustandsbefehl, und der wiederholbare --dod.
+  proof: core/release/NOTES.md, the four lines under ## Unreleased
 
 ## Options
 
