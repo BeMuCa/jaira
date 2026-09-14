@@ -37,8 +37,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T12:59:31Z
-assignee: Alexander Sacharov
+updated-at: 2026-09-14T12:59:44Z
+assignee: ""
 updated-by: Alexander Sacharov
 ---
 
