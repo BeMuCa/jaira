@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:34:27Z
+updated-at: 2026-09-14T18:36:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -61,7 +61,7 @@ question: ""
 - [x] Eine Karte mit zwei Tags zeigt zwei unterscheidbare Farbfelder: Platz 1 traegt die Farbe des ersten Tags des Tickets, Platz 2 die des zweiten, in genau der Reihenfolge, in der sie im Ticket stehen.
   proof: TestTwoTaggedCardShowsBothColoursInTicketOrder (internal/tui/tagbox_test.go)
 - [x] Platz 3 traegt die Farbe des dritten Tags: eine Karte mit drei gefaerbten Tags zeigt drei unterscheidbare Farbfelder in Ticket-Reihenfolge. Eine Karte mit einem Tag faerbt nur Platz 1, eine mit zwei nur Platz 1 und 2; unbelegte Plaetze zeigen weiter die Schattierung der Lane.
-  proof: TestThreeTaggedCardShowsAllThreeColoursInTicketOrder, TestCardColorsAreTheFirstThreeTagsInTicketOrder, TestSlotsBelowTheLastTagStayUncoloured (internal/tui/tagbox_test.go)
+  proof: TestThreeTaggedCardShowsAllThreeColoursInTicketOrder, TestSlotsBelowTheLastTagStayUncoloured (internal/tui/tagbox_test.go)
 - [x] Ein Ticket mit vier Tags behaelt alle vier: 'jaira tag' nimmt den vierten an und gibt keinen Fehler, 'jaira show' listet ihn, und nur die Farbe fehlt ihm.
   proof: TestFourTaggedCardRendersWithTheExtraTagsUncoloured; CLI nachgestellt: jaira tag <id> ui backend docs ci exit 0, jaira show --json listet alle vier
 - [x] Ein Tag ohne Zeile in .jaira/tags laesst seinen Platz in der Lane-Schattierung, und die drei Textzeilen der Karte stehen an derselben Stelle wie bei einer Karte ohne jeden Tag - nachgestellt an einer Karte mit einem gefaerbten und einem ungefaerbten Tag.
