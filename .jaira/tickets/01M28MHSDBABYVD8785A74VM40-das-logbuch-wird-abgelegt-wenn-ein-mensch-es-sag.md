@@ -1,7 +1,7 @@
 ---
 id: 01M28MHSDBABYVD8785A74VM40
 title: "Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird"
-status: optimize
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Fertige Tickets sammeln sich in done, und wer seine Stunden eintraegt, legt sie mit einem Befehl als Tagesordner ab - das Board sagt Bescheid, wenn sich viel angesammelt hat, entscheidet aber nichts"
@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:48:22Z
+updated-at: 2026-09-14T19:48:38Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-661099
@@ -101,3 +101,6 @@ Was ich dafuer erst finden musste: in core/ticket gibt es keinen Test-Fake fuer 
 
 NOTES.md-Zeile geschrieben, weil (3) von aussen sichtbar ist: --all meldete bisher jedes fertige Ref-only-Ticket als Problem.
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach optimize geholt, weil zwei Lanes uebersprungen worden waren: das Ticket stand in human, ohne dass optimize und testing je gelaufen waren - test-verdict war leer. Dazwischen lag Commit 912ac3c, der echten Code geaendert hat (FileLane, logbookAll), also genau das, was testing pruefen muss. Die Frage im question-Feld war ausserdem noch die alte vom 11.09.; Alex hat beide Teile heute beantwortet, sie stehen als Notizen weiter oben.
+- **2026-09-14 19:48 · Alexander Sacharov** — critique round 2: three findings, all small, all in the new code. (1) logbookAll's --json branch drops the PartialError - flow.go:232 already carries a sweep failure as out["trim_error"] beside a successful result; copy that key. This matters because the CLI has to be readable by an agent, and stderr prose is the one channel --json readers do not parse. (2) the !t.ReadOnly filter landed in Overflow as well as FileLane; FileLane is this ticket, Overflow is the holds cap - a user-visible change with neither a NOTES line nor a test. Widen the NOTES line and pin it, or drop the hunk. (3) logbook.go's file header still describes only 'jaira logbook <id>'.
+Checked and NOT findings: logbookOut needs no ReadOnly guard of its own - store.go:333 Logbook() already calls onlyOnRef, so a ref-only id is refused there with a proper error; stampCommits in logbook.go is not a one-caller wrapper, archive.go:73 uses it too.
+Recorded, not fixed, not a reason for this send-back: core/lane/lane.go:479 leaves boards created before this change on logbook-on-entry - ticket 1K9KZS owns that and its NOTES line.
