@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,14 +33,14 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T15:58:28Z
+updated-at: 2026-09-14T15:58:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
 claimed-at: 2026-09-14T15:57:55Z
-outcome-what: "noRefReason asks gitref for the missing-remote sentence instead of cutting it out of the error text"
-outcome-why: "the strings.TrimPrefix tied internal/cli to how gitref concatenated its error; a changed format would have missed silently and printed a line with no remote name, no remotes and no git-config hint"
-outcome-resolves: "critique round three, finding 1"
+outcome-what: "Kritik-Runde vier auf 04f92e7: kein Befund, review-summary=none."
+outcome-why: "Der eine Befund aus Runde drei ist behoben, wie verlangt und ohne Textaenderung fuer den Benutzer; die Schleife endet bei einem Durchgang ohne Befund."
+outcome-resolves: "Kritik-Lane fuer dieses Ticket abgeschlossen."
 review-summary: "none"
 review-gaps: "Removed: fileModeReason (internal/cli/refs.go), a one-caller wrapper that only prefixed noRefReason, and with it the third rendering of the file-mode reason - the --json field now goes through noRefReason like the printed line and whoami do; the doubled canReachARef branch in internal/cli/tickets.go, two Fprintf calls repeating a whole sentence to append six words, now one call with an optional tail; and one of the two refs.Usable() questions in whoami, fileOnlyCount taking the ref mode from boardState instead of deciding it again. Changed: the release hint reads 'once the remote works', because 'once the remote is there' is false when the remote is there and the push failed. Left: the nil guards in fileOnRefOnly/putOnRef, unreachable from their callers but three lines against a panic; settings.RemoteFor as a wrapper over RemoteSourceFor, which critique settled and every caller uses; whoami's plural(); the pre-existing dead 'missing := gate.Violations(nil) ... _ = missing' in tickets.go, which this change did not orphan. Not fixed because it is outside this diff: fetch.go, pull.go, release.go and snapshot.go still print refs.Usable() errors raw, so 'gitref:' still reaches users from four other commands."
 test-verdict: "pass: suite green with -race (RC=0), gofmt/vet clean, all six DoD verified in the tree and exercised by hand on throwaway boards; three cosmetic observations noted, none blocking"
