@@ -208,7 +208,7 @@ func laneSection(facts []LaneFact) string {
 		}
 		fmt.Fprintf(&b, "- `%s` — %s\n", f.ID, strings.Join(marks, "; "))
 		if d := strings.TrimSpace(f.Description); d != "" {
-			fmt.Fprintf(&b, "  %s\n", firstSentence(d))
+			fmt.Fprintf(&b, "  %s\n", FirstSentence(d))
 		}
 	}
 
@@ -227,9 +227,12 @@ func laneSection(facts []LaneFact) string {
 	return b.String()
 }
 
-// firstSentence keeps a lane description to its opening claim, so a lane with a
+// FirstSentence keeps a description to its opening claim, so an entry with a
 // paragraph of prose does not push the rest of the section off the screen.
-func firstSentence(s string) string {
+//
+// The cut is at ". " and not at every ".", so a description naming a path or an
+// abbreviation ("writes into .claude/skills") survives it whole.
+func FirstSentence(s string) string {
 	if i := strings.Index(s, ". "); i > 0 {
 		return s[:i+1]
 	}
