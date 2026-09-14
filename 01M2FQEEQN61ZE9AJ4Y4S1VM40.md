@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:36:21Z
+updated-at: 2026-09-14T18:36:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -218,3 +218,10 @@ Nicht angefasst, bewusst: selectionFill/Glow speisen sich weiter aus Slot 1 (Ale
 3. Ticketdatei Zeile 63: die proof-Zeile von DoD-Punkt 3 nennt TestFourTaggedCardRendersWithTheExtraTagsUncoloured, den dieser Diff in ...ExtraTagUncoloured umbenannt hat. Fix: jaira dod S1VM40 3 --done --proof mit dem neuen Namen.
 
 Nicht beanstandet und bewusst stehen gelassen: die Aenderung selbst ist eine Schleifengrenze - kleiner geht die Form nicht; renderCardBlock unangetastet ist richtig, der reservierte Slot war nur ein Modell-Detail; selectionFill/Glow weiter aus Slot 1 ist Alex' Vorgabe; die eine umgeschriebene statt zweite NOTES-Zeile ist richtig, weil '## Unreleased' nie ein Binary erreicht hat; die Ueberschneidung zwischen Modell- und Rendering-Tests hat schon die vorige Runde stehen lassen und wird nicht neu aufgemacht.
+- **2026-09-14 18:36 · Alexander Sacharov** — in-progress (Fixrunde nach der dritten critique): alle drei Befunde behoben, keine Codeaenderung an cardColors selbst.
+
+1. TestCardColorsAreTheFirstThreeTagsInTicketOrder ersatzlos geloescht (internal/tui/tagbox_test.go). Nicht ersetzt oder umgeschrieben: TestTagsPastTheThirdColourNoSlot prueft denselben Aufruf mit einem zusaetzlichen vierten Tag und ist damit echte Obermenge; die Ticket-Reihenfolge deckt TestThreeTaggedCardShowsAllThreeColoursInTicketOrder samt Umkehrprobe.
+2. Der Kommentar an cardColors (internal/tui/model.go:1351) sagt jetzt 'the sprint marker moved off this bar (ticket 0YGWXQ)' statt im Praesens einen rechten Kartenrand zu versprechen, den kein Code traegt. Gegengeprueft: sonst nennt keine Stelle in internal/tui einen Sprint-Marker oder einen reservierten Slot (grep auf 'right edge|0YGWXQ|reserved').
+3. proof von DoD-Punkt 3 auf den umbenannten TestFourTaggedCardRendersWithTheExtraTagUncoloured (internal/tui/tagbox_test.go:593) gezogen. Punkt 2 nannte den geloeschten Test und ist mitgezogen - der Befund erwaehnte das; ohne wuerde Fix 1 einen zweiten toten Beleg hinterlassen.
+
+go test ./... Exit 0, go vet ./... und gofmt -l ohne Ausgabe.
