@@ -550,7 +550,7 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 		// or the reserved third — gets the card's own shade, so the text still
 		// lines up with every other card in the lane.
 		barParams := bgParams
-		if i < len(slots) && slots[i].coloured {
+		if slots[i].coloured {
 			barParams = "5;" + strconv.Itoa(slots[i].colour)
 		}
 		b.WriteString(paintRow(barParams, " "))

@@ -1,7 +1,7 @@
 ---
 id: 01M2FQEEQN61ZE9AJ4Y4S1VM40
 title: "Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einer Karte sind bis zu drei Tag-Farben gleichzeitig zu sehen: die ersten beiden Plaetze tragen die Farben der ersten beiden Tags des Tickets, der dritte Platz bleibt fuer die Sprint-Markierung reserviert und in diesem Ticket leer."
@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:06:18Z
+updated-at: 2026-09-14T16:09:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -46,6 +46,7 @@ outcome-what: "Die Randspalte der Karte hat jetzt drei Farb-Slots statt einer Ka
 outcome-why: "Ein Ticket kann viele Tags tragen, aber nur der erste faerbte die Karte; jeder weitere war auf dem Board unsichtbar. Beim Planen nach zwei Achsen (Thema plus Sprint) musste dafuer jedes Mal der Filter umgestellt werden. Die drei eingefaerbten Zellen der Randspalte waren schon da und trugen alle dieselbe Farbe - sie auf Slots aufzuteilen zeigt zwei Tags gleichzeitig, ohne dass die Karte eine Zeile waechst."
 outcome-resolves: "Alle sechs DoD-Punkte sind mit Test bzw. Datei belegt: zwei unterscheidbare Farbfelder in Ticket-Reihenfolge (TestTwoTaggedCardShowsBothColoursInTicketOrder), Platz 3 in Lane-Schattierung (TestThirdRowAlwaysCarriesTheLaneShade), vier Tags bleiben erhalten ohne neue Validierung (TestFourTaggedCardRendersWithTheExtraTagsUncoloured, per CLI nachgestellt: jaira tag nimmt den vierten an, jaira show listet ihn), ungefaerbter Tag ohne Textversatz (TestUncolouredSecondTagFallsBackWithoutMovingTheText), cardHeight bleibt 3 (internal/tui/view.go:488 plus TestCardHeightIsTheThreeContentRows und TestACardHeavyWithFlagsStaysThreeRows), NOTES.md-Zeile unter ## Unreleased. go test ./... ist gruen."
 review-summary: none
+review-gaps: "Entfernt: die tote Schranke 'i < len(slots)' in renderCardBlock (internal/tui/view.go:552). Die Schleife laeuft ueber die Zeilen von renderCard, und das sind immer genau drei — cardHeight() gibt 3 zurueck, cardSlots ist 3, und renderCard baut Titel/Meta/Flags fest als drei Zeilen. Die Bedingung konnte also nie falsch sein und tat so, als gaebe es Karten mit mehr Zeilen als Slots. Bewusst stehen gelassen: der reservierte dritte Slot (Alex' Entscheidung, Sprint-Markierung), das Feld cardSlot.coloured (Palettenfarbe 0 ist gueltig, ein blosser int kann 'keine Farbe' nicht ausdruecken), der nil-Check auf m.tags (tag.Registry.Colour laeuft nicht auf nil), das variadische 'pairs ...any' in registryWith und die beiden alten Box-Kommentare — alles drei hat schon die Critique-Lane geprueft. Keine Duplikate: cardColors ist die einzige Stelle, die Tag zu Kartenfarbe macht; cardColor hat keine Aufrufer mehr hinterlassen. Das Muster '5;'+strconv.Itoa(...) steht mehrfach in glow.go und view.go, ist aber aelter als dieser Diff und nicht sein Problem. Kosten: cardColors wird einmal pro Karte aufgerufen, nicht pro Zeile — pro Zeile bleibt nur ein Array-Zugriff. Die zwei Tests TestThirdSlotStaysUncolouredHoweverManyTags und TestThirdRowAlwaysCarriesTheLaneShade ueberschneiden sich thematisch, pruefen aber verschiedene Schichten (Modell und Rendering) und bleiben beide. go test ./... gruen."
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
@@ -135,3 +136,4 @@ Bewusst nicht als Befund erhoben:
 - Veraltete Kommentare zur alten Rahmen-Aera in internal/tui/view.go:443 und internal/tui/model.go:1264 ('Box') sind aelter als dieser Diff und gehoeren nicht in dieses Ticket.
 
 go build ./..., go vet ./internal/tui und go test ./... sind gruen, gofmt meldet nichts.
+- **2026-09-14 16:09 · Alexander Sacharov** — optimize: nur die tote Schranke 'i < len(slots)' entfernt, die die Critique-Lane uebergeben hatte. Der Bezug ist jetzt direkt: die Schleife indiziert slots[i] ueber die drei Zeilen von renderCard. Das haelt, solange cardHeight()==cardSlots gilt — genau das sagt der Kommentar an cardSlots bereits. Sonst nichts gefunden: keine Duplikate, kein verwaister Code, keine Arbeit in der Schleife, die sich heben liesse.
