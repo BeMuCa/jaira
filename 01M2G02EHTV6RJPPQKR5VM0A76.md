@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:35:23Z
+updated-at: 2026-09-14T13:35:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -70,7 +70,7 @@ claimed-at: 2026-09-14T13:29:29Z
 - [x] implement the way back
 - [x] design the state command (DoD 3): extend 'jaira whoami' with the git side, or add a separate command — and fix the four facts it prints: remote name and where it came from, remotes this repository has, ref mode yes/no with the reason, how many tickets lie as files only
 - [ ] failing test for the state command on a board with a matching remote and on one without
-- [ ] implement the state command, text and --json
+- [x] implement the state command, text and --json
 - [ ] make --dod repeatable (DoD 4): StringArray like --tag, ticket.NewBody takes several items, the frontmatter definition-of-done keeps the first and the body checklist carries all of them
 - [ ] failing test: create with three --dod in ref mode leaves three boxes without anybody pulling the ticket
 - [ ] implement the repeatable --dod, and check gate.Ready/missingFields still read it
