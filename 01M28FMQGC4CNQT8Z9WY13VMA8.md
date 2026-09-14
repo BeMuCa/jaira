@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T20:32:42Z
+updated-at: 2026-09-14T20:32:46Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -106,3 +106,6 @@ Reihenfolge, die eingehalten werden muss: dieses Ticket zuerst, KSGSKK danach. K
 Ausdruecklich NICHT als Fehler gewertet (gehoert KSGSKK): jaira-dispatcher/SKILL.md:157 'not when the pull request merges' begrenzt die Lebensdauer des Worktrees, nicht wer den PR aufmacht.
 
 Offen, aber kein Grund fuer fail: die frontmatter-Zeile definition-of-done traegt weiter den ueberholten Wortlaut 'ein Agent macht ihn auf und merged ihn nie' - die Checkbox im Body ist gedreht, die frontmatter-Kopie nicht. Wer spaeter nur die Frontmatter liest, liest die alte Regel.
+- **2026-09-14 20:32 · Alexander Sacharov** — Alex hat die Arbeit am 2026-09-14 angenommen ('13VMA8 принял'); den Uebergang human -> review hat ein Agent auf seine Anweisung getippt, weil sein eigener Aufruf wie schon dreimal heute im Hauptcheckout landete statt im Worktree, in dem die Ticket-Datei liegt. Entschieden hat der Mensch.
+
+Zur Reihenfolge: review kommt jetzt NACH human, weil die Lane-Reihenfolge des Boards heute geaendert wurde - human sitzt zwischen testing und review statt mit precedence 40 vor den drei Schleifen-Lanes.
