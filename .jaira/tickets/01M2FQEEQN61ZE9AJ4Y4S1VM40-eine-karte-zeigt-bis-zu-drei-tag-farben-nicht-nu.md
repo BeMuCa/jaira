@@ -1,7 +1,7 @@
 ---
 id: 01M2FQEEQN61ZE9AJ4Y4S1VM40
 title: "Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einer Karte sind bis zu drei Tag-Farben gleichzeitig zu sehen: die ersten beiden Plaetze tragen die Farben der ersten beiden Tags des Tickets, der dritte Platz bleibt fuer die Sprint-Markierung reserviert und in diesem Ticket leer."
@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:23:25Z
+updated-at: 2026-09-14T16:30:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -47,7 +47,7 @@ outcome-why: "Ein Ticket kann viele Tags tragen, aber nur der erste faerbte die 
 outcome-resolves: "Alle sechs DoD-Punkte sind belegt: zwei unterscheidbare Farbfelder in Ticket-Reihenfolge (TestTwoTaggedCardShowsBothColoursInTicketOrder), Platz 3 in Lane-Schattierung (TestThirdRowAlwaysCarriesTheLaneShade), vier Tags bleiben ohne neue Validierung erhalten (TestFourTaggedCardRendersWithTheExtraTagsUncoloured, per CLI nachgestellt), ungefaerbter Tag ohne Textversatz (TestUncolouredSecondTagFallsBackWithoutMovingTheText), cardHeight bleibt 3 (TestCardHeightIsTheThreeContentRows, TestACardHeavyWithFlagsStaysThreeRows und neu TestRenderCardAlwaysReturnsAsManyLinesAsThereAreSlots, TestACardWhoseFieldsCarryNewlinesStaysThreeRows), NOTES.md-Zeilen unter ## Unreleased. Der Befund der testing-Lane ist geschlossen: die Deckungsluecke - kein Test konfrontiert renderCardBlock mit einem Karteninhalt, dessen Zeilenzahl von der Slotzahl abweicht - ist mit zwei Tests gefuellt, und ohne den Fix faellt der erste mit genau dem gemeldeten Panic. go test ./... und go test ./... -race sind gruen, go vet ./... und gofmt melden nichts."
 review-summary: none
 review-gaps: "Entfernt: die tote Schranke 'i < len(slots)' in renderCardBlock (internal/tui/view.go:552). Die Schleife laeuft ueber die Zeilen von renderCard, und das sind immer genau drei — cardHeight() gibt 3 zurueck, cardSlots ist 3, und renderCard baut Titel/Meta/Flags fest als drei Zeilen. Die Bedingung konnte also nie falsch sein und tat so, als gaebe es Karten mit mehr Zeilen als Slots. Bewusst stehen gelassen: der reservierte dritte Slot (Alex' Entscheidung, Sprint-Markierung), das Feld cardSlot.coloured (Palettenfarbe 0 ist gueltig, ein blosser int kann 'keine Farbe' nicht ausdruecken), der nil-Check auf m.tags (tag.Registry.Colour laeuft nicht auf nil), das variadische 'pairs ...any' in registryWith und die beiden alten Box-Kommentare — alles drei hat schon die Critique-Lane geprueft. Keine Duplikate: cardColors ist die einzige Stelle, die Tag zu Kartenfarbe macht; cardColor hat keine Aufrufer mehr hinterlassen. Das Muster '5;'+strconv.Itoa(...) steht mehrfach in glow.go und view.go, ist aber aelter als dieser Diff und nicht sein Problem. Kosten: cardColors wird einmal pro Karte aufgerufen, nicht pro Zeile — pro Zeile bleibt nur ein Array-Zugriff. Die zwei Tests TestThirdSlotStaysUncolouredHoweverManyTags und TestThirdRowAlwaysCarriesTheLaneShade ueberschneiden sich thematisch, pruefen aber verschiedene Schichten (Modell und Rendering) und bleiben beide. go test ./... gruen."
-test-verdict: "fail — Suite gruen (go test ./..., -race, go vet, gofmt alle ohne Befund), aber der Diff bringt einen Absturz mit: internal/tui/view.go:553 indiziert slots[i] ueber die Zeilen von renderCard und paniert mit 'index out of range [3] with length 3', sobald ein Ticket-Titel einen Zeilenumbruch enthaelt — dann liefert renderCard vier Zeilen statt drei. Erreichbar ueber 'jaira create' mit mehrzeiligem Titel (wird angenommen, landet als YAML-Blockskalar) und ueber handgeschriebene Frontmatter. Regression dieses Tickets: auf master (1c6be9d) und auf 1276d7b rendert derselbe Fall sauber, erst f2b0077 (Entfernen der Schranke 'i < len(slots)') macht daraus den Panic. Fix gehoert nach in-progress: die Schranke zurueck oder den Titel in renderCard auf eine Zeile normalisieren, plus ein Test fuer eine Karte mit abweichender Zeilenzahl. Alle sechs DoD-Belege wurden einzeln nachgeprueft und halten (Tests gruen, CLI-Nachstellung des vierten Tags Exit 0, cardHeight=3 in view.go:488, NOTES.md:16)."
+test-verdict: "pass — Durchgang 2, unabhaengig nachgeprueft. Der Befund aus Durchgang 1 ist weg: mit einem echten Board auf Platte (ticket.Store, Titel/Assignee/updated-by/executed-by je mit Zeilenumbruch, auch \\r\\n) rendert m.render() ohne Panik, die Karte bleibt dreizeilig und der Umbruch wird zum Leerzeichen. Gegenprobe ohne fremde Tests: derselbe Fall gegen internal/tui/view.go aus f2b0077 (per go test -overlay, Arbeitsbaum unveraendert) paniert weiterhin mit 'index out of range [3] with length 3' — der Nachweis haengt also am Fix, nicht am Testtext. Keine neue Stoerung: die gerenderten Karten ohne Umbruch (fuenf Tickets x selected/alt) sind byteweise identisch zu denen vor dem Fix, oneLine ist fuer Werte ohne \\r\\n die Identitaet. renderCardBlock ist der einzige Aufrufer von renderCard (internal/tui/view.go:545). Alle sechs DoD-Punkte mit eigenen Pruefungen bestaetigt: 1+2 Slot 1 = 5;83, Slot 2 = 5;45, umgekehrte Tag-Reihenfolge kehrt die Farben um, Slot 3 traegt die Lane-Schattierung auch bei drei Tags; 3 auf einem Wegwerf-Board per CLI: 'jaira tag <id> ui backend docs ci' Exit 0, 'jaira show --json' listet alle vier; 4 ungefaerbter zweiter Tag faellt auf die Lane-Schattierung, die drei Textzeilen sind zeichengleich mit einer Karte ohne Tags; 5 cardHeight()==3 und in einer Lane mit 30 Karten und Platz fuer wenige traegt jede gezeigte Karte ihre Flag-Zeile — keine halb gezeichnete Karte; 6 core/release/NOTES.md, zwei einzeilige '- '-Zeilen unter '## Unreleased' ueber '## 0.2.0'. Suiten: go test ./... Exit 0, go test ./... -race Exit 0, go vet ./... ohne Ausgabe, gofmt -l ohne Ausgabe. Kosmetischer Restpunkt, kein Fehler: ein per CLI geschriebenes \\r\\n kommt als ' \\n' aus dem YAML zurueck und faltet damit zu zwei Leerzeichen; die NOTES-Zeile nennt nur den Titel, obwohl der Fix auch Assignee, updated-by und executed-by deckt."
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
@@ -165,3 +165,24 @@ Gegenprobe gemacht: mit zurueckgedrehtem oneLine faellt TestACardWhoseFieldsCarr
 
 NOTES.md: eine zweite Zeile unter ## Unreleased. Gegen den letzten Release ist das sichtbar - auf master stuerzt derselbe Titel zwar nicht ab, malt aber eine vierzeilige Karte.
 - **2026-09-14 16:23 · Alexander Sacharov** — Commits dieses Tickets fuer den move: 1276d7b (Implementierung), f2b0077 (optimize), 4e96b33 (Fixrunde nach testing).
+- **2026-09-14 16:29 · Alexander Sacharov** — testing (Durchgang 2): BESTANDEN.
+
+Suiten: go test ./... Exit 0, go test ./... -race Exit 0, go vet ./... ohne Ausgabe, gofmt -l ohne Ausgabe. 0 Fehler, 0 Skips.
+
+Der Absturz aus Durchgang 1 ist unabhaengig nachgestellt und weg. Nicht ueber die neuen Tests geprueft, sondern mit eigenen, per 'go test -overlay' eingehaengten Testdateien (im Arbeitsbaum wurde nichts geaendert):
+- Echtes Board auf Platte: Tickets ueber ticket.Store angelegt mit Umbruch in title, assignee, updated-by und executed-by, davon einer mit \r\n, danach neu von Platte gelesen. Der Umbruch ueberlebt den Round-Trip (nachgeprueft), m.render() laeuft durch, der Titel steht als eine Zeile auf der Karte und kein \r landet im Output.
+- renderCardBlock direkt: sieben Karten mit Umbruechen, darunter eine aus lauter Leerzeilen — jede genau drei Zeilen.
+- Gegenprobe: dieselbe Testdatei gegen internal/tui/view.go aus f2b0077 paniert weiterhin mit 'index out of range [3] with length 3'. Der Fix traegt den Nachweis, nicht die Testformulierung.
+
+Keine neue Stoerung gefunden. Fuenf Karten ohne Umbruch (je selected/alt in allen vier Kombinationen) wurden mit und ohne Fix gerendert und verglichen: byteweise identisch. oneLine gibt Werte ohne \r\n unveraendert zurueck. renderCard hat ausser renderCardBlock (internal/tui/view.go:545) keinen Aufrufer, es gibt also keinen zweiten Kartenpfad.
+
+DoD einzeln und mit eigenen Pruefungen nachgestellt, alle sechs halten:
+1+2 Slot 1 = 5;83 (erster Tag), Slot 2 = 5;45 (zweiter), verschieden; umgekehrte Tag-Reihenfolge kehrt die Farben um; Slot 3 traegt die Lane-Schattierung einer ungetaggten Karte, auch bei drei Tags.
+3 Wegwerf-Board unter dem Scratchpad, frisch mit 'jaira init': 'jaira tag <id> ui backend docs ci' Exit 0, 'jaira show --json' listet alle vier.
+4 Erster Tag gefaerbt, zweiter ohne Registry-Zeile: Slot 2 faellt auf die Lane-Schattierung, und die drei Textzeilen sind Zeichen fuer Zeichen die einer Karte ohne jeden Tag.
+5 cardHeight()==3; Lane mit 30 Karten in einem 20 Zeilen hohen Terminal: es werden weniger als 30 gezeigt, und jede gezeigte traegt ihre Flag-Zeile '○ spec' — keine halb gezeichnete Karte.
+6 core/release/NOTES.md: zwei Zeilen, beide einzeilig und mit '- ' beginnend, unter '## Unreleased' ueber '## 0.2.0'.
+
+Zwei kosmetische Restpunkte, ausdruecklich kein Fehlschlag:
+- Ein per CLI geschriebenes \r\n kommt aus dem YAML als ' \n' zurueck; oneLine macht daraus zwei Leerzeichen statt einem. Sichtbar nur als doppeltes Leerzeichen im Titel.
+- Die neue NOTES-Zeile spricht nur vom Titel, der Fix deckt aber auch assignee, updated-by und executed-by ab.
