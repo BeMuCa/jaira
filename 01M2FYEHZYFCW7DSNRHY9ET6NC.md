@@ -1,8 +1,8 @@
 ---
 id: 01M2FYEHZYFCW7DSNRHY9ET6NC
 title: "Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: Alexander Sacharov
 goal: "Auf einem Board, dessen Repository den eingestellten Remote nicht hat, funktionieren die ref-Befehle wieder - ohne dass ein Ticket dadurch im falschen Repository landet."
 context: |-
@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:36:43Z
+updated-at: 2026-09-14T12:36:54Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
