@@ -21,11 +21,11 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:16:25Z
+updated-at: 2026-09-14T19:25:37Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-630371
-claimed-at: 2026-09-11T16:24:41Z
+claimed-by: DESKTOP-RFTCH11-646871
+claimed-at: 2026-09-14T19:25:37Z
 question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn fertigen Tickets - passt das, oder lieber einstellbar? (2) WXQ9PT wartet in signoff und verlangt das Gegenteil (done ist danach leer) - markiere ich es als abgeloest, oder machst du das beim Abnehmen?"
 outcome-what: "logbook-on-entry aus den mitgelieferten Lanes entfernt, jaira logbook --all als Handschnitt, Board-Meldung ab zehn fertigen Tickets"
 outcome-why: "Ein Move nach done nahm 49 fremde fertige Tickets mit ins Logbuch (Issue #6) - Ablegen ist Buchhaltung und faellt Tage spaeter, Fertigwerden ist eine Aussage ueber die Arbeit"
