@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/hook"
@@ -158,11 +159,26 @@ func noRefReason(why error) string {
 	if errors.Is(why, gitref.ErrNoGit) {
 		return "git is not available on PATH, so nothing can be pushed to a ref"
 	}
-	name := "a remote"
-	if refs != nil && refs.Repo != nil {
-		name = fmt.Sprintf("%q", refs.Repo.RemoteName())
+	// Everything a reader can act on is already in gitref's own sentence: the
+	// remote name that was looked for, the remotes this repository really has,
+	// and the git config line that settles it. Only the wrapper in front of it
+	// belongs to the machinery — "gitref: no repository or no such remote" names
+	// a sentinel, not a reason — so it is taken off rather than pasted into the
+	// line with %v, which is what put a raw error in front of users. Nothing is
+	// wrapped around what is left either: "no remote \"origin\" — this
+	// repository has no remotes" already is the sentence, and a second framing
+	// in front of it only says the same thing twice.
+	detail := strings.TrimPrefix(why.Error(), gitref.ErrNoRepo.Error()+": ")
+	if detail == "" || detail == why.Error() {
+		// A bare sentinel with nothing behind it. Say the one thing still known
+		// — which remote was looked for — instead of printing the sentinel.
+		name := "a remote"
+		if refs != nil && refs.Repo != nil {
+			name = fmt.Sprintf("%q", refs.Repo.RemoteName())
+		}
+		return fmt.Sprintf("this board has no usable %s", name)
 	}
-	return fmt.Sprintf("this board has no usable %s — %v", name, why)
+	return detail
 }
 
 // canReachARef reports whether the board could carry tickets on refs once

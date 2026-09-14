@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -302,5 +303,120 @@ func TestCreateNamesTheCostOfReleasingATicketItJustAssigned(t *testing.T) {
 	}
 	if strings.Contains(plain, "clears") {
 		t.Errorf("create warns about an assignee that was never set:\n%s", plain)
+	}
+}
+
+// The other half of "do not blame a remote where there is none": whoami used to
+// print 'Remote: origin (the default, nothing configured)' and 'Remotes: —' in a
+// directory with no git repository, naming exactly the remote that 'jaira
+// create' had stopped naming there. Two commands, two answers, one board.
+func TestWhoamiOutsideAGitRepositoryNamesNoRemote(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "whoami")
+	if err != nil {
+		t.Fatalf("whoami: %v\n%s", err, out)
+	}
+	for _, unwanted := range []string{"Remote:", "Remotes:", "origin"} {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("whoami still says %q where there is no repository:\n%s", unwanted, out)
+		}
+	}
+	// The board block itself is still there — only the two rows that would be
+	// inventions are gone.
+	if !strings.Contains(out, "Ref mode:    no") {
+		t.Errorf("whoami stopped saying which mode the board is in:\n%s", out)
+	}
+
+	jsonOut, err := runCLI(t, dir, "--json", "whoami")
+	if err != nil {
+		t.Fatalf("whoami --json: %v\n%s", err, jsonOut)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jsonOut), &payload); err != nil {
+		t.Fatalf("whoami --json did not emit one object: %v\n%s", err, jsonOut)
+	}
+	if _, ok := payload["remote"]; ok {
+		t.Errorf("whoami --json names a remote outside a repository: %v", payload["remote"])
+	}
+	if _, ok := payload["remote_source"]; ok {
+		t.Errorf("whoami --json explains where a remote that does not exist came from: %v", payload["remote_source"])
+	}
+}
+
+// The reason a board is not on refs has to be a sentence, which is what the
+// release note promises. It used to end in '%v' of the gitref error, so the
+// sentinel chain 'gitref: no repository or no such remote: ...' reached the
+// user with the advice buried behind it.
+func TestTheFileModeReasonIsNotARawGitrefError(t *testing.T) {
+	clone := cloneWithRemotes(t, "")
+	gitRun(t, clone, "config", "--local", "jaira.remote", "nowhere")
+	t.Setenv("JAIRA_USER", "ada")
+
+	if out, err := runCLI(t, clone, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	created, err := runCLI(t, clone, "create", "stays here")
+	if err != nil {
+		t.Fatalf("create: %v\n%s", err, created)
+	}
+	whoami, err := runCLI(t, clone, "whoami")
+	if err != nil {
+		t.Fatalf("whoami: %v\n%s", err, whoami)
+	}
+	for name, out := range map[string]string{"create": created, "whoami": whoami} {
+		if strings.Contains(out, "gitref:") {
+			t.Errorf("%s prints the raw error chain:\n%s", name, out)
+		}
+		// What is dropped is the wrapper, never the two things that make the
+		// line actionable: which remote was looked for and how to set it.
+		if !strings.Contains(out, `"nowhere"`) {
+			t.Errorf("%s no longer names the remote it looked for:\n%s", name, out)
+		}
+		if !strings.Contains(out, "config jaira.remote") {
+			t.Errorf("%s no longer says what to do about it:\n%s", name, out)
+		}
+	}
+}
+
+// "remotes": null broke every consumer that iterated the list. A repository
+// with no remotes has an empty list of them, not an absent one.
+func TestWhoamiJSONRemotesIsAlwaysAList(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_HOME", home)
+	t.Setenv("JAIRA_USER", "ada")
+	dir := filepath.Join(root, "repo")
+	gitRun(t, root, "init", "--quiet", dir)
+	gitRun(t, dir, "config", "user.name", "ada")
+	gitRun(t, dir, "config", "user.email", "ada@example.test")
+
+	if out, err := runCLI(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "--json", "whoami")
+	if err != nil {
+		t.Fatalf("whoami --json: %v\n%s", err, out)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("whoami --json did not emit one object: %v\n%s", err, out)
+	}
+	remotes, ok := payload["remotes"].([]any)
+	if !ok {
+		t.Fatalf("remotes is %#v, want a list", payload["remotes"])
+	}
+	if len(remotes) != 0 {
+		t.Fatalf("a repository with no remotes reports %v", remotes)
 	}
 }

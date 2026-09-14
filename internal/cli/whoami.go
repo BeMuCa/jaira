@@ -57,8 +57,15 @@ before a ticket is written rather than after.`,
 				}
 				if st != nil {
 					payload["board"] = st.Root
-					payload["remote"] = st.Remote
-					payload["remote_source"] = st.Source
+					// Outside a git repository there is no remote to name, so
+					// the JSON names none either — the text above this dropped
+					// the same two rows, and one command must not answer the
+					// question two ways. "remotes" stays, always as a list: a
+					// consumer iterating it would break on a null.
+					if st.InRepo {
+						payload["remote"] = st.Remote
+						payload["remote_source"] = st.Source
+					}
 					payload["remotes"] = st.Remotes
 					payload["ref_mode"] = st.RefMode
 					if st.Reason != "" {
@@ -81,8 +88,14 @@ before a ticket is written rather than after.`,
 				return nil
 			}
 			fmt.Fprintf(w, "Board:       %s\n", st.Root)
-			fmt.Fprintf(w, "Remote:      %s (%s)\n", st.Remote, st.Source)
-			fmt.Fprintf(w, "Remotes:     %s\n", dash(strings.Join(st.Remotes, ", ")))
+			// A directory that is no git repository has no remote and no list
+			// of remotes, and printing 'origin' and '—' there invents a missing
+			// remote as the problem. 'jaira create' stopped naming one here
+			// after the same finding; these two rows are the other half of it.
+			if st.InRepo {
+				fmt.Fprintf(w, "Remote:      %s (%s)\n", st.Remote, st.Source)
+				fmt.Fprintf(w, "Remotes:     %s\n", dash(strings.Join(st.Remotes, ", ")))
+			}
 			if st.RefMode {
 				fmt.Fprintf(w, "Ref mode:    yes — new tickets travel on their refs\n")
 			} else {
@@ -99,6 +112,7 @@ before a ticket is written rather than after.`,
 // the JSON cannot disagree about it.
 type boardGit struct {
 	Root     string
+	InRepo   bool
 	Remote   string
 	Source   string
 	Remotes  []string
@@ -131,13 +145,21 @@ func boardState() *boardGit {
 		name = refs.Repo.RemoteName()
 	}
 	st := &boardGit{
-		Root:    s.Root,
-		Remote:  name,
-		Source:  source,
-		Remotes: gitref.Remotes(s.Root),
+		Root:   s.Root,
+		InRepo: true,
+		Remote: name,
+		Source: source,
+		// Never nil: this list is printed and handed out as JSON, and a null
+		// where a list belongs breaks the consumer that iterates it.
+		Remotes: append([]string{}, gitref.Remotes(s.Root)...),
 	}
 	if err := refs.Usable(); err != nil {
 		st.Reason = noRefReason(err)
+		// canReachARef is the same question 'jaira create' asks before it
+		// advises a way back: false means no repository here at all, or no git
+		// to ask — and then there is no remote and no list of remotes to
+		// report, only invented ones.
+		st.InRepo = canReachARef(err)
 	} else {
 		st.RefMode = true
 	}
