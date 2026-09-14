@@ -33,11 +33,11 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:54:11Z
+updated-at: 2026-09-14T13:55:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-155812
-claimed-at: 2026-09-14T13:29:29Z
+claimed-by: DESKTOP-RFTCH11-191270
+claimed-at: 2026-09-14T13:55:19Z
 outcome-what: "Critique lane, second round: no findings. The five findings from round one are genuinely fixed — RemoteSourceFor is the single remote ladder with RemoteFor as a wrapper and whoami's remoteOrigin deleted, ErrNoGitRepo wraps ErrNoRepo so noRefReason can branch once for create and whoami, the release hint names its cost, the unused *ticket.Store is gone. The joint the implementer flagged is closed by construction: attachRefs builds refs.Repo.Remote from set.RemoteFor(s.Root) and RemoteFor is RemoteSourceFor, so whoami's name and source come from one function on one directory in one process."
 outcome-why: "A pass that finds nothing is where this lane ends. The three settled decisions - release instead of a new command, the board block in whoami, the first --dod into frontmatter - were not reopened, and nothing new in the second round rises to a defect or a design error."
 outcome-resolves: "review-summary=none"
