@@ -41,11 +41,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:54:53Z
+updated-at: 2026-09-14T12:55:48Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
 claimed-at: 2026-09-14T12:36:43Z
+outcome-what: "Der Remote fuer die Ticket-Refs wird jetzt pro Board aufgeloest statt pro Rechner: gitref.Remotes/BoardRemote lesen den Clone, settings.RemoteFor entscheidet in der Reihenfolge git config jaira.remote > settings.json (nur wenn das Repo den Remote hat) > einziger Remote > lauter Abbruch, und Repo.Usable nennt im Fehlerfall eingestellten Namen, vorhandene Remotes und den korrigierenden Befehl."
+outcome-why: "Ein einziges \"remote\": \"upstream\" in ~/.jaira/settings.json galt fuer jedes Board auf dem Rechner und hat auf jedem Repository ohne upstream (requirementsgenie) saemtliche ref-Befehle lahmgelegt - u. a. jaira release, also genau die Haelfte, die ein Mensch zum Zurueckgeben eines Tickets braucht."
+outcome-resolves: "jaira release und die uebrigen ref-Befehle laufen auf einem Board mit nur origin durch, waehrend settings.json weiterhin upstream sagt; im jaira-Repo selbst geht der Ref unveraendert nach upstream."
 ---
 
 # Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board
