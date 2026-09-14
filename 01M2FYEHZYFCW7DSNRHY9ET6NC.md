@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:00:13Z
+updated-at: 2026-09-14T13:00:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -68,7 +68,8 @@ review-summary: |-
   proof: git config jaira.remote <name>, gelesen von gitref.BoardRemote; core/settings/remotefor_test.go: TestBoardRemoteWinsAndNeverFallsBack, TestBoardRemoteIsSharedByWorktrees
 - [x] Bricht eine ref-Operation doch am Remote ab, nennt die Meldung drei Dinge: den eingestellten Namen, die Remotes die dieses Repository tatsaechlich hat, und den Befehl der es geradezieht. Nicht nur: no remote "upstream".
   proof: core/gitref/gitref_test.go:274 TestUsableExplainsAMissingRemote prueft alle drei Teile; :293 TestUsableSaysWhenThereAreNoRemotesAtAll fuer den Fall ohne Remotes
-- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+  proof: core/release/NOTES.md: eine Zeile unter ## Unreleased
 
 Im jaira-Repository selbst (origin = Fork, upstream = BeMuCa) geht der Ticket-Ref weiterhin nach upstream. Ein Test haelt das fest, damit die Loesung nicht darin bestehen kann, ueberall still auf origin auszuweichen.
 
