@@ -10,18 +10,19 @@ import (
 	"strings"
 )
 
-// attributes is the part of .gitattributes this package needs: which paths are
-// pinned to LF. It is a matcher of our own rather than a shell-out to
-// "git check-attr" so the testdata fixtures can be plain directories instead of
-// repositories — and because the only pattern forms this repository uses are
-// dir/*.ext and dir/**/*.ext, which path.Match plus a ** segment covers.
+// attributes is the part of .gitattributes this package needs: which paths git
+// is told to hand over byte for byte. It is a matcher of our own rather than a
+// shell-out to "git check-attr" so the testdata fixtures can be plain
+// directories instead of repositories — and because the only pattern forms this
+// repository uses are dir/*.ext and dir/**/*.ext, which path.Match plus a **
+// segment covers.
 type attributes struct {
 	rules []attrRule
 }
 
 type attrRule struct {
 	pattern string
-	eolLF   bool
+	pinned  bool
 }
 
 // loadAttributes reads root/.gitattributes. A missing file is not an error: it
@@ -49,11 +50,12 @@ func loadAttributes(root string) (*attributes, error) {
 		}
 		r := attrRule{pattern: fields[0]}
 		for _, at := range fields[1:] {
-			switch {
-			case at == "eol=lf":
-				r.eolLF = true
-			case at == "-text" || at == "binary":
-				r.eolLF = false
+			// eol=lf pins the line endings; -text and binary tell git to convert
+			// nothing at all, which answers the same question — the bytes in the
+			// working tree are the bytes that were committed.
+			switch at {
+			case "eol=lf", "-text", "binary":
+				r.pinned = true
 			}
 		}
 		a.rules = append(a.rules, r)
@@ -61,13 +63,13 @@ func loadAttributes(root string) (*attributes, error) {
 	return a, sc.Err()
 }
 
-// eolLF reports whether rel, a slash-separated path relative to the root the
-// .gitattributes sits in, is pinned to LF. Git gives the last matching line the
-// final say, so the scan runs backwards.
-func (a *attributes) eolLF(rel string) bool {
+// pinned reports whether rel, a slash-separated path relative to the root the
+// .gitattributes sits in, is protected from autocrlf. Git gives the last
+// matching line the final say, so the scan runs backwards.
+func (a *attributes) pinned(rel string) bool {
 	for i := len(a.rules) - 1; i >= 0; i-- {
 		if matchPattern(a.rules[i].pattern, rel) {
-			return a.rules[i].eolLF
+			return a.rules[i].pinned
 		}
 	}
 	return false

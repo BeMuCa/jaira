@@ -171,10 +171,12 @@ func strLit(e ast.Expr) (string, bool) {
 	return v, true
 }
 
-func hasGOOS(body ast.Node) bool {
+// anyNode reports whether pred holds for n or for any node below it, which is
+// the shape every "does this function mention X" question below takes.
+func anyNode(n ast.Node, pred func(ast.Node) bool) bool {
 	found := false
-	ast.Inspect(body, func(n ast.Node) bool {
-		if pkg, sel, ok := selName2(n); ok && pkg == "runtime" && sel == "GOOS" {
+	ast.Inspect(n, func(x ast.Node) bool {
+		if !found && pred(x) {
 			found = true
 		}
 		return !found
@@ -182,12 +184,28 @@ func hasGOOS(body ast.Node) bool {
 	return found
 }
 
-func selName2(n ast.Node) (pkg, sel string, ok bool) {
-	e, isExpr := n.(ast.Expr)
-	if !isExpr {
-		return "", "", false
-	}
-	return selName(e)
+// litContains reports whether n holds a string literal containing sub, compared
+// case-insensitively.
+func litContains(n ast.Node, sub string) bool {
+	return anyNode(n, func(x ast.Node) bool {
+		lit, ok := x.(*ast.BasicLit)
+		if !ok {
+			return false
+		}
+		v, ok := strLit(lit)
+		return ok && strings.Contains(strings.ToLower(v), sub)
+	})
+}
+
+func hasGOOS(body ast.Node) bool {
+	return anyNode(body, func(n ast.Node) bool {
+		s, ok := n.(*ast.SelectorExpr)
+		if !ok || s.Sel.Name != "GOOS" {
+			return false
+		}
+		id, ok := s.X.(*ast.Ident)
+		return ok && id.Name == "runtime"
+	})
 }
 
 // ---- rule 1: HOME without USERPROFILE -------------------------------------
@@ -230,13 +248,7 @@ func checkSetenv(fset *token.FileSet, f *ast.File, rel string) []Finding {
 	return out
 }
 
-// ---- rule 2: go:embed without eol=lf --------------------------------------
-
-var binaryExt = map[string]bool{
-	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".ico": true,
-	".pdf": true, ".zip": true, ".gz": true, ".wasm": true, ".ttf": true,
-	".woff": true, ".woff2": true, ".bin": true, ".icns": true,
-}
+// ---- rule 2: go:embed with nothing pinning it in .gitattributes -----------
 
 func checkEmbed(fset *token.FileSet, f *ast.File, rel, root, dir string, attrs *attributes) []Finding {
 	var out []Finding
@@ -250,7 +262,7 @@ func checkEmbed(fset *token.FileSet, f *ast.File, rel, root, dir string, attrs *
 			for _, pat := range embedPatterns(strings.TrimPrefix(text, "go:embed ")) {
 				for _, file := range embedFiles(dir, pat) {
 					r := relSlash(root, file)
-					if binaryExt[strings.ToLower(path.Ext(r))] || attrs.eolLF(r) {
+					if attrs.pinned(r) {
 						continue
 					}
 					uncovered = append(uncovered, r)
@@ -262,8 +274,8 @@ func checkEmbed(fset *token.FileSet, f *ast.File, rel, root, dir string, attrs *
 			sort.Strings(uncovered)
 			out = append(out, Finding{
 				Rule: 2, File: rel, Line: fset.Position(c.Pos()).Line,
-				Problem: fmt.Sprintf("//go:embed pulls in %d file(s) with no eol=lf line in .gitattributes, starting at %s: a Windows checkout with core.autocrlf embeds them with CRLF, and the embedded bytes stop matching what the code expects", len(uncovered), uncovered[0]),
-				Fix:     fmt.Sprintf("add a line to .gitattributes pinning them, e.g. %q", coverPattern(uncovered[0])+" text eol=lf"),
+				Problem: fmt.Sprintf("//go:embed pulls in %d file(s) that no line in .gitattributes pins, starting at %s: a Windows checkout with core.autocrlf embeds them with CRLF, and the embedded bytes stop matching what the code expects", len(uncovered), uncovered[0]),
+				Fix:     fmt.Sprintf("add a line to .gitattributes pinning them, e.g. %q — or %q if they are not text", coverPattern(uncovered[0])+" text eol=lf", coverPattern(uncovered[0])+" binary"),
 			})
 		}
 	}
@@ -393,7 +405,11 @@ func isZeroMode(e ast.Expr) bool {
 func checkExe(fset *token.FileSet, f *ast.File, rel string) []Finding {
 	var out []Finding
 	for _, body := range funcBodies(f) {
-		if hasGOOS(body) || mentionsExe(body) {
+		// A function that names ".exe" itself already accounts for the suffix. A
+		// site that delegates it to a helper carries //wintrap:ok with its reason
+		// instead — a silencer nobody can see at the site it silences is worse
+		// than the finding.
+		if hasGOOS(body) || litContains(body, ".exe") {
 			continue
 		}
 		var lines []int
@@ -420,9 +436,10 @@ func checkExe(fset *token.FileSet, f *ast.File, rel string) []Finding {
 
 // isGoBuildOutput reports whether call is exec.Command("go", "build", ..., "-o", ...) —
 // the only shape the rule 4 message describes. "install" takes no -o at all and
-// "test -o" writes a test binary, which is not what the finding says. Anything narrower than this and
-// the check fires on every unrelated tool that happens to take a "-o" flag,
-// which is what a finding is not allowed to do: claim something it did not see.
+// "test -o" writes a test binary, which is not what the finding says. Anything
+// looser than this and the check fires on every unrelated tool that happens to
+// take a "-o" flag, which is what a finding is not allowed to do: claim
+// something it did not see.
 func isGoBuildOutput(call *ast.CallExpr) bool {
 	pkg, sel, ok := selName(call.Fun)
 	if !ok || pkg != "exec" || (sel != "Command" && sel != "CommandContext") {
@@ -447,23 +464,6 @@ func isGoBuildOutput(call *ast.CallExpr) bool {
 		}
 	}
 	return build && out
-}
-
-// mentionsExe reports whether the function accounts for the suffix itself, by
-// naming ".exe" somewhere in it. A site that delegates the suffix to a helper
-// carries //wintrap:ok with its reason instead — a silencer nobody can see at
-// the site it silences is worse than the finding.
-func mentionsExe(body ast.Node) bool {
-	found := false
-	ast.Inspect(body, func(n ast.Node) bool {
-		if b, ok := n.(*ast.BasicLit); ok {
-			if v, ok := strLit(b); ok && strings.Contains(strings.ToLower(v), ".exe") {
-				found = true
-			}
-		}
-		return !found
-	})
-	return found
 }
 
 // ---- rule 5: a path glued together with a literal "/" ---------------------
@@ -520,14 +520,5 @@ func sepConcat(e ast.Expr) bool {
 	if !ok || bin.Op != token.ADD {
 		return false
 	}
-	sep := false
-	ast.Inspect(e, func(n ast.Node) bool {
-		if b, ok := n.(*ast.BasicLit); ok {
-			if v, ok := strLit(b); ok && strings.Contains(v, "/") {
-				sep = true
-			}
-		}
-		return !sep
-	})
-	return sep
+	return litContains(e, "/")
 }
