@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:50:40Z
+updated-at: 2026-09-14T19:52:23Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -105,3 +105,14 @@ NOTES.md-Zeile geschrieben, weil (3) von aussen sichtbar ist: --all meldete bish
 Checked and NOT findings: logbookOut needs no ReadOnly guard of its own - store.go:333 Logbook() already calls onlyOnRef, so a ref-only id is refused there with a proper error; stampCommits in logbook.go is not a one-caller wrapper, archive.go:73 uses it too.
 Recorded, not fixed, not a reason for this send-back: core/lane/lane.go:479 leaves boards created before this change on logbook-on-entry - ticket 1K9KZS owns that and its NOTES line.
 - **2026-09-14 19:50 · Alexander Sacharov** — Dispatcher-Uebergabe am 2026-09-14: der vorige Dispatcher wurde gestoppt, waehrend seine critique-Runde 2 bereits auf dem Ticket stand, sein Fix-Worker aber noch nicht gelaufen war. Der Arbeitsbaum /home/alex/projects/.worktrees/jaira-9ET6NC war bei der Uebernahme sauber (HEAD 3062f60), es lag also nichts halb Fertiges herum - die drei Befunde aus critique Runde 2 werden vollstaendig neu gearbeitet, nichts davon war schon angefangen. Route ab hier ohne Lane-Sprung: in-progress -> critique -> optimize -> testing -> review.
+- **2026-09-14 19:52 · Alexander Sacharov** — in-progress nach critique Runde 2: alle drei Befunde umgesetzt, nichts darueber hinaus.
+
+(1) logbookAll --json traegt jetzt "trim_error" neben filed/count/lane - derselbe Schluessel und dieselbe Form wie flow.go beim move. Der PartialError wird in eine lokale 'skipped' gehoben, weil err selbst nach dem errors.As-Zweig weiterlebt und im JSON-Zweig nicht mehr aussagekraeftig ist. Neuer Test TestTheCutJSONCarriesWhatItSkipped (internal/cli/holdcap_test.go); Gegenprobe gefahren: Schluessel weggenommen -> Test faellt mit 'lacks trim_error'.
+
+(2) Der !t.ReadOnly-Hunk in Overflow BLEIBT, statt zurueckgenommen zu werden. Begruendung: Overflow und FileLane treffen denselben Satz Tickets, und der Grund ist in beiden derselbe - ein Ref-only-Ticket hat hier keine Datei. Zaehlte es zur Kappe, wuerde fremde Arbeit, die dieser Klon gar nicht bewegen kann, eigene Tickets vom Board draengen; TrimLane wuerde danach in Logbook() auf onlyOnRef laufen. Zurueckgenommen haette es die Kappe genau in die Lage gebracht, gegen die dieses Ticket den Schnitt gebaut hat. Dafuer jetzt gepinnt: TestOverflowLeavesRefOnlyTicketsOutOfTheCap (core/ticket/trim_test.go) mit zwei Kappen - bei keep=2 nimmt die Kappe nichts, obwohl drei Tickets in der Lane stehen, bei keep=1 genau das aelteste eigene. Gegenprobe: ohne den Hunk faellt der Test. Die NOTES-Zeile nennt jetzt beide Wege ('--all und die holds-Kappe') statt nur --all.
+
+(3) Dateikopf von logbook.go nennt jetzt beide Kommandos.
+
+Nicht angefasst, wie vom Dispatcher abgegrenzt: lane.go:479 / aeltere Boards behalten logbook-on-entry - Ticket 1K9KZS, samt seiner NOTES-Zeile. Schwelle bleibt zehn, WXQ9PT bekommt keine Abloese-Markierung.
+
+go vet ./... und go test ./... -race: Exit 0.
