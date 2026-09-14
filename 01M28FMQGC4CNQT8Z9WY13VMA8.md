@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:26:23Z
+updated-at: 2026-09-14T18:28:42Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
@@ -28,6 +28,7 @@ outcome-why: "Sie stand an allen drei Stellen als 'ein Agent macht den PR auf', 
 outcome-resolves: "Alle drei Stellen tragen die gedrehte Regel, in CLAUDE.md und AGENTS.md hinter dem jaira:local-Marker also regenerationsfest"
 claimed-by: DESKTOP-RFTCH11-472111
 claimed-at: 2026-09-14T18:22:34Z
+review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:3,6,10-12 - die Rolle heisst 'Open a pull request for finished ticket work' und sagt woertlich 'Opening a pull request is a contributor's job. Accepting one is the maintainer's. You are the contributor: you may open'. Das ist genau der Satz, den CLAUDE.md:166 jetzt umdreht. Ein ausgeliefertes Prompt weist den Agenten an zu tun, was die Projektregel ihm verbietet. || core/role/builtin/jaira-teamlead/SKILL.md:79-80 - 'Opening one is a contributor's job, accepting it is the maintainer's' - derselbe alte Satz ein zweites Mal, ebenfalls ausgeliefert. || core/role/builtin/jaira-teamlead/SKILL.md:89 - 'Close it once the pull request is open, not once it is merged' nennt als Schlusspunkt einen Moment, den ein Agent unter der neuen Regel nie erlebt, weil er den PR nicht aufmacht. || Der Diff schreibt die Regel an drei Dokumentationsstellen auf, aber die Prompts, die Agenten tatsaechlich ausfuehren, liegen im selben Repository und tragen weiter die alte. Wer die Regel in CLAUDE.md liest und die Rolle /jaira-role-pr benutzt, bekommt zwei Anweisungen, die sich widersprechen."
 ---
 
 # Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
