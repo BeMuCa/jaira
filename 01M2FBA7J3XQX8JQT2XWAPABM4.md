@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:16:47Z
+updated-at: 2026-09-14T16:17:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-382690
 claimed-at: 2026-09-14T16:16:39Z
@@ -122,3 +122,12 @@ Nicht gemeldet, absichtlich: gitattributes.go:30 liest nur root/.gitattributes, 
 - Der CallExpr-Zweig in mentionsExe ist raus. Folge, die vorher niemand sah: internal/cli/mergebranches_test.go:34 und :194 waren nur deshalb still, weil sie exeSuffix() rufen. Beide tragen jetzt //wintrap:ok mit Begruendung - die Stelle ist korrekt, aber die Stummschaltung steht jetzt dort, wo man sie liest.
 - Der "://"-Zweig in sepConcat ist geloescht. Kein neuer Treffer im Repository-Lauf, damit ist die Analyse der critique bestaetigt: eine URL erreicht os.*/filepath.*/TrimPrefix hier nirgends.
 - wintrap.go -> wintrap_scan_test.go, gitattributes.go -> gitattributes_scan_test.go. Die note vom 15:51 hat das eigene Nicht-Test-Paket mit "Scan muss eine beliebige Wurzel scannen koennen" begruendet - das war kein Argument, eine _test.go kann das genauso. Damit traegt das Modul kein exportiertes Scan mehr, das niemand importiert. README ## Development bleibt woertlich richtig, dort steht "internal/wintrap, das go test ./... schon laeuft" und nicht der Dateiname.
+- **2026-09-14 16:17 · Alexander Sacharov** — critique Runde 2: ein Fund, eine Zeile.
+
+wintrap_scan_test.go:442 - isGoBuildOutput nimmt neben "build" auch "install" und "test", der Fundtext auf :413 behauptet aber "a binary is built with go build -o". Nachgemessen: "go install -o" gibt es nicht (flag provided but not defined: -o), der Zweig kann also nie greifen; "go test -o" baut ein Testbinary, das die Meldung nicht beschreibt. Das ist der Fund aus Runde 1 in kleiner Form - die Regel prueft wieder etwas anderes, als sie meldet. Abhilfe: im switch auf :442 nur "build" stehen lassen.
+
+Geprueft und absichtlich NICHT gemeldet:
+- binaryExt (:235) sieht nach totem Code aus, verhindert aber echten Schaden: ohne die Liste bekaeme ein eingebettetes .png den Rat, eol=lf zu setzen. Bleibt.
+- Das Paket besteht jetzt nur noch aus _test.go-Dateien; go build ./..., go vet ./... und GOOS=windows go vet ./... laufen damit alle gruen. Die Umbenennung aus Runde 1 hat nichts kaputt gemacht.
+- mentionsExe schaltet weiter eine ganze Funktion stumm, sobald ein ".exe"-Literal darin steht. Das war in Runde 1 die bewusste Entscheidung und wird hier nicht neu aufgemacht.
+- README wiederholt die fuenf Muster aus dem Paketkommentar. Da der Paketkommentar jetzt in einer _test.go steht und go doc ihn nicht mehr zeigt, ist die README-Kopie die einzige auffindbare - kein Fund.
