@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T16:02:38Z
+updated-at: 2026-09-14T16:08:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
@@ -43,7 +43,7 @@ outcome-why: "The two commits add one exported method, one predicate and three t
 outcome-resolves: "review-gaps is written: what was considered and what was left standing, with the out-of-lane raw-error ticket named again."
 review-summary: "none"
 review-gaps: "Optimize round two, over a38ae17 and 04f92e7 only: nothing to remove. Duplication: none new — the sentence has exactly one owner (gitref Repo.NoRemoteHint), noRefReason is still the single renderer for create, whoami and --json, and whoami's InRepo comes from canReachARef, the same predicate create uses, so the two commands cannot answer differently. Dead code: nothing orphaned — the strings import and the TrimPrefix went out with the change that made them dead, and no reference to the old private noRemote is left anywhere. Fluff: the new comments explain why rather than restate the line; the only leftover was a comment line in internal/cli/refs.go that the NoRemoteHint rename left over-long, rewrapped, no code touched. Cost: nothing new on a hot path — the extra gitref.Remotes subprocesses sit in the error path of one invocation. Left alone deliberately: everything critique rounds three and four recorded as explicitly-not-a-finding (the bare-remote fallback swallowing foreign errors, NoRemoteHint re-running git remote, whoami's two tests over one setup, TestWhoamiJSONRemotesIsAlwaysAList building its repo by hand because cloneWithRemotes always adds origin, the nil checks in noRefReason), and everything the first optimize round listed as left standing. Still out of lane, as before: fetch.go, pull.go, release.go and snapshot.go printing raw refs.Usable() errors — its own ticket."
-test-verdict: "pass: suite green with -race (RC=0), gofmt/vet clean, all six DoD verified in the tree and exercised by hand on throwaway boards; three cosmetic observations noted, none blocking"
+test-verdict: "pass: all gates green (build, gofmt, vet, go test -count=1, go test -race -count=1, RC=0), all six DoD verified in the tree and exercised by hand with a binary built from 3c8c681 on throwaway boards, and the three human-lane points plus the NoRemoteHint fix hold"
 question: "drei Punkte korrigieren"
 ---
 
