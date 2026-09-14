@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,13 +19,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:25:55Z
+updated-at: 2026-09-14T18:26:23Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
-outcome-what: "Die Regel steht hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md und im README unter Development"
-outcome-why: "Sie galt bisher nur als Gewohnheit: nirgends stand, dass master nur ueber einen PR erreicht wird und dass das Abnehmen dem Maintainer gehoert"
-outcome-resolves: "Alle drei Stellen tragen sie, hinter dem Marker also regenerationsfest, und dieser Branch samt PR ist selbst das erste Beispiel"
+outcome-what: "Die PR-Regel steht in CLAUDE.md, AGENTS.md und README - und jetzt in die richtige Richtung: ein Agent pusht seinen Branch und hoert dort auf"
+outcome-why: "Sie stand an allen drei Stellen als 'ein Agent macht den PR auf', was Alex am 14.09. umgedreht hat; ausserdem fehlte in AGENTS.md die Leerzeile vor der Ueberschrift"
+outcome-resolves: "Alle drei Stellen tragen die gedrehte Regel, in CLAUDE.md und AGENTS.md hinter dem jaira:local-Marker also regenerationsfest"
 claimed-by: DESKTOP-RFTCH11-472111
 claimed-at: 2026-09-14T18:22:34Z
 ---
