@@ -128,6 +128,10 @@ func TestRolesInstallIntoNamesTheDirectory(t *testing.T) {
 func TestRolesInstallGlobalWritesUnderHome(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	// os.UserHomeDir reads USERPROFILE on Windows and HOME everywhere else, so
+	// setting only HOME let --global install into the runner's real home and
+	// the assertion looked in a temp directory nothing had been written to.
+	t.Setenv("USERPROFILE", home)
 	dir := t.TempDir()
 	if out, err := runCLI(t, dir, "roles", "install", "--global"); err != nil {
 		t.Fatalf("roles install --global: %v\n%s", err, out)
