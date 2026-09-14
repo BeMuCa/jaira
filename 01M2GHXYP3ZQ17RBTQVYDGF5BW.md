@@ -27,7 +27,9 @@ related:
   - 01M2G02EHTV6RJPPQKR5VM0A76
 commits: []
 created-at: 2026-09-14T18:12:37Z
-updated-at: 2026-09-14T18:12:37Z
+updated-at: 2026-09-14T18:12:51Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Ein Remote, den es gibt und der nicht funktioniert, wird wie ein fehlender gemeldet
