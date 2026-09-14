@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: critique
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,21 +19,24 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T19:48:26Z
+updated-at: 2026-09-14T19:50:20Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
-question: "Entschieden: ein Agent macht keinen PR auf, er schiebt den Zweig und haelt an. Die Regel steht an drei Stellen im alten Wortlaut - CLAUDE.md:167, AGENTS.md:176, README.md:799."
-outcome-what: "Die Regel steht hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md und im README unter Development"
-outcome-why: "Sie galt bisher nur als Gewohnheit: nirgends stand, dass master nur ueber einen PR erreicht wird und dass das Abnehmen dem Maintainer gehoert"
-outcome-resolves: "Alle drei Stellen tragen sie, hinter dem Marker also regenerationsfest, und dieser Branch samt PR ist selbst das erste Beispiel"
+question: "Die Regel steht jetzt in CLAUDE.md, AGENTS.md und README: ein Agent pusht seinen Branch und macht den PR nicht auf. Die Rollen-Prompts in core/role/builtin sagen aber weiter das Gegenteil - jaira-role-pr/SKILL.md ist als ganze Rolle 'mach den PR auf' gebaut, jaira-teamlead/SKILL.md:79-80 traegt woertlich den alten Satz, und :89 laesst den Dispatcher schliessen, 'sobald der PR offen ist'. Deine Entscheidung, weil beides vertretbar ist: (A) Die Regel gilt nur fuer dieses Projekt - hinter jaira:local, wo sie steht. Dann bleibt core/role/builtin unangetastet, kostet aber, dass jeder Agent hier ein ausgeliefertes Prompt liest, das ihm das Gegenteil sagt. (B) Die Regel gilt jaira-weit. Dann muessen die drei Prompt-Stellen gedreht werden, jaira-role-pr wird auf reines Pushen zurueckgebaut oder abgeschafft, und es braucht eine NOTES.md-Zeile plus 'jaira roles install --global --force' fuer alle - das ist ein eigenes Ticket, nicht mehr dieses."
+outcome-what: "Die PR-Regel steht in CLAUDE.md, AGENTS.md und README - und jetzt in die richtige Richtung: ein Agent pusht seinen Branch und hoert dort auf"
+outcome-why: "Sie stand an allen drei Stellen als 'ein Agent macht den PR auf', was Alex am 14.09. umgedreht hat; ausserdem fehlte in AGENTS.md die Leerzeile vor der Ueberschrift"
+outcome-resolves: "Alle drei Stellen tragen die gedrehte Regel, in CLAUDE.md und AGENTS.md hinter dem jaira:local-Marker also regenerationsfest"
+claimed-by: DESKTOP-RFTCH11-690668
+claimed-at: 2026-09-14T19:50:20Z
+review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:3,6,10-12 - die Rolle heisst 'Open a pull request for finished ticket work' und sagt woertlich 'Opening a pull request is a contributor's job. Accepting one is the maintainer's. You are the contributor: you may open'. Das ist genau der Satz, den CLAUDE.md:166 jetzt umdreht. Ein ausgeliefertes Prompt weist den Agenten an zu tun, was die Projektregel ihm verbietet. || core/role/builtin/jaira-teamlead/SKILL.md:79-80 - 'Opening one is a contributor's job, accepting it is the maintainer's' - derselbe alte Satz ein zweites Mal, ebenfalls ausgeliefert. || core/role/builtin/jaira-teamlead/SKILL.md:89 - 'Close it once the pull request is open, not once it is merged' nennt als Schlusspunkt einen Moment, den ein Agent unter der neuen Regel nie erlebt, weil er den PR nicht aufmacht. || Der Diff schreibt die Regel an drei Dokumentationsstellen auf, aber die Prompts, die Agenten tatsaechlich ausfuehren, liegen im selben Repository und tragen weiter die alte. Wer die Regel in CLAUDE.md liest und die Rolle /jaira-role-pr benutzt, bekommt zwei Anweisungen, die sich widersprechen."
 ---
 
 # Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
 
 ## Definition of Done
 
-- [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
-  proof: CLAUDE.md und AGENTS.md tragen die Regel hinter dem jaira:local-Marker, README unter Development; dieser Branch mit seinem PR ist das erste Beispiel
+- [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und der PR gehoert von Anfang an dem Maintainer - ein Agent pusht seinen Branch und hoert dort auf, er macht den PR nicht auf, merged ihn nicht und gibt ihn nicht frei; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt
+  proof: CLAUDE.md:156-172 und AGENTS.md:165-182 hinter dem jaira:local-Marker, README.md:842-851 unter Development
 
 ## Options
 
@@ -44,5 +47,11 @@ outcome-resolves: "Alle drei Stellen tragen sie, hinter dem Marker also regenera
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
+- [x] CLAUDE.md: turn the PR rule around behind the jaira:local marker - the agent pushes the branch and stops
+- [x] AGENTS.md: add the same section behind the jaira:local marker, it is missing there entirely
+- [x] README.md under Development: turn the same two sentences around so a reader who never uses an agent finds the rule
+
 ## Progress
-- **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
+- **2026-09-14 18:22 · Alexander Sacharov** — Alex hat die offene Frage am 14.09. beantwortet: ein Agent macht den Pull Request NICHT auf. Er pusht den Branch und hoert dort auf; das Aufmachen gibt der Mensch in Auftrag. Mergen und Freigeben waren schon verboten - das verschiebt die Linie nach vorn, aufs Aufmachen. Damit steht die Regel heute an drei Stellen falsch herum und alle drei muessen gedreht werden: CLAUDE.md hinter dem jaira:local-Marker, AGENTS.md hinter dem jaira:local-Marker, README.md unter Development. Die Formulierung des DoD-Kriteriums ('ein Agent macht ihn auf und merged ihn nie') ist damit selbst ueberholt - erfuellt ist es jetzt durch die gedrehte Regel, nicht durch die woertliche.
+- **2026-09-14 18:25 · Alexander Sacharov** — Der Abschnitt stand schon in CLAUDE.md und README - nur falsch herum ('an agent may open a pull request'). In AGENTS.md stand er ebenfalls schon, aber weiter unten hinter der NOTES.md-Regel und ohne Leerzeile vor der Ueberschrift, weshalb eine Suche nach dem Marker plus 30 Zeilen ihn nicht findet. Wer hier nachsieht, ob eine Regel fehlt, muss nach dem Ueberschriftentext greppen, nicht nach dem Marker. Die Leerzeile ist mitgefixt. Kein NOTES.md-Eintrag: nur Dokumentation, von aussen am Binary nichts zu beobachten.
+- **2026-09-14 18:28 · Alexander Sacharov** — critique: Die gedrehte Regel steht in CLAUDE.md, AGENTS.md und README - aber die in diesem Repository gepflegten Rollen-Prompts sagen weiter das Gegenteil. core/role/builtin/jaira-role-pr/SKILL.md ist als ganze Rolle 'mach den PR auf' gebaut (Zeile 3, 6, 10-12), core/role/builtin/jaira-teamlead/SKILL.md:79-80 traegt woertlich den alten Satz, und Zeile 89 setzt den Schlusspunkt des Dispatchers auf 'sobald der PR offen ist' - ein Moment, den ein Agent unter der neuen Regel nie erreicht. Nicht selbst gefixt, weil es eine Entscheidung braucht: CLAUDE.md/AGENTS.md hinter jaira:local sind die Regel DIESES Projekts, core/role/builtin geht an jedes jaira-Board. Ob die Regel jaira-weit gilt oder nur hier, aendert den Umfang von 'zwei Saetze umschreiben' auf 'die Rolle jaira-role-pr abschaffen oder auf reines Pushen zurueckbauen, plus NOTES.md-Zeile'. Sonst nichts gefunden: die drei Textstellen sagen dasselbe, die Platzierung hinter dem Marker stimmt, die NOTES.md-Regel in CLAUDE.md liegt hinter jaira:end und war vorher wie nachher ausserhalb des regenerierten Blocks - kein Verlust durch den neuen Marker.
