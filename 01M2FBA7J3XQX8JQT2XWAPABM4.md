@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:09:56Z
+updated-at: 2026-09-14T16:13:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273044
 claimed-at: 2026-09-14T15:48:01Z
@@ -119,3 +119,9 @@ Keine Zeile in core/release/NOTES.md: Tests und CI sind von aussen am Binary nic
 4. Einordnung: wintrap.go und gitattributes.go sind 640 Zeilen Nicht-Test-Code mit exportiertem Scan, dessen einziger Aufrufer der eigene Test ist. Das Repository hat den Waechtertest schon als Muster - core/lane/lane_test.go:698 TestModelTierNeverComparedToModelName liest den Quellbaum aus einer _test.go im bewachten Paket. Beide Dateien in _test.go umbenennen: testdata, Scan und alle vier Tests laufen unveraendert weiter, und das Modul traegt keine exportierte Entwickler-API mehr, die niemand importiert. Die note vom 15:51 begruendet das eigene Paket mit "Scan muss eine beliebige Wurzel scannen koennen" - das kann eine _test.go genauso.
 
 Nicht gemeldet, absichtlich: gitattributes.go:30 liest nur root/.gitattributes, nicht die in Unterverzeichnissen. Im Repository gibt es heute keine, und der Fehlalarm kostet eine Zeile in der Wurzeldatei. Nicht wert, dafuer git-Semantik nachzubauen.
+- **2026-09-14 16:13 · Alexander Sacharov** — critique-Runde abgearbeitet, vier Funde. Was dabei herauskam und nicht im Diff steht:
+
+- Regel 4 auf exec.Command/CommandContext mit erstem Literal "go" plus "build"/"install"/"test" und "-o" verengt. Nachgemessen mit den beiden Gegenproben aus der critique (sort -o, tar -c -o) in testdata/clean: melden nicht mehr.
+- Der CallExpr-Zweig in mentionsExe ist raus. Folge, die vorher niemand sah: internal/cli/mergebranches_test.go:34 und :194 waren nur deshalb still, weil sie exeSuffix() rufen. Beide tragen jetzt //wintrap:ok mit Begruendung - die Stelle ist korrekt, aber die Stummschaltung steht jetzt dort, wo man sie liest.
+- Der "://"-Zweig in sepConcat ist geloescht. Kein neuer Treffer im Repository-Lauf, damit ist die Analyse der critique bestaetigt: eine URL erreicht os.*/filepath.*/TrimPrefix hier nirgends.
+- wintrap.go -> wintrap_scan_test.go, gitattributes.go -> gitattributes_scan_test.go. Die note vom 15:51 hat das eigene Nicht-Test-Paket mit "Scan muss eine beliebige Wurzel scannen koennen" begruendet - das war kein Argument, eine _test.go kann das genauso. Damit traegt das Modul kein exportiertes Scan mehr, das niemand importiert. README ## Development bleibt woertlich richtig, dort steht "internal/wintrap, das go test ./... schon laeuft" und nicht der Dateiname.
