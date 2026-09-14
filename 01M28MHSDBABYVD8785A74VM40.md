@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:48:18Z
+updated-at: 2026-09-14T19:48:22Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-661099
@@ -100,3 +100,4 @@ Zu (3): !t.ReadOnly steht jetzt in der Auswahlschleife von FileLane (trim.go), n
 Was ich dafuer erst finden musste: in core/ticket gibt es keinen Test-Fake fuer TicketSource, ReadOnly wird ausschliesslich in store.extra() gesetzt. Der neue Test TestFileLaneLeavesRefOnlyTicketsWhereTheyAre haengt deshalb ein eigenes refSource an s.Source - das ist der einzige Weg, ein ReadOnly-Ticket ohne echtes git-Ref zu bekommen. Gegenprobe gefahren: ohne !t.ReadOnly faellt der Test mit genau der Meldung aus dem Befund ('on its ref and not on your disk').
 
 NOTES.md-Zeile geschrieben, weil (3) von aussen sichtbar ist: --all meldete bisher jedes fertige Ref-only-Ticket als Problem.
+- **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach optimize geholt, weil zwei Lanes uebersprungen worden waren: das Ticket stand in human, ohne dass optimize und testing je gelaufen waren - test-verdict war leer. Dazwischen lag Commit 912ac3c, der echten Code geaendert hat (FileLane, logbookAll), also genau das, was testing pruefen muss. Die Frage im question-Feld war ausserdem noch die alte vom 11.09.; Alex hat beide Teile heute beantwortet, sie stehen als Notizen weiter oben.
