@@ -4,7 +4,7 @@ title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in 
 status: backlog
 ready: true
 creator: Alexander Sacharov
-assignee: Alexander Sacharov
+assignee: ""
 goal: "Die fuenf bekannten Windows-Fallen scheitern auf einem Linux-Rechner in Sekunden: ein Go-Test benennt jede mit der Abhilfe im Fehlertext, und ein GOOS=windows-Lauf von vet und build auf dem ubuntu-Job faengt ab, was schon beim Uebersetzen bricht."
 context: |-
   Der windows-latest-Job faellt regelmaessig um, und wir erfahren es erst, wenn die Arbeit schon fertiggemeldet ist.
@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T06:58:17Z
+updated-at: 2026-09-14T07:00:16Z
 updated-by: Alexander Sacharov
 ---
 
