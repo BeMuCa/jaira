@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:44:05Z
+updated-at: 2026-09-14T13:49:57Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -58,7 +58,7 @@ review-summary: |-
 - [x] Ein Datei-Ticket kommt mit einem Befehl auf seinen Ref und die lokale Datei verschwindet dabei. Die Logik dafuer ist die vorhandene fileOnRefOnly (internal/cli/refs.go:69), nicht eine zweite Kopie davon. Nachgestellt auf einem Fixture-Board, dessen Ticket im Datei-Modus entstanden ist.
   proof: TestReleasePutsAFileTicketOnItsRef (internal/cli/filemode_test.go); releaseFromFile in internal/cli/release.go calls putOnRef, which is fileOnRefOnly itself
 - [x] Ein Befehl zeigt den git-Zustand des Boards in einem Aufruf: den eingestellten Remote-Namen, die Remotes die dieses Repository hat, ob der Ref-Modus laeuft, und wie viele Tickets nur als Datei liegen. Nachgestellt auf einem Board mit passendem und auf einem mit fehlendem Remote.
-  proof: TestWhoamiShowsTheBoardIsOnRefs and TestWhoamiShowsTheBoardIsInFileMode (internal/cli/filemode_test.go); boardState/remoteOrigin/fileOnlyCount in internal/cli/whoami.go
+  proof: TestWhoamiShowsTheBoardIsOnRefs, TestWhoamiShowsTheBoardIsInFileMode and TestWhoamiOutsideAGitRepositorySaysSo (internal/cli/filemode_test.go); boardState/fileOnlyCount in internal/cli/whoami.go, taking the name from refs.Repo.RemoteName() and the source from settings.RemoteSourceFor
 - [x] 'jaira create --dod' nimmt den Schalter mehrfach, wie --tag es tut. Nachgestellt: ein Ticket mit drei Kriterien wird im Ref-Modus mit einem Aufruf angelegt und traegt danach drei Kaestchen, ohne dass es dafuer gepullt wurde.
   proof: TestCreateTakesSeveralDoDItems (internal/cli/filemode_test.go) and TestNewBodyWritesOneBoxPerCriterion (core/ticket/body_test.go)
 - [x] Der Diagnosetext, der heute nur aus 'jaira release' kommt, erscheint dort wo der Zustand entsteht. Nachgestellt: auf einem Board ohne passenden Remote nennt schon der erste 'jaira create' den Grund, nicht erst ein Befehl am Ende der Kette.
