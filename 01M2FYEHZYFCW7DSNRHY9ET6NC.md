@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:11:59Z
+updated-at: 2026-09-14T13:12:03Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -155,3 +155,4 @@ Zur bewussten Abweichung bei Finding 2 (ticket.At(dir).Create statt CLI): die Be
 Der Store-Rueckfall in ticketIn ist kein toter Zweig: im dritten Test scheitert Usable() am fehlenden Board-Remote, refsync ist inert, die Datei bleibt liegen und es gibt keinen ref.
 
 Nichts Neues eingeschleppt: go vet ./core/... ./internal/... laeuft sauber, Remotes/BoardRemote liefern bei fehlendem git, fehlendem Repo und leerer Ausgabe dasselbe wie vorher (nil bzw. ""), und value() trimmt bereits, was BoardRemote vorher von Hand tat.
+- **2026-09-14 13:12 · Alexander Sacharov** — optimize: keine Aenderung noetig. Vier Durchgaenge (Duplikation, toter Code, Fluff, Kosten) im Detail in review-gaps. Zwei Dinge bewusst NICHT angefasst, damit die naechste Runde sie nicht neu aufmacht: der tote 'remote == ""'-Zweig in Settings.Landing ist vorbestehend (auch RemoteName gab nie "" zurueck) und gehoert nicht zu diesem Ticket; das doppelte strings.TrimSpace in RemoteFor ist folgenlos, aber das Entfernen wuerde RemoteFor an eine undokumentierte Zusicherung von Repo.value binden.
