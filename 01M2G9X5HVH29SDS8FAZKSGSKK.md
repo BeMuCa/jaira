@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: backlog
+status: todo
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -29,13 +29,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:18:34Z
+updated-at: 2026-09-14T20:18:47Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
 claimed-at: 2026-09-14T20:17:54Z
-outcome-what: durchgereicht
-outcome-why: Ticket ist bereits vollstaendig spezifiziert
+outcome-what: Ticket ist spezifiziert
+outcome-why: "brainstorm und planning sind auf diesem Ticket nicht angehakt; Ziel, Kontext und acht DoD-Punkte stehen seit der Aufnahme"
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
