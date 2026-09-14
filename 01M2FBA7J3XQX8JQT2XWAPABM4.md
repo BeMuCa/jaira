@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:27:17Z
+updated-at: 2026-09-14T18:33:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
@@ -167,3 +167,14 @@ Nicht angefasst, absichtlich:
 - Der neue -text/binary-Zweig hat keinen dauerhaften Test. Bewusst mit einem Wegwerf-Fixture belegt statt ein Fixture einzubauen - das ist die Entscheidung der testing-Lane, nicht dieser.
 
 Nichts davon aendert das Verhalten auf einer Eingabe, die es in diesem Repository gibt: go test ./... -race, go vet ./..., GOOS=windows go vet ./... und GOOS=windows go build ./cmd/jaira sind gruen.
+- **2026-09-14 18:33 · Alexander Sacharov** — testing: Alle Tore gruen auf 946dca6 plus dem hier ergaenzten Test. go test ./... -race -count=1 RC=0 (alle Pakete ok, internal/tui 125s, internal/cli 31s), go vet ./... RC=0, GOOS=windows GOARCH=amd64 go vet ./... RC=0, GOOS=windows GOARCH=amd64 go build ./cmd/jaira RC=0.
+
+Die Luecke aus dem optimize-Lauf war echt und ist geschlossen. Mit dem Wegfall von binaryExt beantwortet nur noch .gitattributes die Frage, ob eine eingebettete Datei gepinnt ist - und die beiden neuen Attribute -text und binary in loadAttributes hatte kein einziger Test angefasst: die Wurzel-.gitattributes dieses Repositories benutzt ausschliesslich 'text eol=lf', und testdata/clean ebenso. Wer 'case "-text", "binary"' geloescht haette, waere gruen durchgekommen. Nachgemessen: genau diese Mutation angebracht, alte Tests blieben gruen.
+
+Ergaenzt sind zwei Fixtures im Schnitt der bestehenden rule1..rule5 und ein Test TestNonTextEmbedIsNotExempt: testdata/rule2bin bettet assets/*.png ohne jede .gitattributes ein und muss genau einen Fund der Regel 2 liefern - das ist der Beweis, dass eine Nicht-Text-Datei ueberhaupt noch anschlaegt, seit die 14er-Endungsliste weg ist -, und der Abhilfetext muss "assets/*.png binary" anbieten, weil 'text eol=lf' fuer ein PNG die falsche Anweisung waere. testdata/cleanbinary bettet dieselbe .png plus eine .txt ein und pinnt sie mit 'assets/*.png binary' und 'docs/*.txt -text' - der Scan muss schweigen. Gegenprobe: mit der oben genannten Mutation faellt der neue Test mit genau diesem cleanbinary-Fund um, er ist also nicht leer.
+
+Definition of Done Punkt fuer Punkt am Baum geprueft, nicht am outcome-Text: (1) alle fuenf Muster feuern mit eigenem Fixture und der Abhilfe im Text - TestEachPatternFires gruen; (2) TestRepositoryIsClean gruen ohne aufgeweichte Regel, die zwei Ausnahmen stehen sichtbar als //wintrap:ok; (3) .github/workflows/ci.yaml:33 'Cross-check the Windows build' mit 'if: matrix.os == ubuntu-latest', GOOS/GOARCH als env, go vet und go build ./cmd/jaira; (4) README.md:826-827 unter '## Development' mit beiden Zeilen zum Selberlaufen; (5) core/release/NOTES.md nennt weder wintrap noch Windows - richtig so.
+
+Verhalten selbst ausgeloest, nicht nur behauptet: eine Probe-Datei internal/cli/probe_wintrap_test.go mit t.Setenv("HOME", t.TempDir()) ohne USERPROFILE eingesetzt - TestRepositoryIsClean faellt sofort mit 'internal/cli/probe_wintrap_test.go:6: windows trap 1' und der Abhilfe 'add t.Setenv("USERPROFILE", <the same directory>) next to it'. Probe wieder entfernt, Lauf wieder gruen.
+
+Nicht angefasst, absichtlich: die Fixture-Dateien unter testdata liegen in skipDirs, der Repository-Lauf sieht sie also nicht. Der Inhalt der .png ist bewusst reiner Text ohne CR - die Regel liest nur Namen und .gitattributes-Zeile, und eine Datei mit CRLF im Baum waere selbst eine Autocrlf-Falle.
