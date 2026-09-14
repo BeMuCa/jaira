@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:50:33Z
+updated-at: 2026-09-14T13:53:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -41,12 +41,7 @@ claimed-at: 2026-09-14T13:29:29Z
 outcome-what: "Second in-progress round: the five critique findings. settings.RemoteSourceFor(dir) (name, source) is now the single remote ladder and RemoteFor wraps it; internal/cli/whoami.go's remoteOrigin copy is gone and boardState takes the name from refs.Repo.RemoteName(). gitref.ErrNoGitRepo wraps ErrNoRepo for the no-repository half, Usable returns it, and internal/cli/refs.go noRefReason branches on it so create and whoami print one sentence instead of a raw 'gitref:' error. Outside a git repository create names no remote, no 'git config jaira.remote' and no 'jaira release'. The release hint after create now names the cost when create itself set the assignee. fileOnRefOnly and putOnRef lost their unused *ticket.Store. Five new tests, three NOTES lines amended."
 outcome-why: "Two copies of the remote ladder in the one command whose job is to say which remote is used, and a file-mode line that blamed a missing remote where there is no repository at all and advised a command that can never run there."
 outcome-resolves: "review-summary findings 1-5"
-review-summary: |-
-  internal/cli/whoami.go:169 remoteOrigin baut die Remote-Aufloesung ein zweites Mal nach; core/settings/settings.go:143 RemoteFor ist dieselbe Leiter und laut Paketkommentar (settings.go:20) 'the only way to ask' - stattdessen RemoteFor um die Herkunft erweitern (RemoteSourceFor(dir) (name, source string)) und remoteOrigin loeschen, sonst nennt ausgerechnet whoami beim naechsten Schritt einen anderen Remote als der Code, der scheitert
-  internal/cli/whoami.go:126 nimmt den Remote-Namen aus remoteOrigin statt aus refs.Repo.RemoteName(); genau das verbietet der Kommentar, der RemoteName() in core/gitref/gitref.go:128 ueberhaupt exportiert hat ('must not have to re-derive it and risk naming a different one than the code that failed') - boardState soll den Namen von refs.Repo.RemoteName() nehmen und nur die Herkunft dazu holen
-  core/gitref/gitref.go:95-98 wirft 'kein Repository' und 'kein solcher Remote' in dasselbe ErrNoRepo, und internal/cli/refs.go fileModeReason macht daraus auf einem Board ganz ohne git die falsche Zeile: 'no usable "origin"' plus 'git config jaira.remote' plus der release-Hinweis, obwohl kein Remote fehlt - ErrNoGitRepo = fmt.Errorf("%w: this board is not in a git repository", ErrNoRepo) einfuehren (errors.Is(.., ErrNoRepo) bleibt gueltig), in fileModeReason darauf verzweigen und in internal/cli/tickets.go den release-Hinweis in diesem Fall weglassen; dieselbe Verzweigung raeumt in internal/cli/whoami.go:87 die rohe Fehlerzeile 'gitref: no repository or no such remote' weg
-  internal/cli/tickets.go:329 raet nach jedem Datei-create zu 'jaira release <handle>', aber release loescht den assignee - bei 'create --mine'/'--assignee' verliert der Hinweis genau die Zuordnung, die create gerade gesetzt hat: die Zeile nur drucken wenn der neue Ticket keinen assignee hat, sonst die Kosten mitnennen
-  internal/cli/refs.go: der Parameter s *ticket.Store wird weder in fileOnRefOnly noch in putOnRef benutzt (putOnRef reicht ihn nur weiter) - streichen, dann auch beim Aufrufer in internal/cli/tickets.go und internal/cli/release.go
+review-summary: none
 ---
 
 # Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen
