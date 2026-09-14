@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:17:54Z
+updated-at: 2026-09-14T20:18:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -59,3 +59,4 @@ claimed-at: 2026-09-14T20:17:54Z
 
 ## Progress
 - **2026-09-14 18:23 · Alexander Sacharov** — Befund aus dem ersten echten Gebrauch (Dispatcher fuer 13VMA8, 14.09.): scripts/spawn.sh und SKILL.md widersprechen sich beim Transport. SKILL.md sagt ausdruecklich 'Not a split pane: a tab' und nennt 'herdr tab create --cwd ... --label ... --no-focus'. spawn.sh macht stattdessen 'herdr pane split --current --direction down --no-focus'. Wer dem Prompt folgt, benutzt das Skript nicht; wer das Skript benutzt, bricht den Prompt. Zweiter Befund: spawn.sh legt den Worktree mit -b feature/SLUG von HEAD des Repos an - dieses Repository benutzt feat/, und ein Dispatcher braucht oft eine andere Basis als HEAD (hier daf4312 auf feat/9ET6NC-per-board-remote); der Worktree musste deshalb von Hand vorher angelegt werden, damit spawn.sh ihn nur noch vorfindet. Dritter Befund: der .env-Block traegt COMPOSE_PROJECT_NAME=rg_SLUG - 'rg_' ist der Projektname eines fremden Repositories. Vierter Befund: spawn.sh startet immer /jaira-role-lane und kann /jaira-role-tester nicht starten, obwohl SKILL.md sagt 'Testing is not a lane'.
+- **2026-09-14 20:18 · Alexander Sacharov** — Dispatcher-Lauf 2026-09-14 (2. Anlauf, Worktree jaira-13VMA8 auf feat/13VMA8-pr-is-the-humans). Transport: Herdr ist da, HERDR_ENV=1, HERDR_BIN_PATH=/mnt/c/.../herdr.exe - 'command -v herdr' waere hier wieder falsch gewesen. Ich benutze scripts/spawn.sh wie mein eigener Prompt es jetzt vorschreibt. Ausgangslage: die INSTALLIERTEN Kopien unter ~/.claude/skills sind heute von Hand gepatcht und dienen als Vorlage fuer den Transport-Abschnitt; sie tragen aber noch die ALTE Pull-Request-Regel, die 13VMA8 gerade umgedreht hat. Es werden nur die Transport-Passagen portiert, nicht die Dateien.
