@@ -37,11 +37,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T19:16:22Z
+updated-at: 2026-09-14T19:23:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-521068
-claimed-at: "2026-09-14T18:34:27Z"
+claimed-by: DESKTOP-RFTCH11-645421
+claimed-at: 2026-09-14T19:23:41Z
 outcome-what: "testing-Lane: Gates gruen, DoD 1-6 im Baum verifiziert, drei Tag-Farben am echten Binary gesehen"
 outcome-why: "Die Lane schuldet ein test-verdict; nur was wirklich gelaufen ist, darf durchgehen"
 outcome-resolves: "pass — nichts gefunden, das zurueck in in-progress muesste"
