@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:40:57Z
+updated-at: 2026-09-14T18:41:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
@@ -59,6 +59,12 @@ review-gaps: |-
 
   3. Undocumented side effect of moving the package into _test.go: go doc ./internal/wintrap now answers "no source-code package in directory", so the 22-line package comment explaining the five patterns is reachable only by opening wintrap_scan_test.go. Nothing in README becomes untrue — it promises only that go test ./... runs the checker, which it does — but the documentation stopped being discoverable and nobody recorded it.
 test-verdict: "pass: go test ./... -race, go vet ./..., GOOS=windows vet und build alle RC=0; DoD 1-5 am Baum geprueft; die vom optimize-Lauf ungetestet gelassene -text/binary-Abzweigung ist jetzt mit zwei Fixtures und TestNonTextEmbedIsNotExempt abgedeckt, Mutationsprobe bestaetigt den Test"
+review-verdict: |-
+  Accept, with the ticket's own claim corrected. The definition of done is met item for item, and I re-ran all four commands rather than trusting the notes: go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... and GOOS=windows GOARCH=amd64 go build ./cmd/jaira all exit 0. All three critique findings are genuinely fixed in the shipped code, not just in the account: isGoBuildOutput now requires exec.Command/CommandContext with literal "go" plus "build" plus "-o" (wintrap_scan_test.go:443), the "://" branch is gone from sepConcat (:518), and of mentionsExe only litContains(body, ".exe") survives (:412). Nothing outside the package imported the exported Scan, so the move to _test.go breaks no caller, and the package builds and vets on both platforms. The feature does the thing it was built for, demonstrably: held against the tree before each of the seven historical Windows fixes it names five of them on the exact line, which is the end-to-end evidence the ticket had been carrying as an assertion until now.
+
+  What it does not do is the two it misses — one of them, filepath.Join on an io/fs path (4d3cace), a total outage at the time and the exact inverse of rule 5. That is a gap in coverage, not a defect in this diff, and the honest response is a follow-up rule rather than sending this back; the same goes for the non-rule-scoped //wintrap:ok. Neither is worth another in-progress round against work that is green on both platforms. What should not travel unchanged is the sentence in the context and in outcome-why that all seven historical fixes were these five patterns: it is five of seven, and a person signing off should see the corrected number.
+
+  Where I am unsure: I did not run any of this on a real Windows machine, so the claim that a caught site would actually have failed there rests on the historical CI failures each fix records, not on my own observation.
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
