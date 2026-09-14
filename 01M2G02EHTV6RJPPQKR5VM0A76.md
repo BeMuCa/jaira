@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T14:05:59Z
+updated-at: 2026-09-14T15:32:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-191270
@@ -109,3 +109,4 @@ Zwei Sachen gesehen und bewusst NICHT als Befund gefuehrt, damit die naechste Ru
 Exercised by hand with a binary built from 859ebfd, on throwaway boards under /tmp, HOME redirected, never the real board. DoD 1: outside a git repository create prints 'as a file on your disk, not on a ref: this board is not in a git repository, so there is no remote to carry a ref' and names no remote and no release hint; in a repository whose remote is missing it names "origin", what git said, the 'git config jaira.remote' line and 'jaira release <id>'. --json carries the same sentence in file-only-reason. DoD 5 is that same first create. DoD 2: a ticket created in file mode, remote added afterwards, 'jaira release' put it on refs/jaira/tickets/<id> in the bare repo, the local .md disappeared and 'jaira show' read it back off the ref; on the ticket created with --mine the assignee was cleared, as the plan decision says it would be. DoD 3: whoami prints Board/Remote/Remotes/Ref mode/File only on a board with a matching remote (ref mode yes, File only 0) and on one without (ref mode no with the reason, File only 2, dropping to 1 after the release). DoD 4: one 'create --dod a --dod b --dod c' on a ref-mode board left three checkboxes, read back with 'jaira show' without any pull and with .jaira/tickets empty. DoD 6: four lines under ## Unreleased in core/release/NOTES.md.
 
 Three observations, none of them a DoD failure and none fixed here. (1) whoami on a board with no git repository at all still prints 'Remote: origin (the default, nothing configured)' and 'Remotes: —', naming a remote exactly where create deliberately stopped naming one after critique round one — internal/cli/whoami.go prints the Remote/Remotes rows unconditionally while noRefReason branches on ErrNoGitRepo. (2) the NOTES.md whoami line says the reason 'is a sentence rather than a raw gitref: error'; for the missing-remote case it still reads 'this board has no usable "origin" — gitref: no repository or no such remote: no remote "origin" — this repository has no remotes', because noRefReason (internal/cli/refs.go:165) formats the gitref error with %v. True only for the no-repository case. (3) whoami --json emits "remotes": null rather than [] where the repository has none.
+- **2026-09-14 15:32 · Alexander Sacharov** — Diagnose 2026-09-14: 'jaira move --to in-progress' meldet EXIT=0 und 'moved', danach steht in der Datei weiterhin status: human.
