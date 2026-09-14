@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:16:58Z
+updated-at: 2026-09-14T13:17:39Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -51,6 +51,7 @@ outcome-why: "Die Critique-Lane hat den Entwurf angenommen, aber vier lokale Dop
 outcome-resolves: "Critique-Runde 1, alle vier Findings."
 review-summary: none
 review-gaps: "none - nichts zu entfernen. Geprueft und bewusst stehen gelassen: (1) Duplikation - gegrept nach 'remote', 'config --local', Remote-Auflistung im ganzen Baum; die einzige zweite Stelle, die eine lokale git-config liest, ist internal/cli/mergedriver.go:99, anderer Key, anderer Layer, eine Zeile, ein gemeinsamer Helfer waere mehr Kopplung als Ersparnis. gitref.Remotes und BoardRemote gehen beide ueber Repo.value, es gibt keine zweite Implementierung. Die Test-Helfer git/gitRun in core/settings, core/gitref und internal/cli sehen gleich aus, liegen aber in drei Packages ohne gemeinsames testutil - in Go nicht zusammenlegbar, ohne ein neues Paket zu erfinden. (2) Toter Code - kein neuer: Remotes hat zwei Aufrufer (noRemote, RemoteFor), BoardRemote zwei, noRemote einen; RemoteName ist bereits in 154b198 ganz entfallen. Vorbestehend tot und NICHT von dieser Aenderung verursacht: der Zweig 'if remote ==' in Settings.Landing (settings.go:247) - beide Produktivaufrufer geben refs.Repo.Remote, und schon RemoteName() gab nie einen leeren String zurueck; bleibt als dokumentierter Vertrag einer exportierten Methode. (3) Fluff - der einzige Fund ist das aeussere strings.TrimSpace um gitref.BoardRemote in RemoteFor (settings.go:164): Repo.value trimmt bereits, der Aufruf kann nie etwas aendern. Stehen gelassen, weil das Entfernen RemoteFor an ein Detail von value bindet, das nicht Teil dessen Signatur ist - Kosten hoeher als der Gewinn einer Zeile. (4) Kosten - RemoteFor macht zwei git-Aufrufe, faellt aber genau einmal pro Prozess an (internal/cli/refs.go:32 ueber attachRefs, internal/tui/refs.go:34 bei Board-Oeffnen und -Wechsel); alles weiter unten liest refs.Repo.Remote. Keine Schleife, kein doppelter Lesevorgang. go vet und go test ./... gruen, ohne dass etwas geaendert wurde."
+test-verdict: "pass: go build/vet/test ./... gruen (26 Pakete, 0 Fehler); Regressionsnachweis - Elternstand 1c6be9d stirbt am selben Fixture mit no remote \"upstream\" (Exit 1), der Branch laeuft durch; alle fuenf DoD-Kriterien am gebauten Binary auf Wegwerf-Fixtures nachgestellt, nicht nur aus Tests gelesen"
 ---
 
 # Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board
