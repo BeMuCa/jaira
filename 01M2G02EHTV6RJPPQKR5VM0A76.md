@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:24:20Z
+updated-at: 2026-09-14T13:26:54Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-152036
@@ -59,6 +59,24 @@ claimed-at: 2026-09-14T13:23:44Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] read how create picks the mode: fileOnRefOnly (internal/cli/refs.go:69) and its caller internal/cli/tickets.go:293-311, plus gitref Repo.Usable/noRemote — the diagnostic text already exists since 9ET6NC, only a caller at create is missing
+- [ ] make fileOnRefOnly answer with the reason, not a bare bool: return the mode and the refs.Usable() error, so create can say why it chose the file
+- [ ] failing test in internal/cli: 'create' on a board whose remote is absent prints a line naming the remote looked for and the reason; --json carries the same as a field
+- [ ] implement that create line and the json field (DoD 1 and DoD 5 are the same change)
+- [ ] decide the way back: extend 'jaira release' to a ticket with no ref, or add a new command — write the decision and its reason as a jaira note
+- [ ] generalise fileOnRefOnly so it also takes an existing ticket: Record() the current bytes with the empty lease, flush, then drop the file — one function, not a second copy
+- [ ] failing test: a fixture board whose ticket was created in file mode gets a remote; one command puts it on its ref and the local file is gone
+- [ ] implement the way back
+- [ ] design the state command (DoD 3): extend 'jaira whoami' with the git side, or add a separate command — and fix the four facts it prints: remote name and where it came from, remotes this repository has, ref mode yes/no with the reason, how many tickets lie as files only
+- [ ] failing test for the state command on a board with a matching remote and on one without
+- [ ] implement the state command, text and --json
+- [ ] make --dod repeatable (DoD 4): StringArray like --tag, ticket.NewBody takes several items, the frontmatter definition-of-done keeps the first and the body checklist carries all of them
+- [ ] failing test: create with three --dod in ref mode leaves three boxes without anybody pulling the ticket
+- [ ] implement the repeatable --dod, and check gate.Ready/missingFields still read it
+- [ ] fix the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt (internal/cli/boardremote_test.go): both remotes point at the same bare repository, so the comment promises a check the test does not make
+- [ ] one line per externally visible change under ## Unreleased in core/release/NOTES.md (DoD 6)
+- [ ] go test ./... and tick each DoD box with its proof
 
 ## Progress
 
