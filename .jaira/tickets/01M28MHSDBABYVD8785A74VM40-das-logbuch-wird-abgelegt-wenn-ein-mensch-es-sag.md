@@ -1,7 +1,7 @@
 ---
 id: 01M28MHSDBABYVD8785A74VM40
 title: "Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird"
-status: human
+status: review
 ready: true
 creator: Alexander Sacharov
 goal: "Fertige Tickets sammeln sich in done, und wer seine Stunden eintraegt, legt sie mit einem Befehl als Tagesordner ab - das Board sagt Bescheid, wenn sich viel angesammelt hat, entscheidet aber nichts"
@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-11T16:38:45Z
+updated-at: 2026-09-14T19:16:25Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-630371
@@ -60,3 +60,4 @@ outcome-resolves: Jeder Teil der DoD mit Test belegt und von Hand gegengeprueft
 4. Die Schwelle im Board ist eine Zahl, keine Regel: bei zehn fertigen Tickets erscheint eine Zeile, sonst passiert nichts. Ref-only-Tickets zaehlen nicht mit - sie gehoeren diesem Klon nicht zum Ablegen.
 
 Handprobe: drei Tickets bis done gefahren, alle drei bleiben stehen; jaira logbook --all legt genau diese drei in den Tagesordner und nennt jede Datei mit ihrem restore-Pfad.
+- **2026-09-14 19:16 · Alexander Sacharov** — Wie bei S1VM40: der Uebergang human -> review am 2026-09-14 kam von einem Agenten auf Alex' ausdrueckliche Anweisung. Seine Antworten auf die zwei Fragen des Tickets: (1) die Schwelle bleibt bei zehn und meldet nur - nachgesehen in internal/tui/model.go:741, am Schwellwert passiert nichts ausser einer Zeile in der Hinweisleiste. (2) WXQ9PT ist erledigt: es liegt seit dem 11.09. im Logbuch as-20260911 und wartet nicht mehr in signoff, die Frage war veraltet. Als abgeloest markiert wird es nicht - das Logbuch ist eine Chronik, und eine Chronik, deren Eintraege mit dem Heute uebereinstimmen muessen, ist keine.
