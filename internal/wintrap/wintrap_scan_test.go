@@ -402,11 +402,8 @@ func checkExe(fset *token.FileSet, f *ast.File, rel string) []Finding {
 			if !ok {
 				return true
 			}
-			for _, a := range call.Args {
-				if v, ok := strLit(a); ok && v == "-o" {
-					lines = append(lines, line(fset, call))
-					break
-				}
+			if isGoBuildOutput(call) {
+				lines = append(lines, line(fset, call))
 			}
 			return true
 		})
@@ -421,27 +418,45 @@ func checkExe(fset *token.FileSet, f *ast.File, rel string) []Finding {
 	return out
 }
 
-// mentionsExe reports whether anything in the function accounts for the suffix:
-// a literal ".exe", or a call to a helper named for it. The os/exec package is
-// spelled out of the way, or every exec.Command would count as handling.
+// isGoBuildOutput reports whether call is exec.Command("go", ..., "-o", ...) —
+// the only shape the rule 4 message describes. Anything narrower than this and
+// the check fires on every unrelated tool that happens to take a "-o" flag,
+// which is what a finding is not allowed to do: claim something it did not see.
+func isGoBuildOutput(call *ast.CallExpr) bool {
+	pkg, sel, ok := selName(call.Fun)
+	if !ok || pkg != "exec" || (sel != "Command" && sel != "CommandContext") {
+		return false
+	}
+	var lits []string
+	for _, a := range call.Args {
+		if v, ok := strLit(a); ok {
+			lits = append(lits, v)
+		}
+	}
+	if len(lits) == 0 || lits[0] != "go" {
+		return false
+	}
+	build, out := false, false
+	for _, v := range lits[1:] {
+		switch v {
+		case "build", "install", "test":
+			build = true
+		case "-o":
+			out = true
+		}
+	}
+	return build && out
+}
+
+// mentionsExe reports whether the function accounts for the suffix itself, by
+// naming ".exe" somewhere in it. A site that delegates the suffix to a helper
+// carries //wintrap:ok with its reason instead — a silencer nobody can see at
+// the site it silences is worse than the finding.
 func mentionsExe(body ast.Node) bool {
 	found := false
 	ast.Inspect(body, func(n ast.Node) bool {
-		switch e := n.(type) {
-		case *ast.BasicLit:
-			if v, ok := strLit(e); ok && strings.Contains(strings.ToLower(v), ".exe") {
-				found = true
-			}
-		case *ast.CallExpr:
-			name := ""
-			switch fn := e.Fun.(type) {
-			case *ast.Ident:
-				name = fn.Name
-			case *ast.SelectorExpr:
-				name = fn.Sel.Name
-			}
-			name = strings.ToLower(name)
-			if strings.Contains(name, "exe") && !strings.HasPrefix(name, "exec") {
+		if b, ok := n.(*ast.BasicLit); ok {
+			if v, ok := strLit(b); ok && strings.Contains(strings.ToLower(v), ".exe") {
 				found = true
 			}
 		}
@@ -496,30 +511,22 @@ func checkSlash(fset *token.FileSet, f *ast.File, rel string) []Finding {
 }
 
 // sepConcat reports whether e concatenates a literal path separator into a
-// value. A concatenation that carries a URL scheme is not a filesystem path
-// and is left alone.
+// value. It does not try to spot URLs: this only runs on values already headed
+// into os.*, filepath.* or a prefix test against a filesystem path, where a URL
+// has no business being. A site that is genuinely one carries //wintrap:ok.
 func sepConcat(e ast.Expr) bool {
 	bin, ok := e.(*ast.BinaryExpr)
 	if !ok || bin.Op != token.ADD {
 		return false
 	}
-	var lits []string
+	sep := false
 	ast.Inspect(e, func(n ast.Node) bool {
 		if b, ok := n.(*ast.BasicLit); ok {
-			if v, ok := strLit(b); ok {
-				lits = append(lits, v)
+			if v, ok := strLit(b); ok && strings.Contains(v, "/") {
+				sep = true
 			}
 		}
-		return true
+		return !sep
 	})
-	sep := false
-	for _, v := range lits {
-		if strings.Contains(v, "://") {
-			return false
-		}
-		if strings.Contains(v, "/") {
-			sep = true
-		}
-	}
 	return sep
 }

@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -39,15 +39,16 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:09:56Z
+updated-at: 2026-09-14T16:13:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273044
 claimed-at: 2026-09-14T15:48:01Z
-outcome-what: "Neues Paket internal/wintrap liest den Quelltext auf die fuenf Muster, an denen dieses Repository auf Windows bisher gebrochen ist, und nennt in jedem Fund die Abhilfe. TestRepositoryIsClean laesst go test ./... auf Linux rot werden, sobald eines davon wieder auftaucht; TestEachPatternFires beweist mit je einem testdata-Fixture, dass jede der fuenf Regeln anschlaegt. Der heutige Stand ist gruen gemacht: USERPROFILE in core/identity/identity_test.go, eol=lf-Zeilen fuer core/release/NOTES.md und core/hook/example/notify.sh in .gitattributes, filepath.Join in core/tag/tag_test.go und core/gate/gate_test.go, filepath.Rel in internal/tui/browse.go. Zwei Scheintreffer (core/role/role.go embed.FS, core/settings/settings.go git-Refname) sind mit //wintrap:ok plus Begruendung markiert statt umgeschrieben. Der ubuntu-latest-Job fuehrt zusaetzlich GOOS=windows go vet ./... und go build ./cmd/jaira aus, und README '## Development' nennt beide Zeilen zum Selberlaufen."
-outcome-why: "Der windows-latest-Job braucht 8 Minuten und meldet erst nach getaner Arbeit, dass sie kaputt ist. Alle sieben Windows-Fixes der Historie waren fuenf Muster, kein einziges neues Problem, und alle fuenf sind auf Linux im Quelltext sichtbar. Jetzt scheitern sie in Sekunden auf dem Rechner, an dem man sitzt."
-outcome-resolves: "Fuenf Muster mit je eigenem Unterfall und Abhilfetext; Repository-Lauf gruen ohne aufgeweichte Regel; GOOS=windows vet+build im ubuntu-Job, nachweislich fallend bei einem Windows-Uebersetzungsfehler; beide Zeilen in der Entwickler-Dokumentation; keine Zeile in core/release/NOTES.md."
+outcome-what: "Vier critique-Funde abgearbeitet. Regel 4 verengt: checkExe meldet nur noch, wenn der Aufruf exec.Command/CommandContext mit erstem Literal \"go\" und \"build\"/\"install\"/\"test\" plus \"-o\" ist (neues isGoBuildOutput in internal/wintrap/wintrap_scan_test.go) - die Gegenproben sort -o und tar -c -o melden nicht mehr. Der CallExpr-Zweig aus mentionsExe ist geloescht, nur das \".exe\"-Literal zaehlt noch; die zwei Stellen, die davon lebten (internal/cli/mergebranches_test.go:34 und :194, beide rufen exeSuffix()), tragen jetzt //wintrap:ok mit Begruendung. Der \"://\"-Zweig in sepConcat ist geloescht. wintrap.go und gitattributes.go sind zu wintrap_scan_test.go und gitattributes_scan_test.go umbenannt, das Modul traegt kein exportiertes Scan mehr ausserhalb des Tests."
+outcome-why: "Jeder der drei Regelfunde war eine Meldung, die etwas anderes prueft als sie behauptet, oder ein Stummschalter, den man an der stummgeschalteten Stelle nicht sieht - beides macht den Waechter unglaubwuerdig, und ein Waechter, dem man nicht glaubt, wird abgeschaltet. Der vierte Fund nahm 640 Zeilen Entwickler-Werkzeug aus dem ausgelieferten Modul, ohne dass eine Zeile davon anders arbeitet."
+outcome-resolves: "go test ./... und go vet ./... gruen, GOOS=windows go vet ./... und go build ./cmd/jaira gruen. TestEachPatternFires laeuft unveraendert weiter - alle fuenf Fixtures schlagen an, Regel 4 also trotz der Verengung nicht vakuum. TestRepositoryIsClean gruen ohne aufgeweichte Regel: die zwei neuen Stellen sind mit //wintrap:ok plus Grund ausgenommen, nicht durch eine Lockerung. Kein Eintrag in core/release/NOTES.md, von aussen am Binary ist nichts davon zu beobachten."
 review-summary: |-
   internal/wintrap/wintrap.go:406 rule 4 fires on any call with a "-o" string argument, then claims in the finding text that "a binary is built with go build -o". Probed: exec.Command("sort","-o",out,in) and exec.Command("tar","-c","-o","x.tar",dir) both report trap 4. Require the call to be exec.Command/exec.CommandContext whose first literal arg is "go" and whose args carry "build", so the check verifies what its own message asserts.
   internal/wintrap/wintrap.go:517 sepConcat returns false for any concatenation carrying "://", to spare URLs — but a URL reaching os.*/filepath.*/strings.TrimPrefix-against-a-path is the state that cannot occur, and the one real URL site (core/selfupdate/selfupdate.go:208) is a bare return that checkSlash never looks at. Delete the "://" branch; the remedy text at wintrap.go:468 already tells URL sites to carry //wintrap:ok, which is the mechanism that works.
@@ -119,3 +120,9 @@ Keine Zeile in core/release/NOTES.md: Tests und CI sind von aussen am Binary nic
 4. Einordnung: wintrap.go und gitattributes.go sind 640 Zeilen Nicht-Test-Code mit exportiertem Scan, dessen einziger Aufrufer der eigene Test ist. Das Repository hat den Waechtertest schon als Muster - core/lane/lane_test.go:698 TestModelTierNeverComparedToModelName liest den Quellbaum aus einer _test.go im bewachten Paket. Beide Dateien in _test.go umbenennen: testdata, Scan und alle vier Tests laufen unveraendert weiter, und das Modul traegt keine exportierte Entwickler-API mehr, die niemand importiert. Die note vom 15:51 begruendet das eigene Paket mit "Scan muss eine beliebige Wurzel scannen koennen" - das kann eine _test.go genauso.
 
 Nicht gemeldet, absichtlich: gitattributes.go:30 liest nur root/.gitattributes, nicht die in Unterverzeichnissen. Im Repository gibt es heute keine, und der Fehlalarm kostet eine Zeile in der Wurzeldatei. Nicht wert, dafuer git-Semantik nachzubauen.
+- **2026-09-14 16:13 · Alexander Sacharov** — critique-Runde abgearbeitet, vier Funde. Was dabei herauskam und nicht im Diff steht:
+
+- Regel 4 auf exec.Command/CommandContext mit erstem Literal "go" plus "build"/"install"/"test" und "-o" verengt. Nachgemessen mit den beiden Gegenproben aus der critique (sort -o, tar -c -o) in testdata/clean: melden nicht mehr.
+- Der CallExpr-Zweig in mentionsExe ist raus. Folge, die vorher niemand sah: internal/cli/mergebranches_test.go:34 und :194 waren nur deshalb still, weil sie exeSuffix() rufen. Beide tragen jetzt //wintrap:ok mit Begruendung - die Stelle ist korrekt, aber die Stummschaltung steht jetzt dort, wo man sie liest.
+- Der "://"-Zweig in sepConcat ist geloescht. Kein neuer Treffer im Repository-Lauf, damit ist die Analyse der critique bestaetigt: eine URL erreicht os.*/filepath.*/TrimPrefix hier nirgends.
+- wintrap.go -> wintrap_scan_test.go, gitattributes.go -> gitattributes_scan_test.go. Die note vom 15:51 hat das eigene Nicht-Test-Paket mit "Scan muss eine beliebige Wurzel scannen koennen" begruendet - das war kein Argument, eine _test.go kann das genauso. Damit traegt das Modul kein exportiertes Scan mehr, das niemand importiert. README ## Development bleibt woertlich richtig, dort steht "internal/wintrap, das go test ./... schon laeuft" und nicht der Dateiname.
