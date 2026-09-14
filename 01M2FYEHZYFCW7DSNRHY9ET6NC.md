@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:00:36Z
+updated-at: 2026-09-14T13:05:50Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -145,3 +145,9 @@ Vier Befunde, alle lokal, keiner ruehrt an der Form:
 
 Nicht beanstandet, damit es niemand nochmal aufmacht: dass ein Repo mit genau EINEM Remote diesen still nimmt, auch wenn settings.json etwas anderes sagt - das verlangt die DoD ausdruecklich (der Fall requirementsgenie soll ohne Einstellung laufen).
 - **2026-09-14 13:00 · Alexander Sacharov** — DoD-Reparatur durch den Dispatcher: beim Anlegen sind vier der fuenf Kriterien verloren gegangen, weil "jaira create --dod" nur EIN Item nimmt - die Absaetze 2-5 landeten als Fliesstext im Body unter "## Definition of Done", ohne Checkbox. Damit hat das Gate der Terminal-Lane nur 1 von 5 Kriterien geprueft. Die vier fehlenden sind mit "jaira dod --add" nachgetragen und gegen die vorhandene Implementierung geprueft: alle vier waren bereits gebaut und sind mit Testnamen als Proof abgehakt. Nichts an der Implementierung widerspricht ihnen.
+- **2026-09-14 13:05 · Alexander Sacharov** — critique (1. Durchgang), lokale Befunde abgearbeitet. Was dabei herauskam und nicht im Code steht:
+
+- gitref.Remotes/BoardRemote nutzen jetzt (&Repo{Dir: dir}).value(...). Verhalten unveraendert, aber value() setzt GIT_TERMINAL_PROMPT=0 - das fehlte in der handgebauten exec.Command-Variante und haette bei einem credential-Prompt haengen koennen.
+- RemoteName ist weg, nicht nur unexportiert: die vier Aufrufe in core/settings/settings_test.go pruefen jetzt ueber RemoteFor(t.TempDir()). Ein TempDir ist kein Repo, also liefern BoardRemote und Remotes nichts und RemoteFor faellt auf denselben Vorgabewert durch, den RemoteName geliefert hat. Dadurch braucht kein Test mehr eine zweite Einstiegstuer.
+- Der 'if dir == ""'-Zweig in RemoteFor ist weg. Kein Aufrufer uebergibt ""; s.Root ist nie leer.
+- Abweichung von der Kritik bei boardremote_test.go: ticket.At(dir).Create(...) allein reicht hier NICHT. 'jaira create' legt das Ticket auf seinem git-ref ab und nicht auf der Platte ('On its ref, not on your disk'), und genau dieser ref ist das, was die drei Tests pruefen. Store-Create baut keinen ref, und 'release' scheitert dann mit 'no ref for this ticket'. Deshalb bleibt das Anlegen ueber die CLI; nur das Raten des Handles aus stdout ist weg - der Handle kommt aus (&gitref.Repo{Dir: clone}).List(). Und weil im dritten Test der Board-Remote fehlt, kann create keinen ref schreiben und legt das Ticket auf die Platte; dafuer faellt der Helfer auf ticket.At(clone).List() zurueck.
