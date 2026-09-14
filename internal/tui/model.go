@@ -1333,16 +1333,45 @@ func (m *Model) toggleEmptyLanes() {
 	m.thinEmpty = !m.thinEmpty
 }
 
-// cardColor is the colour a ticket's card is boxed in: the registry's colour
-// for its first tag. A ticket with no tags, or whose first tag has no line in
-// the registry, has no colour — the card renders unboxed either way, so a tag
-// nobody has assigned a colour to costs nothing on the board, only a
-// colourless line in the legend.
-func (m *Model) cardColor(t *ticket.Ticket) (int, bool) {
-	if len(t.Tags) == 0 || m.tags == nil {
-		return 0, false
+// cardSlots is how many colour slots a card's bar carries — one per row of
+// cardHeight, so the bar can show more than one tag without the card growing a
+// row. Changing it means changing cardHeight with it.
+const cardSlots = 3
+
+// cardSlot is one cell of a card's bar: a registry colour, and whether there is
+// one at all. An uncoloured slot is painted in the card's own shade, so it is
+// invisible rather than blank.
+type cardSlot struct {
+	colour   int
+	coloured bool
+}
+
+// cardColors is the bar down a card's left edge, read top to bottom: slot 1 is
+// the registry's colour for the ticket's first tag, slot 2 for its second, both
+// in the order the tags stand on the ticket. Slot 3 is reserved for the sprint
+// marker and is always uncoloured for now — what fills it is an open decision
+// (a tag named sprint-xxxx, or a field of its own), and until it is taken the
+// slot stays empty rather than showing a third tag that would then have to move
+// again.
+//
+// A tag with no line in the registry, a missing tag, and any tag past the
+// second all leave their slot uncoloured: the card renders with the lane's
+// shade there, so a tag nobody has assigned a colour to costs nothing on the
+// board, only a colourless line in the legend.
+func (m *Model) cardColors(t *ticket.Ticket) [cardSlots]cardSlot {
+	var slots [cardSlots]cardSlot
+	if m.tags == nil {
+		return slots
 	}
-	return m.tags.Colour(t.Tags[0])
+	// Only the first cardSlots-1 tags are drawn; the rest stay on the ticket
+	// and in `jaira show`. This is a display limit, never a validation one —
+	// boards already carry tickets with more tags than there are slots.
+	for i := 0; i < cardSlots-1 && i < len(t.Tags); i++ {
+		if c, ok := m.tags.Colour(t.Tags[i]); ok {
+			slots[i] = cardSlot{colour: c, coloured: true}
+		}
+	}
+	return slots
 }
 
 // activeTags is every tag carried by a ticket on the board, deduplicated and
