@@ -36,7 +36,7 @@ commits:
   - f085553ae220103ab2f64ae2d2b7bad3b99e7c2e
   - 1c6be9d38c71f7574c25899ac16cd599f5577117
 created-at: 2026-09-13T21:27:58Z
-updated-at: 2026-09-14T12:35:02Z
+updated-at: 2026-09-14T15:15:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-44645
 claimed-at: 2026-09-13T21:37:52Z
@@ -93,4 +93,3 @@ Ein Befund, bewusst nicht zurueckgeschickt sondern der signoff-Lane vorgelegt: d
 Kleinigkeit: spawn.sh:18 'mkdir -p' ist ueberfluessig, 'git worktree add' legt Elternverzeichnisse selbst an (hier nachgestellt). Harmlos, deshalb stehengelassen.
 Nicht pruefbar und deshalb nicht geprueft: ob der uebernommene Prompt-Text inhaltlich vollstaendig ist. Die Heimfassungen sind geloescht, ein Vorher-Nachher-Vergleich ist nicht mehr herstellbar - genau deshalb war das die human-Lane, und die hat abgenommen.
 - **2026-09-13 22:07 · Alexander Sacharov** — Fuer den Menschen, der hier abzeichnet: die review-Lane hat zwei Kleinigkeiten gefunden, beide bewusst NICHT mehr angefasst, weil das Ticket in signoff steht und ein Zweig sich unter einer laufenden Abnahme nicht aendern soll. (1) jaira-teamlead/SKILL.md:95 sagt "leave that until the pull request is merged", jaira-dispatcher/SKILL.md:155 sagt "only once the ticket is off the board". In der human-Lane ist der zweite Zeitpunkt entschieden worden. Zwei ausgelieferte Prompts nennen damit zwei verschiedene Momente fuer dieselbe Sache, und der Teamlead nennt den fruehen. Gegenvorschlag: in jaira-teamlead/SKILL.md:95-96 den Satz auf denselben Zeitpunkt umschreiben wie Zeile 155 des Dispatchers, eine Zeile. (2) core/role/builtin/jaira-dispatcher/scripts/spawn.sh:18 "mkdir -p $(dirname $wt)" ist tot: git worktree add legt fehlende Elternverzeichnisse selbst an, im Repository nachgestellt. Die Zeile kam mit f3bc433 von mir und kann ersatzlos weg - der Prompt-Schnipsel in SKILL.md:128-131 kommt schon ohne sie aus. Entweder vor dem Abzeichnen fixen lassen oder als Folgeticket fuehren.
-- **2026-09-14 06:34 · Alexander Sacharov** — Windows-Fehlschlag in TestRolesInstallGlobalWritesUnderHome: t.Setenv("HOME") allein leitet os.UserHomeDir auf Windows nicht um — dort wird USERPROFILE gelesen, HOME nur auf Unix. Der --global-Install landete deshalb im echten Home des Runners, waehrend die Assertion im TempDir suchte. Regel fuer jeden Test, der ~ umbiegt: HOME und USERPROFILE zusammen setzen. Praezedenzfall lag schon in core/selfupdate/cache_test.go:20-31. core/identity/identity_test.go:27 setzt zwar auch nur HOME, hat den Fehler aber nicht: dort geht es um die Isolation von ~/.gitconfig, nicht um os.UserHomeDir.
