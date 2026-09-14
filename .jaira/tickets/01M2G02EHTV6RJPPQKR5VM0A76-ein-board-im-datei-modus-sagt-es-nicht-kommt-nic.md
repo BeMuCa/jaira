@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,16 +33,16 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T15:58:38Z
+updated-at: 2026-09-14T16:02:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
 claimed-at: 2026-09-14T15:57:55Z
-outcome-what: "Kritik-Runde vier auf 04f92e7: kein Befund, review-summary=none."
-outcome-why: "Der eine Befund aus Runde drei ist behoben, wie verlangt und ohne Textaenderung fuer den Benutzer; die Schleife endet bei einem Durchgang ohne Befund."
-outcome-resolves: "Kritik-Lane fuer dieses Ticket abgeschlossen."
+outcome-what: "Optimize round two over a38ae17 and 04f92e7: nothing to remove; one over-long doc comment in internal/cli/refs.go rewrapped after the NoRemoteHint rename."
+outcome-why: "The two commits add one exported method, one predicate and three tests; the sentence has a single owner, nothing was orphaned, and everything critique closed in rounds three and four stays closed."
+outcome-resolves: "review-gaps is written: what was considered and what was left standing, with the out-of-lane raw-error ticket named again."
 review-summary: "none"
-review-gaps: "Removed: fileModeReason (internal/cli/refs.go), a one-caller wrapper that only prefixed noRefReason, and with it the third rendering of the file-mode reason - the --json field now goes through noRefReason like the printed line and whoami do; the doubled canReachARef branch in internal/cli/tickets.go, two Fprintf calls repeating a whole sentence to append six words, now one call with an optional tail; and one of the two refs.Usable() questions in whoami, fileOnlyCount taking the ref mode from boardState instead of deciding it again. Changed: the release hint reads 'once the remote works', because 'once the remote is there' is false when the remote is there and the push failed. Left: the nil guards in fileOnRefOnly/putOnRef, unreachable from their callers but three lines against a panic; settings.RemoteFor as a wrapper over RemoteSourceFor, which critique settled and every caller uses; whoami's plural(); the pre-existing dead 'missing := gate.Violations(nil) ... _ = missing' in tickets.go, which this change did not orphan. Not fixed because it is outside this diff: fetch.go, pull.go, release.go and snapshot.go still print refs.Usable() errors raw, so 'gitref:' still reaches users from four other commands."
+review-gaps: "Optimize round two, over a38ae17 and 04f92e7 only: nothing to remove. Duplication: none new — the sentence has exactly one owner (gitref Repo.NoRemoteHint), noRefReason is still the single renderer for create, whoami and --json, and whoami's InRepo comes from canReachARef, the same predicate create uses, so the two commands cannot answer differently. Dead code: nothing orphaned — the strings import and the TrimPrefix went out with the change that made them dead, and no reference to the old private noRemote is left anywhere. Fluff: the new comments explain why rather than restate the line; the only leftover was a comment line in internal/cli/refs.go that the NoRemoteHint rename left over-long, rewrapped, no code touched. Cost: nothing new on a hot path — the extra gitref.Remotes subprocesses sit in the error path of one invocation. Left alone deliberately: everything critique rounds three and four recorded as explicitly-not-a-finding (the bare-remote fallback swallowing foreign errors, NoRemoteHint re-running git remote, whoami's two tests over one setup, TestWhoamiJSONRemotesIsAlwaysAList building its repo by hand because cloneWithRemotes always adds origin, the nil checks in noRefReason), and everything the first optimize round listed as left standing. Still out of lane, as before: fetch.go, pull.go, release.go and snapshot.go printing raw refs.Usable() errors — its own ticket."
 test-verdict: "pass: suite green with -race (RC=0), gofmt/vet clean, all six DoD verified in the tree and exercised by hand on throwaway boards; three cosmetic observations noted, none blocking"
 question: "drei Punkte korrigieren"
 ---
@@ -131,3 +131,4 @@ Die eine Stelle, die ich absichtlich geprueft habe, weil sie nach einem Defekt a
 Ebenfalls geprueft, kein Befund: noRefReason liest den Satz jetzt aus dem Paket-Global refs statt aus dem uebergebenen Fehler - moeglich waere ein Auseinanderlaufen nur, wenn der Fehler von einem anderen Repo als refs.Repo kaeme; es gibt weiterhin genau einen Erzeuger (Repo.Usable ueber refs), wie Runde drei schon festgestellt hat. NoRemoteHint() ruft Remotes(r.Dir) beim Rendern erneut auf, also ein zusaetzlicher git-Unterprozess - nur im Fehlerpfad, im selben Prozess, gleiches Ergebnis, kein Thema fuer 'instant startup'. Der neue Test TestTheFileModeReasonDoesNotReadTheErrorText prueft vier Fehlerformen gegen repo.NoRemoteHint() und haette den alten TrimPrefix bei dreien gefangen - das ist genau die Zusage, die der Fix gibt. go build, go vet und gofmt -l sind sauber.
 
 Damit ist die Kritik-Schleife fuer dieses Ticket zu; alles aus Runde eins bis drei bleibt geschlossen.
+- **2026-09-14 16:02 · Alexander Sacharov** — Optimize lane, second round, scoped to what the human lane sent back and what came after it (a38ae17, 04f92e7). Verdict: nothing to remove. Details in review-gaps. The one edit is cosmetic: internal/cli/refs.go had a doc comment line left over-long by the Repo.noRemote -> NoRemoteHint rename; rewrapped, no code and no output touched, so no NOTES.md line. Checked and deliberately not reopened, so a later round does not rediscover them: everything critique round three listed as explicitly-not-a-finding (whoami InRepo from canReachARef, the two whoami tests over one setup, TestWhoamiJSONRemotesIsAlwaysAList building its repo by hand rather than through cloneWithRemotes, the nil fallback in noRefReason, the line break in NoRemoteHint) and everything round four cleared (the fallback text swallowing a foreign error, NoRemoteHint calling gitref.Remotes a second time). The nearest thing to a real finding is that a create in a remote-less repository runs 'git remote' twice and builds the hint twice, throwing the first copy away with the error text - but that is exactly what round four weighed and closed, it is one error path of one invocation, and undoing it would mean threading the sentence out of Usable, which is a change in shape and not a cleanup. Gates: go build ./..., gofmt -l ., go vet ./... clean; go test ./... green with internal/cli run uncached (16.1s).

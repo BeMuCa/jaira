@@ -138,8 +138,9 @@ func putOnRef(t *ticket.Ticket) (onRefOnly bool, why error) {
 // --json field beside them — says it from here, so the three cannot drift apart.
 //
 // The diagnostic itself is gitref's (Repo.NoRemoteHint names the remote, the
-// remotes this repository does have, and the git config line that sets it). This only
-// puts it where the state is created instead of at the end of the chain.
+// remotes this repository does have, and the git config line that sets it).
+// This only puts it where the state is created instead of at the end of the
+// chain.
 //
 // It branches on the two halves of gitref.ErrNoRepo because they need opposite
 // words. A repository whose remote is missing has a name that was looked for,
