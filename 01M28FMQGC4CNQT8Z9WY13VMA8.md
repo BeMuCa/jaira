@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:25:42Z
+updated-at: 2026-09-14T18:25:45Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
@@ -34,8 +34,8 @@ claimed-at: 2026-09-14T18:22:34Z
 
 ## Definition of Done
 
-- [ ] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und der PR gehoert von Anfang an dem Maintainer - ein Agent pusht seinen Branch und hoert dort auf, er macht den PR nicht auf, merged ihn nicht und gibt ihn nicht frei; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt
-  proof: CLAUDE.md und AGENTS.md tragen die Regel hinter dem jaira:local-Marker, README unter Development; dieser Branch mit seinem PR ist das erste Beispiel
+- [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und der PR gehoert von Anfang an dem Maintainer - ein Agent pusht seinen Branch und hoert dort auf, er macht den PR nicht auf, merged ihn nicht und gibt ihn nicht frei; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt
+  proof: CLAUDE.md:156-172 und AGENTS.md:165-182 hinter dem jaira:local-Marker, README.md:842-851 unter Development
 
 ## Options
 
