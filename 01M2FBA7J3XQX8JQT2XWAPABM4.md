@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: todo
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T15:52:14Z
+updated-at: 2026-09-14T15:52:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273044
 claimed-at: 2026-09-14T15:48:01Z
