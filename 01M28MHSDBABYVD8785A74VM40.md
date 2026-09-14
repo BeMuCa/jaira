@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:52:40Z
+updated-at: 2026-09-14T19:53:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -116,3 +116,4 @@ Recorded, not fixed, not a reason for this send-back: core/lane/lane.go:479 leav
 Nicht angefasst, wie vom Dispatcher abgegrenzt: lane.go:479 / aeltere Boards behalten logbook-on-entry - Ticket 1K9KZS, samt seiner NOTES-Zeile. Schwelle bleibt zehn, WXQ9PT bekommt keine Abloese-Markierung.
 
 go vet ./... und go test ./... -race: Exit 0.
+- **2026-09-14 19:53 · Alexander Sacharov** — Der in-progress-Lauf wurde nicht von dem Worker gemacht, den dieser Dispatcher gestartet hat: der sah den Claim und lehnte ab. Erledigt hat ihn ein noch lebender Worker des vorigen Dispatchers (Commit 78e3703, 21:52, gepusht). Ergebnis geprueft und uebernommen, nichts doppelt gearbeitet. Der abgelehnte Pane wurde geschlossen, damit nicht zwei Worker im selben Arbeitsbaum laufen.
