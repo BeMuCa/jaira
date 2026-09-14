@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:29:15Z
+updated-at: 2026-09-14T16:29:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -165,3 +165,24 @@ Gegenprobe gemacht: mit zurueckgedrehtem oneLine faellt TestACardWhoseFieldsCarr
 
 NOTES.md: eine zweite Zeile unter ## Unreleased. Gegen den letzten Release ist das sichtbar - auf master stuerzt derselbe Titel zwar nicht ab, malt aber eine vierzeilige Karte.
 - **2026-09-14 16:23 · Alexander Sacharov** — Commits dieses Tickets fuer den move: 1276d7b (Implementierung), f2b0077 (optimize), 4e96b33 (Fixrunde nach testing).
+- **2026-09-14 16:29 · Alexander Sacharov** — testing (Durchgang 2): BESTANDEN.
+
+Suiten: go test ./... Exit 0, go test ./... -race Exit 0, go vet ./... ohne Ausgabe, gofmt -l ohne Ausgabe. 0 Fehler, 0 Skips.
+
+Der Absturz aus Durchgang 1 ist unabhaengig nachgestellt und weg. Nicht ueber die neuen Tests geprueft, sondern mit eigenen, per 'go test -overlay' eingehaengten Testdateien (im Arbeitsbaum wurde nichts geaendert):
+- Echtes Board auf Platte: Tickets ueber ticket.Store angelegt mit Umbruch in title, assignee, updated-by und executed-by, davon einer mit \r\n, danach neu von Platte gelesen. Der Umbruch ueberlebt den Round-Trip (nachgeprueft), m.render() laeuft durch, der Titel steht als eine Zeile auf der Karte und kein \r landet im Output.
+- renderCardBlock direkt: sieben Karten mit Umbruechen, darunter eine aus lauter Leerzeilen — jede genau drei Zeilen.
+- Gegenprobe: dieselbe Testdatei gegen internal/tui/view.go aus f2b0077 paniert weiterhin mit 'index out of range [3] with length 3'. Der Fix traegt den Nachweis, nicht die Testformulierung.
+
+Keine neue Stoerung gefunden. Fuenf Karten ohne Umbruch (je selected/alt in allen vier Kombinationen) wurden mit und ohne Fix gerendert und verglichen: byteweise identisch. oneLine gibt Werte ohne \r\n unveraendert zurueck. renderCard hat ausser renderCardBlock (internal/tui/view.go:545) keinen Aufrufer, es gibt also keinen zweiten Kartenpfad.
+
+DoD einzeln und mit eigenen Pruefungen nachgestellt, alle sechs halten:
+1+2 Slot 1 = 5;83 (erster Tag), Slot 2 = 5;45 (zweiter), verschieden; umgekehrte Tag-Reihenfolge kehrt die Farben um; Slot 3 traegt die Lane-Schattierung einer ungetaggten Karte, auch bei drei Tags.
+3 Wegwerf-Board unter dem Scratchpad, frisch mit 'jaira init': 'jaira tag <id> ui backend docs ci' Exit 0, 'jaira show --json' listet alle vier.
+4 Erster Tag gefaerbt, zweiter ohne Registry-Zeile: Slot 2 faellt auf die Lane-Schattierung, und die drei Textzeilen sind Zeichen fuer Zeichen die einer Karte ohne jeden Tag.
+5 cardHeight()==3; Lane mit 30 Karten in einem 20 Zeilen hohen Terminal: es werden weniger als 30 gezeigt, und jede gezeigte traegt ihre Flag-Zeile '○ spec' — keine halb gezeichnete Karte.
+6 core/release/NOTES.md: zwei Zeilen, beide einzeilig und mit '- ' beginnend, unter '## Unreleased' ueber '## 0.2.0'.
+
+Zwei kosmetische Restpunkte, ausdruecklich kein Fehlschlag:
+- Ein per CLI geschriebenes \r\n kommt aus dem YAML als ' \n' zurueck; oneLine macht daraus zwei Leerzeichen statt einem. Sichtbar nur als doppeltes Leerzeichen im Titel.
+- Die neue NOTES-Zeile spricht nur vom Titel, der Fix deckt aber auch assignee, updated-by und executed-by ab.
