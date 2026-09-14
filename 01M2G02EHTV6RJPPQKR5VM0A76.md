@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:39:41Z
+updated-at: 2026-09-14T13:43:37Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -41,6 +41,12 @@ claimed-at: 2026-09-14T13:29:29Z
 outcome-what: "jaira create now names the storage mode in both cases: a ticket that stays a file prints why, naming the remote it looked for and the git config line that fixes it, and --json carries it as file-only-reason beside on-ref-only. fileOnRefOnly returns that reason instead of a bare bool, and putOnRef is the same function for a ticket that already exists as a file. jaira release uses it: a ticket with no ref is put on one, the assignee cleared and the local file removed. jaira whoami gained a board block - remote and where the name came from, the repository's remotes, ref mode with the reason, and how many tickets lie on this disk and on no ref. jaira create --dod is repeatable like --tag: ticket.NewBody takes []string and writes one box per criterion, the first also filling the frontmatter. Four lines in core/release/NOTES.md, six new tests, and the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt now says what that test actually checks."
 outcome-why: "A board whose remote is not there stops carrying tickets on refs silently. Seventeen tickets went to disk unnoticed on requirementsgenie and there was no way back except recreating them under new ids. The diagnostic existed but only ran at the end of the chain, in jaira release. This puts it where the state is created, gives the state a way back, and makes the board's git state readable in one call."
 outcome-resolves: "Kein Befehl sagt, dass das Board im Datei-Modus laeuft; ein Datei-Ticket kommt nicht auf seinen Ref zurueck; kein Befehl zeigt den git-Zustand des Boards; --dod nimmt nur ein Kriterium."
+review-summary: |-
+  internal/cli/whoami.go:169 remoteOrigin baut die Remote-Aufloesung ein zweites Mal nach; core/settings/settings.go:143 RemoteFor ist dieselbe Leiter und laut Paketkommentar (settings.go:20) 'the only way to ask' - stattdessen RemoteFor um die Herkunft erweitern (RemoteSourceFor(dir) (name, source string)) und remoteOrigin loeschen, sonst nennt ausgerechnet whoami beim naechsten Schritt einen anderen Remote als der Code, der scheitert
+  internal/cli/whoami.go:126 nimmt den Remote-Namen aus remoteOrigin statt aus refs.Repo.RemoteName(); genau das verbietet der Kommentar, der RemoteName() in core/gitref/gitref.go:128 ueberhaupt exportiert hat ('must not have to re-derive it and risk naming a different one than the code that failed') - boardState soll den Namen von refs.Repo.RemoteName() nehmen und nur die Herkunft dazu holen
+  core/gitref/gitref.go:95-98 wirft 'kein Repository' und 'kein solcher Remote' in dasselbe ErrNoRepo, und internal/cli/refs.go fileModeReason macht daraus auf einem Board ganz ohne git die falsche Zeile: 'no usable "origin"' plus 'git config jaira.remote' plus der release-Hinweis, obwohl kein Remote fehlt - ErrNoGitRepo = fmt.Errorf("%w: this board is not in a git repository", ErrNoRepo) einfuehren (errors.Is(.., ErrNoRepo) bleibt gueltig), in fileModeReason darauf verzweigen und in internal/cli/tickets.go den release-Hinweis in diesem Fall weglassen; dieselbe Verzweigung raeumt in internal/cli/whoami.go:87 die rohe Fehlerzeile 'gitref: no repository or no such remote' weg
+  internal/cli/tickets.go:329 raet nach jedem Datei-create zu 'jaira release <handle>', aber release loescht den assignee - bei 'create --mine'/'--assignee' verliert der Hinweis genau die Zuordnung, die create gerade gesetzt hat: die Zeile nur drucken wenn der neue Ticket keinen assignee hat, sonst die Kosten mitnennen
+  internal/cli/refs.go: der Parameter s *ticket.Store wird weder in fileOnRefOnly noch in putOnRef benutzt (putOnRef reicht ihn nur weiter) - streichen, dann auch beim Aufrufer in internal/cli/tickets.go und internal/cli/release.go
 ---
 
 # Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen
