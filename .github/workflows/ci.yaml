@@ -26,3 +26,15 @@ jobs:
       - run: go vet ./...
       - run: go test ./... -race
       - run: go build ./cmd/jaira
+      # Cross-compiling for Windows on the Linux runner catches what breaks at
+      # compile time — a build tag, a syscall, a package with no windows build
+      # — in seconds, instead of eight minutes into the windows-latest job.
+      # vet covers the test files too, which is where most of it has been.
+      - name: Cross-check the Windows build
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          go vet ./...
+          go build ./cmd/jaira

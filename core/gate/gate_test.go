@@ -2,6 +2,7 @@ package gate
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -24,7 +25,7 @@ func scrapTicket(status string) *ticket.Ticket {
 func installCustomLane(t *testing.T, filename, body string) Env {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.WriteFile(dir+"/"+filename, []byte(body), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(body), 0o644); err != nil {
 		t.Fatalf("write custom lane: %v", err)
 	}
 	t.Setenv("JAIRA_LANES_DIR", dir)

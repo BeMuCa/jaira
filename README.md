@@ -817,6 +817,28 @@ go test ./...
 go build ./cmd/jaira
 ```
 
+Windows is a shipped platform — `.goreleaser.yaml` builds a binary for it — but
+the `windows-latest` CI job takes eight minutes and only tells you afterwards.
+Two commands run before you push catch what has actually broken there, from
+whatever machine you are on:
+
+```bash
+GOOS=windows GOARCH=amd64 go vet ./...
+GOOS=windows GOARCH=amd64 go build ./cmd/jaira
+```
+
+`go vet` covers the test files too, which is where most of the Windows failures
+have been. What breaks at run time rather than at compile time is caught by
+`internal/wintrap`, which `go test ./...` already runs: it reads the source for
+the five patterns this repository has broken on before — `t.Setenv("HOME")` with
+no `USERPROFILE` beside it, a `//go:embed` target with no `eol=lf` line in
+`.gitattributes`, a permission claim with no `runtime.GOOS` branch, an expected
+binary name with no `.exe`, and a path glued together with a literal `/`. Each
+finding names the remedy, not only the site. A site that only looks like one of
+them — a URL, a git refname, an `io/fs` path — is marked `//wintrap:ok` with the
+reason, so the exemption stays visible in the diff instead of the rule quietly
+getting weaker.
+
 **Nothing lands on `master` directly.** A change is made on a branch of its own,
 the ticket rides in the same commits as the code, and the branch arrives through
 a pull request — which is what makes the diff readable: the change and what it

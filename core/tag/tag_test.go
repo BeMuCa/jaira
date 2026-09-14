@@ -68,7 +68,7 @@ func TestNormalizedNamesSurviveFrontmatter(t *testing.T) {
 // it was — the same promise the ticket writer makes about frontmatter.
 func TestSetPreservesEverythingItDidNotWrite(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	original := "# my own header\n" +
@@ -151,7 +151,7 @@ func TestSetPreservesEverythingItDidNotWrite(t *testing.T) {
 // the tickets can carry.
 func TestLoadNormalizesHandWrittenNames(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(Path(root), []byte("UI: 39\nbad: 999\n"), 0o644); err != nil {
@@ -276,7 +276,7 @@ func TestPaletteEntriesAreDistinctAnsi256Colours(t *testing.T) {
 // this file is what produces one when two sides recolour the same tag.
 func TestSetRewritesTheLastDuplicateLine(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(Path(root), []byte("ui: 33\ndocs: 178\nui: 45\n"), 0o644); err != nil {
@@ -312,7 +312,7 @@ func TestSetRewritesTheLastDuplicateLine(t *testing.T) {
 // describing it — worse than an unsorted file.
 func TestInsertionRespectsAHandGroupedFile(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	grouped := "# frontend\nui: 33\ncss: 45\n\n# backend\nsql: 73\napi: 100\n"
@@ -335,7 +335,7 @@ func TestInsertionRespectsAHandGroupedFile(t *testing.T) {
 	// A sorted file still gets sorted insertion — that is what keeps two
 	// teammates' additions off the same last line.
 	root2 := t.TempDir()
-	if err := os.MkdirAll(root2+"/.jaira", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root2, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(Path(root2), []byte("api: 33\nui: 45\n"), 0o644); err != nil {
@@ -362,7 +362,7 @@ func TestInsertionRespectsAHandGroupedFile(t *testing.T) {
 // replacement.
 func TestSaveWritesViaTempFileAndRename(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(root+"/.jaira", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(Path(root), []byte("ui: 33\n"), 0o644); err != nil {
@@ -415,7 +415,7 @@ func TestSaveWritesViaTempFileAndRename(t *testing.T) {
 		t.Errorf("Save wrote in place: the file linked before Save reads %q, want the pre-Save bytes", old)
 	}
 	// And no temporary file is left behind in .jaira.
-	ents, err := os.ReadDir(root + "/.jaira")
+	ents, err := os.ReadDir(filepath.Join(root, ".jaira"))
 	if err != nil {
 		t.Fatal(err)
 	}

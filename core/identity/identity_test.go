@@ -24,7 +24,11 @@ func TestCurrentFallsThroughWhenJairaUserIsEmpty(t *testing.T) {
 	// the real developer's ~/.gitconfig, which would otherwise make "git
 	// config user.name" succeed even outside a repo and mask the fallback
 	// this test is checking.
-	t.Setenv("HOME", t.TempDir())
+	// USERPROFILE is the same redirection on Windows: os.UserHomeDir reads it
+	// there and ignores HOME entirely.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	// A directory with no git repo (or one with no configured user.name) falls
 	// through to the USER/USERNAME/LOGNAME environment variables.

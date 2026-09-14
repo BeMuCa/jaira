@@ -31,6 +31,7 @@ func TestTwoBranchesOnOneTicketMergeFieldAware(t *testing.T) {
 	// find it, and the failure reads as "executable file not found in %PATH%"
 	// rather than as the naming rule it is.
 	bin := filepath.Join(root, "jaira"+exeSuffix())
+	//wintrap:ok the .exe suffix is on bin already, from exeSuffix() above
 	build := exec.Command("go", "build", "-o", bin, "github.com/BeMuCa/jaira/cmd/jaira")
 	build.Dir = repoRoot(t)
 	if out, err := build.CombinedOutput(); err != nil {
@@ -191,6 +192,7 @@ func TestTwoBranchesThatBothCreateTheTicketStillMergeFieldAware(t *testing.T) {
 	t.Setenv("JAIRA_HOME", filepath.Join(root, "home"))
 
 	bin := filepath.Join(root, "jaira"+exeSuffix())
+	//wintrap:ok the .exe suffix is on bin already, from exeSuffix() above
 	build := exec.Command("go", "build", "-o", bin, "github.com/BeMuCa/jaira/cmd/jaira")
 	build.Dir = repoRoot(t)
 	if out, err := build.CombinedOutput(); err != nil {
