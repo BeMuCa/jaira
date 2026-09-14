@@ -11,3 +11,10 @@ core/lane/builtin/*.md text eol=lf
 # shell script is pinned for the older reason: CRLF makes it unrunnable.
 core/role/builtin/**/*.md text eol=lf
 core/role/builtin/**/*.sh text eol=lf
+
+# core/release/NOTES.md is embedded and read back line by line — a CRLF
+# checkout turns every entry into one that ends in \r. core/hook/example is the
+# shipped notify hook: CRLF makes it unrunnable, the same reason the role
+# scripts above are pinned.
+core/release/NOTES.md text eol=lf
+core/hook/example/*.sh text eol=lf

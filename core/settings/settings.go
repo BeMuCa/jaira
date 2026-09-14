@@ -208,6 +208,9 @@ func (s Settings) Landing(remote string, remoteHead func() string) []string {
 			if b == "" {
 				continue
 			}
+			// A git refname is slash-separated on every platform; it is not
+			// a filesystem path.
+			//wintrap:ok
 			if strings.HasPrefix(b, remote+"/") || strings.HasPrefix(b, "refs/") {
 				out = append(out, b)
 				continue
