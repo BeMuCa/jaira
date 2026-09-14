@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:45:26Z
+updated-at: 2026-09-14T18:45:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -236,3 +236,19 @@ Nicht als Befund erhoben:
 - Die drei Befunde aus Runde 3 sind erledigt und werden nicht neu aufgemacht: der doppelte Slot-Test ist weg, der Kommentar an cardColors (internal/tui/model.go:1350) nennt jetzt 'the sprint marker moved off this bar (ticket 0YGWXQ)', und die proof-Zeilen der Punkte 2 und 3 zeigen auf Tests, die es gibt.
 - Die veralteten Testnamen im Feld review-gaps (TestThirdSlotStaysUncolouredHoweverManyTags, TestThirdRowAlwaysCarriesTheLaneShade) sind Ausgabe der optimize-Lane und werden von deren naechstem Durchgang ueberschrieben - anders als die DoD, die der Vertrag des Tickets ist.
 - **2026-09-14 18:43 · Alexander Sacharov** — Befund der zweiten critique behoben, und zwar vom Dispatcher selbst, weil es sein eigener Fehler war: beim Wiedereroeffnen wurde DoD-Punkt 2 im Body umformuliert, das Frontmatter-Feld definition-of-done aber nicht. Absatz 2 dieses Feldes traegt jetzt denselben Wortlaut wie DoD-Punkt 2; die uebrigen fuenf Absaetze sind unveraendert. Keine Codeaenderung in dieser Runde - der Diff aus 50f15a2/82c111e steht unberuehrt.
+- **2026-09-14 18:45 · Alexander Sacharov** — critique (Runde 5): keine Befunde, review-summary=none. Der Befund aus Runde 4 ist geschlossen: das Frontmatter-Feld definition-of-done (Ticketdatei Zeile 21-33) traegt in Absatz 2 jetzt denselben Wortlaut wie DoD-Punkt 2 und wie goal - 'Platz 3 traegt die Farbe des dritten Tags'; die uebrigen fuenf Absaetze sind unveraendert, der Body unter '## Definition of Done' ebenso. Der Payload dieser Runde ('jaira show --for-lane critique --json') legt goal und definition-of-done erstmals widerspruchsfrei nebeneinander.
+
+Gelesen: 50f15a2 und 82c111e in internal/tui/model.go, internal/tui/view.go, internal/tui/tagbox_test.go und core/release/NOTES.md; 7b4b734 ist reine Ticketdatei.
+
+Was geprueft wurde und stand hielt:
+- Die Form ist minimal: cardColors (internal/tui/model.go:1364) laeuft 'i < cardSlots' statt 'i < cardSlots-1'. Eine Schleifengrenze, sonst nichts. renderCardBlock (internal/tui/view.go:545) las schon immer slots[i] je Zeile und brauchte keine Codeaenderung - der reservierte Slot war allein ein Modell-Detail. Kleiner geht es nicht.
+- Kein neues Muster: cardSlots, cardSlot und cardColors bestehen seit 1276d7b; dieser Diff ergaenzt keine Abstraktion, keine Konfiguration und keine Fehlerbehandlung.
+- Anzeigegrenze statt Validierung, wie Alex entschieden hat: Tags ab dem vierten werden stillschweigend ignoriert, core/tag und die tag-/show-Kommandos sind unberuehrt.
+- selectionFill/Glow speisen sich weiter aus Slot 1 - Alex' Vorgabe, nicht angefasst.
+- Eine umgeschriebene statt einer zweiten NOTES-Zeile ist richtig: '## Unreleased' hat nie ein Binary erreicht.
+- Die drei Befunde aus Runde 3 halten: der doppelte Slot-Test ist weg (internal/tui/tagbox_test.go:92 geloescht), der Kommentar an cardColors nennt 'the sprint marker moved off this bar (ticket 0YGWXQ)' statt Praesens fuer Code, den es nicht gibt, und alle proof-Zeilen nennen Tests, die es gibt (nachgeprueft per grep: TestTwoTaggedCardShowsBothColoursInTicketOrder:500, TestThreeTaggedCardShowsAllThreeColoursInTicketOrder:530, TestSlotsBelowTheLastTagStayUncoloured:109, TestUncolouredSecondTagFallsBackWithoutMovingTheText:568, TestFourTaggedCardRendersWithTheExtraTagUncoloured:593).
+
+Bewusst NICHT als Befund erhoben:
+- Die proof-Zeile von DoD-Punkt 6 nennt 'core/release/NOTES.md:16'. Durch den Merge daf4312 steht die Zeile dieses Tickets inzwischen auf :22; :16 ist die 'jaira create'-Zeile. Anders als der tote Testname aus Runde 3 fuehrt das aber nicht ins Leere: die Datei und der Abschnitt '## Unreleased' stimmen, und die gemeinte Zeile ist dort die einzige, die von drei Tag-Farben spricht. Eine Zeilennummer in einer Datei, in die jeder Branch oben einfuegt, veraltet bei jedem Merge - das ist kein Befund dieses Diffs.
+- Die losen Prosa-Absaetze im Ticket-Body unter der Checkliste (Zeilen 74-82) tragen weiter den alten Satz. Runde 4 hat das schon geprueft: sie stammen aus der Ticketerstellung, sind ueber die CLI nicht erreichbar und gehoeren in ein eigenes jaira-Ticket. Wird nicht neu aufgemacht.
+- Die Ueberschneidung zwischen Modell- und Rendering-Tests hat schon Runde 1 stehen lassen.
