@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T16:15:26Z
+updated-at: 2026-09-14T16:15:46Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
@@ -158,3 +158,14 @@ DoD 2 and 3: the remote was added to the file-mode board afterwards, whoami flip
 DoD 4: one 'create --dod erstes --dod zweites --dod drittes' on the ref-mode board left three boxes, read back with 'jaira show' without any pull and with the new ticket absent from .jaira/tickets; frontmatter definition-of-done keeps only 'erstes', as the plan says. DoD 6: five lines under ## Unreleased in core/release/NOTES.md, four of them this ticket's.
 
 No finding. Two cosmetics seen and deliberately not raised, because earlier rounds already weighed them: whoami's reason wraps its second and third line under the 13-column label instead of at it, and the release hint says 'once the remote works' even where the remote is fine — both pre-existing and both already closed by critique.
+- **2026-09-14 16:15 · Alexander Sacharov** — Review lane, second model over the whole branch diff against master (a99e7a1..19da0f6, 28 files, +1808/-60). Verdict: accept with one gap, not fixed here.
+
+Gates re-run in this worktree, nothing cached: go build ./... RC=0; gofmt -l . printed nothing; go vet ./... RC=0; go test -count=1 ./... every package ok, RC=0 (internal/cli 11.3s, internal/tui 46.3s).
+
+All six DoD criteria hold and were exercised by hand with a binary built from 19da0f6 on throwaway boards under the scratchpad, HOME/USERPROFILE/XDG_CONFIG_HOME/GIT_CONFIG_GLOBAL all redirected; the real board was never touched.
+
+The gap, and why it is new rather than a reopened round: earlier critique and optimize rounds reasoned about a remote that is ABSENT. A remote that EXISTS but does not work was never on the table, and it breaks both halves of what this ticket promises. (a) gitref wraps push failures in ErrNoRepo as well, so internal/cli/refs.go:171 answers them with Repo.NoRemoteHint() and create prints the self-contradicting 'no remote "origin" — this repository has origin'; git's real message ('fatal: ... does not appear to be a git repository') survives only in the separate raw 'jaira: warning: ... gitref: ...' line afterwards — the very raw-error shape the human lane sent this back to remove. (b) whoami on that board says 'Ref mode: yes' while the create that just ran wrote a file, because boardState asks only refs.Usable() and 'git remote get-url' succeeds for a remote whose URL points nowhere. Round four's argument that 'the error set on the way to noRefReason is closed' holds for whoami's call site; it does not hold for create's, where the error comes out of Flush.
+
+Deliberately NOT fixed in this lane: the review lane judges, it does not implement, and the fix is a shape change (noRefReason would have to be told absent-versus-unreachable, and whoami's ref mode would have to reflect what create actually did) rather than a touch-up. A person decides whether it goes in on this branch or becomes its own ticket.
+
+Nothing else reopened. Everything rounds one to four and both optimize rounds listed as settled or explicitly-not-a-finding was left standing; fetch/pull/release/snapshot printing raw refs.Usable() errors stays its own ticket. Cosmetic, uncounted: the frontmatter still carries question: 'drei Punkte korrigieren' from the human round that has since been answered.
