@@ -157,11 +157,8 @@ babysits the ticket through the same route.
 
 Nothing lands on `master` directly. A change is made on a branch of its own, the
 ticket rides in the same commits as the code it belongs to, and the branch
-reaches `master` through a pull request.
-
-The ticket travelling with the code is what makes the pull request readable: a
-reviewer sees the change and what it was for in one place, instead of a diff
-whose ticket is still in whatever state the last commit left it.
+reaches `master` through a pull request — which is what makes the diff readable:
+the change and what it was for in one place.
 
 **The pull request belongs to the maintainer from the moment it exists.** An
 agent pushes its branch and stops there: it does not open the pull request, does
