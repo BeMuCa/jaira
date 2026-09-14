@@ -2,7 +2,7 @@
 id: 01M2GMAGZB6QR6N2QEZJJFW22A
 title: "Die drei Schleifen-Lanes liegen nur auf einem Rechner, obwohl sie die Fehler finden"
 status: backlog
-ready: false
+ready: true
 creator: Alexander Sacharov
 goal: "critique, optimize und testing kommen aus dem Binary, sodass ein frischer Klon sie hat, ohne dass jemand einen Katalog von Hand mitbringt."
 context: |-
@@ -30,7 +30,7 @@ related:
   - 01M2E248SM9X1JRZBNTHC9V7ZV
 commits: []
 created-at: 2026-09-14T18:54:26Z
-updated-at: 2026-09-14T18:54:40Z
+updated-at: 2026-09-14T18:54:42Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -40,6 +40,10 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] critique, optimize und testing liegen in core/lane/builtin und sind im Binary eingebettet. Nachgestellt auf einem Rechner ohne ~/.jaira/lanes: 'jaira lanes add critique' bringt die Lane auf ein Board, ohne dass eine Datei von Hand mitgebracht wird.
+- [ ] Die drei Schleifen funktionieren aus der ausgelieferten Fassung heraus: critique, optimize und testing schicken ein Ticket nach in-progress zurueck und lassen es wieder vor. Nachgestellt auf einem frisch aufgesetzten Board, nicht auf diesem.
+- [ ] Es ist entschieden und im Ticket festgehalten, ob ein neues Board mit den dreien startet oder ob sie per 'jaira lanes add' dazukommen - und die Entscheidung ist begruendet, nicht nur getroffen.
+- [ ] Die Reihenfolge stimmt aus der Lieferung heraus: eine Schleifen-Lane steht zwischen in-progress und der menschlichen Lane, nicht dahinter. Nachgestellt an 'jaira lanes' auf einem frischen Board.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
