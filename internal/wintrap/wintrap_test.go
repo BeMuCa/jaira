@@ -123,3 +123,32 @@ func TestMatchPattern(t *testing.T) {
 		}
 	}
 }
+
+// TestNonTextEmbedIsNotExempt is the other half of what .gitattributes can say.
+// Rule 2 used to skip embedded files by extension, so a .png was never a
+// finding and a -text or binary line was never read; now the file is a finding
+// like any other, and only a line in .gitattributes silences it. Without these
+// two fixtures the "-text"/"binary" arm of loadAttributes could be deleted and
+// every test would stay green.
+func TestNonTextEmbedIsNotExempt(t *testing.T) {
+	found, err := Scan("testdata/rule2bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(found) != 1 || found[0].Rule != 2 {
+		t.Fatalf("Scan(testdata/rule2bin) = %v, want one rule 2 finding: the embedded .png is pinned by nothing", found)
+	}
+	// A non-text file told to carry "text eol=lf" would be the wrong remedy, so
+	// the finding has to offer the other one too.
+	if !strings.Contains(found[0].Fix, `"assets/*.png binary"`) {
+		t.Errorf("remedy %q does not offer the binary attribute for a non-text embed", found[0].Fix)
+	}
+
+	found, err = Scan("testdata/cleanbinary")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(found) != 0 {
+		t.Errorf("Scan(testdata/cleanbinary) = %v, want nothing: binary and -text pin the bytes as firmly as eol=lf", found)
+	}
+}

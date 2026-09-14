@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -42,13 +42,13 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:27:17Z
+updated-at: 2026-09-14T18:34:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
-outcome-what: "Der Windows-Pruefer traegt nach dem optimize-Lauf 40 Zeilen weniger: binaryExt, selName2 und mentionsExe sind raus, dreimal dasselbe ast.Inspect-Muster ist zu anyNode/litContains zusammengelegt, und die Frage \"ist diese eingebettete Datei gegen autocrlf geschuetzt\" beantwortet jetzt nur noch .gitattributes - eol=lf, -text und binary zaehlen gleichermassen als gepinnt."
-outcome-why: "Zwei Mechanismen fuer eine Frage werden beide fuer immer gepflegt, von jemandem, der den anderen nicht kennt. Die 14-Endungen-Liste hat in diesem Modul nie einen Treffer stumm geschaltet - alle vier go:embed ziehen .md und .sh - und sie haette beim ersten echten Binaerembed gegen das Attribut gearbeitet, das git selbst dafuer hat."
-outcome-resolves: "Alle drei Funde der critique-Runde 3 abgearbeitet, dazu die doppelte Inspect-Logik; Abhilfetext der Regel 2 nennt jetzt auch \"binary\", damit eine Nicht-Text-Datei keine falsche Anweisung bekommt; go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... und GOOS=windows GOARCH=amd64 go build ./cmd/jaira gruen."
+outcome-what: "Die bisher ungetestete Abzweigung des optimize-Laufs ist abgedeckt: zwei Fixtures (testdata/rule2bin, testdata/cleanbinary) und TestNonTextEmbedIsNotExempt in internal/wintrap/wintrap_test.go pruefen, dass eine eingebettete Nicht-Text-Datei ohne .gitattributes-Zeile Regel 2 ausloest und im Abhilfetext 'binary' anbietet, und dass 'binary' und '-text' den Fund genauso verstummen lassen wie 'eol=lf'."
+outcome-why: "Mit dem Wegfall von binaryExt beantwortet nur noch .gitattributes die Pin-Frage, aber kein Test fasste '-text' oder 'binary' an: die Wurzel-.gitattributes und testdata/clean benutzen ausschliesslich 'text eol=lf'. Die Mutationsprobe zeigte, dass sich 'case \"-text\", \"binary\"' loeschen liess, ohne dass ein Test umfiel."
+outcome-resolves: "go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... und go build ./cmd/jaira alle RC=0; DoD 1-5 einzeln am Baum geprueft (ci.yaml:33, README.md:826-827, keine NOTES.md-Zeile); Regel 1 mit einer Probe-Datei scharf gestellt und wieder entfernt."
 review-summary: |-
   internal/wintrap/wintrap_scan_test.go:235 binaryExt is a 14-entry extension list guarding a case this module does not have: every //go:embed in it (core/role/role.go:33, core/lane/lane.go:34, core/release/release.go:17, core/hook/example.go:9) pulls only .md and .sh. Git already answers this with -text/binary, which gitattributes_scan_test.go:55 parses and then scores as NOT pinned. Delete binaryExt and let -text/binary count as covered in eolLF — one mechanism, and the one git owns.
   internal/wintrap/wintrap_scan_test.go:185 selName2 is a seven-line adapter with exactly one caller (hasGOOS, line 177), existing only to widen selName's ast.Expr parameter to ast.Node; the numbered name is what you call a function you did not want to name. Inline it: in hasGOOS type-assert n.(*ast.SelectorExpr) and test X == runtime / Sel == GOOS, then delete selName2.
@@ -57,6 +57,7 @@ review-gaps: |-
   Removed: binaryExt (a 14-extension allowlist in wintrap_scan_test.go that silenced a case this module does not have — all four //go:embed directives pull .md and .sh only) in favour of the attribute git already owns; loadAttributes now counts -text and binary as pinned, because both tell git to convert nothing, and the method is named pinned rather than eolLF to match. Removed: selName2, a seven-line ast.Expr/ast.Node adapter with one caller; hasGOOS now matches *ast.SelectorExpr directly. Removed: mentionsExe, which was one of three copies of the same "inspect until the first hit" loop — anyNode plus litContains now carry all three (hasGOOS, the .exe check in checkExe, sepConcat), and the reason the .exe check silences a function sits as a comment at the site that silences it. Fixed the word "narrower" (meant looser) in the isGoBuildOutput doc comment, and widened the rule 2 remedy to offer "binary" beside "text eol=lf", since a non-text embed can now produce a finding at all.
   Left alone, deliberately: "ioutil" in fsPackages and vendor/node_modules in skipDirs have no match in this repository, but they widen the search where binaryExt narrowed it — speculatively finding more is harmless, speculatively staying silent is not. The filepath.Rel error branch in relSlash guards a state WalkDir(root) cannot produce, but removing it means discarding an error, which is worse than three lines. The new -text/binary branch has no permanent fixture; it was proved with a throwaway one (an unpinned .png embed fires rule 2, "assets/*.png binary" silences it), and building a fixture is the testing lane's call.
   No behaviour changes on any input this repository contains: go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... and GOOS=windows GOARCH=amd64 go build ./cmd/jaira all green.
+test-verdict: "pass: go test ./... -race, go vet ./..., GOOS=windows vet und build alle RC=0; DoD 1-5 am Baum geprueft; die vom optimize-Lauf ungetestet gelassene -text/binary-Abzweigung ist jetzt mit zwei Fixtures und TestNonTextEmbedIsNotExempt abgedeckt, Mutationsprobe bestaetigt den Test"
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
@@ -167,3 +168,14 @@ Nicht angefasst, absichtlich:
 - Der neue -text/binary-Zweig hat keinen dauerhaften Test. Bewusst mit einem Wegwerf-Fixture belegt statt ein Fixture einzubauen - das ist die Entscheidung der testing-Lane, nicht dieser.
 
 Nichts davon aendert das Verhalten auf einer Eingabe, die es in diesem Repository gibt: go test ./... -race, go vet ./..., GOOS=windows go vet ./... und GOOS=windows go build ./cmd/jaira sind gruen.
+- **2026-09-14 18:33 · Alexander Sacharov** — testing: Alle Tore gruen auf 946dca6 plus dem hier ergaenzten Test. go test ./... -race -count=1 RC=0 (alle Pakete ok, internal/tui 125s, internal/cli 31s), go vet ./... RC=0, GOOS=windows GOARCH=amd64 go vet ./... RC=0, GOOS=windows GOARCH=amd64 go build ./cmd/jaira RC=0.
+
+Die Luecke aus dem optimize-Lauf war echt und ist geschlossen. Mit dem Wegfall von binaryExt beantwortet nur noch .gitattributes die Frage, ob eine eingebettete Datei gepinnt ist - und die beiden neuen Attribute -text und binary in loadAttributes hatte kein einziger Test angefasst: die Wurzel-.gitattributes dieses Repositories benutzt ausschliesslich 'text eol=lf', und testdata/clean ebenso. Wer 'case "-text", "binary"' geloescht haette, waere gruen durchgekommen. Nachgemessen: genau diese Mutation angebracht, alte Tests blieben gruen.
+
+Ergaenzt sind zwei Fixtures im Schnitt der bestehenden rule1..rule5 und ein Test TestNonTextEmbedIsNotExempt: testdata/rule2bin bettet assets/*.png ohne jede .gitattributes ein und muss genau einen Fund der Regel 2 liefern - das ist der Beweis, dass eine Nicht-Text-Datei ueberhaupt noch anschlaegt, seit die 14er-Endungsliste weg ist -, und der Abhilfetext muss "assets/*.png binary" anbieten, weil 'text eol=lf' fuer ein PNG die falsche Anweisung waere. testdata/cleanbinary bettet dieselbe .png plus eine .txt ein und pinnt sie mit 'assets/*.png binary' und 'docs/*.txt -text' - der Scan muss schweigen. Gegenprobe: mit der oben genannten Mutation faellt der neue Test mit genau diesem cleanbinary-Fund um, er ist also nicht leer.
+
+Definition of Done Punkt fuer Punkt am Baum geprueft, nicht am outcome-Text: (1) alle fuenf Muster feuern mit eigenem Fixture und der Abhilfe im Text - TestEachPatternFires gruen; (2) TestRepositoryIsClean gruen ohne aufgeweichte Regel, die zwei Ausnahmen stehen sichtbar als //wintrap:ok; (3) .github/workflows/ci.yaml:33 'Cross-check the Windows build' mit 'if: matrix.os == ubuntu-latest', GOOS/GOARCH als env, go vet und go build ./cmd/jaira; (4) README.md:826-827 unter '## Development' mit beiden Zeilen zum Selberlaufen; (5) core/release/NOTES.md nennt weder wintrap noch Windows - richtig so.
+
+Verhalten selbst ausgeloest, nicht nur behauptet: eine Probe-Datei internal/cli/probe_wintrap_test.go mit t.Setenv("HOME", t.TempDir()) ohne USERPROFILE eingesetzt - TestRepositoryIsClean faellt sofort mit 'internal/cli/probe_wintrap_test.go:6: windows trap 1' und der Abhilfe 'add t.Setenv("USERPROFILE", <the same directory>) next to it'. Probe wieder entfernt, Lauf wieder gruen.
+
+Nicht angefasst, absichtlich: die Fixture-Dateien unter testdata liegen in skipDirs, der Repository-Lauf sieht sie also nicht. Der Inhalt der .png ist bewusst reiner Text ohne CR - die Regel liest nur Namen und .gitattributes-Zeile, und eine Datei mit CRLF im Baum waere selbst eine Autocrlf-Falle.
