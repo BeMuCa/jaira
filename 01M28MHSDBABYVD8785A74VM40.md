@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:41:35Z
+updated-at: 2026-09-14T19:45:05Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-661099
@@ -90,3 +90,12 @@ NICHT erhoben, weil bereits entschieden oder anderswo abgelegt: lane.go:479 laed
 
 Zur Form der Board-Zeile selbst: 'jaira logbook --all' steht als const fileCommand neben fileReminder, Test und Zeile lesen dieselbe Konstante - das ist die richtige Loesung fuer den Fehler, der vorher drin war, und dagegen habe ich nichts.
 - **2026-09-14 19:41 · Alexander Sacharov** — in-progress nach critique: die drei Befunde werden genau so umgesetzt, wie die critique sie beschrieben hat - doppeltes lane.Load raus, ein reason-Code fuer eine Lage, !t.ReadOnly in die Callee. Ausserhalb: lane.go:479 (Ticket 1K9KZS).
+- **2026-09-14 19:45 · Alexander Sacharov** — Alle drei critique-Befunde umgesetzt.
+
+Zu (1)+(2) in einem: die zwei Befunde hatten dieselbe Wurzel. logbookAll laedt jetzt nur noch ueber loadEnv und nimmt env.Lanes.Terminal() - damit faellt der zweite Ladeweg weg, die lanes.Warnings kommen wieder heraus (nur loadEnv druckt sie), und der reason-Code ist 'not_terminal' wie bei logbookOut. Der core/lane-Import in logbook.go ist damit weg.
+
+Zu (3): !t.ReadOnly steht jetzt in der Auswahlschleife von FileLane (trim.go), nicht nur im TUI-Zaehler. Das trifft bewusst BEIDE Aufrufer - auch den Doorway in settle.go. Richtig so: ein Ref-only-Ticket hat hier keine Datei, FileLane koennte es gar nicht bewegen, es fiel nur in onlyOnRef und wurde als Problem gemeldet. Der Doc-Kommentar von FileLane sprach noch ausschliesslich vom Doorway - seit --all hat er zwei Aufrufer, das steht jetzt drin.
+
+Was ich dafuer erst finden musste: in core/ticket gibt es keinen Test-Fake fuer TicketSource, ReadOnly wird ausschliesslich in store.extra() gesetzt. Der neue Test TestFileLaneLeavesRefOnlyTicketsWhereTheyAre haengt deshalb ein eigenes refSource an s.Source - das ist der einzige Weg, ein ReadOnly-Ticket ohne echtes git-Ref zu bekommen. Gegenprobe gefahren: ohne !t.ReadOnly faellt der Test mit genau der Meldung aus dem Befund ('on its ref and not on your disk').
+
+NOTES.md-Zeile geschrieben, weil (3) von aussen sichtbar ist: --all meldete bisher jedes fertige Ref-only-Ticket als Problem.
