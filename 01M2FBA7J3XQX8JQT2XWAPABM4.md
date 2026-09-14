@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -42,13 +42,13 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:18:37Z
+updated-at: 2026-09-14T16:18:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-382690
 claimed-at: 2026-09-14T16:16:39Z
-outcome-what: "Vier critique-Funde abgearbeitet. Regel 4 verengt: checkExe meldet nur noch, wenn der Aufruf exec.Command/CommandContext mit erstem Literal \"go\" und \"build\"/\"install\"/\"test\" plus \"-o\" ist (neues isGoBuildOutput in internal/wintrap/wintrap_scan_test.go) - die Gegenproben sort -o und tar -c -o melden nicht mehr. Der CallExpr-Zweig aus mentionsExe ist geloescht, nur das \".exe\"-Literal zaehlt noch; die zwei Stellen, die davon lebten (internal/cli/mergebranches_test.go:34 und :194, beide rufen exeSuffix()), tragen jetzt //wintrap:ok mit Begruendung. Der \"://\"-Zweig in sepConcat ist geloescht. wintrap.go und gitattributes.go sind zu wintrap_scan_test.go und gitattributes_scan_test.go umbenannt, das Modul traegt kein exportiertes Scan mehr ausserhalb des Tests."
-outcome-why: "Jeder der drei Regelfunde war eine Meldung, die etwas anderes prueft als sie behauptet, oder ein Stummschalter, den man an der stummgeschalteten Stelle nicht sieht - beides macht den Waechter unglaubwuerdig, und ein Waechter, dem man nicht glaubt, wird abgeschaltet. Der vierte Fund nahm 640 Zeilen Entwickler-Werkzeug aus dem ausgelieferten Modul, ohne dass eine Zeile davon anders arbeitet."
-outcome-resolves: "go test ./... und go vet ./... gruen, GOOS=windows go vet ./... und go build ./cmd/jaira gruen. TestEachPatternFires laeuft unveraendert weiter - alle fuenf Fixtures schlagen an, Regel 4 also trotz der Verengung nicht vakuum. TestRepositoryIsClean gruen ohne aufgeweichte Regel: die zwei neuen Stellen sind mit //wintrap:ok plus Grund ausgenommen, nicht durch eine Lockerung. Kein Eintrag in core/release/NOTES.md, von aussen am Binary ist nichts davon zu beobachten."
+outcome-what: "Regel 4 auf 'go build -o' verengt: isGoBuildOutput (internal/wintrap/wintrap_scan_test.go:443) akzeptiert nur noch das Literal \"build\", die Zweige \"install\" und \"test\" sind raus. Der Doc-Kommentar nennt jetzt die Form exec.Command(\"go\", \"build\", ..., \"-o\", ...) und sagt, warum die beiden anderen nicht dazugehoeren."
+outcome-why: "Der Fundtext behauptet 'a binary is built with go build -o'. 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, das der Text nicht beschreibt. Eine Regel, die etwas anderes prueft als sie meldet, ist genau der Fehler, den die critique-Runde davor schon dreimal gefunden hat."
+outcome-resolves: "go test ./... gruen, go vet ./... und GOOS=windows GOARCH=amd64 go vet ./... gruen. TestEachPatternFires laeuft unveraendert: das Fixture internal/wintrap/testdata/rule4/build.go:10 ist exec.Command(\"go\",\"build\",\"-o\",bin,...) und schlaegt weiter an, Regel 4 ist also nicht ins Leere verengt. TestRepositoryIsClean gruen ohne aufgeweichte Regel."
 review-summary: "internal/wintrap/wintrap_scan_test.go:442 isGoBuildOutput accepts \"install\" and \"test\" beside \"build\", but the finding text at wintrap_scan_test.go:413 asserts that \"a binary is built with go build -o\". Verified: \"go install -o\" does not exist (flag provided but not defined: -o), so that arm can never fire, and \"go test -o\" builds a test binary the message does not describe. Keep only \"build\" in the switch at :442, so the rule again verifies exactly what it claims."
 ---
 
