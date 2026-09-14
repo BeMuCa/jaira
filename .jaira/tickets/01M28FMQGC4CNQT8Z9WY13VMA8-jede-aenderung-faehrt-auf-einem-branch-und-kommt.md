@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T20:09:00Z
+updated-at: 2026-09-14T20:12:06Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Die Regel steht jetzt in CLAUDE.md, AGENTS.md und README: ein Agent pusht seinen Branch und macht den PR nicht auf. Die Rollen-Prompts in core/role/builtin sagen aber weiter das Gegenteil - jaira-role-pr/SKILL.md ist als ganze Rolle 'mach den PR auf' gebaut, jaira-teamlead/SKILL.md:79-80 traegt woertlich den alten Satz, und :89 laesst den Dispatcher schliessen, 'sobald der PR offen ist'. Deine Entscheidung, weil beides vertretbar ist: (A) Die Regel gilt nur fuer dieses Projekt - hinter jaira:local, wo sie steht. Dann bleibt core/role/builtin unangetastet, kostet aber, dass jeder Agent hier ein ausgeliefertes Prompt liest, das ihm das Gegenteil sagt. (B) Die Regel gilt jaira-weit. Dann muessen die drei Prompt-Stellen gedreht werden, jaira-role-pr wird auf reines Pushen zurueckgebaut oder abgeschafft, und es braucht eine NOTES.md-Zeile plus 'jaira roles install --global --force' fuer alle - das ist ein eigenes Ticket, nicht mehr dieses."
@@ -30,7 +30,7 @@ claimed-by: DESKTOP-RFTCH11-690668
 claimed-at: 2026-09-14T19:50:20Z
 review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:3,6,10-12 - die Rolle heisst 'Open a pull request for finished ticket work' und sagt woertlich 'Opening a pull request is a contributor's job. Accepting one is the maintainer's. You are the contributor: you may open'. Das ist genau der Satz, den CLAUDE.md:166 jetzt umdreht. Ein ausgeliefertes Prompt weist den Agenten an zu tun, was die Projektregel ihm verbietet. || core/role/builtin/jaira-teamlead/SKILL.md:79-80 - 'Opening one is a contributor's job, accepting it is the maintainer's' - derselbe alte Satz ein zweites Mal, ebenfalls ausgeliefert. || core/role/builtin/jaira-teamlead/SKILL.md:89 - 'Close it once the pull request is open, not once it is merged' nennt als Schlusspunkt einen Moment, den ein Agent unter der neuen Regel nie erlebt, weil er den PR nicht aufmacht. || Der Diff schreibt die Regel an drei Dokumentationsstellen auf, aber die Prompts, die Agenten tatsaechlich ausfuehren, liegen im selben Repository und tragen weiter die alte. Wer die Regel in CLAUDE.md liest und die Rolle /jaira-role-pr benutzt, bekommt zwei Anweisungen, die sich widersprechen."
 review-gaps: "Docs-only change, one duplication removed: the new section's second paragraph repeated, word for word, a sentence the generated jaira block already carries 40 lines above it in the same file (core/board/announce.go:88-91, shipped into every board) - folded into the first paragraph using the phrasing the README already uses at the same place, so all three copies of the rule now read alike. Left alone and why: the rule standing in three files is the DoD, not duplication (README serves readers who never run an agent); the missing blank line before <!-- jaira:end --> is harmless, the marker parser matches the line and Markdown swallows the comment; the NOTES.md rule sitting behind jaira:end instead of jaira:local in CLAUDE.md is pre-existing and outside the regenerated block either way; core/role/builtin still carries the old rule - that is the critique's open A/B question and DoD item 2, out of this lane. Nothing dead, nothing to hoist, go test ./... green."
-test-verdict: "fail: docs sind gedreht und konsistent, aber die ausgelieferten Rollen-Prompts sagen weiter das Gegenteil - 'may open' steht noch in core/role/builtin/jaira-role-pr/SKILL.md:11 und jaira-teamlead/SKILL.md:80; DoD 2 unerfuellt, go test ./... -race gruen (RC=0)"
+test-verdict: "pass: alle sieben ausgelieferten Prompts sagen jetzt dasselbe wie die Dokumentation - kein 'may open' und keine andere Formulierung von 'mach den PR auf' mehr in core/role/builtin; jaira-role-pr behaelt Ordner- und frontmatter-Namen (core/role/role_test.go:18) und kann weiter zu einem offenen PR pushen und Review-Kommentare beantworten; NOTES.md traegt eine einzeilige Unreleased-Zeile; go test ./... -race gruen, RC=0"
 ---
 
 # Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
@@ -89,3 +89,20 @@ Betroffen sind mehr Stellen als die eine, die ich genannt hatte: jaira-role-pr/S
 
 Reihenfolge, die eingehalten werden muss: dieses Ticket zuerst, KSGSKK danach. KSGSKK traegt die installierten Fassungen aus ~/.claude/skills nach core/role/builtin - und die installierten Fassungen tragen die alte PR-Regel immer noch, weil ich dort nur den Transport-Abschnitt gepatcht habe. Wer KSGSKK vor diesem Ticket macht, holt die alte Regel zurueck.
 - **2026-09-14 20:09 · Alexander Sacharov** — in-progress nach testing-fail: die ausgelieferten Prompts gedreht. jaira-role-pr behaelt Namen und Ordner - core/role/role_test.go:18 listet 'jaira-role-pr' namentlich und prueft, dass der frontmatter-name gleich dem Ordnernamen ist; die Rolle abschaffen haette also den Test mitgeaendert. Stattdessen zurueckgebaut: description, Ueberschrift und Zeile 10-13 sagen jetzt 'push und halt an', der Abschnitt 'Before you open anything' heisst 'Before you push anything' und endet mit 'git push -u origin HEAD und stop', und der PR-Beschreibungs-Abschnitt bleibt erhalten, aber als Uebergabe an den Menschen ('Hand back the description, do not open it yourself') - der Inhalt war gut und wird weiter gebraucht, nur macht ihn jetzt nicht der Agent auf. 'Never gh pr create' ist zu den Boundaries dazugekommen. jaira-teamlead:89 war kein Wortfix: der Schlusspunkt des Dispatchers heisst jetzt 'sobald der Branch gepusht und die Arbeit gemeldet ist'. Bewusst nicht angefasst: jaira-dispatcher/SKILL.md:157 ('not when the pull request merges') - das begrenzt die Lebensdauer des Worktrees, nicht wer den PR aufmacht, und widerspricht der neuen Regel nicht; ausserdem liegt es im Transport-Abschnitt, der KSGSKK gehoert. Die vier uebrigen Rollen (brainstorm, lane, research, tester) nennen PRs gar nicht, nur 'git merge-base' im tester.
+- **2026-09-14 20:12 · Alexander Sacharov** — testing 14.09. (2. Durchlauf, nach dem fail um 20:04): Befund selbst nachgeprueft, nicht uebernommen.
+
+1. grep -rni 'may open' core/role/builtin: leer. Breiter gesucht (open/opening/create a pull request, 'gh pr create', 'open a PR') ueber ALLE sieben Prompts, nicht nur die zwei geaenderten: jeder Treffer sagt jetzt das Richtige. jaira-role-pr/SKILL.md:3,6,10-14,36-37,75 ('Never gh pr create'), jaira-teamlead/SKILL.md:79-80,90-91. brainstorm, lane, research nennen PRs gar nicht; tester nur 'git merge-base' (kein PR).
+
+2. Die drei Dokumentationskopien und die Prompts sagen dasselbe in der Sache: CLAUDE.md:156-169 (zwischen :154 local und :170 end), AGENTS.md:166-179 (zwischen :127 und :180), README.md:842-851 unter ## Development (Ueberschrift :813). Ueberall: Branch pushen und anhalten, der Mensch macht den PR auf, mergen und freigeben bleiben verboten. Kein 'macht auf, merged aber nicht' mehr uebrig.
+
+3. jaira-role-pr verliert seine restliche Arbeit nicht: :59-72 'Answering review comments' steht vollstaendig ('once a person has opened the pull request, the branch is yours to push to and the thread is yours to answer'), :39-57 uebergibt die fertige PR-Beschreibung, :79-80 meldet die PR-URL, wenn schon eine offen ist.
+
+4. Ordner core/role/builtin/jaira-role-pr und frontmatter name: jaira-role-pr unveraendert - core/role/role_test.go:18 haelt.
+
+5. core/release/NOTES.md: erste Zeile unter ## Unreleased, 420 Zeichen auf EINER Zeile, als Anweisung formuliert (inkl. 'jaira roles install --force'), kein Umbruch.
+
+6. go test ./... -race: RC=0, kein FAIL, core/role ok, core/lane 5.2s, internal/wintrap 1.5s. Die go:embed-Prompts bauen.
+
+Ausdruecklich NICHT als Fehler gewertet (gehoert KSGSKK): jaira-dispatcher/SKILL.md:157 'not when the pull request merges' begrenzt die Lebensdauer des Worktrees, nicht wer den PR aufmacht.
+
+Offen, aber kein Grund fuer fail: die frontmatter-Zeile definition-of-done traegt weiter den ueberholten Wortlaut 'ein Agent macht ihn auf und merged ihn nie' - die Checkbox im Body ist gedreht, die frontmatter-Kopie nicht. Wer spaeter nur die Frontmatter liest, liest die alte Regel.
