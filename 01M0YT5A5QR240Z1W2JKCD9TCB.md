@@ -1,7 +1,7 @@
 ---
 id: 01M0YT5A5QR240Z1W2JKCD9TCB
 title: Ein absichtlicher Lane-Override soll nicht mehr warnen
-status: human
+status: done
 ready: true
 creator: BeMuCa
 goal: "Eine Lane-Datei kann erklaeren, dass sie eine eingebaute Lane ersetzen will"
@@ -10,7 +10,7 @@ definition-of-done: Mit dem Feld ist die Warnung weg; ohne das Feld kommt sie un
 blocked-by: []
 commits: []
 created-at: 2026-08-26T10:34:25Z
-updated-at: 2026-09-14T15:41:56Z
+updated-at: 2026-09-14T15:42:03Z
 claimed-by: EE-3NX6GL3-2641173
 claimed-at: 2026-08-31T16:33:58Z
 updated-by: Alexander Sacharov
