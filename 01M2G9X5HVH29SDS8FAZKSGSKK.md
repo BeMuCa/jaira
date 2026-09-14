@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T18:23:45Z
+updated-at: 2026-09-14T18:23:54Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
@@ -56,4 +56,4 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-14 18:23 · Alexander Sacharov** — Befund aus dem ersten echten Gebrauch (Dispatcher fuer 13VMA8, 14.09.): scripts/spawn.sh und SKILL.md widersprechen sich beim Transport. SKILL.md sagt ausdruecklich 'Not a split pane: a tab' und nennt 'herdr tab create --cwd ... --label ... --no-focus'. spawn.sh macht stattdessen 'herdr pane split --current --direction down --no-focus'. Wer dem Prompt folgt, benutzt das Skript nicht; wer das Skript benutzt, bricht den Prompt. Zweiter Befund: spawn.sh legt den Worktree mit -b feature/SLUG von HEAD des Repos an - dieses Repository benutzt feat/, und ein Dispatcher braucht oft eine andere Basis als HEAD (hier daf4312 auf feat/9ET6NC-per-board-remote); der Worktree musste deshalb von Hand vorher angelegt werden, damit spawn.sh ihn nur noch vorfindet. Dritter Befund: der .env-Block traegt COMPOSE_PROJECT_NAME=rg_SLUG - 'rg_' ist der Projektname eines fremden Repositories. Vierter Befund: spawn.sh startet immer /jaira-role-lane und kann /jaira-role-tester nicht starten, obwohl SKILL.md sagt 'Testing is not a lane'.
