@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:17:11Z
+updated-at: 2026-09-14T16:18:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-382690
 claimed-at: 2026-09-14T16:16:39Z
@@ -131,3 +131,4 @@ Geprueft und absichtlich NICHT gemeldet:
 - Das Paket besteht jetzt nur noch aus _test.go-Dateien; go build ./..., go vet ./... und GOOS=windows go vet ./... laufen damit alle gruen. Die Umbenennung aus Runde 1 hat nichts kaputt gemacht.
 - mentionsExe schaltet weiter eine ganze Funktion stumm, sobald ein ".exe"-Literal darin steht. Das war in Runde 1 die bewusste Entscheidung und wird hier nicht neu aufgemacht.
 - README wiederholt die fuenf Muster aus dem Paketkommentar. Da der Paketkommentar jetzt in einer _test.go steht und go doc ihn nicht mehr zeigt, ist die README-Kopie die einzige auffindbare - kein Fund.
+- **2026-09-14 16:18 · Alexander Sacharov** — critique Runde 3: ein Fund, eine Zeile. isGoBuildOutput nimmt nur noch "build", nicht mehr "install"/"test". Nachgeprueft, warum der Fund stimmt: 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, und das beschreibt der Fundtext nicht. TestEachPatternFires bleibt gruen - das Fixture testdata/rule4/build.go:10 ist exec.Command("go","build","-o",...), also weiter im verengten Muster.
