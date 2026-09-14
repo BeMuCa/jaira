@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T16:08:48Z
+updated-at: 2026-09-14T16:09:13Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-298475
@@ -132,3 +132,18 @@ Ebenfalls geprueft, kein Befund: noRefReason liest den Satz jetzt aus dem Paket-
 
 Damit ist die Kritik-Schleife fuer dieses Ticket zu; alles aus Runde eins bis drei bleibt geschlossen.
 - **2026-09-14 16:02 · Alexander Sacharov** — Optimize lane, second round, scoped to what the human lane sent back and what came after it (a38ae17, 04f92e7). Verdict: nothing to remove. Details in review-gaps. The one edit is cosmetic: internal/cli/refs.go had a doc comment line left over-long by the Repo.noRemote -> NoRemoteHint rename; rewrapped, no code and no output touched, so no NOTES.md line. Checked and deliberately not reopened, so a later round does not rediscover them: everything critique round three listed as explicitly-not-a-finding (whoami InRepo from canReachARef, the two whoami tests over one setup, TestWhoamiJSONRemotesIsAlwaysAList building its repo by hand rather than through cloneWithRemotes, the nil fallback in noRefReason, the line break in NoRemoteHint) and everything round four cleared (the fallback text swallowing a foreign error, NoRemoteHint calling gitref.Remotes a second time). The nearest thing to a real finding is that a create in a remote-less repository runs 'git remote' twice and builds the hint twice, throwing the first copy away with the error text - but that is exactly what round four weighed and closed, it is one error path of one invocation, and undoing it would mean threading the sentence out of Usable, which is a change in shape and not a cleanup. Gates: go build ./..., gofmt -l ., go vet ./... clean; go test ./... green with internal/cli run uncached (16.1s).
+- **2026-09-14 16:09 · Alexander Sacharov** — testing lane, second pass — covers a38ae17 (the three human-lane points), 04f92e7 (NoRemoteHint instead of string-trimming) and 3c8c681. Verdict: pass.
+
+Gates in the worktree, nothing cached: go build ./... RC=0; gofmt -l . printed nothing; go vet ./... RC=0; go test -count=1 ./... all packages ok, RC=0; go test -race -count=1 ./... all packages ok, RC=0 (internal/cli 30.8s, internal/tui 120.2s). The thirteen named proof tests were also run individually and all passed: TestCreateSaysWhenTheTicketStaysAFile, TestCreateJSONCarriesTheFileModeReason, TestCreateOutsideAGitRepositoryDoesNotBlameARemote, TestCreateOutsideAGitRepositoryNamesNoRemote via TestWhoamiOutsideAGitRepositoryNamesNoRemote, TestReleasePutsAFileTicketOnItsRef, TestWhoamiShowsTheBoardIsOnRefs, TestWhoamiShowsTheBoardIsInFileMode, TestWhoamiOutsideAGitRepositorySaysSo, TestWhoamiJSONRemotesIsAlwaysAList, TestCreateTakesSeveralDoDItems, TestTheFileModeReasonDoesNotReadTheErrorText, TestNoGitRepoIsStillNoRepo (core/gitref), TestNewBodyWritesOneBoxPerCriterion (core/ticket).
+
+Exercised by hand with a binary built from 3c8c681, HOME/USERPROFILE/XDG_CONFIG_HOME/GIT_CONFIG_GLOBAL all redirected into the scratchpad, on four throwaway boards; the real board was never touched.
+
+Board with no git repository at all: create prints 'as a file on your disk, not on a ref: this board is not in a git repository, so there is no remote to carry a ref', names no remote and gives no release hint; --json carries that same sentence in file-only-reason. whoami prints Board/Ref mode/File only and NO Remote and NO Remotes row; whoami --json has no remote and no remote_source key and 'remotes': [] — not null. That is human-lane points 1 and 3, both confirmed from the outside.
+
+Repository with no remote: create names 'no remote "origin" — this repository has no remotes', the 'git -C ... config jaira.remote <name>' line and the release hint; after --mine the hint also says releasing clears the assignee, without --mine it does not. Repository whose configured remote is absent while another exists (git config jaira.remote nowhere): the sentence becomes 'no remote "nowhere" — this repository has origin'. Grepped the whole output of create and whoami, text and --json, for 'gitref:' — zero hits, which is human-lane point 2 confirmed and the thing 04f92e7 protects.
+
+DoD 2 and 3: the remote was added to the file-mode board afterwards, whoami flipped to 'Ref mode: yes' with 'Remotes: origin', 'jaira release 6PM31C' put the ticket on refs/jaira/tickets/01M2GASTXRY675QAPJY36PM31C in the bare repository, the local .md disappeared, 'jaira show' read it back off the ref, the assignee set by --mine was cleared as the plan decision said it would be, and File only dropped from 3 to 2.
+
+DoD 4: one 'create --dod erstes --dod zweites --dod drittes' on the ref-mode board left three boxes, read back with 'jaira show' without any pull and with the new ticket absent from .jaira/tickets; frontmatter definition-of-done keeps only 'erstes', as the plan says. DoD 6: five lines under ## Unreleased in core/release/NOTES.md, four of them this ticket's.
+
+No finding. Two cosmetics seen and deliberately not raised, because earlier rounds already weighed them: whoami's reason wraps its second and third line under the 13-column label instead of at it, and the release hint says 'once the remote works' even where the remote is fine — both pre-existing and both already closed by critique.
