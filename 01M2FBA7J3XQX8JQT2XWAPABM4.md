@@ -42,14 +42,17 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:18:56Z
+updated-at: 2026-09-14T16:21:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-382690
 claimed-at: 2026-09-14T16:16:39Z
 outcome-what: "Regel 4 auf 'go build -o' verengt: isGoBuildOutput (internal/wintrap/wintrap_scan_test.go:443) akzeptiert nur noch das Literal \"build\", die Zweige \"install\" und \"test\" sind raus. Der Doc-Kommentar nennt jetzt die Form exec.Command(\"go\", \"build\", ..., \"-o\", ...) und sagt, warum die beiden anderen nicht dazugehoeren."
 outcome-why: "Der Fundtext behauptet 'a binary is built with go build -o'. 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, das der Text nicht beschreibt. Eine Regel, die etwas anderes prueft als sie meldet, ist genau der Fehler, den die critique-Runde davor schon dreimal gefunden hat."
 outcome-resolves: "go test ./... gruen, go vet ./... und GOOS=windows GOARCH=amd64 go vet ./... gruen. TestEachPatternFires laeuft unveraendert: das Fixture internal/wintrap/testdata/rule4/build.go:10 ist exec.Command(\"go\",\"build\",\"-o\",bin,...) und schlaegt weiter an, Regel 4 ist also nicht ins Leere verengt. TestRepositoryIsClean gruen ohne aufgeweichte Regel."
-review-summary: "internal/wintrap/wintrap_scan_test.go:442 isGoBuildOutput accepts \"install\" and \"test\" beside \"build\", but the finding text at wintrap_scan_test.go:413 asserts that \"a binary is built with go build -o\". Verified: \"go install -o\" does not exist (flag provided but not defined: -o), so that arm can never fire, and \"go test -o\" builds a test binary the message does not describe. Keep only \"build\" in the switch at :442, so the rule again verifies exactly what it claims."
+review-summary: |-
+  internal/wintrap/wintrap_scan_test.go:235 binaryExt is a 14-entry extension list guarding a case this module does not have: every //go:embed in it (core/role/role.go:33, core/lane/lane.go:34, core/release/release.go:17, core/hook/example.go:9) pulls only .md and .sh. Git already answers this with -text/binary, which gitattributes_scan_test.go:55 parses and then scores as NOT pinned. Delete binaryExt and let -text/binary count as covered in eolLF — one mechanism, and the one git owns.
+  internal/wintrap/wintrap_scan_test.go:185 selName2 is a seven-line adapter with exactly one caller (hasGOOS, line 177), existing only to widen selName's ast.Expr parameter to ast.Node; the numbered name is what you call a function you did not want to name. Inline it: in hasGOOS type-assert n.(*ast.SelectorExpr) and test X == runtime / Sel == GOOS, then delete selName2.
+  internal/wintrap/wintrap_scan_test.go:424 the isGoBuildOutput doc says "Anything narrower than this and the check fires on every unrelated tool that happens to take a -o flag". Narrower fires on less; it is looser that fires on sort -o and tar -o — the round-1 finding this function was written to answer. Write "looser".
 ---
 
 # Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI
