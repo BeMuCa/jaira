@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:38:58Z
+updated-at: 2026-09-14T13:39:01Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -76,7 +76,7 @@ claimed-at: 2026-09-14T13:29:29Z
 - [x] implement the repeatable --dod, and check gate.Ready/missingFields still read it
 - [x] fix the misleading comment on TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt (internal/cli/boardremote_test.go): both remotes point at the same bare repository, so the comment promises a check the test does not make
 - [x] one line per externally visible change under ## Unreleased in core/release/NOTES.md (DoD 6)
-- [ ] go test ./... and tick each DoD box with its proof
+- [x] go test ./... and tick each DoD box with its proof
 
 ## Progress
 - **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, Begruendung. DoD 1 und DoD 5 sind eine einzige Aenderung: 9ET6NC hat den Diagnosetext schon gebaut (gitref Repo.noRemote nennt gesuchten Remote, vorhandene Remotes und 'git config jaira.remote'). Er fehlt nur bei create, weil fileOnRefOnly (internal/cli/refs.go:75) bei refs.Usable() != nil ein nacktes false zurueckgibt und den Grund wegwirft. Also: Rueckgabe um den Grund erweitern, nicht einen zweiten Text schreiben.
