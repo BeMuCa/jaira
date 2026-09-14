@@ -418,8 +418,9 @@ func checkExe(fset *token.FileSet, f *ast.File, rel string) []Finding {
 	return out
 }
 
-// isGoBuildOutput reports whether call is exec.Command("go", ..., "-o", ...) —
-// the only shape the rule 4 message describes. Anything narrower than this and
+// isGoBuildOutput reports whether call is exec.Command("go", "build", ..., "-o", ...) —
+// the only shape the rule 4 message describes. "install" takes no -o at all and
+// "test -o" writes a test binary, which is not what the finding says. Anything narrower than this and
 // the check fires on every unrelated tool that happens to take a "-o" flag,
 // which is what a finding is not allowed to do: claim something it did not see.
 func isGoBuildOutput(call *ast.CallExpr) bool {
@@ -439,7 +440,7 @@ func isGoBuildOutput(call *ast.CallExpr) bool {
 	build, out := false, false
 	for _, v := range lits[1:] {
 		switch v {
-		case "build", "install", "test":
+		case "build":
 			build = true
 		case "-o":
 			out = true
