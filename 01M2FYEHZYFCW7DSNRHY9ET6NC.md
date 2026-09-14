@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:36:58Z
+updated-at: 2026-09-14T12:37:07Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -65,7 +65,7 @@ Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 ## Options
 
 - [ ] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
