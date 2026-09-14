@@ -141,7 +141,7 @@ func boardState() *boardGit {
 	} else {
 		st.RefMode = true
 	}
-	st.FileOnly = fileOnlyCount(s)
+	st.FileOnly = fileOnlyCount(s, st.RefMode)
 	return st
 }
 
@@ -151,13 +151,16 @@ func boardState() *boardGit {
 // that matters: on a board carrying tickets on refs a file is a ticket somebody
 // pulled into work, and on a board that lost its remote every file is a ticket
 // nobody else can see.
-func fileOnlyCount(s *ticket.Store) int {
+// onRefs comes from the caller rather than being asked for again: boardState
+// has just decided it, and one command answering "does this board carry tickets
+// on refs" twice is one command that can answer it two ways.
+func fileOnlyCount(s *ticket.Store, onRefs bool) int {
 	paths, err := s.Paths()
 	if err != nil {
 		return 0
 	}
 	onRef := map[string]bool{}
-	if refs.Usable() == nil {
+	if onRefs {
 		ids, err := refs.Repo.List()
 		if err == nil {
 			for _, id := range ids {

@@ -234,6 +234,22 @@ func TestCreateOutsideAGitRepositoryDoesNotBlameARemote(t *testing.T) {
 			t.Errorf("create still says %q where there is no repository:\n%s", unwanted, out)
 		}
 	}
+
+	// And the agent reads the same sentence, not the raw error value: the
+	// --json field is rendered through noRefReason like the text above it, so
+	// the two cannot say different things about the same board.
+	jsonOut, err := runCLI(t, dir, "--json", "create", "no git here either")
+	if err != nil {
+		t.Fatalf("create --json: %v\n%s", err, jsonOut)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jsonOut), &payload); err != nil {
+		t.Fatalf("create --json did not emit one object: %v\n%s", err, jsonOut)
+	}
+	reason, _ := payload["file-only-reason"].(string)
+	if !strings.Contains(reason, "not in a git repository") || strings.Contains(reason, "gitref:") {
+		t.Errorf("file-only-reason is the raw error rather than the sentence: %q", reason)
+	}
 }
 
 // And the same directory through whoami: the reason it prints is the same

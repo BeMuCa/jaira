@@ -132,19 +132,14 @@ func putOnRef(t *ticket.Ticket) (onRefOnly bool, why error) {
 	return fileOnRefOnly(t)
 }
 
-// fileModeReason renders why a ticket stayed on disk as the line a person can
-// act on: which remote was looked for, and what git said about it.
+// noRefReason renders why a ticket is not on a ref as the line a person can act
+// on: which remote was looked for, and what git said about it. Every command
+// that has to say it — 'jaira create' in its own words, 'jaira whoami', and the
+// --json field beside them — says it from here, so the three cannot drift apart.
 //
 // The diagnostic itself is gitref's (Repo.noRemote names the remote, the remotes
 // this repository does have, and the git config line that sets it). This only
 // puts it where the state is created instead of at the end of the chain.
-func fileModeReason(why error) string {
-	return "as a file on your disk, not on a ref: " + noRefReason(why)
-}
-
-// noRefReason is the same explanation without the create-time preamble, so the
-// text 'jaira create' prints and the one 'jaira whoami' prints cannot drift
-// apart.
 //
 // It branches on the two halves of gitref.ErrNoRepo because they need opposite
 // words. A repository whose remote is missing has a name that was looked for,

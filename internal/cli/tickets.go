@@ -312,7 +312,7 @@ already know it is yours; --assignee wins over it.`,
 				// that only sees "on-ref-only": false learns nothing it can act
 				// on, which is how seventeen tickets went to disk unnoticed.
 				if !onRefOnly && why != nil {
-					payload["file-only-reason"] = why.Error()
+					payload["file-only-reason"] = noRefReason(why)
 				}
 				return emit(cmd.OutOrStdout(), payload)
 			}
@@ -330,17 +330,21 @@ already know it is yours; --assignee wins over it.`,
 				// The other mode says so too. Silence here is what cost an hour:
 				// the board had quietly stopped carrying tickets on refs and the
 				// only command that said so ran at the end of the chain.
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", fileModeReason(why))
+				fmt.Fprintf(cmd.OutOrStdout(), "as a file on your disk, not on a ref: %s\n", noRefReason(why))
 				// The way back is only advice where it can be taken. Not in a
 				// git repository, 'jaira release' can never work; and on a
 				// ticket that already has an assignee it would undo the
 				// '--mine' or '--assignee' of this very command, because
-				// clearing the holder is what release means.
-				if canReachARef(why) && strings.TrimSpace(t.Assignee) == "" {
-					fmt.Fprintf(cmd.OutOrStdout(), "  once the remote is there, 'jaira release %s' puts it on its ref\n", ticket.Handle(t.ID))
-				} else if canReachARef(why) {
-					fmt.Fprintf(cmd.OutOrStdout(), "  once the remote is there, 'jaira release %s' puts it on its ref — and clears %s as its assignee\n",
-						ticket.Handle(t.ID), t.Assignee)
+				// clearing the holder is what release means. It says "works"
+				// rather than "is there" because the remote may well be there
+				// and the push the thing that failed.
+				if canReachARef(why) {
+					clears := ""
+					if holder := strings.TrimSpace(t.Assignee); holder != "" {
+						clears = fmt.Sprintf(" — and clears %s as its assignee", holder)
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "  once the remote works, 'jaira release %s' puts it on its ref%s\n",
+						ticket.Handle(t.ID), clears)
 				}
 			}
 			if !gate.Ready(t) {
