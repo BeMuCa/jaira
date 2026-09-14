@@ -37,9 +37,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T15:48:02Z
+updated-at: 2026-09-14T15:48:04Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-273100
+claimed-at: 2026-09-14T15:48:04Z
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
