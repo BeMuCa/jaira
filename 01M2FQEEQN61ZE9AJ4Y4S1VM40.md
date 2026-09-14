@@ -1,7 +1,7 @@
 ---
 id: 01M2FQEEQN61ZE9AJ4Y4S1VM40
 title: "Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einer Karte sind bis zu drei Tag-Farben gleichzeitig zu sehen: die ersten beiden Plaetze tragen die Farben der ersten beiden Tags des Tickets, der dritte Platz bleibt fuer die Sprint-Markierung reserviert und in diesem Ticket leer."
@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T16:30:11Z
+updated-at: 2026-09-14T16:30:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273100
@@ -48,6 +48,7 @@ outcome-resolves: "Alle sechs DoD-Punkte sind belegt: zwei unterscheidbare Farbf
 review-summary: none
 review-gaps: "Entfernt: die tote Schranke 'i < len(slots)' in renderCardBlock (internal/tui/view.go:552). Die Schleife laeuft ueber die Zeilen von renderCard, und das sind immer genau drei — cardHeight() gibt 3 zurueck, cardSlots ist 3, und renderCard baut Titel/Meta/Flags fest als drei Zeilen. Die Bedingung konnte also nie falsch sein und tat so, als gaebe es Karten mit mehr Zeilen als Slots. Bewusst stehen gelassen: der reservierte dritte Slot (Alex' Entscheidung, Sprint-Markierung), das Feld cardSlot.coloured (Palettenfarbe 0 ist gueltig, ein blosser int kann 'keine Farbe' nicht ausdruecken), der nil-Check auf m.tags (tag.Registry.Colour laeuft nicht auf nil), das variadische 'pairs ...any' in registryWith und die beiden alten Box-Kommentare — alles drei hat schon die Critique-Lane geprueft. Keine Duplikate: cardColors ist die einzige Stelle, die Tag zu Kartenfarbe macht; cardColor hat keine Aufrufer mehr hinterlassen. Das Muster '5;'+strconv.Itoa(...) steht mehrfach in glow.go und view.go, ist aber aelter als dieser Diff und nicht sein Problem. Kosten: cardColors wird einmal pro Karte aufgerufen, nicht pro Zeile — pro Zeile bleibt nur ein Array-Zugriff. Die zwei Tests TestThirdSlotStaysUncolouredHoweverManyTags und TestThirdRowAlwaysCarriesTheLaneShade ueberschneiden sich thematisch, pruefen aber verschiedene Schichten (Modell und Rendering) und bleiben beide. go test ./... gruen."
 test-verdict: "pass — Durchgang 2, unabhaengig nachgeprueft. Der Befund aus Durchgang 1 ist weg: mit einem echten Board auf Platte (ticket.Store, Titel/Assignee/updated-by/executed-by je mit Zeilenumbruch, auch \\r\\n) rendert m.render() ohne Panik, die Karte bleibt dreizeilig und der Umbruch wird zum Leerzeichen. Gegenprobe ohne fremde Tests: derselbe Fall gegen internal/tui/view.go aus f2b0077 (per go test -overlay, Arbeitsbaum unveraendert) paniert weiterhin mit 'index out of range [3] with length 3' — der Nachweis haengt also am Fix, nicht am Testtext. Keine neue Stoerung: die gerenderten Karten ohne Umbruch (fuenf Tickets x selected/alt) sind byteweise identisch zu denen vor dem Fix, oneLine ist fuer Werte ohne \\r\\n die Identitaet. renderCardBlock ist der einzige Aufrufer von renderCard (internal/tui/view.go:545). Alle sechs DoD-Punkte mit eigenen Pruefungen bestaetigt: 1+2 Slot 1 = 5;83, Slot 2 = 5;45, umgekehrte Tag-Reihenfolge kehrt die Farben um, Slot 3 traegt die Lane-Schattierung auch bei drei Tags; 3 auf einem Wegwerf-Board per CLI: 'jaira tag <id> ui backend docs ci' Exit 0, 'jaira show --json' listet alle vier; 4 ungefaerbter zweiter Tag faellt auf die Lane-Schattierung, die drei Textzeilen sind zeichengleich mit einer Karte ohne Tags; 5 cardHeight()==3 und in einer Lane mit 30 Karten und Platz fuer wenige traegt jede gezeigte Karte ihre Flag-Zeile — keine halb gezeichnete Karte; 6 core/release/NOTES.md, zwei einzeilige '- '-Zeilen unter '## Unreleased' ueber '## 0.2.0'. Suiten: go test ./... Exit 0, go test ./... -race Exit 0, go vet ./... ohne Ausgabe, gofmt -l ohne Ausgabe. Kosmetischer Restpunkt, kein Fehler: ein per CLI geschriebenes \\r\\n kommt als ' \\n' aus dem YAML zurueck und faltet damit zu zwei Leerzeichen; die NOTES-Zeile nennt nur den Titel, obwohl der Fix auch Assignee, updated-by und executed-by deckt."
+question: "Eine Karte mit genau EINEM Tag faerbt jetzt nur noch Zeile 1 des Balkens statt wie bisher alle drei Zeilen - das betrifft praktisch jede Karte auf dem Board heute. Das folgt zwingend aus DoD-Punkt 2 (Platz 3 bleibt unbelegt), ist aber die einzige Aenderung, die alle bestehenden Karten sichtbar trifft. Bitte am laufenden Board ansehen und bestaetigen, oder sagen, dass ein Ticket mit nur einem Tag weiterhin einen durchgehenden Balken tragen soll."
 ---
 
 # Eine Karte zeigt bis zu drei Tag-Farben, nicht nur die des ersten Tags
