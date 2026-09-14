@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T14:05:43Z
+updated-at: 2026-09-14T14:05:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-191270
@@ -44,6 +44,7 @@ outcome-resolves: "review-gaps set; DoD 1's proof updated to name noRefReason in
 review-summary: none
 review-gaps: "Removed: fileModeReason (internal/cli/refs.go), a one-caller wrapper that only prefixed noRefReason, and with it the third rendering of the file-mode reason - the --json field now goes through noRefReason like the printed line and whoami do; the doubled canReachARef branch in internal/cli/tickets.go, two Fprintf calls repeating a whole sentence to append six words, now one call with an optional tail; and one of the two refs.Usable() questions in whoami, fileOnlyCount taking the ref mode from boardState instead of deciding it again. Changed: the release hint reads 'once the remote works', because 'once the remote is there' is false when the remote is there and the push failed. Left: the nil guards in fileOnRefOnly/putOnRef, unreachable from their callers but three lines against a panic; settings.RemoteFor as a wrapper over RemoteSourceFor, which critique settled and every caller uses; whoami's plural(); the pre-existing dead 'missing := gate.Violations(nil) ... _ = missing' in tickets.go, which this change did not orphan. Not fixed because it is outside this diff: fetch.go, pull.go, release.go and snapshot.go still print refs.Usable() errors raw, so 'gitref:' still reaches users from four other commands."
 test-verdict: "pass: suite green with -race (RC=0), gofmt/vet clean, all six DoD verified in the tree and exercised by hand on throwaway boards; three cosmetic observations noted, none blocking"
+question: "Testing is green and all six DoD items hold, by test and by hand. Three cosmetic points are left open for you to decide, none of them blocking: (1) 'jaira whoami' on a board with no git repository still prints 'Remote: origin' and 'Remotes: —', naming a remote where 'jaira create' deliberately stopped naming one — should whoami drop those two rows there too? (2) the missing-remote reason still carries the raw 'gitref: no repository or no such remote:' text inside it, which the NOTES.md line says it no longer does — fix the text or the line? (3) whoami --json emits \"remotes\": null instead of []. Accept as is, or send it back for any of the three?"
 ---
 
 # Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen
