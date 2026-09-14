@@ -592,3 +592,56 @@ func TestFourTaggedCardRendersWithTheExtraTagsUncoloured(t *testing.T) {
 		t.Errorf("a four-tag card lost its title:\n%s", stripANSI(raw))
 	}
 }
+
+// A ticket field may carry a newline: `jaira create` takes a multi-line title
+// verbatim and writes it as a YAML block scalar, and the parser reads the break
+// back. The card has three rows and three colour slots, so such a value must not
+// add a row — it used to, and renderCardBlock then indexed past the slots and
+// took the board down with it.
+func TestACardWhoseFieldsCarryNewlinesStaysThreeRows(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.tags = registryWith(t, "ui", 83, "backend", 45)
+
+	for _, c := range []struct {
+		name string
+		tk   *ticket.Ticket
+	}{
+		{"title", &ticket.Ticket{ID: "a", Title: "Zeile eins\nZeile zwei", Tags: []string{"ui", "backend"}}},
+		{"assignee", &ticket.Ticket{ID: "b", Title: "Ein Titel", Assignee: "berk\nmehr", Tags: []string{"ui"}}},
+		{"updated-by", &ticket.Ticket{ID: "c", Title: "Ein Titel", UpdatedBy: "berk\nmehr"}},
+		{"executed-by", &ticket.Ticket{ID: "d", Title: "Ein Titel", ExecutedBy: "agent\nmehr"}},
+		{"carriage return", &ticket.Ticket{ID: "e", Title: "Zeile eins\r\nZeile zwei"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			raw := m.renderCardBlock(c.tk, 40, false, false)
+			if rows := barRows(t, raw); len(rows) != cardSlots {
+				t.Fatalf("card is %d rows, want %d:\n%s", len(rows), cardSlots, stripANSI(raw))
+			}
+			if strings.Contains(stripANSI(raw), "\r") {
+				t.Errorf("a carriage return survived into the card:\n%q", raw)
+			}
+		})
+	}
+}
+
+// renderCardBlock draws one row per line renderCard returns and reads that row's
+// colour out of cardSlots slots, so the two counts have to agree. This pins the
+// agreement itself rather than one field that could break it: whatever a ticket
+// carries, renderCard returns exactly cardHeight lines.
+func TestRenderCardAlwaysReturnsAsManyLinesAsThereAreSlots(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	m.tags = registryWith(t, "ui", 83)
+
+	for _, tk := range []*ticket.Ticket{
+		{ID: "a", Title: "Schlicht"},
+		{ID: "b", Title: "Drei\nZeilen\nTitel", Tags: []string{"ui"}},
+		{ID: "c", Title: "", Assignee: "berk\n\n\nberk"},
+		{ID: "d", Title: strings.Repeat("sehr langer Titel ", 20)},
+	} {
+		content := strings.TrimSuffix(m.renderCard(tk, 39, false), "\n")
+		if got := len(strings.Split(content, "\n")); got != cardSlots {
+			t.Errorf("renderCard(%s) returned %d lines, want %d (cardHeight is %d):\n%s",
+				tk.ID, got, cardSlots, m.cardHeight(tk), stripANSI(content))
+		}
+	}
+}

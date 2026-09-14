@@ -614,7 +614,7 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// coloured in the tag's own colour, which now names the same hue twice —
 	// the fill is mixed from that colour — and put bright text on a background
 	// of its own shade, where it read as muddy rather than as selected.
-	title := truncate(t.Title, w-1)
+	title := truncate(oneLine(t.Title), w-1)
 	if selected {
 		title = lipgloss.NewStyle().Bold(true).Render(title)
 	}
@@ -703,9 +703,9 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// wraps inside the card's box and breaks the three-content-row contract
 	// cardHeight promises — unboxed cards used to hide this behind clampBlock.
 	out := " " + title + "\n"
-	out += " " + truncate(meta, w-1) + "\n"
+	out += " " + truncate(oneLine(meta), w-1) + "\n"
 	if len(flags) > 0 {
-		out += " " + truncate(strings.Join(flags, " "), w-1) + "\n"
+		out += " " + truncate(oneLine(strings.Join(flags, " ")), w-1) + "\n"
 	} else {
 		out += "\n"
 	}
@@ -1663,6 +1663,22 @@ func padDisplay(s string, n int) string {
 		return s + strings.Repeat(" ", n-w)
 	}
 	return s
+}
+
+// oneLine folds a value onto a single row. Ticket fields are hand-editable and
+// the CLI takes them verbatim: `jaira create` accepts a title with a newline in
+// it and writes it as a YAML block scalar, which parses straight back. A card
+// row built from such a value is two rows, and then renderCard returns more
+// lines than cardHeight promises — the lane's row budget is wrong, the cards
+// below it are drawn over, and renderCardBlock indexes past the card's colour
+// slots. The break is not information the card could show anyway: three rows is
+// all a card has, so the newline becomes a space and the row count holds for
+// every value a ticket can carry.
+func oneLine(s string) string {
+	if !strings.ContainsAny(s, "\r\n") {
+		return s
+	}
+	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ").Replace(s)
 }
 
 // truncate cuts to a display width, counting grapheme width rather than bytes so
