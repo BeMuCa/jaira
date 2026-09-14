@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:49:18Z
+updated-at: 2026-09-14T19:50:40Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -104,3 +104,4 @@ NOTES.md-Zeile geschrieben, weil (3) von aussen sichtbar ist: --all meldete bish
 - **2026-09-14 19:48 · Alexander Sacharov** — critique round 2: three findings, all small, all in the new code. (1) logbookAll's --json branch drops the PartialError - flow.go:232 already carries a sweep failure as out["trim_error"] beside a successful result; copy that key. This matters because the CLI has to be readable by an agent, and stderr prose is the one channel --json readers do not parse. (2) the !t.ReadOnly filter landed in Overflow as well as FileLane; FileLane is this ticket, Overflow is the holds cap - a user-visible change with neither a NOTES line nor a test. Widen the NOTES line and pin it, or drop the hunk. (3) logbook.go's file header still describes only 'jaira logbook <id>'.
 Checked and NOT findings: logbookOut needs no ReadOnly guard of its own - store.go:333 Logbook() already calls onlyOnRef, so a ref-only id is refused there with a proper error; stampCommits in logbook.go is not a one-caller wrapper, archive.go:73 uses it too.
 Recorded, not fixed, not a reason for this send-back: core/lane/lane.go:479 leaves boards created before this change on logbook-on-entry - ticket 1K9KZS owns that and its NOTES line.
+- **2026-09-14 19:50 · Alexander Sacharov** — Dispatcher-Uebergabe am 2026-09-14: der vorige Dispatcher wurde gestoppt, waehrend seine critique-Runde 2 bereits auf dem Ticket stand, sein Fix-Worker aber noch nicht gelaufen war. Der Arbeitsbaum /home/alex/projects/.worktrees/jaira-9ET6NC war bei der Uebernahme sauber (HEAD 3062f60), es lag also nichts halb Fertiges herum - die drei Befunde aus critique Runde 2 werden vollstaendig neu gearbeitet, nichts davon war schon angefangen. Route ab hier ohne Lane-Sprung: in-progress -> critique -> optimize -> testing -> review.
