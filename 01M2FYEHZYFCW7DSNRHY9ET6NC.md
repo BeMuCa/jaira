@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:06:23Z
+updated-at: 2026-09-14T13:08:31Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -49,11 +49,7 @@ claimed-at: 2026-09-14T12:36:43Z
 outcome-what: "Vier lokale Critique-Findings behoben: gitref.Remotes/BoardRemote nutzen jetzt Repo.value statt eigener exec-Aufrufe, der handle-Scan im cli-Test ist weg, der tote dir==\"\"-Zweig und RemoteName sind entfernt."
 outcome-why: "Die Critique-Lane hat den Entwurf angenommen, aber vier lokale Doppelungen und eine rateende Testhilfe beanstandet."
 outcome-resolves: "Critique-Runde 1, alle vier Findings."
-review-summary: |-
-  core/gitref/gitref.go:681-731 - Remotes und BoardRemote bauen exec.LookPath, exec.Command und bytes.Buffer neu, obwohl run() in derselben Datei (Zeile 150) und value() (Zeile 174) genau das schon tun, inklusive GIT_TERMINAL_PROMPT=0 und getrenntem stderr; stattdessen (&Repo{Dir: dir}).value("remote") bzw. .value("config", "--local", "--get", "jaira.remote") benutzen - die Funktionen bleiben dabei Paketfunktionen auf einem Verzeichnis.
-  internal/cli/boardremote_test.go:51 - handleOf durchsucht die Ausgabe nach einem beliebigen sechsstelligen Grossbuchstaben-Wort; jeder solche Titel- oder Lane-Teil in der Ausgabe trifft genauso. Die uebrigen cli-Tests machen es andersherum: Ticket ueber ticket.At(dir).Create(...) anlegen und ticket.Handle(tk.ID) benutzen (internal/cli/checklist_test.go:14, internal/cli/claimrelease_test.go:34). Diesem Muster folgen und handleOf loeschen.
-  core/settings/settings.go:175-177 - der Zweig if dir == "" liefert genau dasselbe wie der Durchlauf darunter (BoardRemote("") ist leer, Remotes("") ist leer, also wird want == RemoteName() zurueckgegeben). Zweig streichen, oder wenn er nur die zwei git-Aufrufe sparen soll, das im Kommentar sagen - als Fall, den es geben kann, liest er sich falsch, s.Root ist nie leer.
-  core/settings/settings.go:147 - RemoteName() hat nach dieser Aenderung ausser RemoteFor und den Tests keinen Aufrufer mehr (geprueft mit grep ueber alle Nicht-Test-Dateien); der Kommentar begruendet es mit dem Fall ohne Verzeichnis, den es nicht gibt. Entweder in RemoteFor hineinziehen oder unexportieren.
+review-summary: none
 ---
 
 # Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board
