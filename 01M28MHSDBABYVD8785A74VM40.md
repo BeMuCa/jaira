@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:32:27Z
+updated-at: 2026-09-14T19:34:39Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-646871
@@ -41,7 +41,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-9ET6NC  2. go test ./c
 ## Definition of Done
 
 - [x] ein Move nach done legt nichts mehr ab: das Ticket bleibt in done stehen, und die Meldung sagt, dass es fertig ist, nicht dass es abgelegt wurde; 'jaira logbook --all' legt alles aus der terminalen Lane in den heutigen Ordner und nennt, was es abgelegt hat; 'jaira logbook <id>' legt weiterhin genau eines ab und 'jaira logbook' ohne Argument listet nur; das Board zeigt eine Zeile, sobald sich in der terminalen Lane zehn oder mehr fertige Tickets angesammelt haben - eine feste Zahl, keine Einstellung -, und die Zeile nennt den Befehl 'jaira logbook --all'; es legt nie selbst ab; Tests decken ab, dass ein Move nichts mitnimmt, dass --all den ganzen Satz nimmt, und dass die gerenderte Zeile ab der Schwelle erscheint und den Befehl nennt
-  proof: Move nach done legt nichts mehr ab; jaira logbook --all legt den ganzen terminalen Satz in den Tagesordner; das Board meldet ab zehn fertigen Tickets und legt nie selbst ab; drei Tests plus Handprobe
+  proof: internal/tui/view.go:975 renders the command; TestTheRenderedHintNamesTheFilingCommand (internal/tui/filereminder_test.go) reads the rendered status bar; TestMoveIntoDoneFilesNothingByItself; --all tests in internal/cli/holdcap_test.go
 
 ## Options
 
