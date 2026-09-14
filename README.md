@@ -842,8 +842,13 @@ getting weaker.
 **Nothing lands on `master` directly.** A change is made on a branch of its own,
 the ticket rides in the same commits as the code, and the branch arrives through
 a pull request — which is what makes the diff readable: the change and what it
-was for in one place. Opening the pull request is the contributor's job;
-accepting it is the maintainer's.
+was for in one place.
+
+The pull request belongs to the maintainer from the moment it exists. An agent
+pushes its branch and stops there: it does not open the pull request, does not
+merge one, and does not approve one. Opening it is the maintainer's call, given
+as an instruction — so whoever wrote the change is never whoever decides it
+arrives.
 
 Layering is enforced by the module graph: `core/` imports nothing from `cmd/` or
 `internal/`. The CLI and the TUI are peers over the same core, which is the only

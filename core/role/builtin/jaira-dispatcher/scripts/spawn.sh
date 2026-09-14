@@ -15,7 +15,9 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 
 if [ ! -d "$wt" ]; then
-  git -C "$root" worktree add "$wt" -b "feature/$slug" >&2
+  # feat/, the prefix this board's own branches use. A repository that names
+  # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
+  git -C "$root" worktree add "$wt" -b "${JAIRA_BRANCH_PREFIX:-feat}/$slug" >&2
 
   # Only a repo that carries a container stack needs its own ports. A repo
   # without a .env has nothing to offset, and must not fail here.
@@ -27,20 +29,36 @@ if [ ! -d "$wt" ]; then
     {
       echo
       echo "# worker stack: slug=$slug offset=$off"
-      echo "COMPOSE_PROJECT_NAME=rg_$slug"
+      # Derived from the repository, never a name written in here: a prefix
+      # baked into this script belongs to one project and silently names every
+      # other project's stack after it.
+      echo "COMPOSE_PROJECT_NAME=$(basename "$root" | tr -c 'a-zA-Z0-9' '_')_$slug"
       echo "HTTP_PORT=$((8080 + off))"
       echo "DB_PORT_HOST=$((5500 + off * 2))"
       echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
-      echo "VITE_PORT_HOST=$((5200 + off))"
-      echo "BACKEND_PORT_HOST=$((8100 + off))"
     } >> "$wt/.env"
   fi
 fi
 
-pane="$("$herdr" pane split --current --direction down --no-focus \
-  | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"]["pane_id"])')"
+# A tab per worker, never a split. A split divides the height of one screen: at
+# four workers each strip is a few lines, and nobody can read what any of them is
+# doing — which is the whole reason a worker gets a surface of its own.
+pane="$("$herdr" tab create --cwd "$wt" --label "$ticket/$lane" --no-focus \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
 
-"$herdr" pane run "$pane" "cd '$wt' && claude" >/dev/null
+# The tab's shell runs on the machine Herdr itself runs on. When that is Windows
+# and this script runs in WSL, that shell has no /home/... at all: --cwd is
+# resolved against Windows and dropped, `cd "$wt"` fails, and claude comes up in
+# the Windows home in front of its trust dialog — which the send-keys below would
+# then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
+# sets the directory before any shell starts, so no cd function and no wrong home
+# can intervene, and `bash -lic` is what puts claude on PATH.
+case "$herdr" in
+  /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic claude" ;;
+  *)            start="cd '$wt' && claude" ;;
+esac
+
+"$herdr" pane run "$pane" "$start" >/dev/null
 
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do

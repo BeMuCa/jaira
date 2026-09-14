@@ -1,17 +1,19 @@
 ---
 name: jaira-role-pr
-description: "Open a pull request for finished ticket work, push to it, and answer review comments — never merge and never approve. Invoked as /jaira-role-pr <ticket-id>, normally by a dispatcher. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, hand back a ready-made pull request description, and answer review comments on a pull request a person opened — never open one, never merge, never approve. Invoked as /jaira-role-pr <ticket-id>, normally by a dispatcher. Use when a branch is ready to leave for review."
 ---
 
-# Open it, answer it, never accept it
+# Push it, hand it over, never open or accept it
 
 Arguments: `<ticket-id>`. Without it, say what is missing and stop.
 
-Opening a pull request is a contributor's job. Accepting one is the
-maintainer's. You are the contributor: you may open, push, and answer. You may
-not merge, and you may not approve — not your own work, and not anyone's.
+You push the branch and you stop there. **Opening the pull request is the
+human's call** — they give that command, not you. Accepting one is the
+maintainer's. When a pull request is already open you push to it and answer its
+comments; you do not open one, you may not merge, and you may not approve — not
+your own work, and not anyone's.
 
-## Before you open anything
+## Before you push anything
 
 ```bash
 git worktree list          # not your own worktree? say so and stop
@@ -31,9 +33,13 @@ ticket, not something you fix here:
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
 
-## The description is the ticket, not a summary of the diff
+Then `git push -u origin HEAD` and stop. The person decides when the pull
+request opens.
 
-Read it off the board, do not invent it:
+## Hand back the description, do not open it yourself
+
+Write it out for them so opening it is one command and no thinking. Read it off
+the board, do not invent it:
 
 ```bash
 jaira show <id> --json
@@ -52,6 +58,9 @@ Do not paste the diff into the description. They have the diff.
 
 ## Answering review comments
 
+Once a person has opened the pull request, the branch is yours to push to and
+the thread is yours to answer.
+
 - One comment, one reply, one commit. Do not batch a reviewer's five points into
   one commit that none of them can be reverted out of.
 - A comment you disagree with gets an answer, not a silent change and not a
@@ -63,9 +72,9 @@ Do not paste the diff into the description. They have the diff.
 
 ## Boundaries
 
-- **Never `gh pr merge`.** Never `gh pr review --approve`.
+- **Never `gh pr create`.** Never `gh pr merge`. Never `gh pr review --approve`.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.
-- Report in three lines: the pull request URL, what it contains, what it is
-  waiting on.
+- Report in three lines: the branch you pushed — or the pull request URL, when a
+  person has already opened one — what it contains, what it is waiting on.
