@@ -1,7 +1,7 @@
 ---
 id: 01M2FYEHZYFCW7DSNRHY9ET6NC
 title: "Der Remote-Name gilt pro Rechner, gebraucht wird er pro Board"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Auf einem Board, dessen Repository den eingestellten Remote nicht hat, funktionieren die ref-Befehle wieder - ohne dass ein Ticket dadurch im falschen Repository landet."
@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T13:12:03Z
+updated-at: 2026-09-14T13:16:22Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -156,3 +156,25 @@ Der Store-Rueckfall in ticketIn ist kein toter Zweig: im dritten Test scheitert 
 
 Nichts Neues eingeschleppt: go vet ./core/... ./internal/... laeuft sauber, Remotes/BoardRemote liefern bei fehlendem git, fehlendem Repo und leerer Ausgabe dasselbe wie vorher (nil bzw. ""), und value() trimmt bereits, was BoardRemote vorher von Hand tat.
 - **2026-09-14 13:12 · Alexander Sacharov** — optimize: keine Aenderung noetig. Vier Durchgaenge (Duplikation, toter Code, Fluff, Kosten) im Detail in review-gaps. Zwei Dinge bewusst NICHT angefasst, damit die naechste Runde sie nicht neu aufmacht: der tote 'remote == ""'-Zweig in Settings.Landing ist vorbestehend (auch RemoteName gab nie "" zurueck) und gehoert nicht zu diesem Ticket; das doppelte strings.TrimSpace in RemoteFor ist folgenlos, aber das Entfernen wuerde RemoteFor an eine undokumentierte Zusicherung von Repo.value binden.
+- **2026-09-14 13:16 · Alexander Sacharov** — Testing-Lane: Verdikt BESTANDEN.
+
+Suite: go build ./... ok, go vet ./... ok, go test ./... alle 26 Pakete ok, 0 Fehler.
+Die neun in den DoD-Proofs genannten Tests existieren und laufen gruen.
+
+Gegenprobe mit dem Elternstand (1c6be9d), gleiches Fixture-Repo:
+  jaira pull/release -> 'no remote "upstream"', Exit 1.
+Mit dem Stand dieses Branches laeuft dasselbe durch. Der Fehler aus dem Kontext ist also wirklich weg, nicht nur wegdefiniert.
+
+Am Binary nachgestellt (Build aus diesem Worktree, JAIRA_HOME-Fixture, Wegwerf-Repos im Scratchpad; das echte Board und ~/.jaira wurden nicht angefasst):
+1) Repo mit nur origin, settings.json sagt remote=upstream: create -> Ref landet in origin.git; pull, claim, release laufen durch, Exit 0, assignee danach leer. BESTANDEN.
+2) jaira-Repo selbst (origin=Fork, upstream=BeMuCa, kein jaira.remote gesetzt): RemoteFor loest zu "upstream" auf - nur aufgeloest, nichts gepusht. BESTANDEN.
+3) Fixture mit origin+fleet, 'git config jaira.remote fleet': der Ticket-Ref liegt danach in fleet, origin hat keinen Ticket-Ref. Pro Board einstellbar. BESTANDEN.
+4) Fehlermeldung nennt alle drei Teile, in vier Faellen geprueft (ghost-Board-Remote, settings-Remote fehlt bei zwei Remotes, Repo ganz ohne Remotes):
+   no remote "ghost" - this repository has fleet, origin
+     set the one this board uses: git -C <pfad> config jaira.remote <name>
+   Ohne Remotes: 'this repository has no remotes'. BESTANDEN.
+5) core/release/NOTES.md: eine Zeile unter ## Unreleased, eine Zeile, kein Umbruch. BESTANDEN.
+
+Beobachtung, kein Fehler: 'jaira create' bricht bei unaufloesbarem Remote nicht ab und zeigt die neue Meldung nicht - der Ref-Teil wird still uebersprungen (internal/cli/refs.go:75 fileOnRefOnly), das Ticket bleibt als Datei liegen. Das ist bestehendes Verhalten und nicht Teil dieses Tickets. Die Meldung kommt bei pull, fetch, release, snapshot.
+
+Naechster Schritt: nichts zu beheben. Ticket kann in die naechste Lane.
