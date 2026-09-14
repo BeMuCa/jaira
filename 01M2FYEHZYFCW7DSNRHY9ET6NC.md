@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:53:28Z
+updated-at: 2026-09-14T12:54:38Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -52,7 +52,8 @@ claimed-at: 2026-09-14T12:36:43Z
 
 ## Definition of Done
 
-- [ ] In einem Repository, dessen einziger Remote origin heisst, laeuft 'jaira release <id>' durch, waehrend ~/.jaira/settings.json weiterhin remote: upstream sagt. Nachgestellt an einem Fixture-Repository mit genau einem Remote.
+- [x] In einem Repository, dessen einziger Remote origin heisst, laeuft 'jaira release <id>' durch, waehrend ~/.jaira/settings.json weiterhin remote: upstream sagt. Nachgestellt an einem Fixture-Repository mit genau einem Remote.
+  proof: internal/cli/boardremote_test.go TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote, TestTheRefGoesToTheConfiguredRemoteWhenTheRepositoryHasIt, TestABoardRemoteThatIsGoneStopsLoudly; core/settings/remotefor_test.go TestBoardRemoteWinsAndNeverFallsBack; core/gitref/gitref_test.go TestUsableExplainsAMissingRemote; core/release/NOTES.md:16
 
 Im jaira-Repository selbst (origin = Fork, upstream = BeMuCa) geht der Ticket-Ref weiterhin nach upstream. Ein Test haelt das fest, damit die Loesung nicht darin bestehen kann, ueberall still auf origin auszuweichen.
 
