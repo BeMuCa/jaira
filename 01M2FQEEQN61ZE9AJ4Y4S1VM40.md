@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:41:52Z
+updated-at: 2026-09-14T18:42:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -223,3 +223,15 @@ Nicht beanstandet und bewusst stehen gelassen: die Aenderung selbst ist eine Sch
 
 go test ./... Exit 0, go vet ./... und gofmt -l ohne Ausgabe.
 - **2026-09-14 18:38 · Alexander Sacharov** — Dispatcher-Hinweis: die Fixrunde nach der ersten critique hat ihre Aenderungen im Arbeitsbaum liegen lassen, ohne zu committen. Der Dispatcher hat sie unveraendert als 82c111e committet (fix(S1VM40): drop the duplicated slot test and correct the sprint-marker comment), zusammen mit der Ticketdatei. Es wurde nichts am Inhalt geaendert; go test ./internal/tui war vor dem Commit gruen und gofmt meldete nichts.
+- **2026-09-14 18:42 · Alexander Sacharov** — critique (Runde 4): ein Befund, Fix klar, deshalb zurueck nach in-progress.
+
+1. Ticketdatei Zeile 25, Frontmatter definition-of-done: Absatz 2 lautet weiter 'Platz 3 bleibt in diesem Ticket unbelegt und zeigt die Schattierung der Lane'. Der Diff hat goal (Zeile 7) und den Checklistenpunkt 2 (Zeile 63) auf die human-Entscheidung gezogen, dieses Feld aber nicht. Warum das zaehlt: 'jaira show --for-lane <lane> --json' gibt definition-of-done als input aus - diese critique-Runde hat den Widerspruch im eigenen Payload vorgelegt bekommen, goal und definition-of-done sagen einander entgegengesetzte Dinge. review und signoff bekommen ihn genauso. Fix: jaira set S1VM40 definition-of-done=<sechs Absaetze>, Absatz 2 im Wortlaut von DoD-Punkt 2, die uebrigen fuenf unveraendert.
+
+Nachgeprueft, damit der Fix nicht halb wirkt: 'jaira set definition-of-done' schreibt nur das Frontmatter, nie den Body (auf einem Wegwerf-Board unter dem Scratchpad nachgestellt: Feld geaendert, die Prosa unter '## Definition of Done' blieb stehen).
+
+Nicht als Befund erhoben:
+- Die losen Prosa-Absaetze im Body unter der Checkliste (Zeilen 74-82) sind derselbe alte Satz. Sie stammen aber aus der Ticketerstellung - ein mehrabsaetziges --dod wird zu EINEM Kaestchen plus Prosa (auf dem Wegwerf-Board reproduziert) - sind aelter als dieser Diff und ueber die CLI gar nicht erreichbar. Das ist ein jaira-Fehler fuer ein eigenes Ticket, nicht der dieses Diffs.
+- TestTwoTaggedCardShowsBothColoursInTicketOrder (internal/tui/tagbox_test.go:500) ueberschneidet sich mit der neuen Tabelle in TestThreeTaggedCardShowsAllThreeColoursInTicketOrder (:530), ist aber keine Obermenge: der Vertauschungsfall {backend,ui} steht nur dort. Kein zweiter Loeschkandidat wie in Runde 3.
+- Die Aenderung selbst bleibt unbeanstandet: eine Schleifengrenze cardSlots-1 -> cardSlots (internal/tui/model.go:1364), renderCardBlock unangetastet, eine umgeschriebene statt einer zweiten NOTES-Zeile. Kleiner geht die Form nicht.
+- Die drei Befunde aus Runde 3 sind erledigt und werden nicht neu aufgemacht: der doppelte Slot-Test ist weg, der Kommentar an cardColors (internal/tui/model.go:1350) nennt jetzt 'the sprint marker moved off this bar (ticket 0YGWXQ)', und die proof-Zeilen der Punkte 2 und 3 zeigen auf Tests, die es gibt.
+- Die veralteten Testnamen im Feld review-gaps (TestThirdSlotStaysUncolouredHoweverManyTags, TestThirdRowAlwaysCarriesTheLaneShade) sind Ausgabe der optimize-Lane und werden von deren naechstem Durchgang ueberschrieben - anders als die DoD, die der Vertrag des Tickets ist.
