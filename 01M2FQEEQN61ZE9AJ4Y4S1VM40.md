@@ -37,7 +37,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T10:29:46Z
-updated-at: 2026-09-14T18:55:43Z
+updated-at: 2026-09-14T18:55:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521068
@@ -253,3 +253,4 @@ Bewusst NICHT als Befund erhoben:
 - Die losen Prosa-Absaetze im Ticket-Body unter der Checkliste (Zeilen 74-82) tragen weiter den alten Satz. Runde 4 hat das schon geprueft: sie stammen aus der Ticketerstellung, sind ueber die CLI nicht erreichbar und gehoeren in ein eigenes jaira-Ticket. Wird nicht neu aufgemacht.
 - Die Ueberschneidung zwischen Modell- und Rendering-Tests hat schon Runde 1 stehen lassen.
 - **2026-09-14 18:49 · Alexander Sacharov** — optimize Runde 2: cardHeight() gab die 3 ein zweites Mal aus, neben der Konstante cardSlots. Genau diese zwei Zahlen muessen gleich sein, sonst indiziert renderCardBlock an den Slots vorbei und die Karte stuerzt das Board ab - der Kommentar an cardSlots bat bisher nur darum, beide zusammen zu aendern. cardHeight gibt jetzt cardSlots zurueck, damit sie nicht auseinanderlaufen koennen. Nicht angefasst: dass cardHeight sein Ticket-Argument ignoriert (aelter als dieser Diff), der pro Aufruf gebaute strings.NewReplacer in oneLine (nur auf dem seltenen Zweig, ContainsAny schirmt ihn ab), und die thematische Ueberschneidung von TestFourTaggedCardRendersWithTheExtraTagUncoloured mit der Vier-Tag-Zeile der Tabelle in TestThreeTaggedCardShowsAllThreeColoursInTicketOrder - verschiedene Schichten, beide bleiben.
+- **2026-09-14 18:55 · Alexander Sacharov** — testing: Gates gruen — go build ./..., go vet ./..., go test -race -count=1 ./... alle RC=0 (internal/tui ok 136s). DoD einzeln gegen den Baum geprueft, nicht gegen den outcome-Text: Slot-Reihenfolge in internal/tui/model.go:1360 cardColors, Balken-Rendering in internal/tui/view.go:534-562, cardHeight()=cardSlots in view.go:493. Tests TestTwoTaggedCardShowsBothColoursInTicketOrder, TestThreeTaggedCardShowsAllThreeColoursInTicketOrder, TestUncolouredSecondTagFallsBackWithoutMovingTheText, TestFourTaggedCardRendersWithTheExtraTagUncoloured, TestCardHeightIsTheThreeContentRows, TestColumnDrawsEveryCardItCountsInFull einzeln gelaufen und gruen. Funktion zusaetzlich am echten Binary: Scratch-Board, Ticket mit vier Tags (ui/cli/docs/vier); 'jaira tag' nahm den vierten ohne Fehler, 'jaira show --json' listet alle vier, .jaira/tags gab allen vieren eine Farbe. Im TUI-Mitschnitt traegt die Karte genau drei Zeilen und drei Balkenzellen 48;5;73, 48;5;45, 48;5;33 (ui, cli, docs) von oben nach unten in Ticket-Reihenfolge; vier=135 faerbt nichts. NOTES.md hat die Zeile unter ## Unreleased. Nichts gefunden, das zurueckgehen muesste.
