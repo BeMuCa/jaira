@@ -1,7 +1,7 @@
 ---
 id: 01M0YT6EEK0K9A895ZD47ZQ0ZN
 title: v0.1.1 schneiden
-status: human
+status: done
 ready: true
 creator: BeMuCa
 goal: Alles nach 62989f1 ist als Release veroeffentlicht
@@ -10,7 +10,7 @@ definition-of-done: "core/release/NOTES.md hat einen 0.1.1-Block, der die [-]-Ae
 blocked-by: []
 commits: []
 created-at: 2026-08-26T10:35:02Z
-updated-at: 2026-09-14T15:39:59Z
+updated-at: 2026-09-14T15:40:12Z
 claimed-by: EE-3NX6GL3-2976569
 claimed-at: 2026-08-31T19:05:43Z
 updated-by: Alexander Sacharov
