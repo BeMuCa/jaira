@@ -1335,7 +1335,8 @@ func (m *Model) toggleEmptyLanes() {
 
 // cardSlots is how many colour slots a card's bar carries — one per row of
 // cardHeight, so the bar can show more than one tag without the card growing a
-// row. Changing it means changing cardHeight with it.
+// row. cardHeight returns this constant, so raising it makes the card taller
+// rather than leaving the bar short of the rows it has to paint.
 const cardSlots = 3
 
 // cardSlot is one cell of a card's bar: a registry colour, and whether there is
@@ -1347,15 +1348,13 @@ type cardSlot struct {
 }
 
 // cardColors is the bar down a card's left edge, read top to bottom: slot 1 is
-// the registry's colour for the ticket's first tag, slot 2 for its second, both
-// in the order the tags stand on the ticket. Slot 3 is reserved for the sprint
-// marker and is always uncoloured for now — what fills it is an open decision
-// (a tag named sprint-xxxx, or a field of its own), and until it is taken the
-// slot stays empty rather than showing a third tag that would then have to move
-// again.
+// the registry's colour for the ticket's first tag, slot 2 for its second and
+// slot 3 for its third, all in the order the tags stand on the ticket. All
+// three slots belong to tags; the sprint marker moved off this bar (ticket
+// 0YGWXQ).
 //
 // A tag with no line in the registry, a missing tag, and any tag past the
-// second all leave their slot uncoloured: the card renders with the lane's
+// third all leave their slot uncoloured: the card renders with the lane's
 // shade there, so a tag nobody has assigned a colour to costs nothing on the
 // board, only a colourless line in the legend.
 func (m *Model) cardColors(t *ticket.Ticket) [cardSlots]cardSlot {
@@ -1363,10 +1362,10 @@ func (m *Model) cardColors(t *ticket.Ticket) [cardSlots]cardSlot {
 	if m.tags == nil {
 		return slots
 	}
-	// Only the first cardSlots-1 tags are drawn; the rest stay on the ticket
+	// Only the first cardSlots tags are drawn; the rest stay on the ticket
 	// and in `jaira show`. This is a display limit, never a validation one —
 	// boards already carry tickets with more tags than there are slots.
-	for i := 0; i < cardSlots-1 && i < len(t.Tags); i++ {
+	for i := 0; i < cardSlots && i < len(t.Tags); i++ {
 		if c, ok := m.tags.Colour(t.Tags[i]); ok {
 			slots[i] = cardSlot{colour: c, coloured: true}
 		}
