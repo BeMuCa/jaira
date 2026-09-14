@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:39:01Z
+updated-at: 2026-09-14T13:39:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -44,7 +44,8 @@ claimed-at: 2026-09-14T13:29:29Z
 
 ## Definition of Done
 
-- [ ] 'jaira create' nennt den Modus in beiden Faellen. Im Datei-Modus sagt es, dass das Ticket als Datei und nicht auf einem Ref liegt, nennt den Remote-Namen, nach dem gesucht wurde, und den Grund - nicht nur das Schweigen von heute.
+- [x] 'jaira create' nennt den Modus in beiden Faellen. Im Datei-Modus sagt es, dass das Ticket als Datei und nicht auf einem Ref liegt, nennt den Remote-Namen, nach dem gesucht wurde, und den Grund - nicht nur das Schweigen von heute.
+  proof: TestCreateSaysWhenTheTicketStaysAFile and TestCreateJSONCarriesTheFileModeReason (internal/cli/filemode_test.go); internal/cli/tickets.go, the else-branch after 'On its ref'
 - [ ] Ein Datei-Ticket kommt mit einem Befehl auf seinen Ref und die lokale Datei verschwindet dabei. Die Logik dafuer ist die vorhandene fileOnRefOnly (internal/cli/refs.go:69), nicht eine zweite Kopie davon. Nachgestellt auf einem Fixture-Board, dessen Ticket im Datei-Modus entstanden ist.
 - [ ] Ein Befehl zeigt den git-Zustand des Boards in einem Aufruf: den eingestellten Remote-Namen, die Remotes die dieses Repository hat, ob der Ref-Modus laeuft, und wie viele Tickets nur als Datei liegen. Nachgestellt auf einem Board mit passendem und auf einem mit fehlendem Remote.
 - [ ] 'jaira create --dod' nimmt den Schalter mehrfach, wie --tag es tut. Nachgestellt: ein Ticket mit drei Kriterien wird im Ref-Modus mit einem Aufruf angelegt und traegt danach drei Kaestchen, ohne dass es dafuer gepullt wurde.
