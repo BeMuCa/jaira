@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T19:48:03Z
+updated-at: 2026-09-14T19:48:26Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Entschieden: ein Agent macht keinen PR auf, er schiebt den Zweig und haelt an. Die Regel steht an drei Stellen im alten Wortlaut - CLAUDE.md:167, AGENTS.md:176, README.md:799."
@@ -45,4 +45,4 @@ outcome-resolves: "Alle drei Stellen tragen sie, hinter dem Marker also regenera
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
