@@ -42,7 +42,7 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:21:26Z
+updated-at: 2026-09-14T16:21:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-382690
 claimed-at: 2026-09-14T16:16:39Z
@@ -135,3 +135,12 @@ Geprueft und absichtlich NICHT gemeldet:
 - mentionsExe schaltet weiter eine ganze Funktion stumm, sobald ein ".exe"-Literal darin steht. Das war in Runde 1 die bewusste Entscheidung und wird hier nicht neu aufgemacht.
 - README wiederholt die fuenf Muster aus dem Paketkommentar. Da der Paketkommentar jetzt in einer _test.go steht und go doc ihn nicht mehr zeigt, ist die README-Kopie die einzige auffindbare - kein Fund.
 - **2026-09-14 16:18 · Alexander Sacharov** — critique Runde 3: ein Fund, eine Zeile. isGoBuildOutput nimmt nur noch "build", nicht mehr "install"/"test". Nachgeprueft, warum der Fund stimmt: 'go install' kennt kein -o (flag provided but not defined: -o), der Zweig konnte also nie feuern; 'go test -o' baut ein Test-Binary, und das beschreibt der Fundtext nicht. TestEachPatternFires bleibt gruen - das Fixture testdata/rule4/build.go:10 ist exec.Command("go","build","-o",...), also weiter im verengten Muster.
+- **2026-09-14 16:21 · Alexander Sacharov** — critique Runde 3: drei Funde, alle klein und alle mit klarer Abhilfe, kein Punkt fuer die Nutzerin zu entscheiden. Runde-1- und Runde-2-Funde sind abgearbeitet und werden nicht wiederholt.
+
+1. wintrap_scan_test.go:235 - binaryExt zaehlt 14 Endungen auf, fuer einen Fall, den dieses Modul nicht hat: nachgesehen, alle vier //go:embed (core/role/role.go:33 all:builtin, core/lane/lane.go:34, core/release/release.go:17, core/hook/example.go:9) ziehen ausschliesslich .md und .sh; unter core/role/builtin und core/lane/builtin liegen nur diese beiden Endungen. Git hat fuer eine Binaerdatei schon die Antwort - -text bzw. binary -, und gitattributes_scan_test.go:55 liest das Attribut bereits, wertet es dann aber ausdruecklich als 'nicht gepinnt'. binaryExt loeschen und -text/binary in eolLF als abgedeckt zaehlen: ein Mechanismus statt zweier, und der, den git selbst besitzt.
+
+2. wintrap_scan_test.go:185 - selName2 ist ein siebenzeiliger Adapter mit genau einem Aufrufer (hasGOOS, Zeile 177) und existiert nur, um selName von ast.Expr auf ast.Node zu weiten. Der durchnummerierte Name ist das, was man einer Funktion gibt, die man nicht benennen wollte. In hasGOOS direkt n.(*ast.SelectorExpr) pruefen und X == runtime / Sel == GOOS testen, selName2 raus.
+
+3. wintrap_scan_test.go:424 - der Doc-Kommentar zu isGoBuildOutput sagt 'Anything narrower than this and the check fires on every unrelated tool that happens to take a -o flag'. Enger trifft weniger; es ist weiter, was auf sort -o und tar -o anschlaegt - genau der Fund aus Runde 1, fuer den diese Funktion geschrieben wurde. 'looser' hinschreiben.
+
+Nicht gemeldet, absichtlich: (a) fsPackages enthaelt 'ioutil', das im ganzen Repository nirgends vorkommt, und skipDirs kennt 'vendor' und 'node_modules', die es in diesem reinen Go-Modul nicht gibt - drei Map-Eintraege, deren Entfernung nichts aendert und deren Verbleib nichts kostet. (b) TestMatchPattern steht in wintrap_test.go, waehrend matchPattern in gitattributes_scan_test.go liegt; beide sind _test.go-Dateien im selben Paket, das laeuft, und eine Runde dafuer lohnt nicht. (c) core/role/role.go:93 und core/settings/settings.go:213 tragen den Grund in einem Kommentar ueber dem //wintrap:ok statt auf der Markerzeile wie internal/cli/mergebranches_test.go:34 - der Grund steht direkt daneben und ist lesbar.
