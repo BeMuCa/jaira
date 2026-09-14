@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,14 +33,14 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:53:59Z
+updated-at: 2026-09-14T13:54:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
 claimed-at: 2026-09-14T13:29:29Z
-outcome-what: "Second in-progress round: the five critique findings. settings.RemoteSourceFor(dir) (name, source) is now the single remote ladder and RemoteFor wraps it; internal/cli/whoami.go's remoteOrigin copy is gone and boardState takes the name from refs.Repo.RemoteName(). gitref.ErrNoGitRepo wraps ErrNoRepo for the no-repository half, Usable returns it, and internal/cli/refs.go noRefReason branches on it so create and whoami print one sentence instead of a raw 'gitref:' error. Outside a git repository create names no remote, no 'git config jaira.remote' and no 'jaira release'. The release hint after create now names the cost when create itself set the assignee. fileOnRefOnly and putOnRef lost their unused *ticket.Store. Five new tests, three NOTES lines amended."
-outcome-why: "Two copies of the remote ladder in the one command whose job is to say which remote is used, and a file-mode line that blamed a missing remote where there is no repository at all and advised a command that can never run there."
-outcome-resolves: "review-summary findings 1-5"
+outcome-what: "Critique lane, second round: no findings. The five findings from round one are genuinely fixed — RemoteSourceFor is the single remote ladder with RemoteFor as a wrapper and whoami's remoteOrigin deleted, ErrNoGitRepo wraps ErrNoRepo so noRefReason can branch once for create and whoami, the release hint names its cost, the unused *ticket.Store is gone. The joint the implementer flagged is closed by construction: attachRefs builds refs.Repo.Remote from set.RemoteFor(s.Root) and RemoteFor is RemoteSourceFor, so whoami's name and source come from one function on one directory in one process."
+outcome-why: "A pass that finds nothing is where this lane ends. The three settled decisions - release instead of a new command, the board block in whoami, the first --dod into frontmatter - were not reopened, and nothing new in the second round rises to a defect or a design error."
+outcome-resolves: "review-summary=none"
 review-summary: none
 ---
 
