@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,14 +33,14 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:50:19Z
+updated-at: 2026-09-14T13:50:33Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
 claimed-at: 2026-09-14T13:29:29Z
-outcome-what: "Kritik-Lane gelaufen: fuenf Befunde, alle mit Datei und konkreter Alternative, im review-summary und als Notiz"
-outcome-why: "Eine zweite Kopie der Remote-Aufloesung in whoami und eine Modus-Zeile, die auf einem Board ohne git einen fehlenden Remote behauptet, sind Entwurfsfehler, keine Schoenheitsfragen"
-outcome-resolves: "Kein Befehl sagt, dass das Board im Datei-Modus laeuft; ein Datei-Ticket kommt nicht auf seinen Ref zurueck; kein Befehl zeigt den git-Zustand des Boards; --dod nimmt nur ein Kriterium."
+outcome-what: "Second in-progress round: the five critique findings. settings.RemoteSourceFor(dir) (name, source) is now the single remote ladder and RemoteFor wraps it; internal/cli/whoami.go's remoteOrigin copy is gone and boardState takes the name from refs.Repo.RemoteName(). gitref.ErrNoGitRepo wraps ErrNoRepo for the no-repository half, Usable returns it, and internal/cli/refs.go noRefReason branches on it so create and whoami print one sentence instead of a raw 'gitref:' error. Outside a git repository create names no remote, no 'git config jaira.remote' and no 'jaira release'. The release hint after create now names the cost when create itself set the assignee. fileOnRefOnly and putOnRef lost their unused *ticket.Store. Five new tests, three NOTES lines amended."
+outcome-why: "Two copies of the remote ladder in the one command whose job is to say which remote is used, and a file-mode line that blamed a missing remote where there is no repository at all and advised a command that can never run there."
+outcome-resolves: "review-summary findings 1-5"
 review-summary: |-
   internal/cli/whoami.go:169 remoteOrigin baut die Remote-Aufloesung ein zweites Mal nach; core/settings/settings.go:143 RemoteFor ist dieselbe Leiter und laut Paketkommentar (settings.go:20) 'the only way to ask' - stattdessen RemoteFor um die Herkunft erweitern (RemoteSourceFor(dir) (name, source string)) und remoteOrigin loeschen, sonst nennt ausgerechnet whoami beim naechsten Schritt einen anderen Remote als der Code, der scheitert
   internal/cli/whoami.go:126 nimmt den Remote-Namen aus remoteOrigin statt aus refs.Repo.RemoteName(); genau das verbietet der Kommentar, der RemoteName() in core/gitref/gitref.go:128 ueberhaupt exportiert hat ('must not have to re-derive it and risk naming a different one than the code that failed') - boardState soll den Namen von refs.Repo.RemoteName() nehmen und nur die Herkunft dazu holen
