@@ -21,11 +21,11 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:48:38Z
+updated-at: 2026-09-14T19:49:18Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-661099
-claimed-at: 2026-09-14T19:36:30Z
+claimed-by: DESKTOP-RFTCH11-687240
+claimed-at: 2026-09-14T19:49:18Z
 question: "Zwei Fragen: (1) die Schwelle fuer die Board-Meldung steht auf zehn fertigen Tickets - passt das, oder lieber einstellbar? (2) WXQ9PT wartet in signoff und verlangt das Gegenteil (done ist danach leer) - markiere ich es als abgeloest, oder machst du das beim Abnehmen?"
 outcome-what: "Die drei critique-Befunde behoben: logbookAll laedt die Lanes nur noch einmal ueber loadEnv, meldet die fehlende terminale Lane als 'not_terminal' wie logbookOut, und die Regel 'Ref-only-Tickets sind nicht dieses Klons zum Ablegen' steht jetzt in FileLane statt nur im TUI-Zaehler - mit Test und NOTES-Zeile."
 outcome-why: "Der Zaehler auf dem Board und der Befehl, der wirklich ablegt, waren sich ueber den Satz uneinig: das Board sagte 'N to file', 'jaira logbook --all' legte N ab und meldete jedes fertige Ref-only-Ticket als Problem. Dazu zwei maschinenlesbare Namen fuer eine Lage in einem Kommando und ein zweiter Ladeweg, der die lanes.Warnings verschluckte."
