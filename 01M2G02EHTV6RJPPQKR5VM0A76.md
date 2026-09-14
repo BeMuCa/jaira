@@ -33,11 +33,11 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T15:43:33Z
+updated-at: 2026-09-14T15:46:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-191270
-claimed-at: 2026-09-14T13:55:19Z
+claimed-by: DESKTOP-RFTCH11-271405
+claimed-at: 2026-09-14T15:46:40Z
 outcome-what: "Optimize lane: closed the two items critique handed over and cut what the change did not need. noRefReason is now the single rendering of 'why this ticket is not on a ref' for the printed line, the --json file-only-reason field and whoami; fileModeReason is gone; create's release hint is one Fprintf with an optional assignee tail instead of two that repeated the sentence, and it says 'once the remote works'; fileOnlyCount takes the ref mode from boardState rather than asking refs.Usable() again. TestCreateOutsideAGitRepositoryDoesNotBlameARemote now reads the --json field too."
 outcome-why: "A fact rendered three ways is maintained in three places by people who do not know about the other two, and the third rendering was the raw gitref error an agent would have read outside a git repository. 'once the remote is there' was simply untrue where the remote exists and the push failed."
 outcome-resolves: "review-gaps set; DoD 1's proof updated to name noRefReason instead of the deleted fileModeReason. go test ./..., go vet ./... and gofmt -l all clean."
