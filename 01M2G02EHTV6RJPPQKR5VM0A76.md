@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:35:16Z
+updated-at: 2026-09-14T13:35:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -67,7 +67,7 @@ claimed-at: 2026-09-14T13:29:29Z
 - [x] decide the way back: extend 'jaira release' to a ticket with no ref, or add a new command — write the decision and its reason as a jaira note
 - [x] generalise fileOnRefOnly so it also takes an existing ticket: Record() the current bytes with the empty lease, flush, then drop the file — one function, not a second copy
 - [ ] failing test: a fixture board whose ticket was created in file mode gets a remote; one command puts it on its ref and the local file is gone
-- [ ] implement the way back
+- [x] implement the way back
 - [ ] design the state command (DoD 3): extend 'jaira whoami' with the git side, or add a separate command — and fix the four facts it prints: remote name and where it came from, remotes this repository has, ref mode yes/no with the reason, how many tickets lie as files only
 - [ ] failing test for the state command on a board with a matching remote and on one without
 - [ ] implement the state command, text and --json
