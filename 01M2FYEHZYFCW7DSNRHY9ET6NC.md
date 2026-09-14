@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:54:50Z
+updated-at: 2026-09-14T12:54:53Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -118,3 +118,4 @@ Kosten: RemoteFor macht bis zu zwei git-Aufrufe (config get, remote). attachRefs
 
 core/release/NOTES.md hat zur Zeit keinen Abschnitt '## Unreleased'; der oberste ist ## 0.2.0. Der Abschnitt muss neu angelegt werden.
 - **2026-09-14 12:50 · Alexander Sacharov** — Ablageort ist git config --local jaira.remote; gelesen von gitref.BoardRemote(dir). Warum nicht memoisieren: RemoteFor wird genau einmal je Prozess aufgerufen, in attachRefs. snapshot.go und fetch.go lesen den aufgeloesten Namen jetzt von refs.Repo.Remote ab, statt ihn ein zweites und drittes Mal aufzuloesen. Damit kosten die bis zu zwei git-Aufrufe nur einmal, und es braucht keinen Cache, der in Tests veraltet.
+- **2026-09-14 12:54 · Alexander Sacharov** — Gegenprobe gelaufen: settings.RemoteFor loest sowohl /home/alex/projects/jaira als auch das worktree .worktrees/jaira-9ET6NC auf 'upstream' auf - unveraendert. Verworfen: 'fehlt der eingestellte Remote, nimm origin'. In diesem Repo ist origin der Fork; das waere stiller Datenverlust. Stattdessen weicht nur der Rechner-Vorgabewert aus, und auch nur wenn das Repo genau EINEN Remote hat. Gegenprobe, dass der Test 1 den Fehler wirklich nachstellt: RemoteFor testweise auf RemoteName zurueckgedreht -> TestRefCommandsWorkWhenTheMachineSettingNamesAnAbsentRemote faellt mit genau 'no remote "upstream"' um.
