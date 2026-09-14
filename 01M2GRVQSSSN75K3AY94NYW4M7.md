@@ -2,7 +2,7 @@
 id: 01M2GRVQSSSN75K3AY94NYW4M7
 title: Die Definition of Done steht an zwei Stellen und die CLI haelt sie nicht zusammen
 status: backlog
-ready: false
+ready: true
 creator: Alexander Sacharov
 goal: "Ein Kriterium der Definition of Done hat eine Wahrheit, nicht zwei: was in der Checkliste steht, steht auch im Frontmatter, ohne dass jemand daran denkt."
 context: |-
@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T20:13:44Z
-updated-at: 2026-09-14T20:14:06Z
+updated-at: 2026-09-14T20:14:08Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -38,6 +38,10 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Ein Kriterium, das ueber 'jaira dod --text' umformuliert wird, steht danach in beiden Fassungen gleich - nachgestellt an einem Ticket, dessen Frontmatter vorher abwich.
+- [ ] 'jaira dod --add' haengt kein Kriterium an, das nur in einer der beiden Fassungen steht.
+- [ ] 'jaira show --for-lane' reicht an eine Lane dieselben Kriterien weiter, die 'jaira show' einem Menschen zeigt. Nachgestellt, indem beide Ausgaben fuer dasselbe Ticket verglichen werden.
+- [ ] Ein Ticket, dessen zwei Fassungen heute schon abweichen, wird erkannt statt still weitergereicht - 'jaira validate' nennt es, oder das Werkzeug zieht sie beim naechsten Schreiben zusammen.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
