@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:38:27Z
+updated-at: 2026-09-14T13:38:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-155812
@@ -62,7 +62,7 @@ claimed-at: 2026-09-14T13:29:29Z
 
 - [x] read how create picks the mode: fileOnRefOnly (internal/cli/refs.go:69) and its caller internal/cli/tickets.go:293-311, plus gitref Repo.Usable/noRemote — the diagnostic text already exists since 9ET6NC, only a caller at create is missing
 - [x] make fileOnRefOnly answer with the reason, not a bare bool: return the mode and the refs.Usable() error, so create can say why it chose the file
-- [ ] failing test in internal/cli: 'create' on a board whose remote is absent prints a line naming the remote looked for and the reason; --json carries the same as a field
+- [x] failing test in internal/cli: 'create' on a board whose remote is absent prints a line naming the remote looked for and the reason; --json carries the same as a field
 - [x] implement that create line and the json field (DoD 1 and DoD 5 are the same change)
 - [x] decide the way back: extend 'jaira release' to a ticket with no ref, or add a new command — write the decision and its reason as a jaira note
 - [x] generalise fileOnRefOnly so it also takes an existing ticket: Record() the current bytes with the empty lease, flush, then drop the file — one function, not a second copy
