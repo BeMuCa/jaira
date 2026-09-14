@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T18:25:45Z
+updated-at: 2026-09-14T18:25:55Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Regel steht an drei Stellen. Eine Frage: soll ein Agent einen PR ueberhaupt aufmachen duerfen, oder nur den Branch pushen und den PR dir ueberlassen?"
@@ -52,3 +52,4 @@ claimed-at: 2026-09-14T18:22:34Z
 
 ## Progress
 - **2026-09-14 18:22 · Alexander Sacharov** — Alex hat die offene Frage am 14.09. beantwortet: ein Agent macht den Pull Request NICHT auf. Er pusht den Branch und hoert dort auf; das Aufmachen gibt der Mensch in Auftrag. Mergen und Freigeben waren schon verboten - das verschiebt die Linie nach vorn, aufs Aufmachen. Damit steht die Regel heute an drei Stellen falsch herum und alle drei muessen gedreht werden: CLAUDE.md hinter dem jaira:local-Marker, AGENTS.md hinter dem jaira:local-Marker, README.md unter Development. Die Formulierung des DoD-Kriteriums ('ein Agent macht ihn auf und merged ihn nie') ist damit selbst ueberholt - erfuellt ist es jetzt durch die gedrehte Regel, nicht durch die woertliche.
+- **2026-09-14 18:25 · Alexander Sacharov** — Der Abschnitt stand schon in CLAUDE.md und README - nur falsch herum ('an agent may open a pull request'). In AGENTS.md stand er ebenfalls schon, aber weiter unten hinter der NOTES.md-Regel und ohne Leerzeile vor der Ueberschrift, weshalb eine Suche nach dem Marker plus 30 Zeilen ihn nicht findet. Wer hier nachsieht, ob eine Regel fehlt, muss nach dem Ueberschriftentext greppen, nicht nach dem Marker. Die Leerzeile ist mitgefixt. Kein NOTES.md-Eintrag: nur Dokumentation, von aussen am Binary nichts zu beobachten.
