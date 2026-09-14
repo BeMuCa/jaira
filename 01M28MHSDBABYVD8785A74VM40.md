@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T19:39:26Z
+updated-at: 2026-09-14T19:39:46Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-661099
@@ -78,3 +78,14 @@ Neuer Test TestTheRenderedHintNamesTheFilingCommand liest m.statusBar() statt re
 DoD-Punkt 1 umformuliert: 'einstellbare Zahl' -> 'zehn oder mehr, eine feste Zahl, keine Einstellung', dazu 'die gerenderte Zeile' im Test-Teil. Alex hat am 14.09. die Zahl entschieden, nicht den Wortlaut; die DoD versprach eine Einstellung, die es nie gab.
 
 Nicht angefasst: Befund 3 (lane.Load legt die Builtins nicht unter ein bestehendes Board, daher behaelt jedes aeltere Board logbook-on-entry in .jaira/lanes/done.md). Das ist Ticket 1K9KZS. Auf diesem Board stand die Zeile heute frueh noch drin und ein Move nach done hat drei fremde fertige Tickets mitgenommen; von Hand entfernt. Genau deshalb zaehlt Befund 1: wer den Befehl nie sieht, ruft ihn nie auf.
+- **2026-09-14 19:39 · Alexander Sacharov** — critique, erster Durchgang. Drei Befunde, alle klein, alle im Code des Tickets selbst - keiner betrifft das Verhalten, das die DoD verlangt.
+
+1. logbookAll laedt die Lanes doppelt (internal/cli/logbook.go:89 und 97). loadEnv macht lane.Load bereits selbst und gibt env.Lanes zurueck; logbookOut zehn Zeilen weiter unten benutzt genau das. Der zweite Ladeweg verwirft ausserdem lanes.Warnings, die nur loadEnv ausgibt.
+
+2. Zwei reason-Codes fuer eine Lage: 'no_terminal_lane' in logbookAll, 'not_terminal' in logbookOut. Fuer --json-Aufrufer sind das zwei Namen fuer dieselbe Bedingung aus einem Kommando.
+
+3. Der schwerste der drei, und es ist eine Frage des Ortes, nicht der Korrektheit: die Regel 'Ref-only-Tickets gehoeren diesem Klon nicht zum Ablegen' steht im TUI-Zaehler (model.go:764), aber nicht in FileLane (trim.go:147). Der Zaehler zeigt also an, und der Befehl, der wirklich ablegt, kennt die Regel nicht - er versucht sie, faellt in onlyOnRef und meldet jedes fertige Ref-only-Ticket als Problem. Das ist erst durch dieses Ticket sichtbar geworden: vorher war FileLane nur der Doorway, jetzt ist --all der normale Weg dorthin. Die Bedingung gehoert in die Callee.
+
+NICHT erhoben, weil bereits entschieden oder anderswo abgelegt: lane.go:479 laedt bei einem bestehenden Board nur dessen eigenes Lane-Verzeichnis, also behaelt ein aelteres Board logbook-on-entry - das ist Ticket 1K9KZS, samt seiner NOTES-Zeile. Die Schwelle bleibt bei zehn und meldet nur (Alex, 14.09.). WXQ9PT bekommt keine Abloese-Markierung. Dass logbook-on-entry als Flag erhalten bleibt, ist ausdruecklich gewollt. Dass die PartialError-Warnung in den Fehlerstrom des Kommandos geht statt nach os.Stderr, ist bewusst - damit ein Test sie sieht.
+
+Zur Form der Board-Zeile selbst: 'jaira logbook --all' steht als const fileCommand neben fileReminder, Test und Zeile lesen dieselbe Konstante - das ist die richtige Loesung fuer den Fehler, der vorher drin war, und dagegen habe ich nichts.
