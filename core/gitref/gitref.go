@@ -113,12 +113,17 @@ func (r *Repo) Usable() error {
 		if errors.Is(err, ErrNoGit) {
 			return err
 		}
-		return fmt.Errorf("%w: %s", ErrNoRepo, r.noRemote())
+		return fmt.Errorf("%w: %s", ErrNoRepo, r.NoRemoteHint())
 	}
 	return nil
 }
 
-// noRemote explains a missing remote the way somebody can act on it.
+// NoRemoteHint explains a missing remote the way somebody can act on it.
+//
+// It is exported for the same reason RemoteName is: a command that has to tell
+// a person why this board carries no refs must be able to ask for the sentence
+// instead of reconstructing it — or, worse, cutting it back out of the error
+// text and so depending on how Usable happened to concatenate it.
 //
 // "no remote \"upstream\"" was true and useless: it named the thing that is
 // absent and nothing else, so the reader still had to find out what this
@@ -126,7 +131,7 @@ func (r *Repo) Usable() error {
 // came from a machine-wide setting made for a different repository. So the
 // message carries all three: the name that was asked for, the remotes that are
 // really here, and the one command that settles it for this clone.
-func (r *Repo) noRemote() string {
+func (r *Repo) NoRemoteHint() string {
 	have := "this repository has no remotes"
 	if names := Remotes(r.Dir); len(names) > 0 {
 		have = "this repository has " + strings.Join(names, ", ")

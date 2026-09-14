@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -418,5 +420,40 @@ func TestWhoamiJSONRemotesIsAlwaysAList(t *testing.T) {
 	}
 	if len(remotes) != 0 {
 		t.Fatalf("a repository with no remotes reports %v", remotes)
+	}
+}
+
+// The reason line used to be cut out of the error text with
+// strings.TrimPrefix(why.Error(), gitref.ErrNoRepo.Error()+": "), which tied
+// internal/cli to how gitref.Repo.Usable happened to concatenate its error
+// rather than to gitref's API. A changed format — or one more wrapper on the
+// way up — made the cut miss silently, and the user got a line naming no
+// remote, listing no remotes and offering no 'git config jaira.remote'.
+// So: whatever the error text looks like, the sentence comes from the repo.
+func TestTheFileModeReasonDoesNotReadTheErrorText(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	dir := t.TempDir()
+	gitRun(t, dir, "init", "--quiet", ".")
+	repo := &gitref.Repo{Dir: dir, Remote: "nowhere"}
+
+	saved := refs
+	t.Cleanup(func() { refs = saved })
+	refs = &refsync.Syncer{Repo: repo}
+
+	want := repo.NoRemoteHint()
+	if !strings.Contains(want, `"nowhere"`) || !strings.Contains(want, "config jaira.remote") {
+		t.Fatalf("gitref no longer names the remote and the fix: %q", want)
+	}
+	for name, why := range map[string]error{
+		"today's format":   fmt.Errorf("%w: %s", gitref.ErrNoRepo, repo.NoRemoteHint()),
+		"another format":   fmt.Errorf("%w (%s)", gitref.ErrNoRepo, repo.NoRemoteHint()),
+		"one more wrapper": fmt.Errorf("refsync: %w", fmt.Errorf("%w: %s", gitref.ErrNoRepo, repo.NoRemoteHint())),
+		"no detail at all": gitref.ErrNoRepo,
+	} {
+		if got := noRefReason(why); got != want {
+			t.Errorf("%s: noRefReason = %q, want gitref's own sentence %q", name, got, want)
+		}
 	}
 }
