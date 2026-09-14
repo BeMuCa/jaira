@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:55:19Z
+updated-at: 2026-09-14T13:58:49Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-191270
@@ -49,7 +49,7 @@ review-summary: none
 ## Definition of Done
 
 - [x] 'jaira create' nennt den Modus in beiden Faellen. Im Datei-Modus sagt es, dass das Ticket als Datei und nicht auf einem Ref liegt, nennt den Remote-Namen, nach dem gesucht wurde, und den Grund - nicht nur das Schweigen von heute.
-  proof: TestCreateSaysWhenTheTicketStaysAFile, TestCreateJSONCarriesTheFileModeReason and TestCreateOutsideAGitRepositoryDoesNotBlameARemote (internal/cli/filemode_test.go); fileModeReason/noRefReason in internal/cli/refs.go, called from the else-branch after 'On its ref' in internal/cli/tickets.go
+  proof: TestCreateSaysWhenTheTicketStaysAFile, TestCreateJSONCarriesTheFileModeReason and TestCreateOutsideAGitRepositoryDoesNotBlameARemote (internal/cli/filemode_test.go, the last now checking text and --json); noRefReason in internal/cli/refs.go, called from both the else-branch and the json payload in internal/cli/tickets.go
 - [x] Ein Datei-Ticket kommt mit einem Befehl auf seinen Ref und die lokale Datei verschwindet dabei. Die Logik dafuer ist die vorhandene fileOnRefOnly (internal/cli/refs.go:69), nicht eine zweite Kopie davon. Nachgestellt auf einem Fixture-Board, dessen Ticket im Datei-Modus entstanden ist.
   proof: TestReleasePutsAFileTicketOnItsRef (internal/cli/filemode_test.go); releaseFromFile in internal/cli/release.go calls putOnRef, which is fileOnRefOnly itself
 - [x] Ein Befehl zeigt den git-Zustand des Boards in einem Aufruf: den eingestellten Remote-Namen, die Remotes die dieses Repository hat, ob der Ref-Modus laeuft, und wie viele Tickets nur als Datei liegen. Nachgestellt auf einem Board mit passendem und auf einem mit fehlendem Remote.
