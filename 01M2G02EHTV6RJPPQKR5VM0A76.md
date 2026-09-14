@@ -33,7 +33,7 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T13:27:25Z
+updated-at: 2026-09-14T13:27:28Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-152036
@@ -81,3 +81,4 @@ claimed-at: 2026-09-14T13:23:44Z
 ## Progress
 - **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, Begruendung. DoD 1 und DoD 5 sind eine einzige Aenderung: 9ET6NC hat den Diagnosetext schon gebaut (gitref Repo.noRemote nennt gesuchten Remote, vorhandene Remotes und 'git config jaira.remote'). Er fehlt nur bei create, weil fileOnRefOnly (internal/cli/refs.go:75) bei refs.Usable() != nil ein nacktes false zurueckgibt und den Grund wegwirft. Also: Rueckgabe um den Grund erweitern, nicht einen zweiten Text schreiben.
 - **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, offene Entwurfsfragen, die in Schritt 5 und 9 entschieden werden. (a) Weg zurueck: 'jaira release' erweitern statt neuem Befehl - release heisst schon 'zurueck aufs Board', entfernt schon die Datei und laeuft heute nur deshalb ins Leere, weil es refs.Release() ohne Ref fragt. Gegen release spricht, dass es zusaetzlich den assignee loescht; fuer ein ungearbeitetes Datei-Ticket ist genau das richtig, fuer ein gerade bearbeitetes nicht. (b) Zustandsbefehl: 'jaira whoami' erweitern statt neuem Befehl - whoami ist schon 'was denkt jaira ueber diese Umgebung', und die Projektregel misst jedes Feature an 'kleiner als paca'. Beides bewusst als Option im Plan gelassen, weil die Kritik-Lane das umdrehen darf.
+- **2026-09-14 13:27 · Alexander Sacharov** — Plan-Lane, zu DoD 4: das Frontmatter-Feld definition-of-done ist ein einzelner String, die Kaestchen im Rumpf sind die Wahrheit fuer den Gate (core/gate/gate.go:504-510 liest DoDItems, wenn es welche gibt, sonst DoD). Beide duerfen also auseinanderlaufen - dieses Ticket hier tut es bereits. Darum: --dod mehrfach, erstes Vorkommen ins Frontmatter, alle in ticket.NewBody (core/ticket/body.go:25, Signatur von string auf []string). Kein neues Feld, kein Listen-Frontmatter.
