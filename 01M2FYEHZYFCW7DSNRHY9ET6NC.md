@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T12:32:09Z
-updated-at: 2026-09-14T12:53:21Z
+updated-at: 2026-09-14T12:53:25Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93721
@@ -83,7 +83,7 @@ Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 - [x] Die vier Aufrufstellen auf RemoteFor(dir) umstellen: internal/cli/refs.go:27, internal/cli/snapshot.go:112, internal/cli/fetch.go:103, internal/tui/refs.go:35
 - [x] Startkosten pruefen: RemoteFor kostet bis zu zwei git-Aufrufe je Kommando - einmal je Prozess merken oder erst beim ersten Ref-Zugriff aufloesen
 - [x] README.md:338 (settings.json-Block) um den Board-Remote und die Reihenfolge ergaenzen
-- [ ] core/release/NOTES.md: Abschnitt '## Unreleased' oben anlegen und eine Zeile schreiben
+- [x] core/release/NOTES.md: Abschnitt '## Unreleased' oben anlegen und eine Zeile schreiben
 - [ ] go test ./... und Gegenprobe im jaira-Repo selbst: der Ticket-Ref geht weiterhin nach upstream
 
 ## Progress
