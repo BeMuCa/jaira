@@ -1,7 +1,7 @@
 ---
 id: 01M2G02EHTV6RJPPQKR5VM0A76
 title: "Ein Board im Datei-Modus sagt es nicht, kommt nicht zurueck und laesst sich nicht pruefen"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Wer ein Ticket anlegt, sieht in derselben Zeile, ob es auf einem Ref liegt oder als Datei; ein Datei-Ticket kommt mit einem Befehl auf seinen Ref; und ein Befehl sagt, in welchem Modus dieses Board laeuft und warum."
@@ -33,15 +33,15 @@ related:
   - 01M2FYEHZYFCW7DSNRHY9ET6NC
 commits: []
 created-at: 2026-09-14T13:00:30Z
-updated-at: 2026-09-14T15:55:18Z
+updated-at: 2026-09-14T15:58:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-275968
-claimed-at: 2026-09-14T15:50:11Z
-outcome-what: "noRefReason asks gitref for the missing-remote sentence instead of cutting it out of the error text"
-outcome-why: "the strings.TrimPrefix tied internal/cli to how gitref concatenated its error; a changed format would have missed silently and printed a line with no remote name, no remotes and no git-config hint"
-outcome-resolves: "critique round three, finding 1"
-review-summary: "internal/cli/refs.go:169 noRefReason takes gitref's wrapper off by string-matching — strings.TrimPrefix(why.Error(), gitref.ErrNoRepo.Error()+\": \"). That makes internal/cli depend on how gitref concatenated the error (fmt.Errorf(\"%w: %s\", ...) at core/gitref/gitref.go:116) instead of on its API; change that format or wrap once more and the trim silently misses, the fallback drops the remote name, the remotes this repository has and the git config line, and the user gets \"this board has no usable \\\"origin\\\"\" — the unactionable line the human lane sent back. Ask the callee instead: export Repo.noRemote (core/gitref/gitref.go:129) as NoRemoteHint(), the way RemoteName() at core/gitref/gitref.go:145 is already exported for exactly this reason, and have noRefReason return refs.Repo.NoRemoteHint() when errors.Is(why, gitref.ErrNoRepo) and refs.Repo is there, keeping todays bare-sentinel fallback for the refs == nil case. Same text, no string surgery, and the one place that builds the sentence stays the one place that owns it."
+claimed-by: DESKTOP-RFTCH11-298475
+claimed-at: 2026-09-14T15:57:55Z
+outcome-what: "Kritik-Runde vier auf 04f92e7: kein Befund, review-summary=none."
+outcome-why: "Der eine Befund aus Runde drei ist behoben, wie verlangt und ohne Textaenderung fuer den Benutzer; die Schleife endet bei einem Durchgang ohne Befund."
+outcome-resolves: "Kritik-Lane fuer dieses Ticket abgeschlossen."
+review-summary: "none"
 review-gaps: "Removed: fileModeReason (internal/cli/refs.go), a one-caller wrapper that only prefixed noRefReason, and with it the third rendering of the file-mode reason - the --json field now goes through noRefReason like the printed line and whoami do; the doubled canReachARef branch in internal/cli/tickets.go, two Fprintf calls repeating a whole sentence to append six words, now one call with an optional tail; and one of the two refs.Usable() questions in whoami, fileOnlyCount taking the ref mode from boardState instead of deciding it again. Changed: the release hint reads 'once the remote works', because 'once the remote is there' is false when the remote is there and the push failed. Left: the nil guards in fileOnRefOnly/putOnRef, unreachable from their callers but three lines against a panic; settings.RemoteFor as a wrapper over RemoteSourceFor, which critique settled and every caller uses; whoami's plural(); the pre-existing dead 'missing := gate.Violations(nil) ... _ = missing' in tickets.go, which this change did not orphan. Not fixed because it is outside this diff: fetch.go, pull.go, release.go and snapshot.go still print refs.Usable() errors raw, so 'gitref:' still reaches users from four other commands."
 test-verdict: "pass: suite green with -race (RC=0), gofmt/vet clean, all six DoD verified in the tree and exercised by hand on throwaway boards; three cosmetic observations noted, none blocking"
 question: "drei Punkte korrigieren"
@@ -122,3 +122,12 @@ Geprueft und ausdruecklich KEIN Befund, damit die naechste Runde es nicht neu au
 New test TestTheFileModeReasonDoesNotReadTheErrorText (internal/cli/filemode_test.go) is what keeps the coupling from growing back: it points the package-level refs at a Repo with remote 'nowhere' and asserts noRefReason returns exactly Repo.NoRemoteHint() for four shapes of the same error — today's 'sentinel: detail', a different concatenation, one extra wrapper on top, and the bare sentinel. The old TrimPrefix passes only the first of those.
 
 Rejected: keeping the fallback's old wording 'this board has no usable "<name>"'. It is now only reachable when refs or refs.Repo is nil, where there is no name to print — the old code said 'this board has no usable a remote' there — so the fallback reads 'this board has no usable remote'. The branch that used to produce the named-but-detail-less line is precisely the failure critique described, and it no longer exists. Not touched, as settled or out of lane: the nil checks themselves, whoami's InRepo branching, and fetch/pull/release/snapshot still printing raw refs.Usable() errors (its own ticket).
+- **2026-09-14 15:58 · Alexander Sacharov** — Kritik-Lane, vierte Runde (beurteilt nur 04f92e7, den Fix des einen Befunds aus Runde drei). Kein Befund.
+
+Nachgeprueft: (1) core/gitref/gitref.go:134 NoRemoteHint() ist die frueher private noRemote, unveraendert im Rumpf; Usable (gitref.go:116) baut seinen Fehler weiter aus genau dieser Methode, also ist der Text, den ein Benutzer sieht, byteweise derselbe. Die Methode gehoert dorthin, wo der Zustand entsteht - dieselbe Begruendung, die RemoteName() (gitref.go:145) schon traegt und die Runde eins woertlich verlangt hat. (2) internal/cli/refs.go:170 fragt den Satz bei errors.Is(why, gitref.ErrNoRepo) und vorhandenem refs.Repo ab; strings.TrimPrefix und der strings-Import sind weg. Keine Zeichenketten-Chirurgie mehr.
+
+Die eine Stelle, die ich absichtlich geprueft habe, weil sie nach einem Defekt aussieht, und die keiner ist: der neue Fallback 'this board has no usable remote' verschluckt jeden Fehler, der nicht ErrNoGitRepo/ErrNoGit/ErrNoRepo ist - frueher gab TrimPrefix in diesem Fall why.Error() roh zurueck. Die Fehlermenge auf dem Weg zu noRefReason ist aber geschlossen: refsync.Syncer.Usable (core/refsync/refsync.go:77) gibt entweder nackt gitref.ErrNoRepo (nil-Syncer) zurueck oder wortwoertlich das, was gitref.Repo.Usable liefert, und das sind nur nil, ErrNoGit, ErrNoGitRepo und der ErrNoRepo-Wrapper. Alle vier Aufrufer (internal/cli/whoami.go:157, internal/cli/tickets.go:315 und :333) reichen genau diesen Fehler durch. Es geht also nichts verloren.
+
+Ebenfalls geprueft, kein Befund: noRefReason liest den Satz jetzt aus dem Paket-Global refs statt aus dem uebergebenen Fehler - moeglich waere ein Auseinanderlaufen nur, wenn der Fehler von einem anderen Repo als refs.Repo kaeme; es gibt weiterhin genau einen Erzeuger (Repo.Usable ueber refs), wie Runde drei schon festgestellt hat. NoRemoteHint() ruft Remotes(r.Dir) beim Rendern erneut auf, also ein zusaetzlicher git-Unterprozess - nur im Fehlerpfad, im selben Prozess, gleiches Ergebnis, kein Thema fuer 'instant startup'. Der neue Test TestTheFileModeReasonDoesNotReadTheErrorText prueft vier Fehlerformen gegen repo.NoRemoteHint() und haette den alten TrimPrefix bei dreien gefangen - das ist genau die Zusage, die der Fix gibt. go build, go vet und gofmt -l sind sauber.
+
+Damit ist die Kritik-Schleife fuer dieses Ticket zu; alles aus Runde eins bis drei bleibt geschlossen.
