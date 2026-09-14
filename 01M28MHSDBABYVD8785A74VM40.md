@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-14T20:07:54Z
+updated-at: 2026-09-14T20:08:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-687240
@@ -117,3 +117,20 @@ go vet ./... und go test ./... -race: Exit 0.
 - **2026-09-14 19:56 · Alexander Sacharov** — critique round three: nothing to raise. Checked the three round-two fixes against HEAD and they hold: logbookAll carries trim_error beside filed/count/lane the same way flow.go:232 does for a move (verified, not just claimed), the !t.ReadOnly filter in Overflow and FileLane is pinned by TestOverflowLeavesRefOnlyTicketsOutOfTheCap and TestFileLaneLeavesRefOnlyTicketsWhereTheyAre with a counter-probe, and logbook.go:3 names both commands. Two things looked at and deliberately not raised: 'jaira logbook <id>' on a ref-only ticket needs no guard of its own - Store.Mutate (store.go:1076) and Store.Logbook via onlyOnRef (store.go:333) both already refuse with ErrOnRefOnly, so the stamp cannot half-apply; and the 'Status == lane && !ReadOnly' predicate standing in three places (trim.go:40, trim.go:150, model.go:756) is a shape round two read and let stand, so it is not reopened here. The stampCommits wrapper in logbook.go is a pure pass-through to s.StampCommits with one caller since WXQ9PT hollowed it out - pre-existing, outside this diff, left alone. lane.Load not layering the builtins under an existing board is recorded as ticket 1K9KZS and carried on past.
 - **2026-09-14 20:00 · Alexander Sacharov** — Zum zweiten Mal an diesem Tag aus human zurueckgeholt, wieder mit leerem test-verdict. Beim ersten Mal habe ich es fuer einen Fehler des Dispatchers gehalten und ihm ausdruecklich verboten, eine Lane zu ueberspringen; er tat es erneut. Die Ursache liegt nicht bei ihm: jaira kennt keine Reihenfolge-Pflicht. core/lane/lane.go:43 sagt es selbst - 'After anchors ordering to another lane's ID', das Feld ordnet die Anzeige und schraenkt keinen Uebergang ein. Jede Lane ist von jeder aus erreichbar, und human steht mit precedence 40 sogar VOR critique, optimize und testing. Ein Agent, der die naechste Lane sucht, findet human voellig regelkonform. D28H7V im Backlog ist der Ticket dafuer - heute zum dritten Mal gesehen.
 - **2026-09-14 20:02 · Alexander Sacharov** — optimize: cut two leftovers in the change's own files. internal/cli/logbook.go carried stampCommits(), a forwarder whose whole body was 'return s.StampCommits(t, derive)' and whose doc comment restated core/ticket/trim.go:88 word for word; the new logbookAll already called the store method directly, so the package spelled one call two ways. Forwarder gone, archive.go:73 and logbookOut now call s.StampCommits. logbookOut also built two *codedError literals by hand that fail() (internal/cli/root.go:50) constructs identically - folded, same code, same reason, same message. Looked and left: FileLane and Overflow both filter 'Status == lane && !ReadOnly' in four lines each, but their sorts and error handling differ, so a shared helper would cost more than it saves; readyToFile() walks m.tickets once per status-bar render, which is the same order of work the bar already does; logbook-on-entry is NOT dead - 50-done.md stopped setting it but core/lane/settle.go still honours it and NOTES.md tells people how to switch it back on. Separately noted, not fixed here: lane.Load does not layer builtins under an existing board - that is ticket 1K9KZS.
+- **2026-09-14 20:08 · Alexander Sacharov** — testing, erster Durchgang - Befund: keiner. Nicht die Testsuite geglaubt, sondern die Befehle selbst gefahren.
+
+Gates: go build ./... und go test ./... -race, Exit 0. Weil ein Teil des Laufs aus dem Cache kam, core/move, core/ticket, core/lane, internal/cli und internal/tui noch einmal mit -count=1 -race - ebenfalls gruen.
+
+Handprobe auf einem frischen Scratch-Board (git init, jaira init, eigenes Binary aus diesem Worktree):
+- .jaira/lanes/done.md des NEUEN Boards enthaelt keine Zeile logbook-on-entry; das Wort kommt nur in der Lane-Beschreibung vor, die 'jaira logbook --all' erklaert.
+- drei Tickets nach done gefahren: die Ausgabe sagt je 'PM41ZH -> done' und kein Wort von Ablegen; .jaira/logbook existiert danach gar nicht.
+- 'jaira logbook' ohne Argument: 'The logbook is empty.' - legt nichts an.
+- 'jaira logbook PM41ZH': legt genau eines ab, nennt Tagesordner und restore-Pfad; die anderen zwei bleiben liegen.
+- 'jaira logbook --all': 'filed 2 ticket(s) from done:' mit Handle und Dateiname je Zeile, danach ist .jaira/tickets leer und alle drei liegen im Tagesordner. Noch einmal gerufen: 'nothing in done to file', --json gibt count 0.
+- 'jaira logbook --all PM41ZH' wird abgelehnt: '--all files the whole terminal lane; naming a ticket as well says two different things'.
+
+Die Schwelle echt gerendert, nicht nur im Test: scripts/shotgen gegen ein Board mit neun fertigen Tickets zeigt in der Hinweisleiste nichts; mit dem zehnten steht dort woertlich '⌸ 10 to file: jaira logbook --all'. Der Befehlsname ist also wirklich in der Zeile, nicht nur in einer Konstante.
+
+Die spaetere Runde im Baum nachgesehen: core/ticket/trim.go:150 filtert in FileLane 'Status == lane && !t.ReadOnly', Ref-only-Tickets sind damit fuer den Befehl selbst nicht mehr dieses Klons Sache, nicht nur fuer den Zaehler; internal/cli/logbook.go:93 laedt die Lanes einmal ueber loadEnv und benutzt env.Lanes, der zweite Ladeweg ist weg, und der reason-Code heisst in beiden Pfaden 'not_terminal'.
+
+Ausserhalb des Auftrags gelassen: lane.go:479 legt die Builtins nicht unter ein bestehendes Board, ein aelteres Board behaelt also logbook-on-entry - Ticket 1K9KZS, hier nicht geprueft und nicht gewertet. Nicht weiterbewegt: die naechste Lane einer Schleife entscheidet der Dispatcher.
