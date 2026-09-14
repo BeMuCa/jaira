@@ -41,7 +41,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T16:05:26Z
+updated-at: 2026-09-14T16:05:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-273044
 claimed-at: 2026-09-14T15:48:01Z
@@ -59,7 +59,8 @@ claimed-at: 2026-09-14T15:48:01Z
   proof: .github/workflows/ci.yaml:29 'Cross-check the Windows build'
 - [x] Die beiden GOOS=windows-Zeilen stehen so in der Entwickler-Dokumentation, dass jemand sie vor dem Push von Hand laufen lassen kann.
   proof: README.md:796 '## Development'
-- [ ] Keine Zeile in core/release/NOTES.md: Tests und CI sind von aussen am Binary nicht zu beobachten.
+- [x] Keine Zeile in core/release/NOTES.md: Tests und CI sind von aussen am Binary nicht zu beobachten.
+  proof: core/release/NOTES.md unchanged (git status clean for that path)
 
 Der Test ist auf dem heutigen Stand des Repositories gruen, ohne dass dafuer eine der fuenf Regeln aufgeweicht wurde.
 
