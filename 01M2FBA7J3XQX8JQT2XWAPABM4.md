@@ -1,7 +1,7 @@
 ---
 id: 01M2FBA7J3XQX8JQT2XWAPABM4
 title: "Windows-Fallen fallen auf Linux auf, nicht erst acht Minuten spaeter in CI"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: "Alexander Sacharov"
@@ -42,13 +42,13 @@ related: []
 commits:
   - 3f0c8bf38ea2f302ccdfe7ebc462df927636eff9
 created-at: 2026-09-14T06:57:45Z
-updated-at: 2026-09-14T18:34:09Z
+updated-at: 2026-09-14T18:34:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-463488
 claimed-at: 2026-09-14T18:14:12Z
-outcome-what: "Der Windows-Pruefer traegt nach dem optimize-Lauf 40 Zeilen weniger: binaryExt, selName2 und mentionsExe sind raus, dreimal dasselbe ast.Inspect-Muster ist zu anyNode/litContains zusammengelegt, und die Frage \"ist diese eingebettete Datei gegen autocrlf geschuetzt\" beantwortet jetzt nur noch .gitattributes - eol=lf, -text und binary zaehlen gleichermassen als gepinnt."
-outcome-why: "Zwei Mechanismen fuer eine Frage werden beide fuer immer gepflegt, von jemandem, der den anderen nicht kennt. Die 14-Endungen-Liste hat in diesem Modul nie einen Treffer stumm geschaltet - alle vier go:embed ziehen .md und .sh - und sie haette beim ersten echten Binaerembed gegen das Attribut gearbeitet, das git selbst dafuer hat."
-outcome-resolves: "Alle drei Funde der critique-Runde 3 abgearbeitet, dazu die doppelte Inspect-Logik; Abhilfetext der Regel 2 nennt jetzt auch \"binary\", damit eine Nicht-Text-Datei keine falsche Anweisung bekommt; go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... und GOOS=windows GOARCH=amd64 go build ./cmd/jaira gruen."
+outcome-what: "Die bisher ungetestete Abzweigung des optimize-Laufs ist abgedeckt: zwei Fixtures (testdata/rule2bin, testdata/cleanbinary) und TestNonTextEmbedIsNotExempt in internal/wintrap/wintrap_test.go pruefen, dass eine eingebettete Nicht-Text-Datei ohne .gitattributes-Zeile Regel 2 ausloest und im Abhilfetext 'binary' anbietet, und dass 'binary' und '-text' den Fund genauso verstummen lassen wie 'eol=lf'."
+outcome-why: "Mit dem Wegfall von binaryExt beantwortet nur noch .gitattributes die Pin-Frage, aber kein Test fasste '-text' oder 'binary' an: die Wurzel-.gitattributes und testdata/clean benutzen ausschliesslich 'text eol=lf'. Die Mutationsprobe zeigte, dass sich 'case \"-text\", \"binary\"' loeschen liess, ohne dass ein Test umfiel."
+outcome-resolves: "go test ./... -race, go vet ./..., GOOS=windows GOARCH=amd64 go vet ./... und go build ./cmd/jaira alle RC=0; DoD 1-5 einzeln am Baum geprueft (ci.yaml:33, README.md:826-827, keine NOTES.md-Zeile); Regel 1 mit einer Probe-Datei scharf gestellt und wieder entfernt."
 review-summary: |-
   internal/wintrap/wintrap_scan_test.go:235 binaryExt is a 14-entry extension list guarding a case this module does not have: every //go:embed in it (core/role/role.go:33, core/lane/lane.go:34, core/release/release.go:17, core/hook/example.go:9) pulls only .md and .sh. Git already answers this with -text/binary, which gitattributes_scan_test.go:55 parses and then scores as NOT pinned. Delete binaryExt and let -text/binary count as covered in eolLF — one mechanism, and the one git owns.
   internal/wintrap/wintrap_scan_test.go:185 selName2 is a seven-line adapter with exactly one caller (hasGOOS, line 177), existing only to widen selName's ast.Expr parameter to ast.Node; the numbered name is what you call a function you did not want to name. Inline it: in hasGOOS type-assert n.(*ast.SelectorExpr) and test X == runtime / Sel == GOOS, then delete selName2.
