@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -41,14 +41,14 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:58:23Z
+updated-at: 2026-09-15T20:58:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
 claimed-at: 2026-09-15T20:47:24Z
-outcome-what: "Milestones leave the board only on command: the round-1 delete path is reverted, 'jaira logbook <name>' files a milestone into .jaira/logbook/<folder>/milestones/ and 'jaira restore <name>.md' brings it back with its ticket list and colour. core/milestone gained Status/Filed/SetStatus (a 'status: filed' line edited in place, every other line verbatim) and FromBytes; core/ticket gained MilestonesSubdir, MilestonesDir, LogbookMilestone and a Restore that files a find back where it found it. refsync.IncomingMilestones skips a ref whose content says filed and never deletes a local file; 'jaira milestone create' refuses a filed name, looking at the ref first and the local logbook second. Help texts, docs/COMMANDS.md and four NOTES.md lines follow."
-outcome-why: "Alex reversed DoD 8 mid-round and added DoD 10-12: an emptied milestone must stay standing, and a filed milestone's ref must NOT be reaped but carry its status - a reaped ref frees the name and tells no other clone anything, so two machines would plan two milestones under one identity."
-outcome-resolves: "DoD 8-12. Build, vet and the full suite are green; the new tests are TestRmDropsTheLineAndKeepsTheMilestone, TestCreateWithNoTicketsLeavesTheFileLyingThere, TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack, TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef and two SetStatus tests in core/milestone."
+outcome-what: "Round 4 on DoD 8-12, the five findings of critique round 5. 'status: filed' is now the line that takes a milestone off the board: milestone.LoadAll leaves a filed one out, so the ordering in logbookMilestone no longer carries the state on its own. refsync.IncomingMilestones writes a filed ref's content over a file the tree already has — that is how a clone still planning the round learns it was filed — and reports those names apart from the updated ones ('Milestones filed elsewhere', milestones_filed in --json); a filed milestone the tree never had is not written, or restore would find the name back on the board and refuse. unfileMilestone returns its error and fails the restore. milestoneFiled calls the new ticket.Store.FiledMilestone, built on logbookFolders, instead of a third hand-rolled walk that missed the legacy .jaira/sync/ folder. Fallout guards: 'jaira logbook <name>' refuses an already-filed milestone, 'jaira milestone create' names the marked line instead of saying 'already exists'. Help texts, docs/COMMANDS.md and three NOTES.md lines follow."
+outcome-why: "The five findings all came back to one thing: the filed line was written and read by nobody who decides what is on the board, so the board believed the file had merely been moved. A clone that already had the file was never told, its half-done states were load-bearing, and one error path reported a restore that left a milestone invisible."
+outcome-resolves: "critique round 5, findings 1-5. Build, vet and the full suite with -race are green; new tests are TestAClonePlanningTheMilestoneLearnsItWasFiled (internal/cli), TestLoadAllLeavesOutAFiledMilestone (core/milestone) and TestFiledMilestoneFindsBothLogbookFolders (core/ticket)."
 review-summary: |-
   core/milestone/milestone.go:LoadAll does not skip Filed() milestones, so 'status: filed' is a truth only refsync and 'milestone create' read while the board itself only believes the file was moved — filter Filed() out in LoadAll (or in the one listing call above it) so the line is what takes a milestone off the board
   internal/cli/logbook.go:logbookMilestone marks, records the ref and then renames; if LogbookMilestone fails (dst exists) the file stays in .jaira/milestones/ saying filed, the ref says filed, and this board shows the milestone while every other clone hides it — with LoadAll filtering Filed() that half-done state is harmless and the ordering comment stops being load-bearing
