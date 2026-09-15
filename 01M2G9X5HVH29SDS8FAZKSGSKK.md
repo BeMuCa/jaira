@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:41:16Z
+updated-at: 2026-09-15T05:41:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46021
@@ -209,3 +209,10 @@ Ausdruecklich NICHT als Befund gewertet, damit der naechste Durchgang es nicht n
 KEINE neue NOTES.md-Zeile: die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung; diese vier Fixes sind Korrekturen daran und nicht von aussen zusaetzlich beobachtbar.
 
 Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
+- **2026-09-15 05:41 · Alexander Sacharov** — critique (2. Durchgang, ueber 49ad70e): die vier Befunde des ersten Durchgangs sind alle im Baum - Torwaechter auf 'claude idle'|'claude done' verengt (spawn.sh:74-77), die Portliste im .env-Kommentar raus (spawn.sh:26), der spawn.sh-Pfad im Teamlead-Prompt ausgeschrieben, und dispatcher/SKILL.md:168 sagt jetzt Repository-Name plus Slug. Zwei neue, beide aus genau diesem Fix-Commit:
+
+1. spawn.sh:76 - der neue Torwaechter sagt bei ABLEHNUNG immer 'claude did not come up'. Fuer 'claude blocked' stimmt das nicht: claude laeuft, es steht ein Genehmigungsdialog davor und wartet auf einen Menschen. Der Kommentar in 70-73 nennt diesen Fall ausdruecklich als den wichtigsten, die einzige Zeile, die der Dispatcher zu sehen bekommt, beschreibt ihn falsch - der Dispatcher liest 'nicht hochgekommen' und raeumt womoeglich den Pane weg, statt den Menschen zu holen. Fix: eigener Arm 'claude blocked)' mit eigener Meldung (Dialog im Pane, selbst beantworten, dann neu starten), exit 1 wie bisher.
+
+2. teamlead/SKILL.md:46 - der eingefuegte Pfad hat den Absatz nicht neu umgebrochen: 103 Zeichen, waehrend die Datei sonst bei ~78 bricht (naechstlange Zeile 82). Fix: 44-46 neu umbrechen.
+
+Nicht neu aufgemacht (stand schon im ersten Durchgang so): die doppelte Warnung in beiden Prompts (DoD 2+3 verlangen sie), die eine lange NOTES.md-Zeile (Form der Nachbarzeile), die Plattform-Weiche spawn.sh:56, und dass spawn.sh keinen /jaira-role-tester starten kann (eigenes Ticket). Auch kein Befund: dass der Zustand jetzt zweimal als Literal steht (Zeile 68 und 75) - die Verdopplung sind zwei Zeilen und der Kommentar erklaert sie.
