@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:31:10Z
+updated-at: 2026-09-15T06:31:13Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-77218
@@ -58,7 +58,7 @@ test-verdict: "fail: spawn.sh schreibt ein COMPOSE_PROJECT_NAME, das 'docker com
 - [x] Der .env-Block in scripts/spawn.sh traegt keinen fest eingebauten Projektnamen eines fremden Repositories mehr - entweder abgeleitet oder aus dem Skript heraus.
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:39-40 (repo-Name + Slug, kleingeschrieben; 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0)
 - [x] Nachgestellt: ein Dispatcher, der nur seinen eigenen Prompt liest, startet einen Worker in einer eigenen Vorlage, ohne 'claude --permission-mode' selbst aufzurufen.
-  proof: Herdr-Tab w3:t2H, Label 'KSGSKK/in-progress' = das Format aus core/role/builtin/jaira-dispatcher/scripts/spawn.sh:46; diese Sitzung selbst
+  proof: Herdr-Tab w3:t2H, Label 'KSGSKK/in-progress' = das Format aus core/role/builtin/jaira-dispatcher/scripts/spawn.sh:58; diese Sitzung selbst
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased, weil die ausgelieferten Prompts sich aendern.
   proof: core/release/NOTES.md:19
 
