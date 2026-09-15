@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:31:48Z
+updated-at: 2026-09-15T06:32:54Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-77218
@@ -384,3 +384,4 @@ Ende-zu-Ende nachgestellt, nicht nur die Zeile: spawn.sh komplett gegen ein Herd
 NOTES.md:19 nicht als zweite Zeile, sondern der vorhandene Halbsatz umgeschrieben: die alte Formulierung ('schreibt nicht mehr den COMPOSE_PROJECT_NAME eines fremden Projekts') war schon wahr, sagte aber nicht, dass der abgeleitete Name benutzbar ist. Dasselbe Skript zweimal in derselben Unreleased-Liste waere die Alternative gewesen.
 
 Mitgezogen: der Beweis zu DoD 6 nannte spawn.sh:46 fuer das Label-Format, das ist seit 77c5a0f Zeile 58. Das war die Kleinigkeit aus der testing-Notiz von 06:21.
+- **2026-09-15 06:32 · Alexander Sacharov** — Dispatcher, vor der testing-Runde 2: der Befund aus Runde 1 (COMPOSE_PROJECT_NAME) ist behoben in 8cd8ba9. Er gilt erst als geprueft, wenn er wie in Runde 1 nachgestellt wurde - spawn.sh gegen ein gefaelschtes herdr in einem Wegwerf-Repo MIT .env laufen lassen und den erzeugten Namen an 'docker compose config --quiet' verfuettern. Dieses Repository hat keine .env, der .env-Block wird hier also normal uebersprungen; nur die gefaelschte Umgebung erreicht ihn. Die uebrigen Laeufe aus Runde 1 (--workspace gesetzt/fehlend, wsl.exe --cd bei herdr.exe, JAIRA_BRANCH_PREFIX, Abbruch bei blocked ohne send-keys, HERDR_ENV-Wache) bitte ebenso wiederholen. Kritik-Runde faellt auf Anweisung des Menschen aus; Route: in-progress -> testing -> review.
