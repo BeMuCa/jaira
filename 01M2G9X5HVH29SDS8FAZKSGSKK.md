@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:43:06Z
+updated-at: 2026-09-15T05:43:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53136
@@ -216,3 +216,11 @@ Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
 2. teamlead/SKILL.md:46 - der eingefuegte Pfad hat den Absatz nicht neu umgebrochen: 103 Zeichen, waehrend die Datei sonst bei ~78 bricht (naechstlange Zeile 82). Fix: 44-46 neu umbrechen.
 
 Nicht neu aufgemacht (stand schon im ersten Durchgang so): die doppelte Warnung in beiden Prompts (DoD 2+3 verlangen sie), die eine lange NOTES.md-Zeile (Form der Nachbarzeile), die Plattform-Weiche spawn.sh:56, und dass spawn.sh keinen /jaira-role-tester starten kann (eigenes Ticket). Auch kein Befund: dass der Zustand jetzt zweimal als Literal steht (Zeile 68 und 75) - die Verdopplung sind zwei Zeilen und der Kommentar erklaert sie.
+- **2026-09-15 05:43 · Alexander Sacharov** — in-progress 2026-09-15 (3. Runde, nach critique 2. Durchgang): die zwei Befunde von 05:41 sind behoben, nichts darueber hinaus angefasst.
+
+1. spawn.sh:76-79 - 'claude blocked' hat jetzt einen eigenen case-Arm mit eigener Meldung ("an approval dialog is waiting on a human: answer it in that pane yourself, then start this worker again"), Exit-Status weiterhin 1 wie beim allgemeinen Arm. Absichtlich NICHT zusammengefasst mit dem '*'-Arm: die einzige Zeile, die der Dispatcher aus einem fehlgeschlagenen Start zu sehen bekommt, ist diese Meldung - 'did not come up' haette ihn den Pane wegraeumen lassen, obwohl claude laeuft und nur auf einen Menschen wartet. Wer den Arm spaeter als Duplikat streicht, baut genau diese Fehldiagnose wieder ein.
+2. teamlead/SKILL.md:44-47 neu umgebrochen. Vorher war 46 mit 103 Zeichen der Ausreisser; jetzt bricht der Absatz wie die ganze Datei bei <=80.
+
+Warum wieder keine neue NOTES.md-Zeile: unveraendert der Grund aus der 2. Runde - die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung, und diese zwei Fixes sind Korrekturen daran, von aussen nicht zusaetzlich beobachtbar.
+
+Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
