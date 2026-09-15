@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:43:15Z
+updated-at: 2026-09-15T20:43:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -80,7 +80,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/milestoneref_test.go:TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef
 - [x] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
   proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (milestone create refused, names 'jaira restore')
-- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
+- [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
+  proof: core/release/NOTES.md:24 (filing) and :25 (the taken name)
 
 ## Options
 
