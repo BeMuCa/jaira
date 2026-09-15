@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:52:18Z
+updated-at: 2026-09-15T05:54:35Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58796
@@ -289,3 +289,14 @@ Warum keine neue NOTES.md-Zeile: unveraendert der Grund aus Runde 2 und 3 - die 
 Nur die eigenen Dateien committet: im selben Worktree arbeitet ein zweiter Dispatcher an 13VMA8 (core/role/builtin/jaira-role-pr/SKILL.md, core/release/NOTES.md, das 13VMA8-Ticket). Kein 'git add -A' - das haette dessen offene Arbeit mit eingesammelt.
 
 Gates: go build, go vet, go test ./core/role/... gruen; bash -n auf spawn.sh gruen.
+- **2026-09-15 05:54 · Alexander Sacharov** — optimize: vier Durchgaenge ueber den Diff.
+
+Doppelung: die beiden Lehren (der Berechtigungspruefer lehnt ein selbst aufgerufenes 'claude --permission-mode' als 'Create Unsafe Agents' ab; $HERDR_BIN_PATH statt 'command -v herdr') stehen jetzt woertlich zweimal - jaira-dispatcher/SKILL.md:91-98 und jaira-teamlead/SKILL.md:44-52. NICHT zusammengelegt und das absichtlich: ein Rollen-Prompt wird allein geladen. Der Teamlead liest den Dispatcher-Prompt nie und umgekehrt; eine Verweisung waere fuer den Leser eine Sackgasse. Das ist keine zweite Implementierung, sondern dasselbe Wissen fuer zwei Leser, die einander nicht sehen.
+
+Toter Code: nichts, was diese Aenderung verwaist hat. Der Linux-Arm des case in spawn.sh:58 ('cd $wt && claude') ist erreichbar, sobald Herdr als Linux-Binary laeuft.
+
+Fluff: eine Fundstelle, behoben. jaira-dispatcher/SKILL.md trug nach der Umschreibung noch den Absatz ''--no-focus' matters: you are starting work, not stealing the human's screen' als eigenen Absatz - eine Anweisung zu einer Option, die der Dispatcher gar nicht mehr selbst tippt, weil spawn.sh sie setzt. Er ist ein Rest des geloeschten Befehlsbeispiels. In den Satz gefaltet, der den Weg am Skript vorbei beschreibt; dort gilt er noch.
+
+Bewusst stehen gelassen: dass spawn.sh:46 '--cwd $wt' setzt UND der Linux-Arm danach noch einmal 'cd' macht. Auf dem Windows-Weg wird --cwd verworfen (Kommentar Zeile 49-55), auf dem Linux-Weg ist das cd doppelt gemoppelt, aber harmlos; es zu entfernen waere eine Verhaltensaenderung an genau der Stelle, an der dieses Ticket dreimal falsch lag.
+
+Kosten: nichts. Das Skript laeuft einmal je Worker; die einzige Schleife wartet ohnehin mit sleep.
