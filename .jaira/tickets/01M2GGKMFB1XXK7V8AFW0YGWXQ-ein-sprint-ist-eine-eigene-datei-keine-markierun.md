@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:49:31Z
+updated-at: 2026-09-15T15:53:24Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -49,12 +49,9 @@ outcome-what: "Alle sechs Findings der critique-Runde 2 behoben: Dateiname ist d
 outcome-why: "Finding 1 und 2 waren echte Fehler: ein von Hand geaenderter name: legte beim naechsten add eine zweite Datei an, und ein von einem aelteren Build hinterlassener Outbox-Eintrag wurde neben dem neuen gesendet - erst der veraltete Inhalt, dann ein Lease, das der Remote nicht mehr hat. Nachgemessen mit TestQueueSupersedesTheEntryAnOlderBuildLeft, der ohne den Fix zwei Eintraege derselben ID sieht."
 outcome-resolves: "Kein DoD-Punkt aendert sich - die sechs Findings waren Korrektheit und Doppelung innerhalb der schon gebauten Mechanik. go vet und go test ./... sind gruen."
 review-summary: |-
-  core/milestone/milestone.go:145 Load nimmt den Namen aus der Frontmatter und nur ersatzweise aus dem Dateinamen, Save schreibt nach Path(root, m.Name) - wer name: von Hand aendert, bekommt beim naechsten add eine zweite Datei und laesst die alte samt Ref stehen; in Load immer m.Name = name setzen (der Dateiname ist die Identitaet) oder die Zeile name: aus New streichen.
-  core/outbox/outbox.go:196 List liest das alte flache Verzeichnis UND tickets/, und QueueKind loescht die alte Datei nie - ein Ticket steht danach zweimal in der Liste, der veraltete Eintrag zuerst (nachgemessen: content=old, dann content=new); statt parallel zu lesen migrieren - QueueKind entfernt legacyPath nach dem atomaren Schreiben, oder List dedupliziert auf (Kind, ID) zugunsten des Unterordners.
-  core/gitref/gitref.go:364 refDelete und :659 listRemoteNames haben je genau einen Aufrufer mit konstantem Argument - Reste des in Runde 1 entfernten Milestone-Loeschwegs; beide zurueck in Delete und ListRemote inlinen.
-  internal/cli/milestones.go:292 die Regel Farbe 0 heisst keine Farbe steht dreimal ausgeschrieben (dort, internal/tui/model.go milestoneColors, internal/tui/view.go:1531) und milestones.go:119 nimmt --color 0 trotzdem an; ein HasColour() an core/milestone.Milestone an allen drei Stellen benutzen und 0 am Flag entweder ablehnen oder zulassen.
-  core/outbox/outbox.go:253 DropKind entscheidet per Pfad-Stringvergleich, in welchem Schleifendurchlauf es ist, und normalisiert als einzige Methode kind nicht - kind = kind.or(KindTicket) an den Anfang, paths := []string{b.path(kind,key)} und legacyPath nur fuer KindTicket anhaengen.
-  internal/tui/view.go:1501 und :1532 tragen denselben lipgloss-Swatch-Ausdruck dreissig Zeilen auseinander - ein func swatch(colour int) string in view.go, von renderLegend und renderMilestones benutzt.
+  internal/cli/milestones.go:51 der Hilfetext von 'jaira milestone' sagt weiter "Frontmatter carries the name, the colour and when it was created" - seit Runde 2 schreibt New() kein name: mehr und parse() liest keines; wer das liest und von Hand ein name: einträgt, ändert nichts und merkt es nie. Ersetzen durch: der Dateiname IST der Name, die Frontmatter trägt color und created-at - genau wie core/milestone/milestone.go:154 und core/release/NOTES.md:18 es schon sagen.
+  internal/cli/milestones.go:78 und :146 nennen den Bereich weiter "--color <0-255>" bzw. "ANSI-256 colour (0-255)", während :123 jetzt "1-255" fordert und 0 zurückweist; drei Stellen, zwei davon falsch, und die falschen sind die, die man vor dem Aufruf liest. Beide auf 1-255 ändern, mit dem Grund in einem Halbsatz (0 färbt keine Zelle).
+  docs/COMMANDS.md:57 listet für 'jaira list' weiter nur --lane/--assignee/--tag/--query/--actionable, und die Befehlstabelle hat keine Zeile für milestone create/add/rm/ls - obwohl README.md:676 diese Datei als vollständige Referenz ausweist und jede andere Befehlsfamilie (jaira tag, jaira tags, jaira lanes ...) dort steht. Vier Zeilen in die Writing-Tabelle neben 'jaira tag' und --milestone in Zeile 57 nachtragen.
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
@@ -229,3 +226,14 @@ NICHT AUFGEMACHT: dass IncomingMilestones die lokale Datei ueberschreibt, die ge
 - Finding 1: 'name:' ist aus New UND aus parse() raus, nicht nur aus New. Wuerde parse den Schluessel weiterlesen, saehe ein Leser wieder zwei Wahrheiten, obwohl nur eine gilt. Alte Dateien mit der Zeile bleiben lesbar - die Zeile ist dann Prosa in der Frontmatter und ueberlebt Save verbatim, wie jede andere unbekannte Zeile.
 - Finding 4: HasColour() sitzt in core/milestone, nicht im TUI, weil die Regel 'Farbe 0 heisst keine Farbe' eine Eigenschaft des Dateiformats ist und nicht der Darstellung. --color 0 wird jetzt am Flag abgewiesen (internal/cli/milestones.go), damit die Regel nicht erst auf der Karte sichtbar wird.
 - Nicht angefasst, absichtlich: tag.ValidColour bleibt 0-255. Das Tag-Registry hat kein 'keine Farbe' in dieser Form; eine gemeinsame Verschaerfung waere eine Aenderung an S1VM40s Gegenstand.
+- **2026-09-15 15:53 · Alexander Sacharov** — critique-Runde 3, 2026-09-15. Die sechs Findings aus Runde 2 sind alle abgearbeitet und werden nicht wieder aufgemacht: der Dateiname ist die einzige Identität (Load setzt m.Name immer, name: ist aus New und parse raus), QueueKind räumt den flachen Alt-Eintrag weg und TestQueueSupersedesTheEntryAnOlderBuildLeft misst es nach, HasColour() steht an allen drei Stellen und --color 0 wird abgewiesen, refDelete/listRemoteNames sind inline, DropKind normalisiert kind, swatch() ist ein Helfer. Der Bau selbst bleibt richtig.
+
+Drei Findings in Runde 3, und alle drei sind dieselbe Sorte: die Oberfläche, die jemand VOR dem Aufruf liest, beschreibt noch den Stand vor Runde 2.
+
+1) internal/cli/milestones.go:51 verspricht ein name: in der Frontmatter, das es nicht mehr gibt. Das ist nicht kosmetisch: die Datei IST die API (CLAUDE.md), der Hilfetext ist die einzige Stelle, an der ein Mensch das Format erklärt bekommt, und wer nach dieser Erklärung ein name: hinschreibt, bekommt keine Fehlermeldung, sondern eine Zeile, die nichts tut.
+
+2) internal/cli/milestones.go:78 und der Flag-Text bei :146 sagen 0-255, die Prüfung bei :123 sagt 1-255. Die Fehlermeldung ist die einzige richtige der drei, und sie sieht man erst, nachdem man dem Hilfetext geglaubt hat. NOTES.md:18 sagt bereits 1-255 - die Hilfe ist jetzt die letzte Stelle, die widerspricht.
+
+3) docs/COMMANDS.md kennt milestone überhaupt nicht - weder die vier Unterbefehle noch --milestone in der list-Zeile 57. README.md:676 nennt diese Datei die vollständige Referenz, und jede andere Befehlsfamilie steht dort, jaira tag und jaira tags eingeschlossen (Zeilen 130-131). Eine Befehlsfamilie, die nur die eingebaute Hilfe kennt, findet niemand, der nicht schon weiß, dass es sie gibt.
+
+NICHT aufgemacht, weil begründet und die Begründung trägt: die geteilte Palette mit tag, der Index in newListCmd statt loadEnv, dass IncomingMilestones die lokale Datei überschreibt, der fehlende Löschweg (eigenes Ticket), und dass gitref zwei Namensräume nebeneinander hat statt eines generischen (Art, Name). Auch nicht aufgemacht: dass das Ticket im TITEL weiter 'Sprint' sagt - dafür fehlt jaira ein Umbenennen-Befehl, das ist kein Finding an diesem Diff.
