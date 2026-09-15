@@ -12,7 +12,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:48:02Z
-updated-at: 2026-09-15T06:48:02Z
+updated-at: 2026-09-15T06:48:26Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # jaira lanes use --all bringt alle Lanes eines Boards auf den Stand des Binaries
