@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:22:22Z
+updated-at: 2026-09-15T20:22:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -73,7 +73,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt.
   proof: core/release/NOTES.md:17
 - [ ] Ein Milestone verschwindet nur auf Kommando, nie von allein: ein leer geraeumter Milestone bleibt stehen, bis jemand ihn ablegt. Nachgestellt, indem das letzte Ticket herausgenommen wird - danach nennt 'jaira milestone ls' ihn unveraendert.
-- [ ] 'jaira logbook' legt einen Milestone genauso ab wie ein Ticket: ist er fertig, wandert er unter .jaira/logbook/ und ist vom Board weg. 'jaira restore' holt ihn zurueck, samt seiner Ticket-Liste und seiner Farbe.
+- [ ] 'jaira logbook' legt einen Milestone ab wie ein Ticket: er wandert unter .jaira/logbook/, 'jaira milestone ls' nennt ihn nicht mehr, das Board zeigt ihn nicht und der M-Filter kennt ihn nicht. 'jaira restore' holt ihn zurueck, samt Ticket-Liste und Farbe.
 - [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leeren Milestones.
 
 ## Options
