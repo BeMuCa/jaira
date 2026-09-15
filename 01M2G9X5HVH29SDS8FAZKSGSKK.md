@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:49:14Z
+updated-at: 2026-09-15T05:49:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58796
@@ -247,3 +247,17 @@ spawn.sh:77-78, die Meldung des blocked-Arms an den Menschen richten statt an de
 Danach fehlen noch: optimize, testing (test-verdict ist leer!), review.
 
 Stand des Baums: alle sieben DoD-Punkte sind abgehakt und belegt, go build und go test ./core/role/... waren zuletzt gruen. Kein Commit ist offen, der Arbeitsbaum ist sauber.
+- **2026-09-15 05:49 · Alexander Sacharov** — Arbeitsanweisung fuer diese in-progress-Runde (Dispatcher, 2026-09-15, nach dem Stopp von 05:46). Alex hat den Handoff genommen und entschieden: die Schleife war konvergierend, nicht vertiefend (Befunde 4 -> 2 -> 1, keiner wiederholt, jede Runde auf den Zeilen der vorigen). Es wird KEINE vierte critique-Runde gefahren. Diese Runde behebt den einen offenen Befund, danach folgen optimize, testing und review.
+
+ZU AENDERN, genau eine Stelle: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78, die Meldung des 'claude blocked'-Arms. Sie lautet heute 'answer it in that pane yourself, then start this worker again' und richtet sich damit an den Dispatcher - dem jaira-dispatcher/SKILL.md:188-189 genau das verbietet ('Read its output, report what it is asking, and never answer for the human').
+
+Critiques Vorschlag WOERTLICH uebernehmen, keine dritte eigene Fassung erfinden:
+  'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'
+
+Alles andere an diesem Arm bleibt wie es ist: eigener case-Arm, exit 1, und nur 'claude idle' bzw. 'claude done' duerfen in send-text hinein. Ein blockierter Pane beendet weiterhin, statt Enter zu druecken.
+
+Umfang dieser Runde: NUR diese Meldung. Kein weiteres Aufraeumen, keine neue NOTES.md-Zeile (die Zeile unter ## Unreleased beschreibt dieselbe, noch unveroeffentlichte Aenderung; diese Korrektur ist von aussen nicht zusaetzlich beobachtbar).
+
+Gearbeitet wird im Worktree /home/alex/projects/.worktrees/jaira-13VMA8 auf Zweig feat/13VMA8-pr-is-the-humans. KEIN neuer Worktree, KEIN neuer Zweig. NICHT anfassen: /home/alex/projects/jaira, .worktrees/jaira-9ET6NC (dort laeuft 74VM40) und core/role/builtin/jaira-role-pr/SKILL.md (daran arbeitet im selben Worktree ein zweiter Dispatcher an Ticket 13VMA8).
+
+KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
