@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:24:00Z
+updated-at: 2026-09-15T07:24:03Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74981
@@ -44,7 +44,7 @@ review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur 
 - [x] Ein Board, dessen done.md noch 'logbook-on-entry: true' traegt, fegt beim naechsten Move nach done keine fremden fertigen Tickets mehr ins Logbuch. Nachgestellt an einem Board-Fixture, das mit der alten Lane-Datei angelegt wurde.
   proof: core/move/oldboard_test.go:38 TestMoveIntoDoneOnAnOldBoardFilesNothing
 - [x] Eine vom Nutzer selbst geaenderte Lane ueberlebt die Migration unveraendert: was er geschrieben hat, wird nicht zurueckgesetzt. Die Entscheidung von 743737f - ein Board ist sein Lane-Verzeichnis - bleibt gueltig.
-  proof: core/lane/corrections_test.go:71 TestCorrectionRunsOncePerBoard; core/lane/corrections_test.go:107 TestCorrectionLeavesALaneSomebodyWroteAlone
+  proof: core/lane/corrections_test.go:93 TestCorrectionRunsOncePerBoard; core/lane/corrections_test.go:134 TestCorrectionLeavesALaneSomebodyWroteAlone
 - [x] Der Nutzer erfaehrt, dass eine seiner Lanes von einer Korrektur betroffen ist, statt es an seinem Verhalten zu merken. Nachgestellt an dem Board-Fixture aus Punkt 1.
   proof: core/lane/corrections.go:144 applyCorrections writes to os.Stderr (correctionsOut:121); core/lane/corrections_test.go:244 TestCorrectionSpeaksOnStderrAndNotOnStdout, :55 TestCorrectionRemovesTheDoorwayFromAnOldBoard; core/move/oldboard_test.go:63
 - [x] Die Zeile in core/release/NOTES.md, die 'Finishing a ticket no longer files anything' behauptet, stimmt danach fuer alle Boards - oder sie sagt, fuer welche sie nicht gilt und was zu tun ist.
