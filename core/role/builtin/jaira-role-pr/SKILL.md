@@ -22,10 +22,8 @@ git log --oneline origin/HEAD..HEAD
 gh pr list --head "$(git branch --show-current)" --state open
 ```
 
-That last line decides which of your two jobs this is. Empty: no pull request
-exists, you push and hand back the description. A pull request listed: a person
-has opened it, so you push to it and answer its comments under **Answering
-review comments** below. Either way you never open one.
+That last line decides which of your two jobs this is; you branch on it after
+the push. Either way you never open one.
 
 Three things must already be true. If one is not, that is a finding for the
 ticket, not something you fix here:
