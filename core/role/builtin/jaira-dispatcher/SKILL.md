@@ -100,7 +100,9 @@ Say which one you took. The human needs to know whether the workers outlive you.
    If you have to go around the script, run `herdr --skill` first rather than
    working from what this file remembers about the command surface, which
    drifts — and keep `--no-focus`: you are starting work, not stealing the
-   human's screen.
+   human's screen. Keep `--workspace "$HERDR_WORKSPACE_ID"` too: without it
+   Herdr chooses the workspace itself, and the worker can open in a window you
+   are not looking at.
 
    On WSL, prefer the tab and pane surface over `herdr agent start` /
    `agent prompt` / `agent wait` — those refuse a WSL pane, because they resolve

@@ -40,10 +40,17 @@ if [ ! -d "$wt" ]; then
   fi
 fi
 
+# Named, because without --workspace Herdr decides for itself where the tab
+# lands: the worker can open in a window nobody is looking at, and a worker
+# nobody sees is one nobody notices dying. Herdr exports its own workspace into
+# every pane it starts, so this is the workspace the caller is sitting in.
+ws=()
+if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID"); fi
+
 # A tab per worker, never a split. A split divides the height of one screen: at
 # four workers each strip is a few lines, and nobody can read what any of them is
 # doing — which is the whole reason a worker gets a surface of its own.
-pane="$("$herdr" tab create --cwd "$wt" --label "$ticket/$lane" --no-focus \
+pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$lane" --no-focus \
   | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
 
 # The tab's shell runs on the machine Herdr itself runs on. When that is Windows
