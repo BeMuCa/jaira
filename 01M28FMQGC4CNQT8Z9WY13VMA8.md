@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:51:54Z
+updated-at: 2026-09-15T06:54:29Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -284,3 +284,22 @@ Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - 
 - Folge fuer die Commit-Ableitung: dieser Commit nennt 13VMA8 nicht. Die Ticket-Datei selbst ist in 79bb6de aber ebenfalls geaendert, und die Ableitung nimmt die Vereinigung aus Ticket-Datei-Historie UND Commits, die die Id nennen - 79bb6de faellt also ueber den ersten Weg trotzdem in die Liste.
 - Fuer die naechste Runde in einem geteilten Worktree: 'git add <pfade>' statt 'git add -A'. Der Rollen-Prompt jaira-role-lane sagt heute 'git add -A' und ist damit genau die Anleitung, die diesen Zusammenstoss erzeugt hat.
 - **2026-09-15 06:51 · Alexander Sacharov** — Fuer den erneuten Testing-Durchgang: was frueher schon festgestellt wurde und nicht verloren gehen darf - (1) kein glab-Flag ist per Analogie zu gh geraten, --body-file existiert dort nicht, geprueft gegen echtes glab 1.114.0; (2) die Never-Run-Regel (kein merge, kein approve) steht auf beiden Pfaden, gh wie glab; (3) die Forge wird am Push-Remote abgelesen, nicht an jaira.remote. Neu zu pruefen ist nur Sprosse 4 der Leiter in core/role/builtin/jaira-role-pr/SKILL.md: haelt sie den Agenten wirklich vor dem Push an, und sagt sie dem Menschen etwas Ausfuehrbares (git config jaira.forge gitlab|github, danach Rolle neu starten). Dazu die neue Zeile unter ## Unreleased in core/release/NOTES.md - eine Zeile, nicht umgebrochen. NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md (paralleles Ticket KSGSKK im selben Worktree). Keinen Pull Request oeffnen oder aktualisieren.
+- **2026-09-15 06:54 · Alexander Sacharov** — testing 2026-09-15: Gates gruen, Funktion gruen, ABER drei von vier DoD-Proofs zeigen auf falsche Zeilen - fail.
+
+Was gruen ist, damit es niemand zweimal prueft:
+- go build ./... RC=0; go test ./... -race RC=0, kein FAIL (core/lane 5.055s, internal/wintrap 1.514s, Rest cached).
+- DoD 1 inhaltlich erfuellt: CLAUDE.md:156-169 steht hinter dem jaira:local-Marker (:154) vor :170 jaira:end, AGENTS.md:166-179, README.md:842-851 - alle drei tragen die Regel, die beiden Agenten-Dateien wortgleich.
+- Forge-Leiter auf sechs Fixtures durchgespielt (Remotes github.com / gitlab.com / git.esprit-engineering.de, je ohne und mit gesetztem jaira.forge): Sprosse 1 gewinnt immer, github.com -> gh, gitlab.com -> glab, git.esprit-engineering.de ohne Einstellung -> kein Werkzeug genannt und Halt vor dem Push. Genau wie SKILL.md:51-69 es beschreibt.
+- glab 1.114.0 gegengeprueft: 'mr list -s/--source-branch' existiert, 'mr create -t/--title' und '-d/--description' existieren, '--body-file' gibt es NICHT (die $(cat ...)-Form ist also richtig), 'glab mr approve' existiert.
+- Frisch gebaute Binary: 'jaira roles install --into <dir>' schreibt die glab-Zeilen wirklich heraus (go:embed traegt sie mit) - im ausgelieferten SKILL.md stehen :89 glab mr list, :130 glab mr create, :151-152 die glab-Verbote.
+- 'merge request' steht genau einmal (:71), also nur auf der GitLab-Seite und nicht global.
+
+Der Befund: 9fc224c ('read the forge off the remote the branch is pushed to') hat den Absatz 'Then stop, here, before the push' (:65-69) eingezogen und alles darunter um sechs Zeilen verschoben. In 8c2324f wurde nur der Proof von DoD 3 nachgezogen, die drei aelteren nicht. Sie zeigen jetzt auf Text, der ihre Aussage nicht traegt:
+- DoD 1 proof sagt 'SKILL.md:86-92 verzweigt nach dem Push in beide Betriebsarten' - :86-90 ist der glab-mr-list-Block. Richtig ist :92-97.
+- DoD 2 proof sagt ':83 (glab mr list --source-branch) und :124 (glab mr create)' - :83 ist 'gh pr list', :124 ist 'gh pr create'. Der Proof fuer den GitLab-Weg zeigt auf die GitHub-Befehle, liest sich also als sein eigenes Gegenteil. Richtig ist :89 und :130.
+- DoD 4 proof sagt ':143-148' fuer die never-run-Zeilen - :143-148 sind die Bullets zum Beantworten von Review-Kommentaren. Richtig ist :149-152. Und ':113-115' fuer 'You write it; you never run it' ist in Wahrheit :119-121.
+Nur DoD 3 (:36-68, :65-68) stimmt.
+
+Warum das nicht kosmetisch ist: die Proofs sind genau das, was jaira-role-pr in die PR-Beschreibung unter 'How to check' schreibt. Ein Reviewer, der DoD 2 folgt, landet auf 'gh pr create' und liest es als Beleg fuer GitLab-Unterstuetzung.
+
+Fix, fuenf Minuten: 'jaira dod 13VMA8 1|2|4 --done --proof "..."' mit den oben genannten richtigen Zeilen. Inhaltlich ist nichts zu aendern - nur die Anker. Danach lohnt ein Blick, ob review-check Schritt 4 ('genau EIN Treffer fuer gh pr create') noch stimmt; die vorige Runde hat ihn selbst schon als ueberholt notiert.
