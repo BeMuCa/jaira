@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:11:15Z
+updated-at: 2026-09-15T07:15:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
@@ -34,6 +34,7 @@ claimed-at: 2026-09-15T06:57:22Z
 outcome-what: "core/lane/corrections.go: benannte, einmalige, feldgenaue Lane-Korrektur im Ladepfad; entfernt 'logbook-on-entry: true' aus einem done.md, das erkennbar die von 2ecc670 ausgelieferte Datei ist, meldet es und merkt sich das in .jaira/lanes/corrections. Eine selbstgeschriebene Lane wird gemeldet, nie editiert. Tests: core/lane/corrections_test.go (6), core/move/oldboard_test.go (end-to-end). Eine Zeile in core/release/NOTES.md unter ## Unreleased."
 outcome-why: "Boards von vor 9ad7aa9 fegen beim Move nach done weiterhin fremde fertige Tickets ins Logbuch (Issue #6), weil Load bei ProjectLanesActive nur das Lane-Verzeichnis liest - eine einmal geschriebene Lane-Datei ist fuer immer die Wahrheit. Die Handarbeit-Anweisung der 0.1.4-Notiz greift nicht, weil .jaira/lanes/ gitignored ist und die Zeile pro Checkout einzeln entfernt werden muesste."
 outcome-resolves: "DoD 1-6 abgehakt mit Proof; go test ./... -race RC=0; alle drei Faelle zusaetzlich von Hand mit gebautem Binary nachgestellt"
+review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur nur als Set.Warnings-Eintrag; internal/cli/root.go:291 verwirft alle Lane-Warnungen unter --json, und rund fuenfzehn weitere lane.Load-Aufrufer (internal/cli/mergedriver.go:55, tags.go:320, links.go:43, validate.go:35, lanes.go:110, checklist.go:137, resume.go:84, internal/tui/browse.go:157) lesen .Warnings gar nicht. Die Korrektur ist einmalig und schreibt den Marker im selben Aufruf: faellt sie in einem dieser Aufrufe an - beim Agenten-'jaira next --json' oder im git-Merge-Driver - wird die done.md editiert und niemand erfaehrt es je. Stattdessen den Says-/Skipped-Satz in applyCorrections direkt auf os.Stderr schreiben, so wie nudgeIfStale in internal/cli/update.go:37 es fuer genau diesen Fall schon tut und im Kommentar begruendet: 'it must reach the terminal regardless of --json - stdout is reserved for the payload an agent parses'. Das ist DoD 3: der Test beweist, dass der Satz erzeugt wird, nicht dass er ankommt."
 ---
 
 # Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen
