@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -31,16 +31,22 @@ tags:
 blocked-by: []
 related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
-commits: []
+commits:
+  - bb903c8d77f82fae3840895ccd46a9ad569ef84f
+  - 85cfde30113a1c24da62ca7136bdcaacdbb6d8b6
+  - 5b0d17ce5a712900708342b600c0e59dcef88267
+  - c359211dbc52d7cca6286f32e06eb3e8c736a242
+  - ade63fe0eac8077144f48ef491da073ea7176087
+  - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:27:28Z
+updated-at: 2026-09-15T15:27:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
 claimed-at: 2026-09-15T15:02:47Z
-outcome-what: "Der Plan steht: 17 Schritte, Datei im Baum zuerst (1-11), Ref-Namensraum danach (12-16), NOTES.md zuletzt."
-outcome-why: "Die Plan-Lane hat im Code nachgesehen, was der Milestone kostet, und die offenen Punkte des Entwurfs entschieden: Format, Ablageort, Farbvergabe, Indexrichtung."
-outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig als Ablageort verworfen, Ref bleibt im Plan weil DoD 2 ihn verlangt."
+outcome-what: "core/milestone (Datei, Farbe, Index), jaira milestone create/add/rm/ls, jaira list --milestone, die rechte Kartenkante und der M-Picker im TUI, und ein zweiter Ref-Namensraum refs/jaira/milestones/ durch gitref, outbox, refsync und jaira fetch."
+outcome-why: "Ein Tag am einzelnen Ticket kann unerledigte Arbeit nicht in die naechste Runde tragen: jedes Ticket liegt auf seinem Ref, das sind zwanzig Vorgaenge. Eine Datei wird stattdessen in einem Griff bearbeitet."
+outcome-resolves: "DoD 1-5 und 7 erfuellt und mit Tests belegt; DoD 6 war bereits von Alex' Milestone-Entscheidung vom 15.09. als superseded markiert."
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
