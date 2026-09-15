@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:49:49Z
+updated-at: 2026-09-15T06:50:29Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -99,7 +99,7 @@ conflict-theirs-question: ""
 - [x] go test ./... -race gruen, dann committen
 - [x] Sprosse 4 der Forge-Leiter: die Rolle dort anhalten - kein Push, keine PR-Abfrage - und dem Menschen sagen, dass er git config jaira.forge setzt und neu startet
 - [x] NOTES.md: Unreleased-Zeile fuer das Anhalten bei unbekannter Forge
-- [~] go test ./... -race gruen, dann committen
+- [x] go test ./... -race gruen, dann committen
 
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
