@@ -278,12 +278,13 @@ previous commit left it, and have to go looking.
 leave a note and a lane change and no source change; a commit carrying only that
 is bookkeeping, and a branch with one per lane hides the work inside it. Leave the
 ticket file modified in the worktree — the next commit that carries code takes it
-along, and if no further code commit follows, the `jaira logbook <id>` commit that
-files the ticket away carries its final state. Nothing is lost by waiting: the commit list is derived from the ticket id
-in the commit message as much as from the ticket file's history, so name the
-handle in every subject (`fix(A3K9QP): …`) and the list fills itself in. The one
-ticket that still earns a commit of its own is one you create and hand to someone
-else: commit it, or nobody but you knows it exists.
+along, and if no further code commit follows, the commit that files the ticket
+away with `jaira logbook <id>` carries its final state. Nothing is lost by
+waiting: the commit list is derived from the ticket id in the commit message as
+much as from the ticket file's history, so name the handle in every subject
+(`fix(A3K9QP): …`) and the list fills itself in. The one ticket that still earns
+a commit of its own is one you create and hand to someone else: commit it, or
+nobody but you knows it exists.
 
 jaira never commits for you. It reads git (`Diff`, `Commits`, `HeadSHA`) and
 writes only files — staging is yours, deliberately.

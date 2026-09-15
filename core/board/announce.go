@@ -98,11 +98,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  that is bookkeeping, and a branch with one of them per lane hides the work\n" +
 	"  inside it. Leave the ticket file modified in the worktree — the next commit\n" +
 	"  that carries code takes it along; if no further code commit follows, the\n" +
-	"  `jaira logbook <id>` commit that files the ticket away carries its final\n" +
-	"  state. Nothing is lost by waiting: the lane's writes are already on the\n" +
-	"  ticket, and the commit list is derived from the id in the message, not from\n" +
-	"  the ticket file. The one ticket that still earns a commit of its own is a\n" +
-	"  ticket you create and hand to someone else — commit it, or nobody but you\n" +
+	"  commit that files the ticket away with `jaira logbook <id>` carries its\n" +
+	"  final state. Nothing is lost by waiting: the lane's writes are already on\n" +
+	"  the ticket, and the commit list is derived from the id in the message, not\n" +
+	"  from the ticket file. The one ticket that still earns a commit of its own is\n" +
+	"  a ticket you create and hand to someone else — commit it, or nobody but you\n" +
 	"  knows it exists\n" +
 	"- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its\n" +
 	"  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the\n" +

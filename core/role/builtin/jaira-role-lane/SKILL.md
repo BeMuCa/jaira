@@ -33,8 +33,8 @@ Then finish the step yourself:
   and a lane change has nothing to show a reviewer, and a commit for that alone
   turns the branch history into one entry per lane with the actual work buried in
   it. Leave the ticket file modified in the worktree; the next commit that
-  carries code takes it along; if no further code commit follows, the `jaira
-  logbook <id>` commit that files the ticket away carries its final state.
+  carries code takes it along; if no further code commit follows, the commit
+  that files the ticket away with `jaira logbook <id>` carries its final state.
 
 ## Boundaries
 

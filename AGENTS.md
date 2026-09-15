@@ -68,11 +68,11 @@ Working a ticket:
   that is bookkeeping, and a branch with one of them per lane hides the work
   inside it. Leave the ticket file modified in the worktree — the next commit
   that carries code takes it along; if no further code commit follows, the
-  `jaira logbook <id>` commit that files the ticket away carries its final
-  state. Nothing is lost by waiting: the lane's writes are already on the
-  ticket, and the commit list is derived from the id in the message, not from
-  the ticket file. The one ticket that still earns a commit of its own is a
-  ticket you create and hand to someone else — commit it, or nobody but you
+  commit that files the ticket away with `jaira logbook <id>` carries its
+  final state. Nothing is lost by waiting: the lane's writes are already on
+  the ticket, and the commit list is derived from the id in the message, not
+  from the ticket file. The one ticket that still earns a commit of its own is
+  a ticket you create and hand to someone else — commit it, or nobody but you
   knows it exists
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
@@ -183,8 +183,8 @@ reaches `master` through a pull request — which is what makes the diff readabl
 the change and what it was for in one place. It rides with the code and never
 alone: a lane that changed no code — critique, testing, review — commits
 nothing at all and leaves the ticket file for the next commit that carries
-code, or, when no further code commit follows, for the `jaira logbook` commit
-that files the ticket away.
+code, or, when no further code commit follows, for the commit that files the
+ticket away with `jaira logbook`.
 
 **The pull request belongs to the maintainer from the moment it exists.** An
 agent pushes its branch and stops there: it does not open the pull request, does
