@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:44:56Z
+updated-at: 2026-09-15T05:45:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53136
@@ -222,3 +222,12 @@ Nicht neu aufgemacht (stand schon im ersten Durchgang so): die doppelte Warnung 
 Warum wieder keine neue NOTES.md-Zeile: unveraendert der Grund aus der 2. Runde - die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung, und diese zwei Fixes sind Korrekturen daran, von aussen nicht zusaetzlich beobachtbar.
 
 Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
+- **2026-09-15 05:45 · Alexander Sacharov** — critique 3. Durchgang (7d24138, zwei Fixes). Ein Befund, und er steckt in genau dem Arm, den dieser Durchgang neu gebaut hat:
+
+1. spawn.sh:77-78 - die Meldung des 'claude blocked'-Arms lautet 'answer it in that pane yourself, then start this worker again'. Gelesen wird diese Zeile nur vom Dispatcher, und dispatcher/SKILL.md:188-189 verbietet ihm genau das: 'Read its output, report what it is asking, and never answer for the human'. Der Kommentar spawn.sh:70-73 beruft sich selbst auf dieses Verbot - das Skript schuetzt den Dialog also vor seinem eigenen send-keys und schickt den Dispatcher im naechsten Satz mit der Hand hinein. Fix: die Meldung an den Menschen richten, der Dispatcher meldet nur ('report it to the human, let them answer it in that pane, then start this worker again'). Der eigene case-Arm und exit 1 bleiben richtig.
+
+Der Umbruch teamlead/SKILL.md:44-47 ist erledigt, kein Befund.
+
+Nicht neu aufgemacht, stand in Durchgang 1 oder 2 schon so: die doppelte Warnung in beiden Prompts (DoD 2+3 verlangen sie), die lange NOTES.md-Zeile, die Plattform-Weiche spawn.sh:56, das Zustands-Literal zweimal (68 und 75), und dass spawn.sh keinen /jaira-role-tester starten kann (eigenes Ticket).
+
+Fuer den Dispatcher: das ist die DRITTE Ruecksendung dieser Lane. Die Stoppregel in dispatcher/SKILL.md:190 greift damit nach diesem Fix - nicht noch eine vierte Runde, sondern dem Menschen vorlegen.
