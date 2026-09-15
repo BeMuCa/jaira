@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:41:58Z
+updated-at: 2026-09-15T20:42:01Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -135,7 +135,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] listLogbook/logbookNames (internal/cli/logbook.go:224) listen den Unterordner milestones/ mit, sonst liegt die Datei da und die Liste sagt es nicht
 - [x] Test DoD 9 und 11: ablegen - vom Board weg, 'milestone ls' schweigt, keine Karte traegt die Farbe, das Logbuch nennt ihn; 'create' mit demselben Namen wird abgelehnt; 'restore' - Liste, Farbe und Karte zurueck
 - [x] Hilfetexte und docs/COMMANDS.md: 'jaira logbook' nennt den Milestone-Fall, 'jaira milestone rm' bleibt bei 'der Milestone bleibt stehen', 'create' nennt den belegten Namen - alle drei liest man VOR dem Aufruf
-- [ ] DoD 12: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen
+- [~] DoD 12: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
