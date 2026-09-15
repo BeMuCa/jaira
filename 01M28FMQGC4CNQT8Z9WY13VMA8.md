@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:51:38Z
+updated-at: 2026-09-15T06:51:54Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -283,3 +283,4 @@ Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - 
 - Nicht repariert, bewusst: die Historie dieses Branches gehoert gerade zwei Sitzungen gleichzeitig; ein rebase oder amend haette der anderen unter den Haenden weggezogen. Der Inhalt ist richtig und liegt am Baum.
 - Folge fuer die Commit-Ableitung: dieser Commit nennt 13VMA8 nicht. Die Ticket-Datei selbst ist in 79bb6de aber ebenfalls geaendert, und die Ableitung nimmt die Vereinigung aus Ticket-Datei-Historie UND Commits, die die Id nennen - 79bb6de faellt also ueber den ersten Weg trotzdem in die Liste.
 - Fuer die naechste Runde in einem geteilten Worktree: 'git add <pfade>' statt 'git add -A'. Der Rollen-Prompt jaira-role-lane sagt heute 'git add -A' und ist damit genau die Anleitung, die diesen Zusammenstoss erzeugt hat.
+- **2026-09-15 06:51 · Alexander Sacharov** — Fuer den erneuten Testing-Durchgang: was frueher schon festgestellt wurde und nicht verloren gehen darf - (1) kein glab-Flag ist per Analogie zu gh geraten, --body-file existiert dort nicht, geprueft gegen echtes glab 1.114.0; (2) die Never-Run-Regel (kein merge, kein approve) steht auf beiden Pfaden, gh wie glab; (3) die Forge wird am Push-Remote abgelesen, nicht an jaira.remote. Neu zu pruefen ist nur Sprosse 4 der Leiter in core/role/builtin/jaira-role-pr/SKILL.md: haelt sie den Agenten wirklich vor dem Push an, und sagt sie dem Menschen etwas Ausfuehrbares (git config jaira.forge gitlab|github, danach Rolle neu starten). Dazu die neue Zeile unter ## Unreleased in core/release/NOTES.md - eine Zeile, nicht umgebrochen. NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md (paralleles Ticket KSGSKK im selben Worktree). Keinen Pull Request oeffnen oder aktualisieren.
