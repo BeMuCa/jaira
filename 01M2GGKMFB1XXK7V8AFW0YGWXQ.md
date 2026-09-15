@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:16:14Z
+updated-at: 2026-09-15T20:19:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -286,3 +286,21 @@ Meine Lesart von Alex' Satz, bevor jemand anders sie anders liest: ein Milestone
 Offen und Sache der Plan-Lane, weil es den Bau entscheidet: verschwindet der leere Milestone VON ALLEIN, sobald die letzte Zeile herausgenommen wird, oder braucht es dafuer ein Kommando? Automatisch ist bequemer und laesst sich nicht vergessen; es loescht aber eine frisch mit 'jaira milestone create' angelegte, noch leere Datei sofort wieder - und genau so legt man einen Milestone an, bevor man weiss, was hineinkommt. Wer das automatisch baut, braucht eine Antwort darauf.
 
 Ref-Transport beim Loeschen nicht vergessen: eine Datei von der Platte zu nehmen raeumt refs/jaira/ nicht. Wer den Milestone entfernt, muss auch seinen Ref raeumen, sonst schreibt IncomingMilestones ihn beim naechsten Zug wieder hin.
+- **2026-09-15 20:19 · Alexander Sacharov** — pre-process, Runde 2 (DoD 8-10), 2026-09-15. Die offene Frage aus der human-Lane ist entschieden, und zwar so:
+
+VERSCHWINDEN IST EIN EREIGNIS, KEIN ZUSTAND. Ein Milestone verschwindet in dem Moment, in dem seine LETZTE Ticket-Zeile herausgenommen wird - nicht deshalb, weil seine Liste leer ist. Damit faellt der Einwand aus der human-Lane weg: 'jaira milestone create <name>' ohne Tickets legt eine leere Datei an, und die bleibt liegen, weil niemand etwas herausgenommen hat. Genau so legt man einen Milestone an, bevor man weiss, was hineinkommt.
+
+Die Alternative waere ein eigenes Kommando ('jaira milestone delete'). Dagegen spricht, dass DoD 8 woertlich das Herausnehmen des letzten Tickets als Nachstellung nennt, und dass ein Milestone, den man vergisst zu loeschen, als Farbe auf Karten weiterlebt. Ein automatisches Loeschen laeuft NUR im Schreibweg (milestone rm), nie beim Lesen: eine von Hand leer editierte Datei wird nicht beim naechsten Laden geloescht - jaira loescht keine Datei, die es nur gelesen hat.
+
+ZWEI AUSGAENGE, ZWEI BEDEUTUNGEN, das ist kein Widerspruch zwischen DoD 8 und 9: leer geraeumt heisst aufgegeben und die Gruppe ist spurlos weg; fertig heisst abgerechnet und die Gruppe wandert samt Liste ins Logbuch, wo sie nachlesbar bleibt.
+
+WAS DER CODE DAFUER NOCH NICHT HAT:
+- core/outbox/outbox.go:361 send() lehnt OpDelete fuer KindMilestone ausdruecklich ab ('A milestone is only ever written, never deleted'). Dieser Satz ist ab jetzt falsch und der Weg muss gebaut werden.
+- core/gitref hat Delete nur fuer Tickets; MilestoneRefName ist da, das Gegenstueck zu Delete fehlt.
+- core/ticket/store.go:464 Restore legt JEDE Datei nach TicketsDir. Ein abgelegter Milestone braucht ein eigenes Ziel.
+
+REF RAEUMEN IST PFLICHT, nicht Kosmetik: refsync.IncomingMilestones (refsync.go:194) schreibt jede Milestone-Datei, die die Refs tragen, auf die Platte. Wer nur die Datei loescht, bekommt sie beim naechsten 'jaira fetch' zurueck. Das gilt fuer das Verschwinden UND fuer das Ablegen ins Logbuch - anders als bei einem Ticket, wo RecordFiled den Ref absichtlich stehen laesst und erst der Snapshot-Lauf ihn raeumt; fuer Milestones raeumt der Snapshot nichts.
+
+ABLAGEORT: .jaira/logbook/<initials>-<datum>/milestones/<name>.md, ein Unterordner. Grund: ein Milestone-Dateiname (frei gewaehlt) kann mit einem Ticket-Dateinamen kollidieren, und Restore muss am Fundort erkennen, wohin die Datei zurueckgehoert - Ordner statt Namensraten.
+
+NOCH IMMER NICHT BESTAETIGT, und wer es anders liest, korrigiert DoD 9 statt es zu bauen: dass mit Alex' Forderung der Lebenslauf des Milestones selbst gemeint ist (Logbuch legt den Milestone ab) und nicht, dass das Ablegen eines TICKETS dessen Zeile aus dem Milestone nimmt. Gebaut wird die erste Lesart, weil DoD 9 sie woertlich so sagt.
