@@ -40,14 +40,14 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:28:30Z
+updated-at: 2026-09-15T18:28:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
 claimed-at: 2026-09-15T18:09:30Z
-outcome-what: "critique-Runde 4 ohne Finding: die drei Text-Findings aus Runde 3 sind nachgemessen behoben, und ein Durchgang durch den ganzen Diff - core/milestone, internal/cli/milestones.go, der TUI-Teil und der Ref-Weg - bringt nichts Neues."
-outcome-why: "Die Lane endet, wenn ein Durchgang nichts findet. Die Findings-Zahl ist 9, 6, 3, 0 gelaufen, keines wurde wiederholt, und die vier stehengelassenen Abwaegungen bleiben stehen."
-outcome-resolves: "review-summary=none gesetzt; kein DoD-Punkt aendert sich, der Code ist seit Runde 3 unveraendert."
+outcome-what: "testing: Suite gruen und alle sieben DoD-Punkte am Baum nachgeprueft; DoD 6 auf einem Scratch-Board mit dem echten Binary nachgestellt"
+outcome-why: "die Lane prueft, ob das Geforderte existiert und funktioniert, nicht ob der Outcome-Text stimmt"
+outcome-resolves: "test-verdict=pass; DoD 6 abgehakt mit der Nachstellung als Proof"
 review-summary: none
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
