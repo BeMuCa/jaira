@@ -25,7 +25,7 @@ related:
   - 01M28FMQGC4CNQT8Z9WY13VMA8
 commits: []
 created-at: 2026-09-15T05:40:26Z
-updated-at: 2026-09-15T05:45:31Z
+updated-at: 2026-09-15T05:45:35Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
@@ -38,7 +38,8 @@ updated-by: Alexander Sacharov
   proof: als Punkte 2-4 nach 13VMA8 gewandert, 2026-09-15
 - [-] Auf GitHub aendert sich nichts: derselbe Prompt tut dort weiterhin genau das, was er heute tut. Nachgestellt auf diesem Repository.
   proof: als Punkte 2-4 nach 13VMA8 gewandert, 2026-09-15
-- [ ] Der Forge wird erkannt, ohne dass jemand pro Board etwas einstellen muss, solange der Remote es hergibt - und wenn er es nicht hergibt, sagt die Rolle das, statt den falschen Befehl zu raten.
+- [-] Der Forge wird erkannt, ohne dass jemand pro Board etwas einstellen muss, solange der Remote es hergibt - und wenn er es nicht hergibt, sagt die Rolle das, statt den falschen Befehl zu raten.
+  proof: als Punkte 2-4 nach 13VMA8 gewandert, 2026-09-15
 - [ ] Die Regel aus 13VMA8 steht auf beiden Wegen und stimmt: der Agent schreibt die Zeile aus und fuehrt sie nie aus, merged nie und gibt nie frei. Nachgestellt, indem beide Wege gelesen werden - kein 'Never run' darf auf einem Weg fehlen.
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
