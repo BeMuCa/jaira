@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:07:42Z
+updated-at: 2026-09-15T21:08:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -448,3 +448,13 @@ FINDING: internal/cli/milestones.go:237 — 'jaira milestone add/rm' is the thir
 Nothing is lost when it happens — the status line survives the write, so the ref stays filed and no other clone is misled. What is wrong is only what the user is told, which is why this is one finding and not a redesign.
 
 CHECKED AND LEFT ALONE: unfileMilestone recording an unmarked milestone that was never marked is a no-op write, not a bug; AssignColour no longer sees a filed milestone's colour since LoadAll filters, but a filed milestone paints nothing, so a reused colour cannot collide on screen; milestoneFiled's ref-before-logbook order is right for an unshared board; fetch.go's two lists and their JSON keys match what IncomingMilestones returns.
+- **2026-09-15 21:08 · Alexander Sacharov** — Dispatcher, 2026-09-15 21:1x: HALT NACH DREI RUECKLAEUFEN. Die critique-Lane hat die Arbeit dreimal zurueckgeschickt (Runde 5: fuenf Findings, Runde 6: zwei, Runde 7: eines). Die Regel des Dispatchers sagt, dass hier ein Mensch entscheidet, und der Dispatcher startet deshalb KEINE vierte Runde.
+
+Was ein Mensch zum Entscheiden braucht - die Beobachtung, nicht die Empfehlung:
+- Die Findings werden kleiner und keines wird wieder aufgemacht. Runde 6 und 7 sagen das ausdruecklich und nennen jedes Mal, was nachgemessen und liegengelassen wurde.
+- Runde 5 betraf den Bau ('status: filed' entschied nicht, was auf dem Board steht). Runde 6 und 7 betreffen nur noch, was der Benutzer zu lesen bekommt, wenn er auf eine markierte Datei trifft.
+- Das offene Finding aus Runde 7: 'jaira milestone add/rm' ist die dritte Tuer in eine markierte Milestone-Datei und die einzige ohne Weigerung; create (milestones.go:121) und logbook (logbook.go:283) haben je eine. Es geht dabei nichts verloren - die Status-Zeile ueberlebt den Schreibvorgang, der Ref bleibt 'filed' - falsch ist nur die Meldung an den Benutzer.
+
+Die zwei Lesarten, zwischen denen nur ein Mensch entscheiden kann, und sie sehen von hier gleich aus: entweder ist die Definition of Done unvollstaendig (jede Tuer in eine abgelegte Datei braucht eine Weigerung, und das gehoert hingeschrieben), oder die Schleife konvergiert, ohne je zu enden, weil jede Runde eine Ebene tiefer liest und tiefer immer geht.
+
+Das Ticket steht in in-progress. Der Zweig feat/0YGWXQ traegt alles bis 65aff0a; DoD 8-12 sind gebaut, die Suite mit -race ist gruen.
