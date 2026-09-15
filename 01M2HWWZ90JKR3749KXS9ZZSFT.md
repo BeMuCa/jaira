@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:32:17Z
+updated-at: 2026-09-15T13:32:35Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -112,3 +112,4 @@ Nicht aufgemacht und bewusst stehen gelassen: dass dieselbe Regel in sechs handg
 - **2026-09-15 13:31 · Alexander Sacharov** — in-progress (3. Durchgang): beide critique-Befunde des 2. Durchgangs behoben. Die Formulierung lautet jetzt ueberall 'the commit that files the ticket away with `jaira logbook <id>`' - das Subjekt ist der Commit, nicht jaira, und der Widerspruch zu '`jaira` never commits for you' sechs Zeilen tiefer in .claude/skills/jaira/SKILL.md ist weg. Angefasst wurden sieben Stellen statt der sechs aus dem Befund: AGENTS.md:187 und CLAUDE.md:176 tragen denselben Satz im handgeschriebenen PR-Abschnitt, der NICHT aus announce.go erzeugt wird - 'jaira update' laesst ihn stehen. Wer die Formulierung spaeter noch einmal aendert, muss diese beiden von Hand mitnehmen.
 
 Beim Umbrechen: es genuegt nicht, die eine geaenderte Zeile zu kuerzen - der Umbruch schiebt sich durch den Rest des Absatzes, und eine kurze Zeile in der Mitte ist derselbe Diff-Schaden wie eine zu lange. In docs/AGENTS.md und .claude/skills/jaira/SKILL.md waren jeweils drei Nachlaeufe noetig, bis der Absatz wieder durchgehend auf 80 lief.
+- **2026-09-15 13:32 · Alexander Sacharov** — Falle beim Ablauf 'commit - move --commits $(git rev-parse HEAD) - amend, damit die Ticket-Datei mitfaehrt': das Amend vergibt eine neue Sha, und die im Ticket steht dann auf einem Commit, den es nicht mehr gibt. Korrigiert mit 'jaira set 9ZZSFT commits=<neue sha>'. Die Reihenfolge, die das vermeidet: erst 'git add' von Code UND Ticket-Datei nach dem Move, dann ein einziger Commit, und die Sha danach per 'jaira set' nachtragen - sie laesst sich vorher nicht kennen. Die Ticket-Datei bleibt dadurch immer um genau diesen einen 'set'-Schreibvorgang hinter dem Commit zurueck; sie liegt jetzt geaendert im Arbeitsbaum und faehrt mit dem naechsten Code-Commit, wie die Regel es vorsieht. Die abgeleitete Liste ist davon unberuehrt - sie liest den Handle aus dem Betreff.
