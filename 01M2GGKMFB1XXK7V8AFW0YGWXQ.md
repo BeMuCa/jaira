@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:12:11Z
+updated-at: 2026-09-15T18:15:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -48,10 +48,7 @@ claimed-at: 2026-09-15T18:09:30Z
 outcome-what: "Die drei Findings der critique-Runde 3 behoben, alle drei Text: der Hilfetext von 'jaira milestone' sagt jetzt, dass der Dateiname der Name ist und die Frontmatter nur color und created-at traegt; --color steht an allen vier Stellen als 1-255 mit dem Grund (0 faerbt keine Zelle); docs/COMMANDS.md hat --milestone bei 'jaira list' und vier Zeilen fuer milestone create/add/rm/ls in der Writing-Tabelle."
 outcome-why: "Die drei Texte waren die Stellen, die man VOR dem Aufruf liest. Ein von Hand eingetragenes name: aendert seit Runde 2 nichts und niemand merkt es; '--color <0-255>' laedt dazu ein, 0 zu uebergeben, was der Code zurueckweist; und COMMANDS.md wird von README.md:676 als vollstaendige Referenz ausgewiesen, fuehrte die Befehlsfamilie aber ueberhaupt nicht."
 outcome-resolves: "Kein DoD-Punkt aendert sich - der Code ist unveraendert, es war Dokumentation an drei Stellen. go vet und go test ./... sind gruen."
-review-summary: |-
-  internal/cli/milestones.go:51 der Hilfetext von 'jaira milestone' sagt weiter "Frontmatter carries the name, the colour and when it was created" - seit Runde 2 schreibt New() kein name: mehr und parse() liest keines; wer das liest und von Hand ein name: einträgt, ändert nichts und merkt es nie. Ersetzen durch: der Dateiname IST der Name, die Frontmatter trägt color und created-at - genau wie core/milestone/milestone.go:154 und core/release/NOTES.md:18 es schon sagen.
-  internal/cli/milestones.go:78 und :146 nennen den Bereich weiter "--color <0-255>" bzw. "ANSI-256 colour (0-255)", während :123 jetzt "1-255" fordert und 0 zurückweist; drei Stellen, zwei davon falsch, und die falschen sind die, die man vor dem Aufruf liest. Beide auf 1-255 ändern, mit dem Grund in einem Halbsatz (0 färbt keine Zelle).
-  docs/COMMANDS.md:57 listet für 'jaira list' weiter nur --lane/--assignee/--tag/--query/--actionable, und die Befehlstabelle hat keine Zeile für milestone create/add/rm/ls - obwohl README.md:676 diese Datei als vollständige Referenz ausweist und jede andere Befehlsfamilie (jaira tag, jaira tags, jaira lanes ...) dort steht. Vier Zeilen in die Writing-Tabelle neben 'jaira tag' und --milestone in Zeile 57 nachtragen.
+review-summary: none
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
