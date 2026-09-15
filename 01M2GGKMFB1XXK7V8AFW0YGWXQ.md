@@ -4,7 +4,7 @@ title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
 status: brainstorm
 ready: true
 creator: Alexander Sacharov
-goal: "Wer plant, legt einen Sprint als eigene Datei an, sieht auf jeder Karte am rechten Rand welche Tickets zusammengehoeren, und filtert das Board mit einem Griff darauf."
+goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
 context: |-
   Beim Planen am 2026-09-14 lagen 80-90 alte Tickets auf dem Board und 20 neue sollten dazukommen. Gebraucht wurde ein Weg, die neuen in der Sitzung schnell durchzugehen, waehrend die alten daneben liegen bleiben.
 
@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T14:59:52Z
+updated-at: 2026-09-15T15:00:00Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-69299
