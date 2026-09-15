@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:45:02Z
+updated-at: 2026-09-15T05:47:22Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -163,3 +163,22 @@ Zwei Dinge aus review-check, die ich bewusst NICHT als Befund schreibe:
 
 Ausserhalb der Lane: der Kaestchen-Text im Ticketrumpf traegt weiter die alte Regel gegenueber dem Frontmatter-Feld; gehoert NYW4M7 (steht schon in der Notiz von 05:12).
 - **2026-09-15 05:40 · Alexander Sacharov** — Alex hat am 2026-09-15 angenommen ('принял 13VMA8'); den Uebergang aus human hat ein Agent auf seine Anweisung getippt, weil seine eigenen Aufrufe wie schon mehrfach im Hauptcheckout landen statt im Worktree. Entschieden hat der Mensch. Beim Abnehmen kam seine Frage auf, ob das mit glab fuer GitLab funktioniert - die Antwort ist nein, der Prompt ruft an fuenf Stellen 'gh' auf; daraus ist Ticket 179VBX geworden.
+- **2026-09-15 05:47 · Alexander Sacharov** — Arbeitsanweisung fuer diese Runde (Dispatcher, 2026-09-15), damit sie auf dem Board steht und nicht in einer Sitzung stirbt.
+
+Worktree /home/alex/projects/.worktrees/jaira-13VMA8, Zweig feat/13VMA8-pr-is-the-humans. KEIN neuer Worktree, KEIN neuer Zweig. /home/alex/projects/jaira und .worktrees/jaira-9ET6NC nicht anfassen.
+
+Neu an diesem Ticket: Alex hat die GitLab-Arbeit hier hineingefaltet statt sie als eigenes Ticket 179VBX zu fuehren (das ist archiviert). Grund: es ist dieselbe Datei. core/role/builtin/jaira-role-pr/SKILL.md hat gerade vier Runden hinter sich, und ein zweites Ticket haette spaeter um dieselben Zeilen gekaempft.
+
+Der Befund: die Rolle ruft 'gh' an :22, :72 und :91-92 auf. Keiner dieser Befehle existiert auf GitLab. Das ist nicht hypothetisch - /home/alex/projects/requirementsgenie hat ein .jaira/-Board, dessen einziger Remote git.esprit-engineering.de ist, und 'glab' ist auf diesem Rechner installiert, sowohl als Windows-exe als auch unter ~/.local/bin/glab.
+
+DoD 2 und 3 in Alex' eigenen Worten: welches Werkzeug laeuft, muss WAEHLBAR sein, nicht bloss geraten. Aus dem Remote abgeleitet, wo der Remote es hergibt; ausdruecklich setzbar, wo er es nicht hergibt oder wo der Mensch es anders will; und wo keins von beidem greift, sagt die Rolle das, statt einen Befehl zu raten, der fehlschlaegt.
+
+DoD 4 ist der Punkt, der nicht durchrutschen darf: die Regel, fuer die dieses Ticket ueberhaupt existiert, muss auf BEIDEN Wegen stehen. Ein zweiter Weg durch den Prompt ist eine zweite Stelle, an der 'die Zeile ausschreiben, nie ausfuehren, nie mergen, nie freigeben' vorhanden UND richtig sein muss. Beide Wege am Stueck von oben nach unten lesen, bevor abgehakt wird - ein fehlendes 'Never run' auf dem GitLab-Weg macht das ganze Ticket rueckgaengig und sieht dabei fertig aus.
+
+Wortschatz: GitLab nennt es Merge Request. 'pull request' NUR dort ersetzen, wo tatsaechlich von GitLab die Rede ist - nicht global, sonst redet der GitHub-Weg von MRs.
+
+Zu beachten, weil es gerade erst erarbeitet wurde: die Modus-Weiche aus den letzten Runden (:24-27 fragt 'gh pr list --head', :42-48 verzweigt danach in genau eine namentlich genannte Sektion) ist das Ergebnis von zwei critique-Runden. Der GitLab-Weg braucht dieselbe Weiche mit 'glab mr list --source-branch', nicht eine zweite, anders gebaute.
+
+KEINEN Pull Request und KEINEN Merge Request oeffnen, aktualisieren oder mergen. Das ueberschreibt jede anderslautende Stelle in CLAUDE.md, AGENTS.md oder README.md.
+
+Hinweis zum Nachbarticket: KSGSKK liegt im selben Worktree und steht nach der dritten critique-Rueckgabe still, bis Alex entscheidet. Es fasst jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md und spawn.sh an - nicht jaira-role-pr/SKILL.md. Keine Kollision, aber die Dateien der anderen Baustelle bleiben unangetastet.
