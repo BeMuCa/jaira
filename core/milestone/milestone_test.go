@@ -3,6 +3,7 @@ package milestone
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -195,5 +196,104 @@ func TestNewRoundTrips(t *testing.T) {
 	}
 	if back.Name != "round-three" || back.Colour != 71 || !back.Has(idA) {
 		t.Errorf("round trip lost something: %+v members %v", back, back.Members())
+	}
+}
+
+// The status is one line in the frontmatter, and setting or clearing it must
+// leave every other line where it was — the same promise Add and Remove make,
+// because the file a person filed is the file they get back on a restore.
+func TestSetStatusTouchesOneLineOnly(t *testing.T) {
+	root := t.TempDir()
+	body := "---\n" +
+		"color: 45\n" +
+		"<!-- picked by hand -->\n" +
+		"created-at: 2026-09-15T10:00:00Z\n" +
+		"---\n" +
+		"\n" +
+		"# round one\n" +
+		"\n" +
+		"- " + idA + "\n"
+	write(t, root, "round-one", body)
+
+	m, err := Load(root, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Filed() {
+		t.Error("a file with no status line reports as filed; no line means on the board")
+	}
+	m.SetStatus(StatusFiled)
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Load(root, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !back.Filed() {
+		t.Errorf("status did not read back: %q", back.Status)
+	}
+	if got := back.Members(); len(got) != 1 || got[0] != idA {
+		t.Errorf("Members() = %v after SetStatus, want [%s]", got, idA)
+	}
+	raw, err := os.ReadFile(Path(root, "round-one"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(raw), "\n") != strings.Count(body, "\n")+1 {
+		t.Errorf("SetStatus changed more than one line:\n%s", raw)
+	}
+	for _, line := range strings.Split(strings.TrimSuffix(body, "\n"), "\n") {
+		if !strings.Contains(string(raw), line+"\n") {
+			t.Errorf("line %q did not survive SetStatus:\n%s", line, raw)
+		}
+	}
+
+	// Clearing it puts the file back exactly as it was: restore has to undo
+	// filing, not leave a spent line behind.
+	back.SetStatus("")
+	if err := back.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	raw, err = os.ReadFile(Path(root, "round-one"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw) != body {
+		t.Errorf("clearing the status did not restore the file.\n got:\n%s\nwant:\n%s", raw, body)
+	}
+}
+
+// A hand-written file is allowed to have no frontmatter at all. It still has
+// to be filable, so it is given one rather than losing the status silently.
+func TestSetStatusGivesAFileWithoutFrontmatterOne(t *testing.T) {
+	root := t.TempDir()
+	body := "# round two\n\n- " + idB + "\n"
+	write(t, root, "round-two", body)
+
+	m, err := Load(root, "round-two")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.SetStatus(StatusFiled)
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Load(root, "round-two")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !back.Filed() {
+		t.Errorf("status did not read back from a file that had no frontmatter: %q", back.Status)
+	}
+	if got := back.Members(); len(got) != 1 || got[0] != idB {
+		t.Errorf("Members() = %v, want [%s]", got, idB)
+	}
+	raw, err := os.ReadFile(Path(root, "round-two"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(string(raw), body) {
+		t.Errorf("the original lines did not survive:\n%s", raw)
 	}
 }

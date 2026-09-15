@@ -201,6 +201,12 @@ func (y *Syncer) RecordMilestone(name string, content []byte) error {
 // ref is the newer state by construction — it is what the remote accepted —
 // so a local file that differs is overwritten, and the previous content is in
 // git if it was ever committed.
+//
+// A ref whose file says it has been filed is skipped: it is off the board, and
+// writing it back is exactly how filing a milestone would undo itself on the
+// next fetch. A local file already there is left alone rather than removed —
+// jaira does not delete a file it has only read, and whoever wants that board
+// tidy files it there too.
 func (y *Syncer) IncomingMilestones(root string) ([]string, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
@@ -213,6 +219,9 @@ func (y *Syncer) IncomingMilestones(root string) ([]string, error) {
 	for _, name := range names {
 		content, _, err := y.Repo.ReadMilestone(name)
 		if err != nil {
+			continue
+		}
+		if milestone.FromBytes(name, content).Filed() {
 			continue
 		}
 		path := milestone.Path(root, name)

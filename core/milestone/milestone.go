@@ -10,6 +10,14 @@
 // does it. A file is copied instead: the lines that are not finished move into
 // the next milestone's file in one edit.
 //
+// A milestone that has been filed into the logbook carries `status: filed` in
+// its frontmatter, and that line is what keeps it off the board. It is written
+// onto the ref too, on purpose: a ref taken down would free the name again and
+// tell no other clone anything, while a ref saying "filed" is read by every
+// clone that fetches — it stops the file being written back to disk, and it
+// holds the name until somebody restores it. No line means the milestone is on
+// the board, which is the state every file written before this existed is in.
+//
 // The file is read and written the way a ticket file is — frontmatter for the
 // facts about the milestone, one line per member below it — and the lines are
 // kept verbatim across a write. A comment, a blank line, a hand-chosen order
@@ -24,6 +32,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,8 +42,10 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// Subdir is where a board keeps its milestones, under .jaira.
-const Subdir = "milestones"
+// Subdir is where a board keeps its milestones, under .jaira. It is the name
+// core/ticket files a milestone under inside a logbook folder too, and is
+// taken from there so the two cannot drift apart.
+const Subdir = ticket.MilestonesSubdir
 
 // Dir is the milestone directory of a board rooted at root.
 func Dir(root string) string { return filepath.Join(root, ticket.DirName, Subdir) }
@@ -68,6 +79,7 @@ type Milestone struct {
 	Name      string
 	Colour    int
 	CreatedAt time.Time
+	Status    string
 
 	lines   []string // the whole file, frontmatter included
 	members []string // ticket ids, in file order
@@ -161,9 +173,18 @@ func Load(root, name string) (*Milestone, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := parse(string(b))
+	return FromBytes(name, b), nil
+}
+
+// FromBytes reads a milestone out of bytes that are not on this disk — what a
+// ref carries. The ref is the only place a milestone filed on another machine
+// can be read from, and the caller has to be able to ask its status without
+// first writing it to the board, which is the very thing a filed milestone
+// must not do.
+func FromBytes(name string, content []byte) *Milestone {
+	m := parse(string(content))
 	m.Name = name
-	return m, nil
+	return m
 }
 
 // LoadAll reads every milestone on the board, sorted by name. An absent
@@ -230,6 +251,8 @@ func parse(text string) *Milestone {
 			switch strings.TrimSpace(key) {
 			case "color":
 				m.Colour, _ = strconv.Atoi(value)
+			case "status":
+				m.Status = value
 			case "created-at":
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					m.CreatedAt = t
@@ -262,6 +285,71 @@ func parseMember(line string) (string, bool) {
 		return "", false
 	}
 	return rest, true
+}
+
+// StatusFiled is the one status a milestone can carry. A milestone is either
+// on the board or filed into the logbook, so the field is a flag with a name
+// rather than a state machine — and a name, because a reader of the file has
+// to be able to tell what it means without a table.
+const StatusFiled = "filed"
+
+// Filed reports whether this milestone has been put into the logbook. A filed
+// milestone is off the board: 'jaira milestone ls' does not name it, no card
+// carries its colour, and a fetch that finds its ref leaves the ref alone
+// rather than writing the file back to disk.
+func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
+
+// SetStatus writes, replaces or removes the status line in the frontmatter and
+// touches nothing else — the same rule Add and Remove follow. Rebuilding the
+// frontmatter from the parsed facts would be shorter and would throw away the
+// comments and the order somebody chose, which is exactly what the format
+// promises to keep.
+//
+// The empty status removes the line, which is how a restore puts a milestone
+// back on the board. A file with no frontmatter at all is given one, because
+// there is nowhere else for the status to go and a hand-written file is
+// allowed to have started without it.
+func (m *Milestone) SetStatus(status string) {
+	m.Status = status
+	end, hasFront := m.frontEnd()
+	idx := -1
+	if hasFront {
+		for i := 1; i < end; i++ {
+			key, _, ok := strings.Cut(strings.TrimSpace(m.lines[i]), ":")
+			if ok && strings.TrimSpace(key) == "status" {
+				idx = i
+				break
+			}
+		}
+	}
+	switch {
+	case status == "":
+		if idx >= 0 {
+			m.lines = slices.Delete(slices.Clone(m.lines), idx, idx+1)
+		}
+	case idx >= 0:
+		m.lines = slices.Clone(m.lines)
+		m.lines[idx] = "status: " + status
+	case hasFront:
+		m.lines = slices.Insert(slices.Clone(m.lines), end, "status: "+status)
+	default:
+		m.lines = append([]string{"---", "status: " + status, "---", ""}, m.lines...)
+	}
+}
+
+// frontEnd reports where the frontmatter closes. It is a frontmatter only when
+// the file opens with the fence, which is the rule parse reads by: a "---"
+// further down is a horizontal rule in somebody's prose.
+func (m *Milestone) frontEnd() (int, bool) {
+	if len(m.lines) == 0 || strings.TrimSpace(m.lines[0]) != "---" {
+		return 0, false
+	}
+	for i := 1; i < len(m.lines); i++ {
+		if strings.TrimSpace(m.lines[i]) == "---" {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 // Save writes the milestone back through ticket.WriteAtomic, so a reader never

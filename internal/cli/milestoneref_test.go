@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
 )
 
@@ -150,4 +151,56 @@ func gitOut(t *testing.T, dir string, args ...string) string {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
 	}
 	return string(out)
+}
+
+// Filing a milestone must not take its ref down, and this is why: a ref is
+// what every other clone reads. Taken down, the name is free again and two
+// machines can plan two different milestones under one identity. Left up and
+// marked, it says "filed" to everyone who fetches — the file is not written to
+// their board, and the name stays taken.
+func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(ada, "round-one"); err == nil {
+		t.Error("the milestone is still on ada's board after being filed")
+	}
+	out, err := runCLI(t, ada, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "round-one") {
+		t.Errorf("'milestone ls' still names a filed milestone:\n%s", out)
+	}
+
+	// The ref is up and says so. Read through gitref rather than the file,
+	// because the ref is the only thing the other clone will ever see.
+	repo := &gitref.Repo{Dir: ada, Remote: "origin"}
+	content, _, err := repo.ReadMilestone("round-one")
+	if err != nil {
+		t.Fatalf("the ref of a filed milestone was taken down: %v", err)
+	}
+	if got := milestone.FromBytes("round-one", content); !got.Filed() {
+		t.Errorf("the ref carries status %q, want %q", got.Status, milestone.StatusFiled)
+	}
+
+	// And grace, who never saw it on her board, does not get it written there.
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err == nil {
+		t.Error("a fetch wrote a filed milestone onto grace's board")
+	}
+	out, err = runCLI(t, grace, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("grace's ls: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "round-one") {
+		t.Errorf("grace's 'milestone ls' names a filed milestone:\n%s", out)
+	}
 }

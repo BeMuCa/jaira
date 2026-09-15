@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
 )
@@ -94,8 +95,15 @@ should never have existed. It asks for the handle typed back first.`,
 func newRestoreCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "restore <file>",
-		Short: "Put an archived ticket back on the board",
-		Args:  exactArgs(1),
+		Short: "Put an archived ticket, or a filed milestone, back on the board",
+		Long: `Moves a file out of .jaira/archive/ or .jaira/logbook/ and back onto the board,
+named by its filename.
+
+A milestone filed with 'jaira logbook <name>' comes back the same way, with its
+ticket list and its colour as they were. Its ref is unmarked in the same
+breath, because until that happens the ref still says "filed" and every other
+clone goes on hiding it.`,
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
@@ -105,13 +113,41 @@ func newRestoreCmd() *cobra.Command {
 			if err != nil {
 				return &codedError{code: ExitNotFound, reason: "not_archived", message: err.Error()}
 			}
+			restored := unfileMilestone(s, dst)
 			if g.jsonOut {
-				return emit(cmd.OutOrStdout(), map[string]any{"restored": true, "path": dst})
+				return emit(cmd.OutOrStdout(), map[string]any{"restored": true, "path": dst, "milestone": restored})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Restored %s to the board.\n", filepath.Base(dst))
 			return nil
 		},
 	}
+}
+
+// unfileMilestone takes the "filed" line back off a milestone that has just
+// been restored and puts the unmarked file on its ref again, reporting the
+// milestone's name if that is what was restored.
+//
+// Both halves are needed. Without the line removed the milestone is on this
+// board while its own file says it is filed; without the ref rewritten the ref
+// still says "filed", so every other clone keeps hiding it and the name stays
+// taken against the person who just asked for it back.
+func unfileMilestone(s *ticket.Store, dst string) string {
+	if filepath.Base(filepath.Dir(dst)) != ticket.MilestonesSubdir {
+		return ""
+	}
+	name := strings.TrimSuffix(filepath.Base(dst), ".md")
+	ms, err := milestone.Load(s.Root, name)
+	if err != nil {
+		return ""
+	}
+	if ms.Filed() {
+		ms.SetStatus("")
+		if err := ms.Save(s.Root); err != nil {
+			return name
+		}
+	}
+	recordMilestone(s, ms)
+	return name
 }
 
 func archivedNames(s *ticket.Store) ([]string, error) {

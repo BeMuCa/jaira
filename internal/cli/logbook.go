@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -47,6 +48,15 @@ The folder is the record: who finished what, on which day. Leaving the board
 is the moment every commit is finally known, so it is stamped here rather
 than left to whoever remembers to run 'jaira set'. 'jaira restore <file>'
 brings a logged ticket back, the same as an archived one.
+
+Naming a milestone instead of a ticket files the milestone: its file moves
+into .jaira/logbook/<initials>-<yyyymmdd>/milestones/, 'jaira milestone ls'
+stops naming it, no card carries its colour and the board's M filter forgets
+it. Its ref stays up carrying the status "filed", which is what keeps every
+other clone from writing it back onto their board and what holds the name
+until somebody restores it. Only a milestone you name by hand — --all sweeps
+the terminal lane and never takes a group with it. A milestone is filed only
+once every ticket in it has reached the terminal lane or left the board.
 
 'jaira archive' is for a ticket that is not being worked — abandoned,
 duplicate, obsolete — and works from any lane. This command is for finished
@@ -166,6 +176,12 @@ func listLogbook(s *ticket.Store, w io.Writer) error {
 func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 	t, err := s.Load(idArg)
 	if err != nil {
+		// A ticket first, a milestone second. A milestone name is chosen
+		// freely and could be spelled like a handle, and the ticket is both
+		// the older and the far commoner meaning of an argument here.
+		if name, nerr := milestoneNamed(s, idArg); nerr == nil {
+			return logbookMilestone(s, name, w)
+		}
 		return err
 	}
 	env, _, err := loadEnv(s)
@@ -214,6 +230,98 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 	return nil
 }
 
+// milestoneNamed resolves an argument to a milestone on this board, or reports
+// why it is not one. Only an exact name: a milestone is a name from a closed
+// set, the same way the --milestone filter treats it.
+func milestoneNamed(s *ticket.Store, arg string) (string, error) {
+	name, _, err := milestone.NormalizeName(arg)
+	if err != nil {
+		return "", err
+	}
+	if _, err := milestone.Load(s.Root, name); err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+// logbookMilestone files a milestone: off the board, into the logbook, with
+// its ref left standing and marked.
+//
+// The ref is the part worth reading twice. Taking it down would be the obvious
+// move and is the wrong one: refsync.IncomingMilestones writes to disk every
+// milestone the refs carry, so a removed ref frees the name for a second
+// milestone with the same identity, while a ref that says "filed" is read by
+// every clone — it stops the file coming back and holds the name until
+// 'jaira restore' gives it up.
+func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
+	env, _, err := loadEnv(s)
+	if err != nil {
+		return err
+	}
+	term := env.Lanes.Terminal()
+	if term == nil {
+		return fail(ExitValidation, "not_terminal",
+			"no terminal lane is installed, so there is nowhere for milestone %q to be logged from", name)
+	}
+
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
+	ms, err := milestone.Load(s.Root, name)
+	if err != nil {
+		return err
+	}
+	// The same gate a ticket passes, asked of a group: a milestone with
+	// unfinished work in it is a plan somebody is still working, and filing it
+	// takes the plan off the board while the work stays on it.
+	var open []string
+	for _, id := range ms.Members() {
+		t, err := s.Load(id)
+		if err != nil {
+			// Already off the board — filed or archived — which is as finished
+			// as this can ask for.
+			continue
+		}
+		if t.Status != term.ID {
+			open = append(open, fmt.Sprintf("%s (%s)", ticket.Handle(id), t.Status))
+		}
+	}
+	if len(open) > 0 {
+		return fail(ExitValidation, "milestone_unfinished",
+			"milestone %q still holds work that has not reached %q: %s — finish or take those out with 'jaira milestone rm %s <id>' first",
+			name, term.ID, strings.Join(open, ", "), name)
+	}
+
+	// Mark, then put the marked file on the ref, then move it: recordMilestone
+	// reads the file from the board, so the order is not a preference.
+	ms.SetStatus(milestone.StatusFiled)
+	if err := ms.Save(s.Root); err != nil {
+		return err
+	}
+	recordMilestone(s, ms)
+
+	folder := logbookFolder()
+	dst, err := s.LogbookMilestone(name, folder)
+	if err != nil {
+		return err
+	}
+
+	if g.jsonOut {
+		return emit(w, map[string]any{
+			"logged": true, "milestone": name, "path": dst, "file": filepath.Base(dst),
+			"count": len(ms.Members()),
+		})
+	}
+	fmt.Fprintf(w, "Logged milestone %s (%d ticket(s)).\n", name, len(ms.Members()))
+	fmt.Fprintf(w, "Moved to %s — restore it with 'jaira restore %s'.\n",
+		filepath.Join(ticket.DirName, ticket.LogbookSubdir, folder, ticket.MilestonesSubdir), filepath.Base(dst))
+	fmt.Fprintf(w, "Its ref stays up marked %q, so the name stays taken until you do.\n", milestone.StatusFiled)
+	return nil
+}
+
 // logbookFolder names the dated folder a ticket lands in: who took the ticket
 // off and when, so the folder is a readable record of one person's sweep
 // rather than a bare filename nobody can attribute.
@@ -239,6 +347,20 @@ func logbookNames(s *ticket.Store) ([]string, error) {
 			continue
 		}
 		for _, f := range sub {
+			// A filed milestone sits one level deeper, in milestones/. It is
+			// listed with the rest or the file is there and the list denies it.
+			if f.IsDir() && f.Name() == ticket.MilestonesSubdir {
+				inner, err := os.ReadDir(filepath.Join(s.LogbookDir(), e.Name(), f.Name()))
+				if err != nil {
+					continue
+				}
+				for _, mf := range inner {
+					if !mf.IsDir() && strings.HasSuffix(mf.Name(), ".md") {
+						out = append(out, filepath.Join(e.Name(), f.Name(), mf.Name()))
+					}
+				}
+				continue
+			}
 			if !f.IsDir() && strings.HasSuffix(f.Name(), ".md") {
 				out = append(out, filepath.Join(e.Name(), f.Name()))
 			}

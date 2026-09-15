@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -55,7 +56,11 @@ blank lines and an order you chose all survive.
 
 Each milestone is given a random free colour, which its cards then show as a
 bar down their RIGHT edge — the left edge belongs to the tags. On the board, M
-opens the picker and narrows everything to one milestone.`,
+opens the picker and narrows everything to one milestone.
+
+A milestone leaves the board only when somebody says so: ` + "`jaira logbook <name>`" + `
+files it once all its tickets are finished, and ` + "`jaira restore <name>.md`" + ` brings
+it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
 	}
 	cmd.AddCommand(
 		newMilestoneCreateCmd(),
@@ -79,6 +84,11 @@ this board is using: concurrent milestones are never many, so a clash once the
 palette is spent is survivable, and nobody should have to choose one. --color
 <1-255> overrides it; 0 is not black here but "no colour", and would paint no
 cell on any card.
+
+A name that belongs to a filed milestone is refused rather than reused: its
+ref still holds it, and a second milestone under one name is one identity that
+looks different on every machine. ` + "`jaira restore <name>.md`" + ` brings the filed one
+back instead.
 
 Names are lowercase kebab, the same rule tags follow — the name is also the
 filename, so it has to be safe in a path. "Round One" is filed as "round-one"
@@ -110,6 +120,11 @@ and you are told so.`,
 					name, milestone.Path(s.Root, name), name)
 			} else if !errors.Is(err, os.ErrNotExist) {
 				return err
+			}
+			if where, filed := milestoneFiled(s, name); filed {
+				return fail(ExitValidation, "milestone_filed",
+					"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour; creating it again would make a second milestone with the same name",
+					name, where, name)
 			}
 			existing, err := milestone.LoadAll(s.Root)
 			if err != nil {
@@ -175,9 +190,13 @@ func newMilestoneRmCmd() *cobra.Command {
 		Long: `Removes one line per ticket from the milestone's file, in one write, leaving
 every other line exactly where it was.
 
-The milestone itself is not deleted when its last ticket leaves: an empty
-milestone is still a plan, and deleting the file is ` + "`rm`" + ` on a file you can
-read.`,
+The milestone itself stays standing, even when its last ticket leaves. A
+milestone goes away on command and never on its own — an empty one is still a
+plan, and a milestone that deleted itself when emptied would take a freshly
+created one with it the moment you changed your mind about its first ticket.
+
+` + "`jaira logbook <name>`" + ` is the command that takes a milestone off the board,
+and ` + "`jaira restore <name>.md`" + ` brings it back.`,
 		Args: minArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return editMembers(cmd, args, false)
@@ -306,6 +325,39 @@ work and each filters to half of it.`,
 			return nil
 		},
 	}
+}
+
+// milestoneFiled reports whether this name belongs to a milestone that has
+// been filed, and where that was found. A filed name stays taken: two
+// milestones called the same thing are one identity that looks different on
+// every machine, which is the confusion a name exists to prevent.
+//
+// Two places are looked at because neither alone covers both boards. The ref
+// is the one an unshared clone does not have, and the logbook is the one a
+// clone that never fetched does not see — a board that has never been shared
+// has no refs at all, and would otherwise hand out the same name twice.
+func milestoneFiled(s *ticket.Store, name string) (string, bool) {
+	if refs != nil && refs.Usable() == nil {
+		if content, _, err := refs.Repo.ReadMilestone(name); err == nil {
+			if milestone.FromBytes(name, content).Filed() {
+				return "on its ref", true
+			}
+		}
+	}
+	folders, err := os.ReadDir(s.LogbookDir())
+	if err != nil {
+		return "", false
+	}
+	for _, f := range folders {
+		if !f.IsDir() {
+			continue
+		}
+		path := filepath.Join(s.LogbookDir(), f.Name(), ticket.MilestonesSubdir, name+".md")
+		if _, err := os.Stat(path); err == nil {
+			return filepath.Join(ticket.DirName, ticket.LogbookSubdir, f.Name(), ticket.MilestonesSubdir), true
+		}
+	}
+	return "", false
 }
 
 // recordMilestone puts the milestone file on its own ref, the way every ticket

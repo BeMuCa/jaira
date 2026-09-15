@@ -36,6 +36,11 @@ const (
 	// stamped, because leaving the board is the point at which every commit
 	// is finally known.
 	LogbookSubdir = "logbook"
+	// MilestonesSubdir holds one file per milestone, and names the folder a
+	// filed milestone gets inside a logbook folder. It is spelled here rather
+	// than taken from core/milestone because that package reads this one; the
+	// constant there is defined from this one, so there is still one spelling.
+	MilestonesSubdir = "milestones"
 	// legacyLogbookSubdir is what the logbook was called before it was one.
 	// Nothing writes here any more; Restore still reads it so a folder written
 	// by an earlier build stays restorable.
@@ -255,6 +260,9 @@ func (s *Store) SharedDir() string { return filepath.Join(s.dir(), SharedSubdir)
 // live, grouped into dated per-person folders.
 func (s *Store) LogbookDir() string { return filepath.Join(s.dir(), LogbookSubdir) }
 
+// MilestonesDir is where the board's milestone files live.
+func (s *Store) MilestonesDir() string { return filepath.Join(s.dir(), MilestonesSubdir) }
+
 // Archive moves a ticket out of the board, returning its new path.
 //
 // The file is moved, never removed. Restoring is moving it back, which is why
@@ -353,6 +361,38 @@ func (s *Store) Logbook(id, folder string) (string, error) {
 	return dst, s.recordFiled(t.ID, dst)
 }
 
+// LogbookMilestone moves a milestone's file off the board and into a dated
+// logbook folder, returning its new path. The counterpart of Logbook, minus
+// the refs: a milestone's ref deliberately stays up carrying its status, so
+// nothing is recorded here.
+//
+// It lands in a milestones/ subfolder rather than beside the tickets because a
+// milestone's name is chosen freely and could be spelled like a ticket file.
+// Restore has to know from where it found a file where the file belongs, and a
+// folder says that without guessing at names.
+func (s *Store) LogbookMilestone(name, folder string) (string, error) {
+	src := filepath.Join(s.MilestonesDir(), filepath.Base(name)+".md")
+	if _, err := os.Stat(src); err != nil {
+		return "", err
+	}
+	dir := filepath.Join(s.LogbookDir(), filepath.Base(folder), MilestonesSubdir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	if real, err := filepath.EvalSymlinks(src); err == nil {
+		src = real
+	}
+	dst := filepath.Join(dir, filepath.Base(src))
+	if _, err := os.Stat(dst); err == nil {
+		return "", fmt.Errorf("%s already exists in %s", filepath.Base(dst),
+			filepath.Join(LogbookSubdir, filepath.Base(folder), MilestonesSubdir))
+	}
+	if err := os.Rename(src, dst); err != nil {
+		return "", err
+	}
+	return dst, nil
+}
+
 // logbookFolders lists the per-person dated folders of the logbook as full
 // paths, in deterministic order — those under LogbookDir and, after them,
 // those under the name the logbook used to have, so a folder written by an
@@ -429,6 +469,7 @@ func (s *Store) LoggedPerDay(now time.Time, days int) []int {
 // walk it anywhere but back into TicketsDir.
 func (s *Store) Restore(name string) (string, error) {
 	base := filepath.Base(name)
+	home := s.TicketsDir()
 
 	var src string
 	if _, err := os.Stat(filepath.Join(s.ArchiveDir(), base)); err == nil {
@@ -439,10 +480,16 @@ func (s *Store) Restore(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var logMatches []string
+	// A file is looked for in the folder itself and in its milestones/
+	// subfolder, and where it was found is where it goes back to: a milestone
+	// belongs in .jaira/milestones/, never among the tickets.
+	var logMatches, logDirs []string
 	for _, folder := range folders {
-		if _, err := os.Stat(filepath.Join(folder, base)); err == nil {
-			logMatches = append(logMatches, folder)
+		for _, dir := range []string{folder, filepath.Join(folder, MilestonesSubdir)} {
+			if _, err := os.Stat(filepath.Join(dir, base)); err == nil {
+				logMatches = append(logMatches, folder)
+				logDirs = append(logDirs, dir)
+			}
 		}
 	}
 	names := make([]string, 0, len(logMatches))
@@ -456,12 +503,19 @@ func (s *Store) Restore(name string) (string, error) {
 	case len(logMatches) > 1:
 		return "", fmt.Errorf("%s is in more than one logbook folder (%s) — remove one before restoring", base, strings.Join(names, ", "))
 	case len(logMatches) == 1:
-		src = filepath.Join(logMatches[0], base)
+		src = logDirs[0]
+		if filepath.Base(src) == MilestonesSubdir {
+			home = s.MilestonesDir()
+		}
+		src = filepath.Join(src, base)
 	case src == "":
 		return "", fmt.Errorf("%s is not in the archive or in .jaira/logbook/", base)
 	}
 
-	dst := filepath.Join(s.TicketsDir(), base)
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		return "", err
+	}
+	dst := filepath.Join(home, base)
 	if _, err := os.Stat(dst); err == nil {
 		return "", fmt.Errorf("%s is already on the board", base)
 	}

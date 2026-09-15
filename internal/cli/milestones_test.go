@@ -2,8 +2,10 @@ package cli
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -194,6 +196,39 @@ func TestRmDropsTheLineAndKeepsTheMilestone(t *testing.T) {
 	if !strings.Contains(out, "Nothing to do") {
 		t.Errorf("a no-op rm did not say so:\n%s", out)
 	}
+	// And 'ls' names it exactly as before: a milestone goes away on command
+	// and never on its own, or a freshly created one would vanish the moment
+	// you took its last ticket back out.
+	out, err = runCLI(t, dir, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "round-one") {
+		t.Errorf("ls stopped naming the emptied milestone:\n%s", out)
+	}
+}
+
+// The rule hangs on emptying a milestone, not on being empty: creating one
+// with no tickets is exactly how a plan starts, and that file has to stay put.
+func TestCreateWithNoTicketsLeavesTheFileLyingThere(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatalf("an empty milestone did not survive its own creation: %v", err)
+	}
+	if len(ms.Members()) != 0 {
+		t.Errorf("milestone holds %v, want nothing", ms.Members())
+	}
+	out, err := runCLI(t, dir, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "round-one") || !strings.Contains(out, "0 ticket(s)") {
+		t.Errorf("ls does not name the empty milestone:\n%s", out)
+	}
 }
 
 // ls is read before creating, the way 'jaira tags' is read before tagging.
@@ -260,4 +295,120 @@ func ticketByHandle(t *testing.T, dir, handle string) *ticket.Ticket {
 		t.Fatal(err)
 	}
 	return tk
+}
+
+// mkDoneTicket puts a ticket straight into the terminal lane. It bypasses the
+// pipeline deliberately: what is under test is filing a milestone, not how a
+// ticket gets to be finished.
+func mkDoneTicket(t *testing.T, dir, title string) string {
+	t.Helper()
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := ticket.NewID(time.Now())
+	if _, err := s.Create(map[string]string{
+		ticket.FieldID:     id,
+		ticket.FieldTitle:  title,
+		ticket.FieldStatus: "done",
+	}, nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+// A milestone is filed the way a ticket is, and comes back the way a ticket
+// does — with its ticket list and its colour intact, because a group restored
+// as a different colour is a group nobody recognises on the board.
+func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) {
+	dir := emptyStore(t)
+	done := mkDoneTicket(t, dir, "finished work")
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one", done); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	before, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Unfinished work in it refuses the whole thing: filing a group whose work
+	// is still on the board takes the plan away and leaves the work.
+	open := mkTicket(t, dir, "not finished")
+	if out, err := runCLI(t, dir, "milestone", "add", "round-one", open); err != nil {
+		t.Fatalf("add: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "logbook", "round-one")
+	if err == nil {
+		t.Fatalf("filing a milestone with unfinished work succeeded:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "not finished") && !strings.Contains(err.Error(), "has not reached") {
+		t.Errorf("the refusal does not name what is unfinished: %v", err)
+	}
+	if out, err := runCLI(t, dir, "milestone", "rm", "round-one", open); err != nil {
+		t.Fatalf("rm: %v\n%s", err, out)
+	}
+
+	if out, err := runCLI(t, dir, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(dir, "round-one"); err == nil {
+		t.Error("the milestone is still on the board after being filed")
+	}
+	if out, err := runCLI(t, dir, "milestone", "ls"); err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	} else if strings.Contains(out, "round-one") {
+		t.Errorf("'milestone ls' still names a filed milestone:\n%s", out)
+	}
+	// No card carries its colour any more: the index is built from the files
+	// on the board, and the file is not on it.
+	rows, _ := jsonCLI(t, dir, "list", "--lane", "done")["tickets"].([]any)
+	if len(rows) == 0 {
+		t.Fatal("the filed milestone's ticket is not listed, so the colour check would prove nothing")
+	}
+	for _, r := range rows {
+		row, _ := r.(map[string]any)
+		if names, _ := row["milestones"].([]any); len(names) != 0 {
+			t.Errorf("ticket %v still carries %v", row["title"], names)
+		}
+	}
+	// And the logbook says where it went, or the file is there and the list
+	// denies it.
+	out, err = runCLI(t, dir, "logbook")
+	if err != nil {
+		t.Fatalf("logbook listing: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, filepath.Join("milestones", "round-one.md")) {
+		t.Errorf("the logbook listing does not name the filed milestone:\n%s", out)
+	}
+
+	// The name is taken until somebody gives it up.
+	out, err = runCLI(t, dir, "milestone", "create", "round-one")
+	if err == nil {
+		t.Fatalf("a filed milestone's name was handed out again:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "jaira restore") {
+		t.Errorf("the refusal does not say how to get it back: %v", err)
+	}
+
+	if out, err := runCLI(t, dir, "restore", "round-one.md"); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	after, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatalf("restore did not put the milestone back on the board: %v", err)
+	}
+	if after.Filed() {
+		t.Error("the restored milestone still says it is filed")
+	}
+	if after.Colour != before.Colour {
+		t.Errorf("colour came back as %d, want %d", after.Colour, before.Colour)
+	}
+	if got := after.Members(); len(got) != 1 || got[0] != done {
+		t.Errorf("ticket list came back as %v, want [%s]", got, done)
+	}
+	if out, err := runCLI(t, dir, "milestone", "ls"); err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	} else if !strings.Contains(out, "round-one") {
+		t.Errorf("'milestone ls' does not name the restored milestone:\n%s", out)
+	}
 }
