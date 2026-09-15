@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -39,15 +39,16 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
+  - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:43:42Z
+updated-at: 2026-09-15T20:43:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
 claimed-at: 2026-09-15T20:16:14Z
-outcome-what: "in-progress round 1 aborted; the ticket goes back to planning"
-outcome-why: "Alex reversed DoD 8 and added DoD 10-12 mid-round, so the delete path being built is no longer the wanted behaviour"
-outcome-resolves: "nothing; the round produced no committed change"
+outcome-what: "Milestones leave the board only on command: the round-1 delete path is reverted, 'jaira logbook <name>' files a milestone into .jaira/logbook/<folder>/milestones/ and 'jaira restore <name>.md' brings it back with its ticket list and colour. core/milestone gained Status/Filed/SetStatus (a 'status: filed' line edited in place, every other line verbatim) and FromBytes; core/ticket gained MilestonesSubdir, MilestonesDir, LogbookMilestone and a Restore that files a find back where it found it. refsync.IncomingMilestones skips a ref whose content says filed and never deletes a local file; 'jaira milestone create' refuses a filed name, looking at the ref first and the local logbook second. Help texts, docs/COMMANDS.md and four NOTES.md lines follow."
+outcome-why: "Alex reversed DoD 8 mid-round and added DoD 10-12: an emptied milestone must stay standing, and a filed milestone's ref must NOT be reaped but carry its status - a reaped ref frees the name and tells no other clone anything, so two machines would plan two milestones under one identity."
+outcome-resolves: "DoD 8-12. Build, vet and the full suite are green; the new tests are TestRmDropsTheLineAndKeepsTheMilestone, TestCreateWithNoTicketsLeavesTheFileLyingThere, TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack, TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef and two SetStatus tests in core/milestone."
 review-summary: none
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
