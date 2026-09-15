@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:26:37Z
+updated-at: 2026-09-15T13:26:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -32,8 +32,8 @@ outcome-what: "Die vier critique-Befunde abgearbeitet. (1) Der Abschnitt 'Work r
 outcome-why: "Befund 4 war der wesentliche: findet critique nichts, laufen testing und review ohne weitere Code-Aenderung, und es gibt keinen naechsten Commit - der PR haette eine Ticket-Datei im in-progress-Stand gezeigt, ohne review-summary und test-verdict. Genau der Zustand, den die Regel verhindern soll. Der Traeger existierte schon, die Regel benannte ihn nur nicht. Die uebrigen drei sind Uneinheitlichkeiten, die dieselbe Regel je nach gelesener Quelle anders klingen lassen."
 outcome-resolves: "Die Regel lautet jetzt in allen sechs Quellen gleich, womit die Behauptung 'ueberall gleich' aus dem vorigen outcome-what erst zutrifft (DoD 3, weiterhin getickt). DoD 4 bleibt erfuellt, die NOTES.md-Zeile ist praeziser geworden. DoD 1 und 2 bleiben der testing-Lane vorbehalten - sie verlangen die Nachstellung nach critique, testing und review. Vorbereitet ist sie: dieser Zweig traegt nach diesem Commit genau zwei Commits, beide mit Code und Ticket-Datei zusammen und beide mit dem Handle im Betreff. go build ./... und go test ./... gruen."
 review-summary: |-
-  docs/AGENTS.md:77 und .claude/skills/jaira/SKILL.md:282: der eingefuegte Halbsatz wurde nicht neu umbrochen - mitten im auf 80 Zeichen umbrochenen Absatz steht jetzt eine Zeile mit 123 bzw. 120 Zeichen ('... carries its final state. Nothing is lost by waiting ...'). Den Absatz in beiden Dateien wieder auf die Breite der Nachbarzeilen umbrechen, sonst faerbt der naechste Diff dieses Absatzes jede Zeile neu.
-  .claude/skills/jaira/SKILL.md:281 sagt 'the  commit', sechs Zeilen darunter sagt Zeile 289 'jaira never commits for you'. In derselben Datei widersprechen sich die beiden Saetze: jaira legt keinen Commit an, Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei. 'the commit that files the ticket away with ' schreiben - in dieser Datei zwingend, in den uebrigen Kopien (core/board/announce.go:100, docs/AGENTS.md:76, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:847, core/release/NOTES.md:17) derselben Formulierung wegen gleich mit.
+  docs/AGENTS.md:77 und .claude/skills/jaira/SKILL.md:282: der eingefuegte Halbsatz wurde nicht neu umbrochen - mitten im auf 80 Zeichen umbrochenen Absatz steht jetzt eine Zeile mit 123 bzw. 120 Zeichen ("... carries its final state. Nothing is lost by waiting ..."). Den Absatz in beiden Dateien wieder auf die Breite der Nachbarzeilen umbrechen, sonst faerbt der naechste Diff dieses Absatzes jede Zeile neu.
+  .claude/skills/jaira/SKILL.md:281 sagt "the 'jaira logbook <id>' commit", sechs Zeilen darunter sagt Zeile 289 "jaira never commits for you". Die beiden Saetze widersprechen sich in derselben Datei: jaira legt keinen Commit an, Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei. Stattdessen "the commit that files the ticket away with 'jaira logbook <id>'" schreiben - in dieser Datei zwingend, und derselben Formulierung wegen gleich mit in core/board/announce.go:100, docs/AGENTS.md:76, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:847 und core/release/NOTES.md:17.
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
