@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:16:51Z
+updated-at: 2026-09-15T06:17:14Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -233,3 +233,19 @@ Stehen gelassen und warum: (a) Ein Ablauf statt zwei Kopien - richtig entschiede
 
 Gegengelesen und stehen gelassen, damit die naechste Runde es nicht wieder aufmacht: (a) Die drei Zeilen Prosa :46-49 ('Not off jaira.remote') sind Begruendung und keine Handlung - in einem Prompt sind sie trotzdem richtig, weil jaira.remote an anderer Stelle des Projekts der normale Griff ist (README.md:350-355, core/settings/settings.go:149) und ein Agent ihn sonst fuer die bessere Wahl haelt. Ohne den Satz kommt Befund 1 durch die Hintertuer zurueck. (b) Die Forge-Sektion steht vor dem Push, obwohl die Antwort erst danach gebraucht wird - absichtlich: 'settle it before you type either' ist die Aussage, und die Platzierung der Listung wurde gerade erst entschieden, ich mache sie nicht in der Gegenrichtung wieder auf. (c) Ein Ablauf mit drei forge-spezifischen Stellen statt zwei Sektionen - unveraendert richtig, DoD 4 haengt daran. (d) 'glab mr list' ohne State-Flag und '--description "$(cat ...)"' statt --body-file: gegen glab 1.114.0 nachgesehen, ob es stimmt, ist die Aufgabe der review-Lane, nicht meine. (e) Der veraltete review-check (erwartet EINEN Treffer fuer 'gh pr create') bleibt ein Ticketfeld und kein Diff-Befund; steht seit der in-progress-Notiz auf dem Ticket und gehoert der review-Lane.
 - **2026-09-15 06:06 · Alexander Sacharov** — optimize (GitLab-Runde, 2026-09-15): nichts zu entfernen, keine Datei angefasst. Was ich nachgesehen habe, damit die naechste Runde es nicht wiederholt: (1) es gibt im ganzen Repo nur eine Stelle, die eine Forge kennt oder gh/glab tippt - jaira-role-pr/SKILL.md; dispatcher und teamlead tragen die PR-Regel als Prosa ohne Werkzeugnamen. (2) Nichts zeigt auf den alten Aufbau: 'the gh pr list above' ist mit 9fc224c verschwunden, und kein Go-Code liest den Prompttext (core/role/role_test.go:18 kennt nur den Rollennamen, nicht den Inhalt). (3) Die einzige neue Wiederholung ist :72 gegen :86 ('you do not open the pull request' / 'Either way you never open one'), entstanden beim Verschieben der Listung. Sie bleibt stehen: die eine steht am Push, die andere an der Verzweigung, und die Runde davor hat schon entschieden, dass Wiederholung an der Stelle der Handlung in einem Prompt kein Fluff ist. || Offen und nicht meins: NOTES.md haelt zwei Unreleased-Zeilen zu dieser Rolle, und die aeltere ('hands you ... the gh pr create line') stimmt seit heute nur noch auf GitHub. Sie gehoert einer anderen Aenderung; wer sie anfasst, sollte es bewusst tun.
+- **2026-09-15 06:17 · Alexander Sacharov** — testing-Lane 2026-09-15 (GitLab-Runde): pass. Was ich wirklich laufen liess, nicht nur gelesen:
+
+Gates: go build ./... RC=0, go test ./... -race RC=0, kein FAIL. core/role 1.034s gruen - das ist das Paket, das die eingebetteten Prompts traegt.
+
+DoD 3 (Werkzeugwahl) habe ich nicht am Text abgenommen, sondern die Regel aus SKILL.md:46-63 auf sechs frischen git-Fixtures durchgespielt: Remote github.com / gitlab.com / git.esprit-engineering.de, je einmal ohne und mit 'git config jaira.forge gitlab'. Alle sechs verhalten sich wie beschrieben, einschliesslich des Falls, der am leichtesten falsch waere: gesetztes jaira.forge=gitlab schlaegt einen github.com-Remote. Der selbstgehostete Host ohne Einstellung bleibt stehen und nennt die eine Zeile, statt zu raten.
+
+glab-Flags gegen das echte Binary geprueft (glab 1.114.0, /home/alex/.local/bin/glab), weil der Prompt sonst Befehle ausschreibt, die auf dem Rechner des Menschen scheitern:
+- 'glab mr list' sagt im Hilfetext selbst 'Defaults to open merge requests' - das fehlende Gegenstueck zu --state open ist also richtig und kein Versehen.
+- 'glab mr create' hat -d/--description und KEIN --body-file. Die ausgeschriebene Zeile mit --description "$(cat ...)" ist damit die einzige, die laeuft.
+- 'glab mr approve' existiert als eigener Befehl. Die Boundary nennt ihn richtig, nicht 'review --approve'.
+
+Funktion: frisch gebaute Binary, 'jaira roles install --into <scratch>' schreibt 8 Rollen, und die herausgeschriebene jaira-role-pr/SKILL.md traegt die glab-Zeilen an :83, :124, :145-146. go:embed nimmt die Aenderung also wirklich mit - ohne diesen Schritt haette ich nur die Quelldatei bestaetigt, nicht das, was ein Nutzer bekommt.
+
+Offen und ausdruecklich NICHT von mir angefasst (Lane-Grenze): review-check Schritt 4 verlangt genau EINEN Treffer fuer 'gh pr create'; im Baum sind es drei, plus jetzt die glab-Gegenstuecke. Der Check ist ueberholt, die Regel dahinter unveraendert. Die review-Lane muss ihn neu schreiben - das steht schon in der in-progress-Notiz und ist hier bestaetigt, nicht behoben.
+
+Ebenfalls nicht angefasst: im Worktree liegen uncommittete Aenderungen des Nachbartickets KSGSKK (jaira-dispatcher/SKILL.md, spawn.sh, NOTES.md). Gehoeren nicht zu dieser Runde, bleiben ungestaged.
