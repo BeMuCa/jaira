@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:08:47Z
+updated-at: 2026-09-15T05:08:49Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
@@ -118,3 +118,12 @@ Das gehoert in spawn.sh, und es ist der Grund, warum das Skript bisher nie einen
 Transparenz: ich habe fuer diesen einen Start spawn.sh umgangen und die drei Befehle von Hand abgesetzt, weil das Skript sonst genau den Fehler wiederholt, den es zu beheben gilt. Das ist hier ausdruecklich festgehalten und nicht stillschweigend geschehen.
 - **2026-09-14 20:35 · Alexander Sacharov** — Noch ein Befund am Rande, der zum selben Absatz gehoert: spawn.sh schickt den Lane-Befehl ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet. Herdr kennt aber einen eigenen Zustand 'blocked' fuer erkannte Genehmigungs- und Rueckfrage-Dialoge. Wer spawn.sh anfasst: vor send-text auf 'blocked' pruefen und in dem Fall abbrechen statt Enter zu druecken. Sonst beantwortet das Skript Dialoge an Stelle des Menschen, und SKILL.md verbietet dem Dispatcher genau das ('never answer for the human').
 - **2026-09-14 20:36 · Alexander Sacharov** — Die in-progress-Lane hat keine Plan-Checkliste; gearbeitet wird nach der Arbeitsanweisung des Dispatchers vom 2026-09-14 20:19 plus dem Grundursachen-Befund von 20:35 (wsl.exe --cd statt 'cd $wt &&'), der dort ausdruecklich in dieses Ticket gelegt wurde. Umfang: dispatcher/SKILL.md Transport-Absatz, teamlead/SKILL.md:44, spawn.sh (feat/, kein rg_, tab statt split, WSL-Start), dispatcher/SKILL.md:157, NOTES.md. NICHT angefasst: dass spawn.sh nur /jaira-role-lane starten kann und keinen /jaira-role-tester (Befund 4 vom 18:23) - das ist weder DoD noch in der Arbeitsanweisung und gehoert in ein eigenes Ticket.
+- **2026-09-15 05:08 · Alexander Sacharov** — Am 2026-09-15 ist die installierte Kopie ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh aus core/role/builtin ueberschrieben worden - Richtung repo -> installiert, also die, die PMF635 festgelegt hat. Sie sind jetzt deckungsgleich.
+
+Der Grund ist ein Fehler in meinem eigenen Patch vom Vortag, und er ist schlimmer als das Problem, das er loesen sollte: ich hatte den Split durch 'tab create' ersetzt, aber 'pane run "cd \'$wt\' && claude"' stehen lassen. Die Shell eines Tabs laeuft auf dem Rechner, auf dem Herdr laeuft - hier Windows. Dort gibt es kein /home/alex, das cd scheitert, claude startet im Windows-Heimverzeichnis und zeigt seinen Trust-Dialog, und das blinde 'send-keys enter' zwei Zeilen weiter beantwortet diesen Dialog. Ein Skript, das eine Vertrauensabfrage fuer den Menschen wegklickt.
+
+Die Fassung im Repository hatte das schon geloest: sie erkennt ein Windows-Herdr an /mnt/* oder *.exe und geht mit 'wsl.exe --cd <wt> -- bash -lic claude' zurueck nach Linux, wo weder eine cd-Funktion noch ein falsches Heimverzeichnis dazwischenkommen.
+
+Belegt am selben Tag: der Dispatcher, der 13VMA8 fuehrt, hat die installierte Kopie bewusst NICHT benutzt, die Fassung aus dem Worktree genommen und den Worker im ersten Versuch in seinem Tab gestartet. Das ist der Nachweis fuer Kriterium 6 dieses Tickets.
+
+Nebenbefund, noch zu pruefen: cc21ca9 hat mehr getan, als seine Commit-Nachricht sagt - Kriterium 4 (feat/-Praefix, jetzt ueber JAIRA_BRANCH_PREFIX) und Kriterium 5 (abgeleiteter COMPOSE_PROJECT_NAME statt rg_) sehen im Diff bereits erledigt aus. Nicht abhaken, ohne es nachgestellt zu haben.
