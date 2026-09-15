@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:14:15Z
+updated-at: 2026-09-15T06:14:39Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
@@ -326,3 +326,14 @@ Das erklaert auch, warum es bisher nie auffiel: alle sechs vorherigen Worker die
 Die verlaessliche Antwort steht in der Umgebung, in der spawn.sh ohnehin schon laeuft: HERDR_WORKSPACE_ID (hier w3), zusammen mit HERDR_PANE_ID und HERDR_TAB_ID ueber WSLENV durchgereicht. Also '--workspace "$HERDR_WORKSPACE_ID"'.
 
 Nebenwirkung, die zum selben Absatz gehoert: ein Tab im falschen Workspace macht '--no-focus' wertlos. Der Sinn von --no-focus ist, dem Menschen den Bildschirm nicht wegzunehmen; ein Tab, der in SEINEM Workspace aufgeht statt im Workspace des Dispatchers, tut genau das - er erscheint neben der Arbeit, die er gerade ansieht.
+- **2026-09-15 06:14 · Alexander Sacharov** — in-progress 2026-09-15 (5. Runde, nach dem Abbruch der testing-Runde): behoben ist genau der eine Befund aus Alex' Anweisung von 06:11 - scripts/spawn.sh:43-53 uebergibt jetzt --workspace $HERDR_WORKSPACE_ID an 'herdr tab create', sonst nichts angefasst.
+
+Warum ueber die Umgebungsvariable und nicht ueber eine Abfrage bei Herdr: HERDR_WORKSPACE_ID steht in WSLENV und ist in jeder Pane gesetzt, die Herdr startet (hier w3, gemessen in dieser Sitzung). Ein 'herdr workspace list' o.ae. haette geraten werden muessen, welcher der Workspaces der eigene ist - die Variable weiss es.
+
+Warum die Weiche mit Array und nicht ein leerer String: 'tab create --workspace "" ...' waere ein leerer Workspace-Name, nicht 'kein Flag'. ${ws[@]+"${ws[@]}"} ist dabei kein Zierrat - unter 'set -u' bricht ein blankes "${ws[@]}" auf einem leeren Array in bash < 4.4 ab.
+
+Warum 'if ...; then ...; fi' und nicht '[ -n ... ] && ws=(...)': als letzter Befehl einer &&-Liste liefert der fehlgeschlagene Test 1 zurueck, und 'set -e' beendet dann das ganze Skript, wenn HERDR_WORKSPACE_ID nicht gesetzt ist - also genau im Fallback-Fall.
+
+Nachgeprueft mit einem Herdr-Attrappen-Skript (Argumente auf stderr), beide Faelle: mit gesetzter Variable steht '[--workspace] [w3]' vor '--cwd', ohne sie faellt das Flagpaar ersatzlos weg und der Rest des Aufrufs ist unveraendert. Das Skript selbst laeuft in beiden Faellen bis 'send-keys enter' durch.
+
+Mit angefasst, weil es sonst sofort wieder auseinanderlaeuft: dispatcher/SKILL.md:103-105 - der Absatz 'wenn du am Skript vorbei musst' sagte bisher nur '--no-focus behalten'. Er nennt jetzt --workspace mit demselben Grund. NOTES.md:19 ist die vorhandene Unreleased-Zeile zu diesem Skript, um den Halbsatz ergaenzt statt eine zweite Zeile ueber dasselbe Skript aufzumachen.
