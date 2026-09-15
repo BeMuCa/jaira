@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:23:42Z
+updated-at: 2026-09-15T20:23:46Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -108,7 +108,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] core/outbox: OpDelete fuer KindMilestone zulassen - send() (core/outbox/outbox.go:361) weist ihn heute ab, samt Kommentar, der das Gegenteil behauptet
 - [x] core/refsync: RecordMilestoneDelete nach dem Vorbild von RecordDelete (core/refsync/refsync.go:133) - Lease aus MilestoneSHA, Weg ueber die Outbox, damit Loeschen offline funktioniert
 - [x] core/milestone: Delete(root, name) entfernt die Datei; os.ErrNotExist durchreichen, wie Load es tut
-- [ ] internal/cli: 'jaira milestone rm' loescht Datei und Ref, wenn die letzte Zeile herausgenommen wird - ein Aufruf, ein Schreibvorgang; Meldung sagt, dass der Milestone weg ist
+- [~] internal/cli: 'jaira milestone rm' loescht Datei und Ref, wenn die letzte Zeile herausgenommen wird - ein Aufruf, ein Schreibvorgang; Meldung sagt, dass der Milestone weg ist
 - [ ] Test DoD 8: letztes Ticket herausnehmen - Datei weg, 'milestone ls' nennt ihn nicht, Index leer, also keine Karte traegt seine Farbe
 - [ ] Test: 'jaira milestone create' ohne Tickets legt eine leere Datei an und sie bleibt liegen - die Regel haengt am Herausnehmen, nicht am Leersein
 - [ ] Test mit zwei Klonen: nach dem Loeschen holt 'jaira fetch' den Milestone NICHT zurueck (sonst schreibt IncomingMilestones ihn wieder hin)
