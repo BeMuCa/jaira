@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:21:36Z
+updated-at: 2026-09-15T18:21:39Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -263,3 +263,4 @@ Ausdruecklich NICHT aufgemacht, weil in Runde 1 bis 3 stehengelassen und die Beg
 
 Die Schleife hat konvergiert: 9, 6, 3, 0. Das ist der vorgesehene Ausgang der Lane und keine Nachsicht - eine vierte Runde haette nur wiederholt, was schon beantwortet ist.
 - **2026-09-15 18:21 · Alexander Sacharov** — optimize: staticcheck U1000 ueber core/milestone, core/outbox, core/gitref, internal/cli und internal/tui findet nichts, was dieser Branch verwaist hat - die drei Treffer (share.go isShared, model.go laneStart, model.go currentLane) stehen schon auf master. staticcheck ist im Repo nicht installiert, lief ueber 'go run honnef.co/go/tools/cmd/staticcheck@latest'.
+- **2026-09-15 18:21 · Alexander Sacharov** — optimize: .jaira/milestones/demo-*.md sind Handtest-Dateien aus einer frueheren Lane und bleiben untracked - sie gehoeren nicht in den Commit, aber jemand sollte sie am Ende loeschen.
