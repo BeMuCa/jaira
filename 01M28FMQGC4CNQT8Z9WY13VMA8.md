@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:51:58Z
+updated-at: 2026-09-15T05:52:46Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -191,3 +191,21 @@ Zu beachten, weil es gerade erst erarbeitet wurde: die Modus-Weiche aus den letz
 KEINEN Pull Request und KEINEN Merge Request oeffnen, aktualisieren oder mergen. Das ueberschreibt jede anderslautende Stelle in CLAUDE.md, AGENTS.md oder README.md.
 
 Hinweis zum Nachbarticket: KSGSKK liegt im selben Worktree und steht nach der dritten critique-Rueckgabe still, bis Alex entscheidet. Es fasst jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md und spawn.sh an - nicht jaira-role-pr/SKILL.md. Keine Kollision, aber die Dateien der anderen Baustelle bleiben unangetastet.
+- **2026-09-15 05:52 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (GitLab-Weg): die Rolle laeuft jetzt auf beiden Forges, und zwar als EIN Ablauf mit forge-spezifischen Kommandozeilen, nicht als zwei Sektionen.
+
+Warum nicht zwei Sektionen (naheliegend, aber verworfen): eine Kopie des ganzen Ablaufs fuer GitLab heisst, dass jede kuenftige Aenderung an zwei Stellen richtig sein muss - und DoD 4 sagt genau, was dann passiert: auf einem der beiden Wege fehlt irgendwann das 'Never run', und es sieht dabei fertig aus. Die drei Stellen, an denen die Werkzeuge sich wirklich unterscheiden, sind Auflisten (:64-74), Aufmachen (:109-121) und Boundaries (:139-144); ueberall sonst ist der Text derselbe. Darum nennen diese drei Stellen beide Kommandos und der Rest bleibt einmalig.
+
+Die Modus-Weiche aus den vorigen Runden ist unveraendert geblieben - dieselbe Weiche, nur mit zwei moeglichen Abfragekommandos davor. Keine zweite, anders gebaute.
+
+Warum 'git config jaira.forge' und nicht ~/.jaira/settings.json: die Wahl gehoert dem Repository, nicht dem Rechner. Dasselbe Argument, mit dem 'git config jaira.remote' in dieser Version eingefuehrt wurde (NOTES.md ## Unreleased) - wer auf einem Rechner ein GitHub- und ein GitLab-Board hat, kann mit einer maschinenweiten Einstellung nichts anfangen. Der Prompt liest 'jaira.remote' beim Ableiten auch gleich mit, statt blind 'origin' anzunehmen.
+
+Dead end, aufgeschrieben damit es niemand zweimal probiert: den selbstgehosteten Fall automatisch zu erkennen geht nicht sauber. 'git.esprit-engineering.de' traegt weder 'github' noch 'gitlab' im Namen. Denkbar waere, glabs eigene Hosts-Konfiguration (~/.config/glab-cli/config.yml) zu lesen oder probeweise 'glab mr list' laufen zu lassen - beides ist Maschinerie in einem Prompt, und der Probelauf authentifiziert im Zweifel gegen das falsche Projekt. Deshalb bleibt die Rolle dort ausdruecklich stehen und nennt die eine Zeile, die es fuer immer klaert. Genau das verlangt DoD 3 im dritten Satz.
+
+Was ich an glab 1.114.0 nachgesehen und nicht geraten habe:
+- 'glab mr list' listet ohne Flag bereits nur offene MRs; ein Gegenstueck zu '--state open' gibt es nicht, '--source-branch' ist das Gegenstueck zu '--head'.
+- 'glab mr create' hat kein '--body-file'. '-d/--description' nimmt einen String, darum steht in der ausgeschriebenen Zeile '--description "$(cat <die Beschreibung>)"'. '--source-branch' ist unnoetig: der aktuelle Zweig ist die Vorgabe.
+- Freigeben heisst auf GitLab 'glab mr approve', nicht 'review --approve'.
+
+Fixtures: drei git-Repos mit Remote github.com / gitlab.com / git.esprit-engineering.de, je einmal ohne und mit gesetztem jaira.forge - alle vier Zweige der Regel aus :46-58 laufen so, wie der Prompt sie beschreibt. Danach frisch gebaute Binary, 'jaira roles install --into' schreibt die glab-Zeilen wirklich heraus (go:embed nimmt die Datei mit) und 'jaira update' gibt die neue NOTES-Zeile zurueck.
+
+Fuer die naechste review-Runde: review-check Schritt 4 verlangt genau EINEN Treffer fuer 'gh pr create'. Der Check war schon vor dieser Runde ueberholt (drei Treffer), jetzt kommen die 'glab mr create'-Treffer dazu. Der Check gehoert neu geschrieben, die Regel ist unveraendert.
