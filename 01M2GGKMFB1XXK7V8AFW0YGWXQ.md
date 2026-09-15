@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:43:36Z
+updated-at: 2026-09-15T15:44:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -205,3 +205,20 @@ SENDER: WriteMilestone sitzt jetzt direkt auf outbox.Sender, MilestoneSender ist
 FORMAT: die Frontmatter-Zeile heisst 'color:', nicht 'colour:' - internal/cli/tags.go:233 schreibt diese Regel fuer die Maschinenoberflaeche hin. Das Go-Feld heisst weiter Colour, wie in core/tag; die Regel gilt fuer das, was in der Datei steht. Mitgeaendert: core/milestone/milestone_test.go, core/gitref/milestone_test.go und die NOTES-Zeile zum Dateiformat. Jetzt eine Zeile, nach dem Release ein Bruch.
 
 Plan-Schritt 5 nachgetragen abgehakt: der Index wird gebaut (internal/cli/milestones.go:29 milestoneIndex, internal/tui/model.go:374), nur in newListCmd statt in loadEnv - die critique hat genau das als begruendet durchgehen lassen.
+- **2026-09-15 15:44 · Alexander Sacharov** — critique-Runde 2, 2026-09-15. Die Findings aus Runde 1 sind alle abgearbeitet und werden nicht wieder aufgemacht: der Loeschweg ist weg, MilestoneSender ist in Sender aufgeloest, die Frontmatter sagt color:, validColour/itoa/atoi/path/activeMilestones sind ersetzt, der fetch-Hilfetext stimmt. Der Bau bleibt im Kern richtig.
+
+Sechs neue Findings, zwei davon nicht kosmetisch.
+
+1) IDENTITAET DES MILESTONE. core/milestone/milestone.go:145: Load setzt m.Name nur dann aus dem Dateinamen, wenn die Frontmatter keinen hat; Save schreibt nach Path(root, m.Name). Die Datei ist laut CLAUDE.md und laut dem eigenen Hilfetext von Hand editierbar - wer also die Zeile name: aendert, legt beim naechsten jaira milestone add eine zweite Datei an, waehrend die alte mitsamt ihrem Ref liegen bleibt. Zwei Wahrheiten fuer einen Namen. Entweder der Dateiname gewinnt immer (Load setzt m.Name = name), oder die Zeile name: verschwindet aus New - sie wird sonst nirgends gebraucht.
+
+2) DIE ALTE OUTBOX WIRD GELESEN, NICHT MIGRIERT. core/outbox/outbox.go:196: List liest sowohl das flache Verzeichnis als auch tickets/, und QueueKind loescht die flache Datei nach dem Superseden nicht. Nachgemessen mit einem Wegwerf-Test: nach einem Queue auf ein altes Ticket enthaelt List zwei Eintraege derselben ID, der veraltete zuerst. Erst wird also der alte Inhalt gesendet, danach traegt der neue Eintrag ein Lease, das der Remote nicht mehr hat. Ein paralleler Lesepfad loest das nicht - QueueKind soll legacyPath nach dem Schreiben entfernen (den Key hat es), oder List auf (Kind, ID) deduplizieren und den Unterordner gewinnen lassen.
+
+3) RESTE VON RUNDE 1. core/gitref/gitref.go:364 refDelete und :659 listRemoteNames haben je einen Aufrufer, dem sie eine Konstante uebergeben - die zweiten Aufrufer sind mit dem Loeschweg gegangen. Beide inlinen.
+
+4) DREIMAL DIESELBE REGEL. Farbe 0 bedeutet keine Farbe steht in internal/cli/milestones.go:292, internal/tui/model.go milestoneColors und internal/tui/view.go:1531 - und milestones.go:119 laesst --color 0 durch, was dann ueberall als farblos erscheint. Ein HasColour() am Milestone, an allen drei Stellen benutzt, und am Flag eine Entscheidung.
+
+5) core/outbox/outbox.go:253 DropKind vergleicht Pfad-Strings, um zu wissen, in welchem Durchlauf es steht, und ist die einzige Methode, die kind nicht normalisiert.
+
+6) internal/tui/view.go:1501 und :1532 sind derselbe Swatch-Ausdruck.
+
+NICHT AUFGEMACHT: dass IncomingMilestones die lokale Datei ueberschreibt, die geteilte Palette, der Index in newListCmd, gitref ohne generisches (Art, Name) - alle vier stehen seit Runde 1 mit ihrer Begruendung. Ebenso, dass milestoneIndex() genau einen Aufrufer hat: das ist die Naht, an der die naechsten Leser haengen, und sie ist als solche beschrieben.
