@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:54:46Z
+updated-at: 2026-09-15T06:57:48Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -43,11 +43,11 @@ question: |-
   Nicht getan, wie angewiesen: kein Pull Request und kein Merge Request aufgemacht, aktualisiert oder gemerged. Der Zweig feat/13VMA8-pr-is-the-humans ist gepusht; das Kommando gibst du.
 
   Hinweis: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide dann neu.
-outcome-what: "Critique uebersprungen"
-outcome-why: "Alex: critique ist auf diesem Ticket zweimal ohne Befund geschlossen, die Aenderung ist ein Satz"
-outcome-resolves: "DoD 3 - 'gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten' - ist jetzt nicht nur gesagt, sondern durchgesetzt: die Rolle kann den falschen Befehl nicht mehr raten, weil sie vor dem ersten Befehl stehenbleibt. Proof auf DoD 3 aktualisiert. go test ./... -race: Exit 0, kein FAIL; 'roles install --into' aus einer frisch gebauten Binary traegt den neuen Absatz, der go:embed-Pfad ist also mit."
-claimed-by: DESKTOP-RFTCH11-19054
-claimed-at: 2026-09-15T06:45:11Z
+outcome-what: "Die Proof-Zeilen aller vier DoD-Punkte am aktuellen Baum nachgeschlagen und neu gesetzt. DoD 1: :86-92 -> :92-97 (die Verzweigung nach dem Push). DoD 2: :83/:124 (die gh-Zeilen) -> :89/:130 (die glab-Zeilen). DoD 3: :36-68 -> :41-69 fuer die Leiter, dazu je eine Einzelzeile pro Sprosse (:51-52, :43, :53, :54, :55-69) und :65-66 / :67-69 fuer Halt und Anweisung an den Menschen. DoD 4: :143-148 -> :149-152 fuer die never-run-Zeilen, :113-115 -> :119-121 fuer 'You write it; you never run it', :65-67 -> :71-73 fuer den Wortwechsel merge request. Keine Datei ausserhalb von .jaira/ geaendert."
+outcome-why: "testing hat die Runde nicht am Inhalt scheitern lassen, sondern an den Ankern: seit 9fc224c zeigten drei von vier Proofs sechs Zeilen zu frueh, und DoD 2 belegte den GitLab-Weg ausgerechnet mit den beiden gh-Zeilen - der Proof las sich als sein eigenes Gegenteil. Ein Proof, der auf die falsche Zeile zeigt, ist beim Review schlimmer als keiner: er sagt 'nachgeprueft' und schickt den Pruefer an eine Stelle, die seine Behauptung nicht traegt."
+outcome-resolves: "DoD 1-4 tragen jetzt Anker, die halten, was sie behaupten - jede genannte Zeile am Baum nachgeschlagen, nicht aus dem testing-Bericht uebernommen. Dabei kamen zwei Anker ans Licht, die testing selbst nicht gemeldet hatte (DoD 4 Wortwechsel, DoD 3 Leiterspanne). Der Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und core/release/NOTES.md ist unveraendert."
+claimed-by: DESKTOP-RFTCH11-38871
+claimed-at: 2026-09-15T06:55:39Z
 review-summary: "Die Rolle jaira-role-pr spricht jetzt zwei Forges. Neu ist die Sektion 'Which forge this repository is on' (SKILL.md:36-67): zuerst 'git config jaira.forge' - ist es gesetzt, gewinnt es ohne Wenn und Aber; sonst entscheidet der Host von 'git remote get-url origin', also des Remotes, auf den der Branch gepusht wird (github.com -> gh, Host mit 'gitlab' -> glab); gibt der Host nichts her, nennt die Rolle kein Werkzeug, sagt das und schreibt die eine Zeile hin, die es klaert ('git config jaira.forge gitlab'). Dass 'origin' und nicht 'jaira.remote' gelesen wird, steht mit Begruendung im Text (:46-49) - jaira.remote traegt die Ticket-Refs und ist im Fork das Upstream, waehrend der Branch zum Fork geht. Danach sind genau drei Stellen zweisprachig: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create --body-file / :124 glab mr create --description \"$(cat ...)\") und die Boundaries (:143-148). Der uebrige Ablauf bleibt einmalig, statt als zweite Kopie zu existieren. Der Wortwechsel ist begrenzt: :65-67 weist an, 'pull request' NUR auf dem GitLab-Weg als 'merge request' zu lesen - der GitHub-Weg redet weiter von Pull Requests. Ausserdem hat 9fc224c die Abfrage der offenen Requests aus der Forge-Sektion in die Push-Sektion verschoben, wo der Branch tatsaechlich genommen wird. Dazu eine Unreleased-Zeile in core/release/NOTES.md:20 und ein Satz in der SKILL-description."
 review-gaps: |-
   Ein Befund, klein aber echt, und genau von der Sorte, die kein Test sieht: Zweig 4 der Forge-Leiter (SKILL.md:55-63, Host ist weder github.com noch gitlab-haltig, jaira.forge ungesetzt) laesst den ausfuehrenden Agenten ohne Anweisung fuer den Rest der Datei stehen. Er soll sagen, dass er es nicht entscheiden kann, und 'git config jaira.forge' nennen - aber es steht nirgends, ob er danach anhaelt oder weiterliest. Liest er weiter, steht er bei :71 vor einem unbedingten 'git push -u origin HEAD' und bei :74-84 vor einer Gabel 'auf GitHub ... oder auf GitLab ...', die er per Voraussetzung nicht aufloesen kann. Kein Widerspruch, aber eine Luecke: ein Satz wie 'Stop here and report; the rest of this file needs a settled forge' schliesst sie. Die Definition of Done ist davon nicht verletzt - DoD 3 verlangt nur, dass die Rolle es sagt statt zu raten, und das tut sie.
@@ -65,13 +65,13 @@ conflict-theirs-question: ""
 ## Definition of Done
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:86-92 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:92-97 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
 - [x] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:83 (glab mr list --source-branch) und :124 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:89 (glab mr list --source-branch) und :130 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
 - [x] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-68: git config jaira.forge gewinnt immer, sonst der Host von 'git remote get-url origin'; github.com -> gh, Host mit 'gitlab' -> glab, sonst nennt Sprosse 4 kein Werkzeug und haelt dort an - ':65-68' sagt ausdruecklich kein Push und keine Abfrage offener Requests, und nennt dem Menschen 'git config jaira.forge' als das, was die Rolle beim naechsten Start weiterlaufen laesst
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:41-69: git config jaira.forge gewinnt immer (:51-52), sonst der Host von 'git remote get-url origin' (:43); github.com -> gh (:53), Host mit 'gitlab' -> glab (:54), sonst nennt Sprosse 4 (:55-69) kein Werkzeug und haelt dort an - :65-66 sagt ausdruecklich kein Push und keine Abfrage offener Requests, :67-69 nennt dem Menschen 'git config jaira.forge' als das, was die Rolle beim naechsten Start weiterlaufen laesst
 - [x] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:143-148: 'never run gh pr create/gh pr merge/gh pr review --approve' UND 'never run glab mr create/glab mr merge/glab mr approve', dazu :113-115 'You write it; you never run it' fuer beide; Wortwechsel nur bei :65-67, nicht global
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:149-152: 'never run gh pr create/gh pr merge/gh pr review --approve' (:149-150) UND 'never run glab mr create/glab mr merge/glab mr approve' (:151-152), dazu :119-121 'You write it; you never run it' fuer beide; Wortwechsel nur bei :71-73, nicht global
 
 ## Options
 
@@ -101,6 +101,7 @@ conflict-theirs-question: ""
 - [x] Sprosse 4 der Forge-Leiter: die Rolle dort anhalten - kein Push, keine PR-Abfrage - und dem Menschen sagen, dass er git config jaira.forge setzt und neu startet
 - [x] NOTES.md: Unreleased-Zeile fuer das Anhalten bei unbekannter Forge
 - [x] go test ./... -race gruen, dann committen
+- [x] Proof-Zeilen von DoD 1-4 am aktuellen Baum nachschlagen und neu setzen
 
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
@@ -303,3 +304,9 @@ Nur DoD 3 (:36-68, :65-68) stimmt.
 Warum das nicht kosmetisch ist: die Proofs sind genau das, was jaira-role-pr in die PR-Beschreibung unter 'How to check' schreibt. Ein Reviewer, der DoD 2 folgt, landet auf 'gh pr create' und liest es als Beleg fuer GitLab-Unterstuetzung.
 
 Fix, fuenf Minuten: 'jaira dod 13VMA8 1|2|4 --done --proof "..."' mit den oben genannten richtigen Zeilen. Inhaltlich ist nichts zu aendern - nur die Anker. Danach lohnt ein Blick, ob review-check Schritt 4 ('genau EIN Treffer fuer gh pr create') noch stimmt; die vorige Runde hat ihn selbst schon als ueberholt notiert.
+- **2026-09-15 06:55 · Alexander Sacharov** — in-progress-Runde nach dem testing-fail vom 2026-09-15: der Befund ist AUSSCHLIESSLICH, dass die Proof-Zeilen von DoD 1, 2 und 4 seit 9fc224c sechs Zeilen zu frueh zeigen - DoD 2 belegt den GitLab-Weg mit den gh-Zeilen :83/:124 statt :89/:130. Am Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und an core/release/NOTES.md ist NICHTS zu aendern: Gates sind gruen, alle vier Sprossen der Forge-Leiter verhalten sich richtig, Sprosse 4 haelt jetzt vor dem Push an. Zu tun: jede Proof-Zeile einmal am aktuellen Baum nachschlagen (grep/sed auf der Datei, nicht aus dem Gedaechtnis) und per "jaira dod 13VMA8 <n> --done --proof ..." neu setzen, sodass jede genannte Zeilennummer wirklich das zeigt, was sie behauptet. Danach nichts weiter. NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md (paralleles Ticket KSGSKK im selben Worktree). Keinen Pull Request oeffnen oder aktualisieren.
+- **2026-09-15 06:57 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (Rueckgabe aus testing): nur Anker gesetzt, keine Datei ausserhalb von .jaira/ angefasst.
+- Jede der vier Proof-Zeilen am Baum nachgeschlagen, nicht aus dem testing-Bericht uebernommen - und dabei zwei Anker gefunden, die testing selbst nicht genannt hatte: DoD 4 belegte den Wortwechsel mit ':65-67' (dort steht heute die Stop-Anweisung von Sprosse 4), richtig ist :71-73; DoD 3 sagte ':36-68' fuer die Leiter und ':65-68' fuer den Halt, beides eine Zeile zu kurz - die Leiter laeuft :41-69, der Halt :65-69.
+- Warum die Proofs jetzt einzelne Zeilen statt nur Spannen nennen (DoD 3 und 4): eine Spanne verschiebt sich beim naechsten Absatz lautlos mit und niemand merkt es; eine benannte Einzelzeile pro Behauptung faellt beim Nachschlagen sofort durch. Genau dieser Fehler hat diese Runde erzeugt.
+- Nicht angefasst, obwohl es auffaellt: der Proof von DoD 1 belegt mit SKILL.md:92-97 die Verzweigung der PR-Rolle, waehrend DoD 1 selbst von der Regel in CLAUDE.md/AGENTS.md/README handelt. Der Satzteil gehoert inhaltlich nicht dorthin. Die Anweisung dieser Runde war ausdruecklich nur, Zeilennummern richtigzustellen - den Proof umzuschreiben waere eine zweite Aenderung, ueber die critique entscheiden soll.
+- Keine NOTES.md-Zeile und kein Code: diese Runde aendert nichts, was ein Nutzer der Binary bemerken kann. Aus demselben Grund keine Gate-Laeufe - kein .go und kein eingebetteter Prompt hat sich geaendert (git status zeigt nur die Ticketdatei).
