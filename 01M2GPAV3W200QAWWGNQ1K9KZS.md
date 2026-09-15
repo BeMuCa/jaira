@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:06:58Z
+updated-at: 2026-09-15T07:07:01Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
@@ -61,7 +61,7 @@ outcome-resolves: "Der Plan sagt Schritt fuer Schritt, wie DoD 1 bis 5 erreicht 
 - [x] write the board fixture: a board whose done.md still carries 'logbook-on-entry: true', built the way an old board was
 - [x] failing test: a move into done on that fixture files nothing and leaves the other finished tickets standing
 - [x] failing test: what the user wrote survives - a changed prompt/description is untouched, and 'logbook-on-entry: true' put back by hand after the correction ran stays put
-- [ ] failing test: the correction is reported once, naming the file it changed and how to keep the old behaviour
+- [x] failing test: the correction is reported once, naming the file it changed and how to keep the old behaviour
 - [ ] implement core/lane/corrections.go: the embedded list, dropFrontmatterLine beside stampCreatorLine, applyCorrections(root) called from Load next to migrateLegacy, marker via readIDList/writeIDList
 - [ ] run go test ./... -race and replay the fixture by hand with a built binary
 - [ ] one line in core/release/NOTES.md under ## Unreleased: what an older board does now, replacing the 'remove that line by hand' instruction of the closed 0.1.4 section
