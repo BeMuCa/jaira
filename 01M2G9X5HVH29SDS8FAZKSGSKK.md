@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:48:16Z
+updated-at: 2026-09-15T06:48:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-17089
 claimed-at: 2026-09-15T06:43:19Z
-outcome-what: "Die Aenderung getestet: Bau, vet und die volle Suite mit Race-Detektor laufen gelassen, die sieben DoD-Punkte einzeln im Arbeitsbaum nachgeschlagen und das Verhalten von scripts/spawn.sh selbst ausgefuehrt."
-outcome-why: "Die Runde vor mir hat geurteilt, ob das die richtige Aenderung ist; hier musste beantwortet werden, ob das Verlangte ueberhaupt da ist und laeuft."
-outcome-resolves: "test-verdict=pass. go build ./... RC=0, go vet ./... RC=0, go test -race -count=1 ./... RC=0 ueber 27 Pakete. DoD 1-7 an Datei und Zeile nachgeprueft; DoD 6 an dieser Sitzung selbst beobachtet (Herdr-Tab w3:t36, Label 'KSGSKK/testing'). Funktion: 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0, beide Wachen in spawn.sh brechen mit RC=1 ab, die Plattform-Verzweigung waehlt wsl.exe fuer /mnt/* und *.exe. Ein Randfall steht als Notiz am Ticket und wurde nicht angefasst."
+outcome-what: "Das Diff gegen die sieben DoD-Punkte gelesen und die Mechanik, auf der es steht, gegen das echte Herdr auf diesem Rechner nachgeprueft."
+outcome-why: "Eine Pruefung, die nur dem Bericht des Umsetzers folgt, prueft nichts; die Zustandsnamen und Antwortfelder, an denen das Skript haengt, muessen am laufenden Herdr stimmen, nicht im Kommentar."
+outcome-resolves: "review-verdict: keine Defekte gefunden, alle sieben DoD-Punkte am Diff belegt, Bau und die betroffenen Tests gruen. Drei Restluecken benannt und als Notiz hinterlegt: COMPOSE_PROJECT_NAME mit nicht-alphanumerischem Anfang wird von docker weiter abgelehnt, drei fremde Portvariablen bleiben im .env-Block, und die WSL-Erkennung haengt am Namen der Binaerdatei statt an /proc/version. DoD 6 ruht auf einer Beobachtung, nicht auf dem Diff - review-check gibt den Ablauf, mit dem ein Mensch ihn in einer Minute selbst nachstellt."
 review-summary: "Drei ausgelieferte Rollen-Dateien und eine NOTES-Zeile. jaira-dispatcher/SKILL.md:83-105 ersetzt 'run herdr --skill und bau dir die Folge selbst' durch die Anweisung, scripts/spawn.sh zu benutzen, und nennt die zwei Gruende, an denen Dispatcher bisher gescheitert sind: 'claude --permission-mode' wird vom Berechtigungspruefer als 'Create Unsafe Agents' abgelehnt, und 'command -v herdr' findet die Windows-Binaerdatei nicht, HERDR_BIN_PATH schon. jaira-teamlead/SKILL.md:44-54 sagt dasselbe an der Stelle, an der ein Dispatcher gestartet wird, mit dem Installationspfad des Skripts. spawn.sh selbst ist an vier Stellen geaendert: Zweigpraefix feat/ statt feature/ (ueberschreibbar mit JAIRA_BRANCH_PREFIX), COMPOSE_PROJECT_NAME aus Repository-Name plus Slug statt des fest eingebauten 'rg_' eines fremden Projekts (kleingeschrieben, weil docker compose ueber einen einzigen Grossbuchstaben den ganzen Stapel ablehnt), 'tab create --workspace $HERDR_WORKSPACE_ID' statt 'pane split', und der Start von claude laeuft ueber 'wsl.exe --cd', wenn Herdr eine Windows-Binaerdatei ist - vorher startete claude im Windows-Home vor seinem Vertrauens-Dialog. Dazu ein neuer Wachtposten in Zeile 86-94: nur 'claude idle' und 'claude done' duerfen zu send-text durch; bei 'claude blocked' bricht das Skript ab und richtet die Meldung an den Menschen, statt blind Enter auf einen Genehmigungsdialog zu druecken. core/release/NOTES.md:19 traegt eine Zeile unter ## Unreleased."
 review-gaps: |-
   Fuenf Befunde, keiner blockiert, drei davon nachgestellt.
