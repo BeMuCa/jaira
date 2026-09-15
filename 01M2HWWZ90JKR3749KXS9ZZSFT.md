@@ -1,7 +1,7 @@
 ---
 id: 01M2HWWZ90JKR3749KXS9ZZSFT
 title: Zwei von drei Commits aendern nur eine Ticket-Datei
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Zweig zeigt die Arbeit, nicht die Buchhaltung: wer den Verlauf liest, sieht Aenderungen am Werkzeug und nicht jede Lane, die einen Vermerk hinterlassen hat."
@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:15:08Z
+updated-at: 2026-09-15T13:15:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -28,9 +28,9 @@ context: |-
   Was dabei nicht kaputtgehen darf: jaira leitet die Commit-Liste eines Tickets aus der Vereinigung zweier Quellen ab - der Historie der Ticket-Datei UND der Commits, die seine Id nennen. Faellt die erste Quelle weg, haengt alles daran, dass Commits die Id im Betreff tragen. Heute tun sie das ohnehin ('fix(KSGSKK): ...'), aber aus einer Gewohnheit wird damit eine Bedingung.
 claimed-by: DESKTOP-RFTCH11-41016
 claimed-at: 2026-09-15T13:03:43Z
-outcome-what: "Plan geschrieben: zehn Schritte, die die Commit-Regel an ihrer Quelle aendern - core/board/announce.go und core/role/builtin/jaira-role-lane/SKILL.md - statt ein Gate zu bauen."
-outcome-why: "Die Buchhaltungs-Commits entstehen aus einer Instruktion, die bedingungslos formuliert ist ('git add -A und commit'). Eine Lane ohne Code-Aenderung kann sie nur erfuellen, indem sie allein committet. Der Hebel ist der Text, nicht der Code - jaira committet nie selbst."
-outcome-resolves: "Wie die Aenderung gemacht wird, steht fest; die offene Entscheidung ueber die Ticket-Datei nach der letzten Code-Lane ist als Plan-Schritt 2 benannt und in einer Notiz mit Empfehlung (a: der Ref traegt sie) hinterlegt."
+outcome-what: "Die Commit-Regel in allen sechs Quellen umgeschrieben, die sie einem Agenten sagen. Neu und ueberall gleich: eine Lane, die keinen Code geaendert hat, committet gar nichts und laesst die Ticket-Datei im Arbeitsbaum stehen; der naechste Commit, der Code traegt, nimmt sie mit. Als eigener Punkt daneben: jeder Commit nennt den Handle im Betreff - das ist jetzt die Bedingung fuer die abgeleitete Commit-Liste, nicht mehr eine Gewohnheit. Betroffen: core/board/announce.go (erzeugter Block, dadurch CLAUDE.md und AGENTS.md nach 'jaira update'), core/role/builtin/jaira-role-lane/SKILL.md (das unbedingte 'git add -A und commit' ist weg, ersetzt durch die Fallunterscheidung und durch 'adde mit Pfad, nie -A'), core/role/builtin/jaira-role-pr/SKILL.md (die Vorbedingung heisst jetzt 'nothing uncommitted but the ticket file', und Punkt 2 sagt ausdruecklich, dass eine geaenderte Ticket-Datei beim Push kein Fehler ist), docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md. Eine Zeile in core/release/NOTES.md unter ## Unreleased. Kein Code-Verhalten geaendert - jaira committet nie selbst, der Hebel ist die Instruktion."
+outcome-why: "Auf feat/9ET6NC-per-board-remote fassten 62 von 92 Commits nur .jaira/ an: je Lane ein Vermerk, ein Uebergang, eine Notiz. Das kam aus einer Instruktion, die bedingungslos formuliert war - 'move the ticket, then git add -A and commit'. Eine Lane wie critique, testing oder review aendert keinen Code und konnte die Regel nur erfuellen, indem sie allein committete. Wer den Zweig liest, sieht dann die Buchhaltung und nicht die Arbeit."
+outcome-resolves: "DoD 3 (die Regel steht dort, wo ein Agent sie liest) ist erfuellt: sie steht im erzeugten Block (core/board/announce.go:92) und in beiden Rollen-Prompts, nicht nur im Ticket. DoD 4 ist erfuellt: core/release/NOTES.md:16. DoD 1 und 2 sind bewusst noch offen - sie verlangen die Nachstellung an einem Ticket, das critique, testing und review DURCHLAUFEN hat, und diese Lanes kommen erst noch; sie sind von der testing-Lane zu ticken. Vorbereitet ist beides: der pre-process-Commit 4e89f86, der nur .jaira/ anfasste, ist in diesen Commit gefaltet, so dass der Zweig jetzt genau einen Commit traegt, der Code und Ticket-Datei zusammen fuehrt und den Handle im Betreff nennt. Dass die Ableitung ohne Datei-Historie traegt, ist an der Quelle geprueft: core/gate/gate.go:322 verlangt nur ein nichtleeres Ergebnis von core/gitrepo/derive.go:19, und dessen zweite Quelle - Commits, die den Handle nennen - genuegt allein. go build ./... und go test ./... gruen."
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
