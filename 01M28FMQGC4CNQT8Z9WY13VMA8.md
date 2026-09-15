@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:56:47Z
+updated-at: 2026-09-15T06:56:51Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -71,7 +71,7 @@ conflict-theirs-question: ""
 - [x] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
   proof: core/role/builtin/jaira-role-pr/SKILL.md:41-69: git config jaira.forge gewinnt immer (:51-52), sonst der Host von 'git remote get-url origin' (:43); github.com -> gh (:53), Host mit 'gitlab' -> glab (:54), sonst nennt Sprosse 4 (:55-69) kein Werkzeug und haelt dort an - :65-66 sagt ausdruecklich kein Push und keine Abfrage offener Requests, :67-69 nennt dem Menschen 'git config jaira.forge' als das, was die Rolle beim naechsten Start weiterlaufen laesst
 - [x] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:143-148: 'never run gh pr create/gh pr merge/gh pr review --approve' UND 'never run glab mr create/glab mr merge/glab mr approve', dazu :113-115 'You write it; you never run it' fuer beide; Wortwechsel nur bei :65-67, nicht global
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:149-152: 'never run gh pr create/gh pr merge/gh pr review --approve' (:149-150) UND 'never run glab mr create/glab mr merge/glab mr approve' (:151-152), dazu :119-121 'You write it; you never run it' fuer beide; Wortwechsel nur bei :71-73, nicht global
 
 ## Options
 
