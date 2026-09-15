@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:46:24Z
+updated-at: 2026-09-15T20:46:43Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -409,3 +409,16 @@ MILESTONE-NAME BELEGT: zwei Quellen, Ref zuerst, dann lokales Logbuch (milestone
 NICHT GEBAUT UND ABSICHTLICH: ein anderswo abgelegter Milestone verschwindet beim Fetch NICHT vom eigenen Board. IncomingMilestones ueberspringt den Ref nur. Eine lokale Datei zu loeschen, weil ein Ref das sagt, waere das erste Mal, dass jaira eine Datei entfernt, die es nur gelesen hat; DoD 10 verlangt es nicht.
 
 ADJACENT, NICHT ANGEFASST: 'jaira restore' hat keinen Hinweis darauf, dass der Name eines Milestones ohne .md-Endung nicht funktioniert - man muss 'round-one.md' schreiben. Das ist bei Tickets genauso und waere eine eigene Aenderung.
+- **2026-09-15 20:46 · Alexander Sacharov** — critique-Runde 5 (DoD 8-12), 2026-09-15. Der Bau ist im Kern richtig: Milestone verlaesst das Board nur auf Befehl, der Ref bleibt stehen und traegt den Status, restore holt die Datei dorthin zurueck, wo sie gefunden wurde. Fuenf Findings, und die ersten drei haengen zusammen.
+
+1. 'status: filed' ist eine zweite Wahrheit, die das Board nicht liest. core/milestone/milestone.go:LoadAll filtert Filed() NICHT - nachgesehen, Filed() wird nur an drei Stellen gelesen (refsync.go:224, archive.go:143, milestones.go:342). Dass ein abgelegter Milestone vom Board verschwindet, haengt allein daran, dass die Datei verschoben wurde. Die Zeile soll das entscheiden, nicht der Ort der Datei.
+
+2. Daraus folgt die Ordnung in internal/cli/logbook.go:logbookMilestone - Save, recordMilestone, dann Rename - deren Kommentar ausdruecklich sagt, sie sei keine Vorliebe. Schlaegt das Rename fehl (dst existiert schon), steht die Datei markiert weiter auf dem Board, waehrend jeder andere Clone sie versteckt. Mit einem Filter in LoadAll ist dieser Halbzustand harmlos.
+
+3. core/refsync/refsync.go:224 ueberspringt einen abgelegten Ref ganz. Ein Clone, der die Datei schon hat, erfaehrt damit NIE, dass abgelegt wurde - genau das, wofuer der Ref da ist. Die Begruendung im Kommentar ('jaira loescht keine Datei, die es nur gelesen hat') traegt die Alternative nicht: den markierten Inhalt normal schreiben loescht nichts und braucht den Sonderfall gar nicht.
+
+4. internal/cli/archive.go:143 schluckt den Save-Fehler und meldet trotzdem 'Restored'.
+
+5. internal/cli/milestones.go:milestoneFiled laeuft die Logbook-Ordner von Hand ab und sieht den Alt-Ordner nicht, den core/ticket/store.go:logbookFolders abdeckt - und aus dem Restore einen Milestone sehr wohl zurueckholen kann. Dritter handgeschriebener Walk neben logbookNames und Restore.
+
+Kein Finding aus den Runden 1-4 wird wieder aufgemacht; die betrafen den Bau vor DoD 8-12 und sind nachgemessen erledigt.
