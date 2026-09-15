@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:27:50Z
+updated-at: 2026-09-15T15:31:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -47,6 +47,16 @@ claimed-at: 2026-09-15T15:02:47Z
 outcome-what: "core/milestone (Datei, Farbe, Index), jaira milestone create/add/rm/ls, jaira list --milestone, die rechte Kartenkante und der M-Picker im TUI, und ein zweiter Ref-Namensraum refs/jaira/milestones/ durch gitref, outbox, refsync und jaira fetch."
 outcome-why: "Ein Tag am einzelnen Ticket kann unerledigte Arbeit nicht in die naechste Runde tragen: jedes Ticket liegt auf seinem Ref, das sind zwanzig Vorgaenge. Eine Datei wird stattdessen in einem Griff bearbeitet."
 outcome-resolves: "DoD 1-5 und 7 erfuellt und mit Tests belegt; DoD 6 war bereits von Alex' Milestone-Entscheidung vom 15.09. als superseded markiert."
+review-summary: |-
+  core/refsync/refsync.go:197 RecordMilestoneDelete has no caller anywhere, and neither does core/outbox/outbox.go:280 PendingMilestone; gitref.DeleteMilestone is reached only from an OpDelete branch nothing ever queues and no command deletes a milestone — delete the three, or add 'jaira milestone delete <name>' and wire them
+  core/outbox/outbox.go:282 MilestoneSender and the s.(MilestoneSender) assert at :364 handle a state that cannot occur: Box.Flush has one call site, core/refsync/refsync.go:344, passing *gitref.Repo, which implements both halves — put WriteMilestone/DeleteMilestone on Sender itself and drop the assert, the 'this sender cannot carry milestones' error and the (error, bool) return of send()
+  core/milestone/milestone.go:129 writes 'colour:' into the file format and :208 reads it back, against this board's own stated rule at internal/cli/tags.go:233 ('color, matching --color: one spelling on the machine surface') that milestones.go:347 and the --color flag already follow — write and read 'color:' before the format ships, because afterwards it is a break
+  internal/cli/milestones.go:360 validColour is a verbatim copy of tag.ValidColour (core/tag/tag.go:251), which internal/tui/model.go:1466 already calls directly — delete it and call tag.ValidColour
+  core/milestone/milestone.go:358-366 itoa/atoi reimplement strconv for the one field core/tag/tag.go already does with strconv.Itoa (:327) and strconv.Atoi (:243); the Sscanf atoi also reads '12abc' as 12 — import strconv and use them
+  core/milestone/milestone.go:71 the path field is written at :155 and :279 and read nowhere; every caller computes milestone.Path(root, name) instead (internal/cli/milestones.go:132, core/refsync/refsync.go:239) — drop the field and the two assignments
+  internal/tui/model.go:1478 activeMilestones() is m.milestones under a second name, and the picker indexes the two lists with one cursor — view.go:1522 renders m.milestones[i] while model.go:1039 indexes the names slice — use m.milestones in both (len(m.milestones), m.milestones[m.msIdx].Name) and delete the helper
+  internal/cli/fetch.go:23 the Long text still says 'Fetches refs/jaira/tickets/*' after core/gitref/gitref.go:633 widened the refspec to refs/jaira/* and this command started writing milestone files — say that it brings both
+  core/gitref/gitref.go:657 ListRemoteMilestones has no caller outside milestone_test.go — remove it until something asks the remote what milestones exist
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
