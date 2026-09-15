@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:50:50Z
+updated-at: 2026-09-15T05:51:53Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58796
@@ -276,3 +276,16 @@ Die Umgehung, die funktioniert, und die der Lauf vom 05:30 schon benutzt hat: al
 Dann trifft Zeile 15 genau /home/alex/projects/.worktrees/jaira-13VMA8, der 'if [ ! -d "$wt" ]'-Waechter greift, und weder Worktree noch Zweig werden angelegt. Das ist aber eine Umgehung ueber die Namensableitung und steht in keinem Prompt - wer sie nicht kennt, baut sich den verschachtelten Worktree.
 
 Was fehlt, falls ein Folgeticket das aufgreift: eine ausdrueckliche Moeglichkeit, den Worktree vorzugeben (Umgebungsvariable oder viertes Argument als Worktree statt als repo-root), und ein Prompt-Satz dazu. Ein Dispatcher, der in einen bestehenden Zweig weiterarbeiten soll - genau der Fall nach einem Handoff -, hat ihn heute nicht.
+- **2026-09-15 05:51 · Alexander Sacharov** — in-progress 2026-09-15 (4. Runde, nach dem Handoff von 05:46/05:49): der eine offene Befund aus critique-Durchgang 3 ist behoben, sonst nichts angefasst.
+
+spawn.sh:76-79 - die Meldung des 'claude blocked'-Arms richtet sich jetzt an den Menschen statt an den Dispatcher: 'report it to the human, let them answer it in that pane, then start this worker again'. Critiques Wortlaut woertlich uebernommen, wie die Arbeitsanweisung es verlangt - keine dritte eigene Fassung.
+
+Warum die Meldung dreizeilig umgebrochen ist und nicht zweizeilig wie vorher: der neue Text ist laenger, und die Datei bricht sonst bei <=80 Zeichen. Wer sie spaeter zu zwei Zeilen zusammenzieht, baut den Ausreisser wieder ein, den critique in teamlead/SKILL.md:46 schon einmal gemeldet hat.
+
+Absichtlich NICHT angefasst, obwohl in dieser Datei benachbart: der '*'-Arm mit 'claude did not come up' bleibt, der eigene case-Arm bleibt, exit 1 bleibt. Der Kommentar 70-73 bleibt unveraendert - er begruendet die Verengung des Torwaechters, nicht die Meldung.
+
+Warum keine neue NOTES.md-Zeile: unveraendert der Grund aus Runde 2 und 3 - die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung, und dies ist eine Korrektur des Meldungstexts eines Skripts, von aussen nicht zusaetzlich beobachtbar.
+
+Nur die eigenen Dateien committet: im selben Worktree arbeitet ein zweiter Dispatcher an 13VMA8 (core/role/builtin/jaira-role-pr/SKILL.md, core/release/NOTES.md, das 13VMA8-Ticket). Kein 'git add -A' - das haette dessen offene Arbeit mit eingesammelt.
+
+Gates: go build, go vet, go test ./core/role/... gruen; bash -n auf spawn.sh gruen.
