@@ -78,6 +78,12 @@ type Milestone struct {
 // is a thing a person controls by editing.
 func (m *Milestone) Members() []string { return append([]string(nil), m.members...) }
 
+// HasColour reports whether this milestone paints a cell on a card. Zero is
+// "no colour" rather than ANSI black: the board reserves the right-hand column
+// whether a ticket is in a milestone or not, so something has to mean "leave
+// the cell blank", and 0 is that value everywhere it is asked.
+func (m *Milestone) HasColour() bool { return tag.ValidColour(m.Colour) && m.Colour > 0 }
+
 // Has reports whether a ticket id is a member.
 func (m *Milestone) Has(id string) bool {
 	for _, got := range m.members {
@@ -129,7 +135,6 @@ func New(name string, colour int, now time.Time) *Milestone {
 	m := &Milestone{Name: name, Colour: colour, CreatedAt: now}
 	m.lines = []string{
 		"---",
-		"name: " + name,
 		"color: " + strconv.Itoa(colour),
 		"created-at: " + now.UTC().Format(time.RFC3339),
 		"---",
@@ -145,6 +150,11 @@ func New(name string, colour int, now time.Time) *Milestone {
 
 // Load reads one milestone by name. A missing file reports os.ErrNotExist, so
 // a caller can tell "no such milestone" from "unreadable".
+//
+// The file name is the milestone's name, always — the frontmatter does not
+// carry one. The file is hand-editable by design, and a name written inside it
+// would be a second truth: edit that line and the next Save files the
+// milestone under a different name, leaving the old file and its ref behind.
 func Load(root, name string) (*Milestone, error) {
 	path := Path(root, name)
 	b, err := os.ReadFile(path)
@@ -152,9 +162,7 @@ func Load(root, name string) (*Milestone, error) {
 		return nil, err
 	}
 	m := parse(string(b))
-	if m.Name == "" {
-		m.Name = name
-	}
+	m.Name = name
 	return m, nil
 }
 
@@ -220,8 +228,6 @@ func parse(text string) *Milestone {
 			}
 			value = strings.TrimSpace(value)
 			switch strings.TrimSpace(key) {
-			case "name":
-				m.Name = value
 			case "color":
 				m.Colour, _ = strconv.Atoi(value)
 			case "created-at":

@@ -1468,7 +1468,7 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 	}
 	held := m.mstones.For(t.ID)
 	for i := 0; i < cardSlots && i < len(held); i++ {
-		if ms := held[i]; tag.ValidColour(ms.Colour) && ms.Colour > 0 {
+		if ms := held[i]; ms.HasColour() {
 			slots[i] = cardSlot{colour: ms.Colour, coloured: true}
 		}
 	}

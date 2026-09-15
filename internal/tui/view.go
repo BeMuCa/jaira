@@ -14,7 +14,6 @@ import (
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/session"
-	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -1498,8 +1497,7 @@ func (m *Model) renderLegend() string {
 	}
 	for _, name := range tags {
 		if c, ok := m.tags.Colour(name); ok {
-			swatch := lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(c))).Render("■")
-			b.WriteString(swatch + " " + name + "\n")
+			b.WriteString(swatch(c) + " " + name + "\n")
 		} else {
 			b.WriteString(styMeta.Render("· "+name+" (no colour)") + "\n")
 		}
@@ -1508,6 +1506,13 @@ func (m *Model) renderLegend() string {
 		b.WriteString("\n" + styMeta.Render(l))
 	}
 	return b.String()
+}
+
+// swatch is the coloured block a legend and a picker put in front of a name.
+// One expression rather than two: the mark is what ties a list entry to the
+// cell painted on a card, and two spellings of it drift apart.
+func swatch(colour int) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(colour))).Render("■")
 }
 
 // renderMilestones is the picker behind M: the board's rounds of work, each in
@@ -1527,12 +1532,12 @@ func (m *Model) renderMilestones() string {
 			marker = stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
-		swatch := styMeta.Render("·")
-		if tag.ValidColour(ms.Colour) && ms.Colour > 0 {
-			swatch = lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(ms.Colour))).Render("■")
+		mark := styMeta.Render("·")
+		if ms.HasColour() {
+			mark = swatch(ms.Colour)
 		}
 		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
-		b.WriteString(marker + swatch + " " + name + count + "\n")
+		b.WriteString(marker + mark + " " + name + count + "\n")
 	}
 	for _, l := range wrapHints([]string{"enter narrow the board to it", "x show everything again", "esc close"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))

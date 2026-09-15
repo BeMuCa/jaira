@@ -359,9 +359,8 @@ func (r *Repo) refWrite(ref, name string, content []byte, lease string) (string,
 // Delete removes the ticket's ref, locally and on the remote. A logged or
 // archived ticket is off the board, and leaving its ref behind would keep it on
 // everybody else's.
-func (r *Repo) Delete(id, lease string) error { return r.refDelete(RefName(id), lease) }
-
-func (r *Repo) refDelete(ref, lease string) error {
+func (r *Repo) Delete(id, lease string) error {
+	ref := RefName(id)
 	if err := r.pushRefspec(ref, ":"+ref, lease); err != nil {
 		return err
 	}
@@ -654,17 +653,16 @@ func (r *Repo) listNames(prefix string) ([]string, error) {
 
 // ListRemote asks the remote which tickets exist, without fetching them. One
 // roundtrip is cheap enough to run before a command needs the contents.
-func (r *Repo) ListRemote() ([]string, error) { return r.listRemoteNames(Prefix) }
-
-func (r *Repo) listRemoteNames(prefix string) ([]string, error) {
-	out, errb, err := r.run("", "ls-remote", r.remote(), prefix+"*")
+func (r *Repo) ListRemote() ([]string, error) {
+	out, errb, err := r.run("", "ls-remote", r.remote(), Prefix+"*")
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return nil, err
 		}
 		return nil, classify(errb, err)
 	}
-	return namesFrom(out, prefix, func(line string) string {
+	// ls-remote prints "<sha>\t<ref>"; the ref is what carries the id.
+	return namesFrom(out, Prefix, func(line string) string {
 		if i := strings.IndexAny(line, " \t"); i >= 0 {
 			return strings.TrimSpace(line[i:])
 		}

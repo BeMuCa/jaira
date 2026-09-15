@@ -116,8 +116,11 @@ and you are told so.`,
 			c := colour
 			if !cmd.Flags().Changed("color") {
 				c = milestone.AssignColour(existing, name)
-			} else if !tag.ValidColour(c) {
-				return fail(ExitUsage, "bad_color", "--color takes an ANSI-256 value, 0-255; got %d", c)
+			} else if !tag.ValidColour(c) || c == 0 {
+				// 0 is not black here, it is "no colour": a milestone given it
+				// would paint nothing on any card, which is not a thing to be
+				// asked for by hand.
+				return fail(ExitUsage, "bad_color", "--color takes an ANSI-256 value, 1-255; got %d", c)
 			}
 			ms := milestone.New(name, c, time.Now())
 			for _, id := range ids {
@@ -289,7 +292,7 @@ work and each filters to half of it.`,
 			colours := colourable(w)
 			fmt.Fprintln(w)
 			for _, ms := range all {
-				known := tag.ValidColour(ms.Colour) && ms.Colour > 0
+				known := ms.HasColour()
 				value := "  -"
 				if known {
 					value = fmt.Sprintf("%3d", ms.Colour)

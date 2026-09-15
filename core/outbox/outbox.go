@@ -156,7 +156,20 @@ func (b *Box) QueueKind(kind Kind, key string, op Op, content []byte, lease, by 
 	if err != nil {
 		return err
 	}
-	return ticket.WriteAtomic(path, append(data, '\n'))
+	if err := ticket.WriteAtomic(path, append(data, '\n')); err != nil {
+		return err
+	}
+	// An entry an older build filed at the flat path has just been superseded
+	// by this one, so it goes. Left behind it would be a second entry for the
+	// same ticket: List would return both, the flush would send the stale
+	// content first, and the newer write would then carry a lease the remote
+	// no longer has.
+	if kind == KindTicket {
+		if err := os.Remove(b.legacyPath(key)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 // Pending returns the unsent write for one ticket, if there is one. The board
@@ -249,13 +262,15 @@ func (b *Box) Drop(id string) error { return b.DropKind(KindTicket, id) }
 // DropKind removes a queued write of either kind, including one an older build
 // filed at the flat path.
 func (b *Box) DropKind(kind Kind, key string) error {
-	for _, path := range []string{b.path(kind, key), b.legacyPath(key)} {
-		if kind != KindTicket && path == b.legacyPath(key) {
-			continue
-		}
-		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-			return err
-		}
+	kind = kind.or(KindTicket)
+	if err := os.Remove(b.path(kind, key)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if kind != KindTicket {
+		return nil
+	}
+	if err := os.Remove(b.legacyPath(key)); err != nil && !os.IsNotExist(err) {
+		return err
 	}
 	return nil
 }
