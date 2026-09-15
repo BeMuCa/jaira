@@ -39,9 +39,14 @@ Everything below runs through one of two command-line tools, and they are not
 interchangeable. Settle which one this repository uses before you type either:
 
 ```bash
-git config jaira.forge                                            # github or gitlab, if it is set
-git remote get-url "$(git config jaira.remote || echo origin)"    # otherwise read the host
+git config jaira.forge          # github or gitlab, if it is set
+git remote get-url origin       # otherwise read the host you push to
 ```
+
+Read the host off `origin`, because `origin` is what you push to below. Not off
+`jaira.remote`: that is the remote the board's ticket refs travel on, and in a
+fork it is the upstream while your branch goes to the fork — a different host,
+and on a bad day a different forge.
 
 1. **`jaira.forge` says so** — that is the answer, whatever the remote looks
    like. It exists for the remotes a host name cannot settle, and it wins.
@@ -61,6 +66,11 @@ GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
 word.
 
+## Push, then ask which of your two jobs this is
+
+`git push -u origin HEAD`. That is where your push ends and the person's
+decision begins: you do not open the pull request.
+
 Now ask the forge whether this branch already has one open — on GitHub:
 
 ```bash
@@ -73,14 +83,8 @@ or on GitLab:
 glab mr list --source-branch "$(git branch --show-current)"
 ```
 
-That decides which of your two jobs this is; you branch on it after the push.
-Either way you never open one.
-
-## Push, then take the branch the listing put you on
-
-Then `git push -u origin HEAD`. That is where your push ends and the person's
-decision begins: you do not open the pull request. Carry on below, along the
-branch the listing above put you on:
+Carry on along the branch that listing puts you on. Either way you never open
+one:
 
 - **Nothing listed** — write the description out for them, then report.
 - **One listed** — it already has a description. Skip the next section and go

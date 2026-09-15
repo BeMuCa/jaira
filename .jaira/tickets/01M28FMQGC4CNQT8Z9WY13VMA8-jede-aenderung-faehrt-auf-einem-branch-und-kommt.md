@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,8 +19,9 @@ tags:
 blocked-by: []
 commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
+  - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:55:59Z
+updated-at: 2026-09-15T06:01:08Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -36,9 +37,9 @@ question: |-
   ACHTUNG beim Lesen des Tickets: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Punkt 7 der Pruefliste ('entscheide, ob Zeile 36-37 zu aendern ist') und Punkt 9 ('jaira roles install --force') sind beide bereits erledigt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide Felder dann neu.
 
   Du musst nur sagen, ob du die Arbeit annimmst.
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md kennt jetzt zwei Forges: eine neue Sektion 'Which forge this repository is on' (:36-62) leitet das Werkzeug aus 'git config jaira.forge' ab, sonst aus dem Remote-Host, und bleibt auf einem Host stehen, der weder github.com noch ein gitlab-Host ist. Die drei Stellen, an denen die Werkzeuge sich unterscheiden, nennen beide: Auflisten (:64-74 gh pr list / glab mr list --source-branch), Aufmachen (:109-121 gh pr create / glab mr create --description) und Boundaries (:139-144 never run, never merge, never approve auf beiden). Dazu eine Unreleased-Zeile in core/release/NOTES.md."
-outcome-why: "Die Rolle rief an fuenf Stellen 'gh' auf und war damit auf jedem GitLab-Board unbrauchbar - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall. Ein geratenes Werkzeug scheitert gegen die falsche Forge, und ein geratenes, das sich gegen das falsche Projekt authentifiziert, ist schlimmer; darum waehlbar statt geraten."
-outcome-resolves: "DoD 2, 3 und 4 abgehakt und belegt. Ein Ablauf statt zwei Kopien, damit das 'Never run' nicht auf einem Weg verloren gehen kann; die Modus-Weiche der vorigen Runden ist unveraendert. go build ./... und go test ./... -race gruen, frisch gebaute Binary schreibt die glab-Zeilen per 'jaira roles install --into' wirklich heraus."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md liest die Forge jetzt vom Push-Remote ab: 'git remote get-url origin' statt 'git remote get-url $(git config jaira.remote || echo origin)'. Drei Zeilen Prosa unter dem Block sagen, warum nicht jaira.remote. Die Abfrage der offenen Requests ist aus der Sektion 'Which forge this repository is on' in die Push-Sektion gewandert, die jetzt 'Push, then ask which of your two jobs this is' heisst - erst pushen, dann listen, dann verzweigen."
+outcome-why: "critique-Befund: :43 leitete die Forge aus jaira.remote ab, :81 pusht aber nach origin. In diesem Repo loest jaira.remote zu 'upstream' auf (jaira whoami --json), der Branch geht nach origin - im Fork zwei verschiedene Hosts und moeglicherweise zwei verschiedene Forges. Dieselbe Zeile war ausserdem eine zweite, kuerzere Kopie der Remote-Leiter aus core/settings/settings.go:145-168, vor der deren eigener Kommentar warnt. Und die Forge-Sektion trug drei Aufgaben statt einer."
+outcome-resolves: "Die Forge wird von dem Remote gelesen, auf den auch gepusht wird; die Remote-Leiter existiert nur noch an einer Stelle; die Forge-Sektion klaert nur noch Werkzeug und Wortwahl, die Verzweigung steht dort, wo sie ausgewertet wird."
 claimed-by: DESKTOP-RFTCH11-90589
 claimed-at: 2026-09-15T05:55:12Z
 review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:43 leitet die Forge aus 'git config jaira.remote || echo origin' ab, :81 pusht aber fest nach 'origin' - das sind zwei verschiedene Remotes. jaira.remote ist der Remote der Ticket-Refs, nicht der, auf dem der Branch landet: in diesem Repo loest er zu 'upstream' auf (jaira whoami --json: remote=upstream, remote_source='from settings.json on this machine'), waehrend der Branch nach origin geht. Die Forge gehoert von dem Remote abgelesen, auf den :81 wirklich pusht - 'git remote get-url origin' - und die jaira.remote-Zeile gestrichen. || core/role/builtin/jaira-role-pr/SKILL.md:43 baut ausserdem eine zweite, kuerzere Kopie der Remote-Leiter, die core/settings/settings.go:145-168 (RemoteFor) in vier Schritten definiert (jaira.remote, settings.json, einziger Remote, sonst laut scheitern). Deren eigener Kommentar warnt woertlich vor genau dieser zweiten Kopie. Falls der Prompt den Board-Remote doch braucht: 'jaira whoami --json' lesen, Feld 'remote' - nicht git config nachbauen. || core/role/builtin/jaira-role-pr/SKILL.md:64-77: die Abfrage der offenen Requests steht in der Sektion 'Which forge this repository is on', die damit drei Aufgaben traegt (Werkzeug klaeren, Wortwechsel erklaeren, Abfrage laufen lassen). Den Block nach '## Push, then take the branch the listing put you on' (:79) verschieben, wo die Verzweigung ohnehin ausgewertet wird."
@@ -55,13 +56,13 @@ conflict-theirs-question: ""
 ## Definition of Done
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:42-48 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:86-92 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
 - [x] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:73 (glab mr list --source-branch) und :120 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:83 (glab mr list --source-branch) und :124 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
 - [x] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-58: git config jaira.forge gewinnt immer, sonst Host github.com -> gh und Host mit 'gitlab' -> glab, sonst stehenbleiben und 'git config jaira.forge gitlab' nennen. Alle vier Zweige auf Fixtures durchlaufen (github.com/gitlab.com/git.esprit-engineering.de, je einmal ohne und mit gesetztem jaira.forge)
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-63: git config jaira.forge gewinnt immer, sonst der Host von 'git remote get-url origin' - dem Remote, auf den :71 auch pusht, nicht dem Board-Remote jaira.remote - github.com -> gh und Host mit 'gitlab' -> glab, sonst stehenbleiben und 'git config jaira.forge gitlab' nennen. Alle vier Zweige auf Fixtures durchlaufen
 - [x] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:139-144: 'never run gh pr create/gh pr merge/gh pr review --approve' UND 'never run glab mr create/glab mr merge/glab mr approve', dazu :109-111 'You write it; you never run it' fuer beide; Wortwechsel nur bei :60-62 ('Read pull request below as merge request while you are on GitLab'), nicht global
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:143-148: 'never run gh pr create/gh pr merge/gh pr review --approve' UND 'never run glab mr create/glab mr merge/glab mr approve', dazu :113-115 'You write it; you never run it' fuer beide; Wortwechsel nur bei :65-67, nicht global
 
 ## Options
 
@@ -84,6 +85,9 @@ conflict-theirs-question: ""
 - [x] Beide Wege am Stueck von oben nach unten lesen - auf keinem darf 'Never run'/'never merge'/'never approve' fehlen
 - [x] Erkennung auf Fixtures nachstellen: gitlab.com-Remote, github.com-Remote, selbstgehosteter Host + jaira.forge
 - [x] NOTES.md: Unreleased-Zeile fuer den GitLab-Weg
+- [x] go test ./... -race gruen, dann committen
+- [x] critique-Befund 1+2: SKILL.md:43 die Forge vom Push-Remote ablesen (git remote get-url origin), die jaira.remote-Zeile streichen
+- [x] critique-Befund 3: den Block 'ist schon einer offen' aus der Forge-Sektion in die Push-Sektion verschieben
 - [x] go test ./... -race gruen, dann committen
 
 ## Progress
@@ -219,3 +223,9 @@ Fuer die naechste review-Runde: review-check Schritt 4 verlangt genau EINEN Tref
 3. Sektionsgrenze: :64-77 laesst die Abfrage der offenen Requests in der Sektion 'Which forge this repository is on' laufen, die damit drei Aufgaben traegt. Die Verzweigung wird aber erst in '## Push, then take the branch the listing put you on' (:79) ausgewertet. Den Block dorthin verschieben; die Forge-Sektion klaert dann nur noch das Werkzeug und den Wortwechsel. Kein Verhalten, nur die Stelle - faellt beim Fix von 1 ohnehin an, weil :43 und :81 an dieser Grenze liegen.
 
 Stehen gelassen und warum: (a) Ein Ablauf statt zwei Kopien - richtig entschieden, die Begruendung des Implementierers zu DoD 4 traegt. (b) Die vierfache Wiederholung von 'never open/merge/approve' bleibt, das ist in einem Prompt kein Fluff (schon in der letzten optimize-Runde so entschieden, wird nicht wieder aufgemacht). (c) 'glab mr list' ohne State-Flag und '--description "$(cat ...)"' statt --body-file: gegen glab 1.114.0 nachgesehen, das ist die review-Lane, nicht meine. (d) Der veraltete review-check (erwartet EINEN Treffer fuer 'gh pr create') ist ein Ticketfeld, kein Diff-Befund - steht schon in der Notiz der in-progress-Runde und gehoert der review-Lane.
+- **2026-09-15 06:00 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (critique-Rueckgabe, GitLab): die Forge wird jetzt von dem Remote abgelesen, auf den auch gepusht wird.
+- Nachgeprueft, nicht angenommen: 'jaira whoami --json' meldet in diesem Repo remote=upstream (remote_source='from settings.json on this machine'), waehrend der Branch nach origin geht. Die alte Zeile haette hier also den Host des Upstream gelesen und den des Push-Ziels nie gesehen - im Fork sind das zwei verschiedene Hosts und im schlimmsten Fall zwei verschiedene Forges.
+- Warum nicht 'jaira whoami --json' lesen, wie critique als Ausweichweg anbot: der Prompt braucht den Board-Remote gar nicht. Er braucht den Remote, auf den 'git push -u origin HEAD' schiebt, und der steht wortwoertlich in dieser Zeile. Damit ist auch die zweite Kopie der Remote-Leiter aus core/settings/settings.go:145-168 weg, ohne dass eine dritte Quelle dazukommt.
+- Der Grund steht als Prosa unter dem Codeblock, nicht als Kommentar in der Zeile: wer 'git remote get-url origin' sieht, fragt sich genau dann nach jaira.remote, wenn er den Prompt liest - und ohne die drei Zeilen holt die naechste Runde die alte Fassung zurueck.
+- Befund 3 (Block verschoben): die Sektion 'Which forge this repository is on' endet jetzt beim Wortwechsel gh/glab. Die Push-Sektion heisst 'Push, then ask which of your two jobs this is' - erst pushen, dann listen, dann verzweigen. Vorher stand die Abfrage vor dem Push und die Verzweigung dahinter, mit 'du branchst erst nach dem Push' als Klammer dazwischen; die Klammer ist ersatzlos weg, weil die Reihenfolge sie jetzt selbst erzaehlt.
+- Keine neue NOTES.md-Zeile: die Unreleased-Zeile zum GitLab-Weg sagt 'otherwise the remote host does', und das bleibt nach dieser Korrektur wahr. Ausgeliefert ist der Prompt noch nicht; korrigiert wurde ein Wortlaut, den noch niemand hat.
