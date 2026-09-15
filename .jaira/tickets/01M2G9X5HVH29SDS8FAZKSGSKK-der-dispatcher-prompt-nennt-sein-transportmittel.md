@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:52:18Z
+updated-at: 2026-09-15T05:54:57Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58796
@@ -39,6 +39,7 @@ outcome-what: "Die Meldung des 'claude blocked'-Arms in core/role/builtin/jaira-
 outcome-why: "Die alte Meldung sagte 'answer it in that pane yourself'. Gelesen wird sie nur vom Dispatcher, und jaira-dispatcher/SKILL.md:188-189 verbietet ihm genau das ('never answer for the human'). Das Skript schuetzte den Genehmigungsdialog also vor seinem eigenen send-keys und schickte den Dispatcher im naechsten Satz mit der Hand hinein."
 outcome-resolves: "Der einzige offene Befund aus critique-Durchgang 3 (Notiz 2026-09-15 05:45), den die Arbeitsanweisung von 05:49 als alleinigen Umfang dieser Runde benannt hat. Alle sieben DoD-Punkte waren bereits abgehakt und belegt; dieser Befund haengt an keinem Haken. Gates gruen: go build, go vet, go test ./core/role/..., bash -n spawn.sh."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
+review-gaps: "Entfernt: der verwaiste '--no-focus'-Absatz in jaira-dispatcher/SKILL.md - er wies auf eine Option hin, die seit dieser Aenderung spawn.sh setzt und der Dispatcher nicht mehr tippt; in den Satz ueber den Weg am Skript vorbei gefaltet, wo er noch gilt. Stehen gelassen und warum: die doppelte Transport-Lehre in dispatcher/SKILL.md:91-98 und teamlead/SKILL.md:44-52 (ein Rollen-Prompt wird allein geladen - ein Verweis waere fuer den Leser eine Sackgasse, das ist dasselbe Wissen fuer zwei Leser, keine zweite Implementierung); das doppelte Verzeichnissetzen in spawn.sh (--cwd plus 'cd' im Linux-Arm) - harmlos, und es zu entfernen waere eine Verhaltensaenderung an der Stelle, an der dieses Ticket dreimal falsch lag. Kein toter Code, nichts an Kosten: das Skript laeuft einmal je Worker."
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
@@ -289,3 +290,14 @@ Warum keine neue NOTES.md-Zeile: unveraendert der Grund aus Runde 2 und 3 - die 
 Nur die eigenen Dateien committet: im selben Worktree arbeitet ein zweiter Dispatcher an 13VMA8 (core/role/builtin/jaira-role-pr/SKILL.md, core/release/NOTES.md, das 13VMA8-Ticket). Kein 'git add -A' - das haette dessen offene Arbeit mit eingesammelt.
 
 Gates: go build, go vet, go test ./core/role/... gruen; bash -n auf spawn.sh gruen.
+- **2026-09-15 05:54 · Alexander Sacharov** — optimize: vier Durchgaenge ueber den Diff.
+
+Doppelung: die beiden Lehren (der Berechtigungspruefer lehnt ein selbst aufgerufenes 'claude --permission-mode' als 'Create Unsafe Agents' ab; $HERDR_BIN_PATH statt 'command -v herdr') stehen jetzt woertlich zweimal - jaira-dispatcher/SKILL.md:91-98 und jaira-teamlead/SKILL.md:44-52. NICHT zusammengelegt und das absichtlich: ein Rollen-Prompt wird allein geladen. Der Teamlead liest den Dispatcher-Prompt nie und umgekehrt; eine Verweisung waere fuer den Leser eine Sackgasse. Das ist keine zweite Implementierung, sondern dasselbe Wissen fuer zwei Leser, die einander nicht sehen.
+
+Toter Code: nichts, was diese Aenderung verwaist hat. Der Linux-Arm des case in spawn.sh:58 ('cd $wt && claude') ist erreichbar, sobald Herdr als Linux-Binary laeuft.
+
+Fluff: eine Fundstelle, behoben. jaira-dispatcher/SKILL.md trug nach der Umschreibung noch den Absatz ''--no-focus' matters: you are starting work, not stealing the human's screen' als eigenen Absatz - eine Anweisung zu einer Option, die der Dispatcher gar nicht mehr selbst tippt, weil spawn.sh sie setzt. Er ist ein Rest des geloeschten Befehlsbeispiels. In den Satz gefaltet, der den Weg am Skript vorbei beschreibt; dort gilt er noch.
+
+Bewusst stehen gelassen: dass spawn.sh:46 '--cwd $wt' setzt UND der Linux-Arm danach noch einmal 'cd' macht. Auf dem Windows-Weg wird --cwd verworfen (Kommentar Zeile 49-55), auf dem Linux-Weg ist das cd doppelt gemoppelt, aber harmlos; es zu entfernen waere eine Verhaltensaenderung an genau der Stelle, an der dieses Ticket dreimal falsch lag.
+
+Kosten: nichts. Das Skript laeuft einmal je Worker; die einzige Schleife wartet ohnehin mit sleep.
