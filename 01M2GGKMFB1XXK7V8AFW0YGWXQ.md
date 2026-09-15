@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:21:22Z
+updated-at: 2026-09-15T15:23:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -77,7 +77,7 @@ outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig
 - [x] TUI: die Geste - Picker wie die Tag-Box auf 't' (internal/tui/model.go:1010), die Auswahl setzt m.filter auf milestone:<name> und nutzt damit den vorhandenen Filterweg
 - [x] gitref: Namensraum von 'Ticket-ID' auf '(Art, Name)' verallgemeinern - Prefix (core/gitref/gitref.go:39), RefName (:144), Fetch-Refspec (:575), List/ListRemote/idsFrom (:587-625); refs/jaira/milestones/<name> neben refs/jaira/tickets/<id>
 - [x] snapshot: pruefen, dass reap (core/snapshot/snapshot.go:234) nur Ticket-Refs loescht und den zweiten Namensraum nicht anfasst; der Snapshot-Zweig bleibt Backup und wird NICHT der Ablageort
-- [~] outbox und refsync auf die zweite Art ausdehnen: b.path (core/outbox/outbox.go:77) kollidiert sonst zwischen einem Milestone-Namen und einem Ticket-Handle - je Art ein Unterordner
+- [x] outbox und refsync auf die zweite Art ausdehnen: b.path (core/outbox/outbox.go:77) kollidiert sonst zwischen einem Milestone-Namen und einem Ticket-Handle - je Art ein Unterordner
 - [ ] Milestone-Schreibweg an den Ref haengen, wie attachRefs es fuer Tickets tut (internal/cli/root.go:255)
 - [ ] Test: zwei Klone, in einem ein Milestone angelegt, im anderen nach jaira fetch sichtbar - ohne dass ein Zweig gemergt wurde
 - [ ] core/release/NOTES.md unter ## Unreleased: je eine Zeile fuer den Befehl, den Listen-Schalter, die Board-Geste, die rechte Kartenkante und das Dateiformat
