@@ -13,7 +13,7 @@ related:
   - 01M2HX6SYCFB27V26R5APWAF22
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-09-15T07:34:37Z
+updated-at: 2026-09-15T07:34:39Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -30,6 +30,7 @@ context: |-
   Damit steht die Frage, die dieses Ticket beantworten muss: die Rollen-Prompts werden fuer alle gleich ausgeliefert und koennen nicht pro Projekt verschieden sein. Wie erfaehrt ein ausgelieferter Prompt, dass dieses Board es anders haelt? Entweder er liest die Einstellung zur Laufzeit, oder der erzeugte Block gilt vor ihm und der Prompt sagt das ausdruecklich. Das ist die Entscheidung, nicht die Umsetzung.
 
   Verwandt, aber nicht dasselbe: PWAF22 will, dass 'jaira update' das ganze Setup nachzieht. Wenn dieses Ticket dem Befehl etwas zu schreiben gibt, bekommt PWAF22 einen Grund mehr zu existieren.
+question: "Bevor jemand mit der Arbeit anfaengt: die genaue Form der ersten Loesung ist noch nicht entschieden, und Alex will sie besprechen, nicht von einer Plan-Lane gesetzt bekommen. Fest steht nur die Richtung - der erzeugte Block in CLAUDE.md, weil er sich ohne Umbau ausprobieren laesst. Offen ist, wie der ausgelieferte Prompt ihm weicht: sagt er ausdruecklich, dass der Block vor ihm gilt, oder ersetzt der Block den betreffenden Absatz; wo die Einstellung des Boards steht und wie sie heisst; und was in dem erzeugten Absatz woertlich stehen soll. Dieses Ticket wird nicht in eine Lane geschoben, bevor das besprochen ist."
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
