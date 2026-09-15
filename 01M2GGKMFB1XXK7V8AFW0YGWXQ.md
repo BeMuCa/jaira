@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:45:48Z
+updated-at: 2026-09-15T15:48:49Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -223,3 +223,8 @@ Sechs neue Findings, zwei davon nicht kosmetisch.
 
 NICHT AUFGEMACHT: dass IncomingMilestones die lokale Datei ueberschreibt, die geteilte Palette, der Index in newListCmd, gitref ohne generisches (Art, Name) - alle vier stehen seit Runde 1 mit ihrer Begruendung. Ebenso, dass milestoneIndex() genau einen Aufrufer hat: das ist die Naht, an der die naechsten Leser haengen, und sie ist als solche beschrieben.
 - **2026-09-15 15:45 · Alexander Sacharov** — in-progress, 2026-09-15, Runde 2 der critique-Findings. Wahl bei Finding 1 (zwei Wahrheiten fuer den Namen): der DATEINAME gewinnt immer, und die Zeile name: verschwindet aus New. Die Alternative - name: gewinnt und Save benennt die Datei um - waere ein Rename samt Ref-Umzug bei jedem Save gewesen, also genau der Vorgang, den dieses Ticket abschaffen will.
+- **2026-09-15 15:48 · Alexander Sacharov** — in-progress, Runde 2 abgearbeitet, 2026-09-15. Was der Code nicht erklaert:
+- Finding 2 war real und ist jetzt durch TestQueueSupersedesTheEntryAnOlderBuildLeft (core/outbox/outbox_test.go) abgesichert - nachgemessen: ohne das os.Remove in QueueKind liefert List zwei Eintraege derselben ID, der veraltete zuerst. Der PARALLELE LESEPFAD bleibt, nur der Schreibvorgang raeumt auf: einen Eintrag, den dieser Build nie wieder anfasst, darf er auch nicht loeschen.
+- Finding 1: 'name:' ist aus New UND aus parse() raus, nicht nur aus New. Wuerde parse den Schluessel weiterlesen, saehe ein Leser wieder zwei Wahrheiten, obwohl nur eine gilt. Alte Dateien mit der Zeile bleiben lesbar - die Zeile ist dann Prosa in der Frontmatter und ueberlebt Save verbatim, wie jede andere unbekannte Zeile.
+- Finding 4: HasColour() sitzt in core/milestone, nicht im TUI, weil die Regel 'Farbe 0 heisst keine Farbe' eine Eigenschaft des Dateiformats ist und nicht der Darstellung. --color 0 wird jetzt am Flag abgewiesen (internal/cli/milestones.go), damit die Regel nicht erst auf der Karte sichtbar wird.
+- Nicht angefasst, absichtlich: tag.ValidColour bleibt 0-255. Das Tag-Registry hat kein 'keine Farbe' in dieser Form; eine gemeinsame Verschaerfung waere eine Aenderung an S1VM40s Gegenstand.
