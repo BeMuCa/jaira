@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:38:28Z
+updated-at: 2026-09-15T20:38:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -131,7 +131,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] core/refsync IncomingMilestones (refsync.go:194): einen Ref, dessen Inhalt 'filed' sagt, NICHT auf die Platte schreiben. Eine schon vorhandene lokale Datei wird dabei nicht geloescht - jaira loescht keine Datei, die es nur gelesen hat
 - [x] Test DoD 10 mit zwei Arbeitsbaeumen: im ersten ablegen, im zweiten 'jaira fetch' - der Milestone erscheint dort nicht auf dem Board, und der Ref steht weiter und traegt 'filed'
 - [x] internal/cli milestone create: nach der lokalen Pruefung (milestones.go:107) den Ref lesen - traegt er 'filed', wird abgelehnt mit dem Hinweis auf 'jaira restore'. Ohne brauchbare Refs greift derselbe Blick ins lokale Logbuch, sonst legt ein ungeteiltes Board denselben Namen zweimal an
-- [ ] Restore eines Milestones: die Status-Zeile wieder entfernen und ueber recordMilestone erneut an den Ref - sonst liegt er auf dem Board, waehrend sein Ref weiter 'filed' sagt und jeder andere Klon ihn ausblendet
+- [~] Restore eines Milestones: die Status-Zeile wieder entfernen und ueber recordMilestone erneut an den Ref - sonst liegt er auf dem Board, waehrend sein Ref weiter 'filed' sagt und jeder andere Klon ihn ausblendet
 - [x] listLogbook/logbookNames (internal/cli/logbook.go:224) listen den Unterordner milestones/ mit, sonst liegt die Datei da und die Liste sagt es nicht
 - [ ] Test DoD 9 und 11: ablegen - vom Board weg, 'milestone ls' schweigt, keine Karte traegt die Farbe, das Logbuch nennt ihn; 'create' mit demselben Namen wird abgelehnt; 'restore' - Liste, Farbe und Karte zurueck
 - [ ] Hilfetexte und docs/COMMANDS.md: 'jaira logbook' nennt den Milestone-Fall, 'jaira milestone rm' bleibt bei 'der Milestone bleibt stehen', 'create' nennt den belegten Namen - alle drei liest man VOR dem Aufruf
