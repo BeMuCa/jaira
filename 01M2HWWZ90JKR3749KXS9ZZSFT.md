@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T06:44:00Z
+updated-at: 2026-09-15T06:44:04Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 context: |-
@@ -33,6 +33,9 @@ context: |-
 ## Definition of Done
 
 - [ ] Eine Lane, die keinen Code aendert, erzeugt keinen eigenen Commit mehr. Nachgestellt an einem Ticket, das critique, testing und review durchlaeuft: danach steht im Verlauf kein Commit, der nur .jaira/ anfasst.
+- [ ] Die Commit-Liste eines Tickets bleibt vollstaendig, obwohl die Ticket-Datei seltener committet wird. Nachgestellt an einem Ticket, das die Lanes durchlaeuft und danach 'jaira move' in die Endlane erreicht - die abgeleitete Liste nennt jeden Code-Commit, der zu ihm gehoert.
+- [ ] Die Regel steht dort, wo ein Agent sie liest: im erzeugten jaira-Block und in den Rollen-Prompts, nicht nur in einem Ticket.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased, falls sich etwas an der Ableitung oder am Verhalten der Befehle aendert.
 
 ## Options
 
