@@ -11,11 +11,14 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-09-15T21:00:36Z
+updated-at: 2026-09-15T21:00:39Z
 assignee: BeMuCa
 updated-by: Alexander Sacharov
 claimed-by: EE-3NX6GL3-4179675
 claimed-at: 2026-09-04T16:44:21Z
+outcome-what: "eingefroren, bis Berk ueber Epics gegen Milestones entschieden hat"
+outcome-why: "0YGWXQ hat Milestones gebaut und macht dieselbe Gruppierung; zwei Datenmodelle fuer eine Handlung sind eine Achse zu viel auf einem Board, dessen Regel 'kleiner als paca' lautet"
+outcome-resolves: "die Frage und die drei Wege stehen als PUNKT 4 auf QF08G3, wo die Uebergabe an Berk gefuehrt wird"
 ---
 
 # Ein Epic-Layer zeigt Storys als verbundene Bubbles ueber dem Board
