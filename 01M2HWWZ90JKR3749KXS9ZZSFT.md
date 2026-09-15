@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:04:20Z
+updated-at: 2026-09-15T13:06:37Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -47,6 +47,17 @@ claimed-at: 2026-09-15T13:03:43Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] sammeln: jede Stelle, die einem Agenten sagt, die Ticket-Datei zu committen (core/board/announce.go, core/role/builtin/*/SKILL.md, docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md)
+- [ ] entscheiden und als Notiz festhalten: was mit der Ticket-Datei nach der letzten Code-Lane passiert - Ref traegt sie, oder ein Abschluss-Commit
+- [ ] pruefen: laesst das Gate den Zug in die Endlane noch zu, wenn die Ticket-Datei nie committet wurde und nur die Commit-Nachricht die Id nennt (core/gate/gate.go:322, core/gitrepo/derive.go:19)
+- [ ] core/board/announce.go: den Commit-Punkt umschreiben - eine Lane ohne Code-Aenderung committet nichts, der Ref haelt den Zustand, jeder Commit nennt die Id
+- [ ] core/role/builtin/jaira-role-lane/SKILL.md: 'git add -A und commit' durch dieselbe Bedingung ersetzen
+- [ ] core/role/builtin/jaira-role-pr/SKILL.md: die Vorbedingung 'nothing uncommitted' auf alles ausser der Ticket-Datei verengen
+- [ ] die nicht erzeugten Kopien nachziehen: docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md
+- [ ] 'jaira update' laufen lassen, damit CLAUDE.md und AGENTS.md den neuen Block tragen; core/board/announce_test.go und core/role/role_test.go gruen
+- [ ] eine Zeile in core/release/NOTES.md unter ## Unreleased
+- [ ] am eigenen Ticket nachstellen: nach critique, testing und review zeigt 'git log --name-only origin/master..HEAD' keinen Commit, der nur .jaira/ anfasst
 
 ## Progress
 
