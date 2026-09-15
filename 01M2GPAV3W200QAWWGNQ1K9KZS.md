@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:23:41Z
+updated-at: 2026-09-15T07:23:44Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74981
@@ -72,7 +72,7 @@ review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur 
 - [x] implement core/lane/corrections.go: the embedded list, dropFrontmatterLine beside stampCreatorLine, applyCorrections(root) called from Load next to migrateLegacy, marker via readIDList/writeIDList
 - [x] run go test ./... -race and replay the fixture by hand with a built binary
 - [x] one line in core/release/NOTES.md under ## Unreleased: what an older board does now, replacing the 'remove that line by hand' instruction of the closed 0.1.4 section
-- [~] critique loop: the correction's report goes to os.Stderr from applyCorrections, not into Set.Warnings, so it survives --json and the callers that drop Warnings
+- [x] critique loop: the correction's report goes to os.Stderr from applyCorrections, not into Set.Warnings, so it survives --json and the callers that drop Warnings
 
 ## Progress
 - **2026-09-15 07:00 · Alexander Sacharov** — pre-process: warum der Plan so aussieht.
