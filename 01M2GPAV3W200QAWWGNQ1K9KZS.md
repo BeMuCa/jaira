@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:02:11Z
+updated-at: 2026-09-15T07:02:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
@@ -82,3 +82,4 @@ Das Einmal-Marker ist der Punkt, an dem DoD 2 haelt: wer 'logbook-on-entry: true
 Warnung: lanes.Warnings werden in internal/cli/root.go:291 und internal/tui/model.go:351 schon ausgegeben - DoD 3 braucht keinen neuen Kanal, nur den richtigen Satz.
 
 NOTES.md: die 0.1.4-Zeile bleibt stehen. 0.1.4 ist getaggt, also geschlossene Historie, und Alex hat am 15.09. entschieden, sie nicht anzufassen (74VM40). DoD 4 und 5 fallen deshalb auf eine einzige neue Zeile unter ## Unreleased zusammen, die sagt, was ein aelteres Board ab jetzt tut - womit die Handarbeit-Anweisung der alten Zeile gegenstandslos wird.
+- **2026-09-15 07:02 · Alexander Sacharov** — Neues Kriterium 6 kam waehrend der in-progress-Lane dazu und verengt den Plan (Form bleibt, die Praezedenzfaelle und Tests bleiben): Eine Korrektur darf nur eine Lane anfassen, die erkennbar die ausgelieferte ist - die Datei entspricht einer ausgelieferten Fassung oder unterscheidet sich von ihr nur in genau dem Feld, das korrigiert wird. Eine selbst geschriebene Lane mit derselben id wird gemeldet, nie editiert. Der 'applied'-Marker deckt das NICHT ab: er verhindert die Wiederholung, nicht dass die Korrektur beim ersten Mal falsch ist. Erkennung muss aus dem Inhalt kommen: 'creator:' taugt nicht dafuer - stampCreatorLine (core/lane/share.go:60) setzt es, aber auf diesem Board tragen es nur critique.md, optimize.md und testing.md (aus einem Katalog uebernommen); die ausgelieferten Lanes haben die Zeile gar nicht. Zusaetzlicher Test: ein handgeschriebenes done.md, das absichtlich logbook-on-entry: true fuehrt, bleibt unveraendert und der Mensch erfaehrt, dass die Korrektur uebersprungen wurde und warum.
