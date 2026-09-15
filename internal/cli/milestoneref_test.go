@@ -204,3 +204,49 @@ func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
 		t.Errorf("grace's 'milestone ls' names a filed milestone:\n%s", out)
 	}
 }
+
+// The other half of the same claim, and the reason the ref carries a status at
+// all: a clone that ALREADY has the file on its board has to learn that the
+// milestone was filed. Skipping the marked ref would leave grace planning a
+// round of work ada closed, with nothing in either board ever telling her.
+func TestAClonePlanningTheMilestoneLearnsItWasFiled(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's first fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err != nil {
+		t.Fatalf("grace has to have the milestone before it is filed: %v", err)
+	}
+
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, grace, "fetch")
+	if err != nil {
+		t.Fatalf("grace's second fetch: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "round-one") {
+		t.Errorf("the fetch does not say the milestone was filed:\n%s", out)
+	}
+
+	// The file is still hers — nothing deletes a file jaira only read — but it
+	// carries the mark, and the mark is what takes it off the board.
+	ms, err := milestone.Load(grace, "round-one")
+	if err != nil {
+		t.Fatalf("the fetch removed a file instead of marking it: %v", err)
+	}
+	if !ms.Filed() {
+		t.Errorf("grace's file carries status %q, want %q", ms.Status, milestone.StatusFiled)
+	}
+	out, err = runCLI(t, grace, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("grace's ls: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "round-one") {
+		t.Errorf("grace's 'milestone ls' still names a milestone that was filed:\n%s", out)
+	}
+}

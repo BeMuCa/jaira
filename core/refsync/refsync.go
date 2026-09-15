@@ -202,41 +202,57 @@ func (y *Syncer) RecordMilestone(name string, content []byte) error {
 // so a local file that differs is overwritten, and the previous content is in
 // git if it was ever committed.
 //
-// A ref whose file says it has been filed is skipped: it is off the board, and
-// writing it back is exactly how filing a milestone would undo itself on the
-// next fetch. A local file already there is left alone rather than removed —
-// jaira does not delete a file it has only read, and whoever wants that board
-// tidy files it there too.
-func (y *Syncer) IncomingMilestones(root string) ([]string, error) {
+// A ref whose file says it has been filed is written over a file this tree
+// already has: the marked line is what keeps a milestone off the board, so
+// writing it is how a clone that already has the file learns it was filed at
+// all — which is the one thing that ref exists to carry. Skipping it would
+// leave that clone showing a round of work everybody else has closed. Those
+// names come back separately, because "this group left the board" is
+// different news from "this group changed".
+//
+// A filed milestone this tree does NOT have is not written: there is nothing
+// here to correct, and putting the file on disk would leave a second copy
+// beside the one in the logbook of the tree that filed it — which is the tree
+// 'jaira restore' would then refuse, because the name is back on the board.
+//
+// Nothing is ever deleted here: a milestone the refs no longer carry is left
+// where it is. jaira does not delete a file it has only read, and whoever
+// wants that board tidy files it there too.
+func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, err error) {
 	if y == nil || y.Usable() != nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	names, err := y.Repo.ListMilestones()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var wrote []string
 	for _, name := range names {
 		content, _, err := y.Repo.ReadMilestone(name)
 		if err != nil {
 			continue
 		}
-		if milestone.FromBytes(name, content).Filed() {
+		path := milestone.Path(root, name)
+		have, haveErr := os.ReadFile(path)
+		if haveErr == nil && bytes.Equal(have, content) {
 			continue
 		}
-		path := milestone.Path(root, name)
-		if have, err := os.ReadFile(path); err == nil && bytes.Equal(have, content) {
+		isFiled := milestone.FromBytes(name, content).Filed()
+		if isFiled && haveErr != nil {
 			continue
 		}
 		if err := os.MkdirAll(milestone.Dir(root), 0o755); err != nil {
-			return wrote, err
+			return wrote, filed, err
 		}
 		if err := ticket.WriteAtomic(path, content); err != nil {
-			return wrote, err
+			return wrote, filed, err
+		}
+		if isFiled {
+			filed = append(filed, name)
+			continue
 		}
 		wrote = append(wrote, name)
 	}
-	return wrote, nil
+	return wrote, filed, nil
 }
 
 // Winner describes the state that beat a rejected write, read from the ref

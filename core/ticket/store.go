@@ -422,6 +422,31 @@ func (s *Store) logbookFolders() ([]string, error) {
 	return out, nil
 }
 
+// FiledMilestone reports whether a milestone of this name lies filed in the
+// logbook, and where, as a path relative to the repository root.
+//
+// It looks in every folder Restore looks in — including the one the logbook
+// was called before it was one — because a name Restore can still bring back
+// is a name that is still taken. A hand-rolled walk over LogbookDir alone
+// misses that older folder and hands the name out twice.
+func (s *Store) FiledMilestone(name string) (string, bool) {
+	folders, err := s.logbookFolders()
+	if err != nil {
+		return "", false
+	}
+	for _, folder := range folders {
+		dir := filepath.Join(folder, MilestonesSubdir)
+		if _, err := os.Stat(filepath.Join(dir, name+".md")); err != nil {
+			continue
+		}
+		if rel, err := filepath.Rel(s.Root, dir); err == nil {
+			return rel, true
+		}
+		return dir, true
+	}
+	return "", false
+}
+
 // LoggedPerDay counts the logbook's tickets by the day of their folder, for
 // the days days ending today: out[days-1] is today, out[0] the oldest. The
 // folder name carries the date — <initials>-<yyyymmdd> — so no ticket is

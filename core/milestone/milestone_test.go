@@ -297,3 +297,34 @@ func TestSetStatusGivesAFileWithoutFrontmatterOne(t *testing.T) {
 		t.Errorf("the original lines did not survive:\n%s", raw)
 	}
 }
+
+// The status line is what takes a milestone off the board, not where its file
+// happens to lie: a filing that marked the file and got no further, and a
+// fetch that wrote a marked file back, both leave one here, and neither is a
+// milestone anybody is planning.
+func TestLoadAllLeavesOutAFiledMilestone(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "open", "---\ncolor: 40\n---\n- "+idA+"\n")
+	write(t, root, "closed", "---\ncolor: 33\nstatus: filed\n---\n- "+idB+"\n")
+
+	all, err := LoadAll(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 1 || all[0].Name != "open" {
+		t.Fatalf("LoadAll() = %v, want only the open milestone", names(all))
+	}
+	// Read by name it is still there, which is what a restore needs.
+	ms, err := Load(root, "closed")
+	if err != nil || !ms.Filed() {
+		t.Fatalf("Load(closed) = %v, %v; want the filed milestone", ms, err)
+	}
+}
+
+func names(all []*Milestone) []string {
+	out := make([]string, 0, len(all))
+	for _, m := range all {
+		out = append(out, m.Name)
+	}
+	return out
+}

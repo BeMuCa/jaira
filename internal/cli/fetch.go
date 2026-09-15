@@ -25,6 +25,11 @@ refs/jaira/tickets/* and the milestones under refs/jaira/milestones/* — and
 reports what they say. A milestone whose file is new or newer is written to
 .jaira/milestones/, so the groups a teammate planned arrive with the tickets.
 
+A milestone somebody filed is reported apart from those: its ref carries
+"status: filed", and that line is what keeps a milestone off a board. A file
+you already have is marked with it, so the group leaves your board too; a
+filed milestone you never had is not written at all. Nothing is deleted here.
+
 This is how a ticket assigned to you arrives without anyone sharing a branch:
 the ref carries the whole ticket file, so it is readable with no checkout and
 nothing to merge. Refs are outside refs/heads, so the default refspec does not
@@ -61,7 +66,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			// disk: a milestone has no lane and no editor here, the file IS
 			// the interface, so a group that stayed on a ref would be a group
 			// nobody can open.
-			openedMilestones, err := refs.IncomingMilestones(openedStore.Root)
+			openedMilestones, filedMilestones, err := refs.IncomingMilestones(openedStore.Root)
 			if err != nil {
 				return err
 			}
@@ -70,10 +75,12 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
-					"milestones": strOrEmpty(openedMilestones),
+					"milestones":       strOrEmpty(openedMilestones),
+					"milestones_filed": strOrEmpty(filedMilestones),
 				})
 			}
 			printMilestones(cmd.OutOrStdout(), openedMilestones)
+			printFiledMilestones(cmd.OutOrStdout(), filedMilestones)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)
@@ -95,6 +102,22 @@ func printMilestones(w io.Writer, names []string) {
 	for _, n := range names {
 		fmt.Fprintf(w, "  %s\n", n)
 	}
+}
+
+// printFiledMilestones says which milestones somebody else has filed. Kept
+// apart from the updated ones: a group that changed is work you look at, a
+// group that was filed is work that has left the board, and reading the second
+// under the first heading would send you looking for a milestone 'jaira
+// milestone ls' no longer names.
+func printFiledMilestones(w io.Writer, names []string) {
+	if len(names) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones filed elsewhere, now off this board:\n")
+	for _, n := range names {
+		fmt.Fprintf(w, "  %s\n", n)
+	}
+	fmt.Fprintf(w, "Whoever filed one brings it back with 'jaira restore <name>.md'.\n")
 }
 
 // announceArrivals raises one notification per ticket newly assigned to this

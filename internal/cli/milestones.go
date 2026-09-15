@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -114,7 +113,15 @@ and you are told so.`,
 			}
 			defer unlock()
 
-			if _, err := milestone.Load(s.Root, name); err == nil {
+			if have, err := milestone.Load(s.Root, name); err == nil && have.Filed() {
+				// The file is here but marked, which a fetch of somebody
+				// else's filing leaves behind. It is not on the board, so
+				// "already exists" would send the reader looking for a
+				// milestone no listing names.
+				return fail(ExitValidation, "milestone_filed",
+					"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — take that line out by hand to put this one back, or let whoever filed it run 'jaira restore %s.md'",
+					name, milestone.Path(s.Root, name), milestone.StatusFiled, name)
+			} else if err == nil {
 				return fail(ExitValidation, "milestone_exists",
 					"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
 					name, milestone.Path(s.Root, name), name)
@@ -344,20 +351,7 @@ func milestoneFiled(s *ticket.Store, name string) (string, bool) {
 			}
 		}
 	}
-	folders, err := os.ReadDir(s.LogbookDir())
-	if err != nil {
-		return "", false
-	}
-	for _, f := range folders {
-		if !f.IsDir() {
-			continue
-		}
-		path := filepath.Join(s.LogbookDir(), f.Name(), ticket.MilestonesSubdir, name+".md")
-		if _, err := os.Stat(path); err == nil {
-			return filepath.Join(ticket.DirName, ticket.LogbookSubdir, f.Name(), ticket.MilestonesSubdir), true
-		}
-	}
-	return "", false
+	return s.FiledMilestone(name)
 }
 
 // recordMilestone puts the milestone file on its own ref, the way every ticket

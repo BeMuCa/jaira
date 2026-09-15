@@ -52,9 +52,10 @@ brings a logged ticket back, the same as an archived one.
 Naming a milestone instead of a ticket files the milestone: its file moves
 into .jaira/logbook/<initials>-<yyyymmdd>/milestones/, 'jaira milestone ls'
 stops naming it, no card carries its colour and the board's M filter forgets
-it. Its ref stays up carrying the status "filed", which is what keeps every
-other clone from writing it back onto their board and what holds the name
-until somebody restores it. Only a milestone you name by hand — --all sweeps
+it. Its ref stays up carrying the status "filed": that line is what keeps a
+milestone off a board, so a clone that already has the file has it marked on
+the next fetch and stops showing the group, and the name stays taken until
+somebody restores it. Only a milestone you name by hand — --all sweeps
 the terminal lane and never takes a group with it. A milestone is filed only
 once every ticket in it has reached the terminal lane or left the board.
 
@@ -274,6 +275,15 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	// A file that already says filed is one a fetch wrote back here, or one a
+	// filing marked and got no further with. Either way it is off the board
+	// already, and filing it a second time would only stamp today's folder on
+	// somebody else's record of it.
+	if ms.Filed() {
+		return fail(ExitValidation, "milestone_filed",
+			"milestone %q is already filed — 'jaira restore %s.md' brings it back onto the board",
+			name, name)
+	}
 	// The same gate a ticket passes, asked of a group: a milestone with
 	// unfinished work in it is a plan somebody is still working, and filing it
 	// takes the plan off the board while the work stays on it.
@@ -296,7 +306,10 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	}
 
 	// Mark, then put the marked file on the ref, then move it: recordMilestone
-	// reads the file from the board, so the order is not a preference.
+	// reads the file from the board, so writing has to come before moving.
+	// Nothing rides on it beyond that — the marked line is what takes the
+	// milestone off the board, so a move that fails here leaves a file that is
+	// already invisible to the board and already filed on its ref.
 	ms.SetStatus(milestone.StatusFiled)
 	if err := ms.Save(s.Root); err != nil {
 		return err

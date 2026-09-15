@@ -187,9 +187,18 @@ func FromBytes(name string, content []byte) *Milestone {
 	return m
 }
 
-// LoadAll reads every milestone on the board, sorted by name. An absent
-// directory is not an error: it means the board has planned no milestones yet,
-// which is the state every board starts in.
+// LoadAll reads every milestone that is ON the board, sorted by name. An
+// absent directory is not an error: it means the board has planned no
+// milestones yet, which is the state every board starts in.
+//
+// A filed milestone is not on the board and is left out here, which is what
+// makes `status: filed` the line that decides it rather than where the file
+// happens to lie. Both states put a file under .jaira/milestones/: filing it
+// moves it into the logbook, but a fetch writes the marked file back the way
+// it writes every other one, and a filing that got as far as marking the file
+// and no further has left it lying here too. One read of the line answers all
+// three. Load reads a filed milestone by name, which is how a restore gets at
+// it.
 //
 // A file that does not parse is skipped rather than failing the read: the
 // board is glanced at constantly, and one malformed file must not be able to
@@ -212,7 +221,7 @@ func LoadAll(root string) ([]*Milestone, error) {
 		}
 		name := strings.TrimSuffix(e.Name(), ".md")
 		m, err := Load(root, name)
-		if err != nil {
+		if err != nil || m.Filed() {
 			continue
 		}
 		out = append(out, m)
