@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:31:34Z
+updated-at: 2026-09-15T06:31:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-77218
 claimed-at: 2026-09-15T06:31:06Z
-outcome-what: "testing round 1: gates green, DoD 1-7 verified in the tree, spawn.sh exercised against a fake herdr in four runs"
-outcome-why: "the COMPOSE_PROJECT_NAME spawn.sh writes is rejected by docker compose, so the .env block it was asked to fix still does not work"
-outcome-resolves: "no DoD item; the finding is on spawn.sh:35, the line DoD item 5 demanded"
+outcome-what: "spawn.sh leitet COMPOSE_PROJECT_NAME jetzt so ab, dass Docker den Namen annimmt: printf statt echo (kein angehaengter Unterstrich aus dem Zeilenumbruch), erst kleinschreiben, dann saeubern. NOTES.md:19 sagt das statt nur 'kein fremder Projektname mehr'."
+outcome-why: "Der abgeleitete Name war zwar nicht mehr fremd, aber unbrauchbar: 'docker compose config' wies repo__SLUG3 als 'invalid project name' zurueck, also startete der Worker-Stapel gar nicht erst - genau das, wofuer der .env-Block da ist."
+outcome-resolves: "DoD 5, jetzt funktionsgeprueft statt nur gelesen (my_repo_ksgskk, Compose v2.40.3, RC=0); DoD 6 traegt die richtige Zeilennummer fuers Label-Format."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 review-gaps: "Entfernt: der verwaiste '--no-focus'-Absatz in jaira-dispatcher/SKILL.md - er wies auf eine Option hin, die seit dieser Aenderung spawn.sh setzt und der Dispatcher nicht mehr tippt; in den Satz ueber den Weg am Skript vorbei gefaltet, wo er noch gilt. Stehen gelassen und warum: die doppelte Transport-Lehre in dispatcher/SKILL.md:91-98 und teamlead/SKILL.md:44-52 (ein Rollen-Prompt wird allein geladen - ein Verweis waere fuer den Leser eine Sackgasse, das ist dasselbe Wissen fuer zwei Leser, keine zweite Implementierung); das doppelte Verzeichnissetzen in spawn.sh (--cwd plus 'cd' im Linux-Arm) - harmlos, und es zu entfernen waere eine Verhaltensaenderung an der Stelle, an der dieses Ticket dreimal falsch lag. Kein toter Code, nichts an Kosten: das Skript laeuft einmal je Worker."
 test-verdict: "fail: spawn.sh schreibt ein COMPOSE_PROJECT_NAME, das 'docker compose' zurueckweist - Grossbuchstaben aus dem Slug und ein doppelter Unterstrich (spawn.sh:35)"
