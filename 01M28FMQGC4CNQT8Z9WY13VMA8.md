@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:23:49Z
+updated-at: 2026-09-15T05:25:00Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -129,3 +129,8 @@ Bewusst NICHT gekuerzt habe ich die vierfache Wiederholung von 'du machst keinen
 Die dreifache Doku-Kopie (CLAUDE.md, AGENTS.md, README.md) ist ebenfalls keine Doppelung zum Einsammeln: die Definition of Done verlangt sie, weil drei verschiedene Leserschaften dort nachsehen.
 
 go test ./... gruen nach der Aenderung.
+- **2026-09-15 05:25 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen: scripts/spawn.sh:71 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane also nicht folgen.
+
+Das ist derselbe Befund 4, den KSGSKK am 2026-09-14 18:23 notiert und am 20:36 ausdruecklich aus seinem Umfang ausgeschlossen hat (weder DoD noch Arbeitsanweisung). Er gehoert weiterhin in ein eigenes Ticket, nicht in dieses und nicht in KSGSKK.
+
+Was ich hier getan habe: spawn.sh unveraendert mit lane=testing benutzt, also '/jaira-role-lane 13VMA8 testing'. Das ist auf diesem Board vertretbar, weil 'testing' hier eine echte, konfigurierte agentische Lane mit eigenem Prompt und Pflichtfeld test-verdict ist - genau das Feld, das gefuellt werden muss. Kein Handaufruf von claude, kein --permission-mode.
