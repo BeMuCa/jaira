@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T07:00:25Z
+updated-at: 2026-09-15T07:00:37Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -43,9 +43,9 @@ question: |-
   Nicht getan, wie angewiesen: kein Pull Request und kein Merge Request aufgemacht, aktualisiert oder gemerged. Der Zweig feat/13VMA8-pr-is-the-humans ist gepusht; das Kommando gibst du.
 
   Hinweis: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide dann neu.
-outcome-what: "Critique uebersprungen (Alex)"
-outcome-why: "Diese Runde hat nur Proof-Zeilennummern korrigiert, keinen Code und keinen Prompttext"
-outcome-resolves: "DoD 1-4 tragen jetzt Anker, die halten, was sie behaupten - jede genannte Zeile am Baum nachgeschlagen, nicht aus dem testing-Bericht uebernommen. Dabei kamen zwei Anker ans Licht, die testing selbst nicht gemeldet hatte (DoD 4 Wortwechsel, DoD 3 Leiterspanne). Der Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und core/release/NOTES.md ist unveraendert."
+outcome-what: "testing-Lane: 'go build ./...' und 'go test ./... -race' gruen (RC=0), alle vier DoD-Anker einzeln am Baum nachgeschlagen und korrekt, die Forge-Leiter auf drei Remote-Fixtures in allen vier Zweigen durchlaufen, glab-1.114.0-Flags am --help geprueft, und eine frisch gebaute Binary schreibt die Rolle per 'jaira roles install --into' byte-gleich heraus."
+outcome-why: "Die Lane prueft, ob das Geforderte existiert und ob es laeuft - beides am Arbeitsbaum bestaetigt, nicht am outcome-Text. Die Anker waren der Befund der letzten Runde, also wurde diesmal jede Zeilennummer per grep -n gegengelesen."
+outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress. Offen fuer den Menschen: der Zweig ist gepusht, der Pull Request wird nicht von einem Agenten aufgemacht."
 claimed-by: DESKTOP-RFTCH11-38871
 claimed-at: 2026-09-15T06:55:39Z
 review-summary: "Die Rolle jaira-role-pr spricht jetzt zwei Forges. Neu ist die Sektion 'Which forge this repository is on' (SKILL.md:36-67): zuerst 'git config jaira.forge' - ist es gesetzt, gewinnt es ohne Wenn und Aber; sonst entscheidet der Host von 'git remote get-url origin', also des Remotes, auf den der Branch gepusht wird (github.com -> gh, Host mit 'gitlab' -> glab); gibt der Host nichts her, nennt die Rolle kein Werkzeug, sagt das und schreibt die eine Zeile hin, die es klaert ('git config jaira.forge gitlab'). Dass 'origin' und nicht 'jaira.remote' gelesen wird, steht mit Begruendung im Text (:46-49) - jaira.remote traegt die Ticket-Refs und ist im Fork das Upstream, waehrend der Branch zum Fork geht. Danach sind genau drei Stellen zweisprachig: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create --body-file / :124 glab mr create --description \"$(cat ...)\") und die Boundaries (:143-148). Der uebrige Ablauf bleibt einmalig, statt als zweite Kopie zu existieren. Der Wortwechsel ist begrenzt: :65-67 weist an, 'pull request' NUR auf dem GitLab-Weg als 'merge request' zu lesen - der GitHub-Weg redet weiter von Pull Requests. Ausserdem hat 9fc224c die Abfrage der offenen Requests aus der Forge-Sektion in die Push-Sektion verschoben, wo der Branch tatsaechlich genommen wird. Dazu eine Unreleased-Zeile in core/release/NOTES.md:20 und ein Satz in der SKILL-description."
