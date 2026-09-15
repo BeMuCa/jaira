@@ -30,11 +30,11 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:09:16Z
+updated-at: 2026-09-15T06:09:53Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-23543
-claimed-at: 2026-09-15T06:06:17Z
+claimed-by: DESKTOP-RFTCH11-38471
+claimed-at: 2026-09-15T06:09:53Z
 outcome-what: "Die Meldung des 'claude blocked'-Arms in core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76-79 richtet sich jetzt an den Menschen: 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'. Critiques Wortlaut woertlich uebernommen. Eigener case-Arm, exit 1 und der Torwaechter-Kommentar bleiben unveraendert."
 outcome-why: "Die alte Meldung sagte 'answer it in that pane yourself'. Gelesen wird sie nur vom Dispatcher, und jaira-dispatcher/SKILL.md:188-189 verbietet ihm genau das ('never answer for the human'). Das Skript schuetzte den Genehmigungsdialog also vor seinem eigenen send-keys und schickte den Dispatcher im naechsten Satz mit der Hand hinein."
 outcome-resolves: "Der einzige offene Befund aus critique-Durchgang 3 (Notiz 2026-09-15 05:45), den die Arbeitsanweisung von 05:49 als alleinigen Umfang dieser Runde benannt hat. Alle sieben DoD-Punkte waren bereits abgehakt und belegt; dieser Befund haengt an keinem Haken. Gates gruen: go build, go vet, go test ./core/role/..., bash -n spawn.sh."
