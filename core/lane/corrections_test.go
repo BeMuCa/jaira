@@ -43,6 +43,8 @@ func hears(t *testing.T) func() (stdout, stderr string) {
 			var ob, eb bytes.Buffer
 			ob.ReadFrom(outR)
 			eb.ReadFrom(errR)
+			outR.Close()
+			errR.Close()
 			out, errs = ob.String(), eb.String()
 		})
 	}
@@ -245,23 +247,20 @@ func TestCorrectionSaysNothingOnABoardThatNeverHadTheDefect(t *testing.T) {
 
 func TestDropFrontmatterLine(t *testing.T) {
 	const body = "---\nid: done\nlogbook-on-entry: true  # doorway\nterminal: true\n---\nprompt\n"
+	const bare = "id: done\n" // no frontmatter at all
 	for _, tc := range []struct {
-		name, field, value, want string
-		dropped                  bool
+		name, in, field, value, want string
+		dropped                      bool
 	}{
-		{"drops the field", "logbook-on-entry", "", "---\nid: done\nterminal: true\n---\nprompt\n", true},
-		{"drops it on a matching value past a comment", "logbook-on-entry", "true", "---\nid: done\nterminal: true\n---\nprompt\n", true},
-		{"keeps it on another value", "logbook-on-entry", "false", body, false},
-		{"keeps a field that is not there", "holds", "", body, false},
-		{"never reaches past the frontmatter", "prompt", "", body, false},
-		{"leaves a file with no frontmatter alone", "id", "", body, false},
+		{"drops the field", body, "logbook-on-entry", "", "---\nid: done\nterminal: true\n---\nprompt\n", true},
+		{"drops it on a matching value past a comment", body, "logbook-on-entry", "true", "---\nid: done\nterminal: true\n---\nprompt\n", true},
+		{"keeps it on another value", body, "logbook-on-entry", "false", body, false},
+		{"keeps a field that is not there", body, "holds", "", body, false},
+		{"never reaches past the frontmatter", body, "prompt", "", body, false},
+		{"leaves a file with no frontmatter alone", bare, "id", "", bare, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			in := body
-			if tc.name == "leaves a file with no frontmatter alone" {
-				in, tc.want = "id: done\n", "id: done\n"
-			}
-			got, dropped := dropFrontmatterLine([]byte(in), tc.field, tc.value)
+			got, dropped := dropFrontmatterLine([]byte(tc.in), tc.field, tc.value)
 			if dropped != tc.dropped || string(got) != tc.want {
 				t.Errorf("dropped=%v content=%q, want dropped=%v content=%q", dropped, got, tc.dropped, tc.want)
 			}

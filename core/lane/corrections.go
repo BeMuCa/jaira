@@ -139,9 +139,11 @@ func applyCorrections(root string) {
 		fmt.Fprintf(os.Stderr, "jaira: %s\n", fmt.Sprintf(format, a...))
 	}
 
-	applied, err := readIDList(correctionsPath(root))
+	lanesDir := ProjectLanesDir(root)
+	marker := correctionsPath(root)
+	applied, err := readIDList(marker)
 	if err != nil {
-		say("could not read %s: %v", correctionsPath(root), err)
+		say("could not read %s: %v", marker, err)
 		return
 	}
 	done := make(map[string]bool, len(applied))
@@ -154,7 +156,7 @@ func applyCorrections(root string) {
 		if done[c.ID] {
 			continue
 		}
-		path := filepath.Join(ProjectLanesDir(root), c.Lane+".md")
+		path := filepath.Join(lanesDir, c.Lane+".md")
 		b, err := os.ReadFile(path)
 		if err != nil {
 			if !os.IsNotExist(err) {
@@ -184,8 +186,8 @@ func applyCorrections(root string) {
 	}
 
 	if len(ran) > 0 {
-		if err := writeIDList(root, correctionsPath(root), append(applied, ran...)); err != nil {
-			say("could not record the corrections applied to %s: %v", ProjectLanesDir(root), err)
+		if err := writeIDList(root, marker, append(applied, ran...)); err != nil {
+			say("could not record the corrections applied to %s: %v", lanesDir, err)
 		}
 	}
 }
