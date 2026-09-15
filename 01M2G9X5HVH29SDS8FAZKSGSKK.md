@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:14:39Z
+updated-at: 2026-09-15T06:14:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
 claimed-at: 2026-09-15T06:09:53Z
-outcome-what: "testing abgebrochen, nicht geurteilt: Alex hat mitten in der Runde den Umfang erweitert - scripts/spawn.sh soll den Worker-Tab im Workspace des Dispatchers/Teamleads oeffnen."
-outcome-why: "Die Lane prueft ein Skript, das sich dadurch aendert; ein Urteil ueber die alte Fassung waere wertlos gewesen."
-outcome-resolves: "Kein DoD-Punkt; die Runde geht zurueck an in-progress, damit der Befund behoben wird, bevor testing neu laeuft."
+outcome-what: "scripts/spawn.sh uebergibt 'herdr tab create' jetzt --workspace $HERDR_WORKSPACE_ID, wenn die Variable gesetzt ist (spawn.sh:43-53); ohne sie faellt das Flag ersatzlos weg. dispatcher/SKILL.md:103-105 nennt dasselbe Flag fuer den Weg am Skript vorbei, und die vorhandene Unreleased-Zeile in NOTES.md:19 sagt es dem Leser."
+outcome-why: "Ohne --workspace entscheidet Herdr selbst, in welchem Workspace der Worker-Tab landet - der Worker kann in einem Fenster aufgehen, auf das der Dispatcher nicht schaut, und ein Worker, den niemand sieht, ist einer, dessen Tod niemand bemerkt (die testing-Runde von 06:09 hat genau das erlebt). Alex hat das am 2026-09-15 06:11 in den Umfang dieses Tickets gelegt."
+outcome-resolves: "Kein DoD-Punkt - alle sieben stehen seit der 4. Runde. Behoben ist der Befund vom 2026-09-15 06:10/06:11; die testing-Runde, die daran abgebrochen wurde, kann jetzt ueber die endgueltige Fassung des Skripts urteilen."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 review-gaps: "Entfernt: der verwaiste '--no-focus'-Absatz in jaira-dispatcher/SKILL.md - er wies auf eine Option hin, die seit dieser Aenderung spawn.sh setzt und der Dispatcher nicht mehr tippt; in den Satz ueber den Weg am Skript vorbei gefaltet, wo er noch gilt. Stehen gelassen und warum: die doppelte Transport-Lehre in dispatcher/SKILL.md:91-98 und teamlead/SKILL.md:44-52 (ein Rollen-Prompt wird allein geladen - ein Verweis waere fuer den Leser eine Sackgasse, das ist dasselbe Wissen fuer zwei Leser, keine zweite Implementierung); das doppelte Verzeichnissetzen in spawn.sh (--cwd plus 'cd' im Linux-Arm) - harmlos, und es zu entfernen waere eine Verhaltensaenderung an der Stelle, an der dieses Ticket dreimal falsch lag. Kein toter Code, nichts an Kosten: das Skript laeuft einmal je Worker."
 ---
