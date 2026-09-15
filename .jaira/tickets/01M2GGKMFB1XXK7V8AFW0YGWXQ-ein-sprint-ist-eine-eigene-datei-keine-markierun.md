@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:43:58Z
+updated-at: 2026-09-15T20:46:53Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -49,7 +49,12 @@ claimed-at: 2026-09-15T20:16:14Z
 outcome-what: "Milestones leave the board only on command: the round-1 delete path is reverted, 'jaira logbook <name>' files a milestone into .jaira/logbook/<folder>/milestones/ and 'jaira restore <name>.md' brings it back with its ticket list and colour. core/milestone gained Status/Filed/SetStatus (a 'status: filed' line edited in place, every other line verbatim) and FromBytes; core/ticket gained MilestonesSubdir, MilestonesDir, LogbookMilestone and a Restore that files a find back where it found it. refsync.IncomingMilestones skips a ref whose content says filed and never deletes a local file; 'jaira milestone create' refuses a filed name, looking at the ref first and the local logbook second. Help texts, docs/COMMANDS.md and four NOTES.md lines follow."
 outcome-why: "Alex reversed DoD 8 mid-round and added DoD 10-12: an emptied milestone must stay standing, and a filed milestone's ref must NOT be reaped but carry its status - a reaped ref frees the name and tells no other clone anything, so two machines would plan two milestones under one identity."
 outcome-resolves: "DoD 8-12. Build, vet and the full suite are green; the new tests are TestRmDropsTheLineAndKeepsTheMilestone, TestCreateWithNoTicketsLeavesTheFileLyingThere, TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack, TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef and two SetStatus tests in core/milestone."
-review-summary: none
+review-summary: |-
+  core/milestone/milestone.go:LoadAll does not skip Filed() milestones, so 'status: filed' is a truth only refsync and 'milestone create' read while the board itself only believes the file was moved — filter Filed() out in LoadAll (or in the one listing call above it) so the line is what takes a milestone off the board
+  internal/cli/logbook.go:logbookMilestone marks, records the ref and then renames; if LogbookMilestone fails (dst exists) the file stays in .jaira/milestones/ saying filed, the ref says filed, and this board shows the milestone while every other clone hides it — with LoadAll filtering Filed() that half-done state is harmless and the ordering comment stops being load-bearing
+  core/refsync/refsync.go:224 skips a filed ref outright, so a clone that already has the file on its board never learns the milestone was filed — the one thing the ref exists to carry — write the marked content to disk like any other incoming milestone and let the Filed() filter hide it; that removes the special case instead of adding one, and still deletes nothing
+  internal/cli/archive.go:143 swallows the Save error: a milestone whose unmarking fails is still reported 'Restored ... to the board' while its file and its ref both still say filed — return the error from unfileMilestone and fail the restore
+  internal/cli/milestones.go:milestoneFiled walks os.ReadDir(s.LogbookDir()) by hand and therefore misses the legacy logbook folder that core/ticket/store.go:logbookFolders (and Restore, which can restore a milestone from there) does cover — export a store lookup built on logbookFolders and call it from here, instead of a third hand-rolled walk beside logbookNames and Restore
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
 question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, Milestone-Anlegen, Hand-Edit-Weitertragen, Ref-Transport und Board-Filter am echten Binary vorgefuehrt. Nimmst du die Arbeit an, oder soll noch etwas geprueft werden, bevor sie in review geht?"
@@ -404,3 +409,16 @@ MILESTONE-NAME BELEGT: zwei Quellen, Ref zuerst, dann lokales Logbuch (milestone
 NICHT GEBAUT UND ABSICHTLICH: ein anderswo abgelegter Milestone verschwindet beim Fetch NICHT vom eigenen Board. IncomingMilestones ueberspringt den Ref nur. Eine lokale Datei zu loeschen, weil ein Ref das sagt, waere das erste Mal, dass jaira eine Datei entfernt, die es nur gelesen hat; DoD 10 verlangt es nicht.
 
 ADJACENT, NICHT ANGEFASST: 'jaira restore' hat keinen Hinweis darauf, dass der Name eines Milestones ohne .md-Endung nicht funktioniert - man muss 'round-one.md' schreiben. Das ist bei Tickets genauso und waere eine eigene Aenderung.
+- **2026-09-15 20:46 · Alexander Sacharov** — critique-Runde 5 (DoD 8-12), 2026-09-15. Der Bau ist im Kern richtig: Milestone verlaesst das Board nur auf Befehl, der Ref bleibt stehen und traegt den Status, restore holt die Datei dorthin zurueck, wo sie gefunden wurde. Fuenf Findings, und die ersten drei haengen zusammen.
+
+1. 'status: filed' ist eine zweite Wahrheit, die das Board nicht liest. core/milestone/milestone.go:LoadAll filtert Filed() NICHT - nachgesehen, Filed() wird nur an drei Stellen gelesen (refsync.go:224, archive.go:143, milestones.go:342). Dass ein abgelegter Milestone vom Board verschwindet, haengt allein daran, dass die Datei verschoben wurde. Die Zeile soll das entscheiden, nicht der Ort der Datei.
+
+2. Daraus folgt die Ordnung in internal/cli/logbook.go:logbookMilestone - Save, recordMilestone, dann Rename - deren Kommentar ausdruecklich sagt, sie sei keine Vorliebe. Schlaegt das Rename fehl (dst existiert schon), steht die Datei markiert weiter auf dem Board, waehrend jeder andere Clone sie versteckt. Mit einem Filter in LoadAll ist dieser Halbzustand harmlos.
+
+3. core/refsync/refsync.go:224 ueberspringt einen abgelegten Ref ganz. Ein Clone, der die Datei schon hat, erfaehrt damit NIE, dass abgelegt wurde - genau das, wofuer der Ref da ist. Die Begruendung im Kommentar ('jaira loescht keine Datei, die es nur gelesen hat') traegt die Alternative nicht: den markierten Inhalt normal schreiben loescht nichts und braucht den Sonderfall gar nicht.
+
+4. internal/cli/archive.go:143 schluckt den Save-Fehler und meldet trotzdem 'Restored'.
+
+5. internal/cli/milestones.go:milestoneFiled laeuft die Logbook-Ordner von Hand ab und sieht den Alt-Ordner nicht, den core/ticket/store.go:logbookFolders abdeckt - und aus dem Restore einen Milestone sehr wohl zurueckholen kann. Dritter handgeschriebener Walk neben logbookNames und Restore.
+
+Kein Finding aus den Runden 1-4 wird wieder aufgemacht; die betrafen den Bau vor DoD 8-12 und sind nachgemessen erledigt.
