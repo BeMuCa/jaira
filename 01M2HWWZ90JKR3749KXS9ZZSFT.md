@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T15:01:14Z
+updated-at: 2026-09-15T15:04:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -42,7 +42,8 @@ question: "Testing ist gruen: Gates RC=0, die Ableitung der Commit-Liste haelt a
 
 ## Definition of Done
 
-- [ ] Eine Lane, die keinen Code aendert, erzeugt keinen eigenen Commit mehr. Nachgestellt an einem Ticket, das critique, testing und review durchlaeuft: danach steht im Verlauf kein Commit, der nur .jaira/ anfasst.
+- [x] Eine Lane, die keinen Code aendert, erzeugt keinen eigenen Commit mehr. Nachgestellt an einem Ticket, das critique, testing und review durchlaeuft: danach steht im Verlauf kein Commit, der nur .jaira/ anfasst.
+  proof: git log --name-only master..HEAD: kein Commit der vier Branch-Commits fasst nur .jaira/ an; critique, optimize und testing liefen und committeten nichts, die Ticket-Datei liegt unversioniert im Worktree
 - [x] Die Commit-Liste eines Tickets bleibt vollstaendig, obwohl die Ticket-Datei seltener committet wird. Nachgestellt an einem Ticket, das die Lanes durchlaeuft und danach 'jaira move' in die Endlane erreicht - die abgeleitete Liste nennt jeden Code-Commit, der zu ihm gehoert.
   proof: core/gitrepo/derive.go:19; funktional nachgestellt: Scratch-Board mit gitignoretem .jaira/, Ticket-Datei nie committet, 'feat(7085JK): ...' als einziger Traeger -> Zug nach done erlaubt, 'jaira logbook' stampft ef129c1
 - [x] Die Regel steht dort, wo ein Agent sie liest: im erzeugten jaira-Block und in den Rollen-Prompts, nicht nur in einem Ticket.
