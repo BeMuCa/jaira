@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:05:19Z
+updated-at: 2026-09-15T15:05:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -140,3 +140,23 @@ ZWEI SACHEN, DIE AM TICKET NOCH FAUL SIND
 - DoD-Punkt 6 ("Unerledigte Arbeit wandert in den naechsten Sprint") beschreibt Mechanik, die es nach Alex' Entscheidung nicht mehr gibt. Er gehoert gestrichen, bevor das Ticket in todo liegt - ein Gate am Ende liest ihn und weist die Arbeit sonst zurueck, wenn das Herausfinden am teuersten ist.
 - Titel und DoD sagen weiter "Sprint". Das Ziel sagt ab jetzt Milestone. Wer das Ticket arbeitet, liest sonst zwei verschiedene Entwuerfe.
 - **2026-09-15 15:02 · Alexander Sacharov** — Dispatcher, 2026-09-15 nach der Brainstorm-Lane: DoD 1-5 von 'Sprint' auf 'Milestone' umgeschrieben, DoD 4 um die Mehrfachzugehoerigkeit (bis zu drei Plaetze rechts, Dateireihenfolge) ergaenzt, DoD 6 (Weiterwandern in den naechsten Sprint) als superseded markiert - Alex' Entscheidung vom 15.09. sagt woertlich, dass dieser Punkt gestrichen gehoert. Der TITEL sagt weiterhin 'Sprint'; jaira hat keinen Befehl zum Umbenennen, das muss von Hand oder per eigenem Ticket passieren. DoD 2 ('reist auf einem Ref') bleibt stehen, obwohl die Brainstorm-Lane B in zwei Schritten empfiehlt und den Ref-Namensraum zurueckstellen will - das ist eine Empfehlung an die Plan-Lane, nicht eine Aenderung an Alex' Entscheidung.
+- **2026-09-15 15:05 · Alexander Sacharov** — Plan-Lane, 2026-09-15, im Code nachgelesen. Warum der Plan so aussieht und nicht anders.
+
+FORMAT: .jaira/milestones/<name>.md, Frontmatter fuer name und colour, im Body eine Zeile je Mitglied.
+Der DoD sagt woertlich 'von Hand editierbar und im Diff lesbar, wie eine Ticket-Datei' - also Markdown mit Frontmatter und nicht das Zeilenformat von .jaira/tags. Eine Zeile je Mitglied trotzdem, weil eine Zeile das Kleinste ist, was git mergen kann; zwei Leute, die gleichzeitig ein Ticket in denselben Milestone legen, sollen sich nicht in die Quere kommen. Im Body ein Handle je Zeile, nicht die volle ID: wer die Datei von Hand aufmacht, liest Handles, und das Board zeigt ueberall Handles.
+
+FARBE STEHT IN DER MILESTONE-DATEI, nicht in einem zentralen Register. Bei Tags war das Register noetig, weil eine Farbe eine Eigenschaft des TAGS ist und viele Tickets denselben Tag tragen (core/tag/tag.go:1-14). Ein Milestone hat aber schon eine eigene Datei - eine zweite board-weite Datei dafuer waere ein zweites Ding zum Mergen ohne Gegenwert. Vergabe nach dem Muster von Registry.Assign: zufaellig aus der Palette, was noch keiner hat.
+
+DER INDEX DREHT DIE RICHTUNG UM. Heute ist Filtern ein Feld AM Ticket (internal/cli/tickets.go:499, tag.Matches(t.Tags, filter)). Die Mitgliedschaft steht kuenftig in der Milestone-Datei, also muss beim Laden ein Index ID -> Milestones gebaut werden, sonst braeuchte jede Karte einen Scan ueber alle Dateien. Das ist die eine wirklich neue Schicht in diesem Ticket. Vorbild ist link.Build in loadEnv (internal/cli/root.go:275): einmal bauen, dann nur lesen.
+
+DER SNAPSHOT-ZWEIG IST NICHT DER ORT. Der Entwurf vom 14.09. nannte jaira/board als moeglichen Ablageort. Seine eigene Doku widerspricht (core/snapshot/snapshot.go:1-27): 'It is a backup, not the storage: the working state is always on the refs.' Er wird alle 72 Stunden aus den Refs neu gebaut und loescht dabei Refs gelandeter Tickets. Wer die Mitgliederliste dort ablegt, legt sie in einen Cache, der sie ueberschreibt. Darum Schritt 13: nachpruefen, dass reap den neuen Namensraum nicht mitnimmt.
+
+WARUM DER REF TROTZDEM IM PLAN STEHT. Die Brainstorm-Lane hat empfohlen, in zwei Schritten zu bauen und den Ref-Namensraum zurueckzustellen (Weg B, Schritt eins ist A). Das bleibt eine gute Reihenfolge und ist sie hier auch: Schritte 1-11 sind die Datei im Baum, Schritte 12-16 der Ref. Aber weglassen kann der Plan ihn nicht - DoD-Punkt 2 verlangt ihn woertlich, und ein Gate am Ende liest ihn. Wenn Alex den Ref doch zuruecknehmen will, ist das eine Aenderung am DoD und nicht am Plan.
+
+WAS DER REF KOSTET: er ist die Haelfte der Arbeit. Heute traegt ein Ref ausschliesslich Tickets - Prefix, RefName, Fetch-Refspec, List, idsFrom, die Outbox mit gitref.RefName(id), die 'unsent'-Anzeige im Board. Nichts davon kennt etwas anderes als eine Ticket-ID. Die stillste Falle ist die Outbox: b.path ist <id>.json, also kollidiert ein Milestone namens wie ein Handle mit einem Ticket. Darum je Art ein Unterordner (Schritt 14).
+
+RECHTE KARTENKANTE: 'die Karte wird nicht breiter' ist erfuellbar, 'der Titel wird nicht kuerzer' nicht. renderCardBlock gibt dem Text heute inner = w-1 (internal/tui/view.go:533); eine zweite Balkenzelle macht daraus w-2. Und die Spalte muss IMMER reserviert werden, auch bei einem Ticket ohne Milestone - sonst stehen in einer Lane Karten mit unterschiedlich breitem Text nebeneinander. Darum Schritt 10 als eigener Test.
+
+DIE GESTE: kein neuer Filtermechanismus. Das Board hat schon m.filter mit key:value (internal/tui/model.go:598) und die Tag-Box auf 't' (:1010). Ein Milestone-Picker, dessen Auswahl m.filter auf milestone:<name> setzt, ist eine Geste und kein zweiter Weg zum selben Ziel. Der Schluessel wird exakt verglichen, nicht als Teilstring - genau wie tag, sonst widerspricht das Board 'jaira list --milestone'.
+
+NOCH FAUL AM TICKET, ausserhalb dieser Lane: der TITEL sagt weiter 'Sprint'. jaira hat keinen Umbenennen-Befehl. Wer das Ticket aufmacht, liest im Titel den Entwurf vom 14.09. und im Ziel den vom 15.09.
