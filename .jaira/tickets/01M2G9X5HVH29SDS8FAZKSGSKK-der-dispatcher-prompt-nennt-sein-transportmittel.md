@@ -29,11 +29,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-14T20:37:44Z
+updated-at: 2026-09-15T05:30:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-772869
-claimed-at: 2026-09-14T20:17:54Z
+claimed-by: DESKTOP-RFTCH11-40252
+claimed-at: 2026-09-15T05:29:18Z
 outcome-what: an einen Worker uebergeben
 outcome-why: "Transport-Passagen aus den installierten Kopien nach core/role/builtin portieren"
 ---
@@ -118,3 +118,39 @@ Das gehoert in spawn.sh, und es ist der Grund, warum das Skript bisher nie einen
 Transparenz: ich habe fuer diesen einen Start spawn.sh umgangen und die drei Befehle von Hand abgesetzt, weil das Skript sonst genau den Fehler wiederholt, den es zu beheben gilt. Das ist hier ausdruecklich festgehalten und nicht stillschweigend geschehen.
 - **2026-09-14 20:35 · Alexander Sacharov** — Noch ein Befund am Rande, der zum selben Absatz gehoert: spawn.sh schickt den Lane-Befehl ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet. Herdr kennt aber einen eigenen Zustand 'blocked' fuer erkannte Genehmigungs- und Rueckfrage-Dialoge. Wer spawn.sh anfasst: vor send-text auf 'blocked' pruefen und in dem Fall abbrechen statt Enter zu druecken. Sonst beantwortet das Skript Dialoge an Stelle des Menschen, und SKILL.md verbietet dem Dispatcher genau das ('never answer for the human').
 - **2026-09-14 20:36 · Alexander Sacharov** — Die in-progress-Lane hat keine Plan-Checkliste; gearbeitet wird nach der Arbeitsanweisung des Dispatchers vom 2026-09-14 20:19 plus dem Grundursachen-Befund von 20:35 (wsl.exe --cd statt 'cd $wt &&'), der dort ausdruecklich in dieses Ticket gelegt wurde. Umfang: dispatcher/SKILL.md Transport-Absatz, teamlead/SKILL.md:44, spawn.sh (feat/, kein rg_, tab statt split, WSL-Start), dispatcher/SKILL.md:157, NOTES.md. NICHT angefasst: dass spawn.sh nur /jaira-role-lane starten kann und keinen /jaira-role-tester (Befund 4 vom 18:23) - das ist weder DoD noch in der Arbeitsanweisung und gehoert in ein eigenes Ticket.
+- **2026-09-15 05:29 · Alexander Sacharov** — Arbeitsanweisung fuer diese in-progress-Runde (Dispatcher, 2026-09-15), damit sie auf dem Board steht und nicht in einer Sitzung stirbt.
+
+Gearbeitet wird im Worktree /home/alex/projects/.worktrees/jaira-13VMA8 auf Zweig feat/13VMA8-pr-is-the-humans. KEINEN neuen Worktree, KEINEN neuen Zweig. /home/alex/projects/jaira und .worktrees/jaira-9ET6NC nicht anfassen - dort arbeitet ein anderer Dispatcher an 74VM40.
+
+WICHTIG, weil die Ausgangslage anders ist als der letzte Stand des Tickets glauben macht: DoD 4 und DoD 5 sind im Baum BEREITS ERLEDIGT, nur nicht abgehakt. Nachgeprueft am 2026-09-15:
+- spawn.sh:20 legt Zweige mit "${JAIRA_BRANCH_PREFIX:-feat}/$slug" an, nicht mehr mit feature/. (DoD 4)
+- spawn.sh:35 schreibt COMPOSE_PROJECT_NAME aus dem Repository-Namen abgeleitet; rg_, VITE_PORT_HOST und BACKEND_PORT_HOST sind raus. (DoD 5)
+Commit cc21ca9 hat also mehr getan, als seine Commit-Nachricht sagt. Diese beiden Punkte sind zu VERIFIZIEREN und mit 'jaira dod KSGSKK <n> --done --proof <datei:zeile>' abzuhaken, nicht neu zu bauen.
+
+Ebenfalls schon im Baum und zu verifizieren statt neu zu schreiben: der wsl.exe-Fix aus dem Grundursachen-Befund vom 2026-09-14 20:35 steht in spawn.sh:56-61 (case auf /mnt/* bzw. *.exe, dann "wsl.exe --cd '$wt' -- bash -lic claude"). Er hat in diesem Lauf sieben Worker gestartet, alle beim ersten Versuch.
+
+Offen und zu tun:
+- DoD 2: jaira-teamlead/SKILL.md muss scripts/spawn.sh an der Stelle nennen, an der es einen Dispatcher in einen Tab schickt.
+- DoD 3: BEIDE Prompts muessen sagen, dass 'herdr' auf einem WSL-Rechner nicht unter diesem Namen im PATH steht und HERDR_BIN_PATH die verlaessliche Antwort ist.
+- DoD 6: nachstellen - siehe eigene Notiz dazu, der Beleg aus diesem Lauf liegt schon vor.
+- DoD 7: eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- KEIN DoD, gehoert trotzdem in diesen Durchgang (Notiz vom 2026-09-14 20:31): jaira-dispatcher/SKILL.md 'not when the pull request merges' - unter der neuen Regel aus 13VMA8 sieht ein Dispatcher nie einen offenen Pull Request. Der Satz muss umgeschrieben werden.
+
+FALLE, unveraendert gueltig: die installierten Kopien unter ~/.claude/skills sind Vorlage NUR fuer die Transport-Absaetze. Sie tragen noch die ALTE Pull-Request-Regel, die 13VMA8 umgedreht hat - und 13VMA8 ist auf genau diesem Zweig inzwischen fertig und steht in human. Wer eine dieser Dateien im Ganzen kopiert, macht 13VMA8 rueckgaengig. Absatzweise portieren.
+
+KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
+- **2026-09-15 05:30 · Alexander Sacharov** — Beleg fuer DoD 6 aus diesem Dispatcher-Lauf (2026-09-15), erzeugt beim Abarbeiten von 13VMA8 auf demselben Zweig:
+
+Ich habe als Dispatcher SIEBEN Worker gestartet, jeden mit 'bash core/role/builtin/jaira-dispatcher/scripts/spawn.sh 13VMA8 13VMA8 <lane> /home/alex/projects/jaira'. Jeder kam beim ERSTEN Versuch hoch, in einem eigenen Tab, kein Split: w3:p3B (in-progress), p3E (critique), p3F (in-progress), p3H (critique), p3K (optimize), p3M (testing). Jeder Tab wurde geschlossen, sobald sein Ergebnis vom Board gelesen war. 'claude --permission-mode' habe ich nirgends selbst aufgerufen, es gab also auch keine Ablehnung als 'Create Unsafe Agents'.
+
+Was den Unterschied zum gescheiterten Lauf vom 2026-09-14 macht: die Fassung im Repo traegt den wsl.exe-Fix (spawn.sh:56-61). Kein Vertrauens-Dialog, kein blindes Enter, kein falsches Verzeichnis.
+
+ABER - und das ist der Grund, warum DoD 6 noch nicht einfach abgehakt werden darf: die INSTALLIERTE Kopie ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh ist AELTER als die im Repo und startet den Worker immer noch mit "cd '$wt' && claude". Genau der Aufruf, den die Notiz vom 2026-09-14 20:35 als Grundursache benannt hat. Ein Dispatcher, der heute nur seinen Prompt liest und das INSTALLIERTE Skript benutzt, laeuft weiterhin in den Vertrauens-Dialog und bekommt blind ein Enter darauf gedrueckt.
+
+Ich habe die installierte Kopie deshalb bewusst NICHT laufen lassen - der Befund ist belegt, ihn erneut auszuloesen haette nur ein zweites Mal 'No, exit' fuer Alex geklickt. Benutzt wurde die Fassung aus dem Worktree.
+
+Daraus zwei Dinge fuer die Lane, die DoD 6 abhakt:
+1. Der Beleg gilt fuer die Fassung, die dieser Zweig AUSLIEFERT. Das ist das, was das Ticket verlangt - was auf diesem Rechner zufaellig installiert ist, ist nicht Gegenstand des Tickets.
+2. Erwaehnenswert bleibt, dass 'jaira roles install' noetig ist, damit die Korrektur ueberhaupt bei einem Dispatcher ankommt. Wenn die NOTES.md-Zeile aus DoD 7 das nicht sagt, sagt es niemandem jemand.
+
+Zweiter Befund aus diesem Lauf, KEIN Teil dieses Tickets (Befund 4 vom 2026-09-14 18:23, am 20:36 ausdruecklich ausgeschlossen): spawn.sh:71 schickt fest '/jaira-role-lane $ticket $lane' und kann '/jaira-role-tester' nicht starten, obwohl der Dispatcher-Prompt sagt 'Testing is not a lane: /jaira-role-tester <id>'. Ich habe fuer die Testing-Lane von 13VMA8 spawn.sh unveraendert mit lane=testing benutzt, weil 'testing' auf diesem Board eine echte agentische Lane mit Pflichtfeld test-verdict ist. Gehoert in ein eigenes Ticket.
