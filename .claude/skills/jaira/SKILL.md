@@ -260,7 +260,7 @@ change satisfies the definition of done. A reviewer reads it instead of the code
 `--executed-by` records which model did the work. The `assignee` stays the human
 who owns the outcome — never reassign a ticket to a model.
 
-**The ticket rides in the same commit as the code.** Move it first, then stage
+**The ticket rides with the code, never on its own.** Move it first, then stage
 the changed file under `.jaira/tickets/` alongside your source changes and commit
 them together:
 
@@ -272,8 +272,19 @@ git commit
 
 A reviewer reading that commit then sees the change *and* what it was for. Split
 across two commits, they get a diff whose ticket is still in whatever state the
-previous commit left it, and have to go looking. The same applies to a ticket you
-create and hand to someone else: commit it, or nobody but you knows it exists.
+previous commit left it, and have to go looking.
+
+**A lane that changed no code commits nothing.** critique, testing and review
+leave a note and a lane change and no source change; a commit carrying only that
+is bookkeeping, and a branch with one per lane hides the work inside it. Leave
+the ticket file modified in the worktree — the next commit that carries code
+takes it along, and if no further code commit follows, the commit that files the
+ticket away with `jaira logbook <id>` carries its final state. Nothing is lost
+by waiting: the commit list is derived from the ticket id in the commit message
+as much as from the ticket file's history, so name the handle in every subject
+(`fix(A3K9QP): …`) and the list fills itself in. The one ticket that still earns
+a commit of its own is one you create and hand to someone else: commit it, or
+nobody but you knows it exists.
 
 jaira never commits for you. It reads git (`Diff`, `Commits`, `HeadSHA`) and
 writes only files — staging is yours, deliberately.

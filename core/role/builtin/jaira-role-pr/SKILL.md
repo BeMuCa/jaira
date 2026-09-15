@@ -17,7 +17,7 @@ your own work, and not anyone's.
 
 ```bash
 git worktree list          # not your own worktree? say so and stop
-git status --short         # nothing uncommitted
+git status --short         # nothing uncommitted but the ticket file
 git log --oneline origin/HEAD..HEAD
 ```
 
@@ -25,10 +25,15 @@ Three things must already be true. If one is not, that is a finding for the
 ticket, not something you fix here:
 
 1. **The branch is its own.** Nothing lands on the default branch directly.
-2. **The ticket rides in the same commits as the code.** A reviewer must see the
+2. **The ticket rides with the code, never on its own.** A reviewer must see the
    change and what it was for in one place, not a diff whose ticket file is in
-   whatever state the last commit left it. If the ticket file is unstaged or its
-   lane is stale, stop and say so.
+   whatever state the last commit left it — so a commit that changed code must
+   carry the ticket file with it. The ticket file showing as modified *now* is
+   not a fault and not yours to fix: the lanes that ran after the last code
+   commit — critique, testing, review — leave a note and a lane change and
+   deliberately commit nothing, because a commit touching only `.jaira/` is
+   bookkeeping. Push what is committed and leave that file alone. Anything else
+   uncommitted is a finding: stop and say so.
 3. **Every commit names the ticket id.** On a board that has not been shared,
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
