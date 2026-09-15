@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,14 +40,14 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:15:23Z
+updated-at: 2026-09-15T18:15:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
 claimed-at: 2026-09-15T18:09:30Z
-outcome-what: "Die drei Findings der critique-Runde 3 behoben, alle drei Text: der Hilfetext von 'jaira milestone' sagt jetzt, dass der Dateiname der Name ist und die Frontmatter nur color und created-at traegt; --color steht an allen vier Stellen als 1-255 mit dem Grund (0 faerbt keine Zelle); docs/COMMANDS.md hat --milestone bei 'jaira list' und vier Zeilen fuer milestone create/add/rm/ls in der Writing-Tabelle."
-outcome-why: "Die drei Texte waren die Stellen, die man VOR dem Aufruf liest. Ein von Hand eingetragenes name: aendert seit Runde 2 nichts und niemand merkt es; '--color <0-255>' laedt dazu ein, 0 zu uebergeben, was der Code zurueckweist; und COMMANDS.md wird von README.md:676 als vollstaendige Referenz ausgewiesen, fuehrte die Befehlsfamilie aber ueberhaupt nicht."
-outcome-resolves: "Kein DoD-Punkt aendert sich - der Code ist unveraendert, es war Dokumentation an drei Stellen. go vet und go test ./... sind gruen."
+outcome-what: "critique-Runde 4 ohne Finding: die drei Text-Findings aus Runde 3 sind nachgemessen behoben, und ein Durchgang durch den ganzen Diff - core/milestone, internal/cli/milestones.go, der TUI-Teil und der Ref-Weg - bringt nichts Neues."
+outcome-why: "Die Lane endet, wenn ein Durchgang nichts findet. Die Findings-Zahl ist 9, 6, 3, 0 gelaufen, keines wurde wiederholt, und die vier stehengelassenen Abwaegungen bleiben stehen."
+outcome-resolves: "review-summary=none gesetzt; kein DoD-Punkt aendert sich, der Code ist seit Runde 3 unveraendert."
 review-summary: none
 ---
 
