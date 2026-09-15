@@ -1,7 +1,7 @@
 ---
 id: 01M2HWWZ90JKR3749KXS9ZZSFT
 title: Zwei von drei Commits aendern nur eine Ticket-Datei
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Zweig zeigt die Arbeit, nicht die Buchhaltung: wer den Verlauf liest, sieht Aenderungen am Werkzeug und nicht jede Lane, die einen Vermerk hinterlassen hat."
@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:44:49Z
+updated-at: 2026-09-15T13:45:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -35,6 +35,7 @@ outcome-resolves: "Keine Duplikation und kein toter Code in dieser Aenderung aus
 review-summary: none
 review-gaps: "Entfernt: die dritte Wiederholung derselben Aussage im erzeugten Block. 'Nothing is lost by waiting' begruendete sich mit 'the commit list is derived from the id in the message, not from the ticket file' - was der Punkt 'every commit names the ticket id' zwei Punkte hoeher bereits vollstaendig erklaert und der 'jaira move'-Punkt (AGENTS.md:48) ein drittes Mal sagt. Der Halbsatz ist gestrichen, in core/board/announce.go und in den beiden erzeugten Kopien AGENTS.md/CLAUDE.md; spart zwei Zeilen in einem Block, der in jedes AGENTS.md dieser Welt kopiert wird. In docs/AGENTS.md und .claude/skills/jaira/SKILL.md steht dieselbe Begruendung nur EINMAL - dort ist sie nicht redundant und bleibt. Nachgezogen: die neuen Absaetze liefen auf 81-83 Zeichen; docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md und core/role/builtin/jaira-role-lane/SKILL.md sind auf 80 umbrochen, ohne Code-Spans zu zerreissen. Stehen gelassen und bewusst nicht angefasst: (1) die Regel lebt in sieben handgepflegten Kopien - announce.go erzeugt AGENTS.md und CLAUDE.md, docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md und die beiden Rollen-Prompts pflegt jemand von Hand; das ist die Architektur des Repositorys und aelter als dieses Ticket. (2) Die NOTES.md-Zeile ist rund 900 Zeichen lang und packt drei Anweisungen in einen Satz - das Format verbietet den Umbruch und liest eine zweite Zeile als zweite Aenderung, also bleibt sie. (3) Vorbestehende Zeilen ueber 80 Zeichen: README.md 39, .claude/skills/jaira/SKILL.md 34, docs/AGENTS.md 19 - nicht von dieser Aenderung verursacht."
 test-verdict: "pass: gofmt leer, go build ./... und go test -count=1 ./... RC=0; DoD 2 im Baum und funktional auf einem Wegwerf-Board verifiziert (Ableitung allein aus dem Commit-Betreff traegt, Gegenprobe wird refused), DoD 3 und 4 an ihren Proof-Zeilen nachgeprueft; DoD 1 bleibt offen bis review ohne eigenen Commit vorbei ist"
+question: "Testing ist gruen: Gates RC=0, die Ableitung der Commit-Liste haelt auch dann, wenn die Ticket-Datei nie committet wird (auf einem Wegwerf-Board nachgestellt). Offen bleibt genau eine Sache, und sie ist eine Entscheidung, keine Pruefung: DoD 1 verlangt die Nachstellung ueber critique, testing UND review - review kommt erst nach dieser Lane, also kann DoD 1 erst dort abgehakt werden. Dazu der Befund aus der Planungsnotiz, der die Begruendung des Tickets einschraenkt: refsync laeuft auf diesem Board nicht (keine refs/jaira/*, kein jaira.remote), also traegt hier der Commit den Ticket-Zustand und nicht der Ref - nach dem Merge steht auf master eine veraltete Ticket-Datei, bis ein spaeterer Commit sie mitnimmt. Soll das so bleiben (Weg a) oder braucht es vor dem Push doch einen Abschluss-Commit (Weg b, den die DoD woertlich ausschliesst)?"
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
