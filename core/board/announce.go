@@ -83,10 +83,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
 	"  and the commits that name its id. The first source is thin by design (see the\n" +
-	"  next point), and on a board that has not been shared yet (`jaira init`\n" +
-	"  gitignores `.jaira/` until `jaira share`) it does not exist at all — so the\n" +
-	"  handle in the subject line is what the list is actually built from. Leave it\n" +
-	"  out and the list stays empty and the move into the last lane is refused\n" +
+	"  point on lanes that change no code), and on a board that has not been shared\n" +
+	"  yet (`jaira init` gitignores `.jaira/` until `jaira share`) it does not exist\n" +
+	"  at all — so the handle in the subject line is what the list is actually built\n" +
+	"  from. Leave it out and the list stays empty and the move into the last lane\n" +
+	"  is refused\n" +
 	"- **the ticket rides with the code, never on its own.** Move the ticket first,\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +
@@ -96,11 +97,13 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  leave a note and a lane change and no source change; a commit carrying only\n" +
 	"  that is bookkeeping, and a branch with one of them per lane hides the work\n" +
 	"  inside it. Leave the ticket file modified in the worktree — the next commit\n" +
-	"  that carries code takes it along. Nothing is lost by waiting: the lane's\n" +
-	"  writes are already on the ticket, and the commit list is derived from the id\n" +
-	"  in the message, not from the ticket file. The one ticket that still earns a\n" +
-	"  commit of its own is a ticket you create and hand to someone else — commit\n" +
-	"  it, or nobody but you knows it exists\n" +
+	"  that carries code takes it along; if no further code commit follows, the\n" +
+	"  `jaira logbook <id>` commit that files the ticket away carries its final\n" +
+	"  state. Nothing is lost by waiting: the lane's writes are already on the\n" +
+	"  ticket, and the commit list is derived from the id in the message, not from\n" +
+	"  the ticket file. The one ticket that still earns a commit of its own is a\n" +
+	"  ticket you create and hand to someone else — commit it, or nobody but you\n" +
+	"  knows it exists\n" +
 	"- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its\n" +
 	"  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the\n" +
 	"  board. `jaira restore <file>` brings it back\n" +

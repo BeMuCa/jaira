@@ -80,10 +80,11 @@ Working a ticket:
 - **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a
   ticket's commit list from two sources: the history of the ticket file itself,
   and the commits that name its id. The first source is thin by design (see the
-  next point), and on a board that has not been shared yet (`jaira init`
-  gitignores `.jaira/` until `jaira share`) it does not exist at all — so the
-  handle in the subject line is what the list is actually built from. Leave it
-  out and the list stays empty and the move into the last lane is refused
+  point on lanes that change no code), and on a board that has not been shared
+  yet (`jaira init` gitignores `.jaira/` until `jaira share`) it does not exist
+  at all — so the handle in the subject line is what the list is actually built
+  from. Leave it out and the list stays empty and the move into the last lane
+  is refused
 - **the ticket rides with the code, never on its own.** Move the ticket first,
   then `git add` the changed file under `.jaira/tickets/` alongside your source
   changes and commit them together. A reviewer then sees the change and what it
@@ -93,11 +94,13 @@ Working a ticket:
   leave a note and a lane change and no source change; a commit carrying only
   that is bookkeeping, and a branch with one of them per lane hides the work
   inside it. Leave the ticket file modified in the worktree — the next commit
-  that carries code takes it along. Nothing is lost by waiting: the lane's
-  writes are already on the ticket, and the commit list is derived from the id
-  in the message, not from the ticket file. The one ticket that still earns a
-  commit of its own is a ticket you create and hand to someone else — commit
-  it, or nobody but you knows it exists
+  that carries code takes it along; if no further code commit follows, the
+  `jaira logbook <id>` commit that files the ticket away carries its final
+  state. Nothing is lost by waiting: the lane's writes are already on the
+  ticket, and the commit list is derived from the id in the message, not from
+  the ticket file. The one ticket that still earns a commit of its own is a
+  ticket you create and hand to someone else — commit it, or nobody but you
+  knows it exists
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back
@@ -167,7 +170,11 @@ babysits the ticket through the same route.
 Nothing lands on `master` directly. A change is made on a branch of its own, the
 ticket rides in the same commits as the code it belongs to, and the branch
 reaches `master` through a pull request — which is what makes the diff readable:
-the change and what it was for in one place.
+the change and what it was for in one place. It rides with the code and never
+alone: a lane that changed no code — critique, testing, review — commits
+nothing at all and leaves the ticket file for the next commit that carries
+code, or, when no further code commit follows, for the `jaira logbook` commit
+that files the ticket away.
 
 **The pull request belongs to the maintainer from the moment it exists.** An
 agent pushes its branch and stops there: it does not open the pull request, does

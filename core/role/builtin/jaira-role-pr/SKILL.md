@@ -25,7 +25,7 @@ Three things must already be true. If one is not, that is a finding for the
 ticket, not something you fix here:
 
 1. **The branch is its own.** Nothing lands on the default branch directly.
-2. **The ticket rides in the same commits as the code.** A reviewer must see the
+2. **The ticket rides with the code, never on its own.** A reviewer must see the
    change and what it was for in one place, not a diff whose ticket file is in
    whatever state the last commit left it — so a commit that changed code must
    carry the ticket file with it. The ticket file showing as modified *now* is

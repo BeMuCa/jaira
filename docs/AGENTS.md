@@ -73,7 +73,8 @@ the previous commit left it.
 leave a note and a lane change and no source change, and a commit carrying only
 that is bookkeeping — a branch with one per lane hides the work inside it. Leave
 the ticket file modified in the worktree; the next commit that carries code takes
-it along. Nothing is lost by waiting, because the commit list is derived from the
+it along, and if no further code commit follows, the `jaira logbook <id>` commit
+that files the ticket away carries its final state. Nothing is lost by waiting, because the commit list is derived from the
 ticket id in the commit message as much as from the ticket file's own history:
 name the handle in every subject, `fix(A3K9QP): …`, and the list fills itself in
 even for a ticket file git has not seen since. The one ticket that still earns a
