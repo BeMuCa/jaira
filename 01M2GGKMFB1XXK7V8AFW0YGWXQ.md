@@ -33,11 +33,11 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:02:21Z
+updated-at: 2026-09-15T15:02:47Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-69299
-claimed-at: 2026-09-15T14:56:26Z
+claimed-by: DESKTOP-RFTCH11-79843
+claimed-at: 2026-09-15T15:02:47Z
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
