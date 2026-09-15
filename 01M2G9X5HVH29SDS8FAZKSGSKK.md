@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:34:12Z
+updated-at: 2026-09-15T05:36:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41109
@@ -38,6 +38,11 @@ claimed-at: 2026-09-15T05:31:02Z
 outcome-what: "Alle sieben DoD-Punkte im Baum nachgeprueft und mit Beleg abgehakt; kein Code geaendert, weil keiner fehlte. DoD 2, 3, 6, 7 galten laut Arbeitsanweisung als offen, waren aber bereits durch cc21ca9 erledigt, dessen Commit-Nachricht das nicht sagt. Zusaetzlich geprueft und in einer Notiz festgehalten: scripts/spawn.sh wird wirklich ausgeliefert (role.go:33 'go:embed all:builtin', abgesichert durch role_test.go:75/143/225/254) - sonst zeigte DoD 1 auf ein Skript, das 'jaira roles install' nie installiert. Der Satz ohne DoD-Haken (dispatcher/SKILL.md:171-174, 'You never see the pull request') ist ebenfalls erledigt."
 outcome-why: "Die Haken auf dem Board waren hinter dem Baum zurueck. Ein Ticket, dessen DoD unabgehakt ist, obwohl die Arbeit steht, wird in der Terminal-Lane abgewiesen - und zwar am Ende, wenn das Nachpruefen am teuersten ist. Die Belege muessen an den Punkten stehen, solange noch jemand weiss, welche Zeile welchen Punkt erfuellt."
 outcome-resolves: "Ein Dispatcher liest scripts/spawn.sh aus seinem eigenen Prompt - in beiden Rollen, dispatcher und teamlead -, findet Herdr ueber HERDR_BIN_PATH statt ueber 'command -v herdr', und das Skript legt Zweige mit feat/ an und schreibt keinen fremden COMPOSE_PROJECT_NAME. Nachgestellt an dieser Sitzung: Tab w3:t2H, Label 'KSGSKK/in-progress'."
+review-summary: |-
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:70 laesst jeden Zustand durch, der mit 'claude' anfaengt - auch 'blocked', den Herdr fuer einen erkannten Genehmigungsdialog meldet -, und schickt danach in Zeile 72-74 bedingungslos send-text + enter. Genau der Fall, gegen den der Kommentar in Zeile 49-55 den wsl.exe-Start begruendet, und den die Notiz vom 2026-09-14 20:32 fuer dieses Ticket verlangt hat. Stattdessen: Zeile 70 auf dieselben zwei Zustaende verengen, auf denen die Schleife in Zeile 68 bricht ('claude idle'|'claude done'), alles andere mit exit 1 abbrechen.
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:26 nennt im Kommentar noch die Ports '5173, 8000' - VITE_PORT_HOST und BACKEND_PORT_HOST, die derselbe Diff als fremden Stapel geloescht hat. Damit ist der Kommentar die letzte Stelle, an der ein fremdes Projekt in diesem Skript steht. Stattdessen: die Klammer auf die drei Ports kuerzen, die das Skript noch versetzt (80, 5432, 5433).
+  core/role/builtin/jaira-teamlead/SKILL.md:44 schickt den Teamlead zu 'scripts/spawn.sh from the dispatcher role's directory', ohne diesen Pfad je zu nennen. Der Dispatcher-Prompt darf 'beside this file' sagen, weil er dort liegt; der Teamlead liegt woanders und muss raten. Stattdessen: den installierten Pfad ausschreiben - ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh, den core/role/install.go anlegt.
+  core/role/builtin/jaira-dispatcher/SKILL.md:168 sagt weiter, scripts/spawn.sh leite Projektnamen und Ports 'both from the worktree slug' ab. Seit spawn.sh:35 stammt COMPOSE_PROJECT_NAME aus dem Repository-Namen plus Slug, nicht aus dem Slug. Stattdessen: 'from the repository name and the worktree slug'.
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
