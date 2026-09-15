@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -27,15 +27,17 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:30:12Z
+updated-at: 2026-09-15T05:34:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-40252
-claimed-at: 2026-09-15T05:29:18Z
-outcome-what: an einen Worker uebergeben
-outcome-why: "Transport-Passagen aus den installierten Kopien nach core/role/builtin portieren"
+claimed-by: DESKTOP-RFTCH11-41109
+claimed-at: 2026-09-15T05:31:02Z
+outcome-what: "Alle sieben DoD-Punkte im Baum nachgeprueft und mit Beleg abgehakt; kein Code geaendert, weil keiner fehlte. DoD 2, 3, 6, 7 galten laut Arbeitsanweisung als offen, waren aber bereits durch cc21ca9 erledigt, dessen Commit-Nachricht das nicht sagt. Zusaetzlich geprueft und in einer Notiz festgehalten: scripts/spawn.sh wird wirklich ausgeliefert (role.go:33 'go:embed all:builtin', abgesichert durch role_test.go:75/143/225/254) - sonst zeigte DoD 1 auf ein Skript, das 'jaira roles install' nie installiert. Der Satz ohne DoD-Haken (dispatcher/SKILL.md:171-174, 'You never see the pull request') ist ebenfalls erledigt."
+outcome-why: "Die Haken auf dem Board waren hinter dem Baum zurueck. Ein Ticket, dessen DoD unabgehakt ist, obwohl die Arbeit steht, wird in der Terminal-Lane abgewiesen - und zwar am Ende, wenn das Nachpruefen am teuersten ist. Die Belege muessen an den Punkten stehen, solange noch jemand weiss, welche Zeile welchen Punkt erfuellt."
+outcome-resolves: "Ein Dispatcher liest scripts/spawn.sh aus seinem eigenen Prompt - in beiden Rollen, dispatcher und teamlead -, findet Herdr ueber HERDR_BIN_PATH statt ueber 'command -v herdr', und das Skript legt Zweige mit feat/ an und schreibt keinen fremden COMPOSE_PROJECT_NAME. Nachgestellt an dieser Sitzung: Tab w3:t2H, Label 'KSGSKK/in-progress'."
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
@@ -44,12 +46,18 @@ outcome-why: "Transport-Passagen aus den installierten Kopien nach core/role/bui
 
 - [x] jaira-dispatcher/SKILL.md nennt scripts/spawn.sh dort, wo ein Worker gestartet wird, nicht erst im Abschnitt ueber Ports - und sagt dazu, dass ein selbst aufgerufenes 'claude --permission-mode ...' vom Berechtigungspruefer abgelehnt wird, damit niemand es noch einmal versucht.
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:83-101
-- [ ] jaira-teamlead/SKILL.md nennt dasselbe an der Stelle, an der es einen Dispatcher in eine Vorlage schickt - heute steht dort nur 'Run herdr --skill for the mechanics'.
-- [ ] Beide Prompts sagen, dass 'herdr' auf einem WSL-Rechner nicht unter diesem Namen im PATH stehen muss und HERDR_BIN_PATH die verlaessliche Antwort ist - 'command -v herdr' beantwortet die Frage falsch.
-- [ ] scripts/spawn.sh legt Zweige mit dem Praefix an, den dieses Repository benutzt, nicht mit feature/.
-- [ ] Der .env-Block in scripts/spawn.sh traegt keinen fest eingebauten Projektnamen eines fremden Repositories mehr - entweder abgeleitet oder aus dem Skript heraus.
-- [ ] Nachgestellt: ein Dispatcher, der nur seinen eigenen Prompt liest, startet einen Worker in einer eigenen Vorlage, ohne 'claude --permission-mode' selbst aufzurufen.
-- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased, weil die ausgelieferten Prompts sich aendern.
+- [x] jaira-teamlead/SKILL.md nennt dasselbe an der Stelle, an der es einen Dispatcher in eine Vorlage schickt - heute steht dort nur 'Run herdr --skill for the mechanics'.
+  proof: core/role/builtin/jaira-teamlead/SKILL.md:43-45
+- [x] Beide Prompts sagen, dass 'herdr' auf einem WSL-Rechner nicht unter diesem Namen im PATH stehen muss und HERDR_BIN_PATH die verlaessliche Antwort ist - 'command -v herdr' beantwortet die Frage falsch.
+  proof: core/role/builtin/jaira-teamlead/SKILL.md:49-51 und core/role/builtin/jaira-dispatcher/SKILL.md:96-98
+- [x] scripts/spawn.sh legt Zweige mit dem Praefix an, den dieses Repository benutzt, nicht mit feature/.
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:20
+- [x] Der .env-Block in scripts/spawn.sh traegt keinen fest eingebauten Projektnamen eines fremden Repositories mehr - entweder abgeleitet oder aus dem Skript heraus.
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:35
+- [x] Nachgestellt: ein Dispatcher, der nur seinen eigenen Prompt liest, startet einen Worker in einer eigenen Vorlage, ohne 'claude --permission-mode' selbst aufzurufen.
+  proof: Herdr-Tab w3:t2H, Label 'KSGSKK/in-progress' = das Format aus core/role/builtin/jaira-dispatcher/scripts/spawn.sh:46; diese Sitzung selbst
+- [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased, weil die ausgelieferten Prompts sich aendern.
+  proof: core/release/NOTES.md:19
 
 ## Options
 
@@ -154,3 +162,22 @@ Daraus zwei Dinge fuer die Lane, die DoD 6 abhakt:
 2. Erwaehnenswert bleibt, dass 'jaira roles install' noetig ist, damit die Korrektur ueberhaupt bei einem Dispatcher ankommt. Wenn die NOTES.md-Zeile aus DoD 7 das nicht sagt, sagt es niemandem jemand.
 
 Zweiter Befund aus diesem Lauf, KEIN Teil dieses Tickets (Befund 4 vom 2026-09-14 18:23, am 20:36 ausdruecklich ausgeschlossen): spawn.sh:71 schickt fest '/jaira-role-lane $ticket $lane' und kann '/jaira-role-tester' nicht starten, obwohl der Dispatcher-Prompt sagt 'Testing is not a lane: /jaira-role-tester <id>'. Ich habe fuer die Testing-Lane von 13VMA8 spawn.sh unveraendert mit lane=testing benutzt, weil 'testing' auf diesem Board eine echte agentische Lane mit Pflichtfeld test-verdict ist. Gehoert in ein eigenes Ticket.
+- **2026-09-15 05:33 · Alexander Sacharov** — in-progress 2026-09-15: diese Runde hat KEINE Zeile Code geaendert, und das ist das Ergebnis, nicht ein Versaeumnis. Die Arbeitsanweisung des Dispatchers (05:29) fuehrte DoD 2, 3, 6 und 7 als offen. Im Baum waren alle vier bereits erledigt - commit cc21ca9 ('wip(KSGSKK): the transport passages as the worker left them') hat die Transport-Absaetze vollstaendig portiert, seine Commit-Nachricht sagt das aber nicht, und die Haken auf dem Board wurden damals nicht gesetzt. Genau dieselbe Luecke, die der Dispatcher fuer DoD 4 und 5 schon bemerkt hatte. Wer nach dieser Runde ein leeres Diff sieht: das ist der Grund.
+
+Nachgeprueft, Datei fuer Datei, nicht aus der Notizlage geschlossen:
+- teamlead/SKILL.md:43-45 nennt scripts/spawn.sh an der Stelle, die einen Dispatcher in einen Tab schickt (DoD 2).
+- teamlead/SKILL.md:49-51 und dispatcher/SKILL.md:96-98 sagen beide, dass 'command -v herdr' die falsche Frage beantwortet und $HERDR_BIN_PATH die verlaessliche ist (DoD 3).
+- NOTES.md:19 traegt die Zeile unter ## Unreleased, und sie nennt 'jaira roles install --force' - das war die Sorge aus der Notiz vom 05:30, dass sonst niemandem gesagt wird, wie die Korrektur ueberhaupt bei einem Dispatcher ankommt (DoD 7).
+- dispatcher/SKILL.md:171-174 ist umgeschrieben ('not when the branch is pushed. You never see the pull request: opening it is the human's call'). Das war der Punkt OHNE DoD-Haken aus der Notiz vom 2026-09-14 20:31, den critique und optimize ausdruecklich pruefen sollten. Er ist erledigt.
+
+Was ich zusaetzlich geprueft habe und was in keiner Notiz stand: ob scripts/spawn.sh ueberhaupt AUSGELIEFERT wird. Wenn der Embed nur SKILL.md eingesammelt haette, zeigte DoD 1 auf ein Skript, das 'jaira roles install' nie installiert, und der ganze Prompt-Absatz waere eine Luege. Er wird ausgeliefert: role.go:33 ist '//go:embed all:builtin' (mit all:, sonst faellt scripts/ heraus), und role_test.go:75/143/225/254 pruefen ausdruecklich, dass scripts/spawn.sh in r.Files steht und nach der Installation auf der Platte liegt. Die Frage ist damit beantwortet und muss nicht noch einmal gestellt werden.
+
+Gates: go build, go vet und go test ./... laufen sauber durch; 'bash -n' auf spawn.sh ebenfalls.
+- **2026-09-15 05:33 · Alexander Sacharov** — Beleg fuer DoD 6, erzeugt von dieser Sitzung selbst und nicht aus einem frueheren Lauf uebernommen: ich bin der Worker, den spawn.sh gestartet hat. HERDR_PANE_ID=w3:p3N, HERDR_TAB_ID=w3:t2H, und 'herdr tab get w3:t2H' gibt label 'KSGSKK/in-progress' mit pane_count 1 zurueck. Das Label ist woertlich das Format aus spawn.sh:46 ("\$ticket/\$lane"), und pane_count 1 zeigt einen eigenen Tab, keinen Split. Damit ist der Beleg nicht mehr nur die Erzaehlung eines Dispatchers, sondern am laufenden Objekt ablesbar.
+
+Eine Beobachtung dazu, die der Kommentar in spawn.sh:49-55 zwar begruendet, die aber noch nirgends gemessen war: 'herdr pane get w3:p3N' meldet als cwd 'C:\Users\Alex' - obwohl mein pwd der Worktree ist. Herdr loest '--cwd' also tatsaechlich gegen Windows auf und verwirft den WSL-Pfad, genau wie der Kommentar sagt. Das '--cwd' in spawn.sh:46 ist auf diesem Rechner damit rein kosmetisch: es faerbt nur das, was Herdr anzeigt, und das Verzeichnis kommt ausschliesslich von 'wsl.exe --cd' in Zeile 57. Wer spawn.sh spaeter aufraeumt und '--cwd' als redundant streichen will: es schadet nicht, aber man darf sich nicht darauf verlassen - und wer umgekehrt den wsl.exe-Zweig fuer ueberfluessig haelt, weil ja '--cwd' gesetzt ist, baut den Fehler vom 2026-09-14 wieder ein.
+- **2026-09-15 05:33 · Alexander Sacharov** — Ausserhalb dieser Lane, bewusst NICHT angefasst - beides gehoert in eigene Tickets und ist hier nur festgehalten, damit es nicht wieder verloren geht:
+
+1. spawn.sh:64-74 prueft vor 'send-text' nicht auf den Herdr-Zustand 'blocked'. Die Schleife bricht ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet, und schickt dann send-text plus enter. Steht claude in dem Moment vor einem Genehmigungsdialog, beantwortet das Skript ihn an Stelle des Menschen - und dispatcher/SKILL.md:186-187 verbietet dem Dispatcher genau das ('never answer for the human'). Der wsl.exe-Fix macht den Vertrauens-Dialog beim Start unwahrscheinlich, er raeumt die Klasse aber nicht aus. Befund stammt aus der Notiz vom 2026-09-14 20:35, ist kein DoD-Punkt dieses Tickets und stand auch nicht in der Arbeitsanweisung.
+
+2. spawn.sh:72 schickt fest '/jaira-role-lane $ticket $lane' und kann '/jaira-role-tester' nicht starten, obwohl dispatcher/SKILL.md:48 sagt 'Testing is not a lane: /jaira-role-tester <id>'. Befund 4 vom 2026-09-14 18:23, am 20:36 ausdruecklich aus dem Umfang genommen. Anmerkung fuer das Folgeticket: auf DIESEM Board ist 'testing' eine echte agentische Lane mit Pflichtfeld test-verdict, hier ist das Skript also richtig - der Widerspruch trifft Boards, deren Lanes-Datei kein testing kennt.
