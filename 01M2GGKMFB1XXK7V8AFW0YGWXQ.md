@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:43:11Z
+updated-at: 2026-09-15T20:43:15Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -78,7 +78,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack
 - [x] Der Ref eines abgelegten Milestones wird NICHT geraeumt: er bleibt stehen und traegt im Frontmatter den Status 'abgelegt'. Nachgestellt an zwei Arbeitsbaeumen - der zweite zieht die Refs und schreibt den abgelegten Milestone NICHT wieder aufs Board.
   proof: internal/cli/milestoneref_test.go:TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef
-- [ ] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
+- [x] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
+  proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (milestone create refused, names 'jaira restore')
 - [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
 
 ## Options
