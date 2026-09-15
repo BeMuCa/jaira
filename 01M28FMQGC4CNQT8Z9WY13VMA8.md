@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T07:08:27Z
+updated-at: 2026-09-15T07:08:47Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -323,3 +323,4 @@ Fix, fuenf Minuten: 'jaira dod 13VMA8 1|2|4 --done --proof "..."' mit den oben g
 - go:embed: frische Binary nach /tmp gebaut, 'jaira roles install --into <scratch>' geschrieben, 'diff -q' gegen core/role/builtin/jaira-role-pr/SKILL.md ist byte-gleich. Die glab-Zeilen kommen also wirklich beim Nutzer an, mit identischen Zeilennummern.
 
 Nicht mein Befund, aber ich bestaetige ihn: der in der in-progress-Runde notierte review-check Schritt 4 ('genau ein Treffer fuer gh pr create') ist am heutigen Baum falsch - 'gh pr create' kommt auf :124 und :149 vor, dazu die glab-Gegenstuecke. Das ist ein Feld der review-Lane, die auf diesem Board erst nach human kommt; ich fasse es hier nicht an.
+- **2026-09-15 07:08 · Alexander Sacharov** — review-Runde 2026-09-15 (enge Runde, nur die neue Sprosse 4): Die Leiter wurde bewusst von oben nach unten als ausfuehrender Agent gelesen, weil genau dort ein Prompt unsichtbar scheitert. Zwei Dinge geprueft, die ein Rueckschritt kaputt machen wuerde, ohne dass man es sieht: (a) der Stop-Absatz ist unter Sprosse 4 EINGERUECKT, gilt also nicht fuer die Sprossen 1-3 - waere er linksbuendig, wuerde auch ein erkannter GitHub-Lauf anhalten; (b) der erste Push der Datei steht Zeile 77, also hinter der Leiter, und die Sektion 'Before you push anything' ist rein lesend - der Stop kommt daher wirklich vor jeder schreibenden Handlung. Nicht zurueckgeschickt, aber fuer den Menschen aufgeschrieben: die uebergebene Zeile ':62' setzt beim woertlichen Einfuegen 'gitlab'; auf einem GitHub Enterprise unter eigener Domain waere das die falsche Haelfte. Faellt beim naechsten Lauf laut auf, die Rolle kann die Wahl per Voraussetzung nicht treffen, also bleibt es eine Entscheidung fuer die Abnahme und kein Befund. Selbst gelaufen statt geglaubt: go test ./... -race RC=0 ohne FAIL, und 'roles install --into' aus einer frisch gebauten Binary liefert die SKILL.md byte-gleich zur Quelle - der neue Absatz ist also wirklich im go:embed. Der alte review-check (Schritt 4 verlangte genau EINEN Treffer fuer 'gh pr create') war ueberholt und ist neu geschrieben; die Regel dahinter ist unveraendert.
