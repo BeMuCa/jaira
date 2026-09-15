@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:32:26Z
+updated-at: 2026-09-15T20:32:53Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -122,7 +122,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [-] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
 - [x] Arbeitsbaum zurueckdrehen: der komplette Loeschweg aus Runde 1 faellt weg - gitref.DeleteMilestone+refDelete, milestone.Delete, outbox OpDelete/PendingMilestone, refsync.RecordMilestoneDelete und das automatische Wegnehmen in internal/cli/milestones.go; 'git checkout --' auf die fuenf Dateien, denn DoD 8 will das Gegenteil und DoD 10 braucht keinen Ref-Abbau
 - [x] Test DoD 8: letztes Ticket mit 'jaira milestone rm' herausnehmen - die Datei bleibt, 'milestone ls' nennt ihn unveraendert; dazu 'create' ohne Tickets, die leere Datei bleibt ebenfalls liegen
-- [ ] core/milestone: Status aus der Frontmatter lesen ('status: filed'), Filed() dazu, und SetStatus, das die Zeile in der Frontmatter setzt, einfuegt oder entfernt, ohne eine andere Zeile anzufassen - dieselbe verbatim-Regel wie Add/Remove; die Paket-Doku sagt, was 'filed' bedeutet
+- [~] core/milestone: Status aus der Frontmatter lesen ('status: filed'), Filed() dazu, und SetStatus, das die Zeile in der Frontmatter setzt, einfuegt oder entfernt, ohne eine andere Zeile anzufassen - dieselbe verbatim-Regel wie Add/Remove; die Paket-Doku sagt, was 'filed' bedeutet
 - [ ] Test: SetStatus auf eine von Hand editierte Datei (Kommentar, eigene Reihenfolge, fehlende Frontmatter) - jede andere Zeile unveraendert, Load liest den Status zurueck
 - [ ] core/ticket/store.go: Ablegen und Zurueckholen fuer den Unterordner milestones/ - eine LogbookMilestone-Haelfte schiebt .jaira/milestones/<name>.md nach .jaira/logbook/<ordner>/milestones/, und Restore (store.go:464) findet eine Datei auch dort und legt sie nach milestone.Dir statt TicketsDir; Mehrdeutigkeit bleibt ein Fehler wie heute
 - [ ] internal/cli logbook: 'jaira logbook <name>' erkennt einen Milestone, nachdem die Ticket-Aufloesung nicht greift - nur ausdruecklich benannt, nie von '--all' mitgenommen; die Meldung nennt den Ablageort und 'jaira restore'
