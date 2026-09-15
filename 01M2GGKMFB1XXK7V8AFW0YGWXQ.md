@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,15 +40,16 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
+  - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:04:41Z
+updated-at: 2026-09-15T21:04:53Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
 claimed-at: 2026-09-15T20:47:24Z
-outcome-what: "Round 4 on DoD 8-12, the five findings of critique round 5. 'status: filed' is now the line that takes a milestone off the board: milestone.LoadAll leaves a filed one out, so the ordering in logbookMilestone no longer carries the state on its own. refsync.IncomingMilestones writes a filed ref's content over a file the tree already has — that is how a clone still planning the round learns it was filed — and reports those names apart from the updated ones ('Milestones filed elsewhere', milestones_filed in --json); a filed milestone the tree never had is not written, or restore would find the name back on the board and refuse. unfileMilestone returns its error and fails the restore. milestoneFiled calls the new ticket.Store.FiledMilestone, built on logbookFolders, instead of a third hand-rolled walk that missed the legacy .jaira/sync/ folder. Fallout guards: 'jaira logbook <name>' refuses an already-filed milestone, 'jaira milestone create' names the marked line instead of saying 'already exists'. Help texts, docs/COMMANDS.md and three NOTES.md lines follow."
-outcome-why: "The five findings all came back to one thing: the filed line was written and read by nobody who decides what is on the board, so the board believed the file had merely been moved. A clone that already had the file was never told, its half-done states were load-bearing, and one error path reported a restore that left a milestone invisible."
-outcome-resolves: "critique round 5, findings 1-5. Build, vet and the full suite with -race are green; new tests are TestAClonePlanningTheMilestoneLearnsItWasFiled (internal/cli), TestLoadAllLeavesOutAFiledMilestone (core/milestone) and TestFiledMilestoneFindsBothLogbookFolders (core/ticket)."
+outcome-what: "Reworded the two refusals a user meets when a milestone was filed somewhere else: 'jaira logbook <name>' on an already-filed milestone now names the marked file and says the restore has to run in the tree that filed it, instead of pointing at a 'jaira restore' that fails here; 'jaira milestone create' on a filed name no longer offers hand-deleting 'status: filed' as the way back, and core/release/NOTES.md and docs/COMMANDS.md say the same."
+outcome-why: "Both messages sent the reader down a path that does not work. Every state reaching the logbook refusal is a tree without a logbook copy, so its 'jaira restore <name>.md' answers 'is not in the archive'. And deleting the mark by hand in a second clone rides back out on the ref, pulls the milestone onto that board alone and strands the logbook copy in the filer's tree, where 'jaira restore' then hits 'is already on the board'."
+outcome-resolves: "critique round 6, findings 1 and 2. No behaviour changed; go build, go vet and go test ./core/... ./internal/cli/... are green."
 review-summary: |-
   internal/cli/logbook.go:283 the 'already filed' refusal tells the reader to run 'jaira restore <name>.md', but both states its own comment names — a file a fetch wrote back marked, and a filing that marked and got no further — have no logbook copy in this tree, so that restore fails with 'is not in the archive or in .jaira/logbook/'. A failed restore is a third such state: unfileMilestone now returns an error after ticket.Store.Restore has already moved the file back marked. Say instead that this tree has no copy to bring back and only the tree that filed it can restore, the way internal/cli/milestones.go:120 already does.
   internal/cli/milestones.go:121 and core/release/NOTES.md:26 both tell the reader to take 'status: filed' out of the file by hand to put the milestone back on their own board. That is the one state core/refsync/refsync.go:213 is written to prevent: the hand edit reaches the ref on the next milestone command, the tree that filed it fetches the unmarked file onto its board, and its 'jaira restore <name>.md' then refuses with 'is already on the board' while its logbook copy stays stranded. Drop the hand-edit half of both sentences; leave 'let whoever filed it run jaira restore <name>.md, or pick another name'.
