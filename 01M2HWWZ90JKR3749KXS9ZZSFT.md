@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T15:05:00Z
+updated-at: 2026-09-15T15:05:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -41,6 +41,7 @@ review-gaps: |-
   Vorbestehend und nicht angefasst (korrekt so): dieselbe Regel steht in sechs handgepflegten Kopien neben core/board/announce.go, ohne Test, der sie synchron haelt. Nur AGENTS.md und CLAUDE.md sind erzeugt und damit abgesichert.
 test-verdict: "pass: gofmt leer, go build ./... und go test -count=1 ./... RC=0; DoD 2 im Baum und funktional auf einem Wegwerf-Board verifiziert (Ableitung allein aus dem Commit-Betreff traegt, Gegenprobe wird refused), DoD 3 und 4 an ihren Proof-Zeilen nachgeprueft; DoD 1 bleibt offen bis review ohne eigenen Commit vorbei ist"
 question: "Testing ist gruen: Gates RC=0, die Ableitung der Commit-Liste haelt auch dann, wenn die Ticket-Datei nie committet wird (auf einem Wegwerf-Board nachgestellt). Offen bleibt genau eine Sache, und sie ist eine Entscheidung, keine Pruefung: DoD 1 verlangt die Nachstellung ueber critique, testing UND review - review kommt erst nach dieser Lane, also kann DoD 1 erst dort abgehakt werden. Dazu der Befund aus der Planungsnotiz, der die Begruendung des Tickets einschraenkt: refsync laeuft auf diesem Board nicht (keine refs/jaira/*, kein jaira.remote), also traegt hier der Commit den Ticket-Zustand und nicht der Ref - nach dem Merge steht auf master eine veraltete Ticket-Datei, bis ein spaeterer Commit sie mitnimmt. Soll das so bleiben (Weg a) oder braucht es vor dem Push doch einen Abschluss-Commit (Weg b, den die DoD woertlich ausschliesst)?"
+review-verdict: "Die Aenderung erfuellt die Definition of Done und ist am eigenen Ticket nachgestellt: die vier Branch-Commits enthalten keinen, der nur .jaira/ anfasst, und die Lanes critique, optimize und testing haben nichts committet. gofmt sauber, 'go build ./...' und 'go test ./...' gruen; ein Wegwerf-Test bestaetigt, dass AGENTS.md und CLAUDE.md den Text aus core/board/announce.go woertlich tragen und alle neu hinzugefuegten Zeilen <= 80 Zeichen sind. Keine Defekte gefunden. Offen ist eine unbeschriebene Verhaltensfolge: ein Ticket, das ueberhaupt keinen Code-Commit erzeugt, kommt jetzt nicht mehr in die Endlane (review-gaps 1). Das ist keine Regression dieses Diffs im engeren Sinn, sondern eine Luecke in dem, was er dokumentiert - ich bin unsicher, ob das vor dem Merge geschlossen werden soll oder als Folge-Ticket gehoert; das ist die Entscheidung fuer die Signoff-Lane."
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
