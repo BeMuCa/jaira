@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T06:59:55Z
+updated-at: 2026-09-15T07:00:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
@@ -63,4 +63,18 @@ claimed-at: 2026-09-15T06:57:22Z
 - [ ] one line in core/release/NOTES.md under ## Unreleased: what an older board does now, replacing the 'remove that line by hand' instruction of the closed 0.1.4 section
 
 ## Progress
+- **2026-09-15 07:00 · Alexander Sacharov** — pre-process: warum der Plan so aussieht.
 
+Verworfen: die Builtins beim Laden unter das Board legen. Das dreht 743737f um - eine Lane-Datei waere dann keine Lane mehr, sondern eine Ueberschreibung, und jede vom Nutzer entfernte Zeile kaeme still zurueck.
+
+Verworfen: die Korrektur an 'jaira update' haengen. Der Pfad existiert (internal/cli/update.go, release.Stamped + nudgeIfStale), aber die DoD verlangt 'beim naechsten Move nach done' - also muss die Korrektur im Ladepfad sitzen, nicht in einem Befehl, den jemand aufrufen muss.
+
+Verworfen: die ganze Lane-Datei aus dem Builtin neu schreiben (Export). Das setzt einen geaenderten Prompt oder eine geaenderte Beschreibung mit zurueck. DoD 2 verbietet genau das.
+
+Gewaehlt: eine benannte Korrektur, die genau ein Feld entfernt, einmal pro Board. Vorbild ist migrateLegacy (lane.go:645) - eine Migration, die sich an einer Datei merkt, dass sie gelaufen ist. Und stampCreatorLine (share.go:60), das ausdruecklich eine Zeile einfuegt statt das Frontmatter zu parsen und neu zu schreiben, damit nichts Unbekanntes verlorengeht. Die Korrektur entfernt spiegelbildlich eine Zeile.
+
+Das Einmal-Marker ist der Punkt, an dem DoD 2 haelt: wer 'logbook-on-entry: true' nach der Korrektur bewusst wieder hinschreibt, behaelt es - die Korrektur fragt das Board nicht noch einmal. Format wie 'order' und 'removed': eine Zeile pro Korrektur-Id, gelesen mit readIDList.
+
+Warnung: lanes.Warnings werden in internal/cli/root.go:291 und internal/tui/model.go:351 schon ausgegeben - DoD 3 braucht keinen neuen Kanal, nur den richtigen Satz.
+
+NOTES.md: die 0.1.4-Zeile bleibt stehen. 0.1.4 ist getaggt, also geschlossene Historie, und Alex hat am 15.09. entschieden, sie nicht anzufassen (74VM40). DoD 4 und 5 fallen deshalb auf eine einzige neue Zeile unter ## Unreleased zusammen, die sagt, was ein aelteres Board ab jetzt tut - womit die Handarbeit-Anweisung der alten Zeile gegenstandslos wird.
