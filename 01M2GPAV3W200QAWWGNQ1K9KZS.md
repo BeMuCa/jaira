@@ -27,7 +27,7 @@ related:
 commits:
   - 632240e21705271e1e04f68a7c951f6544035c82
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:41:51Z
+updated-at: 2026-09-15T07:45:58Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8323
@@ -37,6 +37,7 @@ outcome-why: "optimize-Lane: Wiederholung und eine namensbasierte Sonderfall-Ver
 outcome-resolves: "go vet ./... RC=0, go test ./... -race RC=0 (ganzer Baum, inkl. internal/tui). Keine DoD neu belegt, aber die durch die Aenderung verschobenen Zeilennummern in DoD 2, 3 und 6 sind nachgezogen. Keine NOTES.md-Zeile: von aussen ist nichts anders."
 review-summary: "none"
 review-gaps: "Entfernt: die dreifache correctionsPath(root)- und doppelte ProjectLanesDir(root)-Berechnung in applyCorrections (core/lane/corrections.go:142) zu je einer Variablen; die Verzweigung ueber tc.name samt Laufzeit-Umschreiben von tc.want in TestDropFrontmatterLine (core/lane/corrections_test.go:248) zugunsten eines in-Feldes in der Tabelle; die nie geschlossenen Lese-Enden der beiden Pipes in hears (:46) - die in critique Runde 3 zurueckgestellte Testhygiene. Kein toter Code und kein verwaister Import gefunden: der io-Import fiel schon mit correctionsOut in 0189cf0. Kein Duplikat gefunden: readIDList/writeIDList (core/lane/order.go:33,53) und containsWarning (core/lane/lane_test.go:25) werden bereits wiederverwendet, und dropFrontmatterLine ist die Gegenrichtung zu stampCreatorLine (core/lane/share.go:64), nicht dieselbe Idee zweimal. Stehen gelassen: doneDoorway woertlich ein zweites Mal in core/move/oldboard_test.go:18, weil eine unexportierte Konstante ueber Paketgrenzen nicht teilbar ist und eine Drift den Test dort laut umwirft; der handgeschriebene Deskriptor-Block in oldboard_test.go:69, weil critique ein gemeinsames Testpaket fuer drei Aufrufer ausdruecklich als teurer verworfen hat; der zweite dropFrontmatterLine-Aufruf in recognises, weil er mit Value fragt und der erste ohne."
+test-verdict: "pass: go vet ./... RC=0, go build ./... RC=0, go test ./... -race -count=1 RC=0 (ganzer Baum, inkl. internal/tui); DoD 1-6 einzeln am Baum geprueft, jeder Proof geoeffnet und der benannte Test einzeln gelaufen; Verhalten mit gebautem Binary auf einem Scratch-Board nachgestellt - Korrektur meldet sich auf stderr unter --json, stdout bleibt gueltiges JSON, zweiter Lauf stumm, von Hand zurueckgeschriebene Zeile bleibt stehen, heutiges done.md plus Zeile wird gemeldet statt angefasst"
 ---
 
 # Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen
