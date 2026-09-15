@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:21:52Z
+updated-at: 2026-09-15T18:28:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -66,7 +66,8 @@ review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert 
   proof: internal/tui/milestonebar_test.go:TestRightBarWidthIsTheSameWithAndWithoutMilestones
 - [x] Das Board zieht sich mit einer Geste auf einen Milestone zusammen, und 'jaira list' hat den entsprechenden Schalter.
   proof: internal/tui/milestonebar_test.go:TestPickerNarrowsTheBoardAndReleasesIt
-- [-] Unerledigte Arbeit wandert in den naechsten Sprint, indem eine Datei bearbeitet wird - nicht indem jedes Ticket einzeln angefasst wird. Nachgestellt mit mindestens drei Tickets, von denen zwei weiterwandern.
+- [x] Unerledigte Arbeit wandert in den naechsten Sprint, indem eine Datei bearbeitet wird - nicht indem jedes Ticket einzeln angefasst wird. Nachgestellt mit mindestens drei Tickets, von denen zwei weiterwandern.
+  proof: testing lane, reenacted on a scratch board: sprint-1 with 3 tickets, 2 lines moved by hand into sprint-2.md, one edit — jaira list --milestone then shows 1 and 2
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt.
   proof: core/release/NOTES.md:17
 
