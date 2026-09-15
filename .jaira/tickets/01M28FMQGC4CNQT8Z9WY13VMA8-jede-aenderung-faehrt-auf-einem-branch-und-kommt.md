@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:18:27Z
+updated-at: 2026-09-15T05:20:23Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -28,7 +28,7 @@ outcome-why: "Die Modus-Weiche aus :25-28 und die unbedingte Anweisung 'Carry on
 outcome-resolves: "Jede der zwei Betriebsarten hat jetzt genau ein benanntes Ziel nach dem Push; keine Sektion laeuft mehr ins Leere. go test ./... -race gruen."
 claimed-by: DESKTOP-RFTCH11-16020
 claimed-at: 2026-09-15T05:13:21Z
-review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:42-44 widerspricht der eigenen Modus-Weiche aus :24-27: :26 schickt den Modus 'PR ist schon offen' auf 'the section below' (gemeint ist 'Answering review comments' :73), :43-44 sagt danach unbedingt 'Carry on with the two sections below - write the description out for them'. Ein Agent im zweiten Modus bekommt beides und schreibt eine gh-pr-create-Beschreibung fuer einen PR, der schon existiert. Stattdessen: :26 die Sektion beim Namen nennen ('Answering review comments') statt 'the section below', und :43-44 nach dem Modus verzweigen - leer: Beschreibung schreiben, dann berichten; ein PR gelistet: direkt zu 'Answering review comments'."
+review-summary: "none"
 review-gaps: "Vier Befunde, keiner davon ein Grund zurueckzuschicken, der erste aber vor dem Signoff zu beheben. || 1) AUSFUEHRBARKEIT, der ernsteste: core/role/builtin/jaira-role-pr/SKILL.md:36-37 sagt 'Then git push -u origin HEAD and stop.' - und danach kommen noch zwei Sektionen, die Arbeit verlangen (die Beschreibung zurueckgeben, ab :39; drei Zeilen berichten, :79-80). Ein Prompt wird ausgefuehrt, nicht gelesen: ein Agent, der von oben nach unten arbeitet, trifft genau in dem Moment, in dem sein Branch gepusht ist, auf ein woertliches 'stop' und hat keine Anweisung, die ihn weiterschickt. Entweder er hoert wirklich auf und der Mensch bekommt die versprochene fertige Beschreibung nie, oder er improvisiert. Ein Wort repariert es ('and stop there - do not open the pull request'), oder der Push wandert hinter die Beschreibungssektion. || 2) Die Rolle hat zwei Betriebsarten - erster Push ohne PR (:36) und Push auf einen PR, den jemand aufgemacht hat (:12, :61) - aber nirgends steht, woran sie erkennt, in welcher sie ist. Die Checkliste 'Before you push anything' (:18-22) fragt git, nie 'gh pr view' oder 'gh pr list'. An der Stelle, an der es zaehlt, muss der Agent raten. || 3) :41 verlangt 'so opening it is one command and no thinking', nennt dieses eine Kommando aber nicht - und da 'Never gh pr create' als Boundary danebensteht, ist nicht klar, ob der Agent es dem Menschen wenigstens hinschreiben darf. Er darf es nicht ausfuehren; das sollte dastehen. || 4) core/release/NOTES.md, Unreleased-Zeile: 'jaira roles install --force' ist so nicht lauffaehig - nachgestellt, das Kommando antwortet 'choose exactly one of --project, --global or --into'. Ausserdem braucht es --force nur, wer die Datei selbst editiert hat; sonst genuegt ein normales 'jaira roles install --project'. Die Zeile ist die einzige, die ein Nutzer je zu sehen bekommt, und wer sie abtippt bekommt einen Fehler. || Geprueft und in Ordnung: kein 'gh pr create' und keine Erlaubnis zum Aufmachen mehr irgendwo in core/role/builtin (grep ueber alle SKILL.md); jaira-role-pr hat Push und Kommentar-Beantwortung behalten; der Tab-Schluss des Dispatchers haengt an der human-Lane, nicht am PR, war also nie am Aufmachen verankert und brauchte keine Aenderung; go test ./... -race gruen. || Ausdruecklich nicht gewertet (gehoert KSGSKK): jaira-dispatcher/SKILL.md:157 und die Transport-Passagen."
 test-verdict: "pass: alle sieben ausgelieferten Prompts sagen jetzt dasselbe wie die Dokumentation - kein 'may open' und keine andere Formulierung von 'mach den PR auf' mehr in core/role/builtin; jaira-role-pr behaelt Ordner- und frontmatter-Namen (core/role/role_test.go:18) und kann weiter zu einem offenen PR pushen und Review-Kommentare beantworten; NOTES.md traegt eine einzeilige Unreleased-Zeile; go test ./... -race gruen, RC=0"
 review-verdict: "Die Definition of Done ist erfuellt: die Regel steht wortgleich in CLAUDE.md, AGENTS.md und README.md, und die ausgelieferten Rollen-Prompts widersprechen ihr nicht mehr - nachgeprueft, nicht uebernommen. go test ./... -race gruen. Kein Defekt, der die Arbeit zurueckschickt. || Ich bin aber nicht rundum ueberzeugt, und sage das lieber als es aufzurunden: jaira-role-pr/SKILL.md:36-37 laesst einen Agenten genau an der Stelle stehen, an der die neue Regel greift ('git push and stop', danach noch zwei Sektionen mit Arbeit). Das ist kein Dokumentationsfehler, das ist die eine Stelle, an der sich entscheidet, ob die Regel im Betrieb haelt. Ein Wort behebt es. Meine Empfehlung: annehmen, diese eine Zeile vorher oder als Folgeticket nachziehen."
@@ -111,3 +111,14 @@ Nicht so geloest, wie es naheliegt (in :43-44 nur 'die zwei Sektionen' auf 'die 
 :27 sagt statt 'the section below' jetzt 'Answering review comments' - 'the section below' stand direkt ueber zwei Sektionen und zeigte woertlich gelesen auf die falsche.
 
 Keine NOTES.md-Zeile ergaenzt, bewusst: die Unreleased-Zeile zu diesem Ticket ('Stop opening pull requests from an agent session') beschreibt schon genau dieses Verhalten samt Aufforderung, die Rollen neu zu installieren. Die Aenderung dieser Runde praezisiert den Wortlaut eines Prompts, den noch niemand ausgeliefert bekommen hat - eine zweite Zeile wuerde dem Leser dieselbe Sache zweimal erzaehlen.
+- **2026-09-15 05:20 · Alexander Sacharov** — critique-Runde 2026-09-15 (zweiter Durchgang): kein Befund. Die Weiche in core/role/builtin/jaira-role-pr/SKILL.md ist jetzt widerspruchsfrei, und zwar besser als der letzte Befund verlangt hatte.
+
+Zeile fuer Zeile durchgespielt, wie ein Agent sie ausfuehrt:
+- Modus 1 (gh pr list leer): :42 pushen, :46 Beschreibung schreiben, :50-75 Sektion 'Hand back the description', :99 in drei Zeilen berichten. Ein benanntes Ziel, kein Sprung ins Leere.
+- Modus 2 (ein PR gelistet): :42 pushen, :47-48 Beschreibungs-Sektion ueberspringen, :77-89 'Answering review comments', :99 berichten - und :99 sieht den zweiten Modus ausdruecklich vor ('or the pull request URL').
+Beide Ausgaenge sind benannt, keiner bekommt beide Anweisungen.
+
+Ausdruecklich NICHT als Befund geschrieben, damit die naechste Runde es nicht reflexhaft anfasst:
+- Die Modus-Zuordnung steht zweimal - erklaerend bei :25-28 direkt unter dem gh-Kommando, ausfuehrend bei :46-48 nach dem Push. Das ist Absicht und keine Doppelung zum Streichen: :25-28 sagt, wozu die vierte Zeile der Checkliste ueberhaupt dasteht; wer sie entfernt, laesst ein unerklaertes Kommando in der Checkliste stehen. Ausserdem ist genau dieser Wortlaut das, was der letzte Befund bestellt hat.
+- :74 '--body-file <the description you wrote>' nennt keine Datei, in die der Agent die Beschreibung schriebe. Der Winkelklammer-Platzhalter ist fuer den Menschen gedacht, der das Kommando ausfuehrt, und der setzt dort ein, was er bekommen hat. Zu duenn fuer einen Befund; hier notiert, falls es beim Signoff jemandem auffaellt.
+- Keine NOTES.md-Zeile: die Unreleased-Zeile dieses Tickets beschreibt die Rolle samt 'gh pr create'-Zeile schon; diese Runde hat nur den Wortlaut eines noch nicht ausgelieferten Prompts praezisiert.
