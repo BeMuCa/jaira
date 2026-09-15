@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:06:33Z
+updated-at: 2026-09-15T06:09:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23543
@@ -308,3 +308,4 @@ Testing hat mehr zu zeigen als eine gruene Suite:
 3. Die Meldung des blocked-Arms richtet sich jetzt an den Menschen, nicht an den Dispatcher - dessen eigener Prompt (jaira-dispatcher/SKILL.md:188-189) verbietet ihm das Beantworten von Dialogen.
 - **2026-09-15 06:06 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen - er haengt an DIESEM Ticket, weil scripts/spawn.sh hier geaendert wird: Zeile 84 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane nicht folgen. Dieser Lauf startet den Tester deshalb als Lane-Worker ('/jaira-role-lane KSGSKK testing'), was auf diesem Board geht, weil testing hier eine echte agentische Lane mit Ausgabe test-verdict ist.
 - **2026-09-15 06:06 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen - er haengt an DIESEM Ticket, weil scripts/spawn.sh hier geaendert wird: Zeile 84 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane nicht folgen. Dieser Lauf startet den Tester deshalb als Lane-Worker ('/jaira-role-lane KSGSKK testing'), was auf diesem Board geht, weil testing hier eine echte agentische Lane mit Ausgabe test-verdict ist.
+- **2026-09-15 06:09 · Alexander Sacharov** — testing-Runde 2026-09-15, erster Versuch: abgebrochen ohne Ergebnis. Der Worker-Tab (Pane w2:p1X, Label 'KSGSKK/testing', per scripts/spawn.sh gestartet) war nach ca. 25 Minuten verschwunden - 'herdr pane get' antwortet 'pane_not_found', und in 'herdr tab list' steht kein KSGSKK-Tab mehr. Der Dispatcher hat ihn nicht geschlossen. Hinterlassen hat er nichts: Lane weiter testing, test-verdict leer, 'git status' sauber, kein neuer Commit. Es geht also nichts verloren, wenn die Lane neu gefahren wird; genau das passiert jetzt in einem frischen Tab.
