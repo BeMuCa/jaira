@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:45:11Z
+updated-at: 2026-09-15T06:45:32Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -269,3 +269,4 @@ Der Hinweis der letzten in-progress-Runde stimmte: das alte review-check verlang
 go test ./... -race: RC=0, kein FAIL. Die glab-Zeilen kommen aus einer frisch gebauten Binary per 'roles install --into' wirklich heraus.
 
 Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - die gehoeren KSGSKK im selben Worktree.
+- **2026-09-15 06:45 · Alexander Sacharov** — Letzte Luecke, hier zu schliessen (Alex entschieden, kein Folgeticket): core/role/builtin/jaira-role-pr/SKILL.md, Sprosse 4 der Forge-Leiter (:55-63). Sie sagt heute nur "nicht raten" und nennt das Kommando, haelt den Agenten aber nicht an: die Ausfuehrung laeuft weiter in den unbedingten Push (:71) und in die gh/glab-Verzweigung (:74-84), die sie nicht aufloesen kann. Genau ein Satz schliesst das, im Ton des umgebenden Prompts: er muss unmissverstaendlich sagen, dass die Rolle hier stehenbleibt (kein Push, keine PR-Abfrage) und was sie dem Menschen sagt - naemlich dass er "git config jaira.forge gitlab|github" setzt und die Rolle danach erneut startet. Sprosse 1 ist genau dieses git config, die Anweisung an den Menschen ist also eine echte. Nur diese Datei plus eine Zeile in core/release/NOTES.md unter ## Unreleased (Zeilen dort nicht umbrechen, fremde Zeilen nicht anfassen). NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - daran arbeitet parallel Ticket KSGSKK im selben Worktree. Worktree und Branch stehen schon (feat/13VMA8-pr-is-the-humans); keinen neuen anlegen. Keinen Pull Request oeffnen oder aktualisieren - Alex gibt das Kommando.
