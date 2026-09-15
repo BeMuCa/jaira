@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:01:54Z
+updated-at: 2026-09-15T21:02:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
