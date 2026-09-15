@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:38:39Z
+updated-at: 2026-09-15T15:39:21Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -199,3 +199,12 @@ NOCH FAUL AM TICKET, ausserhalb dieser Lane: der TITEL sagt weiter 'Sprint'. jai
 EINS DAVON IST KEIN AUFRAEUMEN, SONDERN FORMAT: milestone.go:129 schreibt 'colour:' in die Frontmatter. internal/cli/tags.go:233 schreibt die Regel dieses Boards woertlich hin - 'color, matching --color: one spelling on the machine surface' - und milestones.go:347 sowie der Flag halten sie schon. Die Datei IST die API (CLAUDE.md); nach dem Release ist das ein Bruch, jetzt ist es eine Zeile.
 
 NICHT AUFGEMACHT, absichtlich: dass IncomingMilestones die lokale Datei ueberschreibt, dass die Palette mit tag geteilt wird, dass der Index in newListCmd statt in loadEnv gebaut wird, und dass gitref nicht auf (Art, Name) verallgemeinert wurde statt Plan-Schritt 12 - alle vier sind in den Notizen begruendet und die Begruendung traegt.
+- **2026-09-15 15:39 · Alexander Sacharov** — critique-Runde 1 abgearbeitet, 2026-09-15. Alle neun Findings behoben; zwei Entscheidungen, die der Code nicht erklaert.
+
+LOESCHWEG: entfernt statt verdrahtet (refsync.RecordMilestoneDelete, outbox.PendingMilestone, gitref.DeleteMilestone, gitref.ListRemoteMilestones, der OpDelete-Zweig fuer Milestones in outbox.send und die zwei Tests darauf). Grund: kein Befehl loescht einen Milestone, der Plan sah keinen vor, und Scope-Disziplin schlaegt Symmetrie. FOLGE, bewusst offen gelassen: wer .jaira/milestones/<name>.md von Hand loescht, bekommt die Datei beim naechsten 'jaira fetch' zurueck, weil der Ref stehen bleibt. Das ist eine echte Falle und braucht 'jaira milestone delete <name>', das Datei, Ref und Outbox-Eintrag zusammen wegnimmt - eigenes Ticket, nicht hier.
+
+SENDER: WriteMilestone sitzt jetzt direkt auf outbox.Sender, MilestoneSender ist weg. Nachgesehen: Box.Flush hat genau eine Aufrufstelle (refsync.go:344) und die uebergibt *gitref.Repo. Damit fallen Typ-Assert, Fehlermeldung und die (error, bool)-Rueckgabe von send() weg; ein unbekannter Op kommt jetzt als gewoehnlicher Fehler zurueck und wird wie vorher zu Failed. fakeSender im outbox-Test hat WriteMilestone dazubekommen.
+
+FORMAT: die Frontmatter-Zeile heisst 'color:', nicht 'colour:' - internal/cli/tags.go:233 schreibt diese Regel fuer die Maschinenoberflaeche hin. Das Go-Feld heisst weiter Colour, wie in core/tag; die Regel gilt fuer das, was in der Datei steht. Mitgeaendert: core/milestone/milestone_test.go, core/gitref/milestone_test.go und die NOTES-Zeile zum Dateiformat. Jetzt eine Zeile, nach dem Release ein Bruch.
+
+Plan-Schritt 5 nachgetragen abgehakt: der Index wird gebaut (internal/cli/milestones.go:29 milestoneIndex, internal/tui/model.go:374), nur in newListCmd statt in loadEnv - die critique hat genau das als begruendet durchgehen lassen.
