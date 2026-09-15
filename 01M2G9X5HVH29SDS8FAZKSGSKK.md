@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:31:13Z
+updated-at: 2026-09-15T06:31:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-77218
@@ -371,3 +371,16 @@ Vorschlag, eine Zeile:
 printf gibt keinen Umbruch aus, also frisst tr auch keinen; erst kleinschreiben, dann saeubern. Gegenprobe: repo_slug3 wird von 'docker compose config' angenommen.
 
 KLEINIGKEIT, kein Rueckweisungsgrund: der Beweis zu DoD-Punkt 6 nennt 'spawn.sh:46' fuer das Label-Format. Seit dem --workspace-Zusatz (77c5a0f) steht das Label in Zeile 53; Zeile 46 ist heute ein Kommentar. Beim naechsten Durchgang mitziehen.
+- **2026-09-15 06:31 · Alexander Sacharov** — in-progress 2026-09-15 (6. Runde, nach dem Befund der testing-Runde von 06:21): behoben ist genau diese eine Zeile, sonst nichts angefasst.
+
+spawn.sh:32-40 - COMPOSE_PROJECT_NAME wird jetzt mit printf zusammengesetzt, dann kleingeschrieben, dann gesaeubert. Gemessen: 'My Repo' + KSGSKK -> my_repo_ksgskk; 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' (Compose v2.40.3) gibt RC=0, waehrend der alte Wert repo__SLUG3 dieselbe Pruefung mit 'invalid project name' abweist.
+
+Warum erst kleinschreiben und dann saeubern und nicht umgekehrt: 'tr -c a-z0-9_-' wuerde jeden Grossbuchstaben in einen Unterstrich verwandeln, aus KSGSKK also ______. Die Reihenfolge ist nicht Geschmack.
+
+Warum printf und nicht echo: das ist der zweite Fehler der alten Zeile. 'basename ... | tr' bekam den Zeilenumbruch von basename mit, machte daraus einen Unterstrich, und die Befehlssubstitution konnte ihn nicht mehr abschneiden - daher repo__SLUG3 mit zwei Unterstrichen. printf gibt keinen Umbruch aus.
+
+Ende-zu-Ende nachgestellt, nicht nur die Zeile: spawn.sh komplett gegen ein Herdr-Attrappen-Skript in einem Wegwerf-Repo mit .env laufen lassen (Repo-Name 'My Repo' mit Leerzeichen, damit auch das Saeubern belegt ist). Die .env des Worktrees traegt my_repo_ksgskk, die Aufrufkette 'tab create --workspace w3 ... --label KSGSKK/in-progress --no-focus' -> 'pane run' -> 'pane get' -> 'send-text' -> 'send-keys enter' ist unveraendert.
+
+NOTES.md:19 nicht als zweite Zeile, sondern der vorhandene Halbsatz umgeschrieben: die alte Formulierung ('schreibt nicht mehr den COMPOSE_PROJECT_NAME eines fremden Projekts') war schon wahr, sagte aber nicht, dass der abgeleitete Name benutzbar ist. Dasselbe Skript zweimal in derselben Unreleased-Liste waere die Alternative gewesen.
+
+Mitgezogen: der Beweis zu DoD 6 nannte spawn.sh:46 fuer das Label-Format, das ist seit 77c5a0f Zeile 58. Das war die Kleinigkeit aus der testing-Notiz von 06:21.
