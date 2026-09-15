@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:15:37Z
+updated-at: 2026-09-15T05:15:55Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3200
@@ -145,3 +145,10 @@ Gleichzeitig ist die Lane-Reihenfolge des Boards geaendert: human steht jetzt zw
 Der Grund, warum keine: 1K9KZS steht als naechstes auf der Liste und behebt die Ursache. Faellt es vor dem Tag 0.2.1, gibt es kein aelteres Board mehr zu warnen, und eine Warnung unter ## Unreleased haette einen Zustand beschrieben, den kein ausgeliefertes Binary je hatte - genau das, was die Regel verbietet.
 
 ABHAENGIGKEIT, die daran haengt: wird 0.2.1 getaggt, BEVOR 1K9KZS drin ist, dann fehlt den Nutzern aelterer Boards jeder Hinweis darauf, dass ihre Doska weiterhin beim Fertigwerden ablegt. Dann braucht es die Zeile unter ## Unreleased doch, vor dem Tag. Wer den Release schneidet, muss das pruefen.
+- **2026-09-15 05:15 · Alexander Sacharov** — critique round four - the first round since the optimize cut and the release-note correction. Read the code that changed after round three (0facda1, 9260cc7) and re-read the whole diff against HEAD. Two findings, both small, both in the change's own files.
+
+(1) NOTES.md:46 is wrong by one. The hint bar fires at ten (model.go:768: 'if n < fileReminder { return 0 }'), the line says 'more than ten'. This is not a nit about wording: the same ticket wrote NOTES.md:18 under ## Unreleased saying 'once ten or more finished tickets sit in the terminal lane', so a reader who updates across both sections is told two different thresholds by the same change. The DoD says 'zehn oder mehr' and testing verified the bar is silent at nine and reads at ten. The 'more than ten' text predates the correction - it came in with 9ad7aa9 and 9260cc7 rewrote the sentence around it without touching it. Fixing it is the same class of edit Alex already blessed on 2026-09-14 20:31 (correcting a false statement inside the closed ## 0.1.4 section), so it needs no new decision.
+
+(2) logbookAll's --json entries carry id and file but not handle, while logbookOut (logbook.go:200) carries handle and --all's own text output prints it. Round two fixed the trim_error gap in this same map and round three read the branch and let the rest stand, so this was never raised, not re-raised. It matters for the same reason trim_error did: --all is the cut an agent runs, and the next thing that agent does is name what it filed in a commit message by handle.
+
+Deliberately not raised: the optimize cut (0facda1) is clean - the stampCommits forwarder and the two hand-built codedError literals are gone and archive.go:73 and logbookOut both go through s.StampCommits and fail(). The 'Status == lane && !ReadOnly' predicate in three places stays let-stand, as rounds two and three left it. lane.Load not layering builtins under an existing board is ticket 1K9KZS and stays there - Alex decided that split.
