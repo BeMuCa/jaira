@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:22:32Z
+updated-at: 2026-09-15T20:22:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -321,3 +321,16 @@ REF RAEUMEN IST PFLICHT, nicht Kosmetik: refsync.IncomingMilestones (refsync.go:
 ABLAGEORT: .jaira/logbook/<initials>-<datum>/milestones/<name>.md, ein Unterordner. Grund: ein Milestone-Dateiname (frei gewaehlt) kann mit einem Ticket-Dateinamen kollidieren, und Restore muss am Fundort erkennen, wohin die Datei zurueckgehoert - Ordner statt Namensraten.
 
 NOCH IMMER NICHT BESTAETIGT, und wer es anders liest, korrigiert DoD 9 statt es zu bauen: dass mit Alex' Forderung der Lebenslauf des Milestones selbst gemeint ist (Logbuch legt den Milestone ab) und nicht, dass das Ablegen eines TICKETS dessen Zeile aus dem Milestone nimmt. Gebaut wird die erste Lesart, weil DoD 9 sie woertlich so sagt.
+- **2026-09-15 20:22 · Alexander Sacharov** — Alex hat am 2026-09-15 die offene Frage aus der letzten Notiz beantwortet. DoD 8-12 tragen das Ergebnis; hier steht die Begruendung, damit spaeter niemand zurueckbaut.
+
+Kein Automatismus. Ein Milestone geht nur auf Kommando weg. Die automatische Loeschung eines leer geraeumten Milestones ist ausdruecklich NICHT gewollt - sie wuerde eine frisch angelegte, noch leere Datei sofort wieder wegnehmen, und genau so legt man einen Milestone an. DoD 8 ist deshalb umgedreht: es prueft jetzt, dass der leere Milestone STEHEN BLEIBT.
+
+Ablegen wie ein Ticket, bestaetigt. 'jaira logbook' nimmt den Milestone vom Board, 'jaira restore' holt ihn zurueck.
+
+Der eigentliche Fund dieser Runde, und er kommt von Alex: der Ref wird beim Ablegen NICHT geraeumt. Stattdessen traegt der Milestone einen Status.
+
+Warum das die richtige Loesung ist - es raeumt genau die Falle weg, die in der Notiz vom 15.09. schon stand: eine Datei von der Platte zu nehmen raeumt refs/jaira/ nicht, und IncomingMilestones (core/refsync/refsync.go:194) schreibt sie beim naechsten Zug wieder hin. Ein abgelegter Milestone kaeme also von allein zurueck, und zwar auf jedem Rechner, der zieht. Mit einem Status im Frontmatter ist der Ref die Wahrheit statt der Gegner: er sagt 'abgelegt', und der Client schreibt die Datei nicht mehr aufs Board.
+
+Der Ref haelt ausserdem den Namen belegt. Das ist DoD 11 und Alex' zweite Sorge in einem Satz ('sonst kann es sich wiederholen'): wer nach dem Ablegen denselben Namen noch einmal anlegt, bekommt zwei Milestones mit einer Identitaet, die auf verschiedenen Rechnern verschieden aussehen. Statt dessen wird das Anlegen abgelehnt, mit dem Hinweis auf 'jaira restore'.
+
+Damit ist die Plan-Lane nicht mehr blockiert. Was sie noch selbst entscheidet: wie der Status heisst und wo er steht (Frontmatter-Feld der Milestone-Datei ist der naheliegende Ort), und ob 'jaira logbook' den Milestone von sich aus anfasst oder ob er ausdruecklich benannt werden muss.
