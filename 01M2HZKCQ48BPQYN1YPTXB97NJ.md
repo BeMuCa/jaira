@@ -13,7 +13,7 @@ related:
   - 01M2HX6SYCFB27V26R5APWAF22
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-09-15T07:34:39Z
+updated-at: 2026-09-15T07:34:43Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -58,3 +58,4 @@ question: "Bevor jemand mit der Arbeit anfaengt: die genaue Form der ersten Loes
 Fuer die Plan-Lane heisst das: die Entscheidung 'erzeugter Block statt Laufzeit-Einstellung im Prompt' ist vorgegeben und nicht neu aufzurollen. Offen bleibt, WIE der ausgelieferte Prompt dem Block weicht - ob er ausdruecklich sagt, dass der Block vor ihm gilt, oder ob der Block den betreffenden Absatz des Prompts ersetzt.
 
 Nicht als Freibrief lesen: 'spaeter nachziehen' gilt fuer die Form, nicht fuer Kriterium 4. Ein Board ohne Einstellung muss sich vom ersten Tag an wie heute verhalten - wer nichts tut, darf nichts merken.
+- **2026-09-15 07:34 · Alexander Sacharov** — Am 2026-09-15 auf Alex' Wunsch als zu besprechen markiert: die erste Loesung wird gemeinsam festgelegt, bevor das Ticket in eine Lane geht. Die Frage steht im question-Feld, damit sie auf dem Board sichtbar ist und nicht nur in einer Notiz, die niemand oeffnet.
