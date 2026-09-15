@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:17:14Z
+updated-at: 2026-09-15T06:17:25Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -37,9 +37,9 @@ question: |-
   ACHTUNG beim Lesen des Tickets: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Punkt 7 der Pruefliste ('entscheide, ob Zeile 36-37 zu aendern ist') und Punkt 9 ('jaira roles install --force') sind beide bereits erledigt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide Felder dann neu.
 
   Du musst nur sagen, ob du die Arbeit annimmst.
-outcome-what: "optimize der GitLab-Runde: nichts entfernt, keine Datei geaendert. Doppelung, toter Text, Fluff und Kosten je am Baum geprueft; die Befunde und die stehen gelassenen Stellen liegen in review-gaps."
-outcome-why: "Die Runde ist reiner Prompt- und Notes-Text und hat vier critique-Durchlaeufe hinter sich; es gibt genau eine Stelle im Repo, die eine Forge kennt, und nichts zeigt mehr auf den alten Aufbau."
-outcome-resolves: "review-gaps geschrieben. go build ./... und go test ./... gruen. Weiter nach testing."
+outcome-what: "testing-Lane der GitLab-Runde: Gates gruen, DoD 1-4 am Baum verifiziert, Forge-Erkennung auf sechs Fixtures nachgestellt, glab-Flags gegen glab 1.114.0 geprueft und die frisch gebaute Binary schreibt die glab-Zeilen wirklich heraus."
+outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides am Baum und am laufenden Werkzeug bestaetigt, nicht am outcome-Text."
+outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
 claimed-by: DESKTOP-RFTCH11-90589
 claimed-at: 2026-09-15T05:55:12Z
 review-summary: "none"
