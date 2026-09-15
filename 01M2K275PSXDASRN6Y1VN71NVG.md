@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-09-15T17:36:11Z
+updated-at: 2026-09-15T17:36:13Z
 updated-by: Alexander Sacharov
 ---
 
@@ -35,6 +35,11 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Ein fertiger Milestone laesst sich in einem Griff archivieren: Datei und Ref verschwinden vom Board, der Inhalt bleibt lesbar - nach dem Vorbild von jaira logbook
+- [ ] Ein archivierter Milestone faerbt keine Kartenkante mehr und steht nicht im M-Picker
+- [ ] Es gibt einen Weg zurueck, wie 'jaira restore' ihn fuer Tickets hat
+- [ ] Archivieren sagt es, wenn der Milestone noch unerledigte Tickets fuehrt, und archiviert die Tickets nicht mit
+- [ ] 'jaira milestone delete <name>' entfernt Datei UND Ref, lokal und auf dem Remote - sonst kommt der Milestone beim naechsten fetch zurueck
+- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt
 
 ## Options
 
