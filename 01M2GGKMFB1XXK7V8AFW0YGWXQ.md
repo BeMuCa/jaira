@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:29:51Z
+updated-at: 2026-09-15T20:31:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -119,7 +119,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [-] Test DoD 9: ablegen - vom Board weg und 'milestone ls' nennt ihn nicht; restore - Liste und Farbe zurueck, Karte wieder gefaerbt
 - [-] Hilfetexte und docs/COMMANDS.md: das Verschwinden bei 'jaira milestone rm' und das Ablegen bei 'jaira logbook' - beide Stellen liest man VOR dem Aufruf
 - [-] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
-- [ ] Arbeitsbaum zurueckdrehen: der komplette Loeschweg aus Runde 1 faellt weg - gitref.DeleteMilestone+refDelete, milestone.Delete, outbox OpDelete/PendingMilestone, refsync.RecordMilestoneDelete und das automatische Wegnehmen in internal/cli/milestones.go; 'git checkout --' auf die fuenf Dateien, denn DoD 8 will das Gegenteil und DoD 10 braucht keinen Ref-Abbau
+- [~] Arbeitsbaum zurueckdrehen: der komplette Loeschweg aus Runde 1 faellt weg - gitref.DeleteMilestone+refDelete, milestone.Delete, outbox OpDelete/PendingMilestone, refsync.RecordMilestoneDelete und das automatische Wegnehmen in internal/cli/milestones.go; 'git checkout --' auf die fuenf Dateien, denn DoD 8 will das Gegenteil und DoD 10 braucht keinen Ref-Abbau
 - [ ] Test DoD 8: letztes Ticket mit 'jaira milestone rm' herausnehmen - die Datei bleibt, 'milestone ls' nennt ihn unveraendert; dazu 'create' ohne Tickets, die leere Datei bleibt ebenfalls liegen
 - [ ] core/milestone: Status aus der Frontmatter lesen ('status: filed'), Filed() dazu, und SetStatus, das die Zeile in der Frontmatter setzt, einfuegt oder entfernt, ohne eine andere Zeile anzufassen - dieselbe verbatim-Regel wie Add/Remove; die Paket-Doku sagt, was 'filed' bedeutet
 - [ ] Test: SetStatus auf eine von Hand editierte Datei (Kommentar, eigene Reihenfolge, fehlende Frontmatter) - jede andere Zeile unveraendert, Load liest den Status zurueck
