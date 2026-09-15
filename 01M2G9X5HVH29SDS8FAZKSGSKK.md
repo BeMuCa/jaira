@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:10:32Z
+updated-at: 2026-09-15T06:11:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
@@ -313,3 +313,5 @@ Testing hat mehr zu zeigen als eine gruene Suite:
 Was das im Lauf angerichtet hat: der erste testing-Worker ging nach w2 - laut 'herdr workspace list' der Workspace mit dem Label 'Req' (requirementsgenie), also ein fremdes Projekt. Der zweite Start landete in w3 ('JAIRA'), wo der Mensch und der Dispatcher sitzen. Zwei identische Aufrufe, zwei verschiedene Workspaces.
 Warum das mehr ist als Kosmetik: ein Worker-Tab im Workspace eines fremden Projekts ist genau der Tab, den niemand sieht und den jemand zumacht - der erste Worker ist spurlos verschwunden, Pane w2:p1X 'pane_not_found', ohne ein einziges Ergebnis. Der ganze Zweck eines Tabs statt eines Splits ist laut dispatcher/SKILL.md, dass der Mensch ihn oeffnen kann, wenn er will; in einem anderen Workspace kann er das nicht.
 Naheliegende Behebung: den Workspace des eigenen Panes ermitteln (der Praefix vor dem ':' der Pane-Id, oder 'herdr workspace list' nach focused) und als --workspace weiterreichen, damit der Worker neben dem entsteht, der ihn gestartet hat. Nicht in dieser Lane gemacht - testing implementiert nicht.
+- **2026-09-15 06:11 · Alexander Sacharov** — Anweisung von Alex im Lauf (2026-09-15), damit sie auf dem Board steht und nicht in dieser Sitzung stirbt: scripts/spawn.sh soll den Worker-Tab dort oeffnen, wo der Dispatcher beziehungsweise der Teamlead selbst sitzt - nicht dort, wo Herdr ihn von sich aus hinlegt. Damit ist der zweite spawn.sh-Befund dieses Laufs (Notiz davor) kein blosser Vermerk mehr, sondern Umfang dieses Tickets.
+Die testing-Runde wurde dafuer abgebrochen: sie pruefte ein Skript, das sich jetzt aendert, und ihr Urteil waere ueber die alte Fassung gewesen. Der Tab w3:p45 ist geschlossen, das Ticket geht zurueck nach in-progress.
