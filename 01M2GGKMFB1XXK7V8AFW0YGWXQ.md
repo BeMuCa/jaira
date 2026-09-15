@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:29:07Z
+updated-at: 2026-09-15T20:29:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -361,3 +361,20 @@ Dieser Weg ist ab jetzt FALSCH, in beiden Haelften:
 Der Diff liegt als Patch unter dem Scratchpad dieser Dispatcher-Sitzung (inprogress-round1-deletepath.patch), falls jemand eine Zeile daraus doch braucht. Der Arbeitsbaum wurde ABSICHTLICH nicht zurueckgesetzt: was davon stehenbleibt, entscheidet die Plan-Lane und nicht der Dispatcher.
 
 Der Plan-Schritt 'core/gitref: DeleteMilestone als Gegenstueck zu Delete' steht auf [~] und ist der erste, den die neue Plan-Runde anfassen muss.
+- **2026-09-15 20:29 · Alexander Sacharov** — pre-process, Runde 3 (DoD 8-12 nach Alex' Umkehrung), 2026-09-15. Die Plan-Schritte 18-32 sind SUPERSEDED, nicht erledigt: sie beschrieben den Loeschweg, und den gibt es nicht mehr. Die Schritte 33-48 sind der Ersatz und stehen in der Reihenfolge, in der sie gebaut werden.
+
+DER GANZE DIFF IM ARBEITSBAUM GEHT WEG, alle fuenf Dateien. Nachgesehen, ob eine Zeile davon ueberlebt: keine. gitref.DeleteMilestone, milestone.Delete, outbox OpDelete fuer KindMilestone, outbox.PendingMilestone, refsync.RecordMilestoneDelete und das automatische Wegnehmen in milestones.go loesen alle dasselbe Problem - einen Milestone-Ref abbauen - und DoD 10 sagt ausdruecklich, dass er stehen bleibt. Auch das herausgezogene refDelete geht zurueck: es haette dann wieder nur einen Aufrufer, und genau das war Finding 3 der critique-Runde 2. Der Patch liegt im Scratchpad der Dispatcher-Sitzung, falls doch jemand eine Zeile sucht.
+
+WIE DER STATUS AUSSIEHT, das war die offene Frage der Plan-Lane: eine Zeile 'status: filed' in der Frontmatter der Milestone-Datei, neben color und created-at. Kein eigenes Registry und keine zweite Datei, weil die Datei laut CLAUDE.md die API ist und ein Mensch in einem Diff lesen koennen muss, warum ein Milestone nicht mehr auf dem Board steht. Englisch, weil die Dateien und der Code englisch sind - im Ticket heisst es 'abgelegt', in der Datei 'filed'. Fehlt die Zeile, steht der Milestone auf dem Board; das ist der Zustand jeder heute existierenden Datei, also braucht es keine Migration.
+
+Setzen und Entfernen brauchen ein SetStatus in core/milestone, kein Neuschreiben der Datei: Save schreibt m.lines verbatim zurueck, und wer die Frontmatter neu baut, verliert Kommentare und Reihenfolge - genau das, was DoD 1 abgesichert hat.
+
+WARUM DER REF DIE WAHRHEIT IST UND NICHT DER GEGNER: IncomingMilestones (core/refsync/refsync.go:194) schreibt jede Milestone-Datei, die die Refs tragen, auf die Platte. Ein abgelegter Milestone mit abgebautem Ref kaeme nicht zurueck - aber sein Name waere auch wieder frei, und dann legen zwei Rechner zwei Milestones mit einer Identitaet an. Mit dem Status im Ref-Inhalt ist beides in einem Zug geloest: der Leser sieht 'filed' und schreibt ihn nicht aufs Board (Schritt 41), und 'milestone create' sieht denselben Ref und lehnt den Namen ab (Schritt 43).
+
+WAS ICH ENTSCHIEDEN HABE, WEIL DIE DoD ES OFFEN LAESST:
+- 'jaira logbook <name>' fasst einen Milestone nur an, wenn er BENANNT ist. '--all' sweept die Terminal-Lane und bleibt bei Tickets. Grund: --all ist der Schnitt, den jemand macht, wenn er Stunden eintraegt, und dieser Schnitt darf keine Gruppe mitnehmen, an die niemand gedacht hat - dieselbe Sorge, die im Hilfetext von logbook schon mit den neunundvierzig fremden Tickets steht.
+- Reihenfolge der Aufloesung: erst Ticket, dann Milestone. Ein Milestone-Name ist frei gewaehlt und koennte wie ein Handle aussehen; das Ticket gewinnt, weil es die haeufigere und die aeltere Bedeutung ist.
+- Ein Milestone, der auf einem anderen Rechner abgelegt wird, verschwindet dort NICHT automatisch vom Board: der Fetch schreibt ihn nur nicht mehr hin. Eine lokale Datei zu loeschen, weil ein Ref das sagt, waere das erste Mal, dass jaira eine Datei entfernt, die es nur gelesen hat. DoD 10 verlangt es auch nicht - dort steht 'schreibt ihn NICHT wieder aufs Board'. Wer dort aufraeumt, legt selber ab.
+- Der Ref-Blick in 'create' reicht auf einem ungeteilten Board nicht (dort gibt es keine Refs), deshalb zusaetzlich der Blick ins lokale Logbuch. Zwei Quellen, aber die Suchfunktion braucht Restore ohnehin.
+
+NICHT ENTSCHIEDEN UND AUCH NICHT NOETIG: ob ein abgelegter Milestone jemals wieder aus dem Logbuch verschwindet. 'jaira restore' holt ihn zurueck, sonst liegt er da - genau wie ein abgelegtes Ticket.
