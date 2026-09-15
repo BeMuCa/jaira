@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:07:11Z
+updated-at: 2026-09-15T13:07:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -73,3 +73,10 @@ Die offene Entscheidung (Plan-Schritt 2): was mit der Ticket-Datei geschieht, na
 Ich wuerde (a) nehmen, weil die DoD (b) ausschliesst und der Kontext genau dieses Argument macht: die Commits bewahren nichts, Record() tut es.
 
 Was dabei kippen kann und Schritt 3 prueft: die abgeleitete Commit-Liste (core/gitrepo/derive.go:19) ist die Vereinigung aus Ticket-Datei-Historie und Commits, die die Id nennen. Faellt die erste Quelle fuer die spaeten Lanes weg, haengt alles an der zweiten. Das Nennen der Id im Betreff wird damit von einer Gewohnheit zur Bedingung - und das muss im erzeugten Block stehen, nicht nur hier.
+- **2026-09-15 13:07 · Alexander Sacharov** — Befund beim Planen, der die Empfehlung aus der vorigen Notiz einschraenkt: refsync laeuft auf diesem Board NICHT. 'git for-each-ref refs/jaira/*' ist leer, .jaira/ hat keine Outbox, und 'git config jaira.remote' ist nicht gesetzt. Syncer.Usable() gibt dann einen Fehler und Record() (core/refsync/refsync.go:108) kehrt sofort zurueck, ohne etwas zu queuen.
+
+Damit ist die Kernaussage des Kontexts - 'die Commits bewahren nichts, der Ref tut es' - nur auf einem Board mit konfiguriertem Remote wahr. Auf einem Board ohne Remote ist der Commit der einzige Traeger des Ticket-Zustands.
+
+Folge fuer Plan-Schritt 2: Weg (a) - 'der Ref traegt sie, git nie' - darf nicht bedingungslos in den erzeugten Block geschrieben werden. Die Regel muss entweder an 'Board hat ein Remote' geknuepft werden, oder der Verzicht auf den Commit gilt nur fuer Lanes, deren Vermerk eine spaetere Code-Lane ohnehin mitnimmt.
+
+Deshalb committet dieser pre-process-Schritt seine Ticket-Datei doch: sie war untracked, kein Ref haelt sie, und ohne Commit gaebe es auf dem Zweig nichts, was das Ticket mit der Arbeit verbindet - und keine ableitbare Commit-Liste.
