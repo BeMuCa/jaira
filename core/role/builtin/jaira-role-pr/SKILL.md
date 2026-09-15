@@ -62,6 +62,12 @@ and on a bad day a different forge.
    git config jaira.forge gitlab    # or github
    ```
 
+   Then stop, here, before the push. Do not push and do not ask for open
+   requests: everything below needs the tool you were just unable to name.
+   Report that the forge is unsettled, hand the person that one line to run —
+   it is rung 1 above, so once it is set the ladder answers on the first step —
+   and say the role runs again from the top afterwards.
+
 GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
 word.

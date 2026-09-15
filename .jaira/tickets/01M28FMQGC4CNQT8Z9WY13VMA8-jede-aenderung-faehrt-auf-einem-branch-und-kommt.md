@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: review
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:38:52Z
+updated-at: 2026-09-15T06:47:06Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -45,8 +45,8 @@ question: |-
 outcome-what: "testing-Lane der GitLab-Runde: Gates gruen, DoD 1-4 am Baum verifiziert, Forge-Erkennung auf sechs Fixtures nachgestellt, glab-Flags gegen glab 1.114.0 geprueft und die frisch gebaute Binary schreibt die glab-Zeilen wirklich heraus."
 outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides am Baum und am laufenden Werkzeug bestaetigt, nicht am outcome-Text."
 outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
-claimed-by: DESKTOP-RFTCH11-80237
-claimed-at: 2026-09-15T06:33:52Z
+claimed-by: DESKTOP-RFTCH11-19054
+claimed-at: 2026-09-15T06:45:11Z
 review-summary: "Die Rolle jaira-role-pr spricht jetzt zwei Forges. Neu ist die Sektion 'Which forge this repository is on' (SKILL.md:36-67): zuerst 'git config jaira.forge' - ist es gesetzt, gewinnt es ohne Wenn und Aber; sonst entscheidet der Host von 'git remote get-url origin', also des Remotes, auf den der Branch gepusht wird (github.com -> gh, Host mit 'gitlab' -> glab); gibt der Host nichts her, nennt die Rolle kein Werkzeug, sagt das und schreibt die eine Zeile hin, die es klaert ('git config jaira.forge gitlab'). Dass 'origin' und nicht 'jaira.remote' gelesen wird, steht mit Begruendung im Text (:46-49) - jaira.remote traegt die Ticket-Refs und ist im Fork das Upstream, waehrend der Branch zum Fork geht. Danach sind genau drei Stellen zweisprachig: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create --body-file / :124 glab mr create --description \"$(cat ...)\") und die Boundaries (:143-148). Der uebrige Ablauf bleibt einmalig, statt als zweite Kopie zu existieren. Der Wortwechsel ist begrenzt: :65-67 weist an, 'pull request' NUR auf dem GitLab-Weg als 'merge request' zu lesen - der GitHub-Weg redet weiter von Pull Requests. Ausserdem hat 9fc224c die Abfrage der offenen Requests aus der Forge-Sektion in die Push-Sektion verschoben, wo der Branch tatsaechlich genommen wird. Dazu eine Unreleased-Zeile in core/release/NOTES.md:20 und ein Satz in der SKILL-description."
 review-gaps: |-
   Ein Befund, klein aber echt, und genau von der Sorte, die kein Test sieht: Zweig 4 der Forge-Leiter (SKILL.md:55-63, Host ist weder github.com noch gitlab-haltig, jaira.forge ungesetzt) laesst den ausfuehrenden Agenten ohne Anweisung fuer den Rest der Datei stehen. Er soll sagen, dass er es nicht entscheiden kann, und 'git config jaira.forge' nennen - aber es steht nirgends, ob er danach anhaelt oder weiterliest. Liest er weiter, steht er bei :71 vor einem unbedingten 'git push -u origin HEAD' und bei :74-84 vor einer Gabel 'auf GitHub ... oder auf GitLab ...', die er per Voraussetzung nicht aufloesen kann. Kein Widerspruch, aber eine Luecke: ein Satz wie 'Stop here and report; the rest of this file needs a settled forge' schliesst sie. Die Definition of Done ist davon nicht verletzt - DoD 3 verlangt nur, dass die Rolle es sagt statt zu raten, und das tut sie.
@@ -97,6 +97,9 @@ conflict-theirs-question: ""
 - [x] critique-Befund 1+2: SKILL.md:43 die Forge vom Push-Remote ablesen (git remote get-url origin), die jaira.remote-Zeile streichen
 - [x] critique-Befund 3: den Block 'ist schon einer offen' aus der Forge-Sektion in die Push-Sektion verschieben
 - [x] go test ./... -race gruen, dann committen
+- [x] Sprosse 4 der Forge-Leiter: die Rolle dort anhalten - kein Push, keine PR-Abfrage - und dem Menschen sagen, dass er git config jaira.forge setzt und neu startet
+- [x] NOTES.md: Unreleased-Zeile fuer das Anhalten bei unbekannter Forge
+- [~] go test ./... -race gruen, dann committen
 
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
@@ -269,3 +272,4 @@ Der Hinweis der letzten in-progress-Runde stimmte: das alte review-check verlang
 go test ./... -race: RC=0, kein FAIL. Die glab-Zeilen kommen aus einer frisch gebauten Binary per 'roles install --into' wirklich heraus.
 
 Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - die gehoeren KSGSKK im selben Worktree.
+- **2026-09-15 06:45 · Alexander Sacharov** — Letzte Luecke, hier zu schliessen (Alex entschieden, kein Folgeticket): core/role/builtin/jaira-role-pr/SKILL.md, Sprosse 4 der Forge-Leiter (:55-63). Sie sagt heute nur "nicht raten" und nennt das Kommando, haelt den Agenten aber nicht an: die Ausfuehrung laeuft weiter in den unbedingten Push (:71) und in die gh/glab-Verzweigung (:74-84), die sie nicht aufloesen kann. Genau ein Satz schliesst das, im Ton des umgebenden Prompts: er muss unmissverstaendlich sagen, dass die Rolle hier stehenbleibt (kein Push, keine PR-Abfrage) und was sie dem Menschen sagt - naemlich dass er "git config jaira.forge gitlab|github" setzt und die Rolle danach erneut startet. Sprosse 1 ist genau dieses git config, die Anweisung an den Menschen ist also eine echte. Nur diese Datei plus eine Zeile in core/release/NOTES.md unter ## Unreleased (Zeilen dort nicht umbrechen, fremde Zeilen nicht anfassen). NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - daran arbeitet parallel Ticket KSGSKK im selben Worktree. Worktree und Branch stehen schon (feat/13VMA8-pr-is-the-humans); keinen neuen anlegen. Keinen Pull Request oeffnen oder aktualisieren - Alex gibt das Kommando.
