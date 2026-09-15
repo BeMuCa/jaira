@@ -39,11 +39,11 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:32:25Z
+updated-at: 2026-09-15T15:33:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-79843
-claimed-at: 2026-09-15T15:02:47Z
+claimed-by: DESKTOP-RFTCH11-28259
+claimed-at: 2026-09-15T15:33:55Z
 outcome-what: "core/milestone (Datei, Farbe, Index), jaira milestone create/add/rm/ls, jaira list --milestone, die rechte Kartenkante und der M-Picker im TUI, und ein zweiter Ref-Namensraum refs/jaira/milestones/ durch gitref, outbox, refsync und jaira fetch."
 outcome-why: "Ein Tag am einzelnen Ticket kann unerledigte Arbeit nicht in die naechste Runde tragen: jedes Ticket liegt auf seinem Ref, das sind zwanzig Vorgaenge. Eine Datei wird stattdessen in einem Griff bearbeitet."
 outcome-resolves: "DoD 1-5 und 7 erfuellt und mit Tests belegt; DoD 6 war bereits von Alex' Milestone-Entscheidung vom 15.09. als superseded markiert."
