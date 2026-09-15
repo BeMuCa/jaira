@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:22:12Z
+updated-at: 2026-09-15T05:22:27Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27181
@@ -159,3 +159,6 @@ Deliberately not raised: the optimize cut (0facda1) is clean - the stampCommits 
 Gelernt beim Pinnen: der Handle IST der Schwanz der ID. Ein erster Test, der nur strings.Contains(out, ticket.Handle(id)) prueft, ist gruen ohne die Aenderung - er findet den Handle im id-Feld. Die Behauptung muss auf dem Schluessel stehen: strings.Contains(out, `"handle": "`+handle+`"`). Gegenprobe gefahren: mit entferntem handle-Schluessel faellt TestTheCutJSONNamesEachHandle, mit ihm laeuft sie. Genau der Fehler, den Runde eins schon einmal durchgelassen hat (der Schwellen-Test prueft nur den Zaehler, nie die gerenderte Zeile) - ein Test, der die Aussage nicht wirklich festnagelt.
 
 Nicht angefasst: 1K9KZS (lane.Load legt die Builtins nicht unter ein bestehendes Board) bleibt eigenes Ticket, so entschieden.
+- **2026-09-15 05:22 · Alexander Sacharov** — critique round five: one finding, in the change's own release note. NOTES.md:46-47 - the two lines that describe this ticket's central behaviour - sit under '## 0.1.4'. That tag exists, and so does v0.2.0; neither tagged tree contains the lines, so they were written into a closed section after the fact. release.go:62 selects by position (all[:i] at the stamped version), which means a board stamped 0.1.4 or later is cut above that section and never sees them, and a board on 0.1.3 is told the behaviour is in 0.1.4, where it is not. The change's most visible user-facing note therefore reaches nobody. Fix: move both lines under '## Unreleased', and fold the hint-bar half of line 46 into line 18, which already names the same ten-or-more threshold and the same command - otherwise Unreleased states the threshold twice, which is exactly what round four was sent back for.
+
+Checked and found nothing: logbookAll follows the shapes already here (fail(), s.StampCommits, the trim_error key move already uses); the ReadOnly filter sits in the callee trim.go where both callers get it; fileReminder and fileCommand are consts with one reader each and no configurability nobody asked for. The duplicated lanes-and-fill setup across the two tests in filereminder_test.go was looked at and left: naming a shared helper costs more than the six lines it saves. Not re-raised: readyToFile returning 0 below the threshold, which optimize already weighed and let stand.
