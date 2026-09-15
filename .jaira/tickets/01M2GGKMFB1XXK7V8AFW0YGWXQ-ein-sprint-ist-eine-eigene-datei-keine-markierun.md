@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -39,14 +39,14 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:32:25Z
+updated-at: 2026-09-15T15:39:35Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-79843
-claimed-at: 2026-09-15T15:02:47Z
-outcome-what: "core/milestone (Datei, Farbe, Index), jaira milestone create/add/rm/ls, jaira list --milestone, die rechte Kartenkante und der M-Picker im TUI, und ein zweiter Ref-Namensraum refs/jaira/milestones/ durch gitref, outbox, refsync und jaira fetch."
-outcome-why: "Ein Tag am einzelnen Ticket kann unerledigte Arbeit nicht in die naechste Runde tragen: jedes Ticket liegt auf seinem Ref, das sind zwanzig Vorgaenge. Eine Datei wird stattdessen in einem Griff bearbeitet."
-outcome-resolves: "DoD 1-5 und 7 erfuellt und mit Tests belegt; DoD 6 war bereits von Alex' Milestone-Entscheidung vom 15.09. als superseded markiert."
+claimed-by: DESKTOP-RFTCH11-28259
+claimed-at: 2026-09-15T15:33:55Z
+outcome-what: "Alle neun critique-Findings behoben: der ungenutzte Milestone-Loeschweg entfernt, MilestoneSender in Sender aufgeloest, die Frontmatter-Zeile von 'colour:' auf 'color:' gebracht, validColour/itoa/atoi/Milestone.path/activeMilestones durch die vorhandenen Dinge ersetzt und der Hilfetext von 'jaira fetch' auf refs/jaira/* richtiggestellt."
+outcome-why: "Die Datei ist die API: 'colour:' waere nach dem Release ein Bruch, jetzt eine Zeile. Der Rest war Code, den nichts aufruft, und zweite Namen fuer Dinge, die es schon gibt - beides driftet auseinander, sobald jemand eines von beiden aendert."
+outcome-resolves: "Kein Verhalten der DoD-Punkte geaendert; alle Tests gruen. Plan-Schritt 5 nachgetragen abgehakt (Index in internal/cli/milestones.go:29 und internal/tui/model.go:374)."
 review-summary: |-
   core/refsync/refsync.go:197 RecordMilestoneDelete has no caller anywhere, and neither does core/outbox/outbox.go:280 PendingMilestone; gitref.DeleteMilestone is reached only from an OpDelete branch nothing ever queues and no command deletes a milestone — delete the three, or add 'jaira milestone delete <name>' and wire them
   core/outbox/outbox.go:282 MilestoneSender and the s.(MilestoneSender) assert at :364 handle a state that cannot occur: Box.Flush has one call site, core/refsync/refsync.go:344, passing *gitref.Repo, which implements both halves — put WriteMilestone/DeleteMilestone on Sender itself and drop the assert, the 'this sender cannot carry milestones' error and the (error, bool) return of send()
@@ -90,7 +90,7 @@ review-summary: |-
 - [x] core/milestone: Load/LoadAll/Save nach dem Vorbild von core/tag (core/tag/tag.go:189 Load, :371 Save) - Zeilen verbatim erhalten, WriteAtomic, Mitgliederliste parsen
 - [x] Farbvergabe: zufaellig aus einer Palette, die keine Farbe eines schon vorhandenen Milestones doppelt; die Farbe steht in der Milestone-Datei selbst, kein zweites zentrales Registry
 - [x] Test: eine Milestone-Datei von Hand editieren (Kommentar, Leerzeile, eigene Reihenfolge) und nach Load/Save unveraendert wiederfinden
-- [ ] Index ID -> Milestones einmal beim Laden bauen, neben link.Build in loadEnv (internal/cli/root.go:275) und im TUI (internal/tui/model.go:352); CLI und TUI lesen denselben Index
+- [x] Index ID -> Milestones einmal beim Laden bauen, neben link.Build in loadEnv (internal/cli/root.go:275) und im TUI (internal/tui/model.go:352); CLI und TUI lesen denselben Index
 - [x] CLI: jaira milestone create/add/rm/ls - je Aufruf genau ein Dateischreibvorgang, damit zwanzig Tickets gruppieren eine Bearbeitung bleibt
 - [x] CLI: jaira list --milestone <name> (neben --tag, internal/cli/tickets.go:528) und der Schluessel milestone:<name> in beiden matches() (internal/cli/tickets.go:534, internal/tui/model.go:598) - exakt wie tag, nicht als Teilstring
 - [x] TUI: rechte Kartenkante in renderCardBlock (internal/tui/view.go:533) - zweite Balkenzelle rechts, inner = w-2, die Spalte IMMER reserviert, auch ohne Milestone, sonst flattern die Titel in einer Lane
@@ -199,3 +199,12 @@ NOCH FAUL AM TICKET, ausserhalb dieser Lane: der TITEL sagt weiter 'Sprint'. jai
 EINS DAVON IST KEIN AUFRAEUMEN, SONDERN FORMAT: milestone.go:129 schreibt 'colour:' in die Frontmatter. internal/cli/tags.go:233 schreibt die Regel dieses Boards woertlich hin - 'color, matching --color: one spelling on the machine surface' - und milestones.go:347 sowie der Flag halten sie schon. Die Datei IST die API (CLAUDE.md); nach dem Release ist das ein Bruch, jetzt ist es eine Zeile.
 
 NICHT AUFGEMACHT, absichtlich: dass IncomingMilestones die lokale Datei ueberschreibt, dass die Palette mit tag geteilt wird, dass der Index in newListCmd statt in loadEnv gebaut wird, und dass gitref nicht auf (Art, Name) verallgemeinert wurde statt Plan-Schritt 12 - alle vier sind in den Notizen begruendet und die Begruendung traegt.
+- **2026-09-15 15:39 · Alexander Sacharov** — critique-Runde 1 abgearbeitet, 2026-09-15. Alle neun Findings behoben; zwei Entscheidungen, die der Code nicht erklaert.
+
+LOESCHWEG: entfernt statt verdrahtet (refsync.RecordMilestoneDelete, outbox.PendingMilestone, gitref.DeleteMilestone, gitref.ListRemoteMilestones, der OpDelete-Zweig fuer Milestones in outbox.send und die zwei Tests darauf). Grund: kein Befehl loescht einen Milestone, der Plan sah keinen vor, und Scope-Disziplin schlaegt Symmetrie. FOLGE, bewusst offen gelassen: wer .jaira/milestones/<name>.md von Hand loescht, bekommt die Datei beim naechsten 'jaira fetch' zurueck, weil der Ref stehen bleibt. Das ist eine echte Falle und braucht 'jaira milestone delete <name>', das Datei, Ref und Outbox-Eintrag zusammen wegnimmt - eigenes Ticket, nicht hier.
+
+SENDER: WriteMilestone sitzt jetzt direkt auf outbox.Sender, MilestoneSender ist weg. Nachgesehen: Box.Flush hat genau eine Aufrufstelle (refsync.go:344) und die uebergibt *gitref.Repo. Damit fallen Typ-Assert, Fehlermeldung und die (error, bool)-Rueckgabe von send() weg; ein unbekannter Op kommt jetzt als gewoehnlicher Fehler zurueck und wird wie vorher zu Failed. fakeSender im outbox-Test hat WriteMilestone dazubekommen.
+
+FORMAT: die Frontmatter-Zeile heisst 'color:', nicht 'colour:' - internal/cli/tags.go:233 schreibt diese Regel fuer die Maschinenoberflaeche hin. Das Go-Feld heisst weiter Colour, wie in core/tag; die Regel gilt fuer das, was in der Datei steht. Mitgeaendert: core/milestone/milestone_test.go, core/gitref/milestone_test.go und die NOTES-Zeile zum Dateiformat. Jetzt eine Zeile, nach dem Release ein Bruch.
+
+Plan-Schritt 5 nachgetragen abgehakt: der Index wird gebaut (internal/cli/milestones.go:29 milestoneIndex, internal/tui/model.go:374), nur in newListCmd statt in loadEnv - die critique hat genau das als begruendet durchgehen lassen.

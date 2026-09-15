@@ -191,27 +191,6 @@ func (y *Syncer) RecordMilestone(name string, content []byte) error {
 	return nil
 }
 
-// RecordMilestoneDelete queues the removal of a milestone's ref, for a
-// milestone whose file is gone. Without it a deleted milestone would keep
-// arriving on everybody else's fetch forever.
-func (y *Syncer) RecordMilestoneDelete(name string) error {
-	if y == nil || y.Usable() != nil {
-		return nil
-	}
-	lease, err := y.Repo.MilestoneSHA(name)
-	if err != nil {
-		if errors.Is(err, gitref.ErrNoRef) {
-			return nil
-		}
-		return err
-	}
-	if err := y.Box.QueueMilestone(name, outbox.OpDelete, nil, lease, y.Actor); err != nil {
-		return err
-	}
-	y.dirty = true
-	return nil
-}
-
 // IncomingMilestones writes to disk every milestone file the refs carry that
 // this working tree does not already have in the same state, and reports the
 // names it wrote.

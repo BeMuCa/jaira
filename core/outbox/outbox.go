@@ -163,11 +163,6 @@ func (b *Box) QueueKind(kind Kind, key string, op Op, content []byte, lease, by 
 // asks this to mark a card as carrying something not yet sent.
 func (b *Box) Pending(id string) (Entry, bool) { return b.PendingKind(KindTicket, id) }
 
-// PendingMilestone returns the unsent write for one milestone, if there is one.
-func (b *Box) PendingMilestone(name string) (Entry, bool) {
-	return b.PendingKind(KindMilestone, name)
-}
-
 // PendingKind reads one entry. A ticket is also looked for at the flat path an
 // older build used, so upgrading does not strand a queued write.
 func (b *Box) PendingKind(kind Kind, key string) (Entry, bool) {
@@ -272,16 +267,7 @@ func (b *Box) DropKind(kind Kind, key string) error {
 type Sender interface {
 	Write(id string, content []byte, lease string) (string, error)
 	Delete(id, lease string) error
-}
-
-// MilestoneSender is the second half of the transport, for the second
-// namespace. It is a separate interface so a Sender written before milestones
-// existed still compiles and still flushes tickets; a queue holding a
-// milestone write for a sender that cannot carry one reports Failed rather
-// than dropping it, because the write is not lost, only unsendable here.
-type MilestoneSender interface {
 	WriteMilestone(name string, content []byte, lease string) (string, error)
-	DeleteMilestone(name, lease string) error
 }
 
 // Outcome is what became of one queued write during a flush.
@@ -329,11 +315,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 	var results []Result
 	for _, e := range entries {
 		kind := e.Kind.or(KindTicket)
-		sendErr, known := send(s, kind, e)
-		if !known {
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Failed, Err: sendErr})
-			continue
-		}
+		sendErr := send(s, kind, e)
 
 		switch {
 		case sendErr == nil:
@@ -356,30 +338,26 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 	return results, nil
 }
 
-// send picks the transport call for one entry, reporting false when there is
-// none — an op nothing recognises, or a milestone handed to a sender that only
-// carries tickets.
-func send(s Sender, kind Kind, e Entry) (error, bool) {
+// send picks the transport call for one entry. An op nothing recognises comes
+// back as an error, which Flush reports as Failed and leaves queued: the entry
+// is unreadable, not unwanted.
+//
+// A milestone is only ever written, never deleted: no command deletes one —
+// removing a milestone is rm on its file — so there is nothing to queue.
+func send(s Sender, kind Kind, e Entry) error {
 	if kind == KindMilestone {
-		ms, ok := s.(MilestoneSender)
-		if !ok {
-			return fmt.Errorf("outbox: this sender cannot carry milestones"), false
+		if e.Op != OpWrite {
+			return fmt.Errorf("outbox: unknown milestone op %q", e.Op)
 		}
-		switch e.Op {
-		case OpDelete:
-			return ms.DeleteMilestone(e.ID, e.Lease), true
-		case OpWrite:
-			_, err := ms.WriteMilestone(e.ID, []byte(e.Content), e.Lease)
-			return err, true
-		}
-		return fmt.Errorf("outbox: unknown op %q", e.Op), false
+		_, err := s.WriteMilestone(e.ID, []byte(e.Content), e.Lease)
+		return err
 	}
 	switch e.Op {
 	case OpDelete:
-		return s.Delete(e.ID, e.Lease), true
+		return s.Delete(e.ID, e.Lease)
 	case OpWrite:
 		_, err := s.Write(e.ID, []byte(e.Content), e.Lease)
-		return err, true
+		return err
 	}
-	return fmt.Errorf("outbox: unknown op %q", e.Op), false
+	return fmt.Errorf("outbox: unknown op %q", e.Op)
 }

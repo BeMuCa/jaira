@@ -7,7 +7,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitref"
 )
 
-const milestoneFile = "---\nname: round-one\ncolour: 45\n---\n\n- 01TEST\n"
+const milestoneFile = "---\nname: round-one\ncolor: 45\n---\n\n- 01TEST\n"
 
 // A milestone has to reach everybody the way a ticket does: without a branch
 // being merged, and on the same fetch. The file naming twenty tickets is the
@@ -93,13 +93,6 @@ func TestTheTwoNamespacesStayApart(t *testing.T) {
 	if len(remote) != 1 {
 		t.Errorf("ListRemote() = %v, want only the ticket", remote)
 	}
-	remoteMs, err := ada.ListRemoteMilestones()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(remoteMs) != 1 {
-		t.Errorf("ListRemoteMilestones() = %v, want only the milestone", remoteMs)
-	}
 }
 
 // A milestone is edited by hand as often as by jaira, so a stale write has to
@@ -124,26 +117,6 @@ func TestAStaleMilestoneWriteLoses(t *testing.T) {
 	}
 	if _, err := grace.WriteMilestone("round-one", []byte("---\nname: round-one\n---\n"), lease); err == nil {
 		t.Error("a write against a stale lease was accepted")
-	}
-}
-
-// The ref is what makes a milestone deletable everywhere: a milestone whose
-// file is gone must stop appearing on other boards, the way a logged ticket's
-// ref is reaped.
-func TestDeletingAMilestoneRefRemovesItEverywhere(t *testing.T) {
-	ada, grace := twoClones(t)
-
-	if _, err := ada.WriteMilestone("round-one", []byte(milestoneFile), ""); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-	if err := ada.DeleteMilestone("round-one", firstSHA(t, ada, "round-one")); err != nil {
-		t.Fatalf("delete: %v", err)
-	}
-	if err := grace.Fetch(); err != nil {
-		t.Fatalf("fetch: %v", err)
-	}
-	if names, err := grace.ListMilestones(); err != nil || len(names) != 0 {
-		t.Errorf("ListMilestones() = %v, %v; want nothing left", names, err)
 	}
 }
 

@@ -133,8 +133,8 @@ func TestFilterNarrowsToAMilestone(t *testing.T) {
 			t.Errorf("filter on an unknown milestone still showed %d cards", len(c.tickets))
 		}
 	}
-	if got := m.activeMilestones(); len(got) != 1 || got[0] != "round-one" {
-		t.Errorf("activeMilestones() = %v, want [round-one]", got)
+	if len(m.milestones) != 1 || m.milestones[0].Name != "round-one" {
+		t.Errorf("the picker offers %d milestones, want only round-one", len(m.milestones))
 	}
 }
 

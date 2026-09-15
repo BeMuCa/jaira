@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -70,7 +71,6 @@ type Milestone struct {
 
 	lines   []string // the whole file, frontmatter included
 	members []string // ticket ids, in file order
-	path    string
 }
 
 // Members lists the ticket ids this milestone holds, in the order the file
@@ -130,7 +130,7 @@ func New(name string, colour int, now time.Time) *Milestone {
 	m.lines = []string{
 		"---",
 		"name: " + name,
-		"colour: " + itoa(colour),
+		"color: " + strconv.Itoa(colour),
 		"created-at: " + now.UTC().Format(time.RFC3339),
 		"---",
 		"",
@@ -152,7 +152,6 @@ func Load(root, name string) (*Milestone, error) {
 		return nil, err
 	}
 	m := parse(string(b))
-	m.path = path
 	if m.Name == "" {
 		m.Name = name
 	}
@@ -223,8 +222,8 @@ func parse(text string) *Milestone {
 			switch strings.TrimSpace(key) {
 			case "name":
 				m.Name = value
-			case "colour":
-				m.Colour = atoi(value)
+			case "color":
+				m.Colour, _ = strconv.Atoi(value)
 			case "created-at":
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					m.CreatedAt = t
@@ -272,11 +271,9 @@ func (m *Milestone) Save(root string) error {
 		b.WriteString(l)
 		b.WriteByte('\n')
 	}
-	path := Path(root, m.Name)
-	if err := ticket.WriteAtomic(path, []byte(b.String())); err != nil {
+	if err := ticket.WriteAtomic(Path(root, m.Name), []byte(b.String())); err != nil {
 		return err
 	}
-	m.path = path
 	return nil
 }
 
@@ -348,14 +345,4 @@ func (i Index) Matches(id, want string) bool {
 		}
 	}
 	return false
-}
-
-func itoa(n int) string { return fmt.Sprintf("%d", n) }
-
-func atoi(s string) int {
-	var n int
-	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
-		return 0
-	}
-	return n
 }

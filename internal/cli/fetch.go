@@ -19,8 +19,11 @@ func newFetchCmd() *cobra.Command {
 	var quiet bool
 	cmd := &cobra.Command{
 		Use:   "fetch",
-		Short: "Fetch the tickets travelling on their own git refs",
-		Long: `Fetches refs/jaira/tickets/* from the board's remote and reports what they say.
+		Short: "Fetch the tickets and milestones travelling on their own git refs",
+		Long: `Fetches refs/jaira/* from the board's remote — the tickets under
+refs/jaira/tickets/* and the milestones under refs/jaira/milestones/* — and
+reports what they say. A milestone whose file is new or newer is written to
+.jaira/milestones/, so the groups a teammate planned arrive with the tickets.
 
 This is how a ticket assigned to you arrives without anyone sharing a branch:
 the ref carries the whole ticket file, so it is readable with no checkout and

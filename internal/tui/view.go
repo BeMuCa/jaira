@@ -1517,8 +1517,7 @@ func (m *Model) renderMilestones() string {
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render("Milestones") + "\n")
 	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 40))) + "\n\n")
-	names := m.activeMilestones()
-	if len(names) == 0 {
+	if len(m.milestones) == 0 {
 		b.WriteString(styMeta.Render("No milestones on this board.") + "\n")
 	}
 	for i, ms := range m.milestones {

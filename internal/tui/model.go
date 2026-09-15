@@ -1037,25 +1037,25 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeMilestones:
-		names := m.activeMilestones()
+		n := len(m.milestones)
 		switch s {
 		case "esc", "M", "q":
 			m.mode = m.returnTo
 		case "j", "down":
-			if len(names) > 0 {
-				m.msIdx = (m.msIdx + 1) % len(names)
+			if n > 0 {
+				m.msIdx = (m.msIdx + 1) % n
 			}
 		case "k", "up":
-			if len(names) > 0 {
-				m.msIdx = (m.msIdx - 1 + len(names)) % len(names)
+			if n > 0 {
+				m.msIdx = (m.msIdx - 1 + n) % n
 			}
 		case "enter":
 			// The gesture writes the ordinary filter rather than carrying a
 			// second kind of narrowing beside it: one filter means esc clears
 			// this the same way it clears a typed one, and / shows what the
 			// board is currently narrowed to.
-			if m.msIdx >= 0 && m.msIdx < len(names) {
-				m.filter = "milestone:" + names[m.msIdx]
+			if m.msIdx >= 0 && m.msIdx < n {
+				m.filter = "milestone:" + m.milestones[m.msIdx].Name
 				m.input = m.filter
 				m.rebuild()
 			}
@@ -1332,7 +1332,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Not m: m is move and must keep meaning that. The picker narrows the
 		// board to one round of work in one gesture, which is the whole reason
 		// a milestone is worth having.
-		if len(m.activeMilestones()) == 0 {
+		if len(m.milestones) == 0 {
 			m.notify("No milestones on this board yet.\n\nCreate one with 'jaira milestone create <name>' and add tickets to it.", false)
 		} else {
 			m.returnTo = m.mode
@@ -1473,18 +1473,6 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 		}
 	}
 	return slots
-}
-
-// activeMilestones is every milestone the board has a file for, in name order.
-// It reads the files rather than the tickets on screen, so an empty milestone
-// is still offered by the picker — a group you have just created and not yet
-// filled is exactly the one you want to filter to.
-func (m *Model) activeMilestones() []string {
-	var names []string
-	for _, ms := range m.milestones {
-		names = append(names, ms.Name)
-	}
-	return names
 }
 
 // activeTags is every tag carried by a ticket on the board, deduplicated and

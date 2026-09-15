@@ -30,7 +30,7 @@ func TestSaveKeepsHandEditsVerbatim(t *testing.T) {
 	root := t.TempDir()
 	body := "---\n" +
 		"name: round-one\n" +
-		"colour: 45\n" +
+		"color: 45\n" +
 		"created-at: 2026-09-15T10:00:00Z\n" +
 		"---\n" +
 		"\n" +
@@ -76,7 +76,7 @@ func TestSaveKeepsHandEditsVerbatim(t *testing.T) {
 // twenty tickets grouped in one edit is the whole point of the file.
 func TestAddAndRemoveTouchOneLine(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "round-two", "---\nname: round-two\ncolour: 33\n---\n\n<!-- keep me -->\n- "+idA+"\n")
+	write(t, root, "round-two", "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- "+idA+"\n")
 
 	m, err := Load(root, "round-two")
 	if err != nil {
@@ -97,7 +97,7 @@ func TestAddAndRemoveTouchOneLine(t *testing.T) {
 	if err := m.Save(root); err != nil {
 		t.Fatal(err)
 	}
-	want := "---\nname: round-two\ncolour: 33\n---\n\n<!-- keep me -->\n- " + idB + "\n"
+	want := "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- " + idB + "\n"
 	back, err := os.ReadFile(Path(root, "round-two"))
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +115,7 @@ func TestLoadAllToleratesAbsenceAndJunk(t *testing.T) {
 	if err != nil || len(all) != 0 {
 		t.Fatalf("LoadAll() on a fresh board = %v, %v; want no milestones and no error", all, err)
 	}
-	write(t, root, "beta", "---\nname: beta\ncolour: 40\n---\n- "+idA+"\n")
+	write(t, root, "beta", "---\nname: beta\ncolor: 40\n---\n- "+idA+"\n")
 	write(t, root, "alpha", "nothing here is frontmatter\n")
 	if err := os.WriteFile(filepath.Join(Dir(root), "notes.txt"), []byte("ignored"), 0o644); err != nil {
 		t.Fatal(err)
@@ -134,8 +134,8 @@ func TestLoadAllToleratesAbsenceAndJunk(t *testing.T) {
 // until somebody removes the old line.
 func TestIndexAnswersPerTicketAndAllowsMultipleMembership(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "alpha", "---\nname: alpha\ncolour: 33\n---\n- "+idA+"\n- "+idB+"\n")
-	write(t, root, "beta", "---\nname: beta\ncolour: 40\n---\n- "+idA+"\n")
+	write(t, root, "alpha", "---\nname: alpha\ncolor: 33\n---\n- "+idA+"\n- "+idB+"\n")
+	write(t, root, "beta", "---\nname: beta\ncolor: 40\n---\n- "+idA+"\n")
 
 	all, err := LoadAll(root)
 	if err != nil {

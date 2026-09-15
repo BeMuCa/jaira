@@ -361,13 +361,6 @@ func (r *Repo) refWrite(ref, name string, content []byte, lease string) (string,
 // everybody else's.
 func (r *Repo) Delete(id, lease string) error { return r.refDelete(RefName(id), lease) }
 
-// DeleteMilestone removes a milestone's ref, locally and on the remote — for a
-// milestone whose file was deleted, so it stops appearing on everybody else's
-// board the way a logged ticket does.
-func (r *Repo) DeleteMilestone(name, lease string) error {
-	return r.refDelete(MilestoneRefName(name), lease)
-}
-
 func (r *Repo) refDelete(ref, lease string) error {
 	if err := r.pushRefspec(ref, ":"+ref, lease); err != nil {
 		return err
@@ -662,10 +655,6 @@ func (r *Repo) listNames(prefix string) ([]string, error) {
 // ListRemote asks the remote which tickets exist, without fetching them. One
 // roundtrip is cheap enough to run before a command needs the contents.
 func (r *Repo) ListRemote() ([]string, error) { return r.listRemoteNames(Prefix) }
-
-// ListRemoteMilestones asks the remote which milestones exist, without
-// fetching them.
-func (r *Repo) ListRemoteMilestones() ([]string, error) { return r.listRemoteNames(MilestonePrefix) }
 
 func (r *Repo) listRemoteNames(prefix string) ([]string, error) {
 	out, errb, err := r.run("", "ls-remote", r.remote(), prefix+"*")

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -115,7 +116,7 @@ and you are told so.`,
 			c := colour
 			if !cmd.Flags().Changed("color") {
 				c = milestone.AssignColour(existing, name)
-			} else if !validColour(c) {
+			} else if !tag.ValidColour(c) {
 				return fail(ExitUsage, "bad_color", "--color takes an ANSI-256 value, 0-255; got %d", c)
 			}
 			ms := milestone.New(name, c, time.Now())
@@ -288,7 +289,7 @@ work and each filters to half of it.`,
 			colours := colourable(w)
 			fmt.Fprintln(w)
 			for _, ms := range all {
-				known := validColour(ms.Colour) && ms.Colour > 0
+				known := tag.ValidColour(ms.Colour) && ms.Colour > 0
 				value := "  -"
 				if known {
 					value = fmt.Sprintf("%3d", ms.Colour)
@@ -354,7 +355,3 @@ func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
 	}
 	return out
 }
-
-// validColour is tag.ValidColour under a name this file can read; the two
-// marks share one palette and one range.
-func validColour(n int) bool { return n >= 0 && n <= 255 }
