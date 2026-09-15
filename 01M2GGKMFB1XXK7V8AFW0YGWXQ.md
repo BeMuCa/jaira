@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:43:18Z
+updated-at: 2026-09-15T20:43:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -392,3 +392,14 @@ KEIN IMPORTZYKLUS MOEGLICH: core/milestone importiert core/ticket, also kann cor
 RESTORE MERKT SICH DEN FUNDORT, nicht den Namen: store.Restore sammelt jetzt neben logMatches auch logDirs und leitet das Ziel daraus ab (milestones/ -> MilestonesDir, sonst TicketsDir). Am Namen zu erkennen, ob eine Datei ein Milestone ist, geht nicht - ein Milestone-Name ist frei gewaehlt.
 
 STOLPERSTELLE im Hilfetext: cobra Long ist ein Backtick-String. Ein Backtick-Zitat wie 'status: filed' darin beendet das Literal und der Compiler zeigt auf eine Stelle 200 Zeilen weiter unten. Anfuehrungszeichen benutzen.
+- **2026-09-15 20:43 · Alexander Sacharov** — in-progress Runde 3 fertig, 2026-09-15. Was beim Bauen entschieden wurde und im Plan nicht stand.
+
+DAS ABLEGEN BRAUCHT EIN GATE, ANALOG ZUM TICKET: logbookMilestone laedt jedes Mitglied und verlangt Terminal-Lane ODER 'nicht mehr auf dem Board' (s.Load schlaegt fehl = abgelegt/archiviert). Ein Ticket, das nicht geladen werden kann, gilt als fertig genug - sonst kann ein Milestone, dessen Tickets schon abgelegt sind, nie ins Logbuch.
+
+RESTORE ERKENNT DEN MILESTONE AM ZIELPFAD, nicht am Argument: unfileMilestone (internal/cli/archive.go) prueft filepath.Base(filepath.Dir(dst)) == 'milestones'. Der Aufrufer nennt nur den Dateinamen, und ob das ein Ticket oder ein Milestone ist, weiss erst store.Restore, nachdem es die Datei gefunden hat.
+
+MILESTONE-NAME BELEGT: zwei Quellen, Ref zuerst, dann lokales Logbuch (milestoneFiled in internal/cli/milestones.go). Der Ref allein reicht nicht - ein ungeteiltes Board hat keine Refs, und dann wuerde derselbe Name zweimal vergeben. Das Logbuch allein reicht auch nicht - wer nie gefetcht hat, sieht die fremde Ablage nicht.
+
+NICHT GEBAUT UND ABSICHTLICH: ein anderswo abgelegter Milestone verschwindet beim Fetch NICHT vom eigenen Board. IncomingMilestones ueberspringt den Ref nur. Eine lokale Datei zu loeschen, weil ein Ref das sagt, waere das erste Mal, dass jaira eine Datei entfernt, die es nur gelesen hat; DoD 10 verlangt es nicht.
+
+ADJACENT, NICHT ANGEFASST: 'jaira restore' hat keinen Hinweis darauf, dass der Name eines Milestones ohne .md-Endung nicht funktioniert - man muss 'round-one.md' schreiben. Das ist bei Tickets genauso und waere eine eigene Aenderung.
