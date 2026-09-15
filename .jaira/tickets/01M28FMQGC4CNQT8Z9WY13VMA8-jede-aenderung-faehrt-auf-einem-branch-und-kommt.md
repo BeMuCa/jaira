@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,18 +19,18 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:23:49Z
+updated-at: 2026-09-15T05:27:46Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md:25-26: die doppelte Aufzaehlung der zwei Betriebsarten entfernt, die direkt unter dem gh-pr-list-Block stand; die Verzweigung nach dem Push (:40-46) ist jetzt die einzige Stelle, die beide Modi benennt."
-outcome-why: "Ein Prompt, der dieselbe Weiche zweimal stellt, laesst den Agenten raten, welche gilt - und die zweite steht an der Stelle, an der tatsaechlich verzweigt wird. Die erste Fassung sagt jetzt nur noch, wozu die Abfrage da ist."
-outcome-resolves: "Eine Weiche, ein Ort. go test ./... gruen."
+outcome-what: "testing-Lane: go build ./... und go test ./... -race gruen, DoD-1 an README/CLAUDE/AGENTS Zeile fuer Zeile geprueft, und eine frisch gebaute Binary schreibt die neue PR-Regel per 'jaira roles install --into' wirklich heraus."
+outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides bestaetigt am Baum, nicht am outcome-Text."
+outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
 claimed-by: DESKTOP-RFTCH11-16020
 claimed-at: 2026-09-15T05:13:21Z
 review-summary: "none"
 review-gaps: "Eine Doppelung entfernt: core/role/builtin/jaira-role-pr/SKILL.md zaehlte die zwei Betriebsarten zweimal auf - einmal direkt unter dem gh-pr-list-Block (:25-28) und noch einmal nach dem Push (:42-48). Die zweite Aufzaehlung ist die, die zaehlt, weil sie an der Stelle steht, an der der Agent verzweigt, und beide Ziele beim Namen nennt. Die erste ist jetzt ein Satz, der nur noch sagt, wozu die Abfrage da ist ('you branch on it after the push'), plus die Invariante 'Either way you never open one'. Kein Verhalten geaendert, go test ./... gruen. || Stehen gelassen und warum: (a) die Regel 'du machst keinen PR auf' steht im Prompt viermal - Titel, Einleitung :10-14, :40-41 am Push, Boundary :91-93. In einem Prompt ist Wiederholung an der Stelle der Handlung keine Fluff, sondern das, was ein zeilenweise ausfuehrender Agent tatsaechlich liest; gekuerzt haette ich genau den Befund 1 zurueckgeholt, den die letzte in-progress-Runde behoben hat. (b) jaira-teamlead/SKILL.md:86-88 und :97-99 tragen die Regel beide, aber mit verschiedener Anweisung (nie tun / wann den Tab schliessen) - keine Doppelung. (c) Die Regel steht wortgleich in CLAUDE.md, AGENTS.md und README.md - das verlangt die Definition of Done ausdruecklich, drei Leserschaften. (d) core/release/NOTES.md:34 (Sektion 0.2.0) sagt, der Teamlead schliesse den Tab 'once the pull request is open', was der heutige Prompt nicht mehr tut - geschlossene Historie, beschreibt eine ausgelieferte Binary, wird nicht angefasst. (e) Kein toter Code: die Aenderung ist reiner Prompt- und Doku-Text, nichts wurde unerreichbar. || Keine neue NOTES.md-Zeile: die Unreleased-Zeile zu diesem Ticket schickt den Nutzer schon zu 'jaira roles install --project', und das ist genau das, was diese Straffung ausliefert."
-test-verdict: "pass: alle sieben ausgelieferten Prompts sagen jetzt dasselbe wie die Dokumentation - kein 'may open' und keine andere Formulierung von 'mach den PR auf' mehr in core/role/builtin; jaira-role-pr behaelt Ordner- und frontmatter-Namen (core/role/role_test.go:18) und kann weiter zu einem offenen PR pushen und Review-Kommentare beantworten; NOTES.md traegt eine einzeilige Unreleased-Zeile; go test ./... -race gruen, RC=0"
+test-verdict: "pass: go build ./... und go test ./... -race gruen (RC=0, kein FAIL), DoD-1 in README.md:842-851, CLAUDE.md:154-170 (vor jaira:end) und AGENTS.md:166-180 wortgleich verifiziert, und eine frisch gebaute Binary schreibt mit 'jaira roles install --into' die neue PR-Regel wirklich heraus"
 review-verdict: "Die Definition of Done ist erfuellt: die Regel steht wortgleich in CLAUDE.md, AGENTS.md und README.md, und die ausgelieferten Rollen-Prompts widersprechen ihr nicht mehr - nachgeprueft, nicht uebernommen. go test ./... -race gruen. Kein Defekt, der die Arbeit zurueckschickt. || Ich bin aber nicht rundum ueberzeugt, und sage das lieber als es aufzurunden: jaira-role-pr/SKILL.md:36-37 laesst einen Agenten genau an der Stelle stehen, an der die neue Regel greift ('git push and stop', danach noch zwei Sektionen mit Arbeit). Das ist kein Dokumentationsfehler, das ist die eine Stelle, an der sich entscheidet, ob die Regel im Betrieb haelt. Ein Wort behebt es. Meine Empfehlung: annehmen, diese eine Zeile vorher oder als Folgeticket nachziehen."
 review-check: "1. cd /home/alex/projects/.worktrees/jaira-13VMA8 -- alles Folgende laeuft dort. || 2. sed -n '840,852p' README.md -- du musst zwei Absaetze sehen: 'Nothing lands on master directly' und darunter 'The pull request belongs to the maintainer from the moment it exists.' || 3. sed -n '156,170p' CLAUDE.md und sed -n '164,180p' AGENTS.md -- beide muessen denselben zweiten Absatz tragen, Wort fuer Wort wie im README, und in CLAUDE.md muss er vor der Zeile <!-- jaira:end --> stehen. Steht er dahinter, ueberlebt er die naechste Regeneration nicht. || 4. grep -rn 'gh pr create' core/role/builtin/ -- genau ein Treffer, in jaira-role-pr/SKILL.md, und davor muss 'Never' stehen. || 5. grep -rni 'you may open\\|contributor.s job' core/role/builtin/ -- muss leer bleiben. Kommt hier etwas zurueck, traegt ein ausgeliefertes Prompt noch die alte Regel. || 6. sed -n '59,71p' core/role/builtin/jaira-role-pr/SKILL.md -- die Sektion 'Answering review comments' muss noch da sein. Die Rolle soll das Aufmachen verlieren, nicht ihre uebrige Arbeit. || 7. Jetzt der Punkt, an dem ich haenge: cat -n core/role/builtin/jaira-role-pr/SKILL.md und lies Zeile 36 bis 41 am Stueck, so wie ein Agent sie ausfuehrt. Zeile 36-37 sagt 'Then git push -u origin HEAD and stop.' Zeile 39 faengt eine neue Sektion an, die noch Arbeit verlangt. Entscheide, ob du dem Agenten zutraust, nach dem Wort 'stop' weiterzulesen. Wenn nein, ist das die eine Zeile, die noch zu aendern ist. || 8. go test ./... -race -- laeuft rund zwei Minuten und muss mit 'ok' pro Paket enden, ohne FAIL. Die Prompts stecken per go:embed in der Binary, der Lauf deckt also ab, dass die geaenderten SKILL.md-Dateien noch eingebettet werden. || 9. jaira roles install --force -- gibt 'choose exactly one of --project, --global or --into' aus. Genau dieses Kommando steht als Rat in core/release/NOTES.md unter ## Unreleased; wer es abtippt, bekommt diesen Fehler. Entscheide, ob die Zeile vor dem Release korrigiert wird."
 merge-conflicts: []
@@ -129,3 +129,21 @@ Bewusst NICHT gekuerzt habe ich die vierfache Wiederholung von 'du machst keinen
 Die dreifache Doku-Kopie (CLAUDE.md, AGENTS.md, README.md) ist ebenfalls keine Doppelung zum Einsammeln: die Definition of Done verlangt sie, weil drei verschiedene Leserschaften dort nachsehen.
 
 go test ./... gruen nach der Aenderung.
+- **2026-09-15 05:25 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen: scripts/spawn.sh:71 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane also nicht folgen.
+
+Das ist derselbe Befund 4, den KSGSKK am 2026-09-14 18:23 notiert und am 20:36 ausdruecklich aus seinem Umfang ausgeschlossen hat (weder DoD noch Arbeitsanweisung). Er gehoert weiterhin in ein eigenes Ticket, nicht in dieses und nicht in KSGSKK.
+
+Was ich hier getan habe: spawn.sh unveraendert mit lane=testing benutzt, also '/jaira-role-lane 13VMA8 testing'. Das ist auf diesem Board vertretbar, weil 'testing' hier eine echte, konfigurierte agentische Lane mit eigenem Prompt und Pflichtfeld test-verdict ist - genau das Feld, das gefuellt werden muss. Kein Handaufruf von claude, kein --permission-mode.
+- **2026-09-15 05:27 · Alexander Sacharov** — testing-Runde 2026-09-15 (nach eabb440): pass.
+
+Gates: go build ./... RC=0, go test ./... -race RC=0, kein FAIL, alle Pakete ok (core/lane 5.1s, core/role 1.0s, internal/cli 27.0s).
+
+Die Forderung: DoD-1 Stueck fuer Stueck am Baum geprueft, nicht am outcome-Text. README.md:842-851 traegt beide Absaetze unter Development; CLAUDE.md:154-170 traegt den zweiten Absatz zwischen jaira:local (154) und jaira:end (170), ueberlebt also die Regeneration; AGENTS.md:166-180 ebenso zwischen 127 und 180. Die drei Fassungen sind wortgleich (nur README schreibt 'whoever wrote the change' statt 'the person who wrote the change').
+
+Funktion: neu gebaute Binary aus diesem Baum, 'jaira roles install --into <tmp>' schreibt 8 Rollen. Die herausgeschriebene jaira-role-pr/SKILL.md traegt :25-26 die einmalige Weiche, :40-46 die Verzweigung nach dem Push und :91-93 das Verbot - der go:embed nimmt die geaenderte Datei also wirklich mit. 'grep -rniE "you may open|contributor.s job|open the pull request yourself"' ueber core/role/builtin/ und ueber die herausgeschriebenen Rollen bleibt leer.
+
+Zwei Dinge aus review-check, die ich bewusst NICHT als Befund schreibe:
+- Check 4 verlangt genau einen 'gh pr create'-Treffer; es sind drei (SKILL.md:72, :91, :92). Der Check ist aelter als die Boundaries-Sektion. Alle drei stehen im richtigen Rahmen ('you write it; you never run it' / 'Never run'). Kein Widerspruch.
+- Check 9: 'jaira roles install --force' gibt 'choose exactly one of --project, --global or --into'. Die NOTES.md-Zeile DIESES Tickets ist bereits korrigiert (sie nennt --project/--global plus --force). Der kaputte Rat steht in der Dispatcher-Zeile desselben Unreleased-Blocks und gehoert einem anderen Ticket - nicht angefasst.
+
+Ausserhalb der Lane: der Kaestchen-Text im Ticketrumpf traegt weiter die alte Regel gegenueber dem Frontmatter-Feld; gehoert NYW4M7 (steht schon in der Notiz von 05:12).
