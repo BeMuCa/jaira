@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:23:25Z
+updated-at: 2026-09-15T05:23:38Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -122,3 +122,10 @@ Ausdruecklich NICHT als Befund geschrieben, damit die naechste Runde es nicht re
 - Die Modus-Zuordnung steht zweimal - erklaerend bei :25-28 direkt unter dem gh-Kommando, ausfuehrend bei :46-48 nach dem Push. Das ist Absicht und keine Doppelung zum Streichen: :25-28 sagt, wozu die vierte Zeile der Checkliste ueberhaupt dasteht; wer sie entfernt, laesst ein unerklaertes Kommando in der Checkliste stehen. Ausserdem ist genau dieser Wortlaut das, was der letzte Befund bestellt hat.
 - :74 '--body-file <the description you wrote>' nennt keine Datei, in die der Agent die Beschreibung schriebe. Der Winkelklammer-Platzhalter ist fuer den Menschen gedacht, der das Kommando ausfuehrt, und der setzt dort ein, was er bekommen hat. Zu duenn fuer einen Befund; hier notiert, falls es beim Signoff jemandem auffaellt.
 - Keine NOTES.md-Zeile: die Unreleased-Zeile dieses Tickets beschreibt die Rolle samt 'gh pr create'-Zeile schon; diese Runde hat nur den Wortlaut eines noch nicht ausgelieferten Prompts praezisiert.
+- **2026-09-15 05:23 · Alexander Sacharov** — optimize-Runde 2026-09-15: nur eine Sache angefasst - die doppelte Modus-Aufzaehlung in jaira-role-pr/SKILL.md. Die Fassung unter dem gh-pr-list-Block ist raus, die nach dem Push bleibt.
+
+Bewusst NICHT gekuerzt habe ich die vierfache Wiederholung von 'du machst keinen PR auf'. Ein Prompt wird ausgefuehrt, nicht gelesen: die Wiederholung steht jeweils an der Stelle, an der gehandelt wird (Push, Beschreibung schreiben, Boundaries). Sie zusammenzuziehen haette genau Befund 1 der letzten review-Runde wiederhergestellt - der Agent verliert die Regel dort, wo sie greift. Das ist der Grund, warum 'Fluff' in einem Prompt anders zaehlt als in Go-Code.
+
+Die dreifache Doku-Kopie (CLAUDE.md, AGENTS.md, README.md) ist ebenfalls keine Doppelung zum Einsammeln: die Definition of Done verlangt sie, weil drei verschiedene Leserschaften dort nachsehen.
+
+go test ./... gruen nach der Aenderung.
