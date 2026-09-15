@@ -13,8 +13,8 @@ related:
   - 01M28FMQGC4CNQT8Z9WY13VMA8
 commits: []
 created-at: 2026-09-15T07:24:12Z
-updated-at: 2026-09-15T07:24:40Z
-assignee: Alexander Sacharov
+updated-at: 2026-09-15T07:24:45Z
+assignee: ""
 updated-by: Alexander Sacharov
 context: "Gefunden von der review-Lane von 13VMA8 am 2026-09-15, als nicht blockierend eingestuft und von Alex bei der Abnahme bewusst durchgelassen, um 0.2.1 nicht aufzuhalten.\n\ncore/role/builtin/jaira-role-pr/SKILL.md:62 gibt dem Menschen an Rung 4 der Forge-Leiter diese Zeile:\n\n  git config jaira.forge gitlab    # or github\n\nWer sie unbesehen kopiert - und in einer Sackgasse kopiert man unbesehen -, setzt gitlab. Auf einer GitHub-Enterprise-Instanz unter eigener Domain ist das die falsche Haelfte.\n\nWarum es mehr ist als ein Schoenheitsfehler: Rung 4 existiert, WEIL die Rolle den Forge nicht erraten darf. Sie haelt sich im Verhalten daran und raet dann im Hilfetext doch - nur eben an der Stelle, an der der Mensch nicht hinsieht. Alex hat den Grundsatz am 2026-09-15 so formuliert: die Zeile vorschlagen, und wenn der Mensch sie nicht ausfuehrt, haben wir keine Information - erfinden ist nicht noetig.\n\nNicht schlimm genug fuer einen Rueckruf: der falsche Wert faellt beim naechsten Lauf laut um, er verdirbt nichts still.\n\nZwei Zeilen statt einer mit Kommentar waeren der naheliegende Weg; welcher es wird, entscheidet die Arbeit."
 ---
