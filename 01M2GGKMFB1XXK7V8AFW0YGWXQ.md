@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -33,11 +33,14 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:05:56Z
+updated-at: 2026-09-15T15:06:10Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
 claimed-at: 2026-09-15T15:02:47Z
+outcome-what: "Der Plan steht: 17 Schritte, Datei im Baum zuerst (1-11), Ref-Namensraum danach (12-16), NOTES.md zuletzt."
+outcome-why: "Die Plan-Lane hat im Code nachgesehen, was der Milestone kostet, und die offenen Punkte des Entwurfs entschieden: Format, Ablageort, Farbvergabe, Indexrichtung."
+outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig als Ablageort verworfen, Ref bleibt im Plan weil DoD 2 ihn verlangt."
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
