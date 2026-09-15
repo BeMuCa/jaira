@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:20:27Z
+updated-at: 2026-09-15T13:23:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -107,3 +107,4 @@ Fuer critique/testing/review: ihr seid selbst die Nachstellung von DoD 1 und 2. 
 
 Das ist ausdruecklich KEIN Ruf nach dem Abschluss-Commit, den die DoD verbietet. Der Traeger existiert schon: 'jaira logbook <id>' verschiebt die Ticket-Datei nach .jaira/logbook/ und nimmt ihren Endstand in den Commit mit, der diese Verschiebung traegt. Die Regel muss ihn nur benennen, sonst liest sie sich als 'der Endstand bleibt liegen'. Die Note vom 13:10 nimmt den Preis bewusst in Kauf und verweist auf refsync.Pull - die Note vom 13:07 zeigt, dass refsync auf diesem Board nicht laeuft. Damit bleibt logbook der einzige Traeger, und er gehoert in den Text.
 - **2026-09-15 13:20 · Alexander Sacharov** — in-progress (zweiter Durchgang): die vier critique-Befunde werden abgearbeitet. Zu Befund 3 weiche ich vom Wortlaut der Korrektur ab: 'see the last point in this list' waere falsch, die Liste endet mit 'jaira logbook'. Ich schreibe stattdessen einen selbstbeschreibenden Verweis auf den Punkt ueber Lanes ohne Code-Aenderung - der bleibt richtig, auch wenn die Liste spaeter umsortiert wird.
+- **2026-09-15 13:23 · Alexander Sacharov** — Alle vier critique-Befunde behoben. Was dabei zusaetzlich auffiel und mit erledigt wurde: die NOTES.md-Zeile unter ## Unreleased sagte ebenfalls nur 'der naechste Code-Commit nimmt sie mit' - sie ist dieselbe Aussage fuer den Leser des Releases und haette die Luecke aus Befund 4 nach aussen getragen; der logbook-Halbsatz steht jetzt auch dort. Nicht angefasst, weil ausserhalb dieser Lane: docs/AGENTS.md:85 spricht noch von 'jaira archive <id>', den Befehl gibt es nicht mehr - er heisst logbook. Das ist ein eigenes Ticket wert.
