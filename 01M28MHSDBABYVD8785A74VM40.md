@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:16:02Z
+updated-at: 2026-09-15T05:18:45Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3200
@@ -152,3 +152,12 @@ ABHAENGIGKEIT, die daran haengt: wird 0.2.1 getaggt, BEVOR 1K9KZS drin ist, dann
 (2) logbookAll's --json entries carry id and file but not handle, while logbookOut (logbook.go:200) carries handle and --all's own text output prints it. Round two fixed the trim_error gap in this same map and round three read the branch and let the rest stand, so this was never raised, not re-raised. It matters for the same reason trim_error did: --all is the cut an agent runs, and the next thing that agent does is name what it filed in a commit message by handle.
 
 Deliberately not raised: the optimize cut (0facda1) is clean - the stampCommits forwarder and the two hand-built codedError literals are gone and archive.go:73 and logbookOut both go through s.StampCommits and fail(). The 'Status == lane && !ReadOnly' predicate in three places stays let-stand, as rounds two and three left it. lane.Load not layering builtins under an existing board is ticket 1K9KZS and stays there - Alex decided that split.
+- **2026-09-15 05:18 · Alexander Sacharov** — in-progress nach critique Runde 4: beide Befunde umgesetzt, nichts darueber hinaus.
+
+(1) NOTES.md:46 sagt jetzt 'ten or more' statt 'more than ten' und stimmt damit mit NOTES.md:18 unter ## Unreleased, mit der DoD ('zehn oder mehr') und mit model.go:768 ('if n < fileReminder { return 0 }') ueberein. Wieder eine Korrektur innerhalb der geschlossenen Sektion ## 0.1.4 - genau die Klasse Edit, die Alex am 2026-09-14 20:31 bereits gebilligt hat; keine zweite Zeile unter ## Unreleased.
+
+(2) logbookAll traegt handle neben id und file in die --json-Eintraege (logbook.go:126), wie logbookOut es seit jeher tut.
+
+Gelernt beim Pinnen: der Handle IST der Schwanz der ID. Ein erster Test, der nur strings.Contains(out, ticket.Handle(id)) prueft, ist gruen ohne die Aenderung - er findet den Handle im id-Feld. Die Behauptung muss auf dem Schluessel stehen: strings.Contains(out, `"handle": "`+handle+`"`). Gegenprobe gefahren: mit entferntem handle-Schluessel faellt TestTheCutJSONNamesEachHandle, mit ihm laeuft sie. Genau der Fehler, den Runde eins schon einmal durchgelassen hat (der Schwellen-Test prueft nur den Zaehler, nie die gerenderte Zeile) - ein Test, der die Aussage nicht wirklich festnagelt.
+
+Nicht angefasst: 1K9KZS (lane.Load legt die Builtins nicht unter ein bestehendes Board) bleibt eigenes Ticket, so entschieden.
