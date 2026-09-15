@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:33:32Z
+updated-at: 2026-09-15T05:33:49Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41109
@@ -174,3 +174,8 @@ Gates: go build, go vet und go test ./... laufen sauber durch; 'bash -n' auf spa
 - **2026-09-15 05:33 · Alexander Sacharov** — Beleg fuer DoD 6, erzeugt von dieser Sitzung selbst und nicht aus einem frueheren Lauf uebernommen: ich bin der Worker, den spawn.sh gestartet hat. HERDR_PANE_ID=w3:p3N, HERDR_TAB_ID=w3:t2H, und 'herdr tab get w3:t2H' gibt label 'KSGSKK/in-progress' mit pane_count 1 zurueck. Das Label ist woertlich das Format aus spawn.sh:46 ("\$ticket/\$lane"), und pane_count 1 zeigt einen eigenen Tab, keinen Split. Damit ist der Beleg nicht mehr nur die Erzaehlung eines Dispatchers, sondern am laufenden Objekt ablesbar.
 
 Eine Beobachtung dazu, die der Kommentar in spawn.sh:49-55 zwar begruendet, die aber noch nirgends gemessen war: 'herdr pane get w3:p3N' meldet als cwd 'C:\Users\Alex' - obwohl mein pwd der Worktree ist. Herdr loest '--cwd' also tatsaechlich gegen Windows auf und verwirft den WSL-Pfad, genau wie der Kommentar sagt. Das '--cwd' in spawn.sh:46 ist auf diesem Rechner damit rein kosmetisch: es faerbt nur das, was Herdr anzeigt, und das Verzeichnis kommt ausschliesslich von 'wsl.exe --cd' in Zeile 57. Wer spawn.sh spaeter aufraeumt und '--cwd' als redundant streichen will: es schadet nicht, aber man darf sich nicht darauf verlassen - und wer umgekehrt den wsl.exe-Zweig fuer ueberfluessig haelt, weil ja '--cwd' gesetzt ist, baut den Fehler vom 2026-09-14 wieder ein.
+- **2026-09-15 05:33 · Alexander Sacharov** — Ausserhalb dieser Lane, bewusst NICHT angefasst - beides gehoert in eigene Tickets und ist hier nur festgehalten, damit es nicht wieder verloren geht:
+
+1. spawn.sh:64-74 prueft vor 'send-text' nicht auf den Herdr-Zustand 'blocked'. Die Schleife bricht ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet, und schickt dann send-text plus enter. Steht claude in dem Moment vor einem Genehmigungsdialog, beantwortet das Skript ihn an Stelle des Menschen - und dispatcher/SKILL.md:186-187 verbietet dem Dispatcher genau das ('never answer for the human'). Der wsl.exe-Fix macht den Vertrauens-Dialog beim Start unwahrscheinlich, er raeumt die Klasse aber nicht aus. Befund stammt aus der Notiz vom 2026-09-14 20:35, ist kein DoD-Punkt dieses Tickets und stand auch nicht in der Arbeitsanweisung.
+
+2. spawn.sh:72 schickt fest '/jaira-role-lane $ticket $lane' und kann '/jaira-role-tester' nicht starten, obwohl dispatcher/SKILL.md:48 sagt 'Testing is not a lane: /jaira-role-tester <id>'. Befund 4 vom 2026-09-14 18:23, am 20:36 ausdruecklich aus dem Umfang genommen. Anmerkung fuer das Folgeticket: auf DIESEM Board ist 'testing' eine echte agentische Lane mit Pflichtfeld test-verdict, hier ist das Skript also richtig - der Widerspruch trifft Boards, deren Lanes-Datei kein testing kennt.
