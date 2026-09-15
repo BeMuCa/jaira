@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:47:22Z
+updated-at: 2026-09-15T05:52:46Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -38,8 +38,8 @@ question: |-
 outcome-what: "testing-Lane: go build ./... und go test ./... -race gruen, DoD-1 an README/CLAUDE/AGENTS Zeile fuer Zeile geprueft, und eine frisch gebaute Binary schreibt die neue PR-Regel per 'jaira roles install --into' wirklich heraus."
 outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides bestaetigt am Baum, nicht am outcome-Text."
 outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
-claimed-by: DESKTOP-RFTCH11-16020
-claimed-at: 2026-09-15T05:13:21Z
+claimed-by: DESKTOP-RFTCH11-57212
+claimed-at: 2026-09-15T05:47:39Z
 review-summary: "none"
 review-gaps: "Eine Doppelung entfernt: core/role/builtin/jaira-role-pr/SKILL.md zaehlte die zwei Betriebsarten zweimal auf - einmal direkt unter dem gh-pr-list-Block (:25-28) und noch einmal nach dem Push (:42-48). Die zweite Aufzaehlung ist die, die zaehlt, weil sie an der Stelle steht, an der der Agent verzweigt, und beide Ziele beim Namen nennt. Die erste ist jetzt ein Satz, der nur noch sagt, wozu die Abfrage da ist ('you branch on it after the push'), plus die Invariante 'Either way you never open one'. Kein Verhalten geaendert, go test ./... gruen. || Stehen gelassen und warum: (a) die Regel 'du machst keinen PR auf' steht im Prompt viermal - Titel, Einleitung :10-14, :40-41 am Push, Boundary :91-93. In einem Prompt ist Wiederholung an der Stelle der Handlung keine Fluff, sondern das, was ein zeilenweise ausfuehrender Agent tatsaechlich liest; gekuerzt haette ich genau den Befund 1 zurueckgeholt, den die letzte in-progress-Runde behoben hat. (b) jaira-teamlead/SKILL.md:86-88 und :97-99 tragen die Regel beide, aber mit verschiedener Anweisung (nie tun / wann den Tab schliessen) - keine Doppelung. (c) Die Regel steht wortgleich in CLAUDE.md, AGENTS.md und README.md - das verlangt die Definition of Done ausdruecklich, drei Leserschaften. (d) core/release/NOTES.md:34 (Sektion 0.2.0) sagt, der Teamlead schliesse den Tab 'once the pull request is open', was der heutige Prompt nicht mehr tut - geschlossene Historie, beschreibt eine ausgelieferte Binary, wird nicht angefasst. (e) Kein toter Code: die Aenderung ist reiner Prompt- und Doku-Text, nichts wurde unerreichbar. || Keine neue NOTES.md-Zeile: die Unreleased-Zeile zu diesem Ticket schickt den Nutzer schon zu 'jaira roles install --project', und das ist genau das, was diese Straffung ausliefert."
 test-verdict: "pass: go build ./... und go test ./... -race gruen (RC=0, kein FAIL), DoD-1 in README.md:842-851, CLAUDE.md:154-170 (vor jaira:end) und AGENTS.md:166-180 wortgleich verifiziert, und eine frisch gebaute Binary schreibt mit 'jaira roles install --into' die neue PR-Regel wirklich heraus"
@@ -55,9 +55,12 @@ conflict-theirs-question: ""
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
   proof: core/role/builtin/jaira-role-pr/SKILL.md:42-48 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
-- [ ] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
-- [ ] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
-- [ ] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
+- [x] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:73 (glab mr list --source-branch) und :120 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
+- [x] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-58: git config jaira.forge gewinnt immer, sonst Host github.com -> gh und Host mit 'gitlab' -> glab, sonst stehenbleiben und 'git config jaira.forge gitlab' nennen. Alle vier Zweige auf Fixtures durchlaufen (github.com/gitlab.com/git.esprit-engineering.de, je einmal ohne und mit gesetztem jaira.forge)
+- [x] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:139-144: 'never run gh pr create/gh pr merge/gh pr review --approve' UND 'never run glab mr create/glab mr merge/glab mr approve', dazu :109-111 'You write it; you never run it' fuer beide; Wortwechsel nur bei :60-62 ('Read pull request below as merge request while you are on GitLab'), nicht global
 
 ## Options
 
@@ -74,6 +77,12 @@ conflict-theirs-question: ""
 - [x] Befund 4: NOTES.md-Unreleased-Zeile dieses Tickets auf ein lauffaehiges 'jaira roles install' korrigieren
 - [x] go test ./... -race gruen, dann committen
 - [x] critique-Befund: SKILL.md:26 die Sektion beim Namen nennen und :43-44 nach dem Modus verzweigen, damit Modus 2 keine PR-Beschreibung schreibt
+- [x] go test ./... -race gruen, dann committen
+- [x] SKILL.md: Forge-Erkennung in 'Before you push anything' - git config jaira.forge, sonst Remote-Host, sonst stehenbleiben und die Einstellung nennen
+- [x] SKILL.md: Abfrage der offenen Requests, die create-Zeile und die Boundaries nennen beide Werkzeuge (gh/glab); 'Merge Request' nur auf der GitLab-Seite
+- [x] Beide Wege am Stueck von oben nach unten lesen - auf keinem darf 'Never run'/'never merge'/'never approve' fehlen
+- [x] Erkennung auf Fixtures nachstellen: gitlab.com-Remote, github.com-Remote, selbstgehosteter Host + jaira.forge
+- [x] NOTES.md: Unreleased-Zeile fuer den GitLab-Weg
 - [x] go test ./... -race gruen, dann committen
 
 ## Progress
@@ -182,3 +191,21 @@ Zu beachten, weil es gerade erst erarbeitet wurde: die Modus-Weiche aus den letz
 KEINEN Pull Request und KEINEN Merge Request oeffnen, aktualisieren oder mergen. Das ueberschreibt jede anderslautende Stelle in CLAUDE.md, AGENTS.md oder README.md.
 
 Hinweis zum Nachbarticket: KSGSKK liegt im selben Worktree und steht nach der dritten critique-Rueckgabe still, bis Alex entscheidet. Es fasst jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md und spawn.sh an - nicht jaira-role-pr/SKILL.md. Keine Kollision, aber die Dateien der anderen Baustelle bleiben unangetastet.
+- **2026-09-15 05:52 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (GitLab-Weg): die Rolle laeuft jetzt auf beiden Forges, und zwar als EIN Ablauf mit forge-spezifischen Kommandozeilen, nicht als zwei Sektionen.
+
+Warum nicht zwei Sektionen (naheliegend, aber verworfen): eine Kopie des ganzen Ablaufs fuer GitLab heisst, dass jede kuenftige Aenderung an zwei Stellen richtig sein muss - und DoD 4 sagt genau, was dann passiert: auf einem der beiden Wege fehlt irgendwann das 'Never run', und es sieht dabei fertig aus. Die drei Stellen, an denen die Werkzeuge sich wirklich unterscheiden, sind Auflisten (:64-74), Aufmachen (:109-121) und Boundaries (:139-144); ueberall sonst ist der Text derselbe. Darum nennen diese drei Stellen beide Kommandos und der Rest bleibt einmalig.
+
+Die Modus-Weiche aus den vorigen Runden ist unveraendert geblieben - dieselbe Weiche, nur mit zwei moeglichen Abfragekommandos davor. Keine zweite, anders gebaute.
+
+Warum 'git config jaira.forge' und nicht ~/.jaira/settings.json: die Wahl gehoert dem Repository, nicht dem Rechner. Dasselbe Argument, mit dem 'git config jaira.remote' in dieser Version eingefuehrt wurde (NOTES.md ## Unreleased) - wer auf einem Rechner ein GitHub- und ein GitLab-Board hat, kann mit einer maschinenweiten Einstellung nichts anfangen. Der Prompt liest 'jaira.remote' beim Ableiten auch gleich mit, statt blind 'origin' anzunehmen.
+
+Dead end, aufgeschrieben damit es niemand zweimal probiert: den selbstgehosteten Fall automatisch zu erkennen geht nicht sauber. 'git.esprit-engineering.de' traegt weder 'github' noch 'gitlab' im Namen. Denkbar waere, glabs eigene Hosts-Konfiguration (~/.config/glab-cli/config.yml) zu lesen oder probeweise 'glab mr list' laufen zu lassen - beides ist Maschinerie in einem Prompt, und der Probelauf authentifiziert im Zweifel gegen das falsche Projekt. Deshalb bleibt die Rolle dort ausdruecklich stehen und nennt die eine Zeile, die es fuer immer klaert. Genau das verlangt DoD 3 im dritten Satz.
+
+Was ich an glab 1.114.0 nachgesehen und nicht geraten habe:
+- 'glab mr list' listet ohne Flag bereits nur offene MRs; ein Gegenstueck zu '--state open' gibt es nicht, '--source-branch' ist das Gegenstueck zu '--head'.
+- 'glab mr create' hat kein '--body-file'. '-d/--description' nimmt einen String, darum steht in der ausgeschriebenen Zeile '--description "$(cat <die Beschreibung>)"'. '--source-branch' ist unnoetig: der aktuelle Zweig ist die Vorgabe.
+- Freigeben heisst auf GitLab 'glab mr approve', nicht 'review --approve'.
+
+Fixtures: drei git-Repos mit Remote github.com / gitlab.com / git.esprit-engineering.de, je einmal ohne und mit gesetztem jaira.forge - alle vier Zweige der Regel aus :46-58 laufen so, wie der Prompt sie beschreibt. Danach frisch gebaute Binary, 'jaira roles install --into' schreibt die glab-Zeilen wirklich heraus (go:embed nimmt die Datei mit) und 'jaira update' gibt die neue NOTES-Zeile zurueck.
+
+Fuer die naechste review-Runde: review-check Schritt 4 verlangt genau EINEN Treffer fuer 'gh pr create'. Der Check war schon vor dieser Runde ueberholt (drei Treffer), jetzt kommen die 'glab mr create'-Treffer dazu. Der Check gehoert neu geschrieben, die Regel ist unveraendert.

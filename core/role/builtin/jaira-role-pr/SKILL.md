@@ -1,6 +1,6 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, hand back a ready-made pull request description, and answer review comments on a pull request a person opened — never open one, never merge, never approve. Invoked as /jaira-role-pr <ticket-id>, normally by a dispatcher. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, hand back a ready-made pull request description, and answer review comments on a pull request a person opened — never open one, never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>, normally by a dispatcher. Use when a branch is ready to leave for review."
 ---
 
 # Push it, hand it over, never open or accept it
@@ -19,11 +19,7 @@ your own work, and not anyone's.
 git worktree list          # not your own worktree? say so and stop
 git status --short         # nothing uncommitted
 git log --oneline origin/HEAD..HEAD
-gh pr list --head "$(git branch --show-current)" --state open
 ```
-
-That last line decides which of your two jobs this is; you branch on it after
-the push. Either way you never open one.
 
 Three things must already be true. If one is not, that is a finding for the
 ticket, not something you fix here:
@@ -37,13 +33,58 @@ ticket, not something you fix here:
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
 
+## Which forge this repository is on
+
+Everything below runs through one of two command-line tools, and they are not
+interchangeable. Settle which one this repository uses before you type either:
+
+```bash
+git config jaira.forge                                            # github or gitlab, if it is set
+git remote get-url "$(git config jaira.remote || echo origin)"    # otherwise read the host
+```
+
+1. **`jaira.forge` says so** — that is the answer, whatever the remote looks
+   like. It exists for the remotes a host name cannot settle, and it wins.
+2. **Unset, host `github.com`** — GitHub. Your tool is `gh`.
+3. **Unset, host contains `gitlab`** — GitLab. Your tool is `glab`.
+4. **Unset and the host says neither** — a forge on a domain of its own, say
+   `git.esprit-engineering.de`. Do not guess: a guessed tool fails against the
+   wrong forge, and a guessed tool that authenticates against the wrong project
+   is worse. Say you cannot tell, and name the one command that settles it for
+   this board for good:
+
+   ```bash
+   git config jaira.forge gitlab    # or github
+   ```
+
+GitLab calls it a **merge request**. Read "pull request" below as "merge
+request" while you are on GitLab; the rule over it does not change with the
+word.
+
+Now ask the forge whether this branch already has one open — on GitHub:
+
+```bash
+gh pr list --head "$(git branch --show-current)" --state open
+```
+
+or on GitLab:
+
+```bash
+glab mr list --source-branch "$(git branch --show-current)"
+```
+
+That decides which of your two jobs this is; you branch on it after the push.
+Either way you never open one.
+
+## Push, then take the branch the listing put you on
+
 Then `git push -u origin HEAD`. That is where your push ends and the person's
 decision begins: you do not open the pull request. Carry on below, along the
-branch the `gh pr list` above put you on:
+branch the listing above put you on:
 
 - **Nothing listed** — write the description out for them, then report.
-- **A pull request listed** — it already has a description. Skip the next
-  section and go straight to **Answering review comments**, then report.
+- **One listed** — it already has a description. Skip the next section and go
+  straight to **Answering review comments**, then report.
 
 ## Hand back the description, do not open it yourself
 
@@ -65,11 +106,18 @@ jaira show <id> --json
 
 Do not paste the diff into the description. They have the diff.
 
-End with the command they run to open it, written out and ready to paste. You
-write it; you never run it:
+End with the command they run to open it, written out and ready to paste —
+the one for the forge you settled on above, not both. You write it; you never
+run it. On GitHub:
 
 ```bash
 gh pr create --title "<title>" --body-file <the description you wrote>
+```
+
+On GitLab:
+
+```bash
+glab mr create --title "<title>" --description "$(cat <the description you wrote>)"
 ```
 
 ## Answering review comments
@@ -88,9 +136,12 @@ the thread is yours to answer.
 
 ## Boundaries
 
-- **Never run `gh pr create`.** Never `gh pr merge`. Never
-  `gh pr review --approve`. Writing the `gh pr create` line out for the person
-  is the job; running it is theirs.
+- On GitHub: **never run `gh pr create`.** Never `gh pr merge`. Never
+  `gh pr review --approve`.
+- On GitLab: **never run `glab mr create`.** Never `glab mr merge`. Never
+  `glab mr approve`.
+- Writing that create line out for the person is the job; running it is theirs,
+  on either forge.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.
