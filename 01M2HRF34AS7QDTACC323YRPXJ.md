@@ -14,7 +14,9 @@ related:
   - 01M2G9X5HVH29SDS8FAZKSGSKK
 commits: []
 created-at: 2026-09-15T05:26:04Z
-updated-at: 2026-09-15T05:26:04Z
+updated-at: 2026-09-15T05:26:17Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # spawn.sh kann nur eine Rolle starten, obwohl der Prompt zwei verlangt
