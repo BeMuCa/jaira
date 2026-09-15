@@ -1,7 +1,7 @@
 ---
 id: 01M2HWWZ90JKR3749KXS9ZZSFT
 title: Zwei von drei Commits aendern nur eine Ticket-Datei
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Zweig zeigt die Arbeit, nicht die Buchhaltung: wer den Verlauf liest, sieht Aenderungen am Werkzeug und nicht jede Lane, die einen Vermerk hinterlassen hat."
@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:19:11Z
+updated-at: 2026-09-15T13:19:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
