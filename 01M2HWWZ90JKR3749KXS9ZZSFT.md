@@ -1,7 +1,7 @@
 ---
 id: 01M2HWWZ90JKR3749KXS9ZZSFT
 title: Zwei von drei Commits aendern nur eine Ticket-Datei
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Zweig zeigt die Arbeit, nicht die Buchhaltung: wer den Verlauf liest, sieht Aenderungen am Werkzeug und nicht jede Lane, die einen Vermerk hinterlassen hat."
@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:39:32Z
+updated-at: 2026-09-15T13:39:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -29,9 +29,9 @@ context: |-
   Was dabei nicht kaputtgehen darf: jaira leitet die Commit-Liste eines Tickets aus der Vereinigung zweier Quellen ab - der Historie der Ticket-Datei UND der Commits, die seine Id nennen. Faellt die erste Quelle weg, haengt alles daran, dass Commits die Id im Betreff tragen. Heute tun sie das ohnehin ('fix(KSGSKK): ...'), aber aus einer Gewohnheit wird damit eine Bedingung.
 claimed-by: DESKTOP-RFTCH11-91666
 claimed-at: 2026-09-15T13:34:55Z
-outcome-what: "Die Formulierung 'the `jaira logbook <id>` commit' ist in allen sieben Kopien durch 'the commit that files the ticket away with `jaira logbook <id>`' ersetzt: core/board/announce.go:100 (und darueber erzeugt AGENTS.md:71 und CLAUDE.md:98), docs/AGENTS.md:76, .claude/skills/jaira/SKILL.md:281, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:848, core/release/NOTES.md:17 sowie die handgeschriebenen PR-Abschnitte AGENTS.md:186 und CLAUDE.md:176, die 'jaira update' nicht anfasst. Die Absaetze in docs/AGENTS.md und .claude/skills/jaira/SKILL.md, in die der logbook-Halbsatz im vorigen Durchgang eingefuegt wurde, laufen wieder durchgehend auf 80 Zeichen."
-outcome-why: "Befund (2) des zweiten critique-Durchgangs: der alte Wortlaut macht jaira zum Urheber des Commits. Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei, und .claude/skills/jaira/SKILL.md:289 sagt sechs Zeilen tiefer 'jaira never commits for you' - der Widerspruch stand auf einem Bildschirm. Befund (1): der eingefuegte Halbsatz war nicht neu umbrochen, docs/AGENTS.md:77 lief auf 123 und .claude/skills/jaira/SKILL.md:282 auf 120 Zeichen mitten in einem 80er-Absatz; der naechste Diff dieses Absatzes haette jede Zeile neu gefaerbt."
-outcome-resolves: "Beide Befunde des zweiten critique-Durchgangs sind erledigt; kein 'logbook ... commit' in diesem Wortlaut bleibt im Baum (grep leer). DoD 3 und 4 bleiben getickt und werden praeziser: die Regel lautet in allen Quellen gleich und behauptet nichts Falsches ueber das Werkzeug. DoD 1 und 2 bleiben der testing-Lane vorbehalten. go build ./... und go test ./... gruen; der Zweig traegt drei Commits, jeder mit Code und Handle im Betreff, keiner nur mit .jaira/."
+outcome-what: "Der erzeugte Block sagt die Ableitung der Commit-Liste nicht mehr dreimal: der Halbsatz 'and the commit list is derived from the id in the message, not from the ticket file' ist aus core/board/announce.go:98 und den erzeugten Kopien AGENTS.md:99 und CLAUDE.md:99 gestrichen, weil der Punkt 'every commit names the ticket id' (AGENTS.md:53) dasselbe vollstaendig sagt und der 'jaira move'-Punkt (AGENTS.md:48) ein drittes Mal. Ausserdem auf 80 Zeichen umbrochen, was der vorige Durchgang auf 81-83 stehen liess: docs/AGENTS.md:66-82, README.md:842-849, .claude/skills/jaira/SKILL.md:277-285 und core/role/builtin/jaira-role-lane/SKILL.md:25-36."
+outcome-why: "Optimize-Pass 3, Fluff: der Block wird in das AGENTS.md jedes Boards kopiert und von jedem Agenten bei jedem Start gelesen - drei Formulierungen derselben Regel innerhalb von 25 Zeilen kosten dort dauerhaft Platz und lassen den Leser nach dem Unterschied suchen, den es nicht gibt. In docs/AGENTS.md und .claude/skills/jaira/SKILL.md steht die Begruendung genau einmal und bleibt deshalb stehen."
+outcome-resolves: "Keine Duplikation und kein toter Code in dieser Aenderung ausser der beschriebenen; die sieben handgepflegten Kopien der Regel sind vorbestehende Architektur und in review-gaps benannt, nicht angefasst. Verhalten unveraendert - reine Textarbeit. gofmt sauber, go build ./... und go test ./... gruen. Zusaetzlich mit einem Wegwerf-Test verifiziert, dass AGENTS.md und CLAUDE.md den Text aus announce.go weiterhin woertlich tragen."
 review-summary: none
 review-gaps: "Entfernt: die dritte Wiederholung derselben Aussage im erzeugten Block. 'Nothing is lost by waiting' begruendete sich mit 'the commit list is derived from the id in the message, not from the ticket file' - was der Punkt 'every commit names the ticket id' zwei Punkte hoeher bereits vollstaendig erklaert und der 'jaira move'-Punkt (AGENTS.md:48) ein drittes Mal sagt. Der Halbsatz ist gestrichen, in core/board/announce.go und in den beiden erzeugten Kopien AGENTS.md/CLAUDE.md; spart zwei Zeilen in einem Block, der in jedes AGENTS.md dieser Welt kopiert wird. In docs/AGENTS.md und .claude/skills/jaira/SKILL.md steht dieselbe Begruendung nur EINMAL - dort ist sie nicht redundant und bleibt. Nachgezogen: die neuen Absaetze liefen auf 81-83 Zeichen; docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md und core/role/builtin/jaira-role-lane/SKILL.md sind auf 80 umbrochen, ohne Code-Spans zu zerreissen. Stehen gelassen und bewusst nicht angefasst: (1) die Regel lebt in sieben handgepflegten Kopien - announce.go erzeugt AGENTS.md und CLAUDE.md, docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md und die beiden Rollen-Prompts pflegt jemand von Hand; das ist die Architektur des Repositorys und aelter als dieses Ticket. (2) Die NOTES.md-Zeile ist rund 900 Zeichen lang und packt drei Anweisungen in einen Satz - das Format verbietet den Umbruch und liest eine zweite Zeile als zweite Aenderung, also bleibt sie. (3) Vorbestehende Zeilen ueber 80 Zeichen: README.md 39, .claude/skills/jaira/SKILL.md 34, docs/AGENTS.md 19 - nicht von dieser Aenderung verursacht."
 ---
