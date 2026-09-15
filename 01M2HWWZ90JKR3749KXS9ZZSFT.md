@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:14:36Z
+updated-at: 2026-09-15T13:14:39Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -85,3 +85,6 @@ Deshalb committet dieser pre-process-Schritt seine Ticket-Datei doch: sie war un
 Schritt 3 geprueft, und er entschaerft den Einwand aus der vorigen Notiz: das Gate laesst den Zug in die Endlane zu, auch wenn die Ticket-Datei nie committet wurde. core/gate/gate.go:322 verlangt nur, dass CommitsForTicket etwas findet, und core/gitrepo/derive.go:19 bildet die Vereinigung aus Datei-Historie UND Commits, die den Handle im Betreff nennen. Die zweite Quelle allein genuegt. Die Refusal-Meldung sagt das sogar selbst ('or name <handle> in the commit message'). Damit wird das Nennen der Id im Betreff von einer Gewohnheit zur Bedingung - und genau deshalb steht es jetzt als eigener Punkt im erzeugten Block, nicht als Nebensatz.
 
 Der Preis, den ich bewusst nehme: Notizen, die nach dem letzten Code-Commit entstehen (critique/testing/review am Ende einer Schleife, die nichts mehr zurueckschickt), stehen nicht auf dem Zweig. Auf einem Board mit konfiguriertem Remote holt refsync.Pull sie zurueck; auf diesem Board - ohne Remote, siehe vorige Notiz - bleiben sie im Arbeitsbaum, bis ein spaeterer Commit sie mitnimmt. Das ist begrenzt: die Ticket-Datei ist ab dem ersten Code-Commit getrackt, veraltet sind also die letzten Notizen, nicht das Ticket. Wer das spaeter anders entscheidet, muss zuerst die DoD dieses Tickets aendern - sie schliesst den Abschluss-Commit aus, nicht ich.
+- **2026-09-15 13:14 · Alexander Sacharov** — Der pre-process-Commit 4e89f86 ('docs(9ZZSFT): plan the removal of bookkeeping-only commits') fasst nur .jaira/ an und ist damit genau das, was die neue Regel verbietet - pre-process aendert keinen Code. Er war nicht gepusht und hatte kein Upstream, also habe ich ihn per 'git reset --soft HEAD~1' in diesen Commit gefaltet, statt ihn stehen zu lassen und die DoD-Demonstration (Plan-Schritt 10) daran scheitern zu lassen. Das ist zugleich die Probe aufs Exempel: die Ticket-Datei erscheint jetzt zum ersten Mal in dem Commit, der auch Code traegt.
+
+Warum das kein Zustandsverlust war: 'git reset --soft' laesst den Arbeitsbaum unberuehrt, und der Ticket-Zustand liegt in der Datei, nicht im Commit. Wer das nachmacht, muss vorher 'git ls-remote --heads origin <branch>' pruefen - auf einem gepushten Zweig ist das Falten verboten und der Buchhaltungs-Commit bleibt stehen.
