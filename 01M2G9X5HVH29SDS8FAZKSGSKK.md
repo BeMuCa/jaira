@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:33:35Z
+updated-at: 2026-09-15T06:41:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79721
@@ -385,3 +385,4 @@ NOTES.md:19 nicht als zweite Zeile, sondern der vorhandene Halbsatz umgeschriebe
 
 Mitgezogen: der Beweis zu DoD 6 nannte spawn.sh:46 fuer das Label-Format, das ist seit 77c5a0f Zeile 58. Das war die Kleinigkeit aus der testing-Notiz von 06:21.
 - **2026-09-15 06:32 · Alexander Sacharov** — Dispatcher, vor der testing-Runde 2: der Befund aus Runde 1 (COMPOSE_PROJECT_NAME) ist behoben in 8cd8ba9. Er gilt erst als geprueft, wenn er wie in Runde 1 nachgestellt wurde - spawn.sh gegen ein gefaelschtes herdr in einem Wegwerf-Repo MIT .env laufen lassen und den erzeugten Namen an 'docker compose config --quiet' verfuettern. Dieses Repository hat keine .env, der .env-Block wird hier also normal uebersprungen; nur die gefaelschte Umgebung erreicht ihn. Die uebrigen Laeufe aus Runde 1 (--workspace gesetzt/fehlend, wsl.exe --cd bei herdr.exe, JAIRA_BRANCH_PREFIX, Abbruch bei blocked ohne send-keys, HERDR_ENV-Wache) bitte ebenso wiederholen. Kritik-Runde faellt auf Anweisung des Menschen aus; Route: in-progress -> testing -> review.
+- **2026-09-15 06:41 · Alexander Sacharov** — testing: Tore gruen und DoD 1-7 im Baum nachgeprueft. go build ./... RC=0, go vet ./... RC=0, go test -race -count=1 ./... RC=0 ueber 27 Pakete. DoD 6 an dieser Sitzung selbst beobachtet: Herdr-Tab w3:t36, Label 'KSGSKK/testing', Workspace w3 - genau das Format aus spawn.sh:58, gestartet ohne 'claude --permission-mode'. Funktion einzeln geprueft: COMPOSE_PROJECT_NAME-Ableitung (spawn.sh:39-40) liefert 'my_repo_ksgskk' und 'weird_repo_name_ab-9x', 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0; HERDR_ENV-Wache und Argument-Wache brechen mit RC=1 ab; die case-Verzweigung spawn.sh:68-71 waehlt 'wsl.exe --cd' fuer /mnt/* und *.exe und sonst 'cd && claude'. Randfall ausserhalb dieser DoD, deshalb nicht angefasst: faengt der Repository-Name mit einem Zeichen ausser a-z0-9 an (ein Verzeichnis wie '.foo'), beginnt der abgeleitete Name mit '_' und docker lehnt ihn ab - 'invalid project name "_dotrepo_ksgskk": ... as well as start with a letter or number', RC=1. Ein eigenes Ticket wert, wenn es je vorkommt.
