@@ -20,7 +20,7 @@ blocked-by: []
 commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:00:15Z
+updated-at: 2026-09-15T06:00:25Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -87,7 +87,7 @@ conflict-theirs-question: ""
 - [x] go test ./... -race gruen, dann committen
 - [x] critique-Befund 1+2: SKILL.md:43 die Forge vom Push-Remote ablesen (git remote get-url origin), die jaira.remote-Zeile streichen
 - [x] critique-Befund 3: den Block 'ist schon einer offen' aus der Forge-Sektion in die Push-Sektion verschieben
-- [~] go test ./... -race gruen, dann committen
+- [x] go test ./... -race gruen, dann committen
 
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
