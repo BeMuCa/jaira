@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T15:00:59Z
+updated-at: 2026-09-15T15:01:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -27,8 +27,8 @@ context: |-
   Der Punkt, der die Sache entscheidet: diese Commits sind nicht das, was den Zustand bewahrt. Record() (core/refsync/refsync.go:108) stellt JEDE Schreibung - note, move, dod - in die Outbox und schickt sie auf den Ref, unabhaengig von git. Die Commits dienen der Lesbarkeit des Pull Requests, nicht der Haltbarkeit. Wer sie weglaesst, verliert nichts Dauerhaftes.
 
   Was dabei nicht kaputtgehen darf: jaira leitet die Commit-Liste eines Tickets aus der Vereinigung zweier Quellen ab - der Historie der Ticket-Datei UND der Commits, die seine Id nennen. Faellt die erste Quelle weg, haengt alles daran, dass Commits die Id im Betreff tragen. Heute tun sie das ohnehin ('fix(KSGSKK): ...'), aber aus einer Gewohnheit wird damit eine Bedingung.
-claimed-by: DESKTOP-RFTCH11-91666
-claimed-at: 2026-09-15T13:34:55Z
+claimed-by: DESKTOP-RFTCH11-76452
+claimed-at: 2026-09-15T15:01:14Z
 outcome-what: "Der erzeugte Block sagt die Ableitung der Commit-Liste nicht mehr dreimal: der Halbsatz 'and the commit list is derived from the id in the message, not from the ticket file' ist aus core/board/announce.go:98 und den erzeugten Kopien AGENTS.md:99 und CLAUDE.md:99 gestrichen, weil der Punkt 'every commit names the ticket id' (AGENTS.md:53) dasselbe vollstaendig sagt und der 'jaira move'-Punkt (AGENTS.md:48) ein drittes Mal. Ausserdem auf 80 Zeichen umbrochen, was der vorige Durchgang auf 81-83 stehen liess: docs/AGENTS.md:66-82, README.md:842-849, .claude/skills/jaira/SKILL.md:277-285 und core/role/builtin/jaira-role-lane/SKILL.md:25-36."
 outcome-why: "Optimize-Pass 3, Fluff: der Block wird in das AGENTS.md jedes Boards kopiert und von jedem Agenten bei jedem Start gelesen - drei Formulierungen derselben Regel innerhalb von 25 Zeilen kosten dort dauerhaft Platz und lassen den Leser nach dem Unterschied suchen, den es nicht gibt. In docs/AGENTS.md und .claude/skills/jaira/SKILL.md steht die Begruendung genau einmal und bleibt deshalb stehen."
 outcome-resolves: "Keine Duplikation und kein toter Code in dieser Aenderung ausser der beschriebenen; die sieben handgepflegten Kopien der Regel sind vorbestehende Architektur und in review-gaps benannt, nicht angefasst. Verhalten unveraendert - reine Textarbeit. gofmt sauber, go build ./... und go test ./... gruen. Zusaetzlich mit einem Wegwerf-Test verifiziert, dass AGENTS.md und CLAUDE.md den Text aus announce.go weiterhin woertlich tragen."
