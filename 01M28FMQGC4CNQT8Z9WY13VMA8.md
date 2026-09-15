@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:50:51Z
+updated-at: 2026-09-15T06:51:38Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -43,8 +43,8 @@ question: |-
   Nicht getan, wie angewiesen: kein Pull Request und kein Merge Request aufgemacht, aktualisiert oder gemerged. Der Zweig feat/13VMA8-pr-is-the-humans ist gepusht; das Kommando gibst du.
 
   Hinweis: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide dann neu.
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md:65-69: Sprosse 4 der Forge-Leiter haelt den Agenten jetzt an, statt ihn ohne Anweisung stehen zu lassen. Der neue Absatz sagt (a) wo er anhaelt - 'here, before the push' -, (b) was er nicht tut - kein Push, keine Abfrage offener Requests -, (c) warum - 'everything below needs the tool you were just unable to name' -, und (d) was er dem Menschen sagt: 'git config jaira.forge', mit dem Hinweis, dass genau das Sprosse 1 ist und die Rolle danach von oben neu laeuft. Dazu core/release/NOTES.md eine neue Zeile unter ## Unreleased, die dem Leser sagt, die Einstellung vor dem Lauf auf einer selbstgehosteten Forge zu setzen."
-outcome-why: "Der review-Befund dieser Runde: Sprosse 4 sagte nur 'ich kann es nicht entscheiden' und nannte das Kommando, hielt die Ausfuehrung aber nicht an. Wer weiterliest, steht bei :71 vor einem unbedingten 'git push -u origin HEAD' und bei :74-84 vor einer gh/glab-Gabel, die er per Voraussetzung nicht aufloesen kann. Alex hat entschieden, das hier zu schliessen statt als Folgeticket zu fuehren."
+outcome-what: "Critique uebersprungen"
+outcome-why: "Alex: critique ist auf diesem Ticket zweimal ohne Befund geschlossen, die Aenderung ist ein Satz"
 outcome-resolves: "DoD 3 - 'gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten' - ist jetzt nicht nur gesagt, sondern durchgesetzt: die Rolle kann den falschen Befehl nicht mehr raten, weil sie vor dem ersten Befehl stehenbleibt. Proof auf DoD 3 aktualisiert. go test ./... -race: Exit 0, kein FAIL; 'roles install --into' aus einer frisch gebauten Binary traegt den neuen Absatz, der go:embed-Pfad ist also mit."
 claimed-by: DESKTOP-RFTCH11-19054
 claimed-at: 2026-09-15T06:45:11Z
