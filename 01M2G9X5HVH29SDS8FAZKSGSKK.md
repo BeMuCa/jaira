@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:36:17Z
+updated-at: 2026-09-15T05:36:43Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41109
@@ -186,3 +186,18 @@ Eine Beobachtung dazu, die der Kommentar in spawn.sh:49-55 zwar begruendet, die 
 1. spawn.sh:64-74 prueft vor 'send-text' nicht auf den Herdr-Zustand 'blocked'. Die Schleife bricht ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet, und schickt dann send-text plus enter. Steht claude in dem Moment vor einem Genehmigungsdialog, beantwortet das Skript ihn an Stelle des Menschen - und dispatcher/SKILL.md:186-187 verbietet dem Dispatcher genau das ('never answer for the human'). Der wsl.exe-Fix macht den Vertrauens-Dialog beim Start unwahrscheinlich, er raeumt die Klasse aber nicht aus. Befund stammt aus der Notiz vom 2026-09-14 20:35, ist kein DoD-Punkt dieses Tickets und stand auch nicht in der Arbeitsanweisung.
 
 2. spawn.sh:72 schickt fest '/jaira-role-lane $ticket $lane' und kann '/jaira-role-tester' nicht starten, obwohl dispatcher/SKILL.md:48 sagt 'Testing is not a lane: /jaira-role-tester <id>'. Befund 4 vom 2026-09-14 18:23, am 20:36 ausdruecklich aus dem Umfang genommen. Anmerkung fuer das Folgeticket: auf DIESEM Board ist 'testing' eine echte agentische Lane mit Pflichtfeld test-verdict, hier ist das Skript also richtig - der Widerspruch trifft Boards, deren Lanes-Datei kein testing kennt.
+- **2026-09-15 05:36 · Alexander Sacharov** — critique (1. Durchgang): vier Befunde, alle mit klarem Fix - zurueck nach in-progress, nicht an den Menschen.
+
+1. spawn.sh:70 - die Torwaechter-Zeile ist breiter als die Schleife darueber. Zeile 68 bricht nur bei 'claude idle' oder 'claude done', Zeile 70 laesst dann aber jedes 'claude*' durch und Zeile 72-74 schicken send-text + enter ohne weitere Pruefung. 'claude blocked' - Herdrs Zustand fuer einen erkannten Genehmigungsdialog - faellt also durch und bekommt ein Enter. Das ist derselbe Fehler, den der wsl.exe-Fix in Zeile 49-55 gerade beseitigen soll, nur eine Ebene spaeter: der Dialog kommt jetzt nicht mehr vom falschen Verzeichnis, aber wenn er aus irgendeinem anderen Grund kommt, beantwortet das Skript ihn weiterhin an Stelle des Menschen. SKILL.md verbietet dem Dispatcher genau das ('never answer for the human'). Die Notiz vom 2026-09-14 20:32/20:35 hat diesen Check ausdruecklich in dieses Ticket gelegt; er ist nicht im Baum. Fix: Zeile 70 auf 'claude idle'|'claude done' verengen.
+
+2. spawn.sh:26 - Kommentar-Leiche desselben Diffs. Er nennt '(80, 5432, 5433, 5173, 8000)'; 5173 ist VITE_PORT_HOST und 8000 BACKEND_PORT_HOST, beide in diesem Durchgang als fremder Stapel geloescht. DoD 5 verlangt, dass kein fremdes Projekt mehr fest im .env-Block steht - im Code stimmt das jetzt, im Kommentar daneben nicht.
+
+3. teamlead/SKILL.md:44 - 'scripts/spawn.sh from the dispatcher role's directory' ist eine Wegbeschreibung ohne Weg. Der Dispatcher kann 'beside this file' sagen, der Teamlead nicht. Der Pfad, den core/role/install.go schreibt, gehoert ausgeschrieben hin.
+
+4. dispatcher/SKILL.md:168 - 'derives both from the worktree slug' beschreibt das Skript von vor diesem Diff. COMPOSE_PROJECT_NAME kommt seit spawn.sh:35 aus Repository-Name + Slug.
+
+Ausdruecklich NICHT als Befund gewertet, damit der naechste Durchgang es nicht noch einmal aufmacht:
+- Die doppelte Warnung in dispatcher- und teamlead-Prompt ist keine Redundanz, die man zusammenziehen sollte: DoD 2 und 3 verlangen sie in beiden Dateien.
+- Die eine lange NOTES.md-Zeile buendelt sechs Aenderungen, entspricht aber genau der Form der Nachbarzeile aus 13VMA8 - das ist das Muster, das hier schon liegt.
+- Die Plattform-Weiche in spawn.sh:56 ('/mnt/*|*.exe') prueft die Gestalt des Herdr-Pfads, nicht die Umgebung. Vertretbar: die Bedingung ist wirklich 'Herdr ist eine Windows-Binaerdatei', und genau das sagt der Pfad. Kein Befund.
+- Dass spawn.sh:72 nur /jaira-role-lane starten kann und keinen /jaira-role-tester, ist ein echter Mangel, aber weder DoD noch Arbeitsanweisung dieses Tickets - gehoert in ein eigenes Ticket (13VMA8 hat denselben Befund am 2026-09-15 05:25 schon notiert).
