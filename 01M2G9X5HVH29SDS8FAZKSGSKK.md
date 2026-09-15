@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:33:14Z
+updated-at: 2026-09-15T05:33:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41109
@@ -171,3 +171,6 @@ Nachgeprueft, Datei fuer Datei, nicht aus der Notizlage geschlossen:
 Was ich zusaetzlich geprueft habe und was in keiner Notiz stand: ob scripts/spawn.sh ueberhaupt AUSGELIEFERT wird. Wenn der Embed nur SKILL.md eingesammelt haette, zeigte DoD 1 auf ein Skript, das 'jaira roles install' nie installiert, und der ganze Prompt-Absatz waere eine Luege. Er wird ausgeliefert: role.go:33 ist '//go:embed all:builtin' (mit all:, sonst faellt scripts/ heraus), und role_test.go:75/143/225/254 pruefen ausdruecklich, dass scripts/spawn.sh in r.Files steht und nach der Installation auf der Platte liegt. Die Frage ist damit beantwortet und muss nicht noch einmal gestellt werden.
 
 Gates: go build, go vet und go test ./... laufen sauber durch; 'bash -n' auf spawn.sh ebenfalls.
+- **2026-09-15 05:33 · Alexander Sacharov** — Beleg fuer DoD 6, erzeugt von dieser Sitzung selbst und nicht aus einem frueheren Lauf uebernommen: ich bin der Worker, den spawn.sh gestartet hat. HERDR_PANE_ID=w3:p3N, HERDR_TAB_ID=w3:t2H, und 'herdr tab get w3:t2H' gibt label 'KSGSKK/in-progress' mit pane_count 1 zurueck. Das Label ist woertlich das Format aus spawn.sh:46 ("\$ticket/\$lane"), und pane_count 1 zeigt einen eigenen Tab, keinen Split. Damit ist der Beleg nicht mehr nur die Erzaehlung eines Dispatchers, sondern am laufenden Objekt ablesbar.
+
+Eine Beobachtung dazu, die der Kommentar in spawn.sh:49-55 zwar begruendet, die aber noch nirgends gemessen war: 'herdr pane get w3:p3N' meldet als cwd 'C:\Users\Alex' - obwohl mein pwd der Worktree ist. Herdr loest '--cwd' also tatsaechlich gegen Windows auf und verwirft den WSL-Pfad, genau wie der Kommentar sagt. Das '--cwd' in spawn.sh:46 ist auf diesem Rechner damit rein kosmetisch: es faerbt nur das, was Herdr anzeigt, und das Verzeichnis kommt ausschliesslich von 'wsl.exe --cd' in Zeile 57. Wer spawn.sh spaeter aufraeumt und '--cwd' als redundant streichen will: es schadet nicht, aber man darf sich nicht darauf verlassen - und wer umgekehrt den wsl.exe-Zweig fuer ueberfluessig haelt, weil ja '--cwd' gesetzt ist, baut den Fehler vom 2026-09-14 wieder ein.
