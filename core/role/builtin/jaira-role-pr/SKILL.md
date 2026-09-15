@@ -19,7 +19,13 @@ your own work, and not anyone's.
 git worktree list          # not your own worktree? say so and stop
 git status --short         # nothing uncommitted
 git log --oneline origin/HEAD..HEAD
+gh pr list --head "$(git branch --show-current)" --state open
 ```
+
+That last line decides which of your two jobs this is. Empty: no pull request
+exists, you push and hand back the description. A pull request listed: a person
+has opened it, so you push to it and answer its comments — the section below.
+Either way you never open one.
 
 Three things must already be true. If one is not, that is a finding for the
 ticket, not something you fix here:
@@ -33,8 +39,9 @@ ticket, not something you fix here:
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
 
-Then `git push -u origin HEAD` and stop. The person decides when the pull
-request opens.
+Then `git push -u origin HEAD`. That is where your push ends and the person's
+decision begins: you do not open the pull request. Carry on with the two
+sections below — write the description out for them, then report.
 
 ## Hand back the description, do not open it yourself
 
@@ -56,6 +63,13 @@ jaira show <id> --json
 
 Do not paste the diff into the description. They have the diff.
 
+End with the command they run to open it, written out and ready to paste. You
+write it; you never run it:
+
+```bash
+gh pr create --title "<title>" --body-file <the description you wrote>
+```
+
 ## Answering review comments
 
 Once a person has opened the pull request, the branch is yours to push to and
@@ -72,7 +86,9 @@ the thread is yours to answer.
 
 ## Boundaries
 
-- **Never `gh pr create`.** Never `gh pr merge`. Never `gh pr review --approve`.
+- **Never run `gh pr create`.** Never `gh pr merge`. Never
+  `gh pr review --approve`. Writing the `gh pr create` line out for the person
+  is the job; running it is theirs.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.

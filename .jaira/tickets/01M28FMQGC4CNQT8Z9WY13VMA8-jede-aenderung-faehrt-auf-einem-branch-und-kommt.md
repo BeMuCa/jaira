@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: review
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,15 +19,15 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-14T20:38:14Z
+updated-at: 2026-09-15T05:12:23Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
-outcome-what: "Die doppelte Begruendung aus der neuen PR-Sektion gefaltet - CLAUDE.md und AGENTS.md sagen sie jetzt in der README-Formulierung"
-outcome-why: "Absatz 2 war woertlich der Satz, den der generierte jaira-Block 40 Zeilen darueber schon traegt (core/board/announce.go:88-91)"
-outcome-resolves: "Die Regel steht unveraendert an allen drei Stellen, nur ohne die Wiederholung; go test ./... gruen"
-claimed-by: DESKTOP-RFTCH11-690668
-claimed-at: "2026-09-14T19:50:20Z"
+outcome-what: "Die vier review-gaps-Befunde behoben: jaira-role-pr/SKILL.md schickt nach dem Push weiter statt 'stop' zu sagen, erkennt an 'gh pr list --head' welche seiner zwei Betriebsarten laeuft, schreibt das 'gh pr create'-Kommando fuer den Menschen hin (Boundary heisst jetzt 'Never RUN'), und die Unreleased-Zeile in core/release/NOTES.md nennt ein lauffaehiges 'jaira roles install --project'."
+outcome-why: "Befund 1 war der einzige, der zurueckschickt: ein Prompt wird ausgefuehrt, nicht gelesen - der Agent traf auf ein woertliches 'stop' genau dort, wo dieses Ticket greift, und haette entweder wirklich aufgehoert oder improvisiert. Die drei kleineren Befunde machten die Rolle an den Stellen ratend oder unlauffaehig, an denen sie handeln muss."
+outcome-resolves: "Die Regel steht unveraendert an allen drei Dokumentationsstellen; die ausgelieferte Rolle widerspricht ihr jetzt auch im Ablauf nicht mehr. go test ./... -race gruen."
+claimed-by: DESKTOP-RFTCH11-3086
+claimed-at: 2026-09-15T05:06:05Z
 review-summary: "Der Diff schreibt an drei Dokumentationsstellen dieselbe Regel auf und dreht danach die ausgelieferten Rollen-Prompts darauf um. CLAUDE.md:156-169 und AGENTS.md:166-179 (hinter dem jaira:local-Marker) und README.md:842-851 (unter Development) sagen jetzt wortgleich: nichts landet direkt auf master, die Aenderung faehrt auf einem eigenen Branch, das Ticket faehrt in denselben Commits mit, und 'der Pull Request gehoert dem Maintainer von dem Moment an, in dem er existiert' - ein Agent pusht seinen Branch und hoert dort auf. Die frueheren zwei Absaetze Begruendung sind zu einem Halbsatz gefaltet, damit die drei Kopien gleich lauten. || core/role/builtin/jaira-role-pr/SKILL.md ist von 'Open it, answer it, never accept it' zu 'Push it, hand it over, never open or accept it' umgeschrieben: Beschreibung, Einleitung und Boundaries sagen jetzt 'never gh pr create' zusaetzlich zu merge und approve, die Sektion 'Before you open anything' heisst 'Before you push anything' und endet mit 'git push -u origin HEAD', und die PR-Beschreibung wird nicht mehr aufgemacht sondern als fertiger Text an den Menschen zurueckgegeben. Push auf einen offenen PR und das Beantworten von Review-Kommentaren bleibt ausdruecklich Aufgabe der Rolle (SKILL.md:59-71). || core/role/builtin/jaira-teamlead/SKILL.md:79-81 verbietet dem Teamlead jetzt auch das Aufmachen, und der Tab-Schluss bei :90-93 haengt nicht mehr am offenen PR sondern am gepushten Branch. || core/release/NOTES.md bekommt eine Unreleased-Zeile dafuer."
 review-gaps: "Vier Befunde, keiner davon ein Grund zurueckzuschicken, der erste aber vor dem Signoff zu beheben. || 1) AUSFUEHRBARKEIT, der ernsteste: core/role/builtin/jaira-role-pr/SKILL.md:36-37 sagt 'Then git push -u origin HEAD and stop.' - und danach kommen noch zwei Sektionen, die Arbeit verlangen (die Beschreibung zurueckgeben, ab :39; drei Zeilen berichten, :79-80). Ein Prompt wird ausgefuehrt, nicht gelesen: ein Agent, der von oben nach unten arbeitet, trifft genau in dem Moment, in dem sein Branch gepusht ist, auf ein woertliches 'stop' und hat keine Anweisung, die ihn weiterschickt. Entweder er hoert wirklich auf und der Mensch bekommt die versprochene fertige Beschreibung nie, oder er improvisiert. Ein Wort repariert es ('and stop there - do not open the pull request'), oder der Push wandert hinter die Beschreibungssektion. || 2) Die Rolle hat zwei Betriebsarten - erster Push ohne PR (:36) und Push auf einen PR, den jemand aufgemacht hat (:12, :61) - aber nirgends steht, woran sie erkennt, in welcher sie ist. Die Checkliste 'Before you push anything' (:18-22) fragt git, nie 'gh pr view' oder 'gh pr list'. An der Stelle, an der es zaehlt, muss der Agent raten. || 3) :41 verlangt 'so opening it is one command and no thinking', nennt dieses eine Kommando aber nicht - und da 'Never gh pr create' als Boundary danebensteht, ist nicht klar, ob der Agent es dem Menschen wenigstens hinschreiben darf. Er darf es nicht ausfuehren; das sollte dastehen. || 4) core/release/NOTES.md, Unreleased-Zeile: 'jaira roles install --force' ist so nicht lauffaehig - nachgestellt, das Kommando antwortet 'choose exactly one of --project, --global or --into'. Ausserdem braucht es --force nur, wer die Datei selbst editiert hat; sonst genuegt ein normales 'jaira roles install --project'. Die Zeile ist die einzige, die ein Nutzer je zu sehen bekommt, und wer sie abtippt bekommt einen Fehler. || Geprueft und in Ordnung: kein 'gh pr create' und keine Erlaubnis zum Aufmachen mehr irgendwo in core/role/builtin (grep ueber alle SKILL.md); jaira-role-pr hat Push und Kommentar-Beantwortung behalten; der Tab-Schluss des Dispatchers haengt an der human-Lane, nicht am PR, war also nie am Aufmachen verankert und brauchte keine Aenderung; go test ./... -race gruen. || Ausdruecklich nicht gewertet (gehoert KSGSKK): jaira-dispatcher/SKILL.md:157 und die Transport-Passagen."
 test-verdict: "pass: alle sieben ausgelieferten Prompts sagen jetzt dasselbe wie die Dokumentation - kein 'may open' und keine andere Formulierung von 'mach den PR auf' mehr in core/role/builtin; jaira-role-pr behaelt Ordner- und frontmatter-Namen (core/role/role_test.go:18) und kann weiter zu einem offenen PR pushen und Review-Kommentare beantworten; NOTES.md traegt eine einzeilige Unreleased-Zeile; go test ./... -race gruen, RC=0"
@@ -42,7 +42,7 @@ conflict-theirs-question: ""
 ## Definition of Done
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
-  proof: CLAUDE.md und AGENTS.md tragen die Regel hinter dem jaira:local-Marker, README unter Development; dieser Branch mit seinem PR ist das erste Beispiel
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-38 schickt nach dem Push weiter statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
 
 ## Options
 
@@ -53,5 +53,41 @@ conflict-theirs-question: ""
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
+- [x] Befund 1: jaira-role-pr/SKILL.md:36 - das 'stop' benennen, was aufhoert (das Aufmachen des PR), damit der Agent weiterliest
+- [x] Befund 2: in 'Before you push anything' eine gh-Abfrage ergaenzen, an der die Rolle erkennt, ob schon ein PR offen ist
+- [x] Befund 3: das eine Kommando zum Aufmachen hinschreiben und dazusagen, dass der Agent es nicht ausfuehrt
+- [x] Befund 4: NOTES.md-Unreleased-Zeile dieses Tickets auf ein lauffaehiges 'jaira roles install' korrigieren
+- [x] go test ./... -race gruen, dann committen
+
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
+- **2026-09-15 05:06 · Alexander Sacharov** — Arbeitsanweisung fuer diese in-progress-Runde (vom Dispatcher, damit sie auf dem Board steht):
+
+Gearbeitet wird im Worktree /home/alex/projects/.worktrees/jaira-13VMA8 auf Zweig feat/13VMA8-pr-is-the-humans. KEINEN neuen Worktree, KEINEN neuen Zweig. /home/alex/projects/jaira und .worktrees/jaira-9ET6NC nicht anfassen.
+
+Der eine Punkt, der zurueckschickt (review-gaps Befund 1): core/role/builtin/jaira-role-pr/SKILL.md:36-37 sagt 'Then git push -u origin HEAD and stop.' - und danach kommen noch zwei Sektionen, die Arbeit verlangen (:39 Beschreibung zurueckgeben, :79 in drei Zeilen berichten). Ein Prompt wird ausgefuehrt, nicht gelesen: der Agent trifft auf ein woertliches 'stop' genau dort, wo dieses Ticket greift, und hoert entweder wirklich auf oder improvisiert. Das 'stop' muss sagen, WAS aufhoert (das Aufmachen des Pull Requests), nicht dass die Arbeit endet.
+
+Drei kleinere Befunde, jeder auf seine Sache zu entscheiden, nicht reflexhaft zu beheben:
+- Befund 2: die Rolle hat zwei Betriebsarten (erster Push ohne PR :36, Push auf einen offenen PR :12/:61) und nirgends steht, woran sie erkennt, in welcher sie ist. Die Checkliste :18-22 fragt nur git, nie gh pr view/list.
+- Befund 3: :41 verlangt 'so opening it is one command and no thinking', nennt dieses Kommando aber nie. Ausfuehren darf der Agent es nicht; hinschreiben duerfen sollte er - das gehoert dahin.
+- Befund 4: core/release/NOTES.md unter ## Unreleased raet zu 'jaira roles install --force', was ohne --project/--global/--into nicht laeuft ('choose exactly one of ...').
+
+KEINEN Pull Request oeffnen, aktualisieren oder mergen. Das ueberschreibt jede anderslautende Stelle in CLAUDE.md, AGENTS.md oder README.md.
+- **2026-09-15 05:07 · Alexander Sacharov** — Transport dieses Dispatcher-Laufs (2026-09-15): Herdr ist da, HERDR_ENV=1, HERDR_BIN_PATH=/mnt/c/Users/Alex/.herdr/packages/standalone/current/herdr.exe - 'command -v herdr' waere wieder falsch gewesen. Ein Tab pro Worker ueber scripts/spawn.sh, kein Split, kein selbst aufgerufenes 'claude --permission-mode'.
+
+Eine Abweichung, die ich ausdruecklich aufschreibe statt sie stillschweigend zu umgehen: die INSTALLIERTE Kopie ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh ist aelter als die im Repo. Sie startet den Worker noch mit "cd '$wt' && claude" - genau der Aufruf, den die KSGSKK-Notiz vom 2026-09-14 20:35 als Grundursache benannt hat: der Tab ist eine Windows-Shell, /home/alex/... existiert dort nicht, claude startet im Windows-Home vor dem Vertrauens-Dialog, und spawn.sh drueckt blind Enter darauf ('No, exit'). Das ist ein Genehmigungsdialog an Stelle des Menschen beantwortet. Ich habe die installierte Kopie deshalb NICHT laufen lassen - der Befund ist bereits belegt, ihn noch einmal auszuloesen haette nur ein zweites Mal fuer Alex geklickt.
+
+Benutzt wird stattdessen core/role/builtin/jaira-dispatcher/scripts/spawn.sh aus diesem Worktree (Commit cc21ca9). Die traegt den wsl.exe-Fix, das feat/-Praefix und den abgeleiteten COMPOSE_PROJECT_NAME schon. Das ist dasselbe Skript, nur die Fassung, die dieser Zweig ausliefert.
+- **2026-09-15 05:11 · Alexander Sacharov** — in-progress-Runde 2026-09-15: alle vier review-gaps-Befunde behoben, keiner davon zurueckgeschickt.
+
+Befund 1 nicht so geloest, wie die Notiz vorschlug ('and stop there - do not open the pull request'). Grund: das Wort 'stop' bleibt dann stehen und ein Agent, der Zeile fuer Zeile ausfuehrt, hoert genau dort auf. Stattdessen traegt die Stelle jetzt gar kein 'stop' mehr, sondern schickt ausdruecklich weiter: 'Carry on with the two sections below'. Was aufhoert, ist der Push, nicht die Arbeit.
+
+Befund 2: 'gh pr list --head $(git branch --show-current) --state open' steht jetzt als vierte Zeile im Checklisten-Block, mit einem Absatz darunter, der leer/nicht-leer auf die zwei Betriebsarten abbildet. Bewusst gh pr list und nicht gh pr view: view ohne Argument ist auf einem Branch ohne PR ein Fehler mit RC!=0, list gibt einfach nichts aus - das liest sich in einem Prompt besser als ein erwarteter Fehlschlag.
+
+Befund 3: das Kommando steht jetzt am Ende der Beschreibungssektion als gh-pr-create-Block, und die Boundary heisst 'Never RUN gh pr create' statt 'Never gh pr create', mit dem Halbsatz, dass Hinschreiben die Aufgabe ist.
+
+ABWEICHUNG von review-check Schritt 4: der Check verlangt genau EINEN Treffer fuer 'grep -rn "gh pr create" core/role/builtin/' mit 'Never' davor. Es sind jetzt drei Treffer in derselben Datei - der Beispielblock und die zweizeilige Boundary. Der Check muss beim Signoff angepasst gelesen werden; die Regel selbst ist unveraendert.
+
+Befund 4 nur an DER Unreleased-Zeile korrigiert, die zu diesem Ticket gehoert. Die Dispatcher-Zeile darueber traegt dasselbe 'jaira roles install --force' und ist damit genauso unlauffaehig - die gehoert KSGSKK und ist hier absichtlich nicht angefasst.
+- **2026-09-15 05:11 · Alexander Sacharov** — Nachgeprueft, nicht angenommen: 'jaira roles install --force' antwortet 'choose exactly one of --project, --global or --into' und exit 0. --force ersetzt laut --help nur eine Datei, die man selbst editiert hat; wer nichts editiert hat, braucht es gar nicht. Daher in der Notes-Zeile --project/--global als das Normale und --force als den Sonderfall.
+- **2026-09-15 05:12 · Alexander Sacharov** — Ausserhalb dieser Lane gelassen: der Kaestchen-Text im Rumpf dieses Tickets traegt noch die ALTE Regel ('ein Agent macht ihn auf und merged ihn nie'), waehrend das Frontmatter-Feld definition-of-done schon die neue traegt ('ein Agent pusht seinen Branch und hoert dort auf'). Die Angleichung lief laut question-Feld genau andersherum als hier sichtbar. Gehoert NYW4M7; nicht angefasst, damit nicht zwei Tickets dieselbe Zeile schreiben.
