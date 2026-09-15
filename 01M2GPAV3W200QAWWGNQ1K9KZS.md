@@ -1,7 +1,7 @@
 ---
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
@@ -27,13 +27,13 @@ related:
 commits:
   - 632240e21705271e1e04f68a7c951f6544035c82
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:46:28Z
+updated-at: 2026-09-15T07:46:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8323
 claimed-at: 2026-09-15T07:35:48Z
-outcome-what: "Alle drei Testdurchgaenge gruen, ohne Aenderung am Code. Gates: go vet, go build, go test ./... -race -count=1 je RC=0. DoD 1-6 einzeln am Baum verifiziert statt am Outcome-Text; die sieben benannten Tests einzeln gelaufen, alle PASS. Verhalten mit gebautem Binary auf einem Scratch-Board nachgestellt: Korrektur greift auf einem alten Board, meldet sich auf stderr auch unter --json, laesst stdout als gueltiges JSON, laeuft genau einmal, laesst eine von Hand zurueckgeschriebene Zeile und ein selbstgeschriebenes done.md stehen. test-verdict gesetzt."
-outcome-why: "testing-Lane: die vorigen Lanes haben Form und Gewicht beurteilt, hier zaehlt, ob das Geforderte existiert und funktioniert. Ein Proof, der nur behauptet wird, ist keiner - deshalb jede Zeilennummer geoeffnet und jeder Pfad einmal mit dem echten Binary gegangen."
+outcome-what: "Alle drei Testdurchgaenge gruen, ohne Aenderung am Code. Gates: go vet ./..., go build ./..., go test ./... -race -count=1 je RC=0 ueber den ganzen Baum. DoD 1-6 einzeln am Baum verifiziert statt am Outcome-Text; die sieben benannten Tests einzeln gelaufen, alle PASS. Verhalten mit gebautem Binary auf einem Scratch-Board nachgestellt: die Korrektur greift auf einem alten Board, meldet sich auf stderr auch unter --json, laesst stdout gueltiges JSON, laeuft genau einmal, und laesst eine von Hand zurueckgeschriebene Zeile wie ein selbstgeschriebenes done.md stehen. test-verdict gesetzt."
+outcome-why: "testing-Lane: die vorigen Lanes haben Form und Gewicht beurteilt, hier zaehlt, ob das Geforderte existiert und funktioniert. Ein Proof, der nur behauptet wird, ist keiner - deshalb jede Zeilennummer geoeffnet und jeder Pfad einmal mit dem echten Binary gegangen. Nicht nach human, obwohl human in der Reihenfolge davor steht: die Lane verlangt eine blockierende Frage, und es gibt keine."
 outcome-resolves: "Keine neue DoD belegt - alle sechs waren bereits abgehakt und sind hier gegengeprueft. Keine Findung, also kein Rueckweg nach in-progress. Keine NOTES.md-Zeile: es wurde nichts geaendert."
 review-summary: "none"
 review-gaps: "Entfernt: die dreifache correctionsPath(root)- und doppelte ProjectLanesDir(root)-Berechnung in applyCorrections (core/lane/corrections.go:142) zu je einer Variablen; die Verzweigung ueber tc.name samt Laufzeit-Umschreiben von tc.want in TestDropFrontmatterLine (core/lane/corrections_test.go:248) zugunsten eines in-Feldes in der Tabelle; die nie geschlossenen Lese-Enden der beiden Pipes in hears (:46) - die in critique Runde 3 zurueckgestellte Testhygiene. Kein toter Code und kein verwaister Import gefunden: der io-Import fiel schon mit correctionsOut in 0189cf0. Kein Duplikat gefunden: readIDList/writeIDList (core/lane/order.go:33,53) und containsWarning (core/lane/lane_test.go:25) werden bereits wiederverwendet, und dropFrontmatterLine ist die Gegenrichtung zu stampCreatorLine (core/lane/share.go:64), nicht dieselbe Idee zweimal. Stehen gelassen: doneDoorway woertlich ein zweites Mal in core/move/oldboard_test.go:18, weil eine unexportierte Konstante ueber Paketgrenzen nicht teilbar ist und eine Drift den Test dort laut umwirft; der handgeschriebene Deskriptor-Block in oldboard_test.go:69, weil critique ein gemeinsames Testpaket fuer drei Aufrufer ausdruecklich als teurer verworfen hat; der zweite dropFrontmatterLine-Aufruf in recognises, weil er mit Value fragt und der erste ohne."
