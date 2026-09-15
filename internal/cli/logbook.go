@@ -1,8 +1,9 @@
 package cli
 
-// This file implements 'jaira logbook <id>' — taking a finished ticket off
-// the board with its commits stamped down, into a dated folder that records
-// who finished what on which day. It was called 'jaira sync' before it was
+// This file implements 'jaira logbook <id>' and 'jaira logbook --all' —
+// taking a finished ticket, or the whole terminal lane, off the board with
+// its commits stamped down, into a dated folder that records who finished
+// what on which day. It was called 'jaira sync' before it was
 // released: that name implied a server this tool does not have, and collided
 // with 'jaira sync-tasks' (sync.go), which mirrors an agent's task list into
 // the backlog and is unrelated.
@@ -20,7 +21,6 @@ import (
 	"github.com/spf13/cobra"
 
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
-	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -86,18 +86,19 @@ work and refuses a ticket that has not reached the terminal lane.`,
 // person asks for it: the set is the same, the moment is not, and the moment
 // was the problem.
 func logbookAll(s *ticket.Store, w, errw io.Writer) error {
-	lanes, err := lane.Load(s.Root)
-	if err != nil {
-		return err
-	}
-	terminal := lanes.Terminal()
-	if terminal == nil {
-		return fail(ExitValidation, "no_terminal_lane", "this board has no terminal lane, so nothing can be finished into the logbook")
-	}
+	// loadEnv already loads the lanes, and it is the only loader that prints
+	// the warnings they carry. Loading them a second time here dropped those
+	// warnings on the floor and named the same condition differently from
+	// logbookOut below.
 	env, _, err := loadEnv(s)
 	if err != nil {
 		return err
 	}
+	terminal := env.Lanes.Terminal()
+	if terminal == nil {
+		return fail(ExitValidation, "not_terminal", "this board has no terminal lane, so nothing can be finished into the logbook")
+	}
+	var skipped string
 	filed, err := s.FileLane(terminal.ID, logbookFolder(), func(t *ticket.Ticket) error {
 		_, err := s.StampCommits(t, env.DeriveCommits)
 		return err
@@ -111,14 +112,25 @@ func logbookAll(s *ticket.Store, w, errw io.Writer) error {
 		if !errors.As(err, &pe) {
 			return err
 		}
+		skipped = pe.Error()
 		fmt.Fprintf(errw, "jaira: warning: %v\n", pe)
 	}
 	if g.jsonOut {
-		out := make([]map[string]any, 0, len(filed))
-		for _, f := range filed {
-			out = append(out, map[string]any{"id": f.ID, "file": filepath.Base(f.Path)})
+		// One rendering of a filed ticket, shared with the sweep 'move' reports
+		// (flow.go, trimmedJSON): both answer "which tickets left the board",
+		// and two spellings of that answer drift the moment one gains a field.
+		// The handle it carries is why the reader wants it — the next thing an
+		// agent does after a cut is name what it filed in a commit message,
+		// which is written by handle.
+		res := map[string]any{"filed": trimmedJSON(filed), "count": len(filed), "lane": terminal.ID}
+		// A cut that skipped something is still a successful cut, so the
+		// skipping rides along with the result rather than replacing it.
+		// 'move' carries its sweep failure the same way (flow.go, trim_error),
+		// and prose on stderr is the one channel a --json reader does not read.
+		if skipped != "" {
+			res["trim_error"] = skipped
 		}
-		return emit(w, map[string]any{"filed": out, "count": len(filed), "lane": terminal.ID})
+		return emit(w, res)
 	}
 	if len(filed) == 0 {
 		fmt.Fprintf(w, "nothing in %s to file\n", terminal.ID)
@@ -163,27 +175,19 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 
 	term := env.Lanes.Terminal()
 	if term == nil {
-		return &codedError{
-			code:   ExitValidation,
-			reason: "not_terminal",
-			message: fmt.Sprintf(
-				"no terminal lane is installed, so there is nowhere for %s to be logged from", ticket.Handle(t.ID)),
-		}
+		return fail(ExitValidation, "not_terminal",
+			"no terminal lane is installed, so there is nowhere for %s to be logged from", ticket.Handle(t.ID))
 	}
 	if t.Status != term.ID {
-		return &codedError{
-			code:   ExitValidation,
-			reason: "not_terminal",
-			message: fmt.Sprintf(
-				"%s is in %q, not the terminal lane %q — move it there first with 'jaira move %s --to %s'",
-				ticket.Handle(t.ID), t.Status, term.ID, ticket.Handle(t.ID), term.ID),
-		}
+		return fail(ExitValidation, "not_terminal",
+			"%s is in %q, not the terminal lane %q — move it there first with 'jaira move %s --to %s'",
+			ticket.Handle(t.ID), t.Status, term.ID, ticket.Handle(t.ID), term.ID)
 	}
 
 	// Stamp before moving: this is the moment every commit is finally known,
 	// and the commits belong to the ticket record whether or not the move
 	// that follows succeeds.
-	merged, err := stampCommits(s, t, env.DeriveCommits)
+	merged, err := s.StampCommits(t, env.DeriveCommits)
 	if err != nil {
 		return err
 	}
@@ -215,16 +219,6 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 // rather than a bare filename nobody can attribute.
 func logbookFolder() string {
 	return fmt.Sprintf("%s-%s", coreidentity.Initials(identity()), time.Now().Format("20060102"))
-}
-
-// stampCommits writes the derived commit union onto the ticket and returns
-// what was written. Derived shas come first, in git order; any sha already
-// recorded that the derivation did not find is appended rather than dropped —
-// a sha a person wrote down deliberately is evidence this tool has no
-// business discarding. derive may be nil, the same "no derivation on offer"
-// convention core/gate uses.
-func stampCommits(s *ticket.Store, t *ticket.Ticket, derive func(*ticket.Ticket) []string) ([]string, error) {
-	return s.StampCommits(t, derive)
 }
 
 func logbookNames(s *ticket.Store) ([]string, error) {

@@ -70,7 +70,7 @@ should never have existed. It asks for the handle typed back first.`,
 			// archive has never required commits and must not start
 			// refusing because a derivation found nothing.
 			if env, _, envErr := loadEnv(s); envErr == nil {
-				_, _ = stampCommits(s, t, env.DeriveCommits)
+				_, _ = s.StampCommits(t, env.DeriveCommits)
 			}
 			dst, err := s.Archive(args[0])
 			if err != nil {

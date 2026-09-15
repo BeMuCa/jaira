@@ -15,32 +15,62 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 
 if [ ! -d "$wt" ]; then
-  git -C "$root" worktree add "$wt" -b "feature/$slug" >&2
+  # feat/, the prefix this board's own branches use. A repository that names
+  # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
+  git -C "$root" worktree add "$wt" -b "${JAIRA_BRANCH_PREFIX:-feat}/$slug" >&2
 
   # Only a repo that carries a container stack needs its own ports. A repo
   # without a .env has nothing to offset, and must not fail here.
   if [ -f "$root/.env" ]; then
     # Deterministic per-slug port offset, so two workers never share a stack.
-    # 0 stays free: it belongs to the main directory (80, 5432, 5433, 5173, 8000).
+    # 0 stays free: it belongs to the main directory's own stack.
     off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
     cp "$root/.env" "$wt/.env"
     {
       echo
       echo "# worker stack: slug=$slug offset=$off"
-      echo "COMPOSE_PROJECT_NAME=rg_$slug"
+      # Derived from the repository, never a name written in here: a prefix
+      # baked into this script belongs to one project and silently names every
+      # other project's stack after it. Docker takes lower case only, so the
+      # name is folded before it is cleaned — a jaira slug is upper case, and
+      # `docker compose` refuses the whole stack over a single capital. printf
+      # rather than echo: the newline echo appends is a character like any
+      # other to tr, and would come back as a trailing underscore.
+      echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" \
+        | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
       echo "HTTP_PORT=$((8080 + off))"
       echo "DB_PORT_HOST=$((5500 + off * 2))"
       echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
-      echo "VITE_PORT_HOST=$((5200 + off))"
-      echo "BACKEND_PORT_HOST=$((8100 + off))"
     } >> "$wt/.env"
   fi
 fi
 
-pane="$("$herdr" pane split --current --direction down --no-focus \
-  | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"]["pane_id"])')"
+# Named, because without --workspace Herdr decides for itself where the tab
+# lands: the worker can open in a window nobody is looking at, and a worker
+# nobody sees is one nobody notices dying. Herdr exports its own workspace into
+# every pane it starts, so this is the workspace the caller is sitting in.
+ws=()
+if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID"); fi
 
-"$herdr" pane run "$pane" "cd '$wt' && claude" >/dev/null
+# A tab per worker, never a split. A split divides the height of one screen: at
+# four workers each strip is a few lines, and nobody can read what any of them is
+# doing — which is the whole reason a worker gets a surface of its own.
+pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$lane" --no-focus \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
+
+# The tab's shell runs on the machine Herdr itself runs on. When that is Windows
+# and this script runs in WSL, that shell has no /home/... at all: --cwd is
+# resolved against Windows and dropped, `cd "$wt"` fails, and claude comes up in
+# the Windows home in front of its trust dialog — which the send-keys below would
+# then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
+# sets the directory before any shell starts, so no cd function and no wrong home
+# can intervene, and `bash -lic` is what puts claude on PATH.
+case "$herdr" in
+  /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic claude" ;;
+  *)            start="cd '$wt' && claude" ;;
+esac
+
+"$herdr" pane run "$pane" "$start" >/dev/null
 
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
@@ -49,7 +79,19 @@ for _ in $(seq 20); do
     | python3 -c 'import sys,json;p=json.load(sys.stdin)["result"]["pane"];print(p.get("agent","-"),p.get("agent_status","-"))')"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done
-case "${st:-}" in claude*) ;; *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;; esac
+# Only the two states the loop breaks on may pass. Anything else — above all
+# Herdr's `blocked`, its state for a detected approval dialog — must stop here:
+# the send-keys below would answer that dialog on the human's behalf, and this
+# role is forbidden from ever doing that.
+case "${st:-}" in
+  claude\ idle|claude\ done) ;;
+  claude\ blocked)
+    echo "claude is up in $pane but an approval dialog is waiting:" \
+         "report it to the human, let them answer it in that pane," \
+         "then start this worker again" >&2
+    exit 1 ;;
+  *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;;
+esac
 
 "$herdr" pane send-text "$pane" "/jaira-role-lane $ticket $lane" >/dev/null
 sleep 1

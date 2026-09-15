@@ -341,6 +341,30 @@ drag a ticket back out of review because a reviewer touched it first.
 { "remote": "origin", "notify-off": false, "hook": "/path/to/script" }
 ```
 
+`"remote"` is a default for every board opened on this machine, not an order.
+A remote name belongs to one clone — the repository this machine knows as
+`upstream` is `origin` to somebody who cloned it directly — so the answer for
+one board lives in that clone's own git config:
+
+```sh
+git config jaira.remote upstream
+```
+
+The order jaira resolves it in:
+
+1. `git config jaira.remote` in the clone. Set for this repository, so it is
+   used as given and never falls back; if that remote is gone, the ref command
+   stops and names it. Shared by every worktree of the checkout, and never
+   committed, so the next person's clone is not told what to call things.
+2. `"remote"` in `settings.json`, when this repository actually has a remote by
+   that name.
+3. The repository's only remote, when it has exactly one. A single-remote
+   checkout therefore works with nothing configured, even while `settings.json`
+   names a remote it has never heard of.
+4. Otherwise the command stops. Several remotes and none of them the one asked
+   for is ambiguous, and guessing would sooner or later push a ticket ref into
+   a fork, where nobody would look for it.
+
 The hook is called on `move` and `claim` for delivery that does not wait for
 the other side to fetch. jaira only calls it and brings no dependency of its
 own: the script gets `JAIRA_EVENT`, `JAIRA_TICKET`, `JAIRA_TITLE`,
@@ -793,11 +817,38 @@ go test ./...
 go build ./cmd/jaira
 ```
 
+Windows is a shipped platform — `.goreleaser.yaml` builds a binary for it — but
+the `windows-latest` CI job takes eight minutes and only tells you afterwards.
+Two commands run before you push catch what has actually broken there, from
+whatever machine you are on:
+
+```bash
+GOOS=windows GOARCH=amd64 go vet ./...
+GOOS=windows GOARCH=amd64 go build ./cmd/jaira
+```
+
+`go vet` covers the test files too, which is where most of the Windows failures
+have been. What breaks at run time rather than at compile time is caught by
+`internal/wintrap`, which `go test ./...` already runs: it reads the source for
+the five patterns this repository has broken on before — `t.Setenv("HOME")` with
+no `USERPROFILE` beside it, a `//go:embed` target with no `eol=lf` line in
+`.gitattributes`, a permission claim with no `runtime.GOOS` branch, an expected
+binary name with no `.exe`, and a path glued together with a literal `/`. Each
+finding names the remedy, not only the site. A site that only looks like one of
+them — a URL, a git refname, an `io/fs` path — is marked `//wintrap:ok` with the
+reason, so the exemption stays visible in the diff instead of the rule quietly
+getting weaker.
+
 **Nothing lands on `master` directly.** A change is made on a branch of its own,
 the ticket rides in the same commits as the code, and the branch arrives through
 a pull request — which is what makes the diff readable: the change and what it
-was for in one place. Opening the pull request is the contributor's job;
-accepting it is the maintainer's.
+was for in one place.
+
+The pull request belongs to the maintainer from the moment it exists. An agent
+pushes its branch and stops there: it does not open the pull request, does not
+merge one, and does not approve one. Opening it is the maintainer's call, given
+as an instruction — so whoever wrote the change is never whoever decides it
+arrives.
 
 Layering is enforced by the module graph: `core/` imports nothing from `cmd/` or
 `internal/`. The CLI and the TUI are peers over the same core, which is the only

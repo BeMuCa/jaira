@@ -1,0 +1,1 @@
+a fixed-byte text file, pinned with -text rather than eol=lf

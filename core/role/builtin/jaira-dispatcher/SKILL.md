@@ -80,12 +80,29 @@ Say which one you took. The human needs to know whether the workers outlive you.
    A second worker in a tab that still holds the first one's scrollback is how
    two lanes get read as one.
 
-   For the mechanics, run `herdr --skill` and follow it — do not work from what
-   this file remembers about the command surface, which drifts. The shape is
-   `herdr tab create --cwd <worktree> --label "<ticket>/<lane>" --no-focus`,
-   then start `claude` in its pane and send it the prompt.
+   **Start the worker with `scripts/spawn.sh`, beside this file. Do not
+   assemble the sequence yourself.** It takes `<slug> <ticket-id> <lane>
+   [repo-root]`, finds or creates the worktree, opens a labelled tab, starts
+   `claude` in it, waits for the state hook to report idle, types the lane
+   command and presses enter. It prints the pane id.
 
-   `--no-focus` matters: you are starting work, not stealing the human's screen.
+   Two things it saves you from, both seen on 2026-09-14, when two dispatchers
+   out of three never got a single worker into a tab:
+
+   - Calling `claude --permission-mode ...` yourself is refused by the
+     permission classifier as "Create Unsafe Agents". spawn.sh never does it:
+     the tab starts `claude`, so the classifier sees a `herdr` call and no agent
+     being created, and no permission mode is needed at all.
+   - `command -v herdr` answers the wrong question. On WSL the binary is
+     `herdr.exe` under `/mnt/c` and is not in `PATH` under that name.
+     `$HERDR_BIN_PATH` is the reliable answer, and spawn.sh already reads it.
+
+   If you have to go around the script, run `herdr --skill` first rather than
+   working from what this file remembers about the command surface, which
+   drifts — and keep `--no-focus`: you are starting work, not stealing the
+   human's screen. Keep `--workspace "$HERDR_WORKSPACE_ID"` too: without it
+   Herdr chooses the workspace itself, and the worker can open in a window you
+   are not looking at.
 
    On WSL, prefer the tab and pane surface over `herdr agent start` /
    `agent prompt` / `agent wait` — those refuse a WSL pane, because they resolve
@@ -149,12 +166,14 @@ root never leaves it.
 ## One worktree per ticket
 
 Two workers must never share a directory. On a project with a container stack
-they also need distinct project names and ports — `scripts/spawn.sh` derives
-both from the worktree slug.
+they also need distinct project names and ports — `scripts/spawn.sh` names the
+stack after the repository plus the worktree slug, and offsets the ports by the
+slug.
 
 Only remove a worktree or close a pane you created yourself, and a worktree not
 before its ticket is in `done` — not when the work is committed, and not when
-the pull request merges.
+the branch is pushed. You never see the pull request: opening it is the human's
+call, and it can come long after your last worker has finished.
 
 **Your own tab is not yours to close.** Whoever started you created it, and they
 close it once they have read your report. Do not close it, and do not keep

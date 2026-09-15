@@ -1,7 +1,7 @@
 ---
 id: 01M0YT5A5QR240Z1W2JKCD9TCB
 title: Ein absichtlicher Lane-Override soll nicht mehr warnen
-status: human
+status: done
 ready: true
 creator: BeMuCa
 goal: "Eine Lane-Datei kann erklaeren, dass sie eine eingebaute Lane ersetzen will"
@@ -10,10 +10,10 @@ definition-of-done: Mit dem Feld ist die Warnung weg; ohne das Feld kommt sie un
 blocked-by: []
 commits: []
 created-at: 2026-08-26T10:34:25Z
-updated-at: 2026-08-31T16:38:20Z
+updated-at: 2026-09-14T15:42:03Z
 claimed-by: EE-3NX6GL3-2641173
 claimed-at: 2026-08-31T16:33:58Z
-updated-by: BeMuCa
+updated-by: Alexander Sacharov
 assignee: BeMuCa
 question: "Die Warnung, die dieses Ticket stumm schalten soll ('lane X: id \"review\" overrides the built-in lane of the same name'), gibt es im aktuellen Code nicht mehr. Commit 743737f (27.08., nach diesem Ticket vom 26.08.) hat sie bewusst entfernt: eine vom Nutzer geschriebene Lane-Datei ist die Lane, keine Ueberschreibung — core/lane/lane.go warnt seit da nur noch bei einer Protection, die dabei verloren geht (droppedProtections, Invariante 4), nie mehr bei einer reinen Verhaltensaenderung. Test core/lane/lane_test.go:378 (TestLoadOverrideChangedPromptIsMarkedNotWarned) belegt das explizit. Damit ist Berks review.md-Fall aus dem Kontext vermutlich schon still, sofern sie keine Protection dropt. Wie soll ich weitermachen: (a) Ticket schliessen/archivieren, weil 743737f es bereits geloest hat, (b) ein overrides:-Feld trotzdem einfuehren, das rein dokumentarisch ist und nichts stummschaltet, oder (c) die alte Immer-Warnung bewusst wieder einfuehren (Reversal einer Design-Entscheidung), nur damit es etwas gibt, das das Feld stummschalten kann?"
 outcome-what: "Recherche statt Code-Aenderung: geprueft, ob die Ticket-Praemisse (immer feuernde Override-Warnung) im aktuellen Code noch zutrifft"
@@ -25,7 +25,8 @@ outcome-resolves: "Ungeloest: die Warnung existiert seit Commit 743737f nicht me
 
 ## Definition of Done
 
-- [ ] Mit dem Feld ist die Warnung weg; ohne das Feld kommt sie unveraendert; jaira lanes show zeigt das Feld
+- [-] Mit dem Feld ist die Warnung weg; ohne das Feld kommt sie unveraendert; jaira lanes show zeigt das Feld
+  proof: 743737f (27.08.) entfernte die Warnung; 'overrides the built-in' steht heute nur noch in core/lane/lane_test.go:336 und :369, beide pruefen ihre Abwesenheit
 
 ## Options
 

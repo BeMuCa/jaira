@@ -17,6 +17,22 @@ type Trimmed struct {
 	Path string
 }
 
+// filesInLane is the set a cap or a cut may move: the tickets standing in the
+// lane that this clone has a file for. A ref-only ticket stands in the lane
+// and is visible here, but its file lives on a ref and not on this disk, so it
+// is not this clone's to file — and a lane full of other people's ref-only
+// tickets must not count toward a cap that then trims your own off the board.
+// Both callers ask the same question, so they ask it in one place.
+func filesInLane(all []*Ticket, lane string) []*Ticket {
+	var ts []*Ticket
+	for _, t := range all {
+		if t.Status == lane && !t.ReadOnly {
+			ts = append(ts, t)
+		}
+	}
+	return ts
+}
+
 // Overflow returns the tickets of a lane beyond the newest keep, oldest first.
 // "Newest" is measured by updated-at: a ticket in a terminal lane is normally
 // never touched again, so updated-at is its acceptance time. newest names the
@@ -35,12 +51,7 @@ func (s *Store) Overflow(lane string, keep int, newest string) ([]*Ticket, error
 	if err != nil {
 		return nil, err
 	}
-	var ts []*Ticket
-	for _, t := range all {
-		if t.Status == lane {
-			ts = append(ts, t)
-		}
-	}
+	ts := filesInLane(all, lane)
 	if len(ts) <= keep {
 		return nil, nil
 	}
@@ -121,11 +132,13 @@ func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string
 	return merged, nil
 }
 
-// FileLane empties a lane into the given logbook folder, oldest first — the
-// lane is a doorway (logbook-on-entry), so the just-landed ticket goes along
-// with anything still sitting there from before the doorway existed. prepare
-// runs on each ticket before its file moves (the callers stamp commits there);
-// nil skips it. A ticket that cannot be filed — unreadable, a stamp failure, a
+// FileLane empties a lane into the given logbook folder, oldest first. Two
+// callers reach it: a doorway lane (logbook-on-entry), where the just-landed
+// ticket goes along with anything still sitting there from before, and
+// 'jaira logbook --all', the cut somebody makes by hand. Both take what
+// filesInLane hands them, so ref-only tickets stay where they are. prepare runs
+// on each ticket before its file moves (the callers stamp commits there); nil
+// skips it. A ticket that cannot be filed — unreadable, a stamp failure, a
 // name collision in the folder — is skipped and named rather than allowed to
 // jam the doorway: a sweep aborts on nothing, because the same failure would
 // repeat on every later landing and the lane would block for good. What moved
@@ -142,12 +155,7 @@ func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Tr
 		// ticket could corrupt — the readable ones still leave.
 		problems = append(problems, perr.Problems...)
 	}
-	var ts []*Ticket
-	for _, t := range all {
-		if t.Status == lane {
-			ts = append(ts, t)
-		}
-	}
+	ts := filesInLane(all, lane)
 	sort.Slice(ts, func(i, j int) bool {
 		if ts[i].UpdatedAt.Equal(ts[j].UpdatedAt) {
 			return ts[i].ID < ts[j].ID

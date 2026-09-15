@@ -157,17 +157,16 @@ babysits the ticket through the same route.
 
 Nothing lands on `master` directly. A change is made on a branch of its own, the
 ticket rides in the same commits as the code it belongs to, and the branch
-reaches `master` through a pull request.
+reaches `master` through a pull request — which is what makes the diff readable:
+the change and what it was for in one place.
 
-The ticket travelling with the code is what makes the pull request readable: a
-reviewer sees the change and what it was for in one place, instead of a diff
-whose ticket is still in whatever state the last commit left it.
-
-**Opening the pull request is the contributor's job. Accepting it is the
-maintainer's.** An agent may open a pull request, push to it, and answer review
-comments; it never merges one, and it never approves its own. This is the same
-rule the board already applies to lanes — a review agent cannot certify its own
-work — said once more where it also has to hold.
+**The pull request belongs to the maintainer from the moment it exists.** An
+agent pushes its branch and stops there: it does not open the pull request, does
+not merge one, and does not approve one. Opening it is the maintainer's call,
+given as an instruction — so the person who wrote the change is never the person
+who decides it arrives. This is the same rule the board already applies to lanes
+— a review agent cannot certify its own work — said once more where it also has
+to hold.
 <!-- jaira:end -->
 
 ## Client-facing changes go in core/release/NOTES.md

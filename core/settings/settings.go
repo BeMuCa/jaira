@@ -6,6 +6,22 @@
 // belongs in the repository — one teammate wanting to be notified says nothing
 // about another, and a remote name is a property of a clone, not of the project.
 //
+// That last point is why the remote here is only a default. This file is read
+// by every board opened on the machine, so "remote": "upstream" — right for the
+// one checkout that has a fork as its origin — reached every other board too
+// and took down every ref command on repositories that have no upstream at all.
+// The name of a remote is a property of one clone, so that is where the answer
+// for one board lives: git config jaira.remote <name>, in the clone's own
+// config. Not a file in .jaira/, which would be committed and therefore wrong
+// for the next person, whose clone may know the same repository by another
+// name; and not a path-keyed section here, which git worktrees would split into
+// several entries for one clone.
+//
+// RemoteFor is the only way to ask: it resolves the two against each other.
+// See its comment for the order and for why a per-board name never falls back.
+// RemoteSourceFor is the same ladder when the caller also has to say which step
+// answered.
+//
 // The file is ~/.jaira/settings.json, beside projects.json, and every field has
 // a working default: a missing file, an unreadable one and an empty one all mean
 // "the defaults", because settings a user never opened must never be the reason
@@ -126,12 +142,64 @@ func Save(s Settings) error {
 	return os.WriteFile(path, append(b, '\n'), 0o644)
 }
 
-// RemoteOr returns the configured remote, or the default.
-func (s Settings) RemoteName() string {
-	if r := strings.TrimSpace(s.Remote); r != "" {
-		return r
+// RemoteFor returns the remote this board's ticket refs travel on.
+//
+// The order, and why each step is where it is:
+//
+//  1. git config jaira.remote in the clone. Somebody decided this for this
+//     repository, so it is used as given and never falls back. If that remote
+//     is gone, the ref command stops and says so — see Repo.Usable. A silent
+//     fallback here would be the expensive kind of wrong: in a fork, origin is
+//     the fork, and quietly pushing a ticket ref there loses it exactly where
+//     nobody looks.
+//  2. The machine-wide "remote" in settings.json, if this repository has a
+//     remote by that name. It is a default for every board, so it applies here
+//     only when it is true here.
+//  3. The repository's only remote, when it has exactly one. There is nothing
+//     to get wrong: one remote is where anything can go. This is what makes a
+//     plain single-remote checkout work without anybody configuring anything,
+//     even while settings.json names a remote it has never heard of.
+//  4. Otherwise the configured name is returned unchanged, so the failure is
+//     loud and names it. Several remotes and none of them the one asked for is
+//     ambiguous, and guessing among them is the fork case again.
+func (s Settings) RemoteFor(dir string) string {
+	name, _ := s.RemoteSourceFor(dir)
+	return name
+}
+
+// RemoteSourceFor is RemoteFor with the step of the ladder that answered, in
+// words a person can read.
+//
+// The two are one function because a command that explains which remote is used
+// must not compute the name a second time: the ladder has four steps, it is
+// changed as one thing, and a second copy of it means the command whose only job
+// is to tell the truth about the remote is the command that names a different
+// one than the code that failed.
+func (s Settings) RemoteSourceFor(dir string) (name, source string) {
+	if board := strings.TrimSpace(gitref.BoardRemote(dir)); board != "" {
+		return board, "from git config jaira.remote, set for this clone"
 	}
-	return gitref.DefaultRemote
+	want := strings.TrimSpace(s.Remote)
+	configured := want != ""
+	if !configured {
+		want = gitref.DefaultRemote
+	}
+	have := gitref.Remotes(dir)
+	for _, n := range have {
+		if n == want {
+			if configured {
+				return want, "from settings.json on this machine"
+			}
+			return want, "the default, nothing configured"
+		}
+	}
+	if len(have) == 1 {
+		return have[0], "the only remote this repository has"
+	}
+	if configured {
+		return want, "from settings.json on this machine, and not a remote here"
+	}
+	return want, "the default, nothing configured"
 }
 
 // NotifyEnabled reports whether an assignment should raise a desktop
@@ -208,6 +276,9 @@ func (s Settings) Landing(remote string, remoteHead func() string) []string {
 			if b == "" {
 				continue
 			}
+			// A git refname is slash-separated on every platform; it is not
+			// a filesystem path.
+			//wintrap:ok
 			if strings.HasPrefix(b, remote+"/") || strings.HasPrefix(b, "refs/") {
 				out = append(out, b)
 				continue

@@ -61,6 +61,18 @@ var (
 	// simply does not carry tickets on refs.
 	ErrNoRepo = errors.New("gitref: no repository or no such remote")
 
+	// ErrNoGitRepo is the first of those two cases on its own: there is no git
+	// repository here at all, so no remote is missing and none can be
+	// configured.
+	//
+	// It wraps ErrNoRepo rather than replacing it so that every existing
+	// errors.Is(err, ErrNoRepo) keeps answering yes. The distinction exists for
+	// the one caller that has to say something: advice about a missing remote
+	// and about 'git config jaira.remote' is wrong where there is no
+	// repository, and pointing at a command that pushes a ref is worse than
+	// saying nothing.
+	ErrNoGitRepo = fmt.Errorf("%w: this board is not in a git repository", ErrNoRepo)
+
 	// ErrNoGit means the git binary is unavailable.
 	ErrNoGit = errors.New("gitref: git is not available on PATH")
 )
@@ -92,22 +104,50 @@ func (r *Repo) Usable() error {
 		if errors.Is(err, ErrNoGit) {
 			return err
 		}
-		return ErrNoRepo
+		return ErrNoGitRepo
 	}
 	if strings.TrimSpace(out) != "true" {
-		return ErrNoRepo
+		return ErrNoGitRepo
 	}
 	if _, _, err := r.run("", "remote", "get-url", r.remote()); err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return err
 		}
-		return fmt.Errorf("%w: no remote %q", ErrNoRepo, r.remote())
+		return fmt.Errorf("%w: %s", ErrNoRepo, r.NoRemoteHint())
 	}
 	return nil
 }
 
+// NoRemoteHint explains a missing remote the way somebody can act on it.
+//
+// It is exported for the same reason RemoteName is: a command that has to tell
+// a person why this board carries no refs must be able to ask for the sentence
+// instead of reconstructing it — or, worse, cutting it back out of the error
+// text and so depending on how Usable happened to concatenate it.
+//
+// "no remote \"upstream\"" was true and useless: it named the thing that is
+// absent and nothing else, so the reader still had to find out what this
+// checkout does have and where the name even came from — and the name usually
+// came from a machine-wide setting made for a different repository. So the
+// message carries all three: the name that was asked for, the remotes that are
+// really here, and the one command that settles it for this clone.
+func (r *Repo) NoRemoteHint() string {
+	have := "this repository has no remotes"
+	if names := Remotes(r.Dir); len(names) > 0 {
+		have = "this repository has " + strings.Join(names, ", ")
+	}
+	return fmt.Sprintf("no remote %q — %s\n  set the one this board uses: git -C %s config jaira.remote <name>",
+		r.remote(), have, r.Dir)
+}
+
 // RefName is the ref a ticket travels on.
 func RefName(id string) string { return Prefix + id }
+
+// RemoteName is the remote this repo actually talks to, with the default
+// filled in. Exported because a command that has to explain which remote was
+// looked for must not have to re-derive it and risk naming a different one than
+// the code that failed.
+func (r *Repo) RemoteName() string { return r.remote() }
 
 func (r *Repo) remote() string {
 	if strings.TrimSpace(r.Remote) == "" {
@@ -663,4 +703,42 @@ func firstLine(s string) string {
 		}
 	}
 	return ""
+}
+
+// Remotes lists the remote names this repository actually has, in git's own
+// order. A directory that is not a repository, or one with no remotes at all,
+// answers with nothing — the question "which remotes are there" has an empty
+// answer in both cases, and the caller that needs to tell them apart asks
+// Usable.
+//
+// It is a function on a directory rather than a method on Repo because the
+// answer is what decides which remote a Repo should be built with in the first
+// place.
+func Remotes(dir string) []string {
+	out, err := (&Repo{Dir: dir}).value("remote")
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for _, line := range strings.Split(out, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			names = append(names, line)
+		}
+	}
+	return names
+}
+
+// BoardRemote returns the remote this one clone was told to use for its ticket
+// refs, from git config jaira.remote, or "" when nothing was set.
+//
+// --local on purpose: the value has to belong to this clone and no other. A
+// global git config would be the same mistake as the machine-wide setting it
+// exists to correct, and worktrees share the clone's config, so every worktree
+// of a checkout answers the same without anybody repeating themselves.
+func BoardRemote(dir string) string {
+	out, err := (&Repo{Dir: dir}).value("config", "--local", "--get", "jaira.remote")
+	if err != nil {
+		return ""
+	}
+	return out
 }

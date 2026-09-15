@@ -315,7 +315,10 @@ func (b *browser) renderResults(width, height int) string {
 		}
 		// The path is shown relative to where the scan started, because the part
 		// that differs is the part worth reading.
-		label := strings.TrimPrefix(b.results[i], b.dir+"/")
+		label := b.results[i]
+		if r, err := filepath.Rel(b.dir, label); err == nil {
+			label = r
+		}
 		sb.WriteString(truncate(lead+mark+" "+label, w) + "\n")
 	}
 	if b.msg != "" {

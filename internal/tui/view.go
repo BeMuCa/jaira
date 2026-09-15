@@ -485,8 +485,13 @@ func (m *Model) renderColumn(idx, w, h int) string {
 // three content rows, and nothing else. A card is a band of background now, not
 // a box, so there are no border rows to count — which is also two rows per card
 // given back to the lane.
+//
+// It is cardSlots because it has to be: renderCardBlock paints one bar cell per
+// row and reads that cell's colour out of a slot, so a card taller than the bar
+// has slots it indexes past. Naming the same constant is what keeps the two
+// from drifting apart.
 func (m *Model) cardHeight(*ticket.Ticket) int {
-	return 3
+	return cardSlots
 }
 
 // cardsInBudget is how many tickets starting at first fit within budget rows,
@@ -510,8 +515,13 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 }
 
 // renderCardBlock draws one card as a filled band, w columns wide: no frame, a
-// cell of its tag's colour down the left, and a background that alternates with
-// the card above.
+// one-cell bar of tag colour down the left, and a background that alternates
+// with the card above.
+//
+// The bar is one cell wide and cardHeight rows tall, and each of those rows is
+// a slot of cardColors: row 1 the ticket's first tag, row 2 its second, row 3
+// its third. Stacking the slots down the rows that were being drawn anyway is
+// what lets a card show three tags at once without becoming a row taller.
 //
 // The frame is gone rather than recoloured. Two glyphs of it stood between the
 // lane's edges and the title on every row, and a title cut at eighteen
@@ -521,11 +531,13 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 // cell, because a border glyph inks about half of one and read as "the frame is
 // a slightly different colour" rather than as a marker.
 func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) string {
-	tag, tagged := m.cardColor(t)
+	slots := m.cardColors(t)
 
+	// The selection fill and the glow still follow the first tag alone: the
+	// card is filled in one colour, and slot 1 is the ticket's primary one.
 	bgParams := ""
 	if selected {
-		_, bgParams = m.selectionFill(tag, tagged)
+		_, bgParams = m.selectionFill(slots[0].colour, slots[0].coloured)
 	} else {
 		_, bgParams = m.laneShade(alt)
 	}
@@ -536,15 +548,15 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	inner := max(1, w-1)
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
 
-	// A card whose tag has no colour gets the card's own shade in the bar, so
-	// the text still lines up with every other card in the lane.
-	barParams := bgParams
-	if tagged {
-		barParams = "5;" + strconv.Itoa(tag)
-	}
-
 	var b strings.Builder
-	for _, line := range strings.Split(content, "\n") {
+	for i, line := range strings.Split(content, "\n") {
+		// A slot with no colour — an absent tag, or a tag with no registry
+		// line — gets the card's own shade, so the text still lines up with
+		// every other card in the lane.
+		barParams := bgParams
+		if slots[i].coloured {
+			barParams = "5;" + strconv.Itoa(slots[i].colour)
+		}
 		b.WriteString(paintRow(barParams, " "))
 		b.WriteString(paintRow(bgParams, padDisplay(line, inner)))
 		b.WriteString("\n")
@@ -606,7 +618,7 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// coloured in the tag's own colour, which now names the same hue twice —
 	// the fill is mixed from that colour — and put bright text on a background
 	// of its own shade, where it read as muddy rather than as selected.
-	title := truncate(t.Title, w-1)
+	title := truncate(oneLine(t.Title), w-1)
 	if selected {
 		title = lipgloss.NewStyle().Bold(true).Render(title)
 	}
@@ -695,9 +707,9 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// wraps inside the card's box and breaks the three-content-row contract
 	// cardHeight promises — unboxed cards used to hide this behind clampBlock.
 	out := " " + title + "\n"
-	out += " " + truncate(meta, w-1) + "\n"
+	out += " " + truncate(oneLine(meta), w-1) + "\n"
 	if len(flags) > 0 {
-		out += " " + truncate(strings.Join(flags, " "), w-1) + "\n"
+		out += " " + truncate(oneLine(strings.Join(flags, " ")), w-1) + "\n"
 	} else {
 		out += "\n"
 	}
@@ -955,7 +967,7 @@ func (m *Model) statusBar() string {
 	// a board that decided it for them once swept forty-nine people's tickets
 	// into one commit.
 	if n := m.readyToFile(); n > 0 {
-		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file ", n))
+		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file: %s ", n, fileCommand))
 	}
 
 	// Wrapped, never dropped: a key the bar has no room for is a key the reader
@@ -1655,6 +1667,22 @@ func padDisplay(s string, n int) string {
 		return s + strings.Repeat(" ", n-w)
 	}
 	return s
+}
+
+// oneLine folds a value onto a single row. Ticket fields are hand-editable and
+// the CLI takes them verbatim: `jaira create` accepts a title with a newline in
+// it and writes it as a YAML block scalar, which parses straight back. A card
+// row built from such a value is two rows, and then renderCard returns more
+// lines than cardHeight promises — the lane's row budget is wrong, the cards
+// below it are drawn over, and renderCardBlock indexes past the card's colour
+// slots. The break is not information the card could show anyway: three rows is
+// all a card has, so the newline becomes a space and the row count holds for
+// every value a ticket can carry.
+func oneLine(s string) string {
+	if !strings.ContainsAny(s, "\r\n") {
+		return s
+	}
+	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ").Replace(s)
 }
 
 // truncate cuts to a display width, counting grapheme width rather than bytes so

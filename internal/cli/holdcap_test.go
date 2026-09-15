@@ -298,3 +298,88 @@ func TestTheCutKeepsFilingPastAProblem(t *testing.T) {
 		t.Errorf("the finished ticket is still on the board — one bad file jammed the cut")
 	}
 }
+
+// Same cut, read by a machine. An agent running the cut with --json parses one
+// object and nothing else: a skipped ticket reported only as prose on stderr is
+// a skipped ticket it never hears about, and it would report the cut as whole.
+func TestTheCutJSONCarriesWhatItSkipped(t *testing.T) {
+	t.Setenv("JAIRA_USER", "berk")
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	mover, err := s.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(stamp), ticket.FieldTitle: "mover",
+		ticket.FieldStatus: "todo", ticket.FieldCreatedAt: ticket.FormatTime(stamp),
+		ticket.FieldUpdatedAt: ticket.FormatTime(stamp),
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(s.TicketsDir(), "broken.md"), []byte("not frontmatter at all"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force"); err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+
+	out, err := runCLI(t, dir, "logbook", "--all", "--json")
+	if err != nil {
+		t.Fatalf("logbook --all --json: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, `"trim_error"`) || !strings.Contains(out, `"count": 1`) {
+		t.Errorf("--json output lacks trim_error next to the successful cut:\n%s", out)
+	}
+}
+
+// TestTheCutJSONNamesEachHandle pins the handle in the --all entries: the cut
+// is what an agent runs, and the commit message it writes next names tickets
+// by handle, not by id. 'jaira logbook <id> --json' has always carried it.
+func TestTheCutJSONNamesEachHandle(t *testing.T) {
+	t.Setenv("JAIRA_USER", "berk")
+	dir := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(dir, "no-lanes"))
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	mover, err := s.Create(map[string]string{
+		ticket.FieldID: ticket.NewID(stamp), ticket.FieldTitle: "mover",
+		ticket.FieldStatus: "todo", ticket.FieldCreatedAt: ticket.FormatTime(stamp),
+		ticket.FieldUpdatedAt: ticket.FormatTime(stamp),
+	}, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "move", ticket.Handle(mover.ID), "--to", "done", "--force"); err != nil {
+		t.Fatalf("move: %v\n%s", err, out)
+	}
+
+	out, err := runCLI(t, dir, "logbook", "--all", "--json")
+	if err != nil {
+		t.Fatalf("logbook --all --json: %v\n%s", err, out)
+	}
+	// Not a bare handle search: the handle is the id's own tail, so looking
+	// for it alone passes on the id field and pins nothing.
+	if !strings.Contains(out, `"handle": "`+ticket.Handle(mover.ID)+`"`) {
+		t.Errorf("--json entry does not name the handle a commit message needs:\n%s", out)
+	}
+	// The cut and the sweep 'move' reports render a filed ticket through the
+	// same helper, so the title comes along. Pinning it here is what says the
+	// two shapes are one shape and not a coincidence.
+	if !strings.Contains(out, `"title": "mover"`) {
+		t.Errorf("--json entry does not carry the title that 'move' reports for a swept ticket:\n%s", out)
+	}
+}

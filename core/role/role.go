@@ -87,6 +87,10 @@ func load(id string) (Role, error) {
 		if d.IsDir() {
 			return nil
 		}
+		// io/fs paths are slash-separated on every platform, embed.FS
+		// included, so this cut is correct on Windows too — filepath here
+		// would be the bug.
+		//wintrap:ok
 		r.Files = append(r.Files, strings.TrimPrefix(p, root+"/"))
 		return nil
 	})

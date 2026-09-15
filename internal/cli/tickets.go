@@ -111,10 +111,10 @@ session and lock state is never committed. Safe to run more than once.`,
 
 func newCreateCmd() *cobra.Command {
 	var (
-		title, goalV, dod, contextV, assignee, laneID, tier, body, follows, parent string
-		blockedBy, tags, related                                                   []string
-		ready                                                                      bool
-		mine                                                                       bool
+		title, goalV, contextV, assignee, laneID, tier, body, follows, parent string
+		blockedBy, tags, related, dods                                        []string
+		ready                                                                 bool
+		mine                                                                  bool
 	)
 	cmd := &cobra.Command{
 		Use:   "create <title>",
@@ -220,6 +220,17 @@ already know it is yours; --assignee wins over it.`,
 				assignee = me
 			}
 
+			// The frontmatter field is one string and the body checklist is the
+			// list: core/gate reads DoDItems when there are any and only falls
+			// back to the scalar when there are none (core/gate/gate.go,
+			// fieldFilled). So the first criterion goes in the field to keep a
+			// one-line summary where every reader of the frontmatter looks, and
+			// every criterion goes in the checklist, which is what the gate
+			// actually counts. No new field, no list frontmatter.
+			dod := ""
+			if len(dods) > 0 {
+				dod = dods[0]
+			}
 			fields := map[string]string{
 				ticket.FieldID:        ticket.NewID(now),
 				ticket.FieldTitle:     title,
@@ -279,7 +290,7 @@ already know it is yours; --assignee wins over it.`,
 					}
 				} else {
 					db, _ := lane.LoadDefaultBoard()
-					body = ticket.NewBody(title, dod, lane.ResolveOptions(lanes, db))
+					body = ticket.NewBody(title, dods, lane.ResolveOptions(lanes, db))
 				}
 			}
 			t, err := s.Create(fields, lists, body)
@@ -293,10 +304,16 @@ already know it is yours; --assignee wins over it.`,
 			// On a board with a remote the ticket travels on its ref and the
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
-			onRefOnly := fileOnRefOnly(s, t)
+			onRefOnly, why := fileOnRefOnly(t)
 			if g.jsonOut {
 				payload := ticketJSON(t, lanes)
 				payload["on-ref-only"] = onRefOnly
+				// Both modes are named, and the file mode says why. An agent
+				// that only sees "on-ref-only": false learns nothing it can act
+				// on, which is how seventeen tickets went to disk unnoticed.
+				if !onRefOnly && why != nil {
+					payload["file-only-reason"] = noRefReason(why)
+				}
 				return emit(cmd.OutOrStdout(), payload)
 			}
 			for _, n := range tagNotes {
@@ -309,6 +326,26 @@ already know it is yours; --assignee wins over it.`,
 			}
 			if onRefOnly {
 				fmt.Fprintf(cmd.OutOrStdout(), "On its ref, not on your disk: whoever works it runs 'jaira pull %s'\n", ticket.Handle(t.ID))
+			} else if why != nil {
+				// The other mode says so too. Silence here is what cost an hour:
+				// the board had quietly stopped carrying tickets on refs and the
+				// only command that said so ran at the end of the chain.
+				fmt.Fprintf(cmd.OutOrStdout(), "as a file on your disk, not on a ref: %s\n", noRefReason(why))
+				// The way back is only advice where it can be taken. Not in a
+				// git repository, 'jaira release' can never work; and on a
+				// ticket that already has an assignee it would undo the
+				// '--mine' or '--assignee' of this very command, because
+				// clearing the holder is what release means. It says "works"
+				// rather than "is there" because the remote may well be there
+				// and the push the thing that failed.
+				if canReachARef(why) {
+					clears := ""
+					if holder := strings.TrimSpace(t.Assignee); holder != "" {
+						clears = fmt.Sprintf(" — and clears %s as its assignee", holder)
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "  once the remote works, 'jaira release %s' puts it on its ref%s\n",
+						ticket.Handle(t.ID), clears)
+				}
 			}
 			if !gate.Ready(t) {
 				missing := gate.Violations(nil)
@@ -322,7 +359,7 @@ already know it is yours; --assignee wins over it.`,
 	f := cmd.Flags()
 	f.StringVar(&title, "title", "", "ticket title (defaults to the positional arguments)")
 	f.StringVar(&goalV, "goal", "", "what this ticket is for")
-	f.StringVar(&dod, "dod", "", "definition of done: the checkable target")
+	f.StringArrayVar(&dods, "dod", nil, "definition of done: one checkable criterion; repeat for several")
 	f.StringVar(&contextV, "context", "", "why this ticket exists: what is wrong now, what triggered it, what is already known")
 	f.StringVar(&assignee, "assignee", "", "human who owns the outcome (otherwise set when someone pulls the ticket into work)")
 	f.BoolVar(&mine, "mine", false, "assign the ticket to you now; --assignee wins over it")

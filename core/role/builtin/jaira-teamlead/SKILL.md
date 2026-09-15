@@ -41,9 +41,17 @@ One dispatcher per ticket. Hand it the id and nothing else — the dispatcher
 skill carries the rest.
 
 **If Herdr is here (`HERDR_ENV=1`), the dispatcher gets its own tab**, the same
-way its workers do. Run `herdr --skill` for the mechanics. A dispatcher in a tab
-outlives you: the human can kill your session, start a new teamlead, and the
-work is still running — which is the whole reason the board exists.
+way its workers do. Start it with
+`.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
+the roles were installed globally — rather than assembling the calls yourself,
+and read `herdr --skill` only if you have to go around the script. Never call
+`claude --permission-mode ...` yourself: the permission classifier refuses it as
+"Create Unsafe Agents", and two dispatchers lost their tabs to that on
+2026-09-14. And `command -v herdr` is not the test for whether Herdr is here —
+on WSL the binary is `herdr.exe` under `/mnt/c` and never appears in `PATH`
+under that name; `$HERDR_BIN_PATH` names it. A dispatcher in a tab outlives you:
+the human can kill your session, start a new teamlead, and the work is still
+running — which is the whole reason the board exists.
 
 Without Herdr, start it as a subagent instead:
 
@@ -76,8 +84,9 @@ board.
 - **You never edit code.** A one-line fix is still a lane, and a lane is a
   worker's.
 - **You never move a ticket out of a human lane.** A person accepts work there.
-- **You never merge a pull request and never approve your own.** Opening one is
-  a contributor's job, accepting it is the maintainer's.
+- **You never open, merge or approve a pull request.** A worker pushes the
+  branch and stops; opening the pull request is the human's call and accepting
+  it is the maintainer's.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 
@@ -86,9 +95,10 @@ board.
 A dispatcher you put in a tab cannot close that tab — you created it, so it is
 yours. Read its three lines, tell the human, then close the tab.
 
-**Close it once the pull request is open, not once it is merged.** After that
-point an agent can do nothing: people and CI are what the ticket waits on, and
-that is hours or days. A finished dispatcher left sitting there is a live
+**Close it once the branch is pushed and the work is reported, not once a pull
+request exists.** That is where an agent's part ends: opening the pull request
+is the human's call, and from there people and CI are what the ticket waits on,
+which is hours or days. A finished dispatcher left sitting there is a live
 session doing nothing, and on five tickets it is five of them — with nothing in
 the tab strip to tell a waiting one from a working one.
 

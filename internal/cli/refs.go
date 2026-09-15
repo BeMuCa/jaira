@@ -2,9 +2,11 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/hook"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/outbox"
@@ -24,7 +26,12 @@ var refs *refsync.Syncer
 // ref.
 func attachRefs(s *ticket.Store) {
 	set := settings.Load()
-	refs = refsync.New(s, set.RemoteName(), s.Actor)
+	// The machine-wide setting in settings.json is only a default, and this is
+	// the one place per process that resolves it against the repository actually
+	// in front of us. Everything downstream reads the answer
+	// off refs.Repo.Remote rather than resolving it again, so a command costs the
+	// git calls once.
+	refs = refsync.New(s, set.RemoteFor(s.Root), s.Actor)
 	// "Me" includes the aliases a person recorded, so core/identity answers it
 	// rather than this package holding a second opinion about who someone is.
 	refs.IsMine = func(assignee string) bool {
@@ -51,8 +58,8 @@ func fireHook(name string, s *ticket.Store, t *ticket.Ticket) {
 	})
 }
 
-// fileOnRefOnly sends a freshly created ticket to its ref and, if the remote
-// accepted it, takes the local file away again.
+// fileOnRefOnly sends a ticket to its ref and, if the remote accepted it, takes
+// the local file away again.
 //
 // This is the one place the two storage modes are decided, and it is decided
 // once: a board with a remote keeps an unworked ticket on its ref only, a board
@@ -66,27 +73,116 @@ func fireHook(name string, s *ticket.Store, t *ticket.Ticket) {
 // A ticket that could not be sent keeps its file. It is then correct here,
 // carries the 'unsent' marker, and goes out with the next command — losing the
 // file for a write that never left the machine would lose the ticket.
-func fileOnRefOnly(s *ticket.Store, t *ticket.Ticket) (onRefOnly bool) {
-	if refs.Usable() != nil || t == nil {
-		return false
+//
+// The second return value is why the file stayed, and it is the whole point of
+// the signature: a bare false is what let 'jaira create' choose the file mode in
+// silence, so that seventeen tickets were written to disk and no command said
+// so. The caller prints this.
+func fileOnRefOnly(t *ticket.Ticket) (onRefOnly bool, why error) {
+	if t == nil {
+		return false, nil
+	}
+	if err := refs.Usable(); err != nil {
+		return false, err
 	}
 	reports, err := refs.Flush()
 	if err != nil {
-		return false
+		return false, err
 	}
 	for _, r := range reports {
 		if r.ID != t.ID {
 			continue
 		}
 		if r.Outcome != outbox.Sent {
-			return false
+			if r.Err != nil {
+				return false, fmt.Errorf("the write is %s: %w", r.Outcome, r.Err)
+			}
+			return false, fmt.Errorf("the write is %s", r.Outcome)
 		}
 		if err := os.Remove(t.Path); err != nil {
-			return false
+			return false, err
 		}
-		return true
+		return true, nil
 	}
-	return false
+	return false, errors.New("nothing was queued for this ticket")
+}
+
+// putOnRef is fileOnRefOnly for a ticket that already exists as a file: it
+// queues the bytes that are on disk now and then goes through the same send and
+// remove.
+//
+// It is the way back for a ticket created while the board had no usable remote.
+// Nothing about that is specific to how the ticket got here — Record leases the
+// empty string for a ticket with no ref, which is exactly "I expect this ref not
+// to exist", the same compare-and-swap a freshly created ticket makes.
+func putOnRef(t *ticket.Ticket) (onRefOnly bool, why error) {
+	if t == nil {
+		return false, nil
+	}
+	if err := refs.Usable(); err != nil {
+		return false, err
+	}
+	content, err := os.ReadFile(t.Path)
+	if err != nil {
+		return false, err
+	}
+	if err := refs.Record(t.ID, content); err != nil {
+		return false, err
+	}
+	return fileOnRefOnly(t)
+}
+
+// noRefReason renders why a ticket is not on a ref as the line a person can act
+// on: which remote was looked for, and what git said about it. Every command
+// that has to say it — 'jaira create' in its own words, 'jaira whoami', and the
+// --json field beside them — says it from here, so the three cannot drift apart.
+//
+// The diagnostic itself is gitref's (Repo.NoRemoteHint names the remote, the
+// remotes this repository does have, and the git config line that sets it).
+// This only puts it where the state is created instead of at the end of the
+// chain.
+//
+// It branches on the two halves of gitref.ErrNoRepo because they need opposite
+// words. A repository whose remote is missing has a name that was looked for,
+// remotes it does have, and a git config line that settles it — all of which
+// gitref already writes. A directory that is no repository at all has none of
+// that: naming a remote there is an invented problem, and the raw
+// "gitref: no repository or no such remote" was the reader's only clue that the
+// advice did not apply.
+func noRefReason(why error) string {
+	if why == nil {
+		return "this board does not carry tickets on refs"
+	}
+	if errors.Is(why, gitref.ErrNoGitRepo) {
+		return "this board is not in a git repository, so there is no remote to carry a ref"
+	}
+	if errors.Is(why, gitref.ErrNoGit) {
+		return "git is not available on PATH, so nothing can be pushed to a ref"
+	}
+	// Everything a reader can act on is already in gitref's own sentence: the
+	// remote name that was looked for, the remotes this repository really has,
+	// and the git config line that settles it. So it is asked for by name —
+	// Repo.NoRemoteHint — rather than cut back out of the error text, which tied
+	// this line to how Usable concatenated it: a changed format would have missed
+	// silently and left the reader with a line naming nothing. Nothing is wrapped
+	// around it either: "no remote \"origin\" — this repository has no remotes"
+	// already is the sentence, and a second framing in front of it only says the
+	// same thing twice.
+	if errors.Is(why, gitref.ErrNoRepo) && refs != nil && refs.Repo != nil {
+		return refs.Repo.NoRemoteHint()
+	}
+	// Nothing to ask: no repo on this process (refsync.Syncer.Usable returns a
+	// naked sentinel for a nil syncer), or an error from somewhere else. Say the
+	// one thing still known instead of printing the sentinel at somebody.
+	return "this board has no usable remote"
+}
+
+// canReachARef reports whether the board could carry tickets on refs once
+// somebody configures a remote. It is false where there is no repository, and
+// that is what keeps 'jaira create' from advising a command that cannot work
+// there however the user answers.
+func canReachARef(why error) bool {
+	return !errors.Is(why, gitref.ErrNoGitRepo) && !errors.Is(why, gitref.ErrNoGit)
 }
 
 // openedStore is the store this command opened, remembered so the work that

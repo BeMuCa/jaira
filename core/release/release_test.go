@@ -92,11 +92,27 @@ func TestEmbeddedNotesParseToAtLeastOneRealEntry(t *testing.T) {
 	if len(notes) == 0 {
 		t.Fatal("Notes() is empty — NOTES.md failed to parse into any entry")
 	}
-	e := notes[0]
-	if e.Version == "" {
-		t.Error("first entry has an empty Version")
+	for _, e := range notes {
+		if e.Version != "" && len(e.Changes) > 0 {
+			return
+		}
 	}
-	if len(e.Changes) == 0 {
-		t.Error("first entry has no Changes")
+	// Entry zero is deliberately not the one checked: straight after a release
+	// cut it is an empty "## Unreleased", which is what the release procedure
+	// prescribes. What must hold is that some released section carries changes.
+	t.Fatalf("no entry in NOTES.md has both a version and changes: %#v", notes)
+}
+
+// An empty leading "## Unreleased" is the state NOTES.md is left in by every
+// release cut, so the parser has to keep recognising it as an entry of its own
+// rather than dropping it or letting the next section's changes fall into it.
+func TestParseNotesKeepsAnEmptyLeadingSection(t *testing.T) {
+	entries := parseNotes("## Unreleased\n\n## 0.1.0\n- a released change\n")
+	want := []Entry{
+		{Version: "Unreleased"},
+		{Version: "0.1.0", Changes: []string{"a released change"}},
+	}
+	if !reflect.DeepEqual(entries, want) {
+		t.Fatalf("parseNotes = %#v, want %#v", entries, want)
 	}
 }
