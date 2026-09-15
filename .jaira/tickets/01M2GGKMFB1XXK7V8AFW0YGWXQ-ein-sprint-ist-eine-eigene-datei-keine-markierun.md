@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,16 +40,18 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:21:52Z
+updated-at: 2026-09-15T18:29:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
 claimed-at: 2026-09-15T18:09:30Z
-outcome-what: "critique-Runde 4 ohne Finding: die drei Text-Findings aus Runde 3 sind nachgemessen behoben, und ein Durchgang durch den ganzen Diff - core/milestone, internal/cli/milestones.go, der TUI-Teil und der Ref-Weg - bringt nichts Neues."
-outcome-why: "Die Lane endet, wenn ein Durchgang nichts findet. Die Findings-Zahl ist 9, 6, 3, 0 gelaufen, keines wurde wiederholt, und die vier stehengelassenen Abwaegungen bleiben stehen."
-outcome-resolves: "review-summary=none gesetzt; kein DoD-Punkt aendert sich, der Code ist seit Runde 3 unveraendert."
+outcome-what: "testing: Suite gruen und alle sieben DoD-Punkte am Baum nachgeprueft; DoD 6 auf einem Scratch-Board mit dem echten Binary nachgestellt"
+outcome-why: "die Lane prueft, ob das Geforderte existiert und funktioniert, nicht ob der Outcome-Text stimmt"
+outcome-resolves: "test-verdict=pass; DoD 6 abgehakt mit der Nachstellung als Proof"
 review-summary: none
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
+test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
+question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, Milestone-Anlegen, Hand-Edit-Weitertragen, Ref-Transport und Board-Filter am echten Binary vorgefuehrt. Nimmst du die Arbeit an, oder soll noch etwas geprueft werden, bevor sie in review geht?"
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
@@ -66,7 +68,8 @@ review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert 
   proof: internal/tui/milestonebar_test.go:TestRightBarWidthIsTheSameWithAndWithoutMilestones
 - [x] Das Board zieht sich mit einer Geste auf einen Milestone zusammen, und 'jaira list' hat den entsprechenden Schalter.
   proof: internal/tui/milestonebar_test.go:TestPickerNarrowsTheBoardAndReleasesIt
-- [-] Unerledigte Arbeit wandert in den naechsten Sprint, indem eine Datei bearbeitet wird - nicht indem jedes Ticket einzeln angefasst wird. Nachgestellt mit mindestens drei Tickets, von denen zwei weiterwandern.
+- [x] Unerledigte Arbeit wandert in den naechsten Sprint, indem eine Datei bearbeitet wird - nicht indem jedes Ticket einzeln angefasst wird. Nachgestellt mit mindestens drei Tickets, von denen zwei weiterwandern.
+  proof: testing lane, reenacted on a scratch board: sprint-1 with 3 tickets, 2 lines moved by hand into sprint-2.md, one edit — jaira list --milestone then shows 1 and 2
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt.
   proof: core/release/NOTES.md:17
 
@@ -264,3 +267,4 @@ Ausdruecklich NICHT aufgemacht, weil in Runde 1 bis 3 stehengelassen und die Beg
 Die Schleife hat konvergiert: 9, 6, 3, 0. Das ist der vorgesehene Ausgang der Lane und keine Nachsicht - eine vierte Runde haette nur wiederholt, was schon beantwortet ist.
 - **2026-09-15 18:21 · Alexander Sacharov** — optimize: staticcheck U1000 ueber core/milestone, core/outbox, core/gitref, internal/cli und internal/tui findet nichts, was dieser Branch verwaist hat - die drei Treffer (share.go isShared, model.go laneStart, model.go currentLane) stehen schon auf master. staticcheck ist im Repo nicht installiert, lief ueber 'go run honnef.co/go/tools/cmd/staticcheck@latest'.
 - **2026-09-15 18:21 · Alexander Sacharov** — optimize: .jaira/milestones/demo-*.md sind Handtest-Dateien aus einer frueheren Lane und bleiben untracked - sie gehoeren nicht in den Commit, aber jemand sollte sie am Ende loeschen.
+- **2026-09-15 18:28 · Alexander Sacharov** — testing: go build/vet ./... RC=0, go clean -testcache && go test ./... -race green in all 28 Pakete (internal/tui 123s). DoD 1-5 und 7: jede Proof-Zeile im Baum nachgeschlagen, die Tests laufen einzeln gruen. DoD 6 war ungehakt und ohne Proof - auf einem Scratch-Board mit dem echten Binary nachgestellt: sprint-1 mit drei Tickets, zwei Zeilen von Hand in sprint-2.md verschoben, danach 'jaira list --milestone' 1 bzw. 2 Tickets; Kommentar und Leerzeilen der Datei ueberleben spaetere 'milestone add/rm'. Ref-Weg mit zwei echten Clones geprueft: refs/jaira/milestones/sprint-x steht auf dem Remote, im zweiten Clone die Datei geloescht, 'jaira fetch' holt sie zurueck und nennt 'Milestones updated from the remote: sprint-x'. Nebenbei: --color 0 und 256 werden mit RC=2 abgelehnt, Umbenennen per mv der Datei wirkt sofort, --milestone nope gibt 'No tickets match.' RC=0. Nicht mitcommittet: .jaira/milestones/demo-*.md im Worktree sind Demo-Dateien aus einer frueheren Lane und bleiben untracked.
