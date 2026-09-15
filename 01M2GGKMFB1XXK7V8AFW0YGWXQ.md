@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -39,14 +39,14 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:39:21Z
+updated-at: 2026-09-15T15:39:35Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
 claimed-at: 2026-09-15T15:33:55Z
-outcome-what: "core/milestone (Datei, Farbe, Index), jaira milestone create/add/rm/ls, jaira list --milestone, die rechte Kartenkante und der M-Picker im TUI, und ein zweiter Ref-Namensraum refs/jaira/milestones/ durch gitref, outbox, refsync und jaira fetch."
-outcome-why: "Ein Tag am einzelnen Ticket kann unerledigte Arbeit nicht in die naechste Runde tragen: jedes Ticket liegt auf seinem Ref, das sind zwanzig Vorgaenge. Eine Datei wird stattdessen in einem Griff bearbeitet."
-outcome-resolves: "DoD 1-5 und 7 erfuellt und mit Tests belegt; DoD 6 war bereits von Alex' Milestone-Entscheidung vom 15.09. als superseded markiert."
+outcome-what: "Alle neun critique-Findings behoben: der ungenutzte Milestone-Loeschweg entfernt, MilestoneSender in Sender aufgeloest, die Frontmatter-Zeile von 'colour:' auf 'color:' gebracht, validColour/itoa/atoi/Milestone.path/activeMilestones durch die vorhandenen Dinge ersetzt und der Hilfetext von 'jaira fetch' auf refs/jaira/* richtiggestellt."
+outcome-why: "Die Datei ist die API: 'colour:' waere nach dem Release ein Bruch, jetzt eine Zeile. Der Rest war Code, den nichts aufruft, und zweite Namen fuer Dinge, die es schon gibt - beides driftet auseinander, sobald jemand eines von beiden aendert."
+outcome-resolves: "Kein Verhalten der DoD-Punkte geaendert; alle Tests gruen. Plan-Schritt 5 nachgetragen abgehakt (Index in internal/cli/milestones.go:29 und internal/tui/model.go:374)."
 review-summary: |-
   core/refsync/refsync.go:197 RecordMilestoneDelete has no caller anywhere, and neither does core/outbox/outbox.go:280 PendingMilestone; gitref.DeleteMilestone is reached only from an OpDelete branch nothing ever queues and no command deletes a milestone — delete the three, or add 'jaira milestone delete <name>' and wire them
   core/outbox/outbox.go:282 MilestoneSender and the s.(MilestoneSender) assert at :364 handle a state that cannot occur: Box.Flush has one call site, core/refsync/refsync.go:344, passing *gitref.Repo, which implements both halves — put WriteMilestone/DeleteMilestone on Sender itself and drop the assert, the 'this sender cannot carry milestones' error and the (error, bool) return of send()
