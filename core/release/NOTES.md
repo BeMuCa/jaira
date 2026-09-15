@@ -14,6 +14,12 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Group a round of work with `jaira milestone create <name> [id...]`, `jaira milestone add <name> <id>...`, `jaira milestone rm` and `jaira milestone ls`: a milestone is a set of tickets that belong together, and every call writes exactly one file, so grouping twenty tickets is one edit instead of twenty.
+- Edit `.jaira/milestones/<name>.md` by hand when that is faster: frontmatter carries the name, colour and creation time, one ticket id per line below it, and jaira keeps your comments, blank lines and chosen order exactly as it found them. Carrying unfinished work into the next round is moving those lines into the next milestone's file.
+- Narrow `jaira list` to one round of work with `--milestone <name>`, matched exactly like `--tag`; every `jaira list --json` row now also carries a `milestones` array naming the groups the ticket is in.
+- Press `M` on the board to pick a milestone and pull everything down to it, `x` there to show the whole board again — the pick writes the ordinary filter, so `esc` clears it like any other.
+- Read a card's milestone off its RIGHT edge: up to three coloured cells there, in file order, with the tag colours staying on the left. A ticket in no milestone shows nothing there and its card is exactly as wide, so titles do not shift as tickets join a group.
+- Expect a milestone to reach your teammates without a branch being merged: it travels on `refs/jaira/milestones/<name>` beside the ticket refs, `jaira fetch` brings it down and writes the file, and it names the milestones it updated.
 
 ## 0.2.1
 - Ignore the 0.1.4 note telling you to delete `logbook-on-entry: true` from `.jaira/lanes/done.md` by hand: a board made before that change now loses the line by itself the next time jaira reads it, once per board, and says on stderr — even under `--json`, and whichever command happens to read the board first — which file it changed and how to write the line back if you want the old doorway. A `done.md` you wrote yourself is never edited — it is reported instead, with the line to remove, because a lane file you hold is your lane.

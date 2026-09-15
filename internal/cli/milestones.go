@@ -125,6 +125,7 @@ and you are told so.`,
 			if err := ms.Save(s.Root); err != nil {
 				return err
 			}
+			recordMilestone(s, ms)
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
@@ -226,6 +227,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		if err := ms.Save(s.Root); err != nil {
 			return err
 		}
+		recordMilestone(s, ms)
 	}
 
 	w := cmd.OutOrStdout()
@@ -297,6 +299,26 @@ work and each filters to half of it.`,
 			fmt.Fprintf(w, "\nFiles: %s\n", milestone.Dir(s.Root))
 			return nil
 		},
+	}
+}
+
+// recordMilestone puts the milestone file on its own ref, the way every ticket
+// write is put on the ticket's. Queued, never pushed here: the write path must
+// not wait for a network, and an unsent milestone goes out with the next
+// command like everything else in the outbox.
+//
+// Best effort, and deliberately: a board with no repository or no remote is a
+// supported way to use jaira, and refusing to group tickets because there is
+// nowhere to send the grouping would break the local case to serve the shared
+// one.
+func recordMilestone(s *ticket.Store, ms *milestone.Milestone) {
+	content, err := os.ReadFile(milestone.Path(s.Root, ms.Name))
+	if err != nil {
+		return
+	}
+	if err := refs.RecordMilestone(ms.Name, content); err != nil {
+		warnRef(map[string]any{"milestone": ms.Name, "error": err.Error()},
+			"jaira: warning: milestone %q was written here but could not be queued for the remote: %v", ms.Name, err)
 	}
 }
 

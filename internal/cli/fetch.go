@@ -54,13 +54,23 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if !quiet {
 				announceArrivals(arrivals)
 			}
+			// Milestones ride the same fetch and are written straight to
+			// disk: a milestone has no lane and no editor here, the file IS
+			// the interface, so a group that stayed on a ref would be a group
+			// nobody can open.
+			openedMilestones, err := refs.IncomingMilestones(openedStore.Root)
+			if err != nil {
+				return err
+			}
 			departed := refs.Departed()
 			stranded := strandedHere()
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
+					"milestones": strOrEmpty(openedMilestones),
 				})
 			}
+			printMilestones(cmd.OutOrStdout(), openedMilestones)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)
@@ -69,6 +79,19 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 	}
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "do not raise a desktop notification")
 	return cmd
+}
+
+// printMilestones says which milestone files this fetch put on disk. Named
+// rather than counted: the reason to care is that a round of work you are in
+// has changed, and that is a name, not a number.
+func printMilestones(w io.Writer, names []string) {
+	if len(names) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones updated from the remote:\n")
+	for _, n := range names {
+		fmt.Fprintf(w, "  %s\n", n)
+	}
 }
 
 // announceArrivals raises one notification per ticket newly assigned to this
