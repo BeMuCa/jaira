@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:22:28Z
+updated-at: 2026-09-15T20:22:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -75,6 +75,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [ ] Ein Milestone verschwindet nur auf Kommando, nie von allein: ein leer geraeumter Milestone bleibt stehen, bis jemand ihn ablegt. Nachgestellt, indem das letzte Ticket herausgenommen wird - danach nennt 'jaira milestone ls' ihn unveraendert.
 - [ ] 'jaira logbook' legt einen Milestone ab wie ein Ticket: er wandert unter .jaira/logbook/, 'jaira milestone ls' nennt ihn nicht mehr, das Board zeigt ihn nicht und der M-Filter kennt ihn nicht. 'jaira restore' holt ihn zurueck, samt Ticket-Liste und Farbe.
 - [ ] Der Ref eines abgelegten Milestones wird NICHT geraeumt: er bleibt stehen und traegt im Frontmatter den Status 'abgelegt'. Nachgestellt an zwei Arbeitsbaeumen - der zweite zieht die Refs und schreibt den abgelegten Milestone NICHT wieder aufs Board.
+- [ ] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
+- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
 
 ## Options
 
