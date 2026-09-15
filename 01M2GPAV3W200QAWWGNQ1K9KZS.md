@@ -26,9 +26,11 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T06:57:20Z
+updated-at: 2026-09-15T06:57:22Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-40747
+claimed-at: 2026-09-15T06:57:22Z
 ---
 
 # Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen
