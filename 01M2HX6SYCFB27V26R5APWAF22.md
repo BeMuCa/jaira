@@ -13,8 +13,8 @@ related:
   - 01M2HX55H2EPFZ8M3AFW0S1A7M
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-09-15T06:49:44Z
-assignee: Alexander Sacharov
+updated-at: 2026-09-15T06:49:49Z
+assignee: ""
 updated-by: Alexander Sacharov
 context: |-
   Nach 'jaira self update' haengt jedes Board zurueck, und es haengt an drei Stellen zurueck: der erzeugte Agent-Block in CLAUDE.md und AGENTS.md, die Rollen-Prompts, und die Lanes.
