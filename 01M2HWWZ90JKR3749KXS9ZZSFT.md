@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:09:43Z
+updated-at: 2026-09-15T13:10:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -80,3 +80,8 @@ Damit ist die Kernaussage des Kontexts - 'die Commits bewahren nichts, der Ref t
 Folge fuer Plan-Schritt 2: Weg (a) - 'der Ref traegt sie, git nie' - darf nicht bedingungslos in den erzeugten Block geschrieben werden. Die Regel muss entweder an 'Board hat ein Remote' geknuepft werden, oder der Verzicht auf den Commit gilt nur fuer Lanes, deren Vermerk eine spaetere Code-Lane ohnehin mitnimmt.
 
 Deshalb committet dieser pre-process-Schritt seine Ticket-Datei doch: sie war untracked, kein Ref haelt sie, und ohne Commit gaebe es auf dem Zweig nichts, was das Ticket mit der Arbeit verbindet - und keine ableitbare Commit-Liste.
+- **2026-09-15 13:10 · Alexander Sacharov** — Entscheidung zu Plan-Schritt 2 (Weg (a), mit einer Verschaerfung): eine Lane ohne Code-Aenderung committet nichts. Die Ticket-Datei bleibt im Arbeitsbaum geaendert; der naechste Commit, der Code traegt, nimmt sie mit. Weg (b) - ein Abschluss-Commit vor dem Push - ist ausgeschlossen, weil er woertlich das ist, was die DoD verbietet.
+
+Schritt 3 geprueft, und er entschaerft den Einwand aus der vorigen Notiz: das Gate laesst den Zug in die Endlane zu, auch wenn die Ticket-Datei nie committet wurde. core/gate/gate.go:322 verlangt nur, dass CommitsForTicket etwas findet, und core/gitrepo/derive.go:19 bildet die Vereinigung aus Datei-Historie UND Commits, die den Handle im Betreff nennen. Die zweite Quelle allein genuegt. Die Refusal-Meldung sagt das sogar selbst ('or name <handle> in the commit message'). Damit wird das Nennen der Id im Betreff von einer Gewohnheit zur Bedingung - und genau deshalb steht es jetzt als eigener Punkt im erzeugten Block, nicht als Nebensatz.
+
+Der Preis, den ich bewusst nehme: Notizen, die nach dem letzten Code-Commit entstehen (critique/testing/review am Ende einer Schleife, die nichts mehr zurueckschickt), stehen nicht auf dem Zweig. Auf einem Board mit konfiguriertem Remote holt refsync.Pull sie zurueck; auf diesem Board - ohne Remote, siehe vorige Notiz - bleiben sie im Arbeitsbaum, bis ein spaeterer Commit sie mitnimmt. Das ist begrenzt: die Ticket-Datei ist ab dem ersten Code-Commit getrackt, veraltet sind also die letzten Notizen, nicht das Ticket. Wer das spaeter anders entscheidet, muss zuerst die DoD dieses Tickets aendern - sie schliesst den Abschluss-Commit aus, nicht ich.
