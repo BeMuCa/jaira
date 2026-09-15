@@ -13,7 +13,9 @@ related:
   - 01M28FMQGC4CNQT8Z9WY13VMA8
 commits: []
 created-at: 2026-09-15T07:24:12Z
-updated-at: 2026-09-15T07:24:12Z
+updated-at: 2026-09-15T07:24:34Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Die Zeile, die ein Mensch in der Sackgasse kopiert, setzt einen Wert fuer ihn ein
