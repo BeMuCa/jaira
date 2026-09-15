@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,14 +40,14 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:11:43Z
+updated-at: 2026-09-15T18:12:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
 claimed-at: 2026-09-15T18:09:30Z
-outcome-what: "Alle sechs Findings der critique-Runde 2 behoben: Dateiname ist der einzige Milestone-Name (name: raus aus New und parse), QueueKind loescht den superseded flachen Outbox-Eintrag, HasColour() als einzige Stelle fuer 'Farbe 0 heisst keine Farbe' plus Abweisung von --color 0, refDelete/listRemoteNames inline, DropKind normalisiert kind statt Pfade zu vergleichen, ein swatch-Helfer statt zwei Ausdruecken."
-outcome-why: "Finding 1 und 2 waren echte Fehler: ein von Hand geaenderter name: legte beim naechsten add eine zweite Datei an, und ein von einem aelteren Build hinterlassener Outbox-Eintrag wurde neben dem neuen gesendet - erst der veraltete Inhalt, dann ein Lease, das der Remote nicht mehr hat. Nachgemessen mit TestQueueSupersedesTheEntryAnOlderBuildLeft, der ohne den Fix zwei Eintraege derselben ID sieht."
-outcome-resolves: "Kein DoD-Punkt aendert sich - die sechs Findings waren Korrektheit und Doppelung innerhalb der schon gebauten Mechanik. go vet und go test ./... sind gruen."
+outcome-what: "Die drei Findings der critique-Runde 3 behoben, alle drei Text: der Hilfetext von 'jaira milestone' sagt jetzt, dass der Dateiname der Name ist und die Frontmatter nur color und created-at traegt; --color steht an allen vier Stellen als 1-255 mit dem Grund (0 faerbt keine Zelle); docs/COMMANDS.md hat --milestone bei 'jaira list' und vier Zeilen fuer milestone create/add/rm/ls in der Writing-Tabelle."
+outcome-why: "Die drei Texte waren die Stellen, die man VOR dem Aufruf liest. Ein von Hand eingetragenes name: aendert seit Runde 2 nichts und niemand merkt es; '--color <0-255>' laedt dazu ein, 0 zu uebergeben, was der Code zurueckweist; und COMMANDS.md wird von README.md:676 als vollstaendige Referenz ausgewiesen, fuehrte die Befehlsfamilie aber ueberhaupt nicht."
+outcome-resolves: "Kein DoD-Punkt aendert sich - der Code ist unveraendert, es war Dokumentation an drei Stellen. go vet und go test ./... sind gruen."
 review-summary: |-
   internal/cli/milestones.go:51 der Hilfetext von 'jaira milestone' sagt weiter "Frontmatter carries the name, the colour and when it was created" - seit Runde 2 schreibt New() kein name: mehr und parse() liest keines; wer das liest und von Hand ein name: einträgt, ändert nichts und merkt es nie. Ersetzen durch: der Dateiname IST der Name, die Frontmatter trägt color und created-at - genau wie core/milestone/milestone.go:154 und core/release/NOTES.md:18 es schon sagen.
   internal/cli/milestones.go:78 und :146 nennen den Bereich weiter "--color <0-255>" bzw. "ANSI-256 colour (0-255)", während :123 jetzt "1-255" fordert und 0 zurückweist; drei Stellen, zwei davon falsch, und die falschen sind die, die man vor dem Aufruf liest. Beide auf 1-255 ändern, mit dem Grund in einem Halbsatz (0 färbt keine Zelle).
