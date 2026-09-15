@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:06:10Z
+updated-at: 2026-09-15T15:10:04Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -64,10 +64,10 @@ outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Format festlegen und als Paket-Doku in core/milestone hinschreiben: .jaira/milestones/<name>.md, Frontmatter name/colour/created-at, Body eine Zeile je Mitglied - wie eine Ticket-Datei, und eine Zeile ist das Kleinste, was git mergen kann
-- [ ] core/milestone: Load/LoadAll/Save nach dem Vorbild von core/tag (core/tag/tag.go:189 Load, :371 Save) - Zeilen verbatim erhalten, WriteAtomic, Mitgliederliste parsen
-- [ ] Farbvergabe: zufaellig aus einer Palette, die keine Farbe eines schon vorhandenen Milestones doppelt; die Farbe steht in der Milestone-Datei selbst, kein zweites zentrales Registry
-- [ ] Test: eine Milestone-Datei von Hand editieren (Kommentar, Leerzeile, eigene Reihenfolge) und nach Load/Save unveraendert wiederfinden
+- [x] Format festlegen und als Paket-Doku in core/milestone hinschreiben: .jaira/milestones/<name>.md, Frontmatter name/colour/created-at, Body eine Zeile je Mitglied - wie eine Ticket-Datei, und eine Zeile ist das Kleinste, was git mergen kann
+- [x] core/milestone: Load/LoadAll/Save nach dem Vorbild von core/tag (core/tag/tag.go:189 Load, :371 Save) - Zeilen verbatim erhalten, WriteAtomic, Mitgliederliste parsen
+- [x] Farbvergabe: zufaellig aus einer Palette, die keine Farbe eines schon vorhandenen Milestones doppelt; die Farbe steht in der Milestone-Datei selbst, kein zweites zentrales Registry
+- [x] Test: eine Milestone-Datei von Hand editieren (Kommentar, Leerzeile, eigene Reihenfolge) und nach Load/Save unveraendert wiederfinden
 - [ ] Index ID -> Milestones einmal beim Laden bauen, neben link.Build in loadEnv (internal/cli/root.go:275) und im TUI (internal/tui/model.go:352); CLI und TUI lesen denselben Index
 - [ ] CLI: jaira milestone create/add/rm/ls - je Aufruf genau ein Dateischreibvorgang, damit zwanzig Tickets gruppieren eine Bearbeitung bleibt
 - [ ] CLI: jaira list --milestone <name> (neben --tag, internal/cli/tickets.go:528) und der Schluessel milestone:<name> in beiden matches() (internal/cli/tickets.go:534, internal/tui/model.go:598) - exakt wie tag, nicht als Teilstring
@@ -163,3 +163,4 @@ RECHTE KARTENKANTE: 'die Karte wird nicht breiter' ist erfuellbar, 'der Titel wi
 DIE GESTE: kein neuer Filtermechanismus. Das Board hat schon m.filter mit key:value (internal/tui/model.go:598) und die Tag-Box auf 't' (:1010). Ein Milestone-Picker, dessen Auswahl m.filter auf milestone:<name> setzt, ist eine Geste und kein zweiter Weg zum selben Ziel. Der Schluessel wird exakt verglichen, nicht als Teilstring - genau wie tag, sonst widerspricht das Board 'jaira list --milestone'.
 
 NOCH FAUL AM TICKET, ausserhalb dieser Lane: der TITEL sagt weiter 'Sprint'. jaira hat keinen Umbenennen-Befehl. Wer das Ticket aufmacht, liest im Titel den Entwurf vom 14.09. und im Ziel den vom 15.09.
+- **2026-09-15 15:10 · Alexander Sacharov** — core/milestone, 2026-09-15. Was das Paket nicht tut und warum: keine eigene Palette - Palette = tag.Palette, weil Tag links und Milestone rechts auf der Karte stehen und nie verwechselt werden koennen; sechzehn weitere Werte wuerden nur naeher an die Statusfarben (39/214/203/78/141) ruecken. Mitglied ist die VOLLE ULID, nicht das Handle: die Datei ist auch der Merge-Gegenstand, und ein Handle ist nicht garantiert eindeutig. parseMember akzeptiert nur eine gueltige ULID, damit ein gewoehnlicher Markdown-Bullet in der Prosa nicht als Mitglied gelesen wird - das ist der Grund, warum die Datei ueberhaupt Prosa enthalten darf. Load/Save haelt die Zeilen verbatim wie core/tag, Frontmatter wird NICHT ueber core/ticket geparst: die Ticket-Frontmatter kennt Schema und Pflichtfelder, ein Milestone hat drei Zeilen.
