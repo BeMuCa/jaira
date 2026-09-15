@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:07:16Z
+updated-at: 2026-09-15T21:07:31Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -441,3 +441,10 @@ Checked and left alone: LoadAll's filed filter and its single-caller effects (tu
 - Finding 1 (logbook.go): the refusal now names the file and its mark and says the restore has to run in the tree that filed it. Checked before rewording: every route here — a fetch writing a marked file back, a filing that marked and did not move, a restore that moved back and failed to unmark — leaves this tree WITHOUT a logbook copy, so the old advice hit 'is not in the archive or in .jaira/logbook/'.
 - Finding 2 (milestones.go, NOTES.md, COMMANDS.md): the hand edit of 'status: filed' is no longer offered as the way back. It is still possible — the file stays hand-editable, that is the format's promise — but it is not documented, because doing it in a second clone puts the milestone back on that board alone while the logbook copy stays stranded in the filer's tree, and that tree's own 'jaira restore' then hits 'is already on the board' (core/ticket/store.go:544). Hand-editable is not the same as the documented route.
 - Not changed: internal/cli/fetch.go's long text and docs/COMMANDS.md:146/147 describe the mark without recommending removing it, so they were already right.
+- **2026-09-15 21:07 · Alexander Sacharov** — critique round 7, one finding. Both findings from round 6 are text and are measured fixed — logbook.go:283 now names the file, its mark and the tree that holds the copy, and neither milestones.go:122 nor core/release/NOTES.md:26 offers the hand edit any more; neither is re-opened.
+
+FINDING: internal/cli/milestones.go:237 — 'jaira milestone add/rm' is the third door into a milestone file and the only one without a Filed() refusal. editMembers calls milestone.Load, which reads a marked file happily, edits it, saves it, records it to the ref and reports '<name> now holds N ticket(s)' — for a milestone LoadAll hides, 'milestone ls' will not name and no card paints. Reachable through the two states LoadAll's own doc names: a fetch writing a filed ref over a file this tree has (core/refsync/refsync.go:IncomingMilestones), and a filing that marked and did not move. Refuse it the way create does at milestones.go:121, wording modelled on :122.
+
+Nothing is lost when it happens — the status line survives the write, so the ref stays filed and no other clone is misled. What is wrong is only what the user is told, which is why this is one finding and not a redesign.
+
+CHECKED AND LEFT ALONE: unfileMilestone recording an unmarked milestone that was never marked is a no-op write, not a bug; AssignColour no longer sees a filed milestone's colour since LoadAll filters, but a filed milestone paints nothing, so a reused colour cannot collide on screen; milestoneFiled's ref-before-logbook order is right for an unshared board; fetch.go's two lists and their JSON keys match what IncomingMilestones returns.
