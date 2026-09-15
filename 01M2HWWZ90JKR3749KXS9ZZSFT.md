@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:34:25Z
+updated-at: 2026-09-15T13:34:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -27,8 +27,8 @@ context: |-
   Der Punkt, der die Sache entscheidet: diese Commits sind nicht das, was den Zustand bewahrt. Record() (core/refsync/refsync.go:108) stellt JEDE Schreibung - note, move, dod - in die Outbox und schickt sie auf den Ref, unabhaengig von git. Die Commits dienen der Lesbarkeit des Pull Requests, nicht der Haltbarkeit. Wer sie weglaesst, verliert nichts Dauerhaftes.
 
   Was dabei nicht kaputtgehen darf: jaira leitet die Commit-Liste eines Tickets aus der Vereinigung zweier Quellen ab - der Historie der Ticket-Datei UND der Commits, die seine Id nennen. Faellt die erste Quelle weg, haengt alles daran, dass Commits die Id im Betreff tragen. Heute tun sie das ohnehin ('fix(KSGSKK): ...'), aber aus einer Gewohnheit wird damit eine Bedingung.
-claimed-by: DESKTOP-RFTCH11-41016
-claimed-at: 2026-09-15T13:03:43Z
+claimed-by: DESKTOP-RFTCH11-91666
+claimed-at: 2026-09-15T13:34:55Z
 outcome-what: "Die Formulierung 'the `jaira logbook <id>` commit' ist in allen sieben Kopien durch 'the commit that files the ticket away with `jaira logbook <id>`' ersetzt: core/board/announce.go:100 (und darueber erzeugt AGENTS.md:71 und CLAUDE.md:98), docs/AGENTS.md:76, .claude/skills/jaira/SKILL.md:281, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:848, core/release/NOTES.md:17 sowie die handgeschriebenen PR-Abschnitte AGENTS.md:186 und CLAUDE.md:176, die 'jaira update' nicht anfasst. Die Absaetze in docs/AGENTS.md und .claude/skills/jaira/SKILL.md, in die der logbook-Halbsatz im vorigen Durchgang eingefuegt wurde, laufen wieder durchgehend auf 80 Zeichen."
 outcome-why: "Befund (2) des zweiten critique-Durchgangs: der alte Wortlaut macht jaira zum Urheber des Commits. Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei, und .claude/skills/jaira/SKILL.md:289 sagt sechs Zeilen tiefer 'jaira never commits for you' - der Widerspruch stand auf einem Bildschirm. Befund (1): der eingefuegte Halbsatz war nicht neu umbrochen, docs/AGENTS.md:77 lief auf 123 und .claude/skills/jaira/SKILL.md:282 auf 120 Zeichen mitten in einem 80er-Absatz; der naechste Diff dieses Absatzes haette jede Zeile neu gefaerbt."
 outcome-resolves: "Beide Befunde des zweiten critique-Durchgangs sind erledigt; kein 'logbook ... commit' in diesem Wortlaut bleibt im Baum (grep leer). DoD 3 und 4 bleiben getickt und werden praeziser: die Regel lautet in allen Quellen gleich und behauptet nichts Falsches ueber das Werkzeug. DoD 1 und 2 bleiben der testing-Lane vorbehalten. go build ./... und go test ./... gruen; der Zweig traegt drei Commits, jeder mit Code und Handle im Betreff, keiner nur mit .jaira/."
