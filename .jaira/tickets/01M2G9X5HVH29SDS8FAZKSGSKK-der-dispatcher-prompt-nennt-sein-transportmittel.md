@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:45:19Z
+updated-at: 2026-09-15T05:46:08Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53136
@@ -231,3 +231,19 @@ Der Umbruch teamlead/SKILL.md:44-47 ist erledigt, kein Befund.
 Nicht neu aufgemacht, stand in Durchgang 1 oder 2 schon so: die doppelte Warnung in beiden Prompts (DoD 2+3 verlangen sie), die lange NOTES.md-Zeile, die Plattform-Weiche spawn.sh:56, das Zustands-Literal zweimal (68 und 75), und dass spawn.sh keinen /jaira-role-tester starten kann (eigenes Ticket).
 
 Fuer den Dispatcher: das ist die DRITTE Ruecksendung dieser Lane. Die Stoppregel in dispatcher/SKILL.md:190 greift damit nach diesem Fix - nicht noch eine vierte Runde, sondern dem Menschen vorlegen.
+- **2026-09-15 05:46 · Alexander Sacharov** — STOPP DES DISPATCHERS - DRITTE RUECKGABE DURCH critique (2026-09-15).
+
+Die Regel aus jaira-dispatcher/SKILL.md: 'the same lane sent work back three times. Stop there and hand it to the person. This one is not yours to argue with.' critique hat dreimal zurueckgeschickt. Ich fuehre keine vierte Runde. Das Ticket bleibt in in-progress; ich habe es NICHT nach human bewegt, weil test-verdict leer ist und ein Ticket mit leerem test-verdict in einer menschlichen Lane genau der Fehler vom 2026-09-14 waere.
+
+Die drei Runden, damit der Mensch beurteilen kann, welche Art Schleife das ist:
+- Runde 1: vier Befunde. Der schwerste echt - spawn.sh:70 liess jeden 'claude*'-Zustand durch, auch Herdrs 'blocked' fuer einen erkannten Genehmigungsdialog, und drueckte danach bedingungslos Enter. Genau der Befund, den die Notiz vom 2026-09-14 20:32 fuer dieses Ticket verlangt hatte. Behoben in 49ad70e.
+- Runde 2: zwei Befunde, beide im Fix-Commit. Die Fehlermeldung sagte 'claude did not come up' auch fuer 'blocked', wo claude sehr wohl hochgekommen war. Behoben in 7d24138.
+- Runde 3: ein Befund, wieder im Fix-Commit. Der neue blocked-Arm sagt 'answer it in that pane yourself' - und richtet sich damit an den Dispatcher, dem SKILL.md:188-189 genau das verbietet. Das Skript beantwortet den Dialog also nicht mehr selbst, fordert aber den Dispatcher auf, es von Hand zu tun.
+
+Meine Einschaetzung, ausdruecklich als Beobachtung und NICHT als Grund weiterzulaufen: die Befunde schrumpfen (4, 2, 1), keiner wird wiederholt, und jede Runde betrifft die Zeilen, die die vorige Runde angefasst hat. Das sieht nach Konvergenz aus. Es sieht aber von innen immer so aus, und genau deshalb gibt es die Regel.
+
+WAS NOCH ZU TUN IST, wenn der Mensch weiterlaufen laesst - eine einzige Zeile:
+spawn.sh:77-78, die Meldung des blocked-Arms an den Menschen richten statt an den Dispatcher. critiques Vorschlag woertlich: 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'.
+Danach fehlen noch: optimize, testing (test-verdict ist leer!), review.
+
+Stand des Baums: alle sieben DoD-Punkte sind abgehakt und belegt, go build und go test ./core/role/... waren zuletzt gruen. Kein Commit ist offen, der Arbeitsbaum ist sauber.
