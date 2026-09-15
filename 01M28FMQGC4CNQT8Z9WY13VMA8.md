@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:49:23Z
+updated-at: 2026-09-15T06:49:49Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -273,3 +273,8 @@ go test ./... -race: RC=0, kein FAIL. Die glab-Zeilen kommen aus einer frisch ge
 
 Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - die gehoeren KSGSKK im selben Worktree.
 - **2026-09-15 06:45 · Alexander Sacharov** — Letzte Luecke, hier zu schliessen (Alex entschieden, kein Folgeticket): core/role/builtin/jaira-role-pr/SKILL.md, Sprosse 4 der Forge-Leiter (:55-63). Sie sagt heute nur "nicht raten" und nennt das Kommando, haelt den Agenten aber nicht an: die Ausfuehrung laeuft weiter in den unbedingten Push (:71) und in die gh/glab-Verzweigung (:74-84), die sie nicht aufloesen kann. Genau ein Satz schliesst das, im Ton des umgebenden Prompts: er muss unmissverstaendlich sagen, dass die Rolle hier stehenbleibt (kein Push, keine PR-Abfrage) und was sie dem Menschen sagt - naemlich dass er "git config jaira.forge gitlab|github" setzt und die Rolle danach erneut startet. Sprosse 1 ist genau dieses git config, die Anweisung an den Menschen ist also eine echte. Nur diese Datei plus eine Zeile in core/release/NOTES.md unter ## Unreleased (Zeilen dort nicht umbrechen, fremde Zeilen nicht anfassen). NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - daran arbeitet parallel Ticket KSGSKK im selben Worktree. Worktree und Branch stehen schon (feat/13VMA8-pr-is-the-humans); keinen neuen anlegen. Keinen Pull Request oeffnen oder aktualisieren - Alex gibt das Kommando.
+- **2026-09-15 06:49 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (letzte Luecke aus review-gaps): Sprosse 4 der Forge-Leiter haelt jetzt an.
+- Der Satz sagt nicht nur 'stop', sondern woran er anhaelt ('here, before the push') und warum ('everything below needs the tool you were just unable to name'). Ein blankes 'Stop here' war genau der Fehler einer frueheren Runde dieses Tickets - der Agent stand dann vor Sektionen, die noch Arbeit schuldeten. Deshalb steht die Grenze ausdruecklich vor dem Push und nicht 'am Ende der Datei'.
+- Die Anweisung an den Menschen verweist zurueck auf Sprosse 1 ('it is rung 1 above'), damit der Leser sieht, dass die Einstellung beim naechsten Lauf wirklich greift und der Neustart nicht ins selbe Loch faellt.
+- NOTES.md: eine neue Zeile statt die bestehende GitLab-Zeile zu aendern. Die alte bleibt wahr ('it names no tool and tells you to set jaira.forge'); das Anhalten ist eine zusaetzliche Verhaltensaenderung, die ein Leser separat merken muss. Zwei Zeilen zur selben Rolle im selben Unreleased-Block sind Absicht.
+- Nachgeprueft statt geglaubt: 'roles install --into /tmp/rollen' aus einer frisch gebauten Binary traegt den neuen Absatz - der go:embed-Pfad ist also mit.
