@@ -21,22 +21,27 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:17:25Z
+updated-at: 2026-09-15T06:18:17Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
-  Runde 2 (2026-09-15): die eine Reservierung aus dem review-Verdikt ist behoben, dazu die drei kleineren Befunde. Es geht nur noch um deine Annahme.
+  GitLab-Runde fertig (2026-09-15). Es geht nur noch um deine Annahme.
 
-  Was seit dem letzten Verdikt passiert ist (4 Commits, 1495e14 bis e3a745a):
-  - jaira-role-pr/SKILL.md sagt nach dem Push nicht mehr 'stop', sondern schickt den Agenten weiter; 'stop' bezieht sich jetzt ausdruecklich auf das Aufmachen des PR, nicht auf die Arbeit.
-  - Die Rolle erkennt an 'gh pr list --head', in welcher ihrer zwei Betriebsarten sie laeuft, und jede Betriebsart fuehrt zu genau einer namentlich genannten Sektion.
-  - Das 'gh pr create'-Kommando steht jetzt fuer dich ausgeschrieben da; die Boundary heisst 'Never RUN', damit klar ist: hinschreiben ja, ausfuehren nie.
-  - Die Unreleased-Zeile in core/release/NOTES.md nennt ein lauffaehiges 'jaira roles install --project' statt '--force'.
-  - critique lief zweimal (fand beim ersten Mal einen echten Widerspruch in der neuen Modus-Weiche, beim zweiten Mal nichts mehr), optimize hat die doppelte Aufzaehlung der Betriebsarten auf eine reduziert, testing steht auf pass.
+  Alle vier DoD-Punkte abgehakt und belegt, test-verdict = pass.
 
-  ACHTUNG beim Lesen des Tickets: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Punkt 7 der Pruefliste ('entscheide, ob Zeile 36-37 zu aendern ist') und Punkt 9 ('jaira roles install --force') sind beide bereits erledigt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide Felder dann neu.
+  Was diese Runde gebracht hat (f6ce687, 9fc224c):
+  - jaira-role-pr/SKILL.md hat eine neue Sektion 'Which forge this repository is on' (:36-67). 'git config jaira.forge' gewinnt immer; sonst entscheidet der Host des Push-Remotes; ist beides unklar, bleibt die Rolle stehen und sagt es, statt einen Befehl zu raten. Damit ist die Wahl waehlbar und nicht geraten - deine drei Bedingungen.
+  - Beide Wege sind ausgeschrieben: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create / :124 glab mr create -d) und Boundaries (:143-148).
+  - DoD 4 habe ich zusaetzlich selbst nachgelesen, weil ein fehlendes 'Never run' auf dem GitLab-Weg das ganze Ticket rueckgaengig machen wuerde, ohne dass man es sieht: :143-144 'never run gh pr create / gh pr merge / gh pr review --approve', :145-146 dasselbe mit glab mr create / merge / approve. Steht auf beiden Wegen.
+  - Wortschatz wie von dir verlangt eingegrenzt: :60 sagt dem Leser, 'pull request' auf dem GitLab-Weg als 'merge request' zu lesen - kein globales Ersetzen, der GitHub-Weg redet weiter von pull requests.
 
-  Du musst nur sagen, ob du die Arbeit annimmst.
+  Zwei Dinge, die du wissen solltest, weil sie Urteile sind und keine Mechanik:
+  1. critique hat diese Runde einen echten Fehler gefunden: die Forge wurde zuerst aus 'git config jaira.remote' abgeleitet, gepusht wird aber nach 'origin'. Das sind zwei verschiedene Remotes - jaira.remote ist der Remote der Ticket-Refs und loest hier zu 'upstream' auf. Auf diesem Board faellt es nicht auf, weil beide auf GitHub liegen; auf einem Fork mit Remotes auf verschiedenen Forges haette die Rolle den falschen Host untersucht und das falsche Werkzeug gewaehlt. Behoben in 9fc224c, die Begruendung steht als Prosa unter dem Block, damit es niemand 'verbessert'.
+  2. testing hat nicht nur die Gates laufen lassen, sondern gegen das echte glab 1.114.0 geprueft: '--source-branch', '-d/--description' und 'glab mr approve' existieren, '--body-file' gibt es auf glab NICHT. Die create-Zeile waere sonst unlauffaehig gewesen - genau der Fehler, den dieses Ticket auf der GitHub-Seite schon einmal hatte.
+
+  Nicht getan, wie angewiesen: kein Pull Request und kein Merge Request aufgemacht, aktualisiert oder gemerged. Der Zweig feat/13VMA8-pr-is-the-humans ist gepusht; das Kommando gibst du.
+
+  Hinweis: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide dann neu.
 outcome-what: "testing-Lane der GitLab-Runde: Gates gruen, DoD 1-4 am Baum verifiziert, Forge-Erkennung auf sechs Fixtures nachgestellt, glab-Flags gegen glab 1.114.0 geprueft und die frisch gebaute Binary schreibt die glab-Zeilen wirklich heraus."
 outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides am Baum und am laufenden Werkzeug bestaetigt, nicht am outcome-Text."
 outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
