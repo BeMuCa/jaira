@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:40:53Z
+updated-at: 2026-09-15T05:40:56Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -159,3 +159,4 @@ Zwei Dinge aus review-check, die ich bewusst NICHT als Befund schreibe:
 - Check 9: 'jaira roles install --force' gibt 'choose exactly one of --project, --global or --into'. Die NOTES.md-Zeile DIESES Tickets ist bereits korrigiert (sie nennt --project/--global plus --force). Der kaputte Rat steht in der Dispatcher-Zeile desselben Unreleased-Blocks und gehoert einem anderen Ticket - nicht angefasst.
 
 Ausserhalb der Lane: der Kaestchen-Text im Ticketrumpf traegt weiter die alte Regel gegenueber dem Frontmatter-Feld; gehoert NYW4M7 (steht schon in der Notiz von 05:12).
+- **2026-09-15 05:40 · Alexander Sacharov** — Alex hat am 2026-09-15 angenommen ('принял 13VMA8'); den Uebergang aus human hat ein Agent auf seine Anweisung getippt, weil seine eigenen Aufrufe wie schon mehrfach im Hauptcheckout landen statt im Worktree. Entschieden hat der Mensch. Beim Abnehmen kam seine Frage auf, ob das mit glab fuer GitLab funktioniert - die Antwort ist nein, der Prompt ruft an fuenf Stellen 'gh' auf; daraus ist Ticket 179VBX geworden.
