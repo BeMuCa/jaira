@@ -27,7 +27,7 @@ related:
 commits:
   - 632240e21705271e1e04f68a7c951f6544035c82
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:40:57Z
+updated-at: 2026-09-15T07:41:01Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8323
@@ -53,7 +53,7 @@ review-summary: "none"
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
   proof: core/release/NOTES.md:17
 - [x] Eine Korrektur fasst nur eine Lane an, die erkennbar die ausgelieferte ist, die sie zu korrigieren behauptet - etwa weil die Datei einer ausgelieferten Fassung entspricht oder sich nur in genau dem Feld unterscheidet, um das es geht. Eine Lane, die ein Mensch selbst geschrieben hat, wird gemeldet und nicht angefasst, auch wenn sie dieselbe id traegt. Nachgestellt mit einem selbstgeschriebenen done.md, das absichtlich logbook-on-entry: true fuehrt: es bleibt unveraendert, und der Mensch erfaehrt davon.
-  proof: core/lane/corrections.go:201 correction.recognises; core/lane/corrections_test.go:167 TestCorrectionLeavesALaneSomebodyWroteAlone, :203 TestCorrectionLeavesTodaysLanePlusTheLineAlone
+  proof: core/lane/corrections.go:203 correction.recognises; core/lane/corrections_test.go:169 TestCorrectionLeavesALaneSomebodyWroteAlone, :205 TestCorrectionLeavesTodaysLanePlusTheLineAlone
 
 ## Options
 
