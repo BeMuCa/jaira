@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:20:56Z
+updated-at: 2026-09-15T06:21:28Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
@@ -338,3 +338,36 @@ Warum 'if ...; then ...; fi' und nicht '[ -n ... ] && ws=(...)': als letzter Bef
 Nachgeprueft mit einem Herdr-Attrappen-Skript (Argumente auf stderr), beide Faelle: mit gesetzter Variable steht '[--workspace] [w3]' vor '--cwd', ohne sie faellt das Flagpaar ersatzlos weg und der Rest des Aufrufs ist unveraendert. Das Skript selbst laeuft in beiden Faellen bis 'send-keys enter' durch.
 
 Mit angefasst, weil es sonst sofort wieder auseinanderlaeuft: dispatcher/SKILL.md:103-105 - der Absatz 'wenn du am Skript vorbei musst' sagte bisher nur '--no-focus behalten'. Er nennt jetzt --workspace mit demselben Grund. NOTES.md:19 ist die vorhandene Unreleased-Zeile zu diesem Skript, um den Halbsatz ergaenzt statt eine zweite Zeile ueber dasselbe Skript aufzumachen.
+- **2026-09-15 06:21 · Alexander Sacharov** — testing (Runde 1, 2026-09-15): Tore gruen, DoD 1-7 im Baum belegt, aber ein Befund an der Zeile, die DoD-Punkt 5 verlangt hat.
+
+GRUEN, damit es festgehalten ist:
+- go build ./... , go vet ./... , gofmt -l . : sauber.
+- go test ./... -race mit geleertem Cache: alle 27 Pakete ok, RC=0 (internal/tui 119s, internal/cli 29s).
+- DoD 1-3, 7 im Baum nachgelesen: dispatcher/SKILL.md:83-105 nennt scripts/spawn.sh an der Startstelle, die Ablehnung 'Create Unsafe Agents' und HERDR_BIN_PATH; teamlead/SKILL.md:43-52 dasselbe; NOTES.md:19 ist da.
+- spawn.sh mit einem gefaelschten herdr (FakeBinary, Log ueber alle Aufrufe) in einem Wegwerf-Repo durchgespielt, vier Laeufe:
+  1. HERDR_WORKSPACE_ID=w3 -> 'tab create --workspace w3 --cwd <wt> --label ABC123/in-progress --no-focus', Zweig feat/TESTSLUG. Also DoD 4 und 6 (Tab statt Split, Label-Format) funktionsgeprueft, nicht nur gelesen.
+  2. Ohne HERDR_WORKSPACE_ID -> das Flag faellt ersatzlos weg, der Rest unveraendert.
+  3. HERDR_BIN_PATH=...herdr.exe -> 'pane run <p> wsl.exe --cd <wt> -- bash -lic claude'; JAIRA_BRANCH_PREFIX=wip -> Zweig wip/SLUG3.
+  4. agent_status=blocked -> Abbruch mit Exit 1 und der Meldung an den Menschen, ohne send-text/send-keys. Ohne HERDR_ENV -> 'not inside a Herdr pane', Exit 1.
+
+BEFUND (schickt das Ticket zurueck):
+spawn.sh:35 schreibt COMPOSE_PROJECT_NAME=$(basename "$root" | tr -c 'a-zA-Z0-9' '_')_$slug. Gemessen bei Lauf 3 in .worktrees/repo-SLUG3/.env:
+
+  COMPOSE_PROJECT_NAME=repo__SLUG3
+
+Zwei Fehler in einer Zeile:
+1. tr wandelt den Zeilenumbruch von basename in einen Unterstrich um - daher der doppelte Unterstrich. Die Befehlssubstitution entfernt ihn nicht mehr, weil dort kein Umbruch mehr steht.
+2. Grossbuchstaben bleiben stehen. Ein jaira-Slug ist gross (KSGSKK, 13VMA8).
+
+Docker weist den Wert zurueck, nachgestellt mit Docker Compose v2.40.3:
+
+  $ COMPOSE_PROJECT_NAME=repo__SLUG3 docker compose config --quiet
+  invalid project name "repo__SLUG3": must consist only of lowercase alphanumeric characters, hyphens, and underscores as well as start with a letter or number
+
+Damit tut der ganze .env-Block das nicht, wofuer er da ist: der Worker-Stapel startet gar nicht erst. Der alte Wert rg_$slug war fuer Grossbuchstaben genauso kaputt, aber die Zeile ist gerade neu geschrieben worden und DoD-Punkt 5 verlangt sie ausdruecklich - kaputt durchgereicht ist hier kein Bestandsschutz.
+
+Vorschlag, eine Zeile:
+  echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
+printf gibt keinen Umbruch aus, also frisst tr auch keinen; erst kleinschreiben, dann saeubern. Gegenprobe: repo_slug3 wird von 'docker compose config' angenommen.
+
+KLEINIGKEIT, kein Rueckweisungsgrund: der Beweis zu DoD-Punkt 6 nennt 'spawn.sh:46' fuer das Label-Format. Seit dem --workspace-Zusatz (77c5a0f) steht das Label in Zeile 53; Zeile 46 ist heute ein Kommentar. Beim naechsten Durchgang mitziehen.
