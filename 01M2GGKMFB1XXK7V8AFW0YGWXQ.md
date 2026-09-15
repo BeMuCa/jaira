@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:35:40Z
+updated-at: 2026-09-15T20:36:08Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -379,3 +379,12 @@ WAS ICH ENTSCHIEDEN HABE, WEIL DIE DoD ES OFFEN LAESST:
 - Der Ref-Blick in 'create' reicht auf einem ungeteilten Board nicht (dort gibt es keine Refs), deshalb zusaetzlich der Blick ins lokale Logbuch. Zwei Quellen, aber die Suchfunktion braucht Restore ohnehin.
 
 NICHT ENTSCHIEDEN UND AUCH NICHT NOETIG: ob ein abgelegter Milestone jemals wieder aus dem Logbuch verschwindet. 'jaira restore' holt ihn zurueck, sonst liegt er da - genau wie ein abgelegtes Ticket.
+- **2026-09-15 20:36 · Alexander Sacharov** — in-progress Runde 3, 2026-09-15. Was beim Bauen anders kam als im Plan.
+
+REIHENFOLGE BEIM ABLEGEN ist keine Geschmacksfrage: SetStatus -> Save -> recordMilestone -> LogbookMilestone. recordMilestone (internal/cli/milestones.go) liest die Datei von der PLATTE, nicht aus dem Objekt. Wer zuerst verschiebt, schickt eine leere Datei an den Ref oder gar nichts - und dann steht der Ref ohne Status und jeder andere Klon schreibt den Milestone zurueck aufs Board.
+
+KEIN IMPORTZYKLUS MOEGLICH: core/milestone importiert core/ticket, also kann core/ticket/store.go den Unterordnernamen nicht von dort holen. Loesung: ticket.MilestonesSubdir ist die Quelle, milestone.Subdir = ticket.MilestonesSubdir. Eine Schreibweise, in der Richtung, die der Compiler erlaubt.
+
+RESTORE MERKT SICH DEN FUNDORT, nicht den Namen: store.Restore sammelt jetzt neben logMatches auch logDirs und leitet das Ziel daraus ab (milestones/ -> MilestonesDir, sonst TicketsDir). Am Namen zu erkennen, ob eine Datei ein Milestone ist, geht nicht - ein Milestone-Name ist frei gewaehlt.
+
+STOLPERSTELLE im Hilfetext: cobra Long ist ein Backtick-String. Ein Backtick-Zitat wie 'status: filed' darin beendet das Literal und der Compiler zeigt auf eine Stelle 200 Zeilen weiter unten. Anfuehrungszeichen benutzen.
