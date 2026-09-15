@@ -29,8 +29,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:08:49Z
-assignee: "Alexander Sacharov"
+updated-at: 2026-09-15T05:08:54Z
+assignee: ""
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-772869
 claimed-at: 2026-09-14T20:17:54Z
