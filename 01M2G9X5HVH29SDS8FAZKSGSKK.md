@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:47:51Z
+updated-at: 2026-09-15T06:48:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-17089
@@ -408,3 +408,14 @@ NOTES.md:19 nicht als zweite Zeile, sondern der vorhandene Halbsatz umgeschriebe
 Mitgezogen: der Beweis zu DoD 6 nannte spawn.sh:46 fuer das Label-Format, das ist seit 77c5a0f Zeile 58. Das war die Kleinigkeit aus der testing-Notiz von 06:21.
 - **2026-09-15 06:32 · Alexander Sacharov** — Dispatcher, vor der testing-Runde 2: der Befund aus Runde 1 (COMPOSE_PROJECT_NAME) ist behoben in 8cd8ba9. Er gilt erst als geprueft, wenn er wie in Runde 1 nachgestellt wurde - spawn.sh gegen ein gefaelschtes herdr in einem Wegwerf-Repo MIT .env laufen lassen und den erzeugten Namen an 'docker compose config --quiet' verfuettern. Dieses Repository hat keine .env, der .env-Block wird hier also normal uebersprungen; nur die gefaelschte Umgebung erreicht ihn. Die uebrigen Laeufe aus Runde 1 (--workspace gesetzt/fehlend, wsl.exe --cd bei herdr.exe, JAIRA_BRANCH_PREFIX, Abbruch bei blocked ohne send-keys, HERDR_ENV-Wache) bitte ebenso wiederholen. Kritik-Runde faellt auf Anweisung des Menschen aus; Route: in-progress -> testing -> review.
 - **2026-09-15 06:41 · Alexander Sacharov** — testing: Tore gruen und DoD 1-7 im Baum nachgeprueft. go build ./... RC=0, go vet ./... RC=0, go test -race -count=1 ./... RC=0 ueber 27 Pakete. DoD 6 an dieser Sitzung selbst beobachtet: Herdr-Tab w3:t36, Label 'KSGSKK/testing', Workspace w3 - genau das Format aus spawn.sh:58, gestartet ohne 'claude --permission-mode'. Funktion einzeln geprueft: COMPOSE_PROJECT_NAME-Ableitung (spawn.sh:39-40) liefert 'my_repo_ksgskk' und 'weird_repo_name_ab-9x', 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0; HERDR_ENV-Wache und Argument-Wache brechen mit RC=1 ab; die case-Verzweigung spawn.sh:68-71 waehlt 'wsl.exe --cd' fuer /mnt/* und *.exe und sonst 'cd && claude'. Randfall ausserhalb dieser DoD, deshalb nicht angefasst: faengt der Repository-Name mit einem Zeichen ausser a-z0-9 an (ein Verzeichnis wie '.foo'), beginnt der abgeleitete Name mit '_' und docker lehnt ihn ab - 'invalid project name "_dotrepo_ksgskk": ... as well as start with a letter or number', RC=1. Ein eigenes Ticket wert, wenn es je vorkommt.
+- **2026-09-15 06:48 · Alexander Sacharov** — Review-Lane, 2026-09-15. Ich schicke nichts zurueck - alle sieben DoD-Punkte sind am Diff belegt und die Mechanik ist gegen das echte Herdr nachgeprueft (herdr --skill kennt idle/working/blocked/done/unknown, 'tab create' liefert .result.root_pane, 'tab create --help' kennt --workspace/--cwd/--label/--no-focus, 'herdr pane get' liefert wirklich 'agent' und 'agent_status'). Nebenbei bestaetigt: die Pane dieser Sitzung selbst meldet cwd C:\\Users\\Alex und tokens.wsl=Ubuntu-24.04, also ist sie ueber 'wsl.exe --cd' gestartet worden - der neue Arm in spawn.sh ist der, der hier laeuft.
+
+Drei Restluecken bleiben stehen, damit sie nicht verloren gehen; keine ist ein verfehlter DoD-Punkt, keine rechtfertigt fuer sich eine weitere Runde:
+
+1. spawn.sh:39-40 saeubert den COMPOSE_PROJECT_NAME, erzwingt aber keinen erlaubten Anfang. Nachgestellt mit docker: '_hidden-repo_ksgskk' (Repository '.hidden-repo') und '-lead_ksgskk' werden von 'docker compose config' abgelehnt mit 'invalid project name ... as well as start with a letter or number'. Ein vorangestelltes sed 's/^[^a-z0-9]*//' schliesst es. Gehoert in ein eigenes Ticket, wenn es jemanden trifft.
+2. spawn.sh:41-43 haengt weiter HTTP_PORT, DB_PORT_HOST und DB_PORT_TEST_HOST an - die Variablennamen desselben fremden Stapels, aus dem VITE_PORT_HOST und BACKEND_PORT_HOST als fremd entfernt wurden. Halbe Saeuberung.
+3. spawn.sh:68-71 erkennt WSL am Pfad der Binaerdatei ('/mnt/*' oder '*.exe'). Ohne gesetztes HERDR_BIN_PATH und mit einem Wrapper namens 'herdr' im PATH faellt eine WSL-Sitzung still in den alten Arm 'cd $wt && claude' zurueck - genau in den Fehler, den dieses Ticket behebt. /proc/version waere die verlaesslichere Frage.
+
+Dazu eine Kleinigkeit im Prompt: jaira-dispatcher/SKILL.md sagt, spawn.sh gebe die Pane-Id aus, sagt aber nicht, was der Dispatcher tut, wenn das Skript mit 1 abbricht - und der neue blocked-Arm ist genau dieser Fall.
+
+Verfahrenshinweis fuer den naechsten, der hier eine Lane arbeitet: 'jaira show KSGSKK --for-lane review --json' hat mir als Diff nur den ersten wip-Commit cc21ca9 geliefert, nicht die spaeteren Korrekturen (77c5a0f, 6e86635, d738769, 8cd8ba9). Beurteilt habe ich deshalb den Arbeitsbaum und 'git diff cc21ca9^ HEAD -- core/role core/release'. Wer nur dem gelieferten Diff folgt, beurteilt einen ueberholten Stand.
