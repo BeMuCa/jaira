@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:27:50Z
+updated-at: 2026-09-15T15:32:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -47,6 +47,16 @@ claimed-at: 2026-09-15T15:02:47Z
 outcome-what: "core/milestone (Datei, Farbe, Index), jaira milestone create/add/rm/ls, jaira list --milestone, die rechte Kartenkante und der M-Picker im TUI, und ein zweiter Ref-Namensraum refs/jaira/milestones/ durch gitref, outbox, refsync und jaira fetch."
 outcome-why: "Ein Tag am einzelnen Ticket kann unerledigte Arbeit nicht in die naechste Runde tragen: jedes Ticket liegt auf seinem Ref, das sind zwanzig Vorgaenge. Eine Datei wird stattdessen in einem Griff bearbeitet."
 outcome-resolves: "DoD 1-5 und 7 erfuellt und mit Tests belegt; DoD 6 war bereits von Alex' Milestone-Entscheidung vom 15.09. als superseded markiert."
+review-summary: |-
+  core/refsync/refsync.go:197 RecordMilestoneDelete has no caller anywhere, and neither does core/outbox/outbox.go:280 PendingMilestone; gitref.DeleteMilestone is reached only from an OpDelete branch nothing ever queues and no command deletes a milestone — delete the three, or add 'jaira milestone delete <name>' and wire them
+  core/outbox/outbox.go:282 MilestoneSender and the s.(MilestoneSender) assert at :364 handle a state that cannot occur: Box.Flush has one call site, core/refsync/refsync.go:344, passing *gitref.Repo, which implements both halves — put WriteMilestone/DeleteMilestone on Sender itself and drop the assert, the 'this sender cannot carry milestones' error and the (error, bool) return of send()
+  core/milestone/milestone.go:129 writes 'colour:' into the file format and :208 reads it back, against this board's own stated rule at internal/cli/tags.go:233 ('color, matching --color: one spelling on the machine surface') that milestones.go:347 and the --color flag already follow — write and read 'color:' before the format ships, because afterwards it is a break
+  internal/cli/milestones.go:360 validColour is a verbatim copy of tag.ValidColour (core/tag/tag.go:251), which internal/tui/model.go:1466 already calls directly — delete it and call tag.ValidColour
+  core/milestone/milestone.go:358-366 itoa/atoi reimplement strconv for the one field core/tag/tag.go already does with strconv.Itoa (:327) and strconv.Atoi (:243); the Sscanf atoi also reads '12abc' as 12 — import strconv and use them
+  core/milestone/milestone.go:71 the path field is written at :155 and :279 and read nowhere; every caller computes milestone.Path(root, name) instead (internal/cli/milestones.go:132, core/refsync/refsync.go:239) — drop the field and the two assignments
+  internal/tui/model.go:1478 activeMilestones() is m.milestones under a second name, and the picker indexes the two lists with one cursor — view.go:1522 renders m.milestones[i] while model.go:1039 indexes the names slice — use m.milestones in both (len(m.milestones), m.milestones[m.msIdx].Name) and delete the helper
+  internal/cli/fetch.go:23 the Long text still says 'Fetches refs/jaira/tickets/*' after core/gitref/gitref.go:633 widened the refspec to refs/jaira/* and this command started writing milestone files — say that it brings both
+  core/gitref/gitref.go:657 ListRemoteMilestones has no caller outside milestone_test.go — remove it until something asks the remote what milestones exist
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
@@ -178,3 +188,14 @@ NOCH FAUL AM TICKET, ausserhalb dieser Lane: der TITEL sagt weiter 'Sprint'. jai
 - **2026-09-15 15:10 · Alexander Sacharov** — core/milestone, 2026-09-15. Was das Paket nicht tut und warum: keine eigene Palette - Palette = tag.Palette, weil Tag links und Milestone rechts auf der Karte stehen und nie verwechselt werden koennen; sechzehn weitere Werte wuerden nur naeher an die Statusfarben (39/214/203/78/141) ruecken. Mitglied ist die VOLLE ULID, nicht das Handle: die Datei ist auch der Merge-Gegenstand, und ein Handle ist nicht garantiert eindeutig. parseMember akzeptiert nur eine gueltige ULID, damit ein gewoehnlicher Markdown-Bullet in der Prosa nicht als Mitglied gelesen wird - das ist der Grund, warum die Datei ueberhaupt Prosa enthalten darf. Load/Save haelt die Zeilen verbatim wie core/tag, Frontmatter wird NICHT ueber core/ticket geparst: die Ticket-Frontmatter kennt Schema und Pflichtfelder, ein Milestone hat drei Zeilen.
 - **2026-09-15 15:15 · Alexander Sacharov** — TUI, 2026-09-15. Taste ist M, nicht m - m ist 'move' und muss das ueberall bleiben. Die Geste schreibt in m.filter ('milestone:<name>') statt eine zweite Verengung daneben zu halten: damit raeumt esc auf dem Board sie genauso weg wie einen getippten Filter, und / zeigt, worauf das Board verengt ist. Im Picker loest x den Filter, weil sich niemand merkt, dass esc auf dem BOARD das tut. matches() hat jetzt einen dritten Parameter (milestone.Index) statt einer zweiten Funktion matchesIn - zwei Namen fuer eine Frage driften. inner in renderCardBlock ist w-2: die rechte Zelle ist IMMER reserviert, auch ohne Milestone, sonst wandern die Titel einer Lane um eine Spalte, wenn ein Ticket einer Gruppe beitritt. Getestet in internal/tui/milestonebar_test.go.
 - **2026-09-15 15:27 · Alexander Sacharov** — Refs, 2026-09-15. gitref wurde NICHT auf ein generisches (Art, Name) umgebaut, wie Plan-Schritt 12 es woertlich sagt: das haette jede Signatur und jede Aufrufstelle in refsync, outbox, internal/cli/refs.go und internal/tui/refs.go angefasst. Stattdessen Root = 'refs/jaira/', Prefix = Root+'tickets/', MilestonePrefix = Root+'milestones/', und die gemeinsamen Teile als private refSHA/refRead/refWrite/refDelete/listNames. Die Ticket-API ist unveraendert, die Milestone-API steht daneben (MilestoneSHA/ReadMilestone/WriteMilestone/DeleteMilestone/ListMilestones). Fetch holt Root/* statt Prefix/* - ein Fetch bringt beide Arten, sonst zeigt ein Board eine Gruppe, deren Datei niemand hat. snapshot.reap braucht keine Aenderung: Run() nimmt Repo.List(), und das liest nur Prefix - abgesichert durch TestTheTwoNamespacesStayApart, das absichtlich Ticket 01TEST und Milestone 01TEST nebeneinanderlegt. outbox: Unterordner je Art (tickets/, milestones/); der ALTE flache Pfad wird weiter GELESEN, damit ein von einem aelteren Build eingestellter Schreibvorgang beim Upgrade nicht verlorengeht. MilestoneSender ist ein zweites Interface, nicht eine Erweiterung von Sender - ein alter Sender kompiliert weiter. Nicht gemacht und bewusst: 'jaira show' zeigt die Milestones eines Tickets nicht; das gehoert in ein eigenes Ticket.
+- **2026-09-15 15:32 · Alexander Sacharov** — critique: Der Bau ist im Kern richtig - zwei Ref-Namensraeume statt eines generischen (Art, Name), die Datei als Format, der Index als einzige neue Schicht, die rechte Kante immer reserviert. Nichts davon muss anders. Neun Findings, alle im Kleinen, und sie fallen in drei Gruppen.
+
+1) SPEKULATIVES: der ganze Loeschweg fuer Milestones ist gebaut und wird von nichts aufgerufen. refsync.go:197 RecordMilestoneDelete hat keinen Aufrufer, outbox.go:280 PendingMilestone keinen, gitref.DeleteMilestone nur einen Test - und die OpDelete-Verzweigung in outbox.send erreicht niemand, weil kein Befehl einen Milestone loescht (die Hilfe sagt woertlich: das ist 'rm' auf einer Datei). Entweder 'jaira milestone delete' anbieten und verdrahten, oder die drei weg. Dasselbe fuer gitref ListRemoteMilestones.
+
+2) FEHLERBEHANDLUNG FUER EINEN UNMOEGLICHEN ZUSTAND: MilestoneSender (outbox.go:282) plus der Typ-Assert bei :364 schuetzt vor einem Sender, der keine Milestones traegt. Box.Flush hat GENAU EINE Aufrufstelle, refsync.go:344, und die uebergibt *gitref.Repo, das beide Haelften erfuellt. Kein anderer Typ im Baum erfuellt Sender. Die zwei Methoden gehoeren an Sender selbst; dann fallen der Assert, die Fehlermeldung und die untypische (error, bool)-Rueckgabe von send() gemeinsam weg.
+
+3) ZWEITE NAMEN FUER VORHANDENE DINGE: validColour (milestones.go:360) ist tag.ValidColour abgeschrieben; itoa/atoi (milestone.go:358) sind strconv, das core/tag fuer genau dieses Feld schon benutzt; Milestone.path wird geschrieben und nie gelesen, weil alle milestone.Path() rechnen; activeMilestones() ist m.milestones unter zweitem Namen, und der Picker indiziert beide Listen mit einem Cursor.
+
+EINS DAVON IST KEIN AUFRAEUMEN, SONDERN FORMAT: milestone.go:129 schreibt 'colour:' in die Frontmatter. internal/cli/tags.go:233 schreibt die Regel dieses Boards woertlich hin - 'color, matching --color: one spelling on the machine surface' - und milestones.go:347 sowie der Flag halten sie schon. Die Datei IST die API (CLAUDE.md); nach dem Release ist das ein Bruch, jetzt ist es eine Zeile.
+
+NICHT AUFGEMACHT, absichtlich: dass IncomingMilestones die lokale Datei ueberschreibt, dass die Palette mit tag geteilt wird, dass der Index in newListCmd statt in loadEnv gebaut wird, und dass gitref nicht auf (Art, Name) verallgemeinert wurde statt Plan-Schritt 12 - alle vier sind in den Notizen begruendet und die Begruendung traegt.
