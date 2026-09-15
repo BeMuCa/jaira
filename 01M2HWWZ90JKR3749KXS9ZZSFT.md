@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:14:33Z
+updated-at: 2026-09-15T13:14:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -60,7 +60,7 @@ outcome-resolves: "Wie die Aenderung gemacht wird, steht fest; die offene Entsch
 - [x] die nicht erzeugten Kopien nachziehen: docs/AGENTS.md, README.md, .claude/skills/jaira/SKILL.md
 - [x] 'jaira update' laufen lassen, damit CLAUDE.md und AGENTS.md den neuen Block tragen; core/board/announce_test.go und core/role/role_test.go gruen
 - [x] eine Zeile in core/release/NOTES.md unter ## Unreleased
-- [ ] am eigenen Ticket nachstellen: nach critique, testing und review zeigt 'git log --name-only origin/master..HEAD' keinen Commit, der nur .jaira/ anfasst
+- [~] am eigenen Ticket nachstellen: nach critique, testing und review zeigt 'git log --name-only origin/master..HEAD' keinen Commit, der nur .jaira/ anfasst
 
 ## Progress
 - **2026-09-15 13:06 · Alexander Sacharov** — Der Plan ist reine Textarbeit, kein Code: die Regel, die die Buchhaltungs-Commits erzeugt, steht an genau einer Stelle als Quelle - core/role/builtin/jaira-role-lane/SKILL.md sagt heute bedingungslos 'move the ticket, then git add -A and commit'. Der erzeugte Block (core/board/announce.go:87) sagt dasselbe als 'the ticket rides in the same commit as the code'. Eine Lane, die keinen Code anfasst, kann die Regel nur erfuellen, indem sie allein committet - daher die 62 von 92.
