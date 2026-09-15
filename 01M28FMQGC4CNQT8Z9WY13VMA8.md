@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:59:57Z
+updated-at: 2026-09-15T07:00:25Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -310,3 +310,19 @@ Fix, fuenf Minuten: 'jaira dod 13VMA8 1|2|4 --done --proof "..."' mit den oben g
 - Warum die Proofs jetzt einzelne Zeilen statt nur Spannen nennen (DoD 3 und 4): eine Spanne verschiebt sich beim naechsten Absatz lautlos mit und niemand merkt es; eine benannte Einzelzeile pro Behauptung faellt beim Nachschlagen sofort durch. Genau dieser Fehler hat diese Runde erzeugt.
 - Nicht angefasst, obwohl es auffaellt: der Proof von DoD 1 belegt mit SKILL.md:92-97 die Verzweigung der PR-Rolle, waehrend DoD 1 selbst von der Regel in CLAUDE.md/AGENTS.md/README handelt. Der Satzteil gehoert inhaltlich nicht dorthin. Die Anweisung dieser Runde war ausdruecklich nur, Zeilennummern richtigzustellen - den Proof umzuschreiben waere eine zweite Aenderung, ueber die critique entscheiden soll.
 - Keine NOTES.md-Zeile und kein Code: diese Runde aendert nichts, was ein Nutzer der Binary bemerken kann. Aus demselben Grund keine Gate-Laeufe - kein .go und kein eingebetteter Prompt hat sich geaendert (git status zeigt nur die Ticketdatei).
+- **2026-09-15 07:00 · Alexander Sacharov** — testing-Runde 2026-09-15 (nach dem Re-Anchoring, critique uebersprungen): Verdikt pass. Was ich wirklich laufen liess, nicht was der outcome-Text behauptet:
+
+1. Gates: 'go build ./...' RC=0. 'go test ./... -race' RC=0, kein FAIL, kein Race; core/lane 5.123s und internal/wintrap 1.533s frisch gelaufen, der Rest aus dem Cache.
+
+2. Die vier DoD-Anker einzeln aufgeschlagen - das war die Runde davor genau der Befund, also diesmal jede Zeilennummer per 'grep -n' am Baum gegengelesen statt aus dem Bericht uebernommen:
+- DoD 1: SKILL.md:92-97 ist tatsaechlich die Verzweigung nach dem Push ('Carry on along the branch that listing puts you on' + beide Aufzaehlungspunkte). CLAUDE.md:156-169 steht hinter dem jaira:local-Marker (:154) und vor jaira:end (:170); AGENTS.md:166-179 hinter dem Marker :127 und vor :180; README.md:842-851 unter der Ueberschrift '## Development' (:813). Alle drei wortgleich, bis auf die im README bewusst weggelassene Fettschrift.
+- DoD 2: :89 ist 'glab mr list --source-branch', :130 ist 'glab mr create --title/--description'. Beide stimmen.
+- DoD 3: die Leiter steht auf :41-69. Sprosse 1 auf :51-52, der Remote-Host auf :43, github.com->gh auf :53, gitlab->glab auf :54, Sprosse 4 auf :55-69, der Halt auf :65-66, die Anweisung an den Menschen auf :67-69. Alle sechs Einzelanker stimmen.
+- DoD 4: :149-150 gh-Verbote, :151-152 glab-Verbote, :119-121 'You write it; you never run it', Wortwechsel merge request nur auf :71-73. Kein 'Never run' fehlt auf einem der beiden Wege.
+
+3. Funktion, drei Dinge nachgestellt:
+- Forge-Leiter: drei git-Fixtures (Remote github.com / gitlab.com / git.esprit-engineering.de), je einmal ohne und mit 'jaira.forge=gitlab'. Alle sechs Laeufe antworten so, wie der Prompt es beschreibt - insbesondere faellt der selbstgehostete Host ohne Einstellung auf Sprosse 4 und nennt kein Werkzeug.
+- glab-Flags gegen die hier installierte glab 1.114.0 am --help geprueft, nicht geraten: '-s/--source-branch' existiert an 'mr list', '-t/--title' und '-d/--description' an 'mr create', '--body-file' gibt es dort nicht (deshalb ist '$(cat ...)' richtig), und 'mr approve' / 'mr merge' sind eigene Unterbefehle. gh 2.83.1 ist ebenfalls da.
+- go:embed: frische Binary nach /tmp gebaut, 'jaira roles install --into <scratch>' geschrieben, 'diff -q' gegen core/role/builtin/jaira-role-pr/SKILL.md ist byte-gleich. Die glab-Zeilen kommen also wirklich beim Nutzer an, mit identischen Zeilennummern.
+
+Nicht mein Befund, aber ich bestaetige ihn: der in der in-progress-Runde notierte review-check Schritt 4 ('genau ein Treffer fuer gh pr create') ist am heutigen Baum falsch - 'gh pr create' kommt auf :124 und :149 vor, dazu die glab-Gegenstuecke. Das ist ein Feld der review-Lane, die auf diesem Board erst nach human kommt; ich fasse es hier nicht an.
