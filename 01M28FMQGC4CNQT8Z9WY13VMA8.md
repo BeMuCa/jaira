@@ -20,7 +20,7 @@ blocked-by: []
 commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:55:25Z
+updated-at: 2026-09-15T05:55:52Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -210,3 +210,12 @@ Was ich an glab 1.114.0 nachgesehen und nicht geraten habe:
 Fixtures: drei git-Repos mit Remote github.com / gitlab.com / git.esprit-engineering.de, je einmal ohne und mit gesetztem jaira.forge - alle vier Zweige der Regel aus :46-58 laufen so, wie der Prompt sie beschreibt. Danach frisch gebaute Binary, 'jaira roles install --into' schreibt die glab-Zeilen wirklich heraus (go:embed nimmt die Datei mit) und 'jaira update' gibt die neue NOTES-Zeile zurueck.
 
 Fuer die naechste review-Runde: review-check Schritt 4 verlangt genau EINEN Treffer fuer 'gh pr create'. Der Check war schon vor dieser Runde ueberholt (drei Treffer), jetzt kommen die 'glab mr create'-Treffer dazu. Der Check gehoert neu geschrieben, die Regel ist unveraendert.
+- **2026-09-15 05:55 · Alexander Sacharov** — critique (GitLab-Runde, 2026-09-15): drei Befunde, alle in core/role/builtin/jaira-role-pr/SKILL.md. Der erste ist der, der weh tut.
+
+1. Der Prompt liest die Forge vom falschen Remote ab (:43 gegen :81). :43 nimmt 'git config jaira.remote || echo origin' und leitet daraus gh/glab ab; :81 pusht dann fest nach 'origin'. Das sind zwei verschiedene Dinge: jaira.remote ist der Remote, auf dem die TICKET-REFS liegen, nicht der, auf dem der Branch landet. In genau diesem Repo faellt das auseinander - 'jaira whoami --json' sagt remote=upstream (aus settings.json), gepusht wird nach origin. Dass beide hier zufaellig auf github.com zeigen, verdeckt es nur; auf einem Fork, dessen Board auf einem GitLab-Upstream liegt, waehlt der Prompt glab und pusht nach GitHub. Die Frage, die der Prompt beantworten will, lautet: auf welcher Forge liegt der Zweig, den ich gerade gepusht habe. Also den Host des Remotes lesen, auf den :81 pusht ('git remote get-url origin'), und die jaira.remote-Zeile ersatzlos streichen. jaira.forge als ausdrueckliche Uebersteuerung bleibt richtig und unveraendert.
+
+2. Dieselbe Zeile :43 ist eine zweite, verkuerzte Kopie einer Leiter, die es schon gibt. core/settings/settings.go:145-168 (RemoteFor/RemoteSourceFor) definiert den Board-Remote in vier Schritten - jaira.remote, settings.json, der einzige Remote, sonst laut scheitern - und der Kommentar darueber warnt woertlich davor, die Leiter ein zweites Mal hinzuschreiben, weil dann die Stelle, deren einzige Aufgabe die Wahrheit ueber den Remote ist, einen anderen Namen nennt als der Code. Der Prompt schreibt sie mit zwei von vier Schritten hin. Falls Befund 1 anders entschieden wird und der Board-Remote doch gebraucht wird, ist 'jaira whoami --json' (Feld remote, dazu remote_source im Klartext) der Weg - das ist genau der Befehl, den es dafuer gibt.
+
+3. Sektionsgrenze: :64-77 laesst die Abfrage der offenen Requests in der Sektion 'Which forge this repository is on' laufen, die damit drei Aufgaben traegt. Die Verzweigung wird aber erst in '## Push, then take the branch the listing put you on' (:79) ausgewertet. Den Block dorthin verschieben; die Forge-Sektion klaert dann nur noch das Werkzeug und den Wortwechsel. Kein Verhalten, nur die Stelle - faellt beim Fix von 1 ohnehin an, weil :43 und :81 an dieser Grenze liegen.
+
+Stehen gelassen und warum: (a) Ein Ablauf statt zwei Kopien - richtig entschieden, die Begruendung des Implementierers zu DoD 4 traegt. (b) Die vierfache Wiederholung von 'never open/merge/approve' bleibt, das ist in einem Prompt kein Fluff (schon in der letzten optimize-Runde so entschieden, wird nicht wieder aufgemacht). (c) 'glab mr list' ohne State-Flag und '--description "$(cat ...)"' statt --body-file: gegen glab 1.114.0 nachgesehen, das ist die review-Lane, nicht meine. (d) Der veraltete review-check (erwartet EINEN Treffer fuer 'gh pr create') ist ein Ticketfeld, kein Diff-Befund - steht schon in der Notiz der in-progress-Runde und gehoert der review-Lane.
