@@ -26,11 +26,11 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:27:45Z
+updated-at: 2026-09-15T07:28:38Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-88915
-claimed-at: 2026-09-15T07:25:25Z
+claimed-by: DESKTOP-RFTCH11-93284
+claimed-at: 2026-09-15T07:28:38Z
 outcome-what: "Der Satz, mit dem eine Lane-Korrektur sich meldet, geht jetzt direkt auf os.Stderr: applyCorrections (core/lane/corrections.go:144) schreibt ihn selbst und gibt nichts mehr zurueck, Load haengt ihn nicht mehr an Set.Warnings. Tests lesen ihn dort, wo ein Mensch ihn liest - core/lane/corrections_test.go (hears-Seam plus TestCorrectionSpeaksOnStderrAndNotOnStdout mit echten Deskriptoren) und core/move/oldboard_test.go. Die Unreleased-Zeile in core/release/NOTES.md sagt jetzt, dass die Meldung auch unter --json kommt."
 outcome-why: "critique-Findung: die Meldung ritt auf Set.Warnings. internal/cli/root.go:291 unterdrueckt Lane-Warnungen unter --json, und die meisten lane.Load-Aufrufer (mergedriver, tags, links, validate, checklist, resume, tui/browse) lesen .Warnings gar nicht. Weil die Korrektur einmalig ist und ihren Marker im selben Load schreibt, war der erste Load nach einem Update - auf einem Agenten-Board ein --json-Aufruf oder der Merge-Driver - meist der einzige und letzte Moment, in dem etwas haette gesagt werden koennen. Danach war die Meldung fuer immer weg."
 outcome-resolves: "DoD 3 jetzt belegt durch die Zustellung, nicht nur durch die Erzeugung des Satzes; go vet + go test ./... -race RC=0; von Hand mit gebautem Binary nachgestellt: altes done.md unter 'jaira list --json' -> Meldung auf stderr, stdout bleibt gueltiges JSON; zweiter Lauf stumm; Zeile von Hand zurueckgeschrieben -> bleibt stehen; heutiges done.md plus Zeile -> unveraendert, Meldung 'is not the lane jaira shipped'"
