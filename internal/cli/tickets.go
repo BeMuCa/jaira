@@ -473,7 +473,7 @@ func missingFields(t *ticket.Ticket) []string {
 }
 
 func newListCmd() *cobra.Command {
-	var laneFilter, assigneeFilter, query, tagFilter string
+	var laneFilter, assigneeFilter, query, tagFilter, milestoneFilter string
 	var actionableOnly bool
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -488,6 +488,14 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// The index is built whether or not --milestone was given, so the
+			// JSON rows can say which milestones a ticket is in — an agent
+			// reading the board needs that as much as a person looking at the
+			// right edge of a card.
+			ms, err := milestoneIndex(s.Root)
+			if err != nil {
+				return err
+			}
 			var out []*ticket.Ticket
 			for _, t := range all {
 				if laneFilter != "" && t.Status != laneFilter {
@@ -497,6 +505,13 @@ func newListCmd() *cobra.Command {
 					continue
 				}
 				if tagFilter != "" && !tag.Matches(t.Tags, tagFilter) {
+					continue
+				}
+				// Exact on the name, like --tag: a milestone is a name from a
+				// closed set, so "q4" answering for "q4-cleanup" would be a
+				// wrong answer rather than a loose one — and it would make
+				// this disagree with the board's own filter.
+				if milestoneFilter != "" && !ms.Matches(t.ID, milestoneFilter) {
 					continue
 				}
 				if query != "" && !matches(t, query) {
@@ -510,7 +525,9 @@ func newListCmd() *cobra.Command {
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(out))
 				for _, t := range out {
-					arr = append(arr, ticketJSON(t, env.Lanes))
+					row := ticketJSON(t, env.Lanes)
+					row["milestones"] = strOrEmpty(ms.Names(t.ID))
+					arr = append(arr, row)
 				}
 				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr)})
 			}
@@ -526,6 +543,7 @@ func newListCmd() *cobra.Command {
 	f.StringVar(&laneFilter, "lane", "", "only tickets in this lane")
 	f.StringVar(&assigneeFilter, "assignee", "", "only tickets assigned to this person")
 	f.StringVar(&tagFilter, "tag", "", "only tickets carrying this tag")
+	f.StringVar(&milestoneFilter, "milestone", "", "only tickets in this milestone")
 	f.StringVarP(&query, "query", "q", "", "substring match over title, goal and id")
 	f.BoolVar(&actionableOnly, "actionable", false, "only tickets that could be started right now")
 	return cmd

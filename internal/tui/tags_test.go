@@ -74,12 +74,12 @@ func TestFilterTagHitsAndMisses(t *testing.T) {
 	tk := taggedTicket()
 
 	for _, q := range []string{"tag:backend", "tag:security", "tags:backend", "tag:BACKEND"} {
-		if !matches(tk, q) {
+		if !matches(tk, q, nil) {
 			t.Errorf("%q did not match a ticket tagged %v", q, tk.Tags)
 		}
 	}
 	for _, q := range []string{"tag:ui", "tag:frontend"} {
-		if matches(tk, q) {
+		if matches(tk, q, nil) {
 			t.Errorf("%q matched a ticket tagged %v", q, tk.Tags)
 		}
 	}
@@ -88,7 +88,7 @@ func TestFilterTagHitsAndMisses(t *testing.T) {
 	// "security" is a wrong answer rather than a loose one, and it would have
 	// made the board filter disagree with 'jaira list --tag', which is exact.
 	for _, q := range []string{"tag:cur", "tag:sec", "tag:security-review", "tag:back"} {
-		if matches(tk, q) {
+		if matches(tk, q, nil) {
 			t.Errorf("%q matched %v: the tag filter is substring, not exact", q, tk.Tags)
 		}
 	}
@@ -96,7 +96,7 @@ func TestFilterTagHitsAndMisses(t *testing.T) {
 	// normalised before comparing.
 	shouty := taggedTicket()
 	shouty.Tags = []string{"My UI"}
-	if !matches(shouty, "tag:my-ui") {
+	if !matches(shouty, "tag:my-ui", nil) {
 		t.Error("tag:my-ui did not match a ticket carrying \"My UI\"")
 	}
 	// A known key on an untagged ticket matches nothing rather than leaking
@@ -104,11 +104,11 @@ func TestFilterTagHitsAndMisses(t *testing.T) {
 	untagged := taggedTicket()
 	untagged.Tags = nil
 	untagged.Context = "the backend was fine"
-	if matches(untagged, "tag:backend") {
+	if matches(untagged, "tag:backend", nil) {
 		t.Error("tag:backend matched via full text although the ticket has no tags")
 	}
 	// A plain search still finds a tag: it is part of what the ticket says.
-	if !matches(tk, "security") {
+	if !matches(tk, "security", nil) {
 		t.Error("a plain query did not match a tag")
 	}
 }

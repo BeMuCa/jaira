@@ -25,6 +25,7 @@ import (
 	"github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/move"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
@@ -53,6 +54,7 @@ const (
 	modeDelete
 	modeDropBoard
 	modeLegend
+	modeMilestones
 	modeLinks
 )
 
@@ -66,6 +68,16 @@ type Model struct {
 	// registry is one small file shared by every card on the board, not a
 	// per-card fact.
 	tags *tag.Registry
+
+	// milestones is the board's planning groups (.jaira/milestones), loaded
+	// once per reload beside the tags, and mstones is the index running the
+	// other way — from a ticket id to the groups holding it, which is the
+	// direction a card and the filter both need and the files do not give.
+	milestones []*milestone.Milestone
+	mstones    milestone.Index
+	// msIdx is the cursor in the milestone picker, the one gesture that pulls
+	// the board down to a single round of work.
+	msIdx int
 
 	tickets []*ticket.Ticket
 	cols    []column
@@ -354,6 +366,12 @@ func (m *Model) reload() error {
 		return err
 	}
 	m.tags = tags
+	all, err := milestone.LoadAll(m.store.Root)
+	if err != nil {
+		return err
+	}
+	m.milestones = all
+	m.mstones = milestone.Build(all)
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
@@ -464,7 +482,7 @@ func (m *Model) rebuild() {
 
 	byLane := map[string][]*ticket.Ticket{}
 	for _, t := range m.tickets {
-		if m.filter != "" && !matches(t, m.filter) {
+		if m.filter != "" && !matches(t, m.filter, m.mstones) {
 			continue
 		}
 		byLane[t.Status] = append(byLane[t.Status], t)
@@ -595,7 +613,7 @@ func (m *Model) currentLane() *lane.Lane {
 	return m.cols[m.laneIdx].lane
 }
 
-func matches(t *ticket.Ticket, q string) bool {
+func matches(t *ticket.Ticket, q string, ms milestone.Index) bool {
 	q = strings.ToLower(q)
 
 	// A "key:value" query narrows the search to one field — "assignee:berk"
@@ -624,6 +642,12 @@ func matches(t *ticket.Ticket, q string) bool {
 			// wrong answer rather than a loose one — and it would have made the
 			// board filter disagree with 'jaira list --tag', which is exact.
 			return tag.Matches(t.Tags, val)
+		case "milestone":
+			// Exact on the name, like tag above and for the same reason: a
+			// milestone is a name from a closed set, and this is the key the
+			// board's own gesture writes into the filter, so a loose match
+			// would quietly widen a filter nobody typed.
+			return ms.Matches(t.ID, val)
 		case "lane", "status":
 			field = t.Status
 		case "body":
@@ -1012,6 +1036,39 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case modeMilestones:
+		names := m.activeMilestones()
+		switch s {
+		case "esc", "M", "q":
+			m.mode = m.returnTo
+		case "j", "down":
+			if len(names) > 0 {
+				m.msIdx = (m.msIdx + 1) % len(names)
+			}
+		case "k", "up":
+			if len(names) > 0 {
+				m.msIdx = (m.msIdx - 1 + len(names)) % len(names)
+			}
+		case "enter":
+			// The gesture writes the ordinary filter rather than carrying a
+			// second kind of narrowing beside it: one filter means esc clears
+			// this the same way it clears a typed one, and / shows what the
+			// board is currently narrowed to.
+			if m.msIdx >= 0 && m.msIdx < len(names) {
+				m.filter = "milestone:" + names[m.msIdx]
+				m.input = m.filter
+				m.rebuild()
+			}
+			m.mode = m.returnTo
+		case "x":
+			// Out of one milestone and back to the whole board, without
+			// having to remember that esc on the board does it.
+			m.filter, m.input = "", ""
+			m.rebuild()
+			m.mode = m.returnTo
+		}
+		return m, nil
+
 	case modeLinks:
 		m.keyLinks(s)
 		return m, nil
@@ -1271,6 +1328,17 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// drawn over the board, so it has to record what it is covering.
 		m.returnTo = m.mode
 		m.mode = modeLegend
+	case "M":
+		// Not m: m is move and must keep meaning that. The picker narrows the
+		// board to one round of work in one gesture, which is the whole reason
+		// a milestone is worth having.
+		if len(m.activeMilestones()) == 0 {
+			m.notify("No milestones on this board yet.\n\nCreate one with 'jaira milestone create <name>' and add tickets to it.", false)
+		} else {
+			m.returnTo = m.mode
+			m.msIdx = 0
+			m.mode = modeMilestones
+		}
 	case "L":
 		// Everything connected to this card, wherever the other end now
 		// lives — the board, a ref, the logbook, the archive.
@@ -1377,6 +1445,46 @@ func (m *Model) cardColors(t *ticket.Ticket) [cardSlots]cardSlot {
 		}
 	}
 	return slots
+}
+
+// milestoneColors is the bar down a card's RIGHT edge, read top to bottom and
+// mirrored to cardColors: slot 1 is the colour of the first milestone holding
+// this ticket, slot 2 the second, slot 3 the third, in the order the milestone
+// files give them — which is an order a person controls by editing a file.
+//
+// Two edges rather than two halves of one bar: the left bar says what a ticket
+// is about and the right says which round of work it belongs to, and those are
+// answers to different questions. Putting them on opposite edges is what makes
+// them readable at a glance without a legend telling you which cell means
+// which.
+//
+// A ticket in no milestone leaves every slot uncoloured, and a fourth
+// milestone colours nothing — the same display limit the tag bar has, never a
+// validation one.
+func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
+	var slots [cardSlots]cardSlot
+	if m.mstones == nil {
+		return slots
+	}
+	held := m.mstones.For(t.ID)
+	for i := 0; i < cardSlots && i < len(held); i++ {
+		if ms := held[i]; tag.ValidColour(ms.Colour) && ms.Colour > 0 {
+			slots[i] = cardSlot{colour: ms.Colour, coloured: true}
+		}
+	}
+	return slots
+}
+
+// activeMilestones is every milestone the board has a file for, in name order.
+// It reads the files rather than the tickets on screen, so an empty milestone
+// is still offered by the picker — a group you have just created and not yet
+// filled is exactly the one you want to filter to.
+func (m *Model) activeMilestones() []string {
+	var names []string
+	for _, ms := range m.milestones {
+		names = append(names, ms.Name)
+	}
+	return names
 }
 
 // activeTags is every tag carried by a ticket on the board, deduplicated and

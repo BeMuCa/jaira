@@ -15,16 +15,16 @@ func TestFilterKeyNarrowsToTheField(t *testing.T) {
 		Context:  "berk reported this while debugging",
 	}
 
-	if matches(tk, "assignee:berk") {
+	if matches(tk, "assignee:berk", nil) {
 		t.Error("assignee:berk matched a ticket assigned to sam whose prose mentions berk")
 	}
-	if !matches(tk, "context:berk") {
+	if !matches(tk, "context:berk", nil) {
 		t.Error("context:berk did not match the context that contains berk")
 	}
-	if !matches(tk, "lane:review") || !matches(tk, "status:review") {
+	if !matches(tk, "lane:review", nil) || !matches(tk, "status:review", nil) {
 		t.Error("lane:/status: did not match the ticket's lane")
 	}
-	if !matches(tk, "ticket:7bvrct") {
+	if !matches(tk, "ticket:7bvrct", nil) {
 		t.Error("ticket:<id suffix> did not match the id")
 	}
 }
@@ -37,7 +37,7 @@ func TestFilterUnknownKeyFallsBackToFullText(t *testing.T) {
 		Context: "see http://example.test/page",
 	}
 
-	if !matches(tk, "http://example.test") {
+	if !matches(tk, "http://example.test", nil) {
 		t.Error("a query containing a colon with an unknown key did not full-text match")
 	}
 }
@@ -49,7 +49,7 @@ func TestFilterKnownKeyOnEmptyFieldMatchesNothing(t *testing.T) {
 		ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "goal is mentioned here", Status: "todo",
 	}
 
-	if matches(tk, "goal:mentioned") {
+	if matches(tk, "goal:mentioned", nil) {
 		t.Error("goal:<q> matched via full text although the goal field is empty")
 	}
 }

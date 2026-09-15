@@ -14,6 +14,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -140,6 +141,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderMessage())
 	case modeLegend:
 		return m.modal(m.renderLegend())
+	case modeMilestones:
+		return m.modal(m.renderMilestones())
 	case modeLinks:
 		if m.links != nil {
 			return m.modalOver(m.renderLinks(), m.links.from)
@@ -515,8 +518,8 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 }
 
 // renderCardBlock draws one card as a filled band, w columns wide: no frame, a
-// one-cell bar of tag colour down the left, and a background that alternates
-// with the card above.
+// one-cell bar of tag colour down the left, a one-cell bar of milestone colour
+// down the right, and a background that alternates with the card above.
 //
 // The bar is one cell wide and cardHeight rows tall, and each of those rows is
 // a slot of cardColors: row 1 the ticket's first tag, row 2 its second, row 3
@@ -532,6 +535,7 @@ func (m *Model) cardsInBudget(tickets []*ticket.Ticket, first, budget int) int {
 // a slightly different colour" rather than as a marker.
 func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) string {
 	slots := m.cardColors(t)
+	right := m.milestoneColors(t)
 
 	// The selection fill and the glow still follow the first tag alone: the
 	// card is filled in one colour, and slot 1 is the ticket's primary one.
@@ -542,10 +546,16 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 		_, bgParams = m.laneShade(alt)
 	}
 
-	// One cell goes to the bar, the rest to renderCard — which budgets its own
-	// leading space inside the width it is given, so that space is the air
-	// between the bar and the text.
-	inner := max(1, w-1)
+	// One cell goes to each bar — tags on the left, milestones on the right —
+	// and the rest to renderCard, which budgets its own leading space inside
+	// the width it is given, so that space is the air between the bar and the
+	// text.
+	//
+	// The right cell is reserved on every card, whether or not the ticket is
+	// in a milestone. Reserving it only when it is used would make the text
+	// width depend on membership, so the titles in one lane would flutter in
+	// and out by a column as tickets joined a group.
+	inner := max(1, w-2)
 	content := strings.TrimSuffix(m.renderCard(t, inner, selected), "\n")
 
 	var b strings.Builder
@@ -557,8 +567,13 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 		if slots[i].coloured {
 			barParams = "5;" + strconv.Itoa(slots[i].colour)
 		}
+		rightParams := bgParams
+		if right[i].coloured {
+			rightParams = "5;" + strconv.Itoa(right[i].colour)
+		}
 		b.WriteString(paintRow(barParams, " "))
 		b.WriteString(paintRow(bgParams, padDisplay(line, inner)))
+		b.WriteString(paintRow(rightParams, " "))
 		b.WriteString("\n")
 	}
 	return b.String()
@@ -1495,6 +1510,37 @@ func (m *Model) renderLegend() string {
 	return b.String()
 }
 
+// renderMilestones is the picker behind M: the board's rounds of work, each in
+// the colour it paints on the right edge of its cards, so the list and the
+// board read as the same thing.
+func (m *Model) renderMilestones() string {
+	var b strings.Builder
+	b.WriteString(styLaneTitle.Render("Milestones") + "\n")
+	b.WriteString(styBar.Render(strings.Repeat("─", min(m.width, 40))) + "\n\n")
+	names := m.activeMilestones()
+	if len(names) == 0 {
+		b.WriteString(styMeta.Render("No milestones on this board.") + "\n")
+	}
+	for i, ms := range m.milestones {
+		marker := "  "
+		name := ms.Name
+		if i == m.msIdx {
+			marker = stySelected.Render("▌ ")
+			name = stySelected.Render(name)
+		}
+		swatch := styMeta.Render("·")
+		if tag.ValidColour(ms.Colour) && ms.Colour > 0 {
+			swatch = lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(ms.Colour))).Render("■")
+		}
+		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
+		b.WriteString(marker + swatch + " " + name + count + "\n")
+	}
+	for _, l := range wrapHints([]string{"enter narrow the board to it", "x show everything again", "esc close"}, max(1, m.width)) {
+		b.WriteString("\n" + styMeta.Render(l))
+	}
+	return b.String()
+}
+
 func (m *Model) renderProjects() string {
 	var b strings.Builder
 	b.WriteString(styLaneTitle.Render("Switch board") + "\n")
@@ -1539,6 +1585,7 @@ func (m *Model) renderHelp() string {
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
 			{"L", "every ticket linked to this one, logbook and archive included"},
 			{"/", "filter tickets as you type; key:value narrows to one field"},
+			{"M", "narrow the board to one milestone (x there shows everything again)"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
