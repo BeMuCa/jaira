@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:29:47Z
+updated-at: 2026-09-15T05:30:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40252
@@ -139,3 +139,18 @@ Offen und zu tun:
 FALLE, unveraendert gueltig: die installierten Kopien unter ~/.claude/skills sind Vorlage NUR fuer die Transport-Absaetze. Sie tragen noch die ALTE Pull-Request-Regel, die 13VMA8 umgedreht hat - und 13VMA8 ist auf genau diesem Zweig inzwischen fertig und steht in human. Wer eine dieser Dateien im Ganzen kopiert, macht 13VMA8 rueckgaengig. Absatzweise portieren.
 
 KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
+- **2026-09-15 05:30 · Alexander Sacharov** — Beleg fuer DoD 6 aus diesem Dispatcher-Lauf (2026-09-15), erzeugt beim Abarbeiten von 13VMA8 auf demselben Zweig:
+
+Ich habe als Dispatcher SIEBEN Worker gestartet, jeden mit 'bash core/role/builtin/jaira-dispatcher/scripts/spawn.sh 13VMA8 13VMA8 <lane> /home/alex/projects/jaira'. Jeder kam beim ERSTEN Versuch hoch, in einem eigenen Tab, kein Split: w3:p3B (in-progress), p3E (critique), p3F (in-progress), p3H (critique), p3K (optimize), p3M (testing). Jeder Tab wurde geschlossen, sobald sein Ergebnis vom Board gelesen war. 'claude --permission-mode' habe ich nirgends selbst aufgerufen, es gab also auch keine Ablehnung als 'Create Unsafe Agents'.
+
+Was den Unterschied zum gescheiterten Lauf vom 2026-09-14 macht: die Fassung im Repo traegt den wsl.exe-Fix (spawn.sh:56-61). Kein Vertrauens-Dialog, kein blindes Enter, kein falsches Verzeichnis.
+
+ABER - und das ist der Grund, warum DoD 6 noch nicht einfach abgehakt werden darf: die INSTALLIERTE Kopie ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh ist AELTER als die im Repo und startet den Worker immer noch mit "cd '$wt' && claude". Genau der Aufruf, den die Notiz vom 2026-09-14 20:35 als Grundursache benannt hat. Ein Dispatcher, der heute nur seinen Prompt liest und das INSTALLIERTE Skript benutzt, laeuft weiterhin in den Vertrauens-Dialog und bekommt blind ein Enter darauf gedrueckt.
+
+Ich habe die installierte Kopie deshalb bewusst NICHT laufen lassen - der Befund ist belegt, ihn erneut auszuloesen haette nur ein zweites Mal 'No, exit' fuer Alex geklickt. Benutzt wurde die Fassung aus dem Worktree.
+
+Daraus zwei Dinge fuer die Lane, die DoD 6 abhakt:
+1. Der Beleg gilt fuer die Fassung, die dieser Zweig AUSLIEFERT. Das ist das, was das Ticket verlangt - was auf diesem Rechner zufaellig installiert ist, ist nicht Gegenstand des Tickets.
+2. Erwaehnenswert bleibt, dass 'jaira roles install' noetig ist, damit die Korrektur ueberhaupt bei einem Dispatcher ankommt. Wenn die NOTES.md-Zeile aus DoD 7 das nicht sagt, sagt es niemandem jemand.
+
+Zweiter Befund aus diesem Lauf, KEIN Teil dieses Tickets (Befund 4 vom 2026-09-14 18:23, am 20:36 ausdruecklich ausgeschlossen): spawn.sh:71 schickt fest '/jaira-role-lane $ticket $lane' und kann '/jaira-role-tester' nicht starten, obwohl der Dispatcher-Prompt sagt 'Testing is not a lane: /jaira-role-tester <id>'. Ich habe fuer die Testing-Lane von 13VMA8 spawn.sh unveraendert mit lane=testing benutzt, weil 'testing' auf diesem Board eine echte agentische Lane mit Pflichtfeld test-verdict ist. Gehoert in ein eigenes Ticket.
