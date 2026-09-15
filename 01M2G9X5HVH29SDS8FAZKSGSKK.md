@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:06:17Z
+updated-at: 2026-09-15T06:06:21Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23543
@@ -306,3 +306,4 @@ Testing hat mehr zu zeigen als eine gruene Suite:
 1. scripts/spawn.sh wird von 'jaira roles install' wirklich ausgeliefert - ueber go:embed all:builtin in core/role/role.go:33, gepinnt von core/role/role_test.go. DoD-Punkt 1 zeigt auf dieses Skript; liefert der Installer es nicht aus, ist das Ticket auf dem Papier erfuellt und in der Praxis kaputt. Nachpruefen, nicht der frueheren Lane glauben, die das behauptet hat.
 2. In eine blockierte Pane darf nicht getippt werden. Nur 'claude idle' und 'claude done' erreichen send-text; alles andere steigt aus. Dieser Torwaechter existiert, weil das Skript frueher Enter auf den Genehmigungsdialog eines Menschen gedrueckt hat. Durch Lesen pruefen und, wenn moeglich, den Fall auch fahren.
 3. Die Meldung des blocked-Arms richtet sich jetzt an den Menschen, nicht an den Dispatcher - dessen eigener Prompt (jaira-dispatcher/SKILL.md:188-189) verbietet ihm das Beantworten von Dialogen.
+- **2026-09-15 06:06 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen - er haengt an DIESEM Ticket, weil scripts/spawn.sh hier geaendert wird: Zeile 84 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane nicht folgen. Dieser Lauf startet den Tester deshalb als Lane-Worker ('/jaira-role-lane KSGSKK testing'), was auf diesem Board geht, weil testing hier eine echte agentische Lane mit Ausgabe test-verdict ist.
