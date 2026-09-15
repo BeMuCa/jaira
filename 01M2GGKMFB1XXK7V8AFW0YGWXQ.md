@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:15:41Z
+updated-at: 2026-09-15T15:15:44Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -164,3 +164,4 @@ DIE GESTE: kein neuer Filtermechanismus. Das Board hat schon m.filter mit key:va
 
 NOCH FAUL AM TICKET, ausserhalb dieser Lane: der TITEL sagt weiter 'Sprint'. jaira hat keinen Umbenennen-Befehl. Wer das Ticket aufmacht, liest im Titel den Entwurf vom 14.09. und im Ziel den vom 15.09.
 - **2026-09-15 15:10 · Alexander Sacharov** — core/milestone, 2026-09-15. Was das Paket nicht tut und warum: keine eigene Palette - Palette = tag.Palette, weil Tag links und Milestone rechts auf der Karte stehen und nie verwechselt werden koennen; sechzehn weitere Werte wuerden nur naeher an die Statusfarben (39/214/203/78/141) ruecken. Mitglied ist die VOLLE ULID, nicht das Handle: die Datei ist auch der Merge-Gegenstand, und ein Handle ist nicht garantiert eindeutig. parseMember akzeptiert nur eine gueltige ULID, damit ein gewoehnlicher Markdown-Bullet in der Prosa nicht als Mitglied gelesen wird - das ist der Grund, warum die Datei ueberhaupt Prosa enthalten darf. Load/Save haelt die Zeilen verbatim wie core/tag, Frontmatter wird NICHT ueber core/ticket geparst: die Ticket-Frontmatter kennt Schema und Pflichtfelder, ein Milestone hat drei Zeilen.
+- **2026-09-15 15:15 · Alexander Sacharov** — TUI, 2026-09-15. Taste ist M, nicht m - m ist 'move' und muss das ueberall bleiben. Die Geste schreibt in m.filter ('milestone:<name>') statt eine zweite Verengung daneben zu halten: damit raeumt esc auf dem Board sie genauso weg wie einen getippten Filter, und / zeigt, worauf das Board verengt ist. Im Picker loest x den Filter, weil sich niemand merkt, dass esc auf dem BOARD das tut. matches() hat jetzt einen dritten Parameter (milestone.Index) statt einer zweiten Funktion matchesIn - zwei Namen fuer eine Frage driften. inner in renderCardBlock ist w-2: die rechte Zelle ist IMMER reserviert, auch ohne Milestone, sonst wandern die Titel einer Lane um eine Spalte, wenn ein Ticket einer Gruppe beitritt. Getestet in internal/tui/milestonebar_test.go.
