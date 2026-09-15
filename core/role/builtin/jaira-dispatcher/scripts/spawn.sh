@@ -31,8 +31,13 @@ if [ ! -d "$wt" ]; then
       echo "# worker stack: slug=$slug offset=$off"
       # Derived from the repository, never a name written in here: a prefix
       # baked into this script belongs to one project and silently names every
-      # other project's stack after it.
-      echo "COMPOSE_PROJECT_NAME=$(basename "$root" | tr -c 'a-zA-Z0-9' '_')_$slug"
+      # other project's stack after it. Docker takes lower case only, so the
+      # name is folded before it is cleaned — a jaira slug is upper case, and
+      # `docker compose` refuses the whole stack over a single capital. printf
+      # rather than echo: the newline echo appends is a character like any
+      # other to tr, and would come back as a trailing underscore.
+      echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" \
+        | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
       echo "HTTP_PORT=$((8080 + off))"
       echo "DB_PORT_HOST=$((5500 + off * 2))"
       echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"

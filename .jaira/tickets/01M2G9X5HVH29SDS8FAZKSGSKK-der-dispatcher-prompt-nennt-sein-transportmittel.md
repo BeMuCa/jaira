@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:21:38Z
+updated-at: 2026-09-15T06:31:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-38471
-claimed-at: 2026-09-15T06:09:53Z
-outcome-what: "testing round 1: gates green, DoD 1-7 verified in the tree, spawn.sh exercised against a fake herdr in four runs"
-outcome-why: "the COMPOSE_PROJECT_NAME spawn.sh writes is rejected by docker compose, so the .env block it was asked to fix still does not work"
-outcome-resolves: "no DoD item; the finding is on spawn.sh:35, the line DoD item 5 demanded"
+claimed-by: DESKTOP-RFTCH11-77218
+claimed-at: 2026-09-15T06:31:06Z
+outcome-what: "spawn.sh leitet COMPOSE_PROJECT_NAME jetzt so ab, dass Docker den Namen annimmt: printf statt echo (kein angehaengter Unterstrich aus dem Zeilenumbruch), erst kleinschreiben, dann saeubern. NOTES.md:19 sagt das statt nur 'kein fremder Projektname mehr'."
+outcome-why: "Der abgeleitete Name war zwar nicht mehr fremd, aber unbrauchbar: 'docker compose config' wies repo__SLUG3 als 'invalid project name' zurueck, also startete der Worker-Stapel gar nicht erst - genau das, wofuer der .env-Block da ist."
+outcome-resolves: "DoD 5, jetzt funktionsgeprueft statt nur gelesen (my_repo_ksgskk, Compose v2.40.3, RC=0); DoD 6 traegt die richtige Zeilennummer fuers Label-Format."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 review-gaps: "Entfernt: der verwaiste '--no-focus'-Absatz in jaira-dispatcher/SKILL.md - er wies auf eine Option hin, die seit dieser Aenderung spawn.sh setzt und der Dispatcher nicht mehr tippt; in den Satz ueber den Weg am Skript vorbei gefaltet, wo er noch gilt. Stehen gelassen und warum: die doppelte Transport-Lehre in dispatcher/SKILL.md:91-98 und teamlead/SKILL.md:44-52 (ein Rollen-Prompt wird allein geladen - ein Verweis waere fuer den Leser eine Sackgasse, das ist dasselbe Wissen fuer zwei Leser, keine zweite Implementierung); das doppelte Verzeichnissetzen in spawn.sh (--cwd plus 'cd' im Linux-Arm) - harmlos, und es zu entfernen waere eine Verhaltensaenderung an der Stelle, an der dieses Ticket dreimal falsch lag. Kein toter Code, nichts an Kosten: das Skript laeuft einmal je Worker."
 test-verdict: "fail: spawn.sh schreibt ein COMPOSE_PROJECT_NAME, das 'docker compose' zurueckweist - Grossbuchstaben aus dem Slug und ein doppelter Unterstrich (spawn.sh:35)"
@@ -56,9 +56,9 @@ test-verdict: "fail: spawn.sh schreibt ein COMPOSE_PROJECT_NAME, das 'docker com
 - [x] scripts/spawn.sh legt Zweige mit dem Praefix an, den dieses Repository benutzt, nicht mit feature/.
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:20
 - [x] Der .env-Block in scripts/spawn.sh traegt keinen fest eingebauten Projektnamen eines fremden Repositories mehr - entweder abgeleitet oder aus dem Skript heraus.
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:35
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:39-40 (repo-Name + Slug, kleingeschrieben; 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0)
 - [x] Nachgestellt: ein Dispatcher, der nur seinen eigenen Prompt liest, startet einen Worker in einer eigenen Vorlage, ohne 'claude --permission-mode' selbst aufzurufen.
-  proof: Herdr-Tab w3:t2H, Label 'KSGSKK/in-progress' = das Format aus core/role/builtin/jaira-dispatcher/scripts/spawn.sh:46; diese Sitzung selbst
+  proof: Herdr-Tab w3:t2H, Label 'KSGSKK/in-progress' = das Format aus core/role/builtin/jaira-dispatcher/scripts/spawn.sh:58; diese Sitzung selbst
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased, weil die ausgelieferten Prompts sich aendern.
   proof: core/release/NOTES.md:19
 
@@ -371,3 +371,16 @@ Vorschlag, eine Zeile:
 printf gibt keinen Umbruch aus, also frisst tr auch keinen; erst kleinschreiben, dann saeubern. Gegenprobe: repo_slug3 wird von 'docker compose config' angenommen.
 
 KLEINIGKEIT, kein Rueckweisungsgrund: der Beweis zu DoD-Punkt 6 nennt 'spawn.sh:46' fuer das Label-Format. Seit dem --workspace-Zusatz (77c5a0f) steht das Label in Zeile 53; Zeile 46 ist heute ein Kommentar. Beim naechsten Durchgang mitziehen.
+- **2026-09-15 06:31 · Alexander Sacharov** — in-progress 2026-09-15 (6. Runde, nach dem Befund der testing-Runde von 06:21): behoben ist genau diese eine Zeile, sonst nichts angefasst.
+
+spawn.sh:32-40 - COMPOSE_PROJECT_NAME wird jetzt mit printf zusammengesetzt, dann kleingeschrieben, dann gesaeubert. Gemessen: 'My Repo' + KSGSKK -> my_repo_ksgskk; 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' (Compose v2.40.3) gibt RC=0, waehrend der alte Wert repo__SLUG3 dieselbe Pruefung mit 'invalid project name' abweist.
+
+Warum erst kleinschreiben und dann saeubern und nicht umgekehrt: 'tr -c a-z0-9_-' wuerde jeden Grossbuchstaben in einen Unterstrich verwandeln, aus KSGSKK also ______. Die Reihenfolge ist nicht Geschmack.
+
+Warum printf und nicht echo: das ist der zweite Fehler der alten Zeile. 'basename ... | tr' bekam den Zeilenumbruch von basename mit, machte daraus einen Unterstrich, und die Befehlssubstitution konnte ihn nicht mehr abschneiden - daher repo__SLUG3 mit zwei Unterstrichen. printf gibt keinen Umbruch aus.
+
+Ende-zu-Ende nachgestellt, nicht nur die Zeile: spawn.sh komplett gegen ein Herdr-Attrappen-Skript in einem Wegwerf-Repo mit .env laufen lassen (Repo-Name 'My Repo' mit Leerzeichen, damit auch das Saeubern belegt ist). Die .env des Worktrees traegt my_repo_ksgskk, die Aufrufkette 'tab create --workspace w3 ... --label KSGSKK/in-progress --no-focus' -> 'pane run' -> 'pane get' -> 'send-text' -> 'send-keys enter' ist unveraendert.
+
+NOTES.md:19 nicht als zweite Zeile, sondern der vorhandene Halbsatz umgeschrieben: die alte Formulierung ('schreibt nicht mehr den COMPOSE_PROJECT_NAME eines fremden Projekts') war schon wahr, sagte aber nicht, dass der abgeleitete Name benutzbar ist. Dasselbe Skript zweimal in derselben Unreleased-Liste waere die Alternative gewesen.
+
+Mitgezogen: der Beweis zu DoD 6 nannte spawn.sh:46 fuer das Label-Format, das ist seit 77c5a0f Zeile 58. Das war die Kleinigkeit aus der testing-Notiz von 06:21.
