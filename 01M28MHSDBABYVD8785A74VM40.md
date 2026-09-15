@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:53:45Z
+updated-at: 2026-09-15T05:59:35Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56199
@@ -197,3 +197,25 @@ Looked at and left, with reasons:
 
 gofmt, go vet ./... and go test ./core/... ./internal/cli/... ./internal/tui/...: all green after each edit.
 - **2026-09-15 05:53 · Alexander Sacharov** — testing muss gegen 7ecf9f2 neu laufen. Der test-verdict im Ticket stammt vom 14.09. 20:08 und ist ueberholt: seitdem sind 343912c (NOTES-Schwelle 'ten or more', handle in 'jaira logbook --all --json', gepinnt von TestTheCutJSONNamesEachHandle) und 7ecf9f2 (--all --json rendert jetzt ueber trimmedJSON und traegt zusaetzlich title; 'Status == lane && !ReadOnly' nur noch einmal in filesInLane()) gelandet. Ein alter Verdict darf dieses Ticket nicht in eine Menschen-Lane tragen - das ist hier viermal passiert.
+- **2026-09-15 05:59 · Alexander Sacharov** — testing, zweiter Durchgang - gegen 7ecf9f2 (der erste lief gegen den Stand vom 14.09. 20:08). Befund: keiner.
+
+Gates: go build ./... und go vet ./... Exit 0. go clean -testcache, danach go test ./... -race: alle 28 Pakete ok, Exit 0. Kein Ergebnis kam aus dem Cache.
+
+Die DoD Punkt fuer Punkt am Baum nachgesehen, nicht am outcome-Text, auf einer frischen Scratch-Doska (git init, jaira init, eigenes Binary aus diesem Worktree):
+- .jaira/lanes/done.md des neuen Boards traegt kein logbook-on-entry; das Wort steht nur in der Lane-Beschreibung, die 'jaira logbook --all' erklaert.
+- drei Tickets nach done gefahren: jede Ausgabe endet mit '<handle> -> done' und sagt kein Wort von Ablegen. Danach existiert .jaira/logbook gar nicht.
+- 'jaira logbook' ohne Argument: 'The logbook is empty.' - legt nichts an, das Verzeichnis entsteht auch danach nicht.
+- 'jaira logbook <id>': legt genau eines ab, nennt Tagesordner und restore-Pfad; die anderen zwei bleiben stehen.
+- 'jaira logbook --all': 'filed 3 ticket(s) from done:' und je Zeile Handle und Dateiname, darunter der restore-Hinweis. Auf leerer Lane 'nothing in done to file', RC 0.
+- 'jaira logbook --all <id>': 'naming a ticket as well says two different things', RC 2.
+
+Neu seit dem ersten Verdict und deshalb einzeln nachgestellt:
+- 7ecf9f2 (--all --json ueber trimmedJSON): live gelaufen, jeder Eintrag traegt id, handle, title und file - title ist tatsaechlich da, nicht nur im Test behauptet.
+- core/ticket/trim.go: 'Status == lane && !ReadOnly' steht nur noch einmal, in filesInLane() (Z.29); Overflow (Z.54) und FileLane (Z.158) rufen es beide.
+- 343912c: NOTES.md Z.18 sagt 'ten or more' und nennt 'jaira logbook --all'.
+
+Die Board-Zeile habe ich nicht geglaubt, sondern gegengeprobt: view.go:970 rendert '⌸ %d to file: %s' mit fileCommand. Den Befehlsteil aus der Formatzeile genommen -> TestTheRenderedHintNamesTheFilingCommand faellt mit der gerenderten Leiste im Klartext ('⌸ 10 to file' ohne Befehl). Zeile wieder hergestellt, git diff sauber. Der Test liest also wirklich m.statusBar() und faengt genau die Luecke, wegen der review das Ticket einmal zurueckgeschickt hat.
+
+Explizit noch einmal gefahren (-count=1 -race): TestMoveIntoDoneFilesNothingByItself, FileLane/Overflow in core/ticket (inkl. der beiden Ref-only-Tests), Cut/Logbook/Hold in internal/cli (inkl. TestTheCutJSONNamesEachHandle und TestTheCutJSONCarriesWhatItSkipped) - alle PASS.
+
+Nicht angefasst, weil ausserhalb dieser Lane: die Release-Notiz in der geschlossenen Sektion ## 0.1.4 - Alex hat am 15.09. in Kenntnis von sinceEntries entschieden, sie stehen zu lassen. Und 1K9KZS (aeltere Boards behalten logbook-on-entry).
