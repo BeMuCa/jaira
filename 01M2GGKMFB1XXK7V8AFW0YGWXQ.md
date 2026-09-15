@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:49:44Z
+updated-at: 2026-09-15T20:58:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -423,3 +423,14 @@ ADJACENT, NICHT ANGEFASST: 'jaira restore' hat keinen Hinweis darauf, dass der N
 
 Kein Finding aus den Runden 1-4 wird wieder aufgemacht; die betrafen den Bau vor DoD 8-12 und sind nachgemessen erledigt.
 - **2026-09-15 20:49 · Alexander Sacharov** — in-progress Runde 4 (critique-Runde 5), 2026-09-15, angefangen. Die fuenf Findings werden in dieser Reihenfolge gebaut: LoadAll filtert Filed() (1), damit faellt die Begruendung der Reihenfolge in logbookMilestone weg (2), IncomingMilestones schreibt den markierten Inhalt normal (3), unfileMilestone gibt den Save-Fehler zurueck (4), milestoneFiled ruft eine Store-Suche auf logbookFolders statt eines dritten Handwalks (5).
+- **2026-09-15 20:58 · Alexander Sacharov** — in-progress Runde 4 fertig (critique-Runde 5), 2026-09-15. Alle fuenf Findings behoben. Was der Code nicht erklaert:
+
+FINDING 3 HAT EINE FALLE, die im Finding nicht steht: 'den markierten Inhalt normal schreiben' darf NICHT heissen, ihn auch dort hinzuschreiben, wo es die Datei gar nicht gibt. Sonst legt der Fetch auf dem ablegenden Klon selbst die Datei wieder unter .jaira/milestones/ an, waehrend die Kopie im Logbuch liegt - und 'jaira restore' verweigert danach mit 'is already on the board'. IncomingMilestones schreibt einen 'filed'-Ref deshalb nur ueber eine Datei, die schon da ist (haveErr == nil). Genau das ist auch der Zweck des Findings: ein Klon, DER DIE DATEI HAT, soll erfahren, dass abgelegt wurde.
+
+ZWEI LISTEN AUS IncomingMilestones (wrote, filed) statt einer: 'Milestones updated from the remote' und daneben 'Milestones filed elsewhere, now off this board'. Einen abgelegten Milestone unter 'updated' zu melden schickt den Leser zu 'jaira milestone ls', das ihn nicht mehr nennt. JSON hat dafuer milestones_filed.
+
+FALLOUT VON FINDING 1, den das Finding nicht nennt: sobald LoadAll Filed() filtert, kann eine markierte Datei legitim auf der Platte liegen. Zwei Wege brauchen deshalb eine eigene Abweisung - 'jaira logbook <name>' legt einen schon markierten Milestone nicht ein zweites Mal ab, und 'jaira milestone create' sagt bei einer markierten lokalen Datei nicht mehr 'already exists' (das schickt zu einem Listing, das ihn nicht nennt), sondern nennt die Zeile und den Weg zurueck: Zeile von Hand entfernen oder der Ableger macht 'jaira restore'.
+
+NICHT GETESTET, absichtlich: der Fehlerweg von Finding 4 (Save schlaegt fehl, nachdem Restore die Datei zurueckgeschoben hat). Ihn herbeizufuehren hiesse das Verzeichnis schreibgeschuetzt zu machen, und daran scheitert schon das Rename davor - der Test wuerde etwas anderes messen als er behauptet.
+
+FINDING 5: die Suche heisst jetzt ticket.Store.FiledMilestone und liegt auf logbookFolders, deckt also den Alt-Ordner .jaira/sync/ mit ab - aus dem Restore einen Milestone sehr wohl zurueckholen kann. TestFiledMilestoneFindsBothLogbookFolders misst beide Ordner nach.
