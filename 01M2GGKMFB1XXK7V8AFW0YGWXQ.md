@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:28:05Z
+updated-at: 2026-09-15T18:28:21Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -265,3 +265,4 @@ Ausdruecklich NICHT aufgemacht, weil in Runde 1 bis 3 stehengelassen und die Beg
 Die Schleife hat konvergiert: 9, 6, 3, 0. Das ist der vorgesehene Ausgang der Lane und keine Nachsicht - eine vierte Runde haette nur wiederholt, was schon beantwortet ist.
 - **2026-09-15 18:21 · Alexander Sacharov** — optimize: staticcheck U1000 ueber core/milestone, core/outbox, core/gitref, internal/cli und internal/tui findet nichts, was dieser Branch verwaist hat - die drei Treffer (share.go isShared, model.go laneStart, model.go currentLane) stehen schon auf master. staticcheck ist im Repo nicht installiert, lief ueber 'go run honnef.co/go/tools/cmd/staticcheck@latest'.
 - **2026-09-15 18:21 · Alexander Sacharov** — optimize: .jaira/milestones/demo-*.md sind Handtest-Dateien aus einer frueheren Lane und bleiben untracked - sie gehoeren nicht in den Commit, aber jemand sollte sie am Ende loeschen.
+- **2026-09-15 18:28 · Alexander Sacharov** — testing: go build/vet ./... RC=0, go clean -testcache && go test ./... -race green in all 28 Pakete (internal/tui 123s). DoD 1-5 und 7: jede Proof-Zeile im Baum nachgeschlagen, die Tests laufen einzeln gruen. DoD 6 war ungehakt und ohne Proof - auf einem Scratch-Board mit dem echten Binary nachgestellt: sprint-1 mit drei Tickets, zwei Zeilen von Hand in sprint-2.md verschoben, danach 'jaira list --milestone' 1 bzw. 2 Tickets; Kommentar und Leerzeilen der Datei ueberleben spaetere 'milestone add/rm'. Ref-Weg mit zwei echten Clones geprueft: refs/jaira/milestones/sprint-x steht auf dem Remote, im zweiten Clone die Datei geloescht, 'jaira fetch' holt sie zurueck und nennt 'Milestones updated from the remote: sprint-x'. Nebenbei: --color 0 und 256 werden mit RC=2 abgelehnt, Umbenennen per mv der Datei wirkt sofort, --milestone nope gibt 'No tickets match.' RC=0. Nicht mitcommittet: .jaira/milestones/demo-*.md im Worktree sind Demo-Dateien aus einer frueheren Lane und bleiben untracked.
