@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:01:38Z
+updated-at: 2026-09-15T21:01:54Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -431,3 +431,10 @@ FALLOUT VON FINDING 1, den das Finding nicht nennt: sobald LoadAll Filed() filte
 NICHT GETESTET, absichtlich: der Fehlerweg von Finding 4 (Save schlaegt fehl, nachdem Restore die Datei zurueckgeschoben hat). Ihn herbeizufuehren hiesse das Verzeichnis schreibgeschuetzt zu machen, und daran scheitert schon das Rename davor - der Test wuerde etwas anderes messen als er behauptet.
 
 FINDING 5: die Suche heisst jetzt ticket.Store.FiledMilestone und liegt auf logbookFolders, deckt also den Alt-Ordner .jaira/sync/ mit ab - aus dem Restore einen Milestone sehr wohl zurueckholen kann. TestFiledMilestoneFindsBothLogbookFolders misst beide Ordner nach.
+- **2026-09-15 21:01 · Alexander Sacharov** — critique round 6, two findings, both about what the user is told when a milestone is filed somewhere else.
+
+1. internal/cli/logbook.go:283 — the 'already filed' refusal points at 'jaira restore <name>.md'. Every state that reaches this refusal is a tree WITHOUT a logbook copy: a fetch wrote the marked file back (refsync writes it only where the file already exists), or a filing marked and did not move, or a restore moved the file back and failed to unmark it. In all three ticket.Store.Restore answers 'is not in the archive or in .jaira/logbook/'. Point at the tree that filed it instead — milestones.go:120 already words this correctly.
+
+2. internal/cli/milestones.go:121 and core/release/NOTES.md:26 recommend deleting the 'status: filed' line by hand. That is the duplicate the refsync doc comment (core/refsync/refsync.go:206-213) refuses to create: the hand edit rides out on the ref with the next milestone command, the filer's tree fetches the unmarked file onto its board, and its own 'jaira restore' then hits the 'is already on the board' guard in core/ticket/store.go:544 with the logbook copy left stranded. The file staying hand-editable is not the same as the hand edit being the documented way back.
+
+Checked and left alone: LoadAll's filed filter and its single-caller effects (tui/model.go:369, milestones.go:30/136/302) are consistent; Store.FiledMilestone swallowing logbookFolders' error matches the os.ReadDir it replaced; IncomingMilestones has one caller. The modify/delete conflict between a clone that commits the marked file and the filer who git-mv'd it is real but is not new — the previous skip behaviour produced the same conflict shape — so it is not re-raised here.
