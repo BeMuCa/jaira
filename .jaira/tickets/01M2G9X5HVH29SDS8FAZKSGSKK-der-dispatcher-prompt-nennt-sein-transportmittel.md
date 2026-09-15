@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:41:46Z
+updated-at: 2026-09-15T05:43:33Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-46021
-claimed-at: 2026-09-15T05:37:50Z
-outcome-what: "Die vier Befunde aus critique behoben: spawn.sh laesst nur noch 'claude idle'/'claude done' zum send-text durch (statt jedes 'claude*', also auch 'blocked'), die veraltete Portliste im .env-Kommentar ist raus, teamlead/SKILL.md schreibt den spawn.sh-Pfad aus statt ihn zu umschreiben, und dispatcher/SKILL.md beschreibt die Herkunft von COMPOSE_PROJECT_NAME so, wie das Skript sie seit diesem Durchgang hat."
-outcome-why: "Der Torwaechter-Befund ist der einzige mit Verhalten dahinter: ohne die Verengung beantwortet spawn.sh einen Genehmigungsdialog an Stelle des Menschen - genau das, was der Dispatcher-Prompt verbietet. Die anderen drei sind Prompt- und Kommentar-Stellen, die das Skript von vor diesem Diff beschreiben und einen Leser in die Irre fuehren, statt ihm den Weg zu zeigen - das ist der Zweck dieses Tickets."
-outcome-resolves: "Alle sieben DoD-Punkte bleiben erfuellt; die Fixes korrigieren die Umsetzung, nicht ihren Umfang. DoD 5 wird erst durch Fix 2 wirklich wahr: der fremde Stapel stand noch im Kommentar neben dem Code. Keine neue NOTES.md-Zeile, weil die Zeile unter ## Unreleased dieselbe unveroeffentlichte Aenderung beschreibt."
+claimed-by: DESKTOP-RFTCH11-53136
+claimed-at: 2026-09-15T05:43:06Z
+outcome-what: "spawn.sh unterscheidet 'claude blocked' vom Nicht-Hochkommen, und der Teamlead-Absatz bricht wieder bei 80 Zeichen"
+outcome-why: "die einzige Zeile, die ein Dispatcher aus einem fehlgeschlagenen Start liest, sagte bei einem wartenden Genehmigungsdialog das Falsche - er haette den Pane weggeraeumt statt den Menschen zu holen"
+outcome-resolves: "beide Befunde des 2. critique-Durchgangs (spawn.sh:76, teamlead/SKILL.md:46)"
 review-summary: |-
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76 meldet fuer JEDEN abgelehnten Zustand 'claude did not come up in $pane' - fuer 'claude blocked' ist das falsch: claude ist sehr wohl hochgekommen und wartet auf einen Menschen vor einem Dialog. Der Kommentar darueber hebt genau diesen Fall hervor, die einzige Ausgabe des Skripts widerspricht ihm. Stattdessen: eigener case-Arm 'claude blocked)' mit einer Meldung, die sagt, was zu tun ist - in dem Pane wartet ein Dialog, ihn selbst beantworten und erneut starten - und danach ebenfalls exit 1.
   core/role/builtin/jaira-teamlead/SKILL.md:46 ist 103 Zeichen lang; die naechstlange Zeile der Datei hat 82, der Rest bricht bei ~78. Der Pfad-Einschub aus diesem Durchgang ist in den Umbruch hineingelaufen. Stattdessen: Absatz 44-46 auf die Breite der Datei neu umbrechen.
@@ -216,3 +216,11 @@ Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
 2. teamlead/SKILL.md:46 - der eingefuegte Pfad hat den Absatz nicht neu umgebrochen: 103 Zeichen, waehrend die Datei sonst bei ~78 bricht (naechstlange Zeile 82). Fix: 44-46 neu umbrechen.
 
 Nicht neu aufgemacht (stand schon im ersten Durchgang so): die doppelte Warnung in beiden Prompts (DoD 2+3 verlangen sie), die eine lange NOTES.md-Zeile (Form der Nachbarzeile), die Plattform-Weiche spawn.sh:56, und dass spawn.sh keinen /jaira-role-tester starten kann (eigenes Ticket). Auch kein Befund: dass der Zustand jetzt zweimal als Literal steht (Zeile 68 und 75) - die Verdopplung sind zwei Zeilen und der Kommentar erklaert sie.
+- **2026-09-15 05:43 · Alexander Sacharov** — in-progress 2026-09-15 (3. Runde, nach critique 2. Durchgang): die zwei Befunde von 05:41 sind behoben, nichts darueber hinaus angefasst.
+
+1. spawn.sh:76-79 - 'claude blocked' hat jetzt einen eigenen case-Arm mit eigener Meldung ("an approval dialog is waiting on a human: answer it in that pane yourself, then start this worker again"), Exit-Status weiterhin 1 wie beim allgemeinen Arm. Absichtlich NICHT zusammengefasst mit dem '*'-Arm: die einzige Zeile, die der Dispatcher aus einem fehlgeschlagenen Start zu sehen bekommt, ist diese Meldung - 'did not come up' haette ihn den Pane wegraeumen lassen, obwohl claude laeuft und nur auf einen Menschen wartet. Wer den Arm spaeter als Duplikat streicht, baut genau diese Fehldiagnose wieder ein.
+2. teamlead/SKILL.md:44-47 neu umgebrochen. Vorher war 46 mit 103 Zeichen der Ausreisser; jetzt bricht der Absatz wie die ganze Datei bei <=80.
+
+Warum wieder keine neue NOTES.md-Zeile: unveraendert der Grund aus der 2. Runde - die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung, und diese zwei Fixes sind Korrekturen daran, von aussen nicht zusaetzlich beobachtbar.
+
+Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
