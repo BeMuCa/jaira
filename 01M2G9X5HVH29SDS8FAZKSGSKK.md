@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: testing
+status: review
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:41:48Z
+updated-at: 2026-09-15T06:42:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79721
 claimed-at: 2026-09-15T06:33:35Z
-outcome-what: "spawn.sh leitet COMPOSE_PROJECT_NAME jetzt so ab, dass Docker den Namen annimmt: printf statt echo (kein angehaengter Unterstrich aus dem Zeilenumbruch), erst kleinschreiben, dann saeubern. NOTES.md:19 sagt das statt nur 'kein fremder Projektname mehr'."
-outcome-why: "Der abgeleitete Name war zwar nicht mehr fremd, aber unbrauchbar: 'docker compose config' wies repo__SLUG3 als 'invalid project name' zurueck, also startete der Worker-Stapel gar nicht erst - genau das, wofuer der .env-Block da ist."
-outcome-resolves: "DoD 5, jetzt funktionsgeprueft statt nur gelesen (my_repo_ksgskk, Compose v2.40.3, RC=0); DoD 6 traegt die richtige Zeilennummer fuers Label-Format."
+outcome-what: "Die Aenderung getestet: Bau, vet und die volle Suite mit Race-Detektor laufen gelassen, die sieben DoD-Punkte einzeln im Arbeitsbaum nachgeschlagen und das Verhalten von scripts/spawn.sh selbst ausgefuehrt."
+outcome-why: "Die Runde vor mir hat geurteilt, ob das die richtige Aenderung ist; hier musste beantwortet werden, ob das Verlangte ueberhaupt da ist und laeuft."
+outcome-resolves: "test-verdict=pass. go build ./... RC=0, go vet ./... RC=0, go test -race -count=1 ./... RC=0 ueber 27 Pakete. DoD 1-7 an Datei und Zeile nachgeprueft; DoD 6 an dieser Sitzung selbst beobachtet (Herdr-Tab w3:t36, Label 'KSGSKK/testing'). Funktion: 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0, beide Wachen in spawn.sh brechen mit RC=1 ab, die Plattform-Verzweigung waehlt wsl.exe fuer /mnt/* und *.exe. Ein Randfall steht als Notiz am Ticket und wurde nicht angefasst."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 review-gaps: "Entfernt: der verwaiste '--no-focus'-Absatz in jaira-dispatcher/SKILL.md - er wies auf eine Option hin, die seit dieser Aenderung spawn.sh setzt und der Dispatcher nicht mehr tippt; in den Satz ueber den Weg am Skript vorbei gefaltet, wo er noch gilt. Stehen gelassen und warum: die doppelte Transport-Lehre in dispatcher/SKILL.md:91-98 und teamlead/SKILL.md:44-52 (ein Rollen-Prompt wird allein geladen - ein Verweis waere fuer den Leser eine Sackgasse, das ist dasselbe Wissen fuer zwei Leser, keine zweite Implementierung); das doppelte Verzeichnissetzen in spawn.sh (--cwd plus 'cd' im Linux-Arm) - harmlos, und es zu entfernen waere eine Verhaltensaenderung an der Stelle, an der dieses Ticket dreimal falsch lag. Kein toter Code, nichts an Kosten: das Skript laeuft einmal je Worker."
 test-verdict: "pass: build, vet und 'go test -race -count=1 ./...' alle RC=0 ueber 27 Pakete; DoD 1-7 im Arbeitsbaum Zeile fuer Zeile nachgeprueft; Verhalten selbst ausgefuehrt - Projektname-Ableitung von docker akzeptiert (RC=0), beide Wachen brechen ab, und diese Sitzung laeuft in dem Tab 'KSGSKK/testing', den spawn.sh erzeugt"
