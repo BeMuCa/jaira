@@ -40,11 +40,11 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:09:14Z
+updated-at: 2026-09-15T18:09:30Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-28259
-claimed-at: 2026-09-15T15:33:55Z
+claimed-by: DESKTOP-RFTCH11-86471
+claimed-at: 2026-09-15T18:09:30Z
 outcome-what: "Alle sechs Findings der critique-Runde 2 behoben: Dateiname ist der einzige Milestone-Name (name: raus aus New und parse), QueueKind loescht den superseded flachen Outbox-Eintrag, HasColour() als einzige Stelle fuer 'Farbe 0 heisst keine Farbe' plus Abweisung von --color 0, refDelete/listRemoteNames inline, DropKind normalisiert kind statt Pfade zu vergleichen, ein swatch-Helfer statt zwei Ausdruecken."
 outcome-why: "Finding 1 und 2 waren echte Fehler: ein von Hand geaenderter name: legte beim naechsten add eine zweite Datei an, und ein von einem aelteren Build hinterlassener Outbox-Eintrag wurde neben dem neuen gesendet - erst der veraltete Inhalt, dann ein Lease, das der Remote nicht mehr hat. Nachgemessen mit TestQueueSupersedesTheEntryAnOlderBuildLeft, der ohne den Fix zwei Eintraege derselben ID sieht."
 outcome-resolves: "Kein DoD-Punkt aendert sich - die sechs Findings waren Korrektheit und Doppelung innerhalb der schon gebauten Mechanik. go vet und go test ./... sind gruen."
