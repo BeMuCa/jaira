@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:41:40Z
+updated-at: 2026-09-15T06:41:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79721
@@ -40,7 +40,7 @@ outcome-why: "Der abgeleitete Name war zwar nicht mehr fremd, aber unbrauchbar: 
 outcome-resolves: "DoD 5, jetzt funktionsgeprueft statt nur gelesen (my_repo_ksgskk, Compose v2.40.3, RC=0); DoD 6 traegt die richtige Zeilennummer fuers Label-Format."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 review-gaps: "Entfernt: der verwaiste '--no-focus'-Absatz in jaira-dispatcher/SKILL.md - er wies auf eine Option hin, die seit dieser Aenderung spawn.sh setzt und der Dispatcher nicht mehr tippt; in den Satz ueber den Weg am Skript vorbei gefaltet, wo er noch gilt. Stehen gelassen und warum: die doppelte Transport-Lehre in dispatcher/SKILL.md:91-98 und teamlead/SKILL.md:44-52 (ein Rollen-Prompt wird allein geladen - ein Verweis waere fuer den Leser eine Sackgasse, das ist dasselbe Wissen fuer zwei Leser, keine zweite Implementierung); das doppelte Verzeichnissetzen in spawn.sh (--cwd plus 'cd' im Linux-Arm) - harmlos, und es zu entfernen waere eine Verhaltensaenderung an der Stelle, an der dieses Ticket dreimal falsch lag. Kein toter Code, nichts an Kosten: das Skript laeuft einmal je Worker."
-test-verdict: "fail: spawn.sh schreibt ein COMPOSE_PROJECT_NAME, das 'docker compose' zurueckweist - Grossbuchstaben aus dem Slug und ein doppelter Unterstrich (spawn.sh:35)"
+test-verdict: "pass: build, vet und 'go test -race -count=1 ./...' alle RC=0 ueber 27 Pakete; DoD 1-7 im Arbeitsbaum Zeile fuer Zeile nachgeprueft; Verhalten selbst ausgefuehrt - Projektname-Ableitung von docker akzeptiert (RC=0), beide Wachen brechen ab, und diese Sitzung laeuft in dem Tab 'KSGSKK/testing', den spawn.sh erzeugt"
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
