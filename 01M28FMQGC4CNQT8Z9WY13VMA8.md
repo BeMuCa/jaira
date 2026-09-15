@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:46:18Z
+updated-at: 2026-09-15T06:46:21Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -97,7 +97,7 @@ conflict-theirs-question: ""
 - [x] critique-Befund 1+2: SKILL.md:43 die Forge vom Push-Remote ablesen (git remote get-url origin), die jaira.remote-Zeile streichen
 - [x] critique-Befund 3: den Block 'ist schon einer offen' aus der Forge-Sektion in die Push-Sektion verschieben
 - [x] go test ./... -race gruen, dann committen
-- [ ] Sprosse 4 der Forge-Leiter: die Rolle dort anhalten - kein Push, keine PR-Abfrage - und dem Menschen sagen, dass er git config jaira.forge setzt und neu startet
+- [~] Sprosse 4 der Forge-Leiter: die Rolle dort anhalten - kein Push, keine PR-Abfrage - und dem Menschen sagen, dass er git config jaira.forge setzt und neu startet
 - [ ] NOTES.md: Unreleased-Zeile fuer das Anhalten bei unbekannter Forge
 - [ ] go test ./... -race gruen, dann committen
 
