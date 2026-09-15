@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,14 +40,14 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:09:14Z
+updated-at: 2026-09-15T18:12:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-28259
-claimed-at: 2026-09-15T15:33:55Z
-outcome-what: "Alle sechs Findings der critique-Runde 2 behoben: Dateiname ist der einzige Milestone-Name (name: raus aus New und parse), QueueKind loescht den superseded flachen Outbox-Eintrag, HasColour() als einzige Stelle fuer 'Farbe 0 heisst keine Farbe' plus Abweisung von --color 0, refDelete/listRemoteNames inline, DropKind normalisiert kind statt Pfade zu vergleichen, ein swatch-Helfer statt zwei Ausdruecken."
-outcome-why: "Finding 1 und 2 waren echte Fehler: ein von Hand geaenderter name: legte beim naechsten add eine zweite Datei an, und ein von einem aelteren Build hinterlassener Outbox-Eintrag wurde neben dem neuen gesendet - erst der veraltete Inhalt, dann ein Lease, das der Remote nicht mehr hat. Nachgemessen mit TestQueueSupersedesTheEntryAnOlderBuildLeft, der ohne den Fix zwei Eintraege derselben ID sieht."
-outcome-resolves: "Kein DoD-Punkt aendert sich - die sechs Findings waren Korrektheit und Doppelung innerhalb der schon gebauten Mechanik. go vet und go test ./... sind gruen."
+claimed-by: DESKTOP-RFTCH11-86471
+claimed-at: 2026-09-15T18:09:30Z
+outcome-what: "Die drei Findings der critique-Runde 3 behoben, alle drei Text: der Hilfetext von 'jaira milestone' sagt jetzt, dass der Dateiname der Name ist und die Frontmatter nur color und created-at traegt; --color steht an allen vier Stellen als 1-255 mit dem Grund (0 faerbt keine Zelle); docs/COMMANDS.md hat --milestone bei 'jaira list' und vier Zeilen fuer milestone create/add/rm/ls in der Writing-Tabelle."
+outcome-why: "Die drei Texte waren die Stellen, die man VOR dem Aufruf liest. Ein von Hand eingetragenes name: aendert seit Runde 2 nichts und niemand merkt es; '--color <0-255>' laedt dazu ein, 0 zu uebergeben, was der Code zurueckweist; und COMMANDS.md wird von README.md:676 als vollstaendige Referenz ausgewiesen, fuehrte die Befehlsfamilie aber ueberhaupt nicht."
+outcome-resolves: "Kein DoD-Punkt aendert sich - der Code ist unveraendert, es war Dokumentation an drei Stellen. go vet und go test ./... sind gruen."
 review-summary: |-
   internal/cli/milestones.go:51 der Hilfetext von 'jaira milestone' sagt weiter "Frontmatter carries the name, the colour and when it was created" - seit Runde 2 schreibt New() kein name: mehr und parse() liest keines; wer das liest und von Hand ein name: einträgt, ändert nichts und merkt es nie. Ersetzen durch: der Dateiname IST der Name, die Frontmatter trägt color und created-at - genau wie core/milestone/milestone.go:154 und core/release/NOTES.md:18 es schon sagen.
   internal/cli/milestones.go:78 und :146 nennen den Bereich weiter "--color <0-255>" bzw. "ANSI-256 colour (0-255)", während :123 jetzt "1-255" fordert und 0 zurückweist; drei Stellen, zwei davon falsch, und die falschen sind die, die man vor dem Aufruf liest. Beide auf 1-255 ändern, mit dem Grund in einem Halbsatz (0 färbt keine Zelle).
@@ -249,3 +249,11 @@ Zum Weitermachen: eine vierte in-progress-Runde mit genau diesen drei Findings i
 Ausserdem entschieden, und damit ist der Punkt zu: die rechte Kartenkante bleibt, wie sie gebaut ist - eine Zelle je Milestone, von oben, hoechstens drei. KEINE Volleinfaerbung aller drei Zellen bei nur einem Milestone. Grund: die Karte soll zeigen, in wie vielen Gruppen ein Ticket steht, und das geht nur, wenn eine Zelle eine Gruppe ist. Wer das spaeter wieder aufmachen will, liest hier, dass es nicht vergessen, sondern entschieden wurde.
 
 Auf dem Board liegen drei Milestones demo-ui, demo-board-dateien und demo-naechste-version, absichtlich mit ueberlappenden Tickets (0YGWXQ in allen dreien, DBJTKQ in zweien). Sie sind eine Vorfuehrung, keine echte Gruppierung, und sie liegen auch auf upstream. Wer sie wegraeumt: es gibt noch keinen Befehl dafuer, das ist Ticket N71NVG.
+- **2026-09-15 18:11 · Alexander Sacharov** — in-progress, Runde 4 (critique-Runde 3), 2026-09-15. Alle drei Findings waren Text, kein Verhalten - der Code selbst ist unveraendert, go vet und go test ./... bleiben gruen.
+
+Was der Code nicht erklaert:
+- Der lange Hilfetext von 'jaira milestone' (internal/cli/milestones.go:42-48) sagt weiterhin, dass unerledigte Arbeit in die Datei des naechsten Milestones wandert. Das ist KEIN Rueckfall auf den Sprint-Entwurf vom 14.09.: gemeint ist das Editieren von Hand, das der Nutzer selbst macht, nicht eine Mechanik, die jaira ausfuehrt. Dieselbe Formulierung steht in core/release/NOTES.md:18. Wer sie streichen will, streicht sie an beiden Stellen und nicht nur an einer.
+- --color steht jetzt an vier Stellen als 1-255: Langtext (:80), Flag-Beschreibung (:148), die Abweisung (:125) und COMMANDS.md. Drei davon sind Text, und genau die liest man VOR dem Aufruf - deshalb war das ein Finding und keine Kleinigkeit.
+- docs/COMMANDS.md: die vier milestone-Zeilen stehen in der Writing-Tabelle, auch 'ls'. In der Looking-Tabelle waere es sauberer sortiert, aber dann stuenden die vier Befehle einer Familie in zwei Tabellen - 'jaira tags' steht auch bei Looking und 'jaira tag' bei Writing, und genau das sucht man beim Lesen zweimal.
+
+Nicht angefasst, ausserhalb der Lane: .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md und demo-ui.md liegen als untracked Dateien im Worktree - Rueckstand eines Demolaufs von Hand. Sie sind NICHT committet worden; wer aufraeumt, loescht sie einfach.

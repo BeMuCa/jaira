@@ -47,9 +47,10 @@ a per-ticket marker means touching every ticket one at a time. Here you open
 the next milestone's file and move the unfinished lines into it — one edit
 instead of twenty.
 
-The file is hand-editable and reads in a diff, like a ticket. Frontmatter
-carries the name, the colour and when it was created; below it, one ticket id
-per line. jaira keeps every other line exactly as it found it, so comments,
+The file is hand-editable and reads in a diff, like a ticket. The file name IS
+the milestone's name — rename the file to rename the milestone; the frontmatter
+carries its colour and when it was created, and below it one ticket id per
+line. jaira keeps every other line exactly as it found it, so comments,
 blank lines and an order you chose all survive.
 
 Each milestone is given a random free colour, which its cards then show as a
@@ -76,7 +77,8 @@ name into it.
 The colour is picked for you, at random from the colours no other milestone on
 this board is using: concurrent milestones are never many, so a clash once the
 palette is spent is survivable, and nobody should have to choose one. --color
-<0-255> overrides it.
+<1-255> overrides it; 0 is not black here but "no colour", and would paint no
+cell on any card.
 
 Names are lowercase kebab, the same rule tags follow — the name is also the
 filename, so it has to be safe in a path. "Round One" is filed as "round-one"
@@ -143,7 +145,7 @@ and you are told so.`,
 			return nil
 		},
 	}
-	cmd.Flags().IntVar(&colour, "color", -1, "ANSI-256 colour (0-255) instead of a random free one")
+	cmd.Flags().IntVar(&colour, "color", -1, "ANSI-256 colour (1-255; 0 paints no cell) instead of a random free one")
 	return cmd
 }
 

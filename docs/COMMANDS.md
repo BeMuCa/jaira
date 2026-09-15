@@ -54,7 +54,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 |---|---|
 | `jaira` | the home screen: every board, and what each needs |
 | `jaira board` | open the board here directly |
-| `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
+| `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--milestone`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
 | `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |
 | `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
@@ -129,6 +129,10 @@ field per ticket.
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--tag` (repeatable; run `jaira tags` first), `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields; list fields take a comma-separated value, `tags=ui,backend` included |
 | `jaira tag <id> <name>…` | add topic tags to a ticket. Run `jaira tags` first. A name the board knows is reused and said to be; a new one gets a free colour from the palette. Names are stored lowercase-kebab — "My UI" is filed as `my-ui`, and you are told so; anything outside `[a-z0-9-]` is refused rather than trimmed down, because a quietly shortened name is a second name for one subject. `--color <0-255>` picks the colour instead, and recolours a tag that already has one; it takes exactly one name. Under `--json` the payload carries `tags_new` and `tags_reused` |
+| `jaira milestone create <name> [id...]` | start a milestone — the set of tickets that belong to one round of work — as `.jaira/milestones/<name>.md`, with any tickets named put into it. The colour is picked at random from the ones no other milestone uses; `--color <1-255>` overrides it (0 is "no colour" and is refused). Names are lowercase-kebab like tags, because the name is also the filename |
+| `jaira milestone add <name> <id>…` | put tickets into a milestone — every id in one write of one file, which is the point: grouping twenty tickets is one edit, not twenty ticket files each travelling on its own ref. A ticket already in it is left where it is rather than moved to the end |
+| `jaira milestone rm <name> <id>…` | take tickets out of a milestone, in one write, leaving every other line where it was. The milestone itself survives its last ticket leaving — deleting the file is `rm` on a file you can read |
+| `jaira milestone ls` | this board's milestones: colour swatch, colour number and how many tickets each holds (`--json`: `milestones`, `count`, `dir`). **Read it before creating one**, for the reason `jaira tags` is read before tagging — "q4" and "quarter-four" are two names for one round of work and each filters to half of it |
 | `jaira dod <id> <n> --doing\|--done\|--todo\|--superseded` | mark a checklist item; `[-]` superseded is retired, not achieved — it stops blocking completion and never reports as done |
 | `jaira dod <id> <n> --text "…"` | reword one item, leaving its state and its proof alone |
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
