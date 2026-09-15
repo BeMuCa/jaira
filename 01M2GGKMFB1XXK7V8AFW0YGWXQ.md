@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:47:24Z
+updated-at: 2026-09-15T20:49:44Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -422,3 +422,4 @@ ADJACENT, NICHT ANGEFASST: 'jaira restore' hat keinen Hinweis darauf, dass der N
 5. internal/cli/milestones.go:milestoneFiled laeuft die Logbook-Ordner von Hand ab und sieht den Alt-Ordner nicht, den core/ticket/store.go:logbookFolders abdeckt - und aus dem Restore einen Milestone sehr wohl zurueckholen kann. Dritter handgeschriebener Walk neben logbookNames und Restore.
 
 Kein Finding aus den Runden 1-4 wird wieder aufgemacht; die betrafen den Bau vor DoD 8-12 und sind nachgemessen erledigt.
+- **2026-09-15 20:49 · Alexander Sacharov** — in-progress Runde 4 (critique-Runde 5), 2026-09-15, angefangen. Die fuenf Findings werden in dieser Reihenfolge gebaut: LoadAll filtert Filed() (1), damit faellt die Begruendung der Reihenfolge in logbookMilestone weg (2), IncomingMilestones schreibt den markierten Inhalt normal (3), unfileMilestone gibt den Save-Fehler zurueck (4), milestoneFiled ruft eine Store-Suche auf logbookFolders statt eines dritten Handwalks (5).
