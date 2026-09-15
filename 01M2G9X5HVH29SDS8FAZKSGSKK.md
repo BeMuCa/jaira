@@ -29,7 +29,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:29:18Z
+updated-at: 2026-09-15T05:29:47Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40252
@@ -118,3 +118,24 @@ Das gehoert in spawn.sh, und es ist der Grund, warum das Skript bisher nie einen
 Transparenz: ich habe fuer diesen einen Start spawn.sh umgangen und die drei Befehle von Hand abgesetzt, weil das Skript sonst genau den Fehler wiederholt, den es zu beheben gilt. Das ist hier ausdruecklich festgehalten und nicht stillschweigend geschehen.
 - **2026-09-14 20:35 · Alexander Sacharov** — Noch ein Befund am Rande, der zum selben Absatz gehoert: spawn.sh schickt den Lane-Befehl ab, sobald der Zustands-Hook irgendetwas mit 'claude' meldet. Herdr kennt aber einen eigenen Zustand 'blocked' fuer erkannte Genehmigungs- und Rueckfrage-Dialoge. Wer spawn.sh anfasst: vor send-text auf 'blocked' pruefen und in dem Fall abbrechen statt Enter zu druecken. Sonst beantwortet das Skript Dialoge an Stelle des Menschen, und SKILL.md verbietet dem Dispatcher genau das ('never answer for the human').
 - **2026-09-14 20:36 · Alexander Sacharov** — Die in-progress-Lane hat keine Plan-Checkliste; gearbeitet wird nach der Arbeitsanweisung des Dispatchers vom 2026-09-14 20:19 plus dem Grundursachen-Befund von 20:35 (wsl.exe --cd statt 'cd $wt &&'), der dort ausdruecklich in dieses Ticket gelegt wurde. Umfang: dispatcher/SKILL.md Transport-Absatz, teamlead/SKILL.md:44, spawn.sh (feat/, kein rg_, tab statt split, WSL-Start), dispatcher/SKILL.md:157, NOTES.md. NICHT angefasst: dass spawn.sh nur /jaira-role-lane starten kann und keinen /jaira-role-tester (Befund 4 vom 18:23) - das ist weder DoD noch in der Arbeitsanweisung und gehoert in ein eigenes Ticket.
+- **2026-09-15 05:29 · Alexander Sacharov** — Arbeitsanweisung fuer diese in-progress-Runde (Dispatcher, 2026-09-15), damit sie auf dem Board steht und nicht in einer Sitzung stirbt.
+
+Gearbeitet wird im Worktree /home/alex/projects/.worktrees/jaira-13VMA8 auf Zweig feat/13VMA8-pr-is-the-humans. KEINEN neuen Worktree, KEINEN neuen Zweig. /home/alex/projects/jaira und .worktrees/jaira-9ET6NC nicht anfassen - dort arbeitet ein anderer Dispatcher an 74VM40.
+
+WICHTIG, weil die Ausgangslage anders ist als der letzte Stand des Tickets glauben macht: DoD 4 und DoD 5 sind im Baum BEREITS ERLEDIGT, nur nicht abgehakt. Nachgeprueft am 2026-09-15:
+- spawn.sh:20 legt Zweige mit "${JAIRA_BRANCH_PREFIX:-feat}/$slug" an, nicht mehr mit feature/. (DoD 4)
+- spawn.sh:35 schreibt COMPOSE_PROJECT_NAME aus dem Repository-Namen abgeleitet; rg_, VITE_PORT_HOST und BACKEND_PORT_HOST sind raus. (DoD 5)
+Commit cc21ca9 hat also mehr getan, als seine Commit-Nachricht sagt. Diese beiden Punkte sind zu VERIFIZIEREN und mit 'jaira dod KSGSKK <n> --done --proof <datei:zeile>' abzuhaken, nicht neu zu bauen.
+
+Ebenfalls schon im Baum und zu verifizieren statt neu zu schreiben: der wsl.exe-Fix aus dem Grundursachen-Befund vom 2026-09-14 20:35 steht in spawn.sh:56-61 (case auf /mnt/* bzw. *.exe, dann "wsl.exe --cd '$wt' -- bash -lic claude"). Er hat in diesem Lauf sieben Worker gestartet, alle beim ersten Versuch.
+
+Offen und zu tun:
+- DoD 2: jaira-teamlead/SKILL.md muss scripts/spawn.sh an der Stelle nennen, an der es einen Dispatcher in einen Tab schickt.
+- DoD 3: BEIDE Prompts muessen sagen, dass 'herdr' auf einem WSL-Rechner nicht unter diesem Namen im PATH steht und HERDR_BIN_PATH die verlaessliche Antwort ist.
+- DoD 6: nachstellen - siehe eigene Notiz dazu, der Beleg aus diesem Lauf liegt schon vor.
+- DoD 7: eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- KEIN DoD, gehoert trotzdem in diesen Durchgang (Notiz vom 2026-09-14 20:31): jaira-dispatcher/SKILL.md 'not when the pull request merges' - unter der neuen Regel aus 13VMA8 sieht ein Dispatcher nie einen offenen Pull Request. Der Satz muss umgeschrieben werden.
+
+FALLE, unveraendert gueltig: die installierten Kopien unter ~/.claude/skills sind Vorlage NUR fuer die Transport-Absaetze. Sie tragen noch die ALTE Pull-Request-Regel, die 13VMA8 umgedreht hat - und 13VMA8 ist auf genau diesem Zweig inzwischen fertig und steht in human. Wer eine dieser Dateien im Ganzen kopiert, macht 13VMA8 rueckgaengig. Absatzweise portieren.
+
+KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
