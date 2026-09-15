@@ -30,8 +30,8 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:09:59Z
-assignee: "Alexander Sacharov"
+updated-at: 2026-09-15T06:10:04Z
+assignee: ""
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
 claimed-at: 2026-09-15T06:09:53Z
