@@ -21,11 +21,11 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:46:02Z
+updated-at: 2026-09-15T05:47:01Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-27181
-claimed-at: 2026-09-15T05:20:29Z
+claimed-by: DESKTOP-RFTCH11-56199
+claimed-at: 2026-09-15T05:47:01Z
 question: "Review hat dieses Ticket einmal abgelehnt, mit vier Gruenden. Drei sind behoben und von testing auf einer eigenen Scratch-Doska nachgestellt: die Board-Zeile nennt jetzt 'jaira logbook --all' woertlich, ein Test liest die gerenderte Zeile, und die Schwelle steht als feste Zehn da wie du entschieden hast. Der vierte ist Ticket 1K9KZS geworden: core/lane/lane.go:479 legt die eingebauten Lanes nicht unter ein Board, das es schon gibt, also behaelt jede vor dieser Aenderung entstandene Doska ihr 'logbook-on-entry' - auf dieser hier hat das heute zugeschlagen. Die Frage an dich ist diese Teilung: geht 74VM40 so durch und die Migration lebt als eigenes Ticket weiter, oder soll sie hier landen, weil die Release-Notiz dieses Tickets sonst etwas behauptet, das fuer aeltere Boards nicht gilt?"
 outcome-what: "NOTES.md:46 nennt jetzt dieselbe Schwelle wie die DoD und der Code ('ten or more' statt 'more than ten'), und 'jaira logbook --all --json' traegt handle neben id und file; TestTheCutJSONNamesEachHandle nagelt den Schluessel fest"
 outcome-why: "critique Runde 4 fand beides in den eigenen Dateien der Aenderung: ein Leser, der ueber beide NOTES-Abschnitte aktualisiert, bekam von derselben Aenderung zwei verschiedene Schwellen genannt, und --all ist der Schnitt, den ein Agent faehrt - der schreibt den Commit danach mit dem Handle, den die JSON-Ausgabe nicht hergab"
