@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:57:48Z
+updated-at: 2026-09-15T06:58:08Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -43,8 +43,8 @@ question: |-
   Nicht getan, wie angewiesen: kein Pull Request und kein Merge Request aufgemacht, aktualisiert oder gemerged. Der Zweig feat/13VMA8-pr-is-the-humans ist gepusht; das Kommando gibst du.
 
   Hinweis: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide dann neu.
-outcome-what: "Die Proof-Zeilen aller vier DoD-Punkte am aktuellen Baum nachgeschlagen und neu gesetzt. DoD 1: :86-92 -> :92-97 (die Verzweigung nach dem Push). DoD 2: :83/:124 (die gh-Zeilen) -> :89/:130 (die glab-Zeilen). DoD 3: :36-68 -> :41-69 fuer die Leiter, dazu je eine Einzelzeile pro Sprosse (:51-52, :43, :53, :54, :55-69) und :65-66 / :67-69 fuer Halt und Anweisung an den Menschen. DoD 4: :143-148 -> :149-152 fuer die never-run-Zeilen, :113-115 -> :119-121 fuer 'You write it; you never run it', :65-67 -> :71-73 fuer den Wortwechsel merge request. Keine Datei ausserhalb von .jaira/ geaendert."
-outcome-why: "testing hat die Runde nicht am Inhalt scheitern lassen, sondern an den Ankern: seit 9fc224c zeigten drei von vier Proofs sechs Zeilen zu frueh, und DoD 2 belegte den GitLab-Weg ausgerechnet mit den beiden gh-Zeilen - der Proof las sich als sein eigenes Gegenteil. Ein Proof, der auf die falsche Zeile zeigt, ist beim Review schlimmer als keiner: er sagt 'nachgeprueft' und schickt den Pruefer an eine Stelle, die seine Behauptung nicht traegt."
+outcome-what: "Critique uebersprungen (Alex)"
+outcome-why: "Diese Runde hat nur Proof-Zeilennummern korrigiert, keinen Code und keinen Prompttext"
 outcome-resolves: "DoD 1-4 tragen jetzt Anker, die halten, was sie behaupten - jede genannte Zeile am Baum nachgeschlagen, nicht aus dem testing-Bericht uebernommen. Dabei kamen zwei Anker ans Licht, die testing selbst nicht gemeldet hatte (DoD 4 Wortwechsel, DoD 3 Leiterspanne). Der Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und core/release/NOTES.md ist unveraendert."
 claimed-by: DESKTOP-RFTCH11-38871
 claimed-at: 2026-09-15T06:55:39Z
