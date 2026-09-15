@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -38,15 +38,16 @@ commits:
   - c359211dbc52d7cca6286f32e06eb3e8c736a242
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
+  - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:48:49Z
+updated-at: 2026-09-15T15:49:31Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
 claimed-at: 2026-09-15T15:33:55Z
-outcome-what: "Alle neun critique-Findings behoben: der ungenutzte Milestone-Loeschweg entfernt, MilestoneSender in Sender aufgeloest, die Frontmatter-Zeile von 'colour:' auf 'color:' gebracht, validColour/itoa/atoi/Milestone.path/activeMilestones durch die vorhandenen Dinge ersetzt und der Hilfetext von 'jaira fetch' auf refs/jaira/* richtiggestellt."
-outcome-why: "Die Datei ist die API: 'colour:' waere nach dem Release ein Bruch, jetzt eine Zeile. Der Rest war Code, den nichts aufruft, und zweite Namen fuer Dinge, die es schon gibt - beides driftet auseinander, sobald jemand eines von beiden aendert."
-outcome-resolves: "Kein Verhalten der DoD-Punkte geaendert; alle Tests gruen. Plan-Schritt 5 nachgetragen abgehakt (Index in internal/cli/milestones.go:29 und internal/tui/model.go:374)."
+outcome-what: "Alle sechs Findings der critique-Runde 2 behoben: Dateiname ist der einzige Milestone-Name (name: raus aus New und parse), QueueKind loescht den superseded flachen Outbox-Eintrag, HasColour() als einzige Stelle fuer 'Farbe 0 heisst keine Farbe' plus Abweisung von --color 0, refDelete/listRemoteNames inline, DropKind normalisiert kind statt Pfade zu vergleichen, ein swatch-Helfer statt zwei Ausdruecken."
+outcome-why: "Finding 1 und 2 waren echte Fehler: ein von Hand geaenderter name: legte beim naechsten add eine zweite Datei an, und ein von einem aelteren Build hinterlassener Outbox-Eintrag wurde neben dem neuen gesendet - erst der veraltete Inhalt, dann ein Lease, das der Remote nicht mehr hat. Nachgemessen mit TestQueueSupersedesTheEntryAnOlderBuildLeft, der ohne den Fix zwei Eintraege derselben ID sieht."
+outcome-resolves: "Kein DoD-Punkt aendert sich - die sechs Findings waren Korrektheit und Doppelung innerhalb der schon gebauten Mechanik. go vet und go test ./... sind gruen."
 review-summary: |-
   core/milestone/milestone.go:145 Load nimmt den Namen aus der Frontmatter und nur ersatzweise aus dem Dateinamen, Save schreibt nach Path(root, m.Name) - wer name: von Hand aendert, bekommt beim naechsten add eine zweite Datei und laesst die alte samt Ref stehen; in Load immer m.Name = name setzen (der Dateiname ist die Identitaet) oder die Zeile name: aus New streichen.
   core/outbox/outbox.go:196 List liest das alte flache Verzeichnis UND tickets/, und QueueKind loescht die alte Datei nie - ein Ticket steht danach zweimal in der Liste, der veraltete Eintrag zuerst (nachgemessen: content=old, dann content=new); statt parallel zu lesen migrieren - QueueKind entfernt legacyPath nach dem atomaren Schreiben, oder List dedupliziert auf (Kind, ID) zugunsten des Unterordners.
