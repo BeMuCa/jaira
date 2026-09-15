@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,13 +19,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:23:38Z
+updated-at: 2026-09-15T05:23:49Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md:27 nennt die Sektion 'Answering review comments' beim Namen statt 'the section below', und :42-48 verzweigt nach dem Push in die zwei Betriebsarten: nichts gelistet - Beschreibung schreiben, dann berichten; ein PR gelistet - Beschreibungs-Sektion ueberspringen und direkt zu 'Answering review comments'."
-outcome-why: "Die Modus-Weiche aus :25-28 und die unbedingte Anweisung 'Carry on with the two sections below - write the description out for them' widersprachen sich: ein Agent im Modus 'PR ist schon offen' bekam beides und haette eine gh-pr-create-Beschreibung fuer einen PR geschrieben, den es schon gibt. 'the section below' stand ausserdem ueber zwei Sektionen und zeigte woertlich gelesen auf die falsche."
-outcome-resolves: "Jede der zwei Betriebsarten hat jetzt genau ein benanntes Ziel nach dem Push; keine Sektion laeuft mehr ins Leere. go test ./... -race gruen."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md:25-26: die doppelte Aufzaehlung der zwei Betriebsarten entfernt, die direkt unter dem gh-pr-list-Block stand; die Verzweigung nach dem Push (:40-46) ist jetzt die einzige Stelle, die beide Modi benennt."
+outcome-why: "Ein Prompt, der dieselbe Weiche zweimal stellt, laesst den Agenten raten, welche gilt - und die zweite steht an der Stelle, an der tatsaechlich verzweigt wird. Die erste Fassung sagt jetzt nur noch, wozu die Abfrage da ist."
+outcome-resolves: "Eine Weiche, ein Ort. go test ./... gruen."
 claimed-by: DESKTOP-RFTCH11-16020
 claimed-at: 2026-09-15T05:13:21Z
 review-summary: "none"
