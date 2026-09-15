@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:34:12Z
+updated-at: 2026-09-15T13:34:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -111,3 +111,4 @@ Nicht aufgemacht und bewusst stehen gelassen: dass dieselbe Regel in sechs handg
 
 Beim Umbrechen: es genuegt nicht, die eine geaenderte Zeile zu kuerzen - der Umbruch schiebt sich durch den Rest des Absatzes, und eine kurze Zeile in der Mitte ist derselbe Diff-Schaden wie eine zu lange. In docs/AGENTS.md und .claude/skills/jaira/SKILL.md waren jeweils drei Nachlaeufe noetig, bis der Absatz wieder durchgehend auf 80 lief.
 - **2026-09-15 13:32 · Alexander Sacharov** — Falle beim Ablauf 'commit - move --commits $(git rev-parse HEAD) - amend, damit die Ticket-Datei mitfaehrt': das Amend vergibt eine neue Sha, und die im Ticket steht dann auf einem Commit, den es nicht mehr gibt. Korrigiert mit 'jaira set 9ZZSFT commits=<neue sha>'. Die Reihenfolge, die das vermeidet: erst 'git add' von Code UND Ticket-Datei nach dem Move, dann ein einziger Commit, und die Sha danach per 'jaira set' nachtragen - sie laesst sich vorher nicht kennen. Die Ticket-Datei bleibt dadurch immer um genau diesen einen 'set'-Schreibvorgang hinter dem Commit zurueck; sie liegt jetzt geaendert im Arbeitsbaum und faehrt mit dem naechsten Code-Commit, wie die Regel es vorsieht. Die abgeleitete Liste ist davon unberuehrt - sie liest den Handle aus dem Betreff.
+- **2026-09-15 13:34 · Alexander Sacharov** — critique (3. Durchgang): nichts mehr zu sagen. Beide Befunde des 2. Durchgangs nachgeprueft: (1) grep nach dem alten Wortlaut 'jaira logbook <id>' commit' liefert ausserhalb von .jaira/ keinen Treffer mehr; die sieben Kopien tragen wortgleich 'the commit that files the ticket away with jaira logbook <id>'. (2) Die beiden neu umbrochenen Absaetze laufen durchgehend auf 74-82 Zeichen (docs/AGENTS.md:72-84, .claude/skills/jaira/SKILL.md:277-287) - dieselbe Breite wie ihre Nachbarabsaetze, keine kurze Zeile in der Mitte. Zusaetzlich geprueft, weil der Befund es beruehrt: der erzeugte Block in AGENTS.md und CLAUDE.md ist byteweise identisch mit core/board/announce.go:96-108, 'jaira update' wuerde also nichts aendern; go build ./... gruen. Kein neuer Befund aufgemacht - die Vervielfachung der Regel auf sechs handgepflegte Kopien bleibt wie im 2. Durchgang bewusst stehen, und docs/AGENTS.md:87 nennt weiter 'jaira archive <id>' statt 'logbook', was der Implementierer bereits als eigenes Ticket vermerkt hat und ausserhalb dieses Diffs liegt.
