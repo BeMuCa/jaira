@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:43:33Z
+updated-at: 2026-09-15T05:45:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53136
@@ -38,9 +38,7 @@ claimed-at: 2026-09-15T05:43:06Z
 outcome-what: "spawn.sh unterscheidet 'claude blocked' vom Nicht-Hochkommen, und der Teamlead-Absatz bricht wieder bei 80 Zeichen"
 outcome-why: "die einzige Zeile, die ein Dispatcher aus einem fehlgeschlagenen Start liest, sagte bei einem wartenden Genehmigungsdialog das Falsche - er haette den Pane weggeraeumt statt den Menschen zu holen"
 outcome-resolves: "beide Befunde des 2. critique-Durchgangs (spawn.sh:76, teamlead/SKILL.md:46)"
-review-summary: |-
-  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76 meldet fuer JEDEN abgelehnten Zustand 'claude did not come up in $pane' - fuer 'claude blocked' ist das falsch: claude ist sehr wohl hochgekommen und wartet auf einen Menschen vor einem Dialog. Der Kommentar darueber hebt genau diesen Fall hervor, die einzige Ausgabe des Skripts widerspricht ihm. Stattdessen: eigener case-Arm 'claude blocked)' mit einer Meldung, die sagt, was zu tun ist - in dem Pane wartet ein Dialog, ihn selbst beantworten und erneut starten - und danach ebenfalls exit 1.
-  core/role/builtin/jaira-teamlead/SKILL.md:46 ist 103 Zeichen lang; die naechstlange Zeile der Datei hat 82, der Rest bricht bei ~78. Der Pfad-Einschub aus diesem Durchgang ist in den Umbruch hineingelaufen. Stattdessen: Absatz 44-46 auf die Breite der Datei neu umbrechen.
+review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
@@ -224,3 +222,12 @@ Nicht neu aufgemacht (stand schon im ersten Durchgang so): die doppelte Warnung 
 Warum wieder keine neue NOTES.md-Zeile: unveraendert der Grund aus der 2. Runde - die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung, und diese zwei Fixes sind Korrekturen daran, von aussen nicht zusaetzlich beobachtbar.
 
 Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
+- **2026-09-15 05:45 · Alexander Sacharov** — critique 3. Durchgang (7d24138, zwei Fixes). Ein Befund, und er steckt in genau dem Arm, den dieser Durchgang neu gebaut hat:
+
+1. spawn.sh:77-78 - die Meldung des 'claude blocked'-Arms lautet 'answer it in that pane yourself, then start this worker again'. Gelesen wird diese Zeile nur vom Dispatcher, und dispatcher/SKILL.md:188-189 verbietet ihm genau das: 'Read its output, report what it is asking, and never answer for the human'. Der Kommentar spawn.sh:70-73 beruft sich selbst auf dieses Verbot - das Skript schuetzt den Dialog also vor seinem eigenen send-keys und schickt den Dispatcher im naechsten Satz mit der Hand hinein. Fix: die Meldung an den Menschen richten, der Dispatcher meldet nur ('report it to the human, let them answer it in that pane, then start this worker again'). Der eigene case-Arm und exit 1 bleiben richtig.
+
+Der Umbruch teamlead/SKILL.md:44-47 ist erledigt, kein Befund.
+
+Nicht neu aufgemacht, stand in Durchgang 1 oder 2 schon so: die doppelte Warnung in beiden Prompts (DoD 2+3 verlangen sie), die lange NOTES.md-Zeile, die Plattform-Weiche spawn.sh:56, das Zustands-Literal zweimal (68 und 75), und dass spawn.sh keinen /jaira-role-tester starten kann (eigenes Ticket).
+
+Fuer den Dispatcher: das ist die DRITTE Ruecksendung dieser Lane. Die Stoppregel in dispatcher/SKILL.md:190 greift damit nach diesem Fix - nicht noch eine vierte Runde, sondern dem Menschen vorlegen.
