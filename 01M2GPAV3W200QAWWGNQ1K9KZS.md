@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:10:30Z
+updated-at: 2026-09-15T07:10:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
@@ -42,7 +42,8 @@ outcome-resolves: "Der Plan sagt Schritt fuer Schritt, wie DoD 1 bis 5 erreicht 
 
 - [x] Ein Board, dessen done.md noch 'logbook-on-entry: true' traegt, fegt beim naechsten Move nach done keine fremden fertigen Tickets mehr ins Logbuch. Nachgestellt an einem Board-Fixture, das mit der alten Lane-Datei angelegt wurde.
   proof: core/move/oldboard_test.go:38 TestMoveIntoDoneOnAnOldBoardFilesNothing
-- [ ] Eine vom Nutzer selbst geaenderte Lane ueberlebt die Migration unveraendert: was er geschrieben hat, wird nicht zurueckgesetzt. Die Entscheidung von 743737f - ein Board ist sein Lane-Verzeichnis - bleibt gueltig.
+- [x] Eine vom Nutzer selbst geaenderte Lane ueberlebt die Migration unveraendert: was er geschrieben hat, wird nicht zurueckgesetzt. Die Entscheidung von 743737f - ein Board ist sein Lane-Verzeichnis - bleibt gueltig.
+  proof: core/lane/corrections_test.go:71 TestCorrectionRunsOncePerBoard; core/lane/corrections_test.go:107 TestCorrectionLeavesALaneSomebodyWroteAlone
 - [ ] Der Nutzer erfaehrt, dass eine seiner Lanes von einer Korrektur betroffen ist, statt es an seinem Verhalten zu merken. Nachgestellt an dem Board-Fixture aus Punkt 1.
 - [ ] Die Zeile in core/release/NOTES.md, die 'Finishing a ticket no longer files anything' behauptet, stimmt danach fuer alle Boards - oder sie sagt, fuer welche sie nicht gilt und was zu tun ist.
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
