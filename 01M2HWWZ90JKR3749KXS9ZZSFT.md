@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:39:51Z
+updated-at: 2026-09-15T13:44:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -41,7 +41,8 @@ review-gaps: "Entfernt: die dritte Wiederholung derselben Aussage im erzeugten B
 ## Definition of Done
 
 - [ ] Eine Lane, die keinen Code aendert, erzeugt keinen eigenen Commit mehr. Nachgestellt an einem Ticket, das critique, testing und review durchlaeuft: danach steht im Verlauf kein Commit, der nur .jaira/ anfasst.
-- [ ] Die Commit-Liste eines Tickets bleibt vollstaendig, obwohl die Ticket-Datei seltener committet wird. Nachgestellt an einem Ticket, das die Lanes durchlaeuft und danach 'jaira move' in die Endlane erreicht - die abgeleitete Liste nennt jeden Code-Commit, der zu ihm gehoert.
+- [x] Die Commit-Liste eines Tickets bleibt vollstaendig, obwohl die Ticket-Datei seltener committet wird. Nachgestellt an einem Ticket, das die Lanes durchlaeuft und danach 'jaira move' in die Endlane erreicht - die abgeleitete Liste nennt jeden Code-Commit, der zu ihm gehoert.
+  proof: core/gitrepo/derive.go:19; funktional nachgestellt: Scratch-Board mit gitignoretem .jaira/, Ticket-Datei nie committet, 'feat(7085JK): ...' als einziger Traeger -> Zug nach done erlaubt, 'jaira logbook' stampft ef129c1
 - [x] Die Regel steht dort, wo ein Agent sie liest: im erzeugten jaira-Block und in den Rollen-Prompts, nicht nur in einem Ticket.
   proof: core/board/announce.go:92 (erzeugter Block, Punkt 'a lane that changed no code commits nothing'); core/role/builtin/jaira-role-lane/SKILL.md:32; core/role/builtin/jaira-role-pr/SKILL.md:29; docs/AGENTS.md:72; .claude/skills/jaira/SKILL.md:277; README.md:843
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased, falls sich etwas an der Ableitung oder am Verhalten der Befehle aendert.
