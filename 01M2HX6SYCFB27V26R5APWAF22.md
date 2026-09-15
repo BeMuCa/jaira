@@ -13,7 +13,7 @@ related:
   - 01M2HX55H2EPFZ8M3AFW0S1A7M
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-09-15T06:49:41Z
+updated-at: 2026-09-15T06:49:44Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 context: |-
@@ -37,6 +37,9 @@ context: |-
 ## Definition of Done
 
 - [ ] 'jaira update' bringt mit den entsprechenden Schaltern Agent-Block, Rollen und Lanes in einem Aufruf auf den Stand des installierten Binaries. Nachgestellt an einem Board, dessen Block, Rollen und Lanes alle drei veraltet sind.
+- [ ] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
+- [ ] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
