@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T06:09:02Z
+updated-at: 2026-09-15T06:09:20Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-14558
@@ -222,3 +222,10 @@ Nicht angefasst, weil ausserhalb dieser Lane: die Release-Notiz in der geschloss
 - **2026-09-15 06:04 · Alexander Sacharov** — Alex am 2026-09-15: '74VM40 закрывай'. Den Uebergang aus human hat ein Agent auf seine Anweisung getippt; entschieden hat der Mensch.
 
 Warum es hier nicht endet: signoff verweigert einem Agenten den Ausgang technisch, nicht nur der Regel nach - 'lane signoff is a human checkpoint ... An agent cannot move a ticket out of it'. Nach der review-Lane liegt das Ticket also in signoff und braucht dort einen Klick im Board. review laeuft ueberhaupt noch einmal, weil seit dem letzten Verdikt Code dazugekommen ist: optimize hat 'jaira logbook --all --json' auf trimmedJSON gefaltet und die doppelt geschriebene Regel in filesInLane() zusammengezogen.
+- **2026-09-15 06:09 · Alexander Sacharov** — review, second pass - run only because 343912c and 7ecf9f2 landed after the last verdict. I did not re-derive the old verdict, I checked it against today's tree: its findings 1 and 2 are closed (view.go:970 names the command, filereminder_test reads the rendered bar), and its other two are Alex's closed decisions - the release note stays inside ## 0.1.4 knowing sinceEntries returns all[:i], the threshold stays a fixed ten in the hint bar only, WXQ9PT gets no superseded marker, lane.go:479 is ticket 1K9KZS. None re-raised.
+
+The new code, which nobody had judged: folding logbookAll's --all --json onto trimmedJSON changes a --json surface, so I checked it on a scratch board instead of reading the diff. Entries went from {id, handle, file} to {id, handle, title, file}; nothing removed, nothing renamed, count and lane untouched. Additive, so not a break, and it already has its ## Unreleased line. Improvement, documented, no send-back. filesInLane() is a pure extraction - both callers keep their own sort and error path, Trimmed.Title was already filled by FileLane so title costs nothing.
+
+Left open on purpose rather than fixed here: internal/tui/model.go:764 still writes 'Status == terminal.ID && !ReadOnly' by hand, so the rule the refactor says must not exist twice now exists in two places - core/ticket's filesInLane is unexported and the TUI counts m.tickets rather than loading the store, so reaching it is a real change and not this lane's. Same for 'jaira logbook <id> --json', which carries no title and so still describes a filed ticket differently from --all. Follow-up ticket material, not a reason to hold a ticket Alex has accepted.
+
+go test ./... -race run from this worktree: exit 0, no FAIL, internal/tui 146s, internal/cli 37s. Verdict: accept. Not moved on - signoff is a human lane.
