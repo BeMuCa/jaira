@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:22:19Z
+updated-at: 2026-09-15T07:23:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74981
@@ -46,7 +46,7 @@ review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur 
 - [x] Eine vom Nutzer selbst geaenderte Lane ueberlebt die Migration unveraendert: was er geschrieben hat, wird nicht zurueckgesetzt. Die Entscheidung von 743737f - ein Board ist sein Lane-Verzeichnis - bleibt gueltig.
   proof: core/lane/corrections_test.go:71 TestCorrectionRunsOncePerBoard; core/lane/corrections_test.go:107 TestCorrectionLeavesALaneSomebodyWroteAlone
 - [x] Der Nutzer erfaehrt, dass eine seiner Lanes von einer Korrektur betroffen ist, statt es an seinem Verhalten zu merken. Nachgestellt an dem Board-Fixture aus Punkt 1.
-  proof: core/lane/corrections.go:104 correction.Says; core/lane/corrections_test.go:41 TestCorrectionRemovesTheDoorwayFromAnOldBoard
+  proof: core/lane/corrections.go:135 applyCorrections writes to os.Stderr; core/lane/corrections_test.go:216 TestCorrectionSpeaksOnStderrAndNotOnStdout; core/move/oldboard_test.go:63
 - [x] Die Zeile in core/release/NOTES.md, die 'Finishing a ticket no longer files anything' behauptet, stimmt danach fuer alle Boards - oder sie sagt, fuer welche sie nicht gilt und was zu tun ist.
   proof: core/release/NOTES.md:18
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
