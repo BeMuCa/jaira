@@ -376,4 +376,10 @@ func TestTheCutJSONNamesEachHandle(t *testing.T) {
 	if !strings.Contains(out, `"handle": "`+ticket.Handle(mover.ID)+`"`) {
 		t.Errorf("--json entry does not name the handle a commit message needs:\n%s", out)
 	}
+	// The cut and the sweep 'move' reports render a filed ticket through the
+	// same helper, so the title comes along. Pinning it here is what says the
+	// two shapes are one shape and not a coincidence.
+	if !strings.Contains(out, `"title": "mover"`) {
+		t.Errorf("--json entry does not carry the title that 'move' reports for a swept ticket:\n%s", out)
+	}
 }

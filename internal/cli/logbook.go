@@ -116,17 +116,13 @@ func logbookAll(s *ticket.Store, w, errw io.Writer) error {
 		fmt.Fprintf(errw, "jaira: warning: %v\n", pe)
 	}
 	if g.jsonOut {
-		out := make([]map[string]any, 0, len(filed))
-		for _, f := range filed {
-			// The handle rides along beside the id: --all is the cut an agent
-			// runs, and the next thing it does is name what it filed in a
-			// commit message, which is written by handle. 'logbook <id>'
-			// carries it the same way.
-			out = append(out, map[string]any{
-				"id": f.ID, "handle": ticket.Handle(f.ID), "file": filepath.Base(f.Path),
-			})
-		}
-		res := map[string]any{"filed": out, "count": len(filed), "lane": terminal.ID}
+		// One rendering of a filed ticket, shared with the sweep 'move' reports
+		// (flow.go, trimmedJSON): both answer "which tickets left the board",
+		// and two spellings of that answer drift the moment one gains a field.
+		// The handle it carries is why the reader wants it — the next thing an
+		// agent does after a cut is name what it filed in a commit message,
+		// which is written by handle.
+		res := map[string]any{"filed": trimmedJSON(filed), "count": len(filed), "lane": terminal.ID}
 		// A cut that skipped something is still a successful cut, so the
 		// skipping rides along with the result rather than replacing it.
 		// 'move' carries its sweep failure the same way (flow.go, trim_error),
