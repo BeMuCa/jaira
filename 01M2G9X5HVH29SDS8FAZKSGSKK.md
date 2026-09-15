@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:54:57Z
+updated-at: 2026-09-15T06:06:03Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58796
@@ -301,3 +301,8 @@ Fluff: eine Fundstelle, behoben. jaira-dispatcher/SKILL.md trug nach der Umschre
 Bewusst stehen gelassen: dass spawn.sh:46 '--cwd $wt' setzt UND der Linux-Arm danach noch einmal 'cd' macht. Auf dem Windows-Weg wird --cwd verworfen (Kommentar Zeile 49-55), auf dem Linux-Weg ist das cd doppelt gemoppelt, aber harmlos; es zu entfernen waere eine Verhaltensaenderung an genau der Stelle, an der dieses Ticket dreimal falsch lag.
 
 Kosten: nichts. Das Skript laeuft einmal je Worker; die einzige Schleife wartet ohnehin mit sleep.
+- **2026-09-15 06:06 · Alexander Sacharov** — Arbeitsanweisung fuer die testing-Runde (Dispatcher, 2026-09-15), damit sie auf dem Board steht und nicht in einer Sitzung stirbt. Der vorige Dispatcher ist nach optimize ohne Bericht gestorben; optimize hat sein review-gaps-Feld hinterlassen, seine Arbeit ist in d738769 und 6e86635 committet. critique wird NICHT noch einmal gefahren: die Schleife hat dreimal zurueckgeschickt, Alex hat die Uebergabe genommen und sie als konvergierend beurteilt (Befunde 4 -> 2 -> 1, keiner wiederaufgewaermt), der letzte Befund ist behoben.
+Testing hat mehr zu zeigen als eine gruene Suite:
+1. scripts/spawn.sh wird von 'jaira roles install' wirklich ausgeliefert - ueber go:embed all:builtin in core/role/role.go:33, gepinnt von core/role/role_test.go. DoD-Punkt 1 zeigt auf dieses Skript; liefert der Installer es nicht aus, ist das Ticket auf dem Papier erfuellt und in der Praxis kaputt. Nachpruefen, nicht der frueheren Lane glauben, die das behauptet hat.
+2. In eine blockierte Pane darf nicht getippt werden. Nur 'claude idle' und 'claude done' erreichen send-text; alles andere steigt aus. Dieser Torwaechter existiert, weil das Skript frueher Enter auf den Genehmigungsdialog eines Menschen gedrueckt hat. Durch Lesen pruefen und, wenn moeglich, den Fall auch fahren.
+3. Die Meldung des blocked-Arms richtet sich jetzt an den Menschen, nicht an den Dispatcher - dessen eigener Prompt (jaira-dispatcher/SKILL.md:188-189) verbietet ihm das Beantworten von Dialogen.
