@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:52:54Z
+updated-at: 2026-09-15T15:53:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -226,3 +226,14 @@ NICHT AUFGEMACHT: dass IncomingMilestones die lokale Datei ueberschreibt, die ge
 - Finding 1: 'name:' ist aus New UND aus parse() raus, nicht nur aus New. Wuerde parse den Schluessel weiterlesen, saehe ein Leser wieder zwei Wahrheiten, obwohl nur eine gilt. Alte Dateien mit der Zeile bleiben lesbar - die Zeile ist dann Prosa in der Frontmatter und ueberlebt Save verbatim, wie jede andere unbekannte Zeile.
 - Finding 4: HasColour() sitzt in core/milestone, nicht im TUI, weil die Regel 'Farbe 0 heisst keine Farbe' eine Eigenschaft des Dateiformats ist und nicht der Darstellung. --color 0 wird jetzt am Flag abgewiesen (internal/cli/milestones.go), damit die Regel nicht erst auf der Karte sichtbar wird.
 - Nicht angefasst, absichtlich: tag.ValidColour bleibt 0-255. Das Tag-Registry hat kein 'keine Farbe' in dieser Form; eine gemeinsame Verschaerfung waere eine Aenderung an S1VM40s Gegenstand.
+- **2026-09-15 15:53 · Alexander Sacharov** — critique-Runde 3, 2026-09-15. Die sechs Findings aus Runde 2 sind alle abgearbeitet und werden nicht wieder aufgemacht: der Dateiname ist die einzige Identität (Load setzt m.Name immer, name: ist aus New und parse raus), QueueKind räumt den flachen Alt-Eintrag weg und TestQueueSupersedesTheEntryAnOlderBuildLeft misst es nach, HasColour() steht an allen drei Stellen und --color 0 wird abgewiesen, refDelete/listRemoteNames sind inline, DropKind normalisiert kind, swatch() ist ein Helfer. Der Bau selbst bleibt richtig.
+
+Drei Findings in Runde 3, und alle drei sind dieselbe Sorte: die Oberfläche, die jemand VOR dem Aufruf liest, beschreibt noch den Stand vor Runde 2.
+
+1) internal/cli/milestones.go:51 verspricht ein name: in der Frontmatter, das es nicht mehr gibt. Das ist nicht kosmetisch: die Datei IST die API (CLAUDE.md), der Hilfetext ist die einzige Stelle, an der ein Mensch das Format erklärt bekommt, und wer nach dieser Erklärung ein name: hinschreibt, bekommt keine Fehlermeldung, sondern eine Zeile, die nichts tut.
+
+2) internal/cli/milestones.go:78 und der Flag-Text bei :146 sagen 0-255, die Prüfung bei :123 sagt 1-255. Die Fehlermeldung ist die einzige richtige der drei, und sie sieht man erst, nachdem man dem Hilfetext geglaubt hat. NOTES.md:18 sagt bereits 1-255 - die Hilfe ist jetzt die letzte Stelle, die widerspricht.
+
+3) docs/COMMANDS.md kennt milestone überhaupt nicht - weder die vier Unterbefehle noch --milestone in der list-Zeile 57. README.md:676 nennt diese Datei die vollständige Referenz, und jede andere Befehlsfamilie steht dort, jaira tag und jaira tags eingeschlossen (Zeilen 130-131). Eine Befehlsfamilie, die nur die eingebaute Hilfe kennt, findet niemand, der nicht schon weiß, dass es sie gibt.
+
+NICHT aufgemacht, weil begründet und die Begründung trägt: die geteilte Palette mit tag, der Index in newListCmd statt loadEnv, dass IncomingMilestones die lokale Datei überschreibt, der fehlende Löschweg (eigenes Ticket), und dass gitref zwei Namensräume nebeneinander hat statt eines generischen (Art, Name). Auch nicht aufgemacht: dass das Ticket im TITEL weiter 'Sprint' sagt - dafür fehlt jaira ein Umbenennen-Befehl, das ist kein Finding an diesem Diff.
