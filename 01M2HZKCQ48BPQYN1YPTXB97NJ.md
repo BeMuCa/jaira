@@ -13,7 +13,9 @@ related:
   - 01M2HX6SYCFB27V26R5APWAF22
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-09-15T07:30:45Z
+updated-at: 2026-09-15T07:31:12Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Ein Board sagt, ob Arbeit durch einen Pull Request kommt oder direkt auf den Hauptzweig
