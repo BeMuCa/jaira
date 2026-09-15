@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:49:31Z
+updated-at: 2026-09-15T15:52:54Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -49,12 +49,9 @@ outcome-what: "Alle sechs Findings der critique-Runde 2 behoben: Dateiname ist d
 outcome-why: "Finding 1 und 2 waren echte Fehler: ein von Hand geaenderter name: legte beim naechsten add eine zweite Datei an, und ein von einem aelteren Build hinterlassener Outbox-Eintrag wurde neben dem neuen gesendet - erst der veraltete Inhalt, dann ein Lease, das der Remote nicht mehr hat. Nachgemessen mit TestQueueSupersedesTheEntryAnOlderBuildLeft, der ohne den Fix zwei Eintraege derselben ID sieht."
 outcome-resolves: "Kein DoD-Punkt aendert sich - die sechs Findings waren Korrektheit und Doppelung innerhalb der schon gebauten Mechanik. go vet und go test ./... sind gruen."
 review-summary: |-
-  core/milestone/milestone.go:145 Load nimmt den Namen aus der Frontmatter und nur ersatzweise aus dem Dateinamen, Save schreibt nach Path(root, m.Name) - wer name: von Hand aendert, bekommt beim naechsten add eine zweite Datei und laesst die alte samt Ref stehen; in Load immer m.Name = name setzen (der Dateiname ist die Identitaet) oder die Zeile name: aus New streichen.
-  core/outbox/outbox.go:196 List liest das alte flache Verzeichnis UND tickets/, und QueueKind loescht die alte Datei nie - ein Ticket steht danach zweimal in der Liste, der veraltete Eintrag zuerst (nachgemessen: content=old, dann content=new); statt parallel zu lesen migrieren - QueueKind entfernt legacyPath nach dem atomaren Schreiben, oder List dedupliziert auf (Kind, ID) zugunsten des Unterordners.
-  core/gitref/gitref.go:364 refDelete und :659 listRemoteNames haben je genau einen Aufrufer mit konstantem Argument - Reste des in Runde 1 entfernten Milestone-Loeschwegs; beide zurueck in Delete und ListRemote inlinen.
-  internal/cli/milestones.go:292 die Regel Farbe 0 heisst keine Farbe steht dreimal ausgeschrieben (dort, internal/tui/model.go milestoneColors, internal/tui/view.go:1531) und milestones.go:119 nimmt --color 0 trotzdem an; ein HasColour() an core/milestone.Milestone an allen drei Stellen benutzen und 0 am Flag entweder ablehnen oder zulassen.
-  core/outbox/outbox.go:253 DropKind entscheidet per Pfad-Stringvergleich, in welchem Schleifendurchlauf es ist, und normalisiert als einzige Methode kind nicht - kind = kind.or(KindTicket) an den Anfang, paths := []string{b.path(kind,key)} und legacyPath nur fuer KindTicket anhaengen.
-  internal/tui/view.go:1501 und :1532 tragen denselben lipgloss-Swatch-Ausdruck dreissig Zeilen auseinander - ein func swatch(colour int) string in view.go, von renderLegend und renderMilestones benutzt.
+  internal/cli/milestones.go:51 der Hilfetext von 'jaira milestone' sagt weiter "Frontmatter carries the name, the colour and when it was created" - seit Runde 2 schreibt New() kein name: mehr und parse() liest keines; wer das liest und von Hand ein name: einträgt, ändert nichts und merkt es nie. Ersetzen durch: der Dateiname IST der Name, die Frontmatter trägt color und created-at - genau wie core/milestone/milestone.go:154 und core/release/NOTES.md:18 es schon sagen.
+  internal/cli/milestones.go:78 und :146 nennen den Bereich weiter "--color <0-255>" bzw. "ANSI-256 colour (0-255)", während :123 jetzt "1-255" fordert und 0 zurückweist; drei Stellen, zwei davon falsch, und die falschen sind die, die man vor dem Aufruf liest. Beide auf 1-255 ändern, mit dem Grund in einem Halbsatz (0 färbt keine Zelle).
+  docs/COMMANDS.md:57 listet für 'jaira list' weiter nur --lane/--assignee/--tag/--query/--actionable, und die Befehlstabelle hat keine Zeile für milestone create/add/rm/ls - obwohl README.md:676 diese Datei als vollständige Referenz ausweist und jede andere Befehlsfamilie (jaira tag, jaira tags, jaira lanes ...) dort steht. Vier Zeilen in die Writing-Tabelle neben 'jaira tag' und --milestone in Zeile 57 nachtragen.
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
