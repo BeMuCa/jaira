@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:27:14Z
+updated-at: 2026-09-15T05:27:35Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -134,3 +134,16 @@ go test ./... gruen nach der Aenderung.
 Das ist derselbe Befund 4, den KSGSKK am 2026-09-14 18:23 notiert und am 20:36 ausdruecklich aus seinem Umfang ausgeschlossen hat (weder DoD noch Arbeitsanweisung). Er gehoert weiterhin in ein eigenes Ticket, nicht in dieses und nicht in KSGSKK.
 
 Was ich hier getan habe: spawn.sh unveraendert mit lane=testing benutzt, also '/jaira-role-lane 13VMA8 testing'. Das ist auf diesem Board vertretbar, weil 'testing' hier eine echte, konfigurierte agentische Lane mit eigenem Prompt und Pflichtfeld test-verdict ist - genau das Feld, das gefuellt werden muss. Kein Handaufruf von claude, kein --permission-mode.
+- **2026-09-15 05:27 · Alexander Sacharov** — testing-Runde 2026-09-15 (nach eabb440): pass.
+
+Gates: go build ./... RC=0, go test ./... -race RC=0, kein FAIL, alle Pakete ok (core/lane 5.1s, core/role 1.0s, internal/cli 27.0s).
+
+Die Forderung: DoD-1 Stueck fuer Stueck am Baum geprueft, nicht am outcome-Text. README.md:842-851 traegt beide Absaetze unter Development; CLAUDE.md:154-170 traegt den zweiten Absatz zwischen jaira:local (154) und jaira:end (170), ueberlebt also die Regeneration; AGENTS.md:166-180 ebenso zwischen 127 und 180. Die drei Fassungen sind wortgleich (nur README schreibt 'whoever wrote the change' statt 'the person who wrote the change').
+
+Funktion: neu gebaute Binary aus diesem Baum, 'jaira roles install --into <tmp>' schreibt 8 Rollen. Die herausgeschriebene jaira-role-pr/SKILL.md traegt :25-26 die einmalige Weiche, :40-46 die Verzweigung nach dem Push und :91-93 das Verbot - der go:embed nimmt die geaenderte Datei also wirklich mit. 'grep -rniE "you may open|contributor.s job|open the pull request yourself"' ueber core/role/builtin/ und ueber die herausgeschriebenen Rollen bleibt leer.
+
+Zwei Dinge aus review-check, die ich bewusst NICHT als Befund schreibe:
+- Check 4 verlangt genau einen 'gh pr create'-Treffer; es sind drei (SKILL.md:72, :91, :92). Der Check ist aelter als die Boundaries-Sektion. Alle drei stehen im richtigen Rahmen ('you write it; you never run it' / 'Never run'). Kein Widerspruch.
+- Check 9: 'jaira roles install --force' gibt 'choose exactly one of --project, --global or --into'. Die NOTES.md-Zeile DIESES Tickets ist bereits korrigiert (sie nennt --project/--global plus --force). Der kaputte Rat steht in der Dispatcher-Zeile desselben Unreleased-Blocks und gehoert einem anderen Ticket - nicht angefasst.
+
+Ausserhalb der Lane: der Kaestchen-Text im Ticketrumpf traegt weiter die alte Regel gegenueber dem Frontmatter-Feld; gehoert NYW4M7 (steht schon in der Notiz von 05:12).
