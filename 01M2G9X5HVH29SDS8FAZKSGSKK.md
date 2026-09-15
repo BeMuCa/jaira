@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:47:47Z
+updated-at: 2026-09-15T06:47:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-17089
@@ -55,6 +55,14 @@ review-gaps: |-
   Ueberprueft und in Ordnung: 'herdr --skill' bestaetigt die Zustaende idle/working/blocked/done/unknown und dass 'tab create' '.result.root_pane' liefert; 'tab create --help' kennt --workspace, --cwd, --label, --no-focus; 'herdr pane get' liefert wirklich 'agent' und 'agent_status'. go build ./... und go test ./core/role/... ./core/release/... laufen durch, 'bash -n spawn.sh' ebenso. ${ws[@]+"${ws[@]}"} ist unter set -u korrekt.
 test-verdict: "pass: build, vet und 'go test -race -count=1 ./...' alle RC=0 ueber 27 Pakete; DoD 1-7 im Arbeitsbaum Zeile fuer Zeile nachgeprueft; Verhalten selbst ausgefuehrt - Projektname-Ableitung von docker akzeptiert (RC=0), beide Wachen brechen ab, und diese Sitzung laeuft in dem Tab 'KSGSKK/testing', den spawn.sh erzeugt"
 review-verdict: "Das Diff deckt alle sieben DoD-Punkte ab, und die Mechanik, auf der es steht, ist gegen das echte Herdr auf diesem Rechner nachgeprueft - Zustandsnamen, Antwortfelder und Optionen stimmen. Keine eingefuehrten Defekte gefunden; Bau und die betroffenen Tests laufen. Drei Restluecken bleiben (Projektname mit nicht-alphanumerischem Anfang, drei fremde Portvariablen, WSL-Erkennung am Binaerdateinamen), alle eng und keine davon ein verfehlter DoD-Punkt. Unsicher bin ich allein bei DoD 6: er ruht auf einer Beobachtung, und die Sitzung, die ihn beobachtet hat, hat spawn.sh dabei umgangen - wer ihn nicht glaubt, stellt ihn mit dem Ablauf unten in einer Minute selbst nach."
+review-check: |-
+  1. Im Arbeitsbaum /home/alex/projects/.worktrees/jaira-13VMA8 'go build ./...' ausfuehren. Erwartet: keine Ausgabe, Rueckgabewert 0.
+  2. 'go test ./core/role/... ./core/release/...' ausfuehren. Erwartet: zwei Zeilen, beide beginnen mit 'ok'.
+  3. 'bash -n core/role/builtin/jaira-dispatcher/scripts/spawn.sh' ausfuehren. Erwartet: keine Ausgabe.
+  4. Den abgeleiteten Stapelnamen ansehen: printf '%s_%s' "$(basename $PWD)" KSGSKK | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_' . Erwartet: 'jaira-13vma8_ksgskk' - klein, keine Spur von 'rg_'.
+  5. Den Zweigpraefix pruefen: 'grep -n JAIRA_BRANCH_PREFIX core/role/builtin/jaira-dispatcher/scripts/spawn.sh'. Erwartet: eine Zeile mit '${JAIRA_BRANCH_PREFIX:-feat}/$slug', nirgends 'feature/'.
+  6. Den Wachtposten pruefen: 'sed -n 86,94p core/role/builtin/jaira-dispatcher/scripts/spawn.sh'. Erwartet: ein Zweig 'claude blocked', der mit 'exit 1' endet und eine Meldung an den Menschen ausgibt - kein Weg von dort zu send-text.
+  7. DoD 6 selbst nachstellen (braucht Herdr): 'bash core/role/builtin/jaira-dispatcher/scripts/spawn.sh testspawn KSGSKK testing /home/alex/projects/jaira'. Erwartet: das Skript gibt eine Pane-Id wie 'w3:p1W' aus, in Herdr steht ein neuer Tab mit dem Etikett 'KSGSKK/testing' im selben Fenster, in dem Sie sitzen, darin laeuft claude im Worktree - und NICHT im Windows-Home C:\\Users\\Alex vor der Frage 'Is this a project you trust?'. Danach aufraeumen: den Tab schliessen und 'git -C /home/alex/projects/jaira worktree remove ../.worktrees/jaira-testspawn'.
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
