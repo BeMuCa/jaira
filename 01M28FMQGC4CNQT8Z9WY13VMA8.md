@@ -20,7 +20,7 @@ blocked-by: []
 commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:53:03Z
+updated-at: 2026-09-15T05:55:12Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -39,8 +39,8 @@ question: |-
 outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md kennt jetzt zwei Forges: eine neue Sektion 'Which forge this repository is on' (:36-62) leitet das Werkzeug aus 'git config jaira.forge' ab, sonst aus dem Remote-Host, und bleibt auf einem Host stehen, der weder github.com noch ein gitlab-Host ist. Die drei Stellen, an denen die Werkzeuge sich unterscheiden, nennen beide: Auflisten (:64-74 gh pr list / glab mr list --source-branch), Aufmachen (:109-121 gh pr create / glab mr create --description) und Boundaries (:139-144 never run, never merge, never approve auf beiden). Dazu eine Unreleased-Zeile in core/release/NOTES.md."
 outcome-why: "Die Rolle rief an fuenf Stellen 'gh' auf und war damit auf jedem GitLab-Board unbrauchbar - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall. Ein geratenes Werkzeug scheitert gegen die falsche Forge, und ein geratenes, das sich gegen das falsche Projekt authentifiziert, ist schlimmer; darum waehlbar statt geraten."
 outcome-resolves: "DoD 2, 3 und 4 abgehakt und belegt. Ein Ablauf statt zwei Kopien, damit das 'Never run' nicht auf einem Weg verloren gehen kann; die Modus-Weiche der vorigen Runden ist unveraendert. go build ./... und go test ./... -race gruen, frisch gebaute Binary schreibt die glab-Zeilen per 'jaira roles install --into' wirklich heraus."
-claimed-by: DESKTOP-RFTCH11-57212
-claimed-at: 2026-09-15T05:47:39Z
+claimed-by: DESKTOP-RFTCH11-90589
+claimed-at: 2026-09-15T05:55:12Z
 review-summary: "none"
 review-gaps: "Eine Doppelung entfernt: core/role/builtin/jaira-role-pr/SKILL.md zaehlte die zwei Betriebsarten zweimal auf - einmal direkt unter dem gh-pr-list-Block (:25-28) und noch einmal nach dem Push (:42-48). Die zweite Aufzaehlung ist die, die zaehlt, weil sie an der Stelle steht, an der der Agent verzweigt, und beide Ziele beim Namen nennt. Die erste ist jetzt ein Satz, der nur noch sagt, wozu die Abfrage da ist ('you branch on it after the push'), plus die Invariante 'Either way you never open one'. Kein Verhalten geaendert, go test ./... gruen. || Stehen gelassen und warum: (a) die Regel 'du machst keinen PR auf' steht im Prompt viermal - Titel, Einleitung :10-14, :40-41 am Push, Boundary :91-93. In einem Prompt ist Wiederholung an der Stelle der Handlung keine Fluff, sondern das, was ein zeilenweise ausfuehrender Agent tatsaechlich liest; gekuerzt haette ich genau den Befund 1 zurueckgeholt, den die letzte in-progress-Runde behoben hat. (b) jaira-teamlead/SKILL.md:86-88 und :97-99 tragen die Regel beide, aber mit verschiedener Anweisung (nie tun / wann den Tab schliessen) - keine Doppelung. (c) Die Regel steht wortgleich in CLAUDE.md, AGENTS.md und README.md - das verlangt die Definition of Done ausdruecklich, drei Leserschaften. (d) core/release/NOTES.md:34 (Sektion 0.2.0) sagt, der Teamlead schliesse den Tab 'once the pull request is open', was der heutige Prompt nicht mehr tut - geschlossene Historie, beschreibt eine ausgelieferte Binary, wird nicht angefasst. (e) Kein toter Code: die Aenderung ist reiner Prompt- und Doku-Text, nichts wurde unerreichbar. || Keine neue NOTES.md-Zeile: die Unreleased-Zeile zu diesem Ticket schickt den Nutzer schon zu 'jaira roles install --project', und das ist genau das, was diese Straffung ausliefert."
 test-verdict: "pass: go build ./... und go test ./... -race gruen (RC=0, kein FAIL), DoD-1 in README.md:842-851, CLAUDE.md:154-170 (vor jaira:end) und AGENTS.md:166-180 wortgleich verifiziert, und eine frisch gebaute Binary schreibt mit 'jaira roles install --into' die neue PR-Regel wirklich heraus"
