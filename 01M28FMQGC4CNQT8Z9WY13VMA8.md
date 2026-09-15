@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:06:21Z
+updated-at: 2026-09-15T06:06:36Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -37,9 +37,9 @@ question: |-
   ACHTUNG beim Lesen des Tickets: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Punkt 7 der Pruefliste ('entscheide, ob Zeile 36-37 zu aendern ist') und Punkt 9 ('jaira roles install --force') sind beide bereits erledigt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide Felder dann neu.
 
   Du musst nur sagen, ob du die Arbeit annimmst.
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md liest die Forge jetzt vom Push-Remote ab: 'git remote get-url origin' statt 'git remote get-url $(git config jaira.remote || echo origin)'. Drei Zeilen Prosa unter dem Block sagen, warum nicht jaira.remote. Die Abfrage der offenen Requests ist aus der Sektion 'Which forge this repository is on' in die Push-Sektion gewandert, die jetzt 'Push, then ask which of your two jobs this is' heisst - erst pushen, dann listen, dann verzweigen."
-outcome-why: "critique-Befund: :43 leitete die Forge aus jaira.remote ab, :81 pusht aber nach origin. In diesem Repo loest jaira.remote zu 'upstream' auf (jaira whoami --json), der Branch geht nach origin - im Fork zwei verschiedene Hosts und moeglicherweise zwei verschiedene Forges. Dieselbe Zeile war ausserdem eine zweite, kuerzere Kopie der Remote-Leiter aus core/settings/settings.go:145-168, vor der deren eigener Kommentar warnt. Und die Forge-Sektion trug drei Aufgaben statt einer."
-outcome-resolves: "Die Forge wird von dem Remote gelesen, auf den auch gepusht wird; die Remote-Leiter existiert nur noch an einer Stelle; die Forge-Sektion klaert nur noch Werkzeug und Wortwahl, die Verzweigung steht dort, wo sie ausgewertet wird."
+outcome-what: "optimize der GitLab-Runde: nichts entfernt, keine Datei geaendert. Doppelung, toter Text, Fluff und Kosten je am Baum geprueft; die Befunde und die stehen gelassenen Stellen liegen in review-gaps."
+outcome-why: "Die Runde ist reiner Prompt- und Notes-Text und hat vier critique-Durchlaeufe hinter sich; es gibt genau eine Stelle im Repo, die eine Forge kennt, und nichts zeigt mehr auf den alten Aufbau."
+outcome-resolves: "review-gaps geschrieben. go build ./... und go test ./... gruen. Weiter nach testing."
 claimed-by: DESKTOP-RFTCH11-90589
 claimed-at: 2026-09-15T05:55:12Z
 review-summary: "none"
