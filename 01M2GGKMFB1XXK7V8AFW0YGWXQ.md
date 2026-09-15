@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:01:44Z
+updated-at: 2026-09-15T15:02:04Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-69299
@@ -121,3 +121,4 @@ ZWEI SACHEN, DIE AM TICKET NOCH FAUL SIND
 
 - DoD-Punkt 6 ("Unerledigte Arbeit wandert in den naechsten Sprint") beschreibt Mechanik, die es nach Alex' Entscheidung nicht mehr gibt. Er gehoert gestrichen, bevor das Ticket in todo liegt - ein Gate am Ende liest ihn und weist die Arbeit sonst zurueck, wenn das Herausfinden am teuersten ist.
 - Titel und DoD sagen weiter "Sprint". Das Ziel sagt ab jetzt Milestone. Wer das Ticket arbeitet, liest sonst zwei verschiedene Entwuerfe.
+- **2026-09-15 15:02 · Alexander Sacharov** — Dispatcher, 2026-09-15 nach der Brainstorm-Lane: DoD 1-5 von 'Sprint' auf 'Milestone' umgeschrieben, DoD 4 um die Mehrfachzugehoerigkeit (bis zu drei Plaetze rechts, Dateireihenfolge) ergaenzt, DoD 6 (Weiterwandern in den naechsten Sprint) als superseded markiert - Alex' Entscheidung vom 15.09. sagt woertlich, dass dieser Punkt gestrichen gehoert. Der TITEL sagt weiterhin 'Sprint'; jaira hat keinen Befehl zum Umbenennen, das muss von Hand oder per eigenem Ticket passieren. DoD 2 ('reist auf einem Ref') bleibt stehen, obwohl die Brainstorm-Lane B in zwei Schritten empfiehlt und den Ref-Namensraum zurueckstellen will - das ist eine Empfehlung an die Plan-Lane, nicht eine Aenderung an Alex' Entscheidung.
