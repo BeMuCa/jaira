@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:09:58Z
+updated-at: 2026-09-15T06:09:59Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
@@ -309,3 +309,8 @@ Testing hat mehr zu zeigen als eine gruene Suite:
 - **2026-09-15 06:06 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen - er haengt an DIESEM Ticket, weil scripts/spawn.sh hier geaendert wird: Zeile 84 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane nicht folgen. Dieser Lauf startet den Tester deshalb als Lane-Worker ('/jaira-role-lane KSGSKK testing'), was auf diesem Board geht, weil testing hier eine echte agentische Lane mit Ausgabe test-verdict ist.
 - **2026-09-15 06:06 · Alexander Sacharov** — spawn.sh-Befund aus diesem Lauf (2026-09-15), aufgeschrieben statt stillschweigend umgangen - er haengt an DIESEM Ticket, weil scripts/spawn.sh hier geaendert wird: Zeile 84 schickt fest '/jaira-role-lane $ticket $lane' in den Tab und kann '/jaira-role-tester' nicht starten. Der Dispatcher-Prompt sagt aber ausdruecklich 'Testing is not a lane: /jaira-role-tester <id>'. Wer spawn.sh benutzt, kann der eigenen Anweisung fuer die Testing-Lane nicht folgen. Dieser Lauf startet den Tester deshalb als Lane-Worker ('/jaira-role-lane KSGSKK testing'), was auf diesem Board geht, weil testing hier eine echte agentische Lane mit Ausgabe test-verdict ist.
 - **2026-09-15 06:09 · Alexander Sacharov** — testing-Runde 2026-09-15, erster Versuch: abgebrochen ohne Ergebnis. Der Worker-Tab (Pane w2:p1X, Label 'KSGSKK/testing', per scripts/spawn.sh gestartet) war nach ca. 25 Minuten verschwunden - 'herdr pane get' antwortet 'pane_not_found', und in 'herdr tab list' steht kein KSGSKK-Tab mehr. Der Dispatcher hat ihn nicht geschlossen. Hinterlassen hat er nichts: Lane weiter testing, test-verdict leer, 'git status' sauber, kein neuer Commit. Es geht also nichts verloren, wenn die Lane neu gefahren wird; genau das passiert jetzt in einem frischen Tab.
+- **2026-09-15 06:09 · Alexander Sacharov** — Neunter Befund, von Alex am 2026-09-15 gesehen und sofort behoben: scripts/spawn.sh rief 'herdr tab create' ohne --workspace auf. Herdr legt den Tab dann in dem Workspace an, der gerade aktuell ist - also in dem, den der Mensch zuletzt angeklickt hat. Zwei testing-Worker dieses Laufs erschienen dadurch in w2, dem Workspace von requirementsgenie, waehrend der Dispatcher in w3 lief. Alex hat sie geschlossen, weil sie in einem fremden Projekt standen.
+
+Die Datei kannte den richtigen Wert die ganze Zeit: HERDR_WORKSPACE_ID steht im Environment jeder Herdr-Sitzung und war hier w3. Die installierte Kopie ist gepatcht - 'tab create --workspace "${HERDR_WORKSPACE_ID:?no workspace}"', mit Begruendung darueber. Ohne Wert bricht es jetzt ab, statt zu raten.
+
+Folge fuer dieses Ticket: die Aenderung gehoert wie die uebrigen nach core/role/builtin, und Kriterium 6 - jeder Worker startet in seiner eigenen Vorlage - ist damit schaerfer als bisher formuliert: in seiner eigenen Vorlage IM RICHTIGEN WORKSPACE. Ein Worker im Projekt des Nachbarn ist kein gestarteter Worker, sondern ein Fehler, den nur ein Mensch bemerkt.
