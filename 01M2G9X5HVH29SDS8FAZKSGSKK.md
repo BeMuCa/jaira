@@ -30,11 +30,11 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:41:46Z
+updated-at: 2026-09-15T05:43:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-46021
-claimed-at: 2026-09-15T05:37:50Z
+claimed-by: DESKTOP-RFTCH11-53136
+claimed-at: 2026-09-15T05:43:06Z
 outcome-what: "Die vier Befunde aus critique behoben: spawn.sh laesst nur noch 'claude idle'/'claude done' zum send-text durch (statt jedes 'claude*', also auch 'blocked'), die veraltete Portliste im .env-Kommentar ist raus, teamlead/SKILL.md schreibt den spawn.sh-Pfad aus statt ihn zu umschreiben, und dispatcher/SKILL.md beschreibt die Herkunft von COMPOSE_PROJECT_NAME so, wie das Skript sie seit diesem Durchgang hat."
 outcome-why: "Der Torwaechter-Befund ist der einzige mit Verhalten dahinter: ohne die Verengung beantwortet spawn.sh einen Genehmigungsdialog an Stelle des Menschen - genau das, was der Dispatcher-Prompt verbietet. Die anderen drei sind Prompt- und Kommentar-Stellen, die das Skript von vor diesem Diff beschreiben und einen Leser in die Irre fuehren, statt ihm den Weg zu zeigen - das ist der Zweck dieses Tickets."
 outcome-resolves: "Alle sieben DoD-Punkte bleiben erfuellt; die Fixes korrigieren die Umsetzung, nicht ihren Umfang. DoD 5 wird erst durch Fix 2 wirklich wahr: der fremde Stapel stand noch im Kommentar neben dem Code. Keine neue NOTES.md-Zeile, weil die Zeile unter ## Unreleased dieselbe unveroeffentlichte Aenderung beschreibt."
