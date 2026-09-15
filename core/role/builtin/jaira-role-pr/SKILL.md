@@ -24,8 +24,8 @@ gh pr list --head "$(git branch --show-current)" --state open
 
 That last line decides which of your two jobs this is. Empty: no pull request
 exists, you push and hand back the description. A pull request listed: a person
-has opened it, so you push to it and answer its comments — the section below.
-Either way you never open one.
+has opened it, so you push to it and answer its comments under **Answering
+review comments** below. Either way you never open one.
 
 Three things must already be true. If one is not, that is a finding for the
 ticket, not something you fix here:
@@ -40,8 +40,12 @@ ticket, not something you fix here:
    ticket, and the commit list is derived from it.
 
 Then `git push -u origin HEAD`. That is where your push ends and the person's
-decision begins: you do not open the pull request. Carry on with the two
-sections below — write the description out for them, then report.
+decision begins: you do not open the pull request. Carry on below, along the
+branch the `gh pr list` above put you on:
+
+- **Nothing listed** — write the description out for them, then report.
+- **A pull request listed** — it already has a description. Skip the next
+  section and go straight to **Answering review comments**, then report.
 
 ## Hand back the description, do not open it yourself
 

@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,13 +19,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:15:39Z
+updated-at: 2026-09-15T05:18:27Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
-outcome-what: "Die vier review-gaps-Befunde behoben: jaira-role-pr/SKILL.md schickt nach dem Push weiter statt 'stop' zu sagen, erkennt an 'gh pr list --head' welche seiner zwei Betriebsarten laeuft, schreibt das 'gh pr create'-Kommando fuer den Menschen hin (Boundary heisst jetzt 'Never RUN'), und die Unreleased-Zeile in core/release/NOTES.md nennt ein lauffaehiges 'jaira roles install --project'."
-outcome-why: "Befund 1 war der einzige, der zurueckschickt: ein Prompt wird ausgefuehrt, nicht gelesen - der Agent traf auf ein woertliches 'stop' genau dort, wo dieses Ticket greift, und haette entweder wirklich aufgehoert oder improvisiert. Die drei kleineren Befunde machten die Rolle an den Stellen ratend oder unlauffaehig, an denen sie handeln muss."
-outcome-resolves: "Die Regel steht unveraendert an allen drei Dokumentationsstellen; die ausgelieferte Rolle widerspricht ihr jetzt auch im Ablauf nicht mehr. go test ./... -race gruen."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md:27 nennt die Sektion 'Answering review comments' beim Namen statt 'the section below', und :42-48 verzweigt nach dem Push in die zwei Betriebsarten: nichts gelistet - Beschreibung schreiben, dann berichten; ein PR gelistet - Beschreibungs-Sektion ueberspringen und direkt zu 'Answering review comments'."
+outcome-why: "Die Modus-Weiche aus :25-28 und die unbedingte Anweisung 'Carry on with the two sections below - write the description out for them' widersprachen sich: ein Agent im Modus 'PR ist schon offen' bekam beides und haette eine gh-pr-create-Beschreibung fuer einen PR geschrieben, den es schon gibt. 'the section below' stand ausserdem ueber zwei Sektionen und zeigte woertlich gelesen auf die falsche."
+outcome-resolves: "Jede der zwei Betriebsarten hat jetzt genau ein benanntes Ziel nach dem Push; keine Sektion laeuft mehr ins Leere. go test ./... -race gruen."
 claimed-by: DESKTOP-RFTCH11-16020
 claimed-at: 2026-09-15T05:13:21Z
 review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:42-44 widerspricht der eigenen Modus-Weiche aus :24-27: :26 schickt den Modus 'PR ist schon offen' auf 'the section below' (gemeint ist 'Answering review comments' :73), :43-44 sagt danach unbedingt 'Carry on with the two sections below - write the description out for them'. Ein Agent im zweiten Modus bekommt beides und schreibt eine gh-pr-create-Beschreibung fuer einen PR, der schon existiert. Stattdessen: :26 die Sektion beim Namen nennen ('Answering review comments') statt 'the section below', und :43-44 nach dem Modus verzweigen - leer: Beschreibung schreiben, dann berichten; ein PR gelistet: direkt zu 'Answering review comments'."
@@ -42,7 +42,7 @@ conflict-theirs-question: ""
 ## Definition of Done
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-38 schickt nach dem Push weiter statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:42-48 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
 
 ## Options
 
@@ -57,6 +57,8 @@ conflict-theirs-question: ""
 - [x] Befund 2: in 'Before you push anything' eine gh-Abfrage ergaenzen, an der die Rolle erkennt, ob schon ein PR offen ist
 - [x] Befund 3: das eine Kommando zum Aufmachen hinschreiben und dazusagen, dass der Agent es nicht ausfuehrt
 - [x] Befund 4: NOTES.md-Unreleased-Zeile dieses Tickets auf ein lauffaehiges 'jaira roles install' korrigieren
+- [x] go test ./... -race gruen, dann committen
+- [x] critique-Befund: SKILL.md:26 die Sektion beim Namen nennen und :43-44 nach dem Modus verzweigen, damit Modus 2 keine PR-Beschreibung schreibt
 - [x] go test ./... -race gruen, dann committen
 
 ## Progress
@@ -102,3 +104,10 @@ Die Behebung ist klein und eindeutig, darum zurueck nach in-progress statt in hu
 Bewusst NICHT als Befunde geschrieben, damit die naechste Runde sie nicht reflexhaft anfasst:
 - CLAUDE.md haelt nur die PR-Regel im jaira:local-Block (154-170), die NOTES.md-Regel steht ausserhalb bei 172; AGENTS.md haelt beide drin (127-180). Das ist harmlos - announce.go schreibt nur zwischen jaira:start und jaira:end, alles nach dem Endmarker ist ohnehin sicher - und steht so schon auf master. Kein Befund dieser Runde.
 - Die vier review-gaps-Befunde sind alle sauber behoben; die drei Doku-Stellen und teamlead:86-88 / dispatcher:173 sagen wortgleich dasselbe. Nichts davon noch einmal aufgemacht.
+- **2026-09-15 05:18 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (critique-Rueckgabe): die Modus-Weiche hat jetzt genau eine Stelle, an der sie verzweigt.
+
+Nicht so geloest, wie es naheliegt (in :43-44 nur 'die zwei Sektionen' auf 'die Beschreibungs-Sektion' verengen): dann laeuft Modus 2 nach dem Push in gar keine Sektion und faellt in dieselbe Luecke, die Befund 1 der letzten Runde geoeffnet hatte. Stattdessen nennt :43-48 beide Ausgaenge ausdruecklich beim Namen, so dass jeder Modus ein benanntes Ziel hat und keiner am Ende der Sektion ins Leere laeuft.
+
+:27 sagt statt 'the section below' jetzt 'Answering review comments' - 'the section below' stand direkt ueber zwei Sektionen und zeigte woertlich gelesen auf die falsche.
+
+Keine NOTES.md-Zeile ergaenzt, bewusst: die Unreleased-Zeile zu diesem Ticket ('Stop opening pull requests from an agent session') beschreibt schon genau dieses Verhalten samt Aufforderung, die Rollen neu zu installieren. Die Aenderung dieser Runde praezisiert den Wortlaut eines Prompts, den noch niemand ausgeliefert bekommen hat - eine zweite Zeile wuerde dem Leser dieselbe Sache zweimal erzaehlen.
