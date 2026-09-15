@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:47:06Z
+updated-at: 2026-09-15T06:49:23Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -68,7 +68,7 @@ conflict-theirs-question: ""
 - [x] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
   proof: core/role/builtin/jaira-role-pr/SKILL.md:83 (glab mr list --source-branch) und :124 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
 - [x] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-63: git config jaira.forge gewinnt immer, sonst der Host von 'git remote get-url origin' - dem Remote, auf den :71 auch pusht, nicht dem Board-Remote jaira.remote - github.com -> gh und Host mit 'gitlab' -> glab, sonst stehenbleiben und 'git config jaira.forge gitlab' nennen. Alle vier Zweige auf Fixtures durchlaufen
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:36-68: git config jaira.forge gewinnt immer, sonst der Host von 'git remote get-url origin'; github.com -> gh, Host mit 'gitlab' -> glab, sonst nennt Sprosse 4 kein Werkzeug und haelt dort an - ':65-68' sagt ausdruecklich kein Push und keine Abfrage offener Requests, und nennt dem Menschen 'git config jaira.forge' als das, was die Rolle beim naechsten Start weiterlaufen laesst
 - [x] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
   proof: core/role/builtin/jaira-role-pr/SKILL.md:143-148: 'never run gh pr create/gh pr merge/gh pr review --approve' UND 'never run glab mr create/glab mr merge/glab mr approve', dazu :113-115 'You write it; you never run it' fuer beide; Wortwechsel nur bei :65-67, nicht global
 
