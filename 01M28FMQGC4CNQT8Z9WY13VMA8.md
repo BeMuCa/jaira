@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:47:39Z
+updated-at: 2026-09-15T05:48:47Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -75,6 +75,12 @@ conflict-theirs-question: ""
 - [x] go test ./... -race gruen, dann committen
 - [x] critique-Befund: SKILL.md:26 die Sektion beim Namen nennen und :43-44 nach dem Modus verzweigen, damit Modus 2 keine PR-Beschreibung schreibt
 - [x] go test ./... -race gruen, dann committen
+- [ ] SKILL.md: Forge-Erkennung in 'Before you push anything' - git config jaira.forge, sonst Remote-Host, sonst stehenbleiben und die Einstellung nennen
+- [ ] SKILL.md: Abfrage der offenen Requests, die create-Zeile und die Boundaries nennen beide Werkzeuge (gh/glab); 'Merge Request' nur auf der GitLab-Seite
+- [ ] Beide Wege am Stueck von oben nach unten lesen - auf keinem darf 'Never run'/'never merge'/'never approve' fehlen
+- [ ] Erkennung auf Fixtures nachstellen: gitlab.com-Remote, github.com-Remote, selbstgehosteter Host + jaira.forge
+- [ ] NOTES.md: Unreleased-Zeile fuer den GitLab-Weg
+- [ ] go test ./... -race gruen, dann committen
 
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
