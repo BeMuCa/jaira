@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:01:30Z
+updated-at: 2026-09-15T15:01:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-69299
@@ -46,7 +46,7 @@ claimed-at: 2026-09-15T14:56:26Z
 
 - [ ] Ein Milestone laesst sich anlegen und benennen, und seine Datei fuehrt die Tickets auf, die zu ihm gehoeren. Sie ist von Hand editierbar und im Diff lesbar, wie eine Ticket-Datei.
 - [ ] Die Milestone-Datei reist auf einem Ref: wer sie zieht, sieht denselben Milestone, ohne auf das Mergen eines Zweiges zu warten.
-- [ ] Jeder Sprint bekommt seine Farbe, ohne dass jemand eine aussucht.
+- [ ] Jeder Milestone bekommt seine Farbe, ohne dass jemand eine aussucht.
 - [ ] Eine Karte zeigt die Farbe ihres Sprints am RECHTEN Rand, deutlich getrennt von den Tag-Farben am linken; ein Ticket ohne Sprint zeigt dort nichts und die Karte wird dadurch nicht breiter.
 - [ ] Das Board zieht sich mit einer Geste auf einen Sprint zusammen, und 'jaira list' hat den entsprechenden Schalter.
 - [ ] Unerledigte Arbeit wandert in den naechsten Sprint, indem eine Datei bearbeitet wird - nicht indem jedes Ticket einzeln angefasst wird. Nachgestellt mit mindestens drei Tickets, von denen zwei weiterwandern.
