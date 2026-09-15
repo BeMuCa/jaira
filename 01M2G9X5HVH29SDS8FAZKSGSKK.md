@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:39:17Z
+updated-at: 2026-09-15T05:41:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46021
@@ -39,10 +39,8 @@ outcome-what: "Die vier Befunde aus critique behoben: spawn.sh laesst nur noch '
 outcome-why: "Der Torwaechter-Befund ist der einzige mit Verhalten dahinter: ohne die Verengung beantwortet spawn.sh einen Genehmigungsdialog an Stelle des Menschen - genau das, was der Dispatcher-Prompt verbietet. Die anderen drei sind Prompt- und Kommentar-Stellen, die das Skript von vor diesem Diff beschreiben und einen Leser in die Irre fuehren, statt ihm den Weg zu zeigen - das ist der Zweck dieses Tickets."
 outcome-resolves: "Alle sieben DoD-Punkte bleiben erfuellt; die Fixes korrigieren die Umsetzung, nicht ihren Umfang. DoD 5 wird erst durch Fix 2 wirklich wahr: der fremde Stapel stand noch im Kommentar neben dem Code. Keine neue NOTES.md-Zeile, weil die Zeile unter ## Unreleased dieselbe unveroeffentlichte Aenderung beschreibt."
 review-summary: |-
-  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:70 laesst jeden Zustand durch, der mit 'claude' anfaengt - auch 'blocked', den Herdr fuer einen erkannten Genehmigungsdialog meldet -, und schickt danach in Zeile 72-74 bedingungslos send-text + enter. Genau der Fall, gegen den der Kommentar in Zeile 49-55 den wsl.exe-Start begruendet, und den die Notiz vom 2026-09-14 20:32 fuer dieses Ticket verlangt hat. Stattdessen: Zeile 70 auf dieselben zwei Zustaende verengen, auf denen die Schleife in Zeile 68 bricht ('claude idle'|'claude done'), alles andere mit exit 1 abbrechen.
-  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:26 nennt im Kommentar noch die Ports '5173, 8000' - VITE_PORT_HOST und BACKEND_PORT_HOST, die derselbe Diff als fremden Stapel geloescht hat. Damit ist der Kommentar die letzte Stelle, an der ein fremdes Projekt in diesem Skript steht. Stattdessen: die Klammer auf die drei Ports kuerzen, die das Skript noch versetzt (80, 5432, 5433).
-  core/role/builtin/jaira-teamlead/SKILL.md:44 schickt den Teamlead zu 'scripts/spawn.sh from the dispatcher role's directory', ohne diesen Pfad je zu nennen. Der Dispatcher-Prompt darf 'beside this file' sagen, weil er dort liegt; der Teamlead liegt woanders und muss raten. Stattdessen: den installierten Pfad ausschreiben - ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh, den core/role/install.go anlegt.
-  core/role/builtin/jaira-dispatcher/SKILL.md:168 sagt weiter, scripts/spawn.sh leite Projektnamen und Ports 'both from the worktree slug' ab. Seit spawn.sh:35 stammt COMPOSE_PROJECT_NAME aus dem Repository-Namen plus Slug, nicht aus dem Slug. Stattdessen: 'from the repository name and the worktree slug'.
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76 meldet fuer JEDEN abgelehnten Zustand 'claude did not come up in $pane' - fuer 'claude blocked' ist das falsch: claude ist sehr wohl hochgekommen und wartet auf einen Menschen vor einem Dialog. Der Kommentar darueber hebt genau diesen Fall hervor, die einzige Ausgabe des Skripts widerspricht ihm. Stattdessen: eigener case-Arm 'claude blocked)' mit einer Meldung, die sagt, was zu tun ist - in dem Pane wartet ein Dialog, ihn selbst beantworten und erneut starten - und danach ebenfalls exit 1.
+  core/role/builtin/jaira-teamlead/SKILL.md:46 ist 103 Zeichen lang; die naechstlange Zeile der Datei hat 82, der Rest bricht bei ~78. Der Pfad-Einschub aus diesem Durchgang ist in den Umbruch hineingelaufen. Stattdessen: Absatz 44-46 auf die Breite der Datei neu umbrechen.
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
