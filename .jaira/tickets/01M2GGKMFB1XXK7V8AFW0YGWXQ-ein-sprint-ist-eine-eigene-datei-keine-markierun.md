@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:39:35Z
+updated-at: 2026-09-15T15:44:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -48,15 +48,12 @@ outcome-what: "Alle neun critique-Findings behoben: der ungenutzte Milestone-Loe
 outcome-why: "Die Datei ist die API: 'colour:' waere nach dem Release ein Bruch, jetzt eine Zeile. Der Rest war Code, den nichts aufruft, und zweite Namen fuer Dinge, die es schon gibt - beides driftet auseinander, sobald jemand eines von beiden aendert."
 outcome-resolves: "Kein Verhalten der DoD-Punkte geaendert; alle Tests gruen. Plan-Schritt 5 nachgetragen abgehakt (Index in internal/cli/milestones.go:29 und internal/tui/model.go:374)."
 review-summary: |-
-  core/refsync/refsync.go:197 RecordMilestoneDelete has no caller anywhere, and neither does core/outbox/outbox.go:280 PendingMilestone; gitref.DeleteMilestone is reached only from an OpDelete branch nothing ever queues and no command deletes a milestone — delete the three, or add 'jaira milestone delete <name>' and wire them
-  core/outbox/outbox.go:282 MilestoneSender and the s.(MilestoneSender) assert at :364 handle a state that cannot occur: Box.Flush has one call site, core/refsync/refsync.go:344, passing *gitref.Repo, which implements both halves — put WriteMilestone/DeleteMilestone on Sender itself and drop the assert, the 'this sender cannot carry milestones' error and the (error, bool) return of send()
-  core/milestone/milestone.go:129 writes 'colour:' into the file format and :208 reads it back, against this board's own stated rule at internal/cli/tags.go:233 ('color, matching --color: one spelling on the machine surface') that milestones.go:347 and the --color flag already follow — write and read 'color:' before the format ships, because afterwards it is a break
-  internal/cli/milestones.go:360 validColour is a verbatim copy of tag.ValidColour (core/tag/tag.go:251), which internal/tui/model.go:1466 already calls directly — delete it and call tag.ValidColour
-  core/milestone/milestone.go:358-366 itoa/atoi reimplement strconv for the one field core/tag/tag.go already does with strconv.Itoa (:327) and strconv.Atoi (:243); the Sscanf atoi also reads '12abc' as 12 — import strconv and use them
-  core/milestone/milestone.go:71 the path field is written at :155 and :279 and read nowhere; every caller computes milestone.Path(root, name) instead (internal/cli/milestones.go:132, core/refsync/refsync.go:239) — drop the field and the two assignments
-  internal/tui/model.go:1478 activeMilestones() is m.milestones under a second name, and the picker indexes the two lists with one cursor — view.go:1522 renders m.milestones[i] while model.go:1039 indexes the names slice — use m.milestones in both (len(m.milestones), m.milestones[m.msIdx].Name) and delete the helper
-  internal/cli/fetch.go:23 the Long text still says 'Fetches refs/jaira/tickets/*' after core/gitref/gitref.go:633 widened the refspec to refs/jaira/* and this command started writing milestone files — say that it brings both
-  core/gitref/gitref.go:657 ListRemoteMilestones has no caller outside milestone_test.go — remove it until something asks the remote what milestones exist
+  core/milestone/milestone.go:145 Load nimmt den Namen aus der Frontmatter und nur ersatzweise aus dem Dateinamen, Save schreibt nach Path(root, m.Name) - wer name: von Hand aendert, bekommt beim naechsten add eine zweite Datei und laesst die alte samt Ref stehen; in Load immer m.Name = name setzen (der Dateiname ist die Identitaet) oder die Zeile name: aus New streichen.
+  core/outbox/outbox.go:196 List liest das alte flache Verzeichnis UND tickets/, und QueueKind loescht die alte Datei nie - ein Ticket steht danach zweimal in der Liste, der veraltete Eintrag zuerst (nachgemessen: content=old, dann content=new); statt parallel zu lesen migrieren - QueueKind entfernt legacyPath nach dem atomaren Schreiben, oder List dedupliziert auf (Kind, ID) zugunsten des Unterordners.
+  core/gitref/gitref.go:364 refDelete und :659 listRemoteNames haben je genau einen Aufrufer mit konstantem Argument - Reste des in Runde 1 entfernten Milestone-Loeschwegs; beide zurueck in Delete und ListRemote inlinen.
+  internal/cli/milestones.go:292 die Regel Farbe 0 heisst keine Farbe steht dreimal ausgeschrieben (dort, internal/tui/model.go milestoneColors, internal/tui/view.go:1531) und milestones.go:119 nimmt --color 0 trotzdem an; ein HasColour() an core/milestone.Milestone an allen drei Stellen benutzen und 0 am Flag entweder ablehnen oder zulassen.
+  core/outbox/outbox.go:253 DropKind entscheidet per Pfad-Stringvergleich, in welchem Schleifendurchlauf es ist, und normalisiert als einzige Methode kind nicht - kind = kind.or(KindTicket) an den Anfang, paths := []string{b.path(kind,key)} und legacyPath nur fuer KindTicket anhaengen.
+  internal/tui/view.go:1501 und :1532 tragen denselben lipgloss-Swatch-Ausdruck dreissig Zeilen auseinander - ein func swatch(colour int) string in view.go, von renderLegend und renderMilestones benutzt.
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
@@ -208,3 +205,20 @@ SENDER: WriteMilestone sitzt jetzt direkt auf outbox.Sender, MilestoneSender ist
 FORMAT: die Frontmatter-Zeile heisst 'color:', nicht 'colour:' - internal/cli/tags.go:233 schreibt diese Regel fuer die Maschinenoberflaeche hin. Das Go-Feld heisst weiter Colour, wie in core/tag; die Regel gilt fuer das, was in der Datei steht. Mitgeaendert: core/milestone/milestone_test.go, core/gitref/milestone_test.go und die NOTES-Zeile zum Dateiformat. Jetzt eine Zeile, nach dem Release ein Bruch.
 
 Plan-Schritt 5 nachgetragen abgehakt: der Index wird gebaut (internal/cli/milestones.go:29 milestoneIndex, internal/tui/model.go:374), nur in newListCmd statt in loadEnv - die critique hat genau das als begruendet durchgehen lassen.
+- **2026-09-15 15:44 · Alexander Sacharov** — critique-Runde 2, 2026-09-15. Die Findings aus Runde 1 sind alle abgearbeitet und werden nicht wieder aufgemacht: der Loeschweg ist weg, MilestoneSender ist in Sender aufgeloest, die Frontmatter sagt color:, validColour/itoa/atoi/path/activeMilestones sind ersetzt, der fetch-Hilfetext stimmt. Der Bau bleibt im Kern richtig.
+
+Sechs neue Findings, zwei davon nicht kosmetisch.
+
+1) IDENTITAET DES MILESTONE. core/milestone/milestone.go:145: Load setzt m.Name nur dann aus dem Dateinamen, wenn die Frontmatter keinen hat; Save schreibt nach Path(root, m.Name). Die Datei ist laut CLAUDE.md und laut dem eigenen Hilfetext von Hand editierbar - wer also die Zeile name: aendert, legt beim naechsten jaira milestone add eine zweite Datei an, waehrend die alte mitsamt ihrem Ref liegen bleibt. Zwei Wahrheiten fuer einen Namen. Entweder der Dateiname gewinnt immer (Load setzt m.Name = name), oder die Zeile name: verschwindet aus New - sie wird sonst nirgends gebraucht.
+
+2) DIE ALTE OUTBOX WIRD GELESEN, NICHT MIGRIERT. core/outbox/outbox.go:196: List liest sowohl das flache Verzeichnis als auch tickets/, und QueueKind loescht die flache Datei nach dem Superseden nicht. Nachgemessen mit einem Wegwerf-Test: nach einem Queue auf ein altes Ticket enthaelt List zwei Eintraege derselben ID, der veraltete zuerst. Erst wird also der alte Inhalt gesendet, danach traegt der neue Eintrag ein Lease, das der Remote nicht mehr hat. Ein paralleler Lesepfad loest das nicht - QueueKind soll legacyPath nach dem Schreiben entfernen (den Key hat es), oder List auf (Kind, ID) deduplizieren und den Unterordner gewinnen lassen.
+
+3) RESTE VON RUNDE 1. core/gitref/gitref.go:364 refDelete und :659 listRemoteNames haben je einen Aufrufer, dem sie eine Konstante uebergeben - die zweiten Aufrufer sind mit dem Loeschweg gegangen. Beide inlinen.
+
+4) DREIMAL DIESELBE REGEL. Farbe 0 bedeutet keine Farbe steht in internal/cli/milestones.go:292, internal/tui/model.go milestoneColors und internal/tui/view.go:1531 - und milestones.go:119 laesst --color 0 durch, was dann ueberall als farblos erscheint. Ein HasColour() am Milestone, an allen drei Stellen benutzt, und am Flag eine Entscheidung.
+
+5) core/outbox/outbox.go:253 DropKind vergleicht Pfad-Strings, um zu wissen, in welchem Durchlauf es steht, und ist die einzige Methode, die kind nicht normalisiert.
+
+6) internal/tui/view.go:1501 und :1532 sind derselbe Swatch-Ausdruck.
+
+NICHT AUFGEMACHT: dass IncomingMilestones die lokale Datei ueberschreibt, die geteilte Palette, der Index in newListCmd, gitref ohne generisches (Art, Name) - alle vier stehen seit Runde 1 mit ihrer Begruendung. Ebenso, dass milestoneIndex() genau einen Aufrufer hat: das ist die Naht, an der die naechsten Leser haengen, und sie ist als solche beschrieben.
