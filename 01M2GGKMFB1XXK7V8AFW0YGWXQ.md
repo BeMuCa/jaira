@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: backlog
+status: brainstorm
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Sprint als eigene Datei an, sieht auf jeder Karte am rechten Rand welche Tickets zusammengehoeren, und filtert das Board mit einem Griff darauf."
@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T14:56:47Z
+updated-at: 2026-09-15T14:56:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-69299
