@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:44:14Z
+updated-at: 2026-09-15T13:44:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -119,3 +119,4 @@ Beim Umbrechen: es genuegt nicht, die eine geaenderte Zeile zu kuerzen - der Umb
 Nicht gemacht, obwohl es der Lane naheliegt: die sieben Kopien zu einer Quelle zusammenfassen. Das waere kein Aufraeumen, sondern eine zweite Implementierung - README.md und docs/AGENTS.md sprechen zu einem Menschen, der erzeugte Block zu einem Agenten, und sie sagen dasselbe absichtlich verschieden lang.
 
 Der Umbruch auf 80 Zeichen war fast ein Fehler: ein automatischer Reflow hat '`git add`' ueber zwei Zeilen getrennt und damit den Code-Span zerrissen, und nebenbei einen Punkt umbrochen, den diese Aenderung gar nicht anfasst. Zurueckgenommen und von Hand umbrochen. Wer hier nochmal reflowt: nicht mit textwrap ueber ganze Absaetze.
+- **2026-09-15 13:44 · Alexander Sacharov** — testing: Gates gruen - gofmt -l leer, go build ./... RC=0, go test -count=1 ./... RC=0 (kein Paket rot). Funktionsprobe auf einem Wegwerf-Board (jaira init, .jaira/ gitignoret, Ticket-Datei nie committet): (a) 'feat(7085JK): scratch code change' als einziger Traeger -> 'jaira move --to done' erlaubt, 'jaira logbook' stampft ef129c1 in commits: - die Ableitung haelt ohne die erste Quelle; (b) Gegenprobe ohne Id im Betreff -> 'lane "done" requires the commits that carry this change, and git has none for G5W3MG yet' - der Satz im erzeugten Block ('Leave it out and the list stays empty and the move into the last lane is refused') stimmt woertlich; (c) frisch erzeugte AGENTS.md/CLAUDE.md tragen den Punkt 'a lane that changed no code commits nothing' und den Punkt 'every commit names the ticket id', der gestrichene Halbsatz kommt 0 mal vor. Wegwerf-Test in core/board (agentNote woertlich in AGENTS.md und CLAUDE.md) gruen und wieder geloescht. DoD 1 ist noch nicht abgehakt und gehoert nicht in diese Lane: 'git show --name-only' ueber master..HEAD zeigt bei allen vier Commits Code neben der Ticket-Datei, aber die geforderte Nachstellung verlangt auch review - diese Lane und review muessen noch ohne eigenen Commit vorbeikommen, also hakt es die letzte Lane ab, die das sehen kann. Testing committet selbst nichts, die Ticket-Datei bleibt im Arbeitsbaum geaendert. Einzige gefundene Zeile ueber 80 Zeichen in den angefassten Bloecken: README.md:859 (81) - vorbestehend, 'git log -S' findet sie nicht in master..HEAD.
