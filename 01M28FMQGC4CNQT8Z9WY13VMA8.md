@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -19,13 +19,13 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:12:19Z
+updated-at: 2026-09-15T05:12:23Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
-outcome-what: "Die doppelte Begruendung aus der neuen PR-Sektion gefaltet - CLAUDE.md und AGENTS.md sagen sie jetzt in der README-Formulierung"
-outcome-why: "Absatz 2 war woertlich der Satz, den der generierte jaira-Block 40 Zeilen darueber schon traegt (core/board/announce.go:88-91)"
-outcome-resolves: "Die Regel steht unveraendert an allen drei Stellen, nur ohne die Wiederholung; go test ./... gruen"
+outcome-what: "Die vier review-gaps-Befunde behoben: jaira-role-pr/SKILL.md schickt nach dem Push weiter statt 'stop' zu sagen, erkennt an 'gh pr list --head' welche seiner zwei Betriebsarten laeuft, schreibt das 'gh pr create'-Kommando fuer den Menschen hin (Boundary heisst jetzt 'Never RUN'), und die Unreleased-Zeile in core/release/NOTES.md nennt ein lauffaehiges 'jaira roles install --project'."
+outcome-why: "Befund 1 war der einzige, der zurueckschickt: ein Prompt wird ausgefuehrt, nicht gelesen - der Agent traf auf ein woertliches 'stop' genau dort, wo dieses Ticket greift, und haette entweder wirklich aufgehoert oder improvisiert. Die drei kleineren Befunde machten die Rolle an den Stellen ratend oder unlauffaehig, an denen sie handeln muss."
+outcome-resolves: "Die Regel steht unveraendert an allen drei Dokumentationsstellen; die ausgelieferte Rolle widerspricht ihr jetzt auch im Ablauf nicht mehr. go test ./... -race gruen."
 claimed-by: DESKTOP-RFTCH11-3086
 claimed-at: 2026-09-15T05:06:05Z
 review-summary: "Der Diff schreibt an drei Dokumentationsstellen dieselbe Regel auf und dreht danach die ausgelieferten Rollen-Prompts darauf um. CLAUDE.md:156-169 und AGENTS.md:166-179 (hinter dem jaira:local-Marker) und README.md:842-851 (unter Development) sagen jetzt wortgleich: nichts landet direkt auf master, die Aenderung faehrt auf einem eigenen Branch, das Ticket faehrt in denselben Commits mit, und 'der Pull Request gehoert dem Maintainer von dem Moment an, in dem er existiert' - ein Agent pusht seinen Branch und hoert dort auf. Die frueheren zwei Absaetze Begruendung sind zu einem Halbsatz gefaltet, damit die drei Kopien gleich lauten. || core/role/builtin/jaira-role-pr/SKILL.md ist von 'Open it, answer it, never accept it' zu 'Push it, hand it over, never open or accept it' umgeschrieben: Beschreibung, Einleitung und Boundaries sagen jetzt 'never gh pr create' zusaetzlich zu merge und approve, die Sektion 'Before you open anything' heisst 'Before you push anything' und endet mit 'git push -u origin HEAD', und die PR-Beschreibung wird nicht mehr aufgemacht sondern als fertiger Text an den Menschen zurueckgegeben. Push auf einen offenen PR und das Beantworten von Review-Kommentaren bleibt ausdruecklich Aufgabe der Rolle (SKILL.md:59-71). || core/role/builtin/jaira-teamlead/SKILL.md:79-81 verbietet dem Teamlead jetzt auch das Aufmachen, und der Tab-Schluss bei :90-93 haengt nicht mehr am offenen PR sondern am gepushten Branch. || core/release/NOTES.md bekommt eine Unreleased-Zeile dafuer."
