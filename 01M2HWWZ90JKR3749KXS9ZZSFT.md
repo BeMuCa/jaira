@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:15:04Z
+updated-at: 2026-09-15T13:15:08Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -41,7 +41,8 @@ outcome-resolves: "Wie die Aenderung gemacht wird, steht fest; die offene Entsch
 - [ ] Die Commit-Liste eines Tickets bleibt vollstaendig, obwohl die Ticket-Datei seltener committet wird. Nachgestellt an einem Ticket, das die Lanes durchlaeuft und danach 'jaira move' in die Endlane erreicht - die abgeleitete Liste nennt jeden Code-Commit, der zu ihm gehoert.
 - [x] Die Regel steht dort, wo ein Agent sie liest: im erzeugten jaira-Block und in den Rollen-Prompts, nicht nur in einem Ticket.
   proof: core/board/announce.go:92 (erzeugter Block, Punkt 'a lane that changed no code commits nothing'); core/role/builtin/jaira-role-lane/SKILL.md:32; core/role/builtin/jaira-role-pr/SKILL.md:29; docs/AGENTS.md:72; .claude/skills/jaira/SKILL.md:277; README.md:843
-- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased, falls sich etwas an der Ableitung oder am Verhalten der Befehle aendert.
+- [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased, falls sich etwas an der Ableitung oder am Verhalten der Befehle aendert.
+  proof: core/release/NOTES.md:16 unter ## Unreleased; core/release TestNotes gruen
 
 ## Options
 
