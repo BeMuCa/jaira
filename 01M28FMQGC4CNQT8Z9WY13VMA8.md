@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:33:17Z
+updated-at: 2026-09-15T06:33:52Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -45,8 +45,8 @@ question: |-
 outcome-what: "testing-Lane der GitLab-Runde: Gates gruen, DoD 1-4 am Baum verifiziert, Forge-Erkennung auf sechs Fixtures nachgestellt, glab-Flags gegen glab 1.114.0 geprueft und die frisch gebaute Binary schreibt die glab-Zeilen wirklich heraus."
 outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides am Baum und am laufenden Werkzeug bestaetigt, nicht am outcome-Text."
 outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
-claimed-by: DESKTOP-RFTCH11-90589
-claimed-at: 2026-09-15T05:55:12Z
+claimed-by: DESKTOP-RFTCH11-80237
+claimed-at: 2026-09-15T06:33:52Z
 review-summary: "none"
 review-gaps: "Nichts entfernt - die GitLab-Runde (f6ce687 + 9fc224c) traegt reinen Prompt- und Notes-Text, und vier Durchlaeufe haben ihn schon gestrafft. Vier Pruefungen am Baum, nicht am outcome-Text: (1) Doppelung: kein zweiter Ort im Repo erkennt eine Forge oder ruft gh/glab auf - 'grep -rn gitlab|glab|forge --include=*.go/*.md/*.sh' trifft ausser NOTES.md und dem Ticket nur jaira-role-pr/SKILL.md; die zweite Kopie der Remote-Leiter aus core/settings/settings.go war schon in 9fc224c gestrichen, es bleibt genau ein git-config-Griff (jaira.forge), und der ist eine eigene Einstellung. jaira-dispatcher/SKILL.md:173 und jaira-teamlead/SKILL.md:87-99 tragen die PR-Regel in Prosa, nennen aber kein Werkzeug - keine Doppelung, sondern verschiedene Adressaten. (2) Toter Text: nichts zeigt mehr auf den alten Aufbau - 'the gh pr list above' ist weg, kein Go-Test und kein Prompt liest die Sektionsueberschriften (nur core/role/role_test.go:18 kennt den Rollennamen). (3)+(4) Fluff/Kosten: keine, es laeuft nichts in einer Schleife und der Prompt hat keine Wrapper. || Stehen gelassen und warum: (a) SKILL.md:72 ('you do not open the pull request') und :86 ('Either way you never open one') stehen jetzt in derselben Sektion 14 Zeilen auseinander. Gestrichen habe ich sie nicht: die erste steht am Push, die zweite an der Verzweigung - beides Stellen, an denen ein zeilenweise lesender Agent handelt. Dieselbe Entscheidung wie in der optimize-Runde davor, ich mache sie nicht in der Gegenrichtung wieder auf. (b) Die drei Zeilen :46-49 ('Not off jaira.remote') sind Begruendung statt Handlung - die critique-Runde hat sie ausdruecklich behalten, weil jaira.remote sonst als der bessere Griff erscheint (README.md:350-355). (c) NOTES.md haelt zwei Unreleased-Zeilen zu /jaira-role-pr: die aeltere sagt, die Rolle reiche 'die gh pr create-Zeile' heraus, was seit dieser Runde nur noch auf GitHub stimmt. Die neue Zeile sagt das selbst dazu ('where it used to hand you gh commands on every remote'); die fremde Zeile umzuschreiben ist keine Bereinigung dieses Diffs. (d) Der veraltete review-check (erwartet EINEN Treffer fuer 'gh pr create') ist ein Ticketfeld, kein Diff-Befund - gehoert der review-Lane, steht seit der in-progress-Notiz auf dem Ticket. || go build ./... und go test ./... gruen, keine Datei angefasst."
 test-verdict: "pass: go build ./... und go test ./... -race gruen (RC=0, kein FAIL), DoD 1-4 am Baum verifiziert (SKILL.md:36-67 Forge-Regel, :77/:83 Auflisten, :118/:124 create-Zeile, :143-148 Boundaries auf beiden Wegen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 unter Development), alle vier Zweige der Forge-Erkennung auf sechs git-Fixtures nachgestellt, glab 1.114.0 --help bestaetigt --source-branch, -d/--description (kein --body-file) und 'glab mr approve', und eine frisch gebaute Binary schreibt die glab-Zeilen per 'jaira roles install --into' wirklich heraus"
