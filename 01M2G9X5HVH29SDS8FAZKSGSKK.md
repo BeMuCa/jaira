@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:39:02Z
+updated-at: 2026-09-15T05:39:17Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46021
 claimed-at: 2026-09-15T05:37:50Z
-outcome-what: "Alle sieben DoD-Punkte im Baum nachgeprueft und mit Beleg abgehakt; kein Code geaendert, weil keiner fehlte. DoD 2, 3, 6, 7 galten laut Arbeitsanweisung als offen, waren aber bereits durch cc21ca9 erledigt, dessen Commit-Nachricht das nicht sagt. Zusaetzlich geprueft und in einer Notiz festgehalten: scripts/spawn.sh wird wirklich ausgeliefert (role.go:33 'go:embed all:builtin', abgesichert durch role_test.go:75/143/225/254) - sonst zeigte DoD 1 auf ein Skript, das 'jaira roles install' nie installiert. Der Satz ohne DoD-Haken (dispatcher/SKILL.md:171-174, 'You never see the pull request') ist ebenfalls erledigt."
-outcome-why: "Die Haken auf dem Board waren hinter dem Baum zurueck. Ein Ticket, dessen DoD unabgehakt ist, obwohl die Arbeit steht, wird in der Terminal-Lane abgewiesen - und zwar am Ende, wenn das Nachpruefen am teuersten ist. Die Belege muessen an den Punkten stehen, solange noch jemand weiss, welche Zeile welchen Punkt erfuellt."
-outcome-resolves: "Ein Dispatcher liest scripts/spawn.sh aus seinem eigenen Prompt - in beiden Rollen, dispatcher und teamlead -, findet Herdr ueber HERDR_BIN_PATH statt ueber 'command -v herdr', und das Skript legt Zweige mit feat/ an und schreibt keinen fremden COMPOSE_PROJECT_NAME. Nachgestellt an dieser Sitzung: Tab w3:t2H, Label 'KSGSKK/in-progress'."
+outcome-what: "Die vier Befunde aus critique behoben: spawn.sh laesst nur noch 'claude idle'/'claude done' zum send-text durch (statt jedes 'claude*', also auch 'blocked'), die veraltete Portliste im .env-Kommentar ist raus, teamlead/SKILL.md schreibt den spawn.sh-Pfad aus statt ihn zu umschreiben, und dispatcher/SKILL.md beschreibt die Herkunft von COMPOSE_PROJECT_NAME so, wie das Skript sie seit diesem Durchgang hat."
+outcome-why: "Der Torwaechter-Befund ist der einzige mit Verhalten dahinter: ohne die Verengung beantwortet spawn.sh einen Genehmigungsdialog an Stelle des Menschen - genau das, was der Dispatcher-Prompt verbietet. Die anderen drei sind Prompt- und Kommentar-Stellen, die das Skript von vor diesem Diff beschreiben und einen Leser in die Irre fuehren, statt ihm den Weg zu zeigen - das ist der Zweck dieses Tickets."
+outcome-resolves: "Alle sieben DoD-Punkte bleiben erfuellt; die Fixes korrigieren die Umsetzung, nicht ihren Umfang. DoD 5 wird erst durch Fix 2 wirklich wahr: der fremde Stapel stand noch im Kommentar neben dem Code. Keine neue NOTES.md-Zeile, weil die Zeile unter ## Unreleased dieselbe unveroeffentlichte Aenderung beschreibt."
 review-summary: |-
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:70 laesst jeden Zustand durch, der mit 'claude' anfaengt - auch 'blocked', den Herdr fuer einen erkannten Genehmigungsdialog meldet -, und schickt danach in Zeile 72-74 bedingungslos send-text + enter. Genau der Fall, gegen den der Kommentar in Zeile 49-55 den wsl.exe-Start begruendet, und den die Notiz vom 2026-09-14 20:32 fuer dieses Ticket verlangt hat. Stattdessen: Zeile 70 auf dieselben zwei Zustaende verengen, auf denen die Schleife in Zeile 68 bricht ('claude idle'|'claude done'), alles andere mit exit 1 abbrechen.
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:26 nennt im Kommentar noch die Ports '5173, 8000' - VITE_PORT_HOST und BACKEND_PORT_HOST, die derselbe Diff als fremden Stapel geloescht hat. Damit ist der Kommentar die letzte Stelle, an der ein fremdes Projekt in diesem Skript steht. Stattdessen: die Klammer auf die drei Ports kuerzen, die das Skript noch versetzt (80, 5432, 5433).
