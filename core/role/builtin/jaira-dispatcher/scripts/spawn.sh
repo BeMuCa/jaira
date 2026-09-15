@@ -74,8 +74,9 @@ done
 case "${st:-}" in
   claude\ idle|claude\ done) ;;
   claude\ blocked)
-    echo "claude is up in $pane but an approval dialog is waiting on a human:" \
-         "answer it in that pane yourself, then start this worker again" >&2
+    echo "claude is up in $pane but an approval dialog is waiting:" \
+         "report it to the human, let them answer it in that pane," \
+         "then start this worker again" >&2
     exit 1 ;;
   *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;;
 esac

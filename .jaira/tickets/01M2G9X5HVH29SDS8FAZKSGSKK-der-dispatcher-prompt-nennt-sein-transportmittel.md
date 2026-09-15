@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:46:08Z
+updated-at: 2026-09-15T05:52:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-53136
-claimed-at: 2026-09-15T05:43:06Z
-outcome-what: "spawn.sh unterscheidet 'claude blocked' vom Nicht-Hochkommen, und der Teamlead-Absatz bricht wieder bei 80 Zeichen"
-outcome-why: "die einzige Zeile, die ein Dispatcher aus einem fehlgeschlagenen Start liest, sagte bei einem wartenden Genehmigungsdialog das Falsche - er haette den Pane weggeraeumt statt den Menschen zu holen"
-outcome-resolves: "beide Befunde des 2. critique-Durchgangs (spawn.sh:76, teamlead/SKILL.md:46)"
+claimed-by: DESKTOP-RFTCH11-58796
+claimed-at: 2026-09-15T05:49:14Z
+outcome-what: "Die Meldung des 'claude blocked'-Arms in core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76-79 richtet sich jetzt an den Menschen: 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'. Critiques Wortlaut woertlich uebernommen. Eigener case-Arm, exit 1 und der Torwaechter-Kommentar bleiben unveraendert."
+outcome-why: "Die alte Meldung sagte 'answer it in that pane yourself'. Gelesen wird sie nur vom Dispatcher, und jaira-dispatcher/SKILL.md:188-189 verbietet ihm genau das ('never answer for the human'). Das Skript schuetzte den Genehmigungsdialog also vor seinem eigenen send-keys und schickte den Dispatcher im naechsten Satz mit der Hand hinein."
+outcome-resolves: "Der einzige offene Befund aus critique-Durchgang 3 (Notiz 2026-09-15 05:45), den die Arbeitsanweisung von 05:49 als alleinigen Umfang dieser Runde benannt hat. Alle sieben DoD-Punkte waren bereits abgehakt und belegt; dieser Befund haengt an keinem Haken. Gates gruen: go build, go vet, go test ./core/role/..., bash -n spawn.sh."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 ---
 
@@ -247,3 +247,45 @@ spawn.sh:77-78, die Meldung des blocked-Arms an den Menschen richten statt an de
 Danach fehlen noch: optimize, testing (test-verdict ist leer!), review.
 
 Stand des Baums: alle sieben DoD-Punkte sind abgehakt und belegt, go build und go test ./core/role/... waren zuletzt gruen. Kein Commit ist offen, der Arbeitsbaum ist sauber.
+- **2026-09-15 05:49 · Alexander Sacharov** — Arbeitsanweisung fuer diese in-progress-Runde (Dispatcher, 2026-09-15, nach dem Stopp von 05:46). Alex hat den Handoff genommen und entschieden: die Schleife war konvergierend, nicht vertiefend (Befunde 4 -> 2 -> 1, keiner wiederholt, jede Runde auf den Zeilen der vorigen). Es wird KEINE vierte critique-Runde gefahren. Diese Runde behebt den einen offenen Befund, danach folgen optimize, testing und review.
+
+ZU AENDERN, genau eine Stelle: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78, die Meldung des 'claude blocked'-Arms. Sie lautet heute 'answer it in that pane yourself, then start this worker again' und richtet sich damit an den Dispatcher - dem jaira-dispatcher/SKILL.md:188-189 genau das verbietet ('Read its output, report what it is asking, and never answer for the human').
+
+Critiques Vorschlag WOERTLICH uebernehmen, keine dritte eigene Fassung erfinden:
+  'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'
+
+Alles andere an diesem Arm bleibt wie es ist: eigener case-Arm, exit 1, und nur 'claude idle' bzw. 'claude done' duerfen in send-text hinein. Ein blockierter Pane beendet weiterhin, statt Enter zu druecken.
+
+Umfang dieser Runde: NUR diese Meldung. Kein weiteres Aufraeumen, keine neue NOTES.md-Zeile (die Zeile unter ## Unreleased beschreibt dieselbe, noch unveroeffentlichte Aenderung; diese Korrektur ist von aussen nicht zusaetzlich beobachtbar).
+
+Gearbeitet wird im Worktree /home/alex/projects/.worktrees/jaira-13VMA8 auf Zweig feat/13VMA8-pr-is-the-humans. KEIN neuer Worktree, KEIN neuer Zweig. NICHT anfassen: /home/alex/projects/jaira, .worktrees/jaira-9ET6NC (dort laeuft 74VM40) und core/role/builtin/jaira-role-pr/SKILL.md (daran arbeitet im selben Worktree ein zweiter Dispatcher an Ticket 13VMA8).
+
+KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
+- **2026-09-15 05:50 · Alexander Sacharov** — BEFUND aus diesem Dispatcher-Lauf, gegen spawn.sh selbst - gehoert in dieses Ticket, weil es das Skript ist, das hier dokumentiert wird. Kein DoD-Punkt; ob es hier behoben wird, entscheidet der Mensch.
+
+spawn.sh kennt keinen Weg, einen BEREITS BESTEHENDEN Worktree zu benutzen. Es leitet das Ziel immer aus Zeile 15 ab:
+  wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
+Wer als repo-root den Worktree uebergibt, in dem er schon arbeitet, bekommt darum einen VERSCHACHTELTEN zweiten Worktree. Bei mir heute woertlich:
+  bash .../spawn.sh 13VMA8 KSGSKK in-progress /home/alex/projects/.worktrees/jaira-13VMA8
+  -> Preparing worktree (new branch 'feat/13VMA8')
+  -> /home/alex/projects/.worktrees/.worktrees/jaira-13VMA8-13VMA8
+Der Worker lief an: 'herdr pane get w3:p3X' zeigte cwd-Token '~/projects/.worktrees/.worktrees/jaira-13VMA8-13VMA8', Zustand 'working'. Also ein Worker auf einem frisch abgezweigten feat/13VMA8 statt auf dem Zweig, auf dem die Arbeit liegt - genau die Klasse von stillem Fehlgriff, vor der dispatcher/SKILL.md beim Thema Worktrees warnt ('a plausible wrong file'). Ich habe den Tab w3:t2S geschlossen, den Worktree entfernt und den Zweig feat/13VMA8 geloescht.
+
+Die Umgehung, die funktioniert, und die der Lauf vom 05:30 schon benutzt hat: als repo-root das HAUPTREPOSITORY uebergeben und als slug den Teil, der den bestehenden Worktree-Namen ergibt -
+  bash .../spawn.sh 13VMA8 KSGSKK <lane> /home/alex/projects/jaira
+Dann trifft Zeile 15 genau /home/alex/projects/.worktrees/jaira-13VMA8, der 'if [ ! -d "$wt" ]'-Waechter greift, und weder Worktree noch Zweig werden angelegt. Das ist aber eine Umgehung ueber die Namensableitung und steht in keinem Prompt - wer sie nicht kennt, baut sich den verschachtelten Worktree.
+
+Was fehlt, falls ein Folgeticket das aufgreift: eine ausdrueckliche Moeglichkeit, den Worktree vorzugeben (Umgebungsvariable oder viertes Argument als Worktree statt als repo-root), und ein Prompt-Satz dazu. Ein Dispatcher, der in einen bestehenden Zweig weiterarbeiten soll - genau der Fall nach einem Handoff -, hat ihn heute nicht.
+- **2026-09-15 05:51 · Alexander Sacharov** — in-progress 2026-09-15 (4. Runde, nach dem Handoff von 05:46/05:49): der eine offene Befund aus critique-Durchgang 3 ist behoben, sonst nichts angefasst.
+
+spawn.sh:76-79 - die Meldung des 'claude blocked'-Arms richtet sich jetzt an den Menschen statt an den Dispatcher: 'report it to the human, let them answer it in that pane, then start this worker again'. Critiques Wortlaut woertlich uebernommen, wie die Arbeitsanweisung es verlangt - keine dritte eigene Fassung.
+
+Warum die Meldung dreizeilig umgebrochen ist und nicht zweizeilig wie vorher: der neue Text ist laenger, und die Datei bricht sonst bei <=80 Zeichen. Wer sie spaeter zu zwei Zeilen zusammenzieht, baut den Ausreisser wieder ein, den critique in teamlead/SKILL.md:46 schon einmal gemeldet hat.
+
+Absichtlich NICHT angefasst, obwohl in dieser Datei benachbart: der '*'-Arm mit 'claude did not come up' bleibt, der eigene case-Arm bleibt, exit 1 bleibt. Der Kommentar 70-73 bleibt unveraendert - er begruendet die Verengung des Torwaechters, nicht die Meldung.
+
+Warum keine neue NOTES.md-Zeile: unveraendert der Grund aus Runde 2 und 3 - die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung, und dies ist eine Korrektur des Meldungstexts eines Skripts, von aussen nicht zusaetzlich beobachtbar.
+
+Nur die eigenen Dateien committet: im selben Worktree arbeitet ein zweiter Dispatcher an 13VMA8 (core/role/builtin/jaira-role-pr/SKILL.md, core/release/NOTES.md, das 13VMA8-Ticket). Kein 'git add -A' - das haette dessen offene Arbeit mit eingesammelt.
+
+Gates: go build, go vet, go test ./core/role/... gruen; bash -n auf spawn.sh gruen.
