@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:24:53Z
+updated-at: 2026-09-15T20:29:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -104,21 +104,37 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Milestone-Schreibweg an den Ref haengen, wie attachRefs es fuer Tickets tut (internal/cli/root.go:255)
 - [x] Test: zwei Klone, in einem ein Milestone angelegt, im anderen nach jaira fetch sichtbar - ohne dass ein Zweig gemergt wurde
 - [x] core/release/NOTES.md unter ## Unreleased: je eine Zeile fuer den Befehl, den Listen-Schalter, die Board-Geste, die rechte Kartenkante und das Dateiformat
-- [x] core/gitref: DeleteMilestone als Gegenstueck zu Delete - refDelete auf MilestoneRefName(name), ErrNoRef heisst nichts zu tun
-- [x] core/outbox: OpDelete fuer KindMilestone zulassen - send() (core/outbox/outbox.go:361) weist ihn heute ab, samt Kommentar, der das Gegenteil behauptet
-- [x] core/refsync: RecordMilestoneDelete nach dem Vorbild von RecordDelete (core/refsync/refsync.go:133) - Lease aus MilestoneSHA, Weg ueber die Outbox, damit Loeschen offline funktioniert
-- [x] core/milestone: Delete(root, name) entfernt die Datei; os.ErrNotExist durchreichen, wie Load es tut
-- [~] internal/cli: 'jaira milestone rm' loescht Datei und Ref, wenn die letzte Zeile herausgenommen wird - ein Aufruf, ein Schreibvorgang; Meldung sagt, dass der Milestone weg ist
-- [ ] Test DoD 8: letztes Ticket herausnehmen - Datei weg, 'milestone ls' nennt ihn nicht, Index leer, also keine Karte traegt seine Farbe
-- [ ] Test: 'jaira milestone create' ohne Tickets legt eine leere Datei an und sie bleibt liegen - die Regel haengt am Herausnehmen, nicht am Leersein
-- [ ] Test mit zwei Klonen: nach dem Loeschen holt 'jaira fetch' den Milestone NICHT zurueck (sonst schreibt IncomingMilestones ihn wieder hin)
-- [ ] internal/cli logbook: 'jaira logbook <name>' erkennt einen Milestone, nachdem die Ticket-Aufloesung nicht greift; er wandert nach .jaira/logbook/<initials>-<datum>/milestones/<name>.md, und sein Ref wird geraeumt
-- [ ] Weigerung festlegen und bauen: ein Milestone geht nur ins Logbuch, wenn jede seiner Ticket-Zeilen in der Terminal-Lane steht oder schon abgelegt ist - Gegenstueck zu der Regel, die 'jaira logbook <id>' fuer ein Ticket hat
-- [ ] listLogbook zeigt abgelegte Milestones mit an, sonst ist die Datei da und die Liste sagt es nicht
-- [ ] Restore: eine Datei aus einem milestones/-Unterordner landet in .jaira/milestones/ statt in TicketsDir (core/ticket/store.go:464) und kommt ueber RecordMilestone wieder auf ihren Ref; Farbe und Mitgliederliste unveraendert
-- [ ] Test DoD 9: ablegen - vom Board weg und 'milestone ls' nennt ihn nicht; restore - Liste und Farbe zurueck, Karte wieder gefaerbt
-- [ ] Hilfetexte und docs/COMMANDS.md: das Verschwinden bei 'jaira milestone rm' und das Ablegen bei 'jaira logbook' - beide Stellen liest man VOR dem Aufruf
-- [ ] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
+- [-] core/gitref: DeleteMilestone als Gegenstueck zu Delete - refDelete auf MilestoneRefName(name), ErrNoRef heisst nichts zu tun
+- [-] core/outbox: OpDelete fuer KindMilestone zulassen - send() (core/outbox/outbox.go:361) weist ihn heute ab, samt Kommentar, der das Gegenteil behauptet
+- [-] core/refsync: RecordMilestoneDelete nach dem Vorbild von RecordDelete (core/refsync/refsync.go:133) - Lease aus MilestoneSHA, Weg ueber die Outbox, damit Loeschen offline funktioniert
+- [-] core/milestone: Delete(root, name) entfernt die Datei; os.ErrNotExist durchreichen, wie Load es tut
+- [-] internal/cli: 'jaira milestone rm' loescht Datei und Ref, wenn die letzte Zeile herausgenommen wird - ein Aufruf, ein Schreibvorgang; Meldung sagt, dass der Milestone weg ist
+- [-] Test DoD 8: letztes Ticket herausnehmen - Datei weg, 'milestone ls' nennt ihn nicht, Index leer, also keine Karte traegt seine Farbe
+- [-] Test: 'jaira milestone create' ohne Tickets legt eine leere Datei an und sie bleibt liegen - die Regel haengt am Herausnehmen, nicht am Leersein
+- [-] Test mit zwei Klonen: nach dem Loeschen holt 'jaira fetch' den Milestone NICHT zurueck (sonst schreibt IncomingMilestones ihn wieder hin)
+- [-] internal/cli logbook: 'jaira logbook <name>' erkennt einen Milestone, nachdem die Ticket-Aufloesung nicht greift; er wandert nach .jaira/logbook/<initials>-<datum>/milestones/<name>.md, und sein Ref wird geraeumt
+- [-] Weigerung festlegen und bauen: ein Milestone geht nur ins Logbuch, wenn jede seiner Ticket-Zeilen in der Terminal-Lane steht oder schon abgelegt ist - Gegenstueck zu der Regel, die 'jaira logbook <id>' fuer ein Ticket hat
+- [-] listLogbook zeigt abgelegte Milestones mit an, sonst ist die Datei da und die Liste sagt es nicht
+- [-] Restore: eine Datei aus einem milestones/-Unterordner landet in .jaira/milestones/ statt in TicketsDir (core/ticket/store.go:464) und kommt ueber RecordMilestone wieder auf ihren Ref; Farbe und Mitgliederliste unveraendert
+- [-] Test DoD 9: ablegen - vom Board weg und 'milestone ls' nennt ihn nicht; restore - Liste und Farbe zurueck, Karte wieder gefaerbt
+- [-] Hilfetexte und docs/COMMANDS.md: das Verschwinden bei 'jaira milestone rm' und das Ablegen bei 'jaira logbook' - beide Stellen liest man VOR dem Aufruf
+- [-] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
+- [ ] Arbeitsbaum zurueckdrehen: der komplette Loeschweg aus Runde 1 faellt weg - gitref.DeleteMilestone+refDelete, milestone.Delete, outbox OpDelete/PendingMilestone, refsync.RecordMilestoneDelete und das automatische Wegnehmen in internal/cli/milestones.go; 'git checkout --' auf die fuenf Dateien, denn DoD 8 will das Gegenteil und DoD 10 braucht keinen Ref-Abbau
+- [ ] Test DoD 8: letztes Ticket mit 'jaira milestone rm' herausnehmen - die Datei bleibt, 'milestone ls' nennt ihn unveraendert; dazu 'create' ohne Tickets, die leere Datei bleibt ebenfalls liegen
+- [ ] core/milestone: Status aus der Frontmatter lesen ('status: filed'), Filed() dazu, und SetStatus, das die Zeile in der Frontmatter setzt, einfuegt oder entfernt, ohne eine andere Zeile anzufassen - dieselbe verbatim-Regel wie Add/Remove; die Paket-Doku sagt, was 'filed' bedeutet
+- [ ] Test: SetStatus auf eine von Hand editierte Datei (Kommentar, eigene Reihenfolge, fehlende Frontmatter) - jede andere Zeile unveraendert, Load liest den Status zurueck
+- [ ] core/ticket/store.go: Ablegen und Zurueckholen fuer den Unterordner milestones/ - eine LogbookMilestone-Haelfte schiebt .jaira/milestones/<name>.md nach .jaira/logbook/<ordner>/milestones/, und Restore (store.go:464) findet eine Datei auch dort und legt sie nach milestone.Dir statt TicketsDir; Mehrdeutigkeit bleibt ein Fehler wie heute
+- [ ] internal/cli logbook: 'jaira logbook <name>' erkennt einen Milestone, nachdem die Ticket-Aufloesung nicht greift - nur ausdruecklich benannt, nie von '--all' mitgenommen; die Meldung nennt den Ablageort und 'jaira restore'
+- [ ] Weigerung: ein Milestone geht nur ins Logbuch, wenn jede seiner Ticket-Zeilen in der Terminal-Lane steht oder nicht mehr auf dem Board liegt - Gegenstueck zu der Regel, die 'jaira logbook <id>' fuer ein Ticket hat
+- [ ] Der Ref bleibt stehen und traegt den Status: beim Ablegen SetStatus('filed') auf den Inhalt, der ueber recordMilestone/RecordMilestone an den Ref geht. Kein Ref-Abbau - ein geraeumter Ref gibt den Namen wieder frei (DoD 11) und der zweite Klon erfaehrt nichts
+- [ ] core/refsync IncomingMilestones (refsync.go:194): einen Ref, dessen Inhalt 'filed' sagt, NICHT auf die Platte schreiben. Eine schon vorhandene lokale Datei wird dabei nicht geloescht - jaira loescht keine Datei, die es nur gelesen hat
+- [ ] Test DoD 10 mit zwei Arbeitsbaeumen: im ersten ablegen, im zweiten 'jaira fetch' - der Milestone erscheint dort nicht auf dem Board, und der Ref steht weiter und traegt 'filed'
+- [ ] internal/cli milestone create: nach der lokalen Pruefung (milestones.go:107) den Ref lesen - traegt er 'filed', wird abgelehnt mit dem Hinweis auf 'jaira restore'. Ohne brauchbare Refs greift derselbe Blick ins lokale Logbuch, sonst legt ein ungeteiltes Board denselben Namen zweimal an
+- [ ] Restore eines Milestones: die Status-Zeile wieder entfernen und ueber recordMilestone erneut an den Ref - sonst liegt er auf dem Board, waehrend sein Ref weiter 'filed' sagt und jeder andere Klon ihn ausblendet
+- [ ] listLogbook/logbookNames (internal/cli/logbook.go:224) listen den Unterordner milestones/ mit, sonst liegt die Datei da und die Liste sagt es nicht
+- [ ] Test DoD 9 und 11: ablegen - vom Board weg, 'milestone ls' schweigt, keine Karte traegt die Farbe, das Logbuch nennt ihn; 'create' mit demselben Namen wird abgelehnt; 'restore' - Liste, Farbe und Karte zurueck
+- [ ] Hilfetexte und docs/COMMANDS.md: 'jaira logbook' nennt den Milestone-Fall, 'jaira milestone rm' bleibt bei 'der Milestone bleibt stehen', 'create' nennt den belegten Namen - alle drei liest man VOR dem Aufruf
+- [ ] DoD 12: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -345,3 +361,20 @@ Dieser Weg ist ab jetzt FALSCH, in beiden Haelften:
 Der Diff liegt als Patch unter dem Scratchpad dieser Dispatcher-Sitzung (inprogress-round1-deletepath.patch), falls jemand eine Zeile daraus doch braucht. Der Arbeitsbaum wurde ABSICHTLICH nicht zurueckgesetzt: was davon stehenbleibt, entscheidet die Plan-Lane und nicht der Dispatcher.
 
 Der Plan-Schritt 'core/gitref: DeleteMilestone als Gegenstueck zu Delete' steht auf [~] und ist der erste, den die neue Plan-Runde anfassen muss.
+- **2026-09-15 20:29 · Alexander Sacharov** — pre-process, Runde 3 (DoD 8-12 nach Alex' Umkehrung), 2026-09-15. Die Plan-Schritte 18-32 sind SUPERSEDED, nicht erledigt: sie beschrieben den Loeschweg, und den gibt es nicht mehr. Die Schritte 33-48 sind der Ersatz und stehen in der Reihenfolge, in der sie gebaut werden.
+
+DER GANZE DIFF IM ARBEITSBAUM GEHT WEG, alle fuenf Dateien. Nachgesehen, ob eine Zeile davon ueberlebt: keine. gitref.DeleteMilestone, milestone.Delete, outbox OpDelete fuer KindMilestone, outbox.PendingMilestone, refsync.RecordMilestoneDelete und das automatische Wegnehmen in milestones.go loesen alle dasselbe Problem - einen Milestone-Ref abbauen - und DoD 10 sagt ausdruecklich, dass er stehen bleibt. Auch das herausgezogene refDelete geht zurueck: es haette dann wieder nur einen Aufrufer, und genau das war Finding 3 der critique-Runde 2. Der Patch liegt im Scratchpad der Dispatcher-Sitzung, falls doch jemand eine Zeile sucht.
+
+WIE DER STATUS AUSSIEHT, das war die offene Frage der Plan-Lane: eine Zeile 'status: filed' in der Frontmatter der Milestone-Datei, neben color und created-at. Kein eigenes Registry und keine zweite Datei, weil die Datei laut CLAUDE.md die API ist und ein Mensch in einem Diff lesen koennen muss, warum ein Milestone nicht mehr auf dem Board steht. Englisch, weil die Dateien und der Code englisch sind - im Ticket heisst es 'abgelegt', in der Datei 'filed'. Fehlt die Zeile, steht der Milestone auf dem Board; das ist der Zustand jeder heute existierenden Datei, also braucht es keine Migration.
+
+Setzen und Entfernen brauchen ein SetStatus in core/milestone, kein Neuschreiben der Datei: Save schreibt m.lines verbatim zurueck, und wer die Frontmatter neu baut, verliert Kommentare und Reihenfolge - genau das, was DoD 1 abgesichert hat.
+
+WARUM DER REF DIE WAHRHEIT IST UND NICHT DER GEGNER: IncomingMilestones (core/refsync/refsync.go:194) schreibt jede Milestone-Datei, die die Refs tragen, auf die Platte. Ein abgelegter Milestone mit abgebautem Ref kaeme nicht zurueck - aber sein Name waere auch wieder frei, und dann legen zwei Rechner zwei Milestones mit einer Identitaet an. Mit dem Status im Ref-Inhalt ist beides in einem Zug geloest: der Leser sieht 'filed' und schreibt ihn nicht aufs Board (Schritt 41), und 'milestone create' sieht denselben Ref und lehnt den Namen ab (Schritt 43).
+
+WAS ICH ENTSCHIEDEN HABE, WEIL DIE DoD ES OFFEN LAESST:
+- 'jaira logbook <name>' fasst einen Milestone nur an, wenn er BENANNT ist. '--all' sweept die Terminal-Lane und bleibt bei Tickets. Grund: --all ist der Schnitt, den jemand macht, wenn er Stunden eintraegt, und dieser Schnitt darf keine Gruppe mitnehmen, an die niemand gedacht hat - dieselbe Sorge, die im Hilfetext von logbook schon mit den neunundvierzig fremden Tickets steht.
+- Reihenfolge der Aufloesung: erst Ticket, dann Milestone. Ein Milestone-Name ist frei gewaehlt und koennte wie ein Handle aussehen; das Ticket gewinnt, weil es die haeufigere und die aeltere Bedeutung ist.
+- Ein Milestone, der auf einem anderen Rechner abgelegt wird, verschwindet dort NICHT automatisch vom Board: der Fetch schreibt ihn nur nicht mehr hin. Eine lokale Datei zu loeschen, weil ein Ref das sagt, waere das erste Mal, dass jaira eine Datei entfernt, die es nur gelesen hat. DoD 10 verlangt es auch nicht - dort steht 'schreibt ihn NICHT wieder aufs Board'. Wer dort aufraeumt, legt selber ab.
+- Der Ref-Blick in 'create' reicht auf einem ungeteilten Board nicht (dort gibt es keine Refs), deshalb zusaetzlich der Blick ins lokale Logbuch. Zwei Quellen, aber die Suchfunktion braucht Restore ohnehin.
+
+NICHT ENTSCHIEDEN UND AUCH NICHT NOETIG: ob ein abgelegter Milestone jemals wieder aus dem Logbuch verschwindet. 'jaira restore' holt ihn zurueck, sonst liegt er da - genau wie ein abgelegtes Ticket.
