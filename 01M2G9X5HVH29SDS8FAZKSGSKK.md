@@ -30,11 +30,11 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:32:54Z
+updated-at: 2026-09-15T06:33:35Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-77218
-claimed-at: 2026-09-15T06:31:06Z
+claimed-by: DESKTOP-RFTCH11-79721
+claimed-at: 2026-09-15T06:33:35Z
 outcome-what: "spawn.sh leitet COMPOSE_PROJECT_NAME jetzt so ab, dass Docker den Namen annimmt: printf statt echo (kein angehaengter Unterstrich aus dem Zeilenumbruch), erst kleinschreiben, dann saeubern. NOTES.md:19 sagt das statt nur 'kein fremder Projektname mehr'."
 outcome-why: "Der abgeleitete Name war zwar nicht mehr fremd, aber unbrauchbar: 'docker compose config' wies repo__SLUG3 als 'invalid project name' zurueck, also startete der Worker-Stapel gar nicht erst - genau das, wofuer der .env-Block da ist."
 outcome-resolves: "DoD 5, jetzt funktionsgeprueft statt nur gelesen (my_repo_ksgskk, Compose v2.40.3, RC=0); DoD 6 traegt die richtige Zeilennummer fuers Label-Format."
