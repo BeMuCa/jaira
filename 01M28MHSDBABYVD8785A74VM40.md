@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:52:50Z
+updated-at: 2026-09-15T05:53:45Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56199
@@ -196,3 +196,4 @@ Looked at and left, with reasons:
 - lane.Load not layering the builtins under an existing board is still ticket 1K9KZS and still out of this lane.
 
 gofmt, go vet ./... and go test ./core/... ./internal/cli/... ./internal/tui/...: all green after each edit.
+- **2026-09-15 05:53 · Alexander Sacharov** — testing muss gegen 7ecf9f2 neu laufen. Der test-verdict im Ticket stammt vom 14.09. 20:08 und ist ueberholt: seitdem sind 343912c (NOTES-Schwelle 'ten or more', handle in 'jaira logbook --all --json', gepinnt von TestTheCutJSONNamesEachHandle) und 7ecf9f2 (--all --json rendert jetzt ueber trimmedJSON und traegt zusaetzlich title; 'Status == lane && !ReadOnly' nur noch einmal in filesInLane()) gelandet. Ein alter Verdict darf dieses Ticket nicht in eine Menschen-Lane tragen - das ist hier viermal passiert.
