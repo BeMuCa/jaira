@@ -26,11 +26,11 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:16:22Z
+updated-at: 2026-09-15T07:18:08Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-40747
-claimed-at: 2026-09-15T06:57:22Z
+claimed-by: DESKTOP-RFTCH11-74981
+claimed-at: 2026-09-15T07:18:08Z
 outcome-what: "core/lane/corrections.go: benannte, einmalige, feldgenaue Lane-Korrektur im Ladepfad; entfernt 'logbook-on-entry: true' aus einem done.md, das erkennbar die von 2ecc670 ausgelieferte Datei ist, meldet es und merkt sich das in .jaira/lanes/corrections. Eine selbstgeschriebene Lane wird gemeldet, nie editiert. Tests: core/lane/corrections_test.go (6), core/move/oldboard_test.go (end-to-end). Eine Zeile in core/release/NOTES.md unter ## Unreleased."
 outcome-why: "Boards von vor 9ad7aa9 fegen beim Move nach done weiterhin fremde fertige Tickets ins Logbuch (Issue #6), weil Load bei ProjectLanesActive nur das Lane-Verzeichnis liest - eine einmal geschriebene Lane-Datei ist fuer immer die Wahrheit. Die Handarbeit-Anweisung der 0.1.4-Notiz greift nicht, weil .jaira/lanes/ gitignored ist und die Zeile pro Checkout einzeln entfernt werden muesste."
 outcome-resolves: "DoD 1-6 abgehakt mit Proof; go test ./... -race RC=0; alle drei Faelle zusaetzlich von Hand mit gebautem Binary nachgestellt"
