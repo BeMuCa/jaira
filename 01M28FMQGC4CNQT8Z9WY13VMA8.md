@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:50:29Z
+updated-at: 2026-09-15T06:50:33Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -278,3 +278,7 @@ Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - 
 - Die Anweisung an den Menschen verweist zurueck auf Sprosse 1 ('it is rung 1 above'), damit der Leser sieht, dass die Einstellung beim naechsten Lauf wirklich greift und der Neustart nicht ins selbe Loch faellt.
 - NOTES.md: eine neue Zeile statt die bestehende GitLab-Zeile zu aendern. Die alte bleibt wahr ('it names no tool and tells you to set jaira.forge'); das Anhalten ist eine zusaetzliche Verhaltensaenderung, die ein Leser separat merken muss. Zwei Zeilen zur selben Rolle im selben Unreleased-Block sind Absicht.
 - Nachgeprueft statt geglaubt: 'roles install --into /tmp/rollen' aus einer frisch gebauten Binary traegt den neuen Absatz - der go:embed-Pfad ist also mit.
+- **2026-09-15 06:50 · Alexander Sacharov** — Zwischenfall in diesem Worktree (2026-09-15): die parallel laufende KSGSKK-Sitzung hat mit einem weiten 'git add' meine beiden Dateien mitgenommen. Commit 79bb6de ('chore(KSGSKK): review passes the dispatcher spawn round ...') traegt core/role/builtin/jaira-role-pr/SKILL.md (+6) und core/release/NOTES.md (+1) - die Aenderung dieser Runde - unter einer fremden Ticket-Id.
+- Nicht repariert, bewusst: die Historie dieses Branches gehoert gerade zwei Sitzungen gleichzeitig; ein rebase oder amend haette der anderen unter den Haenden weggezogen. Der Inhalt ist richtig und liegt am Baum.
+- Folge fuer die Commit-Ableitung: dieser Commit nennt 13VMA8 nicht. Die Ticket-Datei selbst ist in 79bb6de aber ebenfalls geaendert, und die Ableitung nimmt die Vereinigung aus Ticket-Datei-Historie UND Commits, die die Id nennen - 79bb6de faellt also ueber den ersten Weg trotzdem in die Liste.
+- Fuer die naechste Runde in einem geteilten Worktree: 'git add <pfade>' statt 'git add -A'. Der Rollen-Prompt jaira-role-lane sagt heute 'git add -A' und ist damit genau die Anleitung, die diesen Zusammenstoss erzeugt hat.
