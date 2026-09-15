@@ -12,7 +12,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:48:02Z
-updated-at: 2026-09-15T06:48:28Z
+updated-at: 2026-09-15T06:48:32Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 context: |-
@@ -34,6 +34,9 @@ context: |-
 ## Definition of Done
 
 - [ ] 'jaira lanes use --all' bringt jede Lane des Boards auf den mitgelieferten oder Katalog-Stand. Nachgestellt an einem Board mit dreizehn Lanes, von denen mehrere veraltet sind: ein Aufruf genuegt, und die Ausgabe sagt je Lane, was passiert ist.
+- [ ] Eine Lane, die der Mensch geaendert hat, wird gemeldet und nicht angefasst - wie 'jaira roles install' es tut, mit Abschlusscode 3 und einem eigenen --force, das sie ueberschreibt. Nachgestellt an einer Lane mit einer Aenderung von Hand.
+- [ ] Eine Lane, die byteweise dem mitgelieferten Stand entspricht, gilt nicht als geaendert: ein zweiter Lauf meldet sie als unveraendert und endet mit Code 0.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
