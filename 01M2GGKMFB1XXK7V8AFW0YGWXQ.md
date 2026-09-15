@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:15:19Z
+updated-at: 2026-09-15T18:15:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -254,3 +254,10 @@ Was der Code nicht erklaert:
 - docs/COMMANDS.md: die vier milestone-Zeilen stehen in der Writing-Tabelle, auch 'ls'. In der Looking-Tabelle waere es sauberer sortiert, aber dann stuenden die vier Befehle einer Familie in zwei Tabellen - 'jaira tags' steht auch bei Looking und 'jaira tag' bei Writing, und genau das sucht man beim Lesen zweimal.
 
 Nicht angefasst, ausserhalb der Lane: .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md und demo-ui.md liegen als untracked Dateien im Worktree - Rueckstand eines Demolaufs von Hand. Sie sind NICHT committet worden; wer aufraeumt, loescht sie einfach.
+- **2026-09-15 18:15 · Alexander Sacharov** — critique-Runde 4, 2026-09-15: KEIN Finding. Die drei Findings aus Runde 3 sind nachgemessen behoben - internal/cli/milestones.go:50-54 sagt jetzt, dass der Dateiname der Name ist und die Frontmatter color und created-at traegt; grep ueber 0-255/1-255 findet --color nur noch als 1-255 an :80, :125, :148 und in docs/COMMANDS.md:132, die einzige verbliebene 0-255-Stelle ist 'jaira tag', das seit Runde 2 begruendet unangetastet bleibt; docs/COMMANDS.md:57 hat --milestone und :132-135 die vier Zeilen fuer create/add/rm/ls.
+
+Was ich darueber hinaus gelesen habe, statt nur den Zuwachs: core/milestone/milestone.go ganz, internal/cli/milestones.go ganz, der TUI-Diff (model.go/view.go) und der Ref-Weg (outbox.go, refsync.go, fetch.go, tickets.go). Nichts Neues. Jedes exportierte Stueck von core/milestone hat einen Aufrufer - nachgesehen fuer Names, For, Matches, HasColour, Members, NormalizeName, Build, LoadAll, AssignColour, Add, Remove - also keine Abstraktion ohne Nutzer mehr, was in Runde 1 und 2 die haeufigste Sorte war.
+
+Ausdruecklich NICHT aufgemacht, weil in Runde 1 bis 3 stehengelassen und die Begruendung traegt: dass IncomingMilestones die lokale Datei ueberschreibt, die mit tag geteilte Palette, der Index in newListCmd statt loadEnv, gitref mit zwei Namensraeumen statt einem generischen (Art, Name), der fehlende Loeschweg (Ticket N71NVG), und der Titel, der weiter 'Sprint' sagt.
+
+Die Schleife hat konvergiert: 9, 6, 3, 0. Das ist der vorgesehene Ausgang der Lane und keine Nachsicht - eine vierte Runde haette nur wiederholt, was schon beantwortet ist.
