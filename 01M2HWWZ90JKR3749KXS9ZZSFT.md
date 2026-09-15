@@ -1,7 +1,7 @@
 ---
 id: 01M2HWWZ90JKR3749KXS9ZZSFT
 title: Zwei von drei Commits aendern nur eine Ticket-Datei
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Zweig zeigt die Arbeit, nicht die Buchhaltung: wer den Verlauf liest, sieht Aenderungen am Werkzeug und nicht jede Lane, die einen Vermerk hinterlassen hat."
@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:06:59Z
+updated-at: 2026-09-15T13:07:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -28,6 +28,9 @@ context: |-
   Was dabei nicht kaputtgehen darf: jaira leitet die Commit-Liste eines Tickets aus der Vereinigung zweier Quellen ab - der Historie der Ticket-Datei UND der Commits, die seine Id nennen. Faellt die erste Quelle weg, haengt alles daran, dass Commits die Id im Betreff tragen. Heute tun sie das ohnehin ('fix(KSGSKK): ...'), aber aus einer Gewohnheit wird damit eine Bedingung.
 claimed-by: DESKTOP-RFTCH11-41016
 claimed-at: 2026-09-15T13:03:43Z
+outcome-what: "Plan geschrieben: zehn Schritte, die die Commit-Regel an ihrer Quelle aendern - core/board/announce.go und core/role/builtin/jaira-role-lane/SKILL.md - statt ein Gate zu bauen."
+outcome-why: "Die Buchhaltungs-Commits entstehen aus einer Instruktion, die bedingungslos formuliert ist ('git add -A und commit'). Eine Lane ohne Code-Aenderung kann sie nur erfuellen, indem sie allein committet. Der Hebel ist der Text, nicht der Code - jaira committet nie selbst."
+outcome-resolves: "Wie die Aenderung gemacht wird, steht fest; die offene Entscheidung ueber die Ticket-Datei nach der letzten Code-Lane ist als Plan-Schritt 2 benannt und in einer Notiz mit Empfehlung (a: der Ref traegt sie) hinterlegt."
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
