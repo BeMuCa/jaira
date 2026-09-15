@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:43:33Z
+updated-at: 2026-09-15T05:44:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53136
@@ -38,9 +38,7 @@ claimed-at: 2026-09-15T05:43:06Z
 outcome-what: "spawn.sh unterscheidet 'claude blocked' vom Nicht-Hochkommen, und der Teamlead-Absatz bricht wieder bei 80 Zeichen"
 outcome-why: "die einzige Zeile, die ein Dispatcher aus einem fehlgeschlagenen Start liest, sagte bei einem wartenden Genehmigungsdialog das Falsche - er haette den Pane weggeraeumt statt den Menschen zu holen"
 outcome-resolves: "beide Befunde des 2. critique-Durchgangs (spawn.sh:76, teamlead/SKILL.md:46)"
-review-summary: |-
-  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76 meldet fuer JEDEN abgelehnten Zustand 'claude did not come up in $pane' - fuer 'claude blocked' ist das falsch: claude ist sehr wohl hochgekommen und wartet auf einen Menschen vor einem Dialog. Der Kommentar darueber hebt genau diesen Fall hervor, die einzige Ausgabe des Skripts widerspricht ihm. Stattdessen: eigener case-Arm 'claude blocked)' mit einer Meldung, die sagt, was zu tun ist - in dem Pane wartet ein Dialog, ihn selbst beantworten und erneut starten - und danach ebenfalls exit 1.
-  core/role/builtin/jaira-teamlead/SKILL.md:46 ist 103 Zeichen lang; die naechstlange Zeile der Datei hat 82, der Rest bricht bei ~78. Der Pfad-Einschub aus diesem Durchgang ist in den Umbruch hineingelaufen. Stattdessen: Absatz 44-46 auf die Breite der Datei neu umbrechen.
+review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
