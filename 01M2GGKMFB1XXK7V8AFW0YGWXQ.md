@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:54:05Z
+updated-at: 2026-09-15T18:09:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -244,3 +244,8 @@ Das Ticket liegt in in-progress. Die drei offenen Findings aus Runde 3 sind alle
 Was ich als Beobachtung dazuschreibe und worauf ich ausdruecklich NICHT handle: die Findings werden kleiner (9, dann 6, dann 3), keines wurde wiederholt, und Runde 3 findet nur, was Runde 1 und 2 verursacht haben. Von innen sieht das nach einer Schleife aus, die konvergiert. Genau so sieht aber auch eine Schleife aus, die nie endet, weil jede Runde tiefer liest. Welche von beiden das hier ist, kann nur ein Mensch entscheiden.
 
 Zum Weitermachen: eine vierte in-progress-Runde mit genau diesen drei Findings ist ein kleiner, klar begrenzter Auftrag. Danach stehen noch optimize, testing und review aus.
+- **2026-09-15 18:09 · Alexander Sacharov** — Alex hat am 2026-09-15 die vierte in-progress-Runde freigegeben, nachdem der Dispatcher nach drei critique-Ruecksendungen angehalten hatte. Danach laufen optimize, testing und review wie vorgesehen.
+
+Ausserdem entschieden, und damit ist der Punkt zu: die rechte Kartenkante bleibt, wie sie gebaut ist - eine Zelle je Milestone, von oben, hoechstens drei. KEINE Volleinfaerbung aller drei Zellen bei nur einem Milestone. Grund: die Karte soll zeigen, in wie vielen Gruppen ein Ticket steht, und das geht nur, wenn eine Zelle eine Gruppe ist. Wer das spaeter wieder aufmachen will, liest hier, dass es nicht vergessen, sondern entschieden wurde.
+
+Auf dem Board liegen drei Milestones demo-ui, demo-board-dateien und demo-naechste-version, absichtlich mit ueberlappenden Tickets (0YGWXQ in allen dreien, DBJTKQ in zweien). Sie sind eine Vorfuehrung, keine echte Gruppierung, und sie liegen auch auf upstream. Wer sie wegraeumt: es gibt noch keinen Befehl dafuer, das ist Ticket N71NVG.
