@@ -40,11 +40,11 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:15:01Z
+updated-at: 2026-09-15T20:16:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-86471
-claimed-at: 2026-09-15T18:09:30Z
+claimed-by: DESKTOP-RFTCH11-10944
+claimed-at: 2026-09-15T20:16:14Z
 outcome-what: "Alex hat in der human-Lane drei Forderungen gestellt; der Ref war schon da, Logbuch-Ablage und das Verschwinden eines leeren Milestones fehlen"
 outcome-why: "ein Milestone ohne Lebensende sammelt sich an: leere Dateien, tote Refs und Farben auf Karten, die zu nichts mehr gehoeren"
 outcome-resolves: "DoD 8-10 auf dem Ticket ergaenzt, Befund je Forderung in der Notiz vom 2026-09-15"
