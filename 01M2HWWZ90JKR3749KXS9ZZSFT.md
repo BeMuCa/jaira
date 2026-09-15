@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T15:05:27Z
+updated-at: 2026-09-15T15:05:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -141,3 +141,4 @@ Der Umbruch auf 80 Zeichen war fast ein Fehler: ein automatischer Reflow hat '`g
 - **2026-09-15 15:00 · Alexander Sacharov** — Der Befund aus der testing-Lane, refsync laufe auf diesem Board nicht, ist falsch. Nachgeprueft in diesem Worktree: 'git for-each-ref refs/jaira' nennt 53 Ticket-Refs, darunter refs/jaira/tickets/01M2HWWZ90JKR3749KXS9ZZSFT; der Inhalt dieses Refs traegt 'status: human' - denselben Stand wie die Datei im Arbeitsbaum. Das Remote kommt nicht aus 'git config jaira.remote' (hier ungesetzt), sondern aus ~/.jaira/settings.json ('remote': 'upstream'), Stufe 2 der Leiter in core/settings/settings.go:149. Die testing-Lane hat nur die erste Stufe geprueft und deren Fehlen fuer fehlende Synchronisation gehalten.
 
 Entscheidung des Maintainers auf die human-Frage: Weg a. Es gibt keinen Abschluss-Commit. Die Regel gilt unveraendert und deckt beide Faelle ab - gibt es einen Ref, haelt er den Zustand; gibt es keinen, wartet die Ticket-Datei im Arbeitsbaum und faehrt mit dem naechsten Commit mit, der Code traegt. An der Implementierung aendert das nichts.
+- **2026-09-15 15:05 · Alexander Sacharov** — Review-Lane: kein Rueckversand, aber ein Fund, der im Diff nicht sichtbar ist. Die Regel macht ein Ticket ohne jeden Code-Commit in der Endlane unpassierbar: core/gate/gate.go:328 verlangt eine Commit-Liste, DeriveCommits findet ohne Code-Commit und ohne Ticket-Datei-Historie nichts, und die Verweigerungsmeldung raet ausgerechnet 'Commit the change with the ticket file alongside it'. Vorher fiel das nicht auf, weil jede Lane die Ticket-Datei committete. Nirgends dokumentiert - weder im erzeugten Block noch in core/release/NOTES.md, die beide nur den Fall 'Handle in der Commit-Nachricht vergessen' nennen. Ausweg existiert ('jaira set <id> commits=<sha>' / 'jaira move --commits'), wird aber niemandem gesagt. Kein Blocker fuer diesen Zweig, Entscheidung fuer Signoff: Halbsatz nachziehen oder Folge-Ticket. Zweiter, kleinerer Fund: der committete Stand der Ticket-Datei auf dem Branch ist ab jetzt immer der Stand des letzten Code-Commits, ein PR-Diff zeigt also nie review-summary/gaps/verdict - gemildert dadurch, dass jaira-role-pr die Beschreibung aus 'jaira show --json' im Worktree liest, aber als bewusste Folge nirgends benannt.
