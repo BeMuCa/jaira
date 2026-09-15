@@ -1,7 +1,7 @@
 ---
 id: 01M28MHSDBABYVD8785A74VM40
 title: "Das Logbuch wird abgelegt, wenn ein Mensch es sagt, nicht wenn ein Ticket fertig wird"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Fertige Tickets sammeln sich in done, und wer seine Stunden eintraegt, legt sie mit einem Befehl als Tagesordner ab - das Board sagt Bescheid, wenn sich viel angesammelt hat, entscheidet aber nichts"
@@ -21,15 +21,15 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:16:02Z
+updated-at: 2026-09-15T05:18:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3200
 claimed-at: 2026-09-15T05:06:12Z
 question: "Review hat dieses Ticket einmal abgelehnt, mit vier Gruenden. Drei sind behoben und von testing auf einer eigenen Scratch-Doska nachgestellt: die Board-Zeile nennt jetzt 'jaira logbook --all' woertlich, ein Test liest die gerenderte Zeile, und die Schwelle steht als feste Zehn da wie du entschieden hast. Der vierte ist Ticket 1K9KZS geworden: core/lane/lane.go:479 legt die eingebauten Lanes nicht unter ein Board, das es schon gibt, also behaelt jede vor dieser Aenderung entstandene Doska ihr 'logbook-on-entry' - auf dieser hier hat das heute zugeschlagen. Die Frage an dich ist diese Teilung: geht 74VM40 so durch und die Migration lebt als eigenes Ticket weiter, oder soll sie hier landen, weil die Release-Notiz dieses Tickets sonst etwas behauptet, das fuer aeltere Boards nicht gilt?"
-outcome-what: "cut a forwarder and two hand-built error literals out of internal/cli/logbook.go"
-outcome-why: "the change had the package spelling one call two ways; nothing else in the diff carried weight in nothing"
-outcome-resolves: "optimize lane: review-gaps written, no behaviour changed, suite green"
+outcome-what: "NOTES.md:46 nennt jetzt dieselbe Schwelle wie die DoD und der Code ('ten or more' statt 'more than ten'), und 'jaira logbook --all --json' traegt handle neben id und file; TestTheCutJSONNamesEachHandle nagelt den Schluessel fest"
+outcome-why: "critique Runde 4 fand beides in den eigenen Dateien der Aenderung: ein Leser, der ueber beide NOTES-Abschnitte aktualisiert, bekam von derselben Aenderung zwei verschiedene Schwellen genannt, und --all ist der Schnitt, den ein Agent faehrt - der schreibt den Commit danach mit dem Handle, den die JSON-Ausgabe nicht hergab"
+outcome-resolves: "beide Befunde aus critique Runde 4; nichts darueber hinaus"
 review-summary: |-
   core/release/NOTES.md:46 says 'a board holding more than ten finished tickets says so in its hint bar'; internal/tui/model.go:768 returns 0 only when n < fileReminder, so the line appears AT ten, not above it - and this ticket's own later note at NOTES.md:18 says 'once ten or more finished tickets sit in the terminal lane'. Two lines of the same change contradict each other and one is wrong. Change 'more than ten' to 'ten or more' on line 46.
   internal/cli/logbook.go:118 emits each filed ticket as {id, file}; logbookOut ten lines below (logbook.go:200) emits handle beside id, and --all's own human output prints ticket.Handle(f.ID). An agent that cuts with --all and then has to name what it filed in a commit message - 'fix(A3K9QP): ...', the form CLAUDE.md requires - gets only the 26-char ULID and has to slice it itself. Add "handle": ticket.Handle(f.ID) to that map, the same key logbookOut already uses.
@@ -152,3 +152,12 @@ ABHAENGIGKEIT, die daran haengt: wird 0.2.1 getaggt, BEVOR 1K9KZS drin ist, dann
 (2) logbookAll's --json entries carry id and file but not handle, while logbookOut (logbook.go:200) carries handle and --all's own text output prints it. Round two fixed the trim_error gap in this same map and round three read the branch and let the rest stand, so this was never raised, not re-raised. It matters for the same reason trim_error did: --all is the cut an agent runs, and the next thing that agent does is name what it filed in a commit message by handle.
 
 Deliberately not raised: the optimize cut (0facda1) is clean - the stampCommits forwarder and the two hand-built codedError literals are gone and archive.go:73 and logbookOut both go through s.StampCommits and fail(). The 'Status == lane && !ReadOnly' predicate in three places stays let-stand, as rounds two and three left it. lane.Load not layering builtins under an existing board is ticket 1K9KZS and stays there - Alex decided that split.
+- **2026-09-15 05:18 · Alexander Sacharov** — in-progress nach critique Runde 4: beide Befunde umgesetzt, nichts darueber hinaus.
+
+(1) NOTES.md:46 sagt jetzt 'ten or more' statt 'more than ten' und stimmt damit mit NOTES.md:18 unter ## Unreleased, mit der DoD ('zehn oder mehr') und mit model.go:768 ('if n < fileReminder { return 0 }') ueberein. Wieder eine Korrektur innerhalb der geschlossenen Sektion ## 0.1.4 - genau die Klasse Edit, die Alex am 2026-09-14 20:31 bereits gebilligt hat; keine zweite Zeile unter ## Unreleased.
+
+(2) logbookAll traegt handle neben id und file in die --json-Eintraege (logbook.go:126), wie logbookOut es seit jeher tut.
+
+Gelernt beim Pinnen: der Handle IST der Schwanz der ID. Ein erster Test, der nur strings.Contains(out, ticket.Handle(id)) prueft, ist gruen ohne die Aenderung - er findet den Handle im id-Feld. Die Behauptung muss auf dem Schluessel stehen: strings.Contains(out, `"handle": "`+handle+`"`). Gegenprobe gefahren: mit entferntem handle-Schluessel faellt TestTheCutJSONNamesEachHandle, mit ihm laeuft sie. Genau der Fehler, den Runde eins schon einmal durchgelassen hat (der Schwellen-Test prueft nur den Zaehler, nie die gerenderte Zeile) - ein Test, der die Aussage nicht wirklich festnagelt.
+
+Nicht angefasst: 1K9KZS (lane.Load legt die Builtins nicht unter ein bestehendes Board) bleibt eigenes Ticket, so entschieden.
