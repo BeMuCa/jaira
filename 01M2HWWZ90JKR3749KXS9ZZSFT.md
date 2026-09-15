@@ -14,7 +14,7 @@ related: []
 commits:
   - 5164191ae41d9168398545a5d5915974f85ca343
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:32:35Z
+updated-at: 2026-09-15T13:34:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -32,9 +32,7 @@ claimed-at: 2026-09-15T13:03:43Z
 outcome-what: "Die Formulierung 'the `jaira logbook <id>` commit' ist in allen sieben Kopien durch 'the commit that files the ticket away with `jaira logbook <id>`' ersetzt: core/board/announce.go:100 (und darueber erzeugt AGENTS.md:71 und CLAUDE.md:98), docs/AGENTS.md:76, .claude/skills/jaira/SKILL.md:281, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:848, core/release/NOTES.md:17 sowie die handgeschriebenen PR-Abschnitte AGENTS.md:186 und CLAUDE.md:176, die 'jaira update' nicht anfasst. Die Absaetze in docs/AGENTS.md und .claude/skills/jaira/SKILL.md, in die der logbook-Halbsatz im vorigen Durchgang eingefuegt wurde, laufen wieder durchgehend auf 80 Zeichen."
 outcome-why: "Befund (2) des zweiten critique-Durchgangs: der alte Wortlaut macht jaira zum Urheber des Commits. Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei, und .claude/skills/jaira/SKILL.md:289 sagt sechs Zeilen tiefer 'jaira never commits for you' - der Widerspruch stand auf einem Bildschirm. Befund (1): der eingefuegte Halbsatz war nicht neu umbrochen, docs/AGENTS.md:77 lief auf 123 und .claude/skills/jaira/SKILL.md:282 auf 120 Zeichen mitten in einem 80er-Absatz; der naechste Diff dieses Absatzes haette jede Zeile neu gefaerbt."
 outcome-resolves: "Beide Befunde des zweiten critique-Durchgangs sind erledigt; kein 'logbook ... commit' in diesem Wortlaut bleibt im Baum (grep leer). DoD 3 und 4 bleiben getickt und werden praeziser: die Regel lautet in allen Quellen gleich und behauptet nichts Falsches ueber das Werkzeug. DoD 1 und 2 bleiben der testing-Lane vorbehalten. go build ./... und go test ./... gruen; der Zweig traegt drei Commits, jeder mit Code und Handle im Betreff, keiner nur mit .jaira/."
-review-summary: |-
-  docs/AGENTS.md:77 und .claude/skills/jaira/SKILL.md:282: der eingefuegte Halbsatz wurde nicht neu umbrochen - mitten im auf 80 Zeichen umbrochenen Absatz steht jetzt eine Zeile mit 123 bzw. 120 Zeichen ("... carries its final state. Nothing is lost by waiting ..."). Den Absatz in beiden Dateien wieder auf die Breite der Nachbarzeilen umbrechen, sonst faerbt der naechste Diff dieses Absatzes jede Zeile neu.
-  .claude/skills/jaira/SKILL.md:281 sagt "the 'jaira logbook <id>' commit", sechs Zeilen darunter sagt Zeile 289 "jaira never commits for you". Die beiden Saetze widersprechen sich in derselben Datei: jaira legt keinen Commit an, Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei. Stattdessen "the commit that files the ticket away with 'jaira logbook <id>'" schreiben - in dieser Datei zwingend, und derselben Formulierung wegen gleich mit in core/board/announce.go:100, docs/AGENTS.md:76, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:847 und core/release/NOTES.md:17.
+review-summary: none
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
