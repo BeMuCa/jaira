@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:55:19Z
+updated-at: 2026-09-15T06:55:39Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -46,8 +46,8 @@ question: |-
 outcome-what: "Critique uebersprungen"
 outcome-why: "Alex: critique ist auf diesem Ticket zweimal ohne Befund geschlossen, die Aenderung ist ein Satz"
 outcome-resolves: "DoD 3 - 'gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten' - ist jetzt nicht nur gesagt, sondern durchgesetzt: die Rolle kann den falschen Befehl nicht mehr raten, weil sie vor dem ersten Befehl stehenbleibt. Proof auf DoD 3 aktualisiert. go test ./... -race: Exit 0, kein FAIL; 'roles install --into' aus einer frisch gebauten Binary traegt den neuen Absatz, der go:embed-Pfad ist also mit."
-claimed-by: DESKTOP-RFTCH11-19054
-claimed-at: 2026-09-15T06:45:11Z
+claimed-by: DESKTOP-RFTCH11-38871
+claimed-at: 2026-09-15T06:55:39Z
 review-summary: "Die Rolle jaira-role-pr spricht jetzt zwei Forges. Neu ist die Sektion 'Which forge this repository is on' (SKILL.md:36-67): zuerst 'git config jaira.forge' - ist es gesetzt, gewinnt es ohne Wenn und Aber; sonst entscheidet der Host von 'git remote get-url origin', also des Remotes, auf den der Branch gepusht wird (github.com -> gh, Host mit 'gitlab' -> glab); gibt der Host nichts her, nennt die Rolle kein Werkzeug, sagt das und schreibt die eine Zeile hin, die es klaert ('git config jaira.forge gitlab'). Dass 'origin' und nicht 'jaira.remote' gelesen wird, steht mit Begruendung im Text (:46-49) - jaira.remote traegt die Ticket-Refs und ist im Fork das Upstream, waehrend der Branch zum Fork geht. Danach sind genau drei Stellen zweisprachig: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create --body-file / :124 glab mr create --description \"$(cat ...)\") und die Boundaries (:143-148). Der uebrige Ablauf bleibt einmalig, statt als zweite Kopie zu existieren. Der Wortwechsel ist begrenzt: :65-67 weist an, 'pull request' NUR auf dem GitLab-Weg als 'merge request' zu lesen - der GitHub-Weg redet weiter von Pull Requests. Ausserdem hat 9fc224c die Abfrage der offenen Requests aus der Forge-Sektion in die Push-Sektion verschoben, wo der Branch tatsaechlich genommen wird. Dazu eine Unreleased-Zeile in core/release/NOTES.md:20 und ein Satz in der SKILL-description."
 review-gaps: |-
   Ein Befund, klein aber echt, und genau von der Sorte, die kein Test sieht: Zweig 4 der Forge-Leiter (SKILL.md:55-63, Host ist weder github.com noch gitlab-haltig, jaira.forge ungesetzt) laesst den ausfuehrenden Agenten ohne Anweisung fuer den Rest der Datei stehen. Er soll sagen, dass er es nicht entscheiden kann, und 'git config jaira.forge' nennen - aber es steht nirgends, ob er danach anhaelt oder weiterliest. Liest er weiter, steht er bei :71 vor einem unbedingten 'git push -u origin HEAD' und bei :74-84 vor einer Gabel 'auf GitHub ... oder auf GitLab ...', die er per Voraussetzung nicht aufloesen kann. Kein Widerspruch, aber eine Luecke: ein Satz wie 'Stop here and report; the rest of this file needs a settled forge' schliesst sie. Die Definition of Done ist davon nicht verletzt - DoD 3 verlangt nur, dass die Rolle es sagt statt zu raten, und das tut sie.
