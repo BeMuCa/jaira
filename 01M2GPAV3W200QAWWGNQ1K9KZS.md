@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:01:11Z
+updated-at: 2026-09-15T07:02:01Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
@@ -55,7 +55,7 @@ outcome-resolves: "Der Plan sagt Schritt fuer Schritt, wie DoD 1 bis 5 erreicht 
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] read migrateLegacy (core/lane/lane.go:645) and stampCreatorLine (core/lane/share.go:60) - the two precedents for a once-only, surgical edit of a board's lane files
+- [x] read migrateLegacy (core/lane/lane.go:645) and stampCreatorLine (core/lane/share.go:60) - the two precedents for a once-only, surgical edit of a board's lane files
 - [ ] design the correction record: an embedded list of named corrections (lane id, the defect, the one field it removes, the sentence the user is told) plus an 'applied' marker file beside 'order', so each correction touches a board once and never again
 - [ ] write the board fixture: a board whose done.md still carries 'logbook-on-entry: true', built the way an old board was
 - [ ] failing test: a move into done on that fixture files nothing and leaves the other finished tickets standing
