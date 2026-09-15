@@ -2,7 +2,7 @@
 id: 01M2HS9CJZVKSH7352DT179VBX
 title: "Die PR-Rolle kann nur GitHub, obwohl ein Board schon auf GitLab liegt"
 status: backlog
-ready: false
+ready: true
 creator: Alexander Sacharov
 goal: "Die Rolle, die fertige Arbeit zur Abgabe bringt, funktioniert auf einem GitLab-Repository genauso wie auf GitHub - ohne dass jemand den ausgelieferten Prompt von Hand umschreibt."
 context: |-
@@ -25,7 +25,7 @@ related:
   - 01M28FMQGC4CNQT8Z9WY13VMA8
 commits: []
 created-at: 2026-09-15T05:40:26Z
-updated-at: 2026-09-15T05:40:44Z
+updated-at: 2026-09-15T05:40:46Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -35,6 +35,10 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Auf einem Repository, dessen Remote auf GitLab zeigt, listet die Rolle die offenen Merge Requests des aktuellen Zweigs und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus. Nachgestellt auf dem requirementsgenie-Board oder einem Fixture mit einem GitLab-Remote.
+- [ ] Auf GitHub aendert sich nichts: derselbe Prompt tut dort weiterhin genau das, was er heute tut. Nachgestellt auf diesem Repository.
+- [ ] Der Forge wird erkannt, ohne dass jemand pro Board etwas einstellen muss, solange der Remote es hergibt - und wenn er es nicht hergibt, sagt die Rolle das, statt den falschen Befehl zu raten.
+- [ ] Die Regel aus 13VMA8 steht auf beiden Wegen und stimmt: der Agent schreibt die Zeile aus und fuehrt sie nie aus, merged nie und gibt nie frei. Nachgestellt, indem beide Wege gelesen werden - kein 'Never run' darf auf einem Weg fehlen.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
