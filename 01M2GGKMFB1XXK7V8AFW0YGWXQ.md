@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:23:46Z
+updated-at: 2026-09-15T20:24:43Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -334,3 +334,14 @@ Warum das die richtige Loesung ist - es raeumt genau die Falle weg, die in der N
 Der Ref haelt ausserdem den Namen belegt. Das ist DoD 11 und Alex' zweite Sorge in einem Satz ('sonst kann es sich wiederholen'): wer nach dem Ablegen denselben Namen noch einmal anlegt, bekommt zwei Milestones mit einer Identitaet, die auf verschiedenen Rechnern verschieden aussehen. Statt dessen wird das Anlegen abgelehnt, mit dem Hinweis auf 'jaira restore'.
 
 Damit ist die Plan-Lane nicht mehr blockiert. Was sie noch selbst entscheidet: wie der Status heisst und wo er steht (Frontmatter-Feld der Milestone-Datei ist der naheliegende Ort), und ob 'jaira logbook' den Milestone von sich aus anfasst oder ob er ausdruecklich benannt werden muss.
+- **2026-09-15 20:24 · Alexander Sacharov** — Dispatcher, 2026-09-15 20:2x: die in-progress-Runde 1 wurde ABGEBROCHEN, nicht fertig. Grund: Alex hat mitten in der Runde DoD 8 umgedreht und DoD 10-12 dazugelegt, und der Worker baute genau das Gegenteil.
+
+Was er gebaut hatte, unfertig und NICHT committet, im Arbeitsbaum liegend (core/gitref/gitref.go, core/milestone/milestone.go, core/outbox/outbox.go, core/refsync/refsync.go, internal/cli/milestones.go, zusammen ~120 Zeilen): den kompletten LOESCHWEG. gitref.DeleteMilestone plus ein herausgezogenes refDelete, milestone.Delete auf der Datei, outbox.PendingMilestone, OpDelete fuer KindMilestone im Sendeweg, und in milestones.go das automatische Wegnehmen eines leer geraeumten Milestones.
+
+Dieser Weg ist ab jetzt FALSCH, in beiden Haelften:
+- DoD 8 sagt jetzt, ein leer geraeumter Milestone BLEIBT STEHEN. Das automatische Loeschen in milestones.go ist damit nicht mehr gewollt.
+- DoD 10 sagt, der Ref eines abgelegten Milestones wird NICHT geraeumt, sondern traegt den Status. DeleteMilestone/refDelete/OpDelete loesen also ein Problem, das es nicht mehr gibt.
+
+Der Diff liegt als Patch unter dem Scratchpad dieser Dispatcher-Sitzung (inprogress-round1-deletepath.patch), falls jemand eine Zeile daraus doch braucht. Der Arbeitsbaum wurde ABSICHTLICH nicht zurueckgesetzt: was davon stehenbleibt, entscheidet die Plan-Lane und nicht der Dispatcher.
+
+Der Plan-Schritt 'core/gitref: DeleteMilestone als Gegenstueck zu Delete' steht auf [~] und ist der erste, den die neue Plan-Runde anfassen muss.
