@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:50:39Z
+updated-at: 2026-09-15T05:50:43Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -80,7 +80,7 @@ conflict-theirs-question: ""
 - [x] Beide Wege am Stueck von oben nach unten lesen - auf keinem darf 'Never run'/'never merge'/'never approve' fehlen
 - [x] Erkennung auf Fixtures nachstellen: gitlab.com-Remote, github.com-Remote, selbstgehosteter Host + jaira.forge
 - [x] NOTES.md: Unreleased-Zeile fuer den GitLab-Weg
-- [ ] go test ./... -race gruen, dann committen
+- [~] go test ./... -race gruen, dann committen
 
 ## Progress
 - **2026-09-14 19:48 · Alexander Sacharov** — Am 2026-09-14 aus human zurueck nach critique geholt: das Ticket stand in human, ohne dass eine einzige Schleifen-Lane ein Feld hinterlassen hatte - kein review-summary, kein test-verdict, nichts. Das question-Feld trug nur meine eigene Anweisung zurueck ('ein Agent macht keinen PR auf'), keine Frage an einen Menschen. Der Sprung ueber die Lanes hinweg faellt heute nicht auf; D28H7V im Backlog ist genau dafuer da.
