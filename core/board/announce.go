@@ -100,10 +100,9 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  that carries code takes it along; if no further code commit follows, the\n" +
 	"  commit that files the ticket away with `jaira logbook <id>` carries its\n" +
 	"  final state. Nothing is lost by waiting: the lane's writes are already on\n" +
-	"  the ticket, and the commit list is derived from the id in the message, not\n" +
-	"  from the ticket file. The one ticket that still earns a commit of its own is\n" +
-	"  a ticket you create and hand to someone else — commit it, or nobody but you\n" +
-	"  knows it exists\n" +
+	"  the ticket. The one ticket that still earns a commit of its own is a ticket\n" +
+	"  you create and hand to someone else — commit it, or nobody but you knows it\n" +
+	"  exists\n" +
 	"- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its\n" +
 	"  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the\n" +
 	"  board. `jaira restore <file>` brings it back\n" +

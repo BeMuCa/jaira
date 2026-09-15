@@ -70,10 +70,9 @@ Working a ticket:
   that carries code takes it along; if no further code commit follows, the
   commit that files the ticket away with `jaira logbook <id>` carries its
   final state. Nothing is lost by waiting: the lane's writes are already on
-  the ticket, and the commit list is derived from the id in the message, not
-  from the ticket file. The one ticket that still earns a commit of its own is
-  a ticket you create and hand to someone else — commit it, or nobody but you
-  knows it exists
+  the ticket. The one ticket that still earns a commit of its own is a ticket
+  you create and hand to someone else — commit it, or nobody but you knows it
+  exists
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back

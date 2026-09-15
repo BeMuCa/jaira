@@ -842,10 +842,10 @@ getting weaker.
 **Nothing lands on `master` directly.** A change is made on a branch of its own,
 the ticket rides in the same commits as the code, and the branch arrives through
 a pull request — which is what makes the diff readable: the change and what it
-was for in one place. It rides with the code and never alone: a lane that changed
-no code — critique, testing, review — commits nothing at all, and leaves the
-ticket file for the next commit that carries code — or, when none follows, for
-the commit that files it away with `jaira logbook` — so the branch shows the
+was for in one place. It rides with the code and never alone: a lane that
+changed no code — critique, testing, review — commits nothing at all, and leaves
+the ticket file for the next commit that carries code — or, when none follows,
+for the commit that files it away with `jaira logbook` — so the branch shows the
 work rather than one entry per lane that passed over it.
 
 The pull request belongs to the maintainer from the moment it exists. An agent
