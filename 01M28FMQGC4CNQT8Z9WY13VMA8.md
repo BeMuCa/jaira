@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:50:11Z
+updated-at: 2026-09-15T05:50:29Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -78,7 +78,7 @@ conflict-theirs-question: ""
 - [x] SKILL.md: Forge-Erkennung in 'Before you push anything' - git config jaira.forge, sonst Remote-Host, sonst stehenbleiben und die Einstellung nennen
 - [x] SKILL.md: Abfrage der offenen Requests, die create-Zeile und die Boundaries nennen beide Werkzeuge (gh/glab); 'Merge Request' nur auf der GitLab-Seite
 - [x] Beide Wege am Stueck von oben nach unten lesen - auf keinem darf 'Never run'/'never merge'/'never approve' fehlen
-- [ ] Erkennung auf Fixtures nachstellen: gitlab.com-Remote, github.com-Remote, selbstgehosteter Host + jaira.forge
+- [x] Erkennung auf Fixtures nachstellen: gitlab.com-Remote, github.com-Remote, selbstgehosteter Host + jaira.forge
 - [ ] NOTES.md: Unreleased-Zeile fuer den GitLab-Weg
 - [ ] go test ./... -race gruen, dann committen
 
