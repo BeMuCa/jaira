@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:06:37Z
+updated-at: 2026-09-15T13:06:59Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -60,4 +60,13 @@ claimed-at: 2026-09-15T13:03:43Z
 - [ ] am eigenen Ticket nachstellen: nach critique, testing und review zeigt 'git log --name-only origin/master..HEAD' keinen Commit, der nur .jaira/ anfasst
 
 ## Progress
+- **2026-09-15 13:06 · Alexander Sacharov** — Der Plan ist reine Textarbeit, kein Code: die Regel, die die Buchhaltungs-Commits erzeugt, steht an genau einer Stelle als Quelle - core/role/builtin/jaira-role-lane/SKILL.md sagt heute bedingungslos 'move the ticket, then git add -A and commit'. Der erzeugte Block (core/board/announce.go:87) sagt dasselbe als 'the ticket rides in the same commit as the code'. Eine Lane, die keinen Code anfasst, kann die Regel nur erfuellen, indem sie allein committet - daher die 62 von 92.
 
+Warum kein Code: nichts in jaira committet selbst. Der Zug wird von einem Worker ausgefuehrt, der einen Prompt liest. Ein Gate, das '.jaira/-only-Commit' verbietet, koennte man bauen, aber es wuerde nach der Tat greifen und die Lane in eine Sackgasse setzen, in der sie ihren Vermerk nirgends unterbringt. Die Instruktion ist der Hebel.
+
+Die offene Entscheidung (Plan-Schritt 2): was mit der Ticket-Datei geschieht, nachdem die letzte Code-Lane committet hat. critique, testing und review laufen danach und schreiben Notizen. Zwei Wege:
+(a) Der Ref traegt sie, git nie. Die Ticket-Datei bleibt im Arbeitsbaum geaendert; jaira-role-pr muss seine Vorbedingung 'nothing uncommitted' entsprechend verengen, sonst blockiert sie jeden Push. Preis: nach dem Merge steht auf master eine veraltete Ticket-Datei, bis irgendein spaeterer Commit sie mitnimmt. Der Zustand ist nicht verloren - refsync.Pull holt ihn vom Ref zurueck.
+(b) Ein einziger Abschluss-Commit vor dem Push. Preis: das ist wieder ein Commit, der nur .jaira/ anfasst, und widerspricht der DoD woertlich.
+Ich wuerde (a) nehmen, weil die DoD (b) ausschliesst und der Kontext genau dieses Argument macht: die Commits bewahren nichts, Record() tut es.
+
+Was dabei kippen kann und Schritt 3 prueft: die abgeleitete Commit-Liste (core/gitrepo/derive.go:19) ist die Vereinigung aus Ticket-Datei-Historie und Commits, die die Id nennen. Faellt die erste Quelle fuer die spaeten Lanes weg, haengt alles an der zweiten. Das Nennen der Id im Betreff wird damit von einer Gewohnheit zur Bedingung - und das muss im erzeugten Block stehen, nicht nur hier.
