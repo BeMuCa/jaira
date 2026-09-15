@@ -14,6 +14,8 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+
+## 0.2.1
 - Ignore the 0.1.4 note telling you to delete `logbook-on-entry: true` from `.jaira/lanes/done.md` by hand: a board made before that change now loses the line by itself the next time jaira reads it, once per board, and says on stderr — even under `--json`, and whichever command happens to read the board first — which file it changed and how to write the line back if you want the old doorway. A `done.md` you wrote yourself is never edited — it is reported instead, with the line to remove, because a lane file you hold is your lane.
 - Expect `jaira logbook --all` and a lane's `holds` cap alike to leave tickets that live only on a ref where they are, instead of naming each one as a problem they could not file: a ticket with no file on this disk is not yours to file, so a lane full of other people's ref-only tickets no longer trims your own off the board, and the count the board reminds you with now matches the set the command takes.
 - Read `handle` and `title` beside `id` and `file` in every entry of `jaira logbook --all --json`: the cut now reports a filed ticket exactly as `jaira move` reports one it swept, so a script that names what it filed in a commit message no longer has to look the handle up.
