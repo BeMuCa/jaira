@@ -13,7 +13,7 @@ related:
   - 01M2HX6SYCFB27V26R5APWAF22
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-09-15T07:31:14Z
+updated-at: 2026-09-15T07:31:18Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 context: |-
@@ -37,6 +37,10 @@ context: |-
 ## Definition of Done
 
 - [ ] Ein Board haelt fest, wie Arbeit bei ihm ankommt - durch einen Pull Request oder direkt auf dem Hauptzweig - und die Rollen richten sich danach. Nachgestellt an zwei Boards mit verschiedener Einstellung: auf dem einen schiebt die Rolle den Zweig und haelt an, auf dem anderen fuehrt sie die Arbeit ohne Pull Request zu Ende.
+- [ ] Die Einstellung reist mit dem Repository, nicht mit dem Rechner und nicht mit dem Klon: wer klont, erbt sie. Nachgestellt an einem frischen Klon.
+- [ ] Ein ausgelieferter Rollen-Prompt richtet sich danach, obwohl er fuer alle gleich ausgeliefert wird - und wie er davon erfaehrt, steht begruendet im Ticket, nicht nur im Code.
+- [ ] Ein Board ohne Einstellung verhaelt sich wie heute: durch einen Pull Request. Wer nichts tut, merkt nichts.
+- [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
 
 ## Options
 
