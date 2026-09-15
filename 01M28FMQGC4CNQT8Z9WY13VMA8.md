@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:56:51Z
+updated-at: 2026-09-15T06:57:22Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -305,3 +305,8 @@ Warum das nicht kosmetisch ist: die Proofs sind genau das, was jaira-role-pr in 
 
 Fix, fuenf Minuten: 'jaira dod 13VMA8 1|2|4 --done --proof "..."' mit den oben genannten richtigen Zeilen. Inhaltlich ist nichts zu aendern - nur die Anker. Danach lohnt ein Blick, ob review-check Schritt 4 ('genau EIN Treffer fuer gh pr create') noch stimmt; die vorige Runde hat ihn selbst schon als ueberholt notiert.
 - **2026-09-15 06:55 · Alexander Sacharov** — in-progress-Runde nach dem testing-fail vom 2026-09-15: der Befund ist AUSSCHLIESSLICH, dass die Proof-Zeilen von DoD 1, 2 und 4 seit 9fc224c sechs Zeilen zu frueh zeigen - DoD 2 belegt den GitLab-Weg mit den gh-Zeilen :83/:124 statt :89/:130. Am Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und an core/release/NOTES.md ist NICHTS zu aendern: Gates sind gruen, alle vier Sprossen der Forge-Leiter verhalten sich richtig, Sprosse 4 haelt jetzt vor dem Push an. Zu tun: jede Proof-Zeile einmal am aktuellen Baum nachschlagen (grep/sed auf der Datei, nicht aus dem Gedaechtnis) und per "jaira dod 13VMA8 <n> --done --proof ..." neu setzen, sodass jede genannte Zeilennummer wirklich das zeigt, was sie behauptet. Danach nichts weiter. NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md (paralleles Ticket KSGSKK im selben Worktree). Keinen Pull Request oeffnen oder aktualisieren.
+- **2026-09-15 06:57 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (Rueckgabe aus testing): nur Anker gesetzt, keine Datei ausserhalb von .jaira/ angefasst.
+- Jede der vier Proof-Zeilen am Baum nachgeschlagen, nicht aus dem testing-Bericht uebernommen - und dabei zwei Anker gefunden, die testing selbst nicht genannt hatte: DoD 4 belegte den Wortwechsel mit ':65-67' (dort steht heute die Stop-Anweisung von Sprosse 4), richtig ist :71-73; DoD 3 sagte ':36-68' fuer die Leiter und ':65-68' fuer den Halt, beides eine Zeile zu kurz - die Leiter laeuft :41-69, der Halt :65-69.
+- Warum die Proofs jetzt einzelne Zeilen statt nur Spannen nennen (DoD 3 und 4): eine Spanne verschiebt sich beim naechsten Absatz lautlos mit und niemand merkt es; eine benannte Einzelzeile pro Behauptung faellt beim Nachschlagen sofort durch. Genau dieser Fehler hat diese Runde erzeugt.
+- Nicht angefasst, obwohl es auffaellt: der Proof von DoD 1 belegt mit SKILL.md:92-97 die Verzweigung der PR-Rolle, waehrend DoD 1 selbst von der Regel in CLAUDE.md/AGENTS.md/README handelt. Der Satzteil gehoert inhaltlich nicht dorthin. Die Anweisung dieser Runde war ausdruecklich nur, Zeilennummern richtigzustellen - den Proof umzuschreiben waere eine zweite Aenderung, ueber die critique entscheiden soll.
+- Keine NOTES.md-Zeile und kein Code: diese Runde aendert nichts, was ein Nutzer der Binary bemerken kann. Aus demselben Grund keine Gate-Laeufe - kein .go und kein eingebetteter Prompt hat sich geaendert (git status zeigt nur die Ticketdatei).
