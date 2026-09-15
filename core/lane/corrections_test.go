@@ -1,11 +1,25 @@
 package lane
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// hears redirects what a correction says into a buffer for the length of one
+// test. The report is written to stderr rather than returned, because it has
+// one chance to be read (see applyCorrections), so a test that wants to check
+// it has to listen where a person does.
+func hears(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := correctionsOut
+	correctionsOut = &buf
+	t.Cleanup(func() { correctionsOut = prev })
+	return &buf
+}
 
 // oldBoard builds a board the way a build from before 9ad7aa9 left one: every
 // shipped lane as a file, a done.md that still carries logbook-on-entry: true,
@@ -40,6 +54,7 @@ func oldBoard(t *testing.T, doneFile string) (root, donePath string) {
 // every other byte of the file it had.
 func TestCorrectionRemovesTheDoorwayFromAnOldBoard(t *testing.T) {
 	root, donePath := oldBoard(t, doneDoorway)
+	said := hears(t)
 
 	set, err := Load(root)
 	if err != nil {
@@ -64,8 +79,11 @@ func TestCorrectionRemovesTheDoorwayFromAnOldBoard(t *testing.T) {
 	if string(got) != string(want) {
 		t.Errorf("the correction changed more than the one line:\ngot:\n%s\nwant:\n%s", got, want)
 	}
-	if !containsWarning(set.Warnings, donePath) || !containsWarning(set.Warnings, "logbook-on-entry") {
-		t.Errorf("the correction must be reported, naming the file; got: %v", set.Warnings)
+	if !strings.Contains(said.String(), donePath) || !strings.Contains(said.String(), "logbook-on-entry") {
+		t.Errorf("the correction must be reported, naming the file; got: %q", said)
+	}
+	if containsWarning(set.Warnings, "logbook-on-entry") {
+		t.Errorf("the report must not also ride Warnings, where --json drops it; got: %v", set.Warnings)
 	}
 }
 
@@ -89,6 +107,7 @@ func TestCorrectionRunsOncePerBoard(t *testing.T) {
 	if err := os.WriteFile(donePath, []byte(doneDoorway), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	said := hears(t)
 	set, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
@@ -103,8 +122,8 @@ func TestCorrectionRunsOncePerBoard(t *testing.T) {
 	if done, _ := set.Get("done"); done == nil || !done.LogbookOnEntry {
 		t.Error("the board asked for the doorway back and did not get it")
 	}
-	if containsWarning(set.Warnings, "logbook-on-entry") {
-		t.Errorf("a correction that already ran must say nothing; got: %v", set.Warnings)
+	if strings.Contains(said.String(), "logbook-on-entry") {
+		t.Errorf("a correction that already ran must say nothing; got: %q", said)
 	}
 }
 
@@ -119,6 +138,7 @@ func TestCorrectionLeavesALaneSomebodyWroteAlone(t *testing.T) {
 		t.Fatal("fixture did not change the description")
 	}
 	root, donePath := oldBoard(t, mine)
+	said := hears(t)
 
 	set, err := Load(root)
 	if err != nil {
@@ -134,8 +154,11 @@ func TestCorrectionLeavesALaneSomebodyWroteAlone(t *testing.T) {
 	if done, _ := set.Get("done"); done == nil || !done.LogbookOnEntry {
 		t.Error("the hand-written lane lost its doorway")
 	}
-	if !containsWarning(set.Warnings, donePath) || !containsWarning(set.Warnings, "left") {
-		t.Errorf("skipping the correction must be reported, naming the file; got: %v", set.Warnings)
+	if !strings.Contains(said.String(), donePath) || !strings.Contains(said.String(), "left") {
+		t.Errorf("skipping the correction must be reported, naming the file; got: %q", said)
+	}
+	if containsWarning(set.Warnings, donePath) {
+		t.Errorf("the report must not also ride Warnings, where --json drops it; got: %v", set.Warnings)
 	}
 }
 
@@ -173,12 +196,12 @@ func TestCorrectionSaysNothingOnABoardThatNeverHadTheDefect(t *testing.T) {
 	if err := os.MkdirAll(ProjectLanesDir(root), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	set, err := Load(root)
-	if err != nil {
+	said := hears(t)
+	if _, err := Load(root); err != nil {
 		t.Fatal(err)
 	}
-	if containsWarning(set.Warnings, "logbook-on-entry") {
-		t.Errorf("a fresh board was told about a correction; got: %v", set.Warnings)
+	if said.Len() != 0 {
+		t.Errorf("a fresh board was told about a correction; got: %q", said)
 	}
 	ids, _ := readIDList(correctionsPath(root))
 	if len(ids) != 1 {
@@ -209,5 +232,43 @@ func TestDropFrontmatterLine(t *testing.T) {
 				t.Errorf("dropped=%v content=%q, want dropped=%v content=%q", dropped, got, tc.dropped, tc.want)
 			}
 		})
+	}
+}
+
+// TestCorrectionSpeaksOnStderrAndNotOnStdout pins the channel the report rides,
+// with the real file descriptors rather than the test seam: a correction has
+// one load in which to be heard, and on a board driven by agents that load is
+// most likely a --json command (internal/cli/root.go drops lane warnings there)
+// or the merge driver, which never reads Warnings at all. Stdout must stay
+// clean whatever happens, because that is the payload an agent parses.
+func TestCorrectionSpeaksOnStderrAndNotOnStdout(t *testing.T) {
+	root, donePath := oldBoard(t, doneDoorway)
+
+	outR, outW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	errR, errW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	origOut, origErr := os.Stdout, os.Stderr
+	os.Stdout, os.Stderr = outW, errW
+	_, loadErr := Load(root)
+	outW.Close()
+	errW.Close()
+	os.Stdout, os.Stderr = origOut, origErr
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+
+	var stdout, stderr bytes.Buffer
+	stdout.ReadFrom(outR)
+	stderr.ReadFrom(errR)
+	if stdout.Len() != 0 {
+		t.Errorf("the report went to stdout, where it corrupts --json: %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), donePath) {
+		t.Errorf("the report did not reach stderr; got: %q", stderr.String())
 	}
 }

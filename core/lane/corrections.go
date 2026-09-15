@@ -2,6 +2,7 @@ package lane
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -113,24 +114,52 @@ var corrections = []correction{{
 		"is said once.",
 }}
 
+// correctionsOut is where a correction says what it did. It is a variable only
+// so a test can read the report back; nothing else may point it elsewhere. nil
+// means os.Stderr, resolved at the moment of writing rather than captured here,
+// so a test that swaps the real file descriptor still sees the line.
+var correctionsOut io.Writer
+
 // applyCorrections runs every shipped correction this board has not seen and
-// returns what it did, one warning per lane it changed or refused to change. It
-// is called from Load beside migrateLegacy: both repair what a board carries
-// from an older build, and both must happen before the directory is read.
+// says on stderr what it did, one line per lane it changed or refused to
+// change. It is called from Load beside migrateLegacy: both repair what a board
+// carries from an older build, and both must happen before the directory is
+// read.
 //
-// Errors are warnings, never failures. A board that cannot be corrected — a
-// read-only checkout, a lane file nobody can write — must still open.
-func applyCorrections(root string) []string {
+// The report goes to os.Stderr directly rather than into Set.Warnings, for the
+// same reason as nudgeIfStale (internal/cli/update.go): it has exactly one
+// chance to be read. A correction runs once per board and writes its marker in
+// the same Load, so whatever load happens first is the only one that can say
+// anything — and on a board driven by agents that first load is most likely a
+// --json command, where internal/cli/root.go drops lane warnings, or the merge
+// driver, or any of the other lane.Load callers that never look at .Warnings at
+// all. Stdout stays reserved for the payload an agent parses. The one caller
+// that would render a warning itself, the TUI, loads the board in tui.New
+// before the alternate screen is entered, so the line lands in the terminal
+// rather than in the middle of a frame.
+//
+// Errors are reported the same way and are never failures. A board that cannot
+// be corrected — a read-only checkout, a lane file nobody can write — must
+// still open.
+func applyCorrections(root string) {
+	say := func(format string, a ...any) {
+		var w io.Writer = os.Stderr
+		if correctionsOut != nil {
+			w = correctionsOut
+		}
+		fmt.Fprintf(w, "jaira: %s\n", fmt.Sprintf(format, a...))
+	}
+
 	applied, err := readIDList(correctionsPath(root))
 	if err != nil {
-		return []string{fmt.Sprintf("could not read %s: %v", correctionsPath(root), err)}
+		say("could not read %s: %v", correctionsPath(root), err)
+		return
 	}
 	done := make(map[string]bool, len(applied))
 	for _, id := range applied {
 		done[id] = true
 	}
 
-	var warnings []string
 	var ran []string
 	for _, c := range corrections {
 		if done[c.ID] {
@@ -142,7 +171,7 @@ func applyCorrections(root string) []string {
 			if !os.IsNotExist(err) {
 				// Unreadable, not absent: leave it unmarked and try again next
 				// time rather than record a correction that never happened.
-				warnings = append(warnings, fmt.Sprintf("correcting %s: %v", path, err))
+				say("correcting %s: %v", path, err)
 				continue
 			}
 			ran = append(ran, c.ID) // no such lane on this board; nothing to correct, ever
@@ -154,23 +183,22 @@ func applyCorrections(root string) []string {
 			// The defect is not in this file: already corrected by hand, never
 			// present, or the field carries a different value. Nothing to say.
 		case !c.recognises(b):
-			warnings = append(warnings, fmt.Sprintf(c.Skipped, path))
+			say(c.Skipped, path)
 		default:
 			if err := os.WriteFile(path, out, 0o644); err != nil {
-				warnings = append(warnings, fmt.Sprintf("correcting %s: %v", path, err))
+				say("correcting %s: %v", path, err)
 				continue
 			}
-			warnings = append(warnings, fmt.Sprintf(c.Says, path))
+			say(c.Says, path)
 		}
 		ran = append(ran, c.ID)
 	}
 
 	if len(ran) > 0 {
 		if err := writeIDList(root, correctionsPath(root), append(applied, ran...)); err != nil {
-			warnings = append(warnings, fmt.Sprintf("could not record the corrections applied to %s: %v", ProjectLanesDir(root), err))
+			say("could not record the corrections applied to %s: %v", ProjectLanesDir(root), err)
 		}
 	}
-	return warnings
 }
 
 // recognises reports whether b is a lane file jaira itself wrote: equal to one

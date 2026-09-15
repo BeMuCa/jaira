@@ -1,6 +1,7 @@
 package move
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -61,21 +62,30 @@ func TestMoveIntoDoneOnAnOldBoardFilesNothing(t *testing.T) {
 	stranger := mk(t, s, map[string]string{ticket.FieldStatus: "done"})
 	mine := mk(t, s, map[string]string{ticket.FieldStatus: "signoff"})
 
-	lanes, err := lane.Load(dir)
+	// The report is read off stderr, not off Warnings: a correction speaks in
+	// the one load that applies it, and most lane.Load callers — the merge
+	// driver among them — never look at Warnings, so that is where it would be
+	// lost. See applyCorrections (core/lane/corrections.go).
+	errR, errW, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
+	origErr := os.Stderr
+	os.Stderr = errW
+	lanes, loadErr := lane.Load(dir)
+	errW.Close()
+	os.Stderr = origErr
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	var said bytes.Buffer
+	said.ReadFrom(errR)
+
 	if done, _ := lanes.Get("done"); done == nil || done.LogbookOnEntry {
 		t.Fatal("the correction did not reach this board")
 	}
-	warned := false
-	for _, w := range lanes.Warnings {
-		if strings.Contains(w, "logbook-on-entry") {
-			warned = true
-		}
-	}
-	if !warned {
-		t.Errorf("the board was corrected without saying so: %v", lanes.Warnings)
+	if !strings.Contains(said.String(), "logbook-on-entry") {
+		t.Errorf("the board was corrected without saying so: %q", said.String())
 	}
 
 	all, _ := s.List()

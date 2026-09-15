@@ -1,7 +1,7 @@
 ---
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
@@ -26,14 +26,14 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:16:22Z
+updated-at: 2026-09-15T07:24:31Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-40747
-claimed-at: 2026-09-15T06:57:22Z
-outcome-what: "core/lane/corrections.go: benannte, einmalige, feldgenaue Lane-Korrektur im Ladepfad; entfernt 'logbook-on-entry: true' aus einem done.md, das erkennbar die von 2ecc670 ausgelieferte Datei ist, meldet es und merkt sich das in .jaira/lanes/corrections. Eine selbstgeschriebene Lane wird gemeldet, nie editiert. Tests: core/lane/corrections_test.go (6), core/move/oldboard_test.go (end-to-end). Eine Zeile in core/release/NOTES.md unter ## Unreleased."
-outcome-why: "Boards von vor 9ad7aa9 fegen beim Move nach done weiterhin fremde fertige Tickets ins Logbuch (Issue #6), weil Load bei ProjectLanesActive nur das Lane-Verzeichnis liest - eine einmal geschriebene Lane-Datei ist fuer immer die Wahrheit. Die Handarbeit-Anweisung der 0.1.4-Notiz greift nicht, weil .jaira/lanes/ gitignored ist und die Zeile pro Checkout einzeln entfernt werden muesste."
-outcome-resolves: "DoD 1-6 abgehakt mit Proof; go test ./... -race RC=0; alle drei Faelle zusaetzlich von Hand mit gebautem Binary nachgestellt"
+claimed-by: DESKTOP-RFTCH11-74981
+claimed-at: 2026-09-15T07:18:08Z
+outcome-what: "Der Satz, mit dem eine Lane-Korrektur sich meldet, geht jetzt direkt auf os.Stderr: applyCorrections (core/lane/corrections.go:144) schreibt ihn selbst und gibt nichts mehr zurueck, Load haengt ihn nicht mehr an Set.Warnings. Tests lesen ihn dort, wo ein Mensch ihn liest - core/lane/corrections_test.go (hears-Seam plus TestCorrectionSpeaksOnStderrAndNotOnStdout mit echten Deskriptoren) und core/move/oldboard_test.go. Die Unreleased-Zeile in core/release/NOTES.md sagt jetzt, dass die Meldung auch unter --json kommt."
+outcome-why: "critique-Findung: die Meldung ritt auf Set.Warnings. internal/cli/root.go:291 unterdrueckt Lane-Warnungen unter --json, und die meisten lane.Load-Aufrufer (mergedriver, tags, links, validate, checklist, resume, tui/browse) lesen .Warnings gar nicht. Weil die Korrektur einmalig ist und ihren Marker im selben Load schreibt, war der erste Load nach einem Update - auf einem Agenten-Board ein --json-Aufruf oder der Merge-Driver - meist der einzige und letzte Moment, in dem etwas haette gesagt werden koennen. Danach war die Meldung fuer immer weg."
+outcome-resolves: "DoD 3 jetzt belegt durch die Zustellung, nicht nur durch die Erzeugung des Satzes; go vet + go test ./... -race RC=0; von Hand mit gebautem Binary nachgestellt: altes done.md unter 'jaira list --json' -> Meldung auf stderr, stdout bleibt gueltiges JSON; zweiter Lauf stumm; Zeile von Hand zurueckgeschrieben -> bleibt stehen; heutiges done.md plus Zeile -> unveraendert, Meldung 'is not the lane jaira shipped'"
 review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur nur als Set.Warnings-Eintrag; internal/cli/root.go:291 verwirft alle Lane-Warnungen unter --json, und rund fuenfzehn weitere lane.Load-Aufrufer (internal/cli/mergedriver.go:55, tags.go:320, links.go:43, validate.go:35, lanes.go:110, checklist.go:137, resume.go:84, internal/tui/browse.go:157) lesen .Warnings gar nicht. Die Korrektur ist einmalig und schreibt den Marker im selben Aufruf: faellt sie in einem dieser Aufrufe an - beim Agenten-'jaira next --json' oder im git-Merge-Driver - wird die done.md editiert und niemand erfaehrt es je. Stattdessen den Says-/Skipped-Satz in applyCorrections direkt auf os.Stderr schreiben, so wie nudgeIfStale in internal/cli/update.go:37 es fuer genau diesen Fall schon tut und im Kommentar begruendet: 'it must reach the terminal regardless of --json - stdout is reserved for the payload an agent parses'. Das ist DoD 3: der Test beweist, dass der Satz erzeugt wird, nicht dass er ankommt."
 ---
 
@@ -44,15 +44,15 @@ review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur 
 - [x] Ein Board, dessen done.md noch 'logbook-on-entry: true' traegt, fegt beim naechsten Move nach done keine fremden fertigen Tickets mehr ins Logbuch. Nachgestellt an einem Board-Fixture, das mit der alten Lane-Datei angelegt wurde.
   proof: core/move/oldboard_test.go:38 TestMoveIntoDoneOnAnOldBoardFilesNothing
 - [x] Eine vom Nutzer selbst geaenderte Lane ueberlebt die Migration unveraendert: was er geschrieben hat, wird nicht zurueckgesetzt. Die Entscheidung von 743737f - ein Board ist sein Lane-Verzeichnis - bleibt gueltig.
-  proof: core/lane/corrections_test.go:71 TestCorrectionRunsOncePerBoard; core/lane/corrections_test.go:107 TestCorrectionLeavesALaneSomebodyWroteAlone
+  proof: core/lane/corrections_test.go:93 TestCorrectionRunsOncePerBoard; core/lane/corrections_test.go:134 TestCorrectionLeavesALaneSomebodyWroteAlone
 - [x] Der Nutzer erfaehrt, dass eine seiner Lanes von einer Korrektur betroffen ist, statt es an seinem Verhalten zu merken. Nachgestellt an dem Board-Fixture aus Punkt 1.
-  proof: core/lane/corrections.go:104 correction.Says; core/lane/corrections_test.go:41 TestCorrectionRemovesTheDoorwayFromAnOldBoard
+  proof: core/lane/corrections.go:144 applyCorrections writes to os.Stderr (correctionsOut:121); core/lane/corrections_test.go:244 TestCorrectionSpeaksOnStderrAndNotOnStdout, :55 TestCorrectionRemovesTheDoorwayFromAnOldBoard; core/move/oldboard_test.go:63
 - [x] Die Zeile in core/release/NOTES.md, die 'Finishing a ticket no longer files anything' behauptet, stimmt danach fuer alle Boards - oder sie sagt, fuer welche sie nicht gilt und was zu tun ist.
-  proof: core/release/NOTES.md:18
+  proof: core/release/NOTES.md:17
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
-  proof: core/release/NOTES.md:18
+  proof: core/release/NOTES.md:17
 - [x] Eine Korrektur fasst nur eine Lane an, die erkennbar die ausgelieferte ist, die sie zu korrigieren behauptet - etwa weil die Datei einer ausgelieferten Fassung entspricht oder sich nur in genau dem Feld unterscheidet, um das es geht. Eine Lane, die ein Mensch selbst geschrieben hat, wird gemeldet und nicht angefasst, auch wenn sie dieselbe id traegt. Nachgestellt mit einem selbstgeschriebenen done.md, das absichtlich logbook-on-entry: true fuehrt: es bleibt unveraendert, und der Mensch erfaehrt davon.
-  proof: core/lane/corrections.go:181 correction.recognises; core/lane/corrections_test.go:107 TestCorrectionLeavesALaneSomebodyWroteAlone, :140 TestCorrectionLeavesTodaysLanePlusTheLineAlone
+  proof: core/lane/corrections.go:212 correction.recognises; core/lane/corrections_test.go:134 TestCorrectionLeavesALaneSomebodyWroteAlone, :169 TestCorrectionLeavesTodaysLanePlusTheLineAlone
 
 ## Options
 
@@ -72,6 +72,7 @@ review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur 
 - [x] implement core/lane/corrections.go: the embedded list, dropFrontmatterLine beside stampCreatorLine, applyCorrections(root) called from Load next to migrateLegacy, marker via readIDList/writeIDList
 - [x] run go test ./... -race and replay the fixture by hand with a built binary
 - [x] one line in core/release/NOTES.md under ## Unreleased: what an older board does now, replacing the 'remove that line by hand' instruction of the closed 0.1.4 section
+- [x] critique loop: the correction's report goes to os.Stderr from applyCorrections, not into Set.Warnings, so it survives --json and the callers that drop Warnings
 
 ## Progress
 - **2026-09-15 07:00 · Alexander Sacharov** — pre-process: warum der Plan so aussieht.
@@ -95,3 +96,4 @@ NOTES.md: die 0.1.4-Zeile bleibt stehen. 0.1.4 ist getaggt, also geschlossene Hi
 - **2026-09-15 07:16 · Alexander Sacharov** — critique: eine Findung, Zustellweg der Meldung. applyCorrections gibt Says/Skipped als Set.Warnings zurueck. internal/cli/root.go:291 unterdrueckt Lane-Warnungen unter --json, und die meisten lane.Load-Aufrufer (mergedriver.go:55, tags.go:320, links.go:43, validate.go:35, lanes.go, checklist.go:137, resume.go:84, tui/browse.go:157) lesen .Warnings ueberhaupt nicht. Weil die Korrektur einmalig ist und den Marker im selben Load schreibt, ist die Meldung danach fuer immer weg - und der erste Load nach einem Update ist auf diesem Board wahrscheinlich ein Agenten-Aufruf mit --json oder der Merge-Driver. Fix: in applyCorrections direkt auf os.Stderr schreiben, Vorbild und Begruendung stehen schon in internal/cli/update.go:37 (nudgeIfStale). Betrifft DoD 3 - der Unit-Test prueft die Erzeugung des Satzes, nicht seine Zustellung.
 
 Geprueft und NICHT beanstandet, damit es nicht noch einmal aufgemacht wird: (1) doneDoorway stimmt byteweise mit core/lane/builtin/50-done.md bei 2ecc670 ueberein, und zwischen 2ecc670 und 9ad7aa9 gab es genau eine Fassung der Datei - die Shipped-Liste ist vollstaendig. (2) Export kopiert die Lane-Datei verbatim (core/lane/share.go:80), der Byte-Vergleich ist also tragfaehig. (3) Der corrections-Marker wird bewusst auch auf frischen Boards geschrieben: genau das schuetzt eine spaeter von Hand gesetzte Zeile davor, entfernt zu werden. (4) Platzierung in Load ist richtig - 'jaira update' waere ein Befehl, den jemand ausfuehren muss, und genau daran ist die 0.1.4-Notiz gescheitert. (5) Die Korrektur-Tabelle mit einer Zeile ist keine Spekulation, sondern eine append-only Migrationsliste.
+- **2026-09-15 07:22 · Alexander Sacharov** — critique-Schleife erledigt: der Satz der Korrektur geht jetzt direkt auf os.Stderr (correctionsOut, nil = os.Stderr zur Schreibzeit), applyCorrections gibt nichts mehr zurueck und Load haengt nichts mehr an Warnings. Warum nicht beides: root.go:291 druckt Warnings ohne --json bereits aus, also haette jede nicht-json-Ausgabe die Zeile doppelt gezeigt. Gepruefte Sorge, die kein Problem ist: die TUI ist der einzige Warnings-Leser, der sie selbst rendert (model.go:351) - sie laedt das Board aber in tui.New (model.go:290), bevor tea.NewProgram laeuft, die Zeile landet also vor dem Alternate Screen und nicht mitten in einem Frame. Verworfen: ein eigenes Feld Set.Corrections neben Warnings - dasselbe Zustellproblem, nur mit einem zweiten Kanal, den wieder niemand liest. correctionsOut ist bewusst nil-default statt 'io.Writer = os.Stderr': sonst friert die Variable beim Paket-Init den echten Deskriptor ein und ein Test, der os.Stderr auf eine Pipe legt (Vorbild captureStdio, internal/cli/update_test.go:44), sieht nichts.
