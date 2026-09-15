@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:19:19Z
+updated-at: 2026-09-15T13:20:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -106,3 +106,4 @@ Fuer critique/testing/review: ihr seid selbst die Nachstellung von DoD 1 und 2. 
 4. Der wesentliche: 'the next commit that carries code takes it along' hat fuer die letzten Lanes keinen Adressaten. Findet critique nichts, laufen testing und review ohne weitere Code-Aenderung - dann gibt es keinen naechsten Commit, und der PR zeigt eine Ticket-Datei im in-progress-Stand, ohne review-summary und test-verdict. Genau der Zustand, den die Regel 'der Leser sieht die Aenderung und ihren Grund an einer Stelle' verhindern soll.
 
 Das ist ausdruecklich KEIN Ruf nach dem Abschluss-Commit, den die DoD verbietet. Der Traeger existiert schon: 'jaira logbook <id>' verschiebt die Ticket-Datei nach .jaira/logbook/ und nimmt ihren Endstand in den Commit mit, der diese Verschiebung traegt. Die Regel muss ihn nur benennen, sonst liest sie sich als 'der Endstand bleibt liegen'. Die Note vom 13:10 nimmt den Preis bewusst in Kauf und verweist auf refsync.Pull - die Note vom 13:07 zeigt, dass refsync auf diesem Board nicht laeuft. Damit bleibt logbook der einzige Traeger, und er gehoert in den Text.
+- **2026-09-15 13:20 · Alexander Sacharov** — in-progress (zweiter Durchgang): die vier critique-Befunde werden abgearbeitet. Zu Befund 3 weiche ich vom Wortlaut der Korrektur ab: 'see the last point in this list' waere falsch, die Liste endet mit 'jaira logbook'. Ich schreibe stattdessen einen selbstbeschreibenden Verweis auf den Punkt ueber Lanes ohne Code-Aenderung - der bleibt richtig, auch wenn die Liste spaeter umsortiert wird.
