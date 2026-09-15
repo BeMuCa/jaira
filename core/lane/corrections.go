@@ -2,7 +2,6 @@ package lane
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -114,12 +113,6 @@ var corrections = []correction{{
 		"is said once.",
 }}
 
-// correctionsOut is where a correction says what it did. It is a variable only
-// so a test can read the report back; nothing else may point it elsewhere. nil
-// means os.Stderr, resolved at the moment of writing rather than captured here,
-// so a test that swaps the real file descriptor still sees the line.
-var correctionsOut io.Writer
-
 // applyCorrections runs every shipped correction this board has not seen and
 // says on stderr what it did, one line per lane it changed or refused to
 // change. It is called from Load beside migrateLegacy: both repair what a board
@@ -143,11 +136,7 @@ var correctionsOut io.Writer
 // still open.
 func applyCorrections(root string) {
 	say := func(format string, a ...any) {
-		var w io.Writer = os.Stderr
-		if correctionsOut != nil {
-			w = correctionsOut
-		}
-		fmt.Fprintf(w, "jaira: %s\n", fmt.Sprintf(format, a...))
+		fmt.Fprintf(os.Stderr, "jaira: %s\n", fmt.Sprintf(format, a...))
 	}
 
 	applied, err := readIDList(correctionsPath(root))

@@ -5,20 +5,52 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
-// hears redirects what a correction says into a buffer for the length of one
-// test. The report is written to stderr rather than returned, because it has
-// one chance to be read (see applyCorrections), so a test that wants to check
-// it has to listen where a person does.
-func hears(t *testing.T) *bytes.Buffer {
+// hears listens where a person does: it swaps the real stdout and stderr for
+// pipes for the length of one test and returns a reader for what was written
+// to each. The report is written to stderr rather than returned, because it
+// has one chance to be read (see applyCorrections), and the real descriptors
+// are swapped rather than a writer variable in the package, because only that
+// can also show that stdout stayed clean — the payload an agent parses.
+//
+// The returned function may be called any number of times; the first call
+// stops the capture and reads both pipes, and t.Cleanup does the same should a
+// test fail before asking. Reports are a line or two, far inside a pipe's
+// buffer, so nothing has to drain them while the code under test runs.
+func hears(t *testing.T) func() (stdout, stderr string) {
 	t.Helper()
-	var buf bytes.Buffer
-	prev := correctionsOut
-	correctionsOut = &buf
-	t.Cleanup(func() { correctionsOut = prev })
-	return &buf
+	outR, outW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	errR, errW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	origOut, origErr := os.Stdout, os.Stderr
+	os.Stdout, os.Stderr = outW, errW
+
+	var out, errs string
+	var once sync.Once
+	read := func() {
+		once.Do(func() {
+			outW.Close()
+			errW.Close()
+			os.Stdout, os.Stderr = origOut, origErr
+			var ob, eb bytes.Buffer
+			ob.ReadFrom(outR)
+			eb.ReadFrom(errR)
+			out, errs = ob.String(), eb.String()
+		})
+	}
+	t.Cleanup(read)
+	return func() (string, string) {
+		read()
+		return out, errs
+	}
 }
 
 // oldBoard builds a board the way a build from before 9ad7aa9 left one: every
@@ -79,8 +111,9 @@ func TestCorrectionRemovesTheDoorwayFromAnOldBoard(t *testing.T) {
 	if string(got) != string(want) {
 		t.Errorf("the correction changed more than the one line:\ngot:\n%s\nwant:\n%s", got, want)
 	}
-	if !strings.Contains(said.String(), donePath) || !strings.Contains(said.String(), "logbook-on-entry") {
-		t.Errorf("the correction must be reported, naming the file; got: %q", said)
+	_, report := said()
+	if !strings.Contains(report, donePath) || !strings.Contains(report, "logbook-on-entry") {
+		t.Errorf("the correction must be reported, naming the file; got: %q", report)
 	}
 	if containsWarning(set.Warnings, "logbook-on-entry") {
 		t.Errorf("the report must not also ride Warnings, where --json drops it; got: %v", set.Warnings)
@@ -122,8 +155,8 @@ func TestCorrectionRunsOncePerBoard(t *testing.T) {
 	if done, _ := set.Get("done"); done == nil || !done.LogbookOnEntry {
 		t.Error("the board asked for the doorway back and did not get it")
 	}
-	if strings.Contains(said.String(), "logbook-on-entry") {
-		t.Errorf("a correction that already ran must say nothing; got: %q", said)
+	if _, report := said(); strings.Contains(report, "logbook-on-entry") {
+		t.Errorf("a correction that already ran must say nothing; got: %q", report)
 	}
 }
 
@@ -154,8 +187,9 @@ func TestCorrectionLeavesALaneSomebodyWroteAlone(t *testing.T) {
 	if done, _ := set.Get("done"); done == nil || !done.LogbookOnEntry {
 		t.Error("the hand-written lane lost its doorway")
 	}
-	if !strings.Contains(said.String(), donePath) || !strings.Contains(said.String(), "left") {
-		t.Errorf("skipping the correction must be reported, naming the file; got: %q", said)
+	_, report := said()
+	if !strings.Contains(report, donePath) || !strings.Contains(report, "left") {
+		t.Errorf("skipping the correction must be reported, naming the file; got: %q", report)
 	}
 	if containsWarning(set.Warnings, donePath) {
 		t.Errorf("the report must not also ride Warnings, where --json drops it; got: %v", set.Warnings)
@@ -200,8 +234,8 @@ func TestCorrectionSaysNothingOnABoardThatNeverHadTheDefect(t *testing.T) {
 	if _, err := Load(root); err != nil {
 		t.Fatal(err)
 	}
-	if said.Len() != 0 {
-		t.Errorf("a fresh board was told about a correction; got: %q", said)
+	if _, report := said(); report != "" {
+		t.Errorf("a fresh board was told about a correction; got: %q", report)
 	}
 	ids, _ := readIDList(correctionsPath(root))
 	if len(ids) != 1 {
@@ -235,40 +269,25 @@ func TestDropFrontmatterLine(t *testing.T) {
 	}
 }
 
-// TestCorrectionSpeaksOnStderrAndNotOnStdout pins the channel the report rides,
-// with the real file descriptors rather than the test seam: a correction has
-// one load in which to be heard, and on a board driven by agents that load is
-// most likely a --json command (internal/cli/root.go drops lane warnings there)
-// or the merge driver, which never reads Warnings at all. Stdout must stay
-// clean whatever happens, because that is the payload an agent parses.
+// TestCorrectionSpeaksOnStderrAndNotOnStdout pins the channel the report
+// rides: a correction has one load in which to be heard, and on a board driven
+// by agents that load is most likely a --json command (internal/cli/root.go
+// drops lane warnings there) or the merge driver, which never reads Warnings at
+// all. Stdout must stay clean whatever happens, because that is the payload an
+// agent parses.
 func TestCorrectionSpeaksOnStderrAndNotOnStdout(t *testing.T) {
 	root, donePath := oldBoard(t, doneDoorway)
+	said := hears(t)
 
-	outR, outW, err := os.Pipe()
-	if err != nil {
+	if _, err := Load(root); err != nil {
 		t.Fatal(err)
 	}
-	errR, errW, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	origOut, origErr := os.Stdout, os.Stderr
-	os.Stdout, os.Stderr = outW, errW
-	_, loadErr := Load(root)
-	outW.Close()
-	errW.Close()
-	os.Stdout, os.Stderr = origOut, origErr
-	if loadErr != nil {
-		t.Fatal(loadErr)
-	}
 
-	var stdout, stderr bytes.Buffer
-	stdout.ReadFrom(outR)
-	stderr.ReadFrom(errR)
-	if stdout.Len() != 0 {
-		t.Errorf("the report went to stdout, where it corrupts --json: %q", stdout.String())
+	stdout, stderr := said()
+	if stdout != "" {
+		t.Errorf("the report went to stdout, where it corrupts --json: %q", stdout)
 	}
-	if !strings.Contains(stderr.String(), donePath) {
-		t.Errorf("the report did not reach stderr; got: %q", stderr.String())
+	if !strings.Contains(stderr, donePath) {
+		t.Errorf("the report did not reach stderr; got: %q", stderr)
 	}
 }
