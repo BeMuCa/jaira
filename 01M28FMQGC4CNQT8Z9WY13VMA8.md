@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: human
+status: review
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T07:00:37Z
+updated-at: 2026-09-15T07:06:11Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -46,8 +46,8 @@ question: |-
 outcome-what: "testing-Lane: 'go build ./...' und 'go test ./... -race' gruen (RC=0), alle vier DoD-Anker einzeln am Baum nachgeschlagen und korrekt, die Forge-Leiter auf drei Remote-Fixtures in allen vier Zweigen durchlaufen, glab-1.114.0-Flags am --help geprueft, und eine frisch gebaute Binary schreibt die Rolle per 'jaira roles install --into' byte-gleich heraus."
 outcome-why: "Die Lane prueft, ob das Geforderte existiert und ob es laeuft - beides am Arbeitsbaum bestaetigt, nicht am outcome-Text. Die Anker waren der Befund der letzten Runde, also wurde diesmal jede Zeilennummer per grep -n gegengelesen."
 outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress. Offen fuer den Menschen: der Zweig ist gepusht, der Pull Request wird nicht von einem Agenten aufgemacht."
-claimed-by: DESKTOP-RFTCH11-38871
-claimed-at: 2026-09-15T06:55:39Z
+claimed-by: DESKTOP-RFTCH11-52691
+claimed-at: 2026-09-15T07:06:11Z
 review-summary: "Die Rolle jaira-role-pr spricht jetzt zwei Forges. Neu ist die Sektion 'Which forge this repository is on' (SKILL.md:36-67): zuerst 'git config jaira.forge' - ist es gesetzt, gewinnt es ohne Wenn und Aber; sonst entscheidet der Host von 'git remote get-url origin', also des Remotes, auf den der Branch gepusht wird (github.com -> gh, Host mit 'gitlab' -> glab); gibt der Host nichts her, nennt die Rolle kein Werkzeug, sagt das und schreibt die eine Zeile hin, die es klaert ('git config jaira.forge gitlab'). Dass 'origin' und nicht 'jaira.remote' gelesen wird, steht mit Begruendung im Text (:46-49) - jaira.remote traegt die Ticket-Refs und ist im Fork das Upstream, waehrend der Branch zum Fork geht. Danach sind genau drei Stellen zweisprachig: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create --body-file / :124 glab mr create --description \"$(cat ...)\") und die Boundaries (:143-148). Der uebrige Ablauf bleibt einmalig, statt als zweite Kopie zu existieren. Der Wortwechsel ist begrenzt: :65-67 weist an, 'pull request' NUR auf dem GitLab-Weg als 'merge request' zu lesen - der GitHub-Weg redet weiter von Pull Requests. Ausserdem hat 9fc224c die Abfrage der offenen Requests aus der Forge-Sektion in die Push-Sektion verschoben, wo der Branch tatsaechlich genommen wird. Dazu eine Unreleased-Zeile in core/release/NOTES.md:20 und ein Satz in der SKILL-description."
 review-gaps: |-
   Ein Befund, klein aber echt, und genau von der Sorte, die kein Test sieht: Zweig 4 der Forge-Leiter (SKILL.md:55-63, Host ist weder github.com noch gitlab-haltig, jaira.forge ungesetzt) laesst den ausfuehrenden Agenten ohne Anweisung fuer den Rest der Datei stehen. Er soll sagen, dass er es nicht entscheiden kann, und 'git config jaira.forge' nennen - aber es steht nirgends, ob er danach anhaelt oder weiterliest. Liest er weiter, steht er bei :71 vor einem unbedingten 'git push -u origin HEAD' und bei :74-84 vor einer Gabel 'auf GitHub ... oder auf GitLab ...', die er per Voraussetzung nicht aufloesen kann. Kein Widerspruch, aber eine Luecke: ein Satz wie 'Stop here and report; the rest of this file needs a settled forge' schliesst sie. Die Definition of Done ist davon nicht verletzt - DoD 3 verlangt nur, dass die Rolle es sagt statt zu raten, und das tut sie.
