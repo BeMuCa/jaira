@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -27,15 +27,17 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:33:49Z
+updated-at: 2026-09-15T05:34:12Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41109
 claimed-at: 2026-09-15T05:31:02Z
-outcome-what: an einen Worker uebergeben
-outcome-why: "Transport-Passagen aus den installierten Kopien nach core/role/builtin portieren"
+outcome-what: "Alle sieben DoD-Punkte im Baum nachgeprueft und mit Beleg abgehakt; kein Code geaendert, weil keiner fehlte. DoD 2, 3, 6, 7 galten laut Arbeitsanweisung als offen, waren aber bereits durch cc21ca9 erledigt, dessen Commit-Nachricht das nicht sagt. Zusaetzlich geprueft und in einer Notiz festgehalten: scripts/spawn.sh wird wirklich ausgeliefert (role.go:33 'go:embed all:builtin', abgesichert durch role_test.go:75/143/225/254) - sonst zeigte DoD 1 auf ein Skript, das 'jaira roles install' nie installiert. Der Satz ohne DoD-Haken (dispatcher/SKILL.md:171-174, 'You never see the pull request') ist ebenfalls erledigt."
+outcome-why: "Die Haken auf dem Board waren hinter dem Baum zurueck. Ein Ticket, dessen DoD unabgehakt ist, obwohl die Arbeit steht, wird in der Terminal-Lane abgewiesen - und zwar am Ende, wenn das Nachpruefen am teuersten ist. Die Belege muessen an den Punkten stehen, solange noch jemand weiss, welche Zeile welchen Punkt erfuellt."
+outcome-resolves: "Ein Dispatcher liest scripts/spawn.sh aus seinem eigenen Prompt - in beiden Rollen, dispatcher und teamlead -, findet Herdr ueber HERDR_BIN_PATH statt ueber 'command -v herdr', und das Skript legt Zweige mit feat/ an und schreibt keinen fremden COMPOSE_PROJECT_NAME. Nachgestellt an dieser Sitzung: Tab w3:t2H, Label 'KSGSKK/in-progress'."
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
