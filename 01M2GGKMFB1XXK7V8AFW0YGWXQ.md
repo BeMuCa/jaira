@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:29:07Z
+updated-at: 2026-09-15T20:14:24Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -72,6 +72,9 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: testing lane, reenacted on a scratch board: sprint-1 with 3 tickets, 2 lines moved by hand into sprint-2.md, one edit — jaira list --milestone then shows 1 and 2
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt.
   proof: core/release/NOTES.md:17
+- [ ] Ein Milestone, dessen Ticket-Liste leer ist, verschwindet vom Board: seine Datei liegt nicht mehr unter .jaira/milestones/, sein Ref ist geraeumt, 'jaira milestone ls' nennt ihn nicht mehr, und keine Karte traegt seine Farbe. Nachgestellt, indem das letzte Ticket aus einem Milestone genommen wird.
+- [ ] 'jaira logbook' legt einen Milestone genauso ab wie ein Ticket: ist er fertig, wandert er unter .jaira/logbook/ und ist vom Board weg. 'jaira restore' holt ihn zurueck, samt seiner Ticket-Liste und seiner Farbe.
+- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leeren Milestones.
 
 ## Options
 
