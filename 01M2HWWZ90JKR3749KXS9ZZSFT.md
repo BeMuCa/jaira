@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:23:43Z
+updated-at: 2026-09-15T13:26:37Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -32,10 +32,8 @@ outcome-what: "Die vier critique-Befunde abgearbeitet. (1) Der Abschnitt 'Work r
 outcome-why: "Befund 4 war der wesentliche: findet critique nichts, laufen testing und review ohne weitere Code-Aenderung, und es gibt keinen naechsten Commit - der PR haette eine Ticket-Datei im in-progress-Stand gezeigt, ohne review-summary und test-verdict. Genau der Zustand, den die Regel verhindern soll. Der Traeger existierte schon, die Regel benannte ihn nur nicht. Die uebrigen drei sind Uneinheitlichkeiten, die dieselbe Regel je nach gelesener Quelle anders klingen lassen."
 outcome-resolves: "Die Regel lautet jetzt in allen sechs Quellen gleich, womit die Behauptung 'ueberall gleich' aus dem vorigen outcome-what erst zutrifft (DoD 3, weiterhin getickt). DoD 4 bleibt erfuellt, die NOTES.md-Zeile ist praeziser geworden. DoD 1 und 2 bleiben der testing-Lane vorbehalten - sie verlangen die Nachstellung nach critique, testing und review. Vorbereitet ist sie: dieser Zweig traegt nach diesem Commit genau zwei Commits, beide mit Code und Ticket-Datei zusammen und beide mit dem Handle im Betreff. go build ./... und go test ./... gruen."
 review-summary: |-
-  CLAUDE.md:168 und AGENTS.md:178 (Abschnitt 'Work rides on a branch', hinter dem jaira:local-Marker) sagen weiter nur 'the ticket rides in the same commits as the code'; README.md:843 hat den neuen Zusatz bekommen, diese beiden nicht - denselben Satz ('It rides with the code and never alone: a lane that changed no code ... commits nothing at all') dort ergaenzen.
-  core/role/builtin/jaira-role-pr/SKILL.md:28 fuehrt Punkt 2 weiter mit der unbedingten Fassung an ('**The ticket rides in the same commits as the code.**'), die jede andere Quelle abgelegt hat; der Rumpf relativiert sie erst danach - die Fettzeile auf '**The ticket rides with the code, never on its own.**' aendern.
-  core/board/announce.go:85 (und die erzeugten Kopien CLAUDE.md:82, AGENTS.md:55) verweisen mit 'see the next point' auf den Punkt 'the ticket rides with the code' - duenn macht die Datei-Historie aber erst der Punkt danach; 'see the last point in this list' schreiben.
-  core/board/announce.go:98 (gleichlautend docs/AGENTS.md:75, .claude/skills/jaira/SKILL.md:280) sagt 'the next commit that carries code takes it along' und hat fuer die letzten Lanes keine Antwort: laeuft critique/testing/review nach dem letzten Code-Commit durch, gibt es keinen naechsten - der Zweig geht mit einer Ticket-Datei im in-progress-Stand in den PR. Den Schritt benennen, der sie doch traegt: der 'jaira logbook <id>'-Commit verschiebt die Datei und nimmt ihren Endstand mit - als Halbsatz an 'takes it along' anhaengen.
+  docs/AGENTS.md:77 und .claude/skills/jaira/SKILL.md:282: der eingefuegte Halbsatz wurde nicht neu umbrochen - mitten im auf 80 Zeichen umbrochenen Absatz steht jetzt eine Zeile mit 123 bzw. 120 Zeichen ('... carries its final state. Nothing is lost by waiting ...'). Den Absatz in beiden Dateien wieder auf die Breite der Nachbarzeilen umbrechen, sonst faerbt der naechste Diff dieses Absatzes jede Zeile neu.
+  .claude/skills/jaira/SKILL.md:281 sagt 'the  commit', sechs Zeilen darunter sagt Zeile 289 'jaira never commits for you'. In derselben Datei widersprechen sich die beiden Saetze: jaira legt keinen Commit an, Store.Logbook (core/ticket/store.go:328) verschiebt nur die Datei. 'the commit that files the ticket away with ' schreiben - in dieser Datei zwingend, in den uebrigen Kopien (core/board/announce.go:100, docs/AGENTS.md:76, core/role/builtin/jaira-role-lane/SKILL.md:36, README.md:847, core/release/NOTES.md:17) derselben Formulierung wegen gleich mit.
 ---
 
 # Zwei von drei Commits aendern nur eine Ticket-Datei
