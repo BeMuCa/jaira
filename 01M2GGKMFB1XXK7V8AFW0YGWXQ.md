@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:36:19Z
+updated-at: 2026-09-15T20:36:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -126,7 +126,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Test: SetStatus auf eine von Hand editierte Datei (Kommentar, eigene Reihenfolge, fehlende Frontmatter) - jede andere Zeile unveraendert, Load liest den Status zurueck
 - [x] core/ticket/store.go: Ablegen und Zurueckholen fuer den Unterordner milestones/ - eine LogbookMilestone-Haelfte schiebt .jaira/milestones/<name>.md nach .jaira/logbook/<ordner>/milestones/, und Restore (store.go:464) findet eine Datei auch dort und legt sie nach milestone.Dir statt TicketsDir; Mehrdeutigkeit bleibt ein Fehler wie heute
 - [x] internal/cli logbook: 'jaira logbook <name>' erkennt einen Milestone, nachdem die Ticket-Aufloesung nicht greift - nur ausdruecklich benannt, nie von '--all' mitgenommen; die Meldung nennt den Ablageort und 'jaira restore'
-- [ ] Weigerung: ein Milestone geht nur ins Logbuch, wenn jede seiner Ticket-Zeilen in der Terminal-Lane steht oder nicht mehr auf dem Board liegt - Gegenstueck zu der Regel, die 'jaira logbook <id>' fuer ein Ticket hat
+- [x] Weigerung: ein Milestone geht nur ins Logbuch, wenn jede seiner Ticket-Zeilen in der Terminal-Lane steht oder nicht mehr auf dem Board liegt - Gegenstueck zu der Regel, die 'jaira logbook <id>' fuer ein Ticket hat
 - [ ] Der Ref bleibt stehen und traegt den Status: beim Ablegen SetStatus('filed') auf den Inhalt, der ueber recordMilestone/RecordMilestone an den Ref geht. Kein Ref-Abbau - ein geraeumter Ref gibt den Namen wieder frei (DoD 11) und der zweite Klon erfaehrt nichts
 - [ ] core/refsync IncomingMilestones (refsync.go:194): einen Ref, dessen Inhalt 'filed' sagt, NICHT auf die Platte schreiben. Eine schon vorhandene lokale Datei wird dabei nicht geloescht - jaira loescht keine Datei, die es nur gelesen hat
 - [ ] Test DoD 10 mit zwei Arbeitsbaeumen: im ersten ablegen, im zweiten 'jaira fetch' - der Milestone erscheint dort nicht auf dem Board, und der Ref steht weiter und traegt 'filed'
