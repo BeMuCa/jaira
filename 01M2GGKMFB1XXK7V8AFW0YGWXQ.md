@@ -39,7 +39,7 @@ commits:
   - ade63fe0eac8077144f48ef491da073ea7176087
   - 29afd307dee1524f4d96da72e094c13015c125f8
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:44:11Z
+updated-at: 2026-09-15T15:45:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28259
@@ -222,3 +222,4 @@ Sechs neue Findings, zwei davon nicht kosmetisch.
 6) internal/tui/view.go:1501 und :1532 sind derselbe Swatch-Ausdruck.
 
 NICHT AUFGEMACHT: dass IncomingMilestones die lokale Datei ueberschreibt, die geteilte Palette, der Index in newListCmd, gitref ohne generisches (Art, Name) - alle vier stehen seit Runde 1 mit ihrer Begruendung. Ebenso, dass milestoneIndex() genau einen Aufrufer hat: das ist die Naht, an der die naechsten Leser haengen, und sie ist als solche beschrieben.
+- **2026-09-15 15:45 · Alexander Sacharov** — in-progress, 2026-09-15, Runde 2 der critique-Findings. Wahl bei Finding 1 (zwei Wahrheiten fuer den Namen): der DATEINAME gewinnt immer, und die Zeile name: verschwindet aus New. Die Alternative - name: gewinnt und Save benennt die Datei um - waere ein Rename samt Ref-Umzug bei jedem Save gewesen, also genau der Vorgang, den dieses Ticket abschaffen will.
