@@ -13,7 +13,9 @@ related:
   - 01M2HX55H2EPFZ8M3AFW0S1A7M
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-09-15T06:48:56Z
+updated-at: 2026-09-15T06:49:39Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # jaira update bringt das ganze Setup nach, nicht nur den Textblock
