@@ -30,11 +30,11 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:49:53Z
+updated-at: 2026-09-15T05:50:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-61750
-claimed-at: 2026-09-15T05:49:53Z
+claimed-by: DESKTOP-RFTCH11-58796
+claimed-at: 2026-09-15T05:49:14Z
 outcome-what: "spawn.sh unterscheidet 'claude blocked' vom Nicht-Hochkommen, und der Teamlead-Absatz bricht wieder bei 80 Zeichen"
 outcome-why: "die einzige Zeile, die ein Dispatcher aus einem fehlgeschlagenen Start liest, sagte bei einem wartenden Genehmigungsdialog das Falsche - er haette den Pane weggeraeumt statt den Menschen zu holen"
 outcome-resolves: "beide Befunde des 2. critique-Durchgangs (spawn.sh:76, teamlead/SKILL.md:46)"
@@ -247,3 +247,32 @@ spawn.sh:77-78, die Meldung des blocked-Arms an den Menschen richten statt an de
 Danach fehlen noch: optimize, testing (test-verdict ist leer!), review.
 
 Stand des Baums: alle sieben DoD-Punkte sind abgehakt und belegt, go build und go test ./core/role/... waren zuletzt gruen. Kein Commit ist offen, der Arbeitsbaum ist sauber.
+- **2026-09-15 05:49 · Alexander Sacharov** — Arbeitsanweisung fuer diese in-progress-Runde (Dispatcher, 2026-09-15, nach dem Stopp von 05:46). Alex hat den Handoff genommen und entschieden: die Schleife war konvergierend, nicht vertiefend (Befunde 4 -> 2 -> 1, keiner wiederholt, jede Runde auf den Zeilen der vorigen). Es wird KEINE vierte critique-Runde gefahren. Diese Runde behebt den einen offenen Befund, danach folgen optimize, testing und review.
+
+ZU AENDERN, genau eine Stelle: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78, die Meldung des 'claude blocked'-Arms. Sie lautet heute 'answer it in that pane yourself, then start this worker again' und richtet sich damit an den Dispatcher - dem jaira-dispatcher/SKILL.md:188-189 genau das verbietet ('Read its output, report what it is asking, and never answer for the human').
+
+Critiques Vorschlag WOERTLICH uebernehmen, keine dritte eigene Fassung erfinden:
+  'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'
+
+Alles andere an diesem Arm bleibt wie es ist: eigener case-Arm, exit 1, und nur 'claude idle' bzw. 'claude done' duerfen in send-text hinein. Ein blockierter Pane beendet weiterhin, statt Enter zu druecken.
+
+Umfang dieser Runde: NUR diese Meldung. Kein weiteres Aufraeumen, keine neue NOTES.md-Zeile (die Zeile unter ## Unreleased beschreibt dieselbe, noch unveroeffentlichte Aenderung; diese Korrektur ist von aussen nicht zusaetzlich beobachtbar).
+
+Gearbeitet wird im Worktree /home/alex/projects/.worktrees/jaira-13VMA8 auf Zweig feat/13VMA8-pr-is-the-humans. KEIN neuer Worktree, KEIN neuer Zweig. NICHT anfassen: /home/alex/projects/jaira, .worktrees/jaira-9ET6NC (dort laeuft 74VM40) und core/role/builtin/jaira-role-pr/SKILL.md (daran arbeitet im selben Worktree ein zweiter Dispatcher an Ticket 13VMA8).
+
+KEINEN Pull Request oeffnen, aktualisieren oder mergen. Zweig schieben und aufhoeren.
+- **2026-09-15 05:50 · Alexander Sacharov** — BEFUND aus diesem Dispatcher-Lauf, gegen spawn.sh selbst - gehoert in dieses Ticket, weil es das Skript ist, das hier dokumentiert wird. Kein DoD-Punkt; ob es hier behoben wird, entscheidet der Mensch.
+
+spawn.sh kennt keinen Weg, einen BEREITS BESTEHENDEN Worktree zu benutzen. Es leitet das Ziel immer aus Zeile 15 ab:
+  wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
+Wer als repo-root den Worktree uebergibt, in dem er schon arbeitet, bekommt darum einen VERSCHACHTELTEN zweiten Worktree. Bei mir heute woertlich:
+  bash .../spawn.sh 13VMA8 KSGSKK in-progress /home/alex/projects/.worktrees/jaira-13VMA8
+  -> Preparing worktree (new branch 'feat/13VMA8')
+  -> /home/alex/projects/.worktrees/.worktrees/jaira-13VMA8-13VMA8
+Der Worker lief an: 'herdr pane get w3:p3X' zeigte cwd-Token '~/projects/.worktrees/.worktrees/jaira-13VMA8-13VMA8', Zustand 'working'. Also ein Worker auf einem frisch abgezweigten feat/13VMA8 statt auf dem Zweig, auf dem die Arbeit liegt - genau die Klasse von stillem Fehlgriff, vor der dispatcher/SKILL.md beim Thema Worktrees warnt ('a plausible wrong file'). Ich habe den Tab w3:t2S geschlossen, den Worktree entfernt und den Zweig feat/13VMA8 geloescht.
+
+Die Umgehung, die funktioniert, und die der Lauf vom 05:30 schon benutzt hat: als repo-root das HAUPTREPOSITORY uebergeben und als slug den Teil, der den bestehenden Worktree-Namen ergibt -
+  bash .../spawn.sh 13VMA8 KSGSKK <lane> /home/alex/projects/jaira
+Dann trifft Zeile 15 genau /home/alex/projects/.worktrees/jaira-13VMA8, der 'if [ ! -d "$wt" ]'-Waechter greift, und weder Worktree noch Zweig werden angelegt. Das ist aber eine Umgehung ueber die Namensableitung und steht in keinem Prompt - wer sie nicht kennt, baut sich den verschachtelten Worktree.
+
+Was fehlt, falls ein Folgeticket das aufgreift: eine ausdrueckliche Moeglichkeit, den Worktree vorzugeben (Umgebungsvariable oder viertes Argument als Worktree statt als repo-root), und ein Prompt-Satz dazu. Ein Dispatcher, der in einen bestehenden Zweig weiterarbeiten soll - genau der Fall nach einem Handoff -, hat ihn heute nicht.
