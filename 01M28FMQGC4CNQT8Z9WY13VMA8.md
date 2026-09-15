@@ -19,10 +19,22 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:27:46Z
+updated-at: 2026-09-15T05:28:54Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
-question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
+question: |-
+  Runde 2 (2026-09-15): die eine Reservierung aus dem review-Verdikt ist behoben, dazu die drei kleineren Befunde. Es geht nur noch um deine Annahme.
+
+  Was seit dem letzten Verdikt passiert ist (4 Commits, 1495e14 bis e3a745a):
+  - jaira-role-pr/SKILL.md sagt nach dem Push nicht mehr 'stop', sondern schickt den Agenten weiter; 'stop' bezieht sich jetzt ausdruecklich auf das Aufmachen des PR, nicht auf die Arbeit.
+  - Die Rolle erkennt an 'gh pr list --head', in welcher ihrer zwei Betriebsarten sie laeuft, und jede Betriebsart fuehrt zu genau einer namentlich genannten Sektion.
+  - Das 'gh pr create'-Kommando steht jetzt fuer dich ausgeschrieben da; die Boundary heisst 'Never RUN', damit klar ist: hinschreiben ja, ausfuehren nie.
+  - Die Unreleased-Zeile in core/release/NOTES.md nennt ein lauffaehiges 'jaira roles install --project' statt '--force'.
+  - critique lief zweimal (fand beim ersten Mal einen echten Widerspruch in der neuen Modus-Weiche, beim zweiten Mal nichts mehr), optimize hat die doppelte Aufzaehlung der Betriebsarten auf eine reduziert, testing steht auf pass.
+
+  ACHTUNG beim Lesen des Tickets: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Punkt 7 der Pruefliste ('entscheide, ob Zeile 36-37 zu aendern ist') und Punkt 9 ('jaira roles install --force') sind beide bereits erledigt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide Felder dann neu.
+
+  Du musst nur sagen, ob du die Arbeit annimmst.
 outcome-what: "testing-Lane: go build ./... und go test ./... -race gruen, DoD-1 an README/CLAUDE/AGENTS Zeile fuer Zeile geprueft, und eine frisch gebaute Binary schreibt die neue PR-Regel per 'jaira roles install --into' wirklich heraus."
 outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides bestaetigt am Baum, nicht am outcome-Text."
 outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
