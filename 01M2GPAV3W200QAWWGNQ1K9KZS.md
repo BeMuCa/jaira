@@ -26,7 +26,7 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:32:32Z
+updated-at: 2026-09-15T07:32:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93284
@@ -52,7 +52,7 @@ review-summary: "core/lane/corrections.go:121 fuehrt mit 'var correctionsOut io.
 - [x] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
   proof: core/release/NOTES.md:17
 - [x] Eine Korrektur fasst nur eine Lane an, die erkennbar die ausgelieferte ist, die sie zu korrigieren behauptet - etwa weil die Datei einer ausgelieferten Fassung entspricht oder sich nur in genau dem Feld unterscheidet, um das es geht. Eine Lane, die ein Mensch selbst geschrieben hat, wird gemeldet und nicht angefasst, auch wenn sie dieselbe id traegt. Nachgestellt mit einem selbstgeschriebenen done.md, das absichtlich logbook-on-entry: true fuehrt: es bleibt unveraendert, und der Mensch erfaehrt davon.
-  proof: core/lane/corrections.go:212 correction.recognises; core/lane/corrections_test.go:134 TestCorrectionLeavesALaneSomebodyWroteAlone, :169 TestCorrectionLeavesTodaysLanePlusTheLineAlone
+  proof: core/lane/corrections.go:201 correction.recognises; core/lane/corrections_test.go:167 TestCorrectionLeavesALaneSomebodyWroteAlone, :203 TestCorrectionLeavesTodaysLanePlusTheLineAlone
 
 ## Options
 
