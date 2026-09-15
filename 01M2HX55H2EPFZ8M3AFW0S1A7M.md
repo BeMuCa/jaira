@@ -12,8 +12,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:48:02Z
-updated-at: 2026-09-15T06:48:32Z
-assignee: Alexander Sacharov
+updated-at: 2026-09-15T06:48:36Z
+assignee: ""
 updated-by: Alexander Sacharov
 context: |-
   Nach 'jaira self update' haengen die Lanes eines Boards zurueck. Sie aktualisieren sich nicht mit dem Binary: eine Lane-Datei ist die Lane, und das Board behaelt die Fassung, die einmal geschrieben wurde.
