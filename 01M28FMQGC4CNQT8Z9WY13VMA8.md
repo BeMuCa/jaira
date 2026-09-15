@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:11:56Z
+updated-at: 2026-09-15T05:12:19Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -90,3 +90,4 @@ ABWEICHUNG von review-check Schritt 4: der Check verlangt genau EINEN Treffer fu
 
 Befund 4 nur an DER Unreleased-Zeile korrigiert, die zu diesem Ticket gehoert. Die Dispatcher-Zeile darueber traegt dasselbe 'jaira roles install --force' und ist damit genauso unlauffaehig - die gehoert KSGSKK und ist hier absichtlich nicht angefasst.
 - **2026-09-15 05:11 · Alexander Sacharov** — Nachgeprueft, nicht angenommen: 'jaira roles install --force' antwortet 'choose exactly one of --project, --global or --into' und exit 0. --force ersetzt laut --help nur eine Datei, die man selbst editiert hat; wer nichts editiert hat, braucht es gar nicht. Daher in der Notes-Zeile --project/--global als das Normale und --force als den Sonderfall.
+- **2026-09-15 05:12 · Alexander Sacharov** — Ausserhalb dieser Lane gelassen: der Kaestchen-Text im Rumpf dieses Tickets traegt noch die ALTE Regel ('ein Agent macht ihn auf und merged ihn nie'), waehrend das Frontmatter-Feld definition-of-done schon die neue traegt ('ein Agent pusht seinen Branch und hoert dort auf'). Die Angleichung lief laut question-Feld genau andersherum als hier sichtbar. Gehoert NYW4M7; nicht angefasst, damit nicht zwei Tickets dieselbe Zeile schreiben.
