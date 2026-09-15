@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:38:29Z
+updated-at: 2026-09-15T06:38:52Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -258,3 +258,14 @@ Offen und ausdruecklich NICHT von mir angefasst (Lane-Grenze): review-check Schr
 
 Ebenfalls nicht angefasst: im Worktree liegen uncommittete Aenderungen des Nachbartickets KSGSKK (jaira-dispatcher/SKILL.md, spawn.sh, NOTES.md). Gehoeren nicht zu dieser Runde, bleiben ungestaged.
 - **2026-09-15 06:33 · Alexander Sacharov** — Alex hat die GitLab-Runde am 2026-09-15 angenommen; den Uebergang human -> review hat ein Agent auf seine Anweisung getippt. Entschieden hat der Mensch. review-verdict und review-check stammen noch aus der Runde vom Vortag und muessen in dieser Lane neu erarbeitet werden - seither sind f6ce687 und 9fc224c dazugekommen, die den Forge-Zweig ueberhaupt erst eingefuehrt und dann vom falschen Remote auf den Push-Remote umgestellt haben.
+- **2026-09-15 06:38 · Alexander Sacharov** — review-Runde 2026-09-15 zur GitLab-Aenderung (f6ce687 + 9fc224c), am Diff geprueft und nicht am Bericht. Verdict: angenommen, mit einer benannten Luecke.
+
+Die Luecke, damit sie nicht verlorengeht: SKILL.md:55-63, Zweig 4 der Forge-Leiter. Host ist weder github.com noch gitlab-haltig und jaira.forge ist ungesetzt - die Rolle sagt korrekt, dass sie es nicht entscheiden kann, aber sie sagt nicht, ob der Agent danach anhaelt. Liest er weiter, steht er bei :71 vor einem unbedingten Push und bei :74-84 vor einer Gabel gh/glab, die er per Voraussetzung nicht aufloesen kann. Ein Satz an :63 ('Stop here and report; the rest of this file needs a settled forge') schliesst das. Nicht von mir eingebaut - review ist eine Urteils-Lane, keine Aenderungs-Lane, und die DoD verlangt es nicht.
+
+Was ich ausdruecklich verifiziert und nicht angenommen habe, weil beides das Ticket unbemerkt aushebeln wuerde: (1) die nie-ausfuehren-Regel steht vollstaendig auf BEIDEN Wegen - :143-144 fuer gh, :145-146 fuer glab, dazu :86-87 und :113-115. (2) Der Forge-Host kommt aus 'git remote get-url origin', also dem Remote des Pushes, nicht aus jaira.remote; das ist genau das, was 9fc224c repariert hat, und die Begruendung steht im Prompt selbst bei :46-49. Auf diesem Board waere beides GitHub gewesen und der Fehler unsichtbar geblieben.
+
+Der Hinweis der letzten in-progress-Runde stimmte: das alte review-check verlangte genau einen Treffer fuer 'gh pr create' und war ueberholt. Es ist ersetzt - der neue Check zaehlt keine Treffer mehr, sondern verlangt zwei never-run-Zeilen und stellt die Forge-Erkennung auf zwei Wegwerf-Repos nach. Jeder Schritt darin ist einmal gelaufen, bevor er eingetragen wurde.
+
+go test ./... -race: RC=0, kein FAIL. Die glab-Zeilen kommen aus einer frisch gebauten Binary per 'roles install --into' wirklich heraus.
+
+Nicht angefasst: spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md - die gehoeren KSGSKK im selben Worktree.
