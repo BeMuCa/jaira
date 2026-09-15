@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:28:36Z
+updated-at: 2026-09-15T20:28:40Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -118,7 +118,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [-] Restore: eine Datei aus einem milestones/-Unterordner landet in .jaira/milestones/ statt in TicketsDir (core/ticket/store.go:464) und kommt ueber RecordMilestone wieder auf ihren Ref; Farbe und Mitgliederliste unveraendert
 - [-] Test DoD 9: ablegen - vom Board weg und 'milestone ls' nennt ihn nicht; restore - Liste und Farbe zurueck, Karte wieder gefaerbt
 - [-] Hilfetexte und docs/COMMANDS.md: das Verschwinden bei 'jaira milestone rm' und das Ablegen bei 'jaira logbook' - beide Stellen liest man VOR dem Aufruf
-- [ ] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
+- [-] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
