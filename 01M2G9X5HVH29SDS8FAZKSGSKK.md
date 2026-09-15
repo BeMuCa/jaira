@@ -30,11 +30,11 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:42:14Z
+updated-at: 2026-09-15T06:43:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-79721
-claimed-at: 2026-09-15T06:33:35Z
+claimed-by: DESKTOP-RFTCH11-17089
+claimed-at: 2026-09-15T06:43:19Z
 outcome-what: "Die Aenderung getestet: Bau, vet und die volle Suite mit Race-Detektor laufen gelassen, die sieben DoD-Punkte einzeln im Arbeitsbaum nachgeschlagen und das Verhalten von scripts/spawn.sh selbst ausgefuehrt."
 outcome-why: "Die Runde vor mir hat geurteilt, ob das die richtige Aenderung ist; hier musste beantwortet werden, ob das Verlangte ueberhaupt da ist und laeuft."
 outcome-resolves: "test-verdict=pass. go build ./... RC=0, go vet ./... RC=0, go test -race -count=1 ./... RC=0 ueber 27 Pakete. DoD 1-7 an Datei und Zeile nachgeprueft; DoD 6 an dieser Sitzung selbst beobachtet (Herdr-Tab w3:t36, Label 'KSGSKK/testing'). Funktion: 'COMPOSE_PROJECT_NAME=my_repo_ksgskk docker compose config --quiet' RC=0, beide Wachen in spawn.sh brechen mit RC=1 ab, die Plattform-Verzweigung waehlt wsl.exe fuer /mnt/* und *.exe. Ein Randfall steht als Notiz am Ticket und wurde nicht angefasst."
