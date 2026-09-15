@@ -27,7 +27,7 @@ related:
 commits:
   - 632240e21705271e1e04f68a7c951f6544035c82
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:33:09Z
+updated-at: 2026-09-15T07:34:34Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93284
@@ -35,7 +35,7 @@ claimed-at: 2026-09-15T07:28:38Z
 outcome-what: "correctionsOut ist geloescht: say (core/lane/corrections.go:139) schreibt fest auf os.Stderr, das 'var w io.Writer'-Geflecht und der io-Import fallen weg. Die Testhilfe hears (core/lane/corrections_test.go:23) tauscht dafuer os.Stdout und os.Stderr gegen echte Pipes und gibt beide Texte zurueck; TestCorrectionSpeaksOnStderrAndNotOnStdout (:278) benutzt sie statt eines eigenen Deskriptor-Blocks, die uebrigen vier Aufrufer lesen jetzt den stderr-Rueckgabewert."
 outcome-why: "critique Runde 2: 'var correctionsOut io.Writer' war die einzige Writer-Seam im ganzen Produktionscode - nudgeIfStale (internal/cli/update.go) und bindDriverIfShared schreiben direkt auf os.Stderr - und sie trug nichts, weil der Test, der den Kanal wirklich festnagelt, ohnehin die echten Deskriptoren tauschen muss: nur so laesst sich zeigen, dass stdout sauber bleibt. Jetzt gibt es eine Testhilfe statt Testhilfe plus Produktionsvariable."
 outcome-resolves: "Verhalten unveraendert, nur der Weg dorthin: go vet ./... und go test ./... -race beide RC=0. Gegenprobe: say voruebergehend auf os.Stdout umgestellt -> drei Tests fallen um (TestCorrectionSpeaksOnStderrAndNotOnStdout, TestCorrectionRemovesTheDoorwayFromAnOldBoard, TestCorrectionLeavesALaneSomebodyWroteAlone). DoD 3 zeigt jetzt auf core/lane/corrections.go:139 statt auf die geloeschte Variable; die verschobenen Zeilennummern in DoD 2 und 6 sind mitgezogen. Keine NOTES.md-Zeile, weil von aussen nichts anders ist."
-review-summary: "core/lane/corrections.go:121 fuehrt mit 'var correctionsOut io.Writer' die einzige Writer-Seam im ganzen Repository ein - kein anderer Produktionscode in core/ oder internal/ hat so eine Variable, alle schreiben direkt auf os.Stderr (internal/cli/update.go:53 nudgeIfStale, share.go bindDriverIfShared). Die Seam verdient sich auch nichts: TestCorrectionSpeaksOnStderrAndNotOnStdout (core/lane/corrections_test.go:244) beweist den Kanal ohnehin erst mit den echten Deskriptoren, genau wie captureStdio (internal/cli/update_test.go:44) es fuer den zitierten Praezedenzfall tut. Stattdessen: correctionsOut und das 'var w io.Writer'-Geflecht in say (corrections.go:145-151) loeschen, say schreibt fest auf os.Stderr, und hears (corrections_test.go:15) tauscht os.Stderr gegen eine os.Pipe und gibt das Gelesene zurueck - eine Testhilfe in der Datei statt Testhilfe plus Produktionsvariable, und der handgeschriebene Deskriptor-Block in :247-266 faellt in dieselbe Hilfe. Kein gemeinsames Testpaket dafuer anlegen: core/move/oldboard_test.go:69 hat denselben Block ein drittes Mal, aber ein neues Paket fuer drei Aufrufer ist teurer als die Wiederholung."
+review-summary: "none"
 ---
 
 # Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen
