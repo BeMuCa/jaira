@@ -29,11 +29,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:30:12Z
+updated-at: 2026-09-15T05:31:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-40252
-claimed-at: 2026-09-15T05:29:18Z
+claimed-by: DESKTOP-RFTCH11-41109
+claimed-at: 2026-09-15T05:31:02Z
 outcome-what: an einen Worker uebergeben
 outcome-why: "Transport-Passagen aus den installierten Kopien nach core/role/builtin portieren"
 ---
