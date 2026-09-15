@@ -1,7 +1,7 @@
 ---
 id: 01M2G9X5HVH29SDS8FAZKSGSKK
 title: "Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher liest aus seinem eigenen Prompt, womit er einen Worker startet, und benutzt das mitgelieferte scripts/spawn.sh - statt sich einen Weg auszudenken, den der Berechtigungspruefer ablehnt."
@@ -30,14 +30,14 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:51:53Z
+updated-at: 2026-09-15T05:52:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-58796
 claimed-at: 2026-09-15T05:49:14Z
-outcome-what: "spawn.sh unterscheidet 'claude blocked' vom Nicht-Hochkommen, und der Teamlead-Absatz bricht wieder bei 80 Zeichen"
-outcome-why: "die einzige Zeile, die ein Dispatcher aus einem fehlgeschlagenen Start liest, sagte bei einem wartenden Genehmigungsdialog das Falsche - er haette den Pane weggeraeumt statt den Menschen zu holen"
-outcome-resolves: "beide Befunde des 2. critique-Durchgangs (spawn.sh:76, teamlead/SKILL.md:46)"
+outcome-what: "Die Meldung des 'claude blocked'-Arms in core/role/builtin/jaira-dispatcher/scripts/spawn.sh:76-79 richtet sich jetzt an den Menschen: 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'. Critiques Wortlaut woertlich uebernommen. Eigener case-Arm, exit 1 und der Torwaechter-Kommentar bleiben unveraendert."
+outcome-why: "Die alte Meldung sagte 'answer it in that pane yourself'. Gelesen wird sie nur vom Dispatcher, und jaira-dispatcher/SKILL.md:188-189 verbietet ihm genau das ('never answer for the human'). Das Skript schuetzte den Genehmigungsdialog also vor seinem eigenen send-keys und schickte den Dispatcher im naechsten Satz mit der Hand hinein."
+outcome-resolves: "Der einzige offene Befund aus critique-Durchgang 3 (Notiz 2026-09-15 05:45), den die Arbeitsanweisung von 05:49 als alleinigen Umfang dieser Runde benannt hat. Alle sieben DoD-Punkte waren bereits abgehakt und belegt; dieser Befund haengt an keinem Haken. Gates gruen: go build, go vet, go test ./core/role/..., bash -n spawn.sh."
 review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:77-78 sagt dem einzigen Leser dieser Zeile - dem Dispatcher - 'answer it in that pane yourself'. Genau das verbietet jaira-dispatcher/SKILL.md:188-189 ('a worker is sitting at an approval dialog. Read its output, report what it is asking, and never answer for the human'), und der Kommentar drei Zeilen darueber beruft sich selbst auf dieses Verbot. Der neue Arm verhindert also, dass das Skript den Dialog beantwortet, und fordert den Dispatcher im selben Atemzug auf, es von Hand zu tun. Stattdessen: die Meldung an den Menschen richten - etwa 'claude is up in $pane but an approval dialog is waiting: report it to the human, let them answer it in that pane, then start this worker again'."
 ---
 
