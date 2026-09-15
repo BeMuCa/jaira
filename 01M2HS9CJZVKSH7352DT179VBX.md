@@ -25,7 +25,7 @@ related:
   - 01M28FMQGC4CNQT8Z9WY13VMA8
 commits: []
 created-at: 2026-09-15T05:40:26Z
-updated-at: 2026-09-15T05:45:23Z
+updated-at: 2026-09-15T05:45:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
@@ -50,4 +50,6 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
+- **2026-09-15 05:45 · Alexander Sacharov** — Am 2026-09-15 von Alex in 13VMA8 zusammengelegt und hier stillgelegt. Die Kriterien stehen jetzt dort als Punkte 2 bis 4, in seiner Formulierung: welches Werkzeug laeuft, soll waehlbar sein und nicht nur geraten.
 
+Grund fuer das Zusammenlegen: es ist dieselbe Datei. core/role/builtin/jaira-role-pr/SKILL.md hat gerade vier Runden Ueberarbeitung hinter sich; ein eigenes Ticket haette spaeter um dieselben Zeilen gekaempft.
