@@ -1,7 +1,7 @@
 ---
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
@@ -26,14 +26,14 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:24:13Z
+updated-at: 2026-09-15T07:24:31Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-74981
 claimed-at: 2026-09-15T07:18:08Z
-outcome-what: "core/lane/corrections.go: benannte, einmalige, feldgenaue Lane-Korrektur im Ladepfad; entfernt 'logbook-on-entry: true' aus einem done.md, das erkennbar die von 2ecc670 ausgelieferte Datei ist, meldet es und merkt sich das in .jaira/lanes/corrections. Eine selbstgeschriebene Lane wird gemeldet, nie editiert. Tests: core/lane/corrections_test.go (6), core/move/oldboard_test.go (end-to-end). Eine Zeile in core/release/NOTES.md unter ## Unreleased."
-outcome-why: "Boards von vor 9ad7aa9 fegen beim Move nach done weiterhin fremde fertige Tickets ins Logbuch (Issue #6), weil Load bei ProjectLanesActive nur das Lane-Verzeichnis liest - eine einmal geschriebene Lane-Datei ist fuer immer die Wahrheit. Die Handarbeit-Anweisung der 0.1.4-Notiz greift nicht, weil .jaira/lanes/ gitignored ist und die Zeile pro Checkout einzeln entfernt werden muesste."
-outcome-resolves: "DoD 1-6 abgehakt mit Proof; go test ./... -race RC=0; alle drei Faelle zusaetzlich von Hand mit gebautem Binary nachgestellt"
+outcome-what: "Der Satz, mit dem eine Lane-Korrektur sich meldet, geht jetzt direkt auf os.Stderr: applyCorrections (core/lane/corrections.go:144) schreibt ihn selbst und gibt nichts mehr zurueck, Load haengt ihn nicht mehr an Set.Warnings. Tests lesen ihn dort, wo ein Mensch ihn liest - core/lane/corrections_test.go (hears-Seam plus TestCorrectionSpeaksOnStderrAndNotOnStdout mit echten Deskriptoren) und core/move/oldboard_test.go. Die Unreleased-Zeile in core/release/NOTES.md sagt jetzt, dass die Meldung auch unter --json kommt."
+outcome-why: "critique-Findung: die Meldung ritt auf Set.Warnings. internal/cli/root.go:291 unterdrueckt Lane-Warnungen unter --json, und die meisten lane.Load-Aufrufer (mergedriver, tags, links, validate, checklist, resume, tui/browse) lesen .Warnings gar nicht. Weil die Korrektur einmalig ist und ihren Marker im selben Load schreibt, war der erste Load nach einem Update - auf einem Agenten-Board ein --json-Aufruf oder der Merge-Driver - meist der einzige und letzte Moment, in dem etwas haette gesagt werden koennen. Danach war die Meldung fuer immer weg."
+outcome-resolves: "DoD 3 jetzt belegt durch die Zustellung, nicht nur durch die Erzeugung des Satzes; go vet + go test ./... -race RC=0; von Hand mit gebautem Binary nachgestellt: altes done.md unter 'jaira list --json' -> Meldung auf stderr, stdout bleibt gueltiges JSON; zweiter Lauf stumm; Zeile von Hand zurueckgeschrieben -> bleibt stehen; heutiges done.md plus Zeile -> unveraendert, Meldung 'is not the lane jaira shipped'"
 review-summary: "core/lane/corrections.go:applyCorrections meldet die Korrektur nur als Set.Warnings-Eintrag; internal/cli/root.go:291 verwirft alle Lane-Warnungen unter --json, und rund fuenfzehn weitere lane.Load-Aufrufer (internal/cli/mergedriver.go:55, tags.go:320, links.go:43, validate.go:35, lanes.go:110, checklist.go:137, resume.go:84, internal/tui/browse.go:157) lesen .Warnings gar nicht. Die Korrektur ist einmalig und schreibt den Marker im selben Aufruf: faellt sie in einem dieser Aufrufe an - beim Agenten-'jaira next --json' oder im git-Merge-Driver - wird die done.md editiert und niemand erfaehrt es je. Stattdessen den Says-/Skipped-Satz in applyCorrections direkt auf os.Stderr schreiben, so wie nudgeIfStale in internal/cli/update.go:37 es fuer genau diesen Fall schon tut und im Kommentar begruendet: 'it must reach the terminal regardless of --json - stdout is reserved for the payload an agent parses'. Das ist DoD 3: der Test beweist, dass der Satz erzeugt wird, nicht dass er ankommt."
 ---
 
