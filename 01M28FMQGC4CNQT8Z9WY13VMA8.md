@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:57:29Z
+updated-at: 2026-09-15T06:57:48Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -43,9 +43,9 @@ question: |-
   Nicht getan, wie angewiesen: kein Pull Request und kein Merge Request aufgemacht, aktualisiert oder gemerged. Der Zweig feat/13VMA8-pr-is-the-humans ist gepusht; das Kommando gibst du.
 
   Hinweis: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide dann neu.
-outcome-what: "Critique uebersprungen"
-outcome-why: "Alex: critique ist auf diesem Ticket zweimal ohne Befund geschlossen, die Aenderung ist ein Satz"
-outcome-resolves: "DoD 3 - 'gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten' - ist jetzt nicht nur gesagt, sondern durchgesetzt: die Rolle kann den falschen Befehl nicht mehr raten, weil sie vor dem ersten Befehl stehenbleibt. Proof auf DoD 3 aktualisiert. go test ./... -race: Exit 0, kein FAIL; 'roles install --into' aus einer frisch gebauten Binary traegt den neuen Absatz, der go:embed-Pfad ist also mit."
+outcome-what: "Die Proof-Zeilen aller vier DoD-Punkte am aktuellen Baum nachgeschlagen und neu gesetzt. DoD 1: :86-92 -> :92-97 (die Verzweigung nach dem Push). DoD 2: :83/:124 (die gh-Zeilen) -> :89/:130 (die glab-Zeilen). DoD 3: :36-68 -> :41-69 fuer die Leiter, dazu je eine Einzelzeile pro Sprosse (:51-52, :43, :53, :54, :55-69) und :65-66 / :67-69 fuer Halt und Anweisung an den Menschen. DoD 4: :143-148 -> :149-152 fuer die never-run-Zeilen, :113-115 -> :119-121 fuer 'You write it; you never run it', :65-67 -> :71-73 fuer den Wortwechsel merge request. Keine Datei ausserhalb von .jaira/ geaendert."
+outcome-why: "testing hat die Runde nicht am Inhalt scheitern lassen, sondern an den Ankern: seit 9fc224c zeigten drei von vier Proofs sechs Zeilen zu frueh, und DoD 2 belegte den GitLab-Weg ausgerechnet mit den beiden gh-Zeilen - der Proof las sich als sein eigenes Gegenteil. Ein Proof, der auf die falsche Zeile zeigt, ist beim Review schlimmer als keiner: er sagt 'nachgeprueft' und schickt den Pruefer an eine Stelle, die seine Behauptung nicht traegt."
+outcome-resolves: "DoD 1-4 tragen jetzt Anker, die halten, was sie behaupten - jede genannte Zeile am Baum nachgeschlagen, nicht aus dem testing-Bericht uebernommen. Dabei kamen zwei Anker ans Licht, die testing selbst nicht gemeldet hatte (DoD 4 Wortwechsel, DoD 3 Leiterspanne). Der Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und core/release/NOTES.md ist unveraendert."
 claimed-by: DESKTOP-RFTCH11-38871
 claimed-at: 2026-09-15T06:55:39Z
 review-summary: "Die Rolle jaira-role-pr spricht jetzt zwei Forges. Neu ist die Sektion 'Which forge this repository is on' (SKILL.md:36-67): zuerst 'git config jaira.forge' - ist es gesetzt, gewinnt es ohne Wenn und Aber; sonst entscheidet der Host von 'git remote get-url origin', also des Remotes, auf den der Branch gepusht wird (github.com -> gh, Host mit 'gitlab' -> glab); gibt der Host nichts her, nennt die Rolle kein Werkzeug, sagt das und schreibt die eine Zeile hin, die es klaert ('git config jaira.forge gitlab'). Dass 'origin' und nicht 'jaira.remote' gelesen wird, steht mit Begruendung im Text (:46-49) - jaira.remote traegt die Ticket-Refs und ist im Fork das Upstream, waehrend der Branch zum Fork geht. Danach sind genau drei Stellen zweisprachig: Auflisten (:77 gh pr list --head / :83 glab mr list --source-branch), Aufmachen (:118 gh pr create --body-file / :124 glab mr create --description \"$(cat ...)\") und die Boundaries (:143-148). Der uebrige Ablauf bleibt einmalig, statt als zweite Kopie zu existieren. Der Wortwechsel ist begrenzt: :65-67 weist an, 'pull request' NUR auf dem GitLab-Weg als 'merge request' zu lesen - der GitHub-Weg redet weiter von Pull Requests. Ausserdem hat 9fc224c die Abfrage der offenen Requests aus der Forge-Sektion in die Push-Sektion verschoben, wo der Branch tatsaechlich genommen wird. Dazu eine Unreleased-Zeile in core/release/NOTES.md:20 und ein Satz in der SKILL-description."
