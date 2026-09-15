@@ -30,11 +30,11 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:28:52Z
+updated-at: 2026-09-15T06:31:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-74065
-claimed-at: 2026-09-15T06:28:52Z
+claimed-by: DESKTOP-RFTCH11-77218
+claimed-at: 2026-09-15T06:31:06Z
 outcome-what: "testing round 1: gates green, DoD 1-7 verified in the tree, spawn.sh exercised against a fake herdr in four runs"
 outcome-why: "the COMPOSE_PROJECT_NAME spawn.sh writes is rejected by docker compose, so the .env block it was asked to fix still does not work"
 outcome-resolves: "no DoD item; the finding is on spawn.sh:35, the line DoD item 5 demanded"
