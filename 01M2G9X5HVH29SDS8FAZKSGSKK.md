@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:47:23Z
+updated-at: 2026-09-15T06:47:47Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-17089
@@ -54,6 +54,7 @@ review-gaps: |-
 
   Ueberprueft und in Ordnung: 'herdr --skill' bestaetigt die Zustaende idle/working/blocked/done/unknown und dass 'tab create' '.result.root_pane' liefert; 'tab create --help' kennt --workspace, --cwd, --label, --no-focus; 'herdr pane get' liefert wirklich 'agent' und 'agent_status'. go build ./... und go test ./core/role/... ./core/release/... laufen durch, 'bash -n spawn.sh' ebenso. ${ws[@]+"${ws[@]}"} ist unter set -u korrekt.
 test-verdict: "pass: build, vet und 'go test -race -count=1 ./...' alle RC=0 ueber 27 Pakete; DoD 1-7 im Arbeitsbaum Zeile fuer Zeile nachgeprueft; Verhalten selbst ausgefuehrt - Projektname-Ableitung von docker akzeptiert (RC=0), beide Wachen brechen ab, und diese Sitzung laeuft in dem Tab 'KSGSKK/testing', den spawn.sh erzeugt"
+review-verdict: "Das Diff deckt alle sieben DoD-Punkte ab, und die Mechanik, auf der es steht, ist gegen das echte Herdr auf diesem Rechner nachgeprueft - Zustandsnamen, Antwortfelder und Optionen stimmen. Keine eingefuehrten Defekte gefunden; Bau und die betroffenen Tests laufen. Drei Restluecken bleiben (Projektname mit nicht-alphanumerischem Anfang, drei fremde Portvariablen, WSL-Erkennung am Binaerdateinamen), alle eng und keine davon ein verfehlter DoD-Punkt. Unsicher bin ich allein bei DoD 6: er ruht auf einer Beobachtung, und die Sitzung, die ihn beobachtet hat, hat spawn.sh dabei umgangen - wer ihn nicht glaubt, stellt ihn mit dem Ablauf unten in einer Minute selbst nach."
 ---
 
 # Der Dispatcher-Prompt nennt sein Transportmittel nicht, also erfindet jeder Lauf ein eigenes
