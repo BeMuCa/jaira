@@ -41,7 +41,7 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:02:06Z
+updated-at: 2026-09-15T21:04:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -438,3 +438,7 @@ FINDING 5: die Suche heisst jetzt ticket.Store.FiledMilestone und liegt auf logb
 2. internal/cli/milestones.go:121 and core/release/NOTES.md:26 recommend deleting the 'status: filed' line by hand. That is the duplicate the refsync doc comment (core/refsync/refsync.go:206-213) refuses to create: the hand edit rides out on the ref with the next milestone command, the filer's tree fetches the unmarked file onto its board, and its own 'jaira restore' then hits the 'is already on the board' guard in core/ticket/store.go:544 with the logbook copy left stranded. The file staying hand-editable is not the same as the hand edit being the documented way back.
 
 Checked and left alone: LoadAll's filed filter and its single-caller effects (tui/model.go:369, milestones.go:30/136/302) are consistent; Store.FiledMilestone swallowing logbookFolders' error matches the os.ReadDir it replaced; IncomingMilestones has one caller. The modify/delete conflict between a clone that commits the marked file and the filer who git-mv'd it is real but is not new — the previous skip behaviour produced the same conflict shape — so it is not re-raised here.
+- **2026-09-15 21:04 · Alexander Sacharov** — in-progress round 5 (critique round 6), 2026-09-15. Both findings were message text; no behaviour changed and the suite stays green.
+- Finding 1 (logbook.go): the refusal now names the file and its mark and says the restore has to run in the tree that filed it. Checked before rewording: every route here — a fetch writing a marked file back, a filing that marked and did not move, a restore that moved back and failed to unmark — leaves this tree WITHOUT a logbook copy, so the old advice hit 'is not in the archive or in .jaira/logbook/'.
+- Finding 2 (milestones.go, NOTES.md, COMMANDS.md): the hand edit of 'status: filed' is no longer offered as the way back. It is still possible — the file stays hand-editable, that is the format's promise — but it is not documented, because doing it in a second clone puts the milestone back on that board alone while the logbook copy stays stranded in the filer's tree, and that tree's own 'jaira restore' then hits 'is already on the board' (core/ticket/store.go:544). Hand-editable is not the same as the documented route.
+- Not changed: internal/cli/fetch.go's long text and docs/COMMANDS.md:146/147 describe the mark without recommending removing it, so they were already right.
