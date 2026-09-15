@@ -22,7 +22,7 @@ commits:
   - pending
   - 39c2659 79bb6de
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:54:46Z
+updated-at: 2026-09-15T06:55:19Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -303,3 +303,4 @@ Nur DoD 3 (:36-68, :65-68) stimmt.
 Warum das nicht kosmetisch ist: die Proofs sind genau das, was jaira-role-pr in die PR-Beschreibung unter 'How to check' schreibt. Ein Reviewer, der DoD 2 folgt, landet auf 'gh pr create' und liest es als Beleg fuer GitLab-Unterstuetzung.
 
 Fix, fuenf Minuten: 'jaira dod 13VMA8 1|2|4 --done --proof "..."' mit den oben genannten richtigen Zeilen. Inhaltlich ist nichts zu aendern - nur die Anker. Danach lohnt ein Blick, ob review-check Schritt 4 ('genau EIN Treffer fuer gh pr create') noch stimmt; die vorige Runde hat ihn selbst schon als ueberholt notiert.
+- **2026-09-15 06:55 · Alexander Sacharov** — in-progress-Runde nach dem testing-fail vom 2026-09-15: der Befund ist AUSSCHLIESSLICH, dass die Proof-Zeilen von DoD 1, 2 und 4 seit 9fc224c sechs Zeilen zu frueh zeigen - DoD 2 belegt den GitLab-Weg mit den gh-Zeilen :83/:124 statt :89/:130. Am Inhalt von core/role/builtin/jaira-role-pr/SKILL.md und an core/release/NOTES.md ist NICHTS zu aendern: Gates sind gruen, alle vier Sprossen der Forge-Leiter verhalten sich richtig, Sprosse 4 haelt jetzt vor dem Push an. Zu tun: jede Proof-Zeile einmal am aktuellen Baum nachschlagen (grep/sed auf der Datei, nicht aus dem Gedaechtnis) und per "jaira dod 13VMA8 <n> --done --proof ..." neu setzen, sodass jede genannte Zeilennummer wirklich das zeigt, was sie behauptet. Danach nichts weiter. NICHT anfassen: scripts/spawn.sh, jaira-dispatcher/SKILL.md, jaira-teamlead/SKILL.md (paralleles Ticket KSGSKK im selben Worktree). Keinen Pull Request oeffnen oder aktualisieren.
