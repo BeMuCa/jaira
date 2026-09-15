@@ -279,10 +279,15 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	// filing marked and got no further with. Either way it is off the board
 	// already, and filing it a second time would only stamp today's folder on
 	// somebody else's record of it.
+	//
+	// Every route to this refusal leaves the file on the board and nothing in
+	// this tree's logbook, so 'jaira restore' here would only answer that the
+	// file is not in the archive. The copy that can come back is in the tree
+	// that filed it.
 	if ms.Filed() {
 		return fail(ExitValidation, "milestone_filed",
-			"milestone %q is already filed — 'jaira restore %s.md' brings it back onto the board",
-			name, name)
+			"milestone %q is already filed: its file at %s is marked %q, which is what keeps it off the board — there is no logbook copy here to bring back, so 'jaira restore %s.md' has to run in the tree that filed it",
+			name, milestone.Path(s.Root, name), milestone.StatusFiled, name)
 	}
 	// The same gate a ticket passes, asked of a group: a milestone with
 	// unfinished work in it is a plan somebody is still working, and filing it

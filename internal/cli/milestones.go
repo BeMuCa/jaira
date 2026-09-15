@@ -119,7 +119,7 @@ and you are told so.`,
 				// "already exists" would send the reader looking for a
 				// milestone no listing names.
 				return fail(ExitValidation, "milestone_filed",
-					"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — take that line out by hand to put this one back, or let whoever filed it run 'jaira restore %s.md'",
+					"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and taking the line out here instead would leave that tree's copy stranded in its logbook",
 					name, milestone.Path(s.Root, name), milestone.StatusFiled, name)
 			} else if err == nil {
 				return fail(ExitValidation, "milestone_exists",
