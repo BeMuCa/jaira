@@ -13,8 +13,8 @@ related:
   - 01M2HX6SYCFB27V26R5APWAF22
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-09-15T07:31:22Z
-assignee: ""
+updated-at: 2026-09-15T07:33:59Z
+assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
   13VMA8 hat die Regel 'ein Agent schiebt den Zweig und haelt an, der Mensch macht den Pull Request auf' am 2026-09-15 verbindlich gemacht - in CLAUDE.md, AGENTS.md, dem README und in den ausgelieferten Rollen-Prompts. Fuer ein Team ist das richtig. Fuer einen Menschen, der allein an einem Repository arbeitet und auf den Hauptzweig committet, ist es schlicht falsch: die Rolle haelt ihn an und reicht ihm eine 'gh pr create'-Zeile fuer etwas, das er nie wollte.
