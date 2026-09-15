@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:15:11Z
+updated-at: 2026-09-15T05:15:31Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -91,3 +91,14 @@ ABWEICHUNG von review-check Schritt 4: der Check verlangt genau EINEN Treffer fu
 Befund 4 nur an DER Unreleased-Zeile korrigiert, die zu diesem Ticket gehoert. Die Dispatcher-Zeile darueber traegt dasselbe 'jaira roles install --force' und ist damit genauso unlauffaehig - die gehoert KSGSKK und ist hier absichtlich nicht angefasst.
 - **2026-09-15 05:11 · Alexander Sacharov** — Nachgeprueft, nicht angenommen: 'jaira roles install --force' antwortet 'choose exactly one of --project, --global or --into' und exit 0. --force ersetzt laut --help nur eine Datei, die man selbst editiert hat; wer nichts editiert hat, braucht es gar nicht. Daher in der Notes-Zeile --project/--global als das Normale und --force als den Sonderfall.
 - **2026-09-15 05:12 · Alexander Sacharov** — Ausserhalb dieser Lane gelassen: der Kaestchen-Text im Rumpf dieses Tickets traegt noch die ALTE Regel ('ein Agent macht ihn auf und merged ihn nie'), waehrend das Frontmatter-Feld definition-of-done schon die neue traegt ('ein Agent pusht seinen Branch und hoert dort auf'). Die Angleichung lief laut question-Feld genau andersherum als hier sichtbar. Gehoert NYW4M7; nicht angefasst, damit nicht zwei Tickets dieselbe Zeile schreiben.
+- **2026-09-15 05:15 · Alexander Sacharov** — critique-Runde 2026-09-15: ein Befund, und er ist neu - kein Wiederaufwaermen von review-gaps Befund 1, sondern ein Folgefehler der Behebung dieses Befunds.
+
+Die Behebung hat zwei Dinge in dieselbe Datei gebracht, die sich gegenseitig aufheben. :22 fragt jetzt 'gh pr list --head', :24-27 bildet das Ergebnis auf zwei Betriebsarten ab und schickt den Fall 'PR ist schon offen' auf 'the section below'. Unterhalb liegen aber ZWEI Sektionen (:46 Beschreibung schreiben, :73 Kommentare beantworten); gemeint ist :73. Und :43-44 sagt danach ohne jede Bedingung 'Carry on with the two sections below - write the description out for them, then report.' - also beide.
+
+Folge: ein Agent, der auf einem Branch mit offenem PR laeuft, schreibt eine Beschreibung samt 'gh pr create'-Kommando fuer einen Pull Request, den es schon gibt. Das ist genau die Fehlerklasse, die Befund 1 behoben hat - ein Prompt wird ausgefuehrt, nicht gelesen -, nur an der naechsten Zeile.
+
+Die Behebung ist klein und eindeutig, darum zurueck nach in-progress statt in human: :26 die Zielsektion beim Namen nennen statt 'the section below', und :43-44 verzweigen statt 'the two sections' zu sagen.
+
+Bewusst NICHT als Befunde geschrieben, damit die naechste Runde sie nicht reflexhaft anfasst:
+- CLAUDE.md haelt nur die PR-Regel im jaira:local-Block (154-170), die NOTES.md-Regel steht ausserhalb bei 172; AGENTS.md haelt beide drin (127-180). Das ist harmlos - announce.go schreibt nur zwischen jaira:start und jaira:end, alles nach dem Endmarker ist ohnehin sicher - und steht so schon auf master. Kein Befund dieser Runde.
+- Die vier review-gaps-Befunde sind alle sauber behoben; die drei Doku-Stellen und teamlead:86-88 / dispatcher:173 sagen wortgleich dasselbe. Nichts davon noch einmal aufgemacht.
