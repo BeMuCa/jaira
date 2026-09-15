@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:12:36Z
+updated-at: 2026-09-15T15:13:13Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -68,12 +68,12 @@ outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig
 - [x] core/milestone: Load/LoadAll/Save nach dem Vorbild von core/tag (core/tag/tag.go:189 Load, :371 Save) - Zeilen verbatim erhalten, WriteAtomic, Mitgliederliste parsen
 - [x] Farbvergabe: zufaellig aus einer Palette, die keine Farbe eines schon vorhandenen Milestones doppelt; die Farbe steht in der Milestone-Datei selbst, kein zweites zentrales Registry
 - [x] Test: eine Milestone-Datei von Hand editieren (Kommentar, Leerzeile, eigene Reihenfolge) und nach Load/Save unveraendert wiederfinden
-- [~] Index ID -> Milestones einmal beim Laden bauen, neben link.Build in loadEnv (internal/cli/root.go:275) und im TUI (internal/tui/model.go:352); CLI und TUI lesen denselben Index
+- [ ] Index ID -> Milestones einmal beim Laden bauen, neben link.Build in loadEnv (internal/cli/root.go:275) und im TUI (internal/tui/model.go:352); CLI und TUI lesen denselben Index
 - [ ] CLI: jaira milestone create/add/rm/ls - je Aufruf genau ein Dateischreibvorgang, damit zwanzig Tickets gruppieren eine Bearbeitung bleibt
 - [ ] CLI: jaira list --milestone <name> (neben --tag, internal/cli/tickets.go:528) und der Schluessel milestone:<name> in beiden matches() (internal/cli/tickets.go:534, internal/tui/model.go:598) - exakt wie tag, nicht als Teilstring
 - [x] TUI: rechte Kartenkante in renderCardBlock (internal/tui/view.go:533) - zweite Balkenzelle rechts, inner = w-2, die Spalte IMMER reserviert, auch ohne Milestone, sonst flattern die Titel in einer Lane
 - [x] TUI: milestoneColors gespiegelt zu cardColors (internal/tui/model.go:1366) - cardSlots Plaetze, in Dateireihenfolge, ein vierter Milestone faerbt nichts
-- [ ] Test: Karte mit 0, 1 und 4 Milestones - gleiche Kartenbreite, gleiche Textbreite, hoechstens drei gefaerbte Plaetze rechts
+- [~] Test: Karte mit 0, 1 und 4 Milestones - gleiche Kartenbreite, gleiche Textbreite, hoechstens drei gefaerbte Plaetze rechts
 - [ ] TUI: die Geste - Picker wie die Tag-Box auf 't' (internal/tui/model.go:1010), die Auswahl setzt m.filter auf milestone:<name> und nutzt damit den vorhandenen Filterweg
 - [ ] gitref: Namensraum von 'Ticket-ID' auf '(Art, Name)' verallgemeinern - Prefix (core/gitref/gitref.go:39), RefName (:144), Fetch-Refspec (:575), List/ListRemote/idsFrom (:587-625); refs/jaira/milestones/<name> neben refs/jaira/tickets/<id>
 - [ ] snapshot: pruefen, dass reap (core/snapshot/snapshot.go:234) nur Ticket-Refs loescht und den zweiten Namensraum nicht anfasst; der Snapshot-Zweig bleibt Backup und wird NICHT der Ablageort
