@@ -41,11 +41,11 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:46:53Z
+updated-at: 2026-09-15T20:47:24Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-10944
-claimed-at: 2026-09-15T20:16:14Z
+claimed-by: DESKTOP-RFTCH11-63171
+claimed-at: 2026-09-15T20:47:24Z
 outcome-what: "Milestones leave the board only on command: the round-1 delete path is reverted, 'jaira logbook <name>' files a milestone into .jaira/logbook/<folder>/milestones/ and 'jaira restore <name>.md' brings it back with its ticket list and colour. core/milestone gained Status/Filed/SetStatus (a 'status: filed' line edited in place, every other line verbatim) and FromBytes; core/ticket gained MilestonesSubdir, MilestonesDir, LogbookMilestone and a Restore that files a find back where it found it. refsync.IncomingMilestones skips a ref whose content says filed and never deletes a local file; 'jaira milestone create' refuses a filed name, looking at the ref first and the local logbook second. Help texts, docs/COMMANDS.md and four NOTES.md lines follow."
 outcome-why: "Alex reversed DoD 8 mid-round and added DoD 10-12: an emptied milestone must stay standing, and a filed milestone's ref must NOT be reaped but carry its status - a reaped ref frees the name and tells no other clone anything, so two machines would plan two milestones under one identity."
 outcome-resolves: "DoD 8-12. Build, vet and the full suite are green; the new tests are TestRmDropsTheLineAndKeepsTheMilestone, TestCreateWithNoTicketsLeavesTheFileLyingThere, TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack, TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef and two SetStatus tests in core/milestone."
