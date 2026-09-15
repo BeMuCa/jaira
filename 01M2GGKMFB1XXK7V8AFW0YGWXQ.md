@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:02:47Z
+updated-at: 2026-09-15T15:04:50Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -60,6 +60,12 @@ claimed-at: 2026-09-15T15:02:47Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] Format festlegen und als Paket-Doku in core/milestone hinschreiben: .jaira/milestones/<name>.md, Frontmatter name/colour/created-at, Body eine Zeile je Mitglied - wie eine Ticket-Datei, und eine Zeile ist das Kleinste, was git mergen kann
+- [ ] core/milestone: Load/LoadAll/Save nach dem Vorbild von core/tag (core/tag/tag.go:189 Load, :371 Save) - Zeilen verbatim erhalten, WriteAtomic, Mitgliederliste parsen
+- [ ] Farbvergabe: zufaellig aus einer Palette, die keine Farbe eines schon vorhandenen Milestones doppelt; die Farbe steht in der Milestone-Datei selbst, kein zweites zentrales Registry
+- [ ] Test: eine Milestone-Datei von Hand editieren (Kommentar, Leerzeile, eigene Reihenfolge) und nach Load/Save unveraendert wiederfinden
+- [ ] Index ID -> Milestones einmal beim Laden bauen, neben link.Build in loadEnv (internal/cli/root.go:275) und im TUI (internal/tui/model.go:352); CLI und TUI lesen denselben Index
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
