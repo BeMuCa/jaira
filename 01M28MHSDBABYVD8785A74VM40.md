@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:22:34Z
+updated-at: 2026-09-15T05:24:00Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27181
@@ -162,3 +162,18 @@ Nicht angefasst: 1K9KZS (lane.Load legt die Builtins nicht unter ein bestehendes
 - **2026-09-15 05:22 · Alexander Sacharov** — critique round five: one finding, in the change's own release note. NOTES.md:46-47 - the two lines that describe this ticket's central behaviour - sit under '## 0.1.4'. That tag exists, and so does v0.2.0; neither tagged tree contains the lines, so they were written into a closed section after the fact. release.go:62 selects by position (all[:i] at the stamped version), which means a board stamped 0.1.4 or later is cut above that section and never sees them, and a board on 0.1.3 is told the behaviour is in 0.1.4, where it is not. The change's most visible user-facing note therefore reaches nobody. Fix: move both lines under '## Unreleased', and fold the hint-bar half of line 46 into line 18, which already names the same ten-or-more threshold and the same command - otherwise Unreleased states the threshold twice, which is exactly what round four was sent back for.
 
 Checked and found nothing: logbookAll follows the shapes already here (fail(), s.StampCommits, the trim_error key move already uses); the ReadOnly filter sits in the callee trim.go where both callers get it; fileReminder and fileCommand are consts with one reader each and no configurability nobody asked for. The duplicated lanes-and-fill setup across the two tests in filereminder_test.go was looked at and left: naming a shared helper costs more than the six lines it saves. Not re-raised: readyToFile returning 0 below the threshold, which optimize already weighed and let stand.
+- **2026-09-15 05:24 · Alexander Sacharov** — Dispatcher-Stopp am 2026-09-15. Zwei Gruende, beide fuer Alex.
+
+(1) STOPPREGEL: critique hat die Arbeit zum dritten Mal zurueckgeschickt (Runden 1 und 2 am 14.09., Runde 5 heute; Runde 3 war still, Runde 4 hat zwei Befunde gefunden und wurde umgesetzt). Ich habe Runde 5 noch gefahren, weil Runde 3 die Schleife zum Schweigen gebracht hatte und Runde 4 erst durch neuen Code danach aufging (optimize-Schnitt 0facda1 und die Release-Notiz-Korrektur). Eine weitere Runde faehrt der Dispatcher nicht.
+
+(2) critique Runde 5 hebt die GESCHLOSSENE-SEKTION-Frage wieder an - laut Auftrag entschieden und nicht zu befolgen, also NICHT umgesetzt. Aber der Befund traegt eine neue, nachgeprueste Tatsache, die den GRUND der Entscheidung trifft, und die gehoert Alex:
+
+Nachgeprueft an core/release/release.go:61 (sinceEntries gibt all[:i] am gestempelten Abschnitt zurueck) und an der Abschnittsfolge in NOTES.md (Unreleased Z.16, 0.2.0 Z.29, 0.1.4 Z.40, 0.1.3 Z.63):
+- ein Board mit Stempel 0.1.4 ODER NEUER wird OBERHALB von ## 0.1.4 abgeschnitten und bekommt die Zeilen 46-47 nie zu sehen;
+- nur ein Board auf 0.1.3 sieht sie - und liest dann, die Aenderung sei in 0.1.4 gekommen, was der Tag v0.1.4 nicht enthaelt.
+
+Die Begruendung vom 14.09. 20:31 lautete 'wer von einer aelteren Version aktualisiert, liest genau diesen Abschnitt'. Das gilt nur fuer 0.1.3-Boards, und denen gegenueber ist die Zuordnung falsch. Ob das die Entscheidung aendert, entscheidet Alex - nicht der Dispatcher und nicht die Lane.
+
+Zeile 18 unter ## Unreleased nennt Schwelle und Befehl bereits; die Hinweisleisten-Haelfte von Zeile 46 waere dort doppelt.
+
+Stand: 343912c hat die beiden Befunde aus Runde 4 umgesetzt (NOTES.md 'ten or more' statt 'more than ten'; handle neben id und file in logbookAll --json, gepinnt durch TestTheCutJSONNamesEachHandle). optimize und testing sind seit dem optimize-Schnitt NICHT erneut gelaufen, test-verdict stammt noch vom 14.09. 20:08.
