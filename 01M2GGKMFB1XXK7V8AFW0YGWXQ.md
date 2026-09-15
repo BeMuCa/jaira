@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:27:08Z
+updated-at: 2026-09-15T15:27:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -47,7 +47,8 @@ outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig
 
 ## Definition of Done
 
-- [ ] Ein Milestone laesst sich anlegen und benennen, und seine Datei fuehrt die Tickets auf, die zu ihm gehoeren. Sie ist von Hand editierbar und im Diff lesbar, wie eine Ticket-Datei.
+- [x] Ein Milestone laesst sich anlegen und benennen, und seine Datei fuehrt die Tickets auf, die zu ihm gehoeren. Sie ist von Hand editierbar und im Diff lesbar, wie eine Ticket-Datei.
+  proof: core/milestone/milestone_test.go:TestSaveKeepsHandEditsVerbatim
 - [ ] Die Milestone-Datei reist auf einem Ref: wer sie zieht, sieht denselben Milestone, ohne auf das Mergen eines Zweiges zu warten.
 - [ ] Jeder Milestone bekommt seine Farbe, ohne dass jemand eine aussucht.
 - [ ] Eine Karte zeigt die Farbe ihres Milestones am RECHTEN Rand, deutlich getrennt von den Tag-Farben am linken; ein Ticket ohne Milestone zeigt dort nichts und die Karte wird dadurch nicht breiter. Mehrfachzugehoerigkeit ist erlaubt: rechts stehen bis zu drei Plaetze, in Dateireihenfolge.
