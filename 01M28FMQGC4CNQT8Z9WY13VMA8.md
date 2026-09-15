@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:18:01Z
+updated-at: 2026-09-15T05:18:05Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -104,3 +104,10 @@ Die Behebung ist klein und eindeutig, darum zurueck nach in-progress statt in hu
 Bewusst NICHT als Befunde geschrieben, damit die naechste Runde sie nicht reflexhaft anfasst:
 - CLAUDE.md haelt nur die PR-Regel im jaira:local-Block (154-170), die NOTES.md-Regel steht ausserhalb bei 172; AGENTS.md haelt beide drin (127-180). Das ist harmlos - announce.go schreibt nur zwischen jaira:start und jaira:end, alles nach dem Endmarker ist ohnehin sicher - und steht so schon auf master. Kein Befund dieser Runde.
 - Die vier review-gaps-Befunde sind alle sauber behoben; die drei Doku-Stellen und teamlead:86-88 / dispatcher:173 sagen wortgleich dasselbe. Nichts davon noch einmal aufgemacht.
+- **2026-09-15 05:18 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (critique-Rueckgabe): die Modus-Weiche hat jetzt genau eine Stelle, an der sie verzweigt.
+
+Nicht so geloest, wie es naheliegt (in :43-44 nur 'die zwei Sektionen' auf 'die Beschreibungs-Sektion' verengen): dann laeuft Modus 2 nach dem Push in gar keine Sektion und faellt in dieselbe Luecke, die Befund 1 der letzten Runde geoeffnet hatte. Stattdessen nennt :43-48 beide Ausgaenge ausdruecklich beim Namen, so dass jeder Modus ein benanntes Ziel hat und keiner am Ende der Sektion ins Leere laeuft.
+
+:27 sagt statt 'the section below' jetzt 'Answering review comments' - 'the section below' stand direkt ueber zwei Sektionen und zeigte woertlich gelesen auf die falsche.
+
+Keine NOTES.md-Zeile ergaenzt, bewusst: die Unreleased-Zeile zu diesem Ticket ('Stop opening pull requests from an agent session') beschreibt schon genau dieses Verhalten samt Aufforderung, die Rollen neu zu installieren. Die Aenderung dieser Runde praezisiert den Wortlaut eines Prompts, den noch niemand ausgeliefert bekommen hat - eine zweite Zeile wuerde dem Leser dieselbe Sache zweimal erzaehlen.
