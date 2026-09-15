@@ -25,7 +25,9 @@ related:
   - 01M28FMQGC4CNQT8Z9WY13VMA8
 commits: []
 created-at: 2026-09-15T05:40:26Z
-updated-at: 2026-09-15T05:40:26Z
+updated-at: 2026-09-15T05:40:44Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Die PR-Rolle kann nur GitHub, obwohl ein Board schon auf GitLab liegt
