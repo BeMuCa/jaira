@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:51:46Z
+updated-at: 2026-09-15T05:51:50Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -55,7 +55,8 @@ conflict-theirs-question: ""
 
 - [x] hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md steht die Regel: Arbeit laeuft auf einem Branch, das Ticket faehrt in denselben Commits mit, master wird nur durch einen PR erreicht, und das Abnehmen des PRs gehoert dem Maintainer - ein Agent macht ihn auf und merged ihn nie; dieselbe Regel steht im README unter Development, damit sie auch findet, wer nie einen Agenten benutzt; dieser Branch und sein PR sind selbst das erste Beispiel dafuer
   proof: core/role/builtin/jaira-role-pr/SKILL.md:42-48 verzweigt nach dem Push in beide Betriebsarten statt zu stoppen; CLAUDE.md:156-169, AGENTS.md:166-179, README.md:842-851 tragen die Regel wortgleich
-- [ ] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
+- [x] Die Rolle arbeitet auf GitLab wie auf GitHub: sie listet die offenen Merge Requests des aktuellen Zweigs mit 'glab mr list --source-branch' und schreibt dem Menschen eine lauffaehige 'glab mr create'-Zeile aus, so wie sie es auf GitHub mit 'gh pr list' und 'gh pr create' tut. Nachgestellt auf einem Fixture mit einem GitLab-Remote - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall.
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:73 (glab mr list --source-branch) und :120 (glab mr create --title/--description); nachgestellt auf einem git-Fixture mit Remote git@git.esprit-engineering.de:team/requirementsgenie.git -> 'tool: gitlab, would run: glab mr list --source-branch feat/X'; Flags gegen glab 1.114.0 --help geprueft
 - [ ] Welches Werkzeug laeuft, ist waehlbar und nicht nur geraten: aus dem Remote abgeleitet, wenn er es hergibt, und ausdruecklich setzbar, wenn nicht oder wenn der Mensch es anders will. Gibt der Remote nichts her und ist nichts gesetzt, sagt die Rolle das, statt den falschen Befehl zu raten.
 - [ ] Die Regel steht auf BEIDEN Wegen und stimmt: die Zeile wird ausgeschrieben und nie ausgefuehrt, nichts wird gemerged, nichts freigegeben. Nachgestellt, indem beide Wege gelesen werden - auf keinem darf ein 'Never run' fehlen, und das Wort Merge Request ersetzt pull request nur dort, wo von GitLab die Rede ist.
 
