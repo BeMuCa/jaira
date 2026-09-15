@@ -21,7 +21,7 @@ commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
   - pending
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T06:33:06Z
+updated-at: 2026-09-15T06:33:17Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -254,3 +254,4 @@ Funktion: frisch gebaute Binary, 'jaira roles install --into <scratch>' schreibt
 Offen und ausdruecklich NICHT von mir angefasst (Lane-Grenze): review-check Schritt 4 verlangt genau EINEN Treffer fuer 'gh pr create'; im Baum sind es drei, plus jetzt die glab-Gegenstuecke. Der Check ist ueberholt, die Regel dahinter unveraendert. Die review-Lane muss ihn neu schreiben - das steht schon in der in-progress-Notiz und ist hier bestaetigt, nicht behoben.
 
 Ebenfalls nicht angefasst: im Worktree liegen uncommittete Aenderungen des Nachbartickets KSGSKK (jaira-dispatcher/SKILL.md, spawn.sh, NOTES.md). Gehoeren nicht zu dieser Runde, bleiben ungestaged.
+- **2026-09-15 06:33 · Alexander Sacharov** — Alex hat die GitLab-Runde am 2026-09-15 angenommen; den Uebergang human -> review hat ein Agent auf seine Anweisung getippt. Entschieden hat der Mensch. review-verdict und review-check stammen noch aus der Runde vom Vortag und muessen in dieser Lane neu erarbeitet werden - seither sind f6ce687 und 9fc224c dazugekommen, die den Forge-Zweig ueberhaupt erst eingefuehrt und dann vom falschen Remote auf den Push-Remote umgestellt haben.
