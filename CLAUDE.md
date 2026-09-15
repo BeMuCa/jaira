@@ -77,18 +77,27 @@ Working a ticket:
   to be typed here; it is written onto the ticket once, when the ticket leaves
   the board
 - `jaira resume` — work left in progress, with everything recorded about it
-- on a board that has not been shared yet (`jaira init` gitignores `.jaira/`
-  until `jaira share`), the ticket file is untracked, so the only thing tying a
-  commit to a ticket is its handle in the commit message. Name it there —
-  `fix(A3K9QP): ...` — or the derived list stays empty and the move is refused
-- **the ticket rides in the same commit as the code.** Move the ticket first,
+- **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a
+  ticket's commit list from two sources: the history of the ticket file itself,
+  and the commits that name its id. The first source is thin by design (see the
+  next point), and on a board that has not been shared yet (`jaira init`
+  gitignores `.jaira/` until `jaira share`) it does not exist at all — so the
+  handle in the subject line is what the list is actually built from. Leave it
+  out and the list stays empty and the move into the last lane is refused
+- **the ticket rides with the code, never on its own.** Move the ticket first,
   then `git add` the changed file under `.jaira/tickets/` alongside your source
   changes and commit them together. A reviewer then sees the change and what it
   was for in one place, instead of a diff whose ticket is still in whatever
-  state the last commit left it. Same for a ticket you create and hand to
-  someone else: commit it, or nobody but you knows it exists — and now this is
-  also what makes the commit list derivable at all: that shared commit is how
-  git ties the ticket to the change
+  state the last commit left it
+- **a lane that changed no code commits nothing.** critique, testing and review
+  leave a note and a lane change and no source change; a commit carrying only
+  that is bookkeeping, and a branch with one of them per lane hides the work
+  inside it. Leave the ticket file modified in the worktree — the next commit
+  that carries code takes it along. Nothing is lost by waiting: the lane's
+  writes are already on the ticket, and the commit list is derived from the id
+  in the message, not from the ticket file. The one ticket that still earns a
+  commit of its own is a ticket you create and hand to someone else — commit
+  it, or nobody but you knows it exists
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back
