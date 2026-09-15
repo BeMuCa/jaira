@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,18 +40,15 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:12:11Z
+updated-at: 2026-09-15T18:15:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
 claimed-at: 2026-09-15T18:09:30Z
-outcome-what: "Die drei Findings der critique-Runde 3 behoben, alle drei Text: der Hilfetext von 'jaira milestone' sagt jetzt, dass der Dateiname der Name ist und die Frontmatter nur color und created-at traegt; --color steht an allen vier Stellen als 1-255 mit dem Grund (0 faerbt keine Zelle); docs/COMMANDS.md hat --milestone bei 'jaira list' und vier Zeilen fuer milestone create/add/rm/ls in der Writing-Tabelle."
-outcome-why: "Die drei Texte waren die Stellen, die man VOR dem Aufruf liest. Ein von Hand eingetragenes name: aendert seit Runde 2 nichts und niemand merkt es; '--color <0-255>' laedt dazu ein, 0 zu uebergeben, was der Code zurueckweist; und COMMANDS.md wird von README.md:676 als vollstaendige Referenz ausgewiesen, fuehrte die Befehlsfamilie aber ueberhaupt nicht."
-outcome-resolves: "Kein DoD-Punkt aendert sich - der Code ist unveraendert, es war Dokumentation an drei Stellen. go vet und go test ./... sind gruen."
-review-summary: |-
-  internal/cli/milestones.go:51 der Hilfetext von 'jaira milestone' sagt weiter "Frontmatter carries the name, the colour and when it was created" - seit Runde 2 schreibt New() kein name: mehr und parse() liest keines; wer das liest und von Hand ein name: einträgt, ändert nichts und merkt es nie. Ersetzen durch: der Dateiname IST der Name, die Frontmatter trägt color und created-at - genau wie core/milestone/milestone.go:154 und core/release/NOTES.md:18 es schon sagen.
-  internal/cli/milestones.go:78 und :146 nennen den Bereich weiter "--color <0-255>" bzw. "ANSI-256 colour (0-255)", während :123 jetzt "1-255" fordert und 0 zurückweist; drei Stellen, zwei davon falsch, und die falschen sind die, die man vor dem Aufruf liest. Beide auf 1-255 ändern, mit dem Grund in einem Halbsatz (0 färbt keine Zelle).
-  docs/COMMANDS.md:57 listet für 'jaira list' weiter nur --lane/--assignee/--tag/--query/--actionable, und die Befehlstabelle hat keine Zeile für milestone create/add/rm/ls - obwohl README.md:676 diese Datei als vollständige Referenz ausweist und jede andere Befehlsfamilie (jaira tag, jaira tags, jaira lanes ...) dort steht. Vier Zeilen in die Writing-Tabelle neben 'jaira tag' und --milestone in Zeile 57 nachtragen.
+outcome-what: "critique-Runde 4 ohne Finding: die drei Text-Findings aus Runde 3 sind nachgemessen behoben, und ein Durchgang durch den ganzen Diff - core/milestone, internal/cli/milestones.go, der TUI-Teil und der Ref-Weg - bringt nichts Neues."
+outcome-why: "Die Lane endet, wenn ein Durchgang nichts findet. Die Findings-Zahl ist 9, 6, 3, 0 gelaufen, keines wurde wiederholt, und die vier stehengelassenen Abwaegungen bleiben stehen."
+outcome-resolves: "review-summary=none gesetzt; kein DoD-Punkt aendert sich, der Code ist seit Runde 3 unveraendert."
+review-summary: none
 ---
 
 # Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket
@@ -257,3 +254,10 @@ Was der Code nicht erklaert:
 - docs/COMMANDS.md: die vier milestone-Zeilen stehen in der Writing-Tabelle, auch 'ls'. In der Looking-Tabelle waere es sauberer sortiert, aber dann stuenden die vier Befehle einer Familie in zwei Tabellen - 'jaira tags' steht auch bei Looking und 'jaira tag' bei Writing, und genau das sucht man beim Lesen zweimal.
 
 Nicht angefasst, ausserhalb der Lane: .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md und demo-ui.md liegen als untracked Dateien im Worktree - Rueckstand eines Demolaufs von Hand. Sie sind NICHT committet worden; wer aufraeumt, loescht sie einfach.
+- **2026-09-15 18:15 · Alexander Sacharov** — critique-Runde 4, 2026-09-15: KEIN Finding. Die drei Findings aus Runde 3 sind nachgemessen behoben - internal/cli/milestones.go:50-54 sagt jetzt, dass der Dateiname der Name ist und die Frontmatter color und created-at traegt; grep ueber 0-255/1-255 findet --color nur noch als 1-255 an :80, :125, :148 und in docs/COMMANDS.md:132, die einzige verbliebene 0-255-Stelle ist 'jaira tag', das seit Runde 2 begruendet unangetastet bleibt; docs/COMMANDS.md:57 hat --milestone und :132-135 die vier Zeilen fuer create/add/rm/ls.
+
+Was ich darueber hinaus gelesen habe, statt nur den Zuwachs: core/milestone/milestone.go ganz, internal/cli/milestones.go ganz, der TUI-Diff (model.go/view.go) und der Ref-Weg (outbox.go, refsync.go, fetch.go, tickets.go). Nichts Neues. Jedes exportierte Stueck von core/milestone hat einen Aufrufer - nachgesehen fuer Names, For, Matches, HasColour, Members, NormalizeName, Build, LoadAll, AssignColour, Add, Remove - also keine Abstraktion ohne Nutzer mehr, was in Runde 1 und 2 die haeufigste Sorte war.
+
+Ausdruecklich NICHT aufgemacht, weil in Runde 1 bis 3 stehengelassen und die Begruendung traegt: dass IncomingMilestones die lokale Datei ueberschreibt, die mit tag geteilte Palette, der Index in newListCmd statt loadEnv, gitref mit zwei Namensraeumen statt einem generischen (Art, Name), der fehlende Loeschweg (Ticket N71NVG), und der Titel, der weiter 'Sprint' sagt.
+
+Die Schleife hat konvergiert: 9, 6, 3, 0. Das ist der vorgesehene Ausgang der Lane und keine Nachsicht - eine vierte Runde haette nur wiederholt, was schon beantwortet ist.
