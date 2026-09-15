@@ -465,6 +465,12 @@ func ProjectLanesActive(root string) bool {
 // half-configured, and the next command reads files rather than a fallback.
 // Boards from before this rule are brought over by migrateLegacy.
 //
+// A lane file the board already holds is never rewritten from the built-ins.
+// The single exception is a named, once-only, one-field correction of a defect
+// a shipped lane carried, applied only to a file still recognisable as that
+// shipped lane — see correction. applyCorrections runs those and reports them
+// in Warnings.
+//
 // An empty root, or a root with no .jaira/ at all, means no board is in hand —
 // the launcher spans many, a test has none, 'jaira lanes template' needs the
 // shape only — and Load returns the offer: built-ins plus the catalogue.
@@ -506,6 +512,7 @@ func Load(root string) (*Set, error) {
 		} else {
 			warnings = append(warnings, migrateLegacy(root)...)
 		}
+		warnings = append(warnings, applyCorrections(root)...)
 		var w []string
 		lanes, w = readLaneDir(ProjectLanesDir(root), nil, builtinByID)
 		warnings = append(warnings, w...)
