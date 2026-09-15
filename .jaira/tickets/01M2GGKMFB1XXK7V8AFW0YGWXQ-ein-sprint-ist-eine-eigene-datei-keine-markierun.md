@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -40,14 +40,14 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:15:01Z
+updated-at: 2026-09-15T20:19:53Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-86471
-claimed-at: 2026-09-15T18:09:30Z
-outcome-what: "Alex hat in der human-Lane drei Forderungen gestellt; der Ref war schon da, Logbuch-Ablage und das Verschwinden eines leeren Milestones fehlen"
-outcome-why: "ein Milestone ohne Lebensende sammelt sich an: leere Dateien, tote Refs und Farben auf Karten, die zu nichts mehr gehoeren"
-outcome-resolves: "DoD 8-10 auf dem Ticket ergaenzt, Befund je Forderung in der Notiz vom 2026-09-15"
+claimed-by: DESKTOP-RFTCH11-10944
+claimed-at: 2026-09-15T20:16:14Z
+outcome-what: "Plan fuer DoD 8-10: Loeschweg (gitref/outbox/refsync/milestone/CLI) und Logbuch-Ablage samt Restore, 14 Schritte"
+outcome-why: "beide Forderungen haengen daran, dass der Ref mitgeraeumt wird - sonst schreibt IncomingMilestones die Datei zurueck, und die offene Frage 'automatisch oder Kommando' blockiert sonst den Bau"
+outcome-resolves: "Plan-Checkliste Schritte 19-32; Entscheidung und Begruendung in der Notiz vom 2026-09-15"
 review-summary: none
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
@@ -102,6 +102,21 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Milestone-Schreibweg an den Ref haengen, wie attachRefs es fuer Tickets tut (internal/cli/root.go:255)
 - [x] Test: zwei Klone, in einem ein Milestone angelegt, im anderen nach jaira fetch sichtbar - ohne dass ein Zweig gemergt wurde
 - [x] core/release/NOTES.md unter ## Unreleased: je eine Zeile fuer den Befehl, den Listen-Schalter, die Board-Geste, die rechte Kartenkante und das Dateiformat
+- [ ] core/gitref: DeleteMilestone als Gegenstueck zu Delete - refDelete auf MilestoneRefName(name), ErrNoRef heisst nichts zu tun
+- [ ] core/outbox: OpDelete fuer KindMilestone zulassen - send() (core/outbox/outbox.go:361) weist ihn heute ab, samt Kommentar, der das Gegenteil behauptet
+- [ ] core/refsync: RecordMilestoneDelete nach dem Vorbild von RecordDelete (core/refsync/refsync.go:133) - Lease aus MilestoneSHA, Weg ueber die Outbox, damit Loeschen offline funktioniert
+- [ ] core/milestone: Delete(root, name) entfernt die Datei; os.ErrNotExist durchreichen, wie Load es tut
+- [ ] internal/cli: 'jaira milestone rm' loescht Datei und Ref, wenn die letzte Zeile herausgenommen wird - ein Aufruf, ein Schreibvorgang; Meldung sagt, dass der Milestone weg ist
+- [ ] Test DoD 8: letztes Ticket herausnehmen - Datei weg, 'milestone ls' nennt ihn nicht, Index leer, also keine Karte traegt seine Farbe
+- [ ] Test: 'jaira milestone create' ohne Tickets legt eine leere Datei an und sie bleibt liegen - die Regel haengt am Herausnehmen, nicht am Leersein
+- [ ] Test mit zwei Klonen: nach dem Loeschen holt 'jaira fetch' den Milestone NICHT zurueck (sonst schreibt IncomingMilestones ihn wieder hin)
+- [ ] internal/cli logbook: 'jaira logbook <name>' erkennt einen Milestone, nachdem die Ticket-Aufloesung nicht greift; er wandert nach .jaira/logbook/<initials>-<datum>/milestones/<name>.md, und sein Ref wird geraeumt
+- [ ] Weigerung festlegen und bauen: ein Milestone geht nur ins Logbuch, wenn jede seiner Ticket-Zeilen in der Terminal-Lane steht oder schon abgelegt ist - Gegenstueck zu der Regel, die 'jaira logbook <id>' fuer ein Ticket hat
+- [ ] listLogbook zeigt abgelegte Milestones mit an, sonst ist die Datei da und die Liste sagt es nicht
+- [ ] Restore: eine Datei aus einem milestones/-Unterordner landet in .jaira/milestones/ statt in TicketsDir (core/ticket/store.go:464) und kommt ueber RecordMilestone wieder auf ihren Ref; Farbe und Mitgliederliste unveraendert
+- [ ] Test DoD 9: ablegen - vom Board weg und 'milestone ls' nennt ihn nicht; restore - Liste und Farbe zurueck, Karte wieder gefaerbt
+- [ ] Hilfetexte und docs/COMMANDS.md: das Verschwinden bei 'jaira milestone rm' und das Ablegen bei 'jaira logbook' - beide Stellen liest man VOR dem Aufruf
+- [ ] DoD 10: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen und fuer das Verschwinden eines leer geraeumten Milestones
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -286,3 +301,21 @@ Meine Lesart von Alex' Satz, bevor jemand anders sie anders liest: ein Milestone
 Offen und Sache der Plan-Lane, weil es den Bau entscheidet: verschwindet der leere Milestone VON ALLEIN, sobald die letzte Zeile herausgenommen wird, oder braucht es dafuer ein Kommando? Automatisch ist bequemer und laesst sich nicht vergessen; es loescht aber eine frisch mit 'jaira milestone create' angelegte, noch leere Datei sofort wieder - und genau so legt man einen Milestone an, bevor man weiss, was hineinkommt. Wer das automatisch baut, braucht eine Antwort darauf.
 
 Ref-Transport beim Loeschen nicht vergessen: eine Datei von der Platte zu nehmen raeumt refs/jaira/ nicht. Wer den Milestone entfernt, muss auch seinen Ref raeumen, sonst schreibt IncomingMilestones ihn beim naechsten Zug wieder hin.
+- **2026-09-15 20:19 · Alexander Sacharov** — pre-process, Runde 2 (DoD 8-10), 2026-09-15. Die offene Frage aus der human-Lane ist entschieden, und zwar so:
+
+VERSCHWINDEN IST EIN EREIGNIS, KEIN ZUSTAND. Ein Milestone verschwindet in dem Moment, in dem seine LETZTE Ticket-Zeile herausgenommen wird - nicht deshalb, weil seine Liste leer ist. Damit faellt der Einwand aus der human-Lane weg: 'jaira milestone create <name>' ohne Tickets legt eine leere Datei an, und die bleibt liegen, weil niemand etwas herausgenommen hat. Genau so legt man einen Milestone an, bevor man weiss, was hineinkommt.
+
+Die Alternative waere ein eigenes Kommando ('jaira milestone delete'). Dagegen spricht, dass DoD 8 woertlich das Herausnehmen des letzten Tickets als Nachstellung nennt, und dass ein Milestone, den man vergisst zu loeschen, als Farbe auf Karten weiterlebt. Ein automatisches Loeschen laeuft NUR im Schreibweg (milestone rm), nie beim Lesen: eine von Hand leer editierte Datei wird nicht beim naechsten Laden geloescht - jaira loescht keine Datei, die es nur gelesen hat.
+
+ZWEI AUSGAENGE, ZWEI BEDEUTUNGEN, das ist kein Widerspruch zwischen DoD 8 und 9: leer geraeumt heisst aufgegeben und die Gruppe ist spurlos weg; fertig heisst abgerechnet und die Gruppe wandert samt Liste ins Logbuch, wo sie nachlesbar bleibt.
+
+WAS DER CODE DAFUER NOCH NICHT HAT:
+- core/outbox/outbox.go:361 send() lehnt OpDelete fuer KindMilestone ausdruecklich ab ('A milestone is only ever written, never deleted'). Dieser Satz ist ab jetzt falsch und der Weg muss gebaut werden.
+- core/gitref hat Delete nur fuer Tickets; MilestoneRefName ist da, das Gegenstueck zu Delete fehlt.
+- core/ticket/store.go:464 Restore legt JEDE Datei nach TicketsDir. Ein abgelegter Milestone braucht ein eigenes Ziel.
+
+REF RAEUMEN IST PFLICHT, nicht Kosmetik: refsync.IncomingMilestones (refsync.go:194) schreibt jede Milestone-Datei, die die Refs tragen, auf die Platte. Wer nur die Datei loescht, bekommt sie beim naechsten 'jaira fetch' zurueck. Das gilt fuer das Verschwinden UND fuer das Ablegen ins Logbuch - anders als bei einem Ticket, wo RecordFiled den Ref absichtlich stehen laesst und erst der Snapshot-Lauf ihn raeumt; fuer Milestones raeumt der Snapshot nichts.
+
+ABLAGEORT: .jaira/logbook/<initials>-<datum>/milestones/<name>.md, ein Unterordner. Grund: ein Milestone-Dateiname (frei gewaehlt) kann mit einem Ticket-Dateinamen kollidieren, und Restore muss am Fundort erkennen, wohin die Datei zurueckgehoert - Ordner statt Namensraten.
+
+NOCH IMMER NICHT BESTAETIGT, und wer es anders liest, korrigiert DoD 9 statt es zu bauen: dass mit Alex' Forderung der Lebenslauf des Milestones selbst gemeint ist (Logbuch legt den Milestone ab) und nicht, dass das Ablegen eines TICKETS dessen Zeile aus dem Milestone nimmt. Gebaut wird die erste Lesart, weil DoD 9 sie woertlich so sagt.
