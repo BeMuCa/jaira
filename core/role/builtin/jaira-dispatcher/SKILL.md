@@ -165,8 +165,9 @@ root never leaves it.
 ## One worktree per ticket
 
 Two workers must never share a directory. On a project with a container stack
-they also need distinct project names and ports — `scripts/spawn.sh` derives
-both from the worktree slug.
+they also need distinct project names and ports — `scripts/spawn.sh` names the
+stack after the repository plus the worktree slug, and offsets the ports by the
+slug.
 
 Only remove a worktree or close a pane you created yourself, and a worktree not
 before its ticket is in `done` — not when the work is committed, and not when

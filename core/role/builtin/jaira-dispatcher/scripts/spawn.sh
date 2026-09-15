@@ -23,7 +23,7 @@ if [ ! -d "$wt" ]; then
   # without a .env has nothing to offset, and must not fail here.
   if [ -f "$root/.env" ]; then
     # Deterministic per-slug port offset, so two workers never share a stack.
-    # 0 stays free: it belongs to the main directory (80, 5432, 5433, 5173, 8000).
+    # 0 stays free: it belongs to the main directory's own stack.
     off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
     cp "$root/.env" "$wt/.env"
     {
@@ -67,7 +67,14 @@ for _ in $(seq 20); do
     | python3 -c 'import sys,json;p=json.load(sys.stdin)["result"]["pane"];print(p.get("agent","-"),p.get("agent_status","-"))')"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done
-case "${st:-}" in claude*) ;; *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;; esac
+# Only the two states the loop breaks on may pass. Anything else — above all
+# Herdr's `blocked`, its state for a detected approval dialog — must stop here:
+# the send-keys below would answer that dialog on the human's behalf, and this
+# role is forbidden from ever doing that.
+case "${st:-}" in
+  claude\ idle|claude\ done) ;;
+  *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;;
+esac
 
 "$herdr" pane send-text "$pane" "/jaira-role-lane $ticket $lane" >/dev/null
 sleep 1
