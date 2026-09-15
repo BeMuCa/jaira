@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:18:52Z
+updated-at: 2026-09-15T13:19:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -98,3 +98,11 @@ Warum das kein Zustandsverlust war: 'git reset --soft' laesst den Arbeitsbaum un
 - **2026-09-15 13:16 · Alexander Sacharov** — Commit dieser Lane: 239c881 'docs(9ZZSFT): stop a lane without a code change from committing' - Code und Ticket-Datei zusammen, Handle im Betreff. 'git log --name-only master..HEAD' zeigt danach genau diesen einen Commit und keinen, der nur .jaira/ anfasst; der alte pre-process-Commit ist darin aufgegangen.
 
 Fuer critique/testing/review: ihr seid selbst die Nachstellung von DoD 1 und 2. Committet nichts. Wenn ihr am Ende in 'git log --name-only master..HEAD' immer noch nur 239c881 seht, ist DoD 1 bewiesen; wenn 'jaira move' in die Endlane durchgeht und die abgeleitete Liste 239c881 nennt, ist DoD 2 bewiesen. Beide sind absichtlich ungetickt geblieben - sie lassen sich in dieser Lane nicht beweisen, nur vorbereiten.
+- **2026-09-15 13:19 · Alexander Sacharov** — critique: vier Befunde, alle mit klarer Korrektur - zurueck nach in-progress.
+
+1. Die Regel steht nicht in allen sechs Quellen gleich. CLAUDE.md:168 und AGENTS.md:178 tragen den Abschnitt 'Work rides on a branch' hinter dem jaira:local-Marker; README.md:843 hat dort den neuen Zusatz bekommen, die beiden anderen nicht. Das outcome-what behauptet 'ueberall gleich' - drei Kopien desselben Absatzes, zwei davon alt.
+2. core/role/builtin/jaira-role-pr/SKILL.md:28 fuehrt Punkt 2 mit der abgeloesten Fettzeile an. Ein Agent, der nur die Fettzeilen liest - wofuer sie da sind -, liest die alte Regel; die Einschraenkung kommt erst im Rumpf.
+3. 'see the next point' (core/board/announce.go:85) zeigt auf den falschen Punkt. Duenn wird die Datei-Historie durch den dritten Punkt, nicht den zweiten.
+4. Der wesentliche: 'the next commit that carries code takes it along' hat fuer die letzten Lanes keinen Adressaten. Findet critique nichts, laufen testing und review ohne weitere Code-Aenderung - dann gibt es keinen naechsten Commit, und der PR zeigt eine Ticket-Datei im in-progress-Stand, ohne review-summary und test-verdict. Genau der Zustand, den die Regel 'der Leser sieht die Aenderung und ihren Grund an einer Stelle' verhindern soll.
+
+Das ist ausdruecklich KEIN Ruf nach dem Abschluss-Commit, den die DoD verbietet. Der Traeger existiert schon: 'jaira logbook <id>' verschiebt die Ticket-Datei nach .jaira/logbook/ und nimmt ihren Endstand in den Commit mit, der diese Verschiebung traegt. Die Regel muss ihn nur benennen, sonst liest sie sich als 'der Endstand bleibt liegen'. Die Note vom 13:10 nimmt den Preis bewusst in Kauf und verweist auf refsync.Pull - die Note vom 13:07 zeigt, dass refsync auf diesem Board nicht laeuft. Damit bleibt logbook der einzige Traeger, und er gehoert in den Text.
