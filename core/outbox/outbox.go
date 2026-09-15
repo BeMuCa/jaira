@@ -105,8 +105,10 @@ func At(s *ticket.Store) *Box { return &Box{Dir: filepath.Join(s.StateDir(), "ou
 
 // path is where one entry is filed: a subdirectory per kind, so a milestone
 // named after a ticket handle is a different file rather than the same one.
+// Every caller passes a kind it named itself or one that came back normalized
+// off disk, so there is nothing to default here.
 func (b *Box) path(kind Kind, key string) string {
-	return filepath.Join(b.Dir, string(kind.or(KindTicket)), key+".json")
+	return filepath.Join(b.Dir, string(kind), key+".json")
 }
 
 // legacyPath is where a ticket entry was filed before there were kinds. Still
@@ -118,22 +120,21 @@ func (b *Box) legacyPath(id string) string { return filepath.Join(b.Dir, id+".js
 // ticket. Superseding is correct rather than lossy: the entry carries the whole
 // ticket, so the newer bytes already contain everything the older ones said.
 func (b *Box) Queue(id string, op Op, content []byte, lease, by string) error {
-	return b.QueueKind(KindTicket, id, op, content, lease, by)
+	return b.queueKind(KindTicket, id, op, content, lease, by)
 }
 
 // QueueMilestone files a pending write of a milestone file, under the same
 // rules: whole content, the lease the remote last confirmed, superseding any
 // earlier unsent write of the same milestone.
 func (b *Box) QueueMilestone(name string, op Op, content []byte, lease, by string) error {
-	return b.QueueKind(KindMilestone, name, op, content, lease, by)
+	return b.queueKind(KindMilestone, name, op, content, lease, by)
 }
 
-// QueueKind is what both of those are.
-func (b *Box) QueueKind(kind Kind, key string, op Op, content []byte, lease, by string) error {
+// queueKind is what both of those are.
+func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by string) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
-	kind = kind.or(KindTicket)
 	ref := gitref.RefName(key)
 	if kind == KindMilestone {
 		ref = gitref.MilestoneRefName(key)
@@ -144,7 +145,7 @@ func (b *Box) QueueKind(kind Kind, key string, op Op, content []byte, lease, by 
 		Lease: lease, Content: string(content),
 		QueuedAt: now, UpdatedAt: now, By: by,
 	}
-	if old, ok := b.PendingKind(kind, key); ok {
+	if old, ok := b.pendingKind(kind, key); ok {
 		e.Lease = old.Lease
 		e.QueuedAt = old.QueuedAt
 	}
@@ -174,12 +175,11 @@ func (b *Box) QueueKind(kind Kind, key string, op Op, content []byte, lease, by 
 
 // Pending returns the unsent write for one ticket, if there is one. The board
 // asks this to mark a card as carrying something not yet sent.
-func (b *Box) Pending(id string) (Entry, bool) { return b.PendingKind(KindTicket, id) }
+func (b *Box) Pending(id string) (Entry, bool) { return b.pendingKind(KindTicket, id) }
 
-// PendingKind reads one entry. A ticket is also looked for at the flat path an
+// pendingKind reads one entry. A ticket is also looked for at the flat path an
 // older build used, so upgrading does not strand a queued write.
-func (b *Box) PendingKind(kind Kind, key string) (Entry, bool) {
-	kind = kind.or(KindTicket)
+func (b *Box) pendingKind(kind Kind, key string) (Entry, bool) {
 	e, ok := readEntry(b.path(kind, key))
 	if !ok && kind == KindTicket {
 		e, ok = readEntry(b.legacyPath(key))
@@ -257,12 +257,11 @@ func (b *Box) readDir(dir string, kind Kind) ([]Entry, error) {
 }
 
 // Drop removes a queued write.
-func (b *Box) Drop(id string) error { return b.DropKind(KindTicket, id) }
+func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
 
-// DropKind removes a queued write of either kind, including one an older build
+// dropKind removes a queued write of either kind, including one an older build
 // filed at the flat path.
-func (b *Box) DropKind(kind Kind, key string) error {
-	kind = kind.or(KindTicket)
+func (b *Box) dropKind(kind Kind, key string) error {
 	if err := os.Remove(b.path(kind, key)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -334,12 +333,12 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 
 		switch {
 		case sendErr == nil:
-			if err := b.DropKind(kind, e.ID); err != nil {
+			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
 			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Sent})
 		case errors.Is(sendErr, gitref.ErrRaceLost):
-			if err := b.DropKind(kind, e.ID); err != nil {
+			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
 			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})

@@ -344,8 +344,9 @@ func resolveAll(s *ticket.Store, args []string) ([]string, error) {
 }
 
 func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
-	members := make([]map[string]string, 0, len(ms.Members()))
-	for _, id := range ms.Members() {
+	ids := ms.Members()
+	members := make([]map[string]string, 0, len(ids))
+	for _, id := range ids {
 		members = append(members, map[string]string{"id": id, "handle": ticket.Handle(id)})
 	}
 	out := map[string]any{
