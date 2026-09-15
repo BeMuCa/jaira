@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T18:21:25Z
+updated-at: 2026-09-15T18:21:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-86471
@@ -262,3 +262,4 @@ Was ich darueber hinaus gelesen habe, statt nur den Zuwachs: core/milestone/mile
 Ausdruecklich NICHT aufgemacht, weil in Runde 1 bis 3 stehengelassen und die Begruendung traegt: dass IncomingMilestones die lokale Datei ueberschreibt, die mit tag geteilte Palette, der Index in newListCmd statt loadEnv, gitref mit zwei Namensraeumen statt einem generischen (Art, Name), der fehlende Loeschweg (Ticket N71NVG), und der Titel, der weiter 'Sprint' sagt.
 
 Die Schleife hat konvergiert: 9, 6, 3, 0. Das ist der vorgesehene Ausgang der Lane und keine Nachsicht - eine vierte Runde haette nur wiederholt, was schon beantwortet ist.
+- **2026-09-15 18:21 · Alexander Sacharov** — optimize: staticcheck U1000 ueber core/milestone, core/outbox, core/gitref, internal/cli und internal/tui findet nichts, was dieser Branch verwaist hat - die drei Treffer (share.go isShared, model.go laneStart, model.go currentLane) stehen schon auf master. staticcheck ist im Repo nicht installiert, lief ueber 'go run honnef.co/go/tools/cmd/staticcheck@latest'.
