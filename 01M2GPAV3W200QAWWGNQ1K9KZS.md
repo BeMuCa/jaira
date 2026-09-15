@@ -1,7 +1,7 @@
 ---
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
@@ -26,14 +26,14 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:11:11Z
+updated-at: 2026-09-15T07:11:15Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
 claimed-at: 2026-09-15T06:57:22Z
-outcome-what: "Plan fuer die Lane-Korrektur festgelegt: neun Schritte im Ticket"
-outcome-why: "pre-process: die Methode muss stehen, bevor jemand an den Ladepfad geht - die Spannung zwischen 'ein Board ist sein Lane-Verzeichnis' und 'eine Korrektur muss ankommen' loest sich nur mit einer benannten, einmaligen, feldgenauen Korrektur"
-outcome-resolves: "Der Plan sagt Schritt fuer Schritt, wie DoD 1 bis 5 erreicht werden: Fixture, drei Tests, corrections.go im Ladepfad, NOTES-Zeile unter ## Unreleased"
+outcome-what: "core/lane/corrections.go: benannte, einmalige, feldgenaue Lane-Korrektur im Ladepfad; entfernt 'logbook-on-entry: true' aus einem done.md, das erkennbar die von 2ecc670 ausgelieferte Datei ist, meldet es und merkt sich das in .jaira/lanes/corrections. Eine selbstgeschriebene Lane wird gemeldet, nie editiert. Tests: core/lane/corrections_test.go (6), core/move/oldboard_test.go (end-to-end). Eine Zeile in core/release/NOTES.md unter ## Unreleased."
+outcome-why: "Boards von vor 9ad7aa9 fegen beim Move nach done weiterhin fremde fertige Tickets ins Logbuch (Issue #6), weil Load bei ProjectLanesActive nur das Lane-Verzeichnis liest - eine einmal geschriebene Lane-Datei ist fuer immer die Wahrheit. Die Handarbeit-Anweisung der 0.1.4-Notiz greift nicht, weil .jaira/lanes/ gitignored ist und die Zeile pro Checkout einzeln entfernt werden muesste."
+outcome-resolves: "DoD 1-6 abgehakt mit Proof; go test ./... -race RC=0; alle drei Faelle zusaetzlich von Hand mit gebautem Binary nachgestellt"
 ---
 
 # Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen
