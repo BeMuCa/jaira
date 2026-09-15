@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T05:37:50Z
+updated-at: 2026-09-15T05:39:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46021
@@ -201,3 +201,13 @@ Ausdruecklich NICHT als Befund gewertet, damit der naechste Durchgang es nicht n
 - Die eine lange NOTES.md-Zeile buendelt sechs Aenderungen, entspricht aber genau der Form der Nachbarzeile aus 13VMA8 - das ist das Muster, das hier schon liegt.
 - Die Plattform-Weiche in spawn.sh:56 ('/mnt/*|*.exe') prueft die Gestalt des Herdr-Pfads, nicht die Umgebung. Vertretbar: die Bedingung ist wirklich 'Herdr ist eine Windows-Binaerdatei', und genau das sagt der Pfad. Kein Befund.
 - Dass spawn.sh:72 nur /jaira-role-lane starten kann und keinen /jaira-role-tester, ist ein echter Mangel, aber weder DoD noch Arbeitsanweisung dieses Tickets - gehoert in ein eigenes Ticket (13VMA8 hat denselben Befund am 2026-09-15 05:25 schon notiert).
+- **2026-09-15 05:39 · Alexander Sacharov** — in-progress 2026-09-15 (2. Runde, nach critique): die vier Befunde von 05:36 sind behoben, nichts darueber hinaus angefasst.
+
+1. spawn.sh:70ff - der Torwaechter prueft jetzt genau die zwei Zustaende, auf die die Schleife bricht ('claude idle'|'claude done'), statt jedes 'claude*'. Damit faellt 'claude blocked' nicht mehr durch. Der Kommentar daneben sagt, WARUM eng: Herdrs 'blocked' ist der erkannte Genehmigungsdialog, und send-keys wuerde ihn an Stelle des Menschen beantworten. Ohne diesen Satz streicht die naechste Aufraeum-Runde die Verengung wieder als vermeintlich redundante Wiederholung der Schleife.
+2. spawn.sh:26 - die Portliste '(80, 5432, 5433, 5173, 8000)' ist raus. Sie nannte 5173/8000, also VITE_PORT_HOST und BACKEND_PORT_HOST, die dieser Durchgang geloescht hat; der Block versetzt heute 8080/5500/5501. Statt die neuen Zahlen einzutragen steht da jetzt keine Liste mehr - eine Portliste im Kommentar veraltet bei jeder Aenderung am Block darunter, und der Code drei Zeilen tiefer sagt es ohnehin.
+3. teamlead/SKILL.md:43-46 - der Pfad ist ausgeschrieben ('.claude/skills/jaira-dispatcher/scripts/spawn.sh', global '~/.claude/...'). Quelle ist core/role/target.go:17 (const skillsDir = '.claude/skills') plus install.go:59 (<dst>/<role-id>/<file>), nicht geraten.
+4. dispatcher/SKILL.md:167-169 - 'derives both from the worktree slug' beschrieb den Stand vor spawn.sh:35. Jetzt: Name aus Repository plus Slug, Ports aus dem Slug.
+
+KEINE neue NOTES.md-Zeile: die Zeile unter ## Unreleased beschreibt dieselbe, noch nicht veroeffentlichte Aenderung; diese vier Fixes sind Korrekturen daran und nicht von aussen zusaetzlich beobachtbar.
+
+Gates: go build, go vet, go test ./... gruen; bash -n auf spawn.sh gruen.
