@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T06:04:19Z
+updated-at: 2026-09-15T06:04:22Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56199
@@ -219,3 +219,6 @@ Die Board-Zeile habe ich nicht geglaubt, sondern gegengeprobt: view.go:970 rende
 Explizit noch einmal gefahren (-count=1 -race): TestMoveIntoDoneFilesNothingByItself, FileLane/Overflow in core/ticket (inkl. der beiden Ref-only-Tests), Cut/Logbook/Hold in internal/cli (inkl. TestTheCutJSONNamesEachHandle und TestTheCutJSONCarriesWhatItSkipped) - alle PASS.
 
 Nicht angefasst, weil ausserhalb dieser Lane: die Release-Notiz in der geschlossenen Sektion ## 0.1.4 - Alex hat am 15.09. in Kenntnis von sinceEntries entschieden, sie stehen zu lassen. Und 1K9KZS (aeltere Boards behalten logbook-on-entry).
+- **2026-09-15 06:04 · Alexander Sacharov** — Alex am 2026-09-15: '74VM40 закрывай'. Den Uebergang aus human hat ein Agent auf seine Anweisung getippt; entschieden hat der Mensch.
+
+Warum es hier nicht endet: signoff verweigert einem Agenten den Ausgang technisch, nicht nur der Regel nach - 'lane signoff is a human checkpoint ... An agent cannot move a ticket out of it'. Nach der review-Lane liegt das Ticket also in signoff und braucht dort einen Klick im Board. review laeuft ueberhaupt noch einmal, weil seit dem letzten Verdikt Code dazugekommen ist: optimize hat 'jaira logbook --all --json' auf trimmedJSON gefaltet und die doppelt geschriebene Regel in filesInLane() zusammengezogen.
