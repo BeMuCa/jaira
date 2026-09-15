@@ -40,7 +40,7 @@ commits:
   - 29afd307dee1524f4d96da72e094c13015c125f8
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T20:23:05Z
+updated-at: 2026-09-15T20:23:08Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10944
@@ -105,7 +105,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Test: zwei Klone, in einem ein Milestone angelegt, im anderen nach jaira fetch sichtbar - ohne dass ein Zweig gemergt wurde
 - [x] core/release/NOTES.md unter ## Unreleased: je eine Zeile fuer den Befehl, den Listen-Schalter, die Board-Geste, die rechte Kartenkante und das Dateiformat
 - [x] core/gitref: DeleteMilestone als Gegenstueck zu Delete - refDelete auf MilestoneRefName(name), ErrNoRef heisst nichts zu tun
-- [ ] core/outbox: OpDelete fuer KindMilestone zulassen - send() (core/outbox/outbox.go:361) weist ihn heute ab, samt Kommentar, der das Gegenteil behauptet
+- [x] core/outbox: OpDelete fuer KindMilestone zulassen - send() (core/outbox/outbox.go:361) weist ihn heute ab, samt Kommentar, der das Gegenteil behauptet
 - [ ] core/refsync: RecordMilestoneDelete nach dem Vorbild von RecordDelete (core/refsync/refsync.go:133) - Lease aus MilestoneSHA, Weg ueber die Outbox, damit Loeschen offline funktioniert
 - [ ] core/milestone: Delete(root, name) entfernt die Datei; os.ErrNotExist durchreichen, wie Load es tut
 - [ ] internal/cli: 'jaira milestone rm' loescht Datei und Ref, wenn die letzte Zeile herausgenommen wird - ein Aufruf, ein Schreibvorgang; Meldung sagt, dass der Milestone weg ist
