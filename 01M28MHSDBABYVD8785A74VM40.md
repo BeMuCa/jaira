@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:24:00Z
+updated-at: 2026-09-15T05:45:59Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27181
@@ -177,3 +177,8 @@ Die Begruendung vom 14.09. 20:31 lautete 'wer von einer aelteren Version aktuali
 Zeile 18 unter ## Unreleased nennt Schwelle und Befehl bereits; die Hinweisleisten-Haelfte von Zeile 46 waere dort doppelt.
 
 Stand: 343912c hat die beiden Befunde aus Runde 4 umgesetzt (NOTES.md 'ten or more' statt 'more than ten'; handle neben id und file in logbookAll --json, gepinnt durch TestTheCutJSONNamesEachHandle). optimize und testing sind seit dem optimize-Schnitt NICHT erneut gelaufen, test-verdict stammt noch vom 14.09. 20:08.
+- **2026-09-15 05:45 · Alexander Sacharov** — Alex am 2026-09-15, in Kenntnis des neuen Fakts: die Korrektur bleibt in der geschlossenen Sektion ## 0.1.4 stehen. Nicht mehr aufmachen.
+
+Der Fakt, den er dabei hatte und der gestern fehlte: sinceEntries (core/release/release.go:61) gibt all[:i] zurueck, also alles STRENG OBERHALB der eigenen Sektion. Ein Board, das 0.1.4 oder neuer traegt, liest diese Zeilen nie; nur ein Board auf 0.1.3 liest sie, und dem wird gesagt, die Aenderung sei in v0.1.4 erschienen, was dieser Tag nicht enthaelt.
+
+Seine Entscheidung trotzdem: so lassen. Wer sie spaeter anzweifelt, zweifelt eine Entscheidung an, die mit diesem Wissen getroffen wurde, nicht ohne es.
