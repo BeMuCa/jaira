@@ -1,7 +1,7 @@
 ---
 id: 01M28FMQGC4CNQT8Z9WY13VMA8
 title: Jede Aenderung faehrt auf einem Branch und kommt durch einen PR
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Es steht als Regel des Projekts geschrieben, dass Arbeit auf einem Branch mit ihrem Ticket faehrt und ueber einen PR ankommt - und dass das Pruefen dieses PRs dem Maintainer gehoert, nicht dem, der ihn aufmacht"
@@ -17,9 +17,10 @@ definition-of-done: "hinter dem jaira:local-Marker in CLAUDE.md und AGENTS.md st
 tags:
   - cli
 blocked-by: []
-commits: []
+commits:
+  - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:52:46Z
+updated-at: 2026-09-15T05:53:03Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -35,9 +36,9 @@ question: |-
   ACHTUNG beim Lesen des Tickets: review-verdict und review-check sind noch die von gestern und beschreiben einen Baum, den es nicht mehr gibt. Punkt 7 der Pruefliste ('entscheide, ob Zeile 36-37 zu aendern ist') und Punkt 9 ('jaira roles install --force') sind beide bereits erledigt. Die review-Lane kommt auf diesem Board erst NACH human und schreibt beide Felder dann neu.
 
   Du musst nur sagen, ob du die Arbeit annimmst.
-outcome-what: "testing-Lane: go build ./... und go test ./... -race gruen, DoD-1 an README/CLAUDE/AGENTS Zeile fuer Zeile geprueft, und eine frisch gebaute Binary schreibt die neue PR-Regel per 'jaira roles install --into' wirklich heraus."
-outcome-why: "Die Lane prueft, ob das Geforderte existiert und laeuft - beides bestaetigt am Baum, nicht am outcome-Text."
-outcome-resolves: "test-verdict=pass. Nichts geht zurueck nach in-progress."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md kennt jetzt zwei Forges: eine neue Sektion 'Which forge this repository is on' (:36-62) leitet das Werkzeug aus 'git config jaira.forge' ab, sonst aus dem Remote-Host, und bleibt auf einem Host stehen, der weder github.com noch ein gitlab-Host ist. Die drei Stellen, an denen die Werkzeuge sich unterscheiden, nennen beide: Auflisten (:64-74 gh pr list / glab mr list --source-branch), Aufmachen (:109-121 gh pr create / glab mr create --description) und Boundaries (:139-144 never run, never merge, never approve auf beiden). Dazu eine Unreleased-Zeile in core/release/NOTES.md."
+outcome-why: "Die Rolle rief an fuenf Stellen 'gh' auf und war damit auf jedem GitLab-Board unbrauchbar - das requirementsgenie-Board auf git.esprit-engineering.de ist der echte Fall. Ein geratenes Werkzeug scheitert gegen die falsche Forge, und ein geratenes, das sich gegen das falsche Projekt authentifiziert, ist schlimmer; darum waehlbar statt geraten."
+outcome-resolves: "DoD 2, 3 und 4 abgehakt und belegt. Ein Ablauf statt zwei Kopien, damit das 'Never run' nicht auf einem Weg verloren gehen kann; die Modus-Weiche der vorigen Runden ist unveraendert. go build ./... und go test ./... -race gruen, frisch gebaute Binary schreibt die glab-Zeilen per 'jaira roles install --into' wirklich heraus."
 claimed-by: DESKTOP-RFTCH11-57212
 claimed-at: 2026-09-15T05:47:39Z
 review-summary: "none"
