@@ -20,7 +20,7 @@ blocked-by: []
 commits:
   - f6ce687c74d229a4d37f9a99a856a72ad1f865f3
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:57:46Z
+updated-at: 2026-09-15T06:00:15Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: |-
@@ -222,3 +222,9 @@ Fuer die naechste review-Runde: review-check Schritt 4 verlangt genau EINEN Tref
 3. Sektionsgrenze: :64-77 laesst die Abfrage der offenen Requests in der Sektion 'Which forge this repository is on' laufen, die damit drei Aufgaben traegt. Die Verzweigung wird aber erst in '## Push, then take the branch the listing put you on' (:79) ausgewertet. Den Block dorthin verschieben; die Forge-Sektion klaert dann nur noch das Werkzeug und den Wortwechsel. Kein Verhalten, nur die Stelle - faellt beim Fix von 1 ohnehin an, weil :43 und :81 an dieser Grenze liegen.
 
 Stehen gelassen und warum: (a) Ein Ablauf statt zwei Kopien - richtig entschieden, die Begruendung des Implementierers zu DoD 4 traegt. (b) Die vierfache Wiederholung von 'never open/merge/approve' bleibt, das ist in einem Prompt kein Fluff (schon in der letzten optimize-Runde so entschieden, wird nicht wieder aufgemacht). (c) 'glab mr list' ohne State-Flag und '--description "$(cat ...)"' statt --body-file: gegen glab 1.114.0 nachgesehen, das ist die review-Lane, nicht meine. (d) Der veraltete review-check (erwartet EINEN Treffer fuer 'gh pr create') ist ein Ticketfeld, kein Diff-Befund - steht schon in der Notiz der in-progress-Runde und gehoert der review-Lane.
+- **2026-09-15 06:00 · Alexander Sacharov** — in-progress-Runde 2026-09-15 (critique-Rueckgabe, GitLab): die Forge wird jetzt von dem Remote abgelesen, auf den auch gepusht wird.
+- Nachgeprueft, nicht angenommen: 'jaira whoami --json' meldet in diesem Repo remote=upstream (remote_source='from settings.json on this machine'), waehrend der Branch nach origin geht. Die alte Zeile haette hier also den Host des Upstream gelesen und den des Push-Ziels nie gesehen - im Fork sind das zwei verschiedene Hosts und im schlimmsten Fall zwei verschiedene Forges.
+- Warum nicht 'jaira whoami --json' lesen, wie critique als Ausweichweg anbot: der Prompt braucht den Board-Remote gar nicht. Er braucht den Remote, auf den 'git push -u origin HEAD' schiebt, und der steht wortwoertlich in dieser Zeile. Damit ist auch die zweite Kopie der Remote-Leiter aus core/settings/settings.go:145-168 weg, ohne dass eine dritte Quelle dazukommt.
+- Der Grund steht als Prosa unter dem Codeblock, nicht als Kommentar in der Zeile: wer 'git remote get-url origin' sieht, fragt sich genau dann nach jaira.remote, wenn er den Prompt liest - und ohne die drei Zeilen holt die naechste Runde die alte Fassung zurueck.
+- Befund 3 (Block verschoben): die Sektion 'Which forge this repository is on' endet jetzt beim Wortwechsel gh/glab. Die Push-Sektion heisst 'Push, then ask which of your two jobs this is' - erst pushen, dann listen, dann verzweigen. Vorher stand die Abfrage vor dem Push und die Verzweigung dahinter, mit 'du branchst erst nach dem Push' als Klammer dazwischen; die Klammer ist ersatzlos weg, weil die Reihenfolge sie jetzt selbst erzaehlt.
+- Keine neue NOTES.md-Zeile: die Unreleased-Zeile zum GitLab-Weg sagt 'otherwise the remote host does', und das bleibt nach dieser Korrektur wahr. Ausgeliefert ist der Prompt noch nicht; korrigiert wurde ein Wortlaut, den noch niemand hat.
