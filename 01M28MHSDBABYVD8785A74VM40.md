@@ -21,7 +21,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T16:24:28Z
-updated-at: 2026-09-15T05:47:01Z
+updated-at: 2026-09-15T05:52:26Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56199
@@ -182,3 +182,17 @@ Stand: 343912c hat die beiden Befunde aus Runde 4 umgesetzt (NOTES.md 'ten or mo
 Der Fakt, den er dabei hatte und der gestern fehlte: sinceEntries (core/release/release.go:61) gibt all[:i] zurueck, also alles STRENG OBERHALB der eigenen Sektion. Ein Board, das 0.1.4 oder neuer traegt, liest diese Zeilen nie; nur ein Board auf 0.1.3 liest sie, und dem wird gesagt, die Aenderung sei in v0.1.4 erschienen, was dieser Tag nicht enthaelt.
 
 Seine Entscheidung trotzdem: so lassen. Wer sie spaeter anzweifelt, zweifelt eine Entscheidung an, die mit diesem Wissen getroffen wurde, nicht ohne es.
+- **2026-09-15 05:52 · Alexander Sacharov** — optimize, second round (after critique rounds 4 and 5 changed the change again). Two findings, both duplication, both inside this ticket's own files.
+
+1. internal/cli/logbook.go built its --all --json entries by hand: {id, handle, file}. internal/cli/flow.go:701 already has trimmedJSON(), which renders []ticket.Trimmed as {id, handle, title, file} and is what 'jaira move' reports its sweep with. Same package, same question - which tickets left the board - two spellings. Critique round 4 had just added 'handle' to the hand-built one, which is the second copy converging on the first by hand; that is exactly the drift the lane warns about. Folded onto trimmedJSON. The filed entries now also carry 'title', which is a visible change to --all --json, so it got its own NOTES line under ## Unreleased, and TestTheCutJSONNamesEachHandle now pins the title too - the assertion is what says the two shapes are one shape rather than a coincidence.
+
+2. core/ticket/trim.go had 'Status == lane && !ReadOnly' twice, in Overflow and in FileLane. The previous optimize round looked at this and left it, reasoning that the sorts and error handling differ - they do, but the part that was duplicated is neither: it is the predicate, and the predicate is the semantically loaded bit this ticket added ('a ref-only ticket is not this clone's to file'). A predicate that carries a rule is the thing that must not exist twice. Extracted as filesInLane(all, lane), which holds the reason in one place; both callers keep their own sort and their own error handling. No behaviour change. FileLane's doc comment lost the sentence that now lives on filesInLane and points there instead.
+
+Looked at and left, with reasons:
+- listLogbook/logbookNames against archive.go's archivedNames: the same shape, but pre-existing and untouched by this change, and the directory layouts genuinely differ (logbook is nested per day, archive is flat).
+- the local 'skipped' string in logbookAll: it looks like a variable used once, but pe is scoped to the errors.As branch and the JSON branch is below it. Inlining would mean restructuring the error path for nothing.
+- readyToFile()'s pass over m.tickets per render, unchanged from the last round: same order of work the bar already does.
+- logbook-on-entry stays: settle.go honours it and NOTES documents it. Not dead.
+- lane.Load not layering the builtins under an existing board is still ticket 1K9KZS and still out of this lane.
+
+gofmt, go vet ./... and go test ./core/... ./internal/cli/... ./internal/tui/...: all green after each edit.
