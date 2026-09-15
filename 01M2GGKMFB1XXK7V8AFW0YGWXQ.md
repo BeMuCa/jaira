@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:12:33Z
+updated-at: 2026-09-15T15:12:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -72,7 +72,7 @@ outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig
 - [ ] CLI: jaira milestone create/add/rm/ls - je Aufruf genau ein Dateischreibvorgang, damit zwanzig Tickets gruppieren eine Bearbeitung bleibt
 - [ ] CLI: jaira list --milestone <name> (neben --tag, internal/cli/tickets.go:528) und der Schluessel milestone:<name> in beiden matches() (internal/cli/tickets.go:534, internal/tui/model.go:598) - exakt wie tag, nicht als Teilstring
 - [x] TUI: rechte Kartenkante in renderCardBlock (internal/tui/view.go:533) - zweite Balkenzelle rechts, inner = w-2, die Spalte IMMER reserviert, auch ohne Milestone, sonst flattern die Titel in einer Lane
-- [ ] TUI: milestoneColors gespiegelt zu cardColors (internal/tui/model.go:1366) - cardSlots Plaetze, in Dateireihenfolge, ein vierter Milestone faerbt nichts
+- [x] TUI: milestoneColors gespiegelt zu cardColors (internal/tui/model.go:1366) - cardSlots Plaetze, in Dateireihenfolge, ein vierter Milestone faerbt nichts
 - [ ] Test: Karte mit 0, 1 und 4 Milestones - gleiche Kartenbreite, gleiche Textbreite, hoechstens drei gefaerbte Plaetze rechts
 - [ ] TUI: die Geste - Picker wie die Tag-Box auf 't' (internal/tui/model.go:1010), die Auswahl setzt m.filter auf milestone:<name> und nutzt damit den vorhandenen Filterweg
 - [ ] gitref: Namensraum von 'Ticket-ID' auf '(Art, Name)' verallgemeinern - Prefix (core/gitref/gitref.go:39), RefName (:144), Fetch-Refspec (:575), List/ListRemote/idsFrom (:587-625); refs/jaira/milestones/<name> neben refs/jaira/tickets/<id>
