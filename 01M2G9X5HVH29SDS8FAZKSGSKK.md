@@ -30,7 +30,7 @@ related: []
 commits:
   - cc21ca9
 created-at: 2026-09-14T15:52:22Z
-updated-at: 2026-09-15T06:11:54Z
+updated-at: 2026-09-15T06:14:15Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-38471
@@ -315,3 +315,14 @@ Warum das mehr ist als Kosmetik: ein Worker-Tab im Workspace eines fremden Proje
 Naheliegende Behebung: den Workspace des eigenen Panes ermitteln (der Praefix vor dem ':' der Pane-Id, oder 'herdr workspace list' nach focused) und als --workspace weiterreichen, damit der Worker neben dem entsteht, der ihn gestartet hat. Nicht in dieser Lane gemacht - testing implementiert nicht.
 - **2026-09-15 06:11 · Alexander Sacharov** — Anweisung von Alex im Lauf (2026-09-15), damit sie auf dem Board steht und nicht in dieser Sitzung stirbt: scripts/spawn.sh soll den Worker-Tab dort oeffnen, wo der Dispatcher beziehungsweise der Teamlead selbst sitzt - nicht dort, wo Herdr ihn von sich aus hinlegt. Damit ist der zweite spawn.sh-Befund dieses Laufs (Notiz davor) kein blosser Vermerk mehr, sondern Umfang dieses Tickets.
 Die testing-Runde wurde dafuer abgebrochen: sie pruefte ein Skript, das sich jetzt aendert, und ihr Urteil waere ueber die alte Fassung gewesen. Der Tab w3:p45 ist geschlossen, das Ticket geht zurueck nach in-progress.
+- **2026-09-15 06:14 · Alexander Sacharov** — Beleg fuer die neue Umfangserweiterung (Tab im Workspace des Dispatchers), beobachtet am 2026-09-15 waehrend der Testing-Lane von 13VMA8:
+
+Der Worker-Tab wurde als 'w2:p1Y' angelegt, obwohl der Dispatcher in w3 laeuft. Alex hat ihn geschlossen ('он не там открылся'), die Lane war damit abgebrochen und musste neu gestartet werden.
+
+Ursache, nachgeprueft: scripts/spawn.sh:45-47 ruft 'herdr tab create --cwd ... --label ... --no-focus' OHNE '--workspace'. 'herdr tab create --help' kennt die Option (--workspace <WORKSPACE_ID>). Ohne sie entsteht der Tab im gerade FOKUSSIERTEN Workspace - also dort, wo der Mensch zufaellig hinschaut, nicht dort, wo der Dispatcher laeuft. Alex hatte in dem Moment w2 ('Req', requirementsgenie) offen.
+
+Das erklaert auch, warum es bisher nie auffiel: alle sechs vorherigen Worker dieses Laufs landeten in w3, weil w3 zufaellig fokussiert war. Der Fehler ist damit nicht deterministisch, sondern haengt am Blick des Menschen - genau die Sorte Befund, die spaeter niemand reproduzieren kann.
+
+Die verlaessliche Antwort steht in der Umgebung, in der spawn.sh ohnehin schon laeuft: HERDR_WORKSPACE_ID (hier w3), zusammen mit HERDR_PANE_ID und HERDR_TAB_ID ueber WSLENV durchgereicht. Also '--workspace "$HERDR_WORKSPACE_ID"'.
+
+Nebenwirkung, die zum selben Absatz gehoert: ein Tab im falschen Workspace macht '--no-focus' wertlos. Der Sinn von --no-focus ist, dem Menschen den Bildschirm nicht wegzunehmen; ein Tab, der in SEINEM Workspace aufgeht statt im Workspace des Dispatchers, tut genau das - er erscheint neben der Arbeit, die er gerade ansieht.
