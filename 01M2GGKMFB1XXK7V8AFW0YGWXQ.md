@@ -33,7 +33,7 @@ related:
   - 01M2FQEEQN61ZE9AJ4Y4S1VM40
 commits: []
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T15:27:22Z
+updated-at: 2026-09-15T15:27:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79843
@@ -55,7 +55,8 @@ outcome-resolves: "Format .jaira/milestones/<name>.md festgelegt, Snapshot-Zweig
   proof: internal/cli/milestones_test.go:TestCreateAssignsAColourIntoTheMilestoneFile
 - [x] Eine Karte zeigt die Farbe ihres Milestones am RECHTEN Rand, deutlich getrennt von den Tag-Farben am linken; ein Ticket ohne Milestone zeigt dort nichts und die Karte wird dadurch nicht breiter. Mehrfachzugehoerigkeit ist erlaubt: rechts stehen bis zu drei Plaetze, in Dateireihenfolge.
   proof: internal/tui/milestonebar_test.go:TestRightBarWidthIsTheSameWithAndWithoutMilestones
-- [ ] Das Board zieht sich mit einer Geste auf einen Milestone zusammen, und 'jaira list' hat den entsprechenden Schalter.
+- [x] Das Board zieht sich mit einer Geste auf einen Milestone zusammen, und 'jaira list' hat den entsprechenden Schalter.
+  proof: internal/tui/milestonebar_test.go:TestPickerNarrowsTheBoardAndReleasesIt
 - [-] Unerledigte Arbeit wandert in den naechsten Sprint, indem eine Datei bearbeitet wird - nicht indem jedes Ticket einzeln angefasst wird. Nachgestellt mit mindestens drei Tickets, von denen zwei weiterwandern.
 - [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das, was ein Benutzer davon merkt.
 
