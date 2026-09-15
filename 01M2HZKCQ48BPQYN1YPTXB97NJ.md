@@ -13,7 +13,7 @@ related:
   - 01M2HX6SYCFB27V26R5APWAF22
 commits: []
 created-at: 2026-09-15T07:30:45Z
-updated-at: 2026-09-15T07:33:59Z
+updated-at: 2026-09-15T07:34:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -52,4 +52,8 @@ context: |-
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
+- **2026-09-15 07:34 · Alexander Sacharov** — Alex am 2026-09-15 zur Richtung und zum Zeitpunkt: der Weg ueber den erzeugten Block in CLAUDE.md ist der, den er ausprobiert haben will - nicht weil er sicher der richtige ist, sondern weil er sich ohne Umbau probieren laesst. Das Ticket geht in Release 0.2.2, und was sich im Gebrauch als falsch herausstellt, wird danach schrittweise nachgezogen.
 
+Fuer die Plan-Lane heisst das: die Entscheidung 'erzeugter Block statt Laufzeit-Einstellung im Prompt' ist vorgegeben und nicht neu aufzurollen. Offen bleibt, WIE der ausgelieferte Prompt dem Block weicht - ob er ausdruecklich sagt, dass der Block vor ihm gilt, oder ob der Block den betreffenden Absatz des Prompts ersetzt.
+
+Nicht als Freibrief lesen: 'spaeter nachziehen' gilt fuer die Form, nicht fuer Kriterium 4. Ein Board ohne Einstellung muss sich vom ersten Tag an wie heute verhalten - wer nichts tut, darf nichts merken.
