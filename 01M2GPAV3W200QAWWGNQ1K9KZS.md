@@ -1,7 +1,7 @@
 ---
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
@@ -26,11 +26,14 @@ related:
   - 01M28MHSDBABYVD8785A74VM40
 commits: []
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:00:17Z
+updated-at: 2026-09-15T07:00:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40747
 claimed-at: 2026-09-15T06:57:22Z
+outcome-what: "Plan fuer die Lane-Korrektur festgelegt: neun Schritte im Ticket"
+outcome-why: "pre-process: die Methode muss stehen, bevor jemand an den Ladepfad geht - die Spannung zwischen 'ein Board ist sein Lane-Verzeichnis' und 'eine Korrektur muss ankommen' loest sich nur mit einer benannten, einmaligen, feldgenauen Korrektur"
+outcome-resolves: "Der Plan sagt Schritt fuer Schritt, wie DoD 1 bis 5 erreicht werden: Fixture, drei Tests, corrections.go im Ladepfad, NOTES-Zeile unter ## Unreleased"
 ---
 
 # Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen
