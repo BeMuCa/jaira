@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T06:43:33Z
-updated-at: 2026-09-15T13:15:41Z
+updated-at: 2026-09-15T13:16:16Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 context: |-
@@ -90,3 +90,6 @@ Der Preis, den ich bewusst nehme: Notizen, die nach dem letzten Code-Commit ents
 - **2026-09-15 13:14 · Alexander Sacharov** — Der pre-process-Commit 4e89f86 ('docs(9ZZSFT): plan the removal of bookkeeping-only commits') fasst nur .jaira/ an und ist damit genau das, was die neue Regel verbietet - pre-process aendert keinen Code. Er war nicht gepusht und hatte kein Upstream, also habe ich ihn per 'git reset --soft HEAD~1' in diesen Commit gefaltet, statt ihn stehen zu lassen und die DoD-Demonstration (Plan-Schritt 10) daran scheitern zu lassen. Das ist zugleich die Probe aufs Exempel: die Ticket-Datei erscheint jetzt zum ersten Mal in dem Commit, der auch Code traegt.
 
 Warum das kein Zustandsverlust war: 'git reset --soft' laesst den Arbeitsbaum unberuehrt, und der Ticket-Zustand liegt in der Datei, nicht im Commit. Wer das nachmacht, muss vorher 'git ls-remote --heads origin <branch>' pruefen - auf einem gepushten Zweig ist das Falten verboten und der Buchhaltungs-Commit bleibt stehen.
+- **2026-09-15 13:16 · Alexander Sacharov** — Commit dieser Lane: 239c881 'docs(9ZZSFT): stop a lane without a code change from committing' - Code und Ticket-Datei zusammen, Handle im Betreff. 'git log --name-only master..HEAD' zeigt danach genau diesen einen Commit und keinen, der nur .jaira/ anfasst; der alte pre-process-Commit ist darin aufgegangen.
+
+Fuer critique/testing/review: ihr seid selbst die Nachstellung von DoD 1 und 2. Committet nichts. Wenn ihr am Ende in 'git log --name-only master..HEAD' immer noch nur 239c881 seht, ist DoD 1 bewiesen; wenn 'jaira move' in die Endlane durchgeht und die abgeleitete Liste 239c881 nennt, ist DoD 2 bewiesen. Beide sind absichtlich ungetickt geblieben - sie lassen sich in dieser Lane nicht beweisen, nur vorbereiten.
