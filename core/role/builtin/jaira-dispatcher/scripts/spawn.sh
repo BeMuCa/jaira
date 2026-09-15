@@ -23,7 +23,7 @@ if [ ! -d "$wt" ]; then
   # without a .env has nothing to offset, and must not fail here.
   if [ -f "$root/.env" ]; then
     # Deterministic per-slug port offset, so two workers never share a stack.
-    # 0 stays free: it belongs to the main directory (80, 5432, 5433, 5173, 8000).
+    # 0 stays free: it belongs to the main directory's own stack.
     off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
     cp "$root/.env" "$wt/.env"
     {
@@ -31,8 +31,13 @@ if [ ! -d "$wt" ]; then
       echo "# worker stack: slug=$slug offset=$off"
       # Derived from the repository, never a name written in here: a prefix
       # baked into this script belongs to one project and silently names every
-      # other project's stack after it.
-      echo "COMPOSE_PROJECT_NAME=$(basename "$root" | tr -c 'a-zA-Z0-9' '_')_$slug"
+      # other project's stack after it. Docker takes lower case only, so the
+      # name is folded before it is cleaned — a jaira slug is upper case, and
+      # `docker compose` refuses the whole stack over a single capital. printf
+      # rather than echo: the newline echo appends is a character like any
+      # other to tr, and would come back as a trailing underscore.
+      echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" \
+        | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
       echo "HTTP_PORT=$((8080 + off))"
       echo "DB_PORT_HOST=$((5500 + off * 2))"
       echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
@@ -40,10 +45,17 @@ if [ ! -d "$wt" ]; then
   fi
 fi
 
+# Named, because without --workspace Herdr decides for itself where the tab
+# lands: the worker can open in a window nobody is looking at, and a worker
+# nobody sees is one nobody notices dying. Herdr exports its own workspace into
+# every pane it starts, so this is the workspace the caller is sitting in.
+ws=()
+if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID"); fi
+
 # A tab per worker, never a split. A split divides the height of one screen: at
 # four workers each strip is a few lines, and nobody can read what any of them is
 # doing — which is the whole reason a worker gets a surface of its own.
-pane="$("$herdr" tab create --cwd "$wt" --label "$ticket/$lane" --no-focus \
+pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$lane" --no-focus \
   | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
 
 # The tab's shell runs on the machine Herdr itself runs on. When that is Windows
@@ -67,7 +79,19 @@ for _ in $(seq 20); do
     | python3 -c 'import sys,json;p=json.load(sys.stdin)["result"]["pane"];print(p.get("agent","-"),p.get("agent_status","-"))')"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done
-case "${st:-}" in claude*) ;; *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;; esac
+# Only the two states the loop breaks on may pass. Anything else — above all
+# Herdr's `blocked`, its state for a detected approval dialog — must stop here:
+# the send-keys below would answer that dialog on the human's behalf, and this
+# role is forbidden from ever doing that.
+case "${st:-}" in
+  claude\ idle|claude\ done) ;;
+  claude\ blocked)
+    echo "claude is up in $pane but an approval dialog is waiting:" \
+         "report it to the human, let them answer it in that pane," \
+         "then start this worker again" >&2
+    exit 1 ;;
+  *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;;
+esac
 
 "$herdr" pane send-text "$pane" "/jaira-role-lane $ticket $lane" >/dev/null
 sleep 1
