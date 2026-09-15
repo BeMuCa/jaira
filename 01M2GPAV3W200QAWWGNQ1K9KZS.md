@@ -1,7 +1,7 @@
 ---
 id: 01M2GPAV3W200QAWWGNQ1K9KZS
 title: "Ein Board, das es schon gibt, bekommt eine geaenderte Lane nie zu sehen"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Eine Korrektur an einer ausgelieferten Lane erreicht auch die Boards, die es schon gibt - ohne dass jemand auf jedem Rechner eine Zeile von Hand loescht."
@@ -27,14 +27,14 @@ related:
 commits:
   - 632240e21705271e1e04f68a7c951f6544035c82
 created-at: 2026-09-14T19:29:33Z
-updated-at: 2026-09-15T07:41:37Z
+updated-at: 2026-09-15T07:41:51Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8323
 claimed-at: 2026-09-15T07:35:48Z
-outcome-what: "correctionsOut ist geloescht: say (core/lane/corrections.go:139) schreibt fest auf os.Stderr, das 'var w io.Writer'-Geflecht und der io-Import fallen weg. Die Testhilfe hears (core/lane/corrections_test.go:23) tauscht dafuer os.Stdout und os.Stderr gegen echte Pipes und gibt beide Texte zurueck; TestCorrectionSpeaksOnStderrAndNotOnStdout (:278) benutzt sie statt eines eigenen Deskriptor-Blocks, die uebrigen vier Aufrufer lesen jetzt den stderr-Rueckgabewert."
-outcome-why: "critique Runde 2: 'var correctionsOut io.Writer' war die einzige Writer-Seam im ganzen Produktionscode - nudgeIfStale (internal/cli/update.go) und bindDriverIfShared schreiben direkt auf os.Stderr - und sie trug nichts, weil der Test, der den Kanal wirklich festnagelt, ohnehin die echten Deskriptoren tauschen muss: nur so laesst sich zeigen, dass stdout sauber bleibt. Jetzt gibt es eine Testhilfe statt Testhilfe plus Produktionsvariable."
-outcome-resolves: "Verhalten unveraendert, nur der Weg dorthin: go vet ./... und go test ./... -race beide RC=0. Gegenprobe: say voruebergehend auf os.Stdout umgestellt -> drei Tests fallen um (TestCorrectionSpeaksOnStderrAndNotOnStdout, TestCorrectionRemovesTheDoorwayFromAnOldBoard, TestCorrectionLeavesALaneSomebodyWroteAlone). DoD 3 zeigt jetzt auf core/lane/corrections.go:139 statt auf die geloeschte Variable; die verschobenen Zeilennummern in DoD 2 und 6 sind mitgezogen. Keine NOTES.md-Zeile, weil von aussen nichts anders ist."
+outcome-what: "Drei Aufraeumungen ohne Verhaltensaenderung: applyCorrections (core/lane/corrections.go:142) haelt lanesDir und marker je einmal statt correctionsPath(root) dreimal und ProjectLanesDir(root) zweimal auszurechnen; TestDropFrontmatterLine (core/lane/corrections_test.go:248) traegt seinen Input in einem in-Feld der Tabelle statt in einer Verzweigung ueber tc.name, die tc.want zur Laufzeit umschrieb; hears (:46) schliesst die Lese-Enden seiner beiden Pipes nach dem Drainen."
+outcome-why: "optimize-Lane: Wiederholung und eine namensbasierte Sonderfall-Verzweigung in der Tabelle sind Fluff, und die offenen Deskriptoren waren die von critique Runde 3 (4) ausdruecklich in diese Lane verschobene Testhygiene. Duplikations- und Toter-Code-Pass ohne Findung - siehe review-gaps."
+outcome-resolves: "go vet ./... RC=0, go test ./... -race RC=0 (ganzer Baum, inkl. internal/tui). Keine DoD neu belegt, aber die durch die Aenderung verschobenen Zeilennummern in DoD 2, 3 und 6 sind nachgezogen. Keine NOTES.md-Zeile: von aussen ist nichts anders."
 review-summary: "none"
 review-gaps: "Entfernt: die dreifache correctionsPath(root)- und doppelte ProjectLanesDir(root)-Berechnung in applyCorrections (core/lane/corrections.go:142) zu je einer Variablen; die Verzweigung ueber tc.name samt Laufzeit-Umschreiben von tc.want in TestDropFrontmatterLine (core/lane/corrections_test.go:248) zugunsten eines in-Feldes in der Tabelle; die nie geschlossenen Lese-Enden der beiden Pipes in hears (:46) - die in critique Runde 3 zurueckgestellte Testhygiene. Kein toter Code und kein verwaister Import gefunden: der io-Import fiel schon mit correctionsOut in 0189cf0. Kein Duplikat gefunden: readIDList/writeIDList (core/lane/order.go:33,53) und containsWarning (core/lane/lane_test.go:25) werden bereits wiederverwendet, und dropFrontmatterLine ist die Gegenrichtung zu stampCreatorLine (core/lane/share.go:64), nicht dieselbe Idee zweimal. Stehen gelassen: doneDoorway woertlich ein zweites Mal in core/move/oldboard_test.go:18, weil eine unexportierte Konstante ueber Paketgrenzen nicht teilbar ist und eine Drift den Test dort laut umwirft; der handgeschriebene Deskriptor-Block in oldboard_test.go:69, weil critique ein gemeinsames Testpaket fuer drei Aufrufer ausdruecklich als teurer verworfen hat; der zweite dropFrontmatterLine-Aufruf in recognises, weil er mit Value fragt und der erste ohne."
 ---
