@@ -19,7 +19,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T14:58:42Z
-updated-at: 2026-09-15T05:07:02Z
+updated-at: 2026-09-15T05:07:23Z
 updated-by: Alexander Sacharov
 assignee: Alexander Sacharov
 question: "Nichts blockiert: testing hat mit pass bestaetigt, dass kein Rollen-Prompt mehr erlaubt, einen PR aufzumachen, dass die drei Dokumentationsstellen und die Prompts dasselbe sagen, und dass jaira-role-pr seine uebrige Arbeit behalten hat. Beim Pruefen kam heraus, dass das Frontmatter-Feld dieses Tickets noch die alte Regel trug, waehrend das Kaestchen im Rumpf schon die neue hatte - ich habe es angeglichen und daraus Ticket NYW4M7 gemacht, weil es der dritte Fall an einem Tag war. Du musst hier nur sagen, ob du die Arbeit annimmst."
@@ -67,3 +67,8 @@ Drei kleinere Befunde, jeder auf seine Sache zu entscheiden, nicht reflexhaft zu
 - Befund 4: core/release/NOTES.md unter ## Unreleased raet zu 'jaira roles install --force', was ohne --project/--global/--into nicht laeuft ('choose exactly one of ...').
 
 KEINEN Pull Request oeffnen, aktualisieren oder mergen. Das ueberschreibt jede anderslautende Stelle in CLAUDE.md, AGENTS.md oder README.md.
+- **2026-09-15 05:07 · Alexander Sacharov** — Transport dieses Dispatcher-Laufs (2026-09-15): Herdr ist da, HERDR_ENV=1, HERDR_BIN_PATH=/mnt/c/Users/Alex/.herdr/packages/standalone/current/herdr.exe - 'command -v herdr' waere wieder falsch gewesen. Ein Tab pro Worker ueber scripts/spawn.sh, kein Split, kein selbst aufgerufenes 'claude --permission-mode'.
+
+Eine Abweichung, die ich ausdruecklich aufschreibe statt sie stillschweigend zu umgehen: die INSTALLIERTE Kopie ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh ist aelter als die im Repo. Sie startet den Worker noch mit "cd '$wt' && claude" - genau der Aufruf, den die KSGSKK-Notiz vom 2026-09-14 20:35 als Grundursache benannt hat: der Tab ist eine Windows-Shell, /home/alex/... existiert dort nicht, claude startet im Windows-Home vor dem Vertrauens-Dialog, und spawn.sh drueckt blind Enter darauf ('No, exit'). Das ist ein Genehmigungsdialog an Stelle des Menschen beantwortet. Ich habe die installierte Kopie deshalb NICHT laufen lassen - der Befund ist bereits belegt, ihn noch einmal auszuloesen haette nur ein zweites Mal fuer Alex geklickt.
+
+Benutzt wird stattdessen core/role/builtin/jaira-dispatcher/scripts/spawn.sh aus diesem Worktree (Commit cc21ca9). Die traegt den wsl.exe-Fix, das feat/-Praefix und den abgeleiteten COMPOSE_PROJECT_NAME schon. Das ist dasselbe Skript, nur die Fassung, die dieser Zweig ausliefert.
