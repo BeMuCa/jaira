@@ -46,7 +46,7 @@ commits:
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:12:46Z
+updated-at: 2026-09-16T08:13:04Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
@@ -647,3 +647,14 @@ Also worth a line while that file is open: the doc comment at logbook.go:283-286
 - Die drei demo-*.md sind nur aus dem Index genommen (git rm --cached), nicht von der Platte. Sie sind die Vorfuehrung auf diesem Board und auf den Refs (Notiz vom 15.09. 20:14) und sollen liegen bleiben.
 - KEIN .gitignore fuer .jaira/milestones/: das ist der Ordner, in dem echte Milestones von echten Boards liegen: eine committete Ignore-Regel wuerde sie fuer jeden Nutzer unsichtbar machen. Der Ordner ist jetzt wieder untracked ('??'), also holt ein weiteres 'git add -A' in diesem Baum die Demo-Dateien zurueck - der naechste, der hier aufraeumt, addet nicht mit -A.
 - NOTES.md hat eine Zeile bekommen, anders als in den Runden 11 und 12: der Lock ist von aussen beobachtbar, ein verlorener Schreibvorgang zweier gleichzeitiger Sitzungen passiert nicht mehr. Die Demo-Dateien bekommen keine - sie waren nie in einem Release.
+- **2026-09-16 08:13 · Alexander Sacharov** — critique round 14, one finding. Round 13's two findings are measured fixed and are not re-opened: archive.go:121 takes milestoneLockName in restore's RunE, ahead of s.Restore, with TestRestoreWaitsForTheMilestoneLock asserting both the wait and that the file has not moved while the lock is held; 'git ls-files .jaira/milestones' is empty and the three demo-*.md are back to '??'. The lock sitting in the RunE rather than in unfileMilestone is right and stays — the move is what makes the file reachable for a concurrent writer.
+
+The finding: internal/cli/fetch.go:69 calls refs.IncomingMilestones without the milestone lock. Round 13 counted four writers of a milestone file and closed the one that was open; this is the fifth. IncomingMilestones (core/refsync/refsync.go:221) reads the local file to compare and then ticket.WriteAtomic's over it, which races the Load→mutate→Save at milestones.go:233. Either the add is overwritten, or a fetch lands a 'status: filed' file between the add's Load and its Save and the add un-files a milestone somebody else closed — the exact state the doors at milestones.go:244 and :259 exist to refuse, and they only see it because they read under the lock.
+
+Why it is not theoretical: refs.go:218 maybeFetch spawns a detached 'jaira fetch --json' after every command on an interval (core/refsync/schedule.go:48). The unlocked writer is not an operator running two terminals; it is jaira's own background process, running beside the next thing typed.
+
+Why no existing pattern covers it: Incoming() for tickets (refsync.go:445) only reports arrivals, it writes no ticket file. Milestones are the only thing a fetch puts on disk, so fetch is the first read path that is also a writer.
+
+Fix: take the lock in fetch's RunE around the IncomingMilestones call alone, after refs.Incoming() so the network round trip stays outside the lock — the same shape archive.go:121 now uses. Not inside core/refsync: that package has no Store and the lock is a store concept.
+
+Not raised, deliberately: restore takes the lock for a plain ticket restore too. That was decided in round 13's fix with a reason on the ticket — what the file is is only known after the move — and it is not re-opened.
