@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:39:18Z
+updated-at: 2026-09-16T07:41:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -155,6 +155,11 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] create (milestones.go:130) und add/rm (:243) verzweigen auf den Fundort statt beide refuseFiledInLogbook zu rufen
 - [x] Test mit zwei Klonen: in grace, die die Datei nie hatte, 'milestone create' und 'milestone add' gegen einen auf dem Ref abgelegten Milestone - die Meldung nennt den Ref, die Markierung und den ablegenden Baum, und behauptet kein lokales Logbuch
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im Ref-Fall auf den ablegenden Baum zeigt statt auf ein Logbuch, das es hier nicht gibt
+- [ ] milestoneFiled fragt das Logbuch dieses Baums ZUERST und den Ref danach: wer selbst abgelegt hat, hat die Kopie hier, und 'jaira restore' laeuft hier - die Ref-Antwort kommt nur, wenn hier nichts liegt
+- [ ] Die Begruendung der Reihenfolge in der Doku von milestoneFiled umschreiben - sie argumentiert heute fuer Ref-zuerst
+- [ ] refuseFiledOnRef-Doku: 'nichts zu restaurieren und nie gehabt' gilt erst mit der neuen Reihenfolge und nur fuer diesen Baum; Wortlaut geradeziehen
+- [ ] Test: im ABLEGENDEN Baum (mit Refs) 'milestone create' und 'milestone add' - die Meldung nennt das Logbuch hier und nicht den fremden Baum
+- [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im eigenen Baum aufs lokale Logbuch zeigt
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
