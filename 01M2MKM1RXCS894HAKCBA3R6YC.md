@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:05:01Z
+updated-at: 2026-09-16T08:06:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11544
 claimed-at: 2026-09-16T07:59:59Z
@@ -67,3 +67,16 @@ Geprueft und verworfen: 'git rev-parse --abbrev-ref origin/HEAD' als Zielquelle 
 
 go test ./core/role/... prueft nur Installation und Parsing der Rolle, nicht den Inhalt von SKILL.md. Gruen heisst hier also 'nichts kaputt', nicht 'Regel getestet'.
 - **2026-09-16 08:04 · Alexander Sacharov** — critique (Durchgang 1, 4 Findings): (1) Die Reihenfolge im Dokument ist noch nicht fertig gedreht. Der Zielrepository-Abschnitt kam vor die create-Befehle, aber 'gh pr list --head' bei :99 laeuft immer noch davor und fragt im Fork den Fork - ein offener Pull Request im Parent wird nicht gefunden, und die Rolle oeffnet einen zweiten, obwohl :108 sagt, sie tue das nie. Der Abschnitt muss vor das Listing, und das Listing braucht das Repository als Flag. (2) :93-94 'if an agent did, the push is where you stop' widerspricht :175-177, wo der Agent noch Beschreibung schreibt und die Zeile zurueckreicht. Die Aufteilung Mensch/Agent gehoert an genau eine Stelle - den create-Befehl - sonst liest jeder Durchlauf zwei verschiedene Regeln. (3) jaira.remote haelt einen Remote-NAMEN, nicht owner/repo (core/settings/settings.go:149) - ':152 read the owner/repo off it' ist so nicht ausfuehrbar. (4) Fall 3 der Leiter hat keine Sprosse fuer 'jaira.remote ist gar nicht gesetzt' - genau der Normalfall auf einem Board, dessen Refs nie geteilt wurden. Nicht geprueft, weil Sache der review-Lane: ob die Flags '--repo' / '--project' bei gh/glab genau so heissen.
+- **2026-09-16 08:06 · Alexander Sacharov** — in-progress (Durchgang 2, nach critique) — alle 4 Findings abgearbeitet.
+
+(1) Reihenfolge: 'Which repository it goes to' steht jetzt VOR dem Listing, nicht nur vor den create-Blocks. Das Listing trägt '--repo <owner/repo>'. Dabei gefunden: 'gh pr list --head <branch>' findet einen Cross-Repo-PR im Parent nur, wenn der Head als '<owner-of-origin>:<branch>' geschrieben wird — sonst filtert GitHub auf einen gleichnamigen Branch IM Parent und liefert leer, also genau die Nicht-Findung, die den zweiten PR öffnet. Steht jetzt im Text.
+
+Verworfen: das Owner-Präfix per sed aus 'git remote get-url origin' ableiten. Die Regex deckt SSH, HTTPS und '.git'-Suffix nur halb ab und eine falsche Ableitung liefert wieder leer — also keinen Fehler, sondern denselben doppelten PR. Der Text nennt stattdessen '<owner-of-origin>' als Platzhalter und lässt das Modell es aus der URL lesen, die es zwei Abschnitte vorher ohnehin schon angesehen hat.
+
+(2) Mensch/Agent-Aufteilung: aus dem Push-Abschnitt entfernt, lebt jetzt nur noch unter '## Open it'. Der Kopf des Dokuments (:10-25) sagt die Regel weiterhin als Rahmen — das ist Absicht, nicht die zweite Stelle: er sagt WAS gilt, '## Open it' sagt WO es ausgeführt wird.
+
+(3) jaira.remote: hält einen Remote-NAMEN (core/settings/settings.go:145 RemoteFor). Der Text sagt das jetzt ausdrücklich und gibt 'git remote get-url "$(git config jaira.remote)"' als den Schritt, der daraus ein owner/repo macht.
+
+(4) Leiter hat jetzt 4 Sprossen: kein Fork / Fork mit jaira.remote / Fork OHNE jaira.remote -> Parent aus 'gh repo view' / Widerspruch -> nicht öffnen.
+
+Weiterhin ungeprüft und Sache der review-Lane: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten glab-Version genau so heißen. go test ./core/role/... prüft nur Installation und Parsing, nicht den Inhalt von SKILL.md.
