@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:34:57Z
+updated-at: 2026-09-16T08:35:03Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -192,7 +192,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Die zweite Zeile bei Rejected je Art: fuer einen Milestone sagen, dass die Fassung des Remotes gewinnt und der naechste fetch die lokale Datei ersetzt - die Aenderung muss auf der geholten noch einmal gemacht werden
 - [x] Test: eine abgelehnte Milestone-Schreibung nennt den vollen Namen unter dem Schluessel 'milestone' und traegt die Milestone-Zeile; der Ticket-Fall unveraendert
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Outbox-Meldungen einen Milestone bei seinem Namen nennen statt als sechsstelligen Ticket-Handle, und was nach einer Ablehnung wirklich passiert
-- [ ] README:285: den zweiten Namensraum in den Ref-Block schreiben - refs/jaira/milestones/<name>, sein Baum traegt <name>.md - und in einem Satz sagen, dass die Milestone-Datei denselben Weg reist
+- [~] README:285: den zweiten Namensraum in den Ref-Block schreiben - refs/jaira/milestones/<name>, sein Baum traegt <name>.md - und in einem Satz sagen, dass die Milestone-Datei denselben Weg reist
 - [ ] README:400-401: 'see what exists' und 'collect it' auf refs/jaira/* stellen - die Rezeptzeile, die jemand von Hand tippt, muss beide Arten holen, sonst genau die Halbstellung, gegen die gitref.Fetch den breiten Refspec nimmt
 - [ ] README:402: eine Zeile fuer das Lesen eines Milestones ohne Checkout - show refs/jaira/milestones/<name>:<name>.md
 - [ ] Gegenprobe: grep refs/jaira ueber README.md - keine Zeile behauptet mehr, tickets/ sei der einzige Namensraum
