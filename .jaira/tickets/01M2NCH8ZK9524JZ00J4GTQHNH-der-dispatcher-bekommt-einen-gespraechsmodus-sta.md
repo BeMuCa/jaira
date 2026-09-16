@@ -37,16 +37,14 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T16:01:46Z
+updated-at: 2026-09-16T19:47:35Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-5463
-claimed-at: 2026-09-16T15:57:15Z
-outcome-what: "Die beiden critique-Befunde des zweiten Durchgangs repariert. Die Kopfzeile von 'jaira show --for-lane' ohne --json traegt jetzt den Modus neben dem Tier (internal/cli/flow.go:634-642); sie wird als ein String vorgebaut, statt einen zweiten Fprintf-Zweig zu bauen, damit die Klammer nur an einer Stelle steht. Schritt 1 des Zaehlens im Dispatcher-Prompt (core/role/builtin/jaira-dispatcher/SKILL.md:44) liest jetzt ausdruecklich die Notes mit und zaehlt eine dort beantwortete Entscheidung als geschlossen, mit dem Todesfall zwischen Schritt 4 und 5 als genanntem Grund. Dazu TestForLanePlainTextCarriesMode und die um die Kopfzeile erweiterte NOTES.md-Zeile 17."
-outcome-why: "Beide Befunde sind dieselbe stille Fehlerart, gegen die dieses Ticket antritt. Ein bash-faehiger Agent, der die Klartext-Lane-Prompt liest, erfuhr den Modus nie und lief autonom weiter, ohne dass es jemand merkt - genau das, was CanonicalMode fuer den Schreibweg schon verhindert, nur auf dem Leseweg. Und ein Dispatcher, der zwischen Notes und Modus stirbt, stellte dem Menschen dieselben Fragen ein zweites Mal, obwohl die Antworten schon auf dem Ticket standen - der Sitzungsabbruch, gegen den der Modus auf dem Ticket ueberhaupt erfunden wurde, schlug an der Stelle zu, die ihn einschaltet."
-outcome-resolves: "Alle sechs DoD-Punkte bleiben getickt; vier Proofs sind auf die verschobenen Zeilennummern nachgezogen. Punkt 1 zeigt jetzt auf SKILL.md:44, die Stelle, an der das Zaehlen die Notes mitliest - ohne sie erfuellte der Dispatcher die Bedingung zwar, aber nur beim ersten Anlauf. go test ./... -race laeuft durch."
-review-summary: |-
-  internal/cli/flow.go:635 — die Textausgabe von 'jaira show --for-lane' druckt '(tier: %s)', den Modus aber nicht; nur der --json-Zweig trägt ihn. Ein Worker, der die Klartext-Lane-Prompt liest (jeder bash-fähige Agent, nicht nur die mitgelieferte Rolle), erfährt den Modus nie und läuft autonom weiter. Fix: die Kopfzeile um den Modus erweitern, wenn t.Mode nicht leer ist — '# Lane: %s   (tier: %s, mode: %s)' —, dieselbe Stelle, an der der Tier schon steht.
-  core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'Before the plan lane: count what is still open', Schritt 1 — zählt die offenen Entscheidungen allein aus 'jaira show <id> --json' und kennt keinen Zustand 'schon beantwortet'. Schritt 4 schreibt die Antworten als Notes aufs Ticket, Schritt 5 setzt erst danach den Modus; ein Dispatcher, der zwischen 4 und 5 stirbt, liest beim Neustart keinen Modus, zählt neu und stellt dem Menschen dieselben Fragen noch einmal — genau der Sitzungsabbruch, gegen den der Modus auf dem Ticket antritt. Fix: in Schritt 1 die Notes des Tickets als Teil des Gelesenen benennen und festhalten, dass eine in einer Note bereits beantwortete Entscheidung nicht mehr offen ist.
+claimed-by: DESKTOP-RFTCH11-96645
+claimed-at: 2026-09-16T19:45:19Z
+outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md: Abschnitt 2 des Gespraechsmodus gibt die Commit-Zeile nur noch heraus, wenn die Lane Code geaendert hat; ohne Code-Aenderung keine Zeile und die Ticket-Datei bleibt im Worktree. core/release/NOTES.md: die vorhandene Modus-Zeile nennt die Bedingung mit."
+outcome-why: "Der Modus steht auf dem Ticket und gilt damit auch in critique, testing und review, wo kein Code entsteht. Abschnitt 2 hob dort die Regel aus Zeile 31-37 auf und reichte dem Menschen eine Commit-Zeile, deren Einfuegen einen Commit mit nur der Ticket-Datei erzeugt — die Buchhaltung, die 9ZZSFT abgeschafft hat."
+outcome-resolves: "Der einzige offene Befund aus critique-Runde 3, nach Alex' Entscheidung vom 16.09.: die Commit-Zeile traegt immer Code, eine codelose Lane gibt gar keine zurueck. Abschnitt 2 hat jetzt dieselbe Ausnahme wie Abschnitt 1 mit 'Empty output? No pause'."
+review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:68-84, Abschnitt 'Do not commit. Hand back the commit line instead.' — der Abschnitt ist geschrieben, als liefe der Worker immer in in-progress, und hebt damit die Regel zwei Bildschirme darueber auf ('did you change no code? Then commit nothing.', SKILL.md:31-37). Der Modus steht laut schema.go bewusst auf dem TICKET und haelt 'through critique and testing too'; also liest ihn auch ein critique-, testing- oder review-Worker aus 'show --for-lane --json'. Der hat keine Zeile Code geaendert, bekommt aber 'Write the command out ready to paste' und reicht dem Menschen ein 'git add <files> .jaira/tickets/<ticket>.md; git commit -m ...' hinaus. Der Mensch fuegt es ein und committet genau die Buchhaltung, die die Regel darueber verbietet — und weil in diesem Modus ein Mensch committet, ist das der Commit, der am ehesten wirklich abgeschickt wird. Abschnitt 1 hat die Ausnahme schon ('Empty output? No pause'), Abschnitt 2 fehlt sie. Fix: in Abschnitt 2 dieselbe Bedingung nennen — eine Commit-Zeile nur, wenn Code geaendert wurde; eine Lane ohne Code-Aenderung gibt keine Zeile zurueck, sondern laesst die Ticket-Datei im Worktree fuer den naechsten Commit, der Code traegt."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
@@ -197,3 +195,37 @@ Was ich dabei geprueft und verworfen habe: den Modus nicht in die Kopfzeile, son
 Befund 2 (Zaehlen kennt kein 'schon beantwortet'): die Reparatur benennt in Schritt 1 ausdruecklich den Fall, der sie noetig macht - Dispatcher stirbt zwischen Schritt 4 (Notes) und Schritt 5 (Modus). Ohne den genannten Fall liest ein Modell 'Notes mitlesen' als Hoeflichkeit und zaehlt trotzdem neu. Der Prompt muss den Grund tragen, weil niemand sonst ihn traegt.
 
 Nicht angefasst, absichtlich: die Reihenfolge Notes-dann-Modus bleibt. Sie erst den Modus setzen zu lassen waere die andere denkbare Reparatur, aber dann traegt ein Ticket den Modus, bevor die Antworten darauf stehen - ein Worker, der genau dazwischen startet, pausiert nach jedem DoD-Punkt fuer Entscheidungen, die niemand aufgeschrieben hat. Die Notes zuerst ist die richtige Reihenfolge; das Lesen war die Luecke.
+- **2026-09-16 16:05 · Alexander Sacharov** — critique (3. Durchgang): ein Befund, ein Fix.
+
+jaira-role-lane/SKILL.md, Abschnitt 2 des Modus ('Do not commit. Hand back the commit line instead.') widerspricht der Regel 30 Zeilen darueber: 'did you change no code? Then commit nothing.' Der Modus haengt laut schema.go am TICKET und gilt ausdruecklich 'through critique and testing too' — also liest ihn auch ein Worker in critique, testing oder review. Der aendert keine Zeile Code, bekommt aber trotzdem 'Write the command out ready to paste' und haendigt dem Menschen 'git add <files> .jaira/tickets/<ticket>.md; git commit -m ...' aus. Fuegt der Mensch das ein, entsteht ein Commit, der nur die Ticket-Datei traegt — die Buchhaltung, die 9ZZSFT gerade abgeschafft hat. Und hier trifft es haerter als sonst: im Gespraechsmodus committet ein Mensch, der die Zeile als fertig gedacht hinnimmt.
+
+Abschnitt 1 hat die Ausnahme bereits ('Empty output? No pause' — ein Doku-Punkt ohne Diff pausiert nicht). Abschnitt 2 hat sie nicht. Fix: dieselbe Bedingung in Abschnitt 2 — eine Commit-Zeile nur, wenn Code geaendert wurde; ohne Code-Aenderung gibt der Worker keine Zeile zurueck und laesst die Ticket-Datei im Worktree fuer den naechsten Commit, der Code traegt.
+
+Nicht beanstandet, damit es nicht noch einmal aufgemacht wird: die Inline-Pruefung 'if k == ticket.FieldMode' in tickets.go:933 steht neben den schon vorhandenen Sonderfaellen FieldID und FieldStatus in derselben Funktion — das ist das bestehende Muster, keine neue Form. CanonicalMode mit zwei Aufrufern (CLI und TUI) ist keine Abstraktion mit einem Aufrufer. 'mode' neben 'model_tier' statt in input ist im Code begruendet und stimmt. Und 'jaira show --json, notes included' im Dispatcher-Prompt traegt: tickets.go:655 haengt den ganzen Body an, und die Notes stehen unter '## Progress' darin.
+- **2026-09-16 16:06 · Alexander Sacharov** — Dispatcher-Halt: critique hat dreimal zurueckgeschickt (Runde 1: drei Befunde, Runde 2: zwei, Runde 3: einer). Die Schleife wird kleiner, aber sie endet nicht, weil jeder Durchgang tiefer liest als der vorige. Regel im Dispatcher-Prompt: nach drei Rueckgaben entscheidet der Mensch, nicht der Dispatcher.
+
+Offen und unrepariert, der einzige Befund aus Runde 3: core/role/builtin/jaira-role-lane/SKILL.md:68-84. Abschnitt 2 des Modus ('Do not commit. Hand back the commit line instead.') hebt die Regel aus Zeile 31-37 auf ('did you change no code? Then commit nothing'). Der Modus steht auf dem Ticket und gilt damit auch in critique, testing und review, wo kein Code entsteht; der Worker reicht dem Menschen trotzdem eine git-commit-Zeile, und der Mensch committet reine Ticket-Buchhaltung. Abschnitt 1 hat die passende Ausnahme schon ('Empty output? No pause'), Abschnitt 2 nicht.
+
+Stand des Codes: zwei Commits, 9cb1df9 und f2c79a9, go test ./... -race gruen, alle sechs DoD-Punkte getickt und belegt.
+
+Ausserhalb des Tickets: die Rollenkopien in ~/.claude sind aelter als das Repository. Wer den Modus benutzen will, braucht 'jaira roles install --global --force'.
+- **2026-09-16 19:45 · Alexander Sacharov** — Entscheidung von Alex am 16.09., vor der Arbeit aufgeschrieben — sie schliesst den einen offenen Befund aus critique-Runde 3 (core/role/builtin/jaira-role-lane/SKILL.md:68-84).
+
+Die Commit-Zeile, die der Agent im Gespraechsmodus zurueckgibt, traegt IMMER Code. Eine Lane, die keinen Code geaendert hat — critique, testing, review —, gibt gar keine Zeile zurueck: dort gilt weiter die Regel aus Zeile 31-37 ('did you change no code? Then commit nothing'), und die Ticket-Datei wartet wie bisher auf den naechsten Commit, der Code traegt. Abschnitt 2 des Modus bekommt damit dieselbe Ausnahme, die Abschnitt 1 mit 'Empty output? No pause' schon hat.
+
+Was ausdruecklich NICHT gebaut wird: ein Verbot fuer den Menschen. Committet eine Person von Hand etwas ohne Code, ist das ihre Sache und nichts, was der Prompt untersagt. Geregelt wird nur, was der Agent vorschlaegt.
+
+Zwei weitere Punkte, die Alex am selben Tag entschieden hat:
+
+Der Vorbehalt aus dem Kontext ('Nicht vor dem naechsten Release') ist erledigt: das Release kommt spaeter, das Ticket wartet nicht darauf.
+
+Die Rollenkopien in ~/.claude werden aktualisiert, nachdem dieser Befund gefixt ist. Geprueft am 16.09.: das Repository ist ueberall neuer, in den globalen Kopien steht keine Zeile, die im Repository fehlt — jaira-role-pr ist durch den A3R6YC-Merge auseinandergelaufen, jaira-dispatcher und jaira-role-lane durch dieses Ticket. Es geht also nichts verloren. Uebrig in ~/.claude/skills/jaira-dispatcher/scripts sind nur drei alte spawn.sh.*.bak.
+- **2026-09-16 19:47 · Alexander Sacharov** — In-progress nach critique (3. Durchgang): der eine offene Befund ist repariert, nach Alex' Entscheidung vom 16.09.
+
+Abschnitt 2 des Gespraechsmodus (core/role/builtin/jaira-role-lane/SKILL.md) hat jetzt dieselbe Ausnahme wie Abschnitt 1: keine Code-Aenderung, keine Commit-Zeile. Damit gilt die Regel aus Zeile 31-37 auch im Modus, und critique/testing/review reichen dem Menschen nichts mehr aus, dessen Einfuegen einen reinen Ticket-Commit erzeugt.
+
+Warum die Ausnahme mit Begruendung im Prompt steht und nicht als ein Halbsatz: der Grund traegt sie. Ein Modell, das nur 'nur bei Code-Aenderung' liest, wiegt das gegen den umgebenden Absatz ab, der ausfuehrlich erklaert, warum die Zeile wichtig ist, und gibt sie im Zweifel doch heraus. Der Satz 'a line written out ready to paste reads as already decided' ist das, was im Zweifel den Ausschlag gibt — genau wie bei Befund 2 aus Runde 2, wo der genannte Fall erst aus einer Hoeflichkeit eine Regel gemacht hat.
+
+Nicht gebaut, wie Alex entschieden hat: kein Verbot fuer den Menschen. Der Prompt regelt nur, was der Agent vorschlaegt.
+
+NOTES.md: die vorhandene Modus-Zeile ist erweitert statt einer zweiten. Die Ausnahme ist keine eigene Aenderung, sondern die Bedingung derselben — zwei Zeilen haetten dem Leser zwei Mechanismen vorgesetzt, wo einer steht.

@@ -69,7 +69,16 @@ the mode exists.
 You still `jaira move` the ticket, and you still leave the ticket file changed
 in the worktree. What you do not do is run `git commit`.
 
-Write the command out ready to paste, with the paths already filled in:
+Changed no code? Then hand back no line either — the rule above still holds, and
+a mode does not suspend it. critique, testing and review run in this mode too,
+because the mode sits on the ticket and not on a lane, and a commit line handed
+to a person there produces a commit carrying the ticket file alone. In this mode
+that lands harder than elsewhere: a line written out ready to paste reads as
+already decided, and the person pastes it. Leave the ticket file in the worktree
+for the next commit that carries code, exactly as you would outside the mode.
+
+Changed code? Write the command out ready to paste, with the paths already
+filled in:
 
 ```bash
 git add <the files you changed> .jaira/tickets/<this ticket>.md
