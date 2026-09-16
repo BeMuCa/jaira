@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:13:20Z
+updated-at: 2026-09-16T08:13:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41880
 claimed-at: 2026-09-16T08:10:22Z
@@ -99,3 +99,12 @@ Neu im Text davor: 'Resolve both the parent and that URL before you read the lad
 NOTES.md-Zeile mitgezogen: sagte 'falls back to the fork's parent when jaira.remote is unset' — das war nach der Umstellung zu eng.
 
 Weiterhin ungeprueft und Sache der review-Lane: die Flagnamen '--repo' / '--target-project' bei der installierten gh/glab-Version und das Verhalten von 'gh pr list --head owner:branch'.
+- **2026-09-16 08:13 · Alexander Sacharov** — critique Durchgang 3: eine Feststellung, und sie betrifft die Quelle, nicht die Form der Leiter.
+
+Die Leiter selbst ist nach Durchgang 2 disjunkt - daran ist nichts mehr. Falsch ist, WORAUS Sprosse 2 und 3 ihre Antwort ziehen: 'git config jaira.remote' ist nur Stufe 1 der Leiter, die jaira selbst faehrt (core/settings/settings.go:145-200, RemoteFor - danach kommen settings.json, das einzige Remote, und der laute Fehlschlag). Auf diesem Board ist jaira.remote ungesetzt und das Board-Remote ist trotzdem 'upstream', aus settings.json. Die Rolle liest leer, liest das als 'nichts widerspricht' und oeffnet ohne Gegencheck - hier faellt es nicht auf, weil parent und upstream dasselbe Repository sind, aber der Check ist dann schlicht nicht gelaufen.
+
+internal/cli/whoami.go:136-142 hat genau dafuer schon einen Kommentar: 'a command that re-derived it could name a different one than the code that fails'. Die Rolle ist der zweite Ableiter, vor dem der Kommentar warnt.
+
+Fix: 'jaira whoami --json' statt 'git config jaira.remote'; Feld '.remote' ist der Remote-NAME, 'git remote get-url <name>' macht owner/repo daraus. Der Leiter-Wortlaut muss mit: Sprosse 2 fragt dann nicht mehr 'jaira.remote ist ungesetzt oder nennt kein drittes Repository', sondern 'jaira whoami nennt kein drittes Repository'. 'remote_source' aus derselben Ausgabe ist ausserdem der Satz, den man beim Nachfragen auf Sprosse 3 zitieren kann - er sagt, woher der Name kam.
+
+Geprueft und NICHT beanstandet: die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, das Sprungziel in 'One listed', der head-Praefix <owner-of-origin>: bei gh pr list, und der Mensch/Agent-Schnitt, der nur an einer Stelle steht. jaira.forge ist eine Einstellung, die kein Go-Code liest - die stand aber schon vor diesem Ticket da und gehoert nicht in diesen Diff.
