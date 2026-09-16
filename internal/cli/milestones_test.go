@@ -539,3 +539,64 @@ func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
 		}
 	}
 }
+
+// Restore is the fourth writer of a milestone file, after create, add/rm and
+// logbook, and it has to queue behind them: it moves the file into
+// .jaira/milestones/ and then read-modify-writes it to take the "filed" line
+// off, which is exactly what a concurrent 'milestone add' does to the same
+// file. Without the lock one of the two writes is lost.
+func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
+	dir := emptyStore(t)
+	done := mkDoneTicket(t, dir, "finished work")
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one", done); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	restored := make(chan error, 1)
+	go func() {
+		_, err := runCLI(t, dir, "restore", "round-one.md")
+		restored <- err
+	}()
+
+	select {
+	case err := <-restored:
+		unlock()
+		t.Fatalf("restore did not wait for the milestone lock (returned %v)", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+	// The file has not moved either: the lock is taken before s.Restore, not
+	// between the move and the unfiling.
+	if _, err := os.Stat(milestone.Path(dir, "round-one")); !os.IsNotExist(err) {
+		unlock()
+		t.Fatalf("the milestone file was moved back while the lock was held (stat: %v)", err)
+	}
+
+	unlock()
+	select {
+	case err := <-restored:
+		if err != nil {
+			t.Fatalf("restore after unlock: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("restore never completed after the lock was released")
+	}
+	ms, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatalf("restore did not put the milestone back: %v", err)
+	}
+	if ms.Filed() {
+		t.Error("the restored milestone still says it is filed")
+	}
+}

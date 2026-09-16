@@ -111,6 +111,19 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 			if err != nil {
 				return err
 			}
+			// The milestone lock covers the whole restore, not just the
+			// unfiling: s.Restore moves the file into .jaira/milestones/
+			// itself, and a concurrent 'jaira milestone add' read-modify-
+			// writes that same file. A ticket restore takes the lock too —
+			// which of the two this is only becomes clear once the file has
+			// moved, and ordering a ticket restore behind a milestone write
+			// costs nothing.
+			unlock, err := s.Lock(milestoneLockName)
+			if err != nil {
+				return err
+			}
+			defer unlock()
+
 			dst, err := s.Restore(args[0])
 			if err != nil {
 				return &codedError{code: ExitNotFound, reason: "not_archived", message: err.Error()}
@@ -140,6 +153,10 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 // A failure here fails the restore rather than being swallowed: the file has
 // been moved back by then, so reporting success would put a milestone nobody
 // can see on a board and call it restored.
+//
+// The caller holds milestoneLockName. It is not taken here because the move
+// that puts the file in place happens before this runs and belongs under the
+// same lock.
 func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 	if filepath.Base(filepath.Dir(dst)) != ticket.MilestonesSubdir {
 		return "", nil

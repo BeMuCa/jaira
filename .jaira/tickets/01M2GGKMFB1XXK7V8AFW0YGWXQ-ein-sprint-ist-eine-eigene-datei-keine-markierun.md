@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -44,15 +44,16 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
+  - PLACEHOLDER
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:03:51Z
+updated-at: 2026-09-16T08:09:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
 claimed-at: 2026-09-16T07:57:36Z
-outcome-what: "Der state→refusal-Schalter ueber milestoneFiled steht einmal statt dreimal: refuseIfFiled(s, name, onRef, inLogbook) neben den refuse-Helfern in internal/cli/milestones.go, nil bei milestoneNotFiled. Die drei Tueren - create (milestones.go:131), add/rm (:251) und 'jaira logbook <name>' (logbook.go:195) - sind je ein 'if err := ...; err != nil'."
-outcome-why: "Runde 8 hat den Weigerungs-TEXT zusammengelegt, aber jede Tuer musste weiter selbst wissen, welcher Zustand auf welchen Helfer zeigt; 17bab1d hat die dritte Kopie dazugelegt. Eine vierte Tuer haette die Zuordnung wieder neu erfinden muessen, ein spaeter dazukommender Zustand waere an einer Tuer stillschweigend ausgefallen."
-outcome-resolves: "Kein DoD-Punkt: die Weigerungen kommen wortgleich heraus wie vorher. Gemessen, nicht angenommen - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt und TestTheFilingTreeIsPointedAtItsOwnLogbook pruefen den Wortlaut und blieben ungeaendert gruen, 'go test ./...' ebenfalls."
+outcome-what: "restore nimmt den Milestone-Lock: internal/cli/archive.go:118 legt s.Lock(milestoneLockName) um s.Restore UND unfileMilestone, sodass der Move der Datei mit drin liegt; unfileMilestone bleibt lockfrei und sagt das in seiner Doku. Dazu TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go), gegen den reverteten Stand gemessen. Die drei Vorfuehr-Dateien .jaira/milestones/demo-*.md sind per 'git rm --cached' wieder untracked, liegen aber weiter auf der Platte. Eine Zeile in core/release/NOTES.md unter ## Unreleased."
+outcome-why: "unfileMilestone war der vierte Schreiber einer Milestone-Datei und der einzige ohne Lock - Load/SetStatus/Save auf genau die Datei, die ein gleichzeitiges 'jaira milestone add' ebenfalls read-modify-write schreibt; einer der beiden Schreibvorgaenge ging verloren. Die drei Demo-Dateien waren durch ein 'git add -A' in 4bd9797 gerutscht: nach master gebracht haetten sie jedem Clone drei Demo-Gruppen mit echten Ticket-ULIDs verteilt, die rechte Kanten echter Karten einfaerben."
+outcome-resolves: "Kein neuer DoD-Punkt: beide Findings sind Korrekturen an schon abgehakten Punkten. DoD 9/11 (Ablegen und Zurueckholen) bleiben gruen - TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack unveraendert gruen, dazu der neue Lock-Test; 'go build/vet/test ./...' RC=0 und './internal/cli ./core/milestone -race' gruen."
 review-summary: |-
   internal/cli/archive.go:143 unfileMilestone loads, rewrites and re-records a milestone file without taking s.Lock(milestoneLockName) — the lock every other milestone writer takes (milestones.go:111 create, milestones.go:233 add/rm, logbook.go:286 logbook). A concurrent 'jaira milestone add' loses its write. Take the lock in the restore RunE (archive.go:118) around s.Restore and unfileMilestone, so the file move is inside it too
   .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md and demo-ui.md are committed in 4bd9797 — a git add -A swept them in. Two lane notes on this ticket say in words they are hand-test leftovers that must stay untracked. As committed, every clone of master gets three demo groups painting colours on real cards. git rm the three files in the next round
@@ -178,6 +179,10 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: core/release/NOTES.md:29
 - [x] internal/cli: refuseIfFiled(s, name, onRef, inLogbook string) error neben die refuse-Helfer - der state→refusal-Schalter EINMAL, nil bei milestoneNotFiled; die drei Tueren (logbook.go:195, milestones.go:131, :251) werden je ein 'if err := ...; err != nil { return err }'
 - [x] Tests: die bestehenden Weigerungstests bleiben gruen - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt, TestTheFilingTreeIsPointedAtItsOwnLogbook
+- [x] internal/cli archive.go: den Lock milestoneLockName in der RunE von restore nehmen (archive.go:118), um s.Restore UND unfileMilestone herum - der Move der Datei gehoert mit hinein; unfileMilestone selbst bleibt lockfrei, sonst liegt der Move ausserhalb
+  proof: internal/cli/archive.go:118 restore RunE nimmt milestoneLockName; TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go)
+- [x] git rm der drei Vorfuehr-Dateien .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md, demo-ui.md - sie sind in 4bd9797 durch ein 'git add -A' mitgerutscht; auf der Platte und auf den Refs bleiben sie liegen
+  proof: git rm --cached auf die drei demo-*.md; 'git ls-files .jaira/milestones/' ist leer, die Dateien liegen weiter auf der Platte
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -636,3 +641,11 @@ Also worth a line while that file is open: the doc comment at logbook.go:283-286
 1. internal/cli/archive.go:143 unfileMilestone ist der vierte Schreiber einer Milestone-Datei und der einzige ohne Lock. milestones.go:18-21 sagt, wofuer milestoneLockName da ist, und die drei anderen Schreiber nehmen ihn: create (milestones.go:111), add/rm (milestones.go:233), logbook (logbook.go:286). unfileMilestone macht Load → SetStatus('') → Save → recordMilestone, also ein read-modify-write auf genau die Datei, die ein gleichzeitiges 'jaira milestone add' ebenfalls read-modify-write schreibt. Einer der beiden Schreibvorgaenge geht verloren. Fix: den Lock in der RunE von restore nehmen (archive.go:118), NICHT erst in unfileMilestone — s.Restore bewegt die Datei selbst, und der Move gehoert mit hinein.
 
 2. .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md und demo-ui.md sind in 4bd9797 mitcommittet worden, offensichtlich durch ein 'git add -A'. Zwei Notizen auf diesem Ticket sagen woertlich das Gegenteil: 'Sie sind NICHT committet worden; wer aufraeumt, loescht sie einfach' (optimize) und 'Nicht mitcommittet' (testing). Committet heisst: wer diesen Branch nach master bringt, verteilt drei Demo-Gruppen mit echten Ticket-ULIDs an jeden Clone, und sie faerben rechte Kanten auf echten Karten ein. Fix: die drei Dateien per git rm aus dem Branch nehmen. (Dass die Dateien als Vorfuehrung auf dem Board und auf den Refs liegen — Notiz vom 15.09. 20:14 — bleibt davon unberuehrt; es geht nur um den Commit.)
+- **2026-09-16 08:08 · Alexander Sacharov** — in-progress Runde 12 (critique-Runde 13), 2026-09-16. Beide Findings sind zu, und was der Code nicht sagt:
+- Der Lock steht in der RunE von restore, nicht in unfileMilestone. Der Grund ist nicht Stil: s.Restore bewegt die Datei nach .jaira/milestones/, und erst danach existiert sie fuer einen konkurrierenden 'milestone add'. Ein Lock in unfileMilestone liesse genau den Move draussen - also die Haelfte, die die Datei ueberhaupt erst hinlegt.
+- Der Lock wird auch fuer ein Ticket-Restore genommen. Was es ist, weiss man erst, nachdem die Datei bewegt wurde, also gaebe es keine Stelle, an der man die Frage vor dem Lock beantworten koennte. Verworfen: den Dateinamen vorher gegen den milestones/-Unterordner pruefen - das waere die Zuordnung, die s.Restore schon macht, ein zweites Mal und an einer zweiten Stelle.
+- TestRestoreWaitsForTheMilestoneLock ist gegen den reverteten archive.go gemessen worden: ohne den Lock kehrt restore sofort zurueck (gemessen, 'returned <nil>' nach 100ms). Ein Test, der beidemal gruen ist, haette hier nichts gehalten.
+- Die zweite Zusicherung im Test - die Datei liegt waehrend des gehaltenen Locks noch nicht in .jaira/milestones/ - ist die, die einen Lock NUR um unfileMilestone durchfallen liesse. Das Warten allein wuerde ein solcher Lock auch erfuellen.
+- Die drei demo-*.md sind nur aus dem Index genommen (git rm --cached), nicht von der Platte. Sie sind die Vorfuehrung auf diesem Board und auf den Refs (Notiz vom 15.09. 20:14) und sollen liegen bleiben.
+- KEIN .gitignore fuer .jaira/milestones/: das ist der Ordner, in dem echte Milestones von echten Boards liegen: eine committete Ignore-Regel wuerde sie fuer jeden Nutzer unsichtbar machen. Der Ordner ist jetzt wieder untracked ('??'), also holt ein weiteres 'git add -A' in diesem Baum die Demo-Dateien zurueck - der naechste, der hier aufraeumt, addet nicht mit -A.
+- NOTES.md hat eine Zeile bekommen, anders als in den Runden 11 und 12: der Lock ist von aussen beobachtbar, ein verlorener Schreibvorgang zweier gleichzeitiger Sitzungen passiert nicht mehr. Die Demo-Dateien bekommen keine - sie waren nie in einem Release.
