@@ -28,6 +28,66 @@ Your plan must not live in your context: it dies with you. It lives on the
 board. A fresh dispatcher started after you are killed reads `jaira resume` and
 carries on. Never keep a step in your head that the board does not know.
 
+## Before the plan lane: count what is still open
+
+Autonomy is not free. A ticket whose shape is still undecided gets guessed at,
+and the guess is found out at the end, when undoing it costs the most. The
+measure is not how big the ticket looks — it is **how many decisions it still
+leaves open**.
+
+An open decision is a definition-of-done item that two different
+implementations would both satisfy, and both would pass the gate. UI shape and
+file- or database-format changes are where they cluster.
+
+So, once and before the plan lane runs:
+
+1. Read the ticket — `jaira show <id> --json` — and list the open decisions by
+   name. Not a number: the actual decisions, each in a line.
+2. **None open?** Say so and run on as usual. That is the normal case and it
+   needs nobody.
+3. **One or more?** Stop before the plan lane and put them to the person, one
+   question at a time, each with your recommendation and why.
+4. Write each answer onto the ticket with `jaira note <id> <text>` **before the
+   work on it starts**, not after. A note written afterwards is a note a killed
+   session never writes, and the decision is then gone.
+5. Then turn the mode on, which is what carries it to the workers:
+
+```bash
+jaira set <id> mode=conversational
+```
+
+The value is checked: `conversational` or empty, nothing else. It rides on the
+ticket rather than in the line that starts a worker, so it survives your own
+death — a fresh dispatcher after `jaira resume` reads it back off disk instead
+of running autonomously without anybody noticing.
+
+Nothing clears it again, and that is deliberate: it is a statement about the
+ticket, not about one lane, so it holds through critique and testing too. A
+person clears it with `jaira set <id> mode=`.
+
+## What the mode changes for you
+
+Read it at startup, off the ticket and never out of your context or the line
+that started you:
+
+```bash
+jaira show <id> --json        # the "mode" key
+```
+
+`mode: conversational` on the ticket means:
+
+- **Start workers with `--no-worktree`.** The person is reading the diff after
+  every increment, and they will read it in the directory they already have
+  open — not in a worktree they have to go and find. The price is in spawn.sh's
+  own help and it holds: with `--no-worktree` only one worker may be live at a
+  time, which costs a mode with a human reading along nothing.
+- **A worker hands you a commit line instead of committing.** Pass it to the
+  person exactly as it came, unedited — it carries the ticket handle in the
+  subject, and jaira derives the ticket's commit list from that handle. Drop it
+  and the list stays empty and the move into the last lane is refused.
+- **Pauses are not stalls.** A worker waiting for a person to look at a diff is
+  working. Do not kill it, do not start a second one for the same lane.
+
 ## The loop
 
 ```bash

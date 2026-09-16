@@ -615,12 +615,19 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"ticket_id":  t.ID,
 			"lane":       l.ID,
 			"model_tier": l.ModelTier,
-			"prompt":     l.Prompt,
-			"input":      fields,
-			"diff":       diff,
-			"produces":   l.OutputProduces,
-			"missing":    missing,
-			"complete":   len(missing) == 0,
+			// mode sits beside model_tier rather than inside input, because
+			// this half of the payload says HOW the lane is to be run and
+			// input says what with. Routing it through a lane's
+			// input-requires would mean editing every lane file and widening
+			// ticket.SuppliedFields, whose comment explains why that list
+			// stays narrow.
+			"mode":     t.Mode,
+			"prompt":   l.Prompt,
+			"input":    fields,
+			"diff":     diff,
+			"produces": l.OutputProduces,
+			"missing":  missing,
+			"complete": len(missing) == 0,
 		})
 	}
 
@@ -668,6 +675,8 @@ func fieldValue(t *ticket.Ticket, field string) string {
 		return t.Assignee
 	case ticket.FieldQuestion:
 		return t.Question
+	case ticket.FieldMode:
+		return t.Mode
 	case ticket.FieldOutcomeWhat:
 		return t.Outcome.What
 	case ticket.FieldOutcomeWhy:

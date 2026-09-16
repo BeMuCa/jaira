@@ -25,6 +25,7 @@ var editableFields = []struct {
 	{"title", ticket.FieldTitle, func(t *ticket.Ticket) string { return t.Title }},
 	{"tier", ticket.FieldModelTier, func(t *ticket.Ticket) string { return t.ModelTier }},
 	{"question", ticket.FieldQuestion, func(t *ticket.Ticket) string { return t.Question }},
+	{"mode", ticket.FieldMode, func(t *ticket.Ticket) string { return t.Mode }},
 	{"waiting on", ticket.FieldBlockedReason, func(t *ticket.Ticket) string { return t.BlockedReason }},
 }
 
@@ -51,6 +52,13 @@ func (m *Model) commitEdit() {
 	}
 	f := editableFields[m.editIdx]
 	if f.get(m.detail) == m.editBuf {
+		return
+	}
+	// The same closed set 'jaira set' enforces. A mode the worker does not
+	// recognise reads as autonomous, so typing one here has to be refused
+	// rather than stored.
+	if f.field == ticket.FieldMode && !ticket.ValidMode(m.editBuf) {
+		m.notify(fmt.Sprintf("mode is %q or empty", ticket.ModeConversational), true)
 		return
 	}
 	id := m.detail.ID

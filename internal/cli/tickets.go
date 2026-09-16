@@ -919,6 +919,19 @@ its end. Review fields keep their history across loop rounds that way.`,
 							v = old + "\n" + v
 						}
 					}
+					// mode is the one scalar with a closed set of values, and
+					// it is checked here — after --append has folded in what
+					// was already there — so that no path can store a value
+					// the worker will not recognise. A typo stored silently is
+					// worse than no mode at all: the person believes a human
+					// is asked before each increment while the worker,
+					// comparing against exactly one word, commits as usual.
+					if k == ticket.FieldMode {
+						if !ticket.ValidMode(v) {
+							return fail(ExitUsage, "bad_mode",
+								"mode is %q or empty, got %q", ticket.ModeConversational, v)
+						}
+					}
 					if err := t.Doc().SetScalar(k, v); err != nil {
 						return err
 					}
@@ -1303,6 +1316,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"creator":            t.Creator,
 		"assignee":           t.Assignee,
 		"executed_by":        t.ExecutedBy,
+		"mode":               t.Mode,
 		"goal":               t.Goal,
 		"context":            t.Context,
 		"definition_of_done": t.DoD,

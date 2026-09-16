@@ -33,6 +33,23 @@ const (
 	FieldUpdatedBy = "updated-by"
 	FieldQuestion  = "question"
 	FieldClaimedBy = "claimed-by"
+
+	// FieldMode says how this ticket is to be worked, not what it contains.
+	// Empty is the default: lanes run autonomously. "conversational" says the
+	// dispatcher found open design decisions on it and a person is reading
+	// along — the worker shows its diff after each definition-of-done item and
+	// hands back a commit line instead of committing itself.
+	//
+	// It sits on the ticket rather than in the line that starts the worker so
+	// that it survives a killed session: a fresh worker reads the mode off
+	// disk, where a typed argument would be gone and the run would silently be
+	// autonomous again.
+	//
+	// Nothing clears it automatically. The mode is a statement about the
+	// ticket ("decisions were open here"), not about one lane, so it holds
+	// through critique and testing too; a person clears it with
+	// 'jaira set <id> mode='.
+	FieldMode      = "mode"
 	FieldClaimedAt = "claimed-at"
 
 	// The outcome is three flat keys rather than a nested mapping. Nesting would
@@ -119,6 +136,22 @@ const (
 	FieldTags = "tags"
 )
 
+// ModeConversational is the one non-empty value FieldMode takes. A worker
+// compares against exactly this word, which is why 'jaira set' refuses
+// anything else: "mode=chat" would be stored happily and do nothing, and a
+// person believing they are in the mode while the agent commits is the failure
+// this mode exists to prevent.
+const ModeConversational = "conversational"
+
+// ValidMode reports whether v is a value FieldMode accepts — empty, meaning
+// the default autonomous run, or ModeConversational. Every write path checks
+// through here rather than against the constant directly, so the CLI and the
+// TUI cannot come to disagree about what a mode is.
+func ValidMode(v string) bool {
+	v = strings.TrimSpace(v)
+	return v == "" || v == ModeConversational
+}
+
 // canonicalOrder is the order in which fields are written into a new ticket.
 // Existing files are never reordered; this only shapes files jaira creates.
 var canonicalOrder = []string{
@@ -127,7 +160,7 @@ var canonicalOrder = []string{
 	FieldGoal, FieldContext, FieldDoD,
 	FieldTags, FieldBlockedBy, FieldBlockedReason, FieldParent, FieldRelated, FieldFollows, FieldCommits, FieldModelTier,
 	FieldOutcomeWhat, FieldOutcomeWhy, FieldOutcomeResolves,
-	FieldQuestion, FieldClaimedBy, FieldClaimedAt,
+	FieldQuestion, FieldMode, FieldClaimedBy, FieldClaimedAt,
 	FieldCreatedAt, FieldUpdatedAt,
 }
 
@@ -175,6 +208,7 @@ type Ticket struct {
 	Commits    []string
 	ModelTier  string
 	Question   string
+	Mode       string
 	ClaimedBy  string
 	ClaimedAt  time.Time
 	CreatedAt  time.Time
@@ -550,6 +584,7 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.Options = ParseOptions(t.Body)
 	t.ModelTier = str(FieldModelTier)
 	t.Question = str(FieldQuestion)
+	t.Mode = str(FieldMode)
 	t.ClaimedBy = str(FieldClaimedBy)
 	t.BlockedBy = list(FieldBlockedBy)
 	t.Tags = list(FieldTags)

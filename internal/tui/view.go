@@ -1096,6 +1096,7 @@ var fieldsWithTheirOwnRow = map[string]bool{
 	ticket.FieldGoal: true, ticket.FieldContext: true, ticket.FieldDoD: true,
 	ticket.FieldBlockedBy: true, ticket.FieldBlockedReason: true, ticket.FieldTags: true,
 	ticket.FieldFollows: true, ticket.FieldCommits: true, ticket.FieldQuestion: true,
+	ticket.FieldMode:        true,
 	ticket.FieldExternal:    true,
 	ticket.FieldOutcomeWhat: true, ticket.FieldOutcomeWhy: true, ticket.FieldOutcomeResolves: true,
 	ticket.FieldReviewSummary: true, ticket.FieldReviewGaps: true,
