@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:53:50Z
+updated-at: 2026-09-16T07:50:16Z
 updated-by: Alexander Sacharov
 ---
 
@@ -61,10 +61,10 @@ Drei Tickets fassen dieselbe Datei an: 7KX89C (spawn.sh faehrt im Repository mit
 Danach dieses Ticket, dann 3YRPXJ.
 
 Was aus der Sitzung noch dazugehoert: der Teamlead hat dreimal eine gepatchte Kopie von spawn.sh im Scratchpad gefahren, weil die Prompt-Zeile fest verdrahtet ist. Das ist 3YRPXJ und dort notiert - aber es ist dasselbe Muster wie hier: wer spawn.sh nicht erweitern kann, forkt es. Eine Loesung fuer dieses Ticket, die nur die .env herausnimmt, laesst den Fork-Grund von 3YRPXJ stehen. Die Plan-Lane sollte beide Haken - Einrichtungs-Hook und Prompt-Argument - als eine Erweiterbarkeitsfrage ansehen, auch wenn sie in zwei Tickets gebaut werden.
-- **2026-09-16 06:53 · Alexander Sacharov** — Vorweggenommen und im Board requirementsgenie schon in Betrieb: dieselbe Schnittstelle, damit jaira sie nur noch uebernehmen muss statt sie zu erfinden.
+- **2026-09-16 07:50 · Alexander Sacharov** — Die Schnittstelle ist unten schon in Betrieb, im Board requirementsgenie - sie muss nicht erfunden, nur uebernommen werden. Aufruf, wie er dort laeuft: setup="$root/.jaira/worktree-setup"; if [ -x "$setup" ]; then off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 )); "$setup" "$wt" "$slug" "$off" "$root"; fi
 
-Name und Aufruf: <repo>/.jaira/worktree-setup, ausfuehrbar, '$setup "$wt" "$slug" "$off" "$root"'. Fehlt es oder ist es nicht ausfuehrbar, entsteht ein blanker worktree und spawn.sh sagt 'no <pfad>: worktree created, nothing set up'. Der Port-Versatz wird weiter in spawn.sh berechnet (cksum des Slug modulo 40, plus 1) und uebergeben - so bleibt die Zusicherung 'zwei Arbeiter teilen nie einen Stapel' bei jaira, waehrend die Namen der Ports beim Projekt liegen.
+Vier Dinge, die der Umzug nicht von selbst mitbringt: (1) Der Port-Versatz bleibt bei jaira - die einzige Zusicherung, die ein Projekt nicht geben kann: zwei Arbeiter duerfen nie einen Stapel teilen. jaira rechnet ihn aus dem Slug und uebergibt ihn; das Skript des Projekts verteilt ihn nur auf Namen, die es selbst kennt. (2) Bei --no-worktree darf das Skript nicht laufen: dort ist wt == root, und es wuerde in die lebende .env des Repositorys schreiben. Heute schuetzt das nur zufaellig das 'if [ ! -d "$wt" ]' darum herum. (3) Ein fehlschlagendes Skript darf den Arbeiter nicht toeten: spawn.sh hat 'set -euo pipefail', ein Exit ungleich 0 aus dem Hook bricht ab, bevor die Kachel ueberhaupt aufgeht. Abfangen und melden, nicht abbrechen. (4) 'fehlt' und 'nicht ausfuehrbar' getrennt melden, sonst sieht ein vergessenes chmod +x aus wie ein Projekt ohne Einrichtung.
 
-Nicht 'worktree-env' wie in der ersten Fassung dieses Tickets: das Skript richtet ein und liefert nicht nur Zeilen.
+Was der Umzug loest, gemessen: das Exemplar von spawn.sh in requirementsgenie war auf 159 Zeilen gewachsen - IMAGE_NS, COMPOSE_PROFILES, AZIMUTT_PORT, VITE_PORT_HOST, BACKEND_PORT_HOST, dazu ein pg_dump der Hauptdatenbank. Alles davon traegt Namen, die nur dieses eine Projekt kennt. 'roles install' ueberschreibt so eine Datei nicht, sie friert nur ein: jede Verbesserung an spawn.sh wird bei dem Anwender still uebersprungen.
 
-Gemessen an einem Wegwerf-Repository mit echtem 'git worktree add': die kopierte .env behaelt ihren Inhalt, die angehaengten Zeilen gewinnen. spawn.sh schrumpft dadurch dort von 159 auf 133 Zeilen. Was vom Fork bleibt, ist allgemein und gehoert in dieses Ticket oder ein eigenes: --no-worktree und der Lane-Name 'dispatch'.
+Nicht projektspezifisch und daher in spawn.sh gehoerend, nicht in den Hook: --no-worktree und der Lane-Name 'dispatch'.
