@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T16:06:29Z
+updated-at: 2026-09-16T19:45:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5463
 claimed-at: 2026-09-16T15:57:15Z
@@ -209,3 +209,14 @@ Offen und unrepariert, der einzige Befund aus Runde 3: core/role/builtin/jaira-r
 Stand des Codes: zwei Commits, 9cb1df9 und f2c79a9, go test ./... -race gruen, alle sechs DoD-Punkte getickt und belegt.
 
 Ausserhalb des Tickets: die Rollenkopien in ~/.claude sind aelter als das Repository. Wer den Modus benutzen will, braucht 'jaira roles install --global --force'.
+- **2026-09-16 19:45 · Alexander Sacharov** — Entscheidung von Alex am 16.09., vor der Arbeit aufgeschrieben — sie schliesst den einen offenen Befund aus critique-Runde 3 (core/role/builtin/jaira-role-lane/SKILL.md:68-84).
+
+Die Commit-Zeile, die der Agent im Gespraechsmodus zurueckgibt, traegt IMMER Code. Eine Lane, die keinen Code geaendert hat — critique, testing, review —, gibt gar keine Zeile zurueck: dort gilt weiter die Regel aus Zeile 31-37 ('did you change no code? Then commit nothing'), und die Ticket-Datei wartet wie bisher auf den naechsten Commit, der Code traegt. Abschnitt 2 des Modus bekommt damit dieselbe Ausnahme, die Abschnitt 1 mit 'Empty output? No pause' schon hat.
+
+Was ausdruecklich NICHT gebaut wird: ein Verbot fuer den Menschen. Committet eine Person von Hand etwas ohne Code, ist das ihre Sache und nichts, was der Prompt untersagt. Geregelt wird nur, was der Agent vorschlaegt.
+
+Zwei weitere Punkte, die Alex am selben Tag entschieden hat:
+
+Der Vorbehalt aus dem Kontext ('Nicht vor dem naechsten Release') ist erledigt: das Release kommt spaeter, das Ticket wartet nicht darauf.
+
+Die Rollenkopien in ~/.claude werden aktualisiert, nachdem dieser Befund gefixt ist. Geprueft am 16.09.: das Repository ist ueberall neuer, in den globalen Kopien steht keine Zeile, die im Repository fehlt — jaira-role-pr ist durch den A3R6YC-Merge auseinandergelaufen, jaira-dispatcher und jaira-role-lane durch dieses Ticket. Es geht also nichts verloren. Uebrig in ~/.claude/skills/jaira-dispatcher/scripts sind nur drei alte spawn.sh.*.bak.
