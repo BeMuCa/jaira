@@ -128,16 +128,12 @@ and you are told so.`,
 			} else if !errors.Is(err, os.ErrNotExist) {
 				return err
 			}
-			switch where, at := milestoneFiled(s, name); at {
-			case milestoneFiledOnRef:
-				// Somebody else filed it. Their logbook holds the only copy,
-				// so pointing at a restore here would send the reader to a
-				// command that answers that the file is not in the archive.
-				return refuseFiledOnRef(name, where,
-					"creating it again here would make a second milestone with the same name")
-			case milestoneFiledHere:
-				return refuseFiledInLogbook(name, where,
-					"; creating it again would make a second milestone with the same name")
+			// Filed under this name, here or in the tree that wrote the
+			// ref: the name stays taken until 'jaira restore' gives it up.
+			if err := refuseIfFiled(s, name,
+				"creating it again here would make a second milestone with the same name",
+				"; creating it again would make a second milestone with the same name"); err != nil {
+				return err
 			}
 			existing, err := milestone.LoadAll(s.Root)
 			if err != nil {
@@ -248,13 +244,10 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 			// with. Saying "create it" here sends the reader into the
 			// refusal create raises for a filed name, two steps for one
 			// answer, and the first one points the wrong way.
-			switch where, at := milestoneFiled(s, name); at {
-			case milestoneFiledOnRef:
-				return refuseFiledOnRef(name, where,
-					"there is no copy of it here for tickets to go in and out of")
-			case milestoneFiledHere:
-				return refuseFiledInLogbook(name, where,
-					", and then tickets can go in and out of it again")
+			if err := refuseIfFiled(s, name,
+				"there is no copy of it here for tickets to go in and out of",
+				", and then tickets can go in and out of it again"); err != nil {
+				return err
 			}
 			return fail(ExitNotFound, "no_such_milestone",
 				"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
@@ -454,6 +447,31 @@ func refuseFiledInLogbook(name, where, then string) error {
 	return fail(ExitValidation, "milestone_filed",
 		"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour%s",
 		name, where, name, then)
+}
+
+// refuseIfFiled is the door itself: it asks where the name is filed and hands
+// back the refusal that state owes the reader, or nil when the name is not
+// filed at all and the caller may carry on. Every door into a filed milestone
+// — create, add/rm and 'jaira logbook <name>' — stands in front of the same
+// two states and differs only in its closing clause, so each one passes the
+// two clauses and is a single `if err := ...; err != nil`.
+//
+// Written here because the state→refusal mapping was written out at each door
+// instead: the refusal TEXT was already shared, but a fourth door had to
+// rediscover which state maps to which helper, and a state added later would
+// have to be added at every door or be silently dropped at one.
+//
+// `onRef` and `inLogbook` are the caller's closing clauses for the two states,
+// punctuation included, exactly as refuseFiledOnRef and refuseFiledInLogbook
+// take them — the wording differs because the way back differs.
+func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
+	switch where, at := milestoneFiled(s, name); at {
+	case milestoneFiledOnRef:
+		return refuseFiledOnRef(name, where, onRef)
+	case milestoneFiledHere:
+		return refuseFiledInLogbook(name, where, inLogbook)
+	}
+	return nil
 }
 
 // recordMilestone puts the milestone file on its own ref, the way every ticket
