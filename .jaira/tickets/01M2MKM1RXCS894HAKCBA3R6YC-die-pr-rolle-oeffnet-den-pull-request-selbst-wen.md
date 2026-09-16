@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,15 +25,16 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:00:21Z
+updated-at: 2026-09-16T11:07:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
-outcome-what: "Sprosse 1 der Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md nennt jetzt die Quelle des owner/repo (nameWithOwner aus 'gh repo view', Pfad aus 'glab repo view') statt 'braucht kein Flag'; der Satz darunter sagt, dass jede Sprosse eins hält und kein Befehl das Flag weglässt."
-outcome-why: "Das Repository-Flag war sprossenabhängig: ein Durchlauf musste über vier Befehle in vier Abschnitten mitnehmen, auf welcher Sprosse er stand. In einem Dokument, dessen einziger Fehlermodus 'ein Modell liest einen Zweig falsch' ist, kauft ein gesparter Flag-Tipp das nicht auf."
-outcome-resolves: "critique Durchgang 4, Finding 1 (:149-150)"
+outcome-what: "Die Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md fragt jetzt das richtige Repository: 'gh repo view' und 'glab repo view' bekommen \"$(git remote get-url origin)\" als Argument, statt die Forge das Basis-Repository selbst waehlen zu lassen. Dazu ein Absatz, der sagt warum, und Sprosse 2 nennt die Felder '.parent.owner.login' / '.parent.name', aus denen das owner/repo des Elternteils zusammengesetzt wird."
+outcome-why: "Der Befund der testing-Lane: ein blankes 'gh repo view' loest das Basis-Repository selbst auf und bevorzugt das Upstream. Auf einem Fork-Clone meldet es isFork:false, Sprosse 1 ('kein Fork') feuert, und Sprosse 2 und 3 sind unerreichbar - der Widerspruchsfall, fuer den dieses Ticket existiert, konnte nie ausloesen. Hier nachgestellt: bare gh gibt BeMuCa/jaira mit isFork:false, mit origin-URL gibt es sashasoft90/jaira mit parent BeMuCa."
+outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' ist jetzt auch auf einem Fork wahr, nicht nur im Text. go build, go vet und go test ./core/role/... gruen."
 review-summary: "none"
 review-gaps: "Drei doppelte Stellen entfernt: der Listen-Hinweis im Intro von 'Which repository it goes to' (steht als eigener Abschnitt 'Does it already have one open' direkt darunter), die zweite Definition der Board-Remote in Sprosse 2 (steht im Forge-Abschnitt darueber), und die Selbstbegruendung unter 'Push the branch'. whoami-Absatz von acht auf sieben Zeilen. 1988 -> 1929 Woerter, keine Regel und keine Sprosse der Leiter entfernt. Stehen gelassen: die Mensch/Agent-Regel an drei Stellen (Kopf, 'Open it', Boundaries) - sie steht dort jeweils am Ort der Handlung, nicht als Wiederholung. Keine zweite Implementierung gefunden: die Zielrepository-Leiter existiert im Repository nur einmal. go test ./core/role/... gruen."
+test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter beschreibt in einem Fork-Clone nicht origin, sondern das Upstream — auf genau diesem Board meldet es isFork:false, Sprosse 1 feuert, und der Fork-Fall den das Ticket adressiert wird nie erreicht"
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
@@ -41,7 +42,7 @@ review-gaps: "Drei doppelte Stellen entfernt: der Listen-Hinweis im Intro von 'W
 ## Definition of Done
 
 - [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:112-146 (Zielrepository ueber 'jaira whoami --json', disjunkte Leiter), :182-202 (Mensch/Agent an einer Stelle), :218-224 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:107-117 (gh/glab repo view nennen origin explizit, Sprosse 1 feuert auf einem Fork nicht mehr), :134-155 (disjunkte Leiter), :204-224 ('Open it': Mensch oeffnet / Agent reicht die Zeile zurueck), :242-247 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
 
 ## Options
 
@@ -148,3 +149,37 @@ Weiterhin ungeprüft und Sache der review-Lane: ob '--repo' / '--target-project'
 Entfernt wurde nur, was an zwei Stellen stand: der Hinweis im Intro von 'Which repository it goes to', dass eine Abfrage an den Fork den offenen Pull Request upstream nicht sieht - das ist der Punkt des naechsten Abschnitts 'Does it already have one open' und steht dort schon; die Wiederholung der Definition 'die Remote, auf der die Ticket-Refs reisen' in Sprosse 2, die der Forge-Abschnitt zwanzig Zeilen weiter oben schon gibt; und die Begruendung 'so that the run reads one rule rather than two' unter 'Push the branch', die nur erklaert, warum der Satz davor dasteht. Der whoami-Absatz wurde von acht auf sieben Zeilen gezogen, Inhalt unveraendert.
 
 Stehen gelassen und bewusst nicht angefasst: die Mensch/Agent-Regel steht drei Mal (Kopf, 'Open it', Boundaries). Das ist keine Fluff-Wiederholung, sondern die Regel am Ort der Handlung - ein Modell, das erst bei 'Open it' einsteigt, liest den Kopf nicht mehr. Boundaries ist per Bauart eine Wiederholung. 4988 -> 1929 Woerter waere Kuerzen um des Kuerzens willen gewesen; die Leiter selbst bleibt Wort fuer Wort, weil jede Sprosse eine Unterscheidung traegt.
+- **2026-09-16 11:04 · Alexander Sacharov** — testing: Gates gruen, aber die Zielrepository-Leiter greift auf einem Fork-Clone nicht.
+
+GATES (gruen, nichts kaputt): go build ./... OK, go vet ./... OK, go test ./... -race -count=1 RC=0 (alle Pakete ok, internal/tui 108.8s). Das neue Binary embedded den Text: 'jaira roles list' des frischen Builds nennt die neue pr-Beschreibung, 'roles install --global --force' schreibt 8 Rollen, die installierte SKILL.md ist byte-identisch zur Quelle.
+
+BEFUND (SKILL.md:107): der Befehl in der Leiter ist 'gh repo view --json isFork,parent,nameWithOwner' ohne Repository-Argument. gh loest das Basis-Repository selbst auf und bevorzugt dabei das Upstream, nicht origin. Auf genau diesem Clone (origin=git@github.com:sashasoft90/jaira.git, upstream=git@github.com:BeMuCa/jaira.git, kein 'gh repo set-default'):
+
+    $ gh repo view --json isFork,parent,nameWithOwner
+    {"isFork":false,"nameWithOwner":"BeMuCa/jaira","parent":null}
+
+    $ gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner
+    {"isFork":true,"nameWithOwner":"sashasoft90/jaira","parent":{..."login":"BeMuCa"}}
+
+Folge: Sprosse 1 ('Not a fork') feuert auf einem Fork. Hier faellt das Ergebnis zufaellig richtig aus, weil gh schon aufs Upstream aufgeloest hat — aber Sprosse 2 und Sprosse 3 werden nie erreicht. Der Widerspruchsfall, fuer den das Ticket existiert (Fork, dessen Board-Remote ein drittes Repository nennt -> nicht oeffnen, fragen), kann so nicht ausloesen. Dazu sagt Sprosse 1 woertlich 'the target is origin's own repository: the nameWithOwner the same gh repo view already returned' — das ist auf diesem Clone sachlich falsch, die beiden sind verschiedene Repositories.
+
+FIX (klein, nur Text): das Repository im Befehl benennen, statt gh raten zu lassen —
+
+    gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner
+
+gh akzeptiert die SSH-URL, oben verifiziert. Fuer glab dasselbe pruefen, 'glab repo view' hat kein Argument in der Leiter.
+
+Nebenbefund am selben Absatz: Sprosse 2 sagt 'the parent from gh repo view'. --json parent liefert kein nameWithOwner, sondern .parent.owner.login und .parent.name — der Leser muss 'BeMuCa/jaira' erst zusammensetzen. Ein Halbsatz dazu erspart die Runde.
+
+DoD-Punkt 1 habe ich auf --doing zurueckgesetzt: die Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' steht im Text, laeuft aber im Fork nicht. Die uebrigen Klauseln der Zeile (Mensch oeffnet / Agent reicht zurueck / merge+approve verboten / NOTES-Zeile) habe ich im Baum verifiziert und sind erfuellt: SKILL.md:9-25, :214-216, :230-234, NOTES.md:17 (eine Zeile, Format intakt, 4 Eintraege unter ## Unreleased).
+- **2026-09-16 11:06 · Alexander Sacharov** — in-progress (Durchgang 6, nach testing) — der Befund aus der testing-Lane abgearbeitet: die Zielrepository-Leiter fragte den falschen Clone.
+
+Der Fehler war nicht die Leiter, sondern ihre Eingabe. 'gh repo view' ohne Argument loest das Basis-Repository selbst auf und bevorzugt dabei das Upstream; auf diesem Fork-Clone (origin=sashasoft90/jaira, upstream=BeMuCa/jaira, kein 'gh repo set-default') antwortet es isFork:false / nameWithOwner=BeMuCa/jaira. Sprosse 1 feuerte damit auf einem Fork und Sprosse 2 und 3 waren unerreichbar — der Widerspruchsfall, fuer den das Ticket existiert, konnte nie ausloesen. Selbst nachgeprueft statt uebernommen: beide Aufrufe hier ausgefuehrt, die Ausgaben unterscheiden sich genau so.
+
+Fix: 'gh repo view "$(git remote get-url origin)"' und dieselbe Form fuer glab. 'glab repo view --help' der hier installierten Version (/home/alex/.local/bin/glab) nennt 'glab repo view git@gitlab.com:user/repo.git' ausdruecklich als Aufrufform — die SSH-URL ist also fuer beide Forges gueltig, nicht nur fuer gh.
+
+Bewusst KEIN '--output json' bei glab dazugeschrieben, obwohl es die Flagliste hat. Ich haette dann Feldnamen fuer Pfad und Fork-Elternteil nennen muessen ('path_with_namespace', 'forked_from_project'), die ich hier gegen keine GitLab-Instanz pruefen kann — ein erfundener Feldname ist in diesem Dokument teurer als der Satz 'die Pfadangabe, die glab repo view ausgegeben hat', der ohne Feldnamen auskommt.
+
+Nebenbefund der testing-Lane mitgenommen: Sprosse 2 sagt jetzt, dass '--json parent' kein fertiges owner/repo liefert, sondern '.parent.owner.login' und '.parent.name', die man selbst mit einem Schraegstrich verbindet.
+
+NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts — derselbe Check, nur mit dem Repository benannt statt geraten.
