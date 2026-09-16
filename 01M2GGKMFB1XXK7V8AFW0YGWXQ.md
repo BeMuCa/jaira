@@ -46,7 +46,7 @@ commits:
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:16:18Z
+updated-at: 2026-09-16T08:16:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -185,7 +185,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/fetch.go:41,69,92 fetchMilestones
 - [x] Test: fetch wartet auf den Milestone-Lock und schreibt die Datei nicht, solange er gehalten wird - gegen den ungelockten Stand gemessen, sonst haelt der Test nichts
   proof: TestFetchWaitsForTheMilestoneLock (internal/cli/milestoneref_test.go); measured red against the unlocked call: 'fetch did not wait for the milestone lock (returned <nil>)'
-- [~] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass ein Hintergrund-Fetch einen gleichzeitigen 'milestone add' nicht mehr ueberschreibt
+- [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass ein Hintergrund-Fetch einen gleichzeitigen 'milestone add' nicht mehr ueberschreibt
+  proof: core/release/NOTES.md:32
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
