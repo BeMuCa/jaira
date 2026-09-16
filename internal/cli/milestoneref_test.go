@@ -6,9 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // runAndSend runs a command the way the binary does: the queued write is sent
@@ -357,5 +359,60 @@ func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
 		if strings.Contains(err.Error(), "the tree that filed it") {
 			t.Errorf("the %s refusal sends the filing tree to itself: %v", door, err)
 		}
+	}
+}
+
+// Fetch is the fifth writer of a milestone file, after create, add/rm, logbook
+// and restore, and the only one that is not a command somebody typed:
+// maybeFetch spawns a detached 'jaira fetch --json' after every command, so it
+// runs beside the next 'jaira milestone add'. Unlocked, one of the two writes
+// to the same file is lost.
+func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+
+	s, err := ticket.At(grace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fetched := make(chan error, 1)
+	go func() {
+		_, err := runCLI(t, grace, "fetch")
+		fetched <- err
+	}()
+
+	select {
+	case err := <-fetched:
+		unlock()
+		t.Fatalf("fetch did not wait for the milestone lock (returned %v)", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+	// And it has written nothing while waiting: a fetch that blocked only
+	// after putting the file down would pass the wait above and still lose a
+	// concurrent add's write.
+	if _, err := os.Stat(milestone.Path(grace, "round-one")); !os.IsNotExist(err) {
+		unlock()
+		t.Fatalf("the fetch wrote the milestone file while the lock was held (stat: %v)", err)
+	}
+
+	unlock()
+	select {
+	case err := <-fetched:
+		if err != nil {
+			t.Fatalf("fetch after unlock: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("fetch never completed after the lock was released")
+	}
+	if _, err := milestone.Load(grace, "round-one"); err != nil {
+		t.Fatalf("the fetch did not write the milestone once it had the lock: %v", err)
 	}
 }

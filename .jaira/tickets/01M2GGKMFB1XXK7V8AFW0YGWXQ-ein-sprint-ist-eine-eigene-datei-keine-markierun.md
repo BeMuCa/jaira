@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -45,15 +45,16 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
+  - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:13:13Z
+updated-at: 2026-09-16T08:18:27Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-4281
-claimed-at: 2026-09-16T07:57:36Z
-outcome-what: "restore nimmt den Milestone-Lock: internal/cli/archive.go:118 legt s.Lock(milestoneLockName) um s.Restore UND unfileMilestone, sodass der Move der Datei mit drin liegt; unfileMilestone bleibt lockfrei und sagt das in seiner Doku. Dazu TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go), gegen den reverteten Stand gemessen. Die drei Vorfuehr-Dateien .jaira/milestones/demo-*.md sind per 'git rm --cached' wieder untracked, liegen aber weiter auf der Platte. Eine Zeile in core/release/NOTES.md unter ## Unreleased."
-outcome-why: "unfileMilestone war der vierte Schreiber einer Milestone-Datei und der einzige ohne Lock - Load/SetStatus/Save auf genau die Datei, die ein gleichzeitiges 'jaira milestone add' ebenfalls read-modify-write schreibt; einer der beiden Schreibvorgaenge ging verloren. Die drei Demo-Dateien waren durch ein 'git add -A' in 4bd9797 gerutscht: nach master gebracht haetten sie jedem Clone drei Demo-Gruppen mit echten Ticket-ULIDs verteilt, die rechte Kanten echter Karten einfaerben."
-outcome-resolves: "Kein neuer DoD-Punkt: beide Findings sind Korrekturen an schon abgehakten Punkten. DoD 9/11 (Ablegen und Zurueckholen) bleiben gruen - TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack unveraendert gruen, dazu der neue Lock-Test; 'go build/vet/test ./...' RC=0 und './internal/cli ./core/milestone -race' gruen."
+claimed-by: DESKTOP-RFTCH11-48761
+claimed-at: 2026-09-16T08:14:56Z
+outcome-what: "internal/cli/fetch.go haelt den Store aus openStore() fest und ruft IncomingMilestones ueber den neuen Helfer fetchMilestones(s) (fetch.go:92), der s.Lock(milestoneLockName) nimmt und ihn nach dem Schreiben wieder abgibt - vor dem Drucken und vor emit(). refs.Incoming() bleibt davor und damit ausserhalb des Locks. Dazu TestFetchWaitsForTheMilestoneLock in internal/cli/milestoneref_test.go, gegen den ungelockten Aufruf rot gemessen, und eine Zeile in core/release/NOTES.md unter ## Unreleased."
+outcome-why: "fetch war der fuenfte Schreiber einer Milestone-Datei und der einzige ohne Lock: IncomingMilestones schreibt ticket.WriteAtomic ueber .jaira/milestones/<name>.md, waehrend 'jaira milestone add' dieselbe Datei read-modify-write bearbeitet. Weil maybeFetch nach jedem Befehl ein abgekoppeltes 'jaira fetch --json' startet, lief dieser Schreiber im Hintergrund neben dem naechsten getippten Befehl - entweder ging das add verloren, oder ein 'status: filed' landete zwischen dessen Load und Save und das add hob die Ablage eines anderen still wieder auf."
+outcome-resolves: "Kein neuer DoD-Punkt: das ist eine Korrektur an schon abgehakten Punkten. DoD 9/10/11 (Ablegen, Transport ueber den Ref, belegter Name) bleiben gruen - go build/vet/test ./... RC=0, dazu ./internal/cli ./core/milestone ./core/refsync mit -race gruen; die Plan-Schritte 73-75 tragen ihren Proof."
 review-summary: "internal/cli/fetch.go:69 calls refs.IncomingMilestones without milestoneLockName. Round 13 closed the fourth writer of a milestone file (restore); this is the fifth, and it is the only one left unlocked. IncomingMilestones (core/refsync/refsync.go:221) does os.ReadFile(path) to compare, then ticket.WriteAtomic over .jaira/milestones/<name>.md — a blind overwrite that races the Load→mutate→Save of 'jaira milestone add' (internal/cli/milestones.go:233). Two losses, not one: the add can be written over, or the fetch can drop a 'status: filed' file between add's Load and its Save, so add silently un-files a milestone somebody else closed — exactly the state the doors at milestones.go:244/:259 refuse, and they only refuse it because they read under the lock. This is not theoretical: refs.go:218 maybeFetch spawns a detached 'jaira fetch --json' after every command (core/refsync/schedule.go:48), so the unlocked writer runs in the background in parallel with whatever is typed next. It is also not covered by an existing pattern — Incoming() for tickets (refsync.go:445) only reports, it writes no file; milestones are the only thing fetch puts on disk. Fix: take the lock in fetch's RunE around the IncomingMilestones call only — after refs.Incoming() so the network round trip stays outside it — the same shape restore now uses at archive.go:121. Not in core/refsync: that package has no Store."
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
@@ -181,6 +182,12 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/archive.go:118 restore RunE nimmt milestoneLockName; TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go)
 - [x] git rm der drei Vorfuehr-Dateien .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md, demo-ui.md - sie sind in 4bd9797 durch ein 'git add -A' mitgerutscht; auf der Platte und auf den Refs bleiben sie liegen
   proof: git rm --cached auf die drei demo-*.md; 'git ls-files .jaira/milestones/' ist leer, die Dateien liegen weiter auf der Platte
+- [x] internal/cli/fetch.go: den Store aus openStore() festhalten und s.Lock(milestoneLockName) NUR um den IncomingMilestones-Aufruf legen - nach refs.Incoming(), damit die Netzwerkrunde draussen bleibt; gleiche Form wie archive.go:121
+  proof: internal/cli/fetch.go:41,69,92 fetchMilestones
+- [x] Test: fetch wartet auf den Milestone-Lock und schreibt die Datei nicht, solange er gehalten wird - gegen den ungelockten Stand gemessen, sonst haelt der Test nichts
+  proof: TestFetchWaitsForTheMilestoneLock (internal/cli/milestoneref_test.go); measured red against the unlocked call: 'fetch did not wait for the milestone lock (returned <nil>)'
+- [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass ein Hintergrund-Fetch einen gleichzeitigen 'milestone add' nicht mehr ueberschreibt
+  proof: core/release/NOTES.md:32
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -658,3 +665,10 @@ Why no existing pattern covers it: Incoming() for tickets (refsync.go:445) only 
 Fix: take the lock in fetch's RunE around the IncomingMilestones call alone, after refs.Incoming() so the network round trip stays outside the lock — the same shape archive.go:121 now uses. Not inside core/refsync: that package has no Store and the lock is a store concept.
 
 Not raised, deliberately: restore takes the lock for a plain ticket restore too. That was decided in round 13's fix with a reason on the ticket — what the file is is only known after the move — and it is not re-opened.
+- **2026-09-16 08:18 · Alexander Sacharov** — in-progress Runde 13 (critique-Runde 14), 2026-09-16. Der fuenfte Schreiber ist zu, und was der Code nicht sagt:
+- Der Lock liegt in einem Helfer fetchMilestones(s), nicht als zwei Zeilen in der RunE. Grund: 'defer unlock()' in der RunE haette den Lock ueber das ganze Drucken UND ueber emit()/JSON gehalten - also ueber Ausgabe, die auf ein langsames Terminal oder eine Pipe geht. Ein Block waere die Alternative gewesen; ein Helfer mit benanntem Rueckgabewert liest sich an der Aufrufstelle wie vorher.
+- refs.Incoming() bleibt VOR dem Lock, ausdruecklich: dort liegt die Netzwerkrunde. Waere sie drin, wuerde jedes 'milestone add' so lange warten, wie das Remote braucht - bei einem haengenden Remote unbegrenzt.
+- Verworfen: den Lock nach core/refsync in IncomingMilestones selbst. Das Paket kennt keinen Store, der Lock ist ein Store-Begriff, und refsync haette dafuer eine Abhaengigkeit auf ticket bekommen, die es heute nicht hat.
+- openStore() wurde in fetch.go schon aufgerufen, aber sein Ergebnis weggeworfen ('if _, err := openStore()'); der Root kam ueber die Paketvariable openedStore. Jetzt wird s festgehalten und s.Root benutzt - dieselbe Instanz, kein zweiter Store.
+- TestFetchWaitsForTheMilestoneLock ist gegen den ungelockten Aufruf gemessen worden: 'fetch did not wait for the milestone lock (returned <nil>)' nach 120ms. Die zweite Zusicherung - die Datei liegt waehrend des gehaltenen Locks noch nicht in .jaira/milestones/ - faengt einen Lock, der erst NACH dem Schreiben genommen wuerde; das Warten allein wuerde ein solcher auch erfuellen.
+- Der Test braucht twoBoards(t) und damit ein echtes Remote, nicht emptyStore: ohne refs.Usable() bricht fetch vor dem Milestone-Teil ab und haette nie etwas zu locken.

@@ -39,7 +39,8 @@ A ticket newly assigned to you also raises a desktop notification, unless
 notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if _, err := openStore(); err != nil {
+			s, err := openStore()
+			if err != nil {
 				return err
 			}
 			if err := refs.Usable(); err != nil {
@@ -66,7 +67,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			// disk: a milestone has no lane and no editor here, the file IS
 			// the interface, so a group that stayed on a ref would be a group
 			// nobody can open.
-			openedMilestones, filedMilestones, err := refs.IncomingMilestones(openedStore.Root)
+			openedMilestones, filedMilestones, err := fetchMilestones(s)
 			if err != nil {
 				return err
 			}
@@ -89,6 +90,28 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 	}
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "do not raise a desktop notification")
 	return cmd
+}
+
+// fetchMilestones writes the milestone files this fetch brought, under the
+// same lock every other milestone writer takes. Fetch is the only read path
+// that is also a writer — Incoming() reports arriving tickets and writes no
+// ticket file, milestones are the one thing a fetch puts on disk — and it is
+// not an operator in a second terminal: maybeFetch spawns a detached 'jaira
+// fetch --json' after every command, so this runs beside whatever is typed
+// next. Unlocked it overwrites the Load→mutate→Save of a concurrent 'jaira
+// milestone add', or lands a filed file between that add's Load and its Save,
+// and the add silently un-files a milestone somebody else closed.
+//
+// Only this call is inside the lock: refs.Incoming() has already made the
+// network round trip by the time we get here, and holding a store lock across
+// one would block every milestone write for the length of a fetch.
+func fetchMilestones(s *ticket.Store) (opened, filed []string, err error) {
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer unlock()
+	return refs.IncomingMilestones(s.Root)
 }
 
 // printMilestones says which milestone files this fetch put on disk. Named
