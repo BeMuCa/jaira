@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,10 +24,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:03:08Z
+updated-at: 2026-09-16T08:03:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11544
 claimed-at: 2026-09-16T07:59:59Z
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der Zielrepository-Check steht jetzt als eigener Abschnitt 'Which repository it goes to' VOR dem Oeffnen, mit drei Faellen (kein Fork / Fork -> Parent bzw. jaira.remote / Widerspruch -> nicht oeffnen, fragen); die create-Befehle tragen --repo bzw. --target-project; die NOTES.md-Zeile unter ## Unreleased nennt den Check mit. Der Rollentext 'Mensch oeffnet, Agent reicht die Zeile zurueck, merge und approve nie' lag bereits als a553e45 auf dem Branch."
+outcome-why: "Ohne den Check zielt 'gh pr create' in einem Fork auf origin, also den Fork - und dieses Board schickt alle Pull Requests nach BeMuCa/jaira. Ein Pull Request im falschen Repository sieht niemand und ein Mensch muss ihn von Hand schliessen. Der Absatz dazu stand vorher nach den create-Blocks: wer von oben liest, hat das Kommando dann schon getippt."
+outcome-resolves: "Definition of Done vollstaendig: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve in beiden Faellen verboten, Zielrepository vor dem Oeffnen geprueft, eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
