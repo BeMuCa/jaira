@@ -37,10 +37,10 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T21:05:56Z
+updated-at: 2026-09-16T21:06:12Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-67097
-claimed-at: 2026-09-16T20:17:17Z
+claimed-by: DESKTOP-RFTCH11-23289
+claimed-at: 2026-09-16T21:06:12Z
 outcome-what: "Testing-Lane: Build, vet und 'go test ./... -race -count=1' gruen (RC=0), DoD 1-6 einzeln an der Working Tree geprueft, der Modus auf einem Scratch-Board mit dem gebauten Binary durchgespielt — set/trim/Ablehnung, show --json, show --for-lane (JSON und Klartext-Kopf), resume (JSON und Klartext) und validate."
 outcome-why: "Die Lane verlangt Nachweis statt Zusage: jeder proof-Eintrag wurde an der Datei bzw. am Test geoeffnet und das Verhalten selbst ausgefuehrt, nicht aus dem Outcome-Text uebernommen."
 outcome-resolves: "test-verdict: pass. Nichts gefunden, was in in-progress zurueckgeht."
