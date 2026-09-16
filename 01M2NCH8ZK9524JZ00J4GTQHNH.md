@@ -37,14 +37,14 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:06:56Z
+updated-at: 2026-09-16T20:09:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
 outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen die kanonische Form, nicht nur gegen das ok von CanonicalMode: die Bedingung ist '!ok || canon != t.Mode'. Dazu TestUntrimmedModeIsReportedWithTheRepair in core/validate/mode_test.go und eine Praezisierung der bestehenden validate-Zeile in core/release/NOTES.md."
 outcome-why: "CanonicalMode gibt die getrimmte Form zurueck, weil ein Pfad, der ' conversational ' annimmt und unveraendert speichert, derselbe stille Fehler ist wie 'chat'. validate.go warf diese Form weg und pruefte nur das ok — eine handgeschriebene Zeile mit Leerzeichen kam schweigend durch, stand untrimmed im JSON-Schluessel 'mode' und in der Kopfzeile von 'jaira show --for-lane', und der Worker, der gegen genau ein Wort vergleicht, lief autonom weiter."
 outcome-resolves: "Befund aus critique-Runde 6: validate.go:203 warf den kanonischen Wert weg."
-review-summary: "core/validate/validate.go:203 wirft den kanonischen Wert weg, den CanonicalMode zurueckgibt, und prueft nur das ok. Eine handgeschriebene Zeile 'mode: \" conversational \"' passiert die Pruefung schweigend, und t.Mode kommt untrimmed bei flow.go:625 (JSON 'mode') und in der Kopfzeile an — der Worker vergleicht gegen genau ein Wort und laeuft autonom weiter. Genau der Fehler, gegen den CanonicalMode laut eigenem Kommentar existiert, nur auf dem Lesepfad statt auf dem Schreibpfad. Stattdessen: in validate.go auch melden, wenn canon != t.Mode (gleicher CodeBadMode, Reparatur 'jaira set <id> mode=conversational'), und einen Fall dafuer in core/validate/mode_test.go neben 'chat'."
+review-summary: "internal/cli/resume.go:126-141 baut sein eigenes JSON-Literal statt ticketJSON und traegt deshalb kein 'mode' — dieselbe Zeile fehlt im Klartext-Block bei 200-165; 'jaira resume' ist aber die Wiederanlauf-Stelle, auf die sich core/role/builtin/jaira-dispatcher/SKILL.md:65 beruft ('a fresh dispatcher after jaira resume reads it back off disk'), und schema.go:44-47 nennt das Ueberleben eines Sitzungsabbruchs als den Grund, warum das Feld ueberhaupt auf dem Ticket sitzt. Fix: \"mode\": i.t.Mode in die items-Map und eine mode-Zeile in den Klartext-Block aufnehmen — oder SKILL.md:65 streichen und dort nur 'jaira show <id> --json' nennen, was die Begruendung des Feldes aber unbelegt laesst."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
