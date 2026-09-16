@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-15T21:08:36Z
+updated-at: 2026-09-16T06:51:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-63171
@@ -458,3 +458,24 @@ Was ein Mensch zum Entscheiden braucht - die Beobachtung, nicht die Empfehlung:
 Die zwei Lesarten, zwischen denen nur ein Mensch entscheiden kann, und sie sehen von hier gleich aus: entweder ist die Definition of Done unvollstaendig (jede Tuer in eine abgelegte Datei braucht eine Weigerung, und das gehoert hingeschrieben), oder die Schleife konvergiert, ohne je zu enden, weil jede Runde eine Ebene tiefer liest und tiefer immer geht.
 
 Das Ticket steht in in-progress. Der Zweig feat/0YGWXQ traegt alles bis 65aff0a; DoD 8-12 sind gebaut, die Suite mit -race ist gruen.
+- **2026-09-16 06:51 · Alexander Sacharov** — Alex hat am 2026-09-16 entschieden: der Befund aus critique-Runde 7 wird behoben, nicht mitgeliefert. Damit ist die Schleife wieder offen - sie war nach drei Ruecklaeufen angehalten worden, weil die Regel das zur Entscheidung eines Menschen macht, und der Mensch hat sie getroffen.
+
+Zu bauen sind DREI Dinge. Punkt 2 stand in keiner critique-Runde; er ist beim Nachlesen des Codes fuer Alex' Frage 'wie willst du das fixen' aufgefallen.
+
+PUNKT 1 - der fehlende Waechter, der urspruengliche Befund.
+internal/cli/milestones.go:237 editMembers laedt mit milestone.Load und behandelt danach nur os.ErrNotExist. ms.Filed() wird nie gefragt, obwohl es die Methode gibt (core/milestone/milestone.go:309). Also schreibt 'jaira milestone add/rm' in eine Datei, die 'status: filed' traegt, und meldet freundlich, wie viele Tickets sie jetzt haelt.
+
+Was den Befund schwerer macht als er im review-Feld steht: unmittelbar nach ms.Save steht recordMilestone(s, ms). Die Aenderung bleibt nicht lokal - sie geht auf den Ref. Ein abgelegter Milestone wird damit bei JEDEM wieder lebendig, der zieht. Das ist kein stiller Erfolg, das ist eine Veroeffentlichung.
+
+Zu bauen: nach dem erfolgreichen Load, vor der Schleife, auf ms.Filed() pruefen und mit fail(ExitValidation, "milestone_filed", ...) abweisen. Den Wortlaut nicht neu erfinden - milestones.go:122 ist das Vorbild und nennt drei Dinge: die Datei, ihre Markierung, und dass 'jaira restore <name>.md' in dem Baum, der abgelegt hat, sie zurueckholt.
+
+PUNKT 2 - der falsche Rat im ErrNotExist-Zweig. NEU, in keiner Runde genannt.
+Ist der Milestone in DIESEM Baum abgelegt worden, liegt seine Datei nicht mehr unter .jaira/milestones/. Load gibt ErrNotExist, und milestones.go:242 antwortet 'no milestone %q on this board - jaira milestone create %s starts it'. Wer diesem Rat folgt, laeuft in den naechsten Abweisungstext ('filed into the logbook'). Zwei Schritte fuer eine Auskunft, und der erste schickt in die falsche Richtung.
+
+create macht es bereits richtig und hat ZWEI Abweisungen: die markierte Datei auf der Platte (milestones.go:116) UND milestoneFiled(s, name), das im Logbuch-Ordner nachsieht (milestones.go:130). add/rm muss dieselbe zweite Frage stellen und sofort auf 'jaira restore' zeigen statt auf 'create'.
+
+PUNKT 3 - Tests. internal/cli/milestones_test.go hat keinen einzigen add/rm-Fall auf einer markierten Datei. Zwei Faelle: markierte Datei auf der Platte, und in das Logbuch dieses Baumes abgelegt.
+
+Warum das kein Randfall ist, fuer den Fall dass jemand kuerzen will: core/refsync/refsync.go:194 IncomingMilestones schreibt einen abgelegten Ref ueber eine Datei, die dieser Baum schon hat. Die markierte Datei auf der Platte entsteht also dadurch, dass man das Ablegen eines anderen zieht - der normale Weg, nicht ein Sonderfall.
+
+Keine neue DoD-Zeile: Punkt 1 und 2 sind beide das, was DoD 9 und 11 schon verlangen ('ist vom Board weg', 'der Name ist belegt'). Eine NOTES.md-Zeile nur, wenn der Abweisungstext etwas ist, das ein Benutzer von aussen merkt - das tut er hier, also wahrscheinlich ja.
