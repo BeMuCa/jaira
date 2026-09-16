@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:53:44Z
+updated-at: 2026-09-16T10:54:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -121,3 +121,14 @@ Neu in Sprosse 2: der Fall, dass der Name gar kein Remote hier benennt (RemoteSo
 Mitgezogen: :63 sagte 'Not off jaira.remote' und haette den Leser genau auf den Key zurueckgeschickt, den der Abschnitt darunter verbietet — heisst jetzt 'the board's remote'. NOTES.md-Zeile nennt whoami und warum nicht den Key.
 
 Weiterhin ungeprueft und Sache der review-Lane: die Flagnamen '--repo' / '--target-project' bei der installierten gh/glab-Version und das Verhalten von 'gh pr list --head owner:branch'.
+- **2026-09-16 10:54 · Alexander Sacharov** — critique Durchgang 4: ein Finding, und es ist keine Wiederholung — die Umstellung auf 'jaira whoami' aus Durchgang 3 ist sauber (Felder .remote und .remote_source existieren, internal/cli/whoami.go:66-67; RemoteSourceFor existiert, core/settings/settings.go:178).
+
+Finding: :149-150 'In case 1 leave the flag off'. Das Repository-Flag ist damit sprossenabhaengig, und diese Abhaengigkeit muss der Durchlauf ueber vier Befehle in vier Abschnitten mitnehmen: :160 (gh pr list), :166 (glab mr list), :204 (gh pr create), :210 (glab mr create). Gekauft wird damit nichts ausser einem nicht getippten Flag. Fix: Sprosse 1 (:134-135) sagt statt 'braucht kein Flag', dass das owner/repo dort aus 'nameWithOwner' kommt — die Zeile 'gh repo view --json isFork,parent,nameWithOwner' (:110) holt das Feld ohnehin schon und niemand benutzt es bisher. Dann ist <owner/repo> auf jeder Sprosse gesetzt, :149-150 faellt ersatzlos weg und die vier Befehle stehen unbedingt da.
+
+Warum das in dieser Lane ein Finding ist und nicht Kosmetik: dieses Dokument hat genau einen Fehlermodus — ein Modell liest einen Zweig falsch. Drei der vier bisherigen Durchgaenge haben genau das gefunden (Reihenfolge, 'skip the next section', nicht-disjunkte Leiter). Ein Zweig, der nur Tipparbeit spart, ist in so einem Dokument teurer als das Flag.
+
+Geprueft und NICHT beanstandet: die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen; die Disjunktheit der drei Sprossen; der head-Praefix <owner-of-origin>: bei gh pr list; der Mensch/Agent-Schnitt an genau einer Ausfuehrungsstelle (:199-217) mit Kopf und Boundaries als Rahmen — das hat Durchgang 1 aufgemacht und der Implementierer begruendet, es bleibt.
+
+Erwogen und verworfen: :62-65 sagt 'the board's remote' zwei Abschnitte bevor :101-122 erklaert, was das ist — ein Vorwaertsverweis, aber der Satz dort ist eine Abgrenzung ('nicht davon ablesen') und braucht die Definition nicht. Ebenso verworfen: die Forge wird aus origin ermittelt (:62), das Ziel kann der Parent sein — Forks liegen immer auf derselben Forge, und ein Board-Remote auf einer anderen Forge faellt auf Sprosse 3 und fragt.
+
+Sache der review-Lane, hier bewusst nicht gepruet: ob 'gh pr create --repo' und 'glab mr create --target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind — mein Finding setzt das voraus. Ebenso die Flagnamen selbst und das Verhalten von 'gh pr list --head owner:branch'.
