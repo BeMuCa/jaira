@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:43:25Z
+updated-at: 2026-09-16T07:43:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -163,7 +163,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/milestones.go:441-444
 - [x] Test: im ABLEGENDEN Baum (mit Refs) 'milestone create' und 'milestone add' - die Meldung nennt das Logbuch hier und nicht den fremden Baum
   proof: internal/cli/milestoneref_test.go:TestTheFilingTreeIsPointedAtItsOwnLogbook
-- [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im eigenen Baum aufs lokale Logbuch zeigt
+- [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im eigenen Baum aufs lokale Logbuch zeigt
+  proof: core/release/NOTES.md:29
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
