@@ -48,11 +48,11 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T10:48:02Z
+updated-at: 2026-09-16T10:48:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-11194
-claimed-at: 2026-09-16T08:46:07Z
+claimed-by: DESKTOP-RFTCH11-88860
+claimed-at: 2026-09-16T10:48:23Z
 outcome-what: "recordMilestone renders the milestone it already holds instead of reading back the file it just saved, and refuseFiledOnRef's one-line forward folds into refuseIfFiled's switch"
 outcome-why: "the read-back was a second read of bytes in hand whose failure dropped the ref write without a word, and a single-caller forwarder put one of two sibling refusals behind an extra hop"
 outcome-resolves: "milestone.Bytes() renders once for both Save and the outbox; recordMilestone lost its unused *ticket.Store parameter across 4 call sites; suite green"
