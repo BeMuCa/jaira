@@ -25,14 +25,14 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:21:30Z
+updated-at: 2026-09-16T11:23:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
 outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der glab-Aufruf der Zielrepository-Leiter traegt jetzt '-F json' (:110), ein Halbsatz sagt warum (:118-120), Sprosse 1 liest den Projektpfad aus dieser JSON statt aus der Textausgabe (:139-141), und Sprosse 2 trennt die beiden Forges - GitHub '.parent.owner.login' + '.parent.name', GitLab der forked-from-Eintrag derselben JSON (:144-148)."
 outcome-why: "critique Durchgang 6: auf GitLab hatte die Leiter keine Quelle. 'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder den Fork-Status, nach dem die Leiter verzweigt, noch den Elternteil, den Sprosse 2 lesen soll. Der Durchlauf waere auf GitLab still auf Sprosse 1 (den Fork) gefallen: dieselbe stille Verzweigung, die ca7f53c fuer gh geschlossen hat."
 outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' gilt jetzt auf beiden Forges, nicht nur auf GitHub. go test ./core/role/... gruen."
-review-summary: "none"
+review-summary: "Der Diff schreibt core/role/builtin/jaira-role-pr/SKILL.md um und haengt die Regel neu auf: nicht mehr 'kein Agent oeffnet je einen PR', sondern 'nur der Aufruf eines Menschen oeffnet einen'. Kopf (:9-23) und Boundaries (:244-248) sagen beides und lassen merge/approve in beiden Faellen verboten. Dazwischen ist der Ablauf neu geschnitten: 'Push the branch' (:91) pusht immer, danach entscheidet erst der create-Befehl, ob geoeffnet oder die Zeile zurueckgereicht wird. Neu ist der Abschnitt 'Which repository it goes to' (:101-152) VOR dem Oeffnen: 'gh repo view $(git remote get-url origin) --json isFork,parent,nameWithOwner' bzw. 'glab repo view ... -F json', dann drei disjunkte Sprossen - kein Fork -> origin selbst; Fork, dessen Board-Remote nichts Drittes nennt -> der Parent; Board-Remote zeigt auf ein drittes Repo -> nicht oeffnen, fragen. Die Board-Remote kommt aus 'jaira whoami --json' (.remote/.remote_source), nicht aus 'git config jaira.remote', weil das nur die erste von vier Stufen in core/settings/settings.go RemoteSourceFor ist und sonst leer liest. Die PR-Existenzpruefung fragt jetzt das Zielrepo statt origin und schreibt den Head auf GitHub als '<owner-of-origin>:<branch>'. Dazu eine Zeile unter ## Unreleased in core/release/NOTES.md."
 review-gaps: |-
   Vier Durchgaenge, drei Aenderungen, alle in core/role/builtin/jaira-role-pr/SKILL.md, keine davon verhaltensaendernd.
 
