@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:47:50Z
+updated-at: 2026-09-16T15:48:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -170,3 +170,8 @@ Zweiter Befund, kleiner: in 'jaira set' muss die Pruefung NACH der --append-Falt
 docs/AGENTS.md hat jetzt 'A note on the conversational mode' direkt neben 'A note on model tiers'. Das ist derselbe Satz Aussage: jaira reicht den Wert durch und handelt nicht darauf, der Treiber entscheidet. Beim Lane-Abschnitt haette es den falschen Eindruck gemacht, man koenne 'mode' in input-requires eintragen - genau das, was die Pre-process-Notiz ausschliesst.
 
 Offen gelassen, absichtlich, weil ausserhalb dieser Lane: die Rollen-Dateien in ~/.claude sind jetzt aelter als die im Repository. Wer den Modus benutzen will, braucht 'jaira roles install --global --force'; beide NOTES.md-Zeilen sagen das. Ein bereits von Hand editierter Dispatcher wird dabei als skipped gemeldet und nicht ueberschrieben.
+- **2026-09-16 15:48 · Alexander Sacharov** — critique: drei Befunde, alle mit klarer Reparatur, daher zurueck nach in-progress.
+1. ValidMode (core/ticket/schema.go:150) trimmt, der Schreibpfad (internal/cli/tickets.go:929, internal/tui/edit.go:60) nicht. Empirisch geprueft in einem Wegwerf-Board: 'jaira set <id> "mode= conversational "' -> exit 0, Datei traegt 'mode: " conversational "', 'show --json' liefert ' conversational '. Der Mensch glaubt, im Modus zu sein, der Worker vergleicht auf genau ein Wort und committet wie immer — genau der Fall, gegen den TestSetRefusesUnknownMode geschrieben wurde. Fix in einer Zeile: TrimSpace aus ValidMode streichen, oder den getrimmten Wert speichern.
+2. Der Modus ist schreibbar ueber CLI und TUI, aber in keiner Ausgabe fuer Menschen sichtbar — nur in --json. Das Ziel des Tickets ist, dass der Modus einen Sitzungsabbruch ueberlebt; wer ihn gesetzt hat, muss auch sehen koennen, dass er noch an ist. Der Eintrag in fieldsWithTheirOwnRow (internal/tui/view.go:1099) behauptet sogar eine Zeile, die es nicht gibt.
+3. --no-worktree hat jetzt zwei Regeln an zwei Stellen derselben Datei, die sich widersprechen. Nebenbei: der Worktree-Zwang steht weder im Goal noch in der DoD — wenn er bleibt, gehoert er in den bestehenden Absatz und nicht in einen zweiten.
+Nicht beanstandet und bewusst stehen gelassen: mode als freies Frontmatter-Feld statt als Lane-Input (die Begruendung in flow.go:618-623 traegt), das Fehlen einer Merge-Regel in core/merge (Skalar, juengster Schreiber gewinnt, ist hier richtig), und dass jaira den Modus selbst nicht auswertet — das ist dasselbe Muster wie model-tier.
