@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:48:16Z
+updated-at: 2026-09-16T15:51:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -175,3 +175,10 @@ Offen gelassen, absichtlich, weil ausserhalb dieser Lane: die Rollen-Dateien in 
 2. Der Modus ist schreibbar ueber CLI und TUI, aber in keiner Ausgabe fuer Menschen sichtbar — nur in --json. Das Ziel des Tickets ist, dass der Modus einen Sitzungsabbruch ueberlebt; wer ihn gesetzt hat, muss auch sehen koennen, dass er noch an ist. Der Eintrag in fieldsWithTheirOwnRow (internal/tui/view.go:1099) behauptet sogar eine Zeile, die es nicht gibt.
 3. --no-worktree hat jetzt zwei Regeln an zwei Stellen derselben Datei, die sich widersprechen. Nebenbei: der Worktree-Zwang steht weder im Goal noch in der DoD — wenn er bleibt, gehoert er in den bestehenden Absatz und nicht in einen zweiten.
 Nicht beanstandet und bewusst stehen gelassen: mode als freies Frontmatter-Feld statt als Lane-Input (die Begruendung in flow.go:618-623 traegt), das Fehlen einer Merge-Regel in core/merge (Skalar, juengster Schreiber gewinnt, ist hier richtig), und dass jaira den Modus selbst nicht auswertet — das ist dasselbe Muster wie model-tier.
+- **2026-09-16 15:51 · Alexander Sacharov** — In-progress nach critique: die drei Befunde repariert, einer davon anders als critique vorgeschlagen hat.
+
+Befund 1 (Trim-Divergenz) ist NICHT durch Streichen des TrimSpace repariert, obwohl critique das als erste Option nannte. Streichen haette 'jaira set <id> "mode= conversational"' zu einem Fehler gemacht - eine Schreibweise, die in der Shell naheliegt und nichts Falsches meint. Stattdessen gibt ValidMode jetzt als CanonicalMode den getrimmten Wert MIT dem Urteil zurueck, und beide Schreibwege speichern genau das. Damit kann kein Aufrufer mehr pruefen und danach etwas anderes speichern - derselbe Grund, aus dem die Funktion ueberhaupt existiert (Notiz 15:38), eine Ebene weitergezogen. Ein 'bool'-Rueckgabewert laedt zu genau diesem Fehler ein; ein (value, ok) nicht.
+
+Befund 2: row("mode", ...) steht in beiden Detail-Panes neben row("tier", ...), weil beide dieselbe Art Aussage sind - WIE das Ticket gefahren wird, nicht was drinsteht. row() ueberspringt Leeres, ein Ticket ohne Modus kostet keine Zeile; TestShowPrintsModeForPeople prueft beide Richtungen.
+
+Befund 3: die --no-worktree-Regel steht jetzt nur noch im bestehenden Absatz, dort als dritter Fall neben den zwei vorhandenen. Der Bullet im Modus-Abschnitt verweist darauf. Auch Schritt 2 der Schleife ('in its own worktree') ist angefasst - er war die dritte, von critique nur nebenbei erwaehnte Stelle, und ohne ihn haette der Verweis auf einen Absatz gezeigt, dem die Schleife widerspricht.
