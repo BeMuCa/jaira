@@ -31,16 +31,20 @@ func newModeTicket(t *testing.T) (dir, handle string) {
 	return dir, ticket.Handle(tk.ID)
 }
 
-// The mode is what survives a killed session: written once, it has to come
-// back off disk on the next read rather than out of anybody's context.
-func TestModeSurvivesRoundTrip(t *testing.T) {
-	dir, h := newModeTicket(t)
-
-	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
-		t.Fatalf("set mode: %v\n%s", err, out)
+// setMode writes the mode through the CLI, which is the only supported way in:
+// 'jaira set' is where the closed set is enforced, so a test that wrote the
+// frontmatter directly would not be testing the path a person uses.
+func setMode(t *testing.T, dir, handle, mode string) {
+	t.Helper()
+	if out, err := runCLI(t, dir, "set", handle, "mode="+mode); err != nil {
+		t.Fatalf("set mode=%q: %v\n%s", mode, err, out)
 	}
+}
 
-	out, err := runCLI(t, dir, "show", h, "--json")
+// modeOf reads the mode back the way a caller does, out of 'jaira show --json'.
+func modeOf(t *testing.T, dir, handle string) any {
+	t.Helper()
+	out, err := runCLI(t, dir, "show", handle, "--json")
 	if err != nil {
 		t.Fatalf("show --json: %v\n%s", err, out)
 	}
@@ -48,24 +52,24 @@ func TestModeSurvivesRoundTrip(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &got); err != nil {
 		t.Fatalf("show --json is not json: %v\n%s", err, out)
 	}
-	if got["mode"] != ticket.ModeConversational {
-		t.Errorf("show --json carries mode %v, want %q", got["mode"], ticket.ModeConversational)
+	return got["mode"]
+}
+
+// The mode is what survives a killed session: written once, it has to come
+// back off disk on the next read rather than out of anybody's context.
+func TestModeSurvivesRoundTrip(t *testing.T) {
+	dir, h := newModeTicket(t)
+
+	setMode(t, dir, h, ticket.ModeConversational)
+	if got := modeOf(t, dir, h); got != ticket.ModeConversational {
+		t.Errorf("show --json carries mode %v, want %q", got, ticket.ModeConversational)
 	}
 
 	// And it is clearable by hand: nothing clears it automatically, so the
 	// empty write is the only way back out of the mode.
-	if out, err := runCLI(t, dir, "set", h, "mode="); err != nil {
-		t.Fatalf("clear mode: %v\n%s", err, out)
-	}
-	out, err = runCLI(t, dir, "show", h, "--json")
-	if err != nil {
-		t.Fatalf("show --json: %v\n%s", err, out)
-	}
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatal(err)
-	}
-	if got["mode"] != "" {
-		t.Errorf("mode survived being cleared: %v", got["mode"])
+	setMode(t, dir, h, "")
+	if got := modeOf(t, dir, h); got != "" {
+		t.Errorf("mode survived being cleared: %v", got)
 	}
 }
 
@@ -89,9 +93,7 @@ func TestForLaneCarriesMode(t *testing.T) {
 		t.Errorf("a fresh ticket is already in mode %v", got["mode"])
 	}
 
-	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
-		t.Fatalf("set mode: %v\n%s", err, out)
-	}
+	setMode(t, dir, h, ticket.ModeConversational)
 	out, err = runCLI(t, dir, "show", h, "--for-lane", "in-progress", "--json")
 	if err != nil {
 		t.Fatalf("show --for-lane: %v\n%s", err, out)
@@ -120,16 +122,8 @@ func TestSetRefusesUnknownMode(t *testing.T) {
 		}
 	}
 
-	out, err := runCLI(t, dir, "show", h, "--json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var got map[string]any
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatal(err)
-	}
-	if got["mode"] != "" {
-		t.Errorf("a refused mode was written anyway: %v", got["mode"])
+	if got := modeOf(t, dir, h); got != "" {
+		t.Errorf("a refused mode was written anyway: %v", got)
 	}
 }
 
@@ -141,20 +135,9 @@ func TestSetRefusesUnknownMode(t *testing.T) {
 func TestSetStoresModeTrimmed(t *testing.T) {
 	dir, h := newModeTicket(t)
 
-	if out, err := runCLI(t, dir, "set", h, "mode=  "+ticket.ModeConversational+"  "); err != nil {
-		t.Fatalf("set padded mode: %v\n%s", err, out)
-	}
-
-	out, err := runCLI(t, dir, "show", h, "--json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var got map[string]any
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatal(err)
-	}
-	if got["mode"] != ticket.ModeConversational {
-		t.Errorf("padded mode stored as %q, want %q", got["mode"], ticket.ModeConversational)
+	setMode(t, dir, h, "  "+ticket.ModeConversational+"  ")
+	if got := modeOf(t, dir, h); got != ticket.ModeConversational {
+		t.Errorf("padded mode stored as %q, want %q", got, ticket.ModeConversational)
 	}
 }
 
@@ -172,9 +155,7 @@ func TestShowPrintsModeForPeople(t *testing.T) {
 		t.Errorf("a ticket without a mode spends a row on it:\n%s", out)
 	}
 
-	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
-		t.Fatalf("set mode: %v\n%s", err, out)
-	}
+	setMode(t, dir, h, ticket.ModeConversational)
 	out, err = runCLI(t, dir, "show", h)
 	if err != nil {
 		t.Fatal(err)
@@ -199,9 +180,7 @@ func TestForLanePlainTextCarriesMode(t *testing.T) {
 		t.Errorf("a ticket without a mode announces one: %q", head)
 	}
 
-	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
-		t.Fatalf("set mode: %v\n%s", err, out)
-	}
+	setMode(t, dir, h, ticket.ModeConversational)
 	out, err = runCLI(t, dir, "show", h, "--for-lane", "in-progress")
 	if err != nil {
 		t.Fatalf("show --for-lane: %v\n%s", err, out)
@@ -222,9 +201,7 @@ func TestForLanePlainTextCarriesMode(t *testing.T) {
 func TestResumeCarriesMode(t *testing.T) {
 	dir, h := newModeTicket(t)
 
-	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
-		t.Fatalf("set mode: %v\n%s", err, out)
-	}
+	setMode(t, dir, h, ticket.ModeConversational)
 
 	out, err := runCLI(t, dir, "resume", "--json")
 	if err != nil {
@@ -253,9 +230,7 @@ func TestResumeCarriesMode(t *testing.T) {
 
 	// A ticket without a mode says nothing about one, the same way the lane
 	// header stays quiet.
-	if out, err := runCLI(t, dir, "set", h, "mode="); err != nil {
-		t.Fatalf("clear mode: %v\n%s", err, out)
-	}
+	setMode(t, dir, h, "")
 	out, err = runCLI(t, dir, "resume")
 	if err != nil {
 		t.Fatalf("resume: %v\n%s", err, out)

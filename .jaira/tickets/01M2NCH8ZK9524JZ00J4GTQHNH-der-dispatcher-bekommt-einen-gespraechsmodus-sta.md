@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,14 +37,15 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:13:16Z
+updated-at: 2026-09-16T20:21:31Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-96645
-claimed-at: 2026-09-16T19:45:19Z
+claimed-by: DESKTOP-RFTCH11-67097
+claimed-at: 2026-09-16T20:17:17Z
 outcome-what: "internal/cli/resume.go fuehrt jetzt den Modus: 'mode' in der items-Map des --json-Zweigs und eine 'mode:'-Zeile im Klartext-Block, letztere nur bei gesetztem Modus. Dazu TestResumeCarriesMode in internal/cli/mode_test.go, eine Ergaenzung der bestehenden Modus-Zeile in core/release/NOTES.md und der Verweis auf den Test in der proof-Zeile von DoD-Punkt 3."
 outcome-why: "resume.go baut sein JSON von Hand und geht nicht durch ticketJSON, also fehlte das Feld dort. 'jaira resume' ist aber genau die Wiederanlauf-Stelle, auf die sich jaira-dispatcher/SKILL.md:65 beruft — ein Dispatcher nach einem Sitzungsabbruch haette den Modus dort nicht gesehen und waere autonom weitergelaufen, was die in schema.go:44-47 aufgeschriebene Begruendung des Feldes aushebelt."
 outcome-resolves: "Befund aus critique-Runde 7: resume.go:126-141 trug kein 'mode', der Klartext-Block ebenso wenig."
-review-summary: "internal/cli/resume.go:126-141 baut sein eigenes JSON-Literal statt ticketJSON und traegt deshalb kein 'mode' — dieselbe Zeile fehlt im Klartext-Block bei 200-165; 'jaira resume' ist aber die Wiederanlauf-Stelle, auf die sich core/role/builtin/jaira-dispatcher/SKILL.md:65 beruft ('a fresh dispatcher after jaira resume reads it back off disk'), und schema.go:44-47 nennt das Ueberleben eines Sitzungsabbruchs als den Grund, warum das Feld ueberhaupt auf dem Ticket sitzt. Fix: \"mode\": i.t.Mode in die items-Map und eine mode-Zeile in den Klartext-Block aufnehmen — oder SKILL.md:65 streichen und dort nur 'jaira show <id> --json' nennen, was die Begruendung des Feldes aber unbelegt laesst."
+review-summary: "none"
+review-gaps: "folded core/validate/mode_test.go's two near-identical bad-mode tests into one table test (hand-written 'chat' and untrimmed ' conversational ' asserted the same five things twice) and pulled setMode/modeOf out of internal/cli/mode_test.go, where the same 'set mode, show --json, unmarshal, read the key' block stood four times — 72 test lines gone, no behaviour touched, suite green. Left alone: CanonicalMode is already the one shared write-path check (set, TUI editor, validate all call it), so there is no second implementation to fold; fieldValue's FieldMode case looks unreachable but is not — mode merges through merge.go's default mergeScalar branch, so the merge driver renders it on a conflict; the long doc comments on FieldMode/ModeConversational and the repeated 'a lane that changed no code hands back no line' in README, docs/AGENTS.md, both SKILL.md files and NOTES.md are five different readers, not duplication, and cutting them is an editorial call rather than a cleanup; NOTES.md's mode line is very long but the format is one line per change. No dead code and no hot-path cost found."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
@@ -302,3 +303,16 @@ Fix: "mode": i.t.Mode in die items-Map (i.t ist bereits das per s.Load nachgelad
 - Der Klartext-Zweig bekommt die Zeile nur bei gesetztem Modus, wie 'was on:' und wie row() in tickets.go: ein Ticket ohne Modus kostet keine Zeile. Der Test prueft beide Richtungen.
 - Warum ueberhaupt hier und nicht nur in 'jaira show --json': jaira-dispatcher/SKILL.md:65 nennt 'jaira resume' ausdruecklich als die Stelle, an der ein frischer Dispatcher den Modus von der Platte liest. Die Alternative aus critique — den Satz in SKILL.md streichen — laesst die Begruendung des Feldes (schema.go:44-47: es sitzt auf dem Ticket, um einen Sitzungsabbruch zu ueberleben) unbelegt, also wurde der Code an die Doku angeglichen und nicht umgekehrt.
 - Die NOTES.md-Zeile zum Modus wurde ergaenzt statt eine zweite geschrieben: es ist dieselbe Aenderung fuer den Leser (wo sehe ich den Modus), und zwei Zeilen zum selben Feld lesen sich wie zwei Features.
+- **2026-09-16 20:16 · Alexander Sacharov** — critique (8. Durchgang): kein Befund. Das ist der Ausgang der Schleife, nicht ein Durchwinken.
+
+Nachgeprueft, jede Stelle einzeln, und alle tragen 'mode':
+- Schreibwege: 'jaira set' (internal/cli/tickets.go:935, nach der --append-Faltung, speichert den kanonischen Wert) und der TUI-Editor (internal/tui/edit.go:61). Kein dritter. 'jaira create' setzt model-tier (tickets.go:245), aber keinen Modus — richtig so, der Dispatcher setzt ihn erst vor der Plan-Lane. 'jaira set' kennt keine Feld-Aliase, k wird nur getrimmt, also kann die Pruefung nicht ueber eine andere Schreibweise des Schluessels umgangen werden.
+- Lesewege: ticketJSON (tickets.go:1327) und damit 'jaira show --json', 'jaira list --json', 'jaira next --json', 'jaira move --json', 'jaira dod --json' — alle gehen durch dieselbe Funktion. showForLane fuehrt es in JSON und in der Klartext-Kopfzeile (flow.go). printDetail und die TUI-Detailspalte haben die Zeile. 'jaira resume' war der letzte Handbau-Fall und ist seit 28d53bd versorgt, JSON wie Klartext. 'jaira claim --json' ist eine Quittung, kein Ticket — dort gehoert es nicht hin.
+- Hintertueren: 'jaira validate' faengt jeden handgeschriebenen Wert ab, auch den nur durch Leerzeichen abweichenden. Der Merge-Driver bleibt bewusst ungeprueft (Runde 5), mode faellt in core/merge zu Recht in den default-Zweig — proseFields (merge.go:50-59) fuehrt question, nicht mode, und das ist fuer einen geschlossenen Skalar richtig.
+- flow.go:685 (case FieldMode in fieldValue) ist nicht tot: der Merge-Driver ruft dieselbe Funktion beim Auflisten konfliktierter Felder.
+- Die Commit-Zeilen-Bedingung steht an allen fuenf Stellen gleichlautend (jaira-role-lane, jaira-dispatcher, docs/AGENTS.md, README.md, core/ticket/schema.go).
+
+Nicht erneut aufgemacht, weil in frueheren Runden entschieden: mode neben model_tier statt in input-requires (Pre-process 15:33, Runde 2), das Trimmen in CanonicalMode statt Ablehnen (Runde 1), kein automatisches Raeumen des Modus (Pre-process), kein Test auf Prompt-Text (Runde 4).
+
+Ausserhalb dieses Tickets und bewusst nicht hier repariert, gehoert in ein eigenes Ticket: internal/cli baut an mehreren Stellen JSON von Hand statt ueber ticketJSON (resume.go war einer davon und hat Runde 7 gekostet). Ein neues Frontmatter-Feld bleibt dort still zurueck, und nur eine critique-Runde findet es.
+- **2026-09-16 20:21 · Alexander Sacharov** — optimize: the only duplication worth removing was in the tests. core/validate/mode_test.go asserted the same five properties twice (unknown value, untrimmed value) - now one table test. internal/cli/mode_test.go repeated the set/show --json/unmarshal block four times - now setMode and modeOf. -72 lines, suite green. Checked and rejected as cleanups: fieldValue's FieldMode case is NOT dead (mode takes merge.go's default mergeScalar path, so the merge driver prints it on a conflict - do not delete it); the prose repeated across README, AGENTS.md, both SKILLs and NOTES.md serves five different readers and cutting it would change what a reader is told, which is not this lane's call.

@@ -12,59 +12,44 @@ import (
 // check exists for the ways that go past them: a hand-edited file, a bad merge,
 // an agent writing something unexpected. A value outside the set is worse than
 // no value, because it prints as a mode and is read as none.
-func TestUnknownModeIsReportedWithTheRepair(t *testing.T) {
-	bad := tk(ticket.NewID(time.Now()), "hand-written mode", "todo")
-	bad.Goal, bad.Context, bad.Assignee, bad.DoD = "g", "c", "berk", "d"
-	bad.Mode = "chat"
-
-	ps := Tickets([]*ticket.Ticket{bad}, lanes(t), nil)
-	if !has(ps, CodeBadMode) {
-		t.Fatalf("an unknown mode produced %v", codes(ps))
-	}
-	var p Problem
-	for _, cand := range ps {
-		if cand.Code == CodeBadMode {
-			p = cand
-		}
-	}
-	if p.Severity != SeverityWarning {
-		t.Errorf("severity = %q, want a warning: the ticket itself is intact", p.Severity)
-	}
-	if p.Field != ticket.FieldMode {
-		t.Errorf("field = %q, want %q", p.Field, ticket.FieldMode)
-	}
-	if !strings.Contains(p.Message, "chat") {
-		t.Errorf("the message does not name the offending value: %q", p.Message)
-	}
-	if !strings.Contains(p.Message, "mode="+ticket.ModeConversational) {
-		t.Errorf("the message does not name the repair: %q", p.Message)
-	}
-}
-
+//
 // A value that differs from the canonical form only in its whitespace is the
-// same failure as an unknown one: CanonicalMode trims it, but nothing on the
-// read path does, so " conversational " prints as a mode and is compared
-// against exactly one word by the worker, which does not match.
-func TestUntrimmedModeIsReportedWithTheRepair(t *testing.T) {
-	bad := tk(ticket.NewID(time.Now()), "untrimmed mode", "todo")
-	bad.Goal, bad.Context, bad.Assignee, bad.DoD = "g", "c", "berk", "d"
-	bad.Mode = " " + ticket.ModeConversational + " "
+// same failure reached by a value that is not even a typo: CanonicalMode trims
+// it, but nothing on the read path does, so " conversational " prints as a mode
+// and is compared against exactly one word by the worker, which does not match.
+func TestBadModeIsReportedWithTheRepair(t *testing.T) {
+	for _, c := range []struct{ name, mode string }{
+		{"hand-written mode", "chat"},
+		{"untrimmed mode", " " + ticket.ModeConversational + " "},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			bad := tk(ticket.NewID(time.Now()), c.name, "todo")
+			bad.Goal, bad.Context, bad.Assignee, bad.DoD = "g", "c", "berk", "d"
+			bad.Mode = c.mode
 
-	ps := Tickets([]*ticket.Ticket{bad}, lanes(t), nil)
-	if !has(ps, CodeBadMode) {
-		t.Fatalf("an untrimmed mode produced %v", codes(ps))
-	}
-	var p Problem
-	for _, cand := range ps {
-		if cand.Code == CodeBadMode {
-			p = cand
-		}
-	}
-	if p.Severity != SeverityWarning {
-		t.Errorf("severity = %q, want a warning: the ticket itself is intact", p.Severity)
-	}
-	if !strings.Contains(p.Message, "mode="+ticket.ModeConversational) {
-		t.Errorf("the message does not name the repair: %q", p.Message)
+			ps := Tickets([]*ticket.Ticket{bad}, lanes(t), nil)
+			var p Problem
+			for _, cand := range ps {
+				if cand.Code == CodeBadMode {
+					p = cand
+				}
+			}
+			if p.Code == "" {
+				t.Fatalf("mode %q produced %v", c.mode, codes(ps))
+			}
+			if p.Severity != SeverityWarning {
+				t.Errorf("severity = %q, want a warning: the ticket itself is intact", p.Severity)
+			}
+			if p.Field != ticket.FieldMode {
+				t.Errorf("field = %q, want %q", p.Field, ticket.FieldMode)
+			}
+			if !strings.Contains(p.Message, c.mode) {
+				t.Errorf("the message does not name the offending value: %q", p.Message)
+			}
+			if !strings.Contains(p.Message, "mode="+ticket.ModeConversational) {
+				t.Errorf("the message does not name the repair: %q", p.Message)
+			}
+		})
 	}
 }
 
