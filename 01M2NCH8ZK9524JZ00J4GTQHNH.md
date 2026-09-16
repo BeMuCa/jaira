@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:58:05Z
+updated-at: 2026-09-16T16:00:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5463
 claimed-at: 2026-09-16T15:57:15Z
@@ -188,3 +188,12 @@ Befund 3: die --no-worktree-Regel steht jetzt nur noch im bestehenden Absatz, do
 2. core/role/builtin/jaira-dispatcher/SKILL.md, Schritt 1 des Zählens — kennt keinen Zustand 'bereits beantwortet'. Reihenfolge ist Notes (Schritt 4), dann Modus (Schritt 5); stirbt der Dispatcher dazwischen, liest der nächste keinen Modus, zählt neu und fragt den Menschen dasselbe noch einmal. Die Antworten stehen zu dem Zeitpunkt schon in den Notes — sie werden nur nicht gelesen. Schritt 1 muss die Notes mitlesen und eine beantwortete Entscheidung als geschlossen zählen.
 
 Geprüft und nicht beanstandet: mode fällt im Merge in den default-Zweig (mergeScalar, neuerer gewinnt) — für einen geschlossenen Skalar richtig, kein Eintrag in listFields/proseFields nötig. Der neue case in fieldValue() ist gegenüber dem default-Zweig redundant, folgt aber dem Muster aller anderen Felder dort; das aufzubrechen wäre teurer als der Gewinn. Die doppelte Prüfung in tickets.go und tui/edit.go teilt sich CanonicalMode — der Rest ist je eigene Fehlerausgabe und lässt sich nicht sinnvoll zusammenlegen.
+- **2026-09-16 16:00 · Alexander Sacharov** — In-progress nach critique (2. Durchgang): beide Befunde repariert, einer davon enger als critique ihn beschrieben hat.
+
+Befund 1 (Modus fehlt in der Klartext-Kopfzeile): die Zeile wird jetzt vorgebaut, statt einen zweiten Fprintf-Zweig zu bauen. Grund: die Kopfzeile ist ein Format-String mit fester Klammer '(tier: %s)'. Ein zweiter Zweig fuer 'mit Modus' haette den Rest der Zeile dupliziert, und die naechste Aenderung an der Zeile haette nur einen der beiden getroffen - dieselbe Drift-Falle, aus der CanonicalMode entstanden ist. Jetzt gibt es genau eine Stelle, an der die Klammer steht.
+
+Was ich dabei geprueft und verworfen habe: den Modus nicht in die Kopfzeile, sondern als eigene '**mode**'-Zeile zu den Input-Feldern. Falsch, weil die Input-Schleife streng ueber l.InputRequires laeuft - der Modus stuende dann zwischen Feldern, die aus dem Lane-Contract kommen, und suggeriert, er sei eins. Genau das schliesst die Pre-process-Notiz (15:33) aus. Die Kopfzeile sagt schon heute, WIE die Lane zu fahren ist.
+
+Befund 2 (Zaehlen kennt kein 'schon beantwortet'): die Reparatur benennt in Schritt 1 ausdruecklich den Fall, der sie noetig macht - Dispatcher stirbt zwischen Schritt 4 (Notes) und Schritt 5 (Modus). Ohne den genannten Fall liest ein Modell 'Notes mitlesen' als Hoeflichkeit und zaehlt trotzdem neu. Der Prompt muss den Grund tragen, weil niemand sonst ihn traegt.
+
+Nicht angefasst, absichtlich: die Reihenfolge Notes-dann-Modus bleibt. Sie erst den Modus setzen zu lassen waere die andere denkbare Reparatur, aber dann traegt ein Ticket den Modus, bevor die Antworten darauf stehen - ein Worker, der genau dazwischen startet, pausiert nach jedem DoD-Punkt fuer Entscheidungen, die niemand aufgeschrieben hat. Die Notes zuerst ist die richtige Reihenfolge; das Lesen war die Luecke.
