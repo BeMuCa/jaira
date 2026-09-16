@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:26:27Z
+updated-at: 2026-09-16T20:27:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67097
 claimed-at: 2026-09-16T20:17:17Z
@@ -338,3 +338,10 @@ Funktion, auf einem frischen Scratch-Board mit dem selbst gebauten Binary durchg
 - Mode von Hand im Ticket-File auf 'chat' gesetzt: 'jaira validate' meldet die Warnung samt Reparaturzeile.
 
 Nichts gefunden, was zurueckgeht. Diese Lane hat keinen Code geaendert und committet deshalb nichts.
+- **2026-09-16 20:27 · Alexander Sacharov** — Befund vom 16.09. beim Ausliefern der Rollen — er trifft die NOTES.md-Zeilen dieses Tickets direkt.
+
+'jaira roles install --global --force' verteilt NICHT die Rollen aus dem Arbeitsbaum, sondern die, die im installierten Binary einkompiliert sind (/home/alex/.local/bin/jaira, Version 0.2.1). Das Binary ist aelter als dieser Branch. Der Aufruf hat die globalen Kopien deshalb ZURUECKGEDREHT: ~/.claude/skills/jaira-dispatcher/SKILL.md hatte danach null Treffer auf 'conversational' gegen sechs im Repository, und jaira-teamlead verlor den Absatz ueber 'spawn.sh <slug> <id> dispatch', den das Repository fuehrt. Von Hand wieder gleichgezogen, alle sieben Rollen stimmen jetzt mit core/role/builtin ueberein.
+
+Warum das dieses Ticket angeht: beide NOTES.md-Zeilen schicken den Leser genau auf diesen Befehl, damit er den Modus sieht. Vor einem Release, das den neuen Prompt einbettet, tut der Befehl das Gegenteil — er nimmt ihm den Modus weg, schweigend. Entweder die Zeilen sagen dazu, dass erst das Release den Modus bringt, oder 'roles install' lernt, aus dem Arbeitsbaum zu installieren. Das zu entscheiden ist nicht Sache dieses Tickets, aber die NOTES.md-Zeilen so stehen zu lassen, ist falsch.
+
+Zweiter, kleinerer Befund aus demselben Lauf: scripts/spawn.sh kennt nur 'dispatch' als Sonderfall und tippt fuer jede andere Lane '/jaira-role-lane <id> <lane>'. Fuer die testing-Lane ist das laut Dispatcher-Prompt falsch — dort gehoert '/jaira-role-tester <id>' hin. Der Lauf ging gut aus, weil der Lane-Worker denselben Prompt aus .jaira/lanes/testing.md liest und test-verdict liefert, aber der Prompt und das Skript widersprechen sich.
