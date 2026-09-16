@@ -14,7 +14,7 @@ related:
   - 01M2G9X5HVH29SDS8FAZKSGSKK
 commits: []
 created-at: 2026-09-15T05:26:04Z
-updated-at: 2026-09-16T06:48:17Z
+updated-at: 2026-09-16T06:48:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 ---
@@ -38,4 +38,14 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
+- **2026-09-16 06:48 · Alexander Sacharov** — Am 2026-09-15 und 16 dreimal live bestaetigt, von der Teamlead-Sitzung selbst - der Befund ist keine Lesefrucht mehr.
 
+Ein Teamlead soll laut ~/.claude/skills/jaira-teamlead/SKILL.md den Dispatcher ueber scripts/spawn.sh starten. spawn.sh:96 tippt fest '/jaira-role-lane $ticket $lane'. Es gibt keinen Weg, damit '/jaira-dispatcher <id>' zu starten - also genau die Rolle, fuer die das Skript im Dispatcher-Skill liegt.
+
+Was die Sitzung stattdessen getan hat, dreimal (9ZZSFT, 0YGWXQ zweimal): spawn.sh in ein Scratchpad kopiert und die eine Zeile per sed durch ${JAIRA_SPAWN_PROMPT:-...} ersetzt. Das lief, hinterlaesst aber eine zweite Kopie des Skripts, die niemand pflegt - dieselbe Krankheit, die 7MG5GB an einem fremden Board beschreibt.
+
+Damit ist der Befund breiter als der Titel sagt. Es fehlt nicht nur '/jaira-role-tester': es fehlt jede Rolle ausser einer. Drei Aufrufer wollen drei verschiedene Zeilen - der Dispatcher '/jaira-role-lane' und '/jaira-role-tester' (SKILL.md:48), der Teamlead '/jaira-dispatcher'. Eine Loesung, die nur testing nachtraegt, laesst den Teamlead wieder mit sed arbeiten.
+
+Vorschlag fuer die Plan-Lane, nicht entschieden: den Prompt zum Argument machen statt ihn aus der Lane abzuleiten. Ein Aufrufer, der nichts sagt, bekommt weiter '/jaira-role-lane <id> <lane>'; wer etwas anderes braucht, uebergibt es. Das deckt alle drei Aufrufer mit einer Zeile und braucht keine Liste von Sonderfaellen im Skript.
+
+DoD 1 ist damit zu eng formuliert ('fuer testing ..., sonst ...'). Wer ihn woertlich baut, hat den Teamlead-Fall nicht geloest.
