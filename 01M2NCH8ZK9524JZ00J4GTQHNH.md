@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:09:24Z
+updated-at: 2026-09-16T20:09:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -286,3 +286,12 @@ Dieselbe Meldung, derselbe Code, dieselbe Reparatur — bewusst kein zweiter Cod
 NOTES.md: keine neue Zeile, sondern die bestehende validate-Zeile erweitert — es ist dieselbe Pruefung, und eine zweite Zeile daneben liest sich wie ein zweites Feature. Die Zeile nennt jetzt ausdruecklich, dass nur 'jaira set' trimmt.
 
 core/validate/mode_test.go: TestUntrimmedModeIsReportedWithTheRepair neben dem 'chat'-Fall.
+- **2026-09-16 20:09 · Alexander Sacharov** — critique (7. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+Befund: 'jaira resume' traegt den Modus nicht.
+
+internal/cli/resume.go:126-141 baut seine JSON-Items als eigenes Map-Literal (id, handle, title, status, reason, current_step, goal, notes) statt ueber ticketJSON. Jeder andere Lesepfad ist versorgt — ticketJSON (tickets.go:1324), show --for-lane (flow.go), der Detail-Block in printDetail, die TUI-Zeile. resume ist der einzige, der sein eigenes Literal baut, und genau deshalb durchgefallen. Der Klartext-Zweig darunter (Zeile 153-165) druckt Status, Grund, 'was on' und die Notizen — auch dort keine mode-Zeile.
+
+Warum das mehr ist als eine fehlende Ausgabe: core/ticket/schema.go:44-47 begruendet die ganze Bauform damit, dass der Modus einen Sitzungsabbruch ueberlebt, und core/role/builtin/jaira-dispatcher/SKILL.md:65 sagt woertlich, ein frischer Dispatcher lese ihn 'after jaira resume ... back off disk'. Das stimmt nicht. Genau der Dispatcher, der nach einem Abbruch neu startet und seiner eigenen Anweisung aus Zeile 28 folgt ('reads jaira resume and carries on'), sieht den Modus dort nicht — und laeuft autonom weiter, was der Modus verhindern soll. Gerettet wird es nur dadurch, dass der Abschnitt 30 Zeilen weiter oben zusaetzlich 'jaira show <id> --json' vorschreibt; der Prompt widerspricht sich also selbst.
+
+Fix: "mode": i.t.Mode in die items-Map (i.t ist bereits das per s.Load nachgeladene volle Ticket, Zeile 133) und eine mode-Zeile in den Klartext-Block, wie printDetail sie neben 'tier' hat. Zwei Zeilen. Alternative waere, SKILL.md:65 zu streichen und dort nur show --json zu nennen — das laesst aber die Begruendung des Feldes (Abbruch ueberleben) an einer Stelle haengen, die der Dispatcher-Prompt selbst nicht als Wiederanlauf fuehrt. Empfehlung daher: resume versorgen.
