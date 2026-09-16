@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:01:09Z
+updated-at: 2026-09-16T20:01:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -260,3 +260,10 @@ Fix: in core/validate/validate.go ein CodeBadMode neben CodeBadTag, geprueft mit
 Dazu eine Zeile in core/release/NOTES.md: ein neuer validate-Problemcode aendert Ausgabe und, mit --strict, den Exit-Code.
 
 Nicht erneut aufgemacht: die Commit-Zeilen-Bedingung aus Runde 3 und 4 steht jetzt an allen fuenf Stellen und stimmt ueberein. Der --no-worktree-Absatz, die Trim-Entscheidung und die Platzierung von 'mode' neben 'model_tier' statt in input-requires bleiben stehen — alle drei sind in frueheren Runden entschieden worden. Der FieldMode-Zweig in flow.go:685 fieldValue ist NICHT tot, obwohl der Kommentar darueber sagt, mode gehe nicht durch input-requires: der Merge-Driver ruft dieselbe Funktion (mergedriver.go:260) beim Auflisten konfliktierter Felder auf.
+- **2026-09-16 20:01 · Alexander Sacharov** — In-progress nach critique (5. Durchgang): die Wertebereichspruefung fuer 'mode' steht jetzt auch in core/validate/validate.go.
+
+- core/validate/validate.go: CodeBadMode neben CodeBadTag, geprueft mit ticket.CanonicalMode, SeverityWarning aus demselben Grund wie bad_tag — das Ticket selbst ist heil. Die Meldung nennt beide Reparaturen ('mode=conversational' und 'mode=').
+- Die Stelle ist bewusst VOR der blocked-by-Schleife und direkt hinter der Tag-Schleife: beide pruefen einen geschriebenen Wert gegen einen geschlossenen Bereich, und wer den einen Kommentar liest, findet den anderen.
+- Der Merge-Driver (internal/cli/mergedriver.go:223, --take-theirs) bleibt ungeprueft — absichtlich. Er ist ein Konfliktloeser, kein Schreibweg mit eigener Meinung; ein durchgereichtes 'mode: chat' faengt jetzt 'jaira validate' ab, genau wie jeden anderen Handedit. Eine Pruefung im Driver waere eine zweite Wahrheit ueber den Wertebereich.
+- core/validate/mode_test.go: der unbekannte Wert wird als Warnung mit Feld und Reparatur gemeldet; leer und 'conversational' bleiben stumm.
+- Kein Doku-Update noetig: weder docs/ noch README zaehlen validate-Codes auf (grep bad_tag findet dort nichts). Die NOTES.md-Zeile traegt die Aenderung.
