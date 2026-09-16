@@ -43,7 +43,7 @@ commits:
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:35:20Z
+updated-at: 2026-09-16T07:35:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -547,3 +547,9 @@ WHAT TO BUILD: milestoneFiled returns two answers with one shape. Give it a thir
 While there: the doc comment at milestones.go:391 says refuseFiledInLogbook is for the case where 'the file is not on disk any more because this very tree filed it'. With the ref branch feeding it, that sentence is false today; once the split above is built it becomes true again and needs no separate edit.
 
 CHECKED AND LEFT ALONE: refuseFiledOnDisk taking root rather than the store matches milestone.Path's signature; the two helpers sitting in milestones.go while logbook.go calls one is right, they belong next to milestoneFiled; the 'instead'/'then' parameter names differ for the same role, which is cosmetic and not worth a round; TestEveryDoorIntoAFiledMilestoneSaysTheSameThings covers only the on-disk state, which is correct — the logbook state has its own test at milestones_test.go:472.
+- **2026-09-16 07:35 · Alexander Sacharov** — in-progress round 8 (critique round 9), 2026-09-16. The ref case now has its own refusal, and what the code does not say:
+- The split is by WHERE THE WAY BACK RUNS, not by how the mark arrived. refuseFiledElsewhere carries the shared sentence for both states whose copy lies in another tree (marked file here, marked ref), refuseFiledOnDisk and refuseFiledOnRef only name what carries the mark. refuseFiledInLogbook stays the single case where 'jaira restore' works in this tree. Considered a fourth per-command helper and rejected for the reason round 8 gave: a helper per door is how the wording drifted in the first place.
+- milestoneFiled used to return a bare string ('on its ref' / the logbook folder) and a bool, and the caller could not tell the two apart — that is what let the ref case fall into the logbook wording. It now returns a milestoneFiledAt, so the distinction is in the type and a new caller cannot lose it again.
+- The ref case names refs/jaira/milestones/<name> instead of 'on its ref': the reader has nothing on disk to look at, so the ref name is the only thing they can go and check with git.
+- The new test needed handleFromList, not mkTicket: mkTicket calls firstTitledHandle, which does not find a ticket on a board built by twoBoards. Cost ten minutes; handleFromList in the same file is the one that works there.
+- The test asserts the absence of 'into the logbook' as well as the four facts. Without that negative the old wording would have passed three of the four checks.
