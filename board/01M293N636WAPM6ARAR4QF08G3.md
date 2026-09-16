@@ -13,7 +13,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-11T20:48:28Z
-updated-at: 2026-09-11T21:19:56Z
+updated-at: 2026-09-15T21:00:15Z
 updated-by: Alexander Sacharov
 ---
 
@@ -52,3 +52,19 @@ Nicht nur die Zeile gestrichen, sondern die ganze Datei durch core/lane/builtin/
 Geprueft: 'jaira lanes --json' zeigt fuer done kein logbook_on_entry mehr, terminal steht weiter auf true.
 
 Damit bleibt an diesem Ticket nur noch Punkt 1: Berk nach seinem Urlaub sagen, dass die Karten keinen Rahmen mehr haben.
+- **2026-09-15 21:00 · Alexander Sacharov** — PUNKT 4 - Epics oder Milestones: eine Entscheidung, die Berk gehoert, weil das Epic-Ticket seins ist.
+
+Alex' Vorschlag vom 2026-09-15: auf Milestones umsteigen und D0SAHM (Epic-Layer) fallen lassen oder darauf umbauen. D0SAHM ist dafuer auf blocked gesetzt und wartet auf dieses Gespraech.
+
+Was inzwischen gebaut wurde, und darum stellt sich die Frage ueberhaupt: 0YGWXQ bringt Milestones. Eine Datei je Milestone unter .jaira/milestones/<name>.md, hand-editierbar wie ein Ticket, mit der Ticket-Liste IM Milestone statt als Feld an jedem Ticket. Sie reist auf einem eigenen Ref, bekommt eine zufaellige Farbe, zeigt sie als Balken am RECHTEN Kartenrand, und M zieht das Board auf einen Milestone zusammen. 'jaira milestone create/add/rm/ls'. Der Code steht auf feat/0YGWXQ.
+
+Die Ueberschneidung, um die es geht: D0SAHM gruppiert Tickets ueber den Tag und zeigt je Gruppe eine Bubble, die sich nach dem Anteil fertiger Tickets fuellt. Ein Milestone gruppiert Tickets ueber seine Datei. Das ist dieselbe Handlung mit zwei Datenmodellen. Auf einem Board, dessen Regel 'ist das kleiner als paca?' lautet, sind Tags PLUS Epics PLUS Milestones eine Achse zu viel.
+
+Was nur D0SAHM hat und ein Milestone nicht: die Pfeile. 'erst Thema A, dann Thema B', die Kanten zwischen den Bubbles, der Flow. Milestones liegen nebeneinander und kennen keine Reihenfolge untereinander.
+
+Drei Wege, und Berk waehlt:
+  a) D0SAHM archivieren. Wer keinen Themen-Flow braucht, braucht die Bubbles nicht.
+  b) D0SAHM behalten, aber nur als ANSICHT: die Bubbles zeichnen Milestones statt einer eigenen Epic-Datei. Fuellstand aus der Ticket-Liste des Milestones, Farbe aus dem Milestone. Das eigene Datenmodell des Epics faellt, die Kanten bleiben. Alex' Neigung, und meine auch.
+  c) Beides bauen. Dann muss jemand sagen koennen, wann man das eine und wann das andere nimmt.
+
+Zu tun: Berk 0YGWXQ am laufenden Binary zeigen, dann fragen ob die Pfeile ihm so wichtig sind, dass b) gebaut wird - oder ob a) reicht.
