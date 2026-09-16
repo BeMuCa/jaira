@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:36:00Z
+updated-at: 2026-09-16T08:36:04Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -196,7 +196,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: README.md:282-292
 - [x] README:400-401: 'see what exists' und 'collect it' auf refs/jaira/* stellen - die Rezeptzeile, die jemand von Hand tippt, muss beide Arten holen, sonst genau die Halbstellung, gegen die gitref.Fetch den breiten Refspec nimmt
   proof: README.md:404-405, matches core/gitref/gitref.go:625 Fetch
-- [ ] README:402: eine Zeile fuer das Lesen eines Milestones ohne Checkout - show refs/jaira/milestones/<name>:<name>.md
+- [x] README:402: eine Zeile fuer das Lesen eines Milestones ohne Checkout - show refs/jaira/milestones/<name>:<name>.md
+  proof: README.md:407
 - [ ] Gegenprobe: grep refs/jaira ueber README.md - keine Zeile behauptet mehr, tickets/ sei der einzige Namensraum
 
 ## Progress
