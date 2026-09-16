@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:38:43Z
+updated-at: 2026-09-16T07:39:10Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -554,3 +554,24 @@ CHECKED AND LEFT ALONE: refuseFiledOnDisk taking root rather than the store matc
 - The ref case names refs/jaira/milestones/<name> instead of 'on its ref': the reader has nothing on disk to look at, so the ref name is the only thing they can go and check with git.
 - The new test needed handleFromList, not mkTicket: mkTicket calls firstTitledHandle, which does not find a ticket on a board built by twoBoards. Cost ten minutes; handleFromList in the same file is the one that works there.
 - The test asserts the absence of 'into the logbook' as well as the four facts. Without that negative the old wording would have passed three of the four checks.
+- **2026-09-16 07:39 · Alexander Sacharov** — critique round 10, one finding. Round 9's finding is measured fixed and is not re-opened: milestoneFiled returns a milestoneFiledAt, the ref case has refuseFiledOnRef, and TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt drives create and add in grace's clone and asserts the absence of 'into the logbook'. That is right and stays.
+
+FINDING: internal/cli/milestones.go:391 — milestoneFiled asks the REF first, and on a shared board the tree that filed the milestone holds BOTH. logbookMilestone (logbook.go:318-327) marks, calls recordMilestone, THEN moves the file: the filer ends with a marked refs/jaira/milestones/<name> and the only restorable copy in its own .jaira/logbook/<who>-<date>/milestones/. Ref-first means that tree gets milestoneFiledOnRef.
+
+Measured, not reasoned: a throwaway test driving 'milestone create round-one' in ada's tree after ada filed it on a shared board (twoBoards + runAndSend) produced
+
+  milestone "round-one" has been filed: its ref refs/jaira/milestones/round-one is marked "filed", which is what keeps it off the board — 'jaira restore round-one.md' in the tree that filed it puts it back, and creating it again here would make a second milestone with the same name
+
+Ada IS the tree that filed it. The sentence sends her somewhere else while the copy lies in her own logbook, and it never names the folder — which is the one thing refuseFiledInLogbook exists to say.
+
+This is round 9's defect mirrored, not round 9's defect again. Round 9 asserted as its premise that 'the ref branch is reached precisely when this tree has no logbook copy'. That premise is false for the filer on a shared board, and nothing has checked it since: rounds 7 and 8 ruled only that ref-before-logbook is right for an UNSHARED board (no refs at all), which is a different state.
+
+Two things it also makes false, and both stop being false once the order is swapped:
+- the doc comment at milestones.go:437 says refuseFiledOnRef is for 'there is no file here at all ... so this tree has nothing to restore from and never had'. The filer has something to restore from.
+- the order justification added at milestones.go:387-390 argues ref-first 'keeps the refusal from pointing at a restore that would fail'. Logbook-first serves that same aim strictly better: it points at a restore that WORKS when one exists here, and falls through to the ref when none does.
+
+WHY NO TEST CAUGHT IT: TestAddOnAMilestoneFiledInThisTreePointsAtRestore (milestones_test.go:471) is the test for this state, but it runs on emptyStore (mine_test.go:26) — a bare TempDir with no git and no refs — so refs.Usable() fails and the ref branch is never entered. It measures the unshared path only. The shared-board filer is untested.
+
+WHAT TO BUILD: in milestoneFiled, ask s.FiledMilestone(name) first and return milestoneFiledHere when it answers; read the ref only when it does not. Both reasons the ref is consulted survive: a clone that fetched somebody else's filing has no logbook copy and falls through to the ref, and an unshared board has no refs and is answered by the logbook. The case that changes is only the one where both hold, and there the local copy must win, because that is the answer the reader can act on without leaving the tree. Then give the shared-board filer a test — the existing one cannot reach the branch.
+
+CHECKED AND LEFT ALONE: swapping the order is safe where the ref says NOT filed and a logbook copy is here (someone restored elsewhere) — the ref branch only returns on Filed(), so both orders already answer milestoneFiledHere. refuseFiledElsewhere carrying the shared sentence for the two out-of-tree states is right and is not what this finding touches. The 'instead'/'then' parameter-name difference stays cosmetic. logbook.go:289 does not call milestoneFiled at all, so it is unaffected.
