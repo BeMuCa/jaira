@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:25:32Z
+updated-at: 2026-09-16T20:25:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67097
 claimed-at: 2026-09-16T20:17:17Z
@@ -317,3 +317,23 @@ Nicht erneut aufgemacht, weil in frueheren Runden entschieden: mode neben model_
 
 Ausserhalb dieses Tickets und bewusst nicht hier repariert, gehoert in ein eigenes Ticket: internal/cli baut an mehreren Stellen JSON von Hand statt ueber ticketJSON (resume.go war einer davon und hat Runde 7 gekostet). Ein neues Frontmatter-Feld bleibt dort still zurueck, und nur eine critique-Runde findet es.
 - **2026-09-16 20:21 · Alexander Sacharov** — optimize: the only duplication worth removing was in the tests. core/validate/mode_test.go asserted the same five properties twice (unknown value, untrimmed value) - now one table test. internal/cli/mode_test.go repeated the set/show --json/unmarshal block four times - now setMode and modeOf. -72 lines, suite green. Checked and rejected as cleanups: fieldValue's FieldMode case is NOT dead (mode takes merge.go's default mergeScalar path, so the merge driver prints it on a conflict - do not delete it); the prose repeated across README, AGENTS.md, both SKILLs and NOTES.md serves five different readers and cutting it would change what a reader is told, which is not this lane's call.
+- **2026-09-16 20:25 · Alexander Sacharov** — testing: drei Durchgaenge, alle gruen.
+
+Gates: 'go build ./...', 'go vet ./...' und 'go test ./... -race -count=1' — RC=0, 29 Pakete ok, kein Skip. Kein Taskfile im Repo, also die Go-Werkzeuge direkt.
+
+Die Forderung, Punkt fuer Punkt an der Working Tree geprueft, nicht am Outcome-Text:
+1) jaira-dispatcher/SKILL.md:31-66 — Schritt 1 zaehlt die offenen Entscheidungen aus Ticket UND Notes, Schritt 2 laeuft bei null weiter, Schritt 3 haelt bei >=1 an. Bedingung nachpruefbar, nicht Bauchgefuehl.
+2) 'ls core/role/builtin/' zeigt unveraendert sieben Rollen; der Modus steht in denselben zwei Prompts, kein neuer Skill, keine neue Kommandozeile.
+3) Schritt 4 schreibt die Antwort mit 'jaira note' VOR Arbeitsbeginn; der Sitzungsabbruch ist durch TestModeSurvivesRoundTrip, TestShowPrintsModeForPeople und TestResumeCarriesMode belegt — alle drei einzeln mit -v laufen gesehen, PASS.
+4) jaira-role-lane/SKILL.md:72-95 — fertige 'git add'/'git commit'-Zeile mit Handle im Betreff und der Ticket-Datei im add; die Gegenseite (Lane ohne Code-Aenderung gibt keine Zeile) steht an beiden Stellen.
+5) jaira-role-lane/SKILL.md:44-60 — 'git diff' nach jedem DoD-Punkt, leerer Diff heisst keine Pause.
+6) core/release/NOTES.md:17 und :18 unter ## Unreleased, je eine Zeile, kein Umbruch.
+
+Funktion, auf einem frischen Scratch-Board mit dem selbst gebauten Binary durchgespielt:
+- 'jaira set <id> mode=chat' -> 'jaira: mode is "conversational" or empty, got "chat"', RC=2.
+- 'jaira set <id> mode=" conversational "' -> akzeptiert, 'show --json' liefert 'conversational' (getrimmt gespeichert).
+- 'jaira show --for-lane in-progress --json' fuehrt mode neben model_tier; der Klartext-Kopf lautet '# Lane: Implementing   (tier: cheap, mode: conversational)'.
+- 'jaira resume --json' fuehrt "mode": "conversational" im in_flight-Eintrag, 'jaira resume' im Klartext die Zeile 'mode: conversational' — das ist der Befund aus critique-Runde 7, im laufenden Binary bestaetigt.
+- Mode von Hand im Ticket-File auf 'chat' gesetzt: 'jaira validate' meldet die Warnung samt Reparaturzeile.
+
+Nichts gefunden, was zurueckgeht. Diese Lane hat keinen Code geaendert und committet deshalb nichts.
