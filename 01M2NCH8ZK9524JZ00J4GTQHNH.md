@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T21:10:52Z
+updated-at: 2026-09-16T21:11:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23289
 claimed-at: 2026-09-16T21:06:12Z
-outcome-what: "Testing-Lane: Build, vet und 'go test ./... -race -count=1' gruen (RC=0), DoD 1-6 einzeln an der Working Tree geprueft, der Modus auf einem Scratch-Board mit dem gebauten Binary durchgespielt — set/trim/Ablehnung, show --json, show --for-lane (JSON und Klartext-Kopf), resume (JSON und Klartext) und validate."
-outcome-why: "Die Lane verlangt Nachweis statt Zusage: jeder proof-Eintrag wurde an der Datei bzw. am Test geoeffnet und das Verhalten selbst ausgefuehrt, nicht aus dem Outcome-Text uebernommen."
-outcome-resolves: "test-verdict: pass. Nichts gefunden, was in in-progress zurueckgeht."
+outcome-what: "Review-Lane: Diff gegen die sechs DoD-Punkte geprueft, Build/vet/Tests selbst gelaufen, der Modus auf einem Scratch-Board mit dem gebauten Binary durchgespielt. review-summary, review-gaps, review-verdict und review-check geschrieben."
+outcome-why: "Alle sechs DoD-Punkte sind erfuellt und das Traegerwerk deckt sich mit dem Bericht; ein Defekt bleibt offen, dessen Fix eine Prompt-Zeile ist und deshalb am Signoff billiger ist als eine Runde durch in-progress."
+outcome-resolves: "review-verdict: erfuellt, mit einer Einschraenkung. 'git diff' zeigt keine untracked Dateien, also laeuft ein DoD-Punkt aus einer neuen Datei im Gespraechsmodus ohne Pause durch — vor dem Signoff eine Zeile in jaira-role-lane/SKILL.md aendern."
 review-summary: "Der Modus ist ein neues Frontmatter-Feld 'mode' mit genau zwei erlaubten Werten: leer (autonom, der Normalfall) und 'conversational'. core/ticket/schema.go traegt FieldMode, Ticket.Mode, die Stelle in canonicalOrder und CanonicalMode(v) — die eine Funktion, die trimmt UND urteilt, damit CLI und TUI nicht auseinanderlaufen koennen. Geschrieben wird er nur ueber 'jaira set <id> mode=...' (internal/cli/tickets.go, ExitUsage bei allem anderen) und ueber den Editor der Board-Ansicht (internal/tui/edit.go, gleiche Pruefung, Fehlermeldung statt Speichern). Gelesen wird er an fuenf Stellen, und das ist der eigentliche Inhalt der Aenderung: 'show --json' (ticketJSON), 'show --for-lane --json' als eigener Schluessel neben model_tier statt ueber input-requires, die Klartext-Kopfzeile derselben Ausgabe ('# Lane: X (tier: strong, mode: conversational)'), 'jaira resume' in JSON und Klartext — der Wiedereinstiegspunkt nach einem Sitzungsabbruch — sowie je eine 'mode'-Zeile neben 'tier' in 'jaira show' und im Detail-Pane der TUI. core/validate/validate.go meldet jeden anderen Wert als Warnung 'bad_mode', inklusive 'conversational' mit Leerzeichen drumherum, weil ein Hand-Edit oder ein Merge an beiden Schreibpfaden vorbeikommt und ein unbekannter Wert vom Worker als 'kein Modus' gelesen wird. Das Verhalten selbst steht nicht im Go-Code, sondern in zwei Prompts: jaira-dispatcher/SKILL.md bekommt einen Halt VOR der Plan-Lane (offene Entscheidungen namentlich auflisten, bei mindestens einer den Menschen fragen, Antwort mit 'jaira note' aufs Ticket, dann den Modus setzen) und liest den Modus beim Start vom Ticket statt aus seinem Kontext; jaira-role-lane/SKILL.md legt im Modus nach jedem DoD-Punkt 'git diff' vor und wartet, und committet nicht, sondern gibt die fertige Commit-Zeile mit Handle im Betreff zurueck — aber nur, wenn die Lane Code geaendert hat. Es entsteht kein zweiter Skill und keine zweite Kommandozeile."
 review-gaps: |-
   Drei Befunde, der erste ist ein echter Defekt.
