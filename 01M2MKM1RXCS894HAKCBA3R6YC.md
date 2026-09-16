@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:11:11Z
+updated-at: 2026-09-16T11:11:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
-outcome-what: "Die Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md fragt jetzt das richtige Repository: 'gh repo view' und 'glab repo view' bekommen \"$(git remote get-url origin)\" als Argument, statt die Forge das Basis-Repository selbst waehlen zu lassen. Dazu ein Absatz, der sagt warum, und Sprosse 2 nennt die Felder '.parent.owner.login' / '.parent.name', aus denen das owner/repo des Elternteils zusammengesetzt wird."
-outcome-why: "Der Befund der testing-Lane: ein blankes 'gh repo view' loest das Basis-Repository selbst auf und bevorzugt das Upstream. Auf einem Fork-Clone meldet es isFork:false, Sprosse 1 ('kein Fork') feuert, und Sprosse 2 und 3 sind unerreichbar - der Widerspruchsfall, fuer den dieses Ticket existiert, konnte nie ausloesen. Hier nachgestellt: bare gh gibt BeMuCa/jaira mit isFork:false, mit origin-URL gibt es sashasoft90/jaira mit parent BeMuCa."
-outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' ist jetzt auch auf einem Fork wahr, nicht nur im Text. go build, go vet und go test ./core/role/... gruen."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der glab-Aufruf der Zielrepository-Leiter traegt jetzt '-F json' (:110), ein Halbsatz sagt warum (:118-120), Sprosse 1 liest den Projektpfad aus dieser JSON statt aus der Textausgabe (:139-141), und Sprosse 2 trennt die beiden Forges - GitHub '.parent.owner.login' + '.parent.name', GitLab der forked-from-Eintrag derselben JSON (:144-148)."
+outcome-why: "critique Durchgang 6: auf GitLab hatte die Leiter keine Quelle. 'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder den Fork-Status, nach dem die Leiter verzweigt, noch den Elternteil, den Sprosse 2 lesen soll. Der Durchlauf waere auf GitLab still auf Sprosse 1 (den Fork) gefallen: dieselbe stille Verzweigung, die ca7f53c fuer gh geschlossen hat."
+outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' gilt jetzt auf beiden Forges, nicht nur auf GitHub. go test ./core/role/... gruen."
 review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:110,139-140,144 the GitLab arm of the ladder has no source: 'glab repo view <url>' defaults to -F text, which prints the description and README (glab repo view --help), so it names neither the fork status the ladder branches on nor rung 2's parent; put '-F json' in the code block at :110 and let rung 1 and rung 2 read the path and the fork parent off that JSON instead of 'the path glab repo view printed'"
 review-gaps: "Drei doppelte Stellen entfernt: der Listen-Hinweis im Intro von 'Which repository it goes to' (steht als eigener Abschnitt 'Does it already have one open' direkt darunter), die zweite Definition der Board-Remote in Sprosse 2 (steht im Forge-Abschnitt darueber), und die Selbstbegruendung unter 'Push the branch'. whoami-Absatz von acht auf sieben Zeilen. 1988 -> 1929 Woerter, keine Regel und keine Sprosse der Leiter entfernt. Stehen gelassen: die Mensch/Agent-Regel an drei Stellen (Kopf, 'Open it', Boundaries) - sie steht dort jeweils am Ort der Handlung, nicht als Wiederholung. Keine zweite Implementierung gefunden: die Zielrepository-Leiter existiert im Repository nur einmal. go test ./core/role/... gruen."
 test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter beschreibt in einem Fork-Clone nicht origin, sondern das Upstream — auf genau diesem Board meldet es isFork:false, Sprosse 1 feuert, und der Fork-Fall den das Ticket adressiert wird nie erreicht"
