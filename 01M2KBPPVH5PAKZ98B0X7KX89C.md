@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,10 +26,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:52:53Z
+updated-at: 2026-09-16T06:53:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
+outcome-what: "Plan geschrieben: der Dispatcher wird in core/role/builtin/ nachgezogen, nicht nach .claude/skills/ kopiert"
+outcome-why: "Die Rollen-Infrastruktur mit go:embed und 'jaira roles install' existiert schon; eine zweite Kopie waere genau die Drift, gegen die das Ticket existiert"
+outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink- und Herdr-Frage aus dem Kontext beantwortet"
 ---
 
 # Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree
