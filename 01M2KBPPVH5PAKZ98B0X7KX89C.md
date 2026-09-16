@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:52:17Z
+updated-at: 2026-09-16T06:52:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -49,3 +49,4 @@ claimed-at: 2026-09-16T06:49:05Z
 
 ## Progress
 - **2026-09-16 06:52 · Alexander Sacharov** — Die Praemisse des Tickets ist ueberholt: der Dispatcher liegt laengst im Repository, nur an einem anderen Ort als die DoD sagte. core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh, sie sind per go:embed im Binary und 'jaira roles install' schreibt sie nach ~/.claude/skills. .claude/skills/ waere ein zweiter Ort und damit genau die driftende Zweitkopie, gegen die das Ticket existiert. DoD entsprechend umgeschrieben; Symlink-Frage damit erledigt, das Installationskommando ist der Weg.
+- **2026-09-16 06:52 · Alexander Sacharov** — Der Diff ~/.claude gegen core/role/builtin ist groesser als --no-worktree. Vier Hunks: (1) --no-worktree samt usage() und Flag-Schleife - das ist der Auftrag; (2) Lane-Name 'dispatch' startet /jaira-dispatcher statt /jaira-role-lane - generisch, kommt mit; (3) proj-Variable statt Inline-Ausdruck, reines Refactoring, kommt mit; (4) vier .env-Zeilen VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES - die nennen 'task app:dev' eines anderen Projekts und gehoeren nicht in eine generische Builtin-Rolle. Bleiben draussen, Folgeticket.
