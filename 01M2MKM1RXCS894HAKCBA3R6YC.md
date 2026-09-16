@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:10:22Z
+updated-at: 2026-09-16T08:11:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41880
 claimed-at: 2026-09-16T08:10:22Z
@@ -88,3 +88,16 @@ Weiterhin ungeprüft und Sache der review-Lane: ob 'glab mr list --repo' und 'gl
 Bewusst NICHT Finding, weil Sache der review-Lane: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten glab-Version so heissen, und ob 'gh pr list --head owner:branch' sich so verhaelt. Diese Lane fragt nicht, ob es laeuft.
 
 Ebenfalls stehen gelassen: dass Kopf (:10-25) und Boundaries (:222-224) die Mensch/Agent-Regel wiederholen, obwohl :99 und :184 'nur an einer Stelle' behaupten. Durchgang 1 hat das aufgemacht, der Implementierer hat es begruendet (Rahmen vs. Ausfuehrungsort) - das bleibt so.
+- **2026-09-16 08:11 · Alexander Sacharov** — in-progress (Durchgang 3, nach critique 2) — beide Findings abgearbeitet.
+
+(1) :158 nennt jetzt beide Abschnitte beim Namen ('Skip **Write the description** and **Open it**') statt 'the next section'. Bewusst namentlich und nicht relativ: die Abschnitte dieses Dokuments haben sich in zwei Durchgaengen zweimal verschoben, ein relativer Verweis bricht beim naechsten Umbau erneut und bricht dabei still.
+
+(2) Die Zielrepository-Leiter hat jetzt 3 statt 4 Sprossen und ist disjunkt. Der Fehler war nicht die fehlende Sprosse, sondern die Frage: Sprosse 2 fragte 'ist jaira.remote gesetzt', und 'gesetzt' ist kein Kriterium fuer 'zeigt aufs Upstream' — jaira.remote=origin ist ein gueltiger Zustand (core/settings/remotefor_test.go:74). Sprosse 2 fragt jetzt 'nennt jaira.remote ein DRITTES Repository', und die Faelle unset / =origin / =parent fallen alle auf dieselbe Antwort (Parent), weil sie dieselbe Antwort haben. Dadurch verschwindet die alte Sprosse 3 als eigener Fall.
+
+Verworfen: Sprosse 2 nur einschraenken auf 'und der Remote nennt den Parent'. Dann haette 'jaira.remote=origin' gar keine Sprosse mehr getroffen und die Leiter waere am Ende ohne Antwort dagestanden — ein Loch statt einer Ueberlappung.
+
+Neu im Text davor: 'Resolve both the parent and that URL before you read the ladder'. Ohne das liest ein Modell die Leiter von oben und beantwortet Sprosse 2, bevor es den Parent ueberhaupt abgefragt hat.
+
+NOTES.md-Zeile mitgezogen: sagte 'falls back to the fork's parent when jaira.remote is unset' — das war nach der Umstellung zu eng.
+
+Weiterhin ungeprueft und Sache der review-Lane: die Flagnamen '--repo' / '--target-project' bei der installierten gh/glab-Version und das Verhalten von 'gh pr list --head owner:branch'.
