@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:47:22Z
+updated-at: 2026-09-16T06:47:31Z
 updated-by: Alexander Sacharov
 ---
 
@@ -35,6 +35,7 @@ updated-by: Alexander Sacharov
 - [ ] Ohne dieses Skript legt spawn.sh den worktree an und richtet sonst nichts ein
 - [ ] Weder .env-Kopie noch HTTP_PORT oder DB_PORT_HOST stehen noch in spawn.sh; die Dokumentation zeigt ein Beispielskript, das beides macht
 - [ ] Die Hilfe von 'roles install' sagt, dass eine bearbeitete Datei nicht nur unveraendert bleibt, sondern auch keine Verbesserungen mehr bekommt
+- [ ] Ein Board, das bisher ohne Einrichtungsskript lief, bekommt beim naechsten Arbeiter eine verstaendliche Meldung statt einer stillen Verhaltensaenderung
 
 ## Options
 
