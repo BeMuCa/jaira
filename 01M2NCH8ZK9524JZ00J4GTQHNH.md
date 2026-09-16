@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:53:41Z
+updated-at: 2026-09-16T15:54:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
-outcome-what: "Das Frontmatter-Feld 'mode' mit dem einen Wert 'conversational' quer durch Schema, CLI, TUI und die beiden Rollen-Prompts. Der Dispatcher haelt jetzt VOR der Plan-Lane an, wenn das Ticket noch offene Entscheidungen hat, schreibt die Antworten mit 'jaira note' aufs Ticket und setzt den Modus; der Worker legt in diesem Modus nach jedem DoD-Punkt 'git diff' vor und gibt statt eines Commits die fertige Commit-Zeile mit Handle zurueck. Dazu drei Tests, zwei NOTES.md-Zeilen und der Feld-Eintrag in README.md und docs/AGENTS.md."
-outcome-why: "Ein Ticket, dessen Form noch nicht feststeht, wird autonom geraten - 0YGWXQ hat das mit sieben critique-Runden bezahlt. Der Modus musste auf der Platte landen und nicht in der getippten Zeile, weil nur so ein abgebrochener Lauf nicht stumm wieder autonom weiterfaehrt."
-outcome-resolves: "Alle sechs DoD-Punkte sind getickt und belegt: der Eintritt haengt an der gezaehlten Zahl offener Entscheidungen (dispatcher SKILL.md:31), es bleibt bei einer Dispatcher-Rolle (core/role/builtin/ unveraendert sieben), die Entscheidung steht vor der Arbeit auf dem Ticket und ueberlebt den Abbruch (TestModeSurvivesRoundTrip), der Agent committet nicht mehr selbst sondern gibt die Zeile mit Handle zurueck (role-lane SKILL.md:67), der Code wird nach jedem Inkrement vorgelegt (role-lane SKILL.md:50) und beide NOTES.md-Zeilen stehen unter ## Unreleased."
+outcome-what: "Die drei critique-Befunde repariert. ValidMode ist CanonicalMode geworden und gibt den getrimmten Wert samt Urteil zurueck; beide Schreibwege (internal/cli/tickets.go newSetCmd, internal/tui/edit.go commitEdit) speichern genau diesen Wert, statt zu pruefen und danach das Rohe zu schreiben. row(\"mode\", t.Mode) steht jetzt in beiden Detail-Panes neben row(\"tier\", ...) — internal/cli/tickets.go:709 und internal/tui/view.go:1199 — womit der Eintrag in fieldsWithTheirOwnRow wieder stimmt. Die --no-worktree-Regel steht nur noch einmal, als dritter Fall im bestehenden Absatz des Dispatcher-Prompts; der Bullet im Modus-Abschnitt und Schritt 2 der Schleife verweisen darauf. Dazu zwei Tests (TestSetStoresModeTrimmed, TestShowPrintsModeForPeople) und die erweiterte NOTES.md-Zeile."
+outcome-why: "Alle drei Befunde trafen dieselbe Stelle des Ziels: ein Modus, der auf dem Ticket steht, damit er einen Sitzungsabbruch ueberlebt, nuetzt nichts, wenn er gepolstert gespeichert und vom Worker nicht erkannt wird, oder wenn niemand ohne --json sehen kann, dass er noch an ist. Der dritte Befund war ein Prompt, der sich selbst widersprach — zwei Regeln fuer --no-worktree, und ein Agent, der raet, welche gilt, ist genau das Verhalten, das dieses Ticket abschaffen soll."
+outcome-resolves: "Alle sechs DoD-Punkte bleiben getickt und belegt; zwei Proofs sind nachgezogen. Punkt 3 (der Modus ueberlebt den Abbruch) traegt jetzt zusaetzlich TestShowPrintsModeForPeople, weil ein Modus, den nur --json zeigt, den Abbruch zwar ueberlebt, aber niemandem meldet. Punkt 6 zeigt auf NOTES.md:17/:18. go test ./... -race laeuft durch."
 review-summary: |-
   internal/cli/tickets.go:929 + core/ticket/schema.go:150: ValidMode trimmt, der Schreibpfad nicht — 'jaira set <id> "mode= conversational "' wird akzeptiert und als mode: " conversational " gespeichert, 'show --json' gibt es mit den Leerzeichen zurueck, und der Worker vergleicht laut Prompt auf genau ein Wort. Das ist derselbe Fehlerfall, den TestSetRefusesUnknownMode ausschliessen soll, nur durch die Vordertuer. Entweder das strings.TrimSpace in ValidMode streichen, dann faellt der gepolsterte Wert durch dieselbe Pruefung wie 'Conversational', oder in beiden Schreibpfaden den getrimmten Wert speichern.
   internal/tui/view.go:1199 und internal/cli/tickets.go:709: der Modus steht in keiner Ausgabe fuer Menschen. Beide Detail-Panes drucken row("tier", t.ModelTier), aber kein row("mode", t.Mode); view.go:1099 traegt FieldMode in fieldsWithTheirOwnRow ein, dessen Kommentar 'the fields this pane already has a place for' behauptet — die Zeile gibt es nicht, und laneFields erreicht das Feld ohnehin nie, weil keine Lane es produziert. internal/tui/edit.go:28 laesst es dagegen bearbeiten: schreibbar ueberall, lesbar nur in --json. Je eine Zeile row("mode", t.Mode) neben row("tier", ...); row() ueberspringt Leeres, ein Ticket ohne Modus kostet es also nichts.
