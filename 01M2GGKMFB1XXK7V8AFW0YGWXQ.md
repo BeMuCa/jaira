@@ -45,11 +45,11 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:57:00Z
+updated-at: 2026-09-16T07:57:36Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-32438
-claimed-at: 2026-09-16T07:25:29Z
+claimed-by: DESKTOP-RFTCH11-4281
+claimed-at: 2026-09-16T07:57:36Z
 outcome-what: "logbookOut now switches on milestoneFiled when milestone.Load answers ErrNotExist, so 'jaira logbook <name>' raises refuseFiledInLogbook or refuseFiledOnRef in the two states where the file has left the board. milestoneNamed returns the normalized name alongside the error, the doc comment on the ms.Filed() check now says it covers only the on-disk route, both ref tests drive the logbook door as a third door, and NOTES.md carries a line for the changed answer."
 outcome-why: "critique round 11: the milestone branch of the logbook door is reached through milestone.Load, so once the file is gone — filed here, or a ref-only clone — the branch was never taken and the reader got 'ticket: not found: <name>' while create and add/rm refused the same name as filed. The gap sits upstream of the ms.Filed() check that rounds 7-10 worked on, which is why it survived them."
 outcome-resolves: "No definition-of-done item changed state; all twelve were already met. The change is inside the refusal family DoD 9 and 12 describe, closing its last door."
