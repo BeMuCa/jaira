@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:12:28Z
+updated-at: 2026-09-16T07:12:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -75,3 +75,4 @@ test-verdict: "pass: go build + 'go test -count=1 -race ./...' green (RC=0), GOO
 - **2026-09-16 07:03 · Alexander Sacharov** — critique (2. Durchgang): nichts mehr zu sagen. Alle vier Punkte des ersten Durchgangs sind beantwortet - dispatch steht jetzt in spawn.sh usage(), dispatcher/SKILL.md, teamlead/SKILL.md (mit dem Aufrufbeispiel) und als eigene NOTES.md-Zeile; der ungenutzte Slug steht in usage() und SKILL.md. Bewusst NICHT neu aufgemacht: (a) dass derselbe Satz an vier Stellen steht - genau das hat der erste Durchgang verlangt, die vier Leser sind verschieden; (b) dass JAIRA_NO_WORKTREE nur den Wert 1 akzeptiert und ein 'true' stumm ignoriert - usage() sagt =1, das ist die dokumentierte Schnittstelle; (c) die .claude/skills-Zweitkopie, die in der Pre-Process-Notiz entschieden wurde.
 - **2026-09-16 07:06 · Alexander Sacharov** — optimize: der 'dispatch'-Zweig in spawn.sh (jetzt Zeile 139) ist die erste Haelfte von Ticket RPXJ ('spawn.sh kann nur eine Rolle starten, obwohl der Prompt zwei verlangt'): dort soll testing nach /jaira-role-tester abgebogen werden, hier biegt dispatch nach /jaira-dispatcher ab. Zwei Namen, eine Idee. Bewusst NICHT hier generalisiert - eine Lane-zu-Kommando-Tabelle zu bauen waere Verhaltensaenderung und RPJXs Auftrag, nicht Aufraeumen. Vorbereitet ist es: der Zweig setzt jetzt nur noch $prompt, der send-text-Aufruf steht einmal danach, also kommt RPXJ mit einem weiteren elif durch.
 - **2026-09-16 07:06 · Alexander Sacharov** — optimize: zwei Dinge geprueft und absichtlich gelassen. (1) Der '--)'-Fall in der Flag-Schleife ist Absicherung fuer einen Slug mit Bindestrich, den es auf diesem Board nicht gibt - eine Zeile, und sie zu loeschen waere selbst eine Verhaltensaenderung. (2) 'dir := t.TempDir(); Install(dir, false)' steht jetzt in sechs Tests in core/role/role_test.go - das ist vorbestehende Wiederholung aus fuenf aelteren Tests, nicht von dieser Aenderung eingefuehrt, also hier nicht angefasst.
+- **2026-09-16 07:12 · Alexander Sacharov** — testing: Gates gruen ohne Cache — go build ./..., 'go test -count=1 -race ./...' RC=0, dazu 'GOOS=windows GOARCH=amd64 go vet ./...' und der Windows-Build, weil README:817-828 die vor dem Push verlangt. TestEmbeddedScriptsParse/TestInstallWritesEveryFile/TestDispatcherShipsItsScript einzeln -v gelaufen, alle PASS.
