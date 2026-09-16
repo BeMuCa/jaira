@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:47:32Z
+updated-at: 2026-09-16T07:47:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -591,3 +591,17 @@ CHECKED AND LEFT ALONE: swapping the order is safe where the ref says NOT filed 
 - Logbook-first is also strictly the cheaper path: s.FiledMilestone walks this tree's logbook folders, the ref branch shells out to git. The common case on an unshared board returns before touching git at all.
 - TestTheFilingTreeIsPointedAtItsOwnLogbook was measured against the old order before being kept: with ref-first it fails all three assertions on the add door. A test that passes both ways would not have held this down.
 - The negative assertions matter more than the positive ones here: both refusals name 'jaira restore <name>.md', so only the absence of the ref name and of 'the tree that filed it' tells the two apart.
+- **2026-09-16 07:47 · Alexander Sacharov** — critique round 11, one finding. Round 10's finding is measured fixed and is not re-opened: milestoneFiled (milestones.go:395) asks s.FiledMilestone first and the ref second, and TestTheFilingTreeIsPointedAtItsOwnLogbook drives create and add in the filing tree and asserts the absence of both the ref name and 'the tree that filed it'. That is right and stays.
+
+FINDING: the logbook door falls out of the filed-refusal family whenever the file is not on disk. internal/cli/logbook.go:177 logbookOut tries s.Load(idArg) first, then milestoneNamed(s, idArg) — and milestoneNamed (logbook.go:237) calls milestone.Load, which fails with os.ErrNotExist the moment the file has left the board. So logbookOut returns the TICKET error and the reader is told the name is not a ticket, in the two states where create and add/rm both raise milestone_filed.
+
+Measured, not reasoned. Throwaway test on twoBoards (removed again, nothing left in the worktree):
+  ada, after her own successful 'jaira logbook round-one', run again:   ticket: not found: round-one
+  grace, ref-only clone after 'jaira fetch':                            ticket: not found: round-one
+  grace, same board, 'jaira milestone create round-one':                milestone "round-one" has been filed: its ref refs/jaira/milestones/round-one is marked "filed" — ...
+
+Why this is not round 7's or round 9's finding again. Round 7 guarded the add/rm door. Round 9 folded logbook.go:289 into refuseFiledOnDisk and round 8's test TestEveryDoorIntoAFiledMilestoneSaysTheSameThings drives logbook against a marked file that IS on disk — that path is covered and correct. The uncovered path is the one where milestone.Load itself fails, which is upstream of everything those rounds touched: the ms.Filed() check at logbook.go:288 can only run if there is an ms.
+
+THE FIX, and it is the pattern the package already has: in logbookOut, when milestoneNamed answers os.ErrNotExist, switch on milestoneFiled(s, name) and return refuseFiledInLogbook / refuseFiledOnRef with a closing clause saying what filing would have done — the same three lines as editMembers at milestones.go:249-257. Fall through to the ticket error otherwise, so a genuine ticket typo still reads as one: milestoneFiled answers milestoneNotFiled for every name nobody filed.
+
+Also worth a line while that file is open: the doc comment at logbook.go:283-286 says 'every route to this refusal leaves the file on the board and nothing in this tree's logbook'. That is true of the on-disk check it sits on and false of the door, and it is what makes the gap easy to miss on the next read.
