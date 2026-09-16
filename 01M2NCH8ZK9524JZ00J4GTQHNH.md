@@ -36,7 +36,7 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:38:03Z
+updated-at: 2026-09-16T15:38:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -144,3 +144,10 @@ Wichtigster Befund, weil er eine naheliegende Loesung ausschliesst: der Modus da
    Empfehlung: kein Vorher-Wissen einbauen. Der Worker arbeitet den Punkt, laesst 'git diff' laufen; ist die Ausgabe leer, geht er ohne Pause weiter. Das ist eine Prompt-Zeile und kein Mechanismus, und es kann nicht falsch raten.
 
 Nicht in diesem Ticket, absichtlich: spawn.sh bleibt unveraendert. Der Modus faehrt ueber die Platte, nicht ueber die getippte Zeile — genau deshalb ist 3YRPXJ (spawn.sh nicht erweiterbar) hier KEINE Vorbedingung. Und '--no-worktree', das die Brainstorm-Notiz empfiehlt, ist bereits gebaut; es ist eine Empfehlung im Dispatcher-Prompt, kein Code.
+- **2026-09-16 15:38 · Alexander Sacharov** — In-progress, Befund: das 'mode'-Feld braucht zwei Schreibwege, nicht einen.
+
+Der Plan nennt nur 'jaira set' als Pruefstelle. Das TUI schreibt aber an 'jaira set' vorbei: internal/tui/edit.go commitEdit ruft t.Doc().SetScalar direkt. Haette ich die vier Zeilen nur in internal/cli/tickets.go gelegt, waere 'mode' im TUI-Feldeditor frei beschreibbar geblieben und ein dort getippter Tippfehler haette genau den stummen Fehler erzeugt, den Pre-process-Entscheidung 2 verhindern will.
+
+Deshalb steht die Pruefung als ticket.ValidMode in core/ticket/schema.go und wird von beiden Wegen gerufen. Eine Funktion statt zweier Vergleiche gegen die Konstante, damit CLI und TUI nicht auseinanderdriften koennen.
+
+Zweiter Befund, kleiner: in 'jaira set' muss die Pruefung NACH der --append-Faltung stehen, nicht davor. Davor haette 'jaira set <id> mode=conversational --append' auf einem bereits gesetzten Ticket 'conversational\nconversational' geschrieben - jeder Einzelwert gueltig, das Ergebnis nicht. Sie steht jetzt direkt vor SetScalar.
