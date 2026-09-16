@@ -19,8 +19,16 @@ func newFetchCmd() *cobra.Command {
 	var quiet bool
 	cmd := &cobra.Command{
 		Use:   "fetch",
-		Short: "Fetch the tickets travelling on their own git refs",
-		Long: `Fetches refs/jaira/tickets/* from the board's remote and reports what they say.
+		Short: "Fetch the tickets and milestones travelling on their own git refs",
+		Long: `Fetches refs/jaira/* from the board's remote — the tickets under
+refs/jaira/tickets/* and the milestones under refs/jaira/milestones/* — and
+reports what they say. A milestone whose file is new or newer is written to
+.jaira/milestones/, so the groups a teammate planned arrive with the tickets.
+
+A milestone somebody filed is reported apart from those: its ref carries
+"status: filed", and that line is what keeps a milestone off a board. A file
+you already have is marked with it, so the group leaves your board too; a
+filed milestone you never had is not written at all. Nothing is deleted here.
 
 This is how a ticket assigned to you arrives without anyone sharing a branch:
 the ref carries the whole ticket file, so it is readable with no checkout and
@@ -31,7 +39,8 @@ A ticket newly assigned to you also raises a desktop notification, unless
 notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if _, err := openStore(); err != nil {
+			s, err := openStore()
+			if err != nil {
 				return err
 			}
 			if err := refs.Usable(); err != nil {
@@ -54,13 +63,25 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if !quiet {
 				announceArrivals(arrivals)
 			}
+			// Milestones ride the same fetch and are written straight to
+			// disk: a milestone has no lane and no editor here, the file IS
+			// the interface, so a group that stayed on a ref would be a group
+			// nobody can open.
+			openedMilestones, filedMilestones, err := fetchMilestones(s)
+			if err != nil {
+				return err
+			}
 			departed := refs.Departed()
 			stranded := strandedHere()
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
+					"milestones":       strOrEmpty(openedMilestones),
+					"milestones_filed": strOrEmpty(filedMilestones),
 				})
 			}
+			printMilestones(cmd.OutOrStdout(), openedMilestones)
+			printFiledMilestones(cmd.OutOrStdout(), filedMilestones)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)
@@ -69,6 +90,57 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 	}
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "do not raise a desktop notification")
 	return cmd
+}
+
+// fetchMilestones writes the milestone files this fetch brought, under the
+// same lock every other milestone writer takes. Fetch is the only read path
+// that is also a writer — Incoming() reports arriving tickets and writes no
+// ticket file, milestones are the one thing a fetch puts on disk — and it is
+// not an operator in a second terminal: maybeFetch spawns a detached 'jaira
+// fetch --json' after every command, so this runs beside whatever is typed
+// next. Unlocked it overwrites the Load→mutate→Save of a concurrent 'jaira
+// milestone add', or lands a filed file between that add's Load and its Save,
+// and the add silently un-files a milestone somebody else closed.
+//
+// Only this call is inside the lock: refs.Incoming() has already made the
+// network round trip by the time we get here, and holding a store lock across
+// one would block every milestone write for the length of a fetch.
+func fetchMilestones(s *ticket.Store) (opened, filed []string, err error) {
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer unlock()
+	return refs.IncomingMilestones(s.Root)
+}
+
+// printMilestones says which milestone files this fetch put on disk. Named
+// rather than counted: the reason to care is that a round of work you are in
+// has changed, and that is a name, not a number.
+func printMilestones(w io.Writer, names []string) {
+	if len(names) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones updated from the remote:\n")
+	for _, n := range names {
+		fmt.Fprintf(w, "  %s\n", n)
+	}
+}
+
+// printFiledMilestones says which milestones somebody else has filed. Kept
+// apart from the updated ones: a group that changed is work you look at, a
+// group that was filed is work that has left the board, and reading the second
+// under the first heading would send you looking for a milestone 'jaira
+// milestone ls' no longer names.
+func printFiledMilestones(w io.Writer, names []string) {
+	if len(names) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones filed elsewhere, now off this board:\n")
+	for _, n := range names {
+		fmt.Fprintf(w, "  %s\n", n)
+	}
+	fmt.Fprintf(w, "Whoever filed one brings it back with 'jaira restore <name>.md'.\n")
 }
 
 // announceArrivals raises one notification per ticket newly assigned to this

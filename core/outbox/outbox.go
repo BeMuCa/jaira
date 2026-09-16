@@ -32,6 +32,31 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
+// Kind is which namespace a queued write belongs to: a ticket, keyed by its
+// ulid, or a milestone, keyed by its name.
+//
+// It is part of the path an entry is filed under, not only a field inside it.
+// One flat directory keyed by the bare name would collide the moment somebody
+// named a milestone after a ticket handle — and the collision would be silent,
+// one unsent write overwriting the other.
+type Kind string
+
+const (
+	// KindTicket is a ticket's own ref. It is the zero value's meaning too, so
+	// an entry queued by an older build — which had no kinds and no
+	// subdirectory — still reads back as the ticket write it is.
+	KindTicket Kind = "tickets"
+	// KindMilestone is a milestone file's ref.
+	KindMilestone Kind = "milestones"
+)
+
+func (k Kind) or(def Kind) Kind {
+	if k == "" {
+		return def
+	}
+	return k
+}
+
 // Op is what the queued write does to the ticket's ref.
 type Op string
 
@@ -47,6 +72,10 @@ type Entry struct {
 	ID  string `json:"id"`
 	Op  Op     `json:"op"`
 	Ref string `json:"ref"`
+
+	// Kind says which namespace ID belongs to. Absent on an entry written
+	// before there were two, which means a ticket.
+	Kind Kind `json:"kind,omitempty"`
 
 	// Lease is the ref SHA the remote last confirmed to us, and it is the
 	// compare-and-swap value. It survives being superseded: a second local
@@ -74,39 +103,96 @@ type Box struct{ Dir string }
 // At returns the box for a store's working tree.
 func At(s *ticket.Store) *Box { return &Box{Dir: filepath.Join(s.StateDir(), "outbox")} }
 
-func (b *Box) path(id string) string { return filepath.Join(b.Dir, id+".json") }
+// path is where one entry is filed: a subdirectory per kind, so a milestone
+// named after a ticket handle is a different file rather than the same one.
+// Every caller passes a kind it named itself or one that came back normalized
+// off disk, so there is nothing to default here.
+func (b *Box) path(kind Kind, key string) string {
+	return filepath.Join(b.Dir, string(kind), key+".json")
+}
+
+// legacyPath is where a ticket entry was filed before there were kinds. Still
+// read, so an unsent write queued by an older build is sent rather than
+// quietly forgotten the first time the new build runs; never written.
+func (b *Box) legacyPath(id string) string { return filepath.Join(b.Dir, id+".json") }
 
 // Queue files a write, superseding any earlier unsent write for the same
 // ticket. Superseding is correct rather than lossy: the entry carries the whole
 // ticket, so the newer bytes already contain everything the older ones said.
 func (b *Box) Queue(id string, op Op, content []byte, lease, by string) error {
-	if strings.TrimSpace(id) == "" {
-		return errors.New("outbox: no ticket id")
+	return b.queueKind(KindTicket, id, op, content, lease, by)
+}
+
+// QueueMilestone files a pending write of a milestone file, under the same
+// rules: whole content, the lease the remote last confirmed, superseding any
+// earlier unsent write of the same milestone.
+func (b *Box) QueueMilestone(name string, op Op, content []byte, lease, by string) error {
+	return b.queueKind(KindMilestone, name, op, content, lease, by)
+}
+
+// queueKind is what both of those are.
+func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by string) error {
+	if strings.TrimSpace(key) == "" {
+		return errors.New("outbox: no id")
+	}
+	ref := gitref.RefName(key)
+	if kind == KindMilestone {
+		ref = gitref.MilestoneRefName(key)
 	}
 	now := time.Now().UTC()
 	e := Entry{
-		ID: id, Op: op, Ref: gitref.RefName(id),
+		ID: key, Op: op, Ref: ref, Kind: kind,
 		Lease: lease, Content: string(content),
 		QueuedAt: now, UpdatedAt: now, By: by,
 	}
-	if old, ok := b.Pending(id); ok {
+	if old, ok := b.pendingKind(kind, key); ok {
 		e.Lease = old.Lease
 		e.QueuedAt = old.QueuedAt
 	}
-	if err := os.MkdirAll(b.Dir, 0o755); err != nil {
+	path := b.path(kind, key)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
 		return err
 	}
-	return ticket.WriteAtomic(b.path(id), append(data, '\n'))
+	if err := ticket.WriteAtomic(path, append(data, '\n')); err != nil {
+		return err
+	}
+	// An entry an older build filed at the flat path has just been superseded
+	// by this one, so it goes. Left behind it would be a second entry for the
+	// same ticket: List would return both, the flush would send the stale
+	// content first, and the newer write would then carry a lease the remote
+	// no longer has.
+	if kind == KindTicket {
+		if err := os.Remove(b.legacyPath(key)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 // Pending returns the unsent write for one ticket, if there is one. The board
 // asks this to mark a card as carrying something not yet sent.
-func (b *Box) Pending(id string) (Entry, bool) {
-	data, err := os.ReadFile(b.path(id))
+func (b *Box) Pending(id string) (Entry, bool) { return b.pendingKind(KindTicket, id) }
+
+// pendingKind reads one entry. A ticket is also looked for at the flat path an
+// older build used, so upgrading does not strand a queued write.
+func (b *Box) pendingKind(kind Kind, key string) (Entry, bool) {
+	e, ok := readEntry(b.path(kind, key))
+	if !ok && kind == KindTicket {
+		e, ok = readEntry(b.legacyPath(key))
+	}
+	if !ok {
+		return Entry{}, false
+	}
+	e.Kind = e.Kind.or(KindTicket)
+	return e, true
+}
+
+func readEntry(path string) (Entry, bool) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return Entry{}, false
 	}
@@ -121,7 +207,34 @@ func (b *Box) Pending(id string) (Entry, bool) {
 // sorting by id is chronological by creation; QueuedAt orders by when the write
 // was filed, which is what a flush should follow.
 func (b *Box) List() ([]Entry, error) {
-	entries, err := os.ReadDir(b.Dir)
+	var out []Entry
+	// The flat level first: entries an older build left behind, which are
+	// tickets by definition.
+	flat, err := b.readDir(b.Dir, KindTicket)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, flat...)
+	for _, kind := range []Kind{KindTicket, KindMilestone} {
+		got, err := b.readDir(filepath.Join(b.Dir, string(kind)), kind)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, got...)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].QueuedAt.Equal(out[j].QueuedAt) {
+			return out[i].ID < out[j].ID
+		}
+		return out[i].QueuedAt.Before(out[j].QueuedAt)
+	})
+	return out, nil
+}
+
+// readDir reads the entries filed in one directory, as one kind. A missing
+// directory is not an error: it means nothing of that kind is waiting.
+func (b *Box) readDir(dir string, kind Kind) ([]Entry, error) {
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -133,24 +246,29 @@ func (b *Box) List() ([]Entry, error) {
 		if de.IsDir() || !strings.HasSuffix(de.Name(), ".json") {
 			continue
 		}
-		id := strings.TrimSuffix(de.Name(), ".json")
-		if e, ok := b.Pending(id); ok {
-			out = append(out, e)
+		e, ok := readEntry(filepath.Join(dir, de.Name()))
+		if !ok {
+			continue
 		}
+		e.Kind = e.Kind.or(kind)
+		out = append(out, e)
 	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].QueuedAt.Equal(out[j].QueuedAt) {
-			return out[i].ID < out[j].ID
-		}
-		return out[i].QueuedAt.Before(out[j].QueuedAt)
-	})
 	return out, nil
 }
 
 // Drop removes a queued write.
-func (b *Box) Drop(id string) error {
-	err := os.Remove(b.path(id))
-	if err != nil && !os.IsNotExist(err) {
+func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
+
+// dropKind removes a queued write of either kind, including one an older build
+// filed at the flat path.
+func (b *Box) dropKind(kind Kind, key string) error {
+	if err := os.Remove(b.path(kind, key)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if kind != KindTicket {
+		return nil
+	}
+	if err := os.Remove(b.legacyPath(key)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil
@@ -163,6 +281,7 @@ func (b *Box) Drop(id string) error {
 type Sender interface {
 	Write(id string, content []byte, lease string) (string, error)
 	Delete(id, lease string) error
+	WriteMilestone(name string, content []byte, lease string) (string, error)
 }
 
 // Outcome is what became of one queued write during a flush.
@@ -186,6 +305,7 @@ const (
 // Result reports one entry's fate.
 type Result struct {
 	ID      string
+	Kind    Kind
 	Op      Op
 	Outcome Outcome
 	Err     error
@@ -208,35 +328,50 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 	}
 	var results []Result
 	for _, e := range entries {
-		var sendErr error
-		switch e.Op {
-		case OpDelete:
-			sendErr = s.Delete(e.ID, e.Lease)
-		case OpWrite:
-			_, sendErr = s.Write(e.ID, []byte(e.Content), e.Lease)
-		default:
-			results = append(results, Result{ID: e.ID, Op: e.Op, Outcome: Failed,
-				Err: fmt.Errorf("outbox: unknown op %q", e.Op)})
-			continue
-		}
+		kind := e.Kind.or(KindTicket)
+		sendErr := send(s, kind, e)
 
 		switch {
 		case sendErr == nil:
-			if err := b.Drop(e.ID); err != nil {
+			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
-			results = append(results, Result{ID: e.ID, Op: e.Op, Outcome: Sent})
+			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Sent})
 		case errors.Is(sendErr, gitref.ErrRaceLost):
-			if err := b.Drop(e.ID); err != nil {
+			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
-			results = append(results, Result{ID: e.ID, Op: e.Op, Outcome: Rejected, Err: sendErr})
+			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
 		case errors.Is(sendErr, gitref.ErrOffline), errors.Is(sendErr, gitref.ErrNoGit):
-			results = append(results, Result{ID: e.ID, Op: e.Op, Outcome: Unsent, Err: sendErr})
+			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Unsent, Err: sendErr})
 			return results, nil
 		default:
-			results = append(results, Result{ID: e.ID, Op: e.Op, Outcome: Failed, Err: sendErr})
+			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Failed, Err: sendErr})
 		}
 	}
 	return results, nil
+}
+
+// send picks the transport call for one entry. An op nothing recognises comes
+// back as an error, which Flush reports as Failed and leaves queued: the entry
+// is unreadable, not unwanted.
+//
+// A milestone is only ever written, never deleted: no command deletes one —
+// removing a milestone is rm on its file — so there is nothing to queue.
+func send(s Sender, kind Kind, e Entry) error {
+	if kind == KindMilestone {
+		if e.Op != OpWrite {
+			return fmt.Errorf("outbox: unknown milestone op %q", e.Op)
+		}
+		_, err := s.WriteMilestone(e.ID, []byte(e.Content), e.Lease)
+		return err
+	}
+	switch e.Op {
+	case OpDelete:
+		return s.Delete(e.ID, e.Lease)
+	case OpWrite:
+		_, err := s.Write(e.ID, []byte(e.Content), e.Lease)
+		return err
+	}
+	return fmt.Errorf("outbox: unknown op %q", e.Op)
 }

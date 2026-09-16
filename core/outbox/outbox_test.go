@@ -3,6 +3,7 @@ package outbox_test
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -40,6 +41,15 @@ func (f *fakeSender) Delete(id, lease string) error {
 	}
 	f.wrote = append(f.wrote, id+":deleted")
 	return nil
+}
+
+func (f *fakeSender) WriteMilestone(name string, content []byte, lease string) (string, error) {
+	f.seen[name] = lease
+	if err := f.err[name]; err != nil {
+		return "", err
+	}
+	f.wrote = append(f.wrote, "milestone/"+name+":"+string(content))
+	return "sha-" + name, nil
 }
 
 func box(t *testing.T) *outbox.Box {
@@ -305,5 +315,47 @@ func run(t *testing.T, dir, name string, args ...string) {
 	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("%s %s: %v\n%s", name, strings.Join(args, " "), err, out)
+	}
+}
+
+// An older build filed a ticket's pending write flat in the outbox directory,
+// without a kind. That entry is still read, so upgrading does not strand it —
+// but once this build queues the same ticket again, the flat file has to go.
+// Left behind, List hands the flush two entries for one ticket: the stale
+// content goes out first, and the newer write then carries a lease the remote
+// no longer has.
+func TestQueueSupersedesTheEntryAnOlderBuildLeft(t *testing.T) {
+	b := box(t)
+	id := "01HQ0000000000000000000001"
+	legacy := filepath.Join(b.Dir, id+".json")
+	if err := os.MkdirAll(b.Dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := fmt.Sprintf(`{"id":%q,"op":"write","ref":%q,"lease":"old-sha","content":"stale","queued-at":"2020-01-01T00:00:00Z","updated-at":"2020-01-01T00:00:00Z"}`,
+		id, gitref.RefName(id))
+	if err := os.WriteFile(legacy, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := b.Queue(id, outbox.OpWrite, []byte("fresh"), "ignored", "tester"); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := b.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("want one pending entry for %s, got %d: %+v", id, len(list), list)
+	}
+	if list[0].Content != "fresh" {
+		t.Errorf("pending content = %q, want the newer bytes", list[0].Content)
+	}
+	// The lease is the remote's, not ours, so it survives being superseded.
+	if list[0].Lease != "old-sha" {
+		t.Errorf("lease = %q, want the one the older entry carried", list[0].Lease)
+	}
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		t.Errorf("flat entry still on disk at %s", legacy)
 	}
 }

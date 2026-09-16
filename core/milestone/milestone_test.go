@@ -1,0 +1,330 @@
+package milestone
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+// write puts a milestone file on disk verbatim, the way a person editing it
+// by hand would leave it.
+func write(t *testing.T, root, name, body string) {
+	t.Helper()
+	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(root, name), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+const idA = "01M2GGKMFB1XXK7V8AFW0YGWXQ"
+const idB = "01M2GGKMFB1XXK7V8AFW0S1VM4"
+const idC = "01M2GGKMFB1XXK7V8AFW0ZZSFT"
+
+// A milestone file is edited by hand, so a write must give the file back the
+// way it was found: comments, blank lines and a chosen order included. This is
+// what makes the format the API rather than an implementation detail.
+func TestSaveKeepsHandEditsVerbatim(t *testing.T) {
+	root := t.TempDir()
+	body := "---\n" +
+		"name: round-one\n" +
+		"color: 45\n" +
+		"created-at: 2026-09-15T10:00:00Z\n" +
+		"---\n" +
+		"\n" +
+		"# round one\n" +
+		"\n" +
+		"<!-- the two that matter first -->\n" +
+		"- " + idC + "  # the tail of the queue\n" +
+		"\n" +
+		"- " + idA + "\n" +
+		"\n" +
+		"not a member line at all\n"
+	write(t, root, "round-one", body)
+
+	m, err := Load(root, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Name != "round-one" || m.Colour != 45 {
+		t.Errorf("Load() = name %q colour %d, want round-one/45", m.Name, m.Colour)
+	}
+	if want := "2026-09-15T10:00:00Z"; m.CreatedAt.UTC().Format(time.RFC3339) != want {
+		t.Errorf("created-at = %v, want %s", m.CreatedAt, want)
+	}
+	got := m.Members()
+	if len(got) != 2 || got[0] != idC || got[1] != idA {
+		t.Errorf("Members() = %v, want file order [%s %s]", got, idC, idA)
+	}
+
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, err := os.ReadFile(Path(root, "round-one"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(back) != body {
+		t.Errorf("Save() rewrote a hand-edited file.\n got:\n%s\nwant:\n%s", back, body)
+	}
+}
+
+// Add appends one line and Remove drops one line. Everything around them —
+// the comment, the blank lines, the order — has to be where it was, because
+// twenty tickets grouped in one edit is the whole point of the file.
+func TestAddAndRemoveTouchOneLine(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "round-two", "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- "+idA+"\n")
+
+	m, err := Load(root, "round-two")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !m.Add(idB) {
+		t.Fatal("Add() of a new member reported no change")
+	}
+	if m.Add(idB) {
+		t.Error("Add() of a member already there reported a change")
+	}
+	if !m.Remove(idA) {
+		t.Fatal("Remove() of a member reported no change")
+	}
+	if m.Remove(idA) {
+		t.Error("Remove() of a non-member reported a change")
+	}
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	want := "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- " + idB + "\n"
+	back, err := os.ReadFile(Path(root, "round-two"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(back) != want {
+		t.Errorf("after Add/Remove:\n got:\n%s\nwant:\n%s", back, want)
+	}
+}
+
+// A board with no milestones is the state every board starts in, and one
+// unreadable file must not be able to stop the board from opening.
+func TestLoadAllToleratesAbsenceAndJunk(t *testing.T) {
+	root := t.TempDir()
+	all, err := LoadAll(root)
+	if err != nil || len(all) != 0 {
+		t.Fatalf("LoadAll() on a fresh board = %v, %v; want no milestones and no error", all, err)
+	}
+	write(t, root, "beta", "---\nname: beta\ncolor: 40\n---\n- "+idA+"\n")
+	write(t, root, "alpha", "nothing here is frontmatter\n")
+	if err := os.WriteFile(filepath.Join(Dir(root), "notes.txt"), []byte("ignored"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	all, err = LoadAll(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 || all[0].Name != "alpha" || all[1].Name != "beta" {
+		t.Fatalf("LoadAll() = %d milestones, want alpha then beta", len(all))
+	}
+}
+
+// The index runs the other way from the file, and a ticket may sit in more
+// than one milestone — which is exactly what carrying work over looks like
+// until somebody removes the old line.
+func TestIndexAnswersPerTicketAndAllowsMultipleMembership(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "alpha", "---\nname: alpha\ncolor: 33\n---\n- "+idA+"\n- "+idB+"\n")
+	write(t, root, "beta", "---\nname: beta\ncolor: 40\n---\n- "+idA+"\n")
+
+	all, err := LoadAll(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx := Build(all)
+	if got := idx.Names(idA); len(got) != 2 || got[0] != "alpha" || got[1] != "beta" {
+		t.Errorf("Names(%s) = %v, want [alpha beta]", idA, got)
+	}
+	if got := idx.Names(idC); len(got) != 0 {
+		t.Errorf("Names(%s) = %v, want nothing", idC, got)
+	}
+	if !idx.Matches(idB, "Alpha") {
+		t.Error("Matches() should normalize the wanted name, like a tag filter does")
+	}
+	if idx.Matches(idB, "alph") {
+		t.Error("Matches() must compare whole names, not substrings")
+	}
+	if idx.Matches(idB, "") {
+		t.Error("Matches() on an impossible name should answer no, not panic")
+	}
+}
+
+// Nobody picks a milestone colour, and two milestones on one board must not
+// share one while the palette still has room.
+func TestAssignColourAvoidsTheOnesInUse(t *testing.T) {
+	var existing []*Milestone
+	for _, c := range Palette[:len(Palette)-1] {
+		existing = append(existing, &Milestone{Colour: c})
+	}
+	got := AssignColour(existing, "last-one")
+	if got != Palette[len(Palette)-1] {
+		t.Errorf("AssignColour() = %d, want the one free colour %d", got, Palette[len(Palette)-1])
+	}
+	full := append(existing, &Milestone{Colour: Palette[len(Palette)-1]})
+	a := AssignColour(full, "spent")
+	b := AssignColour(full, "spent")
+	if a != b {
+		t.Errorf("an exhausted palette gave %d then %d; a repeat has to be stable per name", a, b)
+	}
+}
+
+// A milestone jaira just created has to be one it can read back, or the first
+// thing anybody does with the feature breaks.
+func TestNewRoundTrips(t *testing.T) {
+	root := t.TempDir()
+	m := New("round-three", 71, time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC))
+	if !m.Add(idA) {
+		t.Fatal("Add() on a fresh milestone reported no change")
+	}
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Load(root, "round-three")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if back.Name != "round-three" || back.Colour != 71 || !back.Has(idA) {
+		t.Errorf("round trip lost something: %+v members %v", back, back.Members())
+	}
+}
+
+// The status is one line in the frontmatter, and setting or clearing it must
+// leave every other line where it was — the same promise Add and Remove make,
+// because the file a person filed is the file they get back on a restore.
+func TestSetStatusTouchesOneLineOnly(t *testing.T) {
+	root := t.TempDir()
+	body := "---\n" +
+		"color: 45\n" +
+		"<!-- picked by hand -->\n" +
+		"created-at: 2026-09-15T10:00:00Z\n" +
+		"---\n" +
+		"\n" +
+		"# round one\n" +
+		"\n" +
+		"- " + idA + "\n"
+	write(t, root, "round-one", body)
+
+	m, err := Load(root, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Filed() {
+		t.Error("a file with no status line reports as filed; no line means on the board")
+	}
+	m.SetStatus(StatusFiled)
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Load(root, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !back.Filed() {
+		t.Errorf("status did not read back: %q", back.Status)
+	}
+	if got := back.Members(); len(got) != 1 || got[0] != idA {
+		t.Errorf("Members() = %v after SetStatus, want [%s]", got, idA)
+	}
+	raw, err := os.ReadFile(Path(root, "round-one"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(raw), "\n") != strings.Count(body, "\n")+1 {
+		t.Errorf("SetStatus changed more than one line:\n%s", raw)
+	}
+	for _, line := range strings.Split(strings.TrimSuffix(body, "\n"), "\n") {
+		if !strings.Contains(string(raw), line+"\n") {
+			t.Errorf("line %q did not survive SetStatus:\n%s", line, raw)
+		}
+	}
+
+	// Clearing it puts the file back exactly as it was: restore has to undo
+	// filing, not leave a spent line behind.
+	back.SetStatus("")
+	if err := back.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	raw, err = os.ReadFile(Path(root, "round-one"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw) != body {
+		t.Errorf("clearing the status did not restore the file.\n got:\n%s\nwant:\n%s", raw, body)
+	}
+}
+
+// A hand-written file is allowed to have no frontmatter at all. It still has
+// to be filable, so it is given one rather than losing the status silently.
+func TestSetStatusGivesAFileWithoutFrontmatterOne(t *testing.T) {
+	root := t.TempDir()
+	body := "# round two\n\n- " + idB + "\n"
+	write(t, root, "round-two", body)
+
+	m, err := Load(root, "round-two")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.SetStatus(StatusFiled)
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Load(root, "round-two")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !back.Filed() {
+		t.Errorf("status did not read back from a file that had no frontmatter: %q", back.Status)
+	}
+	if got := back.Members(); len(got) != 1 || got[0] != idB {
+		t.Errorf("Members() = %v, want [%s]", got, idB)
+	}
+	raw, err := os.ReadFile(Path(root, "round-two"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(string(raw), body) {
+		t.Errorf("the original lines did not survive:\n%s", raw)
+	}
+}
+
+// The status line is what takes a milestone off the board, not where its file
+// happens to lie: a filing that marked the file and got no further, and a
+// fetch that wrote a marked file back, both leave one here, and neither is a
+// milestone anybody is planning.
+func TestLoadAllLeavesOutAFiledMilestone(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "open", "---\ncolor: 40\n---\n- "+idA+"\n")
+	write(t, root, "closed", "---\ncolor: 33\nstatus: filed\n---\n- "+idB+"\n")
+
+	all, err := LoadAll(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 1 || all[0].Name != "open" {
+		t.Fatalf("LoadAll() = %v, want only the open milestone", names(all))
+	}
+	// Read by name it is still there, which is what a restore needs.
+	ms, err := Load(root, "closed")
+	if err != nil || !ms.Filed() {
+		t.Fatalf("Load(closed) = %v, %v; want the filed milestone", ms, err)
+	}
+}
+
+func names(all []*Milestone) []string {
+	out := make([]string, 0, len(all))
+	for _, m := range all {
+		out = append(out, m.Name)
+	}
+	return out
+}

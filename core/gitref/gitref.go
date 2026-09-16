@@ -36,7 +36,24 @@ import (
 // default refspec does not fetch it, so these refs are invisible to anyone who
 // does not ask for them, and they never show up as branches or in a hosting
 // provider's web UI.
-const Prefix = "refs/jaira/tickets/"
+const Prefix = Root + "tickets/"
+
+// Root is the namespace both kinds of ref live under. There are two kinds
+// because two different things travel this way: a ticket, keyed by its id, and
+// a milestone, keyed by its name. They are kept apart by a path segment rather
+// than sharing one flat space — a milestone called "0YGWXQ" and a ticket whose
+// handle is 0YGWXQ would otherwise be one ref, and whichever was written last
+// would silently be the other one's content.
+const Root = "refs/jaira/"
+
+// MilestonePrefix is where a milestone file travels. Same reasoning as a
+// ticket's ref, for the same reason: the group a round of work is planned in
+// has to reach everybody without waiting for a branch to be merged, or the one
+// file everybody is supposed to read is the one file nobody has.
+const MilestonePrefix = Root + "milestones/"
+
+// MilestoneRefName is the ref a milestone travels on.
+func MilestoneRefName(name string) string { return MilestonePrefix + name }
 
 // DefaultRemote is where refs go when nothing is configured.
 const DefaultRemote = "origin"
@@ -213,8 +230,17 @@ func (r *Repo) value(args ...string) (string, error) {
 // SHA returns the commit the ticket's local ref points at, or ErrNoRef. This
 // SHA is the lease: every write is a compare-and-swap against the value the
 // writer last read.
-func (r *Repo) SHA(id string) (string, error) {
-	out, _, err := r.run("", "rev-parse", "--verify", "--quiet", RefName(id))
+func (r *Repo) SHA(id string) (string, error) { return r.refSHA(RefName(id)) }
+
+// MilestoneSHA is the lease for a milestone's ref, exactly as SHA is for a
+// ticket's.
+func (r *Repo) MilestoneSHA(name string) (string, error) { return r.refSHA(MilestoneRefName(name)) }
+
+// refSHA is what both of those are: one ref, one compare-and-swap value. The
+// kind of thing on the ref changes nothing about how it is read, which is why
+// the second namespace costs a path segment rather than a second mechanism.
+func (r *Repo) refSHA(ref string) (string, error) {
+	out, _, err := r.run("", "rev-parse", "--verify", "--quiet", ref)
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return "", err
@@ -228,17 +254,28 @@ func (r *Repo) SHA(id string) (string, error) {
 }
 
 // Read returns the ticket file carried by the local ref.
-func (r *Repo) Read(id string) ([]byte, string, error) {
-	sha, err := r.SHA(id)
+func (r *Repo) Read(id string) ([]byte, string, error) { return r.refRead(RefName(id), id) }
+
+// ReadMilestone returns the milestone file carried by the local ref, with the
+// SHA that is the lease for writing it back.
+func (r *Repo) ReadMilestone(name string) ([]byte, string, error) {
+	return r.refRead(MilestoneRefName(name), name)
+}
+
+// refRead reads the one file a jaira ref carries: <name>.md at its root, named
+// after whatever the ref is keyed by. One file per ref rather than a directory,
+// so reading is a single git show and a ref can never hold two answers.
+func (r *Repo) refRead(ref, name string) ([]byte, string, error) {
+	sha, err := r.refSHA(ref)
 	if err != nil {
 		return nil, "", err
 	}
-	out, errb, runErr := r.run("", "show", sha+":"+id+".md")
+	out, errb, runErr := r.run("", "show", sha+":"+name+".md")
 	if runErr != nil {
 		if errors.Is(runErr, ErrNoGit) {
 			return nil, "", runErr
 		}
-		return nil, "", fmt.Errorf("gitref: ref %s carries no %s.md: %s", RefName(id), id, strings.TrimSpace(errb))
+		return nil, "", fmt.Errorf("gitref: ref %s carries no %s.md: %s", ref, name, strings.TrimSpace(errb))
 	}
 	return []byte(out), sha, nil
 }
@@ -280,15 +317,27 @@ func (r *Repo) ReadParent(id string) ([]byte, error) {
 // An empty lease means "no ref yet" and requires the remote to have none
 // either.
 func (r *Repo) Write(id string, content []byte, lease string) (string, error) {
+	return r.refWrite(RefName(id), id, content, lease)
+}
+
+// WriteMilestone puts a milestone file on its ref and pushes it, under the same
+// compare-and-swap as a ticket. A milestone is edited by hand as often as by
+// jaira, so losing a race here means the same thing it means for a ticket: the
+// caller's bytes are stale and must be re-read, never force-pushed over.
+func (r *Repo) WriteMilestone(name string, content []byte, lease string) (string, error) {
+	return r.refWrite(MilestoneRefName(name), name, content, lease)
+}
+
+func (r *Repo) refWrite(ref, name string, content []byte, lease string) (string, error) {
 	blob, err := r.hashObject(content)
 	if err != nil {
 		return "", err
 	}
-	tree, err := r.mktree(id+".md", blob)
+	tree, err := r.mktree(name+".md", blob)
 	if err != nil {
 		return "", err
 	}
-	args := []string{"commit-tree", tree, "-m", "jaira: " + id}
+	args := []string{"commit-tree", tree, "-m", "jaira: " + name}
 	if lease != "" {
 		args = append(args, "-p", lease)
 	}
@@ -296,12 +345,12 @@ func (r *Repo) Write(id string, content []byte, lease string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := r.push(id, commit, lease); err != nil {
+	if err := r.pushRefspec(ref, commit+":"+ref, lease); err != nil {
 		return "", err
 	}
 	// Only now is the local ref moved: it records what the remote accepted, so
 	// the next lease is a SHA the remote has really seen.
-	if _, err := r.value("update-ref", RefName(id), commit); err != nil {
+	if _, err := r.value("update-ref", ref, commit); err != nil {
 		return commit, err
 	}
 	return commit, nil
@@ -311,10 +360,11 @@ func (r *Repo) Write(id string, content []byte, lease string) (string, error) {
 // archived ticket is off the board, and leaving its ref behind would keep it on
 // everybody else's.
 func (r *Repo) Delete(id, lease string) error {
-	if err := r.pushRefspec(id, ":"+RefName(id), lease); err != nil {
+	ref := RefName(id)
+	if err := r.pushRefspec(ref, ":"+ref, lease); err != nil {
 		return err
 	}
-	_, _, _ = r.run("", "update-ref", "-d", RefName(id))
+	_, _, _ = r.run("", "update-ref", "-d", ref)
 	return nil
 }
 
@@ -572,7 +622,12 @@ func (r *Repo) Landed(id string, branches []string) string {
 // everyone else's board forever, deleted for its owner and immortal for
 // everyone else.
 func (r *Repo) Fetch() error {
-	_, errb, err := r.run("", "fetch", "--quiet", "--prune", r.remote(), "+"+Prefix+"*:"+Prefix+"*")
+	// Root, not Prefix: one fetch brings both kinds of ref, so a milestone
+	// arrives on the same refresh its tickets do. Fetching them separately
+	// would mean a board that shows a group nobody here has the file for, or
+	// a file naming tickets that have not arrived — either way a half-state
+	// somebody has to explain.
+	_, errb, err := r.run("", "fetch", "--quiet", "--prune", r.remote(), "+"+Root+"*:"+Root+"*")
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return err
@@ -583,12 +638,17 @@ func (r *Repo) Fetch() error {
 }
 
 // List returns the ticket ids that have a local ref.
-func (r *Repo) List() ([]string, error) {
-	out, err := r.value("for-each-ref", "--format=%(refname)", Prefix)
+func (r *Repo) List() ([]string, error) { return r.listNames(Prefix) }
+
+// ListMilestones returns the milestone names that have a local ref.
+func (r *Repo) ListMilestones() ([]string, error) { return r.listNames(MilestonePrefix) }
+
+func (r *Repo) listNames(prefix string) ([]string, error) {
+	out, err := r.value("for-each-ref", "--format=%(refname)", prefix)
 	if err != nil {
 		return nil, err
 	}
-	return idsFrom(out, func(line string) string { return line }), nil
+	return namesFrom(out, prefix, func(line string) string { return line }), nil
 }
 
 // ListRemote asks the remote which tickets exist, without fetching them. One
@@ -601,7 +661,8 @@ func (r *Repo) ListRemote() ([]string, error) {
 		}
 		return nil, classify(errb, err)
 	}
-	return idsFrom(out, func(line string) string {
+	// ls-remote prints "<sha>\t<ref>"; the ref is what carries the id.
+	return namesFrom(out, Prefix, func(line string) string {
 		if i := strings.IndexAny(line, " \t"); i >= 0 {
 			return strings.TrimSpace(line[i:])
 		}
@@ -609,19 +670,23 @@ func (r *Repo) ListRemote() ([]string, error) {
 	}), nil
 }
 
-func idsFrom(out string, refOf func(string) string) []string {
-	var ids []string
+// namesFrom pulls the keys out of a list of refs under one prefix. The prefix
+// is a parameter rather than the package constant because there are two
+// namespaces now, and a reader of ticket refs that silently accepted milestone
+// refs would hand the board a milestone name where it expects a ulid.
+func namesFrom(out, prefix string, refOf func(string) string) []string {
+	var names []string
 	for _, line := range strings.Split(out, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
 		ref := refOf(line)
-		if id := strings.TrimPrefix(ref, Prefix); id != ref && id != "" {
-			ids = append(ids, id)
+		if name := strings.TrimPrefix(ref, prefix); name != ref && name != "" {
+			names = append(names, name)
 		}
 	}
-	return ids
+	return names
 }
 
 func (r *Repo) hashObject(content []byte) (string, error) {
@@ -647,12 +712,8 @@ func (r *Repo) mktree(name, blob string) (string, error) {
 	return strings.TrimSpace(out), nil
 }
 
-func (r *Repo) push(id, commit, lease string) error {
-	return r.pushRefspec(id, commit+":"+RefName(id), lease)
-}
-
-func (r *Repo) pushRefspec(id, refspec, lease string) error {
-	args := []string{"push", "--force-with-lease=" + RefName(id) + ":" + lease, r.remote(), refspec}
+func (r *Repo) pushRefspec(ref, refspec, lease string) error {
+	args := []string{"push", "--force-with-lease=" + ref + ":" + lease, r.remote(), refspec}
 	_, errb, err := r.run("", args...)
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {

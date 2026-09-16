@@ -1,0 +1,475 @@
+package cli
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/outbox"
+	"github.com/BeMuCa/jaira/core/ticket"
+)
+
+// runAndSend runs a command the way the binary does: the queued write is sent
+// after the command, not during it, so a test that only calls runCLI leaves
+// everything sitting in the outbox.
+func runAndSend(t *testing.T, dir string, args ...string) (string, error) {
+	t.Helper()
+	out, err := runCLI(t, dir, args...)
+	flushRefs()
+	return out, err
+}
+
+// twoBoards builds one bare remote and two real clones with a board in each,
+// standing in for two teammates. Nothing is faked: the claim under test is
+// about git refs, and a fake would only prove the fake behaves as assumed.
+func twoBoards(t *testing.T) (ada, grace string) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("JAIRA_HOME", home)
+	t.Setenv("JAIRA_LANES_DIR", filepath.Join(root, "no-lanes"))
+
+	bare := filepath.Join(root, "board.git")
+	gitRun(t, root, "init", "--bare", "--quiet", bare)
+	mk := func(name string) string {
+		dir := filepath.Join(root, name)
+		gitRun(t, root, "clone", "--quiet", bare, dir)
+		gitRun(t, dir, "config", "user.name", name)
+		gitRun(t, dir, "config", "user.email", name+"@example.test")
+		if out, err := runCLI(t, dir, "init"); err != nil {
+			t.Fatalf("init %s: %v\n%s", name, err, out)
+		}
+		return dir
+	}
+	return mk("ada"), mk("grace")
+}
+
+// The reason a milestone travels on a ref: it is the one file everybody plans
+// from, so it has to arrive without anyone merging a branch. If it waited for
+// a merge, the file everybody is supposed to read would be the file nobody
+// has.
+func TestAMilestoneReachesTheOtherCloneWithoutAMerge(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	// Nothing was committed, let alone merged: an unshared board gitignores
+	// .jaira entirely, so the milestone file is in no commit anywhere and the
+	// ref is the only way it can travel.
+	if out := gitOut(t, ada, "for-each-ref", "refs/heads/"); strings.TrimSpace(out) != "" {
+		t.Fatalf("the clone has branches, so this test would not prove the ref carried it:\n%s", out)
+	}
+
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(grace, "round-one")
+	if err != nil {
+		t.Fatalf("grace does not have the milestone after a fetch: %v", err)
+	}
+	if ms.Name != "round-one" {
+		t.Errorf("grace's milestone is %q", ms.Name)
+	}
+	out, err := runCLI(t, grace, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "round-one") {
+		t.Errorf("'milestone ls' in grace's clone does not show it:\n%s", out)
+	}
+}
+
+// Adding tickets to a milestone is an edit of the same file, and it has to
+// reach the other side the same way — otherwise grouping twenty tickets is one
+// edit that only one person can see.
+func TestAddingToAMilestoneReachesTheOtherClone(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "create", "the thing", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	h := handleFromList(t, ada, "the thing")
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create milestone: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "milestone", "add", "round-one", h); err != nil {
+		t.Fatalf("add: %v\n%s", err, out)
+	}
+
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(grace, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ms.Members()) != 1 {
+		t.Fatalf("grace's copy holds %v, want the one ticket", ms.Members())
+	}
+	// And the ticket is filterable by it there, which is the thing the file
+	// was written for.
+	got := jsonCLI(t, grace, "list", "--milestone", "round-one")
+	if rows, _ := got["tickets"].([]any); len(rows) != 1 {
+		t.Errorf("grace's 'list --milestone round-one' returned %d tickets, want 1", len(rows))
+	}
+}
+
+// handleFromList reads a ticket's handle back through the CLI. A board with a
+// remote keeps an unworked ticket on its ref and not on disk, so reading the
+// tickets directory would find nothing.
+func handleFromList(t *testing.T, dir, title string) string {
+	t.Helper()
+	got := jsonCLI(t, dir, "list")
+	for _, r := range got["tickets"].([]any) {
+		row, _ := r.(map[string]any)
+		if row["title"] == title {
+			h, _ := row["handle"].(string)
+			if h == "" {
+				h, _ = row["id"].(string)
+			}
+			return h
+		}
+	}
+	t.Fatalf("no ticket titled %q in 'jaira list' from %s", title, dir)
+	return ""
+}
+
+func gitOut(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+	}
+	return string(out)
+}
+
+// Filing a milestone must not take its ref down, and this is why: a ref is
+// what every other clone reads. Taken down, the name is free again and two
+// machines can plan two different milestones under one identity. Left up and
+// marked, it says "filed" to everyone who fetches — the file is not written to
+// their board, and the name stays taken.
+func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(ada, "round-one"); err == nil {
+		t.Error("the milestone is still on ada's board after being filed")
+	}
+	out, err := runCLI(t, ada, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("ls: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "round-one") {
+		t.Errorf("'milestone ls' still names a filed milestone:\n%s", out)
+	}
+
+	// The ref is up and says so. Read through gitref rather than the file,
+	// because the ref is the only thing the other clone will ever see.
+	repo := &gitref.Repo{Dir: ada, Remote: "origin"}
+	content, _, err := repo.ReadMilestone("round-one")
+	if err != nil {
+		t.Fatalf("the ref of a filed milestone was taken down: %v", err)
+	}
+	if got := milestone.FromBytes("round-one", content); !got.Filed() {
+		t.Errorf("the ref carries status %q, want %q", got.Status, milestone.StatusFiled)
+	}
+
+	// And grace, who never saw it on her board, does not get it written there.
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err == nil {
+		t.Error("a fetch wrote a filed milestone onto grace's board")
+	}
+	out, err = runCLI(t, grace, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("grace's ls: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "round-one") {
+		t.Errorf("grace's 'milestone ls' names a filed milestone:\n%s", out)
+	}
+}
+
+// The other half of the same claim, and the reason the ref carries a status at
+// all: a clone that ALREADY has the file on its board has to learn that the
+// milestone was filed. Skipping the marked ref would leave grace planning a
+// round of work ada closed, with nothing in either board ever telling her.
+func TestAClonePlanningTheMilestoneLearnsItWasFiled(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's first fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err != nil {
+		t.Fatalf("grace has to have the milestone before it is filed: %v", err)
+	}
+
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, grace, "fetch")
+	if err != nil {
+		t.Fatalf("grace's second fetch: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "round-one") {
+		t.Errorf("the fetch does not say the milestone was filed:\n%s", out)
+	}
+
+	// The file is still hers — nothing deletes a file jaira only read — but it
+	// carries the mark, and the mark is what takes it off the board.
+	ms, err := milestone.Load(grace, "round-one")
+	if err != nil {
+		t.Fatalf("the fetch removed a file instead of marking it: %v", err)
+	}
+	if !ms.Filed() {
+		t.Errorf("grace's file carries status %q, want %q", ms.Status, milestone.StatusFiled)
+	}
+	out, err = runCLI(t, grace, "milestone", "ls")
+	if err != nil {
+		t.Fatalf("grace's ls: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "round-one") {
+		t.Errorf("grace's 'milestone ls' still names a milestone that was filed:\n%s", out)
+	}
+}
+
+// The door a tree walks into when the filing happened somewhere else: grace
+// never had the file, so her disk holds nothing and her logbook holds nothing
+// — the only thing that says "filed" is the ref ada left standing. The refusal
+// has to point at ada's tree, because 'jaira restore' here answers that the
+// file is not in the archive.
+func TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err == nil {
+		t.Fatal("grace has the file, so this is not the ref-only state under test")
+	}
+
+	if out, err := runCLI(t, grace, "create", "something to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	ticketID := handleFromList(t, grace, "something to group")
+	doors := map[string][]string{
+		"create": {"milestone", "create", "round-one"},
+		"add":    {"milestone", "add", "round-one", ticketID},
+		// The third door, and the one that has no file to look at: the
+		// milestone branch of 'jaira logbook' is reached through
+		// milestone.Load, so this state used to fall out of the family and
+		// answer with the ticket error instead.
+		"logbook": {"logbook", "round-one"},
+	}
+	for door, args := range doors {
+		out, err := runCLI(t, grace, args...)
+		if err == nil {
+			t.Fatalf("'%s' went through a milestone filed on its ref:\n%s", door, out)
+		}
+		for _, want := range []string{
+			gitref.MilestoneRefName("round-one"),
+			milestone.StatusFiled,
+			"jaira restore round-one.md",
+			"the tree that filed it",
+		} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
+			}
+		}
+		// The restore it names runs in ada's tree. Claiming a logbook here
+		// would be claiming a copy grace does not have.
+		if strings.Contains(err.Error(), "into the logbook") {
+			t.Errorf("the %s refusal claims a logbook copy grace never had: %v", door, err)
+		}
+	}
+}
+
+// The tree that filed it stands in a state no other tree is in: the copy is in
+// its own logbook AND the mark is on the ref it wrote. It must be told about
+// the copy lying here, not sent to "the tree that filed it" — which is the
+// tree it is standing in. Asking the ref first said exactly that, so this is
+// the test that holds the order down. It runs on a board with refs, because a
+// board without them cannot get the order wrong.
+func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
+	ada, _ := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, ada, "create", "something to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	ticketID := handleFromList(t, ada, "something to group")
+
+	doors := map[string][]string{
+		"create": {"milestone", "create", "round-one"},
+		"add":    {"milestone", "add", "round-one", ticketID},
+		// Filing the same milestone twice: the copy is in this tree's
+		// logbook, so this door owes the reader the restore that runs here
+		// like the other two do.
+		"logbook": {"logbook", "round-one"},
+	}
+	for door, args := range doors {
+		out, err := runCLI(t, ada, args...)
+		if err == nil {
+			t.Fatalf("'%s' went through a milestone this tree filed:\n%s", door, out)
+		}
+		for _, want := range []string{
+			"into the logbook",
+			"jaira restore round-one.md",
+		} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
+			}
+		}
+		// The ref carries the mark here as well, and naming it would send the
+		// reader away from the copy that is lying in this very tree.
+		if strings.Contains(err.Error(), gitref.MilestoneRefName("round-one")) {
+			t.Errorf("the %s refusal points at the ref although the copy is here: %v", door, err)
+		}
+		if strings.Contains(err.Error(), "the tree that filed it") {
+			t.Errorf("the %s refusal sends the filing tree to itself: %v", door, err)
+		}
+	}
+}
+
+// Fetch is the fifth writer of a milestone file, after create, add/rm, logbook
+// and restore, and the only one that is not a command somebody typed:
+// maybeFetch spawns a detached 'jaira fetch --json' after every command, so it
+// runs beside the next 'jaira milestone add'. Unlocked, one of the two writes
+// to the same file is lost.
+func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+
+	s, err := ticket.At(grace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fetched := make(chan error, 1)
+	go func() {
+		_, err := runCLI(t, grace, "fetch")
+		fetched <- err
+	}()
+
+	select {
+	case err := <-fetched:
+		unlock()
+		t.Fatalf("fetch did not wait for the milestone lock (returned %v)", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+	// And it has written nothing while waiting: a fetch that blocked only
+	// after putting the file down would pass the wait above and still lose a
+	// concurrent add's write.
+	if _, err := os.Stat(milestone.Path(grace, "round-one")); !os.IsNotExist(err) {
+		unlock()
+		t.Fatalf("the fetch wrote the milestone file while the lock was held (stat: %v)", err)
+	}
+
+	unlock()
+	select {
+	case err := <-fetched:
+		if err != nil {
+			t.Fatalf("fetch after unlock: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("fetch never completed after the lock was released")
+	}
+	if _, err := milestone.Load(grace, "round-one"); err != nil {
+		t.Fatalf("the fetch did not write the milestone once it had the lock: %v", err)
+	}
+}
+
+// An outbox report is read by whoever lost the race, and it has to name the
+// thing they wrote. Put through ticket.Handle, the milestone 'next-release'
+// comes out as 'elease' — six characters that name nothing, that no command
+// takes back, and that an agent reading --json finds under the key "ticket".
+//
+// The second line matters as much: a rejected ticket keeps its local file and
+// shows both sides on the board, but a rejected milestone is overwritten by
+// the next fetch (refsync.IncomingMilestones), so the edit has to be made
+// again on the fetched file. Telling that user their file is unchanged sends
+// them away believing work is safe that is about to be discarded.
+func TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "next-release"); err != nil {
+		t.Fatalf("ada create: %v\n%s", err, out)
+	}
+
+	// Grace never fetched, so nothing locally stops her; the ref is already
+	// taken and the write loses the race.
+	var stderr string
+	_, stderr = captureStdio(t, func() {
+		if out, err := runAndSend(t, grace, "milestone", "create", "next-release"); err != nil {
+			t.Fatalf("grace create: %v\n%s", err, out)
+		}
+	})
+
+	if !strings.Contains(stderr, "jaira: next-release was not sent") {
+		t.Errorf("the rejection does not name the milestone:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "the next fetch replaces your file") {
+		t.Errorf("the rejection does not say the fetch will replace the file:\n%s", stderr)
+	}
+	if strings.Contains(stderr, "your file is unchanged") {
+		t.Errorf("the rejection tells a milestone writer a ticket's story:\n%s", stderr)
+	}
+}
+
+// The key an agent looks the subject up under, and the word a person reads,
+// both come from the kind. This pins the ticket half too: it is the half that
+// was already right and that the milestone branch must not change.
+func TestRefSubjectNamesEachKindTheWayItIsAddressed(t *testing.T) {
+	id := "01M2GGKMFB1XXK7V8AFW0YGWXQ"
+	if key, name := refSubject(outbox.KindTicket, id); key != "ticket" || name != ticket.Handle(id) {
+		t.Errorf("ticket subject is (%q, %q), want (%q, %q)", key, name, "ticket", ticket.Handle(id))
+	}
+	if key, name := refSubject(outbox.KindMilestone, "next-release"); key != "milestone" || name != "next-release" {
+		t.Errorf("milestone subject is (%q, %q), want (%q, %q)", key, name, "milestone", "next-release")
+	}
+	if a := rejectedAdvice(outbox.KindTicket); !strings.Contains(a, "your file is unchanged") {
+		t.Errorf("the ticket advice changed: %q", a)
+	}
+	if a := rejectedAdvice(outbox.KindMilestone); strings.Contains(a, "your file is unchanged") {
+		t.Errorf("the milestone advice is still the ticket's: %q", a)
+	}
+}

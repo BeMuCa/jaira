@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/spf13/cobra"
 )
@@ -94,24 +95,87 @@ should never have existed. It asks for the handle typed back first.`,
 func newRestoreCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "restore <file>",
-		Short: "Put an archived ticket back on the board",
-		Args:  exactArgs(1),
+		Short: "Put an archived ticket, or a filed milestone, back on the board",
+		Long: `Moves a file out of .jaira/archive/ or .jaira/logbook/ and back onto the board,
+named by its filename.
+
+A milestone filed with 'jaira logbook <name>' comes back the same way, with its
+ticket list and its colour as they were. The "filed" line comes off the file —
+that line, not where the file lies, is what keeps a milestone off the board —
+and the unmarked file goes back on its ref in the same breath, because until
+that happens every other clone goes on hiding it. If either half fails the
+restore fails with it rather than reporting a milestone nobody can see.`,
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
+			// The milestone lock covers the whole restore, not just the
+			// unfiling: s.Restore moves the file into .jaira/milestones/
+			// itself, and a concurrent 'jaira milestone add' read-modify-
+			// writes that same file. A ticket restore takes the lock too —
+			// which of the two this is only becomes clear once the file has
+			// moved, and ordering a ticket restore behind a milestone write
+			// costs nothing.
+			unlock, err := s.Lock(milestoneLockName)
+			if err != nil {
+				return err
+			}
+			defer unlock()
+
 			dst, err := s.Restore(args[0])
 			if err != nil {
 				return &codedError{code: ExitNotFound, reason: "not_archived", message: err.Error()}
 			}
+			restored, err := unfileMilestone(s, dst)
+			if err != nil {
+				return err
+			}
 			if g.jsonOut {
-				return emit(cmd.OutOrStdout(), map[string]any{"restored": true, "path": dst})
+				return emit(cmd.OutOrStdout(), map[string]any{"restored": true, "path": dst, "milestone": restored})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Restored %s to the board.\n", filepath.Base(dst))
 			return nil
 		},
 	}
+}
+
+// unfileMilestone takes the "filed" line back off a milestone that has just
+// been restored and puts the unmarked file on its ref again, reporting the
+// milestone's name if that is what was restored.
+//
+// Both halves are needed. Without the line removed the milestone is not on the
+// board at all — the line is what LoadAll reads; without the ref rewritten the
+// ref still says "filed", so every other clone keeps hiding it and the name
+// stays taken against the person who just asked for it back.
+//
+// A failure here fails the restore rather than being swallowed: the file has
+// been moved back by then, so reporting success would put a milestone nobody
+// can see on a board and call it restored.
+//
+// The caller holds milestoneLockName. It is not taken here because the move
+// that puts the file in place happens before this runs and belongs under the
+// same lock.
+func unfileMilestone(s *ticket.Store, dst string) (string, error) {
+	if filepath.Base(filepath.Dir(dst)) != ticket.MilestonesSubdir {
+		return "", nil
+	}
+	name := strings.TrimSuffix(filepath.Base(dst), ".md")
+	ms, err := milestone.Load(s.Root, name)
+	if err != nil {
+		return "", fmt.Errorf("%s was moved back to %s but could not be read, so it is still filed: %w",
+			filepath.Base(dst), milestone.Dir(s.Root), err)
+	}
+	if ms.Filed() {
+		ms.SetStatus("")
+		if err := ms.Save(s.Root); err != nil {
+			return name, fmt.Errorf("%s was moved back to %s but the %q line could not be taken off it, so it stays off the board: %w",
+				filepath.Base(dst), milestone.Dir(s.Root), milestone.StatusFiled, err)
+		}
+	}
+	recordMilestone(ms)
+	return name, nil
 }
 
 func archivedNames(s *ticket.Store) ([]string, error) {

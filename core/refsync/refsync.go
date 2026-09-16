@@ -13,6 +13,7 @@
 package refsync
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/merge"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/outbox"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -165,6 +167,94 @@ func (y *Syncer) RecordFiled(id string, content []byte) error {
 	return y.Record(id, content)
 }
 
+// RecordMilestone queues a milestone file's current bytes for its ref, under
+// the same rules as a ticket: the whole file, leased against the SHA the
+// remote last confirmed, sent later.
+//
+// A milestone travels on a ref for the reason it exists at all. It is the one
+// file everybody plans from, and the whole point of planning in a file is that
+// twenty tickets are grouped in one edit — if that edit then waited for a
+// branch to be merged, the file everybody is supposed to read would be the
+// file nobody has.
+func (y *Syncer) RecordMilestone(name string, content []byte) error {
+	if y == nil || y.Usable() != nil {
+		return nil
+	}
+	lease, err := y.Repo.MilestoneSHA(name)
+	if err != nil && !errors.Is(err, gitref.ErrNoRef) {
+		return err
+	}
+	if err := y.Box.QueueMilestone(name, outbox.OpWrite, content, lease, y.Actor); err != nil {
+		return err
+	}
+	y.dirty = true
+	return nil
+}
+
+// IncomingMilestones writes to disk every milestone file the refs carry that
+// this working tree does not already have in the same state, and reports the
+// names it wrote.
+//
+// It writes rather than merely reporting because a milestone has no local
+// editor in jaira the way a ticket has a lane: the file IS the interface, and
+// a group somebody planned is of no use as a ref nobody has checked out. The
+// ref is the newer state by construction — it is what the remote accepted —
+// so a local file that differs is overwritten, and the previous content is in
+// git if it was ever committed.
+//
+// A ref whose file says it has been filed is written over a file this tree
+// already has: the marked line is what keeps a milestone off the board, so
+// writing it is how a clone that already has the file learns it was filed at
+// all — which is the one thing that ref exists to carry. Skipping it would
+// leave that clone showing a round of work everybody else has closed. Those
+// names come back separately, because "this group left the board" is
+// different news from "this group changed".
+//
+// A filed milestone this tree does NOT have is not written: there is nothing
+// here to correct, and putting the file on disk would leave a second copy
+// beside the one in the logbook of the tree that filed it — which is the tree
+// 'jaira restore' would then refuse, because the name is back on the board.
+//
+// Nothing is ever deleted here: a milestone the refs no longer carry is left
+// where it is. jaira does not delete a file it has only read, and whoever
+// wants that board tidy files it there too.
+func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, err error) {
+	if y == nil || y.Usable() != nil {
+		return nil, nil, nil
+	}
+	names, err := y.Repo.ListMilestones()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, name := range names {
+		content, _, err := y.Repo.ReadMilestone(name)
+		if err != nil {
+			continue
+		}
+		path := milestone.Path(root, name)
+		have, haveErr := os.ReadFile(path)
+		if haveErr == nil && bytes.Equal(have, content) {
+			continue
+		}
+		isFiled := milestone.FromBytes(name, content).Filed()
+		if isFiled && haveErr != nil {
+			continue
+		}
+		if err := os.MkdirAll(milestone.Dir(root), 0o755); err != nil {
+			return wrote, filed, err
+		}
+		if err := ticket.WriteAtomic(path, content); err != nil {
+			return wrote, filed, err
+		}
+		if isFiled {
+			filed = append(filed, name)
+			continue
+		}
+		wrote = append(wrote, name)
+	}
+	return wrote, filed, nil
+}
+
 // Winner describes the state that beat a rejected write, read from the ref
 // itself. A rejection that only says "you lost" leaves the user to go and find
 // out who and what — which they cannot do without knowing the ref exists.
@@ -262,7 +352,9 @@ func (y *Syncer) Flush() ([]Report, error) {
 	reports := make([]Report, 0, len(results))
 	for _, r := range results {
 		rep := Report{Result: r}
-		if r.Outcome == outbox.Rejected {
+		// Only a ticket has a winner to name: the lookup parses the ref's
+		// content as a ticket, and a milestone file is not one.
+		if r.Outcome == outbox.Rejected && r.Kind != outbox.KindMilestone {
 			if w, err := y.winner(r.ID); err == nil {
 				rep.Winner = w
 			}

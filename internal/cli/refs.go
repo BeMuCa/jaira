@@ -252,6 +252,7 @@ func flushRefs() {
 		return
 	}
 	for _, r := range reports {
+		key, name := refSubject(r.Kind, r.ID)
 		switch r.Outcome {
 		case outbox.Sent:
 			// The normal case says nothing. A line on every write would be
@@ -261,18 +262,50 @@ func flushRefs() {
 			if r.Winner != nil {
 				line = r.Winner.Describe()
 			}
-			warnRef(map[string]any{"ticket": r.ID, "outcome": "rejected", "winner": r.Winner},
-				"jaira: %s was not sent: %s\n  your file is unchanged; the board shows both sides once the ref is fetched",
-				ticket.Handle(r.ID), line)
+			warnRef(map[string]any{key: r.ID, "outcome": "rejected", "winner": r.Winner},
+				"jaira: %s was not sent: %s\n  %s",
+				name, line, rejectedAdvice(r.Kind))
 		case outbox.Unsent:
-			warnRef(map[string]any{"ticket": r.ID, "outcome": "unsent"},
+			warnRef(map[string]any{key: r.ID, "outcome": "unsent"},
 				"jaira: %s is written locally and waiting to be sent; it goes out with your next command",
-				ticket.Handle(r.ID))
+				name)
 		case outbox.Failed:
-			warnRef(map[string]any{"ticket": r.ID, "outcome": "failed", "error": errText(r.Err)},
-				"jaira: %s could not be sent: %v", ticket.Handle(r.ID), r.Err)
+			warnRef(map[string]any{key: r.ID, "outcome": "failed", "error": errText(r.Err)},
+				"jaira: %s could not be sent: %v", name, r.Err)
 		}
 	}
+}
+
+// refSubject names what an outbox report is about: the key an agent reading
+// --json looks it up under, and the word a person sees on the line.
+//
+// The two kinds are not interchangeable. A ticket is addressed by a handle,
+// the last six characters of its id, which is what every other jaira message
+// prints and what the user types back. A milestone is addressed by its name,
+// and a name put through ticket.Handle comes out as its last six characters —
+// 'next-release' printed as 'elease', a word that names nothing and that no
+// command accepts.
+func refSubject(kind outbox.Kind, id string) (key, name string) {
+	if kind == outbox.KindMilestone {
+		return "milestone", id
+	}
+	return "ticket", ticket.Handle(id)
+}
+
+// rejectedAdvice says what a lost race leaves behind, which differs by kind
+// because the two are reconciled in different places.
+//
+// A ticket's local file is left alone and both sides end up on the board, so
+// the conflict is visible and resolvable there. A milestone has no card and no
+// lane: refsync.IncomingMilestones writes every ref whose content differs
+// straight over the local file, so the next fetch replaces this edit with the
+// accepted one and says nothing about it. Telling a milestone writer their
+// file is unchanged would be describing a ticket to them.
+func rejectedAdvice(kind outbox.Kind) string {
+	if kind == outbox.KindMilestone {
+		return "the remote's version wins; the next fetch replaces your file with it, so make this edit again on the fetched one"
+	}
+	return "your file is unchanged; the board shows both sides once the ref is fetched"
 }
 
 // warnRef writes to stderr in whichever shape the caller asked for. Never

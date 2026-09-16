@@ -262,3 +262,31 @@ func TestLoggedPerDayReadsTheFolderNames(t *testing.T) {
 		t.Errorf("LoggedPerDay = %v, want %v", got, want)
 	}
 }
+
+// FiledMilestone answers "is this name still taken", and it has to look
+// wherever Restore looks: a milestone in the folder the logbook had before it
+// was called one can still be brought back, so its name is not free. A walk
+// over LogbookDir alone misses it and hands the name out twice.
+func TestFiledMilestoneFindsBothLogbookFolders(t *testing.T) {
+	s, _ := syncTestStore(t)
+	for _, sub := range []string{LogbookSubdir, legacyLogbookSubdir} {
+		dir := filepath.Join(s.dir(), sub, "as-20260823", MilestonesSubdir)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		name := "round-" + sub
+		if err := os.WriteFile(filepath.Join(dir, name+".md"), []byte("---\nstatus: filed\n---\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		where, filed := s.FiledMilestone(name)
+		if !filed {
+			t.Fatalf("FiledMilestone(%q) did not find it under %s", name, sub)
+		}
+		if want := filepath.Join(DirName, sub, "as-20260823", MilestonesSubdir); where != want {
+			t.Errorf("FiledMilestone(%q) = %q, want %q", name, where, want)
+		}
+	}
+	if _, filed := s.FiledMilestone("never-planned"); filed {
+		t.Error("FiledMilestone found a milestone nobody filed")
+	}
+}
