@@ -60,7 +60,7 @@ git remote get-url origin       # otherwise read the host you push to
 ```
 
 Read the host off `origin`, because `origin` is what you push to below. Not off
-`jaira.remote`: that is the remote the board's ticket refs travel on, and in a
+the board's remote: that is the remote the board's ticket refs travel on, and in a
 fork it is the upstream while your branch goes to the fork — a different host,
 and on a bad day a different forge.
 
@@ -109,14 +109,23 @@ Settle the target first:
 ```bash
 gh repo view --json isFork,parent,nameWithOwner   # GitHub
 glab repo view                                    # GitLab
-git config jaira.remote                           # a remote NAME, not owner/repo
+jaira whoami --json                               # the board's remote, and where it came from
 ```
 
-`jaira.remote` holds the *name* of a remote — `upstream`, say — not an
+Ask `jaira whoami` for the board's remote, never `git config jaira.remote`. That
+config key is only the first of four steps jaira itself walks
+(`core/settings/settings.go` `RemoteSourceFor`): unset, it falls through to
+`settings.json`, then to the repository's only remote. Reading the key directly
+therefore comes back empty on a board whose remote is set perfectly well — and
+empty reads as "nothing contradicts", so the check you came here for never runs.
+`whoami` is the one command that reports the remote the rest of jaira actually
+uses.
+
+`.remote` in that JSON is the *name* of a remote — `upstream`, say — not an
 `owner/repo`. Turn it into one before you use it:
 
 ```bash
-git remote get-url "$(git config jaira.remote)"
+git remote get-url <the .remote name>
 ```
 
 Resolve both the parent and that URL before you read the ladder: the rungs are
@@ -124,15 +133,18 @@ told apart by what the two say, and a rung answered early answers wrong.
 
 1. **Not a fork** — the target is `origin`'s own repository, and the commands
    below need no repository flag.
-2. **A fork, and `jaira.remote` does not name a third repository** — it is
-   unset, or its URL is `origin`'s own repository, or it is the parent's. Either
-   way the target is the parent from `gh repo view` / `glab repo view`: there is
-   one upstream and nothing contradicts it. `jaira.remote` pointing at `origin`
-   is an ordinary setting and says nothing about where pull requests go — it is
-   the remote the board's ticket refs travel on, not the one they land in.
-3. **A fork whose `jaira.remote` resolves to neither `origin` nor the parent** —
+2. **A fork, and the board's remote does not name a third repository** — its URL
+   is `origin`'s own repository, or it is the parent's, or the name has no URL
+   here at all because no remote by it exists. Either way the target is
+   the parent from `gh repo view` / `glab repo view`: there is one upstream and
+   nothing contradicts it. A board remote pointing at `origin` is an ordinary
+   setting and says nothing about where pull requests go — it is the remote the
+   board's ticket refs travel on, not the one they land in.
+3. **A fork whose board remote resolves to neither `origin` nor the parent** —
    two different upstreams. Do not guess and do not open. Name both and ask
-   which one this pull request belongs in.
+   which one this pull request belongs in, quoting `.remote_source` from the
+   same `whoami` output: it says which step of jaira's ladder named that remote,
+   which is the fact the person needs to answer you.
 
 Everything below takes that repository as `<owner/repo>`. In case 1 leave the
 flag off; there is a single repository the commands can mean.
