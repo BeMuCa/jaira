@@ -37,13 +37,17 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:44:08Z
+updated-at: 2026-09-16T15:47:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
 outcome-what: "Das Frontmatter-Feld 'mode' mit dem einen Wert 'conversational' quer durch Schema, CLI, TUI und die beiden Rollen-Prompts. Der Dispatcher haelt jetzt VOR der Plan-Lane an, wenn das Ticket noch offene Entscheidungen hat, schreibt die Antworten mit 'jaira note' aufs Ticket und setzt den Modus; der Worker legt in diesem Modus nach jedem DoD-Punkt 'git diff' vor und gibt statt eines Commits die fertige Commit-Zeile mit Handle zurueck. Dazu drei Tests, zwei NOTES.md-Zeilen und der Feld-Eintrag in README.md und docs/AGENTS.md."
 outcome-why: "Ein Ticket, dessen Form noch nicht feststeht, wird autonom geraten - 0YGWXQ hat das mit sieben critique-Runden bezahlt. Der Modus musste auf der Platte landen und nicht in der getippten Zeile, weil nur so ein abgebrochener Lauf nicht stumm wieder autonom weiterfaehrt."
 outcome-resolves: "Alle sechs DoD-Punkte sind getickt und belegt: der Eintritt haengt an der gezaehlten Zahl offener Entscheidungen (dispatcher SKILL.md:31), es bleibt bei einer Dispatcher-Rolle (core/role/builtin/ unveraendert sieben), die Entscheidung steht vor der Arbeit auf dem Ticket und ueberlebt den Abbruch (TestModeSurvivesRoundTrip), der Agent committet nicht mehr selbst sondern gibt die Zeile mit Handle zurueck (role-lane SKILL.md:67), der Code wird nach jedem Inkrement vorgelegt (role-lane SKILL.md:50) und beide NOTES.md-Zeilen stehen unter ## Unreleased."
+review-summary: |-
+  internal/cli/tickets.go:929 + core/ticket/schema.go:150: ValidMode trimmt, der Schreibpfad nicht — 'jaira set <id> "mode= conversational "' wird akzeptiert und als mode: " conversational " gespeichert, 'show --json' gibt es mit den Leerzeichen zurueck, und der Worker vergleicht laut Prompt auf genau ein Wort. Das ist derselbe Fehlerfall, den TestSetRefusesUnknownMode ausschliessen soll, nur durch die Vordertuer. Entweder das strings.TrimSpace in ValidMode streichen, dann faellt der gepolsterte Wert durch dieselbe Pruefung wie 'Conversational', oder in beiden Schreibpfaden den getrimmten Wert speichern.
+  internal/tui/view.go:1199 und internal/cli/tickets.go:709: der Modus steht in keiner Ausgabe fuer Menschen. Beide Detail-Panes drucken row("tier", t.ModelTier), aber kein row("mode", t.Mode); view.go:1099 traegt FieldMode in fieldsWithTheirOwnRow ein, dessen Kommentar 'the fields this pane already has a place for' behauptet — die Zeile gibt es nicht, und laneFields erreicht das Feld ohnehin nie, weil keine Lane es produziert. internal/tui/edit.go:28 laesst es dagegen bearbeiten: schreibbar ueberall, lesbar nur in --json. Je eine Zeile row("mode", t.Mode) neben row("tier", ...); row() ueberspringt Leeres, ein Ticket ohne Modus kostet es also nichts.
+  core/role/builtin/jaira-dispatcher/SKILL.md:79 gegen :155-163: zwei Regeln fuer --no-worktree an zwei Stellen. Der neue Abschnitt sagt 'im Gespraechsmodus immer --no-worktree', der bestehende Absatz sagt 'nimm es nur, wenn der Mensch danach fragt oder die Arbeit eine Lane lang ist', und Schritt 2 der Schleife sagt 'in its own worktree'. Den Modus in den bestehenden Absatz bei :160 aufnehmen und den Bullet bei :79 auf einen Verweis darauf kuerzen, statt dieselbe Regel zweimal zu fuehren.
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
