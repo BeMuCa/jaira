@@ -37,14 +37,14 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:01:31Z
+updated-at: 2026-09-16T20:06:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen den geschlossenen Wertebereich: CodeBadMode ('bad_mode'), SeverityWarning, Feld ticket.FieldMode, geprueft mit ticket.CanonicalMode; die Meldung nennt beide Reparaturen. Dazu core/validate/mode_test.go und eine Zeile in core/release/NOTES.md."
-outcome-why: "Die Pruefung stand nur in den zwei CLI-Schreibwegen (internal/cli/tickets.go, internal/tui/edit.go). Genau die drei Wege, die core/validate abdeckt — Handedit, schlechter Merge, Agent schreibt Unerwartetes — gingen daran vorbei, und ein von Hand geschriebenes 'mode: chat' laedt sauber, steht in der 'mode'-Zeile und im JSON, waehrend der Worker gegen genau ein Wort vergleicht und autonom weiterlaeuft. Das Dateiformat ist hier die API; Handedit ist kein Randfall."
-outcome-resolves: "Befund aus critique-Runde 5: core/validate/validate.go kannte 'mode' nicht."
-review-summary: "core/validate/validate.go kennt 'mode' nicht: die Pruefung des geschlossenen Wertebereichs steht nur in den zwei CLI-Schreibwegen (internal/cli/tickets.go:928 und internal/tui/edit.go:57), und genau die drei Wege, die diese Datei laut ihrer eigenen Beschreibung abdeckt — Handedit, schlechter Merge, Agent schreibt Unerwartetes (internal/cli/validate.go:22-26) — gehen daran vorbei. Ein von Hand geschriebenes 'mode: chat' laedt sauber, steht in der 'mode'-Zeile von 'jaira show' und im JSON-Schluessel, und der Worker vergleicht gegen genau ein Wort und laeuft autonom weiter. Das ist woertlich das Versagen, das der Kommentar in core/ticket/schema.go:147-151 als Daseinsgrund der Pruefung nennt. Und das Dateiformat IST hier die API: Handedit ist ein erstklassiger Weg, kein Randfall. Auch der Merge-Driver schreibt 'theirs' mit --take-theirs ungeprueft durch (internal/cli/mergedriver.go:223). Fix: in core/validate/validate.go ein CodeBadMode neben CodeBadTag, geprueft mit ticket.CanonicalMode(t.Mode), SeverityWarning aus demselben Grund wie bei bad_tag (das Ticket selbst ist heil), Field ticket.FieldMode, und die Meldung nennt die Reparatur — 'jaira set <handle> mode=conversational' oder 'mode='. Dazu eine Zeile in core/release/NOTES.md, weil ein neuer validate-Code ein Ausgabe- und Exit-Code-sichtbares Verhalten ist."
+outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen die kanonische Form, nicht nur gegen das ok von CanonicalMode: die Bedingung ist '!ok || canon != t.Mode'. Dazu TestUntrimmedModeIsReportedWithTheRepair in core/validate/mode_test.go und eine Praezisierung der bestehenden validate-Zeile in core/release/NOTES.md."
+outcome-why: "CanonicalMode gibt die getrimmte Form zurueck, weil ein Pfad, der ' conversational ' annimmt und unveraendert speichert, derselbe stille Fehler ist wie 'chat'. validate.go warf diese Form weg und pruefte nur das ok — eine handgeschriebene Zeile mit Leerzeichen kam schweigend durch, stand untrimmed im JSON-Schluessel 'mode' und in der Kopfzeile von 'jaira show --for-lane', und der Worker, der gegen genau ein Wort vergleicht, lief autonom weiter."
+outcome-resolves: "Befund aus critique-Runde 6: validate.go:203 warf den kanonischen Wert weg."
+review-summary: "core/validate/validate.go:203 wirft den kanonischen Wert weg, den CanonicalMode zurueckgibt, und prueft nur das ok. Eine handgeschriebene Zeile 'mode: \" conversational \"' passiert die Pruefung schweigend, und t.Mode kommt untrimmed bei flow.go:625 (JSON 'mode') und in der Kopfzeile an — der Worker vergleicht gegen genau ein Wort und laeuft autonom weiter. Genau der Fehler, gegen den CanonicalMode laut eigenem Kommentar existiert, nur auf dem Lesepfad statt auf dem Schreibpfad. Stattdessen: in validate.go auch melden, wenn canon != t.Mode (gleicher CodeBadMode, Reparatur 'jaira set <id> mode=conversational'), und einen Fall dafuer in core/validate/mode_test.go neben 'chat'."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
@@ -88,6 +88,7 @@ review-summary: "core/validate/validate.go kennt 'mode' nicht: die Pruefung des 
 - [x] go test ./... -race
 - [x] critique 4: dieselbe Bedingung (Commit-Zeile nur bei Code-Aenderung) an den vier verbleibenden Stellen — dispatcher/SKILL.md, docs/AGENTS.md, README.md, core/ticket/schema.go
 - [x] critique 5: 'mode' in core/validate/validate.go pruefen (CodeBadMode, Warning), plus NOTES.md-Zeile
+- [x] critique 6: validate.go meldet auch den untrimmed Wert (canon != t.Mode), plus Testfall
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
@@ -267,3 +268,21 @@ Nicht erneut aufgemacht: die Commit-Zeilen-Bedingung aus Runde 3 und 4 steht jet
 - Der Merge-Driver (internal/cli/mergedriver.go:223, --take-theirs) bleibt ungeprueft — absichtlich. Er ist ein Konfliktloeser, kein Schreibweg mit eigener Meinung; ein durchgereichtes 'mode: chat' faengt jetzt 'jaira validate' ab, genau wie jeden anderen Handedit. Eine Pruefung im Driver waere eine zweite Wahrheit ueber den Wertebereich.
 - core/validate/mode_test.go: der unbekannte Wert wird als Warnung mit Feld und Reparatur gemeldet; leer und 'conversational' bleiben stumm.
 - Kein Doku-Update noetig: weder docs/ noch README zaehlen validate-Codes auf (grep bad_tag findet dort nichts). Die NOTES.md-Zeile traegt die Aenderung.
+- **2026-09-16 20:03 · Alexander Sacharov** — critique (6. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+core/validate/validate.go:203 ruft ticket.CanonicalMode(t.Mode) auf und wertet nur das zweite Rueckgabewert aus. CanonicalMode trimmt aber, BEVOR es urteilt — deshalb ist ' conversational ' fuer die Pruefung gueltig, und der ungetrimmte Wert bleibt auf dem Ticket stehen.
+
+Nachgemessen mit einer Probe gegen ParseDoc/Decode: 'mode: " conversational "' in der Frontmatter ergibt t.Mode = " conversational " (Doc.Scalar liest bei einem quoted scalar token.Value, das die Leerzeichen behaelt), validate schweigt, und flow.go gibt den Wert unveraendert als JSON-Feld 'mode' und in der Kopfzeile '(tier: ..., mode: ...)' aus. Der Worker vergleicht gegen genau ein Wort und laeuft autonom — der Mensch glaubt, er werde vor jedem Inkrement gefragt.
+
+Das ist nicht der Befund aus Runde 1 noch einmal: den haben die beiden SCHREIBpfade (jaira set, TUI-Editor) repariert, indem sie den kanonischen Wert speichern. validate ist der LESEpfad fuer handgeschriebene Dateien und die einzige Stelle, die diese Datei je zu sehen bekommt — genau der Fall, fuer den die Pruefung in Runde 5 ueberhaupt dazukam.
+
+Reparatur: in validate.go zusaetzlich melden, wenn canon != t.Mode — gleicher CodeBadMode, gleiche Severity, die Meldung nennt schon beide Reparaturen. Dazu ein Fall in core/validate/mode_test.go neben 'chat'; dort steht heute nur ein Wert ausserhalb der Menge, keiner mit Rand-Leerzeichen.
+- **2026-09-16 20:06 · Alexander Sacharov** — In-progress nach critique (6. Durchgang): validate.go meldet jetzt auch den nur-Whitespace-Abweichler.
+
+core/validate/validate.go: die Bedingung ist `!ok || canon != t.Mode`, nicht mehr nur `!ok`. CanonicalMode gibt die getrimmte Form zurueck UND ein ok; der alte Code warf die Form weg. ' conversational ' kam damit durch die Pruefung und untrimmed bei flow.go (JSON 'mode') und in der Kopfzeile an, wo der Worker gegen genau ein Wort vergleicht.
+
+Dieselbe Meldung, derselbe Code, dieselbe Reparatur — bewusst kein zweiter Code. Fuer den Leser ist es ein Fehler ('das steht so nicht im Ticket'), und zwei Codes fuer eine Reparatur waeren eine Unterscheidung, die niemand braucht. Das %q in der Meldung zeigt die Anfuehrungszeichen, also sieht man die Leerzeichen.
+
+NOTES.md: keine neue Zeile, sondern die bestehende validate-Zeile erweitert — es ist dieselbe Pruefung, und eine zweite Zeile daneben liest sich wie ein zweites Feature. Die Zeile nennt jetzt ausdruecklich, dass nur 'jaira set' trimmt.
+
+core/validate/mode_test.go: TestUntrimmedModeIsReportedWithTheRepair neben dem 'chat'-Fall.

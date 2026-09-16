@@ -200,7 +200,12 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 		//
 		// A warning, not an error, for the same reason as the bad tag above:
 		// the ticket itself is intact.
-		if _, ok := ticket.CanonicalMode(t.Mode); !ok {
+		// The canonical form is compared, not only the verdict: CanonicalMode
+		// accepts " conversational " and trims it, so a value that only
+		// differs in its whitespace passes the verdict while t.Mode reaches
+		// the JSON key and the header untrimmed — the same silent failure as
+		// "chat", because the worker compares against exactly one word.
+		if canon, ok := ticket.CanonicalMode(t.Mode); !ok || canon != t.Mode {
 			add(CodeBadMode, SeverityWarning, ticket.FieldMode,
 				"mode %q is not a mode: an agent reads it as no mode at all and runs autonomously; set it with 'jaira set %s mode=%s' or clear it with 'mode='",
 				t.Mode, handleOf(t.ID), ticket.ModeConversational)
