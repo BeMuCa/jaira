@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,15 +25,26 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:11:29Z
+updated-at: 2026-09-16T11:16:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
 outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der glab-Aufruf der Zielrepository-Leiter traegt jetzt '-F json' (:110), ein Halbsatz sagt warum (:118-120), Sprosse 1 liest den Projektpfad aus dieser JSON statt aus der Textausgabe (:139-141), und Sprosse 2 trennt die beiden Forges - GitHub '.parent.owner.login' + '.parent.name', GitLab der forked-from-Eintrag derselben JSON (:144-148)."
 outcome-why: "critique Durchgang 6: auf GitLab hatte die Leiter keine Quelle. 'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder den Fork-Status, nach dem die Leiter verzweigt, noch den Elternteil, den Sprosse 2 lesen soll. Der Durchlauf waere auf GitLab still auf Sprosse 1 (den Fork) gefallen: dieselbe stille Verzweigung, die ca7f53c fuer gh geschlossen hat."
 outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' gilt jetzt auf beiden Forges, nicht nur auf GitHub. go test ./core/role/... gruen."
-review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:110,139-140,144 the GitLab arm of the ladder has no source: 'glab repo view <url>' defaults to -F text, which prints the description and README (glab repo view --help), so it names neither the fork status the ladder branches on nor rung 2's parent; put '-F json' in the code block at :110 and let rung 1 and rung 2 read the path and the fork parent off that JSON instead of 'the path glab repo view printed'"
-review-gaps: "Drei doppelte Stellen entfernt: der Listen-Hinweis im Intro von 'Which repository it goes to' (steht als eigener Abschnitt 'Does it already have one open' direkt darunter), die zweite Definition der Board-Remote in Sprosse 2 (steht im Forge-Abschnitt darueber), und die Selbstbegruendung unter 'Push the branch'. whoami-Absatz von acht auf sieben Zeilen. 1988 -> 1929 Woerter, keine Regel und keine Sprosse der Leiter entfernt. Stehen gelassen: die Mensch/Agent-Regel an drei Stellen (Kopf, 'Open it', Boundaries) - sie steht dort jeweils am Ort der Handlung, nicht als Wiederholung. Keine zweite Implementierung gefunden: die Zielrepository-Leiter existiert im Repository nur einmal. go test ./core/role/... gruen."
+review-summary: "none"
+review-gaps: |-
+  Vier Durchgaenge, drei Aenderungen, alle in core/role/builtin/jaira-role-pr/SKILL.md, keine davon verhaltensaendernd.
+
+  Kosten: 'jaira whoami --json' und 'git remote get-url <name>' standen im selben Block wie 'gh/glab repo view' und liefen damit bei JEDEM Aufruf der Rolle. Sprosse 1 (kein Fork) braucht beide nicht - sie beantwortet sich allein aus isFork/nameWithOwner. Die beiden Lookups stehen jetzt hinter Sprosse 1, eingeleitet mit 'Ein Fork hat ein zweites Repository'; der haeufige Nicht-Fork-Pfad spart zwei Kommandos.
+
+  Fluff, gestrichen: 'und du brauchst die Antwort vor dem naechsten Kommando, nicht vor dem letzten' (Kommentar ueber die Reihenfolge im Dokument, nicht ueber die Arbeit); 'Das ist hier, wo die zwei Jobs sich trennen, und der einzige Ort, wo sie das tun' vor dem create-Befehl (der Halbsatz 'nur wenn ein Mensch die Rolle aufgerufen hat' zwei Zeilen weiter sagt dasselbe); der zweite Satz von 'Everything below takes that repository as <owner/repo>' war eine Wiederholung des ersten und ist in ihn hineingezogen.
+
+  Duplikation: keine. grep ueber core/role/builtin und core/ nach 'repo view', 'nameWithOwner', 'target-project', '--repo ' findet die Zielrepository-Leiter nur in dieser einen Datei; keine andere Rolle und kein Go-Code ermittelt ein Zielrepository.
+
+  Stehen gelassen und warum: die lange Begruendung zu 'jaira whoami statt git config jaira.remote' (:133-139) - sie sieht wie Fluff aus, ist aber der einzige Ort, der die Falle benennt, dass ein leerer Config-Wert als 'nichts widerspricht' gelesen wird; die Wiederholung der Mensch/Agent-Regel im Abschnitt Boundaries - Boundaries ist in dieser Datei durchgehend eine Wiederholungsliste, das ist Struktur und nicht diese Aenderung; die Zeile in NOTES.md - sie beschreibt Verhalten, das sich nicht geaendert hat.
+
+  go test ./core/role/... gruen nach der letzten Aenderung. Der Test prueft nur Installation und Parsing, nicht den Text - gruen heisst 'nichts kaputt'.
 test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter beschreibt in einem Fork-Clone nicht origin, sondern das Upstream — auf genau diesem Board meldet es isFork:false, Sprosse 1 feuert, und der Fork-Fall den das Ticket adressiert wird nie erreicht"
 ---
 
@@ -203,3 +214,15 @@ Sprosse 1 sagt 'the project path in the same glab repo view JSON' statt 'the pat
 Bewusst WEITER keine GitLab-Feldnamen ('path_with_namespace', 'forked_from_project') im Text - dieselbe Entscheidung wie in Durchgang 6, und sie traegt jetzt mehr als vorher: mit '-F json' liest das Modell die Felder selbst, vorher haette es Prosa gelesen, in der sie gar nicht vorkommen. Ein erfundener Feldname, gegen keine GitLab-Instanz geprueft, waere in diesem Dokument teurer als die Umschreibung.
 
 NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts - derselbe Check, nur auf GitLab mit einer Ausgabe, in der die Felder stehen.
+- **2026-09-16 11:13 · Alexander Sacharov** — critique Durchgang 7 (nach in-progress 7): keine Findings. Der Diff 1e4442f beantwortet das Finding aus Durchgang 6 vollstaendig und macht nichts Neues auf.
+
+NACHGEPRUEFT STATT GEGLAUBT: 'glab repo view --help' der hier installierten Version (/home/alex/.local/bin/glab) sagt woertlich 'Display the description and README of a project' und listet '-F --output  Format output as: text, json. (text)' — die Begruendung bei SKILL.md:118-120 stimmt also Wort fuer Wort, und '-F json' bei :110 ist die Flagschreibweise dieser Version. Die Git-URL als Argument steht ebenfalls ausdruecklich in den EXAMPLES, fuer glab wie fuer gh.
+
+ERWOGEN UND VERWORFEN (haette ein Finding werden koennen): die GitLab-Haelfte von 'Does it already have one open' (:176) traegt kein Gegenstueck zum GitHub-Praefix '<owner-of-origin>:<branch>' bei :170 — also scheinbar dieselbe Asymmetrie, die Durchgang 6 in der Leiter gefunden hat. Ist aber keine: 'glab mr list --help' kennt nur '-s --source-branch <name>', und auf GitLab liegt ein Merge Request aus einem Fork im ZIEL-Projekt mit dem Branchnamen des Forks als source_branch. Die Abfrage am Ziel findet ihn also ohne Praefix. Das Praefix ist eine GitHub-Eigenheit, kein fehlender Zweig. Deshalb kein Finding — und deshalb steht es hier, damit der naechste Durchgang es nicht noch einmal aufmacht.
+
+NICHT NEU AUFGEMACHT, weil in frueheren Durchgaengen entschieden: der Feldname fuer den Fork-Elternteil in der glab-JSON bleibt bewusst ungenannt (Durchgang 5/6: nicht gegen eine GitLab-Instanz pruefbar, das Modell liest die JSON selbst); die Mensch/Agent-Regel steht an drei Stellen als Rahmen + Ausfuehrungsort (Durchgang 1); die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, die Disjunktheit der drei Sprossen und der whoami-Absatz sind seit Durchgang 5 unbeanstandet.
+
+SACHE DER REVIEW-LANE, hier bewusst nicht gefragt: ob 'glab repo view -F json' den Fork-Elternteil ueberhaupt enthaelt, und ob 'glab mr create --target-project' so heisst. Diese Lane fragt nicht, ob es laeuft.
+- **2026-09-16 11:16 · Alexander Sacharov** — optimize: Die zwei Lookups hinter Sprosse 1 zu ziehen war der einzige Eingriff mit einem Risiko - eine Leiter, deren Sprossen nicht mehr alle im selben Block stehen, laedt dazu ein, eine davon frueh zu beantworten. Sicher ist es, weil Sprosse 1 als einzige kein Fork verlangt und 2 und 3 beide einen: wer bei isFork:false stehenbleibt, kann 2 oder 3 gar nicht treffen. Der Satz 'Resolve the parent and that URL before you read the rungs' bleibt deshalb stehen, gilt jetzt aber nur noch fuer die zwei Fork-Sprossen.
+
+Geprueft und NICHT geaendert: '.remotes' aus 'jaira whoami --json' koennte 'der Name hat hier gar keine URL' in Sprosse 2 ohne 'git remote get-url' beantworten. Das spart aber kein Kommando - die URL wird in derselben Sprosse ohnehin gebraucht, um sie gegen origin und den Parent zu halten. Reine Textaenderung ohne Gewinn, also gelassen.

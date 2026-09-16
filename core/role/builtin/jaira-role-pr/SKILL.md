@@ -94,21 +94,19 @@ word.
 git push -u origin HEAD
 ```
 
-That is the whole of this step: whether a pull request then gets opened, or the
-create line goes back for a person to run, is settled at the create command
-below and nowhere else.
+You push either way. Whether a pull request is then opened, or the create line
+goes back for a person to run, is settled at the create command below and
+nowhere else.
 
 ## Which repository it goes to
 
-`origin` is not the answer, and you need the answer before the next command, not
-before the last one. In a fork `origin` is your fork, and a pull request opened
-against it sits where nobody is looking and has to be closed by hand. Settle the
-target first:
+`origin` is not the answer. In a fork `origin` is your fork, and a pull request
+opened against it sits where nobody is looking and has to be closed by hand.
+Settle the target first:
 
 ```bash
 gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner   # GitHub
 glab repo view "$(git remote get-url origin)" -F json                            # GitLab
-jaira whoami --json                              # the board's remote, and where it came from
 ```
 
 Name `origin` in that command; do not let the forge pick the repository for you.
@@ -119,6 +117,19 @@ Both tools take the remote URL as the argument, SSH form included. Ask `glab`
 for `-F json`: its default output is the project's description and README, which
 names neither the fork status the ladder branches on nor the parent rung 2 needs.
 
+1. **Not a fork** — the target is `origin`'s own repository: the
+   `nameWithOwner` the same `gh repo view` already returned, or the project path
+   in the same `glab repo view` JSON. That settles it; the two lookups below are
+   the fork's business and you can skip them.
+
+A fork has a second repository to weigh against the parent — the one the board's
+ticket refs travel on:
+
+```bash
+jaira whoami --json                     # .remote, and .remote_source: where that name came from
+git remote get-url <the .remote name>   # .remote is a remote's name, not an owner/repo
+```
+
 Ask `jaira whoami` for the board's remote, never `git config jaira.remote`. That
 config key is only the first of the four steps jaira itself walks
 (`core/settings/settings.go` `RemoteSourceFor`, which falls through to
@@ -127,37 +138,26 @@ directly comes back empty on a board whose remote is set perfectly well — and
 empty reads as "nothing contradicts", so the check you came here for never
 runs.
 
-`.remote` in that JSON is the *name* of a remote — `upstream`, say — not an
-`owner/repo`. Turn it into one before you use it:
+Resolve the parent and that URL before you read the rungs: the two are told
+apart by what they say, and a rung answered early answers wrong.
 
-```bash
-git remote get-url <the .remote name>
-```
-
-Resolve both the parent and that URL before you read the ladder: the rungs are
-told apart by what the two say, and a rung answered early answers wrong.
-
-1. **Not a fork** — the target is `origin`'s own repository: the
-   `nameWithOwner` the same `gh repo view` already returned, or the project path
-   in the same `glab repo view` JSON.
-2. **A fork, and the board's remote does not name a third repository** — its URL
-   is `origin`'s own repository, or it is the parent's, or the name has no URL
-   here at all because no remote by it exists. Either way the target is
-   the parent from `gh repo view` / `glab repo view` — on GitHub `--json parent`
-   hands it back as `.parent.owner.login` and `.parent.name`, so join the two
-   with a slash yourself; on GitLab read the forked-from project out of the same
-   JSON: there is one upstream and nothing contradicts it. A board
-   remote pointing at `origin` is an ordinary setting and says nothing about
-   where pull requests go.
-3. **A fork whose board remote resolves to neither `origin` nor the parent** —
-   two different upstreams. Do not guess and do not open. Name both and ask
-   which one this pull request belongs in, quoting `.remote_source` from the
-   same `whoami` output: it says which step of jaira's ladder named that remote,
+2. **The board's remote does not name a third repository** — its URL is
+   `origin`'s own repository, or it is the parent's, or the name has no URL here
+   at all because no remote by it exists. Either way the target is the parent
+   from `gh repo view` / `glab repo view` — on GitHub `--json parent` hands it
+   back as `.parent.owner.login` and `.parent.name`, so join the two with a
+   slash yourself; on GitLab read the forked-from project out of the same JSON:
+   there is one upstream and nothing contradicts it. A board remote pointing at
+   `origin` is an ordinary setting and says nothing about where pull requests
+   go.
+3. **The board's remote resolves to neither `origin` nor the parent** — two
+   different upstreams. Do not guess and do not open. Name both and ask which
+   one this pull request belongs in, quoting `.remote_source` from the same
+   `whoami` output: it says which step of jaira's ladder named that remote,
    which is the fact the person needs to answer you.
 
-Everything below takes that repository as `<owner/repo>`. Every rung leaves you
-holding one, so every command below names it — there is no branch where the flag
-is left off.
+Everything below takes that repository as `<owner/repo>`: every rung leaves you
+holding one, so every command below names it.
 
 ## Does it already have one open
 
@@ -206,9 +206,8 @@ file; the create command below reads it from there.
 
 ## Open it
 
-This is where the two jobs part, and the only place they do. Run the create
-command for the forge you settled on, with the repository from above named in
-it — **only if a person invoked this role.** On GitHub:
+Run the create command for the forge you settled on, with the repository from
+above named in it — **only if a person invoked this role.** On GitHub:
 
 ```bash
 gh pr create --repo <owner/repo> --title "<title>" --body-file <the description you wrote>
