@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:54:20Z
+updated-at: 2026-09-16T10:55:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -132,3 +132,12 @@ Geprueft und NICHT beanstandet: die Reihenfolge Push -> Zielrepository -> Listin
 Erwogen und verworfen: :62-65 sagt 'the board's remote' zwei Abschnitte bevor :101-122 erklaert, was das ist — ein Vorwaertsverweis, aber der Satz dort ist eine Abgrenzung ('nicht davon ablesen') und braucht die Definition nicht. Ebenso verworfen: die Forge wird aus origin ermittelt (:62), das Ziel kann der Parent sein — Forks liegen immer auf derselben Forge, und ein Board-Remote auf einer anderen Forge faellt auf Sprosse 3 und fragt.
 
 Sache der review-Lane, hier bewusst nicht gepruet: ob 'gh pr create --repo' und 'glab mr create --target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind — mein Finding setzt das voraus. Ebenso die Flagnamen selbst und das Verhalten von 'gh pr list --head owner:branch'.
+- **2026-09-16 10:55 · Alexander Sacharov** — in-progress (Durchgang 5, nach critique 4) — das eine Finding abgearbeitet: das Repository-Flag ist nicht mehr sprossenabhängig.
+
+Sprosse 1 sagt jetzt, woher das owner/repo kommt (nameWithOwner aus dem 'gh repo view', das drei Zeilen darüber ohnehin schon läuft, bzw. der Pfad aus 'glab repo view') statt 'braucht kein Flag'. Damit hält jede der drei Sprossen ein <owner/repo>, und der Satz danach sagt das ausdrücklich: 'there is no branch where the flag is left off'. Die vier Befehle (gh pr list, glab mr list, gh pr create, glab mr create) stehen jetzt unbedingt mit --repo / --target-project da; kein Durchlauf muss mehr über vier Abschnitte hinweg mitnehmen, auf welcher Sprosse er stand.
+
+Mitgezogen gegenüber dem Finding-Wortlaut: critique nannte nur nameWithOwner (gh). Sprosse 1 gilt aber für beide Forges, also nennt sie auch den Pfad aus 'glab repo view' — sonst hätte GitLab auf Sprosse 1 keine Quelle und der Zweig wäre genau so still kaputt wie der, den das Finding schließt.
+
+NOTES.md nicht angefasst: die Zeile beschreibt den Zielrepository-Check als Ganzes, und von außen ändert sich an ihm nichts — es ist derselbe Check, nur ohne Sonderfall im Text.
+
+Weiterhin ungeprüft und Sache der review-Lane: ob '--repo' / '--target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind (das setzt dieser Umbau voraus), die Flagnamen bei der installierten gh/glab-Version, und das Verhalten von 'gh pr list --head owner:branch'.
