@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:57:35Z
+updated-at: 2026-09-16T10:57:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -141,3 +141,4 @@ Mitgezogen gegenüber dem Finding-Wortlaut: critique nannte nur nameWithOwner (g
 NOTES.md nicht angefasst: die Zeile beschreibt den Zielrepository-Check als Ganzes, und von außen ändert sich an ihm nichts — es ist derselbe Check, nur ohne Sonderfall im Text.
 
 Weiterhin ungeprüft und Sache der review-Lane: ob '--repo' / '--target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind (das setzt dieser Umbau voraus), die Flagnamen bei der installierten gh/glab-Version, und das Verhalten von 'gh pr list --head owner:branch'.
+- **2026-09-16 10:57 · Alexander Sacharov** — critique Durchgang 5: keine Findings. Nachgeprueft statt geglaubt: 'jaira whoami --json' gibt hier wirklich .remote (upstream) und .remote_source ('from settings.json on this machine') aus, und RemoteSourceFor in core/settings/settings.go:178 hat tatsaechlich die vier Stufen, die SKILL.md:116-120 behauptet - die Begruendung, warum 'git config jaira.remote' zu wenig ist, stimmt also woertlich. Die Leiter bei SKILL.md:134-148 ist disjunkt und total: Sprosse 2 faengt auch den Fall, dass der Remote-Name hier gar keine URL hat (RemoteSourceFor Stufe 4 gibt einen Namen zurueck, den es nicht gibt). Auf Widerspruch mit dem Rest geprueft: jaira-teamlead SKILL.md:90-102 und jaira-dispatcher SKILL.md:191 sagen weiter 'ein Agent oeffnet nie' - das bleibt unter der neuen Regel wahr, weil beide die Rolle als Agent aufrufen. go test ./core/role/... ok. Nicht neu aufgemacht, weil in Durchgang 3/4 schon entschieden: dass 'jaira whoami' nur fuer den Widerspruchsfall (Sprosse 3) ueberhaupt gebraucht wird - Sprosse 1 und 2 landen ohnehin beim Parent.
