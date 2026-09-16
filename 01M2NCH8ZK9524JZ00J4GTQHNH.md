@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:16:31Z
+updated-at: 2026-09-16T20:16:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -302,3 +302,15 @@ Fix: "mode": i.t.Mode in die items-Map (i.t ist bereits das per s.Load nachgelad
 - Der Klartext-Zweig bekommt die Zeile nur bei gesetztem Modus, wie 'was on:' und wie row() in tickets.go: ein Ticket ohne Modus kostet keine Zeile. Der Test prueft beide Richtungen.
 - Warum ueberhaupt hier und nicht nur in 'jaira show --json': jaira-dispatcher/SKILL.md:65 nennt 'jaira resume' ausdruecklich als die Stelle, an der ein frischer Dispatcher den Modus von der Platte liest. Die Alternative aus critique — den Satz in SKILL.md streichen — laesst die Begruendung des Feldes (schema.go:44-47: es sitzt auf dem Ticket, um einen Sitzungsabbruch zu ueberleben) unbelegt, also wurde der Code an die Doku angeglichen und nicht umgekehrt.
 - Die NOTES.md-Zeile zum Modus wurde ergaenzt statt eine zweite geschrieben: es ist dieselbe Aenderung fuer den Leser (wo sehe ich den Modus), und zwei Zeilen zum selben Feld lesen sich wie zwei Features.
+- **2026-09-16 20:16 · Alexander Sacharov** — critique (8. Durchgang): kein Befund. Das ist der Ausgang der Schleife, nicht ein Durchwinken.
+
+Nachgeprueft, jede Stelle einzeln, und alle tragen 'mode':
+- Schreibwege: 'jaira set' (internal/cli/tickets.go:935, nach der --append-Faltung, speichert den kanonischen Wert) und der TUI-Editor (internal/tui/edit.go:61). Kein dritter. 'jaira create' setzt model-tier (tickets.go:245), aber keinen Modus — richtig so, der Dispatcher setzt ihn erst vor der Plan-Lane. 'jaira set' kennt keine Feld-Aliase, k wird nur getrimmt, also kann die Pruefung nicht ueber eine andere Schreibweise des Schluessels umgangen werden.
+- Lesewege: ticketJSON (tickets.go:1327) und damit 'jaira show --json', 'jaira list --json', 'jaira next --json', 'jaira move --json', 'jaira dod --json' — alle gehen durch dieselbe Funktion. showForLane fuehrt es in JSON und in der Klartext-Kopfzeile (flow.go). printDetail und die TUI-Detailspalte haben die Zeile. 'jaira resume' war der letzte Handbau-Fall und ist seit 28d53bd versorgt, JSON wie Klartext. 'jaira claim --json' ist eine Quittung, kein Ticket — dort gehoert es nicht hin.
+- Hintertueren: 'jaira validate' faengt jeden handgeschriebenen Wert ab, auch den nur durch Leerzeichen abweichenden. Der Merge-Driver bleibt bewusst ungeprueft (Runde 5), mode faellt in core/merge zu Recht in den default-Zweig — proseFields (merge.go:50-59) fuehrt question, nicht mode, und das ist fuer einen geschlossenen Skalar richtig.
+- flow.go:685 (case FieldMode in fieldValue) ist nicht tot: der Merge-Driver ruft dieselbe Funktion beim Auflisten konfliktierter Felder.
+- Die Commit-Zeilen-Bedingung steht an allen fuenf Stellen gleichlautend (jaira-role-lane, jaira-dispatcher, docs/AGENTS.md, README.md, core/ticket/schema.go).
+
+Nicht erneut aufgemacht, weil in frueheren Runden entschieden: mode neben model_tier statt in input-requires (Pre-process 15:33, Runde 2), das Trimmen in CanonicalMode statt Ablehnen (Runde 1), kein automatisches Raeumen des Modus (Pre-process), kein Test auf Prompt-Text (Runde 4).
+
+Ausserhalb dieses Tickets und bewusst nicht hier repariert, gehoert in ein eigenes Ticket: internal/cli baut an mehreren Stellen JSON von Hand statt ueber ticketJSON (resume.go war einer davon und hat Runde 7 gekostet). Ein neues Frontmatter-Feld bleibt dort still zurueck, und nur eine critique-Runde findet es.
