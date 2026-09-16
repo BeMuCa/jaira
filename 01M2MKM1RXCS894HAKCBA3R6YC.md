@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:55:45Z
+updated-at: 2026-09-16T10:55:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der Abschnitt 'Which repository it goes to' ermittelt den Board-Remote jetzt mit 'jaira whoami --json' (.remote als Remote-Name, .remote_source als zitierbare Herkunft) statt mit 'git config jaira.remote'. Die drei Sprossen der Leiter sprechen entsprechend vom 'board's remote'; Sprosse 2 deckt zusaetzlich den Fall ab, dass der Name hier gar kein Remote benennt. :63 sagt 'the board's remote' statt 'jaira.remote'. Die NOTES.md-Zeile nennt whoami und warum nicht den Config-Key."
-outcome-why: "critique Durchgang 3: 'git config jaira.remote' ist nur Sprosse 1 der vierstufigen Leiter in core/settings/settings.go RemoteSourceFor. Auf einem Board, dessen Remote aus settings.json kommt - wie diesem: whoami meldet remote=upstream, remote_source='from settings.json on this machine' - liest der Key leer, und leer liest die Rolle als 'nichts widerspricht'. Der Zielrepository-Check waere also genau dort nicht gelaufen, wo er gebraucht wird. internal/cli/whoami.go:136-142 warnt im Kommentar vor genau diesem zweiten Ableiter."
-outcome-resolves: "Definition of Done unveraendert erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve verboten, Zielrepository vor Listing und Oeffnen geprueft - jetzt aus der Quelle, die jaira selbst benutzt, statt aus einem Config-Key, der meistens leer ist. Eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
+outcome-what: "Sprosse 1 der Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md nennt jetzt die Quelle des owner/repo (nameWithOwner aus 'gh repo view', Pfad aus 'glab repo view') statt 'braucht kein Flag'; der Satz darunter sagt, dass jede Sprosse eins hält und kein Befehl das Flag weglässt."
+outcome-why: "Das Repository-Flag war sprossenabhängig: ein Durchlauf musste über vier Befehle in vier Abschnitten mitnehmen, auf welcher Sprosse er stand. In einem Dokument, dessen einziger Fehlermodus 'ein Modell liest einen Zweig falsch' ist, kauft ein gesparter Flag-Tipp das nicht auf."
+outcome-resolves: "critique Durchgang 4, Finding 1 (:149-150)"
 review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:149-150 macht das Repository-Flag von der Sprosse abhaengig ('In case 1 leave the flag off') — eine Ausnahme, die der Durchlauf danach an vier Befehlen (:160, :166, :204, :210) in vier Abschnitten mitschleppen muss und die nichts kauft. Stattdessen Sprosse 1 (:134-135) das owner/repo aus 'nameWithOwner' der schon getippten 'gh repo view'-Zeile nehmen lassen und :149-150 ersatzlos streichen: <owner/repo> ist dann in jedem Fall gesetzt und alle vier Befehle tragen das Flag unbedingt. Ein Dokument, dessen einziger Fehlermodus ein falsch gelesener Zweig ist, soll keinen Zweig tragen, der nur Tipparbeit spart."
 ---
 
