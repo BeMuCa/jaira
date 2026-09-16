@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:49:44Z
+updated-at: 2026-09-16T06:52:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -36,7 +36,7 @@ claimed-at: 2026-09-16T06:49:05Z
 
 ## Definition of Done
 
-- [ ] Der Skill jaira-dispatcher liegt unter .claude/skills/ im Repository, neben dem schon vorhandenen jaira-Skill; scripts/spawn.sh faehrt mit und kennt --no-worktree; ein frisch geklontes Repository kann einen Worker starten, ohne dass etwas aus ~/.claude kopiert wird
+- [ ] Der Rollen-Ordner core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh im Stand von ~/.claude (2026-09-15); spawn.sh kennt --no-worktree; 'jaira roles install' in ein leeres Verzeichnis liefert beide Dateien, spawn.sh ausfuehrbar, ohne dass etwas aus ~/.claude kopiert wird
 
 ## Options
 
