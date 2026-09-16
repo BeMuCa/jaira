@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:57:37Z
+updated-at: 2026-09-16T19:58:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -246,3 +246,16 @@ Warum der Dispatcher zwei Punkte bekommt und nicht einen Nebensatz: die Gefahr d
 Kein Test dazu: alle fuenf Stellen sind Prosa (vier Dokumente und ein Go-Kommentar). Es gibt im Repository keinen Test, der Prompt-Text auf Aussagen prueft, und einer, der auf Formulierungen matcht, bricht beim naechsten Umschreiben, ohne je ein Verhalten geschuetzt zu haben.
 
 NOTES.md: nichts ergaenzt. Die Modus-Zeile nennt die Ausnahme schon (seit Runde 3) und verweist auf 'jaira roles install --global --force' fuer beide Prompts; die Dispatcher-Aenderung faellt darunter. Eine zweite Zeile haette dieselbe Regel zweimal beschrieben.
+- **2026-09-16 19:58 · Alexander Sacharov** — critique (5. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+core/validate/validate.go kennt den neuen Wert 'mode' nicht. Die Pruefung des geschlossenen Wertebereichs (leer oder 'conversational') steht an zwei Stellen: internal/cli/tickets.go:928 im 'set'-Pfad und internal/tui/edit.go:57 im Editor der Detailspalte. Beide sind Schreibwege durch die Vordertuer.
+
+Die Hintertueren sind nicht abgedeckt, und internal/cli/validate.go:22-26 zaehlt sie selbst auf: 'damage from a hand edit, a bad merge, or an agent writing something unexpected'. Ein von Hand ins Frontmatter geschriebenes 'mode: chat' laedt fehlerfrei, erscheint in der 'mode'-Zeile von 'jaira show' und im JSON, und der Worker — der laut core/ticket/schema.go:147-151 gegen genau ein Wort vergleicht — laeuft autonom weiter. Der Mensch glaubt, er werde vor jedem Inkrement gefragt, und der Agent committet wie immer. Das ist woertlich das Versagen, das der Kommentar an schema.go:147-151 als Daseinsgrund der Pruefung nennt.
+
+Warum das kein Randfall ist: das Dateiformat ist hier die API (CLAUDE.md: 'the file format IS the API, and must stay hand-editable'). Handedit ist ein vorgesehener Schreibweg, nicht ein Missbrauch. Dazu kommt der Merge-Driver: --take-theirs schreibt den Gegenwert mit SetScalar durch (internal/cli/mergedriver.go:223), ohne CanonicalMode, und 'mode' faellt im Merge in den default-Zweig mergeScalar (core/merge/merge.go:158), kann also ueberhaupt konfliktieren.
+
+Fix: in core/validate/validate.go ein CodeBadMode neben CodeBadTag, geprueft mit ticket.CanonicalMode(t.Mode), Field ticket.FieldMode. SeverityWarning aus demselben Grund, den der Kommentar bei bad_tag schon aufschreibt — das Ticket selbst ist heil, nur der Wert ist unerreichbar —, und die Meldung nennt die Reparatur ('jaira set <handle> mode=conversational' oder 'mode='). CanonicalMode existiert bereits und ist genau die eine Stelle, die beide Pakete lesen sollen; validate ist der dritte Leser, nicht eine dritte Liste.
+
+Dazu eine Zeile in core/release/NOTES.md: ein neuer validate-Problemcode aendert Ausgabe und, mit --strict, den Exit-Code.
+
+Nicht erneut aufgemacht: die Commit-Zeilen-Bedingung aus Runde 3 und 4 steht jetzt an allen fuenf Stellen und stimmt ueberein. Der --no-worktree-Absatz, die Trim-Entscheidung und die Platzierung von 'mode' neben 'model_tier' statt in input-requires bleiben stehen — alle drei sind in frueheren Runden entschieden worden. Der FieldMode-Zweig in flow.go:685 fieldValue ist NICHT tot, obwohl der Kommentar darueber sagt, mode gehe nicht durch input-requires: der Merge-Driver ruft dieselbe Funktion (mergedriver.go:260) beim Auflisten konfliktierter Felder auf.
