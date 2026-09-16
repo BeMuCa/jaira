@@ -46,7 +46,7 @@ commits:
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:16:32Z
+updated-at: 2026-09-16T08:18:11Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -664,3 +664,10 @@ Why no existing pattern covers it: Incoming() for tickets (refsync.go:445) only 
 Fix: take the lock in fetch's RunE around the IncomingMilestones call alone, after refs.Incoming() so the network round trip stays outside the lock — the same shape archive.go:121 now uses. Not inside core/refsync: that package has no Store and the lock is a store concept.
 
 Not raised, deliberately: restore takes the lock for a plain ticket restore too. That was decided in round 13's fix with a reason on the ticket — what the file is is only known after the move — and it is not re-opened.
+- **2026-09-16 08:18 · Alexander Sacharov** — in-progress Runde 13 (critique-Runde 14), 2026-09-16. Der fuenfte Schreiber ist zu, und was der Code nicht sagt:
+- Der Lock liegt in einem Helfer fetchMilestones(s), nicht als zwei Zeilen in der RunE. Grund: 'defer unlock()' in der RunE haette den Lock ueber das ganze Drucken UND ueber emit()/JSON gehalten - also ueber Ausgabe, die auf ein langsames Terminal oder eine Pipe geht. Ein Block waere die Alternative gewesen; ein Helfer mit benanntem Rueckgabewert liest sich an der Aufrufstelle wie vorher.
+- refs.Incoming() bleibt VOR dem Lock, ausdruecklich: dort liegt die Netzwerkrunde. Waere sie drin, wuerde jedes 'milestone add' so lange warten, wie das Remote braucht - bei einem haengenden Remote unbegrenzt.
+- Verworfen: den Lock nach core/refsync in IncomingMilestones selbst. Das Paket kennt keinen Store, der Lock ist ein Store-Begriff, und refsync haette dafuer eine Abhaengigkeit auf ticket bekommen, die es heute nicht hat.
+- openStore() wurde in fetch.go schon aufgerufen, aber sein Ergebnis weggeworfen ('if _, err := openStore()'); der Root kam ueber die Paketvariable openedStore. Jetzt wird s festgehalten und s.Root benutzt - dieselbe Instanz, kein zweiter Store.
+- TestFetchWaitsForTheMilestoneLock ist gegen den ungelockten Aufruf gemessen worden: 'fetch did not wait for the milestone lock (returned <nil>)' nach 120ms. Die zweite Zusicherung - die Datei liegt waehrend des gehaltenen Locks noch nicht in .jaira/milestones/ - faengt einen Lock, der erst NACH dem Schreiben genommen wuerde; das Warten allein wuerde ein solcher auch erfuellen.
+- Der Test braucht twoBoards(t) und damit ein echtes Remote, nicht emptyStore: ohne refs.Usable() bricht fetch vor dem Milestone-Teil ab und haette nie etwas zu locken.
