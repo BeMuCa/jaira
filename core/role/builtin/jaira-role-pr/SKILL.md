@@ -112,7 +112,7 @@ second one:
 - **One listed** — it already has a description. Skip the next section and go
   straight to **Answering review comments**, then report.
 
-## Write the description, then open it
+## Write the description
 
 The reviewer reads this and nothing else before the diff. Read it off the
 board, do not invent it:
@@ -130,30 +130,51 @@ jaira show <id> --json
 - **What is deliberately not here**: scope the ticket ruled out. This is the
   half reviewers waste the most time on.
 
-Do not paste the diff into the description. They have the diff.
+Do not paste the diff into the description. They have the diff. Write it to a
+file — you do not open anything until the next section has settled where it goes.
 
-Write it to a file, then run the create command for the forge you settled on
-above — not both. On GitHub:
+## Which repository it goes to
+
+`origin` is not the answer. In a fork `origin` is your fork, and a pull request
+opened against the fork instead of the upstream sits where nobody is looking and
+has to be closed by hand. Settle the target **before** you type a create command:
 
 ```bash
-gh pr create --title "<title>" --body-file <the description you wrote>
+gh repo view --json isFork,parent,nameWithOwner   # GitHub
+glab repo view                                    # GitLab
+git config jaira.remote                           # the remote the board travels on
+```
+
+1. **Not a fork** — the target is `origin`'s own repository, and the create
+   command below needs no repository flag.
+2. **A fork** — the target is the parent, not your fork. `jaira.remote` is the
+   remote the board's ticket refs travel on and it names that same upstream;
+   read the owner/repo off it and pass it to the create command explicitly.
+3. **A fork whose parent and `jaira.remote` are not the same repository** — do
+   not guess and do not open. Name both and ask which one this pull request
+   belongs in.
+
+## Open it
+
+Run the create command for the forge you settled on above — not both, and with
+the repository from the step above named in it. On GitHub:
+
+```bash
+gh pr create --repo <owner/repo> --title "<title>" --body-file <the description you wrote>
 ```
 
 On GitLab:
 
 ```bash
-glab mr create --title "<title>" --description "$(cat <the description you wrote>)"
+glab mr create --target-project <path> --title "<title>" --description "$(cat <the description you wrote>)"
 ```
 
-Check where it is about to go. In a fork, `origin` is the fork and the pull
-request may target either it or the upstream; `gh pr create --repo <owner/repo>`
-and `glab mr create --target-project <path>` say which, and a pull request
-opened against the wrong one is noise a person has to close by hand. If the
-branch's base is not obvious, ask before you run it.
+Leave `--repo` / `--target-project` off only in case 1, where there is a single
+repository the command can mean.
 
 Report the URL. An agent invoked you instead: do not run the command — hand it
-back, written out and ready to paste, and say the branch is pushed and waiting
-for a person to open it.
+back, written out and ready to paste, with the target repository already filled
+in, and say the branch is pushed and waiting for a person to open it.
 
 ## Answering review comments
 
