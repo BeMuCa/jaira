@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:59:48Z
+updated-at: 2026-09-16T07:00:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -72,3 +72,4 @@ review-summary: |-
 - **2026-09-16 06:57 · Alexander Sacharov** — Planschritt 2 nannte eine "proj-Variable" und vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) aus ~/.claude. Beides existiert dort heute nicht mehr: die ~/.claude-Kopie von spawn.sh ist am 16.09. auf den .jaira/worktree-setup-Hook umgebaut worden, der die .env-Logik ganz aus dem Skript nimmt. Dieser Hook ist Ticket 7MG5GB und bleibt hier draussen. Uebernommen wurden daher nur zwei Hunks: --no-worktree und die dispatch-Lane.
 - **2026-09-16 06:57 · Alexander Sacharov** — spawn.sh und ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh sind nach diesem Ticket bewusst NICHT byte-gleich - die Builtin-Version traegt noch die inline .env-Logik, die ~/.claude-Version schon den worktree-setup-Hook aus 7MG5GB. SKILL.md dagegen ist byte-gleich (diff leer). Wer die beiden vergleicht und einen Rueckstand vermutet: es ist der andere Ticket-Weg, kein vergessener Hunk.
 - **2026-09-16 06:57 · Alexander Sacharov** — Die Flag-Schleife steht vor dem HERDR_ENV-Check, nicht danach. Damit beantwortet spawn.sh --help die Flags auch auf einer Maschine ohne Herdr mit exit 0, statt mit "not inside a Herdr pane" abzubrechen. TestEmbeddedScriptsParse setzt HERDR_ENV= genau deswegen explizit - wer den Check nach oben schiebt, faellt dort auf.
+- **2026-09-16 07:00 · Alexander Sacharov** — critique: der --no-worktree-Hunk ist sauber und dokumentiert, der zweite Hunk nicht. Die 'dispatch'-Lane (spawn.sh:137) wurde bewusst mitgenommen - aber niemand erfaehrt davon: teamlead/SKILL.md:45 startet den Dispatcher mit spawn.sh und nennt den Lane-Wert nicht, dispatcher/SKILL.md:84 beschreibt die Signatur ohne ihn, NOTES.md:17 nennt nur --no-worktree. Damit ist der Zweig heute unerreichbar, obwohl er ausgeliefert wird. Nicht rausgeworfen, sondern dokumentiert - das ist die kleinere Aenderung. Viertens: --no-worktree liest den Slug nie (wt=$root), verlangt ihn aber weiter; ein Satz in usage() reicht. Bewusst NICHT aufgemacht: ob der Skill zusaetzlich unter .claude/skills/ liegen soll - die Zweitkopie-Entscheidung steht in der Pre-Process-Notiz und bleibt stehen.
