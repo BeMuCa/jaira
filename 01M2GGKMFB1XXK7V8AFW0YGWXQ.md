@@ -48,7 +48,7 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:39:21Z
+updated-at: 2026-09-16T08:39:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -739,3 +739,4 @@ Checked and NOT raised, so the next pass does not re-derive them:
 - Keine NOTES.md-Zeile: eine README-Aenderung ist nichts, was aus dem Binary heraus beobachtbar ist. NOTES.md ist das, was 'jaira update' vorliest.
 - Bewusst NICHT angefasst, ausserhalb des Findings: die Befehlsliste in README:646 nennt weder 'jaira tag' noch 'jaira milestone', und die Tastenliste (README:700) nennt weder den Tag-Picker 't' noch den Milestone-Filter. Das ist eine durchgaengige Auslassung, keine Milestone-Luecke — wer sie schliesst, sollte beide Seiten schliessen. Kandidat fuer ein eigenes Ticket.
 - .jaira/milestones/ liegt weiter untracked im Baum (die drei demo-*.md aus Plan-Schritt 72). Kein 'git add -A' in diesem Baum, sonst rutschen sie wieder mit.
+- **2026-09-16 08:39 · Alexander Sacharov** — critique round 17: none. Der einzige neue Commit df254a6 ist die Antwort auf Runde 16 und stimmt mit dem Code ueberein — gegengeprueft: gitref.Fetch (core/gitref/gitref.go:631) faehrt '+refs/jaira/*:refs/jaira/*', genau der Refspec in README:405; WriteMilestone/mktree (core/gitref/gitref.go:327,336) legt '<name>.md' in den Tree, genau was README:289 und README:407 versprechen. Geprueft und bewusst NICHT als Befund gefuehrt: die Paket-Doku von core/refsync (refsync.go:1-6) und der Paketkopf von core/gitref (gitref.go:1-23) sprechen weiter nur von Tickets, obwohl beide Pakete jetzt auch Milestones tragen. Das ist eine Kommentarzeile ohne Nutzerwirkung, und die Konstanten Root/MilestonePrefix (gitref.go:41-53) erklaeren die zwei Namensraeume direkt darunter ausfuehrlich — ein Befund daraus waere nach 17 Runden Fleiss statt Kritik. Die Schleife endet hier.
