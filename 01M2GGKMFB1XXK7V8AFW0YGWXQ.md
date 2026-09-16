@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:20:15Z
+updated-at: 2026-09-16T07:20:24Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
@@ -146,7 +146,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] editMembers ErrNotExist-Zweig: vor dem 'create'-Rat milestoneFiled(s, name) fragen, wie create es bei milestones.go:130 tut, und auf 'jaira restore' zeigen statt auf 'create'
 - [x] Tests in internal/cli/milestones_test.go: add/rm auf einer markierten Datei auf der Platte, und add/rm auf einem in DIESEN Baum abgelegten Milestone
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer die Weigerung von 'jaira milestone add/rm' bei einem abgelegten Milestone
-- [ ] internal/cli: die Weigerung eines abgelegten Milestones in zwei Helfer ziehen (Vorbild pull.go:113 refusePull) - refuseFiledOnDisk und refuseFiledInLogbook, je einmal formuliert; die vier Stellen in milestones.go und die dritte Tuer in logbook.go rufen sie auf, der abweichende Schlusssatz kommt vom Aufrufer
+- [~] internal/cli: die Weigerung eines abgelegten Milestones in zwei Helfer ziehen (Vorbild pull.go:113 refusePull) - refuseFiledOnDisk und refuseFiledInLogbook, je einmal formuliert; die vier Stellen in milestones.go und die dritte Tuer in logbook.go rufen sie auf, der abweichende Schlusssatz kommt vom Aufrufer
 - [ ] Test: die bestehenden Weigerungstests bleiben gruen, und ein Test misst nach, dass alle Weigerungen dieselben drei Angaben tragen
 
 ## Progress
