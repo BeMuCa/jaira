@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:47:16Z
+updated-at: 2026-09-16T06:47:19Z
 updated-by: Alexander Sacharov
 ---
 
@@ -32,7 +32,7 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] spawn.sh ruft ein Einrichtungsskript des Repositorys auf und uebergibt ihm worktree-Pfad, Slug, Port-Versatz und Repository-Wurzel
-- [ ] Ohne diese Datei schreibt spawn.sh dieselbe .env wie vorher - ein bestehendes Board merkt nichts
+- [ ] Ohne dieses Skript legt spawn.sh den worktree an und richtet sonst nichts ein
 - [ ] HTTP_PORT und DB_PORT_HOST stehen nicht mehr in spawn.sh; die Dokumentation zeigt, wie ein Projekt sie in seinem Hook setzt
 - [ ] Die Hilfe von 'roles install' sagt, dass eine bearbeitete Datei nicht nur unveraendert bleibt, sondern auch keine Verbesserungen mehr bekommt
 
