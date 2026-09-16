@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:02:21Z
+updated-at: 2026-09-16T08:02:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11544
 claimed-at: 2026-09-16T07:59:59Z
@@ -34,7 +34,8 @@ claimed-at: 2026-09-16T07:59:59Z
 
 ## Definition of Done
 
-- [ ] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
+- [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:9-27 (Mensch oeffnet, Agent reicht zurueck), :136 (Zielrepository vor dem Oeffnen), :178-183 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
 
 ## Options
 
