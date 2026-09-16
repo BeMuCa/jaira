@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:16:11Z
+updated-at: 2026-09-16T11:16:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -223,3 +223,6 @@ ERWOGEN UND VERWORFEN (haette ein Finding werden koennen): die GitLab-Haelfte vo
 NICHT NEU AUFGEMACHT, weil in frueheren Durchgaengen entschieden: der Feldname fuer den Fork-Elternteil in der glab-JSON bleibt bewusst ungenannt (Durchgang 5/6: nicht gegen eine GitLab-Instanz pruefbar, das Modell liest die JSON selbst); die Mensch/Agent-Regel steht an drei Stellen als Rahmen + Ausfuehrungsort (Durchgang 1); die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, die Disjunktheit der drei Sprossen und der whoami-Absatz sind seit Durchgang 5 unbeanstandet.
 
 SACHE DER REVIEW-LANE, hier bewusst nicht gefragt: ob 'glab repo view -F json' den Fork-Elternteil ueberhaupt enthaelt, und ob 'glab mr create --target-project' so heisst. Diese Lane fragt nicht, ob es laeuft.
+- **2026-09-16 11:16 · Alexander Sacharov** — optimize: Die zwei Lookups hinter Sprosse 1 zu ziehen war der einzige Eingriff mit einem Risiko - eine Leiter, deren Sprossen nicht mehr alle im selben Block stehen, laedt dazu ein, eine davon frueh zu beantworten. Sicher ist es, weil Sprosse 1 als einzige kein Fork verlangt und 2 und 3 beide einen: wer bei isFork:false stehenbleibt, kann 2 oder 3 gar nicht treffen. Der Satz 'Resolve the parent and that URL before you read the rungs' bleibt deshalb stehen, gilt jetzt aber nur noch fuer die zwei Fork-Sprossen.
+
+Geprueft und NICHT geaendert: '.remotes' aus 'jaira whoami --json' koennte 'der Name hat hier gar keine URL' in Sprosse 2 ohne 'git remote get-url' beantworten. Das spart aber kein Kommando - die URL wird in derselben Sprosse ohnehin gebraucht, um sie gegen origin und den Parent zu halten. Reine Textaenderung ohne Gewinn, also gelassen.
