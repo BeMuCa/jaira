@@ -43,11 +43,11 @@ commits:
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:24:52Z
+updated-at: 2026-09-16T07:25:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-35903
-claimed-at: 2026-09-16T06:51:55Z
+claimed-by: DESKTOP-RFTCH11-32438
+claimed-at: 2026-09-16T07:25:29Z
 outcome-what: "Die Weigerung eines abgelegten Milestones steht nur noch einmal je Zustand: refuseFiledOnDisk (Datei liegt hier, ist aber markiert) und refuseFiledInLogbook (dieser Baum hat sie abgelegt) in internal/cli/milestones.go:380-403. Die vier Stellen in milestones.go und die fuenfte in logbook.go rufen sie auf und geben nur noch den Schlusssatz mit, der sagt, was der jeweilige Befehl getan haette. Neuer Test TestEveryDoorIntoAFiledMilestoneSaysTheSameThings faehrt create/add/rm/logbook gegen eine markierte Datei und misst, dass alle vier Datei, Markierung, 'jaira restore <name>.md' und den ablegenden Baum nennen."
 outcome-why: "Befund aus critique-Runde 8, von Alex am 2026-09-16 zum Bauen freigegeben: derselbe Satz viermal von Hand geschrieben driftet, sobald eine Tuer angefasst wird, und dann liest ein Nutzer an vier Tueren vier verschiedene Erklaerungen fuer eine Lage. Vorbild ist pull.go refusePull."
 outcome-resolves: "Kein Verhalten geaendert: Exit-Code und reason 'milestone_filed' bleiben, go build/vet ./... und go test ./... -race sind in allen 28 Paketen gruen, die beiden Tuer-Tests aus Runde 7 laufen unveraendert. Kein NOTES.md-Eintrag, weil nichts beobachtbar anders wird - die Zeilen :24 und :28 beschreiben beide Weigerungen schon."
