@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:43:29Z
+updated-at: 2026-09-16T07:44:19Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -585,3 +585,9 @@ WHY NO TEST CAUGHT IT: TestAddOnAMilestoneFiledInThisTreePointsAtRestore (milest
 WHAT TO BUILD: in milestoneFiled, ask s.FiledMilestone(name) first and return milestoneFiledHere when it answers; read the ref only when it does not. Both reasons the ref is consulted survive: a clone that fetched somebody else's filing has no logbook copy and falls through to the ref, and an unshared board has no refs and is answered by the logbook. The case that changes is only the one where both hold, and there the local copy must win, because that is the answer the reader can act on without leaving the tree. Then give the shared-board filer a test — the existing one cannot reach the branch.
 
 CHECKED AND LEFT ALONE: swapping the order is safe where the ref says NOT filed and a logbook copy is here (someone restored elsewhere) — the ref branch only returns on Filed(), so both orders already answer milestoneFiledHere. refuseFiledElsewhere carrying the shared sentence for the two out-of-tree states is right and is not what this finding touches. The 'instead'/'then' parameter-name difference stays cosmetic. logbook.go:289 does not call milestoneFiled at all, so it is unaffected.
+- **2026-09-16 07:44 · Alexander Sacharov** — in-progress round 9 (critique round 10), 2026-09-16. The lookup order is now logbook-then-ref, and what the code does not say:
+- The state critique round 10 found is the one no test covered: the FILING tree has BOTH — its own logbook copy and the marked ref it wrote. Every earlier test stood in a tree that had exactly one of the two (TestAddOnAMilestoneFiledInThisTreePointsAtRestore has no refs at all, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt is grace, who never had the file). That is why ref-first passed everything for two rounds.
+- Considered fixing the wording of refuseFiledOnRef instead of the order, so it would say 'in the tree that filed it, which may be this one'. Rejected: the reader would still have to go and find out which, and the answer is already on this disk. The order is what carries the information, not the sentence.
+- Logbook-first is also strictly the cheaper path: s.FiledMilestone walks this tree's logbook folders, the ref branch shells out to git. The common case on an unshared board returns before touching git at all.
+- TestTheFilingTreeIsPointedAtItsOwnLogbook was measured against the old order before being kept: with ref-first it fails all three assertions on the add door. A test that passes both ways would not have held this down.
+- The negative assertions matter more than the positive ones here: both refusals name 'jaira restore <name>.md', so only the absence of the ref name and of 'the tree that filed it' tells the two apart.
