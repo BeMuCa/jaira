@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:46:52Z
+updated-at: 2026-09-16T06:46:56Z
 updated-by: Alexander Sacharov
 ---
 
@@ -46,4 +46,8 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
+- **2026-09-16 06:46 · Alexander Sacharov** — Praezisiert am 16.09.2026 auf Ansage: jaira soll den worktree anlegen und sonst nichts. Die erste Fassung dieses Tickets hat noch von einer Datei gesprochen, die Zeilen fuer die .env ausgibt - das ist zu eng gedacht.
 
+Warum zu eng: das Kopieren der .env ist selbst schon projektspezifisch. Ein Projekt ohne .env braucht es nicht, ein anderes will daneben noch 'npm install' oder eine Datenbank hochfahren. Wenn jaira die .env kopiert und ein Hook nur Zeilen anhaengen darf, bleibt die eine Entscheidung, die am haeufigsten falsch ist, weiter in jaira.
+
+Also: ein Einrichtungsskript, kein Zeilenlieferant. jaira ruft es auf, gibt ihm worktree-Pfad, Slug, Port-Versatz und Repository-Wurzel, und was danach in dem Verzeichnis steht, ist Sache des Projekts. Rueckwaerts vertraeglich bleibt es dadurch, dass ein Board ohne dieses Skript einen worktree ohne .env bekommt - wer die alte Bequemlichkeit will, schreibt sich das Skript einmal hin, und jaira zeigt eins als Vorlage.
