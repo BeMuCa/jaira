@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:20:30Z
+updated-at: 2026-09-16T11:20:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -53,7 +53,7 @@ test-verdict: "pass: go build ./... und go test -race ./... gruen (RC=0, 28 Pake
 ## Definition of Done
 
 - [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:110,118-120 (glab repo view -F json, Begruendung), :139-141 (Sprosse 1 liest den Pfad aus der JSON), :144-148 (Sprosse 2 je Forge), :204-224 ('Open it'), :242-247 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:9-23 (Mensch oeffnet, Agent reicht zurueck), :100-160 (Zielrepository VOR :207 'Open it'), :243-248 (merge/approve verboten); core/release/NOTES.md:17; go build ./... ok, go test -race ./... RC=0
 
 ## Options
 
