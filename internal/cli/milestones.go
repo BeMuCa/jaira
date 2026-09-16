@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -127,7 +128,14 @@ and you are told so.`,
 			} else if !errors.Is(err, os.ErrNotExist) {
 				return err
 			}
-			if where, filed := milestoneFiled(s, name); filed {
+			switch where, at := milestoneFiled(s, name); at {
+			case milestoneFiledOnRef:
+				// Somebody else filed it. Their logbook holds the only copy,
+				// so pointing at a restore here would send the reader to a
+				// command that answers that the file is not in the archive.
+				return refuseFiledOnRef(name, where,
+					"creating it again here would make a second milestone with the same name")
+			case milestoneFiledHere:
 				return refuseFiledInLogbook(name, where,
 					"; creating it again would make a second milestone with the same name")
 			}
@@ -240,7 +248,11 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 			// with. Saying "create it" here sends the reader into the
 			// refusal create raises for a filed name, two steps for one
 			// answer, and the first one points the wrong way.
-			if where, filed := milestoneFiled(s, name); filed {
+			switch where, at := milestoneFiled(s, name); at {
+			case milestoneFiledOnRef:
+				return refuseFiledOnRef(name, where,
+					"there is no copy of it here for tickets to go in and out of")
+			case milestoneFiledHere:
 				return refuseFiledInLogbook(name, where,
 					", and then tickets can go in and out of it again")
 			}
@@ -350,6 +362,19 @@ work and each filters to half of it.`,
 	}
 }
 
+// milestoneFiledAt says where the mark on a filed name was found, because the
+// two places are not interchangeable to the person reading the refusal. A
+// logbook copy lies in this tree and 'jaira restore' here brings it back; a
+// marked ref is somebody else's filing, and the only copy that can come back
+// is in their tree.
+type milestoneFiledAt int
+
+const (
+	milestoneNotFiled milestoneFiledAt = iota
+	milestoneFiledOnRef
+	milestoneFiledHere
+)
+
 // milestoneFiled reports whether this name belongs to a milestone that has
 // been filed, and where that was found. A filed name stays taken: two
 // milestones called the same thing are one identity that looks different on
@@ -359,40 +384,67 @@ work and each filters to half of it.`,
 // is the one an unshared clone does not have, and the logbook is the one a
 // clone that never fetched does not see — a board that has never been shared
 // has no refs at all, and would otherwise hand out the same name twice.
-func milestoneFiled(s *ticket.Store, name string) (string, bool) {
+//
+// The ref is asked first, and that order decides what the caller may say: a
+// tree can hold a marked ref and no logbook copy at all, so the answer here
+// is what keeps the refusal from pointing at a restore that would fail.
+func milestoneFiled(s *ticket.Store, name string) (string, milestoneFiledAt) {
 	if refs != nil && refs.Usable() == nil {
 		if content, _, err := refs.Repo.ReadMilestone(name); err == nil {
 			if milestone.FromBytes(name, content).Filed() {
-				return "on its ref", true
+				return gitref.MilestoneRefName(name), milestoneFiledOnRef
 			}
 		}
 	}
-	return s.FiledMilestone(name)
+	if where, ok := s.FiledMilestone(name); ok {
+		return where, milestoneFiledHere
+	}
+	return "", milestoneNotFiled
 }
 
-// refuseFiledOnDisk and refuseFiledInLogbook are the two refusals a filed
-// milestone raises, each written in one place. Which one a reader gets depends
-// on where the file is — lying here but marked, or moved into this tree's
-// logbook — and not on the command they typed: create, add/rm and logbook all
-// stand in front of the same file and owe the reader the same three facts. The
-// last clause is what differs, so the caller passes it: it says what THIS
-// command would have done instead.
+// These are the refusals a filed milestone raises, each written in one place.
+// Which one a reader gets depends on the state they are in and not on the
+// command they typed: create, add/rm and logbook all stand in front of the
+// same milestone and owe the reader the same facts. The last clause is what
+// differs, so the caller passes it: it says what THIS command would have done
+// instead.
 //
 // Written once because they were written four times, and a refusal that drifts
 // between doors teaches the reader that the doors are different problems.
 // Modelled on refusePull (pull.go) — the refusal is a validation error, so a
 // script sees exit 3 and a reason it can branch on.
-func refuseFiledOnDisk(root, name, instead string) error {
+//
+// The split that matters is WHERE THE WAY BACK RUNS. refuseFiledElsewhere is
+// for a filing that happened in another tree — the copy 'jaira restore' needs
+// is over there, whether the mark reached us as a marked file or as a marked
+// ref — and refuseFiledInLogbook is the one case where the copy is here.
+// Naming the wrong one sends the reader to a restore that answers "not in the
+// archive".
+//
+// `carries` names the thing that holds the mark, in the reader's terms.
+func refuseFiledElsewhere(name, carries, instead string) error {
 	return fail(ExitValidation, "milestone_filed",
-		"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and %s",
-		name, milestone.Path(root, name), milestone.StatusFiled, name, instead)
+		"milestone %q has been filed: %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and %s",
+		name, carries, milestone.StatusFiled, name, instead)
 }
 
-// refuseFiledInLogbook is the other half: the file is not on disk any more
+// refuseFiledOnDisk: the file is lying here and carries the mark, which is
+// what a fetch of somebody else's filing leaves behind.
+func refuseFiledOnDisk(root, name, instead string) error {
+	return refuseFiledElsewhere(name, "its file at "+milestone.Path(root, name), instead)
+}
+
+// refuseFiledOnRef: there is no file here at all and the mark is on the ref,
+// so this tree has nothing to restore from and never had. The ref is named
+// because it is the only thing the reader can go and look at.
+func refuseFiledOnRef(name, ref, instead string) error {
+	return refuseFiledElsewhere(name, "its ref "+ref, instead)
+}
+
+// refuseFiledInLogbook is the other state: the file is not on disk any more
 // because this very tree filed it, so the way back runs here. `where` is the
-// logbook folder or the ref the mark was found on, and `then` is the caller's
-// closing clause, punctuation included — it follows the colour with no
-// separator of its own.
+// logbook folder the copy lies in, and `then` is the caller's closing clause,
+// punctuation included — it follows the colour with no separator of its own.
 func refuseFiledInLogbook(name, where, then string) error {
 	return fail(ExitValidation, "milestone_filed",
 		"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour%s",

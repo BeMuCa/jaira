@@ -250,3 +250,55 @@ func TestAClonePlanningTheMilestoneLearnsItWasFiled(t *testing.T) {
 		t.Errorf("grace's 'milestone ls' still names a milestone that was filed:\n%s", out)
 	}
 }
+
+// The door a tree walks into when the filing happened somewhere else: grace
+// never had the file, so her disk holds nothing and her logbook holds nothing
+// — the only thing that says "filed" is the ref ada left standing. The refusal
+// has to point at ada's tree, because 'jaira restore' here answers that the
+// file is not in the archive.
+func TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err == nil {
+		t.Fatal("grace has the file, so this is not the ref-only state under test")
+	}
+
+	if out, err := runCLI(t, grace, "create", "something to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	ticketID := handleFromList(t, grace, "something to group")
+	doors := map[string][]string{
+		"create": {"milestone", "create", "round-one"},
+		"add":    {"milestone", "add", "round-one", ticketID},
+	}
+	for door, args := range doors {
+		out, err := runCLI(t, grace, args...)
+		if err == nil {
+			t.Fatalf("'%s' went through a milestone filed on its ref:\n%s", door, out)
+		}
+		for _, want := range []string{
+			gitref.MilestoneRefName("round-one"),
+			milestone.StatusFiled,
+			"jaira restore round-one.md",
+			"the tree that filed it",
+		} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
+			}
+		}
+		// The restore it names runs in ada's tree. Claiming a logbook here
+		// would be claiming a copy grace does not have.
+		if strings.Contains(err.Error(), "into the logbook") {
+			t.Errorf("the %s refusal claims a logbook copy grace never had: %v", door, err)
+		}
+	}
+}
