@@ -5,7 +5,7 @@ status: backlog
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
-goal: "spawn.sh schreibt nur, was jaira selbst besitzt. Alles, was den Namen eines Projekts traegt, kommt aus einer Datei im Repository - .jaira/worktree-env, ausfuehrbar, ihre Ausgabe wird an die .env des neuen worktree gehaengt. Fehlt die Datei, verhaelt sich spawn.sh wie bisher."
+goal: "spawn.sh legt den worktree an, oeffnet die Kachel und startet den Arbeiter - mehr nicht. Alles, was ein Projekt zum Loslaufen braucht, macht ein Skript im Repository, das spawn.sh aufruft und mit worktree-Pfad, Slug, Port-Versatz und Wurzel versorgt. Ohne dieses Skript legt spawn.sh nur den worktree an."
 context: |-
   spawn.sh legt fuer jeden Arbeiter einen worktree an und schreibt ihm eine eigene .env. Darin stehen heute HTTP_PORT und DB_PORT_HOST - Namen, die sich ein einzelnes Projekt ausgedacht hat. Ein anderes Projekt nennt seine Ports anders oder hat keine, und bekommt die Zeilen trotzdem.
 
@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:46:36Z
+updated-at: 2026-09-16T06:46:52Z
 updated-by: Alexander Sacharov
 ---
 
