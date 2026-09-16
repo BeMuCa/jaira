@@ -94,17 +94,16 @@ word.
 git push -u origin HEAD
 ```
 
-That is the whole of this step. Whether a pull request then gets opened, or the
+That is the whole of this step: whether a pull request then gets opened, or the
 create line goes back for a person to run, is settled at the create command
-below and nowhere else — so that the run reads one rule rather than two.
+below and nowhere else.
 
 ## Which repository it goes to
 
 `origin` is not the answer, and you need the answer before the next command, not
-before the last one. In a fork `origin` is your fork: a pull request opened
-against it sits where nobody is looking and has to be closed by hand, and a
-listing asked of it does not see the pull request that is already open upstream.
-Settle the target first:
+before the last one. In a fork `origin` is your fork, and a pull request opened
+against it sits where nobody is looking and has to be closed by hand. Settle the
+target first:
 
 ```bash
 gh repo view --json isFork,parent,nameWithOwner   # GitHub
@@ -113,13 +112,12 @@ jaira whoami --json                               # the board's remote, and wher
 ```
 
 Ask `jaira whoami` for the board's remote, never `git config jaira.remote`. That
-config key is only the first of four steps jaira itself walks
-(`core/settings/settings.go` `RemoteSourceFor`): unset, it falls through to
-`settings.json`, then to the repository's only remote. Reading the key directly
-therefore comes back empty on a board whose remote is set perfectly well — and
-empty reads as "nothing contradicts", so the check you came here for never runs.
-`whoami` is the one command that reports the remote the rest of jaira actually
-uses.
+config key is only the first of the four steps jaira itself walks
+(`core/settings/settings.go` `RemoteSourceFor`, which falls through to
+`settings.json` and then to the repository's only remote), so reading it
+directly comes back empty on a board whose remote is set perfectly well — and
+empty reads as "nothing contradicts", so the check you came here for never
+runs.
 
 `.remote` in that JSON is the *name* of a remote — `upstream`, say — not an
 `owner/repo`. Turn it into one before you use it:
@@ -139,8 +137,7 @@ told apart by what the two say, and a rung answered early answers wrong.
    here at all because no remote by it exists. Either way the target is
    the parent from `gh repo view` / `glab repo view`: there is one upstream and
    nothing contradicts it. A board remote pointing at `origin` is an ordinary
-   setting and says nothing about where pull requests go — it is the remote the
-   board's ticket refs travel on, not the one they land in.
+   setting and says nothing about where pull requests go.
 3. **A fork whose board remote resolves to neither `origin` nor the parent** —
    two different upstreams. Do not guess and do not open. Name both and ask
    which one this pull request belongs in, quoting `.remote_source` from the
