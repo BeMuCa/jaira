@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,13 +26,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:06:52Z
+updated-at: 2026-09-16T07:07:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
-outcome-what: "Der ausgelieferte, aber undokumentierte dispatch-Zweig ist jetzt an vier Stellen beschrieben: spawn.sh usage() (eigener Absatz), dispatcher/SKILL.md (was der Lane-Name tut und wer ihn tippt), teamlead/SKILL.md (der Aufruf 'spawn.sh <slug> <ticket> dispatch' samt Warnung) und eine NOTES.md-Zeile unter Unreleased. Zusaetzlich sagen usage() und dispatcher/SKILL.md nun, dass --no-worktree den Slug weiter verlangt und nicht liest."
-outcome-why: "critique: der Zweig war ausgeliefert und unerreichbar - kein Dokument nannte den Lane-Wert 'dispatch', also konnte niemand ihn treffen; und --no-worktree verlangte einen Slug, dessen Nutzlosigkeit nirgends stand"
-outcome-resolves: "DoD 1 bleibt erfuellt und ist um den zweiten Hunk ergaenzt: go test ./core/role/... gruen, 'spawn.sh --help' ohne Herdr exit 0 mit beiden neuen Absaetzen"
+outcome-what: "Zwei Aufraeumungen in core/role/builtin/jaira-dispatcher/scripts/spawn.sh, ohne Verhaltensaenderung: der dispatch-Zweig ruft send-text nicht mehr zweimal auf, sondern setzt $prompt und der Aufruf steht einmal danach; der Kommentar am --no-worktree-Zweig ist von 6 auf 4 Zeilen gekuerzt, weil er usage() wortgleich wiederholte."
+outcome-why: "optimize: eine Idee soll an einer Stelle stehen. Der doppelte send-text-Aufruf war die einzige echte Duplikation dieser Aenderung, und sie zu falten macht auch RPXJ (testing -> /jaira-role-tester) zu einem elif statt zu einem dritten kopierten Aufruf."
+outcome-resolves: "bash -n gruen, 'go test ./...' gruen (inkl. TestEmbeddedScriptsParse, das spawn.sh --help ohne Herdr startet); DoD 1 unveraendert erfuellt, kein Kommando und keine Ausgabe geaendert, also keine NOTES.md-Zeile."
 review-summary: none
 review-gaps: "entfernt: der doppelte send-text-Aufruf im dispatch-Zweig (beide Zweige setzen jetzt $prompt, der Aufruf steht einmal danach - und RPXJ braucht dort nur noch ein elif); gekuerzt: der 6-Zeilen-Kommentar am --no-worktree-Zweig, der usage() 100 Zeilen weiter oben wortgleich wiederholte, auf die eine Begruendung, die dort nicht steht. Gesucht und nicht gefunden: eine zweite spawn.sh oder ein zweites usage() im Repository (find/grep, es gibt genau eines). Gelassen und warum: der '--'-Fall der Flag-Schleife (eine Zeile Absicherung, loeschen waere selbst eine Verhaltensaenderung), der 'scripts == 0'-Guard in TestEmbeddedScriptsParse (deckt sich mit TestDispatcherShipsItsScript, ist aber der Guard dieses Tests und liest keinen anderen), und die vorbestehende 'dir := t.TempDir(); Install(dir, false)'-Wiederholung in core/role/role_test.go. NICHT generalisiert: die Lane-zu-Kommando-Tabelle - siehe Notiz, das ist RPXJ."
 ---
