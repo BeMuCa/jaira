@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:12:54Z
+updated-at: 2026-09-16T20:12:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -296,3 +296,9 @@ internal/cli/resume.go:126-141 baut seine JSON-Items als eigenes Map-Literal (id
 Warum das mehr ist als eine fehlende Ausgabe: core/ticket/schema.go:44-47 begruendet die ganze Bauform damit, dass der Modus einen Sitzungsabbruch ueberlebt, und core/role/builtin/jaira-dispatcher/SKILL.md:65 sagt woertlich, ein frischer Dispatcher lese ihn 'after jaira resume ... back off disk'. Das stimmt nicht. Genau der Dispatcher, der nach einem Abbruch neu startet und seiner eigenen Anweisung aus Zeile 28 folgt ('reads jaira resume and carries on'), sieht den Modus dort nicht — und laeuft autonom weiter, was der Modus verhindern soll. Gerettet wird es nur dadurch, dass der Abschnitt 30 Zeilen weiter oben zusaetzlich 'jaira show <id> --json' vorschreibt; der Prompt widerspricht sich also selbst.
 
 Fix: "mode": i.t.Mode in die items-Map (i.t ist bereits das per s.Load nachgeladene volle Ticket, Zeile 133) und eine mode-Zeile in den Klartext-Block, wie printDetail sie neben 'tier' hat. Zwei Zeilen. Alternative waere, SKILL.md:65 zu streichen und dort nur show --json zu nennen — das laesst aber die Begruendung des Feldes (Abbruch ueberleben) an einer Stelle haengen, die der Dispatcher-Prompt selbst nicht als Wiederanlauf fuehrt. Empfehlung daher: resume versorgen.
+- **2026-09-16 20:12 · Alexander Sacharov** — In-progress nach critique (7. Durchgang): 'jaira resume' fuehrt jetzt den Modus.
+
+- internal/cli/resume.go baut sein JSON von Hand (items-Map, ~Zeile 138) und geht NICHT durch ticketJSON. Jedes neue Frontmatter-Feld muss dort einzeln nachgetragen werden — das ist die Stelle, die bei einem neuen Feld still zurueckbleibt, und sie ist nicht die einzige ihrer Art in internal/cli.
+- Der Klartext-Zweig bekommt die Zeile nur bei gesetztem Modus, wie 'was on:' und wie row() in tickets.go: ein Ticket ohne Modus kostet keine Zeile. Der Test prueft beide Richtungen.
+- Warum ueberhaupt hier und nicht nur in 'jaira show --json': jaira-dispatcher/SKILL.md:65 nennt 'jaira resume' ausdruecklich als die Stelle, an der ein frischer Dispatcher den Modus von der Platte liest. Die Alternative aus critique — den Satz in SKILL.md streichen — laesst die Begruendung des Feldes (schema.go:44-47: es sitzt auf dem Ticket, um einen Sitzungsabbruch zu ueberleben) unbelegt, also wurde der Code an die Doku angeglichen und nicht umgekehrt.
+- Die NOTES.md-Zeile zum Modus wurde ergaenzt statt eine zweite geschrieben: es ist dieselbe Aenderung fuer den Leser (wo sehe ich den Modus), und zwei Zeilen zum selben Feld lesen sich wie zwei Features.
