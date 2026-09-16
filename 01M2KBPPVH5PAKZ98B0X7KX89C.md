@@ -26,7 +26,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-15T20:21:31Z
+updated-at: 2026-09-16T06:48:53Z
+updated-by: Alexander Sacharov
 ---
 
 # Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree
