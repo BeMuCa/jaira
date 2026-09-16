@@ -25,10 +25,10 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:09:34Z
+updated-at: 2026-09-16T11:10:23Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-89868
-claimed-at: 2026-09-16T10:49:16Z
+claimed-by: DESKTOP-RFTCH11-35292
+claimed-at: 2026-09-16T11:10:23Z
 outcome-what: "Die Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md fragt jetzt das richtige Repository: 'gh repo view' und 'glab repo view' bekommen \"$(git remote get-url origin)\" als Argument, statt die Forge das Basis-Repository selbst waehlen zu lassen. Dazu ein Absatz, der sagt warum, und Sprosse 2 nennt die Felder '.parent.owner.login' / '.parent.name', aus denen das owner/repo des Elternteils zusammengesetzt wird."
 outcome-why: "Der Befund der testing-Lane: ein blankes 'gh repo view' loest das Basis-Repository selbst auf und bevorzugt das Upstream. Auf einem Fork-Clone meldet es isFork:false, Sprosse 1 ('kein Fork') feuert, und Sprosse 2 und 3 sind unerreichbar - der Widerspruchsfall, fuer den dieses Ticket existiert, konnte nie ausloesen. Hier nachgestellt: bare gh gibt BeMuCa/jaira mit isFork:false, mit origin-URL gibt es sashasoft90/jaira mit parent BeMuCa."
 outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' ist jetzt auch auf einem Fork wahr, nicht nur im Text. go build, go vet und go test ./core/role/... gruen."
