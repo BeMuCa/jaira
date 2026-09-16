@@ -107,7 +107,7 @@ target first:
 
 ```bash
 gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner   # GitHub
-glab repo view "$(git remote get-url origin)"                                    # GitLab
+glab repo view "$(git remote get-url origin)" -F json                            # GitLab
 jaira whoami --json                              # the board's remote, and where it came from
 ```
 
@@ -115,7 +115,9 @@ Name `origin` in that command; do not let the forge pick the repository for you.
 A bare `gh repo view` resolves the base repository itself and prefers the
 upstream, so in a fork clone it answers about the parent — `isFork:false`, and
 rung 1 below fires on a fork, which is the one case this section exists for.
-Both tools take the remote URL as the argument, SSH form included.
+Both tools take the remote URL as the argument, SSH form included. Ask `glab`
+for `-F json`: its default output is the project's description and README, which
+names neither the fork status the ladder branches on nor the parent rung 2 needs.
 
 Ask `jaira whoami` for the board's remote, never `git config jaira.remote`. That
 config key is only the first of the four steps jaira itself walks
@@ -136,14 +138,15 @@ Resolve both the parent and that URL before you read the ladder: the rungs are
 told apart by what the two say, and a rung answered early answers wrong.
 
 1. **Not a fork** — the target is `origin`'s own repository: the
-   `nameWithOwner` the same `gh repo view` already returned, or the path
-   `glab repo view` printed.
+   `nameWithOwner` the same `gh repo view` already returned, or the project path
+   in the same `glab repo view` JSON.
 2. **A fork, and the board's remote does not name a third repository** — its URL
    is `origin`'s own repository, or it is the parent's, or the name has no URL
    here at all because no remote by it exists. Either way the target is
-   the parent from `gh repo view` / `glab repo view` — `--json parent` hands it
-   back as `.parent.owner.login` and `.parent.name`, so join the two with a
-   slash yourself: there is one upstream and nothing contradicts it. A board
+   the parent from `gh repo view` / `glab repo view` — on GitHub `--json parent`
+   hands it back as `.parent.owner.login` and `.parent.name`, so join the two
+   with a slash yourself; on GitLab read the forked-from project out of the same
+   JSON: there is one upstream and nothing contradicts it. A board
    remote pointing at `origin` is an ordinary setting and says nothing about
    where pull requests go.
 3. **A fork whose board remote resolves to neither `origin` nor the parent** —

@@ -25,14 +25,14 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:07:25Z
+updated-at: 2026-09-16T11:11:29Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-89868
-claimed-at: 2026-09-16T10:49:16Z
-outcome-what: "Die Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md fragt jetzt das richtige Repository: 'gh repo view' und 'glab repo view' bekommen \"$(git remote get-url origin)\" als Argument, statt die Forge das Basis-Repository selbst waehlen zu lassen. Dazu ein Absatz, der sagt warum, und Sprosse 2 nennt die Felder '.parent.owner.login' / '.parent.name', aus denen das owner/repo des Elternteils zusammengesetzt wird."
-outcome-why: "Der Befund der testing-Lane: ein blankes 'gh repo view' loest das Basis-Repository selbst auf und bevorzugt das Upstream. Auf einem Fork-Clone meldet es isFork:false, Sprosse 1 ('kein Fork') feuert, und Sprosse 2 und 3 sind unerreichbar - der Widerspruchsfall, fuer den dieses Ticket existiert, konnte nie ausloesen. Hier nachgestellt: bare gh gibt BeMuCa/jaira mit isFork:false, mit origin-URL gibt es sashasoft90/jaira mit parent BeMuCa."
-outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' ist jetzt auch auf einem Fork wahr, nicht nur im Text. go build, go vet und go test ./core/role/... gruen."
-review-summary: "none"
+claimed-by: DESKTOP-RFTCH11-35292
+claimed-at: 2026-09-16T11:10:23Z
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der glab-Aufruf der Zielrepository-Leiter traegt jetzt '-F json' (:110), ein Halbsatz sagt warum (:118-120), Sprosse 1 liest den Projektpfad aus dieser JSON statt aus der Textausgabe (:139-141), und Sprosse 2 trennt die beiden Forges - GitHub '.parent.owner.login' + '.parent.name', GitLab der forked-from-Eintrag derselben JSON (:144-148)."
+outcome-why: "critique Durchgang 6: auf GitLab hatte die Leiter keine Quelle. 'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder den Fork-Status, nach dem die Leiter verzweigt, noch den Elternteil, den Sprosse 2 lesen soll. Der Durchlauf waere auf GitLab still auf Sprosse 1 (den Fork) gefallen: dieselbe stille Verzweigung, die ca7f53c fuer gh geschlossen hat."
+outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' gilt jetzt auf beiden Forges, nicht nur auf GitHub. go test ./core/role/... gruen."
+review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:110,139-140,144 the GitLab arm of the ladder has no source: 'glab repo view <url>' defaults to -F text, which prints the description and README (glab repo view --help), so it names neither the fork status the ladder branches on nor rung 2's parent; put '-F json' in the code block at :110 and let rung 1 and rung 2 read the path and the fork parent off that JSON instead of 'the path glab repo view printed'"
 review-gaps: "Drei doppelte Stellen entfernt: der Listen-Hinweis im Intro von 'Which repository it goes to' (steht als eigener Abschnitt 'Does it already have one open' direkt darunter), die zweite Definition der Board-Remote in Sprosse 2 (steht im Forge-Abschnitt darueber), und die Selbstbegruendung unter 'Push the branch'. whoami-Absatz von acht auf sieben Zeilen. 1988 -> 1929 Woerter, keine Regel und keine Sprosse der Leiter entfernt. Stehen gelassen: die Mensch/Agent-Regel an drei Stellen (Kopf, 'Open it', Boundaries) - sie steht dort jeweils am Ort der Handlung, nicht als Wiederholung. Keine zweite Implementierung gefunden: die Zielrepository-Leiter existiert im Repository nur einmal. go test ./core/role/... gruen."
 test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter beschreibt in einem Fork-Clone nicht origin, sondern das Upstream — auf genau diesem Board meldet es isFork:false, Sprosse 1 feuert, und der Fork-Fall den das Ticket adressiert wird nie erreicht"
 ---
@@ -42,7 +42,7 @@ test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter besc
 ## Definition of Done
 
 - [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:107-117 (gh/glab repo view nennen origin explizit, Sprosse 1 feuert auf einem Fork nicht mehr), :134-155 (disjunkte Leiter), :204-224 ('Open it': Mensch oeffnet / Agent reicht die Zeile zurueck), :242-247 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:110,118-120 (glab repo view -F json, Begruendung), :139-141 (Sprosse 1 liest den Pfad aus der JSON), :144-148 (Sprosse 2 je Forge), :204-224 ('Open it'), :242-247 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
 
 ## Options
 
@@ -183,3 +183,23 @@ Bewusst KEIN '--output json' bei glab dazugeschrieben, obwohl es die Flagliste h
 Nebenbefund der testing-Lane mitgenommen: Sprosse 2 sagt jetzt, dass '--json parent' kein fertiges owner/repo liefert, sondern '.parent.owner.login' und '.parent.name', die man selbst mit einem Schraegstrich verbindet.
 
 NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts — derselbe Check, nur mit dem Repository benannt statt geraten.
+- **2026-09-16 11:09 · Alexander Sacharov** — critique Durchgang 6 (nach testing + in-progress 6): ein Finding, und es ist die GitLab-Haelfte genau des Fehlers, den ca7f53c fuer GitHub geschlossen hat.
+
+FINDING SKILL.md:110 / :139-140 / :144 — auf GitLab hat die Zielrepository-Leiter keine Quelle. 'glab repo view "$(git remote get-url origin)"' laeuft ohne -F, und der Default ist text: 'Display the description and README of a project' (glab repo view --help der hier installierten Version, /home/alex/.local/bin/glab, Flag '-F --output  Format output as: text, json. (text)'). Diese Ausgabe nennt weder den Fork-Status, nach dem die Leiter ueberhaupt verzweigt, noch den Fork-Elternteil, den Sprosse 2 daraus lesen soll. Sprosse 1 sagt woertlich 'or the path glab repo view printed' — text-Output druckt keinen Pfad als Feld. Auf GitLab faellt der Durchlauf damit entweder still auf Sprosse 1 zurueck (also auf origin, den Fork) oder bleibt ohne Antwort stehen. Das ist derselbe stille Zweig, den die testing-Lane fuer gh gefunden hat.
+
+FIX ohne erfundene Feldnamen: '-F json' in den Codeblock bei :110, und Sprosse 1 und 2 sagen 'lies Pfad bzw. Fork-Elternteil aus dieser JSON' statt 'den Pfad, den glab repo view ausgegeben hat'. Damit muss niemand 'path_with_namespace' oder 'forked_from_project' behaupten — der Durchgang-5-Einwand gegen '--output json' war, Feldnamen nicht gegen eine GitLab-Instanz pruefen zu koennen, und der bleibt erfuellt, weil das Modell die JSON selbst liest. Ohne '-F json' liest es dagegen Prosa, in der die Felder gar nicht vorkommen.
+
+GEPRUEFT UND NICHT BEANSTANDET: die gh-Seite von ca7f53c stimmt — 'gh repo view "$(git remote get-url origin)"' ist der richtige Aufruf und '--json parent' liefert wirklich .parent.owner.login / .parent.name, nicht nameWithOwner. Die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, die Disjunktheit der drei Sprossen, der head-Praefix bei 'gh pr list', der whoami-Absatz und der Mensch/Agent-Schnitt an einer Ausfuehrungsstelle: alles unveraendert in Ordnung, nichts davon wird neu aufgemacht.
+
+SACHE DER REVIEW-LANE, hier bewusst nicht gefragt: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten Version so heissen, und ob 'gh pr list --head owner:branch' sich so verhaelt.
+
+ZUR SCHLEIFE: das ist der sechste critique-Durchgang. Er wiederholt kein frueheres Finding — Durchgang 5 fand nichts, testing hat danach den gh-Aufruf aufgemacht, und dieses Finding ist die GitLab-Seite derselben Korrektur. Wenn der Mensch die Schleife trotzdem beenden will, ist der saubere Schnitt: A3R6YC ohne den GitLab-Zweig weiterziehen und den Zweig als eigenes Ticket fuehren.
+- **2026-09-16 11:11 · Alexander Sacharov** — in-progress (Durchgang 7, nach critique 6) — das eine Finding abgearbeitet: die GitLab-Haelfte der Zielrepository-Leiter hatte keine Quelle.
+
+'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder Fork-Status noch Fork-Elternteil. Selbst nachgeprueft statt uebernommen: 'glab repo view --help' der hier installierten Version (/home/alex/.local/bin/glab) listet '-F --output  Format output as: text, json. (text)' und nennt die Git-URL ausdruecklich als Aufrufform. Der Codeblock bei :110 traegt jetzt '-F json'.
+
+Sprosse 1 sagt 'the project path in the same glab repo view JSON' statt 'the path glab repo view printed'; Sprosse 2 trennt die beiden Forges: GitHub '.parent.owner.login' + '.parent.name' mit Schraegstrich verbunden, GitLab 'read the forked-from project out of the same JSON'.
+
+Bewusst WEITER keine GitLab-Feldnamen ('path_with_namespace', 'forked_from_project') im Text - dieselbe Entscheidung wie in Durchgang 6, und sie traegt jetzt mehr als vorher: mit '-F json' liest das Modell die Felder selbst, vorher haette es Prosa gelesen, in der sie gar nicht vorkommen. Ein erfundener Feldname, gegen keine GitLab-Instanz geprueft, waere in diesem Dokument teurer als die Umschreibung.
+
+NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts - derselbe Check, nur auf GitLab mit einer Ausgabe, in der die Felder stehen.
