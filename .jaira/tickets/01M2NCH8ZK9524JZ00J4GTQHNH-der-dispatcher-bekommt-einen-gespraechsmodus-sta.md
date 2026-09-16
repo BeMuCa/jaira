@@ -37,14 +37,14 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:47:35Z
+updated-at: 2026-09-16T19:54:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md: Abschnitt 2 des Gespraechsmodus gibt die Commit-Zeile nur noch heraus, wenn die Lane Code geaendert hat; ohne Code-Aenderung keine Zeile und die Ticket-Datei bleibt im Worktree. core/release/NOTES.md: die vorhandene Modus-Zeile nennt die Bedingung mit."
-outcome-why: "Der Modus steht auf dem Ticket und gilt damit auch in critique, testing und review, wo kein Code entsteht. Abschnitt 2 hob dort die Regel aus Zeile 31-37 auf und reichte dem Menschen eine Commit-Zeile, deren Einfuegen einen Commit mit nur der Ticket-Datei erzeugt — die Buchhaltung, die 9ZZSFT abgeschafft hat."
-outcome-resolves: "Der einzige offene Befund aus critique-Runde 3, nach Alex' Entscheidung vom 16.09.: die Commit-Zeile traegt immer Code, eine codelose Lane gibt gar keine zurueck. Abschnitt 2 hat jetzt dieselbe Ausnahme wie Abschnitt 1 mit 'Empty output? No pause'."
-review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:68-84, Abschnitt 'Do not commit. Hand back the commit line instead.' — der Abschnitt ist geschrieben, als liefe der Worker immer in in-progress, und hebt damit die Regel zwei Bildschirme darueber auf ('did you change no code? Then commit nothing.', SKILL.md:31-37). Der Modus steht laut schema.go bewusst auf dem TICKET und haelt 'through critique and testing too'; also liest ihn auch ein critique-, testing- oder review-Worker aus 'show --for-lane --json'. Der hat keine Zeile Code geaendert, bekommt aber 'Write the command out ready to paste' und reicht dem Menschen ein 'git add <files> .jaira/tickets/<ticket>.md; git commit -m ...' hinaus. Der Mensch fuegt es ein und committet genau die Buchhaltung, die die Regel darueber verbietet — und weil in diesem Modus ein Mensch committet, ist das der Commit, der am ehesten wirklich abgeschickt wird. Abschnitt 1 hat die Ausnahme schon ('Empty output? No pause'), Abschnitt 2 fehlt sie. Fix: in Abschnitt 2 dieselbe Bedingung nennen — eine Commit-Zeile nur, wenn Code geaendert wurde; eine Lane ohne Code-Aenderung gibt keine Zeile zurueck, sondern laesst die Ticket-Datei im Worktree fuer den naechsten Commit, der Code traegt."
+outcome-what: "Die Bedingung 'Commit-Zeile nur bei Code-Aenderung' steht jetzt an allen fuenf Stellen: core/role/builtin/jaira-dispatcher/SKILL.md (als zwei Punkte — Zeile bei Code, keine Zeile ohne Code und die Lane ist trotzdem fertig), docs/AGENTS.md, README.md und der FieldMode-Kommentar in core/ticket/schema.go, passend zu jaira-role-lane/SKILL.md:72-78."
+outcome-why: "Der Befund aus Runde 3 war nur in jaira-role-lane repariert. Der Dispatcher startet aber auch critique-, testing- und review-Worker, und sein Prompt sagte ihm bedingungslos, eine Commit-Zeile komme und er solle sie weiterreichen — ein Dispatcher, der auf eine Zeile wartet, die nach dem Fix richtigerweise nicht mehr kommt, fragt nach oder haelt die Lane fuer unfertig. Die drei Doku-Stellen beschrieben dieselbe Regel ohne die Bedingung."
+outcome-resolves: "Befund aus critique-Runde 4: dieselbe Regel unveraendert bedingungslos an core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169 und core/ticket/schema.go:41."
+review-summary: "core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169 und core/ticket/schema.go:41 sagen die Commit-Zeilen-Regel weiterhin bedingungslos ('hands back a commit line instead of committing'). Der Fix aus Runde 3 hat sie nur an zwei von sechs Stellen konditioniert — jaira-role-lane/SKILL.md:72-84 und NOTES.md. Am haertesten trifft es den Dispatcher-Prompt: derselbe Dispatcher startet auch critique-, testing- und review-Worker, bekommt dort jetzt korrekterweise keine Zeile, und sein eigener Prompt sagt ihm, eine Zeile komme und er solle sie unveraendert weiterreichen. Fix: an allen vier Stellen dieselbe Bedingung nennen wie in jaira-role-lane/SKILL.md — eine Commit-Zeile, wenn die Lane Code geaendert hat; eine Lane ohne Code-Aenderung gibt keine zurueck und laesst die Ticket-Datei im Worktree. Im Dispatcher-Bullet 85-89 als Satz dahinter, in schema.go:41 im Kommentar, in AGENTS.md und README.md je als Nebensatz."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
@@ -58,7 +58,7 @@ review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:68-84, Abschnitt 'Do
 - [x] Was im Gespraech entschieden wird, steht mit 'jaira note' auf dem Ticket, BEVOR die Arbeit daran beginnt - nicht hinterher. Nachgestellt an einem Ticket, dessen Sitzung mittendrin abgebrochen wird: die Entscheidung ist danach noch da.
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:54 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip und TestShowPrintsModeForPeople in internal/cli/mode_test.go
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:75 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:84
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:75 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:84; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung, sonst keine und die Lane ist trotzdem fertig
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:55 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
@@ -86,6 +86,7 @@ review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:68-84, Abschnitt 'Do
 - [x] docs/AGENTS.md und README.md: mode im Frontmatter dokumentieren
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer den Modus, eine fuer das Committen von Hand
 - [x] go test ./... -race
+- [x] critique 4: dieselbe Bedingung (Commit-Zeile nur bei Code-Aenderung) an den vier verbleibenden Stellen — dispatcher/SKILL.md, docs/AGENTS.md, README.md, core/ticket/schema.go
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
@@ -229,3 +230,19 @@ Warum die Ausnahme mit Begruendung im Prompt steht und nicht als ein Halbsatz: d
 Nicht gebaut, wie Alex entschieden hat: kein Verbot fuer den Menschen. Der Prompt regelt nur, was der Agent vorschlaegt.
 
 NOTES.md: die vorhandene Modus-Zeile ist erweitert statt einer zweiten. Die Ausnahme ist keine eigene Aenderung, sondern die Bedingung derselben — zwei Zeilen haetten dem Leser zwei Mechanismen vorgesetzt, wo einer steht.
+- **2026-09-16 19:49 · Alexander Sacharov** — critique (4. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+Der Befund aus Runde 3 ist repariert — Abschnitt 2 in jaira-role-lane/SKILL.md hat jetzt die Ausnahme, und NOTES.md nennt sie mit. Dieselbe Regel steht aber an vier weiteren Stellen unveraendert bedingungslos da: core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169, core/ticket/schema.go:41.
+
+Behaviour, nicht nur Doku: der Dispatcher startet auch critique-, testing- und review-Worker. Die geben nach dem Fix richtigerweise keine Commit-Zeile mehr zurueck — und sein Prompt sagt ihm, eine komme und er solle sie unveraendert an den Menschen weiterreichen. Ein Dispatcher, der die Zeile erwartet, fragt den Worker danach oder haelt die Lane fuer unfertig. Das ist genau der Widerspruch aus Runde 3, nur eine Datei weiter.
+
+Fix an allen vier Stellen dieselbe Bedingung wie in jaira-role-lane/SKILL.md:72-78: Commit-Zeile nur bei Code-Aenderung, sonst keine und die Ticket-Datei bleibt im Worktree.
+- **2026-09-16 19:54 · Alexander Sacharov** — In-progress nach critique (4. Durchgang): die Bedingung steht jetzt an allen fuenf Stellen, nicht nur in jaira-role-lane.
+
+Repariert: core/role/builtin/jaira-dispatcher/SKILL.md (zwei Punkte statt einem — 'Worker mit Code-Aenderung gibt eine Zeile zurueck' und 'Worker ohne Code-Aenderung gibt keine, und die Lane ist trotzdem fertig'), docs/AGENTS.md, README.md, core/ticket/schema.go.
+
+Warum der Dispatcher zwei Punkte bekommt und nicht einen Nebensatz: die Gefahr dort ist nicht, dass er eine falsche Zeile weiterreicht, sondern dass er eine fehlende Zeile fuer einen Fehler haelt — den Worker noch einmal fragt oder die Lane fuer unfertig haelt. Ein Nebensatz an der bestehenden Zeile haette nur gesagt, wann eine Zeile kommt; der zweite Punkt sagt ausdruecklich, dass ihr Fehlen die Regel bei der Arbeit ist. Das ist der Satz, der den Dispatcher davon abhaelt, die Lane offen zu halten.
+
+Kein Test dazu: alle fuenf Stellen sind Prosa (vier Dokumente und ein Go-Kommentar). Es gibt im Repository keinen Test, der Prompt-Text auf Aussagen prueft, und einer, der auf Formulierungen matcht, bricht beim naechsten Umschreiben, ohne je ein Verhalten geschuetzt zu haben.
+
+NOTES.md: nichts ergaenzt. Die Modus-Zeile nennt die Ausnahme schon (seit Runde 3) und verweist auf 'jaira roles install --global --force' fuer beide Prompts; die Dispatcher-Aenderung faellt darunter. Eine zweite Zeile haette dieselbe Regel zweimal beschrieben.

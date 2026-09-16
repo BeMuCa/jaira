@@ -165,8 +165,9 @@ Three details are load-bearing:
 - **`mode:`** says how the ticket is worked rather than what is in it. Empty —
   the default — means the lanes run autonomously. `conversational` means a
   person found open design decisions on this ticket and is reading along: the
-  agent shows its diff after every definition-of-done item and hands back a
-  commit line instead of committing. It is written with
+  agent shows its diff after every definition-of-done item and, when the lane
+  changed code, hands back a commit line instead of committing — a lane that
+  changed none hands back nothing, as outside the mode. It is written with
   `jaira set <id> mode=conversational`, takes no other value, and nothing clears
   it automatically — a person does, with `jaira set <id> mode=`.
 - **`external:`** is reserved for a future Jira/YouTrack adapter. jaira never

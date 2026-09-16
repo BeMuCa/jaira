@@ -82,10 +82,17 @@ jaira show <id> --json        # the "mode" key
 
 - **Start workers with `--no-worktree`** — one of the cases the flag's own
   paragraph below lists, for the reason given there.
-- **A worker hands you a commit line instead of committing.** Pass it to the
-  person exactly as it came, unedited — it carries the ticket handle in the
-  subject, and jaira derives the ticket's commit list from that handle. Drop it
-  and the list stays empty and the move into the last lane is refused.
+- **A worker that changed code hands you a commit line instead of committing.**
+  Pass it to the person exactly as it came, unedited — it carries the ticket
+  handle in the subject, and jaira derives the ticket's commit list from that
+  handle. Drop it and the list stays empty and the move into the last lane is
+  refused.
+- **A worker that changed no code hands you nothing, and that lane is finished.**
+  critique, testing and review change no code, and the mode sits on the ticket
+  rather than on a lane, so they run in it too. A missing commit line there is
+  the rule working, not a worker that forgot: the ticket file waits in the
+  worktree for the next commit that carries code. Do not ask for a line, and do
+  not hold the lane open waiting for one.
 - **Pauses are not stalls.** A worker waiting for a person to look at a diff is
   working. Do not kill it, do not start a second one for the same lane.
 

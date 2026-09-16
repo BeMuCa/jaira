@@ -253,8 +253,12 @@ on it — like the model tier, it passes it through in `--for-lane` output (a
 `mode` key beside `model_tier`) and in `jaira show --json`, and the thing
 driving the agent decides what to do with it. What the shipped roles do with it:
 stop before the plan lane while decisions are still open, show the diff after
-every definition-of-done item instead of at the end, and hand back a commit line
-— ticket handle in the subject — rather than committing.
+every definition-of-done item instead of at the end, and, where the lane changed
+code, hand back a commit line — ticket handle in the subject — rather than
+committing. A lane that changed none hands back no line: the mode sits on the
+ticket, so critique, testing and review run in it too, and there the ordinary
+rule still holds — no code, no commit, and the ticket file waits for the next
+commit that carries some.
 
 It lives on the ticket rather than in the command that starts an agent so that
 it survives a killed session: the next agent reads it off disk instead of

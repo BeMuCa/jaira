@@ -37,8 +37,11 @@ const (
 	// FieldMode says how this ticket is to be worked, not what it contains.
 	// Empty is the default: lanes run autonomously. "conversational" says the
 	// dispatcher found open design decisions on it and a person is reading
-	// along — the worker shows its diff after each definition-of-done item and
-	// hands back a commit line instead of committing itself.
+	// along — the worker shows its diff after each definition-of-done item and,
+	// when its lane changed code, hands back a commit line instead of
+	// committing itself. A lane that changed none hands back no line: the mode
+	// sits on the ticket, so critique, testing and review run in it too, and
+	// there the ordinary rule still holds — no code, no commit.
 	//
 	// It sits on the ticket rather than in the line that starts the worker so
 	// that it survives a killed session: a fresh worker reads the mode off
