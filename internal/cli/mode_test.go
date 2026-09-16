@@ -214,3 +214,53 @@ func TestForLanePlainTextCarriesMode(t *testing.T) {
 		t.Errorf("the lane header lost the tier: %q", head)
 	}
 }
+
+// 'jaira resume' is the restart point the dispatcher prompt names: a fresh
+// dispatcher reads the mode back from here after a killed session. resume
+// builds its own payload rather than going through ticketJSON, so the field
+// has to be carried here in its own right.
+func TestResumeCarriesMode(t *testing.T) {
+	dir, h := newModeTicket(t)
+
+	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
+		t.Fatalf("set mode: %v\n%s", err, out)
+	}
+
+	out, err := runCLI(t, dir, "resume", "--json")
+	if err != nil {
+		t.Fatalf("resume --json: %v\n%s", err, out)
+	}
+	var got struct {
+		InFlight []map[string]any `json:"in_flight"`
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("resume --json is not json: %v\n%s", err, out)
+	}
+	if len(got.InFlight) != 1 {
+		t.Fatalf("resume reports %d ticket(s), want 1\n%s", len(got.InFlight), out)
+	}
+	if got.InFlight[0]["mode"] != ticket.ModeConversational {
+		t.Errorf("resume --json carries mode %v, want %q", got.InFlight[0]["mode"], ticket.ModeConversational)
+	}
+
+	out, err = runCLI(t, dir, "resume")
+	if err != nil {
+		t.Fatalf("resume: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "mode: "+ticket.ModeConversational) {
+		t.Errorf("the plain-text resume does not carry the mode:\n%s", out)
+	}
+
+	// A ticket without a mode says nothing about one, the same way the lane
+	// header stays quiet.
+	if out, err := runCLI(t, dir, "set", h, "mode="); err != nil {
+		t.Fatalf("clear mode: %v\n%s", err, out)
+	}
+	out, err = runCLI(t, dir, "resume")
+	if err != nil {
+		t.Fatalf("resume: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "mode:") {
+		t.Errorf("a ticket without a mode announces one:\n%s", out)
+	}
+}

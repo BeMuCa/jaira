@@ -37,14 +37,14 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:06:56Z
+updated-at: 2026-09-16T20:13:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen die kanonische Form, nicht nur gegen das ok von CanonicalMode: die Bedingung ist '!ok || canon != t.Mode'. Dazu TestUntrimmedModeIsReportedWithTheRepair in core/validate/mode_test.go und eine Praezisierung der bestehenden validate-Zeile in core/release/NOTES.md."
-outcome-why: "CanonicalMode gibt die getrimmte Form zurueck, weil ein Pfad, der ' conversational ' annimmt und unveraendert speichert, derselbe stille Fehler ist wie 'chat'. validate.go warf diese Form weg und pruefte nur das ok — eine handgeschriebene Zeile mit Leerzeichen kam schweigend durch, stand untrimmed im JSON-Schluessel 'mode' und in der Kopfzeile von 'jaira show --for-lane', und der Worker, der gegen genau ein Wort vergleicht, lief autonom weiter."
-outcome-resolves: "Befund aus critique-Runde 6: validate.go:203 warf den kanonischen Wert weg."
-review-summary: "core/validate/validate.go:203 wirft den kanonischen Wert weg, den CanonicalMode zurueckgibt, und prueft nur das ok. Eine handgeschriebene Zeile 'mode: \" conversational \"' passiert die Pruefung schweigend, und t.Mode kommt untrimmed bei flow.go:625 (JSON 'mode') und in der Kopfzeile an — der Worker vergleicht gegen genau ein Wort und laeuft autonom weiter. Genau der Fehler, gegen den CanonicalMode laut eigenem Kommentar existiert, nur auf dem Lesepfad statt auf dem Schreibpfad. Stattdessen: in validate.go auch melden, wenn canon != t.Mode (gleicher CodeBadMode, Reparatur 'jaira set <id> mode=conversational'), und einen Fall dafuer in core/validate/mode_test.go neben 'chat'."
+outcome-what: "internal/cli/resume.go fuehrt jetzt den Modus: 'mode' in der items-Map des --json-Zweigs und eine 'mode:'-Zeile im Klartext-Block, letztere nur bei gesetztem Modus. Dazu TestResumeCarriesMode in internal/cli/mode_test.go, eine Ergaenzung der bestehenden Modus-Zeile in core/release/NOTES.md und der Verweis auf den Test in der proof-Zeile von DoD-Punkt 3."
+outcome-why: "resume.go baut sein JSON von Hand und geht nicht durch ticketJSON, also fehlte das Feld dort. 'jaira resume' ist aber genau die Wiederanlauf-Stelle, auf die sich jaira-dispatcher/SKILL.md:65 beruft — ein Dispatcher nach einem Sitzungsabbruch haette den Modus dort nicht gesehen und waere autonom weitergelaufen, was die in schema.go:44-47 aufgeschriebene Begruendung des Feldes aushebelt."
+outcome-resolves: "Befund aus critique-Runde 7: resume.go:126-141 trug kein 'mode', der Klartext-Block ebenso wenig."
+review-summary: "internal/cli/resume.go:126-141 baut sein eigenes JSON-Literal statt ticketJSON und traegt deshalb kein 'mode' — dieselbe Zeile fehlt im Klartext-Block bei 200-165; 'jaira resume' ist aber die Wiederanlauf-Stelle, auf die sich core/role/builtin/jaira-dispatcher/SKILL.md:65 beruft ('a fresh dispatcher after jaira resume reads it back off disk'), und schema.go:44-47 nennt das Ueberleben eines Sitzungsabbruchs als den Grund, warum das Feld ueberhaupt auf dem Ticket sitzt. Fix: \"mode\": i.t.Mode in die items-Map und eine mode-Zeile in den Klartext-Block aufnehmen — oder SKILL.md:65 streichen und dort nur 'jaira show <id> --json' nennen, was die Begruendung des Feldes aber unbelegt laesst."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
@@ -56,7 +56,7 @@ review-summary: "core/validate/validate.go:203 wirft den kanonischen Wert weg, d
 - [x] Es gibt weiterhin genau eine Dispatcher-Rolle. Kein zweiter Skill und keine zweite Kommandozeile daneben; der Modus steht im selben Prompt.
   proof: core/role/builtin/ enthaelt unveraendert sieben Rollen; der Modus steht in jaira-dispatcher/SKILL.md:31 und jaira-role-lane/SKILL.md:39, kein neuer Skill und keine neue Kommandozeile
 - [x] Was im Gespraech entschieden wird, steht mit 'jaira note' auf dem Ticket, BEVOR die Arbeit daran beginnt - nicht hinterher. Nachgestellt an einem Ticket, dessen Sitzung mittendrin abgebrochen wird: die Entscheidung ist danach noch da.
-  proof: core/role/builtin/jaira-dispatcher/SKILL.md:54 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip und TestShowPrintsModeForPeople in internal/cli/mode_test.go
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:54 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip, TestShowPrintsModeForPeople und TestResumeCarriesMode in internal/cli/mode_test.go
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:75 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:84; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung, sonst keine und die Lane ist trotzdem fertig
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
@@ -89,6 +89,7 @@ review-summary: "core/validate/validate.go:203 wirft den kanonischen Wert weg, d
 - [x] critique 4: dieselbe Bedingung (Commit-Zeile nur bei Code-Aenderung) an den vier verbleibenden Stellen — dispatcher/SKILL.md, docs/AGENTS.md, README.md, core/ticket/schema.go
 - [x] critique 5: 'mode' in core/validate/validate.go pruefen (CodeBadMode, Warning), plus NOTES.md-Zeile
 - [x] critique 6: validate.go meldet auch den untrimmed Wert (canon != t.Mode), plus Testfall
+- [x] critique 7: 'jaira resume' fuehrt mode — JSON-items und Klartext-Block in internal/cli/resume.go, plus Testfall
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
@@ -286,3 +287,18 @@ Dieselbe Meldung, derselbe Code, dieselbe Reparatur — bewusst kein zweiter Cod
 NOTES.md: keine neue Zeile, sondern die bestehende validate-Zeile erweitert — es ist dieselbe Pruefung, und eine zweite Zeile daneben liest sich wie ein zweites Feature. Die Zeile nennt jetzt ausdruecklich, dass nur 'jaira set' trimmt.
 
 core/validate/mode_test.go: TestUntrimmedModeIsReportedWithTheRepair neben dem 'chat'-Fall.
+- **2026-09-16 20:09 · Alexander Sacharov** — critique (7. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+Befund: 'jaira resume' traegt den Modus nicht.
+
+internal/cli/resume.go:126-141 baut seine JSON-Items als eigenes Map-Literal (id, handle, title, status, reason, current_step, goal, notes) statt ueber ticketJSON. Jeder andere Lesepfad ist versorgt — ticketJSON (tickets.go:1324), show --for-lane (flow.go), der Detail-Block in printDetail, die TUI-Zeile. resume ist der einzige, der sein eigenes Literal baut, und genau deshalb durchgefallen. Der Klartext-Zweig darunter (Zeile 153-165) druckt Status, Grund, 'was on' und die Notizen — auch dort keine mode-Zeile.
+
+Warum das mehr ist als eine fehlende Ausgabe: core/ticket/schema.go:44-47 begruendet die ganze Bauform damit, dass der Modus einen Sitzungsabbruch ueberlebt, und core/role/builtin/jaira-dispatcher/SKILL.md:65 sagt woertlich, ein frischer Dispatcher lese ihn 'after jaira resume ... back off disk'. Das stimmt nicht. Genau der Dispatcher, der nach einem Abbruch neu startet und seiner eigenen Anweisung aus Zeile 28 folgt ('reads jaira resume and carries on'), sieht den Modus dort nicht — und laeuft autonom weiter, was der Modus verhindern soll. Gerettet wird es nur dadurch, dass der Abschnitt 30 Zeilen weiter oben zusaetzlich 'jaira show <id> --json' vorschreibt; der Prompt widerspricht sich also selbst.
+
+Fix: "mode": i.t.Mode in die items-Map (i.t ist bereits das per s.Load nachgeladene volle Ticket, Zeile 133) und eine mode-Zeile in den Klartext-Block, wie printDetail sie neben 'tier' hat. Zwei Zeilen. Alternative waere, SKILL.md:65 zu streichen und dort nur show --json zu nennen — das laesst aber die Begruendung des Feldes (Abbruch ueberleben) an einer Stelle haengen, die der Dispatcher-Prompt selbst nicht als Wiederanlauf fuehrt. Empfehlung daher: resume versorgen.
+- **2026-09-16 20:12 · Alexander Sacharov** — In-progress nach critique (7. Durchgang): 'jaira resume' fuehrt jetzt den Modus.
+
+- internal/cli/resume.go baut sein JSON von Hand (items-Map, ~Zeile 138) und geht NICHT durch ticketJSON. Jedes neue Frontmatter-Feld muss dort einzeln nachgetragen werden — das ist die Stelle, die bei einem neuen Feld still zurueckbleibt, und sie ist nicht die einzige ihrer Art in internal/cli.
+- Der Klartext-Zweig bekommt die Zeile nur bei gesetztem Modus, wie 'was on:' und wie row() in tickets.go: ein Ticket ohne Modus kostet keine Zeile. Der Test prueft beide Richtungen.
+- Warum ueberhaupt hier und nicht nur in 'jaira show --json': jaira-dispatcher/SKILL.md:65 nennt 'jaira resume' ausdruecklich als die Stelle, an der ein frischer Dispatcher den Modus von der Platte liest. Die Alternative aus critique — den Satz in SKILL.md streichen — laesst die Begruendung des Feldes (schema.go:44-47: es sitzt auf dem Ticket, um einen Sitzungsabbruch zu ueberleben) unbelegt, also wurde der Code an die Doku angeglichen und nicht umgekehrt.
+- Die NOTES.md-Zeile zum Modus wurde ergaenzt statt eine zweite geschrieben: es ist dieselbe Aenderung fuer den Leser (wo sehe ich den Modus), und zwei Zeilen zum selben Feld lesen sich wie zwei Features.
