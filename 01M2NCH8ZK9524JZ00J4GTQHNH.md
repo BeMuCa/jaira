@@ -36,7 +36,7 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:43:16Z
+updated-at: 2026-09-16T15:43:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -56,7 +56,8 @@ claimed-at: 2026-09-16T15:25:11Z
   proof: core/role/builtin/jaira-role-lane/SKILL.md:67 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:79
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:50 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
-- [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
+- [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
+  proof: core/release/NOTES.md:16 (Modus) und :17 (Committen von Hand), beide unter ## Unreleased
 
 ## Options
 
