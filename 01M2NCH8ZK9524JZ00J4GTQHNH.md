@@ -37,14 +37,16 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:57:25Z
+updated-at: 2026-09-16T15:57:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5463
 claimed-at: 2026-09-16T15:57:15Z
 outcome-what: "Die drei critique-Befunde repariert. ValidMode ist CanonicalMode geworden und gibt den getrimmten Wert samt Urteil zurueck; beide Schreibwege (internal/cli/tickets.go newSetCmd, internal/tui/edit.go commitEdit) speichern genau diesen Wert, statt zu pruefen und danach das Rohe zu schreiben. row(\"mode\", t.Mode) steht jetzt in beiden Detail-Panes neben row(\"tier\", ...) — internal/cli/tickets.go:709 und internal/tui/view.go:1199 — womit der Eintrag in fieldsWithTheirOwnRow wieder stimmt. Die --no-worktree-Regel steht nur noch einmal, als dritter Fall im bestehenden Absatz des Dispatcher-Prompts; der Bullet im Modus-Abschnitt und Schritt 2 der Schleife verweisen darauf. Dazu zwei Tests (TestSetStoresModeTrimmed, TestShowPrintsModeForPeople) und die erweiterte NOTES.md-Zeile."
 outcome-why: "Alle drei Befunde trafen dieselbe Stelle des Ziels: ein Modus, der auf dem Ticket steht, damit er einen Sitzungsabbruch ueberlebt, nuetzt nichts, wenn er gepolstert gespeichert und vom Worker nicht erkannt wird, oder wenn niemand ohne --json sehen kann, dass er noch an ist. Der dritte Befund war ein Prompt, der sich selbst widersprach — zwei Regeln fuer --no-worktree, und ein Agent, der raet, welche gilt, ist genau das Verhalten, das dieses Ticket abschaffen soll."
 outcome-resolves: "Alle sechs DoD-Punkte bleiben getickt und belegt; zwei Proofs sind nachgezogen. Punkt 3 (der Modus ueberlebt den Abbruch) traegt jetzt zusaetzlich TestShowPrintsModeForPeople, weil ein Modus, den nur --json zeigt, den Abbruch zwar ueberlebt, aber niemandem meldet. Punkt 6 zeigt auf NOTES.md:17/:18. go test ./... -race laeuft durch."
-review-summary: "internal/cli/flow.go:635 — die Textausgabe von 'jaira show --for-lane' druckt '(tier: %s)', den Modus aber nicht; nur der --json-Zweig trägt ihn. Ein Worker, der die Klartext-Lane-Prompt liest (jeder bash-fähige Agent, nicht nur die mitgelieferte Rolle), erfährt den Modus nie und läuft autonom weiter. Fix: die Kopfzeile um den Modus erweitern, wenn t.Mode nicht leer ist — '# Lane: %s   (tier: %s, mode: %s)' —, dieselbe Stelle, an der der Tier schon steht."
+review-summary: |-
+  internal/cli/flow.go:635 — die Textausgabe von 'jaira show --for-lane' druckt '(tier: %s)', den Modus aber nicht; nur der --json-Zweig trägt ihn. Ein Worker, der die Klartext-Lane-Prompt liest (jeder bash-fähige Agent, nicht nur die mitgelieferte Rolle), erfährt den Modus nie und läuft autonom weiter. Fix: die Kopfzeile um den Modus erweitern, wenn t.Mode nicht leer ist — '# Lane: %s   (tier: %s, mode: %s)' —, dieselbe Stelle, an der der Tier schon steht.
+  core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'Before the plan lane: count what is still open', Schritt 1 — zählt die offenen Entscheidungen allein aus 'jaira show <id> --json' und kennt keinen Zustand 'schon beantwortet'. Schritt 4 schreibt die Antworten als Notes aufs Ticket, Schritt 5 setzt erst danach den Modus; ein Dispatcher, der zwischen 4 und 5 stirbt, liest beim Neustart keinen Modus, zählt neu und stellt dem Menschen dieselben Fragen noch einmal — genau der Sitzungsabbruch, gegen den der Modus auf dem Ticket antritt. Fix: in Schritt 1 die Notes des Tickets als Teil des Gelesenen benennen und festhalten, dass eine in einer Note bereits beantwortete Entscheidung nicht mehr offen ist.
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
