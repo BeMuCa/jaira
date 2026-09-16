@@ -279,6 +279,11 @@ func TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt(t *testing.T) {
 	doors := map[string][]string{
 		"create": {"milestone", "create", "round-one"},
 		"add":    {"milestone", "add", "round-one", ticketID},
+		// The third door, and the one that has no file to look at: the
+		// milestone branch of 'jaira logbook' is reached through
+		// milestone.Load, so this state used to fall out of the family and
+		// answer with the ticket error instead.
+		"logbook": {"logbook", "round-one"},
 	}
 	for door, args := range doors {
 		out, err := runCLI(t, grace, args...)
@@ -326,6 +331,10 @@ func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
 	doors := map[string][]string{
 		"create": {"milestone", "create", "round-one"},
 		"add":    {"milestone", "add", "round-one", ticketID},
+		// Filing the same milestone twice: the copy is in this tree's
+		// logbook, so this door owes the reader the restore that runs here
+		// like the other two do.
+		"logbook": {"logbook", "round-one"},
 	}
 	for door, args := range doors {
 		out, err := runCLI(t, ada, args...)

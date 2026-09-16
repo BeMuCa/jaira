@@ -180,8 +180,26 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 		// A ticket first, a milestone second. A milestone name is chosen
 		// freely and could be spelled like a handle, and the ticket is both
 		// the older and the far commoner meaning of an argument here.
-		if name, nerr := milestoneNamed(s, idArg); nerr == nil {
+		name, nerr := milestoneNamed(s, idArg)
+		switch {
+		case nerr == nil:
 			return logbookMilestone(s, name, w)
+		case errors.Is(nerr, os.ErrNotExist):
+			// The file has left the board, which is exactly what filing does
+			// to it: this tree filed it, or this clone only ever saw the
+			// marked ref. milestone.Load answers with the same ErrNotExist a
+			// name nobody ever used answers with, so without this the reader
+			// is told the name is not a ticket — in the two states where
+			// create and add/rm refuse it by name. This is the door's only
+			// route past the ms.Filed() check below, which needs an ms.
+			switch where, at := milestoneFiled(s, name); at {
+			case milestoneFiledOnRef:
+				return refuseFiledOnRef(name, where,
+					"filing it again here would only stamp today's folder on somebody else's record of it")
+			case milestoneFiledHere:
+				return refuseFiledInLogbook(name, where,
+					", and only a milestone that is on the board can be filed")
+			}
 		}
 		return err
 	}
@@ -240,7 +258,10 @@ func milestoneNamed(s *ticket.Store, arg string) (string, error) {
 		return "", err
 	}
 	if _, err := milestone.Load(s.Root, name); err != nil {
-		return "", err
+		// The name travels with the error: a caller that has to ask whether
+		// this name was filed needs the normalized spelling, and the file
+		// being gone is one of the answers it asks about.
+		return name, err
 	}
 	return name, nil
 }
@@ -280,11 +301,15 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	// already, and filing it a second time would only stamp today's folder on
 	// somebody else's record of it.
 	//
-	// Every route to this refusal leaves the file on the board and nothing in
-	// this tree's logbook, so 'jaira restore' here would only answer that the
-	// file is not in the archive. The copy that can come back is in the tree
-	// that filed it — which is what refuseFiledOnDisk says, so this door tells
-	// the reader what the other two tell them.
+	// This check is the route where the marked file is lying here, and only
+	// that one: it took a fetch of somebody else's filing to put it here, so
+	// this tree's logbook holds nothing and 'jaira restore' here would only
+	// answer that the file is not in the archive. The copy that can come back
+	// is in the tree that filed it — which is what refuseFiledOnDisk says, so
+	// this door tells the reader what the other two tell them.
+	//
+	// The routes where the file is NOT here are answered above, before
+	// milestone.Load is even asked for an ms: this check cannot see them.
 	if ms.Filed() {
 		return refuseFiledOnDisk(s.Root, name,
 			"there is no copy of it here to bring back, so filing it again would only stamp today's folder on somebody else's record of it")
