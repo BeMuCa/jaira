@@ -45,7 +45,7 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:03:25Z
+updated-at: 2026-09-16T08:03:43Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
@@ -631,3 +631,8 @@ Also worth a line while that file is open: the doc comment at logbook.go:283-286
 - The clauses stay per-caller strings rather than becoming a verb the helper conjugates. Each closing clause says what THIS command would have done instead, and the three are not variations on one sentence: 'creating it again would make a second milestone', 'tickets can go in and out of it again', 'stamp today's folder on somebody else's record'.
 - No NOTES.md line: every refusal comes out word for word as before, so nothing a user can observe changed. Measured, not assumed — TestEveryDoorIntoAFiledMilestoneSaysTheSameThings and the two per-tree tests assert the exact wording and all three were green without being touched.
 - grep 'milestoneFiled(' over internal/ now finds the definition and one caller. That count is what the next round can measure the finding against.
+- **2026-09-16 08:03 · Alexander Sacharov** — critique-Runde 13, 2026-09-16. Zwei Findings, beide ausserhalb des Pfads, um den die Runden 5-12 gekreist sind — die Weigerungstexte und der state→refusal-Schalter sind abgehakt und werden nicht wieder aufgemacht. Der Bau bleibt im Kern richtig.
+
+1. internal/cli/archive.go:143 unfileMilestone ist der vierte Schreiber einer Milestone-Datei und der einzige ohne Lock. milestones.go:18-21 sagt, wofuer milestoneLockName da ist, und die drei anderen Schreiber nehmen ihn: create (milestones.go:111), add/rm (milestones.go:233), logbook (logbook.go:286). unfileMilestone macht Load → SetStatus('') → Save → recordMilestone, also ein read-modify-write auf genau die Datei, die ein gleichzeitiges 'jaira milestone add' ebenfalls read-modify-write schreibt. Einer der beiden Schreibvorgaenge geht verloren. Fix: den Lock in der RunE von restore nehmen (archive.go:118), NICHT erst in unfileMilestone — s.Restore bewegt die Datei selbst, und der Move gehoert mit hinein.
+
+2. .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md und demo-ui.md sind in 4bd9797 mitcommittet worden, offensichtlich durch ein 'git add -A'. Zwei Notizen auf diesem Ticket sagen woertlich das Gegenteil: 'Sie sind NICHT committet worden; wer aufraeumt, loescht sie einfach' (optimize) und 'Nicht mitcommittet' (testing). Committet heisst: wer diesen Branch nach master bringt, verteilt drei Demo-Gruppen mit echten Ticket-ULIDs an jeden Clone, und sie faerben rechte Kanten auf echten Karten ein. Fix: die drei Dateien per git rm aus dem Branch nehmen. (Dass die Dateien als Vorfuehrung auf dem Board und auf den Refs liegen — Notiz vom 15.09. 20:14 — bleibt davon unberuehrt; es geht nur um den Commit.)
