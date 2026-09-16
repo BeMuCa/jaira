@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T21:11:04Z
+updated-at: 2026-09-16T21:12:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23289
 claimed-at: 2026-09-16T21:06:12Z
@@ -373,3 +373,22 @@ Zum Widerspruch um die testing-Lane: entschieden wird auf EINE Regel, und zwar d
 Der Befund, der einen Menschen braucht: jaira-role-lane/SKILL.md sagt nach jedem DoD-Punkt 'git diff' und 'Empty output? No pause'. 'git diff' zeigt untracked Dateien nicht. Ein DoD-Punkt, der aus einer NEUEN Datei besteht, laeuft im Gespraechsmodus also ohne Pause durch — der Fall ist haeufig (neue Tests, neue Pakete), und die Implementierung dieses Tickets ist selbst ein Beispiel: core/validate/mode_test.go und internal/cli/mode_test.go sind neu. Ein-Zeilen-Fix im Prompt: 'git add -A -N .' vor dem 'git diff', oder 'git status --short' danebenstellen.
 
 Nicht zurueck nach in-progress geschickt, weil die Aenderung selbst korrekt ist und der Fix eine Prompt-Zeile ist — das ist billiger am Signoff als eine Runde durch die Lanes. Die zwei restlichen Befunde (Modus fehlt im von 'jaira update' erzeugten CLAUDE.md-Block in core/board/announce.go:64; internal/tui/edit.go hat keinen Test fuer die Ablehnung) sind Nachlauf und koennen ein eigenes Ticket werden.
+- **2026-09-16 21:12 · Alexander Sacharov** — Erweiterung des Tickets, von Alex am 16.09. angeordnet: die mitlaufende Kritik gehoert in DIESES Ticket und in denselben Prompt, nicht in ein eigenes. Beides soll zusammen wirken - der Gespraechsmodus haelt an und fragt, und waehrend gearbeitet wird, meldet eine Kritik nebenher, ob irgendwo schon ein Problem liegt. Zwei Tickets, die ich dafuer angelegt hatte, sind wieder geloescht.
+
+WARUM das noetig ist, gemessen an diesem Ticket selbst, nicht vermutet:
+
+Die critique-Lane laeuft heute erst, wenn in-progress fertig ist. GTQHNH brauchte so acht Durchgaenge: 3 Befunde, dann 2, dann fuenfmal je 1, dann 0.
+
+Jeder dieser Durchgaenge fand in einer DATEI etwas, die die vorigen nie geoeffnet hatten - Runde 3 in core/role/builtin/jaira-role-lane/SKILL.md, Runde 4 an vier Doku-Stellen, Runde 5 in core/validate/validate.go, Runde 7 in internal/cli/resume.go. Der Diff wurde ihr dabei jedes Mal VOLLSTAENDIG gereicht: internal/cli/flow.go:581 baut ihn aus allen Commits des Tickets, nicht aus dem letzten. Es ist also kein Fenster-Problem. Ein einzelner Leser nimmt einen Ausschnitt und hoert auf, wenn es reicht.
+
+Der teuerste Befund kam in Runde 7: 'jaira resume' trug das neue Feld nicht, womit der Wiederanlauf nach einem Sitzungsabbruch - der Daseinsgrund dieses Tickets - nur auf dem Papier funktioniert haette. Bei einer Abbruchregel von drei Runden waere er nie gefunden worden.
+
+Zweiter Grund, eine fehlende Eingabe: .jaira/lanes/critique.md:10 fuehrt 'input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]'. 'notes' steht dort nicht - von allen Lanes bekommt nur in-progress sie. Der Prompt der Lane verlangt aber ausdruecklich, einen schon appreparierten Befund nicht erneut aufzumachen. Dafuer fehlt ihr die Eingabe: Runde 2 hat freiwillig notiert, was sie geprueft und fuer gut befunden hat, Runde 3 hat das nicht gelesen und dieselbe Gegend noch einmal gelesen.
+
+Der Haken, der mitentschieden werden muss, wenn mehrere Kritiker gleichzeitig laufen: die Lane schreibt heute selbst review-summary UND bewegt selbst das Ticket. Mehrere Worker wuerden sich um beides pruegeln. Dann duerfen die Kritiker nur lesen, und das Zusammenfuehren samt dem einen 'jaira move' gehoert dem Dispatcher.
+
+Zwei weitere Punkte, die in denselben Durchgang gehoeren:
+
+Aus dem review-Lane-Befund vom 16.09.: core/role/builtin/jaira-role-lane/SKILL.md:55 laesst nach jedem DoD-Punkt 'git diff' laufen und sagt 'Empty output? No pause'. 'git diff' zeigt keine untracked Dateien. Ein DoD-Punkt, der aus einer NEUEN Datei besteht, laeuft im Gespraechsmodus also ohne Pause durch - genau das, was der Modus verhindern soll. Dieses Ticket ist selbst das Beispiel: core/validate/mode_test.go und internal/cli/mode_test.go sind neu angelegt. Fix ist eine Zeile: 'git add -A -N .' vor dem 'git diff', oder 'git status --short' danebenstellen.
+
+Aus dem Lauf selbst: core/role/builtin/jaira-dispatcher/SKILL.md:118 sagt 'Testing is not a lane: /jaira-role-tester <id>', waehrend scripts/spawn.sh:139-145 nur 'dispatch' als Sonderfall kennt und testing zu '/jaira-role-lane <ticket> testing' macht. Gelaufen ist es als Lane und es ging gut aus. Alex hat auf die gelaufene Regel entschieden: testing ist eine gewoehnliche Lane, der Halbsatz in Zeile 118 wird gestrichen, spawn.sh behaelt seinen EINEN Sonderfall, und jaira-role-tester bleibt unangetastet als Einstiegsstelle mit zwei optionalen Argumenten.
