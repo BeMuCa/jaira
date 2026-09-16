@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:53:04Z
+updated-at: 2026-09-16T06:54:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -50,7 +50,7 @@ outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Hunk --no-worktree aus ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh nach core/role/builtin/jaira-dispatcher/scripts/spawn.sh uebernehmen: usage(), Flag-Schleife, wt-Zweig
+- [~] Hunk --no-worktree aus ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh nach core/role/builtin/jaira-dispatcher/scripts/spawn.sh uebernehmen: usage(), Flag-Schleife, wt-Zweig
 - [ ] Hunks 'dispatch'-Lane und proj-Variable mitnehmen; die vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) auslassen
 - [ ] Den --no-worktree-Absatz in core/role/builtin/jaira-dispatcher/SKILL.md nachziehen, wortgleich zum Stand in ~/.claude
 - [ ] Pruefen, dass ohne Herdr weder Skript noch Skill ins Leere laufen: HERDR_ENV-Check meldet sauber, SKILL.md nennt die Ersatzwege
