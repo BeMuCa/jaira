@@ -48,7 +48,7 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:46:07Z
+updated-at: 2026-09-16T08:50:23Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11194
@@ -89,7 +89,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
   proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (create refused, names 'jaira restore'); TestAddAndRmRefuseAFiledMilestoneOnDisk and TestAddOnAMilestoneFiledInThisTreePointsAtRestore (add/rm refused the same way)
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
-  proof: core/release/NOTES.md:24 (filing) and :25 (the taken name)
+  proof: core/release/NOTES.md:24 (filing a milestone) and :27 (the taken name)
 
 ## Options
 
