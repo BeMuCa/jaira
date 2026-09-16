@@ -47,11 +47,10 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 # Beside the repository, never inside it: a worktree under the repo is a second
 # copy of the sources on a different branch, and grep -r / find / ls -R walk
 # straight into it. Derived, so no path is baked in for one machine.
-# JAIRA_NO_WORKTREE=1 runs the worker in $root itself, no worktree and no
-# branch of its own. For a one-lane job on the branch that is already checked
-# out — a doc line, a note, a lane that only reads — a worktree costs a clone,
-# a branch and a merge for nothing. It is unsafe for two workers at once: they
-# share the directory, and that is exactly what the worktree exists to prevent.
+# The --no-worktree branch is what usage() above describes. Why anybody wants
+# it: for a one-lane job on the branch already checked out — a doc line, a
+# note, a lane that only reads — a worktree costs a clone, a branch and a merge
+# for nothing.
 if [ "$no_worktree" = 1 ]; then
   wt="$root"
 else
@@ -141,10 +140,11 @@ esac
 # worker — same worktree, same tab, same waiting for claude to come up, so it
 # lives here rather than in a second script that drifts from this one.
 if [ "$lane" = dispatch ]; then
-  "$herdr" pane send-text "$pane" "/jaira-dispatcher $ticket" >/dev/null
+  prompt="/jaira-dispatcher $ticket"
 else
-  "$herdr" pane send-text "$pane" "/jaira-role-lane $ticket $lane" >/dev/null
+  prompt="/jaira-role-lane $ticket $lane"
 fi
+"$herdr" pane send-text "$pane" "$prompt" >/dev/null
 sleep 1
 "$herdr" pane send-keys "$pane" enter >/dev/null
 
