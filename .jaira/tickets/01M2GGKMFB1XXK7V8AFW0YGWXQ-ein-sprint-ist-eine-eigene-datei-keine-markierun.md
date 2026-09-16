@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -48,17 +48,17 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:45:26Z
+updated-at: 2026-09-16T08:51:00Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-48761
-claimed-at: 2026-09-16T08:14:56Z
+claimed-by: DESKTOP-RFTCH11-11194
+claimed-at: 2026-09-16T08:46:07Z
 outcome-what: "recordMilestone renders the milestone it already holds instead of reading back the file it just saved, and refuseFiledOnRef's one-line forward folds into refuseIfFiled's switch"
 outcome-why: "the read-back was a second read of bytes in hand whose failure dropped the ref write without a word, and a single-caller forwarder put one of two sibling refusals behind an extra hop"
 outcome-resolves: "milestone.Bytes() renders once for both Save and the outbox; recordMilestone lost its unused *ticket.Store parameter across 4 call sites; suite green"
 review-summary: "none"
 review-gaps: "Removed: recordMilestone() read the milestone file back off disk (os.ReadFile) immediately after every caller had just saved it, and dropped the ref write silently when that read failed — it now renders the milestone it already holds through a new milestone.Bytes(), which Save also writes, so the file is written once and read never; its unused *ticket.Store parameter went with it (4 call sites). Removed: refuseFiledOnRef(), a one-line forward to refuseFiledElsewhere with a single caller — its text and its reason now stand in refuseIfFiled's switch arm beside the other state, so the two refusals read as one mapping instead of one inline and one indirected. Left: no dead code — deadcode over ./... names nothing this change added, only pre-existing hits (gitrepo Repo.Root/Commits/Stat/HeadSHA, ticket.OptionHeadings, cli flow.laneOf, cli share.isShared, tui Model.currentLane). Left: milestoneNamed()'s existence-check Load and logbookMilestone()'s re-read under the lock — the second is required for correctness and the path runs once per filing. Left: Index.Matches normalizing per ticket in the filter loop — it is cheaper than the pre-existing tag.Matches it mirrors. Left: printMilestones/printFiledMilestones unmerged — fetch.go hand-rolls one printer per report kind and folding two of five breaks that. Left: Store.MilestonesDir vs milestone.Dir, the same import-edge split MilestonesSubdir already has. No duplication found: swatch(), the milestone lock, resolveRef and the gitref ref* helpers are all shared rather than re-spelled. Full suite green."
-test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
+test-verdict: "pass: vet clean, go test ./... -race green on a cleared cache (RC=0, 31 packages), binary builds and cross-builds for windows; all 12 DoD criteria re-verified in the tree and every proof test re-run green; behaviour exercised on a scratch board — create/add/rm/ls, the hand-edit carry-over of 2 of 3 tickets in one edit per file, auto-distinct colours, an emptied milestone left standing, logbook refused on unfinished work, filing plus the taken name refusal and restore with the colour intact"
 question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, Milestone-Anlegen, Hand-Edit-Weitertragen, Ref-Transport und Board-Filter am echten Binary vorgefuehrt. Nimmst du die Arbeit an, oder soll noch etwas geprueft werden, bevor sie in review geht?"
 ---
 
@@ -89,7 +89,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
   proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (create refused, names 'jaira restore'); TestAddAndRmRefuseAFiledMilestoneOnDisk and TestAddOnAMilestoneFiledInThisTreePointsAtRestore (add/rm refused the same way)
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
-  proof: core/release/NOTES.md:24 (filing) and :25 (the taken name)
+  proof: core/release/NOTES.md:24 (filing a milestone) and :27 (the taken name)
 
 ## Options
 
@@ -741,3 +741,4 @@ Checked and NOT raised, so the next pass does not re-derive them:
 - .jaira/milestones/ liegt weiter untracked im Baum (die drei demo-*.md aus Plan-Schritt 72). Kein 'git add -A' in diesem Baum, sonst rutschen sie wieder mit.
 - **2026-09-16 08:39 · Alexander Sacharov** — critique round 17: none. Der einzige neue Commit df254a6 ist die Antwort auf Runde 16 und stimmt mit dem Code ueberein — gegengeprueft: gitref.Fetch (core/gitref/gitref.go:631) faehrt '+refs/jaira/*:refs/jaira/*', genau der Refspec in README:405; WriteMilestone/mktree (core/gitref/gitref.go:327,336) legt '<name>.md' in den Tree, genau was README:289 und README:407 versprechen. Geprueft und bewusst NICHT als Befund gefuehrt: die Paket-Doku von core/refsync (refsync.go:1-6) und der Paketkopf von core/gitref (gitref.go:1-23) sprechen weiter nur von Tickets, obwohl beide Pakete jetzt auch Milestones tragen. Das ist eine Kommentarzeile ohne Nutzerwirkung, und die Konstanten Root/MilestonePrefix (gitref.go:41-53) erklaeren die zwei Namensraeume direkt darunter ausfuehrlich — ein Befund daraus waere nach 17 Runden Fleiss statt Kritik. Die Schleife endet hier.
 - **2026-09-16 08:44 · Alexander Sacharov** — optimize: deadcode over ./... names nothing this change added — its hits (core/gitrepo Repo.Root/Commits/Stat/HeadSHA, ticket.OptionHeadings, cli flow.laneOf, cli share.isShared, tui Model.currentLane) are all pre-existing and left alone. Considered and left: milestoneNamed() Loads and parses the milestone file only to answer 'does it exist', and logbookMilestone() then re-reads it under the lock — the second read is required for correctness and the path runs once per filing, so an os.Stat there buys nothing worth the churn. tag.Matches/milestone.Index.Matches normalize the wanted name per ticket inside the filter loop; milestone.Matches is the cheaper of the two and follows the pre-existing tag pattern, so hoisting it would be a new asymmetry, not a cleanup. printMilestones/printFiledMilestones look alike but fetch.go already hand-rolls one printer per report kind (printArrivals/printDeparted/printStranded); folding two of five into a helper makes the file less uniform, not more. core/ticket Store.MilestonesDir and core/milestone Dir(root) compute the same path from opposite sides of the import edge — the same split MilestonesSubdir already has, so it stays.
+- **2026-09-16 08:50 · Alexander Sacharov** — testing: gates green — go vet ./... clean, go test ./... -race with a cleared cache RC=0 across all 31 packages (tui 117s, cli 39s), go build ./cmd/jaira ok, and the CI's Windows cross-check (GOOS=windows go vet + go build) ok. All 12 DoD proofs re-run individually and green. Behaviour exercised on a scratch board built from the freshly built binary in the scratchpad: three tickets into sprint-1; 'milestone ls' shows colour 209; the file carries frontmatter plus one id per line under a hand-written comment; carrying two of the three into sprint-2 was two hand edits of two files and 'list --milestone' then shows 1 and 2 with colour 45 auto-picked and distinct; 'milestone rm' of the last ticket left sprint-1 standing at 0 tickets; 'logbook sprint-2' refused with RC=3 while its tickets sat in backlog; 'logbook sprint-1' moved it to .jaira/logbook/tl-20260916/milestones/ and off 'milestone ls'; 'milestone create sprint-1' then refused with RC=3 naming 'jaira restore sprint-1.md'; restore brought it back with colour 209 intact; 'list --json' carries the milestones array. One drift, corrected in place rather than sent back: DoD 12's proof pointed at core/release/NOTES.md:25 for the taken name, which is the fetch-elsewhere line — the taken-name line is :27. Both lines exist, so the criterion held; only the pointer was stale.
