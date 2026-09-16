@@ -279,17 +279,21 @@ the branch of whoever wrote it, and if that branch is unpushed, stale or
 force-pushed, the assignee sees neither the title nor the id. Scanning every
 branch for ticket files is expensive and still wrong.
 
-So every write also puts the ticket on a ref of its own:
+So every write also puts the ticket on a ref of its own, and a milestone —
+the file that names which tickets belong to one round of work — travels the
+same way, for the same reason: it has to reach everybody without waiting for a
+branch to be merged.
 
 ```
-refs/jaira/tickets/<id>      one ref per ticket, its tree carries <id>.md
+refs/jaira/tickets/<id>         one ref per ticket, its tree carries <id>.md
+refs/jaira/milestones/<name>    one ref per milestone, its tree carries <name>.md
 ```
 
-That ref belongs to no branch. The default refspec does not fetch it, so a
-teammate who does not use jaira sees none of it, and it never shows up as a
-branch or in a hosting provider's web UI. The tree carries the whole ticket
-file rather than just an id, so the other side reads it with no checkout and
-nothing to merge:
+Those refs belong to no branch. The default refspec does not fetch them, so a
+teammate who does not use jaira sees none of it, and they never show up as a
+branch or in a hosting provider's web UI. The tree carries the whole file
+rather than just an id or a name, so the other side reads it with no checkout
+and nothing to merge:
 
 ```bash
 jaira fetch                                     # one round trip, no branch
@@ -397,9 +401,10 @@ repository on a shared drive without any of them knowing what jaira is.
 |---|---|
 | write a ticket to its ref | `hash-object -w`, `mktree`, `commit-tree` — a commit whose tree holds `<id>.md`, with the SHA you read as its parent |
 | send it | `push --force-with-lease=<ref>:<the SHA you read>` — refused if anybody wrote since |
-| see what exists | `ls-remote origin 'refs/jaira/tickets/*'` — the whole board in one round trip |
-| collect it | `fetch --prune origin '+refs/jaira/tickets/*:refs/jaira/tickets/*'` |
-| read one without a checkout | `show refs/jaira/tickets/<id>:<id>.md` |
+| see what exists | `ls-remote origin 'refs/jaira/*'` — the whole board, tickets and milestones, in one round trip |
+| collect it | `fetch --prune origin '+refs/jaira/*:refs/jaira/*'` — both namespaces in one refspec, or you get cards whose milestone file nobody has |
+| read a ticket without a checkout | `show refs/jaira/tickets/<id>:<id>.md` |
+| read a milestone without a checkout | `show refs/jaira/milestones/<name>:<name>.md` |
 | a ticket's history | `log refs/jaira/tickets/<id>` — every move it ever made |
 | has it landed | `rev-list -1 <branch> -- .jaira/logbook/*/<id>* .jaira/archive/<id>*` |
 | the backup branch | the same three plumbing commands, one tree with every ticket in it |
