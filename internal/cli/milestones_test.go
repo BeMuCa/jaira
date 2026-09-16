@@ -412,3 +412,84 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 		t.Errorf("'milestone ls' does not name the restored milestone:\n%s", out)
 	}
 }
+
+// A marked file lying on the board is the normal outcome of pulling somebody
+// else's filing, not a corner case: core/refsync IncomingMilestones writes a
+// filed ref over a file this tree already has. 'add' and 'rm' are the third
+// door into that file, after create and logbook, and the write would not stay
+// local — recordMilestone puts it on the ref, so every clone that fetches sees
+// a milestone its filer took off the board being edited.
+func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
+	dir := emptyStore(t)
+	member := mkTicket(t, dir, "in the group")
+	other := mkTicket(t, dir, "not in it yet")
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one", member); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ms.SetStatus(milestone.StatusFiled)
+	if err := ms.Save(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, verb := range []string{"add", "rm"} {
+		out, err := runCLI(t, dir, "milestone", verb, "round-one", other)
+		if err == nil {
+			t.Fatalf("'milestone %s' edited a filed milestone:\n%s", verb, out)
+		}
+		// The refusal has to name the file, its mark and where the way back
+		// runs — the same three things create's refusal names, because the
+		// reader is standing in front of the same file.
+		for _, want := range []string{milestone.Path(dir, "round-one"), milestone.StatusFiled, "jaira restore round-one.md"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("the %s refusal does not mention %q: %v", verb, want, err)
+			}
+		}
+	}
+
+	// And nothing was written: the members are as they were and the mark stands,
+	// so the ref this tree records is still the filed one.
+	after, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !after.Filed() {
+		t.Error("the refused call took the filed mark off the file")
+	}
+	if got := after.Members(); len(got) != 1 || got[0] != ticketByHandle(t, dir, member).ID {
+		t.Errorf("the refused call wrote the member list as %v", got)
+	}
+}
+
+// Filed in this very tree, the file is in the logbook and Load answers the same
+// ErrNotExist a name nobody ever used answers with. Pointing at 'create' there
+// walks the reader into create's own refusal: two steps for one answer, and the
+// first one points away from the file.
+func TestAddOnAMilestoneFiledInThisTreePointsAtRestore(t *testing.T) {
+	dir := emptyStore(t)
+	done := mkDoneTicket(t, dir, "finished work")
+	other := mkTicket(t, dir, "something else")
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one", done); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+
+	out, err := runCLI(t, dir, "milestone", "add", "round-one", other)
+	if err == nil {
+		t.Fatalf("'milestone add' accepted a milestone that is in the logbook:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "jaira restore round-one.md") {
+		t.Errorf("the refusal does not point at the restore: %v", err)
+	}
+	if strings.Contains(err.Error(), "milestone create") {
+		t.Errorf("the refusal still sends the reader to 'create', which refuses in turn: %v", err)
+	}
+	if !strings.Contains(err.Error(), "logbook") {
+		t.Errorf("the refusal does not say where the file went: %v", err)
+	}
+}

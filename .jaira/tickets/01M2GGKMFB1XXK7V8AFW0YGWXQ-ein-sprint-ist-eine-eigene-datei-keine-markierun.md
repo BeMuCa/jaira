@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -42,14 +42,14 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T06:51:19Z
+updated-at: 2026-09-16T06:58:00Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-63171
-claimed-at: 2026-09-15T20:47:24Z
-outcome-what: "Reworded the two refusals a user meets when a milestone was filed somewhere else: 'jaira logbook <name>' on an already-filed milestone now names the marked file and says the restore has to run in the tree that filed it, instead of pointing at a 'jaira restore' that fails here; 'jaira milestone create' on a filed name no longer offers hand-deleting 'status: filed' as the way back, and core/release/NOTES.md and docs/COMMANDS.md say the same."
-outcome-why: "Both messages sent the reader down a path that does not work. Every state reaching the logbook refusal is a tree without a logbook copy, so its 'jaira restore <name>.md' answers 'is not in the archive'. And deleting the mark by hand in a second clone rides back out on the ref, pulls the milestone onto that board alone and strands the logbook copy in the filer's tree, where 'jaira restore' then hits 'is already on the board'."
-outcome-resolves: "critique round 6, findings 1 and 2. No behaviour changed; go build, go vet and go test ./core/... ./internal/cli/... are green."
+claimed-by: DESKTOP-RFTCH11-35903
+claimed-at: 2026-09-16T06:51:55Z
+outcome-what: "'jaira milestone add' and 'jaira milestone rm' refuse a filed milestone, the third and last door into its file: one refusal for a marked file still on disk, one for a milestone filed into this tree's logbook, plus two tests and a NOTES.md line."
+outcome-why: "editMembers only handled os.ErrNotExist, so an edit went into a marked file and — because recordMilestone follows ms.Save — out onto refs/jaira/milestones/<name>, reviving for every fetching clone a milestone its owner took off the board. The ErrNotExist branch pointed at 'jaira milestone create', which refuses in turn: the advice walked the reader into the next refusal."
+outcome-resolves: "critique round 7's finding, reopened by Alex on 2026-09-16, plus the second defect found while reading the code for it. No new DoD line: both are what DoD 9 and 11 already demand."
 review-summary: "internal/cli/milestones.go:237 editMembers loads the milestone with milestone.Load, which does not filter Filed(), and never asks ms.Filed() — so 'jaira milestone add/rm <name>' on a marked file still on disk succeeds and prints '<handle> added to <name>' and '<name> now holds N ticket(s)' for a milestone milestone.LoadAll hides, 'jaira milestone ls' does not name and no card paints. That file is a normal state, not a corner: core/refsync/refsync.go:IncomingMilestones writes a filed ref over a file this tree already has, and a filing that marked but did not move leaves one too — the two states core/milestone/milestone.go:LoadAll's doc names. Both other doors into that file already have a refusal (internal/cli/milestones.go:121 for create, internal/cli/logbook.go:283 for logbook); add/rm is the third and has none. Refuse there the same way: name the file, its mark, and that 'jaira restore <name>.md' in the tree that filed it is what puts it back — the wording at milestones.go:122 is the model. No test covers this; internal/cli/milestones_test.go has no add/rm case on a marked file."
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
@@ -81,7 +81,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Der Ref eines abgelegten Milestones wird NICHT geraeumt: er bleibt stehen und traegt im Frontmatter den Status 'abgelegt'. Nachgestellt an zwei Arbeitsbaeumen - der zweite zieht die Refs und schreibt den abgelegten Milestone NICHT wieder aufs Board.
   proof: internal/cli/milestoneref_test.go:TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef
 - [x] Der Name eines abgelegten Milestones ist belegt: 'jaira milestone create' mit demselben Namen wird abgelehnt und sagt, dass dieser Milestone abgelegt ist und mit 'jaira restore' zurueckkommt.
-  proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (milestone create refused, names 'jaira restore')
+  proof: internal/cli/milestones_test.go:TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack (create refused, names 'jaira restore'); TestAddAndRmRefuseAFiledMilestoneOnDisk and TestAddOnAMilestoneFiledInThisTreePointsAtRestore (add/rm refused the same way)
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen.
   proof: core/release/NOTES.md:24 (filing) and :25 (the taken name)
 
@@ -142,6 +142,10 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Test DoD 9 und 11: ablegen - vom Board weg, 'milestone ls' schweigt, keine Karte traegt die Farbe, das Logbuch nennt ihn; 'create' mit demselben Namen wird abgelehnt; 'restore' - Liste, Farbe und Karte zurueck
 - [x] Hilfetexte und docs/COMMANDS.md: 'jaira logbook' nennt den Milestone-Fall, 'jaira milestone rm' bleibt bei 'der Milestone bleibt stehen', 'create' nennt den belegten Namen - alle drei liest man VOR dem Aufruf
 - [x] DoD 12: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen
+- [x] editMembers: nach erfolgreichem Load auf ms.Filed() pruefen und mit fail(ExitValidation, "milestone_filed", ...) abweisen - Wortlaut nach milestones.go:122 (Datei, Markierung, 'jaira restore <name>.md' in dem Baum, der abgelegt hat)
+- [x] editMembers ErrNotExist-Zweig: vor dem 'create'-Rat milestoneFiled(s, name) fragen, wie create es bei milestones.go:130 tut, und auf 'jaira restore' zeigen statt auf 'create'
+- [x] Tests in internal/cli/milestones_test.go: add/rm auf einer markierten Datei auf der Platte, und add/rm auf einem in DIESEN Baum abgelegten Milestone
+- [x] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer die Weigerung von 'jaira milestone add/rm' bei einem abgelegten Milestone
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -479,3 +483,14 @@ PUNKT 3 - Tests. internal/cli/milestones_test.go hat keinen einzigen add/rm-Fall
 Warum das kein Randfall ist, fuer den Fall dass jemand kuerzen will: core/refsync/refsync.go:194 IncomingMilestones schreibt einen abgelegten Ref ueber eine Datei, die dieser Baum schon hat. Die markierte Datei auf der Platte entsteht also dadurch, dass man das Ablegen eines anderen zieht - der normale Weg, nicht ein Sonderfall.
 
 Keine neue DoD-Zeile: Punkt 1 und 2 sind beide das, was DoD 9 und 11 schon verlangen ('ist vom Board weg', 'der Name ist belegt'). Eine NOTES.md-Zeile nur, wenn der Abweisungstext etwas ist, das ein Benutzer von aussen merkt - das tut er hier, also wahrscheinlich ja.
+- **2026-09-16 06:57 · Alexander Sacharov** — in-progress round 6 (critique round 7, reopened by Alex), 2026-09-16. All three points built, suite with -race green in all 28 packages. What the code does not say:
+
+WHY THE GUARD SITS AFTER Load AND NOT BEFORE: editMembers has to distinguish three states that all look like 'no usable milestone' — filed with the file still here, filed with the file in this tree's logbook, and never existed. Only Load tells them apart: the first is err==nil plus Filed(), the second is ErrNotExist plus milestoneFiled(), the third is ErrNotExist alone. Checking Filed() earlier would need a second read of the same file.
+
+THE FINDING UNDERSTATED THE DAMAGE, and the fix's wording follows the larger reading: critique round 7 called this 'only what the user is told'. It is not. recordMilestone(s, ms) runs right after ms.Save, so an add/rm on a marked file publishes that file to refs/jaira/milestones/<name>. The mark survives on disk, but the edit reaches every clone that fetches — and refsync writes a filed ref over a file the clone already has. The refusal text therefore says 'would push the change onto its ref for everyone who fetches' rather than repeating create's 'would leave that tree's copy stranded'.
+
+POINT 2 IS NOT COSMETIC EITHER: without milestoneFiled() in the ErrNotExist branch, 'add' on a milestone filed in this tree says 'jaira milestone create <name> starts it' — and create then refuses with 'has been filed'. The reader is walked into a refusal by the advice of the previous one. The test asserts the absence of 'milestone create' in that message, not only the presence of 'jaira restore'.
+
+WHY BOTH TESTS AND NOT ONE: the marked-file-on-disk case and the filed-in-this-tree case reach different branches (err==nil vs ErrNotExist) and come from different events — the first from fetching somebody else's filing (core/refsync IncomingMilestones), the second from filing here. A single test would cover one branch and leave the other's wording unmeasured.
+
+NOT CHANGED, checked: milestoneFiled(s, name) is the same helper create uses at milestones.go:130, so both doors search the same two places (ref, then logbook folders). The 'Nothing to do' path and the JSON path in editMembers are below the guard and unreachable for a filed milestone, so neither needed its own wording.

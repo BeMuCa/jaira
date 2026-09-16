@@ -237,11 +237,31 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 	ms, err := milestone.Load(s.Root, name)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			// Filed in this very tree: the file moved to the logbook, so Load
+			// answers the same ErrNotExist a name nobody ever used answers
+			// with. Saying "create it" here sends the reader into the
+			// refusal create raises for a filed name, two steps for one
+			// answer, and the first one points the wrong way.
+			if where, filed := milestoneFiled(s, name); filed {
+				return fail(ExitValidation, "milestone_filed",
+					"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour, and then tickets can go in and out of it again",
+					name, where, name)
+			}
 			return fail(ExitNotFound, "no_such_milestone",
 				"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
 				name, name)
 		}
 		return err
+	}
+	if ms.Filed() {
+		// The third door into a filed milestone's file, after create and
+		// logbook. The write would not lose the mark, but it does not stay
+		// local either: recordMilestone below puts it on the ref, so every
+		// clone that fetches sees a milestone the filer took off the board
+		// being edited. Refuse it where the other two refuse it.
+		return fail(ExitValidation, "milestone_filed",
+			"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and editing it here instead would push the change onto its ref for everyone who fetches",
+			name, milestone.Path(s.Root, name), milestone.StatusFiled, name)
 	}
 	var touched []string
 	for _, id := range ids {
