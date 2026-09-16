@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:54:10Z
+updated-at: 2026-09-16T19:54:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -58,7 +58,7 @@ review-summary: "core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:
 - [x] Was im Gespraech entschieden wird, steht mit 'jaira note' auf dem Ticket, BEVOR die Arbeit daran beginnt - nicht hinterher. Nachgestellt an einem Ticket, dessen Sitzung mittendrin abgebrochen wird: die Entscheidung ist danach noch da.
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:54 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip und TestShowPrintsModeForPeople in internal/cli/mode_test.go
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:75 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:84
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:75 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:84; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung, sonst keine und die Lane ist trotzdem fertig
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:55 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
