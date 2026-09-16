@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:47:31Z
+updated-at: 2026-09-16T06:48:38Z
 updated-by: Alexander Sacharov
 ---
 
@@ -52,3 +52,12 @@ updated-by: Alexander Sacharov
 Warum zu eng: das Kopieren der .env ist selbst schon projektspezifisch. Ein Projekt ohne .env braucht es nicht, ein anderes will daneben noch 'npm install' oder eine Datenbank hochfahren. Wenn jaira die .env kopiert und ein Hook nur Zeilen anhaengen darf, bleibt die eine Entscheidung, die am haeufigsten falsch ist, weiter in jaira.
 
 Also: ein Einrichtungsskript, kein Zeilenlieferant. jaira ruft es auf, gibt ihm worktree-Pfad, Slug, Port-Versatz und Repository-Wurzel, und was danach in dem Verzeichnis steht, ist Sache des Projekts. Rueckwaerts vertraeglich bleibt es dadurch, dass ein Board ohne dieses Skript einen worktree ohne .env bekommt - wer die alte Bequemlichkeit will, schreibt sich das Skript einmal hin, und jaira zeigt eins als Vorlage.
+- **2026-09-16 06:48 · Alexander Sacharov** — Reihenfolge, entschieden von der Teamlead-Sitzung am 2026-09-16, damit niemand hier anfaengt, bevor 7KX89C durch ist.
+
+Drei Tickets fassen dieselbe Datei an: 7KX89C (spawn.sh faehrt im Repository mit), dieses hier (Projektwerte raus aus spawn.sh), 3YRPXJ (spawn.sh kann nur eine Rolle starten). Das ist eine Arbeit an einem File, keine drei nebeneinander.
+
+7KX89C geht zuerst, und der Grund steht im Kontext DIESES Tickets: spawn.sh liegt heute nur in ~/.claude/skills/jaira-dispatcher/ auf einer Maschine. Wer hier zuerst baut, aendert eine Datei, die in keinem Diff steht, in keinem PR auftaucht und bei Berk nicht ankommt - und muss dieselbe Aenderung ein zweites Mal machen, sobald 7KX89C die Datei ins Repository holt. Genau das Einfrieren, das dieses Ticket beklagt, wuerde die Behebung dieses Tickets selbst treffen.
+
+Danach dieses Ticket, dann 3YRPXJ.
+
+Was aus der Sitzung noch dazugehoert: der Teamlead hat dreimal eine gepatchte Kopie von spawn.sh im Scratchpad gefahren, weil die Prompt-Zeile fest verdrahtet ist. Das ist 3YRPXJ und dort notiert - aber es ist dasselbe Muster wie hier: wer spawn.sh nicht erweitern kann, forkt es. Eine Loesung fuer dieses Ticket, die nur die .env herausnimmt, laesst den Fork-Grund von 3YRPXJ stehen. Die Plan-Lane sollte beide Haken - Einrichtungs-Hook und Prompt-Argument - als eine Erweiterbarkeitsfrage ansehen, auch wenn sie in zwei Tickets gebaut werden.
