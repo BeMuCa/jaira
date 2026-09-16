@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:32:44Z
+updated-at: 2026-09-16T08:33:03Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -704,3 +704,23 @@ CHECKED AND LEFT ALONE: fileOnRefOnly (refs.go:96) matches reports by r.ID witho
 - Der Ablehnungs-Testfall braucht keinen Trick: grace legt denselben Milestone an, ohne vorher zu fetchen. Die lokale Pruefung in milestones.go greift nur auf Datei und 'filed'-Markierung, der Name ist hier frei - abgelehnt wird erst auf dem Push, weil der Ref schon steht.
 - Beide Tests sind gegen den unveraenderten Stand rot gemessen worden: 'milestone subject is ("ticket", "elease")' und alle drei Zusicherungen der End-zu-End-Pruefung.
 - TestRefSubjectNamesEachKindTheWayItIsAddressed haelt die TICKET-Haelfte fest. Sie war richtig und ist die, die eine spaetere Vereinfachung der beiden Helfer mitreissen wuerde.
+- **2026-09-16 08:33 · Alexander Sacharov** — critique round 16 — one finding, and it is the only one this pass produced.
+
+FINDING: README.md — the milestone feature is not in the README at all. 'grep -n milestone README.md' returns nothing, while the README is where jaira explains its ref layout ('Tickets travel on their own git refs', 285) and the plumbing under it ('What git is actually doing', 394-404).
+
+Two lines there are now WRONG, not merely incomplete, because gitref.Fetch was widened to Root:
+- README:401 'collect it | fetch --prune origin +refs/jaira/tickets/*:refs/jaira/tickets/*' — a teammate who follows this recipe by hand gets the tickets and none of the milestones, and the board then shows cards whose milestone file nobody has. That is exactly the half-state the comment in gitref.Fetch says the widened refspec exists to prevent.
+- README:285 lists refs/jaira/tickets/<id> as THE namespace. It is now one of two.
+
+What to put there instead:
+- README:285 block: add a second line, refs/jaira/milestones/<name>  one ref per milestone, its tree carries <name>.md
+- README:400 'see what exists': ls-remote origin 'refs/jaira/*'
+- README:401 'collect it': fetch --prune origin '+refs/jaira/*:refs/jaira/*'
+- README:402-403 area: one row for reading a milestone without a checkout, show refs/jaira/milestones/<name>:<name>.md
+
+Checked and NOT raised, so the next pass does not re-derive them:
+- core/gitref: Root/Prefix/MilestonePrefix and refSHA/refRead/refWrite/listNames are the smallest shape that keeps the ticket API unchanged; the two namespaces are kept apart by a path segment, which is the same trick outbox uses for its subdirectories. No simpler shape.
+- Repo.Fetch's --prune over refs/jaira/* cannot eat a snapshot ref: core/snapshot/snapshot.go:147 uses refs/heads/.
+- refSubject/rejectedAdvice (internal/cli/refs.go) branch on Kind in one place each, and the per-subject JSON key matches what recordMilestone already emits in the same file. Left standing.
+- No dead milestone API: MilestoneSHA, ListMilestones, QueueMilestone, HasColour and Index.For all have a non-test caller.
+- refuseIfFiled/refuseFiledOnRef/OnDisk/InLogbook: the state to refusal mapping stands once, which is what rounds 12-15 asked for. Nothing to re-open.
