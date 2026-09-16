@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:51:31Z
+updated-at: 2026-09-16T07:53:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -612,3 +612,9 @@ Why this is not round 7's or round 9's finding again. Round 7 guarded the add/rm
 THE FIX, and it is the pattern the package already has: in logbookOut, when milestoneNamed answers os.ErrNotExist, switch on milestoneFiled(s, name) and return refuseFiledInLogbook / refuseFiledOnRef with a closing clause saying what filing would have done — the same three lines as editMembers at milestones.go:249-257. Fall through to the ticket error otherwise, so a genuine ticket typo still reads as one: milestoneFiled answers milestoneNotFiled for every name nobody filed.
 
 Also worth a line while that file is open: the doc comment at logbook.go:283-286 says 'every route to this refusal leaves the file on the board and nothing in this tree's logbook'. That is true of the on-disk check it sits on and false of the door, and it is what makes the gap easy to miss on the next read.
+- **2026-09-16 07:53 · Alexander Sacharov** — in-progress round 10 (critique round 11), 2026-09-16. The logbook door now answers in the two states where the file is gone, and what the code does not say:
+- The gap was upstream of every earlier round: logbookMilestone's ms.Filed() check needs an ms, and milestone.Load is what fails. Rounds 7-10 all worked on refusals that already had the file in hand, which is why four rounds of tests passed over this.
+- milestoneNamed now returns the normalized name TOGETHER with the error. It returned "" before, and the caller would have had to call milestone.NormalizeName a second time to have a name to ask milestoneFiled about — the same string computed twice, in two places that must agree.
+- The two existing ref tests gained a third door instead of a new test being written: both already stand in exactly one of the two states (grace has only the ref, ada has only the logbook copy), and a test of its own would have had to build the same two boards again. Measured against the reverted logbook.go first: the ref test fails all four assertions on the logbook door and the filing-tree test fails both, so the door is genuinely held down.
+- TestEveryDoorIntoAFiledMilestoneSaysTheSameThings was left alone: its logbook door drives a marked file that IS on disk, which is the third route and stays correct.
+- The closing clause for the filing tree is ', and only a milestone that is on the board can be filed'. Considered repeating the 'somebody else's record' wording the on-disk route uses and rejected it: in this tree the record IS the reader's own, so that sentence would be false here.
