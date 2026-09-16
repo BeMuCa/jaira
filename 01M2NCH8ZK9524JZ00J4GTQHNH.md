@@ -36,7 +36,7 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:33:02Z
+updated-at: 2026-09-16T15:33:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -118,3 +118,15 @@ Die Lesekette, die dranhaengt (je eine Stelle, alle klein):
 - core/merge/merge.go: NICHTS zu tun. mode ist ein Skalar, kein Prosa- und kein Listenfeld; die Default-Regel (neuere Antwort gewinnt) ist genau richtig fuer einen Modusschalter.
 
 Wichtigster Befund, weil er eine naheliegende Loesung ausschliesst: der Modus darf NICHT ueber 'input-requires' einer Lane laufen. showForLane (internal/cli/flow.go:552) fuellt 'input' streng aus l.InputRequires, und core/lane prueft beim Laden jedes input-requires gegen ticket.SuppliedFields plus die output-produces frueherer Lanes. 'mode' dort einzutragen hiesse: jede Lane-Datei anfassen UND SuppliedFields aufweichen, dessen Kommentar (schema.go:140ff) ausdruecklich erklaert, warum diese Liste eng bleibt. Richtig ist die Ebene darueber: 'mode' als eigener Schluessel im JSON-Rumpf, neben 'model_tier' und 'prompt' — dort steht schon heute, WIE eine Lane zu fahren ist, nicht WOMIT.
+- **2026-09-16 15:33 · Alexander Sacharov** — Pre-process, drei Stellen, an denen der Plan eine Wahl trifft. Je Empfehlung plus Grund.
+
+1. WER LOESCHT DEN MODUS WIEDER? Der Dispatcher setzt ihn vor der Plan-Lane. Wenn ihn niemand raeumt, laeuft das Ticket bis ins Logbuch im Gespraechsmodus und jeder spaetere Worker pausiert nach jedem DoD-Punkt fuer einen Menschen, der laengst weitergezogen ist.
+   Empfehlung: NIEMAND loescht ihn automatisch, und das ist Absicht. Der Modus ist eine Aussage ueber das Ticket ('hier waren Entscheidungen offen'), nicht ueber eine Lane. Ein Ticket, das ihn einmal gebraucht hat, braucht ihn in critique und testing genauso. Geraeumt wird von Hand mit 'jaira set <id> mode=' — im Prompt der Menschen-Lane als eine Zeile erwaehnt. Automatik hier waere ein zweiter Mechanismus, der raet.
+
+2. FREIER TEXT ODER GEPRUEFTER WERT? 'jaira set' nimmt heute jeden String. 'mode=conversation', 'mode=konversation', 'mode=chat' waeren alle stumm erfolgreich und alle wirkungslos — der Worker vergleicht gegen genau ein Wort.
+   Empfehlung: in 'jaira set' pruefen, erlaubt sind nur leer und 'conversational'. Vier Zeilen Code. Ein Tippfehler, der stumm nichts tut, ist genau die Fehlerklasse, die dieses Ticket ueberhaupt erst gibt: der Mensch glaubt, er laeuft im Gespraechsmodus, und der Worker committet.
+
+3. WORAN MERKT DER WORKER, DASS EIN DoD-PUNKT KEINEN DIFF ERZEUGT? Die Brainstorm-Notiz will die Bremse: ein Punkt ohne Code pausiert nicht. Der Worker kann das nicht vorher wissen, nur hinterher.
+   Empfehlung: kein Vorher-Wissen einbauen. Der Worker arbeitet den Punkt, laesst 'git diff' laufen; ist die Ausgabe leer, geht er ohne Pause weiter. Das ist eine Prompt-Zeile und kein Mechanismus, und es kann nicht falsch raten.
+
+Nicht in diesem Ticket, absichtlich: spawn.sh bleibt unveraendert. Der Modus faehrt ueber die Platte, nicht ueber die getippte Zeile — genau deshalb ist 3YRPXJ (spawn.sh nicht erweiterbar) hier KEINE Vorbedingung. Und '--no-worktree', das die Brainstorm-Notiz empfiehlt, ist bereits gebaut; es ist eine Empfehlung im Dispatcher-Prompt, kein Code.
