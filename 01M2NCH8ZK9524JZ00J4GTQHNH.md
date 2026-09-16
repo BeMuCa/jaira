@@ -34,7 +34,8 @@ related:
   - 01M2KBPPVH5PAKZ98B0X7KX89C
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:14:31Z
+updated-at: 2026-09-16T15:24:58Z
+updated-by: Alexander Sacharov
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
