@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:27:55Z
+updated-at: 2026-09-16T21:05:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67097
 claimed-at: 2026-09-16T20:17:17Z
@@ -345,3 +345,14 @@ Nichts gefunden, was zurueckgeht. Diese Lane hat keinen Code geaendert und commi
 Warum das dieses Ticket angeht: beide NOTES.md-Zeilen schicken den Leser genau auf diesen Befehl, damit er den Modus sieht. Vor einem Release, das den neuen Prompt einbettet, tut der Befehl das Gegenteil — er nimmt ihm den Modus weg, schweigend. Entweder die Zeilen sagen dazu, dass erst das Release den Modus bringt, oder 'roles install' lernt, aus dem Arbeitsbaum zu installieren. Das zu entscheiden ist nicht Sache dieses Tickets, aber die NOTES.md-Zeilen so stehen zu lassen, ist falsch.
 
 Zweiter, kleinerer Befund aus demselben Lauf: scripts/spawn.sh kennt nur 'dispatch' als Sonderfall und tippt fuer jede andere Lane '/jaira-role-lane <id> <lane>'. Fuer die testing-Lane ist das laut Dispatcher-Prompt falsch — dort gehoert '/jaira-role-tester <id>' hin. Der Lauf ging gut aus, weil der Lane-Worker denselben Prompt aus .jaira/lanes/testing.md liest und test-verdict liefert, aber der Prompt und das Skript widersprechen sich.
+- **2026-09-16 21:05 · Alexander Sacharov** — Antwort von Alex am 16.09. auf die Frage aus der human-Lane.
+
+Kein Probelauf an einem echten Ticket vor review. Begruendung von Alex: wie viel geredet wird, haengt ohnehin am einzelnen Ticket; es kommen noch viele Aenderungen, und ein Review findet sowieso statt. Das Ticket geht damit direkt in die review-Lane.
+
+Dazu eine Praezisierung des Modus, die Alex im selben Satz macht und die auf das Ticket gehoert: der Gespraechsmodus ist kein Modus, in dem staendig gefragt wird. Alex redet viel, WAEHREND entschieden wird — was aber einmal entschieden ist, wird danach autonom ausgefuehrt und nicht noch einmal aufgemacht. Der Halt vor der Plan-Lane zaehlt deshalb OFFENE Entscheidungen; eine, die in einer Notiz schon beantwortet ist, ist keine offene mehr. Genau das steht seit critique-Runde 2 im Zaehlschritt des Dispatcher-Prompts — diese Antwort bestaetigt es als gewollt und nicht als Zufall.
+
+Zwei Punkte aus demselben Austausch, nachgeprueft statt vermutet:
+
+Zur Auslieferung der Rollen: core/role/role.go:33 traegt '//go:embed all:builtin'. Alles unter core/role/builtin liegt also beim Bauen automatisch im Binary, es geht nichts verloren. Das Binary 0.2.1 ist schlicht aelter als dieser Branch — 'roles install' war nicht falsch, nur die Quelle war alt. Mit dem naechsten Release loest sich das von selbst; die NOTES.md-Zeilen sollten trotzdem sagen, dass erst dieses Release den Modus bringt.
+
+Zum Widerspruch um die testing-Lane: entschieden wird auf EINE Regel, und zwar die, die heute gelaufen ist. testing ist eine gewoehnliche Lane — .jaira/lanes/testing.md ist 'agentic: true' mit 'output-produces: [test-verdict]' —, sie wird mit '/jaira-role-lane <id> testing' gefahren, und spawn.sh behaelt seinen einen Sonderfall 'dispatch'. jaira-role-tester bleibt, was seine eigene Beschreibung sagt: eine Einstiegsstelle mit zwei optionalen Argumenten fuer 'pruef die Suite', kein Lane-Worker. Zu streichen ist damit der Halbsatz in core/role/builtin/jaira-dispatcher/SKILL.md:118 ('Testing is not a lane'), nicht ein zweiter Zweig in spawn.sh.
