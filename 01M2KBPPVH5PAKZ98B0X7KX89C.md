@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:56:18Z
+updated-at: 2026-09-16T06:56:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -56,7 +56,7 @@ outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink
 - [x] Pruefen, dass ohne Herdr weder Skript noch Skill ins Leere laufen: HERDR_ENV-Check meldet sauber, SKILL.md nennt die Ersatzwege
 - [x] Test in core/role: 'bash -n' ueber jede eingebettete .sh-Datei, und 'spawn.sh --help' endet mit 0 - heute faellt ein kaputtes Skript erst beim Worker auf
 - [x] Zeile unter '## Unreleased' in core/release/NOTES.md: --no-worktree da, und 'jaira roles install --force' noetig, weil eine veraenderte Kopie uebersprungen wird
-- [ ] Abnahme: 'jaira roles install' in ein leeres Verzeichnis, beide Dateien da, spawn.sh ausfuehrbar, --no-worktree drin; 'go test ./core/role/...' gruen
+- [~] Abnahme: 'jaira roles install' in ein leeres Verzeichnis, beide Dateien da, spawn.sh ausfuehrbar, --no-worktree drin; 'go test ./core/role/...' gruen
 
 ## Progress
 - **2026-09-16 06:52 · Alexander Sacharov** — Die Praemisse des Tickets ist ueberholt: der Dispatcher liegt laengst im Repository, nur an einem anderen Ort als die DoD sagte. core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh, sie sind per go:embed im Binary und 'jaira roles install' schreibt sie nach ~/.claude/skills. .claude/skills/ waere ein zweiter Ort und damit genau die driftende Zweitkopie, gegen die das Ticket existiert. DoD entsprechend umgeschrieben; Symlink-Frage damit erledigt, das Installationskommando ist der Weg.
