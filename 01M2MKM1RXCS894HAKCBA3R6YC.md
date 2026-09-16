@@ -25,14 +25,14 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:55:56Z
+updated-at: 2026-09-16T10:57:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
 outcome-what: "Sprosse 1 der Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md nennt jetzt die Quelle des owner/repo (nameWithOwner aus 'gh repo view', Pfad aus 'glab repo view') statt 'braucht kein Flag'; der Satz darunter sagt, dass jede Sprosse eins hält und kein Befehl das Flag weglässt."
 outcome-why: "Das Repository-Flag war sprossenabhängig: ein Durchlauf musste über vier Befehle in vier Abschnitten mitnehmen, auf welcher Sprosse er stand. In einem Dokument, dessen einziger Fehlermodus 'ein Modell liest einen Zweig falsch' ist, kauft ein gesparter Flag-Tipp das nicht auf."
 outcome-resolves: "critique Durchgang 4, Finding 1 (:149-150)"
-review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:149-150 macht das Repository-Flag von der Sprosse abhaengig ('In case 1 leave the flag off') — eine Ausnahme, die der Durchlauf danach an vier Befehlen (:160, :166, :204, :210) in vier Abschnitten mitschleppen muss und die nichts kauft. Stattdessen Sprosse 1 (:134-135) das owner/repo aus 'nameWithOwner' der schon getippten 'gh repo view'-Zeile nehmen lassen und :149-150 ersatzlos streichen: <owner/repo> ist dann in jedem Fall gesetzt und alle vier Befehle tragen das Flag unbedingt. Ein Dokument, dessen einziger Fehlermodus ein falsch gelesener Zweig ist, soll keinen Zweig tragen, der nur Tipparbeit spart."
+review-summary: "none"
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
