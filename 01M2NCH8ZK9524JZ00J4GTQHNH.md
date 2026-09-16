@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: backlog
+status: brainstorm
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -34,7 +34,7 @@ related:
   - 01M2KBPPVH5PAKZ98B0X7KX89C
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:26:11Z
+updated-at: 2026-09-16T15:26:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
