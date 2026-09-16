@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:36:14Z
+updated-at: 2026-09-16T08:36:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -732,3 +732,9 @@ Checked and NOT raised, so the next pass does not re-derive them:
 - refSubject/rejectedAdvice (internal/cli/refs.go) branch on Kind in one place each, and the per-subject JSON key matches what recordMilestone already emits in the same file. Left standing.
 - No dead milestone API: MilestoneSHA, ListMilestones, QueueMilestone, HasColour and Index.For all have a non-test caller.
 - refuseIfFiled/refuseFiledOnRef/OnDisk/InLogbook: the state to refusal mapping stands once, which is what rounds 12-15 asked for. Nothing to re-open.
+- **2026-09-16 08:36 · Alexander Sacharov** — in-progress Runde 15 (critique-Runde 16), 2026-09-16. Nur README.md, kein Code — und was die Dateien nicht sagen:
+- Die ls-remote-Zeile steht bewusst auf refs/jaira/*, obwohl gitref.ListRemote (gitref.go:657) weiter nur Prefix, also tickets/, abfragt. Die Tabelle beschreibt, was ein Mensch von Hand tippt, um zu sehen was es gibt; ListRemote beantwortet die engere Frage 'welche Tickets gibt es'. Das ist kein Widerspruch, den jemand spaeter 'zurueckfixen' sollte.
+- Die fetch-Zeile ist an core/gitref/gitref.go:625 gemessen: Fetch nimmt Root+'*', nicht Prefix. Die alte README-Zeile war die einzige Stelle, die noch das engere Refspec lehrte — wer sie abtippt, bekommt Tickets ohne Milestones, genau die Halbstellung, gegen die der Kommentar an Fetch argumentiert.
+- Keine NOTES.md-Zeile: eine README-Aenderung ist nichts, was aus dem Binary heraus beobachtbar ist. NOTES.md ist das, was 'jaira update' vorliest.
+- Bewusst NICHT angefasst, ausserhalb des Findings: die Befehlsliste in README:646 nennt weder 'jaira tag' noch 'jaira milestone', und die Tastenliste (README:700) nennt weder den Tag-Picker 't' noch den Milestone-Filter. Das ist eine durchgaengige Auslassung, keine Milestone-Luecke — wer sie schliesst, sollte beide Seiten schliessen. Kandidat fuer ein eigenes Ticket.
+- .jaira/milestones/ liegt weiter untracked im Baum (die drei demo-*.md aus Plan-Schritt 72). Kein 'git add -A' in diesem Baum, sonst rutschen sie wieder mit.
