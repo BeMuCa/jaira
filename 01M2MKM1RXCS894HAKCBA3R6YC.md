@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:57:58Z
+updated-at: 2026-09-16T11:00:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -142,3 +142,8 @@ NOTES.md nicht angefasst: die Zeile beschreibt den Zielrepository-Check als Ganz
 
 Weiterhin ungeprüft und Sache der review-Lane: ob '--repo' / '--target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind (das setzt dieser Umbau voraus), die Flagnamen bei der installierten gh/glab-Version, und das Verhalten von 'gh pr list --head owner:branch'.
 - **2026-09-16 10:57 · Alexander Sacharov** — critique Durchgang 5: keine Findings. Nachgeprueft statt geglaubt: 'jaira whoami --json' gibt hier wirklich .remote (upstream) und .remote_source ('from settings.json on this machine') aus, und RemoteSourceFor in core/settings/settings.go:178 hat tatsaechlich die vier Stufen, die SKILL.md:116-120 behauptet - die Begruendung, warum 'git config jaira.remote' zu wenig ist, stimmt also woertlich. Die Leiter bei SKILL.md:134-148 ist disjunkt und total: Sprosse 2 faengt auch den Fall, dass der Remote-Name hier gar keine URL hat (RemoteSourceFor Stufe 4 gibt einen Namen zurueck, den es nicht gibt). Auf Widerspruch mit dem Rest geprueft: jaira-teamlead SKILL.md:90-102 und jaira-dispatcher SKILL.md:191 sagen weiter 'ein Agent oeffnet nie' - das bleibt unter der neuen Regel wahr, weil beide die Rolle als Agent aufrufen. go test ./core/role/... ok. Nicht neu aufgemacht, weil in Durchgang 3/4 schon entschieden: dass 'jaira whoami' nur fuer den Widerspruchsfall (Sprosse 3) ueberhaupt gebraucht wird - Sprosse 1 und 2 landen ohnehin beim Parent.
+- **2026-09-16 11:00 · Alexander Sacharov** — optimize: vier Durchgaenge ueber den Diff, nur Prosa gekuerzt, keine Regel entfernt. Duplikat-Suche: 'gh pr create --repo', '--target-project' und 'nameWithOwner' kommen im ganzen Repository nur in core/role/builtin/jaira-role-pr/SKILL.md vor - es gibt keine zweite Zielrepository-Leiter, die mitgepflegt werden muesste. Der whoami-Absatz behauptet Fakten, die stimmen: core/settings/settings.go RemoteSourceFor hat wirklich vier Stufen (Kommentar Zeile 174), und internal/cli/whoami.go:67 setzt wirklich 'remote_source'. Beides geprueft statt geglaubt.
+
+Entfernt wurde nur, was an zwei Stellen stand: der Hinweis im Intro von 'Which repository it goes to', dass eine Abfrage an den Fork den offenen Pull Request upstream nicht sieht - das ist der Punkt des naechsten Abschnitts 'Does it already have one open' und steht dort schon; die Wiederholung der Definition 'die Remote, auf der die Ticket-Refs reisen' in Sprosse 2, die der Forge-Abschnitt zwanzig Zeilen weiter oben schon gibt; und die Begruendung 'so that the run reads one rule rather than two' unter 'Push the branch', die nur erklaert, warum der Satz davor dasteht. Der whoami-Absatz wurde von acht auf sieben Zeilen gezogen, Inhalt unveraendert.
+
+Stehen gelassen und bewusst nicht angefasst: die Mensch/Agent-Regel steht drei Mal (Kopf, 'Open it', Boundaries). Das ist keine Fluff-Wiederholung, sondern die Regel am Ort der Handlung - ein Modell, das erst bei 'Open it' einsteigt, liest den Kopf nicht mehr. Boundaries ist per Bauart eine Wiederholung. 4988 -> 1929 Woerter waere Kuerzen um des Kuerzens willen gewesen; die Leiter selbst bleibt Wort fuer Wort, weil jede Sprosse eine Unterscheidung traegt.
