@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:51:07Z
+updated-at: 2026-09-16T10:51:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -40,7 +40,7 @@ review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:112,119 liest das Ziel
 ## Definition of Done
 
 - [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:122-136 (disjunkte Leiter), :162-163 (beide Abschnitte namentlich), :182-202 (Mensch/Agent an einer Stelle), :218-221 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:112-146 (Zielrepository ueber 'jaira whoami --json', disjunkte Leiter), :182-202 (Mensch/Agent an einer Stelle), :218-224 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
 
 ## Options
 
