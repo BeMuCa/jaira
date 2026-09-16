@@ -88,21 +88,67 @@ GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
 word.
 
-## Push, then ask which of your two jobs this is
-
-`git push -u origin HEAD`. Then open the pull request, if a person invoked
-you; if an agent did, the push is where you stop.
-
-Now ask the forge whether this branch already has one open — on GitHub:
+## Push the branch
 
 ```bash
-gh pr list --head "$(git branch --show-current)" --state open
+git push -u origin HEAD
+```
+
+That is the whole of this step. Whether a pull request then gets opened, or the
+create line goes back for a person to run, is settled at the create command
+below and nowhere else — so that the run reads one rule rather than two.
+
+## Which repository it goes to
+
+`origin` is not the answer, and you need the answer before the next command, not
+before the last one. In a fork `origin` is your fork: a pull request opened
+against it sits where nobody is looking and has to be closed by hand, and a
+listing asked of it does not see the pull request that is already open upstream.
+Settle the target first:
+
+```bash
+gh repo view --json isFork,parent,nameWithOwner   # GitHub
+glab repo view                                    # GitLab
+git config jaira.remote                           # a remote NAME, not owner/repo
+```
+
+`jaira.remote` holds the *name* of a remote — `upstream`, say — not an
+`owner/repo`. Turn it into one before you use it:
+
+```bash
+git remote get-url "$(git config jaira.remote)"
+```
+
+1. **Not a fork** — the target is `origin`'s own repository, and the commands
+   below need no repository flag.
+2. **A fork, and `jaira.remote` names a remote** — that remote is the upstream
+   the board's ticket refs already travel on. Read its owner/repo off the URL
+   above and use that.
+3. **A fork with no `jaira.remote` set** — the normal case on a board whose refs
+   were never shared. Use the parent from `gh repo view` / `glab repo view`.
+   There is one upstream and nothing contradicts it.
+4. **A fork whose parent and `jaira.remote` are different repositories** — do
+   not guess and do not open. Name both and ask which one this pull request
+   belongs in.
+
+Everything below takes that repository as `<owner/repo>`. In case 1 leave the
+flag off; there is a single repository the commands can mean.
+
+## Does it already have one open
+
+Ask the repository you just settled on — not `origin`, or a fork answers for the
+upstream and you open a second pull request onto a branch that has one. On
+GitHub, where a head in another repository is written `<owner-of-origin>:<branch>`
+— your fork's owner, not the target's:
+
+```bash
+gh pr list --repo <owner/repo> --head "<owner-of-origin>:$(git branch --show-current)" --state open
 ```
 
 or on GitLab:
 
 ```bash
-glab mr list --source-branch "$(git branch --show-current)"
+glab mr list --repo <owner/repo> --source-branch "$(git branch --show-current)"
 ```
 
 Carry on along the branch that listing puts you on. Either way you never open a
@@ -131,33 +177,13 @@ jaira show <id> --json
   half reviewers waste the most time on.
 
 Do not paste the diff into the description. They have the diff. Write it to a
-file — you do not open anything until the next section has settled where it goes.
-
-## Which repository it goes to
-
-`origin` is not the answer. In a fork `origin` is your fork, and a pull request
-opened against the fork instead of the upstream sits where nobody is looking and
-has to be closed by hand. Settle the target **before** you type a create command:
-
-```bash
-gh repo view --json isFork,parent,nameWithOwner   # GitHub
-glab repo view                                    # GitLab
-git config jaira.remote                           # the remote the board travels on
-```
-
-1. **Not a fork** — the target is `origin`'s own repository, and the create
-   command below needs no repository flag.
-2. **A fork** — the target is the parent, not your fork. `jaira.remote` is the
-   remote the board's ticket refs travel on and it names that same upstream;
-   read the owner/repo off it and pass it to the create command explicitly.
-3. **A fork whose parent and `jaira.remote` are not the same repository** — do
-   not guess and do not open. Name both and ask which one this pull request
-   belongs in.
+file; the create command below reads it from there.
 
 ## Open it
 
-Run the create command for the forge you settled on above — not both, and with
-the repository from the step above named in it. On GitHub:
+This is where the two jobs part, and the only place they do. Run the create
+command for the forge you settled on, with the repository from above named in
+it — **only if a person invoked this role.** On GitHub:
 
 ```bash
 gh pr create --repo <owner/repo> --title "<title>" --body-file <the description you wrote>
@@ -166,15 +192,14 @@ gh pr create --repo <owner/repo> --title "<title>" --body-file <the description 
 On GitLab:
 
 ```bash
-glab mr create --target-project <path> --title "<title>" --description "$(cat <the description you wrote>)"
+glab mr create --target-project <owner/repo> --title "<title>" --description "$(cat <the description you wrote>)"
 ```
 
-Leave `--repo` / `--target-project` off only in case 1, where there is a single
-repository the command can mean.
+Then report the URL.
 
-Report the URL. An agent invoked you instead: do not run the command — hand it
-back, written out and ready to paste, with the target repository already filled
-in, and say the branch is pushed and waiting for a person to open it.
+**An agent invoked you instead: do not run it.** Hand the line back written out
+and ready to paste, with the target repository already filled in, and say the
+branch is pushed and waiting for a person to open it.
 
 ## Answering review comments
 
