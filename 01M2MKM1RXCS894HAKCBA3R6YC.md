@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:00:06Z
+updated-at: 2026-09-16T11:00:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -33,6 +33,7 @@ outcome-what: "Sprosse 1 der Zielrepository-Leiter in core/role/builtin/jaira-ro
 outcome-why: "Das Repository-Flag war sprossenabhängig: ein Durchlauf musste über vier Befehle in vier Abschnitten mitnehmen, auf welcher Sprosse er stand. In einem Dokument, dessen einziger Fehlermodus 'ein Modell liest einen Zweig falsch' ist, kauft ein gesparter Flag-Tipp das nicht auf."
 outcome-resolves: "critique Durchgang 4, Finding 1 (:149-150)"
 review-summary: "none"
+review-gaps: "Drei doppelte Stellen entfernt: der Listen-Hinweis im Intro von 'Which repository it goes to' (steht als eigener Abschnitt 'Does it already have one open' direkt darunter), die zweite Definition der Board-Remote in Sprosse 2 (steht im Forge-Abschnitt darueber), und die Selbstbegruendung unter 'Push the branch'. whoami-Absatz von acht auf sieben Zeilen. 1988 -> 1929 Woerter, keine Regel und keine Sprosse der Leiter entfernt. Stehen gelassen: die Mensch/Agent-Regel an drei Stellen (Kopf, 'Open it', Boundaries) - sie steht dort jeweils am Ort der Handlung, nicht als Wiederholung. Keine zweite Implementierung gefunden: die Zielrepository-Leiter existiert im Repository nur einmal. go test ./core/role/... gruen."
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
