@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:07:27Z
+updated-at: 2026-09-16T08:09:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11544
 claimed-at: 2026-09-16T07:59:59Z
@@ -33,10 +33,8 @@ outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 
 outcome-why: "critique hatte vier Findings: die Reihenfolge war halb gedreht, sodass das Listing im Fork nach einem PR fragte, der im Parent offen ist - genau der zweite PR, den der Text an anderer Stelle ausschliesst; die Mensch/Agent-Regel stand an zwei Stellen mit zwei verschiedenen Aussagen; ':152 read the owner/repo off it' war nicht ausfuehrbar, weil jaira.remote einen Remote-Namen haelt (core/settings/settings.go:145); und der Normalfall 'jaira.remote gar nicht gesetzt' hatte keine Sprosse."
 outcome-resolves: "Definition of Done unveraendert erfuellt und jetzt ohne die vier Widersprueche: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck (an genau einer Stelle gesagt), merge/approve in beiden Faellen verboten, Zielrepository vor Listing UND Oeffnen geprueft mit ausfuehrbaren Schritten, eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
 review-summary: |-
-  core/role/builtin/jaira-role-pr/SKILL.md:96-106 lists existing pull requests before the target repository is settled; in a fork 'gh pr list --head' queries the fork, an open pull request on the parent is not found, and the role opens a second one — which :108 says it never does. Move the 'Which repository it goes to' section (:136-155) ahead of the listing and pass the settled repository to it: 'gh pr list --repo <owner/repo> --head …' and 'glab mr list --repo <path> --source-branch …'.
-  core/role/builtin/jaira-role-pr/SKILL.md:93-94 ('if an agent did, the push is where you stop') contradicts :175-177, where an agent-invoked run still writes the description and hands back a filled-in create line. Delete the clause at :93-94 — the push section only needs the push. The human/agent split takes effect in exactly one place, the create command at :175, and the boundary at :197 restates it.
-  core/role/builtin/jaira-role-pr/SKILL.md:145,152 'read the owner/repo off jaira.remote' cannot be done as written: jaira.remote holds a remote NAME, not owner/repo (core/settings/settings.go:149, core/gitref/gitref.go:139 — the example value is 'upstream'). Make case 2 take the target from 'gh repo view --json parent' and use 'git remote get-url "$(git config jaira.remote)"' only where a URL is actually needed.
-  core/role/builtin/jaira-role-pr/SKILL.md:153-155 case 3 has no rung for an unset jaira.remote. On a board whose refs were never shared 'git config jaira.remote' prints nothing, and the ladder reads that as neither case 2 nor case 3 — or as a disagreement, and refuses to open. Say it explicitly: jaira.remote unset means case 2, the parent is the answer; case 3 needs both sides actually named.
+  core/role/builtin/jaira-role-pr/SKILL.md:158 'Skip the next section' zeigt seit der Aufteilung auf die falsche Stelle: zwischen Listing und 'Answering review comments' stehen jetzt ZWEI Abschnitte, 'Write the description' und 'Open it'. Wer nur den naechsten ueberspringt, landet auf '## Open it' und oeffnet den zweiten Pull Request, den :154 gerade verboten hat. Beide Abschnitte namentlich nennen: 'Skip **Write the description** and **Open it**'.
+  core/role/builtin/jaira-role-pr/SKILL.md:124 Sprosse 2 verschluckt Sprosse 4: 'A fork, and jaira.remote names a remote' trifft auch zu, wenn jaira.remote auf 'origin' zeigt (core/settings/remotefor_test.go:74 setzt genau das) - der Leser haelt auf Sprosse 2 an, nimmt den Fork als Ziel und erreicht Sprosse 4 nie. Sprosse 2 auf den Fall einschraenken, in dem jaira.remote den Parent nennt, oder die Widerspruchspruefung vor Sprosse 2 ziehen - so wie die Forge-Leiter :67-79 sich gegenseitig ausschliesst.
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
