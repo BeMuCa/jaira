@@ -45,7 +45,7 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:58:29Z
+updated-at: 2026-09-16T07:58:37Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
@@ -174,7 +174,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/milestoneref_test.go:283 and :340 — both fail on the old code
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass 'jaira logbook <name>' bei einem abgelegten Milestone die Weigerung nennt statt 'ticket: not found'
   proof: core/release/NOTES.md:29
-- [ ] internal/cli: refuseIfFiled(s, name, onRef, inLogbook string) error neben die refuse-Helfer - der state→refusal-Schalter EINMAL, nil bei milestoneNotFiled; die drei Tueren (logbook.go:195, milestones.go:131, :251) werden je ein 'if err := ...; err != nil { return err }'
+- [~] internal/cli: refuseIfFiled(s, name, onRef, inLogbook string) error neben die refuse-Helfer - der state→refusal-Schalter EINMAL, nil bei milestoneNotFiled; die drei Tueren (logbook.go:195, milestones.go:131, :251) werden je ein 'if err := ...; err != nil { return err }'
 - [ ] Tests: die bestehenden Weigerungstests bleiben gruen - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt, TestTheFilingTreeIsPointedAtItsOwnLogbook
 
 ## Progress
