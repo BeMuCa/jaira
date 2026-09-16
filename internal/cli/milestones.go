@@ -155,7 +155,7 @@ and you are told so.`,
 			if err := ms.Save(s.Root); err != nil {
 				return err
 			}
-			recordMilestone(s, ms)
+			recordMilestone(ms)
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
@@ -280,7 +280,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		if err := ms.Save(s.Root); err != nil {
 			return err
 		}
-		recordMilestone(s, ms)
+		recordMilestone(ms)
 	}
 
 	w := cmd.OutOrStdout()
@@ -431,14 +431,6 @@ func refuseFiledOnDisk(root, name, instead string) error {
 	return refuseFiledElsewhere(name, "its file at "+milestone.Path(root, name), instead)
 }
 
-// refuseFiledOnRef: there is nothing filed under this name in this tree's
-// logbook and the mark is on the ref, so the copy 'jaira restore' needs lies
-// in whichever tree filed it. The ref is named because, with no file and no
-// logbook entry here, it is the only thing the reader can go and look at.
-func refuseFiledOnRef(name, ref, instead string) error {
-	return refuseFiledElsewhere(name, "its ref "+ref, instead)
-}
-
 // refuseFiledInLogbook is the other state: the file is not on disk any more
 // because this very tree filed it, so the way back runs here. `where` is the
 // logbook folder the copy lies in, and `then` is the caller's closing clause,
@@ -462,12 +454,18 @@ func refuseFiledInLogbook(name, where, then string) error {
 // have to be added at every door or be silently dropped at one.
 //
 // `onRef` and `inLogbook` are the caller's closing clauses for the two states,
-// punctuation included, exactly as refuseFiledOnRef and refuseFiledInLogbook
-// take them — the wording differs because the way back differs.
+// punctuation included, exactly as refuseFiledElsewhere and
+// refuseFiledInLogbook take them — the wording differs because the way back
+// differs.
 func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
 	switch where, at := milestoneFiled(s, name); at {
 	case milestoneFiledOnRef:
-		return refuseFiledOnRef(name, where, onRef)
+		// Nothing is filed under this name in this tree's logbook and the mark
+		// is on the ref, so the copy 'jaira restore' needs lies in whichever
+		// tree filed it. The ref is what `carries` names because, with no file
+		// and no logbook entry here, it is the only thing the reader can go
+		// and look at.
+		return refuseFiledElsewhere(name, "its ref "+where, onRef)
 	case milestoneFiledHere:
 		return refuseFiledInLogbook(name, where, inLogbook)
 	}
@@ -479,16 +477,17 @@ func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
 // not wait for a network, and an unsent milestone goes out with the next
 // command like everything else in the outbox.
 //
+// The bytes come from the milestone in hand, not from the file: every caller
+// has just saved it, so reading the file back would be a second read of what
+// it is already holding — and a read that failed would drop the ref write on
+// the floor without a word.
+//
 // Best effort, and deliberately: a board with no repository or no remote is a
 // supported way to use jaira, and refusing to group tickets because there is
 // nowhere to send the grouping would break the local case to serve the shared
 // one.
-func recordMilestone(s *ticket.Store, ms *milestone.Milestone) {
-	content, err := os.ReadFile(milestone.Path(s.Root, ms.Name))
-	if err != nil {
-		return
-	}
-	if err := refs.RecordMilestone(ms.Name, content); err != nil {
+func recordMilestone(ms *milestone.Milestone) {
+	if err := refs.RecordMilestone(ms.Name, ms.Bytes()); err != nil {
 		warnRef(map[string]any{"milestone": ms.Name, "error": err.Error()},
 			"jaira: warning: milestone %q was written here but could not be queued for the remote: %v", ms.Name, err)
 	}

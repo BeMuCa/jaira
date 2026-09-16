@@ -361,6 +361,20 @@ func (m *Milestone) frontEnd() (int, bool) {
 	return 0, false
 }
 
+// Bytes renders the milestone as the file it is: every line as it was read or
+// edited, newline-terminated. It is what Save writes, and it is what the ref
+// carries — the caller that queues the ref already holds the milestone, so it
+// spells the content from here rather than reading back the file Save just
+// wrote.
+func (m *Milestone) Bytes() []byte {
+	var b strings.Builder
+	for _, l := range m.lines {
+		b.WriteString(l)
+		b.WriteByte('\n')
+	}
+	return []byte(b.String())
+}
+
 // Save writes the milestone back through ticket.WriteAtomic, so a reader never
 // sees a half-written file and a crash leaves the previous one intact.
 // Atomicity is not exclusion: two writers still have to be serialised by the
@@ -369,15 +383,7 @@ func (m *Milestone) Save(root string) error {
 	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
 		return err
 	}
-	var b strings.Builder
-	for _, l := range m.lines {
-		b.WriteString(l)
-		b.WriteByte('\n')
-	}
-	if err := ticket.WriteAtomic(Path(root, m.Name), []byte(b.String())); err != nil {
-		return err
-	}
-	return nil
+	return ticket.WriteAtomic(Path(root, m.Name), m.Bytes())
 }
 
 // AssignColour picks a colour for a new milestone: a random one none of the

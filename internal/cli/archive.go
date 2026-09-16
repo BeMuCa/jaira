@@ -174,7 +174,7 @@ func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 				filepath.Base(dst), milestone.Dir(s.Root), milestone.StatusFiled, err)
 		}
 	}
-	recordMilestone(s, ms)
+	recordMilestone(ms)
 	return name, nil
 }
 
