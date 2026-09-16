@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -34,12 +34,16 @@ related:
   - 01M2KBPPVH5PAKZ98B0X7KX89C
   - 01M2HRF34AS7QDTACC323YRPXJ
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
-commits: []
+commits:
+  - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:43:40Z
+updated-at: 2026-09-16T15:44:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
+outcome-what: "Das Frontmatter-Feld 'mode' mit dem einen Wert 'conversational' quer durch Schema, CLI, TUI und die beiden Rollen-Prompts. Der Dispatcher haelt jetzt VOR der Plan-Lane an, wenn das Ticket noch offene Entscheidungen hat, schreibt die Antworten mit 'jaira note' aufs Ticket und setzt den Modus; der Worker legt in diesem Modus nach jedem DoD-Punkt 'git diff' vor und gibt statt eines Commits die fertige Commit-Zeile mit Handle zurueck. Dazu drei Tests, zwei NOTES.md-Zeilen und der Feld-Eintrag in README.md und docs/AGENTS.md."
+outcome-why: "Ein Ticket, dessen Form noch nicht feststeht, wird autonom geraten - 0YGWXQ hat das mit sieben critique-Runden bezahlt. Der Modus musste auf der Platte landen und nicht in der getippten Zeile, weil nur so ein abgebrochener Lauf nicht stumm wieder autonom weiterfaehrt."
+outcome-resolves: "Alle sechs DoD-Punkte sind getickt und belegt: der Eintritt haengt an der gezaehlten Zahl offener Entscheidungen (dispatcher SKILL.md:31), es bleibt bei einer Dispatcher-Rolle (core/role/builtin/ unveraendert sieben), die Entscheidung steht vor der Arbeit auf dem Ticket und ueberlebt den Abbruch (TestModeSurvivesRoundTrip), der Agent committet nicht mehr selbst sondern gibt die Zeile mit Handle zurueck (role-lane SKILL.md:67), der Code wird nach jedem Inkrement vorgelegt (role-lane SKILL.md:50) und beide NOTES.md-Zeilen stehen unter ## Unreleased."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
