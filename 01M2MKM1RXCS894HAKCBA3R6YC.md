@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:04:54Z
+updated-at: 2026-09-16T08:05:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11544
 claimed-at: 2026-09-16T07:59:59Z
