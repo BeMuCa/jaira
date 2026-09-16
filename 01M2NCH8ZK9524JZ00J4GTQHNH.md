@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:26:06Z
+updated-at: 2026-09-16T20:26:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67097
 claimed-at: 2026-09-16T20:17:17Z
@@ -47,6 +47,7 @@ outcome-resolves: "test-verdict: pass. Nichts gefunden, was in in-progress zurue
 review-summary: "none"
 review-gaps: "folded core/validate/mode_test.go's two near-identical bad-mode tests into one table test (hand-written 'chat' and untrimmed ' conversational ' asserted the same five things twice) and pulled setMode/modeOf out of internal/cli/mode_test.go, where the same 'set mode, show --json, unmarshal, read the key' block stood four times — 72 test lines gone, no behaviour touched, suite green. Left alone: CanonicalMode is already the one shared write-path check (set, TUI editor, validate all call it), so there is no second implementation to fold; fieldValue's FieldMode case looks unreachable but is not — mode merges through merge.go's default mergeScalar branch, so the merge driver renders it on a conflict; the long doc comments on FieldMode/ModeConversational and the repeated 'a lane that changed no code hands back no line' in README, docs/AGENTS.md, both SKILL.md files and NOTES.md are five different readers, not duplication, and cutting them is an editorial call rather than a cleanup; NOTES.md's mode line is very long but the format is one line per change. No dead code and no hot-path cost found."
 test-verdict: "pass: go build/vet/test ./... -race -count=1 green (RC=0, 29 Pakete), DoD 1-6 in der Working Tree geprueft, Verhalten auf einem Scratch-Board mit dem gebauten Binary durchgespielt"
+question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
