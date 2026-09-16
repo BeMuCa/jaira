@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:05:34Z
+updated-at: 2026-09-16T11:06:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -172,3 +172,14 @@ gh akzeptiert die SSH-URL, oben verifiziert. Fuer glab dasselbe pruefen, 'glab r
 Nebenbefund am selben Absatz: Sprosse 2 sagt 'the parent from gh repo view'. --json parent liefert kein nameWithOwner, sondern .parent.owner.login und .parent.name — der Leser muss 'BeMuCa/jaira' erst zusammensetzen. Ein Halbsatz dazu erspart die Runde.
 
 DoD-Punkt 1 habe ich auf --doing zurueckgesetzt: die Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' steht im Text, laeuft aber im Fork nicht. Die uebrigen Klauseln der Zeile (Mensch oeffnet / Agent reicht zurueck / merge+approve verboten / NOTES-Zeile) habe ich im Baum verifiziert und sind erfuellt: SKILL.md:9-25, :214-216, :230-234, NOTES.md:17 (eine Zeile, Format intakt, 4 Eintraege unter ## Unreleased).
+- **2026-09-16 11:06 · Alexander Sacharov** — in-progress (Durchgang 6, nach testing) — der Befund aus der testing-Lane abgearbeitet: die Zielrepository-Leiter fragte den falschen Clone.
+
+Der Fehler war nicht die Leiter, sondern ihre Eingabe. 'gh repo view' ohne Argument loest das Basis-Repository selbst auf und bevorzugt dabei das Upstream; auf diesem Fork-Clone (origin=sashasoft90/jaira, upstream=BeMuCa/jaira, kein 'gh repo set-default') antwortet es isFork:false / nameWithOwner=BeMuCa/jaira. Sprosse 1 feuerte damit auf einem Fork und Sprosse 2 und 3 waren unerreichbar — der Widerspruchsfall, fuer den das Ticket existiert, konnte nie ausloesen. Selbst nachgeprueft statt uebernommen: beide Aufrufe hier ausgefuehrt, die Ausgaben unterscheiden sich genau so.
+
+Fix: 'gh repo view "$(git remote get-url origin)"' und dieselbe Form fuer glab. 'glab repo view --help' der hier installierten Version (/home/alex/.local/bin/glab) nennt 'glab repo view git@gitlab.com:user/repo.git' ausdruecklich als Aufrufform — die SSH-URL ist also fuer beide Forges gueltig, nicht nur fuer gh.
+
+Bewusst KEIN '--output json' bei glab dazugeschrieben, obwohl es die Flagliste hat. Ich haette dann Feldnamen fuer Pfad und Fork-Elternteil nennen muessen ('path_with_namespace', 'forked_from_project'), die ich hier gegen keine GitLab-Instanz pruefen kann — ein erfundener Feldname ist in diesem Dokument teurer als der Satz 'die Pfadangabe, die glab repo view ausgegeben hat', der ohne Feldnamen auskommt.
+
+Nebenbefund der testing-Lane mitgenommen: Sprosse 2 sagt jetzt, dass '--json parent' kein fertiges owner/repo liefert, sondern '.parent.owner.login' und '.parent.name', die man selbst mit einem Schraegstrich verbindet.
+
+NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts — derselbe Check, nur mit dem Repository benannt statt geraten.
