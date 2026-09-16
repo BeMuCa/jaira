@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:23:20Z
+updated-at: 2026-09-16T07:51:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15376
 claimed-at: 2026-09-16T07:20:26Z
@@ -83,3 +83,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-7KX89C  2. 'go test -c
 - **2026-09-16 07:13 · Alexander Sacharov** — testing: eine Abweichung geprueft und als in Ordnung befunden. core/role/builtin/jaira-dispatcher/SKILL.md ist NICHT byte-gleich zu ~/.claude/skills/jaira-dispatcher/SKILL.md — die Repository-Version ist sechs Zeilen laenger (dispatch-Absatz, ungenutzter Slug). Das sind genau die Zeilen, die die Critique-Lane verlangt hat; das Repository ist also voraus, nicht im Rueckstand. Zusammen mit der frueheren Notiz zu spawn.sh (~/.claude traegt den worktree-setup-Hook aus 7MG5GB) heisst das: wer die beiden Baeume vergleicht, findet in beide Richtungen Unterschiede, und beide sind gewollt.
 - **2026-09-16 07:21 · Alexander Sacharov** — review: die NOTES.md-Zeile nennt ein Kommando, das nicht laeuft. 'jaira roles install --force' endet mit 'choose exactly one of --project, --global or --into' und exit 2 (internal/cli/roles.go:88). Wer der Release-Notiz folgt, bekommt einen Usage-Fehler statt der neuen Datei. Richtig waere 'jaira roles install --global --force' (die ~/.claude-Kopie, um die es in der Zeile geht) bzw. --project fuer die Repository-Kopie. Verifiziert durch Ausfuehrung, nicht gelesen.
 - **2026-09-16 07:22 · Alexander Sacharov** — review: die DoD-Prosa und der DoD-Punkt sagen zwei verschiedene Dinge, und nur der Punkt ist erfuellt. Die Prosa verlangt den Skill 'unter .claude/skills/ im Repository, neben dem schon vorhandenen jaira-Skill'. ls .claude/skills/ zeigt heute nur 'jaira'. Der Skill liegt stattdessen in core/role/builtin/ und kommt per go:embed und 'jaira roles install --project' dorthin. Die Pre-Process-Notiz begruendet das (kein zweiter, driftender Ort), der DoD-Punkt wurde entsprechend umgeschrieben - die Prosa oben aber nicht. Kein Defekt im Code, aber die Stelle, an der ein Mensch beim Signoff haengenbleibt. Nebenwirkung: teamlead/SKILL.md:45 nennt weiter '.claude/skills/jaira-dispatcher/scripts/spawn.sh' als ersten Weg, und dieser Pfad existiert in einem frischen Klon nicht - erst nach 'jaira roles install --project'. Vorbestehend, von dieser Aenderung nur beruehrt.
+- **2026-09-16 07:51 · Alexander Sacharov** — review: die NOTES.md-Zeile nannte 'jaira roles install --force', das bricht mit exit 2 und 'choose exactly one of --project, --global or --into' ab. Korrigiert auf '--global --force' und auf den offenen PR 24 nachgeschoben.
