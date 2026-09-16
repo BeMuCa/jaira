@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:28:01Z
+updated-at: 2026-09-16T08:29:21Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -698,3 +698,11 @@ Not a re-open. Rounds 1-14 stayed inside the milestone commands, the refusal wor
 WHAT TO BUILD: in flushRefs, branch on r.Kind. For outbox.KindMilestone name the milestone by r.ID verbatim ('milestone %q'), key the payload 'milestone', and give the Rejected case a second line that says what actually happens — the remote's version wins and the next fetch replaces the local file, so the edit has to be made again on the fetched one. Unsent and Failed need the name fixed only; their sentences are true for both kinds.
 
 CHECKED AND LEFT ALONE: fileOnRefOnly (refs.go:96) matches reports by r.ID without asking Kind, but a milestone name is lowercase kebab and a ticket id an uppercase ulid, so the two cannot collide there. recordMilestone being best-effort is the documented local-board trade-off and is not touched by this. The lock in restore's RunE covering a plain ticket restore was decided in round 13 and stays.
+- **2026-09-16 08:29 · Alexander Sacharov** — in-progress Runde 14 (critique-Runde 15), 2026-09-16. Das Finding ist zu, und was der Code nicht sagt:
+- Die Verzweigung liegt in zwei Helfern (refSubject, rejectedAdvice), nicht als 'if' in jedem der vier Outcome-Zweige. Sent sagt nichts, die anderen drei brauchen denselben Namen und denselben Schluessel - ein Schalter je Zweig waere dreimal dieselbe Zeile gewesen, und der naechste, der ein Outcome dazulegt, haette sie vergessen.
+- refSubject gibt Schluessel UND Namen zurueck, weil beide dieselbe Frage beantworten: wie man dieses Ding adressiert. Getrennte Helfer haetten erlaubt, den Namen umzustellen und den Schluessel stehenzulassen - genau der Fehler, der hier behoben wird.
+- Verworfen: ticket.Handle so aendern, dass es einen Namen unangetastet laesst. Handle schneidet bewusst die letzten sechs Zeichen einer ULID ab; es kann nicht wissen, ob ein String eine ID ist, und eine Heuristik dort haette jeden Aufrufer betroffen.
+- Der Milestone-Fall ist an refsync.IncomingMilestones (refsync.go:221) gemessen: eine lokale Datei, deren Inhalt vom Ref abweicht, wird ueberschrieben. Deshalb 'die Fassung des Remotes gewinnt, der naechste fetch ersetzt deine Datei' und NICHT 'deine Datei bleibt unveraendert'. Ein Milestone hat keine Karte und keine Lane, also gibt es auch kein Board, das beide Seiten zeigt.
+- Der Ablehnungs-Testfall braucht keinen Trick: grace legt denselben Milestone an, ohne vorher zu fetchen. Die lokale Pruefung in milestones.go greift nur auf Datei und 'filed'-Markierung, der Name ist hier frei - abgelehnt wird erst auf dem Push, weil der Ref schon steht.
+- Beide Tests sind gegen den unveraenderten Stand rot gemessen worden: 'milestone subject is ("ticket", "elease")' und alle drei Zusicherungen der End-zu-End-Pruefung.
+- TestRefSubjectNamesEachKindTheWayItIsAddressed haelt die TICKET-Haelfte fest. Sie war richtig und ist die, die eine spaetere Vereinfachung der beiden Helfer mitreissen wuerde.
