@@ -36,7 +36,7 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:36:22Z
+updated-at: 2026-09-16T15:36:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -64,7 +64,7 @@ claimed-at: 2026-09-16T15:25:11Z
 
 - [x] core/ticket/schema.go: FieldMode-Konstante, canonicalOrder, Ticket.Mode, Zuweisung in Load
 - [x] internal/cli/flow.go: 'mode' als eigener Schluessel im showForLane-JSON, neben model_tier — nicht ueber input-requires
-- [ ] internal/cli/tickets.go: 'mode' in ticketJSON, damit 'jaira show --json' es fuehrt
+- [x] internal/cli/tickets.go: 'mode' in ticketJSON, damit 'jaira show --json' es fuehrt
 - [ ] internal/cli/tickets.go newSetCmd: mode nur leer oder 'conversational' annehmen, sonst ExitUsage
 - [ ] internal/tui: mode in fieldsWithTheirOwnRow (view.go) und in editableFields (edit.go)
 - [ ] Tests: Feld ueberlebt Round-trip, show --for-lane --json fuehrt mode, set lehnt unbekannten Wert ab
