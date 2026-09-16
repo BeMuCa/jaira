@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:04:16Z
+updated-at: 2026-09-16T11:04:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -149,3 +149,26 @@ Weiterhin ungeprüft und Sache der review-Lane: ob '--repo' / '--target-project'
 Entfernt wurde nur, was an zwei Stellen stand: der Hinweis im Intro von 'Which repository it goes to', dass eine Abfrage an den Fork den offenen Pull Request upstream nicht sieht - das ist der Punkt des naechsten Abschnitts 'Does it already have one open' und steht dort schon; die Wiederholung der Definition 'die Remote, auf der die Ticket-Refs reisen' in Sprosse 2, die der Forge-Abschnitt zwanzig Zeilen weiter oben schon gibt; und die Begruendung 'so that the run reads one rule rather than two' unter 'Push the branch', die nur erklaert, warum der Satz davor dasteht. Der whoami-Absatz wurde von acht auf sieben Zeilen gezogen, Inhalt unveraendert.
 
 Stehen gelassen und bewusst nicht angefasst: die Mensch/Agent-Regel steht drei Mal (Kopf, 'Open it', Boundaries). Das ist keine Fluff-Wiederholung, sondern die Regel am Ort der Handlung - ein Modell, das erst bei 'Open it' einsteigt, liest den Kopf nicht mehr. Boundaries ist per Bauart eine Wiederholung. 4988 -> 1929 Woerter waere Kuerzen um des Kuerzens willen gewesen; die Leiter selbst bleibt Wort fuer Wort, weil jede Sprosse eine Unterscheidung traegt.
+- **2026-09-16 11:04 · Alexander Sacharov** — testing: Gates gruen, aber die Zielrepository-Leiter greift auf einem Fork-Clone nicht.
+
+GATES (gruen, nichts kaputt): go build ./... OK, go vet ./... OK, go test ./... -race -count=1 RC=0 (alle Pakete ok, internal/tui 108.8s). Das neue Binary embedded den Text: 'jaira roles list' des frischen Builds nennt die neue pr-Beschreibung, 'roles install --global --force' schreibt 8 Rollen, die installierte SKILL.md ist byte-identisch zur Quelle.
+
+BEFUND (SKILL.md:107): der Befehl in der Leiter ist 'gh repo view --json isFork,parent,nameWithOwner' ohne Repository-Argument. gh loest das Basis-Repository selbst auf und bevorzugt dabei das Upstream, nicht origin. Auf genau diesem Clone (origin=git@github.com:sashasoft90/jaira.git, upstream=git@github.com:BeMuCa/jaira.git, kein 'gh repo set-default'):
+
+    $ gh repo view --json isFork,parent,nameWithOwner
+    {"isFork":false,"nameWithOwner":"BeMuCa/jaira","parent":null}
+
+    $ gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner
+    {"isFork":true,"nameWithOwner":"sashasoft90/jaira","parent":{..."login":"BeMuCa"}}
+
+Folge: Sprosse 1 ('Not a fork') feuert auf einem Fork. Hier faellt das Ergebnis zufaellig richtig aus, weil gh schon aufs Upstream aufgeloest hat — aber Sprosse 2 und Sprosse 3 werden nie erreicht. Der Widerspruchsfall, fuer den das Ticket existiert (Fork, dessen Board-Remote ein drittes Repository nennt -> nicht oeffnen, fragen), kann so nicht ausloesen. Dazu sagt Sprosse 1 woertlich 'the target is origin's own repository: the nameWithOwner the same gh repo view already returned' — das ist auf diesem Clone sachlich falsch, die beiden sind verschiedene Repositories.
+
+FIX (klein, nur Text): das Repository im Befehl benennen, statt gh raten zu lassen —
+
+    gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner
+
+gh akzeptiert die SSH-URL, oben verifiziert. Fuer glab dasselbe pruefen, 'glab repo view' hat kein Argument in der Leiter.
+
+Nebenbefund am selben Absatz: Sprosse 2 sagt 'the parent from gh repo view'. --json parent liefert kein nameWithOwner, sondern .parent.owner.login und .parent.name — der Leser muss 'BeMuCa/jaira' erst zusammensetzen. Ein Halbsatz dazu erspart die Runde.
+
+DoD-Punkt 1 habe ich auf --doing zurueckgesetzt: die Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' steht im Text, laeuft aber im Fork nicht. Die uebrigen Klauseln der Zeile (Mensch oeffnet / Agent reicht zurueck / merge+approve verboten / NOTES-Zeile) habe ich im Baum verifiziert und sind erfuellt: SKILL.md:9-25, :214-216, :230-234, NOTES.md:17 (eine Zeile, Format intakt, 4 Eintraege unter ## Unreleased).
