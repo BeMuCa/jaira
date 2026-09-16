@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:57:38Z
+updated-at: 2026-09-16T15:57:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5463
 claimed-at: 2026-09-16T15:57:15Z
@@ -181,3 +181,10 @@ Befund 1 (Trim-Divergenz) ist NICHT durch Streichen des TrimSpace repariert, obw
 Befund 2: row("mode", ...) steht in beiden Detail-Panes neben row("tier", ...), weil beide dieselbe Art Aussage sind - WIE das Ticket gefahren wird, nicht was drinsteht. row() ueberspringt Leeres, ein Ticket ohne Modus kostet keine Zeile; TestShowPrintsModeForPeople prueft beide Richtungen.
 
 Befund 3: die --no-worktree-Regel steht jetzt nur noch im bestehenden Absatz, dort als dritter Fall neben den zwei vorhandenen. Der Bullet im Modus-Abschnitt verweist darauf. Auch Schritt 2 der Schleife ('in its own worktree') ist angefasst - er war die dritte, von critique nur nebenbei erwaehnte Stelle, und ohne ihn haette der Verweis auf einen Absatz gezeigt, dem die Schleife widerspricht.
+- **2026-09-16 15:57 · Alexander Sacharov** — critique (2. Durchgang): zwei Befunde, beide klar reparierbar, keine Entscheidung für den Menschen.
+
+1. internal/cli/flow.go:635 — die Klartextausgabe von 'jaira show --for-lane' trägt den Tier in der Kopfzeile, den Modus nicht; nur --json hat ihn. Der vorige Durchgang hat den Modus in die Detail-Panes geholt (jaira show, TUI); die Lane-Prompt-Ausgabe, aus der ein Worker tatsächlich seine Anweisung liest, blieb dabei aus. Ein bash-fähiger Agent ohne --json läuft damit autonom weiter, ohne dass es jemand merkt — dieselbe stille Fehlerart, gegen die CanonicalMode angetreten ist. Modus an dieselbe Stelle wie den Tier, nur wenn nicht leer.
+
+2. core/role/builtin/jaira-dispatcher/SKILL.md, Schritt 1 des Zählens — kennt keinen Zustand 'bereits beantwortet'. Reihenfolge ist Notes (Schritt 4), dann Modus (Schritt 5); stirbt der Dispatcher dazwischen, liest der nächste keinen Modus, zählt neu und fragt den Menschen dasselbe noch einmal. Die Antworten stehen zu dem Zeitpunkt schon in den Notes — sie werden nur nicht gelesen. Schritt 1 muss die Notes mitlesen und eine beantwortete Entscheidung als geschlossen zählen.
+
+Geprüft und nicht beanstandet: mode fällt im Merge in den default-Zweig (mergeScalar, neuerer gewinnt) — für einen geschlossenen Skalar richtig, kein Eintrag in listFields/proseFields nötig. Der neue case in fieldValue() ist gegenüber dem default-Zweig redundant, folgt aber dem Muster aller anderen Felder dort; das aufzubrechen wäre teurer als der Gewinn. Die doppelte Prüfung in tickets.go und tui/edit.go teilt sich CanonicalMode — der Rest ist je eigene Fehlerausgabe und lässt sich nicht sinnvoll zusammenlegen.
