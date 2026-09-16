@@ -23,7 +23,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-09-16T06:46:09Z
+updated-at: 2026-09-16T06:46:36Z
+updated-by: Alexander Sacharov
 ---
 
 # spawn.sh schreibt Werte, die nur einem Projekt gehoeren
