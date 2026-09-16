@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:17:17Z
+updated-at: 2026-09-16T20:21:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67097
 claimed-at: 2026-09-16T20:17:17Z
@@ -45,6 +45,7 @@ outcome-what: "internal/cli/resume.go fuehrt jetzt den Modus: 'mode' in der item
 outcome-why: "resume.go baut sein JSON von Hand und geht nicht durch ticketJSON, also fehlte das Feld dort. 'jaira resume' ist aber genau die Wiederanlauf-Stelle, auf die sich jaira-dispatcher/SKILL.md:65 beruft — ein Dispatcher nach einem Sitzungsabbruch haette den Modus dort nicht gesehen und waere autonom weitergelaufen, was die in schema.go:44-47 aufgeschriebene Begruendung des Feldes aushebelt."
 outcome-resolves: "Befund aus critique-Runde 7: resume.go:126-141 trug kein 'mode', der Klartext-Block ebenso wenig."
 review-summary: "none"
+review-gaps: "folded core/validate/mode_test.go's two near-identical bad-mode tests into one table test (hand-written 'chat' and untrimmed ' conversational ' asserted the same five things twice) and pulled setMode/modeOf out of internal/cli/mode_test.go, where the same 'set mode, show --json, unmarshal, read the key' block stood four times — 72 test lines gone, no behaviour touched, suite green. Left alone: CanonicalMode is already the one shared write-path check (set, TUI editor, validate all call it), so there is no second implementation to fold; fieldValue's FieldMode case looks unreachable but is not — mode merges through merge.go's default mergeScalar branch, so the merge driver renders it on a conflict; the long doc comments on FieldMode/ModeConversational and the repeated 'a lane that changed no code hands back no line' in README, docs/AGENTS.md, both SKILL.md files and NOTES.md are five different readers, not duplication, and cutting them is an editorial call rather than a cleanup; NOTES.md's mode line is very long but the format is one line per change. No dead code and no hot-path cost found."
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
