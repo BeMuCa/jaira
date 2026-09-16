@@ -183,3 +183,34 @@ func TestShowPrintsModeForPeople(t *testing.T) {
 		t.Errorf("'jaira show' does not print the mode:\n%s", out)
 	}
 }
+
+// Not every worker asks for --json. An agent reading the plain-text lane
+// prompt takes its instructions from the header line, which already carries
+// the tier; without the mode there it runs on autonomously and nobody notices.
+func TestForLanePlainTextCarriesMode(t *testing.T) {
+	dir, h := newModeTicket(t)
+
+	out, err := runCLI(t, dir, "show", h, "--for-lane", "in-progress")
+	if err != nil {
+		t.Fatalf("show --for-lane: %v\n%s", err, out)
+	}
+	head, _, _ := strings.Cut(out, "\n")
+	if strings.Contains(head, "mode") {
+		t.Errorf("a ticket without a mode announces one: %q", head)
+	}
+
+	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
+		t.Fatalf("set mode: %v\n%s", err, out)
+	}
+	out, err = runCLI(t, dir, "show", h, "--for-lane", "in-progress")
+	if err != nil {
+		t.Fatalf("show --for-lane: %v\n%s", err, out)
+	}
+	head, _, _ = strings.Cut(out, "\n")
+	if !strings.Contains(head, "mode: "+ticket.ModeConversational) {
+		t.Errorf("the lane header does not carry the mode: %q", head)
+	}
+	if !strings.Contains(head, "tier:") {
+		t.Errorf("the lane header lost the tier: %q", head)
+	}
+}

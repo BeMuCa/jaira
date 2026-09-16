@@ -41,8 +41,12 @@ file- or database-format changes are where they cluster.
 
 So, once and before the plan lane runs:
 
-1. Read the ticket — `jaira show <id> --json` — and list the open decisions by
-   name. Not a number: the actual decisions, each in a line.
+1. Read the ticket — `jaira show <id> --json`, **notes included** — and list the
+   open decisions by name. Not a number: the actual decisions, each in a line.
+   A decision a note already answers is closed, not open: you may be a fresh
+   dispatcher restarted after the one that asked died between step 4 and step 5,
+   in which case the answers are on the ticket and the mode is not yet set.
+   Counting those again asks the person the same questions twice.
 2. **None open?** Say so and run on as usual. That is the normal case and it
    needs nobody.
 3. **One or more?** Stop before the plan lane and put them to the person, one

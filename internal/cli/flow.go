@@ -632,7 +632,14 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	}
 
 	w := cmd.OutOrStdout()
-	fmt.Fprintf(w, "# Lane: %s   (tier: %s)\n\n", l.Name, dash(l.ModelTier))
+	// The mode rides in the header beside the tier, because a worker that
+	// reads the plain-text lane prompt rather than --json learns how to run
+	// the lane from this line and nowhere else.
+	head := fmt.Sprintf("tier: %s", dash(l.ModelTier))
+	if t.Mode != "" {
+		head += fmt.Sprintf(", mode: %s", t.Mode)
+	}
+	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
 	if l.Prompt != "" {
 		fmt.Fprintf(w, "%s\n\n", l.Prompt)
 	}
