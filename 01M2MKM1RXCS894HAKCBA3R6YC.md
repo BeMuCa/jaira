@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:16:36Z
+updated-at: 2026-09-16T11:20:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -45,7 +45,7 @@ review-gaps: |-
   Stehen gelassen und warum: die lange Begruendung zu 'jaira whoami statt git config jaira.remote' (:133-139) - sie sieht wie Fluff aus, ist aber der einzige Ort, der die Falle benennt, dass ein leerer Config-Wert als 'nichts widerspricht' gelesen wird; die Wiederholung der Mensch/Agent-Regel im Abschnitt Boundaries - Boundaries ist in dieser Datei durchgehend eine Wiederholungsliste, das ist Struktur und nicht diese Aenderung; die Zeile in NOTES.md - sie beschreibt Verhalten, das sich nicht geaendert hat.
 
   go test ./core/role/... gruen nach der letzten Aenderung. Der Test prueft nur Installation und Parsing, nicht den Text - gruen heisst 'nichts kaputt'.
-test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter beschreibt in einem Fork-Clone nicht origin, sondern das Upstream — auf genau diesem Board meldet es isFork:false, Sprosse 1 feuert, und der Fork-Fall den das Ticket adressiert wird nie erreicht"
+test-verdict: "pass: go build ./... und go test -race ./... gruen (RC=0, 28 Pakete ok); die DoD-Klausel Punkt fuer Punkt im Arbeitsbaum belegt; die Zielrepository-Leiter auf diesem Fork real durchgespielt - 'gh repo view $(git remote get-url origin)' liefert isFork:true mit parent BeMuCa/jaira, das blanke 'gh repo view' isFork:false, genau der Fehler, den der Text beschreibt"
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
