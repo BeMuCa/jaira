@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:47:17Z
+updated-at: 2026-09-16T19:47:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "Die beiden critique-Befunde des zweiten Durchgangs repariert. Die Kopfzeile von 'jaira show --for-lane' ohne --json traegt jetzt den Modus neben dem Tier (internal/cli/flow.go:634-642); sie wird als ein String vorgebaut, statt einen zweiten Fprintf-Zweig zu bauen, damit die Klammer nur an einer Stelle steht. Schritt 1 des Zaehlens im Dispatcher-Prompt (core/role/builtin/jaira-dispatcher/SKILL.md:44) liest jetzt ausdruecklich die Notes mit und zaehlt eine dort beantwortete Entscheidung als geschlossen, mit dem Todesfall zwischen Schritt 4 und 5 als genanntem Grund. Dazu TestForLanePlainTextCarriesMode und die um die Kopfzeile erweiterte NOTES.md-Zeile 17."
-outcome-why: "Beide Befunde sind dieselbe stille Fehlerart, gegen die dieses Ticket antritt. Ein bash-faehiger Agent, der die Klartext-Lane-Prompt liest, erfuhr den Modus nie und lief autonom weiter, ohne dass es jemand merkt - genau das, was CanonicalMode fuer den Schreibweg schon verhindert, nur auf dem Leseweg. Und ein Dispatcher, der zwischen Notes und Modus stirbt, stellte dem Menschen dieselben Fragen ein zweites Mal, obwohl die Antworten schon auf dem Ticket standen - der Sitzungsabbruch, gegen den der Modus auf dem Ticket ueberhaupt erfunden wurde, schlug an der Stelle zu, die ihn einschaltet."
-outcome-resolves: "Alle sechs DoD-Punkte bleiben getickt; vier Proofs sind auf die verschobenen Zeilennummern nachgezogen. Punkt 1 zeigt jetzt auf SKILL.md:44, die Stelle, an der das Zaehlen die Notes mitliest - ohne sie erfuellte der Dispatcher die Bedingung zwar, aber nur beim ersten Anlauf. go test ./... -race laeuft durch."
+outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md: Abschnitt 2 des Gespraechsmodus gibt die Commit-Zeile nur noch heraus, wenn die Lane Code geaendert hat; ohne Code-Aenderung keine Zeile und die Ticket-Datei bleibt im Worktree. core/release/NOTES.md: die vorhandene Modus-Zeile nennt die Bedingung mit."
+outcome-why: "Der Modus steht auf dem Ticket und gilt damit auch in critique, testing und review, wo kein Code entsteht. Abschnitt 2 hob dort die Regel aus Zeile 31-37 auf und reichte dem Menschen eine Commit-Zeile, deren Einfuegen einen Commit mit nur der Ticket-Datei erzeugt — die Buchhaltung, die 9ZZSFT abgeschafft hat."
+outcome-resolves: "Der einzige offene Befund aus critique-Runde 3, nach Alex' Entscheidung vom 16.09.: die Commit-Zeile traegt immer Code, eine codelose Lane gibt gar keine zurueck. Abschnitt 2 hat jetzt dieselbe Ausnahme wie Abschnitt 1 mit 'Empty output? No pause'."
 review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:68-84, Abschnitt 'Do not commit. Hand back the commit line instead.' — der Abschnitt ist geschrieben, als liefe der Worker immer in in-progress, und hebt damit die Regel zwei Bildschirme darueber auf ('did you change no code? Then commit nothing.', SKILL.md:31-37). Der Modus steht laut schema.go bewusst auf dem TICKET und haelt 'through critique and testing too'; also liest ihn auch ein critique-, testing- oder review-Worker aus 'show --for-lane --json'. Der hat keine Zeile Code geaendert, bekommt aber 'Write the command out ready to paste' und reicht dem Menschen ein 'git add <files> .jaira/tickets/<ticket>.md; git commit -m ...' hinaus. Der Mensch fuegt es ein und committet genau die Buchhaltung, die die Regel darueber verbietet — und weil in diesem Modus ein Mensch committet, ist das der Commit, der am ehesten wirklich abgeschickt wird. Abschnitt 1 hat die Ausnahme schon ('Empty output? No pause'), Abschnitt 2 fehlt sie. Fix: in Abschnitt 2 dieselbe Bedingung nennen — eine Commit-Zeile nur, wenn Code geaendert wurde; eine Lane ohne Code-Aenderung gibt keine Zeile zurueck, sondern laesst die Ticket-Datei im Worktree fuer den naechsten Commit, der Code traegt."
 ---
 
