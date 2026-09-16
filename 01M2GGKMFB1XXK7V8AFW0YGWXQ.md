@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -44,15 +44,16 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
+  - PLACEHOLDER
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:08:47Z
+updated-at: 2026-09-16T08:09:05Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
 claimed-at: 2026-09-16T07:57:36Z
-outcome-what: "Der state→refusal-Schalter ueber milestoneFiled steht einmal statt dreimal: refuseIfFiled(s, name, onRef, inLogbook) neben den refuse-Helfern in internal/cli/milestones.go, nil bei milestoneNotFiled. Die drei Tueren - create (milestones.go:131), add/rm (:251) und 'jaira logbook <name>' (logbook.go:195) - sind je ein 'if err := ...; err != nil'."
-outcome-why: "Runde 8 hat den Weigerungs-TEXT zusammengelegt, aber jede Tuer musste weiter selbst wissen, welcher Zustand auf welchen Helfer zeigt; 17bab1d hat die dritte Kopie dazugelegt. Eine vierte Tuer haette die Zuordnung wieder neu erfinden muessen, ein spaeter dazukommender Zustand waere an einer Tuer stillschweigend ausgefallen."
-outcome-resolves: "Kein DoD-Punkt: die Weigerungen kommen wortgleich heraus wie vorher. Gemessen, nicht angenommen - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt und TestTheFilingTreeIsPointedAtItsOwnLogbook pruefen den Wortlaut und blieben ungeaendert gruen, 'go test ./...' ebenfalls."
+outcome-what: "restore nimmt den Milestone-Lock: internal/cli/archive.go:118 legt s.Lock(milestoneLockName) um s.Restore UND unfileMilestone, sodass der Move der Datei mit drin liegt; unfileMilestone bleibt lockfrei und sagt das in seiner Doku. Dazu TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go), gegen den reverteten Stand gemessen. Die drei Vorfuehr-Dateien .jaira/milestones/demo-*.md sind per 'git rm --cached' wieder untracked, liegen aber weiter auf der Platte. Eine Zeile in core/release/NOTES.md unter ## Unreleased."
+outcome-why: "unfileMilestone war der vierte Schreiber einer Milestone-Datei und der einzige ohne Lock - Load/SetStatus/Save auf genau die Datei, die ein gleichzeitiges 'jaira milestone add' ebenfalls read-modify-write schreibt; einer der beiden Schreibvorgaenge ging verloren. Die drei Demo-Dateien waren durch ein 'git add -A' in 4bd9797 gerutscht: nach master gebracht haetten sie jedem Clone drei Demo-Gruppen mit echten Ticket-ULIDs verteilt, die rechte Kanten echter Karten einfaerben."
+outcome-resolves: "Kein neuer DoD-Punkt: beide Findings sind Korrekturen an schon abgehakten Punkten. DoD 9/11 (Ablegen und Zurueckholen) bleiben gruen - TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack unveraendert gruen, dazu der neue Lock-Test; 'go build/vet/test ./...' RC=0 und './internal/cli ./core/milestone -race' gruen."
 review-summary: |-
   internal/cli/archive.go:143 unfileMilestone loads, rewrites and re-records a milestone file without taking s.Lock(milestoneLockName) — the lock every other milestone writer takes (milestones.go:111 create, milestones.go:233 add/rm, logbook.go:286 logbook). A concurrent 'jaira milestone add' loses its write. Take the lock in the restore RunE (archive.go:118) around s.Restore and unfileMilestone, so the file move is inside it too
   .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md and demo-ui.md are committed in 4bd9797 — a git add -A swept them in. Two lane notes on this ticket say in words they are hand-test leftovers that must stay untracked. As committed, every clone of master gets three demo groups painting colours on real cards. git rm the three files in the next round
