@@ -25,10 +25,10 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:09:43Z
+updated-at: 2026-09-16T08:10:22Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-11544
-claimed-at: 2026-09-16T07:59:59Z
+claimed-by: DESKTOP-RFTCH11-41880
+claimed-at: 2026-09-16T08:10:22Z
 outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 1 umgebaut: (1) 'Which repository it goes to' steht jetzt vor dem Listing, das Listing selbst fragt mit '--repo' das Zielrepository und schreibt den Head als '<owner-of-origin>:<branch>'; (2) die Mensch/Agent-Aufteilung steht nur noch unter '## Open it', der Push-Abschnitt sagt sie nicht mehr; (3) jaira.remote wird als Remote-NAME behandelt, mit 'git remote get-url \"$(git config jaira.remote)\"' als Schritt zum owner/repo; (4) die Leiter hat eine vierte Sprosse fuer 'Fork ohne jaira.remote' -> Parent aus 'gh repo view'. Die NOTES.md-Zeile unter ## Unreleased nennt Fallback, Widerspruch und das Listing im Zielrepository mit."
 outcome-why: "critique hatte vier Findings: die Reihenfolge war halb gedreht, sodass das Listing im Fork nach einem PR fragte, der im Parent offen ist - genau der zweite PR, den der Text an anderer Stelle ausschliesst; die Mensch/Agent-Regel stand an zwei Stellen mit zwei verschiedenen Aussagen; ':152 read the owner/repo off it' war nicht ausfuehrbar, weil jaira.remote einen Remote-Namen haelt (core/settings/settings.go:145); und der Normalfall 'jaira.remote gar nicht gesetzt' hatte keine Sprosse."
 outcome-resolves: "Definition of Done unveraendert erfuellt und jetzt ohne die vier Widersprueche: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck (an genau einer Stelle gesagt), merge/approve in beiden Faellen verboten, Zielrepository vor Listing UND Oeffnen geprueft mit ausfuehrbaren Schritten, eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
