@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:24:19Z
+updated-at: 2026-09-16T11:24:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -49,6 +49,12 @@ review-gaps: |-
   Nicht beanstandet: DoD-Proof-Zeilennummern stimmen (:9-23, :100-160, :243-248), NOTES.md hat genau eine Zeile unter ## Unreleased, 'go test ./core/role/...' ist gruen, 'jaira whoami --json' liefert .remote und .remote_source wie beschrieben, 'gh repo view $(git remote get-url origin) --json isFork,parent,nameWithOwner' liefert in diesem Fork tatsaechlich isFork:true und BeMuCa/jaira - der GitHub-Arm der Leiter ist am echten Repo geprueft.
 test-verdict: "pass: go build ./... und go test -race ./... gruen (RC=0, 28 Pakete ok); die DoD-Klausel Punkt fuer Punkt im Arbeitsbaum belegt; die Zielrepository-Leiter auf diesem Fork real durchgespielt - 'gh repo view $(git remote get-url origin)' liefert isFork:true mit parent BeMuCa/jaira, das blanke 'gh repo view' isFork:false, genau der Fehler, den der Text beschreibt"
 question: "Die pr-Rolle ist geprueft und gruen: Ist der Text so, wie du ihn haben willst - oder soll noch etwas an der Zielrepository-Leiter anders formuliert sein?"
+review-verdict: |-
+  Die Definition of Done ist erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve in beiden Faellen verboten, Zielrepository vor dem Oeffnen geprueft, eine Zeile unter ## Unreleased, go test ./core/role/... gruen. Der GitHub-Arm der Zielrepository-Leiter ist am echten Fork nachgeprueft und stimmt.
+
+  Der GitLab-Arm stimmt nicht: '--target-project' ist in glab 1.114 deprecated, und im Fork-Fall fehlt '--head <fork>'. Das ist kein Schoenheitsfehler, sondern genau der Fall, fuer den der neue Abschnitt gebaut wurde. Dazu ein moeglicher Haenger bei 'gh pr create' ohne --head aus einem Fork-Clone (nicht verifiziert).
+
+  Empfehlung: annehmen, wenn dieses Board auf GitHub bleibt - dort funktioniert der Pfad nachweislich. Zurueckschicken, wenn der GitLab-Pfad tragen soll; die Korrektur ist klein (--repo statt --target-project, --head ergaenzen, --head auch bei gh pr create).
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
