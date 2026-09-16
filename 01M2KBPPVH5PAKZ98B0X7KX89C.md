@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:55:20Z
+updated-at: 2026-09-16T06:55:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -54,7 +54,7 @@ outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink
 - [x] Hunks 'dispatch'-Lane und proj-Variable mitnehmen; die vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) auslassen
 - [x] Den --no-worktree-Absatz in core/role/builtin/jaira-dispatcher/SKILL.md nachziehen, wortgleich zum Stand in ~/.claude
 - [x] Pruefen, dass ohne Herdr weder Skript noch Skill ins Leere laufen: HERDR_ENV-Check meldet sauber, SKILL.md nennt die Ersatzwege
-- [ ] Test in core/role: 'bash -n' ueber jede eingebettete .sh-Datei, und 'spawn.sh --help' endet mit 0 - heute faellt ein kaputtes Skript erst beim Worker auf
+- [~] Test in core/role: 'bash -n' ueber jede eingebettete .sh-Datei, und 'spawn.sh --help' endet mit 0 - heute faellt ein kaputtes Skript erst beim Worker auf
 - [ ] Zeile unter '## Unreleased' in core/release/NOTES.md: --no-worktree da, und 'jaira roles install --force' noetig, weil eine veraenderte Kopie uebersprungen wird
 - [ ] Abnahme: 'jaira roles install' in ein leeres Verzeichnis, beide Dateien da, spawn.sh ausfuehrbar, --no-worktree drin; 'go test ./core/role/...' gruen
 
