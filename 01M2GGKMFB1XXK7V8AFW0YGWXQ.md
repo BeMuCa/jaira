@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:02:28Z
+updated-at: 2026-09-16T07:18:07Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
@@ -509,3 +509,10 @@ WHY NOT logbook.go:289 TOO: its middle clause differs ('there is no logbook copy
 
 CHECKED AND LEFT ALONE: the guard sits below resolveAll, so 'milestone add <filed> <bogus-id>' reports the bad id first — create does the same, so the two doors agree; the Nothing-to-do and JSON paths below the guard are unreachable for a filed milestone; milestoneFiled reads the ref before the logbook folders, which is the order create uses.
 - **2026-09-16 07:02 · Alexander Sacharov** — Dispatcher, 2026-09-16 nach critique-Runde 8: HALT. Die critique-Lane hat zum vierten Mal zurueckgeschickt (Runde 5: fuenf Findings, 6: zwei, 7: eines, 8: eines). Alex' Entscheidung vom 2026-09-16 galt Runde 7 und ist gebaut - eb178ec, beide Tueren in add/rm weigern sich, zwei Tests, eine NOTES.md-Zeile. Runde 8 ist ein NEUER Befund und wieder eine Ebene tiefer: nicht mehr ob die Weigerung da ist, sondern dass ihr Text jetzt viermal von Hand dasteht (milestones.go:122,133,247,263) statt in zwei Helfern nach dem Vorbild von pull.go:113 refusePull. Der Befund ist inhaltlich richtig und rein struktureller Natur - es geht kein Verhalten verloren, wenn er mitgeliefert wird. Genau das ist die Lesart, die nur ein Mensch entscheiden kann: entweder die Schleife konvergiert nie, weil jede Runde tiefer liest, oder der Befund gehoert gebaut. Der Dispatcher startet keine fuenfte Runde von sich aus.
+- **2026-09-16 07:18 · Alexander Sacharov** — Alex hat am 2026-09-16 entschieden: der Befund aus critique-Runde 8 wird gebaut, das Ticket soll geschlossen werden. Die Schleife ist damit wieder offen - sie war nach dem vierten Ruecklauf angehalten worden, weil die Regel das zur Entscheidung eines Menschen macht.
+
+Zu bauen: die vier von Hand geschriebenen Abweisungstexte in internal/cli/milestones.go:122, 133, 247 und 263 gehen in zwei Helfer neben milestoneFiled - filedOnDisk(root, name, instead) und filedInLogbook(name, where, instead). Jede Aufrufstelle uebergibt nur noch ihre eigene Schlussklausel. Vorbild im selben Paket, nicht neu erfinden: internal/cli/pull.go:113 refusePull und internal/cli/lanes.go:23 writeConflictError.
+
+Nicht anfassen: logbook.go:289 weicht mitten im Satz ab und bleibt wie er ist - er in den Helfer zu zwingen, macht den Helfer zum Baukasten.
+
+Keine neue DoD-Zeile und keine NOTES.md-Zeile: der Wortlaut, den ein Benutzer liest, aendert sich nicht, nur wo er steht. Aendert er sich doch, ist das ein Fehler und kein Feature - die bestehenden Tests aus eb178ec muessen unveraendert gruen bleiben.
