@@ -1,8 +1,37 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
+
+  --no-worktree   Start the worker in the repository directory itself: no
+                  worktree, no branch of its own. For a one-lane job that
+                  belongs on the branch already checked out. Two workers then
+                  share one directory, so run only one at a time.
+                  JAIRA_NO_WORKTREE=1 in the environment does the same.
+  -h, --help      This text.
+
+Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
+HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
+USAGE
+}
+
+# Flags before the positionals, and -- ends them: a slug is free text and could
+# one day start with a dash.
+no_worktree="${JAIRA_NO_WORKTREE:-}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-worktree) no_worktree=1; shift ;;
+    -h|--help)     usage; exit 0 ;;
+    --)            shift; break ;;
+    -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
+    *)             break ;;
+  esac
+done
 
 slug="${1:?slug}"; ticket="${2:?ticket id}"; lane="${3:?lane}"
 root="${4:-$PWD}"
@@ -12,7 +41,16 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 # Beside the repository, never inside it: a worktree under the repo is a second
 # copy of the sources on a different branch, and grep -r / find / ls -R walk
 # straight into it. Derived, so no path is baked in for one machine.
-wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
+# JAIRA_NO_WORKTREE=1 runs the worker in $root itself, no worktree and no
+# branch of its own. For a one-lane job on the branch that is already checked
+# out — a doc line, a note, a lane that only reads — a worktree costs a clone,
+# a branch and a merge for nothing. It is unsafe for two workers at once: they
+# share the directory, and that is exactly what the worktree exists to prevent.
+if [ "$no_worktree" = 1 ]; then
+  wt="$root"
+else
+  wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
+fi
 
 if [ ! -d "$wt" ]; then
   # feat/, the prefix this board's own branches use. A repository that names
@@ -93,7 +131,14 @@ case "${st:-}" in
   *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;;
 esac
 
-"$herdr" pane send-text "$pane" "/jaira-role-lane $ticket $lane" >/dev/null
+# The lane name "dispatch" starts the dispatcher itself rather than one lane's
+# worker — same worktree, same tab, same waiting for claude to come up, so it
+# lives here rather than in a second script that drifts from this one.
+if [ "$lane" = dispatch ]; then
+  "$herdr" pane send-text "$pane" "/jaira-dispatcher $ticket" >/dev/null
+else
+  "$herdr" pane send-text "$pane" "/jaira-role-lane $ticket $lane" >/dev/null
+fi
 sleep 1
 "$herdr" pane send-keys "$pane" enter >/dev/null
 

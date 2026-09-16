@@ -86,6 +86,14 @@ Say which one you took. The human needs to know whether the workers outlive you.
    `claude` in it, waits for the state hook to report idle, types the lane
    command and presses enter. It prints the pane id.
 
+   `--no-worktree` before the slug starts the worker in the repository
+   directory itself instead — no worktree, no branch of its own. (`JAIRA_NO_WORKTREE=1`
+   in the environment does the same, for a machine that always wants it.)
+   Take it only when the person asked for it, or when the work is one lane long
+   and belongs on the branch that is already checked out. It gives up the one
+   thing the worktree buys: with it set, two workers share a directory, so
+   never run a second one anywhere while such a worker is live.
+
    Two things it saves you from, both seen on 2026-09-14, when two dispatchers
    out of three never got a single worker into a tab:
 

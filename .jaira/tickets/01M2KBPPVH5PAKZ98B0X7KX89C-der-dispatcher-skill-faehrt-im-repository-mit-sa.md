@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,20 +26,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:53:04Z
+updated-at: 2026-09-16T06:57:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
-outcome-what: "Plan geschrieben: der Dispatcher wird in core/role/builtin/ nachgezogen, nicht nach .claude/skills/ kopiert"
-outcome-why: "Die Rollen-Infrastruktur mit go:embed und 'jaira roles install' existiert schon; eine zweite Kopie waere genau die Drift, gegen die das Ticket existiert"
-outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink- und Herdr-Frage aus dem Kontext beantwortet"
+outcome-what: "core/role/builtin/jaira-dispatcher/ traegt jetzt --no-worktree (usage(), Flag-Schleife vor dem Herdr-Check, wt=$root-Zweig) und die dispatch-Lane, die /jaira-dispatcher statt /jaira-role-lane startet; SKILL.md beschreibt den Schalter; neuer Test TestEmbeddedScriptsParse parst jede eingebettete .sh und prueft spawn.sh --help ohne Herdr; NOTES.md-Zeile unter Unreleased"
+outcome-why: "Der Schalter existierte nur in ~/.claude auf einer Maschine; im Builtin faehrt er per go:embed mit jedem Klon und kommt ueber 'jaira roles install' zu jedem Teammitglied"
+outcome-resolves: "DoD erfuellt: 'jaira roles install --into <leer>' schreibt SKILL.md und scripts/spawn.sh (0755), beide mit --no-worktree, ohne dass etwas aus ~/.claude gelesen wird; go test ./core/... gruen"
 ---
 
 # Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree
 
 ## Definition of Done
 
-- [ ] Der Rollen-Ordner core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh im Stand von ~/.claude (2026-09-15); spawn.sh kennt --no-worktree; 'jaira roles install' in ein leeres Verzeichnis liefert beide Dateien, spawn.sh ausfuehrbar, ohne dass etwas aus ~/.claude kopiert wird
+- [x] Der Rollen-Ordner core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh im Stand von ~/.claude (2026-09-15); spawn.sh kennt --no-worktree; 'jaira roles install' in ein leeres Verzeichnis liefert beide Dateien, spawn.sh ausfuehrbar, ohne dass etwas aus ~/.claude kopiert wird
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:7-35,55-64; core/role/role_test.go TestEmbeddedScriptsParse + TestInstallWritesEveryFile
 
 ## Options
 
@@ -50,16 +51,19 @@ outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Hunk --no-worktree aus ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh nach core/role/builtin/jaira-dispatcher/scripts/spawn.sh uebernehmen: usage(), Flag-Schleife, wt-Zweig
-- [ ] Hunks 'dispatch'-Lane und proj-Variable mitnehmen; die vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) auslassen
-- [ ] Den --no-worktree-Absatz in core/role/builtin/jaira-dispatcher/SKILL.md nachziehen, wortgleich zum Stand in ~/.claude
-- [ ] Pruefen, dass ohne Herdr weder Skript noch Skill ins Leere laufen: HERDR_ENV-Check meldet sauber, SKILL.md nennt die Ersatzwege
-- [ ] Test in core/role: 'bash -n' ueber jede eingebettete .sh-Datei, und 'spawn.sh --help' endet mit 0 - heute faellt ein kaputtes Skript erst beim Worker auf
-- [ ] Zeile unter '## Unreleased' in core/release/NOTES.md: --no-worktree da, und 'jaira roles install --force' noetig, weil eine veraenderte Kopie uebersprungen wird
-- [ ] Abnahme: 'jaira roles install' in ein leeres Verzeichnis, beide Dateien da, spawn.sh ausfuehrbar, --no-worktree drin; 'go test ./core/role/...' gruen
+- [x] Hunk --no-worktree aus ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh nach core/role/builtin/jaira-dispatcher/scripts/spawn.sh uebernehmen: usage(), Flag-Schleife, wt-Zweig
+- [x] Hunks 'dispatch'-Lane und proj-Variable mitnehmen; die vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) auslassen
+- [x] Den --no-worktree-Absatz in core/role/builtin/jaira-dispatcher/SKILL.md nachziehen, wortgleich zum Stand in ~/.claude
+- [x] Pruefen, dass ohne Herdr weder Skript noch Skill ins Leere laufen: HERDR_ENV-Check meldet sauber, SKILL.md nennt die Ersatzwege
+- [x] Test in core/role: 'bash -n' ueber jede eingebettete .sh-Datei, und 'spawn.sh --help' endet mit 0 - heute faellt ein kaputtes Skript erst beim Worker auf
+- [x] Zeile unter '## Unreleased' in core/release/NOTES.md: --no-worktree da, und 'jaira roles install --force' noetig, weil eine veraenderte Kopie uebersprungen wird
+- [x] Abnahme: 'jaira roles install' in ein leeres Verzeichnis, beide Dateien da, spawn.sh ausfuehrbar, --no-worktree drin; 'go test ./core/role/...' gruen
 
 ## Progress
 - **2026-09-16 06:52 · Alexander Sacharov** — Die Praemisse des Tickets ist ueberholt: der Dispatcher liegt laengst im Repository, nur an einem anderen Ort als die DoD sagte. core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh, sie sind per go:embed im Binary und 'jaira roles install' schreibt sie nach ~/.claude/skills. .claude/skills/ waere ein zweiter Ort und damit genau die driftende Zweitkopie, gegen die das Ticket existiert. DoD entsprechend umgeschrieben; Symlink-Frage damit erledigt, das Installationskommando ist der Weg.
 - **2026-09-16 06:52 · Alexander Sacharov** — Der Diff ~/.claude gegen core/role/builtin ist groesser als --no-worktree. Vier Hunks: (1) --no-worktree samt usage() und Flag-Schleife - das ist der Auftrag; (2) Lane-Name 'dispatch' startet /jaira-dispatcher statt /jaira-role-lane - generisch, kommt mit; (3) proj-Variable statt Inline-Ausdruck, reines Refactoring, kommt mit; (4) vier .env-Zeilen VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES - die nennen 'task app:dev' eines anderen Projekts und gehoeren nicht in eine generische Builtin-Rolle. Bleiben draussen, Folgeticket.
 - **2026-09-16 06:52 · Alexander Sacharov** — jaira roles install ueberschreibt eine veraenderte Datei nicht, es meldet sie als 'skipped' (core/role/install.go). Alex' ~/.claude-Kopie ist veraendert, also bleibt sie nach diesem Ticket die Abweichung, bis er einmal 'jaira roles install --force' laeuft. Das gehoert in die NOTES.md-Zeile, sonst merkt es niemand.
 - **2026-09-16 06:52 · Alexander Sacharov** — Ohne Herdr scheitert spawn.sh nicht stumm: es prueft HERDR_ENV=1 und sagt 'not inside a Herdr pane', exit 1. SKILL.md nennt zwei Ersatzwege (Peer-Sessions, Subagents). Die dritte offene Frage aus dem Kontext ist damit beantwortet, es bleibt ein Pruefschritt und keine Aenderung.
+- **2026-09-16 06:57 · Alexander Sacharov** — Planschritt 2 nannte eine "proj-Variable" und vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) aus ~/.claude. Beides existiert dort heute nicht mehr: die ~/.claude-Kopie von spawn.sh ist am 16.09. auf den .jaira/worktree-setup-Hook umgebaut worden, der die .env-Logik ganz aus dem Skript nimmt. Dieser Hook ist Ticket 7MG5GB und bleibt hier draussen. Uebernommen wurden daher nur zwei Hunks: --no-worktree und die dispatch-Lane.
+- **2026-09-16 06:57 · Alexander Sacharov** — spawn.sh und ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh sind nach diesem Ticket bewusst NICHT byte-gleich - die Builtin-Version traegt noch die inline .env-Logik, die ~/.claude-Version schon den worktree-setup-Hook aus 7MG5GB. SKILL.md dagegen ist byte-gleich (diff leer). Wer die beiden vergleicht und einen Rueckstand vermutet: es ist der andere Ticket-Weg, kein vergessener Hunk.
+- **2026-09-16 06:57 · Alexander Sacharov** — Die Flag-Schleife steht vor dem HERDR_ENV-Check, nicht danach. Damit beantwortet spawn.sh --help die Flags auch auf einer Maschine ohne Herdr mit exit 0, statt mit "not inside a Herdr pane" abzubrechen. TestEmbeddedScriptsParse setzt HERDR_ENV= genau deswegen explizit - wer den Check nach oben schiebt, faellt dort auf.
