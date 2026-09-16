@@ -26,18 +26,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:02:08Z
+updated-at: 2026-09-16T07:03:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
 outcome-what: "Der ausgelieferte, aber undokumentierte dispatch-Zweig ist jetzt an vier Stellen beschrieben: spawn.sh usage() (eigener Absatz), dispatcher/SKILL.md (was der Lane-Name tut und wer ihn tippt), teamlead/SKILL.md (der Aufruf 'spawn.sh <slug> <ticket> dispatch' samt Warnung) und eine NOTES.md-Zeile unter Unreleased. Zusaetzlich sagen usage() und dispatcher/SKILL.md nun, dass --no-worktree den Slug weiter verlangt und nicht liest."
 outcome-why: "critique: der Zweig war ausgeliefert und unerreichbar - kein Dokument nannte den Lane-Wert 'dispatch', also konnte niemand ihn treffen; und --no-worktree verlangte einen Slug, dessen Nutzlosigkeit nirgends stand"
 outcome-resolves: "DoD 1 bleibt erfuellt und ist um den zweiten Hunk ergaenzt: go test ./core/role/... gruen, 'spawn.sh --help' ohne Herdr exit 0 mit beiden neuen Absaetzen"
-review-summary: |-
-  core/role/builtin/jaira-teamlead/SKILL.md:45 tells the teamlead to start a dispatcher with spawn.sh but never says the lane argument must be 'dispatch' - the new branch at spawn.sh:137 has no caller that knows about it; name the value there.
-  core/role/builtin/jaira-dispatcher/SKILL.md:84 still says spawn.sh takes '<slug> <ticket-id> <lane>' and lists only real lanes; add that lane 'dispatch' starts a dispatcher instead of a lane worker, beside the --no-worktree paragraph that is already there.
-  core/release/NOTES.md:17 notes only --no-worktree; the 'dispatch' lane changes what an existing invocation of a shipped script does and is equally observable - add a second line under ## Unreleased.
-  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:36 keeps demanding a slug that --no-worktree never reads (wt=$root, the worktree-add block is skipped); say so in usage() after the --no-worktree paragraph: the slug only names the worktree and its branch.
+review-summary: none
 ---
 
 # Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree
