@@ -302,3 +302,51 @@ func TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt(t *testing.T) {
 		}
 	}
 }
+
+// The tree that filed it stands in a state no other tree is in: the copy is in
+// its own logbook AND the mark is on the ref it wrote. It must be told about
+// the copy lying here, not sent to "the tree that filed it" — which is the
+// tree it is standing in. Asking the ref first said exactly that, so this is
+// the test that holds the order down. It runs on a board with refs, because a
+// board without them cannot get the order wrong.
+func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
+	ada, _ := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, ada, "create", "something to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	ticketID := handleFromList(t, ada, "something to group")
+
+	doors := map[string][]string{
+		"create": {"milestone", "create", "round-one"},
+		"add":    {"milestone", "add", "round-one", ticketID},
+	}
+	for door, args := range doors {
+		out, err := runCLI(t, ada, args...)
+		if err == nil {
+			t.Fatalf("'%s' went through a milestone this tree filed:\n%s", door, out)
+		}
+		for _, want := range []string{
+			"into the logbook",
+			"jaira restore round-one.md",
+		} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
+			}
+		}
+		// The ref carries the mark here as well, and naming it would send the
+		// reader away from the copy that is lying in this very tree.
+		if strings.Contains(err.Error(), gitref.MilestoneRefName("round-one")) {
+			t.Errorf("the %s refusal points at the ref although the copy is here: %v", door, err)
+		}
+		if strings.Contains(err.Error(), "the tree that filed it") {
+			t.Errorf("the %s refusal sends the filing tree to itself: %v", door, err)
+		}
+	}
+}

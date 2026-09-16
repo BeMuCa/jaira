@@ -385,19 +385,23 @@ const (
 // clone that never fetched does not see — a board that has never been shared
 // has no refs at all, and would otherwise hand out the same name twice.
 //
-// The ref is asked first, and that order decides what the caller may say: a
-// tree can hold a marked ref and no logbook copy at all, so the answer here
-// is what keeps the refusal from pointing at a restore that would fail.
+// This tree's logbook is asked first, and that order decides what the caller
+// may say. The tree that filed the milestone has both: the copy in its own
+// logbook AND the mark on the ref it wrote. Asking the ref first would tell
+// the filer that the way back runs in "the tree that filed it" — which is the
+// tree they are standing in — and hide the copy lying right here. The ref
+// answer is therefore the one left over: nothing in this logbook, so the copy
+// is somewhere else.
 func milestoneFiled(s *ticket.Store, name string) (string, milestoneFiledAt) {
+	if where, ok := s.FiledMilestone(name); ok {
+		return where, milestoneFiledHere
+	}
 	if refs != nil && refs.Usable() == nil {
 		if content, _, err := refs.Repo.ReadMilestone(name); err == nil {
 			if milestone.FromBytes(name, content).Filed() {
 				return gitref.MilestoneRefName(name), milestoneFiledOnRef
 			}
 		}
-	}
-	if where, ok := s.FiledMilestone(name); ok {
-		return where, milestoneFiledHere
 	}
 	return "", milestoneNotFiled
 }
@@ -434,9 +438,10 @@ func refuseFiledOnDisk(root, name, instead string) error {
 	return refuseFiledElsewhere(name, "its file at "+milestone.Path(root, name), instead)
 }
 
-// refuseFiledOnRef: there is no file here at all and the mark is on the ref,
-// so this tree has nothing to restore from and never had. The ref is named
-// because it is the only thing the reader can go and look at.
+// refuseFiledOnRef: there is nothing filed under this name in this tree's
+// logbook and the mark is on the ref, so the copy 'jaira restore' needs lies
+// in whichever tree filed it. The ref is named because, with no file and no
+// logbook entry here, it is the only thing the reader can go and look at.
 func refuseFiledOnRef(name, ref, instead string) error {
 	return refuseFiledElsewhere(name, "its ref "+ref, instead)
 }
