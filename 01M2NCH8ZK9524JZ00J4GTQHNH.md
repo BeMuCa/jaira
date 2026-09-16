@@ -36,7 +36,7 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:39:19Z
+updated-at: 2026-09-16T15:39:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -70,7 +70,7 @@ claimed-at: 2026-09-16T15:25:11Z
 - [x] Tests: Feld ueberlebt Round-trip, show --for-lane --json fuehrt mode, set lehnt unbekannten Wert ab
 - [x] jaira-dispatcher/SKILL.md: neuer Halt VOR der Plan-Lane — offene Entscheidungen zaehlen, bei >=1 anhalten, Antwort mit 'jaira note' aufs Ticket, dann 'jaira set <id> mode=conversational'
 - [x] jaira-dispatcher/SKILL.md: Modus beim Start vom Ticket lesen (jaira show --json), nicht aus dem Kontext — das ist, was den Sitzungsabbruch ueberlebt; --no-worktree in diesem Modus empfehlen
-- [ ] jaira-role-lane/SKILL.md: im Modus nach jedem DoD-Punkt 'git diff' vorlegen und warten; leerer Diff heisst keine Pause
+- [~] jaira-role-lane/SKILL.md: im Modus nach jedem DoD-Punkt 'git diff' vorlegen und warten; leerer Diff heisst keine Pause
 - [ ] jaira-role-lane/SKILL.md: im Modus nicht committen, stattdessen fertige Commit-Zeile mit Handle im Betreff und der Ticket-Datei im git add zurueckgeben (Muster aus jaira-role-pr/SKILL.md)
 - [ ] docs/AGENTS.md und README.md: mode im Frontmatter dokumentieren
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer den Modus, eine fuer das Committen von Hand
