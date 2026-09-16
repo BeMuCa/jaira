@@ -37,10 +37,10 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:16:39Z
+updated-at: 2026-09-16T20:17:17Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-96645
-claimed-at: 2026-09-16T19:45:19Z
+claimed-by: DESKTOP-RFTCH11-67097
+claimed-at: 2026-09-16T20:17:17Z
 outcome-what: "internal/cli/resume.go fuehrt jetzt den Modus: 'mode' in der items-Map des --json-Zweigs und eine 'mode:'-Zeile im Klartext-Block, letztere nur bei gesetztem Modus. Dazu TestResumeCarriesMode in internal/cli/mode_test.go, eine Ergaenzung der bestehenden Modus-Zeile in core/release/NOTES.md und der Verweis auf den Test in der proof-Zeile von DoD-Punkt 3."
 outcome-why: "resume.go baut sein JSON von Hand und geht nicht durch ticketJSON, also fehlte das Feld dort. 'jaira resume' ist aber genau die Wiederanlauf-Stelle, auf die sich jaira-dispatcher/SKILL.md:65 beruft — ein Dispatcher nach einem Sitzungsabbruch haette den Modus dort nicht gesehen und waere autonom weitergelaufen, was die in schema.go:44-47 aufgeschriebene Begruendung des Feldes aushebelt."
 outcome-resolves: "Befund aus critique-Runde 7: resume.go:126-141 trug kein 'mode', der Klartext-Block ebenso wenig."
