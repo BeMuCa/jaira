@@ -24,8 +24,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T07:59:49Z
+updated-at: 2026-09-16T07:59:59Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-11544
+claimed-at: 2026-09-16T07:59:59Z
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
