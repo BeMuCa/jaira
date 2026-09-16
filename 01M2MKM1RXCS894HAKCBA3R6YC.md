@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:51:10Z
+updated-at: 2026-09-16T10:51:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -110,3 +110,14 @@ Fix: 'jaira whoami --json' statt 'git config jaira.remote'; Feld '.remote' ist d
 
 Geprueft und NICHT beanstandet: die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, das Sprungziel in 'One listed', der head-Praefix <owner-of-origin>: bei gh pr list, und der Mensch/Agent-Schnitt, der nur an einer Stelle steht. jaira.forge ist eine Einstellung, die kein Go-Code liest - die stand aber schon vor diesem Ticket da und gehoert nicht in diesen Diff.
 - **2026-09-16 08:14 · Alexander Sacharov** — Dispatcher: critique hat dreimal zurueckgeschickt, damit ist die Schleifengrenze erreicht und die Entscheidung liegt beim Menschen. Die drei Runden waren inhaltlich verschieden und keine wiederholte sich: (1) Zielrepository-Check stand nach den create-Blocks und jaira.remote wurde als owner/repo statt als Remote-Name gelesen; (2) das Listing fragte den Fork statt das Zielrepository, und 'skip the next section' zeigte nach der Umstellung auf 'Open it'; (3) 'git config jaira.remote' ist nur Sprosse 1 der vierstufigen Leiter in core/settings/settings.go:145-200 - auf diesem Board ist jaira.remote leer und das Board-Remote trotzdem 'upstream' aus settings.json, also faellt die Rolle ohne Gegencheck durch. Der vorgeschlagene Ausweg ist 'jaira whoami --json' statt eigener Herleitung; internal/cli/whoami.go:136-142 schreibt genau das schon vor. Offene Frage an den Menschen: eine vierte Runde laufen lassen, oder den Punkt als eigenes Ticket fuehren und A3R6YC ohne ihn weiterziehen.
+- **2026-09-16 10:51 · Alexander Sacharov** — in-progress (Durchgang 4, nach critique 3) — die eine Feststellung aus critique 3 abgearbeitet: die Zielrepository-Leiter liest den Board-Remote jetzt aus 'jaira whoami --json' (.remote / .remote_source) statt aus 'git config jaira.remote'.
+
+Warum whoami und keine eigene Herleitung: 'git config jaira.remote' ist Sprosse 1 von vier in core/settings/settings.go RemoteSourceFor; danach kommen settings.json, das einzige Remote und der laute Fehlschlag. Auf diesem Board ist der Key leer und der Remote trotzdem 'upstream' (verifiziert: 'jaira whoami --json' liefert remote=upstream, remote_source='from settings.json on this machine'). Leer gelesen haette die Rolle 'nichts widerspricht' gelesen und den Check uebersprungen. internal/cli/whoami.go:136-142 sagt genau das schon als Kommentar: wer die Leiter ein zweites Mal ableitet, nennt ein anderes Remote als der Code, der spaeter faellt.
+
+Verworfen: 'git remote get-url "$(jaira whoami --json | jq -r .remote)"'. jq steht in keiner anderen Rolle und ist keine Voraussetzung dieses Projekts; das Modell liest die JSON ohnehin selbst. Im Text steht jetzt 'git remote get-url <the .remote name>'.
+
+Neu in Sprosse 2: der Fall, dass der Name gar kein Remote hier benennt (RemoteSourceFor gibt den konfigurierten Namen auch dann zurueck, wenn es ihn nicht gibt — Sprosse 4 der Go-Leiter). Ohne den Fall haette 'git remote get-url' gefehlt und keine Sprosse getroffen.
+
+Mitgezogen: :63 sagte 'Not off jaira.remote' und haette den Leser genau auf den Key zurueckgeschickt, den der Abschnitt darunter verbietet — heisst jetzt 'the board's remote'. NOTES.md-Zeile nennt whoami und warum nicht den Key.
+
+Weiterhin ungeprueft und Sache der review-Lane: die Flagnamen '--repo' / '--target-project' bei der installierten gh/glab-Version und das Verhalten von 'gh pr list --head owner:branch'.
