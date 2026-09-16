@@ -1,17 +1,28 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, hand back a ready-made pull request description, and answer review comments on a pull request a person opened — never open one, never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>, normally by a dispatcher. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back. Use when a branch is ready to leave for review."
 ---
 
-# Push it, hand it over, never open or accept it
+# Push it, open it, never accept it
 
 Arguments: `<ticket-id>`. Without it, say what is missing and stop.
 
-You push the branch and you stop there. **Opening the pull request is the
-human's call** — they give that command, not you. Accepting one is the
-maintainer's. When a pull request is already open you push to it and answer its
-comments; you do not open one, you may not merge, and you may not approve — not
-your own work, and not anyone's.
+**Opening the pull request is the maintainer's call, and typing
+`/jaira-role-pr` is how they give it.** The invocation is the instruction: you
+push the branch and you open the pull request, in one run, without handing a
+command back.
+
+That holds only when a person typed it. **Invoked by an agent — a dispatcher, a
+teamlead, a workflow — you push and stop**, and you hand the create line back
+for a person to run. An agent that wants a pull request opened asks the person
+for one; it does not get one by calling this role. This is the same rule the
+board applies to its lanes — the one who wrote the change is never the one who
+decides it arrives — and the person's own invocation *is* that decision.
+
+Accepting it stays the maintainer's, always. You may not merge and you may not
+approve — not your own work, and not anyone's.
+
+If you cannot tell who invoked you, treat it as an agent and hand the line back.
 
 ## Before you push anything
 
@@ -79,8 +90,8 @@ word.
 
 ## Push, then ask which of your two jobs this is
 
-`git push -u origin HEAD`. That is where your push ends and the person's
-decision begins: you do not open the pull request.
+`git push -u origin HEAD`. Then open the pull request, if a person invoked
+you; if an agent did, the push is where you stop.
 
 Now ask the forge whether this branch already has one open — on GitHub:
 
@@ -94,17 +105,17 @@ or on GitLab:
 glab mr list --source-branch "$(git branch --show-current)"
 ```
 
-Carry on along the branch that listing puts you on. Either way you never open
-one:
+Carry on along the branch that listing puts you on. Either way you never open a
+second one:
 
-- **Nothing listed** — write the description out for them, then report.
+- **Nothing listed** — write the description, then open it, then report.
 - **One listed** — it already has a description. Skip the next section and go
   straight to **Answering review comments**, then report.
 
-## Hand back the description, do not open it yourself
+## Write the description, then open it
 
-Write it out for them so opening it is one command and no thinking. Read it off
-the board, do not invent it:
+The reviewer reads this and nothing else before the diff. Read it off the
+board, do not invent it:
 
 ```bash
 jaira show <id> --json
@@ -121,9 +132,8 @@ jaira show <id> --json
 
 Do not paste the diff into the description. They have the diff.
 
-End with the command they run to open it, written out and ready to paste —
-the one for the forge you settled on above, not both. You write it; you never
-run it. On GitHub:
+Write it to a file, then run the create command for the forge you settled on
+above — not both. On GitHub:
 
 ```bash
 gh pr create --title "<title>" --body-file <the description you wrote>
@@ -134,6 +144,16 @@ On GitLab:
 ```bash
 glab mr create --title "<title>" --description "$(cat <the description you wrote>)"
 ```
+
+Check where it is about to go. In a fork, `origin` is the fork and the pull
+request may target either it or the upstream; `gh pr create --repo <owner/repo>`
+and `glab mr create --target-project <path>` say which, and a pull request
+opened against the wrong one is noise a person has to close by hand. If the
+branch's base is not obvious, ask before you run it.
+
+Report the URL. An agent invoked you instead: do not run the command — hand it
+back, written out and ready to paste, and say the branch is pushed and waiting
+for a person to open it.
 
 ## Answering review comments
 
@@ -151,14 +171,14 @@ the thread is yours to answer.
 
 ## Boundaries
 
-- On GitHub: **never run `gh pr create`.** Never `gh pr merge`. Never
-  `gh pr review --approve`.
-- On GitLab: **never run `glab mr create`.** Never `glab mr merge`. Never
-  `glab mr approve`.
-- Writing that create line out for the person is the job; running it is theirs,
-  on either forge.
+- On GitHub: never `gh pr merge`. Never `gh pr review --approve`.
+- On GitLab: never `glab mr merge`. Never `glab mr approve`.
+- `gh pr create` / `glab mr create` is yours to run **only** when a person
+  invoked this role. Invoked by an agent, writing that line out is the job and
+  running it is the person's.
 - Never force-push a branch someone has already reviewed. If history must
   change, say so and ask first.
 - Never close a pull request that a person opened.
-- Report in three lines: the branch you pushed — or the pull request URL, when a
-  person has already opened one — what it contains, what it is waiting on.
+- Report in three lines: the pull request URL — or the branch you pushed, when
+  an agent invoked you and the create line went back instead — what it contains,
+  what it is waiting on.
