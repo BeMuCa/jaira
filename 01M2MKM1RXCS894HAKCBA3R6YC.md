@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:24:42Z
+updated-at: 2026-09-16T11:24:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -55,6 +55,14 @@ review-verdict: |-
   Der GitLab-Arm stimmt nicht: '--target-project' ist in glab 1.114 deprecated, und im Fork-Fall fehlt '--head <fork>'. Das ist kein Schoenheitsfehler, sondern genau der Fall, fuer den der neue Abschnitt gebaut wurde. Dazu ein moeglicher Haenger bei 'gh pr create' ohne --head aus einem Fork-Clone (nicht verifiziert).
 
   Empfehlung: annehmen, wenn dieses Board auf GitHub bleibt - dort funktioniert der Pfad nachweislich. Zurueckschicken, wenn der GitLab-Pfad tragen soll; die Korrektur ist klein (--repo statt --target-project, --head ergaenzen, --head auch bei gh pr create).
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-A3R6YC
+  2. 'glab mr create --target-project foo/bar --title x --description y' ausfuehren. Erste Ausgabezeile: 'Flag --target-project has been deprecated, Use --repo instead.' Das ist Befund 1. (Der Befehl legt nichts an - er bricht danach ab, weil hier kein GitLab-Remote konfiguriert ist.)
+  3. 'glab mr create --help | grep -E "head|repo"' ausfuehren. Im Beispielblock steht 'glab mr create --repo upstream/project --head your-namespace/project ...' - zwei Flags, wo SKILL.md:220 nur eins nennt. Das ist Befund 2.
+  4. 'gh repo view "$(git remote get-url origin)" --json isFork,parent,nameWithOwner' ausfuehren. Erwartet: isFork:true, nameWithOwner sashasoft90/jaira, parent.owner.login BeMuCa, parent.name jaira. Damit ist der GitHub-Arm der Leiter (SKILL.md:108, :147-149) am echten Repo belegt.
+  5. 'jaira whoami --json' ausfuehren. Erwartet: "remote": "upstream", "remote_source": "from settings.json on this machine". Zum Vergleich 'git config jaira.remote' - antwortet leer. Genau das ist der Grund, warum SKILL.md:130-139 die Quelle gewechselt hat.
+  6. 'go test ./core/role/...' ausfuehren. Erwartet: 'ok github.com/BeMuCa/jaira/core/role'. Achtung: der Test prueft Installation und Parsing der Rolle, nicht den Inhalt von SKILL.md - gruen heisst 'nichts kaputt', nicht 'Regel getestet'.
+  7. Entscheiden: reicht der GitHub-Pfad, oder soll der GitLab-Pfad zuerst korrigiert werden.
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
