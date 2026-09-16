@@ -26,10 +26,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:19:47Z
+updated-at: 2026-09-16T07:20:26Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-30509
-claimed-at: 2026-09-16T06:49:05Z
+claimed-by: DESKTOP-RFTCH11-15376
+claimed-at: 2026-09-16T07:20:26Z
 outcome-what: "Zwei Aufraeumungen in core/role/builtin/jaira-dispatcher/scripts/spawn.sh, ohne Verhaltensaenderung: der dispatch-Zweig ruft send-text nicht mehr zweimal auf, sondern setzt $prompt und der Aufruf steht einmal danach; der Kommentar am --no-worktree-Zweig ist von 6 auf 4 Zeilen gekuerzt, weil er usage() wortgleich wiederholte."
 outcome-why: "optimize: eine Idee soll an einer Stelle stehen. Der doppelte send-text-Aufruf war die einzige echte Duplikation dieser Aenderung, und sie zu falten macht auch RPXJ (testing -> /jaira-role-tester) zu einem elif statt zu einem dritten kopierten Aufruf."
 outcome-resolves: "bash -n gruen, 'go test ./...' gruen (inkl. TestEmbeddedScriptsParse, das spawn.sh --help ohne Herdr startet); DoD 1 unveraendert erfuellt, kein Kommando und keine Ausgabe geaendert, also keine NOTES.md-Zeile."
