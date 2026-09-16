@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T21:09:34Z
+updated-at: 2026-09-16T21:09:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23289
 claimed-at: 2026-09-16T21:06:12Z
@@ -55,6 +55,10 @@ review-gaps: |-
   3. DoD-Punkt 1 ist ausschliesslich als Prosa erfuellt. 'Der Eintritt haengt an einer nachpruefbaren Bedingung' ist ein Prompt-Absatz in jaira-dispatcher/SKILL.md; nichts im Code zaehlt etwas, nichts prueft, ob der Dispatcher den Halt ausgelassen hat, und kein Test deckt ihn ab. Das ist die in der Brainstorm-Lane getroffene Entscheidung (der Modus ist eine Prompt-Aenderung, der Go-Code ist nur der Traeger) und insofern kein Widerspruch — aber es heisst, dass der zentrale DoD-Punkt dieses Tickets durch keinen Mechanismus gehalten wird. Kleiner Nachbrenner in derselben Ecke: der zweite Schreibpfad, internal/tui/edit.go:60, hat keinen Test; die Ablehnung eines unbekannten Modus ist nur fuer 'jaira set' abgedeckt.
 test-verdict: "pass: go build/vet/test ./... -race -count=1 green (RC=0, 29 Pakete), DoD 1-6 in der Working Tree geprueft, Verhalten auf einem Scratch-Board mit dem gebauten Binary durchgespielt"
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
+review-verdict: |-
+  Das Traegerwerk ist sauber und deckt sich mit dem Bericht des Implementierers: ein Feld, ein geschlossener Wertebereich, eine Funktion (CanonicalMode) hinter beiden Schreibpfaden, fuenf Lesestellen inklusive 'jaira resume' — womit DoD-Punkt 3 (ueberlebt den Sitzungsabbruch) wirklich getragen ist und nicht nur behauptet —, dazu validate als Netz fuer alles, was an den Schreibpfaden vorbeikommt. Build, vet und 'go test ./... -count=1' sind gruen; ich habe sie selbst laufen lassen. Alle sechs DoD-Punkte sind formal erfuellt.
+
+  Eine Einschraenkung, die ich nicht zur Freigabe aufrunde: der Defekt aus review-gaps 1 trifft nicht die Randbedingung, sondern den Zweck. Ein DoD-Punkt, der aus einer neuen Datei besteht, laeuft im Gespraechsmodus ohne Pause durch, weil 'git diff' untracked Dateien nicht zeigt — der Fall ist haeufig (Tests, neue Pakete) und der Fix ist eine Zeile im Prompt. Ich empfehle, das vor dem Signoff zu aendern; es geht in eine Person-Minute und nicht in eine Runde durch in-progress. Die anderen beiden Befunde sind Dokumentationsschulden und koennen als eigenes Ticket nachlaufen.
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
