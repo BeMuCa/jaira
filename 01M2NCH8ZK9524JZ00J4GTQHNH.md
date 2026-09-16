@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:03:30Z
+updated-at: 2026-09-16T20:03:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -267,3 +267,12 @@ Nicht erneut aufgemacht: die Commit-Zeilen-Bedingung aus Runde 3 und 4 steht jet
 - Der Merge-Driver (internal/cli/mergedriver.go:223, --take-theirs) bleibt ungeprueft — absichtlich. Er ist ein Konfliktloeser, kein Schreibweg mit eigener Meinung; ein durchgereichtes 'mode: chat' faengt jetzt 'jaira validate' ab, genau wie jeden anderen Handedit. Eine Pruefung im Driver waere eine zweite Wahrheit ueber den Wertebereich.
 - core/validate/mode_test.go: der unbekannte Wert wird als Warnung mit Feld und Reparatur gemeldet; leer und 'conversational' bleiben stumm.
 - Kein Doku-Update noetig: weder docs/ noch README zaehlen validate-Codes auf (grep bad_tag findet dort nichts). Die NOTES.md-Zeile traegt die Aenderung.
+- **2026-09-16 20:03 · Alexander Sacharov** — critique (6. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+core/validate/validate.go:203 ruft ticket.CanonicalMode(t.Mode) auf und wertet nur das zweite Rueckgabewert aus. CanonicalMode trimmt aber, BEVOR es urteilt — deshalb ist ' conversational ' fuer die Pruefung gueltig, und der ungetrimmte Wert bleibt auf dem Ticket stehen.
+
+Nachgemessen mit einer Probe gegen ParseDoc/Decode: 'mode: " conversational "' in der Frontmatter ergibt t.Mode = " conversational " (Doc.Scalar liest bei einem quoted scalar token.Value, das die Leerzeichen behaelt), validate schweigt, und flow.go gibt den Wert unveraendert als JSON-Feld 'mode' und in der Kopfzeile '(tier: ..., mode: ...)' aus. Der Worker vergleicht gegen genau ein Wort und laeuft autonom — der Mensch glaubt, er werde vor jedem Inkrement gefragt.
+
+Das ist nicht der Befund aus Runde 1 noch einmal: den haben die beiden SCHREIBpfade (jaira set, TUI-Editor) repariert, indem sie den kanonischen Wert speichern. validate ist der LESEpfad fuer handgeschriebene Dateien und die einzige Stelle, die diese Datei je zu sehen bekommt — genau der Fall, fuer den die Pruefung in Runde 5 ueberhaupt dazukam.
+
+Reparatur: in validate.go zusaetzlich melden, wenn canon != t.Mode — gleicher CodeBadMode, gleiche Severity, die Meldung nennt schon beide Reparaturen. Dazu ein Fall in core/validate/mode_test.go neben 'chat'; dort steht heute nur ein Wert ausserhalb der Menge, keiner mit Rand-Leerzeichen.
