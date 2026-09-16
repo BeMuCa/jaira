@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:49:30Z
+updated-at: 2026-09-16T19:49:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -229,3 +229,10 @@ Warum die Ausnahme mit Begruendung im Prompt steht und nicht als ein Halbsatz: d
 Nicht gebaut, wie Alex entschieden hat: kein Verbot fuer den Menschen. Der Prompt regelt nur, was der Agent vorschlaegt.
 
 NOTES.md: die vorhandene Modus-Zeile ist erweitert statt einer zweiten. Die Ausnahme ist keine eigene Aenderung, sondern die Bedingung derselben — zwei Zeilen haetten dem Leser zwei Mechanismen vorgesetzt, wo einer steht.
+- **2026-09-16 19:49 · Alexander Sacharov** — critique (4. Durchgang): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+Der Befund aus Runde 3 ist repariert — Abschnitt 2 in jaira-role-lane/SKILL.md hat jetzt die Ausnahme, und NOTES.md nennt sie mit. Dieselbe Regel steht aber an vier weiteren Stellen unveraendert bedingungslos da: core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169, core/ticket/schema.go:41.
+
+Behaviour, nicht nur Doku: der Dispatcher startet auch critique-, testing- und review-Worker. Die geben nach dem Fix richtigerweise keine Commit-Zeile mehr zurueck — und sein Prompt sagt ihm, eine komme und er solle sie unveraendert an den Menschen weiterreichen. Ein Dispatcher, der die Zeile erwartet, fragt den Worker danach oder haelt die Lane fuer unfertig. Das ist genau der Widerspruch aus Runde 3, nur eine Datei weiter.
+
+Fix an allen vier Stellen dieselbe Bedingung wie in jaira-role-lane/SKILL.md:72-78: Commit-Zeile nur bei Code-Aenderung, sonst keine und die Ticket-Datei bleibt im Worktree.
