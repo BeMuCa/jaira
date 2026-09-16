@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:36:04Z
+updated-at: 2026-09-16T08:36:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -198,7 +198,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: README.md:404-405, matches core/gitref/gitref.go:625 Fetch
 - [x] README:402: eine Zeile fuer das Lesen eines Milestones ohne Checkout - show refs/jaira/milestones/<name>:<name>.md
   proof: README.md:407
-- [ ] Gegenprobe: grep refs/jaira ueber README.md - keine Zeile behauptet mehr, tickets/ sei der einzige Namensraum
+- [x] Gegenprobe: grep refs/jaira ueber README.md - keine Zeile behauptet mehr, tickets/ sei der einzige Namensraum
+  proof: grep -n refs/jaira README.md — every remaining tickets/ line is ticket-specific
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
