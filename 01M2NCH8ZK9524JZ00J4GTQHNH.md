@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T21:10:36Z
+updated-at: 2026-09-16T21:10:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23289
 claimed-at: 2026-09-16T21:06:12Z
@@ -368,3 +368,8 @@ Zwei Punkte aus demselben Austausch, nachgeprueft statt vermutet:
 Zur Auslieferung der Rollen: core/role/role.go:33 traegt '//go:embed all:builtin'. Alles unter core/role/builtin liegt also beim Bauen automatisch im Binary, es geht nichts verloren. Das Binary 0.2.1 ist schlicht aelter als dieser Branch — 'roles install' war nicht falsch, nur die Quelle war alt. Mit dem naechsten Release loest sich das von selbst; die NOTES.md-Zeilen sollten trotzdem sagen, dass erst dieses Release den Modus bringt.
 
 Zum Widerspruch um die testing-Lane: entschieden wird auf EINE Regel, und zwar die, die heute gelaufen ist. testing ist eine gewoehnliche Lane — .jaira/lanes/testing.md ist 'agentic: true' mit 'output-produces: [test-verdict]' —, sie wird mit '/jaira-role-lane <id> testing' gefahren, und spawn.sh behaelt seinen einen Sonderfall 'dispatch'. jaira-role-tester bleibt, was seine eigene Beschreibung sagt: eine Einstiegsstelle mit zwei optionalen Argumenten fuer 'pruef die Suite', kein Lane-Worker. Zu streichen ist damit der Halbsatz in core/role/builtin/jaira-dispatcher/SKILL.md:118 ('Testing is not a lane'), nicht ein zweiter Zweig in spawn.sh.
+- **2026-09-16 21:10 · Alexander Sacharov** — Review-Lane. Vier Felder gesetzt, nach eigenem Lauf von Build, vet, 'go test ./... -count=1' (gruen) und einem Scratch-Board mit dem gebauten Binary: set lehnt 'chat' mit Exit 2 ab, 'jaira show' druckt die mode-Zeile unter tier, die Klartext-Kopfzeile von '--for-lane' lautet '(tier: cheap, mode: conversational)', validate meldet einen handgeschriebenen Modus als Warnung mit der Reparaturzeile.
+
+Der Befund, der einen Menschen braucht: jaira-role-lane/SKILL.md sagt nach jedem DoD-Punkt 'git diff' und 'Empty output? No pause'. 'git diff' zeigt untracked Dateien nicht. Ein DoD-Punkt, der aus einer NEUEN Datei besteht, laeuft im Gespraechsmodus also ohne Pause durch — der Fall ist haeufig (neue Tests, neue Pakete), und die Implementierung dieses Tickets ist selbst ein Beispiel: core/validate/mode_test.go und internal/cli/mode_test.go sind neu. Ein-Zeilen-Fix im Prompt: 'git add -A -N .' vor dem 'git diff', oder 'git status --short' danebenstellen.
+
+Nicht zurueck nach in-progress geschickt, weil die Aenderung selbst korrekt ist und der Fix eine Prompt-Zeile ist — das ist billiger am Signoff als eine Runde durch die Lanes. Die zwei restlichen Befunde (Modus fehlt im von 'jaira update' erzeugten CLAUDE.md-Block in core/board/announce.go:64; internal/tui/edit.go hat keinen Test fuer die Ablehnung) sind Nachlauf und koennen ein eigenes Ticket werden.
