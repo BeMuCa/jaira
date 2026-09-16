@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:51:06Z
+updated-at: 2026-09-16T07:51:28Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -169,7 +169,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/logbook.go:183
 - [x] Doku bei logbook.go:283-286 geradeziehen: 'jede Route' gilt fuer die on-disk-Pruefung, nicht fuer die Tuer als Ganzes
   proof: internal/cli/logbook.go:296
-- [~] Tests: die logbook-Tuer in TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt und TestTheFilingTreeIsPointedAtItsOwnLogbook aufnehmen - beide Zustaende, in denen die Datei nicht auf der Platte liegt
+- [x] Tests: die logbook-Tuer in TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt und TestTheFilingTreeIsPointedAtItsOwnLogbook aufnehmen - beide Zustaende, in denen die Datei nicht auf der Platte liegt
+  proof: internal/cli/milestoneref_test.go:283 and :340 — both fail on the old code
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass 'jaira logbook <name>' bei einem abgelegten Milestone die Weigerung nennt statt 'ticket: not found'
 
 ## Progress
