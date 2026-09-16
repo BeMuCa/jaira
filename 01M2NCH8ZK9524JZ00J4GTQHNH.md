@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:53:38Z
+updated-at: 2026-09-16T15:53:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -65,7 +65,7 @@ review-summary: |-
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:50 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
-  proof: core/release/NOTES.md:16 (Modus) und :17 (Committen von Hand), beide unter ## Unreleased
+  proof: core/release/NOTES.md:17 (Modus, inkl. der mode-Zeile in 'jaira show') und :18 (Committen von Hand), beide unter ## Unreleased
 
 ## Options
 
