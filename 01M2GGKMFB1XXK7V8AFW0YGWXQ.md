@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:26:44Z
+updated-at: 2026-09-16T08:27:43Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -192,7 +192,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: core/release/NOTES.md:32
 - [x] internal/cli/refs.go flushRefs: auf r.Kind verzweigen - der JSON-Schluessel und der gedruckte Name kommen von der Art (ein Milestone unter seinem eigenen Namen, ein Ticket weiter ueber ticket.Handle); ein Helfer, damit die vier Outcomes die Verzweigung nicht je einzeln wiederholen
 - [x] Die zweite Zeile bei Rejected je Art: fuer einen Milestone sagen, dass die Fassung des Remotes gewinnt und der naechste fetch die lokale Datei ersetzt - die Aenderung muss auf der geholten noch einmal gemacht werden
-- [~] Test: eine abgelehnte Milestone-Schreibung nennt den vollen Namen unter dem Schluessel 'milestone' und traegt die Milestone-Zeile; der Ticket-Fall unveraendert
+- [x] Test: eine abgelehnte Milestone-Schreibung nennt den vollen Namen unter dem Schluessel 'milestone' und traegt die Milestone-Zeile; der Ticket-Fall unveraendert
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Outbox-Meldungen einen Milestone bei seinem Namen nennen statt als sechsstelligen Ticket-Handle, und was nach einer Ablehnung wirklich passiert
 
 ## Progress
