@@ -26,13 +26,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:57:33Z
+updated-at: 2026-09-16T06:59:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
 outcome-what: "core/role/builtin/jaira-dispatcher/ traegt jetzt --no-worktree (usage(), Flag-Schleife vor dem Herdr-Check, wt=$root-Zweig) und die dispatch-Lane, die /jaira-dispatcher statt /jaira-role-lane startet; SKILL.md beschreibt den Schalter; neuer Test TestEmbeddedScriptsParse parst jede eingebettete .sh und prueft spawn.sh --help ohne Herdr; NOTES.md-Zeile unter Unreleased"
 outcome-why: "Der Schalter existierte nur in ~/.claude auf einer Maschine; im Builtin faehrt er per go:embed mit jedem Klon und kommt ueber 'jaira roles install' zu jedem Teammitglied"
 outcome-resolves: "DoD erfuellt: 'jaira roles install --into <leer>' schreibt SKILL.md und scripts/spawn.sh (0755), beide mit --no-worktree, ohne dass etwas aus ~/.claude gelesen wird; go test ./core/... gruen"
+review-summary: |-
+  core/role/builtin/jaira-teamlead/SKILL.md:45 tells the teamlead to start a dispatcher with spawn.sh but never says the lane argument must be 'dispatch' - the new branch at spawn.sh:137 has no caller that knows about it; name the value there.
+  core/role/builtin/jaira-dispatcher/SKILL.md:84 still says spawn.sh takes '<slug> <ticket-id> <lane>' and lists only real lanes; add that lane 'dispatch' starts a dispatcher instead of a lane worker, beside the --no-worktree paragraph that is already there.
+  core/release/NOTES.md:17 notes only --no-worktree; the 'dispatch' lane changes what an existing invocation of a shipped script does and is equally observable - add a second line under ## Unreleased.
+  core/role/builtin/jaira-dispatcher/scripts/spawn.sh:36 keeps demanding a slug that --no-worktree never reads (wt=$root, the worktree-add block is skipped); say so in usage() after the --no-worktree paragraph: the slug only names the worktree and its branch.
 ---
 
 # Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree
