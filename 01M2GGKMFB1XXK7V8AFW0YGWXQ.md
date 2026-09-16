@@ -43,7 +43,7 @@ commits:
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:28:03Z
+updated-at: 2026-09-16T07:28:29Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -525,3 +525,20 @@ Keine neue DoD-Zeile und keine NOTES.md-Zeile: der Wortlaut, den ein Benutzer li
 - logbook.go:287 is now the THIRD caller of refuseFiledOnDisk, although critique round 8 named only the four sites in milestones.go. Its wording changed with it: it used to open 'is already filed' and lead with 'there is no logbook copy here'. Both facts survive — the way back runs in the filing tree, and there is no copy here — but the reader now meets the same sentence at all four doors, which was the point of the finding. Nothing in any test asserted the old wording; checked before rewriting.
 - No NOTES.md line: nothing a user can observe changed state. The add/rm refusal line at :28 and the filing line at :24 already describe both refusals, and the logbook one still says the same three things in the same order it was reworded into in round 6.
 - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings drives create/add/rm/logbook against one marked file and asserts all four name the path, the mark, 'jaira restore <name>.md' and the filing tree. That is the test that catches the drift coming back — the two per-door tests from round 7 check their own door only.
+- **2026-09-16 07:28 · Alexander Sacharov** — critique round 9, one finding. Round 8's finding is measured fixed and is not re-opened: grep over the package finds 'milestone_filed' at exactly two places now, internal/cli/milestones.go:386 and :397, with five call sites (milestones.go:121, :131, :244, :259 and logbook.go:289), and TestEveryDoorIntoAFiledMilestoneSaysTheSameThings drives create/add/rm/logbook against one marked file. Folding logbook.go's door in as well — which round 8 had expressly left out — is an improvement, not a deviation to undo: the composed sentence still says 'there is no copy of it here to bring back'.
+
+FINDING: the ref branch gets the wrong refusal. milestoneFiled (milestones.go:362) has two sources, and it returns the location string 'on its ref' when the REF carries the mark. That string is then handed to refuseFiledInLogbook, whose sentence is 'milestone %q has been filed into the logbook (%s) — jaira restore %s.md brings it back with its ticket list and its colour'. Composed, a user on a fetching clone reads: 'has been filed into the logbook (on its ref) — jaira restore x.md brings it back'.
+
+Two things are wrong with that, and the second is the one that costs time:
+- 'filed into the logbook (on its ref)' names a logbook location that is a ref. It contradicts itself in one clause.
+- the restore it names FAILS. The ref branch is reached precisely when this tree has no logbook copy — FiledMilestone (core/ticket/store.go:432) only looks in this tree's logbook folders, and milestoneFiled returns from the ref BEFORE it ever asks. So Restore answers 'x.md is not in the archive or in .jaira/logbook/' (store.go:537). The copy that can come back is in the tree that filed it.
+
+This is the same defect round 6 found at logbook.go:283 and had fixed — 'point a filed milestone at the tree that can restore it', commit 4dcf628. It was fixed for the on-disk door only; the ref door was never looked at. Rounds 7 and 8 both checked milestoneFiled and both only ruled on its ORDER (ref before logbook, right for an unshared board), not on what its two answers are worded as. So this is new, not a re-opened trade-off.
+
+Reachable on the normal path, not a corner: the ref is what every clone that fetches gets, and the logbook copy is what only the filer has. Any teammate who types 'jaira milestone create <filed-name>' on a shared board lands here.
+
+WHAT TO BUILD: milestoneFiled returns two answers with one shape. Give it a third result — or return the ref case separately — so the caller knows which source it came from, and for the ref case use refuseFiledOnDisk's closing ('jaira restore <name>.md' IN THE TREE THAT FILED IT puts it back) instead of refuseFiledInLogbook's. The wording for it already exists at milestones.go:386; what it must not keep saying is 'brings it back' here. Both call sites take this branch: milestones.go:131 (create) and :244 (add/rm).
+
+While there: the doc comment at milestones.go:391 says refuseFiledInLogbook is for the case where 'the file is not on disk any more because this very tree filed it'. With the ref branch feeding it, that sentence is false today; once the split above is built it becomes true again and needs no separate edit.
+
+CHECKED AND LEFT ALONE: refuseFiledOnDisk taking root rather than the store matches milestone.Path's signature; the two helpers sitting in milestones.go while logbook.go calls one is right, they belong next to milestoneFiled; the 'instead'/'then' parameter names differ for the same role, which is cosmetic and not worth a round; TestEveryDoorIntoAFiledMilestoneSaysTheSameThings covers only the on-disk state, which is correct — the logbook state has its own test at milestones_test.go:472.
