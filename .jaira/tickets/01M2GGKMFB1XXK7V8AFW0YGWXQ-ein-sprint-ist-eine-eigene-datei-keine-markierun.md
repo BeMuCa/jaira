@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -47,14 +47,14 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:23:49Z
+updated-at: 2026-09-16T08:29:44Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
 claimed-at: 2026-09-16T08:14:56Z
-outcome-what: "internal/cli/fetch.go haelt den Store aus openStore() fest und ruft IncomingMilestones ueber den neuen Helfer fetchMilestones(s) (fetch.go:92), der s.Lock(milestoneLockName) nimmt und ihn nach dem Schreiben wieder abgibt - vor dem Drucken und vor emit(). refs.Incoming() bleibt davor und damit ausserhalb des Locks. Dazu TestFetchWaitsForTheMilestoneLock in internal/cli/milestoneref_test.go, gegen den ungelockten Aufruf rot gemessen, und eine Zeile in core/release/NOTES.md unter ## Unreleased."
-outcome-why: "fetch war der fuenfte Schreiber einer Milestone-Datei und der einzige ohne Lock: IncomingMilestones schreibt ticket.WriteAtomic ueber .jaira/milestones/<name>.md, waehrend 'jaira milestone add' dieselbe Datei read-modify-write bearbeitet. Weil maybeFetch nach jedem Befehl ein abgekoppeltes 'jaira fetch --json' startet, lief dieser Schreiber im Hintergrund neben dem naechsten getippten Befehl - entweder ging das add verloren, oder ein 'status: filed' landete zwischen dessen Load und Save und das add hob die Ablage eines anderen still wieder auf."
-outcome-resolves: "Kein neuer DoD-Punkt: das ist eine Korrektur an schon abgehakten Punkten. DoD 9/10/11 (Ablegen, Transport ueber den Ref, belegter Name) bleiben gruen - go build/vet/test ./... RC=0, dazu ./internal/cli ./core/milestone ./core/refsync mit -race gruen; die Plan-Schritte 73-75 tragen ihren Proof."
+outcome-what: "internal/cli/refs.go: flushRefs verzweigt auf r.Kind ueber zwei neue Helfer - refSubject(kind, id) liefert den JSON-Schluessel und den gedruckten Namen (ein Milestone unter seinem vollen Namen und dem Schluessel 'milestone', ein Ticket weiter als ticket.Handle unter 'ticket'), rejectedAdvice(kind) die zweite Zeile einer Ablehnung. Fuer einen Milestone sagt sie jetzt, dass die Fassung des Remotes gewinnt und der naechste fetch die lokale Datei ersetzt. Dazu TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt (End-zu-End auf twoBoards) und TestRefSubjectNamesEachKindTheWayItIsAddressed in internal/cli/milestoneref_test.go, beide gegen den unveraenderten Stand rot gemessen, und eine Zeile in core/release/NOTES.md unter ## Unreleased."
+outcome-why: "Die Outbox meldete jedes Ergebnis als Ticket. ticket.Handle schneidet die letzten sechs Zeichen ab - auf einer ULID ist das der Handle, auf einem Namen ein Wort, das nichts benennt: 'next-release' wurde als 'elease' gemeldet, und ein Agent fand den Milestone-Namen unter dem Schluessel 'ticket'. Die zweite Zeile war in beiden Haelften falsch: refsync.IncomingMilestones schreibt jeden abweichenden Ref ueber die lokale Datei, also bleibt sie nicht unveraendert, und ein Milestone hat weder Karte noch Lane, also zeigt kein Board beide Seiten. Wer verliert, ging weg im Glauben, seine Aenderung sei sicher, und der naechste fetch verwarf sie wortlos."
+outcome-resolves: "Kein neuer DoD-Punkt: Korrektur an schon abgehakten Punkten. DoD 2 (Transport ueber den Ref) und 9/10/11 bleiben gruen - go build/vet/test ./... RC=0, dazu ./internal/cli ./core/refsync ./core/outbox mit -race gruen; die Plan-Schritte 76-79 tragen ihren Proof."
 review-summary: |-
   internal/cli/refs.go:266,270,273 report every outbox result as a ticket: ticket.Handle(r.ID) truncates a milestone name to its last six characters and the JSON payload keys it "ticket". Measured on twoBoards: a rejected 'milestone add next-release' prints 'jaira: elease was not sent'. Switch on r.Kind — outbox.Result already carries it and refsync.Flush (refsync.go:355) already special-cases it for the winner — and print the milestone by its own name under a "milestone" key.
   internal/cli/refs.go:267 tells a milestone writer 'your file is unchanged; the board shows both sides once the ref is fetched'. Both halves are false for a milestone: refsync.IncomingMilestones (refsync.go:221) overwrites the local file from the ref, and a milestone has no board card showing two sides. Measured: after the rejection ada's own ticket is in her file, after the next 'jaira fetch' it is gone and grace's is there instead, with nothing said. Give KindMilestone its own second line saying the remote's version wins and the next fetch replaces the local file, so the edit has to be made again on the fetched one.
@@ -190,6 +190,10 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: TestFetchWaitsForTheMilestoneLock (internal/cli/milestoneref_test.go); measured red against the unlocked call: 'fetch did not wait for the milestone lock (returned <nil>)'
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass ein Hintergrund-Fetch einen gleichzeitigen 'milestone add' nicht mehr ueberschreibt
   proof: core/release/NOTES.md:32
+- [x] internal/cli/refs.go flushRefs: auf r.Kind verzweigen - der JSON-Schluessel und der gedruckte Name kommen von der Art (ein Milestone unter seinem eigenen Namen, ein Ticket weiter ueber ticket.Handle); ein Helfer, damit die vier Outcomes die Verzweigung nicht je einzeln wiederholen
+- [x] Die zweite Zeile bei Rejected je Art: fuer einen Milestone sagen, dass die Fassung des Remotes gewinnt und der naechste fetch die lokale Datei ersetzt - die Aenderung muss auf der geholten noch einmal gemacht werden
+- [x] Test: eine abgelehnte Milestone-Schreibung nennt den vollen Namen unter dem Schluessel 'milestone' und traegt die Milestone-Zeile; der Ticket-Fall unveraendert
+- [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Outbox-Meldungen einen Milestone bei seinem Namen nennen statt als sechsstelligen Ticket-Handle, und was nach einer Ablehnung wirklich passiert
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -694,3 +698,11 @@ Not a re-open. Rounds 1-14 stayed inside the milestone commands, the refusal wor
 WHAT TO BUILD: in flushRefs, branch on r.Kind. For outbox.KindMilestone name the milestone by r.ID verbatim ('milestone %q'), key the payload 'milestone', and give the Rejected case a second line that says what actually happens — the remote's version wins and the next fetch replaces the local file, so the edit has to be made again on the fetched one. Unsent and Failed need the name fixed only; their sentences are true for both kinds.
 
 CHECKED AND LEFT ALONE: fileOnRefOnly (refs.go:96) matches reports by r.ID without asking Kind, but a milestone name is lowercase kebab and a ticket id an uppercase ulid, so the two cannot collide there. recordMilestone being best-effort is the documented local-board trade-off and is not touched by this. The lock in restore's RunE covering a plain ticket restore was decided in round 13 and stays.
+- **2026-09-16 08:29 · Alexander Sacharov** — in-progress Runde 14 (critique-Runde 15), 2026-09-16. Das Finding ist zu, und was der Code nicht sagt:
+- Die Verzweigung liegt in zwei Helfern (refSubject, rejectedAdvice), nicht als 'if' in jedem der vier Outcome-Zweige. Sent sagt nichts, die anderen drei brauchen denselben Namen und denselben Schluessel - ein Schalter je Zweig waere dreimal dieselbe Zeile gewesen, und der naechste, der ein Outcome dazulegt, haette sie vergessen.
+- refSubject gibt Schluessel UND Namen zurueck, weil beide dieselbe Frage beantworten: wie man dieses Ding adressiert. Getrennte Helfer haetten erlaubt, den Namen umzustellen und den Schluessel stehenzulassen - genau der Fehler, der hier behoben wird.
+- Verworfen: ticket.Handle so aendern, dass es einen Namen unangetastet laesst. Handle schneidet bewusst die letzten sechs Zeichen einer ULID ab; es kann nicht wissen, ob ein String eine ID ist, und eine Heuristik dort haette jeden Aufrufer betroffen.
+- Der Milestone-Fall ist an refsync.IncomingMilestones (refsync.go:221) gemessen: eine lokale Datei, deren Inhalt vom Ref abweicht, wird ueberschrieben. Deshalb 'die Fassung des Remotes gewinnt, der naechste fetch ersetzt deine Datei' und NICHT 'deine Datei bleibt unveraendert'. Ein Milestone hat keine Karte und keine Lane, also gibt es auch kein Board, das beide Seiten zeigt.
+- Der Ablehnungs-Testfall braucht keinen Trick: grace legt denselben Milestone an, ohne vorher zu fetchen. Die lokale Pruefung in milestones.go greift nur auf Datei und 'filed'-Markierung, der Name ist hier frei - abgelehnt wird erst auf dem Push, weil der Ref schon steht.
+- Beide Tests sind gegen den unveraenderten Stand rot gemessen worden: 'milestone subject is ("ticket", "elease")' und alle drei Zusicherungen der End-zu-End-Pruefung.
+- TestRefSubjectNamesEachKindTheWayItIsAddressed haelt die TICKET-Haelfte fest. Sie war richtig und ist die, die eine spaetere Vereinfachung der beiden Helfer mitreissen wuerde.

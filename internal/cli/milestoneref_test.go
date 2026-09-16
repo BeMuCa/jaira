@@ -10,6 +10,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/outbox"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -414,5 +415,61 @@ func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
 	}
 	if _, err := milestone.Load(grace, "round-one"); err != nil {
 		t.Fatalf("the fetch did not write the milestone once it had the lock: %v", err)
+	}
+}
+
+// An outbox report is read by whoever lost the race, and it has to name the
+// thing they wrote. Put through ticket.Handle, the milestone 'next-release'
+// comes out as 'elease' — six characters that name nothing, that no command
+// takes back, and that an agent reading --json finds under the key "ticket".
+//
+// The second line matters as much: a rejected ticket keeps its local file and
+// shows both sides on the board, but a rejected milestone is overwritten by
+// the next fetch (refsync.IncomingMilestones), so the edit has to be made
+// again on the fetched file. Telling that user their file is unchanged sends
+// them away believing work is safe that is about to be discarded.
+func TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt(t *testing.T) {
+	ada, grace := twoBoards(t)
+
+	if out, err := runAndSend(t, ada, "milestone", "create", "next-release"); err != nil {
+		t.Fatalf("ada create: %v\n%s", err, out)
+	}
+
+	// Grace never fetched, so nothing locally stops her; the ref is already
+	// taken and the write loses the race.
+	var stderr string
+	_, stderr = captureStdio(t, func() {
+		if out, err := runAndSend(t, grace, "milestone", "create", "next-release"); err != nil {
+			t.Fatalf("grace create: %v\n%s", err, out)
+		}
+	})
+
+	if !strings.Contains(stderr, "jaira: next-release was not sent") {
+		t.Errorf("the rejection does not name the milestone:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "the next fetch replaces your file") {
+		t.Errorf("the rejection does not say the fetch will replace the file:\n%s", stderr)
+	}
+	if strings.Contains(stderr, "your file is unchanged") {
+		t.Errorf("the rejection tells a milestone writer a ticket's story:\n%s", stderr)
+	}
+}
+
+// The key an agent looks the subject up under, and the word a person reads,
+// both come from the kind. This pins the ticket half too: it is the half that
+// was already right and that the milestone branch must not change.
+func TestRefSubjectNamesEachKindTheWayItIsAddressed(t *testing.T) {
+	id := "01M2GGKMFB1XXK7V8AFW0YGWXQ"
+	if key, name := refSubject(outbox.KindTicket, id); key != "ticket" || name != ticket.Handle(id) {
+		t.Errorf("ticket subject is (%q, %q), want (%q, %q)", key, name, "ticket", ticket.Handle(id))
+	}
+	if key, name := refSubject(outbox.KindMilestone, "next-release"); key != "milestone" || name != "next-release" {
+		t.Errorf("milestone subject is (%q, %q), want (%q, %q)", key, name, "milestone", "next-release")
+	}
+	if a := rejectedAdvice(outbox.KindTicket); !strings.Contains(a, "your file is unchanged") {
+		t.Errorf("the ticket advice changed: %q", a)
+	}
+	if a := rejectedAdvice(outbox.KindMilestone); strings.Contains(a, "your file is unchanged") {
+		t.Errorf("the milestone advice is still the ticket's: %q", a)
 	}
 }
