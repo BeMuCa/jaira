@@ -48,7 +48,7 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T10:54:19Z
+updated-at: 2026-09-16T10:55:25Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-88860
@@ -747,3 +747,6 @@ Checked and NOT raised, so the next pass does not re-derive them:
 - **2026-09-16 10:54 · Alexander Sacharov** — Review: the three .jaira/milestones/demo-*.md are tracked AGAIN. 284741f removed them from the index on purpose; 43c81b4 (the human -> review chore) put them back with a git add -A. This is the second time the same git add -A has swept them in, so taking them out once more without a .gitignore entry only buys until the next one. Decide at signoff: either 'git rm --cached' plus a line in .jaira/.gitignore, or keep them deliberately as the board's own demonstration data and say so.
 - **2026-09-16 10:54 · Alexander Sacharov** — Review: two help texts offer --color 0 and the code refuses it (milestones.go:172 flag help and :85-87 Long vs :145-149 exit 2). NOTES.md sides with the code, so the fix is the text, not the check. Reproduced on a scratch board.
 - **2026-09-16 10:54 · Alexander Sacharov** — Review: milestoneColors' doc (internal/tui/model.go:1450-1477) says the right-hand cells stand in file order, 'an order a person controls by editing a file'. They stand in milestone-NAME order — Build walks LoadAll, which milestone.go:229 sorts by name. Only within one milestone is the member order the file's. Nothing breaks; the comment is backwards.
+- **2026-09-16 10:55 · Alexander Sacharov** — Dispatcher, 2026-09-16 nach der review-Lane: Befund 1 der review-Lane ist behoben und war vom Dispatcher selbst verursacht - der Umzug aus der human-Lane wurde mit 'git add .jaira/' committet und hat die drei Vorfuehr-Dateien einen Commit nach 284741f wieder in den Index geholt. eefa4e3 nimmt sie erneut heraus; 'git diff --name-status master...HEAD -- .jaira/milestones/' ist jetzt leer. Lehre fuer den naechsten, der hier committet: in diesem Worktree nie 'git add .jaira/' oder 'git add -A', sondern die Ticket-Datei einzeln nennen - .jaira/milestones/ traegt unversionierte Handtest-Reste.
+
+Offen und Sache des Menschen in signoff, beides Text und kein Verhalten: (2) '--color 0' wird von zwei Hilfetexten angeboten (milestones.go:172 und die Long-Beschreibung :85-87) und vom Code mit 'bad_color' und Exit 2 abgelehnt (:145-149); NOTES.md sagt bereits, dass 0 abgelehnt wird, also sind die Hilfetexte falsch und nicht der Code. (3) der Doku-Kommentar an milestoneColors (internal/tui/model.go:1450-1477) behauptet eine Reihenfolge der rechten Leiste, die der Code nicht haelt.
