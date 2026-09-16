@@ -44,7 +44,10 @@ skill carries the rest.
 way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
 the roles were installed globally — rather than assembling the calls yourself,
-and read `herdr --skill` only if you have to go around the script. Never call
+and read `herdr --skill` only if you have to go around the script. Pass
+`dispatch` as the lane: `spawn.sh <slug> <ticket-id> dispatch`. That lane name
+is what makes the tab run `/jaira-dispatcher <ticket-id>`; any other name starts
+a single-lane worker instead, and you get a lane where you wanted a dispatcher. Never call
 `claude --permission-mode ...` yourself: the permission classifier refuses it as
 "Create Unsafe Agents", and two dispatchers lost their tabs to that on
 2026-09-14. And `command -v herdr` is not the test for whether Herdr is here —
