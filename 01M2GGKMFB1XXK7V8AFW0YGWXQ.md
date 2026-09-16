@@ -43,7 +43,7 @@ commits:
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:33:01Z
+updated-at: 2026-09-16T07:35:20Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -153,7 +153,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] refuseFiledOnRef als dritte Weigerung neben OnDisk/InLogbook: gemeinsamer Kern, weil beide auf 'jaira restore <name>.md' IN DEM BAUM, DER ABGELEGT HAT zeigen - InLogbook bleibt der einzige Fall, in dem restore hier laeuft
 - [x] create (milestones.go:130) und add/rm (:243) verzweigen auf den Fundort statt beide refuseFiledInLogbook zu rufen
 - [x] Test mit zwei Klonen: in grace, die die Datei nie hatte, 'milestone create' und 'milestone add' gegen einen auf dem Ref abgelegten Milestone - die Meldung nennt den Ref, die Markierung und den ablegenden Baum, und behauptet kein lokales Logbuch
-- [~] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im Ref-Fall auf den ablegenden Baum zeigt statt auf ein Logbuch, das es hier nicht gibt
+- [x] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im Ref-Fall auf den ablegenden Baum zeigt statt auf ein Logbuch, das es hier nicht gibt
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
