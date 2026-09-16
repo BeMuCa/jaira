@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:54:25Z
+updated-at: 2026-09-16T19:54:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -237,3 +237,12 @@ Der Befund aus Runde 3 ist repariert — Abschnitt 2 in jaira-role-lane/SKILL.md
 Behaviour, nicht nur Doku: der Dispatcher startet auch critique-, testing- und review-Worker. Die geben nach dem Fix richtigerweise keine Commit-Zeile mehr zurueck — und sein Prompt sagt ihm, eine komme und er solle sie unveraendert an den Menschen weiterreichen. Ein Dispatcher, der die Zeile erwartet, fragt den Worker danach oder haelt die Lane fuer unfertig. Das ist genau der Widerspruch aus Runde 3, nur eine Datei weiter.
 
 Fix an allen vier Stellen dieselbe Bedingung wie in jaira-role-lane/SKILL.md:72-78: Commit-Zeile nur bei Code-Aenderung, sonst keine und die Ticket-Datei bleibt im Worktree.
+- **2026-09-16 19:54 · Alexander Sacharov** — In-progress nach critique (4. Durchgang): die Bedingung steht jetzt an allen fuenf Stellen, nicht nur in jaira-role-lane.
+
+Repariert: core/role/builtin/jaira-dispatcher/SKILL.md (zwei Punkte statt einem — 'Worker mit Code-Aenderung gibt eine Zeile zurueck' und 'Worker ohne Code-Aenderung gibt keine, und die Lane ist trotzdem fertig'), docs/AGENTS.md, README.md, core/ticket/schema.go.
+
+Warum der Dispatcher zwei Punkte bekommt und nicht einen Nebensatz: die Gefahr dort ist nicht, dass er eine falsche Zeile weiterreicht, sondern dass er eine fehlende Zeile fuer einen Fehler haelt — den Worker noch einmal fragt oder die Lane fuer unfertig haelt. Ein Nebensatz an der bestehenden Zeile haette nur gesagt, wann eine Zeile kommt; der zweite Punkt sagt ausdruecklich, dass ihr Fehlen die Regel bei der Arbeit ist. Das ist der Satz, der den Dispatcher davon abhaelt, die Lane offen zu halten.
+
+Kein Test dazu: alle fuenf Stellen sind Prosa (vier Dokumente und ein Go-Kommentar). Es gibt im Repository keinen Test, der Prompt-Text auf Aussagen prueft, und einer, der auf Formulierungen matcht, bricht beim naechsten Umschreiben, ohne je ein Verhalten geschuetzt zu haben.
+
+NOTES.md: nichts ergaenzt. Die Modus-Zeile nennt die Ausnahme schon (seit Runde 3) und verweist auf 'jaira roles install --global --force' fuer beide Prompts; die Dispatcher-Aenderung faellt darunter. Eine zweite Zeile haette dieselbe Regel zweimal beschrieben.
