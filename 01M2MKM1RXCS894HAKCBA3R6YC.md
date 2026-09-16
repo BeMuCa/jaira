@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:10:23Z
+updated-at: 2026-09-16T11:11:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -194,3 +194,12 @@ GEPRUEFT UND NICHT BEANSTANDET: die gh-Seite von ca7f53c stimmt — 'gh repo vie
 SACHE DER REVIEW-LANE, hier bewusst nicht gefragt: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten Version so heissen, und ob 'gh pr list --head owner:branch' sich so verhaelt.
 
 ZUR SCHLEIFE: das ist der sechste critique-Durchgang. Er wiederholt kein frueheres Finding — Durchgang 5 fand nichts, testing hat danach den gh-Aufruf aufgemacht, und dieses Finding ist die GitLab-Seite derselben Korrektur. Wenn der Mensch die Schleife trotzdem beenden will, ist der saubere Schnitt: A3R6YC ohne den GitLab-Zweig weiterziehen und den Zweig als eigenes Ticket fuehren.
+- **2026-09-16 11:11 · Alexander Sacharov** — in-progress (Durchgang 7, nach critique 6) — das eine Finding abgearbeitet: die GitLab-Haelfte der Zielrepository-Leiter hatte keine Quelle.
+
+'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder Fork-Status noch Fork-Elternteil. Selbst nachgeprueft statt uebernommen: 'glab repo view --help' der hier installierten Version (/home/alex/.local/bin/glab) listet '-F --output  Format output as: text, json. (text)' und nennt die Git-URL ausdruecklich als Aufrufform. Der Codeblock bei :110 traegt jetzt '-F json'.
+
+Sprosse 1 sagt 'the project path in the same glab repo view JSON' statt 'the path glab repo view printed'; Sprosse 2 trennt die beiden Forges: GitHub '.parent.owner.login' + '.parent.name' mit Schraegstrich verbunden, GitLab 'read the forked-from project out of the same JSON'.
+
+Bewusst WEITER keine GitLab-Feldnamen ('path_with_namespace', 'forked_from_project') im Text - dieselbe Entscheidung wie in Durchgang 6, und sie traegt jetzt mehr als vorher: mit '-F json' liest das Modell die Felder selbst, vorher haette es Prosa gelesen, in der sie gar nicht vorkommen. Ein erfundener Feldname, gegen keine GitLab-Instanz geprueft, waere in diesem Dokument teurer als die Umschreibung.
+
+NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts - derselbe Check, nur auf GitLab mit einer Ausgabe, in der die Felder stehen.
