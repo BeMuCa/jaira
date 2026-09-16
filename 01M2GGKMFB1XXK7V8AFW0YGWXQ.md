@@ -46,11 +46,11 @@ commits:
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:13:13Z
+updated-at: 2026-09-16T08:14:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-4281
-claimed-at: 2026-09-16T07:57:36Z
+claimed-by: DESKTOP-RFTCH11-48761
+claimed-at: 2026-09-16T08:14:56Z
 outcome-what: "restore nimmt den Milestone-Lock: internal/cli/archive.go:118 legt s.Lock(milestoneLockName) um s.Restore UND unfileMilestone, sodass der Move der Datei mit drin liegt; unfileMilestone bleibt lockfrei und sagt das in seiner Doku. Dazu TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go), gegen den reverteten Stand gemessen. Die drei Vorfuehr-Dateien .jaira/milestones/demo-*.md sind per 'git rm --cached' wieder untracked, liegen aber weiter auf der Platte. Eine Zeile in core/release/NOTES.md unter ## Unreleased."
 outcome-why: "unfileMilestone war der vierte Schreiber einer Milestone-Datei und der einzige ohne Lock - Load/SetStatus/Save auf genau die Datei, die ein gleichzeitiges 'jaira milestone add' ebenfalls read-modify-write schreibt; einer der beiden Schreibvorgaenge ging verloren. Die drei Demo-Dateien waren durch ein 'git add -A' in 4bd9797 gerutscht: nach master gebracht haetten sie jedem Clone drei Demo-Gruppen mit echten Ticket-ULIDs verteilt, die rechte Kanten echter Karten einfaerben."
 outcome-resolves: "Kein neuer DoD-Punkt: beide Findings sind Korrekturen an schon abgehakten Punkten. DoD 9/11 (Ablegen und Zurueckholen) bleiben gruen - TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack unveraendert gruen, dazu der neue Lock-Test; 'go build/vet/test ./...' RC=0 und './internal/cli ./core/milestone -race' gruen."
