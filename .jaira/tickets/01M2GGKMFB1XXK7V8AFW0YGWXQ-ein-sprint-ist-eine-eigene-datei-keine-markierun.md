@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -41,15 +41,16 @@ commits:
   - 4078d9774653ab9b785d5a84d0b5caf0009529c9
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
+  - 3f259893ecfab81f77c8ebd2f6c538e47910211a
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:24:18Z
+updated-at: 2026-09-16T07:24:52Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
 claimed-at: 2026-09-16T06:51:55Z
-outcome-what: "'jaira milestone add' and 'jaira milestone rm' refuse a filed milestone, the third and last door into its file: one refusal for a marked file still on disk, one for a milestone filed into this tree's logbook, plus two tests and a NOTES.md line."
-outcome-why: "editMembers only handled os.ErrNotExist, so an edit went into a marked file and — because recordMilestone follows ms.Save — out onto refs/jaira/milestones/<name>, reviving for every fetching clone a milestone its owner took off the board. The ErrNotExist branch pointed at 'jaira milestone create', which refuses in turn: the advice walked the reader into the next refusal."
-outcome-resolves: "critique round 7's finding, reopened by Alex on 2026-09-16, plus the second defect found while reading the code for it. No new DoD line: both are what DoD 9 and 11 already demand."
+outcome-what: "Die Weigerung eines abgelegten Milestones steht nur noch einmal je Zustand: refuseFiledOnDisk (Datei liegt hier, ist aber markiert) und refuseFiledInLogbook (dieser Baum hat sie abgelegt) in internal/cli/milestones.go:380-403. Die vier Stellen in milestones.go und die fuenfte in logbook.go rufen sie auf und geben nur noch den Schlusssatz mit, der sagt, was der jeweilige Befehl getan haette. Neuer Test TestEveryDoorIntoAFiledMilestoneSaysTheSameThings faehrt create/add/rm/logbook gegen eine markierte Datei und misst, dass alle vier Datei, Markierung, 'jaira restore <name>.md' und den ablegenden Baum nennen."
+outcome-why: "Befund aus critique-Runde 8, von Alex am 2026-09-16 zum Bauen freigegeben: derselbe Satz viermal von Hand geschrieben driftet, sobald eine Tuer angefasst wird, und dann liest ein Nutzer an vier Tueren vier verschiedene Erklaerungen fuer eine Lage. Vorbild ist pull.go refusePull."
+outcome-resolves: "Kein Verhalten geaendert: Exit-Code und reason 'milestone_filed' bleiben, go build/vet ./... und go test ./... -race sind in allen 28 Paketen gruen, die beiden Tuer-Tests aus Runde 7 laufen unveraendert. Kein NOTES.md-Eintrag, weil nichts beobachtbar anders wird - die Zeilen :24 und :28 beschreiben beide Weigerungen schon."
 review-summary: "internal/cli/milestones.go:122,133,247,263 — the filed-milestone refusal is now written out four times by hand, two long sentences each, differing only in the trailing clause; internal/cli/pull.go:113 refusePull and internal/cli/lanes.go:23 writeConflictError are the pattern this package already uses for a refusal several call sites share — put the two texts in filedOnDisk(root, name, instead) and filedInLogbook(name, where, instead) next to milestoneFiled and pass only the tail clause from each of the four sites; logbook.go:289 differs mid-sentence and stays as it is"
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
