@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:21:11Z
+updated-at: 2026-09-16T20:21:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-67097
 claimed-at: 2026-09-16T20:17:17Z
@@ -315,3 +315,4 @@ Nachgeprueft, jede Stelle einzeln, und alle tragen 'mode':
 Nicht erneut aufgemacht, weil in frueheren Runden entschieden: mode neben model_tier statt in input-requires (Pre-process 15:33, Runde 2), das Trimmen in CanonicalMode statt Ablehnen (Runde 1), kein automatisches Raeumen des Modus (Pre-process), kein Test auf Prompt-Text (Runde 4).
 
 Ausserhalb dieses Tickets und bewusst nicht hier repariert, gehoert in ein eigenes Ticket: internal/cli baut an mehreren Stellen JSON von Hand statt ueber ticketJSON (resume.go war einer davon und hat Runde 7 gekostet). Ein neues Frontmatter-Feld bleibt dort still zurueck, und nur eine critique-Runde findet es.
+- **2026-09-16 20:21 · Alexander Sacharov** — optimize: the only duplication worth removing was in the tests. core/validate/mode_test.go asserted the same five properties twice (unknown value, untrimmed value) - now one table test. internal/cli/mode_test.go repeated the set/show --json/unmarshal block four times - now setMode and modeOf. -72 lines, suite green. Checked and rejected as cleanups: fieldValue's FieldMode case is NOT dead (mode takes merge.go's default mergeScalar path, so the merge driver prints it on a conflict - do not delete it); the prose repeated across README, AGENTS.md, both SKILLs and NOTES.md serves five different readers and cutting it would change what a reader is told, which is not this lane's call.
