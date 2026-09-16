@@ -493,3 +493,49 @@ func TestAddOnAMilestoneFiledInThisTreePointsAtRestore(t *testing.T) {
 		t.Errorf("the refusal does not say where the file went: %v", err)
 	}
 }
+
+// Three commands walk into a milestone that is filed, and the reader is
+// standing in front of the same file at all three: its file is on disk and
+// marked, and the only way back runs in the tree that filed it. The refusal
+// used to be typed out at each door, so this measures that the three facts
+// arrive whichever door was used — a door that drops one of them teaches the
+// reader that it is a different problem.
+func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
+	dir := emptyStore(t)
+	member := mkTicket(t, dir, "in the group")
+	other := mkTicket(t, dir, "not in it yet")
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one", member); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(dir, "round-one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ms.SetStatus(milestone.StatusFiled)
+	if err := ms.Save(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	doors := map[string][]string{
+		"create":  {"milestone", "create", "round-one"},
+		"add":     {"milestone", "add", "round-one", other},
+		"rm":      {"milestone", "rm", "round-one", other},
+		"logbook": {"logbook", "round-one"},
+	}
+	for door, args := range doors {
+		out, err := runCLI(t, dir, args...)
+		if err == nil {
+			t.Fatalf("'%s' went through a filed milestone:\n%s", door, out)
+		}
+		for _, want := range []string{
+			milestone.Path(dir, "round-one"),
+			milestone.StatusFiled,
+			"jaira restore round-one.md",
+			"the tree that filed it",
+		} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
+			}
+		}
+	}
+}

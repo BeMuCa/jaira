@@ -118,9 +118,8 @@ and you are told so.`,
 				// else's filing leaves behind. It is not on the board, so
 				// "already exists" would send the reader looking for a
 				// milestone no listing names.
-				return fail(ExitValidation, "milestone_filed",
-					"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and taking the line out here instead would leave that tree's copy stranded in its logbook",
-					name, milestone.Path(s.Root, name), milestone.StatusFiled, name)
+				return refuseFiledOnDisk(s.Root, name,
+					"taking the line out here instead would leave that tree's copy stranded in its logbook")
 			} else if err == nil {
 				return fail(ExitValidation, "milestone_exists",
 					"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
@@ -129,9 +128,8 @@ and you are told so.`,
 				return err
 			}
 			if where, filed := milestoneFiled(s, name); filed {
-				return fail(ExitValidation, "milestone_filed",
-					"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour; creating it again would make a second milestone with the same name",
-					name, where, name)
+				return refuseFiledInLogbook(name, where,
+					"; creating it again would make a second milestone with the same name")
 			}
 			existing, err := milestone.LoadAll(s.Root)
 			if err != nil {
@@ -243,9 +241,8 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 			// refusal create raises for a filed name, two steps for one
 			// answer, and the first one points the wrong way.
 			if where, filed := milestoneFiled(s, name); filed {
-				return fail(ExitValidation, "milestone_filed",
-					"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour, and then tickets can go in and out of it again",
-					name, where, name)
+				return refuseFiledInLogbook(name, where,
+					", and then tickets can go in and out of it again")
 			}
 			return fail(ExitNotFound, "no_such_milestone",
 				"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
@@ -259,9 +256,8 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		// local either: recordMilestone below puts it on the ref, so every
 		// clone that fetches sees a milestone the filer took off the board
 		// being edited. Refuse it where the other two refuse it.
-		return fail(ExitValidation, "milestone_filed",
-			"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and editing it here instead would push the change onto its ref for everyone who fetches",
-			name, milestone.Path(s.Root, name), milestone.StatusFiled, name)
+		return refuseFiledOnDisk(s.Root, name,
+			"editing it here instead would push the change onto its ref for everyone who fetches")
 	}
 	var touched []string
 	for _, id := range ids {
@@ -372,6 +368,35 @@ func milestoneFiled(s *ticket.Store, name string) (string, bool) {
 		}
 	}
 	return s.FiledMilestone(name)
+}
+
+// refuseFiledOnDisk and refuseFiledInLogbook are the two refusals a filed
+// milestone raises, each written in one place. Which one a reader gets depends
+// on where the file is — lying here but marked, or moved into this tree's
+// logbook — and not on the command they typed: create, add/rm and logbook all
+// stand in front of the same file and owe the reader the same three facts. The
+// last clause is what differs, so the caller passes it: it says what THIS
+// command would have done instead.
+//
+// Written once because they were written four times, and a refusal that drifts
+// between doors teaches the reader that the doors are different problems.
+// Modelled on refusePull (pull.go) — the refusal is a validation error, so a
+// script sees exit 3 and a reason it can branch on.
+func refuseFiledOnDisk(root, name, instead string) error {
+	return fail(ExitValidation, "milestone_filed",
+		"milestone %q has been filed: its file at %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and %s",
+		name, milestone.Path(root, name), milestone.StatusFiled, name, instead)
+}
+
+// refuseFiledInLogbook is the other half: the file is not on disk any more
+// because this very tree filed it, so the way back runs here. `where` is the
+// logbook folder or the ref the mark was found on, and `then` is the caller's
+// closing clause, punctuation included — it follows the colour with no
+// separator of its own.
+func refuseFiledInLogbook(name, where, then string) error {
+	return fail(ExitValidation, "milestone_filed",
+		"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour%s",
+		name, where, name, then)
 }
 
 // recordMilestone puts the milestone file on its own ref, the way every ticket

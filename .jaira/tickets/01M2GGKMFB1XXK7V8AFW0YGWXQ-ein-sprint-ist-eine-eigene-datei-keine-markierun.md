@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:18:07Z
+updated-at: 2026-09-16T07:24:18Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
@@ -146,6 +146,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] editMembers ErrNotExist-Zweig: vor dem 'create'-Rat milestoneFiled(s, name) fragen, wie create es bei milestones.go:130 tut, und auf 'jaira restore' zeigen statt auf 'create'
 - [x] Tests in internal/cli/milestones_test.go: add/rm auf einer markierten Datei auf der Platte, und add/rm auf einem in DIESEN Baum abgelegten Milestone
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer die Weigerung von 'jaira milestone add/rm' bei einem abgelegten Milestone
+- [x] internal/cli: die Weigerung eines abgelegten Milestones in zwei Helfer ziehen (Vorbild pull.go:113 refusePull) - refuseFiledOnDisk und refuseFiledInLogbook, je einmal formuliert; die vier Stellen in milestones.go und die dritte Tuer in logbook.go rufen sie auf, der abweichende Schlusssatz kommt vom Aufrufer
+- [x] Test: die bestehenden Weigerungstests bleiben gruen, und ein Test misst nach, dass alle Weigerungen dieselben drei Angaben tragen
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
@@ -516,3 +518,9 @@ Zu bauen: die vier von Hand geschriebenen Abweisungstexte in internal/cli/milest
 Nicht anfassen: logbook.go:289 weicht mitten im Satz ab und bleibt wie er ist - er in den Helfer zu zwingen, macht den Helfer zum Baukasten.
 
 Keine neue DoD-Zeile und keine NOTES.md-Zeile: der Wortlaut, den ein Benutzer liest, aendert sich nicht, nur wo er steht. Aendert er sich doch, ist das ein Fehler und kein Feature - die bestehenden Tests aus eb178ec muessen unveraendert gruen bleiben.
+- **2026-09-16 07:24 · Alexander Sacharov** — in-progress round 7 (critique round 8, reopened by Alex), 2026-09-16. The refusal is now written once per state, and what the code does not say:
+- The split is by STATE, not by command: refuseFiledOnDisk for a file that is here but marked, refuseFiledInLogbook for one this tree moved away. The caller passes only the closing clause, because that is the one thing that genuinely differs — what THIS command would have done instead. A third helper per command would have put the drift back.
+- refuseFiledInLogbook's 'then' carries its own punctuation ('; creating it again ...' vs ', and then tickets ...'). Considered normalising both to one separator and dropping the argument: create's clause is a second independent sentence and add/rm's is a continuation, so one separator makes one of the two read wrong.
+- logbook.go:287 is now the THIRD caller of refuseFiledOnDisk, although critique round 8 named only the four sites in milestones.go. Its wording changed with it: it used to open 'is already filed' and lead with 'there is no logbook copy here'. Both facts survive — the way back runs in the filing tree, and there is no copy here — but the reader now meets the same sentence at all four doors, which was the point of the finding. Nothing in any test asserted the old wording; checked before rewriting.
+- No NOTES.md line: nothing a user can observe changed state. The add/rm refusal line at :28 and the filing line at :24 already describe both refusals, and the logbook one still says the same three things in the same order it was reworded into in round 6.
+- TestEveryDoorIntoAFiledMilestoneSaysTheSameThings drives create/add/rm/logbook against one marked file and asserts all four name the path, the mark, 'jaira restore <name>.md' and the filing tree. That is the test that catches the drift coming back — the two per-door tests from round 7 check their own door only.
