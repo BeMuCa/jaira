@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:20:39Z
+updated-at: 2026-09-16T11:20:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -46,6 +46,7 @@ review-gaps: |-
 
   go test ./core/role/... gruen nach der letzten Aenderung. Der Test prueft nur Installation und Parsing, nicht den Text - gruen heisst 'nichts kaputt'.
 test-verdict: "pass: go build ./... und go test -race ./... gruen (RC=0, 28 Pakete ok); die DoD-Klausel Punkt fuer Punkt im Arbeitsbaum belegt; die Zielrepository-Leiter auf diesem Fork real durchgespielt - 'gh repo view $(git remote get-url origin)' liefert isFork:true mit parent BeMuCa/jaira, das blanke 'gh repo view' isFork:false, genau der Fehler, den der Text beschreibt"
+question: "Die pr-Rolle ist geprueft und gruen: Ist der Text so, wie du ihn haben willst - oder soll noch etwas an der Zielrepository-Leiter anders formuliert sein?"
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
