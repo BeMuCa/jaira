@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -48,14 +48,14 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:45:09Z
+updated-at: 2026-09-16T08:45:26Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
 claimed-at: 2026-09-16T08:14:56Z
-outcome-what: "README.md nennt den zweiten Ref-Namensraum: der Ref-Block (README:288-289) fuehrt refs/jaira/milestones/<name> neben refs/jaira/tickets/<id>, und die Tabelle 'What git is actually doing' stellt 'see what exists' und 'collect it' auf refs/jaira/* um und bekommt eine eigene Zeile fuers Lesen eines Milestones ohne Checkout."
-outcome-why: "Die Rezeptzeile in README:401 lehrte '+refs/jaira/tickets/*:refs/jaira/tickets/*'. Wer sie von Hand abtippt, holt die Tickets und keinen einzigen Milestone und sieht danach Karten, deren Milestone-Datei niemand hier hat - genau die Halbstellung, gegen die core/gitref/gitref.go:625 den breiten Refspec nimmt. README:285 nannte tickets/ als DEN Namensraum; es sind zwei."
-outcome-resolves: "Ein Leser des README erfaehrt, dass Milestones auf eigenen Refs reisen, und jeder git-Befehl im README holt und zeigt beide Arten."
+outcome-what: "recordMilestone renders the milestone it already holds instead of reading back the file it just saved, and refuseFiledOnRef's one-line forward folds into refuseIfFiled's switch"
+outcome-why: "the read-back was a second read of bytes in hand whose failure dropped the ref write without a word, and a single-caller forwarder put one of two sibling refusals behind an extra hop"
+outcome-resolves: "milestone.Bytes() renders once for both Save and the outbox; recordMilestone lost its unused *ticket.Store parameter across 4 call sites; suite green"
 review-summary: "none"
 review-gaps: "Removed: recordMilestone() read the milestone file back off disk (os.ReadFile) immediately after every caller had just saved it, and dropped the ref write silently when that read failed — it now renders the milestone it already holds through a new milestone.Bytes(), which Save also writes, so the file is written once and read never; its unused *ticket.Store parameter went with it (4 call sites). Removed: refuseFiledOnRef(), a one-line forward to refuseFiledElsewhere with a single caller — its text and its reason now stand in refuseIfFiled's switch arm beside the other state, so the two refusals read as one mapping instead of one inline and one indirected. Left: no dead code — deadcode over ./... names nothing this change added, only pre-existing hits (gitrepo Repo.Root/Commits/Stat/HeadSHA, ticket.OptionHeadings, cli flow.laneOf, cli share.isShared, tui Model.currentLane). Left: milestoneNamed()'s existence-check Load and logbookMilestone()'s re-read under the lock — the second is required for correctness and the path runs once per filing. Left: Index.Matches normalizing per ticket in the filter loop — it is cheaper than the pre-existing tag.Matches it mirrors. Left: printMilestones/printFiledMilestones unmerged — fetch.go hand-rolls one printer per report kind and folding two of five breaks that. Left: Store.MilestonesDir vs milestone.Dir, the same import-edge split MilestonesSubdir already has. No duplication found: swatch(), the milestone lock, resolveRef and the gitref ref* helpers are all shared rather than re-spelled. Full suite green."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
