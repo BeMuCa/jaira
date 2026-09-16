@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:57:11Z
+updated-at: 2026-09-16T06:57:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -65,3 +65,4 @@ outcome-resolves: "DoD auf den echten Ort umgeschrieben, 7 Planschritte, Symlink
 - **2026-09-16 06:52 · Alexander Sacharov** — Ohne Herdr scheitert spawn.sh nicht stumm: es prueft HERDR_ENV=1 und sagt 'not inside a Herdr pane', exit 1. SKILL.md nennt zwei Ersatzwege (Peer-Sessions, Subagents). Die dritte offene Frage aus dem Kontext ist damit beantwortet, es bleibt ein Pruefschritt und keine Aenderung.
 - **2026-09-16 06:57 · Alexander Sacharov** — Planschritt 2 nannte eine "proj-Variable" und vier .env-Zeilen (VITE_PORT_HOST, BACKEND_PORT_HOST, IMAGE_NS, COMPOSE_PROFILES) aus ~/.claude. Beides existiert dort heute nicht mehr: die ~/.claude-Kopie von spawn.sh ist am 16.09. auf den .jaira/worktree-setup-Hook umgebaut worden, der die .env-Logik ganz aus dem Skript nimmt. Dieser Hook ist Ticket 7MG5GB und bleibt hier draussen. Uebernommen wurden daher nur zwei Hunks: --no-worktree und die dispatch-Lane.
 - **2026-09-16 06:57 · Alexander Sacharov** — spawn.sh und ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh sind nach diesem Ticket bewusst NICHT byte-gleich - die Builtin-Version traegt noch die inline .env-Logik, die ~/.claude-Version schon den worktree-setup-Hook aus 7MG5GB. SKILL.md dagegen ist byte-gleich (diff leer). Wer die beiden vergleicht und einen Rueckstand vermutet: es ist der andere Ticket-Weg, kein vergessener Hunk.
+- **2026-09-16 06:57 · Alexander Sacharov** — Die Flag-Schleife steht vor dem HERDR_ENV-Check, nicht danach. Damit beantwortet spawn.sh --help die Flags auch auf einer Maschine ohne Herdr mit exit 0, statt mit "not inside a Herdr pane" abzubrechen. TestEmbeddedScriptsParse setzt HERDR_ENV= genau deswegen explizit - wer den Check nach oben schiebt, faellt dort auf.
