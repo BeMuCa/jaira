@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:42:28Z
+updated-at: 2026-09-16T07:42:31Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -159,7 +159,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: internal/cli/milestones.go:391 milestoneFiled asks s.FiledMilestone before the ref
 - [x] Die Begruendung der Reihenfolge in der Doku von milestoneFiled umschreiben - sie argumentiert heute fuer Ref-zuerst
   proof: internal/cli/milestones.go:384-390
-- [ ] refuseFiledOnRef-Doku: 'nichts zu restaurieren und nie gehabt' gilt erst mit der neuen Reihenfolge und nur fuer diesen Baum; Wortlaut geradeziehen
+- [x] refuseFiledOnRef-Doku: 'nichts zu restaurieren und nie gehabt' gilt erst mit der neuen Reihenfolge und nur fuer diesen Baum; Wortlaut geradeziehen
+  proof: internal/cli/milestones.go:441-444
 - [ ] Test: im ABLEGENDEN Baum (mit Refs) 'milestone create' und 'milestone add' - die Meldung nennt das Logbuch hier und nicht den fremden Baum
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im eigenen Baum aufs lokale Logbuch zeigt
 
