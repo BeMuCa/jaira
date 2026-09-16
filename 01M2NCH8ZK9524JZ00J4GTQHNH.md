@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:01:12Z
+updated-at: 2026-09-16T20:01:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "Die Bedingung 'Commit-Zeile nur bei Code-Aenderung' steht jetzt an allen fuenf Stellen: core/role/builtin/jaira-dispatcher/SKILL.md (als zwei Punkte — Zeile bei Code, keine Zeile ohne Code und die Lane ist trotzdem fertig), docs/AGENTS.md, README.md und der FieldMode-Kommentar in core/ticket/schema.go, passend zu jaira-role-lane/SKILL.md:72-78."
-outcome-why: "Der Befund aus Runde 3 war nur in jaira-role-lane repariert. Der Dispatcher startet aber auch critique-, testing- und review-Worker, und sein Prompt sagte ihm bedingungslos, eine Commit-Zeile komme und er solle sie weiterreichen — ein Dispatcher, der auf eine Zeile wartet, die nach dem Fix richtigerweise nicht mehr kommt, fragt nach oder haelt die Lane fuer unfertig. Die drei Doku-Stellen beschrieben dieselbe Regel ohne die Bedingung."
-outcome-resolves: "Befund aus critique-Runde 4: dieselbe Regel unveraendert bedingungslos an core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169 und core/ticket/schema.go:41."
+outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen den geschlossenen Wertebereich: CodeBadMode ('bad_mode'), SeverityWarning, Feld ticket.FieldMode, geprueft mit ticket.CanonicalMode; die Meldung nennt beide Reparaturen. Dazu core/validate/mode_test.go und eine Zeile in core/release/NOTES.md."
+outcome-why: "Die Pruefung stand nur in den zwei CLI-Schreibwegen (internal/cli/tickets.go, internal/tui/edit.go). Genau die drei Wege, die core/validate abdeckt — Handedit, schlechter Merge, Agent schreibt Unerwartetes — gingen daran vorbei, und ein von Hand geschriebenes 'mode: chat' laedt sauber, steht in der 'mode'-Zeile und im JSON, waehrend der Worker gegen genau ein Wort vergleicht und autonom weiterlaeuft. Das Dateiformat ist hier die API; Handedit ist kein Randfall."
+outcome-resolves: "Befund aus critique-Runde 5: core/validate/validate.go kannte 'mode' nicht."
 review-summary: "core/validate/validate.go kennt 'mode' nicht: die Pruefung des geschlossenen Wertebereichs steht nur in den zwei CLI-Schreibwegen (internal/cli/tickets.go:928 und internal/tui/edit.go:57), und genau die drei Wege, die diese Datei laut ihrer eigenen Beschreibung abdeckt — Handedit, schlechter Merge, Agent schreibt Unerwartetes (internal/cli/validate.go:22-26) — gehen daran vorbei. Ein von Hand geschriebenes 'mode: chat' laedt sauber, steht in der 'mode'-Zeile von 'jaira show' und im JSON-Schluessel, und der Worker vergleicht gegen genau ein Wort und laeuft autonom weiter. Das ist woertlich das Versagen, das der Kommentar in core/ticket/schema.go:147-151 als Daseinsgrund der Pruefung nennt. Und das Dateiformat IST hier die API: Handedit ist ein erstklassiger Weg, kein Randfall. Auch der Merge-Driver schreibt 'theirs' mit --take-theirs ungeprueft durch (internal/cli/mergedriver.go:223). Fix: in core/validate/validate.go ein CodeBadMode neben CodeBadTag, geprueft mit ticket.CanonicalMode(t.Mode), SeverityWarning aus demselben Grund wie bei bad_tag (das Ticket selbst ist heil), Field ticket.FieldMode, und die Meldung nennt die Reparatur — 'jaira set <handle> mode=conversational' oder 'mode='. Dazu eine Zeile in core/release/NOTES.md, weil ein neuer validate-Code ein Ausgabe- und Exit-Code-sichtbares Verhalten ist."
 ---
 
