@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:13:06Z
+updated-at: 2026-09-16T11:13:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
@@ -203,3 +203,12 @@ Sprosse 1 sagt 'the project path in the same glab repo view JSON' statt 'the pat
 Bewusst WEITER keine GitLab-Feldnamen ('path_with_namespace', 'forked_from_project') im Text - dieselbe Entscheidung wie in Durchgang 6, und sie traegt jetzt mehr als vorher: mit '-F json' liest das Modell die Felder selbst, vorher haette es Prosa gelesen, in der sie gar nicht vorkommen. Ein erfundener Feldname, gegen keine GitLab-Instanz geprueft, waere in diesem Dokument teurer als die Umschreibung.
 
 NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts - derselbe Check, nur auf GitLab mit einer Ausgabe, in der die Felder stehen.
+- **2026-09-16 11:13 · Alexander Sacharov** — critique Durchgang 7 (nach in-progress 7): keine Findings. Der Diff 1e4442f beantwortet das Finding aus Durchgang 6 vollstaendig und macht nichts Neues auf.
+
+NACHGEPRUEFT STATT GEGLAUBT: 'glab repo view --help' der hier installierten Version (/home/alex/.local/bin/glab) sagt woertlich 'Display the description and README of a project' und listet '-F --output  Format output as: text, json. (text)' — die Begruendung bei SKILL.md:118-120 stimmt also Wort fuer Wort, und '-F json' bei :110 ist die Flagschreibweise dieser Version. Die Git-URL als Argument steht ebenfalls ausdruecklich in den EXAMPLES, fuer glab wie fuer gh.
+
+ERWOGEN UND VERWORFEN (haette ein Finding werden koennen): die GitLab-Haelfte von 'Does it already have one open' (:176) traegt kein Gegenstueck zum GitHub-Praefix '<owner-of-origin>:<branch>' bei :170 — also scheinbar dieselbe Asymmetrie, die Durchgang 6 in der Leiter gefunden hat. Ist aber keine: 'glab mr list --help' kennt nur '-s --source-branch <name>', und auf GitLab liegt ein Merge Request aus einem Fork im ZIEL-Projekt mit dem Branchnamen des Forks als source_branch. Die Abfrage am Ziel findet ihn also ohne Praefix. Das Praefix ist eine GitHub-Eigenheit, kein fehlender Zweig. Deshalb kein Finding — und deshalb steht es hier, damit der naechste Durchgang es nicht noch einmal aufmacht.
+
+NICHT NEU AUFGEMACHT, weil in frueheren Durchgaengen entschieden: der Feldname fuer den Fork-Elternteil in der glab-JSON bleibt bewusst ungenannt (Durchgang 5/6: nicht gegen eine GitLab-Instanz pruefbar, das Modell liest die JSON selbst); die Mensch/Agent-Regel steht an drei Stellen als Rahmen + Ausfuehrungsort (Durchgang 1); die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, die Disjunktheit der drei Sprossen und der whoami-Absatz sind seit Durchgang 5 unbeanstandet.
+
+SACHE DER REVIEW-LANE, hier bewusst nicht gefragt: ob 'glab repo view -F json' den Fork-Elternteil ueberhaupt enthaelt, und ob 'glab mr create --target-project' so heisst. Diese Lane fragt nicht, ob es laeuft.
