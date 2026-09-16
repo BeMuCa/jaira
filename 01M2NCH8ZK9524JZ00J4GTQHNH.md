@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T16:05:57Z
+updated-at: 2026-09-16T16:06:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5463
 claimed-at: 2026-09-16T15:57:15Z
@@ -202,3 +202,10 @@ jaira-role-lane/SKILL.md, Abschnitt 2 des Modus ('Do not commit. Hand back the c
 Abschnitt 1 hat die Ausnahme bereits ('Empty output? No pause' — ein Doku-Punkt ohne Diff pausiert nicht). Abschnitt 2 hat sie nicht. Fix: dieselbe Bedingung in Abschnitt 2 — eine Commit-Zeile nur, wenn Code geaendert wurde; ohne Code-Aenderung gibt der Worker keine Zeile zurueck und laesst die Ticket-Datei im Worktree fuer den naechsten Commit, der Code traegt.
 
 Nicht beanstandet, damit es nicht noch einmal aufgemacht wird: die Inline-Pruefung 'if k == ticket.FieldMode' in tickets.go:933 steht neben den schon vorhandenen Sonderfaellen FieldID und FieldStatus in derselben Funktion — das ist das bestehende Muster, keine neue Form. CanonicalMode mit zwei Aufrufern (CLI und TUI) ist keine Abstraktion mit einem Aufrufer. 'mode' neben 'model_tier' statt in input ist im Code begruendet und stimmt. Und 'jaira show --json, notes included' im Dispatcher-Prompt traegt: tickets.go:655 haengt den ganzen Body an, und die Notes stehen unter '## Progress' darin.
+- **2026-09-16 16:06 · Alexander Sacharov** — Dispatcher-Halt: critique hat dreimal zurueckgeschickt (Runde 1: drei Befunde, Runde 2: zwei, Runde 3: einer). Die Schleife wird kleiner, aber sie endet nicht, weil jeder Durchgang tiefer liest als der vorige. Regel im Dispatcher-Prompt: nach drei Rueckgaben entscheidet der Mensch, nicht der Dispatcher.
+
+Offen und unrepariert, der einzige Befund aus Runde 3: core/role/builtin/jaira-role-lane/SKILL.md:68-84. Abschnitt 2 des Modus ('Do not commit. Hand back the commit line instead.') hebt die Regel aus Zeile 31-37 auf ('did you change no code? Then commit nothing'). Der Modus steht auf dem Ticket und gilt damit auch in critique, testing und review, wo kein Code entsteht; der Worker reicht dem Menschen trotzdem eine git-commit-Zeile, und der Mensch committet reine Ticket-Buchhaltung. Abschnitt 1 hat die passende Ausnahme schon ('Empty output? No pause'), Abschnitt 2 nicht.
+
+Stand des Codes: zwei Commits, 9cb1df9 und f2c79a9, go test ./... -race gruen, alle sechs DoD-Punkte getickt und belegt.
+
+Ausserhalb des Tickets: die Rollenkopien in ~/.claude sind aelter als das Repository. Wer den Modus benutzen will, braucht 'jaira roles install --global --force'.
