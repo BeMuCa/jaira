@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -44,14 +44,14 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:44:19Z
+updated-at: 2026-09-16T07:44:32Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
 claimed-at: 2026-09-16T07:25:29Z
-outcome-what: "milestoneFiled sagt jetzt als Typ (milestoneFiledAt), wo die Markierung gefunden wurde, und der Ref-Fall bekommt seine eigene Weigerung: refuseFiledElsewhere traegt den gemeinsamen Satz fuer beide Zustaende, deren Kopie in einem anderen Baum liegt, refuseFiledOnDisk und das neue refuseFiledOnRef nennen nur noch, was die Markierung traegt (Dateipfad bzw. refs/jaira/milestones/<name>). create (milestones.go:130) und add/rm (:243) verzweigen auf den Fundort. Neuer Test TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt faehrt create und add in dem Klon, der die Datei nie hatte. Eine NOTES.md-Zeile unter ## Unreleased."
-outcome-why: "Befund aus critique-Runde 9: im Ref-Fall gab milestoneFiled den Text 'on its ref' an refuseFiledInLogbook, und die Meldung versprach ein lokales Logbuch samt 'jaira restore <name>.md', das genau dort fehlschlaegt - FiledMilestone sieht nur die Logbuch-Ordner DIESES Baums, und der Ref-Zweig greift, bevor danach gefragt wird. Die Kopie, die zurueckkommen kann, liegt in dem Baum, der abgelegt hat."
-outcome-resolves: "go build/vet ./... und go test ./... -race sind gruen (RC=0, alle Pakete). Exit-Code und reason 'milestone_filed' unveraendert; die drei bestehenden Weigerungstests und TestEveryDoorIntoAFiledMilestoneSaysTheSameThings laufen unveraendert, weil der On-Disk-Wortlaut Zeichen fuer Zeichen derselbe bleibt. Der neue Test misst im Ref-Fall Ref-Name, Markierung, 'jaira restore round-one.md' und 'the tree that filed it' nach und weist die Behauptung 'into the logbook' zurueck."
+outcome-what: "milestoneFiled asks this tree's logbook before it asks the ref, so the tree that filed a milestone is pointed at its own logbook copy instead of at 'the tree that filed it'. The doc comments on milestoneFiled and refuseFiledOnRef were rewritten to argue the new order, a test covers the filing tree's own doors, and NOTES.md carries a line for the changed refusal."
+outcome-why: "critique round 10: the filer holds both states at once — the copy in its own logbook and the mark on the ref it wrote. Ref-first answered with the ref, sending the reader to a tree that is the one they are standing in, past a copy lying on this disk. refuseFiledOnRef's doc comment claimed there was nothing to restore from, which was false in exactly that case."
+outcome-resolves: "The refusal now names the logbook here when the copy is here, and the ref only when it is not. No definition-of-done item changed state; all twelve were already met and the fix is inside the wording and the lookup they describe."
 review-summary: "internal/cli/milestones.go:391 milestoneFiled asks the ref before the logbook, so the tree that FILED the milestone on a shared board — which holds a marked ref AND the logbook copy — gets milestoneFiledOnRef and is told 'jaira restore <name>.md in the tree that filed it', pointing away from itself and never naming its own logbook folder; ask s.FiledMilestone(name) first and read the ref only when it answers false, which is the 'where the way back runs' split the helpers already claim"
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
