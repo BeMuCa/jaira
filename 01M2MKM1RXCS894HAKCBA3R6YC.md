@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:06:52Z
+updated-at: 2026-09-16T11:07:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -42,7 +42,7 @@ test-verdict: "fail: das blanke 'gh repo view' in der Zielrepository-Leiter besc
 ## Definition of Done
 
 - [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:107-117 (gh/glab repo view nennen origin explizit, Sprosse 1 feuert auf einem Fork nicht mehr), :134-155 (disjunkte Leiter), :198-218 (Mensch/Agent an einer Stelle), :240-246 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:107-117 (gh/glab repo view nennen origin explizit, Sprosse 1 feuert auf einem Fork nicht mehr), :134-155 (disjunkte Leiter), :204-224 ('Open it': Mensch oeffnet / Agent reicht die Zeile zurueck), :242-247 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
 
 ## Options
 
