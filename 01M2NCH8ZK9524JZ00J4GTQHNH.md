@@ -36,7 +36,7 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:43:19Z
+updated-at: 2026-09-16T15:43:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
@@ -157,3 +157,8 @@ Der Plan nennt nur 'jaira set' als Pruefstelle. Das TUI schreibt aber an 'jaira 
 Deshalb steht die Pruefung als ticket.ValidMode in core/ticket/schema.go und wird von beiden Wegen gerufen. Eine Funktion statt zweier Vergleiche gegen die Konstante, damit CLI und TUI nicht auseinanderdriften koennen.
 
 Zweiter Befund, kleiner: in 'jaira set' muss die Pruefung NACH der --append-Faltung stehen, nicht davor. Davor haette 'jaira set <id> mode=conversational --append' auf einem bereits gesetzten Ticket 'conversational\nconversational' geschrieben - jeder Einzelwert gueltig, das Ergebnis nicht. Sie steht jetzt direkt vor SetScalar.
+- **2026-09-16 15:43 · Alexander Sacharov** — In-progress, Befund an der Dokumentation: 'mode' ist kein Lane-Eingabefeld und wird deshalb bei den Modellstufen dokumentiert, nicht bei den Lane-Contracts.
+
+docs/AGENTS.md hat jetzt 'A note on the conversational mode' direkt neben 'A note on model tiers'. Das ist derselbe Satz Aussage: jaira reicht den Wert durch und handelt nicht darauf, der Treiber entscheidet. Beim Lane-Abschnitt haette es den falschen Eindruck gemacht, man koenne 'mode' in input-requires eintragen - genau das, was die Pre-process-Notiz ausschliesst.
+
+Offen gelassen, absichtlich, weil ausserhalb dieser Lane: die Rollen-Dateien in ~/.claude sind jetzt aelter als die im Repository. Wer den Modus benutzen will, braucht 'jaira roles install --global --force'; beide NOTES.md-Zeilen sagen das. Ein bereits von Hand editierter Dispatcher wird dabei als skipped gemeldet und nicht ueberschrieben.
