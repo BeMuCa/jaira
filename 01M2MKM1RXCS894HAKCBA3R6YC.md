@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:11:24Z
+updated-at: 2026-09-16T08:11:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41880
 claimed-at: 2026-09-16T08:10:22Z
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 1 umgebaut: (1) 'Which repository it goes to' steht jetzt vor dem Listing, das Listing selbst fragt mit '--repo' das Zielrepository und schreibt den Head als '<owner-of-origin>:<branch>'; (2) die Mensch/Agent-Aufteilung steht nur noch unter '## Open it', der Push-Abschnitt sagt sie nicht mehr; (3) jaira.remote wird als Remote-NAME behandelt, mit 'git remote get-url \"$(git config jaira.remote)\"' als Schritt zum owner/repo; (4) die Leiter hat eine vierte Sprosse fuer 'Fork ohne jaira.remote' -> Parent aus 'gh repo view'. Die NOTES.md-Zeile unter ## Unreleased nennt Fallback, Widerspruch und das Listing im Zielrepository mit."
-outcome-why: "critique hatte vier Findings: die Reihenfolge war halb gedreht, sodass das Listing im Fork nach einem PR fragte, der im Parent offen ist - genau der zweite PR, den der Text an anderer Stelle ausschliesst; die Mensch/Agent-Regel stand an zwei Stellen mit zwei verschiedenen Aussagen; ':152 read the owner/repo off it' war nicht ausfuehrbar, weil jaira.remote einen Remote-Namen haelt (core/settings/settings.go:145); und der Normalfall 'jaira.remote gar nicht gesetzt' hatte keine Sprosse."
-outcome-resolves: "Definition of Done unveraendert erfuellt und jetzt ohne die vier Widersprueche: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck (an genau einer Stelle gesagt), merge/approve in beiden Faellen verboten, Zielrepository vor Listing UND Oeffnen geprueft mit ausfuehrbaren Schritten, eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 2 an zwei Stellen korrigiert: (1) der Zweig 'One listed' im Listing-Abschnitt nennt jetzt beide zu ueberspringenden Abschnitte namentlich ('Skip **Write the description** and **Open it**') statt 'the next section'; (2) die Zielrepository-Leiter ist von 4 auf 3 Sprossen umgebaut und disjunkt - Sprosse 2 fragt 'nennt jaira.remote ein drittes Repository' statt 'ist jaira.remote gesetzt', sodass unset, =origin und =parent auf dieselbe Antwort (den Parent) fallen und nur ein echter Widerspruch auf Sprosse 3 landet. Davor steht jetzt die Anweisung, Parent und jaira.remote-URL beide aufzuloesen, bevor die Leiter gelesen wird. Die NOTES.md-Zeile nennt den Fallback entsprechend weiter gefasst."
+outcome-why: "critique-Durchgang 2 hatte zwei Findings, beide Folgen der Umbauten aus Durchgang 2: der relative Verweis 'the next section' zeigte nach der Aufteilung in zwei Abschnitte auf '## Open it' und haette genau den zweiten Pull Request geoeffnet, den vier Zeilen hoeher verboten ist; und die Leiter hielt auf Sprosse 2 an, sobald jaira.remote ueberhaupt gesetzt war - bei jaira.remote=origin (ein gueltiger Zustand, core/settings/remotefor_test.go:74) also im Fork, also genau der Fehler, gegen den der Abschnitt existiert."
+outcome-resolves: "Definition of Done unveraendert erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve verboten, Zielrepository vor Listing und Oeffnen geprueft - jetzt mit einer Leiter, die jeden Zustand genau einmal trifft, und einem Sprungziel, das beim naechsten Umbau nicht still falsch wird. Eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
 review-summary: |-
   core/role/builtin/jaira-role-pr/SKILL.md:158 'Skip the next section' zeigt seit der Aufteilung auf die falsche Stelle: zwischen Listing und 'Answering review comments' stehen jetzt ZWEI Abschnitte, 'Write the description' und 'Open it'. Wer nur den naechsten ueberspringt, landet auf '## Open it' und oeffnet den zweiten Pull Request, den :154 gerade verboten hat. Beide Abschnitte namentlich nennen: 'Skip **Write the description** and **Open it**'.
   core/role/builtin/jaira-role-pr/SKILL.md:124 Sprosse 2 verschluckt Sprosse 4: 'A fork, and jaira.remote names a remote' trifft auch zu, wenn jaira.remote auf 'origin' zeigt (core/settings/remotefor_test.go:74 setzt genau das) - der Leser haelt auf Sprosse 2 an, nimmt den Fork als Ziel und erreicht Sprosse 4 nie. Sprosse 2 auf den Fall einschraenken, in dem jaira.remote den Parent nennt, oder die Widerspruchspruefung vor Sprosse 2 ziehen - so wie die Forge-Leiter :67-79 sich gegenseitig ausschliesst.
