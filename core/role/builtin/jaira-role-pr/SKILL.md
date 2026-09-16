@@ -131,8 +131,9 @@ git remote get-url <the .remote name>
 Resolve both the parent and that URL before you read the ladder: the rungs are
 told apart by what the two say, and a rung answered early answers wrong.
 
-1. **Not a fork** — the target is `origin`'s own repository, and the commands
-   below need no repository flag.
+1. **Not a fork** — the target is `origin`'s own repository: the
+   `nameWithOwner` the same `gh repo view` already returned, or the path
+   `glab repo view` printed.
 2. **A fork, and the board's remote does not name a third repository** — its URL
    is `origin`'s own repository, or it is the parent's, or the name has no URL
    here at all because no remote by it exists. Either way the target is
@@ -146,8 +147,9 @@ told apart by what the two say, and a rung answered early answers wrong.
    same `whoami` output: it says which step of jaira's ladder named that remote,
    which is the fact the person needs to answer you.
 
-Everything below takes that repository as `<owner/repo>`. In case 1 leave the
-flag off; there is a single repository the commands can mean.
+Everything below takes that repository as `<owner/repo>`. Every rung leaves you
+holding one, so every command below names it — there is no branch where the flag
+is left off.
 
 ## Does it already have one open
 

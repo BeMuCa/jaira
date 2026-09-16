@@ -25,14 +25,14 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:51:44Z
+updated-at: 2026-09-16T10:55:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der Abschnitt 'Which repository it goes to' ermittelt den Board-Remote jetzt mit 'jaira whoami --json' (.remote als Remote-Name, .remote_source als zitierbare Herkunft) statt mit 'git config jaira.remote'. Die drei Sprossen der Leiter sprechen entsprechend vom 'board's remote'; Sprosse 2 deckt zusaetzlich den Fall ab, dass der Name hier gar kein Remote benennt. :63 sagt 'the board's remote' statt 'jaira.remote'. Die NOTES.md-Zeile nennt whoami und warum nicht den Config-Key."
-outcome-why: "critique Durchgang 3: 'git config jaira.remote' ist nur Sprosse 1 der vierstufigen Leiter in core/settings/settings.go RemoteSourceFor. Auf einem Board, dessen Remote aus settings.json kommt - wie diesem: whoami meldet remote=upstream, remote_source='from settings.json on this machine' - liest der Key leer, und leer liest die Rolle als 'nichts widerspricht'. Der Zielrepository-Check waere also genau dort nicht gelaufen, wo er gebraucht wird. internal/cli/whoami.go:136-142 warnt im Kommentar vor genau diesem zweiten Ableiter."
-outcome-resolves: "Definition of Done unveraendert erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve verboten, Zielrepository vor Listing und Oeffnen geprueft - jetzt aus der Quelle, die jaira selbst benutzt, statt aus einem Config-Key, der meistens leer ist. Eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
-review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:112,119 liest das Zielrepository-Gegenstueck mit 'git config jaira.remote' selbst aus - das ist nur Stufe 1 der vierstufigen Leiter in core/settings/settings.go:145-200 (RemoteFor). Auf genau diesem Board ist jaira.remote ungesetzt und das Board-Remote trotzdem 'upstream' (aus settings.json): 'jaira whoami --json' antwortet {\"remote\":\"upstream\",\"remote_source\":\"from settings.json on this machine\"}, die Rolle sieht leer und faellt auf Sprosse 2 durch, also ohne jeden Gegencheck. internal/cli/whoami.go:136-142 schreibt genau diese Regel schon auf: wer das Remote neu herleitet, nennt womoeglich ein anderes als der Code, der scheitert. Stattdessen: 'jaira whoami --json' lesen, '.remote' nehmen, mit 'git remote get-url <name>' in owner/repo aufloesen, und den Leiter-Text von 'jaira.remote ist ungesetzt' auf 'jaira whoami nennt kein drittes Repository' umstellen."
+outcome-what: "Sprosse 1 der Zielrepository-Leiter in core/role/builtin/jaira-role-pr/SKILL.md nennt jetzt die Quelle des owner/repo (nameWithOwner aus 'gh repo view', Pfad aus 'glab repo view') statt 'braucht kein Flag'; der Satz darunter sagt, dass jede Sprosse eins hält und kein Befehl das Flag weglässt."
+outcome-why: "Das Repository-Flag war sprossenabhängig: ein Durchlauf musste über vier Befehle in vier Abschnitten mitnehmen, auf welcher Sprosse er stand. In einem Dokument, dessen einziger Fehlermodus 'ein Modell liest einen Zweig falsch' ist, kauft ein gesparter Flag-Tipp das nicht auf."
+outcome-resolves: "critique Durchgang 4, Finding 1 (:149-150)"
+review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:149-150 macht das Repository-Flag von der Sprosse abhaengig ('In case 1 leave the flag off') — eine Ausnahme, die der Durchlauf danach an vier Befehlen (:160, :166, :204, :210) in vier Abschnitten mitschleppen muss und die nichts kauft. Stattdessen Sprosse 1 (:134-135) das owner/repo aus 'nameWithOwner' der schon getippten 'gh repo view'-Zeile nehmen lassen und :149-150 ersatzlos streichen: <owner/repo> ist dann in jedem Fall gesetzt und alle vier Befehle tragen das Flag unbedingt. Ein Dokument, dessen einziger Fehlermodus ein falsch gelesener Zweig ist, soll keinen Zweig tragen, der nur Tipparbeit spart."
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
@@ -121,3 +121,23 @@ Neu in Sprosse 2: der Fall, dass der Name gar kein Remote hier benennt (RemoteSo
 Mitgezogen: :63 sagte 'Not off jaira.remote' und haette den Leser genau auf den Key zurueckgeschickt, den der Abschnitt darunter verbietet — heisst jetzt 'the board's remote'. NOTES.md-Zeile nennt whoami und warum nicht den Key.
 
 Weiterhin ungeprueft und Sache der review-Lane: die Flagnamen '--repo' / '--target-project' bei der installierten gh/glab-Version und das Verhalten von 'gh pr list --head owner:branch'.
+- **2026-09-16 10:54 · Alexander Sacharov** — critique Durchgang 4: ein Finding, und es ist keine Wiederholung — die Umstellung auf 'jaira whoami' aus Durchgang 3 ist sauber (Felder .remote und .remote_source existieren, internal/cli/whoami.go:66-67; RemoteSourceFor existiert, core/settings/settings.go:178).
+
+Finding: :149-150 'In case 1 leave the flag off'. Das Repository-Flag ist damit sprossenabhaengig, und diese Abhaengigkeit muss der Durchlauf ueber vier Befehle in vier Abschnitten mitnehmen: :160 (gh pr list), :166 (glab mr list), :204 (gh pr create), :210 (glab mr create). Gekauft wird damit nichts ausser einem nicht getippten Flag. Fix: Sprosse 1 (:134-135) sagt statt 'braucht kein Flag', dass das owner/repo dort aus 'nameWithOwner' kommt — die Zeile 'gh repo view --json isFork,parent,nameWithOwner' (:110) holt das Feld ohnehin schon und niemand benutzt es bisher. Dann ist <owner/repo> auf jeder Sprosse gesetzt, :149-150 faellt ersatzlos weg und die vier Befehle stehen unbedingt da.
+
+Warum das in dieser Lane ein Finding ist und nicht Kosmetik: dieses Dokument hat genau einen Fehlermodus — ein Modell liest einen Zweig falsch. Drei der vier bisherigen Durchgaenge haben genau das gefunden (Reihenfolge, 'skip the next section', nicht-disjunkte Leiter). Ein Zweig, der nur Tipparbeit spart, ist in so einem Dokument teurer als das Flag.
+
+Geprueft und NICHT beanstandet: die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen; die Disjunktheit der drei Sprossen; der head-Praefix <owner-of-origin>: bei gh pr list; der Mensch/Agent-Schnitt an genau einer Ausfuehrungsstelle (:199-217) mit Kopf und Boundaries als Rahmen — das hat Durchgang 1 aufgemacht und der Implementierer begruendet, es bleibt.
+
+Erwogen und verworfen: :62-65 sagt 'the board's remote' zwei Abschnitte bevor :101-122 erklaert, was das ist — ein Vorwaertsverweis, aber der Satz dort ist eine Abgrenzung ('nicht davon ablesen') und braucht die Definition nicht. Ebenso verworfen: die Forge wird aus origin ermittelt (:62), das Ziel kann der Parent sein — Forks liegen immer auf derselben Forge, und ein Board-Remote auf einer anderen Forge faellt auf Sprosse 3 und fragt.
+
+Sache der review-Lane, hier bewusst nicht gepruet: ob 'gh pr create --repo' und 'glab mr create --target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind — mein Finding setzt das voraus. Ebenso die Flagnamen selbst und das Verhalten von 'gh pr list --head owner:branch'.
+- **2026-09-16 10:55 · Alexander Sacharov** — in-progress (Durchgang 5, nach critique 4) — das eine Finding abgearbeitet: das Repository-Flag ist nicht mehr sprossenabhängig.
+
+Sprosse 1 sagt jetzt, woher das owner/repo kommt (nameWithOwner aus dem 'gh repo view', das drei Zeilen darüber ohnehin schon läuft, bzw. der Pfad aus 'glab repo view') statt 'braucht kein Flag'. Damit hält jede der drei Sprossen ein <owner/repo>, und der Satz danach sagt das ausdrücklich: 'there is no branch where the flag is left off'. Die vier Befehle (gh pr list, glab mr list, gh pr create, glab mr create) stehen jetzt unbedingt mit --repo / --target-project da; kein Durchlauf muss mehr über vier Abschnitte hinweg mitnehmen, auf welcher Sprosse er stand.
+
+Mitgezogen gegenüber dem Finding-Wortlaut: critique nannte nur nameWithOwner (gh). Sprosse 1 gilt aber für beide Forges, also nennt sie auch den Pfad aus 'glab repo view' — sonst hätte GitLab auf Sprosse 1 keine Quelle und der Zweig wäre genau so still kaputt wie der, den das Finding schließt.
+
+NOTES.md nicht angefasst: die Zeile beschreibt den Zielrepository-Check als Ganzes, und von außen ändert sich an ihm nichts — es ist derselbe Check, nur ohne Sonderfall im Text.
+
+Weiterhin ungeprüft und Sache der review-Lane: ob '--repo' / '--target-project' auf ein Nicht-Fork-Repository angewandt harmlos sind (das setzt dieser Umbau voraus), die Flagnamen bei der installierten gh/glab-Version, und das Verhalten von 'gh pr list --head owner:branch'.
