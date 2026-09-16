@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Start a dispatcher in its own tab with `scripts/spawn.sh <slug> <ticket> dispatch`: the lane name `dispatch` types `/jaira-dispatcher <ticket>` into the tab instead of `/jaira-role-lane <ticket> <lane>`, so a teamlead no longer needs a second script for it. Any other lane name starts a single-lane worker, as before.
 - Start a worker in the repository directory itself with `scripts/spawn.sh --no-worktree <slug> <ticket> <lane>` (or `JAIRA_NO_WORKTREE=1`) when the lane belongs on the branch already checked out — no worktree, no branch of its own; only one such worker at a time, because they share the directory. Run `jaira roles install --force` to get it: an already-installed dispatcher you have edited is reported as skipped and left as it was.
 
 ## 0.2.1

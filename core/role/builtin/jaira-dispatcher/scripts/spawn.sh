@@ -11,9 +11,15 @@ spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
                   belongs on the branch already checked out. Two workers then
-                  share one directory, so run only one at a time.
+                  share one directory, so run only one at a time. The slug is
+                  still required but unused: it names a worktree, and there is
+                  none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
   -h, --help      This text.
+
+The lane <dispatch> is special: it starts the dispatcher itself in the tab
+(/jaira-dispatcher <ticket-id>) instead of one lane's worker. Every other lane
+name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
 HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
