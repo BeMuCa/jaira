@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:06:33Z
+updated-at: 2026-09-16T20:06:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -277,3 +277,12 @@ Nachgemessen mit einer Probe gegen ParseDoc/Decode: 'mode: " conversational "' i
 Das ist nicht der Befund aus Runde 1 noch einmal: den haben die beiden SCHREIBpfade (jaira set, TUI-Editor) repariert, indem sie den kanonischen Wert speichern. validate ist der LESEpfad fuer handgeschriebene Dateien und die einzige Stelle, die diese Datei je zu sehen bekommt — genau der Fall, fuer den die Pruefung in Runde 5 ueberhaupt dazukam.
 
 Reparatur: in validate.go zusaetzlich melden, wenn canon != t.Mode — gleicher CodeBadMode, gleiche Severity, die Meldung nennt schon beide Reparaturen. Dazu ein Fall in core/validate/mode_test.go neben 'chat'; dort steht heute nur ein Wert ausserhalb der Menge, keiner mit Rand-Leerzeichen.
+- **2026-09-16 20:06 · Alexander Sacharov** — In-progress nach critique (6. Durchgang): validate.go meldet jetzt auch den nur-Whitespace-Abweichler.
+
+core/validate/validate.go: die Bedingung ist `!ok || canon != t.Mode`, nicht mehr nur `!ok`. CanonicalMode gibt die getrimmte Form zurueck UND ein ok; der alte Code warf die Form weg. ' conversational ' kam damit durch die Pruefung und untrimmed bei flow.go (JSON 'mode') und in der Kopfzeile an, wo der Worker gegen genau ein Wort vergleicht.
+
+Dieselbe Meldung, derselbe Code, dieselbe Reparatur — bewusst kein zweiter Code. Fuer den Leser ist es ein Fehler ('das steht so nicht im Ticket'), und zwei Codes fuer eine Reparatur waeren eine Unterscheidung, die niemand braucht. Das %q in der Meldung zeigt die Anfuehrungszeichen, also sieht man die Leerzeichen.
+
+NOTES.md: keine neue Zeile, sondern die bestehende validate-Zeile erweitert — es ist dieselbe Pruefung, und eine zweite Zeile daneben liest sich wie ein zweites Feature. Die Zeile nennt jetzt ausdruecklich, dass nur 'jaira set' trimmt.
+
+core/validate/mode_test.go: TestUntrimmedModeIsReportedWithTheRepair neben dem 'chat'-Fall.
