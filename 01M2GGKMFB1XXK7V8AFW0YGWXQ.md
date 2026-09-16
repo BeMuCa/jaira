@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -46,15 +46,16 @@ commits:
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
+  - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:36:42Z
+updated-at: 2026-09-16T08:36:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
 claimed-at: 2026-09-16T08:14:56Z
-outcome-what: "internal/cli/refs.go: flushRefs verzweigt auf r.Kind ueber zwei neue Helfer - refSubject(kind, id) liefert den JSON-Schluessel und den gedruckten Namen (ein Milestone unter seinem vollen Namen und dem Schluessel 'milestone', ein Ticket weiter als ticket.Handle unter 'ticket'), rejectedAdvice(kind) die zweite Zeile einer Ablehnung. Fuer einen Milestone sagt sie jetzt, dass die Fassung des Remotes gewinnt und der naechste fetch die lokale Datei ersetzt. Dazu TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt (End-zu-End auf twoBoards) und TestRefSubjectNamesEachKindTheWayItIsAddressed in internal/cli/milestoneref_test.go, beide gegen den unveraenderten Stand rot gemessen, und eine Zeile in core/release/NOTES.md unter ## Unreleased."
-outcome-why: "Die Outbox meldete jedes Ergebnis als Ticket. ticket.Handle schneidet die letzten sechs Zeichen ab - auf einer ULID ist das der Handle, auf einem Namen ein Wort, das nichts benennt: 'next-release' wurde als 'elease' gemeldet, und ein Agent fand den Milestone-Namen unter dem Schluessel 'ticket'. Die zweite Zeile war in beiden Haelften falsch: refsync.IncomingMilestones schreibt jeden abweichenden Ref ueber die lokale Datei, also bleibt sie nicht unveraendert, und ein Milestone hat weder Karte noch Lane, also zeigt kein Board beide Seiten. Wer verliert, ging weg im Glauben, seine Aenderung sei sicher, und der naechste fetch verwarf sie wortlos."
-outcome-resolves: "Kein neuer DoD-Punkt: Korrektur an schon abgehakten Punkten. DoD 2 (Transport ueber den Ref) und 9/10/11 bleiben gruen - go build/vet/test ./... RC=0, dazu ./internal/cli ./core/refsync ./core/outbox mit -race gruen; die Plan-Schritte 76-79 tragen ihren Proof."
+outcome-what: "README.md nennt den zweiten Ref-Namensraum: der Ref-Block (README:288-289) fuehrt refs/jaira/milestones/<name> neben refs/jaira/tickets/<id>, und die Tabelle 'What git is actually doing' stellt 'see what exists' und 'collect it' auf refs/jaira/* um und bekommt eine eigene Zeile fuers Lesen eines Milestones ohne Checkout."
+outcome-why: "Die Rezeptzeile in README:401 lehrte '+refs/jaira/tickets/*:refs/jaira/tickets/*'. Wer sie von Hand abtippt, holt die Tickets und keinen einzigen Milestone und sieht danach Karten, deren Milestone-Datei niemand hier hat - genau die Halbstellung, gegen die core/gitref/gitref.go:625 den breiten Refspec nimmt. README:285 nannte tickets/ als DEN Namensraum; es sind zwei."
+outcome-resolves: "Ein Leser des README erfaehrt, dass Milestones auf eigenen Refs reisen, und jeder git-Befehl im README holt und zeigt beide Arten."
 review-summary: "README.md:285-403 documents the ref layout and the raw-git recipes and never mentions milestones — README has no occurrence of the word at all. gitref.Fetch now pulls +refs/jaira/*:refs/jaira/*, but README:401 still tells the reader to run 'fetch --prune origin +refs/jaira/tickets/*:refs/jaira/tickets/*', which now silently leaves every milestone behind, and the block at README:285 lists only refs/jaira/tickets/<id>. Add refs/jaira/milestones/<name> (tree carries <name>.md) to the block at 285, widen the 'collect it' and 'see what exists' rows at 400-401 to refs/jaira/*, and add a row for reading one: show refs/jaira/milestones/<name>:<name>.md"
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
