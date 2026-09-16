@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:01:25Z
+updated-at: 2026-09-16T07:01:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
@@ -494,3 +494,17 @@ POINT 2 IS NOT COSMETIC EITHER: without milestoneFiled() in the ErrNotExist bran
 WHY BOTH TESTS AND NOT ONE: the marked-file-on-disk case and the filed-in-this-tree case reach different branches (err==nil vs ErrNotExist) and come from different events — the first from fetching somebody else's filing (core/refsync IncomingMilestones), the second from filing here. A single test would cover one branch and leave the other's wording unmeasured.
 
 NOT CHANGED, checked: milestoneFiled(s, name) is the same helper create uses at milestones.go:130, so both doors search the same two places (ref, then logbook folders). The 'Nothing to do' path and the JSON path in editMembers are below the guard and unreachable for a filed milestone, so neither needed its own wording.
+- **2026-09-16 07:01 · Alexander Sacharov** — critique round 8, one finding. The finding from round 7 is measured fixed and is not re-opened: internal/cli/milestones.go:256 refuses a marked file on disk and :246 refuses one filed into this tree, both tests are in milestones_test.go:422 and :486, and the NOTES.md line at :28 tells a user what changed. The guard sitting after Load rather than before is right — only Load tells the three states apart.
+
+FINDING: the refusal text is duplicated. milestones.go:122 and :263 are the same sentence for 'the file is here and marked', identical up to the last clause; :133 and :247 are the same sentence for 'filed into the logbook', likewise. Four hand-maintained copies of two texts, and the next person who improves one of them improves one of two doors.
+
+This package already has the shape for it: refusePull (internal/cli/pull.go:113, three callers) and writeConflictError (internal/cli/lanes.go:23, five callers) each hold a refusal that several sites raise. Concretely, next to milestoneFiled:
+
+    func filedOnDisk(root, name, instead string) error   // ... puts it back, and %s
+    func filedInLogbook(name, where, instead string) error // ... and its colour%s
+
+and the four sites pass only their tail: ':122 taking the line out here instead would leave that tree copy stranded in its logbook', ':263 editing it here instead would push the change onto its ref for everyone who fetches', ':133 ; creating it again would make a second milestone with the same name', ':247 , and then tickets can go in and out of it again'. Every character of the current output survives.
+
+WHY NOT logbook.go:289 TOO: its middle clause differs ('there is no logbook copy here to bring back'), not just its tail. Folding it in would mean a second parameter that exists for one caller. It stays written out.
+
+CHECKED AND LEFT ALONE: the guard sits below resolveAll, so 'milestone add <filed> <bogus-id>' reports the bad id first — create does the same, so the two doors agree; the Nothing-to-do and JSON paths below the guard are unreachable for a filed milestone; milestoneFiled reads the ref before the logbook folders, which is the order create uses.
