@@ -45,7 +45,7 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:06:39Z
+updated-at: 2026-09-16T08:06:42Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
@@ -180,7 +180,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Tests: die bestehenden Weigerungstests bleiben gruen - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt, TestTheFilingTreeIsPointedAtItsOwnLogbook
 - [x] internal/cli archive.go: den Lock milestoneLockName in der RunE von restore nehmen (archive.go:118), um s.Restore UND unfileMilestone herum - der Move der Datei gehoert mit hinein; unfileMilestone selbst bleibt lockfrei, sonst liegt der Move ausserhalb
   proof: internal/cli/archive.go:118 restore RunE nimmt milestoneLockName; TestRestoreWaitsForTheMilestoneLock (internal/cli/milestones_test.go)
-- [ ] git rm der drei Vorfuehr-Dateien .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md, demo-ui.md - sie sind in 4bd9797 durch ein 'git add -A' mitgerutscht; auf der Platte und auf den Refs bleiben sie liegen
+- [~] git rm der drei Vorfuehr-Dateien .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md, demo-ui.md - sie sind in 4bd9797 durch ein 'git add -A' mitgerutscht; auf der Platte und auf den Refs bleiben sie liegen
 
 ## Progress
 - **2026-09-15 14:55 · Alexander Sacharov** — Alex hat am 2026-09-15 aus dem Sprint einen Milestone gemacht. Das ist keine Umbenennung, es aendert die Mechanik - wer dieses Ticket arbeitet, liest ab hier und nicht den Entwurf vom 14.09.
