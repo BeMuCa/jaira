@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:49:16Z
+updated-at: 2026-09-16T10:49:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -54,6 +54,7 @@ review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:112,119 liest das Ziel
 - [x] Den Zielrepository-Check in core/role/builtin/jaira-role-pr/SKILL.md vor den create-Befehl ziehen und konkret machen: wie man das Ziel ermittelt (gh repo view / git config jaira.remote), was bei einem Fork gilt, und dass ohne klares Ziel nicht geoeffnet wird
 - [x] NOTES.md-Zeile unter ## Unreleased so ergaenzen, dass der Zielrepository-Check darin steht
 - [x] go test ./core/role/... laufen lassen, Ticket verschieben und zusammen mit dem Code committen
+- [ ] Die Zielrepository-Leiter auf 'jaira whoami --json' umstellen statt 'git config jaira.remote' (critique Durchgang 3)
 
 ## Progress
 - **2026-09-16 08:02 · Alexander Sacharov** — Der Text aus chore/pr-role-opens-the-pr lag beim Start dieser Lane schon als a553e45 auf feat/A3R6YC (mit Ticket-Id im Subject, auf neuerer Basis als 5b849ca). Diese Lane hat nur noch den Zielrepository-Check gebaut, den der Ticket-Kontext als offen markiert hatte.
