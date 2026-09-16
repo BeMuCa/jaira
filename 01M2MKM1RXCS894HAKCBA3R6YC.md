@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,13 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T10:51:28Z
+updated-at: 2026-09-16T10:51:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 2 an zwei Stellen korrigiert: (1) der Zweig 'One listed' im Listing-Abschnitt nennt jetzt beide zu ueberspringenden Abschnitte namentlich ('Skip **Write the description** and **Open it**') statt 'the next section'; (2) die Zielrepository-Leiter ist von 4 auf 3 Sprossen umgebaut und disjunkt - Sprosse 2 fragt 'nennt jaira.remote ein drittes Repository' statt 'ist jaira.remote gesetzt', sodass unset, =origin und =parent auf dieselbe Antwort (den Parent) fallen und nur ein echter Widerspruch auf Sprosse 3 landet. Davor steht jetzt die Anweisung, Parent und jaira.remote-URL beide aufzuloesen, bevor die Leiter gelesen wird. Die NOTES.md-Zeile nennt den Fallback entsprechend weiter gefasst."
-outcome-why: "critique-Durchgang 2 hatte zwei Findings, beide Folgen der Umbauten aus Durchgang 2: der relative Verweis 'the next section' zeigte nach der Aufteilung in zwei Abschnitte auf '## Open it' und haette genau den zweiten Pull Request geoeffnet, den vier Zeilen hoeher verboten ist; und die Leiter hielt auf Sprosse 2 an, sobald jaira.remote ueberhaupt gesetzt war - bei jaira.remote=origin (ein gueltiger Zustand, core/settings/remotefor_test.go:74) also im Fork, also genau der Fehler, gegen den der Abschnitt existiert."
-outcome-resolves: "Definition of Done unveraendert erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve verboten, Zielrepository vor Listing und Oeffnen geprueft - jetzt mit einer Leiter, die jeden Zustand genau einmal trifft, und einem Sprungziel, das beim naechsten Umbau nicht still falsch wird. Eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der Abschnitt 'Which repository it goes to' ermittelt den Board-Remote jetzt mit 'jaira whoami --json' (.remote als Remote-Name, .remote_source als zitierbare Herkunft) statt mit 'git config jaira.remote'. Die drei Sprossen der Leiter sprechen entsprechend vom 'board's remote'; Sprosse 2 deckt zusaetzlich den Fall ab, dass der Name hier gar kein Remote benennt. :63 sagt 'the board's remote' statt 'jaira.remote'. Die NOTES.md-Zeile nennt whoami und warum nicht den Config-Key."
+outcome-why: "critique Durchgang 3: 'git config jaira.remote' ist nur Sprosse 1 der vierstufigen Leiter in core/settings/settings.go RemoteSourceFor. Auf einem Board, dessen Remote aus settings.json kommt - wie diesem: whoami meldet remote=upstream, remote_source='from settings.json on this machine' - liest der Key leer, und leer liest die Rolle als 'nichts widerspricht'. Der Zielrepository-Check waere also genau dort nicht gelaufen, wo er gebraucht wird. internal/cli/whoami.go:136-142 warnt im Kommentar vor genau diesem zweiten Ableiter."
+outcome-resolves: "Definition of Done unveraendert erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve verboten, Zielrepository vor Listing und Oeffnen geprueft - jetzt aus der Quelle, die jaira selbst benutzt, statt aus einem Config-Key, der meistens leer ist. Eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
 review-summary: "core/role/builtin/jaira-role-pr/SKILL.md:112,119 liest das Zielrepository-Gegenstueck mit 'git config jaira.remote' selbst aus - das ist nur Stufe 1 der vierstufigen Leiter in core/settings/settings.go:145-200 (RemoteFor). Auf genau diesem Board ist jaira.remote ungesetzt und das Board-Remote trotzdem 'upstream' (aus settings.json): 'jaira whoami --json' antwortet {\"remote\":\"upstream\",\"remote_source\":\"from settings.json on this machine\"}, die Rolle sieht leer und faellt auf Sprosse 2 durch, also ohne jeden Gegencheck. internal/cli/whoami.go:136-142 schreibt genau diese Regel schon auf: wer das Remote neu herleitet, nennt womoeglich ein anderes als der Code, der scheitert. Stattdessen: 'jaira whoami --json' lesen, '.remote' nehmen, mit 'git remote get-url <name>' in owner/repo aufloesen, und den Leiter-Text von 'jaira.remote ist ungesetzt' auf 'jaira whoami nennt kein drittes Repository' umstellen."
 ---
 
