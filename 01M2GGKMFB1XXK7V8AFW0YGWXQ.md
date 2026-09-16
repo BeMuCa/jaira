@@ -43,7 +43,7 @@ commits:
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:32:02Z
+updated-at: 2026-09-16T07:32:06Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -149,9 +149,9 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer die Weigerung von 'jaira milestone add/rm' bei einem abgelegten Milestone
 - [x] internal/cli: die Weigerung eines abgelegten Milestones in zwei Helfer ziehen (Vorbild pull.go:113 refusePull) - refuseFiledOnDisk und refuseFiledInLogbook, je einmal formuliert; die vier Stellen in milestones.go und die dritte Tuer in logbook.go rufen sie auf, der abweichende Schlusssatz kommt vom Aufrufer
 - [x] Test: die bestehenden Weigerungstests bleiben gruen, und ein Test misst nach, dass alle Weigerungen dieselben drei Angaben tragen
-- [~] milestoneFiled sagt, WO die Markierung gefunden wurde (Ref vs. Logbuch dieses Baums) statt nur 'on its ref' als Text; der Ref-Fall nennt refs/jaira/milestones/<name>
+- [ ] milestoneFiled sagt, WO die Markierung gefunden wurde (Ref vs. Logbuch dieses Baums) statt nur 'on its ref' als Text; der Ref-Fall nennt refs/jaira/milestones/<name>
 - [x] refuseFiledOnRef als dritte Weigerung neben OnDisk/InLogbook: gemeinsamer Kern, weil beide auf 'jaira restore <name>.md' IN DEM BAUM, DER ABGELEGT HAT zeigen - InLogbook bleibt der einzige Fall, in dem restore hier laeuft
-- [ ] create (milestones.go:130) und add/rm (:243) verzweigen auf den Fundort statt beide refuseFiledInLogbook zu rufen
+- [~] create (milestones.go:130) und add/rm (:243) verzweigen auf den Fundort statt beide refuseFiledInLogbook zu rufen
 - [ ] Test mit zwei Klonen: in grace, die die Datei nie hatte, 'milestone create' und 'milestone add' gegen einen auf dem Ref abgelegten Milestone - die Meldung nennt den Ref, die Markierung und den ablegenden Baum, und behauptet kein lokales Logbuch
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass die Weigerung im Ref-Fall auf den ablegenden Baum zeigt statt auf ein Logbuch, das es hier nicht gibt
 
