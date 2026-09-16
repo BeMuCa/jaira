@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:06:37Z
+updated-at: 2026-09-16T20:06:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen den geschlossenen Wertebereich: CodeBadMode ('bad_mode'), SeverityWarning, Feld ticket.FieldMode, geprueft mit ticket.CanonicalMode; die Meldung nennt beide Reparaturen. Dazu core/validate/mode_test.go und eine Zeile in core/release/NOTES.md."
-outcome-why: "Die Pruefung stand nur in den zwei CLI-Schreibwegen (internal/cli/tickets.go, internal/tui/edit.go). Genau die drei Wege, die core/validate abdeckt — Handedit, schlechter Merge, Agent schreibt Unerwartetes — gingen daran vorbei, und ein von Hand geschriebenes 'mode: chat' laedt sauber, steht in der 'mode'-Zeile und im JSON, waehrend der Worker gegen genau ein Wort vergleicht und autonom weiterlaeuft. Das Dateiformat ist hier die API; Handedit ist kein Randfall."
-outcome-resolves: "Befund aus critique-Runde 5: core/validate/validate.go kannte 'mode' nicht."
+outcome-what: "core/validate/validate.go prueft 'mode' jetzt gegen die kanonische Form, nicht nur gegen das ok von CanonicalMode: die Bedingung ist '!ok || canon != t.Mode'. Dazu TestUntrimmedModeIsReportedWithTheRepair in core/validate/mode_test.go und eine Praezisierung der bestehenden validate-Zeile in core/release/NOTES.md."
+outcome-why: "CanonicalMode gibt die getrimmte Form zurueck, weil ein Pfad, der ' conversational ' annimmt und unveraendert speichert, derselbe stille Fehler ist wie 'chat'. validate.go warf diese Form weg und pruefte nur das ok — eine handgeschriebene Zeile mit Leerzeichen kam schweigend durch, stand untrimmed im JSON-Schluessel 'mode' und in der Kopfzeile von 'jaira show --for-lane', und der Worker, der gegen genau ein Wort vergleicht, lief autonom weiter."
+outcome-resolves: "Befund aus critique-Runde 6: validate.go:203 warf den kanonischen Wert weg."
 review-summary: "core/validate/validate.go:203 wirft den kanonischen Wert weg, den CanonicalMode zurueckgibt, und prueft nur das ok. Eine handgeschriebene Zeile 'mode: \" conversational \"' passiert die Pruefung schweigend, und t.Mode kommt untrimmed bei flow.go:625 (JSON 'mode') und in der Kopfzeile an — der Worker vergleicht gegen genau ein Wort und laeuft autonom weiter. Genau der Fehler, gegen den CanonicalMode laut eigenem Kommentar existiert, nur auf dem Lesepfad statt auf dem Schreibpfad. Stattdessen: in validate.go auch melden, wenn canon != t.Mode (gleicher CodeBadMode, Reparatur 'jaira set <id> mode=conversational'), und einen Fall dafuer in core/validate/mode_test.go neben 'chat'."
 ---
 
