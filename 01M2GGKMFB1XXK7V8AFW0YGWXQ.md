@@ -48,7 +48,7 @@ commits:
   - 9539603996e58b2b30c9746be6585efe197b8530
   - ac13e3294cfeb2c331b5916b676d59d9e335782c
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:50:37Z
+updated-at: 2026-09-16T08:50:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11194
@@ -58,7 +58,7 @@ outcome-why: "the read-back was a second read of bytes in hand whose failure dro
 outcome-resolves: "milestone.Bytes() renders once for both Save and the outbox; recordMilestone lost its unused *ticket.Store parameter across 4 call sites; suite green"
 review-summary: "none"
 review-gaps: "Removed: recordMilestone() read the milestone file back off disk (os.ReadFile) immediately after every caller had just saved it, and dropped the ref write silently when that read failed — it now renders the milestone it already holds through a new milestone.Bytes(), which Save also writes, so the file is written once and read never; its unused *ticket.Store parameter went with it (4 call sites). Removed: refuseFiledOnRef(), a one-line forward to refuseFiledElsewhere with a single caller — its text and its reason now stand in refuseIfFiled's switch arm beside the other state, so the two refusals read as one mapping instead of one inline and one indirected. Left: no dead code — deadcode over ./... names nothing this change added, only pre-existing hits (gitrepo Repo.Root/Commits/Stat/HeadSHA, ticket.OptionHeadings, cli flow.laneOf, cli share.isShared, tui Model.currentLane). Left: milestoneNamed()'s existence-check Load and logbookMilestone()'s re-read under the lock — the second is required for correctness and the path runs once per filing. Left: Index.Matches normalizing per ticket in the filter loop — it is cheaper than the pre-existing tag.Matches it mirrors. Left: printMilestones/printFiledMilestones unmerged — fetch.go hand-rolls one printer per report kind and folding two of five breaks that. Left: Store.MilestonesDir vs milestone.Dir, the same import-edge split MilestonesSubdir already has. No duplication found: swatch(), the milestone lock, resolveRef and the gitref ref* helpers are all shared rather than re-spelled. Full suite green."
-test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
+test-verdict: "pass: vet clean, go test ./... -race green on a cleared cache (RC=0, 31 packages), binary builds and cross-builds for windows; all 12 DoD criteria re-verified in the tree and every proof test re-run green; behaviour exercised on a scratch board — create/add/rm/ls, the hand-edit carry-over of 2 of 3 tickets in one edit per file, auto-distinct colours, an emptied milestone left standing, logbook refused on unfinished work, filing plus the taken name refusal and restore with the colour intact"
 question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, Milestone-Anlegen, Hand-Edit-Weitertragen, Ref-Transport und Board-Filter am echten Binary vorgefuehrt. Nimmst du die Arbeit an, oder soll noch etwas geprueft werden, bevor sie in review geht?"
 ---
 
