@@ -25,7 +25,7 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:09:01Z
+updated-at: 2026-09-16T11:09:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-89868
 claimed-at: 2026-09-16T10:49:16Z
@@ -183,3 +183,14 @@ Bewusst KEIN '--output json' bei glab dazugeschrieben, obwohl es die Flagliste h
 Nebenbefund der testing-Lane mitgenommen: Sprosse 2 sagt jetzt, dass '--json parent' kein fertiges owner/repo liefert, sondern '.parent.owner.login' und '.parent.name', die man selbst mit einem Schraegstrich verbindet.
 
 NOTES.md nicht angefasst: die Zeile beschreibt den Check als Ganzes ('settles the target repository from gh repo view / glab repo view'). Von aussen aendert sich nichts — derselbe Check, nur mit dem Repository benannt statt geraten.
+- **2026-09-16 11:09 · Alexander Sacharov** — critique Durchgang 6 (nach testing + in-progress 6): ein Finding, und es ist die GitLab-Haelfte genau des Fehlers, den ca7f53c fuer GitHub geschlossen hat.
+
+FINDING SKILL.md:110 / :139-140 / :144 — auf GitLab hat die Zielrepository-Leiter keine Quelle. 'glab repo view "$(git remote get-url origin)"' laeuft ohne -F, und der Default ist text: 'Display the description and README of a project' (glab repo view --help der hier installierten Version, /home/alex/.local/bin/glab, Flag '-F --output  Format output as: text, json. (text)'). Diese Ausgabe nennt weder den Fork-Status, nach dem die Leiter ueberhaupt verzweigt, noch den Fork-Elternteil, den Sprosse 2 daraus lesen soll. Sprosse 1 sagt woertlich 'or the path glab repo view printed' — text-Output druckt keinen Pfad als Feld. Auf GitLab faellt der Durchlauf damit entweder still auf Sprosse 1 zurueck (also auf origin, den Fork) oder bleibt ohne Antwort stehen. Das ist derselbe stille Zweig, den die testing-Lane fuer gh gefunden hat.
+
+FIX ohne erfundene Feldnamen: '-F json' in den Codeblock bei :110, und Sprosse 1 und 2 sagen 'lies Pfad bzw. Fork-Elternteil aus dieser JSON' statt 'den Pfad, den glab repo view ausgegeben hat'. Damit muss niemand 'path_with_namespace' oder 'forked_from_project' behaupten — der Durchgang-5-Einwand gegen '--output json' war, Feldnamen nicht gegen eine GitLab-Instanz pruefen zu koennen, und der bleibt erfuellt, weil das Modell die JSON selbst liest. Ohne '-F json' liest es dagegen Prosa, in der die Felder gar nicht vorkommen.
+
+GEPRUEFT UND NICHT BEANSTANDET: die gh-Seite von ca7f53c stimmt — 'gh repo view "$(git remote get-url origin)"' ist der richtige Aufruf und '--json parent' liefert wirklich .parent.owner.login / .parent.name, nicht nameWithOwner. Die Reihenfolge Push -> Zielrepository -> Listing -> Beschreibung -> Oeffnen, die Disjunktheit der drei Sprossen, der head-Praefix bei 'gh pr list', der whoami-Absatz und der Mensch/Agent-Schnitt an einer Ausfuehrungsstelle: alles unveraendert in Ordnung, nichts davon wird neu aufgemacht.
+
+SACHE DER REVIEW-LANE, hier bewusst nicht gefragt: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten Version so heissen, und ob 'gh pr list --head owner:branch' sich so verhaelt.
+
+ZUR SCHLEIFE: das ist der sechste critique-Durchgang. Er wiederholt kein frueheres Finding — Durchgang 5 fand nichts, testing hat danach den gh-Aufruf aufgemacht, und dieses Finding ist die GitLab-Seite derselben Korrektur. Wenn der Mensch die Schleife trotzdem beenden will, ist der saubere Schnitt: A3R6YC ohne den GitLab-Zweig weiterziehen und den Zweig als eigenes Ticket fuehren.
