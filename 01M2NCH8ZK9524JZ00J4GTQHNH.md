@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
-goal: "Ein Ticket, in dem Gestaltungsentscheidungen noch offen sind, wird im Gespraech mit dem Menschen gefuehrt statt geraten: der Dispatcher haelt vor der Plan-Lane an, fragt, schreibt die Antwort auf das Ticket, zeigt den Code bevor darauf aufgebaut wird, und committet nicht von allein - und das ist ein Modus derselben Rolle, keine zweite Rolle daneben"
+goal: "Ein Ticket mit noch offenen Gestaltungsentscheidungen wird im Gespraech gefuehrt statt geraten: derselbe Dispatcher-Prompt zaehlt vor der Plan-Lane die offenen Entscheidungen, haelt bei mindestens einer an und schreibt die Antwort des Menschen mit 'jaira note' aufs Ticket, traegt den Modus auf dem Ticket selbst (damit er einen Sitzungsabbruch ueberlebt), legt den Code nach jedem DoD-Punkt vor, und committet nicht selbst, sondern gibt die fertige Commit-Zeile mit Handle zurueck"
 context: |-
   Alex am 2026-09-16, aus zwei Laeufen dieser Woche.
 
@@ -34,7 +34,7 @@ related:
   - 01M2KBPPVH5PAKZ98B0X7KX89C
 commits: []
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:29:17Z
+updated-at: 2026-09-16T15:29:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
