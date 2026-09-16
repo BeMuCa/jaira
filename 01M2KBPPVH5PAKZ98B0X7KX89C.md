@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,13 +26,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:01:55Z
+updated-at: 2026-09-16T07:02:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
-outcome-what: "core/role/builtin/jaira-dispatcher/ traegt jetzt --no-worktree (usage(), Flag-Schleife vor dem Herdr-Check, wt=$root-Zweig) und die dispatch-Lane, die /jaira-dispatcher statt /jaira-role-lane startet; SKILL.md beschreibt den Schalter; neuer Test TestEmbeddedScriptsParse parst jede eingebettete .sh und prueft spawn.sh --help ohne Herdr; NOTES.md-Zeile unter Unreleased"
-outcome-why: "Der Schalter existierte nur in ~/.claude auf einer Maschine; im Builtin faehrt er per go:embed mit jedem Klon und kommt ueber 'jaira roles install' zu jedem Teammitglied"
-outcome-resolves: "DoD erfuellt: 'jaira roles install --into <leer>' schreibt SKILL.md und scripts/spawn.sh (0755), beide mit --no-worktree, ohne dass etwas aus ~/.claude gelesen wird; go test ./core/... gruen"
+outcome-what: "Der ausgelieferte, aber undokumentierte dispatch-Zweig ist jetzt an vier Stellen beschrieben: spawn.sh usage() (eigener Absatz), dispatcher/SKILL.md (was der Lane-Name tut und wer ihn tippt), teamlead/SKILL.md (der Aufruf 'spawn.sh <slug> <ticket> dispatch' samt Warnung) und eine NOTES.md-Zeile unter Unreleased. Zusaetzlich sagen usage() und dispatcher/SKILL.md nun, dass --no-worktree den Slug weiter verlangt und nicht liest."
+outcome-why: "critique: der Zweig war ausgeliefert und unerreichbar - kein Dokument nannte den Lane-Wert 'dispatch', also konnte niemand ihn treffen; und --no-worktree verlangte einen Slug, dessen Nutzlosigkeit nirgends stand"
+outcome-resolves: "DoD 1 bleibt erfuellt und ist um den zweiten Hunk ergaenzt: go test ./core/role/... gruen, 'spawn.sh --help' ohne Herdr exit 0 mit beiden neuen Absaetzen"
 review-summary: |-
   core/role/builtin/jaira-teamlead/SKILL.md:45 tells the teamlead to start a dispatcher with spawn.sh but never says the lane argument must be 'dispatch' - the new branch at spawn.sh:137 has no caller that knows about it; name the value there.
   core/role/builtin/jaira-dispatcher/SKILL.md:84 still says spawn.sh takes '<slug> <ticket-id> <lane>' and lists only real lanes; add that lane 'dispatch' starts a dispatcher instead of a lane worker, beside the --no-worktree paragraph that is already there.
