@@ -47,7 +47,7 @@ commits:
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
   - 9539603996e58b2b30c9746be6585efe197b8530
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:23:14Z
+updated-at: 2026-09-16T08:23:39Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -674,3 +674,23 @@ Not raised, deliberately: restore takes the lock for a plain ticket restore too.
 - openStore() wurde in fetch.go schon aufgerufen, aber sein Ergebnis weggeworfen ('if _, err := openStore()'); der Root kam ueber die Paketvariable openedStore. Jetzt wird s festgehalten und s.Root benutzt - dieselbe Instanz, kein zweiter Store.
 - TestFetchWaitsForTheMilestoneLock ist gegen den ungelockten Aufruf gemessen worden: 'fetch did not wait for the milestone lock (returned <nil>)' nach 120ms. Die zweite Zusicherung - die Datei liegt waehrend des gehaltenen Locks noch nicht in .jaira/milestones/ - faengt einen Lock, der erst NACH dem Schreiben genommen wuerde; das Warten allein wuerde ein solcher auch erfuellen.
 - Der Test braucht twoBoards(t) und damit ein echtes Remote, nicht emptyStore: ohne refs.Usable() bricht fetch vor dem Milestone-Teil ab und haette nie etwas zu locken.
+- **2026-09-16 08:23 · Alexander Sacharov** — critique round 15, one finding. Round 14's finding is measured fixed and is not re-opened: fetch.go:108 fetchMilestones takes s.Lock(milestoneLockName) around IncomingMilestones alone, refs.Incoming() stays ahead of it, and TestFetchWaitsForTheMilestoneLock holds it down. All five milestone writers now take the lock — grep over internal/ finds milestoneLockName at archive.go:121, milestones.go:111, milestones.go:233, logbook.go:286 and fetch.go:109.
+
+FINDING: the outbox report speaks about a milestone as if it were a ticket. internal/cli/flushRefs (refs.go:254) switches on r.Outcome only and never on r.Kind, although outbox.Result carries Kind and refsync.Flush (refsync.go:355) already special-cases it one layer down ('only a ticket has a winner to name'). Every branch then prints ticket.Handle(r.ID) — the last six characters of the id — and keys the JSON payload 'ticket': r.ID.
+
+Measured, not reasoned. Throwaway test on twoBoards (removed again, the worktree is clean): ada creates milestone 'next-release', grace fetches and adds her ticket to it, ada then adds hers with the stale lease. Her stderr:
+
+  jaira: elease was not sent: someone else wrote it first
+    your file is unchanged; the board shows both sides once the ref is fetched
+
+Two things are wrong, and the second is the one that costs work:
+- 'elease' is next-release put through ticket.Handle (core/ticket/id.go:88), which keeps the last six characters of a ulid. On a name it produces a word that names nothing, and an agent reading --json finds a milestone name under the key 'ticket'.
+- 'your file is unchanged; the board shows both sides once the ref is fetched' is false in both halves. refsync.IncomingMilestones (refsync.go:221) writes every ref whose content differs straight over the local file, so the next fetch discards the rejected edit — measured: 'jaira milestone ls' in ada's tree names her own ticket before the fetch and only grace's after it, with nothing printed. And a milestone has no card and no lane, so there is no board on which two sides could be shown. The sentence is a ticket's behaviour (the file stays, the conflict is visible) told to somebody whose file does not behave that way.
+
+Reachable on the normal path: two people editing one milestone is what a milestone is for, and the fetch that drops the edit is jaira's own detached maybeFetch (refs.go:214), not an operator in a second terminal.
+
+Not a re-open. Rounds 1-14 stayed inside the milestone commands, the refusal wording and the lock; refs.go's flush reporting was never read by any of them.
+
+WHAT TO BUILD: in flushRefs, branch on r.Kind. For outbox.KindMilestone name the milestone by r.ID verbatim ('milestone %q'), key the payload 'milestone', and give the Rejected case a second line that says what actually happens — the remote's version wins and the next fetch replaces the local file, so the edit has to be made again on the fetched one. Unsent and Failed need the name fixed only; their sentences are true for both kinds.
+
+CHECKED AND LEFT ALONE: fileOnRefOnly (refs.go:96) matches reports by r.ID without asking Kind, but a milestone name is lowercase kebab and a ticket id an uppercase ulid, so the two cannot collide there. recordMilestone being best-effort is the documented local-board trade-off and is not touched by this. The lock in restore's RunE covering a plain ticket restore was decided in round 13 and stays.
