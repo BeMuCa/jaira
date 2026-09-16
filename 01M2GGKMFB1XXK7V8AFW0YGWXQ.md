@@ -46,7 +46,7 @@ commits:
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
   - 284741faea4c49d49fadc8b91b96d4dce4cbe14f
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:15:38Z
+updated-at: 2026-09-16T08:16:14Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48761
@@ -183,7 +183,8 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
   proof: git rm --cached auf die drei demo-*.md; 'git ls-files .jaira/milestones/' ist leer, die Dateien liegen weiter auf der Platte
 - [x] internal/cli/fetch.go: den Store aus openStore() festhalten und s.Lock(milestoneLockName) NUR um den IncomingMilestones-Aufruf legen - nach refs.Incoming(), damit die Netzwerkrunde draussen bleibt; gleiche Form wie archive.go:121
   proof: internal/cli/fetch.go:41,69,92 fetchMilestones
-- [~] Test: fetch wartet auf den Milestone-Lock und schreibt die Datei nicht, solange er gehalten wird - gegen den ungelockten Stand gemessen, sonst haelt der Test nichts
+- [x] Test: fetch wartet auf den Milestone-Lock und schreibt die Datei nicht, solange er gehalten wird - gegen den ungelockten Stand gemessen, sonst haelt der Test nichts
+  proof: TestFetchWaitsForTheMilestoneLock (internal/cli/milestoneref_test.go); measured red against the unlocked call: 'fetch did not wait for the milestone lock (returned <nil>)'
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile, dass ein Hintergrund-Fetch einen gleichzeitigen 'milestone add' nicht mehr ueberschreibt
 
 ## Progress
