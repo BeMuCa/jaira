@@ -45,7 +45,7 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:59:47Z
+updated-at: 2026-09-16T08:00:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
@@ -623,3 +623,9 @@ Also worth a line while that file is open: the doc comment at logbook.go:283-286
 - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings was left alone: its logbook door drives a marked file that IS on disk, which is the third route and stays correct.
 - The closing clause for the filing tree is ', and only a milestone that is on the board can be filed'. Considered repeating the 'somebody else's record' wording the on-disk route uses and rejected it: in this tree the record IS the reader's own, so that sentence would be false here.
 - **2026-09-16 07:56 · Alexander Sacharov** — critique round 12 — one finding, and it is the only one: the state→refusal switch over milestoneFiled stands three times (internal/cli/logbook.go:195, internal/cli/milestones.go:131 and :251). Round 8 folded the refusal TEXT into refuseFiledOnRef/refuseFiledInLogbook but left the dispatch at each door; 17bab1d added the third copy. Fold the switch itself into 'refuseIfFiled(s, name, onRef, inLogbook string) error' next to those helpers, returning nil for milestoneNotFiled, so each door is one 'if err := ...; err != nil'. Nothing else was found: the logbook door's new ErrNotExist branch, the widened milestoneNamed contract and the two doc comments all read straight, and the three doors now answer the same in both filed states. Not raised, deliberately: milestoneNamed returning a name together with an error is unusual for Go, but every caller of it needs the normalized spelling on exactly that error, and the doc comment says so.
+- **2026-09-16 08:00 · Alexander Sacharov** — in-progress round 11 (critique round 12), 2026-09-16. The state→refusal switch is one function now, and what the code does not say:
+- refuseFiledOnDisk stays OUTSIDE refuseIfFiled and that is deliberate: its two callers already hold a loaded milestone whose Filed() is true, so they never ask milestoneFiled at all. Folding it in would mean loading the file a second time to answer a question the caller has already answered.
+- Considered giving refuseIfFiled the whole door — Load, ErrNotExist, the on-disk case and the two filed states in one call — and rejected it: create refuses a file that is filed differently from one that merely exists, and add/rm needs the loaded ms afterwards. The switch was the only part all three doors shared.
+- The clauses stay per-caller strings rather than becoming a verb the helper conjugates. Each closing clause says what THIS command would have done instead, and the three are not variations on one sentence: 'creating it again would make a second milestone', 'tickets can go in and out of it again', 'stamp today's folder on somebody else's record'.
+- No NOTES.md line: every refusal comes out word for word as before, so nothing a user can observe changed. Measured, not assumed — TestEveryDoorIntoAFiledMilestoneSaysTheSameThings and the two per-tree tests assert the exact wording and all three were green without being touched.
+- grep 'milestoneFiled(' over internal/ now finds the definition and one caller. That count is what the next round can measure the finding against.
