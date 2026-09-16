@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:01:46Z
+updated-at: 2026-09-16T07:01:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -45,7 +45,7 @@ review-summary: |-
 ## Definition of Done
 
 - [x] Der Rollen-Ordner core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh im Stand von ~/.claude (2026-09-15); spawn.sh kennt --no-worktree; 'jaira roles install' in ein leeres Verzeichnis liefert beide Dateien, spawn.sh ausfuehrbar, ohne dass etwas aus ~/.claude kopiert wird
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:7-35,55-64; core/role/role_test.go TestEmbeddedScriptsParse + TestInstallWritesEveryFile
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:7-40,55-68; core/role/builtin/jaira-teamlead/SKILL.md:44-49; core/role/role_test.go TestEmbeddedScriptsParse + TestInstallWritesEveryFile
 
 ## Options
 
