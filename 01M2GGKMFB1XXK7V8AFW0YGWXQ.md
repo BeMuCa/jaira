@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T06:57:29Z
+updated-at: 2026-09-16T06:57:48Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
@@ -483,3 +483,14 @@ PUNKT 3 - Tests. internal/cli/milestones_test.go hat keinen einzigen add/rm-Fall
 Warum das kein Randfall ist, fuer den Fall dass jemand kuerzen will: core/refsync/refsync.go:194 IncomingMilestones schreibt einen abgelegten Ref ueber eine Datei, die dieser Baum schon hat. Die markierte Datei auf der Platte entsteht also dadurch, dass man das Ablegen eines anderen zieht - der normale Weg, nicht ein Sonderfall.
 
 Keine neue DoD-Zeile: Punkt 1 und 2 sind beide das, was DoD 9 und 11 schon verlangen ('ist vom Board weg', 'der Name ist belegt'). Eine NOTES.md-Zeile nur, wenn der Abweisungstext etwas ist, das ein Benutzer von aussen merkt - das tut er hier, also wahrscheinlich ja.
+- **2026-09-16 06:57 · Alexander Sacharov** — in-progress round 6 (critique round 7, reopened by Alex), 2026-09-16. All three points built, suite with -race green in all 28 packages. What the code does not say:
+
+WHY THE GUARD SITS AFTER Load AND NOT BEFORE: editMembers has to distinguish three states that all look like 'no usable milestone' — filed with the file still here, filed with the file in this tree's logbook, and never existed. Only Load tells them apart: the first is err==nil plus Filed(), the second is ErrNotExist plus milestoneFiled(), the third is ErrNotExist alone. Checking Filed() earlier would need a second read of the same file.
+
+THE FINDING UNDERSTATED THE DAMAGE, and the fix's wording follows the larger reading: critique round 7 called this 'only what the user is told'. It is not. recordMilestone(s, ms) runs right after ms.Save, so an add/rm on a marked file publishes that file to refs/jaira/milestones/<name>. The mark survives on disk, but the edit reaches every clone that fetches — and refsync writes a filed ref over a file the clone already has. The refusal text therefore says 'would push the change onto its ref for everyone who fetches' rather than repeating create's 'would leave that tree's copy stranded'.
+
+POINT 2 IS NOT COSMETIC EITHER: without milestoneFiled() in the ErrNotExist branch, 'add' on a milestone filed in this tree says 'jaira milestone create <name> starts it' — and create then refuses with 'has been filed'. The reader is walked into a refusal by the advice of the previous one. The test asserts the absence of 'milestone create' in that message, not only the presence of 'jaira restore'.
+
+WHY BOTH TESTS AND NOT ONE: the marked-file-on-disk case and the filed-in-this-tree case reach different branches (err==nil vs ErrNotExist) and come from different events — the first from fetching somebody else's filing (core/refsync IncomingMilestones), the second from filing here. A single test would cover one branch and leave the other's wording unmeasured.
+
+NOT CHANGED, checked: milestoneFiled(s, name) is the same helper create uses at milestones.go:130, so both doors search the same two places (ref, then logbook folders). The 'Nothing to do' path and the JSON path in editMembers are below the guard and unreachable for a filed milestone, so neither needed its own wording.
