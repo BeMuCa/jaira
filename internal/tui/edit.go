@@ -54,16 +54,21 @@ func (m *Model) commitEdit() {
 	if f.get(m.detail) == m.editBuf {
 		return
 	}
-	// The same closed set 'jaira set' enforces. A mode the worker does not
-	// recognise reads as autonomous, so typing one here has to be refused
-	// rather than stored.
-	if f.field == ticket.FieldMode && !ticket.ValidMode(m.editBuf) {
-		m.notify(fmt.Sprintf("mode is %q or empty", ticket.ModeConversational), true)
-		return
+	// The same closed set 'jaira set' enforces, storing the value it hands
+	// back. A mode the worker does not recognise reads as autonomous, so
+	// typing one here has to be refused rather than stored.
+	val := m.editBuf
+	if f.field == ticket.FieldMode {
+		canon, ok := ticket.CanonicalMode(val)
+		if !ok {
+			m.notify(fmt.Sprintf("mode is %q or empty", ticket.ModeConversational), true)
+			return
+		}
+		val = canon
 	}
 	id := m.detail.ID
 	if _, err := m.store.Mutate(id, func(t *ticket.Ticket) error {
-		return t.Doc().SetScalar(f.field, m.editBuf)
+		return t.Doc().SetScalar(f.field, val)
 	}); err != nil {
 		m.notify(err.Error(), true)
 		return

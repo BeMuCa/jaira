@@ -707,6 +707,12 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	row("updated by", t.UpdatedBy)
 	row("executed", t.ExecutedBy)
 	row("tier", t.ModelTier)
+	// Next to the tier because it is the same kind of statement: how this
+	// ticket is to be worked, not what it holds. Whoever set the mode has to
+	// be able to see it is still on — that is the whole point of it living on
+	// the ticket rather than in a session. row() skips an empty value, so a
+	// ticket without a mode costs no line.
+	row("mode", t.Mode)
 	row("tags", strings.Join(t.Tags, " "))
 	row("goal", t.Goal)
 	row("context", t.Context)
@@ -927,10 +933,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 					// is asked before each increment while the worker,
 					// comparing against exactly one word, commits as usual.
 					if k == ticket.FieldMode {
-						if !ticket.ValidMode(v) {
+						canon, ok := ticket.CanonicalMode(v)
+						if !ok {
 							return fail(ExitUsage, "bad_mode",
 								"mode is %q or empty, got %q", ticket.ModeConversational, v)
 						}
+						v = canon
 					}
 					if err := t.Doc().SetScalar(k, v); err != nil {
 						return err

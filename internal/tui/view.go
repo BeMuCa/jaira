@@ -1197,6 +1197,10 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	row("when", timespan(t.CreatedAt, t.UpdatedAt))
 	row("executed-by", t.ExecutedBy)
 	row("tier", t.ModelTier)
+	// Next to the tier, for the reason the tier has a row: both say how the
+	// ticket is worked rather than what it says. Without it the mode is
+	// writable from this pane's editor and readable only in --json.
+	row("mode", t.Mode)
 	// A base row, shown whenever the ticket carries tags: what subject a ticket
 	// belongs to is read as often as who owns it, and a tag nothing displays is
 	// a tag nobody reuses. Plain text, not coloured — the colours in .jaira/tags

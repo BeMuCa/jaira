@@ -132,3 +132,54 @@ func TestSetRefusesUnknownMode(t *testing.T) {
 		t.Errorf("a refused mode was written anyway: %v", got["mode"])
 	}
 }
+
+// The gap critique found: the check trimmed, the write path did not, so
+// "mode= conversational " came through the front door and was stored with its
+// padding. The worker compares against exactly one word, so a padded value
+// reads as no mode at all — the same silent failure TestSetRefusesUnknownMode
+// covers, reached by a value that is not even a typo.
+func TestSetStoresModeTrimmed(t *testing.T) {
+	dir, h := newModeTicket(t)
+
+	if out, err := runCLI(t, dir, "set", h, "mode=  "+ticket.ModeConversational+"  "); err != nil {
+		t.Fatalf("set padded mode: %v\n%s", err, out)
+	}
+
+	out, err := runCLI(t, dir, "show", h, "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["mode"] != ticket.ModeConversational {
+		t.Errorf("padded mode stored as %q, want %q", got["mode"], ticket.ModeConversational)
+	}
+}
+
+// The mode is meant to survive a killed session, which it only does if the
+// person who set it can see it is still on. Before this it was writable from
+// the CLI and the TUI and readable only in --json.
+func TestShowPrintsModeForPeople(t *testing.T) {
+	dir, h := newModeTicket(t)
+
+	out, err := runCLI(t, dir, "show", h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "mode") {
+		t.Errorf("a ticket without a mode spends a row on it:\n%s", out)
+	}
+
+	if out, err := runCLI(t, dir, "set", h, "mode="+ticket.ModeConversational); err != nil {
+		t.Fatalf("set mode: %v\n%s", err, out)
+	}
+	out, err = runCLI(t, dir, "show", h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "mode") || !strings.Contains(out, ticket.ModeConversational) {
+		t.Errorf("'jaira show' does not print the mode:\n%s", out)
+	}
+}

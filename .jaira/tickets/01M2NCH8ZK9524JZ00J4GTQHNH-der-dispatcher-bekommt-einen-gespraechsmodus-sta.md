@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -34,12 +34,20 @@ related:
   - 01M2KBPPVH5PAKZ98B0X7KX89C
   - 01M2HRF34AS7QDTACC323YRPXJ
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
-commits: []
+commits:
+  - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T15:43:40Z
+updated-at: 2026-09-16T15:54:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53684
 claimed-at: 2026-09-16T15:25:11Z
+outcome-what: "Die drei critique-Befunde repariert. ValidMode ist CanonicalMode geworden und gibt den getrimmten Wert samt Urteil zurueck; beide Schreibwege (internal/cli/tickets.go newSetCmd, internal/tui/edit.go commitEdit) speichern genau diesen Wert, statt zu pruefen und danach das Rohe zu schreiben. row(\"mode\", t.Mode) steht jetzt in beiden Detail-Panes neben row(\"tier\", ...) — internal/cli/tickets.go:709 und internal/tui/view.go:1199 — womit der Eintrag in fieldsWithTheirOwnRow wieder stimmt. Die --no-worktree-Regel steht nur noch einmal, als dritter Fall im bestehenden Absatz des Dispatcher-Prompts; der Bullet im Modus-Abschnitt und Schritt 2 der Schleife verweisen darauf. Dazu zwei Tests (TestSetStoresModeTrimmed, TestShowPrintsModeForPeople) und die erweiterte NOTES.md-Zeile."
+outcome-why: "Alle drei Befunde trafen dieselbe Stelle des Ziels: ein Modus, der auf dem Ticket steht, damit er einen Sitzungsabbruch ueberlebt, nuetzt nichts, wenn er gepolstert gespeichert und vom Worker nicht erkannt wird, oder wenn niemand ohne --json sehen kann, dass er noch an ist. Der dritte Befund war ein Prompt, der sich selbst widersprach — zwei Regeln fuer --no-worktree, und ein Agent, der raet, welche gilt, ist genau das Verhalten, das dieses Ticket abschaffen soll."
+outcome-resolves: "Alle sechs DoD-Punkte bleiben getickt und belegt; zwei Proofs sind nachgezogen. Punkt 3 (der Modus ueberlebt den Abbruch) traegt jetzt zusaetzlich TestShowPrintsModeForPeople, weil ein Modus, den nur --json zeigt, den Abbruch zwar ueberlebt, aber niemandem meldet. Punkt 6 zeigt auf NOTES.md:17/:18. go test ./... -race laeuft durch."
+review-summary: |-
+  internal/cli/tickets.go:929 + core/ticket/schema.go:150: ValidMode trimmt, der Schreibpfad nicht — 'jaira set <id> "mode= conversational "' wird akzeptiert und als mode: " conversational " gespeichert, 'show --json' gibt es mit den Leerzeichen zurueck, und der Worker vergleicht laut Prompt auf genau ein Wort. Das ist derselbe Fehlerfall, den TestSetRefusesUnknownMode ausschliessen soll, nur durch die Vordertuer. Entweder das strings.TrimSpace in ValidMode streichen, dann faellt der gepolsterte Wert durch dieselbe Pruefung wie 'Conversational', oder in beiden Schreibpfaden den getrimmten Wert speichern.
+  internal/tui/view.go:1199 und internal/cli/tickets.go:709: der Modus steht in keiner Ausgabe fuer Menschen. Beide Detail-Panes drucken row("tier", t.ModelTier), aber kein row("mode", t.Mode); view.go:1099 traegt FieldMode in fieldsWithTheirOwnRow ein, dessen Kommentar 'the fields this pane already has a place for' behauptet — die Zeile gibt es nicht, und laneFields erreicht das Feld ohnehin nie, weil keine Lane es produziert. internal/tui/edit.go:28 laesst es dagegen bearbeiten: schreibbar ueberall, lesbar nur in --json. Je eine Zeile row("mode", t.Mode) neben row("tier", ...); row() ueberspringt Leeres, ein Ticket ohne Modus kostet es also nichts.
+  core/role/builtin/jaira-dispatcher/SKILL.md:79 gegen :155-163: zwei Regeln fuer --no-worktree an zwei Stellen. Der neue Abschnitt sagt 'im Gespraechsmodus immer --no-worktree', der bestehende Absatz sagt 'nimm es nur, wenn der Mensch danach fragt oder die Arbeit eine Lane lang ist', und Schritt 2 der Schleife sagt 'in its own worktree'. Den Modus in den bestehenden Absatz bei :160 aufnehmen und den Bullet bei :79 auf einen Verweis darauf kuerzen, statt dieselbe Regel zweimal zu fuehren.
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
@@ -51,13 +59,13 @@ claimed-at: 2026-09-16T15:25:11Z
 - [x] Es gibt weiterhin genau eine Dispatcher-Rolle. Kein zweiter Skill und keine zweite Kommandozeile daneben; der Modus steht im selben Prompt.
   proof: core/role/builtin/ enthaelt unveraendert sieben Rollen; der Modus steht in jaira-dispatcher/SKILL.md:31 und jaira-role-lane/SKILL.md:39, kein neuer Skill und keine neue Kommandozeile
 - [x] Was im Gespraech entschieden wird, steht mit 'jaira note' auf dem Ticket, BEVOR die Arbeit daran beginnt - nicht hinterher. Nachgestellt an einem Ticket, dessen Sitzung mittendrin abgebrochen wird: die Entscheidung ist danach noch da.
-  proof: core/role/builtin/jaira-dispatcher/SKILL.md:50 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip in internal/cli/mode_test.go — der Modus kommt nach dem Schreiben von der Platte zurueck
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:50 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip in internal/cli/mode_test.go; seit critique zusaetzlich TestShowPrintsModeForPeople — der Modus ist auch ohne --json sichtbar, sonst weiss niemand, dass er den Abbruch ueberlebt hat
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:67 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:79
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:50 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
-  proof: core/release/NOTES.md:16 (Modus) und :17 (Committen von Hand), beide unter ## Unreleased
+  proof: core/release/NOTES.md:17 (Modus, inkl. der mode-Zeile in 'jaira show') und :18 (Committen von Hand), beide unter ## Unreleased
 
 ## Options
 
@@ -162,3 +170,15 @@ Zweiter Befund, kleiner: in 'jaira set' muss die Pruefung NACH der --append-Falt
 docs/AGENTS.md hat jetzt 'A note on the conversational mode' direkt neben 'A note on model tiers'. Das ist derselbe Satz Aussage: jaira reicht den Wert durch und handelt nicht darauf, der Treiber entscheidet. Beim Lane-Abschnitt haette es den falschen Eindruck gemacht, man koenne 'mode' in input-requires eintragen - genau das, was die Pre-process-Notiz ausschliesst.
 
 Offen gelassen, absichtlich, weil ausserhalb dieser Lane: die Rollen-Dateien in ~/.claude sind jetzt aelter als die im Repository. Wer den Modus benutzen will, braucht 'jaira roles install --global --force'; beide NOTES.md-Zeilen sagen das. Ein bereits von Hand editierter Dispatcher wird dabei als skipped gemeldet und nicht ueberschrieben.
+- **2026-09-16 15:48 · Alexander Sacharov** — critique: drei Befunde, alle mit klarer Reparatur, daher zurueck nach in-progress.
+1. ValidMode (core/ticket/schema.go:150) trimmt, der Schreibpfad (internal/cli/tickets.go:929, internal/tui/edit.go:60) nicht. Empirisch geprueft in einem Wegwerf-Board: 'jaira set <id> "mode= conversational "' -> exit 0, Datei traegt 'mode: " conversational "', 'show --json' liefert ' conversational '. Der Mensch glaubt, im Modus zu sein, der Worker vergleicht auf genau ein Wort und committet wie immer — genau der Fall, gegen den TestSetRefusesUnknownMode geschrieben wurde. Fix in einer Zeile: TrimSpace aus ValidMode streichen, oder den getrimmten Wert speichern.
+2. Der Modus ist schreibbar ueber CLI und TUI, aber in keiner Ausgabe fuer Menschen sichtbar — nur in --json. Das Ziel des Tickets ist, dass der Modus einen Sitzungsabbruch ueberlebt; wer ihn gesetzt hat, muss auch sehen koennen, dass er noch an ist. Der Eintrag in fieldsWithTheirOwnRow (internal/tui/view.go:1099) behauptet sogar eine Zeile, die es nicht gibt.
+3. --no-worktree hat jetzt zwei Regeln an zwei Stellen derselben Datei, die sich widersprechen. Nebenbei: der Worktree-Zwang steht weder im Goal noch in der DoD — wenn er bleibt, gehoert er in den bestehenden Absatz und nicht in einen zweiten.
+Nicht beanstandet und bewusst stehen gelassen: mode als freies Frontmatter-Feld statt als Lane-Input (die Begruendung in flow.go:618-623 traegt), das Fehlen einer Merge-Regel in core/merge (Skalar, juengster Schreiber gewinnt, ist hier richtig), und dass jaira den Modus selbst nicht auswertet — das ist dasselbe Muster wie model-tier.
+- **2026-09-16 15:51 · Alexander Sacharov** — In-progress nach critique: die drei Befunde repariert, einer davon anders als critique vorgeschlagen hat.
+
+Befund 1 (Trim-Divergenz) ist NICHT durch Streichen des TrimSpace repariert, obwohl critique das als erste Option nannte. Streichen haette 'jaira set <id> "mode= conversational"' zu einem Fehler gemacht - eine Schreibweise, die in der Shell naheliegt und nichts Falsches meint. Stattdessen gibt ValidMode jetzt als CanonicalMode den getrimmten Wert MIT dem Urteil zurueck, und beide Schreibwege speichern genau das. Damit kann kein Aufrufer mehr pruefen und danach etwas anderes speichern - derselbe Grund, aus dem die Funktion ueberhaupt existiert (Notiz 15:38), eine Ebene weitergezogen. Ein 'bool'-Rueckgabewert laedt zu genau diesem Fehler ein; ein (value, ok) nicht.
+
+Befund 2: row("mode", ...) steht in beiden Detail-Panes neben row("tier", ...), weil beide dieselbe Art Aussage sind - WIE das Ticket gefahren wird, nicht was drinsteht. row() ueberspringt Leeres, ein Ticket ohne Modus kostet keine Zeile; TestShowPrintsModeForPeople prueft beide Richtungen.
+
+Befund 3: die --no-worktree-Regel steht jetzt nur noch im bestehenden Absatz, dort als dritter Fall neben den zwei vorhandenen. Der Bullet im Modus-Abschnitt verweist darauf. Auch Schritt 2 der Schleife ('in its own worktree') ist angefasst - er war die dritte, von critique nur nebenbei erwaehnte Stelle, und ohne ihn haette der Verweis auf einen Absatz gezeigt, dem die Schleife widerspricht.

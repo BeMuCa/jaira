@@ -76,11 +76,8 @@ jaira show <id> --json        # the "mode" key
 
 `mode: conversational` on the ticket means:
 
-- **Start workers with `--no-worktree`.** The person is reading the diff after
-  every increment, and they will read it in the directory they already have
-  open — not in a worktree they have to go and find. The price is in spawn.sh's
-  own help and it holds: with `--no-worktree` only one worker may be live at a
-  time, which costs a mode with a human reading along nothing.
+- **Start workers with `--no-worktree`** — one of the cases the flag's own
+  paragraph below lists, for the reason given there.
 - **A worker hands you a commit line instead of committing.** Pass it to the
   person exactly as it came, unedited — it carries the ticket handle in the
   subject, and jaira derives the ticket's commit list from that handle. Drop it
@@ -104,7 +101,9 @@ let it read the same thing you did.
 Then, per lane:
 
 1. **Claim first.** Other sessions read this board.
-2. **Start one worker on exactly one lane**, in its own worktree:
+2. **Start one worker on exactly one lane**, in its own worktree (in
+   conversational mode, in the checked-out directory — see `--no-worktree`
+   below):
    `/jaira-role-lane <id> <lane>`. Testing is not a lane: `/jaira-role-tester <id>`.
 3. **Wait by the transport's own signal.** Never re-ask a worker whether it is
    done — the answer costs a turn and tells you nothing the board will not.
@@ -157,10 +156,15 @@ Say which one you took. The human needs to know whether the workers outlive you.
    in the environment does the same, for a machine that always wants it.) The
    slug is still required and then goes unused — it names a worktree, and with
    this flag there is none.
-   Take it only when the person asked for it, or when the work is one lane long
-   and belongs on the branch that is already checked out. It gives up the one
-   thing the worktree buys: with it set, two workers share a directory, so
-   never run a second one anywhere while such a worker is live.
+   Take it in exactly three cases: the person asked for it, the work is one
+   lane long and belongs on the branch that is already checked out, or the
+   ticket is in conversational mode — there the person reads the diff after
+   every increment, and they read it in the directory they already have open,
+   not in a worktree they have to go and find. It gives up the one thing the
+   worktree buys: with it set, two workers share a directory, so never run a
+   second one anywhere while such a worker is live. In conversational mode that
+   costs nothing, because a mode with a person reading along runs one worker
+   anyway.
 
    Two things it saves you from, both seen on 2026-09-14, when two dispatchers
    out of three never got a single worker into a tab:

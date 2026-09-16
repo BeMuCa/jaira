@@ -143,13 +143,17 @@ const (
 // this mode exists to prevent.
 const ModeConversational = "conversational"
 
-// ValidMode reports whether v is a value FieldMode accepts — empty, meaning
-// the default autonomous run, or ModeConversational. Every write path checks
-// through here rather than against the constant directly, so the CLI and the
-// TUI cannot come to disagree about what a mode is.
-func ValidMode(v string) bool {
+// CanonicalMode reports whether v is a value FieldMode accepts — empty,
+// meaning the default autonomous run, or ModeConversational — and returns the
+// form to store. Every write path goes through here rather than comparing
+// against the constant itself, so the CLI and the TUI cannot come to disagree
+// about what a mode is. It returns the trimmed value rather than only judging
+// it, because a path that accepts " conversational " and then stores it
+// unchanged is the same silent failure as accepting "chat": the worker
+// compares against exactly one word and would run on as if no mode were set.
+func CanonicalMode(v string) (string, bool) {
 	v = strings.TrimSpace(v)
-	return v == "" || v == ModeConversational
+	return v, v == "" || v == ModeConversational
 }
 
 // canonicalOrder is the order in which fields are written into a new ticket.
