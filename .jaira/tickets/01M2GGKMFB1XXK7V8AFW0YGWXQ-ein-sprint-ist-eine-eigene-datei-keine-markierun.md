@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -44,7 +44,7 @@ commits:
   - 3f259893ecfab81f77c8ebd2f6c538e47910211a
   - 7700e72fbb50cce290be962852d47bcd1670c608
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T07:44:32Z
+updated-at: 2026-09-16T07:48:00Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32438
@@ -52,7 +52,7 @@ claimed-at: 2026-09-16T07:25:29Z
 outcome-what: "milestoneFiled asks this tree's logbook before it asks the ref, so the tree that filed a milestone is pointed at its own logbook copy instead of at 'the tree that filed it'. The doc comments on milestoneFiled and refuseFiledOnRef were rewritten to argue the new order, a test covers the filing tree's own doors, and NOTES.md carries a line for the changed refusal."
 outcome-why: "critique round 10: the filer holds both states at once — the copy in its own logbook and the mark on the ref it wrote. Ref-first answered with the ref, sending the reader to a tree that is the one they are standing in, past a copy lying on this disk. refuseFiledOnRef's doc comment claimed there was nothing to restore from, which was false in exactly that case."
 outcome-resolves: "The refusal now names the logbook here when the copy is here, and the ref only when it is not. No definition-of-done item changed state; all twelve were already met and the fix is inside the wording and the lookup they describe."
-review-summary: "internal/cli/milestones.go:391 milestoneFiled asks the ref before the logbook, so the tree that FILED the milestone on a shared board — which holds a marked ref AND the logbook copy — gets milestoneFiledOnRef and is told 'jaira restore <name>.md in the tree that filed it', pointing away from itself and never naming its own logbook folder; ask s.FiledMilestone(name) first and read the ref only when it answers false, which is the 'where the way back runs' split the helpers already claim"
+review-summary: "internal/cli/logbook.go:177 logbookOut asks milestoneNamed, which calls milestone.Load — so the moment the file is NOT on disk (this tree filed it, or a ref-only clone) the milestone branch is never taken and the caller gets the raw ticket error 'ticket: not found: round-one'. Measured on a twoBoards board: after 'jaira logbook round-one' succeeds, a second 'jaira logbook round-one' in the SAME tree answers 'ticket: not found', and so does 'jaira logbook round-one' in grace's clone that only has the marked ref, while 'jaira milestone create round-one' at both trees raises the milestone_filed refusal. Fix it where add/rm already fixes it: in logbookOut, when milestoneNamed fails with os.ErrNotExist, switch on milestoneFiled(s, name) and return refuseFiledInLogbook / refuseFiledOnRef, the same three lines as internal/cli/milestones.go:249-257, before falling back to the ticket error. The doc comment at logbook.go:283-286 ('every route to this refusal leaves the file on the board and nothing in this tree's logbook') is true of the on-disk check it sits on and false of the door as a whole — this is the route that never reaches it."
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
 question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, Milestone-Anlegen, Hand-Edit-Weitertragen, Ref-Transport und Board-Filter am echten Binary vorgefuehrt. Nimmst du die Arbeit an, oder soll noch etwas geprueft werden, bevor sie in review geht?"
@@ -591,3 +591,17 @@ CHECKED AND LEFT ALONE: swapping the order is safe where the ref says NOT filed 
 - Logbook-first is also strictly the cheaper path: s.FiledMilestone walks this tree's logbook folders, the ref branch shells out to git. The common case on an unshared board returns before touching git at all.
 - TestTheFilingTreeIsPointedAtItsOwnLogbook was measured against the old order before being kept: with ref-first it fails all three assertions on the add door. A test that passes both ways would not have held this down.
 - The negative assertions matter more than the positive ones here: both refusals name 'jaira restore <name>.md', so only the absence of the ref name and of 'the tree that filed it' tells the two apart.
+- **2026-09-16 07:47 · Alexander Sacharov** — critique round 11, one finding. Round 10's finding is measured fixed and is not re-opened: milestoneFiled (milestones.go:395) asks s.FiledMilestone first and the ref second, and TestTheFilingTreeIsPointedAtItsOwnLogbook drives create and add in the filing tree and asserts the absence of both the ref name and 'the tree that filed it'. That is right and stays.
+
+FINDING: the logbook door falls out of the filed-refusal family whenever the file is not on disk. internal/cli/logbook.go:177 logbookOut tries s.Load(idArg) first, then milestoneNamed(s, idArg) — and milestoneNamed (logbook.go:237) calls milestone.Load, which fails with os.ErrNotExist the moment the file has left the board. So logbookOut returns the TICKET error and the reader is told the name is not a ticket, in the two states where create and add/rm both raise milestone_filed.
+
+Measured, not reasoned. Throwaway test on twoBoards (removed again, nothing left in the worktree):
+  ada, after her own successful 'jaira logbook round-one', run again:   ticket: not found: round-one
+  grace, ref-only clone after 'jaira fetch':                            ticket: not found: round-one
+  grace, same board, 'jaira milestone create round-one':                milestone "round-one" has been filed: its ref refs/jaira/milestones/round-one is marked "filed" — ...
+
+Why this is not round 7's or round 9's finding again. Round 7 guarded the add/rm door. Round 9 folded logbook.go:289 into refuseFiledOnDisk and round 8's test TestEveryDoorIntoAFiledMilestoneSaysTheSameThings drives logbook against a marked file that IS on disk — that path is covered and correct. The uncovered path is the one where milestone.Load itself fails, which is upstream of everything those rounds touched: the ms.Filed() check at logbook.go:288 can only run if there is an ms.
+
+THE FIX, and it is the pattern the package already has: in logbookOut, when milestoneNamed answers os.ErrNotExist, switch on milestoneFiled(s, name) and return refuseFiledInLogbook / refuseFiledOnRef with a closing clause saying what filing would have done — the same three lines as editMembers at milestones.go:249-257. Fall through to the ticket error otherwise, so a genuine ticket typo still reads as one: milestoneFiled answers milestoneNotFiled for every name nobody filed.
+
+Also worth a line while that file is open: the doc comment at logbook.go:283-286 says 'every route to this refusal leaves the file on the board and nothing in this tree's logbook'. That is true of the on-disk check it sits on and false of the door, and it is what makes the gap easy to miss on the next read.
