@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:45:19Z
+updated-at: 2026-09-16T19:47:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
@@ -220,3 +220,12 @@ Zwei weitere Punkte, die Alex am selben Tag entschieden hat:
 Der Vorbehalt aus dem Kontext ('Nicht vor dem naechsten Release') ist erledigt: das Release kommt spaeter, das Ticket wartet nicht darauf.
 
 Die Rollenkopien in ~/.claude werden aktualisiert, nachdem dieser Befund gefixt ist. Geprueft am 16.09.: das Repository ist ueberall neuer, in den globalen Kopien steht keine Zeile, die im Repository fehlt — jaira-role-pr ist durch den A3R6YC-Merge auseinandergelaufen, jaira-dispatcher und jaira-role-lane durch dieses Ticket. Es geht also nichts verloren. Uebrig in ~/.claude/skills/jaira-dispatcher/scripts sind nur drei alte spawn.sh.*.bak.
+- **2026-09-16 19:47 · Alexander Sacharov** — In-progress nach critique (3. Durchgang): der eine offene Befund ist repariert, nach Alex' Entscheidung vom 16.09.
+
+Abschnitt 2 des Gespraechsmodus (core/role/builtin/jaira-role-lane/SKILL.md) hat jetzt dieselbe Ausnahme wie Abschnitt 1: keine Code-Aenderung, keine Commit-Zeile. Damit gilt die Regel aus Zeile 31-37 auch im Modus, und critique/testing/review reichen dem Menschen nichts mehr aus, dessen Einfuegen einen reinen Ticket-Commit erzeugt.
+
+Warum die Ausnahme mit Begruendung im Prompt steht und nicht als ein Halbsatz: der Grund traegt sie. Ein Modell, das nur 'nur bei Code-Aenderung' liest, wiegt das gegen den umgebenden Absatz ab, der ausfuehrlich erklaert, warum die Zeile wichtig ist, und gibt sie im Zweifel doch heraus. Der Satz 'a line written out ready to paste reads as already decided' ist das, was im Zweifel den Ausschlag gibt — genau wie bei Befund 2 aus Runde 2, wo der genannte Fall erst aus einer Hoeflichkeit eine Regel gemacht hat.
+
+Nicht gebaut, wie Alex entschieden hat: kein Verbot fuer den Menschen. Der Prompt regelt nur, was der Agent vorschlaegt.
+
+NOTES.md: die vorhandene Modus-Zeile ist erweitert statt einer zweiten. Die Ausnahme ist keine eigene Aenderung, sondern die Bedingung derselben — zwei Zeilen haetten dem Leser zwei Mechanismen vorgesetzt, wo einer steht.
