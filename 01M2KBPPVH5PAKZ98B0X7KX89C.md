@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:13:11Z
+updated-at: 2026-09-16T07:13:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -36,6 +36,7 @@ outcome-resolves: "bash -n gruen, 'go test ./...' gruen (inkl. TestEmbeddedScrip
 review-summary: none
 review-gaps: "entfernt: der doppelte send-text-Aufruf im dispatch-Zweig (beide Zweige setzen jetzt $prompt, der Aufruf steht einmal danach - und RPXJ braucht dort nur noch ein elif); gekuerzt: der 6-Zeilen-Kommentar am --no-worktree-Zweig, der usage() 100 Zeilen weiter oben wortgleich wiederholte, auf die eine Begruendung, die dort nicht steht. Gesucht und nicht gefunden: eine zweite spawn.sh oder ein zweites usage() im Repository (find/grep, es gibt genau eines). Gelassen und warum: der '--'-Fall der Flag-Schleife (eine Zeile Absicherung, loeschen waere selbst eine Verhaltensaenderung), der 'scripts == 0'-Guard in TestEmbeddedScriptsParse (deckt sich mit TestDispatcherShipsItsScript, ist aber der Guard dieses Tests und liest keinen anderen), und die vorbestehende 'dir := t.TempDir(); Install(dir, false)'-Wiederholung in core/role/role_test.go. NICHT generalisiert: die Lane-zu-Kommando-Tabelle - siehe Notiz, das ist RPXJ."
 test-verdict: "pass: go build + 'go test -count=1 -race ./...' green (RC=0), GOOS=windows vet+build green; DoD 1 verified in the tree — 'jaira roles install --into <leer>' schreibt SKILL.md und scripts/spawn.sh (0755) aus dem Binary, kein Zugriff auf ~/.claude; Verhalten mit Herdr-Stub durchgespielt: --no-worktree und JAIRA_NO_WORKTREE=1 starten in $root ohne Worktree, lane 'dispatch' sendet /jaira-dispatcher, jede andere Lane /jaira-role-lane, Default-Pfad legt weiterhin .worktrees/repo-SLUG auf feat/SLUG an"
+question: "Testing ist gruen: Suite ohne Cache mit -race RC=0, Windows-vet/-build gruen, DoD 1 im Baum geprueft (roles install --into liefert beide Dateien, spawn.sh 0755, ohne ~/.claude), und das Verhalten mit einem herdr-Stub durchgespielt — --no-worktree bleibt im Repo-Verzeichnis, 'dispatch' startet /jaira-dispatcher, der Default-Pfad legt weiterhin Worktree und feat/-Branch an. Bitte abnehmen oder sagen, was noch fehlt. Eine Sache zum Wissen: ~/.claude/skills/jaira-dispatcher ist jetzt in beide Richtungen anders als die Builtin-Version (SKILL.md im Repo sechs Zeilen voraus, spawn.sh in ~/.claude durch 7MG5GB voraus) — ein 'jaira roles install --force' wuerde deine lokale Kopie ueberschreiben und den worktree-setup-Hook verlieren, solange 7MG5GB nicht drin ist."
 ---
 
 # Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree
