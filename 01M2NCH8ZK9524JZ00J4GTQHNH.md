@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T19:54:42Z
+updated-at: 2026-09-16T19:54:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
-outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md: Abschnitt 2 des Gespraechsmodus gibt die Commit-Zeile nur noch heraus, wenn die Lane Code geaendert hat; ohne Code-Aenderung keine Zeile und die Ticket-Datei bleibt im Worktree. core/release/NOTES.md: die vorhandene Modus-Zeile nennt die Bedingung mit."
-outcome-why: "Der Modus steht auf dem Ticket und gilt damit auch in critique, testing und review, wo kein Code entsteht. Abschnitt 2 hob dort die Regel aus Zeile 31-37 auf und reichte dem Menschen eine Commit-Zeile, deren Einfuegen einen Commit mit nur der Ticket-Datei erzeugt — die Buchhaltung, die 9ZZSFT abgeschafft hat."
-outcome-resolves: "Der einzige offene Befund aus critique-Runde 3, nach Alex' Entscheidung vom 16.09.: die Commit-Zeile traegt immer Code, eine codelose Lane gibt gar keine zurueck. Abschnitt 2 hat jetzt dieselbe Ausnahme wie Abschnitt 1 mit 'Empty output? No pause'."
+outcome-what: "Die Bedingung 'Commit-Zeile nur bei Code-Aenderung' steht jetzt an allen fuenf Stellen: core/role/builtin/jaira-dispatcher/SKILL.md (als zwei Punkte — Zeile bei Code, keine Zeile ohne Code und die Lane ist trotzdem fertig), docs/AGENTS.md, README.md und der FieldMode-Kommentar in core/ticket/schema.go, passend zu jaira-role-lane/SKILL.md:72-78."
+outcome-why: "Der Befund aus Runde 3 war nur in jaira-role-lane repariert. Der Dispatcher startet aber auch critique-, testing- und review-Worker, und sein Prompt sagte ihm bedingungslos, eine Commit-Zeile komme und er solle sie weiterreichen — ein Dispatcher, der auf eine Zeile wartet, die nach dem Fix richtigerweise nicht mehr kommt, fragt nach oder haelt die Lane fuer unfertig. Die drei Doku-Stellen beschrieben dieselbe Regel ohne die Bedingung."
+outcome-resolves: "Befund aus critique-Runde 4: dieselbe Regel unveraendert bedingungslos an core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169 und core/ticket/schema.go:41."
 review-summary: "core/role/builtin/jaira-dispatcher/SKILL.md:85, docs/AGENTS.md:256, README.md:169 und core/ticket/schema.go:41 sagen die Commit-Zeilen-Regel weiterhin bedingungslos ('hands back a commit line instead of committing'). Der Fix aus Runde 3 hat sie nur an zwei von sechs Stellen konditioniert — jaira-role-lane/SKILL.md:72-84 und NOTES.md. Am haertesten trifft es den Dispatcher-Prompt: derselbe Dispatcher startet auch critique-, testing- und review-Worker, bekommt dort jetzt korrekterweise keine Zeile, und sein eigener Prompt sagt ihm, eine Zeile komme und er solle sie unveraendert weiterreichen. Fix: an allen vier Stellen dieselbe Bedingung nennen wie in jaira-role-lane/SKILL.md — eine Commit-Zeile, wenn die Lane Code geaendert hat; eine Lane ohne Code-Aenderung gibt keine zurueck und laesst die Ticket-Datei im Worktree. Im Dispatcher-Bullet 85-89 als Satz dahinter, in schema.go:41 im Kommentar, in AGENTS.md und README.md je als Nebensatz."
 ---
 
