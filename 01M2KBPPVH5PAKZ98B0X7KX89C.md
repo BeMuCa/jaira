@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T06:52:07Z
+updated-at: 2026-09-16T06:52:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30509
 claimed-at: 2026-09-16T06:49:05Z
@@ -48,4 +48,4 @@ claimed-at: 2026-09-16T06:49:05Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-16 06:52 · Alexander Sacharov** — Die Praemisse des Tickets ist ueberholt: der Dispatcher liegt laengst im Repository, nur an einem anderen Ort als die DoD sagte. core/role/builtin/jaira-dispatcher/ traegt SKILL.md und scripts/spawn.sh, sie sind per go:embed im Binary und 'jaira roles install' schreibt sie nach ~/.claude/skills. .claude/skills/ waere ein zweiter Ort und damit genau die driftende Zweitkopie, gegen die das Ticket existiert. DoD entsprechend umgeschrieben; Symlink-Frage damit erledigt, das Installationskommando ist der Weg.
