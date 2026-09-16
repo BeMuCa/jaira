@@ -37,14 +37,14 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T20:13:16Z
+updated-at: 2026-09-16T20:16:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-96645
 claimed-at: 2026-09-16T19:45:19Z
 outcome-what: "internal/cli/resume.go fuehrt jetzt den Modus: 'mode' in der items-Map des --json-Zweigs und eine 'mode:'-Zeile im Klartext-Block, letztere nur bei gesetztem Modus. Dazu TestResumeCarriesMode in internal/cli/mode_test.go, eine Ergaenzung der bestehenden Modus-Zeile in core/release/NOTES.md und der Verweis auf den Test in der proof-Zeile von DoD-Punkt 3."
 outcome-why: "resume.go baut sein JSON von Hand und geht nicht durch ticketJSON, also fehlte das Feld dort. 'jaira resume' ist aber genau die Wiederanlauf-Stelle, auf die sich jaira-dispatcher/SKILL.md:65 beruft — ein Dispatcher nach einem Sitzungsabbruch haette den Modus dort nicht gesehen und waere autonom weitergelaufen, was die in schema.go:44-47 aufgeschriebene Begruendung des Feldes aushebelt."
 outcome-resolves: "Befund aus critique-Runde 7: resume.go:126-141 trug kein 'mode', der Klartext-Block ebenso wenig."
-review-summary: "internal/cli/resume.go:126-141 baut sein eigenes JSON-Literal statt ticketJSON und traegt deshalb kein 'mode' — dieselbe Zeile fehlt im Klartext-Block bei 200-165; 'jaira resume' ist aber die Wiederanlauf-Stelle, auf die sich core/role/builtin/jaira-dispatcher/SKILL.md:65 beruft ('a fresh dispatcher after jaira resume reads it back off disk'), und schema.go:44-47 nennt das Ueberleben eines Sitzungsabbruchs als den Grund, warum das Feld ueberhaupt auf dem Ticket sitzt. Fix: \"mode\": i.t.Mode in die items-Map und eine mode-Zeile in den Klartext-Block aufnehmen — oder SKILL.md:65 streichen und dort nur 'jaira show <id> --json' nennen, was die Begruendung des Feldes aber unbelegt laesst."
+review-summary: "none"
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
