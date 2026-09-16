@@ -2,6 +2,7 @@ package role
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -254,6 +255,57 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	want, _ := File("jaira-dispatcher", "scripts/spawn.sh")
 	if b, _ := os.ReadFile(script); string(b) != string(want) {
 		t.Error("--force did not restore the embedded script")
+	}
+}
+
+// A shipped script is only ever run by a worker, in a pane nobody is watching
+// at the moment it breaks. Parse every one of them here instead, and prove the
+// dispatcher's own help path does not need Herdr to answer — a caller asking
+// what the flags are has no pane yet.
+func TestEmbeddedScriptsParse(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+
+	roles, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	scripts := 0
+	for _, r := range roles {
+		for _, rel := range r.Files {
+			if filepath.Ext(rel) != ".sh" {
+				continue
+			}
+			scripts++
+			p := filepath.Join(dir, r.ID, filepath.FromSlash(rel))
+			if out, err := exec.Command(bash, "-n", p).CombinedOutput(); err != nil {
+				t.Errorf("%s/%s does not parse: %v\n%s", r.ID, rel, err, out)
+			}
+		}
+	}
+	// Guards the loop itself: a change that stops reporting supporting files
+	// would leave every assertion above unrun and the test still green.
+	if scripts == 0 {
+		t.Fatal("no embedded .sh file was checked")
+	}
+
+	// HERDR_ENV unset on purpose: --help is answered before the pane check, so
+	// somebody can read the flags on a machine that has no Herdr at all.
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := exec.Command(bash, spawn, "--help")
+	cmd.Env = append(os.Environ(), "HERDR_ENV=")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("spawn.sh --help: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "--no-worktree") {
+		t.Errorf("spawn.sh --help does not mention --no-worktree:\n%s", out)
 	}
 }
 

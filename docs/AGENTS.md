@@ -63,13 +63,25 @@ A review hands the reader something they can act on. `review-check` is the steps
 a person follows to check the change themselves, as a flow, and the review lane
 declares it as an output — so a review that skips it cannot leave the lane.
 
-**The ticket rides in the same commit as the code.** Move it first, then stage the
-changed file under `.jaira/tickets/` next to your source changes and commit them
-together. A reviewer reading that commit sees the change and what it was for at
-once; split across two commits they get a diff whose ticket is still in the state
-the previous commit left it. The same goes for a ticket created and handed to
-someone else: commit it, or nobody but its author knows it exists. jaira never
-commits for you — it reads git and writes only files.
+**The ticket rides with the code, never on its own.** Move it first, then stage
+the changed file under `.jaira/tickets/` next to your source changes and commit
+them together. A reviewer reading that commit sees the change and what it was
+for at once; split across two commits they get a diff whose ticket is still in
+the state the previous commit left it.
+
+**A lane that changed no code commits nothing.** critique, testing and review
+leave a note and a lane change and no source change, and a commit carrying only
+that is bookkeeping — a branch with one per lane hides the work inside it. Leave
+the ticket file modified in the worktree; the next commit that carries code
+takes it along, and if no further code commit follows, the commit that files the
+ticket away with `jaira logbook <id>` carries its final state. Nothing is lost
+by waiting, because the commit list is derived from the ticket id in the commit
+message as much as from the ticket file's own history: name the handle in every
+subject, `fix(A3K9QP): …`, and the list fills itself in even for a ticket file
+git has not seen since. The one ticket that still earns a commit of its own is
+one created and handed to someone else — commit it, or nobody but its author
+knows it exists. jaira never commits for you — it reads git and writes only
+files.
 
 The loop ends past the last lane, not at it: an accepted ticket comes off the
 board with `jaira archive <id>` once the work is pushed, and in that order. A

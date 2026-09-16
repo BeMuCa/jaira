@@ -86,6 +86,22 @@ Say which one you took. The human needs to know whether the workers outlive you.
    `claude` in it, waits for the state hook to report idle, types the lane
    command and presses enter. It prints the pane id.
 
+   One lane name is not a lane: `dispatch` types `/jaira-dispatcher <ticket-id>`
+   into the tab instead of `/jaira-role-lane <ticket-id> <lane>`. That is how a
+   teamlead starts a dispatcher in a tab of its own — the same script, so there
+   is no second one to drift from this one. You do not pass it yourself; you are
+   what it starts.
+
+   `--no-worktree` before the slug starts the worker in the repository
+   directory itself instead — no worktree, no branch of its own. (`JAIRA_NO_WORKTREE=1`
+   in the environment does the same, for a machine that always wants it.) The
+   slug is still required and then goes unused — it names a worktree, and with
+   this flag there is none.
+   Take it only when the person asked for it, or when the work is one lane long
+   and belongs on the branch that is already checked out. It gives up the one
+   thing the worktree buys: with it set, two workers share a directory, so
+   never run a second one anywhere while such a worker is live.
+
    Two things it saves you from, both seen on 2026-09-14, when two dispatchers
    out of three never got a single worker into a tab:
 
