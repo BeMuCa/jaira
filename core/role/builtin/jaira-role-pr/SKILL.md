@@ -119,17 +119,20 @@ git config jaira.remote                           # a remote NAME, not owner/rep
 git remote get-url "$(git config jaira.remote)"
 ```
 
+Resolve both the parent and that URL before you read the ladder: the rungs are
+told apart by what the two say, and a rung answered early answers wrong.
+
 1. **Not a fork** — the target is `origin`'s own repository, and the commands
    below need no repository flag.
-2. **A fork, and `jaira.remote` names a remote** — that remote is the upstream
-   the board's ticket refs already travel on. Read its owner/repo off the URL
-   above and use that.
-3. **A fork with no `jaira.remote` set** — the normal case on a board whose refs
-   were never shared. Use the parent from `gh repo view` / `glab repo view`.
-   There is one upstream and nothing contradicts it.
-4. **A fork whose parent and `jaira.remote` are different repositories** — do
-   not guess and do not open. Name both and ask which one this pull request
-   belongs in.
+2. **A fork, and `jaira.remote` does not name a third repository** — it is
+   unset, or its URL is `origin`'s own repository, or it is the parent's. Either
+   way the target is the parent from `gh repo view` / `glab repo view`: there is
+   one upstream and nothing contradicts it. `jaira.remote` pointing at `origin`
+   is an ordinary setting and says nothing about where pull requests go — it is
+   the remote the board's ticket refs travel on, not the one they land in.
+3. **A fork whose `jaira.remote` resolves to neither `origin` nor the parent** —
+   two different upstreams. Do not guess and do not open. Name both and ask
+   which one this pull request belongs in.
 
 Everything below takes that repository as `<owner/repo>`. In case 1 leave the
 flag off; there is a single repository the commands can mean.
@@ -155,8 +158,8 @@ Carry on along the branch that listing puts you on. Either way you never open a
 second one:
 
 - **Nothing listed** — write the description, then open it, then report.
-- **One listed** — it already has a description. Skip the next section and go
-  straight to **Answering review comments**, then report.
+- **One listed** — it already has a description. Skip **Write the description**
+  and **Open it**, go straight to **Answering review comments**, then report.
 
 ## Write the description
 

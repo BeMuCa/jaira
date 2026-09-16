@@ -25,18 +25,16 @@ related: []
 commits:
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T08:07:27Z
+updated-at: 2026-09-16T08:11:41Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-11544
-claimed-at: 2026-09-16T07:59:59Z
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 1 umgebaut: (1) 'Which repository it goes to' steht jetzt vor dem Listing, das Listing selbst fragt mit '--repo' das Zielrepository und schreibt den Head als '<owner-of-origin>:<branch>'; (2) die Mensch/Agent-Aufteilung steht nur noch unter '## Open it', der Push-Abschnitt sagt sie nicht mehr; (3) jaira.remote wird als Remote-NAME behandelt, mit 'git remote get-url \"$(git config jaira.remote)\"' als Schritt zum owner/repo; (4) die Leiter hat eine vierte Sprosse fuer 'Fork ohne jaira.remote' -> Parent aus 'gh repo view'. Die NOTES.md-Zeile unter ## Unreleased nennt Fallback, Widerspruch und das Listing im Zielrepository mit."
-outcome-why: "critique hatte vier Findings: die Reihenfolge war halb gedreht, sodass das Listing im Fork nach einem PR fragte, der im Parent offen ist - genau der zweite PR, den der Text an anderer Stelle ausschliesst; die Mensch/Agent-Regel stand an zwei Stellen mit zwei verschiedenen Aussagen; ':152 read the owner/repo off it' war nicht ausfuehrbar, weil jaira.remote einen Remote-Namen haelt (core/settings/settings.go:145); und der Normalfall 'jaira.remote gar nicht gesetzt' hatte keine Sprosse."
-outcome-resolves: "Definition of Done unveraendert erfuellt und jetzt ohne die vier Widersprueche: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck (an genau einer Stelle gesagt), merge/approve in beiden Faellen verboten, Zielrepository vor Listing UND Oeffnen geprueft mit ausfuehrbaren Schritten, eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
+claimed-by: DESKTOP-RFTCH11-41880
+claimed-at: 2026-09-16T08:10:22Z
+outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md nach critique-Durchgang 2 an zwei Stellen korrigiert: (1) der Zweig 'One listed' im Listing-Abschnitt nennt jetzt beide zu ueberspringenden Abschnitte namentlich ('Skip **Write the description** and **Open it**') statt 'the next section'; (2) die Zielrepository-Leiter ist von 4 auf 3 Sprossen umgebaut und disjunkt - Sprosse 2 fragt 'nennt jaira.remote ein drittes Repository' statt 'ist jaira.remote gesetzt', sodass unset, =origin und =parent auf dieselbe Antwort (den Parent) fallen und nur ein echter Widerspruch auf Sprosse 3 landet. Davor steht jetzt die Anweisung, Parent und jaira.remote-URL beide aufzuloesen, bevor die Leiter gelesen wird. Die NOTES.md-Zeile nennt den Fallback entsprechend weiter gefasst."
+outcome-why: "critique-Durchgang 2 hatte zwei Findings, beide Folgen der Umbauten aus Durchgang 2: der relative Verweis 'the next section' zeigte nach der Aufteilung in zwei Abschnitte auf '## Open it' und haette genau den zweiten Pull Request geoeffnet, den vier Zeilen hoeher verboten ist; und die Leiter hielt auf Sprosse 2 an, sobald jaira.remote ueberhaupt gesetzt war - bei jaira.remote=origin (ein gueltiger Zustand, core/settings/remotefor_test.go:74) also im Fork, also genau der Fehler, gegen den der Abschnitt existiert."
+outcome-resolves: "Definition of Done unveraendert erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve verboten, Zielrepository vor Listing und Oeffnen geprueft - jetzt mit einer Leiter, die jeden Zustand genau einmal trifft, und einem Sprungziel, das beim naechsten Umbau nicht still falsch wird. Eine Zeile unter ## Unreleased, go test ./core/role/... gruen."
 review-summary: |-
-  core/role/builtin/jaira-role-pr/SKILL.md:96-106 lists existing pull requests before the target repository is settled; in a fork 'gh pr list --head' queries the fork, an open pull request on the parent is not found, and the role opens a second one — which :108 says it never does. Move the 'Which repository it goes to' section (:136-155) ahead of the listing and pass the settled repository to it: 'gh pr list --repo <owner/repo> --head …' and 'glab mr list --repo <path> --source-branch …'.
-  core/role/builtin/jaira-role-pr/SKILL.md:93-94 ('if an agent did, the push is where you stop') contradicts :175-177, where an agent-invoked run still writes the description and hands back a filled-in create line. Delete the clause at :93-94 — the push section only needs the push. The human/agent split takes effect in exactly one place, the create command at :175, and the boundary at :197 restates it.
-  core/role/builtin/jaira-role-pr/SKILL.md:145,152 'read the owner/repo off jaira.remote' cannot be done as written: jaira.remote holds a remote NAME, not owner/repo (core/settings/settings.go:149, core/gitref/gitref.go:139 — the example value is 'upstream'). Make case 2 take the target from 'gh repo view --json parent' and use 'git remote get-url "$(git config jaira.remote)"' only where a URL is actually needed.
-  core/role/builtin/jaira-role-pr/SKILL.md:153-155 case 3 has no rung for an unset jaira.remote. On a board whose refs were never shared 'git config jaira.remote' prints nothing, and the ladder reads that as neither case 2 nor case 3 — or as a disagreement, and refuses to open. Say it explicitly: jaira.remote unset means case 2, the parent is the answer; case 3 needs both sides actually named.
+  core/role/builtin/jaira-role-pr/SKILL.md:158 'Skip the next section' zeigt seit der Aufteilung auf die falsche Stelle: zwischen Listing und 'Answering review comments' stehen jetzt ZWEI Abschnitte, 'Write the description' und 'Open it'. Wer nur den naechsten ueberspringt, landet auf '## Open it' und oeffnet den zweiten Pull Request, den :154 gerade verboten hat. Beide Abschnitte namentlich nennen: 'Skip **Write the description** and **Open it**'.
+  core/role/builtin/jaira-role-pr/SKILL.md:124 Sprosse 2 verschluckt Sprosse 4: 'A fork, and jaira.remote names a remote' trifft auch zu, wenn jaira.remote auf 'origin' zeigt (core/settings/remotefor_test.go:74 setzt genau das) - der Leser haelt auf Sprosse 2 an, nimmt den Fork als Ziel und erreicht Sprosse 4 nie. Sprosse 2 auf den Fall einschraenken, in dem jaira.remote den Parent nennt, oder die Widerspruchspruefung vor Sprosse 2 ziehen - so wie die Forge-Leiter :67-79 sich gegenseitig ausschliesst.
 ---
 
 # Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft
@@ -44,7 +42,7 @@ review-summary: |-
 ## Definition of Done
 
 - [x] core/role/builtin/jaira-role-pr/SKILL.md sagt: Aufruf durch einen Menschen -> pushen und oeffnen; Aufruf durch einen Agenten -> pushen und die Zeile zurueckgeben; merge und approve bleiben in beiden Faellen verboten; die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht; eine Zeile unter ## Unreleased in core/release/NOTES.md; go test ./core/role/... gruen
-  proof: core/role/builtin/jaira-role-pr/SKILL.md:10-25 (Mensch oeffnet, Agent reicht zurueck), :101-135 (Zielrepository vor Listing und Oeffnen, 4 Faelle), :137-151 (Listing fragt das Zielrepository), :182-202 (Open it: einzige Stelle der Aufteilung), :218-221 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:122-136 (disjunkte Leiter), :162-163 (beide Abschnitte namentlich), :182-202 (Mensch/Agent an einer Stelle), :218-221 (merge/approve verboten); core/release/NOTES.md:17; go test ./core/role/... ok
 
 ## Options
 
@@ -81,3 +79,25 @@ Verworfen: das Owner-Präfix per sed aus 'git remote get-url origin' ableiten. D
 (4) Leiter hat jetzt 4 Sprossen: kein Fork / Fork mit jaira.remote / Fork OHNE jaira.remote -> Parent aus 'gh repo view' / Widerspruch -> nicht öffnen.
 
 Weiterhin ungeprüft und Sache der review-Lane: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten glab-Version genau so heißen. go test ./core/role/... prüft nur Installation und Parsing, nicht den Inhalt von SKILL.md.
+- **2026-09-16 08:09 · Alexander Sacharov** — critique (Durchgang 2, 2 Findings). Die 4 Findings aus Durchgang 1 sind abgearbeitet und werden nicht wieder aufgemacht; beide neuen Findings sind Folgen der Umbauten aus Durchgang 2 selbst.
+
+(1) :158 'Skip the next section' - vor der Aufteilung hiess der Abschnitt 'Write the description, then open it' und war EINER, da stimmte der Verweis. Jetzt sind es zwei, und der Zweig 'One listed' ueberspringt nur den ersten. Das Ergebnis ist exakt der doppelte Pull Request, gegen den vier Zeilen hoeher (:154 'you never open a second one') und der ganze Listing-Abschnitt gebaut sind. Fix: beide Abschnitte beim Namen nennen statt 'the next section' - ein relativer Verweis in einem Dokument, dessen Abschnitte sich verschieben, bricht beim naechsten Umbau wieder.
+
+(2) :122-132 Die Leiter ist nicht disjunkt. Sprosse 2 fragt nur 'ist jaira.remote gesetzt', nicht 'zeigt es auf den Parent'. jaira.remote = origin ist ein gueltiger Zustand (core/settings/remotefor_test.go:74), und auf einem Fork trifft dann Sprosse 2 zu - Ziel wird der Fork, also genau der Fehler, gegen den der Abschnitt existiert. Sprosse 4 faengt es nicht ab, weil eine Leiter auf der ersten passenden Sprosse anhaelt. Die Forge-Leiter :67-79 direkt darueber macht es richtig: ihre Sprossen schliessen sich gegenseitig aus. Fix entweder Sprosse 2 einschraenken ('und der Remote nennt den Parent') oder die Widerspruchspruefung vor Sprosse 2 ziehen.
+
+Bewusst NICHT Finding, weil Sache der review-Lane: ob 'glab mr list --repo' und 'glab mr create --target-project' bei der installierten glab-Version so heissen, und ob 'gh pr list --head owner:branch' sich so verhaelt. Diese Lane fragt nicht, ob es laeuft.
+
+Ebenfalls stehen gelassen: dass Kopf (:10-25) und Boundaries (:222-224) die Mensch/Agent-Regel wiederholen, obwohl :99 und :184 'nur an einer Stelle' behaupten. Durchgang 1 hat das aufgemacht, der Implementierer hat es begruendet (Rahmen vs. Ausfuehrungsort) - das bleibt so.
+- **2026-09-16 08:11 · Alexander Sacharov** — in-progress (Durchgang 3, nach critique 2) — beide Findings abgearbeitet.
+
+(1) :158 nennt jetzt beide Abschnitte beim Namen ('Skip **Write the description** and **Open it**') statt 'the next section'. Bewusst namentlich und nicht relativ: die Abschnitte dieses Dokuments haben sich in zwei Durchgaengen zweimal verschoben, ein relativer Verweis bricht beim naechsten Umbau erneut und bricht dabei still.
+
+(2) Die Zielrepository-Leiter hat jetzt 3 statt 4 Sprossen und ist disjunkt. Der Fehler war nicht die fehlende Sprosse, sondern die Frage: Sprosse 2 fragte 'ist jaira.remote gesetzt', und 'gesetzt' ist kein Kriterium fuer 'zeigt aufs Upstream' — jaira.remote=origin ist ein gueltiger Zustand (core/settings/remotefor_test.go:74). Sprosse 2 fragt jetzt 'nennt jaira.remote ein DRITTES Repository', und die Faelle unset / =origin / =parent fallen alle auf dieselbe Antwort (Parent), weil sie dieselbe Antwort haben. Dadurch verschwindet die alte Sprosse 3 als eigener Fall.
+
+Verworfen: Sprosse 2 nur einschraenken auf 'und der Remote nennt den Parent'. Dann haette 'jaira.remote=origin' gar keine Sprosse mehr getroffen und die Leiter waere am Ende ohne Antwort dagestanden — ein Loch statt einer Ueberlappung.
+
+Neu im Text davor: 'Resolve both the parent and that URL before you read the ladder'. Ohne das liest ein Modell die Leiter von oben und beantwortet Sprosse 2, bevor es den Parent ueberhaupt abgefragt hat.
+
+NOTES.md-Zeile mitgezogen: sagte 'falls back to the fork's parent when jaira.remote is unset' — das war nach der Umstellung zu eng.
+
+Weiterhin ungeprueft und Sache der review-Lane: die Flagnamen '--repo' / '--target-project' bei der installierten gh/glab-Version und das Verhalten von 'gh pr list --head owner:branch'.
