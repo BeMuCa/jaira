@@ -1,7 +1,7 @@
 ---
 id: 01M2GGKMFB1XXK7V8AFW0YGWXQ
 title: "Ein Sprint ist eine eigene Datei, keine Markierung am einzelnen Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 goal: "Wer plant, legt einen Milestone als eigene Datei an, die die zugehoerigen Tickets aufzaehlt, sieht deren Farbe am rechten Rand jeder Karte und zieht das Board mit einem Griff auf diesen Milestone zusammen - eine Datei bearbeiten statt zwanzig Tickets einzeln anzufassen."
@@ -45,14 +45,14 @@ commits:
   - 7700e72fbb50cce290be962852d47bcd1670c608
   - 9eb4ef7662ff62a5f0027530039a885d0f3adf2e
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T08:00:02Z
+updated-at: 2026-09-16T08:00:20Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4281
 claimed-at: 2026-09-16T07:57:36Z
-outcome-what: "logbookOut now switches on milestoneFiled when milestone.Load answers ErrNotExist, so 'jaira logbook <name>' raises refuseFiledInLogbook or refuseFiledOnRef in the two states where the file has left the board. milestoneNamed returns the normalized name alongside the error, the doc comment on the ms.Filed() check now says it covers only the on-disk route, both ref tests drive the logbook door as a third door, and NOTES.md carries a line for the changed answer."
-outcome-why: "critique round 11: the milestone branch of the logbook door is reached through milestone.Load, so once the file is gone — filed here, or a ref-only clone — the branch was never taken and the reader got 'ticket: not found: <name>' while create and add/rm refused the same name as filed. The gap sits upstream of the ms.Filed() check that rounds 7-10 worked on, which is why it survived them."
-outcome-resolves: "No definition-of-done item changed state; all twelve were already met. The change is inside the refusal family DoD 9 and 12 describe, closing its last door."
+outcome-what: "Der state→refusal-Schalter ueber milestoneFiled steht einmal statt dreimal: refuseIfFiled(s, name, onRef, inLogbook) neben den refuse-Helfern in internal/cli/milestones.go, nil bei milestoneNotFiled. Die drei Tueren - create (milestones.go:131), add/rm (:251) und 'jaira logbook <name>' (logbook.go:195) - sind je ein 'if err := ...; err != nil'."
+outcome-why: "Runde 8 hat den Weigerungs-TEXT zusammengelegt, aber jede Tuer musste weiter selbst wissen, welcher Zustand auf welchen Helfer zeigt; 17bab1d hat die dritte Kopie dazugelegt. Eine vierte Tuer haette die Zuordnung wieder neu erfinden muessen, ein spaeter dazukommender Zustand waere an einer Tuer stillschweigend ausgefallen."
+outcome-resolves: "Kein DoD-Punkt: die Weigerungen kommen wortgleich heraus wie vorher. Gemessen, nicht angenommen - TestEveryDoorIntoAFiledMilestoneSaysTheSameThings, TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt und TestTheFilingTreeIsPointedAtItsOwnLogbook pruefen den Wortlaut und blieben ungeaendert gruen, 'go test ./...' ebenfalls."
 review-summary: "internal/cli/logbook.go:195, internal/cli/milestones.go:131, internal/cli/milestones.go:251 — the switch from milestoneFiled's state to refuseFiledOnRef/refuseFiledInLogbook now stands three times, identical but for the two closing clauses; the third copy arrived with 17bab1d. Fold it into one helper beside the refuse helpers in milestones.go — 'func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error' that runs the switch and returns nil when the name is not filed — and let each door read 'if err := refuseIfFiled(s, name, \"<clause>\", \"<clause>\"); err != nil { return err }'. This is round 8's finding one level up: the doc comment over the refuse helpers already promises that which refusal a reader gets depends on the state and not on the command they typed, and that promise is currently kept by three copies agreeing by hand."
 review-gaps: "Entfernt: outbox.QueueKind/PendingKind/DropKind sind unexportiert (queueKind/pendingKind/dropKind) - kein Aufrufer ausserhalb core/outbox, auch kein Test; die drei kind.or(KindTicket)-Zeilen darin und die in Box.path sind weg, weil jeder Aufrufer den Kind selbst benennt oder ihn normalisiert von der Platte bekommt (Kind.or bleibt dort, wo Kind aus JSON kommt: readEntry-Pfad, readDir, Flush). milestoneJSON ruft ms.Members() einmal statt zweimal - jeder Aufruf kopierte die ganze Slice. Stehengelassen und warum: milestone.parse duplziert die Frontmatter-Lesung von ticket.ParseDoc nur scheinbar - ParseDoc lehnt eine kaputte Datei ab und kann keine Body-Zeilen editieren, milestone muss beides koennen, ein Umbau waere eine Verhaltensaenderung; cardColors/milestoneColors teilen die Form, nicht die Quelle (Registry vs Index), ein gemeinsamer Helfer waere ein Callback und laenger; Index.Matches normalisiert je Ticket, genau wie das vorhandene tag.Matches daneben in tickets.go:507 - dieselbe Kosten, gleiche Stelle, kein Grund nur die eine Haelfte zu aendern; gitref.Root/MilestonePrefix und milestone.Subdir sind exportiert ohne externen Aufrufer, benennen aber das Ref- bzw. Platten-Layout wie das vorhandene gitref.Prefix und ticket.DirName. Vorhandener toter Code nicht angefasst (staticcheck U1000, alle drei aelter als dieser Branch): internal/cli/share.go:17 isShared, internal/tui/model.go:256 laneStart, internal/tui/model.go:609 currentLane."
 test-verdict: "pass: Suite gruen (build/vet/go test ./... -race, Cache geleert, RC=0), DoD 1-7 im Baum nachgeprueft, Verhalten mit dem echten Binary auf einem Scratch-Board und zwei Clones ausgefuehrt"
