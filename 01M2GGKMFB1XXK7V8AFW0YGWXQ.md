@@ -42,11 +42,11 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T06:51:19Z
+updated-at: 2026-09-16T06:51:55Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-63171
-claimed-at: 2026-09-15T20:47:24Z
+claimed-by: DESKTOP-RFTCH11-35903
+claimed-at: 2026-09-16T06:51:55Z
 outcome-what: "Reworded the two refusals a user meets when a milestone was filed somewhere else: 'jaira logbook <name>' on an already-filed milestone now names the marked file and says the restore has to run in the tree that filed it, instead of pointing at a 'jaira restore' that fails here; 'jaira milestone create' on a filed name no longer offers hand-deleting 'status: filed' as the way back, and core/release/NOTES.md and docs/COMMANDS.md say the same."
 outcome-why: "Both messages sent the reader down a path that does not work. Every state reaching the logbook refusal is a tree without a logbook copy, so its 'jaira restore <name>.md' answers 'is not in the archive'. And deleting the mark by hand in a second clone rides back out on the ref, pulls the milestone onto that board alone and strands the logbook copy in the filer's tree, where 'jaira restore' then hits 'is already on the board'."
 outcome-resolves: "critique round 6, findings 1 and 2. No behaviour changed; go build, go vet and go test ./core/... ./internal/cli/... are green."
