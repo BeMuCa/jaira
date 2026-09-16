@@ -42,7 +42,7 @@ commits:
   - c08ecb911b1d5a686c213bc7e717f6dcb0b954b0
   - 2ff06a626737804dcdc2ff5f05b36efa898c0e37
 created-at: 2026-09-14T17:49:30Z
-updated-at: 2026-09-16T06:53:46Z
+updated-at: 2026-09-16T06:53:56Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35903
@@ -142,7 +142,7 @@ question: "Testing ist durch: build/vet/test -race gruen, DoD 1-7 nachgeprueft, 
 - [x] Test DoD 9 und 11: ablegen - vom Board weg, 'milestone ls' schweigt, keine Karte traegt die Farbe, das Logbuch nennt ihn; 'create' mit demselben Namen wird abgelehnt; 'restore' - Liste, Farbe und Karte zurueck
 - [x] Hilfetexte und docs/COMMANDS.md: 'jaira logbook' nennt den Milestone-Fall, 'jaira milestone rm' bleibt bei 'der Milestone bleibt stehen', 'create' nennt den belegten Namen - alle drei liest man VOR dem Aufruf
 - [x] DoD 12: je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer das Ablegen eines Milestones und fuer den belegten Namen
-- [~] editMembers: nach erfolgreichem Load auf ms.Filed() pruefen und mit fail(ExitValidation, "milestone_filed", ...) abweisen - Wortlaut nach milestones.go:122 (Datei, Markierung, 'jaira restore <name>.md' in dem Baum, der abgelegt hat)
+- [x] editMembers: nach erfolgreichem Load auf ms.Filed() pruefen und mit fail(ExitValidation, "milestone_filed", ...) abweisen - Wortlaut nach milestones.go:122 (Datei, Markierung, 'jaira restore <name>.md' in dem Baum, der abgelegt hat)
 - [ ] editMembers ErrNotExist-Zweig: vor dem 'create'-Rat milestoneFiled(s, name) fragen, wie create es bei milestones.go:130 tut, und auf 'jaira restore' zeigen statt auf 'create'
 - [ ] Tests in internal/cli/milestones_test.go: add/rm auf einer markierten Datei auf der Platte, und add/rm auf einem in DIESEN Baum abgelegten Milestone
 - [ ] core/release/NOTES.md unter ## Unreleased: eine Zeile fuer die Weigerung von 'jaira milestone add/rm' bei einem abgelegten Milestone
