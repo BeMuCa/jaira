@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-16T16:05:27Z
+updated-at: 2026-09-16T16:05:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5463
 claimed-at: 2026-09-16T15:57:15Z
@@ -195,3 +195,10 @@ Was ich dabei geprueft und verworfen habe: den Modus nicht in die Kopfzeile, son
 Befund 2 (Zaehlen kennt kein 'schon beantwortet'): die Reparatur benennt in Schritt 1 ausdruecklich den Fall, der sie noetig macht - Dispatcher stirbt zwischen Schritt 4 (Notes) und Schritt 5 (Modus). Ohne den genannten Fall liest ein Modell 'Notes mitlesen' als Hoeflichkeit und zaehlt trotzdem neu. Der Prompt muss den Grund tragen, weil niemand sonst ihn traegt.
 
 Nicht angefasst, absichtlich: die Reihenfolge Notes-dann-Modus bleibt. Sie erst den Modus setzen zu lassen waere die andere denkbare Reparatur, aber dann traegt ein Ticket den Modus, bevor die Antworten darauf stehen - ein Worker, der genau dazwischen startet, pausiert nach jedem DoD-Punkt fuer Entscheidungen, die niemand aufgeschrieben hat. Die Notes zuerst ist die richtige Reihenfolge; das Lesen war die Luecke.
+- **2026-09-16 16:05 · Alexander Sacharov** — critique (3. Durchgang): ein Befund, ein Fix.
+
+jaira-role-lane/SKILL.md, Abschnitt 2 des Modus ('Do not commit. Hand back the commit line instead.') widerspricht der Regel 30 Zeilen darueber: 'did you change no code? Then commit nothing.' Der Modus haengt laut schema.go am TICKET und gilt ausdruecklich 'through critique and testing too' — also liest ihn auch ein Worker in critique, testing oder review. Der aendert keine Zeile Code, bekommt aber trotzdem 'Write the command out ready to paste' und haendigt dem Menschen 'git add <files> .jaira/tickets/<ticket>.md; git commit -m ...' aus. Fuegt der Mensch das ein, entsteht ein Commit, der nur die Ticket-Datei traegt — die Buchhaltung, die 9ZZSFT gerade abgeschafft hat. Und hier trifft es haerter als sonst: im Gespraechsmodus committet ein Mensch, der die Zeile als fertig gedacht hinnimmt.
+
+Abschnitt 1 hat die Ausnahme bereits ('Empty output? No pause' — ein Doku-Punkt ohne Diff pausiert nicht). Abschnitt 2 hat sie nicht. Fix: dieselbe Bedingung in Abschnitt 2 — eine Commit-Zeile nur, wenn Code geaendert wurde; ohne Code-Aenderung gibt der Worker keine Zeile zurueck und laesst die Ticket-Datei im Worktree fuer den naechsten Commit, der Code traegt.
+
+Nicht beanstandet, damit es nicht noch einmal aufgemacht wird: die Inline-Pruefung 'if k == ticket.FieldMode' in tickets.go:933 steht neben den schon vorhandenen Sonderfaellen FieldID und FieldStatus in derselben Funktion — das ist das bestehende Muster, keine neue Form. CanonicalMode mit zwei Aufrufern (CLI und TUI) ist keine Abstraktion mit einem Aufrufer. 'mode' neben 'model_tier' statt in input ist im Code begruendet und stimmt. Und 'jaira show --json, notes included' im Dispatcher-Prompt traegt: tickets.go:655 haengt den ganzen Body an, und die Notes stehen unter '## Progress' darin.
