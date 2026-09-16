@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,13 +26,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:23:05Z
+updated-at: 2026-09-16T07:23:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15376
 claimed-at: 2026-09-16T07:20:26Z
-outcome-what: "Zwei Aufraeumungen in core/role/builtin/jaira-dispatcher/scripts/spawn.sh, ohne Verhaltensaenderung: der dispatch-Zweig ruft send-text nicht mehr zweimal auf, sondern setzt $prompt und der Aufruf steht einmal danach; der Kommentar am --no-worktree-Zweig ist von 6 auf 4 Zeilen gekuerzt, weil er usage() wortgleich wiederholte."
-outcome-why: "optimize: eine Idee soll an einer Stelle stehen. Der doppelte send-text-Aufruf war die einzige echte Duplikation dieser Aenderung, und sie zu falten macht auch RPXJ (testing -> /jaira-role-tester) zu einem elif statt zu einem dritten kopierten Aufruf."
-outcome-resolves: "bash -n gruen, 'go test ./...' gruen (inkl. TestEmbeddedScriptsParse, das spawn.sh --help ohne Herdr startet); DoD 1 unveraendert erfuellt, kein Kommando und keine Ausgabe geaendert, also keine NOTES.md-Zeile."
+outcome-what: "Review gegen die DoD: Diff gelesen, Tests gefahren, beide neuen Schalter von Hand ausgeloest. review-summary/-gaps/-verdict/-check gesetzt."
+outcome-why: "Ein zweites Modell hat den Diff beurteilt; die Entscheidung gehoert einem Menschen."
+outcome-resolves: "Code sauber, 'go build ./...' und 'go test -count=1 ./core/role/...' gruen. Ein Defekt gefunden und als Notiz hinterlegt: core/release/NOTES.md:17 nennt 'jaira roles install --force', das mit exit 2 abbricht - es fehlt --global. Dazu offen: die DoD-Prosa nennt .claude/skills/, geliefert wurde core/role/builtin/ - bewusst und begruendet, aber vom Menschen zu bestaetigen."
 review-summary: "spawn.sh der Builtin-Rolle jaira-dispatcher bekommt zwei Schalter und einen Hilfetext. (1) Eine Flag-Schleife vor den Positionals: --no-worktree setzt wt=$root statt ../.worktrees/<repo>-<slug>, der Worker startet also im schon ausgecheckten Verzeichnis, ohne Worktree und ohne eigenen Branch; JAIRA_NO_WORKTREE=1 tut dasselbe. Da $root immer existiert, ueberspringt der Zweig 'git worktree add' und die .env-Portlogik komplett. (2) Der Lane-Name 'dispatch' tippt '/jaira-dispatcher <ticket>' statt '/jaira-role-lane <ticket> <lane>' in den Tab - ein Teamlead startet damit einen Dispatcher mit demselben Skript. (3) usage() mit -h/--help, absichtlich VOR dem HERDR_ENV-Check, damit die Flags auch ohne Herdr lesbar sind. Dokumentiert in dispatcher/SKILL.md, teamlead/SKILL.md und zwei NOTES.md-Zeilen. Neuer Test TestEmbeddedScriptsParse: 'bash -n' ueber jede eingebettete .sh-Datei plus 'spawn.sh --help' mit leerem HERDR_ENV."
 review-gaps: "Drei, eines davon ein echter Defekt. (1) Defekt, verifiziert: die NOTES.md-Zeile sagt 'Run jaira roles install --force to get it'. Dieses Kommando laeuft nicht - es endet mit 'choose exactly one of --project, --global or --into' und exit 2 (internal/cli/roles.go:88). Die einzige handlungsleitende Zeile der Release-Notiz fuehrt in einen Usage-Fehler; es fehlt --global (bzw. --project). (2) Die DoD-Prosa ist nicht erfuellt: sie verlangt den Skill 'unter .claude/skills/ im Repository', dort liegt nur 'jaira'. Der umgeschriebene DoD-Punkt 1 ist erfuellt, die Prosa darueber wurde nie nachgezogen. Die Pre-Process-Notiz begruendet die Abweichung gut - sie ist aber eine Entscheidung, die ein Mensch bestaetigen muss, kein erledigter Punkt. Mitbetroffen: teamlead/SKILL.md:45 nennt '.claude/skills/jaira-dispatcher/scripts/spawn.sh' als ersten Weg, den ein frischer Klon nicht hat. (3) Testluecke: kein automatischer Test faehrt den dispatch-Zweig oder --no-worktree. Geprueft wird nur Syntax (bash -n) und der Hilfetext. Der Beleg fuer das Verhalten steht als Herdr-Stub-Lauf in einer Notiz, nichts davon ist eingecheckt - RPXJ will genau diese Stelle als naechstes anfassen und faende keinen Waechter vor. Nicht bemaengelt: die vierfache Wiederholung des dispatch-Absatzes (genau das hat die Critique-Lane verlangt, vier verschiedene Leser) und dass JAIRA_NO_WORKTREE nur '1' akzeptiert (usage() sagt =1, das ist die Schnittstelle)."
 test-verdict: "pass: go build + 'go test -count=1 -race ./...' green (RC=0), GOOS=windows vet+build green; DoD 1 verified in the tree — 'jaira roles install --into <leer>' schreibt SKILL.md und scripts/spawn.sh (0755) aus dem Binary, kein Zugriff auf ~/.claude; Verhalten mit Herdr-Stub durchgespielt: --no-worktree und JAIRA_NO_WORKTREE=1 starten in $root ohne Worktree, lane 'dispatch' sendet /jaira-dispatcher, jede andere Lane /jaira-role-lane, Default-Pfad legt weiterhin .worktrees/repo-SLUG auf feat/SLUG an"
