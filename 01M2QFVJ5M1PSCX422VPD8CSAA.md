@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:18:46Z
+updated-at: 2026-09-17T11:18:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -60,3 +60,8 @@ mode: conversational
 
 ## Progress
 - **2026-09-17 11:14 · Alexander Sacharov** — Entscheidung vom Menschen, vor der Plan-Lane: die 18 Milestone-Zeilen werden auf ca. 5 Zeilen gefaltet, je eine pro Faehigkeit, die ein Benutzer anders benutzt - (1) Milestone anlegen/aendern per CLI und per Hand in .jaira/milestones/<name>.md, (2) Board und 'jaira list' auf eine Runde einschraenken (--milestone, Taste M), (3) Milestone-Farben am RECHTEN Kartenrand lesen, (4) Milestone reist auf seinem eigenen Ref und kommt mit 'jaira fetch', (5) Milestone mit 'jaira logbook <name>' ablegen und mit 'jaira restore <name>.md' zurueckholen. Alle Zwischenstaende und Corner-Case-Abweisungen (drei Fassungen der create-Abweisung, Locking, verlorene Rennen) fallen weg - ein Benutzer hat sie nie gesehen. Nicht 4 Zeilen (eine Milestone-Zeile wuerde zu lang und Kommandos ertrinken darin), nicht 8-10. Die anderen drei Aenderungen bleiben je eine Zeile. DoD 3 bleibt gewahrt: jaira milestone, M, --milestone, --no-worktree, dispatch, jaira restore stehen weiter im Text.
+- **2026-09-17 11:18 · Alexander Sacharov** — Erster Wurf waren 7 Zeilen (CLI und Handbearbeitung getrennt, logbook und restore getrennt) - auf 5 nachgefaltet, weil die Entscheidung vom Menschen 5 Faehigkeiten aufzaehlt und 8-10 ausdruecklich ausschliesst. Die Ref-Zeile hat keine eigene bekommen, sondern haengt an der Farbzeile: sie ist zwei Saetze lang und eine sechste Zeile waere gegen die Entscheidung gewesen.
+
+Bewusst weggeworfen, nicht vergessen: die drei Fassungen der create-Abweisung, 'logbook nennt gefilte Milestones statt ticket: not found', die zwei Locking-Zeilen (restore und Hintergrund-fetch nehmen dasselbe Lock) und die Zeile ueber den verlorenen Wettlauf mit abgeschnittenem Namen. Alle beschreiben Zwischenstaende innerhalb derselben unveroeffentlichten Sektion - kein Benutzer hat je einen Build gesehen, in dem sie fehlten. Wer sie sucht: git show 686daa5:core/release/NOTES.md.
+
+DoD 4 bleibt offen und gehoert nicht in diese Lane: die Umbenennung nach '## 0.3.0' faehrt in dem Commit, den der Mensch taggt, und 9ZZSFT/0YGWXQ/7KX89C/GTQHNH stehen noch in signoff. Das Ticket kann die Endlane nicht erreichen, bevor das passiert ist.
