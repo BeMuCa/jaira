@@ -1,7 +1,7 @@
 ---
 id: 01M2QFVJ5M1PSCX422VPD8CSAA
 title: 0.3.0 schneiden
-status: human
+status: review
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:31:12Z
+updated-at: 2026-09-17T15:32:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
