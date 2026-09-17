@@ -1,7 +1,7 @@
 ---
 id: 01M2R1ADY0S9Q512S3FK8XHZT5
 title: Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,14 +28,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:10:55Z
+updated-at: 2026-09-17T17:15:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
-outcome-what: "Zeilenumbruch einmal definiert: insertText (internal/tui/model.go:921-927) normalisiert \\r\\n und einzelnes \\r zu \\n, bevor ein Puffer den Text sieht. modeEdit haengt danach nur noch an, foldToOneLine (internal/tui/paste.go:41) verliert seine beiden ReplaceAll-Zeilen. Zwei Tests dazu: ein Fall \"a lone carriage return counts too\" in TestMultiLinePasteIsFoldedToSpaces und TestPasteNormalisesALoneCarriageReturnInTheFieldEditor."
-outcome-why: "critique (2. Durchlauf) hat genau einen Punkt offen gelassen: in insertText gab es zwei Definitionen von Zeilenumbruch - modeEdit kannte nur \\r\\n, foldToOneLine auch das einzelne \\r. Terminals schicken in einer Klammer-Einfuegung durchaus einzelne CR; die landeten roh im Editorpuffer und damit in der Ticketdatei."
-outcome-resolves: "Plan 11. DoD 4 bleibt erfuellt und ist mit neuem Proof belegt: die Faltungsentscheidung gilt jetzt fuer alle drei Umbruchformen. go build ./... und go test ./... komplett gruen."
-review-summary: "internal/tui/model.go:922 - modeEdit normalisiert Zeilenenden selbst mit ReplaceAll(\"\\r\\n\",\"\\n\") und kennt das einzelne \\r nicht, das foldToOneLine (paste.go:40-41) sehr wohl kennt; ein Terminal, das beim Einfuegen CR statt LF schickt, schreibt damit rohe \\r in editBuf und von dort in die Ticketdatei. Stattdessen: die Normalisierung einmal oben in insertText erledigen (CRLF und CR zu LF), danach haengt modeEdit nur noch an und foldToOneLine verliert seine beiden ReplaceAll-Zeilen - eine Definition von 'Zeilenumbruch' statt zwei in derselben Funktion."
+outcome-what: "Removed the forwarding wrapper Model.paste; the PasteMsg branch calls insertText directly and carries the rationale"
+outcome-why: "A wrapper with one caller that only forwards is one indirection between the event and the code that handles it, and it kept the explanation in a different file from the branch it explains"
+outcome-resolves: "optimize pass: no duplication, no dead code, no behaviour change"
+review-summary: "none"
+review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one caller that only forwarded to insertText; its rationale now sits at the 'case tea.PasteMsg' branch in model.go and the tea import went with it. Left alone: foldToOneLine has no duplicate in the repo (view.go wrap* folds the other way, edit.go:178 is display-only, core/lane/corrections.go:219 is file reading in another package), and the two ReplaceAll on the per-keystroke path allocate nothing when there is no match. No dead code and no behaviour change; tests green, go vet clean."
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
@@ -112,3 +113,12 @@ Warum oben und nicht in jedem Zweig: die beiden Definitionen sind genau so ausei
 Nachweis, dass es vorher wirklich kaputt war: TestPasteNormalisesALoneCarriageReturnInTheFieldEditor faellt mit dem alten ReplaceAll(text, "\r\n", "\n") im modeEdit-Zweig um - das einzelne \r landete roh im editBuf und damit in der Ticketdatei.
 
 Keine NOTES.md-Zeile dafuer: die vorhandene Zeile unter ## Unreleased beschreibt das Einfuegen als Ganzes, und diese Runde aendert nichts, was ein Benutzer ausserhalb davon bemerken koennte.
+- **2026-09-17 17:13 · Alexander Sacharov** — critique (3. Durchlauf): nichts mehr zu beanstanden, review-summary=none. Der Punkt des zweiten Durchlaufs ist abgearbeitet - insertText (model.go:921-927) normalisiert \r\n und einzelnes \r einmal zu \n, bevor irgendein Puffer den Text sieht; modeEdit haengt nur noch an, foldToOneLine (paste.go:41) traegt keine ReplaceAll-Zeile mehr und dokumentiert die Abhaengigkeit ('Carriage returns are already gone'). Eine Definition von Zeilenumbruch, an einer Stelle.
+
+Geprueft und ohne Befund, damit es kein vierter Durchlauf nochmal aufmacht:
+- Vollstaendigkeit: 'grep k.Text' ueber internal/tui findet genau vier Aufrufstellen (model.go:975, 996, 1012, edit.go:136), alle rufen insertText. Kein Puffer liest k.Text noch direkt, kein Feld fehlt.
+- Keine Verhaltensaenderung im Tastenpfad: 686daa5:model.go gegen heute verglichen - modeFilter setzte schon vorher m.filter und rief rebuild() beim Tippen, modeCreate/modeDelete haengten nur an. insertText bildet beides unveraendert ab, nur die 'if k.Text != ""' sind in die eine Leerpruefung oben gewandert.
+- Die Behebung ist nicht tot: charm.land/bubbletea/v2@v2.0.8 cursed_renderer.go:115 schaltet Bracketed Paste von sich aus ein (DisableBracketedPasteMode ist der Ausschalter, niemand setzt ihn). tea.NewProgram ohne Option genuegt also, es fehlt kein Aktivierungsschritt.
+- Nicht wieder aufgemacht: Model.paste als Einzeiler mit einem Aufrufer (spiegelt m.key(msg) im selben switch) und die Leerpruefung im modeFilter-Zweig (spart ein rebuild() ueber die ganze Tafel) - beide im 2. Durchlauf bewusst stehen gelassen.
+- editKey 'enter' haengt \n direkt an statt ueber insertText: identisches Ergebnis, der Umweg waere reine Indirektion.
+- **2026-09-17 17:15 · Alexander Sacharov** — optimize: entfernt wurde der Wrapper Model.paste in internal/tui/paste.go - er leitete nur an insertText weiter und hatte genau einen Aufrufer. Die Begruendung, warum ein Einfuegen keine Tastenbindung sein kann, steht jetzt direkt am 'case tea.PasteMsg' in model.go, also dort, wo jemand sie liest. paste.go haelt nur noch foldToOneLine; der tea-Import ist damit weg. Geprueft und stehen gelassen: foldToOneLine hat kein Gegenstueck im Repo - view.go wrapLines/wrap gehen in die andere Richtung, edit.go:178 ersetzt Umbrueche fuer die Anzeige durch ' ⏎ ', core/lane/corrections.go:219 normalisiert CRLF beim Dateilesen und gehoert einem anderen Paket. Die zwei ReplaceAll in insertText laufen bei jedem Tastendruck, kosten aber nichts: strings.Replace gibt bei null Treffern denselben String ohne Allokation zurueck. Tests gruen, go vet sauber.

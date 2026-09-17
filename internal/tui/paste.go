@@ -1,30 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	tea "charm.land/bubbletea/v2"
-)
-
-// paste takes text the terminal handed over as a bracketed paste and puts it
-// where a typed character would have gone.
-//
-// A paste is not a keypress. The terminal wraps it in its own escape sequence
-// and the decoder turns that into a tea.PasteMsg, so none of it ever reaches
-// Model.key — which is why every input field swallowed pasted text until this
-// existed.
-//
-// It cannot be done through the key layout either. cmdKey reads a key by its
-// physical position, but the decoder clears Key.Text as soon as a modifier
-// beyond shift is down (see the note at keylayout.go's cmdKey), so a ctrl+v
-// carries no character to place and there is nothing for a layout to map.
-// Handling the event instead makes the layout irrelevant: a Cyrillic or German
-// keyboard pastes through the same branch as a US one, because the paste never
-// was a key combination to begin with.
-func (m *Model) paste(text string) (tea.Model, tea.Cmd) {
-	m.insertText(text)
-	return m, nil
-}
+import "strings"
 
 // foldToOneLine folds a block into the one line a single-line field can hold.
 //

@@ -898,9 +898,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.key(msg)
 
 	// A paste arrives as an event of its own, never as a key, so it needs a
-	// branch of its own — see paste.go for why it cannot be a key binding.
+	// branch of its own: the terminal wraps a bracketed paste in its own escape
+	// sequence and the decoder turns that into a tea.PasteMsg, which never
+	// reaches Model.key. That is why every input field swallowed pasted text.
+	//
+	// A key binding could not do it either. cmdKey reads a key by its physical
+	// position, but the decoder clears Key.Text as soon as a modifier beyond
+	// shift is down (see the note at keylayout.go's cmdKey), so a ctrl+v carries
+	// no character to place. Handling the event instead makes the layout
+	// irrelevant: a Cyrillic or German keyboard pastes through this same branch
+	// as a US one, because the paste never was a key combination to begin with.
 	case tea.PasteMsg:
-		return m.paste(msg.Content)
+		m.insertText(msg.Content)
+		return m, nil
 	}
 	return m, nil
 }
