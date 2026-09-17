@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:42:10Z
+updated-at: 2026-09-17T19:48:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
-outcome-what: "internal/cli/mode_test.go auf den vorhandenen jsonCLI-Helfer (internal/cli/tags_test.go:64) gelegt: vier handgeschriebene runCLI+json.Unmarshal-Bloecke raus, -52/+6 Zeilen, Import 'encoding/json' faellt weg."
-outcome-why: "Pass 1 (Duplikat): dasselbe Testpaket hatte die Funktion schon, samt besserer Fehlermeldung. Zwei Wege, ein CLI-JSON zu lesen, werden beide gepflegt von Leuten, die den anderen nicht kennen."
-outcome-resolves: "review-gaps geschrieben: ein Fund behoben, vier geprueft und begruendet stehen gelassen, ein vorbestehender toter Code benannt, ein Verhaltensbefund (announce.go:64) an die naechste Runde weitergereicht. go build/vet/test ./... -count=1 gruen."
+outcome-what: "core/board/announce.go: der Punkt zu 'jaira show --for-lane --json' fuehrt jetzt 'mode' in der Nutzlast auf, sagt was leer und was 'conversational' bedeutet (Diff nach jedem DoD-Punkt, fertige Commit-Zeile statt eigenem Commit) und dass der Modus vom Ticket gelesen wird. Test TestAgentNoteNamesTheConversationalMode, eine NOTES.md-Zeile unter ## Unreleased, AGENTS.md und CLAUDE.md dieses Repositories mit dem gebauten Binary regeneriert."
+outcome-why: "Auf einem fremden Board liegt kein jaira-role-lane-Prompt. Der von 'jaira update' geschriebene Block ist dort die einzige Stelle, an der ein Agent von 'mode' erfaehrt — ohne ihn reist der Schluessel in der --for-lane-Nutzlast mit, ohne dass irgendetwas ihn beschreibt, und der Gespraechsmodus erreicht nur das Board von jaira selbst."
+outcome-resolves: "DoD 13: der ausgelieferte Block nennt den Modus (announce.go:64-72), NOTES.md:17 sagt dem Leser, dass 'jaira update' faellig ist."
 review-summary: none
 review-gaps: |-
   Entfernt: die vier handgeschriebenen runCLI+json.Unmarshal-Bloecke in internal/cli/mode_test.go — jsonCLI (internal/cli/tags_test.go:64) tut im selben Testpaket genau das und meldet den Fehler besser. -52/+6 Zeilen, Import 'encoding/json' faellt weg, go build/vet/test ./... -count=1 gruen.
@@ -95,6 +95,8 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
   proof: grep 'Testing is not a lane' core/ findet nichts mehr; core/role/builtin/jaira-dispatcher/SKILL.md:157 lautet jetzt '/jaira-role-lane <id> <lane> — every lane, testing included'; spawn.sh und jaira-role-tester/SKILL.md stehen unveraendert in 'git status --short'
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
   proof: core/release/NOTES.md:16 (mitlaufende Kritik), :17 (notes als Lane-Eingabe) und :18 (die Pause, die neue Dateien sieht), alle drei unter ## Unreleased
+- [x] Der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, nennt den Modus: core/board/announce.go zaehlt die Nutzlast von 'jaira show --for-lane --json' auf und fuehrt 'mode' darin mit, damit ein Agent auf einem fremden Board ueberhaupt erfaehrt, dass es den Schluessel gibt. Je eine Zeile in core/release/NOTES.md, wenn sich der ausgelieferte Blocktext dadurch aendert.
+  proof: core/board/announce.go:64-72 (Punkt 'mode' in der --for-lane-Nutzlast); Test TestAgentNoteNamesTheConversationalMode in core/board/announce_test.go:151; core/release/NOTES.md:17; regeneriert in AGENTS.md:34-42 und CLAUDE.md:61-69
 
 ## Options
 
@@ -144,6 +146,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
   proof: core/role/builtin/jaira-role-lane/SKILL.md:30-38
 - [x] critique 12: jaira-dispatcher/SKILL.md:120 — die 106-Zeichen-Zeile wie die Nachbarn bei ~78 umbrechen
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:120-129
+- [x] testing 1: core/board/announce.go nennt 'mode' in der --for-lane-Nutzlast; Test, NOTES.md-Zeile, 'jaira update' fuer AGENTS.md/CLAUDE.md
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
@@ -526,3 +529,14 @@ Zwei Dinge, die nach Duplikat aussahen und keines sind — damit die naechste Ru
 2. newModeTicket vs. movableTicket (internal/cli/nextstep_test.go:12) sind nicht dasselbe Fixture: movableTicket legt ein Ticket im backlog an, claimt es und setzt JAIRA_HOME; newModeTicket braucht status=in-progress, keinen claim und eine deterministische ID. Zusammenlegen hiesse beiden Tests Zustand aufzudraengen, den sie nicht wollen.
 
 Vorbestehender toter Code, den ich stehen lasse: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now'. Aelter als diese Aenderung.
+- **2026-09-17 19:47 · Alexander Sacharov** — In-progress nach testing: DoD 13 (der ausgelieferte Block nennt den Modus) gebaut.
+
+Was ich gefunden habe und nicht in der Aufgabe stand: der Blocktext wird von jaira selbst in AGENTS.md und CLAUDE.md dieses Repositories getragen. Eine Aenderung an core/board/announce.go allein laesst beide Dateien zurueck, und 'jaira validate' meldet das als Drift (NoteIsCurrent, core/board/announce.go:252). Regeneriert habe ich mit dem GEBAUTEN Binary (go build -o /tmp/.../jaira-build ./cmd/jaira && ./jaira-build update), nicht mit dem 'jaira' auf dem PATH — das ist die alte Version und haette den alten Text zurueckgeschrieben. Wer nach einer Aenderung an announce.go 'jaira update' vom PATH aufruft, macht seine eigene Aenderung rueckgaengig, ohne es zu merken.
+
+Wortlaut: der Punkt nennt vier Dinge, nicht nur den Schluessel — was leer heisst, was 'conversational' vom Agenten verlangt (Diff nach jedem DoD-Punkt, fertige Commit-Zeile statt eigenem Commit), und dass der Modus VOM TICKET gelesen wird, nicht aus der Startzeile. Der letzte Halbsatz ist der, der auf einem fremden Board am meisten traegt: dort liegt kein jaira-role-lane-Prompt, der es sonst sagen wuerde, also ist dieser Block die einzige Stelle, an der 'mode' ueberhaupt erklaert wird. Ein Schluessel in der Nutzlast, den nirgends etwas beschreibt, wird nicht gelesen.
+
+Bewusst NICHT aufgenommen: der Halt vor der Plan-Lane (Entscheidungen zaehlen) und die mitlaufende Kritik. Beides sind Dispatcher-Eigenschaften und leben in den Rollen-Prompts; der Block beschreibt, was die CLI liefert, und eine zweite Kopie der Rollenregeln darin haette dieselbe Drift erzeugt, die optimize am 16.09. schon einmal angemerkt hat.
+
+Der Test (announce_test.go:151) prueft nur, dass 'mode' und 'conversational' im Block stehen — nicht den Wortlaut. Die byte-genaue Zusage haelt TestAnnounceRegeneratesByteForByteWithNoLocalMarker ohnehin schon; ein zweiter Wortlaut-Test waere ein Test, der bei jeder Umformulierung rot wird, ohne je einen Defekt zu fangen.
+
+go build, go vet, go test ./... -count=1 gruen.

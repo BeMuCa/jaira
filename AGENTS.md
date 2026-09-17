@@ -32,7 +32,14 @@ Working a ticket:
 
 - `jaira claim <id>` — take it first; other sessions read this board too
 - `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,
-  the model tier, and the outputs the lane expects back
+  the model tier, the outputs the lane expects back, and `mode`. Empty — the
+  usual case — means the lanes run autonomously. `conversational` means a person
+  found open design decisions on this ticket and is reading along: show the diff
+  after every definition-of-done item instead of at the end, and, where the lane
+  changed code, hand back a ready-to-paste `git add`/`git commit` line with the
+  ticket id in its subject rather than committing yourself. Read it off the
+  ticket, never off the line that started you — that is what makes it survive a
+  killed session
 - `jaira dod <id> <n> --done --proof "<file:line or test name>"` — tick an
   acceptance criterion and say what makes it true. These are what the terminal
   lane's gate reads: one left unticked refuses the move however finished the
