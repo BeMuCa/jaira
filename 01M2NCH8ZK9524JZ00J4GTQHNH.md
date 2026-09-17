@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:26:04Z
+updated-at: 2026-09-17T21:26:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -102,7 +102,7 @@ review-check: |-
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '3. Do not commit. Hand back the commit line instead.' — statt 'git commit' die fertige 'git add'/'git commit'-Zeile mit Handle im Betreff und der Ticket-Datei im 'git add', begruendet im Absatz 'The handle in the subject is not decoration'; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'What the mode changes for you', Punkt 'A worker that changed code hands you a commit line instead of committing'
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:139-178 — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
+  proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '2. Show the code after every definition-of-done item, not at the end.' — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
   proof: core/release/NOTES.md:17 (Modus, inkl. der Kopfzeile von 'jaira show --for-lane') und :18 (Committen von Hand), beide unter ## Unreleased
 - [x] Im Gespraechsmodus laeuft eine Kritik mit, waehrend an dem Ticket gearbeitet wird, und meldet ihre Befunde sofort - nicht erst, nachdem die implementierende Lane fertig ist. Der Modus und die mitlaufende Kritik stehen im selben Prompt und wirken zusammen.
