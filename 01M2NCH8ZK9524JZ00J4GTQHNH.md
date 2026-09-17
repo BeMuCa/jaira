@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:07:13Z
+updated-at: 2026-09-17T21:07:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -660,3 +660,18 @@ KEINE NOTES.md-Zeile, bewusst und mit demselben Argument wie in Runde 11: die vo
 Nicht angefasst, mit der Notiz, auf der ich stehe: Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
 
 Nachgezogen, weil die Einfuegungen die Datei verschoben haben: die proof-Zeilen von DoD 9, 14 und 15 zeigen auf die Bereiche nach dieser Runde. go build und go test ./... -count=1 gruen.
+- **2026-09-17 21:07 · Alexander Sacharov** — critique (17. Durchgang, ueber c61df66): fuenf Befunde, alle in den proof-Zeilen des Tickets, keiner im Go-Code und keiner in der Prosa der beiden Prompts. Keine Entscheidung fuer den Menschen.
+
+Die beiden umgeschriebenen Saetze selbst (SKILL.md:26-33 und :117-122) sind richtig und schliessen die Befunde aus Runde 16: der Kopf verzweigt jetzt vor dem Schreibauftrag, und 'do not judge the diff it gave you' laesst Ziel, DoD und Notizen ausdruecklich als Massstab stehen. Kein Befund dazu.
+
+Der Befund liegt daneben: c61df66 hat die proof-Zeilen von DoD 9, 14 und 15 nachgezogen, weil die Einfuegungen die Datei um zweimal fuenf Zeilen verschoben haben - die uebrigen nicht. Zwei davon (NOTES.md-Zeilen, announce.go-Block) belegen ihren Punkt inhaltlich gar nicht mehr: sie tragen wortgleich den proof des jeweils naechsten Punktes, ein Versatz um eine Position. Zwei weitere zeigen in den falschen Abschnitt derselben Datei, zwei auf falsche Zeilen im Dispatcher-Prompt. Die belegte Arbeit existiert in allen sechs Faellen - nachgesehen: NOTES.md:17-22 und announce.go:65 -, nur der Zeiger stimmt nicht.
+
+Warum das zaehlt und nicht Kosmetik ist: die proof-Zeile ist das, was die Endlane und ein spaeterer Leser als Beleg lesen. Ein proof, der auf den falschen Abschnitt zeigt, ist schlimmer als keiner - er liest sich als geprueft.
+
+Vorschlag zur Reparatur: die proof-Zeilen NICHT wieder einzeln nachziehen, sondern auf Abschnittsueberschriften statt Zeilenbereiche umstellen, wo es geht (etwa "jaira-role-lane/SKILL.md, Abschnitt '3. Do not commit'"). Sechzehn Runden haben gezeigt, dass Zeilennummern in einer Prompt-Datei, die jede Runde waechst, nicht haltbar sind; genau dieser Befund kam schon in Runde 14. Das ist eine Gestaltungsfrage und keine reine Reparatur - wenn in-progress sie nicht so entscheiden will, reichen die sechs korrigierten Bereiche.
+
+Nachgeprueft und KEIN Befund: die drei Pathspec-Bloecke (unveraendert seit Runde 15, dort am laufenden Worktree geprueft), die Behauptung 'every round after the first ... complete: true' mit flow.go:589-595, die proof-Zeilen von DoD 9 (:74-105), 14 (:104-129) und 15 (:159-169) - alle drei treffen den Bereich nach c61df66. Die Dispatcher-proofs :44, :54, :96 und :100-136 treffen ebenfalls.
+
+Ausdruecklich stehen gelassen, mit Verweis: die doppelte Frage 'Are you the lane that writes?' in SKILL.md:27 und :35 - Alex' Freigabe vom 17.09. 20:59 lautete 'genau zwei Saetze, sonst nichts anfassen', und die Wiederholung ist die Folge davon; sie fuehrt niemanden in die Irre. Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
+
+FUER DEN DISPATCHER: das ist der vierte Ruecklauf ueber die Reparatur der review-Befunde (Runden 14, 15, 16 und dieser). Die Drei-Ruecklauf-Regel greift weiterhin - ob diese Runde laeuft, ist Alex' Entscheidung. Sie fasst keine Prosa an: sechs proof-Zeilen im Ticket, sonst nichts.
