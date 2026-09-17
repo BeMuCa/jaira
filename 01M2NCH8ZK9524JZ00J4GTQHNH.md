@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:38:27Z
+updated-at: 2026-09-17T20:38:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -170,7 +170,7 @@ review-check: |-
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:120-129
 - [x] testing 1: core/board/announce.go nennt 'mode' in der --for-lane-Nutzlast; Test, NOTES.md-Zeile, 'jaira update' fuer AGENTS.md/CLAUDE.md
 - [x] critique 14: jaira-dispatcher/SKILL.md:110 — 'That last sentence' zeigt auf den falschen Satz; auf den Diff-Satz umschreiben
-- [ ] critique 14: jaira-role-lane/SKILL.md — die drei Kommandos der mitlaufenden Kritik bekommen den Pathspec ':/ :(exclude,top).jaira/tickets', plus Halbsatz, dass frische Notizen mit 'jaira show <id> --json' gelesen werden
+- [~] critique 14: jaira-role-lane/SKILL.md — die drei Kommandos der mitlaufenden Kritik bekommen den Pathspec ':/ :(exclude,top).jaira/tickets', plus Halbsatz, dass frische Notizen mit 'jaira show <id> --json' gelesen werden
 - [ ] critique 14: die proof-Zeilen von DoD 5 und DoD 10 auf die Bereiche nach 113628e umschreiben
 
 ## Progress
