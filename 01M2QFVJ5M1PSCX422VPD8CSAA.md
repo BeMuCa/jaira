@@ -1,7 +1,7 @@
 ---
 id: 01M2QFVJ5M1PSCX422VPD8CSAA
 title: 0.3.0 schneiden
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:11:41Z
+updated-at: 2026-09-17T15:11:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
 mode: conversational
-outcome-what: "testing ohne Befund abgeschlossen: Gates gruen (go build ./..., go vet ./..., go test -race -count=1 ./... RC=0 ueber 29 Pakete), DoD 1-3 am Arbeitsbaum verifiziert statt am Outcome-Text, und 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 gegen das aus diesem Baum gebaute Binary ausgefuehrt - es liest genau die 9 Unreleased-Zeilen vor, keine gespalten. Nebenbefund ohne Rueckgabe: der fuer DoD 2 zitierte TestEmbeddedNotesParseToAtLeastOneRealEntry belegt nur, dass ueberhaupt ein Eintrag parst, und wuerde eine umgebrochene Zeile nicht melden - die Sektion wurde deshalb selbst gescannt."
-outcome-why: "Diese Lane prueft, ob das Geforderte existiert und funktioniert. Kein vom Benutzer getipptes Kommando und keine Taste ist beim Falten verloren gegangen: die vier gegenueber 686daa5 fehlenden Tokens ('elease', 'next-release', der --json-Schluessel 'milestone', 'ticket: not found') gehoeren samt und sonders zu nie ausgelieferten Zwischenstaenden und sind im Progress bewusst protokolliert."
-outcome-resolves: "Keine DoD-Position - diese Lane hat nichts geaendert. DoD 1-3 bleiben wie von in-progress belegt, jetzt zusaetzlich am Baum nachgeprueft; DoD 4 ist die Frage an den Menschen."
+outcome-what: "core/release/NOTES.md: '## Unreleased' in '## 0.3.0' umbenannt und eine frische leere '## Unreleased' darueber gesetzt. Die 9 gefalteten Zeilen stehen damit unter der Version, die getaggt wird; die leere Kopfsektion nimmt die naechsten Aenderungen auf."
+outcome-why: "Die Freigabe des Menschen vom 2026-09-17 15:09 hat den Schnitt angeordnet, nachdem 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH in signoff angenommen wurden. Ohne die Umbenennung liest 'jaira update' die vier Aenderungen weiter als 'Unreleased' vor, obwohl sie ausgeliefert sind."
+outcome-resolves: "DoD 4: die Umbenennung und die neue leere Sektion stehen in core/release/NOTES.md:16-18; der Tag v0.3.0 bleibt beim Menschen. DoD 1-3 waren vorher abgehakt und sind unberuehrt - die 9 '- '-Zeilen sind unveraendert, nur die Ueberschrift darueber ist neu."
 review-summary: "none"
 review-gaps: "Nichts entfernt. Doppelung: keine - kein Milestone-Satz steht in einer getaggten Sektion, und die 5 gefalteten Zeilen ueberschneiden sich untereinander nicht. Tote Aussagen: keine - jedes genannte Kommando, Flag und Feld existiert im Code (internal/cli/milestones.go:77,172,178,197,309; core/milestone/milestone.go:303; internal/cli/archive.go:95; milestones_filed in internal/cli/fetch.go). Behalten statt gestrichen: 'rm entfernt nur die Zeile' (NOTES.md:21) steuert ein Kommando und ist keine Beruhigung, 'die Karte ist genau so breit' (23) beantwortet die TUI-Befuerchtung; 'und Erstellzeit' (21) ist echter Fluff, aber 18 Zeichen. Kosten: entfaellt, Zeilenscan ohne Laengengrenze, die create-Zeile ist mit 907 Zeichen nicht die laengste der Sektion (PR-Zeile 918). Liegengelassen, weil ausserhalb dieser Aenderung: die beiden spawn.sh-Zeilen (19/20, aus 7KX89C) nennen dasselbe Skript, aber nur eine sagt, wie man es bekommt; '--color' ist bei milestone 1-255 und bei tag 0-255 (internal/cli/tags.go:389)."
 test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete); DoD 1-3 am Baum nachgeprueft - '## Unreleased' traegt 9 Zeilen, alle beginnen mit '- ', keine umgebrochen, kein vom Benutzer getipptes Kommando beim Falten verloren; 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 liest genau diese 9 Zeilen vor. DoD 4 offen und beim Menschen."
