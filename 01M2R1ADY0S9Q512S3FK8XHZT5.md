@@ -1,7 +1,7 @@
 ---
 id: 01M2R1ADY0S9Q512S3FK8XHZT5
 title: Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:05:17Z
+updated-at: 2026-09-17T17:05:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
-outcome-what: "Ein Einfuegen aus der Zwischenablage kommt jetzt in jedem Eingabefeld der Tafel an. Model.Update hat einen eigenen Zweig 'case tea.PasteMsg' neben tea.KeyPressMsg (internal/tui/model.go:900), der nach internal/tui/paste.go:24 Model.paste fuehrt; der bedient modeFilter, modeCreate, modeDelete und modeEdit. Die drei einzeiligen Felder laufen vorher durch sanitisePaste (paste.go:47-63): CR normalisiert, Umbrueche an den Enden weg, Umbruchketten zu einem Leerzeichen; modeEdit bleibt aussen vor, weil sein Puffer mehrzeilig ist. Neu: internal/tui/paste.go und paste_test.go mit 160 Zeilen Tests, eine Zeile in core/release/NOTES.md unter '## Unreleased'."
-outcome-why: "Ein Einfuegen kommt in bubbletea v2 als tea.PasteMsg an, nie als Taste (input.go:37). Update hatte genau einen Tastenzweig, also fiel das PasteMsg durch das Ende der Funktion und war weg - still, in allen vier Feldern, nicht nur in der Suche. Ueber die Tastaturbelegung war das nicht zu loesen: cmdKey kann Strg+V nicht verschieben, weil der Dekoder Key.Text loescht, sobald ein Modifikator jenseits von Shift gedrueckt ist (keylayout.go:38-42). Es ist auch nicht noetig - ein Terminal-Ereignis hat keine Belegung, also bekommen kyrillische und deutsche Tastaturen die Behebung geschenkt."
-outcome-resolves: "DoD 1 bis 6. Gegenprobe gemacht: mit auskommentiertem PasteMsg-Zweig fallen 14 der neuen Faelle um."
+outcome-what: "Die Modus->Puffer-Zuordnung liegt jetzt einmal in Model.insertText (internal/tui/model.go:914) statt viermal verteilt. key()s drei default-Zweige (model.go:967, 988, 1004), das Ende von editKey() (edit.go:136) und Model.paste (paste.go:24) rufen alle dieselbe Funktion - getippter und eingefuegter Text nehmen denselben Weg in den Puffer. sanitisePaste heisst foldToOneLine (paste.go:39) und faltet in einem Durchlauf (Split/leere weg/Join) statt in der Schleife ueber strings.Contains. Die leere Eingabe wird einmal oben in insertText abgefangen; die drei 'if k.Text != \"\"' und die zwei wirkungslosen 'if s != \"\"' sind damit weg. Paste-Verhalten unveraendert, paste_test.go nicht angefasst, go test ./... gruen."
+outcome-why: "Die Kritik hat drei Luecken benannt: paste.go wiederholte die Modus->Puffer-Zuordnung samt der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft; die Faltschleife ging den Text wiederholt ab; und zwei Leerpruefungen bewachten nichts. Die erste ist die, auf die es ankommt - zwei getrennte Kopien derselben Zuordnung sind genau die Konstruktion, aus der dieser Fehler entstanden ist: ein Feld nahm getippten Text und verschluckte eingefuegten. Eine Funktion fuer beide macht ein erneutes Auseinanderlaufen unmoeglich."
+outcome-resolves: "DoD 1 bis 6, Proofs auf die neuen Zeilen nachgezogen. Die drei Kritikpunkte aus review-summary sind abgearbeitet: Punkt 1 durch insertText, Punkt 2 durch foldToOneLine in einem Durchlauf, Punkt 3 durch die eine Leerpruefung oben. Nachweis, dass nichts verschoben wurde: paste_test.go ist unveraendert und gruen."
 review-summary: |-
   internal/tui/paste.go:25-41 wiederholt die Zuordnung Modus->Puffer, die schon in internal/tui/model.go:936-940, 962-964, 980-982 und internal/tui/edit.go:136-138 steht - samt der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft; stattdessen eine Methode m.insertText(s string) in model.go neben key() anlegen, die den Modus-Switch und die Faltung einmal haelt, und sie aus den drei default-Zweigen von key(), aus dem Ende von editKey() und aus paste() rufen - getippter Text enthaelt nie einen Umbruch, die Faltung ist dort also ein No-op.
   internal/tui/paste.go:57-62: die Schleife 'for strings.Contains(text, "\n\n")' laeuft wiederholt ueber den ganzen Text; stattdessen einmal strings.Split(text, "\n"), leere Teile weglassen, mit " " joinen - das ersetzt Trim und Schleife durch einen Durchlauf.
