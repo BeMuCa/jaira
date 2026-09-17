@@ -7,18 +7,25 @@ description: "Work exactly one jaira lane of one ticket, then stop. Invoked as /
 
 Arguments: `<ticket-id> <lane>`. Without both, say what is missing and stop.
 
-The lane's instructions are not here — the board carries them:
+The lane's instructions are not here — the board carries them. Read first, and
+write nothing at all until you have — `jaira claim` included, writing as it does
+your name onto the ticket. On a ticket in conversational mode one of the two
+workers running on it must not write anything, and this is the call that tells
+you which of them you are:
 
 ```bash
-jaira claim <ticket-id> 2>/dev/null || true
 jaira show <ticket-id> --for-lane <lane> --json
 ```
 
-That gives you the lane prompt, the bounded input, and the outputs the lane owes
-back. Follow it, produce exactly those outputs, and nothing beyond them.
+That gives you the lane prompt, the bounded input, the outputs the lane owes
+back, and the `mode` key the section below turns on. Follow it, produce exactly
+those outputs, and nothing beyond them.
 
-Then finish the step yourself:
+Then take the ticket and finish the step yourself:
 
+- `jaira claim <ticket-id>` — before you work it; other sessions read this board
+  too. `2>/dev/null || true`: a ticket already claimed by you is not an error
+  worth stopping for
 - `jaira dod <id> <n> --doing|--done` as you go, not at the end
 - `jaira note <id> <text>` at every pause — dead ends, why this and not that.
   A killed session never gets a turn to write anything down.
@@ -63,13 +70,33 @@ Your lane argument equal to the ticket's `status` means you are the lane the
 ticket is actually in: work it as written above and below. Your lane argument
 different from it means you are the critique running beside that lane. Then
 read, and hand every finding to the dispatcher in the moment you have it —
-and write nothing at all: no `jaira note`, no `jaira set`, no `jaira move`, no
-`review-summary`, no commit line. Exactly one place writes those, and it is
-the dispatcher that started you.
+and write nothing at all: no `jaira claim`, no `jaira dod`, no `jaira note`, no
+`jaira set`, no `jaira move`, no `review-summary`, no commit line. Everything
+this file tells a worker to write is off, claiming the ticket included. Exactly
+one place writes those, and it is the dispatcher that started you.
+
+**Read it once, and do not read it again.** The status moves under you: the
+implementing worker ends its lane with `jaira move --to critique`, and from that
+moment the ticket's status equals your lane argument. Ask a second time and the
+answer flips — the running critique takes itself for the ordinary critique lane
+and writes the `review-summary` the dispatcher is about to write, which is the
+two writers on one field this whole point exists to prevent. So the first read
+decides, and nothing later un-decides it.
+
+That leaves one gap, and it has a rule of its own: if your session is restarted
+or compacted and you can no longer tell from your own context which of the two
+you were started as, **you are not the one that writes.** Say so to the
+dispatcher and let it answer — it knows, it started you. Asking costs one line;
+guessing wrong costs a second `review-summary` written over the first.
+
+Report and stop. A running critique does not sit waiting for more work after it
+has handed over its findings — it is done, and the dispatcher starts whatever
+comes next.
 
 This does not touch the ordinary critique lane: there the ticket's status is
-`critique` and your lane argument is `critique`, the two match, and it writes
-its `review-summary` and moves the ticket as always.
+`critique` at the moment that worker first reads it, and its lane argument is
+`critique` too — the two match, and it writes its `review-summary` and moves the
+ticket as always.
 
 **2. Show the code after every definition-of-done item, not at the end.**
 
