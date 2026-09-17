@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:12:50Z
+updated-at: 2026-09-17T22:13:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -746,3 +746,12 @@ Warum das bisher keiner Runde auffiel: die 18 critique-Runden haben Prosa gegen 
 Reparatur nach meiner Einschaetzung eine Zeile: die Bedingung an die Lane binden (mitlaufende Kritik nur, wenn das Lane-Argument 'critique' ist und der status nicht), statt an die blosse Ungleichheit. Alternative waere, den Dispatcher das Ticket vor dem Start bewegen zu lassen - das ist die groessere Aenderung und macht eine Annahme zur Pflicht, die heute nirgends steht.
 
 Nicht angefasst: nichts. Diese Lane hat keinen Code geaendert, also auch keinen Commit.
+- **2026-09-17 22:13 · Alexander Sacharov** — In-progress nach review 1 (2026-09-18): nur Prompt-Prosa und NOTES.md, kein Go-Code. Drei Dateien: core/role/builtin/jaira-role-lane/SKILL.md, core/role/builtin/jaira-dispatcher/SKILL.md, core/release/NOTES.md.
+
+Befund 1 (DoD 16), der Unterscheider. Der Fehler war nicht die Formulierung, sondern dass die Bedingung nur EINE Haelfte pruefte. Repariert ist sie an drei Stellen, und alle drei muessen dieselbe Bedingung tragen, sonst faellt der Leser auf die schwaechste zurueck: der Kopf von jaira-role-lane (der Absatz zu 'jaira show <id> --json'), der Absatz 'Both halves have to hold' im Abschnitt 1, und Punkt 2 im dispatcher-Abschnitt 'In conversational mode, a critique runs beside the work'. Warum nicht die andere Reparatur, die der Reviewer anbot ('der Dispatcher bewegt das Ticket, bevor er den Worker startet'): sie haette die Reihenfolge von Schritt 2 und Schritt 5 der Schleife gedreht und damit ein Ticket in einer Lane stehen lassen, deren Worker noch gar nicht laeuft — der Zustand, den 'jaira resume' als unterbrochene Arbeit liest. Die Bedingung zu verengen kostet drei Absaetze, die Schleife zu drehen kostet die Bedeutung des status.
+
+Befund 2 (DoD 17). Was hier NICHT repariert wurde: der Defekt selbst. showForLane in internal/cli/flow.go nimmt 'shas := t.Commits' und fragt git nur, wenn das Feld leer ist — auf diesem Ticket sind das 3 SHAs gegen 21 Commits auf dem Branch, und der Payload kommt trotzdem mit complete:true. Das ist vorbestehend, dieser Branch fasst den Ableitungscode nicht an, und die Reparatur ist eine Entscheidung ueber die Bedeutung von 'commits:' (Aufzeichnung oder Zwischenspeicher), nicht eine Zeile. Sie liegt jetzt als eigenes Ticket auf dem Board. Der Prompt sagt bis dahin, wie man es merkt: 'jaira show <id> --json | jq .commits | length' gegen 'git log master..HEAD | wc -l', und bei Ungleichheit 'git diff master...HEAD'.
+
+Zeilenlaengen: die Einfuegung in dispatcher Punkt 2 hat zwei Nachbarzeilen ueber 85 Zeichen geschoben, beide neu umbrochen. Ueber 85 bleibt nur Frontmatter und dispatcher:233 (vormals 230, aelter als dieses Ticket).
+
+go build, go vet und 'go test ./... -count=1' gruen.
