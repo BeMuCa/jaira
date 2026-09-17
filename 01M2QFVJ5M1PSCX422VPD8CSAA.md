@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:34:53Z
+updated-at: 2026-09-17T15:35:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -147,3 +147,14 @@ Belege: Stempel 0.3.0 -> 'Nothing has changed since the version that last set th
 Zwei Beobachtungen, beide kein Fail:
 (1) Die optimize-Lane hat 'withChanges' wieder in 'sinceEntries' hineingezogen - die Aenderung liegt UNCOMMITTED im Worktree (git diff core/release/release.go). Verhalten identisch, beide Tests gruen. Die Proof-Zeile von DoD 6 nennt aber noch 'core/release/release.go:84 withChanges', und diese Funktion existiert im Baum nicht mehr. Der Nachweis stimmt inhaltlich (der Filter sitzt in sinceEntries, nicht in parseNotes), nur die Zeilenreferenz ist veraltet.
 (2) DoD 5 und DoD 6 sind weiterhin derselbe Punkt aus zwei Blickwinkeln (in der 15:16-Notiz schon festgehalten) - beide mit demselben Lauf abgehakt.
+- **2026-09-17 15:35 · Alexander Sacharov** — review: eine Beanstandung, und sie korrigiert eine Tatsachenbehauptung aus der 15:20-Notiz.
+
+Dort steht, die Filter-Behebung brauche keine NOTES.md-Zeile, weil 'die leere Unreleased ueberhaupt erst durch den Schnitt in diesem Baum (e23e98c) entsteht' - der Fehler sei nie ausgeliefert worden. Nachgesehen statt geglaubt: 'git show v0.2.1:core/release/NOTES.md' traegt in Zeile 16 '## Unreleased' und in Zeile 18 '## 0.2.1'. Der Schnitt nach 0.2.1 hat dieselbe leere Sektion hinterlassen, und sie ist mit dem Tag hinausgegangen.
+
+Am Code nachgestellt, nicht abgeleitet: parseNotes auf der v0.2.1-Fassung, selectSince mit Stempel '0.2.1' liefert [{Version:Unreleased, Changes:nil}]. Jeder, der 0.2.1 installiert hat und 'jaira update' auf seinem 0.2.1-Board laufen laesst, liest seither 'What's changed since then:' und darunter die nackte Ueberschrift 'Unreleased' ohne einen Punkt. Das ist kein Zustand aus einem Arbeitsbaum, sondern der Zustand da draussen.
+
+Damit ist die Behebung 'changed CLI output' im Sinne von CLAUDE.md und schuldet eine Zeile. Das zweite Argument der 15:20-Notiz - eine Zeile wuerde die leere '## Unreleased' wieder fuellen und DoD 5 unpruefbar machen - traegt nicht, weil die Zeile nicht dorthin gehoert: v0.3.0 ist noch nicht getaggt, '## 0.3.0' ist nach CLAUDE.md also offene und keine geschlossene Historie, und die Behebung wird mit 0.3.0 ausgeliefert. Zeile unter '## 0.3.0', '## Unreleased' bleibt leer, DoD 5 bleibt pruefbar.
+
+Nicht beanstandet, weil geprueft und in Ordnung: der Filter sitzt an der einzigen Stelle, die Text und --json gemeinsam bedient (release.Since hat genau einen Aufrufer, internal/cli/update.go:81; release.Notes keinen ausserhalb des Pakets, per grep); entriesJSON baut mit make(..., 0, len) und liefert damit [] und nicht null; das Kriterium 'keine Changes' statt des Wortes 'Unreleased' haengt nicht an einer Ueberschrift, die CLAUDE.md umbenennen kann; die Zusammenfuehrung von withChanges in sinceEntries durch die optimize-Lane aendert das Verhalten nicht. go build/vet sauber, go test -count=1 ./core/release ./internal/cli gruen.
+
+Die veraltete Proof-Zeile von DoD 6 nennt weiterhin 'core/release/release.go:84 withChanges' - die Funktion gibt es seit d880f22 nicht mehr. Inhaltlich stimmt der Nachweis (der Filter sitzt in sinceEntries), nur die Referenz zeigt ins Leere. 'jaira dod' kann eine Proof-Zeile nicht ersetzen, deshalb steht die Korrektur hier.
