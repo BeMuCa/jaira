@@ -1,7 +1,7 @@
 ---
 id: 01M2QFVJ5M1PSCX422VPD8CSAA
 title: 0.3.0 schneiden
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:11:55Z
+updated-at: 2026-09-17T15:20:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -33,7 +33,7 @@ mode: conversational
 outcome-what: "core/release/NOTES.md: '## Unreleased' in '## 0.3.0' umbenannt und eine frische leere '## Unreleased' darueber gesetzt. Die 9 gefalteten Zeilen stehen damit unter der Version, die getaggt wird; die leere Kopfsektion nimmt die naechsten Aenderungen auf."
 outcome-why: "Die Freigabe des Menschen vom 2026-09-17 15:09 hat den Schnitt angeordnet, nachdem 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH in signoff angenommen wurden. Ohne die Umbenennung liest 'jaira update' die vier Aenderungen weiter als 'Unreleased' vor, obwohl sie ausgeliefert sind."
 outcome-resolves: "DoD 4: die Umbenennung und die neue leere Sektion stehen in core/release/NOTES.md:16-18; der Tag v0.3.0 bleibt beim Menschen. DoD 1-3 waren vorher abgehakt und sind unberuehrt - die 9 '- '-Zeilen sind unveraendert, nur die Ueberschrift darueber ist neu."
-review-summary: "none"
+review-summary: "core/release/release.go:60 sinceEntries — der Schnitt legt eine leere '## Unreleased' an, und die reist als Entry ohne Changes durch Since() bis in die Ausgabe. Board mit Stempel 0.3.0, Binary 0.3.0: 'jaira update' druckt 'What's changed since then:' + die nackte Ueberschrift 'Unreleased' und keinen einzigen Punkt; --json traegt {\"version\":\"Unreleased\",\"changes\":null}. Der Zweig len(notes)==0 in internal/cli/update.go:108 ('Nothing has changed since the version that last set this board up.') ist damit fuer jedes aktuelle Board unerreichbar. Stattdessen: in sinceEntries nach dem Schnitt die Entries ohne Changes aus dem Rueckgabewert filtern - nicht in parseNotes, das die leere Sektion absichtlich behaelt (TestParseNotesKeepsAnEmptyLeadingSection). Dann sehen Text und --json dieselbe Liste und der 'Nothing has changed'-Zweig lebt wieder."
 review-gaps: "Nichts entfernt. Doppelung: keine - kein Milestone-Satz steht in einer getaggten Sektion, und die 5 gefalteten Zeilen ueberschneiden sich untereinander nicht. Tote Aussagen: keine - jedes genannte Kommando, Flag und Feld existiert im Code (internal/cli/milestones.go:77,172,178,197,309; core/milestone/milestone.go:303; internal/cli/archive.go:95; milestones_filed in internal/cli/fetch.go). Behalten statt gestrichen: 'rm entfernt nur die Zeile' (NOTES.md:21) steuert ein Kommando und ist keine Beruhigung, 'die Karte ist genau so breit' (23) beantwortet die TUI-Befuerchtung; 'und Erstellzeit' (21) ist echter Fluff, aber 18 Zeichen. Kosten: entfaellt, Zeilenscan ohne Laengengrenze, die create-Zeile ist mit 907 Zeichen nicht die laengste der Sektion (PR-Zeile 918). Liegengelassen, weil ausserhalb dieser Aenderung: die beiden spawn.sh-Zeilen (19/20, aus 7KX89C) nennen dasselbe Skript, aber nur eine sagt, wie man es bekommt; '--color' ist bei milestone 1-255 und bei tag 0-255 (internal/cli/tags.go:389)."
 test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete); DoD 1-3 am Baum nachgeprueft - '## Unreleased' traegt 9 Zeilen, alle beginnen mit '- ', keine umgebrochen, kein vom Benutzer getipptes Kommando beim Falten verloren; 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 liest genau diese 9 Zeilen vor. DoD 4 offen und beim Menschen."
 question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH aus signoff angenommen, so dass '## Unreleased' jetzt nach '## 0.3.0' umbenannt, eine frische leere '## Unreleased' darueber gesetzt und v0.3.0 getaggt werden darf? Der gefaltete Text ist fertig und geprueft - es fehlt nur diese Entscheidung und der Tag, den ein Agent nicht setzen darf."
@@ -51,6 +51,10 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
   proof: grep ueber '## Unreleased': 'jaira milestone' 4x, '`M`' 2x, '--milestone' 1x, '--no-worktree' 1x, 'dispatch' 5x, 'jaira restore' 1x, 'refs/jaira/milestones' 1x, 'jaira fetch' 2x
 - [x] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
   proof: core/release/NOTES.md:16-18 — '## Unreleased' ist leer und neu, '## 0.3.0' traegt die 9 Zeilen; TestParseNotesKeepsAnEmptyLeadingSection deckt die leere Kopfsektion
+- [x] Wer 'jaira update' auf einem Board mit Stempel 0.3.0 laufen laesst, liest 'Nothing has changed since the version that last set this board up.' - und nicht die leere Ueberschrift 'Unreleased' ohne einen einzigen Punkt darunter. Dasselbe fuer --json: notes ist leer statt eines Eintrags mit changes: null.
+  proof: core/release/release.go:68 sinceEntries -> withChanges; jaira update auf Board mit Stempel 0.3.0 druckt 'Nothing has changed since the version that last set this board up.', --json traegt notes: []
+- [x] Eine leere '## Unreleased' erreicht die Ausgabe von 'jaira update' nicht: sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert (nicht parseNotes, das die leere Sektion absichtlich behaelt), Text und --json zeigen dieselbe Liste, und der Zweig 'Nothing has changed since ...' in internal/cli/update.go ist fuer ein Board mit Stempel 0.3.0 und Binary 0.3.0 wieder erreichbar. Mit Test nachgewiesen.
+  proof: core/release/release.go:84 withChanges; TestSinceDropsEntriesWithoutChanges (core/release/release_test.go); TestParseNotesKeepsAnEmptyLeadingSection weiter gruen; Stempel 0.2.1 liefert in Text und --json dieselbe Liste ['0.3.0']
 
 ## Options
 
@@ -65,6 +69,8 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
 - [x] Zeilenformat pruefen: jede Aenderung genau eine '- '-Zeile, kein Umbruch - go test ./core/release/
 - [x] Nachweisen, dass kein Kommando und keine Taste verloren ging: jaira milestone, M, --milestone, --no-worktree, dispatch, jaira restore
 - [x] Umbenennung nach '## 0.3.0' NICHT hier - sie gehoert in den Commit, den der Mensch taggt, nach Annahme der vier signoff-Tickets
+- [x] sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert - parseNotes bleibt unberuehrt
+- [x] Test fuer den leeren Unreleased-Eintrag; jaira update an einem Board mit Stempel 0.3.0 und mit 0.2.1 nachgesehen
 
 ## Progress
 - **2026-09-17 11:14 · Alexander Sacharov** — Entscheidung vom Menschen, vor der Plan-Lane: die 18 Milestone-Zeilen werden auf ca. 5 Zeilen gefaltet, je eine pro Faehigkeit, die ein Benutzer anders benutzt - (1) Milestone anlegen/aendern per CLI und per Hand in .jaira/milestones/<name>.md, (2) Board und 'jaira list' auf eine Runde einschraenken (--milestone, Taste M), (3) Milestone-Farben am RECHTEN Kartenrand lesen, (4) Milestone reist auf seinem eigenen Ref und kommt mit 'jaira fetch', (5) Milestone mit 'jaira logbook <name>' ablegen und mit 'jaira restore <name>.md' zurueckholen. Alle Zwischenstaende und Corner-Case-Abweisungen (drei Fassungen der create-Abweisung, Locking, verlorene Rennen) fallen weg - ein Benutzer hat sie nie gesehen. Nicht 4 Zeilen (eine Milestone-Zeile wuerde zu lang und Kommandos ertrinken darin), nicht 8-10. Die anderen drei Aenderungen bleiben je eine Zeile. DoD 3 bleibt gewahrt: jaira milestone, M, --milestone, --no-worktree, dispatch, jaira restore stehen weiter im Text.
@@ -94,3 +100,22 @@ Ausserhalb dieser Aenderung gefunden, NICHT angefasst: die beiden spawn.sh-Zeile
 Nachgesehen, nicht nur gebaut: Binary aus diesem Baum gegen ein Scratch-Board mit .jaira/version 0.2.1 laufen lassen; 'jaira update' liest die 9 Zeilen unter '0.3.0' vor, jede als ein Punkt.
 
 Befund ausserhalb dieser Lane, absichtlich nicht behoben: 'jaira update' druckt die leere Sektion 'Unreleased' als Ueberschrift ohne Inhalt mit. parseNotes behaelt sie absichtlich (TestParseNotesKeepsAnEmptyLeadingSection), aber der Renderer filtert Entries ohne Changes nicht. Das wird nach JEDEM Release so sein, weil CLAUDE.md eine frische leere '## Unreleased' vorschreibt. Kandidat fuer ein eigenes Ticket - hier waere es ein Fix ausserhalb des Auftrags.
+- **2026-09-17 15:15 · Alexander Sacharov** — critique (dritter Durchgang, auf den Schnitt-Diff e23e98c): ein Befund, und er liegt im Ziel des Tickets, nicht daneben.
+
+Das Ziel lautet 'wer jaira update nach 0.3.0 laufen laesst, liest vier Aenderungen'. Genau dieser Leser liest jetzt etwas Neues und Falsches: die leere '## Unreleased', die der Schnitt anlegt, wird von parseNotes als Entry gefuehrt und von Since() durchgereicht. Auf einem Board mit Stempel 0.3.0 druckt 'jaira update' 'What's changed since then:' und darunter nur die nackte Ueberschrift 'Unreleased'. Am gebauten Binary (-X main.version=0.3.0) gegen ein Scratch-Board nachgesehen, nicht abgeleitet.
+
+Der Folgeschaden ist groesser als der leere Titel: internal/cli/update.go:108 hat einen Zweig fuer len(notes)==0 mit dem Satz 'Nothing has changed since the version that last set this board up.'. Weil die leere Sektion immer ein Entry ist, ist dieser Zweig ab jetzt fuer jedes aktuelle Board tot - und zwar dauerhaft, weil CLAUDE.md nach jedem Release eine frische leere '## Unreleased' vorschreibt. --json zeigt dasselbe: notes traegt {version: Unreleased, changes: null}, ein Phantom-Release fuer jeden Leser des JSON-Vertrags.
+
+Ort des Fixes: core/release/release.go, sinceEntries - nach dem Schnitt die Entries ohne Changes herausfiltern. NICHT parseNotes, das die leere Sektion absichtlich behaelt (TestParseNotesKeepsAnEmptyLeadingSection); und nicht der Renderer allein, sonst weicht --json vom Text ab. Ein Filter an einer Stelle bedient Text, --json und den 'Nothing has changed'-Zweig zugleich.
+
+Der Implementierende hat das in der 15:11-Notiz selbst gesehen und als Ticket-Kandidat ausserhalb des Auftrags zurueckgestellt. Das ist der Punkt, an dem die critique widerspricht: der Auftrag ist die Ausgabe von 'jaira update' nach dem Schnitt, und der Schnitt selbst erzeugt den Defekt. Deshalb DoD 5 statt Satellitenticket.
+
+Geprueft und NICHT beanstandet: (1) der Schnitt selbst ist genau die von CLAUDE.md vorgeschriebene Form, zwei Zeilen, nichts Einfacheres denkbar; (2) die 9 gefalteten Zeilen sind unveraendert unter die neue Ueberschrift gerutscht - kein Text bewegt; (3) die 918-Zeichen-Zeile und 'rm loescht nur die Zeile' standen in frueheren Durchgaengen und werden nicht neu aufgemacht; (4) dass der Tag nicht gesetzt wurde, ist richtig und kein Mangel.
+- **2026-09-17 15:16 · Alexander Sacharov** — DoD 6 ist ein Duplikat von DoD 5 - der Dispatcher hat es angelegt, ohne zu sehen, dass die critique-Lane denselben Punkt schon als DoD 5 geschrieben hatte. 'jaira dod' kann keinen Punkt entfernen. Beide beschreiben denselben Fehler (leere '## Unreleased' reist als Entry ohne Changes durch Since() in die Ausgabe von 'jaira update') und werden mit demselben Nachweis abgehakt: DoD 5 aus Sicht des Benutzers, DoD 6 aus Sicht des Codes.
+- **2026-09-17 15:20 · Alexander Sacharov** — Der Filter sitzt in sinceEntries und nicht in parseNotes - die critique hatte das so verlangt und es stimmt: TestParseNotesKeepsAnEmptyLeadingSection haelt fest, dass der Parser die leere Kopfsektion als eigenen Entry behaelt, und daran haengt, dass die naechste Sektion ihre Changes nicht in die leere hineinfallen laesst. sinceEntries ist in selectSince (Auswahl nach Position) und withChanges (Filter) zerlegt, statt den Filter in die drei Rueckgabepfade der Auswahl zu streuen.
+
+KEINE Zeile in NOTES.md fuer diese Behebung. Das ist bewusst und nicht vergessen: die leere '## Unreleased' entsteht ueberhaupt erst durch den Schnitt in diesem Baum (Commit e23e98c), also war der Fehler nie in einem ausgelieferten Binary. Das ist genau die Klasse, die dieses Ticket schon zweimal aussortiert hat - ein Bug an einem nie ausgelieferten Zustand gehoert nicht in die Notizen. Eine Zeile haette ausserdem die leere '## Unreleased' wieder gefuellt und DoD 5 damit unpruefbar gemacht.
+
+Dead end beim Nachsehen an der echten Ausgabe, kostet sonst wieder eine halbe Stunde: (1) das Ticket-Board stempelt NICHT in <repo>/.jaira/version - release.Stamped liest s.StateDir(), und das ist $JAIRA_HOME (default ~/.jaira) /state/<name>-<hash>/version. Die Datei .jaira/version im Repo ist etwas anderes und zu aendern bringt nichts. (2) Das Binary meldet 'dev', solange man nicht -ldflags '-X main.version=0.3.0' setzt - der Schalter haengt an cmd/jaira/main.go:11, NICHT an core/release.Current (das setzt cli.Execute daraus). Ein falscher -X-Pfad wird von go build stillschweigend ignoriert, der Test laeuft dann mit 'dev' und zeigt erwartungsgemaess alles an.
+
+Nachgesehen wurden alle drei Faelle mit eigenem JAIRA_HOME im Scratchpad: ungestempelt -> alle 8 Versionen und kein 'Unreleased'; Stempel 0.3.0 -> 'Nothing has changed since ...' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0'].
