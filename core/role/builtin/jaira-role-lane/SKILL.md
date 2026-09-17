@@ -9,17 +9,23 @@ Arguments: `<ticket-id> <lane>`. Without both, say what is missing and stop.
 
 The lane's instructions are not here — the board carries them. Read first, and
 write nothing at all until you have — `jaira claim` included, writing as it does
-your name onto the ticket. On a ticket in conversational mode one of the two
-workers running on it must not write anything, and this is the call that tells
-you which of them you are:
+your name onto the ticket. Two reads, in this order:
 
 ```bash
+jaira show <ticket-id> --json
 jaira show <ticket-id> --for-lane <lane> --json
 ```
 
-That gives you the lane prompt, the bounded input, the outputs the lane owes
-back, and the `mode` key the section below turns on. Follow it, produce exactly
-those outputs, and nothing beyond them.
+The first carries the ticket's `status`, and on a ticket in conversational mode
+that is what decides whether you are the worker that writes or the critique
+running beside it, which writes nothing. Only that JSON has the field — the
+`--for-lane` one does not, so it cannot tell you. Read it here, before the
+`jaira claim` below, and read it once: the section below says why a second read
+gives the wrong answer.
+
+The second gives you the lane prompt, the bounded input, the outputs the lane
+owes back, and the `mode` key the section below turns on. Follow it, produce
+exactly those outputs, and nothing beyond them.
 
 Then take the ticket and finish the step yourself:
 
@@ -60,11 +66,8 @@ In this mode the dispatcher starts a second worker on the same ticket at the
 same time — `/jaira-role-lane <id> critique`, while the implementing lane is
 still running — and that worker reads only. Tell which of the two you are from
 the ticket, not from the line that started you, which is gone the moment your
-session is:
-
-```bash
-jaira show <id> --json
-```
+session is: the `status` in the `jaira show <id> --json` you already read at the
+top of this file, before you wrote anything.
 
 Your lane argument equal to the ticket's `status` means you are the lane the
 ticket is actually in: work it as written above and below. Your lane argument

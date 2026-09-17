@@ -112,9 +112,12 @@ implementing lane is working:
 
 1. Start it as a second worker, on the same ticket, at the same time as the
    in-progress worker: `/jaira-role-lane <id> critique`.
-2. It **reads only.** It does not claim the ticket, it does not write
-   `review-summary`, it does not `jaira note`, and it does not `jaira move`.
-   Its own prompt tells it so — `jaira-role-lane` has it read the ticket's
+2. It **reads only.** No `jaira claim`, no `jaira dod`, no `jaira note`, no
+   `jaira set`, no `jaira move`, no `review-summary`, no commit — everything a
+   worker is anywhere told to write is off for this one, and a write command
+   added later is off too without this line being touched. `jaira dod` belongs
+   in that list as much as the rest: it writes the same field the implementing
+   worker beside it is working on. Its own prompt tells it so — `jaira-role-lane` has it read the ticket's
    `status` once, before it writes anything at all, and take a lane argument
    that differs from it as meaning it is this critique. Once, because the
    status moves: the moment the implementing worker lands `jaira move --to
