@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:30:48Z
+updated-at: 2026-09-17T18:31:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -443,3 +443,8 @@ Zusaetzlich mitgenommen (nicht von critique verlangt): jaira-dispatcher/SKILL.md
 Befund 2 — 'no lane shipped with jaira asked for it' in NOTES.md war falsch: core/lane/builtin/20-in-progress.md:9 fuehrt notes in input-requires und wird ausgeliefert. Die Zeile nennt jetzt den wahren Grund, warum die Aenderung ueberhaupt von Hand gemacht werden muss: critique ist gar keine ausgelieferte Lane.
 
 Gepruefte Alternative und verworfen: critique als Builtin-Lane nach core/lane/builtin/ zu legen, damit die Zeile von selbst wahr wird. Das ist eine andere Aenderung an einem anderen Vertrag (welche Lanes jaira mitbringt) und gehoert nicht in dieses Ticket.
+- **2026-09-17 18:31 · Alexander Sacharov** — critique (10. Durchgang, ueber die Punkte 7-12): drei Befunde, alle mit klarem Fix, keine Entscheidung fuer den Menschen. Alle drei entstehen erst durch die Reparatur aus Runde 9 (3eb6ff6) und sind in keiner frueheren Notiz behandelt.
+- Befund 1 (der schwere): der Unterscheider 'Lane-Argument != status' in jaira-role-lane/SKILL.md:62-67 ist keine Eigenschaft des Workers, sondern eine Momentaufnahme des Boards. Die mitlaufende Kritik startet bei status=in-progress; der implementierende Worker beendet seine Lane mit 'jaira move --to critique'; ab da liest dieselbe Kritik status=critique == ihr Lane-Argument und haelt sich fuer die ordentliche critique-Lane. Genau der Fall, gegen den der Absatz geschrieben wurde. Der Prompt verlangt das Nachlesen ausdruecklich ('not out of the line that started you'), also trifft es auch jeden Neustart und jede Kompaktierung nach dem move.
+- Befund 2: die Verbotsliste in Punkt 1 zaehlt note/set/move/review-summary/Commit-Zeile auf, aber nicht 'jaira claim' (SKILL.md:13) und nicht 'jaira dod' (SKILL.md:22) — beides Schreibwege, beide vom selben Prompt angeordnet, 'jaira dod' auf dasselbe Feld, an dem der Worker daneben arbeitet. Und claim steht VOR dem show, aus dem Modus und status kommen: die Kritik hat geschrieben, bevor sie wissen konnte, dass sie es nicht darf. Reihenfolge umdrehen statt nur die Liste verlaengern.
+- Befund 3: spawn.sh:14 (usage von --no-worktree) sagt weiter 'run only one at a time', waehrend jaira-dispatcher/SKILL.md:215-220 die mitlaufende Kritik als Ausnahme fuehrt. Dokumentationsschuld, aber im Skript, das der Dispatcher selbst aufruft.
+- Ausdruecklich stehen gelassen, mit Begruendung: die NOTES.md-Zeile zur critique-Lane beschreibt eine Hand-Aenderung an '.jaira/lanes/critique.md' und nicht am Binary — sie gehoert trotzdem dorthin, weil sie sagt, was ein Leser TUN muss, und weil die Zeile das selbst offenlegt ('critique is not a shipped lane at all, so this one reaches your board only by hand'). Das ist der Befund aus Runde 9, dort repariert; ich hebe ihn nicht wieder auf. DoD 11 nachgeprueft: 'Testing is not a lane' ist raus, spawn.sh hat genau einen Sonderfall (Zeile 142, 'dispatch'), jaira-role-tester/SKILL.md unveraendert auf diesem Branch.
