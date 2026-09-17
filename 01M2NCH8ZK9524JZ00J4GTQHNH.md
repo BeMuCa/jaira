@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:13:16Z
+updated-at: 2026-09-17T18:13:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -398,3 +398,4 @@ Zwei weitere Punkte, die in denselben Durchgang gehoeren:
 Aus dem review-Lane-Befund vom 16.09.: core/role/builtin/jaira-role-lane/SKILL.md:55 laesst nach jedem DoD-Punkt 'git diff' laufen und sagt 'Empty output? No pause'. 'git diff' zeigt keine untracked Dateien. Ein DoD-Punkt, der aus einer NEUEN Datei besteht, laeuft im Gespraechsmodus also ohne Pause durch - genau das, was der Modus verhindern soll. Dieses Ticket ist selbst das Beispiel: core/validate/mode_test.go und internal/cli/mode_test.go sind neu angelegt. Fix ist eine Zeile: 'git add -A -N .' vor dem 'git diff', oder 'git status --short' danebenstellen.
 
 Aus dem Lauf selbst: core/role/builtin/jaira-dispatcher/SKILL.md:118 sagt 'Testing is not a lane: /jaira-role-tester <id>', waehrend scripts/spawn.sh:139-145 nur 'dispatch' als Sonderfall kennt und testing zu '/jaira-role-lane <ticket> testing' macht. Gelaufen ist es als Lane und es ging gut aus. Alex hat auf die gelaufene Regel entschieden: testing ist eine gewoehnliche Lane, der Halbsatz in Zeile 118 wird gestrichen, spawn.sh behaelt seinen EINEN Sonderfall, und jaira-role-tester bleibt unangetastet als Einstiegsstelle mit zwei optionalen Argumenten.
+- **2026-09-17 18:13 · Alexander Sacharov** — Alex am 2026-09-17: die Punkte 7-12 werden jetzt gemacht, das Ticket geht aus signoff zurueck in die Arbeit. Anlass: 'jaira move GTQHNH --to done' wurde abgewiesen, weil 7-11 offen sind - der Dispatcher hatte den Zweig schon in release/0.3.0 gezogen, nur nach der Lane-Marke signoff und ohne die Definition of Done zu lesen. Punkte 1-6 (der Modus selbst) sind fertig und ihre drei NOTES-Zeilen stehen bereits unter '## 0.3.0' in der Release-Ветке. Was jetzt dazukommt, gehoert in denselben Release.
