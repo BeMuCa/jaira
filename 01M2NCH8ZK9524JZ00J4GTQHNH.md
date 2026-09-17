@@ -37,10 +37,10 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:35:54Z
+updated-at: 2026-09-17T20:36:51Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-93859
-claimed-at: 2026-09-17T20:03:50Z
+claimed-by: DESKTOP-RFTCH11-51319
+claimed-at: 2026-09-17T20:36:51Z
 outcome-what: "Die mitlaufende Kritik liest jetzt den nicht committeten Arbeitsbaum (git status --short, git diff, git diff --cached) statt der Commit-Liste, und die Pause nach einem DoD-Punkt schliesst '.jaira/tickets/' aus dem Pathspec aus. Dazu grenzt der Dispatcher-Prompt die Begruendung 'der Diff war nie das Limit' auf die critique-LANE ein, und zwei Zeilen stehen unter ## Unreleased in core/release/NOTES.md."
 outcome-why: "review hat zwei leise Defekte gefunden: die mitlaufende Kritik startet, bevor es Commits gibt, bekam von 'show --for-lane critique --json' complete:false mit fehlendem Diff und haette 'nichts gefunden' gemeldet; und ab dem ersten 'jaira dod' steht die Ticket-Datei dauerhaft in 'git status --short', also war 'Both empty? No pause' unerreichbar und vorgelegt wurde der Ticket-Diff statt des Codes."
 outcome-resolves: "DoD 14 und 15; alle 15 DoD-Punkte sind jetzt abgehakt."
