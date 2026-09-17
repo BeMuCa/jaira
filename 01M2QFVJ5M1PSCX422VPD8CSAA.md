@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:14:50Z
+updated-at: 2026-09-17T11:14:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -50,4 +50,4 @@ claimed-at: 2026-09-17T11:14:50Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-09-17 11:14 · Alexander Sacharov** — Entscheidung vom Menschen, vor der Plan-Lane: die 18 Milestone-Zeilen werden auf ca. 5 Zeilen gefaltet, je eine pro Faehigkeit, die ein Benutzer anders benutzt - (1) Milestone anlegen/aendern per CLI und per Hand in .jaira/milestones/<name>.md, (2) Board und 'jaira list' auf eine Runde einschraenken (--milestone, Taste M), (3) Milestone-Farben am RECHTEN Kartenrand lesen, (4) Milestone reist auf seinem eigenen Ref und kommt mit 'jaira fetch', (5) Milestone mit 'jaira logbook <name>' ablegen und mit 'jaira restore <name>.md' zurueckholen. Alle Zwischenstaende und Corner-Case-Abweisungen (drei Fassungen der create-Abweisung, Locking, verlorene Rennen) fallen weg - ein Benutzer hat sie nie gesehen. Nicht 4 Zeilen (eine Milestone-Zeile wuerde zu lang und Kommandos ertrinken darin), nicht 8-10. Die anderen drei Aenderungen bleiben je eine Zeile. DoD 3 bleibt gewahrt: jaira milestone, M, --milestone, --no-worktree, dispatch, jaira restore stehen weiter im Text.
