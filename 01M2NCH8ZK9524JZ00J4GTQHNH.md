@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:31:23Z
+updated-at: 2026-09-17T21:33:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -681,3 +681,12 @@ FUER DEN DISPATCHER: das ist der vierte Ruecklauf ueber die Reparatur der review
 Auftrag deshalb NICHT 'die Nummern korrigieren', sondern: die proof-Zeilen so schreiben, dass sie das naechste Verschieben ueberleben. Statt 'jaira-role-lane/SKILL.md:107-128' den Abschnittsnamen nennen, etwa "jaira-role-lane/SKILL.md, Abschnitt 'Show the code after every definition-of-done item'", plus wo noetig das Kommando oder den Satz, der den Punkt belegt. Ein Zeilenbereich ist in einer Datei, die in jeder Runde waechst, ein Beleg mit Verfallsdatum - ein Ueberschriftstext ist keiner.
 
 Konkret betroffen, nach critique 17: DoD 4 (zeigt auf :107-128, gemeint ist die Commit-Zeile bei :195-225), DoD 5 (:139-178 statt Abschnitt 2 bei :154-193), DoD 12 (zitiert den Prompt statt der NOTES.md-Zeilen 17, 18, 20, 22), DoD 13 (zitiert die Pathspec-Kommandos statt core/board/announce.go:65 und NOTES.md:19), DoD 2 (dispatcher:31 und lane:39 statt dispatcher:57-81 und lane:61) und DoD 11 (dispatcher:157 statt :178). Am Text selbst nichts aendern.
+- **2026-09-17 21:33 · Alexander Sacharov** — In-progress nach critique 17 (2026-09-17): kein Quellcode angefasst, nur die proof-Zeilen des Tickets.
+
+Umgesetzt wurde der Auftrag des Dispatchers, nicht der Vorschlag 'die sechs Zeilennummern korrigieren': jede proof-Zeile traegt jetzt einen Abschnittsnamen oder einen woertlichen Satzanfang statt eines Zeilenbereichs. Sieben Punkte zeigten inhaltlich falsch (2, 4, 5, 6, 11, 12, 13), sieben weitere waren nur noch zufaellig richtig (1, 3, 7, 9, 10, 14, 15) - die habe ich mitgezogen, weil sonst der naechste Prompt-Einschub genau denselben Befund zum achtzehnten Mal erzeugt. DoD 6 war NICHT in der Sechser-Liste von critique 17, ist aber vom selben Defekt betroffen: es zeigte auf NOTES.md:17/:18, also auf die mitlaufende Kritik und die Pause statt auf den Modus und das Committen von Hand. NOTES.md ist der schlimmste Fall von allen - jede neue Zeile kommt OBEN unter '## Unreleased' dazu und verschiebt alle bestehenden um eins, so dass jede Zeilennummer darin schon beim naechsten Ticket falsch ist. Deshalb dort der woertliche Zeilenanfang als Anker.
+
+Was ich dabei herausfinden musste: 'jaira dod --add-plan' gibt es nicht, der Schalter heisst '--plan --add'. Und '--proof' ohne Zustandsflagge ersetzt die Zeile, ohne das Haekchen anzufassen - genau das, was hier gebraucht wurde, sonst haette ich vierzehn Punkte neu abhaken muessen.
+
+Alle vierzehn Anker am Arbeitsbaum geprueft (grep -cF, jeder genau einmal vorhanden), einschliesslich der vier NOTES.md-Zeilenanfaenge und 'every lane, testing included' im Dispatcher.
+
+Was bleibt: die Anker sind Text, kein Mechanismus. Wer eine Ueberschrift umformuliert, bricht sie genauso - nur faellt das beim Umformulieren auf und beim Einfuegen von fuenf Zeilen nicht. Ein echter Mechanismus (etwa ein 'jaira dod --verify-proof', das jeden proof gegen den Arbeitsbaum haelt) waere ein eigenes Ticket und gehoert nicht in diese Runde.
