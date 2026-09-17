@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:22:45Z
+updated-at: 2026-09-17T17:23:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -122,3 +122,21 @@ Geprueft und ohne Befund, damit es kein vierter Durchlauf nochmal aufmacht:
 - Nicht wieder aufgemacht: Model.paste als Einzeiler mit einem Aufrufer (spiegelt m.key(msg) im selben switch) und die Leerpruefung im modeFilter-Zweig (spart ein rebuild() ueber die ganze Tafel) - beide im 2. Durchlauf bewusst stehen gelassen.
 - editKey 'enter' haengt \n direkt an statt ueber insertText: identisches Ergebnis, der Umweg waere reine Indirektion.
 - **2026-09-17 17:15 · Alexander Sacharov** — optimize: entfernt wurde der Wrapper Model.paste in internal/tui/paste.go - er leitete nur an insertText weiter und hatte genau einen Aufrufer. Die Begruendung, warum ein Einfuegen keine Tastenbindung sein kann, steht jetzt direkt am 'case tea.PasteMsg' in model.go, also dort, wo jemand sie liest. paste.go haelt nur noch foldToOneLine; der tea-Import ist damit weg. Geprueft und stehen gelassen: foldToOneLine hat kein Gegenstueck im Repo - view.go wrapLines/wrap gehen in die andere Richtung, edit.go:178 ersetzt Umbrueche fuer die Anzeige durch ' ⏎ ', core/lane/corrections.go:219 normalisiert CRLF beim Dateilesen und gehoert einem anderen Paket. Die zwei ReplaceAll in insertText laufen bei jedem Tastendruck, kosten aber nichts: strings.Replace gibt bei null Treffern denselben String ohne Allokation zurueck. Tests gruen, go vet sauber.
+- **2026-09-17 17:23 · Alexander Sacharov** — testing: Bestanden, drei Durchgaenge.
+
+1. Tore: go build ./... RC=0, go vet ./... RC=0, go test ./... RC=0 (ganze Suite), go test -race -count=1 ./internal/tui RC=0 (114s, kein Race). Windows-Gegenprobe wie in README 'Development': GOOS=windows GOARCH=amd64 go vet ./... und go build ./cmd/jaira, beide RC=0.
+
+2. Die Forderung, Punkt fuer Punkt am Arbeitsbaum geprueft, nicht am Outcome-Text:
+- DoD 1: model.go:911 'case tea.PasteMsg' -> model.go:924 insertText; TestPasteIntoFilterLandsAndFilters gruen. paste_test.go:14 pasteInto speist wirklich ein tea.PasteMsg ein, kein nachgebautes KeyPressMsg - der Nachweis, den DoD 1 verlangt.
+- DoD 2: grep k.Text ueber internal/tui findet vier Stellen (model.go:975, 996, 1012, edit.go:136), alle rufen insertText. TestPasteReachesEveryInputMode (create/delete/edit) + TestPasteIntoFilterLandsAndFilters, alle gruen.
+- DoD 3: TestPasteKeepsMultiByteTextWhole gruen, 'Gruesse Privet Emoji' kommt heil an, ein Backspace entfernt ein Zeichen.
+- DoD 4: TestMultiLinePasteIsFoldedToSpaces, 6 Faelle, alle gruen; dazu TestPasteKeepsLinesInTheFieldEditor und TestPasteNormalisesALoneCarriageReturnInTheFieldEditor.
+- DoD 5: Begruendung steht an model.go:900-910 am Zweig selbst.
+- DoD 6: core/release/NOTES.md:17 unter '## Unreleased', eine Zeile, als Anweisung geschrieben.
+
+3. Verhalten am echten Programm geprueft, nicht nur am Test - die Tests umgehen den Dekoder, indem sie das PasteMsg direkt einspeisen, also war offen, ob das Terminal ueberhaupt eine Klammer-Einfuegung schickt und ob bubbletea sie ohne Zusatzoption einschaltet. Binary gebaut, in einem echten pty gestartet, Testtafel mit zwei Tickets, '/' gedrueckt und die rohe Bytefolge ESC[200~ ... ESC[201~ hineingeschrieben:
+- 'Privet ueoe Emoji' (Kyrillisch + Umlaute + Emoji): steht Zeichen fuer Zeichen im Feld, Tafel filtert sofort (0 Tickets).
+- 'paste\nbug\r\n' (mehrzeilig, mit CRLF am Ende): im Feld steht 'paste bug', Tafel zeigt 1 Ticket. Faltung und CR-Normalisierung greifen auch auf dem echten Weg durch den Dekoder.
+Damit ist bestaetigt, was der 3. Critique-Durchlauf nur aus dem Quelltext geschlossen hatte: Bracketed Paste ist ohne Zusatzoption aktiv, die Behebung ist nicht tot.
+
+Ein Befund, ohne Ruecklauf, weil er keinen Code betrifft: die Proof-Zeilen von DoD 1 und DoD 5 zeigten noch auf 'internal/tui/paste.go:24 Model.paste' und 'paste.go:9-23', die der optimize-Durchgang entfernt hat. Zeigten also ins Leere. Beide hier auf die heutigen Stellen gesetzt (model.go:911/924 bzw. model.go:900-910). paste.go traegt nur noch foldToOneLine.
