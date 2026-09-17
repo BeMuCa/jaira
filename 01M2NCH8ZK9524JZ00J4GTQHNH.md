@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:09:23Z
+updated-at: 2026-09-17T20:09:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93859
 claimed-at: 2026-09-17T20:03:50Z
-outcome-what: "core/board/announce.go: der Punkt zu 'jaira show --for-lane --json' fuehrt jetzt 'mode' in der Nutzlast auf, sagt was leer und was 'conversational' bedeutet (Diff nach jedem DoD-Punkt, fertige Commit-Zeile statt eigenem Commit) und dass der Modus vom Ticket gelesen wird. Test TestAgentNoteNamesTheConversationalMode, eine NOTES.md-Zeile unter ## Unreleased, AGENTS.md und CLAUDE.md dieses Repositories mit dem gebauten Binary regeneriert."
-outcome-why: "Auf einem fremden Board liegt kein jaira-role-lane-Prompt. Der von 'jaira update' geschriebene Block ist dort die einzige Stelle, an der ein Agent von 'mode' erfaehrt — ohne ihn reist der Schluessel in der --for-lane-Nutzlast mit, ohne dass irgendetwas ihn beschreibt, und der Gespraechsmodus erreicht nur das Board von jaira selbst."
-outcome-resolves: "DoD 13: der ausgelieferte Block nennt den Modus (announce.go:64-72), NOTES.md:17 sagt dem Leser, dass 'jaira update' faellig ist."
+outcome-what: "review gelaufen: review-summary, review-gaps, review-verdict und review-check geschrieben, drei Befunde in einer Progress-Notiz festgehalten"
+outcome-why: "die Go-Seite ist belegt und gruen, die Prompt-Seite traegt zwei ihrer eigenen Versprechen noch nicht; das entscheidet ein Mensch, nicht das Review"
+outcome-resolves: "keinen DoD-Punkt — das Review beurteilt sie, es tickt sie nicht"
 review-summary: "Der Modus ist ein Frontmatter-Feld mit geschlossenem Wertebereich plus die Prosa, die Agenten sagt, was er bedeutet. Go-Seite: core/ticket/schema.go bringt FieldMode, Ticket.Mode, die Zuweisung in Decode, einen Platz in canonicalOrder und CanonicalMode() — eine Funktion, die trimmt UND urteilt, hinter der beide Schreibpfade liegen (internal/cli/tickets.go newSetCmd, internal/tui/edit.go commitEdit), damit CLI und TUI nicht auseinanderlaufen. Gelesen wird der Modus an fuenf Stellen: 'show --json' (ticketJSON), 'show --for-lane --json' als eigener Schluessel neben model_tier, die Kopfzeile von 'show --for-lane' ohne --json, die 'mode'-Zeile in printDetail und im TUI-Detail, und 'jaira resume' (JSON-Item plus Klartextzeile) — letzteres ist das, was den Sitzungsabbruch traegt, weil ein neuer Dispatcher mit genau diesem Befehl wieder anfaengt. core/validate/validate.go faengt mit CodeBadMode (Warning) ab, was an beiden Schreibpfaden vorbeikommt, und vergleicht die kanonische Form, nicht nur das Urteil, damit ' conversational ' nicht als gueltig durchgeht. Prompt-Seite: jaira-dispatcher/SKILL.md zaehlt vor der Plan-Lane die offenen Entscheidungen auf, haelt bei mindestens einer an, schreibt die Antwort mit 'jaira note' und setzt dann mode=conversational; ausserdem ein neuer Abschnitt 'mitlaufende Kritik' — ein zweiter, nur lesender Worker parallel zum implementierenden, genau ein Schreiber von review-summary und genau ein 'jaira move', beide beim Dispatcher. jaira-role-lane/SKILL.md liest zuerst 'show <id> --json' (wegen status), erst danach 'jaira claim', unterscheidet den mitlaufenden Kritiker am Vergleich lane-Argument != status, legt im Modus nach jedem DoD-Punkt 'git status --short' plus 'git diff' vor und gibt statt eines Commits eine fertige Commit-Zeile mit Handle zurueck — und keine, wenn die Lane keinen Code geaendert hat. Dazu .jaira/lanes/critique.md mit 'notes' in input-requires, spawn.sh --help mit der Lesen-Ausnahme fuer --no-worktree, README.md/docs/AGENTS.md, sieben NOTES.md-Zeilen unter ## Unreleased und core/board/announce.go, damit der Block, den 'jaira update' auf ein fremdes Board schreibt, den Schluessel ueberhaupt nennt."
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
