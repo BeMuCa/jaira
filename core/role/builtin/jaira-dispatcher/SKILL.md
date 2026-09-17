@@ -108,9 +108,13 @@ the ticket and not from the last one. One reader takes a slice and stops when
 it is enough. The most expensive finding of the eight arrived in round seven.
 
 The point about the diff above is about the critique **lane** and not about
-the critique below it: a lane runs after the commits exist. The one that runs
-beside the work has no commits to read at all, and its prompt sends it to the
-uncommitted worktree instead.
+the critique below it. A lane judges the ticket's commits; the one that runs
+beside the work judges the uncommitted worktree, and its prompt sends it there
+whatever the payload holds. On a ticket that carries no commits yet there is
+nothing else for it to read anyway; on one that already carries some — every
+round after the first — `show --for-lane critique --json` hands it a full diff
+all the same, and that diff is the earlier rounds and not the work running
+next to it.
 
 So in `mode: conversational`, and only there, run a critique **while** the
 implementing lane is working:

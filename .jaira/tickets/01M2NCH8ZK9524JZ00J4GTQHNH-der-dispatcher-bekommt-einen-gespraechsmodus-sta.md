@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -36,18 +36,16 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
+  - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:42:32Z
+updated-at: 2026-09-17T20:53:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
-outcome-what: "Die mitlaufende Kritik liest jetzt den nicht committeten Arbeitsbaum (git status --short, git diff, git diff --cached) statt der Commit-Liste, und die Pause nach einem DoD-Punkt schliesst '.jaira/tickets/' aus dem Pathspec aus. Dazu grenzt der Dispatcher-Prompt die Begruendung 'der Diff war nie das Limit' auf die critique-LANE ein, und zwei Zeilen stehen unter ## Unreleased in core/release/NOTES.md."
-outcome-why: "review hat zwei leise Defekte gefunden: die mitlaufende Kritik startet, bevor es Commits gibt, bekam von 'show --for-lane critique --json' complete:false mit fehlendem Diff und haette 'nichts gefunden' gemeldet; und ab dem ersten 'jaira dod' steht die Ticket-Datei dauerhaft in 'git status --short', also war 'Both empty? No pause' unerreichbar und vorgelegt wurde der Ticket-Diff statt des Codes."
-outcome-resolves: "DoD 14 und 15; alle 15 DoD-Punkte sind jetzt abgehakt."
-review-summary: |-
-  core/role/builtin/jaira-dispatcher/SKILL.md:109 — 'That last sentence is about the critique LANE' zeigt auf den falschen Satz: der letzte Satz des Absatzes darueber ist 'The most expensive finding of the eight arrived in round seven.'; gemeint ist der Satz ueber den Diff ('in that lane the diff was never what limited them'). In einem Absatz, dessen einziger Zweck das Auseinanderhalten zweier Kritiken ist, ist ein falscher Rueckbezug teuer. Ersetze 'That last sentence' durch 'The point about the diff above' — oder haenge den neuen Absatz direkt hinter den Diff-Satz statt hinter das Absatzende.
-  core/role/builtin/jaira-role-lane/SKILL.md:110-111 — die mitlaufende Kritik laeuft 'git status --short' und 'git diff' OHNE Pathspec, waehrend der implementierende Worker nebenan 'jaira dod' und 'jaira note' schreibt. Sie bekommt damit genau den Ticket-Datei-Diff vorgelegt, den derselbe Prompt 33 Zeilen tiefer (SKILL.md:140-145) als Falle benennt und ausschliesst — auf einem Ticket wie diesem sind das hunderte Zeilen Prosa neben wenigen Zeilen Code. Dieselbe Bedingung an beide Kommandos: 'git status --short -- :/ ":(exclude,top).jaira/tickets"' und 'git diff -- :/ ":(exclude,top).jaira/tickets"', plus ein Halbsatz, dass das, was der Implementierer inzwischen aufs Ticket geschrieben hat, mit 'jaira show <id> --json' gelesen wird und nicht aus einem Diff — sonst nimmt die Ausschluss-Zeile ihr die frischen Notizen weg.
-  .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-*.md — die proof-Zeilen von DoD 5 und DoD 10 zeigen nach 113628e ins Leere: DoD 5 nennt 'jaira-role-lane/SKILL.md:74-105' (das ist jetzt der Abschnitt zur mitlaufenden Kritik) und DoD 10 nennt ':50-80' (das ist jetzt 'did you change no code'). Die Pause mit 'git status --short' steht bei 130-160. Beide proof-Zeilen auf den aktuellen Bereich umschreiben; die naechste Lane, die die DoD-Punkte nachpruefen soll, liest sonst den falschen Text.
+outcome-what: "Die Anweisung der mitlaufenden Kritik, den uncommitteten Arbeitsbaum zu beurteilen, ist an allen drei Stellen unbedingt formuliert: core/role/builtin/jaira-role-lane/SKILL.md (Abschnitt 'Read the worktree, not the ticket's diff'), core/role/builtin/jaira-dispatcher/SKILL.md (Absatz unter 'In conversational mode, a critique runs beside the work') und die erste Zeile unter '## Unreleased' in core/release/NOTES.md. Neu in allen dreien: ein nicht-leerer Payload-Diff zeigt die frueheren Runden und nicht die Arbeit daneben."
+outcome-why: "Befund aus critique 15: die drei Stellen waren als Diagnose eines Zustands geschrieben ('das Payload kam complete:false zurueck'). internal/cli/flow.go:589-595 leitet die Commit-Liste aus git ab, sobald das Ticket keine fuehrt — ab der zweiten Runde liefert 'show --for-lane critique --json' also einen vollstaendigen Diff und complete:true. Wer den beschriebenen Zustand nicht vorfand, haette den Absatz fuer nicht zutreffend gehalten, den gelieferten Diff gelesen und die frueheren Runden kritisiert statt der Arbeit neben sich."
+outcome-resolves: "Plan 38 und 39. Kein Go-Code beruehrt; go build ./... und go test ./... -count=1 gruen (29 Pakete, selbst gelaufen)."
+review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:98-107 tells the running critique that its payload 'came back complete: false, with diff (git has no commits for this ticket yet)'. That premise is only true on a ticket that carries no commits yet. flow.go:589-591 derives the commit list from git when the ticket records none, so on every later round — this ticket has fourteen — the payload is complete:true with a full diff of the EARLIER rounds. The worker then finds nothing wrong with its input, never reaches 'read the worktree', and critiques committed work that is not the work running beside it. Make the instruction unconditional instead of a diagnosis: judge the worktree whatever the payload's diff says, and say that a non-empty payload diff is the previous rounds and not the work beside you."
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
 
@@ -172,6 +170,8 @@ review-check: |-
 - [x] critique 14: jaira-dispatcher/SKILL.md:110 — 'That last sentence' zeigt auf den falschen Satz; auf den Diff-Satz umschreiben
 - [x] critique 14: jaira-role-lane/SKILL.md — die drei Kommandos der mitlaufenden Kritik bekommen den Pathspec ':/ :(exclude,top).jaira/tickets', plus Halbsatz, dass frische Notizen mit 'jaira show <id> --json' gelesen werden
 - [x] critique 14: die proof-Zeilen von DoD 5 und DoD 10 auf die Bereiche nach 113628e umschreiben
+- [x] critique 15: die drei Stellen zur mitlaufenden Kritik machen die Worktree-Anweisung unbedingt — jaira-role-lane/SKILL.md, jaira-dispatcher/SKILL.md, core/release/NOTES.md; ein nicht-leerer Payload-Diff zeigt die frueheren Runden
+- [x] go test ./... -count=1
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
@@ -617,3 +617,16 @@ Warum der Ausschluss einen Ersatz braucht und nicht allein stehen darf: er nimmt
 Keine neue NOTES.md-Zeile fuer Befund 2, sondern die BESTEHENDE Unreleased-Zeile zur mitlaufenden Kritik umgeschrieben: sie ist noch nicht getaggt, beschreibt genau diese drei Kommandos, und eine zweite Zeile daneben haette dem Leser zwei Versionen desselben Verhaltens hingestellt. Befund 1 und 3 sind unter der Wahrnehmungsschwelle eines Benutzers (ein Rueckbezug im Prompt, Zeilennummern auf dem Ticket) und bekommen keine Zeile.
 
 Mitgenommen ueber den Befund hinaus: die proof-Zeilen von DoD 12 und DoD 13 waren nach MEINER eigenen Einfuegung um neun Zeilen verschoben — die habe ich gleich mit nachgezogen. Wer nach einem Prompt-Edit nur die im Befund genannten proofs korrigiert, hinterlaesst die naechsten zwei kaputt.
+- **2026-09-17 20:49 · Alexander Sacharov** — critique (15. Durchgang, ueber 113628e und 6809ad7): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+- Befund: die drei neuen Stellen behaupten gemeinsam, die mitlaufende Kritik habe keinen Diff zu lesen. Das gilt nur in Runde 1. jaira-role-lane/SKILL.md:98-107 ('came back complete: false'), jaira-dispatcher/SKILL.md:112 ('has no commits to read at all') und die NOTES.md-Zeile 17 ('while the implementing lane is still running the ticket has no commits'). internal/cli/flow.go:589-591 leitet die Commit-Liste aus git ab, wenn das Ticket keine fuehrt — also liefert 'show --for-lane critique --json' auf jedem Ticket mit frueheren Commits einen vollstaendigen Diff und complete:true. Dieses Ticket selbst: vierzehn Commits.
+- Warum das schwer wiegt: der Absatz ist als Diagnose geschrieben ('das ist kein kaputtes Board'), nicht als Anweisung. Wer den beschriebenen Zustand nicht vorfindet, haelt den Absatz fuer nicht zutreffend, liest den gelieferten Diff und kritisiert die FRUEHEREN Runden statt der Arbeit, die neben ihm laeuft. Genau der Fehler, den der Absatz verhindern soll, nur mit gefuelltem statt leerem Eingang. Und es trifft den haeufigen Fall: die mitlaufende Kritik laeuft in Runde 2+, sobald einmal Code committet wurde.
+- Reparatur: die Anweisung unbedingt machen. 'Was du beurteilst, ist der uncommittete Arbeitsbaum — was der Diff im Payload auch sagt' und der Zusatz, dass ein nicht-leerer Payload-Diff die frueheren Runden zeigt und nicht die Arbeit daneben. Der leere Fall wird ein Beispiel, nicht die Voraussetzung. Dieselbe Korrektur in allen drei Dateien, sonst sagt eine der drei weiter das Falsche (Runde 10 hat schon einmal eine NOTES.md-Zeile korrigieren muessen, die eine Eigenschaft versprach, die der Prompt nicht trug).
+- Die Pathspec-Bloecke selbst sind richtig: ':/ :(exclude,top).jaira/tickets' am laufenden Worktree geprueft, blendet genau die Ticket-Datei aus, aus jedem Verzeichnis.
+- Ausdruecklich stehen gelassen: die Wiederholung der ':/'-Erklaerung in beiden Abschnitten von jaira-role-lane (Zeilen 111-118 und 145-152) ist KEIN Befund — die beiden Leser sind disjunkt, die mitlaufende Kritik erreicht Abschnitt 2 nie (sie pausiert nicht) und der implementierende Worker Abschnitt 1 nie. Dasselbe Argument wie in der optimize-Notiz vom 16.09. 20:21. Zeilenlaengen geprueft: ueber 85 Zeichen nur Frontmatter und dispatcher:222, aelter als dieses Ticket (Runde 13). Die aelteren offenen Punkte — Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien, NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24) — nicht wieder angefasst.
+- **2026-09-17 20:52 · Alexander Sacharov** — In-progress nach critique 15 (2026-09-17): der eine Befund behoben, kein Go-Code — zwei Prompts und die NOTES.md-Zeile.
+
+Die Anweisung 'lies den Arbeitsbaum' stand in allen drei Dateien als Diagnose eines Zustands ('das Payload kam complete:false zurueck'). Sie ist jetzt unbedingt formuliert und der leere Fall ist ein Beispiel darin, nicht seine Voraussetzung. Dazugekommen ist der Satz, der vorher fehlte und der den haeufigen Fall traegt: ein nicht-leerer Payload-Diff zeigt die FRUEHEREN Runden, nicht die Arbeit daneben — internal/cli/flow.go:589-595 leitet die Commit-Liste aus git ab, sobald das Ticket keine fuehrt, also ist ab Runde 2 immer ein vollstaendiger Diff im Payload.
+
+Warum an allen drei Stellen derselbe Satz und nicht ein Verweis: die drei Leser sind disjunkt (Worker-Prompt, Dispatcher-Prompt, Release-Notiz fuer den Benutzer), und Runde 10 musste schon einmal eine NOTES.md-Zeile nachziehen, die etwas versprach, was der Prompt nicht trug.
+
+Nicht angefasst, mit der Notiz, auf der ich stehe: die Pathspec-Bloecke (critique 15 hat sie am laufenden Worktree geprueft und fuer richtig befunden), die Wiederholung der ':/'-Erklaerung in beiden Abschnitten (optimize 16.09. 20:21), 'git add -A -N' bleibt verworfen (17.09. 18:19), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), dispatcher:226 ist aelter als dieses Ticket.

@@ -96,15 +96,20 @@ you were started as, **you are not the one that writes.** Say so to the
 dispatcher and let it answer — it knows, it started you. Asking costs one line;
 guessing wrong costs a second `review-summary` written over the first.
 
-**Read the worktree, not the ticket's diff.** The `--for-lane critique` payload
-you read at the top came back `complete: false`, with
-`diff (git has no commits for this ticket yet)` among its missing inputs, and
-`outcome-what`/`outcome-resolves` missing beside it. That is not a broken board:
-the lane whose work you are reading is still running, so nothing is committed
-yet and nothing is written on the ticket yet (`internal/cli/flow.go:590-595` —
-the diff is assembled from the ticket's commits, and there are none). Do not
-wait for it to fill and do not report that you had nothing to read. What you
-judge is the uncommitted worktree:
+**Read the worktree, not the ticket's diff.** What you judge is the uncommitted
+worktree, whatever the `--for-lane critique` payload you read at the top handed
+you. On a ticket that carries no commits yet, that payload came back
+`complete: false`, with `diff (git has no commits for this ticket yet)` among
+its missing inputs and `outcome-what`/`outcome-resolves` missing beside it —
+not a broken board, just the lane whose work you are reading still running. On a
+ticket that already carries commits, which is every round after the first, the
+same payload is `complete: true` and hands you a full diff
+(`internal/cli/flow.go:589-595` — the diff is assembled from the ticket's
+commits, and git supplies them when the ticket itself lists none). That diff is
+the EARLIER rounds, not the work running beside you; judging it means
+criticising what is already finished. So in both cases: do not wait for the
+payload to fill, do not report that you had nothing to read, and do not judge
+what it gave you. Read this instead:
 
 ```bash
 git status --short -- :/ ':(exclude,top).jaira/tickets'
