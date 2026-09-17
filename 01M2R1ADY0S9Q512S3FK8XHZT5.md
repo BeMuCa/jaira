@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:15:41Z
+updated-at: 2026-09-17T17:22:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -44,7 +44,7 @@ review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one
 ## Definition of Done
 
 - [x] Ein Einfuegen in die Suche landet im Feld: Model.Update behandelt tea.PasteMsg, der Text haengt an m.input, und die Tafel filtert sofort danach wie beim Tippen. Mit Test nachgewiesen, der ein PasteMsg direkt einspeist.
-  proof: internal/tui/model.go:902 case tea.PasteMsg -> internal/tui/paste.go:24 Model.paste -> internal/tui/model.go:914 Model.insertText; TestPasteIntoFilterLandsAndFilters
+  proof: internal/tui/model.go:911 case tea.PasteMsg -> internal/tui/model.go:924 Model.insertText; TestPasteIntoFilterLandsAndFilters (paste_test.go feeds a real tea.PasteMsg)
 - [x] Kein Eingabefeld verschluckt ein Einfuegen mehr: modeFilter, modeCreate, modeDelete und modeEdit nehmen den eingefuegten Text genauso an wie getippten. Je ein Test pro Modus.
   proof: internal/tui/model.go:914-939 insertText covers modeEdit, modeFilter, modeCreate, modeDelete and is the single path for typed and pasted text alike; TestPasteReachesEveryInputMode (create/delete/edit subtests) + TestPasteIntoFilterLandsAndFilters
 - [x] Mehrbyte-Text ueberlebt das Einfuegen unveraendert: kyrillischer Text, Umlaute und ein Emoji stehen nach dem Einfuegen Zeichen fuer Zeichen im Puffer, und ein Backspace danach entfernt genau ein Zeichen, nicht ein Byte. Mit Test nachgewiesen.
