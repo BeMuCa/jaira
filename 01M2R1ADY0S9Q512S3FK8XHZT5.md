@@ -1,7 +1,7 @@
 ---
 id: 01M2R1ADY0S9Q512S3FK8XHZT5
 title: Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,10 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:04:32Z
+updated-at: 2026-09-17T16:04:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
+outcome-what: "Model.Update behandelt jetzt tea.PasteMsg (model.go:899) und reicht den Text an die neue Model.paste in internal/tui/paste.go weiter: modeFilter, modeCreate und modeDelete bekommen ihn durch sanitisePaste einzeilig gefaltet, modeEdit behaelt die Zeilen. Dazu internal/tui/paste_test.go mit 14 Faellen und eine Zeile in core/release/NOTES.md."
+outcome-why: "Ein Einfuegen kommt vom Terminal als eigenes Ereignis, nicht als Taste. Update hatte nur einen Zweig fuer tea.KeyPressMsg, also fiel jedes PasteMsg durch das Ende von Update - in allen vier Eingabefeldern wurde eingefuegter Text still verschluckt."
+outcome-resolves: "Alle sechs Punkte der Definition of Done sind abgehakt und mit Proof belegt; go test ./... laeuft gruen, und ohne den PasteMsg-Zweig fallen 14 der neuen Faelle um."
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
