@@ -139,7 +139,7 @@ can carry on rather than starting by working out where things were left.`,
 					items = append(items, map[string]any{
 						"id": i.t.ID, "handle": ticket.Handle(i.t.ID), "title": i.t.Title,
 						"status": i.t.Status, "reason": i.why, "current_step": i.step,
-						"goal": i.t.Goal, "notes": i.notes,
+						"goal": i.t.Goal, "notes": i.notes, "mode": i.t.Mode,
 					})
 				}
 				return emit(cmd.OutOrStdout(), map[string]any{"in_flight": items, "count": len(items)})
@@ -155,6 +155,12 @@ can carry on rather than starting by working out where things were left.`,
 				fmt.Fprintf(w, "    %s · %s\n", i.t.Status, i.why)
 				if i.step != "" {
 					fmt.Fprintf(w, "    was on: %s\n", i.step)
+				}
+				// resume is the restart point: a dispatcher that lost its
+				// session reads the mode back from here, so it has to be here
+				// and not only in "jaira show".
+				if i.t.Mode != "" {
+					fmt.Fprintf(w, "    mode: %s\n", i.t.Mode)
 				}
 				for _, n := range i.notes {
 					fmt.Fprintf(w, "    %s\n", n)

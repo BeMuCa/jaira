@@ -28,6 +28,74 @@ Your plan must not live in your context: it dies with you. It lives on the
 board. A fresh dispatcher started after you are killed reads `jaira resume` and
 carries on. Never keep a step in your head that the board does not know.
 
+## Before the plan lane: count what is still open
+
+Autonomy is not free. A ticket whose shape is still undecided gets guessed at,
+and the guess is found out at the end, when undoing it costs the most. The
+measure is not how big the ticket looks — it is **how many decisions it still
+leaves open**.
+
+An open decision is a definition-of-done item that two different
+implementations would both satisfy, and both would pass the gate. UI shape and
+file- or database-format changes are where they cluster.
+
+So, once and before the plan lane runs:
+
+1. Read the ticket — `jaira show <id> --json`, **notes included** — and list the
+   open decisions by name. Not a number: the actual decisions, each in a line.
+   A decision a note already answers is closed, not open: you may be a fresh
+   dispatcher restarted after the one that asked died between step 4 and step 5,
+   in which case the answers are on the ticket and the mode is not yet set.
+   Counting those again asks the person the same questions twice.
+2. **None open?** Say so and run on as usual. That is the normal case and it
+   needs nobody.
+3. **One or more?** Stop before the plan lane and put them to the person, one
+   question at a time, each with your recommendation and why.
+4. Write each answer onto the ticket with `jaira note <id> <text>` **before the
+   work on it starts**, not after. A note written afterwards is a note a killed
+   session never writes, and the decision is then gone.
+5. Then turn the mode on, which is what carries it to the workers:
+
+```bash
+jaira set <id> mode=conversational
+```
+
+The value is checked: `conversational` or empty, nothing else. It rides on the
+ticket rather than in the line that starts a worker, so it survives your own
+death — a fresh dispatcher after `jaira resume` reads it back off disk instead
+of running autonomously without anybody noticing.
+
+Nothing clears it again, and that is deliberate: it is a statement about the
+ticket, not about one lane, so it holds through critique and testing too. A
+person clears it with `jaira set <id> mode=`.
+
+## What the mode changes for you
+
+Read it at startup, off the ticket and never out of your context or the line
+that started you:
+
+```bash
+jaira show <id> --json        # the "mode" key
+```
+
+`mode: conversational` on the ticket means:
+
+- **Start workers with `--no-worktree`** — one of the cases the flag's own
+  paragraph below lists, for the reason given there.
+- **A worker that changed code hands you a commit line instead of committing.**
+  Pass it to the person exactly as it came, unedited — it carries the ticket
+  handle in the subject, and jaira derives the ticket's commit list from that
+  handle. Drop it and the list stays empty and the move into the last lane is
+  refused.
+- **A worker that changed no code hands you nothing, and that lane is finished.**
+  critique, testing and review change no code, and the mode sits on the ticket
+  rather than on a lane, so they run in it too. A missing commit line there is
+  the rule working, not a worker that forgot: the ticket file waits in the
+  worktree for the next commit that carries code. Do not ask for a line, and do
+  not hold the lane open waiting for one.
+- **Pauses are not stalls.** A worker waiting for a person to look at a diff is
+  working. Do not kill it, do not start a second one for the same lane.
+
 ## The loop
 
 ```bash
@@ -44,7 +112,9 @@ let it read the same thing you did.
 Then, per lane:
 
 1. **Claim first.** Other sessions read this board.
-2. **Start one worker on exactly one lane**, in its own worktree:
+2. **Start one worker on exactly one lane**, in its own worktree (in
+   conversational mode, in the checked-out directory — see `--no-worktree`
+   below):
    `/jaira-role-lane <id> <lane>`. Testing is not a lane: `/jaira-role-tester <id>`.
 3. **Wait by the transport's own signal.** Never re-ask a worker whether it is
    done — the answer costs a turn and tells you nothing the board will not.
@@ -97,10 +167,15 @@ Say which one you took. The human needs to know whether the workers outlive you.
    in the environment does the same, for a machine that always wants it.) The
    slug is still required and then goes unused — it names a worktree, and with
    this flag there is none.
-   Take it only when the person asked for it, or when the work is one lane long
-   and belongs on the branch that is already checked out. It gives up the one
-   thing the worktree buys: with it set, two workers share a directory, so
-   never run a second one anywhere while such a worker is live.
+   Take it in exactly three cases: the person asked for it, the work is one
+   lane long and belongs on the branch that is already checked out, or the
+   ticket is in conversational mode — there the person reads the diff after
+   every increment, and they read it in the directory they already have open,
+   not in a worktree they have to go and find. It gives up the one thing the
+   worktree buys: with it set, two workers share a directory, so never run a
+   second one anywhere while such a worker is live. In conversational mode that
+   costs nothing, because a mode with a person reading along runs one worker
+   anyway.
 
    Two things it saves you from, both seen on 2026-09-14, when two dispatchers
    out of three never got a single worker into a tab:
