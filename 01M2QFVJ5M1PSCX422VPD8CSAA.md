@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:19:09Z
+updated-at: 2026-09-17T11:21:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -33,6 +33,7 @@ mode: conversational
 outcome-what: "Die 18 Milestone-Zeilen unter '## Unreleased' in core/release/NOTES.md zu 5 gefaltet, je eine pro Faehigkeit: Milestone anlegen/aendern per CLI, Handbearbeitung von .jaira/milestones/<name>.md, Board und 'jaira list' einschraenken (--milestone, Taste M), Farben am rechten Kartenrand plus Reise auf dem eigenen Ref, und Ablegen/Zurueckholen (jaira logbook <name>, jaira restore <name>.md). Die Sektion traegt jetzt 9 statt 22 Zeilen. Die vier Nicht-Milestone-Zeilen sind unveraendert."
 outcome-why: "core/release/NOTES.md liegt per go:embed im Binary und ist genau der Text, den 'jaira update' jemandem vorliest, dessen Board ein aelterer Build angefasst hat. 22 Zeilen fuer vier Aenderungen war der Entwicklungsweg statt des Ergebnisses: drei Fassungen derselben create-Abweisung, zwei Locking-Zeilen und ein verlorener Wettlauf beschreiben Zwischenstaende innerhalb derselben unveroeffentlichten Sektion, die kein Benutzer je in einem Build gesehen hat."
 outcome-resolves: "DoD 1, 2 und 3. DoD 4 bleibt offen und gehoert nicht in diese Lane: die Umbenennung nach '## 0.3.0' faehrt in dem Commit, den der Mensch taggt, und 9ZZSFT/0YGWXQ/7KX89C/GTQHNH stehen noch in signoff."
+review-summary: "core/release/NOTES.md:24 — die RIGHT-edge-Zeile traegt zwei Themen: wie eine Karte gezeichnet wird UND wie ein Milestone auf refs/jaira/milestones/<name> reist und bei 'jaira fetch' ankommt. Das Reise-Thema geht in Zeile 25 weiter ('One somebody else files leaves your board on the next jaira fetch'), also steht EIN Verhalten auf zwei Zeilen — genau was DoD 1 verbietet. Stattdessen: den Satz 'A milestone reaches your teammates ... names the milestones it updated.' aus Zeile 24 herausschneiden und entweder an den Anfang von Zeile 25 setzen, wo 'jaira fetch' ohnehin schon erklaert wird, oder als eigene sechste Zeile direkt vor die logbook-Zeile stellen. Zeile 24 bleibt dann rein das, was ihr erster Satz ankuendigt: was der Mensch am rechten Kartenrand sieht."
 ---
 
 # 0.3.0 schneiden
