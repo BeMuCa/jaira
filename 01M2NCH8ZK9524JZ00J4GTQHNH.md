@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:17:06Z
+updated-at: 2026-09-17T18:17:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -78,7 +78,8 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
   proof: core/role/builtin/jaira-role-lane/SKILL.md:55 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
   proof: core/release/NOTES.md:17 (Modus, inkl. der Kopfzeile von 'jaira show --for-lane') und :18 (Committen von Hand), beide unter ## Unreleased
-- [ ] Im Gespraechsmodus laeuft eine Kritik mit, waehrend an dem Ticket gearbeitet wird, und meldet ihre Befunde sofort - nicht erst, nachdem die implementierende Lane fertig ist. Der Modus und die mitlaufende Kritik stehen im selben Prompt und wirken zusammen.
+- [x] Im Gespraechsmodus laeuft eine Kritik mit, waehrend an dem Ticket gearbeitet wird, und meldet ihre Befunde sofort - nicht erst, nachdem die implementierende Lane fertig ist. Der Modus und die mitlaufende Kritik stehen im selben Prompt und wirken zusammen.
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:100-136 — Abschnitt 'In conversational mode, a critique runs beside the work', im selben Prompt wie der Modus und aus der Modus-Liste heraus verlinkt (SKILL.md:96); Schritt 3 verlangt den Befund in dem Moment, in dem er da ist
 - [x] Eine Kritik sieht, was frueher schon geprueft und was schon repariert wurde, und hebt einen erledigten Befund nicht erneut auf. Nachgestellt an einem Ticket, dessen zweite Runde etwas ausdruecklich fuer gut befunden hat: die dritte liest das und prueft es nicht noch einmal.
   proof: .jaira/lanes/critique.md:10 fuehrt 'notes' in input-requires und der Prompt-Absatz darunter ('Read the notes before you read the diff') macht einen in einer Notiz erledigten Befund zu einem geschlossenen; nachgestellt an diesem Ticket: 'jaira show GTQHNH --for-lane critique --json' liefert missing=null und den notes-Schluessel mit den acht critique-Runden darin
 - [ ] Genau eine Stelle schreibt review-summary und bewegt das Ticket. Laufen mehrere Kritiker gleichzeitig, lesen sie nur; das Zusammenfuehren und der eine 'jaira move' gehoeren dem Dispatcher.
