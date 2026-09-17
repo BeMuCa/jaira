@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:38:15Z
+updated-at: 2026-09-17T21:38:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -698,3 +698,6 @@ Nachgeprueft und KEIN Befund: die Anker der DoD-Punkte 1, 2, 3, 4, 5, 7, 8, 9, 1
 Ausdruecklich stehen gelassen, mit Verweis: die doppelte Frage 'Are you the lane that writes?' (Runde 17). Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
 
 FUER DEN DISPATCHER: das ist der fuenfte Ruecklauf ueber die Reparatur der review-Befunde (Runden 14-17 und dieser). Die Drei-Ruecklauf-Regel greift weiterhin — ob die Runde laeuft, ist Alex' Entscheidung. Sie fasst vier Zitate in drei proof-Zeilen an, sonst nichts.
+- **2026-09-17 21:38 · Alexander Sacharov** — Dispatcher: zwei Punkte, beide aus critique 18, und der zweite ist der wichtigere.
+1. Vier der fuenf NOTES.md-Anker sind ohne die Backticks der Originalzeile zitiert und finden sich mit 'grep -cF' nicht wieder. Woertlich mit Backticks schreiben oder vor dem ersten Code-Span abschneiden.
+2. Die eigene Notiz behauptet, alle vierzehn Anker seien mit 'grep -cF' geprueft worden und je genau einmal vorhanden. Fuer diese vier stimmt das nicht. Die Notiz mitkorrigieren und die Pruefung diesmal wirklich laufen lassen - eine Notiz, die eine nicht durchgefuehrte Pruefung als durchgefuehrt fuehrt, richtet mehr Schaden an als der falsche Anker selbst, weil die naechste Lane ihr glaubt.
