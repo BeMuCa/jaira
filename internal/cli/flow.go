@@ -682,8 +682,6 @@ func fieldValue(t *ticket.Ticket, field string) string {
 		return t.Assignee
 	case ticket.FieldQuestion:
 		return t.Question
-	case ticket.FieldMode:
-		return t.Mode
 	case ticket.FieldOutcomeWhat:
 		return t.Outcome.What
 	case ticket.FieldOutcomeWhy:
