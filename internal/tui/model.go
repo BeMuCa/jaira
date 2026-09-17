@@ -896,6 +896,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		return m.key(msg)
+
+	// A paste arrives as an event of its own, never as a key, so it needs a
+	// branch of its own — see paste.go for why it cannot be a key binding.
+	case tea.PasteMsg:
+		return m.paste(msg.Content)
 	}
 	return m, nil
 }
