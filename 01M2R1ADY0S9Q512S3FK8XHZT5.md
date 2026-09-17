@@ -1,7 +1,7 @@
 ---
 id: 01M2R1ADY0S9Q512S3FK8XHZT5
 title: Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:15:31Z
+updated-at: 2026-09-17T17:15:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
-outcome-what: "Zeilenumbruch einmal definiert: insertText (internal/tui/model.go:921-927) normalisiert \\r\\n und einzelnes \\r zu \\n, bevor ein Puffer den Text sieht. modeEdit haengt danach nur noch an, foldToOneLine (internal/tui/paste.go:41) verliert seine beiden ReplaceAll-Zeilen. Zwei Tests dazu: ein Fall \"a lone carriage return counts too\" in TestMultiLinePasteIsFoldedToSpaces und TestPasteNormalisesALoneCarriageReturnInTheFieldEditor."
-outcome-why: "critique (2. Durchlauf) hat genau einen Punkt offen gelassen: in insertText gab es zwei Definitionen von Zeilenumbruch - modeEdit kannte nur \\r\\n, foldToOneLine auch das einzelne \\r. Terminals schicken in einer Klammer-Einfuegung durchaus einzelne CR; die landeten roh im Editorpuffer und damit in der Ticketdatei."
-outcome-resolves: "Plan 11. DoD 4 bleibt erfuellt und ist mit neuem Proof belegt: die Faltungsentscheidung gilt jetzt fuer alle drei Umbruchformen. go build ./... und go test ./... komplett gruen."
+outcome-what: "Removed the forwarding wrapper Model.paste; the PasteMsg branch calls insertText directly and carries the rationale"
+outcome-why: "A wrapper with one caller that only forwards is one indirection between the event and the code that handles it, and it kept the explanation in a different file from the branch it explains"
+outcome-resolves: "optimize pass: no duplication, no dead code, no behaviour change"
 review-summary: "none"
 review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one caller that only forwarded to insertText; its rationale now sits at the 'case tea.PasteMsg' branch in model.go and the tea import went with it. Left alone: foldToOneLine has no duplicate in the repo (view.go wrap* folds the other way, edit.go:178 is display-only, core/lane/corrections.go:219 is file reading in another package), and the two ReplaceAll on the per-keystroke path allocate nothing when there is no match. No dead code and no behaviour change; tests green, go vet clean."
 ---
