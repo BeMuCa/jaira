@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,24 +37,27 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:32:43Z
+updated-at: 2026-09-17T19:42:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
-outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md:30-38 — der Satz, der die Handlungsliste eroeffnet, traegt jetzt die Bedingung fuer die ganze Liste ('Are you the lane that writes? ... The critique running beside the work does none of the following'), und der claim-Punkt nennt zusaetzlich den Grund, warum gerade er nicht laufen darf. core/role/builtin/jaira-dispatcher/SKILL.md:120-129 — die 106 Zeichen lange Zeile aus d4244be umgebrochen, laengste Zeile des Absatzes jetzt 78 wie bei den Nachbarn. Kein Go-Code, keine neue NOTES.md-Zeile."
-outcome-why: "critique 12: der Kopf konnte einen Worker seit Runde 11 zur nichts-schreibenden mitlaufenden Kritik erklaeren, aber zwei Zeilen spaeter stand 'Then take the ticket and finish the step yourself' und als erster Punkt ein unbedingtes 'jaira claim'. Wer die Datei der Reihe nach las, hatte die Information und claimte trotzdem — das Verbot stand erst drei Bildschirme weiter unten. Der zweite Befund war kosmetisch: eine beim Einfuegen ans Zeilenende geklebte Zeile."
-outcome-resolves: "DoD 9 (genau eine Stelle schreibt review-summary und bewegt das Ticket): das Verbot greift jetzt an der Stelle, an der es gelesen wird, und deckt alle fuenf Schreibpunkte der Liste ab statt nur den claim. go test ./... -count=1 gruen."
-review-summary: |-
-  core/role/builtin/jaira-role-lane/SKILL.md:30-34 — der Kopf entscheidet jetzt richtig, aber die Entscheidung greift zwei Zeilen spaeter ins Leere. Direkt nach dem Absatz, der einem Worker sagen kann 'du bist die mitlaufende Kritik, die nichts schreibt', folgt woertlich 'Then take the ticket and finish the step yourself:' und als erster Punkt das unbedingte 'jaira claim <ticket-id> — before you work it'. Der Punkt traegt keine Bedingung; der Absatz, der ihn verbietet, steht drei Bildschirme weiter unten in Abschnitt 1. Ein Worker, der der Datei der Reihe nach folgt, hat die Information und claimt trotzdem. Reparatur: den claim-Punkt an die Lesung haengen, z.B. 'jaira claim <ticket-id> — es sei denn, die Lesung oben hat dich zur mitlaufenden Kritik gemacht (Abschnitt 1); die claimt nichts', und/oder 'Then take the ticket' zu 'Bist du die schreibende Lane, dann nimm das Ticket' machen.
-  core/role/builtin/jaira-dispatcher/SKILL.md:120 — der Satz 'Its own prompt tells it so — `jaira-role-lane` has it read the ticket's' ist beim Einfuegen in d4244be an das Zeilenende geklebt worden: 106 Zeichen, waehrend jede andere Zeile der Datei bei ~78 umbricht. Kein Bedeutungsfehler, aber der Satzanfang verschwindet mitten in der Zeile. Umbrechen wie die Nachbarzeilen.
+outcome-what: "internal/cli/mode_test.go auf den vorhandenen jsonCLI-Helfer (internal/cli/tags_test.go:64) gelegt: vier handgeschriebene runCLI+json.Unmarshal-Bloecke raus, -52/+6 Zeilen, Import 'encoding/json' faellt weg."
+outcome-why: "Pass 1 (Duplikat): dasselbe Testpaket hatte die Funktion schon, samt besserer Fehlermeldung. Zwei Wege, ein CLI-JSON zu lesen, werden beide gepflegt von Leuten, die den anderen nicht kennen."
+outcome-resolves: "review-gaps geschrieben: ein Fund behoben, vier geprueft und begruendet stehen gelassen, ein vorbestehender toter Code benannt, ein Verhaltensbefund (announce.go:64) an die naechste Runde weitergereicht. go build/vet/test ./... -count=1 gruen."
+review-summary: none
 review-gaps: |-
-  Drei Befunde, der erste ist ein echter Defekt.
+  Entfernt: die vier handgeschriebenen runCLI+json.Unmarshal-Bloecke in internal/cli/mode_test.go — jsonCLI (internal/cli/tags_test.go:64) tut im selben Testpaket genau das und meldet den Fehler besser. -52/+6 Zeilen, Import 'encoding/json' faellt weg, go build/vet/test ./... -count=1 gruen.
 
-  1. 'git diff' ist blind fuer neue Dateien, und genau daran haengt die Pause. jaira-role-lane/SKILL.md sagt nach jedem DoD-Punkt 'git diff' und dann woertlich: 'Empty output? No pause'. Eine untracked Datei steht in 'git diff' nicht drin. Ein DoD-Punkt, der aus einer neuen Datei besteht, erzeugt also leere Ausgabe, der Worker haelt nicht an und baut weiter — die eine Sache, die der Modus verhindern soll. Der Beleg ist dieses Ticket selbst: seine Implementierung hat core/validate/mode_test.go und internal/cli/mode_test.go neu angelegt, beide waeren im Modus stumm durchgelaufen. Fix ist eine Zeile im Prompt: 'git add -A -N .' vor dem 'git diff', oder 'git status --short' danebenstellen und bei untracked Dateien ebenfalls anhalten.
+  Geprueft und bewusst stehen gelassen:
+  - internal/cli/flow.go:684 'case ticket.FieldMode' ist NICHT tot: fieldValue hat mit internal/cli/mergedriver.go:260 einen zweiten Aufrufer, der ueber konfliktbehaftete Frontmatter-Felder iteriert. Er liefert dasselbe wie der default-Zweig — wie jeder andere explizite Case der Funktion auch.
+  - newModeTicket vs. movableTicket (internal/cli/nextstep_test.go:12): unterschiedliche Fixtures (backlog+claim+JAIRA_HOME gegen in-progress ohne claim, deterministische ID). Kein Zusammenlegen.
+  - CanonicalMode hat kein Gegenstueck im Repo: model-tier wird nirgends gegen eine geschlossene Menge geprueft, core/tag.Normalize ist ein anderer Vertrag (normalisiert statt abzulehnen). Keine zweite Implementierung derselben Idee.
+  - Die Modus-Prosa steht in README.md, docs/AGENTS.md, core/release/NOTES.md und beiden SKILL.md. Das ist die im Repo durchgaengige Aufteilung (Benutzer / Agent / Release / Prompt), kein Duplikat zum Zusammenziehen. Die Wiederholungen innerhalb von jaira-role-lane/SKILL.md sind die aus critique 9-12 absichtlich gesetzten — sie zu kuerzen waere ein Rueckbau von critique, nicht eine Aufraeumung.
+  - Kosten: nichts Neues auf einem heissen Pfad. CanonicalMode ist ein TrimSpace und ein Vergleich, die Modus-Zeile in validate laeuft einmal pro Ticket wie die Tag-Pruefung daneben.
 
-  2. Der Block, den 'jaira update' in CLAUDE.md/AGENTS.md eines Boards schreibt, kennt den Modus nicht. core/board/announce.go:64 beschreibt die Nutzlast von 'show <id> --for-lane --json' namentlich ('the lane's prompt, the bounded input, the model tier, and the outputs the lane expects back') und nennt die Modellstufe — den Modus nennt es nicht. Dokumentiert ist er in docs/AGENTS.md und README.md, also im Repository von jaira, nicht auf dem Board eines Benutzers. Ein Agent, der die ausgelieferten Rollen nicht benutzt — und CLAUDE.md fordert ausdruecklich, dass die CLI von jedem bash-faehigen Agenten benutzbar ist —, sieht einen 'mode'-Schluessel, den ihm nichts erklaert.
+  Vorbestehend und nicht angefasst: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now' sind toter Code aelter als diese Aenderung.
 
-  3. DoD-Punkt 1 ist ausschliesslich als Prosa erfuellt. 'Der Eintritt haengt an einer nachpruefbaren Bedingung' ist ein Prompt-Absatz in jaira-dispatcher/SKILL.md; nichts im Code zaehlt etwas, nichts prueft, ob der Dispatcher den Halt ausgelassen hat, und kein Test deckt ihn ab. Das ist die in der Brainstorm-Lane getroffene Entscheidung (der Modus ist eine Prompt-Aenderung, der Go-Code ist nur der Traeger) und insofern kein Widerspruch — aber es heisst, dass der zentrale DoD-Punkt dieses Tickets durch keinen Mechanismus gehalten wird. Kleiner Nachbrenner in derselben Ecke: der zweite Schreibpfad, internal/tui/edit.go:60, hat keinen Test; die Ablehnung eines unbekannten Modus ist nur fuer 'jaira set' abgedeckt.
+  Offen aus der Vorrunde und NICHT hier zu beheben, weil es Verhalten aendert und eine NOTES.md-Zeile braucht: core/board/announce.go:64 zaehlt die Nutzlast von 'show --for-lane --json' namentlich auf und nennt den Modus nicht — der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, erklaert den 'mode'-Schluessel also nicht.
 test-verdict: "pass: go build/vet/test ./... -race -count=1 green (RC=0, 29 Pakete), DoD 1-6 in der Working Tree geprueft, Verhalten auf einem Scratch-Board mit dem gebauten Binary durchgespielt"
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
 review-verdict: |-
@@ -500,3 +503,26 @@ critique schlug fuer den claim-Punkt eine Bedingung AM PUNKT vor ('es sei denn, 
 Keine NOTES.md-Zeile fuer diese Runde, absichtlich. Die erste Zeile unter ## Unreleased beschreibt die mitlaufende Kritik samt 'Those critics never write' und dem Unterscheider bereits vollstaendig; ein Benutzer tut nach dieser Runde nichts anderes als vorher. Was sich geaendert hat, ist nur, dass der ausgelieferte Prompt das auch an der Stelle sagt, an der er gelesen wird. Eine zweite Zeile dafuer waere ein Commit-Protokoll, und genau das verbietet der Kopf von NOTES.md.
 
 Die zwei Restzeilen ueber 85 Zeichen in jaira-dispatcher/SKILL.md (185 und 399) sind NICHT angefasst: sie sind aelter als dieses Ticket und gehoeren nicht in diese Lane. Wer die Datei einmal ganz umbricht, findet sie mit: awk 'length($0)>85 {print NR}'.
+- **2026-09-17 19:37 · Alexander Sacharov** — critique (13. Durchgang, ueber die Punkte 7-12): kein Befund. Das ist der Ausgang der Schleife, nicht ein Durchwinken.
+
+Gelesen wurde 6c7acc8 (die beiden Reparaturen aus Runde 12) und der jetzige Stand der beiden SKILL-Dateien im Ganzen, vor dem Diff die Notizen.
+
+Was ich geprueft und in Ordnung gefunden habe:
+- jaira-role-lane/SKILL.md:30-38 — die Bedingung traegt jetzt die ganze Liste, nicht nur den claim-Punkt, und steht VOR dem ersten Punkt. Der Befund aus Runde 12 ist damit nicht eine Zeile tiefer gewandert, sondern geschlossen: dod, note, move und die Commit-Punkte haengen an demselben Satz. Die Frage 'Are you the lane that writes?' ist an dieser Stelle noch nicht beantwortet, aber sie ist ein Vorwaertsverweis mit Ziel — Zeile 19-24 sagt, dass die --json-Lesung das entscheidet, und nennt den Abschnitt, der die Regel gibt. Das ist etwas anderes als der unbedingte Punkt, den Runde 12 gefunden hat, und kein Befund.
+- jaira-dispatcher/SKILL.md:120-129 — umgebrochen, laengste Zeile des Absatzes 78. Die zwei Restzeilen ueber 85 Zeichen (Zeile 3 und 217) sind Frontmatter bzw. aelter als dieses Ticket; die In-progress-Notiz vom 17.09. 19:32 laesst sie ausdruecklich stehen.
+- DoD 11 nachgeprueft: 'grep -rn "Testing is not a lane" core/' findet nichts.
+
+Ausdruecklich stehen gelassen, mit Verweis auf die Notiz, die es geschlossen hat: die Prosa-Wiederholung ueber README/AGENTS.md/beide SKILLs/NOTES.md (optimize, 16.09. 20:21). Der Merge-Driver (Runde 5). Die drei Befunde, die der Dispatcher am 17.09. 18:50 als geschlossen nachgesehen hat. Das Restrennen zwischen erstem Lesen und sehr fruehem 'move --to critique' (Runde 11). Dass dispatcher/SKILL.md Schritt 1 die Startzeile ohne den Nebensatz zeigt, den Schritt 2 sechs Zeilen spaeter verlangt: die Anweisung steht in derselben Liste unmittelbar darunter, das ist keine Reihenfolge-Luecke wie die der Runden 10-12.
+
+EINE BEOBACHTUNG AUSSERHALB DIESES TICKETS, fuer Alex, nicht von mir zu entscheiden und hier nicht angefasst: DoD 8 ('eine Kritik sieht, was frueher geprueft wurde') ist in .jaira/lanes/critique.md gebaut — einer Lane, die jaira nicht ausliefert; core/lane/builtin/ hat keine critique.md, und die NOTES.md-Zeile sagt das ehrlich ('critique is not a shipped lane at all'). Die eine urteilende Lane, die JEDES Board bekommt, ist core/lane/builtin/40-review.md, und deren input-requires (Zeile 9) fuehrt 'notes' nicht und ihr Prompt hat keinen 'lies zuerst die Notizen'-Absatz. Die Eigenschaft erreicht also nur das Board von jaira selbst. Ob sie in die review-Lane gehoert, ist eine echte Abwaegung und keine Reparatur: die review-Lane ist absichtlich der zweite, unbelastete Leser, und ihn mit den Befunden der frueheren Durchgaenge zu fuettern kann ihn genauso gut anlehnen wie informieren. Eigenes Ticket oder bewusst so lassen — Alex' Entscheidung.
+- **2026-09-17 19:41 · Alexander Sacharov** — optimize (Runde 2, nach den critique-Runden 9-12): vier Durchgaenge ueber den Branch-Diff gegen master, nicht nur ueber den einen Commit, den 'show --for-lane' als diff mitliefert — das Ticket-Frontmatter fuehrt nur 9cb1df9, die dreizehn spaeteren Commits stehen nur in der git-Historie.
+
+Geaendert wurde genau eine Sache: internal/cli/mode_test.go rief viermal von Hand runCLI + json.Unmarshal, obwohl jsonCLI (internal/cli/tags_test.go:64) im selben Testpaket genau das schon tut und dabei die Fehlermeldung mitbringt. -52/+6 Zeilen, der Import 'encoding/json' faellt weg. go build/vet/test ./... -count=1 gruen.
+
+Zwei Dinge, die nach Duplikat aussahen und keines sind — damit die naechste Runde sie nicht noch einmal aufmacht:
+
+1. internal/cli/flow.go:684 'case ticket.FieldMode: return t.Mode' sieht tot aus, weil mode bewusst NICHT in ticket.SuppliedFields steht und deshalb nie in einem input-requires landen kann. Der Case ist trotzdem erreichbar: fieldValue hat einen zweiten Aufrufer, internal/cli/mergedriver.go:260, und der iteriert ueber die konfliktbehafteten Frontmatter-Felder — mode kann darunter sein. Er liefert dasselbe wie der default-Zweig, aber das gilt fuer jeden anderen expliziten Case in der Funktion auch; ihn allein zu streichen waere Inkonsistenz, keine Aufraeumung.
+
+2. newModeTicket vs. movableTicket (internal/cli/nextstep_test.go:12) sind nicht dasselbe Fixture: movableTicket legt ein Ticket im backlog an, claimt es und setzt JAIRA_HOME; newModeTicket braucht status=in-progress, keinen claim und eine deterministische ID. Zusammenlegen hiesse beiden Tests Zustand aufzudraengen, den sie nicht wollen.
+
+Vorbestehender toter Code, den ich stehen lasse: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now'. Aelter als diese Aenderung.

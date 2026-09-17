@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -44,15 +43,7 @@ func setMode(t *testing.T, dir, handle, mode string) {
 // modeOf reads the mode back the way a caller does, out of 'jaira show --json'.
 func modeOf(t *testing.T, dir, handle string) any {
 	t.Helper()
-	out, err := runCLI(t, dir, "show", handle, "--json")
-	if err != nil {
-		t.Fatalf("show --json: %v\n%s", err, out)
-	}
-	var got map[string]any
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatalf("show --json is not json: %v\n%s", err, out)
-	}
-	return got["mode"]
+	return jsonCLI(t, dir, "show", handle)["mode"]
 }
 
 // The mode is what survives a killed session: written once, it has to come
@@ -78,29 +69,16 @@ func TestModeSurvivesRoundTrip(t *testing.T) {
 func TestForLaneCarriesMode(t *testing.T) {
 	dir, h := newModeTicket(t)
 
-	out, err := runCLI(t, dir, "show", h, "--for-lane", "in-progress", "--json")
-	if err != nil {
-		t.Fatalf("show --for-lane: %v\n%s", err, out)
-	}
-	var got map[string]any
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatalf("not json: %v\n%s", err, out)
-	}
+	got := jsonCLI(t, dir, "show", h, "--for-lane", "in-progress")
 	if _, ok := got["mode"]; !ok {
-		t.Fatalf("the lane payload has no mode key at all:\n%s", out)
+		t.Fatalf("the lane payload has no mode key at all: %v", got)
 	}
 	if got["mode"] != "" {
 		t.Errorf("a fresh ticket is already in mode %v", got["mode"])
 	}
 
 	setMode(t, dir, h, ticket.ModeConversational)
-	out, err = runCLI(t, dir, "show", h, "--for-lane", "in-progress", "--json")
-	if err != nil {
-		t.Fatalf("show --for-lane: %v\n%s", err, out)
-	}
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatal(err)
-	}
+	got = jsonCLI(t, dir, "show", h, "--for-lane", "in-progress")
 	if got["mode"] != ticket.ModeConversational {
 		t.Errorf("the lane payload carries mode %v, want %q", got["mode"], ticket.ModeConversational)
 	}
@@ -203,24 +181,16 @@ func TestResumeCarriesMode(t *testing.T) {
 
 	setMode(t, dir, h, ticket.ModeConversational)
 
-	out, err := runCLI(t, dir, "resume", "--json")
-	if err != nil {
-		t.Fatalf("resume --json: %v\n%s", err, out)
+	inFlight, _ := jsonCLI(t, dir, "resume")["in_flight"].([]any)
+	if len(inFlight) != 1 {
+		t.Fatalf("resume reports %d ticket(s), want 1", len(inFlight))
 	}
-	var got struct {
-		InFlight []map[string]any `json:"in_flight"`
-	}
-	if err := json.Unmarshal([]byte(out), &got); err != nil {
-		t.Fatalf("resume --json is not json: %v\n%s", err, out)
-	}
-	if len(got.InFlight) != 1 {
-		t.Fatalf("resume reports %d ticket(s), want 1\n%s", len(got.InFlight), out)
-	}
-	if got.InFlight[0]["mode"] != ticket.ModeConversational {
-		t.Errorf("resume --json carries mode %v, want %q", got.InFlight[0]["mode"], ticket.ModeConversational)
+	first, _ := inFlight[0].(map[string]any)
+	if first["mode"] != ticket.ModeConversational {
+		t.Errorf("resume --json carries mode %v, want %q", first["mode"], ticket.ModeConversational)
 	}
 
-	out, err = runCLI(t, dir, "resume")
+	out, err := runCLI(t, dir, "resume")
 	if err != nil {
 		t.Fatalf("resume: %v\n%s", err, out)
 	}
