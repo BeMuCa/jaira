@@ -37,10 +37,10 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:50:02Z
+updated-at: 2026-09-17T18:50:16Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-12830
-claimed-at: 2026-09-17T18:13:16Z
+claimed-by: DESKTOP-RFTCH11-75151
+claimed-at: 2026-09-17T18:50:16Z
 outcome-what: "Die drei Befunde aus critique-Runde 10 repariert. core/role/builtin/jaira-role-lane/SKILL.md: der Lesebefehl 'jaira show --for-lane --json' steht jetzt VOR 'jaira claim' — claim schreibt den eigenen Namen aufs Ticket, und im Gespraechsmodus darf einer der beiden Worker gar nichts schreiben; 'jaira claim' ist dafuer ein eigener Punkt der Schritt-Liste geworden. Die Verbotsliste des mitlaufenden Kritikers nennt claim und dod und endet mit dem Satz, dass alles aus ist, was diese Datei sonst zu schreiben auftraegt. Der Unterscheider 'lane-Argument != status' wird ausdruecklich EINMAL gelesen und nie neu, plus die Regel fuer den Worker, dessen Kontext weg ist: nicht raten, den Dispatcher fragen, und bis zur Antwort nichts schreiben — und melden und aufhoeren statt weiterzulaufen. core/role/builtin/jaira-dispatcher/SKILL.md Schritt 2 fuehrt dieselbe Einmal-Lesung und verpflichtet den Dispatcher, die Frage zu beantworten. scripts/spawn.sh: der usage-Text zu --no-worktree nennt den lesenden Worker als Ausnahme. core/release/NOTES.md: die Zeile zur mitlaufenden Kritik behauptete genau das, was Befund 1 widerlegt, und die Zeile zu --no-worktree dasselbe Falsche wie spawn.sh — beide korrigiert."
 outcome-why: "Der Unterscheider war eine Momentaufnahme des Boards, kein bleibendes Merkmal: der implementierende Worker beendet seine Lane mit 'jaira move --to critique', ab da ist status == 'critique' == dem Lane-Argument der mitlaufenden Kritik, und die haelt sich fuer die ordentliche critique-Lane — genau die zwei Schreiber auf einem Feld, die der Absatz verhindern soll. Und 'jaira claim' stand vor dem Lesebefehl: die Kritik hatte geschrieben, bevor sie wissen konnte, dass sie es nicht darf."
 outcome-resolves: "DoD 9 (genau eine Stelle schreibt review-summary und bewegt das Ticket): jaira-role-lane/SKILL.md:69-100 traegt die Regel jetzt so, dass sie einen Statuswechsel und einen Sitzungsabbruch ueberlebt — Einmal-Lesung plus Rueckfrage statt Rateweg — und der Lesebefehl steht vor jedem Schreibweg, claim eingeschlossen. Plan 26-29 [x]; go build ./... und go test ./core/... ./internal/... -count=1 gruen."
