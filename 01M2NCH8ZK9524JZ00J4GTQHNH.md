@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:32:04Z
+updated-at: 2026-09-17T19:32:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -139,7 +139,8 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] critique 11: jaira-dispatcher/SKILL.md — die Verbotsliste der mitlaufenden Kritik nennt 'jaira dod' und schliesst mit einem Satz statt einer Aufzaehlung
 - [x] critique 12: jaira-role-lane/SKILL.md — der claim-Punkt traegt die Bedingung selbst; die mitlaufende Kritik claimt nicht
   proof: core/role/builtin/jaira-role-lane/SKILL.md:30-38
-- [ ] critique 12: jaira-dispatcher/SKILL.md:120 — die 106-Zeichen-Zeile wie die Nachbarn bei ~78 umbrechen
+- [x] critique 12: jaira-dispatcher/SKILL.md:120 — die 106-Zeichen-Zeile wie die Nachbarn bei ~78 umbrechen
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:120-129
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
