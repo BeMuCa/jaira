@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:32:59Z
+updated-at: 2026-09-17T18:33:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -129,7 +129,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] critique 9: jaira-role-lane/SKILL.md — der mitlaufende Kritiker erkennt sich am Ticket (lane-Argument != status), nicht an der Startzeile, und schreibt nichts
 - [x] critique 9: core/release/NOTES.md — die falsche Behauptung 'no lane shipped with jaira asked for it' korrigieren
 - [ ] critique 10: jaira-role-lane/SKILL.md — der Unterscheider wird EINMAL beim ersten Lesen entschieden und nicht neu, wenn der status auf das Lane-Argument wechselt; wer es nicht mehr weiss, schreibt nicht
-- [ ] critique 10: jaira-role-lane/SKILL.md — 'show --for-lane --json' VOR 'jaira claim', und claim/dod in die Verbotsliste der mitlaufenden Kritik
+- [~] critique 10: jaira-role-lane/SKILL.md — 'show --for-lane --json' VOR 'jaira claim', und claim/dod in die Verbotsliste der mitlaufenden Kritik
 - [ ] critique 10: spawn.sh:14 usage von --no-worktree — lesende Worker als Ausnahme nachziehen
 - [ ] critique 10: core/release/NOTES.md — die Zeile zur mitlaufenden Kritik beschreibt den neuen Unterscheider
 
