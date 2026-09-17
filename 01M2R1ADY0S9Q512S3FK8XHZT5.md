@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:02:06Z
+updated-at: 2026-09-17T16:02:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
@@ -58,7 +58,7 @@ claimed-at: 2026-09-17T15:57:28Z
 - [x] Update: case tea.PasteMsg -> m.paste(msg.Content), routed per mode like the k.Text default branch
 - [x] modeFilter/modeCreate/modeDelete take the folded text; modeEdit keeps newlines (enter inserts one there)
 - [x] comment at the PasteMsg branch: why ctrl+v cannot go through cmdKey (keylayout.go:38-42)
-- [~] paste_test.go: one test per mode, one for multi-byte + backspace, one for multiline folding
+- [x] paste_test.go: one test per mode, one for multi-byte + backspace, one for multiline folding
 - [ ] NOTES.md line under ## Unreleased
 
 ## Progress
