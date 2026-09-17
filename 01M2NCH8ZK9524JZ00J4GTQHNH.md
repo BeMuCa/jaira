@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:27:09Z
+updated-at: 2026-09-17T18:27:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -85,7 +85,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] Eine Kritik sieht, was frueher schon geprueft und was schon repariert wurde, und hebt einen erledigten Befund nicht erneut auf. Nachgestellt an einem Ticket, dessen zweite Runde etwas ausdruecklich fuer gut befunden hat: die dritte liest das und prueft es nicht noch einmal.
   proof: .jaira/lanes/critique.md:10 fuehrt 'notes' in input-requires und der Prompt-Absatz darunter ('Read the notes before you read the diff') macht einen in einer Notiz erledigten Befund zu einem geschlossenen; nachgestellt an diesem Ticket: 'jaira show GTQHNH --for-lane critique --json' liefert missing=null und den notes-Schluessel mit den acht critique-Runden darin
 - [x] Genau eine Stelle schreibt review-summary und bewegt das Ticket. Laufen mehrere Kritiker gleichzeitig, lesen sie nur; das Zusammenfuehren und der eine 'jaira move' gehoeren dem Dispatcher.
-  proof: core/role/builtin/jaira-dispatcher/SKILL.md:127 — 'Exactly one place writes review-summary and moves the ticket, and it is you'; die mitlaufenden Kritiker lesen nur (SKILL.md:115)
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:130 ('Exactly one place writes review-summary and moves the ticket, and it is you') plus core/role/builtin/jaira-role-lane/SKILL.md:50-72 — der mitlaufende Kritiker erkennt sich selbst am Ticket ('jaira show --json': lane-Argument != status) und schreibt nichts, also ueberlebt die Nur-Lese-Regel auch einen Neustart des Workers
 - [x] Die Pause nach einem DoD-Punkt erkennt auch eine NEU angelegte Datei. Nachgestellt an einem Punkt, der nur aus einer neuen Datei besteht: der Modus haelt an, statt ihn als leere Ausgabe durchlaufen zu lassen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:50-80 — 'git status --short' steht jetzt neben 'git diff', ein '??' ist eine Pause und die neue Datei wird mit vorgelegt; nachgestellt in diesem Worktree: eine angelegte probe_neu.go liefert 'git diff' 0 Zeilen und 'git status --short' die Zeile '?? probe_neu.go'
 - [x] Der Halbsatz 'Testing is not a lane' steht nicht mehr in core/role/builtin/jaira-dispatcher/SKILL.md; scripts/spawn.sh hat weiterhin genau einen Sonderfall ('dispatch'), und core/role/builtin/jaira-role-tester/SKILL.md ist unveraendert.
