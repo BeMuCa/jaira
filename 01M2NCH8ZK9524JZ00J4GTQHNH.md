@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:22:40Z
+updated-at: 2026-09-17T18:22:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -422,3 +422,10 @@ Aus dem Lauf selbst: core/role/builtin/jaira-dispatcher/SKILL.md:118 sagt 'Testi
 Dafuer war kein Go-Code noetig: core/ticket/schema.go:193-197 fuehrt 'notes' bereits in SuppliedFields, und internal/cli/notesinput_test.go deckt den Weg ab. Nachgeprueft statt vermutet — 'show GTQHNH --for-lane critique --json' liefert missing=null und den notes-Schluessel.
 
 Die mitlaufende Kritik widersprach dem '--no-worktree'-Absatz, der sagt 'never run a second one anywhere while such a worker is live'. Aufgeloest, indem der Absatz sie als die eine Ausnahme benennt: sie liest nur, und deshalb kann nichts an ihr mit dem schreibenden Worker kollidieren. Haette man den Absatz stehen lassen, widerspraeche der Prompt sich selbst an zwei Stellen und der Dispatcher folgt der, die er zuerst liest.
+- **2026-09-17 18:22 · Alexander Sacharov** — critique (9. Durchgang, erste Runde ueber die Punkte 7-12): zwei Befunde, beide mit klarem Fix, keine Entscheidung fuer den Menschen.
+
+1. Der wichtigere. dispatcher/SKILL.md:115-117 traegt die Nur-Lese-Eigenschaft der mitlaufenden Kritik in der GETIPPTEN STARTZEILE ('Say that in the line you start it with, because its lane prompt tells it to do all three'). Das ist Weg B aus der Brainstorm-Entscheidung dieses Tickets, dort verworfen mit der Begruendung, die hier woertlich wieder zutrifft: er stirbt mit der Sitzung. Was ein neu gestarteter oder kompaktierter Worker liest, ist jaira-role-lane/SKILL.md, und die sagt ihm weiterhin note, review-summary und move — plus 'Boundaries: the lane you were given is the deliverable'. Dann ueberschreibt der Kritiker review-summary und zieht das Ticket unter dem implementierenden Worker weg. Fix an derselben Stelle, an der der Modus selbst schon sitzt: ein dritter Punkt in der Liste 'Two things change' (jaira-role-lane/SKILL.md:48), Unterscheidung ueber 'jaira show <id> --json' — Lane-Argument != status heisst mitlaufende Kritik, also nur melden. Die ordentliche critique-Lane laeuft mit status=critique und schreibt unveraendert weiter.
+
+2. NOTES.md:18 behauptet 'no lane shipped with jaira asked for it'. core/lane/builtin/20-in-progress.md:9 fuehrt notes in input-requires und wird ausgeliefert. Halbsatz streichen oder richtigstellen.
+
+Nicht erneut aufgemacht, mit Angabe der Notiz, auf der ich stehe: 'git add -A -N' bleibt verworfen (Notiz 17.09. 18:19, Grund --no-worktree); die ausgelieferte critique-Lane ist bewusst ein eigenes Ticket (dieselbe Notiz); der --no-worktree-Absatz nennt die Kritik schon als die eine Ausnahme (dieselbe Notiz); die ueber fuenf Dateien wiederholte Prosa steht (optimize-Notiz 16.09. 20:21); 'Testing is not a lane' ist von Alex angeordnet (DoD 11).
