@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:29:09Z
+updated-at: 2026-09-17T21:29:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -118,7 +118,7 @@ review-check: |-
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
   proof: core/release/NOTES.md unter ## Unreleased: die Zeile 'Expect a critique to run *beside* the work on a ticket in mode: conversational' (mitlaufende Kritik) und die Zeile 'Expect the conversational-mode pause to stop on a definition-of-done item made of a brand-new file' (Pause, die neue Dateien sieht)
 - [x] Der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, nennt den Modus: core/board/announce.go zaehlt die Nutzlast von 'jaira show --for-lane --json' auf und fuehrt 'mode' darin mit, damit ein Agent auf einem fremden Board ueberhaupt erfaehrt, dass es den Schluessel gibt. Je eine Zeile in core/release/NOTES.md, wenn sich der ausgelieferte Blocktext dadurch aendert.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:143-155 — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
+  proof: core/board/announce.go, der '- jaira show <id> --for-lane <lane> --json'-Punkt im Block 'Working a ticket' — nennt 'mode' neben dem model tier und sagt, was 'conversational' verlangt und dass es vom Ticket gelesen wird; dazu in core/release/NOTES.md unter ## Unreleased die Zeile 'Run jaira update to learn on your own board that mode exists'
 - [x] Die mitlaufende Kritik liest den nicht committeten Arbeitsbaum, nicht die Commit-Liste: jaira-role-lane/SKILL.md sagt dem Worker, der sich als mitlaufende Kritik erkannt hat, dass 'jaira show --for-lane --json' zur Laufzeit mit complete:false und fehlendem Diff kommt, weil es noch keine Commits gibt (internal/cli/flow.go:590-595), und dass er stattdessen 'git diff', 'git diff --cached' und 'git status --short' liest. Die Begruendung im Dispatcher-Prompt, der Diff sei nie das Limit gewesen, wird auf die Kritik-LANE eingegrenzt - fuer die mitlaufende gilt sie nicht.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:104-129 — 'Read the worktree, not the ticket's diff', unbedingt; nur der Diff ist stale, Ziel/DoD/Notizen im selben Payload bleiben der Massstab (:111-115); dann git status --short / git diff / git diff --cached mit ':/ :(exclude,top).jaira/tickets'
 - [x] Die Pause uebergeht die Ticket-Datei: die Bedingung in jaira-role-lane/SKILL.md schliesst Aenderungen unter '.jaira/tickets/' aus (etwa 'git status --short -- . ":(exclude).jaira/tickets"' und dasselbe fuer 'git diff'), damit 'Both empty? No pause' nach dem ersten 'jaira dod' erreichbar bleibt. Nachgestellt an einem reinen Dokumentationspunkt nach einer bereits gesetzten Haekchen: es wird nicht pausiert.
