@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:30:39Z
+updated-at: 2026-09-17T15:30:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -136,3 +136,12 @@ Nicht neu aufgemacht: die 918-Zeichen-Zeile, 'rm loescht nur die Zeile', die bei
 Gesucht und nichts gefunden: kein zweiter Ort im Repo filtert Entries ohne Changes (grep '.Changes': nur parseNotes, der neue Filter, update.go:115/129 als Renderer und release_test.go:96). internal/cli/update.go braucht keine Aenderung - der Zweig len(notes)==0 liest den gefilterten Rueckgabewert und --json bekommt dieselbe Liste ueber entriesJSON.
 
 Absichtlich stehen gelassen: (1) der sechszeilige Kommentar ueber sinceEntries - er sagt warum die leere Sektion im File bleibt, aber nicht reist, und das steht nirgends sonst; (2) release_test.go:96 ('e.Version != "" && len(e.Changes) > 0') laeuft gegen die echte NOTES.md und ist aelter als diese Aenderung; (3) Kosten: Since() laeuft einmal pro 'jaira update' ueber acht Entries - nichts zu hoisten.
+- **2026-09-17 15:30 · Alexander Sacharov** — testing: Alle Gates gruen, alle 6 DoD-Punkte am Baum und am laufenden Binary nachgeprueft. Kein Befund, der zurueckgeht.
+
+Fallstrick beim Nachpruefen, der eine falsche Fehlmeldung erzeugt hat und beim naechsten Mal wieder eine erzeugen wird: 'jaira update' STEMPELT das Board beim Laufen auf die aktuelle Binaryversion. Wer erst 'jaira update' und danach 'jaira update --json' mit demselben Stempel vergleichen will, misst beim zweiten Aufruf Stempel 0.3.0 und bekommt notes: [] - das sieht aus wie 'Text und --json weichen ab', ist aber der eigene erste Aufruf. Die Stempeldatei muss VOR JEDEM Aufruf neu geschrieben werden ($JAIRA_HOME/state/<board>-<hash>/version). Mit Reset vor jedem Aufruf stimmen Text und --json in allen drei Faellen ueberein.
+
+Belege: Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.', --json notes: []. Stempel 0.2.1 -> Text 'What's changed since then:' + '0.3.0', --json ['0.3.0']. Ungestempelt -> 0.3.0, 0.2.1, 0.2.0, 0.1.4, 0.1.3, 0.1.2, 0.1.1, 0.1.0 in Text und --json identisch; 'Unreleased' taucht in keiner der drei Ausgaben auf.
+
+Zwei Beobachtungen, beide kein Fail:
+(1) Die optimize-Lane hat 'withChanges' wieder in 'sinceEntries' hineingezogen - die Aenderung liegt UNCOMMITTED im Worktree (git diff core/release/release.go). Verhalten identisch, beide Tests gruen. Die Proof-Zeile von DoD 6 nennt aber noch 'core/release/release.go:84 withChanges', und diese Funktion existiert im Baum nicht mehr. Der Nachweis stimmt inhaltlich (der Filter sitzt in sinceEntries, nicht in parseNotes), nur die Zeilenreferenz ist veraltet.
+(2) DoD 5 und DoD 6 sind weiterhin derselbe Punkt aus zwei Blickwinkeln (in der 15:16-Notiz schon festgehalten) - beide mit demselben Lauf abgehakt.
