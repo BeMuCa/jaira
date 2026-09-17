@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:15:27Z
+updated-at: 2026-09-17T17:15:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -36,6 +36,7 @@ outcome-what: "Zeilenumbruch einmal definiert: insertText (internal/tui/model.go
 outcome-why: "critique (2. Durchlauf) hat genau einen Punkt offen gelassen: in insertText gab es zwei Definitionen von Zeilenumbruch - modeEdit kannte nur \\r\\n, foldToOneLine auch das einzelne \\r. Terminals schicken in einer Klammer-Einfuegung durchaus einzelne CR; die landeten roh im Editorpuffer und damit in der Ticketdatei."
 outcome-resolves: "Plan 11. DoD 4 bleibt erfuellt und ist mit neuem Proof belegt: die Faltungsentscheidung gilt jetzt fuer alle drei Umbruchformen. go build ./... und go test ./... komplett gruen."
 review-summary: "none"
+review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one caller that only forwarded to insertText; its rationale now sits at the 'case tea.PasteMsg' branch in model.go and the tea import went with it. Left alone: foldToOneLine has no duplicate in the repo (view.go wrap* folds the other way, edit.go:178 is display-only, core/lane/corrections.go:219 is file reading in another package), and the two ReplaceAll on the per-keystroke path allocate nothing when there is no match. No dead code and no behaviour change; tests green, go vet clean."
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
