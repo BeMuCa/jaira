@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:15:24Z
+updated-at: 2026-09-17T15:16:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -52,6 +52,7 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
 - [x] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
   proof: core/release/NOTES.md:16-18 — '## Unreleased' ist leer und neu, '## 0.3.0' traegt die 9 Zeilen; TestParseNotesKeepsAnEmptyLeadingSection deckt die leere Kopfsektion
 - [ ] Wer 'jaira update' auf einem Board mit Stempel 0.3.0 laufen laesst, liest 'Nothing has changed since the version that last set this board up.' - und nicht die leere Ueberschrift 'Unreleased' ohne einen einzigen Punkt darunter. Dasselbe fuer --json: notes ist leer statt eines Eintrags mit changes: null.
+- [ ] Eine leere '## Unreleased' erreicht die Ausgabe von 'jaira update' nicht: sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert (nicht parseNotes, das die leere Sektion absichtlich behaelt), Text und --json zeigen dieselbe Liste, und der Zweig 'Nothing has changed since ...' in internal/cli/update.go ist fuer ein Board mit Stempel 0.3.0 und Binary 0.3.0 wieder erreichbar. Mit Test nachgewiesen.
 
 ## Options
 
