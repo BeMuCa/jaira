@@ -38,7 +38,7 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:02:41Z
+updated-at: 2026-09-17T21:02:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -176,6 +176,7 @@ review-check: |-
 - [x] go test ./... -count=1
 - [x] critique 16: jaira-role-lane/SKILL.md:26-33 — 'Follow it, produce exactly those outputs' traegt die Bedingung; die mitlaufende Kritik liest den Lane-Prompt, statt ihn auszufuehren
 - [x] critique 16: jaira-role-lane/SKILL.md:107-115 — nur der Diff ist stale; Ziel, DoD und Notizen im selben Payload bleiben der Massstab
+- [ ] go test ./... -count=1
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
