@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:32:07Z
+updated-at: 2026-09-17T19:32:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -493,3 +493,10 @@ Alex hat diese vierte Runde ausdruecklich freigegeben, nachdem der Dispatcher na
 - Ausdruecklich stehen gelassen, mit Verweis: die Prosa-Wiederholung ueber README/AGENTS.md/beide SKILLs/NOTES.md (optimize-Notiz 16.09. 20:21). Der Merge-Driver (Runde 5). Die NOTES.md-Zeile zur critique-Lane (Runde 9/10). Das Restrennen zwischen erstem Lesen der mitlaufenden Kritik und einem sehr fruehen 'move --to critique' (Runde 11 — der Weg 'im Zweifel nicht schreiben und den Dispatcher fragen' deckt es ab). Die drei Befunde aus Runde 10/11, die der Dispatcher am 17.09. 18:50 als geschlossen nachgesehen hat — nicht wieder angefasst. Nachgeprueft und KEIN Befund: 'jaira show <id> --json' fuehrt tatsaechlich 'status' (Schluesselliste am laufenden Board), und internal/cli/tickets.go:1327 fuehrt 'mode' im selben JSON — der Kopf behauptet beides zu Recht; dass das installierte Binary 'mode' noch nicht zeigt, liegt an der alten Version auf dem PATH, nicht am Zweig.
 - FUER DEN DISPATCHER: das ist der vierte Ruecklauf ueber die Punkte 7-12 (Runden 9, 10, 11 plus dieser). Alex hatte am 17.09. ausdruecklich EINE weitere Runde freigegeben, und die ist verbraucht. Die Drei-Ruecklauf-Regel greift wieder: ob Befund 1 noch repariert wird oder das Ticket mit dieser Kante weitergeht, ist jetzt Alex' Entscheidung, nicht die des Dispatchers.
 - **2026-09-17 19:29 · Alexander Sacharov** — Alex hat die fuenfte in-progress-Runde freigegeben. Genau zwei Punkte aus critique-Runde 12, beide Folge der Runde-4-Reparatur: (1) jaira-role-lane/SKILL.md:30-34 - der claim-Punkt direkt nach der entscheidenden Lesung traegt keine Bedingung, obwohl der Absatz zwei Zeilen darueber einen Worker zur nichts-schreibenden Kritik erklaeren kann; Bedingung an den Punkt haengen. (2) jaira-dispatcher/SKILL.md:120 - 106 Zeichen lange Zeile, umbrechen wie die Nachbarn bei ~78. Sonst nichts anfassen.
+- **2026-09-17 19:32 · Alexander Sacharov** — In-progress nach critique (12. Durchgang): beide Befunde repariert, der erste weiter als vorgeschlagen.
+
+critique schlug fuer den claim-Punkt eine Bedingung AM PUNKT vor ('es sei denn, die Lesung oben hat dich zur mitlaufenden Kritik gemacht'). Das repariert eine Zeile und laesst die vier darunter (dod, note, move, commit) unbedingt stehen — dieselbe Luecke, nur eine Zeile tiefer. Stattdessen traegt jetzt der Satz, der die Liste eroeffnet, die Bedingung fuer die ganze Liste ('Are you the lane that writes? ... The critique running beside the work does none of the following'), und der claim-Punkt sagt zusaetzlich, WARUM gerade er: der Name, den claim schreibt, ist der, den der implementierende Worker braucht. Ein Leser, der der Datei der Reihe nach folgt, hat die Bedingung damit vor dem ersten Punkt und nicht erst im Punkt.
+
+Keine NOTES.md-Zeile fuer diese Runde, absichtlich. Die erste Zeile unter ## Unreleased beschreibt die mitlaufende Kritik samt 'Those critics never write' und dem Unterscheider bereits vollstaendig; ein Benutzer tut nach dieser Runde nichts anderes als vorher. Was sich geaendert hat, ist nur, dass der ausgelieferte Prompt das auch an der Stelle sagt, an der er gelesen wird. Eine zweite Zeile dafuer waere ein Commit-Protokoll, und genau das verbietet der Kopf von NOTES.md.
+
+Die zwei Restzeilen ueber 85 Zeichen in jaira-dispatcher/SKILL.md (185 und 399) sind NICHT angefasst: sie sind aelter als dieses Ticket und gehoeren nicht in diese Lane. Wer die Datei einmal ganz umbricht, findet sie mit: awk 'length($0)>85 {print NR}'.
