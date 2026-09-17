@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:55:39Z
+updated-at: 2026-09-17T21:55:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -59,7 +59,7 @@ review-gaps: |-
   STEHEN GELASSEN 3: jaira-role-lane/SKILL.md erklaert die Pathspec ':/ :(exclude,top).jaira/tickets' zweimal, einmal fuer die mitlaufende Kritik und einmal fuer die Pause nach jedem DoD-Punkt - rund sechs Zeilen doppelt. Zusammenlegen hiesse, einen der beiden Abschnitte auf einen Verweis zu kuerzen, und Prompt-Text ist hier das Produkt: ein Worker, der nur den zweiten Abschnitt liest, weiss dann nicht mehr, warum die Ausnahme dort steht. Das ist eine Verhaltensaenderung und keine Aufraeumung, also nicht in dieser Lane.
 
   Vier Durchgaenge gelaufen. Dopplung: CanonicalMode liegt hinter allen drei Schreibpfaden (jaira set, TUI-Editor, validate), kein zweiter Vergleich gegen die Konstante irgendwo - gegrept nach "conversational", "CanonicalMode", "FieldMode". Toter Code: ausser dem entfernten Fall keiner; CodeBadMode, ModeConversational und der canonicalOrder-Eintrag haben je einen Leser. Fluff: die Kommentardichte ist die des Repositorys, keine Wrapper, kein Parameter mit nur einem Wert. Kosten: nichts Neues in einer Schleife, kein zweiter Dateizugriff - der Modus ist ein Feld, das Decode ohnehin liest.
-test-verdict: "pass: Suite gruen (go build/vet ohne Ausgabe, go test -race ./... -count=1 RC=0, 29 Pakete ok), alle 13 DoD-Punkte am Arbeitsbaum belegt, Verhalten am Wegwerf-Board gefahren - set lehnt mode=chat mit Exit 2 ab, show/--for-lane/--for-lane --json/resume fuehren den Modus alle vier, validate warnt bei handgeschriebenem mode: chat, und eine neu angelegte Datei zeigt sich in 'git status --short' wo 'git diff' leer bleibt"
+test-verdict: "pass: Suite gruen (build/vet ohne Ausgabe, go test ./... -count=1 RC=0 ueber 29 Pakete), alle 16 DoD-Punkte im Arbeitsbaum nachgeprueft statt aus dem Outcome gelesen, und der Modus am gebauten Binary selbst gefahren - schreiben, ablehnen, fuenf Lesestellen, Platte, loeschen; die Pathspec-Pausen nachgestellt. Nicht pruefbar bleibt, dass Prompt-Prosa das beschriebene Verhalten erzeugt: Prompts fuehrt kein Test aus, und der einzige Beleg waere ein echter Lauf - die offene Frage des Tickets."
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
 review-verdict: |-
   Die Go-Seite wuerde ich so nehmen: ein Feld, ein geschlossener Wertebereich, eine Funktion hinter beiden Schreibpfaden, fuenf Lesestellen einschliesslich 'jaira resume', validate als Netz fuer alles, was daran vorbeikommt, und Tests, die jede dieser Stellen anfassen. Build, vet und die Suite sind gruen; ich habe sie selbst laufen lassen.
