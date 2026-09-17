@@ -24,8 +24,13 @@ running beside it, which writes nothing. Only that JSON has the field — the
 gives the wrong answer.
 
 The second gives you the lane prompt, the bounded input, the outputs the lane
-owes back, and the `mode` key the section below turns on. Follow it, produce
-exactly those outputs, and nothing beyond them.
+owes back, and the `mode` key the section below turns on. Are you the lane that
+writes? Then follow it, produce exactly those outputs, and nothing beyond them.
+Are you the critique running beside the work instead? Then that prompt is
+something to read and not an order: the critique lane's own prompt tells you to
+`jaira set <handle> review-summary=…` and to `jaira move`, and those are the
+writes the section below takes away from you. Read it for what the lane is
+meant to judge, and leave its outputs to the dispatcher that started you.
 
 Are you the lane that writes? Then take the ticket and finish the step
 yourself. The critique running beside the work does none of the following — it
@@ -109,7 +114,12 @@ commits, and git supplies them when the ticket itself lists none). That diff is
 the EARLIER rounds, not the work running beside you; judging it means
 criticising what is already finished. So in both cases: do not wait for the
 payload to fill, do not report that you had nothing to read, and do not judge
-what it gave you. Read this instead:
+the diff it gave you.
+
+Only the diff is stale. The goal, the definition of done and the notes in the
+same payload are the ticket as it stands right now — the critique prompt asks
+for the notes before anything else, and they are what says which findings are
+already closed. They stay the measure; what you hold against them is this:
 
 ```bash
 git status --short -- :/ ':(exclude,top).jaira/tickets'
