@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:23:37Z
+updated-at: 2026-09-17T16:23:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
@@ -83,3 +83,13 @@ modeEdit faellt aus der Faltung heraus: dort fuegt Enter eine Zeile ein (edit.go
 Erste Fassung von sanitisePaste hat jede Zeile einzeln getrimmt - verworfen, weil ein einzeiliges Einfuegen mit fuehrendem Leerzeichen dann veraendert ankommt. Jetzt nur noch: CR normalisieren, Umbrueche an den Enden weg, Umbruchketten zu einem Leerzeichen. Innenliegende Leerzeichen bleiben unangetastet.
 
 Gegenprobe gemacht: mit auskommentiertem PasteMsg-Zweig fallen 14 der neuen Faelle um, mit dem Zweig laeuft die ganze Suite gruen.
+- **2026-09-17 16:23 · Alexander Sacharov** — critique: Die Form ist im Kern richtig - ein eigener Zweig fuer tea.PasteMsg statt eines Umwegs ueber m.key() ist die richtige Entscheidung und bleibt so. Gegenprobe gemacht: den PasteMsg in ein KeyPressMsg{Text: ...} umzubauen und durch m.key() zu schicken waere kuerzer, wuerde aber in den Nicht-Eingabe-Modi gefaehrlich - ein eingefuegtes 'q' liefe dann durch cmdKey in das Beenden. Nicht nochmal aufmachen.
+
+Ebenfalls geprueft und in Ordnung: die vier Modi sind vollstaendig. Ausser modeFilter, modeCreate, modeDelete und modeEdit sammelt kein Bildschirm Text - browse.go, defaultboard.go, dropboard.go, lanes.go und settings.go bekommen von Home nur cmdKey(msg) als String und haben gar keinen Puffer (internal/tui/home.go:213ff). Es fehlt also kein Eingabefeld.
+
+Was zurueckgeht, sind drei Punkte zur Form, alle in internal/tui/paste.go:
+1. Die Zuordnung Modus->Puffer steht jetzt zweimal. paste.go:25-41 sagt noch einmal, was model.go:936-940, 962-964, 980-982 und edit.go:136-138 schon sagen - inklusive der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft. Wer spaeter ein fuenftes Textfeld ergaenzt oder diese Regel aendert, muss an paste.go denken. Eine Methode m.insertText(s string) in model.go neben key(), die den Modus-Switch samt Faltung einmal haelt und aus key(), editKey() und paste() gerufen wird, legt die Regel an eine Stelle; getippter Text enthaelt nie einen Umbruch, die Faltung stoert dort nicht.
+2. sanitisePaste (paste.go:57-62) faltet die Umbruchketten mit einer Schleife aus wiederholtem ReplaceAll ueber den ganzen Text. Split auf '\n', leere Teile weglassen, mit Leerzeichen joinen macht dasselbe in einem Durchlauf und macht Trim und Schleife zusammen ueberfluessig.
+3. Das 's != ""' in modeCreate/modeDelete (paste.go:38-41) bewacht nichts - ein leeres Anhaengen aendert den Puffer nicht. Im modeFilter-Zweig darf es bleiben, dort spart es ein rebuild().
+
+Das Verhalten ist von allen drei Punkten nicht betroffen, die Tests in paste_test.go muessen unveraendert gruen bleiben.
