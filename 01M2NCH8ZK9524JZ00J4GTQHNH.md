@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:52:13Z
+updated-at: 2026-09-17T18:53:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75151
 claimed-at: 2026-09-17T18:50:16Z
@@ -478,3 +478,10 @@ Zu tun sind genau diese zwei:
 2. core/role/builtin/jaira-dispatcher/SKILL.md:113-115 - die Nur-Lese-Liste dort hat in cf7d37c 'claimt das Ticket nicht' bekommen, nennt aber 'jaira dod' nicht, das jaira-role-lane/SKILL.md:74-77 sehr wohl nennt und das genau das Feld schreibt, das der implementierende Worker gerade abhakt. Die Aufzaehlung so schliessen, wie role-lane ihre schliesst: mit einem Satz ('und nichts anderes, was sein Prompt einem Worker zu schreiben auftraegt') statt mit einer Liste, aus der das naechste neue Schreibkommando wieder herausfaellt.
 
 Alex hat diese vierte Runde ausdruecklich freigegeben, nachdem der Dispatcher nach drei Ruecklaeufen angehalten hatte.
+- **2026-09-17 18:53 · Alexander Sacharov** — In-progress nach critique (11. Durchgang): die zwei neuen Befunde repariert, einer davon weiter als vorgeschlagen.
+
+- Befund 1, weiter als vorgeschlagen. critique wollte im Kopf von jaira-role-lane/SKILL.md die falsche Behauptung korrigieren ('show --for-lane --json' sage, wer man ist). Nur korrigieren haette den Unterscheider aber im Abschnitt 1 gelassen, hinter dem 'jaira claim' bei Zeile 26 — also genau die Reihenfolge, die Runde 10 schon einmal umgedreht hat, nur eine Ebene hoeher. Der Kopf nennt jetzt ZWEI Lesebefehle in fester Reihenfolge: 'jaira show <id> --json' zuerst (das einzige JSON mit 'status'), dann 'show --for-lane --json' fuer Prompt, Eingabe und 'mode'. Beide stehen vor dem 'jaira claim'-Punkt.
+- Und Abschnitt 1 ordnet das Lesen nicht mehr an, sondern verweist auf die Lesung aus dem Kopf zurueck. Das ist die Haelfte, die die Einmal-Regel erst tragfaehig macht: solange der Abschnitt einen eigenen Codeblock mit demselben Befehl fuehrt, steht die Aufforderung zum zweiten Lesen woertlich in der Datei, direkt neben dem Absatz, der das zweite Lesen verbietet.
+- Befund 2: die Verbotsliste in jaira-dispatcher/SKILL.md nennt jetzt dieselben sechs Schreibwege wie role-lane und schliesst mit demselben Satz statt einer Aufzaehlung ('alles, was ein Worker irgendwo zu schreiben aufgetragen bekommt, ist aus'), damit der naechste neue Schreibbefehl nicht wieder auf einer Seite fehlt. 'jaira dod' ist ausdruecklich genannt, mit dem Grund (dasselbe Feld, an dem der Worker daneben arbeitet).
+- KEINE NOTES.md-Zeile, bewusst: die vorhandene Unreleased-Zeile zur mitlaufenden Kritik beschreibt den Unterscheider bereits richtig und verlangt schon 'jaira roles install --global --force'. Der Defekt war, dass der Prompt auf den falschen Befehl zeigte — kein Verhalten, das ein Leser anders tun muss. Eine zweite Zeile daneben wuerde dieselbe Sache zweimal ankuendigen.
+- go test ./... -count=1 gruen.
