@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:16:56Z
+updated-at: 2026-09-17T11:17:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -50,7 +50,7 @@ mode: conversational
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] Die 18 Milestone-Zeilen (NOTES.md 21-38) auf 5 Zeilen falten, je eine pro Faehigkeit nach der Entscheidung vom 2026-09-17 11:14
+- [~] Die 18 Milestone-Zeilen (NOTES.md 21-38) auf 5 Zeilen falten, je eine pro Faehigkeit nach der Entscheidung vom 2026-09-17 11:14
 - [ ] Zeilenformat pruefen: jede Aenderung genau eine '- '-Zeile, kein Umbruch - go test ./core/release/
 - [ ] Nachweisen, dass kein Kommando und keine Taste verloren ging: jaira milestone, M, --milestone, --no-worktree, dispatch, jaira restore
 - [ ] Umbenennung nach '## 0.3.0' NICHT hier - sie gehoert in den Commit, den der Mensch taggt, nach Annahme der vier signoff-Tickets
