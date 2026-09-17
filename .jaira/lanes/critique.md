@@ -58,7 +58,7 @@ Then:
 - **Nothing left to say.** Write `review-summary="none"` explicitly — an empty
   field means nobody looked — and move the ticket on to the next lane.
 
-Three rules for this lane:
+Four rules for this lane:
 
 **A finding names a file and a concrete alternative.** "Could be cleaner",
 "consider extracting this", "this may not scale" are not findings. If you cannot
@@ -66,12 +66,29 @@ say which file and what to put there instead, you have not found anything. Do no
 approve a diff you did not read, and do not manufacture a finding to look
 thorough — both produce a critique nobody can act on.
 
-**The loop ends when a pass finds nothing.** Every pass after the first reads a
-diff that already answers the last pass's findings. A pass that produces no
-finding — by the rule above — is where this lane is done: write
-`review-summary="none"` and move the ticket on. That is the expected way out, not
-a failure of nerve. Do not re-raise a finding the implementer addressed, and do
-not re-open a trade-off you let stand on an earlier pass.
+**Every pass after the first reads less than the one before.** The first pass
+reads the whole diff, and it is the only pass that does. A later pass reads two
+things and nothing else: the findings of the pass before it, and the change that
+answered them. Whether each of those findings was addressed is the entire
+question. Do not go back over the parts of the diff nobody raised a finding
+about — looking again at code you already let stand always turns something up,
+because deeper is always available, and a lane fed that way shrinks its findings
+every round without ever reaching zero.
+
+A defect the repair itself introduced is a finding on a later pass, and only
+when it breaks the definition of done. "This could now be simpler too", on a
+line that satisfies the criteria, is not one — it is the first pass reopening
+itself under another name.
+
+The area therefore shrinks every round, which is what ends the loop, and it is
+also what makes the loop affordable: the first pass pays a strong model to read
+the whole diff, and every pass after it pays for a handful of lines.
+
+**The loop ends when a pass finds nothing.** A pass that produces no finding —
+by the rules above — is where this lane is done: write `review-summary="none"`
+and move the ticket on. That is the expected way out, not a failure of nerve. Do
+not re-raise a finding the implementer addressed, and do not re-open a trade-off
+you let stand on an earlier pass.
 
 **Do not fix it yourself.** This lane says what is wrong; the implementing lane
 changes it. Reviewing your own repair in the same breath is how a critique stops
