@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:47:27Z
+updated-at: 2026-09-17T19:47:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -529,3 +529,14 @@ Zwei Dinge, die nach Duplikat aussahen und keines sind — damit die naechste Ru
 2. newModeTicket vs. movableTicket (internal/cli/nextstep_test.go:12) sind nicht dasselbe Fixture: movableTicket legt ein Ticket im backlog an, claimt es und setzt JAIRA_HOME; newModeTicket braucht status=in-progress, keinen claim und eine deterministische ID. Zusammenlegen hiesse beiden Tests Zustand aufzudraengen, den sie nicht wollen.
 
 Vorbestehender toter Code, den ich stehen lasse: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now'. Aelter als diese Aenderung.
+- **2026-09-17 19:47 · Alexander Sacharov** — In-progress nach testing: DoD 13 (der ausgelieferte Block nennt den Modus) gebaut.
+
+Was ich gefunden habe und nicht in der Aufgabe stand: der Blocktext wird von jaira selbst in AGENTS.md und CLAUDE.md dieses Repositories getragen. Eine Aenderung an core/board/announce.go allein laesst beide Dateien zurueck, und 'jaira validate' meldet das als Drift (NoteIsCurrent, core/board/announce.go:252). Regeneriert habe ich mit dem GEBAUTEN Binary (go build -o /tmp/.../jaira-build ./cmd/jaira && ./jaira-build update), nicht mit dem 'jaira' auf dem PATH — das ist die alte Version und haette den alten Text zurueckgeschrieben. Wer nach einer Aenderung an announce.go 'jaira update' vom PATH aufruft, macht seine eigene Aenderung rueckgaengig, ohne es zu merken.
+
+Wortlaut: der Punkt nennt vier Dinge, nicht nur den Schluessel — was leer heisst, was 'conversational' vom Agenten verlangt (Diff nach jedem DoD-Punkt, fertige Commit-Zeile statt eigenem Commit), und dass der Modus VOM TICKET gelesen wird, nicht aus der Startzeile. Der letzte Halbsatz ist der, der auf einem fremden Board am meisten traegt: dort liegt kein jaira-role-lane-Prompt, der es sonst sagen wuerde, also ist dieser Block die einzige Stelle, an der 'mode' ueberhaupt erklaert wird. Ein Schluessel in der Nutzlast, den nirgends etwas beschreibt, wird nicht gelesen.
+
+Bewusst NICHT aufgenommen: der Halt vor der Plan-Lane (Entscheidungen zaehlen) und die mitlaufende Kritik. Beides sind Dispatcher-Eigenschaften und leben in den Rollen-Prompts; der Block beschreibt, was die CLI liefert, und eine zweite Kopie der Rollenregeln darin haette dieselbe Drift erzeugt, die optimize am 16.09. schon einmal angemerkt hat.
+
+Der Test (announce_test.go:151) prueft nur, dass 'mode' und 'conversational' im Block stehen — nicht den Wortlaut. Die byte-genaue Zusage haelt TestAnnounceRegeneratesByteForByteWithNoLocalMarker ohnehin schon; ein zweiter Wortlaut-Test waere ein Test, der bei jeder Umformulierung rot wird, ohne je einen Defekt zu fangen.
+
+go build, go vet, go test ./... -count=1 gruen.
