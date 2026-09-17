@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:04:57Z
+updated-at: 2026-09-17T17:05:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -97,3 +97,12 @@ Was zurueckgeht, sind drei Punkte zur Form, alle in internal/tui/paste.go:
 3. Das 's != ""' in modeCreate/modeDelete (paste.go:38-41) bewacht nichts - ein leeres Anhaengen aendert den Puffer nicht. Im modeFilter-Zweig darf es bleiben, dort spart es ein rebuild().
 
 Das Verhalten ist von allen drei Punkten nicht betroffen, die Tests in paste_test.go muessen unveraendert gruen bleiben.
+- **2026-09-17 17:05 · Alexander Sacharov** — Kritik eingearbeitet: die Modus->Puffer-Zuordnung steht jetzt einmal in Model.insertText (model.go:914) statt viermal. Getippter und eingefuegter Text laufen durch dieselbe Funktion - key()s drei default-Zweige, das Ende von editKey() und paste() rufen sie alle. Damit kann ein Feld nicht mehr getippten Text nehmen und eingefuegten verschlucken, was genau der Fehler dieses Tickets war.
+
+Warum insertText in model.go und nicht in paste.go: getippter Text ist der haeufigere Weg dorthin, paste.go traegt nur noch das PasteMsg-Eingangstor und die Faltung. sanitisePaste heisst jetzt foldToOneLine - der Name 'Paste' war falsch, seit auch getippter Text durchlaeuft (dort ein No-op, eine Taste liefert nie einen Umbruch).
+
+Die leere Eingabe wird einmal oben in insertText abgefangen. Das ersetzt sowohl die drei 'if k.Text != ""' im Tastenpfad als auch die zwei wirkungslosen 'if s != ""' im Einfuegepfad. In modeFilter bleibt eine zweite Pruefung stehen, weil dort erst die Faltung leer werden kann ('\n' allein) und ein rebuild() fuer nichts sonst laufen wuerde.
+
+Faltung jetzt in einem Durchlauf: Split auf \n, leere Teile weg, mit Leerzeichen joinen. Ersetzt Trim plus die Schleife 'for strings.Contains(text, "\n\n")', die den Text wiederholt abging. Verhalten identisch, die fuenf Faelle in TestMultiLinePasteIsFoldedToSpaces laufen unveraendert durch.
+
+Keine Testaenderung noetig und bewusst keine gemacht: die 160 Zeilen paste_test.go pruefen Verhalten, nicht Struktur. Dass sie nach dem Umbau unveraendert gruen sind, ist der Nachweis, dass der Umbau nichts verschoben hat. go test ./... komplett gruen.
