@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:47:23Z
+updated-at: 2026-09-17T21:50:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -724,3 +724,4 @@ Nachgeprueft und ausdruecklich KEIN Befund:
 Ausdruecklich stehen gelassen, mit Verweis: doppelte Frage 'Are you the lane that writes?' (Runde 17), Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
 
 FUER DEN DISPATCHER: das Ticket hat optimize, testing, human und review schon durchlaufen; diese Schleife lief nur ueber die Reparatur der review-Befunde 1 und 2. Ich bewege es auf die naechste Lane der Board-Ordnung (optimize), weil zwei Lanes zu ueberspringen nicht meine Entscheidung ist. Ob es stattdessen direkt zurueck nach review geht, ist Alex' Entscheidung - 'jaira move GTQHNH --to review' ist erlaubt (--dry-run geprueft).
+- **2026-09-17 21:50 · Alexander Sacharov** — optimize: Ein Befund, entfernt. 'case ticket.FieldMode: return t.Mode' in internal/cli/flow.go fieldValue war tot: core/lane/lane.go:929-980 weist beim Laden jede Lane ab, deren input-requires ein Feld nennt, das weder in ticket.SuppliedFields steht noch von einer frueheren Lane produziert wird - 'mode' ist beides nicht, also kann showForLane fieldValue nie mit 'mode' aufrufen. Der zweite Aufrufer, internal/cli/mergedriver.go:260, erreicht es zwar, bekommt aber vom default-Zweig ('t.Doc().Scalar(field)') exakt denselben Wert, den Decode in t.Mode legt (core/ticket/schema.go:550-556, identischer Helfer). go build/vet und 'go test ./... -count=1' danach gruen, 29 Pakete.
