@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:41:56Z
+updated-at: 2026-09-17T19:42:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
-outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md:30-38 — der Satz, der die Handlungsliste eroeffnet, traegt jetzt die Bedingung fuer die ganze Liste ('Are you the lane that writes? ... The critique running beside the work does none of the following'), und der claim-Punkt nennt zusaetzlich den Grund, warum gerade er nicht laufen darf. core/role/builtin/jaira-dispatcher/SKILL.md:120-129 — die 106 Zeichen lange Zeile aus d4244be umgebrochen, laengste Zeile des Absatzes jetzt 78 wie bei den Nachbarn. Kein Go-Code, keine neue NOTES.md-Zeile."
-outcome-why: "critique 12: der Kopf konnte einen Worker seit Runde 11 zur nichts-schreibenden mitlaufenden Kritik erklaeren, aber zwei Zeilen spaeter stand 'Then take the ticket and finish the step yourself' und als erster Punkt ein unbedingtes 'jaira claim'. Wer die Datei der Reihe nach las, hatte die Information und claimte trotzdem — das Verbot stand erst drei Bildschirme weiter unten. Der zweite Befund war kosmetisch: eine beim Einfuegen ans Zeilenende geklebte Zeile."
-outcome-resolves: "DoD 9 (genau eine Stelle schreibt review-summary und bewegt das Ticket): das Verbot greift jetzt an der Stelle, an der es gelesen wird, und deckt alle fuenf Schreibpunkte der Liste ab statt nur den claim. go test ./... -count=1 gruen."
+outcome-what: "internal/cli/mode_test.go auf den vorhandenen jsonCLI-Helfer (internal/cli/tags_test.go:64) gelegt: vier handgeschriebene runCLI+json.Unmarshal-Bloecke raus, -52/+6 Zeilen, Import 'encoding/json' faellt weg."
+outcome-why: "Pass 1 (Duplikat): dasselbe Testpaket hatte die Funktion schon, samt besserer Fehlermeldung. Zwei Wege, ein CLI-JSON zu lesen, werden beide gepflegt von Leuten, die den anderen nicht kennen."
+outcome-resolves: "review-gaps geschrieben: ein Fund behoben, vier geprueft und begruendet stehen gelassen, ein vorbestehender toter Code benannt, ein Verhaltensbefund (announce.go:64) an die naechste Runde weitergereicht. go build/vet/test ./... -count=1 gruen."
 review-summary: none
 review-gaps: |-
   Entfernt: die vier handgeschriebenen runCLI+json.Unmarshal-Bloecke in internal/cli/mode_test.go — jsonCLI (internal/cli/tags_test.go:64) tut im selben Testpaket genau das und meldet den Fehler besser. -52/+6 Zeilen, Import 'encoding/json' faellt weg, go build/vet/test ./... -count=1 gruen.
