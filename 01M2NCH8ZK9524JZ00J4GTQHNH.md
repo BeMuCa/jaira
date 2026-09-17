@@ -39,10 +39,10 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:38:58Z
+updated-at: 2026-09-17T21:39:12Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-34127
-claimed-at: 2026-09-17T21:08:49Z
+claimed-by: DESKTOP-RFTCH11-68496
+claimed-at: 2026-09-17T21:39:12Z
 outcome-what: "Alle vierzehn proof-Zeilen der Definition of Done tragen jetzt Abschnittsnamen und woertliche Satzanfaenge statt Zeilenbereiche; kein Quellcode angefasst."
 outcome-why: "Nach neun Runden Prompt-Aenderungen zeigten sieben proofs inhaltlich auf den falschen Abschnitt und sieben weitere nur noch zufaellig richtig. Ein proof, der auf die falsche Stelle zeigt, liest sich als geprueft und ist damit schlimmer als keiner."
 outcome-resolves: "critique 17: die sechs benannten proof-Zeilen (DoD 2, 4, 5, 11, 12, 13) plus DoD 6, das vom selben Defekt betroffen war; die uebrigen mitgezogen, damit der Befund nicht in der naechsten Runde wiederkommt."
