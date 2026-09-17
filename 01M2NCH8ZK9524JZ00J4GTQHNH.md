@@ -38,7 +38,7 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:56:11Z
+updated-at: 2026-09-17T20:59:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -638,3 +638,7 @@ Nicht angefasst, mit der Notiz, auf der ich stehe: die Pathspec-Bloecke (critiqu
 - Nachgeprueft und KEIN Befund: die Behauptung 'every round after the first ... complete: true' (SKILL.md:104-107) stimmt — outcome-what/outcome-resolves bleiben nach dem ersten 'move' auf dem Ticket stehen, und flow.go:589-592 leitet die Commits aus git ab, wenn das Ticket keine fuehrt. Die Zeilenangabe 589-595 trifft. Die Pathspec-Bloecke sind unveraendert und in Runde 15 am laufenden Worktree geprueft. Die NOTES.md-Zeile nennt jetzt beide Faelle und nicht nur den leeren — das war der Befund aus Runde 15, geschlossen.
 - Ausdruecklich stehen gelassen, mit Verweis: die Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21). Der Merge-Driver (Runde 5). Die NOTES.md-Zeile zur critique-Lane (Runde 9/10). Das Restrennen (Runde 11). review-Befund 3 (Alex' Entscheidung 17.09. 20:24). Die doppelte ':/'-Erklaerung in beiden Abschnitten (Runde 15). Zeilenlaengen: ueber 85 Zeichen nur Frontmatter und dispatcher:226, aelter als dieses Ticket (Runde 13, dort noch Zeile 222).
 - FUER DEN DISPATCHER: das ist der dritte Ruecklauf ueber die Reparatur der review-Befunde (Runden 14, 15 und dieser). Die Drei-Ruecklauf-Regel greift: ob noch eine Runde laeuft, ist Alex' Entscheidung.
+- **2026-09-17 20:59 · Alexander Sacharov** — Alex hat nach dem dritten Ruecklauf eine weitere Runde freigegeben. Genau zwei Saetze, beide in core/role/builtin/jaira-role-lane/SKILL.md, beide Folge der vorigen Reparaturen:
+(1) Zeile 26-28 'Follow it, produce exactly those outputs, and nothing beyond them' ist unbedingt und steht VOR der Bedingung in Zeile 30. Die critique-Lane fuehrt produces=[review-summary] und ihr Prompt ordnet 'jaira set <handle> review-summary=' und 'jaira move' an - genau die Schreibwege, die Zeile 80-83 der mitlaufenden Kritik verbieten. Wer von oben liest, bekommt den Schreibbefehl vor dem Verbot. Dieselbe Bedingung an den Satz haengen wie an die Liste zwei Zeilen darunter.
+(2) Zeile 110-112 'do not judge what it gave you' ist weiter als der Defekt: in derselben Nutzlast liegen goal, definition-of-done und die Notizen, und der critique-Prompt verlangt die Notizen ZUERST. Den Satz auf den Diff eingrenzen und sagen, dass Ziel, DoD und Notizen aktuell sind und der Massstab bleiben, gegen den der Arbeitsbaum beurteilt wird.
+Sonst nichts anfassen.
