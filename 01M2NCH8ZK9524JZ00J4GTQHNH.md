@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:39:36Z
+updated-at: 2026-09-17T20:39:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -98,7 +98,7 @@ review-check: |-
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:107-128 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:74-105 — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:139-178 — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
   proof: core/release/NOTES.md:17 (Modus, inkl. der Kopfzeile von 'jaira show --for-lane') und :18 (Committen von Hand), beide unter ## Unreleased
 - [x] Im Gespraechsmodus laeuft eine Kritik mit, waehrend an dem Ticket gearbeitet wird, und meldet ihre Befunde sofort - nicht erst, nachdem die implementierende Lane fertig ist. Der Modus und die mitlaufende Kritik stehen im selben Prompt und wirken zusammen.
