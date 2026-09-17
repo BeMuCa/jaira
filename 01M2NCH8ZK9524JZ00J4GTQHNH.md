@@ -38,7 +38,7 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:52:51Z
+updated-at: 2026-09-17T20:52:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -623,3 +623,10 @@ Mitgenommen ueber den Befund hinaus: die proof-Zeilen von DoD 12 und DoD 13 ware
 - Reparatur: die Anweisung unbedingt machen. 'Was du beurteilst, ist der uncommittete Arbeitsbaum — was der Diff im Payload auch sagt' und der Zusatz, dass ein nicht-leerer Payload-Diff die frueheren Runden zeigt und nicht die Arbeit daneben. Der leere Fall wird ein Beispiel, nicht die Voraussetzung. Dieselbe Korrektur in allen drei Dateien, sonst sagt eine der drei weiter das Falsche (Runde 10 hat schon einmal eine NOTES.md-Zeile korrigieren muessen, die eine Eigenschaft versprach, die der Prompt nicht trug).
 - Die Pathspec-Bloecke selbst sind richtig: ':/ :(exclude,top).jaira/tickets' am laufenden Worktree geprueft, blendet genau die Ticket-Datei aus, aus jedem Verzeichnis.
 - Ausdruecklich stehen gelassen: die Wiederholung der ':/'-Erklaerung in beiden Abschnitten von jaira-role-lane (Zeilen 111-118 und 145-152) ist KEIN Befund — die beiden Leser sind disjunkt, die mitlaufende Kritik erreicht Abschnitt 2 nie (sie pausiert nicht) und der implementierende Worker Abschnitt 1 nie. Dasselbe Argument wie in der optimize-Notiz vom 16.09. 20:21. Zeilenlaengen geprueft: ueber 85 Zeichen nur Frontmatter und dispatcher:222, aelter als dieses Ticket (Runde 13). Die aelteren offenen Punkte — Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien, NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24) — nicht wieder angefasst.
+- **2026-09-17 20:52 · Alexander Sacharov** — In-progress nach critique 15 (2026-09-17): der eine Befund behoben, kein Go-Code — zwei Prompts und die NOTES.md-Zeile.
+
+Die Anweisung 'lies den Arbeitsbaum' stand in allen drei Dateien als Diagnose eines Zustands ('das Payload kam complete:false zurueck'). Sie ist jetzt unbedingt formuliert und der leere Fall ist ein Beispiel darin, nicht seine Voraussetzung. Dazugekommen ist der Satz, der vorher fehlte und der den haeufigen Fall traegt: ein nicht-leerer Payload-Diff zeigt die FRUEHEREN Runden, nicht die Arbeit daneben — internal/cli/flow.go:589-595 leitet die Commit-Liste aus git ab, sobald das Ticket keine fuehrt, also ist ab Runde 2 immer ein vollstaendiger Diff im Payload.
+
+Warum an allen drei Stellen derselbe Satz und nicht ein Verweis: die drei Leser sind disjunkt (Worker-Prompt, Dispatcher-Prompt, Release-Notiz fuer den Benutzer), und Runde 10 musste schon einmal eine NOTES.md-Zeile nachziehen, die etwas versprach, was der Prompt nicht trug.
+
+Nicht angefasst, mit der Notiz, auf der ich stehe: die Pathspec-Bloecke (critique 15 hat sie am laufenden Worktree geprueft und fuer richtig befunden), die Wiederholung der ':/'-Erklaerung in beiden Abschnitten (optimize 16.09. 20:21), 'git add -A -N' bleibt verworfen (17.09. 18:19), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), dispatcher:226 ist aelter als dieses Ticket.
