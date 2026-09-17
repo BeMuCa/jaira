@@ -28,8 +28,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T15:57:26Z
+updated-at: 2026-09-17T15:57:28Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-45551
+claimed-at: 2026-09-17T15:57:28Z
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
