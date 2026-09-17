@@ -28,7 +28,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T15:56:15Z
+updated-at: 2026-09-17T15:57:26Z
+updated-by: Alexander Sacharov
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
