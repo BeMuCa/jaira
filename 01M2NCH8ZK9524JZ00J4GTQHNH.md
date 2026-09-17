@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:08:49Z
+updated-at: 2026-09-17T21:23:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -181,6 +181,7 @@ review-check: |-
 - [x] critique 16: jaira-role-lane/SKILL.md:26-33 — 'Follow it, produce exactly those outputs' traegt die Bedingung; die mitlaufende Kritik liest den Lane-Prompt, statt ihn auszufuehren
 - [x] critique 16: jaira-role-lane/SKILL.md:107-115 — nur der Diff ist stale; Ziel, DoD und Notizen im selben Payload bleiben der Massstab
 - [x] go test ./... -count=1
+- [ ] critique 17: die proof-Zeilen von Abschnittsnamen statt Zeilenbereichen tragen lassen — DoD 2, 4, 5, 6, 11, 12, 13 zeigen inhaltlich falsch, DoD 1, 3, 7, 9, 10, 14, 15 nur noch zufaellig richtig
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
