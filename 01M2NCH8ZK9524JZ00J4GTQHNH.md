@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:27:13Z
+updated-at: 2026-09-17T18:27:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -126,7 +126,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] core/release/NOTES.md: je eine Zeile unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht
 - [x] go test ./... -count=1
 - [x] critique 9: jaira-role-lane/SKILL.md — der mitlaufende Kritiker erkennt sich am Ticket (lane-Argument != status), nicht an der Startzeile, und schreibt nichts
-- [~] critique 9: core/release/NOTES.md — die falsche Behauptung 'no lane shipped with jaira asked for it' korrigieren
+- [x] critique 9: core/release/NOTES.md — die falsche Behauptung 'no lane shipped with jaira asked for it' korrigieren
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
