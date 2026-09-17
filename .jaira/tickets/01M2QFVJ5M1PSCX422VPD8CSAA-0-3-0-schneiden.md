@@ -1,7 +1,7 @@
 ---
 id: 01M2QFVJ5M1PSCX422VPD8CSAA
 title: 0.3.0 schneiden
-status: in-progress
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,19 +23,20 @@ tags:
   - release
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:20:50Z
+updated-at: 2026-09-17T15:31:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
 mode: conversational
-outcome-what: "core/release/NOTES.md: '## Unreleased' in '## 0.3.0' umbenannt und eine frische leere '## Unreleased' darueber gesetzt. Die 9 gefalteten Zeilen stehen damit unter der Version, die getaggt wird; die leere Kopfsektion nimmt die naechsten Aenderungen auf."
-outcome-why: "Die Freigabe des Menschen vom 2026-09-17 15:09 hat den Schnitt angeordnet, nachdem 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH in signoff angenommen wurden. Ohne die Umbenennung liest 'jaira update' die vier Aenderungen weiter als 'Unreleased' vor, obwohl sie ausgeliefert sind."
-outcome-resolves: "DoD 4: die Umbenennung und die neue leere Sektion stehen in core/release/NOTES.md:16-18; der Tag v0.3.0 bleibt beim Menschen. DoD 1-3 waren vorher abgehakt und sind unberuehrt - die 9 '- '-Zeilen sind unveraendert, nur die Ueberschrift darueber ist neu."
-review-summary: "core/release/release.go:60 sinceEntries — der Schnitt legt eine leere '## Unreleased' an, und die reist als Entry ohne Changes durch Since() bis in die Ausgabe. Board mit Stempel 0.3.0, Binary 0.3.0: 'jaira update' druckt 'What's changed since then:' + die nackte Ueberschrift 'Unreleased' und keinen einzigen Punkt; --json traegt {\"version\":\"Unreleased\",\"changes\":null}. Der Zweig len(notes)==0 in internal/cli/update.go:108 ('Nothing has changed since the version that last set this board up.') ist damit fuer jedes aktuelle Board unerreichbar. Stattdessen: in sinceEntries nach dem Schnitt die Entries ohne Changes aus dem Rueckgabewert filtern - nicht in parseNotes, das die leere Sektion absichtlich behaelt (TestParseNotesKeepsAnEmptyLeadingSection). Dann sehen Text und --json dieselbe Liste und der 'Nothing has changed'-Zweig lebt wieder."
-review-gaps: "Nichts entfernt. Doppelung: keine - kein Milestone-Satz steht in einer getaggten Sektion, und die 5 gefalteten Zeilen ueberschneiden sich untereinander nicht. Tote Aussagen: keine - jedes genannte Kommando, Flag und Feld existiert im Code (internal/cli/milestones.go:77,172,178,197,309; core/milestone/milestone.go:303; internal/cli/archive.go:95; milestones_filed in internal/cli/fetch.go). Behalten statt gestrichen: 'rm entfernt nur die Zeile' (NOTES.md:21) steuert ein Kommando und ist keine Beruhigung, 'die Karte ist genau so breit' (23) beantwortet die TUI-Befuerchtung; 'und Erstellzeit' (21) ist echter Fluff, aber 18 Zeichen. Kosten: entfaellt, Zeilenscan ohne Laengengrenze, die create-Zeile ist mit 907 Zeichen nicht die laengste der Sektion (PR-Zeile 918). Liegengelassen, weil ausserhalb dieser Aenderung: die beiden spawn.sh-Zeilen (19/20, aus 7KX89C) nennen dasselbe Skript, aber nur eine sagt, wie man es bekommt; '--color' ist bei milestone 1-255 und bei tag 0-255 (internal/cli/tags.go:389)."
-test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete); DoD 1-3 am Baum nachgeprueft - '## Unreleased' traegt 9 Zeilen, alle beginnen mit '- ', keine umgebrochen, kein vom Benutzer getipptes Kommando beim Falten verloren; 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 liest genau diese 9 Zeilen vor. DoD 4 offen und beim Menschen."
+outcome-what: "Getestet: Build, vet und die volle Suite mit -race und -count=1 gruen (RC=0, 29 Pakete). Alle 6 DoD-Punkte einzeln am Baum und am gebauten Binary (-X main.version=0.3.0) gegen ein Scratch-Board mit eigenem JAIRA_HOME nachgeprueft, nicht aus dem Outcome uebernommen."
+outcome-why: "Die testing-Lane schuldet ein test-verdict, und die Behauptung des Tickets - 'wer jaira update nach dem Schnitt laufen laesst, liest die richtige Liste' - ist nur am laufenden Binary pruefbar, nicht am Diff. Genau dort lag in diesem Ticket schon einmal der Defekt, den die critique gefunden hat."
+outcome-resolves: "test-verdict: pass. Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.', --json notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0']; ungestempelt -> 8 Versionen in Text und --json identisch, 'Unreleased' in keiner Ausgabe. DoD 1-3 am Text nachgezaehlt (9 '- '-Zeilen, keine umgebrochen, alle sechs Kommandos/Tasten vorhanden), DoD 4 erfuellt und kein v0.3.0-Tag gesetzt. Offen und nur vom Menschen zu schliessen: die Freigabe fuer den Tag v0.3.0."
+review-summary: "none"
+review-gaps: "Entfernt: withChanges in core/release/release.go - ein Vorwaerts-Wrapper mit genau einem Aufrufer; der Filter ist jetzt die Schleife in sinceEntries (2 Funktionen statt 3, selectSince bleibt wegen seiner drei Rueckgabepfade). Doppelung: keine - kein anderer Ort filtert Entries ohne Changes (grep '.Changes' trifft nur parseNotes, den Filter, update.go:115/129 und release_test.go:96). Toter Code: keiner - Since/sinceEntries/selectSince und der neue Test haben alle Aufrufer; der Zweig len(notes)==0 in internal/cli/update.go:108 ist durch diese Aenderung wieder erreichbar statt tot. Stehen gelassen: der sechszeilige Warum-Kommentar ueber sinceEntries (steht nirgends sonst), release_test.go:96 (aelter als diese Aenderung). Kosten: nichts - Since laeuft einmal pro 'jaira update' ueber acht Entries. go build/vet sauber, go test -race -count=1 ./... gruen."
+test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete, 0 Fehler); DoD 1-3 am Baum nachgeprueft (9 '- '-Zeilen unter '## 0.3.0', keine umgebrochen, alle sechs geforderten Kommandos/Tasten weiter im Text); DoD 4 erfuellt (leere '## Unreleased' oben, kein v0.3.0-Tag gesetzt); DoD 5/6 am gebauten Binary -X main.version=0.3.0 gegen ein Scratch-Board mit eigenem JAIRA_HOME nachgesehen: Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0']; ungestempelt -> 8 Versionen, 'Unreleased' kommt in keiner der drei Ausgaben vor. TestSinceDropsEntriesWithoutChanges und TestParseNotesKeepsAnEmptyLeadingSection einzeln gruen."
 question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH aus signoff angenommen, so dass '## Unreleased' jetzt nach '## 0.3.0' umbenannt, eine frische leere '## Unreleased' darueber gesetzt und v0.3.0 getaggt werden darf? Der gefaltete Text ist fertig und geprueft - es fehlt nur diese Entscheidung und der Tag, den ein Agent nicht setzen darf."
 ---
 
@@ -119,3 +120,28 @@ KEINE Zeile in NOTES.md fuer diese Behebung. Das ist bewusst und nicht vergessen
 Dead end beim Nachsehen an der echten Ausgabe, kostet sonst wieder eine halbe Stunde: (1) das Ticket-Board stempelt NICHT in <repo>/.jaira/version - release.Stamped liest s.StateDir(), und das ist $JAIRA_HOME (default ~/.jaira) /state/<name>-<hash>/version. Die Datei .jaira/version im Repo ist etwas anderes und zu aendern bringt nichts. (2) Das Binary meldet 'dev', solange man nicht -ldflags '-X main.version=0.3.0' setzt - der Schalter haengt an cmd/jaira/main.go:11, NICHT an core/release.Current (das setzt cli.Execute daraus). Ein falscher -X-Pfad wird von go build stillschweigend ignoriert, der Test laeuft dann mit 'dev' und zeigt erwartungsgemaess alles an.
 
 Nachgesehen wurden alle drei Faelle mit eigenem JAIRA_HOME im Scratchpad: ungestempelt -> alle 8 Versionen und kein 'Unreleased'; Stempel 0.3.0 -> 'Nothing has changed since ...' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0'].
+- **2026-09-17 15:22 · Alexander Sacharov** — critique (vierter Durchgang, auf den Filter-Diff): keine Befunde - review-summary=none, die Schleife endet hier.
+
+Der Befund des dritten Durchgangs ist genau dort behoben, wo die critique ihn verlangt hat: der Filter sitzt in sinceEntries (core/release/release.go:69), nicht in parseNotes und nicht im Renderer. Text und --json lesen damit dieselbe Liste, und der Zweig len(notes)==0 in internal/cli/update.go:108 ist wieder erreichbar.
+
+Vier Fragen, vier Mal nichts:
+(1) Einfachere Form: die Zerlegung in selectSince (Auswahl) und withChanges (Filter) ist nicht kuerzer als ein Inline-Filter, aber selectSince hat drei Rueckgabepfade - inline hiesse derselbe Filter an drei Stellen. Die Fassung mit dem Filter aussen ist die kleinere.
+(2) Fremdes Muster: keines. core/release hat sonst keinen Filter-Helfer, neben den es sich stellen koennte; die Signatur []Entry -> []Entry ist die des Pakets.
+(3) Spekulativ: withChanges hat genau einen Aufrufer, filtert aber allgemein nach 'keine Changes' statt nach dem Namen 'Unreleased'. Das ist die richtige Richtung - eine Sonderbehandlung des Wortes waere die spekulativere Fassung, weil sie an einer Ueberschrift haengt, die CLAUDE.md jederzeit umbenennen kann.
+(4) Ort: richtig. release.Since hat genau einen Aufrufer (internal/cli/update.go:81), und nur dieses Paket bedient Text und --json zugleich; ein Filter im Renderer haette die beiden auseinanderlaufen lassen. release.Notes hat ausserhalb des Pakets keinen zweiten Leser (geprueft per grep), also nimmt niemandem der Filter etwas weg.
+
+Nicht neu aufgemacht: die 918-Zeichen-Zeile, 'rm loescht nur die Zeile', die beiden spawn.sh-Zeilen und die fehlende NOTES.md-Zeile fuer diese Behebung - alle vier standen in frueheren Durchgaengen und wurden dort begruendet stehen gelassen.
+- **2026-09-17 15:26 · Alexander Sacharov** — optimize: eine Aenderung, und sie ist klein. withChanges hatte genau einen Aufrufer (sinceEntries, das sonst nur weiterreichte) - der Filter steht jetzt als Schleife in sinceEntries, selectSince bleibt als eigene Funktion, weil die Auswahl drei Rueckgabepfade hat und der Filter sonst dreimal dastuende. Zwei Funktionen statt drei, Verhalten identisch, go test -race ./... gruen.
+
+Gesucht und nichts gefunden: kein zweiter Ort im Repo filtert Entries ohne Changes (grep '.Changes': nur parseNotes, der neue Filter, update.go:115/129 als Renderer und release_test.go:96). internal/cli/update.go braucht keine Aenderung - der Zweig len(notes)==0 liest den gefilterten Rueckgabewert und --json bekommt dieselbe Liste ueber entriesJSON.
+
+Absichtlich stehen gelassen: (1) der sechszeilige Kommentar ueber sinceEntries - er sagt warum die leere Sektion im File bleibt, aber nicht reist, und das steht nirgends sonst; (2) release_test.go:96 ('e.Version != "" && len(e.Changes) > 0') laeuft gegen die echte NOTES.md und ist aelter als diese Aenderung; (3) Kosten: Since() laeuft einmal pro 'jaira update' ueber acht Entries - nichts zu hoisten.
+- **2026-09-17 15:30 · Alexander Sacharov** — testing: Alle Gates gruen, alle 6 DoD-Punkte am Baum und am laufenden Binary nachgeprueft. Kein Befund, der zurueckgeht.
+
+Fallstrick beim Nachpruefen, der eine falsche Fehlmeldung erzeugt hat und beim naechsten Mal wieder eine erzeugen wird: 'jaira update' STEMPELT das Board beim Laufen auf die aktuelle Binaryversion. Wer erst 'jaira update' und danach 'jaira update --json' mit demselben Stempel vergleichen will, misst beim zweiten Aufruf Stempel 0.3.0 und bekommt notes: [] - das sieht aus wie 'Text und --json weichen ab', ist aber der eigene erste Aufruf. Die Stempeldatei muss VOR JEDEM Aufruf neu geschrieben werden ($JAIRA_HOME/state/<board>-<hash>/version). Mit Reset vor jedem Aufruf stimmen Text und --json in allen drei Faellen ueberein.
+
+Belege: Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.', --json notes: []. Stempel 0.2.1 -> Text 'What's changed since then:' + '0.3.0', --json ['0.3.0']. Ungestempelt -> 0.3.0, 0.2.1, 0.2.0, 0.1.4, 0.1.3, 0.1.2, 0.1.1, 0.1.0 in Text und --json identisch; 'Unreleased' taucht in keiner der drei Ausgaben auf.
+
+Zwei Beobachtungen, beide kein Fail:
+(1) Die optimize-Lane hat 'withChanges' wieder in 'sinceEntries' hineingezogen - die Aenderung liegt UNCOMMITTED im Worktree (git diff core/release/release.go). Verhalten identisch, beide Tests gruen. Die Proof-Zeile von DoD 6 nennt aber noch 'core/release/release.go:84 withChanges', und diese Funktion existiert im Baum nicht mehr. Der Nachweis stimmt inhaltlich (der Filter sitzt in sinceEntries, nicht in parseNotes), nur die Zeilenreferenz ist veraltet.
+(2) DoD 5 und DoD 6 sind weiterhin derselbe Punkt aus zwei Blickwinkeln (in der 15:16-Notiz schon festgehalten) - beide mit demselben Lauf abgehakt.

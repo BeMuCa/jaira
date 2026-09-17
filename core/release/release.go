@@ -66,7 +66,13 @@ func Since(stamped string) []Entry { return sinceEntries(Notes(), stamped) }
 // "Nothing has changed since ..." branch from every board stamped with the
 // current version. The section stays in the file; it just does not travel.
 func sinceEntries(all []Entry, stamped string) []Entry {
-	return withChanges(selectSince(all, stamped))
+	var out []Entry
+	for _, e := range selectSince(all, stamped) {
+		if len(e.Changes) > 0 {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func selectSince(all []Entry, stamped string) []Entry {
@@ -79,16 +85,6 @@ func selectSince(all []Entry, stamped string) []Entry {
 		}
 	}
 	return all
-}
-
-func withChanges(entries []Entry) []Entry {
-	var out []Entry
-	for _, e := range entries {
-		if len(e.Changes) > 0 {
-			out = append(out, e)
-		}
-	}
-	return out
 }
 
 // Stamped reads <dir>/version, trimmed. Errors are deliberately swallowed: a
