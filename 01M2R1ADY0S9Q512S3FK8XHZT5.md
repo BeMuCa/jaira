@@ -28,14 +28,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:10:55Z
+updated-at: 2026-09-17T17:12:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
 outcome-what: "Zeilenumbruch einmal definiert: insertText (internal/tui/model.go:921-927) normalisiert \\r\\n und einzelnes \\r zu \\n, bevor ein Puffer den Text sieht. modeEdit haengt danach nur noch an, foldToOneLine (internal/tui/paste.go:41) verliert seine beiden ReplaceAll-Zeilen. Zwei Tests dazu: ein Fall \"a lone carriage return counts too\" in TestMultiLinePasteIsFoldedToSpaces und TestPasteNormalisesALoneCarriageReturnInTheFieldEditor."
 outcome-why: "critique (2. Durchlauf) hat genau einen Punkt offen gelassen: in insertText gab es zwei Definitionen von Zeilenumbruch - modeEdit kannte nur \\r\\n, foldToOneLine auch das einzelne \\r. Terminals schicken in einer Klammer-Einfuegung durchaus einzelne CR; die landeten roh im Editorpuffer und damit in der Ticketdatei."
 outcome-resolves: "Plan 11. DoD 4 bleibt erfuellt und ist mit neuem Proof belegt: die Faltungsentscheidung gilt jetzt fuer alle drei Umbruchformen. go build ./... und go test ./... komplett gruen."
-review-summary: "internal/tui/model.go:922 - modeEdit normalisiert Zeilenenden selbst mit ReplaceAll(\"\\r\\n\",\"\\n\") und kennt das einzelne \\r nicht, das foldToOneLine (paste.go:40-41) sehr wohl kennt; ein Terminal, das beim Einfuegen CR statt LF schickt, schreibt damit rohe \\r in editBuf und von dort in die Ticketdatei. Stattdessen: die Normalisierung einmal oben in insertText erledigen (CRLF und CR zu LF), danach haengt modeEdit nur noch an und foldToOneLine verliert seine beiden ReplaceAll-Zeilen - eine Definition von 'Zeilenumbruch' statt zwei in derselben Funktion."
+review-summary: "none"
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
