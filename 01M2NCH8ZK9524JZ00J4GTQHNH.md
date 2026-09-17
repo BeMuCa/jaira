@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:56:41Z
+updated-at: 2026-09-17T18:57:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75151
 claimed-at: 2026-09-17T18:50:16Z
@@ -482,3 +482,9 @@ Alex hat diese vierte Runde ausdruecklich freigegeben, nachdem der Dispatcher na
 - Befund 2: die Verbotsliste in jaira-dispatcher/SKILL.md nennt jetzt dieselben sechs Schreibwege wie role-lane und schliesst mit demselben Satz statt einer Aufzaehlung ('alles, was ein Worker irgendwo zu schreiben aufgetragen bekommt, ist aus'), damit der naechste neue Schreibbefehl nicht wieder auf einer Seite fehlt. 'jaira dod' ist ausdruecklich genannt, mit dem Grund (dasselbe Feld, an dem der Worker daneben arbeitet).
 - KEINE NOTES.md-Zeile, bewusst: die vorhandene Unreleased-Zeile zur mitlaufenden Kritik beschreibt den Unterscheider bereits richtig und verlangt schon 'jaira roles install --global --force'. Der Defekt war, dass der Prompt auf den falschen Befehl zeigte — kein Verhalten, das ein Leser anders tun muss. Eine zweite Zeile daneben wuerde dieselbe Sache zweimal ankuendigen.
 - go test ./... -count=1 gruen.
+- **2026-09-17 18:57 · Alexander Sacharov** — critique (12. Durchgang, ueber die Punkte 7-12): ein echter Befund, ein kosmetischer. Beide entstehen erst durch d4244be.
+
+- Befund 1: jaira-role-lane/SKILL.md:30-34. Runde 11 hat den entscheidenden Lesebefehl in den Kopf gezogen — richtig. Nur endet der Kopf jetzt mit 'Then take the ticket and finish the step yourself:' und dem unbedingten Punkt 'jaira claim <ticket-id> — before you work it'. Genau der Worker, dem der Absatz darueber gerade gesagt hat, er sei die mitlaufende Kritik, 'die nichts schreibt', bekommt zwei Zeilen spaeter die Aufforderung zu claimen. Die Bedingung steht erst in Abschnitt 1, drei Bildschirme tiefer. Das ist dieselbe Reihenfolge-Luecke wie in den Runden 10 und 11, eine Ebene weiter: erst stand der claim vor der Lesung, jetzt steht er nach der Lesung, aber ohne die Bedingung, die die Lesung erzeugt hat. Reparatur: den claim-Punkt an die Lesung haengen ('es sei denn, die Lesung oben hat dich zur mitlaufenden Kritik gemacht').
+- Befund 2 (klein): jaira-dispatcher/SKILL.md:120 ist beim Einfuegen in d4244be auf 106 Zeichen geklebt worden, waehrend die Datei sonst bei ~78 umbricht. Nur Formatierung.
+- Ausdruecklich stehen gelassen, mit Verweis: die Prosa-Wiederholung ueber README/AGENTS.md/beide SKILLs/NOTES.md (optimize-Notiz 16.09. 20:21). Der Merge-Driver (Runde 5). Die NOTES.md-Zeile zur critique-Lane (Runde 9/10). Das Restrennen zwischen erstem Lesen der mitlaufenden Kritik und einem sehr fruehen 'move --to critique' (Runde 11 — der Weg 'im Zweifel nicht schreiben und den Dispatcher fragen' deckt es ab). Die drei Befunde aus Runde 10/11, die der Dispatcher am 17.09. 18:50 als geschlossen nachgesehen hat — nicht wieder angefasst. Nachgeprueft und KEIN Befund: 'jaira show <id> --json' fuehrt tatsaechlich 'status' (Schluesselliste am laufenden Board), und internal/cli/tickets.go:1327 fuehrt 'mode' im selben JSON — der Kopf behauptet beides zu Recht; dass das installierte Binary 'mode' noch nicht zeigt, liegt an der alten Version auf dem PATH, nicht am Zweig.
+- FUER DEN DISPATCHER: das ist der vierte Ruecklauf ueber die Punkte 7-12 (Runden 9, 10, 11 plus dieser). Alex hatte am 17.09. ausdruecklich EINE weitere Runde freigegeben, und die ist verbraucht. Die Drei-Ruecklauf-Regel greift wieder: ob Befund 1 noch repariert wird oder das Ticket mit dieser Kante weitergeht, ist jetzt Alex' Entscheidung, nicht die des Dispatchers.
