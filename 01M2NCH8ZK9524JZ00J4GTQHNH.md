@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:25:56Z
+updated-at: 2026-09-17T18:27:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -75,7 +75,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] Was im Gespraech entschieden wird, steht mit 'jaira note' auf dem Ticket, BEVOR die Arbeit daran beginnt - nicht hinterher. Nachgestellt an einem Ticket, dessen Sitzung mittendrin abgebrochen wird: die Entscheidung ist danach noch da.
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:54 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip, TestShowPrintsModeForPeople und TestResumeCarriesMode in internal/cli/mode_test.go
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:75 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; Begruendung SKILL.md:84; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung, sonst keine und die Lane ist trotzdem fertig
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:107-128 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:55 — 'git diff' nach jedem DoD-Punkt vorlegen und warten; leerer Diff heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
