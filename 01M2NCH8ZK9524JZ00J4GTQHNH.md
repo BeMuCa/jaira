@@ -37,10 +37,10 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:03:37Z
+updated-at: 2026-09-17T20:03:50Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-16211
-claimed-at: 2026-09-17T19:29:19Z
+claimed-by: DESKTOP-RFTCH11-93859
+claimed-at: 2026-09-17T20:03:50Z
 outcome-what: "core/board/announce.go: der Punkt zu 'jaira show --for-lane --json' fuehrt jetzt 'mode' in der Nutzlast auf, sagt was leer und was 'conversational' bedeutet (Diff nach jedem DoD-Punkt, fertige Commit-Zeile statt eigenem Commit) und dass der Modus vom Ticket gelesen wird. Test TestAgentNoteNamesTheConversationalMode, eine NOTES.md-Zeile unter ## Unreleased, AGENTS.md und CLAUDE.md dieses Repositories mit dem gebauten Binary regeneriert."
 outcome-why: "Auf einem fremden Board liegt kein jaira-role-lane-Prompt. Der von 'jaira update' geschriebene Block ist dort die einzige Stelle, an der ein Agent von 'mode' erfaehrt — ohne ihn reist der Schluessel in der --for-lane-Nutzlast mit, ohne dass irgendetwas ihn beschreibt, und der Gespraechsmodus erreicht nur das Board von jaira selbst."
 outcome-resolves: "DoD 13: der ausgelieferte Block nennt den Modus (announce.go:64-72), NOTES.md:17 sagt dem Leser, dass 'jaira update' faellig ist."
