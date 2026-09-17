@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:12:40Z
+updated-at: 2026-09-17T17:13:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -112,3 +112,11 @@ Warum oben und nicht in jedem Zweig: die beiden Definitionen sind genau so ausei
 Nachweis, dass es vorher wirklich kaputt war: TestPasteNormalisesALoneCarriageReturnInTheFieldEditor faellt mit dem alten ReplaceAll(text, "\r\n", "\n") im modeEdit-Zweig um - das einzelne \r landete roh im editBuf und damit in der Ticketdatei.
 
 Keine NOTES.md-Zeile dafuer: die vorhandene Zeile unter ## Unreleased beschreibt das Einfuegen als Ganzes, und diese Runde aendert nichts, was ein Benutzer ausserhalb davon bemerken koennte.
+- **2026-09-17 17:13 · Alexander Sacharov** — critique (3. Durchlauf): nichts mehr zu beanstanden, review-summary=none. Der Punkt des zweiten Durchlaufs ist abgearbeitet - insertText (model.go:921-927) normalisiert \r\n und einzelnes \r einmal zu \n, bevor irgendein Puffer den Text sieht; modeEdit haengt nur noch an, foldToOneLine (paste.go:41) traegt keine ReplaceAll-Zeile mehr und dokumentiert die Abhaengigkeit ('Carriage returns are already gone'). Eine Definition von Zeilenumbruch, an einer Stelle.
+
+Geprueft und ohne Befund, damit es kein vierter Durchlauf nochmal aufmacht:
+- Vollstaendigkeit: 'grep k.Text' ueber internal/tui findet genau vier Aufrufstellen (model.go:975, 996, 1012, edit.go:136), alle rufen insertText. Kein Puffer liest k.Text noch direkt, kein Feld fehlt.
+- Keine Verhaltensaenderung im Tastenpfad: 686daa5:model.go gegen heute verglichen - modeFilter setzte schon vorher m.filter und rief rebuild() beim Tippen, modeCreate/modeDelete haengten nur an. insertText bildet beides unveraendert ab, nur die 'if k.Text != ""' sind in die eine Leerpruefung oben gewandert.
+- Die Behebung ist nicht tot: charm.land/bubbletea/v2@v2.0.8 cursed_renderer.go:115 schaltet Bracketed Paste von sich aus ein (DisableBracketedPasteMode ist der Ausschalter, niemand setzt ihn). tea.NewProgram ohne Option genuegt also, es fehlt kein Aktivierungsschritt.
+- Nicht wieder aufgemacht: Model.paste als Einzeiler mit einem Aufrufer (spiegelt m.key(msg) im selben switch) und die Leerpruefung im modeFilter-Zweig (spart ein rebuild() ueber die ganze Tafel) - beide im 2. Durchlauf bewusst stehen gelassen.
+- editKey 'enter' haengt \n direkt an statt ueber insertText: identisches Ergebnis, der Umweg waere reine Indirektion.
