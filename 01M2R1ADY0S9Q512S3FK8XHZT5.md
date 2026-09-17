@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:04:13Z
+updated-at: 2026-09-17T16:04:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
@@ -48,7 +48,8 @@ claimed-at: 2026-09-17T15:57:28Z
   proof: internal/tui/paste.go:47-63 sanitisePaste folds newline runs to one space; TestMultiLinePasteIsFoldedToSpaces (5 cases) and TestPasteKeepsLinesInTheFieldEditor
 - [x] Die Tastaturbelegung spielt keine Rolle: eine Notiz am Code haelt fest, warum Strg+V nicht ueber cmdKey abgebildet wird (keylayout.go:38-42, der Dekoder loescht Key.Text bei Modifikatoren) und warum das Behandeln von PasteMsg die Belegung ueberfluessig macht.
   proof: internal/tui/paste.go:6-23 doc comment on Model.paste, and internal/tui/model.go:899 at the branch
-- [ ] core/release/NOTES.md traegt unter '## Unreleased' eine Zeile: was der Benutzer jetzt TUN kann - in die Suche einfuegen.
+- [x] core/release/NOTES.md traegt unter '## Unreleased' eine Zeile: was der Benutzer jetzt TUN kann - in die Suche einfuegen.
+  proof: core/release/NOTES.md:17 under '## Unreleased'
 
 ## Options
 
