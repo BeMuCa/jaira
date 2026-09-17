@@ -11,9 +11,11 @@ spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
                   belongs on the branch already checked out. Two workers then
-                  share one directory, so run only one at a time. The slug is
-                  still required but unused: it names a worktree, and there is
-                  none.
+                  share one directory, so run only one writing worker at a
+                  time; a read-only one — the critique that runs beside the
+                  work in conversational mode — is the exception, because
+                  nothing it does can collide. The slug is still required but
+                  unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
   -h, --help      This text.
 

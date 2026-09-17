@@ -147,3 +147,17 @@ func TestAgentNoteExplainsTheLocalArea(t *testing.T) {
 		t.Errorf("agentNote does not mention 'jaira logbook'")
 	}
 }
+
+// TestAgentNoteNamesTheConversationalMode guards the one line that tells an
+// agent on a foreign board that the key exists at all. jaira ships no role
+// prompts to that board, so this block is the only place `mode` is ever
+// named there — a `--for-lane` payload carrying a key nothing describes is a
+// key nobody reads.
+func TestAgentNoteNamesTheConversationalMode(t *testing.T) {
+	if !strings.Contains(agentNote, "`mode`") {
+		t.Errorf("agentNote does not name the mode key in the --for-lane payload")
+	}
+	if !strings.Contains(agentNote, "conversational") {
+		t.Errorf("agentNote names mode but not the one value it takes")
+	}
+}
