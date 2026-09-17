@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:39:53Z
+updated-at: 2026-09-17T20:42:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -608,3 +608,12 @@ Wichtig fuer die Reparatur von 2: der Ausschluss nimmt der Kritik ihre einzige S
 3. Die proof-Zeilen von DoD 5 (':74-105') und DoD 10 (':50-80') zeigen nach 113628e ins Leere — 113628e hat 22 Zeilen bei 99 eingefuegt und den Pause-Abschnitt nach 130-160 geschoben. Testing hat 'alle DoD-Punkte am Arbeitsbaum belegt' gemeldet, also werden die Zeilennummern dort nicht nachgerechnet.
 
 Geprueft und in Ordnung, nicht noch einmal anfassen: der Pathspec ':/ :(exclude,top).jaira/tickets' funktioniert und ist gegenueber der im DoD vorgeschlagenen '. :(exclude)'-Form die richtige Wahl — in diesem Worktree aus / und aus core/ heraus gefahren, beide Male dasselbe Ergebnis. 'git diff --cached' in der mitlaufenden Kritik bleibt drin, obwohl der Prompt jedes 'git add' verbietet: die review-Lane hat es ausdruecklich verlangt und es kostet nichts. Befund 3 des reviews (lane != status beim direkten Aufruf) bleibt nach Alex' Entscheidung vom 2026-09-17 20:24 eine Notiz und keine Aenderung — nicht wieder aufmachen. Der Dispatcher-Schritt 4 deckt ab, dass die mitlaufende Kritik im selben Verzeichnis laeuft ('--no-worktree'), sonst waere die ganze Worktree-Lesung wirkungslos; das steht und ist geprueft.
+- **2026-09-17 20:42 · Alexander Sacharov** — In-progress nach critique 14 (2026-09-17): alle drei Befunde behoben, keiner im Go-Code — zwei Prompts und die NOTES.md-Zeile.
+
+Befund 2 ist der teure: der Ausschluss ':/ :(exclude,top).jaira/tickets' steht jetzt an ALLEN DREI Kommandos der mitlaufenden Kritik, also auch an 'git diff --cached'. Der Befund nannte nur status und diff; --cached mit auszunehmen ist dieselbe Falle mit einem 'git add' davor, und drei Zeilen mit unterschiedlichem Umfang haette der naechste Leser fuer Absicht gehalten.
+
+Warum der Ausschluss einen Ersatz braucht und nicht allein stehen darf: er nimmt der Kritik die einzige Sicht auf die Notizen, die der Implementierer waehrend ihres Laufs schreibt — die Nutzlast hat sie gelesen, bevor es die gab. Der Absatz sagt deshalb ausdruecklich 'jaira show <id> --json' dafuer. Ohne den Halbsatz waere der Ausschluss eine Verschlechterung.
+
+Keine neue NOTES.md-Zeile fuer Befund 2, sondern die BESTEHENDE Unreleased-Zeile zur mitlaufenden Kritik umgeschrieben: sie ist noch nicht getaggt, beschreibt genau diese drei Kommandos, und eine zweite Zeile daneben haette dem Leser zwei Versionen desselben Verhaltens hingestellt. Befund 1 und 3 sind unter der Wahrnehmungsschwelle eines Benutzers (ein Rueckbezug im Prompt, Zeilennummern auf dem Ticket) und bekommen keine Zeile.
+
+Mitgenommen ueber den Befund hinaus: die proof-Zeilen von DoD 12 und DoD 13 waren nach MEINER eigenen Einfuegung um neun Zeilen verschoben — die habe ich gleich mit nachgezogen. Wer nach einem Prompt-Edit nur die im Befund genannten proofs korrigiert, hinterlaesst die naechsten zwei kaputt.
