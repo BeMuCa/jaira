@@ -38,14 +38,16 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:53:08Z
+updated-at: 2026-09-17T20:55:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
 outcome-what: "Die Anweisung der mitlaufenden Kritik, den uncommitteten Arbeitsbaum zu beurteilen, ist an allen drei Stellen unbedingt formuliert: core/role/builtin/jaira-role-lane/SKILL.md (Abschnitt 'Read the worktree, not the ticket's diff'), core/role/builtin/jaira-dispatcher/SKILL.md (Absatz unter 'In conversational mode, a critique runs beside the work') und die erste Zeile unter '## Unreleased' in core/release/NOTES.md. Neu in allen dreien: ein nicht-leerer Payload-Diff zeigt die frueheren Runden und nicht die Arbeit daneben."
 outcome-why: "Befund aus critique 15: die drei Stellen waren als Diagnose eines Zustands geschrieben ('das Payload kam complete:false zurueck'). internal/cli/flow.go:589-595 leitet die Commit-Liste aus git ab, sobald das Ticket keine fuehrt — ab der zweiten Runde liefert 'show --for-lane critique --json' also einen vollstaendigen Diff und complete:true. Wer den beschriebenen Zustand nicht vorfand, haette den Absatz fuer nicht zutreffend gehalten, den gelieferten Diff gelesen und die frueheren Runden kritisiert statt der Arbeit neben sich."
 outcome-resolves: "Plan 38 und 39. Kein Go-Code beruehrt; go build ./... und go test ./... -count=1 gruen (29 Pakete, selbst gelaufen)."
-review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:98-107 tells the running critique that its payload 'came back complete: false, with diff (git has no commits for this ticket yet)'. That premise is only true on a ticket that carries no commits yet. flow.go:589-591 derives the commit list from git when the ticket records none, so on every later round — this ticket has fourteen — the payload is complete:true with a full diff of the EARLIER rounds. The worker then finds nothing wrong with its input, never reaches 'read the worktree', and critiques committed work that is not the work running beside it. Make the instruction unconditional instead of a diagnosis: judge the worktree whatever the payload's diff says, and say that a non-empty payload diff is the previous rounds and not the work beside you."
+review-summary: |-
+  core/role/builtin/jaira-role-lane/SKILL.md:26-28 — 'Follow it, produce exactly those outputs, and nothing beyond them' is unconditional, and it stands BEFORE the condition at line 30. The critique lane's payload lists produces=["review-summary"] and its prompt orders 'jaira set <handle> review-summary=...' plus 'jaira move' — exactly the writes lines 80-83 forbid the running critique. A worker reading top-down is told to write review-summary before anything tells it not to. Fix: hang the same condition on that sentence as on the bullet list two lines below — 'Follow it and produce exactly those outputs, unless the read above made you the critique running beside the work: it produces its findings as a report to the dispatcher and writes nothing (section 1).'
+  core/role/builtin/jaira-role-lane/SKILL.md:110-112 — 'do not judge what it gave you' is wider than the defect it fixes. The payload also carries goal, definition-of-done and the notes, and the critique prompt puts the notes FIRST ('Read the notes before you read the diff'). A reader who takes that sentence at its word drops the one input the lane most needs. Fix: name the diff — 'do not judge the diff it gave you; the goal, the definition of done and the notes in the same payload are current and are what you judge the worktree against.'
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
 
