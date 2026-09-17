@@ -25,7 +25,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T10:51:02Z
+updated-at: 2026-09-17T10:51:18Z
+updated-by: Alexander Sacharov
 ---
 
 # 0.3.0 schneiden
