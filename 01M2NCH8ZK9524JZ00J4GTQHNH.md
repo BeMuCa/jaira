@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:51:51Z
+updated-at: 2026-09-17T18:52:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75151
 claimed-at: 2026-09-17T18:50:16Z
@@ -139,7 +139,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] critique 10: core/release/NOTES.md — die Zeile zur mitlaufenden Kritik beschreibt den neuen Unterscheider
   proof: core/release/NOTES.md:17,29
 - [x] critique 11: jaira-role-lane/SKILL.md Kopf — 'show --for-lane --json' fuehrt kein status und kann den Unterscheider nicht liefern; der entscheidende Lesebefehl 'jaira show <id> --json' steht im Kopf, vor 'jaira claim'
-- [~] critique 11: jaira-dispatcher/SKILL.md — die Verbotsliste der mitlaufenden Kritik nennt 'jaira dod' und schliesst mit einem Satz statt einer Aufzaehlung
+- [x] critique 11: jaira-dispatcher/SKILL.md — die Verbotsliste der mitlaufenden Kritik nennt 'jaira dod' und schliesst mit einem Satz statt einer Aufzaehlung
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
