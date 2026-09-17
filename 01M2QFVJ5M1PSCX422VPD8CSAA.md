@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:22:16Z
+updated-at: 2026-09-17T15:22:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -120,3 +120,14 @@ KEINE Zeile in NOTES.md fuer diese Behebung. Das ist bewusst und nicht vergessen
 Dead end beim Nachsehen an der echten Ausgabe, kostet sonst wieder eine halbe Stunde: (1) das Ticket-Board stempelt NICHT in <repo>/.jaira/version - release.Stamped liest s.StateDir(), und das ist $JAIRA_HOME (default ~/.jaira) /state/<name>-<hash>/version. Die Datei .jaira/version im Repo ist etwas anderes und zu aendern bringt nichts. (2) Das Binary meldet 'dev', solange man nicht -ldflags '-X main.version=0.3.0' setzt - der Schalter haengt an cmd/jaira/main.go:11, NICHT an core/release.Current (das setzt cli.Execute daraus). Ein falscher -X-Pfad wird von go build stillschweigend ignoriert, der Test laeuft dann mit 'dev' und zeigt erwartungsgemaess alles an.
 
 Nachgesehen wurden alle drei Faelle mit eigenem JAIRA_HOME im Scratchpad: ungestempelt -> alle 8 Versionen und kein 'Unreleased'; Stempel 0.3.0 -> 'Nothing has changed since ...' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0'].
+- **2026-09-17 15:22 · Alexander Sacharov** — critique (vierter Durchgang, auf den Filter-Diff): keine Befunde - review-summary=none, die Schleife endet hier.
+
+Der Befund des dritten Durchgangs ist genau dort behoben, wo die critique ihn verlangt hat: der Filter sitzt in sinceEntries (core/release/release.go:69), nicht in parseNotes und nicht im Renderer. Text und --json lesen damit dieselbe Liste, und der Zweig len(notes)==0 in internal/cli/update.go:108 ist wieder erreichbar.
+
+Vier Fragen, vier Mal nichts:
+(1) Einfachere Form: die Zerlegung in selectSince (Auswahl) und withChanges (Filter) ist nicht kuerzer als ein Inline-Filter, aber selectSince hat drei Rueckgabepfade - inline hiesse derselbe Filter an drei Stellen. Die Fassung mit dem Filter aussen ist die kleinere.
+(2) Fremdes Muster: keines. core/release hat sonst keinen Filter-Helfer, neben den es sich stellen koennte; die Signatur []Entry -> []Entry ist die des Pakets.
+(3) Spekulativ: withChanges hat genau einen Aufrufer, filtert aber allgemein nach 'keine Changes' statt nach dem Namen 'Unreleased'. Das ist die richtige Richtung - eine Sonderbehandlung des Wortes waere die spekulativere Fassung, weil sie an einer Ueberschrift haengt, die CLAUDE.md jederzeit umbenennen kann.
+(4) Ort: richtig. release.Since hat genau einen Aufrufer (internal/cli/update.go:81), und nur dieses Paket bedient Text und --json zugleich; ein Filter im Renderer haette die beiden auseinanderlaufen lassen. release.Notes hat ausserhalb des Pakets keinen zweiten Leser (geprueft per grep), also nimmt niemandem der Filter etwas weg.
+
+Nicht neu aufgemacht: die 918-Zeichen-Zeile, 'rm loescht nur die Zeile', die beiden spawn.sh-Zeilen und die fehlende NOTES.md-Zeile fuer diese Behebung - alle vier standen in frueheren Durchgaengen und wurden dort begruendet stehen gelassen.
