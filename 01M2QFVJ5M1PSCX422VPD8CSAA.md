@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:34:49Z
+updated-at: 2026-09-17T15:34:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -39,6 +39,7 @@ review-gaps: "Ein Befund, und er widerspricht einer ausdruecklichen Begruendung 
 test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete, 0 Fehler); DoD 1-3 am Baum nachgeprueft (9 '- '-Zeilen unter '## 0.3.0', keine umgebrochen, alle sechs geforderten Kommandos/Tasten weiter im Text); DoD 4 erfuellt (leere '## Unreleased' oben, kein v0.3.0-Tag gesetzt); DoD 5/6 am gebauten Binary -X main.version=0.3.0 gegen ein Scratch-Board mit eigenem JAIRA_HOME nachgesehen: Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0']; ungestempelt -> 8 Versionen, 'Unreleased' kommt in keiner der drei Ausgaben vor. TestSinceDropsEntriesWithoutChanges und TestParseNotesKeepsAnEmptyLeadingSection einzeln gruen."
 question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH aus signoff angenommen, so dass '## Unreleased' jetzt nach '## 0.3.0' umbenannt, eine frische leere '## Unreleased' darueber gesetzt und v0.3.0 getaggt werden darf? Der gefaltete Text ist fertig und geprueft - es fehlt nur diese Entscheidung und der Tag, den ein Agent nicht setzen darf."
 review-verdict: "Der Code ist richtig und deckt sich mit dem Outcome - am Diff nachgeprueft, nicht aus dem Bericht uebernommen. Offen bleibt genau eine Entscheidung, und sie ist die des Menschen: ob die Filter-Behebung eine Zeile unter '## 0.3.0' bekommt. Ich halte ja fuer richtig, weil das ausgelieferte v0.2.1 die leere '## Unreleased' nachweislich traegt und der Fehler damit in der Hand von Benutzern ist. Kein Grund, die Arbeit zurueckzuschicken - eine Zeile in NOTES.md, mehr fehlt nicht. Der Tag v0.3.0 bleibt ebenfalls beim Menschen."
+review-check: "1. 'git show v0.2.1:core/release/NOTES.md | head -20' - Zeile 16 muss '## Unreleased' sein und Zeile 18 '## 0.2.1'. Das ist der Beleg, dass der Fehler ausgeliefert wurde. 2. 'sed -n \"14,20p\" core/release/NOTES.md' - oben eine leere '## Unreleased', darunter '## 0.3.0'. 3. 'grep -c \"^- \" core/release/NOTES.md' im Abschnitt 0.3.0: es muessen 9 Zeilen sein, jede beginnt mit '- ', keine umgebrochen. 4. 'go test -count=1 ./core/release/' - muss 'ok' melden; TestSinceDropsEntriesWithoutChanges und TestParseNotesKeepsAnEmptyLeadingSection sind die beiden relevanten. 5. Die Ausgabe selbst ansehen: 'go build -ldflags \"-X main.version=0.3.0\" -o /tmp/jaira030 ./cmd/jaira', dann 'JAIRA_HOME=/tmp/jh1 /tmp/jaira030 update' zweimal hintereinander laufen lassen. Der ZWEITE Lauf ist der Test - er stempelt beim ersten Mal auf 0.3.0 und muss dann 'Nothing has changed since the version that last set this board up.' schreiben, NICHT die nackte Ueberschrift 'Unreleased'. 6. 'git tag | grep v0.3.0' muss leer sein - der Tag ist Ihre Entscheidung, kein Agent hat ihn gesetzt."
 ---
 
 # 0.3.0 schneiden
