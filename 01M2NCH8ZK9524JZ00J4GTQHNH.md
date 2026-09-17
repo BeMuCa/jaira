@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -38,13 +38,13 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:52:54Z
+updated-at: 2026-09-17T20:53:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
-outcome-what: "Die drei critique-Befunde der 14. Runde behoben, alle in Prompts: der Rueckbezug in jaira-dispatcher/SKILL.md zeigt jetzt auf den Diff-Satz statt auf den Satz darueber; die drei Kommandos der mitlaufenden Kritik in jaira-role-lane/SKILL.md tragen ':/ :(exclude,top).jaira/tickets' — auch 'git diff --cached' — plus den Halbsatz, dass frische Notizen mit 'jaira show <id> --json' gelesen werden; die proof-Zeilen von DoD 5, 10, 12 und 13 zeigen wieder auf den Text, den sie meinen. Die bestehende Unreleased-Zeile zur mitlaufenden Kritik in core/release/NOTES.md nennt den Ausschluss."
-outcome-why: "Ohne den Pathspec bekommt die mitlaufende Kritik den Ticket-Diff vorgelegt — hunderte Zeilen Prosa um wenige Zeilen Code —, weil der Worker nebenan mit jedem 'jaira dod' und 'jaira note' die Ticket-Datei schreibt; genau die Falle, die derselbe Prompt fuer die Pause 30 Zeilen tiefer schon ausschliesst. Der falsche Rueckbezug steht in dem Absatz, dessen einziger Zweck das Auseinanderhalten der beiden Kritiken ist, und die verschobenen proof-Zeilen schicken die naechste pruefende Lane in den falschen Text."
-outcome-resolves: "DoD 7 (die mitlaufende Kritik sieht die Arbeit, die sie beurteilen soll) und DoD 12 (sie liest den nicht committeten Arbeitsbaum) tragen jetzt auch, wenn der Implementierer parallel schreibt; DoD 5 und DoD 10 sind wieder mit dem Text belegt, den ihre proof-Zeile nennt."
+outcome-what: "Die Anweisung der mitlaufenden Kritik, den uncommitteten Arbeitsbaum zu beurteilen, ist an allen drei Stellen unbedingt formuliert: core/role/builtin/jaira-role-lane/SKILL.md (Abschnitt 'Read the worktree, not the ticket's diff'), core/role/builtin/jaira-dispatcher/SKILL.md (Absatz unter 'In conversational mode, a critique runs beside the work') und die erste Zeile unter '## Unreleased' in core/release/NOTES.md. Neu in allen dreien: ein nicht-leerer Payload-Diff zeigt die frueheren Runden und nicht die Arbeit daneben."
+outcome-why: "Befund aus critique 15: die drei Stellen waren als Diagnose eines Zustands geschrieben ('das Payload kam complete:false zurueck'). internal/cli/flow.go:589-595 leitet die Commit-Liste aus git ab, sobald das Ticket keine fuehrt — ab der zweiten Runde liefert 'show --for-lane critique --json' also einen vollstaendigen Diff und complete:true. Wer den beschriebenen Zustand nicht vorfand, haette den Absatz fuer nicht zutreffend gehalten, den gelieferten Diff gelesen und die frueheren Runden kritisiert statt der Arbeit neben sich."
+outcome-resolves: "Plan 38 und 39. Kein Go-Code beruehrt; go build ./... und go test ./... -count=1 gruen (29 Pakete, selbst gelaufen)."
 review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:98-107 tells the running critique that its payload 'came back complete: false, with diff (git has no commits for this ticket yet)'. That premise is only true on a ticket that carries no commits yet. flow.go:589-591 derives the commit list from git when the ticket records none, so on every later round — this ticket has fourteen — the payload is complete:true with a full diff of the EARLIER rounds. The worker then finds nothing wrong with its input, never reaches 'read the worktree', and critiques committed work that is not the work running beside it. Make the instruction unconditional instead of a diagnosis: judge the worktree whatever the payload's diff says, and say that a non-empty payload diff is the previous rounds and not the work beside you."
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
