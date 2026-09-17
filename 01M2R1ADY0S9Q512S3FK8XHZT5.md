@@ -28,13 +28,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:21:24Z
+updated-at: 2026-09-17T16:23:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
 outcome-what: "Ein Einfuegen aus der Zwischenablage kommt jetzt in jedem Eingabefeld der Tafel an. Model.Update hat einen eigenen Zweig 'case tea.PasteMsg' neben tea.KeyPressMsg (internal/tui/model.go:900), der nach internal/tui/paste.go:24 Model.paste fuehrt; der bedient modeFilter, modeCreate, modeDelete und modeEdit. Die drei einzeiligen Felder laufen vorher durch sanitisePaste (paste.go:47-63): CR normalisiert, Umbrueche an den Enden weg, Umbruchketten zu einem Leerzeichen; modeEdit bleibt aussen vor, weil sein Puffer mehrzeilig ist. Neu: internal/tui/paste.go und paste_test.go mit 160 Zeilen Tests, eine Zeile in core/release/NOTES.md unter '## Unreleased'."
 outcome-why: "Ein Einfuegen kommt in bubbletea v2 als tea.PasteMsg an, nie als Taste (input.go:37). Update hatte genau einen Tastenzweig, also fiel das PasteMsg durch das Ende der Funktion und war weg - still, in allen vier Feldern, nicht nur in der Suche. Ueber die Tastaturbelegung war das nicht zu loesen: cmdKey kann Strg+V nicht verschieben, weil der Dekoder Key.Text loescht, sobald ein Modifikator jenseits von Shift gedrueckt ist (keylayout.go:38-42). Es ist auch nicht noetig - ein Terminal-Ereignis hat keine Belegung, also bekommen kyrillische und deutsche Tastaturen die Behebung geschenkt."
 outcome-resolves: "DoD 1 bis 6. Gegenprobe gemacht: mit auskommentiertem PasteMsg-Zweig fallen 14 der neuen Faelle um."
+review-summary: |-
+  internal/tui/paste.go:25-41 wiederholt die Zuordnung Modus->Puffer, die schon in internal/tui/model.go:936-940, 962-964, 980-982 und internal/tui/edit.go:136-138 steht - samt der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft; stattdessen eine Methode m.insertText(s string) in model.go neben key() anlegen, die den Modus-Switch und die Faltung einmal haelt, und sie aus den drei default-Zweigen von key(), aus dem Ende von editKey() und aus paste() rufen - getippter Text enthaelt nie einen Umbruch, die Faltung ist dort also ein No-op.
+  internal/tui/paste.go:57-62: die Schleife 'for strings.Contains(text, "\n\n")' laeuft wiederholt ueber den ganzen Text; stattdessen einmal strings.Split(text, "\n"), leere Teile weglassen, mit " " joinen - das ersetzt Trim und Schleife durch einen Durchlauf.
+  internal/tui/paste.go:38-41: das 'if s := sanitisePaste(text); s != ""' in modeCreate/modeDelete bewacht nichts, ein leeres Anhaengen aendert den Puffer nicht; dort direkt 'm.input += sanitisePaste(text)'.
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
