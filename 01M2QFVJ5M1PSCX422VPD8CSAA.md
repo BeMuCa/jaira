@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:17:48Z
+updated-at: 2026-09-17T11:17:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -36,7 +36,8 @@ mode: conversational
 
 ## Definition of Done
 
-- [ ] Unter '## Unreleased' steht je eine Zeile je Aenderung, die ein Benutzer von aussen merkt - kein Zwischenstand, den nie jemand ausgeliefert bekommen hat, und keine zwei Zeilen fuer ein Verhalten. Die 18 Milestone-Zeilen sind zusammengefasst; was jede Zeile den Leser TUN laesst, bleibt erhalten.
+- [x] Unter '## Unreleased' steht je eine Zeile je Aenderung, die ein Benutzer von aussen merkt - kein Zwischenstand, den nie jemand ausgeliefert bekommen hat, und keine zwei Zeilen fuer ein Verhalten. Die 18 Milestone-Zeilen sind zusammengefasst; was jede Zeile den Leser TUN laesst, bleibt erhalten.
+  proof: core/release/NOTES.md:21-25 — 18 Milestone-Zeilen zu 5 gefaltet, '## Unreleased' traegt jetzt 9 statt 22 Zeilen
 - [ ] Das Zeilenformat ueberlebt das Falten: jede Aenderung ist genau eine Zeile, die mit '- ' beginnt, keine ist ueber zwei Zeilen umgebrochen. Nachgewiesen mit dem Test, der core/release/NOTES.md scannt.
 - [ ] Keine Aenderung geht beim Falten verloren: jede der vier Aenderungen ist im gefalteten Text nachweisbar, und die Kommandos und Tasten, die ein Benutzer tippt ('jaira milestone', 'M', '--milestone', '--no-worktree', 'dispatch', 'jaira restore'), stehen weiter darin.
 - [ ] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
