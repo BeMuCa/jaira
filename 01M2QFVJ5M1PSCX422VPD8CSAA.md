@@ -1,7 +1,7 @@
 ---
 id: 01M2QFVJ5M1PSCX422VPD8CSAA
 title: 0.3.0 schneiden
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,17 +25,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:35:33Z
+updated-at: 2026-09-17T11:36:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
 mode: conversational
-outcome-what: "Der zitierte Format-Test deckt DoD 2 nicht ab - TestEmbeddedNotesParseToAtLeastOneRealEntry prueft nur, dass ueberhaupt ein Eintrag parst. Die Sektion wurde deshalb selbst gescannt: 9 Eintraege, alle genau eine '- '-Zeile, keine umgebrochen."
-outcome-why: "Diese Lane prueft, ob das Geforderte existiert und funktioniert. Kein Kommando und keine Taste ist beim Falten verloren gegangen - die vier fehlenden Tokens gegenueber 686daa5 gehoeren samt und sonders zu nie ausgelieferten Zwischenstaenden und sind im Progress bewusst protokolliert."
-outcome-resolves: "Keine DoD-Position - diese Lane hat nichts geaendert. DoD 1-3 bleiben wie von in-progress belegt, jetzt zusaetzlich am Baum nachgeprueft; DoD 4 bleibt beim Menschen."
+outcome-what: "testing ohne Befund abgeschlossen: Gates gruen (go build ./..., go vet ./..., go test -race -count=1 ./... RC=0 ueber 29 Pakete), DoD 1-3 am Arbeitsbaum verifiziert statt am Outcome-Text, und 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 gegen das aus diesem Baum gebaute Binary ausgefuehrt - es liest genau die 9 Unreleased-Zeilen vor, keine gespalten. Nebenbefund ohne Rueckgabe: der fuer DoD 2 zitierte TestEmbeddedNotesParseToAtLeastOneRealEntry belegt nur, dass ueberhaupt ein Eintrag parst, und wuerde eine umgebrochene Zeile nicht melden - die Sektion wurde deshalb selbst gescannt."
+outcome-why: "Diese Lane prueft, ob das Geforderte existiert und funktioniert. Kein vom Benutzer getipptes Kommando und keine Taste ist beim Falten verloren gegangen: die vier gegenueber 686daa5 fehlenden Tokens ('elease', 'next-release', der --json-Schluessel 'milestone', 'ticket: not found') gehoeren samt und sonders zu nie ausgelieferten Zwischenstaenden und sind im Progress bewusst protokolliert."
+outcome-resolves: "Keine DoD-Position - diese Lane hat nichts geaendert. DoD 1-3 bleiben wie von in-progress belegt, jetzt zusaetzlich am Baum nachgeprueft; DoD 4 ist die Frage an den Menschen."
 review-summary: "none"
 review-gaps: "Nichts entfernt. Doppelung: keine - kein Milestone-Satz steht in einer getaggten Sektion, und die 5 gefalteten Zeilen ueberschneiden sich untereinander nicht. Tote Aussagen: keine - jedes genannte Kommando, Flag und Feld existiert im Code (internal/cli/milestones.go:77,172,178,197,309; core/milestone/milestone.go:303; internal/cli/archive.go:95; milestones_filed in internal/cli/fetch.go). Behalten statt gestrichen: 'rm entfernt nur die Zeile' (NOTES.md:21) steuert ein Kommando und ist keine Beruhigung, 'die Karte ist genau so breit' (23) beantwortet die TUI-Befuerchtung; 'und Erstellzeit' (21) ist echter Fluff, aber 18 Zeichen. Kosten: entfaellt, Zeilenscan ohne Laengengrenze, die create-Zeile ist mit 907 Zeichen nicht die laengste der Sektion (PR-Zeile 918). Liegengelassen, weil ausserhalb dieser Aenderung: die beiden spawn.sh-Zeilen (19/20, aus 7KX89C) nennen dasselbe Skript, aber nur eine sagt, wie man es bekommt; '--color' ist bei milestone 1-255 und bei tag 0-255 (internal/cli/tags.go:389)."
 test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete); DoD 1-3 am Baum nachgeprueft - '## Unreleased' traegt 9 Zeilen, alle beginnen mit '- ', keine umgebrochen, kein vom Benutzer getipptes Kommando beim Falten verloren; 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 liest genau diese 9 Zeilen vor. DoD 4 offen und beim Menschen."
+question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH aus signoff angenommen, so dass '## Unreleased' jetzt nach '## 0.3.0' umbenannt, eine frische leere '## Unreleased' darueber gesetzt und v0.3.0 getaggt werden darf? Der gefaltete Text ist fertig und geprueft - es fehlt nur diese Entscheidung und der Tag, den ein Agent nicht setzen darf."
 ---
 
 # 0.3.0 schneiden
