@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:19:09Z
+updated-at: 2026-09-17T18:19:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -411,3 +411,12 @@ Aus dem review-Lane-Befund vom 16.09.: core/role/builtin/jaira-role-lane/SKILL.m
 
 Aus dem Lauf selbst: core/role/builtin/jaira-dispatcher/SKILL.md:118 sagt 'Testing is not a lane: /jaira-role-tester <id>', waehrend scripts/spawn.sh:139-145 nur 'dispatch' als Sonderfall kennt und testing zu '/jaira-role-lane <ticket> testing' macht. Gelaufen ist es als Lane und es ging gut aus. Alex hat auf die gelaufene Regel entschieden: testing ist eine gewoehnliche Lane, der Halbsatz in Zeile 118 wird gestrichen, spawn.sh behaelt seinen EINEN Sonderfall, und jaira-role-tester bleibt unangetastet als Einstiegsstelle mit zwei optionalen Argumenten.
 - **2026-09-17 18:13 · Alexander Sacharov** — Alex am 2026-09-17: die Punkte 7-12 werden jetzt gemacht, das Ticket geht aus signoff zurueck in die Arbeit. Anlass: 'jaira move GTQHNH --to done' wurde abgewiesen, weil 7-11 offen sind - der Dispatcher hatte den Zweig schon in release/0.3.0 gezogen, nur nach der Lane-Marke signoff und ohne die Definition of Done zu lesen. Punkte 1-6 (der Modus selbst) sind fertig und ihre drei NOTES-Zeilen stehen bereits unter '## 0.3.0' in der Release-Ветке. Was jetzt dazukommt, gehoert in denselben Release.
+- **2026-09-17 18:19 · Alexander Sacharov** — In-progress, Punkte 7-12: vier Befunde, die das Repository nicht selbst sagt.
+
+'git add -A -N .' vor dem 'git diff' — der Fix, den sowohl die review-Lane als auch Alex' Notiz vom 16.09. vorgeschlagen haben — ist NICHT genommen worden. Grund: CLAUDE.md und jaira-role-lane/SKILL.md:27 verbieten ausdruecklich 'git add -A', weil eine andere Sitzung denselben Worktree halten kann. Der Gespraechsmodus startet den Worker per '--no-worktree' im ausgecheckten Verzeichnis — er ist damit genau der Fall, den das Verbot meint, nicht die Ausnahme davon. 'git status --short' leistet dasselbe und schreibt nichts in den Index. Wer das spaeter 'vereinfachen' will: das ist der Grund.
+
+.jaira/lanes/critique.md ist die Lane-Datei DIESES Boards, keine ausgelieferte. core/lane/builtin/ fuehrt zehn Lanes und critique ist keine davon. Die 'notes'-Eingabe erreicht fremde Boards deshalb nur ueber die NOTES.md-Zeile, die dem Leser sagt, er solle sie selbst eintragen — nicht ueber ein Release. Eine ausgelieferte critique-Lane zu erfinden waere ein eigenes Ticket, nicht dieses.
+
+Dafuer war kein Go-Code noetig: core/ticket/schema.go:193-197 fuehrt 'notes' bereits in SuppliedFields, und internal/cli/notesinput_test.go deckt den Weg ab. Nachgeprueft statt vermutet — 'show GTQHNH --for-lane critique --json' liefert missing=null und den notes-Schluessel.
+
+Die mitlaufende Kritik widersprach dem '--no-worktree'-Absatz, der sagt 'never run a second one anywhere while such a worker is live'. Aufgeloest, indem der Absatz sie als die eine Ausnahme benennt: sie liest nur, und deshalb kann nichts an ihr mit dem schreibenden Worker kollidieren. Haette man den Absatz stehen lassen, widerspraeche der Prompt sich selbst an zwei Stellen und der Dispatcher folgt der, die er zuerst liest.
