@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:28:59Z
+updated-at: 2026-09-17T20:29:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93859
 claimed-at: 2026-09-17T20:03:50Z
@@ -584,3 +584,10 @@ Dieses Ticket selbst hat kein mode-Feld - der Gespraechsmodus lief also hier nic
 - **2026-09-17 20:24 · Alexander Sacharov** — Alex am 2026-09-17, nachdem ihm die drei review-Befunde erklaert waren: Befund 1 und 2 werden jetzt behoben, Befund 3 nicht. Begruendung fuer 3: er trifft nur den direkten Aufruf '/jaira-role-lane <id> <lane>' auf einer Lane, in der das Ticket noch nicht steht; die review-Lane war sich dort selbst unsicher, ob das ein Weg ist, den jemand tatsaechlich geht. Er bleibt als Notiz stehen statt als Aenderung.
 
 Warum 'faellt schon bei echten Benutzern auf' fuer 1 und 2 nicht traegt: beide Defekte sind leise. Die Pause stuerzt nicht ab, sie haelt nur oefter als noetig - das sieht aus wie 'der Modus ist langsam', nicht wie ein Fehler. Die mitlaufende Kritik stuerzt nicht ab, sie meldet 'nichts gefunden' - das sieht aus wie 'der Code ist sauber'. Ein Benutzer meldet kein Verhalten, das er fuer eine Eigenschaft haelt.
+- **2026-09-17 20:29 · Alexander Sacharov** — In-progress nach review (2026-09-17): Befund 1 und 2 aus dem review behoben, Befund 3 nach Alex' Entscheidung nicht.
+
+Der Pathspec für die Pause ist ':/ :(exclude,top).jaira/tickets' und NICHT die im DoD vorgeschlagene Form '. :(exclude).jaira/tickets'. Ausprobiert, beides in diesem Worktree: die DoD-Form funktioniert nur, solange der Worker im Repo-Wurzelverzeichnis steht, weil '.' den Umfang auf das aktuelle Verzeichnis begrenzt — ein Worker in core/ sieht damit seine eigenen Änderungen ausserhalb nicht mehr. ':/' ist die Repo-Wurzel und ',top' verankert den Ausschluss dort, also sagen beide Kommandos aus jedem Verzeichnis dasselbe. Eine Pathspec, die NUR aus einem Ausschluss besteht (':(exclude)…' allein), passt in git auf gar nichts — der positive ':/' davor ist Pflicht, nicht Zierde.
+
+Befund 1 steht als eigener Absatz IM Abschnitt der mitlaufenden Kritik, nicht bei der Pause: er gilt nur für den Worker, der sich als mitlaufende Kritik erkannt hat. Die ordentliche critique-Lane liest weiter den Diff aus der Nutzlast, und der Dispatcher-Prompt sagt das jetzt ausdrücklich (der Satz 'der Diff war nie das Limit' galt immer nur der LANE, die nach den Commits läuft).
+
+Kein Go-Code geändert — die drei Dateien sind zwei Prompts und NOTES.md. Prompts führt kein Test aus; 'go test ./... -count=1' bleibt grün (29 Pakete), belegt aber nur, dass die eingebetteten Rollen weiterhin laden.
