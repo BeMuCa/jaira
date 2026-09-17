@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:48:03Z
+updated-at: 2026-09-17T19:53:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -540,3 +540,22 @@ Bewusst NICHT aufgenommen: der Halt vor der Plan-Lane (Entscheidungen zaehlen) u
 Der Test (announce_test.go:151) prueft nur, dass 'mode' und 'conversational' im Block stehen — nicht den Wortlaut. Die byte-genaue Zusage haelt TestAnnounceRegeneratesByteForByteWithNoLocalMarker ohnehin schon; ein zweiter Wortlaut-Test waere ein Test, der bei jeder Umformulierung rot wird, ohne je einen Defekt zu fangen.
 
 go build, go vet, go test ./... -count=1 gruen.
+- **2026-09-17 19:53 · Alexander Sacharov** — testing: Alle drei Durchgaenge gruen, nichts zurueckzugeben.
+
+Gates: go build ./... und go vet ./... ohne Ausgabe, go test -race ./... -count=1 RC=0, 29 Pakete 'ok' (internal/tui 123s ist der Bremser, nicht rot).
+
+Die Nachfrage: alle 13 DoD-Punkte am Arbeitsbaum geprueft, nicht am outcome-Text. Zwei Punkte, deren Beleg nicht mehr auf die genannte Zeile zeigt, weil spaetere Runden den Text verschoben haben - DoD 5 nennt jaira-role-lane/SKILL.md:74-105, der Abschnitt steht jetzt bei 108-135; DoD 4 nennt 107-128, die Commit-Zeile steht darunter. Inhalt ist an beiden Stellen da, nur der Zeilenanker ist alt. Kein Fehler im Code, deshalb kein Zurueckgeben.
+
+Funktion am Wegwerf-Board (/tmp/claude-1000/sb, mit hier gebautem Binary) selbst gefahren, nicht nur gelesen:
+- 'set mode=chat' -> 'jaira: mode is "conversational" or empty, got "chat"', Exit 2, nichts gespeichert
+- 'show' im Klartext zeigt die Zeile 'mode       conversational'
+- 'show --for-lane in-progress' Kopfzeile: '# Lane: Implementing   (tier: cheap, mode: conversational)'
+- 'show --for-lane in-progress --json': "mode" direkt neben "model_tier"
+- 'resume --json' fuehrt "mode": "conversational", 'resume' im Klartext die Zeile 'mode: conversational' - erst nachdem das Ticket in einer agentischen Lane liegt, vorher ist in_flight leer, das ist so gewollt
+- mode im Frontmatter von Hand auf 'chat' gesetzt -> 'jaira validate' meldet die Warnung bad_mode mit dem Reparaturbefehl
+
+DoD 10 (neue Datei) in diesem Worktree nachgestellt: eine angelegte probe_neu.go liefert 'git diff' 0 Zeilen und 'git status --short' die Zeile '?? probe_neu.go'. Genau deshalb steht status jetzt neben diff im Prompt.
+
+Nicht pruefbar und bewusst nur gelesen: der Halt vor der Plan-Lane (DoD 1) und die mitlaufende Kritik (DoD 7) sind Prompt-Absaetze, kein Code. Beide stehen im selben jaira-dispatcher/SKILL.md, es gibt weiterhin genau sieben Rollen, 'Testing is not a lane' ist weg, spawn.sh und jaira-role-tester/SKILL.md sind gegenueber master unveraendert.
+
+Dieses Ticket selbst hat kein mode-Feld - der Gespraechsmodus lief also hier nicht mit. Das ist die Frage, die im question-Feld an den Menschen geht.
