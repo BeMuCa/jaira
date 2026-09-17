@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:14:50Z
+updated-at: 2026-09-17T15:15:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -95,3 +95,14 @@ Ausserhalb dieser Aenderung gefunden, NICHT angefasst: die beiden spawn.sh-Zeile
 Nachgesehen, nicht nur gebaut: Binary aus diesem Baum gegen ein Scratch-Board mit .jaira/version 0.2.1 laufen lassen; 'jaira update' liest die 9 Zeilen unter '0.3.0' vor, jede als ein Punkt.
 
 Befund ausserhalb dieser Lane, absichtlich nicht behoben: 'jaira update' druckt die leere Sektion 'Unreleased' als Ueberschrift ohne Inhalt mit. parseNotes behaelt sie absichtlich (TestParseNotesKeepsAnEmptyLeadingSection), aber der Renderer filtert Entries ohne Changes nicht. Das wird nach JEDEM Release so sein, weil CLAUDE.md eine frische leere '## Unreleased' vorschreibt. Kandidat fuer ein eigenes Ticket - hier waere es ein Fix ausserhalb des Auftrags.
+- **2026-09-17 15:15 · Alexander Sacharov** — critique (dritter Durchgang, auf den Schnitt-Diff e23e98c): ein Befund, und er liegt im Ziel des Tickets, nicht daneben.
+
+Das Ziel lautet 'wer jaira update nach 0.3.0 laufen laesst, liest vier Aenderungen'. Genau dieser Leser liest jetzt etwas Neues und Falsches: die leere '## Unreleased', die der Schnitt anlegt, wird von parseNotes als Entry gefuehrt und von Since() durchgereicht. Auf einem Board mit Stempel 0.3.0 druckt 'jaira update' 'What's changed since then:' und darunter nur die nackte Ueberschrift 'Unreleased'. Am gebauten Binary (-X main.version=0.3.0) gegen ein Scratch-Board nachgesehen, nicht abgeleitet.
+
+Der Folgeschaden ist groesser als der leere Titel: internal/cli/update.go:108 hat einen Zweig fuer len(notes)==0 mit dem Satz 'Nothing has changed since the version that last set this board up.'. Weil die leere Sektion immer ein Entry ist, ist dieser Zweig ab jetzt fuer jedes aktuelle Board tot - und zwar dauerhaft, weil CLAUDE.md nach jedem Release eine frische leere '## Unreleased' vorschreibt. --json zeigt dasselbe: notes traegt {version: Unreleased, changes: null}, ein Phantom-Release fuer jeden Leser des JSON-Vertrags.
+
+Ort des Fixes: core/release/release.go, sinceEntries - nach dem Schnitt die Entries ohne Changes herausfiltern. NICHT parseNotes, das die leere Sektion absichtlich behaelt (TestParseNotesKeepsAnEmptyLeadingSection); und nicht der Renderer allein, sonst weicht --json vom Text ab. Ein Filter an einer Stelle bedient Text, --json und den 'Nothing has changed'-Zweig zugleich.
+
+Der Implementierende hat das in der 15:11-Notiz selbst gesehen und als Ticket-Kandidat ausserhalb des Auftrags zurueckgestellt. Das ist der Punkt, an dem die critique widerspricht: der Auftrag ist die Ausgabe von 'jaira update' nach dem Schnitt, und der Schnitt selbst erzeugt den Defekt. Deshalb DoD 5 statt Satellitenticket.
+
+Geprueft und NICHT beanstandet: (1) der Schnitt selbst ist genau die von CLAUDE.md vorgeschriebene Form, zwei Zeilen, nichts Einfacheres denkbar; (2) die 9 gefalteten Zeilen sind unveraendert unter die neue Ueberschrift gerutscht - kein Text bewegt; (3) die 918-Zeichen-Zeile und 'rm loescht nur die Zeile' standen in frueheren Durchgaengen und werden nicht neu aufgemacht; (4) dass der Tag nicht gesetzt wurde, ist richtig und kein Mangel.
