@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:34:47Z
+updated-at: 2026-09-17T11:35:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -85,3 +85,4 @@ Fluff geprueft und BEHALTEN, mit Grund: (1) 'rm entfernt nur die Zeile, ein Mile
 Kosten: entfaellt, der Text ist ein Zeilenscan ohne Laengengrenze. Die 907 Zeichen der create-Zeile sind nicht die laengste der Sektion - die PR-Zeile hat 918.
 
 Ausserhalb dieser Aenderung gefunden, NICHT angefasst: die beiden spawn.sh-Zeilen (Z. 19 und 20, aus 7KX89C) beschreiben dasselbe Skript, aber nur Z. 20 sagt, wie man es bekommt ('jaira roles install --global --force') - wer nur Z. 19 liest, erfaehrt die Lane 'dispatch' und nicht, dass sie mit dem jaira-dispatcher-Rollenordner kommt. Zweitens nennt '--color' bei milestone 1-255, bei tag 0-255 (internal/cli/tags.go:389) - eine Inkonsistenz im Code, nicht in den Notizen.
+- **2026-09-17 11:35 · Alexander Sacharov** — testing: Gates gruen - go build ./... und go vet ./... ohne Ausgabe, go test -race -count=1 ./... RC=0 ueber alle 29 Testpakete (core/release ok, internal/cli ok, internal/tui ok). DoD 2 am Baum statt am Proof nachgezaehlt: der zitierte TestEmbeddedNotesParseToAtLeastOneRealEntry belegt nur, dass ueberhaupt ein Eintrag parst - er wuerde eine umgebrochene Zeile nicht melden. Deshalb selbst gescannt (Python ueber core/release/NOTES.md, Sektion '## Unreleased' = Zeilen 16-25): 9 Eintraege, jeder genau eine mit '- ' beginnende Zeile, keine nicht-leere Nicht-'- '-Zeile in der Sektion, keine Zeile mit Leerraum am Ende. DoD 3 als Differenz gegen git show 686daa5:core/release/NOTES.md geprueft, nicht als grep auf die Wunschliste: von den Backtick-Tokens der alten Sektion fehlen nur 'elease', 'next-release', der --json-Schluessel 'milestone' und 'ticket: not found' - alle vier gehoeren zur Rennmeldung bzw. zur logbook-Abweisung, also zu nie ausgelieferten Zwischenstaenden, und ihr Wegfall ist im Progress bewusst protokolliert. '--milestone <name>' ist nicht weg, sondern in 'jaira list --milestone <name>' aufgegangen; 'jaira milestone create/add/rm/ls' ebenso in die verschmolzene Zeile 21. Funktion: Scratch-Board unter dem Scratchpad angelegt, .jaira/version auf 0.2.1 gesetzt, 'jaira update' mit dem aus diesem Baum gebauten Binary laufen lassen - es liest unter 'Unreleased' genau die 9 Zeilen vor, jede als ein Aufzaehlungspunkt, keine gespalten. Das ist der Weg, den das Ziel des Tickets beschreibt, an dem echten Leser nachgesehen. Nichts gefunden, das zurueckgeht. DoD 4 bleibt offen und ist kein Testbefund: die Umbenennung nach '## 0.3.0' faehrt im Commit des Menschen.
