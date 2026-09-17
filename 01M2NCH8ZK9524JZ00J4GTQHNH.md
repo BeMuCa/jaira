@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:53:15Z
+updated-at: 2026-09-17T19:53:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -58,7 +58,7 @@ review-gaps: |-
   Vorbestehend und nicht angefasst: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now' sind toter Code aelter als diese Aenderung.
 
   Offen aus der Vorrunde und NICHT hier zu beheben, weil es Verhalten aendert und eine NOTES.md-Zeile braucht: core/board/announce.go:64 zaehlt die Nutzlast von 'show --for-lane --json' namentlich auf und nennt den Modus nicht — der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, erklaert den 'mode'-Schluessel also nicht.
-test-verdict: "pass: go build/vet/test ./... -race -count=1 green (RC=0, 29 Pakete), DoD 1-6 in der Working Tree geprueft, Verhalten auf einem Scratch-Board mit dem gebauten Binary durchgespielt"
+test-verdict: "pass: Suite gruen (go build/vet ohne Ausgabe, go test -race ./... -count=1 RC=0, 29 Pakete ok), alle 13 DoD-Punkte am Arbeitsbaum belegt, Verhalten am Wegwerf-Board gefahren - set lehnt mode=chat mit Exit 2 ab, show/--for-lane/--for-lane --json/resume fuehren den Modus alle vier, validate warnt bei handgeschriebenem mode: chat, und eine neu angelegte Datei zeigt sich in 'git status --short' wo 'git diff' leer bleibt"
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
 review-verdict: |-
   Das Traegerwerk ist sauber und deckt sich mit dem Bericht des Implementierers: ein Feld, ein geschlossener Wertebereich, eine Funktion (CanonicalMode) hinter beiden Schreibpfaden, fuenf Lesestellen inklusive 'jaira resume' — womit DoD-Punkt 3 (ueberlebt den Sitzungsabbruch) wirklich getragen ist und nicht nur behauptet —, dazu validate als Netz fuer alles, was an den Schreibpfaden vorbeikommt. Build, vet und 'go test ./... -count=1' sind gruen; ich habe sie selbst laufen lassen. Alle sechs DoD-Punkte sind formal erfuellt.
