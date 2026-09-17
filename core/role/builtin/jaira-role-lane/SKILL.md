@@ -49,17 +49,33 @@ is reading along. Two things change, and only these two:
 
 **1. Show the code after every definition-of-done item, not at the end.**
 
-Work one item, then:
+Work one item, then run **both** of these:
 
 ```bash
+git status --short
 git diff
 ```
 
-Empty output? No pause — a documentation item or one that only describes a
-check produces no code, and pausing on it makes the mode slower than typing the
-change by hand. Otherwise show that diff — the diff itself, not a summary of it
-— beside the `--proof` you just recorded for the item, and wait for the person
-before building anything on top of it.
+`git diff` alone is blind to a file that does not exist in the index yet, and a
+definition-of-done item made of one new file — a new test, a new package — is
+the common case, not the corner. Take the empty diff as "nothing happened" and
+that item passes the person by in silence, which is the one thing this mode is
+here to prevent. `git status --short` is what sees it: an untracked file shows
+there as `??`.
+
+Both empty? No pause — a documentation item or one that only describes a check
+produces no code, and pausing on it makes the mode slower than typing the change
+by hand.
+
+Otherwise pause. Show the diff itself, not a summary of it, and for every `??`
+line show the new file's contents as well (`cat <path>`, or
+`git diff --no-index /dev/null <path>` if you want it as a diff). Put it beside
+the `--proof` you just recorded for the item, and wait for the person before
+building anything on top of it.
+
+Do not reach for `git add` to make the file visible — not even `-A -N`. Another
+session may hold the same worktree, and this mode in particular runs the worker
+in the checked-out directory rather than one of its own.
 
 Late is the expensive time to disagree with a shape. That is the whole reason
 the mode exists.

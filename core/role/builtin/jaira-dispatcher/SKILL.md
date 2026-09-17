@@ -93,8 +93,47 @@ jaira show <id> --json        # the "mode" key
   the rule working, not a worker that forgot: the ticket file waits in the
   worktree for the next commit that carries code. Do not ask for a line, and do
   not hold the lane open waiting for one.
+- **A critique runs beside the work, not after it** — see the section below.
 - **Pauses are not stalls.** A worker waiting for a person to look at a diff is
   working. Do not kill it, do not start a second one for the same lane.
+
+## In conversational mode, a critique runs beside the work
+
+The critique lane runs when the implementing lane is finished, and that is the
+late end of the ticket. Measured on the ticket that built this mode: eight
+rounds — three findings, then two, then five times one. Every round opened a
+file no earlier round had looked at, and the diff was never what limited them,
+because `internal/cli/flow.go` assembles it from every commit of the ticket and
+not from the last one. One reader takes a slice and stops when it is enough.
+The most expensive finding of the eight arrived in round seven.
+
+So in `mode: conversational`, and only there, run a critique **while** the
+implementing lane is working:
+
+1. Start it as a second worker, on the same ticket, at the same time as the
+   in-progress worker: `/jaira-role-lane <id> critique`.
+2. It **reads only.** It does not write `review-summary`, it does not
+   `jaira note`, and it does not `jaira move`. Say that in the line you start
+   it with, because its lane prompt tells it to do all three.
+3. It hands each finding to you **the moment it has one**, not as a list at the
+   end. You pass it to the person in the same turn. A finding that arrives
+   while the shape is still being built costs a paragraph; the same finding
+   after the lane is finished costs a round.
+4. Its worktree is the one the implementing worker is in — the mode already
+   runs `--no-worktree`, and a critique reading a different directory reads
+   different code. It is the one case where two workers share a directory on
+   purpose, and it is safe because only one of them writes.
+
+**Exactly one place writes `review-summary` and moves the ticket, and it is
+you.** Run two critics at once if the ticket is wide enough to want them, but
+they both only read: you merge what they found into the one `review-summary`
+and make the one `jaira move`. Two workers writing the same field means the
+second overwrites the first, and two moving the same ticket means a lane is
+skipped without anyone deciding to skip it.
+
+This does not replace the critique lane. The ticket still passes through it,
+and the loop there still runs to silence — the running critique is what makes
+that loop short.
 
 ## The loop
 
@@ -115,7 +154,7 @@ Then, per lane:
 2. **Start one worker on exactly one lane**, in its own worktree (in
    conversational mode, in the checked-out directory — see `--no-worktree`
    below):
-   `/jaira-role-lane <id> <lane>`. Testing is not a lane: `/jaira-role-tester <id>`.
+   `/jaira-role-lane <id> <lane>` — every lane, testing included.
 3. **Wait by the transport's own signal.** Never re-ask a worker whether it is
    done — the answer costs a turn and tells you nothing the board will not.
 4. **Read the outcome off the board, not off the pane.** `jaira show <id>
@@ -173,9 +212,9 @@ Say which one you took. The human needs to know whether the workers outlive you.
    every increment, and they read it in the directory they already have open,
    not in a worktree they have to go and find. It gives up the one thing the
    worktree buys: with it set, two workers share a directory, so never run a
-   second one anywhere while such a worker is live. In conversational mode that
-   costs nothing, because a mode with a person reading along runs one worker
-   anyway.
+   second one anywhere while such a worker is live. The running critique is the
+   single exception, and it is one because it only reads: nothing it does can
+   collide with the worker writing beside it.
 
    Two things it saves you from, both seen on 2026-09-14, when two dispatchers
    out of three never got a single worker into a tab:

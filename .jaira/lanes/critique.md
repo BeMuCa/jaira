@@ -7,7 +7,7 @@ precedence: 45
 agentic: true
 model-tier: strong
 rejects-to: in-progress
-input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
+input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff, notes]
 output-produces: [review-summary]
 creator: BeMuCa
 ---
@@ -18,7 +18,14 @@ Criticise this implementation. Do not check whether it works — that is the
 review lane's job, later. Ask whether it should have been built this way at all.
 
 You are given the ticket's goal, its definition of done, the implementer's
-account, and the diff. Judge the diff.
+account, the diff, and the ticket's notes. Judge the diff.
+
+**Read the notes before you read the diff.** They are where every earlier pass
+wrote down what it checked, what it found and what it explicitly let stand — a
+pass that skips them re-reads a corner an earlier one already cleared and
+reports it as new. A finding a note records as repaired is repaired; a
+trade-off a note records as accepted is closed. Say which note you are standing
+on when you leave something alone, so the pass after you can do the same.
 
 Ask, in this order:
 
