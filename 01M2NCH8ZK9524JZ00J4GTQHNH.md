@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:11:21Z
+updated-at: 2026-09-17T22:12:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -121,7 +121,8 @@ mode: ""
   proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '2. Show the code after every definition-of-done item, not at the end.' — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
 - [x] Der Unterscheider macht aus einem schreibenden Worker keinen stummen Leser mehr: die Bedingung in jaira-role-lane/SKILL.md, Abschnitt '1. Are you the critique that runs beside the work?', ist an die Lane gebunden - mitlaufende Kritik ist ein Worker nur, wenn sein Lane-Argument 'critique' lautet UND der status es nicht ist. Nachgestellt an dem Fall, der heute still ausfaellt: Ticket in 'todo', Aufruf mit 'pre-process' - der Worker arbeitet die Lane, statt sich fuer die Kritik zu halten.
   proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '1. Are you the critique that runs beside the work?', Absatz 'Both halves have to hold' — nennt den Fall 'pre-process' auf einem Ticket in 'todo' namentlich; dazu der Kopf-Absatz 'The first carries the ticket's status' und core/role/builtin/jaira-dispatcher/SKILL.md, Punkt 2 des Abschnitts 'In conversational mode, a critique runs beside the work'
-- [~] Der Prompt behauptet keinen vollstaendigen Diff mehr, den er nicht bekommt: der Satz 'hands you a full diff' in jaira-role-lane/SKILL.md wird richtiggestellt - internal/cli/flow.go:589 nimmt 'shas := t.Commits' und leitet nur bei leerem Feld aus git ab, also zeigt der Payload auf einem Ticket mit gefuelltem 'commits:' genau diese Commits und nicht den Branch. Der Satz sagt, wie man es merkt und was man stattdessen liest ('git diff master...HEAD'). Der Defekt in flow.go selbst gehoert nicht hierher und bekommt ein eigenes Ticket.
+- [x] Der Prompt behauptet keinen vollstaendigen Diff mehr, den er nicht bekommt: der Satz 'hands you a full diff' in jaira-role-lane/SKILL.md wird richtiggestellt - internal/cli/flow.go:589 nimmt 'shas := t.Commits' und leitet nur bei leerem Feld aus git ab, also zeigt der Payload auf einem Ticket mit gefuelltem 'commits:' genau diese Commits und nicht den Branch. Der Satz sagt, wie man es merkt und was man stattdessen liest ('git diff master...HEAD'). Der Defekt in flow.go selbst gehoert nicht hierher und bekommt ein eigenes Ticket.
+  proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '1. Are you the critique that runs beside the work?', Absatz 'And it is not even all of those rounds.' — nennt showForLane in internal/cli/flow.go, die Zaehlprobe mit jq .commits und 'git log master..HEAD' und 'git diff master...HEAD' als Ersatz; dieselbe Richtigstellung in core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'In conversational mode, a critique runs beside the work', und in der NOTES.md-Zeile 'Expect the critique that runs beside the work'
 
 ## Options
 
