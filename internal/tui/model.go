@@ -915,11 +915,19 @@ func (m *Model) insertText(text string) {
 	if text == "" {
 		return
 	}
+
+	// One definition of "line break" for every buffer below. A bracketed paste
+	// can carry CRLF or a lone CR, and a terminal that sends the bare CR is not
+	// unusual; left raw it would reach the editor buffer and from there the
+	// ticket file.
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+
 	switch m.mode {
 	case modeEdit:
 		// The field editor is the one multi-line buffer — enter inserts a line
 		// there — so a pasted paragraph keeps its shape.
-		m.editBuf += strings.ReplaceAll(text, "\r\n", "\n")
+		m.editBuf += text
 
 	case modeFilter:
 		s := foldToOneLine(text)

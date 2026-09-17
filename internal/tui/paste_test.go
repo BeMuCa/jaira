@@ -128,6 +128,7 @@ func TestMultiLinePasteIsFoldedToSpaces(t *testing.T) {
 		{"inner newline becomes a space", "lane\nreview", "lane review"},
 		{"a run of newlines becomes one space", "lane\n\n\nreview", "lane review"},
 		{"carriage returns count as newlines", "lane\r\nreview\r\n", "lane review"},
+		{"a lone carriage return counts too", "lane\rreview\r", "lane review"},
 		{"leading newlines fall away", "\n\nreview", "review"},
 	}
 	for _, c := range cases {
@@ -156,5 +157,19 @@ func TestPasteKeepsLinesInTheFieldEditor(t *testing.T) {
 
 	if m.editBuf != "first line\nsecond line" {
 		t.Errorf("the editor folded a pasted paragraph: %q", m.editBuf)
+	}
+}
+
+// A terminal may send a bare CR inside a bracketed paste. Raw it would reach the
+// editor buffer and from there the ticket file, so it is normalised like CRLF.
+func TestPasteNormalisesALoneCarriageReturnInTheFieldEditor(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	openFirstTicket(t, m)
+	m.key(key("e"))
+	m.editBuf = ""
+	pasteInto(m, "first line\rsecond line")
+
+	if m.editBuf != "first line\nsecond line" {
+		t.Errorf("a bare carriage return survived into the editor: %q", m.editBuf)
 	}
 }

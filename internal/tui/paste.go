@@ -36,9 +36,10 @@ func (m *Model) paste(text string) (tea.Model, tea.Cmd) {
 //
 // Nothing here cuts the text by byte offset, so Cyrillic, umlauts and emoji
 // arrive character for character, the same way k.Text does.
+//
+// Carriage returns are already gone: insertText normalises them to "\n" before
+// any buffer sees the text.
 func foldToOneLine(text string) string {
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\r", "\n")
 	lines := strings.Split(text, "\n")
 	kept := lines[:0]
 	for _, line := range lines {
