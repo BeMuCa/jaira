@@ -1,0 +1,50 @@
+---
+id: 01M2RQM76KT0RGV3W7NA7XXT00
+title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
+status: backlog
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Eine Kritik- oder Review-Lane beurteilt den ganzen Branch, oder sie erfaehrt im Payload, dass sie es nicht tut - statt einen Bruchteil zu unterschreiben, ohne es zu merken"
+context: |-
+  Gefunden von der review-Lane auf GTQHNH am 2026-09-17, nachdem sie selbst darauf hereingefallen war.
+
+  Was passiert: internal/cli/flow.go:589 nimmt 'shas := t.Commits' und leitet die Commit-Liste NUR dann aus git ab, wenn das Feld leer ist. Steht im Ticket-Frontmatter ein 'commits:' mit drei SHAs, waehrend auf dem Branch einundzwanzig liegen, dann zeigt 'jaira show <id> --for-lane review --json' den Diff dieser drei - und meldet complete:true. Nichts im Payload sagt, dass achtzehn Commits fehlen.
+
+  Nachgemessen an drei Tickets desselben Tages: GTQHNH fuehrte 3 SHAs bei 21 auf dem Branch, D8CSAA 1 bei 4, 8XHZT5 hatte das Feld leer und bekam deshalb den ganzen Branch. Die review-Lane von GTQHNH hat den Ausschnitt bemerkt und stattdessen 'git diff origin/HEAD...HEAD' geurteilt; die von D8CSAA hat es nicht bemerkt.
+
+  Warum das gefaehrlich und nicht bloss unpraktisch ist: der Ausfall ist still und sieht aus wie Erfolg. complete:true heisst fuer jeden Leser 'du hast alles'. Eine Review, die einen Bruchteil sieht, findet nichts und unterschreibt - und das ist genau der Fall, gegen den die Review-Lane ueberhaupt existiert.
+
+  Wie 'commits:' teilweise gefuellt wird, ist noch nicht untersucht - vermutlich stempelt ein 'jaira move' den Stand von damals hinein, und spaetere Commits kommen nicht mehr dazu. Das gehoert zur Untersuchung.
+
+  Im Prompt ist das seit f6e8dba (GTQHNH) nur BESCHRIEBEN: jaira-role-lane/SKILL.md sagt der Lane, die den Diff beurteilt, sie solle 'jaira show <id> --json | jq .commits | length' gegen 'git log origin/HEAD..HEAD --oneline | wc -l' zaehlen. Eine Handanweisung ist kein Ersatz dafuer, dass das Werkzeug die Wahrheit sagt.
+definition-of-done: "Der Payload einer Lane, die einen Diff beurteilt, zeigt den ganzen Branch - oder er sagt, dass er es nicht tut: entweder leitet showForLane die Liste immer aus git ab, oder complete ist false und 'missing' nennt die Zahl der nicht enthaltenen Commits. Ein Leser kann nicht mehr einen Ausschnitt fuer das Ganze halten."
+tags:
+  - cli
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-09-17T22:26:05Z
+updated-at: 2026-09-17T22:26:05Z
+---
+
+# Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
+
+## Definition of Done
+
+- [ ] Der Payload einer Lane, die einen Diff beurteilt, zeigt den ganzen Branch - oder er sagt, dass er es nicht tut: entweder leitet showForLane die Liste immer aus git ab, oder complete ist false und 'missing' nennt die Zahl der nicht enthaltenen Commits. Ein Leser kann nicht mehr einen Ausschnitt fuer das Ganze halten.
+- [ ] Nachgestellt an dem Fall, der es gezeigt hat: ein Ticket mit drei SHAs in 'commits:' und einundzwanzig Commits auf dem Branch. Mit Test.
+- [ ] Untersucht und auf dem Ticket festgehalten, WIE 'commits:' teilweise gefuellt wird - welcher Schreibpfad den Stand einfriert und warum er spaetere Commits nicht nachtraegt. Ohne diese Antwort ist jede Reparatur geraten.
+- [ ] Eine Zeile in core/release/NOTES.md, wenn sich aendert, was ein Benutzer im Payload sieht.
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+
