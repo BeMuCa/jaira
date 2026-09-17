@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:11:55Z
+updated-at: 2026-09-17T15:14:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -51,6 +51,7 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
   proof: grep ueber '## Unreleased': 'jaira milestone' 4x, '`M`' 2x, '--milestone' 1x, '--no-worktree' 1x, 'dispatch' 5x, 'jaira restore' 1x, 'refs/jaira/milestones' 1x, 'jaira fetch' 2x
 - [x] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
   proof: core/release/NOTES.md:16-18 — '## Unreleased' ist leer und neu, '## 0.3.0' traegt die 9 Zeilen; TestParseNotesKeepsAnEmptyLeadingSection deckt die leere Kopfsektion
+- [ ] Wer 'jaira update' auf einem Board mit Stempel 0.3.0 laufen laesst, liest 'Nothing has changed since the version that last set this board up.' - und nicht die leere Ueberschrift 'Unreleased' ohne einen einzigen Punkt darunter. Dasselbe fuer --json: notes ist leer statt eines Eintrags mit changes: null.
 
 ## Options
 
