@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:04:40Z
+updated-at: 2026-09-17T17:04:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -76,7 +76,7 @@ review-summary: |-
 - [x] critique gap 1: insertText(text) in model.go holds the mode->buffer switch once; key()'s three default branches, editKey()'s tail and paste() all call it
 - [x] critique gap 2: fold newlines in one pass (Split/drop empty/Join) instead of the repeated Contains loop
 - [x] critique gap 3: drop the s != "" guards in modeCreate/modeDelete; one empty-check at the top of insertText
-- [ ] run the tui tests, unchanged, to show typed and pasted text both still land
+- [x] run the tui tests, unchanged, to show typed and pasted text both still land
 
 ## Progress
 - **2026-09-17 15:57 · Alexander Sacharov** — Entscheidung zu DoD 4, vom Dispatcher getroffen nachdem Alex sie ihm ueberlassen hat: mehrzeiliger eingefuegter Text wird zu Leerzeichen gefaltet, nicht verworfen. Grund: wer eine Zeile aus einem Terminal oder einer Datei kopiert, nimmt den abschliessenden Umbruch versehentlich mit - verwerfen wuerde dann den ganzen Text schlucken und wie der Fehler aussehen, den dieses Ticket behebt. Aufeinanderfolgende Umbrueche werden zu einem Leerzeichen, fuehrende und abschliessende fallen weg.
