@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:38:48Z
+updated-at: 2026-09-17T18:38:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -49,6 +49,7 @@ review-summary: |-
   core/role/builtin/jaira-role-lane/SKILL.md:13 und :22 — 'jaira claim' und 'jaira dod' fehlen in der Verbotsliste von Punkt 1 ('no jaira note, no jaira set, no jaira move, no review-summary, no commit line'), obwohl derselbe Prompt beide ausdruecklich anordnet. Schlimmer: 'jaira claim' steht in Zeile 13, VOR dem 'show --for-lane --json', aus dem der Modus und der status ueberhaupt erst gelesen werden — die mitlaufende Kritik hat also schon auf das Ticket geschrieben, bevor sie wissen kann, dass sie nichts schreiben darf. Den Lesebefehl vor 'jaira claim' ziehen (oder claim an die Bedingung haengen) und beide Kommandos in die Verbotsliste aufnehmen.
   core/role/builtin/jaira-dispatcher/scripts/spawn.sh:14 — der usage-Text zu --no-worktree sagt weiterhin 'Two workers then share one directory, so run only one at a time'. jaira-dispatcher/SKILL.md:215-220 nennt die mitlaufende Kritik jetzt als die eine Ausnahme; ein Dispatcher, der 'spawn.sh --help' liest, bekommt die alte Regel. Denselben Halbsatz dort nachziehen: lesende Worker sind die Ausnahme.
   core/role/builtin/jaira-role-lane/SKILL.md:9-18 — the head names 'jaira show <ticket-id> --for-lane <lane> --json' as 'the call that tells you which of them you are'. That JSON has no status key (complete, diff, input, lane, missing, model_tier, produces, prompt, ticket_id), so it cannot tell anyone; the deciding read is the separate 'jaira show <id> --json' in section 1, three screens further down, after the 'jaira claim' bullet at :26. A worker reading this file in order claims the ticket before it reaches the read that decides — the exact write cf7d37c moved behind the read. Name the status read in the head as well, or end the head paragraph with: mode=conversational means go to section 1 and decide there BEFORE you claim.
+  core/role/builtin/jaira-dispatcher/SKILL.md:113-115 — the read-only list there was extended in cf7d37c with 'does not claim the ticket' but still omits 'jaira dod', which jaira-role-lane/SKILL.md:74-77 names and which writes the very field the implementing worker is ticking. Close it the way role-lane closes its list: end the enumeration with a sentence ('and nothing else its prompt tells a worker to write') instead of a list that the next new write command falls out of.
 review-gaps: |-
   Drei Befunde, der erste ist ein echter Defekt.
 
