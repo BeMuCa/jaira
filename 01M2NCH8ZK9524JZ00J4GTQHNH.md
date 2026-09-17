@@ -37,10 +37,10 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:29:06Z
+updated-at: 2026-09-17T19:29:19Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-75151
-claimed-at: 2026-09-17T18:50:16Z
+claimed-by: DESKTOP-RFTCH11-16211
+claimed-at: 2026-09-17T19:29:19Z
 outcome-what: "Im Kopf von core/role/builtin/jaira-role-lane/SKILL.md stehen jetzt zwei Lesebefehle in fester Reihenfolge — 'jaira show <id> --json' (das einzige JSON mit 'status') und danach 'show --for-lane --json' —, beide vor dem 'jaira claim'-Punkt; Abschnitt 1 wiederholt den Befehl nicht mehr, sondern verweist auf diese Lesung zurueck. Die Verbotsliste der mitlaufenden Kritik in core/role/builtin/jaira-dispatcher/SKILL.md nennt dieselben sechs Schreibwege wie role-lane, 'jaira dod' eingeschlossen, und schliesst mit einem Satz statt einer Aufzaehlung."
 outcome-why: "critique 11: der Kopf behauptete, 'show --for-lane --json' sage einem Worker, ob er die implementierende Lane oder die mitlaufende Kritik ist. Dieses JSON fuehrt kein 'status' und kann es nicht sagen; der entscheidende Befehl stand erst hinter 'jaira claim', womit die Reparatur aus Runde 10 am Kopf wirkungslos war. Und die Dispatcher-Seite der Verbotsliste hatte 'jaira dod' nie genannt, obwohl es auf dasselbe Feld schreibt, an dem der implementierende Worker daneben arbeitet."
 outcome-resolves: "Genau eine Stelle schreibt review-summary und bewegt das Ticket (DoD 9): die Unterscheidung zwischen implementierendem Worker und mitlaufender Kritik wird jetzt aus einem Befehl gelesen, der die Information wirklich fuehrt, und vor jedem Schreibvorgang. Das Verbot ist auf beiden Seiten gleich formuliert."
