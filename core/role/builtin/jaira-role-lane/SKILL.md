@@ -33,6 +33,21 @@ something to read and not an order: the critique lane's own prompt tells you to
 writes the section below takes away from you. Read it for what the lane is
 meant to judge, and leave its outputs to the dispatcher that started you.
 
+Does your lane judge that payload's diff? The ordinary `critique`, `testing`
+and `review` lanes do — then count it before you trust it. `showForLane`
+in `internal/cli/flow.go` takes the SHAs off the ticket's own `commits:` field
+and asks git for them only when that field is empty, so on a ticket whose
+`commits:` was recorded once and never brought up to date the payload is the
+diff of exactly those few commits and nothing in it says the branch has more:
+
+```bash
+jaira show <id> --json | jq '.commits | length'
+git log origin/HEAD..HEAD --oneline | wc -l
+```
+
+Disagree? Then the whole change is `git diff origin/HEAD...HEAD` and the payload
+is a slice of it — judge the former and say in your report that you did.
+
 Are you the lane that writes? Then take the ticket and finish the step
 yourself. The critique running beside the work does none of the following — it
 reads, and reports what it finds to the dispatcher that started it:
@@ -122,11 +137,13 @@ already finished.
 And it is not even all of those rounds. `showForLane` in
 `internal/cli/flow.go` takes the SHAs off the ticket's own `commits:` field and
 asks git for them only when that field is empty — so on a ticket whose
-`commits:` was recorded once and never brought up to date, the payload is the
-diff of exactly those few commits and nothing in it says the branch has more.
-You notice it by counting: `jaira show <id> --json | jq '.commits | length'`
-against `git log master..HEAD --oneline | wc -l`. When they disagree, the whole
-change is `git diff master...HEAD`, and the payload is a slice of it.
+`commits:` was recorded once and never brought up to date, the payload is a
+slice of those commits and not a full diff, and nothing in it says the branch
+has more. You do not need to measure that slice: the branch's committed history
+is the earlier rounds whether the payload shows all of it or some of it, and
+reading more of it is reading more of what you must not judge. The count that
+measures it stands at the top of this file, for the lane that does judge the
+payload's diff.
 
 So in both cases: do not wait for the payload to fill, do not report that you
 had nothing to read, and do not judge the diff it gave you.
