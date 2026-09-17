@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:29:20Z
+updated-at: 2026-09-17T20:29:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93859
 claimed-at: 2026-09-17T20:03:50Z
-outcome-what: "review gelaufen: review-summary, review-gaps, review-verdict und review-check geschrieben, drei Befunde in einer Progress-Notiz festgehalten"
-outcome-why: "die Go-Seite ist belegt und gruen, die Prompt-Seite traegt zwei ihrer eigenen Versprechen noch nicht; das entscheidet ein Mensch, nicht das Review"
-outcome-resolves: "keinen DoD-Punkt — das Review beurteilt sie, es tickt sie nicht"
+outcome-what: "Die mitlaufende Kritik liest jetzt den nicht committeten Arbeitsbaum (git status --short, git diff, git diff --cached) statt der Commit-Liste, und die Pause nach einem DoD-Punkt schliesst '.jaira/tickets/' aus dem Pathspec aus. Dazu grenzt der Dispatcher-Prompt die Begruendung 'der Diff war nie das Limit' auf die critique-LANE ein, und zwei Zeilen stehen unter ## Unreleased in core/release/NOTES.md."
+outcome-why: "review hat zwei leise Defekte gefunden: die mitlaufende Kritik startet, bevor es Commits gibt, bekam von 'show --for-lane critique --json' complete:false mit fehlendem Diff und haette 'nichts gefunden' gemeldet; und ab dem ersten 'jaira dod' steht die Ticket-Datei dauerhaft in 'git status --short', also war 'Both empty? No pause' unerreichbar und vorgelegt wurde der Ticket-Diff statt des Codes."
+outcome-resolves: "DoD 14 und 15; alle 15 DoD-Punkte sind jetzt abgehakt."
 review-summary: "Der Modus ist ein Frontmatter-Feld mit geschlossenem Wertebereich plus die Prosa, die Agenten sagt, was er bedeutet. Go-Seite: core/ticket/schema.go bringt FieldMode, Ticket.Mode, die Zuweisung in Decode, einen Platz in canonicalOrder und CanonicalMode() — eine Funktion, die trimmt UND urteilt, hinter der beide Schreibpfade liegen (internal/cli/tickets.go newSetCmd, internal/tui/edit.go commitEdit), damit CLI und TUI nicht auseinanderlaufen. Gelesen wird der Modus an fuenf Stellen: 'show --json' (ticketJSON), 'show --for-lane --json' als eigener Schluessel neben model_tier, die Kopfzeile von 'show --for-lane' ohne --json, die 'mode'-Zeile in printDetail und im TUI-Detail, und 'jaira resume' (JSON-Item plus Klartextzeile) — letzteres ist das, was den Sitzungsabbruch traegt, weil ein neuer Dispatcher mit genau diesem Befehl wieder anfaengt. core/validate/validate.go faengt mit CodeBadMode (Warning) ab, was an beiden Schreibpfaden vorbeikommt, und vergleicht die kanonische Form, nicht nur das Urteil, damit ' conversational ' nicht als gueltig durchgeht. Prompt-Seite: jaira-dispatcher/SKILL.md zaehlt vor der Plan-Lane die offenen Entscheidungen auf, haelt bei mindestens einer an, schreibt die Antwort mit 'jaira note' und setzt dann mode=conversational; ausserdem ein neuer Abschnitt 'mitlaufende Kritik' — ein zweiter, nur lesender Worker parallel zum implementierenden, genau ein Schreiber von review-summary und genau ein 'jaira move', beide beim Dispatcher. jaira-role-lane/SKILL.md liest zuerst 'show <id> --json' (wegen status), erst danach 'jaira claim', unterscheidet den mitlaufenden Kritiker am Vergleich lane-Argument != status, legt im Modus nach jedem DoD-Punkt 'git status --short' plus 'git diff' vor und gibt statt eines Commits eine fertige Commit-Zeile mit Handle zurueck — und keine, wenn die Lane keinen Code geaendert hat. Dazu .jaira/lanes/critique.md mit 'notes' in input-requires, spawn.sh --help mit der Lesen-Ausnahme fuer --no-worktree, README.md/docs/AGENTS.md, sieben NOTES.md-Zeilen unter ## Unreleased und core/board/announce.go, damit der Block, den 'jaira update' auf ein fremdes Board schreibt, den Schluessel ueberhaupt nennt."
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
