@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:00:34Z
+updated-at: 2026-09-17T22:00:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -60,13 +60,15 @@ review-gaps: |-
 test-verdict: "pass: Suite gruen (build/vet ohne Ausgabe, go test ./... -count=1 RC=0 ueber 29 Pakete), alle 16 DoD-Punkte im Arbeitsbaum nachgeprueft statt aus dem Outcome gelesen, und der Modus am gebauten Binary selbst gefahren - schreiben, ablehnen, fuenf Lesestellen, Platte, loeschen; die Pathspec-Pausen nachgestellt. Nicht pruefbar bleibt, dass Prompt-Prosa das beschriebene Verhalten erzeugt: Prompts fuehrt kein Test aus, und der einzige Beleg waere ein echter Lauf - die offene Frage des Tickets."
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
 review-verdict: |-
-  Die Go-Seite wuerde ich so nehmen: ein Feld, ein geschlossener Wertebereich, eine Funktion hinter beiden Schreibpfaden, fuenf Lesestellen einschliesslich 'jaira resume', validate als Netz fuer alles, was daran vorbeikommt, und Tests, die jede dieser Stellen anfassen. Build, vet und die Suite sind gruen; ich habe sie selbst laufen lassen.
+  Ich bin nicht fuer Annahme, wegen Befund 1 - und das ist eine Aenderung von wenigen Zeilen, kein Umbau.
 
-  Die Prompt-Seite traegt noch nicht, und darum bin ich hier nicht fuer Annahme. Die zwei Verhaltensweisen, die der Modus ueberhaupt verspricht, gehen laut Code anders aus als der Prompt sagt: die mitlaufende Kritik bekommt eine Nutzlast mit complete:false und ohne Diff, weil zur Laufzeit noch nichts committet ist (Befund 1), und die Pause haelt nach dem ersten 'jaira dod' bei jedem Punkt an, weil die Ticket-Datei selbst dauerhaft im 'git status --short' steht (Befund 2). Beides sind Aenderungen von wenigen Zeilen in jaira-role-lane/SKILL.md und jaira-dispatcher/SKILL.md, keine Umbauten — und keins von beiden faellt in einem Test auf, weil Prompt-Prosa nichts ausfuehrt.
+  Die Go-Seite wuerde ich so nehmen. Ein Feld, ein geschlossener Wertebereich, eine Funktion hinter beiden Schreibpfaden, fuenf Lesestellen einschliesslich 'jaira resume', validate als Netz fuer alles, was daran vorbeikommt, und Tests, die jede dieser Stellen anfassen. Build, vet und die Suite habe ich selbst laufen lassen, alles gruen. Am Schema, an der CLI und am TUI habe ich nichts gefunden.
 
-  Dazu kommt, was das Ticket selbst als Frage stellt: der Modus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen. Befund 1 und 2 sind genau das, was ein einziger echter Lauf sofort gezeigt haette. Meine Empfehlung an den Menschen: entweder die drei Befunde in einer Runde in-progress erledigen und dann annehmen, oder den Modus einmal selbst an einem Ticket fahren — dann zeigen sich 1 und 2 von allein, und was danach steht, ist entschieden statt geraten.
+  Die Prompt-Seite traegt an einer Stelle nicht. Der Unterscheider, der entscheidet, ob ein Worker schreiben darf, ist unbedingt formuliert, und seine einzige Absicherung ist eine Annahme, die nirgends steht: dass der status beim Start des Workers schon die Lane ist. Der Dispatcher-Loop erfuellt sie nicht - er startet in Schritt 2 und bewegt in Schritt 5 -, und die erste Lane nach dem Einschalten des Modus ist genau der Fall, in dem sie bricht. Das faellt in keinem Test auf, weil Prompt-Prosa nichts ausfuehrt, und es faellt im Betrieb still aus: die Lane arbeitet einfach nicht.
 
-  Unsicher bin ich bei Befund 3: er trifft nur den direkten Aufruf durch einen Menschen, und ob das ein Weg ist, den Alex tatsaechlich geht, weiss er besser als ich.
+  Unsicher bin ich bei Befund 2. Dass der Payload-Diff auf 'commits:' haengt statt auf der Ableitung, ist vorbestehendes Verhalten und gehoert nicht diesem Ticket - aber es hat mir gerade die Grundlage dieses Reviews weggenommen, und der neue Prompt-Satz behauptet das Gegenteil. Ob das hier mitrepariert wird oder eigens, ist deine Entscheidung.
+
+  Empfehlung: Befund 1 in einer Runde in-progress erledigen, Befund 2 mindestens im Prompt-Satz richtigstellen, dann 'jaira roles install --global --force' und den Modus einmal an einem echten Ticket fahren. Befund 1 haette ein einziger echter Lauf sofort gezeigt.
 review-check: |-
   Alles aus /home/alex/projects/.worktrees/jaira-GTQHNH, Branch feat/GTQHNH.
 
