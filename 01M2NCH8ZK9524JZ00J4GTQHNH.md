@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:32:27Z
+updated-at: 2026-09-17T19:32:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
-outcome-what: "Im Kopf von core/role/builtin/jaira-role-lane/SKILL.md stehen jetzt zwei Lesebefehle in fester Reihenfolge — 'jaira show <id> --json' (das einzige JSON mit 'status') und danach 'show --for-lane --json' —, beide vor dem 'jaira claim'-Punkt; Abschnitt 1 wiederholt den Befehl nicht mehr, sondern verweist auf diese Lesung zurueck. Die Verbotsliste der mitlaufenden Kritik in core/role/builtin/jaira-dispatcher/SKILL.md nennt dieselben sechs Schreibwege wie role-lane, 'jaira dod' eingeschlossen, und schliesst mit einem Satz statt einer Aufzaehlung."
-outcome-why: "critique 11: der Kopf behauptete, 'show --for-lane --json' sage einem Worker, ob er die implementierende Lane oder die mitlaufende Kritik ist. Dieses JSON fuehrt kein 'status' und kann es nicht sagen; der entscheidende Befehl stand erst hinter 'jaira claim', womit die Reparatur aus Runde 10 am Kopf wirkungslos war. Und die Dispatcher-Seite der Verbotsliste hatte 'jaira dod' nie genannt, obwohl es auf dasselbe Feld schreibt, an dem der implementierende Worker daneben arbeitet."
-outcome-resolves: "Genau eine Stelle schreibt review-summary und bewegt das Ticket (DoD 9): die Unterscheidung zwischen implementierendem Worker und mitlaufender Kritik wird jetzt aus einem Befehl gelesen, der die Information wirklich fuehrt, und vor jedem Schreibvorgang. Das Verbot ist auf beiden Seiten gleich formuliert."
+outcome-what: "core/role/builtin/jaira-role-lane/SKILL.md:30-38 — der Satz, der die Handlungsliste eroeffnet, traegt jetzt die Bedingung fuer die ganze Liste ('Are you the lane that writes? ... The critique running beside the work does none of the following'), und der claim-Punkt nennt zusaetzlich den Grund, warum gerade er nicht laufen darf. core/role/builtin/jaira-dispatcher/SKILL.md:120-129 — die 106 Zeichen lange Zeile aus d4244be umgebrochen, laengste Zeile des Absatzes jetzt 78 wie bei den Nachbarn. Kein Go-Code, keine neue NOTES.md-Zeile."
+outcome-why: "critique 12: der Kopf konnte einen Worker seit Runde 11 zur nichts-schreibenden mitlaufenden Kritik erklaeren, aber zwei Zeilen spaeter stand 'Then take the ticket and finish the step yourself' und als erster Punkt ein unbedingtes 'jaira claim'. Wer die Datei der Reihe nach las, hatte die Information und claimte trotzdem — das Verbot stand erst drei Bildschirme weiter unten. Der zweite Befund war kosmetisch: eine beim Einfuegen ans Zeilenende geklebte Zeile."
+outcome-resolves: "DoD 9 (genau eine Stelle schreibt review-summary und bewegt das Ticket): das Verbot greift jetzt an der Stelle, an der es gelesen wird, und deckt alle fuenf Schreibpunkte der Liste ab statt nur den claim. go test ./... -count=1 gruen."
 review-summary: |-
   core/role/builtin/jaira-role-lane/SKILL.md:30-34 — der Kopf entscheidet jetzt richtig, aber die Entscheidung greift zwei Zeilen spaeter ins Leere. Direkt nach dem Absatz, der einem Worker sagen kann 'du bist die mitlaufende Kritik, die nichts schreibt', folgt woertlich 'Then take the ticket and finish the step yourself:' und als erster Punkt das unbedingte 'jaira claim <ticket-id> — before you work it'. Der Punkt traegt keine Bedingung; der Absatz, der ihn verbietet, steht drei Bildschirme weiter unten in Abschnitt 1. Ein Worker, der der Datei der Reihe nach folgt, hat die Information und claimt trotzdem. Reparatur: den claim-Punkt an die Lesung haengen, z.B. 'jaira claim <ticket-id> — es sei denn, die Lesung oben hat dich zur mitlaufenden Kritik gemacht (Abschnitt 1); die claimt nichts', und/oder 'Then take the ticket' zu 'Bist du die schreibende Lane, dann nimm das Ticket' machen.
   core/role/builtin/jaira-dispatcher/SKILL.md:120 — der Satz 'Its own prompt tells it so — `jaira-role-lane` has it read the ticket's' ist beim Einfuegen in d4244be an das Zeilenende geklebt worden: 106 Zeichen, waehrend jede andere Zeile der Datei bei ~78 umbricht. Kein Bedeutungsfehler, aber der Satzanfang verschwindet mitten in der Zeile. Umbrechen wie die Nachbarzeilen.
