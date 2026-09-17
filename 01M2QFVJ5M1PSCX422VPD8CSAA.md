@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:26:26Z
+updated-at: 2026-09-17T15:30:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -36,7 +36,7 @@ outcome-why: "Der Schnitt auf '## 0.3.0' hat eine leere '## Unreleased' angelegt
 outcome-resolves: "DoD 5: Board mit Stempel 0.3.0 und Binary 0.3.0 druckt 'Nothing has changed since the version that last set this board up.', --json traegt notes: []. DoD 6: der Filter sitzt in sinceEntries statt in parseNotes (core/release/release.go:68,84), TestSinceDropsEntriesWithoutChanges weist ihn nach, TestParseNotesKeepsAnEmptyLeadingSection bleibt gruen, und Stempel 0.2.1 liefert in Text und --json dieselbe Liste ['0.3.0']. DoD 1-4 unberuehrt - NOTES.md ist nicht angefasst."
 review-summary: "none"
 review-gaps: "Entfernt: withChanges in core/release/release.go - ein Vorwaerts-Wrapper mit genau einem Aufrufer; der Filter ist jetzt die Schleife in sinceEntries (2 Funktionen statt 3, selectSince bleibt wegen seiner drei Rueckgabepfade). Doppelung: keine - kein anderer Ort filtert Entries ohne Changes (grep '.Changes' trifft nur parseNotes, den Filter, update.go:115/129 und release_test.go:96). Toter Code: keiner - Since/sinceEntries/selectSince und der neue Test haben alle Aufrufer; der Zweig len(notes)==0 in internal/cli/update.go:108 ist durch diese Aenderung wieder erreichbar statt tot. Stehen gelassen: der sechszeilige Warum-Kommentar ueber sinceEntries (steht nirgends sonst), release_test.go:96 (aelter als diese Aenderung). Kosten: nichts - Since laeuft einmal pro 'jaira update' ueber acht Entries. go build/vet sauber, go test -race -count=1 ./... gruen."
-test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete); DoD 1-3 am Baum nachgeprueft - '## Unreleased' traegt 9 Zeilen, alle beginnen mit '- ', keine umgebrochen, kein vom Benutzer getipptes Kommando beim Falten verloren; 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 liest genau diese 9 Zeilen vor. DoD 4 offen und beim Menschen."
+test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete, 0 Fehler); DoD 1-3 am Baum nachgeprueft (9 '- '-Zeilen unter '## 0.3.0', keine umgebrochen, alle sechs geforderten Kommandos/Tasten weiter im Text); DoD 4 erfuellt (leere '## Unreleased' oben, kein v0.3.0-Tag gesetzt); DoD 5/6 am gebauten Binary -X main.version=0.3.0 gegen ein Scratch-Board mit eigenem JAIRA_HOME nachgesehen: Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0']; ungestempelt -> 8 Versionen, 'Unreleased' kommt in keiner der drei Ausgaben vor. TestSinceDropsEntriesWithoutChanges und TestParseNotesKeepsAnEmptyLeadingSection einzeln gruen."
 question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und GTQHNH aus signoff angenommen, so dass '## Unreleased' jetzt nach '## 0.3.0' umbenannt, eine frische leere '## Unreleased' darueber gesetzt und v0.3.0 getaggt werden darf? Der gefaltete Text ist fertig und geprueft - es fehlt nur diese Entscheidung und der Tag, den ein Agent nicht setzen darf."
 ---
 
