@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -39,13 +39,13 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:01:37Z
+updated-at: 2026-09-17T22:01:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
-outcome-what: "Ein toter switch-Zweig entfernt: 'case ticket.FieldMode' in internal/cli/flow.go fieldValue. Sonst nichts angefasst."
-outcome-why: "Er ist in beiden Aufrufern unerreichbar bzw. identisch zum default-Zweig - showForLane kann ihn nicht erreichen (core/lane/lane.go:929-980 weist eine Lane mit input-requires 'mode' beim Laden ab), und mergedriver.go:260 bekommt vom default exakt denselben Wert."
-outcome-resolves: "Den Dead-Code-Durchgang dieser Lane; Dopplung, Fluff und Kosten sind geprueft und in review-gaps mit Begruendung stehen gelassen."
+outcome-what: "Review gefahren: Diff gegen master...HEAD (21 Commits) statt gegen den Payload, alle 16 DoD-Punkte am Arbeitsbaum nachgeprueft, Build/vet/Suite selbst laufen lassen (gruen, 29 Pakete). review-summary, review-gaps, review-verdict und review-check geschrieben."
+outcome-why: "Die Go-Seite traegt; die Prompt-Seite hat einen stillen Ausfall, den kein Test findet - der Unterscheider der mitlaufenden Kritik macht aus einem normalen Worker einen stummen Leser, sobald das Ticket beim Start noch in einer Durchlauf-Lane steht. Das ist genau der erste Worker nach dem Einschalten des Modus."
+outcome-resolves: "Die Review-Lane. Entscheidung liegt beim Menschen: Befund 1 in einer Runde in-progress erledigen oder den Modus einmal echt fahren."
 review-summary: "Der Gespraechsmodus ist ein Frontmatter-Feld plus Prompt-Prosa - kein Runner, kein Daemon. Go-Seite: 'mode' als geschlossener Wertebereich (leer oder 'conversational') in core/ticket/schema.go, eine Funktion CanonicalMode hinter beiden Schreibpfaden ('jaira set' in internal/cli/tickets.go, der TUI-Editor in internal/tui/edit.go), 'jaira validate' als Netz fuer alles, was an beiden vorbeikommt (core/validate/validate.go, CodeBadMode, auch gegen untrimmte Werte), und fuenf Lesestellen: 'show --json', 'show --for-lane --json' (eigener Schluessel neben model_tier, bewusst nicht ueber input-requires), die Kopfzeile von 'show --for-lane' im Klartext, die mode-Zeile in 'jaira show' und im TUI-Detail, und 'jaira resume' (JSON und Klartext) als Wiedereinstiegspunkt nach einem Sitzungsabbruch. Dazu core/board/announce.go, damit ein fremdes Board ueberhaupt erfaehrt, dass der Schluessel existiert. Prompt-Seite: jaira-dispatcher/SKILL.md bekommt einen Halt VOR der Plan-Lane (offene Entscheidungen namentlich aufzaehlen, bei >=1 den Menschen fragen, Antwort mit 'jaira note' aufs Ticket, dann 'jaira set mode=conversational'), einen Abschnitt zur mitlaufenden Kritik und --no-worktree als Regelfall in diesem Modus; jaira-role-lane/SKILL.md bekommt drei Verhaltensaenderungen: Vorlegen von 'git status --short' und 'git diff' (beide mit Pathspec ':/ :(exclude,top).jaira/tickets') nach jedem DoD-Punkt, kein eigener Commit sondern eine fertige Commit-Zeile mit Handle, und die Nur-Lese-Rolle der mitlaufenden Kritik. Nebenbei: 'notes' in .jaira/lanes/critique.md (board-lokal, nicht ausgeliefert), 'Testing is not a lane' gestrichen, spawn.sh --help nachgezogen. Build, vet und 'go test ./... -count=1' sind gruen, selbst gelaufen: 29 Pakete ok."
 review-gaps: |-
   Drei Befunde. Der erste ist der, an dem ich nicht annehmen wuerde.
