@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -39,13 +39,13 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:33:59Z
+updated-at: 2026-09-17T21:34:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
-outcome-what: "Die zwei Saetze aus critique 16 in core/role/builtin/jaira-role-lane/SKILL.md umgeschrieben: der Satz 'Follow it, produce exactly those outputs, and nothing beyond them' im Kopf traegt jetzt die Bedingung 'Are you the lane that writes?' und sagt der mitlaufenden Kritik ausdruecklich, dass der gelieferte Lane-Prompt fuer sie Lesestoff ist und kein Auftrag - ihr eigener critique-Prompt ordnet 'jaira set review-summary=' und 'jaira move' an. Und 'do not judge what it gave you' heisst jetzt 'do not judge the diff it gave you', mit einem Absatz daneben, der Ziel, Definition of Done und Notizen im selben Payload als aktuell und als Massstab benennt. Kein Go-Code, keine neue NOTES.md-Zeile."
-outcome-why: "Beide Saetze standen unbedingt und VOR der Bedingung, die sie einschraenkt: wer die Datei von oben liest, bekam den Schreibauftrag der critique-Lane, bevor Abschnitt 1 ihn der mitlaufenden Kritik nimmt - zwei Schreiber auf review-summary, genau der Fehler, den DoD 9 verbietet. Und 'what it gave you' warf auch die Notizen weg, die der critique-Prompt ausdruecklich ZUERST verlangt und aus denen hervorgeht, welche Befunde schon geschlossen sind - der Fehler, gegen den DoD 8 geschrieben ist."
-outcome-resolves: "DoD 8, 9 und 14 bleiben erfuellt und ihre proof-Zeilen zeigen auf die verschobenen Bereiche (SKILL.md:74-105, :104-129, :159-169). Plan 40-42 abgehakt. go build und go test ./... -count=1 gruen."
+outcome-what: "Alle vierzehn proof-Zeilen der Definition of Done tragen jetzt Abschnittsnamen und woertliche Satzanfaenge statt Zeilenbereiche; kein Quellcode angefasst."
+outcome-why: "Nach neun Runden Prompt-Aenderungen zeigten sieben proofs inhaltlich auf den falschen Abschnitt und sieben weitere nur noch zufaellig richtig. Ein proof, der auf die falsche Stelle zeigt, liest sich als geprueft und ist damit schlimmer als keiner."
+outcome-resolves: "critique 17: die sechs benannten proof-Zeilen (DoD 2, 4, 5, 11, 12, 13) plus DoD 6, das vom selben Defekt betroffen war; die uebrigen mitgezogen, damit der Befund nicht in der naechsten Runde wiederkommt."
 review-summary: |-
   .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-*.md — DoD 'In diesem Modus committet der Agent nicht selbst': proof nennt core/role/builtin/jaira-role-lane/SKILL.md:107-128. Dort steht nach c61df66 'Read the worktree, not the ticket's diff'. Die Commit-Zeile statt 'git commit' steht bei :195-225. Proof auf :195-225 umschreiben.
   .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-*.md — DoD 'Der Mensch sieht den Code, bevor darauf aufgebaut wird': proof nennt jaira-role-lane/SKILL.md:139-178. Abschnitt 2 ('Show the code after every definition-of-done item') steht bei :154-193; :139-153 ist die Pathspec-Prosa von Abschnitt 1. Proof auf :154-193 umschreiben.
