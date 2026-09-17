@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:23:53Z
+updated-at: 2026-09-17T22:25:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59029
 claimed-at: 2026-09-17T22:14:55Z
@@ -776,3 +776,9 @@ Befund 2: die Zaehlprobe ist nicht geloescht, sondern umgezogen - in den KOPF vo
 Nicht angefasst: jaira-dispatcher/SKILL.md:117-120 - rein beschreibend, nennt keinen Branch-Namen und keinen Lesebefehl.
 
 go build, go vet und 'go test ./... -count=1' gruen (29 Pakete ok).
+- **2026-09-17 22:25 · Alexander Sacharov** — Alex am 2026-09-18: Schluss mit den Runden, der Stand geht in den Release. Die critique-Runde 21 wurde mitten im Lauf abgebrochen - was sie gefunden haette, steht nirgends und ist nicht verloren gegangen, sondern nie entstanden. Das Ticket steht auf 'critique' und hat 17 DoD-Punkte abgehakt; die letzte gelaufene Pruefkette ist critique 20 (zwei Befunde, beide in f6e8dba behoben).
+
+Offen geblieben und bewusst nicht gemacht:
+- Der Modus ist nach wie vor nie an einem echten Ticket mit mitlaufender Kritik gefahren worden. Die Belege fuer DoD 7-10 und 14-17 sind Tests und Code-Lesung, kein Lauf. Die review-Lane hat genau das zweimal als ihren Hauptvorbehalt genannt.
+- Befund 3 aus critique 12 (der Unterscheider bei direktem Aufruf durch einen Menschen auf einer Lane, in der das Ticket nicht steht) bleibt unrepariert; die review-Lane war sich dort selbst unsicher, ob jemand diesen Weg geht.
+- Der Defekt in internal/cli/flow.go:589 - showForLane nimmt die SHAs aus 'commits:' und fragt git nur bei leerem Feld, also bekommt eine Kritik- oder Review-Lane auf einem Ticket mit gefuelltem Feld einen Ausschnitt statt des Branch-Diffs, mit complete:true und ohne Hinweis. Er ist aelter als dieses Ticket, hier nur im Prompt richtiggestellt und bekommt ein eigenes Ticket.
