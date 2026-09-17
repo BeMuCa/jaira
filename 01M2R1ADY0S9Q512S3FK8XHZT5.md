@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:10:28Z
+updated-at: 2026-09-17T17:10:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -105,3 +105,10 @@ Faltung jetzt in einem Durchlauf: Split auf \n, leere Teile weg, mit Leerzeichen
 
 Keine Testaenderung noetig und bewusst keine gemacht: die 160 Zeilen paste_test.go pruefen Verhalten, nicht Struktur. Dass sie nach dem Umbau unveraendert gruen sind, ist der Nachweis, dass der Umbau nichts verschoben hat. go test ./... komplett gruen.
 - **2026-09-17 17:07 · Alexander Sacharov** — critique (2. Durchlauf): Die drei Punkte des ersten Durchlaufs sind sauber abgearbeitet - insertText ist der eine Weg in die Puffer (model.go:914), key()s drei default-Zweige und edit.go:136 rufen dieselbe Funktion, foldToOneLine faltet in einem Durchlauf. Geprueft und nicht beanstandet: Model.paste ist zwar ein Einzeiler mit einem Aufrufer, spiegelt aber genau m.key(msg) im selben switch - das ist das vorhandene Muster, kein neues. Die Leerpruefung in modeFilter steht dort zu Recht: ohne sie laeuft rebuild() ueber die ganze Tafel fuer einen Einfuegevorgang, der nichts aendert. Offen bleibt genau ein Punkt: in insertText gibt es zwei Definitionen von 'Zeilenumbruch'. modeEdit (model.go:922) kennt nur \r\n, foldToOneLine (paste.go:40) kennt \r\n und \r. Terminals schicken in einer Klammer-Einfuegung durchaus einzelne CR; die landen dann roh im Editorpuffer und damit in der Ticketdatei. paste_test.go deckt den Fall nicht ab - TestPasteKeepsLinesInTheFieldEditor testet nur \r\n. Fix: einmal oben in insertText normalisieren, dann haengt modeEdit nur noch an und foldToOneLine kommt ohne seine ReplaceAll-Zeilen aus.
+- **2026-09-17 17:10 · Alexander Sacharov** — Zweiter Critique-Punkt eingearbeitet: "Zeilenumbruch" ist jetzt einmal definiert. insertText (model.go:921-927) normalisiert \r\n und einzelnes \r zu \n, bevor irgendein Puffer den Text sieht; modeEdit haengt danach nur noch an, und foldToOneLine kommt ohne seine beiden ReplaceAll-Zeilen aus.
+
+Warum oben und nicht in jedem Zweig: die beiden Definitionen sind genau so auseinandergelaufen - modeEdit kannte nur \r\n, foldToOneLine auch das einzelne \r. Ein Zweig mehr haette denselben Fehler wieder eingebaut.
+
+Nachweis, dass es vorher wirklich kaputt war: TestPasteNormalisesALoneCarriageReturnInTheFieldEditor faellt mit dem alten ReplaceAll(text, "\r\n", "\n") im modeEdit-Zweig um - das einzelne \r landete roh im editBuf und damit in der Ticketdatei.
+
+Keine NOTES.md-Zeile dafuer: die vorhandene Zeile unter ## Unreleased beschreibt das Einfuegen als Ganzes, und diese Runde aendert nichts, was ein Benutzer ausserhalb davon bemerken koennte.
