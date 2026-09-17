@@ -38,7 +38,7 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:59:02Z
+updated-at: 2026-09-17T21:02:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -174,6 +174,8 @@ review-check: |-
 - [x] critique 14: die proof-Zeilen von DoD 5 und DoD 10 auf die Bereiche nach 113628e umschreiben
 - [x] critique 15: die drei Stellen zur mitlaufenden Kritik machen die Worktree-Anweisung unbedingt — jaira-role-lane/SKILL.md, jaira-dispatcher/SKILL.md, core/release/NOTES.md; ein nicht-leerer Payload-Diff zeigt die frueheren Runden
 - [x] go test ./... -count=1
+- [ ] critique 16: jaira-role-lane/SKILL.md:26-33 — 'Follow it, produce exactly those outputs' traegt die Bedingung; die mitlaufende Kritik liest den Lane-Prompt, statt ihn auszufuehren
+- [ ] critique 16: jaira-role-lane/SKILL.md:107-115 — nur der Diff ist stale; Ziel, DoD und Notizen im selben Payload bleiben der Massstab
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
