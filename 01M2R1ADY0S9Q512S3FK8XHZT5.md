@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:27:44Z
+updated-at: 2026-09-17T17:27:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -143,3 +143,8 @@ Geprueft und ohne Befund, damit es kein vierter Durchlauf nochmal aufmacht:
 Damit ist bestaetigt, was der 3. Critique-Durchlauf nur aus dem Quelltext geschlossen hatte: Bracketed Paste ist ohne Zusatzoption aktiv, die Behebung ist nicht tot.
 
 Ein Befund, ohne Ruecklauf, weil er keinen Code betrifft: die Proof-Zeilen von DoD 1 und DoD 5 zeigten noch auf 'internal/tui/paste.go:24 Model.paste' und 'paste.go:9-23', die der optimize-Durchgang entfernt hat. Zeigten also ins Leere. Beide hier auf die heutigen Stellen gesetzt (model.go:911/924 bzw. model.go:900-910). paste.go traegt nur noch foldToOneLine.
+- **2026-09-17 17:27 · Alexander Sacharov** — review: Diff gegen die Definition of Done geprueft, kein Defekt gefunden, nichts geht zurueck. Geprueft und ohne Befund, damit es niemand nochmal aufmacht: alle sechs DoD-Punkte sind im Baum belegt (nicht nur im proof-Feld nachgelesen), 'grep k.Text' ueber internal/tui findet genau die vier Stellen, die insertText rufen, go build/vet/test ./... gruen, und bubbletea v2.0.8 schaltet Bracketed Paste ohne Option ein (cursed_renderer.go:115), die Behebung ist also nicht tot.
+
+Ein Fund, bewusst NICHT behoben, weil er ausserhalb dieser Lane liegt: gefaltet werden nur Zeilenumbrueche. Ein Tabulator laeuft roh durch insertText - mit einem Wegwerftest nachgemessen, input='a\tb' steht als '/a\tb' in der gerenderten Filterzeile, die Breitenrechnung zaehlt 5 Zeichen und das Terminal springt zum naechsten Tabstopp, der Rahmen verrutscht bis zum Backspace. In modeCreate landet derselbe Tabulator im Tickettitel. Eine Zeile in foldToOneLine (Steuerzeichen zu Leerzeichen) waere die Behebung. Wer das aufgreift: es ist kein Regress dieses Tickets, getippt kam ein Tabulator vorher auch nicht in das Feld - es ist neu moeglich, weil Einfuegen jetzt ueberhaupt ankommt.
+
+Was ich NICHT selbst verifiziert habe und was deshalb beim Abnehmen zaehlt: die Tests speisen tea.PasteMsg direkt ein und ueberspringen den Decoder. Dass ein echtes Terminal dieses Ereignis schickt, haengt an der pty-Gegenprobe der Testing-Lane.
