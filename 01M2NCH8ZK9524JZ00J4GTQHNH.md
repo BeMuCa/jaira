@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:13:16Z
+updated-at: 2026-09-17T22:13:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -755,3 +755,4 @@ Befund 2 (DoD 17). Was hier NICHT repariert wurde: der Defekt selbst. showForLan
 Zeilenlaengen: die Einfuegung in dispatcher Punkt 2 hat zwei Nachbarzeilen ueber 85 Zeichen geschoben, beide neu umbrochen. Ueber 85 bleibt nur Frontmatter und dispatcher:233 (vormals 230, aelter als dieses Ticket).
 
 go build, go vet und 'go test ./... -count=1' gruen.
+- **2026-09-17 22:13 · Alexander Sacharov** — Befund 2 aus review 1 liegt als eigenes Ticket auf dem Board: Z4G3RD, 'Der Lane-Payload zeigt den Diff des Tickets und nicht den des Branches'. Es traegt die Zaehlprobe aus diesem Ticket als DoD-Punkt zum Wieder-Entfernen, damit das Pflaster nicht neben der Reparatur stehen bleibt.
