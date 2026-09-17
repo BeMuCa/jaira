@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:29:16Z
+updated-at: 2026-09-17T21:29:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -122,7 +122,7 @@ review-check: |-
 - [x] Die mitlaufende Kritik liest den nicht committeten Arbeitsbaum, nicht die Commit-Liste: jaira-role-lane/SKILL.md sagt dem Worker, der sich als mitlaufende Kritik erkannt hat, dass 'jaira show --for-lane --json' zur Laufzeit mit complete:false und fehlendem Diff kommt, weil es noch keine Commits gibt (internal/cli/flow.go:590-595), und dass er stattdessen 'git diff', 'git diff --cached' und 'git status --short' liest. Die Begruendung im Dispatcher-Prompt, der Diff sei nie das Limit gewesen, wird auf die Kritik-LANE eingegrenzt - fuer die mitlaufende gilt sie nicht.
   proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '1. Are you the critique that runs beside the work?', Absatz 'Read the worktree, not the ticket's diff' — unbedingt, mit beiden Faellen (complete:false ohne Commits, complete:true mit dem Diff der frueheren Runden, internal/cli/flow.go:589-595); nur der Diff ist stale, Ziel/DoD/Notizen im selben Payload bleiben der Massstab; dann git status --short / git diff / git diff --cached mit ':/ :(exclude,top).jaira/tickets'. Die Begruendung im Dispatcher-Prompt ist in core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'In conversational mode, a critique runs beside the work', auf die critique-LANE eingegrenzt
 - [x] Die Pause uebergeht die Ticket-Datei: die Bedingung in jaira-role-lane/SKILL.md schliesst Aenderungen unter '.jaira/tickets/' aus (etwa 'git status --short -- . ":(exclude).jaira/tickets"' und dasselbe fuer 'git diff'), damit 'Both empty? No pause' nach dem ersten 'jaira dod' erreichbar bleibt. Nachgestellt an einem reinen Dokumentationspunkt nach einer bereits gesetzten Haekchen: es wird nicht pausiert.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:159-169 — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
+  proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '2. Show the code after every definition-of-done item, not at the end.' — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
 
 ## Options
 
