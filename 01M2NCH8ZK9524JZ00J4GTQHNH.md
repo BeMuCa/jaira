@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:18:08Z
+updated-at: 2026-09-17T18:18:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -120,7 +120,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] jaira-dispatcher/SKILL.md: neuer Abschnitt 'mitlaufende Kritik' — im Gespraechsmodus ein zweiter, nur lesender Kritiker, Befunde sofort, genau ein Schreiber von review-summary und genau ein 'jaira move'
 - [x] jaira-role-lane/SKILL.md: die Pause nach einem DoD-Punkt sieht auch eine neu angelegte Datei
 - [x] jaira-dispatcher/SKILL.md: Halbsatz 'Testing is not a lane' streichen; spawn.sh und jaira-role-tester unveraendert
-- [~] core/release/NOTES.md: je eine Zeile unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht
+- [x] core/release/NOTES.md: je eine Zeile unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht
 - [ ] go test ./... -count=1
 
 ## Progress
