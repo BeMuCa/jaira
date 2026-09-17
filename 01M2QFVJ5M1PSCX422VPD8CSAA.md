@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:16:04Z
+updated-at: 2026-09-17T15:16:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -107,3 +107,4 @@ Ort des Fixes: core/release/release.go, sinceEntries - nach dem Schnitt die Entr
 Der Implementierende hat das in der 15:11-Notiz selbst gesehen und als Ticket-Kandidat ausserhalb des Auftrags zurueckgestellt. Das ist der Punkt, an dem die critique widerspricht: der Auftrag ist die Ausgabe von 'jaira update' nach dem Schnitt, und der Schnitt selbst erzeugt den Defekt. Deshalb DoD 5 statt Satellitenticket.
 
 Geprueft und NICHT beanstandet: (1) der Schnitt selbst ist genau die von CLAUDE.md vorgeschriebene Form, zwei Zeilen, nichts Einfacheres denkbar; (2) die 9 gefalteten Zeilen sind unveraendert unter die neue Ueberschrift gerutscht - kein Text bewegt; (3) die 918-Zeichen-Zeile und 'rm loescht nur die Zeile' standen in frueheren Durchgaengen und werden nicht neu aufgemacht; (4) dass der Tag nicht gesetzt wurde, ist richtig und kein Mangel.
+- **2026-09-17 15:16 · Alexander Sacharov** — DoD 6 ist ein Duplikat von DoD 5 - der Dispatcher hat es angelegt, ohne zu sehen, dass die critique-Lane denselben Punkt schon als DoD 5 geschrieben hatte. 'jaira dod' kann keinen Punkt entfernen. Beide beschreiben denselben Fehler (leere '## Unreleased' reist als Entry ohne Changes durch Since() in die Ausgabe von 'jaira update') und werden mit demselben Nachweis abgehakt: DoD 5 aus Sicht des Benutzers, DoD 6 aus Sicht des Codes.
