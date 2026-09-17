@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:10:04Z
+updated-at: 2026-09-17T22:10:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -181,7 +181,7 @@ mode: ""
 - [x] go test ./... -count=1
 - [x] critique 17: die proof-Zeilen von Abschnittsnamen statt Zeilenbereichen tragen lassen — DoD 2, 4, 5, 6, 11, 12, 13 zeigen inhaltlich falsch, DoD 1, 3, 7, 9, 10, 14, 15 nur noch zufaellig richtig
 - [x] critique 18: die vier NOTES.md-Anker in den proof-Zeilen von DoD 6, 12 und 13 woertlich mit Backticks schreiben, plus die falsche Pruefbehauptung der Notiz vom 21:33 richtigstellen
-- [ ] review 1 (Befund 1): den Unterscheider an die Lane binden - jaira-role-lane/SKILL.md Kopf und Abschnitt 1, jaira-dispatcher/SKILL.md:130-132, NOTES.md-Zeile zur mitlaufenden Kritik
+- [~] review 1 (Befund 1): den Unterscheider an die Lane binden - jaira-role-lane/SKILL.md Kopf und Abschnitt 1, jaira-dispatcher/SKILL.md:130-132, NOTES.md-Zeile zur mitlaufenden Kritik
 - [ ] review 1 (Befund 2): den Satz 'hands you a full diff' richtigstellen - jaira-role-lane/SKILL.md, dieselbe Behauptung in jaira-dispatcher/SKILL.md und in der NOTES.md-Zeile
 - [ ] go test ./... -count=1
 
