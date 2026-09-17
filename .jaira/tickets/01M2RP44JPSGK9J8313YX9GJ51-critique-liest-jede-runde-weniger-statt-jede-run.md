@@ -1,7 +1,7 @@
 ---
 id: 01M2RP44JPSGK9J8313YX9GJ51
 title: Critique liest jede Runde weniger statt jede Runde alles
-status: human
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,17 +23,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T21:59:49Z
-updated-at: 2026-09-17T22:03:00Z
+updated-at: 2026-09-17T22:05:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30490
 claimed-at: 2026-09-17T22:00:31Z
 outcome-what: "Die Schleifenregel in .jaira/lanes/critique.md ersetzt: jeder Durchgang nach dem ersten liest nur noch die Funde des vorigen und die Aenderung, die sie beantwortet hat. Der Dritte-Runde-Halt im Dispatcher bleibt, gibt aber jetzt eine Ja/Nein-Entscheidung ab statt eines Berichts - in beiden Kopien der Datei."
 outcome-why: "Die Flaeche schrumpft damit jede Runde, also endet die Schleife von selbst statt an einer Zaehlgrenze, und jede Runde nach der ersten kostet ein paar Zeilen statt des ganzen Diffs auf einem strong-Modell."
 outcome-resolves: "critique schickte Arbeit immer wieder zurueck, weil jeder Durchgang den ganzen Diff neu las und tiefer immer geht; der Mensch wurde danach jedes Mal mit einem Bericht statt einer Frage geweckt."
-review-summary: none
+review-summary: "Drei Textdateien geaendert, kein Code. .jaira/lanes/critique.md ersetzt die Regel 'die Schleife endet, wenn ein Durchgang nichts findet' durch eine, die zusaetzlich begrenzt, WAS ein spaeterer Durchgang liest; die alte Regel bleibt als vierte darunter stehen. Beide Kopien der Dispatcher-Datei haengen an den Dritte-Runde-Halt einen Absatz an, der die Uebergabe als Ja/Nein-Frage vorschreibt; der Halt selbst ist unveraendert. NOTES.md bekommt eine Zeile unter '## Unreleased' - fuer den Dispatcher, nicht fuer die Lane."
 review-gaps: none
 test-verdict: go test ./core/release/... ./core/lane/... ./core/role/... - alle drei ok; der NOTES.md-Zeilenscanner laeuft in core/release
 question: "Die Critique-Lane liest ab dem zweiten Durchgang nur noch die Funde des vorigen und die Aenderung dazu, und der Dispatcher gibt nach der dritten Runde eine Ja/Nein-Frage ab statt eines Berichts. Passt das so, oder soll der zweite Durchgang doch noch den ganzen Diff sehen duerfen?"
+review-verdict: "Der Diff erfuellt alle fuenf Kriterien; die beiden Dispatcher-Kopien sind in diesem Absatz identisch, und der bestehende Halt wurde nicht angetastet."
+review-check: "1. sed -n '61,95p' .jaira/lanes/critique.md - die Ueberschrift sagt 'Four rules for this lane' und die zweite Regel beginnt mit 'Every pass after the first reads less than the one before'  2. diff core/role/builtin/jaira-dispatcher/SKILL.md ~/.claude/skills/jaira-dispatcher/SKILL.md | grep -c 'yes or no' - gibt 0 aus, die beiden Kopien unterscheiden sich dort nicht  3. sed -n '199,230p' core/role/builtin/jaira-dispatcher/SKILL.md - 'the same lane sent work back three times' steht unveraendert da, darunter neu 'ask for yes or no and wait'  4. go test ./core/release/... - ok, der Zeilenscanner akzeptiert die neue NOTES.md-Zeile"
 ---
 
 # Critique liest jede Runde weniger statt jede Runde alles
@@ -62,3 +64,4 @@ question: "Die Critique-Lane liest ab dem zweiten Durchgang nur noch die Funde d
 
 ## Progress
 - **2026-09-17 22:02 · Alexander Sacharov** — Geprueft und verworfen: die Runden-Obergrenze im Dispatcher anheben oder entfernen. Der Dispatcher kann die beiden Ursachen nicht unterscheiden, also bleibt der Halt - geaendert wurde nur, WAS er dort abgibt. critique.md ist keine Builtin-Lane, deshalb keine NOTES.md-Zeile dafuer; die Dispatcher-Datei liegt im Binary, deshalb eine.
+- **2026-09-17 22:04 · Alexander Sacharov** — Alexander am 2026-09-18 auf die Frage aus der human-Lane: passt so - der zweite Durchgang bekommt den ganzen Diff NICHT wieder zu sehen.
