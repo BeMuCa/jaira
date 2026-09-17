@@ -25,8 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T10:51:18Z
+updated-at: 2026-09-17T11:14:50Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-33921
+claimed-at: 2026-09-17T11:14:50Z
 ---
 
 # 0.3.0 schneiden
