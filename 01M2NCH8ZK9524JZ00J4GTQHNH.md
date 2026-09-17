@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:17:09Z
+updated-at: 2026-09-17T18:17:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -82,7 +82,8 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:100-136 — Abschnitt 'In conversational mode, a critique runs beside the work', im selben Prompt wie der Modus und aus der Modus-Liste heraus verlinkt (SKILL.md:96); Schritt 3 verlangt den Befund in dem Moment, in dem er da ist
 - [x] Eine Kritik sieht, was frueher schon geprueft und was schon repariert wurde, und hebt einen erledigten Befund nicht erneut auf. Nachgestellt an einem Ticket, dessen zweite Runde etwas ausdruecklich fuer gut befunden hat: die dritte liest das und prueft es nicht noch einmal.
   proof: .jaira/lanes/critique.md:10 fuehrt 'notes' in input-requires und der Prompt-Absatz darunter ('Read the notes before you read the diff') macht einen in einer Notiz erledigten Befund zu einem geschlossenen; nachgestellt an diesem Ticket: 'jaira show GTQHNH --for-lane critique --json' liefert missing=null und den notes-Schluessel mit den acht critique-Runden darin
-- [ ] Genau eine Stelle schreibt review-summary und bewegt das Ticket. Laufen mehrere Kritiker gleichzeitig, lesen sie nur; das Zusammenfuehren und der eine 'jaira move' gehoeren dem Dispatcher.
+- [x] Genau eine Stelle schreibt review-summary und bewegt das Ticket. Laufen mehrere Kritiker gleichzeitig, lesen sie nur; das Zusammenfuehren und der eine 'jaira move' gehoeren dem Dispatcher.
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:127 — 'Exactly one place writes review-summary and moves the ticket, and it is you'; die mitlaufenden Kritiker lesen nur (SKILL.md:115)
 - [ ] Die Pause nach einem DoD-Punkt erkennt auch eine NEU angelegte Datei. Nachgestellt an einem Punkt, der nur aus einer neuen Datei besteht: der Modus haelt an, statt ihn als leere Ausgabe durchlaufen zu lassen.
 - [ ] Der Halbsatz 'Testing is not a lane' steht nicht mehr in core/role/builtin/jaira-dispatcher/SKILL.md; scripts/spawn.sh hat weiterhin genau einen Sonderfall ('dispatch'), und core/role/builtin/jaira-role-tester/SKILL.md ist unveraendert.
 - [ ] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
