@@ -113,8 +113,11 @@ implementing lane is working:
 1. Start it as a second worker, on the same ticket, at the same time as the
    in-progress worker: `/jaira-role-lane <id> critique`.
 2. It **reads only.** It does not write `review-summary`, it does not
-   `jaira note`, and it does not `jaira move`. Say that in the line you start
-   it with, because its lane prompt tells it to do all three.
+   `jaira note`, and it does not `jaira move`. Its own prompt tells it so —
+   `jaira-role-lane` has it read the ticket's `status` and take a lane
+   argument that differs from it as meaning it is this critique — so it
+   still holds after a restart or a compaction, when the line you started it
+   with is gone. Say it in that line as well; it costs one clause.
 3. It hands each finding to you **the moment it has one**, not as a list at the
    end. You pass it to the person in the same turn. A finding that arrives
    while the shape is still being built costs a paragraph; the same finding

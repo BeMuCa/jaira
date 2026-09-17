@@ -45,9 +45,33 @@ gone the moment your session is.
 Empty is the normal case and everything above stands unchanged.
 
 `conversational` means a person found open design decisions on this ticket and
-is reading along. Two things change, and only these two:
+is reading along. Three things change, and only these three:
 
-**1. Show the code after every definition-of-done item, not at the end.**
+**1. Are you the critique that runs beside the work? Then write nothing.**
+
+In this mode the dispatcher starts a second worker on the same ticket at the
+same time — `/jaira-role-lane <id> critique`, while the implementing lane is
+still running — and that worker reads only. Tell which of the two you are from
+the ticket, not from the line that started you, which is gone the moment your
+session is:
+
+```bash
+jaira show <id> --json
+```
+
+Your lane argument equal to the ticket's `status` means you are the lane the
+ticket is actually in: work it as written above and below. Your lane argument
+different from it means you are the critique running beside that lane. Then
+read, and hand every finding to the dispatcher in the moment you have it —
+and write nothing at all: no `jaira note`, no `jaira set`, no `jaira move`, no
+`review-summary`, no commit line. Exactly one place writes those, and it is
+the dispatcher that started you.
+
+This does not touch the ordinary critique lane: there the ticket's status is
+`critique` and your lane argument is `critique`, the two match, and it writes
+its `review-summary` and moves the ticket as always.
+
+**2. Show the code after every definition-of-done item, not at the end.**
 
 Work one item, then run **both** of these:
 
@@ -80,7 +104,7 @@ in the checked-out directory rather than one of its own.
 Late is the expensive time to disagree with a shape. That is the whole reason
 the mode exists.
 
-**2. Do not commit. Hand back the commit line instead.**
+**3. Do not commit. Hand back the commit line instead.**
 
 You still `jaira move` the ticket, and you still leave the ticket file changed
 in the worktree. What you do not do is run `git commit`.
