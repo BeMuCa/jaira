@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:18:40Z
+updated-at: 2026-09-17T11:18:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -40,7 +40,8 @@ mode: conversational
   proof: core/release/NOTES.md:21-25 — 18 Milestone-Zeilen zu 5 gefaltet, '## Unreleased' traegt jetzt 9 statt 22 Zeilen
 - [x] Das Zeilenformat ueberlebt das Falten: jede Aenderung ist genau eine Zeile, die mit '- ' beginnt, keine ist ueber zwei Zeilen umgebrochen. Nachgewiesen mit dem Test, der core/release/NOTES.md scannt.
   proof: go test ./core/release/ ok (TestEmbeddedNotesParseToAtLeastOneRealEntry); awk-Scan ueber '## Unreleased': 9 '- '-Zeilen, keine Nicht-'- '-Zeile
-- [ ] Keine Aenderung geht beim Falten verloren: jede der vier Aenderungen ist im gefalteten Text nachweisbar, und die Kommandos und Tasten, die ein Benutzer tippt ('jaira milestone', 'M', '--milestone', '--no-worktree', 'dispatch', 'jaira restore'), stehen weiter darin.
+- [x] Keine Aenderung geht beim Falten verloren: jede der vier Aenderungen ist im gefalteten Text nachweisbar, und die Kommandos und Tasten, die ein Benutzer tippt ('jaira milestone', 'M', '--milestone', '--no-worktree', 'dispatch', 'jaira restore'), stehen weiter darin.
+  proof: grep ueber '## Unreleased' in core/release/NOTES.md: 'jaira milestone' 3x, '`M`' 2x, '--milestone' 1x, '--no-worktree' 1x, 'dispatch' 2x, 'jaira restore' 1x
 - [ ] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
 
 ## Options
