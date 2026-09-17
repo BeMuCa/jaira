@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:23:37Z
+updated-at: 2026-09-17T11:25:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -33,7 +33,7 @@ mode: conversational
 outcome-what: "Die Naht zwischen den gefalteten Milestone-Zeilen neu gezogen: 'Reise auf refs/jaira/milestones/<name>, jaira fetch holt sie' ist aus der Kartenrand-Zeile heraus und hat eine eigene Zeile (core/release/NOTES.md:24); die Kartenrand-Zeile beschreibt jetzt nur noch das Rendern (23); 'jaira milestone create/add/rm/ls' und die Handbearbeitung von .jaira/milestones/<name>.md sind zu einer Zeile verschmolzen (21). Weiter 5 Milestone-Zeilen, '## Unreleased' traegt 9."
 outcome-why: "Die critique hat auf Zeile 24 ein Verhalten auf zwei Zeilen gefunden - Kartenrendering und Ref-Reise verklebt, wobei das Reise-Thema in Zeile 25 weiterlief. Genau das schliesst DoD 1 aus. Nach dem Umbau decken sich die 5 Zeilen exakt mit den 5 Faehigkeiten aus der Entscheidung des Menschen vom 11:14."
 outcome-resolves: "DoD 1, 2 und 3. DoD 4 bleibt offen und gehoert nicht in diese Lane: die Umbenennung nach '## 0.3.0' faehrt in dem Commit, den der Mensch taggt, und 9ZZSFT/0YGWXQ/7KX89C/GTQHNH stehen noch in signoff."
-review-summary: "core/release/NOTES.md:24 — die RIGHT-edge-Zeile traegt zwei Themen: wie eine Karte gezeichnet wird UND wie ein Milestone auf refs/jaira/milestones/<name> reist und bei 'jaira fetch' ankommt. Das Reise-Thema geht in Zeile 25 weiter ('One somebody else files leaves your board on the next jaira fetch'), also steht EIN Verhalten auf zwei Zeilen — genau was DoD 1 verbietet. Stattdessen: den Satz 'A milestone reaches your teammates ... names the milestones it updated.' aus Zeile 24 herausschneiden und entweder an den Anfang von Zeile 25 setzen, wo 'jaira fetch' ohnehin schon erklaert wird, oder als eigene sechste Zeile direkt vor die logbook-Zeile stellen. Zeile 24 bleibt dann rein das, was ihr erster Satz ankuendigt: was der Mensch am rechten Kartenrand sieht."
+review-summary: "none"
 ---
 
 # 0.3.0 schneiden
