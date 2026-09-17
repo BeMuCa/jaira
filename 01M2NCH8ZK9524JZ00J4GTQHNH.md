@@ -38,7 +38,7 @@ commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:03:00Z
+updated-at: 2026-09-17T21:03:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -645,3 +645,14 @@ Nicht angefasst, mit der Notiz, auf der ich stehe: die Pathspec-Bloecke (critiqu
 (1) Zeile 26-28 'Follow it, produce exactly those outputs, and nothing beyond them' ist unbedingt und steht VOR der Bedingung in Zeile 30. Die critique-Lane fuehrt produces=[review-summary] und ihr Prompt ordnet 'jaira set <handle> review-summary=' und 'jaira move' an - genau die Schreibwege, die Zeile 80-83 der mitlaufenden Kritik verbieten. Wer von oben liest, bekommt den Schreibbefehl vor dem Verbot. Dieselbe Bedingung an den Satz haengen wie an die Liste zwei Zeilen darunter.
 (2) Zeile 110-112 'do not judge what it gave you' ist weiter als der Defekt: in derselben Nutzlast liegen goal, definition-of-done und die Notizen, und der critique-Prompt verlangt die Notizen ZUERST. Den Satz auf den Diff eingrenzen und sagen, dass Ziel, DoD und Notizen aktuell sind und der Massstab bleiben, gegen den der Arbeitsbaum beurteilt wird.
 Sonst nichts anfassen.
+- **2026-09-17 21:03 · Alexander Sacharov** — In-progress nach critique 16 (2026-09-17): beide Saetze in core/role/builtin/jaira-role-lane/SKILL.md umgeschrieben, kein Go-Code.
+
+Befund 1, etwas weiter als vorgeschlagen. Die Bedingung an den Satz zu haengen haette nur gesagt, WER ihn befolgt. Der mitlaufenden Kritik fehlte damit immer noch, was sie mit dem Lane-Prompt dann tun soll - und sie bekommt ihn ja weiter geliefert. Der Absatz sagt jetzt beides: der Prompt der critique-Lane ordnet woertlich 'jaira set <handle> review-summary=' und 'jaira move' an, das sind genau die Wege, die Abschnitt 1 ihr nimmt, also ist er fuer sie Lesestoff ('was diese Lane beurteilen soll') und kein Auftrag. Ohne den zweiten Halbsatz bleibt die Frage offen, und eine offene Frage im Prompt wird geraten.
+
+Befund 2: der Satz nennt jetzt den Diff, und daneben steht ein eigener Absatz, der die drei anderen Eingaben ausdruecklich als aktuell und als Massstab benennt - Ziel, Definition of Done, Notizen. Die Notizen mit dem Grund dazu, den der critique-Prompt selbst liefert: sie sagen, welche Befunde schon geschlossen sind. Genau das Wiederaufmachen ist der Fehler, gegen den DoD 8 geschrieben ist.
+
+KEINE NOTES.md-Zeile, bewusst und mit demselben Argument wie in Runde 11: die vorhandene Unreleased-Zeile zur mitlaufenden Kritik beschreibt das Verhalten schon richtig (sie liest den Arbeitsbaum, sie schreibt nichts, sie liest frische Notizen mit 'jaira show <id> --json') und verlangt bereits 'jaira roles install --global --force'. Beide Befunde waren Reihenfolge und Reichweite von Saetzen INNERHALB dieses schon angekuendigten Verhaltens - nichts, was ein Leser anders tun muss.
+
+Nicht angefasst, mit der Notiz, auf der ich stehe: Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
+
+Nachgezogen, weil die Einfuegungen die Datei verschoben haben: die proof-Zeilen von DoD 9, 14 und 15 zeigen auf die Bereiche nach dieser Runde. go build und go test ./... -count=1 gruen.
