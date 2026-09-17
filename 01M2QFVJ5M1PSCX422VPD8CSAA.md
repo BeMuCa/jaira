@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:21:00Z
+updated-at: 2026-09-17T11:21:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -69,3 +69,4 @@ review-summary: "core/release/NOTES.md:24 — die RIGHT-edge-Zeile traegt zwei T
 Bewusst weggeworfen, nicht vergessen: die drei Fassungen der create-Abweisung, 'logbook nennt gefilte Milestones statt ticket: not found', die zwei Locking-Zeilen (restore und Hintergrund-fetch nehmen dasselbe Lock) und die Zeile ueber den verlorenen Wettlauf mit abgeschnittenem Namen. Alle beschreiben Zwischenstaende innerhalb derselben unveroeffentlichten Sektion - kein Benutzer hat je einen Build gesehen, in dem sie fehlten. Wer sie sucht: git show 686daa5:core/release/NOTES.md.
 
 DoD 4 bleibt offen und gehoert nicht in diese Lane: die Umbenennung nach '## 0.3.0' faehrt in dem Commit, den der Mensch taggt, und 9ZZSFT/0YGWXQ/7KX89C/GTQHNH stehen noch in signoff. Das Ticket kann die Endlane nicht erreichen, bevor das passiert ist.
+- **2026-09-17 11:21 · Alexander Sacharov** — critique: Das Falten selbst ist richtig geschnitten — die Zwischenstaende (Lock-Rennen, der 'elease'-Abschneidefehler, die drei Entwicklungsstufen der Filed-Abweisung) sind Bugs an einer Faehigkeit, die noch nie ausgeliefert wurde, und gehoeren nicht in die Notizen. Auch das Verschmelzen von 'rm loescht nur die Zeile' in die create-Zeile (21) und von Taste M in die list-Zeile (23) ist je ein Verhalten, nicht zwei. Die eine Ausnahme ist Zeile 24: dort ist das Kartenrendering mit dem Reisen ueber refs/jaira/milestones/<name> verklebt, und dieses Reise-Thema laeuft in Zeile 25 weiter. Ein Verhalten auf zwei Zeilen ist genau der Fehler, den DoD 1 ausschliesst — nur diesmal nicht durch Nichtfalten, sondern durch falsche Naht. Fix: den Reise-Satz aus 24 heraus und an den Anfang von 25 (wo 'jaira fetch' schon erklaert wird) oder als eigene sechste Zeile davor. Bewusst NICHT beanstandet: der --json-Schluessel 'milestone' aus der Rennmeldung ist weggefallen, waehrend 'milestones' und 'milestones_filed' blieben — das ist konsistent, weil die Rennmeldung zur Behebung eines nie ausgelieferten Fehlers gehoert.
