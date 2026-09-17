@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:20:04Z
+updated-at: 2026-09-17T15:20:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -67,7 +67,7 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
 - [x] Zeilenformat pruefen: jede Aenderung genau eine '- '-Zeile, kein Umbruch - go test ./core/release/
 - [x] Nachweisen, dass kein Kommando und keine Taste verloren ging: jaira milestone, M, --milestone, --no-worktree, dispatch, jaira restore
 - [x] Umbenennung nach '## 0.3.0' NICHT hier - sie gehoert in den Commit, den der Mensch taggt, nach Annahme der vier signoff-Tickets
-- [ ] sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert - parseNotes bleibt unberuehrt
+- [x] sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert - parseNotes bleibt unberuehrt
 - [ ] Test fuer den leeren Unreleased-Eintrag; jaira update an einem Board mit Stempel 0.3.0 und mit 0.2.1 nachgesehen
 
 ## Progress
