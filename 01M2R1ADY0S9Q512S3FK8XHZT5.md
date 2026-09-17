@@ -1,7 +1,7 @@
 ---
 id: 01M2R1ADY0S9Q512S3FK8XHZT5
 title: Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:10:42Z
+updated-at: 2026-09-17T17:10:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
-outcome-what: "Die Modus->Puffer-Zuordnung liegt jetzt einmal in Model.insertText (internal/tui/model.go:914) statt viermal verteilt. key()s drei default-Zweige (model.go:967, 988, 1004), das Ende von editKey() (edit.go:136) und Model.paste (paste.go:24) rufen alle dieselbe Funktion - getippter und eingefuegter Text nehmen denselben Weg in den Puffer. sanitisePaste heisst foldToOneLine (paste.go:39) und faltet in einem Durchlauf (Split/leere weg/Join) statt in der Schleife ueber strings.Contains. Die leere Eingabe wird einmal oben in insertText abgefangen; die drei 'if k.Text != \"\"' und die zwei wirkungslosen 'if s != \"\"' sind damit weg. Paste-Verhalten unveraendert, paste_test.go nicht angefasst, go test ./... gruen."
-outcome-why: "Die Kritik hat drei Luecken benannt: paste.go wiederholte die Modus->Puffer-Zuordnung samt der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft; die Faltschleife ging den Text wiederholt ab; und zwei Leerpruefungen bewachten nichts. Die erste ist die, auf die es ankommt - zwei getrennte Kopien derselben Zuordnung sind genau die Konstruktion, aus der dieser Fehler entstanden ist: ein Feld nahm getippten Text und verschluckte eingefuegten. Eine Funktion fuer beide macht ein erneutes Auseinanderlaufen unmoeglich."
-outcome-resolves: "DoD 1 bis 6, Proofs auf die neuen Zeilen nachgezogen. Die drei Kritikpunkte aus review-summary sind abgearbeitet: Punkt 1 durch insertText, Punkt 2 durch foldToOneLine in einem Durchlauf, Punkt 3 durch die eine Leerpruefung oben. Nachweis, dass nichts verschoben wurde: paste_test.go ist unveraendert und gruen."
+outcome-what: "Zeilenumbruch einmal definiert: insertText (internal/tui/model.go:921-927) normalisiert \\r\\n und einzelnes \\r zu \\n, bevor ein Puffer den Text sieht. modeEdit haengt danach nur noch an, foldToOneLine (internal/tui/paste.go:41) verliert seine beiden ReplaceAll-Zeilen. Zwei Tests dazu: ein Fall \"a lone carriage return counts too\" in TestMultiLinePasteIsFoldedToSpaces und TestPasteNormalisesALoneCarriageReturnInTheFieldEditor."
+outcome-why: "critique (2. Durchlauf) hat genau einen Punkt offen gelassen: in insertText gab es zwei Definitionen von Zeilenumbruch - modeEdit kannte nur \\r\\n, foldToOneLine auch das einzelne \\r. Terminals schicken in einer Klammer-Einfuegung durchaus einzelne CR; die landeten roh im Editorpuffer und damit in der Ticketdatei."
+outcome-resolves: "Plan 11. DoD 4 bleibt erfuellt und ist mit neuem Proof belegt: die Faltungsentscheidung gilt jetzt fuer alle drei Umbruchformen. go build ./... und go test ./... komplett gruen."
 review-summary: "internal/tui/model.go:922 - modeEdit normalisiert Zeilenenden selbst mit ReplaceAll(\"\\r\\n\",\"\\n\") und kennt das einzelne \\r nicht, das foldToOneLine (paste.go:40-41) sehr wohl kennt; ein Terminal, das beim Einfuegen CR statt LF schickt, schreibt damit rohe \\r in editBuf und von dort in die Ticketdatei. Stattdessen: die Normalisierung einmal oben in insertText erledigen (CRLF und CR zu LF), danach haengt modeEdit nur noch an und foldToOneLine verliert seine beiden ReplaceAll-Zeilen - eine Definition von 'Zeilenumbruch' statt zwei in derselben Funktion."
 ---
 
