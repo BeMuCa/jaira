@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:46:44Z
+updated-at: 2026-09-17T21:47:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -711,3 +711,16 @@ Dabei sind ZWEI weitere Anker derselben Sorte aufgefallen, die critique 18 nicht
 Was daraus zu lernen ist, weil es jetzt zweimal passiert ist: ein Anker wird aus der Quelldatei kopiert, nicht aus dem Gedaechtnis formuliert. Markdown-Prosa in diesem Repository setzt Befehle und Feldnamen konsequent in Backticks; ein Anker, der den Befehl 'nackt' zitiert, findet sich nie wieder. Das trifft NICHT die Abschnittsueberschriften — die tragen keine Code-Spans und waren alle korrekt.
 
 Nicht angefasst, mit Verweis: 'jaira dod --verify-proof' waere ein eigenes Ticket (critique 18 sieht das genauso). Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), doppelte Frage 'Are you the lane that writes?' (Runde 17), dispatcher:226 (aelter als dieses Ticket).
+- **2026-09-17 21:47 · Alexander Sacharov** — critique (19. Durchgang, ueber die uncommittete Reparatur der Anker in DoD 6, 11, 12, 13): kein Befund. Das ist der Ausgang der Schleife, nicht ein Durchwinken.
+
+Selbst nachgefahren, nicht von der Notiz uebernommen: alle 23 Anker des Tickets mit 'grep -cF' gegen den Arbeitsbaum gehalten, jeder liefert genau 1. Die fuenf NOTES.md-Anker (DoD 6 zweimal, DoD 12 zweimal, DoD 13 einmal) tragen jetzt die Backticks der Originalzeile und treffen; der Loop-Schritt in jaira-dispatcher/SKILL.md ('`/jaira-role-lane <id> <lane>` — every lane, testing included.') trifft mitsamt Punkt; der announce.go-Bullet ist mit dem angehaengten "— the lane's prompt" eindeutig (der blosse Befehl kommt in announce.go zweimal vor, der Anker genau einmal). Dazu nachgesehen: announce.go:65 fuehrt 'mode' tatsaechlich in der --for-lane-Nutzlast, 'Working a ticket' einmal, 'Testing is not a lane' null Treffer in core/. go build, go vet und go test ./... -count=1 gruen, selbst gelaufen.
+
+Die beiden von critique 18 nicht gesehenen Anker (DoD 11, DoD 13) sind derselbe Defekt und wurden von in-progress selbst gefunden — das ist mehr als der Auftrag verlangte und richtig so.
+
+Nachgeprueft und ausdruecklich KEIN Befund:
+- Die Richtigstellung der Notiz vom 21:33. Der falsche Satz steht weiterhin auf Zeile 688, die Richtigstellung 19 Zeilen darunter. Das ist kein Mangel, sondern die Folge davon, dass 'jaira note' anhaengt und es kein --amend gibt; die Richtigstellung zitiert den falschen Satz woertlich und ist damit auffindbar. Eine Reparatur in der Datei waere ein Schreiben am Ticket vorbei an der CLI.
+- Die sechs proof-Zeilen der PLAN-Liste (Zeilen 159, 161, 163, 165, 169 und die dispatcher:120-129) tragen weiterhin Zeilenbereiche. Nachgesehen: sie treffen heute noch. Der Auftrag der Runden 17/18 galt der DoD-Liste, weil die vom Gate und vom spaeteren Leser als Beleg gelesen wird; die Plan-Liste ist die Methode. Bleibt stehen — und ist genau der Fall, den das eigene Ticket 'jaira dod --verify-proof' abdecken wuerde.
+
+Ausdruecklich stehen gelassen, mit Verweis: doppelte Frage 'Are you the lane that writes?' (Runde 17), Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
+
+FUER DEN DISPATCHER: das Ticket hat optimize, testing, human und review schon durchlaufen; diese Schleife lief nur ueber die Reparatur der review-Befunde 1 und 2. Ich bewege es auf die naechste Lane der Board-Ordnung (optimize), weil zwei Lanes zu ueberspringen nicht meine Entscheidung ist. Ob es stattdessen direkt zurueck nach review geht, ist Alex' Entscheidung - 'jaira move GTQHNH --to review' ist erlaubt (--dry-run geprueft).
