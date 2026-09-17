@@ -28,13 +28,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:04:45Z
+updated-at: 2026-09-17T17:05:34Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-45551
-claimed-at: 2026-09-17T15:57:28Z
-outcome-what: "Model.Update behandelt jetzt tea.PasteMsg (model.go:899) und reicht den Text an die neue Model.paste in internal/tui/paste.go weiter: modeFilter, modeCreate und modeDelete bekommen ihn durch sanitisePaste einzeilig gefaltet, modeEdit behaelt die Zeilen. Dazu internal/tui/paste_test.go mit 14 Faellen und eine Zeile in core/release/NOTES.md."
-outcome-why: "Ein Einfuegen kommt vom Terminal als eigenes Ereignis, nicht als Taste. Update hatte nur einen Zweig fuer tea.KeyPressMsg, also fiel jedes PasteMsg durch das Ende von Update - in allen vier Eingabefeldern wurde eingefuegter Text still verschluckt."
-outcome-resolves: "Alle sechs Punkte der Definition of Done sind abgehakt und mit Proof belegt; go test ./... laeuft gruen, und ohne den PasteMsg-Zweig fallen 14 der neuen Faelle um."
+claimed-by: DESKTOP-RFTCH11-6497
+claimed-at: 2026-09-17T17:01:52Z
+outcome-what: "Die Modus->Puffer-Zuordnung liegt jetzt einmal in Model.insertText (internal/tui/model.go:914) statt viermal verteilt. key()s drei default-Zweige (model.go:967, 988, 1004), das Ende von editKey() (edit.go:136) und Model.paste (paste.go:24) rufen alle dieselbe Funktion - getippter und eingefuegter Text nehmen denselben Weg in den Puffer. sanitisePaste heisst foldToOneLine (paste.go:39) und faltet in einem Durchlauf (Split/leere weg/Join) statt in der Schleife ueber strings.Contains. Die leere Eingabe wird einmal oben in insertText abgefangen; die drei 'if k.Text != \"\"' und die zwei wirkungslosen 'if s != \"\"' sind damit weg. Paste-Verhalten unveraendert, paste_test.go nicht angefasst, go test ./... gruen."
+outcome-why: "Die Kritik hat drei Luecken benannt: paste.go wiederholte die Modus->Puffer-Zuordnung samt der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft; die Faltschleife ging den Text wiederholt ab; und zwei Leerpruefungen bewachten nichts. Die erste ist die, auf die es ankommt - zwei getrennte Kopien derselben Zuordnung sind genau die Konstruktion, aus der dieser Fehler entstanden ist: ein Feld nahm getippten Text und verschluckte eingefuegten. Eine Funktion fuer beide macht ein erneutes Auseinanderlaufen unmoeglich."
+outcome-resolves: "DoD 1 bis 6, Proofs auf die neuen Zeilen nachgezogen. Die drei Kritikpunkte aus review-summary sind abgearbeitet: Punkt 1 durch insertText, Punkt 2 durch foldToOneLine in einem Durchlauf, Punkt 3 durch die eine Leerpruefung oben. Nachweis, dass nichts verschoben wurde: paste_test.go ist unveraendert und gruen."
+review-summary: |-
+  internal/tui/paste.go:25-41 wiederholt die Zuordnung Modus->Puffer, die schon in internal/tui/model.go:936-940, 962-964, 980-982 und internal/tui/edit.go:136-138 steht - samt der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft; stattdessen eine Methode m.insertText(s string) in model.go neben key() anlegen, die den Modus-Switch und die Faltung einmal haelt, und sie aus den drei default-Zweigen von key(), aus dem Ende von editKey() und aus paste() rufen - getippter Text enthaelt nie einen Umbruch, die Faltung ist dort also ein No-op.
+  internal/tui/paste.go:57-62: die Schleife 'for strings.Contains(text, "\n\n")' laeuft wiederholt ueber den ganzen Text; stattdessen einmal strings.Split(text, "\n"), leere Teile weglassen, mit " " joinen - das ersetzt Trim und Schleife durch einen Durchlauf.
+  internal/tui/paste.go:38-41: das 'if s := sanitisePaste(text); s != ""' in modeCreate/modeDelete bewacht nichts, ein leeres Anhaengen aendert den Puffer nicht; dort direkt 'm.input += sanitisePaste(text)'.
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
@@ -42,15 +46,15 @@ outcome-resolves: "Alle sechs Punkte der Definition of Done sind abgehakt und mi
 ## Definition of Done
 
 - [x] Ein Einfuegen in die Suche landet im Feld: Model.Update behandelt tea.PasteMsg, der Text haengt an m.input, und die Tafel filtert sofort danach wie beim Tippen. Mit Test nachgewiesen, der ein PasteMsg direkt einspeist.
-  proof: internal/tui/model.go:900 case tea.PasteMsg -> internal/tui/paste.go:24 Model.paste; TestPasteIntoFilterLandsAndFilters
+  proof: internal/tui/model.go:902 case tea.PasteMsg -> internal/tui/paste.go:24 Model.paste -> internal/tui/model.go:914 Model.insertText; TestPasteIntoFilterLandsAndFilters
 - [x] Kein Eingabefeld verschluckt ein Einfuegen mehr: modeFilter, modeCreate, modeDelete und modeEdit nehmen den eingefuegten Text genauso an wie getippten. Je ein Test pro Modus.
-  proof: internal/tui/paste.go:25-41 covers modeEdit, modeFilter, modeCreate, modeDelete; TestPasteReachesEveryInputMode (create/delete/edit subtests) + TestPasteIntoFilterLandsAndFilters
+  proof: internal/tui/model.go:914-939 insertText covers modeEdit, modeFilter, modeCreate, modeDelete and is the single path for typed and pasted text alike; TestPasteReachesEveryInputMode (create/delete/edit subtests) + TestPasteIntoFilterLandsAndFilters
 - [x] Mehrbyte-Text ueberlebt das Einfuegen unveraendert: kyrillischer Text, Umlaute und ein Emoji stehen nach dem Einfuegen Zeichen fuer Zeichen im Puffer, und ein Backspace danach entfernt genau ein Zeichen, nicht ein Byte. Mit Test nachgewiesen.
   proof: TestPasteKeepsMultiByteTextWhole in internal/tui/paste_test.go — 'Gruesse Privet <emoji>' arrives whole and one backspace removes one rune
 - [x] Ein mehrzeiliger eingefuegter Text zerlegt die Suche nicht: das Feld ist eine Zeile, also entscheidet das Ticket bewusst, was mit Zeilenumbruechen passiert (verwerfen oder zu Leerzeichen falten), und ein Test haelt diese Entscheidung fest.
-  proof: internal/tui/paste.go:47-63 sanitisePaste folds newline runs to one space; TestMultiLinePasteIsFoldedToSpaces (5 cases) and TestPasteKeepsLinesInTheFieldEditor
+  proof: internal/tui/paste.go:39-49 foldToOneLine folds newline runs to one space in a single pass; TestMultiLinePasteIsFoldedToSpaces (5 cases) and TestPasteKeepsLinesInTheFieldEditor
 - [x] Die Tastaturbelegung spielt keine Rolle: eine Notiz am Code haelt fest, warum Strg+V nicht ueber cmdKey abgebildet wird (keylayout.go:38-42, der Dekoder loescht Key.Text bei Modifikatoren) und warum das Behandeln von PasteMsg die Belegung ueberfluessig macht.
-  proof: internal/tui/paste.go:6-23 doc comment on Model.paste, and internal/tui/model.go:899 at the branch
+  proof: internal/tui/paste.go:9-23 doc comment on Model.paste, and internal/tui/model.go:900-901 at the branch
 - [x] core/release/NOTES.md traegt unter '## Unreleased' eine Zeile: was der Benutzer jetzt TUN kann - in die Suche einfuegen.
   proof: core/release/NOTES.md:17 under '## Unreleased'
 
@@ -69,6 +73,10 @@ outcome-resolves: "Alle sechs Punkte der Definition of Done sind abgehakt und mi
 - [x] comment at the PasteMsg branch: why ctrl+v cannot go through cmdKey (keylayout.go:38-42)
 - [x] paste_test.go: one test per mode, one for multi-byte + backspace, one for multiline folding
 - [x] NOTES.md line under ## Unreleased
+- [x] critique gap 1: insertText(text) in model.go holds the mode->buffer switch once; key()'s three default branches, editKey()'s tail and paste() all call it
+- [x] critique gap 2: fold newlines in one pass (Split/drop empty/Join) instead of the repeated Contains loop
+- [x] critique gap 3: drop the s != "" guards in modeCreate/modeDelete; one empty-check at the top of insertText
+- [x] run the tui tests, unchanged, to show typed and pasted text both still land
 
 ## Progress
 - **2026-09-17 15:57 · Alexander Sacharov** — Entscheidung zu DoD 4, vom Dispatcher getroffen nachdem Alex sie ihm ueberlassen hat: mehrzeiliger eingefuegter Text wird zu Leerzeichen gefaltet, nicht verworfen. Grund: wer eine Zeile aus einem Terminal oder einer Datei kopiert, nimmt den abschliessenden Umbruch versehentlich mit - verwerfen wuerde dann den ganzen Text schlucken und wie der Fehler aussehen, den dieses Ticket behebt. Aufeinanderfolgende Umbrueche werden zu einem Leerzeichen, fuehrende und abschliessende fallen weg.
@@ -79,3 +87,22 @@ modeEdit faellt aus der Faltung heraus: dort fuegt Enter eine Zeile ein (edit.go
 Erste Fassung von sanitisePaste hat jede Zeile einzeln getrimmt - verworfen, weil ein einzeiliges Einfuegen mit fuehrendem Leerzeichen dann veraendert ankommt. Jetzt nur noch: CR normalisieren, Umbrueche an den Enden weg, Umbruchketten zu einem Leerzeichen. Innenliegende Leerzeichen bleiben unangetastet.
 
 Gegenprobe gemacht: mit auskommentiertem PasteMsg-Zweig fallen 14 der neuen Faelle um, mit dem Zweig laeuft die ganze Suite gruen.
+- **2026-09-17 16:23 · Alexander Sacharov** — critique: Die Form ist im Kern richtig - ein eigener Zweig fuer tea.PasteMsg statt eines Umwegs ueber m.key() ist die richtige Entscheidung und bleibt so. Gegenprobe gemacht: den PasteMsg in ein KeyPressMsg{Text: ...} umzubauen und durch m.key() zu schicken waere kuerzer, wuerde aber in den Nicht-Eingabe-Modi gefaehrlich - ein eingefuegtes 'q' liefe dann durch cmdKey in das Beenden. Nicht nochmal aufmachen.
+
+Ebenfalls geprueft und in Ordnung: die vier Modi sind vollstaendig. Ausser modeFilter, modeCreate, modeDelete und modeEdit sammelt kein Bildschirm Text - browse.go, defaultboard.go, dropboard.go, lanes.go und settings.go bekommen von Home nur cmdKey(msg) als String und haben gar keinen Puffer (internal/tui/home.go:213ff). Es fehlt also kein Eingabefeld.
+
+Was zurueckgeht, sind drei Punkte zur Form, alle in internal/tui/paste.go:
+1. Die Zuordnung Modus->Puffer steht jetzt zweimal. paste.go:25-41 sagt noch einmal, was model.go:936-940, 962-964, 980-982 und edit.go:136-138 schon sagen - inklusive der Regel, dass modeFilter zusaetzlich m.filter setzt und rebuild() ruft. Wer spaeter ein fuenftes Textfeld ergaenzt oder diese Regel aendert, muss an paste.go denken. Eine Methode m.insertText(s string) in model.go neben key(), die den Modus-Switch samt Faltung einmal haelt und aus key(), editKey() und paste() gerufen wird, legt die Regel an eine Stelle; getippter Text enthaelt nie einen Umbruch, die Faltung stoert dort nicht.
+2. sanitisePaste (paste.go:57-62) faltet die Umbruchketten mit einer Schleife aus wiederholtem ReplaceAll ueber den ganzen Text. Split auf '\n', leere Teile weglassen, mit Leerzeichen joinen macht dasselbe in einem Durchlauf und macht Trim und Schleife zusammen ueberfluessig.
+3. Das 's != ""' in modeCreate/modeDelete (paste.go:38-41) bewacht nichts - ein leeres Anhaengen aendert den Puffer nicht. Im modeFilter-Zweig darf es bleiben, dort spart es ein rebuild().
+
+Das Verhalten ist von allen drei Punkten nicht betroffen, die Tests in paste_test.go muessen unveraendert gruen bleiben.
+- **2026-09-17 17:05 · Alexander Sacharov** — Kritik eingearbeitet: die Modus->Puffer-Zuordnung steht jetzt einmal in Model.insertText (model.go:914) statt viermal. Getippter und eingefuegter Text laufen durch dieselbe Funktion - key()s drei default-Zweige, das Ende von editKey() und paste() rufen sie alle. Damit kann ein Feld nicht mehr getippten Text nehmen und eingefuegten verschlucken, was genau der Fehler dieses Tickets war.
+
+Warum insertText in model.go und nicht in paste.go: getippter Text ist der haeufigere Weg dorthin, paste.go traegt nur noch das PasteMsg-Eingangstor und die Faltung. sanitisePaste heisst jetzt foldToOneLine - der Name 'Paste' war falsch, seit auch getippter Text durchlaeuft (dort ein No-op, eine Taste liefert nie einen Umbruch).
+
+Die leere Eingabe wird einmal oben in insertText abgefangen. Das ersetzt sowohl die drei 'if k.Text != ""' im Tastenpfad als auch die zwei wirkungslosen 'if s != ""' im Einfuegepfad. In modeFilter bleibt eine zweite Pruefung stehen, weil dort erst die Faltung leer werden kann ('\n' allein) und ein rebuild() fuer nichts sonst laufen wuerde.
+
+Faltung jetzt in einem Durchlauf: Split auf \n, leere Teile weg, mit Leerzeichen joinen. Ersetzt Trim plus die Schleife 'for strings.Contains(text, "\n\n")', die den Text wiederholt abging. Verhalten identisch, die fuenf Faelle in TestMultiLinePasteIsFoldedToSpaces laufen unveraendert durch.
+
+Keine Testaenderung noetig und bewusst keine gemacht: die 160 Zeilen paste_test.go pruefen Verhalten, nicht Struktur. Dass sie nach dem Umbau unveraendert gruen sind, ist der Nachweis, dass der Umbau nichts verschoben hat. go test ./... komplett gruen.

@@ -133,9 +133,7 @@ func (m *Model) editKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// Text carries what the key actually produced, including multi-byte
 	// characters. Gating on a one-byte string here is what dropped every umlaut
 	// in the filter and create prompts.
-	if k.Text != "" {
-		m.editBuf += k.Text
-	}
+	m.insertText(k.Text)
 	return m, nil
 }
 

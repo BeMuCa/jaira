@@ -905,6 +905,36 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// insertText puts text into whichever buffer the mode is collecting into.
+//
+// Typed characters and pasted blocks land here alike, so a field can never
+// again take one and swallow the other — that divergence is the fault this
+// ticket fixes. A keypress carries a single character and never a line break,
+// so the folding a paste needs is a no-op on typed text.
+func (m *Model) insertText(text string) {
+	if text == "" {
+		return
+	}
+	switch m.mode {
+	case modeEdit:
+		// The field editor is the one multi-line buffer — enter inserts a line
+		// there — so a pasted paragraph keeps its shape.
+		m.editBuf += strings.ReplaceAll(text, "\r\n", "\n")
+
+	case modeFilter:
+		s := foldToOneLine(text)
+		if s == "" {
+			return
+		}
+		m.input += s
+		m.filter = m.input
+		m.rebuild()
+
+	case modeCreate, modeDelete:
+		m.input += foldToOneLine(text)
+	}
+}
+
 func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// Commands are read by the key's position, not by the character the layout
 	// printed on it, so the board answers a Cyrillic keyboard too. Typed text
@@ -934,11 +964,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		default:
 			// k.Text is what the key produced, so multi-byte characters survive.
 			// Gating on a one-byte string dropped every umlaut.
-			if k.Text != "" {
-				m.input += k.Text
-				m.filter = m.input
-				m.rebuild()
-			}
+			m.insertText(k.Text)
 		}
 		return m, nil
 
@@ -959,9 +985,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.input = string(r[:len(r)-1])
 			}
 		default:
-			if k.Text != "" {
-				m.input += k.Text
-			}
+			m.insertText(k.Text)
 		}
 		return m, nil
 
@@ -977,9 +1001,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.input = string(r[:len(r)-1])
 			}
 		default:
-			if k.Text != "" {
-				m.input += k.Text
-			}
+			m.insertText(k.Text)
 		}
 		return m, nil
 

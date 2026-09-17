@@ -22,29 +22,11 @@ import (
 // keyboard pastes through the same branch as a US one, because the paste never
 // was a key combination to begin with.
 func (m *Model) paste(text string) (tea.Model, tea.Cmd) {
-	switch m.mode {
-	case modeEdit:
-		// The field editor is the one multi-line buffer — enter inserts a line
-		// there — so a pasted paragraph keeps its shape.
-		m.editBuf += strings.ReplaceAll(text, "\r\n", "\n")
-
-	case modeFilter:
-		if s := sanitisePaste(text); s != "" {
-			m.input += s
-			m.filter = m.input
-			m.rebuild()
-		}
-
-	case modeCreate, modeDelete:
-		if s := sanitisePaste(text); s != "" {
-			m.input += s
-		}
-	}
+	m.insertText(text)
 	return m, nil
 }
 
-// sanitisePaste folds a pasted block into the one line a single-line field can
-// hold.
+// foldToOneLine folds a block into the one line a single-line field can hold.
 //
 // Line breaks become a single space rather than being dropped: copying one line
 // out of a terminal or a file usually takes the trailing newline with it, and
@@ -54,12 +36,15 @@ func (m *Model) paste(text string) (tea.Model, tea.Cmd) {
 //
 // Nothing here cuts the text by byte offset, so Cyrillic, umlauts and emoji
 // arrive character for character, the same way k.Text does.
-func sanitisePaste(text string) string {
+func foldToOneLine(text string) string {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
 	text = strings.ReplaceAll(text, "\r", "\n")
-	text = strings.Trim(text, "\n")
-	for strings.Contains(text, "\n\n") {
-		text = strings.ReplaceAll(text, "\n\n", "\n")
+	lines := strings.Split(text, "\n")
+	kept := lines[:0]
+	for _, line := range lines {
+		if line != "" {
+			kept = append(kept, line)
+		}
 	}
-	return strings.ReplaceAll(text, "\n", " ")
+	return strings.Join(kept, " ")
 }
