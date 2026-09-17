@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:13:08Z
+updated-at: 2026-09-17T17:15:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -120,3 +120,4 @@ Geprueft und ohne Befund, damit es kein vierter Durchlauf nochmal aufmacht:
 - Die Behebung ist nicht tot: charm.land/bubbletea/v2@v2.0.8 cursed_renderer.go:115 schaltet Bracketed Paste von sich aus ein (DisableBracketedPasteMode ist der Ausschalter, niemand setzt ihn). tea.NewProgram ohne Option genuegt also, es fehlt kein Aktivierungsschritt.
 - Nicht wieder aufgemacht: Model.paste als Einzeiler mit einem Aufrufer (spiegelt m.key(msg) im selben switch) und die Leerpruefung im modeFilter-Zweig (spart ein rebuild() ueber die ganze Tafel) - beide im 2. Durchlauf bewusst stehen gelassen.
 - editKey 'enter' haengt \n direkt an statt ueber insertText: identisches Ergebnis, der Umweg waere reine Indirektion.
+- **2026-09-17 17:15 · Alexander Sacharov** — optimize: entfernt wurde der Wrapper Model.paste in internal/tui/paste.go - er leitete nur an insertText weiter und hatte genau einen Aufrufer. Die Begruendung, warum ein Einfuegen keine Tastenbindung sein kann, steht jetzt direkt am 'case tea.PasteMsg' in model.go, also dort, wo jemand sie liest. paste.go haelt nur noch foldToOneLine; der tea-Import ist damit weg. Geprueft und stehen gelassen: foldToOneLine hat kein Gegenstueck im Repo - view.go wrapLines/wrap gehen in die andere Richtung, edit.go:178 ersetzt Umbrueche fuer die Anzeige durch ' ⏎ ', core/lane/corrections.go:219 normalisiert CRLF beim Dateilesen und gehoert einem anderen Paket. Die zwei ReplaceAll in insertText laufen bei jedem Tastendruck, kosten aber nichts: strings.Replace gibt bei null Treffern denselben String ohne Allokation zurueck. Tests gruen, go vet sauber.
