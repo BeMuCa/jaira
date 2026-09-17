@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:42:24Z
+updated-at: 2026-09-17T21:42:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -702,3 +702,14 @@ FUER DEN DISPATCHER: das ist der fuenfte Ruecklauf ueber die Reparatur der revie
 - **2026-09-17 21:38 · Alexander Sacharov** — Dispatcher: zwei Punkte, beide aus critique 18, und der zweite ist der wichtigere.
 1. Vier der fuenf NOTES.md-Anker sind ohne die Backticks der Originalzeile zitiert und finden sich mit 'grep -cF' nicht wieder. Woertlich mit Backticks schreiben oder vor dem ersten Code-Span abschneiden.
 2. Die eigene Notiz behauptet, alle vierzehn Anker seien mit 'grep -cF' geprueft worden und je genau einmal vorhanden. Fuer diese vier stimmt das nicht. Die Notiz mitkorrigieren und die Pruefung diesmal wirklich laufen lassen - eine Notiz, die eine nicht durchgefuehrte Pruefung als durchgefuehrt fuehrt, richtet mehr Schaden an als der falsche Anker selbst, weil die naechste Lane ihr glaubt.
+- **2026-09-17 21:42 · Alexander Sacharov** — In-progress nach critique 18 (2026-09-17): kein Quellcode angefasst, nur proof-Zeilen des Tickets — DoD 6, 11, 12 und 13.
+
+Richtigstellung der eigenen Notiz vom 17.09. 21:33: der dort behauptete Satz 'Alle vierzehn Anker am Arbeitsbaum geprueft (grep -cF, jeder genau einmal vorhanden), einschliesslich der vier NOTES.md-Zeilenanfaenge' war falsch. Fuer die vier NOTES.md-Anker lieferte 'grep -cF' 0, weil die Anker ohne die Backticks der Originalzeile zitiert waren. Die Pruefung ist diesmal wirklich gelaufen, als ein Durchlauf ueber alle 23 Anker; die Ausgabe stand im Terminal dieser Lane.
+
+Dabei sind ZWEI weitere Anker derselben Sorte aufgefallen, die critique 18 nicht genannt hat — beide ebenfalls 'grep -cF' 0:
+- DoD 11 zitierte den Loop-Schritt als '/jaira-role-lane <id> <lane> — every lane, testing included'. jaira-dispatcher/SKILL.md:178 traegt den Befehl in Backticks und schliesst mit einem Punkt.
+- DoD 13 zitierte den announce.go-Punkt als '- jaira show <id> --for-lane <lane> --json'. announce.go:64 traegt ihn in Backticks. Der blosse Befehl kommt zweimal vor (Zeile 64 und 236), der Anker fuehrt deshalb den Bullet-Anfang bis "— the lane's prompt" mit und ist damit eindeutig.
+
+Was daraus zu lernen ist, weil es jetzt zweimal passiert ist: ein Anker wird aus der Quelldatei kopiert, nicht aus dem Gedaechtnis formuliert. Markdown-Prosa in diesem Repository setzt Befehle und Feldnamen konsequent in Backticks; ein Anker, der den Befehl 'nackt' zitiert, findet sich nie wieder. Das trifft NICHT die Abschnittsueberschriften — die tragen keine Code-Spans und waren alle korrekt.
+
+Nicht angefasst, mit Verweis: 'jaira dod --verify-proof' waere ein eigenes Ticket (critique 18 sieht das genauso). Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), doppelte Frage 'Are you the lane that writes?' (Runde 17), dispatcher:226 (aelter als dieses Ticket).
