@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -36,14 +36,15 @@ related:
   - 01M2E5R7NKRK3ETAEKG14XHZ6N
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
+  - 6809ad7d473114e1405fbdf8205f02c9478303f3
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:42:32Z
+updated-at: 2026-09-17T20:42:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
-outcome-what: "Die mitlaufende Kritik liest jetzt den nicht committeten Arbeitsbaum (git status --short, git diff, git diff --cached) statt der Commit-Liste, und die Pause nach einem DoD-Punkt schliesst '.jaira/tickets/' aus dem Pathspec aus. Dazu grenzt der Dispatcher-Prompt die Begruendung 'der Diff war nie das Limit' auf die critique-LANE ein, und zwei Zeilen stehen unter ## Unreleased in core/release/NOTES.md."
-outcome-why: "review hat zwei leise Defekte gefunden: die mitlaufende Kritik startet, bevor es Commits gibt, bekam von 'show --for-lane critique --json' complete:false mit fehlendem Diff und haette 'nichts gefunden' gemeldet; und ab dem ersten 'jaira dod' steht die Ticket-Datei dauerhaft in 'git status --short', also war 'Both empty? No pause' unerreichbar und vorgelegt wurde der Ticket-Diff statt des Codes."
-outcome-resolves: "DoD 14 und 15; alle 15 DoD-Punkte sind jetzt abgehakt."
+outcome-what: "Die drei critique-Befunde der 14. Runde behoben, alle in Prompts: der Rueckbezug in jaira-dispatcher/SKILL.md zeigt jetzt auf den Diff-Satz statt auf den Satz darueber; die drei Kommandos der mitlaufenden Kritik in jaira-role-lane/SKILL.md tragen ':/ :(exclude,top).jaira/tickets' — auch 'git diff --cached' — plus den Halbsatz, dass frische Notizen mit 'jaira show <id> --json' gelesen werden; die proof-Zeilen von DoD 5, 10, 12 und 13 zeigen wieder auf den Text, den sie meinen. Die bestehende Unreleased-Zeile zur mitlaufenden Kritik in core/release/NOTES.md nennt den Ausschluss."
+outcome-why: "Ohne den Pathspec bekommt die mitlaufende Kritik den Ticket-Diff vorgelegt — hunderte Zeilen Prosa um wenige Zeilen Code —, weil der Worker nebenan mit jedem 'jaira dod' und 'jaira note' die Ticket-Datei schreibt; genau die Falle, die derselbe Prompt fuer die Pause 30 Zeilen tiefer schon ausschliesst. Der falsche Rueckbezug steht in dem Absatz, dessen einziger Zweck das Auseinanderhalten der beiden Kritiken ist, und die verschobenen proof-Zeilen schicken die naechste pruefende Lane in den falschen Text."
+outcome-resolves: "DoD 7 (die mitlaufende Kritik sieht die Arbeit, die sie beurteilen soll) und DoD 12 (sie liest den nicht committeten Arbeitsbaum) tragen jetzt auch, wenn der Implementierer parallel schreibt; DoD 5 und DoD 10 sind wieder mit dem Text belegt, den ihre proof-Zeile nennt."
 review-summary: |-
   core/role/builtin/jaira-dispatcher/SKILL.md:109 — 'That last sentence is about the critique LANE' zeigt auf den falschen Satz: der letzte Satz des Absatzes darueber ist 'The most expensive finding of the eight arrived in round seven.'; gemeint ist der Satz ueber den Diff ('in that lane the diff was never what limited them'). In einem Absatz, dessen einziger Zweck das Auseinanderhalten zweier Kritiken ist, ist ein falscher Rueckbezug teuer. Ersetze 'That last sentence' durch 'The point about the diff above' — oder haenge den neuen Absatz direkt hinter den Diff-Satz statt hinter das Absatzende.
   core/role/builtin/jaira-role-lane/SKILL.md:110-111 — die mitlaufende Kritik laeuft 'git status --short' und 'git diff' OHNE Pathspec, waehrend der implementierende Worker nebenan 'jaira dod' und 'jaira note' schreibt. Sie bekommt damit genau den Ticket-Datei-Diff vorgelegt, den derselbe Prompt 33 Zeilen tiefer (SKILL.md:140-145) als Falle benennt und ausschliesst — auf einem Ticket wie diesem sind das hunderte Zeilen Prosa neben wenigen Zeilen Code. Dieselbe Bedingung an beide Kommandos: 'git status --short -- :/ ":(exclude,top).jaira/tickets"' und 'git diff -- :/ ":(exclude,top).jaira/tickets"', plus ein Halbsatz, dass das, was der Implementierer inzwischen aufs Ticket geschrieben hat, mit 'jaira show <id> --json' gelesen wird und nicht aus einem Diff — sonst nimmt die Ausschluss-Zeile ihr die frischen Notizen weg.
