@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:47:15Z
+updated-at: 2026-09-17T19:47:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -145,7 +145,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
   proof: core/role/builtin/jaira-role-lane/SKILL.md:30-38
 - [x] critique 12: jaira-dispatcher/SKILL.md:120 — die 106-Zeichen-Zeile wie die Nachbarn bei ~78 umbrechen
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:120-129
-- [ ] testing 1: core/board/announce.go nennt 'mode' in der --for-lane-Nutzlast; Test, NOTES.md-Zeile, 'jaira update' fuer AGENTS.md/CLAUDE.md
+- [x] testing 1: core/board/announce.go nennt 'mode' in der --for-lane-Nutzlast; Test, NOTES.md-Zeile, 'jaira update' fuer AGENTS.md/CLAUDE.md
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
