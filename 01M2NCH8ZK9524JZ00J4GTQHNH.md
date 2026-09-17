@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:07:40Z
+updated-at: 2026-09-17T22:07:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -120,6 +120,7 @@ mode: ""
 - [x] Die Pause uebergeht die Ticket-Datei: die Bedingung in jaira-role-lane/SKILL.md schliesst Aenderungen unter '.jaira/tickets/' aus (etwa 'git status --short -- . ":(exclude).jaira/tickets"' und dasselbe fuer 'git diff'), damit 'Both empty? No pause' nach dem ersten 'jaira dod' erreichbar bleibt. Nachgestellt an einem reinen Dokumentationspunkt nach einer bereits gesetzten Haekchen: es wird nicht pausiert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '2. Show the code after every definition-of-done item, not at the end.' — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
 - [ ] Der Unterscheider macht aus einem schreibenden Worker keinen stummen Leser mehr: die Bedingung in jaira-role-lane/SKILL.md, Abschnitt '1. Are you the critique that runs beside the work?', ist an die Lane gebunden - mitlaufende Kritik ist ein Worker nur, wenn sein Lane-Argument 'critique' lautet UND der status es nicht ist. Nachgestellt an dem Fall, der heute still ausfaellt: Ticket in 'todo', Aufruf mit 'pre-process' - der Worker arbeitet die Lane, statt sich fuer die Kritik zu halten.
+- [ ] Der Prompt behauptet keinen vollstaendigen Diff mehr, den er nicht bekommt: der Satz 'hands you a full diff' in jaira-role-lane/SKILL.md wird richtiggestellt - internal/cli/flow.go:589 nimmt 'shas := t.Commits' und leitet nur bei leerem Feld aus git ab, also zeigt der Payload auf einem Ticket mit gefuelltem 'commits:' genau diese Commits und nicht den Branch. Der Satz sagt, wie man es merkt und was man stattdessen liest ('git diff master...HEAD'). Der Defekt in flow.go selbst gehoert nicht hierher und bekommt ein eigenes Ticket.
 
 ## Options
 
