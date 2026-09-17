@@ -96,6 +96,28 @@ you were started as, **you are not the one that writes.** Say so to the
 dispatcher and let it answer — it knows, it started you. Asking costs one line;
 guessing wrong costs a second `review-summary` written over the first.
 
+**Read the worktree, not the ticket's diff.** The `--for-lane critique` payload
+you read at the top came back `complete: false`, with
+`diff (git has no commits for this ticket yet)` among its missing inputs, and
+`outcome-what`/`outcome-resolves` missing beside it. That is not a broken board:
+the lane whose work you are reading is still running, so nothing is committed
+yet and nothing is written on the ticket yet (`internal/cli/flow.go:590-595` —
+the diff is assembled from the ticket's commits, and there are none). Do not
+wait for it to fill and do not report that you had nothing to read. What you
+judge is the uncommitted worktree:
+
+```bash
+git status --short
+git diff
+git diff --cached
+```
+
+`git diff` is the work in progress, `--cached` anything already staged, and
+`git status --short` the new files neither of them shows — read a `??` line's
+file with `cat`. The ordinary critique lane is the one that reads the payload's
+diff; you read what is on disk right now, which is the point of running beside
+the work.
+
 Report and stop. A running critique does not sit waiting for more work after it
 has handed over its findings — it is done, and the dispatcher starts whatever
 comes next.
@@ -110,9 +132,17 @@ ticket as always.
 Work one item, then run **both** of these:
 
 ```bash
-git status --short
-git diff
+git status --short -- :/ ':(exclude,top).jaira/tickets'
+git diff -- :/ ':(exclude,top).jaira/tickets'
 ```
+
+The pathspec is not decoration either. From your first `jaira dod` onwards the
+ticket file under `.jaira/tickets/` is modified and stays modified for the rest
+of the lane, so a bare `git status --short` is never empty again: every later
+item would pause, and what you would put in front of the person is the ticket's
+own diff. Excluding that one directory is what keeps "no code, no pause" true
+after the first item. `:/` is the repository root, so both commands say the same
+thing from any directory.
 
 `git diff` alone is blind to a file that does not exist in the index yet, and a
 definition-of-done item made of one new file — a new test, a new package — is

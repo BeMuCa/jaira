@@ -102,10 +102,15 @@ jaira show <id> --json        # the "mode" key
 The critique lane runs when the implementing lane is finished, and that is the
 late end of the ticket. Measured on the ticket that built this mode: eight
 rounds — three findings, then two, then five times one. Every round opened a
-file no earlier round had looked at, and the diff was never what limited them,
-because `internal/cli/flow.go` assembles it from every commit of the ticket and
-not from the last one. One reader takes a slice and stops when it is enough.
-The most expensive finding of the eight arrived in round seven.
+file no earlier round had looked at, and in that lane the diff was never what
+limited them, because `internal/cli/flow.go` assembles it from every commit of
+the ticket and not from the last one. One reader takes a slice and stops when
+it is enough. The most expensive finding of the eight arrived in round seven.
+
+That last sentence is about the critique **lane** and not about the critique
+below it: a lane runs after the commits exist. The one that runs beside the
+work has no commits to read at all, and its prompt sends it to the uncommitted
+worktree instead.
 
 So in `mode: conversational`, and only there, run a critique **while** the
 implementing lane is working:
