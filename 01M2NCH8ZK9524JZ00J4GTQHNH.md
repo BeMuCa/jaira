@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:40:47Z
+updated-at: 2026-09-17T21:40:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -101,7 +101,7 @@ review-check: |-
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt '2. Show the code after every definition-of-done item, not at the end.' — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
-  proof: core/release/NOTES.md unter ## Unreleased: die Zeile 'Mark a ticket whose shape is still undecided with jaira set <id> mode=conversational' (Modus, inkl. der Kopfzeile von 'jaira show --for-lane') und die Zeile 'On a ticket in mode: conversational, commit it yourself' (Committen von Hand)
+  proof: core/release/NOTES.md unter ## Unreleased: die Zeile 'Mark a ticket whose shape is still undecided with `jaira set <id> mode=conversational`' (Modus, inkl. der Kopfzeile von 'jaira show --for-lane') und die Zeile 'On a ticket in `mode: conversational`, commit it yourself' (Committen von Hand) — beide Anker woertlich mit den Backticks der Originalzeile, 'grep -cF' findet jeden genau einmal
 - [x] Im Gespraechsmodus laeuft eine Kritik mit, waehrend an dem Ticket gearbeitet wird, und meldet ihre Befunde sofort - nicht erst, nachdem die implementierende Lane fertig ist. Der Modus und die mitlaufende Kritik stehen im selben Prompt und wirken zusammen.
   proof: core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'In conversational mode, a critique runs beside the work' — im selben Prompt wie der Modus und aus dem Abschnitt 'What the mode changes for you' heraus verlinkt ('A critique runs beside the work, not after it'); dessen Schritt 3 verlangt den Befund in dem Moment, in dem er da ist
 - [x] Eine Kritik sieht, was frueher schon geprueft und was schon repariert wurde, und hebt einen erledigten Befund nicht erneut auf. Nachgestellt an einem Ticket, dessen zweite Runde etwas ausdruecklich fuer gut befunden hat: die dritte liest das und prueft es nicht noch einmal.
