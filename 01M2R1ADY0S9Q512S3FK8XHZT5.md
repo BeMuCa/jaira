@@ -28,13 +28,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:23:24Z
+updated-at: 2026-09-17T17:23:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
-outcome-what: "Removed the forwarding wrapper Model.paste; the PasteMsg branch calls insertText directly and carries the rationale"
-outcome-why: "A wrapper with one caller that only forwards is one indirection between the event and the code that handles it, and it kept the explanation in a different file from the branch it explains"
-outcome-resolves: "optimize pass: no duplication, no dead code, no behaviour change"
+outcome-what: "testing pass: gates green, DoD 1-6 verified in the tree, behaviour exercised end-to-end on a real bracketed paste in a pty"
+outcome-why: "the tests feed a tea.PasteMsg directly and skip the decoder, so the terminal path had to be seen working itself"
+outcome-resolves: "test-verdict: pass"
 review-summary: "none"
 review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one caller that only forwarded to insertText; its rationale now sits at the 'case tea.PasteMsg' branch in model.go and the tea import went with it. Left alone: foldToOneLine has no duplicate in the repo (view.go wrap* folds the other way, edit.go:178 is display-only, core/lane/corrections.go:219 is file reading in another package), and the two ReplaceAll on the per-keystroke path allocate nothing when there is no match. No dead code and no behaviour change; tests green, go vet clean."
 test-verdict: "pass: suite green (go build/vet/test RC=0, -race on internal/tui RC=0, Windows vet+build RC=0), DoD 1-6 verified in the working tree, and a real bracketed paste (ESC[200~ … ESC[201~) fed to the binary in a pty lands in the filter with Cyrillic/umlauts/emoji intact and folds a multi-line paste to 'paste bug', narrowing the board"
