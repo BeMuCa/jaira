@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:37:03Z
+updated-at: 2026-09-17T19:37:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -498,3 +498,15 @@ critique schlug fuer den claim-Punkt eine Bedingung AM PUNKT vor ('es sei denn, 
 Keine NOTES.md-Zeile fuer diese Runde, absichtlich. Die erste Zeile unter ## Unreleased beschreibt die mitlaufende Kritik samt 'Those critics never write' und dem Unterscheider bereits vollstaendig; ein Benutzer tut nach dieser Runde nichts anderes als vorher. Was sich geaendert hat, ist nur, dass der ausgelieferte Prompt das auch an der Stelle sagt, an der er gelesen wird. Eine zweite Zeile dafuer waere ein Commit-Protokoll, und genau das verbietet der Kopf von NOTES.md.
 
 Die zwei Restzeilen ueber 85 Zeichen in jaira-dispatcher/SKILL.md (185 und 399) sind NICHT angefasst: sie sind aelter als dieses Ticket und gehoeren nicht in diese Lane. Wer die Datei einmal ganz umbricht, findet sie mit: awk 'length($0)>85 {print NR}'.
+- **2026-09-17 19:37 · Alexander Sacharov** — critique (13. Durchgang, ueber die Punkte 7-12): kein Befund. Das ist der Ausgang der Schleife, nicht ein Durchwinken.
+
+Gelesen wurde 6c7acc8 (die beiden Reparaturen aus Runde 12) und der jetzige Stand der beiden SKILL-Dateien im Ganzen, vor dem Diff die Notizen.
+
+Was ich geprueft und in Ordnung gefunden habe:
+- jaira-role-lane/SKILL.md:30-38 — die Bedingung traegt jetzt die ganze Liste, nicht nur den claim-Punkt, und steht VOR dem ersten Punkt. Der Befund aus Runde 12 ist damit nicht eine Zeile tiefer gewandert, sondern geschlossen: dod, note, move und die Commit-Punkte haengen an demselben Satz. Die Frage 'Are you the lane that writes?' ist an dieser Stelle noch nicht beantwortet, aber sie ist ein Vorwaertsverweis mit Ziel — Zeile 19-24 sagt, dass die --json-Lesung das entscheidet, und nennt den Abschnitt, der die Regel gibt. Das ist etwas anderes als der unbedingte Punkt, den Runde 12 gefunden hat, und kein Befund.
+- jaira-dispatcher/SKILL.md:120-129 — umgebrochen, laengste Zeile des Absatzes 78. Die zwei Restzeilen ueber 85 Zeichen (Zeile 3 und 217) sind Frontmatter bzw. aelter als dieses Ticket; die In-progress-Notiz vom 17.09. 19:32 laesst sie ausdruecklich stehen.
+- DoD 11 nachgeprueft: 'grep -rn "Testing is not a lane" core/' findet nichts.
+
+Ausdruecklich stehen gelassen, mit Verweis auf die Notiz, die es geschlossen hat: die Prosa-Wiederholung ueber README/AGENTS.md/beide SKILLs/NOTES.md (optimize, 16.09. 20:21). Der Merge-Driver (Runde 5). Die drei Befunde, die der Dispatcher am 17.09. 18:50 als geschlossen nachgesehen hat. Das Restrennen zwischen erstem Lesen und sehr fruehem 'move --to critique' (Runde 11). Dass dispatcher/SKILL.md Schritt 1 die Startzeile ohne den Nebensatz zeigt, den Schritt 2 sechs Zeilen spaeter verlangt: die Anweisung steht in derselben Liste unmittelbar darunter, das ist keine Reihenfolge-Luecke wie die der Runden 10-12.
+
+EINE BEOBACHTUNG AUSSERHALB DIESES TICKETS, fuer Alex, nicht von mir zu entscheiden und hier nicht angefasst: DoD 8 ('eine Kritik sieht, was frueher geprueft wurde') ist in .jaira/lanes/critique.md gebaut — einer Lane, die jaira nicht ausliefert; core/lane/builtin/ hat keine critique.md, und die NOTES.md-Zeile sagt das ehrlich ('critique is not a shipped lane at all'). Die eine urteilende Lane, die JEDES Board bekommt, ist core/lane/builtin/40-review.md, und deren input-requires (Zeile 9) fuehrt 'notes' nicht und ihr Prompt hat keinen 'lies zuerst die Notizen'-Absatz. Die Eigenschaft erreicht also nur das Board von jaira selbst. Ob sie in die review-Lane gehoert, ist eine echte Abwaegung und keine Reparatur: die review-Lane ist absichtlich der zweite, unbelastete Leser, und ihn mit den Befunden der frueheren Durchgaenge zu fuettern kann ihn genauso gut anlehnen wie informieren. Eigenes Ticket oder bewusst so lassen — Alex' Entscheidung.
