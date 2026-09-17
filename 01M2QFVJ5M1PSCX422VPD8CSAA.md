@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:10:02Z
+updated-at: 2026-09-17T15:11:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -49,7 +49,8 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
   proof: go test ./core/release/ ok (TestEmbeddedNotesParseToAtLeastOneRealEntry); awk-Scan ueber '## Unreleased': 9 '- '-Zeilen, keine Nicht-'- '-Zeile
 - [x] Keine Aenderung geht beim Falten verloren: jede der vier Aenderungen ist im gefalteten Text nachweisbar, und die Kommandos und Tasten, die ein Benutzer tippt ('jaira milestone', 'M', '--milestone', '--no-worktree', 'dispatch', 'jaira restore'), stehen weiter darin.
   proof: grep ueber '## Unreleased': 'jaira milestone' 4x, '`M`' 2x, '--milestone' 1x, '--no-worktree' 1x, 'dispatch' 5x, 'jaira restore' 1x, 'refs/jaira/milestones' 1x, 'jaira fetch' 2x
-- [ ] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
+- [x] Die Umbenennung von '## Unreleased' nach '## 0.3.0' und die frische leere '## Unreleased' darueber faehren in dem Commit, den der Mensch taggt - nicht frueher. Der Tag selbst wird von einem Menschen gesetzt, nicht von einem Agenten.
+  proof: core/release/NOTES.md:16-18 — '## Unreleased' ist leer und neu, '## 0.3.0' traegt die 9 Zeilen; TestParseNotesKeepsAnEmptyLeadingSection deckt die leere Kopfsektion
 
 ## Options
 
