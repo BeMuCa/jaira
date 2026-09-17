@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,14 +37,17 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:29:41Z
+updated-at: 2026-09-17T20:42:32Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-93859
-claimed-at: 2026-09-17T20:03:50Z
+claimed-by: DESKTOP-RFTCH11-51319
+claimed-at: 2026-09-17T20:36:51Z
 outcome-what: "Die mitlaufende Kritik liest jetzt den nicht committeten Arbeitsbaum (git status --short, git diff, git diff --cached) statt der Commit-Liste, und die Pause nach einem DoD-Punkt schliesst '.jaira/tickets/' aus dem Pathspec aus. Dazu grenzt der Dispatcher-Prompt die Begruendung 'der Diff war nie das Limit' auf die critique-LANE ein, und zwei Zeilen stehen unter ## Unreleased in core/release/NOTES.md."
 outcome-why: "review hat zwei leise Defekte gefunden: die mitlaufende Kritik startet, bevor es Commits gibt, bekam von 'show --for-lane critique --json' complete:false mit fehlendem Diff und haette 'nichts gefunden' gemeldet; und ab dem ersten 'jaira dod' steht die Ticket-Datei dauerhaft in 'git status --short', also war 'Both empty? No pause' unerreichbar und vorgelegt wurde der Ticket-Diff statt des Codes."
 outcome-resolves: "DoD 14 und 15; alle 15 DoD-Punkte sind jetzt abgehakt."
-review-summary: "Der Modus ist ein Frontmatter-Feld mit geschlossenem Wertebereich plus die Prosa, die Agenten sagt, was er bedeutet. Go-Seite: core/ticket/schema.go bringt FieldMode, Ticket.Mode, die Zuweisung in Decode, einen Platz in canonicalOrder und CanonicalMode() — eine Funktion, die trimmt UND urteilt, hinter der beide Schreibpfade liegen (internal/cli/tickets.go newSetCmd, internal/tui/edit.go commitEdit), damit CLI und TUI nicht auseinanderlaufen. Gelesen wird der Modus an fuenf Stellen: 'show --json' (ticketJSON), 'show --for-lane --json' als eigener Schluessel neben model_tier, die Kopfzeile von 'show --for-lane' ohne --json, die 'mode'-Zeile in printDetail und im TUI-Detail, und 'jaira resume' (JSON-Item plus Klartextzeile) — letzteres ist das, was den Sitzungsabbruch traegt, weil ein neuer Dispatcher mit genau diesem Befehl wieder anfaengt. core/validate/validate.go faengt mit CodeBadMode (Warning) ab, was an beiden Schreibpfaden vorbeikommt, und vergleicht die kanonische Form, nicht nur das Urteil, damit ' conversational ' nicht als gueltig durchgeht. Prompt-Seite: jaira-dispatcher/SKILL.md zaehlt vor der Plan-Lane die offenen Entscheidungen auf, haelt bei mindestens einer an, schreibt die Antwort mit 'jaira note' und setzt dann mode=conversational; ausserdem ein neuer Abschnitt 'mitlaufende Kritik' — ein zweiter, nur lesender Worker parallel zum implementierenden, genau ein Schreiber von review-summary und genau ein 'jaira move', beide beim Dispatcher. jaira-role-lane/SKILL.md liest zuerst 'show <id> --json' (wegen status), erst danach 'jaira claim', unterscheidet den mitlaufenden Kritiker am Vergleich lane-Argument != status, legt im Modus nach jedem DoD-Punkt 'git status --short' plus 'git diff' vor und gibt statt eines Commits eine fertige Commit-Zeile mit Handle zurueck — und keine, wenn die Lane keinen Code geaendert hat. Dazu .jaira/lanes/critique.md mit 'notes' in input-requires, spawn.sh --help mit der Lesen-Ausnahme fuer --no-worktree, README.md/docs/AGENTS.md, sieben NOTES.md-Zeilen unter ## Unreleased und core/board/announce.go, damit der Block, den 'jaira update' auf ein fremdes Board schreibt, den Schluessel ueberhaupt nennt."
+review-summary: |-
+  core/role/builtin/jaira-dispatcher/SKILL.md:109 — 'That last sentence is about the critique LANE' zeigt auf den falschen Satz: der letzte Satz des Absatzes darueber ist 'The most expensive finding of the eight arrived in round seven.'; gemeint ist der Satz ueber den Diff ('in that lane the diff was never what limited them'). In einem Absatz, dessen einziger Zweck das Auseinanderhalten zweier Kritiken ist, ist ein falscher Rueckbezug teuer. Ersetze 'That last sentence' durch 'The point about the diff above' — oder haenge den neuen Absatz direkt hinter den Diff-Satz statt hinter das Absatzende.
+  core/role/builtin/jaira-role-lane/SKILL.md:110-111 — die mitlaufende Kritik laeuft 'git status --short' und 'git diff' OHNE Pathspec, waehrend der implementierende Worker nebenan 'jaira dod' und 'jaira note' schreibt. Sie bekommt damit genau den Ticket-Datei-Diff vorgelegt, den derselbe Prompt 33 Zeilen tiefer (SKILL.md:140-145) als Falle benennt und ausschliesst — auf einem Ticket wie diesem sind das hunderte Zeilen Prosa neben wenigen Zeilen Code. Dieselbe Bedingung an beide Kommandos: 'git status --short -- :/ ":(exclude,top).jaira/tickets"' und 'git diff -- :/ ":(exclude,top).jaira/tickets"', plus ein Halbsatz, dass das, was der Implementierer inzwischen aufs Ticket geschrieben hat, mit 'jaira show <id> --json' gelesen wird und nicht aus einem Diff — sonst nimmt die Ausschluss-Zeile ihr die frischen Notizen weg.
+  .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-*.md — die proof-Zeilen von DoD 5 und DoD 10 zeigen nach 113628e ins Leere: DoD 5 nennt 'jaira-role-lane/SKILL.md:74-105' (das ist jetzt der Abschnitt zur mitlaufenden Kritik) und DoD 10 nennt ':50-80' (das ist jetzt 'did you change no code'). Die Pause mit 'git status --short' steht bei 130-160. Beide proof-Zeilen auf den aktuellen Bereich umschreiben; die naechste Lane, die die DoD-Punkte nachpruefen soll, liest sonst den falschen Text.
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
 
@@ -95,7 +98,7 @@ review-check: |-
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:107-128 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:74-105 — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:139-178 — 'git status --short' und 'git diff' nach jedem DoD-Punkt vorlegen und warten; beide leer heisst keine Pause
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer den Modus und fuer das, was ein Benutzer beim Committen anders tut.
   proof: core/release/NOTES.md:17 (Modus, inkl. der Kopfzeile von 'jaira show --for-lane') und :18 (Committen von Hand), beide unter ## Unreleased
 - [x] Im Gespraechsmodus laeuft eine Kritik mit, waehrend an dem Ticket gearbeitet wird, und meldet ihre Befunde sofort - nicht erst, nachdem die implementierende Lane fertig ist. Der Modus und die mitlaufende Kritik stehen im selben Prompt und wirken zusammen.
@@ -105,13 +108,13 @@ review-check: |-
 - [x] Genau eine Stelle schreibt review-summary und bewegt das Ticket. Laufen mehrere Kritiker gleichzeitig, lesen sie nur; das Zusammenfuehren und der eine 'jaira move' gehoeren dem Dispatcher.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:69-100 — die Nur-Lese-Rolle wird einmal entschieden und nie neu; wer es nicht mehr weiss, fragt den Dispatcher
 - [x] Die Pause nach einem DoD-Punkt erkennt auch eine NEU angelegte Datei. Nachgestellt an einem Punkt, der nur aus einer neuen Datei besteht: der Modus haelt an, statt ihn als leere Ausgabe durchlaufen zu lassen.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:50-80 — 'git status --short' steht jetzt neben 'git diff', ein '??' ist eine Pause und die neue Datei wird mit vorgelegt; nachgestellt in diesem Worktree: eine angelegte probe_neu.go liefert 'git diff' 0 Zeilen und 'git status --short' die Zeile '?? probe_neu.go'
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:156-172 — 'git status --short' steht neben 'git diff', ein '??' ist eine Pause und die neue Datei wird mit vorgelegt; nachgestellt in diesem Worktree: eine angelegte probe_neu.go liefert 'git diff' 0 Zeilen und 'git status --short' die Zeile '?? probe_neu.go'
 - [x] Der Halbsatz 'Testing is not a lane' steht nicht mehr in core/role/builtin/jaira-dispatcher/SKILL.md; scripts/spawn.sh hat weiterhin genau einen Sonderfall ('dispatch'), und core/role/builtin/jaira-role-tester/SKILL.md ist unveraendert.
   proof: grep 'Testing is not a lane' core/ findet nichts mehr; core/role/builtin/jaira-dispatcher/SKILL.md:157 lautet jetzt '/jaira-role-lane <id> <lane> — every lane, testing included'; spawn.sh und jaira-role-tester/SKILL.md stehen unveraendert in 'git status --short'
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
-  proof: core/release/NOTES.md:16 (mitlaufende Kritik), :17 (notes als Lane-Eingabe) und :18 (die Pause, die neue Dateien sieht), alle drei unter ## Unreleased
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:99-127 — 'Read the worktree, not the ticket's diff': complete:false mit flow.go:590-595 erklaert, dann git status --short / git diff / git diff --cached, alle drei mit Pathspec; core/role/builtin/jaira-dispatcher/SKILL.md:110-113 grenzt die Diff-Begruendung auf die critique-LANE ein
 - [x] Der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, nennt den Modus: core/board/announce.go zaehlt die Nutzlast von 'jaira show --for-lane --json' auf und fuehrt 'mode' darin mit, damit ein Agent auf einem fremden Board ueberhaupt erfaehrt, dass es den Schluessel gibt. Je eine Zeile in core/release/NOTES.md, wenn sich der ausgelieferte Blocktext dadurch aendert.
-  proof: core/board/announce.go:64-72 (Punkt 'mode' in der --for-lane-Nutzlast); Test TestAgentNoteNamesTheConversationalMode in core/board/announce_test.go:151; core/release/NOTES.md:17; regeneriert in AGENTS.md:34-42 und CLAUDE.md:61-69
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:143-155 — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
 - [x] Die mitlaufende Kritik liest den nicht committeten Arbeitsbaum, nicht die Commit-Liste: jaira-role-lane/SKILL.md sagt dem Worker, der sich als mitlaufende Kritik erkannt hat, dass 'jaira show --for-lane --json' zur Laufzeit mit complete:false und fehlendem Diff kommt, weil es noch keine Commits gibt (internal/cli/flow.go:590-595), und dass er stattdessen 'git diff', 'git diff --cached' und 'git status --short' liest. Die Begruendung im Dispatcher-Prompt, der Diff sei nie das Limit gewesen, wird auf die Kritik-LANE eingegrenzt - fuer die mitlaufende gilt sie nicht.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:99-119 — 'Read the worktree, not the ticket's diff': complete:false mit flow.go:590-595 erklaert, dann git status --short / git diff / git diff --cached; core/role/builtin/jaira-dispatcher/SKILL.md:99-102 grenzt die Diff-Begruendung auf die critique-LANE ein
 - [x] Die Pause uebergeht die Ticket-Datei: die Bedingung in jaira-role-lane/SKILL.md schliesst Aenderungen unter '.jaira/tickets/' aus (etwa 'git status --short -- . ":(exclude).jaira/tickets"' und dasselbe fuer 'git diff'), damit 'Both empty? No pause' nach dem ersten 'jaira dod' erreichbar bleibt. Nachgestellt an einem reinen Dokumentationspunkt nach einer bereits gesetzten Haekchen: es wird nicht pausiert.
@@ -166,6 +169,9 @@ review-check: |-
 - [x] critique 12: jaira-dispatcher/SKILL.md:120 — die 106-Zeichen-Zeile wie die Nachbarn bei ~78 umbrechen
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:120-129
 - [x] testing 1: core/board/announce.go nennt 'mode' in der --for-lane-Nutzlast; Test, NOTES.md-Zeile, 'jaira update' fuer AGENTS.md/CLAUDE.md
+- [x] critique 14: jaira-dispatcher/SKILL.md:110 — 'That last sentence' zeigt auf den falschen Satz; auf den Diff-Satz umschreiben
+- [x] critique 14: jaira-role-lane/SKILL.md — die drei Kommandos der mitlaufenden Kritik bekommen den Pathspec ':/ :(exclude,top).jaira/tickets', plus Halbsatz, dass frische Notizen mit 'jaira show <id> --json' gelesen werden
+- [x] critique 14: die proof-Zeilen von DoD 5 und DoD 10 auf die Bereiche nach 113628e umschreiben
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
@@ -591,3 +597,23 @@ Der Pathspec für die Pause ist ':/ :(exclude,top).jaira/tickets' und NICHT die 
 Befund 1 steht als eigener Absatz IM Abschnitt der mitlaufenden Kritik, nicht bei der Pause: er gilt nur für den Worker, der sich als mitlaufende Kritik erkannt hat. Die ordentliche critique-Lane liest weiter den Diff aus der Nutzlast, und der Dispatcher-Prompt sagt das jetzt ausdrücklich (der Satz 'der Diff war nie das Limit' galt immer nur der LANE, die nach den Commits läuft).
 
 Kein Go-Code geändert — die drei Dateien sind zwei Prompts und NOTES.md. Prompts führt kein Test aus; 'go test ./... -count=1' bleibt grün (29 Pakete), belegt aber nur, dass die eingebetteten Rollen weiterhin laden.
+- **2026-09-17 20:35 · Alexander Sacharov** — critique (14. Durchgang, ueber die Reparatur der review-Befunde 1 und 2 in 113628e): drei Befunde, alle mit klarem Fix, keine Entscheidung fuer den Menschen.
+
+1. jaira-dispatcher/SKILL.md:109 — 'That last sentence' zeigt auf 'The most expensive finding of the eight arrived in round seven.' statt auf den Diff-Satz. Der Absatz existiert nur, um die mitlaufende Kritik von der Kritik-LANE zu trennen; ein falscher Rueckbezug genau dort ist teurer als anderswo. 'The point about the diff above' statt 'That last sentence'.
+
+2. jaira-role-lane/SKILL.md:110-111 — die drei Kommandos der mitlaufenden Kritik haben keinen Pathspec. Der implementierende Worker nebenan schreibt waehrenddessen mit 'jaira dod' und 'jaira note' dauernd die Ticket-Datei; die Kritik bekommt also genau den Ticket-Diff als 'die Arbeit' vorgelegt — dieselbe Falle, die derselbe Prompt in Zeile 140-145 benennt und ausschliesst. Nachgestellt in diesem Worktree: 'git status --short' nach einer Aenderung an Ticket-Datei, README.md und einer neuen core/probe_new.go zeigt alle drei; mit ':/ :(exclude,top).jaira/tickets' bleiben README.md und '?? probe_new.go' uebrig, aus jedem Verzeichnis gleich (aus core/ heraus ebenfalls geprueft).
+
+Wichtig fuer die Reparatur von 2: der Ausschluss nimmt der Kritik ihre einzige Sicht auf die Notizen, die der Implementierer GERADE geschrieben hat — die Nutzlast hat sie oben gelesen, bevor es die gab. Deshalb gehoert ein Halbsatz dazu, dass sie dafuer 'jaira show <id> --json' liest. Ohne den ist der Ausschluss eine Verschlechterung.
+
+3. Die proof-Zeilen von DoD 5 (':74-105') und DoD 10 (':50-80') zeigen nach 113628e ins Leere — 113628e hat 22 Zeilen bei 99 eingefuegt und den Pause-Abschnitt nach 130-160 geschoben. Testing hat 'alle DoD-Punkte am Arbeitsbaum belegt' gemeldet, also werden die Zeilennummern dort nicht nachgerechnet.
+
+Geprueft und in Ordnung, nicht noch einmal anfassen: der Pathspec ':/ :(exclude,top).jaira/tickets' funktioniert und ist gegenueber der im DoD vorgeschlagenen '. :(exclude)'-Form die richtige Wahl — in diesem Worktree aus / und aus core/ heraus gefahren, beide Male dasselbe Ergebnis. 'git diff --cached' in der mitlaufenden Kritik bleibt drin, obwohl der Prompt jedes 'git add' verbietet: die review-Lane hat es ausdruecklich verlangt und es kostet nichts. Befund 3 des reviews (lane != status beim direkten Aufruf) bleibt nach Alex' Entscheidung vom 2026-09-17 20:24 eine Notiz und keine Aenderung — nicht wieder aufmachen. Der Dispatcher-Schritt 4 deckt ab, dass die mitlaufende Kritik im selben Verzeichnis laeuft ('--no-worktree'), sonst waere die ganze Worktree-Lesung wirkungslos; das steht und ist geprueft.
+- **2026-09-17 20:42 · Alexander Sacharov** — In-progress nach critique 14 (2026-09-17): alle drei Befunde behoben, keiner im Go-Code — zwei Prompts und die NOTES.md-Zeile.
+
+Befund 2 ist der teure: der Ausschluss ':/ :(exclude,top).jaira/tickets' steht jetzt an ALLEN DREI Kommandos der mitlaufenden Kritik, also auch an 'git diff --cached'. Der Befund nannte nur status und diff; --cached mit auszunehmen ist dieselbe Falle mit einem 'git add' davor, und drei Zeilen mit unterschiedlichem Umfang haette der naechste Leser fuer Absicht gehalten.
+
+Warum der Ausschluss einen Ersatz braucht und nicht allein stehen darf: er nimmt der Kritik die einzige Sicht auf die Notizen, die der Implementierer waehrend ihres Laufs schreibt — die Nutzlast hat sie gelesen, bevor es die gab. Der Absatz sagt deshalb ausdruecklich 'jaira show <id> --json' dafuer. Ohne den Halbsatz waere der Ausschluss eine Verschlechterung.
+
+Keine neue NOTES.md-Zeile fuer Befund 2, sondern die BESTEHENDE Unreleased-Zeile zur mitlaufenden Kritik umgeschrieben: sie ist noch nicht getaggt, beschreibt genau diese drei Kommandos, und eine zweite Zeile daneben haette dem Leser zwei Versionen desselben Verhaltens hingestellt. Befund 1 und 3 sind unter der Wahrnehmungsschwelle eines Benutzers (ein Rueckbezug im Prompt, Zeilennummern auf dem Ticket) und bekommen keine Zeile.
+
+Mitgenommen ueber den Befund hinaus: die proof-Zeilen von DoD 12 und DoD 13 waren nach MEINER eigenen Einfuegung um neun Zeilen verschoben — die habe ich gleich mit nachgezogen. Wer nach einem Prompt-Edit nur die im Befund genannten proofs korrigiert, hinterlaesst die naechsten zwei kaputt.

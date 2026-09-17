@@ -107,9 +107,9 @@ wait for it to fill and do not report that you had nothing to read. What you
 judge is the uncommitted worktree:
 
 ```bash
-git status --short
-git diff
-git diff --cached
+git status --short -- :/ ':(exclude,top).jaira/tickets'
+git diff -- :/ ':(exclude,top).jaira/tickets'
+git diff --cached -- :/ ':(exclude,top).jaira/tickets'
 ```
 
 `git diff` is the work in progress, `--cached` anything already staged, and
@@ -117,6 +117,15 @@ git diff --cached
 file with `cat`. The ordinary critique lane is the one that reads the payload's
 diff; you read what is on disk right now, which is the point of running beside
 the work.
+
+The pathspec is what keeps that readable. The worker beside you writes the
+ticket file with every `jaira dod` and every `jaira note`, so without it the
+diff you are handed is hundreds of lines of the ticket's own prose around the
+few lines of code you came to judge. `:/` is the repository root and `,top`
+anchors the exclusion there, so all three commands say the same thing from any
+directory. It costs you the one thing the exclusion hides: what the implementer
+has written onto the ticket since you read the payload. Read that with
+`jaira show <id> --json`, not out of a diff.
 
 Report and stop. A running critique does not sit waiting for more work after it
 has handed over its findings — it is done, and the dispatcher starts whatever

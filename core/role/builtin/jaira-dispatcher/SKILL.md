@@ -107,10 +107,10 @@ limited them, because `internal/cli/flow.go` assembles it from every commit of
 the ticket and not from the last one. One reader takes a slice and stops when
 it is enough. The most expensive finding of the eight arrived in round seven.
 
-That last sentence is about the critique **lane** and not about the critique
-below it: a lane runs after the commits exist. The one that runs beside the
-work has no commits to read at all, and its prompt sends it to the uncommitted
-worktree instead.
+The point about the diff above is about the critique **lane** and not about
+the critique below it: a lane runs after the commits exist. The one that runs
+beside the work has no commits to read at all, and its prompt sends it to the
+uncommitted worktree instead.
 
 So in `mode: conversational`, and only there, run a critique **while** the
 implementing lane is working:
