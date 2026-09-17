@@ -289,7 +289,15 @@ Stop and report the moment any of these is true:
   Three rounds does not always mean the definition of done is wrong. The other
   cause is a loop that converges in size but never terminates, because each pass
   reads deeper than the last and deeper is always available. Both look identical
-  from here, and only the person can tell you which one you are in
+  from here, and only the person can tell you which one you are in.
+
+  So hand it over as a decision they can take in one word, not as a report they
+  have to take apart first. Three lines: the third round's findings, verbatim;
+  which of those two causes you believe it is and what makes you think so; and
+  the one thing you would do about it. Then ask for yes or no and wait. You may
+  recommend, and you may not act on your own recommendation — which is the same
+  rule as above, said for the moment you are most tempted to read it as
+  permission
 - a worker touched a file outside its worktree, or outside its lane
 
 ## Do not swallow what the human should hear
