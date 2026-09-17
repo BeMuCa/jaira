@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:20:27Z
+updated-at: 2026-09-17T15:20:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -112,3 +112,10 @@ Der Implementierende hat das in der 15:11-Notiz selbst gesehen und als Ticket-Ka
 
 Geprueft und NICHT beanstandet: (1) der Schnitt selbst ist genau die von CLAUDE.md vorgeschriebene Form, zwei Zeilen, nichts Einfacheres denkbar; (2) die 9 gefalteten Zeilen sind unveraendert unter die neue Ueberschrift gerutscht - kein Text bewegt; (3) die 918-Zeichen-Zeile und 'rm loescht nur die Zeile' standen in frueheren Durchgaengen und werden nicht neu aufgemacht; (4) dass der Tag nicht gesetzt wurde, ist richtig und kein Mangel.
 - **2026-09-17 15:16 · Alexander Sacharov** — DoD 6 ist ein Duplikat von DoD 5 - der Dispatcher hat es angelegt, ohne zu sehen, dass die critique-Lane denselben Punkt schon als DoD 5 geschrieben hatte. 'jaira dod' kann keinen Punkt entfernen. Beide beschreiben denselben Fehler (leere '## Unreleased' reist als Entry ohne Changes durch Since() in die Ausgabe von 'jaira update') und werden mit demselben Nachweis abgehakt: DoD 5 aus Sicht des Benutzers, DoD 6 aus Sicht des Codes.
+- **2026-09-17 15:20 · Alexander Sacharov** — Der Filter sitzt in sinceEntries und nicht in parseNotes - die critique hatte das so verlangt und es stimmt: TestParseNotesKeepsAnEmptyLeadingSection haelt fest, dass der Parser die leere Kopfsektion als eigenen Entry behaelt, und daran haengt, dass die naechste Sektion ihre Changes nicht in die leere hineinfallen laesst. sinceEntries ist in selectSince (Auswahl nach Position) und withChanges (Filter) zerlegt, statt den Filter in die drei Rueckgabepfade der Auswahl zu streuen.
+
+KEINE Zeile in NOTES.md fuer diese Behebung. Das ist bewusst und nicht vergessen: die leere '## Unreleased' entsteht ueberhaupt erst durch den Schnitt in diesem Baum (Commit e23e98c), also war der Fehler nie in einem ausgelieferten Binary. Das ist genau die Klasse, die dieses Ticket schon zweimal aussortiert hat - ein Bug an einem nie ausgelieferten Zustand gehoert nicht in die Notizen. Eine Zeile haette ausserdem die leere '## Unreleased' wieder gefuellt und DoD 5 damit unpruefbar gemacht.
+
+Dead end beim Nachsehen an der echten Ausgabe, kostet sonst wieder eine halbe Stunde: (1) das Ticket-Board stempelt NICHT in <repo>/.jaira/version - release.Stamped liest s.StateDir(), und das ist $JAIRA_HOME (default ~/.jaira) /state/<name>-<hash>/version. Die Datei .jaira/version im Repo ist etwas anderes und zu aendern bringt nichts. (2) Das Binary meldet 'dev', solange man nicht -ldflags '-X main.version=0.3.0' setzt - der Schalter haengt an cmd/jaira/main.go:11, NICHT an core/release.Current (das setzt cli.Execute daraus). Ein falscher -X-Pfad wird von go build stillschweigend ignoriert, der Test laeuft dann mit 'dev' und zeigt erwartungsgemaess alles an.
+
+Nachgesehen wurden alle drei Faelle mit eigenem JAIRA_HOME im Scratchpad: ungestempelt -> alle 8 Versionen und kein 'Unreleased'; Stempel 0.3.0 -> 'Nothing has changed since ...' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0'].
