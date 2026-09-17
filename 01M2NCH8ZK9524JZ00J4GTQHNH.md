@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:37:43Z
+updated-at: 2026-09-17T21:38:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -687,3 +687,14 @@ Was ich dabei herausfinden musste: 'jaira dod --add-plan' gibt es nicht, der Sch
 Alle vierzehn Anker am Arbeitsbaum geprueft (grep -cF, jeder genau einmal vorhanden), einschliesslich der vier NOTES.md-Zeilenanfaenge und 'every lane, testing included' im Dispatcher.
 
 Was bleibt: die Anker sind Text, kein Mechanismus. Wer eine Ueberschrift umformuliert, bricht sie genauso - nur faellt das beim Umformulieren auf und beim Einfuegen von fuenf Zeilen nicht. Ein echter Mechanismus (etwa ein 'jaira dod --verify-proof', das jeden proof gegen den Arbeitsbaum haelt) waere ein eigenes Ticket und gehoert nicht in diese Runde.
+- **2026-09-17 21:38 · Alexander Sacharov** — critique (18. Durchgang, ueber die uncommittete Umstellung der proof-Zeilen auf Abschnittsanker): ein Befund, klarer Fix, keine Entscheidung fuer den Menschen.
+
+Die Umstellung selbst ist richtig und schliesst den Befund aus Runde 17. Alle siebzehn Anker in den Prompts und in announce.go am Arbeitsbaum nachgeprueft ('grep -cF', jeder genau einmal): Dispatcher-Abschnitte 'Before the plan lane: count what is still open' (Schritte 1, 4, 5), 'What the mode changes for you' samt den beiden zitierten Punkten, 'In conversational mode, a critique runs beside the work', 'The loop' Schritt 2 mit 'every lane, testing included'; Lane-Abschnitte 1, 2, 3, die Absaetze 'Read it once, and do not read it again', 'Read the worktree, not the ticket's diff', 'The handle in the subject is not decoration' und der Kopfabsatz 'Are you the critique running beside the work instead?'; announce.go:64 fuehrt 'mode' im '--for-lane --json'-Punkt des Blocks 'Working a ticket'; .jaira/lanes/critique.md:10 fuehrt 'notes' in input-requires. Alle treffen inhaltlich den Punkt, den sie belegen sollen — auch die sieben, die Runde 17 als falsch gemeldet hatte.
+
+Der Befund liegt allein bei NOTES.md. Vier der fuenf dort gesetzten Anker sind ohne die Backticks der Originalzeile zitiert und sind damit nicht auffindbar; nur der eine ohne Code-Span trifft. Das ist genau der Defekt, den diese Runde beseitigen sollte, nur eine Stufe feiner: ein Anker, den ein 'grep -F' nicht findet, ist so wenig ein Beleg wie eine veraltete Zeilennummer. Und NOTES.md ist der Fall, in dem es am meisten zaehlt — jede neue Zeile kommt oben dazu, dort gibt es keinen zweiten Weg, die Stelle wiederzufinden.
+
+Nachgeprueft und KEIN Befund: die Anker der DoD-Punkte 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 14, 15. Der Vorschlag der In-progress-Notiz, ein 'jaira dod --verify-proof' waere ein eigenes Ticket — richtig so, hier nicht angefasst.
+
+Ausdruecklich stehen gelassen, mit Verweis: die doppelte Frage 'Are you the lane that writes?' (Runde 17). Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
+
+FUER DEN DISPATCHER: das ist der fuenfte Ruecklauf ueber die Reparatur der review-Befunde (Runden 14-17 und dieser). Die Drei-Ruecklauf-Regel greift weiterhin — ob die Runde laeuft, ist Alex' Entscheidung. Sie fasst vier Zitate in drei proof-Zeilen an, sonst nichts.
