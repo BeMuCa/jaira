@@ -1,7 +1,7 @@
 ---
 id: 01M2R1ADY0S9Q512S3FK8XHZT5
 title: Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
-status: testing
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,15 +28,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:15:41Z
+updated-at: 2026-09-17T17:27:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
-outcome-what: "Removed the forwarding wrapper Model.paste; the PasteMsg branch calls insertText directly and carries the rationale"
-outcome-why: "A wrapper with one caller that only forwards is one indirection between the event and the code that handles it, and it kept the explanation in a different file from the branch it explains"
-outcome-resolves: "optimize pass: no duplication, no dead code, no behaviour change"
-review-summary: "none"
-review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one caller that only forwarded to insertText; its rationale now sits at the 'case tea.PasteMsg' branch in model.go and the tea import went with it. Left alone: foldToOneLine has no duplicate in the repo (view.go wrap* folds the other way, edit.go:178 is display-only, core/lane/corrections.go:219 is file reading in another package), and the two ReplaceAll on the per-keystroke path allocate nothing when there is no match. No dead code and no behaviour change; tests green, go vet clean."
+outcome-what: "review durch: Diff erfuellt alle sechs DoD-Punkte, kein Defekt gefunden"
+outcome-why: "die Form ist richtig - ein eigener Zweig fuer tea.PasteMsg statt eines nachgebauten Tastendrucks, und die Modus->Puffer-Zuordnung an einer Stelle, sodass getippter und eingefuegter Text nicht wieder auseinanderlaufen"
+outcome-resolves: "review-verdict: pass mit einem kosmetischen Hinweis (Tabulator wird nicht gefaltet), kein Rueckgang"
+review-summary: "Model.Update bekommt neben 'case tea.KeyPressMsg' einen zweiten Zweig 'case tea.PasteMsg' (model.go:911), der den eingefuegten Text an die neue Methode Model.insertText (model.go:924) gibt. insertText normalisiert erst \\r\\n und einzelnes \\r zu \\n und legt den Text dann je nach Modus ab: modeEdit haengt ihn mehrzeilig an editBuf, modeFilter/modeCreate/modeDelete haengen ihn durch foldToOneLine (paste.go) einzeilig gefaltet an m.input, modeFilter setzt zusaetzlich m.filter und ruft rebuild(). Derselbe insertText ersetzt die vier bisherigen 'if k.Text != \"\"'-Zweige im Tastenpfad (model.go:985/1006/1022, edit.go:136), damit getippter und eingefuegter Text nicht wieder auseinanderlaufen koennen. Bracketed Paste muss nicht eingeschaltet werden - bubbletea v2.0.8 schaltet es selbst ein (cursed_renderer.go:115). Dazu 175 Zeilen paste_test.go und eine NOTES.md-Zeile unter ## Unreleased."
+review-gaps: "Ein Punkt, kein Blocker: nur Zeilenumbrueche werden gefaltet, andere Steuerzeichen nicht. Ein Tabulator aus einem eingefuegten Codeschnipsel oder Pfad laeuft roh durch insertText in m.input und steht so in der gerenderten Filterzeile - nachgemessen mit einem Wegwerftest: input='a\\tb' erscheint als '/a\\tb▏', die Breitenrechnung zaehlt 5 Zeichen, das Terminal springt aber zum naechsten Tabstopp, also verrutscht der Rahmen bis zum Backspace. In modeCreate landet derselbe Tabulator im Tickettitel. Behebung waere eine Zeile in foldToOneLine (Tabulator und weitere Steuerzeichen zu Leerzeichen), Aufwand ~10 Minuten. Nicht behoben, weil es ausserhalb dieser Lane liegt.\\nKleiner: eine Zeile aus nur Leerzeichen bleibt in der Faltung stehen ('a\\n \\nb' wird 'a   b'), und kein Test haelt fest, dass ein PasteMsg in einem Nicht-Eingabe-Modus (modeBoard) nichts tut - heute garantiert das der switch ohne default, ein fuenfter Modus koennte das unbemerkt aendern.\\nSonst nichts: alle 6 DoD-Punkte sind im Baum belegt, 'grep k.Text' ueber internal/tui findet nur die vier Stellen, die insertText rufen, go build/go vet/go test ./... sind gruen, und die im outcome behauptete Wirkung steht so im Diff."
+test-verdict: "pass: suite green (go build/vet/test RC=0, -race on internal/tui RC=0, Windows vet+build RC=0), DoD 1-6 verified in the working tree, and a real bracketed paste (ESC[200~ … ESC[201~) fed to the binary in a pty lands in the filter with Cyrillic/umlauts/emoji intact and folds a multi-line paste to 'paste bug', narrowing the board"
+review-verdict: "Der Diff erfuellt die Definition of Done und ich habe keinen Defekt gefunden. Die Form ist die richtige: ein eigener Zweig fuer das Ereignis statt eines nachgebauten Tastendrucks, und die Modus->Puffer-Zuordnung an genau einer Stelle, wodurch getippter und eingefuegter Text denselben Weg nehmen - das war der Fehler des Tickets. Unsicher bin ich bei genau einer Sache: die Tests speisen tea.PasteMsg direkt ein und ueberspringen damit den Decoder; dass ein echtes Terminal dieses Ereignis auch schickt, ist von der Testing-Lane in einer pty geprueft worden, nicht von mir. Der Tabulator-Punkt oben ist Kosmetik und kein Grund, die Arbeit zurueckzuschicken."
+review-check: "1. Im Verzeichnis /home/alex/projects/.worktrees/jaira-8XHZT5: 'go test ./internal/tui/ -run TestPaste -v' — acht Tests, alle PASS. 2. 'go run ./cmd/jaira' startet die Tafel. 3. Ein Wort in der Zwischenablage bereitstellen, etwa 'review' (mit der Maus im Terminal markieren genuegt). 4. '/' druecken — unten erscheint die Filterzeile mit '/'. 5. Einfuegen mit Strg+Umschalt+V (oder mittlerer Maustaste). Erwartet: das Wort steht sofort hinter dem '/' und die Tafel zeigt nur noch die Tickets, die dazu passen. Vorher passierte nichts. 6. Esc, dann 'n' druecken und erneut einfuegen — der Text steht im Titelfeld. Esc. 7. Ein Ticket mit Enter oeffnen, 'e' druecken, mehrere Zeilen einfuegen — im Feldeditor bleiben die Zeilen erhalten; Esc bricht ab, ohne zu speichern. 8. Gegenprobe auf Mehrbyte: 'Grüße Привет 🙂' kopieren, '/' druecken, einfuegen — der Text steht Zeichen fuer Zeichen da, und ein Backspace entfernt das Emoji ganz, nicht ein Byte davon."
 ---
 
 # Einfuegen aus der Zwischenablage kommt in keinem Eingabefeld an
@@ -44,7 +47,7 @@ review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one
 ## Definition of Done
 
 - [x] Ein Einfuegen in die Suche landet im Feld: Model.Update behandelt tea.PasteMsg, der Text haengt an m.input, und die Tafel filtert sofort danach wie beim Tippen. Mit Test nachgewiesen, der ein PasteMsg direkt einspeist.
-  proof: internal/tui/model.go:902 case tea.PasteMsg -> internal/tui/paste.go:24 Model.paste -> internal/tui/model.go:914 Model.insertText; TestPasteIntoFilterLandsAndFilters
+  proof: internal/tui/model.go:911 case tea.PasteMsg -> internal/tui/model.go:924 Model.insertText; TestPasteIntoFilterLandsAndFilters (paste_test.go feeds a real tea.PasteMsg)
 - [x] Kein Eingabefeld verschluckt ein Einfuegen mehr: modeFilter, modeCreate, modeDelete und modeEdit nehmen den eingefuegten Text genauso an wie getippten. Je ein Test pro Modus.
   proof: internal/tui/model.go:914-939 insertText covers modeEdit, modeFilter, modeCreate, modeDelete and is the single path for typed and pasted text alike; TestPasteReachesEveryInputMode (create/delete/edit subtests) + TestPasteIntoFilterLandsAndFilters
 - [x] Mehrbyte-Text ueberlebt das Einfuegen unveraendert: kyrillischer Text, Umlaute und ein Emoji stehen nach dem Einfuegen Zeichen fuer Zeichen im Puffer, und ein Backspace danach entfernt genau ein Zeichen, nicht ein Byte. Mit Test nachgewiesen.
@@ -52,7 +55,7 @@ review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one
 - [x] Ein mehrzeiliger eingefuegter Text zerlegt die Suche nicht: das Feld ist eine Zeile, also entscheidet das Ticket bewusst, was mit Zeilenumbruechen passiert (verwerfen oder zu Leerzeichen falten), und ein Test haelt diese Entscheidung fest.
   proof: internal/tui/model.go:921-927 insertText normalises CRLF and lone CR to \n once; internal/tui/paste.go:41 foldToOneLine folds newline runs to one space in a single pass; TestMultiLinePasteIsFoldedToSpaces (6 cases), TestPasteKeepsLinesInTheFieldEditor, TestPasteNormalisesALoneCarriageReturnInTheFieldEditor
 - [x] Die Tastaturbelegung spielt keine Rolle: eine Notiz am Code haelt fest, warum Strg+V nicht ueber cmdKey abgebildet wird (keylayout.go:38-42, der Dekoder loescht Key.Text bei Modifikatoren) und warum das Behandeln von PasteMsg die Belegung ueberfluessig macht.
-  proof: internal/tui/paste.go:9-23 doc comment on Model.paste, and internal/tui/model.go:900-901 at the branch
+  proof: internal/tui/model.go:900-910 comment at the 'case tea.PasteMsg' branch: why ctrl+v cannot go through cmdKey (keylayout.go clears Key.Text under modifiers) and why the event makes the layout irrelevant
 - [x] core/release/NOTES.md traegt unter '## Unreleased' eine Zeile: was der Benutzer jetzt TUN kann - in die Suche einfuegen.
   proof: core/release/NOTES.md:17 under '## Unreleased'
 
@@ -122,3 +125,26 @@ Geprueft und ohne Befund, damit es kein vierter Durchlauf nochmal aufmacht:
 - Nicht wieder aufgemacht: Model.paste als Einzeiler mit einem Aufrufer (spiegelt m.key(msg) im selben switch) und die Leerpruefung im modeFilter-Zweig (spart ein rebuild() ueber die ganze Tafel) - beide im 2. Durchlauf bewusst stehen gelassen.
 - editKey 'enter' haengt \n direkt an statt ueber insertText: identisches Ergebnis, der Umweg waere reine Indirektion.
 - **2026-09-17 17:15 · Alexander Sacharov** — optimize: entfernt wurde der Wrapper Model.paste in internal/tui/paste.go - er leitete nur an insertText weiter und hatte genau einen Aufrufer. Die Begruendung, warum ein Einfuegen keine Tastenbindung sein kann, steht jetzt direkt am 'case tea.PasteMsg' in model.go, also dort, wo jemand sie liest. paste.go haelt nur noch foldToOneLine; der tea-Import ist damit weg. Geprueft und stehen gelassen: foldToOneLine hat kein Gegenstueck im Repo - view.go wrapLines/wrap gehen in die andere Richtung, edit.go:178 ersetzt Umbrueche fuer die Anzeige durch ' ⏎ ', core/lane/corrections.go:219 normalisiert CRLF beim Dateilesen und gehoert einem anderen Paket. Die zwei ReplaceAll in insertText laufen bei jedem Tastendruck, kosten aber nichts: strings.Replace gibt bei null Treffern denselben String ohne Allokation zurueck. Tests gruen, go vet sauber.
+- **2026-09-17 17:23 · Alexander Sacharov** — testing: Bestanden, drei Durchgaenge.
+
+1. Tore: go build ./... RC=0, go vet ./... RC=0, go test ./... RC=0 (ganze Suite), go test -race -count=1 ./internal/tui RC=0 (114s, kein Race). Windows-Gegenprobe wie in README 'Development': GOOS=windows GOARCH=amd64 go vet ./... und go build ./cmd/jaira, beide RC=0.
+
+2. Die Forderung, Punkt fuer Punkt am Arbeitsbaum geprueft, nicht am Outcome-Text:
+- DoD 1: model.go:911 'case tea.PasteMsg' -> model.go:924 insertText; TestPasteIntoFilterLandsAndFilters gruen. paste_test.go:14 pasteInto speist wirklich ein tea.PasteMsg ein, kein nachgebautes KeyPressMsg - der Nachweis, den DoD 1 verlangt.
+- DoD 2: grep k.Text ueber internal/tui findet vier Stellen (model.go:975, 996, 1012, edit.go:136), alle rufen insertText. TestPasteReachesEveryInputMode (create/delete/edit) + TestPasteIntoFilterLandsAndFilters, alle gruen.
+- DoD 3: TestPasteKeepsMultiByteTextWhole gruen, 'Gruesse Privet Emoji' kommt heil an, ein Backspace entfernt ein Zeichen.
+- DoD 4: TestMultiLinePasteIsFoldedToSpaces, 6 Faelle, alle gruen; dazu TestPasteKeepsLinesInTheFieldEditor und TestPasteNormalisesALoneCarriageReturnInTheFieldEditor.
+- DoD 5: Begruendung steht an model.go:900-910 am Zweig selbst.
+- DoD 6: core/release/NOTES.md:17 unter '## Unreleased', eine Zeile, als Anweisung geschrieben.
+
+3. Verhalten am echten Programm geprueft, nicht nur am Test - die Tests umgehen den Dekoder, indem sie das PasteMsg direkt einspeisen, also war offen, ob das Terminal ueberhaupt eine Klammer-Einfuegung schickt und ob bubbletea sie ohne Zusatzoption einschaltet. Binary gebaut, in einem echten pty gestartet, Testtafel mit zwei Tickets, '/' gedrueckt und die rohe Bytefolge ESC[200~ ... ESC[201~ hineingeschrieben:
+- 'Privet ueoe Emoji' (Kyrillisch + Umlaute + Emoji): steht Zeichen fuer Zeichen im Feld, Tafel filtert sofort (0 Tickets).
+- 'paste\nbug\r\n' (mehrzeilig, mit CRLF am Ende): im Feld steht 'paste bug', Tafel zeigt 1 Ticket. Faltung und CR-Normalisierung greifen auch auf dem echten Weg durch den Dekoder.
+Damit ist bestaetigt, was der 3. Critique-Durchlauf nur aus dem Quelltext geschlossen hatte: Bracketed Paste ist ohne Zusatzoption aktiv, die Behebung ist nicht tot.
+
+Ein Befund, ohne Ruecklauf, weil er keinen Code betrifft: die Proof-Zeilen von DoD 1 und DoD 5 zeigten noch auf 'internal/tui/paste.go:24 Model.paste' und 'paste.go:9-23', die der optimize-Durchgang entfernt hat. Zeigten also ins Leere. Beide hier auf die heutigen Stellen gesetzt (model.go:911/924 bzw. model.go:900-910). paste.go traegt nur noch foldToOneLine.
+- **2026-09-17 17:27 · Alexander Sacharov** — review: Diff gegen die Definition of Done geprueft, kein Defekt gefunden, nichts geht zurueck. Geprueft und ohne Befund, damit es niemand nochmal aufmacht: alle sechs DoD-Punkte sind im Baum belegt (nicht nur im proof-Feld nachgelesen), 'grep k.Text' ueber internal/tui findet genau die vier Stellen, die insertText rufen, go build/vet/test ./... gruen, und bubbletea v2.0.8 schaltet Bracketed Paste ohne Option ein (cursed_renderer.go:115), die Behebung ist also nicht tot.
+
+Ein Fund, bewusst NICHT behoben, weil er ausserhalb dieser Lane liegt: gefaltet werden nur Zeilenumbrueche. Ein Tabulator laeuft roh durch insertText - mit einem Wegwerftest nachgemessen, input='a\tb' steht als '/a\tb' in der gerenderten Filterzeile, die Breitenrechnung zaehlt 5 Zeichen und das Terminal springt zum naechsten Tabstopp, der Rahmen verrutscht bis zum Backspace. In modeCreate landet derselbe Tabulator im Tickettitel. Eine Zeile in foldToOneLine (Steuerzeichen zu Leerzeichen) waere die Behebung. Wer das aufgreift: es ist kein Regress dieses Tickets, getippt kam ein Tabulator vorher auch nicht in das Feld - es ist neu moeglich, weil Einfuegen jetzt ueberhaupt ankommt.
+
+Was ich NICHT selbst verifiziert habe und was deshalb beim Abnehmen zaehlt: die Tests speisen tea.PasteMsg direkt ein und ueberspringen den Decoder. Dass ein echtes Terminal dieses Ereignis schickt, haengt an der pty-Gegenprobe der Testing-Lane.
