@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:00:54Z
+updated-at: 2026-09-17T22:01:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -73,15 +73,15 @@ review-check: |-
   Alles aus /home/alex/projects/.worktrees/jaira-GTQHNH, Branch feat/GTQHNH.
 
   1. Binary bauen: 'go build -o /tmp/jaira-gtqhnh ./cmd/jaira'. Erwartet: keine Ausgabe.
-  2. Modus setzen: '/tmp/jaira-gtqhnh set GTQHNH mode=conversational'. Erwartet: 'Updated GTQHNH'.
-  3. Falschen Wert versuchen: '/tmp/jaira-gtqhnh set GTQHNH mode=chat; echo RC=$?'. Erwartet: Meldung 'mode is "conversational" or empty, got "chat"' und RC=2. Das Ticket behaelt 'conversational'.
-  4. Die fuenf Lesestellen: '/tmp/jaira-gtqhnh show GTQHNH --json | jq .mode' -> "conversational". '/tmp/jaira-gtqhnh show GTQHNH --for-lane review --json | jq .mode' -> dasselbe. '/tmp/jaira-gtqhnh show GTQHNH --for-lane review | head -1' -> die Kopfzeile endet auf ', mode: conversational)'. '/tmp/jaira-gtqhnh show GTQHNH | grep -i "^ *mode"' -> eine mode-Zeile unter der tier-Zeile. '/tmp/jaira-gtqhnh resume | grep -i mode' -> 'mode: conversational' (nur wenn das Ticket als in-flight gilt; sonst '/tmp/jaira-gtqhnh resume --json | jq ".in_flight[].mode"').
-  5. Befund 2 selbst sehen — das ist der wichtigste Schritt: 'git status --short' JETZT laufen lassen. Erwartet: mindestens eine Zeile ' M .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-....md', weil die Lane-Schritte die Ticket-Datei geschrieben haben. Genau diese Zeile steht dort ab dem ersten 'jaira dod' dauerhaft — der Prompt-Satz 'Both empty? No pause' in core/role/builtin/jaira-role-lane/SKILL.md kann danach nie mehr zutreffen.
-  6. Befund 1 selbst sehen: '/tmp/jaira-gtqhnh show GTQHNH --for-lane critique --json | jq "{complete, missing}"' — solange das Ticket keine eigenen Commits fuehrt und outcome-what leer ist, kommt complete:false mit 'diff (git has no commits for this ticket yet)' in missing. Auf diesem Ticket sind Commits und Outcome inzwischen da, es kommt also complete:true; um den Zustand der mitlaufenden Kritik zu sehen, ein frisches Ticket in in-progress ohne Commits nehmen: '/tmp/jaira-gtqhnh create test --goal g --context c --dod d --assignee "$(/tmp/jaira-gtqhnh whoami)"', dann '--for-lane critique --json' darauf.
-  7. Modus wieder abschalten, wenn du nur geprueft hast: '/tmp/jaira-gtqhnh set GTQHNH mode='. Erwartet: 'show --json | jq .mode' gibt "" zurueck und die mode-Zeile verschwindet aus 'show'.
-  8. Die Suite: 'go test ./... -count=1'. Erwartet: RC=0, 29 Pakete ok, kein FAIL. Die neuen Faelle heissen TestModeSurvivesRoundTrip, TestForLaneCarriesMode, TestSetRefusesUnknownMode, TestSetStoresModeTrimmed, TestShowPrintsModeForPeople, TestForLanePlainTextCarriesMode, TestResumeCarriesMode (internal/cli/mode_test.go), TestBadModeIsReportedWithTheRepair, TestKnownModesAreNotReported (core/validate/mode_test.go), TestAgentNoteNamesTheConversationalMode (core/board/announce_test.go).
+  2. Suite: 'go test ./... -count=1'. Erwartet: RC=0, 29 Pakete ok, kein FAIL.
+  3. Modus setzen: '/tmp/jaira-gtqhnh set GTQHNH mode=conversational'. Erwartet: 'Updated GTQHNH'.
+  4. Falschen Wert versuchen: '/tmp/jaira-gtqhnh set GTQHNH mode=chat; echo RC=$?'. Erwartet: 'mode is "conversational" or empty, got "chat"' und RC=2; das Ticket behaelt 'conversational'.
+  5. Die Lesestellen: '/tmp/jaira-gtqhnh show GTQHNH --json | jq .mode' -> "conversational"; '/tmp/jaira-gtqhnh show GTQHNH --for-lane review --json | jq .mode' -> dasselbe; '/tmp/jaira-gtqhnh show GTQHNH --for-lane review | head -1' -> Kopfzeile endet auf ', mode: conversational)'; '/tmp/jaira-gtqhnh show GTQHNH | grep -i "^ *mode"' -> eine mode-Zeile unter der tier-Zeile.
+  6. BEFUND 1 selbst sehen, ohne etwas zu starten - das ist der wichtigste Schritt: '/tmp/jaira-gtqhnh show GTQHNH --json | jq .status' zeigt die Lane, in der das Ticket steht. Jetzt 'sed -n "80,88p" core/role/builtin/jaira-role-lane/SKILL.md' lesen: dort steht 'Your lane argument different from it means you are the critique running beside that lane' - ohne jede Einschraenkung auf critique. Dann 'sed -n "172,184p" core/role/builtin/jaira-dispatcher/SKILL.md': Worker starten ist Schritt 2, Ticket bewegen ist Schritt 5. Erwartet: du siehst, dass ein Worker, der auf 'pre-process' gestartet wird waehrend das Ticket noch in 'todo' steht, sich nach diesen beiden Saetzen fuer die mitlaufende Kritik haelt und nichts schreibt.
+  7. BEFUND 2 selbst sehen: 'grep -c "^commit" <(git log master..HEAD)' -> 21, und '/tmp/jaira-gtqhnh show GTQHNH --json | jq ".commits | length"' -> 3. Dann '/tmp/jaira-gtqhnh show GTQHNH --for-lane review --json | jq .complete' -> true. Erwartet: der Reviewer bekommt complete:true auf einem Diff aus 3 von 21 Commits, und nichts sagt es ihm.
+  8. Modus wieder abschalten, wenn du nur geprueft hast: '/tmp/jaira-gtqhnh set GTQHNH mode='. Erwartet: 'show --json | jq .mode' gibt "" und die mode-Zeile verschwindet aus 'show'.
 
-  Nicht von Hand pruefbar: dass die Prompt-Prosa das Verhalten erzeugt, das sie beschreibt. Prompts fuehrt kein Test aus. Der einzige echte Beleg ist ein Lauf: 'jaira set <ticket> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten — und vorher 'jaira roles install --global --force', sonst liest der Worker die alten Prompts aus ~/.claude und sieht den Modus ueberhaupt nicht.
+  Nicht von Hand pruefbar: dass die Prompt-Prosa das Verhalten erzeugt, das sie beschreibt - Prompts fuehrt kein Test aus. Der einzige echte Beleg ist ein Lauf: 'jaira roles install --global --force', dann 'jaira set <ticket> mode=conversational' auf einem Ticket mit offener Form und den Dispatcher starten. Ohne den install liest jeder Worker die alten Prompts aus ~/.claude und sieht den Modus ueberhaupt nicht.
 mode: ""
 ---
 
