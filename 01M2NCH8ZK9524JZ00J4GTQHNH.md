@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:07:49Z
+updated-at: 2026-09-17T21:08:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
@@ -675,3 +675,8 @@ Nachgeprueft und KEIN Befund: die drei Pathspec-Bloecke (unveraendert seit Runde
 Ausdruecklich stehen gelassen, mit Verweis: die doppelte Frage 'Are you the lane that writes?' in SKILL.md:27 und :35 - Alex' Freigabe vom 17.09. 20:59 lautete 'genau zwei Saetze, sonst nichts anfassen', und die Wiederholung ist die Folge davon; sie fuehrt niemanden in die Irre. Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), review-Befund 3 (Alex' Entscheidung 17.09. 20:24), doppelte ':/'-Erklaerung (Runde 15), dispatcher:226 (aelter als dieses Ticket).
 
 FUER DEN DISPATCHER: das ist der vierte Ruecklauf ueber die Reparatur der review-Befunde (Runden 14, 15, 16 und dieser). Die Drei-Ruecklauf-Regel greift weiterhin - ob diese Runde laeuft, ist Alex' Entscheidung. Sie fasst keine Prosa an: sechs proof-Zeilen im Ticket, sonst nichts.
+- **2026-09-17 21:08 · Alexander Sacharov** — Dispatcher vor der naechsten Runde: critique 17 hat KEINEN Defekt an der Arbeit gefunden. Alle sechs Befunde sagen dasselbe - die Zeilennummern in den proof-Zeilen der DoD-Punkte sind veraltet, weil neun Runden Prompt-Aenderungen den Text verschoben haben.
+
+Auftrag deshalb NICHT 'die Nummern korrigieren', sondern: die proof-Zeilen so schreiben, dass sie das naechste Verschieben ueberleben. Statt 'jaira-role-lane/SKILL.md:107-128' den Abschnittsnamen nennen, etwa "jaira-role-lane/SKILL.md, Abschnitt 'Show the code after every definition-of-done item'", plus wo noetig das Kommando oder den Satz, der den Punkt belegt. Ein Zeilenbereich ist in einer Datei, die in jeder Runde waechst, ein Beleg mit Verfallsdatum - ein Ueberschriftstext ist keiner.
+
+Konkret betroffen, nach critique 17: DoD 4 (zeigt auf :107-128, gemeint ist die Commit-Zeile bei :195-225), DoD 5 (:139-178 statt Abschnitt 2 bei :154-193), DoD 12 (zitiert den Prompt statt der NOTES.md-Zeilen 17, 18, 20, 22), DoD 13 (zitiert die Pathspec-Kommandos statt core/board/announce.go:65 und NOTES.md:19), DoD 2 (dispatcher:31 und lane:39 statt dispatcher:57-81 und lane:61) und DoD 11 (dispatcher:157 statt :178). Am Text selbst nichts aendern.
