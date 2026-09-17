@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:13:46Z
+updated-at: 2026-09-17T18:15:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -111,6 +111,12 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
 - [x] critique 5: 'mode' in core/validate/validate.go pruefen (CodeBadMode, Warning), plus NOTES.md-Zeile
 - [x] critique 6: validate.go meldet auch den untrimmed Wert (canon != t.Mode), plus Testfall
 - [x] critique 7: 'jaira resume' fuehrt mode — JSON-items und Klartext-Block in internal/cli/resume.go, plus Testfall
+- [ ] .jaira/lanes/critique.md: 'notes' in input-requires plus Prompt-Absatz — eine Kritik liest, was frueher schon geprueft und repariert wurde
+- [ ] jaira-dispatcher/SKILL.md: neuer Abschnitt 'mitlaufende Kritik' — im Gespraechsmodus ein zweiter, nur lesender Kritiker, Befunde sofort, genau ein Schreiber von review-summary und genau ein 'jaira move'
+- [ ] jaira-role-lane/SKILL.md: die Pause nach einem DoD-Punkt sieht auch eine neu angelegte Datei
+- [ ] jaira-dispatcher/SKILL.md: Halbsatz 'Testing is not a lane' streichen; spawn.sh und jaira-role-tester unveraendert
+- [ ] core/release/NOTES.md: je eine Zeile unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht
+- [ ] go test ./... -count=1
 
 ## Progress
 - **2026-09-16 15:28 · Alexander Sacharov** — Brainstorm, Befund aus dem Code — nicht aus der Notiz.
