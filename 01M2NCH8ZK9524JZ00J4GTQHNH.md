@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:51:12Z
+updated-at: 2026-09-17T21:53:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
@@ -82,6 +82,7 @@ review-check: |-
   8. Die Suite: 'go test ./... -count=1'. Erwartet: RC=0, 29 Pakete ok, kein FAIL. Die neuen Faelle heissen TestModeSurvivesRoundTrip, TestForLaneCarriesMode, TestSetRefusesUnknownMode, TestSetStoresModeTrimmed, TestShowPrintsModeForPeople, TestForLanePlainTextCarriesMode, TestResumeCarriesMode (internal/cli/mode_test.go), TestBadModeIsReportedWithTheRepair, TestKnownModesAreNotReported (core/validate/mode_test.go), TestAgentNoteNamesTheConversationalMode (core/board/announce_test.go).
 
   Nicht von Hand pruefbar: dass die Prompt-Prosa das Verhalten erzeugt, das sie beschreibt. Prompts fuehrt kein Test aus. Der einzige echte Beleg ist ein Lauf: 'jaira set <ticket> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten — und vorher 'jaira roles install --global --force', sonst liest der Worker die alten Prompts aus ~/.claude und sieht den Modus ueberhaupt nicht.
+mode: conversational
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
