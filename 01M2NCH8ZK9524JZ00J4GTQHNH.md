@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:41:34Z
+updated-at: 2026-09-17T19:41:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -46,13 +46,18 @@ outcome-why: "critique 12: der Kopf konnte einen Worker seit Runde 11 zur nichts
 outcome-resolves: "DoD 9 (genau eine Stelle schreibt review-summary und bewegt das Ticket): das Verbot greift jetzt an der Stelle, an der es gelesen wird, und deckt alle fuenf Schreibpunkte der Liste ab statt nur den claim. go test ./... -count=1 gruen."
 review-summary: none
 review-gaps: |-
-  Drei Befunde, der erste ist ein echter Defekt.
+  Entfernt: die vier handgeschriebenen runCLI+json.Unmarshal-Bloecke in internal/cli/mode_test.go — jsonCLI (internal/cli/tags_test.go:64) tut im selben Testpaket genau das und meldet den Fehler besser. -52/+6 Zeilen, Import 'encoding/json' faellt weg, go build/vet/test ./... -count=1 gruen.
 
-  1. 'git diff' ist blind fuer neue Dateien, und genau daran haengt die Pause. jaira-role-lane/SKILL.md sagt nach jedem DoD-Punkt 'git diff' und dann woertlich: 'Empty output? No pause'. Eine untracked Datei steht in 'git diff' nicht drin. Ein DoD-Punkt, der aus einer neuen Datei besteht, erzeugt also leere Ausgabe, der Worker haelt nicht an und baut weiter — die eine Sache, die der Modus verhindern soll. Der Beleg ist dieses Ticket selbst: seine Implementierung hat core/validate/mode_test.go und internal/cli/mode_test.go neu angelegt, beide waeren im Modus stumm durchgelaufen. Fix ist eine Zeile im Prompt: 'git add -A -N .' vor dem 'git diff', oder 'git status --short' danebenstellen und bei untracked Dateien ebenfalls anhalten.
+  Geprueft und bewusst stehen gelassen:
+  - internal/cli/flow.go:684 'case ticket.FieldMode' ist NICHT tot: fieldValue hat mit internal/cli/mergedriver.go:260 einen zweiten Aufrufer, der ueber konfliktbehaftete Frontmatter-Felder iteriert. Er liefert dasselbe wie der default-Zweig — wie jeder andere explizite Case der Funktion auch.
+  - newModeTicket vs. movableTicket (internal/cli/nextstep_test.go:12): unterschiedliche Fixtures (backlog+claim+JAIRA_HOME gegen in-progress ohne claim, deterministische ID). Kein Zusammenlegen.
+  - CanonicalMode hat kein Gegenstueck im Repo: model-tier wird nirgends gegen eine geschlossene Menge geprueft, core/tag.Normalize ist ein anderer Vertrag (normalisiert statt abzulehnen). Keine zweite Implementierung derselben Idee.
+  - Die Modus-Prosa steht in README.md, docs/AGENTS.md, core/release/NOTES.md und beiden SKILL.md. Das ist die im Repo durchgaengige Aufteilung (Benutzer / Agent / Release / Prompt), kein Duplikat zum Zusammenziehen. Die Wiederholungen innerhalb von jaira-role-lane/SKILL.md sind die aus critique 9-12 absichtlich gesetzten — sie zu kuerzen waere ein Rueckbau von critique, nicht eine Aufraeumung.
+  - Kosten: nichts Neues auf einem heissen Pfad. CanonicalMode ist ein TrimSpace und ein Vergleich, die Modus-Zeile in validate laeuft einmal pro Ticket wie die Tag-Pruefung daneben.
 
-  2. Der Block, den 'jaira update' in CLAUDE.md/AGENTS.md eines Boards schreibt, kennt den Modus nicht. core/board/announce.go:64 beschreibt die Nutzlast von 'show <id> --for-lane --json' namentlich ('the lane's prompt, the bounded input, the model tier, and the outputs the lane expects back') und nennt die Modellstufe — den Modus nennt es nicht. Dokumentiert ist er in docs/AGENTS.md und README.md, also im Repository von jaira, nicht auf dem Board eines Benutzers. Ein Agent, der die ausgelieferten Rollen nicht benutzt — und CLAUDE.md fordert ausdruecklich, dass die CLI von jedem bash-faehigen Agenten benutzbar ist —, sieht einen 'mode'-Schluessel, den ihm nichts erklaert.
+  Vorbestehend und nicht angefasst: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now' sind toter Code aelter als diese Aenderung.
 
-  3. DoD-Punkt 1 ist ausschliesslich als Prosa erfuellt. 'Der Eintritt haengt an einer nachpruefbaren Bedingung' ist ein Prompt-Absatz in jaira-dispatcher/SKILL.md; nichts im Code zaehlt etwas, nichts prueft, ob der Dispatcher den Halt ausgelassen hat, und kein Test deckt ihn ab. Das ist die in der Brainstorm-Lane getroffene Entscheidung (der Modus ist eine Prompt-Aenderung, der Go-Code ist nur der Traeger) und insofern kein Widerspruch — aber es heisst, dass der zentrale DoD-Punkt dieses Tickets durch keinen Mechanismus gehalten wird. Kleiner Nachbrenner in derselben Ecke: der zweite Schreibpfad, internal/tui/edit.go:60, hat keinen Test; die Ablehnung eines unbekannten Modus ist nur fuer 'jaira set' abgedeckt.
+  Offen aus der Vorrunde und NICHT hier zu beheben, weil es Verhalten aendert und eine NOTES.md-Zeile braucht: core/board/announce.go:64 zaehlt die Nutzlast von 'show --for-lane --json' namentlich auf und nennt den Modus nicht — der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, erklaert den 'mode'-Schluessel also nicht.
 test-verdict: "pass: go build/vet/test ./... -race -count=1 green (RC=0, 29 Pakete), DoD 1-6 in der Working Tree geprueft, Verhalten auf einem Scratch-Board mit dem gebauten Binary durchgespielt"
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
 review-verdict: |-
