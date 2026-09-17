@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:04:16Z
+updated-at: 2026-09-17T16:04:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
@@ -69,3 +69,10 @@ claimed-at: 2026-09-17T15:57:28Z
 
 ## Progress
 - **2026-09-17 15:57 · Alexander Sacharov** — Entscheidung zu DoD 4, vom Dispatcher getroffen nachdem Alex sie ihm ueberlassen hat: mehrzeiliger eingefuegter Text wird zu Leerzeichen gefaltet, nicht verworfen. Grund: wer eine Zeile aus einem Terminal oder einer Datei kopiert, nimmt den abschliessenden Umbruch versehentlich mit - verwerfen wuerde dann den ganzen Text schlucken und wie der Fehler aussehen, den dieses Ticket behebt. Aufeinanderfolgende Umbrueche werden zu einem Leerzeichen, fuehrende und abschliessende fallen weg.
+- **2026-09-17 16:04 · Alexander Sacharov** — Die Behebung sitzt bewusst NICHT im Tastenpfad. Ein Einfuegen kommt als tea.PasteMsg an, nie als Taste - deshalb ein eigener Zweig in Model.Update neben tea.KeyPressMsg statt einer Erweiterung von m.key(). Ueber cmdKey waere es nicht gegangen (keylayout.go: Key.Text ist bei Modifikatoren jenseits von Shift leer), und es ist auch nicht noetig - die Belegung spielt fuer ein Terminal-Ereignis keine Rolle.
+
+modeEdit faellt aus der Faltung heraus: dort fuegt Enter eine Zeile ein (edit.go:83), der Puffer ist also mehrzeilig, und ein eingefuegter Absatz behaelt dort seine Form. Nur die einzeiligen Felder (Filter, Titel, Loeschbestaetigung) laufen durch sanitisePaste.
+
+Erste Fassung von sanitisePaste hat jede Zeile einzeln getrimmt - verworfen, weil ein einzeiliges Einfuegen mit fuehrendem Leerzeichen dann veraendert ankommt. Jetzt nur noch: CR normalisieren, Umbrueche an den Enden weg, Umbruchketten zu einem Leerzeichen. Innenliegende Leerzeichen bleiben unangetastet.
+
+Gegenprobe gemacht: mit auskommentiertem PasteMsg-Zweig fallen 14 der neuen Faelle um, mit dem Zweig laeuft die ganze Suite gruen.
