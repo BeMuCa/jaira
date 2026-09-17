@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:02:44Z
+updated-at: 2026-09-17T17:02:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -73,7 +73,7 @@ review-summary: |-
 - [x] comment at the PasteMsg branch: why ctrl+v cannot go through cmdKey (keylayout.go:38-42)
 - [x] paste_test.go: one test per mode, one for multi-byte + backspace, one for multiline folding
 - [x] NOTES.md line under ## Unreleased
-- [ ] critique gap 1: insertText(text) in model.go holds the mode->buffer switch once; key()'s three default branches, editKey()'s tail and paste() all call it
+- [~] critique gap 1: insertText(text) in model.go holds the mode->buffer switch once; key()'s three default branches, editKey()'s tail and paste() all call it
 - [ ] critique gap 2: fold newlines in one pass (Split/drop empty/Join) instead of the repeated Contains loop
 - [ ] critique gap 3: drop the s != "" guards in modeCreate/modeDelete; one empty-check at the top of insertText
 - [ ] run the tui tests, unchanged, to show typed and pasted text both still land
