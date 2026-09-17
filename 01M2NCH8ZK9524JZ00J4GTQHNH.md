@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:35:04Z
+updated-at: 2026-09-17T20:35:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93859
 claimed-at: 2026-09-17T20:03:50Z
@@ -594,3 +594,14 @@ Der Pathspec für die Pause ist ':/ :(exclude,top).jaira/tickets' und NICHT die 
 Befund 1 steht als eigener Absatz IM Abschnitt der mitlaufenden Kritik, nicht bei der Pause: er gilt nur für den Worker, der sich als mitlaufende Kritik erkannt hat. Die ordentliche critique-Lane liest weiter den Diff aus der Nutzlast, und der Dispatcher-Prompt sagt das jetzt ausdrücklich (der Satz 'der Diff war nie das Limit' galt immer nur der LANE, die nach den Commits läuft).
 
 Kein Go-Code geändert — die drei Dateien sind zwei Prompts und NOTES.md. Prompts führt kein Test aus; 'go test ./... -count=1' bleibt grün (29 Pakete), belegt aber nur, dass die eingebetteten Rollen weiterhin laden.
+- **2026-09-17 20:35 · Alexander Sacharov** — critique (14. Durchgang, ueber die Reparatur der review-Befunde 1 und 2 in 113628e): drei Befunde, alle mit klarem Fix, keine Entscheidung fuer den Menschen.
+
+1. jaira-dispatcher/SKILL.md:109 — 'That last sentence' zeigt auf 'The most expensive finding of the eight arrived in round seven.' statt auf den Diff-Satz. Der Absatz existiert nur, um die mitlaufende Kritik von der Kritik-LANE zu trennen; ein falscher Rueckbezug genau dort ist teurer als anderswo. 'The point about the diff above' statt 'That last sentence'.
+
+2. jaira-role-lane/SKILL.md:110-111 — die drei Kommandos der mitlaufenden Kritik haben keinen Pathspec. Der implementierende Worker nebenan schreibt waehrenddessen mit 'jaira dod' und 'jaira note' dauernd die Ticket-Datei; die Kritik bekommt also genau den Ticket-Diff als 'die Arbeit' vorgelegt — dieselbe Falle, die derselbe Prompt in Zeile 140-145 benennt und ausschliesst. Nachgestellt in diesem Worktree: 'git status --short' nach einer Aenderung an Ticket-Datei, README.md und einer neuen core/probe_new.go zeigt alle drei; mit ':/ :(exclude,top).jaira/tickets' bleiben README.md und '?? probe_new.go' uebrig, aus jedem Verzeichnis gleich (aus core/ heraus ebenfalls geprueft).
+
+Wichtig fuer die Reparatur von 2: der Ausschluss nimmt der Kritik ihre einzige Sicht auf die Notizen, die der Implementierer GERADE geschrieben hat — die Nutzlast hat sie oben gelesen, bevor es die gab. Deshalb gehoert ein Halbsatz dazu, dass sie dafuer 'jaira show <id> --json' liest. Ohne den ist der Ausschluss eine Verschlechterung.
+
+3. Die proof-Zeilen von DoD 5 (':74-105') und DoD 10 (':50-80') zeigen nach 113628e ins Leere — 113628e hat 22 Zeilen bei 99 eingefuegt und den Pause-Abschnitt nach 130-160 geschoben. Testing hat 'alle DoD-Punkte am Arbeitsbaum belegt' gemeldet, also werden die Zeilennummern dort nicht nachgerechnet.
+
+Geprueft und in Ordnung, nicht noch einmal anfassen: der Pathspec ':/ :(exclude,top).jaira/tickets' funktioniert und ist gegenueber der im DoD vorgeschlagenen '. :(exclude)'-Form die richtige Wahl — in diesem Worktree aus / und aus core/ heraus gefahren, beide Male dasselbe Ergebnis. 'git diff --cached' in der mitlaufenden Kritik bleibt drin, obwohl der Prompt jedes 'git add' verbietet: die review-Lane hat es ausdruecklich verlangt und es kostet nichts. Befund 3 des reviews (lane != status beim direkten Aufruf) bleibt nach Alex' Entscheidung vom 2026-09-17 20:24 eine Notiz und keine Aenderung — nicht wieder aufmachen. Der Dispatcher-Schritt 4 deckt ab, dass die mitlaufende Kritik im selben Verzeichnis laeuft ('--no-worktree'), sonst waere die ganze Worktree-Lesung wirkungslos; das steht und ist geprueft.
