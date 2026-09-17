@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:22:53Z
+updated-at: 2026-09-17T22:22:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-59029
 claimed-at: 2026-09-17T22:14:55Z
@@ -766,3 +766,12 @@ go build, go vet und 'go test ./... -count=1' gruen.
 - Befund 2: die Zaehlprobe steht in dem Abschnitt, dessen Leser sie nicht ausfuehren darf. jaira-role-lane/SKILL.md:127-129 sagt 'read git diff master...HEAD', Zeile 131-132 desselben Abschnitts sagt 'do not judge the diff it gave you' und Zeile 139-142 gibt den Worktree-Pathspec als das, was dieser Leser haelt. Der Branch-Diff IST fuer die mitlaufende Kritik die frueheren Runden - genau das, was Zeile 118-120 ihr verbietet. DoD 17 verlangte 'sagt, wie man es merkt und was man stattdessen liest'; die erste Haelfte gehoert hierher, die zweite nicht. Wer sie braucht, ist die ordentliche critique-/review-Lane, und die betritt Abschnitt 1 nie (disjunkte Leser - dasselbe Argument, mit dem optimize am 16.09. 20:21 und critique 15 die doppelte ':/'-Erklaerung stehen liessen).
 - Nachgeprueft und KEIN Befund: die zweiteilige Bedingung selbst ist an beiden Stellen vollstaendig und deckungsgleich (SKILL.md:21-23 im Kopf, 82-90 in Abschnitt 1, dispatcher:133-139); die Wiederholung ist hier kein Befund, weil der Kopf die Regel VOR dem ersten Schreibweg braucht und Zeile 25 ausdruecklich nach unten verweist. Die Begruendung im Dispatcher ('steps 2 and 5 of the loop below') trifft: Schritt 2 startet den Worker, Schritt 5 bewegt das Ticket (dispatcher:182-190). Die Code-Behauptung stimmt: flow.go:589 'shas := t.Commits', Ableitung nur bei len==0. Zeilenlaengen ueber 85 Zeichen: nur Frontmatter und dispatcher:233, aelter als dieses Ticket (Runde 13).
 - Ausdruecklich stehen gelassen, mit Verweis: dass der Defekt in flow.go selbst nicht hier repariert wird, sondern als Z4G3RD auf dem Board liegt (Alex/In-progress 17.09. 22:13, DoD 17). review-Befund 3 (Alex 17.09. 20:24). Merge-Driver (Runde 5), Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21), NOTES-Zeile zur critique-Lane (Runde 9/10), Restrennen (Runde 11), doppelte ':/'-Erklaerung (Runde 15), die Zeilenbereiche in den proof-Zeilen der PLAN-Liste (Runde 19).
+- **2026-09-17 22:22 · Alexander Sacharov** — in-progress (Reparatur von critique 20): beide Befunde behoben, kein Go-Code, drei geaenderte Stellen in zwei Dateien.
+
+Befund 1: 'origin/HEAD' statt 'master' - dieselbe Idiomatik wie jaira-role-pr/SKILL.md:32 und jaira-role-tester/SKILL.md:49. 'grep -rn master core/role/builtin/ core/release/NOTES.md' findet jetzt nichts mehr; der Branch fuehrt keinen Branch-Namen mehr in einen ausgelieferten Prompt ein.
+
+Befund 2: die Zaehlprobe ist nicht geloescht, sondern umgezogen - in den KOPF von jaira-role-lane/SKILL.md, direkt hinter den Absatz zu 'show --for-lane --json'. Warum dorthin und nicht in 'Boundaries': der Kopf ist der Ort, den jede Lane liest, und die Zaehlprobe gehoert dem Leser, der den Payload-Diff beurteilen DARF (critique-/review-/testing-Lane); 'Boundaries' liest man am Ende, also nachdem man dem Payload schon geglaubt hat. Abschnitt 1 behaelt nur noch die Richtigstellung ('a slice, not a full diff') plus einen Satz, warum dieser Leser gerade NICHT nachmessen soll: mehr committete Historie ist mehr von dem, was er nicht beurteilen darf.
+
+Nicht angefasst: jaira-dispatcher/SKILL.md:117-120 - rein beschreibend, nennt keinen Branch-Namen und keinen Lesebefehl.
+
+go build, go vet und 'go test ./... -count=1' gruen (29 Pakete ok).
