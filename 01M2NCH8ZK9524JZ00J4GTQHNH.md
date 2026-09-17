@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:57:13Z
+updated-at: 2026-09-17T19:29:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75151
 claimed-at: 2026-09-17T18:50:16Z
@@ -488,3 +488,4 @@ Alex hat diese vierte Runde ausdruecklich freigegeben, nachdem der Dispatcher na
 - Befund 2 (klein): jaira-dispatcher/SKILL.md:120 ist beim Einfuegen in d4244be auf 106 Zeichen geklebt worden, waehrend die Datei sonst bei ~78 umbricht. Nur Formatierung.
 - Ausdruecklich stehen gelassen, mit Verweis: die Prosa-Wiederholung ueber README/AGENTS.md/beide SKILLs/NOTES.md (optimize-Notiz 16.09. 20:21). Der Merge-Driver (Runde 5). Die NOTES.md-Zeile zur critique-Lane (Runde 9/10). Das Restrennen zwischen erstem Lesen der mitlaufenden Kritik und einem sehr fruehen 'move --to critique' (Runde 11 — der Weg 'im Zweifel nicht schreiben und den Dispatcher fragen' deckt es ab). Die drei Befunde aus Runde 10/11, die der Dispatcher am 17.09. 18:50 als geschlossen nachgesehen hat — nicht wieder angefasst. Nachgeprueft und KEIN Befund: 'jaira show <id> --json' fuehrt tatsaechlich 'status' (Schluesselliste am laufenden Board), und internal/cli/tickets.go:1327 fuehrt 'mode' im selben JSON — der Kopf behauptet beides zu Recht; dass das installierte Binary 'mode' noch nicht zeigt, liegt an der alten Version auf dem PATH, nicht am Zweig.
 - FUER DEN DISPATCHER: das ist der vierte Ruecklauf ueber die Punkte 7-12 (Runden 9, 10, 11 plus dieser). Alex hatte am 17.09. ausdruecklich EINE weitere Runde freigegeben, und die ist verbraucht. Die Drei-Ruecklauf-Regel greift wieder: ob Befund 1 noch repariert wird oder das Ticket mit dieser Kante weitergeht, ist jetzt Alex' Entscheidung, nicht die des Dispatchers.
+- **2026-09-17 19:29 · Alexander Sacharov** — Alex hat die fuenfte in-progress-Runde freigegeben. Genau zwei Punkte aus critique-Runde 12, beide Folge der Runde-4-Reparatur: (1) jaira-role-lane/SKILL.md:30-34 - der claim-Punkt direkt nach der entscheidenden Lesung traegt keine Bedingung, obwohl der Absatz zwei Zeilen darueber einen Worker zur nichts-schreibenden Kritik erklaeren kann; Bedingung an den Punkt haengen. (2) jaira-dispatcher/SKILL.md:120 - 106 Zeichen lange Zeile, umbrechen wie die Nachbarn bei ~78. Sonst nichts anfassen.
