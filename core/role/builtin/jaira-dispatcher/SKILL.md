@@ -117,15 +117,16 @@ implementing lane is working:
    worker is anywhere told to write is off for this one, and a write command
    added later is off too without this line being touched. `jaira dod` belongs
    in that list as much as the rest: it writes the same field the implementing
-   worker beside it is working on. Its own prompt tells it so — `jaira-role-lane` has it read the ticket's
-   `status` once, before it writes anything at all, and take a lane argument
-   that differs from it as meaning it is this critique. Once, because the
-   status moves: the moment the implementing worker lands `jaira move --to
-   critique`, a second reading would say `critique` and the running critique
-   would take itself for the lane. Say it in the line you start it with as
-   well; it costs one clause. And when a restarted or compacted worker asks
-   you which of the two it is — its prompt sends it to you rather than let it
-   guess — answer it. You are the only one who knows.
+   worker beside it is working on. Its own prompt tells it so —
+   `jaira-role-lane` has it read the ticket's `status` once, before it writes
+   anything at all, and take a lane argument that differs from it as meaning
+   it is this critique. Once, because the status moves: the moment the
+   implementing worker lands `jaira move --to critique`, a second reading
+   would say `critique` and the running critique would take itself for the
+   lane. Say it in the line you start it with as well; it costs one clause.
+   And when a restarted or compacted worker asks you which of the two it is —
+   its prompt sends it to you rather than let it guess — answer it. You are
+   the only one who knows.
 3. It hands each finding to you **the moment it has one**, not as a list at the
    end. You pass it to the person in the same turn. A finding that arrives
    while the shape is still being built costs a paragraph; the same finding

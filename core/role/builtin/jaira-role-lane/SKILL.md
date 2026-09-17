@@ -27,11 +27,15 @@ The second gives you the lane prompt, the bounded input, the outputs the lane
 owes back, and the `mode` key the section below turns on. Follow it, produce
 exactly those outputs, and nothing beyond them.
 
-Then take the ticket and finish the step yourself:
+Are you the lane that writes? Then take the ticket and finish the step
+yourself. The critique running beside the work does none of the following — it
+reads, and reports what it finds to the dispatcher that started it:
 
 - `jaira claim <ticket-id>` — before you work it; other sessions read this board
-  too. `2>/dev/null || true`: a ticket already claimed by you is not an error
-  worth stopping for
+  too. Not if the read above made you that critique: claiming is the first
+  thing it must not do, because the name it writes is the one the implementing
+  worker needs. `2>/dev/null || true`: a ticket already claimed by you is not
+  an error worth stopping for
 - `jaira dod <id> <n> --doing|--done` as you go, not at the end
 - `jaira note <id> <text>` at every pause — dead ends, why this and not that.
   A killed session never gets a turn to write anything down.
