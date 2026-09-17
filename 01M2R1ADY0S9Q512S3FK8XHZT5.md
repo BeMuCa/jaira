@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T16:00:52Z
+updated-at: 2026-09-17T16:01:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-45551
 claimed-at: 2026-09-17T15:57:28Z
@@ -53,6 +53,13 @@ claimed-at: 2026-09-17T15:57:28Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] sanitisePaste in model.go: strip CR, fold newline runs to one space, trim ends - shared by the single-line fields
+- [ ] Update: case tea.PasteMsg -> m.paste(msg.Content), routed per mode like the k.Text default branch
+- [ ] modeFilter/modeCreate/modeDelete take the folded text; modeEdit keeps newlines (enter inserts one there)
+- [ ] comment at the PasteMsg branch: why ctrl+v cannot go through cmdKey (keylayout.go:38-42)
+- [ ] paste_test.go: one test per mode, one for multi-byte + backspace, one for multiline folding
+- [ ] NOTES.md line under ## Unreleased
 
 ## Progress
 - **2026-09-17 15:57 · Alexander Sacharov** — Entscheidung zu DoD 4, vom Dispatcher getroffen nachdem Alex sie ihm ueberlassen hat: mehrzeiliger eingefuegter Text wird zu Leerzeichen gefaltet, nicht verworfen. Grund: wer eine Zeile aus einem Terminal oder einer Datei kopiert, nimmt den abschliessenden Umbruch versehentlich mit - verwerfen wuerde dann den ganzen Text schlucken und wie der Fehler aussehen, den dieses Ticket behebt. Aufeinanderfolgende Umbrueche werden zu einem Leerzeichen, fuehrende und abschliessende fallen weg.
