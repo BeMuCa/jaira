@@ -39,16 +39,14 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:42:41Z
+updated-at: 2026-09-17T21:46:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
 outcome-what: "Die proof-Zeilen von DoD 6, 11, 12 und 13 tragen ihre Anker jetzt woertlich mit den Backticks der Originalzeilen: vier Anker in core/release/NOTES.md, der Loop-Schritt in jaira-dispatcher/SKILL.md:178 und der Bullet in core/board/announce.go:64. Dazu die Richtigstellung der In-progress-Notiz vom 21:33, die eine nicht durchgefuehrte Anker-Pruefung als durchgefuehrt fuehrte. Kein Quellcode angefasst."
 outcome-why: "Ein Anker, den 'grep -cF' nicht findet, ist so wenig ein Beleg wie eine veraltete Zeilennummer — genau der Defekt, den Runde 17 beseitigen sollte, nur eine Stufe feiner. Und eine Notiz, die eine nicht gelaufene Pruefung als gelaufen fuehrt, richtet mehr Schaden an als der falsche Anker selbst, weil die naechste Lane ihr glaubt."
 outcome-resolves: "Der Befund aus critique 18 (vier NOTES.md-Anker ohne Backticks) plus zwei weitere derselben Sorte, die critique 18 nicht gesehen hat (DoD 11, DoD 13). Alle 23 Anker des Tickets sind jetzt mit 'grep -cF' geprueft und je genau einmal in der genannten Datei vorhanden."
-review-summary: |-
-  .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-*.md — vier der fuenf neuen NOTES.md-Anker sind ohne die Backticks der Originalzeile zitiert und finden sich damit nicht wieder: 'grep -cF' liefert 0 fuer 'Mark a ticket whose shape is still undecided with jaira set <id> mode=conversational' (DoD 6), 'On a ticket in mode: conversational, commit it yourself' (DoD 6), 'Expect a critique to run *beside* the work on a ticket in mode: conversational' (DoD 12) und 'Run jaira update to learn on your own board that mode exists' (DoD 13). In core/release/NOTES.md stehen an diesen Stellen `jaira set <id> mode=conversational`, `mode: conversational`, `jaira update` und `mode` in Backticks. Nur der fuenfte Anker (DoD 12, 'Expect the conversational-mode pause to stop on a definition-of-done item made of a brand-new file') trifft, weil er keinen Code-Span enthaelt. Reparatur: die vier Anker woertlich mit Backticks schreiben, genau wie die Zeile in NOTES.md lautet — oder vor dem ersten Code-Span abschneiden ('Mark a ticket whose shape is still undecided with', 'On a ticket in ', 'Expect a critique to run *beside* the work on a ticket in '), alle drei in NOTES.md eindeutig.
-  .jaira/tickets/01M2NCH8ZK9524JZ00J4GTQHNH-*.md — die In-progress-Notiz vom 17.09. 21:33 behauptet 'Alle vierzehn Anker am Arbeitsbaum geprueft (grep -cF, jeder genau einmal vorhanden), einschliesslich der vier NOTES.md-Zeilenanfaenge'. Fuer genau diese vier stimmt das nicht. Die Notiz mit korrigieren, wenn die Anker repariert werden — eine Notiz, die eine nicht durchgefuehrte Pruefung als durchgefuehrt fuehrt, ist derselbe Defekt wie ein proof, der auf die falsche Stelle zeigt.
+review-summary: none
 review-gaps: |-
   Drei Befunde, alle auf der Prompt-Seite; die Go-Seite ist sauber.
 
