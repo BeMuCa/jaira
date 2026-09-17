@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:29:05Z
+updated-at: 2026-09-17T21:29:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -116,7 +116,7 @@ review-check: |-
 - [x] Der Halbsatz 'Testing is not a lane' steht nicht mehr in core/role/builtin/jaira-dispatcher/SKILL.md; scripts/spawn.sh hat weiterhin genau einen Sonderfall ('dispatch'), und core/role/builtin/jaira-role-tester/SKILL.md ist unveraendert.
   proof: grep 'Testing is not a lane' core/ findet nichts mehr; core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'The loop', Schritt 2 lautet jetzt '/jaira-role-lane <id> <lane> — every lane, testing included'; scripts/spawn.sh und core/role/builtin/jaira-role-tester/SKILL.md stehen unveraendert in 'git status --short'
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
-  proof: core/role/builtin/jaira-role-lane/SKILL.md:99-127 — 'Read the worktree, not the ticket's diff': complete:false mit flow.go:590-595 erklaert, dann git status --short / git diff / git diff --cached, alle drei mit Pathspec; core/role/builtin/jaira-dispatcher/SKILL.md:110-113 grenzt die Diff-Begruendung auf die critique-LANE ein
+  proof: core/release/NOTES.md unter ## Unreleased: die Zeile 'Expect a critique to run *beside* the work on a ticket in mode: conversational' (mitlaufende Kritik) und die Zeile 'Expect the conversational-mode pause to stop on a definition-of-done item made of a brand-new file' (Pause, die neue Dateien sieht)
 - [x] Der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, nennt den Modus: core/board/announce.go zaehlt die Nutzlast von 'jaira show --for-lane --json' auf und fuehrt 'mode' darin mit, damit ein Agent auf einem fremden Board ueberhaupt erfaehrt, dass es den Schluessel gibt. Je eine Zeile in core/release/NOTES.md, wenn sich der ausgelieferte Blocktext dadurch aendert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:143-155 — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
 - [x] Die mitlaufende Kritik liest den nicht committeten Arbeitsbaum, nicht die Commit-Liste: jaira-role-lane/SKILL.md sagt dem Worker, der sich als mitlaufende Kritik erkannt hat, dass 'jaira show --for-lane --json' zur Laufzeit mit complete:false und fehlendem Diff kommt, weil es noch keine Commits gibt (internal/cli/flow.go:590-595), und dass er stattdessen 'git diff', 'git diff --cached' und 'git status --short' liest. Die Begruendung im Dispatcher-Prompt, der Diff sei nie das Limit gewesen, wird auf die Kritik-LANE eingegrenzt - fuer die mitlaufende gilt sie nicht.
