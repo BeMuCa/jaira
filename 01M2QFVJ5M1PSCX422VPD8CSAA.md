@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:20:24Z
+updated-at: 2026-09-17T15:20:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -53,7 +53,8 @@ question: "DoD 4 kann nur ein Mensch schliessen: Sind 9ZZSFT, 0YGWXQ, 7KX89C und
   proof: core/release/NOTES.md:16-18 — '## Unreleased' ist leer und neu, '## 0.3.0' traegt die 9 Zeilen; TestParseNotesKeepsAnEmptyLeadingSection deckt die leere Kopfsektion
 - [x] Wer 'jaira update' auf einem Board mit Stempel 0.3.0 laufen laesst, liest 'Nothing has changed since the version that last set this board up.' - und nicht die leere Ueberschrift 'Unreleased' ohne einen einzigen Punkt darunter. Dasselbe fuer --json: notes ist leer statt eines Eintrags mit changes: null.
   proof: core/release/release.go:68 sinceEntries -> withChanges; jaira update auf Board mit Stempel 0.3.0 druckt 'Nothing has changed since the version that last set this board up.', --json traegt notes: []
-- [ ] Eine leere '## Unreleased' erreicht die Ausgabe von 'jaira update' nicht: sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert (nicht parseNotes, das die leere Sektion absichtlich behaelt), Text und --json zeigen dieselbe Liste, und der Zweig 'Nothing has changed since ...' in internal/cli/update.go ist fuer ein Board mit Stempel 0.3.0 und Binary 0.3.0 wieder erreichbar. Mit Test nachgewiesen.
+- [x] Eine leere '## Unreleased' erreicht die Ausgabe von 'jaira update' nicht: sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert (nicht parseNotes, das die leere Sektion absichtlich behaelt), Text und --json zeigen dieselbe Liste, und der Zweig 'Nothing has changed since ...' in internal/cli/update.go ist fuer ein Board mit Stempel 0.3.0 und Binary 0.3.0 wieder erreichbar. Mit Test nachgewiesen.
+  proof: core/release/release.go:84 withChanges; TestSinceDropsEntriesWithoutChanges (core/release/release_test.go); TestParseNotesKeepsAnEmptyLeadingSection weiter gruen; Stempel 0.2.1 liefert in Text und --json dieselbe Liste ['0.3.0']
 
 ## Options
 
