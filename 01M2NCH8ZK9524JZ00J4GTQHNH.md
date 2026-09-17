@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -39,13 +39,13 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:51:00Z
+updated-at: 2026-09-17T21:51:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68496
 claimed-at: 2026-09-17T21:39:12Z
-outcome-what: "Die proof-Zeilen von DoD 6, 11, 12 und 13 tragen ihre Anker jetzt woertlich mit den Backticks der Originalzeilen: vier Anker in core/release/NOTES.md, der Loop-Schritt in jaira-dispatcher/SKILL.md:178 und der Bullet in core/board/announce.go:64. Dazu die Richtigstellung der In-progress-Notiz vom 21:33, die eine nicht durchgefuehrte Anker-Pruefung als durchgefuehrt fuehrte. Kein Quellcode angefasst."
-outcome-why: "Ein Anker, den 'grep -cF' nicht findet, ist so wenig ein Beleg wie eine veraltete Zeilennummer — genau der Defekt, den Runde 17 beseitigen sollte, nur eine Stufe feiner. Und eine Notiz, die eine nicht gelaufene Pruefung als gelaufen fuehrt, richtet mehr Schaden an als der falsche Anker selbst, weil die naechste Lane ihr glaubt."
-outcome-resolves: "Der Befund aus critique 18 (vier NOTES.md-Anker ohne Backticks) plus zwei weitere derselben Sorte, die critique 18 nicht gesehen hat (DoD 11, DoD 13). Alle 23 Anker des Tickets sind jetzt mit 'grep -cF' geprueft und je genau einmal in der genannten Datei vorhanden."
+outcome-what: "Ein toter switch-Zweig entfernt: 'case ticket.FieldMode' in internal/cli/flow.go fieldValue. Sonst nichts angefasst."
+outcome-why: "Er ist in beiden Aufrufern unerreichbar bzw. identisch zum default-Zweig - showForLane kann ihn nicht erreichen (core/lane/lane.go:929-980 weist eine Lane mit input-requires 'mode' beim Laden ab), und mergedriver.go:260 bekommt vom default exakt denselben Wert."
+outcome-resolves: "Den Dead-Code-Durchgang dieser Lane; Dopplung, Fluff und Kosten sind geprueft und in review-gaps mit Begruendung stehen gelassen."
 review-summary: none
 review-gaps: |-
   Ein Befund entfernt, drei Kandidaten geprueft und stehen gelassen.
