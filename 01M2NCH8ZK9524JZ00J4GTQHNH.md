@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T20:28:55Z
+updated-at: 2026-09-17T20:28:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-93859
 claimed-at: 2026-09-17T20:03:50Z
@@ -114,7 +114,8 @@ review-check: |-
   proof: core/board/announce.go:64-72 (Punkt 'mode' in der --for-lane-Nutzlast); Test TestAgentNoteNamesTheConversationalMode in core/board/announce_test.go:151; core/release/NOTES.md:17; regeneriert in AGENTS.md:34-42 und CLAUDE.md:61-69
 - [x] Die mitlaufende Kritik liest den nicht committeten Arbeitsbaum, nicht die Commit-Liste: jaira-role-lane/SKILL.md sagt dem Worker, der sich als mitlaufende Kritik erkannt hat, dass 'jaira show --for-lane --json' zur Laufzeit mit complete:false und fehlendem Diff kommt, weil es noch keine Commits gibt (internal/cli/flow.go:590-595), und dass er stattdessen 'git diff', 'git diff --cached' und 'git status --short' liest. Die Begruendung im Dispatcher-Prompt, der Diff sei nie das Limit gewesen, wird auf die Kritik-LANE eingegrenzt - fuer die mitlaufende gilt sie nicht.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:99-119 — 'Read the worktree, not the ticket's diff': complete:false mit flow.go:590-595 erklaert, dann git status --short / git diff / git diff --cached; core/role/builtin/jaira-dispatcher/SKILL.md:99-102 grenzt die Diff-Begruendung auf die critique-LANE ein
-- [ ] Die Pause uebergeht die Ticket-Datei: die Bedingung in jaira-role-lane/SKILL.md schliesst Aenderungen unter '.jaira/tickets/' aus (etwa 'git status --short -- . ":(exclude).jaira/tickets"' und dasselbe fuer 'git diff'), damit 'Both empty? No pause' nach dem ersten 'jaira dod' erreichbar bleibt. Nachgestellt an einem reinen Dokumentationspunkt nach einer bereits gesetzten Haekchen: es wird nicht pausiert.
+- [x] Die Pause uebergeht die Ticket-Datei: die Bedingung in jaira-role-lane/SKILL.md schliesst Aenderungen unter '.jaira/tickets/' aus (etwa 'git status --short -- . ":(exclude).jaira/tickets"' und dasselbe fuer 'git diff'), damit 'Both empty? No pause' nach dem ersten 'jaira dod' erreichbar bleibt. Nachgestellt an einem reinen Dokumentationspunkt nach einer bereits gesetzten Haekchen: es wird nicht pausiert.
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:132-145 — beide Kommandos mit ':/ :(exclude,top).jaira/tickets'; in diesem Worktree nachgestellt: 'git status --short' zeigt die geaenderte Ticket-Datei, mit dem Pathspec bleibt nur der Quellcode uebrig
 
 ## Options
 
