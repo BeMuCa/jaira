@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:27:16Z
+updated-at: 2026-09-17T18:27:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -431,3 +431,14 @@ Die mitlaufende Kritik widersprach dem '--no-worktree'-Absatz, der sagt 'never r
 2. NOTES.md:18 behauptet 'no lane shipped with jaira asked for it'. core/lane/builtin/20-in-progress.md:9 fuehrt notes in input-requires und wird ausgeliefert. Halbsatz streichen oder richtigstellen.
 
 Nicht erneut aufgemacht, mit Angabe der Notiz, auf der ich stehe: 'git add -A -N' bleibt verworfen (Notiz 17.09. 18:19, Grund --no-worktree); die ausgelieferte critique-Lane ist bewusst ein eigenes Ticket (dieselbe Notiz); der --no-worktree-Absatz nennt die Kritik schon als die eine Ausnahme (dieselbe Notiz); die ueber fuenf Dateien wiederholte Prosa steht (optimize-Notiz 16.09. 20:21); 'Testing is not a lane' ist von Alex angeordnet (DoD 11).
+- **2026-09-17 18:27 · Alexander Sacharov** — In-progress nach critique (9. Durchgang): beide Befunde repariert, einer davon an anderer Stelle in der Liste als critique vorgeschlagen hat.
+
+Befund 1 — der mitlaufende Kritiker wusste seine Nur-Lese-Regel nur aus der Startzeile. Die Reparatur steht jetzt in core/role/builtin/jaira-role-lane/SKILL.md, also dort, wo ein neu gestarteter oder komprimierter Worker sie wieder liest. Der Unterscheider ist der von critique vorgeschlagene: 'jaira show <id> --json', und ein lane-Argument, das nicht der status des Tickets ist, heisst 'du bist die mitlaufende Kritik'. Er traegt in beide Richtungen — die gewoehnliche critique-Lane laeuft mit status=critique und schreibt weiter.
+
+Anders als vorgeschlagen: critique wollte einen DRITTEN Punkt in der Liste 'Two things change'. Er steht jetzt als ERSTER. Grund: Punkt 'Do not commit' sagt woertlich 'You still jaira move the ticket'. Ein Kritiker, der die Liste der Reihe nach liest, hat dann schon gehandelt, bevor der Widerspruch kommt — und das ist genau die Form von Fehler ('spaet ist die teure Zeit'), die dieser ganze Modus verhindern soll. Die Punkte 'Show the code' und 'Do not commit' sind dadurch zu 2. und 3. geworden; die --proof-Zeilen von DoD 4, 5 und 9 zeigen auf die neuen Zeilennummern.
+
+Zusaetzlich mitgenommen (nicht von critique verlangt): jaira-dispatcher/SKILL.md Schritt 2 sagte 'because its lane prompt tells it to do all three' — das stimmte nach der Reparatur nicht mehr und waere als stehengebliebene Begruendung die naechste Runde wert gewesen. Die Startzeile bleibt trotzdem verlangt, sie kostet einen Nebensatz.
+
+Befund 2 — 'no lane shipped with jaira asked for it' in NOTES.md war falsch: core/lane/builtin/20-in-progress.md:9 fuehrt notes in input-requires und wird ausgeliefert. Die Zeile nennt jetzt den wahren Grund, warum die Aenderung ueberhaupt von Hand gemacht werden muss: critique ist gar keine ausgelieferte Lane.
+
+Gepruefte Alternative und verworfen: critique als Builtin-Lane nach core/lane/builtin/ zu legen, damit die Zeile von selbst wahr wird. Das ist eine andere Aenderung an einem anderen Vertrag (welche Lanes jaira mitbringt) und gehoert nicht in dieses Ticket.
