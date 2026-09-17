@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T11:29:07Z
+updated-at: 2026-09-17T11:29:21Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33921
 claimed-at: 2026-09-17T11:14:50Z
@@ -34,6 +34,7 @@ outcome-what: "Die Naht zwischen den gefalteten Milestone-Zeilen neu gezogen: 'R
 outcome-why: "Die critique hat auf Zeile 24 ein Verhalten auf zwei Zeilen gefunden - Kartenrendering und Ref-Reise verklebt, wobei das Reise-Thema in Zeile 25 weiterlief. Genau das schliesst DoD 1 aus. Nach dem Umbau decken sich die 5 Zeilen exakt mit den 5 Faehigkeiten aus der Entscheidung des Menschen vom 11:14."
 outcome-resolves: "DoD 1, 2 und 3. DoD 4 bleibt offen und gehoert nicht in diese Lane: die Umbenennung nach '## 0.3.0' faehrt in dem Commit, den der Mensch taggt, und 9ZZSFT/0YGWXQ/7KX89C/GTQHNH stehen noch in signoff."
 review-summary: "none"
+review-gaps: "Nichts entfernt. Doppelung: keine - kein Milestone-Satz steht in einer getaggten Sektion, und die 5 gefalteten Zeilen ueberschneiden sich untereinander nicht. Tote Aussagen: keine - jedes genannte Kommando, Flag und Feld existiert im Code (internal/cli/milestones.go:77,172,178,197,309; core/milestone/milestone.go:303; internal/cli/archive.go:95; milestones_filed in internal/cli/fetch.go). Behalten statt gestrichen: 'rm entfernt nur die Zeile' (NOTES.md:21) steuert ein Kommando und ist keine Beruhigung, 'die Karte ist genau so breit' (23) beantwortet die TUI-Befuerchtung; 'und Erstellzeit' (21) ist echter Fluff, aber 18 Zeichen. Kosten: entfaellt, Zeilenscan ohne Laengengrenze, die create-Zeile ist mit 907 Zeichen nicht die laengste der Sektion (PR-Zeile 918). Liegengelassen, weil ausserhalb dieser Aenderung: die beiden spawn.sh-Zeilen (19/20, aus 7KX89C) nennen dasselbe Skript, aber nur eine sagt, wie man es bekommt; '--color' ist bei milestone 1-255 und bei tag 0-255 (internal/cli/tags.go:389)."
 ---
 
 # 0.3.0 schneiden
