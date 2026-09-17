@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:53:30Z
+updated-at: 2026-09-17T19:54:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -559,3 +559,4 @@ DoD 10 (neue Datei) in diesem Worktree nachgestellt: eine angelegte probe_neu.go
 Nicht pruefbar und bewusst nur gelesen: der Halt vor der Plan-Lane (DoD 1) und die mitlaufende Kritik (DoD 7) sind Prompt-Absaetze, kein Code. Beide stehen im selben jaira-dispatcher/SKILL.md, es gibt weiterhin genau sieben Rollen, 'Testing is not a lane' ist weg, spawn.sh und jaira-role-tester/SKILL.md sind gegenueber master unveraendert.
 
 Dieses Ticket selbst hat kein mode-Feld - der Gespraechsmodus lief also hier nicht mit. Das ist die Frage, die im question-Feld an den Menschen geht.
+- **2026-09-17 19:54 · Alexander Sacharov** — Antwort auf die erste Haelfte der Frage der testing-Lane, aus dem Dispatcher-Lauf vom 2026-09-17: der Modus IST an einem echten Ticket gelaufen, nicht nur an einem Scratch-Board. D8CSAA lief den ganzen Tag in 'mode: conversational' - der Dispatcher hat vor der Plan-Lane die eine offene Entscheidung gezaehlt (auf wie viele Zeilen die 18 Milestone-Zeilen gefaltet werden), sie Alex vorgelegt, die Antwort vor der Arbeit mit 'jaira note' aufs Ticket geschrieben und dann 'jaira set D8CSAA mode=conversational' gesetzt. Die Worker haben in dem Modus Commit-Zeilen zurueckgegeben statt selbst zu committen (zweimal), und die Lanes ohne Code-Aenderung haben erwartungsgemaess keine Zeile geliefert. Was dabei NICHT geprueft wurde, weil es zu diesem Zeitpunkt noch gar nicht gebaut war: die mitlaufende Kritik (DoD 7-9), die Pause, die neue Dateien sieht (DoD 10), und der Block in announce.go (DoD 13). Diese vier sind weiterhin nur durch Tests belegt.
