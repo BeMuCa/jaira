@@ -18,10 +18,11 @@ jaira show <ticket-id> --for-lane <lane> --json
 
 The first carries the ticket's `status`, and on a ticket in conversational mode
 that is what decides whether you are the worker that writes or the critique
-running beside it, which writes nothing. Only that JSON has the field — the
-`--for-lane` one does not, so it cannot tell you. Read it here, before the
-`jaira claim` below, and read it once: the section below says why a second read
-gives the wrong answer.
+running beside it, which writes nothing — but only when you were started on
+`critique`. Started on any other lane you are that lane and you write, whatever
+the `status` says. Only that JSON has the field — the `--for-lane` one does
+not, so it cannot tell you. Read it here, before the `jaira claim` below, and
+read it once: the section below says why a second read gives the wrong answer.
 
 The second gives you the lane prompt, the bounded input, the outputs the lane
 owes back, and the `mode` key the section below turns on. Are you the lane that
@@ -78,9 +79,15 @@ the ticket, not from the line that started you, which is gone the moment your
 session is: the `status` in the `jaira show <id> --json` you already read at the
 top of this file, before you wrote anything.
 
-Your lane argument equal to the ticket's `status` means you are the lane the
-ticket is actually in: work it as written above and below. Your lane argument
-different from it means you are the critique running beside that lane. Then
+Both halves have to hold: your lane argument is `critique`, **and** the
+ticket's `status` is something else. Anything else is the lane the ticket is
+actually in — work it as written above and below, including the ordinary
+`critique` lane on a ticket whose `status` already says `critique`. The
+dispatcher starts every worker before it moves the ticket into that worker's
+lane, so a lane argument that merely differs from the `status` is the normal
+case and says nothing; `pre-process` on a ticket still in `todo` is a
+`pre-process` worker that claims, works and moves, not a silent reader. Only
+`critique` beside a `status` that is not `critique` is this critique. Then
 read, and hand every finding to the dispatcher in the moment you have it —
 and write nothing at all: no `jaira claim`, no `jaira dod`, no `jaira note`, no
 `jaira set`, no `jaira move`, no `review-summary`, no commit line. Everything
@@ -108,13 +115,21 @@ you. On a ticket that carries no commits yet, that payload came back
 its missing inputs and `outcome-what`/`outcome-resolves` missing beside it —
 not a broken board, just the lane whose work you are reading still running. On a
 ticket that already carries commits, which is every round after the first, the
-same payload is `complete: true` and hands you a full diff
-(`internal/cli/flow.go:589-595` — the diff is assembled from the ticket's
-commits, and git supplies them when the ticket itself lists none). That diff is
-the EARLIER rounds, not the work running beside you; judging it means
-criticising what is already finished. So in both cases: do not wait for the
-payload to fill, do not report that you had nothing to read, and do not judge
-the diff it gave you.
+same payload is `complete: true` and hands you a diff. That diff is the EARLIER
+rounds, not the work running beside you; judging it means criticising what is
+already finished.
+
+And it is not even all of those rounds. `showForLane` in
+`internal/cli/flow.go` takes the SHAs off the ticket's own `commits:` field and
+asks git for them only when that field is empty — so on a ticket whose
+`commits:` was recorded once and never brought up to date, the payload is the
+diff of exactly those few commits and nothing in it says the branch has more.
+You notice it by counting: `jaira show <id> --json | jq '.commits | length'`
+against `git log master..HEAD --oneline | wc -l`. When they disagree, the whole
+change is `git diff master...HEAD`, and the payload is a slice of it.
+
+So in both cases: do not wait for the payload to fill, do not report that you
+had nothing to read, and do not judge the diff it gave you.
 
 Only the diff is stale. The goal, the definition of done and the notes in the
 same payload are the ticket as it stands right now — the critique prompt asks

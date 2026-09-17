@@ -112,9 +112,12 @@ the critique below it. A lane judges the ticket's commits; the one that runs
 beside the work judges the uncommitted worktree, and its prompt sends it there
 whatever the payload holds. On a ticket that carries no commits yet there is
 nothing else for it to read anyway; on one that already carries some — every
-round after the first — `show --for-lane critique --json` hands it a full diff
-all the same, and that diff is the earlier rounds and not the work running
-next to it.
+round after the first — `show --for-lane critique --json` hands it a diff all
+the same, and that diff is the earlier rounds and not the work running next to
+it. It is not even all of them: the payload is assembled from the SHAs on the
+ticket's `commits:` field, and git is asked only when that field is empty, so a
+ticket whose `commits:` was recorded once shows a slice of its own branch with
+nothing saying so.
 
 So in `mode: conversational`, and only there, run a critique **while** the
 implementing lane is working:
@@ -128,14 +131,18 @@ implementing lane is working:
    in that list as much as the rest: it writes the same field the implementing
    worker beside it is working on. Its own prompt tells it so —
    `jaira-role-lane` has it read the ticket's `status` once, before it writes
-   anything at all, and take a lane argument that differs from it as meaning
-   it is this critique. Once, because the status moves: the moment the
-   implementing worker lands `jaira move --to critique`, a second reading
-   would say `critique` and the running critique would take itself for the
-   lane. Say it in the line you start it with as well; it costs one clause.
-   And when a restarted or compacted worker asks you which of the two it is —
-   its prompt sends it to you rather than let it guess — answer it. You are
-   the only one who knows.
+   anything at all, and take a `critique` lane argument on a `status` that is
+   not `critique` as meaning it is this critique. Both halves, because you
+   start every worker before you move the ticket into its lane (steps 2 and 5
+   of the loop below): a lane argument that merely differs from the `status`
+   is every worker you start, and a rule reading only that would leave the
+   first lane after you switch the mode on silent. Once, because the status
+   moves: the moment the implementing worker lands `jaira move --to critique`,
+   a second reading would say `critique` and the running critique would take
+   itself for the lane. Say it in the line you start it with as well; it
+   costs one clause. And when a restarted or compacted worker asks you which
+   of the two it is — its prompt sends it to you rather than let it guess —
+   answer it. You are the only one who knows.
 3. It hands each finding to you **the moment it has one**, not as a list at the
    end. You pass it to the person in the same turn. A finding that arrives
    while the shape is still being built costs a paragraph; the same finding
