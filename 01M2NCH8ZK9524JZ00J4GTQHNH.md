@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T18:35:55Z
+updated-at: 2026-09-17T18:35:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12830
 claimed-at: 2026-09-17T18:13:16Z
@@ -456,3 +456,10 @@ Gepruefte Alternative und verworfen: critique als Builtin-Lane nach core/lane/bu
 - Befund 2: die Verbotsliste in Punkt 1 zaehlt note/set/move/review-summary/Commit-Zeile auf, aber nicht 'jaira claim' (SKILL.md:13) und nicht 'jaira dod' (SKILL.md:22) — beides Schreibwege, beide vom selben Prompt angeordnet, 'jaira dod' auf dasselbe Feld, an dem der Worker daneben arbeitet. Und claim steht VOR dem show, aus dem Modus und status kommen: die Kritik hat geschrieben, bevor sie wissen konnte, dass sie es nicht darf. Reihenfolge umdrehen statt nur die Liste verlaengern.
 - Befund 3: spawn.sh:14 (usage von --no-worktree) sagt weiter 'run only one at a time', waehrend jaira-dispatcher/SKILL.md:215-220 die mitlaufende Kritik als Ausnahme fuehrt. Dokumentationsschuld, aber im Skript, das der Dispatcher selbst aufruft.
 - Ausdruecklich stehen gelassen, mit Begruendung: die NOTES.md-Zeile zur critique-Lane beschreibt eine Hand-Aenderung an '.jaira/lanes/critique.md' und nicht am Binary — sie gehoert trotzdem dorthin, weil sie sagt, was ein Leser TUN muss, und weil die Zeile das selbst offenlegt ('critique is not a shipped lane at all, so this one reaches your board only by hand'). Das ist der Befund aus Runde 9, dort repariert; ich hebe ihn nicht wieder auf. DoD 11 nachgeprueft: 'Testing is not a lane' ist raus, spawn.sh hat genau einen Sonderfall (Zeile 142, 'dispatch'), jaira-role-tester/SKILL.md unveraendert auf diesem Branch.
+- **2026-09-17 18:35 · Alexander Sacharov** — In-progress nach critique (10. Durchgang): die drei Befunde repariert. Zwei davon gehen ueber das hinaus, was critique vorgeschlagen hat.
+
+- Befund 1, der eigentliche Defekt. critique wollte 'wer als mitlaufende Kritik gestartet ist, bleibt es'. Das ist nicht ausfuehrbar: nach einer Kompaktierung weiss der Worker nicht mehr, als was er gestartet ist — genau der Fall, gegen den der Absatz geschrieben ist. Die Regel lautet deshalb jetzt zweiteilig: (a) die Lesung 'lane-Argument != status' wird EINMAL gemacht, vor dem ersten Schreiben, und danach nie wieder — damit kippt sie nicht, wenn der implementierende Worker 'move --to critique' macht; (b) fuer den Fall, dass das eigene Gedaechtnis weg ist, gibt es keinen Rateweg, sondern eine Frage an den Dispatcher, und der Dispatcher-Prompt ist verpflichtet zu antworten (SKILL.md Schritt 2). Ein Default 'im Zweifel nicht schreiben' steht daneben, damit die Frage nicht blockiert.
+- Der mitlaufende Kritiker meldet und hoert auf. Das war vorher nicht gesagt und ist die zweite Haelfte von (a): je kuerzer er lebt, desto kleiner das Fenster, in dem sich irgendetwas unter ihm bewegen kann.
+- Befund 2, enger als vorgeschlagen: 'jaira claim' wandert nicht nur in die Verbotsliste, sondern der ganze Lesebefehl steht jetzt VOR claim, und der Grund steht dabei. Die Verbotsliste nennt claim und dod ausdruecklich und endet mit einem Satz statt einer Aufzaehlung ('alles, was diese Datei einem Worker zu schreiben auftraegt, ist aus'), damit der naechste neue Schreibbefehl nicht wieder durch die Ritze faellt.
+- Befund 3 hat eine zweite Stelle, die critique nicht genannt hat: die NOTES.md-Zeile zu --no-worktree sagte dasselbe Falsche wie spawn.sh:14 ('only one such worker at a time'). Beide nennen jetzt den lesenden Worker als Ausnahme.
+- Und die NOTES.md-Zeile zur mitlaufenden Kritik behauptete woertlich das, was Befund 1 widerlegt ('stays read-only instead of writing over the dispatcher'). Korrigiert, nicht ergaenzt — eine Release-Zeile, die eine Eigenschaft verspricht, die der Prompt nicht traegt, ist schlimmer als keine.
