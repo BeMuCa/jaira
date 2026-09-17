@@ -39,10 +39,10 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:08:33Z
+updated-at: 2026-09-17T21:08:49Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-51319
-claimed-at: 2026-09-17T20:36:51Z
+claimed-by: DESKTOP-RFTCH11-34127
+claimed-at: 2026-09-17T21:08:49Z
 outcome-what: "Die zwei Saetze aus critique 16 in core/role/builtin/jaira-role-lane/SKILL.md umgeschrieben: der Satz 'Follow it, produce exactly those outputs, and nothing beyond them' im Kopf traegt jetzt die Bedingung 'Are you the lane that writes?' und sagt der mitlaufenden Kritik ausdruecklich, dass der gelieferte Lane-Prompt fuer sie Lesestoff ist und kein Auftrag - ihr eigener critique-Prompt ordnet 'jaira set review-summary=' und 'jaira move' an. Und 'do not judge what it gave you' heisst jetzt 'do not judge the diff it gave you', mit einem Absatz daneben, der Ziel, Definition of Done und Notizen im selben Payload als aktuell und als Massstab benennt. Kein Go-Code, keine neue NOTES.md-Zeile."
 outcome-why: "Beide Saetze standen unbedingt und VOR der Bedingung, die sie einschraenkt: wer die Datei von oben liest, bekam den Schreibauftrag der critique-Lane, bevor Abschnitt 1 ihn der mitlaufenden Kritik nimmt - zwei Schreiber auf review-summary, genau der Fehler, den DoD 9 verbietet. Und 'what it gave you' warf auch die Notizen weg, die der critique-Prompt ausdruecklich ZUERST verlangt und aus denen hervorgeht, welche Befunde schon geschlossen sind - der Fehler, gegen den DoD 8 geschrieben ist."
 outcome-resolves: "DoD 8, 9 und 14 bleiben erfuellt und ihre proof-Zeilen zeigen auf die verschobenen Bereiche (SKILL.md:74-105, :104-129, :159-169). Plan 40-42 abgehakt. go build und go test ./... -count=1 gruen."
