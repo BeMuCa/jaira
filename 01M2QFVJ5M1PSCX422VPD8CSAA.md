@@ -26,7 +26,7 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:22:44Z
+updated-at: 2026-09-17T15:26:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
@@ -131,3 +131,8 @@ Vier Fragen, vier Mal nichts:
 (4) Ort: richtig. release.Since hat genau einen Aufrufer (internal/cli/update.go:81), und nur dieses Paket bedient Text und --json zugleich; ein Filter im Renderer haette die beiden auseinanderlaufen lassen. release.Notes hat ausserhalb des Pakets keinen zweiten Leser (geprueft per grep), also nimmt niemandem der Filter etwas weg.
 
 Nicht neu aufgemacht: die 918-Zeichen-Zeile, 'rm loescht nur die Zeile', die beiden spawn.sh-Zeilen und die fehlende NOTES.md-Zeile fuer diese Behebung - alle vier standen in frueheren Durchgaengen und wurden dort begruendet stehen gelassen.
+- **2026-09-17 15:26 · Alexander Sacharov** — optimize: eine Aenderung, und sie ist klein. withChanges hatte genau einen Aufrufer (sinceEntries, das sonst nur weiterreichte) - der Filter steht jetzt als Schleife in sinceEntries, selectSince bleibt als eigene Funktion, weil die Auswahl drei Rueckgabepfade hat und der Filter sonst dreimal dastuende. Zwei Funktionen statt drei, Verhalten identisch, go test -race ./... gruen.
+
+Gesucht und nichts gefunden: kein zweiter Ort im Repo filtert Entries ohne Changes (grep '.Changes': nur parseNotes, der neue Filter, update.go:115/129 als Renderer und release_test.go:96). internal/cli/update.go braucht keine Aenderung - der Zweig len(notes)==0 liest den gefilterten Rueckgabewert und --json bekommt dieselbe Liste ueber entriesJSON.
+
+Absichtlich stehen gelassen: (1) der sechszeilige Kommentar ueber sinceEntries - er sagt warum die leere Sektion im File bleibt, aber nicht reist, und das steht nirgends sonst; (2) release_test.go:96 ('e.Version != "" && len(e.Changes) > 0') laeuft gegen die echte NOTES.md und ist aelter als diese Aenderung; (3) Kosten: Since() laeuft einmal pro 'jaira update' ueber acht Entries - nichts zu hoisten.
