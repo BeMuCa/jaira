@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:37:15Z
+updated-at: 2026-09-17T19:41:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -510,3 +510,14 @@ Was ich geprueft und in Ordnung gefunden habe:
 Ausdruecklich stehen gelassen, mit Verweis auf die Notiz, die es geschlossen hat: die Prosa-Wiederholung ueber README/AGENTS.md/beide SKILLs/NOTES.md (optimize, 16.09. 20:21). Der Merge-Driver (Runde 5). Die drei Befunde, die der Dispatcher am 17.09. 18:50 als geschlossen nachgesehen hat. Das Restrennen zwischen erstem Lesen und sehr fruehem 'move --to critique' (Runde 11). Dass dispatcher/SKILL.md Schritt 1 die Startzeile ohne den Nebensatz zeigt, den Schritt 2 sechs Zeilen spaeter verlangt: die Anweisung steht in derselben Liste unmittelbar darunter, das ist keine Reihenfolge-Luecke wie die der Runden 10-12.
 
 EINE BEOBACHTUNG AUSSERHALB DIESES TICKETS, fuer Alex, nicht von mir zu entscheiden und hier nicht angefasst: DoD 8 ('eine Kritik sieht, was frueher geprueft wurde') ist in .jaira/lanes/critique.md gebaut — einer Lane, die jaira nicht ausliefert; core/lane/builtin/ hat keine critique.md, und die NOTES.md-Zeile sagt das ehrlich ('critique is not a shipped lane at all'). Die eine urteilende Lane, die JEDES Board bekommt, ist core/lane/builtin/40-review.md, und deren input-requires (Zeile 9) fuehrt 'notes' nicht und ihr Prompt hat keinen 'lies zuerst die Notizen'-Absatz. Die Eigenschaft erreicht also nur das Board von jaira selbst. Ob sie in die review-Lane gehoert, ist eine echte Abwaegung und keine Reparatur: die review-Lane ist absichtlich der zweite, unbelastete Leser, und ihn mit den Befunden der frueheren Durchgaenge zu fuettern kann ihn genauso gut anlehnen wie informieren. Eigenes Ticket oder bewusst so lassen — Alex' Entscheidung.
+- **2026-09-17 19:41 · Alexander Sacharov** — optimize (Runde 2, nach den critique-Runden 9-12): vier Durchgaenge ueber den Branch-Diff gegen master, nicht nur ueber den einen Commit, den 'show --for-lane' als diff mitliefert — das Ticket-Frontmatter fuehrt nur 9cb1df9, die dreizehn spaeteren Commits stehen nur in der git-Historie.
+
+Geaendert wurde genau eine Sache: internal/cli/mode_test.go rief viermal von Hand runCLI + json.Unmarshal, obwohl jsonCLI (internal/cli/tags_test.go:64) im selben Testpaket genau das schon tut und dabei die Fehlermeldung mitbringt. -52/+6 Zeilen, der Import 'encoding/json' faellt weg. go build/vet/test ./... -count=1 gruen.
+
+Zwei Dinge, die nach Duplikat aussahen und keines sind — damit die naechste Runde sie nicht noch einmal aufmacht:
+
+1. internal/cli/flow.go:684 'case ticket.FieldMode: return t.Mode' sieht tot aus, weil mode bewusst NICHT in ticket.SuppliedFields steht und deshalb nie in einem input-requires landen kann. Der Case ist trotzdem erreichbar: fieldValue hat einen zweiten Aufrufer, internal/cli/mergedriver.go:260, und der iteriert ueber die konfliktbehafteten Frontmatter-Felder — mode kann darunter sein. Er liefert dasselbe wie der default-Zweig, aber das gilt fuer jeden anderen expliziten Case in der Funktion auch; ihn allein zu streichen waere Inkonsistenz, keine Aufraeumung.
+
+2. newModeTicket vs. movableTicket (internal/cli/nextstep_test.go:12) sind nicht dasselbe Fixture: movableTicket legt ein Ticket im backlog an, claimt es und setzt JAIRA_HOME; newModeTicket braucht status=in-progress, keinen claim und eine deterministische ID. Zusammenlegen hiesse beiden Tests Zustand aufzudraengen, den sie nicht wollen.
+
+Vorbestehender toter Code, den ich stehen lasse: internal/cli/flow.go:707-708 'var _ = laneOf' und 'var _ = time.Now'. Aelter als diese Aenderung.
