@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:09:12Z
+updated-at: 2026-09-17T15:09:31Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-33921
-claimed-at: 2026-09-17T11:14:50Z
+claimed-by: DESKTOP-RFTCH11-62926
+claimed-at: 2026-09-17T15:09:31Z
 mode: conversational
 outcome-what: "testing ohne Befund abgeschlossen: Gates gruen (go build ./..., go vet ./..., go test -race -count=1 ./... RC=0 ueber 29 Pakete), DoD 1-3 am Arbeitsbaum verifiziert statt am Outcome-Text, und 'jaira update' auf einem Scratch-Board mit Stempel 0.2.1 gegen das aus diesem Baum gebaute Binary ausgefuehrt - es liest genau die 9 Unreleased-Zeilen vor, keine gespalten. Nebenbefund ohne Rueckgabe: der fuer DoD 2 zitierte TestEmbeddedNotesParseToAtLeastOneRealEntry belegt nur, dass ueberhaupt ein Eintrag parst, und wuerde eine umgebrochene Zeile nicht melden - die Sektion wurde deshalb selbst gescannt."
 outcome-why: "Diese Lane prueft, ob das Geforderte existiert und funktioniert. Kein vom Benutzer getipptes Kommando und keine Taste ist beim Falten verloren gegangen: die vier gegenueber 686daa5 fehlenden Tokens ('elease', 'next-release', der --json-Schluessel 'milestone', 'ticket: not found') gehoeren samt und sonders zu nie ausgelieferten Zwischenstaenden und sind im Progress bewusst protokolliert."
