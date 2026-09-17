@@ -37,7 +37,7 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:45:13Z
+updated-at: 2026-09-17T19:45:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
@@ -93,7 +93,7 @@ review-check: "Alles unten ist auf diesem Branch von Hand nachgelaufen. Dauer et
   proof: core/role/builtin/jaira-role-lane/SKILL.md:50-80 — 'git status --short' steht jetzt neben 'git diff', ein '??' ist eine Pause und die neue Datei wird mit vorgelegt; nachgestellt in diesem Worktree: eine angelegte probe_neu.go liefert 'git diff' 0 Zeilen und 'git status --short' die Zeile '?? probe_neu.go'
 - [x] Der Halbsatz 'Testing is not a lane' steht nicht mehr in core/role/builtin/jaira-dispatcher/SKILL.md; scripts/spawn.sh hat weiterhin genau einen Sonderfall ('dispatch'), und core/role/builtin/jaira-role-tester/SKILL.md ist unveraendert.
   proof: grep 'Testing is not a lane' core/ findet nichts mehr; core/role/builtin/jaira-dispatcher/SKILL.md:157 lautet jetzt '/jaira-role-lane <id> <lane> — every lane, testing included'; spawn.sh und jaira-role-tester/SKILL.md stehen unveraendert in 'git status --short'
-- [~] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
+- [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
   proof: core/release/NOTES.md:16 (mitlaufende Kritik), :17 (notes als Lane-Eingabe) und :18 (die Pause, die neue Dateien sieht), alle drei unter ## Unreleased
 - [ ] Der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, nennt den Modus: core/board/announce.go zaehlt die Nutzlast von 'jaira show --for-lane --json' auf und fuehrt 'mode' darin mit, damit ein Agent auf einem fremden Board ueberhaupt erfaehrt, dass es den Schluessel gibt. Je eine Zeile in core/release/NOTES.md, wenn sich der ausgelieferte Blocktext dadurch aendert.
 
