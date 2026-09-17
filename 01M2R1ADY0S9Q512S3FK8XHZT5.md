@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:22:42Z
+updated-at: 2026-09-17T17:22:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -52,7 +52,7 @@ review-gaps: "removed Model.paste (internal/tui/paste.go) — a wrapper with one
 - [x] Ein mehrzeiliger eingefuegter Text zerlegt die Suche nicht: das Feld ist eine Zeile, also entscheidet das Ticket bewusst, was mit Zeilenumbruechen passiert (verwerfen oder zu Leerzeichen falten), und ein Test haelt diese Entscheidung fest.
   proof: internal/tui/model.go:921-927 insertText normalises CRLF and lone CR to \n once; internal/tui/paste.go:41 foldToOneLine folds newline runs to one space in a single pass; TestMultiLinePasteIsFoldedToSpaces (6 cases), TestPasteKeepsLinesInTheFieldEditor, TestPasteNormalisesALoneCarriageReturnInTheFieldEditor
 - [x] Die Tastaturbelegung spielt keine Rolle: eine Notiz am Code haelt fest, warum Strg+V nicht ueber cmdKey abgebildet wird (keylayout.go:38-42, der Dekoder loescht Key.Text bei Modifikatoren) und warum das Behandeln von PasteMsg die Belegung ueberfluessig macht.
-  proof: internal/tui/paste.go:9-23 doc comment on Model.paste, and internal/tui/model.go:900-901 at the branch
+  proof: internal/tui/model.go:900-910 comment at the 'case tea.PasteMsg' branch: why ctrl+v cannot go through cmdKey (keylayout.go clears Key.Text under modifiers) and why the event makes the layout irrelevant
 - [x] core/release/NOTES.md traegt unter '## Unreleased' eine Zeile: was der Benutzer jetzt TUN kann - in die Suche einfuegen.
   proof: core/release/NOTES.md:17 under '## Unreleased'
 
