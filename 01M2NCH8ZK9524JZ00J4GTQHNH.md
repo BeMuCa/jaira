@@ -39,7 +39,7 @@ commits:
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
   - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:25:57Z
+updated-at: 2026-09-17T21:26:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-34127
 claimed-at: 2026-09-17T21:08:49Z
@@ -98,7 +98,7 @@ review-check: |-
 - [x] Es gibt weiterhin genau eine Dispatcher-Rolle. Kein zweiter Skill und keine zweite Kommandozeile daneben; der Modus steht im selben Prompt.
   proof: core/role/builtin/ enthaelt unveraendert sieben Rollen; der Modus steht in core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitten 'Before the plan lane: count what is still open' (Schritt 5, 'jaira set <id> mode=conversational') und 'What the mode changes for you', und in core/role/builtin/jaira-role-lane/SKILL.md, Abschnitt 'Is this ticket in conversational mode?' — kein neuer Skill und keine neue Kommandozeile
 - [x] Was im Gespraech entschieden wird, steht mit 'jaira note' auf dem Ticket, BEVOR die Arbeit daran beginnt - nicht hinterher. Nachgestellt an einem Ticket, dessen Sitzung mittendrin abgebrochen wird: die Entscheidung ist danach noch da.
-  proof: core/role/builtin/jaira-dispatcher/SKILL.md:54 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip, TestShowPrintsModeForPeople und TestResumeCarriesMode in internal/cli/mode_test.go
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'Before the plan lane: count what is still open', Schritt 4 (jaira note vor Arbeitsbeginn) plus TestModeSurvivesRoundTrip, TestShowPrintsModeForPeople und TestResumeCarriesMode in internal/cli/mode_test.go
 - [x] In diesem Modus committet der Agent nicht selbst. Er legt die Aenderungen bereit und gibt eine fertige Commit-Zeile zurueck, die den Ticket-Handle im Betreff traegt und die Ticket-Datei mitnimmt. Nachgestellt: nach dem Commit des Menschen leitet jaira die Commit-Liste vollstaendig ab und der Zug in die Endlane wird nicht verweigert.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:107-128 — statt 'git commit' die fertige Zeile mit Handle im Betreff und der Ticket-Datei im 'git add'; die Gegenseite in core/role/builtin/jaira-dispatcher/SKILL.md:84 — Zeile nur bei Code-Aenderung
 - [x] Der Mensch sieht den Code, bevor darauf aufgebaut wird: der Dispatcher legt ihn nach jedem Inkrement vor und wartet, statt am Ende alles auf einmal zu zeigen.
