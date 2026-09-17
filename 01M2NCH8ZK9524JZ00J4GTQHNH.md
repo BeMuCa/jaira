@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,14 +37,15 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
   - 6809ad7d473114e1405fbdf8205f02c9478303f3
+  - 03b46691226127ee9f07f008da8d4b908b63bd06
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T21:03:20Z
+updated-at: 2026-09-17T21:03:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-51319
 claimed-at: 2026-09-17T20:36:51Z
-outcome-what: "Die Anweisung der mitlaufenden Kritik, den uncommitteten Arbeitsbaum zu beurteilen, ist an allen drei Stellen unbedingt formuliert: core/role/builtin/jaira-role-lane/SKILL.md (Abschnitt 'Read the worktree, not the ticket's diff'), core/role/builtin/jaira-dispatcher/SKILL.md (Absatz unter 'In conversational mode, a critique runs beside the work') und die erste Zeile unter '## Unreleased' in core/release/NOTES.md. Neu in allen dreien: ein nicht-leerer Payload-Diff zeigt die frueheren Runden und nicht die Arbeit daneben."
-outcome-why: "Befund aus critique 15: die drei Stellen waren als Diagnose eines Zustands geschrieben ('das Payload kam complete:false zurueck'). internal/cli/flow.go:589-595 leitet die Commit-Liste aus git ab, sobald das Ticket keine fuehrt — ab der zweiten Runde liefert 'show --for-lane critique --json' also einen vollstaendigen Diff und complete:true. Wer den beschriebenen Zustand nicht vorfand, haette den Absatz fuer nicht zutreffend gehalten, den gelieferten Diff gelesen und die frueheren Runden kritisiert statt der Arbeit neben sich."
-outcome-resolves: "Plan 38 und 39. Kein Go-Code beruehrt; go build ./... und go test ./... -count=1 gruen (29 Pakete, selbst gelaufen)."
+outcome-what: "Die zwei Saetze aus critique 16 in core/role/builtin/jaira-role-lane/SKILL.md umgeschrieben: der Satz 'Follow it, produce exactly those outputs, and nothing beyond them' im Kopf traegt jetzt die Bedingung 'Are you the lane that writes?' und sagt der mitlaufenden Kritik ausdruecklich, dass der gelieferte Lane-Prompt fuer sie Lesestoff ist und kein Auftrag - ihr eigener critique-Prompt ordnet 'jaira set review-summary=' und 'jaira move' an. Und 'do not judge what it gave you' heisst jetzt 'do not judge the diff it gave you', mit einem Absatz daneben, der Ziel, Definition of Done und Notizen im selben Payload als aktuell und als Massstab benennt. Kein Go-Code, keine neue NOTES.md-Zeile."
+outcome-why: "Beide Saetze standen unbedingt und VOR der Bedingung, die sie einschraenkt: wer die Datei von oben liest, bekam den Schreibauftrag der critique-Lane, bevor Abschnitt 1 ihn der mitlaufenden Kritik nimmt - zwei Schreiber auf review-summary, genau der Fehler, den DoD 9 verbietet. Und 'what it gave you' warf auch die Notizen weg, die der critique-Prompt ausdruecklich ZUERST verlangt und aus denen hervorgeht, welche Befunde schon geschlossen sind - der Fehler, gegen den DoD 8 geschrieben ist."
+outcome-resolves: "DoD 8, 9 und 14 bleiben erfuellt und ihre proof-Zeilen zeigen auf die verschobenen Bereiche (SKILL.md:74-105, :104-129, :159-169). Plan 40-42 abgehakt. go build und go test ./... -count=1 gruen."
 review-summary: |-
   core/role/builtin/jaira-role-lane/SKILL.md:26-28 — 'Follow it, produce exactly those outputs, and nothing beyond them' is unconditional, and it stands BEFORE the condition at line 30. The critique lane's payload lists produces=["review-summary"] and its prompt orders 'jaira set <handle> review-summary=...' plus 'jaira move' — exactly the writes lines 80-83 forbid the running critique. A worker reading top-down is told to write review-summary before anything tells it not to. Fix: hang the same condition on that sentence as on the bullet list two lines below — 'Follow it and produce exactly those outputs, unless the read above made you the critique running beside the work: it produces its findings as a report to the dispatcher and writes nothing (section 1).'
   core/role/builtin/jaira-role-lane/SKILL.md:110-112 — 'do not judge what it gave you' is wider than the defect it fixes. The payload also carries goal, definition-of-done and the notes, and the critique prompt puts the notes FIRST ('Read the notes before you read the diff'). A reader who takes that sentence at its word drops the one input the lane most needs. Fix: name the diff — 'do not judge the diff it gave you; the goal, the definition of done and the notes in the same payload are current and are what you judge the worktree against.'
