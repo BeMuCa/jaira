@@ -1,7 +1,7 @@
 ---
 id: 01M2QFVJ5M1PSCX422VPD8CSAA
 title: 0.3.0 schneiden
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,14 +26,14 @@ related: []
 commits:
   - 395450da3c0c38b2ddfc161c7b68388bad8cd857
 created-at: 2026-09-17T10:51:02Z
-updated-at: 2026-09-17T15:30:57Z
+updated-at: 2026-09-17T15:31:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62926
 claimed-at: 2026-09-17T15:09:31Z
 mode: conversational
-outcome-what: "core/release/release.go: sinceEntries filtert Entries ohne Changes aus dem Rueckgabewert (neu zerlegt in selectSince fuer die Auswahl nach Position und withChanges fuer den Filter). parseNotes ist unveraendert und behaelt die leere Sektion weiter. Neuer Test TestSinceDropsEntriesWithoutChanges deckt beide Richtungen ab: Stempel = geschnittene Version liefert nichts, leerer Stempel liefert alle Entries ausser dem leeren."
-outcome-why: "Der Schnitt auf '## 0.3.0' hat eine leere '## Unreleased' angelegt, und die reiste als Entry ohne Changes bis in die Ausgabe von 'jaira update': ein Board mit Stempel 0.3.0 bekam 'What's changed since then:' plus die nackte Ueberschrift 'Unreleased' und keinen einzigen Punkt, --json trug {\"version\":\"Unreleased\",\"changes\":null}, und der Zweig 'Nothing has changed since ...' war fuer jedes aktuelle Board unerreichbar."
-outcome-resolves: "DoD 5: Board mit Stempel 0.3.0 und Binary 0.3.0 druckt 'Nothing has changed since the version that last set this board up.', --json traegt notes: []. DoD 6: der Filter sitzt in sinceEntries statt in parseNotes (core/release/release.go:68,84), TestSinceDropsEntriesWithoutChanges weist ihn nach, TestParseNotesKeepsAnEmptyLeadingSection bleibt gruen, und Stempel 0.2.1 liefert in Text und --json dieselbe Liste ['0.3.0']. DoD 1-4 unberuehrt - NOTES.md ist nicht angefasst."
+outcome-what: "Getestet: Build, vet und die volle Suite mit -race und -count=1 gruen (RC=0, 29 Pakete). Alle 6 DoD-Punkte einzeln am Baum und am gebauten Binary (-X main.version=0.3.0) gegen ein Scratch-Board mit eigenem JAIRA_HOME nachgeprueft, nicht aus dem Outcome uebernommen."
+outcome-why: "Die testing-Lane schuldet ein test-verdict, und die Behauptung des Tickets - 'wer jaira update nach dem Schnitt laufen laesst, liest die richtige Liste' - ist nur am laufenden Binary pruefbar, nicht am Diff. Genau dort lag in diesem Ticket schon einmal der Defekt, den die critique gefunden hat."
+outcome-resolves: "test-verdict: pass. Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.', --json notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0']; ungestempelt -> 8 Versionen in Text und --json identisch, 'Unreleased' in keiner Ausgabe. DoD 1-3 am Text nachgezaehlt (9 '- '-Zeilen, keine umgebrochen, alle sechs Kommandos/Tasten vorhanden), DoD 4 erfuellt und kein v0.3.0-Tag gesetzt. Offen und nur vom Menschen zu schliessen: die Freigabe fuer den Tag v0.3.0."
 review-summary: "none"
 review-gaps: "Entfernt: withChanges in core/release/release.go - ein Vorwaerts-Wrapper mit genau einem Aufrufer; der Filter ist jetzt die Schleife in sinceEntries (2 Funktionen statt 3, selectSince bleibt wegen seiner drei Rueckgabepfade). Doppelung: keine - kein anderer Ort filtert Entries ohne Changes (grep '.Changes' trifft nur parseNotes, den Filter, update.go:115/129 und release_test.go:96). Toter Code: keiner - Since/sinceEntries/selectSince und der neue Test haben alle Aufrufer; der Zweig len(notes)==0 in internal/cli/update.go:108 ist durch diese Aenderung wieder erreichbar statt tot. Stehen gelassen: der sechszeilige Warum-Kommentar ueber sinceEntries (steht nirgends sonst), release_test.go:96 (aelter als diese Aenderung). Kosten: nichts - Since laeuft einmal pro 'jaira update' ueber acht Entries. go build/vet sauber, go test -race -count=1 ./... gruen."
 test-verdict: "pass: go build/vet sauber, go test -race -count=1 ./... gruen (RC=0, 29 Pakete, 0 Fehler); DoD 1-3 am Baum nachgeprueft (9 '- '-Zeilen unter '## 0.3.0', keine umgebrochen, alle sechs geforderten Kommandos/Tasten weiter im Text); DoD 4 erfuellt (leere '## Unreleased' oben, kein v0.3.0-Tag gesetzt); DoD 5/6 am gebauten Binary -X main.version=0.3.0 gegen ein Scratch-Board mit eigenem JAIRA_HOME nachgesehen: Stempel 0.3.0 -> 'Nothing has changed since the version that last set this board up.' und notes: []; Stempel 0.2.1 -> Text und --json beide genau ['0.3.0']; ungestempelt -> 8 Versionen, 'Unreleased' kommt in keiner der drei Ausgaben vor. TestSinceDropsEntriesWithoutChanges und TestParseNotesKeepsAnEmptyLeadingSection einzeln gruen."
