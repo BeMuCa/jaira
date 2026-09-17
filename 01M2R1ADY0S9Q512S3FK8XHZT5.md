@@ -28,7 +28,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T15:56:15Z
-updated-at: 2026-09-17T17:04:43Z
+updated-at: 2026-09-17T17:04:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6497
 claimed-at: 2026-09-17T17:01:52Z
@@ -46,7 +46,7 @@ review-summary: |-
 ## Definition of Done
 
 - [x] Ein Einfuegen in die Suche landet im Feld: Model.Update behandelt tea.PasteMsg, der Text haengt an m.input, und die Tafel filtert sofort danach wie beim Tippen. Mit Test nachgewiesen, der ein PasteMsg direkt einspeist.
-  proof: internal/tui/model.go:900 case tea.PasteMsg -> internal/tui/paste.go:24 Model.paste; TestPasteIntoFilterLandsAndFilters
+  proof: internal/tui/model.go:902 case tea.PasteMsg -> internal/tui/paste.go:24 Model.paste -> internal/tui/model.go:914 Model.insertText; TestPasteIntoFilterLandsAndFilters
 - [x] Kein Eingabefeld verschluckt ein Einfuegen mehr: modeFilter, modeCreate, modeDelete und modeEdit nehmen den eingefuegten Text genauso an wie getippten. Je ein Test pro Modus.
   proof: internal/tui/paste.go:25-41 covers modeEdit, modeFilter, modeCreate, modeDelete; TestPasteReachesEveryInputMode (create/delete/edit subtests) + TestPasteIntoFilterLandsAndFilters
 - [x] Mehrbyte-Text ueberlebt das Einfuegen unveraendert: kyrillischer Text, Umlaute und ein Emoji stehen nach dem Einfuegen Zeichen fuer Zeichen im Puffer, und ein Backspace danach entfernt genau ein Zeichen, nicht ein Byte. Mit Test nachgewiesen.
