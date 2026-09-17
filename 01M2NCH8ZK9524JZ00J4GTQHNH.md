@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -37,13 +37,13 @@ related:
 commits:
   - 9cb1df92380b3e96ca46030822a91b946e288938
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T19:47:49Z
+updated-at: 2026-09-17T19:48:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16211
 claimed-at: 2026-09-17T19:29:19Z
-outcome-what: "internal/cli/mode_test.go auf den vorhandenen jsonCLI-Helfer (internal/cli/tags_test.go:64) gelegt: vier handgeschriebene runCLI+json.Unmarshal-Bloecke raus, -52/+6 Zeilen, Import 'encoding/json' faellt weg."
-outcome-why: "Pass 1 (Duplikat): dasselbe Testpaket hatte die Funktion schon, samt besserer Fehlermeldung. Zwei Wege, ein CLI-JSON zu lesen, werden beide gepflegt von Leuten, die den anderen nicht kennen."
-outcome-resolves: "review-gaps geschrieben: ein Fund behoben, vier geprueft und begruendet stehen gelassen, ein vorbestehender toter Code benannt, ein Verhaltensbefund (announce.go:64) an die naechste Runde weitergereicht. go build/vet/test ./... -count=1 gruen."
+outcome-what: "core/board/announce.go: der Punkt zu 'jaira show --for-lane --json' fuehrt jetzt 'mode' in der Nutzlast auf, sagt was leer und was 'conversational' bedeutet (Diff nach jedem DoD-Punkt, fertige Commit-Zeile statt eigenem Commit) und dass der Modus vom Ticket gelesen wird. Test TestAgentNoteNamesTheConversationalMode, eine NOTES.md-Zeile unter ## Unreleased, AGENTS.md und CLAUDE.md dieses Repositories mit dem gebauten Binary regeneriert."
+outcome-why: "Auf einem fremden Board liegt kein jaira-role-lane-Prompt. Der von 'jaira update' geschriebene Block ist dort die einzige Stelle, an der ein Agent von 'mode' erfaehrt — ohne ihn reist der Schluessel in der --for-lane-Nutzlast mit, ohne dass irgendetwas ihn beschreibt, und der Gespraechsmodus erreicht nur das Board von jaira selbst."
+outcome-resolves: "DoD 13: der ausgelieferte Block nennt den Modus (announce.go:64-72), NOTES.md:17 sagt dem Leser, dass 'jaira update' faellig ist."
 review-summary: none
 review-gaps: |-
   Entfernt: die vier handgeschriebenen runCLI+json.Unmarshal-Bloecke in internal/cli/mode_test.go — jsonCLI (internal/cli/tags_test.go:64) tut im selben Testpaket genau das und meldet den Fehler besser. -52/+6 Zeilen, Import 'encoding/json' faellt weg, go build/vet/test ./... -count=1 gruen.
