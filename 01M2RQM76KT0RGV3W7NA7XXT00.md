@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T21:00:34Z
+updated-at: 2026-09-18T21:00:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61566
 claimed-at: 2026-09-18T20:56:37Z
@@ -300,3 +300,12 @@ Die Aenderung ist abgedeckt, nicht bloss gruen. Die neuen Tests laufen und beste
 Eine Abweichung, kein Fehler: der review-check auf dem Ticket erwartet '31 Zeilen ok'. Tatsaechlich sind es 28 'ok' plus 4 '[no test files]' = 32 Paketzeilen. Die Zahl im Pruefpunkt stimmt nicht; das Ergebnis (kein FAIL) schon.
 
 Nichts geaendert, nichts committet — die Lane hat nur gemessen.
+- **2026-09-18 21:00 · Alexander Sacharov** — review: der Change haelt, was die DoD verlangt - ein Befund geht trotzdem an einen Menschen und nicht zurueck nach in-progress, weil die Reparatur eine Formatentscheidung ist.
+
+Befund: die Trennzeile 'uncommitted work in the working tree' (flow.go:629) ist keine Trennzeile. Sie steht praefixlos am Zeilenanfang, genau wie jede Commit-Message-Zeile in 'git show --format', und laesst sich damit nicht vom Patch-Inhalt unterscheiden. Am Payload dieses Tickets nachgemessen: neun Treffer, der erste auf Diff-Zeile 1190 als '+'-Zeile im Patch von flow.go selbst, die echte Trennung erst auf 2103. Der neu geschriebene Abschnitt in jaira-role-lane/SKILL.md:130-140 sagt der nebenher laufenden Kritik, alles unter dieser Zeile sei ihr Urteilsobjekt - wer von oben liest, nimmt rund 900 Zeilen fertiger Arbeit dafuer. Zwei Wege, und die Wahl ist nicht meine: (a) die zweite Haelfte als eigener Payload-Schluessel 'worktree_diff', dann braucht es keine Marke; (b) im Prompt den letzten Treffer statt des ersten. (a) ist client-facing und braucht eine NOTES.md-Zeile, (b) nicht.
+
+Zweiter Befund, kleiner: WorktreeDiff nimmt ':/' und damit den unversionierten Stand des ganzen Repositories. Zwei Tickets in einem Checkout sehen gegenseitig ihre Arbeit, und SKILL.md nennt sie 'die Arbeit nebenan'. Hier faellt es nicht auf, weil ein Worktree pro Ticket laeuft; die CLI erzwingt das nicht. Reparatur nicht offensichtlich - welche Dateien zu einem Ticket gehoeren, weiss niemand.
+
+Dritter, nur Buchhaltung: DoD 2 verlangt den Fall drei-von-einundzwanzig, der Test stellt eins-von-zwei nach. Mechanisch identisch, der Proof sagt es auch, aber die DoD-Zeile sagt etwas anderes.
+
+Kein Defekt im Go-Code gefunden. Gegengeprobt statt geglaubt: repo.Diff ohne error-Rueckgabe meldet jeden nicht zeigbaren SHA; die Leer-Patch-Pruefung in WorktreeDiff unterscheidet per os.Stat korrekt zwischen leerer Datei und unlesbarem Pfad; runTolerating faengt ueber ee.Exited() den signalgetoeteten git ab, der sonst als ExitCode -1 durchginge; ein haengender Symlink liefert exit 1 MIT Patch und faellt damit nicht in den Fehlerzweig (am echten git nachgestellt). Laufzeit gemessen: 0,75 s fuer den ganzen Payload auf diesem Branch - der Prozess pro unverfolgter Datei kostet hier nichts.
