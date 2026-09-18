@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:06:08Z
+updated-at: 2026-09-18T07:09:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94878
 claimed-at: 2026-09-18T07:04:05Z
@@ -33,7 +33,9 @@ mode: conversational
 outcome-what: "renderSignOff hat jetzt einen Test fuer commitsSourceLabel: TestSignOffNamesWhereTheCommitsCameFrom rendert den Signoff-Schirm fuer alle drei Quellen-Token und prueft die Heading-Zeile"
 outcome-why: "die Uebersetzung der drei Token in Prosa war ungetestet - genau die Stelle, an der laut Doc-Kommentar ein neuer Wert still auf 'kein Label' faellt, auf dem Schirm, auf dem ein Mensch unterschreibt"
 outcome-resolves: "DoD 5 abgehakt; Mutationsprobe (git+ticket-Label auf \"\" gesetzt) laesst den Test fallen; go build/vet/test ./... gruen"
-review-summary: none
+review-summary: |-
+  core/role/builtin/jaira-role-lane/SKILL.md:36-43 says the payload's diff is the ticket's whole committed history 'and not a slice of it' and drops the old counting instruction - but in mode: conversational the implementing lane is forbidden to commit (same file, rule 3), so on exactly those tickets the payload is the PREVIOUS round with complete:true beside it. This ticket's own re-entry proves it: the third in-progress round (DoD 5, signoff.go/signoff_test.go/trim_test.go/NOTES.md) is uncommitted and absent from the critique payload. The passage must either qualify itself for conversational mode and point the diff lanes at the same three worktree commands the running-critique section already carries (line 120), or flow.go must account for uncommitted work - and choosing between those is the decision, because qualifying the prompt is the very 'hand instruction instead of the tool telling the truth' this ticket exists to remove
+  internal/tui/signoff.go:118 appends ' - recorded at acceptance' to every label, so the ticket-only case renders 'recorded on the ticket - recorded at acceptance' - the same word twice on the screen a person signs on. Let commitsSourceLabel carry its own tail per case instead of a shared suffix
 review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
 ---
 
