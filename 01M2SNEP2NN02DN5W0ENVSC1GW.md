@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T11:23:59Z
+updated-at: 2026-09-18T11:25:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -64,7 +64,7 @@ outcome-resolves: "Der Weg von der Entscheidung zur Umsetzung steht: welches Fel
 - [x] Test: 'jaira lanes add critique' installiert die Lane bei unerreichbarem Netz (JAIRA_MARKET_API auf eine tote Adresse), und sie steht zwischen in-progress und human (DoD 3)
 - [x] 'jaira lanes' um einen Fuss erweitern (internal/cli/tickets.go:977): mitgelieferte, nicht installierte Lanes namentlich plus die Zeile, die sie holt; im JSON ein Feld 'available' (DoD 2)
 - [x] Test fuer diesen Fuss in Text und JSON, und dass er schweigt, wenn nichts fehlt
-- [~] core/market/market.go:45: apiBase() haengt '?ref=v<release.Current>' an; bei 'dev' ohne ref plus eine Zeile auf stderr, dass die Entwicklungsfassung kommt (DoD 6)
+- [x] core/market/market.go:45: apiBase() haengt '?ref=v<release.Current>' an; bei 'dev' ohne ref plus eine Zeile auf stderr, dass die Entwicklungsfassung kommt (DoD 6)
 - [ ] Test: mit gesetzter Version geht der ref an den Server, mit 'dev' nicht und die Ansage erscheint
 - [ ] Je eine Zeile unter '## Unreleased' in core/release/NOTES.md fuer die drei Lanes im Binary, den neuen Fuss von 'jaira lanes' und den versionsgebundenen Katalog (DoD 5)
 - [ ] go build ./... , go vet ./... und die volle Testsuite gruen
