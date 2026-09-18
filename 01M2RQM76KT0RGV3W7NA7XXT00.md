@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T21:00:59Z
+updated-at: 2026-09-18T21:01:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61566
 claimed-at: 2026-09-18T20:56:37Z
 mode: ""
-outcome-what: "Vier Optimize-Durchgaenge; zwei Doppelungen entfernt, kein Verhalten geaendert"
-outcome-why: "MergeCommits trug eine handgeschriebene Kopie von slices.Contains und StampCommits eine zweite Kopie ihrer eigenen Doku"
-outcome-resolves: "review-gaps steht auf dem Ticket"
+outcome-what: "review: Diff gegen alle elf DoD-Punkte gelesen, Payload und Tests am laufenden Binary nachgemessen"
+outcome-why: "der Code haelt, was die DoD verlangt; der eine offene Befund ist eine Formatentscheidung und gehoert einem Menschen"
+outcome-resolves: "review-summary, review-gaps, review-verdict und review-check stehen auf dem Ticket"
 review-summary: "Der Payload einer Diff-Lane wird nicht mehr aus dem Frontmatter-Feld 'commits:' gebaut, sondern aus der Vereinigung von git-Ableitung und Feld (internal/cli/flow.go:590-608 via ticket.MergeCommits) - derselbe Wechsel auf dem Signoff-Schirm (internal/tui/signoff.go:112-120). Dazu kommt die unversionierte Arbeit: core/gitrepo/git.go:WorktreeDiff liefert 'git diff HEAD' plus jede unverfolgte Datei einzeln per '--no-index' (mit -z und core.quotePath=false, damit Umlaute und Leerzeichen im Pfad die Datei nicht stumm verschlucken), ausgenommen .jaira/tickets. Beide Haelften haengen im selben 'diff'-String, getrennt von der Zeile 'uncommitted work in the working tree'. Vier neue Payload-Schluessel sagen, woraus der Diff besteht und was fehlt: commits (die SHAs), commits_source (git / ticket / git+ticket, mit '+worktree' angehaengt), commits_unavailable (SHAs, die mitgezaehlt aber nur als '(not available locally)' im Patch stehen - repo.Diff gibt sie jetzt zurueck statt eines nie gesetzten error) und worktree_error (git konnte den Baum nicht lesen; complete bleibt true). Die Klartext-Ausgabe druckt dieselben Fakten ueber dem Diff. Beide Rollen-Prompts (jaira-role-lane, jaira-dispatcher) sind umgeschrieben: die Handanweisung 'zaehl selbst und lies git diff origin/HEAD...HEAD' faellt weg, die nebenher laufende Kritik wird auf die zweite Haelfte des Payload-Diffs gezeigt. 6 neue Tests, alle mit Gegenprobe; go build/vet/test gruen (28 Pakete)."
 review-gaps: |-
   Ein Befund, nachgemessen an diesem Ticket selbst, plus zwei kleinere.
