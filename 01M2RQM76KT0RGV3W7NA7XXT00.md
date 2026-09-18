@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T08:04:27Z
+updated-at: 2026-09-18T08:04:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -34,7 +34,7 @@ outcome-what: "gitrepo.WorktreeDiff verliert keine untracked Datei mehr: 'git ls
 outcome-why: "Befund der vierten critique: ein untracked Pfad mit Umlaut kam als C-Zitat (\"\\303\\204nderung.txt\") aus ls-files, der --no-index-Aufruf fand die Datei nicht und meldete das mit Exit 1 - demselben Code, den runTolerating als Normalfall akzeptiert. Ergebnis: leerer Anhang, Datei weg, commits_source sagte trotzdem '+worktree', complete blieb true. Das ist der Bruchstueck-als-vollstaendig-Ausfall, den dieses Ticket abschafft, eine Stufe weiter - und in einem Repository mit deutschen Ticket-Titeln keine Ecke."
 outcome-resolves: "DoD 8"
 review-summary: "none"
-review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
+review-gaps: "Zwei Doppelungen gefaltet, die dieser Change selbst erzeugt hat: runTolerating war eine zeichenweise Kopie von run (core/gitrepo/git.go) - run ruft jetzt runTolerating(noTolerance); und die beiden Tests in internal/cli/forlanecommits_test.go teilten 45 Zeilen identisches Setup, jetzt forLaneGitFixture plus Typ forLanePayload. In der eigenen Faltung dabei einen Fehler gefunden und behoben: ExitCode() liefert -1 bei Signal-Tod, also haette noTolerance einen abgeschossenen git als Erfolg gewertet - ee.Exited() davor. Stehen gelassen: ticket.WithWorktree und commitsSourceLabel mit je einem Aufrufer (Vokabular an einer Stelle bzw. Prosa fuer genau einen Schirm, beides am 06:57/07:46 begruendet), die rohen Quellen-Token statt Konstanten (critique 07:09), die langen WorktreeDiff-Kommentare (Gruende, kein Restatement), und das exec.LookPath pro run() in der untracked-Schleife (Paketmuster, ein Cache waere eine Verhaltensaenderung). Nichts tot geworden: contains(), CommitsSource, alle drei Token weiterhin benutzt. Keine NOTES.md-Zeile - beide Faltungen sind von aussen nicht beobachtbar."
 question: |-
   Befund 1 der critique: jaira-role-lane/SKILL.md:36-43 sagt der Diff-Lane jetzt, der Payload sei die ganze committete Historie, und nimmt ihr das Nachzaehlen weg. In mode: conversational darf die implementierende Lane aber nicht committen - also ist der Payload dort der vorherige Durchgang und meldet complete:true. Dieses Ticket selbst ist der Fall. Drei Wege, bitte einen waehlen:
 
