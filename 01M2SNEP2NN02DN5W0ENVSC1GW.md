@@ -23,10 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:37:57Z
+updated-at: 2026-09-18T18:17:38Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-80358
-claimed-at: 2026-09-18T12:11:18Z
+claimed-by: DESKTOP-RFTCH11-7876
+claimed-at: 2026-09-18T18:17:38Z
 mode: conversational
 outcome-what: "Die drei Punkte der zweiten Kritik behoben: 'jaira lanes add' nennt in der Erfolgszeile die Lane, hinter der es gelandet ist (lane.Add gibt den Vorgaenger zurueck, JSON-Feld 'after'); die Warnung ueber einen unaufloesbaren Anker nennt das after: der Lane selbst statt des Namens, an dem die Kettensuche endete; der Kommentarsatz am 'Builtin && !Default'-Filter behauptet nicht mehr, das Angebot gelte nur nie installierten Lanes - derselbe Satz stand auch im Testkopf. Dazu zwei Tests und zwei korrigierte NOTES.md-Zeilen."
 outcome-why: "Die Kettenaufloesung bleibt bewusst still, also erfuhr niemand mehr, wo eine Lane landet; die Warnung nannte bei brainstorm -> backlog einen leeren Namen, den der Benutzer nie geschrieben hat; und der Kommentar samt NOTES-Zeile versprach eine Eigenschaft, die der Filter nachweislich nicht hat."
