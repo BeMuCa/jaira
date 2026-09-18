@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:44:32Z
+updated-at: 2026-09-18T06:44:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -77,3 +77,12 @@ Nicht gefixt, bewusst: internal/tui/view.go:1319 (Detail-Pane) und internal/cli/
 Auch nicht angefasst: core/gate/gate.go:327 - 'explizit gewinnt ueber abgeleitet' beim Tor. Dort ist das Feld nur ein Ja/Nein ('gibt es ueberhaupt Commits'), kein Ausschnitt, der fuer das Ganze gehalten werden kann.
 
 Union-Logik lag doppelt vor: die Merge-Schleife aus StampCommits (core/ticket/trim.go) ist jetzt ticket.MergeCommits und wird von beiden Lesern benutzt, damit sie nicht auseinanderlaufen.
+- **2026-09-18 06:44 · Alexander Sacharov** — in-progress abgeschlossen. Was nicht offensichtlich ist:
+
+- commits_source hat drei Werte: 'git' (nur die Ableitung trug bei), 'ticket' (die Ableitung fand nichts, das Feld trug alles) und 'git+ticket' (das Feld trug einen SHA bei, den die Ableitung nicht fand - Rebase, Cherry-Pick). Die Schluessel commits/commits_source stehen NUR im Payload einer Lane, die 'diff' in input-requires fuehrt. Begruendung: eine Commit-Liste neben einer Lane, die nie einen Diff verlangt hat, liest sich als Aussage ueber das Ticket statt als Herkunft dessen, was auf dem Schirm steht.
+
+- Die Union-Schleife lag vorher nur in StampCommits. Sie ist jetzt ticket.MergeCommits (core/ticket/trim.go) und wird von drei Stellen benutzt. Wer sie aendert, aendert damit auch, was beim Ablegen ins Logbuch ins Frontmatter geschrieben wird - das ist Absicht, sie duerfen nicht auseinanderlaufen.
+
+- Auch die Klartext-Ausgabe (ohne --json) traegt jetzt '<n> commit(s), from <quelle>:' plus die SHAs ueber dem Diff. Ein Worker, der den Lane-Prompt als Text liest, haette sonst als einziger nicht zaehlen koennen.
+
+- NOTES.md: die Zeile steht unter '## Unreleased', NICHT unter '## 0.3.0'. Die 0.3.0-Zeile 22, die die alte Handanweisung beschreibt, bleibt woertlich stehen - sie beschreibt den Build, den es gibt; geschlossene Historie wird nicht nachtraeglich richtiggestellt.
