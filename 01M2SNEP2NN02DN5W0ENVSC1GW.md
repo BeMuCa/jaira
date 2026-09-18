@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:30:50Z
+updated-at: 2026-09-18T12:30:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -82,7 +82,7 @@ review-summary: |-
   proof: core/lane/order.go Add gibt den Vorgaenger zurueck; internal/cli/lanes.go:128 Erfolgszeile 'after <id>' und JSON-Feld 'after'
 - [x] Punkt B: die Warnung nennt den Anker, den die Lane selbst traegt (l.After), nicht den Namen, an dem die Kette endete
   proof: core/lane/order.go insertAfterAnchor: Warnung setzt l.After ein, anchorIndex gibt nur noch den Index zurueck
-- [ ] Punkt C: der Kommentarsatz in internal/cli/tickets.go, der behauptet, das Angebot gelte nur nie installierten Lanes - nur der Satz, nicht der Filter
+- [~] Punkt C: der Kommentarsatz in internal/cli/tickets.go, der behauptet, das Angebot gelte nur nie installierten Lanes - nur der Satz, nicht der Filter
 - [ ] Tests fuer A und B, dann go build ./... , go vet ./... und die volle Suite
 
 ## Progress
