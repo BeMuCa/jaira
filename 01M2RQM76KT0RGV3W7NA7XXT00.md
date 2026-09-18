@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:01:11Z
+updated-at: 2026-09-18T11:14:14Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-5724
-claimed-at: 2026-09-18T09:17:00Z
+claimed-by: DESKTOP-RFTCH11-35097
+claimed-at: 2026-09-18T11:14:14Z
 mode: ""
 outcome-what: "Zurueck aus signoff auf Alex' Anweisung: Befund 1 der review-Lane wird vor der Annahme repariert, Weg B."
 outcome-why: "Der ausgelieferte Rollen-Prompt widerspricht dem Binary, mit dem er kommt - das gehoert nicht in einen akzeptierten Stand."
