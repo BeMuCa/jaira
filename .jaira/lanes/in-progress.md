@@ -12,7 +12,7 @@ description: Carrying out the plan.
 ---
 # Prompt
 
-carry out the plan on this ticket.
+Carry out the plan on this ticket.
 
 You are given the goal, the context, the definition of done, and the plan worked
 out in the previous step. Work through the plan in order. Mark the step you are
