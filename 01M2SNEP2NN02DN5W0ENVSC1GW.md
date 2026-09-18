@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:31:58Z
+updated-at: 2026-09-18T10:33:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -103,3 +103,27 @@ Verworfen, an der Scope-Regel aus CLAUDE.md gemessen:
 - Weg B (Release-Assets): ein eigener Auslieferungsweg fuer das Ergebnis, das Weg A mit einem Query-Parameter liefert.
 
 Warum Form 2 als einzige die Scope-Regel besteht: kein Board bekommt eine Lane mehr als heute, kein neues Kommando, keine Frage in 'jaira init'. Es wird ein bestehendes Bool (Lane.Builtin, core/lane/lane.go:136) in zwei Tatsachen zerlegt - 'reist im Binary mit' und 'steht in der Vorauswahl' - und eine Netzabhaengigkeit entfernt statt eine hinzugefuegt.
+- **2026-09-18 10:33 · Alexander Sacharov** — pre-process, am Code nachgesehen: wie Form 2 + Form 1 + Weg A konkret gebaut werden, und was dabei im Weg steht.
+
+DAS EINE BIT, DAS ZWEI WERDEN MUSS
+Lane.Builtin (core/lane/lane.go:136) traegt heute zwei Tatsachen: 'reist im Binary mit' und 'steht in der Vorauswahl'. Der Plan trennt sie: Builtin bleibt 'reist im Binary mit', neu kommt Default 'steht in der Vorauswahl', gelesen aus dem Frontmatter-Feld 'default-board:' mit Vorgabe = Builtin. Damit aendert sich an den zehn vorhandenen builtin/*.md-Dateien keine Zeile; die drei neuen setzen 'default-board: false'.
+
+Warum ein Frontmatter-Feld und nicht ein zweites embed-Verzeichnis: ein zweites Verzeichnis braucht eine zweite Leseschleife in Builtins() (lane.go:385) und eine zweite Stelle, die 'ist das eine mitgelieferte Lane' beantwortet. Das Feld ist eine Zeile in parse() (lane.go:284) und eine im Lane-Struct.
+
+DIE ELF FUNDSTELLEN VON .Builtin, JE ENTSCHIEDEN
+Auf Default umzustellen sind genau zwei:
+- core/lane/lane.go:627 (setUp) - die Vorauswahl eines frischen Boards. Das ist DoD 4.
+- internal/tui/defaultboard.go:50 - der Haken, der im Default-Board-Bildschirm vorgesetzt ist.
+Builtin bleibt richtig bei: share.go:21 und :146 (mitgelieferte Lanes publiziert man nicht), lane.go:715 (migrateLegacy), lane.go:850/857 (order), internal/tui/defaultboard.go:139, internal/tui/lanes.go:181/359/519 (Beschriftung 'built-in'), internal/cli/tickets.go:1002/1017/1114/1121 (Quelle 'built-in' und das JSON-Feld 'builtin').
+
+ORDER IST EINE FALLE
+order() (lane.go:850) haelt mitgelieferte Lanes in der Reihenfolge ihrer Dateinamen und ordnet nur die uebrigen nach 'after:'. Landen critique/optimize/testing als builtin/*.md mit falschem Zahlenpraefix, stehen sie an der falschen Stelle, sobald sie installiert sind. Deshalb 25-critique.md, 26-optimize.md, 27-testing.md - zwischen 20-in-progress und 30-human, wo ihr 'after:' sie ohnehin hinweist.
+
+OFFLINE IST DANN GESCHENKT
+Installable() (core/lane/order.go:175) bietet schon heute Builtins() plus ~/.jaira/lanes an, lane.Add() kopiert von dort. Eine eingebettete critique-Lane ist damit ohne jedes Netz per 'jaira lanes add critique' installierbar - 'market adopt' entfaellt fuer sie ganz, und es muss keine Fehlermeldung geschrieben werden (DoD 3).
+
+DIE DREI DATEIEN AUS lanes/ NEHMEN
+Vorschlag: lanes/critique.md, lanes/optimize.md, lanes/testing.md werden nach core/lane/builtin/ verschoben, nicht kopiert. Zwei Quellen fuer denselben Prompt laufen auseinander, und der Markt soll laut der Entscheidung der Ort fuer FREMDE Lanes sein. Alte Binaries verlieren dadurch nichts: mit Weg A fragen sie den Tag ihrer eigenen Version ab, und dort liegen die Dateien noch. Im Katalog bleiben changelog-writer und secrets-scan.
+
+WEG A, UND WO ER KLEMMT
+release.Current (core/release/release.go:23) wird in cli.Execute (internal/cli/root.go:100) gesetzt, und core/release importiert nichts aus jaira - core/market darf es also lesen, ohne einen Zyklus zu bauen. apiBase() (core/market/market.go:45) haengt '?ref=v<release.Current>' an. Bei 'dev' (Source-Build) gibt es keinen Tag: dann ohne ref, plus eine Zeile auf stderr, dass die Entwicklungsfassung des Katalogs kommt. Offen und in Schritt 9 zu entscheiden: ob der ref auch an ein per JAIRA_MARKET_API gesetztes Ziel gehaengt wird - dagegen spricht nichts, der Testserver ignoriert eine unbekannte Query.
