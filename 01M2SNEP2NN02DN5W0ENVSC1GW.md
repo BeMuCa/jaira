@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T18:20:23Z
+updated-at: 2026-09-18T18:23:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-7876
 claimed-at: 2026-09-18T18:17:38Z
@@ -31,7 +31,7 @@ mode: conversational
 outcome-what: "Der eine Fund der dritten Kritik behoben: die drei veralteten Saetze, die 'jaira lanes add' noch als Anhaengen ans Ende der Spaltenordnung beschrieben. internal/cli/lanes.go:100 (Long von 'lanes add'), internal/tui/lanes.go:438 (Kommentar an addFromCatalogue) und docs/COMMANDS.md:153 (Kommandotabelle) sagen jetzt, dass die Lane dorthin gesetzt wird, wohin ihr after: zeigt, und dass die Kette durch nicht installierte Lanes hindurch verfolgt wird; CLI-Hilfe und Kommandotabelle nennen dazu die Erfolgszeile mit dem Nachbarn. Kein Verhalten geaendert, nur Prosa."
 outcome-why: "Die Reparatur der zweiten Runde hat das Anhaengen abgeschafft, die drei Saetze aber stehen lassen - 'jaira lanes add --help' beschrieb woertlich ein Verhalten, das das Binary nicht mehr hat, und wer eine Lane installiert, entscheidet danach, wo er sie erwartet."
 outcome-resolves: "DoD 3 bleibt erfuellt und ist jetzt auch dokumentiert richtig: der Weg zu einer arbeitenden critique-Lane ohne Netz laeuft ueber 'jaira lanes add', und dessen Hilfe sagt nicht mehr das Gegenteil dessen, was der Code tut."
-review-summary: "internal/cli/lanes.go:100 the 'lanes add' help still says 'appending it to the column order' - the round-2 repair made that false; say it places the lane where its after: chain points, following the chain through lanes the board has not installed | internal/tui/lanes.go:438 the same sentence in addFromCatalogue's comment ('appending it at the end of the order') | docs/COMMANDS.md:153 the same sentence in the command table"
+review-summary: "internal/cli/lanes_test.go:955 TestLanesAddAfterRemoveAppendsAtEnd - Name und Kommentar ('appended at the end of the order') sind die vierte Fundstelle desselben veralteten Satzes aus Durchgang 3 und wurden nicht mitrepariert. Am Code nachgesehen (core/lane/order.go:263ff insertAfterAnchor): 'blocked' landet hinten, weil ein unaufloesbarer Anker vor die terminale Lane parkt und 'blocked' selbst terminal ist - nicht durch Anhaengen. Zu tun: Test in TestLanesAddAfterRemoveLandsBeforeTheTerminalLane o.ae. umbenennen, Kommentar und die Fehlermeldung 're-added lane not appended at the end' auf den wirklichen Grund umschreiben, Assertion unveraendert lassen - sie prueft weiter das richtige Ergebnis."
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
