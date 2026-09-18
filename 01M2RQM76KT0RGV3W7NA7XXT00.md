@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:33:33Z
+updated-at: 2026-09-18T11:34:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -292,3 +292,11 @@ Zwei neue Befunde, beide von diesem Durchgang selbst erzeugt und beide mit klare
 - SKILL.md:36-46 kennt commits_unavailable nicht und schickt die Diff-Lane weiter auf das Zaehlen von 'commits' gegen 'git log origin/HEAD..HEAD'. Mit nicht zeigbaren SHAs stimmt die Zahl und der Diff ist trotzdem ein Ausschnitt. Das ist review-Befund 1 (ausgelieferte Anweisung widerspricht der Binary) fuer den Schluessel, den dieser Durchgang gebaut hat.
 - flow.go:728 sagt 'nothing uncommitted is below', steht aber unter dem Diff; und bei diff=='' doppelt sich der Fehlertext mit der missing-Zeile aus flow.go:641.
 Bewusst NICHT als Befund gestellt: die rohen Payload-Schluesselnamen statt Konstanten (die critique vom 07:09 hat dieselbe Frage fuer die commits_source-Token bewertet und stehen lassen), und die Null-Byte-Datei in WorktreeDiff (die Notiz vom 07:58 haelt sie als bewusst offen fest, DoD 8 nennt sie woertlich).
+- **2026-09-18 11:34 · Alexander Sacharov** — in-progress (siebter Durchgang, die zwei critique-Befunde vom 11:26). Was nicht im Code steht:
+
+- Befund 2, gewaehlte Bedingung: 'worktreeErr != "" && diff != ""'. Nicht bloss verschoben - der zweite Teil ist die Reparatur der Doppelung. Ist diff leer, traegt die missing-Zeile (flow.go:638-641) den Fehlertext schon; eine eigene Zeile daneben liest sich, als sei es zweimal passiert. Verworfen: die missing-Zeile kuerzen und die eigene Zeile immer drucken - die missing-Zeile ist das, was ein --json-Leser als Grund fuer complete:false bekommt, und dort gehoert der Grund vollstaendig hin.
+- Der Test fuer die Reihenfolge vergleicht strings.Index, nicht ein Muster. Begruendung: ein Regex ueber 'Zeile X vor Zeile Y' haette dieselbe Aussage mit mehr Apparat gemacht, und die Zeile hat keinen festen Abstand zum Diff-Kopf.
+- Die zweite Haelfte des Tests zaehlt 'working tree could not be read' OHNE das erste Wort: die missing-Zeile schreibt es klein mitten im Satz, die eigenstaendige Zeile gross. Mit 'The ...' gezaehlt war der Test still gruen, weil er null Treffer statt zwei fand - genau der Tautologie-Fall. Gegenprobe gefahren: mit dem alten Code (Zeile unter dem Diff, ungeschuetzt) fallen BEIDE Unterfaelle.
+- Befund 1: die Zaehlanweisung in SKILL.md:36-46 wurde ergaenzt, nicht ersetzt. Das Zaehlen von 'commits' gegen 'git log origin/HEAD..HEAD' bleibt richtig - es prueft die LISTE. Der neue Satz sagt nur, was es nicht prueft: den Diff. commits_unavailable ist genau der Fall, in dem die Zahl stimmt und der Diff trotzdem kurz ist.
+- NOTES.md: die bestehende Unreleased-Zeile ergaenzt statt einer zweiten - dieselbe Linie wie 06:51, 07:46 und 07:55. Die alte Formulierung 'prints the same two facts above and below the diff' war nach dieser Aenderung falsch und musste ohnehin angefasst werden.
+- Nebenbefund, nicht repariert: 'go test ./... -count=1' meldet hier 28 ok und 4 Pakete ohne Testdateien, also 32 Pakete. Das Feld test-verdict und die Notizen vom 08:06 sprechen von 31 ok. Kein rotes Ergebnis, nur eine Zahl, die nicht mehr stimmt - wer sie nachzaehlt, soll nicht nach drei verschwundenen Paketen suchen.
