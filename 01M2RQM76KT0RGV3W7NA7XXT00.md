@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:34:08Z
+updated-at: 2026-09-18T06:35:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -49,6 +49,14 @@ mode: conversational
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
+- [ ] showForLane: build the diff SHAs as the union of t.Commits and env.DeriveCommits(t), never the field alone (internal/cli/flow.go:589)
+- [ ] carry the list into the payload: commits (the SHAs used) plus commits_source, so a reader can count instead of trusting
+- [ ] check the same field-first pattern in internal/tui/signoff.go:107 - fix if it is the same bug, note it if it is not
+- [ ] drop the hand instruction from core/role/builtin/jaira-role-lane/SKILL.md (both passages, lines ~36-49 and ~137-146) now the tool tells the truth
+- [ ] NOTES.md under ## Unreleased: one line telling a reader the review payload is now the whole ticket history
+- [ ] go build ./... && go test ./... green
 
 ## Progress
 - **2026-09-18 06:30 · Alexander Sacharov** — Alex am 2026-09-18: dieses Ticket wird 0.3.1. Der Zweig fix/7XXT00 haengt an release/0.3.0 (88b6816), nicht an master - 0.3.0 ist noch nicht gemerged und noch nicht getaggt. Die Zeile fuer NOTES.md gehoert deshalb unter das leere '## Unreleased' ganz oben, NICHT unter '## 0.3.0': diese Sektion wird gleich getaggt und ist damit geschlossene Historie. Das Umbenennen von '## Unreleased' nach '## 0.3.1' und eine frische leere darueber macht ein Mensch in dem Commit, den er taggt - kein Agent.
