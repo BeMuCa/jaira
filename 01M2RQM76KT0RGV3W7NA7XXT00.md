@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:18:23Z
+updated-at: 2026-09-18T11:18:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -100,7 +100,8 @@ review-check: |-
 - [ ] core/role/builtin/jaira-role-lane/SKILL.md:123-161 beschreibt den Payload so, wie dieser Change ihn ausliefert: der Diff hat zwei Haelften, getrennt von der Zeile 'uncommitted work in the working tree', die zweite ist das Urteilsobjekt der nebenher laufenden Kritik; commits_source ('+worktree', auf der ersten Runde 'worktree') sagt, welche Haelften da sind; 'complete: false' auf der ersten Runde wird mit outcome-what/outcome-resolves begruendet und nicht mehr mit einem fehlenden Diff; die drei git-Kommandos bleiben als Rueckfallweg fuer den stumm verworfenen Worktree. Keine Aussage in der Datei behauptet mehr, der Payload-Diff sei nur die frueheren Runden.
 - [x] Ein Payload, dessen Worktree-Anteil nicht gelesen werden konnte, sagt das: schlaegt repo.WorktreeDiff fehl, traegt der Payload den Fehlertext neben commits_source, statt sich von einem sauberen Baum nicht zu unterscheiden. complete bleibt true - die Lane wird informiert, nicht blockiert. Mit Test.
   proof: internal/cli/flow.go:604-631 (worktreeErr) und :673-675; Test internal/cli/forlanecommits_test.go TestForLaneSaysWhenTheWorktreeCouldNotBeRead — Gegenprobe: ohne den payload-Schluessel faellt er
-- [ ] Ein SHA, zu dem git keinen Patch zeigen kann (rebased, cherry-picked, nicht gefetcht), wird im Payload benannt und nicht bloss als Zeile '(not available locally)' mitten im Patch versteckt: repo.Diff gibt die nicht zeigbaren SHAs zurueck, der Payload nennt sie, und der unerreichbare Fehlerzweig in flow.go faellt weg. Mit Test.
+- [x] Ein SHA, zu dem git keinen Patch zeigen kann (rebased, cherry-picked, nicht gefetcht), wird im Payload benannt und nicht bloss als Zeile '(not available locally)' mitten im Patch versteckt: repo.Diff gibt die nicht zeigbaren SHAs zurueck, der Payload nennt sie, und der unerreichbare Fehlerzweig in flow.go faellt weg. Mit Test.
+  proof: core/gitrepo/git.go:88-114 Diff gibt die nicht zeigbaren SHAs zurueck statt eines nie gesetzten error; internal/cli/flow.go:600-602,667-671; Test TestForLaneNamesTheCommitsGitCouldNotShow
 
 ## Options
 
