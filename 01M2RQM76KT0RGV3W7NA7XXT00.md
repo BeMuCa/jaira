@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,11 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:36:15Z
+updated-at: 2026-09-18T06:36:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
 mode: conversational
+outcome-what: "Plan fuer den Ausschnitt-Bug steht: showForLane vereinigt kuenftig t.Commits mit DeriveCommits, statt dem Feld allein zu glauben"
+outcome-why: "die DoD laesst zwei Wege zu; der zaehlende Weg (complete:false plus Fehlzahl) erzeugt auf geteilten Branches Fehlalarm, der ableitende nicht"
+outcome-resolves: "7 Plan-Schritte vom failing test bis NOTES.md, mit der Untersuchung zur Herkunft des Feldes als Notiz"
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
