@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:37:22Z
+updated-at: 2026-09-18T12:37:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -279,3 +279,21 @@ PUNKT C stand ZWEIMAL da. Der falsche Satz 'The offer is for the lanes a board n
 NOTES.md BEKAM KEINE NEUE ZEILE, sondern zwei korrigierte. Die Fuss-Zeile verkaufte dieselbe falsche Zusage wie der Kommentar ('It offers only lanes a board never had') - das ist kein Kommentarfehler mehr, sondern ein Versprechen an den Benutzer, und die Zeile ist unveroeffentlicht, also korrigierbar. Die 'lanes add'-Zeile trug die Platzierung schon, also gehoert die neue Auskunft dort hinein und nicht in eine zweite Zeile: eine Aenderung ist eine Zeile.
 
 BEIDE NEUEN TESTS GEGENGEPRUEFT: mit zurueckgedrehtem Code meldet der eine 'the add must say which lane testing landed after', der andere 'anchor ""'. Am echten Binary nachgestellt, alle drei Faelle.
+- **2026-09-18 12:37 · Alexander Sacharov** — critique (Lane, dritter Durchgang): EIN Fund, am gebauten Binary reproduziert. Die drei Punkte des zweiten Durchgangs sind erledigt und werden nicht neu aufgemacht.
+
+NACHGEPRUEFT, nicht nur gelesen. Punkt A: frisches Testboard, 'jaira lanes add testing' -> 'added testing to this project after in-progress (<pfad>)'. Punkt B: 'remove brainstorm', 'remove backlog', 'add brainstorm' -> Warnung nennt jetzt anchor "backlog", den Namen, den der Benutzer geschrieben hat, nicht mehr die leere Zeichenkette. Punkt C: der falsche Satz ist in internal/cli/tickets.go und im Kopf von TestLanesDoesNotOfferBackALaneTheBoardRemoved durch die zutreffende Fassung ersetzt.
+
+FUND - derselbe Fehler wie Punkt C, an drei Stellen, die Punkt C nicht angesehen hat. Punkt C war: ein Kommentar behauptet eine Eigenschaft, die der Code nicht hat. Der Fix zu Fund 6 / REPRODUZIERT 2 hat genau so eine Behauptung an drei weiteren Stellen falsch gemacht, und eine davon ist nicht ein Kommentar, sondern Hilfetext.
+
+- internal/cli/lanes.go:100, das Long von 'lanes add': 'Adds the named lane to this board, appending it to the column order'. Am Binary nachgestellt: 'jaira lanes add --help' sagt das heute woertlich. Angehaengt wird seit dem Fix nichts mehr - die Lane landet, wohin ihre after:-Kette zeigt.
+- internal/tui/lanes.go:438, Kommentar an addFromCatalogue: 'appending it at the end of the order'.
+- docs/COMMANDS.md:153, dieselbe Zeile in der Kommandotabelle.
+
+WARUM DAS IN DIESEM DURCHGANG UND NICHT SPAETER: der Hilfetext steht auf dem Weg, den DoD 2 verlangt. Wer 'jaira init' laeuft, den Fuss von 'jaira lanes' liest und dem 'Add one with jaira lanes add <id>' folgt, fragt als naechstes '--help' - und bekommt dort genau den Glauben bestaetigt, gegen den der zweite Durchgang gebaut hat: dass die Lane hinten angehaengt wird. Der Weg ohne Vorwissen ist damit nicht gehbar, sondern irrefuehrend beschriftet.
+
+NOTES.md braucht dafuer KEINE neue Zeile: die 'lanes add'-Zeile sagt die Platzierung schon richtig. Es ist der Hilfetext, der ihr widerspricht.
+
+WAS ICH STEHEN LASSE, damit der vierte Durchgang es nicht neu aufmacht:
+- Alles aus Durchgang 1 (Fund 10, Fund 12, terminalIDIndex, die drei verschobenen Lane-Dateien) und aus Durchgang 2 (die Warnungsweitergabe in die TUI). Unveraendert gueltig, siehe Notizen 12:12 und 12:26.
+- Der vierte Rueckgabewert von lane.Add statt eines Structs: Begruendung steht in der Notiz von 12:34, ein exportierter Typ fuer eine Zeichenkette mit einem Leser. Angenommen.
+- Die Erfolgszeile ueber der Warnung bei unaufloesbarem Anker ('after signoff' plus Warnung zu backlog): am Binary gesehen, liest sich seltsam und ist richtig. Begruendung 12:34, geschlossen.
