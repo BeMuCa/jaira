@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:34:11Z
+updated-at: 2026-09-18T18:16:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -300,3 +300,4 @@ Bewusst NICHT als Befund gestellt: die rohen Payload-Schluesselnamen statt Konst
 - Befund 1: die Zaehlanweisung in SKILL.md:36-46 wurde ergaenzt, nicht ersetzt. Das Zaehlen von 'commits' gegen 'git log origin/HEAD..HEAD' bleibt richtig - es prueft die LISTE. Der neue Satz sagt nur, was es nicht prueft: den Diff. commits_unavailable ist genau der Fall, in dem die Zahl stimmt und der Diff trotzdem kurz ist.
 - NOTES.md: die bestehende Unreleased-Zeile ergaenzt statt einer zweiten - dieselbe Linie wie 06:51, 07:46 und 07:55. Die alte Formulierung 'prints the same two facts above and below the diff' war nach dieser Aenderung falsch und musste ohnehin angefasst werden.
 - Nebenbefund, nicht repariert: 'go test ./... -count=1' meldet hier 28 ok und 4 Pakete ohne Testdateien, also 32 Pakete. Das Feld test-verdict und die Notizen vom 08:06 sprechen von 31 ok. Kein rotes Ergebnis, nur eine Zahl, die nicht mehr stimmt - wer sie nachzaehlt, soll nicht nach drei verschwundenen Paketen suchen.
+- **2026-09-18 18:16 · Alexander Sacharov** — Alex am 2026-09-18: critique wird auf diesem Ticket nicht ein viertes Mal gefahren. Die Lane hatte dreimal zurueckgeschickt - das ist die Stoppschwelle des Dispatchers. Beurteilung, die Alex bestaetigt hat: keine falsche Definition of Done, sondern eine Schleife, die in der Groesse konvergiert und trotzdem nicht endet, weil jeder Durchgang eine Ebene tiefer liest und jede Reparatur ihren eigenen naechsten Befund erzeugt (Runde 3 fand die Prosa, die den in Runde 2 hinzugefuegten Schluessel noch nicht kennt). Die DoD steht seit drei Runden vollstaendig, und die review-Lane hatte bereits einmal 'keine Defekte' geurteilt. Das Ticket laeuft weiter nach optimize, testing, review und signoff.
