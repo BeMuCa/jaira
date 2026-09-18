@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:04:59Z
+updated-at: 2026-09-18T07:05:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94878
 claimed-at: 2026-09-18T07:04:05Z
@@ -132,3 +132,10 @@ Luecke, als Befund und nicht als Fehler: commitsSourceLabel (internal/tui/signof
 
 Kein Vergleich gegen die Basis noetig: nichts ist rot.
 - **2026-09-18 07:03 · Alexander Sacharov** — Alex hat am 2026-09-18 im Tab der testing-Lane 'добавь этот тест на renderSignOff' getippt, nachdem der Tester die Luecke gemeldet hatte. Daraus ist DoD 5 geworden: der Befund wird geschlossen, nicht bloss notiert. Die Zeile im Tab liess sich per herdr send-keys nicht abschicken (ein unfokussiertes Pane nimmt kein Enter), deshalb laeuft die Arbeit als eigener in-progress-Durchgang statt in dem Tab.
+- **2026-09-18 07:05 · Alexander Sacharov** — in-progress (dritter Durchgang, nur DoD 5): Test fuer commitsSourceLabel auf dem Signoff-Schirm. Was nicht im Code steht:
+
+- Der Test setzt m.derivedFor/m.derivedShas von Hand, statt DeriveCommits laufen zu lassen. Begruendung: der Testspeicher ist kein git-Repo, DeriveCommits liefert dort immer nichts, und damit waere der Fall 'git+ticket' - genau der teure - gar nicht erreichbar. Der Memo ist das, was renderSignOff liest; ihn vorzufuellen prueft exakt den Zweig, an dem das Label haengt, ohne git. Wer den Memo umbaut (model.go:125), muss den Test mitfuehren.
+- Verworfen: commitsSourceLabel direkt aufrufen. Das haette dieselbe Zuordnung zweimal geprueft und die Zeile auf dem Schirm weiter ungeprueft gelassen - die Luecke war nicht die Funktion, sondern dass niemand nachsieht, ob ihr Ergebnis auch gerendert wird.
+- Gegenprobe gemacht, nicht nur gruen gesehen: mit 'return ""' statt des git+ticket-Labels faellt der Test. Er faengt also den stillen Durchfall, vor dem der Doc-Kommentar warnt, und ist kein Tautologietest.
+- gitStat scheitert im Testspeicher (kein Repo) und faellt auf die fieldRow-Zeile zurueck. Das ist fuer diesen Test egal - die Heading-Zeile mit dem Label steht davor und wird unabhaengig davon geschrieben.
+- Keine NOTES.md-Zeile: reiner Test, von aussen nicht beobachtbar.
