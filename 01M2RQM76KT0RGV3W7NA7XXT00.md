@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:38:05Z
+updated-at: 2026-09-18T07:38:46Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-94878
-claimed-at: 2026-09-18T07:04:05Z
+claimed-by: DESKTOP-RFTCH11-25712
+claimed-at: 2026-09-18T07:38:46Z
 mode: conversational
 outcome-what: "renderSignOff hat jetzt einen Test fuer commitsSourceLabel: TestSignOffNamesWhereTheCommitsCameFrom rendert den Signoff-Schirm fuer alle drei Quellen-Token und prueft die Heading-Zeile"
 outcome-why: "die Uebersetzung der drei Token in Prosa war ungetestet - genau die Stelle, an der laut Doc-Kommentar ein neuer Wert still auf 'kein Label' faellt, auf dem Schirm, auf dem ein Mensch unterschreibt"
