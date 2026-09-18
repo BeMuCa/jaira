@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T08:04:46Z
+updated-at: 2026-09-18T08:06:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -214,3 +214,4 @@ Bewusst NICHT angefasst:
 - Keine NOTES.md-Zeile: beide Faltungen sind von aussen nicht beobachtbar, identische Ausgabe, identische Exit-Codes.
 
 Gegenprobe: go build ./... , go vet ./... , go test ./... -count=1 - 28 Pakete gruen. Dass die Faltung den tolerierten Pfad wirklich noch tut, haengt an TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote: ohne die Toleranz von Exit 1 faellt der Test.
+- **2026-09-18 08:06 · Alexander Sacharov** — testing lane: go test ./... — alles gruen. 31 Pakete ok, 0 failed, 0 errors, 4 ohne Testdateien (cmd/jaira, core/session, scripts/iconpreview, scripts/shotgen). Uebersprungen: nichts, es gibt keine e2e-/Integrations-Suite in diesem Repo. go vet ./... ebenfalls sauber. Testbefehl aus go.mod abgeleitet - weder CLAUDE.md/AGENTS.md noch Taskfile/Makefile nennen einen. Abdeckung der Aenderung: jede geaenderte Quelldatei hat eine mitgeaenderte Testdatei (core/gitrepo/git.go -> worktree_test.go, core/ticket/trim.go -> trim_test.go, internal/cli/flow.go -> forlanecommits_test.go, internal/tui/signoff.go -> signoff_test.go); mit -count=1 gezielt nachgefahren, alle gruen. Keine Luecke gefunden.
