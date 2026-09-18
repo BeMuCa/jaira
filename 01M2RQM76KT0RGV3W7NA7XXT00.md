@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:03:29Z
+updated-at: 2026-09-18T07:04:05Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-99942
-claimed-at: 2026-09-18T06:30:48Z
+claimed-by: DESKTOP-RFTCH11-94878
+claimed-at: 2026-09-18T07:04:05Z
 mode: conversational
 outcome-what: "testing gruen, aber eine Abdeckungsluecke gemeldet und von Alex zur Arbeit erklaert"
 outcome-why: "commitsSourceLabel ist die Stelle, an der laut eigenem Doc-Kommentar ein neuer Token still auf 'kein Label' faellt - ungetestet auf dem Schirm, auf dem ein Mensch unterschreibt"
