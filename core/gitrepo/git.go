@@ -30,22 +30,13 @@ func Available() bool {
 	return err == nil
 }
 
+// run treats any non-zero exit status as a failure. No exit status is
+// negative, so noTolerance tolerates none of them.
 func (r *Repo) run(args ...string) (string, error) {
-	if !Available() {
-		return "", ErrNoGit
-	}
-	cmd := exec.Command("git", append([]string{"-C", r.Dir}, args...)...)
-	var out, errb bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &errb
-	if err := cmd.Run(); err != nil {
-		msg := strings.TrimSpace(errb.String())
-		if msg == "" {
-			msg = err.Error()
-		}
-		return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), msg)
-	}
-	return out.String(), nil
+	return r.runTolerating(noTolerance, args...)
 }
+
+const noTolerance = -1
 
 // IsRepo reports whether Dir is inside a git working tree.
 func (r *Repo) IsRepo() bool {
@@ -144,8 +135,9 @@ func shortSHA(s string) string {
 
 // runTolerating runs git and accepts one non-zero exit status as a normal
 // result. `git diff --no-index` reports "the files differ" as exit 1, which is
-// the whole point of calling it, so run() — which treats any non-zero status as
-// a failure — would turn every untracked file into an error.
+// the whole point of calling it, so run — which tolerates nothing — would turn
+// every untracked file into an error. Every call in this package goes through
+// here; run is this with nothing tolerated.
 func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 	if !Available() {
 		return "", ErrNoGit
@@ -157,8 +149,12 @@ func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 	if err == nil {
 		return out.String(), nil
 	}
+	// Exited() is not belt and braces: a git killed by a signal has no exit
+	// status and ExitCode reports that as -1, which would otherwise match a
+	// caller that tolerates nothing and hand back a truncated result as a
+	// success.
 	var ee *exec.ExitError
-	if errors.As(err, &ee) && ee.ExitCode() == code {
+	if errors.As(err, &ee) && ee.Exited() && ee.ExitCode() == code {
 		return out.String(), nil
 	}
 	msg := strings.TrimSpace(errb.String())

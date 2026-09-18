@@ -13,12 +13,22 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// A ticket's commits: field is a snapshot, never the truth: it is written once,
-// by 'jaira move --out --commits', and every commit made after that never joins
-// it. A lane whose whole job is judging a diff must therefore not be handed the
-// field as if it were the answer — it saw three of twenty-one commits and was
-// told complete:true, which is the failure this test pins.
-func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
+// forLanePayload is the slice of the --for-lane JSON both tests below read: the
+// diff they were handed and the three fields that say what it was built from.
+type forLanePayload struct {
+	Diff          string   `json:"diff"`
+	Commits       []string `json:"commits"`
+	CommitsSource string   `json:"commits_source"`
+	Complete      bool     `json:"complete"`
+}
+
+// forLaneGitFixture stands up what both tests below need: a git repo with a
+// store in it, and a ticket in the review lane whose every declared input but
+// the diff is already filled — so the only thing that can be missing from the
+// payload is the diff itself. It hands back a git runner that returns stdout,
+// which gitRun (boardremote_test.go) does not, because rev-parse is read here.
+func forLaneGitFixture(t *testing.T, at time.Time) (string, *ticket.Store, *ticket.Ticket, string, func(...string) string, func(string, string)) {
+	t.Helper()
 	if !gitrepo.Available() {
 		t.Skip("git is not on PATH")
 	}
@@ -45,13 +55,10 @@ func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
 	if _, err := s.Init(); err != nil {
 		t.Fatal(err)
 	}
-	id := ticket.NewID(time.Date(2026, 9, 18, 8, 0, 0, 0, time.UTC))
 	tk, err := s.Create(map[string]string{
-		ticket.FieldID:     id,
-		ticket.FieldTitle:  "t",
-		ticket.FieldStatus: "review",
-		// The lane's other declared inputs, so the only thing that can be
-		// missing is the diff.
+		ticket.FieldID:              ticket.NewID(at),
+		ticket.FieldTitle:           "t",
+		ticket.FieldStatus:          "review",
 		ticket.FieldGoal:            "g",
 		ticket.FieldDoD:             "d",
 		ticket.FieldOutcomeWhat:     "w",
@@ -60,7 +67,6 @@ func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := ticket.Handle(tk.ID)
 
 	write := func(name, text string) {
 		t.Helper()
@@ -68,6 +74,16 @@ func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	return dir, s, tk, ticket.Handle(tk.ID), run, write
+}
+
+// A ticket's commits: field is a snapshot, never the truth: it is written once,
+// by 'jaira move --out --commits', and every commit made after that never joins
+// it. A lane whose whole job is judging a diff must therefore not be handed the
+// field as if it were the answer — it saw three of twenty-one commits and was
+// told complete:true, which is the failure this test pins.
+func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
+	dir, s, tk, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 18, 8, 0, 0, 0, time.UTC))
 	write("first.txt", "erster\n")
 	run("add", ".")
 	run("commit", "-q", "-m", "feat("+h+"): the first change")
@@ -85,12 +101,7 @@ func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var payload struct {
-		Diff          string   `json:"diff"`
-		Commits       []string `json:"commits"`
-		CommitsSource string   `json:"commits_source"`
-		Complete      bool     `json:"complete"`
-	}
+	var payload forLanePayload
 	out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json")
 	if err != nil {
 		t.Fatalf("show --for-lane review: %v\n%s", err, out)
@@ -117,53 +128,7 @@ func TestForLaneDiffIsNotLimitedToTheRecordedCommits(t *testing.T) {
 // conversational ticket commits nothing at all until a person pastes the line —
 // so the payload that leaves the worktree out reports a fraction as complete.
 func TestForLaneDiffCarriesTheUncommittedWorktree(t *testing.T) {
-	if !gitrepo.Available() {
-		t.Skip("git is not on PATH")
-	}
-	dir := t.TempDir()
-	t.Setenv("JAIRA_USER", "berk")
-	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))
-
-	run := func(args ...string) string {
-		t.Helper()
-		out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput()
-		if err != nil {
-			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
-		}
-		return strings.TrimSpace(string(out))
-	}
-	run("init", "-q")
-	run("config", "user.email", "fixture@example.com")
-	run("config", "user.name", "Fixture")
-
-	s, err := ticket.At(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.Init(); err != nil {
-		t.Fatal(err)
-	}
-	id := ticket.NewID(time.Date(2026, 9, 18, 9, 0, 0, 0, time.UTC))
-	tk, err := s.Create(map[string]string{
-		ticket.FieldID:              id,
-		ticket.FieldTitle:           "t",
-		ticket.FieldStatus:          "review",
-		ticket.FieldGoal:            "g",
-		ticket.FieldDoD:             "d",
-		ticket.FieldOutcomeWhat:     "w",
-		ticket.FieldOutcomeResolves: "r",
-	}, nil, "## Definition of Done\n\n- [x] d\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	h := ticket.Handle(tk.ID)
-
-	write := func(name, text string) {
-		t.Helper()
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(text), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
+	dir, _, _, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 18, 9, 0, 0, 0, time.UTC))
 	write("committed.txt", "eingecheckt\n")
 	run("add", ".")
 	run("commit", "-q", "-m", "feat("+h+"): the committed change")
@@ -176,12 +141,7 @@ func TestForLaneDiffCarriesTheUncommittedWorktree(t *testing.T) {
 	run("add", "staged.txt")
 	write("brandneu.txt", "unverfolgt\n")
 
-	var payload struct {
-		Diff          string   `json:"diff"`
-		Commits       []string `json:"commits"`
-		CommitsSource string   `json:"commits_source"`
-		Complete      bool     `json:"complete"`
-	}
+	var payload forLanePayload
 	out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json")
 	if err != nil {
 		t.Fatalf("show --for-lane review: %v\n%s", err, out)
