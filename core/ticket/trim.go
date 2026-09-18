@@ -3,6 +3,7 @@ package ticket
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -96,11 +97,8 @@ func (s *Store) TrimLane(lane string, keep int, folder, newest string) ([]Trimme
 	return out, nil
 }
 
-// StampCommits writes the derived commit union onto the ticket and returns
-// what was written. Derived shas come first, in git order; any sha already
-// recorded that the derivation did not find is appended rather than dropped —
-// a sha a person wrote down deliberately is evidence this tool has no business
-// discarding. derive may be nil, the same "no derivation on offer" convention
+// StampCommits writes the MergeCommits union onto the ticket and returns what
+// was written. derive may be nil, the same "no derivation on offer" convention
 // core/gate uses.
 func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string, error) {
 	var derived []string
@@ -130,17 +128,7 @@ func MergeCommits(derived, recorded []string) []string {
 	merged := append([]string{}, derived...)
 	for _, c := range recorded {
 		c = strings.TrimSpace(c)
-		if c == "" {
-			continue
-		}
-		seen := false
-		for _, m := range merged {
-			if m == c {
-				seen = true
-				break
-			}
-		}
-		if !seen {
+		if c != "" && !slices.Contains(merged, c) {
 			merged = append(merged, c)
 		}
 	}
