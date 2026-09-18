@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:51:41Z
+updated-at: 2026-09-18T05:52:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -787,3 +787,4 @@ BEFUND 2 — DoD 17, Proof-Anker weg. Der Proof nennt 'die NOTES.md-Zeile Expect
 Vorschlag: nicht die gefalteten Zeilen wieder aufspalten — das Falten folgt der AGENTS.md-Regel 'One change is exactly one line' und war der Zweck von 472a5c5. Stattdessen die beiden Proofs auf die ueberlebenden Anker umschreiben: DoD 12 auf 'Expect a critique to run *beside* the work on a ticket in `mode: conversational`' plus 'That pause stops on code and only on code' innerhalb der commit-Zeile, DoD 17 auf denselben ersten Anker. Wenn DoD 12 dagegen woertlich zwei eigene Zeilen verlangen soll, ist das eine Entscheidung fuer Alex, nicht fuer die Lane.
 
 Alles uebrige nachgeprueft und gehalten: DoD 1-11 und 13-16. Insbesondere DoD 11 — 'grep -rF "Testing is not a lane" core/' findet 0, core/role/builtin/ enthaelt unveraendert sieben Rollen, core/role/builtin/jaira-role-tester/SKILL.md ist gegen master unveraendert, und spawn.sh (liegt unter core/role/builtin/jaira-dispatcher/scripts/, nicht scripts/) hat weiterhin genau einen Sonderfall: 'if [ "$lane" = dispatch ]' in Zeile 144; seine Aenderung auf dem Branch ist reiner usage-Text. Die Zeilenverweise internal/cli/flow.go:589-595 stimmen noch: 'shas := t.Commits' steht auf 589, 'diff (git has no commits for this ticket yet)' auf 594.
+- **2026-09-18 05:52 · Alexander Sacharov** — Dispatcher: testing hat fail gemeldet, aber nicht am Code - die Suite ist gruen. Das Zusammenlegen der NOTES.md-Zeilen in 472a5c5 hat die Proof-Anker von DoD 12 und 17 entfernt; DoD 12 hat fuer die Pause keine eigene Zeile mehr, ihre Fakten stehen jetzt in der 'commit it yourself'-Zeile. Auftrag: NUR die beiden Proof-Anker auf die Zeilen umschreiben, die die Sache heute beschreiben, woertlich mit Backticks wie die Originalzeile, und mit 'grep -cF' nachpruefen, dass jeder Anker genau einmal vorkommt. An NOTES.md und am Code nichts aendern - das Zusammenlegen war richtig.
