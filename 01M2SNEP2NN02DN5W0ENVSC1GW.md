@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:40:51Z
+updated-at: 2026-09-18T10:40:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -143,3 +143,12 @@ Vorschlag: lanes/critique.md, lanes/optimize.md, lanes/testing.md werden nach co
 
 WEG A, UND WO ER KLEMMT
 release.Current (core/release/release.go:23) wird in cli.Execute (internal/cli/root.go:100) gesetzt, und core/release importiert nichts aus jaira - core/market darf es also lesen, ohne einen Zyklus zu bauen. apiBase() (core/market/market.go:45) haengt '?ref=v<release.Current>' an. Bei 'dev' (Source-Build) gibt es keinen Tag: dann ohne ref, plus eine Zeile auf stderr, dass die Entwicklungsfassung des Katalogs kommt. Offen und in Schritt 9 zu entscheiden: ob der ref auch an ein per JAIRA_MARKET_API gesetztes Ziel gehaengt wird - dagegen spricht nichts, der Testserver ignoriert eine unbekannte Query.
+- **2026-09-18 10:40 · Alexander Sacharov** — in-progress, Schritte 1-4: die Aufteilung steht, und der Plan hatte EINE Fundstelle zu wenig.
+
+DRITTE STELLE, die auf Default muss: migrateLegacy (core/lane/lane.go, der Zweig 'kein order-File'). Der Plan nannte nur setUp und internal/tui/defaultboard.go:50. Aber der Fallback dort bedeutet 'was ein altes Verzeichnis ohne order-File implizit hatte', und das waren die zehn - haette er .Builtin weitergelesen, bekaeme jedes migrierte Altboard critique/optimize/testing dazugeschrieben. Genau der Fall, den DoD 4 verbietet, nur an einer Stelle, an der niemand ihn sucht. Die uebrigen acht .Builtin-Stellen bleiben wie geplant.
+
+creator: BeMuCa aus den drei Dateien ENTFERNT. Sie liegen jetzt im Binary, und parse() setzt fuer built-ins ohne creator: 'jaira'. Mit der alten Zeile faellt TestBuiltinDefaultsCreatorToJaira - und die Zeile war auch inhaltlich nicht mehr wahr.
+
+SIEBEN TESTS mussten mit, alle aus demselben Grund: sie schrieben 'built-in' und meinten 'was ein frisches Board bekommt'. Der Helfer builtinIDList filtert jetzt auf Default; neu daneben shippedIDList fuer 'alles, was im Binary steckt' (TestNoBoardReturnsTheOffer braucht das, das Angebot ist jetzt echt groesser). builtinSet in next_test.go lud Load("") - das Angebot, nicht ein Board; mit critique im Angebot war next(in-progress) plotzlich critique. Es laedt jetzt ein leeres Board.
+
+NEBENBEFUND, ungeplant und willkommen: der Lane-Bildschirm der TUI zeigt die drei sofort in seiner 'not on board'-Spalte an - available in internal/tui/lanes.go zieht aus Installable(), und Einbetten genuegte. DoD 2 fuer die TUI ist damit schon erfuellt, ohne eine Zeile dafuer; Schritt 6 bleibt fuer 'jaira lanes' auf der Kommandozeile noetig.
