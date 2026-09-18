@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:49:19Z
+updated-at: 2026-09-18T07:49:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -177,3 +177,9 @@ Zwei Befunde:
 - ticket.WithWorktree/SourceWorktree liegen in core/ticket neben CommitsSource, obwohl heute nur flow.go sie liest. Begruendung ist Befund 2 der ersten critique: zwei Schirme, die dieselbe Tatsache selbst buchstabieren, laufen auseinander. Wer einen fuenften Token erfindet, muss internal/tui/signoff.go:commitsSourceLabel mitfuehren - der faellt sonst still auf 'kein Label'.
 - DoD 7, gewaehlte Formulierung: der ticket-Fall liest jetzt 'recorded on the ticket, and again at acceptance' statt den Suffix wegzulassen. Den Suffix ersatzlos zu streichen waere die einfachere Aenderung gewesen, haette aber die Aussage 'diese Liste wird beim Annehmen ins Frontmatter gestempelt' von allen drei Faellen entfernt - sie war nicht falsch, nur doppelt.
 - Gegenproben gemacht, beide: mit ausgeschaltetem Worktree-Zweig faellt TestForLaneDiffCarriesTheUncommittedWorktree ('commits_source is "git"'), mit dem alten gemeinsamen Suffix faellt TestSignOffNamesWhereTheCommitsCameFrom/the_ticket_alone.
+- **2026-09-18 07:49 · Alexander Sacharov** — critique (vierter Durchgang, nur die zwei Befunde vom 07:09 und der vierte in-progress-Lauf b5c27e1 - der uebrige committete Diff wurde bewusst nicht erneut gelesen).
+- Befund 2 (signoff.go:118, Stotter-Suffix): repariert. commitsSourceLabel traegt den Schwanz je Fall (signoff.go:285-295), der Aufrufer haengt nichts mehr an, und der Test hat ein notWant fuer 'recorded on the ticket - recorded at acceptance'. Geschlossen.
+- Befund 1 (SKILL.md 36-43 vs. unversionierte Arbeit): Alex hat am 07:35 Weg B gewaehlt, und der ist gebaut - WorktreeDiff, ticket.WithWorktree, Test mit Gegenprobe, SKILL.md ohne Einschraenkung. Der Weg als solcher ist geschlossen.
+- NEU, aus der Reparatur selbst und gegen DoD 6: die untracked-Haelfte von WorktreeDiff laesst Pfade mit Nicht-ASCII-Zeichen still fallen. core/gitrepo/git.go:194 liest ls-files ohne core.quotePath abzuschalten, bekommt "\303\204nderung.txt" als C-Zitat, und der --no-index-Aufruf auf Zeile 206 findet die Datei nicht. Er meldet das mit Exit 1 - demselben Code, den runTolerating(1,...) als Normalfall akzeptiert. Also kein Fehler, kein continue, leerer Anhang: die Datei ist weg, commits_source sagt trotzdem '+worktree', complete bleibt true. Selbst nachgestellt in einem Wegwerf-Repo. Das ist genau der stille Ausfall, den dieses Ticket abschafft, eine Stufe weiter.
+- Warum das ein Befund ist und kein Aufmachen des ersten Durchgangs: DoD 6 verlangt 'plus nicht verfolgte Dateien' im Payload, und diese Zeile liefert sie fuer eine ganze Klasse von Dateinamen nicht. In einem Repository, dessen Tickets deutsche Titel tragen, ist das keine Ecke.
+- Fix ohne Entscheidungsbedarf: ls-files -z und Split auf "\x00" - -z schaltet das Zitieren ab und loest den Leerzeichen-Fall gleich mit. Ersatzweise r.run("-c", "core.quotePath=false", "ls-files", ...). Zweitens: Exit 1 bei --no-index heisst 'Dateien unterscheiden sich' UND 'Pfad nicht lesbar'; leerer out bei nicht leerer Datei gehoert nicht toleriert.
