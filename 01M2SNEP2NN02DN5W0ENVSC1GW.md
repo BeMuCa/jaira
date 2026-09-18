@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T21:04:14Z
+updated-at: 2026-09-18T21:09:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -33,6 +33,7 @@ outcome-why: "Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende -
 outcome-resolves: "vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik"
 review-summary: "none"
 review-gaps: "internal/tui/lanes.go: addFromCatalogue und addAvailable trugen denselben Sechszeiler samt Kommentar hinter einer sofort ueberschriebenen ls.msg-Zuweisung - in einen Helfer addedMsg(id, warnings) gefaltet, Verhalten unveraendert. Stehen gelassen mit Begruendung: terminalIDIndex neben terminalIndex (zwei Typen, in Durchgang 1 geschlossen; beide Fallbacks am Code auf gleiche Position gegengeprueft), die Unpinned()-Notiz zweimal in internal/cli/market.go (spiegelt die vorhandene Overridden()-Doppelung), die after-Nachsuche in lane.Add (ein dritter Rueckgabewert fuer eine Schleife ueber 13 Eintraege auf einem einmaligen Pfad) und der ''-Zweig in pinnedRef (Vorsicht gegen -ldflags, nicht unerreichbar). Kein toter Code; lane.Installable() auf dem 'jaira lanes'-Pfad ist netzfrei (embedded Builtins plus ein Glob), die Startzeit-Regel bleibt unberuehrt."
+test-verdict: "pass: go build/vet sauber, volle Suite mit -race und geleertem Cache gruen (RC=0), DoD 1-6 am Arbeitsbaum geprueft, Verhalten an einer frischen Testdoska und an einem Binary mit -X main.version=0.1.4 nachgestellt"
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
