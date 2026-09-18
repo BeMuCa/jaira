@@ -23,7 +23,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T07:07:21Z
+updated-at: 2026-09-18T07:10:26Z
+updated-by: Alexander Sacharov
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
