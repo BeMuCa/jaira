@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T20:54:32Z
+updated-at: 2026-09-18T20:54:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -310,3 +310,10 @@ WAS ICH STEHEN LASSE, damit der vierte Durchgang es nicht neu aufmacht:
 - Am Code nachgeprueft statt geglaubt: core/lane/order.go:263ff, Kommentar und Code von insertAfterAnchor. Die Diagnose des Workers stimmt - 'kein aufloesbarer Anker' parkt vor der terminalen Lane, und 'blocked' ist die terminale. Die Assertion ids[len-1]=='blocked' bleibt darum richtig.
 - ENTSCHIEDEN, keine neue NOTES.md-Zeile: der Worker hat recht und die Begruendung traegt. core/release/NOTES.md:19 sagt dem Leser bereits, wohin 'jaira lanes add' die Lane setzt und dass die Kette durch nicht installierte Lanes verfolgt wird; die Hilfetexte holen nur nach, was dort schon steht. Eine zweite Zeile wuerde nach der Regel in CLAUDE.md als zweite Aenderung gelesen und dem Leser nichts nennen, das er anders tun soll - das ist der Test, den die Datei an eine Zeile stellt. Geschlossen, nicht wieder aufmachen.
 - Nicht neu aufgemacht und weiterhin gueltig: Fund 10, Fund 12, terminalIDIndex und die drei verschobenen Lane-Dateien (Notiz 12:12), die Warnungsweitergabe in die TUI (Notiz 12:26), der vierte Rueckgabewert von lane.Add und die Erfolgszeile ueber der Warnung (Notiz 12:37). Die drei Stellen aus Durchgang 3 sind repariert - internal/cli/lanes.go:100, internal/tui/lanes.go:438, docs/COMMANDS.md:153 im Diff gelesen, alle drei sagen jetzt 'where its after: chain points'.
+- **2026-09-18 20:54 · Alexander Sacharov** — in-progress, fuenfter Durchgang: der Fund der vierten Kritik behoben - und die Begruendung, die Kritik UND Dispatcher mitgaben, ist am Code falsch.
+
+- Kritik und Dispatcher sagten beide: 'blocked' landet hinten, weil insertAfterAnchor bei UNAUFLOESBAREM Anker vor die terminale Lane parkt und 'blocked' selbst terminal ist. Beide Haelften stimmen nicht. core/lane/builtin/60-blocked.md:4 traegt 'after: done', und 'done' steht auf dem Board - der Anker ist also aufloesbar, anchorIndex (core/lane/order.go:315) findet ihn und gibt index(done)+1 zurueck. Und terminal ist nicht 'blocked' (60-blocked.md:7 'terminal: false'), sondern 'done' (50-done.md:7 'terminal: true').
+- Gegenprobe, die es entscheidet, ohne etwas zu glauben: waere der Fallback-Weg gelaufen, haette terminalIDIndex den Index von 'done' geliefert und 'blocked' VOR 'done' eingesetzt - dann waere 'blocked' nicht mehr letzte Lane und die Assertion ids[len-1]=='blocked' waere rot. Sie ist gruen. Also lief der Anker-Weg.
+- Darum heisst der Test NICHT TestLanesAddAfterRemoveLandsBeforeTheTerminalLane, wie vorgeschlagen - der Name waere die zweite falsche Behauptung an derselben Stelle. Er heisst TestLanesAddAfterRemoveLandsAfterItsAnchor, und Kommentar wie Fehlermeldung nennen 'done' als den Anker, dem die Lane folgt.
+- Was der Kommentar zusaetzlich festhaelt, weil es die Stelle verwirrend macht: 'blocked' landet zufaellig an derselben Position, die Anhaengen erzeugt haette. Die Assertion bleibt trotzdem aussagekraeftig - genau weil der Fallback eine ANDERE Position ergaebe.
+- Sonst nichts angefasst: keine NOTES.md-Zeile (die Entscheidung von 12:12/18:23 gilt, und eine Testumbenennung ist ohnehin nicht client-facing), keine weitere Fundstelle. go build, go vet und 'go test -count=1 ./...' gruen.
