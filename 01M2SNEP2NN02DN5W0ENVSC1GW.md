@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:34:03Z
+updated-at: 2026-09-18T12:34:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -269,3 +269,16 @@ PUNKT C am Binary reproduziert: 'lanes add critique', 'lanes remove critique', '
 WAS ICH STEHEN LASSE, damit der dritte Durchgang es nicht neu aufmacht:
 - Die Warnungsweitergabe in die TUI: internal/tui/lanes.go:460 und :511 nehmen warnings[0] in die Meldungszeile. Nachgesehen, nicht angenommen - die neue Signatur verliert nichts.
 - Alles aus dem ersten Durchgang, was dort mit Grund stehen blieb (Fund 10, Fund 12, terminalIDIndex, die drei verschobenen Lane-Dateien). Unveraendert gueltig, siehe Notiz vom 12:12.
+- **2026-09-18 12:34 · Alexander Sacharov** — in-progress, dritter Durchgang: die drei Punkte der zweiten Kritik. Was der Diff nicht sagt:
+
+PUNKT A als VIERTER RUECKGABEWERT von lane.Add, nicht als Struct. Ein Struct waere die sauberere Signatur, kostet aber einen neuen exportierten Typ fuer eine einzige Zeichenkette, und der Aufrufer, der sie braucht, ist genau einer. Die beiden TUI-Aufrufe (internal/tui/lanes.go:446 und :499) ignorieren sie ABSICHTLICH: dort sieht man die Position, die Liste wird neu gezeichnet und der Cursor springt auf die Lane. Nur die Kommandozeile ist blind, und nur sie sagt es jetzt.
+
+EINE STELLE, DIE KOMISCH AUSSIEHT UND RICHTIG IST: bei unaufloesbarem Anker steht die Erfolgszeile 'added brainstorm to this project after signoff' direkt ueber der Warnung, dass backlog nicht da ist. Am Binary nachgestellt. Ueberlegt, den Nachbarn in diesem Fall wegzulassen - nicht getan: genau dann will der Benutzer wissen, WO die Lane statt dessen liegt, und die Warnung darunter erklaert das 'warum'. Wer das spaeter 'aufraeumt', nimmt die Auskunft im einzigen Fall weg, in dem sie nicht selbstverstaendlich ist.
+
+PUNKT B hat anchorIndex den zweiten Rueckgabewert ganz genommen. Nachgesehen, ob ihn sonst jemand liest: nein, er existierte nur fuer die Meldung. Die Funktion gibt jetzt int zurueck.
+
+PUNKT C stand ZWEIMAL da. Der falsche Satz 'The offer is for the lanes a board never had' klebte auch im Kopf von TestLanesDoesNotOfferBackALaneTheBoardRemoved in internal/cli/lanes_test.go - ein Testkommentar, der eine falsche Eigenschaft behauptet, fuehrt den naechsten Leser genauso in die Irre wie der im Produktionscode.
+
+NOTES.md BEKAM KEINE NEUE ZEILE, sondern zwei korrigierte. Die Fuss-Zeile verkaufte dieselbe falsche Zusage wie der Kommentar ('It offers only lanes a board never had') - das ist kein Kommentarfehler mehr, sondern ein Versprechen an den Benutzer, und die Zeile ist unveroeffentlicht, also korrigierbar. Die 'lanes add'-Zeile trug die Platzierung schon, also gehoert die neue Auskunft dort hinein und nicht in eine zweite Zeile: eine Aenderung ist eine Zeile.
+
+BEIDE NEUEN TESTS GEGENGEPRUEFT: mit zurueckgedrehtem Code meldet der eine 'the add must say which lane testing landed after', der andere 'anchor ""'. Am echten Binary nachgestellt, alle drei Faelle.
