@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T09:18:42Z
+updated-at: 2026-09-18T09:19:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
@@ -245,3 +245,12 @@ Bewusst NICHT angefasst:
 
 Gegenprobe: go build ./... , go vet ./... , go test ./... -count=1 - 28 Pakete gruen. Dass die Faltung den tolerierten Pfad wirklich noch tut, haengt an TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote: ohne die Toleranz von Exit 1 faellt der Test.
 - **2026-09-18 08:06 · Alexander Sacharov** — testing lane: go test ./... — alles gruen. 31 Pakete ok, 0 failed, 0 errors, 4 ohne Testdateien (cmd/jaira, core/session, scripts/iconpreview, scripts/shotgen). Uebersprungen: nichts, es gibt keine e2e-/Integrations-Suite in diesem Repo. go vet ./... ebenfalls sauber. Testbefehl aus go.mod abgeleitet - weder CLAUDE.md/AGENTS.md noch Taskfile/Makefile nennen einen. Abdeckung der Aenderung: jede geaenderte Quelldatei hat eine mitgeaenderte Testdatei (core/gitrepo/git.go -> worktree_test.go, core/ticket/trim.go -> trim_test.go, internal/cli/flow.go -> forlanecommits_test.go, internal/tui/signoff.go -> signoff_test.go); mit -count=1 gezielt nachgefahren, alle gruen. Keine Luecke gefunden.
+- **2026-09-18 09:19 · Alexander Sacharov** — review: drei Befunde, keiner schickt zurueck - aber Befund 1 gehoert vor die Annahme, nicht danach.
+
+1. core/role/builtin/jaira-role-lane/SKILL.md:122-135 beschreibt weiter den Stand vor diesem Change, in derselben Datei, die er oben (36-45) korrigiert. Der Abschnitt fuer die nebenher laufende Kritik behauptet (a) ein Ticket ohne Commits bekomme 'complete: false' mit 'diff (git has no commits for this ticket yet)' - die Notiz vom 07:46 haelt das Gegenteil fest, flow.go:625 liefert jetzt einen vollstaendigen Payload, sobald Arbeit im Worktree liegt; (b) der Diff im Payload sei 'the EARLIER rounds, not the work running beside you'; (c) 'do not judge the diff it gave you'. Der Payload haengt jetzt genau diese nebenher laufende Arbeit an. Die Anweisung schickt die Kritik also mit drei git-Kommandos von Hand holen, was sie schon hat, und verbietet ihr, das Richtige zu lesen. Die Datei geht per go:embed ins Binary und die NOTES.md-Zeile fordert 'jaira roles install --global --force' - ausgerollt wuerde eine Anweisung, die der Binary widerspricht, mit der sie kommt. Reparatur: zehn Zeilen Prosa in einer Datei, die dieser Change ohnehin anfasst.
+
+2. internal/cli/flow.go:619 verwirft den Fehler von WorktreeDiff spurlos (err == nil && ...). Faellt er, liest der Payload commits_source 'git' und complete true - ununterscheidbar von 'es lag nichts da'. DoD 8 hat das breiter gemacht: git.go:224 macht aus 'continue' ein 'return "", err', eine unlesbare untracked Datei laesst jetzt den ganzen Worktree-Anteil verschwinden. Die Notizen 07:46/07:55 begruenden 'nicht fatal' - das traegt fuer 'nicht blockieren', nicht fuer 'gar nichts sagen'. Ein Schluessel mit dem Fehlertext neben commits_source blockiert niemanden.
+
+3. core/gitrepo/git.go:89-103: repo.Diff gibt nie einen Fehler zurueck, ein unzeigbarer SHA wird zur Zeile '(not available locally)'. Damit ist flow.go:601-604 unerreichbar, und die Notiz vom 06:51 verteidigt einen Fall, den es nicht gibt. Praktisch: ein SHA, den nur das Feld traegt (der Rebase-Fall, den dieser Change bewahren will), wird in 'commits' gezaehlt, liefert aber keinen Diff-Inhalt. Ein Mensch sieht es im Patch, etwas das 'commits' zaehlt nicht.
+
+Gegen den Diff selbst nichts: acht von acht DoD belegt, go build/vet/test -count=1 gruen (31 Pakete), Gegenproben in den Notizen und in den Tests, jede verworfene Alternative festgehalten. Selbst nachgefahren: Schritt 3 aus review-check (shas = t.Commits statt MergeCommits) laesst TestForLaneDiffIsNotLimitedToTheRecordedCommits fallen - der Test ist kein Tautologietest.
