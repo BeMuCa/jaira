@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: critique
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:09:53Z
+updated-at: 2026-09-18T07:10:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94878
 claimed-at: 2026-09-18T07:04:05Z
@@ -37,6 +37,16 @@ review-summary: |-
   core/role/builtin/jaira-role-lane/SKILL.md:36-43 says the payload's diff is the ticket's whole committed history 'and not a slice of it' and drops the old counting instruction - but in mode: conversational the implementing lane is forbidden to commit (same file, rule 3), so on exactly those tickets the payload is the PREVIOUS round with complete:true beside it. This ticket's own re-entry proves it: the third in-progress round (DoD 5, signoff.go/signoff_test.go/trim_test.go/NOTES.md) is uncommitted and absent from the critique payload. The passage must either qualify itself for conversational mode and point the diff lanes at the same three worktree commands the running-critique section already carries (line 120), or flow.go must account for uncommitted work - and choosing between those is the decision, because qualifying the prompt is the very 'hand instruction instead of the tool telling the truth' this ticket exists to remove
   internal/tui/signoff.go:118 appends ' - recorded at acceptance' to every label, so the ticket-only case renders 'recorded on the ticket - recorded at acceptance' - the same word twice on the screen a person signs on. Let commitsSourceLabel carry its own tail per case instead of a shared suffix
 review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
+question: |-
+  Befund 1 der critique: jaira-role-lane/SKILL.md:36-43 sagt der Diff-Lane jetzt, der Payload sei die ganze committete Historie, und nimmt ihr das Nachzaehlen weg. In mode: conversational darf die implementierende Lane aber nicht committen - also ist der Payload dort der vorherige Durchgang und meldet complete:true. Dieses Ticket selbst ist der Fall. Drei Wege, bitte einen waehlen:
+
+  (A) Die Passage qualifiziert sich fuer conversational und schickt ALLE Diff-Lanes zusaetzlich an die drei Worktree-Kommandos, die bei Zeile 120 schon stehen. Kosten: wieder eine Handanweisung, statt dass das Werkzeug die Wahrheit sagt - genau das, was dieses Ticket abgeschafft hat, nur an einer neuen Stelle. Aufwand: ein Absatz, ~10 Minuten.
+
+  (B) flow.go traegt die unversionierte Arbeit in den Payload (eigener Abschnitt neben dem Diff, oder complete:false, solange der Worktree schmutzig ist). Kosten: der Payload ist dann nicht mehr reproduzierbar und nicht mehr derselbe fuer zwei Leser; ein schmutziger Worktree hat auch fremde Aenderungen anderer Sessions darin. Aufwand: halber Tag mit Test, eigentlich ein eigenes Ticket.
+
+  (C) Nichts tun - ausserhalb des Ziels dieses Tickets, das vom 'commits:'-Feld handelt und nicht vom Worktree. Kosten: die conversational-Kritik verlaesst sich weiter darauf, dass der Leser von sich aus git status laeuft.
+
+  Befund 2 (signoff.go:118, 'recorded on the ticket — recorded at acceptance') ist unabhaengig und in in-progress in fuenf Minuten repariert.
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
