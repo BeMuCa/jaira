@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T06:00:18Z
+updated-at: 2026-09-18T06:00:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -812,3 +812,4 @@ Ausdruecklich NICHT als Befund erhoben, weil es keiner dieser Lane ist: dass DoD
 Weiter stehen gelassen, mit Verweis: der Defekt in flow.go:589 (liegt als Z4G3RD auf dem Board, 17.09. 22:13); review-Befund 3 (Alex 17.09. 20:24); Merge-Driver (Runde 5); Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21); NOTES-Zeile zur critique-Lane (Runde 9/10); Restrennen (Runde 11); doppelte ':/'-Erklaerung (Runde 15); Zeilenbereiche in den proof-Zeilen der Plan-Liste (Runde 19).
 
 Kontext: Alex hat am 18.09. entschieden, dass die Runden enden und der Stand in den Release geht. Diese Runde bestaetigt, dass die Reparatur aus dem Dispatcher-Auftrag 05:52 sitzt — sie ist kein neuer Schleifenanlauf.
+- **2026-09-18 06:00 · Alexander Sacharov** — optimize (zweiter Lauf): Sackgasse, die sich lohnt aufzuschreiben, damit sie kein dritter Lauf nochmal geht. Die dreifache Erklaerung des showForLane-/'commits:'-Mechanismus (jaira-role-lane Kopf + Abschnitt 1, jaira-dispatcher) sieht wie der klassische Duplikationsbefund dieser Lane aus - drei Prosa-Stellen ueber eine Go-Funktion, die bei einer Aenderung an flow.go alle drei veralten. Sie wird nicht zusammengelegt, weil DoD 17 sie an allen drei Stellen woertlich verlangt und ihr proof sie mit 'grep -cF' zaehlt. Kuerzen waere hier keine Aufraeumung, sondern eine Verhaltensaenderung am Abnahmekriterium - und damit laut Lane-Prompt ein Fall fuer in-progress, nicht fuer optimize. Wer die Doppelung wirklich aufloesen will, muss zuerst DoD 17 aendern, nicht den Text. Zweitens zur Einordnung des Laufs: seit 472a5c5 (dem vorigen optimize) hat sich am Diff nichts bewegt ausser den zwei proof-Zeilen, die in-progress nachgezogen hat. Die vier Durchgaenge liefen also auf demselben Stand wie beim letzten Mal; nachgemessen wurde trotzdem (gofmt/vet/test gruen), vorausgesetzt nichts.
