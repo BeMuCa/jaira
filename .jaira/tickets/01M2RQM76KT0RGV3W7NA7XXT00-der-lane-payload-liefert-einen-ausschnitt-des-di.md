@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:45:02Z
+updated-at: 2026-09-18T06:57:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
 mode: conversational
-outcome-what: "showForLane und der Signoff-Schirm leiten die Commit-Liste jetzt immer aus git ab und vereinigen sie mit dem 'commits:'-Feld (neuer ticket.MergeCommits), statt das Feld als fertige Antwort zu lesen; der --json-Payload einer Diff-Lane traegt neu 'commits' und 'commits_source', die Klartext-Ausgabe dieselbe Zeile ueber dem Diff; die Handanweisung zum Nachzaehlen faellt aus jaira-role-lane/SKILL.md und jaira-dispatcher/SKILL.md; eine Zeile unter ## Unreleased"
-outcome-why: "'commits:' ist per Konstruktion eine Momentaufnahme - 'move --out --commits' schreibt es einmal, spaetere Commits kommen nie dazu. Eine Review-Lane sah dadurch drei von einundzwanzig Commits und bekam complete:true dazu: ein stiller Ausfall, der wie Erfolg aussieht, genau in der Lane, die es verhindern soll"
-outcome-resolves: "Die DoD verlangte eins von beidem; gewaehlt ist der erste Weg (Alex' Entscheidung vor der Plan-Lane): showForLane leitet immer ab, complete:true heisst wieder 'du siehst den ganzen Branch'. Kein 'missing'-Feld, weil eine Zahl fehlender Commits auf einem geteilten Release-Branch bei jedem Lauf Fehlalarm waere. Belegt durch internal/cli/forlanecommits_test.go; go build ./... und go test ./... gruen"
+outcome-what: "optimize: die handgeschriebene Union-Schleife in 'move --out --commits' faltet auf ticket.MergeCommits, sonst nichts entfernt"
+outcome-why: "eine vierte Kopie der Schleife im selben File, den dieser Change gerade zur gemeinsamen Heimat gemacht hat - genau das Auseinanderlaufen, vor dem ihr Doc-Kommentar warnt"
+outcome-resolves: "review-gaps geschrieben; go build und go test ./... gruen"
+review-summary: none
+review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
@@ -57,7 +59,7 @@ outcome-resolves: "Die DoD verlangte eins von beidem; gewaehlt ist der erste Weg
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [x] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
+- [~] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
 - [x] showForLane: build the diff SHAs as the union of t.Commits and env.DeriveCommits(t), never the field alone (internal/cli/flow.go:589)
 - [x] carry the list into the payload: commits (the SHAs used) plus commits_source, so a reader can count instead of trusting
 - [x] check the same field-first pattern in internal/tui/signoff.go:107 - fix if it is the same bug, note it if it is not
@@ -86,3 +88,37 @@ Union-Logik lag doppelt vor: die Merge-Schleife aus StampCommits (core/ticket/tr
 - Auch die Klartext-Ausgabe (ohne --json) traegt jetzt '<n> commit(s), from <quelle>:' plus die SHAs ueber dem Diff. Ein Worker, der den Lane-Prompt als Text liest, haette sonst als einziger nicht zaehlen koennen.
 
 - NOTES.md: die Zeile steht unter '## Unreleased', NICHT unter '## 0.3.0'. Die 0.3.0-Zeile 22, die die alte Handanweisung beschreibt, bleibt woertlich stehen - sie beschreibt den Build, den es gibt; geschlossene Historie wird nicht nachtraeglich richtiggestellt.
+- **2026-09-18 06:47 · Alexander Sacharov** — critique (erster Durchgang, ganzer Diff gelesen): drei Befunde, alle mit klarer Reparatur, daher zurueck nach in-progress.
+
+1. internal/cli/flow.go:646 — die neuen Schluessel commits/commits_source hahngen an len(shas)>0. Schlaegt repo.Diff fehl, ist diff leer, shas aber gefuellt: der Payload traegt dann eine Commit-Liste als 'Herkunft dessen, was auf dem Schirm steht', waehrend nichts auf dem Schirm steht. Der Klartext-Zweig (:677) macht es schon richtig und prueft diff != "". Beide Zweige auf dieselbe Bedingung.
+
+2. internal/tui/signoff.go:114 — 'derived' bedeutet jetzt nur noch 'git hat etwas gefunden', die Liste ist aber eine Vereinigung. Ein SHA, den nur das Feld traegt (Rebase, Cherry-Pick), erscheint damit unter der Ueberschrift 'derived from git — recorded at acceptance'. Genau diesen Fall unterscheidet flow.go:601 mit git / ticket / git+ticket. Zwei Schirme, dieselben Daten, zwei Ehrlichkeitsmassstaebe — und der Signoff-Schirm ist der, auf dem ein Mensch unterschreibt. Entweder dieselbe Dreiteilung ins Label, oder derived nur setzen, wenn das Feld nichts beigetragen hat.
+
+3. core/ticket/trim.go:123 — der Kommentar sagt 'Two callers share it and must not drift apart' und nennt StampCommits und den Lane-Payload. Dieser Change hat einen dritten hinzugefuegt: internal/tui/signoff.go:114. Der Kommentar existiert, um Auseinanderlaufen zu verhindern, und laesst ausgerechnet die Stelle aus, an der es am teuersten ist. Alle drei nennen.
+
+Bewusst stehen gelassen: commits_source mit drei Werten ist kein Ueberbau — die Note vom 2026-09-18 06:44 haelt die Entscheidung fest (Plan-Schritt 3: der Leser soll zaehlen koennen statt zu vertrauen), und dass die Schluessel nur im Payload einer Lane mit 'diff' in input-requires stehen, ist dort ebenfalls begruendet. Ebenso die verworfene Alternative 'complete:false plus Zahl fehlender Commits' (Note 06:36) — geschlossen, nicht neu aufgemacht. Die Vereinigung statt Ersetzung folgt StampCommits und ist das bestehende Muster, nicht ein neues daneben.
+- **2026-09-18 06:51 · Alexander Sacharov** — in-progress (zweiter Durchgang, alle drei critique-Befunde repariert). Was nicht im Code steht:
+
+- Die Dreiteilung git / ticket / git+ticket lag doppelt vor, sobald der Signoff-Schirm sie auch brauchte. Sie ist jetzt ticket.CommitsSource (core/ticket/trim.go) neben MergeCommits - bewusst dort und nicht in internal/tui oder internal/cli, weil genau das Auseinanderlaufen zweier Schirme der zweite Befund war. Wer einen Wert hinzufuegt, muss internal/tui/signoff.go:commitsSourceLabel mitfuehren, sonst faellt der neue Fall still auf 'kein Label'.
+
+- Befund 1 (Payload-Schluessel an len(shas)>0): die Bedingung ist jetzt diff != "", dieselbe wie im Klartext-Zweig. Kein Test dafuer: repo.Diff scheitern zu lassen verlangt ein kaputtes git-Repo mit gueltigen SHAs im Frontmatter - der Aufwand steht nicht zum Nutzen, die Bedingung ist eine Zeile und steht neben ihrem Zwilling. Wer das doch testen will: SHAs eintragen, die auf keinem Objekt liegen, dann meldet Diff einen Fehler.
+
+- Befund 2, gewaehlte Variante: die Dreiteilung ins Label, NICHT 'derived nur setzen, wenn das Feld nichts beigetragen hat'. Begruendung: die zweite Variante laesst im Fall git+ticket gar kein Label stehen, und ein fehlendes Label liest sich als 'keine Aussage' statt als 'gemischte Herkunft' - auf dem Schirm, auf dem unterschrieben wird, ist das wieder ein stiller Ausfall, nur ein kleinerer.
+
+- NOTES.md: die Unreleased-Zeile wurde ERGAENZT, nicht um eine zweite Zeile erweitert. Der Signoff-Schirm war in derselben Zeile schon genannt; eine zweite Zeile haette denselben Change zweimal beschrieben. Unreleased ist offen, das darf man - an einer getaggten Sektion nicht.
+- **2026-09-18 06:54 · Alexander Sacharov** — critique (zweiter Durchgang, nur die drei Befunde vom 06:47 und die Aenderung, die sie beantwortet - der uebrige Diff wurde bewusst nicht erneut gelesen): alle drei repariert, kein neuer Befund.
+- Befund 1 (flow.go:646 gate an len(shas)>0): jetzt 'if diff != ""' (internal/cli/flow.go:645), dieselbe Bedingung wie der Klartext-Zweig bei :674. Das frueher noetige 'shasFrom = ""' im len(shas)==0-Zweig ist entfallen, weil ticket.CommitsSource bei leerer Liste selbst "" liefert - geprueft in trim.go:203 und im Testfall 'nothing at all'.
+- Befund 2 (signoff.go label): die Dreiteilung liegt jetzt in core/ticket/trim.go:CommitsSource und wird von flow.go und signoff.go gelesen; commitsSourceLabel (internal/tui/signoff.go:277) setzt sie in Worte, git+ticket bekommt ein eigenes Label statt gar keines.
+- Befund 3 (Doc-Kommentar MergeCommits): nennt jetzt alle drei Aufrufer namentlich inklusive internal/tui/signoff.go.
+Kein Folgefehler der Reparatur: CommitsSource unterscheidet git+ticket ueber len(merged) > len(derived), und MergeCommits haengt nur nicht bereits enthaltene SHAs an - die Bedingung ist damit genau 'das Feld hat etwas beigetragen'. review-summary=none, weiter nach optimize.
+- **2026-09-18 06:57 · Alexander Sacharov** — optimize: eine echte Doppelung gefunden und gefaltet, sonst nichts entfernt.
+
+- Doppelung: internal/cli/flow.go:151 ('move --out --commits') hatte die Union-Schleife handgeschrieben - append(t.Commits...) plus contains()-Pruefung mit TrimSpace. Das ist zeichenweise ticket.MergeCommits(t.Commits, commits), nur mit vertauschten Argumenten: der erste Parameter ist 'was zuerst kommt', nicht 'was aus git stammt'. Jetzt ruft sie MergeCommits. Verhalten identisch: MergeCommits trimmt nur die zweite Liste, genau wie die Schleife nur die eingehenden Shas trimmte. Warum das hierher gehoert und nicht in ein Folgeticket: dieser Change hat MergeCommits ueberhaupt erst zur gemeinsamen Heimat gemacht und seinen Doc-Kommentar mit 'muessen nicht auseinanderlaufen' beschriftet - eine vierte handgeschriebene Kopie im selben File stehen zu lassen ist genau das Auseinanderlaufen, vor dem der Kommentar warnt.
+- Der Doc-Kommentar von MergeCommits nennt jetzt vier Aufrufer statt drei. Wer die Funktion anfasst, aendert damit auch, was 'move --out --commits' ins Frontmatter schreibt.
+- internal/cli/flow.go:297 contains() bleibt: sync.go:386 und delete.go:113 benutzen es weiter, es ist durch die Faltung nicht tot geworden.
+
+Bewusst NICHT angefasst:
+- ticket.CommitsSource: die Bedingung 'len(derived) > 0 && len(merged) > len(derived)' sieht redundant aus, ist es aber nicht - ohne den ersten Teil wuerde der Fall 'nur das Feld traegt etwas' als git+ticket gelesen. Kein Fluff.
+- commitsSourceLabel (internal/tui/signoff.go:277) ist keine Weiterleitung, sondern die Uebersetzung der drei Token in Prosa fuer genau einen Schirm. Die Klartext-Ausgabe von flow.go druckt absichtlich das rohe Token - ein Agent parst, ein Mensch liest.
+- internal/tui/view.go:1319 und internal/cli/tickets.go:776 zeigen t.Commits weiterhin roh. In-progress hat begruendet warum (Feldanzeige, kein Urteil ueber einen Diff); optimize macht daraus keine Verhaltensaenderung.
+- Kosten: DeriveCommits laeuft in signoff pro geoeffnetem Ticket einmal (memoisiert) und in showForLane einmal pro Aufruf. Nichts in einer Schleife, nichts doppelt gelesen.

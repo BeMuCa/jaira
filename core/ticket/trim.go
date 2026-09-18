@@ -120,9 +120,12 @@ func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string
 // come first, in git order; a recorded sha the derivation did not find is
 // appended rather than dropped — a sha somebody wrote down deliberately, or one
 // whose commit a rebase moved off the branch, is evidence this tool has no
-// business discarding. Two callers share it and must not drift apart:
-// StampCommits, which writes the union onto the ticket, and the lane payload,
-// which reads it to build the diff a review lane judges.
+// business discarding. Four callers share it and must not drift apart:
+// StampCommits, which writes the union onto the ticket; 'move --out
+// --commits' (internal/cli/flow.go), which folds the shas a lane hands back
+// into the field; the lane payload (same file), which reads it to build the
+// diff a review lane judges; and the signoff screen (internal/tui/signoff.go),
+// the screen a person accepts work on, where drift costs most.
 func MergeCommits(derived, recorded []string) []string {
 	merged := append([]string{}, derived...)
 	for _, c := range recorded {
@@ -193,4 +196,23 @@ func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Tr
 		return out, &PartialError{Problems: problems}
 	}
 	return out, nil
+}
+
+// CommitsSource names where a merged commit list came from: "git" when the
+// derivation accounts for all of it, "ticket" when the derivation found
+// nothing and the recorded field carries it, and "git+ticket" when the field
+// contributed a sha git could not find — a rebase or a cherry-pick. Every
+// screen that labels such a list shares this so two screens built on the same
+// data cannot end up holding themselves to two standards of honesty.
+func CommitsSource(derived, merged []string) string {
+	switch {
+	case len(merged) == 0:
+		return ""
+	case len(derived) > 0 && len(merged) > len(derived):
+		return "git+ticket"
+	case len(derived) > 0:
+		return "git"
+	default:
+		return "ticket"
+	}
 }

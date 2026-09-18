@@ -149,12 +149,11 @@ one the real move would have returned.`,
 					}
 				}
 				if len(commits) > 0 {
-					merged := append([]string{}, t.Commits...)
-					for _, c := range commits {
-						if c = strings.TrimSpace(c); c != "" && !contains(merged, c) {
-							merged = append(merged, c)
-						}
-					}
+					// Same union as everywhere else: what the ticket already
+					// records first, the incoming shas appended if new. This
+					// hand-rolled its own copy of the loop before
+					// ticket.MergeCommits existed to share.
+					merged := ticket.MergeCommits(t.Commits, commits)
 					if err := t.Doc().SetList(ticket.FieldCommits, merged); err != nil {
 						return err
 					}
@@ -598,16 +597,8 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				derived = env.DeriveCommits(t)
 			}
 			shas = ticket.MergeCommits(derived, t.Commits)
-			switch {
-			case len(derived) > 0 && len(shas) > len(derived):
-				shasFrom = "git+ticket"
-			case len(derived) > 0:
-				shasFrom = "git"
-			default:
-				shasFrom = "ticket"
-			}
+			shasFrom = ticket.CommitsSource(derived, shas)
 			if len(shas) == 0 {
-				shasFrom = ""
 				missing = append(missing, "diff (git has no commits for this ticket yet)")
 				continue
 			}
@@ -646,10 +637,12 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"missing":  missing,
 			"complete": len(missing) == 0,
 		}
-		// Only for a lane that asked for a diff. A commit list beside a lane
-		// that never declared one would read as a claim about the ticket
-		// rather than as the provenance of what is on screen.
-		if len(shas) > 0 {
+		// Only for a lane that asked for a diff, and only once there is a
+		// diff to account for. A commit list beside a lane that never declared
+		// one would read as a claim about the ticket rather than as the
+		// provenance of what is on screen — and so would one standing beside a
+		// diff that failed to build, where nothing is on screen at all.
+		if diff != "" {
 			payload["commits"] = shas
 			payload["commits_source"] = shasFrom
 		}
