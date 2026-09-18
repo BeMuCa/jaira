@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:54:36Z
+updated-at: 2026-09-18T07:54:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -65,7 +65,8 @@ question: |-
   proof: core/gitrepo/git.go:WorktreeDiff + internal/cli/flow.go case "diff"; ticket.WithWorktree (core/ticket/trim.go); Test TestForLaneDiffCarriesTheUncommittedWorktree (internal/cli/forlanecommits_test.go), faellt ohne die Aenderung; SKILL.md 36-45 ohne Einschraenkung
 - [x] internal/tui/signoff.go:118 haengt nicht mehr einen gemeinsamen Suffix ' - recorded at acceptance' an jedes Label, sodass der Ticket-only-Fall 'recorded on the ticket - recorded at acceptance' liest. commitsSourceLabel traegt seinen Schwanz je Fall selbst.
   proof: internal/tui/signoff.go:118 haengt keinen Suffix mehr an; commitsSourceLabel (signoff.go:285) traegt ihn je Fall; Test TestSignOffNamesWhereTheCommitsCameFrom/the_ticket_alone mit notWant, faellt mit dem alten Suffix
-- [ ] WorktreeDiff verliert keine untracked Datei mehr, deren Pfad Nicht-ASCII-Zeichen oder Leerzeichen traegt: 'git ls-files --others' laeuft mit -z, und ein --no-index-Aufruf, der mit Exit 1 aber ohne Ausgabe zurueckkommt, obwohl die Datei nicht leer ist, gilt als Fehler und nicht als Treffer. Mit Test.
+- [x] WorktreeDiff verliert keine untracked Datei mehr, deren Pfad Nicht-ASCII-Zeichen oder Leerzeichen traegt: 'git ls-files --others' laeuft mit -z, und ein --no-index-Aufruf, der mit Exit 1 aber ohne Ausgabe zurueckkommt, obwohl die Datei nicht leer ist, gilt als Fehler und nicht als Treffer. Mit Test.
+  proof: core/gitrepo/git.go:207 ls-files -z + Split auf NUL, :215 quotePath=false, :220-228 leerer Patch bei nicht leerer Datei ist ein Fehler; Tests core/gitrepo/worktree_test.go TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote (faellt ohne -z) und TestWorktreeDiffIgnoresAnEmptyUntrackedFile
 
 ## Options
 
