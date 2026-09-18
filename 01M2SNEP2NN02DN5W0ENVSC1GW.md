@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:30:32Z
+updated-at: 2026-09-18T10:30:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28090
 claimed-at: 2026-09-18T08:09:46Z
@@ -34,7 +34,8 @@ mode: conversational
 
 ## Definition of Done
 
-- [ ] Das Ticket nennt EINE gewaehlte Form mit Begruendung, warum die anderen drei verworfen wurden - an der Scope-Regel aus CLAUDE.md gemessen, nicht am Bauchgefuehl.
+- [x] Das Ticket nennt EINE gewaehlte Form mit Begruendung, warum die anderen drei verworfen wurden - an der Scope-Regel aus CLAUDE.md gemessen, nicht am Bauchgefuehl.
+  proof: Notiz 'ENTSCHIEDEN von Alex am 2026-09-18' auf diesem Ticket: Form 2 gewaehlt, Formen 1/3/4 und Weg B mit Begruendung verworfen
 - [ ] Ein frisch mit 'jaira init' angelegtes Board erfaehrt von der Pruefschleife, ohne dass jemand den Katalog kennt. Nachgestellt an einer leeren Testdoska: der Weg von 'jaira init' zu einer arbeitenden critique-Lane ist ohne Vorwissen gehbar.
 - [ ] Wer jaira ohne Netz benutzt, kommt an die drei Lanes heran, oder die Fehlermeldung sagt, dass sie aus dem Netz kommen und wie man sie sonst bekommt. 'jaira lanes market' holt heute von GitHub.
 - [ ] Ein Board, das jaira als reinen Tracker benutzt, wird nicht mit einem Konveyer beladen, den niemand faehrt - die Wahl bleibt eine Wahl.
