@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:01:12Z
+updated-at: 2026-09-18T07:03:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -49,6 +49,7 @@ review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('m
   proof: Notiz vom 2026-09-18 (pre-process): StampCommits laeuft nur als move.Request.Prepare beim Einlaufen in eine Doorway-Lane (core/ticket/trim.go:105, core/move/move.go:132); gefuellt wird commits: von 'jaira move --out --commits' (internal/cli/flow.go:99,152)
 - [x] Eine Zeile in core/release/NOTES.md, wenn sich aendert, was ein Benutzer im Payload sieht.
   proof: core/release/NOTES.md:18 unter ## Unreleased
+- [ ] renderSignOff hat einen Test fuer commitsSourceLabel: ein Ticket mit einem SHA nur im 'commits:'-Feld rendert die Zeile 'plus shas only the ticket records'. Die drei Token werden heute nur in core/ticket geprueft, die Uebersetzung in Prosa auf dem Signoff-Schirm von keinem Test.
 
 ## Options
 
