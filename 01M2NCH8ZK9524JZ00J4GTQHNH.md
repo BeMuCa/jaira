@@ -40,10 +40,10 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-17T22:25:36Z
+updated-at: 2026-09-18T05:38:38Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-59029
-claimed-at: 2026-09-17T22:14:55Z
+claimed-by: DESKTOP-RFTCH11-2585
+claimed-at: 2026-09-18T05:38:38Z
 outcome-what: "Beide Befunde aus critique 20 behoben, kein Go-Code, zwei Dateien. jaira-role-lane/SKILL.md: der Kopf bekommt hinter dem Absatz zu 'show --for-lane --json' einen neuen Absatz 'Does your lane judge that payload's diff?' - dort steht die Zaehlprobe jetzt, als Zweizeiler 'jaira show <id> --json | jq .commits | length' gegen 'git log origin/HEAD..HEAD --oneline | wc -l', mit 'git diff origin/HEAD...HEAD' als Ersatz. Abschnitt 1, Absatz 'And it is not even all of those rounds.', behaelt nur noch die Richtigstellung ('a slice, not a full diff') und sagt jetzt, warum dieser Leser gerade NICHT nachmisst: der committete Branch-Diff ist die frueheren Runden, also mehr von dem, was er nicht beurteilen darf. core/release/NOTES.md Zeile 17: dieselben zwei Befehle auf origin/HEAD, und der Satz schreibt die Zaehlprobe der Lane zu, die den Diff beurteilen darf. DoD 17 umformuliert, weil seine zweite Haelfte jetzt woanders und bei einem anderen Leser steht."
 outcome-why: "critique 20 hatte zwei Befunde. Der erste trifft fremde Boards: 'jaira roles install --global --force' legt jaira-role-lane/SKILL.md auf jedes Board, und 'git log master..HEAD' bricht dort mit 'unknown revision' ab, wo der Default-Branch 'main' heisst. Das Repository hatte die Idiomatik schon zweimal (jaira-role-pr/SKILL.md:32, jaira-role-tester/SKILL.md:49); dieser Branch hatte sie gebrochen statt fortgesetzt. Der zweite war ein Widerspruch im selben Abschnitt: 'read git diff master...HEAD' stand drei Zeilen ueber 'do not judge the diff it gave you' - der Branch-Diff IST fuer die mitlaufende Kritik die frueheren Runden. Der Leser, der die Zaehlprobe braucht, ist die ordentliche critique-/review-Lane, und die betritt Abschnitt 1 nie."
 outcome-resolves: "DoD 17, in seiner neuen Fassung: die Richtigstellung steht weiterhin bei der mitlaufenden Kritik, die Zaehlprobe bei dem Leser, der den Payload-Diff beurteilen darf, und keiner der Befehle nennt einen festen Branch-Namen. 'grep -rn master core/role/builtin/ core/release/NOTES.md' findet nichts mehr. go build, go vet und 'go test ./... -count=1' gruen, 29 Pakete ok."
