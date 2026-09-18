@@ -120,24 +120,34 @@ you were started as, **you are not the one that writes.** Say so to the
 dispatcher and let it answer — it knows, it started you. Asking costs one line;
 guessing wrong costs a second `review-summary` written over the first.
 
-**Read the worktree, not the ticket's diff.** What you judge is the uncommitted
-worktree, whatever the `--for-lane critique` payload you read at the top handed
-you. On a ticket that carries no commits yet, that payload came back
-`complete: false`, with `diff (git has no commits for this ticket yet)` among
-its missing inputs and `outcome-what`/`outcome-resolves` missing beside it —
-not a broken board, just the lane whose work you are reading still running. On a
-ticket that already carries commits, which is every round after the first, the
-same payload is `complete: true` and hands you a diff. That diff is the EARLIER
-rounds, not the work running beside you; judging it means criticising what is
-already finished.
+**What you judge is in the payload, and it is the second half of the diff.**
+The `--for-lane critique` payload you read at the top already carries the
+uncommitted work: `showForLane` appends the working tree to the commit diff, so
+the `diff` has two halves separated by the line
 
-So in both cases: do not wait for the payload to fill, do not report that you
-had nothing to read, and do not judge the diff it gave you.
+```
+uncommitted work in the working tree
+```
 
-Only the diff is stale. The goal, the definition of done and the notes in the
-same payload are the ticket as it stands right now — the critique prompt asks
-for the notes before anything else, and they are what says which findings are
-already closed. They stay the measure; what you hold against them is this:
+Everything above that line is the earlier rounds — finished, already judged,
+not yours. Everything below it is the work running beside you, and that is your
+judgment object. On the first round there is no line at all, because there are
+no commits yet: the whole diff is the worktree.
+
+You do not have to hunt for the marker. `commits_source` says which halves are
+there: it ends in `+worktree` when the uncommitted half is appended, and on the
+first round it is plain `worktree`.
+
+`complete: false` on that first round is still normal, but not because the diff
+is missing — it is not. The critique lane also requires `outcome-what` and
+`outcome-resolves`, and those are written by the worker beside you when it ends
+its lane. So: do not wait for the payload to fill, and do not report that you
+had nothing to read.
+
+One case leaves you without that half, and the payload names it: a
+`worktree_error` key means git could not read the working tree, so nothing
+uncommitted is in the diff however clean `commits_source` looks. That is when
+you fall back to reading the disk yourself:
 
 ```bash
 git status --short -- :/ ':(exclude,top).jaira/tickets'
@@ -147,18 +157,19 @@ git diff --cached -- :/ ':(exclude,top).jaira/tickets'
 
 `git diff` is the work in progress, `--cached` anything already staged, and
 `git status --short` the new files neither of them shows — read a `??` line's
-file with `cat`. The ordinary critique lane is the one that reads the payload's
-diff; you read what is on disk right now, which is the point of running beside
-the work.
+file with `cat`. The pathspec is what keeps that readable: the worker beside
+you rewrites the ticket file with every `jaira dod` and every `jaira note`, so
+without it you get hundreds of lines of the ticket's own prose around the few
+lines of code you came to judge. `:/` is the repository root and `,top` anchors
+the exclusion there, so all three commands say the same thing from any
+directory.
 
-The pathspec is what keeps that readable. The worker beside you writes the
-ticket file with every `jaira dod` and every `jaira note`, so without it the
-diff you are handed is hundreds of lines of the ticket's own prose around the
-few lines of code you came to judge. `:/` is the repository root and `,top`
-anchors the exclusion there, so all three commands say the same thing from any
-directory. It costs you the one thing the exclusion hides: what the implementer
-has written onto the ticket since you read the payload. Read that with
-`jaira show <id> --json`, not out of a diff.
+The goal, the definition of done and the notes in the same payload are the
+ticket as it stands right now — the critique prompt asks for the notes before
+anything else, and they are what says which findings are already closed. They
+stay the measure. The one thing neither they nor the diff carry is what the
+implementer has written onto the ticket since the payload was built: read that
+with `jaira show <id> --json`, not out of a diff.
 
 Report and stop. A running critique does not sit waiting for more work after it
 has handed over its findings — it is done, and the dispatcher starts whatever

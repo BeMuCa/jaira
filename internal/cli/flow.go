@@ -562,6 +562,12 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	// instead of trusting the diff to be whole.
 	var shas []string
 	var shasFrom string
+	// Shas whose patch git could not produce, and the reason the working tree
+	// is absent. Both ride in the payload rather than staying here: a lane
+	// that cannot tell "nothing was uncommitted" from "the worktree could not
+	// be read" is back to trusting a fraction.
+	var unavailable []string
+	var worktreeErr string
 	for _, want := range l.InputRequires {
 		switch want {
 		case "plan":
@@ -600,11 +606,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			shasFrom = ticket.CommitsSource(derived, shas)
 			var d string
 			if len(shas) > 0 {
-				var err error
-				if d, err = repo.Diff(shas); err != nil {
-					missing = append(missing, fmt.Sprintf("diff (%v)", err))
-					continue
-				}
+				d, unavailable = repo.Diff(shas)
 			}
 			// Uncommitted work counts. A lane judges what is in front of it,
 			// and the rule "a lane that changed no code commits nothing"
@@ -616,7 +618,15 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// one step further along. A failure to read it is not fatal: the
 			// commits are still worth judging, and the source token stays
 			// silent about a worktree nobody could look at.
-			if wt, err := repo.WorktreeDiff(); err == nil && strings.TrimSpace(wt) != "" {
+			wt, err := repo.WorktreeDiff()
+			switch {
+			case err != nil:
+				// Not fatal, and not silent either. Dropping the error left
+				// the payload identical to one built over a clean tree, so a
+				// lane judging half the work had no way to know — which is the
+				// failure this ticket exists to end, one step further along.
+				worktreeErr = err.Error()
+			case strings.TrimSpace(wt) != "":
 				if d != "" {
 					d += "\n"
 				}
@@ -624,7 +634,13 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				shasFrom = ticket.WithWorktree(shasFrom)
 			}
 			if d == "" {
-				missing = append(missing, "diff (git has no commits for this ticket yet)")
+				// Both halves are accounted for, because "no commits" alone
+				// would read as "the worktree was not looked at".
+				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
+				if worktreeErr != "" {
+					m = fmt.Sprintf("diff (git has no commits for this ticket yet, and the working tree could not be read: %s)", worktreeErr)
+				}
+				missing = append(missing, m)
 				continue
 			}
 			diff = d
@@ -665,6 +681,17 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		if diff != "" {
 			payload["commits"] = shas
 			payload["commits_source"] = shasFrom
+			// Only when there are any: a key that is always there is read as a
+			// field, and an empty one beside every payload trains the reader
+			// to skip it.
+			if len(unavailable) > 0 {
+				payload["commits_unavailable"] = unavailable
+			}
+		}
+		// Outside the guard above: the case worth reporting loudest is the one
+		// where the worktree was the only thing there was to show.
+		if worktreeErr != "" {
+			payload["worktree_error"] = worktreeErr
 		}
 		return emit(cmd.OutOrStdout(), payload)
 	}
@@ -691,8 +718,14 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		// The provenance rides above the diff for the same reason it rides in
 		// the payload: a reader who can count the shas can check the diff is
 		// whole instead of trusting it.
-		fmt.Fprintf(w, "## Diff\n\n%d commit(s), from %s:\n%s\n\n```diff\n%s```\n\n",
-			len(shas), shasFrom, strings.Join(shas, " "), diff)
+		fmt.Fprintf(w, "## Diff\n\n%d commit(s), from %s:\n%s\n\n", len(shas), shasFrom, strings.Join(shas, " "))
+		if len(unavailable) > 0 {
+			fmt.Fprintf(w, "git could not show %d of them: %s\n\n", len(unavailable), strings.Join(unavailable, " "))
+		}
+		fmt.Fprintf(w, "```diff\n%s```\n\n", diff)
+	}
+	if worktreeErr != "" {
+		fmt.Fprintf(w, "The working tree could not be read, so nothing uncommitted is below: %s\n\n", worktreeErr)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")

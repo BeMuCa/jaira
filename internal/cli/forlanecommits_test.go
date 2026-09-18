@@ -20,6 +20,9 @@ type forLanePayload struct {
 	Commits       []string `json:"commits"`
 	CommitsSource string   `json:"commits_source"`
 	Complete      bool     `json:"complete"`
+	Unavailable   []string `json:"commits_unavailable"`
+	WorktreeError string   `json:"worktree_error"`
+	Missing       []string `json:"missing"`
 }
 
 // forLaneGitFixture stands up what both tests below need: a git repo with a
@@ -159,5 +162,77 @@ func TestForLaneDiffCarriesTheUncommittedWorktree(t *testing.T) {
 	}
 	if !payload.Complete {
 		t.Error("complete is false although nothing is missing")
+	}
+}
+
+// A payload built where git could not read the working tree used to be
+// byte-for-byte the payload of a clean one: the error went into the bin at
+// flow.go and commits_source said "git", which is what a spotless tree says
+// too. That is the fraction reported as the whole all over again — the lane
+// judges the commits and never learns that the uncommitted half was never
+// looked at. The fixture reaches it through a repository with no commits at
+// all, where "git diff HEAD" has no HEAD to diff against.
+func TestForLaneSaysWhenTheWorktreeCouldNotBeRead(t *testing.T) {
+	dir, s, tk, h, _, _ := forLaneGitFixture(t, time.Date(2026, 9, 18, 11, 0, 0, 0, time.UTC))
+
+	// A sha the ticket records and this repository does not have, so the diff
+	// is non-empty and the payload is complete: the point is that a complete
+	// payload still admits what it could not read.
+	const ghost = "0123456789012345678901234567890123456789"
+	if _, err := s.Mutate(tk.ID, func(t *ticket.Ticket) error {
+		return t.Doc().SetList(ticket.FieldCommits, []string{ghost})
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var payload forLanePayload
+	out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json")
+	if err != nil {
+		t.Fatalf("show --for-lane review: %v\n%s", err, out)
+	}
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("payload is not json: %v\n%s", err, out)
+	}
+	if payload.WorktreeError == "" {
+		t.Errorf("the working tree could not be read and the payload does not say so:\n%s", out)
+	}
+	if !payload.Complete {
+		t.Errorf("complete is false — an unreadable worktree informs the lane, it does not block it: missing=%v", payload.Missing)
+	}
+}
+
+// repo.Diff never fails: a sha it cannot show becomes the line
+// "(not available locally)" inside the patch. It is still counted in "commits",
+// so anything that counts instead of reading — which is what "commits" is there
+// for — reports more diffs than it was shown. The payload names them.
+func TestForLaneNamesTheCommitsGitCouldNotShow(t *testing.T) {
+	dir, s, tk, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC))
+	write("da.txt", "vorhanden\n")
+	run("add", ".")
+	run("commit", "-q", "-m", "feat("+h+"): the change that is here")
+	here := run("rev-parse", "HEAD")
+
+	// The rebase case the union exists to preserve: a sha only the field
+	// carries, which this clone cannot resolve.
+	const ghost = "0123456789012345678901234567890123456789"
+	if _, err := s.Mutate(tk.ID, func(t *ticket.Ticket) error {
+		return t.Doc().SetList(ticket.FieldCommits, []string{ghost})
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var payload forLanePayload
+	out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json")
+	if err != nil {
+		t.Fatalf("show --for-lane review: %v\n%s", err, out)
+	}
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("payload is not json: %v\n%s", err, out)
+	}
+	if len(payload.Commits) != 2 {
+		t.Fatalf("payload names %d commit(s), want the recorded ghost beside %s: %v", len(payload.Commits), here[:7], payload.Commits)
+	}
+	if len(payload.Unavailable) != 1 || payload.Unavailable[0] != ghost {
+		t.Errorf("commits_unavailable is %v — a sha counted in commits but never shown is not named", payload.Unavailable)
 	}
 }

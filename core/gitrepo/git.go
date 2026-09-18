@@ -86,8 +86,16 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 // Diff returns the combined patch for a set of commits, scoped to those commits
 // rather than to the working tree — a reviewer is judging what the ticket
 // shipped, not whatever happens to be uncommitted right now.
-func (r *Repo) Diff(shas []string) (string, error) {
+//
+// The second return names the shas git could not show: rebased away,
+// cherry-picked elsewhere, or on a branch this clone never fetched. They stay
+// in the patch as a placeholder line, but a caller counting commits would
+// otherwise report them as diffs it had shown — the same fraction-reported-whole
+// failure this package was fixed for. There is no error return because there is
+// no failure: an unshowable sha is an outcome, not a broken repository.
+func (r *Repo) Diff(shas []string) (string, []string) {
 	var b strings.Builder
+	var unavailable []string
 	for _, sha := range shas {
 		if strings.TrimSpace(sha) == "" {
 			continue
@@ -95,12 +103,13 @@ func (r *Repo) Diff(shas []string) (string, error) {
 		out, err := r.run("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)
 		if err != nil {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not available locally)\n\n", sha))
+			unavailable = append(unavailable, sha)
 			continue
 		}
 		b.WriteString(out)
 		b.WriteString("\n")
 	}
-	return b.String(), nil
+	return b.String(), unavailable
 }
 
 // Stat returns the per-file summary for a set of commits.
