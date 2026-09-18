@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:49:11Z
+updated-at: 2026-09-18T10:49:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -159,3 +159,12 @@ core/lane/shipped_test.go:59 verbietet, dass eine Datei unter lanes/ zu einer La
 core/lane/lane_test.go:207 (eine ueberschreibende Lane ist nicht Builtin), internal/tui/lanes_test.go:77 (auf einem Board ist keine Lane Builtin, es wird nichts mehr injiziert) und :665 (eine entfernte built-in taucht als verfuegbare built-in wieder auf) sprechen alle drei ueber Herkunft, nicht ueber Vorauswahl. Genau die Bedeutung, die Builtin behalten hat.
 
 FREMDBEFUND, NICHT VON DIESEM TICKET VERURSACHT und hier nicht gefixt: wer eine built-in ueberschreibt, indem er z.B. review.md in ~/.jaira/lanes legt, verliert diese Lane auf jedem NEUEN Board. Nachgestellt: ein frisches Board laedt dann als [backlog brainstorm todo pre-process in-progress human signoff done blocked] - review fehlt. Ursache: die ueberschreibende Lane hat Builtin=false (lane_test.go:207 schreibt das ausdruecklich fest), und setUp filterte schon vorher auf Builtin. Mit der Aufteilung ist es unveraendert, weil Default fuer eine Nicht-built-in ohne 'default-board:' ebenfalls false wird. Fix waere, Default von der ueberschriebenen Lane zu erben, dort wo Load Overrides setzt - eine Zeile, aber eine Verhaltensaenderung ausserhalb dieses Tickets.
+- **2026-09-18 10:49 · Alexander Sacharov** — Schritt 5: der Test fiel beim ersten Lauf, und er hatte recht - 'jaira lanes add' haengte die Lane ans ENDE der Order-Datei, ungeachtet ihres 'after:'. Die drei landeten hinter done und blocked. Eine Pruefschleife, durch die kein Ticket je laeuft, ist keine installierte Pruefschleife, also ist das kein Testproblem, sondern DoD 3.
+
+Warum es bisher niemandem auffiel: solange jede mitgelieferte Lane ohnehin schon installiert war, kam ueber diesen Weg nur eine eigene Lane, und die haengt man sich selbst zurecht. Mit uninstalliert mitgelieferten Lanes ist Anhaengen falsch.
+
+Gefixt in Add() (core/lane/order.go) mit insertAfterAnchor: NUR die neue id wird gesetzt, der Rest der Order-Datei bleibt Zeichen fuer Zeichen stehen. Bewusst NICHT order() ueber das ganze Board laufen lassen - die Spaltenfolge ist die Anordnung des Benutzers, und eine hinzugefuegte Lane ist kein Anlass, sie neu herzuleiten. Ohne 'after:' oder mit einem Anker, den dieses Board nicht hat, wird weiter angehaengt; das ist dieselbe Aussage, die order() aus einem fehlenden Anker liest.
+
+Die Kette loest sich von selbst auf: critique steht nach in-progress, dann findet optimize seinen Anker critique, dann testing seinen Anker optimize. Kein Sortierdurchlauf noetig.
+
+Das ist eine sichtbare Verhaltensaenderung von 'jaira lanes add' - gehoert in NOTES.md (Schritt 10), zusaetzlich zu den dort schon geplanten drei Zeilen.
