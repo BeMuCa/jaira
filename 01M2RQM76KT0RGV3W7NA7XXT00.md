@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:39:35Z
+updated-at: 2026-09-18T07:41:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -82,7 +82,7 @@ question: |-
 - [x] drop the hand instruction from core/role/builtin/jaira-role-lane/SKILL.md (both passages, lines ~36-49 and ~137-146) now the tool tells the truth
 - [x] NOTES.md under ## Unreleased: one line telling a reader the review payload is now the whole ticket history
 - [x] go build ./... && go test ./... green
-- [~] gitrepo: WorktreeDiff() - git diff HEAD plus untracked files, ticket prose excluded
+- [x] gitrepo: WorktreeDiff() - git diff HEAD plus untracked files, ticket prose excluded
 - [ ] showForLane case diff: append the worktree diff, commits_source gains git+worktree
 - [ ] test: a ticket with an uncommitted change gets it in the --for-lane payload
 - [ ] SKILL.md 36-43: drop the now-obsolete restriction
