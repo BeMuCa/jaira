@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:54:33Z
+updated-at: 2026-09-18T10:58:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -180,3 +180,15 @@ DER FUSS SCHWEIGT, WENN NICHTS FEHLT, und dafuer gibt es einen eigenen Test. Ein
 Im JSON heisst das Feld 'available' und traegt id, name, description, agentic, model_tier und 'add' mit dem fertigen Kommando. Eine Sitzung, die --json liest, soll den Prosa-Fuss nicht parsen muessen.
 
 NACHTRAG zur frueheren Notiz: der 'not on board'-Streifen der TUI zeigt die drei bereits, ohne Zutun - er zieht aus derselben Installable().
+- **2026-09-18 10:58 · Alexander Sacharov** — Funde 5-7 der mitlaufenden Kritik behoben. Was dabei gelernt wurde und aus dem Diff nicht hervorgeht:
+
+FUND 5, creator. Ich hatte 'creator: BeMuCa' durch 'default-board: false' ERSETZT statt die Zeile dazuzuschreiben - zwei Felder ohne jeden Zusammenhang. Die Folge war still und genau die, gegen die das Feld existiert: parse() setzt Creator='jaira', wenn das Feld fehlt UND die Lane built-in ist, und built-in sind die drei jetzt. 'jaira lanes show critique' haette jaira als Autor gemeldet. Ausliefern ist nicht Urheberschaft.
+Dabei fiel TestBuiltinDefaultsCreatorToJaira, und die Reparatur ist wichtiger als sie aussieht: der Test darf NICHT auf Default filtern. Default ist 'steht in der Vorauswahl' und hat mit Autorschaft nichts zu tun - das waere derselbe Fehler noch einmal, nur im Test. Er fuehrt jetzt eine benannte Liste, welche mitgelieferte Lane ihren eigenen Autor nennt, und meckert, wenn eine davon nicht mehr mitgeliefert wird.
+
+FUND 6, der ernste. insertAfterAnchor tat bei fehlendem Anker genau das, wogegen sie geschrieben war: anhaengen, hinter done und blocked. Szenario ist real - 'jaira lanes remove in-progress', dann 'jaira lanes add critique'. Die Lane ist dann installiert und unerreichbar, was schlimmer ist als gar nicht installiert, weil 'jaira lanes' sie brav auflistet.
+Der Fix ist Paritaet mit order(): vor die terminale Lane, in BEIDEN ankerlosen Faellen, und beim unaufloesbaren Anker mit derselben Warnung, die order() schon ausgibt. Wo eine Lane landet, darf nicht davon abhaengen, ob Load die Reihenfolge herleitet oder Add sie schreibt.
+Das kostete eine Signaturaenderung: Add gibt jetzt (string, []string, error) zurueck. Warnungen brauchen einen Kanal, und der Rueckgabewert ist derselbe, den order() schon benutzt. Drei Aufrufer: 'jaira lanes add' druckt sie auf stderr und fuehrt sie im --json unter 'warnings'; die TUI hat nur EINE Meldungszeile, deshalb gewinnt dort die Warnung ueber das blosse 'added <id>' - dass die Lane nicht dort steht, wo ihr after: hinzeigt, ist das, was der Benutzer lesen muss.
+
+DER NEUE TEST BEISST WIRKLICH. Gegengeprueft, indem ich 'at = len(ids)' voruebergehend zurueckgesetzt habe: der Test faellt dann mit [... done blocked critique]. Ein Regressionstest, der die alte Fassung durchlaesst, ist keiner - das kostet zwanzig Sekunden und beantwortet die Frage, statt sie zu glauben.
+
+FUND 7: die Bedingung 'l.After == "" || at < 0' war zusammengelegt und ist jetzt geteilt, weil die beiden Faelle sich unterscheiden - ohne Anker keine Warnung, mit unaufloesbarem Anker eine. Der Einfuegepunkt ist derselbe.
