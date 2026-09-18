@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -40,13 +40,13 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:54:25Z
+updated-at: 2026-09-18T05:54:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
-outcome-what: "NOTES.md: die neun Unreleased-Zeilen dieses Tickets auf sechs zusammengelegt; drei Korrekturzeilen an nie ausgelieferten Zwischenstaenden in die Zeilen gefaltet, die die Sache selbst beschreiben."
-outcome-why: "Das Format verlangt eine Zeile pro Aenderung und eine Anweisung an den Leser, kein Protokoll dessen, was ein Commit tat. Ein Leser, der von 0.2.1 kommt, hat keinen der Zwischenstaende je gehabt."
-outcome-resolves: "Kein Code geaendert, nur core/release/NOTES.md. Testsuite gruen."
+outcome-what: "Die proof-Zeilen von DoD 12 und DoD 17 zeigen wieder auf Text, der in core/release/NOTES.md existiert: DoD 12 auf die Critique-beside-work-Zeile plus die zwei Halbsaetze zur Pause innerhalb der 'commit it yourself'-Zeile, DoD 17 auf den Halbsatz zur Herkunft des Payload-Diffs in derselben Critique-Zeile."
+outcome-why: "Das Zusammenlegen der neun Unreleased-Zeilen auf sechs (472a5c5) hat zwei Zeilenanfaenge entfernt, auf die diese beiden Proofs zeigten; 'grep -cF' fand sie null mal. Ein Proof, der ins Leere zeigt, belegt nichts - und das Gate liest genau ihn."
+outcome-resolves: "Kein Code und kein NOTES.md-Text geaendert, nur die zwei proof-Zeilen am Ticket. Alle fuenf NOTES-Anker und alle vier Prompt-Anker der beiden Punkte mit 'grep -cF' je genau einmal nachgemessen; 'git status --short' zeigt allein die Ticket-Datei."
 review-summary: none
 review-gaps: "Zusammengelegt: core/release/NOTES.md, neun Unreleased-Zeilen dieses Tickets auf sechs. Drei Zeilen waren Korrekturen an nie ausgelieferten Zwischenstaenden ('die Pause haelt wieder nur auf Code an', 'die Pause haelt auf einer brandneuen Datei an', 'die mitlaufende Critique liest den Worktree statt des Ticket-Diffs') und damit genau das, was das Format verbietet: ein Protokoll dessen, was ein Commit tat, statt dessen, was der Leser anders tun muss. Ihre Fakten stehen jetzt in der Zeile, die die Sache selbst beschreibt — Worktree-Lesen und die Zaehlprobe in der Critique-beside-work-Zeile, beide Pausen-Praezisierungen in der 'commit it yourself'-Zeile. Stehen gelassen und geprueft: (1) ticket.CanonicalMode in core/ticket/schema.go:158 ist die einzige Stelle, die den geschlossenen Wertebereich kennt, und alle drei Schreib-/Pruefpfade rufen sie — internal/cli/tickets.go:936, internal/tui/edit.go:60, core/validate/validate.go:207 —, keine zweite Implementierung. model-tier hat keinen geschlossenen Satz, also gab es nichts zum Wiederverwenden. (2) ticket.FieldMode in fieldsWithTheirOwnRow (internal/tui/view.go:1100) ist unerreichbar, weil die Schleife nur ueber l.OutputProduces laeuft und keine Lane 'mode' produziert — die Karte ist aber als vollstaendige Liste der Felder gebaut, die das Panel selbst zeigt (FieldID, FieldStatus, FieldClaimedBy sind gleichermassen unerreichbar), also waere das Entfernen genau dieses einen Eintrags die Inkonsistenz. (3) Die Doppelung 'welcher der beiden bin ich' im Kopf von jaira-role-lane/SKILL.md und in Abschnitt 1 ist Absicht: oben die Anweisung an der Stelle, an der sie befolgt werden muss, unten die Begruendung. (4) Kein toter Code, kein verwaister Import; gofmt sauber; Go-Testsuite gruen."
 test-verdict: "fail: Suite gruen (go test -race ./... RC=0), aber DoD 12 und 17 tragen Proof-Anker, die nach dem NOTES.md-Zusammenlegen in 472a5c5 nicht mehr existieren; DoD 12 hat fuer die Pause keine eigene Zeile mehr"
