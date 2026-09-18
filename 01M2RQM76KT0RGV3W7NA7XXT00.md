@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:37:51Z
+updated-at: 2026-09-18T06:38:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -53,7 +53,7 @@ outcome-resolves: "7 Plan-Schritte vom failing test bis NOTES.md, mit der Unters
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
+- [x] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
 - [ ] showForLane: build the diff SHAs as the union of t.Commits and env.DeriveCommits(t), never the field alone (internal/cli/flow.go:589)
 - [ ] carry the list into the payload: commits (the SHAs used) plus commits_source, so a reader can count instead of trusting
 - [ ] check the same field-first pattern in internal/tui/signoff.go:107 - fix if it is the same bug, note it if it is not
