@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:54:30Z
+updated-at: 2026-09-18T10:54:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -169,3 +169,14 @@ Gefixt in Add() (core/lane/order.go) mit insertAfterAnchor: NUR die neue id wird
 Die Kette loest sich von selbst auf: critique steht nach in-progress, dann findet optimize seinen Anker critique, dann testing seinen Anker optimize. Kein Sortierdurchlauf noetig.
 
 Das ist eine sichtbare Verhaltensaenderung von 'jaira lanes add' - gehoert in NOTES.md (Schritt 10), zusaetzlich zu den dort schon geplanten drei Zeilen.
+- **2026-09-18 10:54 · Alexander Sacharov** — Schritte 6+7, drei Entscheidungen am Fuss von 'jaira lanes', die aus dem Code nicht hervorgehen.
+
+NUR MITGELIEFERTE, NICHT DER GANZE KATALOG. Installable() liefert built-ins PLUS ~/.jaira/lanes; der Fuss filtert auf l.Builtin. Zwei Gruende: eine Lane, die der Benutzer selbst in seinen Katalog gelegt hat, ist ihm bekannt - ihn darauf hinzuweisen ist Laerm; und die Aussage 'no network needed' waere fuer sie zwar auch wahr, aber der Satz, den der Fuss zu tragen hat, ist 'das steckt in deinem Binary'. Der Markt bleibt ausdruecklich draussen: er braucht Netz, und ein Fuss, der ohne Verbindung leer bliebe oder haengt, ist schlimmer als keiner.
+
+EINE ZEILE PRO LANE, DIE KOMMANDOZEILE EINMAL AM SCHLUSS. Erst stand 'jaira lanes add <id>' unter jeder der drei - dreimal dieselbe Zeile unter einer ohnehin zehnzeiligen Tabelle. Jetzt: id + description je Zeile, darunter einmal "Add one with 'jaira lanes add <id>'".
+
+DER FUSS SCHWEIGT, WENN NICHTS FEHLT, und dafuer gibt es einen eigenen Test. Eine Dauerwerbung unter einem Kommando, das man staendig aufruft, wird nach drei Tagen nicht mehr gelesen - und dann fehlt sie genau bei dem einen Board, bei dem sie gezaehlt haette.
+
+Im JSON heisst das Feld 'available' und traegt id, name, description, agentic, model_tier und 'add' mit dem fertigen Kommando. Eine Sitzung, die --json liest, soll den Prosa-Fuss nicht parsen muessen.
+
+NACHTRAG zur frueheren Notiz: der 'not on board'-Streifen der TUI zeigt die drei bereits, ohne Zutun - er zieht aus derselben Installable().
