@@ -24,7 +24,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T11:08:36Z
-updated-at: 2026-09-18T11:08:36Z
+updated-at: 2026-09-18T11:11:50Z
+updated-by: Alexander Sacharov
 ---
 
 # Aus einer Menschen-Lane kann ein Mensch nur vorwaerts oder zur Seite, nicht zurueck
