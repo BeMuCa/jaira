@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T11:08:36Z
-updated-at: 2026-09-18T11:11:52Z
+updated-at: 2026-09-18T11:12:11Z
 updated-by: Alexander Sacharov
 ---
 
@@ -33,7 +33,7 @@ updated-by: Alexander Sacharov
 ## Definition of Done
 
 - [ ] Der Gate an core/gate/gate.go:389 greift nur noch fuer einen Ausgang VORWAERTS: ein Ziel, das in der Lane-Reihenfolge nach der aktuellen liegt, bleibt abgelehnt. Ein Ziel VOR der aktuellen wird durchgelassen - ohne --force und ohne Interactive, also auch fuer einen Agenten. Die Richtung entscheidet, nicht der Actor.
-- [ ] Derselbe Weg geht NICHT vorwaerts: ein Ziel, das in der Lane-Reihenfolge nach der aktuellen liegt, wird weiter abgelehnt - auch done, auch die terminale Lane. Vorwaerts bleibt allein die accept-Taste. Mit Test fuer beide Richtungen.
+- [ ] Vorwaerts bleibt allein die accept-Taste: ein move in die terminale Lane oder in irgendeine Lane nach der aktuellen wird weiter abgelehnt, aus der Doska wie aus der CLI. Mit Test fuer beide Richtungen.
 - [ ] Ein Agent gewinnt dadurch nichts: Interactive wird weiterhin nur von einem Tastendruck in der Doska gesetzt, und ein Test pinnt, dass derselbe move aus der CLI abgelehnt bleibt.
 - [ ] Der Grund fuer die Rueckgabe wird festgehalten, damit die Begruendung von fe5a979 gewahrt bleibt: die Rueckgabe schreibt eine Notiz mit der Ziel-Lane und dem, was der Mensch offen sieht, statt stillschweigend die Lane zu wechseln.
 - [ ] Die Fusszeile des signoff-Schirms nennt die neue Aktion, und core/release/NOTES.md hat eine Zeile unter ## Unreleased.
