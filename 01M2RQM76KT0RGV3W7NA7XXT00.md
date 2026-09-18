@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:45:02Z
+updated-at: 2026-09-18T06:47:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -33,6 +33,10 @@ mode: conversational
 outcome-what: "showForLane und der Signoff-Schirm leiten die Commit-Liste jetzt immer aus git ab und vereinigen sie mit dem 'commits:'-Feld (neuer ticket.MergeCommits), statt das Feld als fertige Antwort zu lesen; der --json-Payload einer Diff-Lane traegt neu 'commits' und 'commits_source', die Klartext-Ausgabe dieselbe Zeile ueber dem Diff; die Handanweisung zum Nachzaehlen faellt aus jaira-role-lane/SKILL.md und jaira-dispatcher/SKILL.md; eine Zeile unter ## Unreleased"
 outcome-why: "'commits:' ist per Konstruktion eine Momentaufnahme - 'move --out --commits' schreibt es einmal, spaetere Commits kommen nie dazu. Eine Review-Lane sah dadurch drei von einundzwanzig Commits und bekam complete:true dazu: ein stiller Ausfall, der wie Erfolg aussieht, genau in der Lane, die es verhindern soll"
 outcome-resolves: "Die DoD verlangte eins von beidem; gewaehlt ist der erste Weg (Alex' Entscheidung vor der Plan-Lane): showForLane leitet immer ab, complete:true heisst wieder 'du siehst den ganzen Branch'. Kein 'missing'-Feld, weil eine Zahl fehlender Commits auf einem geteilten Release-Branch bei jedem Lauf Fehlalarm waere. Belegt durch internal/cli/forlanecommits_test.go; go build ./... und go test ./... gruen"
+review-summary: |-
+  internal/cli/flow.go:646 gates the new commits/commits_source keys on len(shas)>0, so a payload whose repo.Diff failed carries a commit list labelled as the provenance of a diff that is not there; the plain-text branch at :677 already gates on diff != "" — use the same condition in the json branch
+  internal/tui/signoff.go:114 keeps derived = len(m.derivedShas) > 0 while shas is now a union, so a ticket whose commits: field contributed a sha git cannot find still gets the label 'derived from git'; flow.go:601 distinguishes git / ticket / git+ticket for exactly this case — either carry the same three-way source into the label or set derived only when the recorded field added nothing
+  core/ticket/trim.go:123 the doc comment says 'Two callers share it and must not drift apart' and names StampCommits and the lane payload, but this change added a third — internal/tui/signoff.go:114, the screen a person accepts work on, which is where drift costs most; name all three
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
