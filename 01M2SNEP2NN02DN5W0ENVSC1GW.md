@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:12:12Z
+updated-at: 2026-09-18T12:13:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -76,6 +76,9 @@ review-summary: |-
 - [x] Test: mit gesetzter Version geht der ref an den Server, mit 'dev' nicht und die Ansage erscheint
 - [x] Je eine Zeile unter '## Unreleased' in core/release/NOTES.md fuer die drei Lanes im Binary, den neuen Fuss von 'jaira lanes' und den versionsgebundenen Katalog (DoD 5)
 - [x] go build ./... , go vet ./... und die volle Testsuite gruen
+- [ ] Fund 1: Fuss von 'jaira lanes' filtert auf 'Builtin && !Default' statt Builtin - eine entfernte Vorauswahl-Lane wird nicht wieder angeboten
+- [ ] Fund 2: insertAfterAnchor loest die Ankerkette ueber Installable() auf, damit 'jaira lanes add testing' auf einem frischen Board nicht hinter signoff landet
+- [ ] Tests fuer beide Funde, dann go build/vet und volle Suite
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
