@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:33:08Z
+updated-at: 2026-09-18T11:33:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -134,7 +134,7 @@ review-check: |-
 - [x] SKILL.md 123-161 auf den neuen Payload umschreiben (DoD 9)
 - [x] NOTES.md-Zeilen fuer 10 und 11; go build && go vet && go test ./... gruen
 - [x] SKILL.md 36-46: die Zaehlanweisung kennt commits_unavailable (critique-Befund 1)
-- [~] flow.go: die worktree_error-Klartextzeile vor den Diff, und nicht doppelt zur missing-Zeile (critique-Befund 2), mit Test
+- [x] flow.go: die worktree_error-Klartextzeile vor den Diff, und nicht doppelt zur missing-Zeile (critique-Befund 2), mit Test
 
 ## Progress
 - **2026-09-18 06:30 · Alexander Sacharov** — Alex am 2026-09-18: dieses Ticket wird 0.3.1. Der Zweig fix/7XXT00 haengt an release/0.3.0 (88b6816), nicht an master - 0.3.0 ist noch nicht gemerged und noch nicht getaggt. Die Zeile fuer NOTES.md gehoert deshalb unter das leere '## Unreleased' ganz oben, NICHT unter '## 0.3.0': diese Sektion wird gleich getaggt und ist damit geschlossene Historie. Das Umbenennen von '## Unreleased' nach '## 0.3.1' und eine frische leere darueber macht ein Mensch in dem Commit, den er taggt - kein Agent.
