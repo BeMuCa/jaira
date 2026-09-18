@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T18:22:04Z
+updated-at: 2026-09-18T18:22:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8082
 claimed-at: 2026-09-18T18:17:46Z
 mode: ""
-outcome-what: "Die zwei critique-Befunde vom 11:26 repariert. (1) jaira-role-lane/SKILL.md:46-51: die Zaehlanweisung sagt jetzt, dass sie die Commit-LISTE prueft und nicht den Diff - traegt der Payload commits_unavailable, stimmt die Zahl und der Diff ist trotzdem ein Ausschnitt. (2) internal/cli/flow.go:717-724: die Klartextzeile 'The working tree could not be read, so nothing uncommitted is below' steht jetzt UEBER dem Diff, den sie qualifiziert, und nur neben einem - bei leerem Diff traegt die missing-Zeile denselben Text schon, und zweimal gedruckt liest er sich wie zwei Ausfaelle. Dazu ein Test mit zwei Unterfaellen (Reihenfolge, Einmaligkeit), beide gegengeprobt, und die bestehende NOTES.md-Unreleased-Zeile korrigiert, weil sie 'above and below the diff' versprach."
-outcome-why: "Beide Befunde sind dieselbe Unwahrheit wie das Ticket selbst, eine Stufe weiter: eine ausgelieferte Anweisung, die dem Binary widerspricht, mit dem sie kommt, und eine Meldung, die in die falsche Richtung zeigt und sich selbst wiederholt. Beide hatte der sechste Durchgang selbst erzeugt, also gehoeren sie in diesen und nicht auf ein Folgeticket."
-outcome-resolves: "Die zwei critique-Befunde vom 2026-09-18 11:26. Keine neue DoD-Nummer - die Reparaturen fallen unter DoD 9 (die Datei beschreibt den Payload, den der Change ausliefert) und DoD 10 (ein unlesbarer Worktree wird gesagt); beide Proofs sind entsprechend ergaenzt."
+outcome-what: "Vier Optimize-Durchgaenge; zwei Doppelungen entfernt, kein Verhalten geaendert"
+outcome-why: "MergeCommits trug eine handgeschriebene Kopie von slices.Contains und StampCommits eine zweite Kopie ihrer eigenen Doku"
+outcome-resolves: "review-gaps steht auf dem Ticket"
 review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:36-46 - dieser Durchgang hat 'commits_unavailable' gebaut, und genau der Absatz, der einer Diff-Lane sagt, wie sie den Payload liest, weiss nichts davon: er behauptet 'the diff is the ticket's whole committed history, not a slice of it' und schickt den Leser auf 'counting commits against git log origin/HEAD..HEAD'. Traegt der Payload commits_unavailable, stimmt die Zahl und der Diff ist trotzdem kurz - der Ausschnitt, der sich als Ganzes meldet, genau eine Ebene weiter. Das ist derselbe Befund, den die review-Lane als Befund 1 gestellt hat (die mit der Binary ausgelieferte Anweisung widerspricht der Binary), nur fuer den neuen Schluessel. Stattdessen: einen Satz an die Zaehlanweisung haengen - commits_unavailable nennt die SHAs, die in commits mitzaehlen, deren Patch aber nicht im Diff steht, sondern nur die Zeile '(not available locally)'; sind welche da, ist die Zahl kein Beleg fuer die Vollstaendigkeit des Diffs. | internal/cli/flow.go:728 - die Klartext-Zeile 'The working tree could not be read, so nothing uncommitted is below: %s' steht NACH dem Diff-Block, unter ihr steht nichts mehr; das 'below' zeigt in die leere Richtung, waehrend der Diff, den sie qualifiziert, darueber liegt. Und wenn diff=='' ist, liest derselbe Fehlertext sich doppelt: einmal hier, einmal in der Missing-Zeile aus flow.go:641. Stattdessen: den Block vor 'if diff != \"\"' ziehen (dann stimmt 'below') und ihn ueberspringen, wenn die missing-Meldung den Text schon traegt."
 review-gaps: "removed the hand-rolled seen-loop in ticket.MergeCommits (now slices.Contains — the package already imports slices in five places) and the StampCommits doc comment that restated the union rule word for word now that MergeCommits documents it; left internal/cli/flow.go:296 contains alone (still called from sync.go and delete.go after the copy in flow.go went), gitrepo.run alone (a one-liner over runTolerating, but ~20 callers and the name carries the default — not a pure forwarder), gitrepo.Stat's always-nil error alone (pre-existing), the per-untracked-file git exec in WorktreeDiff alone (unavoidable without 'git add -N', and the LookPath in front of it is noise beside the exec), and the three NOTES.md lines that each repeat the same 'jaira roles install' instruction alone (the file's format requires every line to stand on its own). No behaviour changed; go vet, gofmt and the full suite green."
 question: |-
