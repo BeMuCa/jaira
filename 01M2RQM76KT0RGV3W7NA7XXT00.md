@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:15:06Z
+updated-at: 2026-09-18T11:15:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -126,6 +126,10 @@ review-check: |-
 - [x] gitrepo.WorktreeDiff: ls-files -z, Split auf NUL; --no-index mit Exit 1 und leerer Ausgabe bei nicht leerer Datei ist ein Fehler
 - [x] Test in core/gitrepo: untracked Datei mit Umlaut im Namen steht im WorktreeDiff
 - [x] NOTES.md-Zeile pruefen, go build && go test gruen
+- [ ] flow.go: WorktreeDiff-Fehler in einen Payload-Schluessel statt in den Papierkorb (DoD 10), mit Test
+- [ ] gitrepo.Diff gibt die nicht zeigbaren SHAs zurueck; flow.go nennt sie, der tote Fehlerzweig faellt (DoD 11), mit Test
+- [ ] SKILL.md 123-161 auf den neuen Payload umschreiben (DoD 9)
+- [ ] NOTES.md-Zeilen fuer 10 und 11; go build && go vet && go test ./... gruen
 
 ## Progress
 - **2026-09-18 06:30 · Alexander Sacharov** — Alex am 2026-09-18: dieses Ticket wird 0.3.1. Der Zweig fix/7XXT00 haengt an release/0.3.0 (88b6816), nicht an master - 0.3.0 ist noch nicht gemerged und noch nicht getaggt. Die Zeile fuer NOTES.md gehoert deshalb unter das leere '## Unreleased' ganz oben, NICHT unter '## 0.3.0': diese Sektion wird gleich getaggt und ist damit geschlossene Historie. Das Umbenennen von '## Unreleased' nach '## 0.3.1' und eine frische leere darueber macht ein Mensch in dem Commit, den er taggt - kein Agent.
