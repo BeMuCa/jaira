@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:39:52Z
+updated-at: 2026-09-18T05:39:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -780,3 +780,9 @@ Offen geblieben und bewusst nicht gemacht:
 - Der Modus ist nach wie vor nie an einem echten Ticket mit mitlaufender Kritik gefahren worden. Die Belege fuer DoD 7-10 und 14-17 sind Tests und Code-Lesung, kein Lauf. Die review-Lane hat genau das zweimal als ihren Hauptvorbehalt genannt.
 - Befund 3 aus critique 12 (der Unterscheider bei direktem Aufruf durch einen Menschen auf einer Lane, in der das Ticket nicht steht) bleibt unrepariert; die review-Lane war sich dort selbst unsicher, ob jemand diesen Weg geht.
 - Der Defekt in internal/cli/flow.go:589 - showForLane nimmt die SHAs aus 'commits:' und fragt git nur bei leerem Feld, also bekommt eine Kritik- oder Review-Lane auf einem Ticket mit gefuelltem Feld einen Ausschnitt statt des Branch-Diffs, mit complete:true und ohne Hinweis. Er ist aelter als dieses Ticket, hier nur im Prompt richtiggestellt und bekommt ein eigenes Ticket.
+- **2026-09-18 05:39 · Alexander Sacharov** — critique (21. Durchgang, ueber f6e8dba — die Reparatur der beiden Befunde aus critique 20): kein Befund. Das ist der Ausgang der Schleife, nicht ein Durchwinken.
+- Gelesen: die Notizen zuerst (alle 20 Vorrunden), dann 'git show f6e8dba' vollstaendig. Der Diff dieser Runde ist genau drei Stellen in zwei Dateien plus die Ticket-Datei.
+- Befund 1 aus Runde 20 (fester Branch-Name im ausgelieferten Prompt) ist geschlossen: 'grep -rn "master\.\." core/role/builtin/ core/release/NOTES.md' findet nichts mehr, beide Befehle stehen auf origin/HEAD und folgen damit jaira-role-pr/SKILL.md und jaira-role-tester/SKILL.md statt ein drittes Muster einzufuehren.
+- Befund 2 aus Runde 20 (die Zaehlprobe stand bei dem Leser, der sie nicht ausfuehren darf) ist geschlossen und an der richtigen Stelle gelandet: der neue Absatz im Kopf bedingt sich ausdruecklich auf 'Does your lane judge that payload's diff?' und nennt critique/testing/review; der Absatz in Abschnitt 1 haelt nur noch die Richtigstellung ('a slice, not a full diff') und begruendet jetzt, warum die mitlaufende Kritik gerade NICHT nachmisst — mehr committete Historie ist mehr von dem, was sie nicht beurteilen darf. Die vier Fragen der Lane (einfachere Form, Passung, Spekulation, richtiger Ort) treffen auf diesen Diff keine: er verschiebt zwei Absaetze und tauscht einen Branch-Namen, ohne eine Datei, eine Abstraktion oder einen Code-Pfad hinzuzufuegen.
+- Ausdruecklich stehen gelassen, mit Verweis: der Defekt in flow.go:589 selbst (liegt als Z4G3RD auf dem Board, Alex/In-progress 17.09. 22:13); review-Befund 3 (Alex' Entscheidung 17.09. 20:24); Merge-Driver (Runde 5); Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21); NOTES-Zeile zur critique-Lane (Runde 9/10); Restrennen (Runde 11); doppelte ':/'-Erklaerung (Runde 15); Zeilenbereiche in den proof-Zeilen der Plan-Liste (Runde 19).
+- Kontext fuer den naechsten Leser: Alex hat am 18.09. entschieden, dass die Runden enden und der Stand in den Release geht (Notiz 17.09. 22:25). Diese Runde ist die Wiederholung der abgebrochenen Runde 21 und bestaetigt, dass die zwei Reparaturen aus Runde 20 sitzen — sie ist kein neuer Schleifenanlauf.
