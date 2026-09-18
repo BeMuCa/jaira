@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T09:13:01Z
+updated-at: 2026-09-18T09:17:00Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-25712
-claimed-at: 2026-09-18T07:38:46Z
+claimed-by: DESKTOP-RFTCH11-5724
+claimed-at: 2026-09-18T09:17:00Z
 mode: ""
 outcome-what: "gitrepo.WorktreeDiff verliert keine untracked Datei mehr: 'git ls-files --others' laeuft mit -z und wird auf NUL gesplittet statt auf \\n, beide diff-Aufrufe laufen mit core.quotePath=false, und ein --no-index-Aufruf, der Exit 1 ohne Patch meldet, obwohl die Datei existiert und Bytes hat, ist jetzt ein Fehler statt eines Treffers - err fuehrt nicht mehr zu 'continue'. Zwei Tests in core/gitrepo/worktree_test.go, einer davon mit Gegenprobe. Die NOTES.md-Zeile unter ## Unreleased ist um die Zusage ergaenzt, dass der Dateiname so im Patch steht, wie er geschrieben ist."
 outcome-why: "Befund der vierten critique: ein untracked Pfad mit Umlaut kam als C-Zitat (\"\\303\\204nderung.txt\") aus ls-files, der --no-index-Aufruf fand die Datei nicht und meldete das mit Exit 1 - demselben Code, den runTolerating als Normalfall akzeptiert. Ergebnis: leerer Anhang, Datei weg, commits_source sagte trotzdem '+worktree', complete blieb true. Das ist der Bruchstueck-als-vollstaendig-Ausfall, den dieses Ticket abschafft, eine Stufe weiter - und in einem Repository mit deutschen Ticket-Titeln keine Ecke."
