@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T21:09:33Z
+updated-at: 2026-09-18T21:09:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -344,3 +344,24 @@ STEHEN GELASSEN, damit die naechste Runde es nicht neu aufmacht:
 - Alles aus den Durchgaengen 1-5, das dort mit Begruendung geschlossen wurde.
 
 go build, go vet und 'go test -count=1 ./...' nach der Aenderung gruen.
+- **2026-09-18 21:09 · Alexander Sacharov** — testing, alle drei Durchgaenge gruen - was genau lief und was dabei zu sehen war.
+
+1 GATES. go build ./... und go vet ./... ohne Ausgabe. 'go clean -testcache && go test -race ./...' RC=0, alle 28 Pakete ok (core/lane 10.6s, internal/cli 55.4s, internal/tui 146.3s).
+
+2 DIE FORDERUNG, Punkt fuer Punkt am Arbeitsbaum nachgesehen, nicht am Outcome.
+DoD 1: die Notiz 'ENTSCHIEDEN von Alex am 2026-09-18' steht auf dem Ticket.
+DoD 2: internal/cli/tickets.go, Filter 'l.Builtin && !l.Default' vorhanden; die vier genannten Tests laufen einzeln gruen.
+DoD 3: TestLanesAddInstallsTheReviewLoopWithoutNetwork und TestLanesAddFollowsAnAnchorThatIsItselfUninstalled gruen.
+DoD 4: TestFreshBoardGetsOnlyTheDefaultLanes gruen.
+DoD 5: unter '## Unreleased' stehen genau fuenf '- '-Zeilen.
+DoD 6: TestListPinsTheCatalogueToTheRunningTag, TestDevBuildSendsNoRefAndSaysSo, TestRefIsSetOnAnAddressThatAlreadyHasAQuery gruen.
+
+3 FUNKTION, an einer leeren Testdoska mit dem gebauten Binary.
+- 'jaira init' legt genau zehn Lane-Dateien an, ohne critique/optimize/testing.
+- 'jaira lanes' schliesst mit 'Shipped with this binary, not on this board - no network needed:' und nennt die drei mit Beschreibung plus der Zeile, die sie holt.
+- 'JAIRA_MARKET_API=http://127.0.0.1:1/dead jaira lanes add testing' installiert sie ohne Netz: 'added testing to this project after in-progress'. Die Reihenfolge danach: backlog brainstorm todo pre-process in-progress testing human review signoff done blocked - testing sitzt im Fluss, nicht hinter signoff.
+- Versionsbindung am Binary nachgestellt: 'go build -ldflags "-X main.version=0.1.4"' gegen einen lokalen HTTP-Server, der die Anfrage mitschreibt. Der Server sah 'ASKED /contents/lanes?ref=v0.1.4', und die dev-Ansage blieb aus. Das Quell-Binary (dev) sagt umgekehrt 'note: this build reports version dev, ... comes from the development branch'.
+
+WAS DABEI AUFFIEL, kein Fund: 'jaira lanes market' listet an diesem Quell-Binary critique und optimize weiterhin. Das ist richtig so - market liest das Verzeichnis lanes/ des Default-Branches, und dort liegen die drei noch, weil dieser Zweig nicht gemerged ist. Die NOTES-Zeile 'jaira lanes market no longer offers them' gilt ab dem Tag, der den Umzug enthaelt, und genau dorthin zeigt der neue ?ref=.
+
+Nicht zu diesem Ticket: '?? .jaira/milestones/' liegt unverfolgt im Baum, stammt aus 0.3.0.
