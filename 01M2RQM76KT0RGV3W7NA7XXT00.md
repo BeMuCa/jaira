@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: signoff
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T10:53:16Z
+updated-at: 2026-09-18T11:01:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
