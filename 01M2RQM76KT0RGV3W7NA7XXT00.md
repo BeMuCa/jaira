@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:58:32Z
+updated-at: 2026-09-18T07:58:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -194,3 +194,8 @@ Zwei Befunde:
 - core.quotePath=false steht zusaetzlich auf BEIDEN diff-Aufrufen. -z regelt nur den Weg hinein (ls-files); ohne quotePath=false traegt der Patch-Header weiter "a/\303\204nderung.txt", waehrend der Inhalt schon da ist. Der erste Testlauf zeigte genau das - Inhalt vorhanden, Kopfzeile zitiert.
 - Verworfen: nur r.run("-c","core.quotePath=false","ls-files",...) statt -z. Loest das Zitieren, aber nicht Pfade mit Leerzeichen beim Split auf \n. -z loest beides in einem.
 - NOTES.md: keine zweite Zeile. Die Unreleased-Zeile versprach schon 'plus every untracked file in full' - das war die Zusage, die nicht stimmte. Sie ist um 'named as it is spelt however many umlauts or spaces are in its path' ergaenzt statt denselben Change zweimal zu beschreiben.
+- **2026-09-18 07:58 · Alexander Sacharov** — critique (fuenfter Durchgang, nur der eine Befund vom 07:49 und der in-progress-Lauf 46516d3, der ihn beantwortet - der uebrige committete Diff wurde bewusst nicht erneut gelesen): kein Befund, review-summary=none.
+- Der Befund (untracked-Pfade mit Nicht-ASCII fallen still weg) ist repariert und zwar an beiden Haelften, die er nannte: ls-files laeuft mit -z und wird auf NUL gesplittet (core/gitrepo/git.go:207,211), beide diff-Aufrufe tragen core.quotePath=false (:190,:215), und ein leerer Patch neben einer existierenden, nicht leeren Datei ist ein Fehler statt eines Treffers (:220-228). Aus 'continue' wurde 'return "", err'.
+- Gegenprobe nicht geglaubt, sondern selbst gefahren: -z entfernt, go test ./core/gitrepo -run TestWorktreeDiff -count=1 faellt mit 'no patch for an unreadable or non-empty file'. Der Test faengt also den Ausfall LAUT, nicht bloss still. git.go danach aus der Kopie wiederhergestellt, Arbeitsbaum sauber.
+- Die Null-Byte-Datei, die dabei durchrutscht, ist kein neuer Befund: DoD 8 nennt sie woertlich ('obwohl die Datei nicht leer ist') und TestWorktreeDiffIgnoresAnEmptyUntrackedFile haelt sie fest. Bewusst offen gelassen.
+- Ort geprueft: die Reparatur liegt im Callee (core/gitrepo), nicht in flow.go, wo sie eine zweite Stelle waere, die etwas ueber Pfadzitierung wissen muesste. NOTES.md wurde die bestehende Unreleased-Zeile ergaenzt statt eine zweite Zeile fuer denselben Change zu schreiben - dieselbe Linie wie 06:51 und 07:46.
