@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T10:45:49Z
+updated-at: 2026-09-18T10:46:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
@@ -97,6 +97,7 @@ review-check: |-
   proof: internal/tui/signoff.go:118 haengt keinen Suffix mehr an; commitsSourceLabel (signoff.go:285) traegt ihn je Fall; Test TestSignOffNamesWhereTheCommitsCameFrom/the_ticket_alone mit notWant, faellt mit dem alten Suffix
 - [x] WorktreeDiff verliert keine untracked Datei mehr, deren Pfad Nicht-ASCII-Zeichen oder Leerzeichen traegt: 'git ls-files --others' laeuft mit -z, und ein --no-index-Aufruf, der mit Exit 1 aber ohne Ausgabe zurueckkommt, obwohl die Datei nicht leer ist, gilt als Fehler und nicht als Treffer. Mit Test.
   proof: core/gitrepo/git.go:207 ls-files -z + Split auf NUL, :215 quotePath=false, :220-228 leerer Patch bei nicht leerer Datei ist ein Fehler; Tests core/gitrepo/worktree_test.go TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote (faellt ohne -z) und TestWorktreeDiffIgnoresAnEmptyUntrackedFile
+- [ ] core/role/builtin/jaira-role-lane/SKILL.md:123-161 beschreibt den Payload so, wie dieser Change ihn ausliefert: der Diff hat zwei Haelften, getrennt von der Zeile 'uncommitted work in the working tree', die zweite ist das Urteilsobjekt der nebenher laufenden Kritik; commits_source ('+worktree', auf der ersten Runde 'worktree') sagt, welche Haelften da sind; 'complete: false' auf der ersten Runde wird mit outcome-what/outcome-resolves begruendet und nicht mehr mit einem fehlenden Diff; die drei git-Kommandos bleiben als Rueckfallweg fuer den stumm verworfenen Worktree. Keine Aussage in der Datei behauptet mehr, der Payload-Diff sei nur die frueheren Runden.
 
 ## Options
 
