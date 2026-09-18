@@ -97,20 +97,21 @@ func (m *Model) renderSignOff() string {
 
 	// What is being accepted: the same Commits block the detail pane shows.
 	// This is the screen where a person judges shipped work, and an account
-	// with no pointer to the change sends them back out to find it. A ticket
-	// here normally has NO commits recorded — only the done lane demands
-	// them, so the field fills at acceptance, after this screen — which is
-	// why an empty field falls back to deriving the list from git, once per
-	// ticket (memoised on the model; per render it would exec on every
-	// keypress). The heading says so: a derived list is git's account, not
-	// the ticket's.
-	shas, derived := t.Commits, false
-	if len(shas) == 0 {
-		if m.derivedFor != t.ID {
-			m.derivedFor, m.derivedShas = t.ID, m.gateEnv().DeriveCommits(t)
-		}
-		shas, derived = m.derivedShas, len(m.derivedShas) > 0
+	// with no pointer to the change sends them back out to find it.
+	//
+	// Always derived, never the recorded field alone. commits: is a snapshot —
+	// written once by 'move --out --commits', never extended by a later commit
+	// — so a ticket carrying three of its twenty-one shas would show a diffstat
+	// of three and nothing would say so. The person accepting would be judging
+	// a fraction while reading it as the whole. The derivation runs once per
+	// open ticket (memoised on the model; per render it would exec on every
+	// keypress) and is unioned with the field, so a recorded sha git can no
+	// longer find survives. The heading says so: a derived list is git's
+	// account, not the ticket's.
+	if m.derivedFor != t.ID {
+		m.derivedFor, m.derivedShas = t.ID, m.gateEnv().DeriveCommits(t)
 	}
+	shas, derived := ticket.MergeCommits(m.derivedShas, t.Commits), len(m.derivedShas) > 0
 	if len(shas) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits"))
 		if derived {

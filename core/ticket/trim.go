@@ -107,8 +107,25 @@ func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string
 	if derive != nil {
 		derived = derive(t)
 	}
+	merged := MergeCommits(derived, t.Commits)
+	if _, err := s.Mutate(t.ID, func(t *Ticket) error {
+		return t.Doc().SetList(FieldCommits, merged)
+	}); err != nil {
+		return nil, err
+	}
+	return merged, nil
+}
+
+// MergeCommits unions a derived commit list with a recorded one. Derived shas
+// come first, in git order; a recorded sha the derivation did not find is
+// appended rather than dropped — a sha somebody wrote down deliberately, or one
+// whose commit a rebase moved off the branch, is evidence this tool has no
+// business discarding. Two callers share it and must not drift apart:
+// StampCommits, which writes the union onto the ticket, and the lane payload,
+// which reads it to build the diff a review lane judges.
+func MergeCommits(derived, recorded []string) []string {
 	merged := append([]string{}, derived...)
-	for _, c := range t.Commits {
+	for _, c := range recorded {
 		c = strings.TrimSpace(c)
 		if c == "" {
 			continue
@@ -124,12 +141,7 @@ func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string
 			merged = append(merged, c)
 		}
 	}
-	if _, err := s.Mutate(t.ID, func(t *Ticket) error {
-		return t.Doc().SetList(FieldCommits, merged)
-	}); err != nil {
-		return nil, err
-	}
-	return merged, nil
+	return merged
 }
 
 // FileLane empties a lane into the given logbook folder, oldest first. Two

@@ -114,10 +114,8 @@ whatever the payload holds. On a ticket that carries no commits yet there is
 nothing else for it to read anyway; on one that already carries some — every
 round after the first — `show --for-lane critique --json` hands it a diff all
 the same, and that diff is the earlier rounds and not the work running next to
-it. It is not even all of them: the payload is assembled from the SHAs on the
-ticket's `commits:` field, and git is asked only when that field is empty, so a
-ticket whose `commits:` was recorded once shows a slice of its own branch with
-nothing saying so.
+it — all of them, since the payload assembles its diff from the ticket's whole
+committed history and names the SHAs it used in `commits`.
 
 So in `mode: conversational`, and only there, run a critique **while** the
 implementing lane is working:

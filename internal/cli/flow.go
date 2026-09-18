@@ -558,6 +558,11 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	fields := map[string]string{}
 	var missing []string
 	var diff string
+	// The shas the diff was actually built from, and where they came from.
+	// They ride in the payload so a reader can count them against the branch
+	// instead of trusting the diff to be whole.
+	var shas []string
+	var shasFrom string
 	for _, want := range l.InputRequires {
 		switch want {
 		case "plan":
@@ -580,17 +585,29 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			}
 		case "diff":
 			repo := &gitrepo.Repo{Dir: s.Root}
-			// The same fallback the gate uses: a ticket that records no commits
-			// of its own gets them derived from git. Without this the lane whose
-			// whole job is judging a diff was handed "records no commits" while
-			// the move it is working towards would have found them — the
-			// derivation was wired into the gate and into the exits, and not
-			// into the one place an agent actually reads its input.
-			shas := t.Commits
-			if len(shas) == 0 && env.DeriveCommits != nil {
-				shas = env.DeriveCommits(t)
+			// Always derived, never the field alone. commits: is a snapshot —
+			// 'move --out --commits' writes it once and no later commit ever
+			// joins it — so a lane handed the field as the answer judged three
+			// commits of twenty-one and was told complete:true. A partial diff
+			// that looks whole is the exact failure the review lane exists to
+			// prevent, so the field is unioned with git's account rather than
+			// believed: a recorded sha the derivation cannot find (rebased,
+			// cherry-picked) still survives into the list.
+			var derived []string
+			if env.DeriveCommits != nil {
+				derived = env.DeriveCommits(t)
+			}
+			shas = ticket.MergeCommits(derived, t.Commits)
+			switch {
+			case len(derived) > 0 && len(shas) > len(derived):
+				shasFrom = "git+ticket"
+			case len(derived) > 0:
+				shasFrom = "git"
+			default:
+				shasFrom = "ticket"
 			}
 			if len(shas) == 0 {
+				shasFrom = ""
 				missing = append(missing, "diff (git has no commits for this ticket yet)")
 				continue
 			}
@@ -611,7 +628,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	}
 
 	if g.jsonOut {
-		return emit(cmd.OutOrStdout(), map[string]any{
+		payload := map[string]any{
 			"ticket_id":  t.ID,
 			"lane":       l.ID,
 			"model_tier": l.ModelTier,
@@ -628,7 +645,15 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"produces": l.OutputProduces,
 			"missing":  missing,
 			"complete": len(missing) == 0,
-		})
+		}
+		// Only for a lane that asked for a diff. A commit list beside a lane
+		// that never declared one would read as a claim about the ticket
+		// rather than as the provenance of what is on screen.
+		if len(shas) > 0 {
+			payload["commits"] = shas
+			payload["commits_source"] = shasFrom
+		}
+		return emit(cmd.OutOrStdout(), payload)
 	}
 
 	w := cmd.OutOrStdout()
@@ -650,7 +675,11 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		}
 	}
 	if diff != "" {
-		fmt.Fprintf(w, "## Diff\n\n```diff\n%s```\n\n", diff)
+		// The provenance rides above the diff for the same reason it rides in
+		// the payload: a reader who can count the shas can check the diff is
+		// whole instead of trusting it.
+		fmt.Fprintf(w, "## Diff\n\n%d commit(s), from %s:\n%s\n\n```diff\n%s```\n\n",
+			len(shas), shasFrom, strings.Join(shas, " "), diff)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")
