@@ -280,3 +280,28 @@ func TestOverflowLeavesRefOnlyTicketsOutOfTheCap(t *testing.T) {
 		t.Fatalf("with a cap of one, want only the oldest ticket that has a file here, got %v", over)
 	}
 }
+
+// Two screens label the same merged list — the lane payload and the signoff
+// screen a person accepts work on. The case that matters is the third one: a
+// sha only the ticket records must not be labelled as git's account of the
+// branch, because that is the label a person reads before signing.
+func TestCommitsSourceNamesWhoContributed(t *testing.T) {
+	for _, c := range []struct {
+		name     string
+		derived  []string
+		recorded []string
+		want     string
+	}{
+		{"nothing at all", nil, nil, ""},
+		{"git accounts for all of it", []string{"a", "b"}, []string{"a"}, "git"},
+		{"only the field carries it", nil, []string{"a"}, "ticket"},
+		{"the field adds a sha git lost", []string{"a"}, []string{"b"}, "git+ticket"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			got := CommitsSource(c.derived, MergeCommits(c.derived, c.recorded))
+			if got != c.want {
+				t.Fatalf("CommitsSource = %q, want %q", got, c.want)
+			}
+		})
+	}
+}

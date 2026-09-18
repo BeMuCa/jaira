@@ -196,3 +196,45 @@ func TestSignOffFitsTheTerminalAndScrolls(t *testing.T) {
 		t.Errorf("clamped scroll does not show the last page:\n%s", out)
 	}
 }
+
+// The three tokens ticket.CommitsSource returns are checked in core/ticket;
+// what is checked here is their translation into the heading a person reads
+// before signing. The case that costs something is the mixed one: the list is
+// a union, so a sha only the ticket records must not be presented as git's
+// account of the branch. A token this screen does not know falls through to no
+// label at all — silently — so the pure cases are pinned here as well.
+//
+// derivedFor/derivedShas are set by hand to stand in for the derivation: the
+// memo is what renderSignOff reads, and pre-filling it keeps the test off git
+// while exercising exactly the branch the label hangs on.
+func TestSignOffNamesWhereTheCommitsCameFrom(t *testing.T) {
+	const derived = "bc615031d54de4b369d66bfabe0adf8846adc409"
+	const recorded = "9f1c0b7ad7f2e2b7b24cdbd0d0b0a3f1d2c4e5a6"
+
+	for _, c := range []struct {
+		name    string
+		derived []string
+		commits []string
+		want    string
+	}{
+		{"git alone", []string{derived}, nil, "derived from git"},
+		{"the ticket alone", nil, []string{recorded}, "recorded on the ticket"},
+		{"a sha git no longer finds", []string{derived}, []string{recorded},
+			"derived from git, plus shas only the ticket records"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			m := newTestModel(t, 120, 40)
+			tk := &ticket.Ticket{
+				ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "signoff",
+				Commits: c.commits,
+			}
+			m.detail = tk
+			m.derivedFor, m.derivedShas = tk.ID, c.derived
+
+			out := stripANSI(m.renderSignOff())
+			if !strings.Contains(out, c.want) {
+				t.Errorf("sign-off heading does not say %q:\n%s", c.want, out)
+			}
+		})
+	}
+}

@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,16 +25,28 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:57:45Z
+updated-at: 2026-09-18T07:10:11Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-99942
-claimed-at: 2026-09-18T06:30:48Z
+claimed-by: DESKTOP-RFTCH11-94878
+claimed-at: 2026-09-18T07:04:05Z
 mode: conversational
-outcome-what: "optimize: die handgeschriebene Union-Schleife in 'move --out --commits' faltet auf ticket.MergeCommits, sonst nichts entfernt"
-outcome-why: "eine vierte Kopie der Schleife im selben File, den dieser Change gerade zur gemeinsamen Heimat gemacht hat - genau das Auseinanderlaufen, vor dem ihr Doc-Kommentar warnt"
-outcome-resolves: "review-gaps geschrieben; go build und go test ./... gruen"
-review-summary: none
+outcome-what: "renderSignOff hat jetzt einen Test fuer commitsSourceLabel: TestSignOffNamesWhereTheCommitsCameFrom rendert den Signoff-Schirm fuer alle drei Quellen-Token und prueft die Heading-Zeile"
+outcome-why: "die Uebersetzung der drei Token in Prosa war ungetestet - genau die Stelle, an der laut Doc-Kommentar ein neuer Wert still auf 'kein Label' faellt, auf dem Schirm, auf dem ein Mensch unterschreibt"
+outcome-resolves: "DoD 5 abgehakt; Mutationsprobe (git+ticket-Label auf \"\" gesetzt) laesst den Test fallen; go build/vet/test ./... gruen"
+review-summary: |-
+  core/role/builtin/jaira-role-lane/SKILL.md:36-43 says the payload's diff is the ticket's whole committed history 'and not a slice of it' and drops the old counting instruction - but in mode: conversational the implementing lane is forbidden to commit (same file, rule 3), so on exactly those tickets the payload is the PREVIOUS round with complete:true beside it. This ticket's own re-entry proves it: the third in-progress round (DoD 5, signoff.go/signoff_test.go/trim_test.go/NOTES.md) is uncommitted and absent from the critique payload. The passage must either qualify itself for conversational mode and point the diff lanes at the same three worktree commands the running-critique section already carries (line 120), or flow.go must account for uncommitted work - and choosing between those is the decision, because qualifying the prompt is the very 'hand instruction instead of the tool telling the truth' this ticket exists to remove
+  internal/tui/signoff.go:118 appends ' - recorded at acceptance' to every label, so the ticket-only case renders 'recorded on the ticket - recorded at acceptance' - the same word twice on the screen a person signs on. Let commitsSourceLabel carry its own tail per case instead of a shared suffix
 review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
+question: |-
+  Befund 1 der critique: jaira-role-lane/SKILL.md:36-43 sagt der Diff-Lane jetzt, der Payload sei die ganze committete Historie, und nimmt ihr das Nachzaehlen weg. In mode: conversational darf die implementierende Lane aber nicht committen - also ist der Payload dort der vorherige Durchgang und meldet complete:true. Dieses Ticket selbst ist der Fall. Drei Wege, bitte einen waehlen:
+
+  (A) Die Passage qualifiziert sich fuer conversational und schickt ALLE Diff-Lanes zusaetzlich an die drei Worktree-Kommandos, die bei Zeile 120 schon stehen. Kosten: wieder eine Handanweisung, statt dass das Werkzeug die Wahrheit sagt - genau das, was dieses Ticket abgeschafft hat, nur an einer neuen Stelle. Aufwand: ein Absatz, ~10 Minuten.
+
+  (B) flow.go traegt die unversionierte Arbeit in den Payload (eigener Abschnitt neben dem Diff, oder complete:false, solange der Worktree schmutzig ist). Kosten: der Payload ist dann nicht mehr reproduzierbar und nicht mehr derselbe fuer zwei Leser; ein schmutziger Worktree hat auch fremde Aenderungen anderer Sessions darin. Aufwand: halber Tag mit Test, eigentlich ein eigenes Ticket.
+
+  (C) Nichts tun - ausserhalb des Ziels dieses Tickets, das vom 'commits:'-Feld handelt und nicht vom Worktree. Kosten: die conversational-Kritik verlaesst sich weiter darauf, dass der Leser von sich aus git status laeuft.
+
+  Befund 2 (signoff.go:118, 'recorded on the ticket — recorded at acceptance') ist unabhaengig und in in-progress in fuenf Minuten repariert.
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
@@ -49,6 +61,8 @@ review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('m
   proof: Notiz vom 2026-09-18 (pre-process): StampCommits laeuft nur als move.Request.Prepare beim Einlaufen in eine Doorway-Lane (core/ticket/trim.go:105, core/move/move.go:132); gefuellt wird commits: von 'jaira move --out --commits' (internal/cli/flow.go:99,152)
 - [x] Eine Zeile in core/release/NOTES.md, wenn sich aendert, was ein Benutzer im Payload sieht.
   proof: core/release/NOTES.md:18 unter ## Unreleased
+- [x] renderSignOff hat einen Test fuer commitsSourceLabel: ein Ticket mit einem SHA nur im 'commits:'-Feld rendert die Zeile 'plus shas only the ticket records'. Die drei Token werden heute nur in core/ticket geprueft, die Uebersetzung in Prosa auf dem Signoff-Schirm von keinem Test.
+  proof: internal/tui/signoff_test.go TestSignOffNamesWhereTheCommitsCameFrom — rendert renderSignOff fuer alle drei Token; faellt, sobald commitsSourceLabel fuer git+ticket kein Label mehr liefert (Mutationsprobe)
 
 ## Options
 
@@ -59,7 +73,7 @@ review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('m
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
+- [x] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
 - [x] showForLane: build the diff SHAs as the union of t.Commits and env.DeriveCommits(t), never the field alone (internal/cli/flow.go:589)
 - [x] carry the list into the payload: commits (the SHAs used) plus commits_source, so a reader can count instead of trusting
 - [x] check the same field-first pattern in internal/tui/signoff.go:107 - fix if it is the same bug, note it if it is not
@@ -122,3 +136,27 @@ Bewusst NICHT angefasst:
 - commitsSourceLabel (internal/tui/signoff.go:277) ist keine Weiterleitung, sondern die Uebersetzung der drei Token in Prosa fuer genau einen Schirm. Die Klartext-Ausgabe von flow.go druckt absichtlich das rohe Token - ein Agent parst, ein Mensch liest.
 - internal/tui/view.go:1319 und internal/cli/tickets.go:776 zeigen t.Commits weiterhin roh. In-progress hat begruendet warum (Feldanzeige, kein Urteil ueber einen Diff); optimize macht daraus keine Verhaltensaenderung.
 - Kosten: DeriveCommits laeuft in signoff pro geoeffnetem Ticket einmal (memoisiert) und in showForLane einmal pro Aufruf. Nichts in einer Schleife, nichts doppelt gelesen.
+- **2026-09-18 07:01 · Alexander Sacharov** — testing: go build ./... , go vet ./... und go test ./... (28 Pakete) gruen. 0 Fehler, 0 Errors, 5 Pakete ohne Tests (cmd/jaira, core/session, scripts/*). Die vom Diff beruehrten Pakete zusaetzlich uncached nachgefahren: go test -count=1 ./core/ticket/... ./internal/cli/... ./internal/tui/... - ok.
+
+Was der Change abdeckt: ticket.CommitsSource hat mit TestCommitsSourceNamesWhoContributed (core/ticket/trim_test.go:284) alle vier Faelle inklusive git+ticket; der Payload-Fall hat internal/cli/forlanecommits_test.go.
+
+Luecke, als Befund und nicht als Fehler: commitsSourceLabel (internal/tui/signoff.go:281) hat keinen Test. Die drei Token werden nur in core/ticket geprueft, die Uebersetzung in Prosa und die Heading-Zeile des Signoff-Schirms rendert kein Test - internal/tui/signoff_test.go prueft nur den Follow-up-Kontext, nicht renderSignOff. Genau dort faellt laut dem Doc-Kommentar ein neuer Wert still auf 'kein Label'. Ein Test, der renderSignOff fuer ein Ticket mit einem SHA nur im Feld aufruft und 'plus shas only the ticket records' erwartet, wuerde das schliessen.
+
+Kein Vergleich gegen die Basis noetig: nichts ist rot.
+- **2026-09-18 07:03 · Alexander Sacharov** — Alex hat am 2026-09-18 im Tab der testing-Lane 'добавь этот тест на renderSignOff' getippt, nachdem der Tester die Luecke gemeldet hatte. Daraus ist DoD 5 geworden: der Befund wird geschlossen, nicht bloss notiert. Die Zeile im Tab liess sich per herdr send-keys nicht abschicken (ein unfokussiertes Pane nimmt kein Enter), deshalb laeuft die Arbeit als eigener in-progress-Durchgang statt in dem Tab.
+- **2026-09-18 07:05 · Alexander Sacharov** — in-progress (dritter Durchgang, nur DoD 5): Test fuer commitsSourceLabel auf dem Signoff-Schirm. Was nicht im Code steht:
+
+- Der Test setzt m.derivedFor/m.derivedShas von Hand, statt DeriveCommits laufen zu lassen. Begruendung: der Testspeicher ist kein git-Repo, DeriveCommits liefert dort immer nichts, und damit waere der Fall 'git+ticket' - genau der teure - gar nicht erreichbar. Der Memo ist das, was renderSignOff liest; ihn vorzufuellen prueft exakt den Zweig, an dem das Label haengt, ohne git. Wer den Memo umbaut (model.go:125), muss den Test mitfuehren.
+- Verworfen: commitsSourceLabel direkt aufrufen. Das haette dieselbe Zuordnung zweimal geprueft und die Zeile auf dem Schirm weiter ungeprueft gelassen - die Luecke war nicht die Funktion, sondern dass niemand nachsieht, ob ihr Ergebnis auch gerendert wird.
+- Gegenprobe gemacht, nicht nur gruen gesehen: mit 'return ""' statt des git+ticket-Labels faellt der Test. Er faengt also den stillen Durchfall, vor dem der Doc-Kommentar warnt, und ist kein Tautologietest.
+- gitStat scheitert im Testspeicher (kein Repo) und faellt auf die fieldRow-Zeile zurueck. Das ist fuer diesen Test egal - die Heading-Zeile mit dem Label steht davor und wird unabhaengig davon geschrieben.
+- Keine NOTES.md-Zeile: reiner Test, von aussen nicht beobachtbar.
+- **2026-09-18 07:09 · Alexander Sacharov** — critique (dritter Durchgang, nach dem in-progress-Lauf fuer DoD 5): der committete Diff aus dem Payload wurde NICHT erneut gelesen - die Notizen 06:47/06:54/06:57 haben ihn geklaert und die Befunde sind dort als repariert festgehalten. Beurteilt wurde die unversionierte Arbeit des dritten Durchgangs (signoff.go, signoff_test.go, trim_test.go, NOTES.md).
+
+Bewusst stehen gelassen, auf den Notizen von 06:51 und 06:57: commitsSourceLabel als Abbildung mit einem Aufrufer (Prosa fuer genau einen Schirm, kein Forwarder), das Vorfuellen von derivedFor/derivedShas im Test statt DeriveCommits (ohne git waere git+ticket unerreichbar), und dass ein NEUER Quellen-Token still auf 'kein Label' faellt - 06:51 haelt das als akzeptierten Preis fest. Auch nicht als Befund: die drei Token sind rohe Strings auf beiden Seiten statt Konstanten - ein Umbenennen faellt durch TestSignOffNamesWhereTheCommitsCameFrom auf, Konstanten wuerden gegen einen neuen Wert genauso wenig helfen.
+
+Zwei Befunde:
+
+1. core/role/builtin/jaira-role-lane/SKILL.md:36-43 - der neue Text sagt der Diff-Lane, der Payload sei 'the ticket's whole committed history and not a slice of it', und nimmt ihr die alte Nachzaehl-Anweisung weg. In mode: conversational darf die implementierende Lane aber nicht committen (Regel 3 in derselben Datei). Auf genau diesen Tickets ist der Payload also der VORHERIGE Durchgang, mit complete:true daneben - derselbe stille Ausfall, den dieses Ticket beseitigt, eine Ebene hoeher. Dieses Ticket beweist es an sich selbst: der dritte in-progress-Durchgang liegt unversioniert im Worktree und steckt in keinem Payload. Die 'read the worktree'-Anweisung samt der drei Kommandos steht in derselben Datei bei Zeile 120, aber ausschliesslich im Abschnitt fuer die NEBENHER laufende Kritik - die ordentliche critique-, testing- und review-Lane bekommt sie nicht. Das ist eine Entscheidung fuer Alex und keine, die diese Lane trifft, siehe --question.
+
+2. internal/tui/signoff.go:118 - '  ' + label + ' — recorded at acceptance' fuer alle drei Faelle. Der Fall 'ticket' rendert damit 'recorded on the ticket — recorded at acceptance': dasselbe Wort zweimal, auf dem Schirm, auf dem ein Mensch unterschreibt. Und 'derived from git, plus shas only the ticket records — recorded at acceptance' ist fuer eine Meta-Zeile lang. Reparatur: commitsSourceLabel gibt den ganzen Nachsatz je Fall selbst zurueck, statt dass die Aufrufstelle einen gemeinsamen anhaengt. Kein Test bricht davon - TestSignOffNamesWhereTheCommitsCameFrom prueft mit Contains nur den Label-Teil.
