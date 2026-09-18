@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:57:45Z
+updated-at: 2026-09-18T07:01:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -122,3 +122,10 @@ Bewusst NICHT angefasst:
 - commitsSourceLabel (internal/tui/signoff.go:277) ist keine Weiterleitung, sondern die Uebersetzung der drei Token in Prosa fuer genau einen Schirm. Die Klartext-Ausgabe von flow.go druckt absichtlich das rohe Token - ein Agent parst, ein Mensch liest.
 - internal/tui/view.go:1319 und internal/cli/tickets.go:776 zeigen t.Commits weiterhin roh. In-progress hat begruendet warum (Feldanzeige, kein Urteil ueber einen Diff); optimize macht daraus keine Verhaltensaenderung.
 - Kosten: DeriveCommits laeuft in signoff pro geoeffnetem Ticket einmal (memoisiert) und in showForLane einmal pro Aufruf. Nichts in einer Schleife, nichts doppelt gelesen.
+- **2026-09-18 07:01 · Alexander Sacharov** — testing: go build ./... , go vet ./... und go test ./... (28 Pakete) gruen. 0 Fehler, 0 Errors, 5 Pakete ohne Tests (cmd/jaira, core/session, scripts/*). Die vom Diff beruehrten Pakete zusaetzlich uncached nachgefahren: go test -count=1 ./core/ticket/... ./internal/cli/... ./internal/tui/... - ok.
+
+Was der Change abdeckt: ticket.CommitsSource hat mit TestCommitsSourceNamesWhoContributed (core/ticket/trim_test.go:284) alle vier Faelle inklusive git+ticket; der Payload-Fall hat internal/cli/forlanecommits_test.go.
+
+Luecke, als Befund und nicht als Fehler: commitsSourceLabel (internal/tui/signoff.go:281) hat keinen Test. Die drei Token werden nur in core/ticket geprueft, die Uebersetzung in Prosa und die Heading-Zeile des Signoff-Schirms rendert kein Test - internal/tui/signoff_test.go prueft nur den Follow-up-Kontext, nicht renderSignOff. Genau dort faellt laut dem Doc-Kommentar ein neuer Wert still auf 'kein Label'. Ein Test, der renderSignOff fuer ein Ticket mit einem SHA nur im Feld aufruft und 'plus shas only the ticket records' erwartet, wuerde das schliessen.
+
+Kein Vergleich gegen die Basis noetig: nichts ist rot.
