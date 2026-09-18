@@ -23,10 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T18:23:43Z
+updated-at: 2026-09-18T20:52:31Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-7876
-claimed-at: 2026-09-18T18:17:38Z
+claimed-by: DESKTOP-RFTCH11-36529
+claimed-at: 2026-09-18T20:52:31Z
 mode: conversational
 outcome-what: "Der eine Fund der dritten Kritik behoben: die drei veralteten Saetze, die 'jaira lanes add' noch als Anhaengen ans Ende der Spaltenordnung beschrieben. internal/cli/lanes.go:100 (Long von 'lanes add'), internal/tui/lanes.go:438 (Kommentar an addFromCatalogue) und docs/COMMANDS.md:153 (Kommandotabelle) sagen jetzt, dass die Lane dorthin gesetzt wird, wohin ihr after: zeigt, und dass die Kette durch nicht installierte Lanes hindurch verfolgt wird; CLI-Hilfe und Kommandotabelle nennen dazu die Erfolgszeile mit dem Nachbarn. Kein Verhalten geaendert, nur Prosa."
 outcome-why: "Die Reparatur der zweiten Runde hat das Anhaengen abgeschafft, die drei Saetze aber stehen lassen - 'jaira lanes add --help' beschrieb woertlich ein Verhalten, das das Binary nicht mehr hat, und wer eine Lane installiert, entscheidet danach, wo er sie erwartet."
