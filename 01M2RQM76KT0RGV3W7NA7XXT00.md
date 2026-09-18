@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:51:46Z
+updated-at: 2026-09-18T07:53:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -89,7 +89,7 @@ question: |-
 - [x] SKILL.md 36-43: drop the now-obsolete restriction
 - [x] signoff.go: commitsSourceLabel carries its own tail, no shared suffix
 - [x] NOTES.md line, go build && go test green
-- [~] gitrepo.WorktreeDiff: ls-files -z, Split auf NUL; --no-index mit Exit 1 und leerer Ausgabe bei nicht leerer Datei ist ein Fehler
+- [x] gitrepo.WorktreeDiff: ls-files -z, Split auf NUL; --no-index mit Exit 1 und leerer Ausgabe bei nicht leerer Datei ist ein Fehler
 - [ ] Test in core/gitrepo: untracked Datei mit Umlaut im Namen steht im WorktreeDiff
 - [ ] NOTES.md-Zeile pruefen, go build && go test gruen
 
