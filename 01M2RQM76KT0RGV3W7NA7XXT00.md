@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T21:00:02Z
+updated-at: 2026-09-18T21:00:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61566
 claimed-at: 2026-09-18T20:56:37Z
@@ -55,12 +55,7 @@ question: |-
 
   Befund 2 (signoff.go:118, 'recorded on the ticket — recorded at acceptance') ist unabhaengig und in in-progress in fuenf Minuten repariert.
 test-verdict: "green: 0 FAIL. 'go test ./...' -> 28 Pakete ok, 4 ohne Testdateien; go vet und gofmt sauber. Abdeckung des Diffs belegt, nicht bloss gruen: jede geaenderte Go-Datei der Branche (internal/cli/flow.go, core/gitrepo/git.go, core/ticket/trim.go, internal/tui/signoff.go) wird von einem Test beruehrt, und die neuen Tests wurden namentlich gefahren - internal/cli: TestForLaneDiffIsNotLimitedToTheRecordedCommits, TestForLaneDiffCarriesTheUncommittedWorktree, TestForLaneSaysWhenTheWorktreeCouldNotBeRead, TestForLaneNamesTheCommitsGitCouldNotShow, TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce; core/gitrepo: TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote, TestWorktreeDiffIgnoresAnEmptyUntrackedFile; core/ticket: TestCommitsSourceNamesWhoContributed; internal/tui: TestSignOffNamesWhereTheCommitsCameFrom. Keine ausgelassenen Suites: e2e-/Integrationsdateien und Tests gegen einen laufenden Dienst oder eine kostenpflichtige API gibt es im Repository nicht. Eine Abweichung, die kein Fehler ist: review-check auf dem Ticket erwartet '31 Zeilen ok', tatsaechlich sind es 28 ok plus 4 'no test files' - die Zahl wurde vor den letzten Runden geschrieben, das Urteil bleibt dasselbe. Eingetragen vom Dispatcher, weil die testing-Lane ihr Ergebnis wieder als Note statt in dieses Feld geschrieben hatte."
-review-verdict: |-
-  Der Diff erfuellt die acht DoD-Punkte, und er tut es an der Wurzel statt an der Meldung: showForLane und der Signoff-Schirm leiten beide immer aus git ab, der Worktree haengt mit dran, und die Herkunft steht als Token daneben. Tests decken jeden Zweig, den man ohne kaputtes Repo erreichen kann, und die Notizen halten zu jeder Entscheidung die verworfene Alternative fest. Keine Defekte gefunden.
-
-  Ein Befund gehoert vor die Annahme, nicht danach: Befund 1 (SKILL.md:122-135 beschreibt weiter das alte Verhalten und weist die nebenher laufende Kritik an, genau den Diff zu ignorieren, den dieser Change ihr gerade gibt). Die Datei wird per go:embed ausgeliefert und die NOTES.md-Zeile fordert 'jaira roles install --global --force' - es wuerde also eine Anweisung ausgerollt, die der Binary widerspricht, mit der sie kommt. Das sind zehn Zeilen Prosa in der Datei, die dieser Change ohnehin anfasst, kein neuer Mechanismus. Befund 2 und 3 sind Nachtraege, kein Grund zurueckzuschicken.
-
-  Unsicher bin ich bei genau einer Sache und sage es lieber, als sie zu runden: ob der Worktree-Anteil auf einem geteilten Worktree stoert, kann ich nicht pruefen - hier stimmt 'ein Worktree je Ticket', und wo das nicht gilt, beurteilt eine Lane fremde Aenderungen mit. Die Notiz vom 07:35 nennt den Preis, ein Test kann ihn nicht abbilden.
+review-verdict: "Der Code haelt, was die DoD verlangt - alle elf Punkte sind im Diff belegt, die sechs neuen Tests sind gegengeprobt und keiner ist tautologisch, go build/vet/test sind gruen. Der Befund liegt nicht im Go-Code, sondern in dem, was dieser Change als Vertrag ausliefert: die Trennzeile im Payload-Diff, auf die der neu geschriebene SKILL.md-Abschnitt die nebenher laufende Kritik zeigt, ist an diesem Ticket selbst nachweislich mehrdeutig (neun Treffer, der erste acht Haelften zu frueh). Das ist kein Blocker fuer die Sache - der Payload ist mit diesem Change deutlich ehrlicher als vorher -, aber es ist derselbe Fehlertyp eine Ebene weiter, und die Entscheidung, ob das noch in dieses Ticket gehoert oder in ein eigenes, ist eine menschliche. Ich bin mir bei Befund 2 (Repo-weiter Worktree) unsicher, ob er ueberhaupt repariert werden soll: die Alternative - den Worktree auf die Dateien des Tickets einschraenken - gibt es nicht, weil niemand weiss, welche Dateien das sind."
 review-check: |-
   Alles aus /home/alex/projects/.worktrees/jaira-7XXT00. Dauer etwa 5 Minuten.
 
