@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:04:08Z
+updated-at: 2026-09-18T12:04:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -45,7 +45,8 @@ outcome-resolves: "Der Weg von der Entscheidung zur Umsetzung steht: welches Fel
   proof: internal/cli/lanes_test.go TestLanesAddInstallsTheReviewLoopWithoutNetwork — mit JAIRA_MARKET_API auf 127.0.0.1:1 installiert 'jaira lanes add critique|optimize|testing' alle drei und setzt sie zwischen in-progress und human
 - [x] Ein Board, das jaira als reinen Tracker benutzt, wird nicht mit einem Konveyer beladen, den niemand faehrt - die Wahl bleibt eine Wahl.
   proof: core/lane/defaultboard_test.go TestFreshBoardGetsOnlyTheDefaultLanes — ein frisch angelegtes Board laedt als genau die zehn Lanes von heute, obwohl das Binary jetzt dreizehn traegt
-- [ ] Je eine Zeile in core/release/NOTES.md fuer das, was ein Benutzer dadurch anders tut.
+- [x] Je eine Zeile in core/release/NOTES.md fuer das, was ein Benutzer dadurch anders tut.
+  proof: core/release/NOTES.md unter '## Unreleased': fuenf Zeilen, per Notes() gegengeprueft - der Zeilenscan liest genau fuenf Aenderungen
 - [x] Der Katalog ist an eine Version gebunden oder sagt, dass er es nicht ist: 'jaira lanes market' holt heute von 'https://api.github.com/repos/BeMuCa/jaira/contents/lanes' ohne '?ref=' und bekommt damit den HEAD des Default-Branches, egal wie alt das laufende Binary ist. Entweder fragt der Aufruf den Tag des laufenden Binaries ab, oder er sagt dem Benutzer, dass er die Entwicklungsfassung bekommt. Nachgestellt mit einem Binary, das eine aeltere Version meldet.
   proof: core/market/market.go apiBase()+pinnedRef()+Unpinned(); Tests core/market/market_test.go TestListPinsTheCatalogueToTheRunningTag, TestDevBuildSendsNoRefAndSaysSo, TestRefIsSetOnAnAddressThatAlreadyHasAQuery; nachgestellt mit einem Binary aus -ldflags '-X main.version=0.1.4': ASKED /contents/lanes?ref=v0.1.4
 
