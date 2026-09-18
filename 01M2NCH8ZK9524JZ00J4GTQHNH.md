@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:44:45Z
+updated-at: 2026-09-18T05:49:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -74,7 +74,7 @@ review-check: |-
   8. Modus wieder abschalten, wenn du nur geprueft hast: '/tmp/jaira-gtqhnh set GTQHNH mode='. Erwartet: 'show --json | jq .mode' gibt "" und die mode-Zeile verschwindet aus 'show'.
 
   Nicht von Hand pruefbar: dass die Prompt-Prosa das Verhalten erzeugt, das sie beschreibt - Prompts fuehrt kein Test aus. Der einzige echte Beleg ist ein Lauf: 'jaira roles install --global --force', dann 'jaira set <ticket> mode=conversational' auf einem Ticket mit offener Form und den Dispatcher starten. Ohne den install liest jeder Worker die alten Prompts aus ~/.claude und sieht den Modus ueberhaupt nicht.
-mode: ""
+mode: "conversational"
 ---
 
 # Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht
