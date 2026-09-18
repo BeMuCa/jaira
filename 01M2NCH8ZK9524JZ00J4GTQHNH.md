@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -40,13 +40,13 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T06:13:44Z
+updated-at: 2026-09-18T06:13:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
-outcome-what: "Testing-Lane: Gates gruen und alle 17 DoD-Punkte am Arbeitsbaum nachgeprueft, der Modus auf einem Wegwerf-Board end-to-end ausgeuebt"
-outcome-why: "Die Lane prueft, ob das Geforderte da ist und laeuft — beides bestaetigt, kein Befund, also keine Runde zurueck nach in-progress"
-outcome-resolves: "go test ./... -race -count=1 RC=0; test-verdict gesetzt; kein Code geaendert, also kein Commit"
+outcome-what: "review-Lane: alle 17 DoD-Punkte gegen den Diff gepruefte, die Go-Seite mit einem frisch gebauten Binary auf einem Wegwerf-Board von Hand ausgeuebt, review-summary/-gaps/-verdict/-check gesetzt"
+outcome-why: "Der Diff erfuellt die Kriterien und die CLI verhaelt sich wie behauptet; die zwei Befunde sind Entscheidungen, die ein Mensch trifft, keine Arbeit fuer eine in-progress-Runde"
+outcome-resolves: "gofmt/vet/go test ./... -count=1 gruen; Verhalten von set/show/resume/validate am Wegwerf-Board bestaetigt; kein Code geaendert, also kein Commit"
 review-summary: "Der Modus ist ein Frontmatter-Feld plus Prompt-Text, kein Mechanismus. Go-Seite: 'mode' wird ein eigenes Feld (core/ticket/schema.go — FieldMode, Ticket.Mode, canonicalOrder hinter FieldQuestion), mit CanonicalMode() als einziger Torwaechter-Funktion, die trimmt UND urteilt. Beide Schreibwege rufen sie auf: 'jaira set' (internal/cli/tickets.go) bricht mit ExitUsage ab, der Board-Editor (internal/tui/edit.go) meldet und schreibt nicht. Alle Lesewege fuehren das Feld: 'jaira show --json' (ticketJSON), 'jaira show --for-lane --json' (flow.go, als eigener Schluessel neben model_tier, ausdruecklich nicht ueber input-requires), die Klartext-Kopfzeile von 'show --for-lane' ('tier: cheap, mode: conversational'), 'jaira resume' in JSON und Klartext, und je eine 'mode'-Zeile in 'jaira show' und im Detail-Pane der TUI. 'jaira validate' warnt mit bad_mode auf jeden anderen Wert, den untrimmten eingeschlossen — der Weg fuer Handedits und Merges, die an beiden CLI-Toren vorbeigehen. Prosa-Seite, und dort liegt der Grossteil der 1604 Zeilen: der Dispatcher-Prompt zaehlt vor der Plan-Lane die offenen Entscheidungen namentlich auf, haelt bei mindestens einer an, schreibt die Antwort mit 'jaira note' aufs Ticket und setzt dann erst den Modus; im Modus startet er die Worker mit --no-worktree und daneben eine NUR LESENDE zweite critique, die ihre Befunde sofort meldet, waehrend genau er der einzige Schreiber von review-summary und der einzige 'jaira move' bleibt. Der Worker-Prompt erkennt sich als diese mitlaufende critique an zwei Haelften (Lane-Argument 'critique' UND status etwas anderes), liest das einmal und nie wieder, beurteilt den nicht committeten Arbeitsbaum statt des Payload-Diffs, legt im Modus nach jedem DoD-Punkt 'git status --short' plus 'git diff' vor (beide mit ':/ :(exclude,top).jaira/tickets', damit die eigene Ticket-Datei nicht jeden Punkt zu einer Pause macht) und committet nicht, sondern gibt die Commit-Zeile mit Handle zurueck — es sei denn, die Lane hat keinen Code geaendert, dann gar keine Zeile. Der Block, den 'jaira update' in fremde CLAUDE.md schreibt, nennt den Modus jetzt, und '.jaira/lanes/critique.md' verlangt 'notes' als Lane-Input, damit eine Runde nicht wieder aufhebt, was eine frühere schon erledigt hat."
 review-gaps: |-
   Zwei Befunde, beide klein, keiner ein Grund fuer eine Runde zurueck nach in-progress — sie gehoeren dem Menschen, nicht der Lane.
