@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:47:33Z
+updated-at: 2026-09-18T06:47:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -90,3 +90,12 @@ Union-Logik lag doppelt vor: die Merge-Schleife aus StampCommits (core/ticket/tr
 - Auch die Klartext-Ausgabe (ohne --json) traegt jetzt '<n> commit(s), from <quelle>:' plus die SHAs ueber dem Diff. Ein Worker, der den Lane-Prompt als Text liest, haette sonst als einziger nicht zaehlen koennen.
 
 - NOTES.md: die Zeile steht unter '## Unreleased', NICHT unter '## 0.3.0'. Die 0.3.0-Zeile 22, die die alte Handanweisung beschreibt, bleibt woertlich stehen - sie beschreibt den Build, den es gibt; geschlossene Historie wird nicht nachtraeglich richtiggestellt.
+- **2026-09-18 06:47 · Alexander Sacharov** — critique (erster Durchgang, ganzer Diff gelesen): drei Befunde, alle mit klarer Reparatur, daher zurueck nach in-progress.
+
+1. internal/cli/flow.go:646 — die neuen Schluessel commits/commits_source hahngen an len(shas)>0. Schlaegt repo.Diff fehl, ist diff leer, shas aber gefuellt: der Payload traegt dann eine Commit-Liste als 'Herkunft dessen, was auf dem Schirm steht', waehrend nichts auf dem Schirm steht. Der Klartext-Zweig (:677) macht es schon richtig und prueft diff != "". Beide Zweige auf dieselbe Bedingung.
+
+2. internal/tui/signoff.go:114 — 'derived' bedeutet jetzt nur noch 'git hat etwas gefunden', die Liste ist aber eine Vereinigung. Ein SHA, den nur das Feld traegt (Rebase, Cherry-Pick), erscheint damit unter der Ueberschrift 'derived from git — recorded at acceptance'. Genau diesen Fall unterscheidet flow.go:601 mit git / ticket / git+ticket. Zwei Schirme, dieselben Daten, zwei Ehrlichkeitsmassstaebe — und der Signoff-Schirm ist der, auf dem ein Mensch unterschreibt. Entweder dieselbe Dreiteilung ins Label, oder derived nur setzen, wenn das Feld nichts beigetragen hat.
+
+3. core/ticket/trim.go:123 — der Kommentar sagt 'Two callers share it and must not drift apart' und nennt StampCommits und den Lane-Payload. Dieser Change hat einen dritten hinzugefuegt: internal/tui/signoff.go:114. Der Kommentar existiert, um Auseinanderlaufen zu verhindern, und laesst ausgerechnet die Stelle aus, an der es am teuersten ist. Alle drei nennen.
+
+Bewusst stehen gelassen: commits_source mit drei Werten ist kein Ueberbau — die Note vom 2026-09-18 06:44 haelt die Entscheidung fest (Plan-Schritt 3: der Leser soll zaehlen koennen statt zu vertrauen), und dass die Schluessel nur im Payload einer Lane mit 'diff' in input-requires stehen, ist dort ebenfalls begruendet. Ebenso die verworfene Alternative 'complete:false plus Zahl fehlender Commits' (Note 06:36) — geschlossen, nicht neu aufgemacht. Die Vereinigung statt Ersetzung folgt StampCommits und ist das bestehende Muster, nicht ein neues daneben.
