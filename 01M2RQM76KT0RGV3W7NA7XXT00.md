@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:18:16Z
+updated-at: 2026-09-18T11:18:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -127,7 +127,7 @@ review-check: |-
 - [x] Test in core/gitrepo: untracked Datei mit Umlaut im Namen steht im WorktreeDiff
 - [x] NOTES.md-Zeile pruefen, go build && go test gruen
 - [x] flow.go: WorktreeDiff-Fehler in einen Payload-Schluessel statt in den Papierkorb (DoD 10), mit Test
-- [ ] gitrepo.Diff gibt die nicht zeigbaren SHAs zurueck; flow.go nennt sie, der tote Fehlerzweig faellt (DoD 11), mit Test
+- [x] gitrepo.Diff gibt die nicht zeigbaren SHAs zurueck; flow.go nennt sie, der tote Fehlerzweig faellt (DoD 11), mit Test
 - [ ] SKILL.md 123-161 auf den neuen Payload umschreiben (DoD 9)
 - [ ] NOTES.md-Zeilen fuer 10 und 11; go build && go vet && go test ./... gruen
 
