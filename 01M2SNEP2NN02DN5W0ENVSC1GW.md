@@ -5,7 +5,7 @@ status: brainstorm
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
-goal: "Wer jaira installiert, um Agenten arbeiten zu lassen, bekommt die Pruefschleife sofort - statt die Haelfte des Produkts im Katalog vermuten zu muessen"
+goal: "Wer jaira ohne Netz benutzt, kommt an critique, optimize und testing heran und erfaehrt beim Blick auf 'jaira lanes', dass es sie gibt - ohne dass ein frisches Board dadurch eine Lane mehr bekommt"
 context: |-
   Alex am 2026-09-18, nachdem 'jaira lanes' auf diesem Board dreizehn Lanes zeigte und zehn davon built-in waren.
 
@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:30:35Z
+updated-at: 2026-09-18T10:30:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28090
 claimed-at: 2026-09-18T08:09:46Z
