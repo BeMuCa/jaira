@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T09:18:17Z
+updated-at: 2026-09-18T09:18:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
@@ -59,6 +59,22 @@ review-verdict: |-
   Ein Befund gehoert vor die Annahme, nicht danach: Befund 1 (SKILL.md:122-135 beschreibt weiter das alte Verhalten und weist die nebenher laufende Kritik an, genau den Diff zu ignorieren, den dieser Change ihr gerade gibt). Die Datei wird per go:embed ausgeliefert und die NOTES.md-Zeile fordert 'jaira roles install --global --force' - es wuerde also eine Anweisung ausgerollt, die der Binary widerspricht, mit der sie kommt. Das sind zehn Zeilen Prosa in der Datei, die dieser Change ohnehin anfasst, kein neuer Mechanismus. Befund 2 und 3 sind Nachtraege, kein Grund zurueckzuschicken.
 
   Unsicher bin ich bei genau einer Sache und sage es lieber, als sie zu runden: ob der Worktree-Anteil auf einem geteilten Worktree stoert, kann ich nicht pruefen - hier stimmt 'ein Worktree je Ticket', und wo das nicht gilt, beurteilt eine Lane fremde Aenderungen mit. Die Notiz vom 07:35 nennt den Preis, ein Test kann ihn nicht abbilden.
+review-check: |-
+  Alles aus /home/alex/projects/.worktrees/jaira-7XXT00. Dauer etwa 5 Minuten.
+
+  1. Bauen und testen: 'go build ./... && go vet ./... && go test ./... -count=1'. Erwartet: keine Ausgabe von build und vet, und in der Testliste 31 Zeilen 'ok', keine einzige 'FAIL'.
+
+  2. Den alten Fehler nachstellen. Der Test dafuer ist da: 'go test ./internal/cli -run TestForLaneDiffIsNotLimitedToTheRecordedCommits -count=1 -v'. Erwartet: PASS. Er legt ein Ticket an, das nur einen von zwei Commits im Feld 'commits:' hat, und verlangt, dass der review-Payload beide zeigt.
+
+  3. Nachweisen, dass dieser Test wirklich etwas faengt, statt nur gruen zu sein. Datei 'internal/cli/flow.go' oeffnen, Zeile 597 'shas = ticket.MergeCommits(derived, t.Commits)' ersetzen durch 'shas = t.Commits', speichern, den Befehl aus Schritt 2 noch einmal laufen lassen. Erwartet: FAIL mit 'the reviewed diff stops at the recorded commit'. Danach mit 'git checkout -- internal/cli/flow.go' zuruecksetzen.
+
+  4. Den Worktree-Anteil an einer echten Datei sehen. 'echo hallo > Prüfung.txt' tippen (der Umlaut gehoert dazu - er ist der Fall, den DoD 8 repariert), dann 'jaira show 7XXT00 --for-lane review --json > /tmp/p.json' und 'jq -r .commits_source /tmp/p.json'. Erwartet: 'git+worktree'. Dann 'grep -c hallo /tmp/p.json'. Erwartet: mindestens 1 - der Inhalt der neuen Datei steht im Diff. Danach 'rm Prüfung.txt' und '/tmp/p.json' loeschen.
+
+  5. Die Signoff-Zeile ansehen. 'go test ./internal/tui -run TestSignOffNamesWhereTheCommitsCameFrom -count=1 -v'. Erwartet: drei Unterfaelle, alle PASS, darunter 'the_ticket_alone' - der prueft, dass die Zeile 'recorded on the ticket, and again at acceptance' liest und NICHT 'recorded on the ticket — recorded at acceptance'.
+
+  6. Die Release-Notiz lesen: 'sed -n "16,20p" core/release/NOTES.md'. Erwartet: zwei Zeilen, die mit '- ' beginnen, unter der Ueberschrift '## Unreleased'. Keine davon darf unter '## 0.3.0' stehen.
+
+  Nicht von Hand pruefbar: dass ein per Signal getoetetes git nicht als Erfolg durchgeht (core/gitrepo/git.go, ee.Exited()). Ein git im richtigen Moment abzuschiessen ist kein bezahlbarer Test; die Bedingung ist eine Zeile und ihr Grund steht als Kommentar daneben.
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
