@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T18:16:56Z
+updated-at: 2026-09-18T18:17:46Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-35097
-claimed-at: 2026-09-18T11:14:14Z
+claimed-by: DESKTOP-RFTCH11-8082
+claimed-at: 2026-09-18T18:17:46Z
 mode: ""
 outcome-what: "Die zwei critique-Befunde vom 11:26 repariert. (1) jaira-role-lane/SKILL.md:46-51: die Zaehlanweisung sagt jetzt, dass sie die Commit-LISTE prueft und nicht den Diff - traegt der Payload commits_unavailable, stimmt die Zahl und der Diff ist trotzdem ein Ausschnitt. (2) internal/cli/flow.go:717-724: die Klartextzeile 'The working tree could not be read, so nothing uncommitted is below' steht jetzt UEBER dem Diff, den sie qualifiziert, und nur neben einem - bei leerem Diff traegt die missing-Zeile denselben Text schon, und zweimal gedruckt liest er sich wie zwei Ausfaelle. Dazu ein Test mit zwei Unterfaellen (Reihenfolge, Einmaligkeit), beide gegengeprobt, und die bestehende NOTES.md-Unreleased-Zeile korrigiert, weil sie 'above and below the diff' versprach."
 outcome-why: "Beide Befunde sind dieselbe Unwahrheit wie das Ticket selbst, eine Stufe weiter: eine ausgelieferte Anweisung, die dem Binary widerspricht, mit dem sie kommt, und eine Meldung, die in die falsche Richtung zeigt und sich selbst wiederholt. Beide hatte der sechste Durchgang selbst erzeugt, also gehoeren sie in diesen und nicht auf ein Folgeticket."
