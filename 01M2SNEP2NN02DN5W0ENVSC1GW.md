@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T21:10:05Z
+updated-at: 2026-09-18T21:10:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -34,6 +34,7 @@ outcome-resolves: "vierte und letzte Fundstelle des veralteten 'appending'-Satze
 review-summary: "none"
 review-gaps: "internal/tui/lanes.go: addFromCatalogue und addAvailable trugen denselben Sechszeiler samt Kommentar hinter einer sofort ueberschriebenen ls.msg-Zuweisung - in einen Helfer addedMsg(id, warnings) gefaltet, Verhalten unveraendert. Stehen gelassen mit Begruendung: terminalIDIndex neben terminalIndex (zwei Typen, in Durchgang 1 geschlossen; beide Fallbacks am Code auf gleiche Position gegengeprueft), die Unpinned()-Notiz zweimal in internal/cli/market.go (spiegelt die vorhandene Overridden()-Doppelung), die after-Nachsuche in lane.Add (ein dritter Rueckgabewert fuer eine Schleife ueber 13 Eintraege auf einem einmaligen Pfad) und der ''-Zweig in pinnedRef (Vorsicht gegen -ldflags, nicht unerreichbar). Kein toter Code; lane.Installable() auf dem 'jaira lanes'-Pfad ist netzfrei (embedded Builtins plus ein Glob), die Startzeit-Regel bleibt unberuehrt."
 test-verdict: "pass: go build/vet sauber, volle Suite mit -race und geleertem Cache gruen (RC=0), DoD 1-6 am Arbeitsbaum geprueft, Verhalten an einer frischen Testdoska und an einem Binary mit -X main.version=0.1.4 nachgestellt"
+question: "Die Pruefschleife liegt im Binary, Suite und Verhalten sind geprueft - nimmst du die Arbeit an, oder soll noch etwas hinein? Zwei Punkte zum Mitentscheiden: (1) Die Arbeit ist NICHT committet - conversational-Modus, die Commit-Zeile gehoert dir. (2) 'jaira lanes market' bietet critique und optimize an einem dev-Build weiter an, weil lanes/ auf master noch existiert; das verschwindet erst mit dem Tag, der diesen Zweig enthaelt - soll das so bleiben, oder soll market eingebettete Lanes zusaetzlich herausfiltern?"
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
