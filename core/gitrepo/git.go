@@ -12,7 +12,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -186,26 +188,48 @@ func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 func (r *Repo) WorktreeDiff() (string, error) {
 	const notTickets = ":(exclude,top).jaira/tickets"
 	var b strings.Builder
-	tracked, err := r.run("diff", "HEAD", "--patch", "--stat", "--", ":/", notTickets)
+	tracked, err := r.run("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat", "--", ":/", notTickets)
 	if err != nil {
 		return "", err
 	}
 	b.WriteString(tracked)
-	others, err := r.run("ls-files", "--others", "--exclude-standard", "--", ":/", notTickets)
+	// -z is not a convenience, and neither is the core.quotePath=false above
+	// it and on the call below. Without it git quotes any path that is not
+	// plain ASCII — "\303\204nderung.txt" for a file with an umlaut — and the
+	// --no-index call below then looks for a file of that literal name, does
+	// not find it, and says so with exit 1, the very code tolerated here as
+	// "the files differ". The file would drop out of the patch in silence
+	// while the payload still claims to carry the worktree: the fragment
+	// reported as the whole that this package exists to have ended. -z turns
+	// the quoting off on the way in and settles paths with spaces in them at
+	// the same time; core.quotePath=false turns it off on the way out, so the
+	// patch a reviewer reads names the file rather than its escape sequence.
+	others, err := r.run("ls-files", "--others", "--exclude-standard", "-z", "--", ":/", notTickets)
 	if err != nil {
 		return "", err
 	}
-	for _, path := range strings.Split(strings.TrimSpace(others), "\n") {
-		if strings.TrimSpace(path) == "" {
+	for _, path := range strings.Split(others, "\x00") {
+		if path == "" {
 			continue
 		}
 		// git diff alone is blind to a file the index has never seen, and a
 		// new test or a new package is the common shape of a change, not a
 		// corner case. --no-index is what sees it without 'git add -N', which
 		// would write to an index another session may be holding.
-		out, err := r.runTolerating(1, "diff", "--no-index", "--", "/dev/null", path)
+		out, err := r.runTolerating(1, "-c", "core.quotePath=false", "diff", "--no-index", "--", "/dev/null", path)
 		if err != nil {
-			continue
+			return "", err
+		}
+		// Exit 1 carries two meanings here — "the files differ", which is the
+		// expected one, and "the path could not be read". Only the second
+		// produces no patch, and a file that exists with bytes in it always
+		// produces one, so an empty patch beside a non-empty file is that
+		// second meaning wearing the first one's exit code. Reporting it is
+		// what keeps the caller from labelling a worktree it never saw.
+		if out == "" {
+			if info, statErr := os.Stat(filepath.Join(r.Dir, path)); statErr != nil || info.Size() > 0 {
+				return "", fmt.Errorf("git diff --no-index -- /dev/null %s: no patch for an unreadable or non-empty file", path)
+			}
 		}
 		b.WriteString(out)
 	}
