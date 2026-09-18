@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:21:36Z
+updated-at: 2026-09-18T12:26:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -32,11 +32,9 @@ outcome-what: "Die beiden von der Kritik reproduzierten Defekte behoben: der Fus
 outcome-why: "Beide Funde machten genau die DoD-Punkte unwahr, die als erfuellt markiert waren: der Fuss (DoD 2) empfahl Entferntes zurueck, und der Einzel-Add aus eben diesem Fuss (DoD 3) installierte eine Test-Lane hinter der menschlichen Abnahme - installiert und unerreichbar, der Zustand, gegen den DoD 3 geschrieben ist."
 outcome-resolves: "DoD 2 und DoD 3 halten jetzt auch auf dem Weg, den der Fuss selbst vorschlaegt: eine Lane nach der anderen. Am gebauten Binary nachgestellt, beide neuen Tests gegen die alte Fassung gegengeprueft, go build/vet und 'go test -count=1 ./...' gruen."
 review-summary: |-
-  internal/cli/tickets.go:1000-1007 filtert 'if l.Builtin' und bietet damit jede ENTFERNTE Standard-Lane ewig wieder an - nachgestellt: nach 'jaira lanes remove signoff' steht signoff bei jedem 'jaira lanes' im Fuss. Filter auf 'l.Builtin && !l.Default' aendern: die Menge, die der Fuss meint, ist 'reist mit, steht aber nicht in der Vorauswahl'.
-  core/lane/order.go:265 insertAfterAnchor faellt bei fehlendem Anker auf 'vor die terminale Lane' zurueck, auch wenn der Anker selbst eine mitgelieferte Lane ist - nachgestellt: 'jaira lanes add testing' auf einem frischen Board legt testing HINTER signoff (backlog..review signoff testing done blocked). Der neue Fuss laedt genau dazu ein, er bietet die drei einzeln an. Anker-Kette ueber Installable() aufloesen (optimize -> critique -> in-progress, das steht auf dem Board) und erst danach terminalIDIndex.
-  core/market/market.go:136 List meldet bei einem Tag, den es im Repo nicht gibt (Fork, Build vor dem Tag-Push, geloeschter Tag), nur 'listing the lane marketplace: not found' - errNotFound ist in market.go:186 schon unterschieden, wird hier aber nicht gelesen. Ursache und Ausweg nennen, wenn pinnedRef() != "": welcher Tag gefehlt hat und dass dieser Build den Katalog an seine eigene Version bindet. Neu durch diesen Diff, vorher lief so ein Build auf dem Default-Branch.
-  internal/cli/lanes_test.go:1330-1332 ist tote Deckung: nach 'critique done blocked' ist Index(critique)=7, Index(blocked)=9, die Bedingung kann nie wahr werden, und die Zeile darueber deckt den Fall bereits ab. Streichen.
-  internal/tui/lanes.go:460 und :511 tragen denselben Sechszeiler samt identischem Kommentar, und beide ueberschreiben ein 'ls.msg' aus der Zeile davor. Ein Helfer 'addedMsg(id string, warnings []string) string', einmal zugewiesen.
+  core/lane/order.go:284-288 setzt in die Warnung 'anchor' ein - das letzte Kettenglied statt des Namens, den der Benutzer geschrieben hat. Endet die Kette an einem Glied mit after: "", kommt 'anchor "" is not on this board' heraus (reproduziert: lanes remove brainstorm+backlog, dann lanes add brainstorm). l.After nennen und das Kettenende, wenn es abweicht und nicht leer ist, als 'via %q' anhaengen.
+  internal/cli/lanes.go:127 sagt nur 'added testing to this project (<pfad>)' und verschweigt, wo die Lane gelandet ist. Der alte Test verlangte hier eine Ansage; die Kettenaufloesung hat sie ersatzlos gestrichen. Keine Warnung (die traefe den vom Fuss beworbenen Normalweg 'lanes add testing' auf frischem Board), sondern den Nachbarn in die normale Erfolgszeile: 'added critique to this project after pre-process (<pfad>)'.
+  internal/cli/tickets.go:1005-1006 behauptet im Kommentar 'The offer is for the lanes a board never had'; !Default unterscheidet das nicht - 'lanes add critique' + 'lanes remove critique' laesst den Fuss critique wieder anbieten (am Binary reproduziert). Den Satz streichen oder die Einschraenkung dazuschreiben; das Verhalten bleibt wie es ist.
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
