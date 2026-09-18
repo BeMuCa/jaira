@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:41:47Z
+updated-at: 2026-09-18T07:41:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -83,7 +83,7 @@ question: |-
 - [x] NOTES.md under ## Unreleased: one line telling a reader the review payload is now the whole ticket history
 - [x] go build ./... && go test ./... green
 - [x] gitrepo: WorktreeDiff() - git diff HEAD plus untracked files, ticket prose excluded
-- [ ] showForLane case diff: append the worktree diff, commits_source gains git+worktree
+- [x] showForLane case diff: append the worktree diff, commits_source gains git+worktree
 - [ ] test: a ticket with an uncommitted change gets it in the --for-lane payload
 - [ ] SKILL.md 36-43: drop the now-obsolete restriction
 - [ ] signoff.go: commitsSourceLabel carries its own tail, no shared suffix
