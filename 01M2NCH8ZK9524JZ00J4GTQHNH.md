@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T06:12:43Z
+updated-at: 2026-09-18T06:13:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -58,16 +58,7 @@ review-gaps: |-
   Geprueft und ohne Befund: gofmt -l core internal leer, go vet ./... leer, go test ./... -count=1 gruen. Auf einem Wegwerf-Board mit einem frisch gebauten Binary von Hand nachgestellt: 'set mode=chat' → Exit 2 mit bad_mode; 'set mode=" conversational "' → gespeichert als 'mode: conversational'; 'set mode=' → 'mode: ""', dieselbe Konvention wie question und model-tier, also nichts Neues; '--append' auf einen gesetzten Modus → Exit 2, die Pruefung steht also wirklich nach dem Falten; ein neues Ticket traegt keine leere mode-Zeile; 'show --json', 'show --for-lane --json', die Klartext-Kopfzeile, die Detail-Zeile und 'resume' (JSON und Klartext) fuehren alle den Wert; 'validate' warnt auf 'chat' UND auf ' conversational ' mit Leerzeichen. Die drei Pathspecs der Prompts aus einem Unterverzeichnis (core/) nachgestellt: 'git status --short -- :/ ":(exclude,top).jaira/tickets"' ist leer, waehrend das nackte 'git status --short' die geaenderte Ticket-Datei zeigt — die Ausnahme greift wie behauptet, aus jedem Verzeichnis. CanonicalMode ist die einzige Stelle mit dem geschlossenen Wertesatz, und beide Schreibwege plus validate rufen sie.
 test-verdict: "pass: gofmt/vet/build sauber, 'go test ./... -race -count=1' gruen (RC=0, 28 Pakete), alle 17 DoD-Punkte im Arbeitsbaum nachgeprueft, Modus auf einem Wegwerf-Board end-to-end ausgeuebt"
 question: "Der Gespraechsmodus ist gebaut und getestet, aber noch nie an einem echten Ticket gelaufen — der Beleg liegt bisher nur in Tests und einem Scratch-Board. Willst du ihn einmal selbst fahren ('jaira set <id> mode=conversational' auf einem Ticket mit offener Form, dann Dispatcher starten), bevor das hier weitergeht, oder reicht dir der Testbericht und es geht direkt in review? Zweitens: die Rollen-Prompts liegen im Repository, deine Kopien in ~/.claude sind noch die alten — 'jaira roles install --global --force' muesste laufen, damit du den Modus ueberhaupt siehst."
-review-verdict: |-
-  Ich bin nicht fuer Annahme, wegen Befund 1 - und das ist eine Aenderung von wenigen Zeilen, kein Umbau.
-
-  Die Go-Seite wuerde ich so nehmen. Ein Feld, ein geschlossener Wertebereich, eine Funktion hinter beiden Schreibpfaden, fuenf Lesestellen einschliesslich 'jaira resume', validate als Netz fuer alles, was daran vorbeikommt, und Tests, die jede dieser Stellen anfassen. Build, vet und die Suite habe ich selbst laufen lassen, alles gruen. Am Schema, an der CLI und am TUI habe ich nichts gefunden.
-
-  Die Prompt-Seite traegt an einer Stelle nicht. Der Unterscheider, der entscheidet, ob ein Worker schreiben darf, ist unbedingt formuliert, und seine einzige Absicherung ist eine Annahme, die nirgends steht: dass der status beim Start des Workers schon die Lane ist. Der Dispatcher-Loop erfuellt sie nicht - er startet in Schritt 2 und bewegt in Schritt 5 -, und die erste Lane nach dem Einschalten des Modus ist genau der Fall, in dem sie bricht. Das faellt in keinem Test auf, weil Prompt-Prosa nichts ausfuehrt, und es faellt im Betrieb still aus: die Lane arbeitet einfach nicht.
-
-  Unsicher bin ich bei Befund 2. Dass der Payload-Diff auf 'commits:' haengt statt auf der Ableitung, ist vorbestehendes Verhalten und gehoert nicht diesem Ticket - aber es hat mir gerade die Grundlage dieses Reviews weggenommen, und der neue Prompt-Satz behauptet das Gegenteil. Ob das hier mitrepariert wird oder eigens, ist deine Entscheidung.
-
-  Empfehlung: Befund 1 in einer Runde in-progress erledigen, Befund 2 mindestens im Prompt-Satz richtigstellen, dann 'jaira roles install --global --force' und den Modus einmal an einem echten Ticket fahren. Befund 1 haette ein einziger echter Lauf sofort gezeigt.
+review-verdict: "Der Diff erfuellt die 17 DoD-Punkte, und die Go-Seite habe ich nicht nur gelesen, sondern jede Oberflaeche mit einem frisch gebauten Binary auf einem Wegwerf-Board ausgeuebt — alle stimmen mit dem, was die Prompts und NOTES.md behaupten. Keine Defekte im Code gefunden. Die beiden Befunde sind Entscheidungen fuer einen Menschen und nicht Arbeit fuer eine weitere in-progress-Runde: ob der flow.go-Defekt ein Folgeticket bekommt, statt in vier Prompt-Stellen als Zaehlprobe weiterzuleben (Befund 1), und ob die zusammengelegte NOTES-Zeile DoD 12 genuegt (Befund 2). Wo ich unsicher bin, sage ich es: die Prosa ist der Grossteil dieser Aenderung und ob sie einen frischen Worker tatsaechlich richtig steuert, kann kein Test und kein Review zeigen, sondern erst der erste Lauf des Modus auf einem echten Ticket. Der Unterscheider der mitlaufenden Kritik ist die Stelle, an der ich das am meisten erwarte: er haengt daran, dass ein Worker eine Information aus seiner ersten Leserunde ueber die ganze Sitzung haelt, und der Prompt nennt selbst den Fall, in dem das nicht klappt (Restart, Compaction) — er faengt ihn ab, indem der Worker dann fragt statt schreibt, was die richtige Sicherung ist, aber es ist eine Sicherung und keine Garantie."
 review-check: |-
   Alles aus /home/alex/projects/.worktrees/jaira-GTQHNH, Branch feat/GTQHNH.
 
