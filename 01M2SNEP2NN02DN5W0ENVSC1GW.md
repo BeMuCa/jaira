@@ -1,7 +1,7 @@
 ---
 id: 01M2SNEP2NN02DN5W0ENVSC1GW
 title: "Die Pruefschleife gehoert ins Binary, nicht in den Katalog"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,14 +23,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:04:43Z
+updated-at: 2026-09-18T12:04:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
 mode: conversational
-outcome-what: "Plan in elf Schritten, am Code gemessen"
-outcome-why: "Form 2 haengt an einer einzigen Aufteilung: Lane.Builtin traegt zwei Tatsachen, und nur zwei der elf Fundstellen gehoeren auf die neue"
-outcome-resolves: "Der Weg von der Entscheidung zur Umsetzung steht: welches Feld, welche Datei, welcher Test, in welcher Reihenfolge"
+outcome-what: "critique, optimize und testing reisen im Binary mit, ohne in der Vorauswahl zu stehen: Lane.Builtin ist in Builtin ('reist mit') und Default ('steht in der Vorauswahl') aufgeteilt, gespeist aus dem neuen Frontmatter-Feld 'default-board:'. Dazu ein Fuss an 'jaira lanes', der mitgelieferte, nicht installierte Lanes nennt, ein nach 'after:' statt ans Ende einsetzendes 'jaira lanes add', und ein an den Tag des laufenden Binaries gebundener Katalog."
+outcome-why: "Ohne die drei ist ein frisches Board ein Tracker und kein Agenten-Konveyer, und wer sie nicht kennt, erfaehrt nirgends von ihnen - der Katalog meldet sich von selbst nicht und braucht Netz. Einbetten loest Offline und Versionierung in einem, weil eine eingebettete Lane per Konstruktion zum Binary passt; die Trennung der beiden Bits ist es, die das moeglich macht, ohne jedem Tracker-Board dreizehn Lanes aufzuzwingen."
+outcome-resolves: "Alle sechs DoD-Punkte: die Wahl ist begruendet festgehalten (1), 'jaira lanes' nennt die fehlenden Lanes samt Installationszeile (2), 'jaira lanes add critique' installiert bei totem Netz und setzt die Lane in den Fluss (3), ein frisches Board hat unveraendert genau zehn Lanes (4), fuenf Zeilen unter '## Unreleased' (5), und 'jaira lanes market' fragt '?ref=v<version>' ab bzw. sagt bei einem Source-Build an, dass es die Entwicklungsfassung holt (6)."
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
