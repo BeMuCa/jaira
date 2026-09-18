@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:34:22Z
+updated-at: 2026-09-18T12:37:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -31,10 +31,7 @@ mode: conversational
 outcome-what: "Die drei Punkte der zweiten Kritik behoben: 'jaira lanes add' nennt in der Erfolgszeile die Lane, hinter der es gelandet ist (lane.Add gibt den Vorgaenger zurueck, JSON-Feld 'after'); die Warnung ueber einen unaufloesbaren Anker nennt das after: der Lane selbst statt des Namens, an dem die Kettensuche endete; der Kommentarsatz am 'Builtin && !Default'-Filter behauptet nicht mehr, das Angebot gelte nur nie installierten Lanes - derselbe Satz stand auch im Testkopf. Dazu zwei Tests und zwei korrigierte NOTES.md-Zeilen."
 outcome-why: "Die Kettenaufloesung bleibt bewusst still, also erfuhr niemand mehr, wo eine Lane landet; die Warnung nannte bei brainstorm -> backlog einen leeren Namen, den der Benutzer nie geschrieben hat; und der Kommentar samt NOTES-Zeile versprach eine Eigenschaft, die der Filter nachweislich nicht hat."
 outcome-resolves: "DoD 2 und DoD 3 bleiben erfuellt und sind jetzt ehrlich beschrieben: das Angebot am Fuss von 'jaira lanes' und die Platzierung von 'jaira lanes add' sagen beide, was sie wirklich tun. DoD 5 ist nachgezogen - die betroffenen Unreleased-Zeilen stimmen wieder mit dem Verhalten ueberein."
-review-summary: |-
-  core/lane/order.go:284-288 setzt in die Warnung 'anchor' ein - das letzte Kettenglied statt des Namens, den der Benutzer geschrieben hat. Endet die Kette an einem Glied mit after: "", kommt 'anchor "" is not on this board' heraus (reproduziert: lanes remove brainstorm+backlog, dann lanes add brainstorm). l.After nennen und das Kettenende, wenn es abweicht und nicht leer ist, als 'via %q' anhaengen.
-  internal/cli/lanes.go:127 sagt nur 'added testing to this project (<pfad>)' und verschweigt, wo die Lane gelandet ist. Der alte Test verlangte hier eine Ansage; die Kettenaufloesung hat sie ersatzlos gestrichen. Keine Warnung (die traefe den vom Fuss beworbenen Normalweg 'lanes add testing' auf frischem Board), sondern den Nachbarn in die normale Erfolgszeile: 'added critique to this project after pre-process (<pfad>)'.
-  internal/cli/tickets.go:1005-1006 behauptet im Kommentar 'The offer is for the lanes a board never had'; !Default unterscheidet das nicht - 'lanes add critique' + 'lanes remove critique' laesst den Fuss critique wieder anbieten (am Binary reproduziert). Den Satz streichen oder die Einschraenkung dazuschreiben; das Verhalten bleibt wie es ist.
+review-summary: "internal/cli/lanes.go:100 the 'lanes add' help still says 'appending it to the column order' - the round-2 repair made that false; say it places the lane where its after: chain points, following the chain through lanes the board has not installed | internal/tui/lanes.go:438 the same sentence in addFromCatalogue's comment ('appending it at the end of the order') | docs/COMMANDS.md:153 the same sentence in the command table"
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
