@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:26:17Z
+updated-at: 2026-09-18T11:26:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
@@ -284,3 +284,9 @@ Befund 3 (repo.Diff gibt nie einen Fehler zurueck) bleibt offen und ist nicht Te
 - Beide Tests gegengeprobt, nicht bloss gruen gesehen: mit entfernten payload-Schluesseln faellt TestForLaneSaysWhenTheWorktreeCouldNotBeRead mit 'the working tree could not be read and the payload does not say so' und zeigt im Ausgabe-Dump genau das alte Bild - commits_source 'ticket', complete true, kein Wort ueber den Baum.
 - Zusaetzlich zur DoD, weil es dieselbe Unwahrheit war: die missing-Meldung hiess 'diff (git has no commits for this ticket yet)', obwohl sie inzwischen erst faellt, wenn AUCH der Worktree leer ist. Jetzt nennt sie beide Haelften.
 - SKILL.md: die drei git-Kommandos stehen nicht mehr als Quelle, sondern als Rueckfallweg - und zwar an worktree_error aufgehaengt statt an einem Gefuehl. Damit beantwortet Befund 2 den Prompt mit, so wie Alex' 10:45-Notiz es vorgesehen hat.
+- **2026-09-18 11:26 · Alexander Sacharov** — critique (sechster Durchgang, nur die drei review-Befunde vom 09:19 und der in-progress-Lauf 853d58a, der sie beantwortet - der uebrige committete Diff wurde bewusst nicht erneut gelesen; die Notizen 06:47/06:54/07:09/07:49/07:58/08:04 halten ihn als geklaert fest). Worktree ist sauber ausser der Ticket-Datei, es gab also nichts Unversioniertes zu beurteilen.
+Alle drei review-Befunde sind beantwortet: (1) SKILL.md:123-176 richtet die nebenher laufende Kritik auf die zweite Haelfte des Payload-Diffs, die drei git-Kommandos bleiben nur noch als Rueckfallweg an worktree_error; (2) flow.go:621-628 macht aus dem verworfenen WorktreeDiff-Fehler den Schluessel worktree_error, ausserhalb des 'if diff != ""'-Guards, mit TestForLaneSaysWhenTheWorktreeCouldNotBeRead; (3) repo.Diff gibt (string, []string) statt (string, error), der tote missing-Zweig faellt weg, commits_unavailable nennt die SHAs, mit TestForLaneNamesTheCommitsGitCouldNotShow. Ein Aufrufer von repo.Diff im Repo, also keine offene Signaturbaustelle.
+Zwei neue Befunde, beide von diesem Durchgang selbst erzeugt und beide mit klarer Reparatur, daher zurueck nach in-progress:
+- SKILL.md:36-46 kennt commits_unavailable nicht und schickt die Diff-Lane weiter auf das Zaehlen von 'commits' gegen 'git log origin/HEAD..HEAD'. Mit nicht zeigbaren SHAs stimmt die Zahl und der Diff ist trotzdem ein Ausschnitt. Das ist review-Befund 1 (ausgelieferte Anweisung widerspricht der Binary) fuer den Schluessel, den dieser Durchgang gebaut hat.
+- flow.go:728 sagt 'nothing uncommitted is below', steht aber unter dem Diff; und bei diff=='' doppelt sich der Fehlertext mit der missing-Zeile aus flow.go:641.
+Bewusst NICHT als Befund gestellt: die rohen Payload-Schluesselnamen statt Konstanten (die critique vom 07:09 hat dieselbe Frage fuer die commits_source-Token bewertet und stehen lassen), und die Null-Byte-Datei in WorktreeDiff (die Notiz vom 07:58 haelt sie als bewusst offen fest, DoD 8 nennt sie woertlich).
