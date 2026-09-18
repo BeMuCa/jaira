@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:54:39Z
+updated-at: 2026-09-18T06:57:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -110,3 +110,14 @@ Bewusst stehen gelassen: commits_source mit drei Werten ist kein Ueberbau — di
 - Befund 2 (signoff.go label): die Dreiteilung liegt jetzt in core/ticket/trim.go:CommitsSource und wird von flow.go und signoff.go gelesen; commitsSourceLabel (internal/tui/signoff.go:277) setzt sie in Worte, git+ticket bekommt ein eigenes Label statt gar keines.
 - Befund 3 (Doc-Kommentar MergeCommits): nennt jetzt alle drei Aufrufer namentlich inklusive internal/tui/signoff.go.
 Kein Folgefehler der Reparatur: CommitsSource unterscheidet git+ticket ueber len(merged) > len(derived), und MergeCommits haengt nur nicht bereits enthaltene SHAs an - die Bedingung ist damit genau 'das Feld hat etwas beigetragen'. review-summary=none, weiter nach optimize.
+- **2026-09-18 06:57 · Alexander Sacharov** — optimize: eine echte Doppelung gefunden und gefaltet, sonst nichts entfernt.
+
+- Doppelung: internal/cli/flow.go:151 ('move --out --commits') hatte die Union-Schleife handgeschrieben - append(t.Commits...) plus contains()-Pruefung mit TrimSpace. Das ist zeichenweise ticket.MergeCommits(t.Commits, commits), nur mit vertauschten Argumenten: der erste Parameter ist 'was zuerst kommt', nicht 'was aus git stammt'. Jetzt ruft sie MergeCommits. Verhalten identisch: MergeCommits trimmt nur die zweite Liste, genau wie die Schleife nur die eingehenden Shas trimmte. Warum das hierher gehoert und nicht in ein Folgeticket: dieser Change hat MergeCommits ueberhaupt erst zur gemeinsamen Heimat gemacht und seinen Doc-Kommentar mit 'muessen nicht auseinanderlaufen' beschriftet - eine vierte handgeschriebene Kopie im selben File stehen zu lassen ist genau das Auseinanderlaufen, vor dem der Kommentar warnt.
+- Der Doc-Kommentar von MergeCommits nennt jetzt vier Aufrufer statt drei. Wer die Funktion anfasst, aendert damit auch, was 'move --out --commits' ins Frontmatter schreibt.
+- internal/cli/flow.go:297 contains() bleibt: sync.go:386 und delete.go:113 benutzen es weiter, es ist durch die Faltung nicht tot geworden.
+
+Bewusst NICHT angefasst:
+- ticket.CommitsSource: die Bedingung 'len(derived) > 0 && len(merged) > len(derived)' sieht redundant aus, ist es aber nicht - ohne den ersten Teil wuerde der Fall 'nur das Feld traegt etwas' als git+ticket gelesen. Kein Fluff.
+- commitsSourceLabel (internal/tui/signoff.go:277) ist keine Weiterleitung, sondern die Uebersetzung der drei Token in Prosa fuer genau einen Schirm. Die Klartext-Ausgabe von flow.go druckt absichtlich das rohe Token - ein Agent parst, ein Mensch liest.
+- internal/tui/view.go:1319 und internal/cli/tickets.go:776 zeigen t.Commits weiterhin roh. In-progress hat begruendet warum (Feldanzeige, kein Urteil ueber einen Diff); optimize macht daraus keine Verhaltensaenderung.
+- Kosten: DeriveCommits laeuft in signoff pro geoeffnetem Ticket einmal (memoisiert) und in showForLane einmal pro Aufruf. Nichts in einer Schleife, nichts doppelt gelesen.
