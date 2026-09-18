@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:11:18Z
+updated-at: 2026-09-18T12:11:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -31,6 +31,12 @@ mode: conversational
 outcome-what: "critique, optimize und testing reisen im Binary mit, ohne in der Vorauswahl zu stehen: Lane.Builtin ist in Builtin ('reist mit') und Default ('steht in der Vorauswahl') aufgeteilt, gespeist aus dem neuen Frontmatter-Feld 'default-board:'. Dazu ein Fuss an 'jaira lanes', der mitgelieferte, nicht installierte Lanes nennt, ein nach 'after:' statt ans Ende einsetzendes 'jaira lanes add', und ein an den Tag des laufenden Binaries gebundener Katalog."
 outcome-why: "Ohne die drei ist ein frisches Board ein Tracker und kein Agenten-Konveyer, und wer sie nicht kennt, erfaehrt nirgends von ihnen - der Katalog meldet sich von selbst nicht und braucht Netz. Einbetten loest Offline und Versionierung in einem, weil eine eingebettete Lane per Konstruktion zum Binary passt; die Trennung der beiden Bits ist es, die das moeglich macht, ohne jedem Tracker-Board dreizehn Lanes aufzuzwingen."
 outcome-resolves: "Alle sechs DoD-Punkte: die Wahl ist begruendet festgehalten (1), 'jaira lanes' nennt die fehlenden Lanes samt Installationszeile (2), 'jaira lanes add critique' installiert bei totem Netz und setzt die Lane in den Fluss (3), ein frisches Board hat unveraendert genau zehn Lanes (4), fuenf Zeilen unter '## Unreleased' (5), und 'jaira lanes market' fragt '?ref=v<version>' ab bzw. sagt bei einem Source-Build an, dass es die Entwicklungsfassung holt (6)."
+review-summary: |-
+  internal/cli/tickets.go:1000-1007 filtert 'if l.Builtin' und bietet damit jede ENTFERNTE Standard-Lane ewig wieder an - nachgestellt: nach 'jaira lanes remove signoff' steht signoff bei jedem 'jaira lanes' im Fuss. Filter auf 'l.Builtin && !l.Default' aendern: die Menge, die der Fuss meint, ist 'reist mit, steht aber nicht in der Vorauswahl'.
+  core/lane/order.go:265 insertAfterAnchor faellt bei fehlendem Anker auf 'vor die terminale Lane' zurueck, auch wenn der Anker selbst eine mitgelieferte Lane ist - nachgestellt: 'jaira lanes add testing' auf einem frischen Board legt testing HINTER signoff (backlog..review signoff testing done blocked). Der neue Fuss laedt genau dazu ein, er bietet die drei einzeln an. Anker-Kette ueber Installable() aufloesen (optimize -> critique -> in-progress, das steht auf dem Board) und erst danach terminalIDIndex.
+  core/market/market.go:136 List meldet bei einem Tag, den es im Repo nicht gibt (Fork, Build vor dem Tag-Push, geloeschter Tag), nur 'listing the lane marketplace: not found' - errNotFound ist in market.go:186 schon unterschieden, wird hier aber nicht gelesen. Ursache und Ausweg nennen, wenn pinnedRef() != "": welcher Tag gefehlt hat und dass dieser Build den Katalog an seine eigene Version bindet. Neu durch diesen Diff, vorher lief so ein Build auf dem Default-Branch.
+  internal/cli/lanes_test.go:1330-1332 ist tote Deckung: nach 'critique done blocked' ist Index(critique)=7, Index(blocked)=9, die Bedingung kann nie wahr werden, und die Zeile darueber deckt den Fall bereits ab. Streichen.
+  internal/tui/lanes.go:460 und :511 tragen denselben Sechszeiler samt identischem Kommentar, und beide ueberschreiben ein 'ls.msg' aus der Zeile davor. Ein Helfer 'addedMsg(id string, warnings []string) string', einmal zugewiesen.
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
