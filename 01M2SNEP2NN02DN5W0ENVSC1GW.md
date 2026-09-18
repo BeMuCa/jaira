@@ -23,10 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:04:47Z
+updated-at: 2026-09-18T12:11:18Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-56920
-claimed-at: 2026-09-18T10:31:58Z
+claimed-by: DESKTOP-RFTCH11-80358
+claimed-at: 2026-09-18T12:11:18Z
 mode: conversational
 outcome-what: "critique, optimize und testing reisen im Binary mit, ohne in der Vorauswahl zu stehen: Lane.Builtin ist in Builtin ('reist mit') und Default ('steht in der Vorauswahl') aufgeteilt, gespeist aus dem neuen Frontmatter-Feld 'default-board:'. Dazu ein Fuss an 'jaira lanes', der mitgelieferte, nicht installierte Lanes nennt, ein nach 'after:' statt ans Ende einsetzendes 'jaira lanes add', und ein an den Tag des laufenden Binaries gebundener Katalog."
 outcome-why: "Ohne die drei ist ein frisches Board ein Tracker und kein Agenten-Konveyer, und wer sie nicht kennt, erfaehrt nirgends von ihnen - der Katalog meldet sich von selbst nicht und braucht Netz. Einbetten loest Offline und Versionierung in einem, weil eine eingebettete Lane per Konstruktion zum Binary passt; die Trennung der beiden Bits ist es, die das moeglich macht, ohne jedem Tracker-Board dreizehn Lanes aufzuzwingen."
