@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:35:28Z
+updated-at: 2026-09-18T10:36:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -56,7 +56,7 @@ outcome-resolves: "Der Weg von der Entscheidung zur Umsetzung steht: welches Fel
 
 - [x] Lane.Builtin aufteilen: Feld Default im Struct (core/lane/lane.go:136), aus Frontmatter 'default-board:' in parse() (lane.go:284), Vorgabe = Builtin
 - [x] setUp() (core/lane/lane.go:627) und internal/tui/defaultboard.go:50 auf Default umstellen; die uebrigen neun .Builtin-Stellen unveraendert lassen
-- [ ] Test: ein frisch angelegtes Board hat genau die zehn Lanes von heute (DoD 4)
+- [x] Test: ein frisch angelegtes Board hat genau die zehn Lanes von heute (DoD 4)
 - [ ] lanes/critique.md, lanes/optimize.md, lanes/testing.md nach core/lane/builtin/ verschieben als 25-/26-/27-, je mit 'default-board: false'
 - [ ] Test: 'jaira lanes add critique' installiert die Lane bei unerreichbarem Netz (JAIRA_MARKET_API auf eine tote Adresse), und sie steht zwischen in-progress und human (DoD 3)
 - [ ] 'jaira lanes' um einen Fuss erweitern (internal/cli/tickets.go:977): mitgelieferte, nicht installierte Lanes namentlich plus die Zeile, die sie holt; im JSON ein Feld 'available' (DoD 2)
