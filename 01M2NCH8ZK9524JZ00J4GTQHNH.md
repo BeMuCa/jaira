@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:53:47Z
+updated-at: 2026-09-18T05:54:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -788,3 +788,14 @@ Vorschlag: nicht die gefalteten Zeilen wieder aufspalten — das Falten folgt de
 
 Alles uebrige nachgeprueft und gehalten: DoD 1-11 und 13-16. Insbesondere DoD 11 — 'grep -rF "Testing is not a lane" core/' findet 0, core/role/builtin/ enthaelt unveraendert sieben Rollen, core/role/builtin/jaira-role-tester/SKILL.md ist gegen master unveraendert, und spawn.sh (liegt unter core/role/builtin/jaira-dispatcher/scripts/, nicht scripts/) hat weiterhin genau einen Sonderfall: 'if [ "$lane" = dispatch ]' in Zeile 144; seine Aenderung auf dem Branch ist reiner usage-Text. Die Zeilenverweise internal/cli/flow.go:589-595 stimmen noch: 'shas := t.Commits' steht auf 589, 'diff (git has no commits for this ticket yet)' auf 594.
 - **2026-09-18 05:52 · Alexander Sacharov** — Dispatcher: testing hat fail gemeldet, aber nicht am Code - die Suite ist gruen. Das Zusammenlegen der NOTES.md-Zeilen in 472a5c5 hat die Proof-Anker von DoD 12 und 17 entfernt; DoD 12 hat fuer die Pause keine eigene Zeile mehr, ihre Fakten stehen jetzt in der 'commit it yourself'-Zeile. Auftrag: NUR die beiden Proof-Anker auf die Zeilen umschreiben, die die Sache heute beschreiben, woertlich mit Backticks wie die Originalzeile, und mit 'grep -cF' nachpruefen, dass jeder Anker genau einmal vorkommt. An NOTES.md und am Code nichts aendern - das Zusammenlegen war richtig.
+- **2026-09-18 05:54 · Alexander Sacharov** — In-progress nach testing (2026-09-18): nur die zwei Proof-Anker aus dem Dispatcher-Auftrag umgeschrieben, NOTES.md und Code unberuehrt ('git status --short' zeigt allein die Ticket-Datei).
+
+DoD 12 traegt jetzt drei Anker statt zwei: die Critique-beside-work-Zeile plus, INNERHALB der Zeile 'On a ticket in `mode: conversational`, commit it yourself', die zwei Halbsaetze 'That pause stops on code and only on code' und 'a definition-of-done item made of one brand-new file'. Warum zwei und nicht einer: das Kriterium verlangt zwei Sachen (Pause auf Code beschraenkt, neue Datei gesehen), und beide stehen seit 472a5c5 in derselben Zeile - ein einziger Anker haette wieder nur die Haelfte belegt.
+
+DoD 17 zeigt nicht mehr auf eine eigene NOTES-Zeile, sondern auf den Halbsatz 'which `jaira show --for-lane` assembles from the SHAs on the ticket's `commits:` field' in der Critique-beside-work-Zeile. Die Richtigstellung ist dort vollstaendig; die alte Zeile 'Expect the critique that runs beside the work' existiert nicht mehr.
+
+Nachgemessen, nicht behauptet: alle fuenf NOTES-Anker dieser beiden Punkte 'grep -cF' = 1, dazu die vier Prompt-Anker in jaira-role-lane/SKILL.md und jaira-dispatcher/SKILL.md ebenfalls je 1.
+
+Was daraus zu lernen ist, weil es jetzt das zweite Mal die Proof-Zeilen getroffen hat (Runde 18 waren es fehlende Backticks): ein Anker auf eine NOTES.md-Zeile ueberlebt das Zusammenlegen von Zeilen nicht. Wer NOTES.md faltet, muss die proof-Zeilen der Tickets mitziehen, die darauf zeigen - oder der Anker zeigt auf einen Halbsatz statt auf einen Zeilenanfang, dann ueberlebt er das Falten.
+
+Nicht angefasst, mit Verweis: das Zusammenlegen selbst (optimize 18.09. 05:44, ausdruecklich richtig laut Dispatcher-Auftrag 05:52). Ob DoD 12 woertlich zwei eigene NOTES-Zeilen verlangt, ist Alex' Entscheidung und nicht die dieser Lane - die Fakten stehen fuer den Leser vollstaendig da.
