@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:52:13Z
+updated-at: 2026-09-18T06:54:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -33,10 +33,7 @@ mode: conversational
 outcome-what: "Test TestCommitsSourceNamesWhoContributed deckt die vier Faelle ab; die Unreleased-Zeile in NOTES.md ergaenzt um das Signoff-Label"
 outcome-why: "Befund 1 war ein Payload, der eine Commit-Liste als Herkunft von etwas ausgibt, das gar nicht auf dem Schirm steht; Befund 2 war derselbe stille Ausfall wie der Ticket-Bug selbst, nur auf dem Schirm, auf dem ein Mensch unterschreibt; Befund 3 war ein Kommentar, der vor Auseinanderlaufen warnt und ausgerechnet die teuerste Stelle ausliess"
 outcome-resolves: "Alle drei Befunde der critique-Lane vom 2026-09-18 06:47 sind repariert, DoD unveraendert erfuellt; go build ./... und go test ./... gruen"
-review-summary: |-
-  internal/cli/flow.go:646 gates the new commits/commits_source keys on len(shas)>0, so a payload whose repo.Diff failed carries a commit list labelled as the provenance of a diff that is not there; the plain-text branch at :677 already gates on diff != "" — use the same condition in the json branch
-  internal/tui/signoff.go:114 keeps derived = len(m.derivedShas) > 0 while shas is now a union, so a ticket whose commits: field contributed a sha git cannot find still gets the label 'derived from git'; flow.go:601 distinguishes git / ticket / git+ticket for exactly this case — either carry the same three-way source into the label or set derived only when the recorded field added nothing
-  core/ticket/trim.go:123 the doc comment says 'Two callers share it and must not drift apart' and names StampCommits and the lane payload, but this change added a third — internal/tui/signoff.go:114, the screen a person accepts work on, which is where drift costs most; name all three
+review-summary: none
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
