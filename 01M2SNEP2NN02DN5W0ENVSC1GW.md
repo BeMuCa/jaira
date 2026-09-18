@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T20:58:12Z
+updated-at: 2026-09-18T20:58:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -317,3 +317,9 @@ WAS ICH STEHEN LASSE, damit der vierte Durchgang es nicht neu aufmacht:
 - Darum heisst der Test NICHT TestLanesAddAfterRemoveLandsBeforeTheTerminalLane, wie vorgeschlagen - der Name waere die zweite falsche Behauptung an derselben Stelle. Er heisst TestLanesAddAfterRemoveLandsAfterItsAnchor, und Kommentar wie Fehlermeldung nennen 'done' als den Anker, dem die Lane folgt.
 - Was der Kommentar zusaetzlich festhaelt, weil es die Stelle verwirrend macht: 'blocked' landet zufaellig an derselben Position, die Anhaengen erzeugt haette. Die Assertion bleibt trotzdem aussagekraeftig - genau weil der Fallback eine ANDERE Position ergaebe.
 - Sonst nichts angefasst: keine NOTES.md-Zeile (die Entscheidung von 12:12/18:23 gilt, und eine Testumbenennung ist ohnehin nicht client-facing), keine weitere Fundstelle. go build, go vet und 'go test -count=1 ./...' gruen.
+- **2026-09-18 20:58 · Alexander Sacharov** — critique (Lane, fuenfter und letzter Durchgang): KEIN Fund. Die Schleife endet hier.
+- Der eine Punkt aus Durchgang 4 ist erledigt und richtig erledigt: internal/cli/lanes_test.go:955ff heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor, Kommentar und Fehlermeldung nennen 'done' als Anker, die Assertion ids[len-1]=='blocked' ist unveraendert.
+- Die Gegenrede des Workers aus der Notiz 20:54 am Code nachgeprueft statt geglaubt, und sie stimmt in allen drei Punkten: core/lane/builtin/60-blocked.md:4 traegt 'after: done'; core/lane/builtin/50-done.md:7 traegt 'terminal: true', 60-blocked.md:7 traegt 'terminal: false'; terminalIDIndex (core/lane/order.go:349) gibt den Index der terminalen Lane selbst zurueck, nicht den danach. Der Fallback haette 'blocked' also VOR 'done' gesetzt und die Assertion rot gemacht - gelaufen ist der Anker-Weg ueber anchorIndex (order.go:315). Meine eigene Diagnose aus Durchgang 4 war an dieser Stelle falsch; der neue Name ist der richtige, der von mir vorgeschlagene waere die zweite falsche Behauptung gewesen.
+- Gegengeprueft, dass Fund 3 jetzt wirklich erschoepft ist: grep ueber *.go und *.md nach 'append(s|ing) (it) (at|to) the end' und 'end of the (column) order' findet ausserhalb der Ticket-Prosa und .planning/ keine Fundstelle mehr.
+- go build, go vet und 'go test -count=1 ./...' selbst gelaufen, alles gruen.
+- Nicht neu aufgemacht und weiterhin gueltig: Fund 10, Fund 12, terminalIDIndex neben terminalIndex und die drei verschobenen Lane-Dateien (Notiz 12:12), die Warnungsweitergabe in die TUI (Notiz 12:26), der vierte Rueckgabewert von lane.Add und die Erfolgszeile ueber der Warnung (Notiz 12:37), die Entscheidung gegen eine weitere NOTES.md-Zeile (Notiz 18:23).
