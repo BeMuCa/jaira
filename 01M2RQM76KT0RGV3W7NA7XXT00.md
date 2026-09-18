@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: review
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T09:19:09Z
+updated-at: 2026-09-18T09:19:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
 mode: ""
-outcome-what: "gitrepo.WorktreeDiff verliert keine untracked Datei mehr: 'git ls-files --others' laeuft mit -z und wird auf NUL gesplittet statt auf \\n, beide diff-Aufrufe laufen mit core.quotePath=false, und ein --no-index-Aufruf, der Exit 1 ohne Patch meldet, obwohl die Datei existiert und Bytes hat, ist jetzt ein Fehler statt eines Treffers - err fuehrt nicht mehr zu 'continue'. Zwei Tests in core/gitrepo/worktree_test.go, einer davon mit Gegenprobe. Die NOTES.md-Zeile unter ## Unreleased ist um die Zusage ergaenzt, dass der Dateiname so im Patch steht, wie er geschrieben ist."
-outcome-why: "Befund der vierten critique: ein untracked Pfad mit Umlaut kam als C-Zitat (\"\\303\\204nderung.txt\") aus ls-files, der --no-index-Aufruf fand die Datei nicht und meldete das mit Exit 1 - demselben Code, den runTolerating als Normalfall akzeptiert. Ergebnis: leerer Anhang, Datei weg, commits_source sagte trotzdem '+worktree', complete blieb true. Das ist der Bruchstueck-als-vollstaendig-Ausfall, den dieses Ticket abschafft, eine Stufe weiter - und in einem Repository mit deutschen Ticket-Titeln keine Ecke."
-outcome-resolves: "DoD 8"
+outcome-what: "review: der committete Diff plus der unversionierte Stand gegen die acht DoD-Punkte gelesen, Build/Vet/Tests selbst gefahren, review-summary/-gaps/-verdict/-check gesetzt."
+outcome-why: "Die Lane beurteilt den Diff und uebergibt an einen Menschen; keiner der drei Befunde verlangt eine Codeaenderung vor der Annahme, aber Befund 1 (SKILL.md:122-135 widerspricht dem ausgelieferten Verhalten) ist eine Entscheidung fuer Alex."
+outcome-resolves: "review-summary, review-gaps, review-verdict, review-check"
 review-summary: "Der Payload einer Lane, die einen Diff beurteilt, wird nicht mehr aus dem Frontmatter-Feld 'commits:' gebaut. internal/cli/flow.go case \"diff\" leitet die SHA-Liste jetzt immer aus git ab (env.DeriveCommits) und vereinigt sie mit dem Feld (ticket.MergeCommits) - ein eingetragener SHA, den git nicht mehr findet, bleibt erhalten, aber ein veraltetes Feld schneidet den Diff nicht mehr ab. Dazu kommen zwei neue Schluessel in den Payload, 'commits' (die benutzten SHAs) und 'commits_source' (git / ticket / git+ticket), damit ein Leser zaehlen statt vertrauen kann; die Klartext-Ausgabe druckt dieselbe Zeile ueber dem Diff. Derselbe Bug lag auf dem Signoff-Schirm (internal/tui/signoff.go) und ist mitgefixt, inklusive der Beschriftung: commitsSourceLabel uebersetzt die drei Token in Prosa und traegt seinen Nachsatz je Fall selbst, statt dass der Aufrufer ein gemeinsames ' - recorded at acceptance' anhaengt (der Ticket-Fall las sonst das Wort zweimal). Zweitens rechnet der Payload jetzt die nicht eingecheckte Arbeit mit: core/gitrepo.WorktreeDiff liefert 'git diff HEAD' plus jede untracked Datei in voller Laenge (ueber 'diff --no-index -- /dev/null <pfad>', also ohne in den Index zu schreiben), .jaira/tickets ausgeschlossen, und commits_source endet dann auf '+worktree'. Damit sieht eine critique-/testing-/review-Lane auch die Arbeit einer Lane, die nichts committet, und die eines conversational-Tickets. Die untracked-Haelfte ist gegen zwei stille Ausfaelle gehaertet: ls-files laeuft mit -z und wird auf NUL gesplittet, beide diff-Aufrufe mit core.quotePath=false, und ein leerer Patch neben einer existierenden nicht leeren Datei ist ein Fehler statt eines Treffers. Aufgeraeumt wurde dabei: die Union-Schleife lag viermal vor und ist jetzt ticket.MergeCommits, die Dreiteilung der Herkunft ist ticket.CommitsSource, und runTolerating ist der einzige exec-Pfad in core/gitrepo (run ruft es mit noTolerance=-1, abgesichert mit ee.Exited(), damit ein per Signal getoetetes git nicht als Erfolg zaehlt). Die beiden Rollen-Prompts in core/role/builtin verlieren die Handanweisung zum Nachzaehlen, NOTES.md bekommt zwei Zeilen unter ## Unreleased."
 review-gaps: |-
   Alle acht DoD-Punkte sind im Diff belegt, go build / go vet / go test ./... -count=1 sind gruen (31 Pakete), und die Proofs zeigen auf Code, den es gibt. Drei Befunde, der erste ist der einzige, der etwas kostet.
