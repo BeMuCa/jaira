@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:57:30Z
+updated-at: 2026-09-18T06:57:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -34,6 +34,7 @@ outcome-what: "critique zweiter Durchgang: alle drei Befunde vom 06:47 verifizie
 outcome-why: "Ein Durchgang ohne Befund beendet die Schleife - der Ausschnitt schrumpft pro Runde, hier war er die drei Befunde und die Aenderung, die sie beantwortet"
 outcome-resolves: "Befund 1 Gate an diff != \"\", Befund 2 dreiwertiges Label aus ticket.CommitsSource, Befund 3 Doc-Kommentar nennt alle drei Aufrufer"
 review-summary: none
+review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
