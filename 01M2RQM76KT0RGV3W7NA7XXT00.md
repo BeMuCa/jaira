@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:54:40Z
+updated-at: 2026-09-18T07:55:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -188,3 +188,9 @@ Zwei Befunde:
 - NEU, aus der Reparatur selbst und gegen DoD 6: die untracked-Haelfte von WorktreeDiff laesst Pfade mit Nicht-ASCII-Zeichen still fallen. core/gitrepo/git.go:194 liest ls-files ohne core.quotePath abzuschalten, bekommt "\303\204nderung.txt" als C-Zitat, und der --no-index-Aufruf auf Zeile 206 findet die Datei nicht. Er meldet das mit Exit 1 - demselben Code, den runTolerating(1,...) als Normalfall akzeptiert. Also kein Fehler, kein continue, leerer Anhang: die Datei ist weg, commits_source sagt trotzdem '+worktree', complete bleibt true. Selbst nachgestellt in einem Wegwerf-Repo. Das ist genau der stille Ausfall, den dieses Ticket abschafft, eine Stufe weiter.
 - Warum das ein Befund ist und kein Aufmachen des ersten Durchgangs: DoD 6 verlangt 'plus nicht verfolgte Dateien' im Payload, und diese Zeile liefert sie fuer eine ganze Klasse von Dateinamen nicht. In einem Repository, dessen Tickets deutsche Titel tragen, ist das keine Ecke.
 - Fix ohne Entscheidungsbedarf: ls-files -z und Split auf "\x00" - -z schaltet das Zitieren ab und loest den Leerzeichen-Fall gleich mit. Ersatzweise r.run("-c", "core.quotePath=false", "ls-files", ...). Zweitens: Exit 1 bei --no-index heisst 'Dateien unterscheiden sich' UND 'Pfad nicht lesbar'; leerer out bei nicht leerer Datei gehoert nicht toleriert.
+- **2026-09-18 07:55 · Alexander Sacharov** — in-progress (fuenfter Durchgang, DoD 8 - der neue Befund der vierten critique). Was nicht im Code steht:
+- Der stille Ausfall hatte zwei Haelften, und -z schliesst nur die erste. Die zweite: 'diff --no-index' meldet 'Pfad nicht lesbar' mit demselben Exit 1 wie 'die Dateien unterscheiden sich', also winkte runTolerating(1,...) ihn durch. Jetzt gilt ein leerer Patch neben einer Datei, die es gibt und die Bytes hat, als Fehler. Gegenprobe gemacht: mit entferntem -z faellt der Test jetzt LAUT (Fehlermeldung statt fehlender Datei) - vorher waere er still gruen geblieben.
+- Aus 'continue' bei err wurde 'return "", err'. Begruendung: eine uebersprungene Datei ist genau die Luecke, die dieses Ticket abschafft. Der Preis ist bewusst: flow.go:619 wertet den Fehler nicht-fatal aus, also faellt im Fehlerfall der GANZE Worktree-Anteil weg und commits_source sagt dann eben kein '+worktree' - lieber nichts behaupten als ein Bruchstueck.
+- core.quotePath=false steht zusaetzlich auf BEIDEN diff-Aufrufen. -z regelt nur den Weg hinein (ls-files); ohne quotePath=false traegt der Patch-Header weiter "a/\303\204nderung.txt", waehrend der Inhalt schon da ist. Der erste Testlauf zeigte genau das - Inhalt vorhanden, Kopfzeile zitiert.
+- Verworfen: nur r.run("-c","core.quotePath=false","ls-files",...) statt -z. Loest das Zitieren, aber nicht Pfade mit Leerzeichen beim Split auf \n. -z loest beides in einem.
+- NOTES.md: keine zweite Zeile. Die Unreleased-Zeile versprach schon 'plus every untracked file in full' - das war die Zusage, die nicht stimmte. Sie ist um 'named as it is spelt however many umlauts or spaces are in its path' ergaenzt statt denselben Change zweimal zu beschreiben.
