@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:43:23Z
+updated-at: 2026-09-18T06:43:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -58,7 +58,7 @@ outcome-resolves: "7 Plan-Schritte vom failing test bis NOTES.md, mit der Unters
 - [x] carry the list into the payload: commits (the SHAs used) plus commits_source, so a reader can count instead of trusting
 - [x] check the same field-first pattern in internal/tui/signoff.go:107 - fix if it is the same bug, note it if it is not
 - [x] drop the hand instruction from core/role/builtin/jaira-role-lane/SKILL.md (both passages, lines ~36-49 and ~137-146) now the tool tells the truth
-- [~] NOTES.md under ## Unreleased: one line telling a reader the review payload is now the whole ticket history
+- [x] NOTES.md under ## Unreleased: one line telling a reader the review payload is now the whole ticket history
 - [ ] go build ./... && go test ./... green
 
 ## Progress
