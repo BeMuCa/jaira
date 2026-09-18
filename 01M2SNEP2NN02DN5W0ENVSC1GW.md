@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:11:38Z
+updated-at: 2026-09-18T12:12:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -221,3 +221,15 @@ In der Katalog-Zeile steht jetzt auch, dass der ref an ein per JAIRA_MARKET_API 
 Format gegengeprueft, nicht nur gelesen: Notes() aus core/release gegen die Datei laufen lassen, Ergebnis 'Unreleased hat 5 Aenderungen'. Der Parser ist ein Zeilenscan, eine umgebrochene Zeile waere still zu zwei halben Aenderungen geworden - das sieht man der Datei im Editor nicht an, dem Parser schon.
 
 Schritt 11: go build, go vet und 'go test -count=1 ./...' (ohne Cache) alle sauber.
+- **2026-09-18 12:12 · Alexander Sacharov** — critique (Lane, erster Durchgang): fuenf Funde, zwei davon am gebauten Binary reproduziert, nicht nur gelesen.
+
+REPRODUZIERT 1 - der Fuss bietet Entferntes wieder an. Frisches Testboard, 'jaira lanes remove signoff', dann 'jaira lanes': signoff steht unter 'Shipped with this binary, not on this board'. Der Filter 'l.Builtin' (internal/cli/tickets.go:1002) meint die falsche Menge; gemeint ist 'mitgeliefert, aber nicht in der Vorauswahl', also 'l.Builtin && !l.Default'. Genau dafuer wurde Default in diesem Diff eingefuehrt - die Stelle liest es nur nicht.
+
+REPRODUZIERT 2 - der neue Fuss laedt in eine Falle. 'jaira lanes add testing' auf einem frischen Board (der Fuss bietet die drei EINZELN an und sagt 'Add one with jaira lanes add <id>'): testing landet hinter signoff. Ein Test-Lane nach der menschlichen Abnahme. Ursache: insertAfterAnchor kennt nur zwei Faelle - Anker da, oder vor die terminale Lane. Der dritte Fall ist neu durch dieses Ticket: der Anker ist selbst eine mitgelieferte, noch nicht installierte Lane. Die Kette loest sich auf, wenn man sie ueber Installable() weiterverfolgt: optimize -> critique -> in-progress. Der Fund-6-Fix war richtig, er ist nur eine Ebene zu flach.
+Der DoD-3-Test deckt das nicht, weil er die drei in der richtigen Reihenfolge installiert - dann findet jede ihren Anker schon auf dem Board.
+
+WAS ICH STEHEN LASSE, mit Grund - damit der naechste Durchgang es nicht neu aufmacht:
+- Fund 10 ('add' als fertige Kommandozeile im JSON): bewusst und in NOTES.md ausdruecklich verkauft ('so a session reading JSON does not have to parse the prose'). Eine Redundanz, die ihren Zweck nennt, ist kein Fund.
+- Fund 12 (os.Stderr statt cmd.ErrOrStderr in tickets.go:1053): die Zeile ist ALT, nicht aus diesem Diff. Und die Kopplung ist nicht real - nachgemessen mit 'go test -run TestLanesJSONCarriesAvailable -v': dieser Test gibt gar keine Warnung aus, nur der Prosa-Test tut es. Eine Vereinheitlichung ist ein eigenes Ticket, keine Aenderung an dieser Lane.
+- terminalIDIndex neben terminalIndex (lane.go:938): die Signaturen unterscheiden sich ([]string+Set gegen []*Lane), eine Zusammenlegung waere mehr Code als die sechs Zeilen. Absichtlich gelassen.
+- Die drei verschobenen Lane-Dateien: wortgleich uebernommen, je eine Zeile dazu. Nichts zu sagen.
