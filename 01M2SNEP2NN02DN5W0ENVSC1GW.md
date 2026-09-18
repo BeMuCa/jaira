@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:04:12Z
+updated-at: 2026-09-18T12:04:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -207,3 +207,11 @@ Die in Schritt 8 offen gelassene Frage - geht der ref auch an ein per JAIRA_MARK
 Am echten Binary nachgestellt, wie DoD 6 es verlangt: mit -ldflags '-X main.version=0.1.4' fragt es /contents/lanes?ref=v0.1.4 ab, der Source-Build fragt ohne ref und sagt die Zeile dazu.
 
 WERKZEUG-DELLE, fuer die naechste Sitzung: ein 'pkill -f ...' am Anfang einer Kommandokette hat die ganze Kette mitgerissen (Exit 144), noch bevor die jaira-Schreibvorgaenge dahinter liefen. Die Haken standen danach nicht auf dem Ticket. Aufraeumbefehle nicht mit Ticket-Schreibvorgaengen in eine Zeile.
+- **2026-09-18 12:04 · Alexander Sacharov** — Schritt 10, was die Zeilen tragen und warum fuenf und nicht drei. Geplant waren drei (Lanes im Binary, Fuss von 'jaira lanes', versionsgebundener Katalog). Dazugekommen sind zwei, weil unterwegs zwei weitere Dinge sichtbar wurden:
+- 'jaira lanes add' setzt jetzt nach dem Anker statt anzuhaengen. Das ist eine geaenderte Wirkung eines bestehenden Aufrufs und damit client-facing nach der Regel in CLAUDE.md, auch wenn niemand danach gefragt hat.
+- 'default-board:' ist ein neues Frontmatter-Feld in Lane-Dateien. Ebenfalls ausdruecklich client-facing, und wer eigene Lanes schreibt, will davon wissen.
+In der Katalog-Zeile steht jetzt auch, dass der ref an ein per JAIRA_MARKET_API gesetztes Ziel geht und dessen eigene Query-Parameter erhalten bleiben - ohne das koennte jemand mit eigenem Spiegel es fuer einen Fehler halten, wenn dort ploetzlich ein ref ankommt.
+
+Format gegengeprueft, nicht nur gelesen: Notes() aus core/release gegen die Datei laufen lassen, Ergebnis 'Unreleased hat 5 Aenderungen'. Der Parser ist ein Zeilenscan, eine umgebrochene Zeile waere still zu zwei halben Aenderungen geworden - das sieht man der Datei im Editor nicht an, dem Parser schon.
+
+Schritt 11: go build, go vet und 'go test -count=1 ./...' (ohne Cache) alle sauber.
