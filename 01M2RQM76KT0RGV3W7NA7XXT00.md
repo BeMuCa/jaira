@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:30:48Z
+updated-at: 2026-09-18T06:33:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -51,3 +51,4 @@ claimed-at: 2026-09-18T06:30:48Z
 
 ## Progress
 - **2026-09-18 06:30 · Alexander Sacharov** — Alex am 2026-09-18: dieses Ticket wird 0.3.1. Der Zweig fix/7XXT00 haengt an release/0.3.0 (88b6816), nicht an master - 0.3.0 ist noch nicht gemerged und noch nicht getaggt. Die Zeile fuer NOTES.md gehoert deshalb unter das leere '## Unreleased' ganz oben, NICHT unter '## 0.3.0': diese Sektion wird gleich getaggt und ist damit geschlossene Historie. Das Umbenennen von '## Unreleased' nach '## 0.3.1' und eine frische leere darueber macht ein Mensch in dem Commit, den er taggt - kein Agent.
+- **2026-09-18 06:33 · Alexander Sacharov** — Entscheidung zu DoD 1 (Alex, 2026-09-18, vor der Plan-Lane): Weg A - showForLane leitet die Commit-Liste im case "diff" IMMER aus git ab, statt t.Commits als fertige Antwort zu lesen. t.Commits wird mit dem aus git abgeleiteten Stand vereinigt, damit ein eingetragener SHA, den die Ableitung nicht findet, nicht verloren geht: shas := union(t.Commits, env.DeriveCommits(t)). complete:true bedeutet damit wieder 'du siehst den ganzen Branch'. Kein 'missing'-Feld mit einer Zahl fehlender Commits, und kein zusaetzliches Warnfeld - der stille Ausfall wird beseitigt, nicht gemeldet. Begruendung: ein Flag, das niemand liest, ersetzt einen stillen Fehler nur durch einen lauten Umweg. Preis, der bewusst akzeptiert wird: der beurteilte Diff ist nicht mehr allein aus dem Frontmatter reproduzierbar.
