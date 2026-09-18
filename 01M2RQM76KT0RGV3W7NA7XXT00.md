@@ -25,10 +25,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:33:23Z
+updated-at: 2026-09-18T06:33:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
+mode: conversational
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
