@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T08:10:23Z
+updated-at: 2026-09-18T08:12:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28090
 claimed-at: 2026-09-18T08:09:46Z
@@ -68,3 +68,26 @@ C - EINBETTEN. Fuer critique, optimize und testing der eigentliche Punkt: sie re
 
 Empfehlung des Dispatchers, nicht Entscheidung: C fuer die drei, A fuer den Rest des Katalogs, B gar nicht. Die Entscheidung gehoert der brainstorm-Lane und ist DoD 1.
 - **2026-09-18 08:09 · Alexander Sacharov** — Dispatcher, beim Start am 2026-09-18: Alex ist weg und hat gesagt, dieses Ticket soll anlaufen, sobald 7XXT00 eine Menschen-Lane erreicht - das ist jetzt passiert. Er hat die Entscheidung dieses Tickets NICHT vorweggenommen, also ist sie offen und dieses Ticket besteht praktisch nur aus ihr. Nicht raten: die vier moeglichen Formen stehen im Kontext, die drei technischen Wege zur Versionierung (A ?ref=, B Release-Assets, C einbetten) in der Notiz darueber, samt der Empfehlung des vorigen Dispatchers (C fuer die drei Lanes, A fuer den Rest, B gar nicht) - eine Empfehlung, keine Entscheidung. Arbeite brainstorm aus, lege die Frage sauber vor und halte dann an. Der Zweig feat/VSC1GW haengt an master (3d12b7a, 0.3.0 gemerged).
+- **2026-09-18 08:12 · Alexander Sacharov** — brainstorm, am Code nachgesehen - was WIRKLICH im Weg steht, und warum Form 2 nicht das ist, was sie im Kontext zu sein scheint.
+
+WAS DER CODE ZEIGT
+
+1. 'eingebettet' und 'auf jedem Board voreingestellt' sind heute EIN Bit, nicht zwei. Builtins() (core/lane/lane.go:385) liest go:embed builtin/*.md, und setUp() (core/lane/lane.go:614) schreibt beim ersten Oeffnen eines Boards genau die Lanes als Dateien, fuer die l.Builtin true ist - sofern kein Default-Board existiert. Wer critique.md einfach nach core/lane/builtin/ legt, hat damit NICHT Form 2 gebaut, sondern Form 4: dreizehn Lanes auf jedem frischen Board. Form 2 verlangt, das Feld Lane.Builtin (lane.go:136) in zwei Tatsachen zu trennen - 'reist im Binary mit' und 'steht in der Vorauswahl'. Das ist ein Frontmatter-Feld mehr (etwa 'default-board: false') oder ein zweites embed-Verzeichnis, plus die eine Zeile in setUp, die statt l.Builtin die Vorauswahl fragt.
+
+2. Ist das getan, ist Offline geschenkt. Installable() (core/lane/order.go:175) bietet schon heute built-ins PLUS ~/.jaira/lanes an, und lane.Add() kopiert von dort auf das Board. Eine eingebettete critique-Lane ist damit ohne jedes Netz per 'jaira lanes add critique' installierbar - 'market adopt' entfaellt fuer sie ganz. Das ist DoD 3 erledigt, ohne eine Fehlermeldung schreiben zu muessen.
+
+3. Form 1 allein erreicht Offline NICHT. Die Namen der Katalog-Lanes kennt das Binary heute nirgends; die Liste kommt ausschliesslich aus market.List() ueber die Contents-API (core/market/market.go:45). 'jaira lanes' koennte also ohne Netz gar nicht nennen, was fehlt - es sei denn, man verdrahtet die drei Namen fest, was ein halbes Einbetten ohne dessen Nutzen ist.
+
+4. Form 3 hat die Mechanik schon, braucht aber trotzdem neuen Stoff. DefaultBoard (core/lane/defaultboard.go) ist per Benutzer und kann jede Lane-Auswahl halten - ein zweites 'agentic'-Profil waere kein neues Konzept im Kern. Neu waeren die Frage in 'jaira init' und ein zweiter mitgelieferter Auswahl-Satz; und sie hilft nur dem, der beim Anlegen schon weiss, was er waehlen soll.
+
+5. DoD 6, Versionierung: version steht in cmd/jaira/main.go:11 (ldflags, 'dev' im Source-Build) und ist dem Paket market heute gar nicht bekannt. Weg A - '?ref=v<version>' an apiBase() - sind wenige Zeilen plus Durchreichen der Version, Fallback auf den Default-Branch mit lauter Ansage, wenn die Version 'dev' ist. Weg B (Release-Assets) liefert dasselbe und kostet den Release-Workflow dazu. Unter Form 2 braucht der Markt fuer die drei Lanes gar nicht mehr versioniert zu sein - er bleibt noetig fuer den Rest des Katalogs (changelog-writer, secrets-scan).
+
+EMPFEHLUNG: Form 2, und Form 1 obendrauf, weil sie durch 2 erst moeglich und dann fast gratis ist. Dazu Weg A.
+
+Form 2 einbetten, aber nicht voreinstellen: kein Board bekommt eine Lane mehr als heute (DoD 4 bleibt gewahrt), kein neues Kommando, keine Frage in 'jaira init' - es wird ein Bool in zwei Bools zerlegt und eine Netzabhaengigkeit entfernt statt eine hinzugefuegt. An der Scope-Regel gemessen ist das die einzige der vier Formen, die das Binary nicht um ein Konzept wachsen laesst.
+Form 1 obendrauf: 'jaira lanes' nennt am Fuss die mitgelieferten, nicht installierten Lanes mit der Zeile, die sie holt. Ohne das ist DoD 2 nicht erfuellt - eingebettet und ungenannt ist so unsichtbar wie im Katalog. Mit 2 im Ruecken ist es eine Liste aus dem Binary statt aus dem Netz.
+Form 4 faellt an der Scope-Regel: dreizehn Lanes als Voreinstellung zwingt jedem Tracker-Benutzer einen Konveyer auf, den niemand faehrt.
+Form 3 faellt am Aufwand gegen den Nutzen: init-Dialog plus zweites Profil, und der Nutzen trifft nur den, der die Wahl schon versteht. Sie bleibt spaeter nachruestbar - ein 'agentic'-Default-Board ist nach Form 2 nur noch eine Datei mit dreizehn Namen darin.
+Weg B faellt: eigener Auslieferungsweg fuer das Ergebnis, das A mit einem Query-Parameter liefert.
+
+OFFEN UND MENSCHENSACHE: die Wahl selbst (DoD 1). Alex hat sie ausdruecklich nicht vorweggenommen.
