@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T20:53:12Z
+updated-at: 2026-09-18T20:53:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -85,7 +85,7 @@ review-summary: "internal/cli/lanes_test.go:955 TestLanesAddAfterRemoveAppendsAt
   proof: TestLanesAddSaysWhichLaneItLandedAfter und TestLanesAddWarnsWithTheAnchorTheLaneNames; go build/vet sauber, volle Suite gruen
 - [x] Runde 4, Fund der dritten Kritik: die drei veralteten 'appending'-Saetze (internal/cli/lanes.go Long von 'lanes add', internal/tui/lanes.go Kommentar an addFromCatalogue, docs/COMMANDS.md Kommandotabelle) sagen stattdessen, dass die Lane dorthin gesetzt wird, wohin ihre after:-Kette zeigt - durch nicht installierte Lanes hindurch
   proof: internal/cli/lanes.go:100, internal/tui/lanes.go:438, docs/COMMANDS.md:153; am gebauten Binary nachgestellt: 'jaira lanes add --help' sagt jetzt 'placing it where its after: field points'
-- [ ] Runde 5, Fund der vierten Kritik: internal/cli/lanes_test.go TestLanesAddAfterRemoveAppendsAtEnd heisst und begruendet nicht mehr 'angehaengt', sondern nennt den wirklichen Grund; Assertion unveraendert
+- [~] Runde 5, Fund der vierten Kritik: internal/cli/lanes_test.go TestLanesAddAfterRemoveAppendsAtEnd heisst und begruendet nicht mehr 'angehaengt', sondern nennt den wirklichen Grund; Assertion unveraendert
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
