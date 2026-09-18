@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T06:06:06Z
+updated-at: 2026-09-18T06:06:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -813,3 +813,22 @@ Weiter stehen gelassen, mit Verweis: der Defekt in flow.go:589 (liegt als Z4G3RD
 
 Kontext: Alex hat am 18.09. entschieden, dass die Runden enden und der Stand in den Release geht. Diese Runde bestaetigt, dass die Reparatur aus dem Dispatcher-Auftrag 05:52 sitzt — sie ist kein neuer Schleifenanlauf.
 - **2026-09-18 06:00 · Alexander Sacharov** — optimize (zweiter Lauf): Sackgasse, die sich lohnt aufzuschreiben, damit sie kein dritter Lauf nochmal geht. Die dreifache Erklaerung des showForLane-/'commits:'-Mechanismus (jaira-role-lane Kopf + Abschnitt 1, jaira-dispatcher) sieht wie der klassische Duplikationsbefund dieser Lane aus - drei Prosa-Stellen ueber eine Go-Funktion, die bei einer Aenderung an flow.go alle drei veralten. Sie wird nicht zusammengelegt, weil DoD 17 sie an allen drei Stellen woertlich verlangt und ihr proof sie mit 'grep -cF' zaehlt. Kuerzen waere hier keine Aufraeumung, sondern eine Verhaltensaenderung am Abnahmekriterium - und damit laut Lane-Prompt ein Fall fuer in-progress, nicht fuer optimize. Wer die Doppelung wirklich aufloesen will, muss zuerst DoD 17 aendern, nicht den Text. Zweitens zur Einordnung des Laufs: seit 472a5c5 (dem vorigen optimize) hat sich am Diff nichts bewegt ausser den zwei proof-Zeilen, die in-progress nachgezogen hat. Die vier Durchgaenge liefen also auf demselben Stand wie beim letzten Mal; nachgemessen wurde trotzdem (gofmt/vet/test gruen), vorausgesetzt nichts.
+- **2026-09-18 06:06 · Alexander Sacharov** — testing: Gates gruen — gofmt -l core internal cmd leer, go vet ./... leer, go build ./... leer, 'go test ./... -race -count=1' RC=0 ueber 28 Pakete (internal/tui 109s, internal/cli 37s, keine Race-Meldung).
+
+Alle 17 DoD-Punkte gegen den Arbeitsbaum geprueft, nicht gegen outcome-what:
+- Die sieben NOTES.md-Anker aus DoD 6, 12, 13 und 17 mit 'grep -cF' gezaehlt: jeder genau einmal.
+- Die Abschnittsnamen aus den proof-Zeilen existieren alle: jaira-role-lane/SKILL.md fuehrt Kopf, '1. Are you the critique...', '2. Show the code...', '3. Do not commit...', 'Read it once, and do not read it again', 'Read the worktree, not the ticket's diff', 'Both halves have to hold', 'Does your lane judge that payload's diff?'; jaira-dispatcher/SKILL.md fuehrt 'Before the plan lane: count what is still open', 'What the mode changes for you', 'In conversational mode, a critique runs beside the work'.
+- DoD 11: 'grep -rF "Testing is not a lane" core/' findet 0 Treffer; The-loop-Schritt 2 lautet woertlich wie behauptet; spawn.sh hat genau einen 'dispatch'-Sonderfall (Zeile 144); jaira-role-tester/SKILL.md steht nicht im Diff 4dcba77...HEAD.
+- DoD 12/15: 'git status --short' zeigt in diesem Worktree nur die Ticket-Datei, mit ':/ :(exclude,top).jaira/tickets' bleibt nichts uebrig — die Pause ist nach dem ersten 'jaira dod' also wieder erreichbar.
+- DoD 10: neue Datei nachgestellt — 'git diff' 0 Zeilen, 'git status --short' mit demselben Pathspec '?? probe_neu.go'.
+- DoD 8: 'jaira show GTQHNH --for-lane critique --json' liefert missing=null und einen notes-Schluessel mit 54760 Zeichen.
+
+Verhalten auf einem Wegwerf-Board (frisches git init + jaira init, Binary aus diesem Baum) ausgeuebt:
+- 'mode' ist per Default leer; 'jaira set <id> mode=chatty' -> exit 2 mit 'mode is "conversational" or empty, got "chatty"'.
+- 'jaira set <id> mode="  conversational  "' schreibt getrimmt 'mode: conversational' ins Frontmatter.
+- 'jaira show --json' fuehrt mode; 'jaira show' im Klartext eine mode-Zeile; 'jaira show --for-lane in-progress --json' fuehrt mode neben model_tier; die Klartext-Kopfzeile lautet '# Lane: Implementing   (tier: cheap, mode: conversational)'.
+- 'jaira resume --json' und der Klartext-Block fuehren mode.
+- Von Hand ins Frontmatter geschriebenes 'mode: " conversational "' und 'mode: chatty' melden beide 'warning ... mode: ... is not a mode'; 'jaira set <id> mode=' raeumt es wieder weg.
+- 'jaira update' auf dem fremden Board schreibt 'mode' in AGENTS.md und CLAUDE.md (Zeile 35), DoD 13 also end-to-end und nicht nur im Quelltext.
+
+Stehengelassen, kein Befund dieser Lane: das 'commits:'-Feld des Tickets traegt 4 SHAs, der Branch 24 GTQHNH-Commits — die Zaehlprobe aus dem Kopf von jaira-role-lane/SKILL.md schlaegt also an, und ich habe entsprechend 'git diff 4dcba77...HEAD' beurteilt statt des Payload-Ausschnitts. Genau dieser flow.go-Defekt ist in DoD 17 ausdruecklich aus dem Ticket herausgenommen. Die Probe selbst hat damit zum ersten Mal an einem echten Ticket funktioniert.
