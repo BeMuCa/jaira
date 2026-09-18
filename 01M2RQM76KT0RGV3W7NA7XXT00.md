@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:54:25Z
+updated-at: 2026-09-18T06:54:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -105,3 +105,8 @@ Bewusst stehen gelassen: commits_source mit drei Werten ist kein Ueberbau — di
 - Befund 2, gewaehlte Variante: die Dreiteilung ins Label, NICHT 'derived nur setzen, wenn das Feld nichts beigetragen hat'. Begruendung: die zweite Variante laesst im Fall git+ticket gar kein Label stehen, und ein fehlendes Label liest sich als 'keine Aussage' statt als 'gemischte Herkunft' - auf dem Schirm, auf dem unterschrieben wird, ist das wieder ein stiller Ausfall, nur ein kleinerer.
 
 - NOTES.md: die Unreleased-Zeile wurde ERGAENZT, nicht um eine zweite Zeile erweitert. Der Signoff-Schirm war in derselben Zeile schon genannt; eine zweite Zeile haette denselben Change zweimal beschrieben. Unreleased ist offen, das darf man - an einer getaggten Sektion nicht.
+- **2026-09-18 06:54 · Alexander Sacharov** — critique (zweiter Durchgang, nur die drei Befunde vom 06:47 und die Aenderung, die sie beantwortet - der uebrige Diff wurde bewusst nicht erneut gelesen): alle drei repariert, kein neuer Befund.
+- Befund 1 (flow.go:646 gate an len(shas)>0): jetzt 'if diff != ""' (internal/cli/flow.go:645), dieselbe Bedingung wie der Klartext-Zweig bei :674. Das frueher noetige 'shasFrom = ""' im len(shas)==0-Zweig ist entfallen, weil ticket.CommitsSource bei leerer Liste selbst "" liefert - geprueft in trim.go:203 und im Testfall 'nothing at all'.
+- Befund 2 (signoff.go label): die Dreiteilung liegt jetzt in core/ticket/trim.go:CommitsSource und wird von flow.go und signoff.go gelesen; commitsSourceLabel (internal/tui/signoff.go:277) setzt sie in Worte, git+ticket bekommt ein eigenes Label statt gar keines.
+- Befund 3 (Doc-Kommentar MergeCommits): nennt jetzt alle drei Aufrufer namentlich inklusive internal/tui/signoff.go.
+Kein Folgefehler der Reparatur: CommitsSource unterscheidet git+ticket ueber len(merged) > len(derived), und MergeCommits haengt nur nicht bereits enthaltene SHAs an - die Bedingung ist damit genau 'das Feld hat etwas beigetragen'. review-summary=none, weiter nach optimize.
