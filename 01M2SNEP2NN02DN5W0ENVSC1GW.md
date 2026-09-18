@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T08:12:17Z
+updated-at: 2026-09-18T10:30:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-28090
 claimed-at: 2026-09-18T08:09:46Z
@@ -91,3 +91,14 @@ Form 3 faellt am Aufwand gegen den Nutzen: init-Dialog plus zweites Profil, und 
 Weg B faellt: eigener Auslieferungsweg fuer das Ergebnis, das A mit einem Query-Parameter liefert.
 
 OFFEN UND MENSCHENSACHE: die Wahl selbst (DoD 1). Alex hat sie ausdruecklich nicht vorweggenommen.
+- **2026-09-18 10:30 · Alexander Sacharov** — ENTSCHIEDEN von Alex am 2026-09-18, in der Sitzung mitlesend (conversational): FORM 2, mit Form 1 obendrauf und Weg A fuer den Rest des Katalogs.
+
+Gewaehlt: die drei Lanes reisen im Binary mit, stehen aber NICHT in der Vorauswahl. Dazu nennt 'jaira lanes' die mitgelieferten, nicht installierten Lanes, damit ein frisches Board von ihnen erfaehrt. 'jaira lanes market' bekommt '?ref=v<version des laufenden Binaries>' fuer den Katalog, der weiterhin aus dem Netz kommt.
+
+Verworfen, an der Scope-Regel aus CLAUDE.md gemessen:
+- Form 1 allein: erreicht DoD 3 nicht. Das Binary kennt die Namen der Katalog-Lanes nirgends, sie kommen nur aus market.List() (core/market/market.go:45). Ohne Netz kann es nicht nennen, was fehlt - ausser man verdrahtet die drei Namen fest, was ein halbes Einbetten ohne dessen Nutzen ist.
+- Form 3: die Mechanik traegt zwar (DefaultBoard, core/lane/defaultboard.go), neu waeren aber ein Dialog in 'jaira init' und ein zweiter mitgelieferter Auswahl-Satz - ein Konzept mehr im Binary, und der Nutzen trifft nur den, der die Wahl beim Anlegen schon versteht. Nach Form 2 bleibt sie jederzeit nachruestbar: ein 'agentic'-Default-Board ist dann nur noch eine Datei mit dreizehn Namen darin.
+- Form 4: dreizehn Lanes als Voreinstellung zwingt jedem, der jaira als reinen Tracker aufsetzt, einen Konveyer auf, den niemand faehrt. Das ist genau das Wachstum, gegen das die Scope-Regel steht.
+- Weg B (Release-Assets): ein eigener Auslieferungsweg fuer das Ergebnis, das Weg A mit einem Query-Parameter liefert.
+
+Warum Form 2 als einzige die Scope-Regel besteht: kein Board bekommt eine Lane mehr als heute, kein neues Kommando, keine Frage in 'jaira init'. Es wird ein bestehendes Bool (Lane.Builtin, core/lane/lane.go:136) in zwei Tatsachen zerlegt - 'reist im Binary mit' und 'steht in der Vorauswahl' - und eine Netzabhaengigkeit entfernt statt eine hinzugefuegt.
