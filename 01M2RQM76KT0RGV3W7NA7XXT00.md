@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T11:34:07Z
+updated-at: 2026-09-18T11:34:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35097
 claimed-at: 2026-09-18T11:14:14Z
 mode: ""
-outcome-what: "Der Lane-Payload sagt jetzt auch, was er NICHT zeigen konnte: commits_unavailable nennt die SHAs, zu denen git keinen Patch liefert (bisher nur eine Zeile '(not available locally)' mitten im Diff, mitgezaehlt in commits), worktree_error traegt die git-Meldung, wenn der unversionierte Teil nicht gelesen werden konnte (bisher ununterscheidbar von einem sauberen Baum). repo.Diff hat dafuer den nie gesetzten error-Rueckgabewert gegen die Liste der nicht zeigbaren SHAs getauscht, der tote Fehlerzweig in flow.go ist weg. Der Abschnitt fuer die nebenher laufende Kritik in jaira-role-lane/SKILL.md ist neu geschrieben: er zeigt auf die zweite Haelfte des Payload-Diffs unter der Zeile 'uncommitted work in the working tree' statt den Diff verbieten und drei git-Kommandos von Hand holen zu lassen. Zwei Tests mit Gegenprobe, eine NOTES.md-Zeile."
-outcome-why: "Die drei Befunde der review-Lane vom 09:19, von Alex am 10:45 und 10:53 zur Bearbeitung in diesem Durchgang freigegeben. Befund 1 gehoert vor die Annahme: die Datei geht per go:embed ins Binary und die NOTES.md-Zeile fordert 'jaira roles install --global --force' - ausgerollt wuerde sonst eine Anweisung, die der Binary widerspricht, mit der sie kommt. Befund 2 und 3 sind dieselbe Unwahrheit wie das Ticket selbst, eine Stufe weiter: ein Payload, der einen Ausfall wie Erfolg aussehen laesst."
-outcome-resolves: "DoD 9, 10 und 11. DoD 10 und 11 sind in diesem Durchgang aus den review-Befunden 2 und 3 auf die Checkliste gekommen, statt als Folge-Ticket wegzuwandern; die zwei Follow-ups der review-Lane liegen archiviert."
+outcome-what: "Die zwei critique-Befunde vom 11:26 repariert. (1) jaira-role-lane/SKILL.md:46-51: die Zaehlanweisung sagt jetzt, dass sie die Commit-LISTE prueft und nicht den Diff - traegt der Payload commits_unavailable, stimmt die Zahl und der Diff ist trotzdem ein Ausschnitt. (2) internal/cli/flow.go:717-724: die Klartextzeile 'The working tree could not be read, so nothing uncommitted is below' steht jetzt UEBER dem Diff, den sie qualifiziert, und nur neben einem - bei leerem Diff traegt die missing-Zeile denselben Text schon, und zweimal gedruckt liest er sich wie zwei Ausfaelle. Dazu ein Test mit zwei Unterfaellen (Reihenfolge, Einmaligkeit), beide gegengeprobt, und die bestehende NOTES.md-Unreleased-Zeile korrigiert, weil sie 'above and below the diff' versprach."
+outcome-why: "Beide Befunde sind dieselbe Unwahrheit wie das Ticket selbst, eine Stufe weiter: eine ausgelieferte Anweisung, die dem Binary widerspricht, mit dem sie kommt, und eine Meldung, die in die falsche Richtung zeigt und sich selbst wiederholt. Beide hatte der sechste Durchgang selbst erzeugt, also gehoeren sie in diesen und nicht auf ein Folgeticket."
+outcome-resolves: "Die zwei critique-Befunde vom 2026-09-18 11:26. Keine neue DoD-Nummer - die Reparaturen fallen unter DoD 9 (die Datei beschreibt den Payload, den der Change ausliefert) und DoD 10 (ein unlesbarer Worktree wird gesagt); beide Proofs sind entsprechend ergaenzt."
 review-summary: "core/role/builtin/jaira-role-lane/SKILL.md:36-46 - dieser Durchgang hat 'commits_unavailable' gebaut, und genau der Absatz, der einer Diff-Lane sagt, wie sie den Payload liest, weiss nichts davon: er behauptet 'the diff is the ticket's whole committed history, not a slice of it' und schickt den Leser auf 'counting commits against git log origin/HEAD..HEAD'. Traegt der Payload commits_unavailable, stimmt die Zahl und der Diff ist trotzdem kurz - der Ausschnitt, der sich als Ganzes meldet, genau eine Ebene weiter. Das ist derselbe Befund, den die review-Lane als Befund 1 gestellt hat (die mit der Binary ausgelieferte Anweisung widerspricht der Binary), nur fuer den neuen Schluessel. Stattdessen: einen Satz an die Zaehlanweisung haengen - commits_unavailable nennt die SHAs, die in commits mitzaehlen, deren Patch aber nicht im Diff steht, sondern nur die Zeile '(not available locally)'; sind welche da, ist die Zahl kein Beleg fuer die Vollstaendigkeit des Diffs. | internal/cli/flow.go:728 - die Klartext-Zeile 'The working tree could not be read, so nothing uncommitted is below: %s' steht NACH dem Diff-Block, unter ihr steht nichts mehr; das 'below' zeigt in die leere Richtung, waehrend der Diff, den sie qualifiziert, darueber liegt. Und wenn diff=='' ist, liest derselbe Fehlertext sich doppelt: einmal hier, einmal in der Missing-Zeile aus flow.go:641. Stattdessen: den Block vor 'if diff != \"\"' ziehen (dann stimmt 'below') und ihn ueberspringen, wenn die missing-Meldung den Text schon traegt."
 review-gaps: |-
   Alle acht DoD-Punkte sind im Diff belegt, go build / go vet / go test ./... -count=1 sind gruen (31 Pakete), und die Proofs zeigen auf Code, den es gibt. Drei Befunde, der erste ist der einzige, der etwas kostet.
