@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:40:54Z
+updated-at: 2026-09-18T10:47:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -152,3 +152,9 @@ creator: BeMuCa aus den drei Dateien ENTFERNT. Sie liegen jetzt im Binary, und p
 SIEBEN TESTS mussten mit, alle aus demselben Grund: sie schrieben 'built-in' und meinten 'was ein frisches Board bekommt'. Der Helfer builtinIDList filtert jetzt auf Default; neu daneben shippedIDList fuer 'alles, was im Binary steckt' (TestNoBoardReturnsTheOffer braucht das, das Angebot ist jetzt echt groesser). builtinSet in next_test.go lud Load("") - das Angebot, nicht ein Board; mit critique im Angebot war next(in-progress) plotzlich critique. Es laedt jetzt ein leeres Board.
 
 NEBENBEFUND, ungeplant und willkommen: der Lane-Bildschirm der TUI zeigt die drei sofort in seiner 'not on board'-Spalte an - available in internal/tui/lanes.go zieht aus Installable(), und Einbetten genuegte. DoD 2 fuer die TUI ist damit schon erfuellt, ohne eine Zeile dafuer; Schritt 6 bleibt fuer 'jaira lanes' auf der Kommandozeile noetig.
+- **2026-09-18 10:47 · Alexander Sacharov** — Die sechs .Builtin-Fundstellen in den Tests, vor Schritt 5 einzeln angesehen (Fund der mitlaufenden Kritik). Ergebnis: KEINE muss geaendert werden, und eine arbeitet fuer uns.
+
+core/lane/shipped_test.go:59 verbietet, dass eine Datei unter lanes/ zu einer Lane mit Builtin=true aufloest. Haette ich critique.md KOPIERT statt verschoben, faende dieser Test es sofort - die Kopie unter lanes/ wuerde auf die eingebettete Lane aufloesen und der Test schluege an. Der Schutz gegen 'zwei Quellen fuer denselben Prompt' steht also schon im Repo; nichts nachzubauen.
+core/lane/lane_test.go:207 (eine ueberschreibende Lane ist nicht Builtin), internal/tui/lanes_test.go:77 (auf einem Board ist keine Lane Builtin, es wird nichts mehr injiziert) und :665 (eine entfernte built-in taucht als verfuegbare built-in wieder auf) sprechen alle drei ueber Herkunft, nicht ueber Vorauswahl. Genau die Bedeutung, die Builtin behalten hat.
+
+FREMDBEFUND, NICHT VON DIESEM TICKET VERURSACHT und hier nicht gefixt: wer eine built-in ueberschreibt, indem er z.B. review.md in ~/.jaira/lanes legt, verliert diese Lane auf jedem NEUEN Board. Nachgestellt: ein frisches Board laedt dann als [backlog brainstorm todo pre-process in-progress human signoff done blocked] - review fehlt. Ursache: die ueberschreibende Lane hat Builtin=false (lane_test.go:207 schreibt das ausdruecklich fest), und setUp filterte schon vorher auf Builtin. Mit der Aufteilung ist es unveraendert, weil Default fuer eine Nicht-built-in ohne 'default-board:' ebenfalls false wird. Fix waere, Default von der ueberschriebenen Lane zu erben, dort wo Load Overrides setzt - eine Zeile, aber eine Verhaltensaenderung ausserhalb dieses Tickets.
