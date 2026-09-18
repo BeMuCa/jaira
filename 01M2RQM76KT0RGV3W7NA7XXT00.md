@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T18:25:47Z
+updated-at: 2026-09-18T18:26:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-8082
 claimed-at: 2026-09-18T18:17:46Z
@@ -45,7 +45,7 @@ question: |-
   (C) Nichts tun - ausserhalb des Ziels dieses Tickets, das vom 'commits:'-Feld handelt und nicht vom Worktree. Kosten: die conversational-Kritik verlaesst sich weiter darauf, dass der Leser von sich aus git status laeuft.
 
   Befund 2 (signoff.go:118, 'recorded on the ticket — recorded at acceptance') ist unabhaengig und in in-progress in fuenf Minuten repariert.
-test-verdict: "green: 31 Pakete passed, 0 failed, 0 errors, 0 skipped; 4 Pakete ohne Tests (cmd/jaira, core/session, scripts/iconpreview, scripts/shotgen). Kommando 'go test ./...', aus go.mod abgeleitet - weder CLAUDE.md/AGENTS.md noch Taskfile/Makefile/package.json nennen eine Testkommando. Zusaetzlich 'go vet ./...' sauber und die Zielpakete des Diffs mit -count=1 ohne Cache nachgefahren (core/gitrepo, core/ticket, internal/cli, internal/tui) - alle gruen. Keine ausgelassenen Suites: e2e-/Integrationsdateien existieren im Repository nicht. Abdeckung des Diffs: jede geaenderte Quelldatei hat einen geaenderten Test - core/gitrepo/git.go -> worktree_test.go, core/ticket/trim.go -> trim_test.go, internal/cli/flow.go -> forlanecommits_test.go, internal/tui/signoff.go -> signoff_test.go. Kein unabgedeckter Code im Diff. Eingetragen vom Dispatcher, weil die testing-Lane ihr Ergebnis als Note statt in dieses Feld geschrieben hatte."
+test-verdict: "green: 0 FAIL. 'go test ./...' -> 28 Pakete ok, 4 ohne Testdateien; go vet und gofmt sauber. Abdeckung des Diffs belegt, nicht bloss gruen: jede geaenderte Go-Datei der Branche (internal/cli/flow.go, core/gitrepo/git.go, core/ticket/trim.go, internal/tui/signoff.go) wird von einem Test beruehrt, und die neuen Tests wurden namentlich gefahren - internal/cli: TestForLaneDiffIsNotLimitedToTheRecordedCommits, TestForLaneDiffCarriesTheUncommittedWorktree, TestForLaneSaysWhenTheWorktreeCouldNotBeRead, TestForLaneNamesTheCommitsGitCouldNotShow, TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce; core/gitrepo: TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote, TestWorktreeDiffIgnoresAnEmptyUntrackedFile; core/ticket: TestCommitsSourceNamesWhoContributed; internal/tui: TestSignOffNamesWhereTheCommitsCameFrom. Keine ausgelassenen Suites: e2e-/Integrationsdateien und Tests gegen einen laufenden Dienst oder eine kostenpflichtige API gibt es im Repository nicht. Eine Abweichung, die kein Fehler ist: review-check auf dem Ticket erwartet '31 Zeilen ok', tatsaechlich sind es 28 ok plus 4 'no test files' - die Zahl wurde vor den letzten Runden geschrieben, das Urteil bleibt dasselbe. Eingetragen vom Dispatcher, weil die testing-Lane ihr Ergebnis wieder als Note statt in dieses Feld geschrieben hatte."
 review-verdict: |-
   Der Diff erfuellt die acht DoD-Punkte, und er tut es an der Wurzel statt an der Meldung: showForLane und der Signoff-Schirm leiten beide immer aus git ab, der Worktree haengt mit dran, und die Herkunft steht als Token daneben. Tests decken jeden Zweig, den man ohne kaputtes Repo erreichen kann, und die Notizen halten zu jeder Entscheidung die verworfene Alternative fest. Keine Defekte gefunden.
 
