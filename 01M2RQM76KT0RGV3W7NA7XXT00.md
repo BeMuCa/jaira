@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:44:57Z
+updated-at: 2026-09-18T06:45:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
 mode: conversational
-outcome-what: "Plan fuer den Ausschnitt-Bug steht: showForLane vereinigt kuenftig t.Commits mit DeriveCommits, statt dem Feld allein zu glauben"
-outcome-why: "die DoD laesst zwei Wege zu; der zaehlende Weg (complete:false plus Fehlzahl) erzeugt auf geteilten Branches Fehlalarm, der ableitende nicht"
-outcome-resolves: "7 Plan-Schritte vom failing test bis NOTES.md, mit der Untersuchung zur Herkunft des Feldes als Notiz"
+outcome-what: "showForLane und der Signoff-Schirm leiten die Commit-Liste jetzt immer aus git ab und vereinigen sie mit dem 'commits:'-Feld (neuer ticket.MergeCommits), statt das Feld als fertige Antwort zu lesen; der --json-Payload einer Diff-Lane traegt neu 'commits' und 'commits_source', die Klartext-Ausgabe dieselbe Zeile ueber dem Diff; die Handanweisung zum Nachzaehlen faellt aus jaira-role-lane/SKILL.md und jaira-dispatcher/SKILL.md; eine Zeile unter ## Unreleased"
+outcome-why: "'commits:' ist per Konstruktion eine Momentaufnahme - 'move --out --commits' schreibt es einmal, spaetere Commits kommen nie dazu. Eine Review-Lane sah dadurch drei von einundzwanzig Commits und bekam complete:true dazu: ein stiller Ausfall, der wie Erfolg aussieht, genau in der Lane, die es verhindern soll"
+outcome-resolves: "Die DoD verlangte eins von beidem; gewaehlt ist der erste Weg (Alex' Entscheidung vor der Plan-Lane): showForLane leitet immer ab, complete:true heisst wieder 'du siehst den ganzen Branch'. Kein 'missing'-Feld, weil eine Zahl fehlender Commits auf einem geteilten Release-Branch bei jedem Lauf Fehlalarm waere. Belegt durch internal/cli/forlanecommits_test.go; go build ./... und go test ./... gruen"
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
