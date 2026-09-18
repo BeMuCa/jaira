@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:44:29Z
+updated-at: 2026-09-18T06:44:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -45,7 +45,8 @@ outcome-resolves: "7 Plan-Schritte vom failing test bis NOTES.md, mit der Unters
   proof: internal/cli/forlanecommits_test.go TestForLaneDiffIsNotLimitedToTheRecordedCommits — Ticket mit einem von zwei SHAs in commits:, review-Payload muss beide zeigen; fiel vor der Aenderung
 - [x] Untersucht und auf dem Ticket festgehalten, WIE 'commits:' teilweise gefuellt wird - welcher Schreibpfad den Stand einfriert und warum er spaetere Commits nicht nachtraegt. Ohne diese Antwort ist jede Reparatur geraten.
   proof: Notiz vom 2026-09-18 (pre-process): StampCommits laeuft nur als move.Request.Prepare beim Einlaufen in eine Doorway-Lane (core/ticket/trim.go:105, core/move/move.go:132); gefuellt wird commits: von 'jaira move --out --commits' (internal/cli/flow.go:99,152)
-- [ ] Eine Zeile in core/release/NOTES.md, wenn sich aendert, was ein Benutzer im Payload sieht.
+- [x] Eine Zeile in core/release/NOTES.md, wenn sich aendert, was ein Benutzer im Payload sieht.
+  proof: core/release/NOTES.md:18 unter ## Unreleased
 
 ## Options
 
