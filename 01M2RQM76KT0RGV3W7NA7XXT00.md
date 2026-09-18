@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T09:19:24Z
+updated-at: 2026-09-18T10:45:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
@@ -254,3 +254,13 @@ Gegenprobe: go build ./... , go vet ./... , go test ./... -count=1 - 28 Pakete g
 3. core/gitrepo/git.go:89-103: repo.Diff gibt nie einen Fehler zurueck, ein unzeigbarer SHA wird zur Zeile '(not available locally)'. Damit ist flow.go:601-604 unerreichbar, und die Notiz vom 06:51 verteidigt einen Fall, den es nicht gibt. Praktisch: ein SHA, den nur das Feld traegt (der Rebase-Fall, den dieser Change bewahren will), wird in 'commits' gezaehlt, liefert aber keinen Diff-Inhalt. Ein Mensch sieht es im Patch, etwas das 'commits' zaehlt nicht.
 
 Gegen den Diff selbst nichts: acht von acht DoD belegt, go build/vet/test -count=1 gruen (31 Pakete), Gegenproben in den Notizen und in den Tests, jede verworfene Alternative festgehalten. Selbst nachgefahren: Schritt 3 aus review-check (shas = t.Commits statt MergeCommits) laesst TestForLaneDiffIsNotLimitedToTheRecordedCommits fallen - der Test ist kein Tautologietest.
+- **2026-09-18 10:45 · Alexander Sacharov** — Entscheidung zu Befund 1 der review-Lane (Alex, 2026-09-18, in der signoff-Lane): Weg B - die nebenher laufende Kritik wird auf den Payload gerichtet, statt die drei git-Kommandos als Wahrheitsquelle zu behalten. Begruendung: dieselbe Linie wie am 07:35 - das Werkzeug sagt die Wahrheit, statt eine Handanweisung nachsehen zu lassen. Weg A (nur die drei falschen Aussagen korrigieren und die Handkommandos als Quelle lassen) waere billiger gewesen, laesst aber die Faehigkeit, die dieser Change gerade gebaut hat, an genau der Stelle ungenutzt, fuer die sie gebaut wurde.
+
+Konkret zu aendern ist core/role/builtin/jaira-role-lane/SKILL.md:123-161. Was der neue Text tragen muss:
+- Der Payload-Diff hat jetzt zwei Haelften, getrennt von der Zeile 'uncommitted work in the working tree' (internal/cli/flow.go:629). Alles danach ist die Arbeit nebenan - das Urteilsobjekt. Alles davor sind die frueheren Runden und bleibt geschlossen.
+- commits_source endet auf '+worktree', wenn die zweite Haelfte da ist; auf der ersten Runde ist es schlicht 'worktree'. Damit muss niemand nach dem Marker suchen.
+- 'complete: false' auf der ersten Runde bleibt richtig, aber aus einem anderen Grund: die critique-Lane verlangt auch outcome-what und outcome-resolves (.jaira/lanes/critique.md:10), nicht weil der Diff fehlt. Die alte Begruendung 'diff (git has no commits for this ticket yet)' faellt weg, sobald Arbeit im Baum liegt.
+- Die drei git-Kommandos bleiben stehen, aber als Rueckfallweg statt als Quelle - und zwar genau wegen Befund 2: ein Worktree, den git nicht lesen konnte, wird stumm verworfen, commits_source sagt dann 'git' und sieht aus wie ein sauberer Baum. Damit bekommt Befund 2 eine Antwort im Prompt, ohne dass flow.go angefasst werden muss.
+- Der Pathspec-Absatz und der Hinweis 'was seit dem Payload auf das Ticket geschrieben wurde, steht nicht im Diff - lies es mit jaira show --json' bleiben inhaltlich erhalten.
+
+Befund 3 (repo.Diff gibt nie einen Fehler zurueck) bleibt offen und ist nicht Teil dieser DoD - kein Verhaltensfehler, nur ein unerreichbarer Zweig plus eine Zahl in 'commits', die im Rebase-Fall mehr zaehlt als der Diff zeigt.
