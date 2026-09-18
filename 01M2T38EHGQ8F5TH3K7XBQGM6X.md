@@ -24,7 +24,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T11:08:36Z
-updated-at: 2026-09-18T11:12:14Z
+updated-at: 2026-09-18T11:12:17Z
 updated-by: Alexander Sacharov
 ---
 
@@ -37,6 +37,7 @@ updated-by: Alexander Sacharov
 - [ ] Ein Agent gewinnt nichts, was er nicht schon hat: er darf zurueckschicken, aber nicht annehmen. Ein Test pinnt, dass ein Vorwaerts-move aus der CLI abgelehnt bleibt, und dass der Rueckwaerts-move ohne Interactive durchgeht.
 - [ ] Der Grund fuer die Rueckgabe wird festgehalten, damit die Begruendung von fe5a979 gewahrt bleibt: die Rueckgabe schreibt eine Notiz mit der Ziel-Lane und dem, was der Mensch offen sieht, statt stillschweigend die Lane zu wechseln.
 - [ ] Die Fusszeile des signoff-Schirms nennt die neue Aktion, und core/release/NOTES.md hat eine Zeile unter ## Unreleased.
+- [ ] core/board/announce.go:210 beschreibt eine Lane mit requires-question nicht mehr als eine, aus der niemand Arbeit herausbewegen darf: human traegt kein requires-human-exit, ein Agent darf sie verlassen, und der erzeugte Lane-Block muss sagen, was der Gate tut. Heute sagt die Prosa 'you may move work in, never out' und der Gate laesst den Ausgang zu.
 
 ## Options
 
