@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: testing
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:03:24Z
+updated-at: 2026-09-18T07:03:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
 mode: conversational
-outcome-what: "optimize: die handgeschriebene Union-Schleife in 'move --out --commits' faltet auf ticket.MergeCommits, sonst nichts entfernt"
-outcome-why: "eine vierte Kopie der Schleife im selben File, den dieser Change gerade zur gemeinsamen Heimat gemacht hat - genau das Auseinanderlaufen, vor dem ihr Doc-Kommentar warnt"
-outcome-resolves: "review-gaps geschrieben; go build und go test ./... gruen"
+outcome-what: "testing gruen, aber eine Abdeckungsluecke gemeldet und von Alex zur Arbeit erklaert"
+outcome-why: "commitsSourceLabel ist die Stelle, an der laut eigenem Doc-Kommentar ein neuer Token still auf 'kein Label' faellt - ungetestet auf dem Schirm, auf dem ein Mensch unterschreibt"
+outcome-resolves: "DoD 5 neu angelegt; go build/vet/test ./... waren gruen, 0 Faelle rot"
 review-summary: none
 review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
 ---
