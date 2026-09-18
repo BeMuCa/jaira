@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:41:50Z
+updated-at: 2026-09-18T07:41:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -84,7 +84,7 @@ question: |-
 - [x] go build ./... && go test ./... green
 - [x] gitrepo: WorktreeDiff() - git diff HEAD plus untracked files, ticket prose excluded
 - [x] showForLane case diff: append the worktree diff, commits_source gains git+worktree
-- [ ] test: a ticket with an uncommitted change gets it in the --for-lane payload
+- [x] test: a ticket with an uncommitted change gets it in the --for-lane payload
 - [ ] SKILL.md 36-43: drop the now-obsolete restriction
 - [ ] signoff.go: commitsSourceLabel carries its own tail, no shared suffix
 - [ ] NOTES.md line, go build && go test green
