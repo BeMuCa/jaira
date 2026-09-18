@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:54:39Z
+updated-at: 2026-09-18T05:56:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -799,3 +799,16 @@ Nachgemessen, nicht behauptet: alle fuenf NOTES-Anker dieser beiden Punkte 'grep
 Was daraus zu lernen ist, weil es jetzt das zweite Mal die Proof-Zeilen getroffen hat (Runde 18 waren es fehlende Backticks): ein Anker auf eine NOTES.md-Zeile ueberlebt das Zusammenlegen von Zeilen nicht. Wer NOTES.md faltet, muss die proof-Zeilen der Tickets mitziehen, die darauf zeigen - oder der Anker zeigt auf einen Halbsatz statt auf einen Zeilenanfang, dann ueberlebt er das Falten.
 
 Nicht angefasst, mit Verweis: das Zusammenlegen selbst (optimize 18.09. 05:44, ausdruecklich richtig laut Dispatcher-Auftrag 05:52). Ob DoD 12 woertlich zwei eigene NOTES-Zeilen verlangt, ist Alex' Entscheidung und nicht die dieser Lane - die Fakten stehen fuer den Leser vollstaendig da.
+- **2026-09-18 05:56 · Alexander Sacharov** — critique (22. Durchgang, ueber 472a5c5 — das Zusammenlegen der NOTES.md-Zeilen — und die nicht committete Umschrift der zwei Proof-Anker): kein Befund.
+
+Gelesen: zuerst die Notizen aller 21 Vorrunden, dann 'git show 472a5c5' und 'git diff' im Arbeitsbaum. Der Payload-Diff aus 'show --for-lane' ist wie bekannt nur die vier SHAs aus 'commits:' (Zaehlprobe: .commits|length = 4 gegen 'git log origin/HEAD..HEAD' = 127, weil origin/HEAD alt ist und der Branch fremde Milestone-Arbeit traegt) — deshalb direkt an den zwei Staenden dieser Runde gepruft, nicht am Branch.
+
+Zu 472a5c5 (neun Unreleased-Zeilen auf sechs): kein Befund. Einfachere Form — es IST die einfachere Form, drei Korrekturzeilen an nie ausgelieferten Zwischenstaenden verschwinden. Passung — folgt der Formatregel in CLAUDE.md/NOTES.md-Kopf ('One change is exactly one line', 'what the reader must DO differently'), fuehrt kein zweites Muster ein. Spekulativ — nichts. Richtiger Ort — die Fakten stehen jetzt bei der Sache, die sie beschreiben: Worktree-Lesen und Zaehlprobe in der Critique-beside-work-Zeile, beide Pausen-Praezisierungen in der 'commit it yourself'-Zeile. Nachgepruft, dass kein leserwirksamer Fakt fehlt: Worktree-Lesen, das Ausklammern von '.jaira/tickets/', 'git diff --cached', 'jaira show --json' als Ersatz, die neue Datei und die Zaehlprobe stehen alle in den gefalteten Zeilen; die 'roles install'-Anweisung der aufgeloesten Pausen-Zeile ist an die commit-Zeile mitgewandert. Einzig gefallen ist die Diagnose 'complete: false auf einem Ticket ohne Commits' — steht im Lane-Prompt und ist nichts, was ein Nutzer tun muss (optimize 18.09. 05:44).
+
+Zur Umschrift der Proof-Anker: kein Befund. Nachgemessen statt geglaubt, 'grep -cF' gegen core/release/NOTES.md, alle fuenf Anker genau einmal: 'Expect a critique to run *beside* the work on a ticket in `mode: conversational`', 'That pause stops on code and only on code', 'a definition-of-done item made of one brand-new file', 'which `jaira show --for-lane` assembles from the SHAs on the ticket's `commits:` field', 'On a ticket in `mode: conversational`, commit it yourself'. Dass DoD 12 jetzt drei Anker statt zwei traegt, ist richtig und nicht Aufblaehung: das Kriterium verlangt zwei Sachen, und seit dem Falten stehen sie in derselben Zeile — ein Anker haette die Haelfte belegt.
+
+Ausdruecklich NICHT als Befund erhoben, weil es keiner dieser Lane ist: dass DoD 12 woertlich 'je eine Zeile' fordert und die Pause seit 472a5c5 keine eigene Zeile mehr hat. Die Sache liegt bereits zweimal als Entscheidung fuer Alex auf dem Ticket (testing 18.09. 05:51, in-progress 18.09. 05:54); sie noch einmal in die human-Lane zu schieben waere dieselbe Frage ein drittes Mal, und das Ticket traegt fuer den Menschen ohnehin schon eine offene 'question'.
+
+Weiter stehen gelassen, mit Verweis: der Defekt in flow.go:589 (liegt als Z4G3RD auf dem Board, 17.09. 22:13); review-Befund 3 (Alex 17.09. 20:24); Merge-Driver (Runde 5); Prosa-Wiederholung ueber fuenf Dateien (optimize 16.09. 20:21); NOTES-Zeile zur critique-Lane (Runde 9/10); Restrennen (Runde 11); doppelte ':/'-Erklaerung (Runde 15); Zeilenbereiche in den proof-Zeilen der Plan-Liste (Runde 19).
+
+Kontext: Alex hat am 18.09. entschieden, dass die Runden enden und der Stand in den Release geht. Diese Runde bestaetigt, dass die Reparatur aus dem Dispatcher-Auftrag 05:52 sitzt — sie ist kein neuer Schleifenanlauf.
