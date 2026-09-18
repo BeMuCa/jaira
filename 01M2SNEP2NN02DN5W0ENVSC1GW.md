@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:04:05Z
+updated-at: 2026-09-18T12:04:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -68,7 +68,7 @@ outcome-resolves: "Der Weg von der Entscheidung zur Umsetzung steht: welches Fel
 - [x] core/market/market.go:45: apiBase() haengt '?ref=v<release.Current>' an; bei 'dev' ohne ref plus eine Zeile auf stderr, dass die Entwicklungsfassung kommt (DoD 6)
 - [x] Test: mit gesetzter Version geht der ref an den Server, mit 'dev' nicht und die Ansage erscheint
 - [x] Je eine Zeile unter '## Unreleased' in core/release/NOTES.md fuer die drei Lanes im Binary, den neuen Fuss von 'jaira lanes' und den versionsgebundenen Katalog (DoD 5)
-- [ ] go build ./... , go vet ./... und die volle Testsuite gruen
+- [x] go build ./... , go vet ./... und die volle Testsuite gruen
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
