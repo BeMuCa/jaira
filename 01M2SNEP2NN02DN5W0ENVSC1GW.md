@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:31:18Z
+updated-at: 2026-09-18T12:34:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -84,7 +84,8 @@ review-summary: |-
   proof: core/lane/order.go insertAfterAnchor: Warnung setzt l.After ein, anchorIndex gibt nur noch den Index zurueck
 - [x] Punkt C: der Kommentarsatz in internal/cli/tickets.go, der behauptet, das Angebot gelte nur nie installierten Lanes - nur der Satz, nicht der Filter
   proof: internal/cli/tickets.go: der Kommentar am 'Builtin && !Default'-Filter, dazu derselbe Satz im Kopf von TestLanesDoesNotOfferBackALaneTheBoardRemoved
-- [~] Tests fuer A und B, dann go build ./... , go vet ./... und die volle Suite
+- [x] Tests fuer A und B, dann go build ./... , go vet ./... und die volle Suite
+  proof: TestLanesAddSaysWhichLaneItLandedAfter und TestLanesAddWarnsWithTheAnchorTheLaneNames; go build/vet sauber, volle Suite gruen
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
