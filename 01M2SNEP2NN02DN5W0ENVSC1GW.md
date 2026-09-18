@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T21:04:01Z
+updated-at: 2026-09-18T21:04:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -32,6 +32,7 @@ outcome-what: "internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd h
 outcome-why: "Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende - das tut 'jaira lanes add' seit Runde 2 nicht mehr. Ein gruener Test, dessen Name das Gegenteil dessen sichert, was die Assertion schuetzt, fuehrt den naechsten Leser von insertAfterAnchor in die Irre."
 outcome-resolves: "vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik"
 review-summary: "none"
+review-gaps: "internal/tui/lanes.go: addFromCatalogue und addAvailable trugen denselben Sechszeiler samt Kommentar hinter einer sofort ueberschriebenen ls.msg-Zuweisung - in einen Helfer addedMsg(id, warnings) gefaltet, Verhalten unveraendert. Stehen gelassen mit Begruendung: terminalIDIndex neben terminalIndex (zwei Typen, in Durchgang 1 geschlossen; beide Fallbacks am Code auf gleiche Position gegengeprueft), die Unpinned()-Notiz zweimal in internal/cli/market.go (spiegelt die vorhandene Overridden()-Doppelung), die after-Nachsuche in lane.Add (ein dritter Rueckgabewert fuer eine Schleife ueber 13 Eintraege auf einem einmaligen Pfad) und der ''-Zweig in pinnedRef (Vorsicht gegen -ldflags, nicht unerreichbar). Kein toter Code; lane.Installable() auf dem 'jaira lanes'-Pfad ist netzfrei (embedded Builtins plus ein Glob), die Startzeit-Regel bleibt unberuehrt."
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
