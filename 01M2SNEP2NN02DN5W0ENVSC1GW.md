@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T18:19:49Z
+updated-at: 2026-09-18T18:20:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-7876
 claimed-at: 2026-09-18T18:17:38Z
@@ -299,3 +299,7 @@ WAS ICH STEHEN LASSE, damit der vierte Durchgang es nicht neu aufmacht:
 - Alles aus Durchgang 1 (Fund 10, Fund 12, terminalIDIndex, die drei verschobenen Lane-Dateien) und aus Durchgang 2 (die Warnungsweitergabe in die TUI). Unveraendert gueltig, siehe Notizen 12:12 und 12:26.
 - Der vierte Rueckgabewert von lane.Add statt eines Structs: Begruendung steht in der Notiz von 12:34, ein exportierter Typ fuer eine Zeichenkette mit einem Leser. Angenommen.
 - Die Erfolgszeile ueber der Warnung bei unaufloesbarem Anker ('after signoff' plus Warnung zu backlog): am Binary gesehen, liest sich seltsam und ist richtig. Begruendung 12:34, geschlossen.
+- **2026-09-18 18:20 · Alexander Sacharov** — in-progress, vierter Durchgang: der Fund der dritten Kritik behoben. Drei Dinge, die aus dem Diff nicht hervorgehen:
+- Eine VIERTE Fundstelle desselben veralteten Satzes existiert und wurde ABSICHTLICH nicht angefasst: internal/cli/lanes_test.go:955, Test 'TestLanesAddAfterRemoveAppendsAtEnd' - Name und Kommentar behaupten beide 'appended at the end of the order'. Der Test ist gruen, aber aus dem falschen Grund: 'blocked' landet nicht durch Anhaengen am Ende, sondern weil insertAfterAnchor fuer eine Lane ohne aufloesbaren Anker vor die terminale Lane parkt und 'blocked' selbst terminal ist. Der Auftrag dieser Runde war auf die drei genannten Stellen begrenzt, also gemeldet statt stillschweigend mitgenommen. Wer sie anfasst: Name und Kommentar aendern, die Assertion nicht - sie prueft weiter das richtige Ergebnis.
+- Grep-Abdeckung: gesucht wurde nach 'append', 'end of the order' und 'column order' ueber *.go und *.md. docs/AGENTS.md:279 nennt 'jaira lanes add' zwar, behauptet aber nirgends Anhaengen - keine Fundstelle. core/lane/order.go:263 sagt 'rather than at the end of the board' und beschreibt damit das NEUE Verhalten korrekt.
+- Keine neue NOTES.md-Zeile geschrieben, und das ist eine Entscheidung: core/release/NOTES.md:19 sagt dem Benutzer bereits, wohin 'jaira lanes add' die Lane setzt. Der Hilfetext holt nur nach, was dort schon steht - eine zweite Zeile fuer dieselbe Aenderung wuerde der Zeilenscan als zwei Aenderungen lesen.
