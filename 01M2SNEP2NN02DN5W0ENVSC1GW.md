@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T20:55:02Z
+updated-at: 2026-09-18T20:58:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -31,7 +31,7 @@ mode: conversational
 outcome-what: "internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor; Kommentar und Fehlermeldung nennen den wirklichen Grund (Anker 'done'), Assertion unveraendert"
 outcome-why: "Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende - das tut 'jaira lanes add' seit Runde 2 nicht mehr. Ein gruener Test, dessen Name das Gegenteil dessen sichert, was die Assertion schuetzt, fuehrt den naechsten Leser von insertAfterAnchor in die Irre."
 outcome-resolves: "vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik"
-review-summary: "internal/cli/lanes_test.go:955 TestLanesAddAfterRemoveAppendsAtEnd - Name und Kommentar ('appended at the end of the order') sind die vierte Fundstelle desselben veralteten Satzes aus Durchgang 3 und wurden nicht mitrepariert. Am Code nachgesehen (core/lane/order.go:263ff insertAfterAnchor): 'blocked' landet hinten, weil ein unaufloesbarer Anker vor die terminale Lane parkt und 'blocked' selbst terminal ist - nicht durch Anhaengen. Zu tun: Test in TestLanesAddAfterRemoveLandsBeforeTheTerminalLane o.ae. umbenennen, Kommentar und die Fehlermeldung 're-added lane not appended at the end' auf den wirklichen Grund umschreiben, Assertion unveraendert lassen - sie prueft weiter das richtige Ergebnis."
+review-summary: "none"
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
