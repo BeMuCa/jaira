@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T06:13:22Z
+updated-at: 2026-09-18T06:13:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -833,3 +833,4 @@ Verhalten auf einem Wegwerf-Board (frisches git init + jaira init, Binary aus di
 - 'jaira update' auf dem fremden Board schreibt 'mode' in AGENTS.md und CLAUDE.md (Zeile 35), DoD 13 also end-to-end und nicht nur im Quelltext.
 
 Stehengelassen, kein Befund dieser Lane: das 'commits:'-Feld des Tickets traegt 4 SHAs, der Branch 24 GTQHNH-Commits — die Zaehlprobe aus dem Kopf von jaira-role-lane/SKILL.md schlaegt also an, und ich habe entsprechend 'git diff 4dcba77...HEAD' beurteilt statt des Payload-Ausschnitts. Genau dieser flow.go-Defekt ist in DoD 17 ausdruecklich aus dem Ticket herausgenommen. Die Probe selbst hat damit zum ersten Mal an einem echten Ticket funktioniert.
+- **2026-09-18 06:13 · Alexander Sacharov** — review 2: kein Rueckweg nach in-progress. Die Go-Seite ist diesmal nicht nur gelesen, sondern mit einem frisch gebauten Binary auf einem Wegwerf-Board unter /tmp ausgeuebt - set (gut/schlecht/untrimmt/leer/--append), show --json, show --for-lane (JSON und Klartext-Kopfzeile), die Detail-Zeile, resume (JSON und Klartext) und validate (chat UND ' conversational ' mit Leerzeichen). Alles verhaelt sich so, wie NOTES.md und die Prompts es behaupten. Zusaetzlich die drei Pathspecs der Prompts aus core/ heraus nachgestellt: ':/ :(exclude,top).jaira/tickets' laesst die geaenderte Ticket-Datei wirklich aus jedem Verzeichnis fallen. 'set mode=' hinterlaesst 'mode: ""' statt die Zeile zu loeschen - das ist KEIN Befund, question und model-tier verhalten sich genauso, die Konvention ist aelter als dieses Ticket. Zwei Befunde, beide fuer den Menschen und nicht fuer eine weitere Runde: (1) der flow.go-Defekt hinter der Zaehlprobe hat kein Folgeticket, obwohl die proof-Zeile von DoD 17 eines ankuendigt - nachgemessen: 4 SHAs auf dem Ticket gegen 24 Commits auf dem Branch, mein eigener review-Payload zeigte 12 von 21 Dateien; (2) DoD 12 fordert eine eigene NOTES-Zeile fuer die Pause, die neue Dateien sieht, und seit 472a5c5 steckt sie als Satz in der Commit-Zeilen-Note. Beides steht in review-gaps mit Begruendung.
