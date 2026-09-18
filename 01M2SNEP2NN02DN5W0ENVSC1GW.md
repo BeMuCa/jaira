@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T11:26:37Z
+updated-at: 2026-09-18T11:26:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
@@ -193,3 +193,16 @@ Das kostete eine Signaturaenderung: Add gibt jetzt (string, []string, error) zur
 DER NEUE TEST BEISST WIRKLICH. Gegengeprueft, indem ich 'at = len(ids)' voruebergehend zurueckgesetzt habe: der Test faellt dann mit [... done blocked critique]. Ein Regressionstest, der die alte Fassung durchlaesst, ist keiner - das kostet zwanzig Sekunden und beantwortet die Frage, statt sie zu glauben.
 
 FUND 7: die Bedingung 'l.After == "" || at < 0' war zusammengelegt und ist jetzt geteilt, weil die beiden Faelle sich unterscheiden - ohne Anker keine Warnung, mit unaufloesbarem Anker eine. Der Einfuegepunkt ist derselbe.
+- **2026-09-18 11:26 · Alexander Sacharov** — Schritte 8+9, Weg A. Drei Dinge, die der Diff nicht sagt.
+
+DER REF WIRD GESETZT, NICHT ANGEKLEBT (Fund 2 der Kritik). '?ref=' als String an apiBase() zu haengen bricht, sobald die Adresse schon eine Query traegt - und der Testserver setzt eine, das ist also der Normalfall und keine Ecke. Heraus kaeme '?x=1?ref=v0.3.0', ein einziger unsinniger Parameter. Jetzt url.Parse + q.Set + Encode, und ein eigener Test (TestRefIsSetOnAnAddressThatAlreadyHasAQuery) haelt fest, dass die vorhandene Query dabei erhalten bleibt.
+
+DIE DEV-ANSAGE WIRD ZURUECKGEGEBEN, NICHT GEDRUCKT (Fund 3). Sie gehoert nicht nach apiBase(): das ist eine reine Funktion, sie laeuft bei jeder Anfrage, und eine Zeile von dort erschiene mitten im --json. Vorbild ist Overridden() direkt darueber - Text zurueckgeben, drucken tut das Kommando. Heisst jetzt Unpinned() und steht im JSON unter 'unpinned' neben 'override'.
+
+WARUM release.Current und nicht ein durchgereichter Parameter: core/release importiert nichts aus jaira, core/market darf es also lesen, ohne einen Zyklus zu bauen. cli.Execute (internal/cli/root.go) setzt die Variable ohnehin schon fuer die TUI.
+
+Die in Schritt 8 offen gelassene Frage - geht der ref auch an ein per JAIRA_MARKET_API gesetztes Ziel - ist mit JA entschieden. Ein Codepfad statt zwei; ein selbst gehosteter Spiegel ist genauso versionierbar; und ein Testserver ignoriert eine unbekannte Query ohnehin. Ein zweiter Pfad waere genau der, den kein Test je durchlaeuft.
+
+Am echten Binary nachgestellt, wie DoD 6 es verlangt: mit -ldflags '-X main.version=0.1.4' fragt es /contents/lanes?ref=v0.1.4 ab, der Source-Build fragt ohne ref und sagt die Zeile dazu.
+
+WERKZEUG-DELLE, fuer die naechste Sitzung: ein 'pkill -f ...' am Anfang einer Kommandokette hat die ganze Kette mitgerissen (Exit 144), noch bevor die jaira-Schreibvorgaenge dahinter liefen. Die Haken standen danach nicht auf dem Ticket. Aufraeumbefehle nicht mit Ticket-Schreibvorgaengen in eine Zeile.
