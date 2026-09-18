@@ -1,7 +1,7 @@
 ---
 id: 01M2SNEP2NN02DN5W0ENVSC1GW
 title: "Die Pruefschleife gehoert ins Binary, nicht in den Katalog"
-status: pre-process
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,11 +23,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T10:33:56Z
+updated-at: 2026-09-18T10:34:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-56920
 claimed-at: 2026-09-18T10:31:58Z
 mode: conversational
+outcome-what: "Plan in elf Schritten, am Code gemessen"
+outcome-why: "Form 2 haengt an einer einzigen Aufteilung: Lane.Builtin traegt zwei Tatsachen, und nur zwei der elf Fundstellen gehoeren auf die neue"
+outcome-resolves: "Der Weg von der Entscheidung zur Umsetzung steht: welches Feld, welche Datei, welcher Test, in welcher Reihenfolge"
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
