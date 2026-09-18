@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:49:11Z
+updated-at: 2026-09-18T06:51:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -99,3 +99,12 @@ Union-Logik lag doppelt vor: die Merge-Schleife aus StampCommits (core/ticket/tr
 3. core/ticket/trim.go:123 — der Kommentar sagt 'Two callers share it and must not drift apart' und nennt StampCommits und den Lane-Payload. Dieser Change hat einen dritten hinzugefuegt: internal/tui/signoff.go:114. Der Kommentar existiert, um Auseinanderlaufen zu verhindern, und laesst ausgerechnet die Stelle aus, an der es am teuersten ist. Alle drei nennen.
 
 Bewusst stehen gelassen: commits_source mit drei Werten ist kein Ueberbau — die Note vom 2026-09-18 06:44 haelt die Entscheidung fest (Plan-Schritt 3: der Leser soll zaehlen koennen statt zu vertrauen), und dass die Schluessel nur im Payload einer Lane mit 'diff' in input-requires stehen, ist dort ebenfalls begruendet. Ebenso die verworfene Alternative 'complete:false plus Zahl fehlender Commits' (Note 06:36) — geschlossen, nicht neu aufgemacht. Die Vereinigung statt Ersetzung folgt StampCommits und ist das bestehende Muster, nicht ein neues daneben.
+- **2026-09-18 06:51 · Alexander Sacharov** — in-progress (zweiter Durchgang, alle drei critique-Befunde repariert). Was nicht im Code steht:
+
+- Die Dreiteilung git / ticket / git+ticket lag doppelt vor, sobald der Signoff-Schirm sie auch brauchte. Sie ist jetzt ticket.CommitsSource (core/ticket/trim.go) neben MergeCommits - bewusst dort und nicht in internal/tui oder internal/cli, weil genau das Auseinanderlaufen zweier Schirme der zweite Befund war. Wer einen Wert hinzufuegt, muss internal/tui/signoff.go:commitsSourceLabel mitfuehren, sonst faellt der neue Fall still auf 'kein Label'.
+
+- Befund 1 (Payload-Schluessel an len(shas)>0): die Bedingung ist jetzt diff != "", dieselbe wie im Klartext-Zweig. Kein Test dafuer: repo.Diff scheitern zu lassen verlangt ein kaputtes git-Repo mit gueltigen SHAs im Frontmatter - der Aufwand steht nicht zum Nutzen, die Bedingung ist eine Zeile und steht neben ihrem Zwilling. Wer das doch testen will: SHAs eintragen, die auf keinem Objekt liegen, dann meldet Diff einen Fehler.
+
+- Befund 2, gewaehlte Variante: die Dreiteilung ins Label, NICHT 'derived nur setzen, wenn das Feld nichts beigetragen hat'. Begruendung: die zweite Variante laesst im Fall git+ticket gar kein Label stehen, und ein fehlendes Label liest sich als 'keine Aussage' statt als 'gemischte Herkunft' - auf dem Schirm, auf dem unterschrieben wird, ist das wieder ein stiller Ausfall, nur ein kleinerer.
+
+- NOTES.md: die Unreleased-Zeile wurde ERGAENZT, nicht um eine zweite Zeile erweitert. Der Signoff-Schirm war in derselben Zeile schon genannt; eine zweite Zeile haette denselben Change zweimal beschrieben. Unreleased ist offen, das darf man - an einer getaggten Sektion nicht.
