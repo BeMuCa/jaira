@@ -896,8 +896,61 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		return m.key(msg)
+
+	// A paste arrives as an event of its own, never as a key, so it needs a
+	// branch of its own: the terminal wraps a bracketed paste in its own escape
+	// sequence and the decoder turns that into a tea.PasteMsg, which never
+	// reaches Model.key. That is why every input field swallowed pasted text.
+	//
+	// A key binding could not do it either. cmdKey reads a key by its physical
+	// position, but the decoder clears Key.Text as soon as a modifier beyond
+	// shift is down (see the note at keylayout.go's cmdKey), so a ctrl+v carries
+	// no character to place. Handling the event instead makes the layout
+	// irrelevant: a Cyrillic or German keyboard pastes through this same branch
+	// as a US one, because the paste never was a key combination to begin with.
+	case tea.PasteMsg:
+		m.insertText(msg.Content)
+		return m, nil
 	}
 	return m, nil
+}
+
+// insertText puts text into whichever buffer the mode is collecting into.
+//
+// Typed characters and pasted blocks land here alike, so a field can never
+// again take one and swallow the other — that divergence is the fault this
+// ticket fixes. A keypress carries a single character and never a line break,
+// so the folding a paste needs is a no-op on typed text.
+func (m *Model) insertText(text string) {
+	if text == "" {
+		return
+	}
+
+	// One definition of "line break" for every buffer below. A bracketed paste
+	// can carry CRLF or a lone CR, and a terminal that sends the bare CR is not
+	// unusual; left raw it would reach the editor buffer and from there the
+	// ticket file.
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+
+	switch m.mode {
+	case modeEdit:
+		// The field editor is the one multi-line buffer — enter inserts a line
+		// there — so a pasted paragraph keeps its shape.
+		m.editBuf += text
+
+	case modeFilter:
+		s := foldToOneLine(text)
+		if s == "" {
+			return
+		}
+		m.input += s
+		m.filter = m.input
+		m.rebuild()
+
+	case modeCreate, modeDelete:
+		m.input += foldToOneLine(text)
+	}
 }
 
 func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
@@ -929,11 +982,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		default:
 			// k.Text is what the key produced, so multi-byte characters survive.
 			// Gating on a one-byte string dropped every umlaut.
-			if k.Text != "" {
-				m.input += k.Text
-				m.filter = m.input
-				m.rebuild()
-			}
+			m.insertText(k.Text)
 		}
 		return m, nil
 
@@ -954,9 +1003,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.input = string(r[:len(r)-1])
 			}
 		default:
-			if k.Text != "" {
-				m.input += k.Text
-			}
+			m.insertText(k.Text)
 		}
 		return m, nil
 
@@ -972,9 +1019,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.input = string(r[:len(r)-1])
 			}
 		default:
-			if k.Text != "" {
-				m.input += k.Text
-			}
+			m.insertText(k.Text)
 		}
 		return m, nil
 

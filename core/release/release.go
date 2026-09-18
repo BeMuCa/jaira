@@ -58,7 +58,24 @@ func Since(stamped string) []Entry { return sinceEntries(Notes(), stamped) }
 
 // sinceEntries holds the selection logic apart from Notes() so tests can
 // drive it against a fixture instead of the real embedded NOTES.md.
+//
+// Entries without changes are dropped from the result. Straight after a
+// release cut the file starts with an empty "## Unreleased", and parseNotes
+// keeps it on purpose — but a reader of "jaira update" has nothing to read in
+// a heading with no points under it, and an entry like that also hid the
+// "Nothing has changed since ..." branch from every board stamped with the
+// current version. The section stays in the file; it just does not travel.
 func sinceEntries(all []Entry, stamped string) []Entry {
+	var out []Entry
+	for _, e := range selectSince(all, stamped) {
+		if len(e.Changes) > 0 {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func selectSince(all []Entry, stamped string) []Entry {
 	if stamped == "" {
 		return all
 	}

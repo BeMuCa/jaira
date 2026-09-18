@@ -38,6 +38,7 @@ const (
 	CodeIncomplete    = "incomplete"
 	CodeUndeclaredDep = "undeclared_dependency"
 	CodeBadTag        = "bad_tag"
+	CodeBadMode       = "bad_mode"
 	// CodeDanglingParent, CodeSelfParent and CodeParentCycle guard the parent
 	// chain. It is followed recursively wherever children are rendered, so a
 	// ring in it is a hung view rather than a wrong one — which is why a
@@ -186,6 +187,28 @@ func Tickets(ts []*ticket.Ticket, lanes *lane.Set, known func(id string) bool) [
 					strings.Join(normalizedTags(t.Tags, raw, fixed), ","))
 			}
 			add(CodeBadTag, SeverityWarning, ticket.FieldTags, msg, args...)
+		}
+
+		// mode takes a closed set of values, and the two CLI write paths
+		// already refuse anything else. This check is for the three ways that
+		// go past them — a hand-edited file, a bad merge, an agent writing
+		// something unexpected — because a value outside the set is not read
+		// as "no mode" by a reader: it prints in the 'mode' row and in the
+		// JSON key, so a person can believe they are in the conversational
+		// mode while the worker, comparing against exactly one word, runs on
+		// autonomously and commits.
+		//
+		// A warning, not an error, for the same reason as the bad tag above:
+		// the ticket itself is intact.
+		// The canonical form is compared, not only the verdict: CanonicalMode
+		// accepts " conversational " and trims it, so a value that only
+		// differs in its whitespace passes the verdict while t.Mode reaches
+		// the JSON key and the header untrimmed — the same silent failure as
+		// "chat", because the worker compares against exactly one word.
+		if canon, ok := ticket.CanonicalMode(t.Mode); !ok || canon != t.Mode {
+			add(CodeBadMode, SeverityWarning, ticket.FieldMode,
+				"mode %q is not a mode: an agent reads it as no mode at all and runs autonomously; set it with 'jaira set %s mode=%s' or clear it with 'mode='",
+				t.Mode, handleOf(t.ID), ticket.ModeConversational)
 		}
 
 		declared := make(map[string]bool, len(t.BlockedBy))

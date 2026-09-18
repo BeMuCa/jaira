@@ -1,0 +1,67 @@
+---
+id: 01M2RP44JPSGK9J8313YX9GJ51
+title: Critique liest jede Runde weniger statt jede Runde alles
+status: done
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Eine Critique-Schleife endet von selbst, weil die Flaeche jede Runde kleiner wird - und wenn sie nach drei Runden doch beim Menschen landet, liegt dort eine Ja/Nein-Frage und kein Bericht"
+context: |-
+  Beobachtung von Alexander am 2026-09-17: die Lane critique schickt Arbeit immer wieder zurueck nach in-progress, statt in einem Durchgang fertig zu sein, und der Dispatcher fragt danach jedes Mal beim Menschen nach.
+
+  Warum das passiert: .jaira/lanes/critique.md Frage 1 ist 'gibt es eine einfachere Form?'. Die ist offen - auf jeden Diff lautet die Antwort 'vermutlich ja'. Es gibt keine Schwelle, unterhalb derer ein Fund keiner ist, und keine Begrenzung darauf, WAS ein spaeterer Durchgang ueberhaupt liest. Jeder Durchgang liest den ganzen Diff neu (internal/cli/flow.go:581 setzt 'diff' aus allen Commits des Tickets zusammen), und wer noch einmal ganz hinsieht, findet noch etwas - tiefer geht immer.
+
+  Der Dispatcher hat dafuer schon eine Bremse: core/role/builtin/jaira-dispatcher/SKILL.md:207 - 'the same lane sent work back three times' haelt an und gibt ab. Die bleibt. Sie ist aber nur eine Bremse, keine Loesung: sie sagt nicht, wie man seltener dort ankommt, und sie liefert dem Menschen einen Bericht, den er selbst auseinandernehmen muss.
+
+  Schon geprueft und ausgeschlossen: die Runden-Obergrenze hochsetzen (schiebt dieselbe Frage nur nach hinten und verdreifacht die Kosten davor), und die Bremse ganz entfernen (der Dispatcher kann 'DoD ist kaputt' nicht von 'liest jede Runde tiefer' unterscheiden - steht so in SKILL.md:214 - und wuerde im zweiten Fall endlos auf einem strong-Modell laufen).
+
+  critique ist KEINE Builtin-Lane: core/lane/builtin/ enthaelt sie nicht, sie gehoert diesem Board. Ihre Aenderung geht also nicht in NOTES.md. Die Dispatcher-Datei liegt dagegen im Binary und ist client-facing.
+definition-of-done: "In .jaira/lanes/critique.md steht, dass jeder Durchgang nach dem ersten weniger liest als der davor: der erste liest den ganzen Diff, jeder spaetere nur die Funde des vorigen und die Aenderung, die sie beantwortet hat"
+tags:
+  - docs
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-09-17T21:59:49Z
+updated-at: 2026-09-17T22:09:48Z
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-30490
+claimed-at: 2026-09-17T22:00:31Z
+outcome-what: "Die Schleifenregel in .jaira/lanes/critique.md ersetzt: jeder Durchgang nach dem ersten liest nur noch die Funde des vorigen und die Aenderung, die sie beantwortet hat. Der Dritte-Runde-Halt im Dispatcher bleibt, gibt aber jetzt eine Ja/Nein-Entscheidung ab statt eines Berichts - in beiden Kopien der Datei."
+outcome-why: "Die Flaeche schrumpft damit jede Runde, also endet die Schleife von selbst statt an einer Zaehlgrenze, und jede Runde nach der ersten kostet ein paar Zeilen statt des ganzen Diffs auf einem strong-Modell."
+outcome-resolves: "critique schickte Arbeit immer wieder zurueck, weil jeder Durchgang den ganzen Diff neu las und tiefer immer geht; der Mensch wurde danach jedes Mal mit einem Bericht statt einer Frage geweckt."
+review-summary: "Drei Textdateien geaendert, kein Code. .jaira/lanes/critique.md ersetzt die Regel 'die Schleife endet, wenn ein Durchgang nichts findet' durch eine, die zusaetzlich begrenzt, WAS ein spaeterer Durchgang liest; die alte Regel bleibt als vierte darunter stehen. Beide Kopien der Dispatcher-Datei haengen an den Dritte-Runde-Halt einen Absatz an, der die Uebergabe als Ja/Nein-Frage vorschreibt; der Halt selbst ist unveraendert. NOTES.md bekommt eine Zeile unter '## Unreleased' - fuer den Dispatcher, nicht fuer die Lane."
+review-gaps: none
+test-verdict: go test ./core/release/... ./core/lane/... ./core/role/... - alle drei ok; der NOTES.md-Zeilenscanner laeuft in core/release
+question: "Die Critique-Lane liest ab dem zweiten Durchgang nur noch die Funde des vorigen und die Aenderung dazu, und der Dispatcher gibt nach der dritten Runde eine Ja/Nein-Frage ab statt eines Berichts. Passt das so, oder soll der zweite Durchgang doch noch den ganzen Diff sehen duerfen?"
+review-verdict: "Der Diff erfuellt alle fuenf Kriterien; die beiden Dispatcher-Kopien sind in diesem Absatz identisch, und der bestehende Halt wurde nicht angetastet."
+review-check: "1. sed -n '61,95p' .jaira/lanes/critique.md - die Ueberschrift sagt 'Four rules for this lane' und die zweite Regel beginnt mit 'Every pass after the first reads less than the one before'  2. diff core/role/builtin/jaira-dispatcher/SKILL.md ~/.claude/skills/jaira-dispatcher/SKILL.md | grep -c 'yes or no' - gibt 0 aus, die beiden Kopien unterscheiden sich dort nicht  3. sed -n '199,230p' core/role/builtin/jaira-dispatcher/SKILL.md - 'the same lane sent work back three times' steht unveraendert da, darunter neu 'ask for yes or no and wait'  4. go test ./core/release/... - ok, der Zeilenscanner akzeptiert die neue NOTES.md-Zeile"
+---
+
+# Critique liest jede Runde weniger statt jede Runde alles
+
+## Definition of Done
+
+- [x] In .jaira/lanes/critique.md steht, dass jeder Durchgang nach dem ersten weniger liest als der davor: der erste liest den ganzen Diff, jeder spaetere nur die Funde des vorigen und die Aenderung, die sie beantwortet hat
+  proof: .jaira/lanes/critique.md:69
+- [x] Ein Defekt, den die Reparatur selbst eingebaut hat, zaehlt als Fund nur, wenn er die Definition of Done bricht - 'koennte jetzt auch einfacher sein' zaehlt nicht
+  proof: .jaira/lanes/critique.md:78
+- [x] Der Dritte-Runde-Halt im Dispatcher bleibt bestehen, gibt aber eine Ja/Nein-Entscheidung ab: die Funde der dritten Runde woertlich, welche der beiden Ursachen der Dispatcher vermutet und warum, und die eine Sache, die er tun wuerde - danach wartet er
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md:219
+- [x] Dieselbe Aenderung steht in beiden Kopien der Dispatcher-Datei: core/role/builtin/jaira-dispatcher/SKILL.md und ~/.claude/skills/jaira-dispatcher/SKILL.md, damit die installierte Rolle und die ausgelieferte nicht auseinanderlaufen
+  proof: diff core/role/builtin/jaira-dispatcher/SKILL.md ~/.claude/skills/jaira-dispatcher/SKILL.md zeigt keinen Unterschied in diesem Absatz
+- [x] core/release/NOTES.md hat unter '## Unreleased' eine Zeile fuer die Dispatcher-Aenderung, weil die Datei im Binary liegt - fuer critique.md keine, weil die Lane nicht ausgeliefert wird
+  proof: core/release/NOTES.md:18
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+- **2026-09-17 22:02 · Alexander Sacharov** — Geprueft und verworfen: die Runden-Obergrenze im Dispatcher anheben oder entfernen. Der Dispatcher kann die beiden Ursachen nicht unterscheiden, also bleibt der Halt - geaendert wurde nur, WAS er dort abgibt. critique.md ist keine Builtin-Lane, deshalb keine NOTES.md-Zeile dafuer; die Dispatcher-Datei liegt im Binary, deshalb eine.
+- **2026-09-17 22:04 · Alexander Sacharov** — Alexander am 2026-09-18 auf die Frage aus der human-Lane: passt so - der zweite Durchgang bekommt den ganzen Diff NICHT wieder zu sehen.

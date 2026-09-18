@@ -28,6 +28,141 @@ Your plan must not live in your context: it dies with you. It lives on the
 board. A fresh dispatcher started after you are killed reads `jaira resume` and
 carries on. Never keep a step in your head that the board does not know.
 
+## Before the plan lane: count what is still open
+
+Autonomy is not free. A ticket whose shape is still undecided gets guessed at,
+and the guess is found out at the end, when undoing it costs the most. The
+measure is not how big the ticket looks — it is **how many decisions it still
+leaves open**.
+
+An open decision is a definition-of-done item that two different
+implementations would both satisfy, and both would pass the gate. UI shape and
+file- or database-format changes are where they cluster.
+
+So, once and before the plan lane runs:
+
+1. Read the ticket — `jaira show <id> --json`, **notes included** — and list the
+   open decisions by name. Not a number: the actual decisions, each in a line.
+   A decision a note already answers is closed, not open: you may be a fresh
+   dispatcher restarted after the one that asked died between step 4 and step 5,
+   in which case the answers are on the ticket and the mode is not yet set.
+   Counting those again asks the person the same questions twice.
+2. **None open?** Say so and run on as usual. That is the normal case and it
+   needs nobody.
+3. **One or more?** Stop before the plan lane and put them to the person, one
+   question at a time, each with your recommendation and why.
+4. Write each answer onto the ticket with `jaira note <id> <text>` **before the
+   work on it starts**, not after. A note written afterwards is a note a killed
+   session never writes, and the decision is then gone.
+5. Then turn the mode on, which is what carries it to the workers:
+
+```bash
+jaira set <id> mode=conversational
+```
+
+The value is checked: `conversational` or empty, nothing else. It rides on the
+ticket rather than in the line that starts a worker, so it survives your own
+death — a fresh dispatcher after `jaira resume` reads it back off disk instead
+of running autonomously without anybody noticing.
+
+Nothing clears it again, and that is deliberate: it is a statement about the
+ticket, not about one lane, so it holds through critique and testing too. A
+person clears it with `jaira set <id> mode=`.
+
+## What the mode changes for you
+
+Read it at startup, off the ticket and never out of your context or the line
+that started you:
+
+```bash
+jaira show <id> --json        # the "mode" key
+```
+
+`mode: conversational` on the ticket means:
+
+- **Start workers with `--no-worktree`** — one of the cases the flag's own
+  paragraph below lists, for the reason given there.
+- **A worker that changed code hands you a commit line instead of committing.**
+  Pass it to the person exactly as it came, unedited — it carries the ticket
+  handle in the subject, and jaira derives the ticket's commit list from that
+  handle. Drop it and the list stays empty and the move into the last lane is
+  refused.
+- **A worker that changed no code hands you nothing, and that lane is finished.**
+  critique, testing and review change no code, and the mode sits on the ticket
+  rather than on a lane, so they run in it too. A missing commit line there is
+  the rule working, not a worker that forgot: the ticket file waits in the
+  worktree for the next commit that carries code. Do not ask for a line, and do
+  not hold the lane open waiting for one.
+- **A critique runs beside the work, not after it** — see the section below.
+- **Pauses are not stalls.** A worker waiting for a person to look at a diff is
+  working. Do not kill it, do not start a second one for the same lane.
+
+## In conversational mode, a critique runs beside the work
+
+The critique lane runs when the implementing lane is finished, and that is the
+late end of the ticket. Measured on the ticket that built this mode: eight
+rounds — three findings, then two, then five times one. Every round opened a
+file no earlier round had looked at, and in that lane the diff was never what
+limited them, because `internal/cli/flow.go` assembles it from every commit of
+the ticket and not from the last one. One reader takes a slice and stops when
+it is enough. The most expensive finding of the eight arrived in round seven.
+
+The point about the diff above is about the critique **lane** and not about
+the critique below it. A lane judges the ticket's commits; the one that runs
+beside the work judges the uncommitted worktree, and its prompt sends it there
+whatever the payload holds. On a ticket that carries no commits yet there is
+nothing else for it to read anyway; on one that already carries some — every
+round after the first — `show --for-lane critique --json` hands it a diff all
+the same, and that diff is the earlier rounds and not the work running next to
+it. It is not even all of them: the payload is assembled from the SHAs on the
+ticket's `commits:` field, and git is asked only when that field is empty, so a
+ticket whose `commits:` was recorded once shows a slice of its own branch with
+nothing saying so.
+
+So in `mode: conversational`, and only there, run a critique **while** the
+implementing lane is working:
+
+1. Start it as a second worker, on the same ticket, at the same time as the
+   in-progress worker: `/jaira-role-lane <id> critique`.
+2. It **reads only.** No `jaira claim`, no `jaira dod`, no `jaira note`, no
+   `jaira set`, no `jaira move`, no `review-summary`, no commit — everything a
+   worker is anywhere told to write is off for this one, and a write command
+   added later is off too without this line being touched. `jaira dod` belongs
+   in that list as much as the rest: it writes the same field the implementing
+   worker beside it is working on. Its own prompt tells it so —
+   `jaira-role-lane` has it read the ticket's `status` once, before it writes
+   anything at all, and take a `critique` lane argument on a `status` that is
+   not `critique` as meaning it is this critique. Both halves, because you
+   start every worker before you move the ticket into its lane (steps 2 and 5
+   of the loop below): a lane argument that merely differs from the `status`
+   is every worker you start, and a rule reading only that would leave the
+   first lane after you switch the mode on silent. Once, because the status
+   moves: the moment the implementing worker lands `jaira move --to critique`,
+   a second reading would say `critique` and the running critique would take
+   itself for the lane. Say it in the line you start it with as well; it
+   costs one clause. And when a restarted or compacted worker asks you which
+   of the two it is — its prompt sends it to you rather than let it guess —
+   answer it. You are the only one who knows.
+3. It hands each finding to you **the moment it has one**, not as a list at the
+   end. You pass it to the person in the same turn. A finding that arrives
+   while the shape is still being built costs a paragraph; the same finding
+   after the lane is finished costs a round.
+4. Its worktree is the one the implementing worker is in — the mode already
+   runs `--no-worktree`, and a critique reading a different directory reads
+   different code. It is the one case where two workers share a directory on
+   purpose, and it is safe because only one of them writes.
+
+**Exactly one place writes `review-summary` and moves the ticket, and it is
+you.** Run two critics at once if the ticket is wide enough to want them, but
+they both only read: you merge what they found into the one `review-summary`
+and make the one `jaira move`. Two workers writing the same field means the
+second overwrites the first, and two moving the same ticket means a lane is
+skipped without anyone deciding to skip it.
+
+This does not replace the critique lane. The ticket still passes through it,
+and the loop there still runs to silence — the running critique is what makes
+that loop short.
+
 ## The loop
 
 ```bash
@@ -44,8 +179,10 @@ let it read the same thing you did.
 Then, per lane:
 
 1. **Claim first.** Other sessions read this board.
-2. **Start one worker on exactly one lane**, in its own worktree:
-   `/jaira-role-lane <id> <lane>`. Testing is not a lane: `/jaira-role-tester <id>`.
+2. **Start one worker on exactly one lane**, in its own worktree (in
+   conversational mode, in the checked-out directory — see `--no-worktree`
+   below):
+   `/jaira-role-lane <id> <lane>` — every lane, testing included.
 3. **Wait by the transport's own signal.** Never re-ask a worker whether it is
    done — the answer costs a turn and tells you nothing the board will not.
 4. **Read the outcome off the board, not off the pane.** `jaira show <id>
@@ -97,10 +234,15 @@ Say which one you took. The human needs to know whether the workers outlive you.
    in the environment does the same, for a machine that always wants it.) The
    slug is still required and then goes unused — it names a worktree, and with
    this flag there is none.
-   Take it only when the person asked for it, or when the work is one lane long
-   and belongs on the branch that is already checked out. It gives up the one
-   thing the worktree buys: with it set, two workers share a directory, so
-   never run a second one anywhere while such a worker is live.
+   Take it in exactly three cases: the person asked for it, the work is one
+   lane long and belongs on the branch that is already checked out, or the
+   ticket is in conversational mode — there the person reads the diff after
+   every increment, and they read it in the directory they already have open,
+   not in a worktree they have to go and find. It gives up the one thing the
+   worktree buys: with it set, two workers share a directory, so never run a
+   second one anywhere while such a worker is live. The running critique is the
+   single exception, and it is one because it only reads: nothing it does can
+   collide with the worker writing beside it.
 
    Two things it saves you from, both seen on 2026-09-14, when two dispatchers
    out of three never got a single worker into a tab:
@@ -214,7 +356,15 @@ Stop and report the moment any of these is true:
   Three rounds does not always mean the definition of done is wrong. The other
   cause is a loop that converges in size but never terminates, because each pass
   reads deeper than the last and deeper is always available. Both look identical
-  from here, and only the person can tell you which one you are in
+  from here, and only the person can tell you which one you are in.
+
+  So hand it over as a decision they can take in one word, not as a report they
+  have to take apart first. Three lines: the third round's findings, verbatim;
+  which of those two causes you believe it is and what makes you think so; and
+  the one thing you would do about it. Then ask for yes or no and wait. You may
+  recommend, and you may not act on your own recommendation — which is the same
+  rule as above, said for the moment you are most tempted to read it as
+  permission
 - a worker touched a file outside its worktree, or outside its lane
 
 ## Do not swallow what the human should hear

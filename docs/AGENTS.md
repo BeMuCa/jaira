@@ -246,6 +246,26 @@ does not know what those names mean on your setup — it passes the tier through
 `--for-lane` output, and the thing driving the agent decides what to launch. That
 is the only place model choice appears.
 
+## A note on the conversational mode
+
+A ticket can carry `mode: conversational` in its frontmatter. jaira does not act
+on it — like the model tier, it passes it through in `--for-lane` output (a
+`mode` key beside `model_tier`) and in `jaira show --json`, and the thing
+driving the agent decides what to do with it. What the shipped roles do with it:
+stop before the plan lane while decisions are still open, show the diff after
+every definition-of-done item instead of at the end, and, where the lane changed
+code, hand back a commit line — ticket handle in the subject — rather than
+committing. A lane that changed none hands back no line: the mode sits on the
+ticket, so critique, testing and review run in it too, and there the ordinary
+rule still holds — no code, no commit, and the ticket file waits for the next
+commit that carries some.
+
+It lives on the ticket rather than in the command that starts an agent so that
+it survives a killed session: the next agent reads it off disk instead of
+silently running autonomously. `jaira set <id> mode=conversational` writes it,
+the empty string is the only other accepted value, and nothing clears it for
+you.
+
 ## A note on lane order
 
 A board's column order follows each lane's `after:` anchor, never `precedence`

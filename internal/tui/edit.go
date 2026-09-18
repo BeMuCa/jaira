@@ -25,6 +25,7 @@ var editableFields = []struct {
 	{"title", ticket.FieldTitle, func(t *ticket.Ticket) string { return t.Title }},
 	{"tier", ticket.FieldModelTier, func(t *ticket.Ticket) string { return t.ModelTier }},
 	{"question", ticket.FieldQuestion, func(t *ticket.Ticket) string { return t.Question }},
+	{"mode", ticket.FieldMode, func(t *ticket.Ticket) string { return t.Mode }},
 	{"waiting on", ticket.FieldBlockedReason, func(t *ticket.Ticket) string { return t.BlockedReason }},
 }
 
@@ -53,9 +54,21 @@ func (m *Model) commitEdit() {
 	if f.get(m.detail) == m.editBuf {
 		return
 	}
+	// The same closed set 'jaira set' enforces, storing the value it hands
+	// back. A mode the worker does not recognise reads as autonomous, so
+	// typing one here has to be refused rather than stored.
+	val := m.editBuf
+	if f.field == ticket.FieldMode {
+		canon, ok := ticket.CanonicalMode(val)
+		if !ok {
+			m.notify(fmt.Sprintf("mode is %q or empty", ticket.ModeConversational), true)
+			return
+		}
+		val = canon
+	}
 	id := m.detail.ID
 	if _, err := m.store.Mutate(id, func(t *ticket.Ticket) error {
-		return t.Doc().SetScalar(f.field, m.editBuf)
+		return t.Doc().SetScalar(f.field, val)
 	}); err != nil {
 		m.notify(err.Error(), true)
 		return
@@ -133,9 +146,7 @@ func (m *Model) editKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// Text carries what the key actually produced, including multi-byte
 	// characters. Gating on a one-byte string here is what dropped every umlaut
 	// in the filter and create prompts.
-	if k.Text != "" {
-		m.editBuf += k.Text
-	}
+	m.insertText(k.Text)
 	return m, nil
 }
 

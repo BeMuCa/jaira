@@ -62,7 +62,14 @@ const agentNote = "## Task tracking: jaira\n" +
 	"\n" +
 	"- `jaira claim <id>` — take it first; other sessions read this board too\n" +
 	"- `jaira show <id> --for-lane <lane> --json` — the lane's prompt, the bounded input,\n" +
-	"  the model tier, and the outputs the lane expects back\n" +
+	"  the model tier, the outputs the lane expects back, and `mode`. Empty — the\n" +
+	"  usual case — means the lanes run autonomously. `conversational` means a person\n" +
+	"  found open design decisions on this ticket and is reading along: show the diff\n" +
+	"  after every definition-of-done item instead of at the end, and, where the lane\n" +
+	"  changed code, hand back a ready-to-paste `git add`/`git commit` line with the\n" +
+	"  ticket id in its subject rather than committing yourself. Read it off the\n" +
+	"  ticket, never off the line that started you — that is what makes it survive a\n" +
+	"  killed session\n" +
 	"- `jaira dod <id> <n> --done --proof \"<file:line or test name>\"` — tick an\n" +
 	"  acceptance criterion and say what makes it true. These are what the terminal\n" +
 	"  lane's gate reads: one left unticked refuses the move however finished the\n" +

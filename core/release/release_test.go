@@ -116,3 +116,23 @@ func TestParseNotesKeepsAnEmptyLeadingSection(t *testing.T) {
 		t.Fatalf("parseNotes = %#v, want %#v", entries, want)
 	}
 }
+
+// The empty "## Unreleased" that every release cut leaves behind is an entry
+// the parser keeps, but nobody can read a heading with no points under it. It
+// must not reach Since()'s result — and on a board stamped with the version
+// that was just cut, the result must be empty, so "jaira update" can say
+// nothing has changed instead of printing a bare heading.
+func TestSinceDropsEntriesWithoutChanges(t *testing.T) {
+	all := parseNotes("## Unreleased\n\n## 0.1.0\n- a released change\n\n## 0.0.1\n- an older change\n")
+
+	if got := sinceEntries(all, "0.1.0"); len(got) != 0 {
+		t.Fatalf("sinceEntries(all, cut version) = %#v, want none", got)
+	}
+	want := []Entry{
+		{Version: "0.1.0", Changes: []string{"a released change"}},
+		{Version: "0.0.1", Changes: []string{"an older change"}},
+	}
+	if got := sinceEntries(all, ""); !reflect.DeepEqual(got, want) {
+		t.Fatalf("sinceEntries(all, \"\") = %#v, want %#v", got, want)
+	}
+}

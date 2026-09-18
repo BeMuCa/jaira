@@ -615,17 +615,31 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"ticket_id":  t.ID,
 			"lane":       l.ID,
 			"model_tier": l.ModelTier,
-			"prompt":     l.Prompt,
-			"input":      fields,
-			"diff":       diff,
-			"produces":   l.OutputProduces,
-			"missing":    missing,
-			"complete":   len(missing) == 0,
+			// mode sits beside model_tier rather than inside input, because
+			// this half of the payload says HOW the lane is to be run and
+			// input says what with. Routing it through a lane's
+			// input-requires would mean editing every lane file and widening
+			// ticket.SuppliedFields, whose comment explains why that list
+			// stays narrow.
+			"mode":     t.Mode,
+			"prompt":   l.Prompt,
+			"input":    fields,
+			"diff":     diff,
+			"produces": l.OutputProduces,
+			"missing":  missing,
+			"complete": len(missing) == 0,
 		})
 	}
 
 	w := cmd.OutOrStdout()
-	fmt.Fprintf(w, "# Lane: %s   (tier: %s)\n\n", l.Name, dash(l.ModelTier))
+	// The mode rides in the header beside the tier, because a worker that
+	// reads the plain-text lane prompt rather than --json learns how to run
+	// the lane from this line and nowhere else.
+	head := fmt.Sprintf("tier: %s", dash(l.ModelTier))
+	if t.Mode != "" {
+		head += fmt.Sprintf(", mode: %s", t.Mode)
+	}
+	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
 	if l.Prompt != "" {
 		fmt.Fprintf(w, "%s\n\n", l.Prompt)
 	}

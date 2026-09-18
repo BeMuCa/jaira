@@ -1,7 +1,7 @@
 ---
 id: 01M2KBPPVH5PAKZ98B0X7KX89C
 title: "Der Dispatcher-Skill faehrt im Repository mit, samt spawn.sh und seinem --no-worktree"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T20:21:31Z
-updated-at: 2026-09-16T07:51:30Z
+updated-at: 2026-09-17T18:04:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15376
 claimed-at: 2026-09-16T07:20:26Z
