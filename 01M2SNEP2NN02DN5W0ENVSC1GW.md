@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:20:55Z
+updated-at: 2026-09-18T12:20:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -236,3 +236,16 @@ WAS ICH STEHEN LASSE, mit Grund - damit der naechste Durchgang es nicht neu aufm
 - Fund 12 (os.Stderr statt cmd.ErrOrStderr in tickets.go:1053): die Zeile ist ALT, nicht aus diesem Diff. Und die Kopplung ist nicht real - nachgemessen mit 'go test -run TestLanesJSONCarriesAvailable -v': dieser Test gibt gar keine Warnung aus, nur der Prosa-Test tut es. Eine Vereinheitlichung ist ein eigenes Ticket, keine Aenderung an dieser Lane.
 - terminalIDIndex neben terminalIndex (lane.go:938): die Signaturen unterscheiden sich ([]string+Set gegen []*Lane), eine Zusammenlegung waere mehr Code als die sechs Zeilen. Absichtlich gelassen.
 - Die drei verschobenen Lane-Dateien: wortgleich uebernommen, je eine Zeile dazu. Nichts zu sagen.
+- **2026-09-18 12:20 · Alexander Sacharov** — in-progress, zweiter Durchgang: die beiden reproduzierten Funde der Kritik behoben. Was der Diff nicht sagt:
+
+FUND 'REPRODUZIERT 1' war ein Ein-Bit-Fehler mit einer inhaltlichen Aussage dahinter. Der Fuss filterte auf Builtin und meinte damit 'mitgeliefert'; richtig ist 'Builtin && !Default' - mitgeliefert UND nicht in der Vorauswahl. Der Unterschied ist nicht kosmetisch: eine Lane, die jedes frische Board bekommt und die dieses Board nicht mehr hat, wurde ENTFERNT. Sie unter jedem 'jaira lanes' wieder anzubieten stellt eine Entscheidung des Benutzers dauerhaft in Frage. Das Angebot gilt dem, was ein Board nie hatte.
+
+FUND 'REPRODUZIERT 2' war tiefer als er aussah. insertAfterAnchor kannte zwei Faelle; der dritte ist jetzt der NORMALFALL, nicht die Ecke: der Fuss bietet die drei einzeln an, also ist 'jaira lanes add testing' auf einem frischen Board der uebliche Weg, und testings Anker optimize ist selbst noch nicht installiert. Die Kette loest sich ueber Installable() auf (testing -> optimize -> critique -> in-progress). Neue Funktion anchorIndex, mit besuchter-Menge gegen eine Kette, die sich im Kreis dreht - zwei nicht installierte Lanes, die einander nennen, haetten sonst eine Endlosschleife ergeben.
+
+DIE PARITAET MIT order() IST DABEI BEWUSST AUFGEGEBEN, und das ist die Entscheidung, die man spaeter anfechten koennte. Die frueherer Notiz sagte: eine Lane darf nicht anders landen, je nachdem ob Load die Reihenfolge herleitet oder Add sie schreibt. Das gilt weiter fuer den unaufloesbaren Anker. Fuer die Kette kann es nicht gelten: order() sieht nur die Lanes AUF dem Board und hat gar keine Kette zu verfolgen, Add haelt das Angebot in der Hand, aus dem die Lane kommt. Add ist also besser informiert, nicht abweichend. Im Kommentar an insertAfterAnchor steht das so.
+
+FOLGE FUER EINEN BESTEHENDEN TEST, den ich umgeschrieben statt repariert habe: TestLanesAddWithoutItsAnchorStaysBeforeTheTerminalLane (in-progress entfernt, dann critique dazu) erwartete eine Warnung. Mit der Kette landet critique jetzt hinter pre-process - in-progress ist ja noch im Angebot und nennt pre-process - und es gibt nichts zu warnen. Das ist die bessere Stelle, also ist der Test veraltet und nicht der Code. Er heisst jetzt TestLanesAddFollowsTheChainPastARemovedAnchor und prueft genau das. Damit der Warnpfad nicht ungeprueft bleibt, steht daneben neu TestLanesAddWithAnAnchorNowhereStaysBeforeTheTerminalLane mit einer eigenen Katalog-Lane, deren after: auf 'nowhere' zeigt.
+
+BEIDE NEUEN TESTS GEGENGEPRUEFT, dass sie wirklich beissen: mit zurueckgesetztem Filter meldet der eine 'available carries signoff', mit abgeschalteter Kettenverfolgung meldet der andere 'testing landed behind signoff'. Ein Regressionstest, den die alte Fassung besteht, ist keiner.
+
+AM ECHTEN BINARY NACHGESTELLT, wie die Kritik es getan hatte: frisches Board, 'jaira lanes add testing' -> [... in-progress testing human ...] ohne Warnung; 'jaira lanes remove signoff' -> der Fuss nennt nur critique, optimize, testing.
