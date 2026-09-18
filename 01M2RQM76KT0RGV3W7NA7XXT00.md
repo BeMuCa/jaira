@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: optimize
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:57:33Z
+updated-at: 2026-09-18T06:57:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
 mode: conversational
-outcome-what: "critique zweiter Durchgang: alle drei Befunde vom 06:47 verifiziert repariert, review-summary=none"
-outcome-why: "Ein Durchgang ohne Befund beendet die Schleife - der Ausschnitt schrumpft pro Runde, hier war er die drei Befunde und die Aenderung, die sie beantwortet"
-outcome-resolves: "Befund 1 Gate an diff != \"\", Befund 2 dreiwertiges Label aus ticket.CommitsSource, Befund 3 Doc-Kommentar nennt alle drei Aufrufer"
+outcome-what: "optimize: die handgeschriebene Union-Schleife in 'move --out --commits' faltet auf ticket.MergeCommits, sonst nichts entfernt"
+outcome-why: "eine vierte Kopie der Schleife im selben File, den dieser Change gerade zur gemeinsamen Heimat gemacht hat - genau das Auseinanderlaufen, vor dem ihr Doc-Kommentar warnt"
+outcome-resolves: "review-gaps geschrieben; go build und go test ./... gruen"
 review-summary: none
 review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('move --out --commits') into ticket.MergeCommits — it was a fourth copy of the loop this change had just made shared, in the same file; MergeCommits' doc comment now names all four callers. Left alone: contains() (still used by sync.go and delete.go, not orphaned), CommitsSource' seemingly redundant len(derived)>0 guard (without it the ticket-only case reads as git+ticket), commitsSourceLabel (a prose translation for one screen, not a forwarder — the plain-text branch prints the raw token on purpose), and the raw t.Commits displays in view.go:1319 / tickets.go:776 (a field display, not a verdict on a diff; changing them is behaviour, not cleanup)"
 ---
