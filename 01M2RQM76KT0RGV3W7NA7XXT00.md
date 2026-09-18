@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T21:00:18Z
+updated-at: 2026-09-18T21:00:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-61566
 claimed-at: 2026-09-18T20:56:37Z
@@ -57,21 +57,13 @@ question: |-
 test-verdict: "green: 0 FAIL. 'go test ./...' -> 28 Pakete ok, 4 ohne Testdateien; go vet und gofmt sauber. Abdeckung des Diffs belegt, nicht bloss gruen: jede geaenderte Go-Datei der Branche (internal/cli/flow.go, core/gitrepo/git.go, core/ticket/trim.go, internal/tui/signoff.go) wird von einem Test beruehrt, und die neuen Tests wurden namentlich gefahren - internal/cli: TestForLaneDiffIsNotLimitedToTheRecordedCommits, TestForLaneDiffCarriesTheUncommittedWorktree, TestForLaneSaysWhenTheWorktreeCouldNotBeRead, TestForLaneNamesTheCommitsGitCouldNotShow, TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce; core/gitrepo: TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote, TestWorktreeDiffIgnoresAnEmptyUntrackedFile; core/ticket: TestCommitsSourceNamesWhoContributed; internal/tui: TestSignOffNamesWhereTheCommitsCameFrom. Keine ausgelassenen Suites: e2e-/Integrationsdateien und Tests gegen einen laufenden Dienst oder eine kostenpflichtige API gibt es im Repository nicht. Eine Abweichung, die kein Fehler ist: review-check auf dem Ticket erwartet '31 Zeilen ok', tatsaechlich sind es 28 ok plus 4 'no test files' - die Zahl wurde vor den letzten Runden geschrieben, das Urteil bleibt dasselbe. Eingetragen vom Dispatcher, weil die testing-Lane ihr Ergebnis wieder als Note statt in dieses Feld geschrieben hatte."
 review-verdict: "Der Code haelt, was die DoD verlangt - alle elf Punkte sind im Diff belegt, die sechs neuen Tests sind gegengeprobt und keiner ist tautologisch, go build/vet/test sind gruen. Der Befund liegt nicht im Go-Code, sondern in dem, was dieser Change als Vertrag ausliefert: die Trennzeile im Payload-Diff, auf die der neu geschriebene SKILL.md-Abschnitt die nebenher laufende Kritik zeigt, ist an diesem Ticket selbst nachweislich mehrdeutig (neun Treffer, der erste acht Haelften zu frueh). Das ist kein Blocker fuer die Sache - der Payload ist mit diesem Change deutlich ehrlicher als vorher -, aber es ist derselbe Fehlertyp eine Ebene weiter, und die Entscheidung, ob das noch in dieses Ticket gehoert oder in ein eigenes, ist eine menschliche. Ich bin mir bei Befund 2 (Repo-weiter Worktree) unsicher, ob er ueberhaupt repariert werden soll: die Alternative - den Worktree auf die Dateien des Tickets einschraenken - gibt es nicht, weil niemand weiss, welche Dateien das sind."
 review-check: |-
-  Alles aus /home/alex/projects/.worktrees/jaira-7XXT00. Dauer etwa 5 Minuten.
-
-  1. Bauen und testen: 'go build ./... && go vet ./... && go test ./... -count=1'. Erwartet: keine Ausgabe von build und vet, und in der Testliste 31 Zeilen 'ok', keine einzige 'FAIL'.
-
-  2. Den alten Fehler nachstellen. Der Test dafuer ist da: 'go test ./internal/cli -run TestForLaneDiffIsNotLimitedToTheRecordedCommits -count=1 -v'. Erwartet: PASS. Er legt ein Ticket an, das nur einen von zwei Commits im Feld 'commits:' hat, und verlangt, dass der review-Payload beide zeigt.
-
-  3. Nachweisen, dass dieser Test wirklich etwas faengt, statt nur gruen zu sein. Datei 'internal/cli/flow.go' oeffnen, Zeile 597 'shas = ticket.MergeCommits(derived, t.Commits)' ersetzen durch 'shas = t.Commits', speichern, den Befehl aus Schritt 2 noch einmal laufen lassen. Erwartet: FAIL mit 'the reviewed diff stops at the recorded commit'. Danach mit 'git checkout -- internal/cli/flow.go' zuruecksetzen.
-
-  4. Den Worktree-Anteil an einer echten Datei sehen. 'echo hallo > Prüfung.txt' tippen (der Umlaut gehoert dazu - er ist der Fall, den DoD 8 repariert), dann 'jaira show 7XXT00 --for-lane review --json > /tmp/p.json' und 'jq -r .commits_source /tmp/p.json'. Erwartet: 'git+worktree'. Dann 'grep -c hallo /tmp/p.json'. Erwartet: mindestens 1 - der Inhalt der neuen Datei steht im Diff. Danach 'rm Prüfung.txt' und '/tmp/p.json' loeschen.
-
-  5. Die Signoff-Zeile ansehen. 'go test ./internal/tui -run TestSignOffNamesWhereTheCommitsCameFrom -count=1 -v'. Erwartet: drei Unterfaelle, alle PASS, darunter 'the_ticket_alone' - der prueft, dass die Zeile 'recorded on the ticket, and again at acceptance' liest und NICHT 'recorded on the ticket — recorded at acceptance'.
-
-  6. Die Release-Notiz lesen: 'sed -n "16,20p" core/release/NOTES.md'. Erwartet: zwei Zeilen, die mit '- ' beginnen, unter der Ueberschrift '## Unreleased'. Keine davon darf unter '## 0.3.0' stehen.
-
-  Nicht von Hand pruefbar: dass ein per Signal getoetetes git nicht als Erfolg durchgeht (core/gitrepo/git.go, ee.Exited()). Ein git im richtigen Moment abzuschiessen ist kein bezahlbarer Test; die Bedingung ist eine Zeile und ihr Grund steht als Kommentar daneben.
+  1. cd /home/alex/projects/.worktrees/jaira-7XXT00
+  2. go build -o /tmp/jaira-7XXT00 ./cmd/jaira    (laeuft durch, keine Ausgabe)
+  3. go test ./core/gitrepo/... ./core/ticket/... ./internal/cli/... ./internal/tui/... -count=1    (vier Zeilen 'ok', kein FAIL)
+  4. /tmp/jaira-7XXT00 show 7XXT00 --for-lane review --json | jq '{complete, commits_source, n: (.commits|length)}'    -> complete true, commits_source 'git+worktree', n 9
+  5. git log origin/HEAD..HEAD --oneline | wc -l    -> 9. Dieselbe Zahl wie in Schritt 4: der Payload zeigt den ganzen Branch, nicht mehr einen Ausschnitt. Das war der Fehler.
+  6. /tmp/jaira-7XXT00 show 7XXT00 --for-lane review --json | jq -r .diff | grep -c 'uncommitted work in the working tree'    -> 9, nicht 1. Das ist Befund 1 aus review-gaps: die Zeile, die im Rollen-Prompt die committete von der unversionierten Haelfte trennen soll, kommt achtmal zusaetzlich im Patch-Inhalt vor. Hier entscheiden Sie, ob das noch in dieses Ticket gehoert.
+  7. echo hallo > /tmp/x && cp /tmp/x 'Änderung.txt' && /tmp/jaira-7XXT00 show 7XXT00 --for-lane review --json | jq -r .diff | grep -c 'Änderung.txt'    -> groesser 0: eine unverfolgte Datei mit Umlaut steht im Payload. Danach: rm 'Änderung.txt'
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
