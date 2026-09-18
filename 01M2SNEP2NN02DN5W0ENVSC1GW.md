@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T20:58:39Z
+updated-at: 2026-09-18T21:04:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -323,3 +323,22 @@ WAS ICH STEHEN LASSE, damit der vierte Durchgang es nicht neu aufmacht:
 - Gegengeprueft, dass Fund 3 jetzt wirklich erschoepft ist: grep ueber *.go und *.md nach 'append(s|ing) (it) (at|to) the end' und 'end of the (column) order' findet ausserhalb der Ticket-Prosa und .planning/ keine Fundstelle mehr.
 - go build, go vet und 'go test -count=1 ./...' selbst gelaufen, alles gruen.
 - Nicht neu aufgemacht und weiterhin gueltig: Fund 10, Fund 12, terminalIDIndex neben terminalIndex und die drei verschobenen Lane-Dateien (Notiz 12:12), die Warnungsweitergabe in die TUI (Notiz 12:26), der vierte Rueckgabewert von lane.Add und die Erfolgszeile ueber der Warnung (Notiz 12:37), die Entscheidung gegen eine weitere NOTES.md-Zeile (Notiz 18:23).
+- **2026-09-18 21:04 · Alexander Sacharov** — optimize (Lane): EINE Aenderung, alles andere geprueft und bewusst stehen gelassen.
+
+GEAENDERT - internal/tui/lanes.go: addFromCatalogue und addAvailable trugen denselben Sechszeiler samt identischem Kommentar ('One message line, and an anchor that could not be found...'), beide Male nach einer Zuweisung von ls.msg, die die naechste Zeile sofort ueberschrieb. Jetzt ein Helfer addedMsg(id, warnings) und je eine Zeile an beiden Stellen. Verhalten identisch: bei leeren warnings 'added <id>', sonst 'added <id> — <warnings[0]>'. Der Kommentar steht nur noch einmal, an der Funktion, die die Entscheidung traegt.
+
+DUPLIKATE GESUCHT, NICHT GERATEN:
+- terminalIDIndex (order.go:349) neben terminalIndex (lane.go:938): echte Doppelung ueber zwei Typen ([]string+Set gegen []*Lane). Bleibt - Durchgang 1 hat sie mit Grund geschlossen (Notiz 12:12), und eine Vereinheitlichung hiesse, ids in []*Lane aufzuloesen, um eine Schleife von vier Zeilen zu sparen.
+- Gegengeprueft, dass die beiden Fallbacks wirklich dasselbe tun, statt es zu glauben: order() rechnet 'idx = terminalIndex(out) - 1' und danach 'at = idx + 1', insertAfterAnchor setzt 'at = terminalIDIndex(ids, set)'. Gleiche Position. Ebenso beim aufgeloesten Anker: order() 'indexOf + 1', anchorIndex 'i + 1'. Kein Auseinanderlaufen.
+- Die Unpinned()-Notiz steht zweimal in internal/cli/market.go (list und adopt). Das spiegelt exakt die schon vorhandene Overridden()-Doppelung zwei Zeilen darueber - ein Helfer fuer beide waere eine Aenderung an unberuehrtem Code.
+
+TOTER CODE: keiner gefunden. Alle neuen Bezeichner haben Leser - Default (setUp, migrateLegacy, tickets.go:1010, defaultboard.go:50), anchorIndex/terminalIDIndex/insertAfterAnchor (order.go), pinnedRef/Unpinned (market.go, cli/market.go). anchorIndex hat seinen zweiten Rueckgabewert schon in Durchgang 3 verloren.
+
+KOSTEN: lane.Installable() laeuft jetzt bei jedem 'jaira lanes'. Nachgesehen statt angenommen (order.go:175ff): embedded Builtins plus ein Glob ueber UserLanesDir, kein Netz. Die Startzeit-Regel aus CLAUDE.md ist nicht beruehrt.
+
+STEHEN GELASSEN, damit die naechste Runde es nicht neu aufmacht:
+- Die Nachsuche nach 'after' in lane.Add (order.go, Schleife ueber ids nach dem Einfuegen): insertAfterAnchor kennt die Position bereits, aber sie herauszureichen kostet einen dritten Rueckgabewert an einer Funktion mit einem Aufrufer, um eine Schleife ueber dreizehn Eintraege auf einem einmaligen Pfad zu sparen. Kein Gewinn.
+- 'release.Current == \"\"' in pinnedRef: release.go:23 setzt 'dev' als Vorgabe, die leere Zeichenkette entsteht nur ueber -ldflags. Der Zweig ist Vorsicht, keine unerreichbare Bedingung - entfernen wuerde ref='v' erzeugen.
+- Alles aus den Durchgaengen 1-5, das dort mit Begruendung geschlossen wurde.
+
+go build, go vet und 'go test -count=1 ./...' nach der Aenderung gruen.
