@@ -714,6 +714,14 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			fmt.Fprintf(w, "**%s**\n%s\n\n", want, v)
 		}
 	}
+	// Above the diff, not below it, and only beside one: the sentence says the
+	// uncommitted half is not in what follows, so it has to stand before what
+	// follows. And where there is no diff at all the missing line below already
+	// carries this same error text — printed here as well, a reader would be
+	// told the same thing twice and left to wonder whether it happened twice.
+	if worktreeErr != "" && diff != "" {
+		fmt.Fprintf(w, "The working tree could not be read, so nothing uncommitted is below: %s\n\n", worktreeErr)
+	}
 	if diff != "" {
 		// The provenance rides above the diff for the same reason it rides in
 		// the payload: a reader who can count the shas can check the diff is
@@ -723,9 +731,6 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			fmt.Fprintf(w, "git could not show %d of them: %s\n\n", len(unavailable), strings.Join(unavailable, " "))
 		}
 		fmt.Fprintf(w, "```diff\n%s```\n\n", diff)
-	}
-	if worktreeErr != "" {
-		fmt.Fprintf(w, "The working tree could not be read, so nothing uncommitted is below: %s\n\n", worktreeErr)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")

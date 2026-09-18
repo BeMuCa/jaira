@@ -236,3 +236,50 @@ func TestForLaneNamesTheCommitsGitCouldNotShow(t *testing.T) {
 		t.Errorf("commits_unavailable is %v — a sha counted in commits but never shown is not named", payload.Unavailable)
 	}
 }
+
+// The plain-text lane prompt is what a worker who does not parse JSON reads,
+// and there the worktree error is a sentence rather than a key. It used to be
+// printed under the diff while saying "nothing uncommitted is below" — pointing
+// at the empty space after itself, with the diff it qualifies above it — and,
+// where there was no diff at all, a second time inside the missing line. Both
+// halves of the fixture carry no commit that git can show, so the working tree
+// is unreadable either way; only the recorded ghost sha differs.
+func TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce(t *testing.T) {
+	const ghost = "0123456789012345678901234567890123456789"
+
+	t.Run("beside a diff", func(t *testing.T) {
+		dir, s, tk, h, _, _ := forLaneGitFixture(t, time.Date(2026, 9, 18, 13, 0, 0, 0, time.UTC))
+		if _, err := s.Mutate(tk.ID, func(t *ticket.Ticket) error {
+			return t.Doc().SetList(ticket.FieldCommits, []string{ghost})
+		}); err != nil {
+			t.Fatal(err)
+		}
+		out, err := runCLI(t, dir, "show", h, "--for-lane", "review")
+		if err != nil {
+			t.Fatalf("show --for-lane review: %v\n%s", err, out)
+		}
+		said := strings.Index(out, "The working tree could not be read")
+		diffAt := strings.Index(out, "## Diff")
+		if said < 0 || diffAt < 0 {
+			t.Fatalf("want the worktree sentence and a diff, got:\n%s", out)
+		}
+		if said > diffAt {
+			t.Errorf("the sentence says the uncommitted half is not below, but it stands under the diff:\n%s", out)
+		}
+	})
+
+	t.Run("without a diff", func(t *testing.T) {
+		dir, _, _, h, _, _ := forLaneGitFixture(t, time.Date(2026, 9, 18, 14, 0, 0, 0, time.UTC))
+		out, err := runCLI(t, dir, "show", h, "--for-lane", "review")
+		if err != nil {
+			t.Fatalf("show --for-lane review: %v\n%s", err, out)
+		}
+		// Matched without its first word: the missing line spells it
+		// "the working tree could not be read: …" mid-sentence, the standalone
+		// line capitalises it, and a reader is told the same thing twice either
+		// way.
+		if n := strings.Count(out, "working tree could not be read"); n != 1 {
+			t.Errorf("the same error is reported %d times, want once — the missing line carries it:\n%s", n, out)
+		}
+	})
+}

@@ -43,7 +43,11 @@ that has not been committed yet are both in front of you without your going to
 look. The one commit that escapes is a commit that neither names the ticket id
 nor touches its file; that is what the rule "every commit names the ticket id"
 is for, and you can see it by counting `commits` against
-`git log origin/HEAD..HEAD --oneline`.
+`git log origin/HEAD..HEAD --oneline`. That count proves the LIST is whole, not
+the diff: a payload that also carries `commits_unavailable` names shas that are
+counted in `commits` but whose patch git could not produce — in the diff they
+are a bare `(not available locally)` line. Are any there? Then the number agrees
+and the diff is still a slice, and what you judge is short by those commits.
 
 Are you the lane that writes? Then take the ticket and finish the step
 yourself. The critique running beside the work does none of the following — it
