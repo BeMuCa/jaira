@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:21:14Z
+updated-at: 2026-09-18T12:21:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -48,7 +48,7 @@ review-summary: |-
 - [x] Ein frisch mit 'jaira init' angelegtes Board erfaehrt von der Pruefschleife, ohne dass jemand den Katalog kennt. Nachgestellt an einer leeren Testdoska: der Weg von 'jaira init' zu einer arbeitenden critique-Lane ist ohne Vorwissen gehbar.
   proof: internal/cli/tickets.go:1010 Filter 'l.Builtin && !l.Default'; Tests internal/cli/lanes_test.go TestLanesNamesTheShippedLanesThisBoardLacks, TestLanesJSONCarriesAvailable, TestLanesSaysNothingWhenTheBoardHasEverything, TestLanesDoesNotOfferBackALaneTheBoardRemoved
 - [x] Wer jaira ohne Netz benutzt, kommt an die drei Lanes heran, oder die Fehlermeldung sagt, dass sie aus dem Netz kommen und wie man sie sonst bekommt. 'jaira lanes market' holt heute von GitHub.
-  proof: internal/cli/lanes_test.go TestLanesAddInstallsTheReviewLoopWithoutNetwork — mit JAIRA_MARKET_API auf 127.0.0.1:1 installiert 'jaira lanes add critique|optimize|testing' alle drei und setzt sie zwischen in-progress und human
+  proof: internal/cli/lanes_test.go TestLanesAddInstallsTheReviewLoopWithoutNetwork und TestLanesAddFollowsAnAnchorThatIsItselfUninstalled - 'jaira lanes add testing' allein landet ueber die Ankerkette (core/lane/order.go anchorIndex) zwischen in-progress und human, nicht hinter signoff
 - [x] Ein Board, das jaira als reinen Tracker benutzt, wird nicht mit einem Konveyer beladen, den niemand faehrt - die Wahl bleibt eine Wahl.
   proof: core/lane/defaultboard_test.go TestFreshBoardGetsOnlyTheDefaultLanes — ein frisch angelegtes Board laedt als genau die zehn Lanes von heute, obwohl das Binary jetzt dreizehn traegt
 - [x] Je eine Zeile in core/release/NOTES.md fuer das, was ein Benutzer dadurch anders tut.
