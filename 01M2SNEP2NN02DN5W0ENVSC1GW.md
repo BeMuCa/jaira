@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T12:26:09Z
+updated-at: 2026-09-18T12:26:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-80358
 claimed-at: 2026-09-18T12:11:18Z
@@ -247,3 +247,16 @@ FOLGE FUER EINEN BESTEHENDEN TEST, den ich umgeschrieben statt repariert habe: T
 BEIDE NEUEN TESTS GEGENGEPRUEFT, dass sie wirklich beissen: mit zurueckgesetztem Filter meldet der eine 'available carries signoff', mit abgeschalteter Kettenverfolgung meldet der andere 'testing landed behind signoff'. Ein Regressionstest, den die alte Fassung besteht, ist keiner.
 
 AM ECHTEN BINARY NACHGESTELLT, wie die Kritik es getan hatte: frisches Board, 'jaira lanes add testing' -> [... in-progress testing human ...] ohne Warnung; 'jaira lanes remove signoff' -> der Fuss nennt nur critique, optimize, testing.
+- **2026-09-18 12:26 · Alexander Sacharov** — critique (Lane, zweiter Durchgang): drei Punkte, zwei am gebauten Binary reproduziert. Dazu die Entscheidung zu Punkt A, die der Dispatcher mir gegeben hat.
+
+ENTSCHIEDEN - PUNKT A, die stille Kettenaufloesung BLEIBT still. Der Vorschlag war, auch bei at >= 0 zu warnen, wenn der aufgeloeste Anker nicht l.After ist. Nachgemessen, warum das nicht geht: auf einem frischen Board loest 'jaira lanes add testing' die Kette testing -> optimize -> critique -> in-progress auf und wuerde damit warnen - und genau dieser Aufruf ist der Weg, den der neue Fuss von 'jaira lanes' selbst bewirbt. Eine Warnung auf dem beworbenen Normalweg ist Laerm, und Laerm erzieht dazu, Warnungen zu ueberlesen. Add kann die beiden Faelle auch nicht trennen: 'noch nie installiert' und 'entfernt' sehen von Add aus identisch aus (dasselbe, was Punkt C am Kommentar in tickets.go aufzeigt). Also entweder immer warnen oder nie - und nie ist richtig, denn die Platzierung ist in beiden Faellen die richtige.
+
+Was dabei aber wirklich fehlt, ist nicht eine Warnung, sondern die Auskunft WO die Lane gelandet ist: 'jaira lanes add' sagt heute nur 'added <id> to this project (<pfad>)'. Der geloeschte Test TestLanesAddWithoutItsAnchorStaysBeforeTheTerminalLane trug diese Ansage, die Kettenaufloesung hat sie ersatzlos mitgenommen. Der Nachbar gehoert in die normale Erfolgszeile, nicht auf den Warnkanal - damit erfaehrt auch der, der in-progress entfernt hat, wo critique hingekommen ist, ohne dass der Normalweg Warnungen wirft.
+
+PUNKT B am Binary reproduziert, nicht nur gelesen: '.jaira lanes remove brainstorm', 'remove backlog', dann 'lanes add brainstorm' -> 'jaira: warning: lane brainstorm: anchor "" is not on this board'. Leere Anfuehrungszeichen, weil anchorIndex die Laufvariable 'anchor' bis ans Kettenende schiebt und insertAfterAnchor sie in die Meldung setzt. Der Benutzer hat 'backlog' geschrieben und bekommt einen Namen genannt, den er nie geschrieben hat.
+
+PUNKT C am Binary reproduziert: 'lanes add critique', 'lanes remove critique', 'jaira lanes' -> critique steht wieder im Angebot. Das VERHALTEN ist vertretbar (eine Katalog-Lane ist eben immer nachinstallierbar), der Kommentarsatz ist es nicht: 'The offer is for the lanes a board never had' ist nachweislich falsch, und ein Kommentar, der eine Eigenschaft behauptet, die der Code nicht hat, ist schlimmer als keiner. Nur der Satz aendert sich, nicht der Filter.
+
+WAS ICH STEHEN LASSE, damit der dritte Durchgang es nicht neu aufmacht:
+- Die Warnungsweitergabe in die TUI: internal/tui/lanes.go:460 und :511 nehmen warnings[0] in die Meldungszeile. Nachgesehen, nicht angenommen - die neue Signatur verliert nichts.
+- Alles aus dem ersten Durchgang, was dort mit Grund stehen blieb (Fund 10, Fund 12, terminalIDIndex, die drei verschobenen Lane-Dateien). Unveraendert gueltig, siehe Notiz vom 12:12.
