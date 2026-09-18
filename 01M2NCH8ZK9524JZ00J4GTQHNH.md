@@ -1,7 +1,7 @@
 ---
 id: 01M2NCH8ZK9524JZ00J4GTQHNH
 title: "Der Dispatcher bekommt einen Gespraechsmodus, statt dass eine zweite Rolle daneben entsteht"
-status: testing
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -40,13 +40,13 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T06:06:34Z
+updated-at: 2026-09-18T06:06:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
-outcome-what: "optimize ohne Aenderung: vier Durchgaenge (Duplikation, toter Code, Fuellwerk, Kosten) ueber den Branch-Diff, nichts entfernt, kein Code angefasst."
-outcome-why: "Seit dem vorigen optimize-Lauf (472a5c5) hat sich nur das Ticket bewegt - in-progress hat die proof-Zeilen von DoD 12 und 17 nachgezogen. Der einzige echte Duplikationsbefund (showForLane-/'commits:'-Mechanismus an drei Prosa-Stellen) ist von DoD 17 woertlich gefordert; ihn zusammenzulegen waere das Streichen eines Abnahmekriteriums, nicht eine Aufraeumung."
-outcome-resolves: "gofmt -l core internal leer, go vet ./... leer, go test ./... gruen; 'git status --short' zeigt allein die Ticket-Datei. Befunde und Stehengelassenes in review-gaps, die Sackgasse als Notiz."
+outcome-what: "Testing-Lane: Gates gruen und alle 17 DoD-Punkte am Arbeitsbaum nachgeprueft, der Modus auf einem Wegwerf-Board end-to-end ausgeuebt"
+outcome-why: "Die Lane prueft, ob das Geforderte da ist und laeuft — beides bestaetigt, kein Befund, also keine Runde zurueck nach in-progress"
+outcome-resolves: "go test ./... -race -count=1 RC=0; test-verdict gesetzt; kein Code geaendert, also kein Commit"
 review-summary: none
 review-gaps: "Nichts entfernt, nichts geaendert - und das ist diesmal eine Aussage ueber den Abstand seit dem letzten optimize-Lauf: 472a5c5 war dieser Lauf, danach hat nur die in-progress-Runde die beiden proof-Zeilen von DoD 12 und 17 am Ticket nachgezogen. Kein Go-Code, kein Prompt, kein NOTES.md-Text hat sich seither bewegt, also standen die vier Durchgaenge auf demselben Diff. Trotzdem nachgemessen statt vorausgesetzt: gofmt -l core internal leer, go vet ./... leer, go test ./... gruen. Der eine echte Doppelungs-Kandidat, den dieser Lauf gefunden hat, wird ausdruecklich stehen gelassen: der showForLane-/'commits:'-Mechanismus steht dreimal - jaira-role-lane/SKILL.md:37-43 (Kopf, mit Zaehlprobe), jaira-role-lane/SKILL.md:137-145 ('And it is not even all of those rounds') und jaira-dispatcher/SKILL.md:117-120 -, und drei Prosa-Stellen ueber eine Go-Funktion driften, wenn flow.go sich aendert. Entfernt wird trotzdem keine: DoD 17 fordert genau diese Richtigstellung woertlich an allen drei Stellen plus in der NOTES-Zeile und nennt sie im proof als 'grep -cF findet jeden genau einmal'; eine davon zu kuerzen ist keine Aufraeumung, sondern das Streichen eines Abnahmekriteriums. Weiter geprueft und ohne Befund: CanonicalMode (core/ticket/schema.go:157) bleibt die einzige Stelle mit dem geschlossenen Wertebereich, alle drei Schreib-/Pruefpfade rufen sie (internal/cli/tickets.go:936, internal/tui/edit.go:62, core/validate/validate.go:208); kein verwaister Import, keine unerreichbar gewordene Verzweigung; die Testhelfer newModeTicket/setMode/modeOf stehen genau einmal, core/validate/mode_test.go kommt ohne eigene aus; 'notes' als neuer critique-Input ist ein bestehendes SuppliedField (core/ticket/schema.go:196, internal/cli/flow.go:573), kein neuer Pfad. Kein Kostenbefund: alle Lesestellen sind einmalige Feldzugriffe auf ein bereits dekodiertes Ticket."
 test-verdict: "pass: gofmt/vet/build sauber, 'go test ./... -race -count=1' gruen (RC=0, 28 Pakete), alle 17 DoD-Punkte im Arbeitsbaum nachgeprueft, Modus auf einem Wegwerf-Board end-to-end ausgeuebt"
