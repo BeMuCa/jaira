@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:58:58Z
+updated-at: 2026-09-18T08:04:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25712
 claimed-at: 2026-09-18T07:38:46Z
@@ -199,3 +199,18 @@ Zwei Befunde:
 - Gegenprobe nicht geglaubt, sondern selbst gefahren: -z entfernt, go test ./core/gitrepo -run TestWorktreeDiff -count=1 faellt mit 'no patch for an unreadable or non-empty file'. Der Test faengt also den Ausfall LAUT, nicht bloss still. git.go danach aus der Kopie wiederhergestellt, Arbeitsbaum sauber.
 - Die Null-Byte-Datei, die dabei durchrutscht, ist kein neuer Befund: DoD 8 nennt sie woertlich ('obwohl die Datei nicht leer ist') und TestWorktreeDiffIgnoresAnEmptyUntrackedFile haelt sie fest. Bewusst offen gelassen.
 - Ort geprueft: die Reparatur liegt im Callee (core/gitrepo), nicht in flow.go, wo sie eine zweite Stelle waere, die etwas ueber Pfadzitierung wissen muesste. NOTES.md wurde die bestehende Unreleased-Zeile ergaenzt statt eine zweite Zeile fuer denselben Change zu schreiben - dieselbe Linie wie 06:51 und 07:46.
+- **2026-09-18 08:04 · Alexander Sacharov** — optimize (zweiter Durchgang, ueber die Runden 3-5: efaae36, b5c27e1, 46516d3 und den vorher unversionierten Stand). Zwei Doppelungen gefaltet, die dieser Change selbst erzeugt hat, sonst nichts entfernt.
+
+- core/gitrepo/git.go: runTolerating war eine zeichenweise Kopie von run - dieselben dreizehn Zeilen exec/Puffer/Fehlertext, nur mit einem tolerierten Exit-Code davor. Jetzt ist runTolerating der einzige Weg in dieses Paket hinein und run ruft es mit noTolerance (-1). Warum das hierher gehoert und nicht in ein Folgeticket: die Kopie ist in diesem Change entstanden, und beide Haelften formatieren die git-Fehlermeldung - laufen sie auseinander, liest ein Benutzer zwei verschiedene Fehlertexte fuer denselben Fehlschlag.
+- Dabei ein echter Fehler in meiner eigenen Faltung gefunden und vor dem Commit behoben: exec.ExitError.ExitCode() liefert -1, wenn git durch ein Signal stirbt. Mit noTolerance == -1 haette run dann einen abgeschossenen git-Prozess als Erfolg gewertet und die halbe Ausgabe zurueckgegeben - genau der stille Ausfall, den dieses Ticket abschafft, im Werkzeug selbst. Die Bedingung traegt jetzt ee.Exited() davor: ein Signal-Tod hat keinen Exit-Status und kann deshalb nie mit einem tolerierten Code zusammenfallen. Kein Test dafuer (ein git im richtigen Moment zu killen ist kein bezahlbarer Test); die Zeile ist eine Bedingung und ihr Grund steht als Kommentar daneben.
+- internal/cli/forlanecommits_test.go: die beiden Tests dieses Changes teilten rund 45 Zeilen woertlich identisches Setup - git init/config, Store, Ticket in der review-Lane mit allen Lane-Inputs ausser dem Diff, der write-Helfer, dazu zweimal dieselbe anonyme Payload-Struktur. Jetzt forLaneGitFixture(t, at) und der Typ forLanePayload. gitRun (boardremote_test.go:45) passte nicht: es gibt kein stdout zurueck, und der erste Test liest rev-parse HEAD.
+
+Bewusst NICHT angefasst:
+- ticket.WithWorktree/SourceWorktree mit einem Aufrufer: keine Weiterleitung, sondern das Vokabular an einer Stelle - die Begruendung steht in der Notiz vom 07:46 und ist der zweite critique-Befund vom 06:47.
+- commitsSourceLabel: Uebersetzung dreier Token in Prosa fuer genau einen Schirm, ein Aufrufer ist hier der richtige Wert. Schon am 06:57 geprueft.
+- Die rohen Strings 'git'/'ticket'/'git+ticket' auf beiden Seiten statt Konstanten: die critique vom 07:09 hat das bewertet und stehen lassen, weil TestSignOffNamesWhereTheCommitsCameFrom ein Umbenennen faengt und Konstanten gegen einen NEUEN Token genauso wenig helfen.
+- Die langen Kommentarbloecke in WorktreeDiff: kein Restatement der Zeile darunter, sondern die Gruende, die dieses Ticket teuer gelernt hat. Fluff ist ein Kommentar, der sagt was der Code tut; diese sagen, warum es sonst still schiefgeht.
+- Kosten: Available() macht pro run() ein exec.LookPath, also jetzt einmal pro untracked Datei in der WorktreeDiff-Schleife. Nicht angefasst - das ist das Muster des ganzen Pakets (Diff und Commits forken ohnehin pro SHA einen git-Prozess, gegen den ein PATH-Scan nicht zaehlt), und ein Caching waere eine Verhaltensaenderung in einer Lane, die keine machen darf.
+- Keine NOTES.md-Zeile: beide Faltungen sind von aussen nicht beobachtbar, identische Ausgabe, identische Exit-Codes.
+
+Gegenprobe: go build ./... , go vet ./... , go test ./... -count=1 - 28 Pakete gruen. Dass die Faltung den tolerierten Pfad wirklich noch tut, haengt an TestWorktreeDiffKeepsUntrackedPathsGitWouldQuote: ohne die Toleranz von Exit 1 faellt der Test.
