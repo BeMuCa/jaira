@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:03:10Z
+updated-at: 2026-09-18T07:03:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
@@ -130,3 +130,4 @@ Was der Change abdeckt: ticket.CommitsSource hat mit TestCommitsSourceNamesWhoCo
 Luecke, als Befund und nicht als Fehler: commitsSourceLabel (internal/tui/signoff.go:281) hat keinen Test. Die drei Token werden nur in core/ticket geprueft, die Uebersetzung in Prosa und die Heading-Zeile des Signoff-Schirms rendert kein Test - internal/tui/signoff_test.go prueft nur den Follow-up-Kontext, nicht renderSignOff. Genau dort faellt laut dem Doc-Kommentar ein neuer Wert still auf 'kein Label'. Ein Test, der renderSignOff fuer ein Ticket mit einem SHA nur im Feld aufruft und 'plus shas only the ticket records' erwartet, wuerde das schliessen.
 
 Kein Vergleich gegen die Basis noetig: nichts ist rot.
+- **2026-09-18 07:03 · Alexander Sacharov** — Alex hat am 2026-09-18 im Tab der testing-Lane 'добавь этот тест на renderSignOff' getippt, nachdem der Tester die Luecke gemeldet hatte. Daraus ist DoD 5 geworden: der Befund wird geschlossen, nicht bloss notiert. Die Zeile im Tab liess sich per herdr send-keys nicht abschicken (ein unfokussiertes Pane nimmt kein Enter), deshalb laeuft die Arbeit als eigener in-progress-Durchgang statt in dem Tab.
