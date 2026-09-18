@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T10:52:38Z
+updated-at: 2026-09-18T10:53:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5724
 claimed-at: 2026-09-18T09:17:00Z
@@ -265,3 +265,4 @@ Konkret zu aendern ist core/role/builtin/jaira-role-lane/SKILL.md:123-161. Was d
 - Der Pathspec-Absatz und der Hinweis 'was seit dem Payload auf das Ticket geschrieben wurde, steht nicht im Diff - lies es mit jaira show --json' bleiben inhaltlich erhalten.
 
 Befund 3 (repo.Diff gibt nie einen Fehler zurueck) bleibt offen und ist nicht Teil dieser DoD - kein Verhaltensfehler, nur ein unerreichbarer Zweig plus eine Zahl in 'commits', die im Rebase-Fall mehr zaehlt als der Diff zeigt.
+- **2026-09-18 10:53 · Alexander Sacharov** — Alex hat die Arbeit in der signoff-Lane am 2026-09-18 geprueft und zurueckgeschickt: die drei Befunde der review-Lane sind zu bearbeiten, die Lane hat sie vollstaendig aufgeschrieben (review-gaps). Befund 1 nennt die review-Lane selbst als 'gehoert vor die Annahme': jaira-role-lane/SKILL.md:122-135 beschreibt weiter das alte Verhalten und weist die nebenher laufende Kritik an, genau den Diff zu ignorieren, den dieser Change ihr gerade gibt - ausgeliefert per go:embed, und die NOTES.md-Zeile fordert 'jaira roles install --global --force'. Befund 2 (flow.go:619 verwirft den WorktreeDiff-Fehler spurlos; nach DoD 8 laesst eine unlesbare untracked Datei den ganzen Worktree-Anteil verschwinden) und Befund 3 (repo.Diff scheitert nie, der missing-Zweig ist unerreichbar, die Zahl in 'commits' ist nicht in jedem Fall die Zahl der beurteilten Diffs) waren als Nachtraege markiert - sie werden in diesem Durchgang mitgenommen, nicht auf ein zweites Ticket verschoben. Die Branche fix/7XXT00 ist schon auf origin (sashasoft90/jaira) gepusht; der Pull Request ist noch nicht offen, also braucht nichts force-gepusht zu werden.
