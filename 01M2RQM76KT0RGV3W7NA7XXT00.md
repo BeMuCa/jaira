@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:09:28Z
+updated-at: 2026-09-18T07:09:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94878
 claimed-at: 2026-09-18T07:04:05Z
@@ -141,3 +141,12 @@ Kein Vergleich gegen die Basis noetig: nichts ist rot.
 - Gegenprobe gemacht, nicht nur gruen gesehen: mit 'return ""' statt des git+ticket-Labels faellt der Test. Er faengt also den stillen Durchfall, vor dem der Doc-Kommentar warnt, und ist kein Tautologietest.
 - gitStat scheitert im Testspeicher (kein Repo) und faellt auf die fieldRow-Zeile zurueck. Das ist fuer diesen Test egal - die Heading-Zeile mit dem Label steht davor und wird unabhaengig davon geschrieben.
 - Keine NOTES.md-Zeile: reiner Test, von aussen nicht beobachtbar.
+- **2026-09-18 07:09 · Alexander Sacharov** — critique (dritter Durchgang, nach dem in-progress-Lauf fuer DoD 5): der committete Diff aus dem Payload wurde NICHT erneut gelesen - die Notizen 06:47/06:54/06:57 haben ihn geklaert und die Befunde sind dort als repariert festgehalten. Beurteilt wurde die unversionierte Arbeit des dritten Durchgangs (signoff.go, signoff_test.go, trim_test.go, NOTES.md).
+
+Bewusst stehen gelassen, auf den Notizen von 06:51 und 06:57: commitsSourceLabel als Abbildung mit einem Aufrufer (Prosa fuer genau einen Schirm, kein Forwarder), das Vorfuellen von derivedFor/derivedShas im Test statt DeriveCommits (ohne git waere git+ticket unerreichbar), und dass ein NEUER Quellen-Token still auf 'kein Label' faellt - 06:51 haelt das als akzeptierten Preis fest. Auch nicht als Befund: die drei Token sind rohe Strings auf beiden Seiten statt Konstanten - ein Umbenennen faellt durch TestSignOffNamesWhereTheCommitsCameFrom auf, Konstanten wuerden gegen einen neuen Wert genauso wenig helfen.
+
+Zwei Befunde:
+
+1. core/role/builtin/jaira-role-lane/SKILL.md:36-43 - der neue Text sagt der Diff-Lane, der Payload sei 'the ticket's whole committed history and not a slice of it', und nimmt ihr die alte Nachzaehl-Anweisung weg. In mode: conversational darf die implementierende Lane aber nicht committen (Regel 3 in derselben Datei). Auf genau diesen Tickets ist der Payload also der VORHERIGE Durchgang, mit complete:true daneben - derselbe stille Ausfall, den dieses Ticket beseitigt, eine Ebene hoeher. Dieses Ticket beweist es an sich selbst: der dritte in-progress-Durchgang liegt unversioniert im Worktree und steckt in keinem Payload. Die 'read the worktree'-Anweisung samt der drei Kommandos steht in derselben Datei bei Zeile 120, aber ausschliesslich im Abschnitt fuer die NEBENHER laufende Kritik - die ordentliche critique-, testing- und review-Lane bekommt sie nicht. Das ist eine Entscheidung fuer Alex und keine, die diese Lane trifft, siehe --question.
+
+2. internal/tui/signoff.go:118 - '  ' + label + ' — recorded at acceptance' fuer alle drei Faelle. Der Fall 'ticket' rendert damit 'recorded on the ticket — recorded at acceptance': dasselbe Wort zweimal, auf dem Schirm, auf dem ein Mensch unterschreibt. Und 'derived from git, plus shas only the ticket records — recorded at acceptance' ist fuer eine Meta-Zeile lang. Reparatur: commitsSourceLabel gibt den ganzen Nachsatz je Fall selbst zurueck, statt dass die Aufrufstelle einen gemeinsamen anhaengt. Kein Test bricht davon - TestSignOffNamesWhereTheCommitsCameFrom prueft mit Contains nur den Label-Teil.
