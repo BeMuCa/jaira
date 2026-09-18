@@ -36,10 +36,13 @@ meant to judge, and leave its outputs to the dispatcher that started you.
 Does your lane judge that payload's diff? The ordinary `critique`, `testing`
 and `review` lanes do — and the payload names what it was built from. Its
 `commits` field lists the SHAs the diff covers and `commits_source` says where
-they came from, so the diff is the ticket's whole committed history and not a
-slice of it. The one commit that escapes is a commit that neither names the
-ticket id nor touches its file; that is what the rule "every commit names the
-ticket id" is for, and you can see it by counting `commits` against
+they came from: the diff is the ticket's whole committed history, not a slice
+of it, and where `commits_source` ends in `+worktree` the uncommitted work is
+appended to it too — so a lane that changed no code and a conversational ticket
+that has not been committed yet are both in front of you without your going to
+look. The one commit that escapes is a commit that neither names the ticket id
+nor touches its file; that is what the rule "every commit names the ticket id"
+is for, and you can see it by counting `commits` against
 `git log origin/HEAD..HEAD --oneline`.
 
 Are you the lane that writes? Then take the ticket and finish the step

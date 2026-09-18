@@ -598,13 +598,33 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			}
 			shas = ticket.MergeCommits(derived, t.Commits)
 			shasFrom = ticket.CommitsSource(derived, shas)
-			if len(shas) == 0 {
-				missing = append(missing, "diff (git has no commits for this ticket yet)")
-				continue
+			var d string
+			if len(shas) > 0 {
+				var err error
+				if d, err = repo.Diff(shas); err != nil {
+					missing = append(missing, fmt.Sprintf("diff (%v)", err))
+					continue
+				}
 			}
-			d, err := repo.Diff(shas)
-			if err != nil {
-				missing = append(missing, fmt.Sprintf("diff (%v)", err))
+			// Uncommitted work counts. A lane judges what is in front of it,
+			// and the rule "a lane that changed no code commits nothing"
+			// leaves the implementer's work lying in the worktree on an
+			// autonomous board just as a conversational ticket does, where
+			// the worker hands back a commit line instead of committing at
+			// all. Left out, the payload is a fraction reported complete —
+			// the same silent failure the commit list above was fixed for,
+			// one step further along. A failure to read it is not fatal: the
+			// commits are still worth judging, and the source token stays
+			// silent about a worktree nobody could look at.
+			if wt, err := repo.WorktreeDiff(); err == nil && strings.TrimSpace(wt) != "" {
+				if d != "" {
+					d += "\n"
+				}
+				d += "uncommitted work in the working tree\n\n" + wt
+				shasFrom = ticket.WithWorktree(shasFrom)
+			}
+			if d == "" {
+				missing = append(missing, "diff (git has no commits for this ticket yet)")
 				continue
 			}
 			diff = d

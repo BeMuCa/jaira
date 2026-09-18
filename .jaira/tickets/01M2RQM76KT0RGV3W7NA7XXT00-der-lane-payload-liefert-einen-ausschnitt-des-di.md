@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: human
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:10:11Z
+updated-at: 2026-09-18T07:46:17Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-94878
-claimed-at: 2026-09-18T07:04:05Z
-mode: conversational
-outcome-what: "renderSignOff hat jetzt einen Test fuer commitsSourceLabel: TestSignOffNamesWhereTheCommitsCameFrom rendert den Signoff-Schirm fuer alle drei Quellen-Token und prueft die Heading-Zeile"
-outcome-why: "die Uebersetzung der drei Token in Prosa war ungetestet - genau die Stelle, an der laut Doc-Kommentar ein neuer Wert still auf 'kein Label' faellt, auf dem Schirm, auf dem ein Mensch unterschreibt"
-outcome-resolves: "DoD 5 abgehakt; Mutationsprobe (git+ticket-Label auf \"\" gesetzt) laesst den Test fallen; go build/vet/test ./... gruen"
+claimed-by: DESKTOP-RFTCH11-25712
+claimed-at: 2026-09-18T07:38:46Z
+mode: ""
+outcome-what: "showForLane haengt im case 'diff' den uncommitteten Worktree an den Commit-Diff (gitrepo.WorktreeDiff: git diff HEAD plus jede untracked Datei per --no-index, .jaira/tickets ausgenommen) und markiert ihn in commits_source mit dem vierten Token via ticket.WithWorktree. Ein Ticket ohne Commits, aber mit Arbeit im Worktree, ist damit complete statt 'diff missing'. internal/tui/signoff.go haengt keinen gemeinsamen Suffix mehr an jedes Label; commitsSourceLabel traegt ihn je Fall. Zwei Tests mit Gegenprobe, eine NOTES.md-Zeile, SKILL.md:36-45 ohne Einschraenkung."
+outcome-why: "Der Payload meldete weiter einen Ausschnitt als vollstaendig - nur eine Stufe weiter: eine Lane, die keinen Code geaendert hat, committet nichts, und ein conversational-Ticket committet gar nicht, bis ein Mensch die Zeile einfuegt. Diese Arbeit lag ausserhalb des Payloads, und complete:true sagte trotzdem 'du hast alles'. Und die Signoff-Zeile las 'recorded on the ticket - recorded at acceptance'."
+outcome-resolves: "DoD 6 und DoD 7; damit alle sieben DoD-Punkte"
 review-summary: |-
   core/role/builtin/jaira-role-lane/SKILL.md:36-43 says the payload's diff is the ticket's whole committed history 'and not a slice of it' and drops the old counting instruction - but in mode: conversational the implementing lane is forbidden to commit (same file, rule 3), so on exactly those tickets the payload is the PREVIOUS round with complete:true beside it. This ticket's own re-entry proves it: the third in-progress round (DoD 5, signoff.go/signoff_test.go/trim_test.go/NOTES.md) is uncommitted and absent from the critique payload. The passage must either qualify itself for conversational mode and point the diff lanes at the same three worktree commands the running-critique section already carries (line 120), or flow.go must account for uncommitted work - and choosing between those is the decision, because qualifying the prompt is the very 'hand instruction instead of the tool telling the truth' this ticket exists to remove
   internal/tui/signoff.go:118 appends ' - recorded at acceptance' to every label, so the ticket-only case renders 'recorded on the ticket - recorded at acceptance' - the same word twice on the screen a person signs on. Let commitsSourceLabel carry its own tail per case instead of a shared suffix
@@ -63,6 +63,10 @@ question: |-
   proof: core/release/NOTES.md:18 unter ## Unreleased
 - [x] renderSignOff hat einen Test fuer commitsSourceLabel: ein Ticket mit einem SHA nur im 'commits:'-Feld rendert die Zeile 'plus shas only the ticket records'. Die drei Token werden heute nur in core/ticket geprueft, die Uebersetzung in Prosa auf dem Signoff-Schirm von keinem Test.
   proof: internal/tui/signoff_test.go TestSignOffNamesWhereTheCommitsCameFrom — rendert renderSignOff fuer alle drei Token; faellt, sobald commitsSourceLabel fuer git+ticket kein Label mehr liefert (Mutationsprobe)
+- [x] showForLane rechnet im case 'diff' die nicht eingecheckte Arbeit mit: der Worktree-Diff (git diff HEAD plus nicht verfolgte Dateien) haengt an den Commit-Diff, und commits_source nennt ihn mit einem vierten Token (git+worktree). Mit Test. Danach faellt die Zusage in core/role/builtin/jaira-role-lane/SKILL.md:36-43 nicht mehr auseinander und braucht keine Einschraenkung.
+  proof: core/gitrepo/git.go:WorktreeDiff + internal/cli/flow.go case "diff"; ticket.WithWorktree (core/ticket/trim.go); Test TestForLaneDiffCarriesTheUncommittedWorktree (internal/cli/forlanecommits_test.go), faellt ohne die Aenderung; SKILL.md 36-45 ohne Einschraenkung
+- [x] internal/tui/signoff.go:118 haengt nicht mehr einen gemeinsamen Suffix ' - recorded at acceptance' an jedes Label, sodass der Ticket-only-Fall 'recorded on the ticket - recorded at acceptance' liest. commitsSourceLabel traegt seinen Schwanz je Fall selbst.
+  proof: internal/tui/signoff.go:118 haengt keinen Suffix mehr an; commitsSourceLabel (signoff.go:285) traegt ihn je Fall; Test TestSignOffNamesWhereTheCommitsCameFrom/the_ticket_alone mit notWant, faellt mit dem alten Suffix
 
 ## Options
 
@@ -80,6 +84,12 @@ question: |-
 - [x] drop the hand instruction from core/role/builtin/jaira-role-lane/SKILL.md (both passages, lines ~36-49 and ~137-146) now the tool tells the truth
 - [x] NOTES.md under ## Unreleased: one line telling a reader the review payload is now the whole ticket history
 - [x] go build ./... && go test ./... green
+- [x] gitrepo: WorktreeDiff() - git diff HEAD plus untracked files, ticket prose excluded
+- [x] showForLane case diff: append the worktree diff, commits_source gains git+worktree
+- [x] test: a ticket with an uncommitted change gets it in the --for-lane payload
+- [x] SKILL.md 36-43: drop the now-obsolete restriction
+- [x] signoff.go: commitsSourceLabel carries its own tail, no shared suffix
+- [x] NOTES.md line, go build && go test green
 
 ## Progress
 - **2026-09-18 06:30 · Alexander Sacharov** — Alex am 2026-09-18: dieses Ticket wird 0.3.1. Der Zweig fix/7XXT00 haengt an release/0.3.0 (88b6816), nicht an master - 0.3.0 ist noch nicht gemerged und noch nicht getaggt. Die Zeile fuer NOTES.md gehoert deshalb unter das leere '## Unreleased' ganz oben, NICHT unter '## 0.3.0': diese Sektion wird gleich getaggt und ist damit geschlossene Historie. Das Umbenennen von '## Unreleased' nach '## 0.3.1' und eine frische leere darueber macht ein Mensch in dem Commit, den er taggt - kein Agent.
@@ -160,3 +170,12 @@ Zwei Befunde:
 1. core/role/builtin/jaira-role-lane/SKILL.md:36-43 - der neue Text sagt der Diff-Lane, der Payload sei 'the ticket's whole committed history and not a slice of it', und nimmt ihr die alte Nachzaehl-Anweisung weg. In mode: conversational darf die implementierende Lane aber nicht committen (Regel 3 in derselben Datei). Auf genau diesen Tickets ist der Payload also der VORHERIGE Durchgang, mit complete:true daneben - derselbe stille Ausfall, den dieses Ticket beseitigt, eine Ebene hoeher. Dieses Ticket beweist es an sich selbst: der dritte in-progress-Durchgang liegt unversioniert im Worktree und steckt in keinem Payload. Die 'read the worktree'-Anweisung samt der drei Kommandos steht in derselben Datei bei Zeile 120, aber ausschliesslich im Abschnitt fuer die NEBENHER laufende Kritik - die ordentliche critique-, testing- und review-Lane bekommt sie nicht. Das ist eine Entscheidung fuer Alex und keine, die diese Lane trifft, siehe --question.
 
 2. internal/tui/signoff.go:118 - '  ' + label + ' — recorded at acceptance' fuer alle drei Faelle. Der Fall 'ticket' rendert damit 'recorded on the ticket — recorded at acceptance': dasselbe Wort zweimal, auf dem Schirm, auf dem ein Mensch unterschreibt. Und 'derived from git, plus shas only the ticket records — recorded at acceptance' ist fuer eine Meta-Zeile lang. Reparatur: commitsSourceLabel gibt den ganzen Nachsatz je Fall selbst zurueck, statt dass die Aufrufstelle einen gemeinsamen anhaengt. Kein Test bricht davon - TestSignOffNamesWhereTheCommitsCameFrom prueft mit Contains nur den Label-Teil.
+- **2026-09-18 07:35 · Alexander Sacharov** — Entscheidung zu Befund 1 der critique-Lane (Alex, 2026-09-18, in der human-Lane): der Payload rechnet die nicht eingecheckte Arbeit mit ein, statt dass der Prompt zum Nachsehen auffordert. showForLane haengt im case 'diff' den Worktree-Diff (git diff HEAD, plus nicht verfolgte Dateien) an den aus den Commits gebauten Diff, und commits_source bekommt dafuer einen vierten Token - git+worktree. complete:true bleibt damit wahr. Begruendung: dieselbe Logik wie bei DoD 1 - das Werkzeug sagt die Wahrheit, statt eine Handanweisung nachzaehlen zu lassen; und der zweite Weg waere genau die Handanweisung, die dieser Change aus demselben File gerade entfernt hat. Die Luecke ist ausserdem nicht auf conversational beschraenkt: die Regel 'eine Lane, die keinen Code geaendert hat, committet nichts' laesst die Ticket-Datei auch autonom im Worktree liegen. Preis, der bewusst akzeptiert wird: der beurteilte Diff ist nicht mehr aus Commits allein reproduzierbar, und fremde Aenderungen im selben Verzeichnis werden mitbeurteilt - was 'ein Worktree je Ticket' aber ohnehin verbietet.
+- **2026-09-18 07:46 · Alexander Sacharov** — in-progress (vierter Durchgang, DoD 6 und 7). Was nicht im Code steht:
+- .jaira/tickets ist aus WorktreeDiff ausgeschlossen. Die Entscheidung vom 07:35 sagt das nicht; der Grund ist derselbe, aus dem der Pathspec in SKILL.md steht - der Worker schreibt die Ticket-Datei bei jedem 'jaira dod' und jedem 'jaira note' neu, und der Payload traegt dieselbe Prosa schon als goal/dod/notes. Ohne den Ausschluss ist der Worktree-Anteil des Diffs zu neunzig Prozent Ticket-Text.
+- Verworfen: 'git add -N', um untracked Dateien in 'git diff' sichtbar zu machen. Es schreibt in den Index, den eine andere Session im selben Worktree halten kann - genau das, was SKILL.md dem conversational-Kritiker verbietet. Stattdessen 'git diff --no-index -- /dev/null <pfad>' je Datei, und weil das 'die Dateien unterscheiden sich' als Exit 1 meldet, brauchte gitrepo ein runTolerating: run() wickelt den ExitError mit %s ein, nicht mit %w, also kommt errors.As an ihn nicht heran - ein erster Versuch mit errors.Unwrap(err) hat still nie toleriert.
+- Der Fehlerfall von WorktreeDiff ist bewusst nicht fatal: schlaegt er fehl, bleiben die Commits im Diff und commits_source schweigt ueber einen Worktree, den niemand ansehen konnte. Ein 'missing'-Eintrag waere hier das Gegenteil des Ziels - er wuerde eine Lane blockieren, der nichts fehlt.
+- len(shas)==0 ist kein 'missing' mehr, sondern d=="". Ein Ticket ohne einen einzigen Commit, aber mit Arbeit im Worktree - der erste conversational-Durchgang - bekommt jetzt einen vollstaendigen Payload statt 'diff (git has no commits for this ticket yet)'. commits ist dann [] und commits_source schlicht 'worktree'.
+- ticket.WithWorktree/SourceWorktree liegen in core/ticket neben CommitsSource, obwohl heute nur flow.go sie liest. Begruendung ist Befund 2 der ersten critique: zwei Schirme, die dieselbe Tatsache selbst buchstabieren, laufen auseinander. Wer einen fuenften Token erfindet, muss internal/tui/signoff.go:commitsSourceLabel mitfuehren - der faellt sonst still auf 'kein Label'.
+- DoD 7, gewaehlte Formulierung: der ticket-Fall liest jetzt 'recorded on the ticket, and again at acceptance' statt den Suffix wegzulassen. Den Suffix ersatzlos zu streichen waere die einfachere Aenderung gewesen, haette aber die Aussage 'diese Liste wird beim Annehmen ins Frontmatter gestempelt' von allen drei Faellen entfernt - sie war nicht falsch, nur doppelt.
+- Gegenproben gemacht, beide: mit ausgeschaltetem Worktree-Zweig faellt TestForLaneDiffCarriesTheUncommittedWorktree ('commits_source is "git"'), mit dem alten gemeinsamen Suffix faellt TestSignOffNamesWhereTheCommitsCameFrom/the_ticket_alone.

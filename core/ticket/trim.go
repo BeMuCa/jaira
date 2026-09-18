@@ -216,3 +216,20 @@ func CommitsSource(derived, merged []string) string {
 		return "ticket"
 	}
 }
+
+// SourceWorktree is the token CommitsSource cannot produce, because it names
+// something that is not a commit: work sitting in the working tree, judged
+// alongside the commits. It joins a commit source with a "+", so a list built
+// from git with uncommitted work beside it reads "git+worktree".
+const SourceWorktree = "worktree"
+
+// WithWorktree appends SourceWorktree to a source token. The vocabulary lives
+// here, beside CommitsSource, for the reason CommitsSource itself does: two
+// screens inventing their own spelling of the same fact is how one of them
+// ends up quietly telling a different truth.
+func WithWorktree(source string) string {
+	if source == "" {
+		return SourceWorktree
+	}
+	return source + "+" + SourceWorktree
+}

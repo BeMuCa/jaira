@@ -211,16 +211,23 @@ func TestSignOffNamesWhereTheCommitsCameFrom(t *testing.T) {
 	const derived = "bc615031d54de4b369d66bfabe0adf8846adc409"
 	const recorded = "9f1c0b7ad7f2e2b7b24cdbd0d0b0a3f1d2c4e5a6"
 
+	// notWant pins the second half of the same demand: the tail belongs to each
+	// case, not to the caller. A shared "— recorded at acceptance" appended to
+	// every label made the one case whose source IS the ticket read "recorded
+	// on the ticket — recorded at acceptance", which says the word twice and
+	// reads as two separate claims about where the list came from.
 	for _, c := range []struct {
 		name    string
 		derived []string
 		commits []string
 		want    string
+		notWant string
 	}{
-		{"git alone", []string{derived}, nil, "derived from git"},
-		{"the ticket alone", nil, []string{recorded}, "recorded on the ticket"},
+		{"git alone", []string{derived}, nil, "derived from git — recorded at acceptance", ""},
+		{"the ticket alone", nil, []string{recorded}, "recorded on the ticket",
+			"recorded on the ticket — recorded at acceptance"},
 		{"a sha git no longer finds", []string{derived}, []string{recorded},
-			"derived from git, plus shas only the ticket records"},
+			"derived from git, plus shas only the ticket records", ""},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			m := newTestModel(t, 120, 40)
@@ -234,6 +241,9 @@ func TestSignOffNamesWhereTheCommitsCameFrom(t *testing.T) {
 			out := stripANSI(m.renderSignOff())
 			if !strings.Contains(out, c.want) {
 				t.Errorf("sign-off heading does not say %q:\n%s", c.want, out)
+			}
+			if c.notWant != "" && strings.Contains(out, c.notWant) {
+				t.Errorf("sign-off heading stutters — it says %q:\n%s", c.notWant, out)
 			}
 		})
 	}

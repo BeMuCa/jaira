@@ -116,7 +116,7 @@ func (m *Model) renderSignOff() string {
 	if len(shas) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits"))
 		if label := commitsSourceLabel(ticket.CommitsSource(m.derivedShas, shas)); label != "" {
-			b.WriteString(styMeta.Render("  " + label + " — recorded at acceptance"))
+			b.WriteString(styMeta.Render("  " + label))
 		}
 		b.WriteString("\n")
 		if stat, err := (&gitStat{root: m.store.Root}).of(shas); err == nil && stat != "" {
@@ -276,14 +276,20 @@ func (m *Model) atHumanCheckpoint() bool {
 // list is a union, so "derived from git" is a claim only the pure case may
 // make: a sha the derivation could not find — rebased, cherry-picked — is the
 // ticket's word and not git's, and this is the screen a person signs on.
+//
+// Each case carries its own tail rather than the caller appending a shared one.
+// A common "— recorded at acceptance" read as "recorded on the ticket —
+// recorded at acceptance" in the one case where the ticket is already the
+// source, which says the same word twice and, worse, reads as two separate
+// facts about where the list came from.
 func commitsSourceLabel(source string) string {
 	switch source {
 	case "git":
-		return "derived from git"
+		return "derived from git — recorded at acceptance"
 	case "ticket":
-		return "recorded on the ticket"
+		return "recorded on the ticket, and again at acceptance"
 	case "git+ticket":
-		return "derived from git, plus shas only the ticket records"
+		return "derived from git, plus shas only the ticket records — recorded at acceptance"
 	default:
 		return ""
 	}
