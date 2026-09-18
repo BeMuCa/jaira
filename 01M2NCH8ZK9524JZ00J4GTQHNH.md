@@ -40,7 +40,7 @@ commits:
   - 03b46691226127ee9f07f008da8d4b908b63bd06
   - 11f44b272f26b07eca4ffd4afbb08fb1921add88
 created-at: 2026-09-16T15:14:31Z
-updated-at: 2026-09-18T05:52:10Z
+updated-at: 2026-09-18T05:53:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2585
 claimed-at: 2026-09-18T05:38:38Z
@@ -104,7 +104,7 @@ mode: ""
 - [x] Der Halbsatz 'Testing is not a lane' steht nicht mehr in core/role/builtin/jaira-dispatcher/SKILL.md; scripts/spawn.sh hat weiterhin genau einen Sonderfall ('dispatch'), und core/role/builtin/jaira-role-tester/SKILL.md ist unveraendert.
   proof: grep -F 'Testing is not a lane' core/ findet nichts mehr; core/role/builtin/jaira-dispatcher/SKILL.md, Abschnitt 'The loop', Schritt 2 lautet jetzt woertlich "`/jaira-role-lane <id> <lane>` — every lane, testing included."; scripts/spawn.sh und core/role/builtin/jaira-role-tester/SKILL.md stehen unveraendert in 'git status --short'
 - [x] Je eine Zeile in core/release/NOTES.md unter ## Unreleased fuer die mitlaufende Kritik und fuer die Pause, die neue Dateien sieht.
-  proof: core/release/NOTES.md unter ## Unreleased: die Zeile 'Expect a critique to run *beside* the work on a ticket in `mode: conversational`' (mitlaufende Kritik) und die Zeile 'Expect the conversational-mode pause to stop on a definition-of-done item made of a brand-new file' (Pause, die neue Dateien sieht) — beide Anker woertlich, 'grep -cF' findet jeden genau einmal
+  proof: core/release/NOTES.md unter ## Unreleased: die Zeile 'Expect a critique to run *beside* the work on a ticket in `mode: conversational`' (mitlaufende Kritik) und, seit dem Zusammenlegen in 472a5c5, innerhalb der Zeile 'On a ticket in `mode: conversational`, commit it yourself' der Satz 'That pause stops on code and only on code' mit 'a definition-of-done item made of one brand-new file' (Pause, die neue Dateien sieht) — alle drei Anker woertlich mit den Backticks der Originalzeile, 'grep -cF' findet jeden genau einmal
 - [x] Der Block, den 'jaira update' in ein fremdes CLAUDE.md schreibt, nennt den Modus: core/board/announce.go zaehlt die Nutzlast von 'jaira show --for-lane --json' auf und fuehrt 'mode' darin mit, damit ein Agent auf einem fremden Board ueberhaupt erfaehrt, dass es den Schluessel gibt. Je eine Zeile in core/release/NOTES.md, wenn sich der ausgelieferte Blocktext dadurch aendert.
   proof: core/board/announce.go, der Punkt "- `jaira show <id> --for-lane <lane> --json` — the lane's prompt" im Block 'Working a ticket' — nennt 'mode' neben dem model tier und sagt, was 'conversational' verlangt und dass es vom Ticket gelesen wird; dazu in core/release/NOTES.md unter ## Unreleased die Zeile 'Run `jaira update` to learn on your own board that `mode` exists'. Alle drei Anker woertlich mit Backticks, 'grep -cF' findet jeden genau einmal
 - [x] Die mitlaufende Kritik liest den nicht committeten Arbeitsbaum, nicht die Commit-Liste: jaira-role-lane/SKILL.md sagt dem Worker, der sich als mitlaufende Kritik erkannt hat, dass 'jaira show --for-lane --json' zur Laufzeit mit complete:false und fehlendem Diff kommt, weil es noch keine Commits gibt (internal/cli/flow.go:590-595), und dass er stattdessen 'git diff', 'git diff --cached' und 'git status --short' liest. Die Begruendung im Dispatcher-Prompt, der Diff sei nie das Limit gewesen, wird auf die Kritik-LANE eingegrenzt - fuer die mitlaufende gilt sie nicht.
