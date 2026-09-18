@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T07:04:56Z
+updated-at: 2026-09-18T07:04:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94878
 claimed-at: 2026-09-18T07:04:05Z
@@ -61,7 +61,7 @@ review-gaps: "folded the hand-written union loop in internal/cli/flow.go:151 ('m
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
+- [x] failing test: ticket with a stale, partial commits: field asks for --for-lane review --json and gets the diff of only those SHAs
 - [x] showForLane: build the diff SHAs as the union of t.Commits and env.DeriveCommits(t), never the field alone (internal/cli/flow.go:589)
 - [x] carry the list into the payload: commits (the SHAs used) plus commits_source, so a reader can count instead of trusting
 - [x] check the same field-first pattern in internal/tui/signoff.go:107 - fix if it is the same bug, note it if it is not
