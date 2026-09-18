@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-18T06:54:28Z
+updated-at: 2026-09-18T06:54:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-99942
 claimed-at: 2026-09-18T06:30:48Z
 mode: conversational
-outcome-what: "Test TestCommitsSourceNamesWhoContributed deckt die vier Faelle ab; die Unreleased-Zeile in NOTES.md ergaenzt um das Signoff-Label"
-outcome-why: "Befund 1 war ein Payload, der eine Commit-Liste als Herkunft von etwas ausgibt, das gar nicht auf dem Schirm steht; Befund 2 war derselbe stille Ausfall wie der Ticket-Bug selbst, nur auf dem Schirm, auf dem ein Mensch unterschreibt; Befund 3 war ein Kommentar, der vor Auseinanderlaufen warnt und ausgerechnet die teuerste Stelle ausliess"
-outcome-resolves: "Alle drei Befunde der critique-Lane vom 2026-09-18 06:47 sind repariert, DoD unveraendert erfuellt; go build ./... und go test ./... gruen"
+outcome-what: "critique zweiter Durchgang: alle drei Befunde vom 06:47 verifiziert repariert, review-summary=none"
+outcome-why: "Ein Durchgang ohne Befund beendet die Schleife - der Ausschnitt schrumpft pro Runde, hier war er die drei Befunde und die Aenderung, die sie beantwortet"
+outcome-resolves: "Befund 1 Gate an diff != \"\", Befund 2 dreiwertiges Label aus ticket.CommitsSource, Befund 3 Doc-Kommentar nennt alle drei Aufrufer"
 review-summary: none
 ---
 
