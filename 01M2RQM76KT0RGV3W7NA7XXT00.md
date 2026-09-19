@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,14 +25,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:42:17Z
+updated-at: 2026-09-19T15:42:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79578
 claimed-at: 2026-09-19T15:36:34Z
 mode: ""
-outcome-what: "review: Diff gegen alle elf DoD-Punkte gelesen, Payload und Tests am laufenden Binary nachgemessen"
-outcome-why: "der Code haelt, was die DoD verlangt; der eine offene Befund ist eine Formatentscheidung und gehoert einem Menschen"
-outcome-resolves: "review-summary, review-gaps, review-verdict und review-check stehen auf dem Ticket"
+outcome-what: "Die unversionierte Haelfte des Lane-Payloads ist ein eigener Schluessel worktree_diff statt einer Textmarke im diff-String. diff traegt nur noch die committete Historie; die Zeile 'uncommitted work in the working tree' als Trenner ist weg. commits_source bleibt wie es war (git+worktree, auf der ersten Runde worktree) und wird jetzt auch dann mitgegeben, wenn es nur die unversionierte Haelfte gibt. Klartext-Ausgabe druckt sie unter '## Worktree diff (not committed yet)'. Beide Stellen in core/role/builtin/jaira-role-lane/SKILL.md, die auf die Marke zeigten, lesen jetzt den Schluessel. Neuer Test TestForLaneKeepsTheCommittedAndUncommittedHalvesApart, NOTES.md-Zeile unter ## Unreleased."
+outcome-why: "Die Textmarke war keine Grenze: sie steht praefixlos am Zeilenanfang und ist von Patch-Inhalt nicht zu unterscheiden. Am Payload dieses Tickets kam sie neunmal vor, der erste Treffer rund 900 Zeilen vor der echten Grenze - wer dem Rollen-Prompt folgte und beim ersten Treffer stehenblieb, hielt fertige, committete Arbeit fuer die Arbeit nebenan. Das ist derselbe Fehlertyp, gegen den dieses Ticket angetreten ist: eine Markierung ohne Zusicherung, als Grenze gemeldet. Zwei Schluessel koennen nicht verwechselt werden - es gibt keine Marke mehr, die man verfehlen kann."
+outcome-resolves: "DoD 12. Befund 1 aus review-gaps ist damit geschlossen, in diesem Ticket und nicht in einem eigenen, so wie Alex es am 2026-09-19 im signoff entschieden hat."
 review-summary: "Der Payload einer Diff-Lane wird nicht mehr aus dem Frontmatter-Feld 'commits:' gebaut, sondern aus der Vereinigung von git-Ableitung und Feld (internal/cli/flow.go:590-608 via ticket.MergeCommits) - derselbe Wechsel auf dem Signoff-Schirm (internal/tui/signoff.go:112-120). Dazu kommt die unversionierte Arbeit: core/gitrepo/git.go:WorktreeDiff liefert 'git diff HEAD' plus jede unverfolgte Datei einzeln per '--no-index' (mit -z und core.quotePath=false, damit Umlaute und Leerzeichen im Pfad die Datei nicht stumm verschlucken), ausgenommen .jaira/tickets. Beide Haelften haengen im selben 'diff'-String, getrennt von der Zeile 'uncommitted work in the working tree'. Vier neue Payload-Schluessel sagen, woraus der Diff besteht und was fehlt: commits (die SHAs), commits_source (git / ticket / git+ticket, mit '+worktree' angehaengt), commits_unavailable (SHAs, die mitgezaehlt aber nur als '(not available locally)' im Patch stehen - repo.Diff gibt sie jetzt zurueck statt eines nie gesetzten error) und worktree_error (git konnte den Baum nicht lesen; complete bleibt true). Die Klartext-Ausgabe druckt dieselben Fakten ueber dem Diff. Beide Rollen-Prompts (jaira-role-lane, jaira-dispatcher) sind umgeschrieben: die Handanweisung 'zaehl selbst und lies git diff origin/HEAD...HEAD' faellt weg, die nebenher laufende Kritik wird auf die zweite Haelfte des Payload-Diffs gezeigt. 6 neue Tests, alle mit Gegenprobe; go build/vet/test gruen (28 Pakete)."
 review-gaps: |-
   Ein Befund, nachgemessen an diesem Ticket selbst, plus zwei kleinere.
