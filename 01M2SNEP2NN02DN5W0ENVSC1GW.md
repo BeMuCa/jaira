@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:11:55Z
+updated-at: 2026-09-19T19:42:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-92780
 claimed-at: 2026-09-19T19:09:20Z
@@ -108,6 +108,8 @@ review-check: |-
   proof: core/release/NOTES.md unter '## Unreleased': fuenf Zeilen, per Notes() gegengeprueft - der Zeilenscan liest genau fuenf Aenderungen
 - [x] Der Katalog ist an eine Version gebunden oder sagt, dass er es nicht ist: 'jaira lanes market' holt heute von 'https://api.github.com/repos/BeMuCa/jaira/contents/lanes' ohne '?ref=' und bekommt damit den HEAD des Default-Branches, egal wie alt das laufende Binary ist. Entweder fragt der Aufruf den Tag des laufenden Binaries ab, oder er sagt dem Benutzer, dass er die Entwicklungsfassung bekommt. Nachgestellt mit einem Binary, das eine aeltere Version meldet.
   proof: core/market/market.go apiBase()+pinnedRef()+Unpinned(); Tests core/market/market_test.go TestListPinsTheCatalogueToTheRunningTag, TestDevBuildSendsNoRefAndSaysSo, TestRefIsSetOnAnAddressThatAlreadyHasAQuery; nachgestellt mit einem Binary aus -ldflags '-X main.version=0.1.4': ASKED /contents/lanes?ref=v0.1.4
+- [ ] lanes/README.md sagt nichts Falsches mehr: der Schnellstart nennt keine Datei, die nicht in lanes/ liegt, der Verweis auf 'jaira lanes adopt lanes/critique.md' ist weg oder auf eine vorhandene Datei umgestellt, die Tabelle 'What is here' zaehlt critique und optimize nicht mehr als Katalog-Lanes, und der Absatz zu 'jaira lanes add' beschreibt die after:-Ankerkette statt des Anhaengens als letzte Zeile der order-Datei. Nachweis: ls lanes/ gegen jede in der README genannte Datei, plus grep nach 'appends the lane as the last line' ohne Treffer.
+- [ ] Wer critique, optimize oder testing frueher per 'jaira lanes market adopt' geholt und selbst bearbeitet hat, erfaehrt es: eine Zeile unter '## Unreleased' in core/release/NOTES.md sagt, dass das im Binary mitgelieferte Exemplar die eigene Fassung in ~/.jaira/lanes ab jetzt verdeckt, und ein Test haelt diese Verdeckung fest (Installable() nimmt den Builtin, nicht die Datei aus JAIRA_LANES_DIR).
 
 ## Options
 
