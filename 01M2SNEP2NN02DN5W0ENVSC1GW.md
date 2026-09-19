@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T21:06:17Z
+updated-at: 2026-09-19T21:07:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24729
 claimed-at: 2026-09-19T20:42:23Z
@@ -134,6 +134,7 @@ review-gaps: |-
   2. KOSMETISCH: lanes/README.md sagt die CI-Aussage zu core/lane/shipped_test.go zweimal - Zeilen 34-37 unter 'Adding yours' und noch einmal als Schlussabsatz Zeilen 76-78. Die optimize-Lane dieser Runde hat die doppelte Binary-Aussage entfernt, diese hier ist stehengeblieben. Aeltere Dopplung, nicht von dieser Runde eingefuehrt.
 
   Geprueft und ausdruecklich NICHT als Luecke gezaehlt: README.md:233 und docs/COMMANDS.md:160 nennen 'jaira lanes market adopt <id>' nur generisch mit Platzhalter, ohne critique/optimize/testing als Katalog-Lanes zu behaupten - dort ist nichts falsch geworden. docs/AGENTS.md:272 spricht ueber Load und nicht ueber Add. core/release/NOTES.md:131 unter '## 0.1.1' traegt den alten Anhaenge-Satz und bleibt nach CLAUDE.md geschlossene Geschichte.
+  Optimize-Runde zu den drei Commits b5b877d, 155433f, 63c8682 (nur internal/cli/market_test.go): nichts zu entfernen. Kein toter Code aus dieser Runde - marketGizmo wird an zwei Stellen benutzt, marketServer von drei Tests, alle Importe sind gebunden, die alte Konstante marketCritique ist restlos verschwunden. Keine doppelte Zusicherung: in TestLanesMarketListsWhatTheRepositoryOffers ist keiner der funf erwarteten Strings Teilstring eines anderen (gizmo trifft nur die ID-Spalte, Gizmo nur die NAME-Spalte, die Beschreibung tragt das Wort gizmo nicht mehr). Keine Uberschneidung mit core/market/market_test.go: dort wird List/Fetch der Bibliothek gepruft, hier die Ausgabe des Kommandos und der Weg market adopt -> Katalog -> lanes add; core/lane/order_test.go beruhrt den Markt gar nicht. Der Eingriff ist minimal geblieben: eine Fixture-Zeile plus die zwei Zusicherungen, die durch die Umbenennung selbst hohl geworden waren, und ein zusatzlicher Eintrag Gizmo, der die vorher ungepruefte NAME-Spalte abdeckt. internal/cli/market.go ist nachweislich unberuhrt (git diff --stat 4b7805a -- internal/cli/market.go ist leer). go test ./internal/cli ./core/market ./core/lane ist grun. Nichts entfernt, nichts committet.
 test-verdict: |-
   pass: go build/vet sauber, volle Suite mit -race und geleertem Cache gruen (RC=0), DoD 1-6 am Arbeitsbaum geprueft, Verhalten an einer frischen Testdoska und an einem Binary mit -X main.version=0.1.4 nachgestellt
   Runde 5, Pruefung von DoD 7 und 8 am gebauten Binary (go build -o ... ./cmd/jaira), Wegwerf-Board mit eigenem HOME, JAIRA_LANES_DIR in ein Temp-Verzeichnis und JAIRA_MARKET_API=http://127.0.0.1:1/dead. Ergebnis: bestanden, keine Abweichung gefunden.
