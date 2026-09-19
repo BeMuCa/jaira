@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:52:46Z
+updated-at: 2026-09-19T19:52:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -486,3 +486,8 @@ Die Praezedenz bleibt, wie Alex es gesagt hat. Zwei Dinge dazu:
 Der Test wurde gegengeprueft, nicht nur laufen gelassen: in Installable() die Schleifenreihenfolge umgedreht (erst der Glob ueber UserLanesDir, dann die Builtins), Test schlaegt fehl mit 'the adopted file won'; order.go danach aus der Sicherung zurueckgespielt, git diff auf core/lane/order.go ist leer. Ein Test, der auch bei umgedrehtem Verhalten gruen bliebe, haelt nichts fest.
 
 Warum kein Ausweg gebaut wurde (z.B. der Nutzerdatei den Vorrang geben oder beim Verdecken warnen): das ist eine Entscheidung ueber das Verhalten, und Alex hat nur die Dokumentation und den Test verlangt. Sichtbar ist es jetzt; wer es anders will, hat einen benannten Ort.
+- **2026-09-19 19:52 · Alexander Sacharov** — Kosmetik aus dem Review (Befund 3), core/market/market.go Unpinned(): bei leerem release.Current stand 'this build reports version , which is no released tag' - ein Satz mit Loch. Jetzt 'this build reports no version, which is no released tag ...'.
+
+Erreichbar ist der Zweig nur ueber -ldflags '-X ...=' (release.Current ist mit 'dev' vorbelegt, core/release/release.go:23), deshalb KEINE NOTES-Zeile: in einem ausgelieferten Build sieht das niemand, und CLAUDE.md zaehlt nur, was ein Benutzer von aussen beobachten kann.
+
+Test trotzdem dazu (TestBlankVersionStillReadsAsASentence in core/market/market_test.go), weil der Fall sonst genau so bleibt, wie er war: unbemerkt. Er setzt release.Current auf '' und prueft, dass 'version ,' nicht vorkommt.
