@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:52:09Z
+updated-at: 2026-09-19T19:52:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -152,7 +152,7 @@ review-check: |-
 - [x] Runde 5, DoD 7: lanes/README.md neu geschrieben - Schnellstart und Klon-Zeile auf secrets-scan, Tabelle nur noch secrets-scan und changelog-writer, neuer Absatz 'Where it lands' beschreibt die after:-Ankerkette samt Kettenaufloesung, Warnung und Erfolgszeile
 - [x] Runde 5: Grep neu gefahren, am Anker 'lanes add' und an den Ortswoertern statt an der Formulierung - sechste Fundstelle internal/cli/lanes.go:74 (Kommentar in 'lanes use') praezisiert, Code unveraendert
 - [x] Runde 5, DoD 8: Verdeckung am gebauten Binary reproduziert (JAIRA_LANES_DIR mit eigener critique-Beschreibung - Fuss und 'lanes add' nehmen beide die eingebettete), eine NOTES-Zeile dazu, Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID
-- [ ] Runde 5, kosmetisch: core/market/market.go Unpinned() sagt bei leerem release.Current 'this build reports no version' statt eines Satzes mit Loch; Test TestBlankVersionStillReadsAsASentence
+- [x] Runde 5, kosmetisch: core/market/market.go Unpinned() sagt bei leerem release.Current 'this build reports no version' statt eines Satzes mit Loch; Test TestBlankVersionStillReadsAsASentence
 - [ ] Runde 5: go build ./... , go vet ./... und go test ./... -count=1 gruen
 
 ## Progress
