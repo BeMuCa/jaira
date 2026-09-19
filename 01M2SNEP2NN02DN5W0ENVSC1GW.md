@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:52:16Z
+updated-at: 2026-09-19T19:52:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -473,3 +473,16 @@ Ergebnis: in lebendigen Quellen genau ZWEI veraltete Stellen, nicht eine.
 Sauber sind: docs/COMMANDS.md:153 (nennt die Ankerkette), core/release/NOTES.md:19, docs/AGENTS.md:272 (spricht ueber Load, nicht ueber Add - dort ist die Aussage richtig), README.md:233, internal/cli/lanes.go:130, internal/tui/lanes.go:448/497, core/lane/order.go.
 
 Was daraus zu lernen ist und was ich nicht behaupte: ich sage NICHT, dass es jetzt erschoepfend ist. Ich sage, dass zwei unabhaengige Anker (das Kommando 'lanes add' und die Ortswoerter 'last line/rightmost/end') zwei Treffer ergeben haben und beide erledigt sind. Eine Formulierung, die weder das Kommando noch eines dieser Woerter enthaelt, faende auch diese Suche nicht.
+- **2026-09-19 19:52 · Alexander Sacharov** — DoD 8, die stille Verdeckung: erst reproduziert, dann festgeschrieben - und ausdruecklich NICHT geaendert.
+
+Reproduziert am gebauten Binary, nicht am Code gelesen: /tmp/jt-user/critique.md aus core/lane/builtin/25-critique.md mit 'description: MEINE EIGENE FASSUNG', frisches Wegwerf-Board, HOME=/tmp JAIRA_LANES_DIR=/tmp/jt-user. Der Fuss von 'jaira lanes' zeigt die EINGEBETTETE Beschreibung. 'jaira lanes add critique' sagt 'added critique to this project after in-progress' und schreibt die EINGEBETTETE Datei aufs Board. Die eigene Fassung erscheint nirgends und es gibt keine Meldung darueber.
+
+Die Praezedenz bleibt, wie Alex es gesagt hat. Zwei Dinge dazu:
+
+1. Eine NOTES-Zeile, die der Betroffene auch als Anweisung lesen kann: sie sagt nicht nur, dass verdeckt wird, sondern was zu tun ist - die eigene Datei auf eine eigene id umbenennen, dann steht sie wieder im Angebot. Die vorhandene Zeile sagte nur 'Adopting them from the marketplace is no longer needed', was genau den Falschen beruhigt.
+
+2. Ein Test, core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID. Er prueft drei Dinge: critique steht genau einmal im Angebot, seine Beschreibung ist die eingebettete und nicht die eigene, und 'Add' schreibt die eingebettete Datei aufs Board.
+
+Der Test wurde gegengeprueft, nicht nur laufen gelassen: in Installable() die Schleifenreihenfolge umgedreht (erst der Glob ueber UserLanesDir, dann die Builtins), Test schlaegt fehl mit 'the adopted file won'; order.go danach aus der Sicherung zurueckgespielt, git diff auf core/lane/order.go ist leer. Ein Test, der auch bei umgedrehtem Verhalten gruen bliebe, haelt nichts fest.
+
+Warum kein Ausweg gebaut wurde (z.B. der Nutzerdatei den Vorrang geben oder beim Verdecken warnen): das ist eine Entscheidung ueber das Verhalten, und Alex hat nur die Dokumentation und den Test verlangt. Sichtbar ist es jetzt; wer es anders will, hat einen benannten Ort.
