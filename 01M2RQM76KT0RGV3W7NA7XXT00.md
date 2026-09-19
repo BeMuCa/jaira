@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:36:37Z
+updated-at: 2026-09-19T15:36:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79578
 claimed-at: 2026-09-19T15:36:34Z
@@ -310,3 +310,4 @@ Zweiter Befund, kleiner: WorktreeDiff nimmt ':/' und damit den unversionierten S
 Dritter, nur Buchhaltung: DoD 2 verlangt den Fall drei-von-einundzwanzig, der Test stellt eins-von-zwei nach. Mechanisch identisch, der Proof sagt es auch, aber die DoD-Zeile sagt etwas anderes.
 
 Kein Defekt im Go-Code gefunden. Gegengeprobt statt geglaubt: repo.Diff ohne error-Rueckgabe meldet jeden nicht zeigbaren SHA; die Leer-Patch-Pruefung in WorktreeDiff unterscheidet per os.Stat korrekt zwischen leerer Datei und unlesbarem Pfad; runTolerating faengt ueber ee.Exited() den signalgetoeteten git ab, der sonst als ExitCode -1 durchginge; ein haengender Symlink liefert exit 1 MIT Patch und faellt damit nicht in den Fehlerzweig (am echten git nachgestellt). Laufzeit gemessen: 0,75 s fuer den ganzen Payload auf diesem Branch - der Prozess pro unverfolgter Datei kostet hier nichts.
+- **2026-09-19 15:36 · Alexander Sacharov** — Entscheidung von Alex am 2026-09-19: das Ticket wird im signoff NICHT angenommen, sondern zurueck nach in-progress geschickt. Befund 1 aus review-gaps (die Textmarke 'uncommitted work in the working tree' ist keine verlaessliche Grenze - am Payload dieses Tickets neun Treffer, der erste auf Zeile 1190 mitten im Patch von flow.go, die echte Grenze erst auf 2103) wird in DIESEM Ticket geschlossen und nicht in einem eigenen. Gewaehlt ist die saubere Variante, die review-gaps selbst nennt: die unversionierte Haelfte bekommt einen eigenen Payload-Schluessel worktree_diff, statt als Textmarke im selben String zu haengen. Damit gibt es keine Trennzeile mehr, die man verfehlen kann. Die beiden Rollen-Prompts, die heute auf die Textmarke zeigen (core/role/builtin/jaira-role-lane/SKILL.md), werden mitgezogen. Begruendung fuer 'in diesem Ticket': es ist derselbe Fehlertyp, gegen den das Ticket angetreten ist - eine Markierung ohne Zusicherung, als Grenze gemeldet.
