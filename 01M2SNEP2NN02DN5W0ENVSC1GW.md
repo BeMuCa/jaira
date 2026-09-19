@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:53:10Z
+updated-at: 2026-09-19T19:53:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -34,7 +34,9 @@ outcome-what: |-
 outcome-why: |-
   Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende - das tut 'jaira lanes add' seit Runde 2 nicht mehr. Ein gruener Test, dessen Name das Gegenteil dessen sichert, was die Assertion schuetzt, fuehrt den naechsten Leser von insertAfterAnchor in die Irre.
   Die README war die letzte Stelle im Repository, die dem Leser etwas erzaehlte, was das Binary nicht mehr tut - und ausgerechnet die Titelseite des Katalogs. Die Verdeckung ist eine stille Verhaltensaenderung fuer genau die Benutzer, die die drei Lanes bisher nur ueber 'market adopt' hatten; sie bleibt absichtlich, aber jetzt steht sie in NOTES und in einem Test statt nur in einem Review-Bericht. Die Grep-Abdeckung aus Runde 4 hat nicht getragen, weil nach der Formulierung statt nach dem Anker gesucht wurde - deshalb diesmal am Kommando 'lanes add' und an den Ortswoertern gesucht, was eine sechste Fundstelle ergab.
-outcome-resolves: "vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik"
+outcome-resolves: |-
+  vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik
+  DoD 7 und DoD 8; Befunde 1, 2 und 3 aus review-gaps der Review-Runde 1; Ehrlichkeitspunkt zur Grep-Abdeckung aus Runde 4
 review-summary: |-
   none
   review (Runde 1), am Diff 2fb8f17 gelesen und am gebauten Binary nachgestellt - nicht am Bericht. Der Zweig traegt genau einen Commit, das Ticket-Feld commits: ist leer, der Payload-Diff ist damit der ganze Zweig (23 Dateien, +1308/-73); nichts ist ausserhalb des Payloads passiert.
