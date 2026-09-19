@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:49:33Z
+updated-at: 2026-09-19T19:50:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -443,3 +443,16 @@ Kein Defekt im Go-Code. Angesehen und in Ordnung: repo.Diff ohne error (jeder ni
 
 Drei offene Punkte, alle in review-gaps ausgeschrieben, keiner blockierend: (1) die zwei Payload-Zweige ohne Test - ticket.WithWorktree hat gar keinen, und dass worktree_diff bei sauberem Baum fehlt, behauptet keiner; ich empfehle, beide hier zu schliessen, weil genau diese zwei Zusagen in NOTES.md:20 und SKILL.md:40-44/145-149 woertlich stehen und sonst nur Prosa sind. (2) Der Worktree-Anteil ist repo-weit und nicht ticket-weit - Befund 2 aus Runde 1, unveraendert offen, nicht hier reparierbar. (3) Zeilennummern in den Proofs von DoD 1 und DoD 13 sind nach bcf403b gewandert (591-608 -> 612-613, 678 -> 673); die Symbole loesen auf, die Nummern nicht.
 - **2026-09-19 19:42 · Alexander Sacharov** — Entscheidung von Alex am 2026-09-19, ausdruecklich in der Session: das Ticket geht aus signoff zurueck nach in-progress. Der Punkt aus review-gaps ueber die fehlenden Tests wird in DIESEM Ticket geschlossen, nicht in einem eigenen Folge-Ticket. Konkret drei Dinge: (1) ticket.WithWorktree hat heute gar keinen Test - die Funktion kommt nur an core/ticket/trim.go:218 und internal/cli/flow.go:637 vor; (2) nichts prueft, dass worktree_diff bei sauberem Arbeitsbaum FEHLT statt leer dazustehen, obwohl NOTES.md und SKILL.md genau das dem Leser versprechen ('test diff for content, never for absence'); (3) die Proof-Zeilennummern von DoD 1 und DoD 13 sind nach bcf403b verrutscht - Symbole und Testnamen stimmen, die Zahlen nicht. Dazu kommt als Dokumentation, nicht als Code-Fix, der Satz in SKILL.md, dass die Worktree-Haelfte des Payloads repo-weit ist. Die review-Lane hat diesen Punkt als nicht blockierend und nicht sauber behebbar eingestuft; das bleibt so, es wird nur ausgesprochen.
+- **2026-09-19 19:50 · Alexander Sacharov** — Runde 4 (in-progress, DoD 14 und 15 plus Proof-Reparatur).
+
+Was der Diff nicht sagt, Teil 1 - die Fixture forLaneGitFixture ist beim ersten CLI-Aufruf noch nicht sauber. Der erste Anlauf des Absenz-Tests fiel, weil nach 'git add . && git commit' immer noch .jaira/lanes/*.md als unverfolgt im worktree_diff standen: das CLI schreibt die eingebauten Lane-Dateien erst beim ersten Gebrauch in den Store, also nach dem Commit. Der Test laeuft deshalb 'show --for-lane' einmal zum Aufwaermen, committet danach, prueft mit 'git status --porcelain' auf leer und fragt erst dann den Payload ab, den er beurteilt. Wer den Test spaeter anfasst: das Aufwaerm-Kommando ist kein Rauschen, ohne es prueft er nichts.
+
+Was der Diff nicht sagt, Teil 2 - die Absenz ist im vorhandenen forLanePayload-Struct nicht pruefbar. json.Unmarshal setzt WorktreeDiff bei fehlendem Schluessel auf "", genau wie bei einem leeren Schluessel; ein Test darueber haette die Zusage 'worktree_diff fehlt' nie halten koennen. Der neue Test liest den Payload deshalb als map[string]any und fragt den Schluessel mit dem Zwei-Wert-Zugriff ab. Das Struct blieb unangetastet, weil die vier anderen Tests es fuer Inhalt und nicht fuer Absenz benutzen.
+
+Der Wortlaut der DoD 14 beschreibt WithWorktree schief ('leerer Worktree-Diff: Feld bleibt weg'). WithWorktree bekommt kein Diff, sondern ein Quell-Token, und seine beiden Zweige sind leere Quelle -> 'worktree' und nicht leere Quelle -> '<quelle>+worktree'. Getestet sind die echten zwei Zweige (plus git+ticket als dritter Fall); die Sache, die die DoD meint - Feld bleibt weg - ist der zweite Test in internal/cli.
+
+Gegenprobe wie verlangt, am Produktivcode und wieder zurueckgenommen: payload["worktree_diff"] unbedingt gesetzt -> der CLI-Test faellt mit 'a clean tree still carries a worktree_diff key ("")'; WithWorktree ohne den Leer-Zweig -> Untertest 'no commit source at all' faellt; WithWorktree immer SourceWorktree -> die zwei anderen Untertests fallen. Beide Dateien danach aus der Sicherung zurueckgespielt, 'git diff --stat' auf trim.go und flow.go leer.
+
+Keine NOTES.md-Zeile. Neue Tests sieht ein Benutzer nicht, und der Satz in SKILL.md praezisiert Verhalten, das im selben ## Unreleased-Abschnitt schon vier Zeilen ankuendigen - eine fuenfte Zeile ueber denselben Payload macht den Abschnitt schwerer lesbar, ohne dem Leser etwas Neues zu sagen. Wenn der Maintainer das anders sieht, ist es eine Zeile, kein Umbau.
+
+Proof-Nummern: nicht nur DoD 1 und 13, auch 6, 9, 10, 11 und 12 zitierten Zeilen, die nach bcf403b verrutscht waren. Alle selbst nachgelesen und korrigiert; Symbole und Testnamen stimmten ueberall, nur die Zahlen nicht. DoD 9 und 12 zitieren SKILL.md-Bereiche, die sich durch den Satz aus DoD 15 noch einmal um vier Zeilen verschoben haben - diese Verschiebung ist mit eingerechnet.
