@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:00:52Z
+updated-at: 2026-09-19T20:01:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -474,3 +474,4 @@ Keine NOTES.md-Zeile. Neue Tests sieht ein Benutzer nicht, und der Satz in SKILL
 
 Proof-Nummern: nicht nur DoD 1 und 13, auch 6, 9, 10, 11 und 12 zitierten Zeilen, die nach bcf403b verrutscht waren. Alle selbst nachgelesen und korrigiert; Symbole und Testnamen stimmten ueberall, nur die Zahlen nicht. DoD 9 und 12 zitieren SKILL.md-Bereiche, die sich durch den Satz aus DoD 15 noch einmal um vier Zeilen verschoben haben - diese Verschiebung ist mit eingerechnet.
 - **2026-09-19 19:56 · Alexander Sacharov** — critique (nur f1994ad): tragfaehig. Der Aufwaermlauf im CLI-Test ist legitim, weil die Vorbedingung danach mit git status --porcelain behauptet und nicht angenommen wird (forlanecommits_test.go:329-331). Beide Zweige von WithWorktree (trim.go:219-222) sind gedeckt; der falsche Klammerzusatz in DoD 14 beschreibt die Funktion, nicht die Garantie - gemeint und geliefert ist beides. Der SKILL.md-Satz (:44-48) steht in dem Abschnitt, den critique/testing/review lesen, und stimmt mit gitrepo/git.go:196,212 ueberein. Einziger Rest: DoD 8 traegt noch die alten Proof-Zahlen (207/215/220-228 statt 212,216/224/234-236) - angenommene Arbeit, daher nur vermerkt und nicht zurueckgegeben; ebenso der Startversatz in DoD 9 (129 statt 133) und NOTES.md:19 statt :18 in DoD 13. go build/vet/test ./... gruen.
+- **2026-09-19 20:01 · Alexander Sacharov** — optimize: Die Proof-Zeilennummern-Durchsicht deckt jetzt DoD 1, 6, 8, 9, 10, 11, 12, 13 ab. Die fruehere Notiz zaehlte nur 1, 6, 9, 10, 11, 12, 13 auf und las sich vollstaendig, waehrend DoD 8 noch auf falsche Zeilen zeigte. Korrigiert in dieser Lane: DoD 8 (core/gitrepo/git.go — ls-files -z steht auf :212 statt :207, der NUL-Split auf :216, quotePath=false am --no-index-Aufruf auf :224 statt :215, 'leerer Patch bei nicht leerer Datei ist ein Fehler' auf :234-236 statt :220-228), DoD 9 (der neu geschriebene SKILL.md-Abschnitt beginnt auf :133 mit 'What you judge is in the payload', nicht auf :129; das Ende :181 stimmte), DoD 13 (die abgeschaffte Trennzeile wird in core/release/NOTES.md auf :18 benannt und fuer abgeschafft erklaert; :19 handelt von commits_unavailable/worktree_error). Jede Nummer an der Datei selbst nachgezaehlt, nicht uebernommen. DoD 12 (trim.go:218-222) und DoD 14 (SKILL.md:44-48) wurden mitgeprueft und stimmen.
