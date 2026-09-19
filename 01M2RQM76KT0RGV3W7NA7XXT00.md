@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:51:13Z
+updated-at: 2026-09-19T15:51:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -96,7 +96,8 @@ review-check: |-
   proof: core/gitrepo/git.go:88-114 Diff gibt die nicht zeigbaren SHAs zurueck statt eines nie gesetzten error; internal/cli/flow.go:600-602,667-671; Test TestForLaneNamesTheCommitsGitCouldNotShow
 - [x] Die committete und die unversionierte Haelfte des Lane-Payloads sind zwei getrennte Payload-Schluessel (diff und worktree_diff) statt eines Strings mit der Textmarke 'uncommitted work in the working tree'. Nachgestellt am Payload dieses Tickets selbst: kein Leser kann die Grenze mehr verfehlen, weil es keine Textmarke mehr gibt, die im Patch-Inhalt noch einmal vorkommen kann.
   proof: internal/cli/flow.go: worktreeDiff ist eine eigene Variable, der Payload traegt sie als Schluessel worktree_diff (flow.go:683-688); die Textmarke ist aus dem diff-String verschwunden, die Klartext-Ausgabe druckt sie unter '## Worktree diff (not committed yet)'. Test internal/cli/forlanecommits_test.go TestForLaneKeepsTheCommittedAndUncommittedHalvesApart, gegengeprobt: mit der alten Anhaenge-Logik faellt er ('worktree_diff does not carry the uncommitted half' + 'the old text marker is still in the payload'). Nachgemessen am Payload dieses Tickets mit frisch gebautem Binary: keys = ... diff ... worktree_diff; diff 2641 Zeilen, worktree_diff 289 Zeilen, commits_source git+worktree, complete true. 'jq -r .diff | grep -c' findet die Zeichenkette zehnmal - alle zehn sind reiner Patch-Inhalt (1190, 1919, 1968, 2005, 2067, 2103, 2373, 2387, 2431, 2432), keine davon ist eine Grenze; vorher war 2103 die echte Grenze und 1190 der erste Treffer, rund 900 Zeilen davor. SKILL.md 36-46 und 127-146 lesen jetzt worktree_diff statt der Marke. go build/vet/test ./... gruen.
-- [ ] Kein Text im Repository beschreibt den Payload mehr falsch: core/release/NOTES.md nennt unter ## Unreleased nirgends mehr die abgeschaffte Trennzeile als Wegweiser, und core/role/builtin/jaira-role-lane/SKILL.md sagt die Asymmetrie der beiden Schluessel so herum, wie flow.go sie baut - diff immer da (notfalls leer), worktree_diff weggelassen wenn leer - und knuepft die Worktree-Haelfte nicht mehr an ein commits_source mit Plus.
+- [x] Kein Text im Repository beschreibt den Payload mehr falsch: core/release/NOTES.md nennt unter ## Unreleased nirgends mehr die abgeschaffte Trennzeile als Wegweiser, und core/role/builtin/jaira-role-lane/SKILL.md sagt die Asymmetrie der beiden Schluessel so herum, wie flow.go sie baut - diff immer da (notfalls leer), worktree_diff weggelassen wenn leer - und knuepft die Worktree-Haelfte nicht mehr an ein commits_source mit Plus.
+  proof: core/release/NOTES.md:19; core/role/builtin/jaira-role-lane/SKILL.md:40-45 und 143-149; belegt an internal/cli/flow.go:678 (diff immer gesetzt) gegen flow.go:686-688 (worktree_diff nur wenn nicht leer) und core/ticket/trim.go:218-222 (WithWorktree("") == "worktree")
 
 ## Options
 
