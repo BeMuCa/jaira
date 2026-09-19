@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:18:28Z
+updated-at: 2026-09-19T20:18:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -138,6 +138,7 @@ review-verdict: |-
   Das eine, was ich NICHT durchwinken kann, ist lanes/README.md: die Datei beschreibt weiter einen Katalog mit critique und optimize darin und einen 'lanes add', der anhaengt - beides hat dieser Commit abgeschafft. Sie ist damit die einzige verbliebene Stelle im Repository, die dem Leser etwas erzaehlt, was das Binary nicht mehr tut, und sie ist ausgerechnet die Titelseite des Katalogs. Das ist eine Nachtragsarbeit von wenigen Minuten, kein Konstruktionsfehler - deshalb Weitergabe an signoff und nicht zurueck nach in-progress.
 
   Menschensache, und darum nicht von mir entschieden: ob Befund 1 noch auf diesem Ticket erledigt wird (die Datei gehoert sachlich dazu, und 'client-facing' im Sinne von CLAUDE.md ist sie nicht - sie ist Repository-Dokumentation, keine NOTES-Zeile), und ob Befund 2 - eine schon adoptierte, angepasste Fassung von critique/optimize/testing wird ab jetzt still von der eingebetteten ueberdeckt - eine eigene NOTES-Zeile bekommt oder als hinnehmbar gilt. Ich bin nicht das letzte Wort.
+  ANGENOMMEN - geht weiter nach signoff. Beide in dieser Runde beauftragten Punkte sind geschlossen: DoD 7 (lanes/README.md nennt keine Datei mehr, die nicht in lanes/ liegt, fuehrt critique und optimize nicht mehr als Katalog-Lanes und beschreibt die after:-Ankerkette statt des Anhaengens) und DoD 8 (eine Zeile unter '## Unreleased', als Anweisung geschrieben, plus der mutationsgeprueft wirksame Test TestBuiltinShadowsAnAdoptedCopyOfTheSameID). Die Ehrlichkeits-Auflage - die falsche Grep-Behauptung aus Runde 4 richtigzustellen statt sie zu ueberschreiben - ist als eigene Notiz erfuellt und nennt die fuenfte und sechste Fundstelle beim Namen. gofmt, build, vet und die volle Suite laufen hier selbst gefahren sauber. Die CLAUDE.md-Regel zu core/release/NOTES.md ist eingehalten, einschliesslich des richtigen Verzichts auf eine Zeile fuer die README- und die -ldflags-Kosmetik. Die zwei Befunde in review-gaps sind beide klein und keiner davon rechtfertigt eine weitere Runde in-progress.
 review-check: |-
   So pruefst du das selbst nach. Alles laeuft im Worktree /home/alex/projects/.worktrees/jaira-VSC1GW auf dem Zweig feat/VSC1GW. Kein Netz noetig.
 
