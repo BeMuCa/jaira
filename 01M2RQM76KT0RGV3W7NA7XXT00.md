@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:58:23Z
+updated-at: 2026-09-19T21:03:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
@@ -575,3 +575,16 @@ Warum das zweite Ticket im Fixture nicht zu schwer ist: der erste Read desselben
 --exclude-standard nachgeprueft: core/gitrepo/git.go:212 ruft ls-files --others --exclude-standard -z. Die SKILL.md-Aussage stimmt.
 
 go build ./... && go vet ./... && go test ./... -count=1 gruen (Baseline und nach Ruecknahme der Mutation).
+- **2026-09-19 21:03 · Alexander Sacharov** — testing (zweite Runde, nur der neue Zuwachs b5e425b gegen DoD 16-18; DoD 1-15 waren in der ersten Runde schon getestet und angenommen):
+
+Gates: 'go build ./...' RC=0, 'go vet ./...' RC=0, 'go test ./... -count=1' RC=0 - alle 29 Pakete ok, internal/cli 14,3s, internal/tui 31,5s, kein FAIL.
+
+DoD 16 (Mutationsprobe): in internal/cli/flow.go den Schluessel 'diff' aus dem Payload-Literal genommen und durch 'if diff != "" { payload["diff"] = diff }' ersetzt - genau wie worktree_diff. 'go test ./internal/cli/ -count=1' wird rot, und zwar genau ein Test: --- FAIL: TestForLaneLeavesTheWorktreeKeyOutOfACleanTree, forlanecommits_test.go:383 'the payload has no diff key although diff is promised to be always present, empty when there is nothing'. Danach 'git checkout -- internal/cli/flow.go', 'git status --short -- internal/cli/flow.go' leer, internal/cli wieder gruen (RC=0). Der Test ist also echt und nicht dekorativ - er haelt die leere Haelfte der Zusage fest.
+
+DoD 17 (Verhalten, nicht nur Prosa): SKILL.md 44-51 nennt die Ausnahme im selben Satz wie die repo-weite Worktree-Haelfte ('ausser .jaira/tickets und allem, was .gitignore deckt, weil git mit --exclude-standard nach unverfolgten Dateien gefragt wird'), und das deckt sich mit core/gitrepo/git.go:213 (ls-files --others --exclude-standard). Nachgemessen mit frisch gebautem Binary: zwei unverfolgte Dateien angelegt, coverage.out (von .gitignore:12 gedeckt, mit 'git check-ignore -v' belegt) und probe-control-7xxt00.txt (nicht gedeckt). 'jaira show 7XXT00 --for-lane review --json | jq -r .worktree_diff' hat 65 Zeilen: 0 Treffer fuer coverage.out bzw. dessen Inhalt, die Kontrolldatei dagegen steht mit Patch drin (Zeilen 58-64). Beide Dateien danach geloescht, 'git status --short' steht wieder auf dem Stand von vorher (nur die geaenderte Ticketdatei und das fremde, unverfolgte .jaira/milestones/).
+
+DoD 18: SKILL.md 155-158 - auf 'so test diff for content and never for absence' folgt unmittelbar 'That sentence is about diff alone: worktree_diff is the other way round, and the absence of the key is exactly what you test it for.' Als eiliger Leser gelesen: der Nachsatz steht direkt daneben und nennt beide Schluessel beim Namen, ein Bezug auf worktree_diff ist nicht mehr moeglich.
+
+NOTES.md: unter ## Unreleased vier Zeilen, alle vier beginnen mit '- ', keine umgebrochene Zeile, kein Fremdtext. Der korrigierte dritte Punkt ('plus every untracked file git does not ignore ... and so is anything your .gitignore covers') ist durch die Messung oben belegt.
+
+Kein Code geaendert, nichts committet, nichts gepusht.
