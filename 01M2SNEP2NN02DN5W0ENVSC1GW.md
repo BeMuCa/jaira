@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:13:38Z
+updated-at: 2026-09-19T20:13:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -563,3 +563,4 @@ Nicht wieder aufgemacht: DoD 1-6, der Verzicht auf einen zusaetzlichen market-Fi
 - Beweis von DoD 5 richtiggestellt: er sagte 'fuenf Zeilen' unter '## Unreleased', seit DoD 8 sind es sechs. Nicht am Grep gezaehlt, sondern an release.Notes() selbst - ein Wegwerf-Test im Paket core/release gab 'Unreleased -> 6' aus und wurde danach geloescht (git status im Arbeitsbaum zeigt keine neue Datei in core/release).
 - Nicht angefasst: DoD 1-6 als solche, die Entscheidung gegen einen zusaetzlichen market-Filter, der Vorrang 'Builtin verdeckt adoptierte Fassung'.
 - **2026-09-19 20:10 · Alexander Sacharov** — optimize: Prosa-Dopplung entfernt, kein Verhalten geaendert. lanes/README.md hatte den Binary-Hinweis zweimal (oben unter dem Codeblock und unter der Tabelle) - der untere ist weg. Der Kommentar in core/market/market.go Unpinned und der Testkommentar in market_test.go wiederholten je den Satz aus dem pinnedRef-Kommentar zehn Zeilen darueber - beide gekuerzt. Nichts geht zurueck nach in-progress; go build/vet/test ./... -count=1 gruen.
+- **2026-09-19 20:13 · Alexander Sacharov** — testing Runde 5: DoD 7 und 8 am gebauten Binary auf zwei Wegwerf-Boards geprueft, nicht am Quelltext. Nichts gefunden, was zurueck nach in-progress muesste. Zwei Dinge fuers Protokoll: 'jaira lanes market' und 'jaira lanes market adopt' gehen gegen JAIRA_MARKET_API=http://127.0.0.1:1/dead erwartungsgemaess mit Exit 1 unter - das ist kein README-Fehler, sondern das Offline-Verhalten; geprueft wurde stattdessen der Klon-Weg 'jaira lanes adopt <pfad>/secrets-scan.md', den die README in Zeile 16 nennt. Und: die Aussage der README, 'jaira lanes market' biete critique/optimize/testing nicht mehr an, laesst sich ohne Netz nicht direkt fahren; sie folgt daraus, dass die drei Dateien nicht mehr in lanes/ liegen (ls lanes/ = README.md, changelog-writer.md, secrets-scan.md).
