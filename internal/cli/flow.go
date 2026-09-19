@@ -557,6 +557,16 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	fields := map[string]string{}
 	var missing []string
 	var diff string
+	// The uncommitted half, kept apart from the committed one. It used to be
+	// appended to diff behind the line "uncommitted work in the working
+	// tree", and a role prompt told its reader that everything below that
+	// line was the work in progress. The string carries no prefix and looks
+	// exactly like a commit-message line inside a patch, so on this very
+	// ticket's payload it occurred nine times, the first of them 900 lines
+	// above the real boundary. A marker without a guarantee, reported as a
+	// boundary — which is the defect this whole ticket was opened against. A
+	// key of its own cannot be missed, so there is no marker left to misread.
+	var worktreeDiff string
 	// The shas the diff was actually built from, and where they came from.
 	// They ride in the payload so a reader can count them against the branch
 	// instead of trusting the diff to be whole.
@@ -627,13 +637,10 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				// failure this ticket exists to end, one step further along.
 				worktreeErr = err.Error()
 			case strings.TrimSpace(wt) != "":
-				if d != "" {
-					d += "\n"
-				}
-				d += "uncommitted work in the working tree\n\n" + wt
+				worktreeDiff = wt
 				shasFrom = ticket.WithWorktree(shasFrom)
 			}
-			if d == "" {
+			if d == "" && worktreeDiff == "" {
 				// Both halves are accounted for, because "no commits" alone
 				// would read as "the worktree was not looked at".
 				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
@@ -673,12 +680,18 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"missing":  missing,
 			"complete": len(missing) == 0,
 		}
+		// The uncommitted half rides in a key of its own, and only when there
+		// is one: a key that is always there is read as a field, and an empty
+		// one beside every payload trains the reader to skip it.
+		if worktreeDiff != "" {
+			payload["worktree_diff"] = worktreeDiff
+		}
 		// Only for a lane that asked for a diff, and only once there is a
 		// diff to account for. A commit list beside a lane that never declared
 		// one would read as a claim about the ticket rather than as the
 		// provenance of what is on screen — and so would one standing beside a
 		// diff that failed to build, where nothing is on screen at all.
-		if diff != "" {
+		if diff != "" || worktreeDiff != "" {
 			payload["commits"] = shas
 			payload["commits_source"] = shasFrom
 			// Only when there are any: a key that is always there is read as a
@@ -731,6 +744,13 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			fmt.Fprintf(w, "git could not show %d of them: %s\n\n", len(unavailable), strings.Join(unavailable, " "))
 		}
 		fmt.Fprintf(w, "```diff\n%s```\n\n", diff)
+	}
+	// Its own heading, not a line inside the block above: a reader who has to
+	// find a boundary by matching a string finds it wherever the patch happens
+	// to quote it.
+	if worktreeDiff != "" {
+		fmt.Fprintf(w, "## Worktree diff (not committed yet)\n\n")
+		fmt.Fprintf(w, "```diff\n%s```\n\n", worktreeDiff)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")

@@ -38,9 +38,9 @@ and `review` lanes do — and the payload names what it was built from. Its
 `commits` field lists the SHAs the diff covers and `commits_source` says where
 they came from: the diff is the ticket's whole committed history, not a slice
 of it, and where `commits_source` ends in `+worktree` the uncommitted work is
-appended to it too — so a lane that changed no code and a conversational ticket
-that has not been committed yet are both in front of you without your going to
-look. The one commit that escapes is a commit that neither names the ticket id
+in front of you too, in a key of its own — `worktree_diff`, never mixed into
+`diff` — so a lane that changed no code and a conversational ticket that has
+not been committed yet are both there without your going to look. The one commit that escapes is a commit that neither names the ticket id
 nor touches its file; that is what the rule "every commit names the ticket id"
 is for, and you can see it by counting `commits` against
 `git log origin/HEAD..HEAD --oneline`. That count proves the LIST is whole, not
@@ -124,22 +124,25 @@ you were started as, **you are not the one that writes.** Say so to the
 dispatcher and let it answer — it knows, it started you. Asking costs one line;
 guessing wrong costs a second `review-summary` written over the first.
 
-**What you judge is in the payload, and it is the second half of the diff.**
-The `--for-lane critique` payload you read at the top already carries the
-uncommitted work: `showForLane` appends the working tree to the commit diff, so
-the `diff` has two halves separated by the line
+**What you judge is in the payload, and it is the `worktree_diff` key.**
+The `--for-lane critique` payload you read at the top carries the uncommitted
+work in a key of its own, beside `diff` and never inside it:
 
-```
-uncommitted work in the working tree
-```
+- `diff` is the committed history — the earlier rounds, finished, already
+  judged, not yours.
+- `worktree_diff` is the work running beside you, and that is your judgment
+  object.
 
-Everything above that line is the earlier rounds — finished, already judged,
-not yours. Everything below it is the work running beside you, and that is your
-judgment object. On the first round there is no line at all, because there are
-no commits yet: the whole diff is the worktree.
+Read the key, do not search the text for a boundary. There used to be one, the
+line `uncommitted work in the working tree` inside `diff`, and it could not be
+told apart from a commit-message line quoted inside a patch: on one ticket's
+payload it occurred nine times, the first of them some nine hundred lines above
+the real split. Two keys cannot be confused that way, and there is no marker
+left to look for.
 
-You do not have to hunt for the marker. `commits_source` says which halves are
-there: it ends in `+worktree` when the uncommitted half is appended, and on the
+On the first round `diff` is absent, because there are no commits yet, and
+`worktree_diff` is everything there is. `commits_source` says which halves are
+there: it ends in `+worktree` when the uncommitted half is present, and on the
 first round it is plain `worktree`.
 
 `complete: false` on that first round is still normal, but not because the diff
@@ -149,8 +152,8 @@ its lane. So: do not wait for the payload to fill, and do not report that you
 had nothing to read.
 
 One case leaves you without that half, and the payload names it: a
-`worktree_error` key means git could not read the working tree, so nothing
-uncommitted is in the diff however clean `commits_source` looks. That is when
+`worktree_error` key means git could not read the working tree, so there is no
+`worktree_diff` at all however clean `commits_source` looks. That is when
 you fall back to reading the disk yourself:
 
 ```bash

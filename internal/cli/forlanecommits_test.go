@@ -17,6 +17,7 @@ import (
 // diff they were handed and the three fields that say what it was built from.
 type forLanePayload struct {
 	Diff          string   `json:"diff"`
+	WorktreeDiff  string   `json:"worktree_diff"`
 	Commits       []string `json:"commits"`
 	CommitsSource string   `json:"commits_source"`
 	Complete      bool     `json:"complete"`
@@ -153,8 +154,8 @@ func TestForLaneDiffCarriesTheUncommittedWorktree(t *testing.T) {
 		t.Fatalf("payload is not json: %v\n%s", err, out)
 	}
 	for _, want := range []string{"eingecheckt und geaendert", "vorgemerkt", "unverfolgt"} {
-		if !strings.Contains(payload.Diff, want) {
-			t.Errorf("the payload leaves uncommitted work out — %q is missing:\n%s", want, payload.Diff)
+		if !strings.Contains(payload.WorktreeDiff, want) {
+			t.Errorf("the payload leaves uncommitted work out — %q is missing:\n%s", want, payload.WorktreeDiff)
 		}
 	}
 	if !strings.HasSuffix(payload.CommitsSource, "+"+ticket.SourceWorktree) {
@@ -162,6 +163,49 @@ func TestForLaneDiffCarriesTheUncommittedWorktree(t *testing.T) {
 	}
 	if !payload.Complete {
 		t.Error("complete is false although nothing is missing")
+	}
+}
+
+// The two halves of the payload are two keys, not one string with a line in
+// the middle of it. They were one string once, split by the plain text
+// "uncommitted work in the working tree", and a role prompt told its reader
+// that everything below that line was the work in progress. Nothing tells
+// that line apart from a commit-message line quoted inside a patch: on the
+// payload of the very ticket that fixed this, the string occurred nine times,
+// the first of them some nine hundred lines above the real boundary. So the
+// test holds the two apart by content — the committed half must not carry the
+// uncommitted work, the uncommitted key must, and the old marker must be gone
+// from both — which is exactly what a single string cannot promise.
+func TestForLaneKeepsTheCommittedAndUncommittedHalvesApart(t *testing.T) {
+	dir, _, _, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 19, 9, 0, 0, 0, time.UTC))
+	write("committed.txt", "eingecheckt\n")
+	run("add", ".")
+	run("commit", "-q", "-m", "feat("+h+"): the committed change")
+	write("uncommitted.txt", "unversioniert\n")
+
+	var payload forLanePayload
+	out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json")
+	if err != nil {
+		t.Fatalf("show --for-lane review: %v\n%s", err, out)
+	}
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("payload is not json: %v\n%s", err, out)
+	}
+	if !strings.Contains(payload.Diff, "eingecheckt") {
+		t.Errorf("diff does not carry the committed half:\n%s", payload.Diff)
+	}
+	if strings.Contains(payload.Diff, "unversioniert") {
+		t.Errorf("diff carries the uncommitted half — the two are one string again:\n%s", payload.Diff)
+	}
+	if !strings.Contains(payload.WorktreeDiff, "unversioniert") {
+		t.Errorf("worktree_diff does not carry the uncommitted half:\n%s", payload.WorktreeDiff)
+	}
+	if strings.Contains(payload.WorktreeDiff, "eingecheckt\n") && strings.Contains(payload.WorktreeDiff, "committed.txt") {
+		t.Errorf("worktree_diff carries the committed half:\n%s", payload.WorktreeDiff)
+	}
+	const gone = "uncommitted work in the working tree"
+	if strings.Contains(payload.Diff, gone) || strings.Contains(payload.WorktreeDiff, gone) {
+		t.Errorf("the old text marker is still in the payload — a reader can still mistake it for the boundary")
 	}
 }
 
