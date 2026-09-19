@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:04:57Z
+updated-at: 2026-09-19T20:06:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -74,6 +74,15 @@ review-summary: |-
   - go build ./... , go vet ./... , go test ./... -count=1 im Arbeitsbaum feat/VSC1GW: alle gruen, RC=0.
 
   Randnotiz ohne Handlungsbedarf: der Beweis zu DoD 5 nennt 'fuenf Zeilen' unter '## Unreleased', es sind durch DoD 8 jetzt sechs. DoD 5 ist geschlossen, der Beweistext ist nur zeitlich ueberholt.
+  critique (Runde 6, Schleifendurchgang 2): nichts mehr zu sagen. Geprueft wurden nur die drei Antworten auf Runde 5; kein neues Gebiet aufgemacht, die Punkte 4-10 aus Runde 5 stehen unveraendert.
+
+  1. lanes/README.md:47, Tabelle 'What is here': die Zelle liest jetzt 'after implementing', die Klausel ', once you move the column there' ist weg. Damit sagt die Tabelle dasselbe wie der Absatz 'Where it lands' und wie 'after: in-progress' in lanes/secrets-scan.md. Befund 1 aus Runde 5 ist geschlossen.
+
+  2. lanes/README.md:61-70, der erweiterte Absatz, Satz fuer Satz gegen core/lane/order.go insertAfterAnchor gelesen: 'An anchor nothing in the chain can resolve parks the lane before the first terminal lane, and says so - a warning on stderr, warnings in --json; no after: at all parks it there too and says nothing, that being a choice rather than an omission.' Das stimmt genau: der Zweig at < 0 ist der einzige Weg zu terminalIDIndex, und die Warnung haengt an 'if l.After != ""', also warnt der Fall ohne after: nicht. Das vorher davorstehende 'Only' ist richtigerweise gefallen, weil jetzt beide Faelle genannt sind - haette es stehen bleiben muessen, waere der Absatz beim Wachsen falsch geworden. Der Rest des Absatzes ist gegenueber Runde 5 unveraendert (Einfuegen hinter dem Anker, nur die neue id bewegt sich, Kette ueber nicht installierte Lanes, Erfolgszeile nennt den Nachbarn) und bleibt richtig. Befund 2 aus Runde 5 ist geschlossen.
+
+  3. Der Beweis zu DoD 5 nennt jetzt sechs Zeilen. Gegengeprueft nicht am Auge, sondern am Parser: ein Wegwerf-Test in package release ueber Notes() liest unter 'Unreleased' genau 6 Changes (danach wieder entfernt, git status unveraendert). Der Beweis deckt sich mit dem, was das Binary liest.
+
+  Nichts kaputt gegangen: die Diffs von core/lane/order_test.go, core/market/market.go, core/market/market_test.go, core/release/NOTES.md und internal/cli/lanes.go sind gegenueber Runde 5 unveraendert, nur lanes/README.md hat sich bewegt. go build ./... , go vet ./... und go test ./... -count=1 wieder alle gruen, RC=0. Kein Rueckweg nach in-progress.
 review-gaps: |-
   internal/tui/lanes.go: addFromCatalogue und addAvailable trugen denselben Sechszeiler samt Kommentar hinter einer sofort ueberschriebenen ls.msg-Zuweisung - in einen Helfer addedMsg(id, warnings) gefaltet, Verhalten unveraendert. Stehen gelassen mit Begruendung: terminalIDIndex neben terminalIndex (zwei Typen, in Durchgang 1 geschlossen; beide Fallbacks am Code auf gleiche Position gegengeprueft), die Unpinned()-Notiz zweimal in internal/cli/market.go (spiegelt die vorhandene Overridden()-Doppelung), die after-Nachsuche in lane.Add (ein dritter Rueckgabewert fuer eine Schleife ueber 13 Eintraege auf einem einmaligen Pfad) und der ''-Zweig in pinnedRef (Vorsicht gegen -ldflags, nicht unerreichbar). Kein toter Code; lane.Installable() auf dem 'jaira lanes'-Pfad ist netzfrei (embedded Builtins plus ein Glob), die Startzeit-Regel bleibt unberuehrt.
   review (Runde 1). Gegengeprueft, nicht geglaubt: go build ./... , go vet ./... und go test ./... -count=1 alle RC=0, keine uebersprungenen Pakete; alle 13 in den DoD-Beweisen genannten Testfunktionen existieren an den genannten Dateien; jede Datei-Fundstelle stimmt am Arbeitsbaum; die Entscheidung vom 2026-09-19 ist eingehalten - in core/market/market.go kommt weder 'Builtin' noch 'Default' vor, market filtert nichts zusaetzlich. Die DoD ist damit erfuellt. Drei Befunde, alle ausserhalb des Go-Codes oder unterhalb der Rueckweis-Schwelle:
