@@ -557,15 +557,12 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	fields := map[string]string{}
 	var missing []string
 	var diff string
-	// The uncommitted half, kept apart from the committed one. It used to be
-	// appended to diff behind the line "uncommitted work in the working
-	// tree", and a role prompt told its reader that everything below that
-	// line was the work in progress. The string carries no prefix and looks
-	// exactly like a commit-message line inside a patch, so on this very
-	// ticket's payload it occurred nine times, the first of them 900 lines
-	// above the real boundary. A marker without a guarantee, reported as a
-	// boundary — which is the defect this whole ticket was opened against. A
-	// key of its own cannot be missed, so there is no marker left to misread.
+	// The uncommitted half, kept apart from the committed one. Appending it to
+	// diff behind the line "uncommitted work in the working tree" made the
+	// boundary a string a reader had to search for, and that string occurs in
+	// any patch that quotes it — nine times on this ticket's own payload, the
+	// first of them 900 lines above the real boundary. A key cannot be
+	// misread that way.
 	var worktreeDiff string
 	// The shas the diff was actually built from, and where they came from.
 	// They ride in the payload so a reader can count them against the branch
@@ -614,9 +611,8 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			}
 			shas = ticket.MergeCommits(derived, t.Commits)
 			shasFrom = ticket.CommitsSource(derived, shas)
-			var d string
 			if len(shas) > 0 {
-				d, unavailable = repo.Diff(shas)
+				diff, unavailable = repo.Diff(shas)
 			}
 			// Uncommitted work counts. A lane judges what is in front of it,
 			// and the rule "a lane that changed no code commits nothing"
@@ -640,7 +636,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				worktreeDiff = wt
 				shasFrom = ticket.WithWorktree(shasFrom)
 			}
-			if d == "" && worktreeDiff == "" {
+			if diff == "" && worktreeDiff == "" {
 				// Both halves are accounted for, because "no commits" alone
 				// would read as "the worktree was not looked at".
 				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
@@ -650,7 +646,6 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				missing = append(missing, m)
 				continue
 			}
-			diff = d
 		default:
 			v := fieldValue(t, want)
 			if strings.TrimSpace(v) == "" {
@@ -694,9 +689,8 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		if diff != "" || worktreeDiff != "" {
 			payload["commits"] = shas
 			payload["commits_source"] = shasFrom
-			// Only when there are any: a key that is always there is read as a
-			// field, and an empty one beside every payload trains the reader
-			// to skip it.
+			// Only when there are any, for the same reason worktree_diff
+			// above is left out when it is empty.
 			if len(unavailable) > 0 {
 				payload["commits_unavailable"] = unavailable
 			}
@@ -749,8 +743,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	// find a boundary by matching a string finds it wherever the patch happens
 	// to quote it.
 	if worktreeDiff != "" {
-		fmt.Fprintf(w, "## Worktree diff (not committed yet)\n\n")
-		fmt.Fprintf(w, "```diff\n%s```\n\n", worktreeDiff)
+		fmt.Fprintf(w, "## Worktree diff (not committed yet)\n\n```diff\n%s```\n\n", worktreeDiff)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")
