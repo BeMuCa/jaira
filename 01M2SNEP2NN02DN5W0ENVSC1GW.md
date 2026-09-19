@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:47:36Z
+updated-at: 2026-09-19T19:51:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -110,7 +110,8 @@ review-check: |-
   proof: core/market/market.go apiBase()+pinnedRef()+Unpinned(); Tests core/market/market_test.go TestListPinsTheCatalogueToTheRunningTag, TestDevBuildSendsNoRefAndSaysSo, TestRefIsSetOnAnAddressThatAlreadyHasAQuery; nachgestellt mit einem Binary aus -ldflags '-X main.version=0.1.4': ASKED /contents/lanes?ref=v0.1.4
 - [x] lanes/README.md sagt nichts Falsches mehr: der Schnellstart nennt keine Datei, die nicht in lanes/ liegt, der Verweis auf 'jaira lanes adopt lanes/critique.md' ist weg oder auf eine vorhandene Datei umgestellt, die Tabelle 'What is here' zaehlt critique und optimize nicht mehr als Katalog-Lanes, und der Absatz zu 'jaira lanes add' beschreibt die after:-Ankerkette statt des Anhaengens als letzte Zeile der order-Datei. Nachweis: ls lanes/ gegen jede in der README genannte Datei, plus grep nach 'appends the lane as the last line' ohne Treffer.
   proof: lanes/README.md neu geschrieben: Schnellstart und Zeile 16 nennen secrets-scan (liegt in lanes/), Tabelle fuehrt nur noch secrets-scan und changelog-writer, Absatz 'Where it lands' beschreibt die after:-Ankerkette; grep -c 'appends the lane as the last line' lanes/README.md = 0
-- [ ] Wer critique, optimize oder testing frueher per 'jaira lanes market adopt' geholt und selbst bearbeitet hat, erfaehrt es: eine Zeile unter '## Unreleased' in core/release/NOTES.md sagt, dass das im Binary mitgelieferte Exemplar die eigene Fassung in ~/.jaira/lanes ab jetzt verdeckt, und ein Test haelt diese Verdeckung fest (Installable() nimmt den Builtin, nicht die Datei aus JAIRA_LANES_DIR).
+- [x] Wer critique, optimize oder testing frueher per 'jaira lanes market adopt' geholt und selbst bearbeitet hat, erfaehrt es: eine Zeile unter '## Unreleased' in core/release/NOTES.md sagt, dass das im Binary mitgelieferte Exemplar die eigene Fassung in ~/.jaira/lanes ab jetzt verdeckt, und ein Test haelt diese Verdeckung fest (Installable() nimmt den Builtin, nicht die Datei aus JAIRA_LANES_DIR).
+  proof: core/release/NOTES.md, zweite Zeile unter '## Unreleased' (Notes() liest jetzt sechs Aenderungen); Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID - gegengeprueft durch Umdrehen der Schleifenreihenfolge in Installable(), dann schlaegt er fehl
 
 ## Options
 
