@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:52:17Z
+updated-at: 2026-09-19T20:57:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
@@ -556,3 +556,12 @@ Proof-Nummern ueber DoD 1, 6, 8, 9, 10, 11, 12, 13, 14, 15 einzeln in den Dateie
 - Nicht blockierend, nur festgehalten: 'ausser .jaira/tickets und allem, was .gitignore abdeckt' ist fuer die verfolgte Haelfte streng genommen zu weit gefasst - 'git diff HEAD' zeigt auch eine verfolgte Datei, die .gitignore nennt. Der Nebensatz 'because git is asked for untracked files with --exclude-standard' grenzt es ein, und der Fall verfolgt+ignoriert kommt auf diesem Board nicht vor. Kein Rueckweg deswegen.
 
 Keine Rueckgabe an in-progress. Kein Code geaendert, kein Commit.
+- **2026-09-19 20:57 · Alexander Sacharov** — optimize (Inkrement b5e425b, DoD 16/17/18): nichts entfernt, alles gemessen.
+
+Mutationsprobe selbst gefahren: in internal/cli/flow.go den Schluessel 'diff' aus dem Map-Literal genommen und wie worktree_diff bedingt gesetzt ('if diff != "" { payload["diff"] = diff }'). Ergebnis 'go test ./... -count=1': genau ein roter Test, TestForLaneLeavesTheWorktreeKeyOutOfACleanTree, forlanecommits_test.go:383. Kein anderer Test im ganzen Repository faellt. Der zweite Payload-Read ist also die einzige Wache fuer diese Haelfte der Zusage; Mutation danach mit 'git checkout -- internal/cli/flow.go' zurueckgenommen.
+
+Warum das zweite Ticket im Fixture nicht zu schwer ist: der erste Read desselben Tests hat einen nicht leeren Diff, dort haelt jede bedingte Variante. Ein billigerer Aufbau (Read auf schmutzigem Baum vor dem Commit) wuerde zwar 'diff ist leer' treffen, aber die naheliegende Mutation 'if diff != "" || worktreeDiff != ""' - genau die Form, die zwei Zeilen tiefer fuer 'commits' schon im Code steht - durchlassen. Nur 'keine Commits UND sauberer Baum' faengt beide. Ein s.Create und ein runCLI im schon stehenden TempDir, kein zweites git-Repo.
+
+--exclude-standard nachgeprueft: core/gitrepo/git.go:212 ruft ls-files --others --exclude-standard -z. Die SKILL.md-Aussage stimmt.
+
+go build ./... && go vet ./... && go test ./... -count=1 gruen (Baseline und nach Ruecknahme der Mutation).
