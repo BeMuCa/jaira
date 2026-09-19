@@ -1,7 +1,7 @@
 ---
 id: 01M2RQM76KT0RGV3W7NA7XXT00
 title: Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,9 +23,24 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 04074c52c6e9ae0b92a0a75ffb7248e17fb1019d
+  - 50cae0942285b74c14567ac31760ca350e9612af
+  - efaae36b9cdc314e7e0fe01fc20b03e41292c969
+  - b5c27e1c7f3a5f3dedeb6a7911e85ade3b0c3fa0
+  - 46516d322eec74efac001ffea149d59319e33fca
+  - 57a924cb8473ffcd88dd40cb5418bbb0533dc272
+  - 853d58acc5435e8c0c0623583e02cdf9a5fcde3a
+  - 47616d62022237106ea84dd51647c3c2ec4786d5
+  - fdbbb242622d4f70b7ff29ff016778e5935f41ce
+  - 122b3710ad859f1a6649ba3d6aa360057fb51f2e
+  - 1799482940c751da4f076ee00e6daafec4a67e7a
+  - b809b4a57250e53ab590c31f6acd2dcc2b9668bf
+  - bcf403b0ba776eb59c5f9a4d90e0f8e76074f177
+  - f1994ad4d7429f60605bfa4a088454372365b525
+  - b5e425b1498f3a5b8da8fa25428d97a7f2675b93
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T21:16:55Z
+updated-at: 2026-09-19T21:25:38Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
