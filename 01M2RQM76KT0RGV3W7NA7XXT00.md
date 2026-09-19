@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:55:20Z
+updated-at: 2026-09-19T15:55:43Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -349,3 +349,16 @@ Weiter geprueft und in Ordnung: kein anderer Prompt im Repository zeigt noch auf
 Nicht beanstandet, aber festgehalten: DoD 9 beschreibt den Payload noch mit der abgeschafften Trennzeile. Das ist der Stand, der damals gefordert war, und DoD 12/13 darunter loesen ihn ausdruecklich ab - in der Reihenfolge gelesen ist das Geschichte, kein falscher Wegweiser. Nicht angefasst.
 
 Offen ist ein Befund - siehe review-summary.
+- **2026-09-19 15:55 · Alexander Sacharov** — Befund 1 (blockierend, klein, eine Zeile): core/release/NOTES.md:20 beschreibt den Payload weiter so, wie er vor 122b371 aussah, und steht damit im selben '## Unreleased'-Abschnitt wie Zeile 18, die das Gegenteil sagt. Das ist woertlich dieselbe Lage, die in Runde 1 fuer Zeile 19 blockierend war - zwei widersprechende Anweisungen zu demselben Kommando in einem Abschnitt, und die aeltere gewinnt bei einem Leser, der von oben nach unten liest, sobald er sie zuerst befolgt.
+
+Zwei Aussagen der Zeile stimmen nicht mehr:
+
+(a) 'jaira show <id> --for-lane <lane> now appends the uncommitted working tree ... to the diff of the ticket's commits'. Angehaengt wird nichts mehr. internal/cli/flow.go:664 traegt nur die committete Haelfte als 'diff', flow.go:683-685 die unversionierte als eigenen Schluessel 'worktree_diff', und die Klartext-Ausgabe druckt sie unter der eigenen Ueberschrift '## Worktree diff (not committed yet)'. Zeile 18 sagt genau das drei Zeilen darueber.
+
+(b) 'commits_source ends in +worktree when it did'. Auf der ersten Runde ohne Commits heisst es schlicht 'worktree' ohne Plus (core/ticket/trim.go:197-198 und 218-222). Das ist Befund 3 aus Runde 1 - in SKILL.md:40-44 repariert, in NOTES.md stehengeblieben.
+
+Warum das aenderbar ist: beide Zeilen stehen unter '## Unreleased', also noch nicht getaggt und nach der Projektregel offen. Zeile 18 als Nachtrag zu 20 zu lesen hilft dem Leser nicht - alle drei Zeilen gehen in einer Release an ihn raus und beschreiben denselben Payload, den es nur in einem Zustand gibt.
+
+Fix: in Zeile 20 den Nebensatz 'appends ... to the diff of the ticket's commits' auf 'gibt den unversionierten Worktree ... neben dem Commit-Diff aus' umschreiben und 'ends in +worktree' um den Sonderfall der ersten Runde ergaenzen - oder, falls das die Zeile zu sehr verbiegt, die beiden Aussagen aus ihr streichen, weil Zeile 18 sie ohnehin traegt. Zeile 18 und 19 bleiben, wie sie sind.
+
+Nichts sonst in diesem Durchgang. Ohne diesen einen Satz ist die Runde fertig.
