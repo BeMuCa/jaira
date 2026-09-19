@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:58:02Z
+updated-at: 2026-09-19T19:58:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -516,3 +516,14 @@ Warum kein Ausweg gebaut wurde (z.B. der Nutzerdatei den Vorrang geben oder beim
 Erreichbar ist der Zweig nur ueber -ldflags '-X ...=' (release.Current ist mit 'dev' vorbelegt, core/release/release.go:23), deshalb KEINE NOTES-Zeile: in einem ausgelieferten Build sieht das niemand, und CLAUDE.md zaehlt nur, was ein Benutzer von aussen beobachten kann.
 
 Test trotzdem dazu (TestBlankVersionStillReadsAsASentence in core/market/market_test.go), weil der Fall sonst genau so bleibt, wie er war: unbemerkt. Er setzt release.Current auf '' und prueft, dass 'version ,' nicht vorkommt.
+- **2026-09-19 19:58 · Alexander Sacharov** — critique (Runde 5): ein blockierender Befund, sonst sauber.
+
+Blockierend - lanes/README.md:47, Tabelle 'What is here': die Spalte 'Sits' sagt fuer secrets-scan weiter 'after implementing, once you move the column there'. Das ist derselbe Anhaenge-Satz, den DoD 7 aus der Datei verlangt, nur in einer Tabellenzelle statt in Prosa - und er widerspricht dem neu geschriebenen Absatz 'Where it lands' 14 Zeilen tiefer. lanes/secrets-scan.md traegt 'after: in-progress', und 'jaira lanes add secrets-scan' setzt die Lane seit diesem Ticket selbst dorthin. Fix: die Klausel ', once you move the column there' streichen, 'after implementing' allein stehen lassen (so wie changelog-writer nur 'after review' sagt). Keine weitere Aenderung noetig, keine NOTES-Zeile - die README ist nicht client-facing.
+
+Klein, optional, gleicher Weg: lanes/README.md:66-69 sagt, nur ein unaufloesbarer Anker parke die Lane vor der terminalen Lane 'und das sage sich als Warnung'. Eine Lane ganz ohne 'after:' landet dort ebenfalls, aber stillschweigend (insertAfterAnchor warnt nur bei l.After != ""). Heute traegt jede Katalogdatei ein after:, also schlaegt es nicht durch.
+
+Bewusst stehen gelassen, damit die naechste Runde nicht daran zieht: core/release/NOTES.md:131 traegt denselben veralteten Satz, steht aber unter '## 0.1.1' - geschlossene Geschichte, beschreibt das damalige Binary richtig, wird nach CLAUDE.md nicht angefasst.
+
+Gegengeprueft, nicht geglaubt: beide neuen Tests per Mutation. Installable() mit umgedrehter Schleifenreihenfolge -> TestBuiltinShadowsAnAdoptedCopyOfTheSameID FAIL ('the adopted file won'); Unpinned() auf die alte Fassung zurueck -> TestBlankVersionStillReadsAsASentence FAIL ('version ,'). Beide Dateien danach wieder hergestellt, git diff der beiden Quelldateien unveraendert gegenueber dem Stand der Runde. build/vet/'go test ./... -count=1' gruen. Eigene Ankersuche ueber *.go und *.md (ohne .jaira/, ohne .planning/) fand ausser dem Befund oben keine weitere lebende Fundstelle; internal/cli/lanes.go:74 als sechste Stelle bestaetigt und korrekt praezisiert.
+
+Nicht wieder aufgemacht: DoD 1-6, der Verzicht auf einen zusaetzlichen market-Filter und der Vorrang 'Builtin verdeckt adoptierte Fassung'.
