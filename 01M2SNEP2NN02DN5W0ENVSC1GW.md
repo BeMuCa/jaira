@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:04:15Z
+updated-at: 2026-09-19T20:04:19Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -39,6 +39,7 @@ outcome-why: |-
 outcome-resolves: |-
   vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik
   DoD 7 und DoD 8; Befunde 1, 2 und 3 aus review-gaps der Review-Runde 1; Ehrlichkeitspunkt zur Grep-Abdeckung aus Runde 4
+  Der blockierende Befund der fuenften Kritik (lanes/README.md:47, 'Sits' von secrets-scan) und ihr kleiner Befund (lanes/README.md:66-70, stille Platzierung ohne after:). Dazu die Hausarbeit am Beweis von DoD 5. Nachgeprueft statt geglaubt: lanes/secrets-scan.md traegt 'after: in-progress', und 'jaira lanes add secrets-scan' setzt die Lane am gebauten Binary ohne Netz selbst hinter in-progress; die Warnbedingung 'if l.After != ""' steht in core/lane/order.go insertAfterAnchor. go build ./... , go vet ./... und go test ./... -count=1 gruen (28 Pakete, RC=0).
 review-summary: |-
   none
   review (Runde 1), am Diff 2fb8f17 gelesen und am gebauten Binary nachgestellt - nicht am Bericht. Der Zweig traegt genau einen Commit, das Ticket-Feld commits: ist leer, der Payload-Diff ist damit der ganze Zweig (23 Dateien, +1308/-73); nichts ist ausserhalb des Payloads passiert.
