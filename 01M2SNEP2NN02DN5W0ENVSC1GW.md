@@ -23,12 +23,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:52:50Z
+updated-at: 2026-09-19T19:53:06Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
 mode: conversational
-outcome-what: "internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor; Kommentar und Fehlermeldung nennen den wirklichen Grund (Anker 'done'), Assertion unveraendert"
+outcome-what: |-
+  internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor; Kommentar und Fehlermeldung nennen den wirklichen Grund (Anker 'done'), Assertion unveraendert
+  Runde 5 (aus signoff zurueck): lanes/README.md neu geschrieben - Schnellstart, Klon-Zeile und Tabelle nennen nur noch, was in lanes/ liegt (secrets-scan, changelog-writer), neuer Absatz 'Where it lands' beschreibt die after:-Ankerkette statt des Anhaengens. internal/cli/lanes.go:74 Kommentar praezisiert (sechste Fundstelle desselben veralteten Satzes). Eine NOTES-Zeile plus Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID zur Verdeckung einer adoptierten Fassung durch den Builtin. core/market/market.go Unpinned() sagt bei leerem release.Current 'reports no version' statt eines Satzes mit Loch, mit Test.
 outcome-why: "Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende - das tut 'jaira lanes add' seit Runde 2 nicht mehr. Ein gruener Test, dessen Name das Gegenteil dessen sichert, was die Assertion schuetzt, fuehrt den naechsten Leser von insertAfterAnchor in die Irre."
 outcome-resolves: "vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik"
 review-summary: |-
