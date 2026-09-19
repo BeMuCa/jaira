@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:01:12Z
+updated-at: 2026-09-19T20:01:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -181,7 +181,8 @@ review-check: |-
 - [x] Runde 5: go build ./... , go vet ./... und go test ./... -count=1 gruen
 - [x] Runde 6, blockierender Fund der fuenften Kritik: lanes/README.md Tabelle 'What is here', Zelle 'Sits' von secrets-scan - die Klausel ', once you move the column there' streichen
   proof: lanes/README.md:47 - 'Sits' lautet jetzt nur 'after implementing'; nachgestellt am gebauten Binary: 'jaira lanes add secrets-scan' auf frischem Board -> 'after in-progress', Reihenfolge ... in-progress secrets-scan human ...
-- [~] Runde 6, kleiner Fund: lanes/README.md 'Where it lands' haelt auch fest, dass eine Lane ganz ohne after: still an derselben Stelle parkt
+- [x] Runde 6, kleiner Fund: lanes/README.md 'Where it lands' haelt auch fest, dass eine Lane ganz ohne after: still an derselben Stelle parkt
+  proof: lanes/README.md:66-70 - 'no after: at all parks it there too and says nothing'; am Code gegengeprueft: core/lane/order.go insertAfterAnchor warnt nur unter 'if l.After != ""'
 - [ ] Runde 6: Beweis von DoD 5 auf sechs Zeilen korrigiert; go build/vet/test -count=1 gruen
 
 ## Progress
