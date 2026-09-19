@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:09:28Z
+updated-at: 2026-09-19T19:09:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62754
 claimed-at: 2026-09-19T19:04:54Z
@@ -83,6 +83,20 @@ review-check: |-
   5. git log origin/HEAD..HEAD --oneline | wc -l    -> 9. Dieselbe Zahl wie in Schritt 4: der Payload zeigt den ganzen Branch, nicht mehr einen Ausschnitt. Das war der Fehler.
   6. /tmp/jaira-7XXT00 show 7XXT00 --for-lane review --json | jq -r .diff | grep -c 'uncommitted work in the working tree'    -> 9, nicht 1. Das ist Befund 1 aus review-gaps: die Zeile, die im Rollen-Prompt die committete von der unversionierten Haelfte trennen soll, kommt achtmal zusaetzlich im Patch-Inhalt vor. Hier entscheiden Sie, ob das noch in dieses Ticket gehoert.
   7. echo hallo > /tmp/x && cp /tmp/x 'Änderung.txt' && /tmp/jaira-7XXT00 show 7XXT00 --for-lane review --json | jq -r .diff | grep -c 'Änderung.txt'    -> groesser 0: eine unverfolgte Datei mit Umlaut steht im Payload. Danach: rm 'Änderung.txt'
+  Runde 2 - so pruefen Sie es selbst. Jeder Schritt sagt, was Sie sehen muessen.
+
+  1. cd /home/alex/projects/.worktrees/jaira-7XXT00
+  2. go build -o /tmp/jaira-neu ./cmd/jaira    -> laeuft durch, gibt nichts aus.
+  3. go vet ./... && go test ./... -count=1    -> nur Zeilen 'ok' und 'no test files', 28x 'ok', nirgends 'FAIL'.
+  4. /tmp/jaira-neu show 7XXT00 --for-lane review --json | jq '{k:keys, complete, commits_source, n:(.commits|length)}'    -> in k stehen sowohl 'diff' als auch 'worktree_diff'; complete true; commits_source 'git+worktree'; n 13.
+  5. git log origin/HEAD..HEAD --oneline | wc -l    -> 13. Dieselbe Zahl wie n in Schritt 4. Das war der urspruengliche Defekt: frueher stand hier eine kleinere Zahl und der Payload meldete trotzdem complete true.
+  6. /tmp/jaira-neu show 7XXT00 --for-lane review --json | jq -r .diff | grep -c '^uncommitted work in the working tree$'    -> 0. Null ist das Ergebnis, das zaehlt: es gibt keine praefixlose Zeile mehr, die jemand fuer die Grenze zwischen committeter und unversionierter Arbeit halten koennte. Das ist der Befund, wegen dem Sie das Ticket zurueckgeworfen haben.
+  7. Dasselbe ohne das Zeilenanker-Dollarzeichen: ... | grep -c 'uncommitted work in the working tree'    -> 49. Die Zahl ist hoch und das ist in Ordnung: alle 49 sind Patch-Inhalt und beginnen mit '+', '-' oder einem Leerzeichen. Genau darum ist die Grenze jetzt ein eigener Schluessel und keine Textzeile.
+  8. /tmp/jaira-neu show 7XXT00 --for-lane review | grep -n '^## '    -> '## Diff' und '## Worktree diff (not committed yet)' stehen als zwei getrennte Ueberschriften da, nicht eine Zeile im selben Codeblock.
+  9. Sauberer Baum - der Zweig, den kein Test haelt: mv .jaira/milestones /tmp/mst && /tmp/jaira-neu show 7XXT00 --for-lane review --json | jq '{hat_wt: has("worktree_diff"), commits_source}'    -> hat_wt false, commits_source 'git' ohne '+worktree'. Danach unbedingt zurueck: mv /tmp/mst .jaira/milestones
+  10. Umlaut und Leerzeichen im Pfad: printf 'hallo\n' > 'Änderung mit Leerzeichen.txt' && /tmp/jaira-neu show 7XXT00 --for-lane review --json | jq -r .worktree_diff | grep -c 'Änderung mit Leerzeichen.txt'    -> groesser 0 (bei mir 2). Die Datei steht mit ihrem echten Namen im Payload, nicht als Escape-Folge. Danach: rm 'Änderung mit Leerzeichen.txt'
+  11. git status --short    -> nur die beiden erwarteten Zeilen: ' M .jaira/tickets/01M2RQM...7XXT00-...md' und '?? .jaira/milestones/'. Steht dort mehr, hat einer der Schritte 9 oder 10 etwas liegengelassen.
+  12. Was noch nicht getestet ist, koennen Sie hier nicht sehen, nur nachschlagen: grep -rn 'WithWorktree' --include='*_test.go' .    -> keine Treffer. Die Funktion, die 'worktree' ohne Plus liefert, wenn ein Ticket noch gar keine Commits hat, hat keinen Test. Das ist der eine Punkt, bei dem ich Ihre Entscheidung brauche (siehe review-gaps Punkt 1).
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
