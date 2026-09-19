@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:51:52Z
+updated-at: 2026-09-19T20:52:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
@@ -71,6 +71,7 @@ review-summary: |-
   Drittens core/role/builtin/jaira-role-lane/SKILL.md:44-48: ein Satz in dem Abschnitt, den critique/testing/review lesen - die Worktree-Haelfte ist repo-weit und nicht ticket-weit, sie traegt jede unversionierte Aenderung ausser .jaira/tickets, und nichts kann die fremde von der eigenen trennen, weil nichts weiss, welche Dateien einem Ticket gehoeren. Kein Code-Fix, weil es keinen gibt.
 
   Viertens das Ticket selbst: DoD 14 und 15 angelegt und abgehakt, dazu die nach bcf403b verrutschten Proof-Zeilennummern in DoD 1, 6, 8, 9, 10, 11, 12 und 13 repariert.
+  critique der Nachbesserung b5e425b (DoD 16-18), aelterer Stand bleibt unberuehrt: Die drei offenen Review-Befunde sind geschlossen und jeder einzeln nachgemessen. DoD 16 ist echt abgesichert - eine Mutation, die 'diff' in internal/cli/flow.go bedingt macht, macht TestForLaneLeavesTheWorktreeKeyOutOfACleanTree an forlanecommits_test.go:383 rot; flow.go danach wieder unveraendert und gruen. DoD 17 stimmt gegen core/gitrepo/git.go:212 ('ls-files --others --exclude-standard'), der .gitignore-Nachsatz gegen internal/cli/share.go. DoD 18 trennt den Satz 'test diff for content, never for absence' sauber von worktree_diff, so wie flow.go beide Schluessel baut. Die korrigierte NOTES.md-Zeile ist weiterhin genau eine Zeile mit '- ' (Zeile 20, vier Punkte unter ## Unreleased) und sagt jetzt die Wahrheit. Verdikt: richtige Umsetzung, nichts Blockierendes, kein Rueckweg nach in-progress.
 review-gaps: |-
   Ein Befund, nachgemessen an diesem Ticket selbst, plus zwei kleinere.
 
