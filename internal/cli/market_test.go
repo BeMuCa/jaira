@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const marketGizmo = "---\nid: gizmo\nname: Gizmo\nafter: in-progress\nprecedence: 45\nagentic: true\nmodel-tier: strong\ndescription: Explains the gizmo.\n---\n# Prompt\n\nExplain.\n"
+const marketGizmo = "---\nid: gizmo\nname: Gizmo\nafter: in-progress\nprecedence: 45\nagentic: true\nmodel-tier: strong\ndescription: Explains what it does.\n---\n# Prompt\n\nExplain.\n"
 
 // marketServer stands in for GitHub's contents API and raw files.
 func marketServer(t *testing.T) {
@@ -41,7 +41,7 @@ func TestLanesMarketListsWhatTheRepositoryOffers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lanes market: %v\n%s", err, out)
 	}
-	for _, want := range []string{"gizmo", "Explains the gizmo.", "JAIRA_MARKET_API", "market adopt"} {
+	for _, want := range []string{"gizmo", "Gizmo", "Explains what it does.", "JAIRA_MARKET_API", "market adopt"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("listing lacks %q:\n%s", want, out)
 		}
