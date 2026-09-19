@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T21:16:22Z
+updated-at: 2026-09-19T21:16:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
@@ -599,3 +599,12 @@ DoD 18: SKILL.md 155-158 - auf 'so test diff for content and never for absence' 
 NOTES.md: unter ## Unreleased vier Zeilen, alle vier beginnen mit '- ', keine umgebrochene Zeile, kein Fremdtext. Der korrigierte dritte Punkt ('plus every untracked file git does not ignore ... and so is anything your .gitignore covers') ist durch die Messung oben belegt.
 
 Kein Code geaendert, nichts committet, nichts gepusht.
+- **2026-09-19 21:16 · Alexander Sacharov** — review (Runde 3 des Signoff-Zyklus, 2026-09-19): angenommen. Was die Vorlanes nicht schon sagen, sind drei Dinge.
+
+1. Die Mutationsproben zu DoD 16 habe ich unabhaengig gefahren und dabei eine zweite, schwaechere Form mitgeprueft, die bisher niemand probiert hat: 'if diff != "" || worktreeDiff != ""' - genau die Form, die zwei Zeilen tiefer fuer 'commits' schon im Produktivcode steht und die der optimize-Lauf als das eigentliche Risiko benannt hatte. Auch sie faellt rot. Die Begruendung, warum das zweite Ticket im Fixture noetig ist (nur 'keine Commits UND sauberer Baum' faengt beide Formen), ist damit nachgemessen und nicht nur plausibel.
+
+2. Neuer Befund, nicht blockierend: die Proof-Zeilennummern sind durch b5e425b selbst wieder verrutscht. Der Commit fuegt in SKILL.md auf :44-47 drei Zeilen ein, also wandert alles ab :47 um 3 - betroffen sind DoD 9 (:133-181 und :51-56), DoD 12 (:133-161) und DoD 13 (:149-155). Das ist woertlich die Klasse, die Alex am 19.09. 19:42 als Punkt (3) schon einmal zum Rueckwurf gebracht hat. Der Ablauf hat hier eine Luecke: die optimize-Lane der Runde 4 hat die Nummern einmal durchgezaehlt, aber keine Lane zaehlt sie NACH dem letzten Commit nach, der die referenzierte Datei verlaengert. Wer das dauerhaft loesen will, braucht eine Pruefung im Binary und keine weitere Runde - als Beobachtung hier festgehalten, nicht als Auftrag.
+
+3. Dem nicht blockierenden critique-Befund zur Formulierung 'ausser .jaira/tickets und allem, was .gitignore abdeckt' stimme ich zu, und zwar nachgestellt statt nachgedacht: in einem Wegwerf-Repo eine Datei committet, danach in .gitignore eingetragen, danach geaendert - 'git diff HEAD' zeigt sie. core/gitrepo/git.go:196 hat kein --exclude-standard, nur :212 hat es. Die Aussage ist fuer die verfolgte Haelfte zu weit, der Fehler geht aber in die ungefaehrliche Richtung: der Leser erwartet eine Datei NICHT im worktree_diff, die drin ist. Kein Rueckweg deswegen, und der Fall verfolgt+ignoriert kommt auf diesem Board nicht vor.
+
+Kein Code geaendert, kein Commit, nichts gepusht.
