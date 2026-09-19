@@ -23,10 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:03:18Z
+updated-at: 2026-09-19T19:09:20Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-36529
-claimed-at: 2026-09-18T20:52:31Z
+claimed-by: DESKTOP-RFTCH11-92780
+claimed-at: 2026-09-19T19:09:20Z
 mode: conversational
 outcome-what: "internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor; Kommentar und Fehlermeldung nennen den wirklichen Grund (Anker 'done'), Assertion unveraendert"
 outcome-why: "Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende - das tut 'jaira lanes add' seit Runde 2 nicht mehr. Ein gruener Test, dessen Name das Gegenteil dessen sichert, was die Assertion schuetzt, fuehrt den naechsten Leser von insertAfterAnchor in die Irre."
