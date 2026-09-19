@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:46:31Z
+updated-at: 2026-09-19T15:46:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -322,3 +322,12 @@ Kein Defekt im Go-Code gefunden. Gegengeprobt statt geglaubt: repo.Diff ohne err
 
 - In der Klartext-Ausgabe (ohne --json) steht die unversionierte Haelfte unter einer eigenen Ueberschrift '## Worktree diff (not committed yet)'. Der Satz 'uncommitted work in the working tree' ist dort bewusst nicht wiederholt worden, damit die alte Zeichenkette nicht als scheinbare Marke ueberlebt.
 - **2026-09-19 15:46 · Alexander Sacharov** — critique zu 122b371 (nur der neue Commit, DoD 12): der Code stimmt. diff traegt in jedem Zweig von showForLane nur noch die committete Haelfte, worktree_diff die unversionierte; der Zweig 'keine Commits + sauberer Baum' meldet weiter genau eine missing-Zeile (flow.go:640-650), der Zweig 'Worktree nicht lesbar' setzt worktree_error und faellt in dieselbe missing-Zeile, und commits/commits_source reiten jetzt auch dann mit, wenn nur die Worktree-Haelfte da ist (flow.go:686-697). CommitsSource(nil, []) + WithWorktree ergibt in der ersten Runde genau 'worktree' (core/ticket/trim.go:195-223), die Aussage in der Commit-Message haelt. go test ./internal/cli -run ForLane ist gruen. Kein weiterer Leser verliert die Worktree-Haelfte: internal/tui/signoff.go baut seinen Diff selbst und hat nie eine Worktree-Haelfte gehabt, der jaira-dispatcher-Prompt spricht nur generisch vom 'unversionierten Worktree' ohne Marker, und README.md:261, docs/AGENTS.md:17 und .claude/skills/jaira/SKILL.md:333 nennen nur 'den Diff der Commits des Tickets'. Offen sind zwei Stellen, an denen Text und Code auseinandergehen - siehe review-summary.
+- **2026-09-19 15:46 · Alexander Sacharov** — Befund 1 (blockierend): core/release/NOTES.md:19 zeigt weiter auf den abgeschafften Marker. Die Zeile sagt dem Leser, der jaira-role-lane-Prompt zeige einer mitlaufenden critique 'den Diff des Payloads - die Haelfte unterhalb der Zeile uncommitted work in the working tree'. Genau diese Zeile gibt es nicht mehr, und Zeile 18 direkt darueber sagt das auch. Beide Zeilen stehen unter '## Unreleased', also noch nicht veroeffentlicht und nach der Regel im Projekt aenderbar - ein Benutzer, der die Release-Notes mit 'jaira update' liest, bekommt sonst in einem Abschnitt zwei widersprechende Anweisungen, und die aeltere schickt ihn auf die Suche nach einem String, den das Binary nie mehr ausgibt. Fix: in Zeile 19 den Nebensatz ueber die Marker-Haelfte umschreiben (z.B. auf 'den unversionierten Teil des Payloads'), Zeile 18 bleibt wie sie ist.
+
+Befund 2 (blockierend, klein): core/role/builtin/jaira-role-lane/SKILL.md:143 sagt 'On the first round diff is absent, because there are no commits yet'. Der Code setzt payload['diff'] immer (flow.go:679), auch als leeren String; weggelassen wird umgekehrt worktree_diff, wenn es leer ist (flow.go:686-689). Die Asymmetrie steht im Prompt genau verkehrt herum, und ein Leser, der auf Abwesenheit von .diff prueft, bekommt nie true. Fix: 'absent' durch 'leer' ersetzen.
+
+Befund 3 (klein, gleiche Datei): SKILL.md:40-43 knuepft die Worktree-Haelfte an 'where commits_source ends in +worktree'. In der ersten Runde ohne Commits ist commits_source genau 'worktree' ohne Plus, worktree_diff ist trotzdem da. Fuer die mitlaufende critique steht das ab Zeile 144 richtig; der Lane-Absatz oben sollte dieselbe Ausnahme nennen oder schlicht auf 'worktree_diff ist da, wenn es etwas gibt' umgestellt werden.
+
+Befund 4 (kosmetisch): derselbe Absatz hat beim Umschreiben seinen Zeilenumbruch verloren - SKILL.md:43 laeuft ueber die ~78 Spalten der Datei hinaus ('...both there without your going to look. The one commit that escapes...' in einer Zeile). Nur neu umbrechen.
+
+Nicht beanstandet und ausdruecklich in Ordnung: die Klartextausgabe. Der worktree_error steht weiter ueber dem Diff, den er qualifiziert, die Worktree-Haelfte bekommt mit '## Worktree diff (not committed yet)' eine eigene Ueberschrift statt einer Zeile im Codeblock, und dass die Provenienz-Zeile ('N commit(s), from ...') in der ersten Runde ohne Commits nicht gedruckt wird, ist richtig - es gibt dann nichts zu zaehlen.
