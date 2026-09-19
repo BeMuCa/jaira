@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-18T21:10:24Z
+updated-at: 2026-09-19T15:38:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36529
 claimed-at: 2026-09-18T20:52:31Z
@@ -366,3 +366,6 @@ DoD 6: TestListPinsTheCatalogueToTheRunningTag, TestDevBuildSendsNoRefAndSaysSo,
 WAS DABEI AUFFIEL, kein Fund: 'jaira lanes market' listet an diesem Quell-Binary critique und optimize weiterhin. Das ist richtig so - market liest das Verzeichnis lanes/ des Default-Branches, und dort liegen die drei noch, weil dieser Zweig nicht gemerged ist. Die NOTES-Zeile 'jaira lanes market no longer offers them' gilt ab dem Tag, der den Umzug enthaelt, und genau dorthin zeigt der neue ?ref=.
 
 Nicht zu diesem Ticket: '?? .jaira/milestones/' liegt unverfolgt im Baum, stammt aus 0.3.0.
+- **2026-09-19 15:38 · Alexander Sacharov** — Nachpruefung vor der Menschen-Lane (nichts neu gebaut, nur geprueft): go build ./... , go vet ./... und go test ./... -count=1 im Zweig feat/VSC1GW alle sauber, RC=0, keine uebersprungenen Pakete. Alle 13 in den DoD-Beweisen genannten Tests existieren und laufen; alle Datei-Beweise stimmen am Arbeitsbaum (internal/cli/tickets.go Filter 'l.Builtin && !l.Default', core/lane/order.go anchorIndex, internal/cli/lanes.go 'after' in Erfolgszeile und JSON, core/lane/builtin/25-/26-/27- mit 'default-board: false', core/market/market.go apiBase()/pinnedRef()/Unpinned(), fuenf Zeilen unter '## Unreleased'). Einzige Abweichung: der Beweis der letzten Planzeile nennt internal/cli/lanes_test.go:954, die Funktion TestLanesAddAfterRemoveLandsAfterItsAnchor steht auf 962 - Zeilendrift, der Test ist der richtige.
+
+Zu Frage (2), Empfehlung des Dispatchers, keine Entscheidung: so lassen, market NICHT zusaetzlich filtern. Begruendung: die Bindung ?ref=v<version> aus diesem Ticket loest genau dieses Problem schon. Ein ausgeliefertes Binary fragt den Katalog SEINES Tags ab - der Tag, der diesen Zweig enthaelt, hat lanes/critique.md nicht mehr, also bietet market dort nichts doppelt an; und ein 0.3.0-Binary, das die drei Lanes nicht eingebettet traegt, bekommt sie aus dem Katalog voellig zu Recht. Doppelt angeboten wird nur auf einem dev-Build, der ohne ref den HEAD von master liest, und auch nur bis dieser Zweig auf master ist. Das Fenster ist also 'jaira-Entwickler, bis zum Merge'. Ein Filter kostet dagegen eine neue Abhaengigkeit von core/market auf lane.Builtins, Test, NOTES-Zeile - und nimmt einen Fall weg, den es wirklich gibt: eine Katalogfassung einer Lane bewusst gegen die eingebettete zu holen. An der Scope-Regel aus CLAUDE.md gemessen ist das Wachstum fuer ein Problem, das der Tag von selbst beendet.
