@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:49:08Z
+updated-at: 2026-09-19T19:49:11Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -122,7 +122,7 @@ review-check: |-
 - [x] core/role/builtin/jaira-role-lane/SKILL.md:123-161 beschreibt den Payload so, wie dieser Change ihn ausliefert: der Diff hat zwei Haelften, getrennt von der Zeile 'uncommitted work in the working tree', die zweite ist das Urteilsobjekt der nebenher laufenden Kritik; commits_source ('+worktree', auf der ersten Runde 'worktree') sagt, welche Haelften da sind; 'complete: false' auf der ersten Runde wird mit outcome-what/outcome-resolves begruendet und nicht mehr mit einem fehlenden Diff; die drei git-Kommandos bleiben als Rueckfallweg fuer den stumm verworfenen Worktree. Keine Aussage in der Datei behauptet mehr, der Payload-Diff sei nur die frueheren Runden.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:129-181 neu geschrieben; zusaetzlich :51-56 — die Zaehlanweisung sagt jetzt, dass commits_unavailable die Zahl stimmen und den Diff kurz laesst; grep -rn 'EARLIER|do not judge the diff|git has no commits for this ticket yet' findet in core/ und internal/ nur noch die missing-Meldung in flow.go
 - [x] Ein Payload, dessen Worktree-Anteil nicht gelesen werden konnte, sagt das: schlaegt repo.WorktreeDiff fehl, traegt der Payload den Fehlertext neben commits_source, statt sich von einem sauberen Baum nicht zu unterscheiden. complete bleibt true - die Lane wird informiert, nicht blockiert. Mit Test.
-  proof: internal/cli/flow.go:604-631 (worktreeErr) und :673-675 (Payload-Schluessel); Klartext :717-724 steht ueber dem Diff und nur neben einem, weil die missing-Zeile denselben Text sonst ein zweites Mal traegt; Tests TestForLaneSaysWhenTheWorktreeCouldNotBeRead und TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce, beide gegengeprobt
+  proof: internal/cli/flow.go:627-634 (worktreeErr) und :700-701 (Payload-Schluessel); Klartext :729-730 steht ueber dem Diff und nur neben einem, weil die missing-Zeile denselben Text sonst ein zweites Mal traegt; Tests TestForLaneSaysWhenTheWorktreeCouldNotBeRead und TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce, beide gegengeprobt
 - [x] Ein SHA, zu dem git keinen Patch zeigen kann (rebased, cherry-picked, nicht gefetcht), wird im Payload benannt und nicht bloss als Zeile '(not available locally)' mitten im Patch versteckt: repo.Diff gibt die nicht zeigbaren SHAs zurueck, der Payload nennt sie, und der unerreichbare Fehlerzweig in flow.go faellt weg. Mit Test.
   proof: core/gitrepo/git.go:88-114 Diff gibt die nicht zeigbaren SHAs zurueck statt eines nie gesetzten error; internal/cli/flow.go:600-602,667-671; Test TestForLaneNamesTheCommitsGitCouldNotShow
 - [x] Die committete und die unversionierte Haelfte des Lane-Payloads sind zwei getrennte Payload-Schluessel (diff und worktree_diff) statt eines Strings mit der Textmarke 'uncommitted work in the working tree'. Nachgestellt am Payload dieses Tickets selbst: kein Leser kann die Grenze mehr verfehlen, weil es keine Textmarke mehr gibt, die im Patch-Inhalt noch einmal vorkommen kann.
