@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:54:08Z
+updated-at: 2026-09-19T19:58:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -52,6 +52,25 @@ review-summary: |-
   8. Fuenf Zeilen unter '## Unreleased' in core/release/NOTES.md, je eine pro Punkt; der Zeilenscan liest genau fuenf. docs/COMMANDS.md:153 und die Hilfetexte sagen nicht mehr 'appending'.
 
   WAS DAMIT DAS PROBLEM LOEST: die drei Lanes sind ohne Netz installierbar, weil Installable() sie schon vorher angeboten haette, sobald sie eingebettet sind; sie draengen sich keinem Board auf, weil setUp() jetzt Default liest; und ein frisches Board erfaehrt von ihnen, weil der Fuss sie nennt. Nachgestellt: 'jaira lanes add testing' mit JAIRA_MARKET_API auf 127.0.0.1:1 installiert sie, danach 'add optimize' und 'add critique' - Endordnung in-progress critique optimize testing human, der Fuss schweigt danach.
+  critique (Runde 5, nur DoD 7 + DoD 8 + Kosmetik geprueft; DoD 1-6 sind geschlossen und wurden nicht wieder aufgemacht, ebenso die beiden von Alex entschiedenen Punkte - market filtert eingebettete Lanes nicht, und der Vorrang 'Builtin verdeckt adoptierte Fassung' bleibt).
+
+  BEFUND 1, blockierend, lanes/README.md:47: die Tabelle 'What is here' sagt in der Spalte 'Sits' fuer secrets-scan weiter 'after implementing, once you move the column there'. Das ist genau der Satz aus der Anhaenge-Zeit, den DoD 7 aus der Datei haben will - lanes/secrets-scan.md traegt 'after: in-progress', und 'jaira lanes add secrets-scan' setzt die Lane seit diesem Ticket selbst dorthin (core/lane/order.go insertAfterAnchor/anchorIndex). Der Benutzer muss die Spalte NICHT mehr verschieben. Die Zeile widerspricht damit dem Absatz 'Where it lands' 14 Zeilen weiter unten, der es richtig beschreibt. Zu tun: die Klausel ', once you move the column there' streichen - 'after implementing' allein stimmt, so wie 'after review' bei changelog-writer stimmt. Das ist der Fehlermodus, vor dem das Ticket gewarnt hat: eine falsche Aussage ersetzt, eine zweite derselben Familie stehen gelassen.
+
+  BEFUND 2, klein, nicht blockierend, lanes/README.md:66-69: 'Only an anchor nothing in the chain can resolve parks the lane before the first terminal lane, and that case says so - a warning on stderr'. Eine Lane ganz ohne 'after:' landet an derselben Stelle, aber OHNE Warnung (insertAfterAnchor warnt nur bei l.After != ""). Vorschlag: '... or a lane with no after: at all, which lands there silently'. Beide Katalogdateien tragen ein after:, deshalb schlaegt es heute nicht durch.
+
+  BEFUND 3, kein Fund, festgehalten: core/release/NOTES.md:131 traegt denselben veralteten Satz ('a freshly added lane lands as the rightmost column until you move its line') - er steht unter '## 0.1.1', also in geschlossener Geschichte, und beschreibt das Binary von damals korrekt. Nach CLAUDE.md darf dort nichts nachtraeglich geaendert werden. Bleibt bewusst stehen.
+
+  NACHGEPRUEFT, alles bestaetigt:
+  - ls lanes/ = README.md, changelog-writer.md, secrets-scan.md. Jede in der README genannte Datei existiert; 'jaira lanes adopt <path>' und 'jaira lanes template' existieren (internal/cli/lanes.go:297, internal/cli/tickets.go:1292), core/lane/shipped_test.go existiert.
+  - Der Absatz 'Where it lands' stimmt gegen core/lane/order.go: Einfuegen bei anchorIndex()+1, nur die neue id bewegt sich, Kette laeuft ueber nicht installierte Lanes (byID aus installable), Fallback terminalIDIndex mit Warnung.
+  - NOTES.md: genau EINE neue Zeile unter '## Unreleased' (jetzt sechs), eine Zeile, nicht umbrochen, als Anweisung formuliert ('Rename your own copy ...'), und sie sagt dem Betroffenen, was mit seiner bearbeiteten Datei passiert ist und wie er sie zurueckbekommt. Keine zusaetzliche Zeile fuer die README-Korrektur - richtig so, die ist nicht client-facing.
+  - TestBuiltinShadowsAnAdoptedCopyOfTheSameID selbst mutiert gegengeprueft: in Installable() den Glob vor die Builtins gezogen -> FAIL 'the adopted file won' (order_test.go:117); order.go wieder hergestellt, git diff leer. Der Test haelt das Verhalten wirklich fest.
+  - TestBlankVersionStillReadsAsASentence ebenfalls mutiert gegengeprueft: Unpinned() auf die alte Fassung zurueckgesetzt -> FAIL mit 'version ,'; Datei wieder hergestellt. Die Kosmetik in core/market/market.go Unpinned() ist an der richtigen Stelle (Callee, nicht Caller) und ohne NOTES-Zeile korrekt, weil der Zweig nur ueber -ldflags erreichbar ist.
+  - internal/cli/lanes.go:74 als SECHSTE Fundstelle bestaetigt und korrigiert; der neue Kommentar stimmt gegen den Code darunter (SaveOrder(append(ids, l.ID)) haengt bei 'use' wirklich an). Eigene, unabhaengige Suche an zwei Ankern ('lanes add' und 'last line|rightmost|last column|end of (column) order|appends (it|the lane)') ueber *.go und *.md ohne .jaira/ und .planning/ ergab keine weitere lebende Fundstelle ausser Befund 1 und der geschlossenen NOTES-Historie.
+  - Der Ehrlichkeitspunkt steht als Notiz vom 19:47 auf dem Ticket und sagt klar 'die Grep-Abdeckung aus Runde 4 traegt NICHT' samt Grund; er behauptet auch nicht, jetzt erschoepfend zu sein. Das genuegt Punkt A der Entscheidung.
+  - go build ./... , go vet ./... , go test ./... -count=1 im Arbeitsbaum feat/VSC1GW: alle gruen, RC=0.
+
+  Randnotiz ohne Handlungsbedarf: der Beweis zu DoD 5 nennt 'fuenf Zeilen' unter '## Unreleased', es sind durch DoD 8 jetzt sechs. DoD 5 ist geschlossen, der Beweistext ist nur zeitlich ueberholt.
 review-gaps: |-
   internal/tui/lanes.go: addFromCatalogue und addAvailable trugen denselben Sechszeiler samt Kommentar hinter einer sofort ueberschriebenen ls.msg-Zuweisung - in einen Helfer addedMsg(id, warnings) gefaltet, Verhalten unveraendert. Stehen gelassen mit Begruendung: terminalIDIndex neben terminalIndex (zwei Typen, in Durchgang 1 geschlossen; beide Fallbacks am Code auf gleiche Position gegengeprueft), die Unpinned()-Notiz zweimal in internal/cli/market.go (spiegelt die vorhandene Overridden()-Doppelung), die after-Nachsuche in lane.Add (ein dritter Rueckgabewert fuer eine Schleife ueber 13 Eintraege auf einem einmaligen Pfad) und der ''-Zweig in pinnedRef (Vorsicht gegen -ldflags, nicht unerreichbar). Kein toter Code; lane.Installable() auf dem 'jaira lanes'-Pfad ist netzfrei (embedded Builtins plus ein Glob), die Startzeit-Regel bleibt unberuehrt.
   review (Runde 1). Gegengeprueft, nicht geglaubt: go build ./... , go vet ./... und go test ./... -count=1 alle RC=0, keine uebersprungenen Pakete; alle 13 in den DoD-Beweisen genannten Testfunktionen existieren an den genannten Dateien; jede Datei-Fundstelle stimmt am Arbeitsbaum; die Entscheidung vom 2026-09-19 ist eingehalten - in core/market/market.go kommt weder 'Builtin' noch 'Default' vor, market filtert nichts zusaetzlich. Die DoD ist damit erfuellt. Drei Befunde, alle ausserhalb des Go-Codes oder unterhalb der Rueckweis-Schwelle:
