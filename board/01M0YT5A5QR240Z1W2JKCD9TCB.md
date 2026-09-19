@@ -8,9 +8,11 @@ goal: "Eine Lane-Datei kann erklaeren, dass sie eine eingebaute Lane ersetzen wi
 context: "Berks Board meldet bei jedem Befehl: 'lane review.md: id \"review\" overrides the built-in lane of the same name'. Die Warnung stimmt - er hat review.md am 20.08. bewusst zu einer Menschen-Lane gemacht - aber sie ist damit nutzlos: eine Warnung, die immer kommt, wird nicht mehr gelesen. Vorschlag: ein Feld wie 'overrides: review' im Lane-Kopf laesst sie verstummen, alles andere warnt weiter."
 definition-of-done: Mit dem Feld ist die Warnung weg; ohne das Feld kommt sie unveraendert; jaira lanes show zeigt das Feld
 blocked-by: []
-commits: []
+commits:
+  - 6c5d81b28e18049c24bafd21a1d639c263474a32
+  - 5a1eb101fb1aef17677ce555db627c7f55a90cb1
 created-at: 2026-08-26T10:34:25Z
-updated-at: 2026-09-14T15:42:03Z
+updated-at: 2026-09-18T07:02:56Z
 claimed-by: EE-3NX6GL3-2641173
 claimed-at: 2026-08-31T16:33:58Z
 updated-by: Alexander Sacharov
