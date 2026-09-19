@@ -37,10 +37,12 @@ Does your lane judge that payload's diff? The ordinary `critique`, `testing`
 and `review` lanes do — and the payload names what it was built from. Its
 `commits` field lists the SHAs the diff covers and `commits_source` says where
 they came from: the diff is the ticket's whole committed history, not a slice
-of it, and where `commits_source` ends in `+worktree` the uncommitted work is
-in front of you too, in a key of its own — `worktree_diff`, never mixed into
-`diff` — so a lane that changed no code and a conversational ticket that has
-not been committed yet are both there without your going to look. The one commit that escapes is a commit that neither names the ticket id
+of it, and whenever there is uncommitted work it is in front of you too, in a
+key of its own — `worktree_diff`, never mixed into `diff`. `commits_source`
+then ends in `+worktree`, or is plain `worktree` on a first round that carries
+no commits at all, so a lane that changed no code and a conversational ticket
+that has not been committed yet are both there without your going to look. The
+one commit that escapes is a commit that neither names the ticket id
 nor touches its file; that is what the rule "every commit names the ticket id"
 is for, and you can see it by counting `commits` against
 `git log origin/HEAD..HEAD --oneline`. That count proves the LIST is whole, not
@@ -140,10 +142,13 @@ payload it occurred nine times, the first of them some nine hundred lines above
 the real split. Two keys cannot be confused that way, and there is no marker
 left to look for.
 
-On the first round `diff` is absent, because there are no commits yet, and
-`worktree_diff` is everything there is. `commits_source` says which halves are
-there: it ends in `+worktree` when the uncommitted half is present, and on the
-first round it is plain `worktree`.
+On the first round `diff` is empty, because there are no commits yet, and
+`worktree_diff` is everything there is. Read the two keys the way the payload
+writes them: `diff` is always present and is an empty string when there is
+nothing committed, while `worktree_diff` is left out entirely when the working
+tree has nothing to show — so test `diff` for content, never for absence.
+`commits_source` says which halves are there: it ends in `+worktree` when the
+uncommitted half is present, and on the first round it is plain `worktree`.
 
 `complete: false` on that first round is still normal, but not because the diff
 is missing — it is not. The critique lane also requires `outcome-what` and
