@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:14:18Z
+updated-at: 2026-09-19T20:14:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70053
 claimed-at: 2026-09-19T20:14:18Z
@@ -56,6 +56,15 @@ review-summary: |-
   Alle drei sind Zahlen, keine falschen Symbole oder Testnamen; Funktionen, Dateien und Testnamen stimmen ueberall.
 
   Keine NOTES.md-Zeile hinzugefuegt: die Entscheidung, ob der ## Unreleased-Abschnitt eine fuenfte Zeile ueber denselben Payload bekommt, gehoert dem Maintainer. Die Begruendung des Workers (neue Tests sieht ein Benutzer nicht; der SKILL.md-Satz praezisiert Verhalten, das vier Zeilen schon ankuendigen) traegt.
+  Runde 4, beurteilt ist genau f1994ad ("test(7XXT00): pin the two untested worktree payload branches"); DoD 1..13 sind angenommene Arbeit und wurden nicht wieder aufgemacht. Die Runde aendert keinen Produktivcode - sie nagelt zwei Zusagen fest, die bisher nur als Prosa in core/release/NOTES.md und im Rollen-Prompt standen, und spricht eine dritte aus.
+
+  Erstens core/ticket/trim_test.go:315-331, TestWithWorktreeNamesTheWorktreeBesideTheCommitSource: eine Tabelle ueber beide Zweige von ticket.WithWorktree (core/ticket/trim.go:218-223) mit drei Untertests - leere Quelle -> "worktree", "git" -> "git+worktree", "git+ticket" -> "git+ticket+worktree". Die Funktion hatte vorher gar keinen Test.
+
+  Zweitens internal/cli/forlanecommits_test.go:316-353, TestForLaneLeavesTheWorktreeKeyOutOfACleanTree: baut ueber forLaneGitFixture einen Baum, in dem nach einem Aufwaermlauf des CLI nichts Unversioniertes mehr liegt, und prueft am Payload, dass der Schluessel worktree_diff FEHLT - nicht, dass er leer ist. Dazu: kein worktree_error, commits_source == "git" ohne Plus, complete true. Gelesen wird der Payload bewusst als map[string]any statt durch das vorhandene forLanePayload-Struct, weil dessen Feld ein blanker string ist und json.Unmarshal fehlenden und leeren Schluessel auf denselben Wert abbildet.
+
+  Drittens core/role/builtin/jaira-role-lane/SKILL.md:44-48: ein Satz in dem Abschnitt, den critique/testing/review lesen - die Worktree-Haelfte ist repo-weit und nicht ticket-weit, sie traegt jede unversionierte Aenderung ausser .jaira/tickets, und nichts kann die fremde von der eigenen trennen, weil nichts weiss, welche Dateien einem Ticket gehoeren. Kein Code-Fix, weil es keinen gibt.
+
+  Viertens das Ticket selbst: DoD 14 und 15 angelegt und abgehakt, dazu die nach bcf403b verrutschten Proof-Zeilennummern in DoD 1, 6, 8, 9, 10, 11, 12 und 13 repariert.
 review-gaps: |-
   Ein Befund, nachgemessen an diesem Ticket selbst, plus zwei kleinere.
 
