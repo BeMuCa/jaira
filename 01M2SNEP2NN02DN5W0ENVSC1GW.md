@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:01:30Z
+updated-at: 2026-09-19T20:01:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -183,7 +183,7 @@ review-check: |-
   proof: lanes/README.md:47 - 'Sits' lautet jetzt nur 'after implementing'; nachgestellt am gebauten Binary: 'jaira lanes add secrets-scan' auf frischem Board -> 'after in-progress', Reihenfolge ... in-progress secrets-scan human ...
 - [x] Runde 6, kleiner Fund: lanes/README.md 'Where it lands' haelt auch fest, dass eine Lane ganz ohne after: still an derselben Stelle parkt
   proof: lanes/README.md:66-70 - 'no after: at all parks it there too and says nothing'; am Code gegengeprueft: core/lane/order.go insertAfterAnchor warnt nur unter 'if l.After != ""'
-- [ ] Runde 6: Beweis von DoD 5 auf sechs Zeilen korrigiert; go build/vet/test -count=1 gruen
+- [~] Runde 6: Beweis von DoD 5 auf sechs Zeilen korrigiert; go build/vet/test -count=1 gruen
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
