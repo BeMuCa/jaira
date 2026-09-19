@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:42:09Z
+updated-at: 2026-09-19T19:42:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -440,3 +440,4 @@ Selbst nachgestellt, nicht nur gelesen: der saubere Worktree (.jaira/milestones 
 Kein Defekt im Go-Code. Angesehen und in Ordnung: repo.Diff ohne error (jeder nicht zeigbare SHA wird zurueckgegeben), die Leerpatch-Pruefung in WorktreeDiff (leere Datei vs. unlesbarer Pfad, per os.Stat), runTolerating mit ee.Exited() gegen den Signal-Fall, commitsSourceLabel kennt die worktree-Token nicht und braucht sie nicht (signoff.go ruft CommitsSource direkt, nie WithWorktree), MergeCommits gibt eine nicht-nil leere Slice zurueck, der Payload traegt also '[]' statt 'null'.
 
 Drei offene Punkte, alle in review-gaps ausgeschrieben, keiner blockierend: (1) die zwei Payload-Zweige ohne Test - ticket.WithWorktree hat gar keinen, und dass worktree_diff bei sauberem Baum fehlt, behauptet keiner; ich empfehle, beide hier zu schliessen, weil genau diese zwei Zusagen in NOTES.md:20 und SKILL.md:40-44/145-149 woertlich stehen und sonst nur Prosa sind. (2) Der Worktree-Anteil ist repo-weit und nicht ticket-weit - Befund 2 aus Runde 1, unveraendert offen, nicht hier reparierbar. (3) Zeilennummern in den Proofs von DoD 1 und DoD 13 sind nach bcf403b gewandert (591-608 -> 612-613, 678 -> 673); die Symbole loesen auf, die Nummern nicht.
+- **2026-09-19 19:42 · Alexander Sacharov** — Entscheidung von Alex am 2026-09-19, ausdruecklich in der Session: das Ticket geht aus signoff zurueck nach in-progress. Der Punkt aus review-gaps ueber die fehlenden Tests wird in DIESEM Ticket geschlossen, nicht in einem eigenen Folge-Ticket. Konkret drei Dinge: (1) ticket.WithWorktree hat heute gar keinen Test - die Funktion kommt nur an core/ticket/trim.go:218 und internal/cli/flow.go:637 vor; (2) nichts prueft, dass worktree_diff bei sauberem Arbeitsbaum FEHLT statt leer dazustehen, obwohl NOTES.md und SKILL.md genau das dem Leser versprechen ('test diff for content, never for absence'); (3) die Proof-Zeilennummern von DoD 1 und DoD 13 sind nach bcf403b verrutscht - Symbole und Testnamen stimmen, die Zahlen nicht. Dazu kommt als Dokumentation, nicht als Code-Fix, der Satz in SKILL.md, dass die Worktree-Haelfte des Payloads repo-weit ist. Die review-Lane hat diesen Punkt als nicht blockierend und nicht sauber behebbar eingestuft; das bleibt so, es wird nur ausgesprochen.
