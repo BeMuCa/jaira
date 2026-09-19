@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:48:12Z
+updated-at: 2026-09-19T19:48:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -131,7 +131,8 @@ review-check: |-
   proof: core/release/NOTES.md:19; core/role/builtin/jaira-role-lane/SKILL.md:40-45 und 143-149; belegt an internal/cli/flow.go:678 (diff immer gesetzt) gegen flow.go:686-688 (worktree_diff nur wenn nicht leer) und core/ticket/trim.go:218-222 (WithWorktree("") == "worktree")
 - [x] ticket.WithWorktree hat einen Test ueber beide Zweige (leerer Worktree-Diff: Feld bleibt weg; nicht leerer: Feld wird gesetzt), und ein Test haelt fest, dass worktree_diff im Lane-Payload bei sauberem Arbeitsbaum FEHLT statt leer zu sein. Beide Garantien stehen heute nur als Prosa in core/release/NOTES.md und in jaira-role-lane/SKILL.md ('test diff for content, never for absence') - ohne Test ist das nur eine Behauptung.
   proof: core/ticket/trim_test.go TestWithWorktreeNamesTheWorktreeBesideTheCommitSource deckt beide Zweige (leere Quelle -> 'worktree', 'git' -> 'git+worktree', 'git+ticket' -> 'git+ticket+worktree'); internal/cli/forlanecommits_test.go TestForLaneLeavesTheWorktreeKeyOutOfACleanTree liest den Payload als rohe Map und prueft, dass der Schluessel worktree_diff FEHLT, nicht dass er leer ist. Beide gegengeprobt am Produktivcode: payload[worktree_diff] unbedingt gesetzt laesst den CLI-Test fallen, WithWorktree ohne den Leer-Zweig (bzw. immer SourceWorktree) laesst je einen Untertest fallen.
-- [ ] core/role/builtin/jaira-role-lane/SKILL.md sagt in einem Satz, dass die Worktree-Haelfte des Payloads REPO-WEIT ist und nicht ticket-weit: repo.WorktreeDiff fragt git mit ':/' und nimmt nur .jaira/tickets aus, also steht in worktree_diff jede unversionierte Aenderung im Repo, auch solche, die mit dem Ticket nichts zu tun haben. Sichtbar an diesem Ticket selbst, wo .jaira/milestones/ im worktree_diff landet. Kein Code-Fix - niemand kann wissen, welche Dateien zu einem Ticket gehoeren; der ehrliche Weg ist, es dem Leser zu sagen.
+- [x] core/role/builtin/jaira-role-lane/SKILL.md sagt in einem Satz, dass die Worktree-Haelfte des Payloads REPO-WEIT ist und nicht ticket-weit: repo.WorktreeDiff fragt git mit ':/' und nimmt nur .jaira/tickets aus, also steht in worktree_diff jede unversionierte Aenderung im Repo, auch solche, die mit dem Ticket nichts zu tun haben. Sichtbar an diesem Ticket selbst, wo .jaira/milestones/ im worktree_diff landet. Kein Code-Fix - niemand kann wissen, welche Dateien zu einem Ticket gehoeren; der ehrliche Weg ist, es dem Leser zu sagen.
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:44-48 - ein Satz in dem Abschnitt, der worktree_diff beschreibt: die Haelfte ist repo-weit, traegt jede unversionierte Aenderung ausser .jaira/tickets, und nichts kann sie vom Ticket trennen, weil nichts weiss, welche Dateien ein Ticket besitzt. Kein Code-Fix.
 
 ## Options
 
