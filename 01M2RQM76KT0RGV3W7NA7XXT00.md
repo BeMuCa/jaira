@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:16:48Z
+updated-at: 2026-09-19T20:42:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70053
 claimed-at: 2026-09-19T20:14:18Z
@@ -195,6 +195,9 @@ review-check: |-
   proof: core/ticket/trim_test.go TestWithWorktreeNamesTheWorktreeBesideTheCommitSource deckt beide Zweige (leere Quelle -> 'worktree', 'git' -> 'git+worktree', 'git+ticket' -> 'git+ticket+worktree'); internal/cli/forlanecommits_test.go TestForLaneLeavesTheWorktreeKeyOutOfACleanTree liest den Payload als rohe Map und prueft, dass der Schluessel worktree_diff FEHLT, nicht dass er leer ist. Beide gegengeprobt am Produktivcode: payload[worktree_diff] unbedingt gesetzt laesst den CLI-Test fallen, WithWorktree ohne den Leer-Zweig (bzw. immer SourceWorktree) laesst je einen Untertest fallen.
 - [x] core/role/builtin/jaira-role-lane/SKILL.md sagt in einem Satz, dass die Worktree-Haelfte des Payloads REPO-WEIT ist und nicht ticket-weit: repo.WorktreeDiff fragt git mit ':/' und nimmt nur .jaira/tickets aus, also steht in worktree_diff jede unversionierte Aenderung im Repo, auch solche, die mit dem Ticket nichts zu tun haben. Sichtbar an diesem Ticket selbst, wo .jaira/milestones/ im worktree_diff landet. Kein Code-Fix - niemand kann wissen, welche Dateien zu einem Ticket gehoeren; der ehrliche Weg ist, es dem Leser zu sagen.
   proof: core/role/builtin/jaira-role-lane/SKILL.md:44-48 - ein Satz in dem Abschnitt, der worktree_diff beschreibt: die Haelfte ist repo-weit, traegt jede unversionierte Aenderung ausser .jaira/tickets, und nichts kann sie vom Ticket trennen, weil nichts weiss, welche Dateien ein Ticket besitzt. Kein Code-Fix.
+- [ ] Die zweite Haelfte der Zusage 'diff ist immer da, notfalls ein leerer String' (internal/cli/flow.go:673) haelt ein Test fest: der Payload traegt den Schluessel diff auch dann, wenn er leer ist. Eine Mutation, die diff nur bedingt setzt - so wie worktree_diff -, muss den Test rot machen. Am besten eine weitere Zusicherung in dem Test, der die andere Haelfte schon abdeckt.
+- [ ] Der Satz in core/role/builtin/jaira-role-lane/SKILL.md, der die repo-weite Worktree-Haelfte beschreibt, nennt die zweite Ausnahme mit: core/gitrepo/git.go ruft ls-files mit --exclude-standard, also stehen gitignorierte unverfolgte Dateien NICHT im worktree_diff. Auf einem Board, das jaira init bis zu jaira share gitignoriert, ist das ganze .jaira/. Wer 'jede unversionierte Aenderung ausser .jaira/tickets' liest und auf einem ungeteilten Board arbeitet, bekommt heute das Gegenteil dessen, was der Satz verspricht.
+- [ ] Der Satz 'test diff for content, never for absence' in core/role/builtin/jaira-role-lane/SKILL.md sagt ausdruecklich, worauf er sich bezieht: er gilt fuer diff und gerade nicht fuer worktree_diff, der genau umgekehrt auf Abwesenheit des Schluessels geprueft wird. Ein eiliger Leser darf ihn nicht mehr auf worktree_diff beziehen koennen.
 
 ## Options
 
