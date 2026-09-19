@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:10:36Z
+updated-at: 2026-09-19T19:10:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-92780
 claimed-at: 2026-09-19T19:09:20Z
@@ -64,6 +64,12 @@ review-gaps: |-
   NICHT BEANSTANDET, damit es niemand nochmal aufmacht: die TUI-Zeile addedMsg() nennt die Nachbarlane nicht, aber reload() zeichnet die Spalten neu und setzt den Cursor auf die neue Lane - die Position ist dort sichtbar, anders als in der CLI. Und die dritte .Builtin-Umstellung in migrateLegacy(), die der Plan nicht vorsah, ist richtig und begruendet: ohne sie bekaeme ein Alt-Board ohne order-Datei drei Lanes, die es nie hatte.
 test-verdict: "pass: go build/vet sauber, volle Suite mit -race und geleertem Cache gruen (RC=0), DoD 1-6 am Arbeitsbaum geprueft, Verhalten an einer frischen Testdoska und an einem Binary mit -X main.version=0.1.4 nachgestellt"
 question: "Die Pruefschleife liegt im Binary, Suite und Verhalten sind geprueft - nimmst du die Arbeit an, oder soll noch etwas hinein? Zwei Punkte zum Mitentscheiden: (1) Die Arbeit ist NICHT committet - conversational-Modus, die Commit-Zeile gehoert dir. (2) 'jaira lanes market' bietet critique und optimize an einem dev-Build weiter an, weil lanes/ auf master noch existiert; das verschwindet erst mit dem Tag, der diesen Zweig enthaelt - soll das so bleiben, oder soll market eingebettete Lanes zusaetzlich herausfiltern?"
+review-verdict: |-
+  review (Runde 1): der Diff erfuellt die Definition of Done, alle sieben Punkte samt Beweisen sind am Arbeitsbaum und am gebauten Binary nachgestellt; build, vet und die volle Suite sind gruen; die Entscheidung vom 2026-09-19 (market filtert eingebettete Lanes NICHT) ist im Code so umgesetzt, wie sie gefallen ist. Im Go-Code habe ich keinen Defekt gefunden - die Kettenaufloesung, der Zyklusschutz, der terminale Fallback und die url.Parse-Variante des ?ref= halten auch den Faellen stand, die ich selbst nachgestellt habe.
+
+  Das eine, was ich NICHT durchwinken kann, ist lanes/README.md: die Datei beschreibt weiter einen Katalog mit critique und optimize darin und einen 'lanes add', der anhaengt - beides hat dieser Commit abgeschafft. Sie ist damit die einzige verbliebene Stelle im Repository, die dem Leser etwas erzaehlt, was das Binary nicht mehr tut, und sie ist ausgerechnet die Titelseite des Katalogs. Das ist eine Nachtragsarbeit von wenigen Minuten, kein Konstruktionsfehler - deshalb Weitergabe an signoff und nicht zurueck nach in-progress.
+
+  Menschensache, und darum nicht von mir entschieden: ob Befund 1 noch auf diesem Ticket erledigt wird (die Datei gehoert sachlich dazu, und 'client-facing' im Sinne von CLAUDE.md ist sie nicht - sie ist Repository-Dokumentation, keine NOTES-Zeile), und ob Befund 2 - eine schon adoptierte, angepasste Fassung von critique/optimize/testing wird ab jetzt still von der eingebetteten ueberdeckt - eine eigene NOTES-Zeile bekommt oder als hinnehmbar gilt. Ich bin nicht das letzte Wort.
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
