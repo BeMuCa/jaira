@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:03:27Z
+updated-at: 2026-09-19T19:04:54Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-11257
-claimed-at: 2026-09-19T15:46:16Z
+claimed-by: DESKTOP-RFTCH11-62754
+claimed-at: 2026-09-19T19:04:54Z
 mode: ""
 outcome-what: "NOTES.md Zeile 20 beschreibt den Lane-Payload wieder so, wie er heute ist: der unversionierte Worktree steht neben dem Commit-Diff statt daran angehaengt, und commits_source endet auf +worktree oder heisst auf der ersten Runde ohne Commits schlicht worktree."
 outcome-why: "Die Zeile stammte aus der Runde vor 122b371 und widersprach Zeile 18 im selben ## Unreleased-Abschnitt; wer sie las, suchte den unversionierten Teil im diff-Schluessel statt in worktree_diff."
