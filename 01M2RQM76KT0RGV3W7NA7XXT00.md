@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:09:52Z
+updated-at: 2026-09-19T19:10:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-62754
 claimed-at: 2026-09-19T19:04:54Z
@@ -429,3 +429,12 @@ Die vier Payload-Zweige nach dem optimize-Commit bcf403b (Wegfall der Variablen 
 - Ueberhaupt keine Commits: nur indirekt behauptet. Der Unter-Test 'without a diff' laeuft in einer Fixture ohne Commits durch, prueft dort aber nur den Fehlertext, nicht commits_source=='worktree' ohne Plus. ticket.WithWorktree hat ueberhaupt keinen Test (grep: nur trim.go:218 und flow.go:637).
 
 Zusammengefasst: zwei der vier Zweige sind von Tests festgenagelt, zwei nur vom Happy Path mitgenommen. Kein Defekt gefunden — eine Luecke in der Testabdeckung, kein Blocker fuer dieses Ticket.
+- **2026-09-19 19:10 · Alexander Sacharov** — review (Runde 2, ganzer Branch fix/7XXT00 mit 13 Commits, nicht nur die vier nach dem Rueckwurf): angenommen, kein Blocker, kein Zurueckwerfen.
+
+Der Befund, wegen dem Alex am 2026-09-19 aus dem Signoff zurueckgeworfen hat, ist geschlossen und von mir selbst nachgemessen statt der Notiz geglaubt. Mit einem frisch aus diesem Worktree gebauten Binary: der Payload traegt diff UND worktree_diff als getrennte Schluessel, commits_source 'git+worktree', complete true, commits 13 gegen 13 Commits auf dem Branch. 'grep -c "^uncommitted work in the working tree$"' auf .diff findet 0 - die Marke existiert als Grenze nicht mehr, von ihren 49 Vorkommen im Patch ist keines praefixlos. Ausserhalb von .jaira steht die Zeichenkette nur noch dreimal als Geschichte (NOTES.md:18, SKILL.md:139, Kommentar flow.go:561) und einmal als Abwesenheitstest (forlanecommits_test.go:176).
+
+Selbst nachgestellt, nicht nur gelesen: der saubere Worktree (.jaira/milestones beiseite -> worktree_diff fehlt, commits_source 'git', complete true, danach zurueckgelegt) und ein unverfolgter Pfad mit Umlaut UND Leerzeichen ('Änderung mit Leerzeichen.txt' -> steht mit echtem Namen in worktree_diff). Gates gruen: go build, go vet ./..., go test ./... -count=1 (28 ok, kein FAIL). Alle in den Proofs genannten Testnamen existieren - nachgeschlagen, alle 16.
+
+Kein Defekt im Go-Code. Angesehen und in Ordnung: repo.Diff ohne error (jeder nicht zeigbare SHA wird zurueckgegeben), die Leerpatch-Pruefung in WorktreeDiff (leere Datei vs. unlesbarer Pfad, per os.Stat), runTolerating mit ee.Exited() gegen den Signal-Fall, commitsSourceLabel kennt die worktree-Token nicht und braucht sie nicht (signoff.go ruft CommitsSource direkt, nie WithWorktree), MergeCommits gibt eine nicht-nil leere Slice zurueck, der Payload traegt also '[]' statt 'null'.
+
+Drei offene Punkte, alle in review-gaps ausgeschrieben, keiner blockierend: (1) die zwei Payload-Zweige ohne Test - ticket.WithWorktree hat gar keinen, und dass worktree_diff bei sauberem Baum fehlt, behauptet keiner; ich empfehle, beide hier zu schliessen, weil genau diese zwei Zusagen in NOTES.md:20 und SKILL.md:40-44/145-149 woertlich stehen und sonst nur Prosa sind. (2) Der Worktree-Anteil ist repo-weit und nicht ticket-weit - Befund 2 aus Runde 1, unveraendert offen, nicht hier reparierbar. (3) Zeilennummern in den Proofs von DoD 1 und DoD 13 sind nach bcf403b gewandert (591-608 -> 612-613, 678 -> 673); die Symbole loesen auf, die Nummern nicht.
