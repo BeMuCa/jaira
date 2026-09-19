@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:48:04Z
+updated-at: 2026-09-19T15:48:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -333,3 +333,4 @@ Befund 3 (klein, gleiche Datei): SKILL.md:40-43 knuepft die Worktree-Haelfte an 
 Befund 4 (kosmetisch): derselbe Absatz hat beim Umschreiben seinen Zeilenumbruch verloren - SKILL.md:43 laeuft ueber die ~78 Spalten der Datei hinaus ('...both there without your going to look. The one commit that escapes...' in einer Zeile). Nur neu umbrechen.
 
 Nicht beanstandet und ausdruecklich in Ordnung: die Klartextausgabe. Der worktree_error steht weiter ueber dem Diff, den er qualifiziert, die Worktree-Haelfte bekommt mit '## Worktree diff (not committed yet)' eine eigene Ueberschrift statt einer Zeile im Codeblock, und dass die Provenienz-Zeile ('N commit(s), from ...') in der ersten Runde ohne Commits nicht gedruckt wird, ist richtig - es gibt dann nichts zu zaehlen.
+- **2026-09-19 15:48 · Alexander Sacharov** — Nebenbefund aus dieser Lane, nicht Teil von DoD 12 und hier nicht repariert: 'jaira move <id> --from-lane critique' kann nie gelingen. readLaneOutput (internal/cli/claim.go:226-240) kennt nur outcome-what/why/resolves, question und commits; fuer review-summary, review-gaps, review-verdict und review-check gibt get() immer den leeren String zurueck, also meldet der Aufruf 'lane critique requires review-summary in its output', egal was auf stdin steht. Umweg fuer diese Lane war 'jaira set <id> review-summary=... --append' und danach ein schlichtes 'jaira move --to in-progress'.
