@@ -99,7 +99,13 @@ func Unpinned() string {
 	if pinnedRef() != "" {
 		return ""
 	}
-	return "this build reports version " + release.Current +
+	// A -ldflags build can blank release.Current, and naming it then produces
+	// "reports version ," — a sentence with a hole in it.
+	reported := "reports version " + release.Current
+	if release.Current == "" {
+		reported = "reports no version"
+	}
+	return "this build " + reported +
 		", which is no released tag, so the catalogue comes from the development branch and may name fields this binary does not know"
 }
 

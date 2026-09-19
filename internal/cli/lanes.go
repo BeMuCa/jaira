@@ -71,7 +71,9 @@ brought up to date after a jaira upgrade changed it.`,
 			if err != nil {
 				return writeConflictError(err)
 			}
-			// A lane new to the board takes the last column, like 'lanes add'.
+			// A lane new to the board takes the last column. Not what 'lanes add'
+			// does any more — that one inserts at the lane's after: anchor; 'use'
+			// is a copy of a file and carries no placement intent of its own.
 			if ids, err := lane.LoadOrder(s.Root); err == nil && len(ids) > 0 && !slices.Contains(ids, l.ID) {
 				if err := lane.SaveOrder(s.Root, append(ids, l.ID)); err != nil {
 					return err

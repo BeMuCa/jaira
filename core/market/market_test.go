@@ -198,3 +198,24 @@ func TestRefIsSetOnAnAddressThatAlreadyHasAQuery(t *testing.T) {
 		t.Errorf("the address' own query was lost: %q", got)
 	}
 }
+
+// TestBlankVersionStillReadsAsASentence: pinnedRef already treats a blanked
+// release.Current as unpinned; Unpinned used to paste the empty string
+// straight into its sentence and produce "reports version , which is no
+// released tag".
+func TestBlankVersionStillReadsAsASentence(t *testing.T) {
+	old := release.Current
+	t.Cleanup(func() { release.Current = old })
+	release.Current = ""
+
+	u := Unpinned()
+	if u == "" {
+		t.Fatal("a build with no version must still say the catalogue is the development branch")
+	}
+	if strings.Contains(u, "version ,") {
+		t.Errorf("the sentence has a hole where the version would be: %q", u)
+	}
+	if !strings.Contains(u, "no version") {
+		t.Errorf("the sentence must say there is no version to name: %q", u)
+	}
+}

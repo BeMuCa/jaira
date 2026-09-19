@@ -1,20 +1,26 @@
 # Catalogue lanes
 
 Lane files shipped with the repository that are **not** built-ins. A built-in is
-compiled into the binary and appears on every board; these do not. They sit here
-to be read, copied and argued with, and they reach a board only because someone
-adopted them on purpose.
+compiled into the binary and can be installed without a network; these do not
+travel in the binary and reach a board only because someone fetched them on
+purpose.
 
 To use one — no clone needed:
 
 ```bash
-jaira lanes market                    # what is here, fetched from GitHub
-jaira lanes market adopt critique     # into your catalogue (~/.jaira/lanes)
-jaira lanes add critique              # onto this board
+jaira lanes market                       # what is here, fetched from GitHub
+jaira lanes market adopt secrets-scan    # into your catalogue (~/.jaira/lanes)
+jaira lanes add secrets-scan             # onto this board
 ```
 
-From a clone, `jaira lanes adopt lanes/critique.md` does the same as the
+From a clone, `jaira lanes adopt lanes/secrets-scan.md` does the same as the
 second line.
+
+`critique`, `optimize` and `testing` are **not** here any more: they travel
+inside the binary, so `jaira lanes add critique` installs one with no network
+and no adopting. They still stand outside the selection a fresh board starts
+with — `jaira init` writes the same ten lanes it always did, and the foot of
+`jaira lanes` names the ones this board has not installed.
 
 ## Adding yours
 
@@ -38,29 +44,26 @@ prompt says, at whatever model tier it declares.
 
 | Lane | Sits | Sends work back to | For |
 |---|---|---|---|
-| `secrets-scan` | after implementing, once you move the column there | implementing | Catching a credential that reached a commit — keys, tokens, private keys, a tracked `.env` |
-| `critique` | after implementing | implementing | Judging whether this is the right implementation, not whether it works |
-| `optimize` | after critique | implementing | Removing duplication, dead code and fluff the change left behind |
+| `secrets-scan` | after implementing | implementing | Catching a credential that reached a commit — keys, tokens, private keys, a tracked `.env` |
 | `changelog-writer` | after review | — | Writing the one changelog line for whoever installs the release, rather than for the next agent |
 
-`critique` and `optimize` together make a loop: implementing writes it, critique says what is wrong
-with the approach, implementing fixes it, and that repeats until critique has
-nothing left to say. Then optimize strips what is not needed, and only then does
-the work reach review. A decision that is genuinely the user's goes to the HITL
-lane on the way, rather than being taken by whichever agent noticed it.
-
-`secrets-scan` belongs ahead of that loop: it is the cheapest check on the board
-and the only one whose miss cannot be taken back — a pushed credential is already
-public. `changelog-writer` belongs behind it, after review, once what actually
+`secrets-scan` belongs ahead of the review loop the binary carries: it is the
+cheapest check on the board and the only one whose miss cannot be taken back — a
+pushed credential is already public. `changelog-writer` belongs behind it, after review, once what actually
 shipped is settled; it writes one field on the ticket and no file, so two tickets
 in it in parallel do not conflict.
 
-**Belongs, not lands.** The `Sits` column above and each lane's `after:` field say
-where the lane is *meant* to go; neither moves a column. `jaira lanes add` appends
-the lane as the last line of `.jaira/lanes/order`, so a freshly adopted lane is the
-rightmost column on the board until you move that line — `after:` is only consulted
-when there is no order file at all, and `jaira init` writes one. Rearranging that
-file is the adopter's job, and it is a one-line edit.
+**Where it lands.** The `Sits` column above and each lane's `after:` field say
+where the lane is *meant* to go, and `jaira lanes add` puts it there: the lane is
+inserted into `.jaira/lanes/order` just behind the lane its `after:` names, and
+only the added id moves — the rest of your column order is left exactly as it is.
+The chain is followed through lanes this board has not installed, so a lane whose
+anchor is itself uninstalled still lands in the flow rather than at the end. An
+anchor nothing in the chain can resolve parks the lane before the first terminal
+lane, and says so — a warning on stderr, `warnings` in `--json`; no `after:` at
+all parks it there too and says nothing, that being a choice rather than an
+omission. The success line names the lane it landed after, because a chain
+resolved through lanes you do not have puts it somewhere you never typed.
 
 The loop is not enforced. `rejects-to:` declares the back edge so an agent
 reading the board can see it, and a backwards move was always allowed — the gate
