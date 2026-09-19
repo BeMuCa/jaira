@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:51:26Z
+updated-at: 2026-09-19T19:51:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -149,6 +149,7 @@ review-check: |-
   proof: internal/cli/lanes.go:100, internal/tui/lanes.go:438, docs/COMMANDS.md:153; am gebauten Binary nachgestellt: 'jaira lanes add --help' sagt jetzt 'placing it where its after: field points'
 - [x] Runde 5, Fund der vierten Kritik: internal/cli/lanes_test.go TestLanesAddAfterRemoveAppendsAtEnd heisst und begruendet nicht mehr 'angehaengt', sondern nennt den wirklichen Grund; Assertion unveraendert
   proof: internal/cli/lanes_test.go:962 TestLanesAddAfterRemoveLandsAfterItsAnchor - gruen, Assertion unveraendert
+- [ ] Runde 5, DoD 7: lanes/README.md neu geschrieben - Schnellstart und Klon-Zeile auf secrets-scan, Tabelle nur noch secrets-scan und changelog-writer, neuer Absatz 'Where it lands' beschreibt die after:-Ankerkette samt Kettenaufloesung, Warnung und Erfolgszeile
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
