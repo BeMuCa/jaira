@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T16:06:13Z
+updated-at: 2026-09-19T16:06:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -48,6 +48,7 @@ review-gaps: |-
   3. DoD 2 verlangte den Fall 'drei SHAs in commits: bei einundzwanzig auf dem Branch'. Der Test (TestForLaneDiffIsNotLimitedToTheRecordedCommits) stellt einen von zwei nach. Der Mechanismus ist identisch und der Test faellt ohne die Aenderung - kein Mangel in der Sache, aber der Proof sagt etwas anderes als die DoD-Zeile.
 
   Nicht gefunden: kein Defekt im Go-Code. repo.Diff ohne error ist korrekt (jeder nicht zeigbare SHA wird gemeldet), die leere-Patch-Pruefung in WorktreeDiff unterscheidet richtig zwischen leerer Datei und unlesbarem Pfad (per os.Stat gegengeprobt), runTolerating faengt den Signal-Fall ueber ee.Exited() ab, CommitsSource deckt alle vier Faelle mit Test ab, und der m.derivedFor-Memo in signoff.go wird nur dort gelesen. Alles, was outcome-what behauptet, steht im Diff.
+  optimize: die lokale Variable d in showForLane entfernt - sie war nur noch ein Weiterreicher, seit der Worktree-Diff nicht mehr an sie angehaengt wird (repo.Diff schreibt jetzt direkt nach diff); zwei Fprintf fuer die Worktree-Ueberschrift zu einem zusammengezogen; den Kommentar an worktreeDiff gekuerzt und den wortgleichen Doppel-Kommentar an commits_unavailable auf den ersten verwiesen. Tests: TestForLaneKeepsTheCommittedAndUncommittedHalvesApart in TestForLaneCarriesTheUncommittedWorktreeInItsOwnKey verschmolzen - zwei identische Fixtures und zwei CLI-Laeufe fuer einen Payload, beide prueften dasselbe worktree_diff; die drei Trennungs-Assertions (diff ohne die unversionierte Arbeit, diff mit der committeten, Textmarke in keinem Schluessel) laufen jetzt in der reicheren Fixture ueber drei Zeichenketten statt einer, gegengeprobt siebenfach rot gegen die alte Anhaenge-Logik. Fallengelassen: "worktree_diff traegt die committete Haelfte nicht" - war eine zusammengesetzte Kruecke und ist eine Eigenschaft von git diff HEAD, nicht dieses Changes. Stehen gelassen: die vier Payload-Zweige der Kritik-Lane, die Bedingung diff != "" || worktreeDiff != "" um commits/commits_source (die erste Runde ohne Commits braucht sie) und die enge Bedingung worktreeErr != "" && diff != "" im Klartext (wo worktreeErr gesetzt ist, ist worktreeDiff per Konstruktion leer). Keine NOTES.md-Zeile: von aussen ist nichts anders.
 question: |-
   Befund 1 der critique: jaira-role-lane/SKILL.md:36-43 sagt der Diff-Lane jetzt, der Payload sei die ganze committete Historie, und nimmt ihr das Nachzaehlen weg. In mode: conversational darf die implementierende Lane aber nicht committen - also ist der Payload dort der vorherige Durchgang und meldet complete:true. Dieses Ticket selbst ist der Fall. Drei Wege, bitte einen waehlen:
 
