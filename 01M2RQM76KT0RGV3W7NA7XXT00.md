@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:55:56Z
+updated-at: 2026-09-19T15:58:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -363,3 +363,4 @@ Warum das aenderbar ist: beide Zeilen stehen unter '## Unreleased', also noch ni
 Fix: in Zeile 20 den Nebensatz 'appends ... to the diff of the ticket's commits' auf 'gibt den unversionierten Worktree ... neben dem Commit-Diff aus' umschreiben und 'ends in +worktree' um den Sonderfall der ersten Runde ergaenzen - oder, falls das die Zeile zu sehr verbiegt, die beiden Aussagen aus ihr streichen, weil Zeile 18 sie ohnehin traegt. Zeile 18 und 19 bleiben, wie sie sind.
 
 Nichts sonst in diesem Durchgang. Ohne diesen einen Satz ist die Runde fertig.
+- **2026-09-19 15:58 · Alexander Sacharov** — Runde 3 (in-progress): NOTES.md Zeile 20 beschrieb den Payload noch so, wie er vor 122b371 aussah, und widersprach damit Zeile 18 im selben ## Unreleased-Abschnitt. Umgeschrieben statt gestrichen: Zeile 18 traegt zwar worktree_diff als eigenen Schluessel, sagt aber nichts ueber commits_source, ueber die Ausnahme von .jaira/tickets und ueber die Sign-off-Ueberschrift - ein Streichen der beiden Aussagen haette die Zeile um ihren eigentlichen Inhalt gebracht. Jetzt: 'now carries the uncommitted working tree ... beside the diff of the ticket's commits' statt 'appends ... to the diff', und 'ends in +worktree when it did, or reads a plain worktree with no commit source in front of it on a first round that has no commits yet' (core/ticket/trim.go:207-222, WithWorktree gibt bei leerer Quelle nur 'worktree' zurueck). Zeilen 18, 19 und 21 unveraendert; eine Zeile bleibt eine Zeile (kein Umbruch).
