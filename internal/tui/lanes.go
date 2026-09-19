@@ -434,16 +434,27 @@ func (ls *laneScreen) openCatalogue() {
 	ls.catalogueOpen = true
 }
 
+// addedMsg is the line both add paths show. One message line, and an anchor
+// that could not be resolved is what the user needs off it: the lane is on the
+// board but not where its after: field asked for.
+func addedMsg(id string, warnings []string) string {
+	if len(warnings) > 0 {
+		return "added " + id + " — " + warnings[0]
+	}
+	return "added " + id
+}
+
 // addFromCatalogue adds the highlighted catalogue lane through lane.Add —
-// the same call 'jaira lanes add' makes — appending it at the end of the
-// order, and selects it.
+// the same call 'jaira lanes add' makes — placing it where its after: chain
+// points, followed through lanes this board has not installed, and selects it.
 func (ls *laneScreen) addFromCatalogue() {
 	if ls.catalogueIdx < 0 || ls.catalogueIdx >= len(ls.catalogue) {
 		return
 	}
 	l := ls.catalogue[ls.catalogueIdx]
 	ls.catalogueOpen = false
-	if _, err := lane.Add(ls.store.Root, ls.set, l.ID); err != nil {
+	_, _, warnings, err := lane.Add(ls.store.Root, ls.set, l.ID)
+	if err != nil {
 		ls.msg, ls.isErr = err.Error(), true
 		return
 	}
@@ -455,7 +466,7 @@ func (ls *laneScreen) addFromCatalogue() {
 	if i := indexOfLane(ls.lanes, id); i >= 0 {
 		ls.idx = i
 	}
-	ls.msg, ls.isErr = "added "+id, false
+	ls.msg, ls.isErr = addedMsg(id, warnings), false
 }
 
 // publish copies the selected lane to .jaira/shared/<slug>/, the deliberate,
@@ -489,7 +500,8 @@ func (ls *laneScreen) addAvailable() {
 	if l == nil {
 		return
 	}
-	if _, err := lane.Add(ls.store.Root, ls.set, l.ID); err != nil {
+	_, _, warnings, err := lane.Add(ls.store.Root, ls.set, l.ID)
+	if err != nil {
 		ls.msg, ls.isErr = err.Error(), true
 		return
 	}
@@ -499,7 +511,7 @@ func (ls *laneScreen) addAvailable() {
 		return
 	}
 	ls.idx = indexOfLane(ls.lanes, id)
-	ls.msg, ls.isErr = "added "+id, false
+	ls.msg, ls.isErr = addedMsg(id, warnings), false
 }
 
 // editLane opens the selected lane's file in $EDITOR. A built-in has no file —

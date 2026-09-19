@@ -27,14 +27,19 @@ func newDefaultBoardTestScreen(t *testing.T) *defaultBoardScreen {
 }
 
 // TestDefaultBoardScreenDefaultsToBuiltinsChecked asserts a first visit, with
-// no default board yet, shows every built-in already ticked — an absent
-// selection means the built-ins, and the screen must not misrepresent that
-// as "nothing chosen".
+// no default board yet, shows every default lane already ticked — an absent
+// selection means those lanes, and the screen must not misrepresent that as
+// "nothing chosen". The shipped lanes that are not default — critique,
+// optimize, testing — must start unticked, or saving straight away would
+// widen every new board instead of leaving it unchanged.
 func TestDefaultBoardScreenDefaultsToBuiltinsChecked(t *testing.T) {
 	d := newDefaultBoardTestScreen(t)
 	for _, l := range d.set.Lanes {
-		if !d.lanes[l.ID] {
-			t.Errorf("built-in %q must start ticked, got unticked", l.ID)
+		if l.Default && !d.lanes[l.ID] {
+			t.Errorf("default lane %q must start ticked, got unticked", l.ID)
+		}
+		if !l.Default && d.lanes[l.ID] {
+			t.Errorf("lane %q ships with default-board: false and must start unticked", l.ID)
 		}
 	}
 }

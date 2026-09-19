@@ -207,17 +207,26 @@ func Installable(set *Set) ([]*Lane, error) {
 	return out, nil
 }
 
-// Add brings a built-in or catalogue lane onto this board: the lane's file
-// is written into the board's lane directory and its id appended to the order
-// file. It refuses a lane already part of set — "already in this project" —
-// rather than re-exporting it.
-func Add(root string, set *Set, id string) (string, error) {
+// Add brings a built-in or catalogue lane onto this board: the lane's file is
+// written into the board's lane directory and its id placed where its after:
+// field says it belongs. It refuses a lane already part of set — "already in
+// this project" — rather than re-exporting it. The returned warnings say what
+// the placement had to assume, the same way Load reports an anchor it could
+// not resolve.
+//
+// The second return is the id the lane now follows, empty when it went to the
+// front. Placement is the whole point of the call and the one thing a caller
+// cannot see: a chain resolved through uninstalled lanes lands 'jaira lanes
+// add testing' between in-progress and human, and silently, because warning on
+// the path the board itself advertises would be noise. So the neighbour is
+// handed back to be said out loud instead.
+func Add(root string, set *Set, id string) (string, string, []string, error) {
 	if _, already := set.Get(id); already {
-		return "", fmt.Errorf("lane %q is already part of this project", id)
+		return "", "", nil, fmt.Errorf("lane %q is already part of this project", id)
 	}
 	installable, err := Installable(set)
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
 	var l *Lane
 	for _, il := range installable {
@@ -227,21 +236,123 @@ func Add(root string, set *Set, id string) (string, error) {
 		}
 	}
 	if l == nil {
-		return "", fmt.Errorf("no lane %q is installed or in the catalogue", id)
+		return "", "", nil, fmt.Errorf("no lane %q is installed or in the catalogue", id)
 	}
 	dst, err := Export(l, ProjectLanesDir(root), false)
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
 	ids, err := effectiveOrder(root, set)
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
-	ids = append(ids, l.ID)
+	ids, warnings := insertAfterAnchor(ids, l, set, installable)
 	if err := SaveOrder(root, ids); err != nil {
-		return "", err
+		return "", "", nil, err
 	}
-	return dst, nil
+	var after string
+	for i, got := range ids {
+		if got == id && i > 0 {
+			after = ids[i-1]
+		}
+	}
+	return dst, after, warnings, nil
+}
+
+// insertAfterAnchor places a newly added lane where its after: field says it
+// belongs, rather than at the end of the board. Appending was harmless while
+// every shipped lane was already installed and only custom lanes arrived this
+// way; with critique, optimize and testing shipping uninstalled, appending
+// puts a review loop behind done and blocked, where no ticket ever reaches it
+// — a lane installed but out of the flow is not an installed lane.
+//
+// Only the new id moves: the rest of the order is left exactly as it is,
+// because a board's column order is the user's arrangement and adding one
+// lane is no reason to re-derive it.
+//
+// Once nothing can resolve the anchor, the fallback is order()'s, decided the
+// same way it decides it, because a lane must not land in one place when Load
+// derives the order and another when Add writes it:
+//
+//   - no anchor at all is a statement, not an omission: park the lane before
+//     the terminal lane, where work still flows through it.
+//   - an anchor this board does not have is the same placement plus a
+//     warning. Appending here was the bug this function was written against,
+//     one board removed or renamed away from biting: 'jaira lanes remove
+//     in-progress' followed by 'jaira lanes add critique' put critique behind
+//     done and blocked, installed and unreachable.
+//
+// The anchor may also be a lane that ships uninstalled, which is the common
+// case now rather than a corner: 'jaira lanes add testing' on a fresh board
+// names optimize, which names critique, which names in-progress. Only the last
+// of those is on the board, and stopping at the first missing name would park
+// testing before the terminal lane — behind signoff, a test lane after the
+// human acceptance. So the chain is followed through the offer until it
+// reaches a lane the board has; a name that is nowhere is the unresolvable
+// case above, warning and all. That step is Add's alone and no break with
+// order(): order() sees only the lanes on the board and has no chain to
+// follow, while Add is holding the offer the lane came out of.
+func insertAfterAnchor(ids []string, l *Lane, set *Set, installable []*Lane) ([]string, []string) {
+	var warnings []string
+	at := anchorIndex(ids, l, installable)
+	if at < 0 {
+		if l.After != "" {
+			// l.After, not the name the chain ended on: the user wrote this one,
+			// and a warning naming a link they never typed — or the empty string
+			// a chain ending in an anchor-less lane leaves behind — reads as a bug
+			// in jaira rather than a lane this board does not have.
+			warnings = append(warnings, fmt.Sprintf(
+				"lane %s: anchor %q is not on this board; placed before the terminal lane",
+				l.ID, l.After))
+		}
+		at = terminalIDIndex(ids, set)
+	}
+	out := make([]string, 0, len(ids)+1)
+	out = append(out, ids[:at]...)
+	out = append(out, l.ID)
+	return append(out, ids[at:]...), warnings
+}
+
+// anchorIndex resolves where l's after: chain lands in ids: the position just
+// past the first anchor the board actually has, or -1 when nothing in the
+// chain is on this board. Following the chain through the offer is what a board that has
+// not installed the whole review loop needs — its links are lanes it does not
+// have yet, and each one knows where the next belongs.
+func anchorIndex(ids []string, l *Lane, installable []*Lane) int {
+	byID := make(map[string]*Lane, len(installable))
+	for _, il := range installable {
+		byID[il.ID] = il
+	}
+	// A chain that loops — two uninstalled lanes naming each other — would spin
+	// here, so every link is visited once.
+	seen := map[string]bool{l.ID: true}
+	anchor := l.After
+	for anchor != "" && !seen[anchor] {
+		seen[anchor] = true
+		for i, id := range ids {
+			if id == anchor {
+				return i + 1
+			}
+		}
+		next, ok := byID[anchor]
+		if !ok {
+			break
+		}
+		anchor = next.After
+	}
+	return -1
+}
+
+// terminalIDIndex is terminalIndex over a list of ids: the position of the
+// first terminal lane, or the end when this board has none. Placing before it
+// is what keeps an anchor-less lane in the flow instead of behind done.
+func terminalIDIndex(ids []string, set *Set) int {
+	for i, id := range ids {
+		if l, ok := set.Get(id); ok && l.Terminal {
+			return i
+		}
+	}
+	return len(ids)
 }
 
 // ticketsIn lists the handles of tickets currently sitting in lane id, so

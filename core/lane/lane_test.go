@@ -484,16 +484,33 @@ creator: alex
 }
 
 // TestBuiltinDefaultsCreatorToJaira asserts a built-in with no creator: field
-// reports "jaira" — the nine shipped files carry no such line, so this is the
-// default doing the work rather than the files.
+// reports "jaira" — most shipped files carry no such line, so this is the
+// default doing the work rather than the files. It must stay a default and
+// not become an override: critique, optimize and testing were written by
+// BeMuCa and ship in the binary, and shipping is not authorship. Reading
+// "jaira" off a lane someone else wrote is exactly the provenance the field
+// exists to keep.
 func TestBuiltinDefaultsCreatorToJaira(t *testing.T) {
 	lanes, err := Builtins()
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The shipped lanes that name their own author, and who it is.
+	authored := map[string]string{"critique": "BeMuCa", "optimize": "BeMuCa", "testing": "BeMuCa"}
+	seen := map[string]bool{}
 	for _, l := range lanes {
-		if l.Creator != "jaira" {
-			t.Errorf("built-in %q: Creator = %q, want %q", l.ID, l.Creator, "jaira")
+		want, ok := authored[l.ID]
+		if !ok {
+			want = "jaira"
+		}
+		seen[l.ID] = true
+		if l.Creator != want {
+			t.Errorf("built-in %q: Creator = %q, want %q", l.ID, l.Creator, want)
+		}
+	}
+	for id := range authored {
+		if !seen[id] {
+			t.Errorf("lane %q no longer ships in the binary; drop it from this test", id)
 		}
 	}
 }
@@ -791,10 +808,12 @@ func idsOf(lanes []*Lane) []string {
 }
 
 // TestBuiltinOrderIsUnchanged is the task 10 regression baseline: the ten
-// built-ins render in exactly the order the shipped binary prints them in
+// default lanes render in exactly the order the shipped binary prints them in
 // today, captured by running the binary rather than copied from a plan that
 // may be stale. Never delete this test — task 10's whole point is that
-// nothing here moved.
+// nothing here moved. The offer itself is larger now: critique, optimize and
+// testing ship in the binary too, so the baseline reads the default selection
+// out of the offer rather than counting the offer.
 func TestBuiltinOrderIsUnchanged(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
 	set, err := Load("")
@@ -805,14 +824,29 @@ func TestBuiltinOrderIsUnchanged(t *testing.T) {
 		"backlog", "brainstorm", "todo", "pre-process", "in-progress",
 		"human", "review", "signoff", "done", "blocked",
 	}
-	got := set.IDs()
+	var got []string
+	for _, l := range set.Lanes {
+		if l.Default {
+			got = append(got, l.ID)
+		}
+	}
 	if len(got) != len(want) {
-		t.Fatalf("got %d lanes, want %d: %v", len(got), len(want), got)
+		t.Fatalf("got %d default lanes, want %d: %v", len(got), len(want), got)
 	}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Errorf("position %d: got %q, want %q (ids=%v)", i, got[i], want[i], got)
 		}
+	}
+	// And where the three non-default ones land once installed: between
+	// in-progress and human, which is what their filename prefixes buy.
+	wantOffer := []string{
+		"backlog", "brainstorm", "todo", "pre-process", "in-progress",
+		"critique", "optimize", "testing",
+		"human", "review", "signoff", "done", "blocked",
+	}
+	if offer := set.IDs(); !reflect.DeepEqual(offer, wantOffer) {
+		t.Errorf("the offer must list every shipped lane in board order:\n want %v\n got  %v", wantOffer, offer)
 	}
 }
 
@@ -1159,8 +1193,8 @@ func TestNoBoardReturnsTheOffer(t *testing.T) {
 	if _, ok := set.Get("extra"); !ok {
 		t.Errorf("catalogue lane missing from the offer: %v", set.IDs())
 	}
-	if len(set.Lanes) != len(builtinIDList(t))+1 {
-		t.Errorf("offer has %d lanes, want built-ins plus one", len(set.Lanes))
+	if len(set.Lanes) != len(shippedIDList(t))+1 {
+		t.Errorf("offer has %d lanes, want every shipped lane plus one", len(set.Lanes))
 	}
 	if _, err := os.Stat(ProjectLanesDir(root)); !os.IsNotExist(err) {
 		t.Error("loading a non-board must not create a lane directory")

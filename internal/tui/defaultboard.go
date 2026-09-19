@@ -47,7 +47,7 @@ func newDefaultBoardScreen(set *lane.Set, board *lane.DefaultBoard) *defaultBoar
 	// down to nothing instead of leaving it unchanged.
 	if len(board.Lanes) == 0 {
 		for _, l := range set.Lanes {
-			d.lanes[l.ID] = l.Builtin
+			d.lanes[l.ID] = l.Default
 		}
 	} else {
 		selected := make(map[string]bool, len(board.Lanes))

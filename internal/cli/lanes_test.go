@@ -951,9 +951,15 @@ func TestLanesRemoveMaterialisesWorkingSetOnFirstChange(t *testing.T) {
 	}
 }
 
-// TestLanesAddAfterRemoveAppendsAtEnd asserts a lane made addable by a prior
-// removal comes back in via 'add', appended at the end of the order.
-func TestLanesAddAfterRemoveAppendsAtEnd(t *testing.T) {
+// TestLanesAddAfterRemoveLandsAfterItsAnchor asserts a lane made addable by a
+// prior removal comes back in via 'add' where its after: field points, not
+// wherever the order happens to end. 'blocked' lands last here because its
+// anchor is 'done' and 'done' is the final lane — the same placement appending
+// would have produced, for a different reason. Asserting the position is still
+// the point: were the anchor ignored, the anchor-less fallback would park
+// 'blocked' before the terminal lane, which is 'done', and it would no longer
+// be last.
+func TestLanesAddAfterRemoveLandsAfterItsAnchor(t *testing.T) {
 	lanesTestCatalogue(t)
 	root := lanesTestProject(t)
 	if out, err := runLanes(t, root, "remove", "blocked"); err != nil {
@@ -970,7 +976,7 @@ func TestLanesAddAfterRemoveAppendsAtEnd(t *testing.T) {
 	}
 	ids := set.IDs()
 	if len(ids) == 0 || ids[len(ids)-1] != "blocked" {
-		t.Errorf("re-added lane not appended at the end: %v", ids)
+		t.Errorf("re-added lane did not land after its anchor 'done': %v", ids)
 	}
 }
 
@@ -1157,5 +1163,363 @@ func TestLanesUseStillRefusesToOverwriteWithoutForce(t *testing.T) {
 
 	if _, err := runLanes(t, dir, "use", "in-progress"); err == nil {
 		t.Error("use without --force overwrote the board's copy")
+	}
+}
+
+// TestLanesAddInstallsTheReviewLoopWithoutNetwork is DoD 3: critique, optimize
+// and testing travel inside the binary, so getting the review loop onto a
+// board must not touch GitHub at all. JAIRA_MARKET_API points at a port
+// nothing listens on — any call to the catalogue would fail there — and
+// 'lanes add' still installs all three, in the order that puts them between
+// in-progress and human, where their after: field says they belong.
+func TestLanesAddInstallsTheReviewLoopWithoutNetwork(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	for _, id := range []string{"critique", "optimize", "testing"} {
+		if out, err := runLanes(t, root, "add", id); err != nil {
+			t.Fatalf("lanes add %s with no network: %v\n%s", id, err, out)
+		}
+	}
+
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"critique", "optimize", "testing"} {
+		if _, ok := set.Get(id); !ok {
+			t.Fatalf("lane %q did not reach the board: %v", id, set.IDs())
+		}
+	}
+	if got := set.Index("critique"); got != set.Index("in-progress")+1 {
+		t.Errorf("critique must sit right after in-progress: %v", set.IDs())
+	}
+	if set.Index("critique") >= set.Index("optimize") ||
+		set.Index("optimize") >= set.Index("testing") ||
+		set.Index("testing") >= set.Index("human") {
+		t.Errorf("the loop must run critique, optimize, testing and then human: %v", set.IDs())
+	}
+	// And the loop is a loop: each of the three sends work back to in-progress.
+	for _, id := range []string{"critique", "optimize", "testing"} {
+		l, _ := set.Get(id)
+		if len(l.RejectsTo) == 0 || l.RejectsTo[0] != "in-progress" {
+			t.Errorf("lane %q must send work back to in-progress, got %v", id, l.RejectsTo)
+		}
+	}
+}
+
+// TestLanesNamesTheShippedLanesThisBoardLacks is DoD 2: a board set up by
+// 'jaira init' must learn the review loop exists without anyone knowing the
+// catalogue. The table lists what is installed; this foot lists what the
+// binary carries and this board does not, with the line that installs it.
+// The market API points nowhere, because the answer comes out of the binary.
+func TestLanesNamesTheShippedLanesThisBoardLacks(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root)
+	if err != nil {
+		t.Fatalf("lanes: %v\n%s", err, out)
+	}
+	for _, want := range []string{"critique", "optimize", "testing", "jaira lanes add"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("'jaira lanes' does not mention %q:\n%s", want, out)
+		}
+	}
+}
+
+// TestLanesJSONCarriesAvailable asserts the same answer reaches an agent:
+// the foot is prose, and a session reading --json must not have to parse it.
+func TestLanesJSONCarriesAvailable(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root, "--json")
+	if err != nil {
+		t.Fatalf("lanes --json: %v\n%s", err, out)
+	}
+	var got struct {
+		Available []struct {
+			ID          string `json:"id"`
+			Description string `json:"description"`
+			Add         string `json:"add"`
+		} `json:"available"`
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("lanes --json is not JSON: %v\n%s", err, out)
+	}
+	byID := map[string]string{}
+	for _, a := range got.Available {
+		if a.Description == "" {
+			t.Errorf("available lane %q carries no description; it is what says whether to add it", a.ID)
+		}
+		byID[a.ID] = a.Add
+	}
+	for _, id := range []string{"critique", "optimize", "testing"} {
+		if byID[id] != "jaira lanes add "+id {
+			t.Errorf("available[%s].add = %q, want the command that installs it", id, byID[id])
+		}
+	}
+}
+
+// TestLanesSaysNothingWhenTheBoardHasEverything asserts the foot is silent
+// once there is nothing to offer. A permanent advertisement under every
+// listing is noise, and noise under a command people run constantly is read
+// as "jaira always prints this", which is how the one time it matters gets
+// missed.
+func TestLanesSaysNothingWhenTheBoardHasEverything(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+	for _, id := range []string{"critique", "optimize", "testing"} {
+		if out, err := runLanes(t, root, "add", id); err != nil {
+			t.Fatalf("lanes add %s: %v\n%s", id, err, out)
+		}
+	}
+
+	out, err := runLanes(t, root)
+	if err != nil {
+		t.Fatalf("lanes: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "not on this board") {
+		t.Errorf("the foot must be silent when nothing is missing:\n%s", out)
+	}
+
+	jsonOut, err := runLanes(t, root, "--json")
+	if err != nil {
+		t.Fatalf("lanes --json: %v\n%s", err, jsonOut)
+	}
+	var got struct {
+		Available []map[string]any `json:"available"`
+	}
+	if err := json.Unmarshal([]byte(jsonOut), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Available) != 0 {
+		t.Errorf("available = %v, want empty when the board has every shipped lane", got.Available)
+	}
+}
+
+// TestLanesAddFollowsTheChainPastARemovedAnchor covers the path the loop test
+// cannot: a board whose in-progress lane is gone, so critique's after: names a
+// lane that is not there. Appending would put the review loop behind done and
+// blocked, where no ticket ever reaches it — the lane would be installed and
+// unreachable, which is the failure DoD 3 is about. The chain answers it
+// instead: in-progress is still in the offer and names pre-process, which this
+// board has, so critique lands there — in the flow, and with nothing assumed,
+// so nothing to warn about.
+func TestLanesAddFollowsTheChainPastARemovedAnchor(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	if out, err := runLanes(t, root, "remove", "in-progress"); err != nil {
+		t.Fatalf("lanes remove in-progress: %v\n%s", err, out)
+	}
+	out, err := runLanes(t, root, "add", "critique")
+	if err != nil {
+		t.Fatalf("lanes add critique: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "terminal") {
+		t.Errorf("the chain resolved, so nothing was assumed and nothing is warned:\n%s", out)
+	}
+
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("critique"); !ok {
+		t.Fatalf("critique did not reach the board: %v", set.IDs())
+	}
+	if set.Index("critique") != set.Index("pre-process")+1 {
+		t.Errorf("critique must follow its chain to pre-process: %v", set.IDs())
+	}
+	if set.Index("critique") >= set.Index("done") || set.Index("critique") >= set.Index("blocked") {
+		t.Errorf("critique must stay before the terminal lanes: %v", set.IDs())
+	}
+}
+
+// TestLanesAddWithAnAnchorNowhereStaysBeforeTheTerminalLane is the end of that
+// chain: an after: naming a lane neither the board nor the offer has. Nothing
+// can resolve it, so the placement is the one order() makes for the same case
+// — before the terminal lane — and it says so, because where the lane landed
+// is then an assumption and not the file's instruction.
+func TestLanesAddWithAnAnchorNowhereStaysBeforeTheTerminalLane(t *testing.T) {
+	cat := lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	lane1 := "---\nid: hover\nname: Hover\nafter: nowhere\n---\n\n# Prompt\n\nhover.\n"
+	if err := os.WriteFile(filepath.Join(cat, "hover.md"), []byte(lane1), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, root, "add", "hover")
+	if err != nil {
+		t.Fatalf("lanes add hover: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "nowhere") || !strings.Contains(out, "terminal") {
+		t.Errorf("an anchor nothing can resolve must say so, got:\n%s", out)
+	}
+
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.Index("hover") >= set.Index("done") {
+		t.Errorf("hover must stay before the terminal lane: %v", set.IDs())
+	}
+}
+
+// TestLanesDoesNotOfferBackALaneTheBoardRemoved is the other half of the foot:
+// it holds back what a board decided against. A lane every
+// fresh board starts with is on the board unless somebody removed it, and
+// offering it back under every 'jaira lanes' turns a deliberate removal into a
+// standing reminder. Builtin alone cannot tell the two apart — Default is the
+// bit that says "this is in the fresh-board selection", which is exactly the
+// set that must stay out of the offer.
+func TestLanesDoesNotOfferBackALaneTheBoardRemoved(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	if out, err := runLanes(t, root, "remove", "signoff"); err != nil {
+		t.Fatalf("lanes remove signoff: %v\n%s", err, out)
+	}
+
+	out, err := runLanes(t, root)
+	if err != nil {
+		t.Fatalf("lanes: %v\n%s", err, out)
+	}
+	_, foot, ok := strings.Cut(out, "not on this board")
+	if !ok {
+		t.Fatalf("the foot is missing; the three shipped lanes are still absent:\n%s", out)
+	}
+	if strings.Contains(foot, "signoff") {
+		t.Errorf("the foot offers back signoff, which this board removed:\n%s", out)
+	}
+
+	jsonOut, err := runLanes(t, root, "--json")
+	if err != nil {
+		t.Fatalf("lanes --json: %v\n%s", err, jsonOut)
+	}
+	var got struct {
+		Available []struct {
+			ID string `json:"id"`
+		} `json:"available"`
+	}
+	if err := json.Unmarshal([]byte(jsonOut), &got); err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range got.Available {
+		if a.ID == "signoff" {
+			t.Errorf("available carries signoff, which this board removed: %v", got.Available)
+		}
+	}
+}
+
+// TestLanesAddFollowsAnAnchorThatIsItselfUninstalled is the case the loop test
+// hides by installing the three in order: the foot offers them one at a time,
+// so 'jaira lanes add testing' on a fresh board is the normal way in. testing's
+// anchor is optimize, optimize's is critique, and neither is on the board yet —
+// stopping at the first missing name parks testing before the terminal lane,
+// which on a default board means behind signoff: a test lane after the human
+// has accepted the work. Following the chain through the offer lands it after
+// in-progress, in the flow, and with nothing to warn about.
+func TestLanesAddFollowsAnAnchorThatIsItselfUninstalled(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root, "add", "testing")
+	if err != nil {
+		t.Fatalf("lanes add testing: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "terminal") {
+		t.Errorf("the anchor chain resolves, so nothing is assumed and nothing is warned:\n%s", out)
+	}
+
+	set, err := lane.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set.Get("testing"); !ok {
+		t.Fatalf("testing did not reach the board: %v", set.IDs())
+	}
+	if set.Index("testing") <= set.Index("in-progress") {
+		t.Errorf("testing must follow its chain down to in-progress: %v", set.IDs())
+	}
+	for _, after := range []string{"human", "signoff", "done", "blocked"} {
+		if i := set.Index(after); i >= 0 && set.Index("testing") > i {
+			t.Errorf("testing landed behind %s, where no ticket reaches it: %v", after, set.IDs())
+		}
+	}
+}
+
+// TestLanesAddSaysWhichLaneItLandedAfter holds the success line to the one
+// thing the caller cannot work out for themselves. 'lanes add testing'
+// resolves testing -> optimize -> critique -> in-progress through lanes this
+// board has not installed, and does it silently, because warning on the path
+// the foot of 'jaira lanes' advertises would teach people to skip warnings.
+// Silent must not mean unsaid: the column the lane ended up in is a result,
+// and the line that reports the add is where it belongs.
+func TestLanesAddSaysWhichLaneItLandedAfter(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	out, err := runLanes(t, root, "add", "testing")
+	if err != nil {
+		t.Fatalf("lanes add testing: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "after in-progress") {
+		t.Errorf("the add must say which lane testing landed after, got:\n%s", out)
+	}
+
+	root2 := lanesTestProject(t)
+	jsonOut, err := runLanes(t, root2, "--json", "add", "testing")
+	if err != nil {
+		t.Fatalf("lanes add testing --json: %v\n%s", err, jsonOut)
+	}
+	var got struct {
+		After string `json:"after"`
+	}
+	if err := json.Unmarshal([]byte(jsonOut), &got); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, jsonOut)
+	}
+	if got.After != "in-progress" {
+		t.Errorf("after = %q, want in-progress — a session reading JSON needs the placement too", got.After)
+	}
+}
+
+// TestLanesAddWarnsWithTheAnchorTheLaneNames pins the name in the warning to
+// the one the lane's own after: carries. The chain walk moves a variable from
+// link to link, and reporting where it stopped names something the user never
+// wrote — for brainstorm -> backlog, where backlog is in the offer and anchors
+// nothing, that is the empty string, and 'anchor ""' reads as a bug in jaira
+// rather than as a lane this board does not have.
+func TestLanesAddWarnsWithTheAnchorTheLaneNames(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_MARKET_API", "http://127.0.0.1:1/contents/lanes")
+	root := lanesTestProject(t)
+
+	for _, id := range []string{"brainstorm", "backlog"} {
+		if out, err := runLanes(t, root, "remove", id); err != nil {
+			t.Fatalf("lanes remove %s: %v\n%s", id, err, out)
+		}
+	}
+
+	out, err := runLanes(t, root, "add", "brainstorm")
+	if err != nil {
+		t.Fatalf("lanes add brainstorm: %v\n%s", err, out)
+	}
+	if strings.Contains(out, `anchor ""`) {
+		t.Errorf("the warning names the end of the chain instead of the lane's own anchor:\n%s", out)
+	}
+	if !strings.Contains(out, `anchor "backlog"`) {
+		t.Errorf("the warning must name backlog, which brainstorm's after: carries, got:\n%s", out)
 	}
 }

@@ -1,6 +1,8 @@
 package lane
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -23,7 +25,16 @@ func inLane(status string, options ...string) *ticket.Ticket {
 func builtinSet(t *testing.T) *Set {
 	t.Helper()
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
-	s, err := Load(t.TempDir())
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A board, not the offer: Load("") answers with everything the binary
+	// carries, which since critique/optimize/testing ship includes lanes no
+	// board has until someone adds them. Walking the offer would test a board
+	// nobody has.
+	s, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
 	}
