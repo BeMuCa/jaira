@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:49:00Z
+updated-at: 2026-09-19T19:49:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -114,7 +114,7 @@ review-check: |-
 - [x] renderSignOff hat einen Test fuer commitsSourceLabel: ein Ticket mit einem SHA nur im 'commits:'-Feld rendert die Zeile 'plus shas only the ticket records'. Die drei Token werden heute nur in core/ticket geprueft, die Uebersetzung in Prosa auf dem Signoff-Schirm von keinem Test.
   proof: internal/tui/signoff_test.go TestSignOffNamesWhereTheCommitsCameFrom — rendert renderSignOff fuer alle drei Token; faellt, sobald commitsSourceLabel fuer git+ticket kein Label mehr liefert (Mutationsprobe)
 - [x] showForLane rechnet im case 'diff' die nicht eingecheckte Arbeit mit: der Worktree-Diff (git diff HEAD plus nicht verfolgte Dateien) haengt an den Commit-Diff, und commits_source nennt ihn mit einem vierten Token (git+worktree). Mit Test. Danach faellt die Zusage in core/role/builtin/jaira-role-lane/SKILL.md:36-43 nicht mehr auseinander und braucht keine Einschraenkung.
-  proof: core/gitrepo/git.go:WorktreeDiff + internal/cli/flow.go case "diff"; ticket.WithWorktree (core/ticket/trim.go); Test TestForLaneCarriesTheUncommittedWorktreeInItsOwnKey (internal/cli/forlanecommits_test.go), faellt ohne die Aenderung; SKILL.md 36-45 ohne Einschraenkung
+  proof: core/gitrepo/git.go:WorktreeDiff + internal/cli/flow.go case "diff"; ticket.WithWorktree (core/ticket/trim.go:218); Test TestForLaneCarriesTheUncommittedWorktreeInItsOwnKey (internal/cli/forlanecommits_test.go), faellt ohne die Aenderung; SKILL.md 36-57 ohne Einschraenkung
 - [x] internal/tui/signoff.go:118 haengt nicht mehr einen gemeinsamen Suffix ' - recorded at acceptance' an jedes Label, sodass der Ticket-only-Fall 'recorded on the ticket - recorded at acceptance' liest. commitsSourceLabel traegt seinen Schwanz je Fall selbst.
   proof: internal/tui/signoff.go:118 haengt keinen Suffix mehr an; commitsSourceLabel (signoff.go:285) traegt ihn je Fall; Test TestSignOffNamesWhereTheCommitsCameFrom/the_ticket_alone mit notWant, faellt mit dem alten Suffix
 - [x] WorktreeDiff verliert keine untracked Datei mehr, deren Pfad Nicht-ASCII-Zeichen oder Leerzeichen traegt: 'git ls-files --others' laeuft mit -z, und ein --no-index-Aufruf, der mit Exit 1 aber ohne Ausgabe zurueckkommt, obwohl die Datei nicht leer ist, gilt als Fehler und nicht als Treffer. Mit Test.
