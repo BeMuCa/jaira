@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:42:51Z
+updated-at: 2026-09-19T19:43:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-92780
 claimed-at: 2026-09-19T19:09:20Z
@@ -442,3 +442,12 @@ Der ernste Befund ist lanes/README.md - dieses Ticket hat die Datei nicht angefa
 Der zweite Befund ist eine stille Verhaltensaenderung fuer Bestandsbenutzer: Installable() legt die Builtins VOR dem Glob ueber ~/.jaira/lanes in dieselbe seen-Map, also ueberdeckt die eingebettete critique eine frueher adoptierte und angepasste. Nachgestellt mit JAIRA_LANES_DIR und einer geaenderten description: der Fuss von 'jaira lanes' nennt die eingebettete Beschreibung, und 'lanes add critique' schreibt die eingebettete Datei aufs Board. Fuer die zehn alten Builtins war das immer so; neu ist, dass es genau die drei Lanes trifft, die bis gestern NUR ueber diesen Weg zu haben waren. Ob das eine NOTES-Zeile wert ist, ist Alex' Entscheidung und nicht meine - die vorhandene Zeile sagt nur 'Adopting them from the marketplace is no longer needed'.
 
 Der dritte ist kosmetisch: core/market/market.go:78 faengt release.Current == "" ab, Unpinned() baut daraus aber 'this build reports version , which is no released tag'. Nur per -ldflags erreichbar.
+- **2026-09-19 19:43 · Alexander Sacharov** — ENTSCHIEDEN von Alex am 2026-09-19, ausdruecklich in der Sitzung: dieses Ticket geht aus signoff zurueck nach in-progress. Zwei Punkte aus review-gaps werden in DIESEM Ticket geschlossen, nicht in eigenen Tickets.
+
+A) lanes/README.md wurde von diesem Ticket nie angefasst und behauptet vier Dinge, die nicht mehr stimmen: der Schnellstart 'jaira lanes market adopt critique' (die Datei liegt nicht mehr in lanes/), der Verweis 'jaira lanes adopt lanes/critique.md', die Tabelle 'What is here' mit critique und optimize als Katalog-Lanes, und Zeile 58-63 mit dem Satz, 'lanes add' haenge die Lane als letzte Zeile der order-Datei an und 'after:' werde nur ohne order-Datei konsultiert. Das ist zugleich die FUENFTE Fundstelle des veralteten 'appending'-Satzes, und die Grep-Abdeckung aus Runde 4 traegt damit nicht - sie suchte nach der Formulierung statt nach dem Anker 'lanes add'. Das gehoert ehrlich richtiggestellt, nicht stillschweigend.
+
+B) Eine stille Verhaltensaenderung fuer bestehende Benutzer braucht eine eigene Zeile unter '## Unreleased' und einen Test: Installable() (core/lane/order.go:190-205) traegt die Builtins in 'seen' ein, BEVOR ~/.jaira/lanes durchsucht wird. Damit verdeckt das eingebaute critique eine Fassung, die jemand frueher per 'market adopt' geholt und selbst bearbeitet hat. Nachgestellt: mit JAIRA_LANES_DIR auf ein Verzeichnis mit eigener critique-Beschreibung zeigt der Fuss von 'jaira lanes' die eingebaute Beschreibung, und 'lanes add critique' installiert die eingebaute Datei. Fuer die zehn aelteren Builtins war das schon immer so; neu ist, dass es genau die drei Lanes trifft, die es bis gestern nur aus dem Katalog gab. Die bestehende NOTES-Zeile sagt nur 'Adopting them from the marketplace is no longer needed' - das sagt diesem Benutzer nicht, dass seine bearbeitete Fassung nicht mehr benutzt wird.
+
+Kosmetisch dazu: core/market/market.go:78 faengt release.Current == "" gesondert ab, Unpinned() baut daraus aber den Satz 'this build reports version , which is no released tag'. Nur ueber -ldflags erreichbar.
+
+NICHT wieder aufmachen: Alex hat entschieden, dass 'jaira lanes market' eingebettete Lanes NICHT zusaetzlich herausfiltert.
