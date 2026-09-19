@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:42:36Z
+updated-at: 2026-09-19T15:46:16Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-79578
-claimed-at: 2026-09-19T15:36:34Z
+claimed-by: DESKTOP-RFTCH11-11257
+claimed-at: 2026-09-19T15:46:16Z
 mode: ""
 outcome-what: "Die unversionierte Haelfte des Lane-Payloads ist ein eigener Schluessel worktree_diff statt einer Textmarke im diff-String. diff traegt nur noch die committete Historie; die Zeile 'uncommitted work in the working tree' als Trenner ist weg. commits_source bleibt wie es war (git+worktree, auf der ersten Runde worktree) und wird jetzt auch dann mitgegeben, wenn es nur die unversionierte Haelfte gibt. Klartext-Ausgabe druckt sie unter '## Worktree diff (not committed yet)'. Beide Stellen in core/role/builtin/jaira-role-lane/SKILL.md, die auf die Marke zeigten, lesen jetzt den Schluessel. Neuer Test TestForLaneKeepsTheCommittedAndUncommittedHalvesApart, NOTES.md-Zeile unter ## Unreleased."
 outcome-why: "Die Textmarke war keine Grenze: sie steht praefixlos am Zeilenanfang und ist von Patch-Inhalt nicht zu unterscheiden. Am Payload dieses Tickets kam sie neunmal vor, der erste Treffer rund 900 Zeilen vor der echten Grenze - wer dem Rollen-Prompt folgte und beim ersten Treffer stehenblieb, hielt fertige, committete Arbeit fuer die Arbeit nebenan. Das ist derselbe Fehlertyp, gegen den dieses Ticket angetreten ist: eine Markierung ohne Zusicherung, als Grenze gemeldet. Zwei Schluessel koennen nicht verwechselt werden - es gibt keine Marke mehr, die man verfehlen kann."
