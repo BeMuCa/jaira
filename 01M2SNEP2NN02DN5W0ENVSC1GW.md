@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:47:15Z
+updated-at: 2026-09-19T19:47:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -452,3 +452,18 @@ B) Eine stille Verhaltensaenderung fuer bestehende Benutzer braucht eine eigene 
 Kosmetisch dazu: core/market/market.go:78 faengt release.Current == "" gesondert ab, Unpinned() baut daraus aber den Satz 'this build reports version , which is no released tag'. Nur ueber -ldflags erreichbar.
 
 NICHT wieder aufmachen: Alex hat entschieden, dass 'jaira lanes market' eingebettete Lanes NICHT zusaetzlich herausfiltert.
+- **2026-09-19 19:47 · Alexander Sacharov** — Ehrlichkeitspunkt zu DoD 7: die Grep-Abdeckung aus Runde 4 traegt NICHT. Die Notiz von Runde 4 behauptet, die veraltete 'appending'-Formulierung sei erschoepfend gejagt und es gebe genau vier Fundstellen. lanes/README.md war die fuenfte und stand die ganze Zeit da.
+
+Warum die Suche sie verfehlt hat: gesucht wurde nach der FORMULIERUNG - 'append(s|ing) ... the end' und 'end of the (column) order'. Die README schreibt 'appends the lane as the last line of .jaira/lanes/order'. Kein 'end', also kein Treffer. Wer nach Woertern sucht statt nach dem Gegenstand, findet nur die Synonyme, die er selbst schon im Kopf hatte.
+
+Diesmal am Anker gesucht statt an der Formulierung, in *.go und *.md, ohne .jaira/ und ohne .planning/ (Historie, wird nicht korrigiert):
+- grep -rn 'lanes add' --include=*.go --include=*.md
+- grep -rniE 'last line|rightmost|end of (the )?(column )?order|at the end of the board' --include=*.go --include=*.md
+
+Ergebnis: in lebendigen Quellen genau ZWEI veraltete Stellen, nicht eine.
+1. lanes/README.md 59-63 - die bekannte, jetzt neu geschrieben.
+2. internal/cli/lanes.go:74, Kommentar in 'jaira lanes use': 'A lane new to the board takes the last column, like lanes add.' Das Anhaengen stimmt fuer 'use' weiterhin, der Vergleich mit 'lanes add' nicht mehr. Kommentar praezisiert, Code unveraendert - 'use' kopiert eine Datei und traegt keine Platzierungsabsicht.
+
+Sauber sind: docs/COMMANDS.md:153 (nennt die Ankerkette), core/release/NOTES.md:19, docs/AGENTS.md:272 (spricht ueber Load, nicht ueber Add - dort ist die Aussage richtig), README.md:233, internal/cli/lanes.go:130, internal/tui/lanes.go:448/497, core/lane/order.go.
+
+Was daraus zu lernen ist und was ich nicht behaupte: ich sage NICHT, dass es jetzt erschoepfend ist. Ich sage, dass zwei unabhaengige Anker (das Kommando 'lanes add' und die Ortswoerter 'last line/rightmost/end') zwei Treffer ergeben haben und beide erledigt sind. Eine Formulierung, die weder das Kommando noch eines dieser Woerter enthaelt, faende auch diese Suche nicht.
