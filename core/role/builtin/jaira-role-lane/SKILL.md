@@ -43,7 +43,10 @@ then ends in `+worktree`, or is plain `worktree` on a first round that carries
 no commits at all, so a lane that changed no code and a conversational ticket
 that has not been committed yet are both there without your going to look. That
 half is repo-wide and not ticket-wide — `worktree_diff` carries every
-uncommitted change in the repository except `.jaira/tickets`, so work that has
+uncommitted change in the repository except `.jaira/tickets` and anything
+`.gitignore` covers, because git is asked for untracked files with
+`--exclude-standard`, and on a board `jaira init` gitignored and `jaira share`
+has not yet freed that is the whole of `.jaira/`; so work that has
 nothing to do with this ticket arrives in it beside yours, and nothing can tell
 the two apart, because nothing knows which files a ticket owns. The
 one commit that escapes is a commit that neither names the ticket id
@@ -150,7 +153,9 @@ On the first round `diff` is empty, because there are no commits yet, and
 `worktree_diff` is everything there is. Read the two keys the way the payload
 writes them: `diff` is always present and is an empty string when there is
 nothing committed, while `worktree_diff` is left out entirely when the working
-tree has nothing to show — so test `diff` for content, never for absence.
+tree has nothing to show — so test `diff` for content and never for absence.
+That sentence is about `diff` alone: `worktree_diff` is the other way round,
+and the absence of the key is exactly what you test it for.
 `commits_source` says which halves are there: it ends in `+worktree` when the
 uncommitted half is present, and on the first round it is plain `worktree`.
 

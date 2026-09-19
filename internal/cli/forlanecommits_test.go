@@ -313,7 +313,7 @@ func TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce(t *testing.T) {
 // struct the other tests unmarshal into cannot see the difference, so the
 // payload is read as a bare map here.
 func TestForLaneLeavesTheWorktreeKeyOutOfACleanTree(t *testing.T) {
-	dir, _, _, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 18, 13, 0, 0, 0, time.UTC))
+	dir, s, _, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 18, 13, 0, 0, 0, time.UTC))
 	write("committed.txt", "eingecheckt\n")
 	run("add", ".")
 	run("commit", "-q", "-m", "feat("+h+"): the committed change")
@@ -349,5 +349,40 @@ func TestForLaneLeavesTheWorktreeKeyOutOfACleanTree(t *testing.T) {
 	}
 	if got, _ := payload["complete"].(bool); !got {
 		t.Error("complete is false although nothing is missing")
+	}
+
+	// The other half of the same asymmetry, and the half nothing pinned: diff
+	// is ALWAYS there, empty when there is nothing, because the role prompt
+	// tells its reader to test diff for content and worktree_diff for the
+	// absence of the key. Read on a ticket with no commits and a clean tree,
+	// where diff is the empty string — a payload that dropped the key here
+	// would leave a lane unable to tell "nothing to judge" from "this build
+	// does not carry a diff at all".
+	empty, err := s.Create(map[string]string{
+		ticket.FieldID:              ticket.NewID(time.Date(2026, 9, 18, 14, 0, 0, 0, time.UTC)),
+		ticket.FieldTitle:           "ohne commits",
+		ticket.FieldStatus:          "review",
+		ticket.FieldGoal:            "g",
+		ticket.FieldDoD:             "d",
+		ticket.FieldOutcomeWhat:     "w",
+		ticket.FieldOutcomeResolves: "r",
+	}, nil, "## Definition of Done\n\n- [x] d\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err = runCLI(t, dir, "show", ticket.Handle(empty.ID), "--for-lane", "review", "--json")
+	if err != nil {
+		t.Fatalf("show --for-lane review: %v\n%s", err, out)
+	}
+	var none map[string]any
+	if err := json.Unmarshal([]byte(out), &none); err != nil {
+		t.Fatalf("payload is not json: %v\n%s", err, out)
+	}
+	v, ok := none["diff"]
+	if !ok {
+		t.Fatalf("the payload has no diff key although diff is promised to be always present, empty when there is nothing:\n%s", out)
+	}
+	if got, _ := v.(string); got != "" {
+		t.Errorf("diff is %q on a ticket with no commits and a clean tree, want the empty string", got)
 	}
 }
