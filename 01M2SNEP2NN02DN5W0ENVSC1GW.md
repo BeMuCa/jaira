@@ -23,10 +23,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:42:15Z
+updated-at: 2026-09-19T20:42:23Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-15130
-claimed-at: 2026-09-19T19:43:50Z
+claimed-by: DESKTOP-RFTCH11-24729
+claimed-at: 2026-09-19T20:42:23Z
 mode: conversational
 outcome-what: |-
   internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor; Kommentar und Fehlermeldung nennen den wirklichen Grund (Anker 'done'), Assertion unveraendert
