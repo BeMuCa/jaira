@@ -1,7 +1,7 @@
 ---
 id: 01M2SNEP2NN02DN5W0ENVSC1GW
 title: "Die Pruefschleife gehoert ins Binary, nicht in den Katalog"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,9 +21,14 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 2fb8f177aa0e72c09f2082c56f5713482b885ec3
+  - 4b7805af52762bb1b2407633034829d482c6c945
+  - b5b877dc2f5dd396b9b71b9db5e609cdf3d5a3e0
+  - 155433faa2d566f0c5a8fbc3b556a9a947cc30e6
+  - 63c86825b0319940ef7e0361baf8697d139912b2
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T21:22:57Z
+updated-at: 2026-09-19T21:32:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46241
 claimed-at: 2026-09-19T21:15:37Z
