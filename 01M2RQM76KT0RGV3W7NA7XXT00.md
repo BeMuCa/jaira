@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:47:09Z
+updated-at: 2026-09-19T20:47:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
@@ -197,7 +197,8 @@ review-check: |-
   proof: core/role/builtin/jaira-role-lane/SKILL.md:44-48 - ein Satz in dem Abschnitt, der worktree_diff beschreibt: die Haelfte ist repo-weit, traegt jede unversionierte Aenderung ausser .jaira/tickets, und nichts kann sie vom Ticket trennen, weil nichts weiss, welche Dateien ein Ticket besitzt. Kein Code-Fix.
 - [x] Die zweite Haelfte der Zusage 'diff ist immer da, notfalls ein leerer String' (internal/cli/flow.go:673) haelt ein Test fest: der Payload traegt den Schluessel diff auch dann, wenn er leer ist. Eine Mutation, die diff nur bedingt setzt - so wie worktree_diff -, muss den Test rot machen. Am besten eine weitere Zusicherung in dem Test, der die andere Haelfte schon abdeckt.
   proof: internal/cli/forlanecommits_test.go TestForLaneLeavesTheWorktreeKeyOutOfACleanTree — zweiter Payload auf einem Ticket ohne Commits bei sauberem Baum: Schluessel diff vorhanden und leer. Mutationsprobe: diff in internal/cli/flow.go nur bedingt gesetzt (wie worktree_diff) -> Test rot ('the payload has no diff key'); flow.go zurueckgesetzt, git diff auf flow.go leer
-- [ ] Der Satz in core/role/builtin/jaira-role-lane/SKILL.md, der die repo-weite Worktree-Haelfte beschreibt, nennt die zweite Ausnahme mit: core/gitrepo/git.go ruft ls-files mit --exclude-standard, also stehen gitignorierte unverfolgte Dateien NICHT im worktree_diff. Auf einem Board, das jaira init bis zu jaira share gitignoriert, ist das ganze .jaira/. Wer 'jede unversionierte Aenderung ausser .jaira/tickets' liest und auf einem ungeteilten Board arbeitet, bekommt heute das Gegenteil dessen, was der Satz verspricht.
+- [x] Der Satz in core/role/builtin/jaira-role-lane/SKILL.md, der die repo-weite Worktree-Haelfte beschreibt, nennt die zweite Ausnahme mit: core/gitrepo/git.go ruft ls-files mit --exclude-standard, also stehen gitignorierte unverfolgte Dateien NICHT im worktree_diff. Auf einem Board, das jaira init bis zu jaira share gitignoriert, ist das ganze .jaira/. Wer 'jede unversionierte Aenderung ausser .jaira/tickets' liest und auf einem ungeteilten Board arbeitet, bekommt heute das Gegenteil dessen, was der Satz verspricht.
+  proof: core/role/builtin/jaira-role-lane/SKILL.md:45-51 — derselbe Satz nennt jetzt neben .jaira/tickets auch alles, was .gitignore deckt (core/gitrepo/git.go:213 ls-files --exclude-standard), und dass das auf einem nicht geteilten Board das ganze .jaira/ ist
 - [ ] Der Satz 'test diff for content, never for absence' in core/role/builtin/jaira-role-lane/SKILL.md sagt ausdruecklich, worauf er sich bezieht: er gilt fuer diff und gerade nicht fuer worktree_diff, der genau umgekehrt auf Abwesenheit des Schluessels geprueft wird. Ein eiliger Leser darf ihn nicht mehr auf worktree_diff beziehen koennen.
 
 ## Options
