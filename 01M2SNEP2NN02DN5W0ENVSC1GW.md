@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:03:26Z
+updated-at: 2026-09-19T20:03:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -533,3 +533,11 @@ Bewusst stehen gelassen, damit die naechste Runde nicht daran zieht: core/releas
 Gegengeprueft, nicht geglaubt: beide neuen Tests per Mutation. Installable() mit umgedrehter Schleifenreihenfolge -> TestBuiltinShadowsAnAdoptedCopyOfTheSameID FAIL ('the adopted file won'); Unpinned() auf die alte Fassung zurueck -> TestBlankVersionStillReadsAsASentence FAIL ('version ,'). Beide Dateien danach wieder hergestellt, git diff der beiden Quelldateien unveraendert gegenueber dem Stand der Runde. build/vet/'go test ./... -count=1' gruen. Eigene Ankersuche ueber *.go und *.md (ohne .jaira/, ohne .planning/) fand ausser dem Befund oben keine weitere lebende Fundstelle; internal/cli/lanes.go:74 als sechste Stelle bestaetigt und korrekt praezisiert.
 
 Nicht wieder aufgemacht: DoD 1-6, der Verzicht auf einen zusaetzlichen market-Filter und der Vorrang 'Builtin verdeckt adoptierte Fassung'.
+- **2026-09-19 20:03 · Alexander Sacharov** — in-progress, Runde 6: der blockierende Fund der fuenften Kritik behoben, der kleine Fund mitgenommen. Was der Diff nicht sagt:
+
+- BEIDE Behauptungen der Kritik selbst nachgestellt statt geglaubt, und beide stimmen. lanes/secrets-scan.md:5 traegt 'after: in-progress'. Und am gebauten Binary auf einem Wegwerf-Board (HOME und JAIRA_LANES_DIR auf ein Temp-Verzeichnis mit einer Kopie von lanes/secrets-scan.md, JAIRA_MARKET_API auf http://127.0.0.1:1/dead, also ohne Netz): 'jaira lanes add secrets-scan' meldet 'added secrets-scan to this project after in-progress', und .jaira/lanes/order lautet danach backlog brainstorm todo pre-process in-progress secrets-scan human review signoff done blocked. Die Lane setzt sich also wirklich selbst, niemand verschiebt eine Spalte. Die Tabellenzelle war damit die letzte Stelle, die das Gegenteil behauptete.
+- Den kleinen Fund habe ich GEMACHT und nicht liegen lassen, weil er in eine Teilklausel passte. core/lane/order.go insertAfterAnchor: das 'warnings = append(...)' sitzt unter 'if l.After != ""', der Fallback 'at = terminalIDIndex(ids, set)' steht darunter und laeuft in beiden Faellen. Eine Lane ohne after: landet also an derselben Stelle wie eine mit unaufloesbarem Anker, nur stumm. Der Absatz sagt das jetzt in einem Halbsatz ('no after: at all parks it there too and says nothing') und nennt dazu den Grund, den der Kommentar in order.go:278 schon traegt: kein Anker ist eine Aussage, kein Versehen. Der Absatz ist dadurch eine Zeile laenger und keine Behauptung weniger wahr.
+- Warum die Zelle 'after implementing' heisst und nicht 'after in-progress': die Tabelle spricht in Rollen, nicht in Lane-ids - die Spalte 'Sends work back to' sagt ebenfalls 'implementing'. changelog-writer sagt 'after review'. Wer hier auf ids umstellen will, muss die ganze Tabelle umstellen; halb ist schlechter als gar nicht.
+- Keine NOTES.md-Zeile, und das ist kein Vergessen: lanes/README.md ist Repository-Prosa, kein Verhalten, das ein Benutzer am Binary beobachten kann. core/release/NOTES.md:131 unter '## 0.1.1' traegt denselben veralteten Satz und bleibt unangetastet - geschlossene Geschichte nach CLAUDE.md.
+- Beweis von DoD 5 richtiggestellt: er sagte 'fuenf Zeilen' unter '## Unreleased', seit DoD 8 sind es sechs. Nicht am Grep gezaehlt, sondern an release.Notes() selbst - ein Wegwerf-Test im Paket core/release gab 'Unreleased -> 6' aus und wurde danach geloescht (git status im Arbeitsbaum zeigt keine neue Datei in core/release).
+- Nicht angefasst: DoD 1-6 als solche, die Entscheidung gegen einen zusaetzlichen market-Filter, der Vorrang 'Builtin verdeckt adoptierte Fassung'.
