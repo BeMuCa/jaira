@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:01:22Z
+updated-at: 2026-09-19T20:01:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -130,7 +130,7 @@ review-check: |-
 - [x] Ein Board, das jaira als reinen Tracker benutzt, wird nicht mit einem Konveyer beladen, den niemand faehrt - die Wahl bleibt eine Wahl.
   proof: core/lane/defaultboard_test.go TestFreshBoardGetsOnlyTheDefaultLanes — ein frisch angelegtes Board laedt als genau die zehn Lanes von heute, obwohl das Binary jetzt dreizehn traegt
 - [x] Je eine Zeile in core/release/NOTES.md fuer das, was ein Benutzer dadurch anders tut.
-  proof: core/release/NOTES.md unter '## Unreleased': fuenf Zeilen, per Notes() gegengeprueft - der Zeilenscan liest genau fuenf Aenderungen
+  proof: core/release/NOTES.md unter '## Unreleased': sechs Zeilen (die fuenf dieses Tickets plus die Verdeckungszeile aus DoD 8), per Notes() gegengeprueft - der Zeilenscan liest genau sechs Aenderungen
 - [x] Der Katalog ist an eine Version gebunden oder sagt, dass er es nicht ist: 'jaira lanes market' holt heute von 'https://api.github.com/repos/BeMuCa/jaira/contents/lanes' ohne '?ref=' und bekommt damit den HEAD des Default-Branches, egal wie alt das laufende Binary ist. Entweder fragt der Aufruf den Tag des laufenden Binaries ab, oder er sagt dem Benutzer, dass er die Entwicklungsfassung bekommt. Nachgestellt mit einem Binary, das eine aeltere Version meldet.
   proof: core/market/market.go apiBase()+pinnedRef()+Unpinned(); Tests core/market/market_test.go TestListPinsTheCatalogueToTheRunningTag, TestDevBuildSendsNoRefAndSaysSo, TestRefIsSetOnAnAddressThatAlreadyHasAQuery; nachgestellt mit einem Binary aus -ldflags '-X main.version=0.1.4': ASKED /contents/lanes?ref=v0.1.4
 - [x] lanes/README.md sagt nichts Falsches mehr: der Schnellstart nennt keine Datei, die nicht in lanes/ liegt, der Verweis auf 'jaira lanes adopt lanes/critique.md' ist weg oder auf eine vorhandene Datei umgestellt, die Tabelle 'What is here' zaehlt critique und optimize nicht mehr als Katalog-Lanes, und der Absatz zu 'jaira lanes add' beschreibt die after:-Ankerkette statt des Anhaengens als letzte Zeile der order-Datei. Nachweis: ls lanes/ gegen jede in der README genannte Datei, plus grep nach 'appends the lane as the last line' ohne Treffer.
