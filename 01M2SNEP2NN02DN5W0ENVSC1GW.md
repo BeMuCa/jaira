@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:10:54Z
+updated-at: 2026-09-19T19:11:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-92780
 claimed-at: 2026-09-19T19:09:20Z
@@ -70,6 +70,26 @@ review-verdict: |-
   Das eine, was ich NICHT durchwinken kann, ist lanes/README.md: die Datei beschreibt weiter einen Katalog mit critique und optimize darin und einen 'lanes add', der anhaengt - beides hat dieser Commit abgeschafft. Sie ist damit die einzige verbliebene Stelle im Repository, die dem Leser etwas erzaehlt, was das Binary nicht mehr tut, und sie ist ausgerechnet die Titelseite des Katalogs. Das ist eine Nachtragsarbeit von wenigen Minuten, kein Konstruktionsfehler - deshalb Weitergabe an signoff und nicht zurueck nach in-progress.
 
   Menschensache, und darum nicht von mir entschieden: ob Befund 1 noch auf diesem Ticket erledigt wird (die Datei gehoert sachlich dazu, und 'client-facing' im Sinne von CLAUDE.md ist sie nicht - sie ist Repository-Dokumentation, keine NOTES-Zeile), und ob Befund 2 - eine schon adoptierte, angepasste Fassung von critique/optimize/testing wird ab jetzt still von der eingebetteten ueberdeckt - eine eigene NOTES-Zeile bekommt oder als hinnehmbar gilt. Ich bin nicht das letzte Wort.
+review-check: |-
+  So pruefst du das selbst nach. Alles laeuft im Worktree /home/alex/projects/.worktrees/jaira-VSC1GW auf dem Zweig feat/VSC1GW. Kein Netz noetig.
+
+  1. Ins Verzeichnis: cd /home/alex/projects/.worktrees/jaira-VSC1GW
+  2. go build ./... - es kommt keine Ausgabe. Kommt eine, ist der Rest hinfaellig.
+  3. go vet ./... - es kommt keine Ausgabe.
+  4. go test ./... -count=1 - jede Zeile beginnt mit 'ok' oder '?'. Kein 'FAIL'. Dauert etwa eine Minute, internal/tui allein 36 Sekunden.
+  5. Ein Testbinary bauen, damit die naechsten Schritte nicht das installierte jaira benutzen: go build -o /tmp/jt ./cmd/jaira
+  6. Ein leeres Wegwerf-Board anlegen: mkdir -p /tmp/jt-board && cd /tmp/jt-board && git init -q . && HOME=/tmp JAIRA_LANES_DIR=/tmp/leer /tmp/jt init
+  7. HOME=/tmp JAIRA_LANES_DIR=/tmp/leer /tmp/jt lanes ausfuehren. Die Tabelle hat ZEHN Zeilen - critique, optimize und testing sind NICHT darunter. Das ist DoD 4: ein frisches Board bekommt keine Lane mehr als heute.
+  8. Bei derselben Ausgabe ganz nach unten schauen. Dort steht ein Absatz 'Shipped with this binary, not on this board - no network needed:' mit genau den drei Namen critique, optimize, testing, je mit Beschreibung, und darunter die Zeile 'Add one with jaira lanes add <id>.'. Das ist DoD 2.
+  9. Ohne Netz installieren, mit einer toten Adresse fuer den Katalog: HOME=/tmp JAIRA_LANES_DIR=/tmp/leer JAIRA_MARKET_API=http://127.0.0.1:1/tot /tmp/jt lanes add testing. Es erscheint 'added testing to this project after in-progress (...)'. Keine Fehlermeldung ueber das Netz. Das ist DoD 3.
+  10. cat .jaira/lanes/order ansehen. testing steht zwischen in-progress und human - nicht am Ende hinter blocked. Das ist der Kern von Fund 2 des Tickets.
+  11. Die beiden anderen dazu: HOME=/tmp JAIRA_LANES_DIR=/tmp/leer /tmp/jt lanes add optimize, dann dasselbe mit critique. Danach cat .jaira/lanes/order - die Reihenfolge lautet ... in-progress critique optimize testing human ... Jede ist ueber die Kette an ihren Platz gegangen, ohne dass jemand eine Position getippt hat.
+  12. HOME=/tmp JAIRA_LANES_DIR=/tmp/leer /tmp/jt lanes nochmal ausfuehren. Der Absatz aus Schritt 8 ist jetzt weg - es gibt nichts mehr anzubieten.
+  13. Die Warnung ansehen: ein zweites leeres Board anlegen wie in Schritt 6 unter /tmp/jt-board2, dann dort HOME=/tmp JAIRA_LANES_DIR=/tmp/leer /tmp/jt lanes remove in-progress und danach ... lanes add critique. Es erscheint 'added critique to this project after pre-process' - die Kette ist DURCH die entfernte Lane hindurch weitergegangen. Eine Warnung erscheint hier absichtlich nicht; sie kommt erst, wenn gar nichts in der Kette auf dem Board ist (Test TestLanesAddWarnsWithTheAnchorTheLaneNames deckt das ab).
+  14. Den versionsgebundenen Katalog (DoD 6) von Hand zu sehen braucht einen Server; dafuer ist go test ./core/market/ -run 'TestListPinsTheCatalogueToTheRunningTag|TestDevBuildSendsNoRefAndSaysSo|TestRefIsSetOnAnAddressThatAlreadyHasAQuery' -v der Weg. Alle drei sagen PASS. Der erste prueft, dass der Server ?ref=v0.3.0 gefragt wird, der zweite dass ein dev-Build keinen ref schickt und den Hinweissatz ausgibt, der dritte dass eine Adresse mit eigener Query nicht kaputtgeht.
+  15. Befund 1 selbst sehen: sed -n '10,16p;40,44p;58,63p' lanes/README.md und daneben ls lanes/. Die README fuehrt critique und optimize vor, im Verzeichnis liegen nur changelog-writer.md, secrets-scan.md und die README.
+  16. Befund 2 selbst sehen: mkdir -p /tmp/jt-user && sed 's/^description:.*/description: MEINE EIGENE FASSUNG/' core/lane/builtin/25-critique.md > /tmp/jt-user/critique.md, dann auf einem frischen Wegwerf-Board HOME=/tmp JAIRA_LANES_DIR=/tmp/jt-user /tmp/jt lanes add critique und danach grep '^description:' .jaira/lanes/critique.md. Dort steht die EINGEBETTETE Beschreibung, nicht 'MEINE EIGENE FASSUNG'.
+  17. Aufraeumen: rm -rf /tmp/jt-board /tmp/jt-board2 /tmp/jt-user /tmp/leer /tmp/jt
 ---
 
 # Die Pruefschleife gehoert ins Binary, nicht in den Katalog
