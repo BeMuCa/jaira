@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:51:29Z
+updated-at: 2026-09-19T15:51:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -336,3 +336,4 @@ Befund 4 (kosmetisch): derselbe Absatz hat beim Umschreiben seinen Zeilenumbruch
 
 Nicht beanstandet und ausdruecklich in Ordnung: die Klartextausgabe. Der worktree_error steht weiter ueber dem Diff, den er qualifiziert, die Worktree-Haelfte bekommt mit '## Worktree diff (not committed yet)' eine eigene Ueberschrift statt einer Zeile im Codeblock, und dass die Provenienz-Zeile ('N commit(s), from ...') in der ersten Runde ohne Commits nicht gedruckt wird, ist richtig - es gibt dann nichts zu zaehlen.
 - **2026-09-19 15:48 · Alexander Sacharov** — Nebenbefund aus dieser Lane, nicht Teil von DoD 12 und hier nicht repariert: 'jaira move <id> --from-lane critique' kann nie gelingen. readLaneOutput (internal/cli/claim.go:226-240) kennt nur outcome-what/why/resolves, question und commits; fuer review-summary, review-gaps, review-verdict und review-check gibt get() immer den leeren String zurueck, also meldet der Aufruf 'lane critique requires review-summary in its output', egal was auf stdin steht. Umweg fuer diese Lane war 'jaira set <id> review-summary=... --append' und danach ein schlichtes 'jaira move --to in-progress'.
+- **2026-09-19 15:51 · Alexander Sacharov** — Befund 2 am Code nachgeprueft, nicht nur an der Paraphrase: internal/cli/flow.go:678 legt 'diff' unbedingt in die Payload-Map, auch als Leerstring; weggelassen wird umgekehrt 'worktree_diff' (flow.go:686-688, nur wenn nicht leer). Der Zweig flow.go:643-651 laesst bei leerem Commit- UND Worktree-Diff nur die missing-Zeile fallen und springt mit continue weiter - 'diff' bleibt also auch dann als leerer Schluessel in der Map. Ein Leser, der auf Abwesenheit von .diff prueft, bekommt nie true; deshalb sagt SKILL.md jetzt zusaetzlich, dass man 'diff' auf Inhalt und nicht auf Vorhandensein prueft. Befund 3 ebenso: ticket.CommitsSource gibt bei len(merged)==0 den Leerstring zurueck (core/ticket/trim.go:197-198), und WithWorktree("") liefert schlicht 'worktree' ohne Plus (trim.go:218-222) - der Lane-Absatz oben knuepft die Worktree-Haelfte darum nicht mehr an ein Plus, sondern an 'es gibt unversionierte Arbeit'. Zwei Fundstellen der alten Trennzeile bleiben absichtlich stehen: NOTES.md:18 und SKILL.md:139 erzaehlen, dass es sie gab und warum sie weg ist - das ist Geschichte, kein Wegweiser.
