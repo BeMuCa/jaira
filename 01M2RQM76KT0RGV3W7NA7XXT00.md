@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:36:34Z
+updated-at: 2026-09-19T15:36:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79578
 claimed-at: 2026-09-19T15:36:34Z
@@ -92,6 +92,7 @@ review-check: |-
   proof: internal/cli/flow.go:604-631 (worktreeErr) und :673-675 (Payload-Schluessel); Klartext :717-724 steht ueber dem Diff und nur neben einem, weil die missing-Zeile denselben Text sonst ein zweites Mal traegt; Tests TestForLaneSaysWhenTheWorktreeCouldNotBeRead und TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce, beide gegengeprobt
 - [x] Ein SHA, zu dem git keinen Patch zeigen kann (rebased, cherry-picked, nicht gefetcht), wird im Payload benannt und nicht bloss als Zeile '(not available locally)' mitten im Patch versteckt: repo.Diff gibt die nicht zeigbaren SHAs zurueck, der Payload nennt sie, und der unerreichbare Fehlerzweig in flow.go faellt weg. Mit Test.
   proof: core/gitrepo/git.go:88-114 Diff gibt die nicht zeigbaren SHAs zurueck statt eines nie gesetzten error; internal/cli/flow.go:600-602,667-671; Test TestForLaneNamesTheCommitsGitCouldNotShow
+- [ ] Die committete und die unversionierte Haelfte des Lane-Payloads sind zwei getrennte Payload-Schluessel (diff und worktree_diff) statt eines Strings mit der Textmarke 'uncommitted work in the working tree'. Nachgestellt am Payload dieses Tickets selbst: kein Leser kann die Grenze mehr verfehlen, weil es keine Textmarke mehr gibt, die im Patch-Inhalt noch einmal vorkommen kann.
 
 ## Options
 
