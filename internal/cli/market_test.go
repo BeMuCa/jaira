@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const marketCritique = "---\nid: critique\nname: Critique\nafter: in-progress\nprecedence: 45\nagentic: true\nmodel-tier: strong\ndescription: Judges the approach.\n---\n# Prompt\n\nCriticise.\n"
+const marketGizmo = "---\nid: gizmo\nname: Gizmo\nafter: in-progress\nprecedence: 45\nagentic: true\nmodel-tier: strong\ndescription: Judges the approach.\n---\n# Prompt\n\nCriticise.\n"
 
 // marketServer stands in for GitHub's contents API and raw files.
 func marketServer(t *testing.T) {
@@ -20,10 +20,10 @@ func marketServer(t *testing.T) {
 	mux.HandleFunc("/contents/lanes", func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode([]map[string]any{
 			{"name": "README.md", "path": "lanes/README.md", "type": "file", "download_url": srv.URL + "/raw/README.md"},
-			{"name": "critique.md", "path": "lanes/critique.md", "type": "file", "download_url": srv.URL + "/raw/critique.md"},
+			{"name": "gizmo.md", "path": "lanes/gizmo.md", "type": "file", "download_url": srv.URL + "/raw/gizmo.md"},
 		})
 	})
-	mux.HandleFunc("/raw/critique.md", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(marketCritique)) })
+	mux.HandleFunc("/raw/gizmo.md", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(marketGizmo)) })
 	mux.HandleFunc("/raw/README.md", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("# Catalogue\n")) })
 	srv = httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -41,7 +41,7 @@ func TestLanesMarketListsWhatTheRepositoryOffers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lanes market: %v\n%s", err, out)
 	}
-	for _, want := range []string{"critique", "Judges the approach.", "JAIRA_MARKET_API", "market adopt"} {
+	for _, want := range []string{"gizmo", "Judges the approach.", "JAIRA_MARKET_API", "market adopt"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("listing lacks %q:\n%s", want, out)
 		}
@@ -60,7 +60,7 @@ func TestLanesMarketListsWhatTheRepositoryOffers(t *testing.T) {
 	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
 		t.Fatalf("invalid json: %v\n%s", err, jout)
 	}
-	if len(payload.Lanes) != 1 || payload.Lanes[0]["id"] != "critique" || payload.Lanes[0]["model_tier"] != "strong" {
+	if len(payload.Lanes) != 1 || payload.Lanes[0]["id"] != "gizmo" || payload.Lanes[0]["model_tier"] != "strong" {
 		t.Errorf("json lanes = %v", payload.Lanes)
 	}
 }
@@ -72,25 +72,25 @@ func TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt(t *testing.T) {
 	root := lanesTestProject(t)
 	marketServer(t)
 
-	out, err := runLanes(t, root, "market", "adopt", "critique")
+	out, err := runLanes(t, root, "market", "adopt", "gizmo")
 	if err != nil {
 		t.Fatalf("market adopt: %v\n%s", err, out)
 	}
-	got, err := os.ReadFile(filepath.Join(catalogue, "critique.md"))
+	got, err := os.ReadFile(filepath.Join(catalogue, "gizmo.md"))
 	if err != nil {
 		t.Fatalf("expected the lane in the catalogue: %v", err)
 	}
-	if string(got) != marketCritique {
+	if string(got) != marketGizmo {
 		t.Errorf("catalogue copy differs from what was served:\n%s", got)
 	}
-	if !strings.Contains(out, "lanes add critique") {
+	if !strings.Contains(out, "lanes add gizmo") {
 		t.Errorf("adopt output does not say how to put it on the board:\n%s", out)
 	}
 
-	if _, err := runLanes(t, root, "market", "adopt", "critique"); err == nil {
+	if _, err := runLanes(t, root, "market", "adopt", "gizmo"); err == nil {
 		t.Error("a second adopt without --force must refuse")
 	}
-	if out, err := runLanes(t, root, "add", "critique"); err != nil {
+	if out, err := runLanes(t, root, "add", "gizmo"); err != nil {
 		t.Fatalf("lanes add after market adopt: %v\n%s", err, out)
 	}
 }
@@ -100,11 +100,11 @@ func TestLanesMarketUnknownIdNamesWhatExists(t *testing.T) {
 	lanesTestCatalogue(t)
 	root := lanesTestProject(t)
 	marketServer(t)
-	out, err := runLanes(t, root, "market", "adopt", "critiqe")
+	out, err := runLanes(t, root, "market", "adopt", "gizmoo")
 	if err == nil {
 		t.Fatalf("expected a refusal, got:\n%s", out)
 	}
-	if !strings.Contains(err.Error(), "critique") {
+	if !strings.Contains(err.Error(), "gizmo") {
 		t.Errorf("refusal does not name what exists: %v", err)
 	}
 }
@@ -118,7 +118,7 @@ func TestLanesMarketWithoutNetworkFailsPlainly(t *testing.T) {
 	if _, err := runLanes(t, root, "market"); err == nil {
 		t.Fatal("expected an error with nothing listening")
 	}
-	if _, err := runLanes(t, root, "market", "adopt", "critique"); err == nil {
+	if _, err := runLanes(t, root, "market", "adopt", "gizmo"); err == nil {
 		t.Fatal("expected adopt to fail with nothing listening")
 	}
 	if entries, _ := os.ReadDir(catalogue); len(entries) != 0 {

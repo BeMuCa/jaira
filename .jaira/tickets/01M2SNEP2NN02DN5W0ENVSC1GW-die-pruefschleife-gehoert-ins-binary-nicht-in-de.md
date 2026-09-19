@@ -1,7 +1,7 @@
 ---
 id: 01M2SNEP2NN02DN5W0ENVSC1GW
 title: "Die Pruefschleife gehoert ins Binary, nicht in den Katalog"
-status: signoff
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,23 +23,26 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:20:20Z
+updated-at: 2026-09-19T20:48:25Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-15130
-claimed-at: 2026-09-19T19:43:50Z
+claimed-by: DESKTOP-RFTCH11-24729
+claimed-at: 2026-09-19T20:42:23Z
 mode: conversational
 outcome-what: |-
   internal/cli/lanes_test.go: TestLanesAddAfterRemoveAppendsAtEnd heisst jetzt TestLanesAddAfterRemoveLandsAfterItsAnchor; Kommentar und Fehlermeldung nennen den wirklichen Grund (Anker 'done'), Assertion unveraendert
   Runde 5 (aus signoff zurueck): lanes/README.md neu geschrieben - Schnellstart, Klon-Zeile und Tabelle nennen nur noch, was in lanes/ liegt (secrets-scan, changelog-writer), neuer Absatz 'Where it lands' beschreibt die after:-Ankerkette statt des Anhaengens. internal/cli/lanes.go:74 Kommentar praezisiert (sechste Fundstelle desselben veralteten Satzes). Eine NOTES-Zeile plus Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID zur Verdeckung einer adoptierten Fassung durch den Builtin. core/market/market.go Unpinned() sagt bei leerem release.Current 'reports no version' statt eines Satzes mit Loch, mit Test.
   Runde 6: lanes/README.md an zwei Stellen richtiggestellt - die Zelle 'Sits' von secrets-scan in der Tabelle 'What is here' lautet jetzt nur noch 'after implementing' (die Klausel ', once you move the column there' ist weg), und der Absatz 'Where it lands' haelt zusaetzlich fest, dass eine Lane ganz ohne 'after:' ebenfalls vor der terminalen Lane parkt, dabei aber nichts sagt. Dazu der Beweis von DoD 5 auf sechs Zeilen unter '## Unreleased' korrigiert. Kein Go-Code geaendert.
+  Fixture-Lane-Id in internal/cli/market_test.go von 'critique' auf das fiktive 'gizmo' umgestellt (marketCritique -> marketGizmo, gizmo.md, alle vier market-Tests).
 outcome-why: |-
   Name, Kommentar und Fehlermeldung behaupteten Anhaengen ans Ende - das tut 'jaira lanes add' seit Runde 2 nicht mehr. Ein gruener Test, dessen Name das Gegenteil dessen sichert, was die Assertion schuetzt, fuehrt den naechsten Leser von insertAfterAnchor in die Irre.
   Die README war die letzte Stelle im Repository, die dem Leser etwas erzaehlte, was das Binary nicht mehr tut - und ausgerechnet die Titelseite des Katalogs. Die Verdeckung ist eine stille Verhaltensaenderung fuer genau die Benutzer, die die drei Lanes bisher nur ueber 'market adopt' hatten; sie bleibt absichtlich, aber jetzt steht sie in NOTES und in einem Test statt nur in einem Review-Bericht. Die Grep-Abdeckung aus Runde 4 hat nicht getragen, weil nach der Formulierung statt nach dem Anker gesucht wurde - deshalb diesmal am Kommando 'lanes add' und an den Ortswoertern gesucht, was eine sechste Fundstelle ergab.
   Die Tabellenzelle war die letzte lebende Stelle, die noch behauptete, man muesse die Spalte selbst verschieben - derselbe veraltete Satz, den DoD 7 aus der Datei verlangt, nur in einer Zelle statt in Prosa, und im Widerspruch zum neu geschriebenen Absatz vierzehn Zeilen tiefer. Wer die Tabelle liest und dem Absatz nicht mehr glaubt, verschiebt eine Spalte, die jaira schon richtig gesetzt hat. Der zweite Punkt schliesst eine Luecke derselben Art: der Absatz sagte, nur ein unaufloesbarer Anker parke vor der terminalen Lane und das sage sich mit einer Warnung - eine Lane ohne 'after:' landet dort stumm, was die Datei ungesagt liess.
+  Seit diesem Ticket ist 'critique' ein eingebettetes Builtin, daher lieferte Installable() es unabhaengig vom Katalog und 'lanes add critique' gelang auch ohne den vorangehenden 'market adopt' - das letzte Drittel des Tests bewies nichts mehr. 'gizmo' ist unter keinem Builtin, damit ist adopt wieder das, was add gelingen laesst.
 outcome-resolves: |-
   vierte und letzte Fundstelle des veralteten 'appending'-Satzes aus Fund 3; Fund der vierten Kritik
   DoD 7 und DoD 8; Befunde 1, 2 und 3 aus review-gaps der Review-Runde 1; Ehrlichkeitspunkt zur Grep-Abdeckung aus Runde 4
   Der blockierende Befund der fuenften Kritik (lanes/README.md:47, 'Sits' von secrets-scan) und ihr kleiner Befund (lanes/README.md:66-70, stille Platzierung ohne after:). Dazu die Hausarbeit am Beweis von DoD 5. Nachgeprueft statt geglaubt: lanes/secrets-scan.md traegt 'after: in-progress', und 'jaira lanes add secrets-scan' setzt die Lane am gebauten Binary ohne Netz selbst hinter in-progress; die Warnbedingung 'if l.After != ""' steht in core/lane/order.go insertAfterAnchor. go build ./... , go vet ./... und go test ./... -count=1 gruen (28 Pakete, RC=0).
+  DoD 9: TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt beweist wieder seinen Namen. Per Mutation belegt: adopt-Schritt entfernt -> 'lanes add after market adopt: no lane "gizmo" is installed or in the catalogue', FAIL; Datei wiederhergestellt -> gruen. Kein Produktionscode geaendert, keine NOTES.md-Zeile (nicht beobachtbar).
 review-summary: |-
   none
   review (Runde 1), am Diff 2fb8f17 gelesen und am gebauten Binary nachgestellt - nicht am Bericht. Der Zweig traegt genau einen Commit, das Ticket-Feld commits: ist leer, der Payload-Diff ist damit der ganze Zweig (23 Dateien, +1308/-73); nichts ist ausserhalb des Payloads passiert.
@@ -162,6 +165,8 @@ review-check: "So pruefst du das selbst nach. Alles laeuft im Worktree /home/ale
   proof: lanes/README.md neu geschrieben: Schnellstart und Zeile 16 nennen secrets-scan (liegt in lanes/), Tabelle fuehrt nur noch secrets-scan und changelog-writer, Absatz 'Where it lands' beschreibt die after:-Ankerkette; grep -c 'appends the lane as the last line' lanes/README.md = 0
 - [x] Wer critique, optimize oder testing frueher per 'jaira lanes market adopt' geholt und selbst bearbeitet hat, erfaehrt es: eine Zeile unter '## Unreleased' in core/release/NOTES.md sagt, dass das im Binary mitgelieferte Exemplar die eigene Fassung in ~/.jaira/lanes ab jetzt verdeckt, und ein Test haelt diese Verdeckung fest (Installable() nimmt den Builtin, nicht die Datei aus JAIRA_LANES_DIR).
   proof: core/release/NOTES.md, zweite Zeile unter '## Unreleased' (Notes() liest jetzt sechs Aenderungen); Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID - gegengeprueft durch Umdrehen der Schleifenreihenfolge in Installable(), dann schlaegt er fehl
+- [x] TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt beweist wieder, was sein Name sagt - der adopt-Schritt ist noetig, damit add gelingt; per Mutation belegt, dass der Test ohne adopt faellt
+  proof: internal/cli/market_test.go TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt
 
 ## Options
 
@@ -568,3 +573,5 @@ Nicht wieder aufgemacht: DoD 1-6, der Verzicht auf einen zusaetzlichen market-Fi
 - Nicht angefasst: DoD 1-6 als solche, die Entscheidung gegen einen zusaetzlichen market-Filter, der Vorrang 'Builtin verdeckt adoptierte Fassung'.
 - **2026-09-19 20:10 · Alexander Sacharov** — optimize: Prosa-Dopplung entfernt, kein Verhalten geaendert. lanes/README.md hatte den Binary-Hinweis zweimal (oben unter dem Codeblock und unter der Tabelle) - der untere ist weg. Der Kommentar in core/market/market.go Unpinned und der Testkommentar in market_test.go wiederholten je den Satz aus dem pinnedRef-Kommentar zehn Zeilen darueber - beide gekuerzt. Nichts geht zurueck nach in-progress; go build/vet/test ./... -count=1 gruen.
 - **2026-09-19 20:13 · Alexander Sacharov** — testing Runde 5: DoD 7 und 8 am gebauten Binary auf zwei Wegwerf-Boards geprueft, nicht am Quelltext. Nichts gefunden, was zurueck nach in-progress muesste. Zwei Dinge fuers Protokoll: 'jaira lanes market' und 'jaira lanes market adopt' gehen gegen JAIRA_MARKET_API=http://127.0.0.1:1/dead erwartungsgemaess mit Exit 1 unter - das ist kein README-Fehler, sondern das Offline-Verhalten; geprueft wurde stattdessen der Klon-Weg 'jaira lanes adopt <pfad>/secrets-scan.md', den die README in Zeile 16 nennt. Und: die Aussage der README, 'jaira lanes market' biete critique/optimize/testing nicht mehr an, laesst sich ohne Netz nicht direkt fahren; sie folgt daraus, dass die drei Dateien nicht mehr in lanes/ liegen (ls lanes/ = README.md, changelog-writer.md, secrets-scan.md).
+- **2026-09-19 20:42 · Alexander Sacharov** — ENTSCHIEDEN von Alex am 2026-09-19: das Ticket geht aus signoff zurueck nach in-progress. Grund: die review-Lane hat gefunden, dass TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt (internal/cli/market_test.go) durch genau dieses Ticket ausgehoehlt wurde - das abschliessende 'lanes add critique' gelingt jetzt auch ohne den vorangehenden 'market adopt', weil Installable() das eingebettete Builtin-Exemplar von critique liefert (core/lane/builtin/25-critique.md). Per Mutation nachgestellt: adopt-Schritt entfernt, Test bleibt gruen. Die Reparatur ist eine Fixture-Zeile - eine id waehlen, die NICHT unter den eingebetteten Lanes ist, damit adopt wieder das ist, was add gelingen laesst. NICHT wieder aufmachen: 'jaira lanes market' filtert eingebettete Lanes weiterhin nicht heraus; die Builtin-vor-adoptiert-Praezedenz bleibt wie sie ist; die fehlende Ausweichmoeglichkeit fuer einen Benutzer mit selbst bearbeiteter adoptierter Kopie laeuft getrennt als Ticket VHS67E und wird hier nicht geloest.
+- **2026-09-19 20:46 · Alexander Sacharov** — Fixture-Lane-Id in internal/cli/market_test.go von 'critique' auf 'gizmo' geaendert (marketCritique -> marketGizmo, id/name/dateiname ueberall mitgezogen), weil 'critique' seit diesem Ticket ein embedded builtin ist (core/lane/builtin/25-critique.md) und lane.Installable() sie deshalb unabhaengig vom Katalog anbietet - 'lanes add critique' waere also auch ohne 'market adopt' gruen gewesen. Per Mutation geprueft: mit dem 'market adopt gizmo'-Schritt entfernt schlaegt der Test jetzt mit 'no lane "gizmo" is installed or in the catalogue' fehl, danach Datei exakt aus Backup wiederhergestellt und erneut gruen. Alle vier Market-Tests sowie 'go test ./...' vollstaendig gruen. Produktionscode unveraendert, nur Testfixtures.
