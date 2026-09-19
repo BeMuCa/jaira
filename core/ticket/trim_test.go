@@ -305,3 +305,27 @@ func TestCommitsSourceNamesWhoContributed(t *testing.T) {
 		})
 	}
 }
+
+// The token CommitsSource cannot produce, because it names something that is
+// not a commit. Both branches matter and neither had a test: a payload built
+// over commits plus an uncommitted tree must say so with a "+", and a first
+// round that has no commits at all must say "worktree" on its own rather than
+// "+worktree" with nothing in front of the plus. core/release/NOTES.md
+// promises a reader exactly those two spellings.
+func TestWithWorktreeNamesTheWorktreeBesideTheCommitSource(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{"no commit source at all", "", SourceWorktree},
+		{"git accounts for the commits", "git", "git+" + SourceWorktree},
+		{"the field added a sha git lost", "git+ticket", "git+ticket+" + SourceWorktree},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := WithWorktree(c.source); got != c.want {
+				t.Fatalf("WithWorktree(%q) = %q, want %q", c.source, got, c.want)
+			}
+		})
+	}
+}

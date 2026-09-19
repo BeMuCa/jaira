@@ -41,7 +41,11 @@ of it, and whenever there is uncommitted work it is in front of you too, in a
 key of its own — `worktree_diff`, never mixed into `diff`. `commits_source`
 then ends in `+worktree`, or is plain `worktree` on a first round that carries
 no commits at all, so a lane that changed no code and a conversational ticket
-that has not been committed yet are both there without your going to look. The
+that has not been committed yet are both there without your going to look. That
+half is repo-wide and not ticket-wide — `worktree_diff` carries every
+uncommitted change in the repository except `.jaira/tickets`, so work that has
+nothing to do with this ticket arrives in it beside yours, and nothing can tell
+the two apart, because nothing knows which files a ticket owns. The
 one commit that escapes is a commit that neither names the ticket id
 nor touches its file; that is what the rule "every commit names the ticket id"
 is for, and you can see it by counting `commits` against

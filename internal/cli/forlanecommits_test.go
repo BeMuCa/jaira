@@ -303,3 +303,51 @@ func TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce(t *testing.T) {
 		}
 	})
 }
+
+// The other half of the same promise: a key that is only there when it carries
+// something. core/release/NOTES.md and the jaira-role-lane prompt both tell a
+// reader to test worktree_diff for content and never for absence — which only
+// holds if a clean working tree leaves the key OUT of the payload instead of
+// setting it to "". An empty key beside every payload trains the reader to
+// skip it, and a reader who skips it reads a fraction as the whole. The
+// struct the other tests unmarshal into cannot see the difference, so the
+// payload is read as a bare map here.
+func TestForLaneLeavesTheWorktreeKeyOutOfACleanTree(t *testing.T) {
+	dir, _, _, h, run, write := forLaneGitFixture(t, time.Date(2026, 9, 18, 13, 0, 0, 0, time.UTC))
+	write("committed.txt", "eingecheckt\n")
+	run("add", ".")
+	run("commit", "-q", "-m", "feat("+h+"): the committed change")
+
+	// The CLI materialises the board's lane files on first use, so the tree is
+	// only clean after it has run once: committing before that leaves them
+	// behind as untracked work and the payload legitimately carries them.
+	if out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json"); err != nil {
+		t.Fatalf("show --for-lane review: %v\n%s", err, out)
+	}
+	run("add", ".")
+	run("commit", "-q", "-m", "chore("+h+"): the board the cli wrote")
+	if left := run("status", "--porcelain"); left != "" {
+		t.Fatalf("the fixture's tree is not clean, so the payload would carry a worktree half:\n%s", left)
+	}
+
+	out, err := runCLI(t, dir, "show", h, "--for-lane", "review", "--json")
+	if err != nil {
+		t.Fatalf("show --for-lane review: %v\n%s", err, out)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("payload is not json: %v\n%s", err, out)
+	}
+	if v, ok := payload["worktree_diff"]; ok {
+		t.Errorf("a clean tree still carries a worktree_diff key (%q) — absence is what the prompt tells its reader to rely on", v)
+	}
+	if v, ok := payload["worktree_error"]; ok {
+		t.Errorf("a clean tree reports a worktree error: %v", v)
+	}
+	if got, _ := payload["commits_source"].(string); got != "git" {
+		t.Errorf("commits_source is %q, want %q — nothing uncommitted was there to name", got, "git")
+	}
+	if got, _ := payload["complete"].(bool); !got {
+		t.Error("complete is false although nothing is missing")
+	}
+}
