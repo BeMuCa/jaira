@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:42:00Z
+updated-at: 2026-09-19T15:42:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79578
 claimed-at: 2026-09-19T15:36:34Z
@@ -312,3 +312,12 @@ Dritter, nur Buchhaltung: DoD 2 verlangt den Fall drei-von-einundzwanzig, der Te
 
 Kein Defekt im Go-Code gefunden. Gegengeprobt statt geglaubt: repo.Diff ohne error-Rueckgabe meldet jeden nicht zeigbaren SHA; die Leer-Patch-Pruefung in WorktreeDiff unterscheidet per os.Stat korrekt zwischen leerer Datei und unlesbarem Pfad; runTolerating faengt ueber ee.Exited() den signalgetoeteten git ab, der sonst als ExitCode -1 durchginge; ein haengender Symlink liefert exit 1 MIT Patch und faellt damit nicht in den Fehlerzweig (am echten git nachgestellt). Laufzeit gemessen: 0,75 s fuer den ganzen Payload auf diesem Branch - der Prozess pro unverfolgter Datei kostet hier nichts.
 - **2026-09-19 15:36 · Alexander Sacharov** — Entscheidung von Alex am 2026-09-19: das Ticket wird im signoff NICHT angenommen, sondern zurueck nach in-progress geschickt. Befund 1 aus review-gaps (die Textmarke 'uncommitted work in the working tree' ist keine verlaessliche Grenze - am Payload dieses Tickets neun Treffer, der erste auf Zeile 1190 mitten im Patch von flow.go, die echte Grenze erst auf 2103) wird in DIESEM Ticket geschlossen und nicht in einem eigenen. Gewaehlt ist die saubere Variante, die review-gaps selbst nennt: die unversionierte Haelfte bekommt einen eigenen Payload-Schluessel worktree_diff, statt als Textmarke im selben String zu haengen. Damit gibt es keine Trennzeile mehr, die man verfehlen kann. Die beiden Rollen-Prompts, die heute auf die Textmarke zeigen (core/role/builtin/jaira-role-lane/SKILL.md), werden mitgezogen. Begruendung fuer 'in diesem Ticket': es ist derselbe Fehlertyp, gegen den das Ticket angetreten ist - eine Markierung ohne Zusicherung, als Grenze gemeldet.
+- **2026-09-19 15:42 · Alexander Sacharov** — in-progress (DoD 12, nach der Rueckweisung aus signoff): Was der Diff nicht sagt.
+
+- Geprueft, ob ausser showForLane noch jemand den Payload-Diff liest und die unversionierte Haelfte verlieren koennte: nein. 'grep -rn WorktreeDiff|showForLane' findet genau einen Bauer (internal/cli/flow.go:551, aufgerufen aus internal/cli/tickets.go:651). Die beiden anderen Treffer auf "diff" sind etwas anderes: internal/tui/view.go:1104 fuehrt "diff" nur als Feldnamen, den die Detail-Pane nicht als eigene Zeile rendert, und internal/cli/claim.go:236 behandelt "diff" als Alias fuer commits beim Pruefen der Lane-Ausgaben. Keiner von beiden liest den String. Die TUI baut keinen Lane-Payload - es gibt nichts zu spiegeln.
+
+- Der Sonderfall erste Runde haette den Schluessel commits_source still verloren: die Payload-Schluessel commits/commits_source hingen an 'if diff != ""', und diff ist jetzt nur noch die committete Haelfte. Ein Ticket ohne Commits, aber mit Arbeit im Baum, haette damit worktree_diff getragen und daneben kein commits_source 'worktree' - also genau die Aussage verloren, die SKILL.md fuer die erste Runde verspricht. Die Bedingung ist jetzt 'diff != "" || worktreeDiff != ""'. Gleiches beim missing-Zweig: der greift nur noch, wenn beide Haelften leer sind.
+
+- Die Zeichenkette 'uncommitted work in the working tree' steht im Payload dieses Tickets weiterhin zehnmal - sie ist Patch-Inhalt der Commits, die sie eingefuehrt und wieder entfernt haben. Das ist kein Restproblem, sondern der Beweis: die Marke war nie von Patch-Inhalt unterscheidbar. Neu ist, dass keine dieser zehn Stellen eine Grenze ist, weil es keine Grenze mehr im String gibt.
+
+- In der Klartext-Ausgabe (ohne --json) steht die unversionierte Haelfte unter einer eigenen Ueberschrift '## Worktree diff (not committed yet)'. Der Satz 'uncommitted work in the working tree' ist dort bewusst nicht wiederholt worden, damit die alte Zeichenkette nicht als scheinbare Marke ueberlebt.
