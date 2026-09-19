@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:42:48Z
+updated-at: 2026-09-19T20:46:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-24729
 claimed-at: 2026-09-19T20:42:23Z
@@ -162,7 +162,8 @@ review-check: "So pruefst du das selbst nach. Alles laeuft im Worktree /home/ale
   proof: lanes/README.md neu geschrieben: Schnellstart und Zeile 16 nennen secrets-scan (liegt in lanes/), Tabelle fuehrt nur noch secrets-scan und changelog-writer, Absatz 'Where it lands' beschreibt die after:-Ankerkette; grep -c 'appends the lane as the last line' lanes/README.md = 0
 - [x] Wer critique, optimize oder testing frueher per 'jaira lanes market adopt' geholt und selbst bearbeitet hat, erfaehrt es: eine Zeile unter '## Unreleased' in core/release/NOTES.md sagt, dass das im Binary mitgelieferte Exemplar die eigene Fassung in ~/.jaira/lanes ab jetzt verdeckt, und ein Test haelt diese Verdeckung fest (Installable() nimmt den Builtin, nicht die Datei aus JAIRA_LANES_DIR).
   proof: core/release/NOTES.md, zweite Zeile unter '## Unreleased' (Notes() liest jetzt sechs Aenderungen); Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID - gegengeprueft durch Umdrehen der Schleifenreihenfolge in Installable(), dann schlaegt er fehl
-- [ ] TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt beweist wieder, was sein Name sagt - der adopt-Schritt ist noetig, damit add gelingt; per Mutation belegt, dass der Test ohne adopt faellt
+- [x] TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt beweist wieder, was sein Name sagt - der adopt-Schritt ist noetig, damit add gelingt; per Mutation belegt, dass der Test ohne adopt faellt
+  proof: internal/cli/market_test.go TestLanesMarketAdoptLandsInTheCatalogueAndAddFindsIt
 
 ## Options
 
