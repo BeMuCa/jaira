@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:46:16Z
+updated-at: 2026-09-19T15:46:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -321,3 +321,4 @@ Kein Defekt im Go-Code gefunden. Gegengeprobt statt geglaubt: repo.Diff ohne err
 - Die Zeichenkette 'uncommitted work in the working tree' steht im Payload dieses Tickets weiterhin zehnmal - sie ist Patch-Inhalt der Commits, die sie eingefuehrt und wieder entfernt haben. Das ist kein Restproblem, sondern der Beweis: die Marke war nie von Patch-Inhalt unterscheidbar. Neu ist, dass keine dieser zehn Stellen eine Grenze ist, weil es keine Grenze mehr im String gibt.
 
 - In der Klartext-Ausgabe (ohne --json) steht die unversionierte Haelfte unter einer eigenen Ueberschrift '## Worktree diff (not committed yet)'. Der Satz 'uncommitted work in the working tree' ist dort bewusst nicht wiederholt worden, damit die alte Zeichenkette nicht als scheinbare Marke ueberlebt.
+- **2026-09-19 15:46 · Alexander Sacharov** — critique zu 122b371 (nur der neue Commit, DoD 12): der Code stimmt. diff traegt in jedem Zweig von showForLane nur noch die committete Haelfte, worktree_diff die unversionierte; der Zweig 'keine Commits + sauberer Baum' meldet weiter genau eine missing-Zeile (flow.go:640-650), der Zweig 'Worktree nicht lesbar' setzt worktree_error und faellt in dieselbe missing-Zeile, und commits/commits_source reiten jetzt auch dann mit, wenn nur die Worktree-Haelfte da ist (flow.go:686-697). CommitsSource(nil, []) + WithWorktree ergibt in der ersten Runde genau 'worktree' (core/ticket/trim.go:195-223), die Aussage in der Commit-Message haelt. go test ./internal/cli -run ForLane ist gruen. Kein weiterer Leser verliert die Worktree-Haelfte: internal/tui/signoff.go baut seinen Diff selbst und hat nie eine Worktree-Haelfte gehabt, der jaira-dispatcher-Prompt spricht nur generisch vom 'unversionierten Worktree' ohne Marker, und README.md:261, docs/AGENTS.md:17 und .claude/skills/jaira/SKILL.md:333 nennen nur 'den Diff der Commits des Tickets'. Offen sind zwei Stellen, an denen Text und Code auseinandergehen - siehe review-summary.
