@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:56:16Z
+updated-at: 2026-09-19T19:56:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -473,3 +473,4 @@ Gegenprobe wie verlangt, am Produktivcode und wieder zurueckgenommen: payload["w
 Keine NOTES.md-Zeile. Neue Tests sieht ein Benutzer nicht, und der Satz in SKILL.md praezisiert Verhalten, das im selben ## Unreleased-Abschnitt schon vier Zeilen ankuendigen - eine fuenfte Zeile ueber denselben Payload macht den Abschnitt schwerer lesbar, ohne dem Leser etwas Neues zu sagen. Wenn der Maintainer das anders sieht, ist es eine Zeile, kein Umbau.
 
 Proof-Nummern: nicht nur DoD 1 und 13, auch 6, 9, 10, 11 und 12 zitierten Zeilen, die nach bcf403b verrutscht waren. Alle selbst nachgelesen und korrigiert; Symbole und Testnamen stimmten ueberall, nur die Zahlen nicht. DoD 9 und 12 zitieren SKILL.md-Bereiche, die sich durch den Satz aus DoD 15 noch einmal um vier Zeilen verschoben haben - diese Verschiebung ist mit eingerechnet.
+- **2026-09-19 19:56 · Alexander Sacharov** — critique (nur f1994ad): tragfaehig. Der Aufwaermlauf im CLI-Test ist legitim, weil die Vorbedingung danach mit git status --porcelain behauptet und nicht angenommen wird (forlanecommits_test.go:329-331). Beide Zweige von WithWorktree (trim.go:219-222) sind gedeckt; der falsche Klammerzusatz in DoD 14 beschreibt die Funktion, nicht die Garantie - gemeint und geliefert ist beides. Der SKILL.md-Satz (:44-48) steht in dem Abschnitt, den critique/testing/review lesen, und stimmt mit gitrepo/git.go:196,212 ueberein. Einziger Rest: DoD 8 traegt noch die alten Proof-Zahlen (207/215/220-228 statt 212,216/224/234-236) - angenommene Arbeit, daher nur vermerkt und nicht zurueckgegeben; ebenso der Startversatz in DoD 9 (129 statt 133) und NOTES.md:19 statt :18 in DoD 13. go build/vet/test ./... gruen.
