@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:15:30Z
+updated-at: 2026-09-19T20:16:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70053
 claimed-at: 2026-09-19T20:14:18Z
@@ -142,6 +142,23 @@ review-check: |-
   10. Umlaut und Leerzeichen im Pfad: printf 'hallo\n' > 'Änderung mit Leerzeichen.txt' && /tmp/jaira-neu show 7XXT00 --for-lane review --json | jq -r .worktree_diff | grep -c 'Änderung mit Leerzeichen.txt'    -> groesser 0 (bei mir 2). Die Datei steht mit ihrem echten Namen im Payload, nicht als Escape-Folge. Danach: rm 'Änderung mit Leerzeichen.txt'
   11. git status --short    -> nur die beiden erwarteten Zeilen: ' M .jaira/tickets/01M2RQM...7XXT00-...md' und '?? .jaira/milestones/'. Steht dort mehr, hat einer der Schritte 9 oder 10 etwas liegengelassen.
   12. Was noch nicht getestet ist, koennen Sie hier nicht sehen, nur nachschlagen: grep -rn 'WithWorktree' --include='*_test.go' .    -> keine Treffer. Die Funktion, die 'worktree' ohne Plus liefert, wenn ein Ticket noch gar keine Commits hat, hat keinen Test. Das ist der eine Punkt, bei dem ich Ihre Entscheidung brauche (siehe review-gaps Punkt 1).
+  Runde 4 - so pruefen Sie f1994ad selbst. Jeder Schritt sagt, was Sie sehen muessen. Beurteilt wird nur diese eine Runde; DoD 1..13 sind schon angenommen.
+
+  1. cd /home/alex/projects/.worktrees/jaira-7XXT00
+  2. git show --stat f1994ad    -> vier Dateien: das Ticket, core/role/builtin/jaira-role-lane/SKILL.md (6 Zeilen), core/ticket/trim_test.go (24 Zeilen), internal/cli/forlanecommits_test.go (48 Zeilen). Kein Produktivcode. Das ist der ganze Umfang dieser Runde.
+  3. go build ./... && go vet ./... && go test ./core/... ./internal/... -count=1    -> nur Zeilen "ok" und "no test files", 28x ok, nirgends FAIL.
+  4. go test ./core/ticket/ -run TestWithWorktreeNamesTheWorktreeBesideTheCommitSource -count=1 -v | grep -c "^    --- PASS"    -> 3. Drei Untertests: leere Quelle, "git", "git+ticket".
+  5. Mutationsprobe 1, der Leer-Zweig. In core/ticket/trim.go die drei Zeilen 219-221 (if source == "" { return SourceWorktree }) loeschen, dann go test ./core/ticket/ -run TestWithWorktree -count=1    -> FAIL, Untertest no_commit_source_at_all, Meldung WithWorktree("") = "+worktree", want "worktree". Danach unbedingt zurueck: git checkout core/ticket/trim.go
+  6. Mutationsprobe 2, der Plus-Zweig. In derselben Datei Zeile 222 (return source + "+" + SourceWorktree) durch return SourceWorktree ersetzen, dann derselbe go-test-Aufruf    -> FAIL in den beiden ANDEREN Untertests (git_accounts_for_the_commits und the_field_added_a_sha_git_lost). Danach: git checkout core/ticket/trim.go
+  7. Mutationsprobe 3, die eigentliche Zusage. In internal/cli/flow.go die Bedingung um Zeile 681-683 entfernen, also payload["worktree_diff"] = worktreeDiff unbedingt setzen, dann go test ./internal/cli/ -run TestForLaneLeavesTheWorktreeKeyOutOfACleanTree -count=1    -> FAIL mit a clean tree still carries a worktree_diff key (""). Genau das ist die Garantie, die vorher nur als Prosa in NOTES.md und im Prompt stand. Danach: git checkout internal/cli/flow.go
+  8. Probe auf das Setup, nicht auf den Produktivcode - ist der Aufwaermlauf noetig? In internal/cli/forlanecommits_test.go die Zeilen 325-331 (der erste runCLI-show, das darauffolgende git add/commit) loeschen, dann denselben go-test-Aufruf    -> FAIL, und der worktree_diff in der Meldung ist seitenlang und besteht aus .jaira/lanes/*.md; ausserdem commits_source is "git+worktree", want "git". Der Aufwaermlauf ist tragend: das CLI schreibt die eingebauten Lane-Dateien erst beim ersten Gebrauch in den Store. Danach: git checkout internal/cli/forlanecommits_test.go
+  9. git status --porcelain    -> genau zwei Zeilen, " M .jaira/tickets/01M2RQM...7XXT00-...md" und "?? .jaira/milestones/". Steht dort mehr, hat einer der Schritte 5 bis 8 etwas liegengelassen - dann die genannten git-checkout-Zeilen nachholen.
+  10. Der neue Prompt-Satz, Wortlaut: sed -n "44,48p" core/role/builtin/jaira-role-lane/SKILL.md    -> der Satz, dass worktree_diff repo-weit und nicht ticket-weit ist und jede unversionierte Aenderung ausser .jaira/tickets traegt.
+  11. Derselbe Satz gegen den Code: sed -n "194p;196p;212p" core/gitrepo/git.go    -> die Konstante notTickets = ":(exclude,top).jaira/tickets" und zwei git-Aufrufe (diff HEAD und ls-files --others), die beide mit "--", ":/", notTickets laufen. ":/" ist die Repo-Wurzel, die Ausnahme ist genau eine. Der Satz stimmt woertlich.
+  12. Derselbe Satz an lebender Wirkung: go build -o /tmp/jaira-r4 ./cmd/jaira && /tmp/jaira-r4 show 7XXT00 --for-lane review --json | jq -r .worktree_diff | grep "^diff --git"    -> drei Zeilen, alle .jaira/milestones/demo-*.md. Diese drei Dateien haben mit diesem Ticket nichts zu tun und stehen trotzdem im Payload. Das ist der Satz aus Schritt 10, im Betrieb zu sehen.
+  13. Und der Payload im Ganzen: /tmp/jaira-r4 show 7XXT00 --for-lane review --json | jq "{n:(.commits|length), commits_source, has_wt:has(\"worktree_diff\")}"    -> n 14, commits_source "git+worktree", has_wt true. Gegenprobe: git log origin/HEAD..HEAD --oneline | wc -l    -> 14. Dieselbe Zahl - der urspruengliche Defekt dieses Tickets ist weiterhin geschlossen.
+  14. Die Proof-Nummern, stichprobenartig: sed -n "612p" internal/cli/flow.go    -> shas = ticket.MergeCommits(derived, t.Commits) (DoD 1); sed -n "212p" core/gitrepo/git.go    -> die ls-files-Zeile mit -z (DoD 8); sed -n "681p" internal/cli/flow.go    -> if worktreeDiff != "" { (DoD 12, 13); sed -n "18p" core/release/NOTES.md    -> die Zeile ueber worktree_diff (DoD 13). Alle vier treffen das, was der Proof behauptet.
+  15. Die eine Entscheidung, die bei Ihnen liegt: sed -n "18,21p" core/release/NOTES.md    -> vier Zeilen unter ## Unreleased, alle ueber denselben Payload, keine sagt das Wort "repo-wide". Zeile 20 sagt "every untracked file in full" und ".jaira/tickets is left out of that worktree diff on purpose" - daraus folgt die Repo-Weite, ausgesprochen ist sie nicht. Ich habe nichts geaendert. Siehe review-gaps Punkt 6: wenn Sie es ausgesprochen haben wollen, ist ein Nebensatz in Zeile 20 der saubere Ort, keine fuenfte Zeile.
 ---
 
 # Der Lane-Payload liefert einen Ausschnitt des Diffs und meldet ihn als vollstaendig
