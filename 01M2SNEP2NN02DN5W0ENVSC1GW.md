@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:10:13Z
+updated-at: 2026-09-19T20:10:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -554,3 +554,4 @@ Nicht wieder aufgemacht: DoD 1-6, der Verzicht auf einen zusaetzlichen market-Fi
 - Keine NOTES.md-Zeile, und das ist kein Vergessen: lanes/README.md ist Repository-Prosa, kein Verhalten, das ein Benutzer am Binary beobachten kann. core/release/NOTES.md:131 unter '## 0.1.1' traegt denselben veralteten Satz und bleibt unangetastet - geschlossene Geschichte nach CLAUDE.md.
 - Beweis von DoD 5 richtiggestellt: er sagte 'fuenf Zeilen' unter '## Unreleased', seit DoD 8 sind es sechs. Nicht am Grep gezaehlt, sondern an release.Notes() selbst - ein Wegwerf-Test im Paket core/release gab 'Unreleased -> 6' aus und wurde danach geloescht (git status im Arbeitsbaum zeigt keine neue Datei in core/release).
 - Nicht angefasst: DoD 1-6 als solche, die Entscheidung gegen einen zusaetzlichen market-Filter, der Vorrang 'Builtin verdeckt adoptierte Fassung'.
+- **2026-09-19 20:10 · Alexander Sacharov** — optimize: Prosa-Dopplung entfernt, kein Verhalten geaendert. lanes/README.md hatte den Binary-Hinweis zweimal (oben unter dem Codeblock und unter der Tabelle) - der untere ist weg. Der Kommentar in core/market/market.go Unpinned und der Testkommentar in market_test.go wiederholten je den Satz aus dem pinnedRef-Kommentar zehn Zeilen darueber - beide gekuerzt. Nichts geht zurueck nach in-progress; go build/vet/test ./... -count=1 gruen.
