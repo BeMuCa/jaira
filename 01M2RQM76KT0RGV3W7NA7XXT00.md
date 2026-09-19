@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:42:11Z
+updated-at: 2026-09-19T20:42:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70053
 claimed-at: 2026-09-19T20:14:18Z
@@ -535,3 +535,4 @@ Drittens die NOTES.md-Frage. Ich komme auf dieselbe Antwort wie die drei Vorlane
 Rest, alles nicht blockierend und in review-gaps ausgeschrieben: die zweite Haelfte der Zusage aus SKILL.md:149-153 - "diff ist immer da, notfalls leer", flow.go:673 - haelt noch kein Test; SKILL.md:44-48 laesst --exclude-standard unerwaehnt, also fehlen von .gitignore erfasste unverfolgte Dateien im worktree_diff (auf einem noch nicht geteilten Board ist das sogar das ganze .jaira/); der Kopfkommentar forlanecommits_test.go:16-17 sagt noch "both tests below"; und der Satz SKILL.md:152-153 "test diff for content, never for absence" ist so knapp, dass er auf worktree_diff bezogen das Gegenteil sagt - angenommene Arbeit, daher nur vermerkt.
 
 Proof-Nummern ueber DoD 1, 6, 8, 9, 10, 11, 12, 13, 14, 15 einzeln in den Dateien nachgeschlagen, alle loesen auf. go build ./..., go vet ./..., go test ./core/... ./internal/... -count=1: 28x ok, kein FAIL. Kein Code geaendert, nichts committet.
+- **2026-09-19 20:42 · Alexander Sacharov** — Entscheidung von Alex am 2026-09-19, ausdruecklich in der laufenden Sitzung: das Ticket geht aus signoff zurueck nach in-progress. Die vier noch offenen Punkte aus review-gaps werden in DIESEM Ticket geschlossen und nicht in ein Folgeticket ausgelagert: (A) die ungetestete Haelfte der Zusage 'diff ist immer da, notfalls leer' (internal/cli/flow.go:673), (B) der SKILL.md-Satz ueber die repo-weite Worktree-Haelfte schweigt zu --exclude-standard - gitignorierte unverfolgte Dateien erreichen worktree_diff nicht, auf einem noch nicht geteilten Board ist das ganze .jaira/, (C) 'test diff for content, never for absence' in jaira-role-lane/SKILL.md liest sich in der Eile so, als gaelte es auch fuer worktree_diff - also genau umgekehrt zu dem, was dieses Ticket festgenagelt hat, (D) der Text von DoD 14 war falsch formuliert (WithWorktree nimmt ein Commit-Quellen-Token, keinen Diff) und wurde mit 'jaira dod 14 --text' korrigiert, Status und Proof unveraendert. Ausserdem bestaetigt Alex: der Durchgang durch die human-Lane war seine eigene Entscheidung und wird nicht zurueckgedreht. Eine fuenfte NOTES.md-Zeile ist NICHT entschieden und wird nicht hinzugefuegt - nur wenn die Arbeit an (B) die bestehende Zeile core/release/NOTES.md:20 aktiv falsch macht ('jede unverfolgte Datei in voller Laenge'), wird diese eine Zeile korrigiert; sie steht unter ## Unreleased und ist damit noch offen.
