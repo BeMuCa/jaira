@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:11:24Z
+updated-at: 2026-09-19T19:11:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-92780
 claimed-at: 2026-09-19T19:09:20Z
@@ -431,3 +431,12 @@ Begruendung, an der Scope-Regel aus CLAUDE.md gemessen: der Pin '?ref=v<version>
 Der Preis des Filters waere eine neue Abhaengigkeit von core/market auf lane.Builtins(), ein Test und eine NOTES-Zeile - und er nimmt einen echten Fall weg: absichtlich die Katalog-Fassung einer Lane statt der eingebetteten holen. Wachstum fuer ein Problem, das der Tag von selbst schliesst.
 
 Die Zeile in core/release/NOTES.md, die sagt 'jaira lanes market' biete sie nicht mehr an, bleibt richtig: ihr Leser ist der Besitzer eines Release-Binaries, und der hat den Pin.
+- **2026-09-19 19:11 · Alexander Sacharov** — review (Runde 1), Weitergabe an signoff mit drei Befunden - keiner davon ein Rueckweg nach in-progress, alle drei stehen ausfuehrlich in review-gaps.
+
+Warum kein Rueckweg: die DoD ist erfuellt und am gebauten Binary nachgestellt (nicht nur an den Testnamen), build/vet/Suite sind gruen, und im Go-Code habe ich keinen Defekt gefunden. Die Kettenaufloesung in anchorIndex, der Zyklusschutz, der terminale Fallback und die url.Parse-Variante des ?ref= halten den Faellen stand, die ich selbst auf Wegwerf-Boards durchgespielt habe. Die Entscheidung vom 2026-09-19 ist eingehalten: in core/market/market.go kommt weder 'Builtin' noch 'Default' vor.
+
+Der ernste Befund ist lanes/README.md - dieses Ticket hat die Datei nicht angefasst, obwohl es ihr den halben Inhalt weggenommen hat. Sie fuehrt weiter 'jaira lanes market adopt critique' als Schnellstart vor, listet critique und optimize in der Tabelle 'What is here', verweist auf 'jaira lanes adopt lanes/critique.md', und in Zeile 58-63 steht der Satz, dass 'lanes add' die Lane als letzte Zeile der order-Datei anhaengt und 'after:' nur ohne order-Datei konsultiert wird. Das ist die FUENFTE Fundstelle des 'appending'-Satzes aus Fund 3. Die Notiz von Runde 4 haelt die Suche fuer erschoepfend; sie war es nicht, weil gesucht wurde nach 'append(s|ing) (it) (at|to) the end' und nach 'end of the (column) order', die README aber 'appends the lane as the last line' formuliert. Wer das nachtraegt, sollte den Grep beim naechsten Mal auf 'lanes add' als Anker legen und nicht auf die Formulierung.
+
+Der zweite Befund ist eine stille Verhaltensaenderung fuer Bestandsbenutzer: Installable() legt die Builtins VOR dem Glob ueber ~/.jaira/lanes in dieselbe seen-Map, also ueberdeckt die eingebettete critique eine frueher adoptierte und angepasste. Nachgestellt mit JAIRA_LANES_DIR und einer geaenderten description: der Fuss von 'jaira lanes' nennt die eingebettete Beschreibung, und 'lanes add critique' schreibt die eingebettete Datei aufs Board. Fuer die zehn alten Builtins war das immer so; neu ist, dass es genau die drei Lanes trifft, die bis gestern NUR ueber diesen Weg zu haben waren. Ob das eine NOTES-Zeile wert ist, ist Alex' Entscheidung und nicht meine - die vorhandene Zeile sagt nur 'Adopting them from the marketplace is no longer needed'.
+
+Der dritte ist kosmetisch: core/market/market.go:78 faengt release.Current == "" ab, Unpinned() baut daraus aber 'this build reports version , which is no released tag'. Nur per -ldflags erreichbar.
