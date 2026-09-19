@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T20:00:48Z
+updated-at: 2026-09-19T20:00:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -179,7 +179,8 @@ review-check: |-
 - [x] Runde 5, DoD 8: Verdeckung am gebauten Binary reproduziert (JAIRA_LANES_DIR mit eigener critique-Beschreibung - Fuss und 'lanes add' nehmen beide die eingebettete), eine NOTES-Zeile dazu, Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID
 - [x] Runde 5, kosmetisch: core/market/market.go Unpinned() sagt bei leerem release.Current 'this build reports no version' statt eines Satzes mit Loch; Test TestBlankVersionStillReadsAsASentence
 - [x] Runde 5: go build ./... , go vet ./... und go test ./... -count=1 gruen
-- [~] Runde 6, blockierender Fund der fuenften Kritik: lanes/README.md Tabelle 'What is here', Zelle 'Sits' von secrets-scan - die Klausel ', once you move the column there' streichen
+- [x] Runde 6, blockierender Fund der fuenften Kritik: lanes/README.md Tabelle 'What is here', Zelle 'Sits' von secrets-scan - die Klausel ', once you move the column there' streichen
+  proof: lanes/README.md:47 - 'Sits' lautet jetzt nur 'after implementing'; nachgestellt am gebauten Binary: 'jaira lanes add secrets-scan' auf frischem Board -> 'after in-progress', Reihenfolge ... in-progress secrets-scan human ...
 - [ ] Runde 6, kleiner Fund: lanes/README.md 'Where it lands' haelt auch fest, dass eine Lane ganz ohne after: still an derselben Stelle parkt
 - [ ] Runde 6: Beweis von DoD 5 auf sechs Zeilen korrigiert; go build/vet/test -count=1 gruen
 
