@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T15:31:45Z
+updated-at: 2026-09-19T15:36:34Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-61566
-claimed-at: 2026-09-18T20:56:37Z
+claimed-by: DESKTOP-RFTCH11-79578
+claimed-at: 2026-09-19T15:36:34Z
 mode: ""
 outcome-what: "review: Diff gegen alle elf DoD-Punkte gelesen, Payload und Tests am laufenden Binary nachgemessen"
 outcome-why: "der Code haelt, was die DoD verlangt; der eine offene Befund ist eine Formatentscheidung und gehoert einem Menschen"
