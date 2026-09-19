@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T16:06:49Z
+updated-at: 2026-09-19T16:10:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-11257
 claimed-at: 2026-09-19T15:46:16Z
@@ -379,3 +379,25 @@ Tests: TestForLaneKeepsTheCommittedAndUncommittedHalvesApart ist in TestForLaneC
 Fallengelassen aus dem geloeschten Test: "worktree_diff traegt die committete Haelfte nicht". Die Bedingung war dort eine zusammengesetzte Kruecke (Contains("eingecheckt\n") && Contains("committed.txt")), weil sie in der reicheren Fixture nicht formulierbar ist - git diff HEAD zeigt die geaenderte verfolgte Datei samt ihrer alten Zeile. Die Aussage ist ausserdem eine Eigenschaft von git diff HEAD und nicht dieses Changes.
 
 Nicht angefasst: die vier Payload-Zweige, die die Kritik-Lane geprueft hat (keine Commits / sauberer Worktree / Worktree-Lesefehler / nicht zeigbare SHAs). Die Bedingung diff != "" || worktreeDiff != "" um commits/commits_source bleibt so weit, wie sie ist - auf der ersten Runde ohne Commits ist worktree_diff das Einzige, was da ist, und commits_source muss dann "worktree" sagen. Die Klartext-Bedingung worktreeErr != "" && diff != "" bleibt eng: wo worktreeErr gesetzt ist, ist worktreeDiff per Konstruktion leer. Keine NOTES.md-Zeile: von aussen ist nichts anders.
+- **2026-09-19 16:10 · Alexander Sacharov** — testing (Runde 3, DoD 12): gruen, frisch gebautes Binary aus dem Worktree fix/7XXT00 (bcf403b).
+
+Gates: go build rc=0, go vet ./... rc=0, go test ./... -count=1 rc=0 — 28 Pakete ok, kein FAIL.
+
+DoD 12 nachgemessen am Payload dieses Tickets:
+- keys enthaelt diff UND worktree_diff (13 Schluessel), complete true, commits_source git+worktree.
+- diff: 3450 Zeilen, worktree_diff: 58 Zeilen.
+- 'jq -r .diff | grep -c "uncommitted work in the working tree"' -> 49 Treffer. Alle 49 beginnen mit einem Diff-Praefix (28x '+', 9x '-', 12x ' '); 'grep -c "^uncommitted work in the working tree$"' -> 0. Es gibt keine praefixlose Zeile mehr, also keine Zeichenkette, die als Grenze missverstanden werden kann. Zum Vergleich der Befund von Runde 2: damals 9 Treffer, davon einer (Zeile 2103) die echte Grenze, der erste 913 Zeilen zu frueh.
+- worktree_diff traegt genau die unversionierte Arbeit dieses Worktrees und nichts sonst: drei Dateien, .jaira/milestones/demo-board-dateien.md, demo-naechste-version.md, demo-ui.md — deckungsgleich mit 'git status --short' minus der ausgenommenen .jaira/tickets-Datei. Marker-Treffer in worktree_diff: 0.
+- Klartext-Ausgabe: '## Worktree diff (not committed yet)' als eigene Ueberschrift (Zeile 3532, neben '## Diff' 75 und '## Must produce' 3594); praefixlose Marker-Zeilen in der Klartext-Ausgabe: 0.
+
+Keine Regression des urspruenglichen Defekts: payload .commits hat 13 Eintraege, 'git log origin/HEAD..HEAD --oneline | wc -l' -> 13. Gleiche Zahl, der Payload zeigt den ganzen Branch.
+
+review.check Schritt 7 (Umlaut-Pfad) nachgestellt: 'Änderung.txt' angelegt -> 2 Treffer in worktree_diff, 3 in diff; die drei in diff sind committeter Patch-Inhalt (forlanecommits_test.go Zeilen 1544/1554 der Fixture-Liste und die check-Rezeptzeile 2735 des Tickets), keine davon die Datei selbst. Datei wieder entfernt.
+
+Die vier Payload-Zweige nach dem optimize-Commit bcf403b (Wegfall der Variablen d):
+- Worktree-Lesefehler: von Tests behauptet — TestForLaneSaysWhenTheWorktreeCouldNotBeRead prueft worktree_error != "" und complete true; TestForLaneWorktreeErrorStandsAboveTheDiffAndOnlyOnce prueft Reihenfolge und Einmaligkeit in der Klartext-Ausgabe.
+- Nicht zeigbare SHAs: von Tests behauptet — TestForLaneNamesTheCommitsGitCouldNotShow prueft commits==2 und commits_unavailable==[ghost].
+- Sauberer Worktree: NICHT von einem Test behauptet. Kein Test prueft, dass worktree_diff bei sauberem Baum fehlt. Selbst nachgemessen statt geraten: .jaira/milestones/ kurz beiseitegelegt, Payload neu gebaut -> worktree_diff fehlt im Schluesselsatz, commits_source 'git' ohne '+worktree', complete true, n 13. Verhalten korrekt, Abdeckung fehlt.
+- Ueberhaupt keine Commits: nur indirekt behauptet. Der Unter-Test 'without a diff' laeuft in einer Fixture ohne Commits durch, prueft dort aber nur den Fehlertext, nicht commits_source=='worktree' ohne Plus. ticket.WithWorktree hat ueberhaupt keinen Test (grep: nur trim.go:218 und flow.go:637).
+
+Zusammengefasst: zwei der vier Zweige sind von Tests festgenagelt, zwei nur vom Happy Path mitgenommen. Kein Defekt gefunden — eine Luecke in der Testabdeckung, kein Blocker fuer dieses Ticket.
