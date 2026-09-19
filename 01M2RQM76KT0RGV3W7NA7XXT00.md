@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:48:15Z
+updated-at: 2026-09-19T19:49:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -104,7 +104,7 @@ review-check: |-
 ## Definition of Done
 
 - [x] Der Payload einer Lane, die einen Diff beurteilt, zeigt den ganzen Branch - oder er sagt, dass er es nicht tut: entweder leitet showForLane die Liste immer aus git ab, oder complete ist false und 'missing' nennt die Zahl der nicht enthaltenen Commits. Ein Leser kann nicht mehr einen Ausschnitt fuer das Ganze halten.
-  proof: internal/cli/flow.go:591-608 — shas = ticket.MergeCommits(env.DeriveCommits(t), t.Commits), immer abgeleitet; Payload traegt commits + commits_source (flow.go:648-656); internal/tui/signoff.go:114 dieselbe Union
+  proof: internal/cli/flow.go:598-613 — shas = ticket.MergeCommits(env.DeriveCommits(t), t.Commits), immer abgeleitet; Payload traegt commits + commits_source (flow.go:689-691); internal/tui/signoff.go:115 dieselbe Union
 - [x] Nachgestellt an dem Fall, der es gezeigt hat: ein Ticket mit drei SHAs in 'commits:' und einundzwanzig Commits auf dem Branch. Mit Test.
   proof: internal/cli/forlanecommits_test.go TestForLaneDiffIsNotLimitedToTheRecordedCommits — Ticket mit einem von zwei SHAs in commits:, review-Payload muss beide zeigen; fiel vor der Aenderung
 - [x] Untersucht und auf dem Ticket festgehalten, WIE 'commits:' teilweise gefuellt wird - welcher Schreibpfad den Stand einfriert und warum er spaetere Commits nicht nachtraegt. Ohne diese Antwort ist jede Reparatur geraten.
