@@ -25,10 +25,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:10:37Z
+updated-at: 2026-09-19T20:14:18Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-12347
-claimed-at: 2026-09-19T19:41:48Z
+claimed-by: DESKTOP-RFTCH11-70053
+claimed-at: 2026-09-19T20:14:18Z
 mode: ""
 outcome-what: "Zwei Tests geschrieben, die die zwei ungetesteten Payload-Zweige festnageln, und einen Satz in den jaira-role-lane-Prompt gesetzt, der sagt, dass die Worktree-Haelfte des Payloads repo-weit ist. core/ticket/trim_test.go TestWithWorktreeNamesTheWorktreeBesideTheCommitSource deckt beide Zweige von ticket.WithWorktree, das bis jetzt gar keinen Test hatte; internal/cli/forlanecommits_test.go TestForLaneLeavesTheWorktreeKeyOutOfACleanTree prueft am rohen Payload-Map, dass der Schluessel worktree_diff bei sauberem Arbeitsbaum FEHLT statt leer dazustehen. core/role/builtin/jaira-role-lane/SKILL.md:44-48 sagt dem Leser, dass worktree_diff jede unversionierte Aenderung im Repo ausser .jaira/tickets traegt. Ausserdem die nach bcf403b verrutschten Zeilennummern in den Proofs von DoD 1, 6, 9, 10, 11, 12 und 13 nachgelesen und korrigiert. Kein Produktivcode geaendert."
 outcome-why: "Die review-Lane hat drei offene Punkte hinterlassen, und Alex hat das Ticket am 2026-09-19 ausdruecklich aus signoff zurueckgeworfen, damit sie hier und nicht in einem Folge-Ticket geschlossen werden. Die zwei Zusagen - 'commits_source liest worktree ohne Plus' und 'test diff for content, never for absence' - standen in core/release/NOTES.md und in SKILL.md woertlich als Versprechen an den Leser, und kein Test hielt sie; eine Zusage ohne Test ist Prosa, die beim naechsten Refactor still bricht. Die Repo-Weite der Worktree-Haelfte ist nicht reparierbar, weil niemand wissen kann, welche Dateien zu einem Ticket gehoeren - der ehrliche Weg ist, es dem Leser zu sagen, statt ihn glauben zu lassen, er sehe nur die Arbeit dieses Tickets. Falsche Zeilennummern in einem Proof kosten den naechsten Leser genau die Zeit, die der Proof ihm sparen soll."
