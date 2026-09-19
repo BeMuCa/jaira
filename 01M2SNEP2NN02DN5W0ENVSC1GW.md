@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T07:07:21Z
-updated-at: 2026-09-19T19:51:50Z
+updated-at: 2026-09-19T19:51:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-15130
 claimed-at: 2026-09-19T19:43:50Z
@@ -153,6 +153,7 @@ review-check: |-
 - [ ] Runde 5: Grep neu gefahren, am Anker 'lanes add' und an den Ortswoertern statt an der Formulierung - sechste Fundstelle internal/cli/lanes.go:74 (Kommentar in 'lanes use') praezisiert, Code unveraendert
 - [ ] Runde 5, DoD 8: Verdeckung am gebauten Binary reproduziert (JAIRA_LANES_DIR mit eigener critique-Beschreibung - Fuss und 'lanes add' nehmen beide die eingebettete), eine NOTES-Zeile dazu, Test core/lane/order_test.go TestBuiltinShadowsAnAdoptedCopyOfTheSameID
 - [ ] Runde 5, kosmetisch: core/market/market.go Unpinned() sagt bei leerem release.Current 'this build reports no version' statt eines Satzes mit Loch; Test TestBlankVersionStillReadsAsASentence
+- [ ] Runde 5: go build ./... , go vet ./... und go test ./... -count=1 gruen
 
 ## Progress
 - **2026-09-18 07:10 · Alexander Sacharov** — Alex am 2026-09-18, beim Durchdenken der Katalog-Idee: 'kann man dann nicht alle Lanes in den Markt legen, und werden sie aus dem Release geladen?'
