@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T20:57:51Z
+updated-at: 2026-09-19T20:58:12Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-25543
 claimed-at: 2026-09-19T20:42:49Z
@@ -110,6 +110,16 @@ review-gaps: |-
   6. NOTES.md, fuenfte Zeile - mein eigenes Urteil, wie gefordert: ich haette auch keine geschrieben, aber aus einem anderen Grund als die drei Vorlanes. Nicht "neue Tests sieht ein Benutzer nicht" ist das Argument - der SKILL.md-Satz IST benutzersichtbar, die optimize-Lane hat recht, er geht ueber jaira roles install --global --force hinaus - sondern dass NOTES.md:20 die Tatsache bereits traegt: dieselbe Zeile sagt "every untracked file in full" und im selben Atemzug ".jaira/tickets is left out of that worktree diff on purpose". Eine Ausnahme wird nur benannt, wo alles andere drin ist; die Repo-Weite steht dort also schon, nur nicht mit dem Wort. Wenn der Maintainer sie ausgesprochen haben will, ist der saubere Ort ein Nebensatz IN Zeile 20 ("repo-wide, so uncommitted work from other tickets arrives with it"), nicht eine fuenfte Zeile - der Abschnitt haette dann fuenf Zeilen ueber einen Payload, und der Leser des Release-Notes-Scans muesste vier davon lesen, um die fuenfte einzuordnen. Ich aendere nichts, weder Falten noch Hinzufuegen: das ist die Entscheidung des Maintainers.
 
   7. Zu DoD 1..13, nur als Beobachtung und ausdruecklich kein Grund fuer einen Rueckwurf: der Satz SKILL.md:152-153 "test diff for content, never for absence" liest sich schief. Gemeint und richtig ist, dass diff auf Inhalt geprueft wird, weil es immer da ist, und worktree_diff auf Abwesenheit geprueft werden DARF, weil es weggelassen wird. So wie der Satz steht, kann ein eiliger Leser ihn auf worktree_diff beziehen und genau das Gegenteil der Zusage mitnehmen, die dieses Ticket gerade festgenagelt hat. Angenommene Arbeit, daher vermerkt und nicht zurueckgegeben.
+  optimize auf dem Inkrement b5e425b (DoD 16/17/18): ENTFERNT: nichts. Kein toter Code im Inkrement - es enthaelt ueberhaupt keinen Produktionscode, nur einen Test und zwei Prosastellen.
+
+  STEHEN GELASSEN, mit Grund:
+  1. Der zweite Payload-Read in TestForLaneLeavesTheWorktreeKeyOutOfACleanTree: dupliziert keinen Test. Mutationsprobe selbst gefahren (diff im Payload bedingt gesetzt) - im ganzen Repository wird genau dieser eine Test rot, sonst keiner. Er ist die einzige Wache.
+  2. Das zweite Ticket im Fixture: kein Ueberbau. Der erste Read des Tests traegt einen nicht leeren Diff und kann die Mutation nicht sehen. Ein Read auf schmutzigem Baum wuerde 'if diff != "" || worktreeDiff != ""' durchlassen - die Form, die im selben Block fuer 'commits' schon so im Code steht. Nur 'keine Commits UND sauberer Baum' faengt beide Mutationen. Kosten: ein s.Create und ein runCLI im schon stehenden TempDir.
+  3. SKILL.md ~45-51 (--exclude-standard): sagt nicht, was die Nachbarsaetze sagen - es korrigiert sie. Der Satz versprach 'jede unversionierte Aenderung ausser .jaira/tickets' und war damit auf einem ungeteilten Board falsch. Beleg core/gitrepo/git.go:212.
+  4. SKILL.md ~156-158 ('That sentence is about diff alone'): die Wiederholung ist gewollt und ist DoD 18. Der Vordersatz nennt worktree_diff nur im Nebensatz als Tatsache, der Imperativ steht am Satzende; wer quer liest, nimmt nur den Imperativ mit. Der Zusatz bindet ihn an sein Subjekt und gibt worktree_diff den eigenen, umgekehrten Imperativ.
+  5. Die NOTES.md-Zeile: die Ignore-Regel steht zweimal in der Zeile (im Versprechen und bei der Folge), rund sechzig Woerter auseinander. Die zweite Stelle traegt das Einzige, was ein Leser handeln kann - auf einem ungeteilten Board fehlt das ganze .jaira/. Sie auf einen Rueckverweis kuerzen spart sieben Woerter und kostet die Folgerung; die Zeile wird zeilenweise gelesen, nicht im Zusammenhang. Keine fuenfte Zeile ergaenzt.
+
+  ANMERKUNG, nicht als Mangel: der Testname nennt nur noch die Haelfte dessen, was der Test prueft (worktree_diff-Abwesenheit plus diff-Anwesenheit). Nicht umbenannt, weil DoD 16 ausdruecklich verlangt, die Zusicherung in genau diesen Test zu legen.
 question: |-
   Befund 1 der critique: jaira-role-lane/SKILL.md:36-43 sagt der Diff-Lane jetzt, der Payload sei die ganze committete Historie, und nimmt ihr das Nachzaehlen weg. In mode: conversational darf die implementierende Lane aber nicht committen - also ist der Payload dort der vorherige Durchgang und meldet complete:true. Dieses Ticket selbst ist der Fall. Drei Wege, bitte einen waehlen:
 
