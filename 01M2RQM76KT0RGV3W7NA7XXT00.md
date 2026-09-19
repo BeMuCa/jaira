@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:26:05Z
-updated-at: 2026-09-19T19:41:58Z
+updated-at: 2026-09-19T19:42:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12347
 claimed-at: 2026-09-19T19:41:48Z
@@ -130,6 +130,7 @@ review-check: |-
 - [x] Kein Text im Repository beschreibt den Payload mehr falsch: core/release/NOTES.md nennt unter ## Unreleased nirgends mehr die abgeschaffte Trennzeile als Wegweiser, und core/role/builtin/jaira-role-lane/SKILL.md sagt die Asymmetrie der beiden Schluessel so herum, wie flow.go sie baut - diff immer da (notfalls leer), worktree_diff weggelassen wenn leer - und knuepft die Worktree-Haelfte nicht mehr an ein commits_source mit Plus.
   proof: core/release/NOTES.md:19; core/role/builtin/jaira-role-lane/SKILL.md:40-45 und 143-149; belegt an internal/cli/flow.go:678 (diff immer gesetzt) gegen flow.go:686-688 (worktree_diff nur wenn nicht leer) und core/ticket/trim.go:218-222 (WithWorktree("") == "worktree")
 - [ ] ticket.WithWorktree hat einen Test ueber beide Zweige (leerer Worktree-Diff: Feld bleibt weg; nicht leerer: Feld wird gesetzt), und ein Test haelt fest, dass worktree_diff im Lane-Payload bei sauberem Arbeitsbaum FEHLT statt leer zu sein. Beide Garantien stehen heute nur als Prosa in core/release/NOTES.md und in jaira-role-lane/SKILL.md ('test diff for content, never for absence') - ohne Test ist das nur eine Behauptung.
+- [ ] core/role/builtin/jaira-role-lane/SKILL.md sagt in einem Satz, dass die Worktree-Haelfte des Payloads REPO-WEIT ist und nicht ticket-weit: repo.WorktreeDiff fragt git mit ':/' und nimmt nur .jaira/tickets aus, also steht in worktree_diff jede unversionierte Aenderung im Repo, auch solche, die mit dem Ticket nichts zu tun haben. Sichtbar an diesem Ticket selbst, wo .jaira/milestones/ im worktree_diff landet. Kein Code-Fix - niemand kann wissen, welche Dateien zu einem Ticket gehoeren; der ehrliche Weg ist, es dem Leser zu sagen.
 
 ## Options
 
