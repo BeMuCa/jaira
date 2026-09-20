@@ -33,15 +33,18 @@ func TestLaneScreenNavigationClamps(t *testing.T) {
 	if ls.idx != 0 {
 		t.Errorf("idx = %d, want 0 (clamped at the first column)", ls.idx)
 	}
-	for range ls.lanes {
+	// The '+' column sits past the installed lanes AND the available ones —
+	// the shipped lanes this board has not installed are columns too.
+	last := len(ls.lanes) + len(ls.available)
+	for i := 0; i <= last; i++ {
 		ls.key("l")
 	}
-	ls.key("l") // one more than there are lanes: lands on '+', then clamps
-	if ls.idx != len(ls.lanes) {
-		t.Errorf("idx = %d, want %d (clamped at the '+' column)", ls.idx, len(ls.lanes))
+	ls.key("l") // one more than there are columns: clamps on '+'
+	if ls.idx != last {
+		t.Errorf("idx = %d, want %d (clamped at the '+' column)", ls.idx, last)
 	}
 	if !ls.isPlusColumn() {
-		t.Error("idx at len(lanes) must report as the '+' column")
+		t.Error("idx at the last column must report as the '+' column")
 	}
 }
 

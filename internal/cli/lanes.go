@@ -71,7 +71,9 @@ brought up to date after a jaira upgrade changed it.`,
 			if err != nil {
 				return writeConflictError(err)
 			}
-			// A lane new to the board takes the last column, like 'lanes add'.
+			// A lane new to the board takes the last column. Not what 'lanes add'
+			// does any more — that one inserts at the lane's after: anchor; 'use'
+			// is a copy of a file and carries no placement intent of its own.
 			if ids, err := lane.LoadOrder(s.Root); err == nil && len(ids) > 0 && !slices.Contains(ids, l.ID) {
 				if err := lane.SaveOrder(s.Root, append(ids, l.ID)); err != nil {
 					return err
@@ -97,10 +99,13 @@ func newLanesAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <id>",
 		Short: "Add a built-in or catalogue lane to this project's board",
-		Long: `Adds the named lane to this board, appending it to the column order — the
-same move the lane settings screen's '+' column makes once a lane is chosen.
-A board is its lane directory: the lane's file is written there, and that is
-what puts it on the board.`,
+		Long: `Adds the named lane to this board, placing it where its after: field points
+— the same move the lane settings screen's '+' column makes once a lane is
+chosen. The chain is followed through lanes this board has not installed, so a
+lane whose anchor is itself uninstalled still lands in the flow rather than
+behind the terminal lanes; the success line names the neighbour it ended up
+after. A board is its lane directory: the lane's file is written there, and
+that is what puts it on the board.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -111,7 +116,7 @@ what puts it on the board.`,
 			if err != nil {
 				return err
 			}
-			dst, err := lane.Add(s.Root, set, args[0])
+			dst, after, warnings, err := lane.Add(s.Root, set, args[0])
 			if err != nil {
 				if strings.Contains(err.Error(), "already part of this project") ||
 					strings.Contains(err.Error(), "no lane") {
@@ -122,9 +127,22 @@ what puts it on the board.`,
 			refreshAgentNote(cmd, s.Root)
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, map[string]any{"id": args[0], "path": dst})
+				return emit(w, map[string]any{"id": args[0], "path": dst, "after": after, "warnings": warnings})
 			}
-			fmt.Fprintf(w, "added %s to this project (%s)\n", args[0], dst)
+			// Where it landed, not only that it did: 'lanes add' resolves the
+			// after: chain through lanes this board has not installed, so the
+			// column it ends up in is a result and not something the caller
+			// typed. The neighbour goes in the success line rather than on the
+			// warning channel — the placement is right in every case, and a
+			// warning on the ordinary path teaches people to skip warnings.
+			if after != "" {
+				fmt.Fprintf(w, "added %s to this project after %s (%s)\n", args[0], after, dst)
+			} else {
+				fmt.Fprintf(w, "added %s to this project, at the front (%s)\n", args[0], dst)
+			}
+			for _, warn := range warnings {
+				fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: %s\n", warn)
+			}
 			return nil
 		},
 	}

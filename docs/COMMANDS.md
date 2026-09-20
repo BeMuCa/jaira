@@ -150,7 +150,7 @@ field per ticket.
 | `jaira share` | publish the board; `--undo` makes it private again |
 | `jaira projects add <path>` | register a board; `--scan` searches two levels down |
 | `jaira lanes use <id>` | copy a lane's catalogue or shipped version onto this board; `--force` overwrites the board's copy (how a lane is reset to the shipped one). Like `add`, `remove` and `move`, it regenerates the agent block, since changing the pipeline is when the note stops being true |
-| `jaira lanes add <id>` | add a built-in or catalogue lane to this board, appending it to the column order. A board is its lane directory — the lane's file is written there, and that is what puts it on the board |
+| `jaira lanes add <id>` | add a built-in or catalogue lane to this board, placed where its `after:` chain points — followed through lanes this board has not installed, so the success line names the neighbour it landed after. A board is its lane directory — the lane's file is written there, and that is what puts it on the board |
 | `jaira lanes remove <id>` | remove a lane from this project's board (it stays in the catalogue); refused, naming them, if any ticket sits in it |
 | `jaira lanes move <id> --left\|--right` | shift a lane one column in this project's order, swapping it with its neighbour |
 | `jaira lanes publish <id>` | copy a lane into `.jaira/shared/<you>/` for teammates; `--force` |

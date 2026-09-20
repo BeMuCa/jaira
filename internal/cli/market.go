@@ -50,10 +50,14 @@ Needs the network. Without it the command says so and nothing changes.`,
 						"path": e.Path, "url": e.URL,
 					})
 				}
-				return emit(w, map[string]any{"lanes": arr, "warnings": warnings, "override": market.Overridden()})
+				return emit(w, map[string]any{"lanes": arr, "warnings": warnings,
+					"override": market.Overridden(), "unpinned": market.Unpinned()})
 			}
 			if o := market.Overridden(); o != "" {
 				fmt.Fprintf(w, "note: listing from %s\n", o)
+			}
+			if u := market.Unpinned(); u != "" {
+				fmt.Fprintf(w, "note: %s\n", u)
 			}
 			if len(entries) == 0 {
 				fmt.Fprintln(w, "the marketplace holds no lanes")
@@ -124,10 +128,14 @@ a teammate's file. Refuses to overwrite an existing catalogue entry unless
 			}
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, map[string]any{"id": l.ID, "path": dst, "url": pick.URL, "override": market.Overridden()})
+				return emit(w, map[string]any{"id": l.ID, "path": dst, "url": pick.URL,
+					"override": market.Overridden(), "unpinned": market.Unpinned()})
 			}
 			if o := market.Overridden(); o != "" {
 				fmt.Fprintf(w, "note: fetched from %s\n", o)
+			}
+			if u := market.Unpinned(); u != "" {
+				fmt.Fprintf(w, "note: %s\n", u)
 			}
 			fmt.Fprintf(w, "adopted %s\nRead it before you run it: 'jaira lanes show %s'. Then 'jaira lanes add %s' puts it on this board.\n",
 				filepath.Clean(dst), l.ID, l.ID)

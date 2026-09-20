@@ -10,6 +10,7 @@ rejects-to: in-progress
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff]
 output-produces: [review-summary]
 creator: BeMuCa
+default-board: false
 ---
 
 # Prompt

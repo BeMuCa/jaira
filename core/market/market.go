@@ -15,11 +15,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/selfupdate"
 )
 
@@ -34,15 +36,49 @@ const (
 // memory bomb waiting on a misbehaving server.
 const maxBody = 4 << 20
 
-// apiBase is the contents-API address of the catalogue directory.
-// JAIRA_MARKET_API overrides it, with the same rule as the release host
-// overrides (https, or plain http on loopback for the test suite only) — see
-// selfupdate.OverrideOf for why that rule and why not a flag.
+// apiBase is the contents-API address of the catalogue directory, pinned to
+// the tag of the running binary. JAIRA_MARKET_API overrides the address, with
+// the same rule as the release host overrides (https, or plain http on
+// loopback for the test suite only) — see selfupdate.OverrideOf for why that
+// rule and why not a flag.
+//
+// The pin is what makes the catalogue match the binary reading it. Without a
+// ref GitHub's contents API answers with the default branch's HEAD, so a
+// 0.1.4 installed a year ago fetched today's lanes: name a field that binary
+// does not know and the lane arrives broken, and there is no way to repair
+// the catalogue for an old release because there is only one for everybody.
+// A tag's tree is a tag's tree, so pinning costs one query parameter and no
+// release machinery at all.
 func apiBase() string {
+	base := "https://api.github.com/repos/" + repo + "/contents/" + dir
 	if v := selfupdate.OverrideOf("JAIRA_MARKET_API"); v != "" {
-		return v
+		base = v
 	}
-	return "https://api.github.com/repos/" + repo + "/contents/" + dir
+	ref := pinnedRef()
+	if ref == "" {
+		return base
+	}
+	// Parsed, not concatenated: an override may already carry a query — the
+	// test server sets one — and gluing "?ref=" onto that produces
+	// "?x=1?ref=v0.3.0", which the server reads as one nonsense parameter.
+	u, err := url.Parse(base)
+	if err != nil {
+		return base
+	}
+	q := u.Query()
+	q.Set("ref", ref)
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+// pinnedRef is the tag whose catalogue this binary asks for, empty when it is
+// not a released build. release.Current is "dev" in a source build and has no
+// tag on GitHub to ask for.
+func pinnedRef() string {
+	if release.Current == "" || release.Current == "dev" {
+		return ""
+	}
+	return "v" + release.Current
 }
 
 // Overridden reports the override in effect, so a command can name it before
@@ -52,6 +88,25 @@ func Overridden() string {
 		return "JAIRA_MARKET_API=" + v
 	}
 	return ""
+}
+
+// Unpinned reports that this build fetches the catalogue unpinned, empty when
+// it is pinned to its own tag. The text is returned rather than printed, like
+// Overridden above it: apiBase is a pure function called on every request,
+// and a line written from inside it would appear once per call and land in
+// the middle of --json output.
+func Unpinned() string {
+	if pinnedRef() != "" {
+		return ""
+	}
+	// A -ldflags build can blank release.Current, and naming it then produces
+	// "reports version ," — a sentence with a hole in it.
+	reported := "reports version " + release.Current
+	if release.Current == "" {
+		reported = "reports no version"
+	}
+	return "this build " + reported +
+		", which is no released tag, so the catalogue comes from the development branch and may name fields this binary does not know"
 }
 
 // Entry is one lane on offer: the parsed lane, and where its file lives.

@@ -132,8 +132,15 @@ type Lane struct {
 	// "shipped by the tool" and "author unknown" are different facts.
 	Creator string
 
-	// Builtin distinguishes shipped lanes from user-installed ones.
+	// Builtin distinguishes shipped lanes from user-installed ones: it says
+	// the lane travels inside the binary, nothing more.
 	Builtin bool
+	// Default says the lane belongs to a fresh board's selection. It is the
+	// second half of what Builtin used to carry alone: a shipped lane that is
+	// installable without the network but must not be forced on every board —
+	// critique, optimize, testing — ships with "default-board: false" and is
+	// built-in without being default.
+	Default bool
 	// Source is the path a custom lane came from, for error messages.
 	Source string
 	// Overrides names the built-in this lane displaced, empty if it does not
@@ -284,6 +291,11 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 		Builtin:           builtin,
 		Source:            source,
 	}
+	// A lane that says nothing about it is default exactly when it ships in the
+	// binary — which is what Builtin meant before the two facts were split, so
+	// the ten shipped files need no new line and a custom lane keeps behaving
+	// as it did.
+	l.Default = boolOr("default-board", builtin)
 	if l.Creator == "" && builtin {
 		// The nine shipped lane files carry no creator: line — defaulting it
 		// here is the same observable result for none of the file churn, and
@@ -624,7 +636,7 @@ func setUp(root string) ([]string, error) {
 	if len(ids) == 0 {
 		source = "the built-in lanes"
 		for _, l := range offer.Lanes {
-			if l.Builtin {
+			if l.Default {
 				ids = append(ids, l.ID)
 			}
 		}
@@ -679,7 +691,14 @@ func migrateLegacy(root string) []string {
 		}
 	} else {
 		for _, l := range builtins {
-			used[l.ID] = true
+			// The default lanes, not every shipped one: a legacy directory with
+			// no order file implied the board a fresh board got back then, and
+			// that never included a lane shipped with "default-board: false".
+			// Reading Builtin here would hand an old board three lanes it
+			// never had.
+			if l.Default {
+				used[l.ID] = true
+			}
 		}
 	}
 

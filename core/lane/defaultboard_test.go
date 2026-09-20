@@ -71,7 +71,9 @@ func TestLoadDefaultBoardUnparseableWarnsAndIsAbsent(t *testing.T) {
 	}
 }
 
-func builtinIDList(t *testing.T) []string {
+// shippedIDList is every lane the binary carries, default or not — what
+// 'jaira lanes add' can offer without a network.
+func shippedIDList(t *testing.T) []string {
 	t.Helper()
 	lanes, err := Builtins()
 	if err != nil {
@@ -80,6 +82,26 @@ func builtinIDList(t *testing.T) []string {
 	ids := make([]string, len(lanes))
 	for i, l := range lanes {
 		ids[i] = l.ID
+	}
+	return ids
+}
+
+// builtinIDList is what a fresh board gets: the shipped lanes that stand in
+// the default selection. Not every shipped lane — critique, optimize and
+// testing travel in the binary with "default-board: false" and are installed
+// by hand, so a test asking "what does a new board look like" must not count
+// them.
+func builtinIDList(t *testing.T) []string {
+	t.Helper()
+	lanes, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := make([]string, 0, len(lanes))
+	for _, l := range lanes {
+		if l.Default {
+			ids = append(ids, l.ID)
+		}
 	}
 	return ids
 }
@@ -312,6 +334,43 @@ func TestResolveOptionsDropsUnknownBoardOption(t *testing.T) {
 	for _, o := range opts {
 		if o.Name == "not-a-real-option" {
 			t.Error("an option no lane requires must not appear")
+		}
+	}
+}
+
+// TestFreshBoardGetsOnlyTheDefaultLanes asserts what splitting Builtin into
+// "ships in the binary" and "stands in the selection" must not change: a board
+// set up without a default board file gets exactly the ten lanes it always
+// got, not every lane the binary carries. Embedding critique, optimize and
+// testing adds three built-ins; if setUp read Builtin again they would land on
+// every new board, which is the one outcome this ticket rules out.
+func TestFreshBoardGetsOnlyTheDefaultLanes(t *testing.T) {
+	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{"backlog", "brainstorm", "todo", "pre-process", "in-progress", "human", "review", "signoff", "done", "blocked"}
+	if got := set.IDs(); !reflect.DeepEqual(got, want) {
+		t.Errorf("a fresh board must carry exactly the default lanes:\n want %v\n got  %v", want, got)
+	}
+
+	offer, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range offer.Lanes {
+		if l.Builtin && !l.Default {
+			if _, on := set.Get(l.ID); on {
+				t.Errorf("lane %q ships with default-board: false but landed on a fresh board", l.ID)
+			}
 		}
 	}
 }

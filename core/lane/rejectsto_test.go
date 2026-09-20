@@ -100,8 +100,12 @@ func TestRejectsToDefaultsEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, l := range bs {
-		if len(l.RejectsTo) > 0 {
-			t.Errorf("built-in %q declares rejects-to %q; no built-in should", l.ID, l.RejectsTo)
+		// The default lanes only. critique, optimize and testing ship in the
+		// binary too and each sends work back to in-progress — that loop is
+		// what they are for — but they are not on a board until someone adds
+		// them, so no board gets a back edge it did not ask for.
+		if l.Default && len(l.RejectsTo) > 0 {
+			t.Errorf("default lane %q declares rejects-to %q; none should", l.ID, l.RejectsTo)
 		}
 	}
 }

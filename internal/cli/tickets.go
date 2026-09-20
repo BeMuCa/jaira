@@ -993,6 +993,29 @@ func newLanesCmd() *cobra.Command {
 			// rather than reported through a second path.
 			db, _ := lane.LoadDefaultBoard()
 			warnings := append(append([]string{}, lanes.Warnings...), lane.Validate(db, lanes)...)
+			// The lanes this binary carries that this board has not installed.
+			// Without this, a board only ever learns of critique, optimize and
+			// testing from someone who already knows they exist: the table
+			// above lists what is installed, and the catalogue announces
+			// itself nowhere. These need no network — they are in the binary
+			// — so naming them is honest even with no connection at all.
+			//
+			// !Default is what keeps it from nagging: a lane every fresh board
+			// starts with and this board no longer has was removed on purpose,
+			// and offering it back under every 'jaira lanes' is second-guessing
+			// that choice. It does not reach further than that: a lane outside
+			// the default board keeps being offered after it is removed too, and
+			// deliberately so — from here 'never installed' and 'installed and
+			// dropped again' look identical, and a catalogue lane is one a board
+			// may always take back.
+			var available []*lane.Lane
+			if installable, err := lane.Installable(lanes); err == nil {
+				for _, l := range installable {
+					if l.Builtin && !l.Default {
+						available = append(available, l)
+					}
+				}
+			}
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(lanes.Lanes))
 				for _, l := range lanes.Lanes {
@@ -1004,7 +1027,16 @@ func newLanesCmd() *cobra.Command {
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
 				}
-				return emit(cmd.OutOrStdout(), map[string]any{"lanes": arr, "warnings": warnings})
+				avail := make([]map[string]any, 0, len(available))
+				for _, l := range available {
+					avail = append(avail, map[string]any{
+						"id": l.ID, "name": l.Name, "description": l.Description,
+						"agentic": l.Agentic, "model_tier": l.ModelTier,
+						"add": "jaira lanes add " + l.ID,
+					})
+				}
+				return emit(cmd.OutOrStdout(), map[string]any{
+					"lanes": arr, "available": avail, "warnings": warnings})
 			}
 			w := cmd.OutOrStdout()
 			// CREATOR is not a column here: the table is already six columns wide,
@@ -1018,6 +1050,13 @@ func newLanesCmd() *cobra.Command {
 					src = l.Source
 				}
 				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), src)
+			}
+			if len(available) > 0 {
+				fmt.Fprintf(w, "\nShipped with this binary, not on this board — no network needed:\n")
+				for _, l := range available {
+					fmt.Fprintf(w, "  %-14s %s\n", l.ID, l.Description)
+				}
+				fmt.Fprintf(w, "  Add one with 'jaira lanes add <id>'.\n")
 			}
 			for _, warn := range warnings {
 				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", warn)

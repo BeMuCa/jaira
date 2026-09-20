@@ -89,20 +89,35 @@ precedence: 41
 	}
 	ls := newLaneScreen(s, set)
 
-	if len(ls.available) != 1 || ls.available[0].ID != "extra" {
-		t.Fatalf("available = %v, want exactly [extra]", ls.available)
+	// The shipped-but-not-default lanes are available too: they travel in the
+	// binary and are not on this board, which is exactly what this column is
+	// for. What must be there is the catalogue lane.
+	var found bool
+	for _, l := range ls.available {
+		if l.ID == "extra" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("available = %v, want it to include extra", idsOfLanes(ls.available))
 	}
 	if out := stripANSI(ls.render(120, 40)); !strings.Contains(out, "not on board") {
 		t.Errorf("the missing lane is not visible on the screen:\n%s", out)
 	}
 
-	ls.idx = len(ls.lanes) // the one available lane
+	for i, l := range ls.available {
+		if l.ID == "extra" {
+			ls.idx = len(ls.lanes) + i
+		}
+	}
 	ls.key("enter")
 	if indexOfLane(ls.lanes, "extra") < 0 {
 		t.Fatalf("enter did not install the available lane: %v", ls.msg)
 	}
-	if len(ls.available) != 0 {
-		t.Errorf("extra is installed but still listed as available: %v", ls.available)
+	for _, l := range ls.available {
+		if l.ID == "extra" {
+			t.Errorf("extra is installed but still listed as available: %v", idsOfLanes(ls.available))
+		}
 	}
 }
 
@@ -154,3 +169,13 @@ func TestLaneScreenShowsEveryLaneOnANarrowTerminal(t *testing.T) {
 }
 
 func truncateForTest(s string, w int) string { return truncate(s, w) }
+
+// idsOfLanes names lanes in a failure message; printing the slice prints
+// pointers.
+func idsOfLanes(lanes []*lane.Lane) []string {
+	out := make([]string, len(lanes))
+	for i, l := range lanes {
+		out[i] = l.ID
+	}
+	return out
+}
