@@ -149,12 +149,11 @@ one the real move would have returned.`,
 					}
 				}
 				if len(commits) > 0 {
-					merged := append([]string{}, t.Commits...)
-					for _, c := range commits {
-						if c = strings.TrimSpace(c); c != "" && !contains(merged, c) {
-							merged = append(merged, c)
-						}
-					}
+					// Same union as everywhere else: what the ticket already
+					// records first, the incoming shas appended if new. This
+					// hand-rolled its own copy of the loop before
+					// ticket.MergeCommits existed to share.
+					merged := ticket.MergeCommits(t.Commits, commits)
 					if err := t.Doc().SetList(ticket.FieldCommits, merged); err != nil {
 						return err
 					}
@@ -558,6 +557,24 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	fields := map[string]string{}
 	var missing []string
 	var diff string
+	// The uncommitted half, kept apart from the committed one. Appending it to
+	// diff behind the line "uncommitted work in the working tree" made the
+	// boundary a string a reader had to search for, and that string occurs in
+	// any patch that quotes it — nine times on this ticket's own payload, the
+	// first of them 900 lines above the real boundary. A key cannot be
+	// misread that way.
+	var worktreeDiff string
+	// The shas the diff was actually built from, and where they came from.
+	// They ride in the payload so a reader can count them against the branch
+	// instead of trusting the diff to be whole.
+	var shas []string
+	var shasFrom string
+	// Shas whose patch git could not produce, and the reason the working tree
+	// is absent. Both ride in the payload rather than staying here: a lane
+	// that cannot tell "nothing was uncommitted" from "the worktree could not
+	// be read" is back to trusting a fraction.
+	var unavailable []string
+	var worktreeErr string
 	for _, want := range l.InputRequires {
 		switch want {
 		case "plan":
@@ -580,26 +597,55 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			}
 		case "diff":
 			repo := &gitrepo.Repo{Dir: s.Root}
-			// The same fallback the gate uses: a ticket that records no commits
-			// of its own gets them derived from git. Without this the lane whose
-			// whole job is judging a diff was handed "records no commits" while
-			// the move it is working towards would have found them — the
-			// derivation was wired into the gate and into the exits, and not
-			// into the one place an agent actually reads its input.
-			shas := t.Commits
-			if len(shas) == 0 && env.DeriveCommits != nil {
-				shas = env.DeriveCommits(t)
+			// Always derived, never the field alone. commits: is a snapshot —
+			// 'move --out --commits' writes it once and no later commit ever
+			// joins it — so a lane handed the field as the answer judged three
+			// commits of twenty-one and was told complete:true. A partial diff
+			// that looks whole is the exact failure the review lane exists to
+			// prevent, so the field is unioned with git's account rather than
+			// believed: a recorded sha the derivation cannot find (rebased,
+			// cherry-picked) still survives into the list.
+			var derived []string
+			if env.DeriveCommits != nil {
+				derived = env.DeriveCommits(t)
 			}
-			if len(shas) == 0 {
-				missing = append(missing, "diff (git has no commits for this ticket yet)")
+			shas = ticket.MergeCommits(derived, t.Commits)
+			shasFrom = ticket.CommitsSource(derived, shas)
+			if len(shas) > 0 {
+				diff, unavailable = repo.Diff(shas)
+			}
+			// Uncommitted work counts. A lane judges what is in front of it,
+			// and the rule "a lane that changed no code commits nothing"
+			// leaves the implementer's work lying in the worktree on an
+			// autonomous board just as a conversational ticket does, where
+			// the worker hands back a commit line instead of committing at
+			// all. Left out, the payload is a fraction reported complete —
+			// the same silent failure the commit list above was fixed for,
+			// one step further along. A failure to read it is not fatal: the
+			// commits are still worth judging, and the source token stays
+			// silent about a worktree nobody could look at.
+			wt, err := repo.WorktreeDiff()
+			switch {
+			case err != nil:
+				// Not fatal, and not silent either. Dropping the error left
+				// the payload identical to one built over a clean tree, so a
+				// lane judging half the work had no way to know — which is the
+				// failure this ticket exists to end, one step further along.
+				worktreeErr = err.Error()
+			case strings.TrimSpace(wt) != "":
+				worktreeDiff = wt
+				shasFrom = ticket.WithWorktree(shasFrom)
+			}
+			if diff == "" && worktreeDiff == "" {
+				// Both halves are accounted for, because "no commits" alone
+				// would read as "the worktree was not looked at".
+				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
+				if worktreeErr != "" {
+					m = fmt.Sprintf("diff (git has no commits for this ticket yet, and the working tree could not be read: %s)", worktreeErr)
+				}
+				missing = append(missing, m)
 				continue
 			}
-			d, err := repo.Diff(shas)
-			if err != nil {
-				missing = append(missing, fmt.Sprintf("diff (%v)", err))
-				continue
-			}
-			diff = d
 		default:
 			v := fieldValue(t, want)
 			if strings.TrimSpace(v) == "" {
@@ -611,7 +657,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	}
 
 	if g.jsonOut {
-		return emit(cmd.OutOrStdout(), map[string]any{
+		payload := map[string]any{
 			"ticket_id":  t.ID,
 			"lane":       l.ID,
 			"model_tier": l.ModelTier,
@@ -628,7 +674,33 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"produces": l.OutputProduces,
 			"missing":  missing,
 			"complete": len(missing) == 0,
-		})
+		}
+		// The uncommitted half rides in a key of its own, and only when there
+		// is one: a key that is always there is read as a field, and an empty
+		// one beside every payload trains the reader to skip it.
+		if worktreeDiff != "" {
+			payload["worktree_diff"] = worktreeDiff
+		}
+		// Only for a lane that asked for a diff, and only once there is a
+		// diff to account for. A commit list beside a lane that never declared
+		// one would read as a claim about the ticket rather than as the
+		// provenance of what is on screen — and so would one standing beside a
+		// diff that failed to build, where nothing is on screen at all.
+		if diff != "" || worktreeDiff != "" {
+			payload["commits"] = shas
+			payload["commits_source"] = shasFrom
+			// Only when there are any, for the same reason worktree_diff
+			// above is left out when it is empty.
+			if len(unavailable) > 0 {
+				payload["commits_unavailable"] = unavailable
+			}
+		}
+		// Outside the guard above: the case worth reporting loudest is the one
+		// where the worktree was the only thing there was to show.
+		if worktreeErr != "" {
+			payload["worktree_error"] = worktreeErr
+		}
+		return emit(cmd.OutOrStdout(), payload)
 	}
 
 	w := cmd.OutOrStdout()
@@ -649,8 +721,29 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			fmt.Fprintf(w, "**%s**\n%s\n\n", want, v)
 		}
 	}
+	// Above the diff, not below it, and only beside one: the sentence says the
+	// uncommitted half is not in what follows, so it has to stand before what
+	// follows. And where there is no diff at all the missing line below already
+	// carries this same error text — printed here as well, a reader would be
+	// told the same thing twice and left to wonder whether it happened twice.
+	if worktreeErr != "" && diff != "" {
+		fmt.Fprintf(w, "The working tree could not be read, so nothing uncommitted is below: %s\n\n", worktreeErr)
+	}
 	if diff != "" {
-		fmt.Fprintf(w, "## Diff\n\n```diff\n%s```\n\n", diff)
+		// The provenance rides above the diff for the same reason it rides in
+		// the payload: a reader who can count the shas can check the diff is
+		// whole instead of trusting it.
+		fmt.Fprintf(w, "## Diff\n\n%d commit(s), from %s:\n%s\n\n", len(shas), shasFrom, strings.Join(shas, " "))
+		if len(unavailable) > 0 {
+			fmt.Fprintf(w, "git could not show %d of them: %s\n\n", len(unavailable), strings.Join(unavailable, " "))
+		}
+		fmt.Fprintf(w, "```diff\n%s```\n\n", diff)
+	}
+	// Its own heading, not a line inside the block above: a reader who has to
+	// find a boundary by matching a string finds it wherever the patch happens
+	// to quote it.
+	if worktreeDiff != "" {
+		fmt.Fprintf(w, "## Worktree diff (not committed yet)\n\n```diff\n%s```\n\n", worktreeDiff)
 	}
 	if len(l.OutputProduces) > 0 {
 		fmt.Fprintf(w, "## Must produce\n\n")

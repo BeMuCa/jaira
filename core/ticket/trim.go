@@ -3,6 +3,7 @@ package ticket
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -96,40 +97,42 @@ func (s *Store) TrimLane(lane string, keep int, folder, newest string) ([]Trimme
 	return out, nil
 }
 
-// StampCommits writes the derived commit union onto the ticket and returns
-// what was written. Derived shas come first, in git order; any sha already
-// recorded that the derivation did not find is appended rather than dropped —
-// a sha a person wrote down deliberately is evidence this tool has no business
-// discarding. derive may be nil, the same "no derivation on offer" convention
+// StampCommits writes the MergeCommits union onto the ticket and returns what
+// was written. derive may be nil, the same "no derivation on offer" convention
 // core/gate uses.
 func (s *Store) StampCommits(t *Ticket, derive func(*Ticket) []string) ([]string, error) {
 	var derived []string
 	if derive != nil {
 		derived = derive(t)
 	}
-	merged := append([]string{}, derived...)
-	for _, c := range t.Commits {
-		c = strings.TrimSpace(c)
-		if c == "" {
-			continue
-		}
-		seen := false
-		for _, m := range merged {
-			if m == c {
-				seen = true
-				break
-			}
-		}
-		if !seen {
-			merged = append(merged, c)
-		}
-	}
+	merged := MergeCommits(derived, t.Commits)
 	if _, err := s.Mutate(t.ID, func(t *Ticket) error {
 		return t.Doc().SetList(FieldCommits, merged)
 	}); err != nil {
 		return nil, err
 	}
 	return merged, nil
+}
+
+// MergeCommits unions a derived commit list with a recorded one. Derived shas
+// come first, in git order; a recorded sha the derivation did not find is
+// appended rather than dropped — a sha somebody wrote down deliberately, or one
+// whose commit a rebase moved off the branch, is evidence this tool has no
+// business discarding. Four callers share it and must not drift apart:
+// StampCommits, which writes the union onto the ticket; 'move --out
+// --commits' (internal/cli/flow.go), which folds the shas a lane hands back
+// into the field; the lane payload (same file), which reads it to build the
+// diff a review lane judges; and the signoff screen (internal/tui/signoff.go),
+// the screen a person accepts work on, where drift costs most.
+func MergeCommits(derived, recorded []string) []string {
+	merged := append([]string{}, derived...)
+	for _, c := range recorded {
+		c = strings.TrimSpace(c)
+		if c != "" && !slices.Contains(merged, c) {
+			merged = append(merged, c)
+		}
+	}
+	return merged
 }
 
 // FileLane empties a lane into the given logbook folder, oldest first. Two
@@ -181,4 +184,40 @@ func (s *Store) FileLane(lane, folder string, prepare func(*Ticket) error) ([]Tr
 		return out, &PartialError{Problems: problems}
 	}
 	return out, nil
+}
+
+// CommitsSource names where a merged commit list came from: "git" when the
+// derivation accounts for all of it, "ticket" when the derivation found
+// nothing and the recorded field carries it, and "git+ticket" when the field
+// contributed a sha git could not find — a rebase or a cherry-pick. Every
+// screen that labels such a list shares this so two screens built on the same
+// data cannot end up holding themselves to two standards of honesty.
+func CommitsSource(derived, merged []string) string {
+	switch {
+	case len(merged) == 0:
+		return ""
+	case len(derived) > 0 && len(merged) > len(derived):
+		return "git+ticket"
+	case len(derived) > 0:
+		return "git"
+	default:
+		return "ticket"
+	}
+}
+
+// SourceWorktree is the token CommitsSource cannot produce, because it names
+// something that is not a commit: work sitting in the working tree, judged
+// alongside the commits. It joins a commit source with a "+", so a list built
+// from git with uncommitted work beside it reads "git+worktree".
+const SourceWorktree = "worktree"
+
+// WithWorktree appends SourceWorktree to a source token. The vocabulary lives
+// here, beside CommitsSource, for the reason CommitsSource itself does: two
+// screens inventing their own spelling of the same fact is how one of them
+// ends up quietly telling a different truth.
+func WithWorktree(source string) string {
+	if source == "" {
+		return SourceWorktree
+	}
+	return source + "+" + SourceWorktree
 }

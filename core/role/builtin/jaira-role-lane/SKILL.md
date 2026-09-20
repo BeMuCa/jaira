@@ -34,19 +34,29 @@ writes the section below takes away from you. Read it for what the lane is
 meant to judge, and leave its outputs to the dispatcher that started you.
 
 Does your lane judge that payload's diff? The ordinary `critique`, `testing`
-and `review` lanes do — then count it before you trust it. `showForLane`
-in `internal/cli/flow.go` takes the SHAs off the ticket's own `commits:` field
-and asks git for them only when that field is empty, so on a ticket whose
-`commits:` was recorded once and never brought up to date the payload is the
-diff of exactly those few commits and nothing in it says the branch has more:
-
-```bash
-jaira show <id> --json | jq '.commits | length'
-git log origin/HEAD..HEAD --oneline | wc -l
-```
-
-Disagree? Then the whole change is `git diff origin/HEAD...HEAD` and the payload
-is a slice of it — judge the former and say in your report that you did.
+and `review` lanes do — and the payload names what it was built from. Its
+`commits` field lists the SHAs the diff covers and `commits_source` says where
+they came from: the diff is the ticket's whole committed history, not a slice
+of it, and whenever there is uncommitted work it is in front of you too, in a
+key of its own — `worktree_diff`, never mixed into `diff`. `commits_source`
+then ends in `+worktree`, or is plain `worktree` on a first round that carries
+no commits at all, so a lane that changed no code and a conversational ticket
+that has not been committed yet are both there without your going to look. That
+half is repo-wide and not ticket-wide — `worktree_diff` carries every
+uncommitted change in the repository except `.jaira/tickets` and anything
+`.gitignore` covers, because git is asked for untracked files with
+`--exclude-standard`, and on a board `jaira init` gitignored and `jaira share`
+has not yet freed that is the whole of `.jaira/`; so work that has
+nothing to do with this ticket arrives in it beside yours, and nothing can tell
+the two apart, because nothing knows which files a ticket owns. The
+one commit that escapes is a commit that neither names the ticket id
+nor touches its file; that is what the rule "every commit names the ticket id"
+is for, and you can see it by counting `commits` against
+`git log origin/HEAD..HEAD --oneline`. That count proves the LIST is whole, not
+the diff: a payload that also carries `commits_unavailable` names shas that are
+counted in `commits` but whose patch git could not produce — in the diff they
+are a bare `(not available locally)` line. Are any there? Then the number agrees
+and the diff is still a slice, and what you judge is short by those commits.
 
 Are you the lane that writes? Then take the ticket and finish the step
 yourself. The critique running beside the work does none of the following — it
@@ -123,35 +133,42 @@ you were started as, **you are not the one that writes.** Say so to the
 dispatcher and let it answer — it knows, it started you. Asking costs one line;
 guessing wrong costs a second `review-summary` written over the first.
 
-**Read the worktree, not the ticket's diff.** What you judge is the uncommitted
-worktree, whatever the `--for-lane critique` payload you read at the top handed
-you. On a ticket that carries no commits yet, that payload came back
-`complete: false`, with `diff (git has no commits for this ticket yet)` among
-its missing inputs and `outcome-what`/`outcome-resolves` missing beside it —
-not a broken board, just the lane whose work you are reading still running. On a
-ticket that already carries commits, which is every round after the first, the
-same payload is `complete: true` and hands you a diff. That diff is the EARLIER
-rounds, not the work running beside you; judging it means criticising what is
-already finished.
+**What you judge is in the payload, and it is the `worktree_diff` key.**
+The `--for-lane critique` payload you read at the top carries the uncommitted
+work in a key of its own, beside `diff` and never inside it:
 
-And it is not even all of those rounds. `showForLane` in
-`internal/cli/flow.go` takes the SHAs off the ticket's own `commits:` field and
-asks git for them only when that field is empty — so on a ticket whose
-`commits:` was recorded once and never brought up to date, the payload is a
-slice of those commits and not a full diff, and nothing in it says the branch
-has more. You do not need to measure that slice: the branch's committed history
-is the earlier rounds whether the payload shows all of it or some of it, and
-reading more of it is reading more of what you must not judge. The count that
-measures it stands at the top of this file, for the lane that does judge the
-payload's diff.
+- `diff` is the committed history — the earlier rounds, finished, already
+  judged, not yours.
+- `worktree_diff` is the work running beside you, and that is your judgment
+  object.
 
-So in both cases: do not wait for the payload to fill, do not report that you
-had nothing to read, and do not judge the diff it gave you.
+Read the key, do not search the text for a boundary. There used to be one, the
+line `uncommitted work in the working tree` inside `diff`, and it could not be
+told apart from a commit-message line quoted inside a patch: on one ticket's
+payload it occurred nine times, the first of them some nine hundred lines above
+the real split. Two keys cannot be confused that way, and there is no marker
+left to look for.
 
-Only the diff is stale. The goal, the definition of done and the notes in the
-same payload are the ticket as it stands right now — the critique prompt asks
-for the notes before anything else, and they are what says which findings are
-already closed. They stay the measure; what you hold against them is this:
+On the first round `diff` is empty, because there are no commits yet, and
+`worktree_diff` is everything there is. Read the two keys the way the payload
+writes them: `diff` is always present and is an empty string when there is
+nothing committed, while `worktree_diff` is left out entirely when the working
+tree has nothing to show — so test `diff` for content and never for absence.
+That sentence is about `diff` alone: `worktree_diff` is the other way round,
+and the absence of the key is exactly what you test it for.
+`commits_source` says which halves are there: it ends in `+worktree` when the
+uncommitted half is present, and on the first round it is plain `worktree`.
+
+`complete: false` on that first round is still normal, but not because the diff
+is missing — it is not. The critique lane also requires `outcome-what` and
+`outcome-resolves`, and those are written by the worker beside you when it ends
+its lane. So: do not wait for the payload to fill, and do not report that you
+had nothing to read.
+
+One case leaves you without that half, and the payload names it: a
+`worktree_error` key means git could not read the working tree, so there is no
+`worktree_diff` at all however clean `commits_source` looks. That is when
+you fall back to reading the disk yourself:
 
 ```bash
 git status --short -- :/ ':(exclude,top).jaira/tickets'
@@ -161,18 +178,19 @@ git diff --cached -- :/ ':(exclude,top).jaira/tickets'
 
 `git diff` is the work in progress, `--cached` anything already staged, and
 `git status --short` the new files neither of them shows — read a `??` line's
-file with `cat`. The ordinary critique lane is the one that reads the payload's
-diff; you read what is on disk right now, which is the point of running beside
-the work.
+file with `cat`. The pathspec is what keeps that readable: the worker beside
+you rewrites the ticket file with every `jaira dod` and every `jaira note`, so
+without it you get hundreds of lines of the ticket's own prose around the few
+lines of code you came to judge. `:/` is the repository root and `,top` anchors
+the exclusion there, so all three commands say the same thing from any
+directory.
 
-The pathspec is what keeps that readable. The worker beside you writes the
-ticket file with every `jaira dod` and every `jaira note`, so without it the
-diff you are handed is hundreds of lines of the ticket's own prose around the
-few lines of code you came to judge. `:/` is the repository root and `,top`
-anchors the exclusion there, so all three commands say the same thing from any
-directory. It costs you the one thing the exclusion hides: what the implementer
-has written onto the ticket since you read the payload. Read that with
-`jaira show <id> --json`, not out of a diff.
+The goal, the definition of done and the notes in the same payload are the
+ticket as it stands right now — the critique prompt asks for the notes before
+anything else, and they are what says which findings are already closed. They
+stay the measure. The one thing neither they nor the diff carry is what the
+implementer has written onto the ticket since the payload was built: read that
+with `jaira show <id> --json`, not out of a diff.
 
 Report and stop. A running critique does not sit waiting for more work after it
 has handed over its findings — it is done, and the dispatcher starts whatever

@@ -97,24 +97,26 @@ func (m *Model) renderSignOff() string {
 
 	// What is being accepted: the same Commits block the detail pane shows.
 	// This is the screen where a person judges shipped work, and an account
-	// with no pointer to the change sends them back out to find it. A ticket
-	// here normally has NO commits recorded — only the done lane demands
-	// them, so the field fills at acceptance, after this screen — which is
-	// why an empty field falls back to deriving the list from git, once per
-	// ticket (memoised on the model; per render it would exec on every
-	// keypress). The heading says so: a derived list is git's account, not
-	// the ticket's.
-	shas, derived := t.Commits, false
-	if len(shas) == 0 {
-		if m.derivedFor != t.ID {
-			m.derivedFor, m.derivedShas = t.ID, m.gateEnv().DeriveCommits(t)
-		}
-		shas, derived = m.derivedShas, len(m.derivedShas) > 0
+	// with no pointer to the change sends them back out to find it.
+	//
+	// Always derived, never the recorded field alone. commits: is a snapshot —
+	// written once by 'move --out --commits', never extended by a later commit
+	// — so a ticket carrying three of its twenty-one shas would show a diffstat
+	// of three and nothing would say so. The person accepting would be judging
+	// a fraction while reading it as the whole. The derivation runs once per
+	// open ticket (memoised on the model; per render it would exec on every
+	// keypress) and is unioned with the field, so a recorded sha git can no
+	// longer find survives. The heading names which of the two the list came
+	// from, so a sha only the ticket records is never shown as git's account
+	// of the branch.
+	if m.derivedFor != t.ID {
+		m.derivedFor, m.derivedShas = t.ID, m.gateEnv().DeriveCommits(t)
 	}
+	shas := ticket.MergeCommits(m.derivedShas, t.Commits)
 	if len(shas) > 0 {
 		b.WriteString("\n" + styLaneTitle.Render("Commits"))
-		if derived {
-			b.WriteString(styMeta.Render("  derived from git — recorded at acceptance"))
+		if label := commitsSourceLabel(ticket.CommitsSource(m.derivedShas, shas)); label != "" {
+			b.WriteString(styMeta.Render("  " + label))
 		}
 		b.WriteString("\n")
 		if stat, err := (&gitStat{root: m.store.Root}).of(shas); err == nil && stat != "" {
@@ -268,4 +270,27 @@ func (m *Model) atHumanCheckpoint() bool {
 	}
 	l, ok := m.lanes.Get(m.detail.Status)
 	return ok && l.RequiresHumanExit
+}
+
+// commitsSourceLabel puts ticket.CommitsSource into words for the heading. The
+// list is a union, so "derived from git" is a claim only the pure case may
+// make: a sha the derivation could not find — rebased, cherry-picked — is the
+// ticket's word and not git's, and this is the screen a person signs on.
+//
+// Each case carries its own tail rather than the caller appending a shared one.
+// A common "— recorded at acceptance" read as "recorded on the ticket —
+// recorded at acceptance" in the one case where the ticket is already the
+// source, which says the same word twice and, worse, reads as two separate
+// facts about where the list came from.
+func commitsSourceLabel(source string) string {
+	switch source {
+	case "git":
+		return "derived from git — recorded at acceptance"
+	case "ticket":
+		return "recorded on the ticket, and again at acceptance"
+	case "git+ticket":
+		return "derived from git, plus shas only the ticket records — recorded at acceptance"
+	default:
+		return ""
+	}
 }

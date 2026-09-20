@@ -280,3 +280,52 @@ func TestOverflowLeavesRefOnlyTicketsOutOfTheCap(t *testing.T) {
 		t.Fatalf("with a cap of one, want only the oldest ticket that has a file here, got %v", over)
 	}
 }
+
+// Two screens label the same merged list — the lane payload and the signoff
+// screen a person accepts work on. The case that matters is the third one: a
+// sha only the ticket records must not be labelled as git's account of the
+// branch, because that is the label a person reads before signing.
+func TestCommitsSourceNamesWhoContributed(t *testing.T) {
+	for _, c := range []struct {
+		name     string
+		derived  []string
+		recorded []string
+		want     string
+	}{
+		{"nothing at all", nil, nil, ""},
+		{"git accounts for all of it", []string{"a", "b"}, []string{"a"}, "git"},
+		{"only the field carries it", nil, []string{"a"}, "ticket"},
+		{"the field adds a sha git lost", []string{"a"}, []string{"b"}, "git+ticket"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			got := CommitsSource(c.derived, MergeCommits(c.derived, c.recorded))
+			if got != c.want {
+				t.Fatalf("CommitsSource = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// The token CommitsSource cannot produce, because it names something that is
+// not a commit. Both branches matter and neither had a test: a payload built
+// over commits plus an uncommitted tree must say so with a "+", and a first
+// round that has no commits at all must say "worktree" on its own rather than
+// "+worktree" with nothing in front of the plus. core/release/NOTES.md
+// promises a reader exactly those two spellings.
+func TestWithWorktreeNamesTheWorktreeBesideTheCommitSource(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{"no commit source at all", "", SourceWorktree},
+		{"git accounts for the commits", "git", "git+" + SourceWorktree},
+		{"the field added a sha git lost", "git+ticket", "git+ticket+" + SourceWorktree},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := WithWorktree(c.source); got != c.want {
+				t.Fatalf("WithWorktree(%q) = %q, want %q", c.source, got, c.want)
+			}
+		})
+	}
+}
