@@ -41,6 +41,11 @@ def load(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def said(coll, key):
+    """What the person wrote under one key of a db collection, or ''."""
+    return ((coll.get(key) or {}).get("note") or "").strip()
+
+
 def check(data):
     errors = []
     if data.get("lang", "en") not in LANGS:
@@ -118,18 +123,18 @@ def state(data, db):
             v = ""
         out[t["id"]] = {"verdict": v, "failed": failed, "broken": broken,
                         "skipped": [s for s in own if mark(s) == "skip"], "unmarked": [s for s in own if not mark(s)]}
-    return out, results
+    return out
 
 
 def plan(data_path, db_path):
     data, db = load(data_path), load(db_path)
-    st, results = state(data, db)
-    comments, notes = db.get("comments", {}), db.get("notes", {})
+    st = state(data, db)
+    results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})
     T = {t["id"]: t for t in data["tickets"]}
     cases = {}
     for tid, s in st.items():
         t, rnd = T[tid], T[tid].get("round", 1)
-        comment = ((comments.get(tid) or {}).get("note") or "").strip()
+        comment = said(comments, tid)
         if s["verdict"] == "accept":
             print(f"# {tid}: accepted - every step ok")
             print(f"jaira move {tid} --to {t['next_lane']} --force")
@@ -147,7 +152,7 @@ def plan(data_path, db_path):
             print(f"# {tid}: open - not marked: {', '.join(left)}" + (f"; comment: {comment!r}" if comment else ""))
 
     for sid, step in cases.items():
-        note = ((results.get(sid) or {}).get("note") or "").strip()
+        note = said(results, sid)
         print(f"\n# CASE {sid}: {step['do']}")
         print(f"#   expected: {step.get('expect', '')}")
         print(f"#   the person saw: {note!r}" if note else "#   the person wrote nothing - ask what they saw before deciding")
@@ -159,7 +164,7 @@ def plan(data_path, db_path):
         print("#   new-bug: jaira create <title> --goal ... --context ... --dod ... --follows <id>")
 
     for b in data["blocks"]:
-        n = ((notes.get(f"b{b['n']}") or {}).get("note") or "").strip()
+        n = said(notes, f"b{b['n']}")
         if n:
             print(f"\n# block {b['n']} ({b['title']}) note: {n!r} - put it on the tickets it is about, or ask the person which")
 
@@ -183,8 +188,8 @@ REPORT = {
 def report(data_path, db_path, decisions_path, html_path, md_path):
     data, db = load(data_path), load(db_path)
     decisions = load(decisions_path)
-    st, results = state(data, db)
-    comments, notes = db.get("comments", {}), db.get("notes", {})
+    st = state(data, db)
+    results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})
     R = REPORT.get(data.get("lang"), REPORT["en"])
     T = {t["id"]: t for t in data["tickets"]}
     kinds = {"return": R["return"], "new-bug": R["new-bug"], "step": R["step-k"], "asked": R["asked"]}
@@ -202,7 +207,7 @@ def report(data_path, db_path, decisions_path, html_path, md_path):
             for m in st[tid]["broken"]:
                 md.append(f"- {R['machine']}: `{m['cmd']}` ({m.get('summary', '')})")
             for s in st[tid]["failed"]:
-                note = ((results.get(s["id"]) or {}).get("note") or "").strip()
+                note = said(results, s["id"])
                 md.append(f"- {R['step']} {s['id']}: {s['do']}")
                 md.append(f"  - {R['expected']}: {s.get('expect', '')}")
                 if note:
@@ -211,11 +216,11 @@ def report(data_path, db_path, decisions_path, html_path, md_path):
                     if d["step"] == s["id"] and d["ticket"] == tid:
                         res = f" → {d['result']}" if d.get("result") else ""
                         md.append(f"  - {R['decision']}: {kinds.get(d['kind'], d['kind'])}{res}. {d.get('reason', '')}")
-            c = ((comments.get(tid) or {}).get("note") or "").strip()
+            c = said(comments, tid)
             if c:
                 md.append(f"- {R['comment']}: {c}")
             md.append("")
-        n = ((notes.get(f"b{b['n']}") or {}).get("note") or "").strip()
+        n = said(notes, f"b{b['n']}")
         if n:
             md += [f"{R['note']}: {n}", ""]
     text = "\n".join(md)

@@ -166,8 +166,8 @@ const roundOf = ids => Math.max(1, ...ids.map(id => T[id]?.round || 1));
 const allSteps = () => DATA.blocks.flatMap(b => b.steps);
 const chip = id => `<a class="chip" href="#t-${esc(id)}">${esc(id)}</a>`;
 
-function stepState(st){ const r = results[st.id]; if (!r?.status) return ''; return (r.round || 1) < roundOf(st.covers) ? '' : r.status; }
 function stepStale(st){ const r = results[st.id]; return !!r?.status && (r.round || 1) < roundOf(st.covers); }
+function stepState(st){ return stepStale(st) ? '' : results[st.id]?.status || ''; }
 // 'accept' | 'fail' | '' (not every step marked yet). A skipped step leaves the ticket open.
 function verdict(id){
   const steps = allSteps().filter(s => s.covers.includes(id));

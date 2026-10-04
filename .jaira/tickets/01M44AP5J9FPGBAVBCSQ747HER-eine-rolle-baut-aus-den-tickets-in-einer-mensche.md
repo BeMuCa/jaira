@@ -1,7 +1,7 @@
 ---
 id: 01M44AP5J9FPGBAVBCSQ747HER
 title: Eine Rolle baut aus den Tickets in einer Menschen-Lane eine Abnahme-Seite und liest die Entscheidungen zurueck
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -35,14 +35,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-04T20:46:32Z
-updated-at: 2026-10-04T21:00:36Z
+updated-at: 2026-10-04T21:02:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94145
 claimed-at: 2026-10-04T20:47:12Z
-outcome-what: "Wie Runde 2, dazu: ein nur maschinell belegtes Ticket wird mit gruenen Pruefungen angenommen."
-outcome-why: "Sonst bliebe ein rein technisches Ticket fuer immer offen."
-outcome-resolves: "Wie Runde 2."
-review-summary: "core/role/builtin/jaira-role-acceptance/build.py:113 and template.html:176 accept a ticket only when it has person steps (`own and all(...)` / `steps.length && ...`), while build.py check() (line 76) lets a ticket proven only by machine checks onto the page - such a ticket stays open forever. Either accept a ticket with no person steps once all its machine checks pass (own empty -> verdict from its machine checks) in both places, or make check() demand at least one person step per ticket and say so in SKILL.md. Round-1 findings 1, 2 and 4 are fixed; 3 (next_lane vs the TUI a key) is now a recorded decision in SKILL.md section 2 and stays closed"
+outcome-what: "optimize: Notiz-Lesen in said() zusammengefasst, state() ohne Durchreichen von results, stepState ueber stepStale"
+outcome-why: "dieselbe Zeile sechsmal und dieselbe Rundenregel zweimal waeren zwei Stellen zum Pflegen"
+outcome-resolves: "review-gaps fuer 747HER"
+review-summary: "none"
+review-gaps: "build.py: sechsmal wiederholtes ((coll.get(k) or {}).get('note') or '').strip() in einen Helfer said() gezogen; state() gibt nur noch die Urteile zurueck statt (out, results) - plan/report lesen results selbst aus db. template.html: stepState() nutzt stepStale() statt die Rundenpruefung zu wiederholen. Ausgaben von page/plan/report auf dem Demo-Datensatz vorher/nachher identisch. Gelassen: REPORT-Labels in build.py und STR in template.html sind getrennte Woerterbuecher (Python vs. Seite, verschiedene Schluessel) - kein gemeinsamer Ort ohne Build-Schritt; state()/verdict() bewusst doppelt in Python und JS, weil Seite und Rueckleser dieselbe Regel brauchen; roleFiles-Tabelle in role_test.go bereits in Runde 1 entdoppelt; Dispatcher-/Teamlead-Texte ohne Ueberschuss."
 ---
 
 # Eine Rolle baut aus den Tickets in einer Menschen-Lane eine Abnahme-Seite und liest die Entscheidungen zurueck
@@ -92,3 +93,4 @@ review-summary: "core/role/builtin/jaira-role-acceptance/build.py:113 and templa
 - **2026-10-04 20:59 · Alexander Sacharov** — in-progress Runde 2: Critique-Befunde umgesetzt - plan druckt --force und nimmt next_lane/return_lane aus data.json (build.py check verlangt beide), Praefix englisch ('acceptance (round n)'), Annehmen geht zu next_lane und SKILL.md sagt, warum nicht ins Terminal wie die Taste a (die Seite bestaetigt Verhalten, Review/Signoff laufen danach weiter), Tests als Tabelle roleFiles. Dazu AlSa 04.10.: kein eigener Annehmen/Zurueck-Knopf mehr - die Schritte entscheiden, und jedes 'nein' klaert der Agent selbst (Ticket zurueck, neuer Fehler, falscher Schritt, Rueckfrage); am Ende ein festes Protokoll (build.py report), weil die Seite sich weiter aendert. Beispiel: https://claude.ai/artifact/DHsAgCGbByU3A1KxWNGBKp und https://claude.ai/artifact/DLztPxZgKdtGbEd7HNYUJn
 - **2026-10-04 20:59 · Alexander Sacharov** — critique (Runde 2): Befunde 1, 2, 4 aus Runde 1 behoben; 3 (next_lane statt Terminal) in SKILL.md begruendet - geschlossen. Neu durch die Umstellung auf 'Schritte entscheiden': ein Ticket, das nur von Maschinenpruefungen belegt ist (check() erlaubt das), wird nie angenommen - build.py:113 'own and all(...)', template.html:176 'steps.length && ...'. Entweder ohne Personenschritte nach gruenen Maschinenpruefungen annehmen (beide Stellen), oder check() verlangt mindestens einen Personenschritt je Ticket.
 - **2026-10-04 21:00 · Alexander Sacharov** — in-progress Runde 3: Critique-Befund 2 umgesetzt - ein Ticket ohne Personenschritt gilt als angenommen, wenn alle seine Maschinenpruefungen gruen sind (build.py state, template.html verdict); eine nicht gelaufene Pruefung nimmt nichts an. AlSa 04.10.: 'да так мне нравится' zu Schritte-entscheiden + Protokoll.
+- **2026-10-04 21:00 · Alexander Sacharov** — critique (Runde 3): Befund aus Runde 2 behoben (acf4f02) - build.py state() und template.html verdict() nehmen ein nur maschinell belegtes Ticket bei gruenen Pruefungen an, beide Stellen gleich. Nichts offen.
