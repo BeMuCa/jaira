@@ -142,7 +142,7 @@ field per ticket.
 | `jaira note <id> "…"` | record progress a later session would otherwise rediscover |
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide; taking over a lease that has expired is allowed and is reported, on stderr and as `took_over` in `--json` |
 | `jaira archive <id>` | take a ticket off the board (nothing is deleted); stamps derived commits first, best-effort |
-| `jaira logbook [id]` | take a terminal-lane ticket off the board into `.jaira/logbook/<initials>-<yyyymmdd>/`, stamping its derived commits first; with no argument, lists what went into the logbook in the last four weeks, read off each folder's date, and says how many older entries it left out — `--since` sets the window (`4w`, `10d`, in weeks or days), `--since 0` lists everything, and `--json` carries `hidden` and `since` beside `logbook` and `count`. `--since` with an id or `--all` is a usage error. Exit codes: 3 if the ticket has not reached the terminal lane, 5 for an unknown id, 2 for too many arguments |
+| `jaira logbook [id]` | take a terminal-lane ticket off the board into `.jaira/logbook/<initials>-<yyyymmdd>/`, stamping its derived commits first; with no argument, lists what went into the logbook in the last `logbook-days` days (`~/.jaira/settings.json`, 28 when unset — the same window the board shows below its terminal lane), read off each folder's date, and says how many older entries it left out and which setting cut them — `--since` sets the window for one listing and wins over the setting (`4w`, `10d`, in weeks or days), `--since 0` and `logbook-days 0` list everything, and `--json` carries `hidden` and `since` beside `logbook` and `count`. `--since` with an id or `--all` is a usage error. Exit codes: 3 if the ticket has not reached the terminal lane, 5 for an unknown id, 2 for too many arguments |
 | `jaira logbook <milestone>` | the same for a milestone named by hand — `--all` sweeps the terminal lane and never takes a group with it. The file moves into `.jaira/logbook/<initials>-<yyyymmdd>/milestones/`, `jaira milestone ls` stops naming it, no card carries its colour and the board's `M` filter forgets it. Refused (exit 3) while any ticket in it is short of the terminal lane. **Its ref is not taken down**: it stays up carrying `status: filed` — that line, not the file's whereabouts, is what keeps a milestone off a board — so a clone that already has the file gets it marked on its next `jaira fetch` and stops showing the group, and the name stays taken |
 | `jaira restore <file>` | put an archived or logged ticket back, or a filed milestone — a file found under `logbook/<folder>/milestones/` goes back to `.jaira/milestones/` with its ticket list and colour intact, and its ref is unmarked in the same breath so the other clones stop hiding it. If the mark cannot be taken off, the restore fails (exit 1) instead of reporting a milestone the board cannot show |
 | `jaira delete <id>` | remove a ticket's file for good; asks for the handle typed back, `--force` skips it. Refused while another ticket still points at it. Archive is almost always what you want |
@@ -180,8 +180,15 @@ j k ↓ ↑   card            /       filter (key:value narrows to one field:
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
-S         settings: lanes and the default board
+S         settings: lanes, the default board, days of logbook shown
 ```
+
+The terminal lane ends with the logbook of the last `logbook-days` days
+(`~/.jaira/settings.json`, 28 when unset, `0` hides them), newest first, filled
+in teal and marked `⎙ filed <day>`. They are read-only: `enter` opens one, and
+every key that would change it answers with the `jaira restore` line instead.
+The settings screen (`S`) shows the number and edits it: `enter` on the row,
+type the days, `enter` saves.
 
 In an open ticket:
 

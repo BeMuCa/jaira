@@ -263,6 +263,53 @@ func TestLoggedPerDayReadsTheFolderNames(t *testing.T) {
 	}
 }
 
+// TestLoggedSinceReadsTheWindowNewestFirst covers what the board shows under
+// its terminal lane: the tickets of the last days days, newest folder first,
+// the old folder name included, nothing older, nothing undated, and nothing
+// at all for a window of zero.
+func TestLoggedSinceReadsTheWindowNewestFirst(t *testing.T) {
+	s, _ := syncTestStore(t)
+	now := time.Now()
+	day := func(ago int) string { return now.AddDate(0, 0, -ago).Format("20060102") }
+	file := func(folder, title string) {
+		t.Helper()
+		tk, err := s.Create(map[string]string{FieldID: NewID(time.Now()), FieldTitle: title, FieldStatus: "done"}, nil, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Logbook(tk.ID, folder); err != nil {
+			t.Fatal(err)
+		}
+	}
+	file("as-"+day(5), "five days ago")
+	file("as-"+day(0), "today")
+	file("as-"+day(40), "too old")
+	file("nodate", "undated")
+	// One folder where an older build left it, under the logbook's old name.
+	file("bc-"+day(2), "two days ago")
+	legacy := filepath.Join(s.dir(), legacyLogbookSubdir)
+	if err := os.MkdirAll(legacy, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(filepath.Join(s.LogbookDir(), "bc-"+day(2)), filepath.Join(legacy, "bc-"+day(2))); err != nil {
+		t.Fatal(err)
+	}
+
+	var got []string
+	for _, l := range s.LoggedSince(now, 28) {
+		got = append(got, l.Ticket.Title)
+	}
+	if want := []string{"today", "two days ago", "five days ago"}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("LoggedSince(28) = %q, want %q", got, want)
+	}
+	if n := len(s.LoggedSince(now, 3)); n != 2 {
+		t.Errorf("LoggedSince(3) read %d tickets, want today's and the one from two days ago", n)
+	}
+	if l := s.LoggedSince(now, 0); l != nil {
+		t.Errorf("LoggedSince(0) = %v, want nothing", l)
+	}
+}
+
 // FiledMilestone answers "is this name still taken", and it has to look
 // wherever Restore looks: a milestone in the folder the logbook had before it
 // was called one can still be brought back, so its name is not free. A walk

@@ -23,6 +23,7 @@ import (
 
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -34,10 +35,12 @@ func newLogbookCmd() *cobra.Command {
 		Short: "Take finished tickets off the board with their commits stamped down, or list the logbook",
 		Long: `Moves a terminal-lane ticket into .jaira/logbook/<initials>-<yyyymmdd>/, after
 stamping it with every commit git can find for it. With no argument, lists
-what went into the logbook in the last four weeks — what recently left the
-board, not the whole history. --since sets that window in weeks or days (4w, 10d) and
---since 0 lists everything; the listing says how many older entries it left
-out. The date is the one in each folder's name.
+what went into the logbook in the last logbook-days days (~/.jaira/settings.json,
+28 when unset; the board shows the same window under its terminal lane) — what
+recently left the board, not the whole history. --since sets the window for one
+listing in weeks or days (4w, 10d) and wins over the setting; --since 0, like
+logbook-days 0, lists everything. The listing says how many older entries it
+left out. The date is the one in each folder's name.
 
 --all files everything that has reached the terminal lane into today's folder,
 which is the usual way: finished tickets pile up there, and whoever enters
@@ -89,17 +92,23 @@ work and refuses a ticket that has not reached the terminal lane.`,
 			case all:
 				return logbookAll(s, w, cmd.ErrOrStderr())
 			case len(args) == 0:
-				days, err := parseSince(since)
-				if err != nil {
-					return err
+				// Without --since the window is the one the board shows,
+				// so the two never disagree about what "recently" means.
+				days := settings.Load().LogbookWindow()
+				window := fmt.Sprintf("logbook-days %d", days)
+				if cmd.Flags().Changed("since") {
+					if days, err = parseSince(since); err != nil {
+						return err
+					}
+					window = "--since " + since
 				}
-				return listLogbook(s, w, days, since, time.Now())
+				return listLogbook(s, w, days, window, time.Now())
 			}
 			return logbookOut(s, args[0], w)
 		},
 	}
 	cmd.Flags().BoolVar(&all, "all", false, "file everything in the terminal lane into today's folder")
-	cmd.Flags().StringVar(&since, "since", "4w", "list only what went into the logbook this long ago or later (4w, 10d); 0 lists everything")
+	cmd.Flags().StringVar(&since, "since", "", "list only what went into the logbook this long ago or later (4w, 10d); 0 lists everything (default: logbook-days in ~/.jaira/settings.json, 28)")
 	return cmd
 }
 
@@ -195,15 +204,17 @@ func parseSince(v string) (int, error) {
 // folder whose name holds no date is always listed — what cannot be dated is
 // not old, and hiding it would make a file on disk disappear from the only
 // listing that names it.
-func listLogbook(s *ticket.Store, w io.Writer, days int, since string, now time.Time) error {
+//
+// window names where the cut came from — "--since 2w" or "logbook-days 28" —
+// so the reader of a shorter list than expected knows which knob made it.
+func listLogbook(s *ticket.Store, w io.Writer, days int, window string, now time.Time) error {
 	names, err := logbookNames(s)
 	if err != nil {
 		return err
 	}
 	shown, hidden, cutoff := names, 0, ""
 	if days > 0 {
-		// AddDate, not Add: across a DST change a day is not 24 hours.
-		start := time.Date(now.Year(), now.Month(), now.Day()-days, 0, 0, 0, 0, now.Location())
+		start := ticket.LogbookWindowStart(now, days)
 		cutoff = start.Format("2006-01-02")
 		shown = nil
 		for _, n := range names {
@@ -230,9 +241,9 @@ func listLogbook(s *ticket.Store, w io.Writer, days int, since string, now time.
 		return nil
 	}
 	if len(shown) == 0 {
-		fmt.Fprintf(w, "Nothing went into the logbook since %s (--since %s).\n", cutoff, since)
+		fmt.Fprintf(w, "Nothing went into the logbook since %s (%s).\n", cutoff, window)
 	} else {
-		fmt.Fprintf(w, "\n%d in the logbook since %s (--since %s). Bring one back with 'jaira restore <file>'.\n", len(shown), cutoff, since)
+		fmt.Fprintf(w, "\n%d in the logbook since %s (%s). Bring one back with 'jaira restore <file>'.\n", len(shown), cutoff, window)
 	}
 	if hidden > 0 {
 		fmt.Fprintf(w, "%d older not listed — 'jaira logbook --since 0' lists everything.\n", hidden)

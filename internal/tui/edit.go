@@ -31,7 +31,7 @@ var editableFields = []struct {
 
 // startEdit opens the field editor on the ticket in the detail pane.
 func (m *Model) startEdit() {
-	if m.detail == nil {
+	if m.detail == nil || m.refuseLogged(m.detail) {
 		return
 	}
 	m.mode = modeEdit

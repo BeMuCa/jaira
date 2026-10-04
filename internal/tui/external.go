@@ -45,7 +45,7 @@ func editorCommand() []string {
 // because a hand-edited field would bypass the gates and the derived readiness
 // flag — and because the fields are already editable in place with e.
 func (m *Model) openInEditor() (tea.Model, tea.Cmd) {
-	if m.detail == nil {
+	if m.detail == nil || m.refuseLogged(m.detail) {
 		return m, nil
 	}
 	id := m.detail.ID

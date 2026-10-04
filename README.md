@@ -682,9 +682,11 @@ teammate a board that has forgotten the ticket while the code it describes has
 not arrived. `jaira archive <id>` is for a ticket that is *not* being worked —
 abandoned, duplicate, obsolete — and works from any lane. Nothing is deleted,
 `jaira restore` puts either back, and a follow-up keeps its link to a logged
-predecessor. `jaira logbook` with no argument lists what left the board in the
-last four weeks and says how many older entries it left out; `--since 10d`
-picks another window and `--since 0` lists everything.
+predecessor. The board keeps showing what you filed at the foot of the
+terminal lane for `logbook-days` days (28 by default; see **Keys**).
+`jaira logbook` with no argument lists what left the board in the same window
+and says how many older entries it left out; `--since 10d` picks another window
+and `--since 0` lists everything.
 
 ## Commands
 
@@ -701,7 +703,7 @@ jaira set <id> k=v...      set fields
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira validate             check every ticket on the board for damage
 jaira logbook <id>         file a finished ticket under today, commits stamped
-jaira logbook              list what left the board in the last four weeks (--since)
+jaira logbook              list what left the board in the last logbook-days (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
@@ -747,7 +749,7 @@ j k ↓ ↑   card            /       filter (key:value narrows to one field)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
-S         settings: lanes and the default board
+S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
 an arrow lit when work just moved. ad/←→ pick a step, enter opens it full width,
@@ -800,6 +802,15 @@ same to anyone. `?` lists them with the same styling the cards use.
 | `✓ 3` | commits recorded on the ticket |
 | `sonnet` | the model that last ran a lane on it |
 | `@name` | who owns the outcome |
+| `⎙ filed 4 Oct` | in the logbook, filed that day — see below |
+
+The terminal lane ends with what went into the logbook in the last 28 days,
+newest first, below the tickets still waiting to be filed and filled in teal
+rather than grey. Those cards are read-only: `enter` opens one, and `m`, `x`,
+`e`, `E` and `X` answer with the `jaira restore` line that brings it back. How
+many days is `"logbook-days"` in `~/.jaira/settings.json`, editable on the
+settings screen (`S`); `0` takes them off the board. The same number is the
+window `jaira logbook` lists without `--since`.
 
 `✎` comes from `updated-by`, written on every change. It marks somebody else's
 change, never your own, and "you" means any name you go by — the alias list, not
