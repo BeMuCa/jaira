@@ -14,6 +14,8 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+
+## 0.3.2
 - Run `jaira roles install --global --force` to get `scripts/run-lane.sh` beside the `jaira-dispatcher` prompt: it runs one lane in a Herdr tab and closes that tab once the worker reports `done` — a dispatcher waiting for `idle` alone never noticed a finished worker and left its tab open all night. It stops with exit 4 and leaves the tab open when the worker sits at an approval dialog, and with exit 3 after `--timeout` minutes (default 240).
 
 ## 0.3.1
