@@ -612,6 +612,26 @@ the lane it landed in — but both are advice a model can drop, and the hook is
 the environment refusing. It fails open (no board, no jaira on `PATH`, a stop it
 has already blocked once) so it cannot trap you in a session.
 
+### Roles: a teamlead, a dispatcher, and the workers
+
+`jaira roles install --global` (or `--project`, so the roles arrive with a
+clone) writes the agent prompts that drive a board into your skills directory.
+They are compiled into the binary, so they match the version you run. Run it
+again after an upgrade: a prompt you have edited is left alone and reported,
+and `--force` replaces it too.
+
+- `/jaira-dispatcher <id>` carries one ticket lane by lane, handing every lane
+  to a fresh worker and stopping at a lane a person owns. It needs no teamlead:
+  start it yourself for a single ticket. Under Herdr each worker gets a tab of
+  its own, which `scripts/run-lane.sh` closes once the worker has finished and
+  the ticket has left its lane.
+- `/jaira-teamlead` is for several tickets at once: it decides the order, says
+  what is not worth doing, and starts one dispatcher per ticket.
+- Every question either of them puts to you comes as a choice of two to four
+  options, the recommended one first, rather than a paragraph to answer.
+- `jaira roles list` names the rest: single-lane workers, a tester, a
+  researcher, a brainstorm role and one that pushes a branch for review.
+
 ## Working with an agent
 
 The whole integration surface is: run a command, read the JSON, branch on the
@@ -649,7 +669,9 @@ teammate a board that has forgotten the ticket while the code it describes has
 not arrived. `jaira archive <id>` is for a ticket that is *not* being worked —
 abandoned, duplicate, obsolete — and works from any lane. Nothing is deleted,
 `jaira restore` puts either back, and a follow-up keeps its link to a logged
-predecessor.
+predecessor. `jaira logbook` with no argument lists what left the board in the
+last four weeks and says how many older entries it left out; `--since 10d`
+picks another window and `--since 0` lists everything.
 
 ## Commands
 
@@ -666,6 +688,7 @@ jaira set <id> k=v...      set fields
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira validate             check every ticket on the board for damage
 jaira logbook <id>         file a finished ticket under today, commits stamped
+jaira logbook              list what left the board in the last four weeks (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
@@ -684,6 +707,7 @@ jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira share                publish the board (--undo to make it private)
+jaira roles install        write the teamlead, dispatcher and worker prompts as skills
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.

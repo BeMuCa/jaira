@@ -259,3 +259,90 @@ func TestLogbookAndSyncTasksBothResolve(t *testing.T) {
 		t.Fatalf("sync-tasks --help: %v\n%s", err, out)
 	}
 }
+
+// The bare listing shows what recently left the board, not the whole history:
+// four weeks by default, --since to widen or narrow it, --since 0 for all of
+// it — and it says how much it left out, so nothing on disk goes unmentioned.
+func TestLogbookListsTheLastFourWeeksByDefault(t *testing.T) {
+	dir, _ := syncoutFixture(t)
+	lb := filepath.Join(dir, ".jaira", "logbook")
+	now := time.Now()
+	put := func(folder, file string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Join(lb, folder), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(lb, folder, file), []byte("---\n---\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	put("as-"+now.AddDate(0, 0, -3).Format("20060102"), "recent.md")
+	put("as-"+now.AddDate(0, 0, -20).Format("20060102"), "three-weeks.md")
+	put("as-"+now.AddDate(0, 0, -60).Format("20060102"), "old.md")
+	put("undated", "kept.md")
+
+	out, err := runCLI(t, dir, "logbook")
+	if err != nil {
+		t.Fatalf("bare logbook: %v\n%s", err, out)
+	}
+	for _, want := range []string{"recent.md", "three-weeks.md", "kept.md", "1 older not listed", "--since 0"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("bare logbook = %q, want it to contain %q", out, want)
+		}
+	}
+	if strings.Contains(out, "old.md") {
+		t.Errorf("bare logbook = %q, want the entry from sixty days ago left out", out)
+	}
+
+	out, err = runCLI(t, dir, "logbook", "--since", "1w")
+	if err != nil {
+		t.Fatalf("logbook --since 1w: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "three-weeks.md") || !strings.Contains(out, "recent.md") || !strings.Contains(out, "2 older not listed") {
+		t.Errorf("logbook --since 1w = %q, want only the recent and the undated entry, two left out", out)
+	}
+
+	jout, err := runCLI(t, dir, "logbook", "--since", "0", "--json")
+	if err != nil {
+		t.Fatalf("logbook --since 0 --json: %v\n%s", err, jout)
+	}
+	var payload struct {
+		Logbook []string `json:"logbook"`
+		Count   int      `json:"count"`
+		Hidden  int      `json:"hidden"`
+		Since   string   `json:"since"`
+	}
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("unmarshal %q: %v", jout, err)
+	}
+	if payload.Count != 4 || payload.Hidden != 0 || payload.Since != "" {
+		t.Errorf("logbook --since 0 --json = %+v, want all four entries, none hidden, no since", payload)
+	}
+
+	jout, err = runCLI(t, dir, "logbook", "--json")
+	if err != nil {
+		t.Fatalf("logbook --json: %v\n%s", err, jout)
+	}
+	payload.Since = ""
+	if err := json.Unmarshal([]byte(jout), &payload); err != nil {
+		t.Fatalf("unmarshal %q: %v", jout, err)
+	}
+	if payload.Count != 3 || payload.Hidden != 1 || payload.Since == "" {
+		t.Errorf("logbook --json = %+v, want three entries, one hidden, the since day named", payload)
+	}
+}
+
+func TestLogbookSinceRefusesWhatItCannotMean(t *testing.T) {
+	dir, id := syncoutFixture(t)
+	for _, args := range [][]string{
+		{"logbook", "--since", "4"},
+		{"logbook", "--since", "48h"},
+		{"logbook", "--since", "-1w"},
+		{"logbook", "--since", "1w", "--all"},
+		{"logbook", "--since", "1w", id},
+	} {
+		if out, err := runCLI(t, dir, args...); err == nil {
+			t.Errorf("%v succeeded, want a usage error\n%s", args, out)
+		}
+	}
+}
