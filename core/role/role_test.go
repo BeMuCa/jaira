@@ -9,11 +9,12 @@ import (
 	"testing"
 )
 
-// The seven roles this ticket ships. Named rather than counted, because the
-// point of the list is that every one of them arrives, not that seven of
+// The roles this binary ships. Named rather than counted, because the
+// point of the list is that every one of them arrives, not that a number of
 // something did.
 var wantRoles = []string{
 	"jaira-dispatcher",
+	"jaira-role-acceptance",
 	"jaira-role-brainstorm",
 	"jaira-role-lane",
 	"jaira-role-pr",
@@ -22,7 +23,7 @@ var wantRoles = []string{
 	"jaira-teamlead",
 }
 
-func TestBuiltinsAreTheSevenRoles(t *testing.T) {
+func TestBuiltinsAreTheShippedRoles(t *testing.T) {
 	roles, err := Builtins()
 	if err != nil {
 		t.Fatal(err)
@@ -87,6 +88,31 @@ func TestDispatcherShipsItsScript(t *testing.T) {
 }
 
 var dispatcherScripts = []string{"scripts/spawn.sh", "scripts/run-lane.sh"}
+
+// The acceptance prompt builds its page with build.py from template.html; the
+// prompt without either is an instruction to run a file that is not there.
+func TestAcceptanceShipsItsBuilder(t *testing.T) {
+	roles, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range roles {
+		if r.ID != "jaira-role-acceptance" {
+			continue
+		}
+		want := []string{skillFile, "build.py", "template.html"}
+		if len(r.Files) != len(want) {
+			t.Fatalf("files %v, want %v", r.Files, want)
+		}
+		for i := range want {
+			if r.Files[i] != want[i] {
+				t.Errorf("files %v, want %v", r.Files, want)
+			}
+		}
+		return
+	}
+	t.Fatal("no jaira-role-acceptance role")
+}
 
 // The prefix is not cosmetic: a cross-reference left on the unprefixed name
 // calls a command that does not exist on a teammate's machine.

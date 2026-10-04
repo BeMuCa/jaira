@@ -414,6 +414,19 @@ everything the human could have reacted to while it was still cheap to react.
 If the lane produced nothing a person needs, say the lane is done and nothing
 else. Silence is the exception you state, not the default.
 
+## Handing it on for acceptance
+
+When your ticket reaches a human lane and its `review-check` asks a person to
+try something in the app, hand it on before you stop:
+
+    /jaira-role-acceptance <id> [<id>...]
+
+Pass every ticket of the same change that is already waiting in a human lane —
+a large fix carried as several tickets is one acceptance page, not several.
+Say which language the person was spoken to in. The acceptance role answers in
+three lines; its link goes into your third report line. Reading the person's
+marks back is not yours: that comes later, from whoever the person tells.
+
 ## Report
 
 Three lines at the end, on top of the per-lane lines. The teamlead pastes them

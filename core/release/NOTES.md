@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Run `jaira roles install --global --force` to get `/jaira-role-acceptance`: it turns the tickets waiting in a human lane into one acceptance page with the tests already run, setup once per block and one scenario per block, takes your verdict and free-text comments there, and on "read the acceptance" sends a return back into the same ticket as a definition-of-done item instead of a new ticket; the dispatcher and teamlead now hand tickets of one change to it together. It needs `python3` for its page builder.
 
 ## 0.3.2
 - Expect `jaira logbook` with no argument to list only the last four weeks — what recently left the board — and to say how many older entries it left out; pass `--since 10d` or `--since 8w` for another window and `--since 0` for the whole logbook. `--json` follows the same window and now also carries `hidden` (entries left out) and `since` (the first day listed, empty for `--since 0`), so `count` is the number listed rather than the size of the logbook. The day comes from each folder's name; a folder without one is always listed.
