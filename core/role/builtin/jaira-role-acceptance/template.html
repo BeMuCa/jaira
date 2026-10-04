@@ -173,7 +173,8 @@ function verdict(id){
   const steps = allSteps().filter(s => s.covers.includes(id));
   const machine = DATA.blocks.flatMap(b => b.machine || []).filter(m => m.covers.includes(id));
   if (machine.some(m => m.status === 'fail') || steps.some(s => stepState(s) === 'fail')) return 'fail';
-  return steps.length && steps.every(s => stepState(s) === 'ok') ? 'accept' : '';
+  // A ticket only a machine can prove is accepted on its checks alone.
+  return (steps.length || machine.length) && steps.every(s => stepState(s) === 'ok') && machine.every(m => m.status === 'pass') ? 'accept' : '';
 }
 function blockDecided(b){ return b.tickets.filter(id => verdict(id)).length; }
 

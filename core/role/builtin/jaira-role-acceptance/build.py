@@ -107,10 +107,12 @@ def state(data, db):
     for t in data["tickets"]:
         own = [s for s in steps if t["id"] in s["covers"]]
         failed = [s for s in own if mark(s) == "fail"]
-        broken = [m for m in machine if t["id"] in m["covers"] and m.get("status") == "fail"]
+        proof = [m for m in machine if t["id"] in m["covers"]]
+        broken = [m for m in proof if m.get("status") == "fail"]
         if failed or broken:
             v = "fail"
-        elif own and all(mark(s) == "ok" for s in own):
+        elif all(mark(s) == "ok" for s in own) and all(m.get("status") == "pass" for m in proof) and (own or proof):
+            # A ticket only a machine can prove is accepted on its checks alone.
             v = "accept"
         else:
             v = ""
