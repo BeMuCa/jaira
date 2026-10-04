@@ -1,7 +1,7 @@
 ---
 id: 01M44AQ1BH7H7R09PGER2MJBJM
 title: "Eine Rolle fasst einen Zeitraum aus dem Logbook fuer die Projektleitung zusammen, ohne Code"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,9 +26,14 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 6555760c14d651b6fcd6eaeee877c8c6d6591311
+  - 43aefa9bfadb156a9b2d0077cf1ee96cf846d7fe
+  - 23704c35d168bf5534e0ef05f5c685aa4d07659d
+  - 79125e6054597a1b4dc153e0d1ed5c1446f11fe4
+  - 4bced36f8aa5f9c18b99c404e9ac2b09472e5fc6
 created-at: 2026-10-04T20:47:00Z
-updated-at: 2026-10-04T21:38:25Z
+updated-at: 2026-10-04T22:27:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32325
 claimed-at: 2026-10-04T21:03:09Z
@@ -36,9 +41,9 @@ outcome-what: "Wie Runde 4; dazu Stunden je Ticket in collect.py (hours_by_ticke
 outcome-why: "AlSa will Stunden je Ticket; eine feste Rechnung statt Schaetzung des Modells."
 outcome-resolves: "Wie Runde 4."
 review-summary: none
-review-gaps: "none - c7f59e2 adds one optional comments list rendered in two places (page, markdown) that need it; nothing duplicated or orphaned"
-test-verdict: "pass: go build ./... ok; go test -count=1 -race ./core/role/ ./core/release/ ./internal/wintrap/ green; build.py page rg-summary (8 items) and rg-jira (6 items, 7 comments -> 7 dated blocks in the markdown) rc=0; DoD 7 template .comments + to_md verified, DoD 8 no Jira in the role's md files, README line or code; DoD 1-6 as before, collect --gap 60 changes the rule (35.0 h vs 37.0)"
-question: "Abnahme Runde 2: stehen die Kommentare je Tag jetzt so auf der Seite, wie du sie brauchst (Probe https://claude.ai/artifact/3U3Bb2EUnB8wqs1d7WtbiW Version 2), und ist die Rolle frei von Jira? Ja -> weiter; nein -> was fehlt."
+review-gaps: "none - split_hours() recomputes the day's minutes the session loop also sums, but it needs them per ticket and the duplicate is one sum; left as is"
+test-verdict: "pass: go build ./... ok; go test -count=1 -race ./core/role/ ./core/release/ ./internal/wintrap/ green; collect.py requirementsgenie KW40 rc=0: total 37.5 = sum(hours_by_ticket) 37.5, each of 7 days equal; split_hours on a scratch session (lead-in, two-id commit, no-id commit) gives A 0.75/B 0.25/- 0.5 = 1.5; build.py rg-summary/rg-jira rc=0; DoD 1-9 in the tree (no Jira in role md files)"
+question: "Abnahme Runde 3: Stunden je Ticket (requirementsgenie KW 40: 37,5 h, z. B. 7KSKMP 7,0 / R33C4B 3,0) - passt die Verteilung nach Zeit seit dem vorigen Commit, und sollen sie nur auf Wunsch in summary.md erscheinen? Ja -> weiter; nein -> was anders."
 ---
 
 # Eine Rolle fasst einen Zeitraum aus dem Logbook fuer die Projektleitung zusammen, ohne Code
@@ -85,3 +90,5 @@ core/role/builtin/jaira-role-logbook-summary/build.py:30 texts() lists fields by
 - **2026-10-04 21:30 · Alexander Sacharov** — Abnahme AlSa 04.10.: im Jira-Beispiel fehlten die Kommentare je Tag - es gab nur Summary und Description, weil ein Eintrag keine Kommentare tragen konnte. Und: Jira gehoert nicht in die Rolle, jeder schreibt sein System in seine summary.md. Umgesetzt: comments[] je Eintrag, Jira aus SKILL.md/README/NOTES/Beispiel entfernt, AlSas Regeln (nach KW34) in ~/.jaira/summary.md.
 - **2026-10-04 21:30 · Alexander Sacharov** — critique (pass 4, c7f59e2 only): comments[] is one optional list in template.html and to_md, covered by the recursive no-code check in texts(); Jira gone from shipped text without losing the example's substance. No finding.
 - **2026-10-04 21:38 · Alexander Sacharov** — AlSa 04.10.: Stunden je Ticket gewuenscht. Rechnen gehoert in collect.py (sonst schaetzt das Modell jedes Mal anders), Zeigen in die summary.md der Person - der Standardbericht bleibt kurz. AlSas ~/.jaira/summary.md verlangt jetzt Tabelle je internem Ticket und Summe je Jira-Ticket.
+- **2026-10-04 21:38 · Alexander Sacharov** — critique (pass 5, bbf3a1e only): split_hours() sits beside the session code that already owns the commit times, output is additive (hours_by_ticket per day and period), the role shows it only on request. No finding.
+- **2026-10-04 22:27 · Alexander Sacharov** — AlSa 05.10.2026: angenommen ('сдвинь 2MJBJM и закончи'), kommt in 0.3.3.
