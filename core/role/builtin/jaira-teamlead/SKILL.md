@@ -67,7 +67,9 @@ Without Herdr, start it as a subagent instead:
 ```
 Agent(subagent_type: "claude",
       prompt: "Read the dispatcher skill and drive ticket <id> until it
-               reaches a human lane or blocks. Report in three lines.")
+               reaches a human lane or blocks. Report in three lines,
+               plus the numbered options of any question you could not
+               ask.")
 ```
 
 and say plainly that it dies with your session.

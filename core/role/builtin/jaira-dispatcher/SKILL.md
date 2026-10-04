@@ -48,7 +48,11 @@ So, once and before the plan lane runs:
    in which case the answers are on the ticket and the mode is not yet set.
    Counting those again asks the person the same questions twice.
 2. **None open?** Say so and run on as usual. That is the normal case and it
-   needs nobody.
+   needs nobody. One exception: if notes answered decisions — closed in step 1
+   rather than never open — and `mode` is still empty, the asking happened
+   elsewhere, through the teamlead or before a dispatcher died. Do step 5 now,
+   then run on: a person decided the shape of this ticket, and that is what the
+   mode stands for.
 3. **One or more?** Stop before the plan lane and put them to the person, one
    question at a time, as a choice — see "How you ask" below.
 4. Write each answer onto the ticket with `jaira note <id> <text>` **before the
