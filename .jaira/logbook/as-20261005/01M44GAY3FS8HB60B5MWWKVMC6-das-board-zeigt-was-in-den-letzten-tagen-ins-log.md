@@ -1,7 +1,7 @@
 ---
 id: 01M44GAY3FS8HB60B5MWWKVMC6
 title: "Das Board zeigt, was in den letzten Tagen ins Logbook ging, und wie viele Tage stellt man in den Einstellungen ein"
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -26,9 +26,12 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - aeb5c5751bebb2c72e6afcd47628b589312bf8e5
+  - 7d4a6f747950236d1ef678c2f8d6621ea32bf46d
+  - 5d1116d261e98098cbdf0de688f8a922a8687bde
 created-at: 2026-10-04T22:25:15Z
-updated-at: 2026-10-04T22:38:05Z
+updated-at: 2026-10-04T22:50:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-734
 claimed-at: 2026-10-04T22:25:33Z
@@ -37,6 +40,8 @@ outcome-why: "Critique: eine zweite Tastenliste wird beim naechsten schreibenden
 outcome-resolves: "Critique-Befund aus Durchgang 1; DoD unveraendert erfuellt."
 review-summary: "none"
 review-gaps: "Model.logbookDays gestrichen (nur in loadLogbook gelesen, und gleichnamig mit der Konstante logbookDays der Launcher-Grafik in home.go) - loadLogbook liest settings selbst; nil-Pruefung in isLogged gestrichen (Map-Lookup mit nil ist false). Stehen gelassen: LoggedPerDay (store.go) neben LoggedSince - zaehlt nur Dateinamen ohne Tickets zu lesen und schneidet anders (Tage bis heute), Zusammenlegen wuerde die Launcher-Grafik teurer machen; settingsActionLogbookDays als Zeilenmarker; vorhandenes gateEnv() pro Karte in renderCard ist alt."
+test-verdict: "pass: go build + go test -race -count=1 ./... gruen (RC=0, HOME=tmp); DoD 1-6 im Baum geprueft, die sieben Proof-Tests einzeln gruen; Scratch-Board mit gebautem Binary: jaira logbook nennt 'logbook-days 28', mit logbook-days 7 blendet es den 10 Tage alten Eintrag aus, --since 2w gewinnt, logbook-days 0 listet alles. TUI nur ueber die Model-Tests getrieben (Rendern, Enter/m/x/e/E/X, Settings-Zeile), nicht interaktiv im Terminal."
+question: "Bitte im TUI abnehmen: Done-Lane zeigt unten die Logbook-Tickets der letzten 28 Tage (tuerkis, '⎙ filed <Tag>'), Enter oeffnet, m/x/e/E/X verweisen auf 'jaira restore'; S -> 'Logbook on the board' -> Enter, Zahl, Enter. Passt Farbe/Marker, und ist 'logbook-days 0 = jaira logbook listet alles' (wie --since 0) so gewollt?"
 ---
 
 # Das Board zeigt, was in den letzten Tagen ins Logbook ging, und wie viele Tage stellt man in den Einstellungen ein
@@ -78,3 +83,4 @@ review-gaps: "Model.logbookDays gestrichen (nur in loadLogbook gelesen, und glei
 - **2026-10-04 22:36 · Alexander Sacharov** — in-progress (Runde 2): Critique-Befund umgesetzt - refuseLogged sitzt jetzt in startEdit (edit.go), openInEditor (external.go) und im Fall X; der vorgeschaltete switch in modeDetail ist weg. Test prueft zusaetzlich E.
 - **2026-10-04 22:36 · Alexander Sacharov** — critique (2. Durchgang): nur der Befund aus Durchgang 1 und cb4bb84 gelesen - Schutz sitzt in startEdit/openInEditor/X, Tastenliste entfernt. Erledigt, keine neuen Befunde.
 - **2026-10-04 22:38 · Alexander Sacharov** — AlSa 05.10.2026: kommt in 0.3.4, nicht in 0.3.3. Der Zweig ging von der alten release/0.3.3 ab und wird vor dem PR auf master gesetzt.
+- **2026-10-04 22:50 · Alexander Sacharov** — AlSa 05.10.2026: Farbe und Marke so lassen; logbook-days 0 blendet die Karten aus und 'jaira logbook' zeigt dann alles - so lassen. Angenommen.
