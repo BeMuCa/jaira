@@ -264,6 +264,19 @@ Say which one you took. The human needs to know whether the workers outlive you.
    `agent prompt` / `agent wait` — those refuse a WSL pane, because they resolve
    the foreground process as `wsl.exe`.
 
+   To run a lane and be woken when it ends, start `scripts/run-lane.sh
+   [--no-worktree] <ticket-id> <lane> [repo-root]`, beside this file, with
+   `run_in_background`. It starts the worker through spawn.sh, waits until the
+   ticket has been in the lane and left it — so starting it before you move
+   the ticket in is fine — and the worker has finished its turn, prints the
+   outcome and closes the tab. A finished worker reports `agent_status`
+   **`done`**, not only `idle` — a wait loop that checks `idle|blocked` alone
+   never returns, and the board stands still all night with the tab open. One
+   background call per ticket, so each one wakes you on its own. Exit 4 means
+   the worker sits at an approval dialog: report it, the tab stays open. Exit 3
+   means it timed out and the worker is still running: look at its tab, do not
+   start a second one.
+
 2. **Peer sessions** — no Herdr, but `ListAgents` shows live peers. You cannot
    start one; the human does, in its own worktree. Delegate with `SendMessage`
    and hear back with `notify_when_idle: true` rather than polling. `ListAgents`

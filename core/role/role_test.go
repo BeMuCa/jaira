@@ -71,16 +71,22 @@ func TestDispatcherShipsItsScript(t *testing.T) {
 	if r.ID == "" {
 		t.Fatal("no jaira-dispatcher role")
 	}
-	found := false
-	for _, f := range r.Files {
-		if f == "scripts/spawn.sh" {
-			found = true
+	// run-lane.sh is what the prompt starts in the background to wait out a
+	// lane; without it the dispatcher is told to call a file that is not there.
+	for _, want := range dispatcherScripts {
+		found := false
+		for _, f := range r.Files {
+			if f == want {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("files %v, want %s among them", r.Files, want)
 		}
 	}
-	if !found {
-		t.Fatalf("files %v, want scripts/spawn.sh among them", r.Files)
-	}
 }
+
+var dispatcherScripts = []string{"scripts/spawn.sh", "scripts/run-lane.sh"}
 
 // The prefix is not cosmetic: a cross-reference left on the unprefixed name
 // calls a command that does not exist on a teammate's machine.
@@ -141,12 +147,14 @@ func TestInstallWritesEveryFile(t *testing.T) {
 	// only toggles the read-only flag — so the claim is not one this platform
 	// can make either way.
 	if runtime.GOOS != "windows" {
-		fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if fi.Mode().Perm()&0o111 == 0 {
-			t.Errorf("spawn.sh installed as %v, want the execute bit", fi.Mode().Perm())
+		for _, rel := range dispatcherScripts {
+			fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", filepath.FromSlash(rel)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if fi.Mode().Perm()&0o111 == 0 {
+				t.Errorf("%s installed as %v, want the execute bit", rel, fi.Mode().Perm())
+			}
 		}
 	}
 }
