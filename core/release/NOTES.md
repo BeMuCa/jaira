@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Look at the foot of the done lane for what went into the logbook in the last 28 days, newest first and filled in teal; enter opens one read-only and `jaira restore <file>` brings it back. Set the number of days with `"logbook-days"` in `~/.jaira/settings.json` or on the settings screen `S` (0 hides them); `jaira logbook` without `--since` now lists the same window and names it.
 
 ## 0.3.3
 - Run `jaira roles install --global --force` to get `/jaira-role-logbook-summary`: it summarises a period (by default last calendar week) for a project lead as one page — finished, under way and open work in plain words, hours per day estimated from commit times and, when you ask for them, per ticket, every text behind a copy button, and no file names, hashes or code in it. Out of the box it writes plain Markdown in the language you speak with it; to shape it for your own system — its markup, one comment per day per entry, hours split by customer, another week — write what you need into `.jaira/summary.md` in the repository or `~/.jaira/summary.md`, starting from the `summary.example.md` installed beside the role. It needs `python3`.

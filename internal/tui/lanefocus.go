@@ -59,7 +59,7 @@ func (m *Model) renderLaneFocus() string {
 		title = "? " + title
 	}
 	b.WriteString(styLaneTitle.Render(title))
-	b.WriteString(" " + styLaneCount.Render(fmt.Sprintf("%d ticket(s)", len(col.tickets))))
+	b.WriteString(" " + styLaneCount.Render(fmt.Sprintf("%d ticket(s)", len(col.tickets)-col.filed)))
 	switch {
 	case l.Unknown:
 		b.WriteString("  " + styWarn.Render("read-only"))
@@ -197,6 +197,9 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 	// Same computation as renderCard's flags, so a ticket does not look
 	// different depending on which screen it is read from.
 	var flags []string
+	if m.isLogged(t) {
+		flags = append(flags, m.logbookFlag(t))
+	}
 	env := m.gateEnv()
 	if !gate.Ready(t) {
 		flags = append(flags, styWarn.Render("○ spec"))

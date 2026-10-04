@@ -30,6 +30,7 @@ import (
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -81,6 +82,15 @@ type Model struct {
 
 	tickets []*ticket.Ticket
 	cols    []column
+
+	// logbookDays is how far back the terminal lane shows the logbook
+	// (settings.json, logbook-days), read on every reload so a hand edit of
+	// the file lands like any other change. logged is that window, newest
+	// first, and loggedDay marks its cards — by pointer — with the day they
+	// were filed. See logbook.go.
+	logbookDays int
+	logged      []ticket.Logged
+	loggedDay   map[*ticket.Ticket]time.Time
 
 	laneIdx int
 	cardIdx int
@@ -269,6 +279,9 @@ type Model struct {
 type column struct {
 	lane    *lane.Lane
 	tickets []*ticket.Ticket
+	// filed is how many of tickets, at the end, are logbook cards rather
+	// than tickets on the board. Only the terminal lane has any.
+	filed int
 }
 
 // pendingMove is everything a refused move needs to be retried as a forced one.
@@ -390,6 +403,8 @@ func (m *Model) reload() error {
 		m.warnings = append(m.warnings, pe.Problems...)
 	}
 	m.tickets = tickets
+	m.logbookDays = settings.Load().LogbookWindow()
+	m.loadLogbook()
 	if sess, err := session.Load(m.store); err == nil {
 		m.sessions = sess
 	}
@@ -496,9 +511,25 @@ func (m *Model) rebuild() {
 		})
 	}
 
+	// The logbook goes below what is still on the board, already newest
+	// first, and through the same filter: narrowing the board to a tag or a
+	// milestone narrows what it remembers too.
+	var filed []*ticket.Ticket
+	for _, l := range m.logged {
+		if m.filter == "" || matches(l.Ticket, m.filter, m.mstones) {
+			filed = append(filed, l.Ticket)
+		}
+	}
+	terminal := m.lanes.Terminal()
+
 	m.cols = make([]column, 0, len(lanes))
 	for _, l := range lanes {
-		m.cols = append(m.cols, column{lane: l, tickets: byLane[l.ID]})
+		col := column{lane: l, tickets: byLane[l.ID]}
+		if terminal != nil && l.ID == terminal.ID {
+			col.tickets = append(col.tickets, filed...)
+			col.filed = len(filed)
+		}
+		m.cols = append(m.cols, col)
 	}
 
 	m.clampCursor()
@@ -1165,6 +1196,11 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case settingsActionLanes:
 			m.laneScreen = newLaneScreen(m.store, m.lanes)
 			m.mode = modeLanes
+		case settingsActionSaved:
+			// The terminal lane shows a different window from now on.
+			if err := m.reload(); err != nil {
+				m.notify(err.Error(), true)
+			}
 		case settingsActionDefaultBoard:
 			db, err := lane.LoadDefaultBoard()
 			if err != nil {
@@ -1238,6 +1274,15 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case modeDetail:
 		m.copied = false
+		// A logbook card opens to be read. Every key that would change it —
+		// edit, the editor, move, delete — is answered with the way back
+		// instead; a follow-up stays, since it writes a new ticket.
+		switch s {
+		case "e", "E", "m", "X":
+			if m.refuseLogged(m.detail) {
+				return m, nil
+			}
+		}
 		switch s {
 		case "esc", "q", "enter":
 			// One level back: out of the split first, onto the ticket the follow-up
@@ -1575,10 +1620,16 @@ func (m *Model) openDetail() {
 	if t == nil {
 		return
 	}
-	full, err := m.store.Load(t.ID)
-	if err != nil {
-		m.notify(err.Error(), true)
-		return
+	// A logbook card was read whole when the window was loaded, and from its
+	// own file: Load would answer from the board, which for a ticket that is
+	// filed and on the board at once is the other copy.
+	full := t
+	if !m.isLogged(t) {
+		var err error
+		if full, err = m.store.Load(t.ID); err != nil {
+			m.notify(err.Error(), true)
+			return
+		}
 	}
 	m.detail = full
 	m.detailFrom = m.mode
@@ -1605,7 +1656,7 @@ func (m *Model) isMe(who string) bool {
 
 func (m *Model) openMove() {
 	t := m.selected()
-	if t == nil {
+	if t == nil || m.refuseLogged(t) {
 		return
 	}
 	m.moveTarget = 0
@@ -1937,7 +1988,7 @@ func (m *Model) confirmDelete() {
 // the action is reversible.
 func (m *Model) archiveSelected() {
 	t := m.selected()
-	if t == nil {
+	if t == nil || m.refuseLogged(t) {
 		return
 	}
 	dst, err := m.store.Archive(t.ID)

@@ -90,6 +90,13 @@ type Settings struct {
 	// landing branch before jaira mentions it, as a duration ("72h"). Empty
 	// means three days.
 	LandingGrace string `json:"landing-grace,omitempty"`
+
+	// LogbookDays is how many days back the board shows what went into the
+	// logbook, under the terminal lane, and how far 'jaira logbook' lists
+	// without --since. A pointer because 0 is a real answer — "show none" —
+	// and has to be told apart from a file that never mentions it, which
+	// means DefaultLogbookDays. Read it through LogbookWindow.
+	LogbookDays *int `json:"logbook-days,omitempty"`
 }
 
 // Path is the settings file, honouring JAIRA_HOME so tests and a sandboxed run
@@ -255,6 +262,21 @@ const DefaultLandingGrace = 3 * 24 * time.Hour
 // LandingGraceInterval returns that, or whatever the settings say instead.
 func (s Settings) LandingGraceInterval() time.Duration {
 	return every(s.LandingGrace, DefaultLandingGrace)
+}
+
+// DefaultLogbookDays is the logbook window nobody chose: four weeks, what
+// 'jaira logbook' listed before the window became a setting.
+const DefaultLogbookDays = 28
+
+// LogbookWindow returns how many days of the logbook the board shows and
+// 'jaira logbook' lists: the setting, or DefaultLogbookDays when it is absent
+// or negative. Zero means none on the board — and everything in the listing,
+// which is what --since 0 already means there.
+func (s Settings) LogbookWindow() int {
+	if s.LogbookDays == nil || *s.LogbookDays < 0 {
+		return DefaultLogbookDays
+	}
+	return *s.LogbookDays
 }
 
 // Landing returns the branches to check for a landed ticket, as revisions on

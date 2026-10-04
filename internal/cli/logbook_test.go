@@ -332,6 +332,49 @@ func TestLogbookListsTheLastFourWeeksByDefault(t *testing.T) {
 	}
 }
 
+// Without --since the listing reaches back as far as logbook-days says — the
+// same window the board shows — and --since still wins over it.
+func TestLogbookListingFollowsLogbookDays(t *testing.T) {
+	dir, _ := syncoutFixture(t)
+	home := filepath.Join(dir, "settings-home")
+	t.Setenv("JAIRA_HOME", home)
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"logbook-days": 7}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lb := filepath.Join(dir, ".jaira", "logbook")
+	now := time.Now()
+	for folder, file := range map[string]string{
+		"as-" + now.AddDate(0, 0, -3).Format("20060102"):  "recent.md",
+		"as-" + now.AddDate(0, 0, -20).Format("20060102"): "three-weeks.md",
+	} {
+		if err := os.MkdirAll(filepath.Join(lb, folder), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(lb, folder, file), []byte("---\n---\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	out, err := runCLI(t, dir, "logbook")
+	if err != nil {
+		t.Fatalf("bare logbook: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "recent.md") || strings.Contains(out, "three-weeks.md") || !strings.Contains(out, "logbook-days 7") {
+		t.Errorf("bare logbook with logbook-days 7 = %q, want only the entry from three days ago, the setting named", out)
+	}
+
+	out, err = runCLI(t, dir, "logbook", "--since", "4w")
+	if err != nil {
+		t.Fatalf("logbook --since 4w: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "three-weeks.md") || !strings.Contains(out, "--since 4w") {
+		t.Errorf("logbook --since 4w = %q, want --since to win over logbook-days", out)
+	}
+}
+
 func TestLogbookSinceRefusesWhatItCannotMean(t *testing.T) {
 	dir, id := syncoutFixture(t)
 	for _, args := range [][]string{

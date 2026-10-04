@@ -170,3 +170,39 @@ func TestAnUnreadableIntervalFallsBackToTheDefault(t *testing.T) {
 		t.Errorf("a negative grace became %v", s.LandingGraceInterval())
 	}
 }
+
+// logbook-days has three answers that must stay apart: missing means four
+// weeks, 0 means none, and a number means that many days — and 0 survives a
+// save, which an int with omitempty would have dropped back to the default.
+func TestLogbookWindow(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+
+	if got := settings.Load().LogbookWindow(); got != settings.DefaultLogbookDays {
+		t.Errorf("no file: window = %d, want %d", got, settings.DefaultLogbookDays)
+	}
+	for _, tc := range []struct {
+		raw  string
+		want int
+	}{
+		{`{}`, settings.DefaultLogbookDays},
+		{`{"logbook-days": 0}`, 0},
+		{`{"logbook-days": 7}`, 7},
+		{`{"logbook-days": -3}`, settings.DefaultLogbookDays},
+	} {
+		if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(tc.raw), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := settings.Load().LogbookWindow(); got != tc.want {
+			t.Errorf("%s: window = %d, want %d", tc.raw, got, tc.want)
+		}
+	}
+
+	zero := 0
+	if err := settings.Save(settings.Settings{LogbookDays: &zero}); err != nil {
+		t.Fatal(err)
+	}
+	if got := settings.Load().LogbookWindow(); got != 0 {
+		t.Errorf("a saved 0 came back as %d", got)
+	}
+}

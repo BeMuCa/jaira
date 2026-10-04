@@ -432,7 +432,10 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	if col.lane.Unknown {
 		title = "? " + title
 	}
-	head := styLaneTitle.Render(truncate(title, w-6)) + " " + styLaneCount.Render(fmt.Sprintf("%d", len(col.tickets)))
+	// The count is what is on the board. Logbook cards below it are history
+	// and carry their own marker; counting them would make a lane that has
+	// just been emptied by a cut look as full as before it.
+	head := styLaneTitle.Render(truncate(title, w-6)) + " " + styLaneCount.Render(fmt.Sprintf("%d", len(col.tickets)-col.filed))
 
 	var body strings.Builder
 	body.WriteString(head + "\n")
@@ -539,9 +542,12 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	// The selection fill and the glow still follow the first tag alone: the
 	// card is filled in one colour, and slot 1 is the ticket's primary one.
 	bgParams := ""
-	if selected {
+	switch {
+	case selected:
 		_, bgParams = m.selectionFill(slots[0].colour, slots[0].coloured)
-	} else {
+	case m.isLogged(t):
+		bgParams = m.logbookShade(alt)
+	default:
 		_, bgParams = m.laneShade(alt)
 	}
 
@@ -639,6 +645,9 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 
 	// State is shown with a glyph plus a word, never colour alone.
 	var flags []string
+	if m.isLogged(t) {
+		flags = append(flags, m.logbookFlag(t))
+	}
 	env := m.gateEnv()
 	if !gate.Ready(t) {
 		flags = append(flags, styWarn.Render("○ spec"))
@@ -918,7 +927,7 @@ func (m *Model) header() string {
 	}
 	total := 0
 	for _, c := range m.cols {
-		total += len(c.tickets)
+		total += len(c.tickets) - c.filed
 	}
 	right := styMeta.Render(fmt.Sprintf("%d tickets", total))
 	gap := m.width - lipgloss.Width(left) - lipgloss.Width(right)
@@ -1614,7 +1623,7 @@ func (m *Model) renderHelp() string {
 			{"r", "reload from disk now"},
 			{"p", "switch to another board"},
 			{"x", "in that list: remove a board, choosing what goes (default no)"},
-			{"S", "settings: lanes (read a prompt, use it, publish it) and the default board"},
+			{"S", "settings: lanes (read a prompt, use it, publish it), the default board, and how many days of the logbook the terminal lane shows"},
 		}},
 		{"Compact view", [][2]string{
 			{"v", "the whole flow at a glance, agents counted per step"},
@@ -1653,6 +1662,7 @@ func (m *Model) renderHelp() string {
 		{styOK.Render("✓ 3"), "commits recorded on the ticket"},
 		{styAgentic.Render("sonnet"), "the model that last ran a lane on it"},
 		{styMeta.Render("@name"), "who owns the outcome"},
+		{styOK.Render("⎙ filed 4 Oct"), "in the logbook, filed that day: read-only, 'jaira restore' brings it back"},
 	} {
 		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
 	}

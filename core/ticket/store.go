@@ -461,6 +461,75 @@ func LogbookFolderDay(name string, loc *time.Location) (time.Time, bool) {
 	return day, true
 }
 
+// LogbookWindowStart is the first day a logbook window of days days reaches
+// back to: midnight, days days before now. A folder dated that day or later is
+// inside the window. Whole days, because a folder carries a day and nothing
+// finer; time.Date rather than Add, because across a DST change a day is not
+// 24 hours. 'jaira logbook' and the board cut at the same place through this.
+func LogbookWindowStart(now time.Time, days int) time.Time {
+	return time.Date(now.Year(), now.Month(), now.Day()-days, 0, 0, 0, 0, now.Location())
+}
+
+// Logged is a ticket lying in the logbook, with the day its folder was filed.
+type Logged struct {
+	Ticket *Ticket
+	Day    time.Time
+}
+
+// LoggedSince reads the tickets filed into the logbook within the last days
+// days, newest first: by the folder's day, then by the ticket's own
+// updated_at, then by id so the order never flickers between reloads. Zero
+// days reads nothing.
+//
+// Only folders whose name ends in a date are read. The listing in
+// 'jaira logbook' keeps an undated folder because it is the one place that
+// names every file; the board shows what recently left it, and a folder with
+// no day has no "recently". Filed milestones, one level deeper, are not
+// tickets and are not read. A file that does not parse is skipped rather than
+// reported — the board's warnings are about the board, and this is history.
+func (s *Store) LoggedSince(now time.Time, days int) []Logged {
+	if days <= 0 {
+		return nil
+	}
+	folders, err := s.logbookFolders()
+	if err != nil {
+		return nil
+	}
+	start := LogbookWindowStart(now, days)
+	var out []Logged
+	for _, folder := range folders {
+		day, ok := LogbookFolderDay(filepath.Base(folder), now.Location())
+		if !ok || day.Before(start) {
+			continue
+		}
+		entries, err := os.ReadDir(folder)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			t, err := s.loadHeader(filepath.Join(folder, e.Name()))
+			if err != nil {
+				continue
+			}
+			out = append(out, Logged{Ticket: t, Day: day})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if !a.Day.Equal(b.Day) {
+			return a.Day.After(b.Day)
+		}
+		if !a.Ticket.UpdatedAt.Equal(b.Ticket.UpdatedAt) {
+			return a.Ticket.UpdatedAt.After(b.Ticket.UpdatedAt)
+		}
+		return a.Ticket.ID < b.Ticket.ID
+	})
+	return out
+}
+
 // LoggedPerDay counts the logbook's tickets by the day of their folder, for
 // the days days ending today: out[days-1] is today, out[0] the oldest. The
 // folder name carries the date — <initials>-<yyyymmdd> — so no ticket is
