@@ -28,17 +28,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-04T20:47:00Z
-updated-at: 2026-10-04T21:30:30Z
+updated-at: 2026-10-04T21:38:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32325
 claimed-at: 2026-10-04T21:03:09Z
-outcome-what: "Wie Runde 2; dazu Kommentare je Tag pro Eintrag (Seite und Markdown) und eine Rolle ohne festes Zielsystem."
-outcome-why: "Abnahme AlSa: Tageskommentare fehlten, und das Zielsystem gehoert in die Datei der Person, nicht in die Rolle."
-outcome-resolves: "Wie Runde 2."
+outcome-what: "Wie Runde 4; dazu Stunden je Ticket in collect.py (hours_by_ticket je Tag und Zeitraum) und die Regel in SKILL.md, sie nur auf Wunsch und unveraendert zu zeigen."
+outcome-why: "AlSa will Stunden je Ticket; eine feste Rechnung statt Schaetzung des Modells."
+outcome-resolves: "Wie Runde 4."
 review-summary: none
-review-gaps: "none - pass 2 after rebase: no new diff beyond f6e0805, which optimize itself wrote; earlier gaps note stands"
-test-verdict: "pass: go build ./... ok; go test -count=1 -race ./core/role/ ./core/release/ ./internal/wintrap/ green; DoD 1-6 checked in the tree (role in wantRoles/roleFiles, SKILL default, summary.example.md, collect --gap/--lead-in, build check(), NOTES Unreleased); collect.py on requirementsgenie KW40 rc=0, 37.0 h, 28.09. 0 h; build.py page rg-summary (8 items) and rg-jira (4 items) rc=0"
-question: "Abnahme: passen die zwei Probeseiten (Standard KW 40 https://claude.ai/artifact/XUH5fQY3DHV4VY1pyB6P5m, Jira https://claude.ai/artifact/3U3Bb2EUnB8wqs1d7WtbiW) zu dem, was die Projektleitung lesen soll? Ja -> weiter; nein -> was fehlt oder stoert."
+review-gaps: "none - c7f59e2 adds one optional comments list rendered in two places (page, markdown) that need it; nothing duplicated or orphaned"
+test-verdict: "pass: go build ./... ok; go test -count=1 -race ./core/role/ ./core/release/ ./internal/wintrap/ green; build.py page rg-summary (8 items) and rg-jira (6 items, 7 comments -> 7 dated blocks in the markdown) rc=0; DoD 7 template .comments + to_md verified, DoD 8 no Jira in the role's md files, README line or code; DoD 1-6 as before, collect --gap 60 changes the rule (35.0 h vs 37.0)"
+question: "Abnahme Runde 2: stehen die Kommentare je Tag jetzt so auf der Seite, wie du sie brauchst (Probe https://claude.ai/artifact/3U3Bb2EUnB8wqs1d7WtbiW Version 2), und ist die Rolle frei von Jira? Ja -> weiter; nein -> was fehlt."
 ---
 
 # Eine Rolle fasst einen Zeitraum aus dem Logbook fuer die Projektleitung zusammen, ohne Code
@@ -61,6 +61,8 @@ question: "Abnahme: passen die zwei Probeseiten (Standard KW 40 https://claude.a
   proof: core/role/builtin/jaira-role-logbook-summary/template.html .comments, core/role/builtin/jaira-role-logbook-summary/build.py to_md(); Probe https://claude.ai/artifact/3U3Bb2EUnB8wqs1d7WtbiW Version 2
 - [x] Die Rolle nennt kein bestimmtes Zielsystem (kein Jira in SKILL.md, README, NOTES, summary.example.md); was ein System braucht, steht nur in der summary.md der Person
   proof: grep -i jira in core/role/builtin/jaira-role-logbook-summary/*.md und der neuen README-Zeile: 0 Treffer; AlSas Jira-Regeln stehen in ~/.jaira/summary.md
+- [x] collect.py verteilt die Stunden eines Tages auf die Tickets seiner Commits (Zeit seit dem vorigen Commit, Viertelstunden nach groesstem Rest); die Tickets eines Tages ergeben genau dessen Stunden, und gezeigt werden sie nur, wenn summary.md es verlangt
+  proof: core/role/builtin/jaira-role-logbook-summary/collect.py split_hours(); Probe requirementsgenie KW 40: 37,5 h, Summe je Ticket 37,5, jeder Tag gleich
 
 ## Options
 
@@ -81,3 +83,5 @@ core/role/builtin/jaira-role-logbook-summary/build.py:30 texts() lists fields by
 - **2026-10-04 21:09 · Alexander Sacharov** — in-progress Runde 3: Testing-Befund (wintrap, .py/.html nicht auf LF) war derselbe wie bei 747HER und ist dort in 933ad03 behoben; feat/2MJBJM auf feat/747HER neu aufgesetzt, kein eigener Code. internal/wintrap gruen.
 - **2026-10-04 21:09 · Alexander Sacharov** — critique (pass 3): the testing finding (unpinned .py/.html) is answered by the rebase onto 933ad03 (747HER pins core/role/builtin/**/*.py and *.html to LF); no new diff in this ticket.
 - **2026-10-04 21:30 · Alexander Sacharov** — Abnahme AlSa 04.10.: im Jira-Beispiel fehlten die Kommentare je Tag - es gab nur Summary und Description, weil ein Eintrag keine Kommentare tragen konnte. Und: Jira gehoert nicht in die Rolle, jeder schreibt sein System in seine summary.md. Umgesetzt: comments[] je Eintrag, Jira aus SKILL.md/README/NOTES/Beispiel entfernt, AlSas Regeln (nach KW34) in ~/.jaira/summary.md.
+- **2026-10-04 21:30 · Alexander Sacharov** — critique (pass 4, c7f59e2 only): comments[] is one optional list in template.html and to_md, covered by the recursive no-code check in texts(); Jira gone from shipped text without losing the example's substance. No finding.
+- **2026-10-04 21:38 · Alexander Sacharov** — AlSa 04.10.: Stunden je Ticket gewuenscht. Rechnen gehoert in collect.py (sonst schaetzt das Modell jedes Mal anders), Zeigen in die summary.md der Person - der Standardbericht bleibt kurz. AlSas ~/.jaira/summary.md verlangt jetzt Tabelle je internem Ticket und Summe je Jira-Ticket.

@@ -9,7 +9,9 @@ repository, a new session after 90 minutes without a commit, and 30 minutes
 counted before a session's first commit, because a commit closes work and does
 not start it.
 
-Prints one JSON object. It only reads: git history, `jaira list --json` and
+Prints one JSON object. Hours per ticket (`hours_by_ticket`, per day and for
+the period) share each day's estimate out by the time between commits; they
+add up to the day's hours exactly. It only reads: git history, `jaira list --json` and
 `jaira logbook` and `jaira show`. Hours are an estimate from commit times and
 are labelled so; a day with no commits has no hours here, whatever happened on
 it.
@@ -35,6 +37,35 @@ def run(args, cwd):
 def last_week(today):
     monday = today - dt.timedelta(days=today.weekday() + 7)
     return monday, monday + dt.timedelta(days=6)
+
+
+def split_hours(sessions, lead, day_hours):
+    """A day's hours shared out over the tickets its commits name.
+
+    Inside a session, the time since the previous commit belongs to the ticket
+    of the commit that ended it; the first commit gets the lead-in. A commit
+    naming two tickets splits its time evenly, one naming none counts as "-".
+    The day's rounded hours are then dealt out in quarter hours by largest
+    remainder, so the tickets of a day add up to exactly that day's hours.
+    """
+    minutes = defaultdict(float)
+    for se in sessions:
+        prev = se["start"] - lead
+        for c in se["commits"]:
+            span = (c["at"] - prev).total_seconds() / 60
+            ids = c["ids"] or ["-"]
+            for i in ids:
+                minutes[i] += span / len(ids)
+            prev = c["at"]
+    whole = sum(minutes.values())
+    if not whole:
+        return {}
+    quarters = round(day_hours * 4)
+    shares = {i: m / whole * quarters for i, m in minutes.items()}
+    out = {i: int(x) for i, x in shares.items()}
+    for i in sorted(shares, key=lambda i: shares[i] - out[i], reverse=True)[:quarters - sum(out.values())]:
+        out[i] += 1
+    return {i: q / 4 for i, q in sorted(out.items(), key=lambda kv: -kv[1]) if q}
 
 
 def main():
@@ -83,6 +114,7 @@ def main():
         by_day[se["start"].date()].append(se)
 
     day_rows, total = [], 0.0
+    ticket_total = defaultdict(float)
     d = start
     while d <= end:
         ss = by_day.get(d, [])
@@ -94,6 +126,9 @@ def main():
         for c in cs:
             for i in c["ids"] or ["-"]:
                 by_ticket[i].append(c["subject"])
+        hours_by_ticket = split_hours(ss, lead, hours)
+        for i, h in hours_by_ticket.items():
+            ticket_total[i] += h
         day_rows.append({
             "date": d.isoformat(),
             "weekday": d.strftime("%a"),
@@ -101,6 +136,7 @@ def main():
             "commits": len(cs),
             "hours_estimate": hours,
             "by_ticket": by_ticket,
+            "hours_by_ticket": hours_by_ticket,
         })
         d += dt.timedelta(days=1)
 
@@ -134,6 +170,7 @@ def main():
         "authors": authors,
         "session_rule": {"gap_minutes": a.gap, "lead_in_minutes": a.lead_in},
         "hours_total_estimate": total,
+        "hours_by_ticket": dict(sorted(ticket_total.items(), key=lambda kv: -kv[1])),
         "days": day_rows,
         "done": done,
         "active": active,

@@ -47,7 +47,11 @@ python3 <this skill's folder>/collect.py --from <YYYY-MM-DD> --to <YYYY-MM-DD> [
 Run it in the repository whose work is being summarised. It reads git history,
 `jaira list --json` and `.jaira/logbook/`, and prints facts: commits and
 sessions per day with an hour estimate, tickets filed into the logbook in the
-period (`done`), and tickets on the board that moved in it (`active`). One
+period (`done`), and tickets on the board that moved in it (`active`). It
+also shares each day's hours out over the tickets its commits name
+(`hours_by_ticket`, per day and for the period): the time between two commits
+belongs to the ticket of the later one, and a day's tickets add up to that
+day's hours exactly. One
 person's work across several repositories: run it in each and add up.
 
 For each ticket you will write about, read what it was for: `jaira show <id>`
@@ -85,6 +89,10 @@ Then:
   that day, one or two sentences — a section of its own
 - **appendix**: internal ticket ids with their titles, for whoever needs to
   trace a line back. Ids belong only here
+- **hours per ticket**, only when `summary.md` asks for them: take them from
+  `hours_by_ticket` as they are — never estimate or round them yourself, so
+  that they add up to the hours per day. A theme's hours are the sum of its
+  tickets'. `-` is time on commits that name no ticket; show it as such
 
 Write `summary.json` beside nothing in the repository — in
 `~/.claude/summaries/<repo>/<from>_<to>/`:
