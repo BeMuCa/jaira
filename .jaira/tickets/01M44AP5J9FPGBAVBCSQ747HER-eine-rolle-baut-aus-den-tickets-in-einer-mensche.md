@@ -1,7 +1,7 @@
 ---
 id: 01M44AP5J9FPGBAVBCSQ747HER
 title: Eine Rolle baut aus den Tickets in einer Menschen-Lane eine Abnahme-Seite und liest die Entscheidungen zurueck
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -35,15 +35,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-04T20:46:32Z
-updated-at: 2026-10-04T21:02:35Z
+updated-at: 2026-10-04T21:05:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-94145
 claimed-at: 2026-10-04T20:47:12Z
-outcome-what: "optimize: Notiz-Lesen in said() zusammengefasst, state() ohne Durchreichen von results, stepState ueber stepStale"
-outcome-why: "dieselbe Zeile sechsmal und dieselbe Rundenregel zweimal waeren zwei Stellen zum Pflegen"
-outcome-resolves: "review-gaps fuer 747HER"
+outcome-what: "Wie Runde 3, dazu .gitattributes fuer die neuen .py- und .html-Dateien der Rollen."
+outcome-why: "Ein Windows-Checkout haette sie mit CRLF eingebettet."
+outcome-resolves: "Wie Runde 3."
 review-summary: "none"
 review-gaps: "build.py: sechsmal wiederholtes ((coll.get(k) or {}).get('note') or '').strip() in einen Helfer said() gezogen; state() gibt nur noch die Urteile zurueck statt (out, results) - plan/report lesen results selbst aus db. template.html: stepState() nutzt stepStale() statt die Rundenpruefung zu wiederholen. Ausgaben von page/plan/report auf dem Demo-Datensatz vorher/nachher identisch. Gelassen: REPORT-Labels in build.py und STR in template.html sind getrennte Woerterbuecher (Python vs. Seite, verschiedene Schluessel) - kein gemeinsamer Ort ohne Build-Schritt; state()/verdict() bewusst doppelt in Python und JS, weil Seite und Rueckleser dieselbe Regel brauchen; roleFiles-Tabelle in role_test.go bereits in Runde 1 entdoppelt; Dispatcher-/Teamlead-Texte ohne Ueberschuss."
+test-verdict: "fail: go test ./internal/wintrap rot - build.py, template.html, report.html der neuen Rolle sind in .gitattributes nicht auf eol=lf gepinnt; DoD 1-13 sonst im Baum bestaetigt"
 ---
 
 # Eine Rolle baut aus den Tickets in einer Menschen-Lane eine Abnahme-Seite und liest die Entscheidungen zurueck
@@ -94,3 +95,5 @@ review-gaps: "build.py: sechsmal wiederholtes ((coll.get(k) or {}).get('note') o
 - **2026-10-04 20:59 · Alexander Sacharov** — critique (Runde 2): Befunde 1, 2, 4 aus Runde 1 behoben; 3 (next_lane statt Terminal) in SKILL.md begruendet - geschlossen. Neu durch die Umstellung auf 'Schritte entscheiden': ein Ticket, das nur von Maschinenpruefungen belegt ist (check() erlaubt das), wird nie angenommen - build.py:113 'own and all(...)', template.html:176 'steps.length && ...'. Entweder ohne Personenschritte nach gruenen Maschinenpruefungen annehmen (beide Stellen), oder check() verlangt mindestens einen Personenschritt je Ticket.
 - **2026-10-04 21:00 · Alexander Sacharov** — in-progress Runde 3: Critique-Befund 2 umgesetzt - ein Ticket ohne Personenschritt gilt als angenommen, wenn alle seine Maschinenpruefungen gruen sind (build.py state, template.html verdict); eine nicht gelaufene Pruefung nimmt nichts an. AlSa 04.10.: 'да так мне нравится' zu Schritte-entscheiden + Protokoll.
 - **2026-10-04 21:00 · Alexander Sacharov** — critique (Runde 3): Befund aus Runde 2 behoben (acf4f02) - build.py state() und template.html verdict() nehmen ein nur maschinell belegtes Ticket bei gruenen Pruefungen an, beide Stellen gleich. Nichts offen.
+- **2026-10-04 21:04 · Alexander Sacharov** — testing: Gate rot. go test -count=1 ./internal/wintrap: --- FAIL: TestRepositoryIsClean / wintrap_test.go:83: core/role/role.go:33: windows trap 2: //go:embed pulls in 3 file(s) that no line in .gitattributes pins, starting at core/role/builtin/jaira-role-acceptance/build.py. Fix: in .gitattributes neben core/role/builtin/**/*.md und *.sh auch core/role/builtin/**/*.py text eol=lf und core/role/builtin/**/*.html text eol=lf eintragen (Kommentar dort ergaenzen). Sonst gruen: go test -race ./core/role ./core/release ok; tui TestArchiveFromTheBoard und core/lane TestLoadEmptyProjectDirIsSetUp fallen nur mit dem echten HOME (~/.jaira/default-board.md), mit leerem HOME gruen - nicht von hier. Funktion: jaira roles install --into <tmp> schreibt SKILL.md, build.py, template.html, report.html; build.py page/plan/report auf acc-demo laufen (8 Tickets, 10 Schritte, 4 Maschinenpruefungen; plan: 4 angenommen mit move --force, Fall b3-s02, Blocknotiz; report: 4/3/1); page auf bad.json exit 1 mit fr, unbekanntem Ticket und fehlender Abdeckung. Alle DoD-Proofs im Baum gefunden.
+- **2026-10-04 21:05 · Alexander Sacharov** — in-progress Runde 4: Testing-Befund - .gitattributes pinnt jetzt core/role/builtin/**/*.py und *.html auf LF (internal/wintrap TestRepositoryIsClean).
