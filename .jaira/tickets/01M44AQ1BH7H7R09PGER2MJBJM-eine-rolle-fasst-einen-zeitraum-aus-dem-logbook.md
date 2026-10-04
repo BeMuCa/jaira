@@ -28,13 +28,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-04T20:47:00Z
-updated-at: 2026-10-04T21:04:58Z
+updated-at: 2026-10-04T21:06:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32325
 claimed-at: 2026-10-04T21:03:09Z
-outcome-what: "Neue eingebaute Rolle jaira-role-logbook-summary: collect.py (Fakten aus git, Board, Logbook, Stunden je Tag), build.py (prueft Text auf Code, baut Seite und Markdown), template.html, summary.example.md; README und NOTES."
-outcome-why: "Eine Projektleitung fragt nach Stand und Stunden, nicht nach Code; AlSa baut das bisher jede Woche von Hand (jira-erfassung-kw34.html)."
-outcome-resolves: "Ohne Datei ein schlichter Bericht der letzten Woche; mit .jaira/summary.md in eigener Form, z. B. Jira mit zwei Kunden."
+outcome-what: "Wie Runde 1; Logbook ueber jaira statt eigenem Parser, Code-Pruefung ueber alle sichtbaren Texte."
+outcome-why: "Ein zweiter Ticket-Parser veraltet neben jaira; eine Pruefung, die Felder aufzaehlt, uebersieht neue."
+outcome-resolves: "Wie Runde 1."
+review-summary: |-
+  core/role/builtin/jaira-role-logbook-summary/collect.py:40 frontmatter() is a hand-written YAML-subset parser for logbook files; jaira show <handle> --json already reads a filed ticket (fields filed_away, path, goal, outcome, tags, follows, commits) - list the files with jaira logbook --since 0 --json, keep the folder-date filter, and read each with jaira show instead, then delete frontmatter()
+  core/role/builtin/jaira-role-logbook-summary/build.py:30 texts() lists fields by hand and so misses title, eyebrow, item titles, meta, status_label, figure labels and hours.note, while checking hours rows day/note that the summary.json schema in SKILL.md does not have - walk every string in the data recursively and skip only appendix (and hours.rows cells), so the no-code check (DoD 5) covers whatever the page shows
 ---
 
 # Eine Rolle fasst einen Zeitraum aus dem Logbook fuer die Projektleitung zusammen, ohne Code
@@ -65,3 +68,6 @@ outcome-resolves: "Ohne Datei ein schlichter Bericht der letzten Woche; mit .jai
 
 ## Progress
 - **2026-10-04 21:04 · Alexander Sacharov** — in-progress: Zweig auf feat/747HER gestellt, weil beide core/role/role_test.go (roleFiles) aendern; PR erst nach 747HER. Stunden: Sitzungen laufen ueber den ganzen Zeitraum, damit Arbeit nach Mitternacht eine Sitzung bleibt; sie zaehlen am Tag ihres Beginns. collect.py liest nur (git log --branches --no-merges, jaira list --json, .jaira/logbook); 'active' nimmt jedes Ticket, das sich im Zeitraum bewegt hat, auch die anderer Personen - die Rolle filtert beim Schreiben. Probe KW 40 auf requirementsgenie: 37 h geschaetzt, 28.09. ohne Commits.
+- **2026-10-04 21:05 · Alexander Sacharov** — critique (pass 1): core/role/builtin/jaira-role-logbook-summary/collect.py:40 frontmatter() is a hand-written YAML-subset parser for logbook files; jaira show <handle> --json already reads a filed ticket (fields filed_away, path, goal, outcome, tags, follows, commits) - list the files with jaira logbook --since 0 --json, keep the folder-date filter, and read each with jaira show instead, then delete frontmatter()
+core/role/builtin/jaira-role-logbook-summary/build.py:30 texts() lists fields by hand and so misses title, eyebrow, item titles, meta, status_label, figure labels and hours.note, while checking hours rows day/note that the summary.json schema in SKILL.md does not have - walk every string in the data recursively and skip only appendix (and hours.rows cells), so the no-code check (DoD 5) covers whatever the page shows
+- **2026-10-04 21:06 · Alexander Sacharov** — in-progress Runde 2: Critique umgesetzt - collect.py liest das Logbook ueber 'jaira logbook --since 0 --json' und 'jaira show <handle> --json' statt eigenem YAML-Parser; build.py prueft jeden sichtbaren Text rekursiv (Titel, Eyebrow, Meta, Labels, Notizen), ausgenommen appendix, lang, status und die Stunden-Zellen. Probe: KW 40 und Jira-Beispiel bauen weiter, Titel mit build.py und Meta mit Hash werden abgewiesen.

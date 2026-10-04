@@ -27,17 +27,19 @@ CODE = [
 ]
 
 
-def texts(data):
-    yield "subtitle", data.get("subtitle", "")
-    for f in data.get("figures", []):
-        yield f"figure {f.get('label')}", f.get("note", "")
-    for r in data.get("hours", {}).get("rows", []):
-        yield f"hours {r.get('day')}", r.get("note", "")
-    for s in data.get("sections", []):
-        yield f"section {s['title']}", s.get("intro", "")
-        for it in s.get("items", []):
-            yield f"{s['title']} / {it['title']}", it.get("body", "")
-            yield f"{s['title']} / {it['title']} (copy)", it.get("copy", "")
+def texts(node, where="page"):
+    # Every string the reader sees, wherever it sits. The appendix holds the
+    # internal ids on purpose, the hours cells are figures, and lang is a code.
+    if isinstance(node, str):
+        yield where, node
+    elif isinstance(node, list):
+        for i, x in enumerate(node):
+            yield from texts(x, f"{where}[{i}]")
+    elif isinstance(node, dict):
+        for k, v in node.items():
+            if k in ("appendix", "lang", "status") or (k == "rows" and where.endswith("hours")):
+                continue
+            yield from texts(v, f"{where}.{k}")
 
 
 def check(data):

@@ -10,7 +10,7 @@ counted before a session's first commit, because a commit closes work and does
 not start it.
 
 Prints one JSON object. It only reads: git history, `jaira list --json` and
-the files under .jaira/logbook/. Hours are an estimate from commit times and
+`jaira logbook` and `jaira show`. Hours are an estimate from commit times and
 are labelled so; a day with no commits has no hours here, whatever happened on
 it.
 
@@ -35,36 +35,6 @@ def run(args, cwd):
 def last_week(today):
     monday = today - dt.timedelta(days=today.weekday() + 7)
     return monday, monday + dt.timedelta(days=6)
-
-
-def frontmatter(path):
-    # Ticket files are YAML written by jaira: one key per line, strings double-quoted
-    # with JSON-compatible escapes, lists as "  - item" lines. That subset is all we read.
-    out, key = {}, None
-    lines = path.read_text(encoding="utf-8").split("\n")
-    if not lines or lines[0] != "---":
-        return out
-    for line in lines[1:]:
-        if line == "---":
-            break
-        if line.startswith("  - ") and key:
-            if not isinstance(out.get(key), list):
-                out[key] = []
-            out[key].append(line[4:].strip())
-            continue
-        m = re.match(r"^([\w-]+):\s?(.*)$", line)
-        if not m:
-            continue
-        key, val = m.group(1), m.group(2)
-        if val.startswith('"'):
-            try:
-                val = json.loads(val)
-            except json.JSONDecodeError:
-                val = val.strip('"')
-        elif val == "[]":
-            val = []
-        out[key] = val
-    return out
 
 
 def main():
@@ -134,18 +104,21 @@ def main():
         })
         d += dt.timedelta(days=1)
 
-    # Finished: logbook entries filed inside the window (the folder carries the day).
+    # Finished: logbook entries filed inside the window. The folder name
+    # carries the day; jaira itself reads the file.
+    listing = json.loads(run(["jaira", "logbook", "--since", "0", "--json"], repo) or '{"logbook": []}')
     done = []
-    for f in sorted((repo / ".jaira" / "logbook").glob("*/*.md")):
-        m = re.search(r"(\d{8})$", f.parent.name)
+    for rel in listing.get("logbook") or []:
+        m = re.search(r"(\d{8})/[0-9A-Z]{20}([0-9A-Z]{6})-", rel)
         if not m:
             continue
         filed = dt.datetime.strptime(m.group(1), "%Y%m%d").date()
         if not (start <= filed <= end):
             continue
-        fm = frontmatter(f)
-        done.append({k: fm.get(k) for k in ("id", "title", "goal", "outcome-what", "outcome-why", "tags", "follows")}
-                    | {"handle": (fm.get("id") or "")[-6:], "filed": filed.isoformat(), "commits": len(fm.get("commits") or [])})
+        t = json.loads(run(["jaira", "show", m.group(2), "--json"], repo) or "{}")
+        t = t.get("ticket", t)
+        done.append({k: t.get(k) for k in ("handle", "title", "goal", "outcome", "tags", "follows")}
+                    | {"filed": filed.isoformat(), "commits": len(t.get("commits") or [])})
 
     # Under way: tickets on the board that moved inside the window.
     board = json.loads(run(["jaira", "list", "--json"], repo) or '{"tickets": []}')["tickets"]
