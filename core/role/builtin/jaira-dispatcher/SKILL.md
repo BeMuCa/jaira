@@ -267,7 +267,8 @@ Say which one you took. The human needs to know whether the workers outlive you.
    To run a lane and be woken when it ends, start `scripts/run-lane.sh
    [--no-worktree] <ticket-id> <lane> [repo-root]`, beside this file, with
    `run_in_background`. It starts the worker through spawn.sh, waits until the
-   ticket has left the lane and the worker has finished its turn, prints the
+   ticket has been in the lane and left it — so starting it before you move
+   the ticket in is fine — and the worker has finished its turn, prints the
    outcome and closes the tab. A finished worker reports `agent_status`
    **`done`**, not only `idle` — a wait loop that checks `idle|blocked` alone
    never returns, and the board stands still all night with the tab open. One

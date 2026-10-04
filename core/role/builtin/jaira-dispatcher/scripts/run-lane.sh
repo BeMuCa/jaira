@@ -68,6 +68,7 @@ status() {
   (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
     | python3 -c 'import sys,json;print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true
 }
+start="$(status)"
 # A finished worker reports done, not only idle. A loop that waits for
 # idle|blocked alone never returns, and the tab never closes.
 agent() {
@@ -89,9 +90,22 @@ check() {
   fi
 }
 
-# An empty status is a read that failed, not a ticket that left the lane: taking
-# it for one would close the tab of a worker still at work.
-while s="$(status)"; [ -z "$s" ] || [ "$s" = "$lane" ]; do check; sleep 20; done
+# The lane is finished once the ticket has been in it and left it. A worker is
+# started before its ticket is moved into the lane, so a status other than the
+# lane is not yet an exit: until the lane has been seen, only a status that is
+# neither the starting one nor the lane counts — a worker that moved the ticket
+# straight on. Once seen, any other status counts, the starting one included:
+# that is critique sending work back. An empty status is a read that failed,
+# never an exit — taking it for one would close the tab of a worker at work.
+seen=""
+while :; do
+  s="$(status)"
+  if [ -n "$s" ]; then
+    [ "$s" = "$lane" ] && seen=1
+    if [ "$s" != "$lane" ] && { [ -n "$seen" ] || [ "$s" != "$start" ]; }; then break; fi
+  fi
+  check; sleep 20
+done
 until case "$(agent)" in idle|done) true ;; *) false ;; esac; do check; sleep 10; done
 
 (cd "$board" && jaira show "$ticket" --json 2>/dev/null) | python3 -c '
