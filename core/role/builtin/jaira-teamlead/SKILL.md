@@ -34,7 +34,10 @@ write it too.
    backlog around it — and bring it as a choice: `AskUserQuestion`, two to four
    options, the recommended one first with `(Recommended)` on its label. A
    dispatcher that could not ask itself hands you its options as a numbered
-   list; put exactly those to the person, do not rewrite them into prose.
+   list; put exactly those to the person, do not rewrite them into prose. Each
+   answer goes onto the ticket with `jaira note <id>` before you start a fresh
+   dispatcher on it — that note is what makes the new one count the decision
+   closed instead of asking it again.
 4. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
 

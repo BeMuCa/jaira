@@ -175,7 +175,11 @@ and it forces you to have done the weighing yourself.
 - No `AskUserQuestion` in your session — started as a subagent, or headless —
   then the same options go into your report as a numbered list, recommendation
   first, and you stop. The teamlead puts them to the person as a choice; you
-  never pick one yourself because nobody answered.
+  never pick one yourself because nobody answered. Several open decisions go
+  up together, one list each, in the order they would have been asked — you
+  cannot ask the second after the first once you have stopped. The teamlead
+  asks them one at a time in that order and drops one an earlier answer made
+  moot. The lists come on top of the three report lines, not in place of them.
 
 The answer is a decision, so it goes onto the ticket with `jaira note` before
 anything acts on it — the same rule as step 4 above.
