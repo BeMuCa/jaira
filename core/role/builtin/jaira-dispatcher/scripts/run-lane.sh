@@ -68,7 +68,6 @@ status() {
   (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
     | python3 -c 'import sys,json;print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true
 }
-start="$(status)"
 # A finished worker reports done, not only idle. A loop that waits for
 # idle|blocked alone never returns, and the tab never closes.
 agent() {
@@ -79,7 +78,7 @@ agent() {
 deadline=$(( timeout > 0 ? SECONDS + timeout * 60 : 0 ))
 check() {
   if [ "$deadline" -gt 0 ] && [ "$SECONDS" -ge "$deadline" ]; then
-    echo "timed out after $timeout min: $ticket is in $(status), worker $(agent) in $pane — left running" >&2
+    echo "timed out after $timeout min: $ticket is in $(status), worker in $pane is $(agent), its tab left open" >&2
     exit 3
   fi
   # blocked is Herdr's state for an approval dialog. Answering it is the human's
@@ -89,6 +88,11 @@ check() {
     exit 4
   fi
 }
+
+# Where the ticket stood when the worker started; the wait below needs it. An
+# empty one is a failed read like any other, and taken as the start it would
+# make the first status before the lane look like a worker that moved past it.
+until start="$(status)"; [ -n "$start" ]; do check; sleep 5; done
 
 # The lane is finished once the ticket has been in it and left it. A worker is
 # started before its ticket is moved into the lane, so a status other than the
@@ -118,8 +122,14 @@ for k in ("outcome", "review", "question"):
 ' || true
 
 if [ -z "$keep" ]; then
-  tab="$("$herdr" pane get "$pane" | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"]["tab_id"])')"
-  "$herdr" tab close "$tab" >/dev/null
-  echo "closed $pane"
+  # The person may have closed the tab already; that is the job done, not an error.
+  tab="$("$herdr" pane get "$pane" 2>/dev/null \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"]["tab_id"])' 2>/dev/null || true)"
+  if [ -n "$tab" ]; then
+    "$herdr" tab close "$tab" >/dev/null
+    echo "closed $pane"
+  else
+    echo "$pane is already gone"
+  fi
 fi
 git -C "$wt" log --oneline -3 2>/dev/null || true
