@@ -1,7 +1,7 @@
 ---
 id: 01M43C1R4XCMMNDAD75YMCTRTD
 title: Der Dispatcher fragt in Prosa statt mit Auswahl
-status: review
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,17 +17,22 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 2be7f7557c302785f8534ca19258ceed9c2f75f3
+  - e8cde06c368d6dceac55e33af066881aa23e0f02
+  - e69bed3b60e494ee4f432ab37acc5fef8f42d262
+  - 11987efb28e40a644e46efdb0ece01f1a82d38ca
+  - ee0f4ee76904b4150d325549f07252ee6e55a1da
 created-at: 2026-10-04T11:51:06Z
-updated-at: 2026-10-04T15:15:35Z
+updated-at: 2026-10-04T15:22:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-23999
 claimed-at: 2026-10-04T11:51:17Z
-outcome-what: "Getestet"
-outcome-why: "Befund Runde 4 eingearbeitet"
-outcome-resolves: testing
-review-summary: "Reiner Prompt-Text. dispatcher/SKILL.md: Abschnitt 'How you ask' (Z.164-185) - jede Frage per AskUserQuestion, 2-4 Optionen, Empfehlung zuerst mit '(Recommended)', Ja/Nein als Zwei-Optionen-Wahl; ohne AskUserQuestion gehen alle offenen Entscheidungen als nummerierte Listen in Fragereihenfolge zusätzlich zu den drei Berichtszeilen hoch, und der Dispatcher stoppt. Schritt 3 (Z.53) und dritte Runde (Z.398-399) verweisen darauf. teamlead/SKILL.md Z.33-42: Teamlead stellt die Listen unverändert als Auswahl, schreibt jede Antwort per 'jaira note' und setzt dann selbst 'mode=conversational', bevor ein frischer Dispatcher startet; Subagent-Prompt Z.70-75 verlangt die Optionen neben den drei Zeilen. Runde 4 (225eb82): die Ausnahme in Dispatcher-Schritt 2, die den Modus aus Notes ableitete, ist entfernt (Z.50-51 wieder wie vor 8b0bb42). NOTES.md: eine '- '-Zeile unter '## Unreleased'. go test ./core/role/ ./core/release/ grün."
-review-gaps: "1) Runde-3-Lücke ist zu (Dispatcher leitet den Modus nicht mehr aus Notes ab), aber dieselbe Fehlwirkung sitzt jetzt beim Teamlead: teamlead/SKILL.md:37-39 setzt mode=conversational nach JEDER weitergereichten Antwort. Der Dispatcher reicht über 'How you ask' (dispatcher/SKILL.md:175-182, Verweis Z.398-399) auch die Ja/Nein-Frage der dritten Runde als Liste hoch, und der Subagent-Prompt (teamlead/SKILL.md:72-74) fordert 'any question you could not ask'. Realistischer Lauf ohne Herdr: Testing schickt dreimal zurück -> Teamlead fragt 'vierte Runde?' -> Note + mode=conversational -> der neue Dispatcher fährt den Rest mit --no-worktree und Commit-Zeilen statt Commits, ohne dass jemand den Ticket-Zuschnitt entschieden hat. Fix: Modus nur setzen, wenn die Antworten offene Entscheidungen vor der Plan-Lane schließen; bei der Dritte-Runde-Frage nur die Note. Nicht blockierend: a) teamlead/SKILL.md:42 'nobody else sets it' stimmt nicht ganz - der Dispatcher setzt ihn selbst in Schritt 5 (dispatcher/SKILL.md:57-61), wenn er selbst gefragt hat. b) dispatcher/SKILL.md:46-49 (vorbestehend) beschreibt den Fall 'gestorben zwischen Schritt 4 und 5, Modus noch nicht gesetzt', aber nach Wegfall der Ausnahme setzt ihn dort niemand mehr - das Ticket läuft autonom weiter; galt schon vor diesem Ticket."
+outcome-what: "Review bestanden"
+outcome-why: "Runde 5 ohne blockierenden Befund"
+outcome-resolves: review
+review-summary: "Reiner Prompt-Text. dispatcher/SKILL.md: Abschnitt 'How you ask' (Z.164-185) - jede Frage per AskUserQuestion, 2-4 Optionen, Empfehlung zuerst mit '(Recommended)', Ja/Nein als Zwei-Optionen-Wahl, keine 'other'-Option; ohne AskUserQuestion (Subagent/headless) gehen alle offenen Entscheidungen als nummerierte Listen in Fragereihenfolge zusätzlich zu den drei Berichtszeilen hoch, und der Dispatcher stoppt. Schritt 3 (Z.53) und die Dritte-Runde-Frage (Z.398-399) verweisen darauf. teamlead/SKILL.md Z.33-45: Teamlead stellt die Listen unverändert als Auswahl und schreibt jede Antwort per 'jaira note', bevor ein frischer Dispatcher startet; nur wenn die Antworten die offenen Entscheidungen vor der Plan-Lane schließen, setzt er zusätzlich 'mode=conversational' (Ersatz für Dispatcher-Schritt 5); jede andere Antwort, z. B. Ja/Nein nach drei Runden, bekommt nur die Note. Subagent-Prompt Z.72-77 verlangt die Optionslisten neben den drei Zeilen. Runde 5 (43e1de7): Modus-Regel eingeschränkt, ungenaues 'nobody else sets it' entfernt. NOTES.md: eine '- '-Zeile unter '## Unreleased'. go test ./core/role/ ./core/release/ grün."
+review-gaps: "none (blockierend). Runde-4-Lücke geschlossen: teamlead/SKILL.md:40-45 setzt den Modus nur noch für Antworten auf offene Entscheidungen vor der Plan-Lane, die Dritte-Runde-Frage bekommt nur die Note; 'nobody else sets it' ist weg. Nicht blockierend: a) Die Optionslisten im Rückfallweg (dispatcher/SKILL.md:175-182) tragen keine Kennung, ob sie Vor-Plan-Entscheidungen oder die Stopp-Frage sind - der Teamlead muss das aus Lane und Berichtszeilen ablesen (Stopp-Frage kommt mit den Befunden der dritten Runde, Vor-Plan-Fragen vor pre-process); im realistischen Lauf unterscheidbar. b) vorbestehend (galt vor 3e95568): dispatcher/SKILL.md:46-49 beschreibt 'gestorben zwischen Schritt 4 und 5, Modus noch nicht gesetzt', aber kein frischer Dispatcher setzt ihn dann nach."
 test-verdict: |-
   go test ./core/role/ ./core/release/ grün. Verhalten (fragt der Dispatcher wirklich mit Auswahl?) nur in einem echten Lauf prüfbar.
   Runde 2: go test ./core/role/ ./core/release/ grün.
@@ -35,8 +40,8 @@ test-verdict: |-
   Runde 4: go test ./core/role/ ./core/release/ grün.
   Runde 5: go test ./core/role/ ./core/release/ grün.
 question: "Nach 'jaira roles install --global --force' einen Dispatcher auf ein Ticket mit offener Entscheidung ansetzen: kommt die Frage als Auswahl?"
-review-verdict: "Zurück an in-progress. DoD erfüllt, Runde-3-Befund geschlossen, Tests grün, NOTES-Zeile regelkonform. Aber die Vereinfachung verschiebt das Problem: die Regel 'Teamlead setzt mode=conversational' (teamlead/SKILL.md:37-39) ist unbedingt und greift damit auch bei der Dritte-Runde-Ja/Nein-Frage, die über denselben Rückfallweg kommt. Fix ist ein Halbsatz Einschränkung. Sicher beim Befund; ob Alex den Dritte-Runde-ohne-Herdr-Fall für häufig genug hält, um zu blockieren, ist seine Entscheidung."
-review-check: "1. cd /home/alex/projects/jaira && go test ./core/role/ ./core/release/ - beide Zeilen 'ok'. 2. sed -n '44,61p' core/role/builtin/jaira-dispatcher/SKILL.md - Schritt 2 endet bei 'needs nobody.', keine Ausnahme mehr über Notes. 3. sed -n '33,42p' core/role/builtin/jaira-teamlead/SKILL.md - Teamlead schreibt 'jaira note' und 'jaira set <id> mode=conversational'; prüfen: steht dort eine Einschränkung auf offene Entscheidungen vor der Plan-Lane? (heute: nein - die Lücke). 4. sed -n '395,400p' core/role/builtin/jaira-dispatcher/SKILL.md - die Dritte-Runde-Frage verweist auf 'How you ask', geht also im Subagent-Fall über denselben Weg zum Teamlead. 5. sed -n '16,18p' core/release/NOTES.md - genau eine '- '-Zeile unter '## Unreleased'. 6. Echter Lauf (optional): 'jaira roles install --global --force', Teamlead ohne Herdr, Dispatcher als Subagent auf ein Ticket mit einer offenen Entscheidung - Teamlead fragt als Auswahl, danach 'jaira show <id> --json': Note vorhanden und mode=conversational."
+review-verdict: "Bestanden. DoD erfüllt und belegt, Runde-4-Befund geschlossen, keine neue Fehlwirkung im Haupt- oder Rückfallweg gefunden, Querverweise stimmen, NOTES-Zeile regelkonform (eine Zeile, Anweisung, unter Unreleased), Tests grün. Unsicher bleibt nur, ob sich der Teamlead im echten Lauf an die Unterscheidung Vor-Plan-Frage vs. Stopp-Frage hält - das zeigt erst ein Lauf ohne Herdr."
+review-check: "1. cd /home/alex/projects/jaira && go test ./core/role/ ./core/release/ - beide Zeilen 'ok'. 2. sed -n '164,185p' core/role/builtin/jaira-dispatcher/SKILL.md - Abschnitt 'How you ask': AskUserQuestion, 2-4 Optionen, '(Recommended)', Rückfall nummerierte Listen. 3. sed -n '52,53p;398,399p' derselben Datei - beide Fragestellen verweisen auf 'How you ask'. 4. sed -n '33,45p' core/role/builtin/jaira-teamlead/SKILL.md - 'jaira note' für jede Antwort; 'mode=conversational' nur 'When the answers closed the open decisions a dispatcher found before the plan lane'; Satz 'Any other answer, such as the yes or no after three rounds ... leaves the mode alone' vorhanden; kein 'nobody else sets it' mehr. 5. sed -n '16,18p' core/release/NOTES.md - genau eine '- '-Zeile unter '## Unreleased'. 6. Echter Lauf (optional): 'jaira roles install --global --force', Teamlead ohne Herdr, Dispatcher als Subagent auf ein Ticket mit einer offenen Entscheidung - Teamlead fragt als Auswahl mit Empfehlung zuerst; danach 'jaira show <id> --json': Note vorhanden und mode=conversational."
 ---
 
 # Der Dispatcher fragt in Prosa statt mit Auswahl
@@ -71,3 +76,4 @@ review-check: "1. cd /home/alex/projects/jaira && go test ./core/role/ ./core/re
 - **2026-10-04 13:59 · Alexander Sacharov** — Alex hat entschieden (2026-10-04, Auswahl nach drei Review-Runden): vereinfachen. Die Ausnahme in Schritt 2 des Dispatchers entfällt; der Teamlead, der die Antwort bekommt, schreibt die Note UND setzt mode=conversational selbst. Kein Raten aus Notizen.
 - **2026-10-04 14:01 · Alexander Sacharov** — Review Runde 4 schickt zurück: teamlead/SKILL.md:37-39 setzt mode=conversational nach jeder weitergereichten Antwort - auch nach der Ja/Nein-Frage der dritten Runde (dispatcher/SKILL.md:398-399 -> 'How you ask' Rückfallweg). Ohne Herdr schaltet ein vierter Testing-Durchlauf so den Modus ein (--no-worktree, Commit-Zeilen), ohne dass jemand den Zuschnitt entschieden hat. Fix: Modus nur, wenn die Antworten offene Entscheidungen vor der Plan-Lane schließen; sonst nur die Note. Nebenbei: Z.42 'nobody else sets it' übersieht Dispatcher-Schritt 5.
 - **2026-10-04 15:15 · Alexander Sacharov** — Alex hat entschieden (2026-10-04): Fix + fünfte Review-Runde. Der Teamlead setzt mode nur, wenn die Antworten offene Entscheidungen vor der Plan-Lane schließen; jede andere Antwort (z. B. Stopp-Frage nach drei Runden) bekommt nur die Note.
+- **2026-10-04 15:16 · Alexander Sacharov** — Review Runde 5 bestanden. Offen, nicht blockierend: (a) die Optionslisten im Rückfallweg (dispatcher SKILL.md:175-182) sagen nicht, ob sie Entscheidungen vor der Plan-Lane oder die Stopp-Frage sind — der Teamlead liest das aus Lane und Berichtszeilen; (b) älter als dieses Ticket: stirbt ein Dispatcher zwischen Schritt 4 und 5, setzt der frische den Modus nicht nach (dispatcher SKILL.md:46-49).
