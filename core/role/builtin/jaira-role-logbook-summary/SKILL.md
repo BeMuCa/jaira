@@ -1,6 +1,6 @@
 ---
 name: jaira-role-logbook-summary
-description: "Summarise a stretch of work for a project lead - what is finished, what is under way, what is open, hours estimated from commit times - as one page with every text ready to copy, and no code in it. Plain by default; a summary.md in the repository or in ~/.jaira shapes it for a target such as Jira. Invoked as /jaira-role-logbook-summary [period]. Use when someone asks how far the work has come, for a weekly report, or for hours to book."
+description: "Summarise a stretch of work for a project lead - what is finished, what is under way, what is open, hours estimated from commit times - as one page with every text ready to copy, and no code in it. Plain by default; a summary.md in the repository or in ~/.jaira says what the reader's own system needs. Invoked as /jaira-role-logbook-summary [period]. Use when someone asks how far the work has come, for a weekly report, or for hours to book."
 ---
 
 # What happened, for someone who does not read code
@@ -17,7 +17,8 @@ Read, in this order, and stop at the first that exists:
 2. `~/.jaira/summary.md`
 
 It is prose, written by a person, describing what they need: the target system
-(Jira, an email, a wiki), the markup (Jira wiki markup, Markdown, plain text),
+(a ticket system, an email, a wiki), the markup (Markdown, plain text, a
+system's own markup),
 the language, how to bundle the work (one entry per theme, two tickets for two
 customers), how to split hours, the session rule for hours. Follow it where it
 speaks; where it is silent, the default below applies. `summary.example.md`
@@ -69,7 +70,11 @@ For each theme:
   still open. Plain words. No file names, function names, paths, commit
   hashes, or code formatting: `build.py` refuses a page that has them
 - **copy**: the same content in the target markup, if that differs from the
-  body (Jira wiki markup, for instance); otherwise leave it out
+  body; otherwise leave it out
+- **comments**: when the target keeps a running record per entry — a ticket
+  with comments, a log — one comment per day that entry moved, saying what
+  was finished that day, each in the target markup. The facts are in
+  `days[].by_ticket`; a day the entry did not move gets no comment
 
 Then:
 
@@ -91,7 +96,8 @@ Write `summary.json` beside nothing in the repository — in
   "hours": {"title": "Hours per day", "columns": ["Day", "Sessions", "Commits", "Hours"],
             "rows": [{"cells": ["Mon 28.09.", "09:10-12:40", "14", "4.0"]}], "note": "..."},
   "sections": [{"title": "What changed", "intro": "", "items": [
-      {"title": "...", "status": "done", "status_label": "finished", "meta": "3 tickets", "body": "...", "copy": "..."}]}],
+      {"title": "...", "status": "done", "status_label": "finished", "meta": "3 tickets", "body": "...", "copy": "...",
+       "comments": [{"date": "30.09.", "text": "..."}]}]}],
   "appendix": {"title": "Internal ticket ids", "lines": ["7P6J0C  A refused start says the run did not start"]}
 }
 ```

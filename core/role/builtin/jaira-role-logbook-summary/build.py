@@ -72,6 +72,8 @@ def to_md(data):
             out += [s["intro"], ""]
         for it in s.get("items", []):
             out += [f"### {it['title']}" + (f" ({it['status_label']})" if it.get("status_label") else ""), "", it.get("copy") or it.get("body", ""), ""]
+            for c in it.get("comments", []):
+                out += [f"**{c['date']}**", "", c["text"], ""]
     if data.get("appendix"):
         out += [f"## {data['appendix']['title']}", ""] + [f"- {x}" for x in data["appendix"]["lines"]]
     return "\n".join(out).rstrip() + "\n"

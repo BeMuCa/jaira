@@ -638,7 +638,8 @@ and `--force` replaces it too.
   know about a period — what is finished, what is under way, hours estimated
   from commit times — as one page without code, every text ready to copy. A
   `.jaira/summary.md` (or `~/.jaira/summary.md`) says in your own words what
-  your target needs, such as Jira wiki markup or hours split by customer.
+  your reader's system needs: its markup, a comment per day, hours split by
+  customer.
 - Every question either of them puts to you comes as a choice of two to four
   options, the recommended one first, rather than a paragraph to answer.
 - `jaira roles list` names the rest: single-lane workers, a tester, a
