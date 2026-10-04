@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Run `jaira roles install --global --force` to get `/jaira-role-logbook-summary`: it summarises a period (by default last calendar week) for a project lead as one page — finished, under way and open work in plain words, hours per day estimated from commit times, every text behind a copy button, and no file names, hashes or code in it. Out of the box it writes plain Markdown in the language you speak with it; to shape it for your target — Jira wiki markup, two customers, another week — write what you need into `.jaira/summary.md` in the repository or `~/.jaira/summary.md`, starting from the `summary.example.md` installed beside the role. It needs `python3`.
 - Run `jaira roles install --global --force` to get `/jaira-role-acceptance`: it turns the tickets waiting in a human lane into one acceptance page with the tests already run, setup once per block and one scenario per block. You only mark steps ok, no or skipped and may write what you saw, a comment per ticket and a note per block; a ticket whose steps are all ok is accepted. On "read the acceptance" it works out every "no" itself — back into the same ticket as a definition-of-done item, a new bug that follows it, or a wrong step — asks you only where it cannot tell, and publishes a fixed record of the acceptance. The dispatcher and teamlead now hand tickets of one change to it together. It needs `python3` for its page builder.
 
 ## 0.3.2

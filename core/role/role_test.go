@@ -18,6 +18,7 @@ var wantRoles = []string{
 	"jaira-role-acceptance",
 	"jaira-role-brainstorm",
 	"jaira-role-lane",
+	"jaira-role-logbook-summary",
 	"jaira-role-pr",
 	"jaira-role-research",
 	"jaira-role-tester",
@@ -66,6 +67,10 @@ var roleFiles = map[string][]string{
 	// build.py writes the page from template.html and the record from
 	// report.html.
 	"jaira-role-acceptance": {"build.py", "template.html", "report.html"},
+	// collect.py gathers the facts, build.py checks the text and writes the
+	// page from template.html; summary.example.md is what the prompt points a
+	// person at to shape the summary.
+	"jaira-role-logbook-summary": {"collect.py", "build.py", "template.html", "summary.example.md"},
 }
 
 func TestRolesShipTheirFiles(t *testing.T) {
