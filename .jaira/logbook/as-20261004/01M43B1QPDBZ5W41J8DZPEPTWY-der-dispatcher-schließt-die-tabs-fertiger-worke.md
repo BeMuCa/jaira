@@ -1,7 +1,7 @@
 ---
 id: 01M43B1QPDBZ5W41J8DZPEPTWY
 title: Der Dispatcher schließt die Tabs fertiger Worker nie
-status: review
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,24 +21,28 @@ tags:
   - release
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 418a9c4fd654f0c90600584b65eeb4b2d2927984
+  - fe7efd174071a2e0f0a66e84c6a0538c6b8ba738
+  - 86f473ebcdb53be5d53e1320acf630598f5e0e66
+  - b1dba69f7c7124586696665c3f8c3cd43c1c4e3c
 created-at: 2026-10-04T11:33:37Z
-updated-at: 2026-10-04T12:21:36Z
+updated-at: 2026-10-04T15:22:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-12187
 claimed-at: 2026-10-04T11:33:53Z
-outcome-what: "Getestet"
-outcome-why: "Befunde eingearbeitet"
-outcome-resolves: "testing"
-review-summary: "Runde 2 (fe7efd1): run-lane.sh liest nach spawn.sh einmal den Ausgangsstatus (start, Z.71) und zählt die Lane erst als fertig, wenn das Ticket in der Lane war und sie verlassen hat, oder wenn es in einen Status wechselt, der weder start noch die Lane ist (Worker hat die Lane übersprungen). Leerer Status zählt nie als Ausgang. Danach wie gehabt: warten auf idle|done, Ausgabe, Tab schließen. SKILL.md sagt jetzt, dass der Start vor dem Move in die Lane in Ordnung ist. Der Runde-1-Defekt (Tab schließt beim ersten idle, weil das Ticket noch nicht in der Lane war) ist im Normalfall weg: Stub-Lauf todo->pre-process->in-progress Exit 0 erst nach dem Wechsel; Lane übersprungen Exit 0; critique zurück nach in-progress Exit 0."
-review-gaps: "1) Defekt, run-lane.sh:71: start=\"$(status)\" wird nicht wiederholt, wenn das Lesen scheitert. Dann ist start leer, und Z.105 ([ \"$s\" != \"$start\" ]) wertet schon den ersten gelesenen Vorstatus (z.B. todo) als 'Worker hat die Lane übersprungen' -> Schleife bricht ab, agent() ist direkt nach dem Start idle, Tab wird geschlossen. Genau der Runde-1-Fehler auf anderem Weg. Stub belegt: Statusfolge FAIL,todo,todo -> Exit 0, tab close nach 3 Lesezugriffen. Wahrscheinlich gerade dort, wo es zählt: der Dispatcher schreibt das Ticket (claim/move) genau in dem Moment, in dem run-lane.sh startet. Fix: start lesen, bis es nicht leer ist (mit check dazwischen). 2) Klein, kein Rückgabegrund: Kehrt ein Worker ohne Statuswechsel zurück (z.B. critique auf einem Ticket in in-progress, das nie nach critique kam), wartet das Skript die vollen 240 min und meldet dann 'timed out ... left running', obwohl der Worker idle ist — bewusste Entscheidung laut Note, aber die Meldung von Exit 3 führt in die Irre. 3) Klein, vorbestehend: Z.121 herdr pane get ohne Schutz — ist der Tab schon von Hand zu, endet das Skript mit Python-Fehler und Exit 1, nicht dokumentiert."
+outcome-what: "Von Alex abgenommen"
+outcome-why: "Alex: 'review machen und schließen'"
+outcome-resolves: "signoff"
+review-summary: "Liefert core/role/builtin/jaira-dispatcher/scripts/run-lane.sh mit dem Binary aus (Test prüft Ausführungsbit). Das Skript startet den Worker über spawn.sh neben sich selbst (--no-worktree nur auf Flag/Env), liest den Ticketstatus dort, wo der Worker schreibt (Worktree, sonst Repo), wartet bis das Ticket in der Lane war und sie verlassen hat, dann bis Herdr idle|done meldet, und schließt den Tab. Zeitgrenze (Default 240 min, Exit 3), Approval-Dialog (blocked) bricht mit Exit 4 ab, Tab bleibt offen. Runde 3 (86f473e): Startstatus wird so lange neu gelesen, bis er nicht leer ist (run-lane.sh:95); Timeout-Meldung nennt den Worker-Zustand statt 'left running' (run-lane.sh:81); ein schon geschlossener Tab beim Abschluss wird gemeldet statt abzustürzen (run-lane.sh:126-133)."
+review-gaps: "Keine blockierenden. Die drei Runde-2-Lücken sind zu (Stub-Läufe: zwei gescheiterte Lesezugriffe, dann review→human: Exit 0, ein tab close; nur todo nach gescheitertem Lesen: kein tab close). Beobachtung, kein Fehler: schließt der Mensch den Tab, bevor der Worker idle|done gemeldet hat, liefert agent() leer und die Schleife in run-lane.sh:113 wartet bis zur Zeitgrenze (Exit 3, Meldung 'tab left open', obwohl er weg ist); der Zweig 'already gone' in run-lane.sh:131-132 greift nur im kurzen Fenster zwischen Zeile 113 und 126. Kein Absturz, kein falsch geschlossener Tab, Rückkehr per Timeout — daher nicht zurückgeschickt."
 test-verdict: |-
   Bestanden. go test ./core/role/ grün (run-lane.sh mitgeliefert, mit Ausführungsbit). Stub-Läufe mit falschem herdr/jaira: done -> Exit 0 und Tab zu; blocked -> Exit 4, Tab offen; --timeout 0 wartet; gescheiterter Status-Lesezugriff -> wartet weiter, kein Tab zu. Nicht getestet: echter Herdr-Lauf.
   Runde 2: go test ./core/role/ grün; sechs Stub-Szenarien wie in der Notiz.
   Runde 3: go test ./core/role/ grün; acht Stub-Szenarien plus Tab-weg-Fall.
 question: "Einmal echt in Herdr laufen lassen (eine Lane mit scripts/run-lane.sh): schließt sich der Tab, wenn der Worker fertig ist? Getestet ist nur mit Attrappen."
-review-verdict: "Zurück nach in-progress. Der Runde-1-Defekt ist im Normalfall behoben, aber ein gescheiterter erster Statuslesezugriff (run-lane.sh:71) bringt ihn zurück: Tab eines gerade gestarteten Workers wird geschlossen. Einzeiliger Fix, danach sollte es passen. go test ./core/role/ grün, bash -n ok."
-review-check: "1. go test ./core/role/ -run 'TestDispatcherShipsItsScript|TestInstallWritesEveryFile' -> ok. 2. Stub-Verzeichnis anlegen mit falschem herdr (pane get liefert agent_status idle, tab close wird geloggt), falschem jaira (gibt Status aus einer Liste zurück, Zeile FAIL = Exit 1) und sleep, das sofort endet. 3. export HERDR_BIN_PATH=<stub>/herdr HERDR_ENV=1 PATH=<stub>:$PATH. 4. Liste todo,todo,pre-process,pre-process,in-progress; bash core/role/builtin/jaira-dispatcher/scripts/run-lane.sh --no-worktree TICK1 pre-process <leeres Verzeichnis mit .jaira/> -> Exit 0, tab close erst nach dem Wechsel auf in-progress. 5. Liste FAIL,todo,todo,todo -> heute: Exit 0 und tab close, obwohl das Ticket nie in pre-process war (das ist der Defekt). Nach dem Fix muss das Skript hier weiter warten. 6. Echt in Herdr einmal eine Lane mit scripts/run-lane.sh laufen lassen: Tab schließt sich erst, wenn der Worker fertig ist."
+review-verdict: "Bestanden. Der Diff erfüllt alle fünf DoD-Punkte; die Runde-2-Lücken sind behoben und per Stub geprüft. Unsicher bleibt nur der echte Herdr-Lauf (agent_status-Werte, tab_id-Feld), der nur mit Attrappen getestet ist."
+review-check: "1. cd /home/alex/projects/jaira && go test ./core/role/ — erwartet: ok.  2. bash core/role/builtin/jaira-dispatcher/scripts/run-lane.sh --help — erwartet: Hilfetext mit Exit-Codes 0/3/4.  3. In einer Herdr-Pane in einem Repo mit .jaira: run-lane.sh --no-worktree <ticket-id> <lane> im Hintergrund starten.  4. Es öffnet sich ein Tab '<ticket>/<lane>', claude tippt /jaira-role-lane selbst.  5. Wenn der Worker das Ticket aus der Lane bewegt hat und fertig ist: Skript gibt 'status: <neue Lane>' und 'closed <pane>' aus, Exit 0, der Tab ist zu.  6. Gegenprobe: denselben Lauf mit --timeout 1 starten und den Worker an einem Approval-Dialog stehen lassen — Exit 4, Tab bleibt offen."
 ---
 
 # Der Dispatcher schließt die Tabs fertiger Worker nie
@@ -72,3 +76,4 @@ review-check: "1. go test ./core/role/ -run 'TestDispatcherShipsItsScript|TestIn
 - **2026-10-04 12:17 · Alexander Sacharov** — Review-Befund behoben: run-lane.sh liest den Startstatus und gilt als fertig erst, wenn das Ticket in der Lane war und sie verlassen hat — oder direkt weiter zog, ohne sie zu betreten. Rückkehr in den Startstatus nach der Lane (critique schickt zurück) zählt. Stub-Läufe: nie betreten -> wartet; todo->pre-process->in-progress -> zu; todo->in-progress -> zu; in-progress->critique->in-progress -> zu; Lesefehler -> wartet.
 - **2026-10-04 12:20 · Alexander Sacharov** — Review Runde 2: zurück. run-lane.sh:71 liest start einmal; scheitert dieser Lesezugriff (z.B. weil der Dispatcher das Ticket gerade schreibt), ist start leer und Z.105 nimmt den ersten Vorstatus (todo) als 'Lane übersprungen' -> Tab des gerade gestarteten Workers wird geschlossen (Stub: FAIL,todo,todo -> Exit 0 + tab close). Fix: start wiederholt lesen, bis nicht leer, check dazwischen.
 - **2026-10-04 12:21 · Alexander Sacharov** — Review Runde 2 behoben: Startstatus wird wiederholt gelesen, bis er nicht leer ist (core/role/builtin/jaira-dispatcher/scripts/run-lane.sh:95); Timeout-Meldung nennt den Worker-Zustand statt 'left running'; ein schon geschlossener Tab ist kein Fehler mehr ('already gone', Exit 0). Stub: FAIL,todo,todo -> wartet; FAIL,FAIL,todo,pre-process,in-progress -> zu; Tab weg -> Exit 0.
+- **2026-10-04 13:59 · Alexander Sacharov** — Review Runde 3 bestanden. Offen, nicht blockierend: schließt die Person den Tab, bevor der Worker idle|done meldet, wartet run-lane.sh bis zum Timeout (240 min) und meldet dann 'tab left open'. Bewusst gelassen — der Worker ist dann ohnehin weg, und Exit 3 weckt den Dispatcher.
