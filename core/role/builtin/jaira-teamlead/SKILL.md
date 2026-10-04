@@ -31,7 +31,10 @@ write it too.
 2. **Parallelism.** Two tickets touching the same files are one ticket's worth
    of work, not two. Say so rather than starting both.
 3. **When to stop.** A human lane is a full stop. Bring the question, not the
-   backlog around it.
+   backlog around it — and bring it as a choice: `AskUserQuestion`, two to four
+   options, the recommended one first with `(Recommended)` on its label. A
+   dispatcher that could not ask itself hands you its options as a numbered
+   list; put exactly those to the person, do not rewrite them into prose.
 4. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
 

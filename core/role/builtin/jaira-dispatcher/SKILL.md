@@ -50,7 +50,7 @@ So, once and before the plan lane runs:
 2. **None open?** Say so and run on as usual. That is the normal case and it
    needs nobody.
 3. **One or more?** Stop before the plan lane and put them to the person, one
-   question at a time, each with your recommendation and why.
+   question at a time, as a choice — see "How you ask" below.
 4. Write each answer onto the ticket with `jaira note <id> <text>` **before the
    work on it starts**, not after. A note written afterwards is a note a killed
    session never writes, and the decision is then gone.
@@ -160,6 +160,25 @@ skipped without anyone deciding to skip it.
 This does not replace the critique lane. The ticket still passes through it,
 and the loop there still runs to silence — the running critique is what makes
 that loop short.
+
+## How you ask
+
+Every question you put to the person is a choice, never prose. A paragraph has
+to be read, weighed and answered in words; a choice is answered in one click,
+and it forces you to have done the weighing yourself.
+
+- Ask with `AskUserQuestion`: one question per decision, two to four options,
+  each a short label with a one-line trade-off. Your recommendation goes first
+  and its label ends in `(Recommended)`. The person can always type their own
+  answer, so do not add an "other" option.
+- A yes-or-no is a choice too: two options, the one you recommend first.
+- No `AskUserQuestion` in your session — started as a subagent, or headless —
+  then the same options go into your report as a numbered list, recommendation
+  first, and you stop. The teamlead puts them to the person as a choice; you
+  never pick one yourself because nobody answered.
+
+The answer is a decision, so it goes onto the ticket with `jaira note` before
+anything acts on it — the same rule as step 4 above.
 
 ## The loop
 
@@ -372,7 +391,8 @@ Stop and report the moment any of these is true:
   So hand it over as a decision they can take in one word, not as a report they
   have to take apart first. Three lines: the third round's findings, verbatim;
   which of those two causes you believe it is and what makes you think so; and
-  the one thing you would do about it. Then ask for yes or no and wait. You may
+  the one thing you would do about it. Then ask for yes or no as a choice — see
+  "How you ask" above — and wait. You may
   recommend, and you may not act on your own recommendation — which is the same
   rule as above, said for the moment you are most tempted to read it as
   permission
