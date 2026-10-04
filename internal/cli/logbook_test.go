@@ -336,6 +336,7 @@ func TestLogbookSinceRefusesWhatItCannotMean(t *testing.T) {
 	dir, id := syncoutFixture(t)
 	for _, args := range [][]string{
 		{"logbook", "--since", "4"},
+		{"logbook", "--since", "48h"},
 		{"logbook", "--since", "-1w"},
 		{"logbook", "--since", "1w", "--all"},
 		{"logbook", "--since", "1w", id},

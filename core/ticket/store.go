@@ -447,6 +447,20 @@ func (s *Store) FiledMilestone(name string) (string, bool) {
 	return "", false
 }
 
+// LogbookFolderDay reads the day a logbook folder was filed on off its name,
+// <initials>-<yyyymmdd>, and reports false for a name that does not end in one.
+func LogbookFolderDay(name string, loc *time.Location) (time.Time, bool) {
+	i := strings.LastIndex(name, "-")
+	if i < 0 {
+		return time.Time{}, false
+	}
+	day, err := time.ParseInLocation("20060102", name[i+1:], loc)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return day, true
+}
+
 // LoggedPerDay counts the logbook's tickets by the day of their folder, for
 // the days days ending today: out[days-1] is today, out[0] the oldest. The
 // folder name carries the date — <initials>-<yyyymmdd> — so no ticket is
@@ -460,13 +474,8 @@ func (s *Store) LoggedPerDay(now time.Time, days int) []int {
 	}
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	for _, folder := range folders {
-		name := filepath.Base(folder)
-		i := strings.LastIndex(name, "-")
-		if i < 0 {
-			continue
-		}
-		day, err := time.ParseInLocation("20060102", name[i+1:], now.Location())
-		if err != nil {
+		day, ok := LogbookFolderDay(filepath.Base(folder), now.Location())
+		if !ok {
 			continue
 		}
 		// Rounded, not truncated: across a DST change two midnights are 23 or
