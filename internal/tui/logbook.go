@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -34,9 +35,6 @@ const (
 // board and in the logbook at once is a known merge outcome, and the board copy
 // must stay workable while its filed twin stays read-only.
 func (m *Model) isLogged(t *ticket.Ticket) bool {
-	if t == nil {
-		return false
-	}
 	_, ok := m.loggedDay[t]
 	return ok
 }
@@ -74,9 +72,10 @@ func (m *Model) refuseLogged(t *ticket.Ticket) bool {
 
 // loadLogbook reads the window of the logbook the board shows. It is called on
 // every reload, which is cheap enough: only folders inside the window are
-// opened, and the window is days, not the history.
+// opened, and the window is days, not the history. The setting is read here
+// too, so a hand edit of settings.json lands like any other change.
 func (m *Model) loadLogbook() {
-	m.logged = m.store.LoggedSince(time.Now(), m.logbookDays)
+	m.logged = m.store.LoggedSince(time.Now(), settings.Load().LogbookWindow())
 	m.loggedDay = make(map[*ticket.Ticket]time.Time, len(m.logged))
 	for _, l := range m.logged {
 		m.loggedDay[l.Ticket] = l.Day

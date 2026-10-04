@@ -30,7 +30,6 @@ import (
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
-	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -83,14 +82,11 @@ type Model struct {
 	tickets []*ticket.Ticket
 	cols    []column
 
-	// logbookDays is how far back the terminal lane shows the logbook
-	// (settings.json, logbook-days), read on every reload so a hand edit of
-	// the file lands like any other change. logged is that window, newest
-	// first, and loggedDay marks its cards — by pointer — with the day they
-	// were filed. See logbook.go.
-	logbookDays int
-	logged      []ticket.Logged
-	loggedDay   map[*ticket.Ticket]time.Time
+	// logged is the logbook of the last logbook-days days, newest first, and
+	// loggedDay marks its cards — by pointer — with the day they were filed.
+	// See logbook.go.
+	logged    []ticket.Logged
+	loggedDay map[*ticket.Ticket]time.Time
 
 	laneIdx int
 	cardIdx int
@@ -403,7 +399,6 @@ func (m *Model) reload() error {
 		m.warnings = append(m.warnings, pe.Problems...)
 	}
 	m.tickets = tickets
-	m.logbookDays = settings.Load().LogbookWindow()
 	m.loadLogbook()
 	if sess, err := session.Load(m.store); err == nil {
 		m.sessions = sess

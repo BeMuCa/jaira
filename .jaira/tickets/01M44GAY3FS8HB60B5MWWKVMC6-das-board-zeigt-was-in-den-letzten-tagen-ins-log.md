@@ -1,7 +1,7 @@
 ---
 id: 01M44GAY3FS8HB60B5MWWKVMC6
 title: "Das Board zeigt, was in den letzten Tagen ins Logbook ging, und wie viele Tage stellt man in den Einstellungen ein"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,14 +28,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-04T22:25:15Z
-updated-at: 2026-10-04T22:36:37Z
+updated-at: 2026-10-04T22:38:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-734
 claimed-at: 2026-10-04T22:25:33Z
 outcome-what: "Lese-Schutz der Logbook-Karten aus der Tastenliste in modeDetail in die Aufgerufenen verlegt (startEdit, openInEditor, X); Test deckt E ab."
 outcome-why: "Critique: eine zweite Tastenliste wird beim naechsten schreibenden Key vergessen; openMove/archiveSelected schuetzen sich schon selbst."
 outcome-resolves: "Critique-Befund aus Durchgang 1; DoD unveraendert erfuellt."
-review-summary: "internal/tui/model.go modeDetail: der vorgeschaltete switch auf \"e\",\"E\",\"m\",\"X\" ist eine zweite Tastenliste neben der eigentlichen, die beim naechsten schreibenden Key vergessen wird - und \"m\" wird doppelt geprueft, weil openMove schon refuseLogged ruft. Stattdessen den Schutz in die Aufgerufenen legen wie bei openMove/archiveSelected: refuseLogged(m.detail) am Anfang von startEdit (internal/tui/edit.go) und openInEditor (internal/tui/external.go) sowie im Fall \"X\" vor dem Wechsel nach modeDelete; den vorgeschalteten switch streichen."
+review-summary: "none"
+review-gaps: "Model.logbookDays gestrichen (nur in loadLogbook gelesen, und gleichnamig mit der Konstante logbookDays der Launcher-Grafik in home.go) - loadLogbook liest settings selbst; nil-Pruefung in isLogged gestrichen (Map-Lookup mit nil ist false). Stehen gelassen: LoggedPerDay (store.go) neben LoggedSince - zaehlt nur Dateinamen ohne Tickets zu lesen und schneidet anders (Tage bis heute), Zusammenlegen wuerde die Launcher-Grafik teurer machen; settingsActionLogbookDays als Zeilenmarker; vorhandenes gateEnv() pro Karte in renderCard ist alt."
 ---
 
 # Das Board zeigt, was in den letzten Tagen ins Logbook ging, und wie viele Tage stellt man in den Einstellungen ein
@@ -75,3 +76,5 @@ review-summary: "internal/tui/model.go modeDetail: der vorgeschaltete switch auf
 - **2026-10-04 22:34 · Alexander Sacharov** — In-progress: Logbook-Karten haengen in rebuild() hinter den Tickets der Terminal-Lane (column.filed zaehlt sie), erkannt per Zeiger (m.loggedDay), nicht per ID - ein Ticket kann nach einem Merge zugleich auf dem Board und im Logbook liegen, die Board-Kopie muss bearbeitbar bleiben. openDetail nimmt die Logbook-Karte direkt (store.Load wuerde die Board-Kopie liefern). Ordner ohne Datum zeigt das Board nicht (die CLI-Liste schon). logbook-days ist *int, weil 0 = aus von 'nicht gesetzt' (=28) unterschieden werden muss; logbook-days 0 heisst fuer 'jaira logbook' ohne --since: alles, wie --since 0. Follow-up (n) auf einer Logbook-Karte bleibt erlaubt, er schreibt ein neues Ticket. Shade-Test: '48;5;23' ist Praefix von 234 (Lane-Grau) - deshalb mit 'm' am Ende pruefen.
 - **2026-10-04 22:35 · Alexander Sacharov** — critique (1. Durchgang): ein Befund - der Lese-Schutz im Detail haengt an einer eigenen Tastenliste vor dem switch in model.go; er gehoert in die Aufgerufenen (startEdit in edit.go, openInEditor in external.go, Fall X), so wie openMove/archiveSelected es schon tun. Bewusst stehen gelassen: settingsActionLogbookDays als Marker der Zeile (nie zurueckgegeben) - passt zur Eintragstabelle; logbook-days 0 = CLI listet alles (wie --since 0, dokumentiert); Ordner ohne Datum nicht auf dem Board (Notiz in-progress).
 - **2026-10-04 22:36 · Alexander Sacharov** — in-progress (Runde 2): Critique-Befund umgesetzt - refuseLogged sitzt jetzt in startEdit (edit.go), openInEditor (external.go) und im Fall X; der vorgeschaltete switch in modeDetail ist weg. Test prueft zusaetzlich E.
+- **2026-10-04 22:36 · Alexander Sacharov** — critique (2. Durchgang): nur der Befund aus Durchgang 1 und cb4bb84 gelesen - Schutz sitzt in startEdit/openInEditor/X, Tastenliste entfernt. Erledigt, keine neuen Befunde.
+- **2026-10-04 22:38 · Alexander Sacharov** — AlSa 05.10.2026: kommt in 0.3.4, nicht in 0.3.3. Der Zweig ging von der alten release/0.3.3 ab und wird vor dem PR auf master gesetzt.
