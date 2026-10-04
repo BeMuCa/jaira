@@ -35,9 +35,11 @@ write it too.
    options, the recommended one first with `(Recommended)` on its label. A
    dispatcher that could not ask itself hands you its options as a numbered
    list; put exactly those to the person, do not rewrite them into prose. Each
-   answer goes onto the ticket with `jaira note <id>` before you start a fresh
-   dispatcher on it — that note is what makes the new one count the decision
-   closed instead of asking it again.
+   answer goes onto the ticket with `jaira note <id>`, and then
+   `jaira set <id> mode=conversational`, before you start a fresh dispatcher
+   on it — the note makes the new one count the decision closed instead of
+   asking it again, and the mode is what tells it a person decided the shape.
+   It does not infer that from notes, so nobody else sets it.
 4. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
 
