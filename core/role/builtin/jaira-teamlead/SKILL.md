@@ -35,11 +35,14 @@ write it too.
    options, the recommended one first with `(Recommended)` on its label. A
    dispatcher that could not ask itself hands you its options as a numbered
    list; put exactly those to the person, do not rewrite them into prose. Each
-   answer goes onto the ticket with `jaira note <id>`, and then
-   `jaira set <id> mode=conversational`, before you start a fresh dispatcher
-   on it — the note makes the new one count the decision closed instead of
-   asking it again, and the mode is what tells it a person decided the shape.
-   It does not infer that from notes, so nobody else sets it.
+   answer goes onto the ticket with `jaira note <id>` before you start a fresh
+   dispatcher on it — the note makes the new one count the decision closed
+   instead of asking it again. When the answers closed the open decisions a
+   dispatcher found before the plan lane, also `jaira set <id>
+   mode=conversational`: a person decided the shape, and a dispatcher that
+   asked itself would have set it in its own step 5 — the fresh one does not
+   infer it from notes. Any other answer, such as the yes or no after three
+   rounds of one lane, gets the note and leaves the mode alone.
 4. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
 
