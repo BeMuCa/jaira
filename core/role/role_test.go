@@ -5,24 +5,27 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
 
-// The seven roles this ticket ships. Named rather than counted, because the
-// point of the list is that every one of them arrives, not that seven of
+// The roles this binary ships. Named rather than counted, because the
+// point of the list is that every one of them arrives, not that a number of
 // something did.
 var wantRoles = []string{
 	"jaira-dispatcher",
+	"jaira-role-acceptance",
 	"jaira-role-brainstorm",
 	"jaira-role-lane",
+	"jaira-role-logbook-summary",
 	"jaira-role-pr",
 	"jaira-role-research",
 	"jaira-role-tester",
 	"jaira-teamlead",
 }
 
-func TestBuiltinsAreTheSevenRoles(t *testing.T) {
+func TestBuiltinsAreTheShippedRoles(t *testing.T) {
 	roles, err := Builtins()
 	if err != nil {
 		t.Fatal(err)
@@ -54,39 +57,44 @@ func TestBuiltinsAreTheSevenRoles(t *testing.T) {
 	}
 }
 
-// A role's supporting files travel with it: the dispatcher prompt calls
-// scripts/spawn.sh by a path relative to its own skill folder, and shipping the
-// prompt without the script ships a broken instruction.
-func TestDispatcherShipsItsScript(t *testing.T) {
+// A role's supporting files travel with it: a prompt that calls a script or
+// reads a template by a path relative to its own folder is a broken instruction
+// when the file stays behind.
+var roleFiles = map[string][]string{
+	// run-lane.sh is what the dispatcher starts in the background to wait out
+	// a lane.
+	"jaira-dispatcher": {"scripts/spawn.sh", "scripts/run-lane.sh"},
+	// build.py writes the page from template.html and the record from
+	// report.html.
+	"jaira-role-acceptance": {"build.py", "template.html", "report.html"},
+	// collect.py gathers the facts, build.py checks the text and writes the
+	// page from template.html; summary.example.md is what the prompt points a
+	// person at to shape the summary.
+	"jaira-role-logbook-summary": {"collect.py", "build.py", "template.html", "summary.example.md"},
+}
+
+func TestRolesShipTheirFiles(t *testing.T) {
 	roles, err := Builtins()
 	if err != nil {
 		t.Fatal(err)
 	}
-	var r Role
-	for _, b := range roles {
-		if b.ID == "jaira-dispatcher" {
-			r = b
+	byID := map[string]Role{}
+	for _, r := range roles {
+		byID[r.ID] = r
+	}
+	for id, want := range roleFiles {
+		r, ok := byID[id]
+		if !ok {
+			t.Errorf("no %s role", id)
+			continue
 		}
-	}
-	if r.ID == "" {
-		t.Fatal("no jaira-dispatcher role")
-	}
-	// run-lane.sh is what the prompt starts in the background to wait out a
-	// lane; without it the dispatcher is told to call a file that is not there.
-	for _, want := range dispatcherScripts {
-		found := false
-		for _, f := range r.Files {
-			if f == want {
-				found = true
+		for _, w := range want {
+			if !slices.Contains(r.Files, w) {
+				t.Errorf("%s: files %v, want %s among them", id, r.Files, w)
 			}
-		}
-		if !found {
-			t.Errorf("files %v, want %s among them", r.Files, want)
 		}
 	}
 }
-
-var dispatcherScripts = []string{"scripts/spawn.sh", "scripts/run-lane.sh"}
 
 // The prefix is not cosmetic: a cross-reference left on the unprefixed name
 // calls a command that does not exist on a teammate's machine.
@@ -147,7 +155,7 @@ func TestInstallWritesEveryFile(t *testing.T) {
 	// only toggles the read-only flag — so the claim is not one this platform
 	// can make either way.
 	if runtime.GOOS != "windows" {
-		for _, rel := range dispatcherScripts {
+		for _, rel := range roleFiles["jaira-dispatcher"] {
 			fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", filepath.FromSlash(rel)))
 			if err != nil {
 				t.Fatal(err)

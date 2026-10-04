@@ -1,0 +1,97 @@
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a status report read top-down — figures, hours per day, then themes as cards, each with its own copy button, and the whole text behind one more. */
+:root{
+  --bg:#eceef1; --panel:#ffffff; --panel-2:#f5f6f8; --fg:#14181f; --muted:#626c79; --line:#d3d8de;
+  --accent:#1f4e79; --done:#2c6449; --done-bg:#dfeee6; --active:#9a5c00; --active-bg:#f7ecd8; --open-bg:#e9ecf0;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1317; --panel:#171c22; --panel-2:#1d232a; --fg:#e5eaf0; --muted:#8b95a2; --line:#2c343d;
+  --accent:#79add9; --done:#74bd97; --done-bg:#16301f; --active:#dfa249; --active-bg:#322710; --open-bg:#232a32; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1317; --panel:#171c22; --panel-2:#1d232a; --fg:#e5eaf0; --muted:#8b95a2; --line:#2c343d;
+  --accent:#79add9; --done:#74bd97; --done-bg:#16301f; --active:#dfa249; --active-bg:#322710; --open-bg:#232a32; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);margin:0}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;display:grid;gap:20px}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-size:1.6rem;font-weight:600;margin:4px 0 0;text-wrap:balance}
+h2{font-size:1.15rem;font-weight:600;margin:0;text-wrap:balance}
+h3{font-size:1rem;font-weight:600;margin:0;text-wrap:balance}
+.sub{color:var(--muted);max-width:70ch;margin:6px 0 0}
+.figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.fig b{display:block;font-size:1.5rem;font-weight:600;font-variant-numeric:tabular-nums}
+.fig span{color:var(--muted);font-size:.88rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.92rem}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:.82rem}
+tr:last-child td{border-bottom:0;font-weight:600}
+.note{color:var(--muted);font-size:.9rem;margin:10px 0 0;max-width:75ch}
+.section{display:grid;gap:10px}
+.items{display:grid;gap:10px}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;display:grid;gap:8px;min-width:0}
+.ihead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.ihead h3{flex:1 1 260px;min-width:0}
+.pill{font-size:.78rem;border-radius:4px;padding:1px 8px;white-space:nowrap;background:var(--open-bg);color:var(--muted)}
+.pill.done{background:var(--done-bg);color:var(--done)}
+.pill.active{background:var(--active-bg);color:var(--active)}
+.meta{color:var(--muted);font-size:.85rem;font-family:var(--mono)}
+.body{white-space:pre-wrap;max-width:75ch;overflow-wrap:anywhere}
+.copyrow{display:flex;gap:8px;align-items:center}
+button{font:inherit;font-size:.88rem;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:6px;padding:3px 12px}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ok{color:var(--done);font-size:.85rem}
+.comments{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:8px}
+.comment{display:grid;gap:4px}
+.comment b{font-size:.85rem;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+textarea.fallback{width:100%;min-height:8em;font:12px/1.45 var(--mono);background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+details summary{cursor:pointer;color:var(--muted)}
+details ul{margin:8px 0 0;padding-left:20px;font-family:var(--mono);font-size:.84rem}
+</style>
+
+<div class="wrap" id="app"></div>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const COPY = { de: ['Kopieren', 'Kopiert', 'Alles kopieren'], en: ['Copy', 'Copied', 'Copy everything'], ru: ['Копировать', 'Скопировано', 'Скопировать всё'] }[D.lang] || ['Copy', 'Copied', 'Copy everything'];
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const texts = [];
+const copyBtn = (text, label = COPY[0]) => { texts.push(text); return `<div class="copyrow"><button type="button" data-c="${texts.length - 1}">${label}</button><span class="ok" role="status"></span></div>`; };
+
+const h = D.hours;
+document.documentElement.lang = D.lang || 'en';
+document.getElementById('app').innerHTML = `
+  <header>
+    ${D.eyebrow ? `<p class="eyebrow">${esc(D.eyebrow)}</p>` : ''}
+    <h1>${esc(D.title)}</h1>
+    ${D.subtitle ? `<p class="sub">${esc(D.subtitle)}</p>` : ''}
+  </header>
+  ${D.figures?.length ? `<div class="figures">${D.figures.map(f => `<div class="fig"><b>${esc(f.value)}</b><span>${esc(f.label)}${f.note ? ` · ${esc(f.note)}` : ''}</span></div>`).join('')}</div>` : ''}
+  ${h?.rows?.length ? `<section class="panel"><h2>${esc(h.title || '')}</h2><div class="scroll"><table>
+      <thead><tr>${h.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+      <tbody>${h.rows.map(r => `<tr>${r.cells.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      ${h.note ? `<p class="note">${esc(h.note)}</p>` : ''}</section>` : ''}
+  ${(D.sections || []).map(s => `<section class="section"><h2>${esc(s.title)}</h2>${s.intro ? `<p class="sub">${esc(s.intro)}</p>` : ''}
+    <div class="items">${(s.items || []).map(it => `<article class="item">
+      <div class="ihead"><h3>${esc(it.title)}</h3>${it.status_label ? `<span class="pill ${esc(it.status || '')}">${esc(it.status_label)}</span>` : ''}</div>
+      ${it.meta ? `<div class="meta">${esc(it.meta)}</div>` : ''}
+      <div class="body">${esc(it.body)}</div>
+      ${copyBtn(it.copy || it.body)}
+      ${it.comments?.length ? `<div class="comments">${it.comments.map(c => `<div class="comment"><b>${esc(c.date)}</b><div class="body">${esc(c.text)}</div>${copyBtn(c.text)}</div>`).join('')}</div>` : ''}</article>`).join('')}</div></section>`).join('')}
+  ${D.appendix ? `<details class="panel"><summary>${esc(D.appendix.title)}</summary><ul>${D.appendix.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></details>` : ''}
+  <section class="panel">${copyBtn(D.full_copy, COPY[2])}</section>`;
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-c]'); if (!b) return;
+  const text = texts[+b.dataset.c], out = b.nextElementSibling;
+  try { await navigator.clipboard.writeText(text); out.textContent = COPY[1]; setTimeout(() => out.textContent = '', 2000); }
+  catch { if (!b.parentElement.querySelector('textarea')) { const ta = document.createElement('textarea'); ta.className = 'fallback'; ta.readOnly = true; ta.value = text; b.parentElement.after(ta); ta.select(); } }
+});
+</script>

@@ -627,6 +627,19 @@ and `--force` replaces it too.
   the ticket has left its lane.
 - `/jaira-teamlead` is for several tickets at once: it decides the order, says
   what is not worth doing, and starts one dispatcher per ticket.
+- `/jaira-role-acceptance <id>...` turns the tickets waiting for you into one
+  page to accept them on: the tests already run, setup written once per block,
+  and one scenario per block whose steps name the tickets they prove. You mark
+  each step ok or no; a ticket whose steps are all ok is accepted. Reading it
+  back, the role works out every "no" itself — back into the same ticket, a new
+  bug, or a wrong step — and publishes a fixed record of the acceptance. A
+  dispatcher or teamlead hands tickets on to it when they reach a human lane.
+- `/jaira-role-logbook-summary [period]` writes what a project lead wants to
+  know about a period — what is finished, what is under way, hours estimated
+  from commit times — as one page without code, every text ready to copy. A
+  `.jaira/summary.md` (or `~/.jaira/summary.md`) says in your own words what
+  your reader's system needs: its markup, a comment per day, hours split by
+  customer.
 - Every question either of them puts to you comes as a choice of two to four
   options, the recommended one first, rather than a paragraph to answer.
 - `jaira roles list` names the rest: single-lane workers, a tester, a

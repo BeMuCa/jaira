@@ -1,7 +1,7 @@
 ---
 id: 01M28KJ9PZ9GA3HGBJAY17TJ1H
 title: "Das Board sendet, was es einreiht, und ein abgelegtes Ticket kommt nicht zurueck"
-status: human
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Wer im Board arbeitet, sieht dieselbe Tafel wie alle anderen: was das Board schreibt geht raus, und was hier abgelegt wurde taucht nicht als Ref-Karte wieder auf"
@@ -19,9 +19,11 @@ definition-of-done: "das Board sendet seine Warteschlange selbst: der Hintergrun
 tags:
   - concurrency
 blocked-by: []
-commits: []
+commits:
+  - 733df8f4f5361272fa19061c9bad8f8570a618f4
+  - c28dac9903697385010ffaaf38fd1c41db26ead1
 created-at: 2026-09-11T16:07:16Z
-updated-at: 2026-09-11T16:09:50Z
+updated-at: 2026-10-04T21:40:40Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 question: "Zwei Fehler behoben, beide aus meiner Ref-Arbeit. Eine Frage: der Hintergrundlauf des Boards sendet jetzt vor dem Lesen, alle zehn Minuten - reicht das, oder soll das Board sofort nach einer Aenderung senden?"
@@ -48,3 +50,4 @@ outcome-resolves: "Beide Haelften der DoD mit je einem Test belegt, und der ganz
 
 ## Progress
 - **2026-09-11 16:09 · Alexander Sacharov** — Beim Anlegen dieses Tickets selbst aufgefallen: es hatte keine Datei, weil 0.1.3 auf einem Board mit Remote nur das Ref schreibt - 'jaira dod' verweigerte mit 'pull it first'. Das ist die Absicht, aber fuer ein Ticket, das mit seinem Code in einen PR fahren soll, heisst es: erst 'jaira pull', dann arbeiten. Sonst faehrt der PR ohne sein Ticket.
+- **2026-10-04 21:40 · Alexander Sacharov** — AlSa 04.10.2026: Hintergrundlauf alle zehn Minuten reicht. Sofortiges Senden nach jeder Aenderung nur als eigenes Ticket, falls Kollegen eine nachhinkende Tafel bemerken. Angenommen.

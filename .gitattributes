@@ -11,6 +11,10 @@ core/lane/builtin/*.md text eol=lf
 # shell script is pinned for the older reason: CRLF makes it unrunnable.
 core/role/builtin/**/*.md text eol=lf
 core/role/builtin/**/*.sh text eol=lf
+# The acceptance role's builder and page templates: python3 reads build.py
+# either way, but the pages it writes would carry CRLF into every artifact.
+core/role/builtin/**/*.py text eol=lf
+core/role/builtin/**/*.html text eol=lf
 
 # core/release/NOTES.md is embedded and read back line by line — a CRLF
 # checkout turns every entry into one that ends in \r. core/hook/example is the
