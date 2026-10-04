@@ -1274,15 +1274,6 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case modeDetail:
 		m.copied = false
-		// A logbook card opens to be read. Every key that would change it —
-		// edit, the editor, move, delete — is answered with the way back
-		// instead; a follow-up stays, since it writes a new ticket.
-		switch s {
-		case "e", "E", "m", "X":
-			if m.refuseLogged(m.detail) {
-				return m, nil
-			}
-		}
 		switch s {
 		case "esc", "q", "enter":
 			// One level back: out of the split first, onto the ticket the follow-up
@@ -1331,7 +1322,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// Not x: x is archive on the board and must keep meaning that
 			// everywhere. Shift, then the handle typed back — the only
 			// irreversible thing the board can do costs two deliberate acts.
-			if m.detail != nil {
+			if m.detail != nil && !m.refuseLogged(m.detail) {
 				m.mode = modeDelete
 				m.input = ""
 			}

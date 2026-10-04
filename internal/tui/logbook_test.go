@@ -144,7 +144,7 @@ func TestALogbookCardIsReadOnly(t *testing.T) {
 	if m.mode != modeDetail || m.detail == nil || m.detail.ID != id {
 		t.Fatalf("enter on a logbook card: mode %v, detail %v; want it open", m.mode, m.detail)
 	}
-	for _, k := range []string{"e", "m", "X"} {
+	for _, k := range []string{"e", "E", "m", "X"} {
 		m.key(key(k))
 		if m.mode != modeMessage {
 			t.Errorf("%s in an open logbook ticket: mode %v, want the refusal", k, m.mode)
