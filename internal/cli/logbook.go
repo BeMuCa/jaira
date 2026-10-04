@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,12 +28,16 @@ import (
 
 func newLogbookCmd() *cobra.Command {
 	var all bool
+	var since string
 	cmd := &cobra.Command{
 		Use:   "logbook [id]",
 		Short: "Take finished tickets off the board with their commits stamped down, or list the logbook",
 		Long: `Moves a terminal-lane ticket into .jaira/logbook/<initials>-<yyyymmdd>/, after
 stamping it with every commit git can find for it. With no argument, lists
-the logbook.
+what went into the logbook in the last four weeks — what recently left the
+board, not the whole history. --since sets that window (4w, 10d, 48h) and
+--since 0 lists everything; the listing says how many older entries it left
+out. The date is the one in each folder's name.
 
 --all files everything that has reached the terminal lane into today's folder,
 which is the usual way: finished tickets pile up there, and whoever enters
@@ -75,18 +80,26 @@ work and refuses a ticket that has not reached the terminal lane.`,
 			}
 			w := cmd.OutOrStdout()
 
+			if cmd.Flags().Changed("since") && (all || len(args) > 0) {
+				return fail(ExitUsage, "usage", "--since narrows the listing; it does nothing when filing a ticket or the terminal lane")
+			}
 			switch {
 			case all && len(args) > 0:
 				return fail(ExitUsage, "usage", "--all files the whole terminal lane; naming a ticket as well says two different things")
 			case all:
 				return logbookAll(s, w, cmd.ErrOrStderr())
 			case len(args) == 0:
-				return listLogbook(s, w)
+				window, err := parseSince(since)
+				if err != nil {
+					return err
+				}
+				return listLogbook(s, w, window, since, time.Now())
 			}
 			return logbookOut(s, args[0], w)
 		},
 	}
 	cmd.Flags().BoolVar(&all, "all", false, "file everything in the terminal lane into today's folder")
+	cmd.Flags().StringVar(&since, "since", "4w", "list only what went into the logbook this long ago or later (4w, 10d, 48h); 0 lists everything")
 	return cmd
 }
 
@@ -155,23 +168,96 @@ func logbookAll(s *ticket.Store, w, errw io.Writer) error {
 	return nil
 }
 
-func listLogbook(s *ticket.Store, w io.Writer) error {
+// parseSince reads the listing window: a count of weeks or days, which is how
+// anybody thinks about a logbook, or a Go duration for the rare finer cut.
+// Zero means no window at all.
+func parseSince(v string) (time.Duration, error) {
+	v = strings.TrimSpace(v)
+	if v == "0" {
+		return 0, nil
+	}
+	var d time.Duration
+	var err error
+	if n := len(v); n > 1 && (v[n-1] == 'w' || v[n-1] == 'd') {
+		var k int
+		k, err = strconv.Atoi(v[:n-1])
+		unit := 24 * time.Hour
+		if v[n-1] == 'w' {
+			unit *= 7
+		}
+		d = time.Duration(k) * unit
+	} else {
+		d, err = time.ParseDuration(v)
+	}
+	if err != nil || d < 0 {
+		return 0, fail(ExitUsage, "usage", "--since %q is not a window: use weeks, days or hours such as 4w, 10d or 48h, or 0 for everything", v)
+	}
+	return d, nil
+}
+
+// listLogbook lists the logbook, the recent part of it unless window is zero.
+//
+// The cut is on whole days: a folder carries the day it was filed and nothing
+// finer, so the window starts at midnight of the day it reaches back to. A
+// folder whose name holds no date is always listed — what cannot be dated is
+// not old, and hiding it would make a file on disk disappear from the only
+// listing that names it.
+func listLogbook(s *ticket.Store, w io.Writer, window time.Duration, since string, now time.Time) error {
 	names, err := logbookNames(s)
 	if err != nil {
 		return err
 	}
+	shown, hidden, cutoff := names, 0, ""
+	if window > 0 {
+		from := now.Add(-window)
+		start := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, now.Location())
+		cutoff = start.Format("2006-01-02")
+		shown = nil
+		for _, n := range names {
+			if day, ok := logbookDay(n, now.Location()); ok && day.Before(start) {
+				hidden++
+				continue
+			}
+			shown = append(shown, n)
+		}
+	}
 	if g.jsonOut {
-		return emit(w, map[string]any{"logbook": names, "count": len(names)})
+		return emit(w, map[string]any{"logbook": shown, "count": len(shown), "hidden": hidden, "since": cutoff})
 	}
 	if len(names) == 0 {
 		fmt.Fprintf(w, "The logbook is empty.\n")
 		return nil
 	}
-	for _, n := range names {
+	for _, n := range shown {
 		fmt.Fprintf(w, "%s\n", n)
 	}
-	fmt.Fprintf(w, "\n%d in the logbook. Bring one back with 'jaira restore <file>'.\n", len(names))
+	if cutoff == "" {
+		fmt.Fprintf(w, "\n%d in the logbook. Bring one back with 'jaira restore <file>'.\n", len(shown))
+		return nil
+	}
+	if len(shown) == 0 {
+		fmt.Fprintf(w, "Nothing went into the logbook since %s (--since %s).\n", cutoff, since)
+	} else {
+		fmt.Fprintf(w, "\n%d in the logbook since %s (--since %s). Bring one back with 'jaira restore <file>'.\n", len(shown), cutoff, since)
+	}
+	if hidden > 0 {
+		fmt.Fprintf(w, "%d older not listed — 'jaira logbook --since 0' lists everything.\n", hidden)
+	}
 	return nil
+}
+
+// logbookDay reads the filing day off an entry's folder, <initials>-<yyyymmdd>.
+func logbookDay(entry string, loc *time.Location) (time.Time, bool) {
+	folder := strings.SplitN(filepath.ToSlash(entry), "/", 2)[0]
+	i := strings.LastIndex(folder, "-")
+	if i < 0 {
+		return time.Time{}, false
+	}
+	day, err := time.ParseInLocation("20060102", folder[i+1:], loc)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return day, true
 }
 
 func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {

@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Expect `jaira logbook` with no argument to list only the last four weeks — what recently left the board — and to say how many older entries it left out; pass `--since 10d`, `--since 8w` or `--since 48h` for another window and `--since 0` for the whole logbook. `--json` follows the same window and now also carries `hidden` (entries left out) and `since` (the first day listed, empty for `--since 0`), so `count` is the number listed rather than the size of the logbook. The day comes from each folder's name; a folder without one is always listed.
 - Answer a dispatcher's or teamlead's question with one click: both prompts now put every question to you as a choice of two to four options, the recommended one first, instead of a paragraph to answer in words — a dispatcher running as a subagent hands its options to the teamlead, which asks you. Run `jaira roles install --global --force` to get the new `jaira-dispatcher` and `jaira-teamlead` prompts.
 - Run `jaira roles install --global --force` to get `scripts/run-lane.sh` beside the `jaira-dispatcher` prompt: it runs one lane in a Herdr tab and closes that tab once the worker reports `done` — a dispatcher waiting for `idle` alone never noticed a finished worker and left its tab open all night. It stops with exit 4 and leaves the tab open when the worker sits at an approval dialog, and with exit 3 after `--timeout` minutes (default 240).
 
