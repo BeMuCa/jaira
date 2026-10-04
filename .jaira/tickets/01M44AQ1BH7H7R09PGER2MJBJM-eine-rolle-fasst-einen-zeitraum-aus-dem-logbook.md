@@ -1,7 +1,7 @@
 ---
 id: 01M44AQ1BH7H7R09PGER2MJBJM
 title: "Eine Rolle fasst einen Zeitraum aus dem Logbook fuer die Projektleitung zusammen, ohne Code"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -28,16 +28,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-04T20:47:00Z
-updated-at: 2026-10-04T21:06:50Z
+updated-at: 2026-10-04T21:07:58Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-32325
 claimed-at: 2026-10-04T21:03:09Z
 outcome-what: "Wie Runde 1; Logbook ueber jaira statt eigenem Parser, Code-Pruefung ueber alle sichtbaren Texte."
 outcome-why: "Ein zweiter Ticket-Parser veraltet neben jaira; eine Pruefung, die Felder aufzaehlt, uebersieht neue."
 outcome-resolves: "Wie Runde 1."
-review-summary: |-
-  core/role/builtin/jaira-role-logbook-summary/collect.py:40 frontmatter() is a hand-written YAML-subset parser for logbook files; jaira show <handle> --json already reads a filed ticket (fields filed_away, path, goal, outcome, tags, follows, commits) - list the files with jaira logbook --since 0 --json, keep the folder-date filter, and read each with jaira show instead, then delete frontmatter()
-  core/role/builtin/jaira-role-logbook-summary/build.py:30 texts() lists fields by hand and so misses title, eyebrow, item titles, meta, status_label, figure labels and hours.note, while checking hours rows day/note that the summary.json schema in SKILL.md does not have - walk every string in the data recursively and skip only appendix (and hours.rows cells), so the no-code check (DoD 5) covers whatever the page shows
+review-summary: none
+review-gaps: "removed: collect.py fallback t.get(\"ticket\", t) (jaira show --json is flat), the unused sha/author fields of the git log format, build.py full_copy override nobody sets (schema has none); SKILL.md step 2 now says jaira show reads logbook tickets and names outcome instead of outcome-what/-why. Left: build.py/template.html page plumbing resembles jaira-role-acceptance/build.py - kept, each role ships self-contained; active also lists other people's tickets (implementer note, the role filters)"
 ---
 
 # Eine Rolle fasst einen Zeitraum aus dem Logbook fuer die Projektleitung zusammen, ohne Code
@@ -71,3 +70,4 @@ review-summary: |-
 - **2026-10-04 21:05 · Alexander Sacharov** — critique (pass 1): core/role/builtin/jaira-role-logbook-summary/collect.py:40 frontmatter() is a hand-written YAML-subset parser for logbook files; jaira show <handle> --json already reads a filed ticket (fields filed_away, path, goal, outcome, tags, follows, commits) - list the files with jaira logbook --since 0 --json, keep the folder-date filter, and read each with jaira show instead, then delete frontmatter()
 core/role/builtin/jaira-role-logbook-summary/build.py:30 texts() lists fields by hand and so misses title, eyebrow, item titles, meta, status_label, figure labels and hours.note, while checking hours rows day/note that the summary.json schema in SKILL.md does not have - walk every string in the data recursively and skip only appendix (and hours.rows cells), so the no-code check (DoD 5) covers whatever the page shows
 - **2026-10-04 21:06 · Alexander Sacharov** — in-progress Runde 2: Critique umgesetzt - collect.py liest das Logbook ueber 'jaira logbook --since 0 --json' und 'jaira show <handle> --json' statt eigenem YAML-Parser; build.py prueft jeden sichtbaren Text rekursiv (Titel, Eyebrow, Meta, Labels, Notizen), ausgenommen appendix, lang, status und die Stunden-Zellen. Probe: KW 40 und Jira-Beispiel bauen weiter, Titel mit build.py und Meta mit Hash werden abgewiesen.
+- **2026-10-04 21:07 · Alexander Sacharov** — critique (pass 2): both pass-1 findings addressed in bbb907d - collect.py reads the logbook via jaira logbook --json + jaira show, frontmatter() gone; build.py texts() walks every string except appendix/lang/status/hours.rows. Nothing new that breaks the DoD.

@@ -58,14 +58,14 @@ def main():
     # Commits: every local branch, no merges, by the given authors.
     log = run(["git", "log", "--branches", "--no-merges", "--date=iso-strict",
                f"--since={start}T00:00:00", f"--until={end}T23:59:59",
-               "--format=%H%x1f%aI%x1f%an%x1f%ae%x1f%s"] + [f"--author={x}" for x in authors], repo)
+               "--format=%aI%x1f%s"] + [f"--author={x}" for x in authors], repo)
     commits = []
     for line in log.splitlines():
-        h, when, name, mail, subject = line.split("\x1f")
+        when, subject = line.split("\x1f")
         t = dt.datetime.fromisoformat(when)
         m = SUBJECT.match(subject)
         ids = ID.findall(m.group(1)) if m else []
-        commits.append({"sha": h[:10], "at": t, "subject": subject, "ids": ids})
+        commits.append({"at": t, "subject": subject, "ids": ids})
     commits.sort(key=lambda c: c["at"])
 
     # Sessions run over the whole period, so work past midnight stays one
@@ -116,7 +116,6 @@ def main():
         if not (start <= filed <= end):
             continue
         t = json.loads(run(["jaira", "show", m.group(2), "--json"], repo) or "{}")
-        t = t.get("ticket", t)
         done.append({k: t.get(k) for k in ("handle", "title", "goal", "outcome", "tags", "follows")}
                     | {"filed": filed.isoformat(), "commits": len(t.get("commits") or [])})
 

@@ -50,8 +50,8 @@ period (`done`), and tickets on the board that moved in it (`active`). One
 person's work across several repositories: run it in each and add up.
 
 For each ticket you will write about, read what it was for: `jaira show <id>`
-for one on the board, the logbook file for one that left it. The `goal`,
-`outcome-what` and `outcome-why` are your raw material.
+reads it on the board and in the logbook alike, and `done` already carries it.
+The `goal` and the `outcome` (`what`, `why`) are your raw material.
 
 **Days with no commits** inside a working week: say so on the page. If the
 person may have worked on them anyway — an acceptance in the browser, a

@@ -84,7 +84,7 @@ def page(src, out_html, out_md):
         print("\n".join(errors), file=sys.stderr)
         sys.exit(1)
     md = to_md(data)
-    data["full_copy"] = data.get("full_copy") or md
+    data["full_copy"] = md
     blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     tpl = (HERE / "template.html").read_text(encoding="utf-8")
     Path(out_html).write_text(tpl.replace("__TITLE__", html.escape(data["title"])).replace("__DATA__", blob), encoding="utf-8")
