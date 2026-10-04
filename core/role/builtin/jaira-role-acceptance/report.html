@@ -1,0 +1,44 @@
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column — the record of an acceptance as it stood when written, and its markdown behind one copy button. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --fg:#17202a; --muted:#5b6774; --line:#d9dfe5; --accent:#1f5f99; --code-bg:#eef2f6;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --fg:#e4e9ee; --muted:#9aa6b2; --line:#2c3743; --accent:#6fa8dc; --code-bg:#222b35; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --fg:#e4e9ee; --muted:#9aa6b2; --line:#2c3743; --accent:#6fa8dc; --code-bg:#222b35; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);margin:0}
+.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:24px 60px}
+.doc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 24px 20px}
+h1{font-size:1.45rem;font-weight:600;text-wrap:balance}
+h2{font-size:1.15rem;font-weight:600;margin-top:28px;padding-top:14px;border-top:1px solid var(--line);text-wrap:balance}
+h3{font-size:1rem;font-weight:600;margin-top:18px}
+h3, li, p{overflow-wrap:anywhere}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 4px;border-radius:3px}
+ul{padding-left:20px} ul ul{color:var(--muted)}
+.bar{display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-bottom:10px}
+.bar span{color:var(--muted);font-size:.85rem}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;padding:4px 12px}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea{position:absolute;left:-9999px}
+</style>
+<div class="wrap">
+  <div class="bar"><span id="done" role="status"></span><button id="copy" type="button">Markdown</button></div>
+  <article class="doc" lang="__LANG__">
+__BODY__
+  </article>
+  <textarea id="md" readonly aria-hidden="true">__MD__</textarea>
+</div>
+<script>
+document.getElementById('copy').addEventListener('click', async () => {
+  const ta = document.getElementById('md'), out = document.getElementById('done');
+  try { await navigator.clipboard.writeText(ta.value); out.textContent = '✓'; }
+  catch { ta.style.position = 'static'; ta.removeAttribute('aria-hidden'); ta.select(); out.textContent = 'Ctrl+C'; }
+});
+</script>

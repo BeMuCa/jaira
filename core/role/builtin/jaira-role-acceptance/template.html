@@ -88,11 +88,7 @@ details.dod{padding:0 16px 10px}
 details.dod summary{cursor:pointer;color:var(--muted);font-size:.88rem}
 details.dod ul{margin:6px 0 0;padding-left:20px}
 .tfoot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-top:1px solid var(--line)}
-.tfoot .lbl{color:var(--muted);font-size:.88rem}
-.tfoot textarea{flex:1 1 260px;min-width:0;width:auto}
-.tfoot button[data-d="accept"][aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--on-solid)}
-.tfoot button[data-d="return"][aria-pressed="true"]{background:var(--fail);border-color:var(--fail);color:var(--on-solid)}
-.need{color:var(--fail);font-size:.85rem}
+.thead .pill{margin-left:auto}
 .bnote{margin:6px 0 0}
 .bnote label{display:block;color:var(--muted);font-size:.85rem;margin-bottom:4px}
 @media (max-width:560px){.step{grid-template-columns:2em minmax(0,1fr)}.acts{grid-column:2}.note{grid-column:1 / 3}.mc{grid-template-columns:minmax(0,1fr) auto}.mc>.pill:first-child{display:none}}
@@ -117,48 +113,50 @@ details.dod ul{margin:6px 0 0;padding-left:20px}
 
 <script id="data" type="application/json">__DATA__</script>
 <script>
-// State lives in db: results/<stepId> {status,note,round}, verdicts/<ticketId> {decision,note,round},
-// notes/b<n> {note}. A mark made before the ticket's current round counts as open again:
-// the work changed after it was looked at.
+// State lives in db: results/<stepId> {status,note,round}, comments/<ticketId> {note}, notes/b<n> {note}.
+// A ticket has no verdict of its own: it is accepted when every step proving it is ok and every
+// machine check passed, and not accepted as soon as one of them failed. Why it failed is worked out
+// afterwards, from what the person wrote. A mark made before the ticket's current round counts as
+// open again: the work changed after it was looked at.
 const DATA = JSON.parse(document.getElementById('data').textContent);
 const STR = {
   ru: { connecting: 'Подключаюсь к хранилищу…', saving: 'Сохраняется', nosave: 'Без сохранения', saveFailed: 'Не сохранилось: ', store: 'Хранилище: ',
     warn: 'Хранилище недоступно: отметки не сохраняются. Откройте страницу на claude.ai под своим аккаунтом.', blocks: 'Блоки',
-    stepsOk: 'шагов ок', no: 'нет', accepted: 'принято', toReturn: 'вернуть', block: 'Блок', decided: 'решено', steps: 'шагов',
-    blockDone: 'Блок решён. Напиши Claude «посмотри приёмку»: возвраты уйдут в работу, принятые пойдут дальше.',
+    stepsOk: 'шагов ок', no: 'нет', accepted: 'принято', block: 'Блок', decided: 'решено', steps: 'шагов',
+    isAccepted: 'принят', notAccepted: 'не принят: Claude разберёт почему', open: 'не всё отмечено', notAcceptedCount: 'не принято',
+    blockDone: 'Блок отмечен. Напиши Claude «посмотри приёмку»: принятые пойдут дальше, по каждому «нет» Claude разберёт, вернуть тикет или завести новый баг.',
     setup: 'Подготовка, один раз', machine: 'Уже проверено машиной', scenario: 'Сценарий', tickets: 'Тикеты',
     passed: '✓ прошло', failed: '✗ упало', notRun: 'не запускалось', output: 'вывод', tokens: 'токены', again: '↻ заново после доработки',
-    expect: 'Ожидается:', ok: '✓ ок', fail: '✗ нет', skip: 'пропуск', stepNote: 'Что увидел вместо ожидаемого?',
-    test: 'тест', step: 'шаг', unproven: 'ни один шаг не проверяет этот тикет', round: 'круг', decideAgain: '↻ решить заново',
-    changed: 'После доработки:', ticket: 'Тикет:', accept: 'Принять', ret: 'Вернуть',
-    returnNote: 'Что доделать? Это станет пунктом DoD этого тикета.', comment: 'Комментарий (необязательно)', needReason: 'Нужна причина',
+    expect: 'Ожидается:', ok: '✓ ок', fail: '✗ нет', skip: 'пропуск', stepNote: 'Что увидел вместо ожидаемого? Отсюда Claude поймёт, вернуть тикет или это новый баг.',
+    test: 'тест', step: 'шаг', unproven: 'ни один шаг не проверяет этот тикет', round: 'круг',
+    changed: 'После доработки:', comment: 'Комментарий к тикету (необязательно)',
     blockNote: 'Заметка к блоку: всё, что не относится к одному шагу или тикету' },
   de: { connecting: 'Verbinde mit dem Speicher…', saving: 'Wird gespeichert', nosave: 'Ohne Speichern', saveFailed: 'Nicht gespeichert: ', store: 'Speicher: ',
     warn: 'Speicher nicht erreichbar: Markierungen werden nicht gespeichert. Seite auf claude.ai mit eigenem Konto öffnen.', blocks: 'Blöcke',
-    stepsOk: 'Schritte ok', no: 'nein', accepted: 'angenommen', toReturn: 'zurück', block: 'Block', decided: 'entschieden', steps: 'Schritte',
-    blockDone: 'Block entschieden. Schreib Claude „schau dir die Abnahme an“: Zurückgegebenes geht in Arbeit, Angenommenes weiter.',
+    stepsOk: 'Schritte ok', no: 'nein', accepted: 'angenommen', block: 'Block', decided: 'entschieden', steps: 'Schritte',
+    isAccepted: 'angenommen', notAccepted: 'nicht angenommen: Claude klärt warum', open: 'noch nicht alles markiert', notAcceptedCount: 'nicht angenommen',
+    blockDone: 'Block markiert. Schreib Claude „schau dir die Abnahme an“: Angenommenes geht weiter, zu jedem „nein“ klärt Claude, ob das Ticket zurückgeht oder ein neuer Fehler ist.',
     setup: 'Vorbereitung, einmal', machine: 'Schon maschinell geprüft', scenario: 'Ablauf', tickets: 'Tickets',
     passed: '✓ grün', failed: '✗ rot', notRun: 'nicht gelaufen', output: 'Ausgabe', tokens: 'Tokens', again: '↻ neu nach Nacharbeit',
     expect: 'Erwartet:', ok: '✓ ok', fail: '✗ nein', skip: 'übersprungen', stepNote: 'Was war stattdessen zu sehen?',
-    test: 'Test', step: 'Schritt', unproven: 'kein Schritt prüft dieses Ticket', round: 'Runde', decideAgain: '↻ neu entscheiden',
-    changed: 'Nach der Nacharbeit:', ticket: 'Ticket:', accept: 'Annehmen', ret: 'Zurück',
-    returnNote: 'Was fehlt? Das wird ein DoD-Punkt dieses Tickets.', comment: 'Kommentar (optional)', needReason: 'Grund fehlt',
+    test: 'Test', step: 'Schritt', unproven: 'kein Schritt prüft dieses Ticket', round: 'Runde',
+    changed: 'Nach der Nacharbeit:', comment: 'Kommentar zum Ticket (optional)',
     blockNote: 'Bemerkung zum Block: alles, was nicht zu einem Schritt oder Ticket gehört' },
   en: { connecting: 'Connecting to storage…', saving: 'Saving', nosave: 'Not saving', saveFailed: 'Not saved: ', store: 'Storage: ',
     warn: 'Storage unavailable: marks are not saved. Open the page on claude.ai with your own account.', blocks: 'Blocks',
-    stepsOk: 'steps ok', no: 'no', accepted: 'accepted', toReturn: 'return', block: 'Block', decided: 'decided', steps: 'steps',
-    blockDone: 'Block decided. Tell Claude "read the acceptance": returns go back to work, accepted tickets move on.',
+    stepsOk: 'steps ok', no: 'no', accepted: 'accepted', block: 'Block', decided: 'decided', steps: 'steps',
+    isAccepted: 'accepted', notAccepted: 'not accepted: Claude works out why', open: 'not everything marked', notAcceptedCount: 'not accepted',
+    blockDone: 'Block marked. Tell Claude "read the acceptance": accepted tickets move on, and for every "no" Claude works out whether the ticket goes back or it is a new bug.',
     setup: 'Setup, once', machine: 'Already checked by machine', scenario: 'Scenario', tickets: 'Tickets',
     passed: '✓ passed', failed: '✗ failed', notRun: 'not run', output: 'output', tokens: 'tokens', again: '↻ again after rework',
     expect: 'Expect:', ok: '✓ ok', fail: '✗ no', skip: 'skip', stepNote: 'What did you see instead?',
-    test: 'test', step: 'step', unproven: 'no step checks this ticket', round: 'round', decideAgain: '↻ decide again',
-    changed: 'After rework:', ticket: 'Ticket:', accept: 'Accept', ret: 'Return',
-    returnNote: 'What is missing? This becomes a definition-of-done item of this ticket.', comment: 'Comment (optional)', needReason: 'Reason needed',
+    test: 'test', step: 'step', unproven: 'no step checks this ticket', round: 'round',
+    changed: 'After rework:', comment: 'Comment on this ticket (optional)',
     blockNote: 'Note on this block: anything that belongs to no single step or ticket' },
 };
 const L = STR[DATA.lang] || STR.en;
 const T = Object.fromEntries(DATA.tickets.map(t => [t.id, t]));
-const results = {}, verdicts = {}, notes = {};
+const results = {}, comments = {}, notes = {};
 let db = null;
 let block = (() => { try { return localStorage.getItem('acc-block') || String(DATA.blocks[0].n); } catch { return String(DATA.blocks[0].n); } })();
 
@@ -170,7 +168,13 @@ const chip = id => `<a class="chip" href="#t-${esc(id)}">${esc(id)}</a>`;
 
 function stepState(st){ const r = results[st.id]; if (!r?.status) return ''; return (r.round || 1) < roundOf(st.covers) ? '' : r.status; }
 function stepStale(st){ const r = results[st.id]; return !!r?.status && (r.round || 1) < roundOf(st.covers); }
-function verdict(id){ const v = verdicts[id]; if (!v?.decision) return ''; return (v.round || 1) < (T[id].round || 1) ? '' : v.decision; }
+// 'accept' | 'fail' | '' (not every step marked yet). A skipped step leaves the ticket open.
+function verdict(id){
+  const steps = allSteps().filter(s => s.covers.includes(id));
+  const machine = DATA.blocks.flatMap(b => b.machine || []).filter(m => m.covers.includes(id));
+  if (machine.some(m => m.status === 'fail') || steps.some(s => stepState(s) === 'fail')) return 'fail';
+  return steps.length && steps.every(s => stepState(s) === 'ok') ? 'accept' : '';
+}
 function blockDecided(b){ return b.tickets.filter(id => verdict(id)).length; }
 
 function machineHtml(m){
@@ -194,27 +198,22 @@ function stepHtml(st, n){
 }
 
 function ticketHtml(id, b){
-  const t = T[id], v = verdict(id), vn = verdicts[id]?.note || '';
+  const t = T[id], v = verdict(id), cn = comments[id]?.note || '';
   const steps = b.steps.map((s, i) => [s, i + 1]).filter(([s]) => s.covers.includes(id));
   const mcs = (b.machine || []).filter(m => m.covers.includes(id));
   const proof = [
     ...mcs.map(m => `<span class="${m.status === 'pass' ? 'ok' : m.status === 'fail' ? 'fail' : ''}">${m.status === 'pass' ? '✓' : m.status === 'fail' ? '✗' : '·'} ${L.test}</span>`),
     ...steps.map(([s, n]) => { const c = stepState(s); return `<span class="${c}">${c === 'ok' ? '✓' : c === 'fail' ? '✗' : c === 'skip' ? '–' : '·'} ${L.step} ${n}</span>`; })
   ].join('');
-  const stale = verdicts[id]?.decision && !v;
-  const ph = v === 'return' ? L.returnNote : L.comment;
+  const state = v === 'accept' ? `<span class="pill pass">${L.isAccepted}</span>` : v === 'fail' ? `<span class="pill fail">${L.notAccepted}</span>` : `<span class="pill pending">${L.open}</span>`;
   return `<section class="ticket" id="t-${esc(id)}">
     <div class="thead"><span class="tid">${esc(id)}</span><span class="ttitle">${esc(t.title)}</span>
-      ${(t.round || 1) > 1 ? `<span class="tag re">${L.round} ${t.round}</span>` : ''}${stale ? `<span class="tag re">${L.decideAgain}</span>` : ''}</div>
+      ${(t.round || 1) > 1 ? `<span class="tag re">${L.round} ${t.round}</span>` : ''}${state}</div>
     <p class="goal">${esc(t.goal)}</p>
     <div class="proof">${proof || L.unproven}</div>
     ${t.changed ? `<p class="goal"><b>${L.changed}</b> ${fmt(t.changed)}</p>` : ''}
     <details class="dod"><summary>Definition of Done (${t.dod.length})</summary><ul>${t.dod.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>
-    <div class="tfoot"><span class="lbl">${L.ticket}</span>
-      <button data-t="${esc(id)}" data-d="accept" aria-pressed="${v==='accept'}">${L.accept}</button>
-      <button data-t="${esc(id)}" data-d="return" aria-pressed="${v==='return'}">${L.ret}</button>
-      <textarea id="v-${esc(id)}" data-t="${esc(id)}" aria-label="${ph}" placeholder="${ph}">${esc(vn)}</textarea>
-      ${v==='return' && !vn.trim() ? `<span class="need">${L.needReason}</span>` : ''}</div></section>`;
+    <div class="tfoot"><textarea id="c-${esc(id)}" data-t="${esc(id)}" aria-label="${L.comment}" placeholder="${L.comment}">${esc(cn)}</textarea></div></section>`;
 }
 
 function render(){
@@ -227,8 +226,8 @@ function render(){
   steps.forEach(s => { const c = stepState(s); if (c) done[c]++; });
   const pct = x => steps.length ? (x / steps.length * 100) + '%' : '0';
   document.getElementById('bar').innerHTML = `<i style="width:${pct(done.ok)};background:var(--ok)"></i><i style="width:${pct(done.fail)};background:var(--fail)"></i><i style="width:${pct(done.skip)};background:var(--skip)"></i>`;
-  const acc = DATA.tickets.filter(t => verdict(t.id) === 'accept').length, ret = DATA.tickets.filter(t => verdict(t.id) === 'return').length;
-  document.getElementById('counts').innerHTML = `<span><b>${done.ok}</b>/${steps.length} ${L.stepsOk}</span><span><b>${done.fail}</b> ${L.no}</span><span><b>${acc}</b>/${DATA.tickets.length} ${L.accepted}</span><span><b>${ret}</b> ${L.toReturn}</span>`;
+  const acc = DATA.tickets.filter(t => verdict(t.id) === 'accept').length, nok = DATA.tickets.filter(t => verdict(t.id) === 'fail').length;
+  document.getElementById('counts').innerHTML = `<span><b>${done.ok}</b>/${steps.length} ${L.stepsOk}</span><span><b>${done.fail}</b> ${L.no}</span><span><b>${acc}</b>/${DATA.tickets.length} ${L.accepted}</span><span><b>${nok}</b> ${L.notAcceptedCount}</span>`;
   document.getElementById('blocks').innerHTML = DATA.blocks.map(b => { const d = blockDecided(b);
     return `<button data-b="${b.n}" data-done="${d === b.tickets.length ? 1 : 0}" aria-pressed="${block === String(b.n)}"><span class="bn">${b.n}</span>${esc(b.title)}<span class="bp">${d}/${b.tickets.length}</span></button>`; }).join('');
   const b = DATA.blocks.find(x => String(x.n) === block) || DATA.blocks[0];
@@ -257,15 +256,11 @@ document.addEventListener('click', e => {
   if (s){ const st = allSteps().find(x => x.id === s.dataset.k), cur = results[st.id] || {};
     const v = stepState(st) === s.dataset.v ? '' : s.dataset.v;
     results[st.id] = { ...cur, status: v, round: roundOf(st.covers) }; render(); save('results/' + st.id, results[st.id]); return; }
-  const d = e.target.closest('button[data-d]');
-  if (d){ const id = d.dataset.t, cur = verdicts[id] || {}, v = verdict(id) === d.dataset.d ? '' : d.dataset.d;
-    verdicts[id] = { ...cur, decision: v, round: T[id].round || 1 }; render(); save('verdicts/' + id, verdicts[id]);
-    if (v === 'return') document.getElementById('v-' + id)?.focus(); }
 });
 const timers = {};
 document.addEventListener('input', e => {
   const ta = e.target; if (ta.tagName !== 'TEXTAREA') return;
-  const [col, key, store] = ta.dataset.k ? ['results', ta.dataset.k, results] : ta.dataset.t ? ['verdicts', ta.dataset.t, verdicts] : ['notes', ta.dataset.n, notes];
+  const [col, key, store] = ta.dataset.k ? ['results', ta.dataset.k, results] : ta.dataset.t ? ['comments', ta.dataset.t, comments] : ['notes', ta.dataset.n, notes];
   store[key] = { ...(store[key] || {}), note: ta.value };
   clearTimeout(timers[col + key]);
   timers[col + key] = setTimeout(() => save(col + '/' + key, store[key]), 700);
@@ -283,6 +278,6 @@ render();
     qs.docs.forEach(doc => { store[doc.id] = doc.data(); });
     if (document.activeElement?.tagName !== 'TEXTAREA') render();
   }, err => { status.textContent = L.store + (err?.code || '?'); });
-  listen('results', results); listen('verdicts', verdicts); listen('notes', notes);
+  listen('results', results); listen('comments', comments); listen('notes', notes);
 })();
 </script>

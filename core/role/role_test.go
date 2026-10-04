@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -55,63 +56,39 @@ func TestBuiltinsAreTheShippedRoles(t *testing.T) {
 	}
 }
 
-// A role's supporting files travel with it: the dispatcher prompt calls
-// scripts/spawn.sh by a path relative to its own skill folder, and shipping the
-// prompt without the script ships a broken instruction.
-func TestDispatcherShipsItsScript(t *testing.T) {
-	roles, err := Builtins()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var r Role
-	for _, b := range roles {
-		if b.ID == "jaira-dispatcher" {
-			r = b
-		}
-	}
-	if r.ID == "" {
-		t.Fatal("no jaira-dispatcher role")
-	}
-	// run-lane.sh is what the prompt starts in the background to wait out a
-	// lane; without it the dispatcher is told to call a file that is not there.
-	for _, want := range dispatcherScripts {
-		found := false
-		for _, f := range r.Files {
-			if f == want {
-				found = true
-			}
-		}
-		if !found {
-			t.Errorf("files %v, want %s among them", r.Files, want)
-		}
-	}
+// A role's supporting files travel with it: a prompt that calls a script or
+// reads a template by a path relative to its own folder is a broken instruction
+// when the file stays behind.
+var roleFiles = map[string][]string{
+	// run-lane.sh is what the dispatcher starts in the background to wait out
+	// a lane.
+	"jaira-dispatcher": {"scripts/spawn.sh", "scripts/run-lane.sh"},
+	// build.py writes the page from template.html and the record from
+	// report.html.
+	"jaira-role-acceptance": {"build.py", "template.html", "report.html"},
 }
 
-var dispatcherScripts = []string{"scripts/spawn.sh", "scripts/run-lane.sh"}
-
-// The acceptance prompt builds its page with build.py from template.html; the
-// prompt without either is an instruction to run a file that is not there.
-func TestAcceptanceShipsItsBuilder(t *testing.T) {
+func TestRolesShipTheirFiles(t *testing.T) {
 	roles, err := Builtins()
 	if err != nil {
 		t.Fatal(err)
 	}
+	byID := map[string]Role{}
 	for _, r := range roles {
-		if r.ID != "jaira-role-acceptance" {
+		byID[r.ID] = r
+	}
+	for id, want := range roleFiles {
+		r, ok := byID[id]
+		if !ok {
+			t.Errorf("no %s role", id)
 			continue
 		}
-		want := []string{skillFile, "build.py", "template.html"}
-		if len(r.Files) != len(want) {
-			t.Fatalf("files %v, want %v", r.Files, want)
-		}
-		for i := range want {
-			if r.Files[i] != want[i] {
-				t.Errorf("files %v, want %v", r.Files, want)
+		for _, w := range want {
+			if !slices.Contains(r.Files, w) {
+				t.Errorf("%s: files %v, want %s among them", id, r.Files, w)
 			}
 		}
-		return
 	}
-	t.Fatal("no jaira-role-acceptance role")
 }
 
 // The prefix is not cosmetic: a cross-reference left on the unprefixed name
@@ -173,7 +150,7 @@ func TestInstallWritesEveryFile(t *testing.T) {
 	// only toggles the read-only flag — so the claim is not one this platform
 	// can make either way.
 	if runtime.GOOS != "windows" {
-		for _, rel := range dispatcherScripts {
+		for _, rel := range roleFiles["jaira-dispatcher"] {
 			fi, err := os.Stat(filepath.Join(dir, "jaira-dispatcher", filepath.FromSlash(rel)))
 			if err != nil {
 				t.Fatal(err)

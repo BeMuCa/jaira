@@ -630,8 +630,9 @@ and `--force` replaces it too.
 - `/jaira-role-acceptance <id>...` turns the tickets waiting for you into one
   page to accept them on: the tests already run, setup written once per block,
   and one scenario per block whose steps name the tickets they prove. You mark
-  each step and accept or return each ticket; the same role reads that back and
-  turns a return into a definition-of-done item of the same ticket. A
+  each step ok or no; a ticket whose steps are all ok is accepted. Reading it
+  back, the role works out every "no" itself — back into the same ticket, a new
+  bug, or a wrong step — and publishes a fixed record of the acceptance. A
   dispatcher or teamlead hands tickets on to it when they reach a human lane.
 - Every question either of them puts to you comes as a choice of two to four
   options, the recommended one first, rather than a paragraph to answer.
