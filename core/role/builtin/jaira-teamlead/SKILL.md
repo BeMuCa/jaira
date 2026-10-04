@@ -31,7 +31,18 @@ write it too.
 2. **Parallelism.** Two tickets touching the same files are one ticket's worth
    of work, not two. Say so rather than starting both.
 3. **When to stop.** A human lane is a full stop. Bring the question, not the
-   backlog around it.
+   backlog around it — and bring it as a choice: `AskUserQuestion`, two to four
+   options, the recommended one first with `(Recommended)` on its label. A
+   dispatcher that could not ask itself hands you its options as a numbered
+   list; put exactly those to the person, do not rewrite them into prose. Each
+   answer goes onto the ticket with `jaira note <id>` before you start a fresh
+   dispatcher on it — the note makes the new one count the decision closed
+   instead of asking it again. When the answers closed the open decisions a
+   dispatcher found before the plan lane, also `jaira set <id>
+   mode=conversational`: a person decided the shape, and a dispatcher that
+   asked itself would have set it in its own step 5 — the fresh one does not
+   infer it from notes. Any other answer, such as the yes or no after three
+   rounds of one lane, gets the note and leaves the mode alone.
 4. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
 
@@ -61,7 +72,9 @@ Without Herdr, start it as a subagent instead:
 ```
 Agent(subagent_type: "claude",
       prompt: "Read the dispatcher skill and drive ticket <id> until it
-               reaches a human lane or blocks. Report in three lines.")
+               reaches a human lane or blocks. Report in three lines,
+               plus the numbered options of any question you could not
+               ask.")
 ```
 
 and say plainly that it dies with your session.
