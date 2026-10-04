@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Run `jaira roles install --global --force` to get `scripts/run-lane.sh` beside the `jaira-dispatcher` prompt: it runs one lane in a Herdr tab and closes that tab once the worker reports `done` — a dispatcher waiting for `idle` alone never noticed a finished worker and left its tab open all night. It stops with exit 4 and leaves the tab open when the worker sits at an approval dialog, and with exit 3 after `--timeout` minutes (default 240).
 
 ## 0.3.1
 - Add the review loop without a network and without knowing the catalogue exists: `critique`, `optimize` and `testing` now travel inside the binary, so `jaira lanes add critique` installs one from a plane. They stay off every new board — `jaira init` still writes exactly the ten lanes it always did, and a board used as a plain tracker is not handed a conveyor nobody drives. Adopting them from the marketplace is no longer needed and `jaira lanes market` no longer offers them.

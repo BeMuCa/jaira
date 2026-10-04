@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# One lane from start to finish: spawn.sh starts a worker on it, this waits
+# until the ticket has left the lane and the worker has finished its turn, then
+# closes the worker's tab. Start it with run_in_background: its exit is what
+# wakes the dispatcher.
+# Usage: run-lane.sh [--no-worktree] [--keep] [--timeout <minutes>] <ticket-id> <lane> [repo-root]
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+run-lane.sh [--no-worktree] [--keep] [--timeout <minutes>] <ticket-id> <lane> [repo-root]
+
+  --no-worktree   Passed on to spawn.sh; see its --help for when to take it.
+                  JAIRA_NO_WORKTREE=1 in the environment does the same.
+  --keep          Leave the worker's tab open when the lane is finished.
+  --timeout <m>   Give up waiting after m minutes (default 240, or
+                  JAIRA_LANE_TIMEOUT); 0 waits for ever. The worker is left
+                  running and its tab open.
+  -h, --help      This text.
+
+Exit codes: 0 the lane is finished and the tab closed (or kept), 3 timed out,
+4 the worker is at an approval dialog — its tab stays open for the human.
+USAGE
+}
+
+no_worktree="${JAIRA_NO_WORKTREE:-}"
+keep=""
+timeout="${JAIRA_LANE_TIMEOUT:-240}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-worktree) no_worktree=1; shift ;;
+    --keep)        keep=1; shift ;;
+    --timeout)     timeout="${2:?--timeout needs minutes}"; shift 2 ;;
+    -h|--help)     usage; exit 0 ;;
+    --)            shift; break ;;
+    -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
+    *)             break ;;
+  esac
+done
+
+ticket="${1:?ticket id}"; lane="${2:?lane}"
+root="$(cd "${3:-$PWD}" && pwd)"
+herdr="${HERDR_BIN_PATH:-herdr}"
+# Beside this file, not under ~/.claude/skills: roles are installed into a
+# project's .claude/skills as well, and a hard-coded home path misses those.
+here="$(cd "$(dirname "$0")" && pwd)"
+slug="$(printf '%s' "$ticket" | tr '[:upper:]' '[:lower:]')"
+
+# The worker writes the ticket in the directory it runs in, so that is where its
+# status has to be read. Same derivation as spawn.sh. A board that is not
+# shared yet is gitignored and missing from a fresh worktree; then the ticket
+# only exists in the repository itself.
+if [ "$no_worktree" = 1 ]; then
+  wt="$root"
+else
+  wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
+fi
+
+flags=()
+[ "$no_worktree" = 1 ] && flags+=(--no-worktree)
+# spawn.sh types the lane command itself once claude is idle; sending a prompt
+# of our own after it would hand the worker the lane a second time.
+pane="$("$here/spawn.sh" ${flags[@]+"${flags[@]}"} "$slug" "$ticket" "$lane" "$root")"
+echo "pane $pane"
+
+board="$wt"; [ -d "$wt/.jaira" ] || board="$root"
+status() {
+  (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true
+}
+# A finished worker reports done, not only idle. A loop that waits for
+# idle|blocked alone never returns, and the tab never closes.
+agent() {
+  "$herdr" pane get "$pane" 2>/dev/null \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"].get("agent_status","-"))' 2>/dev/null || true
+}
+
+deadline=$(( timeout > 0 ? SECONDS + timeout * 60 : 0 ))
+check() {
+  if [ "$deadline" -gt 0 ] && [ "$SECONDS" -ge "$deadline" ]; then
+    echo "timed out after $timeout min: $ticket is in $(status), worker $(agent) in $pane — left running" >&2
+    exit 3
+  fi
+  # blocked is Herdr's state for an approval dialog. Answering it is the human's
+  # call, never this script's, so stop here and leave the tab to them.
+  if [ "$(agent)" = blocked ]; then
+    echo "worker in $pane is at an approval dialog: report it to the human, the tab stays open" >&2
+    exit 4
+  fi
+}
+
+# An empty status is a read that failed, not a ticket that left the lane: taking
+# it for one would close the tab of a worker still at work.
+while s="$(status)"; [ -z "$s" ] || [ "$s" = "$lane" ]; do check; sleep 20; done
+until case "$(agent)" in idle|done) true ;; *) false ;; esac; do check; sleep 10; done
+
+(cd "$board" && jaira show "$ticket" --json 2>/dev/null) | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+print("status:", d.get("status"))
+for k in ("outcome", "review", "question"):
+    if d.get(k):
+        print(k + ":", json.dumps(d[k], ensure_ascii=False)[:900])
+' || true
+
+if [ -z "$keep" ]; then
+  tab="$("$herdr" pane get "$pane" | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"]["tab_id"])')"
+  "$herdr" tab close "$tab" >/dev/null
+  echo "closed $pane"
+fi
+git -C "$wt" log --oneline -3 2>/dev/null || true
