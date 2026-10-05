@@ -329,3 +329,131 @@ func TestLinkLineFindsABlockerNamedByItsHandle(t *testing.T) {
 		t.Error("the handle was counted as a link with no card")
 	}
 }
+
+// A ticket named in two fields is joined by its strongest relation: blocked
+// by and related to the same ticket is a blocker, drawn red.
+func TestTwoFieldsNamingOneTicketKeepTheStrongerKind(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	fix := titled(t, m, "Fix session cookie dropped on 302")
+	id := addTicket(t, m, "Card naming one ticket twice", "todo", time.Now().Add(time.Hour), nil,
+		map[string][]string{ticket.FieldBlockedBy: {fix}, ticket.FieldRelated: {fix}})
+	m.selectByID(id)
+	s := readScreen(m)
+
+	sx, sy := s.find(t, "Card nam")
+	s.expect(t, s.border(t, sx, sy, 1), sy+1, "━", colErr)
+}
+
+// The legend only takes room the status bar already has: resting on a
+// linked card must not move the board, at any width.
+func TestLinkedCardDoesNotMoveTheBoard(t *testing.T) {
+	for _, w := range []int{80, 100, 150, 200} {
+		m := newTestModel(t, w, 40)
+		linked := addTicket(t, m, "Card with every family", "todo", time.Now().Add(time.Hour), nil,
+			map[string][]string{
+				ticket.FieldBlockedBy: {titled(t, m, "Fix session cookie dropped on 302")},
+				ticket.FieldRelated:   {titled(t, m, "Decide on cookie SameSite policy")},
+			})
+		addTicket(t, m, "Its child", "todo", time.Now().Add(-time.Hour), map[string]string{ticket.FieldParent: linked}, nil)
+		addTicket(t, m, "Its follow-up", "backlog", time.Now().Add(time.Hour), map[string]string{ticket.FieldFollows: linked}, nil)
+
+		bottom := func(out string) (int, int) {
+			lines := strings.Split(stripANSI(out), "\n")
+			for i, l := range lines {
+				if strings.Contains(l, "└") {
+					return i, len(lines)
+				}
+			}
+			return -1, len(lines)
+		}
+		m.selectByID(titled(t, m, "Rate limit the login endpoint"))
+		plainRow, plainLines := bottom(m.render())
+		m.selectByID(linked)
+		row, lines := bottom(m.render())
+		if row != plainRow || lines != plainLines {
+			t.Errorf("width %d: board bottom on row %d of %d, %d of %d without links", w, row, lines, plainRow, plainLines)
+		}
+	}
+}
+
+// Of the two legends the bar is offered, the first that fits on its last
+// line is set flush right; when neither fits, the bar is left as it was.
+func TestFitLegendTakesTheFirstThatFits(t *testing.T) {
+	sb := "first line\nkeys"
+	if got := fitLegend(sb, 20, "full legend", "short"); got != "first line\nkeys     full legend" {
+		t.Errorf("room for the full legend: %q", got)
+	}
+	if got := fitLegend(sb, 12, "full legend", "short"); got != "first line\nkeys   short" {
+		t.Errorf("room for the short legend only: %q", got)
+	}
+	if got := fitLegend(sb, 8, "full legend", "short"); got != sb {
+		t.Errorf("room for neither: %q", got)
+	}
+}
+
+// A ticket can be on the board and in the logbook at once. The line starts
+// at the copy the cursor is on, not at its filed twin lower in the lane.
+func TestLinkLineStartsAtTheCopyUnderTheCursor(t *testing.T) {
+	s := newTestStore(t)
+	id := fileIntoLogbook(t, s, "Twin ticket", 1)
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.width, m.height = 200, 40
+	if _, err := s.Create(map[string]string{
+		ticket.FieldID: id, ticket.FieldTitle: "Twin ticket", ticket.FieldStatus: "done",
+		ticket.FieldUpdatedAt: ticket.FormatTime(time.Now().Add(time.Hour)),
+	}, map[string][]string{ticket.FieldRelated: {titled(t, m, "Fix session cookie dropped on 302")}}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.selectByID(id)
+	if m.isLogged(m.selected()) {
+		t.Fatal("setup: the cursor is on the filed twin")
+	}
+	sc := readScreen(m)
+
+	bx, by := sc.find(t, "Twin tic")
+	edge := sc.border(t, bx, by, -1)
+	if g := sc.glyph(edge, by+1); !slices.Contains(lineGlyphs, g) {
+		t.Errorf("the board copy's border on its middle row is %q, want the line", g)
+	}
+	for y := by + cardSlots; y < sc.h; y++ {
+		if sc.glyph(bx, y) == "T" && sc.glyph(bx+1, y) == "w" {
+			if g := sc.glyph(edge, y+1); g != "│" {
+				t.Errorf("the filed twin's border on its middle row is %q, want no line", g)
+			}
+			return
+		}
+	}
+	t.Fatal("setup: the filed twin is not on screen")
+}
+
+// A short reference that fits two tickets names neither — the rule
+// core/link's bySuffix follows — so no line is drawn to either, and the bar
+// counts it as a link with no card.
+func TestAmbiguousHandleDrawsNoLine(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	twin := func(title, status string) {
+		id := ticket.NewID(time.Now())
+		addTicket(t, m, title, status, time.Now().Add(time.Hour), map[string]string{ticket.FieldID: id[:24] + "ZZ"}, nil)
+	}
+	twin("First ending in ZZ", "in-progress")
+	twin("Second ending in ZZ", "human")
+	id := addTicket(t, m, "Card naming ZZ", "todo", time.Now().Add(time.Hour), nil,
+		map[string][]string{ticket.FieldBlockedBy: {"ZZ"}})
+	m.selectByID(id)
+	out := stripANSI(m.render())
+
+	for _, g := range lineGlyphs {
+		if strings.Contains(out, g) {
+			t.Errorf("an ambiguous reference drew %q", g)
+		}
+	}
+	if !strings.Contains(out, "1 link off screen · L") {
+		t.Errorf("the ambiguous reference is not counted:\n%s", out)
+	}
+}

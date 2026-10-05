@@ -58,57 +58,72 @@ type lineLink struct {
 // The order is the drawing order: weakest family first, then by id so the
 // picture does not shuffle between frames.
 func (m *Model) cursorLinks(t *ticket.Ticket) []lineLink {
-	best := map[string]int{}
-	note := func(id string, k link.Kind) {
-		if f, ok := best[id]; !ok || lineFamily(k) < f {
-			best[id] = lineFamily(k)
+	known := append([]*ticket.Ticket(nil), m.tickets...)
+	for _, l := range m.logged {
+		known = append(known, l.Ticket)
+	}
+	// target is the ticket a link field's value names. Not every field holds
+	// a full id: 'jaira create --blocked-by SEFFWC' stores the handle as
+	// typed, and a handle names the one ticket whose id ends in it. One that
+	// fits several tickets, or none, is kept as written — no match, as in
+	// core/link's bySuffix — so it still counts as a link, with no card to
+	// draw to.
+	target := func(ref string) string {
+		tail := ticket.NormalizeIDPrefix(ref)
+		if tail == "" || len(tail) >= 26 {
+			return ref
 		}
-	}
-	// What t names, kept until a ticket in memory answers to it: a name
-	// nothing here answers to is still a link, just one with no card.
-	named := map[string]link.Kind{}
-	for _, r := range t.BlockedBy {
-		named[r] = link.KindBlockedBy
-	}
-	for _, r := range t.Related {
-		named[r] = link.KindRelated
-	}
-	named[t.Parent] = link.KindParent
-	named[t.Follows] = link.KindFollows
-	delete(named, "")
-
-	scan := func(o *ticket.Ticket) {
-		if o.ID == t.ID {
-			return
-		}
-		for r, k := range named {
-			if refersTo(r, o.ID) {
-				note(o.ID, k)
-				delete(named, r)
+		match := ""
+		for _, o := range known {
+			if strings.HasSuffix(o.ID, tail) {
+				if match != "" && match != o.ID {
+					return ref
+				}
+				match = o.ID
 			}
 		}
-		if slices.ContainsFunc(o.BlockedBy, func(r string) bool { return refersTo(r, t.ID) }) {
+		if match == "" {
+			return ref
+		}
+		return match
+	}
+
+	best := map[string]int{}
+	note := func(ref string, k link.Kind) {
+		other := target(ref)
+		if other == "" || other == t.ID {
+			return
+		}
+		if f, ok := best[other]; !ok || lineFamily(k) < f {
+			best[other] = lineFamily(k)
+		}
+	}
+	names := func(refs []string) bool {
+		return slices.ContainsFunc(refs, func(r string) bool { return target(r) == t.ID })
+	}
+	for _, r := range t.BlockedBy {
+		note(r, link.KindBlockedBy)
+	}
+	note(t.Parent, link.KindParent)
+	for _, r := range t.Related {
+		note(r, link.KindRelated)
+	}
+	note(t.Follows, link.KindFollows)
+	for _, o := range known {
+		if o.ID == t.ID {
+			continue
+		}
+		if names(o.BlockedBy) {
 			note(o.ID, link.KindBlocks)
 		}
-		if refersTo(o.Parent, t.ID) {
+		if target(o.Parent) == t.ID {
 			note(o.ID, link.KindChild)
 		}
-		if slices.ContainsFunc(o.Related, func(r string) bool { return refersTo(r, t.ID) }) {
+		if names(o.Related) {
 			note(o.ID, link.KindRelated)
 		}
-		if refersTo(o.Follows, t.ID) {
+		if target(o.Follows) == t.ID {
 			note(o.ID, link.KindFollowedBy)
-		}
-	}
-	for _, o := range m.tickets {
-		scan(o)
-	}
-	for _, l := range m.logged {
-		scan(l.Ticket)
-	}
-	for r, k := range named {
-		if !refersTo(r, t.ID) {
-			note(r, k)
 		}
 	}
 
@@ -123,21 +138,6 @@ func (m *Model) cursorLinks(t *ticket.Ticket) []lineLink {
 		return out[i].id < out[j].id
 	})
 	return out
-}
-
-// refersTo reports whether a link field's value names the ticket id. Not
-// every field holds a full id: 'jaira create --blocked-by SEFFWC' stores the
-// handle as typed, so a value shorter than an id is matched as its tail, the
-// way core/link resolves one.
-func refersTo(ref, id string) bool {
-	if ref == "" {
-		return false
-	}
-	if ref == id {
-		return true
-	}
-	ref = ticket.NormalizeIDPrefix(ref)
-	return len(ref) < len(id) && strings.HasSuffix(id, ref)
 }
 
 // linkLegend is what the status bar says while the cursor card has links:
@@ -165,10 +165,26 @@ func linkLegend(drawn []lineLink, offscreen int) string {
 		}
 		s += styMeta.Render(fmt.Sprintf("%d %s off screen · L", offscreen, noun))
 	}
-	if s == "" {
-		return ""
+	return s
+}
+
+// fitLegend puts the first legend that fits at the right end of the status
+// bar's last line, in room the bar already has. A bar that grew a line
+// whenever the cursor reached a linked card would make the whole board jump,
+// so a terminal too narrow for the full legend gets the short one, and one
+// too narrow for that gets none.
+func fitLegend(sb string, width int, full, short string) string {
+	i := strings.LastIndex(sb, "\n") + 1
+	last := sb[i:]
+	for _, l := range []string{full, short} {
+		if l == "" {
+			continue
+		}
+		if gap := width - lipgloss.Width(last) - lipgloss.Width(l); gap >= 2 {
+			return sb[:i] + last + strings.Repeat(" ", gap) + l
+		}
 	}
-	return s + "   "
+	return sb
 }
 
 // cardSpot is where one card landed on screen: the two border cells of its
