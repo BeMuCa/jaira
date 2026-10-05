@@ -136,6 +136,11 @@ func TestFilterSpaceAfterAColonStaysOneCondition(t *testing.T) {
 	if matches(other, "assignee: sam", nil) {
 		t.Error("assignee: sam fell apart into every ticket and the word sam")
 	}
+	// A word that only looks like a key is still prose, space and all.
+	prose := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCY", Title: "fix: crash on start", Status: "todo"}
+	if !matches(prose, "fix: crash", nil) {
+		t.Error("fix: crash no longer finds the title that says it")
+	}
 }
 
 // An empty alternative is not a match: "title:zzz," while the next name is

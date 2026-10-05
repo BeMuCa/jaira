@@ -672,7 +672,9 @@ func filterTerms(q string) []string {
 	var out []string
 	for _, part := range splitOutsideQuotes(q, unicode.IsSpace) {
 		if n := len(out); n > 0 && strings.HasSuffix(out[n-1], ":") {
-			out[n-1] += part
+			// With the space: a known key trims its value, and a word that
+			// only looks like one — "fix: crash" — is searched as written.
+			out[n-1] += " " + part
 			continue
 		}
 		out = append(out, part)
