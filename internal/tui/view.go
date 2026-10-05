@@ -142,6 +142,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderLegend())
 	case modeMilestones:
 		return m.modal(m.renderMilestones())
+	case modeUsers:
+		return m.modal(m.renderUsers())
 	case modeLinks:
 		if m.links != nil {
 			return m.modalOver(m.renderLinks(), m.links.from)
@@ -923,7 +925,9 @@ func (m *Model) header() string {
 		left = styLaneTitle.Render(name)
 	}
 	if m.filter != "" {
-		left += styMeta.Render(fmt.Sprintf("   filter: %q", m.filter))
+		// As typed, not %q: a filter quotes names with a space in them, and
+		// %q would print those quotes back escaped.
+		left += styMeta.Render("   filter: " + m.filter)
 	}
 	total := 0
 	for _, c := range m.cols {
@@ -1602,8 +1606,9 @@ func (m *Model) renderHelp() string {
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
 			{"L", "every ticket linked to this one, logbook and archive included"},
-			{"/", "filter tickets as you type; key:value narrows to one field"},
+			{"/", "filter as you type; key:value narrows to one field, spaces combine, a comma means or, \"quotes\" keep words together"},
 			{"M", "narrow the board to one milestone (x there shows everything again)"},
+			{"u", "narrow the board to some people: space ticks them, enter applies (x there shows everyone)"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},

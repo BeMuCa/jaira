@@ -14,6 +14,8 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Press `u` on the board to show only some people's tickets: tick names with space and press enter, and the `/` filter gets `user:name,other`, which matches a ticket's assignee or creator by exact name; `x` in that list shows everyone again.
+- Combine conditions in the `/` filter with spaces — `user:berk 7MG5GB` is berk's ticket 7MG5GB — list alternatives for one field with a comma (`tag:ui,cli`), and put a phrase or a name with a space in double quotes (`user:"Alexander Sacharov"`); an unquoted phrase now matches each of its words anywhere instead of the words side by side.
 
 ## 0.3.4
 - Look at the foot of the done lane for what went into the logbook in the last 28 days, newest first and filled in teal; enter opens one read-only and `jaira restore <file>` brings it back. Set the number of days with `"logbook-days"` in `~/.jaira/settings.json` or on the settings screen `S` (0 hides them); `jaira logbook` without `--since` now lists the same window and names it.
