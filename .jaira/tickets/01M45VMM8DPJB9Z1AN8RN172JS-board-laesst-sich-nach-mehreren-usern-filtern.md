@@ -1,7 +1,7 @@
 ---
 id: 01M45VMM8DPJB9Z1AN8RN172JS
 title: Board laesst sich nach mehreren Usern filtern
-status: testing
+status: human
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,16 +21,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-05T11:02:02Z
-updated-at: 2026-10-05T14:20:15Z
+updated-at: 2026-10-05T14:27:23Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-323571
 claimed-at: 2026-10-05T12:48:54Z
-executed-by: opus
+executed-by: sonnet
 outcome-what: "filterTerms klebt einen Schluessel ohne Wert mit Leerzeichen an das naechste Wort"
 outcome-why: "Critique Runde 2: 'fix: crash' fand nichts mehr, master fand es"
 outcome-resolves: "Testfall fix: crash in TestFilterSpaceAfterAColonStaysOneCondition (vorher rot, jetzt gruen); go test ./... -race RC=0"
 review-summary: "Runde 3: Befund aus Runde 2 behoben - 'fix: crash' und 'todo: write' finden ihre Tickets wieder wie auf master; 'tag: ui' und 'milestone: q4-cleanup' bleiben eine Bedingung; alle Proben wie beabsichtigt; go test ./internal/tui -race gruen. Picker-Scrollen bewusst offen. Nichts mehr offen."
 review-gaps: "Drei Kopien von 'eine Bedingung im Filter ersetzen, input nachziehen, rebuild' (Milestone enter, Milestone x, applyUsers) in setFilterTerm(key, values...) gefaltet. In matchField die beiden strings.TrimSpace entfernt: filterValues trimmt jeden Wert, und um einen Schluessel steht kein Leerzeichen mehr - beide waren wirkungslos. Gelassen: renderUsers/keyUsers folgen dem bestehenden Picker-Muster der Milestones (ein gemeinsamer Picker waere Umbau); Neu-Zerlegen des Filters pro Ticket ist vernachlaessigbar; der known-Check per matchField(t, key, \"\", ms) vermeidet eine zweite Schluesselliste. Kein bestehender quote-bewusster Splitter im Repo."
+test-verdict: "pass: go test ./... -race RC=0 (Cache geleert), gofmt/vet sauber; DoD 1-5 per Tests und live in tmux (160x30): u-Liste mit Anzahl, zwei angekreuzt inkl. 'Alexander Sacharov' und 'Doe, John' -> user:\"Alexander Sacharov\",\"Doe, John\", 2 Tickets; Haken beim Wiederoeffnen da; x/esc wie spezifiziert; /-Filter UND, ODER, Quotes, 'assignee: sam' geprueft. M-Picker nur per Test (Fixture ohne Milestones)."
+question: "User-Filter so abnehmen? Taste u, mehrere ankreuzen, schreibt user:a,b in den /-Filter; /-Filter: Leerzeichen = und, Komma = oder, Anfuehrungszeichen halten zusammen. Verhaltensaenderung: ein Feldwert mit Leerzeichen braucht jetzt Quotes (tag:\"needs review\"); M ersetzt nur noch milestone:. Zum Ausprobieren: Branch feat/N172JS-user-filter bauen (dein ~/.local/bin/jaira ist noch PAP369)."
 ---
 
 # Board laesst sich nach mehreren Usern filtern
