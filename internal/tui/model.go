@@ -738,6 +738,19 @@ func splitTerm(filter, key string) (rest, values []string) {
 	return rest, values
 }
 
+// setFilterTerm puts key's condition into the board filter with values as
+// its alternatives, or takes it out when there are none, and keeps every
+// other condition as typed.
+func (m *Model) setFilterTerm(key string, values ...string) {
+	rest, _ := splitTerm(m.filter, key)
+	if len(values) > 0 {
+		rest = append(rest, key+":"+strings.Join(values, ","))
+	}
+	m.filter = strings.Join(rest, " ")
+	m.input = m.filter
+	m.rebuild()
+}
+
 // matchesTerm is one condition of the filter, already lower-cased.
 func matchesTerm(t *ticket.Ticket, q string, ms milestone.Index) bool {
 	// A "key:value" query narrows the search to one field — "assignee:berk"
@@ -781,9 +794,8 @@ func matchesTerm(t *ticket.Ticket, q string, ms milestone.Index) bool {
 // matchField answers one "key:value" condition. known is false for a key
 // that names no field.
 func matchField(t *ticket.Ticket, key, val string, ms milestone.Index) (hit, known bool) {
-	val = strings.TrimSpace(val)
 	var field string
-	switch strings.TrimSpace(key) {
+	switch key {
 	case "id", "ticket":
 		field = t.ID
 	case "title":
@@ -1252,20 +1264,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// Only the milestone: part: whatever else narrows the board — the
 			// people the user picker ticked, a typed word — stays.
 			if m.msIdx >= 0 && m.msIdx < n {
-				rest, _ := splitTerm(m.filter, "milestone")
-				m.filter = strings.Join(append(rest, "milestone:"+m.milestones[m.msIdx].Name), " ")
-				m.input = m.filter
-				m.rebuild()
+				m.setFilterTerm("milestone", m.milestones[m.msIdx].Name)
 			}
 			m.mode = m.returnTo
 		case "x":
 			// Out of the milestone and back to the board, without having to
 			// remember that esc on the board does it — keeping the rest of
 			// the filter, as enter does.
-			rest, _ := splitTerm(m.filter, "milestone")
-			m.filter = strings.Join(rest, " ")
-			m.input = m.filter
-			m.rebuild()
+			m.setFilterTerm("milestone")
 			m.mode = m.returnTo
 		}
 		return m, nil

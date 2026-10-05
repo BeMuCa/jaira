@@ -1,7 +1,7 @@
 ---
 id: 01M45VMM8DPJB9Z1AN8RN172JS
 title: Board laesst sich nach mehreren Usern filtern
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-05T11:02:02Z
-updated-at: 2026-10-05T13:54:40Z
+updated-at: 2026-10-05T14:20:15Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-323571
 claimed-at: 2026-10-05T12:48:54Z
@@ -29,7 +29,8 @@ executed-by: opus
 outcome-what: "filterTerms klebt einen Schluessel ohne Wert mit Leerzeichen an das naechste Wort"
 outcome-why: "Critique Runde 2: 'fix: crash' fand nichts mehr, master fand es"
 outcome-resolves: "Testfall fix: crash in TestFilterSpaceAfterAColonStaysOneCondition (vorher rot, jetzt gruen); go test ./... -race RC=0"
-review-summary: "Runde 2: alle Befunde aus Runde 1 behoben (tag: ui, title:zzz,, Doe, John, M besitzt nur milestone:, links.go, Doku, NOTES). Neu kaputt: das Kleben an ':' verschluckt das Leerzeichen - 'fix: crash' oder 'todo: write' findet nichts mehr, obwohl master sie fand. Fix: mit Leerzeichen kleben."
+review-summary: "Runde 3: Befund aus Runde 2 behoben - 'fix: crash' und 'todo: write' finden ihre Tickets wieder wie auf master; 'tag: ui' und 'milestone: q4-cleanup' bleiben eine Bedingung; alle Proben wie beabsichtigt; go test ./internal/tui -race gruen. Picker-Scrollen bewusst offen. Nichts mehr offen."
+review-gaps: "Drei Kopien von 'eine Bedingung im Filter ersetzen, input nachziehen, rebuild' (Milestone enter, Milestone x, applyUsers) in setFilterTerm(key, values...) gefaltet. In matchField die beiden strings.TrimSpace entfernt: filterValues trimmt jeden Wert, und um einen Schluessel steht kein Leerzeichen mehr - beide waren wirkungslos. Gelassen: renderUsers/keyUsers folgen dem bestehenden Picker-Muster der Milestones (ein gemeinsamer Picker waere Umbau); Neu-Zerlegen des Filters pro Ticket ist vernachlaessigbar; der known-Check per matchField(t, key, \"\", ms) vermeidet eine zweite Schluesselliste. Kein bestehender quote-bewusster Splitter im Repo."
 ---
 
 # Board laesst sich nach mehreren Usern filtern

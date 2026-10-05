@@ -68,7 +68,6 @@ func (m *Model) openUsers() {
 // milestone picker it writes the ordinary filter rather than a second kind
 // of narrowing, so / shows it and esc on the board clears it.
 func (m *Model) applyUsers() {
-	rest, _ := splitTerm(m.filter, "user")
 	var picked []string
 	for _, u := range m.users {
 		if !m.userPicked[strings.ToLower(u.name)] {
@@ -82,12 +81,7 @@ func (m *Model) applyUsers() {
 		}
 		picked = append(picked, name)
 	}
-	if len(picked) > 0 {
-		rest = append(rest, "user:"+strings.Join(picked, ","))
-	}
-	m.filter = strings.Join(rest, " ")
-	m.input = m.filter
-	m.rebuild()
+	m.setFilterTerm("user", picked...)
 }
 
 // keyUsers drives the user picker. esc leaves the filter as it was: the
