@@ -168,23 +168,27 @@ func linkLegend(drawn []lineLink, offscreen int) string {
 	return s
 }
 
-// fitLegend puts the first legend that fits at the right end of the status
-// bar's last line, in room the bar already has. A bar that grew a line
-// whenever the cursor reached a linked card would make the whole board jump,
-// so a terminal too narrow for the full legend gets the short one, and one
-// too narrow for that gets none.
-func fitLegend(sb string, width int, full, short string) string {
-	i := strings.LastIndex(sb, "\n") + 1
-	last := sb[i:]
-	for _, l := range []string{full, short} {
-		if l == "" {
-			continue
-		}
-		if gap := width - lipgloss.Width(last) - lipgloss.Width(l); gap >= 2 {
-			return sb[:i] + last + strings.Repeat(" ", gap) + l
-		}
+// legendFits reports whether legend fits flush right on the status bar's
+// last line, in room the bar already has.
+func legendFits(sb string, width int, legend string) bool {
+	last := sb[strings.LastIndex(sb, "\n")+1:]
+	return lipgloss.Width(last)+2+lipgloss.Width(legend) <= width
+}
+
+// placeLegend adds the legend to the status bar: flush right on its last
+// line, or on a line of its own when renderBoard gave it one — cut down to
+// the count alone, and then to the width, on a terminal too narrow for all
+// of it.
+func placeLegend(sb string, width int, ownLine bool, drawn []lineLink, offscreen int) string {
+	legend := linkLegend(drawn, offscreen)
+	if !ownLine {
+		last := sb[strings.LastIndex(sb, "\n")+1:]
+		return sb + strings.Repeat(" ", width-lipgloss.Width(last)-lipgloss.Width(legend)) + legend
 	}
-	return sb
+	if lipgloss.Width(legend) > width && offscreen > 0 {
+		legend = linkLegend(nil, offscreen)
+	}
+	return sb + "\n" + truncate(legend, width)
 }
 
 // cardSpot is where one card landed on screen: the two border cells of its

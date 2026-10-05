@@ -253,6 +253,21 @@ func (m *Model) renderBoard() string {
 	// on a narrow terminal, and the columns get whatever height remains.
 	sb := m.statusBar()
 	sbLines := strings.Count(sb, "\n") + 1
+	// The cursor card's links are drawn only on the board itself, not under
+	// a dialog or while a move is being picked. Their legend goes flush right
+	// on the bar's last line when the longest legend it could get fits there,
+	// and on a line of its own when not — decided now, from that longest
+	// one, because which links reach a card is only known once the columns
+	// are drawn and the columns get the height the bar leaves them.
+	cur := m.selected()
+	var links []lineLink
+	if m.mode == modeBoard && cur != nil {
+		links = m.cursorLinks(cur)
+	}
+	ownLine := len(links) > 0 && !legendFits(sb, m.width, linkLegend(links, len(links)))
+	if ownLine {
+		sbLines++
+	}
 	bodyHeight := m.height - 4 - sbLines - tabsLine - headLines - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
@@ -286,13 +301,6 @@ func (m *Model) renderBoard() string {
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, rendered...))
 	b.WriteString("\n")
 
-	// The cursor card's links are drawn only on the board itself, not under
-	// a dialog or while a move is being picked.
-	cur := m.selected()
-	var links []lineLink
-	if m.mode == modeBoard && cur != nil {
-		links = m.cursorLinks(cur)
-	}
 	if len(links) == 0 {
 		b.WriteString(sb)
 		return b.String()
@@ -312,8 +320,7 @@ func (m *Model) renderBoard() string {
 			targets = append(targets, lineTarget{at: at, colour: lineFamilies[l.family].colour})
 		}
 	}
-	off := len(links) - len(drawn)
-	b.WriteString(fitLegend(sb, m.width, linkLegend(drawn, off), linkLegend(nil, off)))
+	b.WriteString(placeLegend(sb, m.width, ownLine, drawn, len(links)-len(drawn)))
 	if len(targets) == 0 {
 		return b.String()
 	}

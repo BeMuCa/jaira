@@ -344,10 +344,11 @@ func TestTwoFieldsNamingOneTicketKeepTheStrongerKind(t *testing.T) {
 	s.expect(t, s.border(t, sx, sy, 1), sy+1, "━", colErr)
 }
 
-// The legend only takes room the status bar already has: resting on a
-// linked card must not move the board, at any width.
-func TestLinkedCardDoesNotMoveTheBoard(t *testing.T) {
-	for _, w := range []int{80, 100, 150, 200} {
+// Resting on a linked card moves the board by at most the one line the
+// legend is given when it cannot sit on the status bar's last line — and by
+// none at all where it can. Either way the legend is on screen.
+func TestLinkedCardMovesTheBoardOnlyForALegendLine(t *testing.T) {
+	for _, w := range []int{80, 100, 120, 130, 150, 200} {
 		m := newTestModel(t, w, 40)
 		linked := addTicket(t, m, "Card with every family", "todo", time.Now().Add(time.Hour), nil,
 			map[string][]string{
@@ -369,25 +370,57 @@ func TestLinkedCardDoesNotMoveTheBoard(t *testing.T) {
 		m.selectByID(titled(t, m, "Rate limit the login endpoint"))
 		plainRow, plainLines := bottom(m.render())
 		m.selectByID(linked)
-		row, lines := bottom(m.render())
-		if row != plainRow || lines != plainLines {
-			t.Errorf("width %d: board bottom on row %d of %d, %d of %d without links", w, row, lines, plainRow, plainLines)
+		out := m.render()
+		row, lines := bottom(out)
+
+		shift := 0
+		if !legendFits(m.statusBar(), w, linkLegend(m.cursorLinks(m.selected()), 4)) {
+			shift = 1
+		}
+		if row != plainRow-shift || lines != plainLines {
+			t.Errorf("width %d: board bottom on row %d of %d, want %d of %d", w, row, lines, plainRow-shift, plainLines)
+		}
+		if plain := stripANSI(out); !strings.Contains(plain, "blocker") && !strings.Contains(plain, "off screen") {
+			t.Errorf("width %d: neither legend nor count is on screen", w)
 		}
 	}
 }
 
-// Of the two legends the bar is offered, the first that fits on its last
-// line is set flush right; when neither fits, the bar is left as it was.
-func TestFitLegendTakesTheFirstThatFits(t *testing.T) {
-	sb := "first line\nkeys"
-	if got := fitLegend(sb, 20, "full legend", "short"); got != "first line\nkeys     full legend" {
-		t.Errorf("room for the full legend: %q", got)
+// The count of links without a card is in the status bar at every width,
+// including the ones whose key hints fill the bar's last line — where the
+// legend used to fall off.
+func TestOffScreenCountShownAtEveryWidth(t *testing.T) {
+	for _, w := range []int{80, 100, 110, 120, 130, 140, 150, 200} {
+		m := newTestModel(t, w, 40)
+		id := addTicket(t, m, "Card with a dangling blocker", "todo", time.Now().Add(time.Hour), nil,
+			map[string][]string{ticket.FieldBlockedBy: {ticket.NewID(time.Unix(0, 0))}})
+		m.selectByID(id)
+		if out := stripANSI(m.render()); !strings.Contains(out, "1 link off screen · L") {
+			t.Errorf("width %d: the count is not on screen", w)
+		}
 	}
-	if got := fitLegend(sb, 12, "full legend", "short"); got != "first line\nkeys   short" {
-		t.Errorf("room for the short legend only: %q", got)
+}
+
+// On a bar with room, the legend goes flush right on its last line; given a
+// line of its own it is cut to the count, then to the width, when it is too
+// wide for the terminal.
+func TestPlaceLegend(t *testing.T) {
+	blocker := []lineLink{{id: "x", family: 0}}
+	full := stripANSI(linkLegend(blocker, 2))
+	short := stripANSI(linkLegend(nil, 2))
+
+	got := stripANSI(placeLegend("first\nkeys", 60, false, blocker, 2))
+	if want := "first\nkeys" + strings.Repeat(" ", 60-4-len([]rune(full))) + full; got != want {
+		t.Errorf("flush right: %q, want %q", got, want)
 	}
-	if got := fitLegend(sb, 8, "full legend", "short"); got != sb {
-		t.Errorf("room for neither: %q", got)
+	if got := stripANSI(placeLegend("keys", 60, true, blocker, 2)); got != "keys\n"+full {
+		t.Errorf("own line with room: %q", got)
+	}
+	if got := stripANSI(placeLegend("keys", len([]rune(short)), true, blocker, 2)); got != "keys\n"+short {
+		t.Errorf("own line too narrow for the full legend: %q", got)
+	}
+	if !legendFits("keys", 4+2+len([]rune(full)), linkLegend(blocker, 2)) || legendFits("keys", 4+1+len([]rune(full)), linkLegend(blocker, 2)) {
+		t.Error("legendFits must demand two cells of air between the keys and the legend")
 	}
 }
 

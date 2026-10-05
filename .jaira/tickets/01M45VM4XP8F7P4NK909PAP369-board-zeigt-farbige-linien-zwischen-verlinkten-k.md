@@ -22,15 +22,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-05T11:01:46Z
-updated-at: 2026-10-05T11:50:32Z
+updated-at: 2026-10-05T12:48:25Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-155624
 claimed-at: 2026-10-05T11:02:23Z
 executed-by: opus
-outcome-what: "Critique-Runde 1 umgesetzt: staerkste Art je Partner, Positionen per Zeiger, eindeutige Kurz-Refs, Legende nur in vorhandenem Platz der Statusleiste (fitLegend)"
-outcome-why: "Kritik: blocked-by+related wurde grau, Board sprang bei jeder Cursorbewegung auf eine verlinkte Karte, Logbuch-Zwilling stahl den Linienstart, mehrdeutige Kurz-Refs zeichneten zu einem beliebigen Ticket"
-outcome-resolves: "Je Befund ein Test, jeder per Mutation als scharf bewiesen (F1 TwoFields, F2 DoesNotMoveTheBoard bei 80/100/150/200 Spalten, F3 CopyUnderTheCursor, F4 AmbiguousHandle); go test ./... -race RC=0; live in tmux: unterer Board-Rand gleiche Zeile mit/ohne Links bei 100 und 180 Spalten"
-review-summary: "Grundform stimmt: Kartenpositionen werden in renderColumn gemessen statt gerechnet, Overlay ueber die lipgloss Canvas wie modalOver (modal.go:63); Positionen stimmen in allen geprueften Layouts. Falsch ist dreierlei: (1) cursorLinks verliert die staerkste Art, wenn ein Ticket denselben Wert in zwei Feldern nennt (blocked-by + related -> grau statt rot). (2) Die Legende sitzt im prefix der Statusleiste; wrapHints macht damit jede Hinweiszeile schmaler, das Board schrumpft bei 80 Spalten um bis zu 9 Zeilen und springt bei jeder Cursorbewegung auf/von einer verlinkten Karte. (3) Positionen nach ID statt Zeiger geschluesselt, obwohl logbook.go:33 Board- und Logbuch-Zwillinge per Zeiger trennt. Optional: mehrdeutige Kurz-Refs matchen anders als core/link bySuffix; die Polsterschleife der Statusleiste ist wirkungslos. Zurueck nach in-progress."
+outcome-what: "Legende: rechtsbuendig in der letzten Zeile der Statusleiste, wenn die laengstmoegliche Legende dort passt; sonst eigene Zeile (legendFits/placeLegend). fitLegend entfaellt"
+outcome-why: "Critique Runde 2: bei 120/130 Spalten fielen Legende und Zaehler weg (DoD 4). Berk entschied 05.10.: eigene Zeile statt Zeile 0, Sprung von 1 Zeile nur bei diesen Breiten"
+outcome-resolves: "TestOffScreenCountShownAtEveryWidth deckt 80-200 Spalten ab, TestLinkedCardMovesTheBoardOnlyForALegendLine erlaubt genau 1 Zeile Verschiebung nur wenn legendFits false; beide per Mutation scharf; go test ./... -race RC=0; live 120 Spalten bestaetigt"
+review-summary: "Runde 2: F1, F3, F4, F5 richtig und vollstaendig behoben, je mit Test; nichts anderes kaputt. fitLegend loest das Springen wirklich. Offen: bei 120 und 130 Spalten passt die Legende nicht in die letzte Zeile der Statusleiste (Tasten fuellen sie fast), dann fehlen Legende UND 'N links off screen' - DoD 4 bei gaengigen Breiten verletzt (verifiziert: 80-110 und 140-200 ja, 120/130 nein). Loesung ist Berks Entscheidung."
 ---
 
 # Board zeigt farbige Linien zwischen verlinkten Karten
@@ -44,9 +44,9 @@ review-summary: "Grundform stimmt: Kartenpositionen werden in renderColumn gemes
 - [x] Karte ohne sichtbaren Link: Board-Ausgabe byte-gleich wie ohne Feature; Test
   proof: TestUnlinkedCardDrawsNothing (internal/tui/linklines_test.go); renderBoard gibt ohne Links b.String() unveraendert zurueck (view.go, 'if len(links) == 0'); alle bestehenden Render-Tests gruen
 - [x] Verlinkte Karte nicht auf dem Schirm (gescrollt, gefiltert, schmale Lane, Logbuch): keine Linie, Statusleiste zeigt 'N links off screen · L'; Test
-  proof: TestLinkWithoutACardOnScreenIsCounted, TestAmbiguousHandleDrawsNoLine (internal/tui/linklines_test.go); Legende nur in vorhandenem Platz (fitLegend, TestLinkedCardDoesNotMoveTheBoard 80-200 Spalten); live 100 Spalten: '2 links off screen · L'
+  proof: TestLinkWithoutACardOnScreenIsCounted, TestOffScreenCountShownAtEveryWidth (80-200 Spalten), TestAmbiguousHandleDrawsNoLine (internal/tui/linklines_test.go); live 120 Spalten: eigene Zeile '━ blocker ━ parent ━ related · 1 link off screen · L'
 - [x] Legende der 4 Farben in der Statusleiste nur solange Linien gezeichnet sind; Test
-  proof: TestLinkWithoutACardOnScreenIsCounted, TestUnlinkedCardDrawsNothing, TestFitLegendTakesTheFirstThatFits (internal/tui/linklines_test.go)
+  proof: TestLinkWithoutACardOnScreenIsCounted, TestUnlinkedCardDrawsNothing, TestPlaceLegend, TestLinkedCardMovesTheBoardOnlyForALegendLine (internal/tui/linklines_test.go)
 - [x] Linien nur in der Board-Ansicht; Detail, Pipeline, Lane-Fokus und Modals zeichnen keine; Test
   proof: TestLinkLinesOnlyOnTheBoard: enter, L, m (internal/tui/linklines_test.go); Gate 'm.mode == modeBoard' in renderBoard
 - [x] core/release/NOTES.md hat eine Zeile unter ## Unreleased; go test ./... -race gruen
@@ -78,3 +78,5 @@ Gleiche Luecke vermutlich in core/link Relations (link.go ~376: 'dep == id' exak
 Test-Helfer border() muss Linienglyphen als Rand akzeptieren - eine senkrechte Linie uebermalt den Rand auf der Titelzeile.
 - **2026-10-05 11:50 · BeMuCa** — Critique-Runde 1 umgesetzt: F1 staerkste Art gewinnt (best-Map statt named-Map), F3 Positionen per Zeiger (renderColumn liefert map[*ticket.Ticket]int; Board-Kopie vor Logbuch-Zwilling), F4 Kurz-Ref passt nur eindeutig, sonst kein Ziel (wie bySuffix), F5 Polsterschleife entfaellt.
 F2 anders geloest als vorgeschlagen: Vorschlag 'Legende als erste keys' haette auf schmalen Terminals weiter 1 Zeile Sprung gelassen. Jetzt fitLegend: Legende rechtsbuendig in die letzte Zeile der Statusleiste, nur wenn Platz ist; sonst nur 'N links off screen · L'; sonst nichts. Hoehe der Leiste aendert sich nie -> Board springt nie, Reservierung entfaellt. Preis: auf sehr schmalen Terminals fehlt die Legende.
+- **2026-10-05 11:57 · BeMuCa** — Critique Runde 2 offen fuer Berk (05.10.): Legende fehlt bei 120/130 Spalten. Optionen: (a) Legende rechtsbuendig in Zeile 0 (Versionszeile, rechts frei) - Board springt nie, passt ab 80 Spalten, DoD 4/5 sagen dann 'oberste Zeile' statt 'Statusleiste'; (b) Statusleiste waechst nur dann um 1 Zeile, wenn keine Legende passt - Sprung nur in diesem Breitenband; (c) so lassen, DoD 4 umformulieren. Gefragt im Chat.
+- **2026-10-05 12:39 · BeMuCa** — Berk entschieden 05.10.: Legende bleibt in der Statusleiste; passt sie nicht in die letzte Zeile, bekommt sie eine eigene Zeile (Board springt dann 1 Zeile, nur bei diesen Breiten). Nicht Zeile 0.
