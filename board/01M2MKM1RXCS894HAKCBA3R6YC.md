@@ -1,7 +1,7 @@
 ---
 id: 01M2MKM1RXCS894HAKCBA3R6YC
 title: "Die pr-Rolle oeffnet den Pull Request selbst, wenn ein Mensch sie aufruft"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,15 +23,24 @@ tags:
 blocked-by: []
 related: []
 commits:
+  - a553e4504252e15a6bb684fea933161d4582e9b6
   - ea78a3abd48ed2c7568c3bb65671a46d262d6d3b
+  - 8f537cd329b0b7593f80da5c04c2e38d18b9f7ed
+  - 9e8a1503911187e6c3094eb8b5cc86cd67748a73
+  - 852a839dd2d998000814c2a32c695b9f0df93900
+  - 266dd1ed7855f22cb43abbbf42bbe3d69c215ff2
+  - c9906b766fd200161d08d590740a3f0524044346
+  - ca7f53cb6df47213cfc6a20e385e910b1fb968cd
+  - 1e4442f78a9a191e5247ac13dddee8072bb6f50c
+  - ba1da9de9441ffa8eda68eb9fac73193671fa673
 created-at: 2026-09-16T07:59:07Z
-updated-at: 2026-09-16T11:25:12Z
+updated-at: 2026-10-04T18:18:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-35292
 claimed-at: 2026-09-16T11:10:23Z
-outcome-what: "core/role/builtin/jaira-role-pr/SKILL.md: der glab-Aufruf der Zielrepository-Leiter traegt jetzt '-F json' (:110), ein Halbsatz sagt warum (:118-120), Sprosse 1 liest den Projektpfad aus dieser JSON statt aus der Textausgabe (:139-141), und Sprosse 2 trennt die beiden Forges - GitHub '.parent.owner.login' + '.parent.name', GitLab der forked-from-Eintrag derselben JSON (:144-148)."
-outcome-why: "critique Durchgang 6: auf GitLab hatte die Leiter keine Quelle. 'glab repo view <url>' laeuft per Default auf -F text und druckt Beschreibung und README - weder den Fork-Status, nach dem die Leiter verzweigt, noch den Elternteil, den Sprosse 2 lesen soll. Der Durchlauf waere auf GitLab still auf Sprosse 1 (den Fork) gefallen: dieselbe stille Verzweigung, die ca7f53c fuer gh geschlossen hat."
-outcome-resolves: "Die DoD-Klausel 'die Rolle prueft vor dem Oeffnen, in welches Repository der Pull Request geht' gilt jetzt auf beiden Forges, nicht nur auf GitHub. go test ./core/role/... gruen."
+outcome-what: "testing bestanden, Code ist in master"
+outcome-why: "letzter fehlender Lauf vor der Abnahme"
+outcome-resolves: "A3R6YC haengt nicht mehr in testing"
 review-summary: "Der Diff schreibt core/role/builtin/jaira-role-pr/SKILL.md um und haengt die Regel neu auf: nicht mehr 'kein Agent oeffnet je einen PR', sondern 'nur der Aufruf eines Menschen oeffnet einen'. Kopf (:9-23) und Boundaries (:244-248) sagen beides und lassen merge/approve in beiden Faellen verboten. Dazwischen ist der Ablauf neu geschnitten: 'Push the branch' (:91) pusht immer, danach entscheidet erst der create-Befehl, ob geoeffnet oder die Zeile zurueckgereicht wird. Neu ist der Abschnitt 'Which repository it goes to' (:101-152) VOR dem Oeffnen: 'gh repo view $(git remote get-url origin) --json isFork,parent,nameWithOwner' bzw. 'glab repo view ... -F json', dann drei disjunkte Sprossen - kein Fork -> origin selbst; Fork, dessen Board-Remote nichts Drittes nennt -> der Parent; Board-Remote zeigt auf ein drittes Repo -> nicht oeffnen, fragen. Die Board-Remote kommt aus 'jaira whoami --json' (.remote/.remote_source), nicht aus 'git config jaira.remote', weil das nur die erste von vier Stufen in core/settings/settings.go RemoteSourceFor ist und sonst leer liest. Die PR-Existenzpruefung fragt jetzt das Zielrepo statt origin und schreibt den Head auf GitHub als '<owner-of-origin>:<branch>'. Dazu eine Zeile unter ## Unreleased in core/release/NOTES.md."
 review-gaps: |-
   Drei Befunde, alle im GitLab-/Fork-Arm, den der Abschnitt gerade erst gebaut hat.
@@ -47,8 +56,8 @@ review-gaps: |-
   5) Auf GitLab wird nie benannt, welches Feld 'ist ein Fork' beantwortet. Fuer GitHub steht 'isFork' da (:114); der GitLab-Arm nennt fuer Sprosse 1 keine Quelle, nur fuer Sprosse 2 den forked-from-Eintrag.
 
   Nicht beanstandet: DoD-Proof-Zeilennummern stimmen (:9-23, :100-160, :243-248), NOTES.md hat genau eine Zeile unter ## Unreleased, 'go test ./core/role/...' ist gruen, 'jaira whoami --json' liefert .remote und .remote_source wie beschrieben, 'gh repo view $(git remote get-url origin) --json isFork,parent,nameWithOwner' liefert in diesem Fork tatsaechlich isFork:true und BeMuCa/jaira - der GitHub-Arm der Leiter ist am echten Repo geprueft.
-test-verdict: "pass: go build ./... und go test -race ./... gruen (RC=0, 28 Pakete ok); die DoD-Klausel Punkt fuer Punkt im Arbeitsbaum belegt; die Zielrepository-Leiter auf diesem Fork real durchgespielt - 'gh repo view $(git remote get-url origin)' liefert isFork:true mit parent BeMuCa/jaira, das blanke 'gh repo view' isFork:false, genau der Fehler, den der Text beschreibt"
-question: "Die pr-Rolle ist geprueft und gruen: Ist der Text so, wie du ihn haben willst - oder soll noch etwas an der Zielrepository-Leiter anders formuliert sein?"
+test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; DoD verified in SKILL.md:108-148 (Zielrepository-Leiter), :207 (Open it), :22-23 (kein merge/approve), NOTES.md Zeile vorhanden; Leiter auf diesem Fork ausgefuehrt: isFork=true, parent=BeMuCa/jaira, whoami remote=upstream=BeMuCa/jaira -> Sprosse 2 -> BeMuCa/jaira. Code ist bereits ueber PR #25 (c3a371c) in master."
+question: "So annehmen (GitHub-Pfad geprueft, dieses Board ist auf GitHub) oder zurueck fuer den GitLab-Fix (--repo statt --target-project, --head ergaenzen) als Folge-PR?"
 review-verdict: |-
   Die Definition of Done ist erfuellt: Mensch -> pushen und oeffnen, Agent -> pushen und Zeile zurueck, merge/approve in beiden Faellen verboten, Zielrepository vor dem Oeffnen geprueft, eine Zeile unter ## Unreleased, go test ./core/role/... gruen. Der GitHub-Arm der Zielrepository-Leiter ist am echten Fork nachgeprueft und stimmt.
 
@@ -249,3 +258,5 @@ Geprueft und NICHT geaendert: '.remotes' aus 'jaira whoami --json' koennte 'der 
 Warum ich 'gh pr create' nicht verifiziert habe: ein Dry-Run haette den Branch gepusht ('gh pr create --dry-run' pusht laut Hilfetext ggf. trotzdem), und feat/A3R6YC liegt noch nicht auf origin. Der Verdacht bleibt begruendet, aber unbewiesen: gh pr list bekommt in diesem Diff ausdruecklich '--head <owner-of-origin>:<branch>', gh pr create bekommt kein --head.
 
 Zweiter, leiserer Punkt fuer den Fall, dass jemand hier weiterarbeitet: Sprosse 3 vergleicht eine Remote-URL mit einem aus .parent.owner.login/.parent.name zusammengesetzten owner/repo. Der Text sagt nicht, wie man die beiden Formen vergleichbar macht. Faellt das Modell auf die falsche Seite, oeffnet es auf einem gewoehnlichen Board gar nichts.
+- **2026-10-04 17:17 · Alexander Sacharov** — testing (2026-10-04): Ticket hing seit 2026-09-16 in testing, obwohl PR #25 schon gemergt war. Rolleninhalt in upstream/master identisch mit feat/A3R6YC (git diff leer fuer core/role/builtin/jaira-role-pr). Der Worktree ../.worktrees/jaira-A3R6YC kann nach logbook weg.
+- **2026-10-04 17:18 · Alexander Sacharov** — Korrektur zur Notiz von 17:17: das Ticket hing nicht in testing, sondern steht hier im Worktree seit 2026-09-16 in signoff. Stale war nur die Kopie im Haupt-Checkout und auf dem Ref. Die drei GitLab-Befunde aus der Review-Lane (--target-project deprecated, --head fehlt im Fork-Fall, gh pr create ohne --head) stehen unveraendert in upstream/master, SKILL.md:213,219.
