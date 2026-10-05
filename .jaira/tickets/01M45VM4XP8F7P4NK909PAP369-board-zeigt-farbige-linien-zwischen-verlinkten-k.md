@@ -1,7 +1,7 @@
 ---
 id: 01M45VM4XP8F7P4NK909PAP369
 title: Board zeigt farbige Linien zwischen verlinkten Karten
-status: critique
+status: human
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,15 +22,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-05T11:01:46Z
-updated-at: 2026-10-05T12:48:25Z
+updated-at: 2026-10-05T13:38:07Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-155624
 claimed-at: 2026-10-05T11:02:23Z
-executed-by: opus
+executed-by: sonnet
 outcome-what: "Legende: rechtsbuendig in der letzten Zeile der Statusleiste, wenn die laengstmoegliche Legende dort passt; sonst eigene Zeile (legendFits/placeLegend). fitLegend entfaellt"
 outcome-why: "Critique Runde 2: bei 120/130 Spalten fielen Legende und Zaehler weg (DoD 4). Berk entschied 05.10.: eigene Zeile statt Zeile 0, Sprung von 1 Zeile nur bei diesen Breiten"
 outcome-resolves: "TestOffScreenCountShownAtEveryWidth deckt 80-200 Spalten ab, TestLinkedCardMovesTheBoardOnlyForALegendLine erlaubt genau 1 Zeile Verschiebung nur wenn legendFits false; beide per Mutation scharf; go test ./... -race RC=0; live 120 Spalten bestaetigt"
-review-summary: "Runde 2: F1, F3, F4, F5 richtig und vollstaendig behoben, je mit Test; nichts anderes kaputt. fitLegend loest das Springen wirklich. Offen: bei 120 und 130 Spalten passt die Legende nicht in die letzte Zeile der Statusleiste (Tasten fuellen sie fast), dann fehlen Legende UND 'N links off screen' - DoD 4 bei gaengigen Breiten verletzt (verifiziert: 80-110 und 140-200 ja, 120/130 nein). Loesung ist Berks Entscheidung."
+review-summary: "Runde 3: nichts mehr offen. R2-1 wie von Berk entschieden umgesetzt (Legende rechtsbuendig in letzter Zeile, sonst eigene, vorher reservierte Zeile); echte Legende nie breiter als die gepruefte, kein negatives Repeat. Sweep 30-230 Spalten, Hoehe 40 und 16: Legende oder Zaehler immer sichtbar, kein Ueberlauf, kein Panic. F1, F3, F4, F5 bleiben behoben."
+review-gaps: "Nichts entfernt. Der target-Abgleich in cursorLinks aehnelt core/link bySuffix (link.go:514), bleibt aber: bySuffix ist unexportiert, haengt am link.Index und sucht ueber das ganze Logbuch statt m.tickets+m.logged. lineFamily ist keine Kopie von link.Order (fasst Paare zusammen, andere Reihenfolge). Kein toter Code; 'r < h-1' ist erreichbar. Kosten pro Karte vernachlaessigbar gegen renderCardBlock."
+test-verdict: "pass: go test ./... -race RC=0 (cache geleert), gofmt/vet sauber, DoD 1-7 im Baum und live in tmux bei 100/125/180 Spalten geprueft (Farben 203/33/78/244 per capture-pane -e, Legende/Zaehler je Breite, keine Linien in Detail und L-Fenster)"
+question: "Linien zwischen verlinkten Karten so abnehmen? Zum Ausprobieren: ~/.local/bin/jaira ist auf bfe54df gebaut - Cursor auf eine Karte mit Links stellen. Bekannt: passt die Legende nicht in die letzte Zeile der Statusleiste, bekommt sie eine eigene (Board springt dann 1 Zeile)."
 ---
 
 # Board zeigt farbige Linien zwischen verlinkten Karten
