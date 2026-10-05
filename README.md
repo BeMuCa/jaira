@@ -745,10 +745,12 @@ supply, so an agent can fix and retry without parsing prose.
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            /       filter (key:value narrows to one field)
+j k ↓ ↑   card            /       filter (key:value narrows to one field;
+                                  spaces combine, a comma means or)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
+u         only some people's tickets (space ticks, enter applies)
 S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,

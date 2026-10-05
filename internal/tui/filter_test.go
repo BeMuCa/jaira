@@ -94,12 +94,13 @@ func TestFilterUserIsAssigneeOrCreator(t *testing.T) {
 	}
 }
 
-// Splitting a phrase into words only widens it: whatever held the phrase
-// holds each word, so no ticket the old filter found goes missing.
+// Splitting a plain phrase into words only widens it: whatever held the
+// phrase holds each word, so no ticket the old filter found goes missing. A
+// field value with a space is not a plain phrase — it needs quotes now.
 func TestFilterPhraseNeverFindsLess(t *testing.T) {
 	tk := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "Fix session cookie dropped", Status: "todo"}
 
-	for _, q := range []string{"session cookie", "cookie session", "title:session cookie"} {
+	for _, q := range []string{"session cookie", "cookie session", "fix cookie dropped"} {
 		if !matches(tk, q, nil) {
 			t.Errorf("%q no longer finds a ticket whose title holds it", q)
 		}
@@ -120,5 +121,44 @@ func TestFilterQuotesKeepWordsTogether(t *testing.T) {
 	}
 	if matches(tk, `"cookie session"`, nil) {
 		t.Error("a quoted phrase matched its words in another order")
+	}
+}
+
+// A key left waiting for its value takes the next word: "tag: ui" is one
+// condition, as it was before words became conditions of their own.
+func TestFilterSpaceAfterAColonStaysOneCondition(t *testing.T) {
+	tk := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "todo", Assignee: "sam", Tags: []string{"ui"}}
+	other := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCX", Title: "mentions sam", Status: "todo", Assignee: "berk"}
+
+	if !matches(tk, "tag: ui", nil) || !matches(tk, `user: "sam"`, nil) {
+		t.Error("a value after a space did not stay with its key")
+	}
+	if matches(other, "assignee: sam", nil) {
+		t.Error("assignee: sam fell apart into every ticket and the word sam")
+	}
+}
+
+// An empty alternative is not a match: "title:zzz," while the next name is
+// being typed must not let every ticket through.
+func TestFilterEmptyAlternativeAddsNothing(t *testing.T) {
+	tk := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "t", Status: "todo", Assignee: "berk"}
+
+	if matches(tk, "title:zzz,", nil) || matches(tk, "user:sam,", nil) || matches(tk, "user:sam,,", nil) || matches(tk, `user:sam,""`, nil) {
+		t.Error("an empty alternative matched")
+	}
+	if !matches(tk, "user:", nil) || !matches(tk, "title:,", nil) {
+		t.Error("a key with no value yet must leave the board as it is")
+	}
+}
+
+// Quotes keep a comma inside a value: "Doe, John" is one person.
+func TestFilterQuotesKeepACommaInAValue(t *testing.T) {
+	tk := &ticket.Ticket{ID: "01KZTT3XZ2YQBX93TTSR7BVRCT", Title: "then what", Status: "todo", Creator: "Doe, John"}
+
+	if !matches(tk, `user:"Doe, John"`, nil) || !matches(tk, `user:sam,"doe, john"`, nil) {
+		t.Error("a quoted name with a comma did not match its creator")
+	}
+	if matches(tk, `title:"zz, then"`, nil) {
+		t.Error("a quoted value was split at its comma")
 	}
 }

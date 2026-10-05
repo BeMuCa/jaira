@@ -21,14 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-05T11:02:02Z
-updated-at: 2026-10-05T13:14:47Z
+updated-at: 2026-10-05T13:38:33Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-323571
 claimed-at: 2026-10-05T12:48:54Z
 executed-by: opus
-outcome-what: "Taste u oeffnet ein Users-Fenster (internal/tui/users.go): Namen aus assignee+creator aller geladenen Tickets mit Anzahl, space kreuzt an, enter schreibt user:a,b in den /-Filter, x entfernt, esc verwirft. Der /-Filter (matches in model.go) trennt Bedingungen an Leerzeichen (UND), Komma = oder je Feld, Anfuehrungszeichen halten Woerter zusammen; neuer Schluessel user: = assignee oder creator, exakt"
-outcome-why: Berk will das Board per Taste auf mehrere Personen einschraenken und im /-Filter zwei Dinge zugleich filtern koennen (z.B. Person und Ticket-Nr)
-outcome-resolves: "DoD 1-2: Picker-Tests und live in tmux; DoD 3: vier Filter-Tests fuer UND/ODER/Quotes/Phrase; DoD 4: Filter in der Kopfzeile wie typed, esc auf dem Board leert ihn (Tests); DoD 5: NOTES.md, -race RC=0. Jeder neue Test per Mutation scharf (Quoting, %q, Quote-Entfernung)"
+outcome-what: "Critique Runde 1: Schluessel mit Leerzeichen vor dem Wert bleibt eine Bedingung, leere Alternativen zaehlen nicht, Quotes schuetzen Kommas, Milestone-Picker besitzt nur milestone:, Hinweis im L-Fenster ohne %q, Doku (COMMANDS.md, README) nennt u und die Syntax"
+outcome-why: "Kritik: 'tag: ui' fand nichts mehr, 'title:zzz,' liess alles durch, 'Doe, John' traf niemanden, M loeschte den User-Filter"
+outcome-resolves: "Je Befund ein Test (SpaceAfterAColon, EmptyAlternative, QuotesKeepACommaInAValue, SplitTermKeepsQuotedCommas, MilestonePickerKeepsTheUserFilter), jeder per Mutation als scharf bewiesen; go test ./... -race RC=0"
+review-summary: "Form passt (users.go folgt der Milestone-Auswahl, ein /-Filter, Tests gruen). Falsch: (1) Zerlegen an Leerzeichen macht 'tag: ui', 'milestone: q4-cleanup', 'tag:needs review' leer, die vorher trafen - 'verbreitert nur' stimmt nicht (Note, Testname, Kommentar). (2) Leerer Komma-Teil wie 'title:zzz,' laesst jedes Ticket durch. (3) Anfuehrungszeichen schuetzen kein Komma - 'Nachname, Vorname' aus dem Picker trifft niemanden. Optional: links.go:147 druckt den Filter noch mit %q; M ersetzt den ganzen Filter statt nur milestone:; Picker scrollt nicht; Namen nur bei ' \\t' gequotet; docs/COMMANDS.md + README nennen user/Kombination nicht."
 ---
 
 # Board laesst sich nach mehreren Usern filtern
@@ -67,3 +68,4 @@ outcome-resolves: "DoD 1-2: Picker-Tests und live in tmux; DoD 3: vier Filter-Te
 - **2026-10-05 13:14 · BeMuCa** — In-progress: Namen mit Leerzeichen sind echt - 'Alexander Sacharov' ist auf dem jAIra-Board 49x creator. 'Leerzeichen trennt Bedingungen' haette ihn zerlegt; deshalb filterTerms: doppelte Anfuehrungszeichen halten Woerter zusammen (user:"Alexander Sacharov"), bringen nebenbei die exakte Phrasensuche zurueck. Milestone- und Tag-Namen sind kebab (core/milestone NormalizeName -> tag.Normalize), brauchen keine Quotes.
 Kopfzeile zeigte den Filter mit %q - mit Quotes im Filter kam '\"' heraus; jetzt wie getippt (view.go header).
 Komma in einem Namen wird nicht unterstuetzt (Komma = oder).
+- **2026-10-05 13:38 · BeMuCa** — Critique Runde 1 umgesetzt: (1) 'tag: ui' - ein Schluessel ohne Wert nimmt das naechste Wort (filterTerms klebt an ':'). 'tag:needs review' braucht jetzt Quotes - 'verbreitert nur' gilt nur fuer reine Phrasen; Kommentar, Testname und NOTES korrigiert. (2) leere Komma-Teile zaehlen nicht (filterValues), ein Schluessel ganz ohne Wert laesst das Board wie es ist. (3) ein splitOutsideQuotes fuer Leerzeichen UND Komma - Quotes schuetzen jetzt auch Kommas ('Doe, John'); Picker quotet bei Leerraum oder Komma. (4) links.go-Hinweis druckt den Filter wie getippt. (5) M und x im Milestone-Fenster besitzen nur noch milestone: (splitTerm, gemeinsam mit dem User-Picker) - sonst loeschten sich die beiden Picker gegenseitig. Nicht gemacht: Scrollen im Picker (echte Boards haben 2-3 Namen; Milestone-Fenster hat dieselbe Grenze).

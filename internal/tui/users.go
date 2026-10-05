@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -54,7 +55,7 @@ func (m *Model) openUsers() {
 
 	m.users, m.userIdx = rows, 0
 	m.userPicked = map[string]bool{}
-	_, picked := splitUserTerm(m.filter)
+	_, picked := splitTerm(m.filter, "user")
 	for _, name := range picked {
 		m.userPicked[name] = true
 	}
@@ -62,37 +63,21 @@ func (m *Model) openUsers() {
 	m.mode = modeUsers
 }
 
-// splitUserTerm takes the user: condition out of a filter: the other
-// conditions as they were typed, and the names it held, lower-cased.
-func splitUserTerm(filter string) (rest, names []string) {
-	for _, term := range filterTerms(filter) {
-		key, val, ok := strings.Cut(term, ":")
-		if !ok || !strings.EqualFold(key, "user") {
-			rest = append(rest, term)
-			continue
-		}
-		for _, v := range strings.Split(strings.ReplaceAll(val, `"`, ""), ",") {
-			if v = strings.TrimSpace(v); v != "" {
-				names = append(names, strings.ToLower(v))
-			}
-		}
-	}
-	return rest, names
-}
-
 // applyUsers writes the ticked people into the board filter in place of any
 // user: condition it had, keeping everything else typed there. Like the
 // milestone picker it writes the ordinary filter rather than a second kind
 // of narrowing, so / shows it and esc on the board clears it.
 func (m *Model) applyUsers() {
-	rest, _ := splitUserTerm(m.filter)
+	rest, _ := splitTerm(m.filter, "user")
 	var picked []string
 	for _, u := range m.users {
 		if !m.userPicked[strings.ToLower(u.name)] {
 			continue
 		}
 		name := u.name
-		if strings.ContainsAny(name, " \t") {
+		// Quoted where the filter would otherwise cut the name apart: at a
+		// space between words, or at a comma between alternatives.
+		if strings.ContainsFunc(name, func(r rune) bool { return unicode.IsSpace(r) || r == ',' }) {
 			name = `"` + name + `"`
 		}
 		picked = append(picked, name)

@@ -162,3 +162,38 @@ func TestEscOnTheBoardClearsTheUserFilter(t *testing.T) {
 		t.Errorf("after esc: filter = %q, %d of %d tickets shown", m.filter, len(boardTitles(m)), all)
 	}
 }
+
+// splitTerm takes one key's condition out of a filter, its values unquoted
+// and lower-cased, and leaves the rest as typed.
+func TestSplitTermKeepsQuotedCommas(t *testing.T) {
+	rest, vals := splitTerm(`"export csv" user:"Doe, John",sam tag:ui`, "user")
+	if strings.Join(rest, " ") != `"export csv" tag:ui` {
+		t.Errorf("rest = %q", rest)
+	}
+	if strings.Join(vals, "|") != "doe, john|sam" {
+		t.Errorf("values = %q", vals)
+	}
+}
+
+// The milestone picker owns only the milestone: part of the filter, like the
+// user picker owns user:, so one does not wipe out what the other set.
+func TestMilestonePickerKeepsTheUserFilter(t *testing.T) {
+	m := pickerModel(t)
+	mkMilestone(t, m, "round-one", 45, m.tickets[0].ID)
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.filter, m.input = "user:sam", "user:sam"
+	m.rebuild()
+
+	m.key(key("M"))
+	m.key(key("enter"))
+	if want := "user:sam milestone:round-one"; m.filter != want {
+		t.Errorf("after picking a milestone: filter = %q, want %q", m.filter, want)
+	}
+	m.key(key("M"))
+	m.key(key("x"))
+	if m.filter != "user:sam" {
+		t.Errorf("after x in the milestone picker: filter = %q, want the user part kept", m.filter)
+	}
+}

@@ -651,31 +651,60 @@ func (m *Model) currentLane() *lane.Lane {
 // matches reports whether t passes the board filter q. Each word of q is a
 // condition of its own and all of them must hold: "user:berk 7mg5gb" is
 // berk's ticket 7MG5GB, not a ticket whose assignee is called "berk 7mg5gb".
-// A phrase therefore finds the tickets that hold each of its words, which is
-// never fewer than held it whole — and quoted, it is searched whole again.
+// A plain phrase therefore finds the tickets that hold each of its words,
+// which is never fewer than held it whole; a phrase or a field value that
+// has to stay whole goes in double quotes.
 func matches(t *ticket.Ticket, q string, ms milestone.Index) bool {
 	for _, term := range filterTerms(strings.ToLower(q)) {
-		if !matchesTerm(t, strings.ReplaceAll(term, `"`, ""), ms) {
+		if !matchesTerm(t, term, ms) {
 			return false
 		}
 	}
 	return true
 }
 
-// filterTerms splits a filter into its conditions at whitespace, except
-// inside double quotes: user:"Alexander Sacharov" is one person, not a
-// person and a word. The quotes stay on the terms, so a filter put back
-// together from them reads as it was typed.
+// filterTerms splits a filter into its conditions at whitespace outside
+// double quotes — user:"Alexander Sacharov" is one person, not a person and
+// a word — keeping the quotes, so a filter put back together from its terms
+// reads as it was typed. A key left waiting for its value takes the next
+// word: "tag: ui" stays one condition.
 func filterTerms(q string) []string {
 	var out []string
+	for _, part := range splitOutsideQuotes(q, unicode.IsSpace) {
+		if n := len(out); n > 0 && strings.HasSuffix(out[n-1], ":") {
+			out[n-1] += part
+			continue
+		}
+		out = append(out, part)
+	}
+	return out
+}
+
+// filterValues is the alternatives of one field's value: split at commas
+// outside quotes, unquoted, and with the empty ones dropped — "user:sam,"
+// while the next name is being typed is sam alone, not sam and nobody.
+func filterValues(val string) []string {
+	var out []string
+	for _, v := range splitOutsideQuotes(val, func(r rune) bool { return r == ',' }) {
+		if v = strings.TrimSpace(strings.ReplaceAll(v, `"`, "")); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// splitOutsideQuotes cuts s at every rune sep matches outside double quotes,
+// keeping the quotes on the parts and dropping empty ones.
+func splitOutsideQuotes(s string, sep func(rune) bool) []string {
+	var out []string
 	start, quoted := -1, false
-	for i, r := range q {
+	for i, r := range s {
 		switch {
 		case r == '"':
 			quoted = !quoted
-		case unicode.IsSpace(r) && !quoted:
+		case sep(r) && !quoted:
 			if start >= 0 {
-				out = append(out, q[start:i])
+				out = append(out, s[start:i])
 				start = -1
 			}
 			continue
@@ -685,27 +714,51 @@ func filterTerms(q string) []string {
 		}
 	}
 	if start >= 0 {
-		out = append(out, q[start:])
+		out = append(out, s[start:])
 	}
 	return out
 }
 
-// matchesTerm is one word of the filter, already lower-cased.
+// splitTerm takes one key's condition out of a filter: the other conditions
+// as they were typed, and the values it held, lower-cased. The pickers use
+// it to own their key of the filter and leave the rest alone.
+func splitTerm(filter, key string) (rest, values []string) {
+	for _, term := range filterTerms(filter) {
+		k, val, ok := strings.Cut(term, ":")
+		if !ok || !strings.EqualFold(k, key) {
+			rest = append(rest, term)
+			continue
+		}
+		for _, v := range filterValues(val) {
+			values = append(values, strings.ToLower(v))
+		}
+	}
+	return rest, values
+}
+
+// matchesTerm is one condition of the filter, already lower-cased.
 func matchesTerm(t *ticket.Ticket, q string, ms milestone.Index) bool {
 	// A "key:value" query narrows the search to one field — "assignee:berk"
 	// finds berk's tickets without also matching every ticket whose prose
 	// mentions them. An unrecognized key is not an error: "http:" in a pasted
 	// URL is a search term, not a field, so it falls through to full text.
 	if key, val, ok := strings.Cut(q, ":"); ok {
-		if _, known := matchField(t, key, val, ms); known {
+		if _, known := matchField(t, key, "", ms); known {
+			vals := filterValues(val)
+			// A key with no value yet leaves the board as it is, the way an
+			// empty filter does.
+			if len(vals) == 0 {
+				return true
+			}
 			// A comma lists alternatives for one field: "user:berk,sam" is
 			// either of them.
-			return slices.ContainsFunc(strings.Split(val, ","), func(v string) bool {
+			return slices.ContainsFunc(vals, func(v string) bool {
 				hit, _ := matchField(t, key, v, ms)
 				return hit
 			})
 		}
 	}
+	q = strings.ReplaceAll(q, `"`, "")
 
 	// The body is included because half of what a ticket says lives there — the
 	// description and both checklists — and searching only the frontmatter meant
@@ -1194,16 +1247,22 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// second kind of narrowing beside it: one filter means esc clears
 			// this the same way it clears a typed one, and / shows what the
 			// board is currently narrowed to.
+			// Only the milestone: part: whatever else narrows the board — the
+			// people the user picker ticked, a typed word — stays.
 			if m.msIdx >= 0 && m.msIdx < n {
-				m.filter = "milestone:" + m.milestones[m.msIdx].Name
+				rest, _ := splitTerm(m.filter, "milestone")
+				m.filter = strings.Join(append(rest, "milestone:"+m.milestones[m.msIdx].Name), " ")
 				m.input = m.filter
 				m.rebuild()
 			}
 			m.mode = m.returnTo
 		case "x":
-			// Out of one milestone and back to the whole board, without
-			// having to remember that esc on the board does it.
-			m.filter, m.input = "", ""
+			// Out of the milestone and back to the board, without having to
+			// remember that esc on the board does it — keeping the rest of
+			// the filter, as enter does.
+			rest, _ := splitTerm(m.filter, "milestone")
+			m.filter = strings.Join(rest, " ")
+			m.input = m.filter
 			m.rebuild()
 			m.mode = m.returnTo
 		}
