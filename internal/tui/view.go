@@ -251,25 +251,74 @@ func (m *Model) renderBoard() string {
 	headLines := strings.Count(head, "\n") + 1
 	// The status bar is rendered first because it may wrap onto several lines
 	// on a narrow terminal, and the columns get whatever height remains.
+	//
+	// The cursor card's links are drawn only on the board itself, not under
+	// a dialog or while a move is being picked. Their legend goes into the
+	// bar, but which links reach a card on screen is only known once the
+	// columns are drawn — so the bar's height is fixed now from the longest
+	// legend it could get, and the real one, never longer, replaces it below.
+	cur := m.selected()
+	var links []lineLink
+	if m.mode == modeBoard && cur != nil {
+		links = m.cursorLinks(cur)
+	}
 	sb := m.statusBar()
+	if len(links) > 0 {
+		sb = m.statusBarWith(linkLegend(links, len(links)))
+	}
 	sbLines := strings.Count(sb, "\n") + 1
 	bodyHeight := m.height - 4 - sbLines - tabsLine - headLines - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
 	}
 
+	top := strings.Count(b.String(), "\n")
+	spots := map[string]cardSpot{}
+	x := 0
 	rendered := make([]string, 0, win.end-win.start)
 	for ci := win.start; ci < win.end; ci++ {
 		if win.thin[ci] {
 			rendered = append(rendered, m.renderThinColumn(ci, bodyHeight))
+			x += lipgloss.Width(rendered[len(rendered)-1])
 			continue
 		}
-		rendered = append(rendered, m.renderColumn(ci, win.colW, bodyHeight))
+		col, rows := m.renderColumn(ci, win.colW, bodyHeight)
+		w, h := lipgloss.Width(col), lipgloss.Height(col)
+		for id, r := range rows {
+			// A card the column clipped before its middle row has nowhere
+			// for a line to land.
+			if r < h-1 {
+				spots[id] = cardSpot{left: x, right: x + w - 1, row: top + r}
+			}
+		}
+		rendered = append(rendered, col)
+		x += w
 	}
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, rendered...))
 	b.WriteString("\n")
+	if len(links) == 0 {
+		b.WriteString(sb)
+		return b.String()
+	}
+
+	from, onScreen := spots[cur.ID]
+	var drawn []lineLink
+	var targets []lineTarget
+	for _, l := range links {
+		if at, ok := spots[l.id]; ok && onScreen {
+			drawn = append(drawn, l)
+			targets = append(targets, lineTarget{at: at, colour: lineFamilies[l.family].colour})
+		}
+	}
+	sb = m.statusBarWith(linkLegend(drawn, len(links)-len(drawn)))
+	for n := strings.Count(sb, "\n") + 1; n < sbLines; n++ {
+		sb += "\n"
+	}
 	b.WriteString(sb)
-	return b.String()
+	if len(targets) == 0 {
+		return b.String()
+	}
+	return drawLinkLines(b.String(), m.width, from, targets)
 }
 
 // renderSessions shows what each agent session is working on: the board's
@@ -419,7 +468,9 @@ func (m *Model) columnStyle(idx, w, h int) lipgloss.Style {
 	return style
 }
 
-func (m *Model) renderColumn(idx, w, h int) string {
+// renderColumn draws one lane, and reports for each card it drew the row of
+// that card's middle line, counted from the column's top border.
+func (m *Model) renderColumn(idx, w, h int) (string, map[string]int) {
 	col := m.cols[idx]
 	focused := idx == m.laneIdx
 	style := m.columnStyle(idx, w, h)
@@ -469,7 +520,11 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	}
 
 	shown := m.cardsInBudget(col.tickets, first, budget)
+	rows := map[string]int{}
 	for i := first; i < first+shown; i++ {
+		// Counted off what has been written, plus the top border and the
+		// card's own first row, so a line drawn to it lands where it is.
+		rows[col.tickets[i].ID] = strings.Count(body.String(), "\n") + 2
 		// w-2 is the lane's inside: columnStyle's Width counts its own border.
 		// The band runs all of it — there is no box to centre any more, so the
 		// column that used to sit unpainted at the right goes to the title
@@ -483,7 +538,7 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	if rest := len(col.tickets) - (first + shown); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
 	}
-	return style.Render(clampBlock(body.String(), w, h))
+	return style.Render(clampBlock(body.String(), w, h)), rows
 }
 
 // cardHeight is the rows renderCardBlock will draw a ticket's card in: the
@@ -940,7 +995,11 @@ func (m *Model) header() string {
 	return left + strings.Repeat(" ", gap) + right
 }
 
-func (m *Model) statusBar() string {
+func (m *Model) statusBar() string { return m.statusBarWith("") }
+
+// statusBarWith is the status bar with extra said just before the key hints:
+// the board's link legend, which only renderBoard can work out.
+func (m *Model) statusBarWith(extra string) string {
 	if m.mode == modeMove {
 		var parts []string
 		for i, l := range m.lanes.Lanes {
@@ -992,6 +1051,7 @@ func (m *Model) statusBar() string {
 	if n := m.readyToFile(); n > 0 {
 		prefix += styMeta.Render(fmt.Sprintf("⌸ %d to file: %s ", n, fileCommand))
 	}
+	prefix += extra
 
 	// Wrapped, never dropped: a key the bar has no room for is a key the reader
 	// does not know exists. renderBoard measures this bar and gives the columns

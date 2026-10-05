@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Rest the cursor on a board card that has links to see them: a line runs from it to every linked card on screen — red for blocked-by/blocks, blue for parent/child, green for follows, grey for related — straight across the cards between, and the status bar names the colours drawn and counts the links whose card is not on screen (`L` still lists them all).
 
 ## 0.3.4
 - Look at the foot of the done lane for what went into the logbook in the last 28 days, newest first and filled in teal; enter opens one read-only and `jaira restore <file>` brings it back. Set the number of days with `"logbook-days"` in `~/.jaira/settings.json` or on the settings screen `S` (0 hides them); `jaira logbook` without `--since` now lists the same window and names it.
