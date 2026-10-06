@@ -282,8 +282,10 @@ takes it along, and if no further code commit follows, the commit that files the
 ticket away with `jaira logbook <id>` carries its final state. Nothing is lost
 by waiting: the commit list is derived from the ticket id in the commit message
 as much as from the ticket file's history, so name the handle in every subject
-(`fix(A3K9QP): …`) and the list fills itself in. The one ticket that still earns
-a commit of its own is one you create and hand to someone else: commit it, or
+(`fix(A3K9QP): …`) and the list fills itself in. A ticket you create commits
+nothing either: it travels on its ref, everybody sees it there, and `jaira pull
+<id>` brings it into the branch that works it. Only when `jaira create` reports
+it as a file on your disk — the board has no usable remote — commit it, or
 nobody but you knows it exists.
 
 jaira never commits for you. It reads git (`Diff`, `Commits`, `HeadSHA`) and
