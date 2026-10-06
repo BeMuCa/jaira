@@ -6,6 +6,17 @@ on:
   pull_request:
 
 jobs:
+  # A ticket file goes into a commit only together with code; a ticket nobody
+  # works yet lives on its ref. See scripts/check-ticket-commits.sh for why.
+  ticket-commits:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: scripts/check-ticket-commits.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
   test:
     # Tested on all three platforms because the store touches the filesystem and
     # shells out to git, both of which differ across them. WSL2's file-watch

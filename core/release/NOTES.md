@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Stop committing a ticket you just created: run `jaira update`, and the block jaira writes into `AGENTS.md` and `CLAUDE.md` now says a new ticket travels on its ref and reaches a branch only through `jaira pull <id>` — commit it only when `jaira create` reports it as a file on your disk. The old block told agents to commit every ticket they created and handed on, which is how backlog tickets piled up on master.
 
 ## 0.3.4
 - Look at the foot of the done lane for what went into the logbook in the last 28 days, newest first and filled in teal; enter opens one read-only and `jaira restore <file>` brings it back. Set the number of days with `"logbook-days"` in `~/.jaira/settings.json` or on the settings screen `S` (0 hides them); `jaira logbook` without `--since` now lists the same window and names it.
