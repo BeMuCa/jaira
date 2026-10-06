@@ -54,12 +54,20 @@ func nudgeIfStale(s *ticket.Store) {
 }
 
 func newUpdateCmd() *cobra.Command {
-	return &cobra.Command{
+	var agentFile string
+	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Re-apply this repository's jaira setup",
 		Long: `Regenerates the jaira section in AGENTS.md/CLAUDE.md for this board's
 current lanes, and prints what changed since the version that last ran it
 here.
+
+--agent-file picks where that section lives: agents (AGENTS.md), claude
+(CLAUDE.md) or both. The section is taken out of the other file, and the
+choice holds from then on, because jaira writes only into the files that
+already carry the section. Claude Code reads AGENTS.md only where there is no
+CLAUDE.md, so 'agents' deletes a CLAUDE.md left empty and puts an
+'@AGENTS.md' import into one that still holds anything else.
 
 It does not touch .gitignore. 'jaira init' makes a new board private; whether
 this board is shared is a decision already taken, and re-adding the ignore
@@ -70,6 +78,12 @@ brings a board's own setup up to date with whichever binary you already have
 installed.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			switch agentFile {
+			case "", board.AgentFileAgents, board.AgentFileClaude, board.AgentFileBoth:
+			default:
+				return fail(ExitValidation, "bad_agent_file",
+					"--agent-file %q: want agents, claude or both", agentFile)
+			}
 			updateInProgress = true
 			defer func() { updateInProgress = false }()
 			s, err := openStore()
@@ -83,7 +97,13 @@ installed.`,
 			// Re-generated with this board's current lanes: adopting a lane is
 			// exactly when the note stops matching the board.
 			boardLanes, _ := lane.Load(s.Root)
-			notesWritten, noteErr := board.AnnounceInAgentFiles(s.Root, laneFacts(boardLanes))
+			var notesWritten []string
+			var noteErr error
+			if agentFile != "" {
+				notesWritten, noteErr = board.ChooseAgentFiles(s.Root, agentFile, laneFacts(boardLanes))
+			} else {
+				notesWritten, noteErr = board.AnnounceInAgentFiles(s.Root, laneFacts(boardLanes))
+			}
 			if noteErr != nil {
 				return fail(ExitError, "prepare_failed", "could not update an agent instruction file: %v", noteErr)
 			}
@@ -119,6 +139,8 @@ installed.`,
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&agentFile, "agent-file", "", "where the jaira section lives: agents (AGENTS.md), claude (CLAUDE.md) or both")
+	return cmd
 }
 
 // entriesJSON renders release entries as the plain maps emit() serializes,

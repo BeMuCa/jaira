@@ -1,7 +1,7 @@
 ---
 id: 01M4930V33NCPD29SW0ZV3S0MW
 title: Ein Ticket landet nur zusammen mit Code in einem Commit
-status: critique
+status: human
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,13 +21,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-06T17:08:45Z
-updated-at: 2026-10-06T17:12:45Z
+updated-at: 2026-10-06T17:14:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22138
 claimed-at: 2026-10-06T17:08:56Z
 outcome-what: "Der Agent-Block sagt nicht mehr, ein erstelltes Ticket zu committen; CI lehnt Commits ab, die Ticketfiles ohne Code tragen (scripts/check-ticket-commits.sh)."
 outcome-why: "Agenten folgten der alten Regel und committeten frische Tickets nach master, obwohl sie längst auf ihrem Ref leben; ohne Prüfung kam nichts davon auf."
 outcome-resolves: Backlog-Tickets landen nicht mehr auf master; ein Ticket kommt nur noch über jaira pull und mit Code in einen Branch.
+question: "Regel so richtig? Danach: die 32 Altfiles auf master räumen (vorher prüfen, welche Branches sie anfassen)."
+review-summary: "none — die Regel sitzt dort, wo sie entsteht (core/board/announce.go erzeugt den Agent-Block) und wird dort geprüft, wo alle vorbeikommen (CI auf pull_request). Löschungen bleiben erlaubt, damit logbook/archive und das Aufräumen der Altfiles durchgehen. Bewusste Grenze: ein Board im File-Modus würde in diesem Repo von CI abgelehnt; dieses Repo läuft im Ref-Modus."
+review-gaps: "none — ein Skript von ~20 Zeilen, ein CI-Job, ein Textabsatz; keine bestehende Prüfung in scripts/ oder .github/ deckt dasselbe ab."
+test-verdict: "pass — scripts/check-ticket-commits.sh master auf dem Branch: OK. Fixture-Repo: Commit nur mit .jaira/tickets/X.md -> exit 1 mit Commit-Namen; Ticket+main.go -> durch; git mv nach .jaira/logbook/ -> durch. go test ./internal/cli ./core/... mit leerem HOME grün; die 13 Fehler mit echtem HOME bestehen identisch ohne diese Änderung (Ursache ~/.jaira)."
 ---
 
 # Ein Ticket landet nur zusammen mit Code in einem Commit
