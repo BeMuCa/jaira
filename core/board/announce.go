@@ -420,7 +420,14 @@ func removeBlock(path string) (action string, err error) {
 		return "", fmt.Errorf("%s: its jaira block has a %s area written by hand; move that text out of the block first",
 			filepath.Base(path), jairaMarkerLocal)
 	}
-	rest := strings.TrimRight(s[:start], "\n") + "\n" + strings.TrimLeft(s[end+len(jairaMarkerEnd):], "\n")
+	before := strings.TrimRight(s[:start], "\n")
+	after := strings.TrimLeft(s[end+len(jairaMarkerEnd):], "\n")
+	rest := before + "\n"
+	if before != "" && after != "" {
+		// A blank line, or the paragraphs either side would run into one.
+		rest += "\n"
+	}
+	rest += after
 	if strings.TrimSpace(rest) == "" {
 		if err := os.Remove(path); err != nil {
 			return "", err

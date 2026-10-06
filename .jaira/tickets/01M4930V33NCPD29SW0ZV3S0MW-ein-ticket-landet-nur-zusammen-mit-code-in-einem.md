@@ -1,7 +1,7 @@
 ---
 id: 01M4930V33NCPD29SW0ZV3S0MW
 title: Ein Ticket landet nur zusammen mit Code in einem Commit
-status: critique
+status: signoff
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-06T17:08:45Z
-updated-at: 2026-10-06T19:05:07Z
+updated-at: 2026-10-06T19:06:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22138
 claimed-at: 2026-10-06T17:08:56Z
@@ -29,11 +29,11 @@ outcome-what: "Brainstorm-Rolle und Projekt-Skill sagen jetzt wie der Agent-Bloc
 outcome-why: "Review fand zwei Anweisungen, die der neuen Regel widersprachen; die Brainstorm-Rolle ist die wahrscheinlichste Quelle der Backlog-Stapel auf master."
 outcome-resolves: "Keine mitgelieferte Anweisung schickt mehr ein frisch erstelltes Ticket in einen Commit (git grep 'earns a commit' leer)."
 question: "Regel so richtig? Danach: die 32 Altfiles auf master räumen (vorher prüfen, welche Branches sie anfassen)."
-review-summary: "Der generierte Agent-Block (core/board/announce.go, daraus CLAUDE.md/AGENTS.md) und docs/AGENTS.md sagen jetzt: ein erstelltes Ticket wird nicht committet, es reist auf seinem Ref und kommt per jaira pull in den Branch; nur im File-Modus committen. Neu ist scripts/check-ticket-commits.sh: es geht jeden Nicht-Merge-Commit von base..head durch und schlägt fehl, wenn einer ein Ticketfile unter .jaira/tickets/ hinzufügt oder ändert, ohne eine Datei außerhalb von .jaira/ zu ändern; Löschen ist frei. Der CI-Job ticket-commits läuft es auf jedem pull_request."
-review-gaps: "Zwei Anweisungen sagen weiter das Gegenteil und werden jetzt von CI abgelehnt: (1) core/role/builtin/jaira-role-brainstorm/SKILL.md:77 'Then commit the ticket files' — die Brainstorm-Rolle legt Tickets an und committet sie; genau so landen Backlog-Tickets stapelweise auf master. (2) .claude/skills/jaira/SKILL.md:286 'The one ticket that still earns a commit of its own is one you create and hand to someone else: commit it'. Der DoD-Punkt 1 ist damit nur für den generierten Block erfüllt, das Ziel ('nie ohne Codeänderung') nicht."
-test-verdict: "pass — scripts/check-ticket-commits.sh master auf dem Branch: OK. Fixture-Repo: Commit nur mit .jaira/tickets/X.md -> exit 1 mit Commit-Namen; Ticket+main.go -> durch; git mv nach .jaira/logbook/ -> durch. go test ./internal/cli ./core/... mit leerem HOME grün; die 13 Fehler mit echtem HOME bestehen identisch ohne diese Änderung (Ursache ~/.jaira)."
-review-verdict: "nicht fertig: der Diff erfüllt die vier DoD-Punkte, aber zwei mitgelieferte Anweisungen widersprechen der Regel weiter, und eine davon (Brainstorm-Rolle) ist die wahrscheinlichste Quelle der Altfiles. Zurück nach in-progress."
-review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket-commits.sh master -> keine Ausgabe, exit 0  3. git grep -n 'earns a commit' -> keine Treffer  4. grep -n 'commit the ticket files' core/role/builtin/jaira-role-brainstorm/SKILL.md -> keine Treffer  5. sed -n 100,115p CLAUDE.md -> der Absatz sagt 'A ticket you create commits nothing either'"
+review-summary: "Der generierte Agent-Block (core/board/announce.go -> CLAUDE.md, AGENTS.md), docs/AGENTS.md, die Brainstorm-Rolle und der Projekt-Skill sagen jetzt einheitlich: ein erstelltes Ticket wird nicht committet, es reist auf seinem Ref und kommt per jaira pull in den Branch; nur ohne nutzbares Remote committen. scripts/check-ticket-commits.sh prüft jeden Nicht-Merge-Commit eines PR und lehnt einen ab, der ein Ticketfile unter .jaira/tickets/ hinzufügt oder ändert, ohne eine Datei außerhalb .jaira/ zu ändern; Löschen ist frei. Der CI-Job ticket-commits führt es auf pull_request aus."
+review-gaps: "none — Rest-Risiko, nicht Lücke: ein Board im File-Modus würde in diesem Repo von CI abgelehnt; dieses Repo läuft im Ref-Modus. Der CI-Job selbst ist erst auf GitHub bewiesen, wenn der PR läuft."
+test-verdict: "pass — scripts/check-ticket-commits.sh master: exit 0; git grep 'earns a commit' (ohne .planning/.jaira): leer; go test ./core/role grün."
+review-verdict: "der Diff erfüllt alle sechs DoD-Punkte; keine Defekte gefunden. Unsicher nur, ob der Job auf GitHub so läuft wie lokal — das zeigt der erste PR."
+review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket-commits.sh master -> keine Ausgabe, Exit-Code 0 (echo $?)  3. git grep -n 'earns a commit' -- ':!.planning' -> keine Treffer  4. sed -n 100,112p CLAUDE.md -> Absatz beginnt 'A ticket you create commits nothing either'  5. sed -n 74,82p core/role/builtin/jaira-role-brainstorm/SKILL.md -> 'Do not commit them.'  6. Nach dem PR: der Job 'ticket-commits' in GitHub Actions ist grün"
 ---
 
 # Ein Ticket landet nur zusammen mit Code in einem Commit
@@ -64,3 +64,4 @@ review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket
 - **2026-10-06 17:12 · Alexander Sacharov** — Die CI-Prüfung läuft nur auf pull_request über base..head. Die alte Historie verletzt die Regel dutzendfach (z.B. ec2c861, 4cf0249) — ein Check über die ganze Historie wäre für immer rot. Löschen eines Ticketfiles ist erlaubt, damit logbook/archive und das Aufräumen der 32 Altfiles auf master durchgehen. 13 Tests in internal/cli schlagen auf diesem Rechner auch ohne diese Änderung fehl; mit leerem HOME sind alle grün — Ursache ist ~/.jaira, nicht der Code.
 - **2026-10-06 18:57 · Alexander Sacharov** — Alex am 2026-10-06: Regel und CI-Prüfung angenommen wie gebaut (Ticketfile nur mit Code außerhalb .jaira/). Nächster Schritt danach: die 32 Altfiles auf master räumen.
 - **2026-10-06 19:03 · Alexander Sacharov** — Review 2026-10-06: zwei Anweisungen widersprechen der Regel noch — Brainstorm-Rolle (core/role/builtin/jaira-role-brainstorm/SKILL.md:77) und Projekt-Skill (.claude/skills/jaira/SKILL.md:286). Beide als DoD-Punkte 5 und 6 angehängt.
+- **2026-10-06 19:05 · Alexander Sacharov** — Von testing direkt nach review, ohne human: keine offene Frage. Nach Alex' Entscheidung vom 2026-10-06 (siehe BG5QJ6) nimmt der Mensch in signoff ab.

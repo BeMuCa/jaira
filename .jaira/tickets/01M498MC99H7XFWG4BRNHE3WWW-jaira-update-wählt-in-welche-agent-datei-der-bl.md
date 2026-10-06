@@ -1,7 +1,7 @@
 ---
 id: 01M498MC99H7XFWG4BRNHE3WWW
 title: "jaira update wählt, in welche Agent-Datei der Block geht"
-status: human
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-06T18:46:48Z
-updated-at: 2026-10-06T18:57:17Z
+updated-at: 2026-10-06T19:07:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3243
 claimed-at: 2026-10-06T18:46:59Z
@@ -29,9 +29,10 @@ outcome-what: "jaira update --agent-file agents|claude|both; core/board ChooseAg
 outcome-why: "Wer nur AGENTS.md oder nur CLAUDE.md will, bekam die andere Datei bei jedem update zurück; Claude Code liest AGENTS.md nur ohne CLAUDE.md."
 outcome-resolves: "Die Wahl ist ein Flag, hält ohne Konfiguration, und Claude Code sieht den Block in jeder Variante."
 review-summary: "none — die Wahl lebt in den Dateien, Aufrufer bleiben unverändert, Claude Code sieht den Block in allen drei Varianten. Bewusst stehen gelassen: wird das Entfernen wegen eines jaira:local-Bereichs abgelehnt, ist die gewählte Datei schon geschrieben; der Block steht dann in beiden Dateien wie vorher, nichts geht verloren."
-review-gaps: "none — removeBlock teilt sich die Markersuche nicht mit managedBlock, weil es entfernt statt ersetzt; hasLine ist der einzige Zeilenvergleich im Paket."
+review-gaps: "removeBlock (core/board/announce.go) verbindet Text vor und nach dem Block mit einem einzigen Zeilenumbruch. Steht der Block mitten in der Datei ('Absatz A\\n\\n<block>\\n\\nAbsatz B'), wird daraus 'Absatz A\\nAbsatz B' — in Markdown ein einziger Absatz; der Text des Nutzers ändert seine Bedeutung. Die Tests decken nur Block am Ende und Block am Anfang ab."
 test-verdict: "pass — go test ./core/board ./internal/cli ./internal/tui grün (leeres HOME). E2E mit frischem Build in leerem Repo: update --agent-file agents -> Block nur in AGENTS.md, CLAUDE.md mit eigenem Inhalt bekommt @AGENTS.md; update ohne Flag danach -> AGENTS.md:1 CLAUDE.md:0; --agent-file cursor -> exit 3 mit Meldung."
 question: "Soll dieses Repo selbst auf --agent-file agents umgestellt werden, oder bleibt es bei beiden?"
+review-verdict: "nicht fertig: DoD 2 verspricht, den Block aus der anderen Datei zu nehmen, ohne den übrigen Text zu verändern; bei einem Block in der Mitte verändert removeBlock ihn. Zurück nach in-progress."
 ---
 
 # jaira update wählt, in welche Agent-Datei der Block geht
@@ -48,6 +49,8 @@ question: "Soll dieses Repo selbst auf --agent-file agents umgestellt werden, od
   proof: core/board/agentfile_test.go
 - [x] core/release/NOTES.md hat eine Zeile unter Unreleased
   proof: core/release/NOTES.md:17
+- [x] Steht der Block mitten in der Datei, bleibt nach dem Entfernen zwischen dem Text davor und danach eine Leerzeile; ein Test pinnt das
+  proof: TestRemovingABlockMidFileKeepsTheParagraphsApart
 
 ## Options
 
@@ -61,3 +64,4 @@ question: "Soll dieses Repo selbst auf --agent-file agents umgestellt werden, od
 ## Progress
 - **2026-10-06 18:49 · Alexander Sacharov** — Die Wahl lebt in den Dateien: geschrieben wird nur dorthin, wo der Block schon steht; nirgends -> beide. Darum ändern sich die Aufrufer (update ohne Flag, lanes, TUI, init) nicht. Ein Block mit jaira:local wird nicht entfernt, sondern mit Fehler abgelehnt — sonst ginge handgeschriebener Text verloren. Die eigene @AGENTS.md-Zeile trägt einen Kommentar darüber, damit 'both'/'claude' nur jairas Import wieder entfernt, nie einen vom Nutzer. Dieses Repo selbst bleibt auf 'both'.
 - **2026-10-06 18:57 · Alexander Sacharov** — Alex am 2026-10-06: dieses Repo bleibt auf beiden Dateien (AGENTS.md und CLAUDE.md); --agent-file ist nur verfügbar, nicht angewendet.
+- **2026-10-06 19:06 · Alexander Sacharov** — Review 2026-10-06: removeBlock klebte Text vor und nach einem Block in der Dateimitte mit nur einem Zeilenumbruch zusammen; als DoD-Punkt 6 angehängt.

@@ -166,3 +166,16 @@ func TestChooseRefusesToDropAHandWrittenLocalArea(t *testing.T) {
 		t.Error("the local area was lost")
 	}
 }
+
+// TestRemovingABlockMidFileKeepsTheParagraphsApart: the text either side of a
+// removed block stays two paragraphs, as the user wrote it.
+func TestRemovingABlockMidFileKeepsTheParagraphsApart(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "AGENTS.md", "Paragraph A.\n\n"+jairaMarkerStart+"\nnote\n"+jairaMarkerEnd+"\n\nParagraph B.\n")
+	if _, err := ChooseAgentFiles(root, AgentFileClaude, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := readFile(t, root, "AGENTS.md"); got != "Paragraph A.\n\nParagraph B.\n" {
+		t.Errorf("AGENTS.md = %q", got)
+	}
+}
