@@ -1,7 +1,7 @@
 ---
 id: 01M4930V33NCPD29SW0ZV3S0MW
 title: Ein Ticket landet nur zusammen mit Code in einem Commit
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,9 +19,13 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - c0e38127be11012a6af8dcda3aa804a6d7f099ad
+  - aff2304a20867cc8eaa42bf7d2e4d534b5153c82
+  - 9dfd359398e27dce1752727002d25bb857afaba0
+  - 01cd6d3b29e3e466f61a2b840e0abb73090bd51e
 created-at: 2026-10-06T17:08:45Z
-updated-at: 2026-10-06T19:06:04Z
+updated-at: 2026-10-06T21:53:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22138
 claimed-at: 2026-10-06T17:08:56Z
@@ -33,7 +37,7 @@ review-summary: "Der generierte Agent-Block (core/board/announce.go -> CLAUDE.md
 review-gaps: "none — Rest-Risiko, nicht Lücke: ein Board im File-Modus würde in diesem Repo von CI abgelehnt; dieses Repo läuft im Ref-Modus. Der CI-Job selbst ist erst auf GitHub bewiesen, wenn der PR läuft."
 test-verdict: "pass — scripts/check-ticket-commits.sh master: exit 0; git grep 'earns a commit' (ohne .planning/.jaira): leer; go test ./core/role grün."
 review-verdict: "der Diff erfüllt alle sechs DoD-Punkte; keine Defekte gefunden. Unsicher nur, ob der Job auf GitHub so läuft wie lokal — das zeigt der erste PR."
-review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket-commits.sh master -> keine Ausgabe, Exit-Code 0 (echo $?)  3. git grep -n 'earns a commit' -- ':!.planning' -> keine Treffer  4. sed -n 100,112p CLAUDE.md -> Absatz beginnt 'A ticket you create commits nothing either'  5. sed -n 74,82p core/role/builtin/jaira-role-brainstorm/SKILL.md -> 'Do not commit them.'  6. Nach dem PR: der Job 'ticket-commits' in GitHub Actions ist grün"
+review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket-commits.sh master -> keine Ausgabe, Exit-Code 0 (echo $?)  3. git grep -n 'earns a commit' -- ':!.planning' ':!.jaira' -> keine Treffer  4. sed -n 100,112p CLAUDE.md -> Absatz enthält 'A ticket you create commits nothing either'  5. sed -n 74,82p core/role/builtin/jaira-role-brainstorm/SKILL.md -> 'Do not commit them.'  6. Nach dem PR: der Job 'ticket-commits' in GitHub Actions ist grün"
 ---
 
 # Ein Ticket landet nur zusammen mit Code in einem Commit
@@ -48,8 +52,10 @@ review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket
   proof: .github/workflows/ci.yaml:11, scripts/check-ticket-commits.sh
 - [x] core/release/NOTES.md hat eine Zeile unter Unreleased
   proof: core/release/NOTES.md:17
-- [ ] core/role/builtin/jaira-role-brainstorm/SKILL.md sagt nicht mehr, die angelegten Tickets zu committen
-- [ ] .claude/skills/jaira/SKILL.md sagt dasselbe wie der Agent-Block: ein erstelltes Ticket wird nur im File-Modus committet
+- [x] core/role/builtin/jaira-role-brainstorm/SKILL.md sagt nicht mehr, die angelegten Tickets zu committen
+  proof: core/role/builtin/jaira-role-brainstorm/SKILL.md:77 (9dfd359)
+- [x] .claude/skills/jaira/SKILL.md sagt dasselbe wie der Agent-Block: ein erstelltes Ticket wird nur im File-Modus committet
+  proof: .claude/skills/jaira/SKILL.md:286 (9dfd359)
 
 ## Options
 
@@ -65,3 +71,4 @@ review-check: "1. git switch fix/ticket-rides-with-code  2. scripts/check-ticket
 - **2026-10-06 18:57 · Alexander Sacharov** — Alex am 2026-10-06: Regel und CI-Prüfung angenommen wie gebaut (Ticketfile nur mit Code außerhalb .jaira/). Nächster Schritt danach: die 32 Altfiles auf master räumen.
 - **2026-10-06 19:03 · Alexander Sacharov** — Review 2026-10-06: zwei Anweisungen widersprechen der Regel noch — Brainstorm-Rolle (core/role/builtin/jaira-role-brainstorm/SKILL.md:77) und Projekt-Skill (.claude/skills/jaira/SKILL.md:286). Beide als DoD-Punkte 5 und 6 angehängt.
 - **2026-10-06 19:05 · Alexander Sacharov** — Von testing direkt nach review, ohne human: keine offene Frage. Nach Alex' Entscheidung vom 2026-10-06 (siehe BG5QJ6) nimmt der Mensch in signoff ab.
+- **2026-10-06 21:53 · Alexander Sacharov** — Abnahme 2026-10-06 (https://claude.ai/artifact/JwDPU5tVLGPXLp5uNFNGb2): alle Schritte von Alex ok. Die Maschinenprüfung 'git grep earns a commit' war rot, weil sie die Ticketfiles mitsuchte, die den alten Satz als Ursache zitieren — Schritt korrigiert (':!.jaira'), danach grün. Kein Codefehler.

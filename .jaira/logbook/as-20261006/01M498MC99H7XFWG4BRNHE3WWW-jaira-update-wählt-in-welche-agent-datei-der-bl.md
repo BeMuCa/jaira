@@ -1,7 +1,7 @@
 ---
 id: 01M498MC99H7XFWG4BRNHE3WWW
 title: "jaira update wählt, in welche Agent-Datei der Block geht"
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,20 +19,24 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - aff2304a20867cc8eaa42bf7d2e4d534b5153c82
+  - 9dfd359398e27dce1752727002d25bb857afaba0
+  - 01cd6d3b29e3e466f61a2b840e0abb73090bd51e
 created-at: 2026-10-06T18:46:48Z
-updated-at: 2026-10-06T19:07:13Z
+updated-at: 2026-10-06T21:53:40Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3243
 claimed-at: 2026-10-06T18:46:59Z
 outcome-what: "jaira update --agent-file agents|claude|both; core/board ChooseAgentFiles, removeBlock, setClaudeImport; AnnounceInAgentFiles schreibt nur in Dateien, die den Block tragen."
 outcome-why: "Wer nur AGENTS.md oder nur CLAUDE.md will, bekam die andere Datei bei jedem update zurück; Claude Code liest AGENTS.md nur ohne CLAUDE.md."
 outcome-resolves: "Die Wahl ist ein Flag, hält ohne Konfiguration, und Claude Code sieht den Block in jeder Variante."
-review-summary: "none — die Wahl lebt in den Dateien, Aufrufer bleiben unverändert, Claude Code sieht den Block in allen drei Varianten. Bewusst stehen gelassen: wird das Entfernen wegen eines jaira:local-Bereichs abgelehnt, ist die gewählte Datei schon geschrieben; der Block steht dann in beiden Dateien wie vorher, nichts geht verloren."
-review-gaps: "removeBlock (core/board/announce.go) verbindet Text vor und nach dem Block mit einem einzigen Zeilenumbruch. Steht der Block mitten in der Datei ('Absatz A\\n\\n<block>\\n\\nAbsatz B'), wird daraus 'Absatz A\\nAbsatz B' — in Markdown ein einziger Absatz; der Text des Nutzers ändert seine Bedeutung. Die Tests decken nur Block am Ende und Block am Anfang ab."
-test-verdict: "pass — go test ./core/board ./internal/cli ./internal/tui grün (leeres HOME). E2E mit frischem Build in leerem Repo: update --agent-file agents -> Block nur in AGENTS.md, CLAUDE.md mit eigenem Inhalt bekommt @AGENTS.md; update ohne Flag danach -> AGENTS.md:1 CLAUDE.md:0; --agent-file cursor -> exit 3 mit Meldung."
+review-summary: "jaira update hat ein Flag --agent-file agents|claude|both. Es schreibt den jaira-Block nur in die gewählten Dateien und nimmt ihn aus der anderen heraus (eine Datei, die danach leer ist, wird gelöscht; der Text drumherum bleibt mit Leerzeile getrennt). Bei 'agents' bekommt eine CLAUDE.md mit eigenem Inhalt oben eine markierte Zeile @AGENTS.md, weil Claude Code AGENTS.md sonst nicht liest; 'claude' und 'both' nehmen nur diese markierte Zeile wieder heraus. Ohne Flag schreibt jaira nur in Dateien, die den Block schon tragen, und in beide, wenn keine ihn trägt — so hält die Wahl ohne Konfiguration, und alte Boards verhalten sich wie bisher. Ein Block mit jaira:local-Bereich wird nicht entfernt, sondern mit Fehler abgelehnt. Ein falscher Wert endet mit Exit 3."
+review-gaps: "none — bewusst offen: wird das Entfernen wegen jaira:local abgelehnt, ist die gewählte Datei schon geschrieben und der Block steht in beiden Dateien; nichts geht verloren."
+test-verdict: "pass — go test ./core/board ./internal/cli grün (leeres HOME), 9 Tests in core/board/agentfile_test.go."
 question: "Soll dieses Repo selbst auf --agent-file agents umgestellt werden, oder bleibt es bei beiden?"
-review-verdict: "nicht fertig: DoD 2 verspricht, den Block aus der anderen Datei zu nehmen, ohne den übrigen Text zu verändern; bei einem Block in der Mitte verändert removeBlock ihn. Zurück nach in-progress."
+review-verdict: "der Diff erfüllt alle sechs DoD-Punkte; keine Defekte mehr gefunden."
+review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir /tmp/t && cd /tmp/t && git init -q && printf '# Own\\n' > CLAUDE.md && /tmp/j init  3. /tmp/j update --agent-file agents -> Ausgabe nennt 'CLAUDE.md (block removed), CLAUDE.md (imports AGENTS.md)'  4. head -3 CLAUDE.md -> Kommentarzeile, dann '@AGENTS.md'  5. grep -c 'jaira:start' AGENTS.md CLAUDE.md -> AGENTS.md:1 CLAUDE.md:0  6. /tmp/j update -> danach grep wieder AGENTS.md:1 CLAUDE.md:0  7. /tmp/j update --agent-file cursor -> Meldung 'want agents, claude or both', echo $? zeigt 3"
 ---
 
 # jaira update wählt, in welche Agent-Datei der Block geht
@@ -65,3 +69,5 @@ review-verdict: "nicht fertig: DoD 2 verspricht, den Block aus der anderen Datei
 - **2026-10-06 18:49 · Alexander Sacharov** — Die Wahl lebt in den Dateien: geschrieben wird nur dorthin, wo der Block schon steht; nirgends -> beide. Darum ändern sich die Aufrufer (update ohne Flag, lanes, TUI, init) nicht. Ein Block mit jaira:local wird nicht entfernt, sondern mit Fehler abgelehnt — sonst ginge handgeschriebener Text verloren. Die eigene @AGENTS.md-Zeile trägt einen Kommentar darüber, damit 'both'/'claude' nur jairas Import wieder entfernt, nie einen vom Nutzer. Dieses Repo selbst bleibt auf 'both'.
 - **2026-10-06 18:57 · Alexander Sacharov** — Alex am 2026-10-06: dieses Repo bleibt auf beiden Dateien (AGENTS.md und CLAUDE.md); --agent-file ist nur verfügbar, nicht angewendet.
 - **2026-10-06 19:06 · Alexander Sacharov** — Review 2026-10-06: removeBlock klebte Text vor und nach einem Block in der Dateimitte mit nur einem Zeilenumbruch zusammen; als DoD-Punkt 6 angehängt.
+- **2026-10-06 19:08 · Alexander Sacharov** — Von testing direkt nach review, ohne human: keine offene Frage (Entscheidung vom 2026-10-06, BG5QJ6).
+- **2026-10-06 21:53 · Alexander Sacharov** — Abnahme 2026-10-06 (https://claude.ai/artifact/JwDPU5tVLGPXLp5uNFNGb2): alle Schritte von Alex ok, alle fünf Maschinenprüfungen grün.
