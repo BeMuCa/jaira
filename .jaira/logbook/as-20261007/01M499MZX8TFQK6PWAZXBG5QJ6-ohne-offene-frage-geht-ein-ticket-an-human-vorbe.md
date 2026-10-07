@@ -1,7 +1,7 @@
 ---
 id: 01M499MZX8TFQK6PWAZXBG5QJ6
 title: Ohne offene Frage geht ein Ticket an human vorbei direkt in review
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,15 +18,21 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8e1518b1faac43499322b10458b709ae3c8bfcf1
 created-at: 2026-10-06T19:04:37Z
-updated-at: 2026-10-07T06:07:58Z
+updated-at: 2026-10-07T06:10:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-10262
 claimed-at: 2026-10-07T06:05:41Z
 outcome-what: "Agent-Block, jaira-role-lane und Dispatcher sagen: human nur mit offener Frage, sonst next_lane (review); die Lane-Zeile einer Frage-Lane sagt 'without one, work passes it by'."
 outcome-why: "Agenten lasen human als Station und parkten jedes fertige Ticket dort — ohne review-check, doppelte Abnahme durch den Menschen."
 outcome-resolves: "Ein Ticket ohne Frage geht testing -> review -> signoff; der Mensch nimmt einmal ab, mit review-check."
+review-summary: "Der Agent-Block markiert eine Lane mit requires-question jetzt mit 'only with an open question (--question); without one, work passes it by' und sagt, dass die nächste Lane next_lane aus jaira show --json ist, die eine solche Lane überspringt. jaira-role-lane sagt nicht mehr 'review and human are a person's lanes' (review ist auf diesem Board agentisch), sondern: human nur mit offener Frage, sonst next_lane. Der Dispatcher sagt dasselbe an seiner Stopp-Regel. Code am Routing ist unverändert, weil core/lane/next.go human schon überspringt. CLAUDE.md/AGENTS.md regeneriert, NOTES-Zeile, ein Test für die Lane-Zeile."
+review-gaps: "none — Grenze: die maschinenlokalen Kopien der Rollen unter ~/.claude/skills ändern sich erst mit 'jaira roles install --force'; die NOTES-Zeile sagt das."
+test-verdict: "pass — BG5QJ6 selbst in testing: jaira show --json meldet next_lane=review; jaira move --to review ohne Warnung. go test ./core/board (inkl. TestLaneSectionSaysAQuestionLaneIsPassedBy) ./core/role ./internal/cli grün mit leerem HOME. CLAUDE.md:150 zeigt die neue human-Zeile."
+review-verdict: "der Diff erfüllt alle fünf DoD-Punkte; keine Defekte gefunden. Am Ticket selbst bewiesen: es ging testing -> review ohne human."
+review-check: "1. jaira show BG5QJ6 --json | grep next_lane  -> zeigt 'done' oder 'signoff'-Nachfolger, und in der Ticket-Historie (jaira show BG5QJ6) steht kein Schritt durch human  2. grep -n 'human` —' CLAUDE.md  -> Zeile endet mit 'without one, work passes it by'  3. grep -n 'human.*open question' core/role/builtin/jaira-role-lane/SKILL.md core/role/builtin/jaira-dispatcher/SKILL.md  -> je ein Treffer"
 ---
 
 # Ohne offene Frage geht ein Ticket an human vorbei direkt in review
