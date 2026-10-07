@@ -102,6 +102,10 @@ check() {
 # empty one is a failed read like any other, and taken as the start it would
 # make the first status before the lane look like a worker that moved past it.
 until start="$(status)"; [ -n "$start" ]; do check; sleep 5; done
+# jaira move never clears the question field: a ticket back from human still
+# carries the question answered there. Only a question other than this one is
+# the worker's own.
+q0="$(question)"
 
 # The lane is finished once the ticket has been in it and left it. A worker is
 # started before its ticket is moved into the lane, so a status other than the
@@ -117,7 +121,7 @@ while :; do
   if [ -n "$s" ]; then
     [ "$s" = "$lane" ] && seen=1
     if [ "$s" != "$lane" ] && { [ -n "$seen" ] || [ "$s" != "$start" ]; }; then break; fi
-    if [ "$s" = "$lane" ] && [ -n "$(question)" ] \
+    if [ "$s" = "$lane" ] && { q="$(question)"; [ -n "$q" ] && [ "$q" != "$q0" ]; } \
       && case "$(agent)" in idle|done) true ;; *) false ;; esac; then
       asked=1; break
     fi

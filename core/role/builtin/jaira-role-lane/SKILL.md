@@ -297,8 +297,11 @@ The answer comes back as a `jaira note` on the ticket, and the lane runs again
 in a fresh worker that reads it there.
 
 A question about your role — which of the two critiques you are, see above —
-is not one of these. It goes to the dispatcher directly, because only the
-dispatcher knows the answer, and the person does not.
+is not one of these: only the dispatcher knows that answer, and the person does
+not. You have no line to the dispatcher, though — nothing tells you its name.
+So write it as the last line in your pane, set no `question` field and no note,
+and stop. The dispatcher reads your pane when its wait comes back without the
+lane having moved.
 
 ## Boundaries
 
