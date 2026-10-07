@@ -147,7 +147,7 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
 - `testing` — yours to work; tier cheap; must produce test-verdict
   Runs the change and checks it against the ticket - does the demanded thing exist, and does it work.
-- `human` — **a person's, not yours** — you may move work in, never out
+- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by
   Human in the loop.
 - `review` — yours to work; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
   A second model has judged the diff.
@@ -168,8 +168,11 @@ the lane nobody drives is the one that fills up.
 
 Told to start or work a ticket, drive it this way yourself — lane by lane,
 loops included — until it sits in a human lane, then continue once the human
-has answered. Told an agent should work it, hand it to a subagent that
-babysits the ticket through the same route.
+has answered. The next lane is `next_lane` in `jaira show <id> --json`: it
+passes a lane that only takes a question by, so a ticket with nothing to
+decide goes on to the model review and reaches a person once, at the end.
+Told an agent should work it, hand it to a subagent that babysits the ticket
+through the same route.
 
 <!-- jaira:local -->
 

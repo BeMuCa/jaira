@@ -14,6 +14,9 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+
+## 0.3.5
+- Expect a ticket with nothing to decide to go from testing straight to review and reach you once, in signoff: run `jaira update` and `jaira roles install --force`, and the agent block, the lane role and the dispatcher now say that `human` takes a ticket only with an open question (`--question`) and that the next lane is `next_lane` from `jaira show <id> --json`, which already passed it by. Before, agents parked every finished ticket in `human`, where it had no `review-check` yet and `/jaira-role-acceptance` could not take it.
 - Pick where jaira's section lives with `jaira update --agent-file agents|claude|both`: it is written only there and taken out of the other file, and later updates and lane changes keep to that choice. Claude Code reads `AGENTS.md` only when there is no `CLAUDE.md`, so `agents` deletes a `CLAUDE.md` that held nothing but the section and adds an `@AGENTS.md` import to one that holds anything else. Without the flag nothing changes: a board that never chose keeps the section in both files.
 - Stop committing a ticket you just created: run `jaira update`, and the block jaira writes into `AGENTS.md` and `CLAUDE.md` now says a new ticket travels on its ref and reaches a branch only through `jaira pull <id>` — commit it only when `jaira create` reports it as a file on your disk. The old block told agents to commit every ticket they created and handed on, which is how backlog tickets piled up on master. Run `jaira roles install --force` too: the brainstorm role said the same thing and now files its tickets without committing them.
 

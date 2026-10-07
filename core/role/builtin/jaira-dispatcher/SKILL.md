@@ -377,7 +377,9 @@ finished. Print the three lines and stop.
 Stop and report the moment any of these is true:
 
 - the ticket reached a lane a person owns (human, signoff) — you may deliver
-  into one, never out of it
+  into one, never out of it. `human` is for an open question only: a ticket
+  with nothing to decide follows `next_lane` past it to the model review, and
+  the person sees it once, in signoff
 - a worker is sitting at an approval dialog. Read its output, report what it is
   asking, and never answer for the human
 - **the same lane sent work back three times.** Stop there and hand it to the
