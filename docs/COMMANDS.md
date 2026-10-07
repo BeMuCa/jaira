@@ -176,10 +176,12 @@ Board:
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field:
-                                  id title goal context assignee lane tag body)
+                                  id title goal context assignee user lane tag body;
+                                  spaces combine, a comma means or, "quotes" keep words together)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
+u         only some people's tickets (space ticks, enter applies)
 S         settings: lanes, the default board, days of logbook shown
 ```
 

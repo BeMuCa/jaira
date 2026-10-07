@@ -15,6 +15,9 @@ Format rules — read before editing:
 
 ## Unreleased
 - Rest the cursor on a board card that has links to see them: a line runs from it to every linked card on screen — red for blocked-by/blocks, blue for parent/child, green for follows, grey for related — straight across the cards between, and the status bar names the colours drawn and counts the links whose card is not on screen (`L` still lists them all).
+- Press `u` on the board to show only some people's tickets: tick names with space and press enter, and the `/` filter gets `user:name,other`, which matches a ticket's assignee or creator by exact name; `x` in that list shows everyone again.
+- Combine conditions in the `/` filter with spaces — `user:berk 7MG5GB` is berk's ticket 7MG5GB — list alternatives for one field with a comma (`tag:ui,cli`), and put a phrase, a name or any field value with a space or comma in double quotes (`user:"Alexander Sacharov"`, `tag:"needs review"`) — unquoted, an earlier filter like `export csv` now matches each word anywhere instead of the words side by side, and `tag:needs review` looks for the tag `needs` and the word `review`.
+- Expect `M` to add its milestone to what the filter already holds instead of replacing it, and `x` in that list to take out only the milestone.
 
 ## 0.3.5
 - Expect a ticket with nothing to decide to go from testing straight to review and reach you once, in signoff: run `jaira update` and `jaira roles install --force`, and the agent block, the lane role and the dispatcher now say that `human` takes a ticket only with an open question (`--question`) and that the next lane is `next_lane` from `jaira show <id> --json`, which already passed it by. Before, agents parked every finished ticket in `human`, where it had no `review-check` yet and `/jaira-role-acceptance` could not take it.
