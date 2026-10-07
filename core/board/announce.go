@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -107,9 +108,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  that carries code takes it along; if no further code commit follows, the\n" +
 	"  commit that files the ticket away with `jaira logbook <id>` carries its\n" +
 	"  final state. Nothing is lost by waiting: the lane's writes are already on\n" +
-	"  the ticket. The one ticket that still earns a commit of its own is a ticket\n" +
-	"  you create and hand to someone else — commit it, or nobody but you knows it\n" +
-	"  exists\n" +
+	"  the ticket. A ticket you create commits nothing either: it travels on its\n" +
+	"  ref, everybody sees it there, and `jaira pull <id>` brings it into the\n" +
+	"  branch that works it. Only when `jaira create` reports it as a file on your\n" +
+	"  disk — the board has no usable remote — commit it, or nobody but you knows\n" +
+	"  it exists\n" +
 	"- `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its\n" +
 	"  commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the\n" +
 	"  board. `jaira restore <file>` brings it back\n" +
@@ -224,6 +227,11 @@ func laneSection(facts []LaneFact) string {
 		if f.Parking {
 			marks = append(marks, "parking: work returns to the lane it left")
 		}
+		if f.Question {
+			// Not a station on the route: a ticket with nothing to decide passes it
+			// by, or a person is asked twice — here and again at the sign-off.
+			marks = append(marks, "only with an open question (`--question`); without one, work passes it by")
+		}
 		fmt.Fprintf(&b, "- `%s` — %s\n", f.ID, strings.Join(marks, "; "))
 		if d := strings.TrimSpace(f.Description); d != "" {
 			fmt.Fprintf(&b, "  %s\n", FirstSentence(d))
@@ -240,8 +248,11 @@ func laneSection(facts []LaneFact) string {
 		"\n" +
 		"Told to start or work a ticket, drive it this way yourself — lane by lane,\n" +
 		"loops included — until it sits in a human lane, then continue once the human\n" +
-		"has answered. Told an agent should work it, hand it to a subagent that\n" +
-		"babysits the ticket through the same route.")
+		"has answered. The next lane is `next_lane` in `jaira show <id> --json`: it\n" +
+		"passes a lane that only takes a question by, so a ticket with nothing to\n" +
+		"decide goes on to the model review and reaches a person once, at the end.\n" +
+		"Told an agent should work it, hand it to a subagent that babysits the ticket\n" +
+		"through the same route.")
 	return b.String()
 }
 
@@ -315,9 +326,168 @@ func managedBlock(s, note string) (string, bool) {
 // does not get used, and the cost of an extra markdown section is nothing.
 var agentFiles = []string{"AGENTS.md", "CLAUDE.md"}
 
-// AnnounceInAgentFiles writes the note into each agent instruction file.
-func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
+// The choices 'jaira update --agent-file' takes.
+const (
+	AgentFileAgents = "agents"
+	AgentFileClaude = "claude"
+	AgentFileBoth   = "both"
+)
+
+// agentFileChoices maps a choice to the files that carry the block under it.
+var agentFileChoices = map[string][]string{
+	AgentFileAgents: {"AGENTS.md"},
+	AgentFileClaude: {"CLAUDE.md"},
+	AgentFileBoth:   agentFiles,
+}
+
+// claudeImport is what makes Claude Code read AGENTS.md while a CLAUDE.md
+// exists: Claude Code reads AGENTS.md only where there is no CLAUDE.md, and
+// otherwise only through an import line. The comment above it is what lets a
+// later choice take the import out again without touching one the user wrote.
+const claudeImport = "<!-- jaira: the jaira block lives in AGENTS.md -->\n@AGENTS.md\n"
+
+// chosenAgentFiles is where the block goes when nobody says: the files that
+// already carry it. The choice lives in the files themselves rather than in a
+// setting — a board whose CLAUDE.md has no block is a board somebody chose to
+// keep it out of, and every teammate's clone reads that the same way. With no
+// block anywhere, both get one, which is what jaira always did.
+func chosenAgentFiles(root string) []string {
+	var have []string
 	for _, name := range agentFiles {
+		b, err := os.ReadFile(filepath.Join(root, name))
+		if err == nil && strings.Contains(string(b), jairaMarkerStart) {
+			have = append(have, name)
+		}
+	}
+	if len(have) == 0 {
+		return agentFiles
+	}
+	return have
+}
+
+// AnnounceInAgentFiles writes the note into the agent instruction files that
+// carry it — see chosenAgentFiles.
+func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
+	return announceIn(root, chosenAgentFiles(root), lanes)
+}
+
+// ChooseAgentFiles puts the note into the files of one choice and takes it out
+// of the others, so the next write without a choice keeps to it.
+func ChooseAgentFiles(root, choice string, lanes []LaneFact) (written []string, err error) {
+	keep, ok := agentFileChoices[choice]
+	if !ok {
+		return nil, fmt.Errorf("unknown agent file %q: want %s, %s or %s",
+			choice, AgentFileAgents, AgentFileClaude, AgentFileBoth)
+	}
+	written, err = announceIn(root, keep, lanes)
+	if err != nil {
+		return written, err
+	}
+	for _, name := range agentFiles {
+		if slices.Contains(keep, name) {
+			continue
+		}
+		action, rerr := removeBlock(filepath.Join(root, name))
+		if rerr != nil {
+			return written, rerr
+		}
+		if action != "" {
+			written = append(written, name+" ("+action+")")
+		}
+	}
+	action, ierr := setClaudeImport(filepath.Join(root, "CLAUDE.md"), choice == AgentFileAgents)
+	if ierr != nil {
+		return written, ierr
+	}
+	if action != "" {
+		written = append(written, "CLAUDE.md ("+action+")")
+	}
+	return written, nil
+}
+
+// removeBlock takes the managed block out of a file and deletes the file when
+// nothing else is left in it — a file holding only jaira's block is one jaira
+// created, and an empty CLAUDE.md would still hide AGENTS.md from Claude Code.
+func removeBlock(path string) (action string, err error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	s := string(b)
+	start := strings.Index(s, jairaMarkerStart)
+	end := strings.Index(s, jairaMarkerEnd)
+	if start < 0 || end <= start {
+		return "", nil
+	}
+	if strings.Contains(s[start:end], jairaMarkerLocal) {
+		// The local area is the one part of the block somebody wrote by hand.
+		// Taking the block out would delete it, so it is refused instead.
+		return "", fmt.Errorf("%s: its jaira block has a %s area written by hand; move that text out of the block first",
+			filepath.Base(path), jairaMarkerLocal)
+	}
+	before := strings.TrimRight(s[:start], "\n")
+	after := strings.TrimLeft(s[end+len(jairaMarkerEnd):], "\n")
+	rest := before + "\n"
+	if before != "" && after != "" {
+		// A blank line, or the paragraphs either side would run into one.
+		rest += "\n"
+	}
+	rest += after
+	if strings.TrimSpace(rest) == "" {
+		if err := os.Remove(path); err != nil {
+			return "", err
+		}
+		return "deleted", nil
+	}
+	if strings.TrimSpace(s[:start]) == "" {
+		rest = strings.TrimLeft(rest, "\n")
+	}
+	if err := os.WriteFile(path, []byte(rest), 0o644); err != nil {
+		return "", err
+	}
+	return "block removed", nil
+}
+
+// setClaudeImport adds or removes jaira's import of AGENTS.md in an existing
+// CLAUDE.md. It never creates the file: with no CLAUDE.md, Claude Code reads
+// AGENTS.md on its own. An import the user wrote themselves is left alone.
+func setClaudeImport(path string, want bool) (action string, err error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	s := string(b)
+	has := strings.Contains(s, claudeImport)
+	switch {
+	case want && !has && !hasLine(s, "@AGENTS.md"):
+		s = claudeImport + "\n" + s
+		action = "imports AGENTS.md"
+	case !want && has:
+		s = strings.TrimLeft(strings.Replace(s, claudeImport, "", 1), "\n")
+		action = "import of AGENTS.md removed"
+	default:
+		return "", nil
+	}
+	return action, os.WriteFile(path, []byte(s), 0o644)
+}
+
+func hasLine(s, line string) bool {
+	for _, l := range strings.Split(s, "\n") {
+		if strings.TrimSpace(l) == line {
+			return true
+		}
+	}
+	return false
+}
+
+func announceIn(root string, names []string, lanes []LaneFact) (written []string, err error) {
+	for _, name := range names {
 		path, action, ferr := announceInAgentFile(root, name, lanes)
 		if ferr != nil {
 			return written, ferr

@@ -160,3 +160,20 @@ func TestLaneSectionNamesEveryBackEdge(t *testing.T) {
 		t.Errorf("both declared back edges are not named:\n%s", got)
 	}
 }
+
+// TestLaneSectionSaysAQuestionLaneIsPassedBy: a lane that only takes a
+// question is not a station on the route, and the note has to say so — an
+// agent reading it as one stops every ticket there and asks the person twice.
+func TestLaneSectionSaysAQuestionLaneIsPassedBy(t *testing.T) {
+	got := laneSection([]LaneFact{
+		{ID: "testing", Agentic: true},
+		{ID: "human", Question: true},
+		{ID: "review", Agentic: true},
+	})
+	if !strings.Contains(got, "- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by") {
+		t.Errorf("the human lane does not say it is passed by without a question:\n%s", got)
+	}
+	if strings.Contains(got, "- `review` — yours to work; only with an open question") {
+		t.Error("an ordinary lane was marked as question-only")
+	}
+}

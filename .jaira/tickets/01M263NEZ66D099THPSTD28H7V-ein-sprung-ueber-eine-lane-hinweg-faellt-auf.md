@@ -19,7 +19,8 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-10T16:50:54Z
-updated-at: 2026-09-10T16:50:54Z
+updated-at: 2026-10-07T06:07:42Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein Sprung ueber eine Lane hinweg faellt auf
@@ -38,4 +39,4 @@ updated-at: 2026-09-10T16:50:54Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-07 06:07 · Alexander Sacharov** — Hinweis aus BG5QJ6 (2026-10-07): eine Lane mit requires-question (human) liegt nicht auf dem Weg — core/lane/next.go überspringt sie. Die Sprung-Erkennung darf testing->review nicht als übersprungene Lane melden.

@@ -104,9 +104,11 @@ Working a ticket:
   that carries code takes it along; if no further code commit follows, the
   commit that files the ticket away with `jaira logbook <id>` carries its
   final state. Nothing is lost by waiting: the lane's writes are already on
-  the ticket. The one ticket that still earns a commit of its own is a ticket
-  you create and hand to someone else — commit it, or nobody but you knows it
-  exists
+  the ticket. A ticket you create commits nothing either: it travels on its
+  ref, everybody sees it there, and `jaira pull <id>` brings it into the
+  branch that works it. Only when `jaira create` reports it as a file on your
+  disk — the board has no usable remote — commit it, or nobody but you knows
+  it exists
 - `jaira logbook <id>` — once a ticket reaches the terminal lane, stamps its
   commits and files it under `.jaira/logbook/<you>-<date>/`, taking it off the
   board. `jaira restore <file>` brings it back
@@ -145,7 +147,7 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
 - `testing` — yours to work; tier cheap; must produce test-verdict
   Runs the change and checks it against the ticket - does the demanded thing exist, and does it work.
-- `human` — **a person's, not yours** — you may move work in, never out
+- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by
   Human in the loop.
 - `review` — yours to work; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
   A second model has judged the diff.
@@ -166,8 +168,11 @@ the lane nobody drives is the one that fills up.
 
 Told to start or work a ticket, drive it this way yourself — lane by lane,
 loops included — until it sits in a human lane, then continue once the human
-has answered. Told an agent should work it, hand it to a subagent that
-babysits the ticket through the same route.
+has answered. The next lane is `next_lane` in `jaira show <id> --json`: it
+passes a lane that only takes a question by, so a ticket with nothing to
+decide goes on to the model review and reaches a person once, at the end.
+Told an agent should work it, hand it to a subagent that babysits the ticket
+through the same route.
 
 <!-- jaira:local -->
 

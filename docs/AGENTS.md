@@ -78,9 +78,12 @@ ticket away with `jaira logbook <id>` carries its final state. Nothing is lost
 by waiting, because the commit list is derived from the ticket id in the commit
 message as much as from the ticket file's own history: name the handle in every
 subject, `fix(A3K9QP): …`, and the list fills itself in even for a ticket file
-git has not seen since. The one ticket that still earns a commit of its own is
-one created and handed to someone else — commit it, or nobody but its author
-knows it exists. jaira never commits for you — it reads git and writes only
+git has not seen since. A ticket you create commits nothing either: it travels
+on its ref, everybody sees it there, and `jaira pull <id>` brings it into the
+branch that works it. Only when `jaira create` reports it as a file on your disk
+— the board has no usable remote — commit it, or nobody but its author knows it
+exists. CI refuses a commit that adds or changes a ticket file without touching
+anything outside `.jaira/` (`scripts/check-ticket-commits.sh`). jaira never commits for you — it reads git and writes only
 files.
 
 The loop ends past the last lane, not at it: an accepted ticket comes off the

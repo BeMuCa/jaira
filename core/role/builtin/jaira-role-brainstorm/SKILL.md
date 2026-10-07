@@ -74,8 +74,11 @@ jaira tags                       # reuse a name, never invent a synonym
 jaira create "<title>" --goal … --context … --dod … --tag <existing>
 ```
 
-Then commit the ticket files. A ticket nobody but you knows about is a note in a
-dead session.
+Do not commit them. On a board with a remote, a new ticket travels on its ref
+and everybody sees it there; `jaira pull <id>` brings it into the branch that
+works it. Only when `jaira create` reports a ticket as a file on your disk — the
+board has no usable remote — commit the ticket files: a ticket nobody but you
+knows about is a note in a dead session.
 
 ## Report
 
