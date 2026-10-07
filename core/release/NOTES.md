@@ -14,6 +14,8 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+
+## 0.3.6
 - Answer questions in your teamlead's tab only: run `jaira roles install --force` (add `--global` if you installed them globally), and a lane worker no longer asks you anything — it writes the question with numbered options onto the ticket (`jaira note` plus the `question` field) and stops, `run-lane.sh` exits 5 on it, and a dispatcher started with `spawn.sh --parent <teamlead-session>` sends its own and its workers' questions to that teamlead with `SendMessage` instead of asking in its tab. You may still type into a dispatcher's tab; it answers there, notes the decision on the ticket and tells its teamlead, which then does not ask again.
 - Rest the cursor on a board card that has links to see them: a line runs from it to every linked card on screen — red for blocked-by/blocks, blue for parent/child, green for follows, grey for related — straight across the cards between, and the status bar names the colours drawn and counts the links whose card is not on screen (`L` still lists them all).
 - Press `u` on the board to show only some people's tickets: tick names with space and press enter, and the `/` filter gets `user:name,other`, which matches a ticket's assignee or creator by exact name; `x` in that list shows everyone again.
