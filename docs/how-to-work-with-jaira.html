@@ -233,13 +233,13 @@ jaira roles install --project     # nach .claude/skills, reist mit dem Clone</co
       <h3>Board-Setup nachziehen</h3>
       <pre class="cmd"><code>jaira update</code></pre>
       <ul class="rules">
-        <li>Schreibt nur den Block zwischen <code>&lt;!-- jaira:start --&gt;</code> und <code>&lt;!-- jaira:end --&gt;</code> in <code>CLAUDE.md</code> und <code>AGENTS.md</code> neu. Alles außerhalb bleibt.</li>
+        <li>Schreibt nur den Block zwischen <code>&lt;!-- jaira:start --&gt;</code> und <code>&lt;!-- jaira:end --&gt;</code> neu, in <code>CLAUDE.md</code> und/oder <code>AGENTS.md</code>. Alles außerhalb bleibt.</li>
         <li>Eigene Regeln gehören hinter <code>&lt;!-- jaira:local --&gt;</code> innerhalb des Blocks. Die bleiben auch erhalten.</li>
         <li>Verloren geht nur, was jemand von Hand <i>im</i> Block, aber vor <code>jaira:local</code> geschrieben hat.</li>
         <li>Der Block kommt aus Binary-Version plus Lanes des Boards. Gleiche Version, gleiche Lanes: gleiches Ergebnis, egal wer es ausführt.</li>
         <li>Achtung: ein älteres Binary schreibt älteren Text zurück.</li>
         <li>„Was ist neu seit deinem letzten Lauf“ merkt sich jaira pro Person und Arbeitskopie im Home-Verzeichnis, nicht im Repo.</li>
-        <li>Mit <code>--agent-file agents|claude|both</code> legst du fest, in welcher Datei der Block steht. Ohne die Option bleibt er in beiden.</li>
+        <li>Mit <code>--agent-file agents|claude|both</code> legst du fest, in welcher Datei der Block steht. Ohne die Option bleibt er, wo er schon steht. Hat ihn noch keine der beiden, kommt er in beide.</li>
         <li><b>Im Team:</b> Einer führt es nach dem Upgrade aus und committet die Änderung an <code>CLAUDE.md</code> / <code>AGENTS.md</code>.</li>
       </ul>
     </div></li>
