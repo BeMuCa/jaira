@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Rest the cursor on a board card that has links to see them: a line runs from it to every linked card on screen — red for blocked-by/blocks, blue for parent/child, green for follows, grey for related — straight across the cards between, and the status bar names the colours drawn and counts the links whose card is not on screen (`L` still lists them all).
 
 ## 0.3.5
 - Expect a ticket with nothing to decide to go from testing straight to review and reach you once, in signoff: run `jaira update` and `jaira roles install --force`, and the agent block, the lane role and the dispatcher now say that `human` takes a ticket only with an open question (`--question`) and that the next lane is `next_lane` from `jaira show <id> --json`, which already passed it by. Before, agents parked every finished ticket in `human`, where it had no `review-check` yet and `/jaira-role-acceptance` could not take it.

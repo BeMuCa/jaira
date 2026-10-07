@@ -314,7 +314,7 @@ func TestColumnDrawsEveryCardItCountsInFull(t *testing.T) {
 				tk.Tags = []string{"ui", "backend"}
 			}
 			win := m.boardFit(m.width)
-			raw := m.renderColumn(idx, win.colW, h)
+			raw, _ := m.renderColumn(idx, win.colW, h)
 			out := stripANSI(raw)
 			shown := m.cardsInBudget(m.cols[idx].tickets, 0, max(1, h-4))
 
