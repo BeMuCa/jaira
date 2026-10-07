@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
+spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-root]
 
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
@@ -17,6 +17,10 @@ spawn.sh [--no-worktree] <slug> <ticket-id> <lane> [repo-root]
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
+  --parent <s>    Only with the lane <dispatch>: the session name of whoever
+                  starts the dispatcher (a teamlead's name, as ListAgents shows
+                  it). The dispatcher hands its questions there instead of
+                  asking the person in its own tab.
   -h, --help      This text.
 
 The lane <dispatch> is special: it starts the dispatcher itself in the tab
@@ -31,9 +35,11 @@ USAGE
 # Flags before the positionals, and -- ends them: a slug is free text and could
 # one day start with a dash.
 no_worktree="${JAIRA_NO_WORKTREE:-}"
+parent=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-worktree) no_worktree=1; shift ;;
+    --parent)      parent="${2:?--parent needs a session name}"; shift 2 ;;
     -h|--help)     usage; exit 0 ;;
     --)            shift; break ;;
     -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
@@ -142,7 +148,7 @@ esac
 # worker — same worktree, same tab, same waiting for claude to come up, so it
 # lives here rather than in a second script that drifts from this one.
 if [ "$lane" = dispatch ]; then
-  prompt="/jaira-dispatcher $ticket"
+  prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi

@@ -19,7 +19,9 @@ run-lane.sh [--no-worktree] [--keep] [--timeout <minutes>] <ticket-id> <lane> [r
   -h, --help      This text.
 
 Exit codes: 0 the lane is finished and the tab closed (or kept), 3 timed out,
-4 the worker is at an approval dialog — its tab stays open for the human.
+4 the worker is at an approval dialog — its tab stays open for the human,
+5 the worker stopped on a question — it is in the ticket's question field and
+its notes; the tab is closed (or kept), and the lane runs again once answered.
 USAGE
 }
 
@@ -68,6 +70,13 @@ status() {
   (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
     | python3 -c 'import sys,json;print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true
 }
+# A worker never asks the person: it writes its question onto the ticket and
+# stops in the lane. Without this the wait below sees a lane never left and
+# sits there until the timeout.
+question() {
+  (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("question","").strip())' 2>/dev/null || true
+}
 # A finished worker reports done, not only idle. A loop that waits for
 # idle|blocked alone never returns, and the tab never closes.
 agent() {
@@ -102,11 +111,16 @@ until start="$(status)"; [ -n "$start" ]; do check; sleep 5; done
 # that is critique sending work back. An empty status is a read that failed,
 # never an exit — taking it for one would close the tab of a worker at work.
 seen=""
+asked=""
 while :; do
   s="$(status)"
   if [ -n "$s" ]; then
     [ "$s" = "$lane" ] && seen=1
     if [ "$s" != "$lane" ] && { [ -n "$seen" ] || [ "$s" != "$start" ]; }; then break; fi
+    if [ "$s" = "$lane" ] && [ -n "$(question)" ] \
+      && case "$(agent)" in idle|done) true ;; *) false ;; esac; then
+      asked=1; break
+    fi
   fi
   check; sleep 20
 done
@@ -133,3 +147,7 @@ if [ -z "$keep" ]; then
   fi
 fi
 git -C "$wt" log --oneline -3 2>/dev/null || true
+if [ -n "$asked" ]; then
+  echo "the worker stopped on a question; it is on the ticket — answer it, clear it with 'jaira set $ticket question=', then run the lane again" >&2
+  exit 5
+fi
