@@ -92,7 +92,7 @@ nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
 .branch .when { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 .branch .when h3 { font-size: 1.15rem; }
 .branch .when .tag { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); }
-ol.chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+ol.chain { list-style: none; margin: 0; padding: 0; display: grid; }
 ol.chain > li { position: relative; display: grid; grid-template-columns: 4.6rem 1fr; gap: 10px; padding: 6px 0 6px 0; min-width: 0; }
 ol.chain > li + li { border-top: 1px dashed var(--line); }
 ol.chain > li > div { min-width: 0; display: grid; gap: 3px; }
@@ -174,7 +174,6 @@ footer { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--li
   .branch::after { left: -14px; }
   ol.chain > li { grid-template-columns: 1fr; gap: 2px; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap" lang="de">
