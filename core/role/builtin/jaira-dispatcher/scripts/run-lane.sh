@@ -19,7 +19,9 @@ run-lane.sh [--no-worktree] [--keep] [--timeout <minutes>] <ticket-id> <lane> [r
   -h, --help      This text.
 
 Exit codes: 0 the lane is finished and the tab closed (or kept), 3 timed out,
-4 the worker is at an approval dialog — its tab stays open for the human.
+4 the worker is at an approval dialog — its tab stays open for the human,
+5 the worker stopped on a question — it is in the ticket's question field and
+its notes; the tab is closed (or kept), and the lane runs again once answered.
 USAGE
 }
 
@@ -50,7 +52,11 @@ slug="$(printf '%s' "$ticket" | tr '[:upper:]' '[:lower:]')"
 # status has to be read. Same derivation as spawn.sh. A board that is not
 # shared yet is gitignored and missing from a fresh worktree; then the ticket
 # only exists in the repository itself.
-if [ "$no_worktree" = 1 ]; then
+# A dispatcher runs in its ticket's worktree, and the root it passes is that
+# worktree. Deriving from it again would nest a second one beside it, with a
+# second copy of the ticket the dispatcher never reads.
+if [ "$no_worktree" = 1 ] \
+  || { [ "$(basename "$(dirname "$root")")" = .worktrees ] && [ "${root%-"$slug"}" != "$root" ]; }; then
   wt="$root"
 else
   wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
@@ -64,10 +70,15 @@ pane="$("$here/spawn.sh" ${flags[@]+"${flags[@]}"} "$slug" "$ticket" "$lane" "$r
 echo "pane $pane"
 
 board="$wt"; [ -d "$wt/.jaira" ] || board="$root"
-status() {
+field() {
   (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true
+    | python3 -c 'import sys,json;print(str(json.load(sys.stdin).get(sys.argv[1],"")).strip())' "$1" 2>/dev/null || true
 }
+status() { field status; }
+# A worker never asks the person: it writes its question onto the ticket and
+# stops in the lane. Without this the wait below sees a lane never left and
+# sits there until the timeout.
+question() { field question; }
 # A finished worker reports done, not only idle. A loop that waits for
 # idle|blocked alone never returns, and the tab never closes.
 agent() {
@@ -93,6 +104,10 @@ check() {
 # empty one is a failed read like any other, and taken as the start it would
 # make the first status before the lane look like a worker that moved past it.
 until start="$(status)"; [ -n "$start" ]; do check; sleep 5; done
+# jaira move never clears the question field: a ticket back from human still
+# carries the question answered there. Only a question other than this one is
+# the worker's own.
+q0="$(question)"
 
 # The lane is finished once the ticket has been in it and left it. A worker is
 # started before its ticket is moved into the lane, so a status other than the
@@ -102,11 +117,16 @@ until start="$(status)"; [ -n "$start" ]; do check; sleep 5; done
 # that is critique sending work back. An empty status is a read that failed,
 # never an exit — taking it for one would close the tab of a worker at work.
 seen=""
+asked=""
 while :; do
   s="$(status)"
   if [ -n "$s" ]; then
     [ "$s" = "$lane" ] && seen=1
     if [ "$s" != "$lane" ] && { [ -n "$seen" ] || [ "$s" != "$start" ]; }; then break; fi
+    if [ "$s" = "$lane" ] && { q="$(question)"; [ -n "$q" ] && [ "$q" != "$q0" ]; } \
+      && case "$(agent)" in idle|done) true ;; *) false ;; esac; then
+      asked=1; break
+    fi
   fi
   check; sleep 20
 done
@@ -133,3 +153,7 @@ if [ -z "$keep" ]; then
   fi
 fi
 git -C "$wt" log --oneline -3 2>/dev/null || true
+if [ -n "$asked" ]; then
+  echo "the worker stopped on a question; it is on the ticket — answer it, clear it with 'jaira set $ticket question=', then run the lane again" >&2
+  exit 5
+fi

@@ -661,6 +661,13 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   options, the recommended one first, rather than a paragraph to answer.
 - `jaira roles list` shows the roles the binary you run carries.
 
+A question goes up the chain and only the top asks you. A worker never asks:
+it writes the question onto the ticket and stops. Its dispatcher passes it to
+the teamlead that started it, the teamlead asks you, and your answer goes back
+down as a note the next worker reads:
+
+<img src="docs/img/demo-chain.gif" alt="A brainstorm worker stops on a question; it travels worker → dispatcher → teamlead → person, and the answer travels back until the ticket reaches todo" width="100%">
+
 ## Working with an agent
 
 The whole integration surface is: run a command, read the JSON, branch on the
@@ -864,8 +871,10 @@ is not yet proven by adoption.
 
 ## The recordings
 
-The three GIFs above are recorded from scripts in `scripts/`, not captured by
-hand, so they can be re-shot when the behaviour changes instead of quietly
+The question chain under the roles is a live recording of three real Claude
+sessions and is not re-shot by a script. The other three GIFs are recorded
+from scripts in `scripts/`, not captured by hand, so they can be re-shot when
+the behaviour changes instead of quietly
 describing an older version:
 
 ```bash
