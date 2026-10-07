@@ -633,6 +633,10 @@ and `--force` replaces it too.
 | `/jaira-role-pr <id>` | Pushes the branch, opens the pull request when you typed it, answers review comments. Never merges. |
 | `/jaira-role-logbook-summary [period]` | Writes a report for a project lead, with hours. |
 
+Which route fits which task, every role and the acceptance page, as a
+walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-with-jaira.html)**
+(open it in a browser; GitHub shows the source).
+
 - `/jaira-dispatcher <id>` carries one ticket lane by lane, handing every lane
   to a fresh worker and stopping at a lane a person owns. It needs no teamlead:
   start it yourself for a single ticket. Under Herdr each worker gets a tab of
@@ -655,8 +659,7 @@ and `--force` replaces it too.
   customer.
 - Every question either of them puts to you comes as a choice of two to four
   options, the recommended one first, rather than a paragraph to answer.
-- `jaira roles list` names the rest: single-lane workers, a tester, a
-  researcher, a brainstorm role and one that pushes a branch for review.
+- `jaira roles list` shows the roles the binary you run carries.
 
 ## Working with an agent
 
