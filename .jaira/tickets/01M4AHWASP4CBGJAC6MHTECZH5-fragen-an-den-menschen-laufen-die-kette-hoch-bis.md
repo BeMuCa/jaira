@@ -1,7 +1,7 @@
 ---
 id: 01M4AHWASP4CBGJAC6MHTECZH5
 title: Fragen an den Menschen laufen die Kette hoch bis zum Teamlead
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,16 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-07T06:47:41Z
-updated-at: 2026-10-07T06:58:25Z
+updated-at: 2026-10-07T07:00:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65032
 claimed-at: 2026-10-07T06:52:58Z
-outcome-what: "run-lane.sh zählt nur eine neue Frage (q0-Basis) als Exit 5; jaira-role-lane beschreibt, was ein Worker mit einer Rollenfrage tatsächlich tut"
-outcome-why: "jaira move leert question nie, ein Ticket aus human hätte sofort falsch Exit 5 gemeldet; der Worker hat kein --parent und damit keinen direkten Weg zum Dispatcher"
-outcome-resolves: "critique Runde 1, beide Punkte"
-review-summary: |-
-  core/role/builtin/jaira-dispatcher/scripts/run-lane.sh:205 nimmt jedes nichtleere question-Feld als Frage dieses Workers, aber jaira move leert das Feld nie (erledigte Tickets im logbook tragen ihre human-Frage noch) — ein Ticket, das aus human zurückkommt, meldet beim ersten Idle eines Workers falsch Exit 5 mit einer schon beantworteten Frage; vor der Schleife q0="$(question)" merken und nur eine Frage zählen, die != q0 ist
-  core/role/builtin/jaira-role-lane/SKILL.md, Absatz "A question about your role ... goes to the dispatcher directly": der Worker bekommt laut Note 06:55 bewusst kein --parent und hat damit keinen direkten Weg zum Dispatcher; schreiben, was er tatsächlich tut — die Frage als letzte Zeile in seinen Pane, ohne question-Feld, und anhalten (der Dispatcher sieht sie, wenn run-lane.sh mit Exit 3 zurückkommt)
+outcome-what: "run-lane.sh liest status und question über einen gemeinsamen field-Helfer"
+outcome-why: "question() war eine wörtliche Kopie von status()"
+outcome-resolves: "optimize-Durchgang ohne Verhaltensänderung"
+review-summary: none
+review-gaps: "run-lane.sh: question() war eine Kopie von status() (gleicher jaira show + python-Parse, nur anderes Feld) — beide jetzt über field <name>; geprüft am echten Ticket (status=optimize, question leer), go test ./core/role/... grün. Stehen gelassen: zwei jaira show pro Schleifendurchlauf, wenn der Status die Lane ist (alle 20 s, vernachlässigbar); die Worker-Frage-Regel steht in jaira-role-lane und jaira-dispatcher je für ihren Leser — gewollt, keine Duplikation; unversionierte .jaira/milestones/ gehören nicht zu diesem Ticket."
 ---
 
 # Fragen an den Menschen laufen die Kette hoch bis zum Teamlead
@@ -71,3 +70,4 @@ review-summary: |-
 - **2026-10-07 06:56 · Alexander Sacharov** — critique (Runde 1): core/role/builtin/jaira-dispatcher/scripts/run-lane.sh:205 nimmt jedes nichtleere question-Feld als Frage dieses Workers, aber jaira move leert das Feld nie (erledigte Tickets im logbook tragen ihre human-Frage noch) — ein Ticket, das aus human zurückkommt, meldet beim ersten Idle eines Workers falsch Exit 5 mit einer schon beantworteten Frage; vor der Schleife q0="$(question)" merken und nur eine Frage zählen, die != q0 ist
 core/role/builtin/jaira-role-lane/SKILL.md, Absatz "A question about your role ... goes to the dispatcher directly": der Worker bekommt laut Note 06:55 bewusst kein --parent und hat damit keinen direkten Weg zum Dispatcher; schreiben, was er tatsächlich tut — die Frage als letzte Zeile in seinen Pane, ohne question-Feld, und anhalten (der Dispatcher sieht sie, wenn run-lane.sh mit Exit 3 zurückkommt). Stehen gelassen: Parent-Name als note statt Frontmatter-Feld (Note 06:55, Alex: keine neuen Mechanismen); Worker ohne --parent (Note 06:55); question-Feld + note als Doppelkanal — das Feld ist das maschinenlesbare Signal für run-lane.sh, die note das Überlebende.
 - **2026-10-07 06:58 · Alexander Sacharov** — in-progress Runde 2: beide critique-Punkte umgesetzt. run-lane.sh merkt q0=$(question) nach dem Startstatus und zählt nur eine Frage != q0 als Exit 5 — ein aus human zurückgekehrtes Ticket mit alter Frage wartet also normal weiter. Bewusst in Kauf genommen: stellt ein Worker wörtlich dieselbe Frage noch einmal, sieht run-lane.sh sie nicht und läuft bis Timeout (Exit 3, Pane bleibt offen) — harmlos. jaira-role-lane: Rollenfrage (welche critique) als letzte Zeile im Pane, ohne question-Feld/note; Dispatcher liest den Pane bei Exit 3 (passt zu dispatcher SKILL.md 'Exit 3 … look at its tab'). DoD 5 (Probelauf Herdr) bleibt offen für testing/Mensch.
+- **2026-10-07 06:59 · Alexander Sacharov** — critique (Runde 2): beide Befunde aus Runde 1 erledigt (c444388). run-lane.sh: q0 nach dem Startstatus gemerkt, nur question != q0 zählt als Exit 5; ein fehlgeschlagener Read gibt q0='' und verhält sich wie vorher. jaira-role-lane: Rollenfrage als letzte Pane-Zeile, passt zu dispatcher SKILL.md:339-341 (Exit 3 → Tab ansehen). Stehen gelassen: gleiche Frage wörtlich wiederholt → Timeout statt Exit 5 (Note 06:58, harmlos). Nichts Neues.

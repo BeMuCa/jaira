@@ -66,17 +66,15 @@ pane="$("$here/spawn.sh" ${flags[@]+"${flags[@]}"} "$slug" "$ticket" "$lane" "$r
 echo "pane $pane"
 
 board="$wt"; [ -d "$wt/.jaira" ] || board="$root"
-status() {
+field() {
   (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true
+    | python3 -c 'import sys,json;print(str(json.load(sys.stdin).get(sys.argv[1],"")).strip())' "$1" 2>/dev/null || true
 }
+status() { field status; }
 # A worker never asks the person: it writes its question onto the ticket and
 # stops in the lane. Without this the wait below sees a lane never left and
 # sits there until the timeout.
-question() {
-  (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("question","").strip())' 2>/dev/null || true
-}
+question() { field question; }
 # A finished worker reports done, not only idle. A loop that waits for
 # idle|blocked alone never returns, and the tab never closes.
 agent() {
