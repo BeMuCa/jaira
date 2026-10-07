@@ -77,7 +77,10 @@ way its workers do. Start it with
 the roles were installed globally — rather than assembling the calls yourself,
 and read `herdr --skill` only if you have to go around the script. Pass
 `dispatch` as the lane and your own session name as the parent:
-`spawn.sh --parent <your-name> <slug> <ticket-id> dispatch`. That lane name
+`spawn.sh --parent <your-name> <slug> <ticket-id> dispatch`, with the ticket
+id in lower case as the slug — the dispatcher's workers derive their worktree
+from it, and any other slug puts them on a second copy of the ticket where
+your answer never arrives. That lane name
 is what makes the tab run `/jaira-dispatcher <ticket-id>`; any other name starts
 a single-lane worker instead, and you get a lane where you wanted a dispatcher.
 `--parent` is what sends its questions to you instead of into its own tab;

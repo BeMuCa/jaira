@@ -52,7 +52,11 @@ slug="$(printf '%s' "$ticket" | tr '[:upper:]' '[:lower:]')"
 # status has to be read. Same derivation as spawn.sh. A board that is not
 # shared yet is gitignored and missing from a fresh worktree; then the ticket
 # only exists in the repository itself.
-if [ "$no_worktree" = 1 ]; then
+# A dispatcher runs in its ticket's worktree, and the root it passes is that
+# worktree. Deriving from it again would nest a second one beside it, with a
+# second copy of the ticket the dispatcher never reads.
+if [ "$no_worktree" = 1 ] \
+  || { [ "$(basename "$(dirname "$root")")" = .worktrees ] && [ "${root%-"$slug"}" != "$root" ]; }; then
   wt="$root"
 else
   wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"

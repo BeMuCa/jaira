@@ -59,7 +59,11 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 # it: for a one-lane job on the branch already checked out — a doc line, a
 # note, a lane that only reads — a worktree costs a clone, a branch and a merge
 # for nothing.
-if [ "$no_worktree" = 1 ]; then
+# A dispatcher runs in its ticket's worktree, and the root it passes is that
+# worktree. Deriving from it again would nest a second one beside it, with a
+# second copy of the ticket the dispatcher never reads.
+if [ "$no_worktree" = 1 ] \
+  || { [ "$(basename "$(dirname "$root")")" = .worktrees ] && [ "${root%-"$slug"}" != "$root" ]; }; then
   wt="$root"
 else
   wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
