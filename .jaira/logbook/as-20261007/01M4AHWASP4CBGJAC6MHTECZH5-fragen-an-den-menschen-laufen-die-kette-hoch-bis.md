@@ -19,9 +19,15 @@ definition-of-done: "jaira-role-lane: ein Worker fragt nie selbst; er schreibt d
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f2d475ba2c074bb7fee773638068f63163bf1b0d
+  - c2df8efbdfb59ff2748e6a66296d9f49711acf88
+  - c4443885c85716b55a70da87642b1dd32eff88fe
+  - ffb7747a408df192629e428c88d31fe5bbb52d92
+  - ee71470675d26433c4c0490451533ec271cbcf02
+  - 9d2fad9a01645c29813579d7f7a0d82387476819
 created-at: 2026-10-07T06:47:41Z
-updated-at: 2026-10-07T15:43:17Z
+updated-at: 2026-10-07T15:43:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65032
 claimed-at: 2026-10-07T06:52:58Z
