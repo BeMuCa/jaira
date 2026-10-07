@@ -979,7 +979,7 @@ func (m *Model) statusBar() string {
 	if m.glow {
 		cHint = "c plain"
 	}
-	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "u users", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))

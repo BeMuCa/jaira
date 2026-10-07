@@ -36,7 +36,7 @@ func TestWrapHintsKeepsEveryItem(t *testing.T) {
 func TestNarrowBoardShowsAllKeysAndFits(t *testing.T) {
 	m := newTestModel(t, 30, 24)
 	out := stripANSI(m.render())
-	for _, key := range []string{"enter open", "v compact", "z thin empty", "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"} {
+	for _, key := range []string{"enter open", "v compact", "z thin empty", "t tags", "u users", "n new", "m move", "S settings", "/ filter", "? help", "q quit"} {
 		if !strings.Contains(out, key) {
 			t.Errorf("narrow board lost the %q hint", key)
 		}
