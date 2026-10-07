@@ -1,7 +1,7 @@
 ---
 id: 01M4ATQ46NZ08TFVQARZ9WSS49
 title: "Die README nennt jede Rolle in einer Zeile, und das Tutorial liegt im Repo"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -18,9 +18,14 @@ tags:
   - docs
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 6ab980c4d751a21bf3aa8aea564c987f35bdb58d
+  - a02ca510c8bee148f5878b4dc6860a23b36d53fe
+  - c492f35f552bf2a0769ed4f1065580470f444c93
+  - ec0f1d47a9ca025c7c171c460c82581ef2ac29ed
+  - 3a2241804bc43958fceeb2ecffd970e77fb0a95d
 created-at: 2026-10-07T09:22:07Z
-updated-at: 2026-10-07T09:45:20Z
+updated-at: 2026-10-07T20:02:07Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3654451
 claimed-at: 2026-10-07T09:38:39Z
@@ -64,3 +69,4 @@ Let stand on purpose: README table repeating the four detailed bullets (DoD keep
 - **2026-10-07 09:38 · BeMuCa** — Nach optimize: die zwei wirkungslosen CSS-Zeilen, die optimize nur wegen des Neu-Veroeffentlichens stehen liess (gap: 0 auf ol.chain, reduced-motion-Regel ohne Transitions auf der Seite), entfernt und als Version 5 veroeffentlicht. Ein Republish kostet einen Aufruf; kein Grund, toten Code zu behalten.
 - **2026-10-07 09:39 · BeMuCa** — testing: pass. Compared README.md:623-634 names with jaira-master roles list (9 + jaira): equal. Link target exists. Python HTMLParser: no unclosed/mismatched tags, 12 in-page anchors all resolve. Commands checked against --help: hook print, lanes add, logbook, milestone create, note, pull, resume, roles install/list (--project --global), self upgrade, show --for-lane --json, update --agent-file, create --goal/--context/--dod, next --per-lane --json, set, board, init: all exist. NOT verified: visual render (no headless browser, libasound.so.2 missing); DoD 2 (file == artifact v5) not checkable here.
 - **2026-10-07 09:45 · BeMuCa** — Nach review, Ticket bleibt in signoff: den Gap aus review-gaps (Zeile 242) behoben. Ohne --agent-file schreibt jaira in die Dateien, die den Block schon tragen, und nur wenn keine ihn hat in beide (core/board/announce.go:354 chosenAgentFiles) - die Seite sagte 'bleibt in beiden'. Zeile 236 im selben Sinn auf 'und/oder' gezogen. Sonst nichts geaendert; als Version 6 veroeffentlicht. Dieser eine Satz ist nach dem Review geaendert und von keinem Worker mehr gelesen worden.
+- **2026-10-07 10:14 · BeMuCa** — Abnahme 07.10.: Berk hat im Chat alles angenommen (woertlich: 'ich nehme alles an!'). Die Abnahmeseite https://claude.ai/artifact/UBzQJqGtTpF8B8oDnHuGPM war dabei nicht markiert. Er hat entschieden, Claude hat ausgefuehrt: jaira move --to done --force.
