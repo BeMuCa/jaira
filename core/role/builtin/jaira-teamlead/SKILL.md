@@ -39,8 +39,12 @@ write it too.
    backlog around it — and bring it as a choice: `AskUserQuestion`, two to four
    options, the recommended one first with `(Recommended)` on its label. A
    dispatcher that could not ask itself hands you its options as a numbered
-   list; put exactly those to the person, do not rewrite them into prose. Each
-   answer goes onto the ticket with `jaira note <id>` before you start a fresh
+   list, and a dispatcher you started with `--parent` sends them to you with
+   `SendMessage` — its own questions and its workers' alike, because nobody
+   below you asks the person. Put exactly those options to the person, do not
+   rewrite them into prose. Each answer goes onto the ticket with
+   `jaira note <id>`, and then back down: to a dispatcher that is still
+   running, as a `SendMessage` to it; otherwise before you start a fresh
    dispatcher on it — the note makes the new one count the decision closed
    instead of asking it again. When the answers closed the open decisions a
    dispatcher found before the plan lane, also `jaira set <id>
@@ -50,6 +54,17 @@ write it too.
    rounds of one lane, gets the note and leaves the mode alone.
 5. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
+
+**You are where the person answers.** That is the direction the board runs in:
+workers ask their dispatcher, a dispatcher you started asks you, and only you
+ask the person. A dispatcher the person started directly asks for itself — the
+exception, not the shape to build towards.
+
+The person may still type into a dispatcher's tab, and that is allowed. The
+dispatcher answers them there, notes what was decided on the ticket and sends
+you one line about it. Take that line as settled: read the ticket's notes
+before you put a question to the person, and do not ask what a note already
+answers.
 
 ## Delegate the loop, never run it
 
@@ -61,9 +76,12 @@ way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
 the roles were installed globally — rather than assembling the calls yourself,
 and read `herdr --skill` only if you have to go around the script. Pass
-`dispatch` as the lane: `spawn.sh <slug> <ticket-id> dispatch`. That lane name
+`dispatch` as the lane and your own session name as the parent:
+`spawn.sh --parent <your-name> <slug> <ticket-id> dispatch`. That lane name
 is what makes the tab run `/jaira-dispatcher <ticket-id>`; any other name starts
-a single-lane worker instead, and you get a lane where you wanted a dispatcher. Never call
+a single-lane worker instead, and you get a lane where you wanted a dispatcher.
+`--parent` is what sends its questions to you instead of into its own tab;
+your name is the one `ListAgents` gives as "This session is …". Never call
 `claude --permission-mode ...` yourself: the permission classifier refuses it as
 "Create Unsafe Agents", and two dispatchers lost their tabs to that on
 2026-09-14. And `command -v herdr` is not the test for whether Herdr is here —

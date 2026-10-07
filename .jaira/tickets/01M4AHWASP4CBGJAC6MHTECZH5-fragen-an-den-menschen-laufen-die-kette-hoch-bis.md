@@ -1,7 +1,7 @@
 ---
 id: 01M4AHWASP4CBGJAC6MHTECZH5
 title: Fragen an den Menschen laufen die Kette hoch bis zum Teamlead
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,24 +21,34 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-07T06:47:41Z
-updated-at: 2026-10-07T06:52:22Z
+updated-at: 2026-10-07T06:55:27Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-61773
-claimed-at: 2026-10-07T06:50:35Z
+claimed-by: DESKTOP-RFTCH11-65032
+claimed-at: 2026-10-07T06:52:58Z
+outcome-what: "Questions run up the chain: jaira-role-lane forbids a worker to ask (note + question field, stop); jaira-dispatcher routes its own and its workers' questions to a --parent via SendMessage, asks itself only when started directly, handles run-lane exit 5, and notes+reports decisions made in its own tab; jaira-teamlead starts dispatchers with --parent, takes their questions and sends answers back down; NOTES.md line."
+outcome-why: "Every worker and dispatcher asked in its own Herdr tab, and the person had to hunt for which tab was asking."
+outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Herdr trial run) is left for testing."
 ---
 
 # Fragen an den Menschen laufen die Kette hoch bis zum Teamlead
 
 ## Definition of Done
 
-- [ ] jaira-role-lane: ein Worker fragt nie selbst; er schreibt die Frage als nummerierte Optionen aufs Ticket, gibt sie in seinem Bericht an den Dispatcher und hält an
-- [ ] jaira-dispatcher: mit Starter reicht er jede Frage (eigene und die seiner Worker) an den Starter weiter und wartet; ohne Starter fragt er selbst wie heute
-- [ ] jaira-teamlead: nimmt weitergereichte Fragen an, stellt sie als Wahl, schreibt die Antwort mit jaira note aufs Ticket und gibt sie an den Dispatcher zurück
-- [ ] spawn.sh gibt dem gestarteten Dispatcher bzw. Worker den Namen seines Starters mit
+- [x] jaira-role-lane: ein Worker fragt nie selbst; er schreibt die Frage als nummerierte Optionen aufs Ticket, gibt sie in seinem Bericht an den Dispatcher und hält an
+  proof: core/role/builtin/jaira-role-lane/SKILL.md: section 'You never ask the person yourself'
+- [x] jaira-dispatcher: mit Starter reicht er jede Frage (eigene und die seiner Worker) an den Starter weiter und wartet; ohne Starter fragt er selbst wie heute
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md: 'How you ask' — --parent case, workers' questions (run-lane exit 5)
+- [x] jaira-teamlead: nimmt weitergereichte Fragen an, stellt sie als Wahl, schreibt die Antwort mit jaira note aufs Ticket und gibt sie an den Dispatcher zurück
+  proof: core/role/builtin/jaira-teamlead/SKILL.md: 'What you actually decide' point 4 — SendMessage up, note, SendMessage back down
+- [x] spawn.sh gibt dem gestarteten Dispatcher bzw. Worker den Namen seines Starters mit
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh: --parent -> '/jaira-dispatcher <id> --parent <s>'; teamlead SKILL.md passes --parent <own name>
 - [ ] Ein Probelauf Teamlead -> Dispatcher -> Worker in Herdr: eine Frage des Workers erscheint nur im Teamlead-Tab, die Antwort kommt beim Worker an
-- [ ] core/release/NOTES.md hat eine Zeile unter Unreleased
-- [ ] Die Skills sagen die Richtung: der Teamlead ist der Ort, an dem der Mensch antwortet; ein direkt gestarteter Dispatcher ist der Ausnahmefall
-- [ ] Schreibt der Mensch direkt in den Dispatcher-Tab, antwortet der Dispatcher dort, hält das Entschiedene mit jaira note fest und meldet es seinem Teamlead; der Teamlead fragt es nicht noch einmal
+- [x] core/release/NOTES.md hat eine Zeile unter Unreleased
+  proof: core/release/NOTES.md: line under ## Unreleased
+- [x] Die Skills sagen die Richtung: der Teamlead ist der Ort, an dem der Mensch antwortet; ein direkt gestarteter Dispatcher ist der Ausnahmefall
+  proof: core/role/builtin/jaira-teamlead/SKILL.md 'You are where the person answers'; core/role/builtin/jaira-dispatcher/SKILL.md 'Where the question goes depends on who started you'
+- [x] Schreibt der Mensch direkt in den Dispatcher-Tab, antwortet der Dispatcher dort, hält das Entschiedene mit jaira note fest und meldet es seinem Teamlead; der Teamlead fragt es nicht noch einmal
+  proof: core/role/builtin/jaira-dispatcher/SKILL.md 'The person may still type into your tab'; core/role/builtin/jaira-teamlead/SKILL.md same paragraph, no re-asking
 
 ## Options
 
@@ -54,3 +64,4 @@ claimed-at: 2026-10-07T06:50:35Z
 - **2026-10-07 06:49 · Alexander Sacharov** — Ergänzung Alex 2026-10-07: es wird trotzdem Momente geben, in denen er direkt in den Dispatcher-Tab schreibt. Das ist erlaubt, kein Fehler. Der Dispatcher antwortet dann dort, schreibt das Entschiedene mit jaira note aufs Ticket und meldet es an seinen Teamlead weiter — sonst arbeitet der Teamlead mit einem veralteten Stand und fragt dasselbe noch einmal.
 - **2026-10-07 06:51 · Alexander Sacharov** — Präzisierung (Vorschlag an Alex, 2026-10-07): spricht der Mensch selbst im Dispatcher-Tab, antwortet der Dispatcher dort; eine Rückfrage, die aus diesem Gespräch entsteht, stellt er auch dort. Fragen, die aus seiner eigenen Arbeit entstehen (Worker hängt, dritte Runde einer Lane), gehen immer an den Teamlead. Was im Tab entschieden wurde: jaira note + eine Zeile per SendMessage an den Teamlead. Mechanik geprüft: ListAgents nennt jeder Sitzung ihren eigenen Namen ('This session is jaira-b4'), SendMessage erreicht lokale Sitzungen über diesen Namen — spawn.sh kann ihn als Starter durchreichen.
 - **2026-10-07 06:52 · Alexander Sacharov** — Stand bei Übergabe an den Dispatcher (2026-10-07): run-lane.sh erkennt jetzt einen Worker, der im Lane mit gefülltem question-Feld stehen bleibt (Exit 5); spawn.sh nimmt --parent <session> und hängt es an '/jaira-dispatcher <id>'. Geprüft: 'jaira set <id> question=...' geht in jeder Lane, 'question=' leert es. Noch offen: die Texte in jaira-role-lane, jaira-dispatcher, jaira-teamlead (DoD 1-3, 7, 8), NOTES.md. Alex will es einfach halten und flexibel lassen: keine neuen Mechanismen über diese zwei hinaus; wer mit dem Menschen spricht, antwortet ihm dort.
+- **2026-10-07 06:55 · Alexander Sacharov** — in-progress: Worker bekommt bewusst KEIN --parent. Er fragt nie und braucht keinen Adressaten: sein Kanal ist das question-Feld + jaira note, das run-lane.sh (Exit 5) liest; DoD 4 ist damit für den Worker durch den Dispatcher erfüllt. Dispatcher schreibt den Parent-Namen selbst als note aufs Ticket, damit ein nach jaira resume neu gestarteter Dispatcher ihn kennt — kein neues Frontmatter-Feld (Alex: keine neuen Mechanismen). DoD 5 (Probelauf in Herdr) offen: braucht installierte Rollen aus diesem Branch (jaira roles install --force) und einen Menschen, der sieht, in welchem Tab die Frage erscheint — Sache der testing-Lane. go test ./core/role/... grün.

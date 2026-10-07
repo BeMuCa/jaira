@@ -167,19 +167,57 @@ Every question you put to the person is a choice, never prose. A paragraph has
 to be read, weighed and answered in words; a choice is answered in one click,
 and it forces you to have done the weighing yourself.
 
-- Ask with `AskUserQuestion`: one question per decision, two to four options,
-  each a short label with a one-line trade-off. Your recommendation goes first
-  and its label ends in `(Recommended)`. The person can always type their own
-  answer, so do not add an "other" option.
-- A yes-or-no is a choice too: two options, the one you recommend first.
-- No `AskUserQuestion` in your session — started as a subagent, or headless —
-  then the same options go into your report as a numbered list, recommendation
-  first, and you stop. The teamlead puts them to the person as a choice; you
-  never pick one yourself because nobody answered. Several open decisions go
-  up together, one list each, in the order they would have been asked — you
-  cannot ask the second after the first once you have stopped. The teamlead
-  asks them one at a time in that order and drops one an earlier answer made
-  moot. The lists come on top of the three report lines, not in place of them.
+One question per decision, two to four options, each a short label with a
+one-line trade-off. Your recommendation goes first and its label ends in
+`(Recommended)`. The person can always type their own answer, so do not add an
+"other" option. A yes-or-no is a choice too: two options, the one you
+recommend first.
+
+**Where the question goes depends on who started you.** The person answers in
+the one session they started themselves, and that is normally a teamlead — a
+dispatcher started by the person directly is the exception, not the shape the
+board is meant to run in. Every tab that asks on its own is a tab the person
+has to go looking for.
+
+- **Started with `--parent <session>`** — the line that started you was
+  `/jaira-dispatcher <id> --parent <name>`, which is what `spawn.sh --parent`
+  types. Then you never ask the person yourself, not even with
+  `AskUserQuestion` at hand. Write the question and its numbered options onto
+  the ticket with `jaira note`, send the same to `<name>` with `SendMessage`,
+  and end your turn. The answer comes back as a message, and it is on the
+  ticket as a note by then; act on it from there. Write the parent's name onto
+  the ticket too (`jaira note <id> "parent session: <name>"`) the first time
+  you read it: a dispatcher restarted after `jaira resume` has no starting
+  line to read it from.
+- **No parent, and `AskUserQuestion` in your session** — the person started
+  you directly. Ask with `AskUserQuestion`.
+- **No `AskUserQuestion` at all** — started as a subagent, or headless. The
+  options go into your report as a numbered list, recommendation first, and
+  you stop; the teamlead puts them to the person.
+
+In the two cases that do not ask the person yourself, you never pick an
+option because nobody answered. Several open decisions go up together, one
+list each, in the order they would have been asked — you cannot ask the
+second after the first once you have stopped. The teamlead asks them one at a
+time in that order and drops one an earlier answer made moot. In a report the
+lists come on top of the three report lines, not in place of them.
+
+**Your workers' questions are yours to carry, not theirs.** A worker never
+asks the person: it writes its question onto the ticket — a `jaira note` with
+numbered options and the one-line `question` field — and stops in its lane.
+`run-lane.sh` notices that and exits 5. Read the note, then handle it exactly
+like a question of your own, by the rules above. When the answer is on the
+ticket, clear the field with `jaira set <id> question=` and run the same lane
+again with a fresh worker; it reads the answer off the ticket.
+
+**The person may still type into your tab, and that is allowed.** Answer them
+there. A question that comes up in that conversation you may ask there too —
+they are already in front of you. What came out of it is a decision like any
+other: `jaira note` it onto the ticket, and, when you have a parent, send it
+one line with `SendMessage` — what was decided, on which ticket. Otherwise the
+teamlead works from a stale picture and asks the person the same thing again.
+A question that comes out of your own work — a worker that stopped, a third
+round of one lane — still goes to the parent, not into the tab.
 
 The answer is a decision, so it goes onto the ticket with `jaira note` before
 anything acts on it — the same rule as step 4 above.
@@ -248,7 +286,9 @@ Say which one you took. The human needs to know whether the workers outlive you.
    into the tab instead of `/jaira-role-lane <ticket-id> <lane>`. That is how a
    teamlead starts a dispatcher in a tab of its own — the same script, so there
    is no second one to drift from this one. You do not pass it yourself; you are
-   what it starts.
+   what it starts. With `--parent <session>` it types
+   `/jaira-dispatcher <ticket-id> --parent <session>`, and that name is where
+   your questions go — see "How you ask".
 
    `--no-worktree` before the slug starts the worker in the repository
    directory itself instead — no worktree, no branch of its own. (`JAIRA_NO_WORKTREE=1`
@@ -298,7 +338,9 @@ Say which one you took. The human needs to know whether the workers outlive you.
    background call per ticket, so each one wakes you on its own. Exit 4 means
    the worker sits at an approval dialog: report it, the tab stays open. Exit 3
    means it timed out and the worker is still running: look at its tab, do not
-   start a second one.
+   start a second one. Exit 5 means the worker stopped on a question and its
+   tab is closed: carry the question up as "How you ask" says, then run the
+   lane again.
 
 2. **Peer sessions** — no Herdr, but `ListAgents` shows live peers. You cannot
    start one; the human does, in its own worktree. Delegate with `SendMessage`

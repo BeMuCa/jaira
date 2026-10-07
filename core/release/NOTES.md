@@ -14,6 +14,7 @@ Format rules — read before editing:
 -->
 
 ## Unreleased
+- Answer questions in your teamlead's tab only: run `jaira roles install --force` (add `--global` if you installed them globally), and a lane worker no longer asks you anything — it writes the question with numbered options onto the ticket (`jaira note` plus the `question` field) and stops, `run-lane.sh` exits 5 on it, and a dispatcher started with `spawn.sh --parent <teamlead-session>` sends its own and its workers' questions to that teamlead with `SendMessage` instead of asking in its tab. You may still type into a dispatcher's tab; it answers there, notes the decision on the ticket and tells its teamlead, which then does not ask again.
 
 ## 0.3.5
 - Expect a ticket with nothing to decide to go from testing straight to review and reach you once, in signoff: run `jaira update` and `jaira roles install --force`, and the agent block, the lane role and the dispatcher now say that `human` takes a ticket only with an open question (`--question`) and that the next lane is `next_lane` from `jaira show <id> --json`, which already passed it by. Before, agents parked every finished ticket in `human`, where it had no `review-check` yet and `/jaira-role-acceptance` could not take it.

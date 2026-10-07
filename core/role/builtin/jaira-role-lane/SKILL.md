@@ -274,6 +274,32 @@ commit.
 (The pattern is jaira-role-pr's: invoked by an agent it hands back the create
 line instead of running it.)
 
+## You never ask the person yourself
+
+Not with `AskUserQuestion`, not in prose in your pane. A worker runs in a tab
+of its own, and a question asked there is one the person has to go looking
+for. Questions go up the chain — to the dispatcher that started you, and from
+there to the one session the person actually talks to.
+
+A decision you cannot take from the ticket, the code or a sensible default
+goes onto the ticket, and then you stop:
+
+1. `jaira note <id> <text>` — the question, then two to four options as a
+   numbered list, your recommendation first, each with a one-line trade-off.
+   The note is what survives your tab dying.
+2. `jaira set <id> question="<the question in one line>"` — this is what the
+   dispatcher's wait notices. Leave the ticket in your lane; do not `jaira
+   move` it, and do not move it into `human` either.
+3. Report the same numbered list as the last thing in your pane, and stop. Do
+   not pick an option yourself because nobody answered.
+
+The answer comes back as a `jaira note` on the ticket, and the lane runs again
+in a fresh worker that reads it there.
+
+A question about your role — which of the two critiques you are, see above —
+is not one of these. It goes to the dispatcher directly, because only the
+dispatcher knows the answer, and the person does not.
+
 ## Boundaries
 
 - **This lane only.** A problem you spot outside it is a `jaira note` or a new
