@@ -1,0 +1,624 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mit jaira arbeiten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: eine Lesespalte, dazu breite Bänder (Workflow-Baum, Lane-Leiste, Rollenbaum), die quer scrollen dürfen. */
+:root {
+  --bg: #f4f6f5;
+  --surface: #ffffff;
+  --ink: #1a2321;
+  --muted: #586763;
+  --line: #d6dddb;
+  --accent: #0e7268;
+  --accent-soft: #d6ede9;
+  --agent: #2c5aa8;
+  --agent-soft: #e1e9f7;
+  --person: #a8510a;
+  --person-soft: #fbe9d4;
+  --pass: #66706e;
+  --pass-soft: #e9eceb;
+  --code-bg: #eaefed;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101615; --surface: #172020; --ink: #e2eae7; --muted: #98a8a4; --line: #2a3634;
+    --accent: #45c6b6; --accent-soft: #123a35; --agent: #92b2ee; --agent-soft: #1b2941;
+    --person: #f2a95e; --person-soft: #3a2713; --pass: #a0a9a7; --pass-soft: #222b29;
+    --code-bg: #1c2624; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101615; --surface: #172020; --ink: #e2eae7; --muted: #98a8a4; --line: #2a3634;
+  --accent: #45c6b6; --accent-soft: #123a35; --agent: #92b2ee; --agent-soft: #1b2941;
+  --person: #f2a95e; --person-soft: #3a2713; --pass: #a0a9a7; --pass-soft: #222b29;
+  --code-bg: #1c2624; color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16.5px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 56px; }
+.prose { max-width: 66ch; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.01em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--f-mono); font-size: 0.88em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+kbd { font-family: var(--f-mono); font-size: 0.85em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.35em; background: var(--surface); }
+section { display: grid; gap: 18px; min-width: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* Kopf */
+header.top { padding-top: 48px; display: grid; gap: 16px; }
+.stand { font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); }
+.lede { font-size: 1.15rem; max-width: 60ch; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.toc a { font-family: var(--f-mono); font-size: 0.8rem; text-decoration: none; color: var(--ink); border: 1px solid var(--line); background: var(--surface); padding: 4px 10px; border-radius: 999px; }
+nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Kurzfassung */
+.tldr { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; display: grid; gap: 8px; }
+.tldr ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+
+/* Wer handelt: Du / Claude / Rolle */
+.who { display: inline-block; font-family: var(--f-mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.who.du { background: var(--person-soft); color: var(--person); }
+.who.claude { background: var(--accent-soft); color: var(--accent); }
+.who.rolle { background: var(--agent-soft); color: var(--agent); }
+
+/* Workflow-Baum */
+.tree-root { background: var(--surface); border: 2px solid var(--ink); border-radius: 8px; padding: 10px 16px; font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; justify-self: start; }
+.tree { display: grid; gap: 14px; padding-left: 30px; margin-top: -4px; }
+.branch { position: relative; display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.branch::before { content: ""; position: absolute; left: -20px; top: 26px; width: 20px; border-top: 2px solid var(--line); }
+.branch::after { content: ""; position: absolute; left: -22px; top: -16px; bottom: -16px; border-left: 2px solid var(--line); }
+.branch:last-child::after { bottom: auto; height: 44px; }
+.branch.tail { border-color: var(--accent); }
+.branch .when { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.branch .when h3 { font-size: 1.15rem; }
+.branch .when .tag { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); }
+ol.chain { list-style: none; margin: 0; padding: 0; display: grid; }
+ol.chain > li { position: relative; display: grid; grid-template-columns: 4.6rem 1fr; gap: 10px; padding: 6px 0 6px 0; min-width: 0; }
+ol.chain > li + li { border-top: 1px dashed var(--line); }
+ol.chain > li > div { min-width: 0; display: grid; gap: 3px; }
+ol.chain .res { font-size: 0.9rem; color: var(--muted); }
+.goto { font-family: var(--f-mono); font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+.tree-key { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; color: var(--muted); align-items: center; }
+
+/* Rollenbaum */
+.org { display: grid; gap: 6px; justify-items: center; overflow-x: auto; padding-block: 4px; }
+.node { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; text-align: center; min-width: 0; max-width: 100%; }
+.node b { display: block; font-family: var(--f-mono); font-size: 0.85rem; }
+.node span { font-size: 0.85rem; color: var(--muted); }
+.node.you { background: var(--person-soft); border-color: var(--person); }
+.node.you b { color: var(--person); font-family: var(--f-display); font-size: 1.05rem; }
+.node.lead { border-color: var(--accent); }
+.node.lead b { color: var(--accent); }
+.node.disp b { color: var(--agent); }
+.node.work { background: var(--agent-soft); border-color: transparent; padding: 6px 10px; }
+.node.work b { font-size: 0.75rem; font-weight: 400; }
+.edge { font-size: 0.8rem; color: var(--muted); font-family: var(--f-mono); }
+.edge::before { content: "│ "; color: var(--line); }
+.tier { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.tier.split { gap: 24px; }
+.col { display: grid; gap: 6px; justify-items: center; }
+
+/* Tabellen */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+/* font: inherit, because a copy opened from a clone has no doctype (the artifact host adds it) and quirks mode resets table fonts. */
+table { border-collapse: collapse; width: 100%; font: inherit; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+td:first-child { white-space: nowrap; }
+td code { white-space: nowrap; }
+tr.group td { background: var(--pass-soft); font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-block: 6px; }
+table.roles td:nth-child(2) { min-width: 18rem; }
+
+/* Lane-Leiste */
+.lanes { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+.lane { flex: 0 0 auto; width: 104px; border-radius: 8px; padding: 10px 10px 12px; display: grid; gap: 4px; align-content: start; border: 1px solid transparent; }
+.lane b { font-family: var(--f-mono); font-size: 0.78rem; overflow-wrap: anywhere; }
+.lane small { font-size: 0.72rem; color: var(--muted); line-height: 1.3; }
+.lane.agent { background: var(--agent-soft); }
+.lane.agent b { color: var(--agent); }
+.lane.person { background: var(--person-soft); border-color: var(--person); }
+.lane.person b { color: var(--person); }
+.lane.pass { background: var(--pass-soft); }
+.lane.pass b { color: var(--pass); }
+.lane .loop { font-family: var(--f-mono); font-size: 0.68rem; color: var(--agent); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.85rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+
+/* Nummerierte Schritte */
+ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 14px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 2.2rem 1fr; gap: 12px; }
+ol.steps > li::before { content: counter(s); font-family: var(--f-display); font-weight: 800; font-size: 1.1rem; color: var(--accent); background: var(--accent-soft); border-radius: 50%; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; }
+ol.steps > li > div { display: grid; gap: 6px; min-width: 0; }
+
+/* Befehle mit Kopierknopf */
+pre.cmd { position: relative; margin: 0; background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+pre.cmd code { background: none; padding: 0; font-size: 0.85rem; white-space: pre; overflow-wrap: normal; }
+pre.cmd .copy { position: absolute; top: 6px; right: 6px; font: 600 0.7rem var(--f-mono); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+pre.cmd .copy:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Karten, die auf dem Handy stapeln */
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.card.hl { border-color: var(--accent); }
+.card.person { border-color: var(--person); }
+
+ul.rules { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; max-width: 70ch; }
+.muted { color: var(--muted); }
+footer { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 520px) {
+  .tree { padding-left: 18px; }
+  .branch::before { left: -12px; width: 12px; }
+  .branch::after { left: -14px; }
+  ol.chain > li { grid-template-columns: 1fr; gap: 2px; }
+}
+</style>
+
+<div class="wrap" lang="de">
+
+<header class="top">
+  <div class="eyebrow">jaira · Tutorial</div>
+  <h1>Mit jaira arbeiten</h1>
+  <p class="lede">Wie man das Board heute benutzt: welcher Weg für welche Aufgabe, welche Rollen es gibt, und was du selbst noch tun musst.</p>
+  <p class="stand">Stand 2026-10-07 · jaira 0.3.5 · Quelle: die Rollen-Prompts (<code>jaira roles install</code>), README, core/release/NOTES.md</p>
+  <nav class="toc" aria-label="Inhalt">
+    <a href="#kurz">Kurz gesagt</a>
+    <a href="#setup">Einrichten</a>
+    <a href="#baum">Welcher Weg?</a>
+    <a href="#reden">Mit wem reden?</a>
+    <a href="#alle-rollen">Alle Rollen</a>
+    <a href="#rollen">Wie sie zusammenhängen</a>
+    <a href="#lanes">Die Lanes</a>
+    <a href="#abnahme">Die Abnahmeseite</a>
+    <a href="#modus">Autonom oder im Gespräch</a>
+    <a href="#neu">Was ist neu</a>
+    <a href="#regeln">Feste Regeln</a>
+  </nav>
+</header>
+
+<section id="kurz">
+  <div class="tldr">
+    <h2>Kurz gesagt</h2>
+    <ul>
+      <li>Du redest mit Claude. Die Skills sind <b>Rollen</b>, die du per <code>/name</code> startest.</li>
+      <li>Drei Ebenen: <b>Teamlead</b> redet mit dir. <b>Dispatcher</b> trägt ein Ticket durch die Lanes. <b>Worker</b> macht genau eine Lane.</li>
+      <li>Tickets anlegen: einfach Claude bitten, oder <code>/jaira-role-brainstorm</code>, wenn es noch eine vage Idee ist. Das gehört nicht zum Auftrag des Teamleads.</li>
+      <li>Ein Ticket abarbeiten: <code>/jaira-dispatcher &lt;id&gt;</code>. Mehrere: <code>/jaira-teamlead</code>.</li>
+      <li>Du greifst nur an drei Stellen ein: bei Fragen (immer als Auswahl), auf der Abnahmeseite, und beim Pull Request.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="setup">
+  <h2>Einrichten (einmal pro Rechner)</h2>
+  <ol class="steps">
+    <li><div>
+      <h3>Binary aktuell halten</h3>
+      <pre class="cmd"><code>jaira self upgrade</code></pre>
+    </div></li>
+    <li><div>
+      <h3>Rollen als Skills installieren</h3>
+      <pre class="cmd"><code>jaira roles install --global      # nach ~/.claude/skills, für alle Repos
+jaira roles install --project     # nach .claude/skills, reist mit dem Clone</code></pre>
+      <p class="muted">Nach jedem Upgrade nochmal ausführen. Eine Rolle, die vom eingebauten Stand abweicht, wird übersprungen und als „edited here“ gemeldet (Exit 3). Das passiert auch nach einem Upgrade, wenn du nichts geändert hast: Dann ist es nur der alte Stand, und <code>--force</code> ersetzt ihn.</p>
+    </div></li>
+    <li><div>
+      <h3>Basis-Skill <code>jaira</code> global aktuell halten</h3>
+      <pre class="cmd"><code>cp .claude/skills/jaira/SKILL.md ~/.claude/skills/jaira/SKILL.md</code></pre>
+      <p class="muted">Der Basis-Skill bringt Claude die CLI bei. Er kommt nicht über <code>roles install</code>, sondern liegt im jaira-Repo (siehe docs/AGENTS.md). Eine alte globale Kopie veraltet still.</p>
+    </div></li>
+    <li><div>
+      <h3>Board-Setup nachziehen</h3>
+      <pre class="cmd"><code>jaira update</code></pre>
+      <ul class="rules">
+        <li>Schreibt nur den Block zwischen <code>&lt;!-- jaira:start --&gt;</code> und <code>&lt;!-- jaira:end --&gt;</code> neu, in <code>CLAUDE.md</code> und/oder <code>AGENTS.md</code>. Alles außerhalb bleibt.</li>
+        <li>Eigene Regeln gehören hinter <code>&lt;!-- jaira:local --&gt;</code> innerhalb des Blocks. Die bleiben auch erhalten.</li>
+        <li>Verloren geht nur, was jemand von Hand <i>im</i> Block, aber vor <code>jaira:local</code> geschrieben hat.</li>
+        <li>Der Block kommt aus Binary-Version plus Lanes des Boards. Gleiche Version, gleiche Lanes: gleiches Ergebnis, egal wer es ausführt.</li>
+        <li>Achtung: ein älteres Binary schreibt älteren Text zurück.</li>
+        <li>„Was ist neu seit deinem letzten Lauf“ merkt sich jaira pro Person und Arbeitskopie im Home-Verzeichnis, nicht im Repo.</li>
+        <li>Mit <code>--agent-file agents|claude|both</code> legst du fest, in welcher Datei der Block steht. Ohne die Option bleibt er, wo er schon steht. Hat ihn noch keine der beiden, kommt er in beide.</li>
+        <li><b>Im Team:</b> Einer führt es nach dem Upgrade aus und committet die Änderung an <code>CLAUDE.md</code> / <code>AGENTS.md</code>.</li>
+      </ul>
+    </div></li>
+    <li><div>
+      <h3>Herdr (empfohlen)</h3>
+      <p>Herdr ist ein Terminal-Workspace für Agenten. Läuft Claude in einem Herdr-Tab, bekommt jeder Worker einen eigenen Tab, und die Arbeit überlebt deine Session.</p>
+      <p>Das jaira-Binary selbst kennt Herdr nicht. Die Rollen prüfen beim Start <code>HERDR_ENV=1</code> in der Umgebung von Claude. Also: <b>Claude in einem Herdr-Tab starten.</b> Sonst laufen Worker als Subagents und sterben mit deiner Session.</p>
+    </div></li>
+    <li><div>
+      <h3>Optional</h3>
+      <p><code>jaira hook print</code> gibt einen Stop-Hook für <code>~/.claude/settings.json</code> aus. Er lässt eine Session nicht enden, solange irgendeine Agenten-Lane auf dem Board noch Arbeit hat. Er blockiert pro Stopp nur einmal.</p>
+      <p><code>/jaira-role-acceptance</code> und <code>/jaira-role-logbook-summary</code> brauchen <code>python3</code>. <code>/jaira-role-pr</code> braucht <code>gh</code> (GitHub) oder <code>glab</code> (GitLab).</p>
+    </div></li>
+  </ol>
+</section>
+
+<section id="baum">
+  <h2>Welcher Weg für welche Aufgabe?</h2>
+  <p class="prose">Such dir den Ast, der zu deiner Lage passt. Die ersten drei Äste münden alle in denselben Rest.</p>
+  <div class="tree-key">
+    <span><span class="who du">Du</span> tippst oder entscheidest</span>
+    <span><span class="who claude">Claude</span> normale Session, Basis-Skill</span>
+    <span><span class="who rolle">Rolle</span> ein jaira-Skill arbeitet</span>
+  </div>
+  <div class="tree-root">Du hast …</div>
+  <div class="tree">
+
+    <div class="branch">
+      <div class="when"><h3>A · eine klare Aufgabe</h3><span class="tag">ein Ticket</span></div>
+      <ol class="chain">
+        <li><span class="who du">Du</span><div><code>„Leg ein Ticket an: …, weil …“</code><span class="res">Sag, was falsch ist, warum, und woran man sieht, dass es fertig ist.</span></div></li>
+        <li><span class="who claude">Claude</span><div><code>jaira create "…" --goal … --context … --dod …</code><span class="res">Ticket liegt im Backlog, auf seinem eigenen Git-Ref. Nicht committen: <code>jaira pull &lt;id&gt;</code> holt es in den Branch, der es bearbeitet.</span></div></li>
+        <li><span class="who du">Du</span><div><code>/jaira-dispatcher &lt;id&gt;</code></div></li>
+        <li><span class="goto">→ weiter bei Z</span><div></div></li>
+      </ol>
+    </div>
+
+    <div class="branch">
+      <div class="when"><h3>B · eine vage Idee</h3><span class="tag">noch kein Ticket</span></div>
+      <ol class="chain">
+        <li><span class="who du">Du</span><div><code>/jaira-role-research &lt;frage&gt;</code><span class="res">Nur wenn ein Fakt fehlt, der ändert, was gebaut wird.</span></div></li>
+        <li><span class="who du">Du</span><div><code>/jaira-role-brainstorm &lt;idee&gt;</code><span class="res">Fragt: Was tut heute weh? Warum jetzt? Was wurde schon verworfen?</span></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Legt Tickets an, schneidet nach dem, was ein Nutzer sieht. Oder sagt: „kein Ticket“.</span></div></li>
+        <li><span class="who du">Du</span><div><span>Ein Ticket: <code>/jaira-dispatcher &lt;id&gt;</code>. Mehrere: <code>/jaira-teamlead</code>.</span></div></li>
+        <li><span class="goto">→ weiter bei Z</span><div></div></li>
+      </ol>
+    </div>
+
+    <div class="branch">
+      <div class="when"><h3>C · mehrere Aufgaben</h3><span class="tag">mehrere Tickets</span></div>
+      <ol class="chain">
+        <li><span class="who du">Du</span><div><code>„Leg für jede davon ein Ticket an: …“</code><span class="res">Oder <code>/jaira-role-brainstorm</code>, wenn sie erst noch geschnitten werden müssen.</span></div></li>
+        <li><span class="who du">Du</span><div><code>jaira milestone create &lt;name&gt; &lt;id&gt;…</code><span class="res">Optional. Gruppiert die Tickets; die Abnahmeseite heißt dann wie der Milestone.</span></div></li>
+        <li><span class="who du">Du</span><div><code>/jaira-teamlead</code></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Liest das Board, sagt die Reihenfolge mit Grund, startet einen Dispatcher pro Ticket. Nie zwei auf Tickets mit denselben Dateien.</span></div></li>
+        <li><span class="goto">→ weiter bei Z</span><div><span class="res">Alle Tickets einer Änderung kommen auf eine Abnahmeseite.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="branch">
+      <div class="when"><h3>D · ein Ticket, nur ein Schritt</h3></div>
+      <ol class="chain">
+        <li><span class="who du">Du</span><div><code>/jaira-role-lane &lt;id&gt; &lt;lane&gt;</code><span class="res">Genau diese Lane, dann Schluss.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="branch">
+      <div class="when"><h3>E · ein offener PR, und es kommt etwas zurück</h3></div>
+      <ol class="chain">
+        <li><span class="who du">Du</span><div><span>Eine <b>neue</b> Session starten. Die alte nicht wiederbeleben.</span></div></li>
+        <li><span class="who du">Du</span><div><span>CI rot: <code>/jaira-role-tester &lt;id&gt;</code></span><span class="res">Trennt alte von neuen Fehlern, repariert nichts.</span></div></li>
+        <li><span class="who du">Du</span><div><span>Reparieren: <code>/jaira-role-lane &lt;id&gt; in-progress</code></span></div></li>
+        <li><span class="who du">Du</span><div><span>Review-Kommentar: <code>/jaira-role-pr &lt;id&gt;</code></span><span class="res">Beantwortet die Kommentare und pusht nach.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="branch">
+      <div class="when"><h3>F · Frage nach dem Stand</h3><span class="tag">Bericht, Stunden</span></div>
+      <ol class="chain">
+        <li><span class="who du">Du</span><div><code>/jaira-role-logbook-summary [zeitraum]</code><span class="res">Standard: letzte Kalenderwoche.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="branch tail" id="z">
+      <div class="when"><h3>Z · der gemeinsame Rest: vom Dispatcher bis master</h3></div>
+      <ol class="chain">
+        <li><span class="who rolle">Rolle</span><div><span>Dispatcher zählt offene Entscheidungen. Gibt es welche, fragt er dich einzeln, als Auswahl.</span><span class="res">Antworten gehen per <code>jaira note</code> aufs Ticket, dann <code>mode=conversational</code>.</span></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Legt Branch <code>feat/&lt;slug&gt;</code> und Worktree <code>../.worktrees/&lt;repo&gt;-&lt;slug&gt;</code> an.</span><span class="res">Im Modus <code>conversational</code>: dein ausgecheckter Branch.</span></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Pro Lane ein frischer Worker: <code>/jaira-role-lane &lt;id&gt; &lt;lane&gt;</code>. Pro Lane eine Zeile an dich.</span><span class="res">Commits tragen die Ticket-ID. Gepusht wird noch nichts.</span></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Nach <code>testing</code> geht es direkt zu <code>review</code>. Nach <code>human</code> nur, wenn es eine offene Frage an dich gibt.</span><span class="res"><code>review</code> schreibt auf, wie du es selbst prüfst (<code>review-check</code>).</span></div></li>
+        <li><span class="who rolle">Rolle</span><div><span>Ticket erreicht <code>signoff</code>. Dispatcher baut die Abnahmeseite (<code>/jaira-role-acceptance</code>), schickt dir den Link und hört auf.</span></div></li>
+        <li><span class="who du">Du</span><div><span>Seite durchgehen, jeden Schritt ok / nein / übersprungen markieren.</span></div></li>
+        <li><span class="who du">Du</span><div><code>/jaira-role-acceptance read the acceptance</code><span class="res">Angenommen: weiter nach <code>done</code>. Jedes Nein: zurück ins Ticket oder neuer Bug.</span></div></li>
+        <li><span class="who du">Du</span><div><code>/jaira-role-pr &lt;id&gt;</code><span class="res">Weil du es tippst: Push und PR. Ein Agent dürfte nur pushen.</span></div></li>
+        <li><span class="who du">Du</span><div><span>Maintainer merged. Danach <code>jaira logbook &lt;id&gt;</code>.</span></div></li>
+      </ol>
+    </div>
+
+  </div>
+</section>
+
+<section id="reden">
+  <h2>Mit wem redest du?</h2>
+  <p class="prose">Immer mit Claude. Die Frage ist nur, welche Rolle Claude dabei spielt.</p>
+  <div class="duo">
+    <div class="card">
+      <span class="eyebrow">Weg 1 · einfach reden</span>
+      <h3>„Arbeite Ticket PAP369 ab“</h3>
+      <p>Claude macht es selbst, Lane für Lane, in deiner Session. So steht es im jaira-Block der <code>CLAUDE.md</code>. Gut für Kleines und für Fragen zum Board.</p>
+    </div>
+    <div class="card hl">
+      <span class="eyebrow">Weg 2 · Rolle direkt</span>
+      <h3><code>/jaira-dispatcher PAP369</code></h3>
+      <p>Jede Lane an einen frischen Worker, pro Lane eine Zeile an dich. Der Normalfall für ein ganzes Ticket.</p>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Weg 3 · Teamlead</span>
+      <h3><code>/jaira-teamlead</code></h3>
+      <p>Du redest nur noch mit ihm. Er plant und startet Dispatcher. Er schreibt nie Code. Tickets anlegen gehört nicht zu seinem Auftrag.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Startet Claude eine Rolle von selbst?</h3>
+    <ul>
+      <li>Manchmal. Claude sieht jeden Skill als Name plus Beschreibung und entscheidet danach. Ein Stichwort wie „Ticket“ schaltet nichts fest ein.</li>
+      <li>„Arbeite diese drei Tickets ab“ passt zur Beschreibung des Teamleads und löst ihn oft aus. Verlassen kann man sich darauf nicht.</li>
+      <li>Fest in den Prompts verdrahtet ist nur, wie die Rollen einander aufrufen: Teamlead startet Dispatcher. Dispatcher startet Lane-Worker und, sobald das Ticket in einer Menschen-Lane ist, <code>/jaira-role-acceptance</code>. Brainstorm schickt bei fehlenden Fakten zu <code>/jaira-role-research</code>.</li>
+      <li><b>Wenn du eine bestimmte Rolle willst, tipp <code>/name</code>.</b></li>
+    </ul>
+  </div>
+</section>
+
+<section id="alle-rollen">
+  <h2>Alle Rollen</h2>
+  <p class="prose muted">Alle stecken im Binary und kommen mit <code>jaira roles install</code>. Keine baut auf anderen Skills auf (etwa superpowers). Nur der Basis-Skill <code>jaira</code> kommt aus dem Repo.</p>
+  <div class="tbl">
+    <table class="roles">
+      <thead><tr><th>Skill</th><th>Was er tut</th><th>Wer ruft ihn auf</th><th>Tut nie</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="4">Grundlage</td></tr>
+        <tr><td><code>jaira</code></td><td>Bringt Claude die CLI bei: anlegen, claimen, Notizen, DoD abhaken, Lanes wechseln.</td><td>Claude von selbst, wenn das Repo ein <code>.jaira/</code> hat</td><td>Tickets von Hand editieren</td></tr>
+        <tr class="group"><td colspan="4">Steuern</td></tr>
+        <tr><td><code>/jaira-teamlead</code></td><td>Redet mit dir über das Board. Reihenfolge mit Grund, was sich nicht lohnt, wann gestoppt wird. Startet einen Dispatcher pro Ticket. Fragt als Auswahl, berichtet drei Zeilen pro Ticket.</td><td>du</td><td>Code schreiben, aus einer Menschen-Lane schieben, PRs öffnen oder mergen</td></tr>
+        <tr><td><code>/jaira-dispatcher &lt;id&gt;</code></td><td>Trägt ein Ticket Lane für Lane bis zur nächsten Menschen-Lane. Klärt vorher offene Entscheidungen. Ein Worker pro Lane. Stoppt nach drei Rücksendungen derselben Lane.</td><td>du oder der Teamlead</td><td>selbst implementieren, für dich einen Dialog bestätigen, eine vierte Runde drehen</td></tr>
+        <tr><td><code>/jaira-role-lane &lt;id&gt; &lt;lane&gt;</code></td><td>Genau eine Lane. Liest den Lane-Prompt vom Board, liefert die geforderten Felder, hört auf.</td><td>meist der Dispatcher</td><td>eine zweite Lane anfangen</td></tr>
+        <tr class="group"><td colspan="4">Vorher</td></tr>
+        <tr><td><code>/jaira-role-brainstorm &lt;idee&gt;</code></td><td>Macht aus einer Idee Tickets mit Ziel, Kontext und prüfbarer DoD. Schneidet nach dem, was ein Nutzer sieht, nicht nach Code-Schichten. Darf „kein Ticket“ sagen.</td><td>du</td><td>ein bestehendes Ticket bearbeiten (dafür gibt es die Lane <code>brainstorm</code>)</td></tr>
+        <tr><td><code>/jaira-role-research &lt;frage|id&gt;</code></td><td>Findet heraus, was schon bekannt ist: im Repo, bei vergleichbaren Tools, echte Versionen. Jede Aussage mit Quelle und Sicherheit. Ergebnis per <code>jaira note</code>.</td><td>du oder die Brainstorm-Rolle</td><td>Code schreiben, Tickets bewegen</td></tr>
+        <tr class="group"><td colspan="4">Prüfen und abnehmen</td></tr>
+        <tr><td><code>/jaira-role-tester [id]</code></td><td>Lässt die Tests laufen und meldet, was rot ist.</td><td>du oder der Teamlead</td><td>reparieren</td></tr>
+        <tr><td><code>/jaira-role-acceptance &lt;id&gt;…</code></td><td>Baut eine Abnahmeseite für alle Tickets einer Änderung und wertet deine Markierungen später aus. Siehe <a href="#abnahme">Die Abnahmeseite</a>.</td><td>der Dispatcher von selbst, oder du</td><td>etwas ausführen, das schreibt oder Tokens kostet</td></tr>
+        <tr class="group"><td colspan="4">Danach</td></tr>
+        <tr><td><code>/jaira-role-pr &lt;id&gt;</code></td><td>Prüft den Branch (eigener Branch, Ticket-ID in jedem Commit), pusht ihn, öffnet den PR, beantwortet Review-Kommentare.</td><td>du: Push und PR. Ein Agent: nur Push</td><td>mergen, approven</td></tr>
+        <tr><td><code>/jaira-role-logbook-summary [zeitraum]</code></td><td>Eine Seite für die Projektleitung: fertig, in Arbeit, offen, Stunden aus Commit-Zeiten. Jeder Text mit Kopierknopf, kein Code.</td><td>du</td><td>Dateinamen, Hashes oder Code zeigen</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="rollen">
+  <h2>Wie die Rollen zusammenhängen</h2>
+  <div class="org" role="img" aria-label="Du redest mit dem Teamlead. Der startet einen Dispatcher pro Ticket. Jeder Dispatcher startet einen frischen Worker pro Lane.">
+    <div class="node you"><b>Du</b><span>beantwortest Fragen, nimmst ab</span></div>
+    <div class="edge">fragt als Auswahl · bekommt 3 Zeilen pro Ticket</div>
+    <div class="node lead"><b>jaira-teamlead</b><span>Reihenfolge, was sich nicht lohnt, wann gestoppt wird</span></div>
+    <div class="edge">ein Dispatcher pro Ticket</div>
+    <div class="tier split">
+      <div class="col">
+        <div class="node disp"><b>jaira-dispatcher</b><span>Ticket A</span></div>
+        <div class="edge">ein Worker pro Lane</div>
+        <div class="tier">
+          <div class="node work"><b>pre-process</b></div>
+          <div class="node work"><b>in-progress</b></div>
+          <div class="node work"><b>critique</b></div>
+          <div class="node work"><b>…</b></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="node disp"><b>jaira-dispatcher</b><span>Ticket B</span></div>
+        <div class="edge">ein Worker pro Lane</div>
+        <div class="tier">
+          <div class="node work"><b>in-progress</b></div>
+          <div class="node work"><b>testing</b></div>
+          <div class="node work"><b>…</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="duo">
+    <div class="card">
+      <h3>Warum so viele Ebenen?</h3>
+      <ul>
+        <li>Logs, Diffs und Warten landen beim Dispatcher, nicht beim Teamlead.</li>
+        <li>Jede Lane bekommt einen frischen Worker mit leerem Kontext.</li>
+        <li>Der Plan lebt auf dem Board, nicht im Kopf einer Session. Stirbt ein Dispatcher, liest ein neuer <code>jaira resume</code> und macht weiter.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Wo die Anweisungen stehen</h3>
+      <ul>
+        <li>Was eine Lane tun soll, steht nicht im Skill, sondern auf dem Board: <code>.jaira/lanes/&lt;lane&gt;.md</code>.</li>
+        <li>Der Worker holt es sich mit <code>jaira show &lt;id&gt; --for-lane &lt;lane&gt; --json</code>: Prompt, Input, Modell-Stufe, geforderte Felder.</li>
+        <li>Lane ändern heißt: Lane-Datei ändern. Die Rollen bleiben gleich.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="lanes">
+  <h2>Die Lanes dieses Boards</h2>
+  <div class="lanes" role="list" aria-label="Lanes in Reihenfolge">
+    <div class="lane pass" role="listitem"><b>backlog</b><small>erfasst, noch unklar</small></div>
+    <div class="lane agent" role="listitem"><b>brainstorm</b><small>strong · was soll es sein</small></div>
+    <div class="lane pass" role="listitem"><b>todo</b><small>bereit</small></div>
+    <div class="lane agent" role="listitem"><b>pre-process</b><small>strong · Plan</small></div>
+    <div class="lane agent" role="listitem"><b>in-progress</b><small>cheap · umsetzen</small></div>
+    <div class="lane agent" role="listitem"><b>critique</b><small>strong · richtige Lösung?</small><span class="loop">↺ in-progress</span></div>
+    <div class="lane agent" role="listitem"><b>optimize</b><small>strong · Überflüssiges raus</small><span class="loop">↺ in-progress</span></div>
+    <div class="lane agent" role="listitem"><b>testing</b><small>cheap · läuft es?</small><span class="loop">↺ in-progress</span></div>
+    <div class="lane person" role="listitem"><b>human</b><small>nur bei offener Frage an dich</small></div>
+    <div class="lane agent" role="listitem"><b>review</b><small>strong · zweites Modell</small></div>
+    <div class="lane person" role="listitem"><b>signoff</b><small>du nimmst ab (Abnahmeseite)</small></div>
+    <div class="lane pass" role="listitem"><b>done</b><small>Ende</small></div>
+    <div class="lane pass" role="listitem"><b>blocked</b><small>wartet, kehrt zurück</small></div>
+  </div>
+  <div class="legend">
+    <span><i style="background: var(--agent-soft); outline: 1px solid var(--agent);"></i>Agent arbeitet</span>
+    <span><i style="background: var(--person-soft); outline: 1px solid var(--person);"></i>Mensch: Agenten dürfen rein, nie raus</span>
+    <span><i style="background: var(--pass-soft); outline: 1px solid var(--pass);"></i>nur durchreichen</span>
+  </div>
+  <p class="prose muted">Ein frisches <code>jaira init</code> legt zehn Lanes an. <code>critique</code>, <code>optimize</code> und <code>testing</code> holt man sich mit <code>jaira lanes add &lt;lane&gt;</code>. <code>jaira lanes</code> zeigt unten, was noch fehlt.</p>
+</section>
+
+<section id="abnahme">
+  <h2>Die Abnahmeseite</h2>
+  <p class="prose">So nimmst du Tickets in <code>signoff</code> ab. Die Seite ist ein Artifact auf claude.ai. Du machst darauf nur, was keine Maschine kann: die App anschauen und urteilen.</p>
+  <ol class="steps">
+    <li><div>
+      <h3>Bauen</h3>
+      <p>Der Dispatcher ruft <code>/jaira-role-acceptance &lt;id&gt;…</code> auf, sobald sein Ticket in einer Menschen-Lane ist und <code>review</code> einen Prüfweg für dich aufgeschrieben hat. Du kannst es auch selbst tippen. Ohne IDs nimmt die Rolle alle Tickets aus den Menschen-Lanes.</p>
+      <ul class="rules">
+        <li>Die Rolle teilt jeden Prüfschritt (<code>review-check</code>) in Maschine oder Mensch.</li>
+        <li>Maschinen-Schritte wie <code>go test</code> oder <code>grep</code> führt sie vorher aus. Ergebnis und letzte Zeilen stehen auf der Seite. Was rot ist, bleibt rot sichtbar.</li>
+        <li>Was schreibt oder Tokens kostet, führt sie nie aus. Das bleibt ein Schritt für dich.</li>
+        <li>Pro Block einmal Setup, dann ein Szenario. Jeder Schritt nennt die Tickets, die er beweist.</li>
+        <li>Name der Seite: <code>--name</code>, sonst der gemeinsame Milestone, sonst der Branch.</li>
+      </ul>
+    </div></li>
+    <li><div>
+      <h3>Markieren</h3>
+      <ul class="rules">
+        <li>Jeden Schritt: <b>ok</b>, <b>nein</b> oder <b>übersprungen</b>. Einen Annehmen-Knopf gibt es nicht.</li>
+        <li>Ein Ticket gilt als angenommen, wenn alle seine Schritte ok sind und seine Maschinen-Checks grün.</li>
+        <li>Freitext an drei Stellen: was du statt dessen gesehen hast, ein Kommentar pro Ticket, eine Notiz pro Block.</li>
+      </ul>
+    </div></li>
+    <li><div>
+      <h3>Zurücklesen</h3>
+      <pre class="cmd"><code>/jaira-role-acceptance read the acceptance</code></pre>
+      <ul class="rules">
+        <li>Angenommene Tickets gehen in die nächste Lane (aus <code>signoff</code> nach <code>done</code>), mit <code>--force</code>. Die Rolle sagt dir das.</li>
+        <li>Jedes Nein klärt die Rolle selbst. Fehlt ein DoD-Punkt, geht das Ticket zurück. Ist es etwas daneben, wird ein neuer Bug angelegt. War der Prüfschritt falsch, wird der Schritt korrigiert.</li>
+        <li>Kann sie es nicht entscheiden, fragt sie dich, als Auswahl.</li>
+        <li>Am Ende gibt es einen festen Bericht der Abnahme.</li>
+      </ul>
+    </div></li>
+  </ol>
+  <div class="card person">
+    <h3>Abnahmeseite oder Taste <kbd>a</kbd> im Board?</h3>
+    <ul>
+      <li>Abnahmeseite: Das Ticket geht in die <b>nächste</b> Lane. Aus <code>signoff</code> ist das <code>done</code>.</li>
+      <li><kbd>a</kbd> im Board: Das Ticket springt direkt in die letzte Lane <code>done</code>, auch aus <code>human</code>. <code>review</code> und <code>signoff</code> werden dann übersprungen.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="modus">
+  <h2>Autonom oder im Gespräch</h2>
+  <p class="prose">Jedes Ticket hat ein Feld <code>mode</code>. Es steht auf dem Ticket, nicht in der Session. So überlebt es einen Absturz.</p>
+  <div class="duo">
+    <div class="card">
+      <span class="eyebrow">mode leer · Normalfall</span>
+      <h3>Autonom</h3>
+      <ul>
+        <li>Lanes laufen durch, bis eine Menschen-Lane kommt.</li>
+        <li>Worker committen selbst, mit Ticket-ID im Betreff.</li>
+        <li>Jeder Worker in einem eigenen Worktree.</li>
+      </ul>
+    </div>
+    <div class="card hl">
+      <span class="eyebrow">mode=conversational</span>
+      <h3>Im Gespräch</h3>
+      <ul>
+        <li>Nach jedem DoD-Punkt siehst du den Diff.</li>
+        <li>Der Agent committet nicht. Du bekommst eine fertige <code>git add</code> / <code>git commit</code>-Zeile.</li>
+        <li>Eine Critique läuft parallel mit, liest nur und meldet sofort.</li>
+        <li>Worker arbeiten in deinem ausgecheckten Verzeichnis, nicht im Worktree.</li>
+      </ul>
+    </div>
+  </div>
+  <pre class="cmd"><code>jaira set &lt;id&gt; mode=conversational   # an
+jaira set &lt;id&gt; mode=                  # aus</code></pre>
+</section>
+
+<section id="neu">
+  <h2>Was ist neu (0.3.0 bis 0.3.5)</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Version</th><th>Was du davon merkst</th></tr></thead>
+      <tbody>
+        <tr><td>0.3.0</td><td>Modus <code>conversational</code>. Dispatcher im eigenen Tab (<code>spawn.sh … dispatch</code>), <code>--no-worktree</code>. <code>/jaira-role-pr</code> öffnet den PR, wenn du es tippst. Lanes ohne Code committen nichts. Milestones: <code>jaira milestone</code>, <kbd>M</kbd> im Board. Einfügen in Eingabefelder geht.</td></tr>
+        <tr><td>0.3.1</td><td><code>critique</code>, <code>optimize</code>, <code>testing</code> stecken im Binary: <code>jaira lanes add critique</code>. Der Lane-Input zeigt den ganzen Branch plus nicht committete Arbeit (<code>worktree_diff</code>).</td></tr>
+        <tr><td>0.3.2</td><td>Fragen von Dispatcher und Teamlead kommen als Auswahl. <code>run-lane.sh</code> schließt fertige Worker-Tabs. <code>jaira logbook</code> zeigt nur die letzten vier Wochen.</td></tr>
+        <tr><td>0.3.3</td><td>Neue Rollen: <code>/jaira-role-acceptance</code> und <code>/jaira-role-logbook-summary</code>.</td></tr>
+        <tr><td>0.3.4</td><td>Unten in der <code>done</code>-Lane stehen die Logbook-Einträge der letzten 28 Tage (türkis). Einstellbar mit <code>logbook-days</code>.</td></tr>
+        <tr><td>0.3.5</td><td>Ein Ticket ohne offene Frage überspringt <code>human</code>: von <code>testing</code> direkt nach <code>review</code>, und du siehst es einmal, in <code>signoff</code>. Neue Tickets werden nicht mehr committet; sie reisen auf ihrem Ref, <code>jaira pull &lt;id&gt;</code> holt sie in den Branch. <code>jaira update --agent-file</code> wählt, ob der Block in <code>AGENTS.md</code>, <code>CLAUDE.md</code> oder beiden steht.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose muted">Vollständig: <code>core/release/NOTES.md</code>. Nach einem Upgrade zeigt <code>jaira update</code> die Änderungen seit deinem letzten Stand.</p>
+</section>
+
+<section id="regeln">
+  <h2>Feste Regeln</h2>
+  <ul class="rules">
+    <li><b>Jeder Commit nennt die Ticket-ID</b>, z. B. <code>fix(A3K9QP): …</code>. Sonst bleibt die Commit-Liste leer und der Move nach <code>done</code> wird verweigert.</li>
+    <li><b>Agenten verlassen <code>human</code> und <code>signoff</code> nie.</b> Einzige Ausnahme: die Abnahmeseite setzt um, was du dort markiert hast.</li>
+    <li><b>Agenten mergen und approven keine PRs.</b> Öffnen nur, wenn du <code>/jaira-role-pr</code> selbst tippst.</li>
+    <li><b>Lanes ohne Code committen nichts.</b> Die Ticket-Datei fährt mit dem nächsten Code-Commit mit.</li>
+    <li><b>Ein neues Ticket nicht committen.</b> Es reist auf seinem Ref. <code>jaira pull &lt;id&gt;</code> holt es in den Branch, der es bearbeitet; dort fährt es mit dem Code mit.</li>
+    <li><b>Der Teamlead schreibt nie Code.</b> Auch eine Ein-Zeilen-Änderung ist eine Lane.</li>
+    <li><b>Zwei Dispatcher nie auf Tickets mit denselben Dateien.</b></li>
+    <li><b>Session tot? Neue starten, nicht die alte wiederbeleben.</b> Alles Wichtige steht auf dem Board. Die alte Session nur per <code>claude --resume</code> öffnen, um sie etwas zu fragen.</li>
+    <li><b>Tickets nie von Hand editieren.</b> Die CLI ist der Schreibweg.</li>
+  </ul>
+</section>
+
+<section id="cli">
+  <h2>Die Befehle, die du selbst brauchst</h2>
+  <pre class="cmd"><code>jaira                         # Startseite: deine Boards
+jaira board                   # Board hier öffnen
+jaira next --per-lane --json  # welche Lane hat Arbeit, wem gehört sie
+jaira resume                  # was liegen geblieben ist, mit Notizen
+jaira show &lt;id&gt;               # ein Ticket komplett
+jaira roles list              # alle Rollen dieses Binaries
+jaira &lt;befehl&gt; --help         # alles andere</code></pre>
+</section>
+
+<footer>Erzeugt aus den Rollen-Prompts von jaira 0.3.5 (<code>~/.claude/skills/jaira-*</code>), README, <code>core/release/NOTES.md</code>, <code>internal/cli/update.go</code> und <code>core/board/announce.go</code>. Bei einer neuen Version: <code>jaira roles list</code> und NOTES.md gegenlesen.</footer>
+
+</div>
+
+<script>
+document.querySelectorAll("pre.cmd").forEach(function (pre) {
+  var code = pre.querySelector("code");
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "copy";
+  btn.textContent = "Kopieren";
+  btn.addEventListener("click", function () {
+    var text = code.innerText;
+    var done = function (label) {
+      btn.textContent = label;
+      setTimeout(function () { btn.textContent = "Kopieren"; }, 1500);
+    };
+    var select = function () {
+      var r = document.createRange();
+      r.selectNodeContents(code);
+      var s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      done("Markiert");
+    };
+    try {
+      navigator.clipboard.writeText(text).then(function () { done("Kopiert"); }, select);
+    } catch (e) {
+      select();
+    }
+  });
+  pre.appendChild(btn);
+});
+</script>

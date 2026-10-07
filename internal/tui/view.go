@@ -142,6 +142,8 @@ func (m *Model) render() string {
 		return m.modal(m.renderLegend())
 	case modeMilestones:
 		return m.modal(m.renderMilestones())
+	case modeUsers:
+		return m.modal(m.renderUsers())
 	case modeLinks:
 		if m.links != nil {
 			return m.modalOver(m.renderLinks(), m.links.from)
@@ -253,23 +255,78 @@ func (m *Model) renderBoard() string {
 	// on a narrow terminal, and the columns get whatever height remains.
 	sb := m.statusBar()
 	sbLines := strings.Count(sb, "\n") + 1
+	// The cursor card's links are drawn only on the board itself, not under
+	// a dialog or while a move is being picked. Their legend goes flush right
+	// on the bar's last line when the longest legend it could get fits there,
+	// and on a line of its own when not — decided now, from that longest
+	// one, because which links reach a card is only known once the columns
+	// are drawn and the columns get the height the bar leaves them.
+	cur := m.selected()
+	var links []lineLink
+	if m.mode == modeBoard && cur != nil {
+		links = m.cursorLinks(cur)
+	}
+	ownLine := len(links) > 0 && !legendFits(sb, m.width, linkLegend(links, len(links)))
+	if ownLine {
+		sbLines++
+	}
 	bodyHeight := m.height - 4 - sbLines - tabsLine - headLines - sessionPanelHeight(m.sessions)
 	if bodyHeight < 3 {
 		bodyHeight = 3
 	}
 
+	// Where each card landed, by pointer rather than id: a ticket can be on
+	// the board and in the logbook at once (see isLogged), and the line has
+	// to start at the copy the cursor is on.
+	top := strings.Count(b.String(), "\n")
+	spots := map[*ticket.Ticket]cardSpot{}
+	x := 0
 	rendered := make([]string, 0, win.end-win.start)
 	for ci := win.start; ci < win.end; ci++ {
 		if win.thin[ci] {
 			rendered = append(rendered, m.renderThinColumn(ci, bodyHeight))
+			x += lipgloss.Width(rendered[len(rendered)-1])
 			continue
 		}
-		rendered = append(rendered, m.renderColumn(ci, win.colW, bodyHeight))
+		col, rows := m.renderColumn(ci, win.colW, bodyHeight)
+		w, h := lipgloss.Width(col), lipgloss.Height(col)
+		for tk, r := range rows {
+			// A card the column clipped before its middle row has nowhere
+			// for a line to land.
+			if r < h-1 {
+				spots[tk] = cardSpot{left: x, right: x + w - 1, row: top + r}
+			}
+		}
+		rendered = append(rendered, col)
+		x += w
 	}
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, rendered...))
 	b.WriteString("\n")
-	b.WriteString(sb)
-	return b.String()
+
+	if len(links) == 0 {
+		b.WriteString(sb)
+		return b.String()
+	}
+	byID := map[string]cardSpot{}
+	for tk, at := range spots {
+		if _, seen := byID[tk.ID]; !seen || !m.isLogged(tk) {
+			byID[tk.ID] = at
+		}
+	}
+	from, onScreen := spots[cur]
+	var drawn []lineLink
+	var targets []lineTarget
+	for _, l := range links {
+		if at, ok := byID[l.id]; ok && onScreen {
+			drawn = append(drawn, l)
+			targets = append(targets, lineTarget{at: at, colour: lineFamilies[l.family].colour})
+		}
+	}
+	b.WriteString(placeLegend(sb, m.width, ownLine, drawn, len(links)-len(drawn)))
+	if len(targets) == 0 {
+		return b.String()
+	}
+	return drawLinkLines(b.String(), m.width, from, targets)
 }
 
 // renderSessions shows what each agent session is working on: the board's
@@ -419,7 +476,9 @@ func (m *Model) columnStyle(idx, w, h int) lipgloss.Style {
 	return style
 }
 
-func (m *Model) renderColumn(idx, w, h int) string {
+// renderColumn draws one lane, and reports for each card it drew the row of
+// that card's middle line, counted from the column's top border.
+func (m *Model) renderColumn(idx, w, h int) (string, map[*ticket.Ticket]int) {
 	col := m.cols[idx]
 	focused := idx == m.laneIdx
 	style := m.columnStyle(idx, w, h)
@@ -469,7 +528,11 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	}
 
 	shown := m.cardsInBudget(col.tickets, first, budget)
+	rows := map[*ticket.Ticket]int{}
 	for i := first; i < first+shown; i++ {
+		// Counted off what has been written, plus the top border and the
+		// card's own first row, so a line drawn to it lands where it is.
+		rows[col.tickets[i]] = strings.Count(body.String(), "\n") + 2
 		// w-2 is the lane's inside: columnStyle's Width counts its own border.
 		// The band runs all of it — there is no box to centre any more, so the
 		// column that used to sit unpainted at the right goes to the title
@@ -483,7 +546,7 @@ func (m *Model) renderColumn(idx, w, h int) string {
 	if rest := len(col.tickets) - (first + shown); rest > 0 {
 		body.WriteString(styMeta.Render(fmt.Sprintf(" +%d more", rest)))
 	}
-	return style.Render(clampBlock(body.String(), w, h))
+	return style.Render(clampBlock(body.String(), w, h)), rows
 }
 
 // cardHeight is the rows renderCardBlock will draw a ticket's card in: the
@@ -923,7 +986,9 @@ func (m *Model) header() string {
 		left = styLaneTitle.Render(name)
 	}
 	if m.filter != "" {
-		left += styMeta.Render(fmt.Sprintf("   filter: %q", m.filter))
+		// As typed, not %q: a filter quotes names with a space in them, and
+		// %q would print those quotes back escaped.
+		left += styMeta.Render("   filter: " + m.filter)
 	}
 	total := 0
 	for _, c := range m.cols {
@@ -975,7 +1040,7 @@ func (m *Model) statusBar() string {
 	if m.glow {
 		cHint = "c plain"
 	}
-	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "u users", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1602,8 +1667,9 @@ func (m *Model) renderHelp() string {
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
 			{"L", "every ticket linked to this one, logbook and archive included"},
-			{"/", "filter tickets as you type; key:value narrows to one field"},
+			{"/", "filter as you type; key:value narrows to one field, spaces combine, a comma means or, \"quotes\" keep words together"},
 			{"M", "narrow the board to one milestone (x there shows everything again)"},
+			{"u", "narrow the board to some people: space ticks them, enter applies (x there shows everyone)"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},

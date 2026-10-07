@@ -620,6 +620,23 @@ They are compiled into the binary, so they match the version you run. Run it
 again after an upgrade: a prompt you have edited is left alone and reported,
 and `--force` replaces it too.
 
+| Skill | What it does |
+|---|---|
+| `jaira` | Teaches the agent the CLI. Ships in `.claude/skills/jaira/`, not through `roles install`. |
+| `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
+| `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
+| `/jaira-role-lane <id> <lane>` | Works exactly one lane, then stops. |
+| `/jaira-role-brainstorm <idea>` | Turns an idea into tickets, or says it is not one. |
+| `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
+| `/jaira-role-tester [id]` | Runs the tests and reports what fails. Fixes nothing. |
+| `/jaira-role-acceptance <id>...` | Builds the acceptance page and reads your marks back. |
+| `/jaira-role-pr <id>` | Pushes the branch, opens the pull request when you typed it, answers review comments. Never merges. |
+| `/jaira-role-logbook-summary [period]` | Writes a report for a project lead, with hours. |
+
+Which route fits which task, every role and the acceptance page, as a
+walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-with-jaira.html)**
+(open it in a browser; GitHub shows the source).
+
 - `/jaira-dispatcher <id>` carries one ticket lane by lane, handing every lane
   to a fresh worker and stopping at a lane a person owns. It needs no teamlead:
   start it yourself for a single ticket. Under Herdr each worker gets a tab of
@@ -642,8 +659,7 @@ and `--force` replaces it too.
   customer.
 - Every question either of them puts to you comes as a choice of two to four
   options, the recommended one first, rather than a paragraph to answer.
-- `jaira roles list` names the rest: single-lane workers, a tester, a
-  researcher, a brainstorm role and one that pushes a branch for review.
+- `jaira roles list` shows the roles the binary you run carries.
 
 A question goes up the chain and only the top asks you. A worker never asks:
 it writes the question onto the ticket and stops. Its dispatcher passes it to
@@ -752,10 +768,12 @@ supply, so an agent can fix and retry without parsing prose.
 
 ```
 h l ← →   lane            enter   open ticket      n   new ticket
-j k ↓ ↑   card            /       filter (key:value narrows to one field)
+j k ↓ ↑   card            /       filter (key:value narrows to one field;
+                                  spaces combine, a comma means or)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
+u         only some people's tickets (space ticks, enter applies)
 S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,

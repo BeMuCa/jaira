@@ -144,7 +144,7 @@ func (m *Model) keyLinks(s string) {
 			// On the board but not on screen: a filter is hiding it. Saying
 			// so beats leaving the cursor where it was, which reads as the
 			// jump having silently failed.
-			m.notify(fmt.Sprintf("%s is on the board but the filter %q hides it.\n\nClear the filter with esc, then try again.",
+			m.notify(fmt.Sprintf("%s is on the board but the filter %s hides it.\n\nClear the filter with esc, then try again.",
 				ticket.Handle(e.Ref.ID), m.filter), false)
 			return
 		}
