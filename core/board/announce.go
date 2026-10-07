@@ -227,6 +227,11 @@ func laneSection(facts []LaneFact) string {
 		if f.Parking {
 			marks = append(marks, "parking: work returns to the lane it left")
 		}
+		if f.Question {
+			// Not a station on the route: a ticket with nothing to decide passes it
+			// by, or a person is asked twice — here and again at the sign-off.
+			marks = append(marks, "only with an open question (`--question`); without one, work passes it by")
+		}
 		fmt.Fprintf(&b, "- `%s` — %s\n", f.ID, strings.Join(marks, "; "))
 		if d := strings.TrimSpace(f.Description); d != "" {
 			fmt.Fprintf(&b, "  %s\n", FirstSentence(d))
@@ -243,8 +248,11 @@ func laneSection(facts []LaneFact) string {
 		"\n" +
 		"Told to start or work a ticket, drive it this way yourself — lane by lane,\n" +
 		"loops included — until it sits in a human lane, then continue once the human\n" +
-		"has answered. Told an agent should work it, hand it to a subagent that\n" +
-		"babysits the ticket through the same route.")
+		"has answered. The next lane is `next_lane` in `jaira show <id> --json`: it\n" +
+		"passes a lane that only takes a question by, so a ticket with nothing to\n" +
+		"decide goes on to the model review and reaches a person once, at the end.\n" +
+		"Told an agent should work it, hand it to a subagent that babysits the ticket\n" +
+		"through the same route.")
 	return b.String()
 }
 

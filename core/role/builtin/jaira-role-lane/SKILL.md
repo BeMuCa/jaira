@@ -280,7 +280,10 @@ line instead of running it.)
   ticket, never a fix you slip in. The lane you were given is the deliverable.
 - **Your worktree only.** `git worktree list` first; if you are not in your own
   worktree, say so and stop rather than touching what another session holds.
-- `review` and `human` are a person's lanes. Deliver into them and stop there.
+- A lane a person owns — `human`, `signoff` on the default board — is one you
+  deliver into and stop at. `human` takes a ticket only with an open question
+  (`--question`); with nothing to decide, move on to `next_lane` from `jaira
+  show <id> --json`, which passes it by.
 - When you are done, report in three lines: what changed, what the next lane is,
   what is still open. A teamlead reads your pane, so the last thing on screen
   should be that summary and not a wall of diff.
