@@ -19,9 +19,17 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 84c69ec675df35ab5e2fc0bfeb155548ea1ee4b1
+  - d37b92bcbb230b5bc39446a7d1715fe5830368fc
+  - b62d02832b166bd7701301180a5ba95a54884b64
+  - 518d4ce94dd20bfff3639a527188f12d26c09fe6
+  - 0666af540148979c8f0a43bed28632bdec260012
+  - a99798907b217e1f3b2a71fde9d11c74d803ca6b
+  - 31c5cea19545c8a50d17281ea2bcd02db6ff21cc
+  - 72f2a14b095e970a6ec9a6deb4788fcd3d1385af
 created-at: 2026-10-05T11:02:02Z
-updated-at: 2026-10-07T10:14:31Z
+updated-at: 2026-10-07T20:02:04Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3594284
 claimed-at: 2026-10-07T09:18:49Z
@@ -84,3 +92,4 @@ Komma in einem Namen wird nicht unterstuetzt (Komma = oder).
 - **2026-10-07 09:36 · BeMuCa** — testing 2026-10-07: round on DoD 6 / a997989. Full suite green -race -count=1; live tmux check: key bar shows 'u users', u opens picker window. Items 1-5 not re-verified individually; covered by suite.
 - **2026-10-07 09:45 · BeMuCa** — review 2026-10-07 (second model, whole branch 84c69ec..a997989): no defect. Read the net diff, suite green under -race (28 pkgs, RC=0), gofmt/vet clean, scratch build driven in tmux: key bar, picker, tick, apply, esc all as the DoD says. esc after enter looked unchanged in the first tmux run - that was tmux escape-time latency (clears with a longer wait), not the code. Three things left for the person in review-gaps: DoD 4 wording (header, not status bar), picker does not scroll, old unquoted multi-word filters read differently now. The user picker sees logbook cards too (openUsers walks m.logged) - consistent, since rebuild filters logged cards with the same matches().
 - **2026-10-07 10:14 · BeMuCa** — Abnahme 07.10.: Berk hat im Chat alles angenommen (woertlich: 'ich nehme alles an!'). Die Abnahmeseite https://claude.ai/artifact/UBzQJqGtTpF8B8oDnHuGPM war dabei nicht markiert. Er hat entschieden, Claude hat ausgefuehrt: jaira move --to done --force.
+- **2026-10-07 19:55 · BeMuCa** — 07.10.: PR #41 ist gemerged (14:40). Der Ticket-Ref stand noch auf critique, weil die Moves danach nur in diesem Worktree landeten; diese Notiz zieht den Ref auf den Stand done nach.

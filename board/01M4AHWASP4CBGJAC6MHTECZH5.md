@@ -1,7 +1,7 @@
 ---
 id: 01M4AHWASP4CBGJAC6MHTECZH5
 title: Fragen an den Menschen laufen die Kette hoch bis zum Teamlead
-status: human
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,9 +19,15 @@ definition-of-done: "jaira-role-lane: ein Worker fragt nie selbst; er schreibt d
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f2d475ba2c074bb7fee773638068f63163bf1b0d
+  - c2df8efbdfb59ff2748e6a66296d9f49711acf88
+  - c4443885c85716b55a70da87642b1dd32eff88fe
+  - ffb7747a408df192629e428c88d31fe5bbb52d92
+  - ee71470675d26433c4c0490451533ec271cbcf02
+  - 9d2fad9a01645c29813579d7f7a0d82387476819
 created-at: 2026-10-07T06:47:41Z
-updated-at: 2026-10-07T15:20:13Z
+updated-at: 2026-10-07T15:43:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65032
 claimed-at: 2026-10-07T06:52:58Z
@@ -31,7 +37,7 @@ outcome-resolves: "optimize-Durchgang ohne Verhaltensänderung"
 review-summary: none
 review-gaps: "run-lane.sh: question() war eine Kopie von status() (gleicher jaira show + python-Parse, nur anderes Feld) — beide jetzt über field <name>; geprüft am echten Ticket (status=optimize, question leer), go test ./core/role/... grün. Stehen gelassen: zwei jaira show pro Schleifendurchlauf, wenn der Status die Lane ist (alle 20 s, vernachlässigbar); die Worker-Frage-Regel steht in jaira-role-lane und jaira-dispatcher je für ihren Leser — gewollt, keine Duplikation; unversionierte .jaira/milestones/ gehören nicht zu diesem Ticket."
 test-verdict: "pass except DoD 5: suite green with isolated HOME (RC=0; red only from machine-local ~/.jaira, same on base), DoD 1-4,6-8 verified in tree, run-lane exit 5/q0 and spawn --parent exercised with stubs; DoD 5 live Herdr probe not run — needs a person"
-question: "DoD 5 braucht dich: Live-Probe in Herdr. 1) jaira roles install --force (aus feat/teczh5), 2) Teamlead starten, Dispatcher per spawn.sh --parent auf ein Probeticket, 3) Worker eine Frage stellen lassen — erscheint sie nur im Teamlead-Tab und kommt die Antwort beim Worker an? Ja → dod 5 abhaken und nach review; Nein → was du gesehen hast als note, zurück nach in-progress."
+question: ""
 ---
 
 # Fragen an den Menschen laufen die Kette hoch bis zum Teamlead
@@ -46,14 +52,16 @@ question: "DoD 5 braucht dich: Live-Probe in Herdr. 1) jaira roles install --for
   proof: core/role/builtin/jaira-teamlead/SKILL.md: 'What you actually decide' point 4 — SendMessage up, note, SendMessage back down
 - [x] spawn.sh gibt dem gestarteten Dispatcher bzw. Worker den Namen seines Starters mit
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh: --parent -> '/jaira-dispatcher <id> --parent <s>'; teamlead SKILL.md passes --parent <own name>
-- [ ] Ein Probelauf Teamlead -> Dispatcher -> Worker in Herdr: eine Frage des Workers erscheint nur im Teamlead-Tab, die Antwort kommt beim Worker an
+- [x] Ein Probelauf Teamlead -> Dispatcher -> Worker in Herdr: eine Frage des Workers erscheint nur im Teamlead-Tab, die Antwort kommt beim Worker an
+  proof: Probelauf 7MJDDV, ~/projects/jaira-demo-kit/out/7MJDDV.mp4; note 2026-10-07 Versuch 3
 - [x] core/release/NOTES.md hat eine Zeile unter Unreleased
   proof: core/release/NOTES.md: line under ## Unreleased
 - [x] Die Skills sagen die Richtung: der Teamlead ist der Ort, an dem der Mensch antwortet; ein direkt gestarteter Dispatcher ist der Ausnahmefall
   proof: core/role/builtin/jaira-teamlead/SKILL.md 'You are where the person answers'; core/role/builtin/jaira-dispatcher/SKILL.md 'Where the question goes depends on who started you'
 - [x] Schreibt der Mensch direkt in den Dispatcher-Tab, antwortet der Dispatcher dort, hält das Entschiedene mit jaira note fest und meldet es seinem Teamlead; der Teamlead fragt es nicht noch einmal
   proof: core/role/builtin/jaira-dispatcher/SKILL.md 'The person may still type into your tab'; core/role/builtin/jaira-teamlead/SKILL.md same paragraph, no re-asking
-- [ ] jaira-teamlead startet den Dispatcher mit dem kleingeschriebenen Ticket-Handle als slug, damit Dispatcher und Worker dasselbe Worktree und dieselbe Ticket-Kopie haben
+- [x] jaira-teamlead startet den Dispatcher mit dem kleingeschriebenen Ticket-Handle als slug, damit Dispatcher und Worker dasselbe Worktree und dieselbe Ticket-Kopie haben
+  proof: core/role/builtin/jaira-teamlead/SKILL.md: slug = ticket id lower case; spawn.sh/run-lane.sh reuse root when it is already .worktrees/<repo>-<slug>
 
 ## Options
 
@@ -79,3 +87,4 @@ core/role/builtin/jaira-role-lane/SKILL.md, Absatz "A question about your role .
 - **2026-10-07 08:22 · Alexander Sacharov** — Probelauf Versuch 1 (2026-10-07 10:21): Teamlead startete Dispatcher mit --parent jaira-probe-ed, Dispatcher startete brainstorm-Worker im Tab. Worker fand im Worktree kein .jaira (Probe-Board war nicht geteilt, init gitignored es) und hielt an — fragte dabei nicht selbst per AskUserQuestion, sondern schrieb eine Zeile für den Dispatcher. Kein TECZH5-Fehler: Probe-Setup. Behoben: jaira share + Commit 79b1306 auf master im Probe-Repo, beide Worktrees fast-forward. Nebenbefund für später: auf einem ungeteilten Board kann kein Worker im Worktree arbeiten.
 - **2026-10-07 08:27 · Alexander Sacharov** — Probelauf Versuch 2 (10:23): Worker hat richtig gehandelt — note + question-Feld, angehalten, kein AskUserQuestion. run-lane.sh des Dispatchers sah die Frage trotzdem nicht. Ursache 1 (nur Probe): Probe-Repo ohne Remote, .jaira erst nach Start geteilt -> run-lane las die Hauptkopie (board=root, einmal beim Start bestimmt). Ursache 2 (echt): jaira-teamlead SKILL.md:79 lässt den slug frei ('spawn.sh --parent <name> <slug> <id> dispatch'); der Teamlead nahm 'probe-question', run-lane.sh nimmt für den Worker den kleingeschriebenen Ticket-Handle. Dispatcher und Worker sitzen dann in zwei Worktrees mit zwei Kopien des Tickets: die Antwort, die der Dispatcher aufs Ticket schreibt, sieht der Worker nicht. Fix: Teamlead gibt als slug den Ticket-Handle in Kleinbuchstaben.
 - **2026-10-07 15:20 · Alexander Sacharov** — Probelauf Versuch 3 (17:16-17:19, Demo-Repo ~/projects/jaira-demo, Ticket 7MJDDV, aufgezeichnet als ~/projects/jaira-demo-kit/out/7MJDDV.mp4): Kette funktioniert. Worker setzt question + note und hält an -> run-lane Exit 5 -> Dispatcher SendMessage an Teamlead -> Teamlead AskUserQuestion -> Person 'Blue' -> Teamlead note + SendMessage an Dispatcher -> Dispatcher note, question geleert, Worker neu -> Worker schreibt goal, move todo. Frage erschien nur im Teamlead-Tab. Teamlead bekam slug=Ticket-Handle per Prompt (DoD 9 von Hand umgangen). Neuer Befund zu DoD 9: der Dispatcher sitzt dann im Ticket-Worktree und rief run-lane.sh mit root=$(git rev-parse --show-toplevel) = diesem Worktree -> run-lane leitet .worktrees/jaira-demo-7mjddv-7mjddv ab (doppelter slug). Der Dispatcher merkte es selbst und startete mit --no-worktree neu; die Skill-Texte sagen das nicht. Fix mit DoD 9: Dispatcher im Ticket-Worktree startet run-lane mit --no-worktree (oder spawn/run-lane erkennen, dass root schon das Ticket-Worktree ist).
+- **2026-10-07 15:43 · Alexander Sacharov** — DoD 9: Teamlead-Text nennt den Slug (Ticket-Id klein). spawn.sh und run-lane.sh nehmen root selbst, wenn root schon .worktrees/<repo>-<slug> ist — der Dispatcher im Ticket-Worktree braucht kein --no-worktree mehr. Person hat TECZH5 am 2026-10-07 angenommen.
