@@ -1,7 +1,7 @@
 ---
 id: 01M45VM4XP8F7P4NK909PAP369
 title: Board zeigt farbige Linien zwischen verlinkten Karten
-status: human
+status: done
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -20,9 +20,15 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 088c5959177a969edbd00e1153c1c305f930d9f6
+  - 779cf6b357bc982132400f7d30b93183e0cae150
+  - bfe54df8fd66a52273e385f97957c722ccfeabca
+  - 5c23a5f0a5a03b1ff2c5b0f851845595316a8390
+  - b30b7f63a955eaf4e6a8372592985a8e382f90ea
+  - 31c5cea19545c8a50d17281ea2bcd02db6ff21cc
 created-at: 2026-10-05T11:01:46Z
-updated-at: 2026-10-05T13:38:07Z
+updated-at: 2026-10-07T20:02:01Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-155624
 claimed-at: 2026-10-05T11:02:23Z
@@ -83,3 +89,4 @@ Test-Helfer border() muss Linienglyphen als Rand akzeptieren - eine senkrechte L
 F2 anders geloest als vorgeschlagen: Vorschlag 'Legende als erste keys' haette auf schmalen Terminals weiter 1 Zeile Sprung gelassen. Jetzt fitLegend: Legende rechtsbuendig in die letzte Zeile der Statusleiste, nur wenn Platz ist; sonst nur 'N links off screen · L'; sonst nichts. Hoehe der Leiste aendert sich nie -> Board springt nie, Reservierung entfaellt. Preis: auf sehr schmalen Terminals fehlt die Legende.
 - **2026-10-05 11:57 · BeMuCa** — Critique Runde 2 offen fuer Berk (05.10.): Legende fehlt bei 120/130 Spalten. Optionen: (a) Legende rechtsbuendig in Zeile 0 (Versionszeile, rechts frei) - Board springt nie, passt ab 80 Spalten, DoD 4/5 sagen dann 'oberste Zeile' statt 'Statusleiste'; (b) Statusleiste waechst nur dann um 1 Zeile, wenn keine Legende passt - Sprung nur in diesem Breitenband; (c) so lassen, DoD 4 umformulieren. Gefragt im Chat.
 - **2026-10-05 12:39 · BeMuCa** — Berk entschieden 05.10.: Legende bleibt in der Statusleiste; passt sie nicht in die letzte Zeile, bekommt sie eine eigene Zeile (Board springt dann 1 Zeile, nur bei diesen Breiten). Nicht Zeile 0.
+- **2026-10-07 10:14 · BeMuCa** — Abnahme 07.10.: Berk hat im Chat alles angenommen (woertlich: 'ich nehme alles an!'). Die Abnahmeseite https://claude.ai/artifact/UBzQJqGtTpF8B8oDnHuGPM war dabei nicht markiert. Er hat entschieden, Claude hat ausgefuehrt: jaira move --to done --force.
