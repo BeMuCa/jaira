@@ -64,6 +64,12 @@ arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tok
 - All numbers per agent come from its transcript, because a workflow's
   `agent()` returns only the agent's answer. Every arm agent's prompt starts
   with a `[lane-eval id=… arm=… …]` line; that line is how the script finds it.
+  The transcript does not start with it: the workflow harness puts the request
+  that started the workflow first and the prompt, indented, in the second user
+  message, so the script looks for the marker at the start of any line of the
+  first two. The transcripts lie in
+  `~/.claude/projects/<project>/<session>/subagents/workflows/<run id>/`, the
+  `Transcript dir` the Workflow tool prints when it starts.
   Setup, judges and the recorder carry none and are not counted.
 - An agent an arm agent starts itself with the Agent tool carries no marker
   either, but it is part of that arm's cost. Claude Code writes

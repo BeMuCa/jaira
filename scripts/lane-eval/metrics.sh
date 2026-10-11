@@ -7,6 +7,10 @@
 # agent-*.jsonl below the transcript directories. An agent counts when the
 # first line of its prompt is the marker the workflow puts there:
 #   [lane-eval id=<basename of out> arm=<arm> ticket=<t> run=<n> step=<k> lane=<lane>]
+# A workflow agent's transcript does not start with that prompt: the harness
+# puts the user request that started the workflow first and the prompt, every
+# line indented, in the second user message. So the marker is looked for at the
+# start of any line of the first two.
 # Agents without it (setup, judges, the recorder) are not part of an arm's cost,
 # except an agent that an arm agent started itself (the Agent tool, e.g. the
 # fresh review jaira-worker hands off): Claude Code writes agent-<id>.meta.json
@@ -34,7 +38,7 @@
 # duration_ms,tool_uses,subagents,loops,verdict) and <out>/summary.csv (one line per arm,
 # token columns summed, peak_context the largest), and prints the summary.
 set -euo pipefail
-if [ $# -lt 2 ]; then sed -n '2,36p' "$0" >&2; exit 2; fi
+if [ $# -lt 2 ]; then sed -n '2,39p' "$0" >&2; exit 2; fi
 out=$(cd "$1" && pwd); shift
 id=$(basename "$out")
 results="$out/results.json"
@@ -47,8 +51,8 @@ per_agent() {
     def ms: (sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) * 1000
             + ((capture("\\.(?<f>[0-9]+)Z$").f // "0") | .[0:3] | tonumber);
     def text: if type == "string" then . else (map(select(.type == "text") | .text) | join("\n")) end;
-    (map(select(.type == "user")) | first | .message.content | text) as $prompt
-    | ([$prompt | capture("^\\s*\\[lane-eval id=(?<id>[^ ]+) arm=(?<arm>[^ ]+) ticket=(?<ticket>[^ ]+) run=(?<run>[0-9]+) step=(?<step>[0-9]+) lane=(?<lane>[^\\]]+)\\]")?] | first) as $m
+    (map(select(.type == "user")) | .[0:2] | map(.message.content | text) | join("\n")) as $prompt
+    | ([$prompt | capture("(^|\\n)[ \\t]*\\[lane-eval id=(?<id>[^ ]+) arm=(?<arm>[^ ]+) ticket=(?<ticket>[^ ]+) run=(?<run>[0-9]+) step=(?<step>[0-9]+) lane=(?<lane>[^\\]]+)\\]")?] | first) as $m
     | (if $m != null and $m.id == $id then $m else null end) as $m
     | select($m != null or $parent != "")
     | [ to_entries[] | select(.value.type == "assistant" and .value.message.usage != null)

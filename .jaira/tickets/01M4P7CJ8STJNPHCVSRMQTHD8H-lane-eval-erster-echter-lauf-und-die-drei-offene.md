@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T19:35:11Z
-updated-at: 2026-10-11T19:58:34Z
+updated-at: 2026-10-11T20:00:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-789618
 claimed-at: 2026-10-11T19:45:23Z
@@ -49,7 +49,7 @@ mode: ""
 - [x] judge-prep.sh: verweigern, wenn <out> unter dem Temp-Wurzelordner der Richter liegt; Doku-Beispiel nach $HOME
 - [x] metrics.sh: Agent ohne Markierung ueber meta.json/parentAgentId dem markierten Vorfahren zuschlagen
 - [x] judge-prep.sh: X.ticket.md/Y.ticket.md aus der Arm-Ticket-Datei, nur DoD, Outcome, commits; Richter-Prompt und Doku
-- [ ] Echter Lauf BG5QJ6 N=1, metrics.sh, Ergebnis als Note
+- [~] Echter Lauf BG5QJ6 N=1, metrics.sh, Ergebnis als Note
 
 ## Progress
 - **2026-10-11 19:46 · Alexander Sacharov** — Worker-Entscheidungen vor dem Plan (selbst entschieden, widersprechbar):
@@ -63,3 +63,6 @@ Antworten von Alex (in meinem Tab, 11.10.):
 2. Echter Lauf: BG5QJ6, N=1, beide Arme, nach den Fixes. Alex waehlte 'aus dieser Sitzung jetzt'; Teamlead jaira-61 sagt, die Hauptsitzung startet den Lauf nach dem Review. Vor dem Start mit jaira-61 abstimmen, nicht doppelt laufen lassen.
 - **2026-10-11 19:55 · Alexander Sacharov** — Abgestimmt mit jaira-61: Alex' Wahl im Worker-Tab gilt als Opt-in - der Worker startet den echten Lauf selbst nach den Fixes und schickt jaira-61 drei Zeilen (cost_eq je Arm, Richterurteile, Brueche in metrics.sh).
 - **2026-10-11 19:57 · Alexander Sacharov** — metrics.sh: Falle gefunden - capture(...)? liefert bei fehlendem Treffer 'empty', nicht null; frueher fiel ein unmarkierter Agent dadurch still raus. Jetzt [capture(...)?] | first. Herdr-Tabs (spawn.sh) sind eigene Sitzungen ohne parentAgentId und bleiben ungezaehlt - in LANE-EVAL.md genannt; die Workflow-Prompts starten keine.
+- **2026-10-11 19:58 · Alexander Sacharov** — Echter Lauf gestartet: Workflow lane-eval, repo=/home/alex/projects/.worktrees/jaira-qthd8h (hat die Fixes), out=/home/alex/lane-eval/2026-10-11-qthd8h, tickets=[BG5QJ6], n=1. Stirbt diese Sitzung: Clones und r1.json liegen unter out, results.json fehlt dann.
+- **2026-10-11 19:58 · Alexander Sacharov** — Gefunden: Workflow-Agenten legen ihre Transkripte unter ~/.claude/projects/<projekt>/<session>/subagents/workflows/<runId>/ ab (dieser Lauf: .../-home-alex-projects--worktrees-jaira-qthd8h/0c43ac98-.../subagents/workflows/wf_9ea1a9f1-c81). Run-ID wf_9ea1a9f1-c81, resumable aus derselben Sitzung.
+- **2026-10-11 20:00 · Alexander Sacharov** — Echter Lauf zeigt: Workflow-Transkripte beginnen NICHT mit dem Prompt. 1. user-Nachricht = '[Workflow harness — user request]' mit der Anfrage, die den Workflow startete (hier '/jaira-worker QTHD8H' - die Arm-Agenten lesen das als Nutzerwillen, der bei Konflikt gewinnt!), 2. user-Nachricht = Prompt, jede Zeile 2 Leerzeichen eingerueckt. metrics.sh fand deshalb nichts; jetzt sucht es die Markierung am Zeilenanfang der ersten zwei user-Nachrichten. Workflow-Agenten haben meta.json ohne parentAgentId, agentType workflow-subagent, description = Label.
