@@ -56,6 +56,21 @@ type Lane struct {
 	Terminal  bool
 	ModelTier string
 
+	// Context says whether the agent working this lane may be the one that
+	// worked the lanes before it. "fresh" means it may not: the lane is handed
+	// to a new agent that has seen nothing of the ticket's work, because a
+	// judge who wrote what it judges is not a judge. "shared" says the
+	// opposite out loud, and empty means the file does not say. A single
+	// agent carries a ticket through every other agentic lane itself.
+	//
+	// Load resolves the empty case for the whole board: when no lane declares
+	// a context at all, the last agentic lane before the first lane a person
+	// owns is fresh, with ContextImplied set — so a board written before the
+	// field existed keeps a fresh review without a migration. See
+	// impliedFresh.
+	Context        string
+	ContextImplied bool
+
 	// Holds caps how many tickets the lane keeps. After a move lands a ticket
 	// here, the oldest beyond the newest Holds leave for the logbook — reported,
 	// never silent. 0 or absent means unlimited. Declared in the lane file so the
@@ -151,6 +166,16 @@ type Lane struct {
 	// status names a lane this installation does not have.
 	Unknown bool
 }
+
+// The two values a lane's context: field takes. See Lane.Context.
+const (
+	ContextFresh  = "fresh"
+	ContextShared = "shared"
+)
+
+// Fresh reports whether this lane goes to a new agent with no prior context,
+// whether its file says so or the board's default made it so.
+func (l *Lane) Fresh() bool { return l.Context == ContextFresh }
 
 // Set is the resolved, ordered collection of lanes.
 type Set struct {
@@ -315,6 +340,10 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
 	l.RejectsTo = rejectsTo(d)
+	l.Context = strings.TrimSpace(str("context"))
+	if l.Context != "" && l.Context != ContextFresh && l.Context != ContextShared {
+		return nil, fmt.Errorf("lane %s: context %q must be %q or %q", source, l.Context, ContextFresh, ContextShared)
+	}
 
 	if l.ID == "" {
 		return nil, fmt.Errorf("lane %s: missing required field \"id\"", source)
@@ -547,6 +576,7 @@ func Load(root string) (*Set, error) {
 	}
 
 	warnings = append(warnings, checkContracts(ordered)...)
+	impliedFresh(ordered)
 
 	if !anyRequiresSpecified(ordered) {
 		// A board could take requires-specified out of circulation entirely
@@ -563,6 +593,38 @@ func Load(root string) (*Set, error) {
 		set.byID[l.ID] = l
 	}
 	return set, nil
+}
+
+// impliedFresh applies the board-wide default for context:. Only a board on
+// which no lane declares a context at all gets one — a board that wrote the
+// field on any lane has said what it wants, "shared" included, and a guess
+// laid over that would contradict it.
+//
+// The lane it marks is the last agentic lane before the first lane a person
+// owns (requires-human-exit): the model's last look before a person's. A lane
+// that only takes a question is not counted as that lane, because work passes
+// it by (see Set.Next): on the shipped board HITL sits between testing and
+// review, and counting it would make testing the fresh lane instead of review. A board with no such lane, or with no agentic lane before it, has
+// no fresh lane, and nothing is marked.
+func impliedFresh(lanes []*Lane) {
+	for _, l := range lanes {
+		if l.Context != "" {
+			return
+		}
+	}
+	for i, l := range lanes {
+		if !l.RequiresHumanExit || l.RequiresQuestion || l.Agentic {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if lanes[j].Agentic {
+				lanes[j].Context = ContextFresh
+				lanes[j].ContextImplied = true
+				return
+			}
+		}
+		return
+	}
 }
 
 // boardExists reports whether root carries a .jaira/ directory at all — the
@@ -796,6 +858,7 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.Agentic == replacement.Agentic &&
 		base.Terminal == replacement.Terminal &&
 		base.ModelTier == replacement.ModelTier &&
+		base.Context == replacement.Context &&
 		base.RequiresQuestion == replacement.RequiresQuestion &&
 		base.RequiresBlockedReason == replacement.RequiresBlockedReason &&
 		base.RequiresCommits == replacement.RequiresCommits &&

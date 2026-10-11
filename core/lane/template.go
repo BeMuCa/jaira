@@ -15,6 +15,10 @@ precedence: 42                   # optional. Merge order only — never display 
 agentic: true                    # true if a subagent works this lane; false for a human-only step.
 model-tier: strong               # a local alias (e.g. cheap, strong) — NOT a model name. This
                                   # indirection is what lets a shared lane file survive a model rename.
+context: ""                      # optional. fresh: a new agent that has seen nothing of the ticket's
+                                  # work runs this lane — a reviewer, say. shared: the agent carrying
+                                  # the ticket runs it. Set on no lane, the last agentic lane before the
+                                  # first lane with requires-human-exit counts as fresh.
 terminal: false                  # true marks the lane where signed-off work lands.
 holds: 0                         # optional, terminal lane only: a move landing here files the oldest beyond the newest N into the logbook. 0 = unlimited.
 logbook-on-entry: false          # optional, terminal lane only: a move landing here files the ticket straight into the logbook, commits stamped.

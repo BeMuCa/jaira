@@ -1023,6 +1023,7 @@ func newLanesCmd() *cobra.Command {
 						"id": l.ID, "name": l.Name, "precedence": l.Precedence,
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
+						"context": l.Context, "context_implied": l.ContextImplied,
 						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
@@ -1043,13 +1044,18 @@ func newLanesCmd() *cobra.Command {
 			// and 'lanes show <id>' is where it lives instead.
 			// RANK, not PREC: column order follows after:, never this number — it
 			// is the rank a merge uses to decide which lane wins, nothing more.
-			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %s\n", "ID", "NAME", "RANK", "AGENTIC", "TIER", "SOURCE")
+			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %-8s %s\n", "ID", "NAME", "RANK", "AGENTIC", "TIER", "CONTEXT", "SOURCE")
+			implied := false
 			for _, l := range lanes.Lanes {
 				src := "built-in"
 				if !l.Builtin {
 					src = l.Source
 				}
-				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), src)
+				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), laneContext(l), src)
+				implied = implied || l.ContextImplied
+			}
+			if implied {
+				fmt.Fprintf(w, "\n* %s\n", impliedContextNote)
 			}
 			if len(available) > 0 {
 				fmt.Fprintf(w, "\nShipped with this binary, not on this board — no network needed:\n")
@@ -1162,6 +1168,7 @@ func newLanesShowCmd() *cobra.Command {
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
 					"rejects_to": l.RejectsTo, "holds": l.Holds,
+					"context": l.Context, "context_implied": l.ContextImplied,
 				})
 			}
 			w := cmd.OutOrStdout()
@@ -1176,6 +1183,11 @@ func newLanesShowCmd() *cobra.Command {
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)
 			fmt.Fprintf(w, "Tier:        %s\n", dash(l.ModelTier))
+			if l.ContextImplied {
+				fmt.Fprintf(w, "Context:     fresh — %s\n", impliedContextNote)
+			} else {
+				fmt.Fprintf(w, "Context:     %s\n", dash(l.Context))
+			}
 			fmt.Fprintf(w, "Input:       %s\n", dash(strings.Join(l.InputRequires, ", ")))
 			fmt.Fprintf(w, "Output:      %s\n", dash(strings.Join(l.OutputProduces, ", ")))
 			if l.Holds > 0 {
@@ -1415,6 +1427,19 @@ func truncate(s string, n int) string {
 // The translation lives here rather than in core/board because that package is
 // stdlib-only on purpose — both the CLI and the TUI call it, and it must not
 // pull core/lane behind them.
+// impliedContextNote says why a lane whose file never mentions context: is
+// fresh, in the words both 'jaira lanes' and 'lanes show' print it in.
+const impliedContextNote = "no lane on this board declares context:, so the last agentic lane before the first lane a person owns runs fresh"
+
+// laneContext is the CONTEXT column: the value, with "*" when the board's
+// default supplied it rather than the lane's file.
+func laneContext(l *lane.Lane) string {
+	if l.ContextImplied {
+		return l.Context + "*"
+	}
+	return dash(l.Context)
+}
+
 func laneFacts(lanes *lane.Set) []board.LaneFact {
 	if lanes == nil {
 		return nil
@@ -1426,7 +1451,7 @@ func laneFacts(lanes *lane.Set) []board.LaneFact {
 			ModelTier: l.ModelTier, Agentic: l.Agentic, Terminal: l.Terminal,
 			HumanExit: l.RequiresHumanExit, Question: l.RequiresQuestion,
 			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo,
-			Produces: l.OutputProduces,
+			Produces: l.OutputProduces, Fresh: l.Fresh(),
 		})
 	}
 	return out

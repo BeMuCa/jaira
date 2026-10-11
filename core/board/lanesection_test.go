@@ -177,3 +177,16 @@ func TestLaneSectionSaysAQuestionLaneIsPassedBy(t *testing.T) {
 		t.Error("an ordinary lane was marked as question-only")
 	}
 }
+
+// A lane marked fresh is the one the agent carrying a ticket must not work
+// itself; the note is where that agent reads it, so it may not say "yours".
+func TestLaneSectionMarksAFreshLane(t *testing.T) {
+	facts := append(demoFacts(), LaneFact{ID: "review", Agentic: true, ModelTier: "strong", Fresh: true})
+	got := laneSection(facts)
+	if !strings.Contains(got, "`review` — **fresh context**") {
+		t.Errorf("the fresh lane is not marked as one:\n%s", got)
+	}
+	if strings.Contains(got, "`review` — yours to work") {
+		t.Errorf("a fresh lane is still offered to the carrying agent:\n%s", got)
+	}
+}
