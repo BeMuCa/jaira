@@ -71,6 +71,26 @@ answers.
 One dispatcher per ticket. Hand it the id and nothing else — the dispatcher
 skill carries the rest.
 
+**Which one is the person's choice, and you read it, you do not pick it:**
+
+```bash
+jaira --json roles list      # "dispatch": "lanes" | "worker", "dispatch_role"
+```
+
+- `lanes` — the default: `jaira-dispatcher`, which starts a new agent for
+  every lane. Everything below is written for it.
+- `worker` — the person opted in with `"dispatch": "worker"` in
+  `~/.jaira/settings.json` (or on the board's settings screen, `S`):
+  `jaira-worker`, which carries the ticket through every lane itself and hands
+  only a lane marked fresh context — `review` on the shipped board — to a new
+  agent. Start it exactly as below, with the lane name `worker` where it says
+  `dispatch`, and `/jaira-worker` where it says `/jaira-dispatcher`. It asks,
+  reports and stops by the same rules, so the rest of this file holds for it
+  unchanged; "dispatcher" below means whichever of the two you started.
+
+Read it once per ticket you start, not once per session: the person can switch
+it on the settings screen while you run.
+
 **If Herdr is here (`HERDR_ENV=1`), the dispatcher gets its own tab**, the same
 way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
@@ -93,7 +113,8 @@ under that name; `$HERDR_BIN_PATH` names it. A dispatcher in a tab outlives you:
 the human can kill your session, start a new teamlead, and the work is still
 running — which is the whole reason the board exists.
 
-Without Herdr, start it as a subagent instead:
+Without Herdr, start it as a subagent instead — "the worker skill" in place of
+"the dispatcher skill" when the setting says `worker`:
 
 ```
 Agent(subagent_type: "claude",

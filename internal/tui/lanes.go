@@ -139,7 +139,7 @@ func (ls *laneScreen) reload() error {
 	// pipeline changes rather than at the next 'jaira update'. It writes only
 	// when the content actually differs, so the reload that merely opens this
 	// screen costs nothing.
-	if _, err := board.AnnounceInAgentFiles(ls.store.Root, laneFacts(set)); err != nil {
+	if _, err := board.AnnounceInAgentFiles(ls.store.Root, set.Facts()); err != nil {
 		ls.msg, ls.isErr = "the lanes changed but the agent note could not be updated: "+err.Error(), true
 	}
 	return nil

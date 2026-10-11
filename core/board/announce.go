@@ -146,6 +146,8 @@ type LaneFact struct {
 	Parking     bool
 	RejectsTo   []string
 	Produces    []string
+	// Fresh marks a lane a new agent works, not the one carrying the ticket.
+	Fresh bool
 }
 
 // OrList writes lane ids as a reader would say them — "in-progress",
@@ -208,6 +210,10 @@ func laneSection(facts []LaneFact) string {
 	for _, f := range facts {
 		var marks []string
 		switch {
+		case f.Agentic && f.Fresh:
+			// Said where the lane is listed, because the agent carrying a
+			// ticket reads this list to learn where its own part stops.
+			marks = append(marks, "**fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent")
 		case f.Agentic:
 			marks = append(marks, "yours to work")
 		case f.HumanExit, f.Question:

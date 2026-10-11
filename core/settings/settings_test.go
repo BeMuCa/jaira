@@ -206,3 +206,23 @@ func TestLogbookWindow(t *testing.T) {
 		t.Errorf("a saved 0 came back as %d", got)
 	}
 }
+
+// The worker mode is opt-in: nothing written, or anything but "worker", keeps
+// the one-agent-per-lane dispatcher everybody ran before the choice existed.
+func TestDispatchDefaultsToLanes(t *testing.T) {
+	for in, want := range map[string]string{
+		"": settings.DispatchLanes, "lanes": settings.DispatchLanes, "workr": settings.DispatchLanes,
+		"worker": settings.DispatchWorker, " worker ": settings.DispatchWorker,
+	} {
+		s := settings.Settings{Dispatch: in}
+		if got := s.DispatchMode(); got != want {
+			t.Errorf("dispatch %q: mode %q, want %q", in, got, want)
+		}
+	}
+	if r := (settings.Settings{}).DispatchRole(); r != "jaira-dispatcher" {
+		t.Errorf("default role %q, want jaira-dispatcher", r)
+	}
+	if r := (settings.Settings{Dispatch: "worker"}).DispatchRole(); r != "jaira-worker" {
+		t.Errorf("worker role %q, want jaira-worker", r)
+	}
+}
