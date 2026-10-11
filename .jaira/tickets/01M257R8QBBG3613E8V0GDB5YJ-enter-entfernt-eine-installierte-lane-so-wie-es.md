@@ -1,7 +1,7 @@
 ---
 id: 01M257R8QBBG3613E8V0GDB5YJ
 title: "Enter entfernt eine installierte Lane, so wie es sie hinzufuegt"
-status: backlog
+status: critique
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -19,15 +19,21 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-10T08:43:06Z
-updated-at: 2026-10-11T19:44:56Z
+updated-at: 2026-10-11T20:11:35Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-925641
+claimed-at: 2026-10-11T20:04:07Z
+outcome-what: "Enter auf einer installierten Lane oeffnet dieselbe Ja/Nein-Entfernung wie x (Vorauswahl no); Fusszeile nennt 'enter add/remove' und 'x remove'; Doc-Kommentare um startRemove/confirmRemove nennen jetzt beide Wege"
+outcome-why: "Berk erwartet, dass enter eine hinzugefuegte Lane auch wieder entfernt; Entfernen gab es nur auf x"
+outcome-resolves: "DoD 1: enter-Umschalter, x unveraendert, Fusszeile, Tests fuer beide Enter-Faelle, go test -race gruen"
 ---
 
 # Enter entfernt eine installierte Lane, so wie es sie hinzufuegt
 
 ## Definition of Done
 
-- [ ] Enter auf einer installierten Lane startet dieselbe Entfernung wie x, samt Ja/Nein-Dialog mit 'no' als Vorauswahl; enter auf der Plus-Spalte und auf einer nicht installierten Lane fuegt weiter hinzu; x funktioniert unveraendert; die Fusszeile nennt beide; Tests decken beide Enter-Faelle; go test ./... -race gruen
+- [x] Enter auf einer installierten Lane startet dieselbe Entfernung wie x, samt Ja/Nein-Dialog mit 'no' als Vorauswahl; enter auf der Plus-Spalte und auf einer nicht installierten Lane fuegt weiter hinzu; x funktioniert unveraendert; die Fusszeile nennt beide; Tests decken beide Enter-Faelle; go test ./... -race gruen
+  proof: internal/tui/lanes.go:289-302 (enter -> startRemove auf installierter Lane), Footer lanes.go:860-862; Tests TestLaneScreenEnterTogglesAddAndRemove, TestLaneScreenFooterNamesEnterAndX, TestLaneScreenPlusColumnOpensCatalogueListingOnlyMissingLanes; go test ./... -race exit 0 (isoliertes HOME)
 
 ## Options
 
@@ -40,3 +46,6 @@ updated-by: Alexander Sacharov
 
 ## Progress
 - **2026-10-11 19:44 · Alexander Sacharov** — Code aus dem A/B-Versuch vom 11.10.2026 uebernommen (Arm A, Lane-Pipeline; blinder Richter knapp fuer diese Variante; Review: approve). Offen laut Review: Doc-Kommentare in internal/tui/lanes.go um startRemove nennen teils nur x. Weiter im Worker-Modus; Alex hat das Ticket von BeMuCa uebernommen, um es zum Release zu bringen.
+- **2026-10-11 20:04 · Alexander Sacharov** — parent session: jaira-61
+- **2026-10-11 20:04 · Alexander Sacharov** — Keine offenen Entscheidungen: Ticket-Kontext legt alles fest (enter=Umschalter, x bleibt, Dialog mit no zuerst). Code liegt in 9dafa85; offen nur der Review-Punkt zu Doc-Kommentaren um startRemove.
+- **2026-10-11 20:11 · Alexander Sacharov** — go test ./... -race ist auf dieser Maschine nur mit isoliertem absolutem HOME gruen (Scratchpad-HOME, exit 0). Mit echtem HOME scheitern ~30 Tests in internal/cli und TestArchiveFromTheBoard (nil-Panic), Meldung 'unrecognized lane backlog' - Ursache ist der maschinenlokale ~/.jaira/default-board.md, nicht diese Aenderung. Tests isolieren HOME nicht; eigenes Thema, hier nicht angefasst.

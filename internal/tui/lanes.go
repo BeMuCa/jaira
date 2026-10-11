@@ -88,7 +88,8 @@ type laneScreen struct {
 	isErr bool
 }
 
-// confirmRemove is the pending yes/no question a still-open 'x' has raised.
+// confirmRemove is the pending yes/no question a still-open 'x' (or enter
+// on an installed lane) has raised.
 // path empty means a board removal (lane.Remove, keyed by id); path
 // non-empty means a catalogue file delete (os.Remove on path). yes starts
 // false so a bare enter answers no.
@@ -219,10 +220,10 @@ func (ls *laneScreen) key(s string) (done bool) {
 		return false
 	}
 
-	// Every 'x' opens this confirmation before anything is removed, so
-	// hammering enter never deletes anything: while it is open, h/l (and
-	// left/right) only switch the selected answer, enter acts on it, and
-	// esc/q cancel without finishing the screen. Every other key is ignored
+	// Every 'x', and enter on an installed lane, opens this confirmation
+	// before anything is removed, so hammering enter never deletes anything:
+	// while it is open, h/l (and left/right) only switch the selected answer,
+	// enter acts on it, and esc/q cancel without finishing the screen. Every other key is ignored
 	// rather than falling through to the normal board navigation below.
 	if ls.confirm != nil {
 		switch s {
@@ -348,7 +349,8 @@ func (ls *laneScreen) moveSharedUp() {
 
 // startRemove opens the yes/no confirmation every 'x' now requires, for
 // either an installed lane under the cursor (board removal) or an available
-// (not-installed) catalogue lane (file delete). A built-in has no file — it
+// (not-installed) catalogue lane (file delete). enter on an installed lane
+// calls it too; enter never reaches the file-delete branch. A built-in has no file — it
 // lives inside the binary — so it errors immediately rather than opening a
 // confirmation there is nothing to act on. The '+' column has nothing to
 // remove either.
