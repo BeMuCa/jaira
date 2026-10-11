@@ -1,7 +1,7 @@
 ---
 id: 01M4P5FK818EAFZ68XFYNZZDRH
 title: "jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -30,18 +30,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T19:01:54Z
-updated-at: 2026-10-11T20:52:32Z
+updated-at: 2026-10-11T20:54:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6544
 claimed-at: 2026-10-11T20:12:41Z
-outcome-what: "critique round 1 answered: session cost label, honest give-back without Herdr, worker records and threads in $.store with pruning"
-outcome-why: "four critique findings"
-outcome-resolves: "review-summary of round 1"
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx refreshCache labels this session's cost as 'today' (texts.ts usage) - it is the session's, say so ('Sitzung'/'session'/'сессия')
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx giveBack without Herdr tells the person 'given back to a new worker' though nobody was started - say it went back to in-progress and nothing was started
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx writeRecord/readRecords keep worker records as files under ~/.jaira/cockpit/sessions that nothing ever removes ($.fs has no delete) - keep them in $.store under session:<id>, which is already shared across sessions (reports use it) and can be pruned by updatedAt like keep() prunes reports; drop the files and the fs.list mock
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx threads:<session> keys in $.store are never pruned and grow with every session - prune to the newest 20 at session.start, as keep() does for reports
+outcome-what: "generated mod files kept out of embed and git"
+outcome-why: "critique round 2"
+outcome-resolves: "review-summary round 2"
+review-summary: "none"
+review-gaps: "removed filter.ts isAgentPrompt and REPORT_USAGE (no caller left after register.tsx took the prompt path and texts.ts the usage); the ticket pane now formats its times with filter.ts stamp() instead of a second inline copy. Left: exported constants in cache.ts/sessions.ts/threads.ts that only their own file reads (named thresholds, kept for reading), digest.ts exports that predate this ticket, refreshBoard running 'jaira lanes' on every turn beside 'jaira list' (lanes rarely change, but caching them would show a stale band after a lane edit; both are fast), types/index.d.ts mirroring Waiting/Counts/Lang (a contract may not import)"
 ---
 
 # jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet
@@ -127,3 +124,5 @@ review-summary: |-
 - **2026-10-11 20:49 · Alexander Sacharov** — Live (interaktive Sitzung mit --plugin-dir in einem Herdr-Tab dieses Worktrees, nur lesend): Statuszeile '1 worker · 1 review · 0 ждёт тебя · 5h 36%'; nach einem Prompt das Band 'контекст 50k · кэш ещё 60 мин · нити: открытых вопросов 1, заброшено 0'; /cockpit threads -> '? #1 Logo-Farbe: blau oder grün ? Soll das Logo blau oder grün werden?'; beim Schliessen des Tabs schrieb session.end die Metrikzeile (danach von mir geloescht, ebenso die aus 'claude -p'). NICHT live gedrueckt: Annehmen/Zurueckgeben/Erklaeren/Besprechen und das Pane - auf diesem Board liegt kein Ticket in signoff/human, und ein eigenes Scratch-Board ist ein neuer Workspace, dessen Vertrauensdialog nur Alex beantworten darf. Diese Knoepfe sind durch Tests gedeckt (tests/board.test.ts) und stehen im review-check fuer Alex. Cache-Waechter live nicht provoziert (Abo-Cache haelt 1 h).
 - **2026-10-11 20:50 · Alexander Sacharov** — critique (Runde 1): 4 Befunde, siehe review-summary - (1) Sitzungskosten als 'heute' beschriftet, (2) Rueckgabe ohne Herdr meldet einen neuen Worker, der nie startet, (3) Worker-Staende als Dateien in ~/.jaira/cockpit/sessions ohne Aufraeumen -> in $.store mit Ausduennen, (4) threads:<id> im Store ohne Ausduennen. Bewusst stehen gelassen: register.tsx traegt alles mit $ (LadeVorschrift, Note 'Gelernt (Mod-Lader)'), types/index.d.ts spiegelt Waiting/Counts/Lang (Vertrag muss ohne Import sein), userConfig usdPerMTok (Preis haengt am Modell, fest verdrahtet waere er fuer Sonnet falsch).
 - **2026-10-11 20:52 · Alexander Sacharov** — in-progress (nach critique Runde 1): (1) Statuszeile sagt jetzt 'session $X'/'Sitzung'/'сессия'; (2) Rueckgabe ohne Herdr: 'MG677R back in in-progress; no worker started (no Herdr)'; (3) Worker-Staende in $.store unter session:<id>, readRecords() wirft Eintraege aelter als 24 h weg (sessions.ts isExpired), keine Dateien unter ~/.jaira/cockpit mehr; (4) threads:<id> beim Schreiben ans Ende verschoben, session.start behaelt die 20 neuesten. Tests: 'a record a day old decides nothing and is dropped', 'without Herdr it says ...', 'threads of the 20 sessions heard from last'. Der Test-Mock des Stores ist jetzt eigene store.*-Hooks (Test-$ hat kein $.store). Achtung fuer spaetere Laeufe: register.tsx-Zeilennummern in den Proofs vor review neu pruefen.
+- **2026-10-11 20:53 · Alexander Sacharov** — critique (Runde 2): die 4 Befunde aus Runde 1 sind in d28489d erledigt. Neu, weil die Reparatur ihn einschleppte und er DoD 2 bricht (installierter Mod waere mit 14k Zeilen generierter Typen aufgeblaeht): tsconfig.json + .claude-plugin/types im Mod-Ordner wurden mit eingebettet. In db959f4 behoben (core/mod/mod.go ueberspringt beides, Root-.gitignore ignoriert tsconfig.json, Test prueft es) - offen gesagt: in derselben Sitzung repariert statt erst zurueckzuschicken; der Weg ueber in-progress folgt hier formal.
+- **2026-10-11 20:53 · Alexander Sacharov** — critique (Runde 3): einziger Befund aus Runde 2 in db959f4 erledigt (mod.go generatedTypes/generatedConfig, Test TestBuiltinsCarryTheCockpitWithoutItsTests). Nichts weiter - review-summary=none.

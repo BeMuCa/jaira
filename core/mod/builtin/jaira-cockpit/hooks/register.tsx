@@ -6,7 +6,7 @@ import { cacheView, dollars, guard, ttlMs } from './cache.ts'
 import { digest } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
-  projectKeys, REPORTS_PER_TICKET, rewriteRow, showReport, TICKETS, type Report,
+  projectKeys, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { langOf, type Lang } from './lang.ts'
@@ -667,7 +667,7 @@ export const register: Register = (on, options) => {
         {kept.length === 0 ? <Text dimColor>{t.paneNothing}</Text> : null}
         {kept.map((r, i) => (
           <Box key={`r-${i}`} flexDirection="column">
-            <Text dimColor>── {r.at.replace('T', ' ').slice(0, 16)} · {r.origin} ──</Text>
+            <Text dimColor>── {stamp(r.at)} · {r.origin} ──</Text>
             <Text>{body(r.text)}</Text>
           </Box>
         ))}

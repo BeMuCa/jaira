@@ -37,10 +37,6 @@ export function isAgentReport(e: SessionReceiveInput): boolean {
   return e.agentId === undefined && e.event === undefined && AGENT_ORIGINS.has(e.origin.kind)
 }
 
-export function isAgentPrompt(e: PromptSubmitInput): boolean {
-  return AGENT_ORIGINS.has(e.origin.kind)
-}
-
 // The sending agent the engine names beside a peer origin (`general-purpose`).
 export function agentName(e: PromptSubmitInput): string | undefined {
   const name = (e.origin as { name?: unknown }).name
@@ -99,7 +95,8 @@ export function rewriteRow(e: SessionAppendInput, shortened: Map<string, string>
   return isChanged ? { ...e, message: { ...e.message, content } } : e
 }
 
-function stamp(at: string): string {
+// An ISO time as the person reads it: date and minutes.
+export function stamp(at: string): string {
   return at.replace('T', ' ').replace(/:\d\d(\.\d+)?Z$/, '')
 }
 
@@ -126,5 +123,3 @@ export function showReport(ticket: string, reports: readonly Report[], lang: Lan
     })
     .join('\n\n')
 }
-
-export const REPORT_USAGE = '  report [id]   full text of the agent reports shortened for a ticket, newest first; without an id, the tickets that have some'
