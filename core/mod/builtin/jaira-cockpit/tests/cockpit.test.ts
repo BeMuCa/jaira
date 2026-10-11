@@ -78,6 +78,13 @@ describe('session.receive', () => {
     expect((await $.session.receive({ origin: { kind: 'peer' }, text: aborted })).text).toBe(aborted)
   })
 
+  test('a completed agent that reports a failure stays whole, as a peer would', async ($, on) => {
+    session(on)
+    const failing = REPORT.replace('Moved review -> signoff.', 'MG677R: go test ./... exit status 1, worker stopped.')
+    expect((await $.session.receive({ origin: NOTIFICATION, text: failing })).text).toBe(failing)
+    expect((await $.session.receive({ origin: { kind: 'peer' }, text: failing })).text).toBe(failing)
+  })
+
   test("a person's message is never touched", async ($, on) => {
     session(on)
     const mine = 'Ticket MG677R: move it review -> signoff, verdict: approve'

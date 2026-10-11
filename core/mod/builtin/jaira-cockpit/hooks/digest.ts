@@ -38,14 +38,16 @@ export function ticketOf(text: string): string | undefined {
 
 // A report that has to stay whole: a task-notification whose status is not
 // "completed", or a text that says something broke, was aborted, or waits at
-// an approval dialog. "0 failed" in a test summary is not a failure.
+// an approval dialog — a "completed" status included, since an agent that
+// ends its turn normally can still report a failed run. "0 failed" in a test
+// summary is not a failure.
 const FAILURE =
   /\b(?:fehlgeschlagen|abgebrochen|aborted|crashed|timed out|killed|panic:|approval dialog)|(?<![0-9] )\b(?:failed|failure)\b|\bexit (?:code |status )?[1-9]\d*\b|^\s*error\b/im
 const STATUS = /<status>\s*([a-z_-]+)\s*<\/status>/i
 
 export function isFailure(text: string): boolean {
   const status = STATUS.exec(text)
-  if (status) return status[1]!.toLowerCase() !== 'completed'
+  if (status && status[1]!.toLowerCase() !== 'completed') return true
   return FAILURE.test(text)
 }
 
