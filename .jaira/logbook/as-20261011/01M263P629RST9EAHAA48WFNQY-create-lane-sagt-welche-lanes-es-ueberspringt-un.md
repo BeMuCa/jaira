@@ -1,7 +1,7 @@
 ---
 id: 01M263P629RST9EAHAA48WFNQY
 title: "create --lane sagt, welche Lanes es ueberspringt und was dadurch leer bleibt"
-status: testing
+status: done
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -16,17 +16,24 @@ definition-of-done: "'jaira create --lane <spaeter>' nennt die uebersprungenen L
 tags:
   - cli
 blocked-by: []
-commits: []
+commits:
+  - 6bd21c73399d119c3edd146759e47737c2828ef0
+  - 2b9c8cf08cea739872e7e882c8610fa723ad4f0a
+  - 45367281f3dad6bc728fa1dd71d2e0ac698b8980
+  - 88a21c9bf0182e2268ed3c827ae879e4ce7d9d1a
 created-at: 2026-09-10T16:51:18Z
-updated-at: 2026-10-11T20:39:46Z
+updated-at: 2026-10-11T20:47:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-13127
 claimed-at: 2026-10-11T20:29:01Z
-outcome-what: "skippedByCreate nennt eine Lane mit nicht angekreuzter Option jetzt doch als uebersprungen, wenn sie ein leer gebliebenes Input-Feld der Ziel-Lane schreibt; Test prueft todo+pre-process, nicht brainstorm; NOTES-Zeile ergaenzt"
-outcome-why: "Die Meldung meldete 'plan leer' ohne pre-process zu nennen und widersprach sich selbst (Luecke laut blindem Richter)"
-outcome-resolves: "DoD 1: create --lane nennt uebersprungene Lanes und leere Inputs, ohne --lane unveraendert, Tests gruen"
-review-summary: none
-review-gaps: "Entfernt: die Pfad-Regel (Parking-/Frage-Lane, nicht angekreuzte Option) stand doppelt in internal/cli/tickets.go skippedByCreate und core/lane/next.go Set.Next - jetzt eine Methode Lane.OnPath (core/lane/next.go:54), beide rufen sie. Gelassen: gate.InputMissing hat einen Aufrufer, steht aber bewusst neben gate.OutputOwed (gleiche Form, gleiches Paket, nutzt fieldFilled); show --for-lane (internal/cli/flow.go:578) prueft Inputs eigenstaendig, baut dabei aber den Payload - anderer Zweck, nicht zusammengelegt. Kosten: keine Schleife auf heissem Pfad."
+outcome-what: "Review: Diff gegen DoD geprueft, Tests mit isoliertem HOME gruen, Probe auf Wegwerf-Board bestaetigt die Meldung"
+outcome-why: "Zweites Modell beurteilt den Diff vor der menschlichen Abnahme"
+outcome-resolves: "DoD 1 bestaetigt; keine Defekte, vier nicht blockierende Anmerkungen in review-gaps"
+review-summary: "jaira create --lane <spaetere Lane> gibt jetzt zwei Zeilen mehr aus: 'Skipped on the way to <lane>: …' (Lanes zwischen Default-Lane und Ziel, die das Ticket laut Lane.OnPath besucht haette, plus eine option-gesperrte Lane, wenn sie ein leer gebliebenes Input-Feld schreibt - so erscheint pre-process bei --lane in-progress) und 'Empty, though <lane> takes it as input: …' (neue gate.InputMissing: input-requires der Ziel-Lane, die leer sind und nicht per Flag kommen koennten). --json traegt skipped_lanes/empty_inputs nur, wenn nicht leer. set.Next nutzt dieselbe neue Regel Lane.OnPath (reiner Refactor, Verhalten gleich). Parking-Ziel (blocked) meldet nichts. NOTES-Zeile unter Unreleased."
+review-gaps: "Keine Defekte gefunden. Kleinigkeiten, nicht blockierend: (1) Auf einem Board mit backlog wird backlog selbst als 'skipped' genannt (Slice beginnt bei der Default-Lane) - wahr, aber Rauschen. (2) brainstorm wird nie genannt, auch wenn --goal fehlt: goal zaehlt als SuppliedField und erscheint stattdessen bei den fehlenden Promotion-Feldern - so gewollt und im Kommentar begruendet. (3) TestCreateIntoALaterLaneReportsItInJSON prueft skipped_lanes nur auf nicht-leer. (4) Der Payload-diff enthaelt den fremden Commit 6bd21c7 (beruehrt nur die Ticketdatei); beurteilt wurde 15f8057..HEAD."
+test-verdict: "pass: Binaer aus dieser Branch auf Wegwerf-Board (HOME isoliert). 'create --lane in-progress --goal g --context c --dod d' -> 'Skipped on the way to in-progress: backlog, todo, pre-process' + 'Empty, though in-progress takes it as input: plan'; ohne --lane keine Zusatzzeile; --lane todo -> nur 'Skipped ...: backlog', keine Empty-Zeile; --json traegt skipped_lanes/empty_inputs. go test ./... -race exit 0."
+review-verdict: "Der Diff erfuellt die DoD: Meldung bei --lane, ohne --lane unveraendert (Text und JSON), drei Tests, go test ./... -race gruen mit isoliertem HOME (selbst nachgeprueft). Die Richter-Luecke (pre-process fehlte) ist behoben und per Probe bestaetigt. Freigabe empfohlen."
+review-check: "1. go build -o /tmp/jb ./cmd/jaira  2. mkdir /tmp/probe && cd /tmp/probe && git init && /tmp/jb init  3. /tmp/jb create Probe --lane in-progress --assignee t --goal g --context c --dod d  -> unter 'Created …' stehen 'Skipped on the way to in-progress: … todo, pre-process' und 'Empty, though in-progress takes it as input: plan'  4. /tmp/jb create Probe2 --assignee t --goal g --context c --dod d  -> keine der beiden Zeilen  5. /tmp/jb --json create Probe3 --lane in-progress --assignee t --goal g --context c --dod d  -> JSON hat skipped_lanes und empty_inputs: [\"plan\"]"
 ---
 
 # create --lane sagt, welche Lanes es ueberspringt und was dadurch leer bleibt
