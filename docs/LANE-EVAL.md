@@ -49,11 +49,22 @@ clone can be opened afterwards to see what an agent did.
 
 ## Read the result
 
-When the workflow is done, take the transcript directory from its result and run:
+When the workflow is done, run:
 
 ```bash
-bash scripts/lane-eval/metrics.sh <out> <transcript dir>
+bash scripts/lane-eval/metrics.sh <out> ~/.claude/projects/<project>/<session>/subagents
 ```
+
+Pass the session's whole `subagents` directory, not the run's own
+`subagents/workflows/<run id>/` (the `Transcript dir` the Workflow tool prints).
+The workflow's agents lie in the run's directory, but where Claude Code puts an
+agent that one of them starts with the Agent tool is not seen yet: no arm agent
+started one in the first real run (2026-10-11). Outside a workflow such an agent
+lies flat in `<session>/subagents/`. `find` walks the directory recursively, so
+the session's directory covers both places, and the `id=` in the marker keeps
+other runs and the session's own subagents out. Given only the run's directory,
+a nested agent stored beside it would be missed without a word, and the arm
+would look cheaper than it is.
 
 It writes `<out>/metrics.csv`, one row per agent:
 
@@ -69,7 +80,8 @@ arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tok
   message, so the script looks for the marker at the start of any line of the
   first two. The transcripts lie in
   `~/.claude/projects/<project>/<session>/subagents/workflows/<run id>/`, the
-  `Transcript dir` the Workflow tool prints when it starts.
+  `Transcript dir` the Workflow tool prints when it starts, inside the
+  session's `subagents` directory given to the script above.
   Setup, judges and the recorder carry none and are not counted.
 - An agent an arm agent starts itself with the Agent tool carries no marker
   either, but it is part of that arm's cost. Claude Code writes

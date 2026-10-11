@@ -79,10 +79,12 @@ Working a ticket:
   Not what the checklist and git already record. A killed session never gets a
   turn to write anything down, so do not save it for the end
 - `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish
-  the step. jaira works out the commit list itself from git history — the union
-  of the ticket file's own history and commits naming its id — so nothing needs
-  to be typed here; it is written onto the ticket once, when the ticket leaves
-  the board
+  the step. The three outcome flags belong to the lane that produces the outcome
+  (in-progress); every later lane reads it, moves without them, and is refused
+  when it would replace it. jaira works out the commit list itself from git
+  history — the union of the ticket file's own history and commits naming its
+  id — so nothing needs to be typed here; it is written onto the ticket once,
+  when the ticket leaves the board
 - `jaira resume` — work left in progress, with everything recorded about it
 - **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a
   ticket's commit list from two sources: the history of the ticket file itself,
@@ -149,7 +151,7 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Runs the change and checks it against the ticket - does the demanded thing exist, and does it work.
 - `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by
   Human in the loop.
-- `review` — yours to work; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
+- `review` — **fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
   A second model has judged the diff.
 - `signoff` — **a person's, not yours** — you may move work in, never out
   Reviewed by a model, waiting for a person to accept it or send it back.
