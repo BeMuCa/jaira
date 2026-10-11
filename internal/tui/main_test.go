@@ -3,6 +3,8 @@ package tui
 import (
 	"os"
 	"testing"
+
+	"github.com/BeMuCa/jaira/internal/testhome"
 )
 
 // TestMain disables the background release check for the whole package by
@@ -18,7 +20,10 @@ import (
 // default; the handful of tests that actually exercise the version
 // indicator (updatecheck_test.go) re-enable it locally with t.Setenv, which
 // correctly restores this default once they finish.
+//
+// It also keeps the package out of the machine's ~/.jaira; see
+// internal/testhome.
 func TestMain(m *testing.M) {
 	os.Setenv("JAIRA_NO_UPDATE_CHECK", "1")
-	os.Exit(m.Run())
+	os.Exit(testhome.Run(m))
 }
