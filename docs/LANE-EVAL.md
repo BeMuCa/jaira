@@ -26,12 +26,13 @@ the binary.
 
 Only a person's own session can start a workflow. Ask Claude in this
 repository to run the workflow `lane-eval` with these args (paths absolute,
-`out` a directory that does not exist yet):
+`out` a directory that does not exist yet and does not lie under `$TMPDIR` or
+`/tmp`, where the judge folders go — `judge-prep.sh` refuses that layout):
 
 ```json
 {
   "repo": "/home/alex/projects/jaira",
-  "out": "/tmp/lane-eval-2026-10-11",
+  "out": "/home/alex/lane-eval/2026-10-11",
   "tickets": ["BG5QJ6", {"id": "GDB5YJ", "base": "43080ed"}],
   "n": 3
 }
@@ -57,13 +58,21 @@ bash scripts/lane-eval/metrics.sh <out> <transcript dir>
 It writes `<out>/metrics.csv`, one row per agent:
 
 ```
-arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tokens,cost_eq,peak_context,duration_ms,tool_uses,loops,verdict
+arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tokens,cost_eq,peak_context,duration_ms,tool_uses,subagents,loops,verdict
 ```
 
 - All numbers per agent come from its transcript, because a workflow's
   `agent()` returns only the agent's answer. Every arm agent's prompt starts
   with a `[lane-eval id=… arm=… …]` line; that line is how the script finds it.
   Setup, judges and the recorder carry none and are not counted.
+- An agent an arm agent starts itself with the Agent tool carries no marker
+  either, but it is part of that arm's cost. Claude Code writes
+  `agent-<id>.meta.json` beside every subagent transcript, with
+  `parentAgentId`; the script follows it up to the nearest marked agent and adds
+  the nested one's tokens, `cost_eq` and tool uses to that row (`peak_context`
+  is the larger of the two). `subagents` says how many were added. A session
+  started in its own terminal tab (Herdr's `spawn.sh`) is not a subagent, has
+  no `parentAgentId` and stays uncounted; the workflow's prompts start none.
 - `input_tokens`, `cache_write_tokens`, `cache_read_tokens`, `output_tokens` are
   what the agent consumed: each assistant message counted once (the transcript
   repeats it per content block, under one message id), summed over all turns.
@@ -84,7 +93,8 @@ arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tok
   arm, `tie`, `split` when the two passes disagree (position decided, not
   quality), `unjudged` when a judge or the other arm is missing.
 
-`<out>/summary.csv` has one line per arm: runs, agents, the token columns and
+`<out>/summary.csv` has one line per arm: runs, agents, the subagents added to
+them, the token columns and
 `cost_eq` summed (and `cost_eq` per run), the largest `peak_context`, time, tool
 uses, loops per run, and the verdict counts.
 
@@ -92,10 +102,20 @@ uses, loops per run, and the verdict counts.
 
 - The judge folders are fresh temp directories outside `<out>`
   (`$TMPDIR/judge.XXXXXXXX`, one per pass), holding `ticket.md`, `X.diff`,
-  `Y.diff` and, for a golden ticket, `reference.diff`. The judge's prompt names
+  `Y.diff`, `X.ticket.md`, `Y.ticket.md` and, for a golden ticket,
+  `reference.diff`. The judge's prompt names
   only its folder; neither the folder's path nor anything beside it names an
   arm, a clone or `<out>`. Which diff was X and which Y, and where each folder
   is, stands only in `<out>/KEY.txt`.
+- `X.ticket.md` and `Y.ticket.md` are what each arm wrote onto its ticket: the
+  definition of done with each item's proof, the outcome, and the commit list,
+  every entry with the subject git in the clone gives it, or `(not a commit in
+  this repository)`. The judge needs them because the typical mistakes of an
+  arm sit there, not in the diff: on the hand-run A/B test of 2026-10-11 the
+  lane-per-agent arm left a `--proof` pointing at a line optimize had moved and
+  put two SHAs into one commits entry, and a judge reading diffs alone saw
+  neither. Notes, author, lane history and timestamps stay out: how an agent
+  writes its notes tells the arms apart.
 - An arm agent's prompt names no path but its clone, and its first instruction
   is `cd <clone>`. The clone has no remote.
 
@@ -106,7 +126,8 @@ What is left, because a workflow cannot do more:
   `cd`. A forgotten `cd` still writes to the real board.
 - Agents use the real `~/.jaira` (roles, notify hook) and the real `~/.claude`.
 - Nothing stops a judge from listing `/tmp`; the path just no longer leads it to
-  `<out>` or a name that gives the arm away.
+  `<out>` or a name that gives the arm away, since an `<out>` under the temp
+  root is refused.
 - The judge folders are not removed; old passes stay in `$TMPDIR` until it is
   cleaned.
 
