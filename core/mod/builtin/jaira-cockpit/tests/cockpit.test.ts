@@ -13,9 +13,9 @@ function session(on: On) {
 const LOCAL = (text: string) =>
   ({ text: `[SYSTEM NOTIFICATION - NOT USER INPUT]\n\n${text}`, origin: { kind: 'task-notification' }, wait: false }) as const
 
-// A person typing `/flight <args>` at the prompt.
+// A person typing `/cockpit <args>` at the prompt.
 const typed = (args = '') =>
-  ({ command: 'flight', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }) as const
+  ({ command: 'cockpit', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }) as const
 
 const NOTIFICATION: SessionReceiveOrigin = { kind: 'task-notification' }
 
@@ -39,9 +39,9 @@ describe('session.receive', () => {
     const { text } = await $.session.receive({ origin: NOTIFICATION, text: REPORT })
     expect(text).toBe(
       'MG677R · review → signoff · approve with reservations: the cache key ignores the branch · ' +
-        'question: should the cache survive a rebase? — full report: /flight MG677R',
+        'question: should the cache survive a rebase? — full report: /cockpit report MG677R',
     )
-    const shown = await $.command.run(typed('mg677r'))
+    const shown = await $.command.run(typed('report mg677r'))
     expect(shown.text).toContain('forty more lines of findings')
   })
 
@@ -53,14 +53,14 @@ describe('session.receive', () => {
       'Open: nothing; a person accepts it.',
     ].join('\n')
     const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: worker })
-    expect(text).toBe('T8QS1Y · → signoff — full report: /flight T8QS1Y')
+    expect(text).toBe('T8QS1Y · → signoff — full report: /cockpit report T8QS1Y')
   })
 
   test('a verdict keeps its reservation', async ($, on) => {
     session(on)
     const review = 'Ticket MG677R reviewed: approve mit Vorbehalt, moved to signoff.'
     const { text } = await $.session.receive({ origin: NOTIFICATION, text: review })
-    expect(text).toBe('MG677R · → signoff · approve mit vorbehalt — full report: /flight MG677R')
+    expect(text).toBe('MG677R · → signoff · approve mit vorbehalt — full report: /cockpit report MG677R')
   })
 
   test('a report without a ticket passes unchanged', async ($, on) => {
@@ -93,7 +93,7 @@ describe('session.receive', () => {
     expect((await $.session.receive({ origin: NOTIFICATION, text: go })).text).toBe(go)
     const none = 'MG677R: in-progress -> critique. go test ./...: 44 passed, 0 failed.'
     expect((await $.session.receive({ origin: NOTIFICATION, text: none })).text).toBe(
-      'MG677R · in-progress → critique — full report: /flight MG677R',
+      'MG677R · in-progress → critique — full report: /cockpit report MG677R',
     )
   })
 
@@ -104,8 +104,8 @@ describe('session.receive', () => {
       .replace('</result>', '</result>\n<usage>total_tokens: 184233\ntool_uses: 41\nduration_ms: 312877</usage>')
     const { text } = await $.session.receive({ origin: NOTIFICATION, text: report })
     expect(text).toStartWith('KHJKQS · review → signoff')
-    expect(text).toEndWith('— full report: /flight KHJKQS')
-    expect((await $.command.run(typed('KHJKQS'))).text).toContain('forty more lines of findings')
+    expect(text).toEndWith('— full report: /cockpit report KHJKQS')
+    expect((await $.command.run(typed('report KHJKQS'))).text).toContain('forty more lines of findings')
   })
 
   test("a person's message is never touched", async ($, on) => {
@@ -121,16 +121,16 @@ describe('prompt.submit', () => {
     const { text } = await $.prompt.submit(LOCAL(REPORT))
     expect(text).toBe(
       '[SYSTEM NOTIFICATION - NOT USER INPUT]\n\nMG677R · review → signoff · approve with reservations: the cache key ignores the branch · ' +
-        'question: should the cache survive a rebase? — full report: /flight MG677R',
+        'question: should the cache survive a rebase? — full report: /cockpit report MG677R',
     )
-    expect((await $.command.run(typed('MG677R'))).text).not.toContain('SYSTEM NOTIFICATION')
+    expect((await $.command.run(typed('report MG677R'))).text).not.toContain('SYSTEM NOTIFICATION')
   })
 
   test('a line already shortened is not kept a second time', async ($, on) => {
     session(on)
     const { text = '' } = await $.session.receive({ origin: { kind: 'peer' }, text: 'ticket K7P2QX moved to testing' })
     expect((await $.prompt.submit({ text, origin: { kind: 'peer' }, wait: false })).text).toBe(text)
-    expect((await $.command.run(typed('K7P2QX'))).text).toContain('report 1 of 1')
+    expect((await $.command.run(typed('report K7P2QX'))).text).toContain('report 1 of 1')
   })
 
   test('a comment on an artifact stays whole on both hooks', async ($, on) => {
@@ -149,22 +149,28 @@ describe('prompt.submit', () => {
   })
 })
 
-describe('/flight', () => {
+describe('/cockpit', () => {
   test('lists reports newest first', async ($, on) => {
     session(on)
     await $.session.receive({ origin: { kind: 'peer' }, text: 'first: ticket K7P2QX moved to critique' })
     await $.session.receive({ origin: { kind: 'peer' }, text: 'second: ticket K7P2QX moved to testing' })
-    const { text = '' } = await $.command.run(typed('K7P2QX'))
+    const { text = '' } = await $.command.run(typed('report K7P2QX'))
     expect(text.indexOf('second')).toBeLessThan(text.indexOf('first'))
-    expect((await $.command.run(typed())).text).toContain('K7P2QX')
+    expect((await $.command.run(typed('report'))).text).toContain('K7P2QX')
+  })
+
+  test('without a subcommand, or an unknown one, lists the subcommands', async ($, on) => {
+    session(on)
+    expect((await $.command.run(typed())).text).toContain('report [id]')
+    expect((await $.command.run(typed('flight K7P2QX'))).text).toContain('report [id]')
   })
 })
 
-describe('the flight tool', () => {
+describe('the report tool', () => {
   test('gives the model the same full text', async ($, on) => {
     session(on)
     await $.session.receive({ origin: NOTIFICATION, text: REPORT })
-    const ran = await $.tool.call({ tool: 'mcp__jaira-cockpit__flight', ticket: 'MG677R' })
+    const ran = await $.tool.call({ tool: 'mcp__jaira-cockpit__report', ticket: 'MG677R' })
     expect(String(ran.result)).toContain('forty more lines of findings')
   })
 })

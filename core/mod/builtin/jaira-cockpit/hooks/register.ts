@@ -3,14 +3,14 @@ import { digest } from './digest.ts'
 
 // The noise filter: an agent's report or a task-notification that names a
 // ticket reaches the conversation as one line, and its full text is kept in
-// the store, where `/flight <id>` (and the model's `flight` tool) reads it
-// back. Reports with no recognisable ticket, failures and anything a person
-// wrote pass through unchanged.
+// the store, where `/cockpit report <id>` (and the model's `report` tool)
+// reads it back. Reports with no recognisable ticket, failures and anything a
+// person wrote pass through unchanged.
 
-// What a report is kept as, newest first under `flight:<ticket>`.
+// What a report is kept as, newest first under `report:<ticket>`.
 type Report = { at: string; origin: string; text: string }
 
-const PREFIX = 'flight:'
+const PREFIX = 'report:'
 // The store holds 4 MiB of JSON in all: 20 tickets of 10 reports of 12,000
 // characters stay well below it, escaping included.
 const REPORTS_PER_TICKET = 10
@@ -49,7 +49,7 @@ async function keep($: EngineInterface, ticket: string, report: Report): Promise
 
 // A delivery already shortened at `session.receive` reaches `prompt.submit`
 // again; it is not a report a second time.
-const DIGESTED = /— full report: \/flight [0-9A-Z]{6}$/
+const DIGESTED = /— full report: \/cockpit report [0-9A-Z]{6}$/
 // The notification itself, without the warning the engine wraps it in.
 const NOTIFICATION = /<task-notification>[\s\S]*?<\/task-notification>/
 
@@ -64,7 +64,7 @@ async function shorten($: EngineInterface, text: string, origin: string): Promis
   return text.replace(report, () => short.line)
 }
 
-async function flight($: EngineInterface, args: string): Promise<string> {
+async function showReports($: EngineInterface, args: string): Promise<string> {
   const ticket = args.trim().toUpperCase()
   if (ticket === '') {
     const tickets = (await $.store.keys()).filter(k => k.startsWith(PREFIX)).reverse()
@@ -73,7 +73,7 @@ async function flight($: EngineInterface, args: string): Promise<string> {
       const reports = ((await $.store.get(k)) as Report[] | undefined) ?? []
       return `${k.slice(PREFIX.length)}  ${reports.length} report(s), last ${reports[0]?.at ?? '?'}`
     }))
-    return `Tickets with kept reports, most recent first:\n${rows.join('\n')}\n\n/flight <id> shows one.`
+    return `Tickets with kept reports, most recent first:\n${rows.join('\n')}\n\n/cockpit report <id> shows one.`
   }
   const reports = ((await $.store.get(PREFIX + ticket)) as Report[] | undefined) ?? []
   if (reports.length === 0) return `No reports kept for ${ticket}.`
@@ -82,17 +82,21 @@ async function flight($: EngineInterface, args: string): Promise<string> {
     .join('\n\n')
 }
 
+// Mod commands share one namespace with every other mod's, so the cockpit
+// takes one name and hangs its subcommands under it.
+const USAGE = 'Usage: /cockpit <subcommand>\n\n  report [id]   full text of the agent reports shortened for a ticket, newest first; without an id, the tickets that have some'
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     await $.command.register({
-      name: 'flight',
-      description: 'Full text of the agent reports the jaira cockpit shortened, newest first.',
-      argumentHint: '[ticket id]',
+      name: 'cockpit',
+      description: 'The jaira cockpit. report [id]: full text of the agent reports it shortened, newest first.',
+      argumentHint: 'report [ticket id]',
       immediate: true,
     })
     await $.tool.register({
-      name: 'flight',
+      name: 'report',
       description:
         'Returns the full text of the agent reports and task-notifications about one jaira ticket that reached this conversation shortened to one line, newest first. Without a ticket, lists the tickets that have kept reports.',
       inputSchema: {
@@ -125,11 +129,15 @@ export const register: Register = on => {
     return next(text === undefined ? e : { ...e, text })
   }).catch(($, e, next) => next(e))
 
-  on('command.run', { command: 'flight' }, async ($, e) => ({ text: await flight($, e.args ?? '') }))
+  on('command.run', { command: 'cockpit' }, async ($, e) => {
+    const [sub = '', ...rest] = (e.args ?? '').trim().split(/\s+/)
+    if (sub === 'report') return { text: await showReports($, rest.join(' ')) }
+    return { text: USAGE }
+  })
 
-  on('tool.call', { tool: 'mcp__jaira-cockpit__flight' }, async ($, e) => {
+  on('tool.call', { tool: 'mcp__jaira-cockpit__report' }, async ($, e) => {
     // A tool's arguments ride on `e` beside `tool`, not under a key of their own.
     const { ticket } = e as { ticket?: unknown }
-    return { result: await flight($, typeof ticket === 'string' ? ticket : '') }
+    return { result: await showReports($, typeof ticket === 'string' ? ticket : '') }
   })
 }

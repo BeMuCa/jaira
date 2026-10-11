@@ -102,7 +102,7 @@ export function digest(text: string): { ticket: string; line: string } | undefin
   const question = questionOf(text)
   if (question !== undefined) parts.push(`question: ${question}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
-  return { ticket, line: `${line} — full report: /flight ${ticket}` }
+  return { ticket, line: `${line} — full report: /cockpit report ${ticket}` }
 }
 
 function clip(s: string, n: number): string {
