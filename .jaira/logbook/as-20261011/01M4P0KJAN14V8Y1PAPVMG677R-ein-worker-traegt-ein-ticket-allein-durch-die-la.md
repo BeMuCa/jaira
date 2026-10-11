@@ -1,7 +1,7 @@
 ---
 id: 01M4P0KJAN14V8Y1PAPVMG677R
 title: "Ein Worker traegt ein Ticket allein durch die Lanes, nur der Review laeuft frisch"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,20 +23,28 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8f1707b3f433de9ca3fef3d072defd2bbc0e91ab
+  - 60155dd3dfb697d85a37474dc70f5664ecfa766f
+  - 5b01536d82b14cc64de11d2278ef631d0ff84dcb
+  - 279d5f2fe53b944794217954a17c8b72efb21879
+  - 41b6d9d9f47cf3aff27632456b15cb9a38f171d9
+  - 42d75b6b5f747a54481a8f897340625bd8664739
+  - 3e8f5745fdb4b87ae1a10d0e95059ccf78148aa3
+  - d290675013372551fd201fb277f1a21171f7208b
 created-at: 2026-10-11T17:36:41Z
-updated-at: 2026-10-11T18:51:29Z
+updated-at: 2026-10-11T19:05:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-671645
 claimed-at: 2026-10-11T18:37:04Z
 outcome-what: "Lane-Datei-Patchen in internal/cli/context_test.go in Helfer setLaneContext gezogen"
 outcome-why: "critique 3.1: zwei Tests kopierten denselben Block"
 outcome-resolves: "critique-Fund 3.1"
-review-summary: "internal/cli/context_test.go: TestAnInvalidContextLeavesTheDefaultFresh kopiert das Lane-Datei-Einlesen und Frontmatter-Einfuegen aus TestAnInvalidContextIsReportedNotDropped - beide ueber einen Helfer setLaneContext(t, dir, id, value) laufen lassen, wie addFrontmatter in core/lane/context_test.go"
-review-gaps: "1. Ein Tippfehler auf einer ANDEREN Lane als review verschiebt die fresh-Grenze doch: 'context: Shared' auf in-progress (gemeint: shared) macht in-progress fresh, und weil das als deklariert zaehlt, verliert review seinen Default-fresh — auf dem Scratch-Board nachgestellt: CONTEXT in-progress=fresh!, review=—. Laut (Warnung, fresh!, validate Exit 3), also kein stiller Fehler; der DoD-Fall (Fresh auf review) ist erfuellt. Abhilfe waere, einen ungueltigen Wert nicht als Deklaration zu zaehlen, solange keine Lane einen gueltigen Wert setzt. 2. NOTES-Zeilen sind einzeilig und Instruktionsform, aber sehr lang (Zeile 1 ~600 Zeichen). 3. Ungeprueft: echter Herdr-Tab (nur Stub-Test), Verhalten der jaira-worker-Rolle in einem echten Lauf (Prompt-Text, nicht testbar). Sonst: none."
-test-verdict: "pass: go build/vet ok, go test ./... -race -count=1 mit isoliertem HOME EXIT=0 (28 Pakete ok); DoD 7/8 im Baum geprueft; Scratch-Board: review.md 'context: Fresh' -> jaira lanes 'review fresh!' + Fussnote '!', kein fresh* auf in-progress, validate exit 3 mit lane_context (auch --json, errors=true); Agenten-Block markiert review fresh wie NOTES jetzt sagt"
-review-verdict: "Freigabe mit kleinem Vorbehalt: die Runde-2-Funde sind behoben (Fresh auf review bleibt geladen und fresh, lanes markiert, validate Exit 3; NOTES ehrlich zum Agenten-Block in beiden Modi); Opt-in echt (ohne dispatch: roles list sagt lanes/jaira-dispatcher, Dispatcher-SKILL unveraendert); go test ./... -race mit isoliertem HOME Exit 0. Restfehler: ein Tippfehler auf einer anderen Lane schaltet den review-Default ab — laut gemeldet, daher kein Rueckgabegrund, aber eine Person sollte entscheiden, ob das reicht."
-review-check: "1. go build -o /tmp/j ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m i && /tmp/j init  3. /tmp/j lanes -> Spalte CONTEXT, review zeigt fresh*  4. in .jaira/lanes/review.md unter die erste '---'-Zeile 'context: Fresh' schreiben  5. /tmp/j lanes -> review zeigt fresh!, Fussnote mit '!', Warnung auf stderr; keine andere Lane fresh  6. /tmp/j validate; echo $? -> Fehler lane_context, Exit 3  7. /tmp/j roles list -> letzte Zeile 'dispatch: lanes ... /jaira-dispatcher'  8. echo '{\"dispatch\":\"worker\"}' > ~/.jaira/settings.json (vorher sichern) und erneut roles list -> '/jaira-worker'  9. grep -n 'fresh context' CLAUDE.md -> review-Zeile ist markiert"
+review-summary: "Lane-Dateien kennen 'context: fresh|shared' (core/lane/lane.go). Ein anderer Wert (Tippfehler) wird in ContextInvalid gemerkt, die Lane laeuft fresh, Load warnt, 'jaira validate' meldet lane_context mit Exit 3. impliedFresh: nur gueltige Werte zaehlen als Deklaration; ohne gueltigen Wert wird die letzte agentische Lane vor der ersten requires-human-exit-Lane (Frage-Lanes uebersprungen) fresh*. 'jaira lanes' hat eine CONTEXT-Spalte (fresh*/fresh!/shared mit Fussnoten), 'lanes show', 'show --for-lane' (+json context) und der Agenten-Block in CLAUDE.md/AGENTS.md (lane.Set.Facts, ersetzt zwei laneFacts-Kopien) markieren die fresh-Lane. Opt-in: settings 'dispatch': lanes|worker (Default lanes, Tippfehler -> lanes), TUI-Schalter, 'jaira roles list' zeigt dispatch/dispatch_role; neue Rolle jaira-worker, spawn.sh-Lane 'worker', teamlead liest den Schalter. jaira-dispatcher unveraendert."
+review-gaps: "Keine blockierenden. Klein: (1) Der Agenten-Block markiert review als 'fresh context — hand it to a new agent' auch bei dispatch=lanes; das ist bewusst (DoD 8) und in NOTES ehrlich gesagt, aendert aber ohne Opt-in den Text, den jede selbst fahrende Session liest. (2) teamlead ruft ohne Einstellung zusaetzlich 'jaira --json roles list' auf; Ergebnis identisch zu master (lanes/jaira-dispatcher). (3) Ein Tippfehler auf einer nicht-agentischen Lane zeigt 'fresh!' ohne Wirkung — harmlos, validate meldet es trotzdem."
+test-verdict: "pass: go vet + go test ./... -race -count=1 mit isoliertem HOME exit 0; Scratch-Board mit gebautem Binary: ohne context review fresh*; review 'Fresh' -> review fresh!, kein *, validate 3; in-progress 'Shared' -> in-progress fresh! UND review fresh*, beide Fussnoten, validate 3; gueltiges fresh auf einer Lane plus 'Shared' -> kein Default (wie deklariert)"
+review-verdict: "Diff erfuellt alle 9 DoD-Punkte; im Scratch-Board geprueft: kein Tippfehler-Mix nimmt Frische weg (alle vier agentischen Lanes mit Tippfehler -> alle fresh!; nur gueltiges 'shared' auf review entfernt die Frische, wie deklariert), validate Exit 3 bei jedem Tippfehler, 0 ohne. Opt-in echt: ohne settings dispatch=lanes/jaira-dispatcher, Tippfehler 'Worker' -> lanes. go test ./... -race -count=1 mit leerem HOME/USERPROFILE/JAIRA_HOME: exit 0. Keine Defekte gefunden."
+review-check: "1. cd ins Repo, go build -o /tmp/j ./cmd/jaira  2. mkdir /tmp/b && cd /tmp/b && git init && git commit --allow-empty -m i && /tmp/j init  3. /tmp/j lanes: review zeigt 'fresh*' in CONTEXT  4. In .jaira/lanes/in-progress.md eine Zeile 'context: Shared' ins Frontmatter  5. /tmp/j lanes: in-progress 'fresh!', review weiterhin 'fresh*', Warnung auf stderr  6. /tmp/j validate; echo $? -> 3  7. in review.md 'context: shared' ergaenzen: review 'shared', in-progress bleibt 'fresh!'  8. Zeilen wieder entfernen, /tmp/j validate -> 0  9. /tmp/j --json roles list ohne ~/.jaira/settings.json: dispatch=lanes, dispatch_role=jaira-dispatcher; mit {\"dispatch\":\"worker\"}: worker/jaira-worker"
 ---
 
 # Ein Worker traegt ein Ticket allein durch die Lanes, nur der Review laeuft frisch
@@ -113,3 +121,6 @@ core/role/builtin/jaira-role-lane/SKILL.md: 'A worker starts you for a lane mark
 - **2026-10-11 18:46 · Alexander Sacharov** — Alex hat am 2026-10-11 die offene Review-Frage entschieden (Rueckgabe aus signoff): ein ungueltiger context-Wert darf nirgends Frische wegnehmen. Die Lane mit dem Tippfehler laeuft fresh, zaehlt aber nicht als Deklaration; fehlt ein gueltiger context-Wert auf dem ganzen Board, greift der Default zusaetzlich (z. B. 'Shared' auf in-progress -> in-progress UND review fresh).
 - **2026-10-11 18:50 · Alexander Sacharov** — DoD 7 umformuliert: 'bzw. der Wert zaehlt als deklariert' gestrichen, das widerspricht Alex' Entscheidung (DoD 9). Umsetzung: impliedFresh zaehlt nur gueltige Werte als Deklaration; liegt der Default auf einer Lane, die schon durch ihren Tippfehler fresh ist, bleibt deren '!' statt '*' (die Datei ist das, was zu reparieren ist). Fussnote heisst jetzt 'declares a valid context:'. NOTES.md bleibt: 'where no lane says either' und 'keeps the lane ... runs it fresh' sind weiter wahr.
 - **2026-10-11 18:50 · Alexander Sacharov** — critique Runde 3.1: einziger Fund: doppeltes Lane-Datei-Patchen in internal/cli/context_test.go -> Helfer. Gelassen: die Sonderbehandlung in impliedFresh (Tippfehler-Lane behaelt '!' statt '*') ist noetig, sonst zeigt laneContext '*' zuerst und die Fussnote behauptet, der Default entscheide - TestAnInvalidContextIsReportedNotDropped faellt dann. Gelassen: Ort impliedFresh in core/lane (einziger Ort der Default-Regel).
+- **2026-10-11 18:51 · Alexander Sacharov** — critique Runde 3.2: Fund 3.1 in d290675 behoben (setLaneContext), die Reparatur bringt nichts Neues. Nichts mehr zu sagen.
+- **2026-10-11 18:51 · Alexander Sacharov** — optimize Runde 3: nichts zu entfernen, Begruendung in review-gaps.
+- **2026-10-11 18:54 · Alexander Sacharov** — testing Runde 3: bestanden. Suite gruen (exit 0), alle vier context-Faelle auf Scratch-Board mit gebautem Binary gesehen (siehe test-verdict). Kein echter Herdr-Tab geoeffnet.
