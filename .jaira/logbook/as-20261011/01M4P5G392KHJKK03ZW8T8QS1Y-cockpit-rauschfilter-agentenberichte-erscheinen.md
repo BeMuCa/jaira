@@ -1,7 +1,7 @@
 ---
 id: 01M4P5G392KHJKK03ZW8T8QS1Y
 title: "Cockpit-Rauschfilter: Agentenberichte erscheinen im Teamlead-Chat als eine Zeile"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,20 +19,28 @@ tags:
 blocked-by: []
 parent: 01M4P5FK818EAFZ68XFYNZZDRH
 related: []
-commits: []
+commits:
+  - 88982e41408d43277878310b9f247285d68d201b
+  - 2a066f69d9bf635b5ac2c4cf8fb517c5facd2d53
+  - fa69383bf1d505f4ea5ad5cddc51b8a50a6352cd
+  - 51bf1204da50de75c9c26dbd64b7a4c3071c0ca5
+  - 6375a8102ed02aedd0db6801ff73ef8b5e75337f
+  - 5563bd6e3f892f3483e948e19c91c87cd39bd283
+  - 8b9d9e3b4f49bf221cc64182a983631cc9e3f7f8
+  - ac07fb47e1d5d0788bbdf979f41b7b6d81513349
 created-at: 2026-10-11T19:02:10Z
-updated-at: 2026-10-11T20:03:48Z
+updated-at: 2026-10-11T20:07:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-875701
 claimed-at: 2026-10-11T20:00:55Z
-outcome-what: "/cockpit report <id> replaces /flight <id>, the tool is report, /cockpit alone lists its subcommands; a bare number is never a handle"
-outcome-why: "Alex's decisions of 2026-10-11: one namespaced command for the mod; review round 3 defect"
-outcome-resolves: "DoD 2 reworded, DoD 6"
-review-summary: "Neuer Mod core/mod/builtin/jaira-cockpit (nicht im Binary eingebettet, darum keine NOTES-Zeile). Zwei Hooks (session.receive fuer weitergeleitete, prompt.submit fuer die eigenen Hintergrund-Aufgaben) ersetzen eine Agenten-Lieferung (task-notification, peer, peer-send-message, coordinator; ohne agentId und ohne event) durch eine Zeile 'ID · von → nach · Urteil · question: … — full report: /flight ID'. Nur der <task-notification>-Block wird ersetzt, die Warnung drumherum bleibt. Ohne erkennbare Id, bei Status != completed oder bei Fehlerwoertern (failed ausser '0 failed', FAIL, exit status N, aborted, killed, panic …) bleibt der Text voll. Der volle Bericht liegt in $.store (10 pro Ticket, 20 Tickets, 12000 Zeichen) und kommt per /flight <id> bzw. Werkzeug mcp__jaira-cockpit__flight zurueck, neueste zuerst. 14 Tests."
-review-gaps: "1) DEFEKT, bricht DoD 1 (Zeile mit Ticket) und DoD 2 (/flight <id> findet den Bericht): hooks/digest.ts:19 WITH_DIGIT nimmt jede sechsstellige Zahl als Handle. Nachgeprueft mit digest() direkt: eine task-notification mit '<usage>total_tokens: 184233 … duration_ms: 312877</usage>' und Ergebnis 'Ticket KHJKQS: review -> signoff, approve.' wird zu '184233 · review → signoff · approve — full report: /flight 184233'; gespeichert unter flight:184233, /flight KHJKQS ist leer. Trifft jeden Handle ohne Ziffer (rund 10 % aller Handles), sobald eine Zahl mit 6 Stellen vor oder gleich oft vorkommt; bei Handles mit Ziffer reicht schon 'Wrote 123456 bytes.' vor der Id. Fix-Vorschlag: mindestens ein Buchstabe verlangen, (?=[0-9]*[A-Z]) zusaetzlich in WITH_DIGIT, Test mit usage-Block. 2) Nicht nachpruefbar ohne Live-Sitzung: der Ausschluss von Artifact-Kommentaren in prompt.submit (register.ts:229 untouched) greift nur, wenn prompt.submit genau denselben Text bekommt wie session.receive; der Test stellt das selbst so her. Wickelt die Engine den Text ein, wird ein Kommentar mit Ticket-Id doch gekuerzt. 3) Ebenso DIGESTED (register.ts:160) mit $ am Ende: haengt die Engine etwas an, wird die Kurzzeile ein zweites Mal als Bericht gespeichert."
+outcome-what: "review: approve, Diff erfuellt DoD 1-6"
+outcome-why: "16/16 Tests, validate gruen, digest() an den Grenzfaellen direkt geprueft"
+outcome-resolves: "review of 88982e4..ac07fb4"
+review-summary: "Neuer Claude-Code-Mod core/mod/builtin/jaira-cockpit (nicht ins Binary eingebettet). hooks/digest.ts liest aus einem Agentenbericht Ticket-Handle (6 Zeichen Crockford mit Buchstabe UND Ziffer, Handle hinter ticket/fix(/jaira <verb>, oder ULID-Ende; der haeufigste gewinnt), Lane-Wechsel, Urteil und offene Frage und baut daraus eine Zeile '<id> · a → b · urteil · question: … — full report: /cockpit report <id>'. Fehler bleiben voll: Status != completed, oder Text mit failed/N failed (nicht 0 failed)/FAIL/exit status N/aborted/killed/timed out/panic. hooks/register.ts haengt an session.receive (weitergeleitete Lieferungen: task-notification, peer, peer-send-message, coordinator; ohne agentId und ohne event) und an prompt.submit (eigene Hintergrundaufgaben, nur der <task-notification>-Block wird ersetzt, der Warnrahmen bleibt). Der volle Text liegt in $.store (20 Tickets x 10 Berichte x 12000 Zeichen); '/cockpit report [id]' und das Modell-Werkzeug mcp__jaira-cockpit__report zeigen ihn, neueste zuerst; '/cockpit' ohne/unbekannter Unterbefehl zeigt die Usage. 16 Tests."
+review-gaps: "Kein DoD-Bruch gefunden. Offen, nur live pruefbar: (1) register.ts:52 DIGESTED und :113 untouched setzen voraus, dass prompt.submit denselben Text sieht wie session.receive; haengt die Engine bei einer weitergeleiteten peer-Nachricht etwas an, wird die Kurzzeile ein zweites Mal als Bericht gespeichert (Muell im Store, keine verlorene Information). (2) Bekannte Grenze aus critique: ein Bericht, der SHA256 oefter nennt als seinen Handle, landet unter /cockpit report SHA256 - mit digest() nachgeprueft. (3) Die Menge untouched waechst um Lieferungen an eigene Agenten bis zum Neuladen. Keine NOTES.md-Zeile: richtig, kein go:embed greift auf core/mod (nachgeprueft) - die Zeile ist faellig, sobald NZZDRH den Mod ausliefert. Untracked .jaira/milestones/ gehoert nicht zu diesem Ticket und darf nicht mit committet werden."
 test-verdict: "pass: claude plugin validate passed, claude plugin test 12 pass 0 fail, go build ok; DoD 1-3 in the tree checked; live in claude -p --plugin-dir: a real background task-notification arrived as 'K7P2QX — full report: /flight K7P2QX', /flight and the flight tool returned the full text, reports survived into a second session. Go suite red in core/lane, core/move, internal/cli, internal/tui - same on base 43080ed, no .go in this diff"
-review-verdict: "nicht freigeben in dieser Form: DoD 2-5 stimmen mit dem Diff, validate und 14/14 Tests gruen, aber eine sechsstellige Zahl (Tokenzahl, duration_ms) wird als Ticket-Id gelesen und der Bericht landet unter falscher Id. Kleiner Fix (eine Regex + ein Test). Unsicher bin ich bei Punkt 2 und 3 der Luecken - die haengen davon ab, wie die Engine den Text an prompt.submit weiterreicht."
-review-check: "1. cd core/mod/builtin/jaira-cockpit  2. claude plugin test .  -> '14 pass 0 fail'  3. claude -p --plugin-dir . 'Starte einen Hintergrund-Agenten, der nur antwortet: MG677R: review -> signoff, approve.'  4. Im Chat erscheint statt des Berichts die Zeile 'MG677R · review → signoff · approve — full report: /flight MG677R'  5. /flight MG677R tippen -> der volle Bericht erscheint  6. Fehlerprobe: denselben Agenten 'MG677R: 3 failed' antworten lassen -> der Bericht bleibt voll  7. Defektprobe: Agent antwortet 'Ticket KHJKQS: review -> signoff' und laeuft ueber 100 s -> heute erscheint '/flight <duration_ms>' statt KHJKQS"
+review-verdict: "approve: der ganze Diff (8 Commits 88982e4..ac07fb4, deckungsgleich mit git log origin/HEAD..HEAD) erfuellt DoD 1-6; validate gruen, claude plugin test 16/16 gruen, digest() direkt mit usage-Block, '10 failed', 'approve mit Vorbehalt' und --question geprueft - alles wie verlangt. Unsicher bleibt nur das Zusammenspiel session.receive/prompt.submit bei weitergeleiteten Nachrichten, das kein Test abdecken kann."
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-t8qs1y  2. claude plugin test core/mod/builtin/jaira-cockpit -> '16 pass, 0 fail'  3. claude --plugin-dir core/mod/builtin/jaira-cockpit starten  4. tippen: /cockpit -> Usage mit 'report [id]'  5. tippen: starte im Hintergrund einen Agenten, der nur antwortet 'Ticket MG677R: review -> signoff, review-verdict=\"approve mit Vorbehalt\"'  6. wenn er fertig ist, steht im Chat statt des Berichts eine Zeile 'MG677R · review → signoff · approve mit Vorbehalt — full report: /cockpit report MG677R'  7. tippen: /cockpit report MG677R -> der volle Bericht erscheint  8. dasselbe mit einem Agenten, der 'MG677R: 3 failed' meldet -> der Bericht bleibt voll"
 question: ""
 ---
 
@@ -88,3 +96,6 @@ question: ""
 - **2026-10-11 20:01 · Alexander Sacharov** — in-progress (Fix aus review Runde 3): Buchstabe nur in WITH_DIGIT verlangt, nicht in IN_CONTEXT/ULID: dort steht die Id hinter 'ticket'/'fix(' bzw. ist das Ende einer echten ULID - eine reine Zahl kommt dort nicht aus einem usage-Block, und ein (seltener) reiner Ziffern-Handle bleibt so erkennbar.
 - **2026-10-11 20:02 · Alexander Sacharov** — Alex am 11.10.2026 entschieden (ueber jaira-61): ein Befehl mit Namensraum fuer den ganzen Mod - '/cockpit report <id>' ersetzt '/flight <id>' (Mod-Befehle teilen einen globalen Namensraum, ein nacktes /flight kollidiert leicht). Werkzeug fuers Modell bleibt, heisst passend 'report'. '/cockpit' ohne oder mit unbekanntem Unterbefehl listet die Unterbefehle. Digest-Zeile: 'full report: /cockpit report <id>'.
 - **2026-10-11 20:03 · Alexander Sacharov** — in-progress (Umbenennung nach Alex): Store-Praefix flight: -> report: mit umbenannt; was ein frueherer Live-Test unter flight: abgelegt hat, verwaist und faellt nach 20 Tickets heraus - der Mod ist nirgends installiert, also keine Migration. Interne Funktion heisst showReports, nicht report, weil shorten() eine lokale Variable report hat. Keine NOTES-Zeile, weiter wie Notiz 19:31 (d): der Mod ist noch nicht ausgeliefert.
+- **2026-10-11 20:04 · Alexander Sacharov** — critique (Pass 7, 8b9d9e3 + ac07fb4): richtig so. Unterbefehl nur klein ('report'); alles andere, auch das alte 'flight <id>', bekommt die Usage - wer den alten Befehl tippt, sieht den neuen. optimize: nichts zu entfernen.
+- **2026-10-11 20:04 · Alexander Sacharov** — testing (nach ac07fb4): validate exit 0, test exit 0, 16 pass 0 fail . Live: claude -p --plugin-dir core/mod/builtin/jaira-cockpit '/cockpit' -> Usage mit 'report [id]'; Modell rief mcp__jaira-cockpit__report -> 'No agent reports kept yet.'. Kein '/flight' mehr unter core/. DoD 1-6 erfuellt.
+- **2026-10-11 20:06 · Alexander Sacharov** — review (Runde 4, ganzer Diff 88982e4..ac07fb4): approve. Kein DoD-Bruch; validate gruen, 16/16 Tests; digest() direkt geprueft (usage-Block mit KHJKQS, '10 failed' bleibt voll, '0 failed' gekuerzt, 'approve mit Vorbehalt', --question). Offen nur live: Kurzzeile koennte bei angehaengtem Text an einer weitergeleiteten peer-Nachricht ein zweites Mal gespeichert werden - nur Muell im Store. Kein go:embed greift auf core/mod, daher keine NOTES-Zeile, bis NZZDRH den Mod ausliefert.
