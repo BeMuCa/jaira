@@ -25,8 +25,8 @@ if [ $# -lt 5 ]; then
 fi
 repo=$(cd "$1" && pwd); out=$2; arm=$3; ticket=$4; run=$5; base=${6:-}
 mkdir -p "$out"; out=$(cd "$out" && pwd)
-# judge-prep.sh puts the judge folders in the temp root and refuses an <out>
-# there; refusing it here already saves the hour the arms would run first.
+# judge-prep.sh puts the judge folders in the temp root; an <out> there would
+# leave KEY.txt one 'ls' away from the judge, so it is refused before the arms run.
 case "$(cd "$out" && pwd -P)/" in
   "$(cd "${TMPDIR:-/tmp}" && pwd -P)"/*) echo "clone.sh: <out> $out lies under the temp root, where the judge folders go; use an out under \$HOME" >&2; exit 2 ;;
 esac

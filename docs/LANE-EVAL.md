@@ -27,7 +27,7 @@ the binary.
 Only a person's own session can start a workflow. Ask Claude in this
 repository to run the workflow `lane-eval` with these args (paths absolute,
 `out` a directory that does not exist yet and does not lie under `$TMPDIR` or
-`/tmp`, where the judge folders go — `judge-prep.sh` refuses that layout):
+`/tmp`, where the judge folders go — `clone.sh` refuses that layout):
 
 ```json
 {
