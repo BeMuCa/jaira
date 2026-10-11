@@ -75,8 +75,8 @@ type laneScreen struct {
 
 	// confirm holds the yes/no question every 'x' now opens before removing
 	// anything, so hammering enter never deletes anything by accident: it
-	// starts unset, is set by x, and is cleared by enter (acting on it) or
-	// esc (cancelling).
+	// starts unset, is set by x (or enter on an installed lane), and is
+	// cleared by enter (acting on it) or esc (cancelling).
 	confirm *confirmRemove
 
 	// pendingCmd carries a tea.Cmd out of key() for the one action that needs
@@ -88,7 +88,8 @@ type laneScreen struct {
 	isErr bool
 }
 
-// confirmRemove is the pending yes/no question a still-open 'x' has raised.
+// confirmRemove is the pending yes/no question a still-open 'x' (or enter
+// on an installed lane) has raised.
 // path empty means a board removal (lane.Remove, keyed by id); path
 // non-empty means a catalogue file delete (os.Remove on path). yes starts
 // false so a bare enter answers no.
@@ -219,10 +220,10 @@ func (ls *laneScreen) key(s string) (done bool) {
 		return false
 	}
 
-	// Every 'x' opens this confirmation before anything is removed, so
-	// hammering enter never deletes anything: while it is open, h/l (and
-	// left/right) only switch the selected answer, enter acts on it, and
-	// esc/q cancel without finishing the screen. Every other key is ignored
+	// Every 'x', and enter on an installed lane, opens this confirmation
+	// before anything is removed, so hammering enter never deletes anything:
+	// while it is open, h/l (and left/right) only switch the selected answer,
+	// enter acts on it, and esc/q cancel without finishing the screen. Every other key is ignored
 	// rather than falling through to the normal board navigation below.
 	if ls.confirm != nil {
 		switch s {
@@ -286,10 +287,18 @@ func (ls *laneScreen) key(s string) (done bool) {
 			ls.startRemove()
 		}
 	case "enter":
+		// enter is the one toggle on a column: '+' opens the catalogue, a
+		// not-installed lane is added, and an installed lane is removed —
+		// through the same yes/no confirmation x opens, whose default "no"
+		// is what keeps a blindly hammered enter from deleting anything.
+		// An available lane is never deleted by enter: that is a file
+		// delete, and stays on x alone.
 		if ls.focus == 0 && ls.isPlusColumn() {
 			ls.openCatalogue()
 		} else if ls.focus == 0 && ls.selectedAvailable() != nil {
 			ls.addAvailable()
+		} else if ls.focus == 0 && ls.selected() != nil {
+			ls.startRemove()
 		}
 	case "p":
 		if ls.focus == 0 {
@@ -340,7 +349,8 @@ func (ls *laneScreen) moveSharedUp() {
 
 // startRemove opens the yes/no confirmation every 'x' now requires, for
 // either an installed lane under the cursor (board removal) or an available
-// (not-installed) catalogue lane (file delete). A built-in has no file — it
+// (not-installed) catalogue lane (file delete). enter on an installed lane
+// calls it too; enter never reaches the file-delete branch. A built-in has no file — it
 // lives inside the binary — so it errors immediately rather than opening a
 // confirmation there is nothing to act on. The '+' column has nothing to
 // remove either.
@@ -847,9 +857,9 @@ func (ls *laneScreen) render(width, height int) string {
 	// the full footer runs longer than a narrow terminal's column width, and
 	// cutting it off would silently hide a key's name rather than the column
 	// content truncate exists to fit.
-	help := []string{"E edit", "x remove", "p publish", "n new", "R refresh", "esc back"}
+	help := []string{"enter add/remove", "E edit", "x remove", "p publish", "n new", "R refresh", "esc back"}
 	if len(ls.shared) > 0 {
-		help = []string{"E edit", "x remove", "tab switch", "p publish", "a adopt", "esc back"}
+		help = []string{"enter add/remove", "E edit", "x remove", "tab switch", "p publish", "a adopt", "esc back"}
 	}
 	for _, l := range wrapHints(help, max(1, w)) {
 		sb.WriteString("\n" + styMeta.Render(l))
