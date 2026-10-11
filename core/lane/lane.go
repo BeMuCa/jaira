@@ -173,10 +173,6 @@ const (
 	ContextShared = "shared"
 )
 
-// Fresh reports whether this lane goes to a new agent with no prior context,
-// whether its file says so or the board's default made it so.
-func (l *Lane) Fresh() bool { return l.Context == ContextFresh }
-
 // Set is the resolved, ordered collection of lanes.
 type Set struct {
 	Lanes []*Lane

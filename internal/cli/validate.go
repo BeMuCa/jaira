@@ -61,7 +61,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 			// command that would regenerate the note — which is exactly how a
 			// board ends up handing an agent a route that no longer exists.
 			noteStale := []string{}
-			if current, stale := board.NoteIsCurrent(s.Root, laneFacts(lanes)); !current {
+			if current, stale := board.NoteIsCurrent(s.Root, lanes.Facts()); !current {
 				noteStale = stale
 			}
 

@@ -12,7 +12,7 @@ import (
 func freshIDs(set *Set) []string {
 	var out []string
 	for _, l := range set.Lanes {
-		if l.Fresh() {
+		if l.Context == ContextFresh {
 			id := l.ID
 			if l.ContextImplied {
 				id += "*"

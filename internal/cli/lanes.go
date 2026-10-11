@@ -468,7 +468,7 @@ func refreshAgentNote(cmd *cobra.Command, root string) {
 	if err != nil {
 		return
 	}
-	if _, err := board.AnnounceInAgentFiles(root, laneFacts(lanes)); err != nil {
+	if _, err := board.AnnounceInAgentFiles(root, lanes.Facts()); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "jaira: warning: the lanes changed but the agent note could not be updated: %v\n", err)
 	}
 }

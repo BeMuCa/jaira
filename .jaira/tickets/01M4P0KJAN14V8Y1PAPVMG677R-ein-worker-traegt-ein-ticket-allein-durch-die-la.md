@@ -1,7 +1,7 @@
 ---
 id: 01M4P0KJAN14V8Y1PAPVMG677R
 title: "Ein Worker traegt ein Ticket allein durch die Lanes, nur der Review laeuft frisch"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,18 +25,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T17:36:41Z
-updated-at: 2026-10-11T17:54:03Z
+updated-at: 2026-10-11T17:57:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521795
 claimed-at: 2026-10-11T17:38:06Z
 outcome-what: "Lane-Feld context: fresh|shared mit Board-Default, sichtbar in lanes/lanes show/show --for-lane/Agenten-Block; Opt-in-Rolle jaira-worker, Schalter dispatch (settings.json, TUI, roles list), spawn.sh-Lane worker, Teamlead waehlt nach Schalter; critique-Runde-1-Funde behoben"
 outcome-why: "Ein Agent pro Lane kostete im A/B-Versuch das 2,5-fache an Tokens bei gleichem Code; der frische Review bleibt Pflicht"
 outcome-resolves: "Worker-Modus ohne Lane-Migration, standardmaessig aus"
-review-summary: |-
-  internal/cli/tickets.go:1427 impliedContextNote/laneContext stehen zwischen dem Doc-Kommentar von laneFacts und laneFacts — der Kommentar haengt jetzt an der Konstante; Block ueber den Kommentar ziehen
-  internal/tui/settings.go switchDispatch gibt settingsActionSaved zurueck und loest m.reload() aus, dessen Kommentar (Logbuch-Fenster) nicht passt und das fuer dispatch nichts tut; settingsActionNone zurueckgeben
-  core/lane/lane.go impliedFresh-Kommentar: eine Zeile ueber 150 Zeichen; umbrechen. internal/cli/roles.go Long: eine ueberlange Zeile; umbrechen. core/board/announce.go: verirrte Leerzeile nach dem tier-Block entfernen
-  core/role/builtin/jaira-role-lane/SKILL.md: 'A worker starts you for a lane marked fresh' klingt wie der einzige Fall — der Worker startet auch die lesende critique; 'When a worker starts you for ...' schreiben
+review-summary: none
+review-gaps: "laneFacts gab es zweimal (internal/cli/tickets.go und internal/tui/browse.go); die TUI-Kopie kannte Fresh nicht, sodass ein im TUI neu geschriebener Agenten-Block die fresh-Markierung verlor — beide durch lane.Set.Facts in core/lane/facts.go ersetzt. Lane.Fresh() entfernt (Einzeiler, ein Aufrufer). Gelassen: laneContext und impliedContextNote (zwei Aufrufer bzw. echte Logik), Settings.DispatchRole (zwei Aufrufer in roles.go, getestet)."
 ---
 
 # Ein Worker traegt ein Ticket allein durch die Lanes, nur der Review laeuft frisch
@@ -91,3 +88,5 @@ review-summary: |-
 internal/tui/settings.go switchDispatch gibt settingsActionSaved zurueck und loest m.reload() aus, dessen Kommentar (Logbuch-Fenster) nicht passt und das fuer dispatch nichts tut; settingsActionNone zurueckgeben
 core/lane/lane.go impliedFresh-Kommentar: eine Zeile ueber 150 Zeichen; umbrechen. internal/cli/roles.go Long: eine ueberlange Zeile; umbrechen. core/board/announce.go: verirrte Leerzeile nach dem tier-Block entfernen
 core/role/builtin/jaira-role-lane/SKILL.md: 'A worker starts you for a lane marked fresh' klingt wie der einzige Fall — der Worker startet auch die lesende critique; 'When a worker starts you for ...' schreiben
+- **2026-10-11 17:54 · Alexander Sacharov** — critique Runde 2: alle fuenf Funde aus Runde 1 in 5b01536 behoben (laneFacts-Kommentar, settingsActionNone, zwei Umbrueche, Leerzeile, role-lane-Wortlaut); die Reparatur fuehrt nichts Neues ein. Nichts mehr zu sagen.
+- **2026-10-11 17:57 · Alexander Sacharov** — optimize: laneFacts gab es zweimal (internal/cli/tickets.go und internal/tui/browse.go); die TUI-Kopie kannte Fresh nicht, sodass ein im TUI neu geschriebener Agenten-Block die fresh-Markierung verlor — beide durch lane.Set.Facts in core/lane/facts.go ersetzt. Lane.Fresh() entfernt (Einzeiler, ein Aufrufer). Gelassen: laneContext und impliedContextNote (zwei Aufrufer bzw. echte Logik), Settings.DispatchRole (zwei Aufrufer in roles.go, getestet). Suite mit isoliertem HOME gruen.
