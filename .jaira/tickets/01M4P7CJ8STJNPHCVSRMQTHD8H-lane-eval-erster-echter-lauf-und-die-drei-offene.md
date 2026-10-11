@@ -1,7 +1,7 @@
 ---
 id: 01M4P7CJ8STJNPHCVSRMQTHD8H
 title: "lane-eval: erster echter Lauf und die drei offenen Luecken aus dem Review"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,15 +20,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T19:35:11Z
-updated-at: 2026-10-11T20:19:13Z
+updated-at: 2026-10-11T20:20:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-789618
 claimed-at: 2026-10-11T19:45:23Z
 mode: ""
-outcome-what: "lane-eval: clone.sh/judge-prep.sh verweigern ein <out> unter dem Temp-Root; metrics.sh zaehlt verschachtelte Agenten ueber parentAgentId mit (Spalte subagents) und findet die Markierung dort, wo der Workflow-Harness sie hinlegt; der Richter bekommt X/Y.ticket.md (DoD mit proof, outcome, commits); ein echter Lauf BG5QJ6 N=1 lief, Ergebnis als Note"
-outcome-why: "lane-eval war nie echt gelaufen; KEY.txt lag einen ls vom Richter entfernt, verschachtelte Agenten fehlten in den Kosten, und der Richter sah die typischen Fehler auf dem Ticket nicht"
+outcome-what: "lane-eval: clone.sh verweigert ein <out> unter dem Temp-Root (wo die Richter-Ordner liegen); metrics.sh zaehlt verschachtelte Agenten ueber parentAgentId mit (Spalte subagents) und findet die Markierung dort, wo der Workflow-Harness sie hinlegt; der Richter bekommt X/Y.ticket.md (DoD mit proof, outcome, commits); ein echter Lauf BG5QJ6 N=1 lief, Ergebnis als Note"
+outcome-why: "lane-eval war nie echt gelaufen; KEY.txt lag einen ls vom Richter entfernt, verschachtelte Agenten fehlten in den Kosten, metrics.sh haette im echten Lauf keinen Agenten gefunden, und der Richter sah die typischen Fehler auf dem Ticket nicht"
 outcome-resolves: "Alle drei DoD-Punkte: Lauf mit Zahlen fuer jeden Agenten, Punkte 1 und 2 behoben, Richter sieht die Ticket-Datei (Alex' Entscheidung)"
-review-summary: "scripts/lane-eval/judge-prep.sh:26-30 wiederholt die Temp-Root-Pruefung aus clone.sh:28-32; clone.sh laeuft immer zuerst auf demselben <out> - die Kopie in judge-prep.sh streichen, Kommentar dort auf 'clone.sh refuses' aendern"
+review-summary: "none - Runde 2: die doppelte Temp-Root-Pruefung ist weg (2e2b2f5), sonst nichts; siehe critique-Note Runde 1"
+review-gaps: "judge-prep.sh armticket: die Commit-Schleife (hex-case + git log je SHA) ersetzt durch git log base..HEAD im Clone - im echten Lauf war .commits auf beiden Arm-Tickets leer, weil jaira die Liste erst beim Ablegen ableitet; der Richter sah also nie Commits. Doku und Richter-Prompt angepasst ('zwei SHAs in einem Eintrag' gibt es mit abgeleiteter Liste nicht mehr). Gelassen: per_agent liest meta.json mit einem eigenen jq je Datei - billig, laeuft einmal je Auswertung."
 ---
 
 # lane-eval: erster echter Lauf und die drei offenen Luecken aus dem Review
@@ -40,7 +41,7 @@ review-summary: "scripts/lane-eval/judge-prep.sh:26-30 wiederholt die Temp-Root-
 - [x] Punkte 1 und 2 sind behoben (Beispiel-Pfad; Subagents eines Arm-Agenten werden mitgezaehlt) oder in docs/LANE-EVAL.md mit ihrer Auswirkung genannt
   proof: scripts/lane-eval/clone.sh:31 verweigert ein <out> unter dem Temp-Root (Beispiel unter $HOME, docs/LANE-EVAL.md:35); scripts/lane-eval/metrics.sh:79 rechnet unmarkierte Agenten ueber parentAgentId dem markierten Vorfahren zu, Spalte subagents - Fixture mit 2 Ebenen + Richter-Helfer geprueft
 - [x] Entschieden und umgesetzt, ob der Richter die Ticket-Datei sieht
-  proof: Entscheidung Alex: ja, nur DoD/Outcome/commits. scripts/lane-eval/judge-prep.sh:61 schreibt X.ticket.md/Y.ticket.md (armticket), Richter-Prompt .claude/workflows/lane-eval.js:189, im Lauf wf_9ea1a9f1-c81 angekommen
+  proof: Entscheidung Alex: ja, nur DoD/Outcome/Commits. scripts/lane-eval/judge-prep.sh armticket (X.ticket.md/Y.ticket.md, Commits aus git base..HEAD des Clones), Richter-Prompt .claude/workflows/lane-eval.js:189; an BG5QJ6 r1 des Laufs geprueft: beide Dateien mit DoD, proof, Outcome und 3 Commits
 
 ## Options
 
@@ -79,3 +80,5 @@ Antworten von Alex (in meinem Tab, 11.10.):
 - output_tokens wirken zu klein (710 bei 49 Tool-Aufrufen) - Punkt 3 aus dem Review bestaetigt, bleibt dokumentiert.
 - Nebenfund im worker-Arm: 'jaira move --what/--why/--resolves' in review ueberschrieb die outcome-Felder des Implementierers; der Review-Agent stellte sie mit jaira set wieder her. Kein Teil dieses Tickets.
 - **2026-10-11 20:18 · Alexander Sacharov** — critique: doppelte Temp-Root-Pruefung - nur clone.sh behalten (frueher Abbruch ist der eigentliche Wert), judge-prep.sh-Kopie und Doku-Satz anpassen. Sonst nichts: armticket-Schleife braucht git, deshalb nicht in jq; metrics-Aenderung ist minimal fuer das Gefundene.
+- **2026-10-11 20:19 · Alexander Sacharov** — critique Runde 2: nichts mehr. Hinweis: 'jaira move --what' ueberschreibt outcome komplett - im Rueckweg mit Kurztext passiert, mit jaira set wiederhergestellt (gleicher Befund wie im worker-Arm des Laufs).
+- **2026-10-11 20:20 · Alexander Sacharov** — optimize: judge-prep.sh fuer BG5QJ6 r1 im Lauf-Ordner zweimal neu ausgefuehrt (Test). KEY.txt dort zeigt jetzt auf die neuen Richter-Ordner (gleiche X/Y-Zuordnung: p1 X=worker); die Original-Ordner der Richter vom Lauf liegen weiter in /tmp/judge.*.

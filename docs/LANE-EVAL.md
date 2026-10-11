@@ -114,12 +114,14 @@ uses, loops per run, and the verdict counts.
   arm, a clone or `<out>`. Which diff was X and which Y, and where each folder
   is, stands only in `<out>/KEY.txt`.
 - `X.ticket.md` and `Y.ticket.md` are what each arm wrote onto its ticket: the
-  definition of done with each item's proof, the outcome, and the commit list,
-  every entry with the subject git in the clone gives it, or `(not a commit in
-  this repository)`. The judge needs them because the typical mistakes of an
+  definition of done with each item's proof and the outcome, followed by the
+  commits the clone made since its base, with their subjects. jaira derives a
+  ticket's commit list only when it is filed away, so on the board that field
+  is still empty and the clone's history stands in for it. The judge needs them because the typical mistakes of an
   arm sit there, not in the diff: on the hand-run A/B test of 2026-10-11 the
   lane-per-agent arm left a `--proof` pointing at a line optimize had moved and
-  put two SHAs into one commits entry, and a judge reading diffs alone saw
+  put two SHAs into one commits entry (a mistake jaira's derived commit list
+  has since made impossible), and a judge reading diffs alone saw
   neither. Notes, author, lane history and timestamps stay out: how an agent
   writes its notes tells the arms apart.
 - An arm agent's prompt names no path but its clone, and its first instruction

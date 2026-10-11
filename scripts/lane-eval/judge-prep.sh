@@ -8,9 +8,9 @@
 #   p2  X = <armY>, Y = <armX>
 # Each holds X.diff, Y.diff, ticket.md and, for a golden ticket, reference.diff
 # (the accepted change), plus X.ticket.md and Y.ticket.md: what each arm wrote
-# onto its ticket - the definition of done with its proofs, the outcome, and the
-# commits with their subjects. Notes, author and lane history stay out; they
-# would tell the arms apart. The folders are fresh temp directories outside <out>
+# onto its ticket - the definition of done with its proofs, the outcome - and
+# the commits it made, with their subjects. Notes, author and lane history stay
+# out; they would tell the arms apart. The folders are fresh temp directories outside <out>
 # (mktemp, under $TMPDIR or /tmp), so neither their path nor anything next to
 # them names an arm, <out>, the clones or KEY.txt; clone.sh refuses an <out>
 # under that temp root. Which diff is which, and
@@ -30,24 +30,19 @@ armdiff() {
   git -C "$dir" diff "$base" -- . ':(exclude).jaira'
 }
 
-# The arm's ticket as a judge needs it: what it claims and what proves it. A
-# commit the clone does not know is printed as such, not dropped.
+# The arm's ticket as a judge needs it: what it claims and what proves it. The
+# commits are the clone's own since base: jaira derives a ticket's commit list
+# only when it is filed away, so on the board the field is still empty.
 armticket() {
-  local meta="$out/$1/$ticket/r$run.json" dir handle
-  dir=$(jq -r .dir "$meta"); handle=$(jq -r .handle "$meta")
+  local meta="$out/$1/$ticket/r$run.json" dir handle base
+  dir=$(jq -r .dir "$meta"); handle=$(jq -r .handle "$meta"); base=$(jq -r .base "$meta")
   jaira -C "$dir" show "$handle" --json 2>/dev/null | jq -r '
     "# What this attempt recorded on its ticket\n",
     "## Definition of Done\n",
     (.dod_items[] | "- [\(if .done then "x" else " " end)] \(.text)\n  proof: \(if .proof == "" then "(none)" else .proof end)"),
     "\n## Outcome\n", "what: \(.outcome.what)", "why: \(.outcome.why)", "resolves: \(.outcome.resolves)",
-    "\n## Commits\n", (.commits[]? // empty)' |
-  while IFS= read -r line; do
-    case $line in
-      [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*)
-        printf -- '- %s %s\n' "$line" "$(git -C "$dir" log -1 --format=%s "$line" -- 2>/dev/null || echo '(not a commit in this repository)')" ;;
-      *) printf '%s\n' "$line" ;;
-    esac
-  done
+    "\n## Commits\n"'
+  git -C "$dir" log --reverse --format='- %h %s' "$base..HEAD"
 }
 
 touch "$out/KEY.txt"
