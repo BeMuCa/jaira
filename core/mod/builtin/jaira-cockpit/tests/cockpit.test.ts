@@ -142,6 +142,39 @@ describe('prompt.submit', () => {
     expect((await $.prompt.submit({ text, origin: NOTIFICATION, wait: false })).text).toBe(comment)
   })
 
+  test("a subagent's SendMessage reaches the conversation as one line, not only the store", async ($, on) => {
+    session(on)
+    const rows = mock.session(on)
+    // Live on 2.1.296: the subagent's message arrives at prompt.submit alone,
+    // and the engine stores the row with the text it was handed, under its own
+    // lead-in, whatever prompt.submit answered.
+    const message = '<agent-message from="a7c1b865445b600d6">\nTicket MG677R: review -> signoff, review-verdict="approve mit Vorbehalt"\n</agent-message>'
+    const line = 'MG677R · review → signoff · approve mit Vorbehalt — full report: /cockpit report MG677R'
+    expect((await $.prompt.submit({ text: message, origin: { kind: 'peer' }, wait: false })).text).toBe(line)
+    await $.session.append({
+      message: { type: 'user', role: 'user', content: [{ type: 'text', text: `Another Claude session sent a message:\n${message}` }] },
+      door: 'prompt',
+      origin: { kind: 'peer' },
+      uuid: 'row-1',
+    })
+    const stored = rows.appended().at(-1)?.message.content[0]
+    expect(stored).toEqual({ type: 'text', text: `Another Claude session sent a message:\n${line}` })
+    expect((await $.command.run(typed('report MG677R'))).text).toContain('approve mit Vorbehalt')
+  })
+
+  test("a row the cockpit did not shorten is stored as it came", async ($, on) => {
+    session(on)
+    const rows = mock.session(on)
+    const plain = 'Another Claude session sent a message:\n<agent-message from="x">refactored the parser</agent-message>'
+    await $.session.append({
+      message: { type: 'user', role: 'user', content: [{ type: 'text', text: plain }] },
+      door: 'prompt',
+      origin: { kind: 'peer' },
+      uuid: 'row-2',
+    })
+    expect(rows.appended().at(-1)?.message.content[0]).toEqual({ type: 'text', text: plain })
+  })
+
   test('what a person types is never touched', async ($, on) => {
     session(on)
     const mine = 'Ticket MG677R: move it review -> signoff, verdict: approve'

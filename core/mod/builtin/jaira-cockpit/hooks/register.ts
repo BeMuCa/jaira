@@ -121,12 +121,41 @@ export const register: Register = on => {
     return next(text === undefined ? e : { ...e, text })
   }).catch(($, e, next) => next(e))
 
+  // What prompt.submit shortened, by the text it was handed, until the row
+  // carrying it is appended. A subagent's SendMessage to the main
+  // conversation reaches prompt.submit alone (origin peer, no
+  // session.receive), and the engine stores that row with the text as it
+  // arrived, wrapped in its own lead-in, whatever the hook answered: the row
+  // the model reads and the chat shows is rewritten at session.append too.
+  const shortened = new Map<string, string>()
+
   on('prompt.submit', async ($, e, next) => {
     if (untouched.delete(e.text) || !AGENT_ORIGINS.has(e.origin.kind)) return next(e)
     // A background task of this session always reports in its own block.
     if (e.origin.kind === 'task-notification' && !NOTIFICATION.test(e.text)) return next(e)
     const text = await shorten($, e.text, e.origin.kind)
-    return next(text === undefined ? e : { ...e, text })
+    if (text === undefined) return next(e)
+    shortened.set(e.text, text)
+    // A row that never came keeps nothing alive for long.
+    for (const old of [...shortened.keys()].slice(0, Math.max(0, shortened.size - 20))) shortened.delete(old)
+    return next({ ...e, text })
+  }).catch(($, e, next) => next(e))
+
+  on('session.append', ($, e, next) => {
+    const isDelivery = e.door === 'prompt' || e.door === 'delivery'
+    if (!isDelivery || e.agentId !== undefined || e.message.type !== 'user' || !AGENT_ORIGINS.has(e.origin.kind)) return next(e)
+    let isChanged = false
+    const content = e.message.content.map(block => {
+      if (block.type !== 'text') return block
+      for (const [original, short] of shortened) {
+        if (!block.text.includes(original)) continue
+        shortened.delete(original)
+        isChanged = true
+        return { ...block, text: block.text.replace(original, () => short) }
+      }
+      return block
+    })
+    return next(isChanged ? { ...e, message: { ...e.message, content } } : e)
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'cockpit' }, async ($, e) => {
