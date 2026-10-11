@@ -107,16 +107,40 @@ func TestContextSharedSwitchesTheDefaultOff(t *testing.T) {
 	}
 }
 
-// TestContextRejectsAnUnknownValue: a typo must not silently mean "not fresh"
-// — that is the reviewer quietly turning into the implementer.
-func TestContextRejectsAnUnknownValue(t *testing.T) {
-	_, err := Parse([]byte("---\nid: x\ncontext: frsh\n---\n"), "test")
-	if err == nil || !strings.Contains(err.Error(), "context") {
-		t.Fatalf("parse error = %v, want one naming context", err)
+// TestContextUnknownValueRunsFresh: a typo must neither silently mean "not
+// fresh" — the reviewer quietly turning into the implementer — nor drop the
+// lane, which would let the board's default move the fresh boundary onto
+// another lane. The lane loads, runs fresh, and the value is kept for the
+// warning.
+func TestContextUnknownValueRunsFresh(t *testing.T) {
+	l, err := Parse([]byte("---\nid: x\ncontext: frsh\n---\n"), "test")
+	if err != nil {
+		t.Fatalf("an unknown context must not fail the lane: %v", err)
 	}
-	l, err := Parse([]byte("---\nid: x\ncontext: \"\"\n---\n"), "test")
-	if err != nil || l.Context != "" {
+	if l.Context != ContextFresh || l.ContextInvalid != "frsh" {
+		t.Fatalf("context=%q invalid=%q, want %q/%q", l.Context, l.ContextInvalid, ContextFresh, "frsh")
+	}
+	l, err = Parse([]byte("---\nid: x\ncontext: \"\"\n---\n"), "test")
+	if err != nil || l.Context != "" || l.ContextInvalid != "" {
 		t.Fatalf("an empty context must parse as undeclared: lane=%+v err=%v", l, err)
+	}
+}
+
+// TestContextTypoKeepsTheFreshBoundary: review.md with "context: Fresh" stays
+// on the board as the fresh lane, the default does not move to in-progress,
+// and Load says what is wrong.
+func TestContextTypoKeepsTheFreshBoundary(t *testing.T) {
+	root := setUpBoard(t)
+	addFrontmatter(t, root, "review", "context: Fresh")
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(freshIDs(set), ","); got != "review" {
+		t.Fatalf("fresh lanes = %q, want %q: the typo must neither drop review nor move the default", got, "review")
+	}
+	if !strings.Contains(strings.Join(set.Warnings, "\n"), `lane review: context "Fresh"`) {
+		t.Errorf("no warning names the bad value:\n%s", strings.Join(set.Warnings, "\n"))
 	}
 }
 

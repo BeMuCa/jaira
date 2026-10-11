@@ -1023,7 +1023,7 @@ func newLanesCmd() *cobra.Command {
 						"id": l.ID, "name": l.Name, "precedence": l.Precedence,
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
-						"context": l.Context, "context_implied": l.ContextImplied,
+						"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
 						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
@@ -1045,7 +1045,7 @@ func newLanesCmd() *cobra.Command {
 			// RANK, not PREC: column order follows after:, never this number — it
 			// is the rank a merge uses to decide which lane wins, nothing more.
 			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %-8s %s\n", "ID", "NAME", "RANK", "AGENTIC", "TIER", "CONTEXT", "SOURCE")
-			implied := false
+			implied, invalid := false, false
 			for _, l := range lanes.Lanes {
 				src := "built-in"
 				if !l.Builtin {
@@ -1053,9 +1053,16 @@ func newLanesCmd() *cobra.Command {
 				}
 				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), laneContext(l), src)
 				implied = implied || l.ContextImplied
+				invalid = invalid || l.ContextInvalid != ""
+			}
+			if implied || invalid {
+				fmt.Fprintln(w)
 			}
 			if implied {
-				fmt.Fprintf(w, "\n* %s\n", impliedContextNote)
+				fmt.Fprintf(w, "* %s\n", impliedContextNote)
+			}
+			if invalid {
+				fmt.Fprintf(w, "! %s\n", invalidContextNote)
 			}
 			if len(available) > 0 {
 				fmt.Fprintf(w, "\nShipped with this binary, not on this board — no network needed:\n")
@@ -1168,7 +1175,7 @@ func newLanesShowCmd() *cobra.Command {
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
 					"rejects_to": l.RejectsTo, "holds": l.Holds,
-					"context": l.Context, "context_implied": l.ContextImplied,
+					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
 				})
 			}
 			w := cmd.OutOrStdout()
@@ -1185,6 +1192,8 @@ func newLanesShowCmd() *cobra.Command {
 			fmt.Fprintf(w, "Tier:        %s\n", dash(l.ModelTier))
 			if l.ContextImplied {
 				fmt.Fprintf(w, "Context:     fresh — %s\n", impliedContextNote)
+			} else if l.ContextInvalid != "" {
+				fmt.Fprintf(w, "Context:     fresh — %s\n", lane.ContextInvalidMessage(l))
 			} else {
 				fmt.Fprintf(w, "Context:     %s\n", dash(l.Context))
 			}
@@ -1426,11 +1435,19 @@ func truncate(s string, n int) string {
 // fresh, in the words both 'jaira lanes' and 'lanes show' print it in.
 const impliedContextNote = "no lane on this board declares context:, so the last agentic lane before the first lane a person owns runs fresh"
 
+// invalidContextNote explains the "!" a lane gets in the CONTEXT column when
+// its file sets a value jaira cannot read.
+const invalidContextNote = "this lane's context: is neither fresh nor shared, so it runs fresh until the file is fixed; 'jaira validate' fails on it"
+
 // laneContext is the CONTEXT column: the value, with "*" when the board's
-// default supplied it rather than the lane's file.
+// default supplied it rather than the lane's file, and "!" when the file
+// says something that is neither value.
 func laneContext(l *lane.Lane) string {
 	if l.ContextImplied {
 		return l.Context + "*"
+	}
+	if l.ContextInvalid != "" {
+		return l.Context + "!"
 	}
 	return dash(l.Context)
 }

@@ -70,6 +70,12 @@ type Lane struct {
 	// impliedFresh.
 	Context        string
 	ContextImplied bool
+	// ContextInvalid holds a context: value that is neither fresh nor shared —
+	// a typo like "Fresh". Such a lane still loads, runs fresh, and counts as
+	// having declared a context, so a typo can neither drop the lane nor move
+	// the board's default onto another one; Load warns about it and 'jaira
+	// validate' fails on it.
+	ContextInvalid string
 
 	// Holds caps how many tickets the lane keeps. After a move lands a ticket
 	// here, the oldest beyond the newest Holds leave for the logbook — reported,
@@ -338,7 +344,9 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RejectsTo = rejectsTo(d)
 	l.Context = strings.TrimSpace(str("context"))
 	if l.Context != "" && l.Context != ContextFresh && l.Context != ContextShared {
-		return nil, fmt.Errorf("lane %s: context %q must be %q or %q", source, l.Context, ContextFresh, ContextShared)
+		// Fresh is the safe reading of a value nobody can read: a typo then
+		// costs a new agent, never the independent look the lane was for.
+		l.ContextInvalid, l.Context = l.Context, ContextFresh
 	}
 
 	if l.ID == "" {
@@ -572,6 +580,11 @@ func Load(root string) (*Set, error) {
 	}
 
 	warnings = append(warnings, checkContracts(ordered)...)
+	for _, l := range ordered {
+		if l.ContextInvalid != "" {
+			warnings = append(warnings, ContextInvalidMessage(l))
+		}
+	}
 	impliedFresh(ordered)
 
 	if !anyRequiresSpecified(ordered) {
@@ -589,6 +602,13 @@ func Load(root string) (*Set, error) {
 		set.byID[l.ID] = l
 	}
 	return set, nil
+}
+
+// ContextInvalidMessage says what is wrong with a lane whose context: value is
+// neither fresh nor shared, and what the board does with it meanwhile.
+func ContextInvalidMessage(l *Lane) string {
+	return fmt.Sprintf("lane %s: context %q must be %q or %q; it runs %s until the file is fixed",
+		l.ID, l.ContextInvalid, ContextFresh, ContextShared, ContextFresh)
 }
 
 // impliedFresh applies the board-wide default for context:. Only a board on
@@ -856,6 +876,7 @@ func lanesEquivalent(base, replacement *Lane) bool {
 		base.Terminal == replacement.Terminal &&
 		base.ModelTier == replacement.ModelTier &&
 		base.Context == replacement.Context &&
+		base.ContextInvalid == replacement.ContextInvalid &&
 		base.RequiresQuestion == replacement.RequiresQuestion &&
 		base.RequiresBlockedReason == replacement.RequiresBlockedReason &&
 		base.RequiresCommits == replacement.RequiresCommits &&

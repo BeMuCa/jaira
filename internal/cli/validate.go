@@ -55,6 +55,17 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 			// like breaking it.
 			ix := link.Build(s, lanes, tickets)
 			problems := validate.Tickets(tickets, lanes, ix.Known)
+			// A lane whose context: nobody can read is the one lane-file
+			// mistake reported here: it decides which agent judges the work,
+			// and it fails quietly — the lane still loads and runs fresh.
+			for _, l := range lanes.Lanes {
+				if l.ContextInvalid != "" {
+					problems = append(problems, validate.Problem{
+						Code: "lane_context", Severity: validate.SeverityError,
+						Path: l.Source, Field: "context", Message: lane.ContextInvalidMessage(l),
+					})
+				}
+			}
 
 			// The board at rest includes what it tells its agents. A lane file
 			// edited by hand changes the pipeline without going through any
