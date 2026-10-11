@@ -151,6 +151,16 @@ func TestInstallWritesEveryFile(t *testing.T) {
 			t.Errorf("after install: %v", err)
 		}
 	}
+	// The cockpit mod goes beside the roles, where Claude Code loads a
+	// plugin folder by itself.
+	for _, rel := range []string{".claude-plugin/plugin.json", "hooks/register.tsx"} {
+		if _, err := os.Stat(filepath.Join(dir, "jaira-cockpit", filepath.FromSlash(rel))); err != nil {
+			t.Errorf("mod after install: %v", err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "jaira-cockpit", "tests")); !os.IsNotExist(err) {
+		t.Errorf("the mod's tests were installed: %v", err)
+	}
 	// A shipped script must arrive executable, or the prompt that calls it is
 	// a broken instruction. Windows has no POSIX execute bit — os.Chmod there
 	// only toggles the read-only flag — so the claim is not one this platform
@@ -394,6 +404,10 @@ esac
 		"worker":   "/jaira-worker ab12cd --parent lead",
 		"dispatch": "/jaira-dispatcher ab12cd --parent lead",
 		"review":   "/jaira-role-lane ab12cd review",
+		// A person's chats, which the cockpit mod opens: a plain request,
+		// never a role, so the tab answers and never works the ticket.
+		"explain": "Erklaere mir in einfachen Worten den Review-Befund zu Ticket ab12cd …",
+		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
 	} {
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
@@ -406,8 +420,13 @@ esac
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.TrimSpace(string(got)) != want {
-			t.Errorf("lane %s typed %q, want %q", lane, strings.TrimSpace(string(got)), want)
+		line := strings.TrimSpace(string(got))
+		if prefix, ok := strings.CutSuffix(want, " …"); ok {
+			if !strings.HasPrefix(line, prefix) || strings.HasPrefix(line, "/") {
+				t.Errorf("lane %s typed %q, want a plain request starting %q", lane, line, prefix)
+			}
+		} else if line != want {
+			t.Errorf("lane %s typed %q, want %q", lane, line, want)
 		}
 	}
 }

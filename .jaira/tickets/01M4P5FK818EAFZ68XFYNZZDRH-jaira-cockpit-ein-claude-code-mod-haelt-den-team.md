@@ -30,7 +30,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T19:01:54Z
-updated-at: 2026-10-11T20:36:25Z
+updated-at: 2026-10-11T20:46:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6544
 claimed-at: 2026-10-11T20:12:41Z
@@ -41,13 +41,16 @@ claimed-at: 2026-10-11T20:12:41Z
 ## Definition of Done
 
 - [ ] Teile 2 bis 6 sind umgesetzt, jeder mit einem Test (claude plugin test) und am Scratch-Board ausprobiert
-- [ ] 'jaira roles install' (oder der Befehl, den die Klaerung ergibt) installiert den Mod so, dass ihn Claude Code beim naechsten Start laedt; ohne Installation aendert sich fuer niemanden etwas
-- [ ] Zeile in core/release/NOTES.md unter Unreleased, die sagt, wie man den Mod installiert und was er tut
+- [x] 'jaira roles install' (oder der Befehl, den die Klaerung ergibt) installiert den Mod so, dass ihn Claude Code beim naechsten Start laedt; ohne Installation aendert sich fuer niemanden etwas
+  proof: core/role/install.go:66 Install() schreibt jeden Mod aus core/mod (core/mod/mod.go, go:embed ohne tests/) als <skills>/jaira-cockpit/; TestInstallWritesEveryFile, core/mod TestBuiltinsCarryTheCockpitWithoutItsTests; live: gebauter jaira 'roles install --project' im Worktree -> 'claude plugin list': jaira-cockpit@skills-dir, Scope project, ✔ loaded, '/cockpit' antwortete; ohne install laedt nichts
+- [x] Zeile in core/release/NOTES.md unter Unreleased, die sagt, wie man den Mod installiert und was er tut
+  proof: core/release/NOTES.md:17 '- Get the jaira-cockpit mod ...' unter ## Unreleased (eine Zeile, Installation + was er tut + Weg ohne jaira)
 - [ ] Ein Ticket, das mit Vorbehalt in signoff ankommt, zeigt im Band das Urteil in einer Zeile und einen Knopf [Erklaeren]; der oeffnet einen eigenen Chat (Herdr-Tab), der den Befund in einfachen Worten erklaert: was genau, warum es zaehlt, welche Optionen es gibt, was der Reviewer empfiehlt
 - [ ] Kontext und Cache im Band: Kontextgroesse in Tokens und Restzeit des Prompt-Caches (1 h Abo, 5 min API-Key, aus den Cache-Writes der Sitzung gelesen); ab ~100k Hinweis auf /compact, ab ~300k auf neue Sitzung
 - [ ] Cache-Waechter: ein Prompt des Menschen auf einen abgekuehlten Cache mit grossem Kontext (Schwelle einstellbar, Default 30k Tokens) wird angehalten mit 'senden / erst komprimieren / neu anfangen (/clear) / abbrechen' und geschaetzten Kosten; Nachrichten von Agenten, Herdr-Tastendruecken und Benachrichtigungen werden nie angehalten
 - [ ] Der Mod laeuft auch ohne jaira: in einem Projekt ohne .jaira/ oder ohne jaira-Binary arbeiten Kontext/Cache-Band und Cache-Waechter normal, die Board-Teile (Wartet-auf-dich, Annehmen/Zurueckgeben, Statuszeile mit Lanes) blenden sich still aus statt Fehler zu zeigen; Test deckt ein Projekt ohne Board
-- [ ] Installierbar auch ohne jaira: das Repo traegt .claude-plugin/marketplace.json, die README nennt '/plugin marketplace add' + '/plugin install'; jaira installiert denselben Mod global, so dass er in jedem Projekt geladen wird
+- [x] Installierbar auch ohne jaira: das Repo traegt .claude-plugin/marketplace.json, die README nennt '/plugin marketplace add' + '/plugin install'; jaira installiert denselben Mod global, so dass er in jedem Projekt geladen wird
+  proof: .claude-plugin/marketplace.json (source ./core/mod/builtin/jaira-cockpit, claude plugin validate ✔); README '### The cockpit' nennt '/plugin install jaira-cockpit --marketplace BeMuCa/jaira'; live: marketplace add + plugin install jaira-cockpit@jaira -> ✔ enabled, /cockpit antwortete, danach deinstalliert; 'jaira roles install --global' legt denselben Mod nach ~/.claude/skills (laedt dort in jedem Projekt, 'claude plugin init --help': auto-loads as <name>@skills-dir)
 - [ ] Gespraechsfaeden: nach jedem Zug des Menschen ordnet ein billiges Modell ($.model, Tier cheap) die Nachricht einem bestehenden Faden zu oder eroeffnet einen neuen und schreibt pro Faden eine Zeile Verlauf; jeder Faden hat einen Stand: -> Ticket <id> (angelegt oder verknuepft), ? offene Frage an den Menschen (gestellt, nicht beantwortet), ~ liegen geblieben (N Zuege ohne Ticket und ohne Antwort); Band zeigt die Zahl offener Fragen und liegen gebliebener Faeden, Pane bzw. '/threads' die Liste; laeuft auch ohne jaira (dann ohne Ticket-Stand)
 - [ ] Rueckgabe aus signoff/human: der Knopf [Zurueckgeben] schickt die Arbeit an den Worker, der das Ticket getragen hat, wenn dessen Herdr-Tab noch lebt, sein Prompt-Cache noch warm ist (Abo 1 h, API-Key 5 min) und sein Kontext unter ~150k Tokens liegt - sonst schliesst er ZUERST den Herdr-Tab des alten Workers und startet dann einen neuen ueber spawn.sh, so dass pro Ticket nie zwei Worker-Tabs offen sind; die fresh-Lane (review) bekommt immer einen neuen Agenten, ihr Tab schliesst nach ihrer Lane; die Wahl und ihr Grund stehen als Note am Ticket
 - [ ] Sprache: alle Texte, die der Mod dem Menschen zeigt (Band, Statuszeile, /cockpit-Ausgaben, Fragen des Cache-Waechters, Digest-Zeile), folgen der Claude-Code-Einstellung 'language' (mindestens Deutsch, Englisch, Russisch; Fallback Englisch); Ticket-Ids, Lane-Namen und Befehle bleiben wie sie sind
@@ -72,13 +75,13 @@ claimed-at: 2026-10-11T20:12:41Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] Gemeinsame Basis: board.ts (jaira-Erkennung, jaira list/show --json ueber $.process), i18n.ts (language -> de/en/ru), sessions.ts (Stand jeder Sitzung in $.store)
-- [ ] Kontext/Cache-Band + Cache-Waechter (DoD 5, 6) mit Tests
-- [ ] Band 'Wartet auf dich': Annehmen/Zurueckgeben im richtigen Worktree, Urteil + [Erklaeren], Fragen + [Besprechen]; spawn.sh explain/discuss (Teile 2, 4, DoD 4) mit Tests
-- [ ] Rueckgabe-Logik: alter Worker weiter oder Tab schliessen + neu (DoD 10) mit Tests
-- [ ] Statuszeile (Teil 3), Pane pro Ticket (Teil 5), Metriken-CSV (Teil 6) mit Tests
-- [ ] Gespraechsfaeden mit billigem Modell + /cockpit threads (DoD 9) mit Tests
-- [ ] Ohne-Board-Test (DoD 7), Sprache durchgaengig (DoD 11)
-- [ ] Installation: roles install schreibt den Mod mit, marketplace.json, README, NOTES (DoD 2, 3, 8) + Go-Tests
+- [x] Kontext/Cache-Band + Cache-Waechter (DoD 5, 6) mit Tests
+- [x] Band 'Wartet auf dich': Annehmen/Zurueckgeben im richtigen Worktree, Urteil + [Erklaeren], Fragen + [Besprechen]; spawn.sh explain/discuss (Teile 2, 4, DoD 4) mit Tests
+- [x] Rueckgabe-Logik: alter Worker weiter oder Tab schliessen + neu (DoD 10) mit Tests
+- [x] Statuszeile (Teil 3), Pane pro Ticket (Teil 5), Metriken-CSV (Teil 6) mit Tests
+- [x] Gespraechsfaeden mit billigem Modell + /cockpit threads (DoD 9) mit Tests
+- [x] Ohne-Board-Test (DoD 7), Sprache durchgaengig (DoD 11)
+- [x] Installation: roles install schreibt den Mod mit, marketplace.json, README, NOTES (DoD 2, 3, 8) + Go-Tests
 - [ ] Live: claude -p in Scratch-Repo mit installiertem Mod
 
 ## Progress

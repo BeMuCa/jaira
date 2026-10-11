@@ -676,6 +676,44 @@ down as a note the next worker reads:
 
 <img src="docs/img/demo-chain.gif" alt="A brainstorm worker stops on a question; it travels worker → dispatcher → teamlead → person, and the answer travels back until the ticket reaches todo" width="100%">
 
+### The cockpit: a Claude Code mod for the session you work from
+
+`jaira roles install` also writes `jaira-cockpit`, a Claude Code mod, beside the
+roles. Claude Code loads it by itself from the next session on — from
+`~/.claude/skills` with `--global`, from the project's `.claude/skills` with
+`--project` once you have trusted the workspace. Without that install nothing
+changes for anybody.
+
+- Agent reports and task notifications that name a ticket reach the chat as
+  one line, marked as shortened; `/cockpit report <id>` shows them whole.
+- The band above the prompt lists the tickets waiting in a lane a person owns,
+  with **Accept** (moves it to done in the ticket's own worktree) and **Give
+  back** (asks what is missing, notes it, moves it to in-progress and hands it
+  to the worker that carried it while that is still cheaper, else to a new
+  one). A verdict with a reservation gets **Explain**, an open question
+  **Discuss**: each opens a Herdr tab of its own.
+- The band also shows the context size and how long the prompt cache stays
+  warm, and a prompt of yours onto a cold cache with a large context is held
+  with a choice: send, compact first, start over, cancel.
+- After each of your turns a cheap model files it under a conversation
+  thread; `/cockpit threads` shows which became a ticket, which wait for your
+  answer and which were left lying.
+- `/cockpit ticket <id>` opens a pane with a ticket's reports and what its
+  agents used (`~/.jaira/metrics.csv`, one row per session, in the columns of
+  `scripts/lane-eval/metrics.sh`).
+
+Everything follows Claude Code's `language` setting (English, German,
+Russian). In a project without a board, or without `jaira` on `PATH`, the
+board parts stay out of sight and the rest works as usual — so the mod is
+useful without jaira too. Install it on its own, without jaira, by typing at a
+Claude Code prompt:
+
+```
+/plugin install jaira-cockpit --marketplace BeMuCa/jaira
+```
+
+Answer `y` to add the marketplace, then pick a scope.
+
 ## Working with an agent
 
 The whole integration surface is: run a command, read the JSON, branch on the
@@ -753,7 +791,7 @@ jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira share                publish the board (--undo to make it private)
-jaira roles install        write the teamlead, dispatcher and worker prompts as skills
+jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.

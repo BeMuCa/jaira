@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/mod"
 )
 
 // Action is what Install did with one file.
@@ -33,7 +35,8 @@ type Result struct {
 }
 
 // Install writes every embedded role into dstSkillsDir as
-// <dstSkillsDir>/<role-id>/<file>, and reports what happened to each file.
+// <dstSkillsDir>/<role-id>/<file>, and every embedded mod as
+// <dstSkillsDir>/<mod-id>/<file>, and reports what happened to each file.
 //
 // The comparison is against the embedded bytes, not os.Stat as lane.Export
 // does. Stat answers two questions — there or not — and this needs three: a
@@ -62,6 +65,27 @@ func Install(dstSkillsDir string, force bool) ([]Result, error) {
 				return out, err
 			}
 			out = append(out, Result{Role: r.ID, Path: dst, Action: action})
+		}
+	}
+	// The mods jaira ships go beside the roles: a plugin folder in a skills
+	// directory is one Claude Code loads by itself, so this is their install.
+	// Same three-way comparison, so an edited mod file is left alone too.
+	mods, err := mod.Builtins()
+	if err != nil {
+		return out, err
+	}
+	for _, m := range mods {
+		for _, rel := range m.Files {
+			want, err := mod.File(m.ID, rel)
+			if err != nil {
+				return out, err
+			}
+			dst := filepath.Join(dstSkillsDir, m.ID, filepath.FromSlash(rel))
+			action, err := writeFile(dst, want, force)
+			if err != nil {
+				return out, err
+			}
+			out = append(out, Result{Role: m.ID, Path: dst, Action: action})
 		}
 	}
 	return out, nil
