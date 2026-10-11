@@ -50,6 +50,13 @@ describe('session.receive', () => {
     expect(text).toBe('T8QS1Y · → signoff — full report: /flight T8QS1Y')
   })
 
+  test('a verdict keeps its reservation', async ($, on) => {
+    session(on)
+    const review = 'Ticket MG677R reviewed: approve mit Vorbehalt, moved to signoff.'
+    const { text } = await $.session.receive({ origin: NOTIFICATION, text: review })
+    expect(text).toBe('MG677R · → signoff · approve mit vorbehalt — full report: /flight MG677R')
+  })
+
   test('a report without a ticket passes unchanged', async ($, on) => {
     session(on)
     const plain = 'Agent finished: refactored the parser, all tests pass.'

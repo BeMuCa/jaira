@@ -21,13 +21,14 @@ parent: 01M4P5FK818EAFZ68XFYNZZDRH
 related: []
 commits: []
 created-at: 2026-10-11T19:02:10Z
-updated-at: 2026-10-11T19:31:56Z
+updated-at: 2026-10-11T19:33:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-767990
 claimed-at: 2026-10-11T19:27:17Z
-outcome-what: "Neuer Claude-Code-Mod core/mod/builtin/jaira-cockpit: session.receive kuerzt Agentenberichte und task-notifications mit Ticket-Id auf eine Zeile (Ticket · Lane · Urteil · Frage), speichert den vollen Text in $.store; /flight <id> und das Werkzeug mcp__jaira-cockpit__flight geben ihn zurueck, neueste zuerst"
-outcome-why: "Der Teamlead-Chat ertrank in vollen Berichtsbloecken (ueber 40 fuer 5 Tickets am 11.10.); Alex fand darin nicht, was er entscheiden muss"
-outcome-resolves: "DoD 1: Kurzzeile nur bei erkennbarer Id, Fehler/Abbrueche und Menschen bleiben voll; DoD 2: /flight; DoD 3: validate gruen, 7 Tests"
+outcome-what: "VERDICT_WORD in core/mod/builtin/jaira-cockpit/hooks/digest.ts: 'mit vorbehalt' als Zusatz der approve-Alternative, damit der Vorbehalt in der Zeile bleibt; Test 'a verdict keeps its reservation'"
+outcome-why: "optimize fand: die Alternation nahm 'approve' vor 'approve mit vorbehalt'"
+outcome-resolves: "DoD 1 (Urteil vollstaendig in der Zeile)"
+review-summary: none
 ---
 
 # Cockpit-Rauschfilter: Agentenberichte erscheinen im Teamlead-Chat als eine Zeile
@@ -39,7 +40,7 @@ outcome-resolves: "DoD 1: Kurzzeile nur bei erkennbarer Id, Fehler/Abbrueche und
 - [x] Der volle Text ist gespeichert und mit '/flight <id>' abrufbar (zeigt die Berichte zu einem Ticket, neueste zuerst)
   proof: core/mod/builtin/jaira-cockpit/hooks/register.ts:33 keep() into $.store, :47 flight() for /flight and tool mcp__jaira-cockpit__flight; tests '/flight lists reports newest first', 'the flight tool gives the model the same full text'
 - [x] 'claude plugin validate' und 'claude plugin test' gruen; Tests decken: Bericht mit Id, Bericht ohne Id, Fehlerbericht, Nachricht eines Menschen
-  proof: claude plugin validate core/mod/builtin/jaira-cockpit: passed; claude plugin test core/mod/builtin/jaira-cockpit: 7 pass 0 fail (core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts)
+  proof: claude plugin validate core/mod/builtin/jaira-cockpit: passed; claude plugin test core/mod/builtin/jaira-cockpit: 8 pass 0 fail (core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts)
 
 ## Options
 
@@ -54,3 +55,5 @@ outcome-resolves: "DoD 1: Kurzzeile nur bei erkennbarer Id, Fehler/Abbrueche und
 - **2026-10-11 19:16 · Alexander Sacharov** — Alex am 11.10.2026 entschieden (Variante A): die gekuerzte Zeile sieht auch das Modell des Teamleads; der volle Bericht bleibt gespeichert und ist per '/flight <id>' abrufbar, auch fuer das Modell. Damit ist die offene Entscheidung im Kontext geschlossen.
 - **2026-10-11 19:28 · Alexander Sacharov** — Offene Entscheidungen gezaehlt (Worker, 11.10.): die einzige, die nur Alex treffen konnte (Modell sieht die Kurzzeile), ist laut Notiz beantwortet. Selbst entschieden: (1) Ort: core/mod/builtin/jaira-cockpit/ im Repo, neben core/role/builtin, weil NZZDRH den Mod im Binary mitliefern will; NICHT ~/.claude/dev-mods, das liegt ausserhalb des Worktrees. (2) Gefiltert werden nur Lieferungen an die Hauptkonversation (kein agentId) mit origin task-notification, peer, peer-send-message, coordinator und ohne e.event (e.event = GitHub/Artifact-Kommentar -> durchlassen); bridge (Mensch per Remote Control), slack, scheduled-trigger, projects-relay, unclassified bleiben unberuehrt. (3) Id: 6-stelliger Crockford-Handle mit mindestens einer Ziffer, oder ein beliebiger Handle direkt hinter 'ticket'/'jaira <verb>'/'fix(' usw., oder eine 26-stellige ULID; mehrere Ids -> die haeufigste. (4) Lane-Wechsel, Urteil, Frage werden aus dem Text gelesen, nicht per jaira show: der Mod hat keinen verlaesslichen Worktree und jaira show kostet einen Prozess pro Lieferung. (5) Speicher: $.store (sitzungsuebergreifend, 4 MiB Grenze), pro Ticket die letzten 20 Berichte, je hoechstens 16000 Zeichen. (6) Fuer das Modell zusaetzlich ein Werkzeug mcp__jaira-cockpit__flight mit derselben Ausgabe wie /flight, weil das Modell Slash-Befehle eines Mods nicht selbst ausfuehren kann.
 - **2026-10-11 19:31 · Alexander Sacharov** — Gelernt: (a) im Test-Kit nimmt $.command.run das volle CommandRunInput (origin + presentation), der Hook bekam args=undefined, als ein Plugin ohne args aufrief -> e.args ?? ''. (b) Unter dem Plugin muss der Test selbst einen session.receive-Hook stellen, der {text: e.text} antwortet, sonst wirft der Boden. (c) Typpruefung: die Typen liegen erst nach dem ersten Laden unter .claude-plugin/types; bis dahin tsc mit einer tsconfig ausserhalb des Mod-Ordners, die die claude-code.d.ts des Skills nennt (allowImportingTsExtensions noetig wegen import './digest.ts'). (d) Keine Zeile in core/release/NOTES.md: der Mod ist nur eine Quelle im Repo, jaira installiert ihn noch nicht - das bringt NZZDRH mit seiner eigenen NOTES-Zeile. (e) Nicht live ausprobiert in einer Teamlead-Sitzung; ob ein Hintergrund-Agent seinen Abschluss wirklich als session.receive origin task-notification liefert, sagen nur die Typen (PromptOrigin 'task-notification' = 'A background task's notification').
+- **2026-10-11 19:32 · Alexander Sacharov** — critique (Pass 1, ganzer Diff gelesen): nichts zu aendern. Stehen gelassen, mit Grund: digest.ts getrennt von register.ts, weil die Regeln rein sind und ohne Engine lesbar bleiben; LANES fest verdrahtet statt aus .jaira/lanes gelesen, weil der Mod keinen sicheren Repo-Pfad kennt und der Pfeil 'a -> b' umbenannte Lanes ohnehin liest; /flight ohne Id listet die Tickets, sonst antwortet der Befehl auf ein vergessenes Argument mit 'No reports kept for .'; immediate:true, weil der Teamlead meist mitten im Turn ist. Bekannte Grenze: ein Bericht, der SHA256 oefter nennt als seinen Handle, wird SHA256 zugeordnet (6 Zeichen mit Ziffer) - selten, und die Zeile verweist dann auf /flight SHA256, nichts geht verloren.
+- **2026-10-11 19:32 · Alexander Sacharov** — optimize: VERDICT_WORD in hooks/digest.ts hat 'approve mit vorbehalt' als eigene Alternative HINTER 'approve[sd]?...'; die Alternation nimmt die erste, also wird aus 'approve mit Vorbehalt' nur 'approve' - genau der Vorbehalt aus dem Ziel-Beispiel geht verloren. Zusammenlegen ist kein Aufraeumen, sondern aendert Verhalten -> zurueck nach in-progress: 'mit vorbehalt' als Zusatz in die approve-Alternative falten, Test dazu.

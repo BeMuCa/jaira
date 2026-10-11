@@ -67,7 +67,7 @@ export function laneOf(text: string): string | undefined {
 
 const VERDICT_LINE = /(?:review-verdict\s*=\s*|\b(?:verdict|urteil)\s*[:=]\s*)["“]?([^"\n”]+)/i
 const VERDICT_WORD =
-  /\b(approve[sd]?(?: with (?:reservations?|caveats?))?|approve mit vorbehalt|request(?:s|ed)? changes|changes requested|reject(?:ed)?|sent back|zur(?:ü|ue)ckgegeben|mit vorbehalt)\b/i
+  /\b(approve[sd]?(?: with (?:reservations?|caveats?)| mit vorbehalt)?|request(?:s|ed)? changes|changes requested|reject(?:ed)?|sent back|zur(?:ü|ue)ckgegeben|mit vorbehalt)\b/i
 
 export function verdictOf(text: string): string | undefined {
   const line = VERDICT_LINE.exec(text)
