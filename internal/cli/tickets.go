@@ -472,8 +472,8 @@ func managedField(k string) bool {
 // costs it: the lanes on this ticket's path that it never passed through, and
 // the inputs the target lane declares that are empty because of that.
 //
-// A lane only counts as skipped when the ticket would have visited it — the
-// rule is set.Next's, so a parking or question lane is not reported as
+// A lane only counts as skipped when the ticket would have visited it —
+// Lane.OnPath, the rule set.Next walks by — so a parking or question lane is not reported as
 // something the shortcut took away. A lane whose option is left unticked is
 // the one exception: it counts when it produces one of the empty inputs, or
 // "plan is empty" would stand beside a list that leaves out pre-process, the
@@ -491,14 +491,10 @@ func skippedByCreate(set *lane.Set, t *ticket.Ticket, target *lane.Lane) (skippe
 	}
 	empty = gate.InputMissing(target, t)
 	for _, l := range set.Lanes[from:to] {
-		if l.RequiresBlockedReason || l.RequiresQuestion {
-			continue
+		writesEmpty := slices.ContainsFunc(l.OutputProduces, func(f string) bool { return slices.Contains(empty, f) })
+		if l.OnPath(t) || (writesEmpty && !l.RequiresBlockedReason && !l.RequiresQuestion) {
+			skipped = append(skipped, l.ID)
 		}
-		if l.RequiresOption != "" && !t.OptionSet(l.RequiresOption) &&
-			!slices.ContainsFunc(l.OutputProduces, func(f string) bool { return slices.Contains(empty, f) }) {
-			continue
-		}
-		skipped = append(skipped, l.ID)
 	}
 	return skipped, empty
 }
