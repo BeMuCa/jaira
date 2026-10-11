@@ -10,15 +10,24 @@ export type Waiting = {
   lane: string
   verdict: string
   question: string
+  // Where Accept moves it: the ticket's next lane, when that lane is the
+  // board's terminal one (signoff -> done); null where the next lane is
+  // still work to do (human -> review), so a press never skips a review.
+  acceptTo: string | null
+  // Every definition-of-done item ticked: Accept forces the person's exit,
+  // and must not force past an open item on the way.
+  dodComplete: boolean
 }
 
 export type Counts = { worker: number; review: number; person: number }
 
-type Lane = { id: string; agentic: boolean; context: string; human_exit?: boolean }
+type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
 type Ticket = {
   handle: string
   title: string
   status: string
+  next_lane?: string
+  dod_complete?: boolean
   question?: string
   review?: { verdict?: string }
 }
@@ -46,17 +55,31 @@ export function snapshotOf(lanesJson: string, listJson: string): { waiting: Wait
     if (lane === undefined) continue
     if (lane.human_exit === true) {
       counts.person++
-      waiting.push({ id: t.handle, title: t.title, lane: t.status, verdict: oneLine(t.review?.verdict), question: oneLine(t.question) })
+      const next = t.next_lane === undefined ? undefined : byId.get(t.next_lane)
+      waiting.push({
+        id: t.handle,
+        title: t.title,
+        lane: t.status,
+        verdict: oneLine(t.review?.verdict),
+        question: oneLine(t.question),
+        acceptTo: next?.terminal === true ? next.id : null,
+        dodComplete: t.dod_complete === true,
+      })
     } else if (lane.agentic && lane.context === 'fresh') counts.review++
     else if (lane.agentic) counts.worker++
   }
   return { waiting, counts }
 }
 
-// A review verdict a person should have explained: anything but a plain yes.
+// A review verdict a person should have explained: one that names a
+// reservation, or does not accept the work at all. A verdict is a sentence
+// ("Approve. The diff meets the DoD ...", "the diff matches the criteria; no
+// defects found"); a plain yes, however long, gets no Explain.
+const RESERVATION = /vorbehalt|reservation|caveat|changes|änderungen|\bbut\b|\baber\b|however|jedoch|except|ausser|außer|allerdings|offen(e|er)? (punkt|frage)|open (point|question)/i
+const REFUSAL = /^\s*(request|reject|refuse|fail|zur(ü|ue)ck|ablehn|nicht|not)\b/i
+
 export function hasReservation(verdict: string): boolean {
-  if (verdict === '') return false
-  return !/^(approve|approved|accept|accepted|pass|lgtm|ok)\.?$/i.test(verdict.trim())
+  return RESERVATION.test(verdict) || REFUSAL.test(verdict)
 }
 
 // The main working tree, from `git rev-parse --git-common-dir`: spawn.sh puts

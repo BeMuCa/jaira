@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, mainRepoOf, snapshotOf, upwards, worktreeFor } from './board.ts'
-import { cacheView, dollars, guard, ttlMs } from './cache.ts'
+import { hasReservation, mainRepoOf, snapshotOf, upwards, worktreeFor, type Waiting } from './board.ts'
+import { cacheView, dollars, guard, isPersonsPrompt, ttlMs } from './cache.ts'
 import { digest } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
@@ -221,11 +221,20 @@ async function say($: EngineInterface, text: string): Promise<void> {
 
 // The person pressed Accept: that press is the human exit the lane asks for,
 // so the move is forced exactly as a person typing it by hand would.
-async function accept($: EngineInterface, id: string): Promise<void> {
+// Accept moves the ticket to its next lane, and only where that lane is the
+// terminal one (snapshotOf sets acceptTo): from signoff to done, never from
+// human past review and signoff. --force stands for the press, which is the
+// person's exit the lane asks for — and only for that: with an item of the
+// definition of done still open the press is refused, as the gate would.
+async function accept($: EngineInterface, w: Waiting): Promise<void> {
   const t = texts(await language($))
-  if (!board) return
-  const done = await jaira($, await ticketDir($, board, id), ['move', id, '--to', 'done', '--force'])
-  await say($, done.ok ? t.accepted(id) : t.failed(`${t.accept} ${id}`, done.why))
+  if (!board || w.acceptTo === null) return
+  if (!w.dodComplete) {
+    await say($, t.failed(`${t.accept} ${w.id}`, t.dodOpen))
+    return
+  }
+  const done = await jaira($, await ticketDir($, board, w.id), ['move', w.id, '--to', w.acceptTo, '--force'])
+  await say($, done.ok ? t.accepted(w.id, w.acceptTo) : t.failed(`${t.accept} ${w.id}`, done.why))
   await refreshBoard($)
 }
 
@@ -318,6 +327,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   const bin = await herdr($)
   if (bin === undefined) {
     // No Herdr: nobody to hand it to from here; the board says where it is.
+    await jaira($, dir, ['note', id, 'cockpit: Rueckgabe an niemanden (kein Worker gestartet) - kein Herdr in dieser Sitzung'])
     await say($, t.returnedTo(id, 'none'))
     await refreshBoard($)
     return
@@ -326,17 +336,30 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   const tab = tabs?.exitCode === 0 ? carrierTab(tabs.stdout, id) : undefined
   const record = carrierOf(await readRecords($), id)
   const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now() })
+  // Who got it, as it happened: the note and the toast say only that.
+  let who: 'old' | 'new' | 'none' = 'old'
+  let why = choice.why
   if (choice.reuse && record) {
     await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
     await $.clock.sleep(1000)
     await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
   } else {
-    if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
     const script = await spawnScript($)
-    if (script !== undefined) await run($, [script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+    if (script === undefined) {
+      // Nothing to start a new one with: the old tab stays, so the ticket
+      // keeps whatever worker it has.
+      who = 'none'
+      why = `${choice.why}; kein spawn.sh gefunden (jaira roles install), alter Tab bleibt offen`
+    } else {
+      if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
+      const started = await run($, [script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+      who = started?.exitCode === 0 ? 'new' : 'none'
+      if (who === 'none') why = `${choice.why}; spawn.sh schlug fehl: ${(started?.stderr ?? '').trim().slice(-160)}`
+    }
   }
-  await jaira($, dir, ['note', id, `cockpit: Rueckgabe an ${choice.reuse ? 'den alten Worker' : 'einen neuen Worker'} - ${choice.why}`])
-  await say($, t.returnedTo(id, choice.reuse ? 'old' : 'new'))
+  const to = who === 'old' ? 'den alten Worker' : who === 'new' ? 'einen neuen Worker' : 'niemanden (kein Worker gestartet)'
+  await jaira($, dir, ['note', id, `cockpit: Rueckgabe an ${to} - ${why}`])
+  await say($, t.returnedTo(id, who))
   await refreshBoard($)
 }
 
@@ -527,8 +550,7 @@ export const register: Register = (on, options) => {
     if (start !== undefined && carrying === undefined) carrying = start
     const held = await guarded($, e.text, e.origin.kind, threshold, usdPerMTok)
     if (held !== undefined) return held
-    const isPerson = (e.origin.kind === 'composer' || e.origin.kind === 'bridge') && !e.text.trimStart().startsWith('/')
-    personSaid = isPerson ? e.text : undefined
+    personSaid = isPersonsPrompt(e.origin.kind, e.text) ? e.text : undefined
     return next(e)
   }).catch(($, e, next) => next(e))
 
@@ -613,7 +635,9 @@ export const register: Register = (on, options) => {
               <Text wrap="truncate-end">
                 {w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}{' '}
               </Text>
-              <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w.id)} />
+              {w.acceptTo !== null
+                ? <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w)} />
+                : null}
               {Input !== undefined
                 ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void update($, givingAtom, () => w.id)} />
                 : null}

@@ -82,9 +82,14 @@ export function carrierTab(tabListJson: string, ticket: string): Tab | undefined
   return tabs.find(t => t.label === `${ticket}/worker` || t.label === `${ticket}/dispatch`)
 }
 
+// What the cockpit types into a pane leads with this, so the cockpit in that
+// session knows the words are its own and no person's: no cache guard, no
+// thread for them.
+export const TYPED_BY_COCKPIT = '[jaira-cockpit]'
+
 // What the old worker is told when work comes back to it.
 export function backMessage(ticket: string, lane: string, reason: string): string {
-  return `Ticket ${ticket} kam aus ${lane} zurueck nach in-progress. Grund: ${reason} - steht auch als Note am Ticket. Trag es weiter wie bisher (jaira show ${ticket} --json).`
+  return `${TYPED_BY_COCKPIT} Ticket ${ticket} kam aus ${lane} zurueck nach in-progress. Grund: ${reason} - steht auch als Note am Ticket. Trag es weiter wie bisher (jaira show ${ticket} --json).`
 }
 
 export function isExpired(record: SessionRecord, now: number): boolean {

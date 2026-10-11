@@ -28,18 +28,18 @@ const LANES = {
     { id: 'review', agentic: true, context: 'fresh' },
     { id: 'signoff', agentic: false, context: '', human_exit: true },
     { id: 'human', agentic: false, context: '', human_exit: true },
-    { id: 'done', agentic: false, context: '' },
+    { id: 'done', agentic: false, context: '', terminal: true },
   ],
 }
 
-const SIGNOFF = { handle: 'MG677R', title: 'cache key', status: 'signoff', question: '', review: { verdict: 'approve mit Vorbehalt: der Schluessel ignoriert den Branch' } }
-const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', question: 'Popup oder eigene Seite?', review: { verdict: '' } }
+const SIGNOFF = { handle: 'MG677R', title: 'cache key', status: 'signoff', next_lane: 'done', dod_complete: true, question: '', review: { verdict: 'approve mit Vorbehalt: der Schluessel ignoriert den Branch' } }
+const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', next_lane: 'review', dod_complete: false, question: 'Popup oder eigene Seite?', review: { verdict: '' } }
 const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', question: '', review: {} }
 
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 
-function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; store?: Record<string, unknown> } = {}): World {
+function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; store?: Record<string, unknown>; spawn?: boolean } = {}): World {
   const w: World = {
     ran: [],
     files: new Map(),
@@ -91,7 +91,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; 
   on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
   on('session.id', () => ({ value: 'abcdef123456' }))
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: w.usage.tokens, window: 1_000_000 }, rateLimits: w.usage.rateLimits } }))
-  on('fs.exists', ($, e) => ({ value: (hasBoard && e.path === '/repo/.jaira') || e.path === SPAWN || w.files.has(e.path) }))
+  on('fs.exists', ($, e) => ({ value: (hasBoard && e.path === '/repo/.jaira') || (e.path === SPAWN && opts.spawn !== false) || w.files.has(e.path) }))
   on('fs.read', ($, e) => (w.files.has(e.path) ? { value: w.files.get(e.path)! } : { deny: 'no such file' }))
   on('fs.write', ($, e) => {
     w.files.set(e.path, e.text)
@@ -158,6 +158,40 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
     expect(ran(w, 'jaira', 'move', 'MG677R')).toEqual([['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r']])
+  })
+
+  test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-K7P2QX' })).toBeUndefined()
+    expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
+    void w
+  })
+
+  test('Accept with an item of the definition of done still open moves nothing and says why', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, dod_complete: false }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-MG677R' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(await ui.find({ type: 'Text', text: /the definition of done still has open items/ })).toBeDefined()
+  })
+
+  test('a plain yes gets no Explain, however long the sentence', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...SIGNOFF, review: { verdict: 'Approve. Der Diff erfuellt die DoD: Befehl existiert, Test deckt ihn ab.' } },
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'the diff matches the criteria; no defects found' } },
+      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'request changes: the button skips review' } },
+    ]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'explain-MG677R' })).toBeUndefined()
+    expect(await ui.find({ key: 'explain-AB12CD' })).toBeUndefined()
+    expect(await ui.find({ key: 'explain-EF34GH' })).toBeDefined()
   })
 
   test('a verdict with a reservation gets Explain, which opens a Herdr tab of its own', async ($, on) => {
@@ -255,8 +289,43 @@ describe('give back, the edges', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'back-MG677R' })
     await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
-    expect(await ui.find({ type: 'Text', text: 'MG677R back in in-progress; no worker started (no Herdr)' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: "MG677R back in in-progress; no worker started (the ticket's note says why)" })).toBeDefined()
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: Rueckgabe an niemanden (kein Worker gestartet) - kein Herdr in dieser Sitzung')
     expect(ran(w, SPAWN)).toEqual([])
+  })
+})
+
+describe('give back with nothing to start a worker', () => {
+  test('keeps the old tab and says nobody was started', async ($, on) => {
+    const w = world(on, { herdr: true, spawn: false, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'back-MG677R' })
+    await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: Rueckgabe an niemanden (kein Worker gestartet) - Prompt-Cache des alten Workers kalt seit 10 min; kein spawn.sh gefunden')
+  })
+})
+
+describe("the cockpit's own words in a worker's pane", () => {
+  test('are no person\'s prompt: never held, never filed as a thread', async ($, on) => {
+    const w = world(on, { board: false })
+    await startSession($)
+    w.usage.tokens = 40_000
+    w.usage.rateLimits = []
+    await answer($)
+    await w.clock.advance(7 * 60_000)
+    w.answer = 'Cancel'
+    const back = '[jaira-cockpit] Ticket MG677R kam aus signoff zurueck nach in-progress. Grund: fehlt.'
+    expect((await $.prompt.submit({ text: back, origin: { kind: 'composer' }, wait: false })).text).toBe(back)
+    await answer($, 'ok, mache weiter')
+    await w.clock.settle()
+    expect(w.asked).toEqual([])
+    expect(w.modelCalls).toBe(0)
   })
 })
 

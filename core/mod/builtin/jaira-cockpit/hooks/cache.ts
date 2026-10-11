@@ -1,3 +1,5 @@
+import { TYPED_BY_COCKPIT } from './sessions.ts'
+
 // The context and prompt-cache rules: how long the cache stays warm, what the
 // band says about it, and when the guard holds a prompt. Pure; register.tsx
 // reads the clock and the session's figures and hands them in.
@@ -34,11 +36,18 @@ export function cacheView(tokens: number, now: number, lastAnswerAt: number | un
 }
 
 // Who may be held: a person's prompt alone — typed, or through Remote
-// Control. Never an agent's message, a notification, a scheduled prompt, and
-// never a slash command: Herdr types into a pane exactly as a person does
-// (origin `composer` both ways), but what it types is always a slash command
-// (spawn.sh's `/jaira-worker <id>`), so that is the line drawn.
+// Control. Never an agent's message, a notification, a scheduled prompt.
+// Herdr types into a pane exactly as a person does (origin `composer` both
+// ways), so what is typed for a person is told apart by its words: spawn.sh
+// types slash commands (`/jaira-worker <id>`), and the cockpit's own text to a
+// worker leads with `[jaira-cockpit]`. Its explain/discuss chats start a new
+// session, which has no cache to guard.
 const PERSON = new Set(['composer', 'bridge'])
+
+export function isPersonsPrompt(origin: string, text: string): boolean {
+  const lead = text.trimStart()
+  return PERSON.has(origin) && !lead.startsWith('/') && !lead.startsWith(TYPED_BY_COCKPIT)
+}
 
 export type Guard = { coldMinutes: number; k: number; usd: number }
 
@@ -54,7 +63,7 @@ export function guard(input: {
   threshold: number
   usdPerMTok: number
 }): Guard | undefined {
-  if (!PERSON.has(input.origin) || input.text.trimStart().startsWith('/')) return undefined
+  if (!isPersonsPrompt(input.origin, input.text)) return undefined
   if (input.lastAnswerAt === undefined || input.tokens < input.threshold) return undefined
   const coldFor = input.now - (input.lastAnswerAt + input.ttl)
   if (coldFor < 0) return undefined

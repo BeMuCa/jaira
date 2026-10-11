@@ -11,7 +11,8 @@ type Texts = {
   more: (n: number) => string
   reasonLabel: string
   reasonPlaceholder: string
-  accepted: (id: string) => string
+  accepted: (id: string, lane: string) => string
+  dodOpen: string
   returnedTo: (id: string, who: 'old' | 'new' | 'none') => string
   failed: (what: string, why: string) => string
   needsHerdr: string
@@ -49,9 +50,10 @@ const T: Record<Lang, Texts> = {
     more: n => `+${n} more`,
     reasonLabel: 'What is missing?',
     reasonPlaceholder: 'goes onto the ticket as a note',
-    accepted: id => `${id} accepted: done`,
+    accepted: (id, lane) => `${id} accepted: ${lane}`,
+    dodOpen: 'the definition of done still has open items',
     returnedTo: (id, who) =>
-      who === 'none' ? `${id} back in in-progress; no worker started (no Herdr)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+      who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
     failed: (what, why) => `${what} failed: ${why}`,
     needsHerdr: 'A chat of its own needs Herdr (HERDR_ENV=1).',
     opened: id => `${id}: opened in a Herdr tab of its own`,
@@ -87,9 +89,10 @@ const T: Record<Lang, Texts> = {
     more: n => `+${n} weitere`,
     reasonLabel: 'Was fehlt?',
     reasonPlaceholder: 'kommt als Notiz ans Ticket',
-    accepted: id => `${id} angenommen: done`,
+    accepted: (id, lane) => `${id} angenommen: ${lane}`,
+    dodOpen: 'die Definition of Done hat noch offene Punkte',
     returnedTo: (id, who) =>
-      who === 'none' ? `${id} wieder in in-progress; kein Worker gestartet (kein Herdr)` : `${id} zurückgegeben an ${who === 'old' ? 'den Worker, der es getragen hat' : 'einen neuen Worker'}`,
+      who === 'none' ? `${id} wieder in in-progress; kein Worker gestartet (warum, steht als Note am Ticket)` : `${id} zurückgegeben an ${who === 'old' ? 'den Worker, der es getragen hat' : 'einen neuen Worker'}`,
     failed: (what, why) => `${what} fehlgeschlagen: ${why}`,
     needsHerdr: 'Ein eigener Chat braucht Herdr (HERDR_ENV=1).',
     opened: id => `${id}: in einem eigenen Herdr-Tab geöffnet`,
@@ -125,9 +128,10 @@ const T: Record<Lang, Texts> = {
     more: n => `ещё ${n}`,
     reasonLabel: 'Чего не хватает?',
     reasonPlaceholder: 'попадёт в тикет заметкой',
-    accepted: id => `${id} принят: done`,
+    accepted: (id, lane) => `${id} принят: ${lane}`,
+    dodOpen: 'в definition of done ещё есть открытые пункты',
     returnedTo: (id, who) =>
-      who === 'none' ? `${id} снова в in-progress; воркер не запущен (нет Herdr)` : `${id} возвращён ${who === 'old' ? 'воркеру, который его вёл' : 'новому воркеру'}`,
+      who === 'none' ? `${id} снова в in-progress; воркер не запущен (почему — в заметке тикета)` : `${id} возвращён ${who === 'old' ? 'воркеру, который его вёл' : 'новому воркеру'}`,
     failed: (what, why) => `${what} не удалось: ${why}`,
     needsHerdr: 'Для отдельного чата нужен Herdr (HERDR_ENV=1).',
     opened: id => `${id}: открыт в отдельной вкладке Herdr`,
