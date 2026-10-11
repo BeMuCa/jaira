@@ -625,6 +625,7 @@ and `--force` replaces it too.
 | `jaira` | Teaches the agent the CLI. Ships in `.claude/skills/jaira/`, not through `roles install`. |
 | `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
 | `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
+| `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
 | `/jaira-role-lane <id> <lane>` | Works exactly one lane, then stops. |
 | `/jaira-role-brainstorm <idea>` | Turns an idea into tickets, or says it is not one. |
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
@@ -642,6 +643,13 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   start it yourself for a single ticket. Under Herdr each worker gets a tab of
   its own, which `scripts/run-lane.sh` closes once the worker has finished and
   the ticket has left its lane.
+- `/jaira-worker <id>` is the same job done by one agent: it works every lane
+  itself and hands only a lane marked `context: fresh` in its lane file — on a
+  board where no lane says, the last agentic lane before the first lane a person
+  owns, `review` on the shipped board — to a new agent in a tab of its own.
+  Turn it on with `"dispatch": "worker"` in `~/.jaira/settings.json`, or on the
+  board's settings screen (`S`, "Agents per ticket"); a teamlead then starts it
+  instead of the dispatcher. `jaira roles list` says which is set.
 - `/jaira-teamlead` is for several tickets at once: it decides the order, says
   what is not worth doing, and starts one dispatcher per ticket.
 - `/jaira-role-acceptance <id>...` turns the tickets waiting for you into one

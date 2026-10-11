@@ -2,7 +2,10 @@ package tui
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/BeMuCa/jaira/core/settings"
 )
 
 // TestSettingsOpensFromBoardAndLNoLongerLanes asserts S is the one door to
@@ -81,5 +84,33 @@ func TestSettingsEscStepsBackOneLevel(t *testing.T) {
 	m.key(key("esc"))
 	if m.mode != modeBoard {
 		t.Fatalf("esc from settings menu: mode = %v, want modeBoard", m.mode)
+	}
+}
+
+// TestSettingsEnterSwitchesDispatch: the fourth entry is the opt-in to the
+// worker mode. enter flips it and writes settings.json at once, and the row
+// shows what the file now says — off ("lanes") until somebody turns it on.
+func TestSettingsEnterSwitchesDispatch(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	m := newTestModel(t, 150, 32)
+	m.key(key("S"))
+	for range 3 {
+		m.key(key("j"))
+	}
+	if got := m.settingsScreen.render(150, 32); m.settingsScreen.dispatch != settings.DispatchLanes || !strings.Contains(got, "lanes") {
+		t.Fatalf("the dispatch row does not show the default, lanes (%q):\n%s", m.settingsScreen.dispatch, got)
+	}
+
+	m.key(key("enter"))
+	if got := settings.Load().DispatchMode(); got != settings.DispatchWorker {
+		t.Fatalf("after enter, settings.json dispatch = %q, want worker", got)
+	}
+	if m.mode != modeSettings {
+		t.Errorf("switching must stay on the settings screen, mode = %v", m.mode)
+	}
+
+	m.key(key("enter"))
+	if got := settings.Load().DispatchMode(); got != settings.DispatchLanes {
+		t.Fatalf("after a second enter, dispatch = %q, want lanes", got)
 	}
 }

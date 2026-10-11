@@ -667,7 +667,11 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// input-requires would mean editing every lane file and widening
 			// ticket.SuppliedFields, whose comment explains why that list
 			// stays narrow.
-			"mode":     t.Mode,
+			"mode": t.Mode,
+			// context sits beside mode for the same reason: it says who runs
+			// the lane. "fresh" means not the session that carried the ticket
+			// here — a new agent that has seen none of its work.
+			"context":  l.Context,
 			"prompt":   l.Prompt,
 			"input":    fields,
 			"diff":     diff,
@@ -710,6 +714,9 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	head := fmt.Sprintf("tier: %s", dash(l.ModelTier))
 	if t.Mode != "" {
 		head += fmt.Sprintf(", mode: %s", t.Mode)
+	}
+	if l.Context != "" {
+		head += fmt.Sprintf(", context: %s", l.Context)
 	}
 	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
 	if l.Prompt != "" {

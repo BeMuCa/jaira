@@ -7,6 +7,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/role"
+	"github.com/BeMuCa/jaira/core/settings"
 )
 
 // newRolesCmd groups the role prompts the binary ships.
@@ -19,9 +20,10 @@ func newRolesCmd() *cobra.Command {
 		Use:   "roles",
 		Short: "The agent role prompts this binary ships",
 		Long: `Roles are the agent prompts that drive a board: a teamlead who talks to you, a
-dispatcher who carries one ticket lane by lane, and the workers they hand lanes
-to. They are compiled into this binary, and 'jaira roles install' writes them
-into your agent's skills directory.`,
+dispatcher who carries one ticket lane by lane — or, with "dispatch": "worker"
+in ~/.jaira/settings.json, a worker who carries it through every lane itself —
+and the agents they hand lanes to. They are compiled into this binary, and
+'jaira roles install' writes them into your agent's skills directory.`,
 	}
 	cmd.AddCommand(newRolesListCmd(), newRolesInstallCmd())
 	return cmd
@@ -31,13 +33,23 @@ func newRolesListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List the role prompts built into this binary",
-		Args:  noArgs(),
+		Long: `Lists the role prompts built into this binary, and which one a teamlead
+starts for a whole ticket: the "dispatch" setting in ~/.jaira/settings.json.
+"lanes" (the default) starts jaira-dispatcher, one new agent per lane;
+"worker" starts jaira-worker, one agent through every lane, with only a lane
+marked context: fresh handed to a new one. --json carries it as dispatch and
+dispatch_role.`,
+		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
 			if err != nil {
 				return err
 			}
 			w := cmd.OutOrStdout()
+			// Here rather than in a command of its own: the teamlead reads
+			// this list to know what it can start, and which of two it starts
+			// for a ticket is the same question.
+			cur := settings.Load()
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -46,12 +58,16 @@ func newRolesListCmd() *cobra.Command {
 						"files": r.Files,
 					})
 				}
-				return emit(w, map[string]any{"roles": arr})
+				return emit(w, map[string]any{
+					"roles": arr, "dispatch": cur.DispatchMode(), "dispatch_role": cur.DispatchRole(),
+				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
 			for _, r := range roles {
 				fmt.Fprintf(w, "%-24s %s\n", r.ID, board.FirstSentence(r.Description))
 			}
+			fmt.Fprintf(w, "\ndispatch: %s — a ticket handed to an agent goes to /%s (\"dispatch\" in %s)\n",
+				cur.DispatchMode(), cur.DispatchRole(), settings.Path())
 			return nil
 		},
 	}
