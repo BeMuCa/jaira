@@ -16,7 +16,9 @@ const LANES = [
 // verb.
 const HANDLE = '[0-9A-HJKMNP-TV-Z]{6}'
 const ULID = /\b[0-9A-HJKMNP-TV-Z]{20}([0-9A-HJKMNP-TV-Z]{6})\b/g
-const WITH_DIGIT = new RegExp(`\\b(?=[A-Z]*[0-9])${HANDLE}\\b`, 'g')
+// A number alone is never one: a task-notification's <usage> block carries
+// six-digit counts (total_tokens, duration_ms) that would outvote the handle.
+const WITH_DIGIT = new RegExp(`\\b(?=[A-Z]*[0-9])(?=[0-9]*[A-Z])${HANDLE}\\b`, 'g')
 const IN_CONTEXT = new RegExp(
   `(?:\\b[Tt]icket:?\\s+|\\w\\(|\\bjaira\\s+[a-z-]+\\s+(?:--\\S+\\s+)*)(${HANDLE})\\b`,
   'g',

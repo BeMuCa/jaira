@@ -97,6 +97,17 @@ describe('session.receive', () => {
     )
   })
 
+  test('the counts in a usage block are never taken for the ticket', async ($, on) => {
+    session(on)
+    const report = REPORT.replace('Review of ticket MG677R done. Moved review -> signoff.', 'Ticket KHJKQS: review -> signoff, approve.')
+      .replace(/MG677R/g, 'KHJKQS')
+      .replace('</result>', '</result>\n<usage>total_tokens: 184233\ntool_uses: 41\nduration_ms: 312877</usage>')
+    const { text } = await $.session.receive({ origin: NOTIFICATION, text: report })
+    expect(text).toStartWith('KHJKQS · review → signoff')
+    expect(text).toEndWith('— full report: /flight KHJKQS')
+    expect((await $.command.run(typed('KHJKQS'))).text).toContain('forty more lines of findings')
+  })
+
   test("a person's message is never touched", async ($, on) => {
     session(on)
     const mine = 'Ticket MG677R: move it review -> signoff, verdict: approve'
