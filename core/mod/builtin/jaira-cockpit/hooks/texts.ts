@@ -12,7 +12,7 @@ type Texts = {
   reasonLabel: string
   reasonPlaceholder: string
   accepted: (id: string) => string
-  returnedTo: (id: string, who: 'old' | 'new') => string
+  returnedTo: (id: string, who: 'old' | 'new' | 'none') => string
   failed: (what: string, why: string) => string
   needsHerdr: string
   opened: (id: string) => string
@@ -50,7 +50,8 @@ const T: Record<Lang, Texts> = {
     reasonLabel: 'What is missing?',
     reasonPlaceholder: 'goes onto the ticket as a note',
     accepted: id => `${id} accepted: done`,
-    returnedTo: (id, who) => `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+    returnedTo: (id, who) =>
+      who === 'none' ? `${id} back in in-progress; no worker started (no Herdr)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
     failed: (what, why) => `${what} failed: ${why}`,
     needsHerdr: 'A chat of its own needs Herdr (HERDR_ENV=1).',
     opened: id => `${id}: opened in a Herdr tab of its own`,
@@ -69,7 +70,7 @@ const T: Record<Lang, Texts> = {
     threadsNone: 'No conversation threads yet.',
     threadsTitle: 'Conversation threads (? open question to you, ~ left lying, -> ticket):',
     status: (w, r, p) => `${w} worker · ${r} review · ${p} waiting for you`,
-    usage: 'today',
+    usage: 'session',
     paneTitle: id => `Ticket ${id}`,
     paneReports: 'Reports',
     paneUsage: 'Usage per agent',
@@ -87,7 +88,8 @@ const T: Record<Lang, Texts> = {
     reasonLabel: 'Was fehlt?',
     reasonPlaceholder: 'kommt als Notiz ans Ticket',
     accepted: id => `${id} angenommen: done`,
-    returnedTo: (id, who) => `${id} zurückgegeben an ${who === 'old' ? 'den Worker, der es getragen hat' : 'einen neuen Worker'}`,
+    returnedTo: (id, who) =>
+      who === 'none' ? `${id} wieder in in-progress; kein Worker gestartet (kein Herdr)` : `${id} zurückgegeben an ${who === 'old' ? 'den Worker, der es getragen hat' : 'einen neuen Worker'}`,
     failed: (what, why) => `${what} fehlgeschlagen: ${why}`,
     needsHerdr: 'Ein eigener Chat braucht Herdr (HERDR_ENV=1).',
     opened: id => `${id}: in einem eigenen Herdr-Tab geöffnet`,
@@ -106,7 +108,7 @@ const T: Record<Lang, Texts> = {
     threadsNone: 'Noch keine Gesprächsfäden.',
     threadsTitle: 'Gesprächsfäden (? offene Frage an dich, ~ liegen geblieben, -> Ticket):',
     status: (w, r, p) => `${w} worker · ${r} review · ${p} wartet auf dich`,
-    usage: 'heute',
+    usage: 'Sitzung',
     paneTitle: id => `Ticket ${id}`,
     paneReports: 'Berichte',
     paneUsage: 'Verbrauch je Agent',
@@ -124,7 +126,8 @@ const T: Record<Lang, Texts> = {
     reasonLabel: 'Чего не хватает?',
     reasonPlaceholder: 'попадёт в тикет заметкой',
     accepted: id => `${id} принят: done`,
-    returnedTo: (id, who) => `${id} возвращён ${who === 'old' ? 'воркеру, который его вёл' : 'новому воркеру'}`,
+    returnedTo: (id, who) =>
+      who === 'none' ? `${id} снова в in-progress; воркер не запущен (нет Herdr)` : `${id} возвращён ${who === 'old' ? 'воркеру, который его вёл' : 'новому воркеру'}`,
     failed: (what, why) => `${what} не удалось: ${why}`,
     needsHerdr: 'Для отдельного чата нужен Herdr (HERDR_ENV=1).',
     opened: id => `${id}: открыт в отдельной вкладке Herdr`,
@@ -143,7 +146,7 @@ const T: Record<Lang, Texts> = {
     threadsNone: 'Нитей разговора пока нет.',
     threadsTitle: 'Нити разговора (? открытый вопрос к тебе, ~ заброшено, -> тикет):',
     status: (w, r, p) => `${w} worker · ${r} review · ${p} ждёт тебя`,
-    usage: 'сегодня',
+    usage: 'сессия',
     paneTitle: id => `Тикет ${id}`,
     paneReports: 'Отчёты',
     paneUsage: 'Расход по агентам',

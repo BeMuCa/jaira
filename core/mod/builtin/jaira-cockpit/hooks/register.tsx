@@ -11,7 +11,9 @@ import {
 import { body, source } from './frame.ts'
 import { langOf, type Lang } from './lang.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { backMessage, carrierOf, carrierTab, chooseWorker, startOf, type Role, type SessionRecord } from './sessions.ts'
+import {
+  backMessage, carrierOf, carrierTab, chooseWorker, isExpired, RECORD_PREFIX, startOf, type Role, type SessionRecord,
+} from './sessions.ts'
 import { texts } from './texts.ts'
 import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
 
@@ -263,10 +265,6 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
 // Every session with a Herdr pane writes where it stands, so the session a
 // person works from can tell whether the worker that carried a ticket is
 // worth sending work back to.
-async function recordsDir($: EngineInterface): Promise<string> {
-  return `${await home($)}/.jaira/cockpit/sessions`
-}
-
 async function writeRecord($: EngineInterface): Promise<void> {
   if (carrying === undefined) return
   const pane = await $.env.get('HERDR_PANE_ID')
@@ -285,20 +283,19 @@ async function writeRecord($: EngineInterface): Promise<void> {
     ttl: ttlMs(usage.rateLimits),
     updatedAt: await $.clock.now(),
   }
-  await $.fs.write(`${await recordsDir($)}/${id}.json`, JSON.stringify(record))
+  await $.store.set(RECORD_PREFIX + id, record)
 }
 
+// Every session's record, those a day old dropped on the way.
 async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
-  const dir = await recordsDir($)
+  const now = await $.clock.now()
   const out: SessionRecord[] = []
-  try {
-    for (const entry of await $.fs.list(dir)) {
-      if (!entry.name.endsWith('.json')) continue
-      try {
-        out.push(JSON.parse(await $.fs.read(`${dir}/${entry.name}`)) as SessionRecord)
-      } catch {}
-    }
-  } catch {}
+  for (const key of await $.store.keys()) {
+    if (!key.startsWith(RECORD_PREFIX)) continue
+    const record = (await $.store.get(key)) as SessionRecord | undefined
+    if (record === undefined || isExpired(record, now)) await $.store.delete(key)
+    else out.push(record)
+  }
   return out
 }
 
@@ -321,7 +318,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   const bin = await herdr($)
   if (bin === undefined) {
     // No Herdr: nobody to hand it to from here; the board says where it is.
-    await say($, t.returnedTo(id, 'new'))
+    await say($, t.returnedTo(id, 'none'))
     await refreshBoard($)
     return
   }
@@ -361,15 +358,18 @@ async function refreshCache($: EngineInterface): Promise<void> {
   const window = usage.rateLimits.find(r => /five|5h/i.test(r.kind))
   const used = window !== undefined
     ? `5h ${Math.round(window.percentUsed)}%`
-    : usage.cost !== undefined ? `${dollars(usage.cost.usd)} ${t.usage}` : ''
+    : usage.cost !== undefined ? `${t.usage} ${dollars(usage.cost.usd)}` : ''
   const lanes = view === null ? '' : t.status(view.counts.worker, view.counts.review, view.counts.person)
   $.ui.status([lanes, used].filter(s => s !== '').join(' · ') || undefined)
 }
 
 // ── conversation threads ─────────────────────────────────────────────────
 
+const THREADS_PREFIX = 'threads:'
+const THREAD_SESSIONS = 20
+
 async function threadsKey($: EngineInterface): Promise<string> {
-  return `threads:${await sessionId($)}`
+  return THREADS_PREFIX + (await sessionId($))
 }
 
 // One call of the cheap model per turn of the person's, never per agent
@@ -380,7 +380,11 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
   const filing = parseFiling(result.text)
   if (filing === undefined) return
   threads = file(threads, board ? filing : { ...filing, ticket: null }, turn)
-  await $.store.set(await threadsKey($), { turn, threads })
+  const key = await threadsKey($)
+  // Delete first so the key moves to the end of the store's insertion order,
+  // as keep() does: session.start then drops the sessions heard from longest ago.
+  await $.store.delete(key)
+  await $.store.set(key, { turn, threads })
   const counts: ThreadTally = tally(threads, turn)
   await update($, threadsAtom, () => counts)
 }
@@ -459,6 +463,10 @@ export const register: Register = (on, options) => {
     startedAt = await $.clock.now()
     // Kept before reports were scoped to a project; no project may show them.
     for (const k of await $.store.keys()) if (isUnscoped(k)) await $.store.delete(k)
+    // Every session keeps its threads; the 20 heard from last are enough.
+    const threadKeys = (await $.store.keys()).filter(k => k.startsWith(THREADS_PREFIX))
+    for (const old of threadKeys.slice(0, Math.max(0, threadKeys.length - THREAD_SESSIONS))) await $.store.delete(old)
+    await readRecords($)
     const lang = await language($)
     await update($, langAtom, () => lang)
     const kept = (await $.store.get(await threadsKey($))) as { turn: number; threads: Thread[] } | undefined

@@ -16,6 +16,7 @@ type World = {
   model: string
   modelCalls: number
   filled: string[]
+  store: Map<string, unknown>
   status: (string | undefined)[]
   clock: ReturnType<typeof mock.clock>
 }
@@ -38,7 +39,7 @@ const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', ques
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 
-function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string } = {}): World {
+function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; store?: Record<string, unknown> } = {}): World {
   const w: World = {
     ran: [],
     files: new Map(),
@@ -50,11 +51,22 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string }
     model: '',
     modelCalls: 0,
     filled: [],
+    store: new Map(Object.entries(opts.store ?? {})),
     status: [],
     clock: mock.clock(on, { now: 1_000_000 }),
   }
   const hasBoard = opts.board ?? true
-  mock.store(on)
+  // The store, readable by the test; insertion order kept as the engine's is.
+  on('store.get', ($, e) => ({ value: w.store.get(e.key) }))
+  on('store.set', ($, e) => {
+    w.store.set(e.key, e.value)
+    return { value: undefined } as never
+  })
+  on('store.delete', ($, e) => {
+    w.store.delete(e.key)
+    return { value: undefined } as never
+  })
+  on('store.keys', () => ({ value: [...w.store.keys()] }))
   mock.env(on, { HOME: '/home/a', ...(opts.herdr ? { HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1' } : {}) })
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: undefined }) as never)
@@ -84,10 +96,6 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string }
   on('fs.write', ($, e) => {
     w.files.set(e.path, e.text)
     return { value: undefined }
-  })
-  on('fs.list', ($, e) => {
-    const dir = `${e.path}/`
-    return { value: [...w.files.keys()].filter(k => k.startsWith(dir)).map(k => ({ name: k.slice(dir.length), kind: 'file' as const, size: 0, mtimeMs: 0, isLink: false })) }
   })
   on('process.run', ($, e) => {
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
@@ -200,12 +208,11 @@ describe('give back', () => {
   })
 
   test('goes to the worker that carried it while its tab lives, its cache is warm and its context small', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
-    w.files.set('/home/a/.jaira/cockpit/sessions/old.json', JSON.stringify({
+    const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
-      lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1,
-    }))
+      lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 20 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
@@ -215,12 +222,11 @@ describe('give back', () => {
   })
 
   test('otherwise closes the old worker\'s tab first, then starts a new one', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
-    w.files.set('/home/a/.jaira/cockpit/sessions/old.json', JSON.stringify({
+    const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
-      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1,
-    }))
+      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
     await startSession($)
     await giveBack($, w)
     const close = w.ran.findIndex(r => r[0] === 'herdr' && r[1] === 'tab' && r[2] === 'close')
@@ -230,6 +236,27 @@ describe('give back', () => {
     expect(w.ran[spawn]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: Rueckgabe an einen neuen Worker - Prompt-Cache des alten Workers kalt seit 10 min')
+  })
+})
+
+describe('give back, the edges', () => {
+  test('a record a day old decides nothing and is dropped', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 999_000, tokens: 1, ttl: 3_600_000, updatedAt: 1_000_000 - 25 * 3_600_000,
+    } } })
+    await startSession($)
+    expect(w.store.has('session:old')).toBe(false)
+  })
+
+  test('without Herdr it says the ticket is back in in-progress and nobody was started', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'back-MG677R' })
+    await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
+    expect(await ui.find({ type: 'Text', text: 'MG677R back in in-progress; no worker started (no Herdr)' })).toBeDefined()
+    expect(ran(w, SPAWN)).toEqual([])
   })
 })
 
@@ -398,6 +425,17 @@ describe('conversation threads', () => {
   })
 })
 
+describe('what the store keeps', () => {
+  test('threads of the 20 sessions heard from last, no more', async ($, on) => {
+    const old = Object.fromEntries(Array.from({ length: 25 }, (_, i) => [`threads:s${i}`, { turn: 1, threads: [] }]))
+    const w = world(on, { board: false, store: old })
+    await startSession($)
+    const left = [...w.store.keys()].filter(k => k.startsWith('threads:'))
+    expect(left).toHaveLength(20)
+    expect(left[0]).toBe('threads:s5')
+  })
+})
+
 describe('language', () => {
   test('the band, the guard and /cockpit follow the language setting', async ($, on) => {
     const w = world(on, { lang: 'Russian' })
@@ -424,7 +462,7 @@ describe('metrics and the pane', () => {
     const csv = w.files.get('/home/a/.jaira/metrics.csv') ?? ''
     expect(csv.split('\n')[0]).toBe('arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tokens,cost_eq,peak_context,duration_ms,tool_uses,loops,verdict')
     expect(csv.split('\n')[1]).toMatch(/^live,MG677R,abcdef12,critique,100,2000,500,20,2650,2620,\d+,0,,$/)
-    const record = JSON.parse(w.files.get('/home/a/.jaira/cockpit/sessions/abcdef12.json') ?? '{}')
+    const record = w.store.get('session:abcdef12')
     expect(record).toMatchObject({ ticket: 'MG677R', role: 'lane', lane: 'critique', pane: 'w1:p1', tokens: 30_000, ttl: 3_600_000 })
   })
 

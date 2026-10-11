@@ -1,10 +1,17 @@
 // Every session the cockpit runs in writes down where it stands — which
 // ticket it carries, its Herdr pane, when the model last answered, how big
 // its context is — so the session a person works from can tell whether the
-// worker that carried a ticket is still worth sending work back to. Pure;
-// register.tsx writes and reads the records.
+// worker that carried a ticket is still worth sending work back to. The
+// records live in `$.store`, which every session on the machine shares, under
+// `session:<id>`. Pure; register.tsx writes and reads them.
 
 export type Role = 'worker' | 'dispatch' | 'lane'
+
+export const RECORD_PREFIX = 'session:'
+
+// A record a day old describes a worker whose cache is long cold: it decides
+// nothing any more and goes.
+export const RECORD_MAX_AGE_MS = 24 * 60 * 60_000
 
 export type SessionRecord = {
   session: string
@@ -78,4 +85,8 @@ export function carrierTab(tabListJson: string, ticket: string): Tab | undefined
 // What the old worker is told when work comes back to it.
 export function backMessage(ticket: string, lane: string, reason: string): string {
   return `Ticket ${ticket} kam aus ${lane} zurueck nach in-progress. Grund: ${reason} - steht auch als Note am Ticket. Trag es weiter wie bisher (jaira show ${ticket} --json).`
+}
+
+export function isExpired(record: SessionRecord, now: number): boolean {
+  return now - record.updatedAt > RECORD_MAX_AGE_MS
 }
