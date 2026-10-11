@@ -57,15 +57,25 @@ bash scripts/lane-eval/metrics.sh <out> <transcript dir>
 It writes `<out>/metrics.csv`, one row per agent:
 
 ```
-arm,ticket,run,lane,tokens,duration_ms,tool_uses,loops,verdict
+arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tokens,cost_eq,peak_context,duration_ms,tool_uses,loops,verdict
 ```
 
-- `tokens`, `duration_ms`, `tool_uses` come from the agent's transcript, because
-  a workflow's `agent()` returns only the agent's answer. Every arm agent's
-  prompt starts with a `[lane-eval id=… arm=… …]` line; that line is how the
-  script finds it. Setup, judges and the recorder carry none and are not counted.
-  `tokens` is the context of the agent's last turn, which is what the Agent tool
-  reports as `total_tokens`, to within about one percent.
+- All numbers per agent come from its transcript, because a workflow's
+  `agent()` returns only the agent's answer. Every arm agent's prompt starts
+  with a `[lane-eval id=… arm=… …]` line; that line is how the script finds it.
+  Setup, judges and the recorder carry none and are not counted.
+- `input_tokens`, `cache_write_tokens`, `cache_read_tokens`, `output_tokens` are
+  what the agent consumed: each assistant message counted once (the transcript
+  repeats it per content block, under one message id), summed over all turns.
+- `cost_eq` is the column to compare arms by: `input + cache_write × 1.25 +
+  cache_read × 0.1`, the consumption in input-token prices. Output is left out;
+  it is small and listed on its own.
+- `peak_context` is the context of the agent's last turn, what the Agent tool
+  reports as `total_tokens`. It is a size, not a cost: a long single session has
+  one large peak but pays for its whole context again on every turn, so summing
+  peaks favours the worker arm. On the hand-run A/B test of 2026-10-11 the
+  summed peaks were 1.10 M for lane-per-agent against 0.45 M for the worker
+  (2.5 times), `cost_eq` 2.32 M against 1.50 M (1.5 times).
 - `lane` is the lane the agent worked. The worker arm has one row,
   `in-progress..testing`, plus its `review` row.
 - `loops` is per run: how often critique, optimize or testing sent the ticket
@@ -74,12 +84,31 @@ arm,ticket,run,lane,tokens,duration_ms,tool_uses,loops,verdict
   arm, `tie`, `split` when the two passes disagree (position decided, not
   quality), `unjudged` when a judge or the other arm is missing.
 
-`<out>/summary.csv` has one line per arm: runs, agents, tokens (total and per
-run), time, tool uses, loops per run, and the verdict counts.
+`<out>/summary.csv` has one line per arm: runs, agents, the token columns and
+`cost_eq` summed (and `cost_eq` per run), the largest `peak_context`, time, tool
+uses, loops per run, and the verdict counts.
 
-Which diff was X and which Y stands only in `<out>/KEY.txt`. The judge folders
-`<out>/judge/<ticket>-r<run>-p1|p2/` hold `ticket.md`, `X.diff`, `Y.diff` and,
-for a golden ticket, `reference.diff`. The judge is told to read nothing else.
+## What keeps the judge blind and the arms in their clones
+
+- The judge folders are fresh temp directories outside `<out>`
+  (`$TMPDIR/judge.XXXXXXXX`, one per pass), holding `ticket.md`, `X.diff`,
+  `Y.diff` and, for a golden ticket, `reference.diff`. The judge's prompt names
+  only its folder; neither the folder's path nor anything beside it names an
+  arm, a clone or `<out>`. Which diff was X and which Y, and where each folder
+  is, stands only in `<out>/KEY.txt`.
+- An arm agent's prompt names no path but its clone, and its first instruction
+  is `cd <clone>`. The clone has no remote.
+
+What is left, because a workflow cannot do more:
+
+- `agent()` has no working-directory option. Every agent starts in the session's
+  directory — the real repository — and is in its clone only after that first
+  `cd`. A forgotten `cd` still writes to the real board.
+- Agents use the real `~/.jaira` (roles, notify hook) and the real `~/.claude`.
+- Nothing stops a judge from listing `/tmp`; the path just no longer leads it to
+  `<out>` or a name that gives the arm away.
+- The judge folders are not removed; old passes stay in `$TMPDIR` until it is
+  cleaned.
 
 ## Golden tickets from the logbook
 

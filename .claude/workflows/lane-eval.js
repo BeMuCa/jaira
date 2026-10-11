@@ -13,7 +13,8 @@ export const meta = {
 
 // args: {
 //   repo:    absolute path of the repository the tickets and scripts/lane-eval come from
-//   out:     absolute, not yet used directory for clones, judge folders, KEY.txt, results.json
+//   out:     absolute, not yet used directory for clones, KEY.txt, results.json
+//            (judge folders are temp directories outside it, see judge-prep.sh)
 //   tickets: ['BG5QJ6', {id: 'GDB5YJ', base: '43080ed'}]  (a golden ticket needs no base)
 //   base:    base commit for every ticket that names none (optional)
 //   arms:    ['lane-per-agent', 'worker'] (default: both)
@@ -49,7 +50,9 @@ log(`${TICKETS.length} ticket(s) x ${ARMS.length} arm(s) x ${N} run(s) = ${PAIRS
 const mark = (arm, ticket, run, step, lane) =>
   `[lane-eval id=${EVAL_ID} arm=${arm} ticket=${ticket} run=${run} step=${step} lane=${lane}]`
 
-const rules = (dir) => `Work ONLY in ${dir} — an isolated git clone with no remote. \`cd\` there in every shell command. Never push, never touch ${A.repo} or any path outside this clone, never run \`jaira update\`, do not create git worktrees or branches: commit locally on the current branch. Conversational mode is off. A lane that only takes a question (human) is entered only with a genuine open question; without one, follow \`next_lane\` from \`jaira show <id> --json\` past it.
+// agent() has no cwd option: every agent starts in the session's directory. The
+// prompt therefore names no path but the clone, and its first instruction is the cd.
+const rules = (dir) => `Your working directory is ${dir}, an isolated git clone with no remote. Your first command is \`cd ${dir}\`, and every shell command starts with it again. Never push, never touch any path outside this clone, never run \`jaira update\`, do not create git worktrees or branches: commit locally on the current branch. Conversational mode is off. A lane that only takes a question (human) is entered only with a genuine open question; without one, follow \`next_lane\` from \`jaira show <id> --json\` past it.
 Go tests: set HOME, USERPROFILE and JAIRA_HOME to one ABSOLUTE empty temp directory before \`go test\` — otherwise the tests read this machine's ~/.jaira and about 16 of them fail on the untouched base as well. A relative HOME breaks the Go module cache. Judge a run by its exit code.`
 
 const SETUP = {
@@ -87,6 +90,14 @@ const REVIEW = {
     review_verdict: { type: 'string', description: 'the review-verdict you wrote, first sentence' },
   },
   required: ['status', 'review_verdict'],
+}
+const PREP = {
+  type: 'object',
+  properties: {
+    p1: { type: 'string', description: 'the folder printed after "p1 "' },
+    p2: { type: 'string', description: 'the folder printed after "p2 "' },
+  },
+  required: ['p1', 'p2'],
 }
 const JUDGE = {
   type: 'object',
@@ -170,10 +181,12 @@ async function judgePair(units, pair) {
   // Which arm is X in the first pass alternates over tickets and runs, so X is not always the same arm.
   const [ax, ay] = (pair.ti + pair.run) % 2 === 0 ? ARMS : [ARMS[1], ARMS[0]]
   const prep = await agent(
-    `Run exactly this one command and nothing else, then return its output verbatim:\nbash '${TOOLS}/judge-prep.sh' '${OUT}' '${pair.ticket}' ${pair.run} '${ax}' '${ay}'`,
-    { label: `prep ${pair.ticket} r${pair.run}`, phase: 'Judge', effort: 'low' })
+    `Run exactly this one command and nothing else, then return the two folders it prints:\nbash '${TOOLS}/judge-prep.sh' '${OUT}' '${pair.ticket}' ${pair.run} '${ax}' '${ay}'`,
+    { label: `prep ${pair.ticket} r${pair.run}`, phase: 'Judge', schema: PREP, effort: 'low' })
   if (!prep) return { units: ok, judged: null }
-  const judge = (p) => agent(`You are a blind judge. Read ONLY the files in ${OUT}/judge/${pair.ticket}-r${pair.run}-${p}/: ticket.md (what was demanded), X.diff and Y.diff (two independent attempts at it) and, if present, reference.diff (the change that was accepted back then — a reference, not a target to copy). Open no other path, run no git, and do not try to find out how either diff was produced.
+  // The judge's prompt names only its folder: a temp directory outside OUT holding
+  // the four files and nothing else - no arm, no clone path, no KEY.txt.
+  const judge = (p) => agent(`You are a blind judge. Your first command is \`cd ${prep[p]}\`. Read ONLY the files in that folder: ticket.md (what was demanded), X.diff and Y.diff (two independent attempts at it) and, if present, reference.diff (the change that was accepted back then — a reference, not a target to copy). Open no other path, run no git, and do not try to find out how either diff was produced.
 
 Decide which diff is the better change to merge for this ticket: does it meet every Definition of Done item, is it correct, does it stay in scope, is it tested, would a reviewer understand it. An empty or broken diff fails. Prefer neither position; answer tie only if you cannot separate them.`,
     { label: `judge ${pair.ticket} r${pair.run} ${p}`, phase: 'Judge', schema: JUDGE })
