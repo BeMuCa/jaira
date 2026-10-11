@@ -25,8 +25,8 @@ func TestBuiltinsCarryTheCockpitWithoutItsTests(t *testing.T) {
 		}
 	}
 	for _, f := range files {
-		if strings.HasPrefix(f, "tests/") {
-			t.Errorf("test file %s would be installed", f)
+		if strings.HasPrefix(f, "tests/") || strings.HasPrefix(f, ".claude-plugin/types/") || f == "tsconfig.json" {
+			t.Errorf("%s would be installed: tests and what Claude Code generates stay out", f)
 		}
 	}
 }

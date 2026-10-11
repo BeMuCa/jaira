@@ -1,7 +1,7 @@
 ---
 id: 01M4P5FK818EAFZ68XFYNZZDRH
 title: "jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -30,13 +30,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T19:01:54Z
-updated-at: 2026-10-11T20:52:24Z
+updated-at: 2026-10-11T20:52:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6544
 claimed-at: 2026-10-11T20:12:41Z
-outcome-what: "jaira-cockpit mod: noise filter fixed for subagent SendMessage (session.append), digest marked as shortened, reports per project and without the engine's frame; band with tickets waiting for a person (Accept / Give back / Explain / Discuss), context and cache countdown, cache guard, conversation threads, status line, ticket pane, metrics per session; jaira roles install writes the mod, repo is a marketplace, lanes --json carries human_exit, spawn.sh takes explain/discuss"
-outcome-why: "The teamlead chat drowned in agent reports, accepting or giving back from signoff was by hand and ran in the wrong worktree twice, and questions, cache cost and forgotten ideas were invisible"
-outcome-resolves: "DoD 2-16 with tests and proofs; DoD 1 open for the live button presses only Alex can make (no ticket in a person's lane here, a scratch board would need his trust dialog)"
+outcome-what: "critique round 1 answered: session cost label, honest give-back without Herdr, worker records and threads in $.store with pruning"
+outcome-why: "four critique findings"
+outcome-resolves: "review-summary of round 1"
 review-summary: |-
   core/mod/builtin/jaira-cockpit/hooks/register.tsx refreshCache labels this session's cost as 'today' (texts.ts usage) - it is the session's, say so ('Sitzung'/'session'/'сессия')
   core/mod/builtin/jaira-cockpit/hooks/register.tsx giveBack without Herdr tells the person 'given back to a new worker' though nobody was started - say it went back to in-progress and nothing was started

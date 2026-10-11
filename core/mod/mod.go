@@ -25,13 +25,23 @@ var builtinFS embed.FS
 
 const builtinDir = "builtin"
 
+// What Claude Code writes into a mod folder it loads from disk (a
+// --plugin-dir while developing): this build's API types and a tsconfig.json
+// that points at them. go:embed reads the disk, not git, so a build made
+// after such a run would carry them; it writes them again wherever the mod
+// is installed.
+const (
+	generatedTypes  = ".claude-plugin/types"
+	generatedConfig = "tsconfig.json"
+)
+
 // Mod is one plugin folder and the files that are installed of it.
 type Mod struct {
 	// ID is the folder name, which is also the plugin's name in its manifest.
 	ID string
 	// Files are paths relative to the mod's folder, sorted. Its tests are
 	// left out: they run here, with 'claude plugin test', not where it is
-	// installed.
+	// installed. So is what Claude Code generated into the folder.
 	Files []string
 }
 
@@ -54,9 +64,12 @@ func Builtins() ([]Mod, error) {
 			}
 			rel := strings.TrimPrefix(p, root+"/")
 			if d.IsDir() {
-				if rel == "tests" {
+				if rel == "tests" || rel == generatedTypes {
 					return fs.SkipDir
 				}
+				return nil
+			}
+			if rel == generatedConfig {
 				return nil
 			}
 			m.Files = append(m.Files, rel)
