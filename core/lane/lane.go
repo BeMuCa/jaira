@@ -71,10 +71,11 @@ type Lane struct {
 	Context        string
 	ContextImplied bool
 	// ContextInvalid holds a context: value that is neither fresh nor shared —
-	// a typo like "Fresh". Such a lane still loads, runs fresh, and counts as
-	// having declared a context, so a typo can neither drop the lane nor move
-	// the board's default onto another one; Load warns about it and 'jaira
-	// validate' fails on it.
+	// a typo like "Fresh". Such a lane still loads and runs fresh, but it does
+	// not count as having declared a context: the board's default still
+	// applies when no lane carries a valid value, so a typo can add a fresh
+	// lane and never take one away. Load warns about it and 'jaira validate'
+	// fails on it.
 	ContextInvalid string
 
 	// Holds caps how many tickets the lane keeps. After a move lands a ticket
@@ -612,9 +613,12 @@ func ContextInvalidMessage(l *Lane) string {
 }
 
 // impliedFresh applies the board-wide default for context:. Only a board on
-// which no lane declares a context at all gets one — a board that wrote the
-// field on any lane has said what it wants, "shared" included, and a guess
-// laid over that would contradict it.
+// which no lane declares a valid context gets one — a board that wrote fresh
+// or shared on any lane has said what it wants, "shared" included, and a
+// guess laid over that would contradict it. An invalid value says nothing
+// the board can act on, so it does not switch the default off: a typo like
+// "Shared" on in-progress makes in-progress fresh and leaves review fresh
+// too, rather than costing the board its independent look.
 //
 // The lane it marks is the last agentic lane before the first lane a person
 // owns (requires-human-exit): the model's last look before a person's. A lane
@@ -625,7 +629,7 @@ func ContextInvalidMessage(l *Lane) string {
 // no fresh lane, and nothing is marked.
 func impliedFresh(lanes []*Lane) {
 	for _, l := range lanes {
-		if l.Context != "" {
+		if l.Context != "" && l.ContextInvalid == "" {
 			return
 		}
 	}
@@ -635,8 +639,12 @@ func impliedFresh(lanes []*Lane) {
 		}
 		for j := i - 1; j >= 0; j-- {
 			if lanes[j].Agentic {
-				lanes[j].Context = ContextFresh
-				lanes[j].ContextImplied = true
+				// A lane whose own typo already runs it fresh keeps its "!"
+				// rather than a "*": the file is what needs fixing.
+				if lanes[j].ContextInvalid == "" {
+					lanes[j].Context = ContextFresh
+					lanes[j].ContextImplied = true
+				}
 				return
 			}
 		}

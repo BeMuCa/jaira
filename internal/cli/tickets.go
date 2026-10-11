@@ -1433,7 +1433,7 @@ func truncate(s string, n int) string {
 
 // impliedContextNote says why a lane whose file never mentions context: is
 // fresh, in the words both 'jaira lanes' and 'lanes show' print it in.
-const impliedContextNote = "no lane on this board declares context:, so the last agentic lane before the first lane a person owns runs fresh"
+const impliedContextNote = "no lane on this board declares a valid context:, so the last agentic lane before the first lane a person owns runs fresh"
 
 // invalidContextNote explains the "!" a lane gets in the CONTEXT column when
 // its file sets a value jaira cannot read.

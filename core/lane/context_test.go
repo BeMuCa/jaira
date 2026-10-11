@@ -160,3 +160,40 @@ func TestContextDefaultNeedsALanePersonOwns(t *testing.T) {
 		t.Fatalf("fresh lanes = %v, want none on a board without signoff", got)
 	}
 }
+
+// TestContextTypoAddsFreshnessNeverRemovesIt: an invalid value is no
+// declaration. "context: Shared" on in-progress runs in-progress fresh and
+// leaves the default's fresh review standing; Load names the value.
+func TestContextTypoAddsFreshnessNeverRemovesIt(t *testing.T) {
+	root := setUpBoard(t)
+	addFrontmatter(t, root, "in-progress", "context: Shared")
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(freshIDs(set), ","); got != "in-progress,review*" {
+		t.Fatalf("fresh lanes = %q, want %q: a typo must not switch the default off", got, "in-progress,review*")
+	}
+	if !strings.Contains(strings.Join(set.Warnings, "\n"), `lane in-progress: context "Shared"`) {
+		t.Errorf("no warning names the bad value:\n%s", strings.Join(set.Warnings, "\n"))
+	}
+}
+
+// TestContextValidSharedWinsOverATypo: once a lane carries a valid value the
+// board has declared itself. review saying shared stays shared, the typo on
+// in-progress still runs that lane fresh, and nothing is implied.
+func TestContextValidSharedWinsOverATypo(t *testing.T) {
+	root := setUpBoard(t)
+	addFrontmatter(t, root, "review", "context: shared")
+	addFrontmatter(t, root, "in-progress", "context: Shared")
+	set, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(freshIDs(set), ","); got != "in-progress" {
+		t.Fatalf("fresh lanes = %q, want only the typo's %q", got, "in-progress")
+	}
+	if l, _ := set.Get("review"); l.Context != ContextShared {
+		t.Errorf("review context = %q, want %q", l.Context, ContextShared)
+	}
+}

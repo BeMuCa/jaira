@@ -45,7 +45,7 @@ func TestLanesAndForLaneReportContext(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lanes: %v\n%s", err, table)
 	}
-	if !strings.Contains(table, "CONTEXT") || !strings.Contains(table, "fresh*") || !strings.Contains(table, "* no lane on this board declares context:") {
+	if !strings.Contains(table, "CONTEXT") || !strings.Contains(table, "fresh*") || !strings.Contains(table, "* "+impliedContextNote) {
 		t.Errorf("lanes table does not show the implied fresh lane and why:\n%s", table)
 	}
 
@@ -81,7 +81,7 @@ func TestAnInvalidContextIsReportedNotDropped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lanes: %v\n%s", err, table)
 	}
-	if strings.Contains(table, "no lane on this board declares context:") || strings.Contains(table, "fresh*") {
+	if strings.Contains(table, impliedContextNote) || strings.Contains(table, "fresh*") {
 		t.Errorf("lanes still claims the default decides:\n%s", table)
 	}
 	if !strings.Contains(table, "fresh!") || !strings.Contains(table, "! "+invalidContextNote) {
@@ -94,6 +94,67 @@ func TestAnInvalidContextIsReportedNotDropped(t *testing.T) {
 		t.Fatalf("validate err = %v, want exit %d\n%s", err, ExitValidation, out)
 	}
 	if !strings.Contains(out, `context "Fresh"`) {
+		t.Errorf("validate does not name the bad value:\n%s", out)
+	}
+}
+
+// A typo never takes freshness away. "context: Shared" on in-progress runs
+// in-progress fresh, but it is no declaration the board can act on, so review
+// keeps the default's fresh as well; 'jaira lanes' shows both marks with both
+// footnotes and 'jaira validate' still fails.
+func TestAnInvalidContextLeavesTheDefaultFresh(t *testing.T) {
+	lanesTestCatalogue(t)
+	t.Setenv("JAIRA_DEFAULT_BOARD", filepath.Join(t.TempDir(), "none.md"))
+	dir, _ := newModeTicket(t)
+	if out, err := runLanes(t, dir); err != nil {
+		t.Fatalf("lanes: %v\n%s", err, out)
+	}
+	p := filepath.Join(lane.ProjectLanesDir(dir), "in-progress.md")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(strings.Replace(string(b), "---\n", "---\ncontext: Shared\n", 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runLanes(t, dir, "--json")
+	if err != nil {
+		t.Fatalf("lanes --json: %v\n%s", err, out)
+	}
+	var payload struct {
+		Lanes []map[string]any `json:"lanes"`
+	}
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, out)
+	}
+	byID := map[string]map[string]any{}
+	for _, l := range payload.Lanes {
+		byID[l["id"].(string)] = l
+	}
+	if p := byID["in-progress"]; p["context"] != "fresh" || p["context_invalid"] != "Shared" {
+		t.Errorf("in-progress: context=%v invalid=%v, want fresh/Shared", p["context"], p["context_invalid"])
+	}
+	if r := byID["review"]; r["context"] != "fresh" || r["context_implied"] != true {
+		t.Errorf("review: context=%v implied=%v, want fresh/true: the typo must not switch the default off", r["context"], r["context_implied"])
+	}
+
+	table, err := runLanes(t, dir)
+	if err != nil {
+		t.Fatalf("lanes: %v\n%s", err, table)
+	}
+	for _, want := range []string{"fresh!", "fresh*", "! " + invalidContextNote, "* " + impliedContextNote} {
+		if !strings.Contains(table, want) {
+			t.Errorf("lanes table lacks %q:\n%s", want, table)
+		}
+	}
+
+	out, err = runCLI(t, dir, "validate")
+	var ce *codedError
+	if !errors.As(err, &ce) || ce.code != ExitValidation {
+		t.Fatalf("validate err = %v, want exit %d\n%s", err, ExitValidation, out)
+	}
+	if !strings.Contains(out, `context "Shared"`) {
 		t.Errorf("validate does not name the bad value:\n%s", out)
 	}
 }
