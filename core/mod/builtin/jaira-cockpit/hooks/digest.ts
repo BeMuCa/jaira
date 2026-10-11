@@ -40,15 +40,17 @@ export function ticketOf(text: string): string | undefined {
 // "completed", or a text that says something broke, was aborted, or waits at
 // an approval dialog — a "completed" status included, since an agent that
 // ends its turn normally can still report a failed run. "0 failed" in a test
-// summary is not a failure.
+// summary is not a failure; "3 failed" is. FAIL in capitals is how go test
+// reports one, and only in capitals, so it is matched without /i.
 const FAILURE =
-  /\b(?:fehlgeschlagen|abgebrochen|aborted|crashed|timed out|killed|panic:|approval dialog)|(?<![0-9] )\b(?:failed|failure)\b|\bexit (?:code |status )?[1-9]\d*\b|^\s*error\b/im
+  /\b(?:fehlgeschlagen|abgebrochen|aborted|crashed|timed out|killed|panic:|approval dialog)|(?<!\b0 )\b(?:failed|failures?)\b|\bexit (?:code |status )?[1-9]\d*\b|^\s*error\b/im
+const GO_FAIL = /\bFAIL\b/
 const STATUS = /<status>\s*([a-z_-]+)\s*<\/status>/i
 
 export function isFailure(text: string): boolean {
   const status = STATUS.exec(text)
   if (status && status[1]!.toLowerCase() !== 'completed') return true
-  return FAILURE.test(text)
+  return FAILURE.test(text) || GO_FAIL.test(text)
 }
 
 const ARROW = /\b([a-z][a-z-]*)\s*(?:->|→|=>)\s*([a-z][a-z-]*)\b/

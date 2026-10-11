@@ -85,6 +85,18 @@ describe('session.receive', () => {
     expect((await $.session.receive({ origin: { kind: 'peer' }, text: failing })).text).toBe(failing)
   })
 
+  test('failed tests stay whole, none failed is shortened', async ($, on) => {
+    session(on)
+    const some = 'MG677R: in-progress -> critique. go test ./...: 41 passed, 3 failed.'
+    expect((await $.session.receive({ origin: NOTIFICATION, text: some })).text).toBe(some)
+    const go = 'MG677R: in-progress -> critique.\n--- FAIL: TestDigest (0.00s)\nFAIL\tjaira/core/lane'
+    expect((await $.session.receive({ origin: NOTIFICATION, text: go })).text).toBe(go)
+    const none = 'MG677R: in-progress -> critique. go test ./...: 44 passed, 0 failed.'
+    expect((await $.session.receive({ origin: NOTIFICATION, text: none })).text).toBe(
+      'MG677R · in-progress → critique — full report: /flight MG677R',
+    )
+  })
+
   test("a person's message is never touched", async ($, on) => {
     session(on)
     const mine = 'Ticket MG677R: move it review -> signoff, verdict: approve'
