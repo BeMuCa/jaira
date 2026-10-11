@@ -498,11 +498,16 @@ func emitPerLane(cmd *cobra.Command, env gate.Env, ready []*ticket.Ticket) error
 // the board. It used to do it in silence, so two sessions could work the same
 // ticket with nothing anywhere saying the second had walked over the first.
 // Stderr, so it cannot corrupt --json on stdout.
+//
+// The line names the command that clears the claim: a warning that repeats on
+// every 'next' with nothing to do about it is one people learn to ignore. The
+// hint lives here and not in staleClaimLine, because 'claim' prints that same
+// line after it has already taken the claim over, where releasing is wrong.
 func warnStaleClaims(cmd *cobra.Command, ts []*ticket.Ticket) {
 	id := session.DefaultID()
 	for _, t := range ts {
 		if line := staleClaimLine(t, id); line != "" {
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", line)
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s; clear it with: jaira claim %s --release\n", line, ticket.Handle(t.ID))
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,11 @@ func claimFixture(t *testing.T) (string, *ticket.Store, *ticket.Ticket) {
 	t.Helper()
 	t.Setenv("JAIRA_USER", "berk")
 	dir := t.TempDir()
+	// Without these the store takes the default board of whoever runs the
+	// tests (~/.jaira/default-board.md), and a home board without a "backlog"
+	// lane makes the fixture's ticket read-only. JAIRA_HOME is TestMain's.
+	t.Setenv("HOME", filepath.Join(dir, "home"))
+	t.Setenv("USERPROFILE", filepath.Join(dir, "home"))
 	s, err := ticket.At(dir)
 	if err != nil {
 		t.Fatal(err)

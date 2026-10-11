@@ -4,7 +4,7 @@ title: Ein verwaister Claim laesst sich aufloesen
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Alexander Sacharov
 goal: "Ein Claim, dessen Session gestorben ist, laesst sich mit einem Befehl loesen und blockiert das Ticket nicht auf Dauer"
 context: |-
   Auf dem requirementsgenie-Board: 'jaira next --per-lane' meldet '5M11NC carries an abandoned claim by EE-3NX6GL3-690539, last renewed 11h ago'. Zwei Tage vorher meldete dasselbe Board '2CQ613 ... last renewed 436h ago' - also 18 Tage.
@@ -17,7 +17,8 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-10T16:52:33Z
-updated-at: 2026-09-10T16:52:33Z
+updated-at: 2026-10-11T19:45:09Z
+updated-by: Alexander Sacharov
 ---
 
 # Ein verwaister Claim laesst sich aufloesen
@@ -36,4 +37,4 @@ updated-at: 2026-09-10T16:52:33Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-11 19:45 · Alexander Sacharov** — Code aus dem A/B-Versuch vom 11.10.2026 uebernommen (Arm A; blinder Richter knapp fuer diese Variante; Review: approve). Befund: Claim-Ablauf (ClaimTTL 30 min) und 'jaira claim <id> --release' gab es schon, der Kontext irrte; die Aenderung nennt den Befehl in der Warnung von jaira next. Offen laut Review: der DoD-Proof nannte releaseHint, das inzwischen in warnStaleClaims eingefaltet ist; '--release' ist in 'jaira --help' nicht sichtbar (nicht DoD). Die Fixture-Reparatur in claimrelease_test.go ueberschneidet sich mit AK3Z6D (HOME in TestMain). Alex hat das Ticket von BeMuCa uebernommen.
