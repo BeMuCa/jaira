@@ -68,14 +68,7 @@ func TestAnInvalidContextIsReportedNotDropped(t *testing.T) {
 	if out, err := runLanes(t, dir); err != nil {
 		t.Fatalf("lanes: %v\n%s", err, out)
 	}
-	p := filepath.Join(lane.ProjectLanesDir(dir), "review.md")
-	b, err := os.ReadFile(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(p, []byte(strings.Replace(string(b), "---\n", "---\ncontext: Fresh\n", 1)), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	setLaneContext(t, dir, "review", "Fresh")
 
 	table, err := runLanes(t, dir)
 	if err != nil {
@@ -109,14 +102,7 @@ func TestAnInvalidContextLeavesTheDefaultFresh(t *testing.T) {
 	if out, err := runLanes(t, dir); err != nil {
 		t.Fatalf("lanes: %v\n%s", err, out)
 	}
-	p := filepath.Join(lane.ProjectLanesDir(dir), "in-progress.md")
-	b, err := os.ReadFile(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(p, []byte(strings.Replace(string(b), "---\n", "---\ncontext: Shared\n", 1)), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	setLaneContext(t, dir, "in-progress", "Shared")
 
 	out, err := runLanes(t, dir, "--json")
 	if err != nil {
@@ -156,5 +142,19 @@ func TestAnInvalidContextLeavesTheDefaultFresh(t *testing.T) {
 	}
 	if !strings.Contains(out, `context "Shared"`) {
 		t.Errorf("validate does not name the bad value:\n%s", out)
+	}
+}
+
+// setLaneContext writes a context: line into the frontmatter of one of the
+// board's lane files.
+func setLaneContext(t *testing.T, dir, id, value string) {
+	t.Helper()
+	p := filepath.Join(lane.ProjectLanesDir(dir), id+".md")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(strings.Replace(string(b), "---\n", "---\ncontext: "+value+"\n", 1)), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
