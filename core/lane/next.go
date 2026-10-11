@@ -39,13 +39,21 @@ func (s *Set) Next(t *ticket.Ticket) *Lane {
 		return nil
 	}
 	for _, l := range s.Lanes[from+1:] {
-		if l.RequiresBlockedReason || l.RequiresQuestion {
-			continue
+		if l.OnPath(t) {
+			return l
 		}
-		if l.RequiresOption != "" && !t.OptionSet(l.RequiresOption) {
-			continue
-		}
-		return l
 	}
 	return nil
+}
+
+// OnPath reports whether a ticket walking forward would step into this lane:
+// not a parking lane, not a question-only checkpoint, and not a lane whose
+// option the ticket leaves unticked. It is the rule Next applies, so that
+// anything else asking "would this ticket have gone through here" gives the
+// same answer.
+func (l *Lane) OnPath(t *ticket.Ticket) bool {
+	if l.RequiresBlockedReason || l.RequiresQuestion {
+		return false
+	}
+	return l.RequiresOption == "" || t.OptionSet(l.RequiresOption)
 }
