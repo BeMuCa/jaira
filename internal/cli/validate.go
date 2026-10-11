@@ -62,7 +62,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				if l.ContextInvalid != "" {
 					problems = append(problems, validate.Problem{
 						Code: "lane_context", Severity: validate.SeverityError,
-						Path: l.Source, Field: "context", Message: lane.ContextInvalidMessage(l),
+						Path: l.Source, Message: lane.ContextInvalidMessage(l),
 					})
 				}
 			}
