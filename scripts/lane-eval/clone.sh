@@ -45,6 +45,10 @@ if [ -z "$base" ]; then
 fi
 base=$(git -C "$repo" rev-parse "$base^{commit}")
 
+# jaira in the clone, with its real errors on stderr but without the notice
+# that the board predates this binary: every board at an old base says that.
+j() { jaira -C "$dir" "$@" 2> >(grep -v 'set up by an older version of jaira' >&2); }
+
 git clone -q --no-checkout "$repo" "$dir"
 git -C "$dir" remote remove origin
 git -C "$dir" checkout -q -b "lane-eval/$arm-$ticket-r$run" "$base"
@@ -52,21 +56,21 @@ git -C "$dir" checkout -q -b "lane-eval/$arm-$ticket-r$run" "$base"
 on_board=$(git -C "$dir" ls-tree -r --name-only HEAD .jaira/tickets | grep -E "/[0-9A-Z]*${ticket}-[^/]*\.md$" || true)
 if [ -n "$on_board" ]; then
   handle=$ticket
-  jaira -C "$dir" set "$handle" "assignee=$who" >/dev/null 2>&1
+  j set "$handle" "assignee=$who" >/dev/null
 elif [ -n "$logbook" ]; then
   # Bring the filed ticket back only to read it, then file a clean one.
   mkdir -p "$dir/.jaira/logbook/lane-eval"
   src="$dir/.jaira/logbook/lane-eval/$(basename "$logbook")"
   git -C "$repo" show "HEAD:$logbook" > "$src"
-  jaira -C "$dir" restore "$src" >/dev/null 2>&1
-  old=$(jaira -C "$dir" show "$ticket" --json 2>/dev/null)
-  jaira -C "$dir" delete "$ticket" --force >/dev/null 2>&1
+  j restore "$src" >/dev/null
+  old=$(j show "$ticket" --json)
+  j delete "$ticket" --force >/dev/null
   rm -rf "$dir/.jaira/logbook/lane-eval"
   args=(create "$(jq -r .title <<<"$old")" --lane todo --assignee "$who"
         --goal "$(jq -r .goal <<<"$old")"
         --context "$(jq -r .context <<<"$old")")
   while IFS= read -r d; do args+=(--dod "$d"); done < <(jq -r '.dod_items[].text' <<<"$old")
-  handle=$(jaira -C "$dir" "${args[@]}" --json 2>/dev/null | jq -r .handle)
+  handle=$(j "${args[@]}" --json | jq -r .handle)
   [ -n "$handle" ] && [ "$handle" != null ] || { echo "clone.sh: could not create the ticket in $dir" >&2; exit 1; }
   if [ ! -f "$refdir/$ticket.diff" ]; then
     for c in $(jq -r '.commits[]' <<<"$old"); do
@@ -79,21 +83,21 @@ fi
 
 # What the judge reads about the ticket: the demand, not the record of the work.
 if [ ! -f "$refdir/$ticket.ticket.md" ]; then
-  jaira -C "$dir" show "$handle" --json 2>/dev/null | jq -r '"# " + .title + "\n\n## Goal\n" + .goal + "\n\n## Context\n" + .context + "\n\n## Definition of Done\n" + ([.dod_items[] | "- " + .text] | join("\n"))' > "$refdir/$ticket.ticket.md"
+  j show "$handle" --json | jq -r '"# " + .title + "\n\n## Goal\n" + .goal + "\n\n## Context\n" + .context + "\n\n## Definition of Done\n" + ([.dod_items[] | "- " + .text] | join("\n"))' > "$refdir/$ticket.ticket.md"
 fi
 
 # Where the ticket stands, and which lanes have an agent step: the workflow
 # decides from these which lane a lane-per-agent worker gets next.
-lanes=$(jaira -C "$dir" lanes --json 2>/dev/null | jq -c '[.lanes[] | select(.agentic) | .id]')
-shown=$(jaira -C "$dir" show "$handle" --json 2>/dev/null)
+lanes=$(j lanes --json | jq -c '[.lanes[] | select(.agentic) | .id]')
+shown=$(j show "$handle" --json)
 # A ticket still in backlog is walked to the lane right before the first agent
 # step, so every arm starts from the same place.
 for _ in 1 2 3; do
   st=$(jq -r .status <<<"$shown"); nx=$(jq -r .next_lane <<<"$shown")
   case $st in backlog|todo) ;; *) break ;; esac
   jq -e --arg l "$nx" 'index($l) != null' <<<"$lanes" >/dev/null && break
-  jaira -C "$dir" move "$handle" --to "$nx" >/dev/null 2>&1 || break
-  shown=$(jaira -C "$dir" show "$handle" --json 2>/dev/null)
+  j move "$handle" --to "$nx" >/dev/null || break
+  shown=$(j show "$handle" --json)
 done
 jq -n --arg arm "$arm" --arg ticket "$ticket" --argjson run "$run" --arg dir "$dir" \
   --arg base "$base" --arg handle "$handle" --argjson shown "$shown" --argjson lanes "$lanes" \

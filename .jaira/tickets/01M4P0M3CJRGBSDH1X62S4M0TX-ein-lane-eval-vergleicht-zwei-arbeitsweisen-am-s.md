@@ -21,13 +21,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T17:36:58Z
-updated-at: 2026-10-11T17:46:24Z
+updated-at: 2026-10-11T17:47:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-522427
 claimed-at: 2026-10-11T17:39:04Z
-outcome-what: "Workflow .claude/workflows/lane-eval.js plus drei Bash-Helfer unter scripts/lane-eval/ (clone.sh, judge-prep.sh, metrics.sh) und docs/LANE-EVAL.md."
-outcome-why: Der A/B-Versuch vom 11.10. lief von Hand und war weder wiederholbar noch mit dem naechsten Lauf vergleichbar.
-outcome-resolves: "Ein Aufruf mit Ticket-Ids, Basis, Armen und N legt Klone ohne Remote an, faehrt beide Arme samt frischem review, laesst blind zweimal vertauscht richten; metrics.sh schreibt CSV und Zusammenfassung pro Arm."
+outcome-what: "clone.sh: jaira-Aufrufe ueber j(), das nur die 'older version'-Zeile filtert; docs/LANE-EVAL.md: repo muss scripts/lane-eval/ tragen."
+outcome-why: "critique 1: stille Abbrueche in clone.sh, fehlende Voraussetzung in der Anleitung."
+outcome-resolves: "Ein scheiternder jaira-Schritt im Setup nennt jetzt seinen Fehler; die Anleitung sagt, welches repo gemeint ist."
+review-summary: |-
+  scripts/lane-eval/clone.sh: jeder jaira-Aufruf laeuft mit 2>/dev/null unter set -e - scheitert restore/delete/set, bricht das Skript ohne ein Wort ab; einen Helfer j() einfuehren, der nur die 'older version'-Warnung filtert und echte Fehler durchlaesst
+  docs/LANE-EVAL.md 'Start it': sagt nicht, dass args.repo scripts/lane-eval/ enthalten muss (der Workflow ruft ${repo}/scripts/lane-eval/*.sh) - vor dem Merge also den Worktree des Branches als repo angeben
 ---
 
 # Ein Lane-Eval vergleicht zwei Arbeitsweisen am selben Ticket und schreibt die Metriken
@@ -63,3 +66,4 @@ outcome-resolves: "Ein Aufruf mit Ticket-Ids, Basis, Armen und N legt Klone ohne
 - **2026-10-11 17:37 · Alexander Sacharov** — Den echten Workflow-Lauf kann nur die Hauptsitzung starten (Workflow-Tool braucht Opt-in des Menschen). Der Worker schreibt und prueft das Skript; der Trockenlauf mit einem Ticket und N=1 passiert danach in der Hauptsitzung.
 - **2026-10-11 17:40 · Alexander Sacharov** — Entscheidungen vor dem Plan (keine braucht den Menschen): (1) agent() im Workflow liefert KEINE Tokens/Dauer/Tool-Zahl, nur Text bzw. Schema-Objekt; das Skript hat auch kein Dateisystem. Darum beginnt jeder Agent-Prompt mit einem Marker [lane-eval arm=.. ticket=.. run=.. step=.. lane=..], und scripts/lane-eval/metrics.sh liest danach die agent-*.jsonl im Transkript-Ordner (usage der letzten Antwort = tokens, erster/letzter timestamp = duration_ms, eindeutige tool_use-ids = tool_uses). Gegen den Handversuch geprueft: duration und tool_uses stimmen exakt, tokens ~1% darunter. (2) Goldenes Ticket aus dem logbook wird im Klon per 'jaira create' frisch angelegt (Titel/Ziel/Kontext/DoD aus der logbook-Datei), damit Plan, Notizen, Outcome und Review nicht durchsickern; es bekommt dadurch eine neue Id, die in .lane-eval.json steht. (3) loops: lane-per-agent zaehlt Rueckspruenge nach in-progress aus den Agent-Ergebnissen, worker meldet sie selbst. (4) Richter: Lauf i von Arm A gegen Lauf i von Arm B, zweimal mit vertauschtem X/Y; verdict pro Zeile = win/lose/tie/split dieses Laufs.
 - **2026-10-11 17:46 · Alexander Sacharov** — Gefunden: (a) jaira create nimmt den Titel nur positional, --title gibt es nicht als Flag-Ersatz bei fehlendem Argument (Exit 2). (b) Ein Ticket aus der Basis kann in backlog stehen (GDB5YJ an 43080ed) - clone.sh schiebt es bis vor die erste Agent-Lane (todo), sonst stoppt lane-per-agent sofort. (c) node --check lehnt das top-level return eines Workflows ab; Pruefung ueber eine Wrapper-Funktion (docs/LANE-EVAL.md). (d) Ungeprueft: wo die Workflow-Laufzeit ihre agent-*.jsonl ablegt - metrics.sh sucht darum rekursiv unter jedem angegebenen Ordner und filtert per Marker+eval-id. Das zeigt erst der Trockenlauf in der Hauptsitzung.
+- **2026-10-11 17:46 · Alexander Sacharov** — critique 1: (1) clone.sh verschluckt jaira-Fehler (2>/dev/null + set -e = stiller Abbruch) -> Helfer j(), der nur die 'older version'-Zeile filtert. (2) docs/LANE-EVAL.md muss sagen, dass repo die Helfer unter scripts/lane-eval/ tragen muss. Stehen gelassen: Record-Agent schreibt results.json per Heredoc - der Workflow hat kein Dateisystem, ein anderer Weg braucht mehr Teile.

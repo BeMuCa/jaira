@@ -37,7 +37,9 @@ repository to run the workflow `lane-eval` with these args (paths absolute,
 }
 ```
 
-`arms` defaults to both, `n` to 3, `maxSteps` (lane agents per run before
+`repo` is where the tickets and the helpers come from: the workflow runs
+`<repo>/scripts/lane-eval/*.sh`, so it must be a checkout that has them. `arms`
+defaults to both, `n` to 3, `maxSteps` (lane agents per run before
 lane-per-agent gives up) to 20. Try it on one ticket with `"n": 1` first.
 
 The clones land at `<out>/<arm>/<ticket>/r<run>` with their metadata beside
