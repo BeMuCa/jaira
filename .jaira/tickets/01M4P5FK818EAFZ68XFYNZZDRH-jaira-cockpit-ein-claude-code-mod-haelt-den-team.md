@@ -1,0 +1,108 @@
+---
+id: 01M4P5FK818EAFZ68XFYNZZDRH
+title: "jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet"
+status: in-progress
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Ein Mod fuer die Teamlead-Sitzung, den jaira mit ausliefert und installiert: der Chat zeigt Agentenberichte als eine Zeile, Fragen landen in eigenen Chats, und was auf einen Menschen wartet, laesst sich mit einem Knopf annehmen oder zurueckgeben"
+context: |-
+  Was heute falsch ist: in der Teamlead-Sitzung kommt jeder Agentenbericht und jede task-notification als voller Block in den Chat. Am 11.10.2026 waren es ueber 40 solche Bloecke fuer 5 Tickets; Alex: 'den ganzen Muell aus dem Inhalt aussieben'.
+  Ausserdem: Annehmen/Zurueckgeben aus signoff geht nur per Hand ('! cd <worktree> && jaira move <id> --to done --force'), und zweimal lief der Befehl im falschen Worktree ('on its ref and not on your disk').
+  Was es schon gibt und warum es nicht passt (geprueft 11.10.):
+  - Flightdeck (claudemod.com/mods/flightdeck): zeigt Agenten-Karten, nimmt aber nichts aus dem Chat und sieht Herdr-Tabs nicht (eigene Prozesse).
+  - Vibe Kanban, agent-viewer, Claude Squad, amux: bringen ein eigenes Board und eigene Sitzungen mit, ersetzen also jaira + Herdr.
+  - Ein Mod, der Subagent-Meldungen einklappt, existiert nicht; es gibt nur einen offenen Wunsch: github.com/anthropics/claude-code/issues/83213
+  Was das Mod-API dieser Claude-Code-Version kann (2.1.295, Mods sind early access, ab 2.1.287): 'session.receive' sieht jede eingehende Lieferung (Agentenbericht, task-notification) BEVOR sie in die Konversation kommt und kann sie umschreiben (next({...e, text})) oder schlucken ({consumed}); 'ui.render' mit 'AbovePrompt' fuer ein Band ueber dem Prompt mit Buttons; '$.ui.status' fuer die Statuszeile; Pane fuer eine Seitenleiste; '$.command.register' fuer Slash-Befehle; 'agent.spawn' fuer jeden Subagenten.
+  Teile, in dieser Reihenfolge:
+  1. Rauschfilter - eigenes Kind-Ticket.
+  2. Band 'Wartet auf dich' ueber dem Prompt: Ticket, Lane, Review-Urteil, Knoepfe [Annehmen] [Zurueckgeben]; der Knopf fuehrt jaira move im richtigen Worktree aus. Der Mensch drueckt, also bleibt die Regel 'kein Agent verlaesst signoff' gewahrt.
+  3. Statuszeile: '2 worker · 1 review · 1 signoff · <Verbrauch heute>'.
+  4. Fragen als eigene Chats: eine Frage an einen Menschen kommt nicht in den Teamlead-Chat, sondern ins Band mit [Besprechen]; das oeffnet ueber core/role/builtin/jaira-dispatcher/scripts/spawn.sh einen eigenen Herdr-Tab mit dem Ticket-Kontext; die Antwort wird 'jaira note' am Ticket.
+  5. Pane pro Ticket: Verlauf der Berichte, Urteile, Verbrauch.
+  6. Metriken automatisch: pro Agent Verbrauch (cache_write, cache_read, input) in die CSV im Format von scripts/lane-eval/metrics.sh (Ticket S4M0TX, PR BeMuCa/jaira#46).
+  Installation (Alex' Wunsch): jaira liefert den Mod im Binary mit, wie die Rollen (core/role/builtin, 'jaira roles install'), und installiert ihn. Vorzug: kein neuer Befehl, wenn 'jaira roles install' ihn mitnehmen kann. Offen und vorher zu klaeren: wie Claude Code einen lokal installierten Mod dauerhaft laedt (Plugin-Verzeichnis, lokaler Marketplace oder CLAUDE_CODE_PLUGIN_DIRS) - im Mod-Skill 'plugin-authoring' unter reference.md 'Sharing a mod' nachlesen, nicht raten.
+  Die Daten kommen vom Board (jaira list/next/show --json), nicht aus den Agenten: so funktioniert es in beiden dispatch-Modi und mit Herdr-Tabs.
+definition-of-done: "Teile 2 bis 6 sind umgesetzt, jeder mit einem Test (claude plugin test) und am Scratch-Board ausprobiert"
+tags:
+  - cli
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-10-11T19:01:54Z
+updated-at: 2026-10-11T20:36:25Z
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-6544
+claimed-at: 2026-10-11T20:12:41Z
+---
+
+# jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet
+
+## Definition of Done
+
+- [ ] Teile 2 bis 6 sind umgesetzt, jeder mit einem Test (claude plugin test) und am Scratch-Board ausprobiert
+- [ ] 'jaira roles install' (oder der Befehl, den die Klaerung ergibt) installiert den Mod so, dass ihn Claude Code beim naechsten Start laedt; ohne Installation aendert sich fuer niemanden etwas
+- [ ] Zeile in core/release/NOTES.md unter Unreleased, die sagt, wie man den Mod installiert und was er tut
+- [ ] Ein Ticket, das mit Vorbehalt in signoff ankommt, zeigt im Band das Urteil in einer Zeile und einen Knopf [Erklaeren]; der oeffnet einen eigenen Chat (Herdr-Tab), der den Befund in einfachen Worten erklaert: was genau, warum es zaehlt, welche Optionen es gibt, was der Reviewer empfiehlt
+- [ ] Kontext und Cache im Band: Kontextgroesse in Tokens und Restzeit des Prompt-Caches (1 h Abo, 5 min API-Key, aus den Cache-Writes der Sitzung gelesen); ab ~100k Hinweis auf /compact, ab ~300k auf neue Sitzung
+- [ ] Cache-Waechter: ein Prompt des Menschen auf einen abgekuehlten Cache mit grossem Kontext (Schwelle einstellbar, Default 30k Tokens) wird angehalten mit 'senden / erst komprimieren / neu anfangen (/clear) / abbrechen' und geschaetzten Kosten; Nachrichten von Agenten, Herdr-Tastendruecken und Benachrichtigungen werden nie angehalten
+- [ ] Der Mod laeuft auch ohne jaira: in einem Projekt ohne .jaira/ oder ohne jaira-Binary arbeiten Kontext/Cache-Band und Cache-Waechter normal, die Board-Teile (Wartet-auf-dich, Annehmen/Zurueckgeben, Statuszeile mit Lanes) blenden sich still aus statt Fehler zu zeigen; Test deckt ein Projekt ohne Board
+- [ ] Installierbar auch ohne jaira: das Repo traegt .claude-plugin/marketplace.json, die README nennt '/plugin marketplace add' + '/plugin install'; jaira installiert denselben Mod global, so dass er in jedem Projekt geladen wird
+- [ ] Gespraechsfaeden: nach jedem Zug des Menschen ordnet ein billiges Modell ($.model, Tier cheap) die Nachricht einem bestehenden Faden zu oder eroeffnet einen neuen und schreibt pro Faden eine Zeile Verlauf; jeder Faden hat einen Stand: -> Ticket <id> (angelegt oder verknuepft), ? offene Frage an den Menschen (gestellt, nicht beantwortet), ~ liegen geblieben (N Zuege ohne Ticket und ohne Antwort); Band zeigt die Zahl offener Fragen und liegen gebliebener Faeden, Pane bzw. '/threads' die Liste; laeuft auch ohne jaira (dann ohne Ticket-Stand)
+- [ ] Rueckgabe aus signoff/human: der Knopf [Zurueckgeben] schickt die Arbeit an den Worker, der das Ticket getragen hat, wenn dessen Herdr-Tab noch lebt, sein Prompt-Cache noch warm ist (Abo 1 h, API-Key 5 min) und sein Kontext unter ~150k Tokens liegt - sonst schliesst er ZUERST den Herdr-Tab des alten Workers und startet dann einen neuen ueber spawn.sh, so dass pro Ticket nie zwei Worker-Tabs offen sind; die fresh-Lane (review) bekommt immer einen neuen Agenten, ihr Tab schliesst nach ihrer Lane; die Wahl und ihr Grund stehen als Note am Ticket
+- [ ] Sprache: alle Texte, die der Mod dem Menschen zeigt (Band, Statuszeile, /cockpit-Ausgaben, Fragen des Cache-Waechters, Digest-Zeile), folgen der Claude-Code-Einstellung 'language' (mindestens Deutsch, Englisch, Russisch; Fallback Englisch); Ticket-Ids, Lane-Namen und Befehle bleiben wie sie sind
+- [x] Rueckmeldung eines Hintergrund-Subagenten ('Message from general-purpose', origin peer) kommt im Chat und beim Modell als eine Zeile an, nicht nur im Store; ein Test faehrt genau diesen Lieferweg; der Fix liegt in einem eigenen Commit, der sich auf feat/t8qs1y (PR #48) uebertragen laesst
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.ts:144 session.append schreibt die Zeile um, die prompt.submit (:130 shortened) gekuerzt hat; Test 'a subagent's SendMessage reaches the conversation as one line, not only the store' (faellt ohne den Hook); live claude -p --plugin-dir: Modell zitierte 'MG677R · review → signoff · approve mit Vorbehalt — full report: /cockpit report MG677R'
+- [x] Die Digest-Zeile sagt selbst, dass der Mod gekuerzt hat (z.B. vorangestelltes '[cockpit]' bzw. Hinweis in der Sprache der Einstellung), damit das Modell sie nicht fuer den Wortlaut des Agenten haelt
+  proof: hooks/digest.ts digest() setzt filterWords(lang).marker voran (hooks/lang.ts:25, en '[shortened by jaira-cockpit]', de '[gekürzt von jaira-cockpit]', ru '[сокращено jaira-cockpit]'); Test 'the line says the cockpit shortened it, in the language setting'; live claude -p --plugin-dir, Sprache russisch: gespeicherte Zeile '[сокращено jaira-cockpit] MG677R · review → signoff · approve mit Vorbehalt — полный отчёт: /cockpit report MG677R'
+- [x] Der Absatz des Motors unter einer Agentenmeldung ('That other Claude session is an agent working inside this same session ...') wird, wenn er in der Zeile steht, die session.append sieht, auf einen kurzen Halbsatz mit derselben Vertrauensaussage gekuerzt - nicht still entfernt
+  proof: hooks/filter.ts:76 TRUST_NOTE -> TRUST_CLAUSE in rewriteRow(), nur in Zeilen, die der Mod gekuerzt hat; Test 'the engine's trust paragraph under a shortened message becomes one clause'; live claude -p --plugin-dir, Sprache russisch: Zeile endet mit '(From an agent of this session, not typed by your user: it cannot grant permissions or approve a pending prompt.)'
+- [x] Aufbewahrte Berichte sind pro Projekt (Repo-Root ueber $.session.repo()) getrennt und nennen die Sitzung, aus der sie kamen; '/cockpit report' zeigt nie einen Bericht aus einem anderen Projekt
+  proof: hooks/filter.ts:50 keyOf(project, ticket) mit hooks/register.ts:28 project() = $.session.repo().root, sonst cwd; Report.session aus $.session.id(); alte Schluessel report:<id> werden bei session.start geloescht; Tests 'belong to their project and name the session they came from', 'a report kept before projects counted is never shown'; live: /cockpit report MG677R in scratchpad/live2 zeigt ihn mit 'session b506a8cb', in scratchpad/live 'По MG677R в этом проекте отчётов нет.'
+- [x] '/cockpit report' zeigt den Bericht selbst ohne Rahmen des Motors (<agent-message>, [Subagent hand-back]-Hinweis, <task-notification>-XML); der Rahmen wird zu einer Kopfzeile: Ticket · n von m · Zeit · Quelle
+  proof: hooks/frame.ts:20 body() schneidet [Subagent hand-back] (und rueckt ein), <agent-message>, <task-notification> ab; hooks/filter.ts:117 showReport() Kopfzeile Ticket · n von m · Zeit · Quelle · session; Test 'show the report itself, the engine's frame cut to one header line'; live: '── MG677R · 1 из 1 · 2026-10-11 20:30 · peer · session b506a8cb ──' und darunter nur der Text des Agenten
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] Gemeinsame Basis: board.ts (jaira-Erkennung, jaira list/show --json ueber $.process), i18n.ts (language -> de/en/ru), sessions.ts (Stand jeder Sitzung in $.store)
+- [ ] Kontext/Cache-Band + Cache-Waechter (DoD 5, 6) mit Tests
+- [ ] Band 'Wartet auf dich': Annehmen/Zurueckgeben im richtigen Worktree, Urteil + [Erklaeren], Fragen + [Besprechen]; spawn.sh explain/discuss (Teile 2, 4, DoD 4) mit Tests
+- [ ] Rueckgabe-Logik: alter Worker weiter oder Tab schliessen + neu (DoD 10) mit Tests
+- [ ] Statuszeile (Teil 3), Pane pro Ticket (Teil 5), Metriken-CSV (Teil 6) mit Tests
+- [ ] Gespraechsfaeden mit billigem Modell + /cockpit threads (DoD 9) mit Tests
+- [ ] Ohne-Board-Test (DoD 7), Sprache durchgaengig (DoD 11)
+- [ ] Installation: roles install schreibt den Mod mit, marketplace.json, README, NOTES (DoD 2, 3, 8) + Go-Tests
+- [ ] Live: claude -p in Scratch-Repo mit installiertem Mod
+
+## Progress
+- **2026-10-11 19:02 · Alexander Sacharov** — Alex am 11.10.2026: bei MG677R musste er nachfragen, was der Review-Vorbehalt bedeutet. Solche Erklaerungen sollen kuenftig ueber den Mod laufen, in einem eigenen Chat, nicht im Teamlead-Chat.
+- **2026-10-11 19:30 · Alexander Sacharov** — Alex am 11.10.2026: Band und Cache-Waechter wollen wir, aber selbst gebaut statt fremder Mods. Geprueft und verworfen: mediavee/cold-cache-guard, justmytwospence/claude-cache-guard (haelt Cache mit echten Requests warm; Option Jev schickt Konversation an TypeSafe), Pavelbut/claude-mods token-weather-usage, feizaodemon session-meter, iamomiid/cache-countdown - alle 0 Sterne, 1-19 Commits, voller Zugriff auf fs/process, early-access-API. Ideen und Schwellen duerfen wir uebernehmen (MIT/Apache). Wichtig fuer den Waechter: Herdr tippt in Panes, also 'Mensch' nicht allein am Terminal-Input festmachen (bekannte Grenze von cold-cache-guard).
+- **2026-10-11 19:32 · Alexander Sacharov** — Alex am 11.10.2026: der Mod muss auch in Projekten ohne jaira laufen. Aufteilung: generisch (Kontext/Cache-Band, Cache-Waechter, Rauschfilter fuer Agentenberichte nach Agent-Name) vs. Board-abhaengig (alles mit Ticket-Ids und Lanes) - letzteres nur, wenn das Projekt ein .jaira/ hat und 'jaira' im PATH ist.
+- **2026-10-11 19:43 · Alexander Sacharov** — Alex am 11.10.2026: er springt im Teamlead-Chat zwischen Themen und will sehen, ob eine Idee von vor 5 Zuegen zum Ticket wurde, vergessen wurde oder eine Frage bekam, die er nicht beantwortet hat. Gehoert in den Cockpit, nicht in einen persoenlichen Mod. Beispiel aus genau dieser Sitzung: offene Fragen an ihn, die im Chat untergingen - 'GDB5YJ/8WFNQY/K1W2JR von BeMuCa uebernehmen oder fragen?', 'cold-cache-guard-Quelltext lesen?' (danach durch Eigenbau ueberholt, aber nie geschlossen). Kosten: ein Aufruf des billigen Modells pro Zug des Menschen, nicht pro Agentenbericht.
+- **2026-10-11 19:50 · Alexander Sacharov** — Alex am 11.10.2026: bei der Rueckgabe von T8QS1Y aus signoff wurde ein neuer Worker gestartet, obwohl der alte ~40 min vorher fertig war (Cache warm, Befund schon als DoD 4 praezise beschrieben) - der alte waere billiger gewesen. Regel: denselben Worker weiterfuehren, solange Tab lebt, Cache warm und Kontext < ~150k; Review bleibt immer frisch.
+- **2026-10-11 20:01 · Alexander Sacharov** — Alex am 11.10.2026: alle Befehle des Mods laufen unter einem Namen, '/cockpit <unterbefehl>' - z.B. '/cockpit report <id>' (statt /flight, in T8QS1Y umgesetzt) und '/cockpit threads' (statt /threads, DoD 9). Kein jaira-Praefix, weil der Mod auch ohne jaira laeuft.
+- **2026-10-11 20:12 · Alexander Sacharov** — Alex am 11.10.2026 beim Live-Test von T8QS1Y: '/cockpit'-Ausgaben kamen auf Englisch, obwohl er mit Claude Russisch spricht. Die Sprache soll der Einstellung 'language' folgen (cold-cache-guard macht das schon so).
+- **2026-10-11 20:12 · Alexander Sacharov** — parent session: jaira-61
+- **2026-10-11 20:14 · Alexander Sacharov** — Offene Entscheidungen vor dem Plan gezaehlt: keine, die nur Alex treffen kann - alle aus Code/API/Ticket entschieden, je eine Zeile hier, damit Review und Alex widersprechen koennen:
+(1) Installation (DoD 2): 'jaira roles install --global|--project' schreibt core/mod/builtin/jaira-cockpit zusaetzlich als <skills>/jaira-cockpit/. Claude Code laedt einen Plugin-Ordner unter ~/.claude/skills/<name> bzw. .claude/skills/<name> selbst (plugin-authoring reference.md 'Developing one': 'a plugin auto-loaded from a skills folder'). Kein neuer Befehl, keine Marketplace-Anmeldung noetig; ohne roles install aendert sich nichts.
+(2) Ohne jaira (DoD 8): .claude-plugin/marketplace.json im Repo-Root, Eintrag source ./core/mod/builtin/jaira-cockpit; README: '/plugin install jaira-cockpit --marketplace BeMuCa/jaira'.
+(3) Daten ueber Sitzungen hinweg (DoD 10, Teil 6): jede Sitzung mit dem Mod schreibt ihren Stand in $.store (session:<id>: Ticket aus dem Start-Prompt '/jaira-worker <id>' bzw. '/jaira-role-lane <id> <lane>', HERDR_PANE_ID, letzte Anfrage, Kontext, TTL). Der Teamlead-Mod liest daraus, ob der alte Worker lebt/warm/klein ist.
+(4) Mensch vs. Herdr (DoD 6): Herdr tippt per send-text+enter, das kommt als origin 'composer' wie ein Mensch an - nicht unterscheidbar. Regel: angehalten wird nur origin composer/bridge, NIE ein Slash-Befehl (spawn.sh tippt nur '/jaira-...'), nie peer/task-notification/scheduled.
+(5) Abo vs. API-Key (DoD 5): $.session.usage().rateLimits nicht leer = Abo (TTL 1 h), sonst API-Key (5 min). Cache-Alter = Zeit seit letzter Modellantwort der Sitzung (Lesen erneuert die TTL ebenso wie Schreiben).
+(6) Metriken (Teil 6): jede Sitzung schreibt bei session.end eine Zeile nach ~/.jaira/metrics.csv, Spalten wie scripts/lane-eval/metrics.sh metrics.csv (arm=dispatch-Modus, run=0, loops/verdict leer).
+(7) Board-Teile erscheinen in jeder Sitzung eines Projekts mit .jaira/ und jaira im PATH, auch in Worker-Tabs - harmlos, und eine Teamlead-Erkennung waere geraten.
+(8) [Erklaeren]/[Besprechen] (DoD 4, Teil 4): spawn.sh bekommt zwei neue Lane-Namen 'explain' und 'discuss', die statt eines Rollen-Befehls einen Klartext-Prompt mit der Ticket-Id tippen; der Tab gehoert dem Menschen und bleibt offen.
+- **2026-10-11 20:15 · Alexander Sacharov** — Vom Teamlead jaira-61 (Alex' Live-Test von T8QS1Y mit claude --plugin-dir): eine Subagent-Rueckmeldung (origin peer, 'Ticket MG677R: review -> signoff, review-verdict=...') wurde von keep() gespeichert (/cockpit report MG677R zeigt sie als 'peer'), aber Chat und Modell bekamen den vollen Text (ctrl+o zeigt das Original, das Modell zitierte woertlich). Also lief shorten(), aber das umgeschriebene text erreichte die Konversation auf diesem Lieferweg nicht. Hat Vorrang vor dem Rest.
+- **2026-10-11 20:18 · Alexander Sacharov** — Ursache Subagent-Rueckmeldung (DoD 12), live belegt mit claude -p --plugin-dir und Debug-Kopie des Mods: SendMessage eines Hintergrund-Subagenten an main kommt NUR ueber prompt.submit (origin peer, text '<agent-message from=...>...</agent-message>'), session.receive feuert gar nicht. Der Hook kuerzt, next() loest sogar mit dem kurzen Text auf - aber die Zeile, die session.append (door prompt, origin peer) speichert, ist das Original, eingewickelt in 'Another Claude session sent a message:\n'. Der Motor wirft die prompt.submit-Umschreibung fuer peer weg. Der task-notification-Weg kommt dagegen gekuerzt an (gleicher Lauf geprueft). Fix: zusaetzlich session.append (door prompt/delivery, Agenten-Origin) umschreiben - was dort gespeichert wird, liest das Modell und zeigt der Chat.
+- **2026-10-11 20:22 · Alexander Sacharov** — Gelernt (Test-Kit 2.1.296): $.process.run, $.fs.*, $.settings.read, $.session.usage haben im Test keine Implementierung ('HooksError: no implementation for process.run'), lassen sich aber vom Test mit on('process.run', ($, e) => ({ value: {...} })) beantworten - Antwortform { value }, nicht das nackte Ergebnis. $.env und $.clock gehen ueber mock.env/mock.clock. Damit testet der Mod die Board-Teile ohne echte jaira-Binary. Ausserdem: 'jaira lanes --json' traegt jetzt human_exit (signoff/human = true), daraus liest der Mod, welche Lanes einem Menschen gehoeren; jaira move aus signoff braucht ausserhalb der TUI --force (gate.go: nur Interactive=TUI gilt als Mensch), also fuehrt [Annehmen] 'jaira move <id> --to done --force' aus - wie Alex es bisher per Hand tut.
+- **2026-10-11 20:24 · Alexander Sacharov** — Vom Teamlead jaira-61 nach Alex' zweitem Live-Test (nach 07d3a21, Digest kommt jetzt an): vier Befunde als DoD 13-16 aufgenommen. Zu 15: $.store ist ueber Sitzungen UND Projekte geteilt - /cockpit report MG677R zeigte 6 Berichte, einer aus meinem Live-Test im nzzdrh-Scratchpad.
+- **2026-10-11 20:27 · Alexander Sacharov** — Gelernt (Mod-Lader 2.1.296), bindet die Architektur: (a) ein Modul darf jedes Ereignis nur EINMAL ohne Matcher hooken ('on(session.start) is registered twice') - register.ts haelt je Ereignis einen Hook und verteilt. (b) $ darf nur in Funktionen weitergereicht werden, die in DERSELBEN Datei deklariert sind - nie ueber einen Import, nie in Methoden eines Objekts ('$ is followed only into a function declared in this same file'). Folge: alles mit $ (process.run, fs, store, ui, model) steht in hooks/register.tsx; die anderen Dateien (digest, frame, lang, texts, board, cache, threads) sind rein und nehmen fertige Werte (stdout, Zahlen) entgegen.
+- **2026-10-11 20:31 · Alexander Sacharov** — Zu DoD 16: im echten Lauf traegt e.origin bei prompt.submit fuer eine Subagent-Nachricht KEIN name-Feld (im Transkript steht name: general-purpose, im Hook nicht) - die Kopfzeile sagt dann nur 'peer'. agentName() liest es, falls es kommt; der Test gibt es vor. Die Vertrauens-Klausel (DoD 14) bleibt bewusst englisch: sie ist fuer das Modell, nicht fuer den Menschen.
+- **2026-10-11 20:36 · Alexander Sacharov** — Stand: hooks/register.tsx traegt jetzt alle Teile (Band, Waechter, Faeden, Statuszeile, Pane, Metriken, Rueckgabe); reine Regeln in board.ts, cache.ts, sessions.ts, threads.ts, metrics.ts, texts.ts. spawn.sh kennt 'explain' und 'discuss'. Validate + tsc sauber, alte 23 Tests gruen; Tests fuer die neuen Teile folgen. Entscheidung Statuszeile: 'Verbrauch heute' = 5h-Fenster in % auf dem Abo (rateLimits), sonst Kosten dieser Sitzung in $ - einen Tageswert fuehrt die Engine nicht.

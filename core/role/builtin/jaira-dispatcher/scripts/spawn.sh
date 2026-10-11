@@ -23,10 +23,13 @@ spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-ro
                   person in its own tab.
   -h, --help      This text.
 
-Two lane names are special. <dispatch> starts the dispatcher itself in the tab
+Four lane names are special. <dispatch> starts the dispatcher itself in the tab
 (/jaira-dispatcher <ticket-id>) instead of one lane's worker; <worker> starts
 the worker that carries the whole ticket itself (/jaira-worker <ticket-id>),
 which is what a teamlead passes when settings.json says "dispatch": "worker".
+<explain> and <discuss> open a chat for a person about the ticket — the review
+finding explained, or the ticket's open question talked through — and are what
+the jaira-cockpit mod's buttons start, with --no-worktree.
 Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
@@ -156,10 +159,17 @@ esac
 # "worker" is the same for the role that carries a ticket through every lane
 # itself (jaira-worker), the alternative a teamlead starts when the dispatch
 # setting asks for it.
+# <explain> and <discuss> are no agent's lane at all: the cockpit mod opens
+# them for a person, a chat of its own instead of the teamlead's. They type a
+# plain request, so the tab answers the person and never works the ticket.
 if [ "$lane" = dispatch ]; then
   prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
 elif [ "$lane" = worker ]; then
   prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
+elif [ "$lane" = explain ]; then
+  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
+elif [ "$lane" = discuss ]; then
+  prompt="Ticket $ticket wartet auf eine Entscheidung von mir (jaira show $ticket --json: das Feld question und die letzten Notes). Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Antwort mit jaira note $ticket an das Ticket und leere die Frage mit jaira set $ticket question=. Aendere keinen Code und bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi

@@ -1024,6 +1024,10 @@ func newLanesCmd() *cobra.Command {
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
 						"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
+						// Whose lane it is: true where a person alone moves work out
+						// (signoff, human). The cockpit mod's "waiting for you" band
+						// reads it rather than knowing lane names.
+						"human_exit": l.RequiresHumanExit,
 						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
@@ -1176,6 +1180,7 @@ func newLanesShowCmd() *cobra.Command {
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
 					"rejects_to": l.RejectsTo, "holds": l.Holds,
 					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
+					"human_exit": l.RequiresHumanExit,
 				})
 			}
 			w := cmd.OutOrStdout()

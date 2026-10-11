@@ -40,6 +40,13 @@ func TestLanesAndForLaneReportContext(t *testing.T) {
 	if p := byID["in-progress"]; p["context"] != "" || p["context_implied"] != false {
 		t.Errorf("in-progress in lanes --json: context=%v implied=%v, want empty/false", p["context"], p["context_implied"])
 	}
+	// The cockpit mod tells a person's lane from an agent's by this field.
+	if s := byID["signoff"]; s["human_exit"] != true {
+		t.Errorf("signoff in lanes --json: human_exit=%v, want true", s["human_exit"])
+	}
+	if r := byID["review"]; r["human_exit"] != false {
+		t.Errorf("review in lanes --json: human_exit=%v, want false", r["human_exit"])
+	}
 
 	table, err := runLanes(t, dir)
 	if err != nil {
