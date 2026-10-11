@@ -95,8 +95,10 @@ func (s *settingsScreen) switchDispatch() string {
 		s.dispatchErr = err.Error()
 		return settingsActionNone
 	}
+	// None, not saved: nothing on the board shows this setting, so there is
+	// nothing to reload — the row above already says what the file now holds.
 	s.dispatch, s.dispatchErr = next, ""
-	return settingsActionSaved
+	return settingsActionNone
 }
 
 // editKey drives the number while it is open: digits type, backspace takes

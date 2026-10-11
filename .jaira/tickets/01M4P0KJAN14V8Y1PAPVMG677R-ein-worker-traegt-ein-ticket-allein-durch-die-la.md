@@ -1,7 +1,7 @@
 ---
 id: 01M4P0KJAN14V8Y1PAPVMG677R
 title: "Ein Worker traegt ein Ticket allein durch die Lanes, nur der Review laeuft frisch"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,10 +25,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T17:36:41Z
-updated-at: 2026-10-11T17:52:23Z
+updated-at: 2026-10-11T17:54:03Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521795
 claimed-at: 2026-10-11T17:38:06Z
+outcome-what: "Lane-Feld context: fresh|shared mit Board-Default, sichtbar in lanes/lanes show/show --for-lane/Agenten-Block; Opt-in-Rolle jaira-worker, Schalter dispatch (settings.json, TUI, roles list), spawn.sh-Lane worker, Teamlead waehlt nach Schalter; critique-Runde-1-Funde behoben"
+outcome-why: "Ein Agent pro Lane kostete im A/B-Versuch das 2,5-fache an Tokens bei gleichem Code; der frische Review bleibt Pflicht"
+outcome-resolves: "Worker-Modus ohne Lane-Migration, standardmaessig aus"
+review-summary: |-
+  internal/cli/tickets.go:1427 impliedContextNote/laneContext stehen zwischen dem Doc-Kommentar von laneFacts und laneFacts — der Kommentar haengt jetzt an der Konstante; Block ueber den Kommentar ziehen
+  internal/tui/settings.go switchDispatch gibt settingsActionSaved zurueck und loest m.reload() aus, dessen Kommentar (Logbuch-Fenster) nicht passt und das fuer dispatch nichts tut; settingsActionNone zurueckgeben
+  core/lane/lane.go impliedFresh-Kommentar: eine Zeile ueber 150 Zeichen; umbrechen. internal/cli/roles.go Long: eine ueberlange Zeile; umbrechen. core/board/announce.go: verirrte Leerzeile nach dem tier-Block entfernen
+  core/role/builtin/jaira-role-lane/SKILL.md: 'A worker starts you for a lane marked fresh' klingt wie der einzige Fall — der Worker startet auch die lesende critique; 'When a worker starts you for ...' schreiben
 ---
 
 # Ein Worker traegt ein Ticket allein durch die Lanes, nur der Review laeuft frisch
@@ -79,3 +87,7 @@ claimed-at: 2026-10-11T17:38:06Z
 8. Die generierte CLAUDE.md-Lane-Liste markiert eine fresh-Lane, damit jeder Agent es liest.
 - **2026-10-11 17:43 · Alexander Sacharov** — Teil 1 (Lane-Feld) committed in 8f1707b. Naechstes: Rolle jaira-worker.
 - **2026-10-11 17:45 · Alexander Sacharov** — Scope-Erweiterung von Alex am 2026-10-11 (ueber den Koordinator): (1) Worker-Modus ist opt-in, Default bleibt der Dispatcher mit einem Agenten pro Lane; Schalter 'dispatch' in ~/.jaira/settings.json, im TUI-Settings-Screen, per CLI lesbar; Teamlead startet das Passende. (2) Herdr bleibt: Worker und frischer Review-Agent bekommen je einen eigenen Tab via spawn.sh. DoD 2 und 3 entsprechend umformuliert (vorher: worker ERSETZT dispatcher, alter Name nur noch Hinweis) — das widersprach der Erweiterung. Entscheidung: eigene Rolle jaira-worker statt Zweig im Dispatcher — der Dispatcher-Prompt bleibt byte-gleich, also aendert sich fuer niemanden ohne Schalter etwas, und zwei Arbeitsweisen in einer Datei wuerden jeden Absatz an eine Bedingung haengen. Der Worker benutzt die Skripte von jaira-dispatcher/scripts (gleiches Skills-Verzeichnis, roles install schreibt beide). CLI-Leseweg: 'jaira roles list' (--json: Schluessel dispatch und dispatch_role) — die Stelle, an der der Teamlead ohnehin die Rollen sieht.
+- **2026-10-11 17:52 · Alexander Sacharov** — critique Runde 1: internal/cli/tickets.go:1427 impliedContextNote/laneContext stehen zwischen dem Doc-Kommentar von laneFacts und laneFacts — der Kommentar haengt jetzt an der Konstante; Block ueber den Kommentar ziehen
+internal/tui/settings.go switchDispatch gibt settingsActionSaved zurueck und loest m.reload() aus, dessen Kommentar (Logbuch-Fenster) nicht passt und das fuer dispatch nichts tut; settingsActionNone zurueckgeben
+core/lane/lane.go impliedFresh-Kommentar: eine Zeile ueber 150 Zeichen; umbrechen. internal/cli/roles.go Long: eine ueberlange Zeile; umbrechen. core/board/announce.go: verirrte Leerzeile nach dem tier-Block entfernen
+core/role/builtin/jaira-role-lane/SKILL.md: 'A worker starts you for a lane marked fresh' klingt wie der einzige Fall — der Worker startet auch die lesende critique; 'When a worker starts you for ...' schreiben

@@ -604,7 +604,8 @@ func Load(root string) (*Set, error) {
 // owns (requires-human-exit): the model's last look before a person's. A lane
 // that only takes a question is not counted as that lane, because work passes
 // it by (see Set.Next): on the shipped board HITL sits between testing and
-// review, and counting it would make testing the fresh lane instead of review. A board with no such lane, or with no agentic lane before it, has
+// review, and counting it would make testing the fresh lane instead of
+// review. A board with no such lane, or with no agentic lane before it, has
 // no fresh lane, and nothing is marked.
 func impliedFresh(lanes []*Lane) {
 	for _, l := range lanes {

@@ -224,7 +224,6 @@ func laneSection(facts []LaneFact) string {
 		if f.ModelTier != "" {
 			marks = append(marks, "tier "+f.ModelTier)
 		}
-
 		if len(f.Produces) > 0 {
 			marks = append(marks, "must produce "+strings.Join(f.Produces, ", "))
 		}

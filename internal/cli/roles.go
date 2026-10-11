@@ -22,8 +22,8 @@ func newRolesCmd() *cobra.Command {
 		Long: `Roles are the agent prompts that drive a board: a teamlead who talks to you, a
 dispatcher who carries one ticket lane by lane — or, with "dispatch": "worker"
 in ~/.jaira/settings.json, a worker who carries it through every lane itself —
-and the agents they hand lanes to. They are compiled into this binary, and 'jaira roles install' writes them
-into your agent's skills directory.`,
+and the agents they hand lanes to. They are compiled into this binary, and
+'jaira roles install' writes them into your agent's skills directory.`,
 	}
 	cmd.AddCommand(newRolesListCmd(), newRolesInstallCmd())
 	return cmd

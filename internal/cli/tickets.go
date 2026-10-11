@@ -1422,11 +1422,6 @@ func truncate(s string, n int) string {
 	return string(r[:n-1]) + "…"
 }
 
-// laneFacts reads a board's pipeline into the plain form core/board renders.
-//
-// The translation lives here rather than in core/board because that package is
-// stdlib-only on purpose — both the CLI and the TUI call it, and it must not
-// pull core/lane behind them.
 // impliedContextNote says why a lane whose file never mentions context: is
 // fresh, in the words both 'jaira lanes' and 'lanes show' print it in.
 const impliedContextNote = "no lane on this board declares context:, so the last agentic lane before the first lane a person owns runs fresh"
@@ -1440,6 +1435,11 @@ func laneContext(l *lane.Lane) string {
 	return dash(l.Context)
 }
 
+// laneFacts reads a board's pipeline into the plain form core/board renders.
+//
+// The translation lives here rather than in core/board because that package is
+// stdlib-only on purpose — both the CLI and the TUI call it, and it must not
+// pull core/lane behind them.
 func laneFacts(lanes *lane.Set) []board.LaneFact {
 	if lanes == nil {
 		return nil
