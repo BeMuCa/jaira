@@ -18,9 +18,12 @@ const TICKETS = 20
 const REPORT_CHARS = 12_000
 
 // Deliveries an agent sent: a background task's notification, another
-// session's or agent's message. A person's own message through Remote
-// Control (`bridge`), a Slack ping, a scheduled prompt and anything
-// unclassified are not reports and are never touched.
+// session's or agent's message. They reach the session two ways: a relayed
+// one through `session.receive`, a local one — this session's own background
+// task finishing — through `prompt.submit` alone, so both are hooked. A
+// person's own message (typed, or through Remote Control as `bridge`), a
+// Slack ping, a scheduled prompt and anything unclassified are not reports
+// and are never touched.
 const AGENT_ORIGINS = new Set(['task-notification', 'peer', 'peer-send-message', 'coordinator'])
 
 function isAgentReport(e: SessionReceiveInput): boolean {
@@ -42,6 +45,23 @@ async function keep($: EngineInterface, ticket: string, report: Report): Promise
   await $.store.set(key, [{ ...report, text }, ...before].slice(0, REPORTS_PER_TICKET))
   const tickets = (await $.store.keys()).filter(k => k.startsWith(PREFIX))
   for (const old of tickets.slice(0, Math.max(0, tickets.length - TICKETS))) await $.store.delete(old)
+}
+
+// A delivery already shortened at `session.receive` reaches `prompt.submit`
+// again; it is not a report a second time.
+const DIGESTED = /— full report: \/flight [0-9A-Z]{6}$/
+// The notification itself, without the warning the engine wraps it in.
+const NOTIFICATION = /<task-notification>[\s\S]*?<\/task-notification>/
+
+// The text the conversation gets instead, with the report kept; undefined
+// when it passes on unchanged.
+async function shorten($: EngineInterface, text: string, origin: string): Promise<string | undefined> {
+  if (DIGESTED.test(text)) return undefined
+  const report = NOTIFICATION.exec(text)?.[0] ?? text
+  const short = digest(report)
+  if (short === undefined) return undefined
+  await keep($, short.ticket, { at: new Date().toISOString(), origin, text: report })
+  return text.replace(report, () => short.line)
 }
 
 async function flight($: EngineInterface, args: string): Promise<string> {
@@ -84,17 +104,20 @@ export const register: Register = on => {
   })
 
   on('session.receive', async ($, e, next) => {
-    if (!isAgentReport(e)) return next(e)
-    const short = digest(e.text)
-    if (short === undefined) return next(e)
-    await keep($, short.ticket, { at: new Date().toISOString(), origin: e.origin.kind, text: e.text })
-    return next({ ...e, text: short.line })
+    const text = isAgentReport(e) ? await shorten($, e.text, e.origin.kind) : undefined
+    return next(text === undefined ? e : { ...e, text })
+  }).catch(($, e, next) => next(e))
+
+  on('prompt.submit', async ($, e, next) => {
+    const text = AGENT_ORIGINS.has(e.origin.kind) ? await shorten($, e.text, e.origin.kind) : undefined
+    return next(text === undefined ? e : { ...e, text })
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'flight' }, async ($, e) => ({ text: await flight($, e.args ?? '') }))
 
   on('tool.call', { tool: 'mcp__jaira-cockpit__flight' }, async ($, e) => {
-    const { ticket } = e.input as { ticket?: unknown }
+    // A tool's arguments ride on `e` beside `tool`, not under a key of their own.
+    const { ticket } = e as { ticket?: unknown }
     return { result: await flight($, typeof ticket === 'string' ? ticket : '') }
   })
 }

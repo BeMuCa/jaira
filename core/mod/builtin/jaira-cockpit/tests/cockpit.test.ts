@@ -5,7 +5,13 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 function session(on: On) {
   mock.store(on)
   on('session.receive', ($, e) => ({ text: e.text }))
+  on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
 }
+
+// This session's own background task finishing: the engine wraps the
+// notification in a warning and submits it as a prompt.
+const LOCAL = (text: string) =>
+  ({ text: `[SYSTEM NOTIFICATION - NOT USER INPUT]\n\n${text}`, origin: { kind: 'task-notification' }, wait: false }) as const
 
 // A person typing `/flight <args>` at the prompt.
 const typed = (args = '') =>
@@ -79,6 +85,31 @@ describe('session.receive', () => {
   })
 })
 
+describe('prompt.submit', () => {
+  test("this session's own task notification is shortened, its wrapper kept", async ($, on) => {
+    session(on)
+    const { text } = await $.prompt.submit(LOCAL(REPORT))
+    expect(text).toBe(
+      '[SYSTEM NOTIFICATION - NOT USER INPUT]\n\nMG677R · review → signoff · approve with reservations: the cache key ignores the branch · ' +
+        'question: should the cache survive a rebase? — full report: /flight MG677R',
+    )
+    expect((await $.command.run(typed('MG677R'))).text).not.toContain('SYSTEM NOTIFICATION')
+  })
+
+  test('a line already shortened is not kept a second time', async ($, on) => {
+    session(on)
+    const { text = '' } = await $.session.receive({ origin: { kind: 'peer' }, text: 'ticket K7P2QX moved to testing' })
+    expect((await $.prompt.submit({ text, origin: { kind: 'peer' }, wait: false })).text).toBe(text)
+    expect((await $.command.run(typed('K7P2QX'))).text).toContain('report 1 of 1')
+  })
+
+  test('what a person types is never touched', async ($, on) => {
+    session(on)
+    const mine = 'Ticket MG677R: move it review -> signoff, verdict: approve'
+    expect((await $.prompt.submit({ text: mine, origin: { kind: 'composer' }, wait: false })).text).toBe(mine)
+  })
+})
+
 describe('/flight', () => {
   test('lists reports newest first', async ($, on) => {
     session(on)
@@ -94,7 +125,7 @@ describe('the flight tool', () => {
   test('gives the model the same full text', async ($, on) => {
     session(on)
     await $.session.receive({ origin: NOTIFICATION, text: REPORT })
-    const ran = await $.tool.call({ tool: 'mcp__jaira-cockpit__flight', input: { ticket: 'MG677R' } })
+    const ran = await $.tool.call({ tool: 'mcp__jaira-cockpit__flight', ticket: 'MG677R' })
     expect(String(ran.result)).toContain('forty more lines of findings')
   })
 })

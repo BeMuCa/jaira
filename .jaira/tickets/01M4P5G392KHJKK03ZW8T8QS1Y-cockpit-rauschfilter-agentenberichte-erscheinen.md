@@ -21,14 +21,16 @@ parent: 01M4P5FK818EAFZ68XFYNZZDRH
 related: []
 commits: []
 created-at: 2026-10-11T19:02:10Z
-updated-at: 2026-10-11T19:33:09Z
+updated-at: 2026-10-11T19:38:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-767990
 claimed-at: 2026-10-11T19:27:17Z
-outcome-what: "VERDICT_WORD in core/mod/builtin/jaira-cockpit/hooks/digest.ts: 'mit vorbehalt' als Zusatz der approve-Alternative, damit der Vorbehalt in der Zeile bleibt; Test 'a verdict keeps its reservation'"
-outcome-why: "optimize fand: die Alternation nahm 'approve' vor 'approve mit vorbehalt'"
-outcome-resolves: "DoD 1 (Urteil vollstaendig in der Zeile)"
+outcome-what: "Werkzeug flight liest das Argument von e (nicht e.input); zweiter Hook prompt.submit fuer Benachrichtigungen eigener Hintergrundaufgaben, gemeinsame Funktion shorten() in core/mod/builtin/jaira-cockpit/hooks/register.ts, ersetzt nur den <task-notification>-Block, doppelt Gekuerztes wird erkannt; 3 neue Tests"
+outcome-why: "testing fand live: das Werkzeug warf, und eigene task-notifications erreichen session.receive nie"
+outcome-resolves: "DoD 1 und 2 im echten Betrieb, nicht nur im Test-Kit"
 review-summary: none
+review-gaps: "Aus VERDICT_WORD (hooks/digest.ts) die doppelte Alternative 'approve mit vorbehalt' entfernt und in die approve-Alternative gefaltet (das war zugleich ein Verhaltensfehler und lief deshalb ueber in-progress, Commit 2a066f6). Geprueft und gelassen: keine Duplikation im Repo (einziger TS-Code; die Go-Handle-Logik ist aus dem Mod nicht aufrufbar); kein toter Code - jede Konstante und clip() hat Aufrufer; isAgentReport() hat einen Aufrufer, bleibt wegen des Kommentars, warum agentId und event ausschliessen; keep() ruft $.store.keys() pro Lieferung - ein paar Dutzend Schluessel, kein Hotpath."
+test-verdict: ""
 ---
 
 # Cockpit-Rauschfilter: Agentenberichte erscheinen im Teamlead-Chat als eine Zeile
@@ -36,11 +38,11 @@ review-summary: none
 ## Definition of Done
 
 - [x] Ein Agentenbericht und eine task-notification mit Ticket-Id erscheinen im Chat als eine Zeile mit Ticket, Lane-Wechsel, Urteil und offener Frage; ohne erkennbare Id bleibt die Lieferung unveraendert; Fehler und Abbrueche bleiben voll
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.ts:86 (session.receive) + core/mod/builtin/jaira-cockpit/hooks/digest.ts:91; tests 'a report naming a ticket becomes one line', 'a report without a ticket passes unchanged', 'a failed agent stays whole'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.ts:58 shorten() from :106 (session.receive) and :111 (prompt.submit), rules in core/mod/builtin/jaira-cockpit/hooks/digest.ts:91; tests in core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts; live: claude -p --plugin-dir core/mod/builtin/jaira-cockpit turned a real background task-notification into 'K7P2QX — full report: /flight K7P2QX'
 - [x] Der volle Text ist gespeichert und mit '/flight <id>' abrufbar (zeigt die Berichte zu einem Ticket, neueste zuerst)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.ts:33 keep() into $.store, :47 flight() for /flight and tool mcp__jaira-cockpit__flight; tests '/flight lists reports newest first', 'the flight tool gives the model the same full text'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.ts:36 keep() into $.store, :67 flight() for /flight and :118 tool mcp__jaira-cockpit__flight; tests '/flight lists reports newest first', 'the flight tool gives the model the same full text'; live: the tool returned the stored notification
 - [x] 'claude plugin validate' und 'claude plugin test' gruen; Tests decken: Bericht mit Id, Bericht ohne Id, Fehlerbericht, Nachricht eines Menschen
-  proof: claude plugin validate core/mod/builtin/jaira-cockpit: passed; claude plugin test core/mod/builtin/jaira-cockpit: 8 pass 0 fail (core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts)
+  proof: claude plugin validate core/mod/builtin/jaira-cockpit: passed; claude plugin test core/mod/builtin/jaira-cockpit: 11 pass 0 fail (core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts)
 
 ## Options
 
@@ -57,3 +59,6 @@ review-summary: none
 - **2026-10-11 19:31 · Alexander Sacharov** — Gelernt: (a) im Test-Kit nimmt $.command.run das volle CommandRunInput (origin + presentation), der Hook bekam args=undefined, als ein Plugin ohne args aufrief -> e.args ?? ''. (b) Unter dem Plugin muss der Test selbst einen session.receive-Hook stellen, der {text: e.text} antwortet, sonst wirft der Boden. (c) Typpruefung: die Typen liegen erst nach dem ersten Laden unter .claude-plugin/types; bis dahin tsc mit einer tsconfig ausserhalb des Mod-Ordners, die die claude-code.d.ts des Skills nennt (allowImportingTsExtensions noetig wegen import './digest.ts'). (d) Keine Zeile in core/release/NOTES.md: der Mod ist nur eine Quelle im Repo, jaira installiert ihn noch nicht - das bringt NZZDRH mit seiner eigenen NOTES-Zeile. (e) Nicht live ausprobiert in einer Teamlead-Sitzung; ob ein Hintergrund-Agent seinen Abschluss wirklich als session.receive origin task-notification liefert, sagen nur die Typen (PromptOrigin 'task-notification' = 'A background task's notification').
 - **2026-10-11 19:32 · Alexander Sacharov** — critique (Pass 1, ganzer Diff gelesen): nichts zu aendern. Stehen gelassen, mit Grund: digest.ts getrennt von register.ts, weil die Regeln rein sind und ohne Engine lesbar bleiben; LANES fest verdrahtet statt aus .jaira/lanes gelesen, weil der Mod keinen sicheren Repo-Pfad kennt und der Pfeil 'a -> b' umbenannte Lanes ohnehin liest; /flight ohne Id listet die Tickets, sonst antwortet der Befehl auf ein vergessenes Argument mit 'No reports kept for .'; immediate:true, weil der Teamlead meist mitten im Turn ist. Bekannte Grenze: ein Bericht, der SHA256 oefter nennt als seinen Handle, wird SHA256 zugeordnet (6 Zeichen mit Ziffer) - selten, und die Zeile verweist dann auf /flight SHA256, nichts geht verloren.
 - **2026-10-11 19:32 · Alexander Sacharov** — optimize: VERDICT_WORD in hooks/digest.ts hat 'approve mit vorbehalt' als eigene Alternative HINTER 'approve[sd]?...'; die Alternation nimmt die erste, also wird aus 'approve mit Vorbehalt' nur 'approve' - genau der Vorbehalt aus dem Ziel-Beispiel geht verloren. Zusammenlegen ist kein Aufraeumen, sondern aendert Verhalten -> zurueck nach in-progress: 'mit vorbehalt' als Zusatz in die approve-Alternative falten, Test dazu.
+- **2026-10-11 19:33 · Alexander Sacharov** — critique (Pass 2, nur die Reparatur 2a066f6 gelesen): Befund aus optimize behoben, Test deckt ihn; die allein stehende Alternative 'mit vorbehalt' am Ende bleibt mit Absicht (Urteil 'mit Vorbehalt' ohne approve). Nichts weiter.
+- **2026-10-11 19:35 · Alexander Sacharov** — testing: live mit 'claude -p --plugin-dir core/mod/builtin/jaira-cockpit' gerufen, Modell rief mcp__jaira-cockpit__flight -> 'jaira-cockpit: tool.call hook skipped: threw TypeError: Cannot destructure property 'ticket' from null or undefined value'. Ursache: tool.call traegt die Argumente des Werkzeugs als Schluessel NEBEN 'tool' (ToolCallInput = Envelope & Argumente, vgl. e.file_path im Beispiel tool-call.ts), nicht unter e.input. Der Test war gruen, weil er selbst {tool, input:{ticket}} uebergab und damit den Fehler nachbaute. Fix: hooks/register.ts liest e.ticket; Test ruft $.tool.call({ tool, ticket }). Sonst gesehen: /flight live -> 'jaira-cockpit: No agent reports kept yet.'. Go-Suite: core/lane, core/move, internal/cli, internal/tui rot - genauso auf Basis 43080ed (core/lane, core/move dort nachgeprueft), kein .go in diesem Diff; vorbestehend, nicht Teil dieses Tickets.
+- **2026-10-11 19:37 · Alexander Sacharov** — Gefunden beim Live-Test: die Benachrichtigung einer EIGENEN Hintergrundaufgabe dieser Sitzung (Bash/Agent mit run_in_background) laeuft NICHT durch session.receive - im Debug-Log kein Aufruf -, sondern nur durch prompt.submit mit origin.kind 'task-notification', eingewickelt in '[SYSTEM NOTIFICATION - NOT USER INPUT] ...'. session.receive sieht nur Weitergeleitetes (Relay, Peer-Nachrichten). Darum haengen jetzt beide Hooks an shorten(); ersetzt wird nur der <task-notification>-Block, die Warnung drumherum bleibt; eine schon gekuerzte Zeile (endet auf '— full report: /flight <id>') wird beim zweiten Hook nicht noch einmal gespeichert. Beobachtet: das Modell (haiku) erkannte die Kurzzeile einer reinen Bash-Aufgabe nicht als die erwartete Benachrichtigung und las die Ausgabedatei selbst - bei einem Agentenbericht traegt die Zeile Lane und Urteil, bei einer Bash-Aufgabe nur die Id.
