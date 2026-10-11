@@ -4,7 +4,7 @@ title: "Enter entfernt eine installierte Lane, so wie es sie hinzufuegt"
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Alexander Sacharov
 goal: "Enter ist im Lane-Screen der eine Schalter: auf einer noch nicht installierten Lane fuegt es sie hinzu, auf einer installierten nimmt es sie wieder weg"
 context: |-
   Berk am 09.09.: 'man sollte eine lane die hinzugefuegt wurde mit enter auch wieder entfernen'.
@@ -19,7 +19,8 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-10T08:43:06Z
-updated-at: 2026-09-10T08:43:06Z
+updated-at: 2026-10-11T19:44:56Z
+updated-by: Alexander Sacharov
 ---
 
 # Enter entfernt eine installierte Lane, so wie es sie hinzufuegt
@@ -38,4 +39,4 @@ updated-at: 2026-09-10T08:43:06Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-11 19:44 · Alexander Sacharov** — Code aus dem A/B-Versuch vom 11.10.2026 uebernommen (Arm A, Lane-Pipeline; blinder Richter knapp fuer diese Variante; Review: approve). Offen laut Review: Doc-Kommentare in internal/tui/lanes.go um startRemove nennen teils nur x. Weiter im Worker-Modus; Alex hat das Ticket von BeMuCa uebernommen, um es zum Release zu bringen.

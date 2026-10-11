@@ -75,8 +75,8 @@ type laneScreen struct {
 
 	// confirm holds the yes/no question every 'x' now opens before removing
 	// anything, so hammering enter never deletes anything by accident: it
-	// starts unset, is set by x, and is cleared by enter (acting on it) or
-	// esc (cancelling).
+	// starts unset, is set by x (or enter on an installed lane), and is
+	// cleared by enter (acting on it) or esc (cancelling).
 	confirm *confirmRemove
 
 	// pendingCmd carries a tea.Cmd out of key() for the one action that needs
@@ -286,10 +286,18 @@ func (ls *laneScreen) key(s string) (done bool) {
 			ls.startRemove()
 		}
 	case "enter":
+		// enter is the one toggle on a column: '+' opens the catalogue, a
+		// not-installed lane is added, and an installed lane is removed —
+		// through the same yes/no confirmation x opens, whose default "no"
+		// is what keeps a blindly hammered enter from deleting anything.
+		// An available lane is never deleted by enter: that is a file
+		// delete, and stays on x alone.
 		if ls.focus == 0 && ls.isPlusColumn() {
 			ls.openCatalogue()
 		} else if ls.focus == 0 && ls.selectedAvailable() != nil {
 			ls.addAvailable()
+		} else if ls.focus == 0 && ls.selected() != nil {
+			ls.startRemove()
 		}
 	case "p":
 		if ls.focus == 0 {
@@ -847,9 +855,9 @@ func (ls *laneScreen) render(width, height int) string {
 	// the full footer runs longer than a narrow terminal's column width, and
 	// cutting it off would silently hide a key's name rather than the column
 	// content truncate exists to fit.
-	help := []string{"E edit", "x remove", "p publish", "n new", "R refresh", "esc back"}
+	help := []string{"enter add/remove", "E edit", "x remove", "p publish", "n new", "R refresh", "esc back"}
 	if len(ls.shared) > 0 {
-		help = []string{"E edit", "x remove", "tab switch", "p publish", "a adopt", "esc back"}
+		help = []string{"enter add/remove", "E edit", "x remove", "tab switch", "p publish", "a adopt", "esc back"}
 	}
 	for _, l := range wrapHints(help, max(1, w)) {
 		sb.WriteString("\n" + styMeta.Render(l))
