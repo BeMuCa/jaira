@@ -70,6 +70,11 @@ func TestClaimReportsTakingOverAnAbandonedClaim(t *testing.T) {
 	if !strings.Contains(out, "3h ago") {
 		t.Errorf("the warning does not say how old the claim was:\n%s", out)
 	}
+	// 'next' adds the release command to this same line; here the claim is
+	// already ours, and telling the new holder to release it would be wrong.
+	if strings.Contains(out, "--release") {
+		t.Errorf("taking over a claim tells the new holder to release it:\n%s", out)
+	}
 }
 
 // 'next' names the command that clears an abandoned claim, and running exactly
@@ -112,26 +117,5 @@ func TestNextNamesTheCommandThatClearsAnAbandonedClaim(t *testing.T) {
 	}
 	if out, _ := runCLI(t, dir, "next", "--all"); strings.Contains(out, "abandoned") {
 		t.Errorf("the warning survives the release:\n%s", out)
-	}
-}
-
-// 'claim' prints the same abandoned-claim line after it has taken the claim
-// over; telling the new holder to release it there would be wrong.
-func TestClaimTakeoverDoesNotSuggestReleasing(t *testing.T) {
-	dir, s, tk := claimFixture(t)
-	if _, err := s.Mutate(tk.ID, func(x *ticket.Ticket) error {
-		if err := x.Doc().SetScalar(ticket.FieldClaimedBy, "dead-session"); err != nil {
-			return err
-		}
-		return x.Doc().SetRaw(ticket.FieldClaimedAt, ticket.FormatTime(time.Now().Add(-3*time.Hour)))
-	}); err != nil {
-		t.Fatal(err)
-	}
-	out, err := runCLI(t, dir, "claim", ticket.Handle(tk.ID))
-	if err != nil {
-		t.Fatalf("claim: %v\n%s", err, out)
-	}
-	if strings.Contains(out, "--release") {
-		t.Errorf("taking over a claim tells the new holder to release it:\n%s", out)
 	}
 }
