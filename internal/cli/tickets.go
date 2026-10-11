@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -472,11 +473,14 @@ func managedField(k string) bool {
 // the inputs the target lane declares that are empty because of that.
 //
 // A lane only counts as skipped when the ticket would have visited it — the
-// rule is set.Next's, so an option left unticked or a parking or question lane
-// is not reported as something the shortcut took away. An empty input counts
-// only when no flag on create could have filled it (ticket.SuppliedFields):
-// those are what a skipped lane would have produced, and they are already
-// reported as "still needed" when they are missing.
+// rule is set.Next's, so a parking or question lane is not reported as
+// something the shortcut took away. A lane whose option is left unticked is
+// the one exception: it counts when it produces one of the empty inputs, or
+// "plan is empty" would stand beside a list that leaves out pre-process, the
+// lane that writes it. An empty input counts only when no flag on create could
+// have filled it (ticket.SuppliedFields): those are what a skipped lane would
+// have produced, and they are already reported as "still needed" when they
+// are missing.
 func skippedByCreate(set *lane.Set, t *ticket.Ticket, target *lane.Lane) (skipped, empty []string) {
 	if target.RequiresBlockedReason {
 		return nil, nil
@@ -485,16 +489,18 @@ func skippedByCreate(set *lane.Set, t *ticket.Ticket, target *lane.Lane) (skippe
 	if to <= from {
 		return nil, nil
 	}
+	empty = gate.InputMissing(target, t)
 	for _, l := range set.Lanes[from:to] {
 		if l.RequiresBlockedReason || l.RequiresQuestion {
 			continue
 		}
-		if l.RequiresOption != "" && !t.OptionSet(l.RequiresOption) {
+		if l.RequiresOption != "" && !t.OptionSet(l.RequiresOption) &&
+			!slices.ContainsFunc(l.OutputProduces, func(f string) bool { return slices.Contains(empty, f) }) {
 			continue
 		}
 		skipped = append(skipped, l.ID)
 	}
-	return skipped, gate.InputMissing(target, t)
+	return skipped, empty
 }
 
 func missingFields(t *ticket.Ticket) []string {

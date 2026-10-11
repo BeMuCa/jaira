@@ -17,8 +17,17 @@ func TestCreateIntoALaterLaneNamesWhatItSkipped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "Skipped on the way to in-progress: ") || !strings.Contains(out, "todo") {
-		t.Errorf("create --lane in-progress did not name the lanes it skipped:\n%s", out)
+	// pre-process is option-gated and this ticket ticks no option, but it is
+	// the lane that writes the plan reported empty below, so it is named;
+	// brainstorm writes only the goal, which a flag gave, so it is not.
+	skipped := ""
+	for _, line := range strings.Split(out, "\n") {
+		if s, ok := strings.CutPrefix(line, "Skipped on the way to in-progress: "); ok {
+			skipped = ", " + s + ","
+		}
+	}
+	if !strings.Contains(skipped, ", todo,") || !strings.Contains(skipped, ", pre-process,") || strings.Contains(skipped, "brainstorm") {
+		t.Errorf("create --lane in-progress should name todo and pre-process but not brainstorm as skipped:\n%s", out)
 	}
 	// Only plan: goal, context and the definition of done were given as
 	// flags, and a field a flag could have filled is not the skip's doing.

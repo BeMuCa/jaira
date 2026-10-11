@@ -1,7 +1,7 @@
 ---
 id: 01M263P629RST9EAHAA48WFNQY
 title: "create --lane sagt, welche Lanes es ueberspringt und was dadurch leer bleibt"
-status: backlog
+status: critique
 ready: true
 creator: BeMuCa
 assignee: Alexander Sacharov
@@ -18,15 +18,21 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-10T16:51:18Z
-updated-at: 2026-10-11T19:45:02Z
+updated-at: 2026-10-11T20:35:39Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-13127
+claimed-at: 2026-10-11T20:29:01Z
+outcome-what: "skippedByCreate nennt eine Lane mit nicht angekreuzter Option jetzt doch als uebersprungen, wenn sie ein leer gebliebenes Input-Feld der Ziel-Lane schreibt; Test prueft todo+pre-process, nicht brainstorm; NOTES-Zeile ergaenzt"
+outcome-why: "Die Meldung meldete 'plan leer' ohne pre-process zu nennen und widersprach sich selbst (Luecke laut blindem Richter)"
+outcome-resolves: "DoD 1: create --lane nennt uebersprungene Lanes und leere Inputs, ohne --lane unveraendert, Tests gruen"
 ---
 
 # create --lane sagt, welche Lanes es ueberspringt und was dadurch leer bleibt
 
 ## Definition of Done
 
-- [ ] 'jaira create --lane <spaeter>' nennt die uebersprungenen Lanes und die dadurch leeren input-requires-Felder; ohne --lane aendert sich nichts; ein Test deckt die Meldung ab; go test ./... -race gruen
+- [x] 'jaira create --lane <spaeter>' nennt die uebersprungenen Lanes und die dadurch leeren input-requires-Felder; ohne --lane aendert sich nichts; ein Test deckt die Meldung ab; go test ./... -race gruen
+  proof: internal/cli/tickets.go:484 skippedByCreate + :498; Tests TestCreateIntoALaterLaneNamesWhatItSkipped, TestCreateIntoALaterLaneReportsItInJSON, TestCreateWithoutLaneReportsNoSkip; go test ./... -race exit 0 (isoliertes HOME)
 
 ## Options
 
@@ -39,3 +45,6 @@ updated-by: Alexander Sacharov
 
 ## Progress
 - **2026-10-11 19:45 · Alexander Sacharov** — Code aus dem A/B-Versuch vom 11.10.2026 uebernommen (Arm B, ein Worker; blinder Richter knapp fuer diese Variante: sauberer, nutzt ticket.SuppliedFields und die Regeln von set.Next). Bekannte Luecke laut Richter, VOR signoff beheben: im Beispiel des Tickets ('--lane in-progress') fehlt pre-process in der Liste der uebersprungenen Lanes, weil Lanes mit nicht angekreuzter Option ausgelassen werden - dabei ist es genau die Lane, die den Plan schreiben wuerde; die Meldung widerspricht sich damit selbst. Alex hat das Ticket von BeMuCa uebernommen.
+- **2026-10-11 20:29 · Alexander Sacharov** — parent session: jaira-61
+- **2026-10-11 20:29 · Alexander Sacharov** — Offene Entscheidungen: keine. Luecke aus der Richter-Notiz selbst entschieden: eine Lane, deren Option nicht angekreuzt ist, zaehlt trotzdem als uebersprungen, wenn sie (output-produces) ein Feld schreibt, das in der Ziel-Lane als input leer bleibt. Grund: sonst meldet create 'plan leer', ohne pre-process zu nennen - die Meldung widerspricht sich. Lanes ohne solchen Beitrag (z.B. brainstorm, wenn goal per Flag kam) bleiben weiterhin weg, damit keine Lane gemeldet wird, die der Ticket-Pfad ohnehin nie besucht haette.
+- **2026-10-11 20:35 · Alexander Sacharov** — go test ./... -race mit dem echten HOME scheitert in ~25 Tests (core/lane, core/move, internal/cli, internal/tui) - unabhaengig von diesem Ticket: ~/.jaira auf diesem Rechner hat ein 'default board' ohne backlog, und die Tests lesen es. Mit HOME=<leeres absolutes Verzeichnis> (gitconfig hineinkopiert, GOCACHE/GOMODCACHE/GOPATH explizit) ist alles gruen, exit 0. Deshalb prueft TestCreateIntoALaterLaneNamesWhatItSkipped auch nur Enthaltensein (todo, pre-process, kein brainstorm) statt der exakten Zeile: backlog erscheint nur auf den eingebauten Lanes.
