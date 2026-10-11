@@ -687,7 +687,9 @@ changes for anybody.
 - Agent reports and task notifications that name a ticket reach the chat as
   one line, marked as shortened; `/cockpit report <id>` shows them whole.
 - The band above the prompt lists the tickets waiting in a lane a person owns,
-  with **Accept** (moves it to done in the ticket's own worktree) and **Give
+  with **Accept** (moves it to done in the ticket's own worktree; offered only
+  where the next lane ends the board, and refused while an item of the
+  definition of done is open) and **Give
   back** (asks what is missing, notes it, moves it to in-progress and hands it
   to the worker that carried it while that is still cheaper, else to a new
   one). A verdict with a reservation gets **Explain**, an open question
