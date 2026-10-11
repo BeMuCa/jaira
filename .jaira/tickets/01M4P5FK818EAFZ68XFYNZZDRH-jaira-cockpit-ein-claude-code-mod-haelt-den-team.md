@@ -1,7 +1,7 @@
 ---
 id: 01M4P5FK818EAFZ68XFYNZZDRH
 title: "jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet"
-status: optimize
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -30,7 +30,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T19:01:54Z
-updated-at: 2026-10-11T20:54:46Z
+updated-at: 2026-10-11T21:00:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6544
 claimed-at: 2026-10-11T20:12:41Z
@@ -39,6 +39,7 @@ outcome-why: "critique round 2"
 outcome-resolves: "review-summary round 2"
 review-summary: "none"
 review-gaps: "removed filter.ts isAgentPrompt and REPORT_USAGE (no caller left after register.tsx took the prompt path and texts.ts the usage); the ticket pane now formats its times with filter.ts stamp() instead of a second inline copy. Left: exported constants in cache.ts/sessions.ts/threads.ts that only their own file reads (named thresholds, kept for reading), digest.ts exports that predate this ticket, refreshBoard running 'jaira lanes' on every turn beside 'jaira list' (lanes rarely change, but caching them would show a stale band after a lane edit; both are fast), types/index.d.ts mirroring Waiting/Counts/Lang (a contract may not import)"
+test-verdict: "fail: internal/wintrap TestRepositoryIsClean red - core/mod/mod.go embeds 22 files no .gitattributes line pins to LF, and mod.go:65 glues an fs path with a literal / for strings.TrimPrefix"
 ---
 
 # jaira-cockpit: ein Claude-Code-Mod haelt den Teamlead-Chat sauber und zeigt, was auf dem Board wartet
@@ -126,3 +127,5 @@ review-gaps: "removed filter.ts isAgentPrompt and REPORT_USAGE (no caller left a
 - **2026-10-11 20:52 · Alexander Sacharov** — in-progress (nach critique Runde 1): (1) Statuszeile sagt jetzt 'session $X'/'Sitzung'/'сессия'; (2) Rueckgabe ohne Herdr: 'MG677R back in in-progress; no worker started (no Herdr)'; (3) Worker-Staende in $.store unter session:<id>, readRecords() wirft Eintraege aelter als 24 h weg (sessions.ts isExpired), keine Dateien unter ~/.jaira/cockpit mehr; (4) threads:<id> beim Schreiben ans Ende verschoben, session.start behaelt die 20 neuesten. Tests: 'a record a day old decides nothing and is dropped', 'without Herdr it says ...', 'threads of the 20 sessions heard from last'. Der Test-Mock des Stores ist jetzt eigene store.*-Hooks (Test-$ hat kein $.store). Achtung fuer spaetere Laeufe: register.tsx-Zeilennummern in den Proofs vor review neu pruefen.
 - **2026-10-11 20:53 · Alexander Sacharov** — critique (Runde 2): die 4 Befunde aus Runde 1 sind in d28489d erledigt. Neu, weil die Reparatur ihn einschleppte und er DoD 2 bricht (installierter Mod waere mit 14k Zeilen generierter Typen aufgeblaeht): tsconfig.json + .claude-plugin/types im Mod-Ordner wurden mit eingebettet. In db959f4 behoben (core/mod/mod.go ueberspringt beides, Root-.gitignore ignoriert tsconfig.json, Test prueft es) - offen gesagt: in derselben Sitzung repariert statt erst zurueckzuschicken; der Weg ueber in-progress folgt hier formal.
 - **2026-10-11 20:53 · Alexander Sacharov** — critique (Runde 3): einziger Befund aus Runde 2 in db959f4 erledigt (mod.go generatedTypes/generatedConfig, Test TestBuiltinsCarryTheCockpitWithoutItsTests). Nichts weiter - review-summary=none.
+- **2026-10-11 21:00 · Alexander Sacharov** — testing (Runde 1): go vet gruen; go test ./... -race: 17 Fehler gegen 16 auf Basis 94bd1c1 (gleicher Lauf, eigener Worktree) - neu nur internal/wintrap TestRepositoryIsClean: 'core/mod/mod.go:23: windows trap 2: //go:embed pulls in 22 file(s) that no line in .gitattributes pins ... a Windows checkout with core.autocrlf embeds them with CRLF' und 'core/mod/mod.go:65: windows trap 5: a path is glued together with a literal / and handed to strings.TrimPrefix'. Fix: .gitattributes-Zeile 'core/mod/builtin/** text eol=lf' (wie die Rollen), mod.go:65 ist ein io/fs-Pfad -> //wintrap:ok. Die uebrigen 16 (core/lane, core/move, internal/cli, internal/tui) sind auf der Basis genauso rot.
+- **2026-10-11 21:00 · Alexander Sacharov** — in-progress (nach testing Runde 1): .gitattributes 'core/mod/builtin/** text eol=lf' (eine Zeile fuer den ganzen Mod-Ordner - wintrap liest die Platte und sah sonst auch die von Claude Code generierte .claude-plugin/types/.gitignore), core/mod/mod.go Pfad-Schnitt als io/fs-Pfad mit //wintrap:ok markiert wie core/role/role.go:93. internal/wintrap gruen.

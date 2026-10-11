@@ -62,6 +62,8 @@ func Builtins() ([]Mod, error) {
 			if err != nil {
 				return err
 			}
+			// An io/fs path: always forward slashes, on every platform.
+			//wintrap:ok
 			rel := strings.TrimPrefix(p, root+"/")
 			if d.IsDir() {
 				if rel == "tests" || rel == generatedTypes {
