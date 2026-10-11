@@ -103,13 +103,25 @@ export const register: Register = on => {
     return started
   })
 
+  // What session.receive left alone on purpose — a comment on an artifact,
+  // a pull request's event — reaches prompt.submit next, under the same
+  // origin a report has; it must not be shortened there either.
+  const untouched = new Set<string>()
+
   on('session.receive', async ($, e, next) => {
-    const text = isAgentReport(e) ? await shorten($, e.text, e.origin.kind) : undefined
+    if (!isAgentReport(e)) {
+      untouched.add(e.text)
+      return next(e)
+    }
+    const text = await shorten($, e.text, e.origin.kind)
     return next(text === undefined ? e : { ...e, text })
   }).catch(($, e, next) => next(e))
 
   on('prompt.submit', async ($, e, next) => {
-    const text = AGENT_ORIGINS.has(e.origin.kind) ? await shorten($, e.text, e.origin.kind) : undefined
+    if (untouched.delete(e.text) || !AGENT_ORIGINS.has(e.origin.kind)) return next(e)
+    // A background task of this session always reports in its own block.
+    if (e.origin.kind === 'task-notification' && !NOTIFICATION.test(e.text)) return next(e)
+    const text = await shorten($, e.text, e.origin.kind)
     return next(text === undefined ? e : { ...e, text })
   }).catch(($, e, next) => next(e))
 
