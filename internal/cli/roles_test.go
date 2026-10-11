@@ -68,6 +68,40 @@ func TestRolesListJSON(t *testing.T) {
 	}
 }
 
+// The teamlead reads which role to start for a ticket off 'roles list': the
+// dispatcher by default, the worker once settings.json says "dispatch":
+// "worker".
+func TestRolesListReportsTheDispatchSetting(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	dir := t.TempDir()
+	read := func() map[string]any {
+		t.Helper()
+		out, err := runCLI(t, dir, "--json", "roles", "list")
+		if err != nil {
+			t.Fatalf("roles list --json: %v\n%s", err, out)
+		}
+		var p map[string]any
+		if err := json.Unmarshal([]byte(out), &p); err != nil {
+			t.Fatalf("invalid json: %v\n%s", err, out)
+		}
+		return p
+	}
+	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" {
+		t.Errorf("default: dispatch=%v role=%v, want lanes/jaira-dispatcher", p["dispatch"], p["dispatch_role"])
+	}
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "worker"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" {
+		t.Errorf("opted in: dispatch=%v role=%v, want worker/jaira-worker", p["dispatch"], p["dispatch_role"])
+	}
+	out, err := runCLI(t, dir, "roles", "list")
+	if err != nil || !strings.Contains(out, "dispatch: worker — a ticket handed to an agent goes to /jaira-worker") {
+		t.Errorf("roles list does not say which role a ticket goes to: %v\n%s", err, out)
+	}
+}
+
 // --project with no agent directory in the repository still lands somewhere an
 // agent looks: .claude/skills.
 func TestRolesInstallProjectWritesSevenRoles(t *testing.T) {

@@ -25,7 +25,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-11T17:36:41Z
-updated-at: 2026-10-11T17:42:04Z
+updated-at: 2026-10-11T17:52:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-521795
 claimed-at: 2026-10-11T17:38:06Z
@@ -35,10 +35,18 @@ claimed-at: 2026-10-11T17:38:06Z
 
 ## Definition of Done
 
-- [ ] Lane-Frontmatter kennt 'context: fresh' (Schema, Parser, 'jaira lanes' zeigt es, 'show --for-lane --json' gibt es aus); ohne das Feld auf dem ganzen Board gilt die letzte agentische Lane vor der ersten Menschen-Lane als fresh; Tests decken beides
-- [ ] Rolle jaira-worker in core/role/builtin ersetzt jaira-dispatcher: traegt das Ticket selbst durch alle Lanes bis vor die erste fresh-Lane, startet dafuer einen frischen Agenten mit jaira-role-lane, und behaelt Zaehlen offener Entscheidungen, mode=conversational, Neustart ueber resume und notes
-- [ ] jaira-teamlead startet jaira-worker statt jaira-dispatcher; der alte Name zeigt einen Hinweis statt still zu verschwinden
-- [ ] Zeile in core/release/NOTES.md unter Unreleased; go test ./... -race gruen (mit isoliertem HOME, siehe bekannte Basis-Fehler)
+- [x] Lane-Frontmatter kennt 'context: fresh' (Schema, Parser, 'jaira lanes' zeigt es, 'show --for-lane --json' gibt es aus); ohne das Feld auf dem ganzen Board gilt die letzte agentische Lane vor der ersten Menschen-Lane als fresh; Tests decken beides
+  proof: core/lane/lane.go parse+impliedFresh; internal/cli/tickets.go lanes CONTEXT column, flow.go for-lane context; tests core/lane/context_test.go, internal/cli/context_test.go TestLanesAndForLaneReportContext, core/board/lanesection_test.go TestLaneSectionMarksAFreshLane
+- [x] Rolle jaira-worker in core/role/builtin als Alternative zu jaira-dispatcher (der unveraendert bleibt): traegt das Ticket selbst durch alle Lanes bis vor die erste fresh-Lane, startet dafuer einen frischen Agenten mit jaira-role-lane, und behaelt Zaehlen offener Entscheidungen, mode=conversational, Neustart ueber resume und notes
+  proof: core/role/builtin/jaira-worker/SKILL.md (Before the plan, conversational mode, The fresh lane, restartable); TestBuiltinsAreTheShippedRoles, TestWorkerNamesScriptsThatShip
+- [x] jaira-teamlead liest die Einstellung und startet jaira-worker oder jaira-dispatcher; ohne Einstellung bleibt alles wie heute (dispatcher, ein Agent pro Lane)
+  proof: core/role/builtin/jaira-teamlead/SKILL.md 'Which one is the person's choice' reads jaira --json roles list; internal/cli/roles.go; TestRolesListReportsTheDispatchSetting
+- [x] Zeile in core/release/NOTES.md unter Unreleased; go test ./... -race gruen (mit isoliertem HOME, siehe bekannte Basis-Fehler)
+  proof: core/release/NOTES.md Unreleased (2 Zeilen); go test ./... -race -count=1 mit HOME/USERPROFILE/JAIRA_HOME = absolutes leeres Temp-Verzeichnis: exit 0
+- [x] Opt-in-Schalter in core/settings: ~/.jaira/settings.json "dispatch": "lanes" | "worker", Default "lanes"; im TUI-Einstellungsbildschirm (internal/tui/settings.go) umschaltbar; ueber ein bestehendes CLI-Kommando lesbar (jaira roles list); NOTES.md nennt die Einstellung und wie man sie einschaltet
+  proof: core/settings/settings.go Dispatch/DispatchMode/DispatchRole (TestDispatchDefaultsToLanes); internal/tui/settings.go 'Agents per ticket' (TestSettingsEnterSwitchesDispatch); jaira roles list dispatch/dispatch_role; NOTES.md Unreleased line 2
+- [x] Herdr bleibt: im Worker-Modus bekommt der Worker einen eigenen Herdr-Tab (Teamlead via spawn.sh, Lane-Name 'worker'), der frische Agent der fresh-Lane ebenfalls einen eigenen Tab via spawn.sh/run-lane.sh, nach seiner Lane geschlossen; ohne HERDR_ENV=1 gilt der bisherige Fallback
+  proof: jaira-dispatcher/scripts/spawn.sh lane 'worker' -> /jaira-worker (TestSpawnTypesTheRoleForItsLaneName, Herdr-Stub); jaira-worker/SKILL.md 'Starting another agent' uses run-lane.sh/spawn.sh, Fallback Agent()
 
 ## Options
 
@@ -52,11 +60,12 @@ claimed-at: 2026-10-11T17:38:06Z
 - [x] lane.Lane.Context: parse (fresh|shared), Fehler fuer anderes, lanesEquivalent, Template
 - [x] Set: Default-Regel in Load nach der Reihenfolge (ContextImplied)
 - [x] Tests in core/lane fuer Feld, Fehler und Default (inkl. shared schaltet ab, Board ohne Menschen-Lane)
-- [ ] CLI: jaira lanes (Tabelle+JSON), lanes show, show --for-lane --json context; Tests
-- [ ] announce: fresh-Lane in der Lane-Liste markieren
-- [ ] Rolle jaira-worker schreiben, Skripte verschieben, Dispatcher-Stub, role_test anpassen
-- [ ] teamlead + role-lane + andere Rollen auf worker umstellen; README/docs/roles.go
-- [ ] NOTES.md Zeile; go test ./... -race mit isoliertem HOME
+- [x] CLI: jaira lanes (Tabelle+JSON), lanes show, show --for-lane --json context; Tests
+- [x] announce: fresh-Lane in der Lane-Liste markieren
+- [x] Rolle jaira-worker schreiben (nutzt die Skripte von jaira-dispatcher), spawn.sh-Lane 'worker', role_test anpassen
+- [x] teamlead liest Schalter; role-lane-Wortlaut; README/docs/roles.go
+- [x] NOTES.md Zeile; go test ./... -race mit isoliertem HOME
+- [x] Schalter dispatch in core/settings + TUI-Eintrag + 'jaira roles list' (Text+JSON), Tests
 
 ## Progress
 - **2026-10-11 17:40 · Alexander Sacharov** — Offene Entscheidungen vor dem Plan — alle selbst entschieden, keine braucht den Menschen:
@@ -68,3 +77,5 @@ claimed-at: 2026-10-11T17:38:06Z
 6. Conversational-Modus: die lesende critique neben der Arbeit bleibt, der Worker startet sie.
 7. 'jaira lanes': neue Spalte CONTEXT; abgeleitetes fresh mit * und Fussnote. JSON: context + context_implied. show --for-lane --json: context.
 8. Die generierte CLAUDE.md-Lane-Liste markiert eine fresh-Lane, damit jeder Agent es liest.
+- **2026-10-11 17:43 · Alexander Sacharov** — Teil 1 (Lane-Feld) committed in 8f1707b. Naechstes: Rolle jaira-worker.
+- **2026-10-11 17:45 · Alexander Sacharov** — Scope-Erweiterung von Alex am 2026-10-11 (ueber den Koordinator): (1) Worker-Modus ist opt-in, Default bleibt der Dispatcher mit einem Agenten pro Lane; Schalter 'dispatch' in ~/.jaira/settings.json, im TUI-Settings-Screen, per CLI lesbar; Teamlead startet das Passende. (2) Herdr bleibt: Worker und frischer Review-Agent bekommen je einen eigenen Tab via spawn.sh. DoD 2 und 3 entsprechend umformuliert (vorher: worker ERSETZT dispatcher, alter Name nur noch Hinweis) — das widersprach der Erweiterung. Entscheidung: eigene Rolle jaira-worker statt Zweig im Dispatcher — der Dispatcher-Prompt bleibt byte-gleich, also aendert sich fuer niemanden ohne Schalter etwas, und zwei Arbeitsweisen in einer Datei wuerden jeden Absatz an eine Bedingung haengen. Der Worker benutzt die Skripte von jaira-dispatcher/scripts (gleiches Skills-Verzeichnis, roles install schreibt beide). CLI-Leseweg: 'jaira roles list' (--json: Schluessel dispatch und dispatch_role) — die Stelle, an der der Teamlead ohnehin die Rollen sieht.

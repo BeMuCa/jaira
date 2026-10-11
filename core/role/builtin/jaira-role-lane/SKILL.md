@@ -7,6 +7,14 @@ description: "Work exactly one jaira lane of one ticket, then stop. Invoked as /
 
 Arguments: `<ticket-id> <lane>`. Without both, say what is missing and stop.
 
+Started by `jaira-worker` rather than `jaira-dispatcher`? Then wherever this
+file says "the dispatcher", it means that worker — it started you, it carries
+your questions up, and it is the one writer beside a critique that only reads.
+A worker starts you for a lane marked fresh context (`context: fresh` in the
+`--for-lane` payload), which means it worked every lane before yours itself. You
+have seen nothing of that work, and that is the point: judge it from the board
+and the diff alone, and do not ask the worker what it meant.
+
 The lane's instructions are not here — the board carries them. Read first, and
 write nothing at all until you have — `jaira claim` included, writing as it does
 your name onto the ticket. Two reads, in this order:

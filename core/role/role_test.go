@@ -23,6 +23,7 @@ var wantRoles = []string{
 	"jaira-role-research",
 	"jaira-role-tester",
 	"jaira-teamlead",
+	"jaira-worker",
 }
 
 func TestBuiltinsAreTheShippedRoles(t *testing.T) {
@@ -339,5 +340,74 @@ func TestProjectTargetIsTheClaudeSkillsDirectory(t *testing.T) {
 	got := ProjectTarget(root)
 	if want := filepath.Join(root, ".claude", "skills"); got != want {
 		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+// The worker uses the dispatcher's scripts rather than carrying copies that
+// drift: both roles are installed side by side, so the paths it names are
+// beside it. A rename of either file has to fail here, not in a pane.
+func TestWorkerNamesScriptsThatShip(t *testing.T) {
+	b, err := File("jaira-worker", skillFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{"scripts/spawn.sh", "scripts/run-lane.sh"} {
+		if !strings.Contains(string(b), "jaira-dispatcher/"+rel) {
+			t.Errorf("jaira-worker does not name jaira-dispatcher/%s", rel)
+		}
+		if _, err := File("jaira-dispatcher", rel); err != nil {
+			t.Errorf("jaira-dispatcher/%s does not ship: %v", rel, err)
+		}
+	}
+}
+
+// spawn.sh types the role into the tab it opened; "worker" must start
+// /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
+// Herdr is replaced by a stub that answers the three calls the script reads
+// and records what was typed — no tab is opened anywhere.
+func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skipf("no python3 on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	typed := filepath.Join(t.TempDir(), "typed")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	for lane, want := range map[string]string{
+		"worker":   "/jaira-worker ab12cd --parent lead",
+		"dispatch": "/jaira-dispatcher ab12cd --parent lead",
+		"review":   "/jaira-role-lane ab12cd review",
+	} {
+		_ = os.Remove(typed)
+		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
+		}
+		got, err := os.ReadFile(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.TrimSpace(string(got)) != want {
+			t.Errorf("lane %s typed %q, want %q", lane, strings.TrimSpace(string(got)), want)
+		}
 	}
 }

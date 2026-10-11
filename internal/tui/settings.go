@@ -20,6 +20,9 @@ const (
 	// and the board has to reload to show what it now says.
 	settingsActionLogbookDays = "logbook-days"
 	settingsActionSaved       = "saved"
+	// settingsActionDispatch flips the dispatch setting in place: there are
+	// two values, so enter is the whole editor.
+	settingsActionDispatch = "dispatch"
 )
 
 // settingsEntry is one row in the menu: a name, what pressing enter on it
@@ -46,6 +49,11 @@ var settingsEntries = []settingsEntry{
 		desc:   "days of the logbook the terminal lane shows below its tickets, and 'jaira logbook' lists; 0 hides them",
 		action: settingsActionLogbookDays,
 	},
+	{
+		name:   "Agents per ticket",
+		desc:   "lanes: one new agent per lane (jaira-dispatcher); worker: one agent carries the ticket, only a fresh-context lane such as review gets a new one (jaira-worker). enter switches",
+		action: settingsActionDispatch,
+	},
 }
 
 // settingsScreen is the menu behind S: one door into both the lane screen and
@@ -62,10 +70,33 @@ type settingsScreen struct {
 	editing bool
 	buf     string
 	err     string
+
+	// dispatch is the dispatch setting as settings.json has it now, and
+	// dispatchErr what went wrong saving the last switch.
+	dispatch    string
+	dispatchErr string
 }
 
 func newSettingsScreen() *settingsScreen {
-	return &settingsScreen{days: settings.Load().LogbookWindow()}
+	cur := settings.Load()
+	return &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode()}
+}
+
+// switchDispatch flips lanes and worker and saves at once, reading the file
+// again first for the same reason editKey does.
+func (s *settingsScreen) switchDispatch() string {
+	cur := settings.Load()
+	next := settings.DispatchWorker
+	if cur.DispatchMode() == settings.DispatchWorker {
+		next = settings.DispatchLanes
+	}
+	cur.Dispatch = next
+	if err := settings.Save(cur); err != nil {
+		s.dispatchErr = err.Error()
+		return settingsActionNone
+	}
+	s.dispatch, s.dispatchErr = next, ""
+	return settingsActionSaved
 }
 
 // editKey drives the number while it is open: digits type, backspace takes
@@ -121,7 +152,11 @@ func (s *settingsScreen) key(k string) string {
 			s.idx--
 		}
 	case "enter":
-		if a := settingsEntries[s.idx].action; a != settingsActionLogbookDays {
+		a := settingsEntries[s.idx].action
+		if a == settingsActionDispatch {
+			return s.switchDispatch()
+		}
+		if a != settingsActionLogbookDays {
 			return a
 		}
 		s.editing, s.buf, s.err = true, strconv.Itoa(s.days), ""
@@ -145,10 +180,16 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionLogbookDays {
 			name += "  " + s.logbookValue()
 		}
+		if e.action == settingsActionDispatch {
+			name += "  " + styMeta.Render(s.dispatch)
+		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
 		if e.action == settingsActionLogbookDays && s.err != "" {
 			sb.WriteString(styErr.Render("      "+s.err) + "\n")
+		}
+		if e.action == settingsActionDispatch && s.dispatchErr != "" {
+			sb.WriteString(styErr.Render("      "+s.dispatchErr) + "\n")
 		}
 	}
 

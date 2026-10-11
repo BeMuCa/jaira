@@ -17,15 +17,17 @@ spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-ro
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
-  --parent <s>    Only with the lane <dispatch>: the session name of whoever
-                  starts the dispatcher (a teamlead's name, as ListAgents shows
-                  it). The dispatcher hands its questions there instead of
-                  asking the person in its own tab.
+  --parent <s>    Only with the lane <dispatch> or <worker>: the session name
+                  of whoever starts it (a teamlead's name, as ListAgents shows
+                  it). It hands its questions there instead of asking the
+                  person in its own tab.
   -h, --help      This text.
 
-The lane <dispatch> is special: it starts the dispatcher itself in the tab
-(/jaira-dispatcher <ticket-id>) instead of one lane's worker. Every other lane
-name starts /jaira-role-lane <ticket-id> <lane>.
+Two lane names are special. <dispatch> starts the dispatcher itself in the tab
+(/jaira-dispatcher <ticket-id>) instead of one lane's worker; <worker> starts
+the worker that carries the whole ticket itself (/jaira-worker <ticket-id>),
+which is what a teamlead passes when settings.json says "dispatch": "worker".
+Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
 HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
@@ -151,8 +153,13 @@ esac
 # The lane name "dispatch" starts the dispatcher itself rather than one lane's
 # worker — same worktree, same tab, same waiting for claude to come up, so it
 # lives here rather than in a second script that drifts from this one.
+# "worker" is the same for the role that carries a ticket through every lane
+# itself (jaira-worker), the alternative a teamlead starts when the dispatch
+# setting asks for it.
 if [ "$lane" = dispatch ]; then
   prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
+elif [ "$lane" = worker ]; then
+  prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi
