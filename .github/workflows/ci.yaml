@@ -1,9 +1,17 @@
 name: ci
 
+# A change that touches nothing but core/release/notes/** runs no CI. That is
+# the release pull request (release-notes.yaml moves the notes into
+# notes/<version>/) and its merge into master: the button has already tested
+# that exact tree, and testing it again on three platforms bought nothing.
+# master has no required status checks, so a skipped run blocks no merge; if
+# one is ever made required, replace paths-ignore with a job that ends green.
 on:
   push:
     branches: [main, master]
+    paths-ignore: ["core/release/notes/**"]
   pull_request:
+    paths-ignore: ["core/release/notes/**"]
 
 jobs:
   # A ticket file goes into a commit only together with code; a ticket nobody

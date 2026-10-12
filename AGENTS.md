@@ -196,6 +196,11 @@ Releasing is a button, and nothing in it lands on master directly:
 2. Merging that pull request runs `release-tag`: it tags the merge commit
    `v<version>` and starts `release.yaml`, which builds the binaries as before.
 
+A release is tested once, in step 1: the button runs `go test ./...` on the cut
+tree before it opens the pull request. The pull request and its merge change
+only `core/release/notes/**`, which `ci.yaml` skips, and the tag build runs no
+tests. A release pull request that changes anything else gets the full CI run.
+
 The binary reads a release's version from its folder name. Never move a note
 into a version folder by hand, and never edit a note inside one: that release
 has shipped.
