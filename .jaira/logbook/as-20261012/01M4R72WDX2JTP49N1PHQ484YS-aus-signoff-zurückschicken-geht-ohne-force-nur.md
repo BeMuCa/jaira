@@ -1,7 +1,7 @@
 ---
 id: 01M4R72WDX2JTP49N1PHQ484YS
 title: "Aus signoff zurückschicken geht ohne --force, nur done braucht es"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,20 +19,24 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8cea1b42e7b0a499bc0010fa363427e23b9379ba
+  - 37208bf84f3d814d1430fc51069fd5175ec3ab3f
+  - f77567b4dd6493165165ebf9ea151209652e779f
+  - b024f8ab095fd083f7d5e27bc0308f2617d8af2a
 created-at: 2026-10-12T14:08:23Z
-updated-at: 2026-10-12T14:29:51Z
+updated-at: 2026-10-12T14:39:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1804
 claimed-at: 2026-10-12T14:08:49Z
 outcome-what: "Gate refuses leaving a requires-human-exit lane only when the target is not earlier in the lane order (core/gate/gate.go:394); agent block, README, docs/AGENTS.md, jaira skill and lane template say the same"
 outcome-why: "Sending work back accepts nothing; making it a --force switched off every other refusal on the move, which on 2026-10-12 hid a stale-file overwrite on K1W2JR"
 outcome-resolves: "Agents and '!' commands send a ticket from signoff back to in-progress with a plain move; done and later lanes stay a person's (humanexit_test.go)"
-review-summary: "core/gate/gate.go:395: the CodeNeedsHuman refusal on leaving a requires-human-exit lane now fires only when the target sits later in the lane order (to > from, the same lane.Index the other checks use). signoff -> in-progress (or any earlier lane) passes for an agent or a '!' command with no --force; signoff -> done and signoff -> blocked (blocked is last in the order) are still refused unless interactive. The refusal message, the agent block (announce.go, CLAUDE.md, AGENTS.md), the generated lane line for human-exit lanes, README, docs/AGENTS.md, the jaira skill and the lane template comment say the same. Three tests in core/gate/humanexit_test.go: back from signoff, forward to done/blocked, and the rule on a second lane flagged requires-human-exit."
-review-gaps: "1) core/lane/lane.go:113 doc comment on RequiresHumanExit still says 'no agent may move a ticket out of this lane' — the field's own definition now contradicts the gate. 2) This repo's committed CLAUDE.md:157 and AGENTS.md:130 lane sections still say signoff is 'never out', while line 118/91 of the same files now say send-back is fine; announce.go generates the new text, but the files were not regenerated (jaira update would). 3) core/release/notes/Q484YS.md is not read by this branch's binary: the notes/ directory arrives with AR97K9 (origin/feat/ar97k9), which is not on upstream/master yet — merge AR97K9 first or the line is not shown by jaira update. 4) Minor: the blocked refusal says 'cannot move a ticket on from it' — parking is not 'on', but the rule (blocked stays refused) is the one the ticket decided. No defects in the gate logic: unknown target lanes return earlier, from is never -1 when cur exists."
-test-verdict: "pass: go test ./... exit 0; CLI on a scratch board: signoff->in-progress without --force exit 0 and the ticket lands in in-progress, signoff->done exit 3 with the human-checkpoint refusal; the installed old binary refuses the same send-back with exit 3"
-review-verdict: "the diff matches all four DoD items and works end to end; approve with two small doc fixes (lane.go:113 comment, regenerate the lane section in CLAUDE.md/AGENTS.md) and merge AR97K9 before this so the release note is read"
-review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. in a scratch repo: git init && git commit --allow-empty -m i && /tmp/jaira init && /tmp/jaira create t --goal g --context c --dod d  (note the id)  3. /tmp/jaira move <id> --to signoff --force  4. /tmp/jaira move <id> --to in-progress  -> prints '<id> → in-progress', exit 0, no --force  5. /tmp/jaira move <id> --to signoff --force, then /tmp/jaira move <id> --to done  -> exit 3, the list includes 'lane \"signoff\" is a human checkpoint ... only back to an earlier lane'  6. go test ./core/gate -run HumanExit -v  -> three PASS"
+review-summary: "CheckAdvance (core/gate/gate.go:395) now refuses leaving a requires-human-exit lane only when the target lane sits later in the lane order (to > from, the same lane.Index pair the outcome and spec-zone checks use); moving back to any earlier lane passes without --force, while done, blocked and any later lane still need --force or the board. The refusal text, the agent block and lane line in announce.go (regenerated into CLAUDE.md/AGENTS.md), the lane.go/template.go contract comments, README, docs/AGENTS.md and the jaira skill all say the same. Three gate tests cover back, forward (done, blocked) and a second human-exit lane set via the contract; Get returns *Lane, so that mutation is real."
+review-gaps: "1. The release note sits in core/release/notes/Q484YS.md, but release.go on this branch embeds only NOTES.md - jaira update will not show it until AR97K9 (origin/feat/ar97k9) is merged first; merge order, not code. 2. Round-2 delta b024f8a (lane.go comment, generated lane lines) matches announce.go word for word; nothing left from the earlier review. 3. Untracked .jaira/milestones/ in the worktree is not this ticket's - do not commit it with this branch."
+test-verdict: "pass (round 2): go test ./... exit 0 after b024f8a; CLAUDE.md/AGENTS.md lane section identical to what this branch's 'jaira update' writes; gate unchanged since round 1, where signoff->in-progress exit 0 and ->done exit 3 were checked on a scratch board"
+review-verdict: "approve: the diff meets all four DoD items, go test ./... is green, and end to end signoff->in-progress and signoff->review pass without --force (exit 0) while signoff->done is refused with the human-checkpoint line (exit 3). Only condition: merge AR97K9 before this so the release note is read."
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. mkdir /tmp/q && cd /tmp/q && git init && git commit --allow-empty -m i && /tmp/jaira init  3. /tmp/jaira create t --goal g --context c --dod d  (note the id)  4. /tmp/jaira move <id> --to signoff --force  5. /tmp/jaira move <id> --to in-progress  -> prints '<id> -> in-progress', exit 0, no --force  6. /tmp/jaira move <id> --to signoff --force, then /tmp/jaira move <id> --to done  -> exit 3, list ends with 'lane \"signoff\" is a human checkpoint ... only back to an earlier lane'  7. go test ./core/gate -run HumanExit -v  -> three PASS"
 ---
 
 # Aus signoff zurückschicken geht ohne --force, nur done braucht es
@@ -73,3 +77,4 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. in a scratch repo: git 
 - **2026-10-12 14:19 · Alexander Sacharov** — review: Gate-Logik korrekt, e2e geprüft (signoff->in-progress exit 0 ohne --force; ->done und ->blocked exit 3). Offen: lane.go:113 Kommentar veraltet; CLAUDE.md:157/AGENTS.md:130 Lane-Abschnitt nicht regeneriert; Release-Notiz wird erst mit AR97K9 gelesen — AR97K9 zuerst mergen.
 - **2026-10-12 14:28 · Alexander Sacharov** — Alex 2026-10-12: send back for the two doc gaps from review (lane.go:113 comment; CLAUDE.md/AGENTS.md lane lines via jaira update).
 - **2026-10-12 14:29 · Alexander Sacharov** — in-progress 2: lane.go RequiresHumanExit-Kommentar und die signoff-Zeile in CLAUDE.md/AGENTS.md von Hand auf den Generator-Text gesetzt — nicht per 'jaira update' im Worktree, weil das installierte jaira der alte Build ist und den alten Text schreiben würde; gegen 'jaira update' des Branch-Builds in einer Kopie verglichen: identisch. Punkt 3 (AR97K9 zuerst mergen) ist Reihenfolge beim Merge, kein Code hier.
+- **2026-10-12 14:30 · Alexander Sacharov** — critique 3 (Runde nach signoff): Delta b024f8a ist nur ein Kommentar und zwei generierte Zeilen, Wortlaut gleich announce.go:221 — nichts zu sagen.
