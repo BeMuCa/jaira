@@ -74,9 +74,6 @@ let turn = 0
 // The person's message of the turn running, for the threads.
 let personSaid: string | undefined
 let threads: Thread[] = []
-// The share of a model's window, in percent, past which a ticket's next
-// round goes to a new worker: userConfig workerContextShare.
-let share = DEFAULT_CONTEXT_SHARE
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
 const chats = new Map<string, number>()
@@ -440,7 +437,7 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
-async function giveBack($: EngineInterface, id: string, lane: string, reason: string): Promise<void> {
+async function giveBack($: EngineInterface, id: string, lane: string, reason: string, share: number): Promise<void> {
   if (!board) return
   const dir = await ticketDir($, board, id)
   const noted = await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
@@ -487,7 +484,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
 // The workers of this board, for the teamlead (the tool) and a person
 // (/cockpit workers) alike: the asking session first, from its live figures,
 // then every agent carrying a ticket, with whom a new round would go to.
-async function workers($: EngineInterface): Promise<string> {
+async function workers($: EngineInterface, share: number): Promise<string> {
   let self = ''
   try {
     const usage = await $.session.usage()
@@ -622,7 +619,9 @@ const USAGE_COMMAND = 'cockpit'
 export const register: Register = (on, options) => {
   const threshold = typeof options.cacheGuardTokens === 'number' ? options.cacheGuardTokens : 30_000
   const usdPerMTok = typeof options.usdPerMTok === 'number' ? options.usdPerMTok : 5
-  share = typeof options.workerContextShare === 'number' ? options.workerContextShare : DEFAULT_CONTEXT_SHARE
+  // The share of a model's window, in percent, past which a ticket's next
+  // round goes to a new worker.
+  const share = typeof options.workerContextShare === 'number' ? options.workerContextShare : DEFAULT_CONTEXT_SHARE
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
@@ -737,7 +736,7 @@ export const register: Register = (on, options) => {
       const { ticket } = e as { ticket?: unknown }
       return { result: await reports($, typeof ticket === 'string' ? ticket : '') }
     }
-    if (e.tool === 'mcp__jaira-cockpit__workers') return { result: await workers($) }
+    if (e.tool === 'mcp__jaira-cockpit__workers') return { result: await workers($, share) }
     totals = { ...totals, tools: totals.tools + 1 }
     return next(e)
    }).catch(($, e, next) => next(e))
@@ -751,7 +750,7 @@ export const register: Register = (on, options) => {
   on('command.run', { command: USAGE_COMMAND }, async ($, e) => {
     const [sub = '', ...rest] = (e.args ?? '').trim().split(/\s+/)
     if (sub === 'report') return { text: await reports($, rest.join(' ')) }
-    if (sub === 'workers') return { text: await workers($) }
+    if (sub === 'workers') return { text: await workers($, share) }
     if (sub === 'threads') return { text: listThreads(threads, turn, t.threadsTitle, t.threadsNone) }
     if (sub === 'ticket' && rest[0]) {
       const id = rest[0].toUpperCase()
@@ -914,7 +913,7 @@ export const register: Register = (on, options) => {
             if (reason.trim() === '') return
             void update($, givingAtom, () => null)
             void $.ui.close({ id: GIVE_BACK })
-            void giveBack($, w.id, w.lane, reason.trim())
+            void giveBack($, w.id, w.lane, reason.trim(), share)
           }}
         />
       </Box>

@@ -149,7 +149,7 @@ export function workerLines(input: {
     const cache = tab?.agent_status === 'working' ? 'cache warm (working)' : left > 0 ? `cache ${Math.ceil(left / 60_000)} min left` : 'cache cold'
     const next = tab?.agent_status === 'working'
       ? 'working: nothing to decide'
-      : (c => `next round: ${c.reuse ? 'same worker' : 'new worker'} (${c.why})`)(chooseWorker({ record, tabAlive: tabs === undefined || tab !== undefined, now, share }))
+      : (c => `next round: ${c.reuse ? 'same worker' : 'new worker'} (${c.why})`)(chooseWorker({ record, tabAlive: tab !== undefined, now, share }))
     lines.push(`${head} · ${size(record.tokens, record.window)} · ${cache} · ${next}`)
   }
   return lines
