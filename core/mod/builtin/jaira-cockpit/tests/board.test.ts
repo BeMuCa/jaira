@@ -459,6 +459,22 @@ describe('waiting for you', () => {
     }
   })
 
+  test('a Discuss chat on a teammate\'s ticket stays open while it waits for the person', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
+    w.tickets = [SIGNOFF, { ...HUMAN, assignee: 'Carla' }, WORKING]
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'idle' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'theirs' })
+    await (await $.ui.mount(BAND)).press({ key: 'discuss-K7P2QX' })
+    await w.clock.advance(60_000)
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    w.tickets = [SIGNOFF, { ...HUMAN, assignee: 'Carla', question: '' }, WORKING]
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
+  })
+
   test('without a word from jaira whoami every waiting ticket counts as the person\'s', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...SIGNOFF, assignee: 'Berk' }, HUMAN, WORKING]

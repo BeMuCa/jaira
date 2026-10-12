@@ -263,7 +263,8 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const from = since - (since % 60_000)
     const note = await noteOn($, board.dir, id, kind === 'explain' ? 'explain' : 'decision')
     const fresh = note !== undefined && note.at >= from ? note : undefined
-    const w = view.waiting.find(x => x.id === id)
+    // A teammate's ticket can be talked through too, and sits in theirs.
+    const w = [...view.waiting, ...view.theirs].find(x => x.id === id)
     const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
     chats.delete(label)

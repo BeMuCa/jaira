@@ -371,10 +371,6 @@ func TestWorkerNamesScriptsThatShip(t *testing.T) {
 	}
 }
 
-// spawn.sh types the role into the tab it opened; "worker" must start
-// /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
-// Herdr is replaced by a stub that answers the three calls the script reads
-// and records what was typed — no tab is opened anywhere.
 // The Discuss chat brings its decision back: a note, a move back that jaira
 // takes for a ticket that already has its outcome, and a line to the session
 // that opened it. A move line carrying --what/--why/--resolves is refused for
@@ -422,11 +418,19 @@ esac
 			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
 		}
 	}
-	if move, _, _ := strings.Cut(line[strings.Index(line, "jaira move "):], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
+	at := strings.Index(line, "jaira move ")
+	if at < 0 {
+		t.Fatalf("discuss prompt has no move back:\n%s", line)
+	}
+	if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
 		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
 	}
 }
 
+// spawn.sh types the role into the tab it opened; "worker" must start
+// /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
+// Herdr is replaced by a stub that answers the three calls the script reads
+// and records what was typed — no tab is opened anywhere.
 func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
