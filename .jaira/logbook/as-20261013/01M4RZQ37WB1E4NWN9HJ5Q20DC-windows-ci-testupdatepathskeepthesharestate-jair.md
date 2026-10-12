@@ -1,7 +1,7 @@
 ---
 id: 01M4RZQ37WB1E4NWN9HJ5Q20DC
 title: "Windows-CI: TestUpdatePathsKeepTheShareState/jaira_self_upgrade ersetzt die laufende Test-Binary"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -12,9 +12,11 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 1a6747e4058f07c19b4298f3e737c0e45e09c975
+  - d6ff0ea363769f88f33ee8efc5c74fbf5027c9d2
 created-at: 2026-10-12T21:18:51Z
-updated-at: 2026-10-12T21:37:19Z
+updated-at: 2026-10-12T22:02:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48475
 claimed-at: 2026-10-12T21:19:18Z
@@ -52,3 +54,4 @@ review-check: "1. gh run view 38310503955 --json jobs -q '.jobs[]|.name+\" \"+.c
 - **2026-10-12 21:25 · Alexander Sacharov** — critique: kein Befund. Erwogen: Env-Override wie JAIRA_RELEASE_API (core/selfupdate/selfupdate.go OverrideOf) - abgelehnt, weil ein Nutzer damit 'self upgrade' auf eine beliebige Datei richten koennte; die Paket-Variable selfExecutable ist nur von Tests erreichbar. Einen solchen Seam gibt es sonst nicht im Repo - bewusst hingenommen, ein Aufrufer, eine Zeile.
 - **2026-10-12 21:36 · Alexander Sacharov** — review: annehmbar. Einziger Rest: Doc-Kommentar ueber TestSelfUpgradeVersionPinsInstallsExactRelease (internal/cli/self_test.go:248-256) behauptet noch, der Test ersetze die laufende Test-Binary - beim naechsten Code-Commit auf dem Branch mitkorrigieren oder beim Accept bewusst stehen lassen.
 - **2026-10-12 21:37 · Alexander Sacharov** — Review-Luecke behoben: der veraltete Kommentar ueber TestSelfUpgradeVersionPinsInstallsExactRelease (self_test.go:246) sagt jetzt, dass der Test die Attrappe ersetzt. Schritt 4 im review-check zeigt damit auf einen bereits erledigten Rest. Proofs (self_test.go:130, sharestate_test.go:97) unveraendert.
+- **2026-10-12 22:02 · Alexander Sacharov** — Alex 2026-10-13 per Telefon: 'Сделай ты' - angenommen, vom Teamlead nach done bewegt.
