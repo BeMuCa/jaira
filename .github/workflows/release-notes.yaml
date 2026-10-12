@@ -35,11 +35,12 @@ jobs:
           version=$(go run ./core/release/cut "$VERSION")
           echo "version=$version" >> "$GITHUB_OUTPUT"
       # The pull request opened below runs no CI (a GITHUB_TOKEN push starts
-      # no workflow), so the tests that read the cut tree run here, before
-      # anything is pushed. v0.3.7 failed in the tag build for want of this:
-      # .gitattributes did not pin the new notes/<version>/ folder.
+      # no workflow), so the tests the tag build runs (.goreleaser.yaml) run
+      # here on the cut tree, before anything is pushed. v0.3.7 failed in the
+      # tag build for want of this: .gitattributes did not pin the new
+      # notes/<version>/ folder.
       - name: Test the cut tree
-        run: go test ./internal/wintrap ./core/release/...
+        run: go test ./...
       - name: Push release/<version> and open the pull request
         env:
           VERSION: ${{ steps.cut.outputs.version }}
