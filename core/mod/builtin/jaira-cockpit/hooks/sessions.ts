@@ -69,8 +69,9 @@ export function chooseWorker(input: { record?: SessionRecord; tabAlive: boolean;
 }
 
 // The Herdr tab of the agent carrying a ticket, from `herdr tab list`:
-// spawn.sh labels it `<id>/worker` or `<id>/dispatch`.
-export type Tab = { tab_id: string; label: string }
+// spawn.sh labels it `<id>/worker` or `<id>/dispatch`. Herdr says whether an
+// agent works in it: `working`, `idle` or `done`.
+export type Tab = { tab_id: string; label: string; agent_status?: string }
 
 export function tabsOf(tabListJson: string): Tab[] {
   try {

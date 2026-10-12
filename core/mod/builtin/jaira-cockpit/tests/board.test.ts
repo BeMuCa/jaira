@@ -10,7 +10,7 @@ type World = {
   files: Map<string, string>
   usage: { tokens: number; rateLimits: SessionRateLimit[] }
   tickets: unknown[]
-  tabs: { tab_id: string; label: string }[]
+  tabs: { tab_id: string; label: string; agent_status?: string }[]
   // The old worker's pane went away after the tab list was read.
   paneGone: boolean
   // This session's subagents, as $.agent.list() gives them.
@@ -494,13 +494,17 @@ describe('the status line', () => {
   test('counts the agents that run and the tickets waiting for a person, and what was used', async ($, on) => {
     const w = world(on, { herdr: true })
     // T8QS1Y sits in in-progress and MG677R in signoff: lanes count no agent.
+    // A tab whose agent finished its turn stays open and counts for nothing.
     w.tabs = [
-      { tab_id: 'w1:t1', label: 'T8QS1Y/worker' },
-      { tab_id: 'w1:t2', label: 'K7P2QX/dispatch' },
-      { tab_id: 'w1:t3', label: 'MG677R/review' },
-      { tab_id: 'w1:t4', label: 'MG677R/explain' },
-      { tab_id: 'w1:t5', label: 'ZZ99ZZ/worker' },
-      { tab_id: 'w1:t6', label: 'notes' },
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t2', label: 'K7P2QX/dispatch', agent_status: 'working' },
+      { tab_id: 'w1:t3', label: 'MG677R/review', agent_status: 'working' },
+      { tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' },
+      { tab_id: 'w1:t5', label: 'ZZ99ZZ/worker', agent_status: 'working' },
+      { tab_id: 'w1:t6', label: 'notes', agent_status: 'working' },
+      { tab_id: 'w1:t7', label: 'MG677R/worker', agent_status: 'done' },
+      { tab_id: 'w1:t8', label: 'T8QS1Y/review', agent_status: 'idle' },
+      { tab_id: 'w1:t9', label: 'K7P2QX/review', agent_status: 'done' },
     ]
     await startSession($)
     expect(w.status.at(-1)).toBe('2 worker · 1 review · 2 waiting for you · 5h 34%')
@@ -517,6 +521,16 @@ describe('the status line', () => {
     ]
     await startSession($)
     expect(w.status.at(-1)).toBe('2 worker · 1 review · 2 waiting for you · 5h 34%')
+  })
+
+  test('a worker tab left open after its turn is no worker', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'done' },
+      { tab_id: 'w1:t2', label: 'MG677R/review', agent_status: 'idle' },
+    ]
+    await startSession($)
+    expect(w.status.at(-1)).toBe('0 worker · 0 review · 2 waiting for you · 5h 34%')
   })
 
   test('a jaira built before human_exit still shows the tickets waiting in signoff and human', async ($, on) => {

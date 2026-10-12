@@ -87,9 +87,11 @@ export function snapshotOf(
   }
   const ids = tickets.map(t => t.handle)
   const fresh = lanes.filter(l => l.agentic && l.context === 'fresh').map(l => l.id)
-  for (const { label } of tabs) {
+  // A worker's tab stays open after its turn, for Give back: only one whose
+  // agent is working counts.
+  for (const { label, agent_status } of tabs) {
     const [id = '', lane = ''] = label.split('/')
-    if (!ids.includes(id) || lane === '' || PERSONS_TABS.has(lane)) continue
+    if (agent_status !== 'working' || !ids.includes(id) || lane === '' || PERSONS_TABS.has(lane)) continue
     if (fresh.includes(lane)) counts.review++
     else counts.worker++
   }
