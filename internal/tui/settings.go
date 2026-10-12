@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"cmp"
 	"fmt"
 	"strconv"
 	"strings"
@@ -85,10 +84,12 @@ type settingsScreen struct {
 	dispatch    string
 	dispatchErr string
 
-	// root is the board the screen was opened on. chatModel is the model its
-	// chats start on, chatModelSource where that came from, and chatModelErr
-	// what went wrong saving the last step.
+	// root is the board the screen was opened on. chatBoard is the model its
+	// .jaira/chat-model names, "" for none; chatModel is the model its chats
+	// actually start on, chatModelSource where that came from, and
+	// chatModelErr what went wrong saving the last step.
 	root            string
+	chatBoard       string
 	chatModel       string
 	chatModelSource string
 	chatModelErr    string
@@ -97,20 +98,46 @@ type settingsScreen struct {
 func newSettingsScreen(root string) *settingsScreen {
 	cur := settings.Load()
 	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root}
-	s.chatModel, s.chatModelSource = cur.ChatModelFor(root)
+	s.readChatModel(cur)
 	return s
+}
+
+// readChatModel takes the board's chat model and the one that applies from
+// the files as they are now.
+func (s *settingsScreen) readChatModel(cur settings.Settings) {
+	if s.root != "" {
+		s.chatBoard = settings.BoardChatModel(s.root)
+	}
+	s.chatModel, s.chatModelSource = cur.ChatModelFor(s.root)
+}
+
+// chatModelValue is the chat model row's value: the board's model and where
+// it comes from, or "none" and what applies instead — the step enter is on
+// is always the word the row starts with.
+func (s *settingsScreen) chatModelValue() string {
+	switch {
+	case s.chatBoard != "":
+		return s.chatBoard + " — " + s.chatModelSource
+	case s.chatModel != "":
+		return "none — " + s.chatModel + " " + s.chatModelSource
+	default:
+		return "none — account default"
+	}
 }
 
 // stepChatModel moves the board's chat model on to the next of its choices
 // and saves at once — the board's, because it is the one that wins; the
-// machine's fallback is written by hand. A value written by hand that is none
-// of the choices steps back to none, the first, which lets the machine's
-// apply again.
+// machine's fallback is written by hand. A model written by hand that is none
+// of the choices (claude-sonnet-5-5) steps to none, the first, which lets the
+// machine's apply again. A value that is no model name at all already counts
+// as none, so it steps on to sonnet like none does.
 func (s *settingsScreen) stepChatModel() string {
 	if s.root == "" {
 		return settingsActionNone
 	}
 	choices := settings.ChatModelChoices
+	// Read again rather than trusting chatBoard, for the same reason editKey
+	// reads settings.json again: the file may have changed since S opened.
 	cur, next := settings.BoardChatModel(s.root), choices[0]
 	for i, c := range choices {
 		if c == cur {
@@ -122,7 +149,7 @@ func (s *settingsScreen) stepChatModel() string {
 		return settingsActionNone
 	}
 	// None, not saved: like dispatch, nothing on the board shows it.
-	s.chatModel, s.chatModelSource = settings.Load().ChatModelFor(s.root)
+	s.readChatModel(settings.Load())
 	s.chatModelErr = ""
 	return settingsActionNone
 }
@@ -234,7 +261,7 @@ func (s *settingsScreen) render(width, height int) string {
 			name += "  " + styMeta.Render(s.dispatch)
 		}
 		if e.action == settingsActionChatModel {
-			name += "  " + styMeta.Render(cmp.Or(s.chatModel, "account default")+" — "+s.chatModelSource)
+			name += "  " + styMeta.Render(s.chatModelValue())
 		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
