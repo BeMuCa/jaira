@@ -124,18 +124,22 @@ func selfTestRelease(t *testing.T, latestTag, latestContent, pinTag, pinContent 
 	return &hits
 }
 
-// selfUpgradeTarget resolves the same path 'self upgrade' would operate on,
-// so a test can read its bytes before/after to assert nothing was written.
+// selfUpgradeTarget points 'self upgrade' at a stand-in binary in a temp
+// directory and returns its path, so a test can read its bytes before/after.
+// Never the running test binary: Windows refuses a second rename of it.
 func selfUpgradeTarget(t *testing.T) string {
 	t.Helper()
-	exe, err := os.Executable()
-	if err != nil {
+	name := "jaira"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	target := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(target, []byte("old-bytes"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	target, err := filepath.EvalSymlinks(exe)
-	if err != nil {
-		t.Fatal(err)
-	}
+	prev := selfExecutable
+	selfExecutable = func() (string, error) { return target, nil }
+	t.Cleanup(func() { selfExecutable = prev })
 	return target
 }
 
@@ -242,14 +246,8 @@ func TestSelfUpgradeCheckAgainstNewerReleaseDoesNotInstall(t *testing.T) {
 
 // TestSelfUpgradeVersionPinsInstallsExactRelease asserts '--version' installs
 // the named release even though a newer one is published, and never
-// requests releases/latest to do it.
-//
-// This drives the real command, which means it really does replace the
-// currently-running test binary on disk — safe on unix because a running
-// process keeps executing from its old, now-unlinked inode (the same
-// property Replace's own doc comment relies on), and because 'go test'
-// links a fresh temporary binary for every invocation, so nothing outside
-// this one test run is affected.
+// requests releases/latest to do it. It drives the real command against the
+// stand-in selfUpgradeTarget hands out, not the running test binary.
 func TestSelfUpgradeVersionPinsInstallsExactRelease(t *testing.T) {
 	setCurrent(t, "1.0.0")
 	hits := selfTestRelease(t, "v1.3.0", "latest-bytes", "v1.1.0", "pin-bytes")

@@ -14,6 +14,12 @@ import (
 	"github.com/BeMuCa/jaira/core/selfupdate"
 )
 
+// selfExecutable is the binary 'self upgrade' replaces. Tests point it at a
+// stand-in: replacing the running test binary fails on Windows the second
+// time a process does it, because the first run's .old-<pid> is still there
+// and still locked.
+var selfExecutable = os.Executable
+
 // newSelfCmd groups operations on the jaira binary itself, as distinct from
 // 'jaira update', which re-applies a board's setup and downloads nothing —
 // the name "update" was already taken by that command, so this is "self".
@@ -55,7 +61,7 @@ pins (or downgrades to) an exact release.`,
 				return fail(ExitUsage, "usage", "--check and --version cannot be used together")
 			}
 
-			exe, err := os.Executable()
+			exe, err := selfExecutable()
 			if err != nil {
 				return err
 			}
