@@ -410,7 +410,8 @@ describe('waiting for you', () => {
     // and still answerable in words of one's own.
     const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
     expect(await pane.find({ type: 'Text', text: 'The key leaves out the branch.\nTwo branches share one cache entry.' })).toBeDefined()
-    expect((await pane.find({ key: 'choose-MG677R' }))?.props.options).toEqual([{ value: 'own', label: 'Own answer…' }])
+    expect(await pane.find({ key: 'pick-MG677R-own' })).toBeDefined()
+    expect((await pane.find({ key: 'pick-MG677R-own' }))?.props.autoFocus).toBe(true)
   })
 
   const SHAPED = [
@@ -439,20 +440,21 @@ describe('waiting for you', () => {
     expect(texts).toEqual(expect.arrayContaining([
       'The cache key leaves out the branch.',
       "Warum: two branches then share one entry and read each other's results.",
-      '  a) add the branch to the key (recommended)',
-      '  b) accept it as it is',
-      '  c) clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it',
       'Empfehlung: a - smallest change, no stale reads',
     ]))
-    // A long option is read whole, wrapped, never cut: the Select carries
-    // the letters only, since it draws one line and cuts a long label.
-    expect((await pane.find({ type: 'Text', text: /^ {2}c\) clear the cache/ }))?.props.wrap).toBe('wrap')
-    const choose = await pane.find({ key: 'choose-MG677R' })
-    expect(choose?.props.value).toBe('a')
-    expect(choose?.props.autoFocus).toBe(true)
-    expect(choose?.props.options).toEqual([
-      { value: 'a', label: 'a) (recommended)' }, { value: 'b', label: 'b)' }, { value: 'c', label: 'c)' }, { value: 'own', label: 'Own answer…' },
-    ])
+    // Every option is a row of its own to pick, carrying its whole text in
+    // a wrapping Text — never a one-line label the surface cuts — with its
+    // letter as the key that picks it; the recommended one has the focus.
+    const LONG = 'clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it'
+    for (const [k, text] of [['a', 'add the branch to the key (recommended)'], ['b', 'accept it as it is'], ['c', LONG]] as const) {
+      const row = await pane.find({ key: `pick-MG677R-${k}` })
+      expect(row?.props.hotkey).toBe(k)
+      expect(row?.text).toBe(text)
+      expect((await pane.find({ type: 'Text', text }))?.props.wrap).toBe('wrap')
+    }
+    expect((await pane.find({ key: 'pick-MG677R-a' }))?.props.autoFocus).toBe(true)
+    expect((await pane.find({ key: 'pick-MG677R-b' }))?.props.autoFocus).toBeUndefined()
+    expect((await pane.find({ key: 'pick-MG677R-own' }))?.text).toBe('Own answer…')
   })
 
   test('an option that is neither step goes onto the ticket as a decision and to the teamlead\'s conversation', async ($, on) => {
@@ -460,7 +462,7 @@ describe('waiting for you', () => {
     w.bodies.MG677R = SHAPED
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
-    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'b' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-b' })
     expect(ran(w, 'jaira', 'note')).toEqual([['jaira', 'note', 'MG677R', 'decision: b) accept it as it is', '@/.worktrees/repo-mg677r']])
     expect(w.closed).toEqual(['cockpit-explanation'])
     // No mark: nothing moves, and the conversation the band sits in hears it.
@@ -477,7 +479,7 @@ describe('waiting for you', () => {
     w.bodies.MG677R = SHAPED
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
-    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'own' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-own' })
     expect(w.closed).toEqual(['cockpit-explanation'])
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-answer', title: 'Answer on MG677R', focus: true })
     const pane = await $.ui.mount(ANSWER('Answer on MG677R'))
@@ -499,8 +501,8 @@ describe('waiting for you', () => {
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
     // The mark is read, not shown as text of the option.
-    expect(await pane.find({ type: 'Text', text: '  a) add the branch to the key [give back] (recommended)' })).toBeDefined()
-    await pane.select({ key: 'choose-MG677R', value: 'a' })
+    expect((await pane.find({ key: 'pick-MG677R-a' }))?.text).toBe('add the branch to the key [give back] (recommended)')
+    await pane.press({ key: 'pick-MG677R-a' })
     expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: a) add the branch to the key', 'Given back from signoff: a) add the branch to the key'])
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
     expect(w.submitted).toEqual([])
@@ -511,7 +513,7 @@ describe('waiting for you', () => {
     w.bodies.MG677R = MARKED
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
-    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'b' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-b' })
     expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: b) accept it as it is'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
     expect(w.submitted).toEqual([])
@@ -524,7 +526,7 @@ describe('waiting for you', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     let pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
-    expect(await pane.find({ key: 'choose-MG677R' })).toBeUndefined()
+    expect(await pane.find({ key: 'pick-MG677R-a' })).toBeUndefined()
     expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
     // A newer explanation, a new round's finding, is open again.
     await pane.unmount()
@@ -532,7 +534,7 @@ describe('waiting for you', () => {
     await w.clock.advance(60_000)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
-    expect(await pane.find({ key: 'choose-MG677R' })).toBeDefined()
+    expect(await pane.find({ key: 'pick-MG677R-a' })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /^Decided:/ })).toBeUndefined()
   })
 
@@ -542,11 +544,11 @@ describe('waiting for you', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     const first = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
-    await first.select({ key: 'choose-MG677R', value: 'b' })
+    await first.press({ key: 'pick-MG677R-b' })
     await first.unmount()
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
-    expect(await pane.find({ key: 'choose-MG677R' })).toBeUndefined()
+    expect(await pane.find({ key: 'pick-MG677R-a' })).toBeUndefined()
     expect(await pane.find({ type: 'Text', text: 'Decided: b) accept it as it is' })).toBeDefined()
   })
 

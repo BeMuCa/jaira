@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { explanationNotes, explanationOf, lanesOf, type Action, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { explanationNotes, explanationOf, lanesOf, type Action, type Option, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -56,8 +56,6 @@ const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const ANSWER = 'cockpit-answer'
-// The choice in the explanation pane that is none of the options.
-const OWN = 'own'
 const BAND_TICKETS = 3
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
@@ -973,45 +971,38 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
     const explaining = await read($, explainingAtom)
-    const table = $.ui.resolve(e)
-    const { Box, Button, Text } = table
-    const Select = 'Select' in table ? table.Select : undefined
+    const { Box, Button, Text } = $.ui.resolve(e)
     if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    const { id } = explaining
+    const { id, decided } = explaining
     const x = explanationOf(explaining.text)
+    const open = decided === undefined
+    const pick = (o: Option) => {
+      void $.ui.close({ id: EXPLANATION })
+      void decide($, id, `${o.key}) ${o.text}`, o.action, share)
+    }
+    // An option whole, as many rows as it needs: what it says, what picking
+    // it does, whether the review recommends it.
+    const line = (o: Option) => (
+      <Text wrap="wrap">
+        {o.text}{o.action !== undefined ? ` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}{o.key === x.recommended ? ` ${t.recommended}` : ''}
+      </Text>
+    )
     return (
       <Box flexDirection="column">
         <Text bold>{t.explanationOf(id)}</Text>
         {x.parts.map((p, i) => p.kind === 'option'
-          ? <Text key={`part-${i}`} wrap="wrap">  <Text bold>{p.key})</Text> {p.text}{p.action !== undefined ? ` ${p.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}{p.key === x.recommended ? ` ${t.recommended}` : ''}</Text>
+          // Open, each option is a row of its own to pick: the engine's
+          // Select draws one line per option and cuts a long one, so the
+          // choice would hide what is chosen. Its letter picks it too.
+          ? open
+            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={p.key} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
+            : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
           // A paragraph a line apart; the options one under the other.
           : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
         {/* Answered already, on the ticket: the choice is read, not offered again. */}
-        {explaining.decided !== undefined
-          ? <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {explaining.decided}</Text></Box>
-          : null}
-        {Select !== undefined && explaining.decided === undefined
-          ? (
-            <Box marginTop={1}>
-              <Select
-                key={`choose-${id}`}
-                label={t.choose}
-                // Letters only: the Select draws one line and cuts a long
-                // label; the options stand whole and wrapped above it.
-                options={[...x.options.map(o => ({ value: o.key, label: `${o.key})${o.key === x.recommended ? ` ${t.recommended}` : ''}` })), { value: OWN, label: t.ownAnswer }]}
-                {...(x.recommended !== undefined ? { value: x.recommended } : {})}
-                autoFocus
-                onSelect={(value: string) => {
-                  if (value === OWN) return void askOwnAnswer($, id)
-                  const o = x.options.find(o => o.key === value)
-                  if (o === undefined) return
-                  void $.ui.close({ id: EXPLANATION })
-                  void decide($, id, `${o.key}) ${o.text}`, o.action, share)
-                }}
-              />
-            </Box>
-          )
-          : null}
+        {open
+          ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey="o" {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
+          : <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {decided}</Text></Box>}
         <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
       </Box>
     )
