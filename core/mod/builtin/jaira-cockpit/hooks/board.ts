@@ -271,12 +271,13 @@ export function stepAfterAccept(ahead: number, pending: readonly string[], hasPu
 
 // The tickets a branch carries, off `git log --format=%s <base>..<branch>`:
 // every handle a subject names the way this board's commits do,
-// `type(A3K9QP): ...`, once each.
+// `type(A3K9QP): ...`, or several at once, `chore(A3K9QP,B7XQ2M): ...`,
+// once each.
 export function ticketsNamed(subjects: string): string[] {
   const out: string[] = []
   for (const line of subjects.split('\n')) {
-    const id = /^[a-z]+\(([0-9A-Z]{6})\)!?:/.exec(line.trim())?.[1]
-    if (id !== undefined && !out.includes(id)) out.push(id)
+    const scope = /^[a-z]+\(([^)]*)\)!?:/.exec(line.trim())?.[1] ?? ''
+    for (const id of scope.split(/[\s,]+/)) if (/^[0-9A-Z]{6}$/.test(id) && !out.includes(id)) out.push(id)
   }
   return out
 }

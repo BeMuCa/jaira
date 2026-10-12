@@ -53,8 +53,10 @@ ticket, not something you fix here:
    not a fault and not yours to fix: the lanes that ran after the last code
    commit — critique, testing, review — leave a note and a lane change and
    deliberately commit nothing, because a commit touching only `.jaira/` is
-   bookkeeping. Push what is committed and leave that file alone. Anything else
-   uncommitted is a finding: stop and say so.
+   bookkeeping. Leave that file alone here: **File the finished tickets away**
+   below commits it, filed into the logbook, for every ticket that is in done —
+   the one exception, and the step that settles it. Anything else uncommitted is
+   a finding: stop and say so.
 3. **Every commit names the ticket id.** On a board that has not been shared,
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.

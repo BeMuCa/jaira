@@ -369,23 +369,19 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
   return { on, repo, base: `${remote}/${branch}` }
 }
 
-// What the press starts once the ticket is in done, without a further word
-// from the person: stepAfterAccept (board.ts) decides, from the ticket's
-// branch and its pull requests. A pull request is opened only from here — a
-// press of Accept is a person's — by the pr lane of spawn.sh. A step that
-// cannot run starts nothing and says why in the message pane; the ticket
-// stays in done, where the press put it: accepted is accepted, and what
-// follows is the person's to start by hand then.
-async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<void> {
-  if (!board) return
-  const b = board
-  // Why a pull request is not opened yet, said beside whatever happens instead.
-  let hint = ''
-  const stuck = (why: string) => fail($, t.afterAccept(id), [why, hint, t.staysDone(id)].filter(Boolean).join('\n'))
-  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
-  const found = trees?.exitCode === 0 ? branchesFor(trees.stdout, id) : {}
+// Which step the press starts, and on which branch: the ticket's branch
+// found, counted against the pull request's target, its tickets read, its
+// pull requests asked for — stepAfterAccept (board.ts) decides from that.
+// A forge that cannot be asked — offline, logged out, its repository no
+// remote here — leaves the pull request unchecked and never the board: the step is 'next', and the hint
+// says why no pull request was looked at. A string is a failure that stops
+// both steps.
+type Decided = { step: StepAfterAccept; branch?: string; hint: string }
+
+async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
+  const found = branchesFor(porcelain, id)
   const target = await pullTarget($, b.repo)
-  if (typeof target === 'string') return stuck(target)
+  if (typeof target === 'string') return { step: 'next', hint: t.prUnchecked(target) }
   const base = target?.base ?? found.base
   let branch = found.ticket
   // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
@@ -401,30 +397,41 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
     const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
     if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)
   }
-  let step: StepAfterAccept = 'next'
-  if (branch !== undefined && base !== undefined && branch !== found.base) {
-    // One subject per commit ahead: the count and the tickets in one walk.
-    const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
-    if (subjects?.exitCode !== 0) return stuck(`git log ${base}..${branch}: ${output(subjects)}`)
-    const ahead = subjects.stdout.split('\n').filter(Boolean).length
-    let pending: string[] = []
-    if (ahead > 0) {
-      const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
-      if (list?.exitCode !== 0) return stuck(`jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`)
-      pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
-      if (pending.length > 0) hint = t.prWaits(branch, pending)
-    }
-    let has = false
-    if (ahead > 0 && pending.length === 0) {
-      if (target === undefined) return stuck(t.noForge(branch))
-      const cmd = pullRequestsCommand(target.on, target.repo, branch)
-      const listed = await run($, cmd, b.repo, 30_000)
-      const answer = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
-      if (answer === undefined) return stuck(`${cmd[0]}: ${output(listed)}`)
-      has = answer
-    }
-    step = stepAfterAccept(ahead, pending, has)
-  }
+  if (branch === undefined || base === undefined || branch === found.base) return { step: 'next', hint: '' }
+  // One subject per commit ahead: the count and the tickets in one walk.
+  const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
+  if (subjects?.exitCode !== 0) return `git log ${base}..${branch}: ${output(subjects)}`
+  const ahead = subjects.stdout.split('\n').filter(Boolean).length
+  if (ahead === 0) return { step: 'next', branch, hint: '' }
+  const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
+  if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
+  const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
+  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: t.prWaits(branch, pending) }
+  if (target === undefined) return t.noForge(branch)
+  const cmd = pullRequestsCommand(target.on, target.repo, branch)
+  const listed = await run($, cmd, b.repo, 30_000)
+  const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
+  if (has === undefined) return { step: 'next', branch, hint: t.prUnchecked(`${cmd[0]}: ${output(listed)}`) }
+  return { step: stepAfterAccept(ahead, pending, has), branch, hint: '' }
+}
+
+// What the press starts once the ticket is in done, without a further word
+// from the person: stepAfterAccept (board.ts) decides, from the ticket's
+// branch and its pull requests. A pull request is opened only from here — a
+// press of Accept is a person's — by the pr lane of spawn.sh. A step that
+// cannot run starts nothing and says why in the message pane; the ticket
+// stays in done, where the press put it: accepted is accepted, and what
+// follows is the person's to start by hand then.
+async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<void> {
+  if (!board) return
+  const b = board
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const decided = await decideStep($, b, id, terminal, trees?.exitCode === 0 ? trees.stdout : '')
+  // Why a pull request is not opened yet, said beside whatever happens instead.
+  const hint = typeof decided === 'string' ? '' : decided.hint
+  const stuck = (why: string) => fail($, t.afterAccept(id), [why, hint, t.staysDone(id)].filter(Boolean).join('\n'))
+  if (typeof decided === 'string') return stuck(decided)
+  const { step, branch } = decided
   const bin = await herdr($)
   const script = await spawnScript($)
   if (bin === undefined || script === undefined) return stuck(step === 'pr' ? t.prNeedsHerdr(branch ?? '') : t.nextNeedsHerdr)

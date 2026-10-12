@@ -55,6 +55,8 @@ type World = {
   toasts: string[]
   // `git remote -v`.
   remotes: string
+  // The forge answers `repo view` but refuses `pr list`.
+  prListFails: boolean
 }
 
 const LANES = {
@@ -114,6 +116,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     namedSha: '',
     holders: [],
     toasts: [],
+    prListFails: false,
     remotes: 'origin\tgit@github.com:acme/repo.git (fetch)\norigin\tgit@github.com:acme/repo.git (push)\nupstream\thttps://github.com/upstream/repo.git (fetch)\n',
   }
   const hasBoard = opts.board ?? true
@@ -186,6 +189,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'config') return w.forge ? ok(`${w.forge}\n`) : failed('')
     if (cmd === 'git' && args[0] === 'remote' && args[1] === 'get-url') return w.origin === null ? failed("error: No such remote 'origin'") : ok(`${w.origin}\n`)
     if ((cmd === 'gh' || cmd === 'glab') && w.prs === null) return failed(`${cmd}: command not found`)
+    if ((cmd === 'gh' || cmd === 'glab') && args[1] === 'list' && w.prListFails) return failed("HTTP 401: Bad credentials")
     // origin is a fork of upstream/repo: pull requests are asked of the parent.
     // Its default branch is main; the fork's own lags behind as master.
     if (cmd === 'gh' && args[0] === 'repo') {
@@ -709,26 +713,50 @@ describe('after Accept', () => {
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
   })
 
-  test('a fork without its parent as a remote: nothing is counted, and the pane says which remote to add', async ($, on) => {
+  test('a fork without its parent as a remote: nothing is counted, the next ticket starts, and the press says which remote to add', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.remotes = 'origin\tgit@github.com:acme/repo.git (fetch)\n'
+    w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([])
-    expect(await failure($)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
   })
 
-  test('no gh: nothing starts, the pane says why, and the ticket stays in done', async ($, on) => {
+  test('no gh: the pull request goes unchecked, the next ticket starts anyway, and the press says why', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.prs = null
+    w.next = ['AB12CD']
     await press($)
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(prLane(w)).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
-    const said = await failure($)
-    expect(said).toContain('gh: command not found')
-    expect(said).toContain('MG677R stays in done')
+    expect(w.opened).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; pull requests not checked (gh repo view: gh: command not found)')
+  })
+
+  test('a forge that answers the repository but not the pull requests: the next ticket starts all the same', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prListFails = true
+    w.next = ['AB12CD']
+    await press($)
+    expect(prLane(w)).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
+  })
+
+  test('a subject naming several tickets holds the pull request for each of them', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [SIGNOFF, WORKING, { ...WORKING, handle: 'AB12CD', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'chore(AB12CD,T8QS1Y): both at once']
+    w.next = ['QR34ST']
+    await press($)
+    expect(prLane(w)).toEqual([])
+    expect(w.toasts.at(-1)).toContain('no pull request for feat/mg677r yet: T8QS1Y not in done')
   })
 
   test('no remote: nothing starts, and the pane says so', async ($, on) => {

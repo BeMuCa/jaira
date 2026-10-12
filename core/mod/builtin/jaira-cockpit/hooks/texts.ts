@@ -21,6 +21,7 @@ export const t = {
   prStarted: (id: string, branch: string) => `${id}: opening the pull request for ${branch} in a Herdr tab`,
   nextStarted: (id: string, next: string) => `${id} accepted; ${next} started in a Herdr tab`,
   prWaits: (branch: string, pending: string[]) => `no pull request for ${branch} yet: ${pending.join(', ')} not in done`,
+  prUnchecked: (why: string) => `pull requests not checked (${why})`,
   nothingNext: 'No ticket can be started next (jaira next lists none that no agent carries).',
   noForge: (branch: string) => `${branch} has commits to propose, but no pull request can be opened from here: this repository needs an origin on GitHub or GitLab, or git config jaira.forge github (or gitlab).`,
   noRemoteFor: (repo: string) => `Pull requests go to ${repo}, and no remote here points at it: add it with git remote add upstream <its URL>.`,

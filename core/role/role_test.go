@@ -507,6 +507,9 @@ func TestPRFilesTheTicketsAwayBeforeThePush(t *testing.T) {
 	if file < 0 || commit < 0 || push < 0 || file > push || commit > push {
 		t.Errorf("jaira-role-pr must run jaira logbook <ID> and commit chore(<ID>): file the ticket away before ## Push the branch (at %d, %d, %d)", file, commit, push)
 	}
+	if strings.Contains(text, "Push what is committed and leave that file alone") || !strings.Contains(text, "Leave that file alone here: **File the finished tickets away**") {
+		t.Error("jaira-role-pr's 'Before you push anything' must point at the logbook step instead of leaving the ticket file alone without exception")
+	}
 	if strings.Contains(text, "git add .jaira/") || !strings.Contains(text, `git add -A -- ':(glob).jaira/**/*<ID>-*.md'`) {
 		t.Error("jaira-role-pr must stage the filed ticket by its own path, never .jaira/ whole")
 	}
