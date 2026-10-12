@@ -389,10 +389,10 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// passed review, which is the one judgement it is least able to make.
 	//
 	// Sending work back to an earlier lane decides nothing — it is the opposite
-	// of accepting it — so only a move that is not backwards is refused. The
+	// of accepting it — so only a move forward is refused. The
 	// alternative was --force for every send-back, and --force switches off
 	// every other refusal along with this one.
-	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && req.To != t.Status && to >= from && !req.Interactive {
+	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && to > from && !req.Interactive {
 		vs = append(vs, Violation{
 			Code: CodeNeedsHuman,
 			Message: fmt.Sprintf(
