@@ -3,6 +3,7 @@ package ticket
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -104,6 +105,19 @@ const (
 	// from the diff. Written for someone who knows none of what the reviewer
 	// knows — see the writing register the create and note helps carry.
 	FieldReviewCheck = "review-check"
+
+	// FieldRound counts the ticket's rounds: 1 until work is first sent back
+	// to an earlier lane, one more with every send-back after (core/move). A
+	// review field is only as current as the round it was written in, and the
+	// loop lanes rewrite review-gaps every round while review-verdict waits for
+	// the review: without a count nobody can tell whether the two belong
+	// together. Absent means 1, so a ticket from before the field is round 1.
+	FieldRound = "round"
+
+	// FieldReviewRound is the round review-verdict was written in, stamped by
+	// the write itself. Absent means unknown — a verdict from before the field
+	// — and a reader treats the verdict as it always did.
+	FieldReviewRound = "review-round"
 
 	// FieldParent is the ticket this one is a part of — the child names the
 	// parent, never the other way round. A parent field on the child is the
@@ -257,6 +271,11 @@ type Ticket struct {
 	ReviewGaps string
 	// ReviewCheck is the steps a person follows to check the change themselves.
 	ReviewCheck string
+	// Round is the ticket's round as written, 0 when the field is absent;
+	// CurrentRound reads it.
+	Round int
+	// ReviewRound is the round ReviewVerdict was written in, 0 when unknown.
+	ReviewRound int
 
 	Outcome Outcome
 
@@ -586,6 +605,8 @@ func Decode(d *Doc, path string) (*Ticket, error) {
 	t.ReviewSummary = str(FieldReviewSummary)
 	t.ReviewGaps = str(FieldReviewGaps)
 	t.ReviewCheck = str(FieldReviewCheck)
+	t.Round = count(str(FieldRound))
+	t.ReviewRound = count(str(FieldReviewRound))
 	t.DoDItems = ParseDoDItems(t.Body)
 	t.PlanItems = ParsePlanItems(t.Body)
 	t.Options = ParseOptions(t.Body)
@@ -726,4 +747,19 @@ func SetReady(d *Doc, ready bool) error {
 // YAML by construction.
 var rawLiteralFields = map[string]bool{
 	FieldReady: true, FieldCreatedAt: true, FieldUpdatedAt: true, FieldClaimedAt: true,
+}
+
+// count reads a hand-editable count: a positive whole number, 0 for anything
+// else, so a typo reads as "not recorded" rather than failing the board.
+func count(s string) int {
+	n, err := strconv.Atoi(strings.TrimSpace(s))
+	if err != nil || n < 1 {
+		return 0
+	}
+	return n
+}
+
+// CurrentRound is the ticket's round: 1 until a send-back first counted one.
+func CurrentRound(t *Ticket) int {
+	return max(t.Round, 1)
 }

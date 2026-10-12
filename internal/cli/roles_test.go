@@ -3,12 +3,14 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/role"
+	"github.com/BeMuCa/jaira/core/settings"
 )
 
 func exitCode(err error) int {
@@ -70,7 +72,8 @@ func TestRolesListJSON(t *testing.T) {
 
 // The teamlead reads which role to start for a ticket off 'roles list': the
 // dispatcher by default, the worker once settings.json says "dispatch":
-// "worker".
+// "worker". spawn.sh reads the model for the cockpit's chats off it too:
+// empty, the account's own, until settings.json says "chat-model".
 func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("JAIRA_HOME", home)
@@ -87,18 +90,35 @@ func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 		}
 		return p
 	}
-	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" {
-		t.Errorf("default: dispatch=%v role=%v, want lanes/jaira-dispatcher", p["dispatch"], p["dispatch_role"])
+	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" || p["chat_model"] != "" {
+		t.Errorf("default: dispatch=%v role=%v chat_model=%v, want lanes/jaira-dispatcher/empty", p["dispatch"], p["dispatch_role"], p["chat_model"])
 	}
-	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "worker"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "worker", "chat-model": "sonnet"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" {
-		t.Errorf("opted in: dispatch=%v role=%v, want worker/jaira-worker", p["dispatch"], p["dispatch_role"])
+	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" || p["chat_model"] != "sonnet" {
+		t.Errorf("opted in: dispatch=%v role=%v chat_model=%v, want worker/jaira-worker/sonnet", p["dispatch"], p["dispatch_role"], p["chat_model"])
 	}
 	out, err := runCLI(t, dir, "roles", "list")
 	if err != nil || !strings.Contains(out, "dispatch: worker — a ticket handed to an agent goes to /jaira-worker") {
 		t.Errorf("roles list does not say which role a ticket goes to: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "chat model: sonnet") || !strings.Contains(out, "settings.json on this machine") {
+		t.Errorf("roles list does not name the chat model and where it came from:\n%s", out)
+	}
+
+	// A board that names its own model wins over the machine's.
+	board := lanesTestProject(t)
+	if err := settings.SetBoardChatModel(board, "haiku"); err != nil {
+		t.Fatal(err)
+	}
+	out, err = runCLI(t, board, "--json", "roles", "list")
+	var p map[string]any
+	if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+		t.Fatalf("roles list --json on a board: %v\n%s", err, out)
+	}
+	if p["chat_model"] != "haiku" || !strings.Contains(fmt.Sprint(p["chat_model_source"]), ".jaira/chat-model") {
+		t.Errorf("on a board with its own model: chat_model=%v source=%v, want haiku from .jaira/chat-model", p["chat_model"], p["chat_model_source"])
 	}
 }
 

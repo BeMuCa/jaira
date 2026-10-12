@@ -1594,7 +1594,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.notify("Reloaded", false)
 		}
 	case "S":
-		m.settingsScreen = newSettingsScreen()
+		m.settingsScreen = newSettingsScreen(m.store.Root)
 		m.mode = modeSettings
 	}
 	return m, nil

@@ -44,6 +44,13 @@ func (r *Repo) IsRepo() bool {
 	return err == nil && strings.TrimSpace(out) == "true"
 }
 
+// Tracks reports whether git tracks at least one file under path, relative to
+// Dir. Outside a repository, or without git, nothing is tracked.
+func (r *Repo) Tracks(path string) bool {
+	out, err := r.run("ls-files", "--", path)
+	return err == nil && strings.TrimSpace(out) != ""
+}
+
 // Root returns the working tree root.
 func (r *Repo) Root() (string, error) {
 	out, err := r.run("rev-parse", "--show-toplevel")

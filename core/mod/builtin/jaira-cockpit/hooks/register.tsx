@@ -3,8 +3,8 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  hasReservation, isOlder, lanesOf, MIN_JAIRA, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
-  type Agent, type Waiting,
+  explanationNotes, explanationOf, isOlder, lanesOf, MIN_JAIRA, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  type Action, type Agent, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
@@ -51,16 +51,23 @@ const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, nul
 const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, null)
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
+const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
+const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
 const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
 const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
+const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
+const EXPLANATION = 'cockpit-explanation'
+const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
 const BAND_TICKETS = 3
+// How long a pressed row stays locked when its action has not ended by then.
+const BUSY_MS = 20_000
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 
@@ -252,13 +259,15 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   }
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents, me)
   await update($, boardAtom, () => view)
-  // What an Explain chat wrote back onto the tickets the band shows.
+  // What an Explain chat wrote back onto the tickets the band shows, Explain
+  // or not: an explanation stays readable after a later round, only asking
+  // for a new one waits for that round's verdict.
   const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
-  const explained: Record<string, string> = {}
+  const explained: Record<string, { text: string; decided?: string }> = {}
   for (const w of shownIds) {
-    if (!hasReservation(w.verdict)) continue
-    const note = await noteOn($, board.dir, w.id, 'explain')
-    if (note !== undefined) explained[w.id] = note.text
+    const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
+    const notes = shown?.exitCode === 0 ? explanationNotes(shown.stdout) : undefined
+    if (notes !== undefined) explained[w.id] = notes
   }
   await update($, explainedAtom, () => explained)
   // A chat has done its part once its note is on the ticket — stamped to the
@@ -488,6 +497,30 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
   }
 }
 
+// A press on Accept, Give back or Explain: the row's three lock, drawn dim,
+// until the action has done its part or BUSY_MS has passed; a press on a
+// locked row does nothing, so a slow answer is not asked for twice.
+async function once($: EngineInterface, id: string, action: () => Promise<void>): Promise<void> {
+  const at = await $.clock.now()
+  let took = false
+  await update($, busyAtom, busy => {
+    took = busy[id] === undefined
+    return took ? { ...busy, [id]: at } : busy
+  })
+  if (!took) return
+  const free = () => update($, busyAtom, busy => {
+    if (busy[id] !== at) return busy
+    const { [id]: _, ...rest } = busy
+    return rest
+  })
+  $.clock.after(BUSY_MS, () => void free())
+  try {
+    await action()
+  } finally {
+    await free()
+  }
+}
+
 // The spawn.sh the roles were installed with: the project's own first, as
 // the dispatcher's run-lane.sh finds it beside itself.
 async function spawnScript($: EngineInterface): Promise<string | undefined> {
@@ -551,6 +584,44 @@ async function openOverview($: EngineInterface, dir: string): Promise<void> {
 async function readDecision($: EngineInterface, id: string, text: string): Promise<void> {
   await update($, decidedAtom, d => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)))
   await show($, t.decisionOf(id), text)
+}
+
+// An explanation is read in a pane that takes the keyboard: its options are
+// a choice there, with an own answer beside them, and the choice goes onto
+// the ticket as a decision.
+async function readExplanation($: EngineInterface, id: string, notes: { text: string; decided?: string }): Promise<void> {
+  await update($, explainingAtom, () => ({ id, ...notes }))
+  const opened = await $.ui.open({ id: EXPLANATION, title: t.explanationOf(id), focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) $.ui.toast(`${t.explanationOf(id)}: ${notes.text}`)
+}
+
+// An own answer is typed in a pane of its own, opened with focus, as Give
+// back asks: a field drawn into the open explanation pane after the pick is
+// not sure to get the keyboard.
+async function askOwnAnswer($: EngineInterface, id: string): Promise<void> {
+  await $.ui.close({ id: EXPLANATION })
+  await update($, answeringAtom, () => id)
+  const opened = await $.ui.open({ id: ANSWER, title: t.answerOn(id), focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) await fail($, `${t.decide} ${id}`, t.noRoom)
+}
+
+// The choice is the decision itself: noted on the ticket first, as a Discuss
+// chat notes it, then carried out — Give back with the choice as its reason,
+// Accept where the band's own Accept would move it. A choice that does
+// neither goes to this session's conversation, the teamlead's, so it is
+// heard and not only left on the ticket.
+async function decide($: EngineInterface, id: string, text: string, action: Action | undefined, share: number): Promise<void> {
+  if (!board) return
+  const done = await jaira($, await ticketDir($, board, id), ['note', id, `decision: ${text}`])
+  if (!done.ok) return fail($, `${t.decide} ${id}`, done.why)
+  await update($, decidedAtom, d => ({ ...d, [id]: text }))
+  // Answered from here on, before the next look at the notes says so too.
+  await update($, explainedAtom, e => (e[id] === undefined ? e : { ...e, [id]: { ...e[id], decided: text } }))
+  const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+  if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, text, share)
+  if (action === 'accept' && w !== undefined && w.acceptTo !== null) return accept($, w)
+  await say($, t.decidedOn(id))
+  void $.prompt.submit({ text: t.decisionFor(id, text) })
 }
 
 // Give back asks what is missing in a pane of its own, opened with focus: a
@@ -803,6 +874,8 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     startedAt = await $.clock.now()
+    // A reload drops the timers that free a pressed row; the lock is the host's and stays.
+    await update($, busyAtom, () => ({}))
     // Kept before reports were scoped to a project; no project may show them.
     for (const k of await $.store.keys()) if (isUnscoped(k)) await $.store.delete(k)
     // A session that ended without session.end leaves its mark; the 50 heard
@@ -949,6 +1022,7 @@ export const register: Register = (on, options) => {
     const used = await read($, usedAtom)
     const expanded = await read($, expandedAtom)
     const theirsOpen = await read($, theirsOpenAtom)
+    const busy = await read($, busyAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
@@ -967,6 +1041,8 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = table
     // Mobile has no text field: there the band offers no Give back.
     const hasInput = 'Input' in table
+    const plain = e.surface === 'terminal' ? true : undefined
+    const bracketed = (label: string) => (plain ? `[ ${label} ]` : label)
     // The session line: context, cache, the advice, threads; what asks for
     // action in the warning colour.
     const session: { text: string; color?: 'warning' | 'error' }[] = [
@@ -994,17 +1070,24 @@ export const register: Register = (on, options) => {
               <Text wrap="truncate-end">
                 <Text bold>{w.id}</Text>{SEP}{w.lane}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
               </Text>
+              {/* Told apart by colour before they are read: the theme's own, so a
+                  light terminal reads them too; the focus inverts them as any.
+                  The engine draws a Button's brackets uncoloured, so the
+                  terminal gets them plain and in the label's colour. */}
               {w.acceptTo !== null
-                ? <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w)} />
+                ? <Button key={`accept-${w.id}`} label={t.accept} plain={plain} onPress={() => void once($, w.id, () => accept($, w))}><Text color="success" dimColor={busy[w.id] !== undefined}>{bracketed(t.accept)}</Text></Button>
                 : null}
               {hasInput
-                ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)} />
+                ? <Button key={`back-${w.id}`} label={t.giveBack} plain={plain} onPress={() => void once($, w.id, () => askWhatIsMissing($, w))}><Text color="error" dimColor={busy[w.id] !== undefined}>{bracketed(t.giveBack)}</Text></Button>
                 : null}
-              {hasReservation(w.verdict)
-                ? <Button key={`explain-${w.id}`} label={t.explain} onPress={() => void openChat($, w.id, 'explain')} />
+              {w.explainable
+                ? <Button key={`explain-${w.id}`} label={t.explain} plain={plain} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))}><Text color="warning" dimColor={busy[w.id] !== undefined}>{bracketed(t.explain)}</Text></Button>
                 : null}
               {explained[w.id] !== undefined
-                ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void show($, t.explanationOf(w.id), explained[w.id]!)} />
+                ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
+                : null}
+              {w.verdict !== ''
+                ? <Button key={`verdict-${w.id}`} label={t.verdict} onPress={() => void show($, t.verdictOf(w.id), w.verdict)} />
                 : null}
               {w.question !== ''
                 ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void openChat($, w.id, 'discuss')} />
@@ -1094,6 +1177,86 @@ export const register: Register = (on, options) => {
             void update($, givingAtom, () => null)
             void $.ui.close({ id: GIVE_BACK })
             void giveBack($, w.id, w.lane, reason.trim(), share)
+          }}
+        />
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
+    const explaining = await read($, explainingAtom)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    const { id, decided } = explaining
+    const x = explanationOf(explaining.text)
+    const open = decided === undefined
+    const pick = (o: Option) => {
+      void $.ui.close({ id: EXPLANATION })
+      void decide($, id, `${o.key}) ${o.text}`, o.action, share)
+    }
+    // An option whole: what it says, what picking it does in the band's
+    // colours for that step, whether the review recommends it, highlighted;
+    // the rest of the row neutral. Drawn as many rows as it needs.
+    const mark = (a: Action) => (a === 'accept' ? t.actionAccept : t.actionGiveBack)
+    const said = (o: Option) =>
+      `${o.text}${o.action !== undefined ? ` ${mark(o.action)}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
+    const line = (o: Option) => (
+      <Text wrap="wrap">
+        {o.text}
+        {o.action !== undefined ? <Text color={o.action === 'accept' ? 'success' : 'error'}>{` ${mark(o.action)}`}</Text> : null}
+        {o.key === x.recommended ? <Text color="suggestion">{` ${t.recommended}`}</Text> : null}
+      </Text>
+    )
+    // Each row's digit is its place, whatever the note numbered it: the
+    // engine draws it as '1:' before the row — before the label too, where a
+    // surface draws no children, so the label leaves it out — and takes it
+    // as the key that picks it, which a letter could not be in capitals. Own
+    // answer is the digit after the last option.
+    const digit = (key: string) => String(x.options.findIndex(o => o.key === key) + 1)
+    const ownDigit = String(x.options.length + 1)
+    return (
+      <Box flexDirection="column">
+        <Text bold>{t.explanationOf(id)}</Text>
+        {x.parts.map((p, i) => p.kind === 'option'
+          // Open, each option is a row of its own to pick: the engine's
+          // Select draws one line per option and cuts a long one, so the
+          // choice would hide what is chosen. Its digit picks it too.
+          ? open
+            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={digit(p.key)} label={said(p)} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
+            : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
+          // A paragraph a line apart; the options one under the other.
+          : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
+        {/* Answered already, on the ticket: the choice is read, not offered again. */}
+        {open
+          ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
+          : <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {decided}</Text></Box>}
+        <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: ANSWER }, async ($, e) => {
+    const id = await read($, answeringAtom)
+    const table = $.ui.resolve(e)
+    const { Box, Text } = table
+    const Input = 'Input' in table ? table.Input : undefined
+    if (id === null || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    return (
+      <Box flexDirection="column">
+        <Input
+          key={`answer-${id}`}
+          label={t.ownLabel}
+          placeholder={t.ownPlaceholder}
+          submitLabel={t.decide}
+          autoFocus
+          onSubmit={(answer: string) => {
+            // Nothing typed: the pane stays open for the answer.
+            if (answer.trim() === '') return
+            void update($, answeringAtom, () => null)
+            void $.ui.close({ id: ANSWER })
+            // An own answer asks for something the options did not offer:
+            // it goes back, with the answer as the reason.
+            void decide($, id, answer.trim(), 'giveBack', share)
           }}
         />
       </Box>

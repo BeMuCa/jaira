@@ -89,7 +89,9 @@ func TestEveryScreenFitsTheTerminal(t *testing.T) {
 				m.editIdx = 0
 				m.editBuf = strings.Repeat("a very long line being typed into the field ", 4)
 			}},
-			{"settings", func(m *Model, open *ticket.Ticket) { m.mode, m.settingsScreen = modeSettings, newSettingsScreen() }},
+			{"settings", func(m *Model, open *ticket.Ticket) {
+				m.mode, m.settingsScreen = modeSettings, newSettingsScreen(m.store.Root)
+			}},
 			{"lanes", func(m *Model, open *ticket.Ticket) { m.mode, m.laneScreen = modeLanes, newLaneScreen(m.store, m.lanes) }},
 			{"drop-board", func(m *Model, open *ticket.Ticket) {
 				m.mode, m.drop = modeDropBoard, newDropBoard(m.store.Root, strings.Repeat("a very long board name ", 4), false)
@@ -155,7 +157,7 @@ func TestScreensWithNoOuterClampFitTheirOwnWidth(t *testing.T) {
 
 		// settings: each entry's description wraps under its name.
 		{
-			s := newSettingsScreen()
+			s := newSettingsScreen("")
 			checkLineWidths(t, w, "settings", stripANSI(s.render(w, 24)))
 		}
 

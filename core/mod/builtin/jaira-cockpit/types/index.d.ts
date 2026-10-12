@@ -1,6 +1,6 @@
 // Self-contained, as a contract must be: these mirror hooks/board.ts.
 export type Waiting = {
-  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string
+  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string; explainable: boolean
 }
 export type Counts = { worker: number; review: number; person: number }
 
@@ -33,8 +33,13 @@ declare module 'claude-code' {
       notice: string | null
       // What the message pane shows: an error, or an explanation, whole.
       message: { title: string; text: string } | null
-      // The explanation an Explain chat wrote onto each ticket the band shows.
-      explained: Record<string, string>
+      // The explanation the explanation pane shows, with its ticket, and
+      // the ticket the own-answer pane asks about.
+      explaining: { id: string; text: string; decided?: string } | null
+      answering: string | null
+      // The explanation an Explain chat wrote onto each ticket the band shows,
+      // and the decision that answered it, when one did.
+      explained: Record<string, { text: string; decided?: string }>
       // The decisions Discuss chats wrote back, by ticket, until read.
       decided: Record<string, string>
       // What the person used: the five-hour and seven-day windows, or cost.
@@ -43,6 +48,9 @@ declare module 'claude-code' {
       expanded: boolean
       // Whether the band shows the teammates' waiting tickets one by one.
       theirsOpen: boolean
+      // The tickets whose Accept, Give back or Explain was pressed and has
+      // not yet done its part, each with when, so a late end frees only its own.
+      busy: Record<string, number>
       // The board the Overview pane shows, read when its button was pressed;
       // null when that read failed.
       overview: Overview | null
