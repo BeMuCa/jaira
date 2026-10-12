@@ -1,6 +1,7 @@
 package release
 
 import (
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -193,42 +194,74 @@ func TestCutRefuses(t *testing.T) {
 }
 
 // Moving the Unreleased lines out of NOTES.md into note files must not change
-// what jaira update shows: every released section exactly, and the same
-// Unreleased changes. Their order inside Unreleased now follows the file
-// names, so that one is compared as a set. Once a release folder exists this
-// test has done its job: those lines then rightly read as that release.
+// what jaira update shows: every released section of NOTES.md exactly, and
+// every line that was Unreleased still shown somewhere. Where it shows is not
+// checked: today those lines are Unreleased, after the next release they are
+// that release, and both are right. Nor is anything else in notes/ — a new
+// note or a cut must not turn this test red, or goreleaser's go test stops
+// the very release build it is for.
 func TestNotesUnchangedByMovingUnreleasedIntoFiles(t *testing.T) {
+	checkMigration(t, Notes())
+}
+
+// The same holds on the real package after a release: copy the embedded notes,
+// add a note as the next pull request would, cut a release, and the migrated
+// lines and the history still read the same, the cut release sits on top and
+// nothing is Unreleased any more.
+func TestNotesUnchangedAfterCuttingTheRealPackage(t *testing.T) {
+	pkg := t.TempDir()
+	sub, err := fs.Sub(notesFS, notesDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.CopyFS(filepath.Join(pkg, notesDir), sub); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(pkg, notesDir, "ZZZZZZ.md"), "- a note after the migration\n")
+	if _, err := Cut(pkg, "999.0.0"); err != nil {
+		t.Fatalf("Cut: %v", err)
+	}
+
+	got := composeNotes(notesMD, os.DirFS(pkg))
+	checkMigration(t, got)
+	if got[0].Version != "999.0.0" {
+		t.Fatalf("top entry after the cut = %q, want 999.0.0", got[0].Version)
+	}
+	for _, e := range got {
+		if e.Version == "Unreleased" {
+			t.Fatalf("Unreleased left after the cut: %#v", e)
+		}
+	}
+}
+
+// checkMigration compares all against testdata/NOTES-before-AR97K9.md, the
+// notes as they were before this change.
+func checkMigration(t *testing.T, all []Entry) {
+	t.Helper()
 	before, err := os.ReadFile(filepath.Join("testdata", "NOTES-before-AR97K9.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := parseNotes(string(before))
+	if want[0].Version != "Unreleased" {
+		t.Fatalf("testdata starts with %q, want Unreleased", want[0].Version)
+	}
 
-	got := Notes()
-
-	if len(got) != len(want) {
-		t.Fatalf("got %d entries, want %d", len(got), len(want))
+	if got := parseNotes(notesMD); !reflect.DeepEqual(got, want[1:]) {
+		t.Fatal("a released section of NOTES.md changed")
 	}
-	if got[0].Version != "Unreleased" || !sameSet(got[0].Changes, want[0].Changes) {
-		t.Fatalf("Unreleased = %#v, want the same changes as %#v", got[0], want[0])
+	if n := len(all) - len(want[1:]); n < 0 || !reflect.DeepEqual(all[n:], want[1:]) {
+		t.Fatal("the released sections are not the last entries Notes() shows")
 	}
-	if !reflect.DeepEqual(got[1:], want[1:]) {
-		t.Fatal("a released section changed")
-	}
-}
-
-func sameSet(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	seen := map[string]int{}
-	for _, s := range a {
-		seen[s]++
-	}
-	for _, s := range b {
-		if seen[s]--; seen[s] < 0 {
-			return false
+	shown := map[string]bool{}
+	for _, e := range all {
+		for _, c := range e.Changes {
+			shown[c] = true
 		}
 	}
-	return true
+	for _, c := range want[0].Changes {
+		if !shown[c] {
+			t.Errorf("formerly Unreleased line is shown nowhere: %q", c)
+		}
+	}
 }
