@@ -13,6 +13,10 @@ type World = {
   tabs: { tab_id: string; label: string }[]
   // The old worker's pane went away after the tab list was read.
   paneGone: boolean
+  // This session's subagents, as $.agent.list() gives them.
+  agents: { id: string; description: string; type: string; status: string; name?: string }[]
+  // `jaira lanes --json` of a build before human_exit.
+  oldJaira: boolean
   asked: string[]
   answer: string
   model: string
@@ -52,6 +56,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     tickets: [SIGNOFF, HUMAN, WORKING],
     tabs: [],
     paneGone: false,
+    agents: [],
+    oldJaira: false,
     asked: [],
     answer: '',
     model: '',
@@ -107,7 +113,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
-    if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(LANES))
+    if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
@@ -124,6 +130,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     const { questions } = e as { questions: { question: string }[] }
     return { result: { questions, answers: { [questions[0]!.question]: w.answer } }, text: w.answer }
   })
+  on('agent.list', () => ({ value: w.agents }) as never)
   on('model.complete', () => {
     w.modelCalls++
     return { value: { isAnswered: true, text: w.model, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
@@ -194,22 +201,45 @@ describe('waiting for you', () => {
     expect(await ui.find({ type: 'Text', text: /criterion 1 is still open/ })).toBeDefined()
   })
 
-  test('a plain yes gets no Explain, however long the sentence, nor one that negates a reservation', async ($, on) => {
+  test('a plain yes gets no Explain, however long the sentence', async ($, on) => {
     const w = world(on)
     w.tickets = [
       { ...SIGNOFF, review: { verdict: 'Approve. Der Diff erfuellt die DoD: Befehl existiert, Test deckt ihn ab.' } },
       { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'the diff matches the criteria; no defects found' } },
       { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'request changes: the button skips review' } },
-      { ...SIGNOFF, handle: 'GH56JK', review: { verdict: 'approve, no changes needed' } },
-      { ...SIGNOFF, handle: 'JK78LM', review: { verdict: 'Approve: no open questions, ohne Vorbehalt' } },
     ]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'explain-MG677R' })).toBeUndefined()
     expect(await ui.find({ key: 'explain-AB12CD' })).toBeUndefined()
     expect(await ui.find({ key: 'explain-EF34GH' })).toBeDefined()
-    expect(await ui.find({ key: 'explain-GH56JK' })).toBeUndefined()
-    expect(await ui.find({ key: 'explain-JK78LM' })).toBeUndefined()
+  })
+
+  // The band shows three tickets, so each case below fits on it.
+  test('a negated reservation gets no Explain', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...SIGNOFF, handle: 'GH56JK', review: { verdict: 'approve, no changes needed' } },
+      { ...SIGNOFF, handle: 'JK78LM', review: { verdict: 'Approve: no open questions, ohne Vorbehalt' } },
+    ]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    for (const id of ['GH56JK', 'JK78LM']) {
+      expect(await ui.find({ key: `accept-${id}` })).toBeDefined()
+      expect(await ui.find({ key: `explain-${id}` })).toBeUndefined()
+    }
+  })
+
+  test('a negation ends at a comma and never takes the connective with it', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...SIGNOFF, handle: 'LM90NP', review: { verdict: 'Approve - no blockers, but the docs are missing' } },
+      { ...SIGNOFF, handle: 'NP12QR', review: { verdict: 'Approve: no defects, however the flaky test remains' } },
+      { ...SIGNOFF, handle: 'QR34ST', review: { verdict: 'Annehmen, keine Fehler, aber DoD 2 nie live gesehen' } },
+    ]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    for (const id of ['LM90NP', 'NP12QR', 'QR34ST']) expect(await ui.find({ key: `explain-${id}` })).toBeDefined()
   })
 
   test('a verdict with a reservation gets Explain, which opens a Herdr tab of its own', async ($, on) => {
@@ -461,10 +491,42 @@ describe('the cache guard', () => {
 })
 
 describe('the status line', () => {
-  test('counts the board\'s tickets by whose turn it is, and what was used', async ($, on) => {
-    const w = world(on)
+  test('counts the agents that run and the tickets waiting for a person, and what was used', async ($, on) => {
+    const w = world(on, { herdr: true })
+    // T8QS1Y sits in in-progress and MG677R in signoff: lanes count no agent.
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker' },
+      { tab_id: 'w1:t2', label: 'K7P2QX/dispatch' },
+      { tab_id: 'w1:t3', label: 'MG677R/review' },
+      { tab_id: 'w1:t4', label: 'MG677R/explain' },
+      { tab_id: 'w1:t5', label: 'ZZ99ZZ/worker' },
+      { tab_id: 'w1:t6', label: 'notes' },
+    ]
     await startSession($)
-    expect(w.status.at(-1)).toBe('1 worker · 0 review · 2 waiting for you · 5h 34%')
+    expect(w.status.at(-1)).toBe('2 worker · 1 review · 2 waiting for you · 5h 34%')
+  })
+
+  test('without Herdr the workers are this session\'s running subagents on the board\'s tickets', async ($, on) => {
+    const w = world(on)
+    w.agents = [
+      { id: 'a1', description: 'NZZ T8QS1Y worker', type: 'claude', status: 'running' },
+      { id: 'a2', description: 'carry a ticket', name: 'K7P2QX', type: 'claude', status: 'waiting' },
+      { id: 'a3', description: 'MG677R review', type: 'claude', status: 'running' },
+      { id: 'a4', description: 'MG677R critique', type: 'claude', status: 'completed' },
+      { id: 'a5', description: 'search the code', type: 'Explore', status: 'running' },
+    ]
+    await startSession($)
+    expect(w.status.at(-1)).toBe('2 worker · 1 review · 2 waiting for you · 5h 34%')
+  })
+
+  test('a jaira built before human_exit still shows the tickets waiting in signoff and human', async ($, on) => {
+    const w = world(on)
+    w.oldJaira = true
+    await startSession($)
+    expect(w.status.at(-1)).toBe('0 worker · 0 review · 2 waiting for you · 5h 34%')
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
   })
 
   test('shows the seven-day window beside the five-hour one when the subscription reports it', async ($, on) => {

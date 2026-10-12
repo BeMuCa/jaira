@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, mainRepoOf, otherRefusal, snapshotOf, upwards, worktreeFor, type Waiting } from './board.ts'
+import { hasReservation, liveCounts, mainRepoOf, otherRefusal, snapshotOf, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -185,7 +185,16 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   ])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) return
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout)
-  await update($, boardAtom, () => view)
+  // Workers and reviews are the agents that run: Herdr tabs, and this
+  // session's own subagents where there is no Herdr.
+  const bin = await herdr($)
+  const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], board.dir)
+  let agents: Agent[] = []
+  try {
+    agents = await $.agent.list()
+  } catch {}
+  const live = liveCounts(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabs.stdout : undefined, agents)
+  await update($, boardAtom, () => ({ ...view, counts: { ...view.counts, ...live } }))
 }
 
 // Where a ticket's work lives: running jaira anywhere else answers "on its

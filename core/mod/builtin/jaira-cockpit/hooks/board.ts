@@ -38,8 +38,16 @@ function parse<T>(json: string): T | undefined {
 
 const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
 
-// The tickets waiting in a lane a person owns, and how many tickets each
-// kind of lane holds: an agent's, the fresh review's, a person's.
+// A jaira built before `lanes --json` carried human_exit says nothing about
+// whose lane is whose: then the shipped board's person lanes are taken.
+const PERSON_LANES = new Set(['human', 'signoff'])
+
+function isPersons(lane: Lane): boolean {
+  return lane.human_exit ?? PERSON_LANES.has(lane.id)
+}
+
+// The tickets waiting in a lane a person owns, and how many there are.
+// Workers and reviews are counted by liveCounts, as agents that run.
 export function snapshotOf(lanesJson: string, listJson: string): { waiting: Waiting[]; counts: Counts } {
   const lanes = parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []
   const tickets = parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []
@@ -49,7 +57,7 @@ export function snapshotOf(lanesJson: string, listJson: string): { waiting: Wait
   for (const t of tickets) {
     const lane = byId.get(t.status)
     if (lane === undefined) continue
-    if (lane.human_exit === true) {
+    if (isPersons(lane)) {
       counts.person++
       const next = t.next_lane === undefined ? undefined : byId.get(t.next_lane)
       waiting.push({
@@ -60,10 +68,42 @@ export function snapshotOf(lanesJson: string, listJson: string): { waiting: Wait
         question: oneLine(t.question),
         acceptTo: next?.terminal === true ? next.id : null,
       })
-    } else if (lane.agentic && lane.context === 'fresh') counts.review++
-    else if (lane.agentic) counts.worker++
+    }
   }
   return { waiting, counts }
+}
+
+export type Agent = { description: string; name?: string; status: string }
+
+// The chats a person opens from the band are theirs, not an agent at work.
+const PERSONS_TABS = new Set(['explain', 'discuss'])
+const WORKING = new Set(['pending', 'running', 'waiting'])
+
+// The agents at work on this board's tickets, by kind: a Herdr tab spawn.sh
+// labelled `<id>/<lane>`, and a subagent of this session whose description
+// or name carries a ticket's id. One whose lane is the fresh one is a review,
+// every other a worker. A tab or an agent naming no ticket of this board is
+// not counted.
+export function liveCounts(lanesJson: string, listJson: string, tabListJson: string | undefined, agents: readonly Agent[]): { worker: number; review: number } {
+  const lanes = parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []
+  const ids = new Set((parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []).map(t => t.handle))
+  const fresh = new Set(lanes.filter(l => l.agentic && l.context === 'fresh').map(l => l.id))
+  const counts = { worker: 0, review: 0 }
+  const tabs = tabListJson === undefined ? [] : parse<{ result?: { tabs?: { label?: string }[] } }>(tabListJson)?.result?.tabs ?? []
+  for (const { label = '' } of tabs) {
+    const [id = '', lane = ''] = label.split('/')
+    if (!ids.has(id) || lane === '' || PERSONS_TABS.has(lane)) continue
+    if (fresh.has(lane)) counts.review++
+    else counts.worker++
+  }
+  for (const a of agents) {
+    if (!WORKING.has(a.status)) continue
+    const said = `${a.description} ${a.name ?? ''}`
+    if (![...ids].some(id => said.includes(id))) continue
+    if ([...fresh].some(lane => new RegExp(`\\b${lane}\\b`, 'i').test(said))) counts.review++
+    else counts.worker++
+  }
+  return counts
 }
 
 // A review verdict a person should have explained: one that names a
@@ -74,11 +114,15 @@ const RESERVATION = /vorbehalt|reservation|caveat|changes|änderungen|\bbut\b|\b
 const REFUSAL = /^\s*(request|reject|refuse|fail|zur(ü|ue)ck|ablehn|nicht|not)\b/i
 
 // A reservation word under a negation is none: "approve, no changes needed",
-// "no open questions", "ohne Vorbehalt".
-const NEGATED = new RegExp(`\\b(no|without|kein(e|en|er)?|ohne)\\s+(\\S+\\s+){0,2}?(${RESERVATION.source})`, 'gi')
+// "no open questions", "ohne Vorbehalt". The negation reaches two words at
+// most and never past a comma or a full stop, and a connective is never
+// negated: "no blockers, but the docs are missing" keeps its reservation.
+const CONNECTIVE = /\b(but|aber|however|jedoch)\b/i
+const NEGATED = new RegExp(`\\b(no|without|kein(e|en|er)?|ohne)\\s+([^\\s,;:.]+\\s+){0,2}?(${RESERVATION.source})`, 'gi')
 
 export function hasReservation(verdict: string): boolean {
-  return RESERVATION.test(verdict.replace(NEGATED, '')) || REFUSAL.test(verdict)
+  const unnegated = verdict.replace(NEGATED, m => (CONNECTIVE.test(m) ? m : ''))
+  return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
 // What stops a move besides the person's own exit, read off the error
