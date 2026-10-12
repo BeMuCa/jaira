@@ -23,13 +23,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T06:57:07Z
-updated-at: 2026-10-12T07:34:34Z
+updated-at: 2026-10-12T07:36:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37581
 claimed-at: 2026-10-12T07:24:00Z
 outcome-what: "Jeder Schreibweg (move auch mit --force, note, dod, claim, set, logbook, archive) verweigert eine Ticket-Datei, deren updated-at vor dem lokalen Ref liegt, und nennt beide Staende; jaira pull bringt eine vorhandene aeltere Datei auf den Stand des Refs."
 outcome-why: "move las die veraltete Datei und schrieb sie mit gueltigem Lease auf den Ref (K1W2JR: Review, Proofs, 9 Notes weg); pull war ein No-op, sobald eine Datei existierte, konnte den Zustand also nicht reparieren."
 outcome-resolves: "F3VNVC: eine Datei aelter als ihr Ref kann den Ref nicht mehr ueberschreiben, und pull ist der Weg, sie nachzuziehen."
+review-summary: "core/refsync/refsync.go refresh: liest und dekodiert die Datei von Hand (ReadFile+ParseDoc+Decode); y.Store.Load(id) liefert dasselbe Ticket samt UpdatedAt und war vorher genau dort in Gebrauch - zurueck auf Load"
 ---
 
 # move schreibt eine veraltete Ticket-Datei von der Platte ueber einen neueren Ref
@@ -71,3 +72,4 @@ outcome-resolves: "F3VNVC: eine Datei aelter als ihr Ref kann den Ref nicht mehr
 - pull-Refresh nimmt keine Store-Sperre (Store.lock ist privat); bei gleichzeitigem Mutate desselben Tickets koennte es sich ueberschneiden. Fuer einen Handbefehl hingenommen.
 - Ein Ref ohne updated-at gibt kein Urteil (Store.Create setzt es nicht von selbst, die CLI schon) - dann bleibt alles wie vorher.
 - Test-Falle: runCLI ruft afterCommand nicht, die Ref-Schreibvorgaenge bleiben im Outbox; flushRefs() im Test aufrufen.
+- **2026-10-12 07:35 · Alexander Sacharov** — critique 1: refresh soll y.Store.Load(id) statt eigener ReadFile/ParseDoc/Decode-Kette nutzen (wie der alte AlreadyHere-Zweig). Bewusst stehen gelassen: Was/Now als fertige Saetze im JSON (die Verweigerung soll Menschen beide Staende nennen; ein Agent braucht nur reason=stale_file und pull); Ueberschreiben statt Merge im Refresh (Begruendung im Kommentar an refresh); doppelte Pruefung in move.Move und Mutate (vor dem Gate noetig, in Mutate fuer alle anderen Schreibwege). Uhrenversatz zwischen Maschinen fuehrt hoechstens zu falsch-negativ, also zum alten Verhalten, nie zu einer falschen Verweigerung, solange der Ref nur Inhalte traegt, die die Datei nicht hat.

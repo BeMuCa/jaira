@@ -789,15 +789,7 @@ func (y *Syncer) refresh(id, path string) (*Pulled, error) {
 	if err := y.Repo.Fetch(); err != nil && !errors.Is(err, gitref.ErrOffline) && !errors.Is(err, gitref.ErrNoGit) {
 		return nil, err
 	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	d, err := ticket.ParseDoc(raw)
-	if err != nil {
-		return nil, err
-	}
-	file, err := ticket.Decode(d, path)
+	file, err := y.Store.Load(id)
 	if err != nil {
 		return nil, err
 	}
