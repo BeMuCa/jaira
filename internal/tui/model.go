@@ -78,15 +78,11 @@ type Model struct {
 	// direction a card and the filter both need and the files do not give.
 	milestones []*milestone.Milestone
 	mstones    milestone.Index
-	// msIdx is the cursor in the milestone picker, the one gesture that pulls
-	// the board down to a single round of work.
-	msIdx int
-	// users is the user picker's list, userIdx its cursor, and userPicked
-	// the names ticked in it, lower-cased. All three are built when the
-	// picker opens.
-	users      []userRow
-	userIdx    int
-	userPicked map[string]bool
+	// users is the user picker's list, built when the picker opens.
+	users []userRow
+	// pick is the cursor and the ticks of the open picker, u's or M's; see
+	// ticks.go.
+	pick tickPicker
 
 	tickets []*ticket.Ticket
 	cols    []column
@@ -1240,40 +1236,11 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeUsers:
-		m.keyUsers(s)
+		m.keyTicks(s, "u", m.userNames())
 		return m, nil
 
 	case modeMilestones:
-		n := len(m.milestones)
-		switch s {
-		case "esc", "M", "q":
-			m.mode = m.returnTo
-		case "j", "down":
-			if n > 0 {
-				m.msIdx = (m.msIdx + 1) % n
-			}
-		case "k", "up":
-			if n > 0 {
-				m.msIdx = (m.msIdx - 1 + n) % n
-			}
-		case "enter":
-			// The gesture writes the ordinary filter rather than carrying a
-			// second kind of narrowing beside it: one filter means esc clears
-			// this the same way it clears a typed one, and / shows what the
-			// board is currently narrowed to.
-			// Only the milestone: part: whatever else narrows the board — the
-			// people the user picker ticked, a typed word — stays.
-			if m.msIdx >= 0 && m.msIdx < n {
-				m.setFilterTerm("milestone", m.milestones[m.msIdx].Name)
-			}
-			m.mode = m.returnTo
-		case "x":
-			// Out of the milestone and back to the board, without having to
-			// remember that esc on the board does it — keeping the rest of
-			// the filter, as enter does.
-			m.setFilterTerm("milestone")
-			m.mode = m.returnTo
-		}
+		m.keyTicks(s, "M", m.milestoneNames())
 		return m, nil
 
 	case modeLinks:
@@ -1542,14 +1509,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = modeLegend
 	case "M":
 		// Not m: m is move and must keep meaning that. The picker narrows the
-		// board to one round of work in one gesture, which is the whole reason
+		// board to the rounds of work ticked in it, which is the whole reason
 		// a milestone is worth having.
 		if len(m.milestones) == 0 {
 			m.notify("No milestones on this board yet.\n\nCreate one with 'jaira milestone create <name>' and add tickets to it.", false)
 		} else {
-			m.returnTo = m.mode
-			m.msIdx = 0
-			m.mode = modeMilestones
+			m.openTicks(modeMilestones, "milestone")
 		}
 	case "u":
 		// Next to the milestone picker in purpose: narrowing the board to
@@ -1689,6 +1654,15 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 		}
 	}
 	return slots
+}
+
+// milestoneNames is the milestone picker's rows as the names they show.
+func (m *Model) milestoneNames() []string {
+	out := make([]string, len(m.milestones))
+	for i, ms := range m.milestones {
+		out[i] = ms.Name
+	}
+	return out
 }
 
 // activeTags is every tag carried by a ticket on the board, deduplicated and

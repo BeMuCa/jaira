@@ -1040,7 +1040,7 @@ func (m *Model) statusBar() string {
 	if m.glow {
 		cHint = "c plain"
 	}
-	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "u users", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1607,7 +1607,7 @@ func (m *Model) renderMilestones() string {
 	for i, ms := range m.milestones {
 		marker := "  "
 		name := ms.Name
-		if i == m.msIdx {
+		if i == m.pick.idx {
 			marker = stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
@@ -1616,9 +1616,9 @@ func (m *Model) renderMilestones() string {
 			mark = swatch(ms.Colour)
 		}
 		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
-		b.WriteString(marker + mark + " " + name + count + "\n")
+		b.WriteString(marker + m.tickMark(ms.Name) + " " + mark + " " + name + count + "\n")
 	}
-	for _, l := range wrapHints([]string{"enter narrow the board to it", "x show everything again", "esc close"}, max(1, m.width)) {
+	for _, l := range wrapHints([]string{"space tick", "enter show only the ticked", "x show everything again", "esc close"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))
 	}
 	return b.String()
@@ -1668,7 +1668,7 @@ func (m *Model) renderHelp() string {
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
 			{"L", "every ticket linked to this one, logbook and archive included"},
 			{"/", "filter as you type; key:value narrows to one field, spaces combine, a comma means or, \"quotes\" keep words together"},
-			{"M", "narrow the board to one milestone (x there shows everything again)"},
+			{"M", "narrow the board to some milestones: space ticks them, enter applies (x there shows everything again)"},
 			{"u", "narrow the board to some people: space ticks them, enter applies (x there shows everyone)"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},

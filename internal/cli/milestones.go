@@ -56,7 +56,7 @@ blank lines and an order you chose all survive.
 
 Each milestone is given a random free colour, which its cards then show as a
 bar down their RIGHT edge — the left edge belongs to the tags. On the board, M
-opens the picker and narrows everything to one milestone.
+opens the picker and narrows everything to the milestones ticked in it.
 
 A milestone leaves the board only when somebody says so: ` + "`jaira logbook <name>`" + `
 files it once all its tickets are finished, and ` + "`jaira restore <name>.md`" + ` brings

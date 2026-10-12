@@ -157,6 +157,7 @@ func TestPickerNarrowsTheBoardAndReleasesIt(t *testing.T) {
 	if !strings.Contains(stripANSI(m.render()), "round-one") {
 		t.Error("the picker does not name the board's milestone")
 	}
+	m.Update(key(" "))
 	m.Update(key("enter"))
 	if m.mode != modeBoard {
 		t.Errorf("enter left the picker open; mode = %v", m.mode)
@@ -183,6 +184,110 @@ func TestPickerNarrowsTheBoardAndReleasesIt(t *testing.T) {
 	}
 	if shown != len(m.tickets) {
 		t.Errorf("board shows %d of %d cards after releasing the filter", shown, len(m.tickets))
+	}
+}
+
+// pickerRow is the picker's row for name, colour stripped.
+func pickerRow(t *testing.T, m *Model, name string) string {
+	t.Helper()
+	for _, line := range strings.Split(stripANSI(m.renderMilestones()), "\n") {
+		if strings.Contains(line, name) {
+			return line
+		}
+	}
+	t.Fatalf("the picker has no row for %s", name)
+	return ""
+}
+
+// Two rounds of work are looked at together the way u looks at two people:
+// space ticks each, enter writes both as alternatives of one milestone:
+// condition, and the board shows the tickets of either.
+func TestMilestonePickerTicksSeveral(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	if len(m.tickets) < 3 {
+		t.Fatalf("need three tickets, the board has %d", len(m.tickets))
+	}
+	one, two, none := m.tickets[0].ID, m.tickets[1].ID, m.tickets[2].ID
+	mkMilestone(t, m, "round-one", 45, one)
+	mkMilestone(t, m, "round-two", 202, two)
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+
+	m.Update(key("M"))
+	m.Update(key(" "))
+	m.Update(key("j"))
+	m.Update(key(" "))
+	for _, name := range []string{"round-one", "round-two"} {
+		if row := pickerRow(t, m, name); !strings.Contains(row, "●") {
+			t.Errorf("%s does not show its tick: %q", name, row)
+		}
+	}
+	// A tick does not take the place of the colour: each row still shows
+	// the colour its milestone paints on the cards.
+	out := m.renderMilestones()
+	for _, c := range []string{"38;5;45m■", "38;5;202m■"} {
+		if !strings.Contains(out, c) {
+			t.Errorf("the picker lost the swatch %q:\n%q", c, out)
+		}
+	}
+
+	m.Update(key("enter"))
+	if m.mode != modeBoard {
+		t.Fatalf("enter left the picker open; mode = %v", m.mode)
+	}
+	if want := "milestone:round-one,round-two"; m.filter != want {
+		t.Errorf("filter = %q, want %q", m.filter, want)
+	}
+	shown := map[string]bool{}
+	for _, c := range m.cols {
+		for _, tk := range c.tickets {
+			shown[tk.ID] = true
+		}
+	}
+	if len(shown) != 2 || !shown[one] || !shown[two] || shown[none] {
+		t.Errorf("board shows %v, want only %s and %s", shown, one, two)
+	}
+}
+
+// The picker owns the milestone: condition and nothing else, as u owns
+// user:. Reopened, it shows what the filter holds; enter replaces that
+// condition and keeps the rest; esc changes nothing; x takes it out.
+func TestMilestonePickerOwnsOnlyItsTerm(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	mkMilestone(t, m, "round-one", 45, m.tickets[0].ID)
+	mkMilestone(t, m, "round-two", 202, m.tickets[1].ID)
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.filter, m.input = "user:berk milestone:round-two", "user:berk milestone:round-two"
+	m.rebuild()
+
+	m.Update(key("M"))
+	if row := pickerRow(t, m, "round-two"); !strings.Contains(row, "●") {
+		t.Errorf("reopened, round-two is not ticked: %q", row)
+	}
+	if row := pickerRow(t, m, "round-one"); strings.Contains(row, "●") {
+		t.Errorf("reopened, round-one is ticked: %q", row)
+	}
+	m.Update(key(" "))
+	m.Update(key("enter"))
+	if want := "user:berk milestone:round-one,round-two"; m.filter != want {
+		t.Fatalf("after enter: filter = %q, want %q", m.filter, want)
+	}
+
+	m.Update(key("M"))
+	m.Update(key("j"))
+	m.Update(key(" "))
+	m.Update(key("esc"))
+	if want := "user:berk milestone:round-one,round-two"; m.filter != want || m.mode != modeBoard {
+		t.Errorf("after esc: filter = %q mode = %v, want %q on the board", m.filter, m.mode, want)
+	}
+
+	m.Update(key("M"))
+	m.Update(key("x"))
+	if m.filter != "user:berk" || m.mode != modeBoard {
+		t.Errorf("after x: filter = %q mode = %v, want user:berk on the board", m.filter, m.mode)
 	}
 }
 

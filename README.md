@@ -889,6 +889,7 @@ g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
+M         only some milestones' tickets (space ticks, enter applies)
 S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
