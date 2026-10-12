@@ -669,6 +669,71 @@ func (y *Syncer) Reconcile(id string, lanes *lane.Set) (*Reconciled, error) {
 	return out, nil
 }
 
+// StaleError is the refusal for a ticket file that is older than its ref. It
+// names both states, because "your file is stale" alone does not tell anyone
+// what writing it would have thrown away.
+type StaleError struct {
+	ID        string
+	File, Ref *ticket.Ticket
+}
+
+func (e *StaleError) Error() string {
+	h := ticket.Handle(e.ID)
+	return fmt.Sprintf("%s: the ticket file here is older than its ref; writing it would put that old state back on the ref\n"+
+		"  file: %s\n  ref:  %s\n  run 'jaira pull %s' to bring the file up to the ref, then run this again",
+		h, stateOf(e.File), stateOf(e.Ref), h)
+}
+
+func (e *StaleError) Unwrap() error { return ticket.ErrStale }
+
+// stateOf is one side of a StaleError: the lane and when it was last written.
+func stateOf(t *ticket.Ticket) string {
+	return fmt.Sprintf("%s, updated %s", t.Status, t.UpdatedAt.UTC().Format("2006-01-02 15:04 UTC"))
+}
+
+// refTicket reads the ticket the local ref carries, or nil when there is no ref
+// or it does not hold a ticket.
+func (y *Syncer) refTicket(id string) *ticket.Ticket {
+	content, _, err := y.Repo.Read(id)
+	if err != nil {
+		return nil
+	}
+	d, err := ticket.ParseDoc(content)
+	if err != nil {
+		return nil
+	}
+	t, err := ticket.Decode(d, "")
+	if err != nil {
+		return nil
+	}
+	return t
+}
+
+// isStale is the one definition of "older than its ref": the ref was written
+// strictly after the file. A file or ref without a timestamp gives no verdict.
+func isStale(file, ref *ticket.Ticket) bool {
+	return ref != nil && !file.UpdatedAt.IsZero() && !ref.UpdatedAt.IsZero() &&
+		ref.UpdatedAt.After(file.UpdatedAt)
+}
+
+// CheckFresh refuses a write whose file is older than the ticket's ref. It
+// satisfies ticket.FreshnessChecker, so every write through the store asks it.
+//
+// The local ref is the yardstick, not the remote: it is exactly the state a
+// queued write leases against, so a file older than it is a file whose write
+// the compare-and-swap would accept — and that is the whole problem. A file
+// read from an older branch carries a perfectly current lease. Reading the
+// local ref also keeps a write off the network.
+func (y *Syncer) CheckFresh(t *ticket.Ticket) error {
+	if y == nil || t == nil || y.Usable() != nil {
+		return nil
+	}
+	if ref := y.refTicket(t.ID); isStale(t, ref) {
+		return &StaleError{ID: t.ID, File: t, Ref: ref}
+	}
+	return nil
+}
+
 // ErrTaken means the ticket on the ref already belongs to somebody else.
 //
 // It is a separate refusal from a lost race, and both are needed. The
@@ -692,10 +757,78 @@ type Pulled struct {
 	// there first, and no file was written.
 	Winner *Winner `json:"winner,omitempty"`
 
+	// Was is set when the file was already here but older than its ref, and
+	// the pull brought it up: the state the file was in, beside Now, the state
+	// it carries since. Nothing on the ref changes in that case, so nobody's
+	// claim on the ticket does either.
+	Was string `json:"was,omitempty"`
+	Now string `json:"now,omitempty"`
+
 	// TakenFrom names who the ticket was taken from, when it was taken with
 	// --steal. A silent steal would leave the other person's board saying the
 	// ticket is theirs, with nothing anywhere saying why it stopped being.
 	TakenFrom string `json:"taken-from,omitempty"`
+}
+
+// ErrUnsent means the file here holds a write that has not reached the remote,
+// so bringing it up to the ref would throw that write away.
+var ErrUnsent = errors.New("refsync: the ticket has a write here that has not been sent")
+
+// refresh is a pull of a ticket whose file is already here: it brings a file
+// that is older than the ref up to the ref, and leaves any other file alone.
+//
+// It overwrites rather than merges. The file is behind by definition — the ref
+// was written after it — so the ref already holds everything the file does,
+// and a merge could only turn the gap into conflicts. The one thing the file
+// can hold that the ref does not is an unsent write, and that is refused.
+//
+// The fetch is best effort: offline, the local ref is still the newest state
+// this clone knows of, and a repeated pull has always worked without a network.
+func (y *Syncer) refresh(id, path string) (*Pulled, error) {
+	out := &Pulled{ID: id, Path: path, AlreadyHere: true}
+	if err := y.Repo.Fetch(); err != nil && !errors.Is(err, gitref.ErrOffline) && !errors.Is(err, gitref.ErrNoGit) {
+		return nil, err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	d, err := ticket.ParseDoc(raw)
+	if err != nil {
+		return nil, err
+	}
+	file, err := ticket.Decode(d, path)
+	if err != nil {
+		return nil, err
+	}
+	out.Title = file.Title
+	ref := y.refTicket(id)
+	if !isStale(file, ref) {
+		return out, nil
+	}
+	if _, pending := y.Pending(id); pending {
+		return out, fmt.Errorf("%w: nothing was overwritten, and the ref has moved on since (%s here, %s on the ref)",
+			ErrUnsent, stateOf(file), stateOf(ref))
+	}
+	content, _, err := y.Repo.Read(id)
+	if err != nil {
+		return nil, err
+	}
+	dst := filepath.Join(filepath.Dir(path), ticket.Filename(id, ref.Title))
+	if err := ticket.WriteAtomic(dst, content); err != nil {
+		return nil, err
+	}
+	// A title changed on the ref changes the filename; the old one would be a
+	// second file claiming the same id.
+	if dst != path {
+		if err := os.Remove(path); err != nil {
+			return nil, err
+		}
+	}
+	out.AlreadyHere = false
+	out.Path, out.Title = dst, ref.Title
+	out.Was, out.Now = stateOf(file), stateOf(ref)
+	return out, nil
 }
 
 // Pull takes a ticket that lives on its ref and makes it this clone's to work
@@ -728,14 +861,11 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 		return nil, err
 	}
 	// Already here: a repeated pull is a successful no-op, the same as moving a
-	// ticket to the lane it is already in. The question is whether there is a
-	// FILE, not whether the board can see the ticket — it can see every ref.
+	// ticket to the lane it is already in — unless the file is behind its ref.
+	// The question is whether there is a FILE, not whether the board can see
+	// the ticket — it can see every ref.
 	if path, ok := y.localPath(id); ok {
-		out := &Pulled{ID: id, Path: path, AlreadyHere: true}
-		if t, err := y.Store.Load(id); err == nil {
-			out.Title = t.Title
-		}
-		return out, nil
+		return y.refresh(id, path)
 	}
 	if err := y.Repo.Fetch(); err != nil {
 		return nil, err

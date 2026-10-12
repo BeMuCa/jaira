@@ -846,3 +846,39 @@ func listed(ts []*ticket.Ticket, id string) bool {
 	}
 	return false
 }
+
+// A file behind its ref is brought up to it by a pull — unless it holds a write
+// that has not been sent, which the ref cannot contain. That is refused, and
+// the file is left exactly as it was.
+func TestPullLeavesAStaleFileWithAnUnsentWriteAlone(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := create(t, ada, "unsent and stale")
+	// A write stamps updated-at, which create leaves out; the ref needs one
+	// for there to be anything to be older than.
+	if _, err := ada.store.Mutate(id, func(*ticket.Ticket) error { return nil }); err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	tk, err := ada.store.Mutate(id, func(tk *ticket.Ticket) error {
+		return ticket.AppendNote(tk.Doc(), "not sent yet", time.Now(), "ada")
+	})
+	if err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+	raw, err := os.ReadFile(tk.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stale := olderStamp(string(raw))
+	if err := os.WriteFile(tk.Path, []byte(stale), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Pull(id, false); !errors.Is(err, refsync.ErrUnsent) {
+		t.Fatalf("pull over an unsent write was not refused: %v", err)
+	}
+	if got, _ := os.ReadFile(tk.Path); string(got) != stale {
+		t.Error("the refused pull changed the file")
+	}
+}
