@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { explanationOf, lanesOf, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { explanationOf, lanesOf, type Action, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -407,15 +407,21 @@ async function askOwnAnswer($: EngineInterface, id: string): Promise<void> {
   if (!opened.isPlaced) await fail($, `${t.decide} ${id}`, t.noRoom)
 }
 
-// The choice is noted on the ticket, as a Discuss chat notes it, and the
-// band offers it to read. Nothing moves: Accept and Give back stay the
-// person's presses.
-async function decide($: EngineInterface, id: string, text: string): Promise<void> {
+// The choice is the decision itself: noted on the ticket first, as a Discuss
+// chat notes it, then carried out — Give back with the choice as its reason,
+// Accept where the band's own Accept would move it. A choice that does
+// neither goes to this session's conversation, the teamlead's, so it is
+// heard and not only left on the ticket.
+async function decide($: EngineInterface, id: string, text: string, action: Action | undefined, share: number): Promise<void> {
   if (!board) return
   const done = await jaira($, await ticketDir($, board, id), ['note', id, `decision: ${text}`])
   if (!done.ok) return fail($, `${t.decide} ${id}`, done.why)
   await update($, decidedAtom, d => ({ ...d, [id]: text }))
+  const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+  if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, text, share)
+  if (action === 'accept' && w !== undefined && w.acceptTo !== null) return accept($, w)
   await say($, t.decidedOn(id))
+  void $.prompt.submit({ text: t.decisionFor(id, text) })
 }
 
 // Give back asks what is missing in a pane of its own, opened with focus: a
@@ -973,7 +979,7 @@ export const register: Register = (on, options) => {
       <Box flexDirection="column">
         <Text bold>{t.explanationOf(id)}</Text>
         {x.parts.map((p, i) => p.kind === 'option'
-          ? <Text key={`part-${i}`} wrap="wrap">  <Text bold>{p.key})</Text> {p.text}{p.key === x.recommended ? ` ${t.recommended}` : ''}</Text>
+          ? <Text key={`part-${i}`} wrap="wrap">  <Text bold>{p.key})</Text> {p.text}{p.action !== undefined ? ` ${p.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}{p.key === x.recommended ? ` ${t.recommended}` : ''}</Text>
           // A paragraph a line apart; the options one under the other.
           : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
         {Select !== undefined
@@ -982,7 +988,9 @@ export const register: Register = (on, options) => {
               <Select
                 key={`choose-${id}`}
                 label={t.choose}
-                options={[...x.options.map(o => ({ value: o.key, label: `${o.key}) ${o.text}` })), { value: OWN, label: t.ownAnswer }]}
+                // Letters only: the Select draws one line and cuts a long
+                // label; the options stand whole and wrapped above it.
+                options={[...x.options.map(o => ({ value: o.key, label: `${o.key})${o.key === x.recommended ? ` ${t.recommended}` : ''}` })), { value: OWN, label: t.ownAnswer }]}
                 {...(x.recommended !== undefined ? { value: x.recommended } : {})}
                 autoFocus
                 onSelect={(value: string) => {
@@ -990,7 +998,7 @@ export const register: Register = (on, options) => {
                   const o = x.options.find(o => o.key === value)
                   if (o === undefined) return
                   void $.ui.close({ id: EXPLANATION })
-                  void decide($, id, `${o.key}) ${o.text}`)
+                  void decide($, id, `${o.key}) ${o.text}`, o.action, share)
                 }}
               />
             </Box>
@@ -1020,7 +1028,9 @@ export const register: Register = (on, options) => {
             if (answer.trim() === '') return
             void update($, answeringAtom, () => null)
             void $.ui.close({ id: ANSWER })
-            void decide($, id, answer.trim())
+            // An own answer asks for something the options did not offer:
+            // it goes back, with the answer as the reason.
+            void decide($, id, answer.trim(), 'giveBack', share)
           }}
         />
       </Box>

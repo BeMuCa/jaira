@@ -33,6 +33,8 @@ type World = {
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
   bodies: Record<string, string>
+  // What the plugin submitted to this session's conversation itself.
+  submitted: string[]
   // The panes the plugin opened, and closed, by id and title.
   opened: { id: string; title?: string; focus?: boolean }[]
   closed: string[]
@@ -87,6 +89,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     refusals: [{ code: 'needs_human', message: 'lane "signoff" is a human checkpoint' }],
     warns: false,
     bodies: {},
+    submitted: [],
     opened: [],
     closed: [],
     clock: mock.clock(on, { now: 1_000_000 }),
@@ -128,7 +131,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('ui.toast', () => ({ value: undefined }))
   on('session.end', ($, e) => ({ sessionId: 'abcdef123456' }))
   on('session.receive', ($, e) => ({ text: e.text }))
-  on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+  on('prompt.submit', ($, e) => {
+    if (e.origin.kind === 'plugin') w.submitted.push(e.text)
+    return { text: e.text, origin: e.origin }
+  })
   on('turn.complete', ($, e) => ({ text: e.answer, ...(e.usage ? { usage: e.usage } : {}) }))
   on('session.cwd', () => ({ value: '/repo' }))
   on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
@@ -414,9 +420,14 @@ describe('waiting for you', () => {
     'Warum: two branches then share one entry and read each other\'s results.',
     'a) add the branch to the key',
     'b) accept it as it is',
-    'c) clear the cache on checkout',
+    'c) clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it',
     'Empfehlung: a - smallest change, no stale reads',
   ].join('\n')
+
+  // The same, with what picking each option does.
+  const MARKED = SHAPED
+    .replace('a) add the branch to the key', 'a) add the branch to the key [give back]')
+    .replace('b) accept it as it is', 'b) accept it as it is [accept]')
 
   test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
     const w = world(on)
@@ -430,16 +441,21 @@ describe('waiting for you', () => {
       "Warum: two branches then share one entry and read each other's results.",
       '  a) add the branch to the key (recommended)',
       '  b) accept it as it is',
-      '  c) clear the cache on checkout',
+      '  c) clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it',
       'Empfehlung: a - smallest change, no stale reads',
     ]))
+    // A long option is read whole, wrapped, never cut: the Select carries
+    // the letters only, since it draws one line and cuts a long label.
+    expect((await pane.find({ type: 'Text', text: /^ {2}c\) clear the cache/ }))?.props.wrap).toBe('wrap')
     const choose = await pane.find({ key: 'choose-MG677R' })
     expect(choose?.props.value).toBe('a')
     expect(choose?.props.autoFocus).toBe(true)
-    expect((choose?.props.options as { value: string }[]).map(o => o.value)).toEqual(['a', 'b', 'c', 'own'])
+    expect(choose?.props.options).toEqual([
+      { value: 'a', label: 'a) (recommended)' }, { value: 'b', label: 'b)' }, { value: 'c', label: 'c)' }, { value: 'own', label: 'Own answer…' },
+    ])
   })
 
-  test('an option picked goes onto the ticket as a decision, and the band offers it to read', async ($, on) => {
+  test('an option that is neither step goes onto the ticket as a decision and to the teamlead\'s conversation', async ($, on) => {
     const w = world(on)
     w.bodies.MG677R = SHAPED
     await startSession($)
@@ -447,15 +463,16 @@ describe('waiting for you', () => {
     await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'b' })
     expect(ran(w, 'jaira', 'note')).toEqual([['jaira', 'note', 'MG677R', 'decision: b) accept it as it is', '@/.worktrees/repo-mg677r']])
     expect(w.closed).toEqual(['cockpit-explanation'])
-    // Nothing moves: Accept and Give back stay the person's presses.
+    // No mark: nothing moves, and the conversation the band sits in hears it.
     expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(w.submitted).toEqual(["Decision on MG677R in the cockpit's explanation pane, noted on the ticket and not acted on: b) accept it as it is"])
     const band = await $.ui.mount(BAND)
     expect(await band.find({ type: 'Text', text: /MG677R \| decided/ })).toBeDefined()
     await band.press({ key: 'decision-MG677R' })
     expect(await (await $.ui.mount(MESSAGE('Decision on MG677R'))).find({ type: 'Text', text: 'b) accept it as it is' })).toBeDefined()
   })
 
-  test('an own answer is typed in a pane that takes the keyboard and goes onto the ticket as a decision', async ($, on) => {
+  test('an own answer is typed in a pane that takes the keyboard and gives the work back with it as the reason', async ($, on) => {
     const w = world(on)
     w.bodies.MG677R = SHAPED
     await startSession($)
@@ -469,9 +486,35 @@ describe('waiting for you', () => {
     await pane.input({ key: 'answer-MG677R', text: '  ' })
     expect(ran(w, 'jaira', 'note')).toEqual([])
     await pane.input({ key: 'answer-MG677R', text: 'key by branch and commit' })
-    expect(ran(w, 'jaira', 'note')).toEqual([['jaira', 'note', 'MG677R', 'decision: key by branch and commit', '@/.worktrees/repo-mg677r']])
+    const notes = ran(w, 'jaira', 'note').map(r => r[3])
+    expect(notes.slice(0, 2)).toEqual(['decision: key by branch and commit', 'Given back from signoff: key by branch and commit'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
     expect(w.closed).toEqual(['cockpit-explanation', 'cockpit-answer'])
-    expect(await (await $.ui.mount(BAND)).find({ key: 'decision-MG677R' })).toBeDefined()
+  })
+
+  test('an option marked [give back] gives the work back with it as the reason, without a second press', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    // The mark is read, not shown as text of the option.
+    expect(await pane.find({ type: 'Text', text: '  a) add the branch to the key [give back] (recommended)' })).toBeDefined()
+    await pane.select({ key: 'choose-MG677R', value: 'a' })
+    expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: a) add the branch to the key', 'Given back from signoff: a) add the branch to the key'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
+    expect(w.submitted).toEqual([])
+  })
+
+  test('an option marked [accept] accepts the ticket as the band\'s Accept does', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'b' })
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: b) accept it as it is'])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(w.submitted).toEqual([])
   })
 
   test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {

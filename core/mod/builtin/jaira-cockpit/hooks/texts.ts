@@ -29,6 +29,10 @@ export const t = {
   ownPlaceholder: 'goes onto the ticket as a decision',
   decide: 'Decide',
   decidedOn: (id: string) => `${id}: decision noted on the ticket`,
+  actionGiveBack: '[give back]',
+  actionAccept: '[accept]',
+  decisionFor: (id: string, text: string) =>
+    `Decision on ${id} in the cockpit's explanation pane, noted on the ticket and not acted on: ${text}`,
   answerOn: (id: string) => `Answer on ${id}`,
   verdict: 'Verdict',
   verdictOf: (id: string) => `Review verdict of ${id}`,

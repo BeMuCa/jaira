@@ -230,24 +230,31 @@ export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: 
 }
 
 // An Explain chat's note, in the shape spawn.sh asks for: one line per part —
-// the finding, why it counts, one line per option as `a) ...`, and
+// the finding, why it counts, one line per option as `a) ...`, ending in
+// `[give back]` or `[accept]` when picking it is that step, and
 // `Empfehlung: <letter> - ...`. Its parts in the order written, the options
-// apart for the choice, and the option recommended. A note with no option
+// apart for the choice with what each does, and the option recommended. A note with no option
 // line — one written before the shape was asked for — is one part, whole,
 // as it was always shown.
-export type Part = { kind: 'text'; text: string } | { kind: 'option'; key: string; text: string }
-export type Explanation = { parts: Part[]; options: { key: string; text: string }[]; recommended?: string }
+export type Action = 'giveBack' | 'accept'
+export type Option = { key: string; text: string; action?: Action }
+export type Part = { kind: 'text'; text: string } | ({ kind: 'option' } & Option)
+export type Explanation = { parts: Part[]; options: Option[]; recommended?: string }
 
 const OPTION = /^\s*\(?([a-f])\)\s+(.+)$/
+const MARK = /\s*\[(give back|accept)\]\s*$/i
 const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([a-f])\b/i
 
 export function explanationOf(text: string): Explanation {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
   const parts: Part[] = lines.map(l => {
     const m = OPTION.exec(l)
-    return m ? { kind: 'option', key: m[1]!, text: m[2]!.trim() } : { kind: 'text', text: l }
+    if (!m) return { kind: 'text', text: l }
+    const mark = MARK.exec(m[2]!)?.[1]?.toLowerCase()
+    const text = m[2]!.replace(MARK, '').trim()
+    return { kind: 'option', key: m[1]!, text, ...(mark ? { action: mark === 'accept' ? 'accept' : 'giveBack' } : {}) }
   })
-  const options = parts.flatMap(p => (p.kind === 'option' ? [{ key: p.key, text: p.text }] : []))
+  const options = parts.flatMap(({ kind, ...o }) => (kind === 'option' ? [o as Option] : []))
   if (options.length === 0) return { parts: [{ kind: 'text', text: text.trim() }], options }
   const recommended = lines.map(l => RECOMMENDED.exec(l)?.[1]).find(k => k !== undefined && options.some(o => o.key === k))
   return { parts, options, ...(recommended !== undefined ? { recommended } : {}) }

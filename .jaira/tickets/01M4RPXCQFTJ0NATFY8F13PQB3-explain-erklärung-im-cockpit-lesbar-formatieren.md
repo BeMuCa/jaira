@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:45:00Z
-updated-at: 2026-10-12T19:34:31Z
+updated-at: 2026-10-12T19:37:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65657
 claimed-at: 2026-10-12T18:56:47Z
@@ -54,9 +54,12 @@ mode: conversational
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:160 NO_GAP; test 'Explain is offered once the review names a gap, whatever words the verdict uses' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:477): 'keine Lücken', 'No gaps found.', 'No defect found — ...' get no Explain
 - [x] review.gaps zählen für Explain nur, wenn das Verdikt aus derselben Runde stammt wie die gaps; Test (Alex decision c, 19:21)
   proof: core/move/move.go:154 sendsBack counts round; internal/cli/tickets.go:1002 review-round stamped with the verdict; core/mod/builtin/jaira-cockpit/hooks/board.ts:175 sameRound; tests TestMoveCountsARoundOnEverySendBack (core/move/move_test.go:176), TestReviewVerdictIsStampedWithItsRound (internal/cli/mode_test.go:215), cockpit 'Explain is offered once the review names a gap...' (TU78VW old round, VW90XY same round, XY12ZA unrecorded)
-- [ ] Im Auswahl-Pane sind lange Optionen ganz lesbar (umbrechen statt abschneiden); Test (Alex decision 19:22: 'при выборе текст обрублен')
-- [ ] Eine im Pane getroffene decision erreicht jemanden: die Sitzung, die das Ticket trägt oder den Teamlead (wie Discuss per SendMessage), statt nur als Note zu liegen; Test
-- [ ] Die Wahl im Explain-Pane handelt selbst, ohne zweiten Druck: eine Option, die zurückgibt (oder eine eigene Antwort, die etwas ändern will), führt Give back mit der Wahl als Grund aus; eine Option 'annehmen' führt Accept aus. Nur notieren reicht nicht; Test
+- [x] Im Auswahl-Pane sind lange Optionen ganz lesbar (umbrechen statt abschneiden); Test (Alex decision 19:22: 'при выборе текст обрублен')
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:991 Select carries letters only, options wrap above; test 'a shaped explanation reads as paragraphs...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:432) checks a long option's wrap and the labels
+- [x] Eine im Pane getroffene decision erreicht jemanden: die Sitzung, die das Ticket trägt oder den Teamlead (wie Discuss per SendMessage), statt nur als Note zu liegen; Test
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:415 decide: a choice with no step goes into this session via $.prompt.submit; test 'an option that is neither step ... to the teamlead's conversation' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:458)
+- [x] Die Wahl im Explain-Pane handelt selbst, ohne zweiten Druck: eine Option, die zurückgibt (oder eine eigene Antwort, die etwas ändern will), führt Give back mit der Wahl als Grund aus; eine Option 'annehmen' führt Accept aus. Nur notieren reicht nicht; Test
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:245 MARK, core/mod/builtin/jaira-cockpit/hooks/register.tsx:415 decide -> giveBack()/accept(); spawn.sh:171 asks for [give back]/[accept]; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:495, core/mod/builtin/jaira-cockpit/tests/board.test.ts:509, own answer core/mod/builtin/jaira-cockpit/tests/board.test.ts:475
 
 ## Options
 
