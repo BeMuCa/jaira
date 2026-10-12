@@ -855,13 +855,13 @@ export const register: Register = (on, options) => {
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any. */}
               {w.acceptTo !== null
-                ? <Button key={`accept-${w.id}`} label={t.accept} onPress={() => void accept($, w)}><Text color="success">{t.accept}</Text></Button>
+                ? <Button key={`accept-${w.id}`} onPress={() => void accept($, w)}><Text color="success">{t.accept}</Text></Button>
                 : null}
               {hasInput
-                ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)}><Text color="error">{t.giveBack}</Text></Button>
+                ? <Button key={`back-${w.id}`} onPress={() => void askWhatIsMissing($, w)}><Text color="error">{t.giveBack}</Text></Button>
                 : null}
               {w.explainable
-                ? <Button key={`explain-${w.id}`} label={t.explain} onPress={() => void openChat($, w.id, 'explain')}><Text color="warning">{t.explain}</Text></Button>
+                ? <Button key={`explain-${w.id}`} onPress={() => void openChat($, w.id, 'explain')}><Text color="warning">{t.explain}</Text></Button>
                 : null}
               {explained[w.id] !== undefined
                 ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />

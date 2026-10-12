@@ -1,7 +1,7 @@
 ---
 id: 01M4RRVYXYBK44RANX2D0EW5XK
 title: "Cockpit-Knöpfe farbig: Accept grün, Give back rot, Explain gelb"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,14 +19,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T19:19:11Z
-updated-at: 2026-10-12T19:26:05Z
+updated-at: 2026-10-12T19:26:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41108
 claimed-at: 2026-10-12T19:19:37Z
 outcome-what: "Accept, Give back und Explain im Cockpit-Band zeichnen ihre Beschriftung als <Text> in den Theme-Farben success, error, warning; Read explanation und Verdict bleiben neutral"
 outcome-why: "Die Knöpfe sahen gleich aus; man musste lesen, um den richtigen zu treffen"
 outcome-resolves: "Accept grün, Give back rot, Explain gelb über Theme-Farben; Fokus bleibt durch die Inversion der Engine erkennbar; Release-Note 0EW5XK.md"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:858 Accept keeps variant=\"primary\", which the terminal draws in the accent colour (blue, per the ticket's context even hinterlegt): a green label inside a blue button is not 'Accept is green'. Drop variant=\"primary\" — the colour is now what marks it as the one to press"
+review-summary: "none"
+review-gaps: "dropped label= on Accept, Give back and Explain: it repeated the Text child, which per ButtonProps names the control when label is absent, and key keeps the address; no other Button in the mods holds children, so no existing pattern to reuse; nothing dead, no cost on a hot path"
 ---
 
 # Cockpit-Knöpfe farbig: Accept grün, Give back rot, Explain gelb
@@ -55,3 +56,4 @@ review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:858 Accept ke
 - **2026-10-12 19:23 · Alexander Sacharov** — Keine offenen Entscheidungen. Engine 2.1.296: ButtonProps hat keine color-Prop, variant nur 'primary'|'secondary'. Weg: Button behält label (Adresse/Name) und bekommt ein <Text color=success|error|warning> als Kind — erlaubt laut ButtonProps.label-Doku. Fokus: die Engine markiert Fokus und Pointer per inverse, unabhängig von der Textfarbe; wir setzen kein plain/inverse. Accept behält variant=primary (Desktop zeichnet so den Hauptknopf; im Terminal bleiben die Klammern in Akzentfarbe, die Beschriftung grün).
 - **2026-10-12 19:25 · Alexander Sacharov** — DoD 2 ist aus der Engine-Doku belegt, nicht live gesehen: die Test-API zeigt keinen Fokus-Zustand. Im Terminal prüfen: ctrl+x tab ins Band, Fokus auf Accept — der Knopf muss invertiert erscheinen.
 - **2026-10-12 19:25 · Alexander Sacharov** — critique: register.tsx:858 variant="primary" von Accept streichen. Primary zeichnet den Knopf in der Akzentfarbe (laut Kontext blau hinterlegt); grüne Schrift darin ist weder 'grün' noch gut lesbar. Die Farbe übernimmt jetzt, was primary markierte. Meine frühere Notiz (primary behalten wegen Desktop) ist damit überholt: das Band ist ein Terminal-Band, der Desktop zeichnet ohnehin seinen nativen Knopf.
+- **2026-10-12 19:26 · Alexander Sacharov** — critique Runde 2: der einzige Befund (variant=primary an Accept) ist mit eff028e0 erledigt, Test sichert es. Nichts weiter.
