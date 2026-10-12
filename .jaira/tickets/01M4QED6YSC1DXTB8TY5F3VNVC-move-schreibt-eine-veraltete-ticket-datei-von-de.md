@@ -1,7 +1,7 @@
 ---
 id: 01M4QED6YSC1DXTB8TY5F3VNVC
 title: move schreibt eine veraltete Ticket-Datei von der Platte ueber einen neueren Ref
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,14 +23,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T06:57:07Z
-updated-at: 2026-10-12T07:36:10Z
+updated-at: 2026-10-12T07:37:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37581
 claimed-at: 2026-10-12T07:24:00Z
 outcome-what: "Jeder Schreibweg (move auch mit --force, note, dod, claim, set, logbook, archive) verweigert eine Ticket-Datei, deren updated-at vor dem lokalen Ref liegt, und nennt beide Staende; jaira pull bringt eine vorhandene aeltere Datei auf den Stand des Refs."
 outcome-why: "move las die veraltete Datei und schrieb sie mit gueltigem Lease auf den Ref (K1W2JR: Review, Proofs, 9 Notes weg); pull war ein No-op, sobald eine Datei existierte, konnte den Zustand also nicht reparieren."
 outcome-resolves: "F3VNVC: eine Datei aelter als ihr Ref kann den Ref nicht mehr ueberschreiben, und pull ist der Weg, sie nachzuziehen."
-review-summary: "core/refsync/refsync.go refresh: liest und dekodiert die Datei von Hand (ReadFile+ParseDoc+Decode); y.Store.Load(id) liefert dasselbe Ticket samt UpdatedAt und war vorher genau dort in Gebrauch - zurueck auf Load"
+review-summary: "none"
+review-gaps: "refresh las den Ref zweimal (refTicket, dann Repo.Read fuer die Bytes); refTicket gibt jetzt die Bytes mit. Gelassen: winner() parst den Ref ebenfalls, liest aber nur Skalare ohne Decode - zwei verschiedene Bedarfe; doppelte Freshness-Pruefung in move.Move und Mutate ist gewollt (siehe critique-Note). Kein toter Code, gofmt sauber."
 ---
 
 # move schreibt eine veraltete Ticket-Datei von der Platte ueber einen neueren Ref

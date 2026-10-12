@@ -691,22 +691,22 @@ func stateOf(t *ticket.Ticket) string {
 	return fmt.Sprintf("%s, updated %s", t.Status, t.UpdatedAt.UTC().Format("2006-01-02 15:04 UTC"))
 }
 
-// refTicket reads the ticket the local ref carries, or nil when there is no ref
-// or it does not hold a ticket.
-func (y *Syncer) refTicket(id string) *ticket.Ticket {
+// refTicket reads the ticket the local ref carries, with its bytes, or nil when
+// there is no ref or it does not hold a ticket.
+func (y *Syncer) refTicket(id string) (*ticket.Ticket, []byte) {
 	content, _, err := y.Repo.Read(id)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	d, err := ticket.ParseDoc(content)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	t, err := ticket.Decode(d, "")
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return t
+	return t, content
 }
 
 // isStale is the one definition of "older than its ref": the ref was written
@@ -728,7 +728,7 @@ func (y *Syncer) CheckFresh(t *ticket.Ticket) error {
 	if y == nil || t == nil || y.Usable() != nil {
 		return nil
 	}
-	if ref := y.refTicket(t.ID); isStale(t, ref) {
+	if ref, _ := y.refTicket(t.ID); isStale(t, ref) {
 		return &StaleError{ID: t.ID, File: t, Ref: ref}
 	}
 	return nil
@@ -794,17 +794,13 @@ func (y *Syncer) refresh(id, path string) (*Pulled, error) {
 		return nil, err
 	}
 	out.Title = file.Title
-	ref := y.refTicket(id)
+	ref, content := y.refTicket(id)
 	if !isStale(file, ref) {
 		return out, nil
 	}
 	if _, pending := y.Pending(id); pending {
 		return out, fmt.Errorf("%w: nothing was overwritten, and the ref has moved on since (%s here, %s on the ref)",
 			ErrUnsent, stateOf(file), stateOf(ref))
-	}
-	content, _, err := y.Repo.Read(id)
-	if err != nil {
-		return nil, err
 	}
 	dst := filepath.Join(filepath.Dir(path), ticket.Filename(id, ref.Title))
 	if err := ticket.WriteAtomic(dst, content); err != nil {
