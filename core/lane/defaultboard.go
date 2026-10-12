@@ -34,11 +34,7 @@ func DefaultBoardPath() string {
 	if v := os.Getenv("JAIRA_DEFAULT_BOARD"); v != "" {
 		return v
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, ".jaira", "default-board.md")
+	return inUserHome("default-board.md")
 }
 
 // LoadDefaultBoard reads DefaultBoardPath(). No file at all is the normal

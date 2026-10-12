@@ -1,0 +1,1 @@
+- Expect `JAIRA_HOME` to relocate your default board and lane catalogue too: with it set, jaira reads `$JAIRA_HOME/default-board.md` and `$JAIRA_HOME/lanes/` instead of the ones in `~/.jaira`, like settings, sessions and locks already did. `JAIRA_DEFAULT_BOARD` and `JAIRA_LANES_DIR` still win over it.
