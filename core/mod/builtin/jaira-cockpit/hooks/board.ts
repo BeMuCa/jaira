@@ -238,13 +238,6 @@ export function branchesFor(porcelain: string, id: string): { ticket?: string; b
   return { ...(ticket ? { ticket } : {}), ...(base ? { base } : {}) }
 }
 
-// A ticket's branch without a worktree, from `git branch --list
-// --format=%(refname:short) '*/<slug>'`: spawn.sh names it
-// <prefix>/<slug>, and a worktree removed after done leaves it behind.
-export function branchListed(listing: string): string | undefined {
-  return listing.split('\n').map(l => l.trim()).find(Boolean)
-}
-
 // Where a branch is checked out, off the same porcelain; undefined where it
 // is in no worktree. Without one, newWorktreeFor is where spawn.sh would have
 // put it: beside the repository, never inside it.
@@ -299,9 +292,12 @@ export function pendingOf(listJson: string, named: readonly string[], terminal: 
   })
 }
 
-// The branch that carries a ticket with no branch of its own, off `git
-// branch --contains <a commit naming it> --format=%(refname:short)`: the
-// first that is not the base.
+// A ticket's branch without a worktree of its own, off a branch listing
+// (`--format=%(refname:short)`): the first that is not the base. Read from
+// `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
+// worktree removed after done leaves it behind — and from `git branch
+// --contains <a commit naming it>`, where it was worked on another ticket's
+// branch.
 export function carrierBranch(listing: string, base: string): string | undefined {
   return listing.split('\n').map(l => l.trim()).find(b => b && b !== base)
 }

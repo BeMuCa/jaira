@@ -1,7 +1,7 @@
 ---
 id: 01M4RPX9C61168AXRHPZGPFA7B
 title: "Accept im Cockpit stösst den nächsten Schritt an: PR öffnen oder nächstes Ticket starten"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:44:57Z
-updated-at: 2026-10-12T19:19:42Z
+updated-at: 2026-10-12T19:21:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48016
 claimed-at: 2026-10-12T18:49:39Z
@@ -22,10 +22,8 @@ mode: conversational
 outcome-what: "Accept im Cockpit startet nach dem Move nach done den nächsten Schritt: PR über spawn.sh-Lane pr (/jaira-role-pr <id> --by-person), wenn der Branch Commits vor dem Default-Branch des PR-Ziels hat, alle Tickets seiner Commits in done sind und kein PR existiert; sonst das nächste Ticket aus jaira next ohne laufenden Tab als worker/dispatch. Jedes Scheitern sichtbar im Pane, Ticket bleibt done. jaira-role-pr legt die fertigen Tickets des Branches vor dem Push ins Logbook und beschreibt alle."
 outcome-why: "Accept schob ein Ticket nur nach done; danach musste die Person selbst den PR öffnen oder das nächste Ticket anstossen. Ein PR-Druck ist die Entscheidung einer Person, also darf Accept den PR öffnen."
 outcome-resolves: "DoD 1-7: afterAccept/pullTarget in register.tsx, Regel stepAfterAccept in board.ts, spawn.sh pr, jaira-role-pr --by-person + logbook vor Push, 18 Tests 'after Accept' + role_test, Release-Note GPFA7B"
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept: 'git rev-list --count base..branch' and 'git log --format=%s base..branch' walk the same range - drop rev-list, take ahead as the number of subject lines from the one git log
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx:337: afterAccept's doc comment ('What the press starts…') now sits above pullTarget's comment, so it reads as pullTarget's and afterAccept has none - move it down to afterAccept
-  core/mod/builtin/jaira-cockpit/tests/board.test.ts:591 test name 'a branch ahead of master…' - the base is the PR target's default branch now; say 'ahead of the target'
+review-summary: none
+review-gaps: "folded branchListed into carrierBranch (both took the first listed branch that is not the base); one output() for the failure text the new code repeated eight times; dropped 'branch ?? \"\"' where branch is already narrowed. Left: the spawn.sh path rule mirrored in newWorktreeFor and the dispatch rule mirrored in dispatchLane (Go/bash vs TS, no shared code possible); 2x repo view + fetch on every Accept with a forge (accepted in a note: the --grep branch search needs the right base); pre-existing similar failure-text expressions in openChat/giveBack left alone"
 ---
 
 # Accept im Cockpit stösst den nächsten Schritt an: PR öffnen oder nächstes Ticket starten
@@ -33,9 +31,9 @@ review-summary: |-
 ## Definition of Done
 
 - [x] Nach Accept startet das Cockpit den entschiedenen nächsten Schritt (PR öffnen oder nächstes Ticket) ohne weiteren Befehl der Person; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:373 afterAccept() called from accept() :332 after the move; tests 'after Accept' > 'a branch ahead of the target without a pull request…' and 'a pull request in any state already there: the next ticket starts…' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:591,608; claude plugin test: 99 pass, exit 0)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:379 afterAccept() called from accept() :332 after the move; tests 'after Accept' > 'a branch ahead of the target without a pull request…' and 'a pull request in any state already there: the next ticket starts…' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:591,608; claude plugin test: 99 pass, exit 0)
 - [x] Die Regel, welcher Schritt gilt, steht an einer Stelle im Code und ist im Kommentar begründet
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260-277 stepAfterAccept(ahead, pending, hasPullRequest) with the comment giving the reason; the only place the step is decided (register.tsx afterAccept calls it)
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:253-270 stepAfterAccept(ahead, pending, hasPullRequest) with the comment giving the reason; the only place the step is decided (register.tsx afterAccept calls it)
 - [x] Ein PR wird nur über den Accept-Druck einer Person geöffnet, nie von einem Agenten allein; Test
   proof: spawn.sh lane pr typed only by register.tsx afterAccept (after Accept's move); jaira-role-pr SKILL.md --by-person paragraph; tests 'an agent's session has no Accept, so it can never open a pull request', 'a refused Accept starts no next step at all' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:779,770), core/role/role_test.go TestSpawnTypesTheRoleForItsLaneName pr
 - [x] Scheitert der Folgeschritt (kein gh, kein Remote, kein nächstes Ticket), sagt das Cockpit es sichtbar und das Ticket bleibt im richtigen Zustand; Test
@@ -43,7 +41,7 @@ review-summary: |-
 - [x] Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/GPFA7B.md (3 lines)
 - [x] Mehrere Tickets auf einem Branch: ein PR wird erst geöffnet, wenn jedes Ticket, das die Commits des Branches nennen (master..branch), in done ist; vorher -> 'next' mit Hinweis, welches Ticket noch fehlt. Ein Accept eines Tickets ohne eigenen Branch, dessen Id in einem anderen Branch steht, findet diesen Branch. Der PR nennt alle Tickets; Test
-  proof: board.ts:282 ticketsNamed, :294 pendingOf, :305 carrierBranch; register.tsx:344 pullTarget (base = target's default branch after git fetch: upstream/<default> in a fork) and afterAccept :373 (one git log base..branch gives count and handles); SKILL.md 'Every ticket on the branch'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:655 'two tickets on one branch: no pull request while the other is not in done…', :667 '…both in done…', :676 'a ticket worked on another ticket's branch…', :692 'in a fork, ahead counts against the parent's default branch, fetched first…', :703 'not a fork…'; role_test.go TestPRFilesTheTicketsAwayBeforeThePush
+  proof: board.ts:275 ticketsNamed, :287 pendingOf, :301 carrierBranch; register.tsx:350 pullTarget (base = target's default branch after git fetch: upstream/<default> in a fork) and afterAccept :379 (one git log base..branch gives count and handles); SKILL.md 'Every ticket on the branch'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:655 'two tickets on one branch: no pull request while the other is not in done…', :667 '…both in done…', :676 'a ticket worked on another ticket's branch…', :692 'in a fork, ahead counts against the parent's default branch, fetched first…', :703 'not a fork…'; role_test.go TestPRFilesTheTicketsAwayBeforeThePush
 - [x] Der PR, den Accept öffnet, zeigt das Ticket im Endzustand: vor dem Push läuft 'jaira logbook <id>' und wird als 'chore(<ID>): file the ticket away' committet (jaira-role-pr bzw. die pr-Lane); Test
   proof: core/role/builtin/jaira-role-pr/SKILL.md '## File the finished tickets away' (after 'Which repository it goes to', before '## Push the branch'): jaira logbook <ID> + git add -A -- ':(glob).jaira/**/*<ID>-*.md' + commit chore(<ID>): file the ticket away…; core/role/role_test.go TestPRFilesTheTicketsAwayBeforeThePush
 
@@ -86,3 +84,4 @@ core/mod/builtin/jaira-cockpit/hooks/register.tsx:337: afterAccept's doc comment
 core/mod/builtin/jaira-cockpit/tests/board.test.ts:591 test name 'a branch ahead of master…' - the base is the PR target's default branch now; say 'ahead of the target'. Stehen gelassen: Fork-Basis per pullTarget (Alex 19:14), 2x repo view + fetch auch auf dem next-Weg (Note 19:2x), git worktree add für einen Branch ohne Worktree, GitLab-Pfad (jaira-role-pr kann GitLab auch).
 - **2026-10-12 19:19 · Alexander Sacharov** — Pause: Critique-Runde-1-Fixes ungecommittet im Worktree (register.tsx, board.test.ts), Diff und Commit-Zeile an jaira-f5; warte auf Alex' OK, dann Commit und Critique Runde 2 (liest nur die 3 Befunde und ihre Antwort). Side-Critique-Tab geschlossen.
 - **2026-10-12 19:19 · Alexander Sacharov** — Alex 2026-10-12 (über jaira-f5): Commits, die nur Befunde von critique/optimize/testing schliessen, macht der Worker selbst ohne Warten; gefragt wird nur, wenn sich sichtbares oder von Alex gewähltes Verhalten ändert.
+- **2026-10-12 19:20 · Alexander Sacharov** — critique Runde 2: nur die 3 Befunde von Runde 1 und eea230b8 gelesen - alle drei erledigt (ein git log für Anzahl und Handles, Kommentar wieder an afterAccept, Testname 'ahead of the target'). Nichts Neues.
