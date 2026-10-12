@@ -256,6 +256,25 @@ describe('waiting for you', () => {
     expect(await colour('verdict-MG677R')).toBeUndefined()
   })
 
+  test('on the terminal the coloured buttons draw their brackets in the label\'s colour; elsewhere the native button stays', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    for (const [surface, plain, text] of [['terminal', true, '[ Accept ]'], ['desktop', undefined, 'Accept']] as const) {
+      const ui = await $.ui.mount({ ...BAND, surface })
+      const accept = await ui.find({ key: 'accept-MG677R' })
+      expect(accept?.props.plain).toBe(plain)
+      expect(accept?.props.label).toBe('Accept')
+      expect(accept?.children).toEqual([{ type: 'Text', props: { color: 'success' }, children: [text] }])
+      await ui.unmount()
+    }
+    const ui = await $.ui.mount(BAND)
+    expect((await ui.find({ key: 'back-MG677R' }))?.text).toBe('[ Give back ]')
+    expect((await ui.find({ key: 'explain-MG677R' }))?.text).toBe('[ Explain ]')
+    // Read explanation and Verdict keep the engine's own brackets.
+    expect((await ui.find({ key: 'read-MG677R' }))?.props.plain).toBeUndefined()
+  })
+
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
     const w = world(on)
     await startSession($)
