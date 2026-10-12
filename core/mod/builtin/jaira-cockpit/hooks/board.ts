@@ -99,7 +99,7 @@ export function snapshotOf(
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: hasReservation(oneLine(t.review?.verdict)) || namesGap(t.review?.gaps),
+      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps),
     })
   }
   const ids = tickets.map(t => t.handle)
@@ -152,14 +152,22 @@ export function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
-// A review's gaps name one unless they are empty or say there is none: a
-// verdict that reads as a yes ("the one weak spot ... (gap 1)") still has
-// something a person should have explained.
-const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+)\.?$/i
+// A review's gaps name one unless they are empty or say there is none, alone
+// or before a remark: 'none', 'none — the docs could say more', 'keine
+// (blockierend) ...'. A verdict that reads as a yes ("the one weak spot ...
+// (gap 1)") still has something a person should have explained.
+const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+)\s*([—–\-:(.,;]|$)/i
 
 export function namesGap(gaps: string | undefined): boolean {
   const g = oneLine(gaps)
   return g !== '' && !NO_GAP.test(g)
+}
+
+// Whether the band offers Explain. The gaps count only once the review has
+// spoken: before it, the field holds what the optimize lane removed, not a
+// gap — whatever the lane is called.
+export function explainable(verdict: string, gaps: string | undefined): boolean {
+  return hasReservation(verdict) || (verdict !== '' && namesGap(gaps))
 }
 
 // A jaira older than the board it reads says so on a line of its own before

@@ -482,12 +482,19 @@ describe('waiting for you', () => {
       { ...SIGNOFF, handle: 'WP1CHK', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
       { ...SIGNOFF, handle: 'AB12CD', review: { verdict, gaps: 'none' } },
       { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve', gaps: '' } },
+      // None, with a remark after it, as reviewers on this board write it.
+      { ...SIGNOFF, handle: 'GH56JK', review: { verdict, gaps: 'none — the docs could say more' } },
+      { ...SIGNOFF, handle: 'JK78LM', review: { verdict, gaps: 'keine (blockierend); eine Kleinigkeit im Kommentar' } },
+      // Not reviewed yet: what the optimize lane removed is no gap.
+      { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
     ]
     await startSession($)
+    // Every one of them is in the band, not cut off behind '+N more'.
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ key: 'explain-WP1CHK' })).toBeDefined()
-    expect(await band.find({ key: 'explain-AB12CD' })).toBeUndefined()
-    expect(await band.find({ key: 'explain-EF34GH' })).toBeUndefined()
+    await band.press({ key: 'more' })
+    const open = await $.ui.mount(BAND)
+    expect(await open.find({ key: 'explain-WP1CHK' })).toBeDefined()
+    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
