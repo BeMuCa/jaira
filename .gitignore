@@ -23,3 +23,8 @@ Thumbs.db
 
 # this project's lane files are this machine's, not the team's
 /.claude/worktrees
+
+# Claude Code writes a tsconfig.json into a mod folder it loads with
+# --plugin-dir, pointing at API types it lays beside the manifest (ignored
+# there by a .gitignore of its own). core/mod leaves both out of the binary.
+/core/mod/builtin/*/tsconfig.json

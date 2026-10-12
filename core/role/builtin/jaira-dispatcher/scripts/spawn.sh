@@ -17,16 +17,20 @@ spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-ro
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
-  --parent <s>    Only with the lane <dispatch> or <worker>: the session name
-                  of whoever starts it (a teamlead's name, as ListAgents shows
-                  it). It hands its questions there instead of asking the
-                  person in its own tab.
+  --parent <s>    Only with the lane <dispatch>, <worker> or <discuss>: the
+                  session of whoever starts it (a teamlead's name, as
+                  ListAgents shows it, or its uds: address). A dispatcher or
+                  worker hands its questions there instead of asking the person
+                  in its own tab; a discuss chat sends it the decision.
   -h, --help      This text.
 
-Two lane names are special. <dispatch> starts the dispatcher itself in the tab
+Four lane names are special. <dispatch> starts the dispatcher itself in the tab
 (/jaira-dispatcher <ticket-id>) instead of one lane's worker; <worker> starts
 the worker that carries the whole ticket itself (/jaira-worker <ticket-id>),
 which is what a teamlead passes when settings.json says "dispatch": "worker".
+<explain> and <discuss> open a chat for a person about the ticket — the review
+finding explained, or the ticket's open question talked through — and are what
+the jaira-cockpit mod's buttons start, with --no-worktree.
 Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
@@ -156,10 +160,17 @@ esac
 # "worker" is the same for the role that carries a ticket through every lane
 # itself (jaira-worker), the alternative a teamlead starts when the dispatch
 # setting asks for it.
+# <explain> and <discuss> are no agent's lane at all: the cockpit mod opens
+# them for a person, a chat of its own instead of the teamlead's. They type a
+# plain request, so the tab answers the person and never works the ticket.
 if [ "$lane" = dispatch ]; then
   prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
 elif [ "$lane" = worker ]; then
   prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
+elif [ "$lane" = explain ]; then
+  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung in wenigen Saetzen an das Ticket: jaira note $ticket \"explain: <Erklaerung>\" - das Cockpit zeigt sie dort unter [Read explanation]. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
+elif [ "$lane" = discuss ]; then
+  prompt="Ticket $ticket wartet auf eine Entscheidung von mir (jaira show $ticket --json: das Feld question und die letzten Notes). Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck, genau so: jaira move $ticket --to in-progress (ohne --what/--why/--resolves: das Ticket hat sein Ergebnis schon, und die Entscheidung steht in der Note). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi

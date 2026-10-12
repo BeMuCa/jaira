@@ -80,7 +80,11 @@ func newRolesInstallCmd() *cobra.Command {
 		Use:   "install --project|--global|--into <dir>",
 		Short: "Write the role prompts into a skills directory",
 		Long: `Writes every built-in role as <skills>/<role-id>/SKILL.md, together with any
-files the role ships beside its prompt.
+files the role ships beside its prompt, and the jaira-cockpit mod as
+<skills>/jaira-cockpit/ — a Claude Code plugin folder, which Claude Code loads
+by itself from the next session on (from .claude/skills once you trust the
+workspace). It keeps a teamlead chat readable and shows what waits on the
+board; /cockpit inside Claude Code lists what it does.
 
 --project writes into .claude/skills in this repository, so the roles arrive
 with a clone. --global writes into ~/.claude/skills, for every repository you

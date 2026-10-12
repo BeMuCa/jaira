@@ -1,8 +1,23 @@
 {
   "name": "jaira-cockpit",
-  "version": "0.1.0",
-  "description": "Keeps a jaira teamlead chat readable: agent reports arrive as one line per ticket, the full text stays behind /cockpit report <id>.",
+  "version": "0.2.0",
+  "description": "Keeps a jaira teamlead chat readable and shows what waits on the board: agent reports as one line, tickets waiting for a person with Accept / Give back, context and prompt-cache in the band, a guard against sending onto a cold cache, conversation threads.",
   "author": {
     "name": "jaira"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "cacheGuardTokens": {
+      "type": "number",
+      "title": "Cache guard threshold",
+      "description": "A prompt of yours onto a cold prompt cache is held when the context is at least this many tokens.",
+      "default": 30000
+    },
+    "usdPerMTok": {
+      "type": "number",
+      "title": "Input price per million tokens",
+      "description": "What the cache guard estimates a cache write with (a write costs 1.25 times this).",
+      "default": 5
+    }
   }
 }

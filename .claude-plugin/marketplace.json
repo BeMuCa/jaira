@@ -1,0 +1,14 @@
+{
+  "name": "jaira",
+  "owner": {
+    "name": "BeMuCa"
+  },
+  "description": "Claude Code mods that ship with jaira, the git-synced kanban board for agent work.",
+  "plugins": [
+    {
+      "name": "jaira-cockpit",
+      "source": "./core/mod/builtin/jaira-cockpit",
+      "description": "Keeps a teamlead chat readable and shows what waits on a jaira board; context, prompt cache and conversation threads in any project."
+    }
+  ]
+}

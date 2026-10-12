@@ -151,6 +151,16 @@ func TestInstallWritesEveryFile(t *testing.T) {
 			t.Errorf("after install: %v", err)
 		}
 	}
+	// The cockpit mod goes beside the roles, where Claude Code loads a
+	// plugin folder by itself.
+	for _, rel := range []string{".claude-plugin/plugin.json", "hooks/register.tsx"} {
+		if _, err := os.Stat(filepath.Join(dir, "jaira-cockpit", filepath.FromSlash(rel))); err != nil {
+			t.Errorf("mod after install: %v", err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "jaira-cockpit", "tests")); !os.IsNotExist(err) {
+		t.Errorf("the mod's tests were installed: %v", err)
+	}
 	// A shipped script must arrive executable, or the prompt that calls it is
 	// a broken instruction. Windows has no POSIX execute bit — os.Chmod there
 	// only toggles the read-only flag — so the claim is not one this platform
@@ -361,6 +371,62 @@ func TestWorkerNamesScriptsThatShip(t *testing.T) {
 	}
 }
 
+// The Discuss chat brings its decision back: a note, a move back that jaira
+// takes for a ticket that already has its outcome, and a line to the session
+// that opened it. A move line carrying --what/--why/--resolves is refused for
+// such a ticket (outcome_not_yours), even with --force.
+func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	typed := filepath.Join(t.TempDir(), "typed")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:/tmp/cc-socks/7.sock", "ab12cd", "AB12CD", "discuss")
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
+	}
+	got, err := os.ReadFile(typed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := string(got)
+	for _, want := range []string{
+		`jaira note AB12CD "decision: `,
+		"jaira set AB12CD question=",
+		"jaira move AB12CD --to in-progress (",
+		"SendMessage an uds:/tmp/cc-socks/7.sock",
+	} {
+		if !strings.Contains(line, want) {
+			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+		}
+	}
+	at := strings.Index(line, "jaira move ")
+	if at < 0 {
+		t.Fatalf("discuss prompt has no move back:\n%s", line)
+	}
+	if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
+		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+	}
+}
+
 // spawn.sh types the role into the tab it opened; "worker" must start
 // /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
 // Herdr is replaced by a stub that answers the three calls the script reads
@@ -394,6 +460,10 @@ esac
 		"worker":   "/jaira-worker ab12cd --parent lead",
 		"dispatch": "/jaira-dispatcher ab12cd --parent lead",
 		"review":   "/jaira-role-lane ab12cd review",
+		// A person's chats, which the cockpit mod opens: a plain request,
+		// never a role, so the tab answers and never works the ticket.
+		"explain": "Erklaere mir in einfachen Worten den Review-Befund zu Ticket ab12cd …",
+		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
 	} {
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
@@ -406,8 +476,13 @@ esac
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.TrimSpace(string(got)) != want {
-			t.Errorf("lane %s typed %q, want %q", lane, strings.TrimSpace(string(got)), want)
+		line := strings.TrimSpace(string(got))
+		if prefix, ok := strings.CutSuffix(want, " …"); ok {
+			if !strings.HasPrefix(line, prefix) || strings.HasPrefix(line, "/") {
+				t.Errorf("lane %s typed %q, want a plain request starting %q", lane, line, prefix)
+			}
+		} else if line != want {
+			t.Errorf("lane %s typed %q, want %q", lane, line, want)
 		}
 	}
 }
