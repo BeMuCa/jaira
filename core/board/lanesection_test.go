@@ -43,7 +43,7 @@ func TestLaneSectionSaysWhoseEachLaneIs(t *testing.T) {
 	got := laneSection(demoFacts())
 	for _, want := range []string{
 		"`in-progress` — yours to work",
-		"`signoff` — **a person's, not yours**",
+		"`signoff` — **a person's, not yours** — you may move work in, or send it back to an earlier lane, never on",
 		"`todo` — no agent step",
 	} {
 		if !strings.Contains(got, want) {

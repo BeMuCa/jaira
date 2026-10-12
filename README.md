@@ -189,7 +189,8 @@ should not be: an agent that starts work with no checkable target produces work
 you cannot review. Acquiring a definition of done is the price of admission to a
 run.
 
-`REVIEW` is a **human checkpoint**: no agent may move a ticket out of it. The
+`REVIEW` is a **human checkpoint**: no agent may move a ticket on out of it —
+sending it back to an earlier lane is allowed, since that accepts nothing. The
 review agent writes its verdict and stops; you accept the work in the board, or
 raise a follow-up ticket that carries the context across and links back.
 

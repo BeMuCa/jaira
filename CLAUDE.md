@@ -118,7 +118,8 @@ Working a ticket:
 `jaira <command> --help` for everything else.
 
 Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.
-The human review lane cannot be left by an agent — a person accepts the work there.
+An agent cannot move work on out of the human review lane — a person accepts it there.
+Sending it back to an earlier lane is not an acceptance and needs no --force.
 
 A `jaira:local` marker — an HTML comment of that name — added by hand anywhere
 inside this block makes everything between it and the end marker survive the
@@ -153,7 +154,7 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Human in the loop.
 - `review` — **fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
   A second model has judged the diff.
-- `signoff` — **a person's, not yours** — you may move work in, never out
+- `signoff` — **a person's, not yours** — you may move work in, or send it back to an earlier lane, never on
   Reviewed by a model, waiting for a person to accept it or send it back.
 - `done` — no agent step; move through it; terminal
   Accepted.
