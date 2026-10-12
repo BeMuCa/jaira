@@ -27,9 +27,9 @@ declare module 'claude-code' {
       notice: string | null
       // What the message pane shows: an error, or an explanation, whole.
       message: { title: string; text: string } | null
-      // The ticket the explanation pane shows, and the one the own-answer
-      // pane asks about.
-      explaining: string | null
+      // The explanation the explanation pane shows, with its ticket, and
+      // the ticket the own-answer pane asks about.
+      explaining: { id: string; text: string } | null
       answering: string | null
       // The explanation an Explain chat wrote onto each ticket the band shows.
       explained: Record<string, string>

@@ -13,13 +13,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:45:00Z
-updated-at: 2026-10-12T19:02:26Z
+updated-at: 2026-10-12T19:03:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65657
 claimed-at: 2026-10-12T18:56:47Z
 outcome-what: "Explain-Pane (cockpit-explanation) zeigt die Note zeilenweise mit einer Zeile je Option und einem Select (a/b/c + Own answer…, Empfehlung vorgewählt); die Wahl oder eine eigene Antwort (eigenes Pane mit focus) wird decision:-Note; Verdict-Knopf zeigt das ganze Verdikt; Explain erscheint auch, wenn review.gaps eine Lücke nennt; spawn.sh verlangt die Zeilenform."
 outcome-why: "Die Erklärung war ein Textblock ohne Antwortmöglichkeit, das Verdikt im Band abgeschnitten und nirgends ganz lesbar, und Explain fehlte bei Verdikten ohne Vorbehaltswort (WP1CHK)."
 outcome-resolves: "DoD 1-9: spawn.sh:171, board.ts explanationOf/namesGap, register.tsx Panes EXPLANATION/ANSWER und Verdict-Knopf, sechs Tests in tests/board.test.ts, core/release/notes/13PQB3.md"
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx:964 the explanation pane reads explainedAtom, which refreshBoard rebuilds each minute for the band's shown tickets only - collapse '+N more' and an open pane of the 4th ticket goes blank; keep {id, text} in explainingAtom as messageAtom does for show()
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx:1013 the own-answer pane heads itself 'Explanation of <id>' under its own title 'Answer on <id>'; drop the line
 ---
 
 # Explain-Erklärung im Cockpit lesbar formatieren und Optionen direkt beantwortbar machen
@@ -62,3 +65,4 @@ outcome-resolves: "DoD 1-9: spawn.sh:171, board.ts explanationOf/namesGap, regis
 - **2026-10-12 18:58 · Alexander Sacharov** — Offene Entscheidungen vor dem Plan: keine. 'Was nach der Wahl passiert' entscheidet DoD 3: nur die decision:-Note und das Band zeigt sie - kein Accept/Give back ausgelöst; das bleiben die Knöpfe im Band. Form (aus Code gesetzt): eigenes Pane 'cockpit-explanation' statt des Meldungs-Panes; Struktur = Zeilen in der Note, Optionen als Zeilen 'a) ...', 'Empfehlung: <Buchstabe>' wählt die Option im Select vor. Auswahl per Select (Engine-Element, Pfeile+Enter, autoFocus). 'Eigene Antwort' ist die letzte Option im Select; gewählt öffnet sie ein eigenes Pane mit focus:true und autoFocus-Feld, genau wie Give back - ein Input, das erst nach einem Redraw erscheint, bekommt den Fokus nicht sicher. Bandtext 'decided in Discuss' wird 'decided', weil die Entscheidung jetzt auch aus dem Explain-Pane kommt.
 - **2026-10-12 19:00 · Alexander Sacharov** — Alex 2026-10-12 (Screenshot): WP1CHK in signoff hatte keinen Explain-Knopf, obwohl das Verdikt einen Vorbehalt hat: 'No defect that blocks: the one weak spot is that a failed note after a successful move is not reported (gap 1) ... Accept, with gap 1 either fixed now or knowingly left.' Ursache: hasReservation() in hooks/board.ts (~Zeile 136) sucht nur Wörter (reservation, but, aber, caveat ...); 'weak spot', 'gap', 'either ... or' trifft keins. Eine Wortliste rät; review.gaps sagt es direkt. DoD 9.
 - **2026-10-12 19:01 · Alexander Sacharov** — Gefunden: Select ist ein Engine-Element (Pfeile bewegen, Enter wählt, autoFocus wie Input); Tests wählen mit pane.select({key, value}). Typecheck: kein tsc lokal installiert, nur 'claude plugin validate' (passed) und 'claude plugin test' (88 pass). DoD 9: review.gaps kommt bei Tickets in 'human' (vor review) noch vom optimize-Lane (dort steht, was entfernt wurde) - auch dann erscheint Explain; das ist die wörtliche Forderung, aber ein möglicher Fehlalarm, den der Reviewer sehen soll.
+- **2026-10-12 19:02 · Alexander Sacharov** — critique: (1) explainingAtom soll {id, text} halten wie messageAtom bei show(), statt im Render explainedAtom[id] zu lesen - das wird minütlich nur für die sichtbaren Band-Tickets neu gebaut, ein offenes Pane eines 4. Tickets wird nach 'show fewer' leer. (2) Antwort-Pane: Zeile 'Explanation of <id>' raus, der Pane-Titel sagt schon 'Answer on <id>'. Stehen gelassen: ANSWER-Pane neben GIVE_BACK-Pane ist fast dieselbe Form (ein Input, leer bleibt offen); zusammenlegen hiesse askWhatIsMissing/giveBack anfassen, die GPFA7B/WP1CHK parallel ändern (Teamlead-Note 18:56).

@@ -392,7 +392,7 @@ async function readDecision($: EngineInterface, id: string, text: string): Promi
 // a choice there, with an own answer beside them, and the choice goes onto
 // the ticket as a decision.
 async function readExplanation($: EngineInterface, id: string, text: string): Promise<void> {
-  await update($, explainingAtom, () => id)
+  await update($, explainingAtom, () => ({ id, text }))
   const opened = await $.ui.open({ id: EXPLANATION, title: t.explanationOf(id), focus: true, closeOnEscape: true })
   if (!opened.isPlaced) $.ui.toast(`${t.explanationOf(id)}: ${text}`)
 }
@@ -962,13 +962,13 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
-    const id = await read($, explainingAtom)
-    const text = id === null ? undefined : (await read($, explainedAtom))[id]
+    const explaining = await read($, explainingAtom)
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     const Select = 'Select' in table ? table.Select : undefined
-    if (id === null || text === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    const x = explanationOf(text)
+    if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    const { id } = explaining
+    const x = explanationOf(explaining.text)
     const close = <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
     return (
       <Box flexDirection="column">
@@ -1010,7 +1010,6 @@ export const register: Register = (on, options) => {
     if (id === null || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     return (
       <Box flexDirection="column">
-        <Text>{t.explanationOf(id)}</Text>
         <Input
           key={`answer-${id}`}
           label={t.ownLabel}
