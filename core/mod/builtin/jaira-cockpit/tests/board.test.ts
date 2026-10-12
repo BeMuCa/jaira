@@ -13,6 +13,8 @@ type World = {
   tabs: { tab_id: string; label: string; agent_status?: string }[]
   // The old worker's pane went away after the tab list was read.
   paneGone: boolean
+  // When set, every `jaira move` waits here, in order, until the test lets it go.
+  held: (() => void)[] | undefined
   // This session's subagents, as $.agent.list() gives them.
   agents: { id: string; description: string; type: string; status: string; name?: string }[]
   // `jaira lanes --json` of a build before human_exit.
@@ -75,6 +77,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     tickets: [SIGNOFF, HUMAN, WORKING],
     tabs: [],
     paneGone: false,
+    held: undefined,
     agents: [],
     oldJaira: false,
     asked: [],
@@ -140,8 +143,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.files.set(e.path, e.text)
     return { value: undefined }
   })
-  on('process.run', ($, e) => {
+  on('process.run', async ($, e) => {
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
+    if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
@@ -265,7 +269,7 @@ describe('waiting for you', () => {
       const accept = await ui.find({ key: 'accept-MG677R' })
       expect(accept?.props.plain).toBe(plain)
       expect(accept?.props.label).toBe('Accept')
-      expect(accept?.children).toEqual([{ type: 'Text', props: { color: 'success' }, children: [text] }])
+      expect(accept?.children).toEqual([{ type: 'Text', props: { color: 'success', dimColor: false }, children: [text] }])
       await ui.unmount()
     }
     const ui = await $.ui.mount(BAND)
@@ -273,6 +277,55 @@ describe('waiting for you', () => {
     expect((await ui.find({ key: 'explain-MG677R' }))?.text).toBe('[ Explain ]')
     // Read explanation and Verdict keep the engine's own brackets.
     expect((await ui.find({ key: 'read-MG677R' }))?.props.plain).toBeUndefined()
+  })
+
+  // Lets the oldest `jaira move` still waiting answer, and what it set off run.
+  const release = async (w: World) => {
+    w.held!.shift()!()
+    await w.clock.settle()
+  }
+  const dimmed = async (ui: { find: (q: { key: string }) => Promise<{ children: unknown[] } | undefined> }, key: string) =>
+    ((await ui.find({ key }))?.children[0] as { props: { dimColor?: boolean } }).props.dimColor
+
+  test('a pressed row locks, drawn dim, until its action is done; a second press does nothing', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    for (const key of ['accept-MG677R', 'back-MG677R', 'explain-MG677R']) expect(await dimmed(ui, key)).toBe(true)
+    // Another ticket's row is not this press's.
+    expect(await dimmed(ui, 'back-K7P2QX')).toBe(false)
+    await ui.press({ key: 'back-MG677R' })
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    expect(w.opened).toEqual([])
+    await release(w)
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+  })
+
+  test('a row whose action has not ended is free again after 20 seconds, and the late end frees only its own lock', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.advance(19_999)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await w.clock.advance(1)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    // The first press's dry run and move answer: it ends, the second waits on.
+    await release(w)
+    await release(w)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await release(w)
+    await release(w)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
   })
 
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {

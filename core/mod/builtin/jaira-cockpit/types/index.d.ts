@@ -41,6 +41,9 @@ declare module 'claude-code' {
       expanded: boolean
       // Whether the band shows the teammates' waiting tickets one by one.
       theirsOpen: boolean
+      // The tickets whose Accept, Give back or Explain was pressed and has
+      // not yet done its part, each with when, so a late end frees only its own.
+      busy: Record<string, number>
     }
   }
 }

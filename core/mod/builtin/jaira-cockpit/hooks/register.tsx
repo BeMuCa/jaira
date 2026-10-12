@@ -50,6 +50,7 @@ const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as cons
 const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
 const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
+const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -59,6 +60,8 @@ const ANSWER = 'cockpit-answer'
 // The choice in the explanation pane that is none of the options.
 const OWN = 'own'
 const BAND_TICKETS = 3
+// How long a pressed row stays locked when its action has not ended by then.
+const BUSY_MS = 20_000
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 
@@ -336,6 +339,30 @@ async function accept($: EngineInterface, w: Waiting): Promise<void> {
   if (done.ok) await say($, t.accepted(w.id, w.acceptTo))
   else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
+}
+
+// A press on Accept, Give back or Explain: the row's three lock, drawn dim,
+// until the action has done its part or BUSY_MS has passed; a press on a
+// locked row does nothing, so a slow answer is not asked for twice.
+async function once($: EngineInterface, id: string, action: () => Promise<void>): Promise<void> {
+  const at = await $.clock.now()
+  let took = false
+  await update($, busyAtom, busy => {
+    took = busy[id] === undefined
+    return took ? { ...busy, [id]: at } : busy
+  })
+  if (!took) return
+  const free = () => update($, busyAtom, busy => {
+    if (busy[id] !== at) return busy
+    const { [id]: _, ...rest } = busy
+    return rest
+  })
+  $.clock.after(BUSY_MS, () => void free())
+  try {
+    await action()
+  } finally {
+    await free()
+  }
 }
 
 // The spawn.sh the roles were installed with: the project's own first, as
@@ -808,6 +835,7 @@ export const register: Register = (on, options) => {
     const used = await read($, usedAtom)
     const expanded = await read($, expandedAtom)
     const theirsOpen = await read($, theirsOpenAtom)
+    const busy = await read($, busyAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
@@ -859,13 +887,13 @@ export const register: Register = (on, options) => {
                   The engine draws a Button's brackets uncoloured, so the
                   terminal gets them plain and in the label's colour. */}
               {w.acceptTo !== null
-                ? <Button key={`accept-${w.id}`} label={t.accept} plain={plain} onPress={() => void accept($, w)}><Text color="success">{bracketed(t.accept)}</Text></Button>
+                ? <Button key={`accept-${w.id}`} label={t.accept} plain={plain} onPress={() => void once($, w.id, () => accept($, w))}><Text color="success" dimColor={busy[w.id] !== undefined}>{bracketed(t.accept)}</Text></Button>
                 : null}
               {hasInput
-                ? <Button key={`back-${w.id}`} label={t.giveBack} plain={plain} onPress={() => void askWhatIsMissing($, w)}><Text color="error">{bracketed(t.giveBack)}</Text></Button>
+                ? <Button key={`back-${w.id}`} label={t.giveBack} plain={plain} onPress={() => void once($, w.id, () => askWhatIsMissing($, w))}><Text color="error" dimColor={busy[w.id] !== undefined}>{bracketed(t.giveBack)}</Text></Button>
                 : null}
               {w.explainable
-                ? <Button key={`explain-${w.id}`} label={t.explain} plain={plain} onPress={() => void openChat($, w.id, 'explain')}><Text color="warning">{bracketed(t.explain)}</Text></Button>
+                ? <Button key={`explain-${w.id}`} label={t.explain} plain={plain} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))}><Text color="warning" dimColor={busy[w.id] !== undefined}>{bracketed(t.explain)}</Text></Button>
                 : null}
               {explained[w.id] !== undefined
                 ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
