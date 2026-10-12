@@ -78,6 +78,32 @@ date"/"available" half.
 This is different from `jaira update`, just below, which is about a
 *repository's* board setup and downloads nothing.
 
+If `jaira --version` does not show the version you just installed, you have
+two copies: the install script writes `~/.local/bin`, `go install` writes
+`~/go/bin` (or `$GOBIN`), and whichever comes first on your `PATH` runs.
+`which -a jaira` lists them; keep one.
+
+### Bringing a board up to date
+
+A newer binary on an older board says so on every command:
+`this board was set up by an older version of jaira — run 'jaira update'`.
+Run it in the repository:
+
+```bash
+jaira update
+```
+
+It rewrites the jaira section of `CLAUDE.md`/`AGENTS.md` for this board's
+lanes and lists what changed since the version that last ran there. Commit
+that section along with your next change, or leave it — it is only the agents'
+copy of the rules.
+
+**No update path changes whether the board is shared.** `jaira update`,
+`jaira self upgrade`, `go install` of a newer build, the first command after
+the binary changed, and `jaira init` run again all leave `.gitignore` exactly
+as it was: a shared board stays shared, a private one stays private. Only
+`jaira share` and `jaira share --undo` change it.
+
 ## Start
 
 ```bash
@@ -99,8 +125,23 @@ notes are ready to be read by everyone who can clone the repository. `jaira shar
 --undo` makes it private again; nothing about the tickets changes either way, so
 it is not a migration.
 
-Teammates then clone, run `jaira fetch`, and have the board; the merge driver
-binds itself on first use.
+A teammate then joins with nothing but the README:
+
+```bash
+git clone <the repository> && cd <it>
+# install jaira as above, then:
+jaira init      # sets the board up on this machine; a shared board stays shared
+jaira fetch     # brings in the tickets that travel on their own refs
+jaira           # opens the board
+```
+
+`init` is needed even though `.jaira/` came with the clone: git keeps no empty
+directories, so a fresh clone holds only `.jaira/.gitattributes`, and every
+other command answers `run 'jaira init'` until it has run. On a board that is
+already in git it changes nothing in `.gitignore` and says
+`This board is shared`. The field-aware merge driver binds itself on the first
+command after that. Later, when someone has upgraded jaira, `git pull`,
+upgrade your own binary (see [Upgrading](#upgrading)) and run `jaira update`.
 
 The team flow is pull-based. A captured ticket belongs to nobody; whoever pulls
 it out of the backlog becomes its assignee in the same move. Pull before you
