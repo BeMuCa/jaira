@@ -32,7 +32,7 @@ type World = {
   // The ticket bodies `jaira show --json` gives, by id.
   bodies: Record<string, string>
   // The panes the plugin opened, and closed, by id and title.
-  opened: { id: string; title?: string }[]
+  opened: { id: string; title?: string; focus?: boolean }[]
   closed: string[]
   clock: ReturnType<typeof mock.clock>
 }
@@ -53,6 +53,8 @@ const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', next_lan
 const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', question: '', review: {} }
 
 const OLDER = "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date"
+const GIVE = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-give-back', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as const
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
@@ -101,8 +103,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('tool.register', () => ({ value: undefined }) as never)
   on('ui.render', () => ({ type: 'Box', props: {}, children: [] }) as never)
   on('ui.open', ($, e) => {
-    const { id, title } = e as unknown as { id: string; title?: string }
-    w.opened.push({ id, ...(title !== undefined ? { title } : {}) })
+    const { id, title, focus } = e as unknown as { id: string; title?: string; focus?: boolean }
+    w.opened.push({ id, ...(title !== undefined ? { title } : {}), ...(focus ? { focus } : {}) })
     return { value: { isPlaced: true } }
   })
   on('ui.close', ($, e) => {
@@ -188,6 +190,9 @@ describe('waiting for you', () => {
     world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
+    // A frame of its own, titled, so it reads as the cockpit and not as chat.
+    expect((await ui.find({ type: 'Box' }))?.props.borderStyle).toBe('round')
+    expect(await ui.find({ type: 'Text', text: 'jaira-cockpit' })).toBeDefined()
     expect((await ui.find({ text: 'Waiting for you' }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /MG677R · signoff · approve mit Vorbehalt/ }))).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /K7P2QX · human/ }))).toBeDefined()
@@ -222,7 +227,7 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
     expect(ran(w, 'jaira', 'move').filter(r => r.includes('--force'))).toEqual([])
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Accept MG677R failed' }])
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true }])
     const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
     expect(await pane.find({ type: 'Text', text: 'Accept MG677R failed' })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: 'the definition of done is not met: criterion 1 is still open' })).toBeDefined()
@@ -317,7 +322,7 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'explain-MG677R' })
     expect(ran(w, SPAWN)).toEqual([])
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explain MG677R failed' }])
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explain MG677R failed', focus: true }])
     const pane = await $.ui.mount(MESSAGE('Explain MG677R failed'))
     expect(await pane.find({ type: 'Text', text: /needs Herdr/ })).toBeDefined()
   })
@@ -338,9 +343,39 @@ describe('waiting for you', () => {
     // No explanation on K7P2QX: no button there.
     expect(await ui.find({ key: 'read-K7P2QX' })).toBeUndefined()
     await ui.press({ key: 'read-MG677R' })
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explanation of MG677R' }])
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explanation of MG677R', focus: true }])
     const pane = await $.ui.mount(MESSAGE('Explanation of MG677R'))
     expect(await pane.find({ type: 'Text', text: 'The key leaves out the branch.\nTwo branches share one cache entry.' })).toBeDefined()
+  })
+
+  test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
+    const w = world(on, { herdr: true })
+    // 1_000_000 ms is 1970-01-01 00:16:40 UTC: jaira stamps notes to the minute.
+    w.bodies.MG677R = '## Progress\n\n- **1970-01-01 00:10 · Alex** — explain: an older one\n'
+    w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'explain-MG677R' })
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    w.bodies.MG677R += '- **1970-01-01 00:16 · Alex** — explain: the key leaves out the branch\n'
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t4', '@/repo']])
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toHaveLength(1)
+  })
+
+  test('the Discuss tab closes once the ticket\'s question is answered', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'working' }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'discuss-K7P2QX' })
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    w.tickets = [SIGNOFF, { ...HUMAN, question: '' }, WORKING]
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
   })
 
   test('a ticket nobody explained yet offers no explanation to read', async ($, on) => {
@@ -356,12 +391,33 @@ describe('give back', () => {
   async function giveBack($: Test$, w: World) {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'back-MG677R' })
-    const typed = ui.input({ key: 'reason-MG677R', text: 'der Branch fehlt im Schluessel' })
+    const pane = await $.ui.mount(GIVE('Give back MG677R'))
+    const typed = pane.input({ key: 'reason-MG677R', text: 'der Branch fehlt im Schluessel' })
     // Herdr is given a second between the text and its Enter.
     await w.clock.advance(1000)
     await typed
     return w
   }
+
+  test('asks what is missing in a pane that takes the keyboard, never in a band field the press leaves unfocused', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'back-MG677R' })
+    // Live, the band's own field never got the ring: the press keeps it on
+    // the button. A pane opened with focus hands it to its autoFocus field.
+    expect(await ui.find({ key: 'reason-MG677R' })).toBeUndefined()
+    expect(w.opened).toEqual([{ id: 'cockpit-give-back', title: 'Give back MG677R', focus: true }])
+    const pane = await $.ui.mount(GIVE('Give back MG677R'))
+    expect((await pane.find({ key: 'reason-MG677R' }))?.props.autoFocus).toBe(true)
+    // Enter on an empty field gives nothing back and keeps the pane open.
+    await pane.input({ key: 'reason-MG677R', text: '  ' })
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(w.closed).toEqual([])
+    await pane.input({ key: 'reason-MG677R', text: 'fehlt' })
+    expect(w.closed).toEqual(['cockpit-give-back'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 6)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '--force'])
+  })
 
   test('notes why and moves the ticket back to in-progress', async ($, on) => {
     const w = world(on)
@@ -432,7 +488,7 @@ describe('give back, the edges', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'back-MG677R' })
-    await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
+    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(await ui.find({ type: 'Text', text: "MG677R back in in-progress; no worker started (the ticket's note says why)" })).toBeDefined()
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - no Herdr in this session')
     expect(ran(w, SPAWN)).toEqual([])
@@ -449,7 +505,7 @@ describe('give back with nothing to start a worker', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'back-MG677R' })
-    await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
+    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to nobody (no worker started) - old worker\'s prompt cache cold for 10 min; no spawn.sh found')
   })

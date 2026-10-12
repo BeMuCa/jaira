@@ -152,17 +152,21 @@ export function otherRefusal(errorJson: string): string | undefined {
 
 // The explanation an Explain chat wrote onto the ticket, the newest one, read
 // off `jaira show --json`: a note under Progress that starts `explain:`, up to
-// the next note or section. '' when there is none yet.
-export function explanationOf(showJson: string): string {
+// the next note or section, and when it was written (jaira stamps notes to
+// the minute, in UTC). undefined when there is none yet.
+const EXPLAIN_NOTE = /^- \*\*(\d{4}-\d\d-\d\d \d\d:\d\d) · [^*]*\*\* — explain:\s*/
+
+export function explanationOf(showJson: string): { text: string; at: number } | undefined {
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
   const lines = body.split('\n')
   let at = -1
-  for (let i = 0; i < lines.length; i++) if (/^- \*\*[^*]+\*\* — explain:/.test(lines[i]!)) at = i
-  if (at < 0) return ''
+  for (let i = 0; i < lines.length; i++) if (EXPLAIN_NOTE.test(lines[i]!)) at = i
+  if (at < 0) return undefined
+  const stamp = EXPLAIN_NOTE.exec(lines[at]!)![1]!
   const rest = lines.slice(at + 1)
   const end = rest.findIndex(l => l.startsWith('- **') || l.startsWith('#'))
-  const first = lines[at]!.replace(/^- \*\*[^*]+\*\* — explain:\s*/, '')
-  return [first, ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
+  const text = [lines[at]!.replace(EXPLAIN_NOTE, ''), ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
+  return { text, at: Date.parse(`${stamp.replace(' ', 'T')}:00Z`) }
 }
 
 // The main working tree, from `git rev-parse --git-common-dir`: spawn.sh puts

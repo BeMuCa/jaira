@@ -46,6 +46,7 @@ const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as cons
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
+const GIVE_BACK = 'cockpit-give-back'
 const BAND_TICKETS = 3
 
 // ── what this module keeps between events (a reload starts it over) ──────
@@ -62,6 +63,9 @@ let turn = 0
 // The person's message of the turn running, for the threads.
 let personSaid: string | undefined
 let threads: Thread[] = []
+// The Explain and Discuss chats this session opened, by their tab's label
+// (`<id>/explain`), with when: the tab goes once the chat has done its part.
+const chats = new Map<string, number>()
 
 // ── shared helpers ───────────────────────────────────────────────────────
 
@@ -207,13 +211,29 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows.
   const explained: Record<string, string> = {}
+  const explainedAt: Record<string, number> = {}
   for (const w of view.waiting.slice(0, BAND_TICKETS)) {
     if (!hasReservation(w.verdict)) continue
     const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
-    const text = shown?.exitCode === 0 ? explanationOf(shown.stdout) : ''
-    if (text !== '') explained[w.id] = text
+    const note = shown?.exitCode === 0 ? explanationOf(shown.stdout) : undefined
+    if (note === undefined) continue
+    explained[w.id] = note.text
+    explainedAt[w.id] = note.at
   }
   await update($, explainedAtom, () => explained)
+  // An Explain chat has done its part once its explanation is on the ticket
+  // (stamped to the minute, so from the minute it was opened), a Discuss chat
+  // once the ticket's question is answered: then its tab goes.
+  if (bin === undefined || tabs?.exitCode !== 0) return
+  for (const [label, since] of chats) {
+    const [id = '', kind] = label.split('/')
+    const w = view.waiting.find(x => x.id === id)
+    const done = kind === 'explain' ? (explainedAt[id] ?? 0) >= since - (since % 60_000) : w === undefined || w.question === ''
+    if (!done) continue
+    chats.delete(label)
+    const tab = tabsOf(tabs.stdout).find(x => x.label === label)
+    if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], board.dir)
+  }
 }
 
 // Where a ticket's work lives: running jaira anywhere else answers "on its
@@ -296,8 +316,19 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   if (bin === undefined || script === undefined || !board) return fail($, what, t.needsHerdr)
   const dir = await ticketDir($, board, id)
   const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, kind, dir], dir, 120_000)
-  if (r?.exitCode === 0) await say($, t.opened(id))
-  else await fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
+  if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
+  chats.set(`${id}/${kind}`, await $.clock.now())
+  await say($, t.opened(id))
+}
+
+// Give back asks what is missing in a pane of its own, opened with focus: a
+// pane that takes the keyboard puts it on its autoFocus field. The same field
+// in the band never got it — the band holds the keyboard already when Give
+// back is pressed, and the ring stays on the button.
+async function askWhatIsMissing($: EngineInterface, w: Waiting): Promise<void> {
+  await update($, givingAtom, () => w.id)
+  const opened = await $.ui.open({ id: GIVE_BACK, title: `${t.giveBack} ${w.id}`, focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) await fail($, `${t.giveBack} ${w.id}`, t.noRoom)
 }
 
 // Every session with a Herdr pane writes where it stands, so the session a
@@ -629,7 +660,6 @@ export const register: Register = (on, options) => {
     const view = await read($, boardAtom)
     const cache = await read($, cacheAtom)
     const counts = await read($, threadsAtom)
-    const giving = await read($, givingAtom)
     const notice = await read($, noticeAtom)
     const explained = await read($, explainedAtom)
     await read($, minuteAtom)
@@ -649,8 +679,10 @@ export const register: Register = (on, options) => {
       c.hint === 'new' ? t.hintNew : c.hint === 'compact' ? t.hintCompact : '',
       hasThreads ? t.threadsOpen(counts.questions, counts.stale) : '',
     ].filter(s => s !== '').join(' · ')
+    // A frame of its own, so the band reads as the cockpit's and not as chat.
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
+        <Text dimColor bold>{t.bandTitle}</Text>
         {waiting.length > 0 ? <Text bold>{t.waiting}</Text> : null}
         {waiting.slice(0, BAND_TICKETS).map(w => (
           <Box key={`row-${w.id}`} flexDirection="column">
@@ -662,7 +694,7 @@ export const register: Register = (on, options) => {
                 ? <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w)} />
                 : null}
               {Input !== undefined
-                ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void update($, givingAtom, () => w.id)} />
+                ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)} />
                 : null}
               {hasReservation(w.verdict)
                 ? <Button key={`explain-${w.id}`} label={t.explain} onPress={() => void openChat($, w.id, 'explain')} />
@@ -675,25 +707,39 @@ export const register: Register = (on, options) => {
                 : null}
             </Box>
             {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
-            {giving === w.id && Input !== undefined
-              ? (
-                <Input
-                  key={`reason-${w.id}`}
-                  label={t.reasonLabel}
-                  placeholder={t.reasonPlaceholder}
-                  autoFocus
-                  onSubmit={(reason: string) => {
-                    void update($, givingAtom, () => null)
-                    if (reason.trim() !== '') void giveBack($, w.id, w.lane, reason.trim())
-                  }}
-                />
-              )
-              : null}
           </Box>
         ))}
         {waiting.length > BAND_TICKETS ? <Text dimColor>{t.more(waiting.length - BAND_TICKETS)}</Text> : null}
         {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
         {hasCache || hasThreads ? <Text dimColor wrap="truncate-end">{cacheLine}</Text> : null}
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: GIVE_BACK }, async ($, e) => {
+    const id = await read($, givingAtom)
+    const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+    const table = $.ui.resolve(e)
+    const { Box, Text } = table
+    const Input = 'Input' in table ? table.Input : undefined
+    if (w === undefined || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    return (
+      <Box flexDirection="column">
+        <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
+        <Input
+          key={`reason-${w.id}`}
+          label={t.reasonLabel}
+          placeholder={t.reasonPlaceholder}
+          submitLabel={t.giveBack}
+          autoFocus
+          onSubmit={(reason: string) => {
+            // Nothing typed: the pane stays open for the reason.
+            if (reason.trim() === '') return
+            void update($, givingAtom, () => null)
+            void $.ui.close({ id: GIVE_BACK })
+            void giveBack($, w.id, w.lane, reason.trim())
+          }}
+        />
       </Box>
     )
   })

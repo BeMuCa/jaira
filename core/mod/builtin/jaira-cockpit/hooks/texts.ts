@@ -15,6 +15,8 @@ export const t = {
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
   failed: (what: string) => `${what} failed`,
   close: 'Close',
+  bandTitle: 'jaira-cockpit',
+  noRoom: 'No room for a pane here: widen the terminal and press Give back again.',
   readExplanation: 'Read explanation',
   explanationOf: (id: string) => `Explanation of ${id}`,
   needsHerdr: 'A chat of its own needs Herdr (HERDR_ENV=1).',
