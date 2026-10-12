@@ -115,23 +115,32 @@ func TestSettingsEnterSwitchesDispatch(t *testing.T) {
 	}
 }
 
-// TestSettingsEnterStepsTheChatModel: the fifth entry steps the chat model
-// from the account default through sonnet, haiku and opus and back, saving
-// each step; a hand-written model shows as it is and steps back to default.
+// TestSettingsEnterStepsTheChatModel: the fifth entry shows the chat model and
+// where it comes from. enter steps the board's own (.jaira/chat-model) through
+// sonnet, haiku, opus and none; with none, this machine's settings.json
+// applies, and the row says so.
 func TestSettingsEnterStepsTheChatModel(t *testing.T) {
 	t.Setenv("JAIRA_HOME", t.TempDir())
 	m := newTestModel(t, 150, 32)
-	m.key(key("S"))
-	for range 4 {
-		m.key(key("j"))
+	open := func() string {
+		t.Helper()
+		m.key(key("esc"))
+		m.key(key("S"))
+		for range 4 {
+			m.key(key("j"))
+		}
+		return stripANSI(m.settingsScreen.render(150, 32))
 	}
-	if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  account default") {
+	if got := open(); !strings.Contains(got, "Chat model  account default — account default") {
 		t.Fatalf("the chat model row does not show the account default:\n%s", got)
 	}
 	for _, want := range []string{"sonnet", "haiku", "opus", ""} {
 		m.key(key("enter"))
-		if got := settings.Load().ChatModelName(); got != want {
-			t.Fatalf("after enter, chat-model = %q, want %q", got, want)
+		if got := settings.BoardChatModel(m.store.Root); got != want {
+			t.Fatalf("after enter, the board's chat model = %q, want %q", got, want)
+		}
+		if got := settings.Load().ChatModel; got != "" {
+			t.Fatalf("enter wrote the machine's settings.json too: %q", got)
 		}
 	}
 	if m.mode != modeSettings {
@@ -141,16 +150,11 @@ func TestSettingsEnterStepsTheChatModel(t *testing.T) {
 	if err := settings.Save(settings.Settings{ChatModel: "claude-sonnet-5-5"}); err != nil {
 		t.Fatal(err)
 	}
-	m.key(key("esc"))
-	m.key(key("S"))
-	for range 4 {
-		m.key(key("j"))
-	}
-	if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  claude-sonnet-5-5") {
-		t.Fatalf("a hand-written chat model is not shown as it is:\n%s", got)
+	if got := open(); !strings.Contains(got, "Chat model  claude-sonnet-5-5 — from settings.json on this machine") {
+		t.Fatalf("the machine's fallback is not shown with its source:\n%s", got)
 	}
 	m.key(key("enter"))
-	if got := settings.Load().ChatModelName(); got != "" {
-		t.Errorf("enter on a hand-written model: chat-model = %q, want the account default", got)
+	if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  sonnet — from .jaira/chat-model") {
+		t.Fatalf("the board's model does not win over the machine's:\n%s", got)
 	}
 }

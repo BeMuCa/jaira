@@ -1,3 +1,4 @@
-- Choose the model the cockpit's Explain and Discuss chats start on: Settings (S) → Chat model steps through account default, sonnet, haiku and opus, or write any model as `"chat-model"` in ~/.jaira/settings.json; without it they keep the account default, and lanes are unaffected.
+- Choose the model the cockpit's Explain and Discuss chats start on for everybody on a board: Settings (S) → Chat model steps the board's own `.jaira/chat-model` through sonnet, haiku, opus and none, or write any model id into that file by hand; commit it with the board so teammates get it too.
+- Set a fallback for boards that name none as `"chat-model"` in ~/.jaira/settings.json; without either, chats keep the account default, and lanes are never affected. The Chat model row in S says which one applies.
 - Expect Explain and Discuss chats to start with only the ticket's title, goal, question, review and last four notes in their prompt instead of reading the whole ticket — a fraction of the context they loaded before.
-- Read `chat_model` in `jaira roles list --json`, and a `chat model:` line in its text output.
+- Read `chat_model` and `chat_model_source` in `jaira roles list --json`, and a `chat model:` line naming its source in the text output.

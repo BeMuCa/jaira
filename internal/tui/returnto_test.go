@@ -81,7 +81,7 @@ func TestMessageDismissesToThePageItWasRaisedOn(t *testing.T) {
 		{"board", func(t *testing.T, m *Model) { m.mode = modeBoard }, modeBoard},
 		// Screens that own their own state keep dismissing to the board.
 		{"settings", func(t *testing.T, m *Model) {
-			m.settingsScreen = newSettingsScreen()
+			m.settingsScreen = newSettingsScreen(m.store.Root)
 			m.mode = modeSettings
 		}, modeBoard},
 	}

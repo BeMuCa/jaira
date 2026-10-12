@@ -3,12 +3,14 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/role"
+	"github.com/BeMuCa/jaira/core/settings"
 )
 
 func exitCode(err error) int {
@@ -101,8 +103,22 @@ func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 	if err != nil || !strings.Contains(out, "dispatch: worker — a ticket handed to an agent goes to /jaira-worker") {
 		t.Errorf("roles list does not say which role a ticket goes to: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "chat model: sonnet") {
-		t.Errorf("roles list does not name the chat model:\n%s", out)
+	if !strings.Contains(out, "chat model: sonnet") || !strings.Contains(out, "settings.json on this machine") {
+		t.Errorf("roles list does not name the chat model and where it came from:\n%s", out)
+	}
+
+	// A board that names its own model wins over the machine's.
+	board := lanesTestProject(t)
+	if err := settings.SetBoardChatModel(board, "haiku"); err != nil {
+		t.Fatal(err)
+	}
+	out, err = runCLI(t, board, "--json", "roles", "list")
+	var p map[string]any
+	if err != nil || json.Unmarshal([]byte(out), &p) != nil {
+		t.Fatalf("roles list --json on a board: %v\n%s", err, out)
+	}
+	if p["chat_model"] != "haiku" || !strings.Contains(fmt.Sprint(p["chat_model_source"]), ".jaira/chat-model") {
+		t.Errorf("on a board with its own model: chat_model=%v source=%v, want haiku from .jaira/chat-model", p["chat_model"], p["chat_model_source"])
 	}
 }
 

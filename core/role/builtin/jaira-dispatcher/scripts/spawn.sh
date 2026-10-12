@@ -31,8 +31,9 @@ which is what a teamlead passes when settings.json says "dispatch": "worker".
 <explain> and <discuss> open a chat for a person about the ticket — the review
 finding explained, or the ticket's open question talked through — and are what
 the jaira-cockpit mod's buttons start, with --no-worktree. They start claude on
-the "chat-model" setting in ~/.jaira/settings.json — the account's default
-without one — and get the part of the ticket they need in their prompt.
+the board's .jaira/chat-model, else "chat-model" in ~/.jaira/settings.json, else
+the account's default — and get the part of the ticket they need in their
+prompt.
 Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
@@ -122,15 +123,16 @@ pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$la
   | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
 
 # <explain> and <discuss> write a few lines for a person, so they start on the
-# chat-model setting rather than the account's default model, and they get the
-# part of the ticket they need typed into their prompt rather than reading the
-# whole of it: 'jaira show --json' carries every note and every DoD proof, most
+# chat model 'jaira roles list' names for this board (its .jaira/chat-model,
+# else this machine's settings.json) rather than the account's default model,
+# and they get the part of the ticket they need typed into their prompt rather
+# than reading the whole of it: 'jaira show --json' carries every note and every DoD proof, most
 # of a chat's context for nothing. Without jaira or python3 here both stay as
 # they were — the account's model, and a prompt that reads the ticket itself.
 chat_model=""
 brief=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
-  chat_model="$(jaira roles list --json 2>/dev/null \
+  chat_model="$(jaira -C "$wt" roles list --json 2>/dev/null \
     | python3 -c 'import sys,json;print(json.load(sys.stdin).get("chat_model",""))' 2>/dev/null)" || chat_model=""
   # It lands in a command line: only a model name passes.
   [[ "$chat_model" =~ ^[][A-Za-z0-9._-]*$ ]] || chat_model=""

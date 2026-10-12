@@ -3,6 +3,7 @@ package settings_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -235,8 +236,51 @@ func TestChatModelName(t *testing.T) {
 		"claude-sonnet-5-5": "claude-sonnet-5-5", "opus[1m]": "opus[1m]",
 		"sonnet; rm -rf ~": "", "it's": "", "$(id)": "", "a b": "",
 	} {
-		if got := (settings.Settings{ChatModel: in}).ChatModelName(); got != want {
+		if got, _ := (settings.Settings{ChatModel: in}).ChatModelFor(""); got != want {
 			t.Errorf("chat-model %q: %q, want %q", in, got, want)
 		}
+	}
+}
+
+// The board's own chat model wins over the machine's, and removing it lets the
+// machine's apply again; a board file holding no model name counts as none.
+func TestChatModelForPrefersTheBoard(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s := settings.Settings{ChatModel: "haiku"}
+	if got, src := s.ChatModelFor(root); got != "haiku" || !strings.Contains(src, "settings.json") {
+		t.Errorf("no board file: %q (%s), want haiku from settings.json", got, src)
+	}
+	if err := settings.SetBoardChatModel(root, "sonnet"); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := s.ChatModelFor(root); got != "sonnet" || !strings.Contains(src, ".jaira/chat-model") {
+		t.Errorf("board file: %q (%s), want sonnet from .jaira/chat-model", got, src)
+	}
+	if got, _ := (settings.Settings{}).ChatModelFor(root); got != "sonnet" {
+		t.Errorf("board file, no machine setting: %q, want sonnet", got)
+	}
+	if err := os.WriteFile(settings.BoardChatModelPath(root), []byte("# comment\n\n  opus  \n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := settings.BoardChatModel(root); got != "opus" {
+		t.Errorf("hand-written file: %q, want opus", got)
+	}
+	if err := os.WriteFile(settings.BoardChatModelPath(root), []byte("$(id)\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.ChatModelFor(root); got != "haiku" {
+		t.Errorf("a board file with no model name: %q, want the machine's haiku", got)
+	}
+	if err := settings.SetBoardChatModel(root, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(settings.BoardChatModelPath(root)); !os.IsNotExist(err) {
+		t.Errorf("setting the board's model to empty must remove the file: %v", err)
+	}
+	if got, src := (settings.Settings{}).ChatModelFor(root); got != "" || !strings.Contains(src, "account default") {
+		t.Errorf("nothing set: %q (%s), want the account default", got, src)
 	}
 }

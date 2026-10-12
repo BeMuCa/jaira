@@ -38,6 +38,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/snapshot"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Settings is the whole file.
@@ -112,8 +113,11 @@ type Settings struct {
 	// a cheaper model. It is handed to 'claude --model' as it stands, so an
 	// alias (sonnet) and a full id both work. Empty means no --model at all:
 	// the account's own default, as before there was a setting. No lane
-	// reads it; their model comes from the lane's tier. Read it through
-	// ChatModelName.
+	// reads it; their model comes from the lane's tier.
+	//
+	// This is only the machine's fallback: a board that names its own in
+	// .jaira/chat-model wins, because what a chat about the board's tickets
+	// costs is the team's choice. Read it through ChatModelFor.
 	ChatModel string `json:"chat-model,omitempty"`
 }
 
@@ -121,12 +125,75 @@ type Settings struct {
 // empty account default first. Anything else is written by hand.
 var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
 
-// ChatModelName returns the chat model, or "" when none is set or the value
-// is not a model name. spawn.sh puts it into the command line a tab runs, so
-// a value with anything but letters, digits and . _ - [ ] is treated as
-// unset rather than carried into a shell.
-func (s Settings) ChatModelName() string {
-	v := strings.TrimSpace(s.ChatModel)
+// ChatModelFile is the board's own chat model under .jaira: one line, the
+// model, shared with everybody who works the board. Its own file, like
+// lanes/order and tags, because a line is the smallest thing git merges.
+const ChatModelFile = "chat-model"
+
+// BoardChatModelPath is where the board at root names its chat model.
+func BoardChatModelPath(root string) string {
+	return filepath.Join(root, ticket.DirName, ChatModelFile)
+}
+
+// chatModelHeader is written above the model, for whoever opens the file.
+const chatModelHeader = `# The model jaira's cockpit starts its explain and discuss chats on, for
+# everybody working this board: one line, as 'claude --model' takes it
+# (sonnet, haiku, opus, or a full model id). Without this file each machine's
+# "chat-model" in ~/.jaira/settings.json applies, and without that the account
+# default.
+`
+
+// BoardChatModel returns the model the board at root names, or "" when it
+// names none, or names something that is not a model name.
+func BoardChatModel(root string) string {
+	b, err := os.ReadFile(BoardChatModelPath(root))
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			return modelName(line)
+		}
+	}
+	return ""
+}
+
+// SetBoardChatModel writes the board's chat model; "" removes the file, so
+// the machine's fallback applies again.
+func SetBoardChatModel(root, model string) error {
+	path := BoardChatModelPath(root)
+	if model == "" {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	return os.WriteFile(path, []byte(chatModelHeader+model+"\n"), 0o644)
+}
+
+// ChatModelFor returns the model the chats on the board at root start on,
+// and where it came from in words a person can read: the board's file first,
+// then this machine's settings.json, else "" — no --model, the account's
+// own default. root may be "" outside any board.
+func (s Settings) ChatModelFor(root string) (name, source string) {
+	if root != "" {
+		if m := BoardChatModel(root); m != "" {
+			return m, "from .jaira/chat-model, shared with the board"
+		}
+	}
+	if m := modelName(s.ChatModel); m != "" {
+		return m, "from settings.json on this machine"
+	}
+	return "", "account default, nothing configured"
+}
+
+// modelName returns v trimmed, or "" when it is not a model name. spawn.sh
+// puts it into the command line a tab runs, so a value with anything but
+// letters, digits and . _ - [ ] is treated as unset rather than carried into
+// a shell.
+func modelName(v string) string {
+	v = strings.TrimSpace(v)
 	for _, r := range v {
 		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
 			strings.ContainsRune("._-[]", r)

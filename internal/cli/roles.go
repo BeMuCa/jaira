@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cmp"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -40,9 +41,10 @@ starts for a whole ticket: the "dispatch" setting in ~/.jaira/settings.json.
 marked context: fresh handed to a new one. --json carries it as dispatch and
 dispatch_role.
 
-It also says which model the cockpit's explain and discuss chats start on: the
-"chat-model" setting, carried as chat_model and empty for the account's own
-default.`,
+It also says which model the cockpit's explain and discuss chats start on:
+the board's own .jaira/chat-model first, then "chat-model" in settings.json —
+carried as chat_model, empty for the account's own default, and where it came
+from as chat_model_source.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -54,6 +56,7 @@ default.`,
 			// this list to know what it can start, and which of two it starts
 			// for a ticket is the same question.
 			cur := settings.Load()
+			chat, chatSource := cur.ChatModelFor(bestEffortRoot())
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -64,7 +67,7 @@ default.`,
 				}
 				return emit(w, map[string]any{
 					"roles": arr, "dispatch": cur.DispatchMode(), "dispatch_role": cur.DispatchRole(),
-					"chat_model": cur.ChatModelName(),
+					"chat_model": chat, "chat_model_source": chatSource,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -73,11 +76,8 @@ default.`,
 			}
 			fmt.Fprintf(w, "\ndispatch: %s — a ticket handed to an agent goes to /%s (\"dispatch\" in %s)\n",
 				cur.DispatchMode(), cur.DispatchRole(), settings.Path())
-			chat := cur.ChatModelName()
-			if chat == "" {
-				chat = "account default"
-			}
-			fmt.Fprintf(w, "chat model: %s — what the cockpit's explain and discuss chats start on (\"chat-model\")\n", chat)
+			fmt.Fprintf(w, "chat model: %s — what the cockpit's explain and discuss chats start on (%s)\n",
+				cmp.Or(chat, "account default"), chatSource)
 			return nil
 		},
 	}

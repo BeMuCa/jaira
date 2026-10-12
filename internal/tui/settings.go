@@ -60,7 +60,7 @@ var settingsEntries = []settingsEntry{
 	},
 	{
 		name:   "Chat model",
-		desc:   "the model the cockpit's explain and discuss chats start on; account default passes no --model. enter steps through sonnet, haiku, opus; any other model by hand as chat-model in settings.json",
+		desc:   "the model the cockpit's explain and discuss chats start on, for everybody on this board (.jaira/chat-model); without it this machine's chat-model in settings.json, else the account default. enter steps the board's through sonnet, haiku, opus and none; any other model by hand",
 		action: settingsActionChatModel,
 	},
 }
@@ -85,36 +85,45 @@ type settingsScreen struct {
 	dispatch    string
 	dispatchErr string
 
-	// chatModel is the chat-model setting as settings.json has it now, and
-	// chatModelErr what went wrong saving the last step.
-	chatModel    string
-	chatModelErr string
+	// root is the board the screen was opened on. chatModel is the model its
+	// chats start on, chatModelSource where that came from, and chatModelErr
+	// what went wrong saving the last step.
+	root            string
+	chatModel       string
+	chatModelSource string
+	chatModelErr    string
 }
 
-func newSettingsScreen() *settingsScreen {
+func newSettingsScreen(root string) *settingsScreen {
 	cur := settings.Load()
-	return &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), chatModel: cur.ChatModelName()}
+	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root}
+	s.chatModel, s.chatModelSource = cur.ChatModelFor(root)
+	return s
 }
 
-// stepChatModel moves the chat model on to the next of its choices and saves
-// at once. A value written by hand that is none of them steps back to the
-// account default, the first choice.
+// stepChatModel moves the board's chat model on to the next of its choices
+// and saves at once — the board's, because it is the one that wins; the
+// machine's fallback is written by hand. A value written by hand that is none
+// of the choices steps back to none, the first, which lets the machine's
+// apply again.
 func (s *settingsScreen) stepChatModel() string {
-	cur := settings.Load()
+	if s.root == "" {
+		return settingsActionNone
+	}
 	choices := settings.ChatModelChoices
 	next := choices[0]
 	for i, c := range choices {
-		if c == cur.ChatModelName() {
+		if c == settings.BoardChatModel(s.root) {
 			next = choices[(i+1)%len(choices)]
 		}
 	}
-	cur.ChatModel = next
-	if err := settings.Save(cur); err != nil {
+	if err := settings.SetBoardChatModel(s.root, next); err != nil {
 		s.chatModelErr = err.Error()
 		return settingsActionNone
 	}
 	// None, not saved: like dispatch, nothing on the board shows it.
-	s.chatModel, s.chatModelErr = next, ""
+	s.chatModel, s.chatModelSource = settings.Load().ChatModelFor(s.root)
+	s.chatModelErr = ""
 	return settingsActionNone
 }
 
@@ -225,7 +234,7 @@ func (s *settingsScreen) render(width, height int) string {
 			name += "  " + styMeta.Render(s.dispatch)
 		}
 		if e.action == settingsActionChatModel {
-			name += "  " + styMeta.Render(cmp.Or(s.chatModel, "account default"))
+			name += "  " + styMeta.Render(cmp.Or(s.chatModel, "account default")+" — "+s.chatModelSource)
 		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")

@@ -529,7 +529,7 @@ esac
 	})
 	jaira := `#!/usr/bin/env bash
 case "$*" in
-  "roles list --json") printf '{"chat_model": "%s"}\n' "$(cat "` + model + `")" ;;
+  "-C "*" roles list --json") printf '{"chat_model": "%s"}\n' "$(cat "` + model + `")" ;;
   *" show AB12CD --json") cat <<'JSON'
 ` + string(show) + `
 JSON
