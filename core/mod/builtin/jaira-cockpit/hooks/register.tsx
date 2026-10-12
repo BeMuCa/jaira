@@ -14,11 +14,13 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
+import { overviewOf } from './overview.ts'
+import { drawOverview } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord,
 } from './sessions.ts'
-import { t } from './texts.ts'
+import { overviewWords, t } from './texts.ts'
 import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
 
 // The engine follows `$` only into functions declared in this same file, and
@@ -55,12 +57,14 @@ const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
 const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
 const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
+const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const ANSWER = 'cockpit-answer'
+const OVERVIEW = 'cockpit-overview'
 const BAND_TICKETS = 3
 // How long a pressed row stays locked when its action has not ended by then.
 const BUSY_MS = 20_000
@@ -561,6 +565,21 @@ async function toggleMore($: EngineInterface, open: boolean): Promise<void> {
   if (open) await refreshBoard($)
 }
 
+// The Overview pane, on the board as it is now: read afresh at each press.
+// A command that failed leaves the pane saying so, not half a board.
+async function openOverview($: EngineInterface, dir: string): Promise<void> {
+  const [lanes, list, next] = await Promise.all([
+    run($, ['jaira', 'lanes', '--json'], dir),
+    run($, ['jaira', 'list', '--json'], dir),
+    run($, ['jaira', 'next', '--all', '--json'], dir),
+  ])
+  const ok = lanes?.exitCode === 0 && list?.exitCode === 0 && next?.exitCode === 0
+  const view = ok ? overviewOf(lanes.stdout, list.stdout, next.stdout, await $.clock.now()) : null
+  await update($, overviewAtom, () => view)
+  const opened = await $.ui.open({ id: OVERVIEW, title: overviewWords.title, focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) $.ui.toast(overviewWords.noRoom)
+}
+
 // A decision is read once: the pane shows it, the band lets it go.
 async function readDecision($: EngineInterface, id: string, text: string): Promise<void> {
   await update($, decidedAtom, d => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)))
@@ -1039,6 +1058,7 @@ export const register: Register = (on, options) => {
         <Box flexDirection="row">
           <Text bold color="claude">{t.bandTitle}</Text>
           {head.length > 0 ? <Text dimColor wrap="truncate-end">{'   '}{head.join(SEP)}</Text> : null}
+          {board ? <Button key="overview" label={overviewWords.button} onPress={() => void openOverview($, board!.dir)} /> : null}
         </Box>
         {/* What just happened on top, this person's own work below it, the
             teammates' tickets last of all lists. */}
@@ -1242,6 +1262,9 @@ export const register: Register = (on, options) => {
       </Box>
     )
   })
+
+  on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
+    drawOverview($.ui.resolve(e), await read($, overviewAtom), () => void $.ui.close({ id: OVERVIEW })))
 
   on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
     const message = await read($, messageAtom)

@@ -9,6 +9,12 @@ export type Counts = { worker: number; review: number; person: number }
 export type BoardView = { waiting: Waiting[]; theirs: Waiting[]; counts: Counts }
 export type CacheState = { tokens: number; lastAnswerAt: number | null; ttl: number }
 export type ThreadTally = { questions: number; stale: number }
+// What the Overview pane draws: these mirror hooks/overview.ts.
+export type OverviewRow = { id: string; lane: string; title: string; who: string; reason: string }
+export type OverviewEvent = OverviewRow & { kind: 'created' | 'parked'; at: string }
+export type Overview = {
+  working: OverviewRow[]; queue: OverviewRow[]; parked: OverviewRow[]; history: { day: string; events: OverviewEvent[] }[]
+}
 
 declare module 'claude-code' {
   interface PluginState {
@@ -45,6 +51,9 @@ declare module 'claude-code' {
       // The tickets whose Accept, Give back or Explain was pressed and has
       // not yet done its part, each with when, so a late end frees only its own.
       busy: Record<string, number>
+      // The board the Overview pane shows, read when its button was pressed;
+      // null when that read failed.
+      overview: Overview | null
     }
   }
 }

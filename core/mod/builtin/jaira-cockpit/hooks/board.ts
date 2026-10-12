@@ -25,7 +25,7 @@ export type Waiting = {
 
 export type Counts = { worker: number; review: number; person: number }
 
-type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
+export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
 type Ticket = {
   handle: string
   title: string
@@ -40,7 +40,7 @@ type Ticket = {
   review_round?: number
 }
 
-function parse<T>(json: string): T | undefined {
+export function parse<T>(json: string): T | undefined {
   try {
     return JSON.parse(json) as T
   } catch {
@@ -48,13 +48,13 @@ function parse<T>(json: string): T | undefined {
   }
 }
 
-const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
+export const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
 
 // A jaira built before `lanes --json` carried human_exit says nothing about
 // whose lane is whose: then the shipped board's person lanes are taken.
 const PERSON_LANES = new Set(['human', 'signoff'])
 
-function isPersons(lane: Lane): boolean {
+export function isPersons(lane: Lane): boolean {
   return lane.human_exit ?? PERSON_LANES.has(lane.id)
 }
 

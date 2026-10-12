@@ -23,6 +23,21 @@ jaira list --actionable --json   # what could start right now
 Never plan from memory of an earlier turn. The board changed: other sessions
 write it too.
 
+Then name what happened on the board in the last seven days, newest day
+first, with who did it — the person slept, and what a session filed at night
+is otherwise lost to them. The source is the one the cockpit's Overview pane
+reads, `jaira list --json`, by the same rule:
+
+- **created**: every ticket whose `created_at` lies in the last seven days,
+  with its `creator` and the lane it stands in now
+- **put back**: every ticket now in `backlog` or `blocked` whose `updated_at`
+  lies in the last seven days, on a later day than it was created, with its
+  `updated_by` (and `blocked_reason` for a blocked one). jaira keeps no time a
+  ticket changed lanes, so its last change stands for it
+
+One table, `Handle | Lane | Title | who`, grouped by day. Nothing in the
+seven days: say so in one line.
+
 ## What you actually decide
 
 1. **Order.** Which ticket first, and say why in one line — what it unblocks,

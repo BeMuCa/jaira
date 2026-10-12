@@ -71,6 +71,7 @@ type World = {
   remotes: string
   // The forge answers `repo view` but refuses `pr list`.
   prListFails: boolean
+  nextFails: boolean
 }
 
 const LANES = {
@@ -140,6 +141,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     holders: [],
     toasts: [],
     prListFails: false,
+    nextFails: false,
     remotes: 'origin\tgit@github.com:acme/repo.git (fetch)\norigin\tgit@github.com:acme/repo.git (push)\nupstream\thttps://github.com/upstream/repo.git (fetch)\n',
   }
   const hasBoard = opts.board ?? true
@@ -258,6 +260,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       return ok()
     }
     if (cmd === 'gh' || cmd === 'glab') return ok(JSON.stringify(w.prs))
+    if (cmd === 'jaira' && args[0] === 'next' && w.nextFails) return failed('jaira: board unreadable')
     if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -1883,5 +1886,95 @@ describe('metrics and the pane', () => {
     expect(await pane.find({ type: 'Text', text: /signoff · approve mit Vorbehalt/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: 'Ticket MG677R: review -> signoff, review-verdict="approve"' })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: 'worker · cost_eq 38 · peak 90k · 10 min · 12 tools' })).toBeDefined()
+  })
+})
+
+const OVERVIEW = { plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-overview', props: { title: 'Board overview', isFocused: true, bodyColumns: 160, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } } as never
+
+// An instant `days` before the test clock's now, as jaira writes it.
+const ago = (days: number) => new Date(1_000_000 - days * 86_400_000).toISOString()
+
+describe('the overview', () => {
+  test('the band has an Overview button only where there is a board', async ($, on) => {
+    world(on)
+    await startSession($)
+    expect(await (await $.ui.mount(BAND)).find({ key: 'overview' })).toBeDefined()
+  })
+
+  test('no board, no Overview button', async ($, on) => {
+    const w = world(on, { board: false })
+    w.usage.tokens = 50_000
+    await startSession($)
+    await answer($)
+    expect(await (await $.ui.mount(BAND)).find({ key: 'overview' })).toBeUndefined()
+  })
+
+  test('Overview reads the board afresh and shows in work, queue and put back, each row Handle | Lane | Titel', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      SIGNOFF,
+      HUMAN,
+      { ...WORKING, assignee: 'Alex', updated_at: ago(0.1) },
+      // Not offered by next for an open blocked_by, and nobody on it: in nobody's work.
+      { handle: 'W2W2W2', title: 'waits', status: 'in-progress', assignee: '', updated_at: ago(0.1) },
+      { handle: 'Q1Q1Q1', title: 'queued', status: 'critique', assignee: '', updated_at: ago(0.2) },
+      { handle: 'B1B1B1', title: 'later', status: 'backlog', creator: 'Berk', updated_by: 'Berk', updated_at: ago(20), created_at: ago(20) },
+      { handle: 'X1X1X1', title: 'stuck', status: 'blocked', updated_by: 'Alex', blocked_reason: 'waits on Berk', updated_at: ago(15), created_at: ago(30) },
+      { handle: 'D1D1D1', title: 'finished', status: 'done', updated_at: ago(0.1) },
+    ]
+    w.next = ['Q1Q1Q1', 'B1B1B1', 'K7P2QX']
+    await startSession($)
+    w.ran = []
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    expect(ran(w, 'jaira', 'next')).toEqual([['jaira', 'next', '--all', '--json', '@/repo']])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-overview', title: 'Board overview', focus: true })
+    const pane = await $.ui.mount(OVERVIEW)
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    // Three columns side by side, like lanes.
+    const row = await pane.find({ type: 'Box', props: { flexDirection: 'row' } } as never)
+    expect(row?.text).toMatch(/^In work \(1\).*Queue \(1\).*Put back \(2\)/)
+    expect(texts).toContain('T8QS1Y | in-progress | filter')
+    expect(texts).toContain('  Alex')
+    expect(texts).toContain('Q1Q1Q1 | critique | queued')
+    // The last touched first; a blocked ticket says why.
+    expect(texts.indexOf('X1X1X1 | blocked | stuck')).toBeLessThan(texts.indexOf('B1B1B1 | backlog | later'))
+    expect(texts).toContain('  Alex: waits on Berk')
+    // A person's lanes are the band's, the terminal lane is nobody's.
+    expect(texts.filter(x => /MG677R|K7P2QX|D1D1D1|W2W2W2/.test(x))).toEqual([])
+    await pane.press({ key: 'overview-close' })
+    expect(w.closed).toContain('cockpit-overview')
+  })
+
+  test('the history: created and put back over the last seven days, by day, newest first, with who', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new today', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'P1P1P1', title: 'put back', status: 'blocked', creator: 'Berk', updated_by: 'Alex', blocked_reason: 'x', created_at: ago(5), updated_at: ago(2) },
+      { handle: 'O1O1O1', title: 'too old', status: 'backlog', creator: 'Berk', created_at: ago(10), updated_at: ago(10) },
+      { handle: 'W1W1W1', title: 'started', status: 'in-progress', creator: 'Alex', assignee: 'Alex', created_at: ago(1), updated_at: ago(0.1) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const texts = (await (await $.ui.mount(OVERVIEW)).findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts).toContain('Created and put back, last 7 days')
+    const history = texts.slice(texts.indexOf('Created and put back, last 7 days') + 1)
+    const days = history.filter(x => /^── \d{4}-\d\d-\d\d ──$/.test(x))
+    expect(days).toHaveLength(4)
+    expect([...days].sort().reverse()).toEqual(days)
+    const events = history.filter(x => /^\d\d:\d\d {2}/.test(x)).map(x => x.slice(7))
+    expect(events).toEqual([
+      'N1N1N1 | backlog | new today | created by Alex',
+      'W1W1W1 | in-progress | started | created by Alex',
+      'P1P1P1 | blocked | put back | put back by Alex',
+      'P1P1P1 | blocked | put back | created by Berk',
+    ])
+  })
+
+  test('a board that cannot be read says so', async ($, on) => {
+    const w = world(on)
+    w.nextFails = true
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    expect(await (await $.ui.mount(OVERVIEW)).find({ type: 'Text', text: /could not be read/ })).toBeDefined()
   })
 })
