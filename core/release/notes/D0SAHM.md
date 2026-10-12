@@ -1,0 +1,3 @@
+- Give a milestone a one-line goal and a place in the layer with `jaira milestone create <name> --goal <text> --after <a,b>`; `--after ""` makes it the top of a swimlane of its own, and without `--after` it stays out of the layer.
+- Change a milestone later with `jaira milestone set <name> --goal <text>`, `--after <a,b>` or `--no-layer`; an unknown predecessor exits 5 and an arrow that would close a loop exits 3 with the loop named.
+- Read `goal` and `after` from `jaira milestone ls --json`: `after` is present only for a milestone placed in the layer, and `[]` means it is the top of its own swimlane; `jaira milestone ls` now prints the goal after the ticket count.

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,11 +16,10 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// milestoneLockName keys the store lock a milestone file is written under. One
-// name for the whole directory rather than one per file: creating a milestone
-// reads every existing one to avoid their colours, so two creations at once
-// have to be ordered even though they write different files.
-const milestoneLockName = "milestones"
+// milestoneLockName keys the store lock a milestone file is written under; the
+// name lives in core/milestone, where the shared write path takes it, and the
+// commands that still lock by hand (logbook, restore, fetch) read it from there.
+const milestoneLockName = milestone.LockName
 
 // milestoneIndex is the one place a milestone index is built for the CLI, so
 // the board's filter and 'jaira list --milestone' cannot disagree about what
@@ -66,6 +67,7 @@ it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
 		newMilestoneCreateCmd(),
 		newMilestoneAddCmd(),
 		newMilestoneRmCmd(),
+		newMilestoneSetCmd(),
 		newMilestoneLsCmd(),
 	)
 	return cmd
@@ -73,6 +75,7 @@ it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
 
 func newMilestoneCreateCmd() *cobra.Command {
 	var colour int
+	var goal, after string
 	cmd := &cobra.Command{
 		Use:   "create <name> [id...]",
 		Short: "Start a milestone, optionally with its first tickets",
@@ -92,7 +95,13 @@ back instead.
 
 Names are lowercase kebab, the same rule tags follow — the name is also the
 filename, so it has to be safe in a path. "Round One" is filed as "round-one"
-and you are told so.`,
+and you are told so.
+
+--goal <text> says in one line what the milestone is for, and --after <a,b>
+puts it in the layer on the board (L) under those milestones; the first one
+decides its swimlane. --after "" makes it the top of a swimlane of its own.
+Without --after the milestone stays out of the layer. A predecessor has to be
+a milestone on this board, and the arrows may not form a loop.`,
 		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -107,55 +116,62 @@ and you are told so.`,
 			if err != nil {
 				return err
 			}
+			var preds []string
+			if cmd.Flags().Changed("after") {
+				if preds, err = parseMilestoneNames(after); err != nil {
+					return err
+				}
+			}
 
-			unlock, err := s.Lock(milestoneLockName)
-			if err != nil {
+			ms, err := milestone.Create(s.Root, s, refs, name, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
+				if have, err := milestone.Load(s.Root, name); err == nil && have.Filed() {
+					// The file is here but marked, which a fetch of somebody
+					// else's filing leaves behind. It is not on the board, so
+					// "already exists" would send the reader looking for a
+					// milestone no listing names.
+					return nil, refuseFiledOnDisk(s.Root, name,
+						"taking the line out here instead would leave that tree's copy stranded in its logbook")
+				} else if err == nil {
+					return nil, fail(ExitValidation, "milestone_exists",
+						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
+						name, milestone.Path(s.Root, name), name)
+				} else if !errors.Is(err, os.ErrNotExist) {
+					return nil, err
+				}
+				// Filed under this name, here or in the tree that wrote the
+				// ref: the name stays taken until 'jaira restore' gives it up.
+				if err := refuseIfFiled(s, name,
+					"creating it again here would make a second milestone with the same name",
+					"; creating it again would make a second milestone with the same name"); err != nil {
+					return nil, err
+				}
+				c := colour
+				if !cmd.Flags().Changed("color") {
+					c = milestone.AssignColour(existing, name)
+				} else if !tag.ValidColour(c) || c == 0 {
+					// 0 is not black here, it is "no colour": a milestone given it
+					// would paint nothing on any card, which is not a thing to be
+					// asked for by hand.
+					return nil, fail(ExitUsage, "bad_color", "--color takes an ANSI-256 value, 1-255; got %d", c)
+				}
+				ms := milestone.New(name, c, time.Now())
+				for _, id := range ids {
+					ms.Add(id)
+				}
+				if goal != "" {
+					ms.SetGoal(goal)
+				}
+				if cmd.Flags().Changed("after") {
+					if err := checkPredecessors(existing, name, preds); err != nil {
+						return nil, err
+					}
+					ms.SetAfter(preds)
+				}
+				return ms, nil
+			})
+			if err := warnIfRecordOnly(err); err != nil {
 				return err
 			}
-			defer unlock()
-
-			if have, err := milestone.Load(s.Root, name); err == nil && have.Filed() {
-				// The file is here but marked, which a fetch of somebody
-				// else's filing leaves behind. It is not on the board, so
-				// "already exists" would send the reader looking for a
-				// milestone no listing names.
-				return refuseFiledOnDisk(s.Root, name,
-					"taking the line out here instead would leave that tree's copy stranded in its logbook")
-			} else if err == nil {
-				return fail(ExitValidation, "milestone_exists",
-					"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
-					name, milestone.Path(s.Root, name), name)
-			} else if !errors.Is(err, os.ErrNotExist) {
-				return err
-			}
-			// Filed under this name, here or in the tree that wrote the
-			// ref: the name stays taken until 'jaira restore' gives it up.
-			if err := refuseIfFiled(s, name,
-				"creating it again here would make a second milestone with the same name",
-				"; creating it again would make a second milestone with the same name"); err != nil {
-				return err
-			}
-			existing, err := milestone.LoadAll(s.Root)
-			if err != nil {
-				return err
-			}
-			c := colour
-			if !cmd.Flags().Changed("color") {
-				c = milestone.AssignColour(existing, name)
-			} else if !tag.ValidColour(c) || c == 0 {
-				// 0 is not black here, it is "no colour": a milestone given it
-				// would paint nothing on any card, which is not a thing to be
-				// asked for by hand.
-				return fail(ExitUsage, "bad_color", "--color takes an ANSI-256 value, 1-255; got %d", c)
-			}
-			ms := milestone.New(name, c, time.Now())
-			for _, id := range ids {
-				ms.Add(id)
-			}
-			if err := ms.Save(s.Root); err != nil {
-				return err
-			}
-			recordMilestone(ms)
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
@@ -170,6 +186,8 @@ and you are told so.`,
 		},
 	}
 	cmd.Flags().IntVar(&colour, "color", -1, "ANSI-256 colour (1-255; 0 paints no cell) instead of a random free one")
+	cmd.Flags().StringVar(&goal, "goal", "", "one line saying what the milestone is for")
+	cmd.Flags().StringVar(&after, "after", "", "comma-separated milestones this one follows, placing it in the layer; \"\" makes it a swimlane top")
 	return cmd
 }
 
@@ -213,6 +231,140 @@ and ` + "`jaira restore <name>.md`" + ` brings it back.`,
 	}
 }
 
+func newMilestoneSetCmd() *cobra.Command {
+	var goal, after string
+	var noLayer bool
+	cmd := &cobra.Command{
+		Use:   "set <name> [--goal <text>] [--after <a,b>] [--no-layer]",
+		Short: "Change a milestone's goal or its place in the layer",
+		Long: `Rewrites the ` + "`goal:`" + ` and ` + "`after:`" + ` lines of the milestone's file and nothing else.
+
+--goal <text> sets the one-line goal; --goal "" removes it.
+--after <a,b> places the milestone in the layer (L on the board) under those
+milestones. The first one decides its swimlane, every further one is an extra
+arrow. --after "" makes it the top of a swimlane of its own.
+--no-layer takes it out of the layer again; its tickets stay where they are.
+
+At least one flag is needed, and --after and --no-layer exclude each other. A
+predecessor has to be a milestone on this board (exit 5 otherwise), and an
+arrow that would close a loop is refused (exit 3) with the loop named. A
+filed milestone is refused like everywhere else.`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			setGoal, setAfter := cmd.Flags().Changed("goal"), cmd.Flags().Changed("after")
+			if !setGoal && !setAfter && !noLayer {
+				return fail(ExitUsage, "usage", "milestone set needs at least one of --goal, --after, --no-layer")
+			}
+			if setAfter && noLayer {
+				return fail(ExitUsage, "usage", "--after places the milestone in the layer and --no-layer takes it out; give one")
+			}
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			name, _, err := milestone.NormalizeName(args[0])
+			if err != nil {
+				return fail(ExitUsage, "bad_milestone", "%v", err)
+			}
+			var preds []string
+			if setAfter {
+				if preds, err = parseMilestoneNames(after); err != nil {
+					return err
+				}
+			}
+
+			var before []byte
+			ms, err := milestone.Edit(s.Root, s, refs, name, func(ms *milestone.Milestone) error {
+				if ms.Filed() {
+					return refuseFiledOnDisk(s.Root, name,
+						"editing it here instead would push the change onto its ref for everyone who fetches")
+				}
+				before = ms.Bytes()
+				if setAfter {
+					all, err := milestone.LoadAll(s.Root)
+					if err != nil {
+						return err
+					}
+					if err := checkPredecessors(all, name, preds); err != nil {
+						return err
+					}
+					ms.SetAfter(preds)
+				}
+				if noLayer {
+					ms.Unplace()
+				}
+				if setGoal {
+					ms.SetGoal(goal)
+				}
+				return nil
+			})
+			if err := warnIfRecordOnly(err); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					return refuseMissingMilestone(s, name,
+						"there is no copy of it here to change",
+						", and then it can be changed again")
+				}
+				return err
+			}
+
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				return emit(w, milestoneJSON(ms, milestone.Path(s.Root, name)))
+			}
+			if string(before) == string(ms.Bytes()) {
+				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", name)
+				return nil
+			}
+			fmt.Fprintf(w, "Milestone %q updated: %s\n", name, milestone.Path(s.Root, name))
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&goal, "goal", "", "one line saying what the milestone is for (\"\" removes it)")
+	cmd.Flags().StringVar(&after, "after", "", "comma-separated milestones this one follows; \"\" makes it a swimlane top")
+	cmd.Flags().BoolVar(&noLayer, "no-layer", false, "take the milestone out of the layer")
+	return cmd
+}
+
+// parseMilestoneNames reads a comma-separated list of milestone names the way
+// they are stored. The empty string is the empty list, which --after reads as
+// "a swimlane of its own".
+func parseMilestoneNames(raw string) ([]string, error) {
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		if strings.TrimSpace(part) == "" {
+			continue
+		}
+		n, _, err := milestone.NormalizeName(part)
+		if err != nil {
+			return nil, fail(ExitUsage, "bad_milestone", "%v", err)
+		}
+		if !slices.Contains(out, n) {
+			out = append(out, n)
+		}
+	}
+	return out, nil
+}
+
+// checkPredecessors refuses what the layer must never be handed: a name no
+// milestone on this board carries, and an arrow that would close a loop. The
+// drawing ignores both rather than failing, so this is the one place they are
+// stopped — before anything is written.
+func checkPredecessors(all []*milestone.Milestone, name string, preds []string) error {
+	for _, p := range preds {
+		if !slices.ContainsFunc(all, func(m *milestone.Milestone) bool { return m.Name == p }) {
+			return fail(ExitNotFound, "no_such_milestone",
+				"no milestone %q on this board to come after — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
+				p, p)
+		}
+		if path := milestone.CyclePath(all, name, p); path != nil {
+			return fail(ExitValidation, "milestone_cycle",
+				"milestone %q cannot come after %q: that closes a cycle, %s",
+				name, p, strings.Join(path, " -> "))
+		}
+	}
+	return nil
+}
+
 // editMembers is add and rm, which differ only in which way the lines move.
 // One implementation because the locking, the resolving and the reporting are
 // the whole of both.
@@ -230,57 +382,42 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		return err
 	}
 
-	unlock, err := s.Lock(milestoneLockName)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-
-	ms, err := milestone.Load(s.Root, name)
-	if err != nil {
+	var touched []string
+	ms, err := milestone.Edit(s.Root, s, refs, name, func(ms *milestone.Milestone) error {
+		if ms.Filed() {
+			// The third door into a filed milestone's file, after create and
+			// logbook. The write would not lose the mark, but it does not stay
+			// local either: the ref write would put it on the ref, so every
+			// clone that fetches sees a milestone the filer took off the board
+			// being edited. Refuse it where the other two refuse it.
+			return refuseFiledOnDisk(s.Root, name,
+				"editing it here instead would push the change onto its ref for everyone who fetches")
+		}
+		for _, id := range ids {
+			changed := false
+			if add {
+				changed = ms.Add(id)
+			} else {
+				changed = ms.Remove(id)
+			}
+			if changed {
+				touched = append(touched, id)
+			}
+		}
+		return nil
+	})
+	if err := warnIfRecordOnly(err); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// Filed in this very tree: the file moved to the logbook, so Load
 			// answers the same ErrNotExist a name nobody ever used answers
 			// with. Saying "create it" here sends the reader into the
 			// refusal create raises for a filed name, two steps for one
 			// answer, and the first one points the wrong way.
-			if err := refuseIfFiled(s, name,
+			return refuseMissingMilestone(s, name,
 				"there is no copy of it here for tickets to go in and out of",
-				", and then tickets can go in and out of it again"); err != nil {
-				return err
-			}
-			return fail(ExitNotFound, "no_such_milestone",
-				"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
-				name, name)
+				", and then tickets can go in and out of it again")
 		}
 		return err
-	}
-	if ms.Filed() {
-		// The third door into a filed milestone's file, after create and
-		// logbook. The write would not lose the mark, but it does not stay
-		// local either: recordMilestone below puts it on the ref, so every
-		// clone that fetches sees a milestone the filer took off the board
-		// being edited. Refuse it where the other two refuse it.
-		return refuseFiledOnDisk(s.Root, name,
-			"editing it here instead would push the change onto its ref for everyone who fetches")
-	}
-	var touched []string
-	for _, id := range ids {
-		changed := false
-		if add {
-			changed = ms.Add(id)
-		} else {
-			changed = ms.Remove(id)
-		}
-		if changed {
-			touched = append(touched, id)
-		}
-	}
-	if len(touched) > 0 {
-		if err := ms.Save(s.Root); err != nil {
-			return err
-		}
-		recordMilestone(ms)
 	}
 
 	w := cmd.OutOrStdout()
@@ -346,8 +483,12 @@ work and each filters to half of it.`,
 				if known {
 					value = fmt.Sprintf("%3d", ms.Colour)
 				}
-				fmt.Fprintf(w, "  %s %-24s %s  %3d ticket(s)\n",
-					swatch(ms.Colour, known, colours), ms.Name, value, len(ms.Members()))
+				goal := ""
+				if ms.Goal != "" {
+					goal = "  " + truncate(ms.Goal, 50)
+				}
+				fmt.Fprintf(w, "  %s %-24s %s  %3d ticket(s)%s\n",
+					swatch(ms.Colour, known, colours), ms.Name, value, len(ms.Members()), goal)
 			}
 			fmt.Fprintf(w, "\nFiles: %s\n", milestone.Dir(s.Root))
 			return nil
@@ -472,25 +613,42 @@ func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
 	return nil
 }
 
-// recordMilestone puts the milestone file on its own ref, the way every ticket
-// write is put on the ticket's. Queued, never pushed here: the write path must
-// not wait for a network, and an unsent milestone goes out with the next
-// command like everything else in the outbox.
-//
-// The bytes come from the milestone in hand, not from the file: every caller
-// has just saved it, so reading the file back would be a second read of what
-// it is already holding — and a read that failed would drop the ref write on
-// the floor without a word.
-//
-// Best effort, and deliberately: a board with no repository or no remote is a
-// supported way to use jaira, and refusing to group tickets because there is
-// nowhere to send the grouping would break the local case to serve the shared
-// one.
+// recordMilestone queues the file for its ref for the commands that write a
+// milestone themselves (logbook, restore, fetch); create, add and rm go through
+// milestone.Create and milestone.Edit, which record it. Best effort, see
+// warnIfRecordOnly.
 func recordMilestone(ms *milestone.Milestone) {
 	if err := refs.RecordMilestone(ms.Name, ms.Bytes()); err != nil {
-		warnRef(map[string]any{"milestone": ms.Name, "error": err.Error()},
-			"jaira: warning: milestone %q was written here but could not be queued for the remote: %v", ms.Name, err)
+		warnIfRecordOnly(&milestone.RecordError{Name: ms.Name, Err: err})
 	}
+}
+
+// warnIfRecordOnly turns the one failure the write path reports beside a
+// successful save — the ref could not be queued — into the warning it has
+// always been, and passes every other error on. Best effort, and deliberately:
+// a board with no repository or no remote is a supported way to use jaira, and
+// refusing to group tickets because there is nowhere to send the grouping would
+// break the local case to serve the shared one. The queue is never pushed
+// here: the write path must not wait for a network.
+func warnIfRecordOnly(err error) error {
+	var re *milestone.RecordError
+	if !errors.As(err, &re) {
+		return err
+	}
+	warnRef(map[string]any{"milestone": re.Name, "error": re.Err.Error()},
+		"jaira: warning: milestone %q was written here but could not be queued for the remote: %v", re.Name, re.Err)
+	return nil
+}
+
+// refuseMissingMilestone is the answer to a name no file carries: a filing
+// made in this tree gets the filed refusal, anything else gets "no such".
+func refuseMissingMilestone(s *ticket.Store, name, onRef, inLogbook string) error {
+	if err := refuseIfFiled(s, name, onRef, inLogbook); err != nil {
+		return err
+	}
+	return fail(ExitNotFound, "no_such_milestone",
+		"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
+		name, name)
 }
 
 // resolveAll turns handles, prefixes and full ids into full ids, refusing the
@@ -520,6 +678,14 @@ func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
 		"tickets": members,
 		"count":   len(members),
 		"file":    path,
+	}
+	if ms.Goal != "" {
+		out["goal"] = ms.Goal
+	}
+	if ms.Placed {
+		// Present only when placed, and then even when empty: [] is "top of a
+		// swimlane of its own", which a reader must tell from "not in the layer".
+		out["after"] = append([]string{}, ms.After...)
 	}
 	if !ms.CreatedAt.IsZero() {
 		out["created_at"] = ms.CreatedAt.UTC().Format(time.RFC3339)

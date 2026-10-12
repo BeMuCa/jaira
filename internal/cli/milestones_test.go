@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -598,5 +599,185 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 	}
 	if ms.Filed() {
 		t.Error("the restored milestone still says it is filed")
+	}
+}
+
+// exitCodeOf pulls the exit code a command asked for out of its error.
+func exitCodeOf(t *testing.T, err error) int {
+	t.Helper()
+	var ce *codedError
+	if !errors.As(err, &ce) {
+		t.Fatalf("error %v carries no exit code", err)
+	}
+	return ce.code
+}
+
+func TestCreateWritesGoalAndAfter(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "api", "--goal", "Version 0.4: out", "--after", ""); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "create", "ui", "--after", "api"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "create", "plain"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	api, _ := milestone.Load(dir, "api")
+	if api.Goal != "Version 0.4: out" || !api.Placed || len(api.After) != 0 {
+		t.Errorf("api: goal=%q placed=%v after=%v (--after \"\" is a swimlane top)", api.Goal, api.Placed, api.After)
+	}
+	ui, _ := milestone.Load(dir, "ui")
+	if !ui.Placed || len(ui.After) != 1 || ui.After[0] != "api" {
+		t.Errorf("ui: placed=%v after=%v", ui.Placed, ui.After)
+	}
+	if plain, _ := milestone.Load(dir, "plain"); plain.Placed || plain.Goal != "" {
+		t.Error("a milestone created without the flags must stay out of the layer")
+	}
+}
+
+func TestCreateRefusesAnUnknownPredecessorAndWritesNothing(t *testing.T) {
+	dir := emptyStore(t)
+	out, err := runCLI(t, dir, "milestone", "create", "ui", "--after", "ghost")
+	if err == nil {
+		t.Fatalf("accepted an unknown predecessor:\n%s", out)
+	}
+	if code := exitCodeOf(t, err); code != ExitNotFound {
+		t.Errorf("exit %d, want %d", code, ExitNotFound)
+	}
+	if !strings.Contains(err.Error(), `no milestone "ghost"`) {
+		t.Errorf("message: %v", err)
+	}
+	if _, err := os.Stat(milestone.Path(dir, "ui")); err == nil {
+		t.Error("the refused create left a file")
+	}
+}
+
+func TestSetChangesGoalAndPlacement(t *testing.T) {
+	dir := emptyStore(t)
+	for _, n := range []string{"a", "b"} {
+		if out, err := runCLI(t, dir, "milestone", "create", n); err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+	}
+	if out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", "second", "--after", "a"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	b, _ := milestone.Load(dir, "b")
+	if b.Goal != "second" || !b.Placed || len(b.After) != 1 || b.After[0] != "a" {
+		t.Errorf("b: goal=%q placed=%v after=%v", b.Goal, b.Placed, b.After)
+	}
+	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-layer"); err != nil {
+		t.Fatalf("set --no-layer: %v\n%s", err, out)
+	}
+	if b, _ = milestone.Load(dir, "b"); b.Placed || b.Goal != "second" {
+		t.Errorf("--no-layer must remove only the after line: placed=%v goal=%q", b.Placed, b.Goal)
+	}
+	if out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", ""); err != nil {
+		t.Fatalf("set --goal \"\": %v\n%s", err, out)
+	}
+	if b, _ = milestone.Load(dir, "b"); b.Goal != "" {
+		t.Error("an empty --goal must remove the goal")
+	}
+	out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", "")
+	if err != nil || !strings.Contains(out, "Nothing to do") {
+		t.Errorf("repeating it: %v\n%s", err, out)
+	}
+}
+
+func TestSetUsageErrors(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "a"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	for _, args := range [][]string{
+		{"milestone", "set", "a"},
+		{"milestone", "set", "a", "--after", "a", "--no-layer"},
+	} {
+		out, err := runCLI(t, dir, args...)
+		if err == nil || exitCodeOf(t, err) != ExitUsage {
+			t.Errorf("%v: err=%v\n%s", args, err, out)
+		}
+	}
+}
+
+func TestSetRefusesAnUnknownPredecessorAndACycle(t *testing.T) {
+	dir := emptyStore(t)
+	for _, args := range [][]string{
+		{"create", "a", "--after", ""}, {"create", "b", "--after", "a"}, {"create", "c", "--after", "b"},
+	} {
+		if out, err := runCLI(t, dir, append([]string{"milestone"}, args...)...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	_, err := runCLI(t, dir, "milestone", "set", "a", "--after", "ghost")
+	if err == nil || exitCodeOf(t, err) != ExitNotFound {
+		t.Errorf("unknown predecessor: %v", err)
+	}
+	_, err = runCLI(t, dir, "milestone", "set", "a", "--after", "c")
+	if err == nil || exitCodeOf(t, err) != ExitValidation {
+		t.Fatalf("cycle: %v", err)
+	}
+	if !strings.Contains(err.Error(), "a -> b -> c -> a") {
+		t.Errorf("the refusal must name the cycle: %v", err)
+	}
+	if a, _ := milestone.Load(dir, "a"); len(a.After) != 0 {
+		t.Errorf("a refused set still wrote %v", a.After)
+	}
+}
+
+func TestSetRefusesAFiledMilestoneAndAMissingOne(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "a"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(dir, "a")
+	ms.SetStatus(milestone.StatusFiled)
+	if err := ms.Save(dir); err != nil {
+		t.Fatal(err)
+	}
+	_, err := runCLI(t, dir, "milestone", "set", "a", "--goal", "x")
+	if err == nil || exitCodeOf(t, err) != ExitValidation || !strings.Contains(err.Error(), "jaira restore a.md") {
+		t.Errorf("filed: %v", err)
+	}
+	_, err = runCLI(t, dir, "milestone", "set", "nope", "--goal", "x")
+	if err == nil || exitCodeOf(t, err) != ExitNotFound {
+		t.Errorf("missing: %v", err)
+	}
+}
+
+func TestLsJSONCarriesGoalAndAfterOnlyWhenSet(t *testing.T) {
+	dir := emptyStore(t)
+	for _, args := range [][]string{
+		{"create", "top", "--goal", "g", "--after", ""}, {"create", "next", "--after", "top"}, {"create", "plain"},
+	} {
+		if out, err := runCLI(t, dir, append([]string{"milestone"}, args...)...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	j := jsonCLI(t, dir, "milestone", "ls")
+	rows := map[string]map[string]any{}
+	for _, r := range j["milestones"].([]any) {
+		row := r.(map[string]any)
+		rows[row["name"].(string)] = row
+	}
+	if rows["top"]["goal"] != "g" {
+		t.Errorf("top goal: %v", rows["top"])
+	}
+	if a, ok := rows["top"]["after"].([]any); !ok || len(a) != 0 {
+		t.Errorf("top after must be present and empty: %#v", rows["top"]["after"])
+	}
+	if a, _ := rows["next"]["after"].([]any); len(a) != 1 || a[0] != "top" {
+		t.Errorf("next after: %#v", rows["next"]["after"])
+	}
+	if _, ok := rows["next"]["goal"]; ok {
+		t.Error("goal must be omitted when empty")
+	}
+	if _, ok := rows["plain"]["after"]; ok {
+		t.Error("after must be absent for an unplaced milestone")
+	}
+	out, err := runCLI(t, dir, "milestone", "ls")
+	if err != nil || !strings.Contains(out, "g") {
+		t.Fatalf("ls: %v", err)
 	}
 }
