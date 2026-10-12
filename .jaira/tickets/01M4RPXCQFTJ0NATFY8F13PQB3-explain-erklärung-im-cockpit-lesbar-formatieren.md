@@ -1,7 +1,7 @@
 ---
 id: 01M4RPXCQFTJ0NATFY8F13PQB3
 title: Explain-Erklärung im Cockpit lesbar formatieren und Optionen direkt beantwortbar machen
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,15 +13,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:45:00Z
-updated-at: 2026-10-12T20:56:58Z
+updated-at: 2026-10-12T20:58:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36978
 claimed-at: 2026-10-12T20:33:02Z
 outcome-what: "Runde 7 (DoD 20): Optionszeilen im Explain-Pane tragen Ziffern als Hotkey (1, 2, ...; Own answer die nächste), die Engine zeichnet sie als '1:'; [give back] in error, [accept] in success wie die Band-Knöpfe aus 0EW5XK, (recommended) in suggestion, der Rest neutral; der Explain-Chat nummeriert mit 1) 2) und 'Empfehlung: <Nummer>'; alte a)-Noten werden weiter gelesen."
 outcome-why: "Abnahme Runde 5 (Alex): Farben wie die Knöpfe, (recommended) hervorgehoben, grosse Buchstaben; auf die Frage zu Hotkeys wählte Alex Ziffern."
 outcome-resolves: "DoD 20: register.tsx Explain-Pane, board.ts OPTION/RECOMMENDED nehmen 1-6, spawn.sh; Tests prüfen Ziffern, Labels und Farben; 94 pass"
-review-summary: "Runden 5-6 seit dem letzten Review (8c72239f..d2315240): Im Explanation-Pane ist die Auswahl kein Engine-Select mehr. Jede Option a)-f) ist ein eigener plain Button mit Hotkey = Buchstabe, dessen Kind ein Text wrap=wrap mit dem ganzen Optionstext ist (plus [give back]/[accept] und '(recommended)'); autoFocus auf der empfohlenen Option, sonst auf der ersten; 'Own answer…' ist die letzte Zeile mit Hotkey o. Beantwortet (decision: nach explain:) stehen dieselben Zeilen als Text plus 'Decided: …'. refreshBoard liest die Notes jetzt für jedes gezeigte Ticket, nicht nur explainable ones: 'Read explanation' bleibt, solange eine explain:-Note existiert, nur Explain hängt an der Runde. Release-Note: round = 1 ohne Feld; zwei Zeilen neu bzw. ersetzt. Runden 1-4 (Struktur im spawn.sh-Prompt, Verdikt-Knopf, Explain aus review.gaps, round/review-round im Kern, Marken, Neustart-Festigkeit) wurden in Review 3/4 schon angenommen."
-review-gaps: "1. Pfeiltasten unbelegt: DoD 7 und die Release-Note sagen 'move with the arrow keys'; die Engine-Doku zu Button nennt nur autoFocus und den Fokusring, keine Pfeiltasten - das Select hatte sie nachweislich, die Button-Zeilen nicht geprüft. Tab/Buchstabe gehen sicher. 2. Die Options-Buttons haben kein label: laut Engine-Doku ist label das, was eine Oberfläche zeichnet, die keine Kinder zeichnet (Desktop/Remote) - dort stünde eine leere Zeile. Fix: label={`${o.key}) ${o.text}`} zusätzlich. 3. 'Empfehlung: d' bei nur a-c: x.recommended ist gesetzt, passt zu keiner Option, dann hat keine Zeile autoFocus. 4. refreshBoard ruft jetzt jede Minute 'jaira show' für jedes gezeigte Ticket (aufgeklappt: alle wartenden), vorher nur für explainable - mehr Prozesse, bei wenigen Tickets egal. 5. Live nicht geprüft: Umbruch des Button-Kinds und Fokus nur im Test-Harness."
+review-summary: "none"
+review-gaps: "none - folded the marker text, written twice (label and coloured row), into one mark(); nothing orphaned"
 test-verdict: "pass: go build, vet, go test -count=1 ./... RC=0; claude plugin test 94 pass; validate passed; probe-repo cockpit reinstalled from this build; probe 2W0EFS carries an unanswered explain: note to pick on. Not exercised: how the terminal wraps a plain Button's Text child live - acceptance step"
 review-verdict: "Annehmen mit Vorbehalt. Der Diff erfüllt DoD 17-19 im Test-Harness (94 pass, go test move/ticket/cli ok, go vet ok). Unsicher bin ich bei den Pfeiltasten (Lücke 1): das ist genau die Bedienung, die Alex live prüfen will, und sie ist durch nichts im Diff belegt. Lücke 2 ist ein Einzeiler und lohnt vor dem Merge."
 review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> '94 pass, 0 fail'. 2. cd ../../../.. && go test ./core/move ./core/ticket ./internal/cli -> dreimal ok. 3. Im probe-repo (~/.claude/acceptance/jaira/feat-13pqb3/probe-repo) Claude Code starten, im Band bei einem Ticket mit explain:-Note 'Read explanation' drücken. 4. Sehen: jede Option a) b) c) als eigene Zeile, lange Optionen über mehrere Zeilen umbrochen, nichts mit '…' abgeschnitten; die empfohlene hat den Fokus. 5. Pfeil runter drücken: der Fokus muss auf die nächste Option springen (wenn nicht: Lücke 1 bestätigt; dann Tab probieren). 6. Taste 'b' drücken: Pane schliesst, auf dem Ticket steht 'decision: b) ...'. 7. Pane erneut öffnen: keine Knöpfe mehr, darunter 'Decided: b) ...'."
@@ -43,9 +43,9 @@ mode: conversational
 - [x] Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/13PQB3.md
 - [x] Neben den Optionen gibt es immer 'Eigene Antwort': ein Textfeld im Pane, der Text landet als 'decision:'-Note wie eine gewählte Option; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1024 answer pane; test 'an own answer is typed in a pane that takes the keyboard and gives the work back ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:484)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1023 answer pane; test 'an own answer is typed in a pane that takes the keyboard and gives the work back ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:484)
 - [x] Das Pane ist interaktiv: Optionen und 'Eigene Antwort' per Pfeiltasten/Enter wählbar, Fokus liegt beim Öffnen auf der Liste (wie das Give-back-Pane mit focus: true); Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1011 option rows, autoFocus on the recommended one, pane opened with focus: true; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:436, core/mod/builtin/jaira-cockpit/tests/board.test.ts:484
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1010 option rows, autoFocus on the recommended one, pane opened with focus: true; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:436, core/mod/builtin/jaira-cockpit/tests/board.test.ts:484
 - [x] Der volle Text des Review-Verdikts ist aus dem Band lesbar: ein Druck auf die (abgeschnittene) Verdikt-Zeile oder ein Knopf öffnet ihn ganz im Pane, auch ohne Explain-Note; Test
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:876 Verdict button; test 'the whole review verdict is read from the band ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:626)
 - [x] Explain erscheint, sobald das Review eine Lücke nennt (review.gaps nicht leer bzw. nicht 'none'), nicht nur wenn das Verdikt ein Wort aus RESERVATION trifft; Test mit dem WP1CHK-Verdikt
@@ -55,7 +55,7 @@ mode: conversational
 - [x] review.gaps zählen für Explain nur, wenn das Verdikt aus derselben Runde stammt wie die gaps; Test (Alex decision c, 19:21)
   proof: core/move/move.go:154 sendsBack; internal/cli/tickets.go:1002 review-round; core/mod/builtin/jaira-cockpit/hooks/board.ts:175 sameRound; tests TestMoveCountsARoundOnEverySendBack (core/move/move_test.go:177), TestReviewVerdictIsStampedWithItsRound (internal/cli/mode_test.go:216), core/mod/builtin/jaira-cockpit/tests/board.test.ts:594
 - [x] Im Auswahl-Pane sind lange Optionen ganz lesbar (umbrechen statt abschneiden); Test (Alex decision 19:22: 'при выборе текст обрублен')
-  proof: superseded by DoD 19: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1007 options are wrapped rows, not a one-line Select; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:436
+  proof: superseded by DoD 19: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1006 options are wrapped rows, not a one-line Select; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:436
 - [x] Eine im Pane getroffene decision erreicht jemanden: die Sitzung, die das Ticket trägt oder den Teamlead (wie Discuss per SendMessage), statt nur als Note zu liegen; Test
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:415 decide -> $.prompt.submit for a choice with no step; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:467
 - [x] Die Wahl im Explain-Pane handelt selbst, ohne zweiten Druck: eine Option, die zurückgibt (oder eine eigene Antwort, die etwas ändern will), führt Give back mit der Wahl als Grund aus; eine Option 'annehmen' führt Accept aus. Nur notieren reicht nicht; Test
@@ -63,15 +63,15 @@ mode: conversational
 - [x] hasReservation zählt ein Verdikt nur aus der aktuellen Runde (sameRound wie bei den gaps); Test mit altem Vorbehalt-Verdikt in Runde 2
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:183 explainable gates reservation and gaps on sameRound; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:333
 - [x] Nach einem Neustart von Claude Code bietet das Cockpit eine schon beantwortete Explain-Note nicht wieder zur Wahl an: ob beantwortet, wird aus den Ticket-Notes gelesen (decision: nach der explain:-Note, gleiche Runde), nicht aus Sitzungszustand; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:238 explanationNotes, core/mod/builtin/jaira-cockpit/hooks/register.tsx:1015 'Decided:'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:536, core/mod/builtin/jaira-cockpit/tests/board.test.ts:555
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:238 explanationNotes, core/mod/builtin/jaira-cockpit/hooks/register.tsx:1014 'Decided:'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:536, core/mod/builtin/jaira-cockpit/tests/board.test.ts:555
 - [x] Release-Note 13PQB3: round ist ohne Feld 1, nur review_round 0
   proof: core/release/notes/13PQB3.md:8 round reads 1 without its field, review_round 0
 - [x] 'Read explanation' bleibt im Band, sobald eine explain:-Note existiert, auch wenn das Verdikt aus einer früheren Runde ist (nur der Explain-Knopf hängt an der Runde); Test
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:249 every shown ticket's notes are read, Explain alone gated; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:582
 - [x] Im Antwort-Select des Explain-Panes zeigt jede Option ihren VOLLEN Text (nicht nur den Buchstaben), mehrzeilig umbrochen auf die Pane-Breite, offen wie zugeklappt ('Your choice') lesbar; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1007 each option a plain Button (hotkey = its letter) whose child is a wrapping Text with the whole option; test 'a shaped explanation ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:436) checks every row's full text, wrap and the focus
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1006 each option a plain Button (hotkey = its letter) whose child is a wrapping Text with the whole option; test 'a shaped explanation ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:436) checks every row's full text, wrap and the focus
 - [x] Explain-Pane, Options-Zeilen: Buchstaben gross (A) B) C), Hotkeys passend); die Markierung [give back] rot und [accept] gruen in denselben Theme-Farben wie die Band-Knoepfe aus 0EW5XK (error/success), '(recommended)' farbig hervorgehoben; Rest der Zeile neutral; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:997 digit hotkeys (Own answer the next), :983 [give back] error, [accept] success, (recommended) suggestion; core/role/builtin/jaira-dispatcher/scripts/spawn.sh:171 numbers 1) 2) and 'Empfehlung: <Nummer>'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:436 (digits, labels), core/mod/builtin/jaira-cockpit/tests/board.test.ts:504 (colours)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:996 digit hotkeys (Own answer the next), :983 [give back] error, [accept] success, (recommended) suggestion; core/role/builtin/jaira-dispatcher/scripts/spawn.sh:171 numbers 1) 2) and 'Empfehlung: <Nummer>'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:436 (digits, labels), core/mod/builtin/jaira-cockpit/tests/board.test.ts:504 (colours)
 
 ## Options
 
@@ -137,3 +137,4 @@ Empfehlung: a - beide Fälle sind selten und harmlos, Gap 2 folgt deiner eigenen
 - **2026-10-12 20:52 · Alexander Sacharov** — FRAGE an Alex (DoD 20, Weiche): Die Engine nimmt als Button-hotkey nur einen KLEINbuchstaben ('A' wird abgelehnt; Shift+A löst 'a' aus), und ein plain-Button MIT hotkey zeichnet davor selbst 'a:' in der Akzentfarbe (ButtonProps.plain: 'the hotkey ..., a colon, the label'). Grosses 'A)' und Buchstaben-Hotkey zusammen geht also nicht ohne doppelten Buchstaben. 1) (Empfohlen) 'A) <Text>' selbst gezeichnet, ohne hotkey - Auswahl mit Fokus (Pfeile/Tab) + Enter; sieht genau aus wie verlangt, Buchstabe drücken geht nicht mehr. 2) hotkey behalten: die Engine zeichnet 'a: <Text>' klein - Buchstabe (auch Shift+A) wählt direkt, aber kein grosses A. 3) beides: 'a: A) <Text>' - Buchstabe wählt, gross sichtbar, aber der Buchstabe steht doppelt. Farben unabhängig davon: [give back] error, [accept] success wie 0EW5XK, '(recommended)' in 'suggestion' (Hervorhebung, nicht warning - das ist Explains Gelb im Band).
 - **2026-10-12 20:53 · Alexander Sacharov** — decision: Alex 2026-10-12 zu FRAGE DoD 20: statt Buchstaben Ziffern 1 2 3 4 - Ziffern haben keine Gross/Klein-Frage, also Hotkey = Ziffer und die Ziffer ist das sichtbare Etikett (Engine zeichnet '1:'). Gilt fuer die Options-Zeilen; die Explain-Chat-Vorlage (spawn.sh) soll Optionen entsprechend nummerieren. Own answer bekommt die naechste Ziffer oder bleibt 'o' - Worker entscheidet und notiert.
 - **2026-10-12 20:53 · Alexander Sacharov** — DoD 20, selbst entschieden nach Alex' Antwort (Ziffern): 'Own answer…' bekommt die nächste Ziffer nach der letzten Option (bei drei Optionen die 4), damit alles mit Ziffern geht und kein Buchstabe übrig bleibt. Die Ziffer jeder Zeile ist ihre Position (1, 2, ...), auch bei einer alten Note mit a) b) c) - so wählt die Ziffer immer, was sie zeigt. Die Engine zeichnet sie als '1:' vor der Zeile; die Zeile selbst trägt keinen eigenen Buchstaben mehr. Die Note des Explain-Chats nummeriert mit 1) 2) 3) 4) und 'Empfehlung: <Nummer>'; alte Noten mit a)-f) werden weiter gelesen.
+- **2026-10-12 20:57 · Alexander Sacharov** — critique Runde 7: Ziffern sind Engine-Hotkeys wie in einer Survey-Zeile, Farben die Theme-Namen der Band-Knöpfe (0EW5XK: success/error); nichts zu sagen.

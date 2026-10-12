@@ -983,14 +983,13 @@ export const register: Register = (on, options) => {
     // An option whole: what it says, what picking it does in the band's
     // colours for that step, whether the review recommends it, highlighted;
     // the rest of the row neutral. Drawn as many rows as it needs.
+    const mark = (a: Action) => (a === 'accept' ? t.actionAccept : t.actionGiveBack)
     const said = (o: Option) =>
-      `${o.text}${o.action !== undefined ? ` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
+      `${o.text}${o.action !== undefined ? ` ${mark(o.action)}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
     const line = (o: Option) => (
       <Text wrap="wrap">
         {o.text}
-        {o.action !== undefined
-          ? <Text color={o.action === 'accept' ? 'success' : 'error'}>{` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}`}</Text>
-          : null}
+        {o.action !== undefined ? <Text color={o.action === 'accept' ? 'success' : 'error'}>{` ${mark(o.action)}`}</Text> : null}
         {o.key === x.recommended ? <Text color="suggestion">{` ${t.recommended}`}</Text> : null}
       </Text>
     )
