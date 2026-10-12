@@ -464,11 +464,22 @@ func UserLanesDir() string {
 	if v := os.Getenv("JAIRA_LANES_DIR"); v != "" {
 		return v
 	}
+	return inUserHome("lanes")
+}
+
+// inUserHome is name inside jaira's per-user directory: $JAIRA_HOME when it is
+// set, like the rest of the per-user state, so a test that relocates it never
+// reads the person's own lanes or default board; ~/.jaira otherwise. Empty
+// when there is no home directory at all.
+func inUserHome(name string) string {
+	if v := os.Getenv("JAIRA_HOME"); v != "" {
+		return filepath.Join(v, name)
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".jaira", "lanes")
+	return filepath.Join(home, ".jaira", name)
 }
 
 // ProjectLanesDir is where a project scopes itself down to the lanes it
