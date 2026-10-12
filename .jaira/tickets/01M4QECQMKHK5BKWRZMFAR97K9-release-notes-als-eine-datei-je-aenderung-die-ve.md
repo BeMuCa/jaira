@@ -1,7 +1,7 @@
 ---
 id: 01M4QECQMKHK5BKWRZMFAR97K9
 title: "Release-Notes als eine Datei je Aenderung, die Version setzt der Release-Build"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -31,17 +31,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T06:56:51Z
-updated-at: 2026-10-12T07:36:42Z
+updated-at: 2026-10-12T07:37:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37358
 claimed-at: 2026-10-12T07:23:55Z
 outcome-what: "wie zuvor; WriteIndex baut jetzt eine Gruppenliste je Tag, Kommentare zum alten Release-Cut nachgezogen"
 outcome-why: "critique 1"
 outcome-resolves: "critique-1-Befunde (a) und (b)"
-review-summary: |-
-  core/release/index.go:33-66 baut first-map + versions-slice und sucht dann je Version die Namen im Map zusammen (O(V*N), zwei Strukturen fuer eine Sache) - ls-tree liefert je Tag schon sortiert; eine Liste von Gruppen {version, names} beim Durchlauf aufbauen und rueckwaerts schreiben
-  core/release/release.go:80-87 (sinceEntries-Kommentar) und release_test.go TestEmbeddedNotesParseToAtLeastOneRealEntry/TestParseNotesKeepsAnEmptyLeadingSection beschreiben das leere '## Unreleased' nach jedem Release-Cut - diesen Cut gibt es nicht mehr; Kommentare auf den neuen Weg ziehen, Verhalten (leere Eintraege fallen weg) bleibt als Schutz
-  Stehen gelassen: eigener git()-Helfer statt core/gitref (dessen run ist an Ticket-Refs gebunden und unexportiert); WriteIndex im Paket release statt in gen/ (Note 'Plan-Begruendung': DoD-2-Test braucht Generator und Parser in einem Paket); testdata-Kopie des alten NOTES.md (DoD 4 verlangt den Vergleich mit dem alten Stand)
+review-summary: "Runde 2: keine Befunde. critique-1 (a) und (b) erledigt in dffae51. Stehen gelassen wie in Note 'critique 1' begruendet. Bewusst nicht behandelt: Vorab-Tags (v0.4.0-rc1) - das Repo hat keine, und die Ordnung nach version:refname waere dann die Frage des ersten solchen Tags."
+review-gaps: "Entfernt: Fehlerzweig beim Lesen einer eingebetteten Notiz, die fs.Glob gerade gefunden hat (kann nicht fehlschlagen); Duplikat-Pruefung assigned[name] im Index (WriteIndex schreibt jeden Namen genau einmal). Gelassen: changeLines neben parseNotes - drei Zeilen, ein gemeinsamer Helfer waere laenger; eigener git()-Helfer (gitref.run ist an Ticket-Refs gebunden); Test-Helfer run() wie git(t,...) in jedem anderen Testpaket; testdata/NOTES-before-AR97K9.md (DoD 4); Pruefung changes[name] im Index (eine nach dem Release geloeschte Notiz kann dort stehen). Kosten: Notes() laeuft einmal je jaira update, nichts zu heben."
 ---
 
 # Release-Notes als eine Datei je Aenderung, die Version setzt der Release-Build

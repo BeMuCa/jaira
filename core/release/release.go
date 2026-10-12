@@ -63,10 +63,7 @@ func composeNotes(md string, fsys fs.FS) []Entry {
 	files, _ := fs.Glob(fsys, path.Join(notesDir, "*.md"))
 	changes := map[string][]string{}
 	for _, f := range files {
-		b, err := fs.ReadFile(fsys, f)
-		if err != nil {
-			continue
-		}
+		b, _ := fs.ReadFile(fsys, f)
 		changes[path.Base(f)] = changeLines(string(b))
 	}
 
@@ -75,7 +72,7 @@ func composeNotes(md string, fsys fs.FS) []Entry {
 	index, _ := fs.ReadFile(fsys, path.Join(notesDir, indexFile))
 	for _, line := range strings.Split(string(index), "\n") {
 		version, name, ok := strings.Cut(strings.TrimSpace(line), " ")
-		if !ok || strings.HasPrefix(version, "#") || assigned[name] {
+		if !ok || strings.HasPrefix(version, "#") {
 			continue
 		}
 		c, exists := changes[name]
