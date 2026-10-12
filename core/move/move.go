@@ -89,6 +89,13 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		}
 	}
 
+	// Before the gate, not only in the write: the gate would otherwise judge
+	// the stale file and list its gaps as the ticket's — gaps --force then
+	// overrides, writing the stale file onto the ref after all.
+	if err := s.CheckFresh(t); err != nil {
+		return nil, err
+	}
+
 	claiming := req.ClaimOnPull && strings.TrimSpace(t.Assignee) == ""
 	gated := t
 	if claiming {
