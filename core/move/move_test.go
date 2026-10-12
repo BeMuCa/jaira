@@ -3,6 +3,7 @@ package move
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -205,7 +206,12 @@ func TestMoveCountsARoundOnEverySendBack(t *testing.T) {
 			t.Fatalf("after the move to %s the round is %d, want %d", st.to, n, st.want)
 		}
 	}
-	if _, raw := round(); raw != "3" {
-		t.Fatalf("round is written as %q, want a plain 3 a person can edit", raw)
+	got, _ := s.Load(tk.ID)
+	file, err := os.ReadFile(got.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(file), "\nround: 3\n") {
+		t.Fatalf("round is not written as a bare 3 a person can edit:\n%s", file)
 	}
 }

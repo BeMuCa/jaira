@@ -1,7 +1,7 @@
 ---
 id: 01M4RPXCQFTJ0NATFY8F13PQB3
 title: Explain-Erklärung im Cockpit lesbar formatieren und Optionen direkt beantwortbar machen
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,7 +13,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:45:00Z
-updated-at: 2026-10-12T19:39:40Z
+updated-at: 2026-10-12T19:41:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65657
 claimed-at: 2026-10-12T18:56:47Z
@@ -22,7 +22,7 @@ outcome-why: "Alex wählte im Pane 19:21/19:22 (Fehlalarme, abgeschnittener Text
 outcome-resolves: "DoD 10-14: board.ts NO_GAP/sameRound/MARK, move.go sendsBack, tickets.go review-round, register.tsx decide, spawn.sh; Tests: Go TestMoveCountsARoundOnEverySendBack, TestReviewVerdictIsStampedWithItsRound, Cockpit 90 pass"
 review-summary: "none"
 review-gaps: "none - removed: the default param of explainable() (one caller always passes it); unexported explainable, namesGap and hasReservation (only board.ts uses them; this ticket removed register.tsx's import of hasReservation); rewrapped an overlong comment. Left: gofmt realigned one 'human_exit' map key in internal/cli/tickets.go - pre-existing drift gofmt -w fixed along with the edit, one line"
-test-verdict: "pass: go build + go test -count=1 ./... RC=0; claude plugin test 88 pass; validate passed; DoD 9 test covers WP1CHK plus 'none', 'none — remark', 'keine (...)', empty gaps and optimize gaps without a verdict, and fails on the previous board.ts. Not exercised: the live pane in a Herdr cockpit session"
+test-verdict: "fail: round/review-round are written quoted (round: \"2\") where ready: is written bare via SetRaw"
 review-verdict: "Accept. DoD 1-9 are met by the diff: spawn.sh asks for the shape, explanationOf + the pane render it with one line per option, Select + Own answer write a decision: note, an unshaped note stays whole, Verdict shows the full text, Explain follows review.gaps once a verdict exists. claude plugin test: 88 pass, 0 fail (run by me). I checked by hand that jaira note keeps a multi-line note intact in show --json, which noteOf/explanationOf depend on. The two false-alarm cases in gaps (1)(2) are minor and can be left knowingly; the live pane is unverified and is the person's check."
 review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> '88 pass, 0 fail'. 2. Start Claude Code with HERDR_ENV=1 in this repo, with a ticket in signoff that has a review-verdict. In the cockpit band press 'Verdict' beside it -> a pane 'Review verdict of <id>' shows the whole verdict, not cut at '…'. 3. jaira set <id> review-gaps='one test is missing'; wait up to a minute -> the band shows 'Explain'. Then jaira set <id> review-gaps='none — nothing blocks'; wait -> 'Explain' is gone. 4. Put it back to a real gap, press Explain, let the chat write its note, then press 'Read explanation' -> pane 'Explanation of <id>': finding and 'Warum:' as separate paragraphs, one line per a)/b)/c), one marked '(recommended)', the cursor already on that option under 'Your choice'. 5. Arrow down to another option, Enter -> pane closes, toast '<id>: decision noted on the ticket', band shows 'decided'; jaira show <id> ends with a 'decision: b) ...' note. 6. Read explanation again, choose 'Own answer…', Enter -> pane 'Answer on <id>' with the cursor in the field; Enter on empty does nothing; type text and Enter -> a 'decision: <your text>' note."
 mode: conversational
@@ -103,3 +103,4 @@ Empfehlung: a - beide Fälle sind selten und harmlos, Gap 2 folgt deiner eigenen
 - **2026-10-12 19:29 · Alexander Sacharov** — Alex 2026-10-12 zu DoD 11 (FRAGE): Option 3 - neues Frontmatter-Feld review-round, das jaira beim move zählt und zusammen mit review-verdict/-gaps schreibt; das Cockpit vergleicht die Runden. Formatänderung im Kern: Release-Note-Zeile und handeditierbar lassen.
 - **2026-10-12 19:32 · Alexander Sacharov** — Teamlead 19:3x (für Alex): DoD 10 ok; Plan DoD 11 (round + review-round, fehlendes Feld = wie bisher) und DoD 14 (Marken [give back]/[accept]) freigegeben. DoD 11-14 in einem Durchgang, Worker committet selbst, kein Halt je Punkt; nur bei neuen Weichen fragen. mode=conversational bleibt gesetzt (nur eine Person leert es).
 - **2026-10-12 19:38 · Alexander Sacharov** — critique Runde 3: Form passt - round wird in move.Move gezählt, dem einzigen Ort eines Lane-Wechsels (CLI, TUI, Sign-off laufen dort durch, siehe Paketdoku core/move); review-round entsteht beim Schreiben des Verdikts, nicht im Lane-Prompt; decide() ruft die vorhandenen giveBack()/accept() und ändert sie nicht. Für optimize gelassen: Default-Parameter current=true in explainable() mit einem Aufrufer; eine überlange Kommentarzeile in board.ts. Bekannte Kante, gelassen: 'jaira set round=N review-verdict=...' in einem Aufruf stempelt die Runde von vor dem Aufruf.
+- **2026-10-12 19:41 · Alexander Sacharov** — testing Runde 3: Gates grün (build, vet, go test ./... RC=0, Cockpit 90 pass). Scratch-Board mit Branch-Binary: round zählt review->in-progress (2), blocked hin und zurück bleibt 2, review-verdict stempelt review-round=2, show/list --json tragen round/review_round. Befund: die Zahlen stehen als round: "2" mit Anführungszeichen in der Datei; ready: wird per Doc.SetRaw nackt geschrieben (schema.go:743). Fix: SetRaw für round und review-round. Von Hand 'round: 5' ohne Anführungszeichen liest jaira schon richtig.

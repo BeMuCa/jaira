@@ -123,7 +123,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 			t.Assignee = req.Actor
 		}
 		if sendsBack(env.Lanes, t.Status, req.To) {
-			if err := t.Doc().SetScalar(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
+			if err := t.Doc().SetRaw(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
 				return err
 			}
 		}

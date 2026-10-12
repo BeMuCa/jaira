@@ -999,7 +999,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 					// A verdict says which round it judged, so a reader can
 					// tell it from one a later round left standing.
 					if k == ticket.FieldReviewVerdict && strings.TrimSpace(v) != "" {
-						if err := t.Doc().SetScalar(ticket.FieldReviewRound, strconv.Itoa(ticket.CurrentRound(t))); err != nil {
+						if err := t.Doc().SetRaw(ticket.FieldReviewRound, strconv.Itoa(ticket.CurrentRound(t))); err != nil {
 							return err
 						}
 					}

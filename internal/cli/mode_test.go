@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -229,5 +230,12 @@ func TestReviewVerdictIsStampedWithItsRound(t *testing.T) {
 	}
 	if got := show(); got["round"] != float64(3) || got["review_round"] != float64(3) {
 		t.Fatalf("after the verdict round=%v review_round=%v, want 3 and 3", got["round"], got["review_round"])
+	}
+	file, err := os.ReadFile(jsonCLI(t, dir, "show", h)["path"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(file), "\nreview-round: 3\n") {
+		t.Fatalf("review-round is not written as a bare 3:\n%s", file)
 	}
 }
