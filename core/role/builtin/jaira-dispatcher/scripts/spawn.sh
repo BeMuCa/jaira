@@ -167,7 +167,7 @@ if [ "$lane" = dispatch ]; then
 elif [ "$lane" = worker ]; then
   prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
 elif [ "$lane" = explain ]; then
-  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
+  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung in wenigen Saetzen an das Ticket: jaira note $ticket \"explain: <Erklaerung>\" - das Cockpit zeigt sie dort unter [Read explanation]. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 elif [ "$lane" = discuss ]; then
   prompt="Ticket $ticket wartet auf eine Entscheidung von mir (jaira show $ticket --json: das Feld question und die letzten Notes). Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Antwort mit jaira note $ticket an das Ticket und leere die Frage mit jaira set $ticket question=. Aendere keinen Code und bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 else

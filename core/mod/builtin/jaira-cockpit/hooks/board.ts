@@ -123,22 +123,46 @@ export function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
+// A jaira older than the board it reads says so on a line of its own before
+// anything else it prints; that line is no part of an answer or an error.
+const OLDER_BUILD = /^jaira: this board was set up by an older version.*$\n?/gm
+
+export function withoutWarnings(text: string): string {
+  return text.replace(OLDER_BUILD, '').trim()
+}
+
 // What stops a move besides the person's own exit, read off the error
-// `jaira move --dry-run --json` prints when a gate refuses: the first other
+// `jaira move --dry-run --json` prints when a gate refuses: every other
 // refusal, or undefined when the human exit (needs_human) is the only one.
 // That one Accept stands for; every other gate holds, as for a move made by
 // hand in the board. An error that lists no refusals is a refusal of its own.
 export function otherRefusal(errorJson: string): string | undefined {
   type Refused = { error?: { message?: string; violations?: { code?: string; message?: string }[] } }
+  const text = withoutWarnings(errorJson)
   let error: Refused['error']
   try {
-    error = (JSON.parse(errorJson) as Refused).error
+    error = (JSON.parse(text.slice(Math.max(0, text.search(/^\{/m)))) as Refused).error
   } catch {
-    return oneLine(errorJson).slice(0, 200) || 'jaira refused the move'
+    return text || 'jaira refused the move'
   }
-  if (error?.violations === undefined) return oneLine(error?.message).slice(0, 200) || 'jaira refused the move'
-  const other = error.violations.find(v => v.code !== 'needs_human')
-  return other === undefined ? undefined : oneLine(other.message).slice(0, 200)
+  if (error?.violations === undefined) return error?.message || 'jaira refused the move'
+  const others = error.violations.filter(v => v.code !== 'needs_human')
+  return others.length === 0 ? undefined : others.map(v => v.message ?? v.code).join('\n')
+}
+
+// The explanation an Explain chat wrote onto the ticket, the newest one, read
+// off `jaira show --json`: a note under Progress that starts `explain:`, up to
+// the next note or section. '' when there is none yet.
+export function explanationOf(showJson: string): string {
+  const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
+  const lines = body.split('\n')
+  let at = -1
+  for (let i = 0; i < lines.length; i++) if (/^- \*\*[^*]+\*\* — explain:/.test(lines[i]!)) at = i
+  if (at < 0) return ''
+  const rest = lines.slice(at + 1)
+  const end = rest.findIndex(l => l.startsWith('- **') || l.startsWith('#'))
+  const first = lines[at]!.replace(/^- \*\*[^*]+\*\* — explain:\s*/, '')
+  return [first, ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
 }
 
 // The main working tree, from `git rev-parse --git-common-dir`: spawn.sh puts

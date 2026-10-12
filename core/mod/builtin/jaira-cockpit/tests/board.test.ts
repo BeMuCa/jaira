@@ -27,6 +27,13 @@ type World = {
   // What a dry run of a move refuses, by code: a person's lane always refuses
   // needs_human, the exit Accept stands for.
   refusals: { code: string; message: string }[]
+  // A jaira older than the board: it warns on a line before what it prints.
+  warns: boolean
+  // The ticket bodies `jaira show --json` gives, by id.
+  bodies: Record<string, string>
+  // The panes the plugin opened, and closed, by id and title.
+  opened: { id: string; title?: string }[]
+  closed: string[]
   clock: ReturnType<typeof mock.clock>
 }
 
@@ -44,6 +51,10 @@ const LANES = {
 const SIGNOFF = { handle: 'MG677R', title: 'cache key', status: 'signoff', next_lane: 'done', question: '', review: { verdict: 'approve mit Vorbehalt: der Schluessel ignoriert den Branch' } }
 const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', next_lane: 'review', question: 'Popup oder eigene Seite?', review: { verdict: '' } }
 const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', question: '', review: {} }
+
+const OLDER = "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date"
+const MESSAGE = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
@@ -66,6 +77,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     store: new Map(Object.entries(opts.store ?? {})),
     status: [],
     refusals: [{ code: 'needs_human', message: 'lane "signoff" is a human checkpoint' }],
+    warns: false,
+    bodies: {},
+    opened: [],
+    closed: [],
     clock: mock.clock(on, { now: 1_000_000 }),
   }
   const hasBoard = opts.board ?? true
@@ -85,7 +100,15 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('command.register', () => ({ value: undefined }) as never)
   on('tool.register', () => ({ value: undefined }) as never)
   on('ui.render', () => ({ type: 'Box', props: {}, children: [] }) as never)
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', ($, e) => {
+    const { id, title } = e as unknown as { id: string; title?: string }
+    w.opened.push({ id, ...(title !== undefined ? { title } : {}) })
+    return { value: { isPlaced: true } }
+  })
+  on('ui.close', ($, e) => {
+    w.closed.push((e as unknown as { id: string }).id)
+    return { value: undefined } as never
+  })
   on('ui.status', ($, e) => {
     w.status.push((e as { text?: string }).text)
     return { value: undefined } as never
@@ -116,9 +139,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
-      const error = JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
+      const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
     }
+    if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
@@ -198,7 +222,34 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
     expect(ran(w, 'jaira', 'move').filter(r => r.includes('--force'))).toEqual([])
-    expect(await ui.find({ type: 'Text', text: /criterion 1 is still open/ })).toBeDefined()
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Accept MG677R failed' }])
+    const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
+    expect(await pane.find({ type: 'Text', text: 'Accept MG677R failed' })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: 'the definition of done is not met: criterion 1 is still open' })).toBeDefined()
+    await pane.press({ key: 'message-close' })
+    expect(w.closed).toEqual(['cockpit-message'])
+  })
+
+  test('Accept reads the dry run past the warning an older jaira prints before it', async ($, on) => {
+    const w = world(on)
+    w.warns = true
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
+    expect(w.opened).toEqual([])
+  })
+
+  test('an error is shown whole in a pane of its own, never cut to a line', async ($, on) => {
+    const w = world(on)
+    const long = `the definition of done is not met: ${'criterion still open, '.repeat(20)}and one more`
+    w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: long }, { code: 'needs_commits', message: 'no commit names MG677R' }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-MG677R' })
+    const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
+    expect(await pane.find({ type: 'Text', text: `${long}\nno commit names MG677R` })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /criterion still open/ })).toBeUndefined()
   })
 
   test('a plain yes gets no Explain, however long the sentence', async ($, on) => {
@@ -266,7 +317,38 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'explain-MG677R' })
     expect(ran(w, SPAWN)).toEqual([])
-    expect(await ui.find({ type: 'Text', text: /needs Herdr/ })).toBeDefined()
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explain MG677R failed' }])
+    const pane = await $.ui.mount(MESSAGE('Explain MG677R failed'))
+    expect(await pane.find({ type: 'Text', text: /needs Herdr/ })).toBeDefined()
+  })
+
+  test('what the Explain chat wrote onto the ticket is read in the cockpit', async ($, on) => {
+    const w = world(on)
+    w.warns = true
+    w.bodies.MG677R = [
+      '## Progress',
+      '',
+      '- **2026-10-12 14:00 · Alex** — explain: an old one',
+      '- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.',
+      'Two branches share one cache entry.',
+      '- **2026-10-12 15:05 · Alex** — something else',
+    ].join('\n')
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    // No explanation on K7P2QX: no button there.
+    expect(await ui.find({ key: 'read-K7P2QX' })).toBeUndefined()
+    await ui.press({ key: 'read-MG677R' })
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explanation of MG677R' }])
+    const pane = await $.ui.mount(MESSAGE('Explanation of MG677R'))
+    expect(await pane.find({ type: 'Text', text: 'The key leaves out the branch.\nTwo branches share one cache entry.' })).toBeDefined()
+  })
+
+  test('a ticket nobody explained yet offers no explanation to read', async ($, on) => {
+    world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'explain-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'read-MG677R' })).toBeUndefined()
   })
 })
 
@@ -606,6 +688,42 @@ describe('conversation threads', () => {
     expect(w.modelCalls).toBe(1)
     // No board: no thread stands on a ticket.
     expect((await $.command.run(typed('threads'))).text).toContain('~ #1 Logo')
+  })
+})
+
+describe('a session that carries a ticket', () => {
+  const START = { text: '/jaira-worker MG677R --parent jaira-4c', origin: { kind: 'composer' }, wait: false } as const
+
+  test('passes every agent message on as it was written', async ($, on) => {
+    world(on, { herdr: true })
+    await startSession($)
+    await $.prompt.submit(START)
+    const order = 'Ticket MG677R: review -> signoff, review-verdict="approve". Commit the fix with the ticket.'
+    expect((await $.session.receive({ origin: { kind: 'peer' }, text: order })).text).toBe(order)
+    expect((await $.prompt.submit({ text: order, origin: { kind: 'peer' }, wait: false })).text).toBe(order)
+  })
+
+  test('draws no band and no status line, files no thread and guards no cache, and still writes its record', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await $.prompt.submit(START)
+    expect(w.status.at(-1)).toBeUndefined()
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ text: /Waiting for you/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Button' })).toBeUndefined()
+    w.usage.tokens = 200_000
+    await answer($, 'done')
+    const before = w.ran.length
+    // An hour and more later a person types into the worker's tab: no guard.
+    await w.clock.advance(2 * 3_600_000)
+    await $.prompt.submit({ text: 'how far are you?', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'nearly')
+    await w.clock.settle()
+    expect(w.asked).toEqual([])
+    expect(w.modelCalls).toBe(0)
+    expect(w.status.at(-1)).toBeUndefined()
+    expect(w.ran.slice(before).filter(r => r[0] === 'jaira')).toEqual([])
+    expect(w.store.get('session:abcdef12')).toMatchObject({ ticket: 'MG677R', role: 'worker', pane: 'w1:p1', tokens: 200_000 })
   })
 })
 

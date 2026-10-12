@@ -693,7 +693,9 @@ changes for anybody.
   back** (asks what is missing, notes it, moves it to in-progress and hands it
   to the worker that carried it while that is still cheaper, else to a new
   one). A verdict with a reservation gets **Explain**, an open question
-  **Discuss**: each opens a Herdr tab of its own.
+  **Discuss**: each opens a Herdr tab of its own. The Explain chat writes its
+  explanation onto the ticket, and the band offers it as **Read explanation**.
+  When a button fails, the error opens whole in a pane of its own.
 - The band also shows the context size and how long the prompt cache stays
   warm, and a prompt of yours onto a cold cache with a large context is held
   with a choice: send, compact first, start over, cancel.
@@ -707,6 +709,10 @@ changes for anybody.
 - `/cockpit ticket <id>` opens a pane with a ticket's reports and what its
   agents used (`~/.jaira/metrics.csv`, one row per session, in the columns of
   `scripts/lane-eval/metrics.sh`).
+- In a session that carries a ticket — the worker, lane or dispatcher a
+  `spawn.sh` tab starts — the mod only writes the session's record and
+  metrics: messages to it arrive as written, and it has no band, status line,
+  threads or cache guard.
 
 Every text is in English, whatever Claude Code's `language` setting. In a project without a board, or without `jaira` on `PATH`, the
 board parts stay out of sight and the rest works as usual — so the mod is

@@ -25,6 +25,10 @@ declare module 'claude-code' {
       minute: number
       // The last thing a button did, shown under the band until the next.
       notice: string | null
+      // What the message pane shows: an error, or an explanation, whole.
+      message: { title: string; text: string } | null
+      // The explanation an Explain chat wrote onto each ticket the band shows.
+      explained: Record<string, string>
     }
   }
 }

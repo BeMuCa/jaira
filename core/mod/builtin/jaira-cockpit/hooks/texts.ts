@@ -13,7 +13,10 @@ export const t = {
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
-  failed: (what: string, why: string) => `${what} failed: ${why}`,
+  failed: (what: string) => `${what} failed`,
+  close: 'Close',
+  readExplanation: 'Read explanation',
+  explanationOf: (id: string) => `Explanation of ${id}`,
   needsHerdr: 'A chat of its own needs Herdr (HERDR_ENV=1).',
   opened: (id: string) => `${id}: opened in a Herdr tab of its own`,
   context: (k: number) => `context ${k}k`,

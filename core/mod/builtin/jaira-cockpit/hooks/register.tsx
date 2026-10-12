@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, mainRepoOf, otherRefusal, snapshotOf, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { explanationOf, hasReservation, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -23,9 +23,16 @@ import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } fr
 // The parts: the noise filter (agent reports as one line, /cockpit report);
 // the band above the prompt (tickets waiting for a person with Accept / Give
 // back / Explain / Discuss, context and cache, conversation threads); the
-// cache guard; the status line; the pane per ticket; metrics per session.
-// Whatever needs a board — a .jaira/ and jaira on PATH — stays out of sight
-// without one; the rest works in any project.
+// cache guard; the status line; the pane per ticket; the message pane for an
+// error or an explanation; metrics per session. Whatever needs a board — a
+// .jaira/ and jaira on PATH — stays out of sight without one; the rest works
+// in any project.
+//
+// A session that carries a ticket — a worker, a lane, the dispatcher, started
+// by the line spawn.sh types — is an agent's, not a person's: there the mod
+// writes the session record Give back reads and its metrics, and nothing
+// else. An instruction to it arrives as it was written, and it has no band,
+// no status line, no threads and no cache guard.
 
 const boardAtom = atom({ plugin: 'jaira-cockpit', key: 'board' } as const, null)
 const cacheAtom = atom({ plugin: 'jaira-cockpit', key: 'cache' } as const, { tokens: 0, lastAnswerAt: null, ttl: 0 })
@@ -34,8 +41,11 @@ const givingAtom = atom({ plugin: 'jaira-cockpit', key: 'giving' } as const, nul
 const paneAtom = atom({ plugin: 'jaira-cockpit', key: 'paneTicket' } as const, null)
 const minuteAtom = atom({ plugin: 'jaira-cockpit', key: 'minute' } as const, 0)
 const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, null)
+const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, null)
+const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 
 const PANE = 'cockpit-ticket'
+const MESSAGE = 'cockpit-message'
 const BAND_TICKETS = 3
 
 // ── what this module keeps between events (a reload starts it over) ──────
@@ -174,6 +184,7 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 }
 
 async function refreshBoard($: EngineInterface): Promise<void> {
+  if (carrying !== undefined) return
   if (board === undefined) board = await findBoard($)
   if (board === null) {
     await update($, boardAtom, () => null)
@@ -194,6 +205,15 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   } catch {}
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents)
   await update($, boardAtom, () => view)
+  // What an Explain chat wrote back onto the tickets the band shows.
+  const explained: Record<string, string> = {}
+  for (const w of view.waiting.slice(0, BAND_TICKETS)) {
+    if (!hasReservation(w.verdict)) continue
+    const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
+    const text = shown?.exitCode === 0 ? explanationOf(shown.stdout) : ''
+    if (text !== '') explained[w.id] = text
+  }
+  await update($, explainedAtom, () => explained)
 }
 
 // Where a ticket's work lives: running jaira anywhere else answers "on its
@@ -208,13 +228,27 @@ type Done = { ok: true } | { ok: false; why: string }
 async function jaira($: EngineInterface, cwd: string, args: string[]): Promise<Done> {
   const r = await run($, ['jaira', ...args], cwd, 30_000)
   if (r === undefined) return { ok: false, why: 'jaira did not run' }
-  if (r.exitCode !== 0) return { ok: false, why: (r.stderr || r.stdout).replace(/\s+/g, ' ').trim().slice(0, 200) }
+  if (r.exitCode !== 0) return { ok: false, why: withoutWarnings(r.stderr || r.stdout) || `jaira exited ${r.exitCode}` }
   return { ok: true }
 }
 
 async function say($: EngineInterface, text: string): Promise<void> {
   await update($, noticeAtom, () => text)
   $.ui.toast(text)
+}
+
+// Text a person reads whole, an error or an explanation: a pane of its own
+// with a heading, the text wrapped, and Close. Where no pane fits, a toast
+// carries it.
+async function show($: EngineInterface, title: string, text: string): Promise<void> {
+  await update($, messageAtom, () => ({ title, text }))
+  const opened = await $.ui.open({ id: MESSAGE, title, focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) $.ui.toast(`${title}: ${text}`)
+}
+
+async function fail($: EngineInterface, what: string, why: string): Promise<void> {
+  await update($, noticeAtom, () => null)
+  await show($, t.failed(what), why)
 }
 
 // The person pressed Accept: that press is the human exit the lane asks for,
@@ -228,12 +262,10 @@ async function accept($: EngineInterface, w: Waiting): Promise<void> {
   const dir = await ticketDir($, board, w.id)
   const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
-  if (refused !== undefined) {
-    await say($, t.failed(`${t.accept} ${w.id}`, refused))
-    return
-  }
+  if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
   const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
-  await say($, done.ok ? t.accepted(w.id, w.acceptTo) : t.failed(`${t.accept} ${w.id}`, done.why))
+  if (done.ok) await say($, t.accepted(w.id, w.acceptTo))
+  else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
 }
 
@@ -260,13 +292,12 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void> {
   const bin = await herdr($)
   const script = await spawnScript($)
-  if (bin === undefined || script === undefined || !board) {
-    await say($, t.needsHerdr)
-    return
-  }
+  const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
+  if (bin === undefined || script === undefined || !board) return fail($, what, t.needsHerdr)
   const dir = await ticketDir($, board, id)
   const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, kind, dir], dir, 120_000)
-  await say($, r?.exitCode === 0 ? t.opened(id) : t.failed(kind, (r?.stderr ?? '').trim().slice(-200)))
+  if (r?.exitCode === 0) await say($, t.opened(id))
+  else await fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
 }
 
 // Every session with a Herdr pane writes where it stands, so the session a
@@ -317,10 +348,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   const dir = await ticketDir($, board, id)
   const noted = await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
   const moved = noted.ok ? await jaira($, dir, ['move', id, '--to', 'in-progress', '--force']) : noted
-  if (!moved.ok) {
-    await say($, t.failed(`${t.giveBack} ${id}`, moved.why))
-    return
-  }
+  if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
@@ -360,6 +388,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
 // ── context, cache, status line ──────────────────────────────────────────
 
 async function refreshCache($: EngineInterface): Promise<void> {
+  if (carrying !== undefined) return
   let usage
   try {
     usage = await $.session.usage()
@@ -513,6 +542,7 @@ export const register: Register = (on, options) => {
   })
 
   on('session.receive', async ($, e, next) => {
+    if (carrying !== undefined) return next(e)
     if (!isAgentReport(e)) {
       untouched.add(e.text)
       return next(e)
@@ -523,6 +553,7 @@ export const register: Register = (on, options) => {
 
   on('prompt.submit', async ($, e, next) => {
     if (untouched.delete(e.text)) return next(e)
+    if (carrying !== undefined) return next(e)
     if (AGENT_ORIGINS.has(e.origin.kind)) {
       // A background task of this session always reports in its own block.
       if (e.origin.kind === 'task-notification' && !NOTIFICATION.test(e.text)) return next(e)
@@ -534,7 +565,13 @@ export const register: Register = (on, options) => {
       return next({ ...e, text })
     }
     const start = startOf(e.text)
-    if (start !== undefined && carrying === undefined) carrying = start
+    if (start !== undefined) {
+      // From here on the session is an agent's: what session.start drew goes.
+      carrying = start
+      $.ui.status(undefined)
+      await update($, boardAtom, () => null)
+      return next(e)
+    }
     const held = await guarded($, e.text, e.origin.kind, threshold, usdPerMTok)
     if (held !== undefined) return held
     personSaid = isPersonsPrompt(e.origin.kind, e.text) ? e.text : undefined
@@ -549,8 +586,9 @@ export const register: Register = (on, options) => {
     if (result.usage !== undefined) totals = add(totals, result.usage)
     lastAnswerAt = await $.clock.now()
     turn++
-    await refreshCache($)
     await writeRecord($)
+    if (carrying !== undefined) return result
+    await refreshCache($)
     await refreshBoard($)
     const human = personSaid
     personSaid = undefined
@@ -587,12 +625,13 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey) return next(e)
+    if (e.props.hasSurvey || carrying !== undefined) return next(e)
     const view = await read($, boardAtom)
     const cache = await read($, cacheAtom)
     const counts = await read($, threadsAtom)
     const giving = await read($, givingAtom)
     const notice = await read($, noticeAtom)
+    const explained = await read($, explainedAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
@@ -628,6 +667,9 @@ export const register: Register = (on, options) => {
               {hasReservation(w.verdict)
                 ? <Button key={`explain-${w.id}`} label={t.explain} onPress={() => void openChat($, w.id, 'explain')} />
                 : null}
+              {explained[w.id] !== undefined
+                ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void show($, t.explanationOf(w.id), explained[w.id]!)} />
+                : null}
               {w.question !== ''
                 ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void openChat($, w.id, 'discuss')} />
                 : null}
@@ -652,6 +694,18 @@ export const register: Register = (on, options) => {
         {waiting.length > BAND_TICKETS ? <Text dimColor>{t.more(waiting.length - BAND_TICKETS)}</Text> : null}
         {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
         {hasCache || hasThreads ? <Text dimColor wrap="truncate-end">{cacheLine}</Text> : null}
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
+    const message = await read($, messageAtom)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        <Text bold>{message?.title ?? ''}</Text>
+        <Text wrap="wrap">{message?.text ?? ''}</Text>
+        <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />
       </Box>
     )
   })
