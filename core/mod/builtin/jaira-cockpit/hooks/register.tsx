@@ -969,7 +969,6 @@ export const register: Register = (on, options) => {
     if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     const { id } = explaining
     const x = explanationOf(explaining.text)
-    const close = <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
     return (
       <Box flexDirection="column">
         <Text bold>{t.explanationOf(id)}</Text>
@@ -997,7 +996,7 @@ export const register: Register = (on, options) => {
             </Box>
           )
           : null}
-        {close}
+        <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
       </Box>
     )
   })
