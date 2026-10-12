@@ -1,7 +1,7 @@
 ---
 id: 01M4RRVYXYBK44RANX2D0EW5XK
 title: "Cockpit-Knöpfe farbig: Accept grün, Give back rot, Explain gelb"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,20 +17,26 @@ definition-of-done: "Accept ist grün, Give back rot, Explain gelb im Band, übe
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 9e348d4145e37efb8dda6ad4fc2f3e3af3a70b79
+  - eff028e0745caa86d73294c8d5f7245c23541e32
+  - cbb8a77552b6b87f77afbedab0fa1640cf1fd1c9
+  - d285852e9550ebbbb8248f892d967298a617f72e
+  - 62288fb36300c4202d767fc2df5ca42f3a34f5a1
+  - 530dbe19ef8f4cb9f194e47619db8bda2fd112d3
 created-at: 2026-10-12T19:19:11Z
-updated-at: 2026-10-12T20:21:51Z
+updated-at: 2026-10-12T20:46:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81961
 claimed-at: 2026-10-12T20:14:51Z
 outcome-what: "Accept, Give back und Explain im Cockpit-Band zeichnen ihre Beschriftung als <Text> in den Theme-Farben success, error, warning; Read explanation und Verdict bleiben neutral"
 outcome-why: "Die Knöpfe sahen gleich aus; man musste lesen, um den richtigen zu treffen"
 outcome-resolves: "Accept grün, Give back rot, Explain gelb über Theme-Farben; Fokus bleibt durch die Inversion der Engine erkennbar; Release-Note 0EW5XK.md"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:360 the unlock timer is the module's ($.clock.after), the lock is the host's (busyAtom in $.state, kept across a hot reload): a reload while an action runs leaves its row dim and dead for the rest of the session. Clear busyAtom in the session.start hook (:689), which a reload fires again"
-review-gaps: "1) Fokus-Inversion eines plain Knopfs mit farbigem Text-Kind ist nur aus der Engine-Doku belegt (ButtonProps.plain, index.d.ts:1105-1111: 'the focus and the pointer still invert it'), live gesehen hat es niemand - die Test-API zeigt keinen Fokus (DoD 2). 2) Abstand zwischen den plain Knöpfen und den Engine-Knöpfen Read explanation/Verdict nur live prüfbar. 3) outcome-what/outcome-resolves stammen aus Runde 1 und erwähnen die farbigen Klammern/plain (DoD 4) nicht; der Diff trägt sie, das Outcome ist nur unvollständig. Kein Defekt im Diff gefunden."
-test-verdict: "pass: go build RC=0, go test -race -count=1 ./... RC=0, claude plugin test 90/90 RC=0, validate passed; DoD 1-4 im Baum; DoD 4 per Mutation geprüft (ohne Klammern wird der Test rot); live nicht gesehen: Fokus-Inversion und Abstand zwischen plain und Engine-Knöpfen — Handprobe in signoff"
-review-verdict: "Der Diff erfüllt alle vier DoD-Punkte, claude plugin test 90/90 grün; kein Defekt gefunden. Unsicher bleibt nur das gezeichnete Bild (Fokus-Inversion, Abstände) - das deckt kein Test, nur der Blick ins Terminal."
-review-check: "1. Im Worktree jaira-0ew5xk Claude Code im Terminal starten, so dass das Cockpit-Band ein wartendes Ticket mit Accept zeigt. 2. Ansehen: '[ Accept ]' komplett grün (Klammern inklusive), '[ Give back ]' komplett rot, '[ Explain ]' komplett gelb; Read explanation und Verdict in normaler Farbe. 3. ctrl+x tab ins Band, mit Tab über Accept, Give back, Explain gehen: der fokussierte Knopf muss invertiert (hinterlegt) erscheinen, sonst ist DoD 2 nicht erfüllt. 4. Abstände zwischen allen Knöpfen der Zeile sollen gleich aussehen. 5. Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 90 pass."
+review-summary: "Im Cockpit-Band (core/mod/builtin/jaira-cockpit/hooks/register.tsx) tragen Accept, Give back und Explain ihre Beschriftung als <Text> in den Theme-Farben success/error/warning; Accept hat kein variant=primary mehr. Im Terminal sind die Knöpfe plain und zeichnen '[ Wort ]' samt Klammern im farbigen Text; Desktop/Mobile behalten den nativen Knopf. Neu in dieser Runde (62288fb3, 530dbe19): ein Druck auf einen der drei Knöpfe läuft durch once(): ein Token pro Ticket im State (busyAtom) sperrt die drei Knöpfe dieser Zeile, ihr Text wird dimColor, weitere Drücke tun nichts. Frei wird die Zeile, wenn accept/askWhatIsMissing/openChat zurückkehrt, spätestens nach 20 s; ein spätes Ende hebt nur seine eigene Sperre auf. session.start leert busyAtom, damit ein Reload keine Zeile dauerhaft sperrt. Release-Note hat eine zweite Zeile."
+review-gaps: "1) Sichtbar inaktiv nur über dimColor am Kind-<Text>; auf Desktop/Mobile zeichnet die Engine den nativen Knopf, ob der das Text-dimColor zeigt, ist ungeprüft - Band ist aber ein Terminal-Band, gering. 2) Give back gibt die Sperre sofort nach ui.open frei (Pane offen = Rückmeldung) - passt zur Entscheidung 20:15, nur wird man das Dimmen dort kaum sehen. 3) Gezeichnetes Bild (Fokus-Inversion auf plain-Knopf, Abstände, wie stark dim auf farbigem Text wirkt) deckt kein Test. Kein Defekt gefunden: update() wiederholt den Updater bei Versionskonflikt, took nimmt den Wert des geschriebenen Laufs - korrekt (index.d.ts:14583). Untracked .jaira/milestones/ im worktree_diff gehört nicht zu diesem Ticket."
+test-verdict: "pass: go build RC=0, go test -race -count=1 ./... RC=0, claude plugin test 93/93 RC=0 (3x stabil), validate passed; DoD 5 per Mutation geprüft (ohne took-Sperre, ohne Token-Vergleich, ohne 20-s-Timer, ohne Reset in session.start wird je ein Test rot); live nicht gesehen: wie gedimmt die Zeile im Terminal aussieht, Fokus-Inversion, Abstände"
+review-verdict: "Diff 9e348d41..530dbe19 erfüllt DoD 1-5; claude plugin test 93/93 grün. Kein Defekt gefunden. Unsicher bleibt nur das Live-Bild: Fokus und Abstände der farbigen plain-Knöpfe und ob das Dimmen nach einem Klick deutlich genug zu sehen ist."
+review-check: "1. Im Worktree /home/alex/projects/.worktrees/jaira-0ew5xk Claude Code im Terminal starten, so dass das Cockpit-Band ein wartendes Ticket mit Accept zeigt. 2. Ansehen: '[ Accept ]' ganz grün (Klammern inklusive), '[ Give back ]' ganz rot, '[ Explain ]' ganz gelb; Read explanation und Verdict normal. 3. ctrl+x tab ins Band, mit Tab über die drei Knöpfe: der fokussierte erscheint invertiert. 4. Auf Explain klicken: alle drei Knöpfe dieser Zeile werden sofort blass; ein zweiter Klick startet keinen zweiten Tab; die Zeile eines anderen Tickets bleibt kräftig. 5. Nach dem Start des Tabs (spätestens 20 s) sind die Knöpfe wieder kräftig. 6. Automatisch: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 93 pass."
 ---
 
 # Cockpit-Knöpfe farbig: Accept grün, Give back rot, Explain gelb
@@ -46,7 +52,7 @@ review-check: "1. Im Worktree jaira-0ew5xk Claude Code im Terminal starten, so d
 - [x] Die eckigen Klammern '[ ' und ' ]' der Knöpfe tragen dieselbe Farbe wie die Beschriftung (heute nur das Wort farbig, die Klammern neutral - wirkt abgeschnitten); Test
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:857-858,890-896 (plain + '[ label ]' in the coloured Text on the terminal); test 'waiting for you > on the terminal the coloured buttons draw their brackets in the label's colour; elsewhere the native button stays' (tests/board.test.ts:259)
 - [x] Nach einem Klick auf Accept, Give back oder Explain sind die Knoepfe im Band gesperrt (nicht klickbar, sichtbar inaktiv), bis die Aktion Wirkung zeigt oder eine Zeitgrenze ablaeuft - kein Doppelklick, und man sieht, dass etwas passiert; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:344-366 once() + 890-896 (dimColor from busy) + (a reload frees the lock); tests 'waiting for you > a pressed row locks, drawn dim, until its action is done; a second press does nothing' (tests/board.test.ts:290), '... free again after 20 seconds, and the late end frees only its own lock' (:310), 'a reload frees a row whose press it cut off' (:331)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:344-366 once() + 890-896 (dimColor from busy) + 693 (a reload frees the lock); tests 'waiting for you > a pressed row locks, drawn dim, until its action is done; a second press does nothing' (tests/board.test.ts:290), '... free again after 20 seconds, and the late end frees only its own lock' (:310), 'a reload frees a row whose press it cut off' (:331)
 
 ## Options
 
@@ -82,3 +88,7 @@ Empfehlung: a - zwei Minuten im Terminal klären die einzige offene Frage; revie
 - **2026-10-12 20:14 · Alexander Sacharov** — Alex 2026-10-12 (signoff): zurueckgegeben fuer DoD 5 - nach dem Klick kommt die Rueckmeldung nicht sofort, man sieht nicht, dass etwas passiert ist, und kann nochmal klicken. Der Knopf soll fuer eine Weile inaktiv werden. Vom Teamlead in dieses Ticket gefaltet (dieselben Knoepfe, dieselbe Datei register.tsx). Achtung: GPFA7B arbeitet parallel an accept()/afterAccept in derselben Datei.
 - **2026-10-12 20:15 · Alexander Sacharov** — DoD 5, entschieden ohne Rückfrage: (1) gesperrt werden die drei Aktionsknöpfe (Accept, Give back, Explain) der Zeile des geklickten Tickets, nicht das ganze Band - andere Tickets bleiben bedienbar. (2) 'Wirkung zeigt' = die Aktion (accept/askWhatIsMissing/openChat) ist fertig: Accept hat das Board neu gelesen, Give back den Pane geöffnet, Explain den Tab gestartet oder einen Fehler gezeigt. (3) Zeitgrenze 20 s, danach wieder frei, auch wenn die Aktion noch läuft (spawn.sh darf bis 120 s). (4) Sichtbar inaktiv: dimColor auf dem farbigen Text; Button hat kein disabled, darum schluckt ein Wrapper den Klick. Die Sperre ist ein Token pro Ticket im State (busy), damit das späte Ende einer alten Aktion eine neue Sperre nicht aufhebt. accept()/afterAccept bleiben unberührt (GPFA7B).
 - **2026-10-12 20:20 · Alexander Sacharov** — critique (DoD 5): Sperre im $.state überlebt einen Hot-Reload, der Timer von $.clock.after und das finally der laufenden Aktion nicht -> Zeile bleibt für die Session gesperrt. Fix: in session.start busyAtom auf {} setzen (reload feuert session.start erneut, laut plugin-authoring). Test dazu.
+- **2026-10-12 20:22 · Alexander Sacharov** — critique Runde 2 (DoD 5): der Reload-Befund ist mit 530dbe19 erledigt, Test 'a reload frees a row whose press it cut off' (Mutation geprüft). Nichts weiter.
+- **2026-10-12 20:30 · Alexander Sacharov** — review (fresh, Runde 3, DoD 5): 62288fb3+530dbe19 gelesen, once()-Sperre korrekt auch bei update()-Retry, Reload-Reset in session.start. 93/93 grün. Offen nur Live-Bild (Dimmen sichtbar genug?).
+- **2026-10-12 20:43 · Alexander Sacharov** — Abnahme Runde 1 (Seite HFjLu3hRk4JWen6w9shguz): Farben, Abstaende, Sperre nach Explain, Ruecksetzen nach 20 s ok. Fokus (s02) uebersprungen: ctrl+x ist in Herdr die Praefix-Taste. Accept (s06) scheiterte am Aufbau der Probe (F16YHM ohne Commit), nicht an 0EW5XK - Alex: 'Accept F16YHM failed / lane done requires the commits that carry this change'. Beide Schritte neu: b1-s07 (Fokus-Hervorhebung per Maus-Hover), b1-s08 (Accept nach Probe-Commit 719cddc).
+- **2026-10-12 20:45 · Alexander Sacharov** — Abnahme Runde 1 abgeschlossen: b1-s07 (Fokus-Hervorhebung per Maus-Hover) ok - Alex im Chat: 'мышь работет'; b1-s08 (Accept nach Probe-Commit) ok - Alex: 'принял', F16YHM in der Probe in done. Alle sechs Schritte ok, beide Maschinenchecks gruen -> angenommen.
