@@ -94,6 +94,7 @@ func TestUpdatePathsKeepTheShareState(t *testing.T) {
 		}},
 		{"jaira self upgrade", func(t *testing.T, dir string) {
 			selfTestRelease(t, "v1.1.0", "new-bytes", "v1.1.0", "new-bytes")
+			selfUpgradeTarget(t)
 			if out, err := runSelf(t, dir, "upgrade"); err != nil {
 				t.Fatalf("jaira self upgrade: %v\n%s", err, out)
 			}
