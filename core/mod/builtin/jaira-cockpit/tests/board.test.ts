@@ -342,8 +342,13 @@ describe('waiting for you', () => {
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     // The chat noted the decision and moved the ticket back itself.
+    // Noted first: the chat still moves the ticket and tells this session.
     w.bodies.K7P2QX += '- **1970-01-01 00:17 · Alex** — decision: a page of its own, back to in-progress\n'
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(await (await $.ui.mount(BAND)).find({ key: 'decision-K7P2QX' })).toBeUndefined()
     w.tickets = [SIGNOFF, WORKING, { ...HUMAN, status: 'in-progress', question: '' }]
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'idle' }]
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
     const band = await $.ui.mount(BAND)
@@ -398,6 +403,10 @@ describe('waiting for you', () => {
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     w.bodies.MG677R += '- **1970-01-01 00:16 · Alex** — explain: the key leaves out the branch\n'
+    // Still answering in its tab: it stays until its turn is over.
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'idle' }]
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t4', '@/repo']])
     await w.clock.advance(60_000)
@@ -413,6 +422,7 @@ describe('waiting for you', () => {
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     w.tickets = [SIGNOFF, { ...HUMAN, question: '' }, WORKING]
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'done' }]
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
   })

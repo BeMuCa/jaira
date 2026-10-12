@@ -226,9 +226,14 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // A chat has done its part once its note is on the ticket — stamped to the
   // minute, so from the minute it was opened: an Explain chat's explanation,
   // a Discuss chat's decision, which the band then offers to read. A Discuss
-  // chat whose question went away without one is done too. Its tab goes.
+  // chat whose question went away without one is done too. Its tab goes, but
+  // only once its agent stopped working: a Discuss chat notes the decision
+  // first and then still moves the ticket and tells this session.
+  const open = bin !== undefined && tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : []
   for (const [label, since] of chats) {
     const [id = '', kind] = label.split('/')
+    const tab = open.find(x => x.label === label)
+    if (tab?.agent_status === 'working') continue
     const from = since - (since % 60_000)
     const note = await noteOn($, board.dir, id, kind === 'explain' ? 'explain' : 'decision')
     const fresh = note !== undefined && note.at >= from ? note : undefined
@@ -237,7 +242,6 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     if (!done) continue
     chats.delete(label)
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
-    const tab = bin !== undefined && tabs?.exitCode === 0 ? tabsOf(tabs.stdout).find(x => x.label === label) : undefined
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
 }
