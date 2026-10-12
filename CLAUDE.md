@@ -208,7 +208,11 @@ build, so an unwritten change is a change nobody is ever told about.
 
 One file per ticket is what keeps two pull requests from ever conflicting over
 release notes: each adds a file nobody else touches. A ticket with a second
-change adds a second line to its own file.
+change adds a second line to its own file — but only until a tag holds that
+file. Once one does, a further change goes into a new file, `<TICKET>-2.md`,
+and never into the old one: the release build files a note by its file name,
+so a line added to a tagged file shows up under the old release, and a board
+stamped with that release never sees it.
 
 Counts as client-facing: a new or renamed command or flag, changed CLI output or
 exit codes, a new or changed field in the ticket frontmatter, anything that
