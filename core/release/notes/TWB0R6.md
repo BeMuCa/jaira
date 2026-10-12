@@ -1,0 +1,1 @@
+- Look for the jaira-cockpit's last notice (such as `<id> accepted: done`) right under the band's head line; your own waiting tickets and decisions follow, and the 'waiting for <teammate>' line with its tickets now always sits last, just above the session line.

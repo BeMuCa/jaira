@@ -806,6 +806,9 @@ export const register: Register = (on, options) => {
           <Text bold color="claude">{t.bandTitle}</Text>
           {head.length > 0 ? <Text dimColor wrap="truncate-end">{'   '}{head.join(SEP)}</Text> : null}
         </Box>
+        {/* What just happened on top, this person's own work below it, the
+            teammates' tickets last of all lists. */}
+        {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
         {waiting.length > 0 ? <Box marginTop={1}><Text bold>{t.waiting}</Text></Box> : null}
         {shown.map(w => (
           <Box key={`row-${w.id}`} flexDirection="column">
@@ -843,6 +846,12 @@ export const register: Register = (on, options) => {
             </Box>
           )
           : null}
+        {decisions.map(([id, text]) => (
+          <Box key={`decided-${id}`} flexDirection="row">
+            <Text><Text bold>{id}</Text>{SEP}{t.decided}{' '}</Text>
+            <Button key={`decision-${id}`} label={t.readDecision} onPress={() => void readDecision($, id, text)} />
+          </Box>
+        ))}
         {theirs.length > 0
           ? (
             <Box flexDirection="row" marginTop={1}>
@@ -869,13 +878,6 @@ export const register: Register = (on, options) => {
             </Box>
           ))
           : null}
-        {decisions.map(([id, text]) => (
-          <Box key={`decided-${id}`} flexDirection="row">
-            <Text><Text bold>{id}</Text>{SEP}{t.decided}{' '}</Text>
-            <Button key={`decision-${id}`} label={t.readDecision} onPress={() => void readDecision($, id, text)} />
-          </Box>
-        ))}
-        {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
         {hasCache || hasThreads
           ? (
             <Box marginTop={1} flexDirection="row">
