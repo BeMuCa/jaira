@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/board"
@@ -149,5 +151,66 @@ func TestInitStillMakesAnUntrackedExistingBoardPrivate(t *testing.T) {
 	}
 	if !board.Ignored(dir) {
 		t.Errorf("init left an untracked, never-shared board committable:\n%s", readIgnore(t, dir))
+	}
+}
+
+// init's closing line and --json 'private' report what .gitignore says, not
+// why init left it alone: a board can be in git and still ignored.
+func TestInitReportsTheShareStateItLeaves(t *testing.T) {
+	const sharedLine = "This board is shared"
+	cases := []struct {
+		name    string
+		make    func(t *testing.T) string
+		private bool
+	}{
+		{"shared clone", sharedClone, false},
+		// 'share --undo' re-adds the ignore entry but leaves .gitattributes and
+		// the tracked files where they are.
+		{"after share --undo", func(t *testing.T) string {
+			dir := sharedClone(t)
+			if out, err := runCLI(t, dir, "share", "--undo"); err != nil {
+				t.Fatalf("jaira share --undo: %v\n%s", err, out)
+			}
+			return dir
+		}, true},
+		// A teammate's init in an older build committed the ignore line.
+		{"clone with a committed ignore line", func(t *testing.T) string {
+			dir := sharedClone(t)
+			if _, err := board.AddIgnore(dir); err != nil {
+				t.Fatal(err)
+			}
+			gitRun(t, dir, "config", "user.name", "ada")
+			gitRun(t, dir, "config", "user.email", "ada@example.test")
+			gitRun(t, dir, "commit", "--quiet", "-am", "an older init made it private")
+			return dir
+		}, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir := c.make(t)
+			before := readIgnore(t, dir)
+
+			out, err := runCLI(t, dir, "init")
+			if err != nil {
+				t.Fatalf("jaira init: %v\n%s", err, out)
+			}
+			if got := strings.Contains(out, sharedLine); got == c.private {
+				t.Errorf("output says %q = %v on a board with private = %v:\n%s", sharedLine, got, c.private, out)
+			}
+			js, err := runCLI(t, dir, "init", "--json")
+			if err != nil {
+				t.Fatalf("jaira init --json: %v\n%s", err, js)
+			}
+			var payload map[string]any
+			if err := json.Unmarshal([]byte(js), &payload); err != nil {
+				t.Fatalf("init --json: %v\n%s", err, js)
+			}
+			if payload["private"] != c.private {
+				t.Errorf("--json private = %v, want %v", payload["private"], c.private)
+			}
+			if after := readIgnore(t, dir); after != before {
+				t.Errorf(".gitignore changed:\n before %q\n after  %q", before, after)
+			}
+		})
 	}
 }

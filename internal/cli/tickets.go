@@ -120,10 +120,15 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			} else if line := announceLine(p.Notes); line != "" {
 				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
-			if shared {
-				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so .gitignore was left alone.\n")
-			} else {
+			// Said from .gitignore, not from why init left it alone: a board in
+			// git can still be ignored — after 'share --undo', or in a clone of
+			// one whose ignore line was committed. Neither applies when writing
+			// the ignore entry failed; the warning above already says so.
+			switch {
+			case board.Ignored(s.Root):
 				fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
+			case shared:
+				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so .gitignore was left alone.\n")
 			}
 			return nil
 		},
