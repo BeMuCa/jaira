@@ -994,9 +994,10 @@ export const register: Register = (on, options) => {
       </Text>
     )
     // Each row's digit is its place, whatever the note numbered it: the
-    // engine draws it as '1:' before the row and takes it as the key that
-    // picks it, which a letter could not be in capitals. Own answer is the
-    // digit after the last option.
+    // engine draws it as '1:' before the row — before the label too, where a
+    // surface draws no children, so the label leaves it out — and takes it
+    // as the key that picks it, which a letter could not be in capitals. Own
+    // answer is the digit after the last option.
     const digit = (key: string) => String(x.options.findIndex(o => o.key === key) + 1)
     const ownDigit = String(x.options.length + 1)
     return (
@@ -1007,7 +1008,7 @@ export const register: Register = (on, options) => {
           // Select draws one line per option and cuts a long one, so the
           // choice would hide what is chosen. Its digit picks it too.
           ? open
-            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={digit(p.key)} label={`${digit(p.key)}: ${said(p)}`} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
+            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={digit(p.key)} label={said(p)} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
             : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
           // A paragraph a line apart; the options one under the other.
           : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}

@@ -447,7 +447,7 @@ describe('waiting for you', () => {
     ]))
     // Every option is a row of its own to pick, carrying its whole text in
     // a wrapping Text — never a one-line label the surface cuts — with its
-    // letter as the key that picks it; the recommended one has the focus.
+    // digit as the key that picks it; the recommended one has the focus.
     const LONG = 'clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it'
     for (const [k, text] of [['a', 'add the branch to the key (recommended)'], ['b', 'accept it as it is'], ['c', LONG]] as const) {
       const row = await pane.find({ key: `pick-MG677R-${k}` })
@@ -455,7 +455,9 @@ describe('waiting for you', () => {
       expect(row?.props.hotkey).toBe(String('abc'.indexOf(k) + 1))
       expect(row?.text).toBe(text)
       // A surface that draws no children draws the label: the whole option too.
-      expect(row?.props.label).toBe(`${'abc'.indexOf(k) + 1}: ${text}`)
+      // The engine puts the digit before the label itself: the label is the
+      // option alone, or a surface without children would draw '1: 1: …'.
+      expect(row?.props.label).toBe(text)
       expect((await pane.find({ type: 'Text', text }))?.props.wrap).toBe('wrap')
     }
     expect((await pane.find({ key: 'pick-MG677R-a' }))?.props.autoFocus).toBe(true)
