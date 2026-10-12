@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -112,5 +113,73 @@ func TestSettingsEnterSwitchesDispatch(t *testing.T) {
 	m.key(key("enter"))
 	if got := settings.Load().DispatchMode(); got != settings.DispatchLanes {
 		t.Fatalf("after a second enter, dispatch = %q, want lanes", got)
+	}
+}
+
+// TestSettingsEnterStepsTheChatModel: the fifth entry shows the board's chat
+// model and where it comes from. enter steps the board's own
+// (.jaira/chat-model) through sonnet, haiku, opus and none; at none the row
+// says "none" and what applies instead — this machine's settings.json, or the
+// account default. A value in the file that is no model name is none too.
+func TestSettingsEnterStepsTheChatModel(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	m := newTestModel(t, 150, 32)
+	open := func() string {
+		t.Helper()
+		m.key(key("esc"))
+		m.key(key("S"))
+		for range 4 {
+			m.key(key("j"))
+		}
+		return stripANSI(m.settingsScreen.render(150, 32))
+	}
+	if got := open(); !strings.Contains(got, "Chat model  none — account default") {
+		t.Fatalf("the chat model row does not show the account default:\n%s", got)
+	}
+	for _, want := range []string{"sonnet", "haiku", "opus", ""} {
+		m.key(key("enter"))
+		label := want
+		if want == "" {
+			label = "none — account default"
+		}
+		if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  "+label) {
+			t.Fatalf("after enter, the row does not read %q:\n%s", label, got)
+		}
+		if got := settings.BoardChatModel(m.store.Root); got != want {
+			t.Fatalf("after enter, the board's chat model = %q, want %q", got, want)
+		}
+		if got := settings.Load().ChatModel; got != "" {
+			t.Fatalf("enter wrote the machine's settings.json too: %q", got)
+		}
+	}
+	if m.mode != modeSettings {
+		t.Errorf("stepping must stay on the settings screen, mode = %v", m.mode)
+	}
+
+	if err := settings.Save(settings.Settings{ChatModel: "claude-sonnet-5-5"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := open(); !strings.Contains(got, "Chat model  none — claude-sonnet-5-5 from settings.json on this machine") {
+		t.Fatalf("the machine's fallback is not shown with its source:\n%s", got)
+	}
+	m.key(key("enter"))
+	if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  sonnet — from .jaira/chat-model") {
+		t.Fatalf("the board's model does not win over the machine's:\n%s", got)
+	}
+
+	// A hand-written value that is no model name counts as none: the machine's
+	// model applies, the row reads none, and enter goes on to sonnet.
+	if err := os.WriteFile(settings.BoardChatModelPath(m.store.Root), []byte("$(id)\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := open(); !strings.Contains(got, "Chat model  none — claude-sonnet-5-5 from settings.json on this machine") {
+		t.Fatalf("an invalid board value does not read as none:\n%s", got)
+	}
+	if got, _ := settings.Load().ChatModelFor(m.store.Root); got != "claude-sonnet-5-5" {
+		t.Fatalf("an invalid board value must fall through to the machine's: %q", got)
+	}
+	m.key(key("enter"))
+	if got := settings.BoardChatModel(m.store.Root); got != "sonnet" {
+		t.Errorf("enter on an invalid board value: %q, want sonnet, the step after none", got)
 	}
 }

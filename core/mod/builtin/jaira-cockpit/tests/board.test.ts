@@ -13,6 +13,11 @@ type World = {
   tabs: { tab_id: string; label: string; agent_status?: string }[]
   // The old worker's pane went away after the tab list was read.
   paneGone: boolean
+  // When set, every `jaira move` waits here, in order, until the test lets it go.
+  held: (() => void)[] | undefined
+  // A forced move answers without moving the ticket: the row stays in the
+  // band, for a test about the row and not about where the ticket went.
+  stay?: boolean
   // This session's subagents, as $.agent.list() gives them.
   agents: { id: string; description: string; type: string; status: string; name?: string }[]
   // `jaira lanes --json` of a build before human_exit.
@@ -39,6 +44,8 @@ type World = {
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
   bodies: Record<string, string>
+  // What the plugin submitted to this session's conversation itself.
+  submitted: string[]
   // The panes the plugin opened, and closed, by id and title.
   opened: { id: string; title?: string; focus?: boolean }[]
   closed: string[]
@@ -84,6 +91,10 @@ const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', ques
 const OLDER = "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date"
 const GIVE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-give-back', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as const
+const EXPLANATION = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-explanation', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
+const ANSWER = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-answer', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
@@ -98,6 +109,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     tickets: [SIGNOFF, HUMAN, WORKING],
     tabs: [],
     paneGone: false,
+    held: undefined,
     agents: [],
     oldJaira: false,
     asked: [],
@@ -113,6 +125,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     noteFails: false,
     toasts: [],
     bodies: {},
+    submitted: [],
     opened: [],
     closed: [],
     clock: mock.clock(on, { now: 1_000_000 }),
@@ -169,7 +182,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   })
   on('session.end', ($, e) => ({ sessionId: 'abcdef123456' }))
   on('session.receive', ($, e) => ({ text: e.text }))
-  on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
+  on('prompt.submit', ($, e) => {
+    if (e.origin.kind === 'plugin') w.submitted.push(e.text)
+    return { text: e.text, origin: e.origin }
+  })
   on('turn.complete', ($, e) => ({ text: e.answer, ...(e.usage ? { usage: e.usage } : {}) }))
   on('session.cwd', () => ({ value: '/repo' }))
   on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
@@ -181,8 +197,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.files.set(e.path, e.text)
     return { value: undefined }
   })
-  on('process.run', ($, e) => {
+  on('process.run', async ($, e) => {
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
+    if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
@@ -236,6 +253,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.concat(Array(Math.max(0, w.ahead - w.subjects.length)).fill('chore: more')).slice(0, w.ahead).join('\n'))
     // The move a press forces lands: jaira list reads the ticket in done after it.
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--force')) {
+      if (w.stay) return ok()
       w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === args[1] ? { ...(x as object), status: args[3] } : x))
       return ok()
     }
@@ -321,6 +339,112 @@ describe('waiting for you', () => {
       ['jaira', 'move', 'MG677R', '--to', 'done', '--dry-run', '--json', '@/.worktrees/repo-mg677r'],
       ['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r'],
     ])
+  })
+
+  test('Accept, Give back and Explain are told apart by the theme\'s colours; Read explanation and Verdict stay plain', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    // The colour a Button's label is drawn in: that of the Text it holds.
+    const colour = async (key: string) => {
+      const button = await ui.find({ key })
+      expect(button).toBeDefined()
+      return button!.children.map(c => (c as { props?: { color?: string } }).props?.color).find(Boolean)
+    }
+    expect(await colour('accept-MG677R')).toBe('success')
+    // Not the accent colour of a primary Button around it: green is the mark.
+    expect((await ui.find({ key: 'accept-MG677R' }))?.props.variant).toBeUndefined()
+    expect(await colour('back-MG677R')).toBe('error')
+    expect(await colour('explain-MG677R')).toBe('warning')
+    expect(await colour('read-MG677R')).toBeUndefined()
+    expect(await colour('verdict-MG677R')).toBeUndefined()
+  })
+
+  test('on the terminal the coloured buttons draw their brackets in the label\'s colour; elsewhere the native button stays', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    for (const [surface, plain, text] of [['terminal', true, '[ Accept ]'], ['desktop', undefined, 'Accept']] as const) {
+      const ui = await $.ui.mount({ ...BAND, surface })
+      const accept = await ui.find({ key: 'accept-MG677R' })
+      expect(accept?.props.plain).toBe(plain)
+      expect(accept?.props.label).toBe('Accept')
+      expect(accept?.children).toEqual([{ type: 'Text', props: { color: 'success', dimColor: false }, children: [text] }])
+      await ui.unmount()
+    }
+    const ui = await $.ui.mount(BAND)
+    expect((await ui.find({ key: 'back-MG677R' }))?.text).toBe('[ Give back ]')
+    expect((await ui.find({ key: 'explain-MG677R' }))?.text).toBe('[ Explain ]')
+    // Read explanation and Verdict keep the engine's own brackets.
+    expect((await ui.find({ key: 'read-MG677R' }))?.props.plain).toBeUndefined()
+  })
+
+  // Lets the oldest `jaira move` still waiting answer, and what it set off run.
+  const release = async (w: World) => {
+    w.held!.shift()!()
+    await w.clock.settle()
+  }
+  const dimmed = async (ui: { find: (q: { key: string }) => Promise<{ children: unknown[] } | undefined> }, key: string) =>
+    ((await ui.find({ key }))?.children[0] as { props: { dimColor?: boolean } }).props.dimColor
+
+  test('a pressed row locks, drawn dim, until its action is done; a second press does nothing', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    for (const key of ['accept-MG677R', 'back-MG677R', 'explain-MG677R']) expect(await dimmed(ui, key)).toBe(true)
+    // Another ticket's row is not this press's.
+    expect(await dimmed(ui, 'back-K7P2QX')).toBe(false)
+    await ui.press({ key: 'back-MG677R' })
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    expect(w.opened).toEqual([])
+    await release(w)
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+  })
+
+  test('a row whose action has not ended is free again after 20 seconds, and the late end frees only its own lock', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.advance(19_999)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await w.clock.advance(1)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    // The first press's dry run and move answer: it ends, the second waits on.
+    await release(w)
+    await release(w)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await release(w)
+    await release(w)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+  })
+
+  test('a reload frees a row whose press it cut off', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await startSession($)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    // The cut-off press ends before the test does.
+    await release(w)
+    await release(w)
+    await w.clock.advance(20_000)
   })
 
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
@@ -451,7 +575,7 @@ describe('waiting for you', () => {
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ type: 'Text', text: /K7P2QX \| decided in Discuss/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /K7P2QX \| decided/ })).toBeDefined()
     await band.press({ key: 'decision-K7P2QX' })
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Decision on K7P2QX', focus: true })
     const pane = await $.ui.mount(MESSAGE('Decision on K7P2QX'))
@@ -486,9 +610,238 @@ describe('waiting for you', () => {
     // No explanation on K7P2QX: no button there.
     expect(await ui.find({ key: 'read-K7P2QX' })).toBeUndefined()
     await ui.press({ key: 'read-MG677R' })
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explanation of MG677R', focus: true }])
-    const pane = await $.ui.mount(MESSAGE('Explanation of MG677R'))
+    expect(w.opened).toEqual([{ id: 'cockpit-explanation', title: 'Explanation of MG677R', focus: true }])
+    // Written before the shape was asked for: shown whole, as it always was,
+    // and still answerable in words of one's own.
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
     expect(await pane.find({ type: 'Text', text: 'The key leaves out the branch.\nTwo branches share one cache entry.' })).toBeDefined()
+    expect(await pane.find({ key: 'pick-MG677R-own' })).toBeDefined()
+    expect((await pane.find({ key: 'pick-MG677R-own' }))?.props.autoFocus).toBe(true)
+  })
+
+  const SHAPED = [
+    '## Progress',
+    '',
+    '- **2026-10-12 15:00 · Alex** — explain: The cache key leaves out the branch.',
+    'Warum: two branches then share one entry and read each other\'s results.',
+    'a) add the branch to the key',
+    'b) accept it as it is',
+    'c) clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it',
+    'Empfehlung: a - smallest change, no stale reads',
+  ].join('\n')
+
+  // The same as the Explain chat now writes it: numbered, and with what
+  // picking each option does.
+  const MARKED = SHAPED
+    .replace('a) add the branch to the key', '1) add the branch to the key [give back]')
+    .replace('b) accept it as it is', '2) accept it as it is [accept]')
+    .replace('c) clear the cache', '3) clear the cache')
+    .replace('Empfehlung: a', 'Empfehlung: 1')
+
+  test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts).toEqual(expect.arrayContaining([
+      'The cache key leaves out the branch.',
+      "Warum: two branches then share one entry and read each other's results.",
+      'Empfehlung: a - smallest change, no stale reads',
+    ]))
+    // Every option is a row of its own to pick, carrying its whole text in
+    // a wrapping Text — never a one-line label the surface cuts — with its
+    // digit as the key that picks it; the recommended one has the focus.
+    const LONG = 'clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it'
+    for (const [k, text] of [['a', 'add the branch to the key (recommended)'], ['b', 'accept it as it is'], ['c', LONG]] as const) {
+      const row = await pane.find({ key: `pick-MG677R-${k}` })
+      // Its digit is its place, the key that picks it, drawn by the engine.
+      expect(row?.props.hotkey).toBe(String('abc'.indexOf(k) + 1))
+      expect(row?.text).toBe(text)
+      // A surface that draws no children draws the label: the whole option too.
+      // The engine puts the digit before the label itself: the label is the
+      // option alone, or a surface without children would draw '1: 1: …'.
+      expect(row?.props.label).toBe(text)
+      expect((await pane.find({ type: 'Text', text }))?.props.wrap).toBe('wrap')
+    }
+    expect((await pane.find({ key: 'pick-MG677R-a' }))?.props.autoFocus).toBe(true)
+    expect((await pane.find({ key: 'pick-MG677R-b' }))?.props.autoFocus).toBeUndefined()
+    expect((await pane.find({ key: 'pick-MG677R-own' }))?.text).toBe('Own answer…')
+    expect((await pane.find({ key: 'pick-MG677R-own' }))?.props.hotkey).toBe('4')
+  })
+
+  test('an option that is neither step goes onto the ticket as a decision and to the teamlead\'s conversation', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-b' })
+    expect(ran(w, 'jaira', 'note')).toEqual([['jaira', 'note', 'MG677R', 'decision: b) accept it as it is', '@/.worktrees/repo-mg677r']])
+    expect(w.closed).toEqual(['cockpit-explanation'])
+    // No mark: nothing moves, and the conversation the band sits in hears it.
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(w.submitted).toEqual(["Decision on MG677R in the cockpit's explanation pane, noted on the ticket and not acted on: b) accept it as it is"])
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /MG677R \| decided/ })).toBeDefined()
+    await band.press({ key: 'decision-MG677R' })
+    expect(await (await $.ui.mount(MESSAGE('Decision on MG677R'))).find({ type: 'Text', text: 'b) accept it as it is' })).toBeDefined()
+  })
+
+  test('an own answer is typed in a pane that takes the keyboard and gives the work back with it as the reason', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-own' })
+    expect(w.closed).toEqual(['cockpit-explanation'])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-answer', title: 'Answer on MG677R', focus: true })
+    const pane = await $.ui.mount(ANSWER('Answer on MG677R'))
+    expect((await pane.find({ key: 'answer-MG677R' }))?.props.autoFocus).toBe(true)
+    // Enter on an empty field notes nothing and keeps the pane open.
+    await pane.input({ key: 'answer-MG677R', text: '  ' })
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    await pane.input({ key: 'answer-MG677R', text: 'key by branch and commit' })
+    const notes = ran(w, 'jaira', 'note').map(r => r[3])
+    expect(notes.slice(0, 2)).toEqual(['decision: key by branch and commit', 'Given back from signoff: key by branch and commit'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
+    expect(w.closed).toEqual(['cockpit-explanation', 'cockpit-answer'])
+  })
+
+  test('an option marked [give back] gives the work back with it as the reason, without a second press', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    // The mark is read, and drawn in the colour of the band's button for that
+    // step; the recommendation highlighted; the option's own words neutral.
+    expect((await pane.find({ key: 'pick-MG677R-1' }))?.text).toBe('add the branch to the key [give back] (recommended)')
+    const colours = new Map((await pane.findAll({ type: 'Text' })).map(x => [x.text, x.props.color]))
+    expect(colours.get(' [give back]')).toBe('error')
+    expect(colours.get(' [accept]')).toBe('success')
+    expect(colours.get(' (recommended)')).toBe('suggestion')
+    expect(colours.get('add the branch to the key [give back] (recommended)')).toBeUndefined()
+    expect((await pane.find({ key: 'pick-MG677R-1' }))?.props.autoFocus).toBe(true)
+    await pane.press({ key: 'pick-MG677R-1' })
+    expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: 1) add the branch to the key', 'Given back from signoff: 1) add the branch to the key'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
+    expect(w.submitted).toEqual([])
+  })
+
+  test('an option marked [accept] accepts the ticket as the band\'s Accept does', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-2' })
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is'])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(w.submitted).toEqual([])
+  })
+
+  test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
+    const w = world(on)
+    // Answered in an earlier session: the decision stands after the explanation.
+    w.bodies.MG677R = SHAPED + '\n- **2026-10-12 15:02 · Alex** — decision: c) clear the cache on checkout\n'
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    let pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ key: 'pick-MG677R-a' })).toBeUndefined()
+    expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
+    // A newer explanation, a new round's finding, is open again.
+    await pane.unmount()
+    w.bodies.MG677R += '- **2026-10-12 16:00 · Alex** — explain: A new finding.\na) fix it [give back]\n'
+    await w.clock.advance(60_000)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ key: 'pick-MG677R-a' })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^Decided:/ })).toBeUndefined()
+  })
+
+  test('a choice made in this session is not offered again before the notes are next read', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const first = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    await first.press({ key: 'pick-MG677R-b' })
+    await first.unmount()
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ key: 'pick-MG677R-a' })).toBeUndefined()
+    expect(await pane.find({ type: 'Text', text: 'Decided: b) accept it as it is' })).toBeDefined()
+  })
+
+  test('a verdict with a reservation from an earlier round offers no Explain', async ($, on) => {
+    const w = world(on)
+    const reserved = 'approve, but the cache key ignores the branch'
+    w.tickets = [
+      { ...SIGNOFF, handle: 'OLD123', round: 2, review_round: 1, review: { verdict: reserved, gaps: '' } },
+      { ...SIGNOFF, handle: 'NEW456', round: 2, review_round: 2, review: { verdict: reserved, gaps: '' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
+    expect(await band.find({ key: 'explain-NEW456' })).toBeDefined()
+  })
+
+  test('an explanation stays readable once its verdict is an earlier round\'s; only Explain waits for the new one', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: '1. a test is missing' } }]
+    w.bodies.MG677R = SHAPED + '\n- **2026-10-12 15:02 · Alex** — decision: c) clear the cache on checkout\n'
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-MG677R' })).toBeUndefined()
+    await band.press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
+  })
+
+  test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {
+    const w = world(on)
+    // WP1CHK's verdict: no word of the reservation list, a gap all the same.
+    const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass). No defect that blocks: the one weak spot is that a failed note after a successful move is not reported (gap 1), a small follow-up rather than a reason to send it back. Accept, with gap 1 either fixed now or knowingly left.'
+    w.tickets = [
+      { ...SIGNOFF, handle: 'WP1CHK', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict, gaps: 'none' } },
+      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve', gaps: '' } },
+      // None, with a remark after it, as reviewers on this board write it.
+      { ...SIGNOFF, handle: 'GH56JK', review: { verdict, gaps: 'none — the docs could say more' } },
+      { ...SIGNOFF, handle: 'JK78LM', review: { verdict, gaps: 'keine (blockierend); eine Kleinigkeit im Kommentar' } },
+      // Said in words rather than as 'none'.
+      { ...SIGNOFF, handle: 'MN12PQ', review: { verdict, gaps: 'keine Lücken' } },
+      { ...SIGNOFF, handle: 'PQ34RS', review: { verdict, gaps: 'No gaps found.' } },
+      { ...SIGNOFF, handle: 'RS56TU', review: { verdict, gaps: 'No defect found — the tests cover each item' } },
+      // Not reviewed yet: what the optimize lane removed is no gap.
+      { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
+      // A round later: the old verdict stands beside this round's optimize gaps.
+      { ...HUMAN, handle: 'TU78VW', question: '', round: 3, review_round: 2, review: { verdict, gaps: 'Runde 3: nichts entfernt' } },
+      // The verdict of this very round, and one from before rounds were counted.
+      { ...SIGNOFF, handle: 'VW90XY', round: 3, review_round: 3, review: { verdict, gaps: '1. a test is missing' } },
+      { ...SIGNOFF, handle: 'XY12ZA', round: 2, review: { verdict, gaps: '1. a test is missing' } },
+    ]
+    await startSession($)
+    // Every one of them is in the band, not cut off behind '+N more'.
+    const band = await $.ui.mount(BAND)
+    await band.press({ key: 'more' })
+    const open = await $.ui.mount(BAND)
+    for (const id of ['WP1CHK', 'VW90XY', 'XY12ZA']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
+    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP', 'MN12PQ', 'PQ34RS', 'RS56TU', 'TU78VW']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+  })
+
+  test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
+    const w = world(on)
+    const long = 'The diff meets all five DoD items; the one weak spot is the cache key, which leaves out the branch, so two branches share an entry.'
+    w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, HUMAN]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'read-MG677R' })).toBeUndefined()
+    // No verdict, no button.
+    expect(await band.find({ key: 'verdict-K7P2QX' })).toBeUndefined()
+    await band.press({ key: 'verdict-MG677R' })
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Review verdict of MG677R', focus: true }])
+    expect(await (await $.ui.mount(MESSAGE('Review verdict of MG677R'))).find({ type: 'Text', text: long })).toBeDefined()
   })
 
   test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
@@ -625,7 +978,7 @@ describe('waiting for you', () => {
     await answer($)
     await (await $.ui.mount(BAND)).press({ key: 'theirs' })
     const band = await drawn($)
-    const at = ['jaira-cockpit', 'MG677R accepted; T8QS1Y started', 'Waiting for you', 'AB12CD | signoff', 'K7P2QX | decided in Discuss', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
+    const at = ['jaira-cockpit', 'MG677R accepted; T8QS1Y started', 'Waiting for you', 'AB12CD | signoff', 'K7P2QX | decided', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
     expect(at.every(i => i >= 0)).toBe(true)
     expect(at).toEqual([...at].sort((a, b) => a - b))
   })

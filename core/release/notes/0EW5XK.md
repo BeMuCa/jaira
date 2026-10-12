@@ -1,0 +1,2 @@
+- Tell the cockpit band's buttons apart by colour: Accept is green, Give back red and Explain yellow, brackets included, in your terminal theme's own colours; Read explanation and Verdict stay plain.
+- Press Accept, Give back or Explain in the cockpit band once: the ticket's row dims and ignores further presses until the action has done its part, or for at most 20 seconds.

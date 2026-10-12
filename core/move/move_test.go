@@ -3,6 +3,7 @@ package move
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -168,5 +169,49 @@ func TestMoveIntoDoneFilesNothingByItself(t *testing.T) {
 	}
 	if after.Status != "done" {
 		t.Errorf("status is %q, want done", after.Status)
+	}
+}
+
+// A send-back starts a new round; going on, and parking and coming back from
+// it, do not. A ticket from before the field is round 1.
+func TestMoveCountsARoundOnEverySendBack(t *testing.T) {
+	s, env := fixture(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "review", ticket.FieldAssignee: "berk"})
+	round := func() (int, string) {
+		got, err := s.Load(tk.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _, _ := got.Doc().Scalar(ticket.FieldRound)
+		return ticket.CurrentRound(got), raw
+	}
+	if n, raw := round(); n != 1 || raw != "" {
+		t.Fatalf("a new ticket is round %d (%q), want 1 with no field", n, raw)
+	}
+	steps := []struct {
+		to   string
+		want int
+	}{
+		{"in-progress", 2}, // the review sent it back
+		{"human", 2},       // going on is the same round
+		{"blocked", 2},     // parked
+		{"human", 2},       // and back from parking
+		{"in-progress", 3}, // sent back again
+	}
+	for _, st := range steps {
+		if _, err := Move(s, env, tk.ID, Request{To: st.to, Actor: "berk", Force: true}); err != nil {
+			t.Fatal(err)
+		}
+		if n, _ := round(); n != st.want {
+			t.Fatalf("after the move to %s the round is %d, want %d", st.to, n, st.want)
+		}
+	}
+	got, _ := s.Load(tk.ID)
+	file, err := os.ReadFile(got.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(file), "\nround: 3\n") {
+		t.Fatalf("round is not written as a bare 3 a person can edit:\n%s", file)
 	}
 }
