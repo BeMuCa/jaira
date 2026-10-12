@@ -563,6 +563,18 @@ describe('waiting for you', () => {
     expect(await band.find({ key: 'explain-NEW456' })).toBeDefined()
   })
 
+  test('an explanation stays readable once its verdict is an earlier round\'s; only Explain waits for the new one', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, round: 2, review_round: 1, review: { verdict: 'approve, but the cache key ignores the branch', gaps: '1. a test is missing' } }]
+    w.bodies.MG677R = SHAPED + '\n- **2026-10-12 15:02 · Alex** — decision: c) clear the cache on checkout\n'
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-MG677R' })).toBeUndefined()
+    await band.press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
+  })
+
   test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {
     const w = world(on)
     // WP1CHK's verdict: no word of the reservation list, a gap all the same.

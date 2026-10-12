@@ -247,11 +247,12 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   }
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents, me)
   await update($, boardAtom, () => view)
-  // What an Explain chat wrote back onto the tickets the band shows.
+  // What an Explain chat wrote back onto the tickets the band shows, Explain
+  // or not: an explanation stays readable after a later round, only asking
+  // for a new one waits for that round's verdict.
   const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
   const explained: Record<string, { text: string; decided?: string }> = {}
   for (const w of shownIds) {
-    if (!w.explainable) continue
     const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
     const notes = shown?.exitCode === 0 ? explanationNotes(shown.stdout) : undefined
     if (notes !== undefined) explained[w.id] = notes
