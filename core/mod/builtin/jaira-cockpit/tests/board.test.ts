@@ -13,6 +13,11 @@ type World = {
   tabs: { tab_id: string; label: string; agent_status?: string }[]
   // The old worker's pane went away after the tab list was read.
   paneGone: boolean
+  // When set, every `jaira move` waits here, in order, until the test lets it go.
+  held: (() => void)[] | undefined
+  // A forced move answers without moving the ticket: the row stays in the
+  // band, for a test about the row and not about where the ticket went.
+  stay?: boolean
   // This session's subagents, as $.agent.list() gives them.
   agents: { id: string; description: string; type: string; status: string; name?: string }[]
   // `jaira lanes --json` of a build before human_exit.
@@ -104,6 +109,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     tickets: [SIGNOFF, HUMAN, WORKING],
     tabs: [],
     paneGone: false,
+    held: undefined,
     agents: [],
     oldJaira: false,
     asked: [],
@@ -191,8 +197,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.files.set(e.path, e.text)
     return { value: undefined }
   })
-  on('process.run', ($, e) => {
+  on('process.run', async ($, e) => {
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
+    if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, ...l }) => l) } : LANES))
@@ -246,6 +253,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.concat(Array(Math.max(0, w.ahead - w.subjects.length)).fill('chore: more')).slice(0, w.ahead).join('\n'))
     // The move a press forces lands: jaira list reads the ticket in done after it.
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--force')) {
+      if (w.stay) return ok()
       w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === args[1] ? { ...(x as object), status: args[3] } : x))
       return ok()
     }
@@ -331,6 +339,112 @@ describe('waiting for you', () => {
       ['jaira', 'move', 'MG677R', '--to', 'done', '--dry-run', '--json', '@/.worktrees/repo-mg677r'],
       ['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r'],
     ])
+  })
+
+  test('Accept, Give back and Explain are told apart by the theme\'s colours; Read explanation and Verdict stay plain', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    // The colour a Button's label is drawn in: that of the Text it holds.
+    const colour = async (key: string) => {
+      const button = await ui.find({ key })
+      expect(button).toBeDefined()
+      return button!.children.map(c => (c as { props?: { color?: string } }).props?.color).find(Boolean)
+    }
+    expect(await colour('accept-MG677R')).toBe('success')
+    // Not the accent colour of a primary Button around it: green is the mark.
+    expect((await ui.find({ key: 'accept-MG677R' }))?.props.variant).toBeUndefined()
+    expect(await colour('back-MG677R')).toBe('error')
+    expect(await colour('explain-MG677R')).toBe('warning')
+    expect(await colour('read-MG677R')).toBeUndefined()
+    expect(await colour('verdict-MG677R')).toBeUndefined()
+  })
+
+  test('on the terminal the coloured buttons draw their brackets in the label\'s colour; elsewhere the native button stays', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    for (const [surface, plain, text] of [['terminal', true, '[ Accept ]'], ['desktop', undefined, 'Accept']] as const) {
+      const ui = await $.ui.mount({ ...BAND, surface })
+      const accept = await ui.find({ key: 'accept-MG677R' })
+      expect(accept?.props.plain).toBe(plain)
+      expect(accept?.props.label).toBe('Accept')
+      expect(accept?.children).toEqual([{ type: 'Text', props: { color: 'success', dimColor: false }, children: [text] }])
+      await ui.unmount()
+    }
+    const ui = await $.ui.mount(BAND)
+    expect((await ui.find({ key: 'back-MG677R' }))?.text).toBe('[ Give back ]')
+    expect((await ui.find({ key: 'explain-MG677R' }))?.text).toBe('[ Explain ]')
+    // Read explanation and Verdict keep the engine's own brackets.
+    expect((await ui.find({ key: 'read-MG677R' }))?.props.plain).toBeUndefined()
+  })
+
+  // Lets the oldest `jaira move` still waiting answer, and what it set off run.
+  const release = async (w: World) => {
+    w.held!.shift()!()
+    await w.clock.settle()
+  }
+  const dimmed = async (ui: { find: (q: { key: string }) => Promise<{ children: unknown[] } | undefined> }, key: string) =>
+    ((await ui.find({ key }))?.children[0] as { props: { dimColor?: boolean } }).props.dimColor
+
+  test('a pressed row locks, drawn dim, until its action is done; a second press does nothing', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    for (const key of ['accept-MG677R', 'back-MG677R', 'explain-MG677R']) expect(await dimmed(ui, key)).toBe(true)
+    // Another ticket's row is not this press's.
+    expect(await dimmed(ui, 'back-K7P2QX')).toBe(false)
+    await ui.press({ key: 'back-MG677R' })
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    expect(w.opened).toEqual([])
+    await release(w)
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+  })
+
+  test('a row whose action has not ended is free again after 20 seconds, and the late end frees only its own lock', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.advance(19_999)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await w.clock.advance(1)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    // The first press's dry run and move answer: it ends, the second waits on.
+    await release(w)
+    await release(w)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await release(w)
+    await release(w)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+  })
+
+  test('a reload frees a row whose press it cut off', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await startSession($)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    // The cut-off press ends before the test does.
+    await release(w)
+    await release(w)
+    await w.clock.advance(20_000)
   })
 
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {

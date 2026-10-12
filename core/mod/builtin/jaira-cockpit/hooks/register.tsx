@@ -54,6 +54,7 @@ const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as cons
 const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
 const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
+const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -61,6 +62,8 @@ const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const ANSWER = 'cockpit-answer'
 const BAND_TICKETS = 3
+// How long a pressed row stays locked when its action has not ended by then.
+const BUSY_MS = 20_000
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 
@@ -490,6 +493,30 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
   }
 }
 
+// A press on Accept, Give back or Explain: the row's three lock, drawn dim,
+// until the action has done its part or BUSY_MS has passed; a press on a
+// locked row does nothing, so a slow answer is not asked for twice.
+async function once($: EngineInterface, id: string, action: () => Promise<void>): Promise<void> {
+  const at = await $.clock.now()
+  let took = false
+  await update($, busyAtom, busy => {
+    took = busy[id] === undefined
+    return took ? { ...busy, [id]: at } : busy
+  })
+  if (!took) return
+  const free = () => update($, busyAtom, busy => {
+    if (busy[id] !== at) return busy
+    const { [id]: _, ...rest } = busy
+    return rest
+  })
+  $.clock.after(BUSY_MS, () => void free())
+  try {
+    await action()
+  } finally {
+    await free()
+  }
+}
+
 // The spawn.sh the roles were installed with: the project's own first, as
 // the dispatcher's run-lane.sh finds it beside itself.
 async function spawnScript($: EngineInterface): Promise<string | undefined> {
@@ -828,6 +855,8 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     startedAt = await $.clock.now()
+    // A reload drops the timers that free a pressed row; the lock is the host's and stays.
+    await update($, busyAtom, () => ({}))
     // Kept before reports were scoped to a project; no project may show them.
     for (const k of await $.store.keys()) if (isUnscoped(k)) await $.store.delete(k)
     // A session that ended without session.end leaves its mark; the 50 heard
@@ -974,6 +1003,7 @@ export const register: Register = (on, options) => {
     const used = await read($, usedAtom)
     const expanded = await read($, expandedAtom)
     const theirsOpen = await read($, theirsOpenAtom)
+    const busy = await read($, busyAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
@@ -992,6 +1022,8 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = table
     // Mobile has no text field: there the band offers no Give back.
     const hasInput = 'Input' in table
+    const plain = e.surface === 'terminal' ? true : undefined
+    const bracketed = (label: string) => (plain ? `[ ${label} ]` : label)
     // The session line: context, cache, the advice, threads; what asks for
     // action in the warning colour.
     const session: { text: string; color?: 'warning' | 'error' }[] = [
@@ -1018,14 +1050,18 @@ export const register: Register = (on, options) => {
               <Text wrap="truncate-end">
                 <Text bold>{w.id}</Text>{SEP}{w.lane}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
               </Text>
+              {/* Told apart by colour before they are read: the theme's own, so a
+                  light terminal reads them too; the focus inverts them as any.
+                  The engine draws a Button's brackets uncoloured, so the
+                  terminal gets them plain and in the label's colour. */}
               {w.acceptTo !== null
-                ? <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w)} />
+                ? <Button key={`accept-${w.id}`} label={t.accept} plain={plain} onPress={() => void once($, w.id, () => accept($, w))}><Text color="success" dimColor={busy[w.id] !== undefined}>{bracketed(t.accept)}</Text></Button>
                 : null}
               {hasInput
-                ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)} />
+                ? <Button key={`back-${w.id}`} label={t.giveBack} plain={plain} onPress={() => void once($, w.id, () => askWhatIsMissing($, w))}><Text color="error" dimColor={busy[w.id] !== undefined}>{bracketed(t.giveBack)}</Text></Button>
                 : null}
               {w.explainable
-                ? <Button key={`explain-${w.id}`} label={t.explain} onPress={() => void openChat($, w.id, 'explain')} />
+                ? <Button key={`explain-${w.id}`} label={t.explain} plain={plain} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))}><Text color="warning" dimColor={busy[w.id] !== undefined}>{bracketed(t.explain)}</Text></Button>
                 : null}
               {explained[w.id] !== undefined
                 ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
