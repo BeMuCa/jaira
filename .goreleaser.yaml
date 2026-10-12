@@ -5,10 +5,12 @@
 # Linux box to macOS and Windows work with no extra toolchain.
 version: 2
 
+# No test run here: a release is tested once, by the release button
+# (release-notes.yaml, "Test the cut tree"), on the tree this build is tagged
+# from.
 before:
   hooks:
     - go mod tidy
-    - go test ./...
 
 builds:
   - id: jaira

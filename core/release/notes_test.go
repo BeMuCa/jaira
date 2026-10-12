@@ -198,8 +198,8 @@ func TestCutRefuses(t *testing.T) {
 // every line that was Unreleased still shown somewhere. Where it shows is not
 // checked: today those lines are Unreleased, after the next release they are
 // that release, and both are right. Nor is anything else in notes/ — a new
-// note or a cut must not turn this test red, or goreleaser's go test stops
-// the very release build it is for.
+// note or a cut must not turn this test red, or the release button's test run
+// on the cut tree stops the very release it is for.
 func TestNotesUnchangedByMovingUnreleasedIntoFiles(t *testing.T) {
 	checkMigration(t, Notes())
 }
