@@ -243,9 +243,10 @@ export function explanationNotes(showJson: string): { text: string; decided?: st
 }
 
 // An Explain chat's note, in the shape spawn.sh asks for: one line per part —
-// the finding, why it counts, one line per option as `a) ...`, ending in
+// the finding, why it counts, one line per option as `1) ...` (or, in an
+// older note, `a) ...`), ending in
 // `[give back]` or `[accept]` when picking it is that step, and
-// `Empfehlung: <letter> - ...`. Its parts in the order written, the options
+// `Empfehlung: <number> - ...`. Its parts in the order written, the options
 // apart for the choice with what each does, and the option recommended. A
 // note with no option line — one written before the shape was asked for —
 // is one part, whole, as it was always shown.
@@ -254,9 +255,9 @@ export type Option = { key: string; text: string; action?: Action }
 export type Part = { kind: 'text'; text: string } | ({ kind: 'option' } & Option)
 export type Explanation = { parts: Part[]; options: Option[]; recommended?: string }
 
-const OPTION = /^\s*\(?([a-f])\)\s+(.+)$/
+const OPTION = /^\s*\(?([1-6]|[a-f])\)\s+(.+)$/
 const MARK = /\s*\[(give back|accept)\]\s*$/i
-const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([a-f])\b/i
+const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([1-6]|[a-f])\b/i
 
 export function explanationOf(text: string): Explanation {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')

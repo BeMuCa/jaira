@@ -980,26 +980,41 @@ export const register: Register = (on, options) => {
       void $.ui.close({ id: EXPLANATION })
       void decide($, id, `${o.key}) ${o.text}`, o.action, share)
     }
-    // An option whole: what it says, what picking it does, whether the
-    // review recommends it. Drawn as many rows as it needs.
+    // An option whole: what it says, what picking it does in the band's
+    // colours for that step, whether the review recommends it, highlighted;
+    // the rest of the row neutral. Drawn as many rows as it needs.
     const said = (o: Option) =>
       `${o.text}${o.action !== undefined ? ` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
-    const line = (o: Option) => <Text wrap="wrap">{said(o)}</Text>
+    const line = (o: Option) => (
+      <Text wrap="wrap">
+        {o.text}
+        {o.action !== undefined
+          ? <Text color={o.action === 'accept' ? 'success' : 'error'}>{` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}`}</Text>
+          : null}
+        {o.key === x.recommended ? <Text color="suggestion">{` ${t.recommended}`}</Text> : null}
+      </Text>
+    )
+    // Each row's digit is its place, whatever the note numbered it: the
+    // engine draws it as '1:' before the row and takes it as the key that
+    // picks it, which a letter could not be in capitals. Own answer is the
+    // digit after the last option.
+    const digit = (key: string) => String(x.options.findIndex(o => o.key === key) + 1)
+    const ownDigit = String(x.options.length + 1)
     return (
       <Box flexDirection="column">
         <Text bold>{t.explanationOf(id)}</Text>
         {x.parts.map((p, i) => p.kind === 'option'
           // Open, each option is a row of its own to pick: the engine's
           // Select draws one line per option and cuts a long one, so the
-          // choice would hide what is chosen. Its letter picks it too.
+          // choice would hide what is chosen. Its digit picks it too.
           ? open
-            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={p.key} label={`${p.key}) ${said(p)}`} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
+            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={digit(p.key)} label={`${digit(p.key)}: ${said(p)}`} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
             : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
           // A paragraph a line apart; the options one under the other.
           : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
         {/* Answered already, on the ticket: the choice is read, not offered again. */}
         {open
-          ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey="o" {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
+          ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
           : <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {decided}</Text></Box>}
         <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
       </Box>

@@ -425,10 +425,13 @@ describe('waiting for you', () => {
     'Empfehlung: a - smallest change, no stale reads',
   ].join('\n')
 
-  // The same, with what picking each option does.
+  // The same as the Explain chat now writes it: numbered, and with what
+  // picking each option does.
   const MARKED = SHAPED
-    .replace('a) add the branch to the key', 'a) add the branch to the key [give back]')
-    .replace('b) accept it as it is', 'b) accept it as it is [accept]')
+    .replace('a) add the branch to the key', '1) add the branch to the key [give back]')
+    .replace('b) accept it as it is', '2) accept it as it is [accept]')
+    .replace('c) clear the cache', '3) clear the cache')
+    .replace('Empfehlung: a', 'Empfehlung: 1')
 
   test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
     const w = world(on)
@@ -448,15 +451,17 @@ describe('waiting for you', () => {
     const LONG = 'clear the cache on checkout, and on every pull too, so that no branch ever reads an entry another branch wrote before it'
     for (const [k, text] of [['a', 'add the branch to the key (recommended)'], ['b', 'accept it as it is'], ['c', LONG]] as const) {
       const row = await pane.find({ key: `pick-MG677R-${k}` })
-      expect(row?.props.hotkey).toBe(k)
+      // Its digit is its place, the key that picks it, drawn by the engine.
+      expect(row?.props.hotkey).toBe(String('abc'.indexOf(k) + 1))
       expect(row?.text).toBe(text)
       // A surface that draws no children draws the label: the whole option too.
-      expect(row?.props.label).toBe(`${k}) ${text}`)
+      expect(row?.props.label).toBe(`${'abc'.indexOf(k) + 1}: ${text}`)
       expect((await pane.find({ type: 'Text', text }))?.props.wrap).toBe('wrap')
     }
     expect((await pane.find({ key: 'pick-MG677R-a' }))?.props.autoFocus).toBe(true)
     expect((await pane.find({ key: 'pick-MG677R-b' }))?.props.autoFocus).toBeUndefined()
     expect((await pane.find({ key: 'pick-MG677R-own' }))?.text).toBe('Own answer…')
+    expect((await pane.find({ key: 'pick-MG677R-own' }))?.props.hotkey).toBe('4')
   })
 
   test('an option that is neither step goes onto the ticket as a decision and to the teamlead\'s conversation', async ($, on) => {
@@ -502,10 +507,17 @@ describe('waiting for you', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
-    // The mark is read, not shown as text of the option.
-    expect((await pane.find({ key: 'pick-MG677R-a' }))?.text).toBe('add the branch to the key [give back] (recommended)')
-    await pane.press({ key: 'pick-MG677R-a' })
-    expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: a) add the branch to the key', 'Given back from signoff: a) add the branch to the key'])
+    // The mark is read, and drawn in the colour of the band's button for that
+    // step; the recommendation highlighted; the option's own words neutral.
+    expect((await pane.find({ key: 'pick-MG677R-1' }))?.text).toBe('add the branch to the key [give back] (recommended)')
+    const colours = new Map((await pane.findAll({ type: 'Text' })).map(x => [x.text, x.props.color]))
+    expect(colours.get(' [give back]')).toBe('error')
+    expect(colours.get(' [accept]')).toBe('success')
+    expect(colours.get(' (recommended)')).toBe('suggestion')
+    expect(colours.get('add the branch to the key [give back] (recommended)')).toBeUndefined()
+    expect((await pane.find({ key: 'pick-MG677R-1' }))?.props.autoFocus).toBe(true)
+    await pane.press({ key: 'pick-MG677R-1' })
+    expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: 1) add the branch to the key', 'Given back from signoff: 1) add the branch to the key'])
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
     expect(w.submitted).toEqual([])
   })
@@ -515,8 +527,8 @@ describe('waiting for you', () => {
     w.bodies.MG677R = MARKED
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
-    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-b' })
-    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: b) accept it as it is'])
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-2' })
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
     expect(w.submitted).toEqual([])
   })
