@@ -118,6 +118,11 @@ export function snapshotOf(
 }
 
 // Who `jaira whoami --json` says the person is: the identity and its aliases.
+// Each ticket's lane, by handle, from `jaira list --json`.
+export function lanesOf(listJson: string): Map<string, string> {
+  return new Map((parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []).map(t => [t.handle, t.status]))
+}
+
 export function whoOf(whoamiJson: string): string[] | undefined {
   const who = parse<{ identity?: string; aliases?: string[] }>(withoutWarnings(whoamiJson))
   const names = [who?.identity ?? '', ...(who?.aliases ?? [])].map(n => n.trim()).filter(n => n !== '')

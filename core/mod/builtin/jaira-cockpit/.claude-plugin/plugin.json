@@ -1,7 +1,7 @@
 {
   "name": "jaira-cockpit",
   "version": "0.2.0",
-  "description": "Keeps a jaira teamlead chat readable and shows what waits on the board: agent reports as one line, tickets waiting for a person with Accept / Give back, context and prompt-cache in the band, a guard against sending onto a cold cache, conversation threads.",
+  "description": "Keeps a jaira teamlead chat readable and shows what waits on the board: agent reports as one line, tickets waiting for a person with Accept / Give back, context and prompt-cache in the band, a guard against sending onto a cold cache, conversation threads, the workers of the board with their context and cache.",
   "author": {
     "name": "jaira"
   },
@@ -18,6 +18,12 @@
       "title": "Input price per million tokens",
       "description": "What the cache guard estimates a cache write with (a write costs 1.25 times this).",
       "default": 5
+    },
+    "workerContextShare": {
+      "type": "number",
+      "title": "Worker context limit",
+      "description": "Percent of the model's context window past which a ticket coming back for a new round goes to a new worker instead of the one that carried it.",
+      "default": 50
     }
   }
 }

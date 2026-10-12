@@ -544,15 +544,47 @@ describe('give back', () => {
     expect(w.closed).toEqual([])
     await pane.input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(w.closed).toEqual(['cockpit-give-back'])
-    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 6)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '--force'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
   })
 
-  test('notes why and moves the ticket back to in-progress', async ($, on) => {
+  test('notes why and moves the ticket back to in-progress, without --force, so any other refusal still stops it', async ($, on) => {
     const w = world(on)
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'jaira', 'note', 'MG677R')[0]?.[3]).toBe('Given back from signoff: der Branch fehlt im Schluessel')
-    expect(ran(w, 'jaira', 'move', 'MG677R')[0]).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '--force', '@/.worktrees/repo-mg677r'])
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '@/.worktrees/repo-mg677r'])
+  })
+
+  // The limit is a share of the old worker's window, never a fixed size.
+  const big = (window: number) => ({ 'session:old': {
+    session: 'old', pane: 'w1:p9', cwd: '/x', repo: '/repo', ticket: 'MG677R', role: 'worker', lane: '',
+    lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 300_000, window, ttl: 3_600_000, updatedAt: 1_000_000 - 20 * 60_000,
+  } })
+
+  test('a context under half of its window goes back to the same worker, however many tokens that is', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(1_000_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
+    expect(ran(w, SPAWN)).toEqual([])
+  })
+
+  test('past half of its window a new worker takes the round', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(500_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe("cockpit: given back to a new worker - old worker's context 300k >= 250k (50% of its window)")
+  })
+
+  test('the share is a setting', { options: { workerContextShare: 70 } }, async ($, on) => {
+    const w = world(on, { herdr: true, store: big(500_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
 
   test('goes to the worker that carried it while its tab lives, its cache is warm and its context small', async ($, on) => {
@@ -636,6 +668,63 @@ describe('give back with nothing to start a worker', () => {
     await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to nobody (no worker started) - old worker\'s prompt cache cold for 10 min; no spawn.sh found')
+  })
+})
+
+describe('the workers of the board', () => {
+  const record = (session: string, ticket: string, extra: Record<string, unknown>) => ({
+    session, pane: `w1:${session}`, cwd: '/x', repo: '/repo', ticket, role: 'worker', lane: '', ttl: 3_600_000, window: 1_000_000, ...extra,
+  })
+
+  test('lists every agent carrying a ticket here with lane, context, cache and whom a new round goes to', async ($, on) => {
+    const w = world(on, { herdr: true, store: {
+      // Idle in signoff, cache warm: the round would go back to it.
+      'session:a': record('a', 'MG677R', { lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 80_000, updatedAt: 1_000_000 - 20 * 60_000 }),
+      // At work: nothing is decided about it.
+      'session:b': record('b', 'T8QS1Y', { lastAnswerAt: 1_000_000 - 90 * 60_000, tokens: 120_000, updatedAt: 1_000_000 - 90 * 60_000 }),
+      // Another repository's worker, and one whose tab is gone: neither listed.
+      'session:c': record('c', 'ZZZZZZ', { repo: '/other', lastAnswerAt: 999_000, tokens: 1, updatedAt: 999_000 }),
+      'session:d': record('d', 'K7P2QX', { lastAnswerAt: 999_000, tokens: 1, updatedAt: 999_000 }),
+      // A single lane's agent carries no ticket as a whole.
+      'session:e': { ...record('e', 'MG677R', { lastAnswerAt: 999_000, tokens: 1, updatedAt: 999_999 }), role: 'lane', lane: 'review' },
+    } })
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'MG677R/worker', agent_status: 'idle' },
+      { tab_id: 'w1:t2', label: 'T8QS1Y/worker', agent_status: 'working' },
+      { tab_id: 'w1:t3', label: 'ZZZZZZ/worker', agent_status: 'idle' },
+    ]
+    w.usage.tokens = 142_000
+    await startSession($)
+    const { result } = await $.tool.call({ tool: 'mcp__jaira-cockpit__workers' })
+    expect(String(result).split('\n')).toEqual([
+      'this session: context 142k of 1000k, cache warm while it works and 60 min after its last answer',
+      'Agents carrying a ticket of this board:',
+      'MG677R · signoff · worker · context 80k of 1000k · cache 40 min left · next round: same worker (tab alive, cache warm for 40 more min, context 80k)',
+      'T8QS1Y · in-progress · worker · context 120k of 1000k · cache warm (working) · working: nothing to decide',
+    ])
+  })
+
+  test('a cold worker waiting on a person is still listed, with a new worker for its next round', async ($, on) => {
+    const w = world(on, { herdr: true, store: {
+      'session:a': record('a', 'MG677R', { lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, updatedAt: 1_000_000 - 70 * 60_000 }),
+    } })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'MG677R/worker', agent_status: 'idle' }]
+    await startSession($)
+    const text = (await $.command.run(typed('workers'))).text
+    expect(text).toContain("MG677R · signoff · worker · context 80k of 1000k · cache cold · next round: new worker (old worker's prompt cache cold for 10 min)")
+  })
+
+  test('a worker writes the board it belongs to and its window into its record', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await $.prompt.submit({ text: '/jaira-worker MG677R --parent jaira-4c', origin: { kind: 'composer' }, wait: false })
+    w.usage.tokens = 50_000
+    await answer($, 'done')
+    expect(w.store.get('session:abcdef12')).toMatchObject({ repo: '/repo', window: 1_000_000, tokens: 50_000 })
+    // Asked from inside its own turn, it sees itself first.
+    expect(String((await $.tool.call({ tool: 'mcp__jaira-cockpit__workers' })).result).split('\n')[0]).toBe(
+      'this session: context 50k of 1000k, cache warm while it works and 60 min after its last answer',
+    )
   })
 })
 

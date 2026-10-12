@@ -1,0 +1,4 @@
+- Ask the jaira-cockpit which workers run on your board with `/cockpit workers` (an agent: the `workers` tool) — each line shows the ticket, its lane, the worker's context, how many minutes its prompt cache stays warm, and whether the ticket's next round would go back to that worker or to a new one.
+- Expect a ticket you give back from `signoff` to stay with its old worker while the worker's context is under half of its model's window (set the share with the cockpit's `workerContextShare` setting) instead of under a fixed 150k tokens.
+- Read a worker's or dispatcher's second report line for its context and prompt cache; after `jaira roles install`, a teamlead leaves a worker's tab open while its ticket waits for you and decides about the worker only when the ticket comes back.
+- Expect Give back to stop on any refusal of the move other than the human checkpoint — it no longer passes `--force` to `jaira move`.
