@@ -73,8 +73,12 @@ export function snapshotOf(lanesJson: string, listJson: string): { waiting: Wait
 const RESERVATION = /vorbehalt|reservation|caveat|changes|änderungen|\bbut\b|\baber\b|however|jedoch|except|ausser|außer|allerdings|offen(e|er)? (punkt|frage)|open (point|question)/i
 const REFUSAL = /^\s*(request|reject|refuse|fail|zur(ü|ue)ck|ablehn|nicht|not)\b/i
 
+// A reservation word under a negation is none: "approve, no changes needed",
+// "no open questions", "ohne Vorbehalt".
+const NEGATED = new RegExp(`\\b(no|without|kein(e|en|er)?|ohne)\\s+(\\S+\\s+){0,2}?(${RESERVATION.source})`, 'gi')
+
 export function hasReservation(verdict: string): boolean {
-  return RESERVATION.test(verdict) || REFUSAL.test(verdict)
+  return RESERVATION.test(verdict.replace(NEGATED, '')) || REFUSAL.test(verdict)
 }
 
 // What stops a move besides the person's own exit, read off the error

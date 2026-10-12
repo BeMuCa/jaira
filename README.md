@@ -697,6 +697,9 @@ changes for anybody.
 - The band also shows the context size and how long the prompt cache stays
   warm, and a prompt of yours onto a cold cache with a large context is held
   with a choice: send, compact first, start over, cancel.
+- The status line counts the board's tickets by whose turn it is and shows
+  the five-hour and seven-day windows used (off a subscription, what the
+  session cost).
 - After each of your turns a cheap model files it under a conversation
   thread; `/cockpit threads` shows which became a ticket, which wait for your
   answer and which were left lying.
@@ -704,8 +707,7 @@ changes for anybody.
   agents used (`~/.jaira/metrics.csv`, one row per session, in the columns of
   `scripts/lane-eval/metrics.sh`).
 
-Everything follows Claude Code's `language` setting (English, German,
-Russian). In a project without a board, or without `jaira` on `PATH`, the
+Every text is in English, whatever Claude Code's `language` setting. In a project without a board, or without `jaira` on `PATH`, the
 board parts stay out of sight and the rest works as usual — so the mod is
 useful without jaira too. Install it on its own, without jaira, by typing at a
 Claude Code prompt:

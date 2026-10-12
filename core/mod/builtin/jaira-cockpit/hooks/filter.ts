@@ -1,6 +1,6 @@
 import type { Args, PromptSubmitInput, SessionReceiveInput } from 'claude-code'
 import { body } from './frame.ts'
-import { filterWords, type Lang } from './lang.ts'
+import { filterWords as words } from './texts.ts'
 
 // The noise filter's rules: which deliveries are an agent's, how a kept
 // report is keyed, how the engine's frame around a row is cut down, and how
@@ -101,8 +101,7 @@ export function stamp(at: string): string {
 }
 
 // The tickets of this project that have reports, most recent first.
-export function listReports(rows: ReadonlyArray<readonly [string, Report[]]>, lang: Lang): string {
-  const words = filterWords(lang)
+export function listReports(rows: ReadonlyArray<readonly [string, Report[]]>): string {
   if (rows.length === 0) return words.none
   const lines = rows.map(([k, reports]) =>
     `${ticketOfKey(k)}  ${words.count(reports.length)}, ${words.last} ${stamp(reports[0]?.at ?? '?')}`)
@@ -111,8 +110,7 @@ export function listReports(rows: ReadonlyArray<readonly [string, Report[]]>, la
 
 // One ticket's reports, each the agent's own text under one header line:
 // ticket · n of m · time · source · session.
-export function showReport(ticket: string, reports: readonly Report[], lang: Lang): string {
-  const words = filterWords(lang)
+export function showReport(ticket: string, reports: readonly Report[]): string {
   if (reports.length === 0) return words.noneFor(ticket)
   return reports
     .map((r, i) => {

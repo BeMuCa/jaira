@@ -2,7 +2,7 @@
 // teamlead chat shows in its place. Everything here is pure: no `$`, so the
 // rules can be read and tested without an engine.
 
-import { filterWords, type Lang } from './lang.ts'
+import { filterWords as words } from './texts.ts'
 
 // The lanes jaira ships. A board may rename or add lanes; an arrow between
 // two lowercase words (`review -> signoff`) is read whatever the names are.
@@ -96,11 +96,10 @@ export function questionOf(text: string): string | undefined {
 
 // The line the chat shows instead of the report, or undefined when the
 // report must be passed on whole: no ticket recognisable, or a failure.
-export function digest(text: string, lang: Lang = 'en'): { ticket: string; line: string } | undefined {
+export function digest(text: string): { ticket: string; line: string } | undefined {
   if (isFailure(text)) return undefined
   const ticket = ticketOf(text)
   if (ticket === undefined) return undefined
-  const words = filterWords(lang)
   const parts = [ticket, laneOf(text), verdictOf(text)]
   const question = questionOf(text)
   if (question !== undefined) parts.push(`${words.question}: ${question}`)

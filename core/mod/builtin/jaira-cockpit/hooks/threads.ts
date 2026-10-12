@@ -52,8 +52,8 @@ export function classifyPrompt(threads: readonly Thread[], human: string, answer
   return [
     'You sort one turn of a conversation between a person and an AI assistant into threads.',
     'A thread is one subject the person raised. Reply with ONE JSON object and nothing else:',
-    '{"thread": <number of an existing thread, or null for a new one>, "title": "<thread title, at most 8 words, in the language of the person>",',
-    ' "line": "<what happened in this turn, one short line, in the language of the person>",',
+    '{"thread": <number of an existing thread, or null for a new one>, "title": "<thread title, at most 8 words, in English>",',
+    ' "line": "<what happened in this turn, one short line, in English>",',
     withTickets
       ? ' "ticket": "<the 6-character jaira ticket id the assistant created or linked for this thread in this turn, or null>",'
       : ' "ticket": null,',

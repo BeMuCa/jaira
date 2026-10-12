@@ -11,6 +11,8 @@ type World = {
   usage: { tokens: number; rateLimits: SessionRateLimit[] }
   tickets: unknown[]
   tabs: { tab_id: string; label: string }[]
+  // The old worker's pane went away after the tab list was read.
+  paneGone: boolean
   asked: string[]
   answer: string
   model: string
@@ -42,13 +44,14 @@ const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', ques
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 
-function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; store?: Record<string, unknown>; spawn?: boolean } = {}): World {
+function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean } = {}): World {
   const w: World = {
     ran: [],
     files: new Map(),
     usage: { tokens: 0, rateLimits: [{ kind: 'five_hour', percentUsed: 34 }] },
     tickets: [SIGNOFF, HUMAN, WORKING],
     tabs: [],
+    paneGone: false,
     asked: [],
     answer: '',
     model: '',
@@ -90,7 +93,6 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; 
   on('session.receive', ($, e) => ({ text: e.text }))
   on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
   on('turn.complete', ($, e) => ({ text: e.answer, ...(e.usage ? { usage: e.usage } : {}) }))
-  on('settings.read', () => ({ value: opts.lang ? { language: opts.lang } : {} }))
   on('session.cwd', () => ({ value: '/repo' }))
   on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
   on('session.id', () => ({ value: 'abcdef123456' }))
@@ -114,6 +116,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; 
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
+    if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
     return ok()
   })
   on('tool.call', { tool: 'AskUserQuestion' }, ($, e) => {
@@ -191,18 +194,22 @@ describe('waiting for you', () => {
     expect(await ui.find({ type: 'Text', text: /criterion 1 is still open/ })).toBeDefined()
   })
 
-  test('a plain yes gets no Explain, however long the sentence', async ($, on) => {
+  test('a plain yes gets no Explain, however long the sentence, nor one that negates a reservation', async ($, on) => {
     const w = world(on)
     w.tickets = [
       { ...SIGNOFF, review: { verdict: 'Approve. Der Diff erfuellt die DoD: Befehl existiert, Test deckt ihn ab.' } },
       { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'the diff matches the criteria; no defects found' } },
       { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'request changes: the button skips review' } },
+      { ...SIGNOFF, handle: 'GH56JK', review: { verdict: 'approve, no changes needed' } },
+      { ...SIGNOFF, handle: 'JK78LM', review: { verdict: 'Approve: no open questions, ohne Vorbehalt' } },
     ]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'explain-MG677R' })).toBeUndefined()
     expect(await ui.find({ key: 'explain-AB12CD' })).toBeUndefined()
     expect(await ui.find({ key: 'explain-EF34GH' })).toBeDefined()
+    expect(await ui.find({ key: 'explain-GH56JK' })).toBeUndefined()
+    expect(await ui.find({ key: 'explain-JK78LM' })).toBeUndefined()
   })
 
   test('a verdict with a reservation gets Explain, which opens a Herdr tab of its own', async ($, on) => {
@@ -248,7 +255,7 @@ describe('give back', () => {
     const w = world(on)
     await startSession($)
     await giveBack($, w)
-    expect(ran(w, 'jaira', 'note', 'MG677R')[0]?.[3]).toBe('Zurueckgegeben aus signoff: der Branch fehlt im Schluessel')
+    expect(ran(w, 'jaira', 'note', 'MG677R')[0]?.[3]).toBe('Given back from signoff: der Branch fehlt im Schluessel')
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '--force', '@/.worktrees/repo-mg677r'])
   })
 
@@ -263,7 +270,7 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(ran(w, SPAWN)).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: Rueckgabe an den alten Worker - Tab lebt, Cache noch 40 min warm, Kontext 80k')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to the old worker - tab alive, cache warm for 40 more min, context 80k')
   })
 
   test('otherwise closes the old worker\'s tab first, then starts a new one', async ($, on) => {
@@ -280,7 +287,21 @@ describe('give back', () => {
     expect(close).toBeLessThan(spawn)
     expect(w.ran[spawn]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: Rueckgabe an einen neuen Worker - Prompt-Cache des alten Workers kalt seit 10 min')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min')
+  })
+  test('a pane gone since the tab list takes no text: the old tab is closed and a new worker started', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 20 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    w.paneGone = true
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
+    expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
+    expect(ran(w, SPAWN)[0]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
   })
 })
 
@@ -301,7 +322,7 @@ describe('give back, the edges', () => {
     await ui.press({ key: 'back-MG677R' })
     await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(await ui.find({ type: 'Text', text: "MG677R back in in-progress; no worker started (the ticket's note says why)" })).toBeDefined()
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: Rueckgabe an niemanden (kein Worker gestartet) - kein Herdr in dieser Sitzung')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - no Herdr in this session')
     expect(ran(w, SPAWN)).toEqual([])
   })
 })
@@ -318,7 +339,7 @@ describe('give back with nothing to start a worker', () => {
     await ui.press({ key: 'back-MG677R' })
     await ui.input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: Rueckgabe an niemanden (kein Worker gestartet) - Prompt-Cache des alten Workers kalt seit 10 min; kein spawn.sh gefunden')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to nobody (no worker started) - old worker\'s prompt cache cold for 10 min; no spawn.sh found')
   })
 })
 
@@ -446,6 +467,13 @@ describe('the status line', () => {
     expect(w.status.at(-1)).toBe('1 worker · 0 review · 2 waiting for you · 5h 34%')
   })
 
+  test('shows the seven-day window beside the five-hour one when the subscription reports it', async ($, on) => {
+    const w = world(on, { board: false })
+    w.usage.rateLimits = [{ kind: 'five_hour', percentUsed: 34 }, { kind: 'seven_day', percentUsed: 61.6 }]
+    await startSession($)
+    expect(w.status.at(-1)).toBe('5h 34% · 7d 62%')
+  })
+
   test('without a board it shows what was used alone', async ($, on) => {
     const w = world(on, { board: false })
     await startSession($)
@@ -513,21 +541,6 @@ describe('what the store keeps', () => {
     const left = [...w.store.keys()].filter(k => k.startsWith('threads:'))
     expect(left).toHaveLength(20)
     expect(left[0]).toBe('threads:s5')
-  })
-})
-
-describe('language', () => {
-  test('the band, the guard and /cockpit follow the language setting', async ($, on) => {
-    const w = world(on, { lang: 'Russian' })
-    await startSession($)
-    w.usage.tokens = 120_000
-    await answer($)
-    const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ text: 'Ждёт тебя' })).toBeDefined()
-    expect(await ui.find({ key: 'accept-MG677R', text: 'Принять' })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /контекст 120k · кэш ещё 60 мин · советую \/compact/ })).toBeDefined()
-    expect((await $.command.run(typed(''))).text).toContain('Вызов: /cockpit')
-    expect((await $.command.run(typed('threads'))).text).toBe('Нитей разговора пока нет.')
   })
 })
 

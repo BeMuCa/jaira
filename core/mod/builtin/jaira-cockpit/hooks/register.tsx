@@ -2,19 +2,18 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import { hasReservation, mainRepoOf, otherRefusal, snapshotOf, upwards, worktreeFor, type Waiting } from './board.ts'
-import { cacheView, dollars, guard, isPersonsPrompt, ttlMs } from './cache.ts'
+import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
   agentName, AGENT_ORIGINS, clipReport, DIGESTED, isAgentReport, isUnscoped, keyOf, listReports, NOTIFICATION,
   projectKeys, REPORTS_PER_TICKET, rewriteRow, showReport, stamp, TICKETS, type Report,
 } from './filter.ts'
 import { body, source } from './frame.ts'
-import { langOf, type Lang } from './lang.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, isExpired, RECORD_PREFIX, startOf, type Role, type SessionRecord,
 } from './sessions.ts'
-import { texts } from './texts.ts'
+import { t } from './texts.ts'
 import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
 
 // The engine follows `$` only into functions declared in this same file, and
@@ -33,7 +32,6 @@ const cacheAtom = atom({ plugin: 'jaira-cockpit', key: 'cache' } as const, { tok
 const threadsAtom = atom({ plugin: 'jaira-cockpit', key: 'threads' } as const, { questions: 0, stale: 0 })
 const givingAtom = atom({ plugin: 'jaira-cockpit', key: 'giving' } as const, null)
 const paneAtom = atom({ plugin: 'jaira-cockpit', key: 'paneTicket' } as const, null)
-const langAtom = atom({ plugin: 'jaira-cockpit', key: 'lang' } as const, 'en')
 const minuteAtom = atom({ plugin: 'jaira-cockpit', key: 'minute' } as const, 0)
 const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, null)
 
@@ -56,14 +54,6 @@ let personSaid: string | undefined
 let threads: Thread[] = []
 
 // ── shared helpers ───────────────────────────────────────────────────────
-
-async function language($: EngineInterface): Promise<Lang> {
-  try {
-    return langOf((await $.settings.read()).language)
-  } catch {
-    return 'en'
-  }
-}
 
 // The project a report belongs to: the repository's main working tree, so
 // every worktree of one repository shares its reports; else the directory.
@@ -118,7 +108,7 @@ async function keep($: EngineInterface, ticket: string, report: Report): Promise
 async function shorten($: EngineInterface, text: string, origin: string, agent?: string): Promise<string | undefined> {
   if (DIGESTED.test(text)) return undefined
   const report = NOTIFICATION.exec(text)?.[0] ?? text
-  const short = digest(report, await language($))
+  const short = digest(report)
   if (short === undefined) return undefined
   await keep($, short.ticket, {
     at: new Date().toISOString(),
@@ -133,15 +123,15 @@ async function keptReports($: EngineInterface, ticket: string): Promise<Report[]
   return ((await $.store.get(keyOf(await project($), ticket))) as Report[] | undefined) ?? []
 }
 
-async function reports($: EngineInterface, args: string, lang: Lang): Promise<string> {
+async function reports($: EngineInterface, args: string): Promise<string> {
   const root = await project($)
   const ticket = args.trim().toUpperCase()
   if (ticket === '') {
     const keys = projectKeys(await $.store.keys(), root).reverse()
     const rows = await Promise.all(keys.map(async k => [k, ((await $.store.get(k)) as Report[] | undefined) ?? []] as const))
-    return listReports(rows, lang)
+    return listReports(rows)
   }
-  return showReport(ticket, await keptReports($, ticket), lang)
+  return showReport(ticket, await keptReports($, ticket))
 }
 
 // What session.receive left alone on purpose — a comment on an artifact, a
@@ -226,7 +216,6 @@ async function say($: EngineInterface, text: string): Promise<void> {
 // dry run; --force follows only when the human exit is all they refuse, so
 // an open definition-of-done item or plan step still stops the press.
 async function accept($: EngineInterface, w: Waiting): Promise<void> {
-  const t = texts(await language($))
   if (!board || w.acceptTo === null) return
   const dir = await ticketDir($, board, w.id)
   const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
@@ -261,7 +250,6 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 // Explain a review finding, or talk an open question through, in a Herdr tab
 // of its own: the teamlead's chat is not where that conversation belongs.
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void> {
-  const t = texts(await language($))
   const bin = await herdr($)
   const script = await spawnScript($)
   if (bin === undefined || script === undefined || !board) {
@@ -317,10 +305,9 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
 async function giveBack($: EngineInterface, id: string, lane: string, reason: string): Promise<void> {
-  const t = texts(await language($))
   if (!board) return
   const dir = await ticketDir($, board, id)
-  const noted = await jaira($, dir, ['note', id, `Zurueckgegeben aus ${lane}: ${reason}`])
+  const noted = await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
   const moved = noted.ok ? await jaira($, dir, ['move', id, '--to', 'in-progress', '--force']) : noted
   if (!moved.ok) {
     await say($, t.failed(`${t.giveBack} ${id}`, moved.why))
@@ -328,39 +315,38 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   }
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
-    const to = who === 'old' ? 'den alten Worker' : who === 'new' ? 'einen neuen Worker' : 'niemanden (kein Worker gestartet)'
-    await jaira($, dir, ['note', id, `cockpit: Rueckgabe an ${to} - ${why}`])
+    const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
+    await jaira($, dir, ['note', id, `cockpit: given back to ${to} - ${why}`])
     await say($, t.returnedTo(id, who))
     await refreshBoard($)
   }
   const bin = await herdr($)
   // No Herdr: nobody to hand it to from here; the board says where it is.
-  if (bin === undefined) return handedTo('none', 'kein Herdr in dieser Sitzung')
+  if (bin === undefined) return handedTo('none', 'no Herdr in this session')
   const tabs = await run($, [bin, 'tab', 'list'], dir)
   const tab = tabs?.exitCode === 0 ? carrierTab(tabs.stdout, id) : undefined
   const record = carrierOf(await readRecords($), id)
   const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now() })
-  let who: 'old' | 'new' | 'none' = 'old'
   let why = choice.why
   if (choice.reuse && record) {
-    await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
-    await $.clock.sleep(1000)
-    await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
-  } else {
-    const script = await spawnScript($)
-    if (script === undefined) {
-      // Nothing to start a new one with: the old tab stays, so the ticket
-      // keeps whatever worker it has.
-      who = 'none'
-      why = `${choice.why}; kein spawn.sh gefunden (jaira roles install), alter Tab bleibt offen`
-    } else {
-      if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-      const started = await run($, [script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
-      who = started?.exitCode === 0 ? 'new' : 'none'
-      if (who === 'none') why = `${choice.why}; spawn.sh schlug fehl: ${(started?.stderr ?? '').trim().slice(-160)}`
+    // The pane may have gone since the tab list: only text that arrived
+    // counts as handed to the old worker.
+    const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
+    if (sent?.exitCode === 0) {
+      await $.clock.sleep(1000)
+      await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
+      return handedTo('old', why)
     }
+    why = `${why}, but its pane took no text`
   }
-  await handedTo(who, why)
+  const script = await spawnScript($)
+  // Nothing to start a new one with: the old tab stays, so the ticket keeps
+  // whatever worker it has.
+  if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
+  if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
+  const started = await run($, [script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+  if (started?.exitCode === 0) return handedTo('new', why)
+  await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
 }
 
 // ── context, cache, status line ──────────────────────────────────────────
@@ -375,13 +361,9 @@ async function refreshCache($: EngineInterface): Promise<void> {
   const state: CacheState = { tokens: usage.context.tokens ?? 0, lastAnswerAt: lastAnswerAt ?? null, ttl: ttlMs(usage.rateLimits) }
   await update($, cacheAtom, () => state)
   const view = await read($, boardAtom)
-  const t = texts(await read($, langAtom))
-  // What the person used: the five-hour window on a subscription, else what
-  // this session cost.
-  const window = usage.rateLimits.find(r => /five|5h/i.test(r.kind))
-  const used = window !== undefined
-    ? `5h ${Math.round(window.percentUsed)}%`
-    : usage.cost !== undefined ? `${t.usage} ${dollars(usage.cost.usd)}` : ''
+  // What the person used: the five-hour and seven-day windows on a
+  // subscription, else what this session cost.
+  const used = windowsUsed(usage.rateLimits) || (usage.cost !== undefined ? `${t.usage} ${dollars(usage.cost.usd)}` : '')
   const lanes = view === null ? '' : t.status(view.counts.worker, view.counts.review, view.counts.person)
   $.ui.status([lanes, used].filter(s => s !== '').join(' · ') || undefined)
 }
@@ -455,7 +437,6 @@ async function guarded($: EngineInterface, text: string, origin: string, thresho
     usdPerMTok,
   })
   if (held === undefined) return undefined
-  const t = texts(await language($))
   const options = [t.guardSend, t.guardCompact, t.guardClear, t.guardCancel]
   let choice: string
   try {
@@ -490,8 +471,6 @@ export const register: Register = (on, options) => {
     const threadKeys = (await $.store.keys()).filter(k => k.startsWith(THREADS_PREFIX))
     for (const old of threadKeys.slice(0, Math.max(0, threadKeys.length - THREAD_SESSIONS))) await $.store.delete(old)
     await readRecords($)
-    const lang = await language($)
-    await update($, langAtom, () => lang)
     const kept = (await $.store.get(await threadsKey($))) as { turn: number; threads: Thread[] } | undefined
     if (kept !== undefined) {
       turn = kept.turn
@@ -575,7 +554,7 @@ export const register: Register = (on, options) => {
     if (e.tool === 'mcp__jaira-cockpit__report') {
       // A tool's arguments ride on `e` beside `tool`, not under a key of their own.
       const { ticket } = e as { ticket?: unknown }
-      return { result: await reports($, typeof ticket === 'string' ? ticket : '', 'en') }
+      return { result: await reports($, typeof ticket === 'string' ? ticket : '') }
     }
     totals = { ...totals, tools: totals.tools + 1 }
     return next(e)
@@ -587,10 +566,8 @@ export const register: Register = (on, options) => {
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: USAGE_COMMAND }, async ($, e) => {
-    const lang = await language($)
-    const t = texts(lang)
     const [sub = '', ...rest] = (e.args ?? '').trim().split(/\s+/)
-    if (sub === 'report') return { text: await reports($, rest.join(' '), lang) }
+    if (sub === 'report') return { text: await reports($, rest.join(' ')) }
     if (sub === 'threads') return { text: listThreads(threads, turn, t.threadsTitle, t.threadsNone) }
     if (sub === 'ticket' && rest[0]) {
       const id = rest[0].toUpperCase()
@@ -609,7 +586,6 @@ export const register: Register = (on, options) => {
     const giving = await read($, givingAtom)
     const notice = await read($, noticeAtom)
     await read($, minuteAtom)
-    const t = texts(await read($, langAtom))
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
     const c = cacheView(cache.tokens, now, cache.lastAnswerAt ?? undefined, cache.ttl)
@@ -674,7 +650,6 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const id = await read($, paneAtom)
-    const t = texts(await read($, langAtom))
     const { Box, Text } = $.ui.resolve(e)
     if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     const kept = await keptReports($, id)

@@ -1,10 +1,8 @@
-// Self-contained, as a contract must be: these mirror hooks/board.ts and
-// hooks/lang.ts.
+// Self-contained, as a contract must be: these mirror hooks/board.ts.
 export type Waiting = {
   id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null
 }
 export type Counts = { worker: number; review: number; person: number }
-export type Lang = 'en' | 'de' | 'ru'
 
 // What the cockpit's band and pane draw from, held by the host for the
 // session so a hot reload keeps it.
@@ -23,7 +21,6 @@ declare module 'claude-code' {
       giving: string | null
       // The ticket the pane shows.
       paneTicket: string | null
-      lang: Lang
       // Moves once a minute, so the cache countdown redraws.
       minute: number
       // The last thing a button did, shown under the band until the next.

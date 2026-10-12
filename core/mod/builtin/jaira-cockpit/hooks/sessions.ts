@@ -56,16 +56,16 @@ export type Choice = { reuse: boolean; why: string }
 // The reason is written onto the ticket, so it says what was measured.
 export function chooseWorker(input: { record?: SessionRecord; tabAlive: boolean; now: number }): Choice {
   const { record, tabAlive, now } = input
-  if (!tabAlive) return { reuse: false, why: 'kein Herdr-Tab des alten Workers mehr offen' }
-  if (record === undefined) return { reuse: false, why: 'kein Stand der alten Worker-Sitzung bekannt (Cache und Kontext unbekannt)' }
+  if (!tabAlive) return { reuse: false, why: 'the old worker has no Herdr tab open any more' }
+  if (record === undefined) return { reuse: false, why: 'nothing recorded about the old worker session (cache and context unknown)' }
   const k = Math.round(record.tokens / 1000)
-  if (record.tokens >= CONTEXT_LIMIT) return { reuse: false, why: `Kontext des alten Workers ${k}k >= ${CONTEXT_LIMIT / 1000}k` }
+  if (record.tokens >= CONTEXT_LIMIT) return { reuse: false, why: `old worker's context ${k}k >= ${CONTEXT_LIMIT / 1000}k` }
   const left = record.lastAnswerAt === undefined ? -1 : record.lastAnswerAt + record.ttl - now
   if (left <= 0) {
-    const cold = record.lastAnswerAt === undefined ? '' : ` seit ${Math.max(1, Math.round(-left / 60_000))} min`
-    return { reuse: false, why: `Prompt-Cache des alten Workers kalt${cold}` }
+    const cold = record.lastAnswerAt === undefined ? '' : ` for ${Math.max(1, Math.round(-left / 60_000))} min`
+    return { reuse: false, why: `old worker's prompt cache cold${cold}` }
   }
-  return { reuse: true, why: `Tab lebt, Cache noch ${Math.ceil(left / 60_000)} min warm, Kontext ${k}k` }
+  return { reuse: true, why: `tab alive, cache warm for ${Math.ceil(left / 60_000)} more min, context ${k}k` }
 }
 
 // The Herdr tab of the agent carrying a ticket, from `herdr tab list`:
@@ -89,7 +89,7 @@ export const TYPED_BY_COCKPIT = '[jaira-cockpit]'
 
 // What the old worker is told when work comes back to it.
 export function backMessage(ticket: string, lane: string, reason: string): string {
-  return `${TYPED_BY_COCKPIT} Ticket ${ticket} kam aus ${lane} zurueck nach in-progress. Grund: ${reason} - steht auch als Note am Ticket. Trag es weiter wie bisher (jaira show ${ticket} --json).`
+  return `${TYPED_BY_COCKPIT} Ticket ${ticket} came back from ${lane} to in-progress. Reason: ${reason} - also a note on the ticket. Carry it on as before (jaira show ${ticket} --json).`
 }
 
 export function isExpired(record: SessionRecord, now: number): boolean {
