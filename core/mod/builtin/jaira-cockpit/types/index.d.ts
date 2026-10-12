@@ -1,6 +1,6 @@
 // Self-contained, as a contract must be: these mirror hooks/board.ts.
 export type Waiting = {
-  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string
+  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string; explainable: boolean
 }
 export type Counts = { worker: number; review: number; person: number }
 
@@ -27,6 +27,10 @@ declare module 'claude-code' {
       notice: string | null
       // What the message pane shows: an error, or an explanation, whole.
       message: { title: string; text: string } | null
+      // The ticket the explanation pane shows, and the one the own-answer
+      // pane asks about.
+      explaining: string | null
+      answering: string | null
       // The explanation an Explain chat wrote onto each ticket the band shows.
       explained: Record<string, string>
       // The decisions Discuss chats wrote back, by ticket, until read.

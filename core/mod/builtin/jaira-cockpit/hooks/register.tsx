@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, lanesOf, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { explanationOf, lanesOf, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -45,6 +45,8 @@ const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, nul
 const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, null)
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
+const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
+const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
 const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
 const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
@@ -52,6 +54,10 @@ const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as co
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
+const EXPLANATION = 'cockpit-explanation'
+const ANSWER = 'cockpit-answer'
+// The choice in the explanation pane that is none of the options.
+const OWN = 'own'
 const BAND_TICKETS = 3
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
@@ -245,7 +251,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
   const explained: Record<string, string> = {}
   for (const w of shownIds) {
-    if (!hasReservation(w.verdict)) continue
+    if (!w.explainable) continue
     const note = await noteOn($, board.dir, w.id, 'explain')
     if (note !== undefined) explained[w.id] = note.text
   }
@@ -380,6 +386,36 @@ async function toggleMore($: EngineInterface, open: boolean): Promise<void> {
 async function readDecision($: EngineInterface, id: string, text: string): Promise<void> {
   await update($, decidedAtom, d => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)))
   await show($, t.decisionOf(id), text)
+}
+
+// An explanation is read in a pane that takes the keyboard: its options are
+// a choice there, with an own answer beside them, and the choice goes onto
+// the ticket as a decision.
+async function readExplanation($: EngineInterface, id: string, text: string): Promise<void> {
+  await update($, explainingAtom, () => id)
+  const opened = await $.ui.open({ id: EXPLANATION, title: t.explanationOf(id), focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) $.ui.toast(`${t.explanationOf(id)}: ${text}`)
+}
+
+// An own answer is typed in a pane of its own, opened with focus, as Give
+// back asks: a field drawn into the open explanation pane after the pick is
+// not sure to get the keyboard.
+async function askOwnAnswer($: EngineInterface, id: string): Promise<void> {
+  await $.ui.close({ id: EXPLANATION })
+  await update($, answeringAtom, () => id)
+  const opened = await $.ui.open({ id: ANSWER, title: t.answerOn(id), focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) await fail($, `${t.decide} ${id}`, t.noRoom)
+}
+
+// The choice is noted on the ticket, as a Discuss chat notes it, and the
+// band offers it to read. Nothing moves: Accept and Give back stay the
+// person's presses.
+async function decide($: EngineInterface, id: string, text: string): Promise<void> {
+  if (!board) return
+  const done = await jaira($, await ticketDir($, board, id), ['note', id, `decision: ${text}`])
+  if (!done.ok) return fail($, `${t.decide} ${id}`, done.why)
+  await update($, decidedAtom, d => ({ ...d, [id]: text }))
+  await say($, t.decidedOn(id))
 }
 
 // Give back asks what is missing in a pane of its own, opened with focus: a
@@ -822,11 +858,14 @@ export const register: Register = (on, options) => {
               {hasInput
                 ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)} />
                 : null}
-              {hasReservation(w.verdict)
+              {w.explainable
                 ? <Button key={`explain-${w.id}`} label={t.explain} onPress={() => void openChat($, w.id, 'explain')} />
                 : null}
               {explained[w.id] !== undefined
-                ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void show($, t.explanationOf(w.id), explained[w.id]!)} />
+                ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
+                : null}
+              {w.verdict !== ''
+                ? <Button key={`verdict-${w.id}`} label={t.verdict} onPress={() => void show($, t.verdictOf(w.id), w.verdict)} />
                 : null}
               {w.question !== ''
                 ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void openChat($, w.id, 'discuss')} />
@@ -916,6 +955,74 @@ export const register: Register = (on, options) => {
             void update($, givingAtom, () => null)
             void $.ui.close({ id: GIVE_BACK })
             void giveBack($, w.id, w.lane, reason.trim(), share)
+          }}
+        />
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
+    const id = await read($, explainingAtom)
+    const text = id === null ? undefined : (await read($, explainedAtom))[id]
+    const table = $.ui.resolve(e)
+    const { Box, Button, Text } = table
+    const Select = 'Select' in table ? table.Select : undefined
+    if (id === null || text === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    const x = explanationOf(text)
+    const close = <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
+    return (
+      <Box flexDirection="column">
+        <Text bold>{t.explanationOf(id)}</Text>
+        {x.parts.map((p, i) => p.kind === 'option'
+          ? <Text key={`part-${i}`} wrap="wrap">  <Text bold>{p.key})</Text> {p.text}{p.key === x.recommended ? ` ${t.recommended}` : ''}</Text>
+          // A paragraph a line apart; the options one under the other.
+          : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
+        {Select !== undefined
+          ? (
+            <Box marginTop={1}>
+              <Select
+                key={`choose-${id}`}
+                label={t.choose}
+                options={[...x.options.map(o => ({ value: o.key, label: `${o.key}) ${o.text}` })), { value: OWN, label: t.ownAnswer }]}
+                {...(x.recommended !== undefined ? { value: x.recommended } : {})}
+                autoFocus
+                onSelect={(value: string) => {
+                  if (value === OWN) return void askOwnAnswer($, id)
+                  const o = x.options.find(o => o.key === value)
+                  if (o === undefined) return
+                  void $.ui.close({ id: EXPLANATION })
+                  void decide($, id, `${o.key}) ${o.text}`)
+                }}
+              />
+            </Box>
+          )
+          : null}
+        {close}
+      </Box>
+    )
+  })
+
+  on('ui.render', { component: 'Pane', requestId: ANSWER }, async ($, e) => {
+    const id = await read($, answeringAtom)
+    const table = $.ui.resolve(e)
+    const { Box, Text } = table
+    const Input = 'Input' in table ? table.Input : undefined
+    if (id === null || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    return (
+      <Box flexDirection="column">
+        <Text>{t.explanationOf(id)}</Text>
+        <Input
+          key={`answer-${id}`}
+          label={t.ownLabel}
+          placeholder={t.ownPlaceholder}
+          submitLabel={t.decide}
+          autoFocus
+          onSubmit={(answer: string) => {
+            // Nothing typed: the pane stays open for the answer.
+            if (answer.trim() === '') return
+            void update($, answeringAtom, () => null)
+            void $.ui.close({ id: ANSWER })
+            void decide($, id, answer.trim())
           }}
         />
       </Box>

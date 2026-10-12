@@ -57,6 +57,10 @@ const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', ques
 const OLDER = "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date"
 const GIVE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-give-back', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as const
+const EXPLANATION = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-explanation', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
+const ANSWER = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-answer', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
@@ -360,7 +364,7 @@ describe('waiting for you', () => {
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
     const band = await $.ui.mount(BAND)
-    expect(await band.find({ type: 'Text', text: /K7P2QX \| decided in Discuss/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /K7P2QX \| decided/ })).toBeDefined()
     await band.press({ key: 'decision-K7P2QX' })
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Decision on K7P2QX', focus: true })
     const pane = await $.ui.mount(MESSAGE('Decision on K7P2QX'))
@@ -395,9 +399,109 @@ describe('waiting for you', () => {
     // No explanation on K7P2QX: no button there.
     expect(await ui.find({ key: 'read-K7P2QX' })).toBeUndefined()
     await ui.press({ key: 'read-MG677R' })
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explanation of MG677R', focus: true }])
-    const pane = await $.ui.mount(MESSAGE('Explanation of MG677R'))
+    expect(w.opened).toEqual([{ id: 'cockpit-explanation', title: 'Explanation of MG677R', focus: true }])
+    // Written before the shape was asked for: shown whole, as it always was,
+    // and still answerable in words of one's own.
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
     expect(await pane.find({ type: 'Text', text: 'The key leaves out the branch.\nTwo branches share one cache entry.' })).toBeDefined()
+    expect((await pane.find({ key: 'choose-MG677R' }))?.props.options).toEqual([{ value: 'own', label: 'Own answer…' }])
+  })
+
+  const SHAPED = [
+    '## Progress',
+    '',
+    '- **2026-10-12 15:00 · Alex** — explain: The cache key leaves out the branch.',
+    'Warum: two branches then share one entry and read each other\'s results.',
+    'a) add the branch to the key',
+    'b) accept it as it is',
+    'c) clear the cache on checkout',
+    'Empfehlung: a - smallest change, no stale reads',
+  ].join('\n')
+
+  test('a shaped explanation reads as paragraphs and one line per option, the recommended one chosen', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts).toEqual(expect.arrayContaining([
+      'The cache key leaves out the branch.',
+      "Warum: two branches then share one entry and read each other's results.",
+      '  a) add the branch to the key (recommended)',
+      '  b) accept it as it is',
+      '  c) clear the cache on checkout',
+      'Empfehlung: a - smallest change, no stale reads',
+    ]))
+    const choose = await pane.find({ key: 'choose-MG677R' })
+    expect(choose?.props.value).toBe('a')
+    expect(choose?.props.autoFocus).toBe(true)
+    expect((choose?.props.options as { value: string }[]).map(o => o.value)).toEqual(['a', 'b', 'c', 'own'])
+  })
+
+  test('an option picked goes onto the ticket as a decision, and the band offers it to read', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'b' })
+    expect(ran(w, 'jaira', 'note')).toEqual([['jaira', 'note', 'MG677R', 'decision: b) accept it as it is', '@/.worktrees/repo-mg677r']])
+    expect(w.closed).toEqual(['cockpit-explanation'])
+    // Nothing moves: Accept and Give back stay the person's presses.
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /MG677R \| decided/ })).toBeDefined()
+    await band.press({ key: 'decision-MG677R' })
+    expect(await (await $.ui.mount(MESSAGE('Decision on MG677R'))).find({ type: 'Text', text: 'b) accept it as it is' })).toBeDefined()
+  })
+
+  test('an own answer is typed in a pane that takes the keyboard and goes onto the ticket as a decision', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).select({ key: 'choose-MG677R', value: 'own' })
+    expect(w.closed).toEqual(['cockpit-explanation'])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-answer', title: 'Answer on MG677R', focus: true })
+    const pane = await $.ui.mount(ANSWER('Answer on MG677R'))
+    expect((await pane.find({ key: 'answer-MG677R' }))?.props.autoFocus).toBe(true)
+    // Enter on an empty field notes nothing and keeps the pane open.
+    await pane.input({ key: 'answer-MG677R', text: '  ' })
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    await pane.input({ key: 'answer-MG677R', text: 'key by branch and commit' })
+    expect(ran(w, 'jaira', 'note')).toEqual([['jaira', 'note', 'MG677R', 'decision: key by branch and commit', '@/.worktrees/repo-mg677r']])
+    expect(w.closed).toEqual(['cockpit-explanation', 'cockpit-answer'])
+    expect(await (await $.ui.mount(BAND)).find({ key: 'decision-MG677R' })).toBeDefined()
+  })
+
+  test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {
+    const w = world(on)
+    // WP1CHK's verdict: no word of the reservation list, a gap all the same.
+    const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass). No defect that blocks: the one weak spot is that a failed note after a successful move is not reported (gap 1), a small follow-up rather than a reason to send it back. Accept, with gap 1 either fixed now or knowingly left.'
+    w.tickets = [
+      { ...SIGNOFF, handle: 'WP1CHK', review: { verdict, gaps: '1. Minor: the note after a successful move is fire-and-forget.' } },
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict, gaps: 'none' } },
+      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve', gaps: '' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-WP1CHK' })).toBeDefined()
+    expect(await band.find({ key: 'explain-AB12CD' })).toBeUndefined()
+    expect(await band.find({ key: 'explain-EF34GH' })).toBeUndefined()
+  })
+
+  test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
+    const w = world(on)
+    const long = 'The diff meets all five DoD items; the one weak spot is the cache key, which leaves out the branch, so two branches share an entry.'
+    w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, HUMAN]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'read-MG677R' })).toBeUndefined()
+    // No verdict, no button.
+    expect(await band.find({ key: 'verdict-K7P2QX' })).toBeUndefined()
+    await band.press({ key: 'verdict-MG677R' })
+    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Review verdict of MG677R', focus: true }])
+    expect(await (await $.ui.mount(MESSAGE('Review verdict of MG677R'))).find({ type: 'Text', text: long })).toBeDefined()
   })
 
   test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
@@ -530,7 +634,7 @@ describe('waiting for you', () => {
     await answer($)
     await (await $.ui.mount(BAND)).press({ key: 'theirs' })
     const band = await drawn($)
-    const at = ['jaira-cockpit', 'MG677R accepted: done', 'Waiting for you', 'MG677R | signoff', 'K7P2QX | decided in Discuss', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
+    const at = ['jaira-cockpit', 'MG677R accepted: done', 'Waiting for you', 'MG677R | signoff', 'K7P2QX | decided', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
     expect(at.every(i => i >= 0)).toBe(true)
     expect(at).toEqual([...at].sort((a, b) => a - b))
   })

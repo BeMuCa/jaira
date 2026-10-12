@@ -18,6 +18,9 @@ export type Waiting = {
   acceptTo: string | null
   // Whose it is; '' for nobody's.
   assignee: string
+  // Whether the band offers Explain: the verdict names a reservation, or
+  // the review names a gap.
+  explainable: boolean
 }
 
 export type Counts = { worker: number; review: number; person: number }
@@ -30,7 +33,7 @@ type Ticket = {
   next_lane?: string
   question?: string
   assignee?: string
-  review?: { verdict?: string }
+  review?: { verdict?: string; gaps?: string }
 }
 
 function parse<T>(json: string): T | undefined {
@@ -96,6 +99,7 @@ export function snapshotOf(
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
+      explainable: hasReservation(oneLine(t.review?.verdict)) || namesGap(t.review?.gaps),
     })
   }
   const ids = tickets.map(t => t.handle)
@@ -148,6 +152,16 @@ export function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
+// A review's gaps name one unless they are empty or say there is none: a
+// verdict that reads as a yes ("the one weak spot ... (gap 1)") still has
+// something a person should have explained.
+const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+)\.?$/i
+
+export function namesGap(gaps: string | undefined): boolean {
+  const g = oneLine(gaps)
+  return g !== '' && !NO_GAP.test(g)
+}
+
 // A jaira older than the board it reads says so on a line of its own before
 // anything else it prints; that line is no part of an answer or an error.
 const OLDER_BUILD = /^jaira: this board was set up by an older version.*$\n?/gm
@@ -192,6 +206,30 @@ export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: 
   const end = rest.findIndex(l => l.startsWith('- **') || l.startsWith('#'))
   const text = [lines[at]!.replace(lead, ''), ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
   return { text, at: Date.parse(`${stamp.replace(' ', 'T')}:00Z`) }
+}
+
+// An Explain chat's note, in the shape spawn.sh asks for: one line per part —
+// the finding, why it counts, one line per option as `a) ...`, and
+// `Empfehlung: <letter> - ...`. Its parts in the order written, the options
+// apart for the choice, and the option recommended. A note with no option
+// line — one written before the shape was asked for — is one part, whole,
+// as it was always shown.
+export type Part = { kind: 'text'; text: string } | { kind: 'option'; key: string; text: string }
+export type Explanation = { parts: Part[]; options: { key: string; text: string }[]; recommended?: string }
+
+const OPTION = /^\s*\(?([a-f])\)\s+(.+)$/
+const RECOMMENDED = /^\s*(?:empfehlung|recommendation)\s*:\s*\(?([a-f])\b/i
+
+export function explanationOf(text: string): Explanation {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '')
+  const parts: Part[] = lines.map(l => {
+    const m = OPTION.exec(l)
+    return m ? { kind: 'option', key: m[1]!, text: m[2]!.trim() } : { kind: 'text', text: l }
+  })
+  const options = parts.flatMap(p => (p.kind === 'option' ? [{ key: p.key, text: p.text }] : []))
+  if (options.length === 0) return { parts: [{ kind: 'text', text: text.trim() }], options }
+  const recommended = lines.map(l => RECOMMENDED.exec(l)?.[1]).find(k => k !== undefined && options.some(o => o.key === k))
+  return { parts, options, ...(recommended !== undefined ? { recommended } : {}) }
 }
 
 // The main working tree, from `git rev-parse --git-common-dir`: spawn.sh puts
