@@ -334,13 +334,6 @@ async function accept($: EngineInterface, w: Waiting): Promise<void> {
   await refreshBoard($)
 }
 
-// What the press starts once the ticket is in done, without a further word
-// from the person: stepAfterAccept (board.ts) decides, from the ticket's
-// branch and its pull requests. A pull request is opened only from here — a
-// press of Accept is a person's — by the pr lane of spawn.sh. A step that
-// cannot run starts nothing and says why in the message pane; the ticket
-// stays in done, where the press put it: accepted is accepted, and what
-// follows is the person's to start by hand then.
 // The repository a pull request of this board goes to and the branch it
 // goes into, fetched: `upstream/main` in a fork, `origin/master` otherwise —
 // what "ahead" is counted against. undefined where origin is missing or no
@@ -370,6 +363,13 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
   return { on, repo, base: `${remote}/${branch}` }
 }
 
+// What the press starts once the ticket is in done, without a further word
+// from the person: stepAfterAccept (board.ts) decides, from the ticket's
+// branch and its pull requests. A pull request is opened only from here — a
+// press of Accept is a person's — by the pr lane of spawn.sh. A step that
+// cannot run starts nothing and says why in the message pane; the ticket
+// stays in done, where the press put it: accepted is accepted, and what
+// follows is the person's to start by hand then.
 async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<void> {
   if (!board) return
   const b = board
@@ -397,16 +397,14 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   }
   let step: StepAfterAccept = 'next'
   if (branch !== undefined && base !== undefined && branch !== found.base) {
-    const count = await run($, ['git', 'rev-list', '--count', `${base}..${branch}`], b.repo)
-    if (count?.exitCode !== 0) return stuck(`git rev-list ${base}..${branch}: ${(count?.stderr ?? 'did not run').trim()}`)
-    const ahead = Number.parseInt(count.stdout.trim(), 10) || 0
+    // One subject per commit ahead: the count and the tickets in one walk.
+    const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
+    if (subjects?.exitCode !== 0) return stuck(`git log ${base}..${branch}: ${(subjects?.stderr ?? 'did not run').trim()}`)
+    const ahead = subjects.stdout.split('\n').filter(Boolean).length
     let pending: string[] = []
     if (ahead > 0) {
-      const [subjects, list] = await Promise.all([
-        run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo),
-        run($, ['jaira', 'list', '--json'], b.dir, 30_000),
-      ])
-      if (subjects?.exitCode !== 0 || list?.exitCode !== 0) return stuck(`git log / jaira list: ${(subjects?.stderr || list?.stderr || 'did not run').trim()}`)
+      const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
+      if (list?.exitCode !== 0) return stuck(`jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`)
       pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
       if (pending.length > 0) hint = t.prWaits(branch, pending)
     }

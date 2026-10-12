@@ -37,7 +37,7 @@ type World = {
   opened: { id: string; title?: string; focus?: boolean }[]
   closed: string[]
   clock: ReturnType<typeof mock.clock>
-  // After Accept: commits the ticket's branch has that master lacks, the
+  // After Accept: commits the ticket's branch has that the target lacks, the
   // forge's answer for its pull requests (null: the tool failed), origin
   // (null: none), `git config jaira.forge`, and `jaira next --all`.
   ahead: number
@@ -183,7 +183,6 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
-    if (cmd === 'git' && args[0] === 'rev-list') return ok(`${w.ahead}\n`)
     if (cmd === 'git' && args[0] === 'config') return w.forge ? ok(`${w.forge}\n`) : failed('')
     if (cmd === 'git' && args[0] === 'remote' && args[1] === 'get-url') return w.origin === null ? failed("error: No such remote 'origin'") : ok(`${w.origin}\n`)
     if ((cmd === 'gh' || cmd === 'glab') && w.prs === null) return failed(`${cmd}: command not found`)
@@ -203,7 +202,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
     if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) return ok(w.namedSha)
-    if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.join('\n'))
+    // As many subjects as commits ahead: the first `ahead` of them.
+    if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.concat(Array(Math.max(0, w.ahead - w.subjects.length)).fill('chore: more')).slice(0, w.ahead).join('\n'))
     // The move a press forces lands: jaira list reads the ticket in done after it.
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--force')) {
       w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === args[1] ? { ...(x as object), status: args[3] } : x))
@@ -588,11 +588,11 @@ describe('after Accept', () => {
     return (await pane.findAll({ type: 'Text' })).map(x => x.text).join('\n')
   }
 
-  test('a branch ahead of master without a pull request: the press opens one, by a person, in the ticket\'s worktree', async ($, on) => {
+  test('a branch ahead of the target without a pull request: the press opens one, by a person, in the ticket\'s worktree', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     await press($)
-    expect(ran(w, 'git', 'rev-list')).toEqual([['git', 'rev-list', '--count', 'upstream/main..feat/mg677r', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
     expect(ran(w, 'gh')).toEqual([
       ['gh', 'repo', 'view', 'git@github.com:acme/repo.git', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
       ['gh', 'repo', 'view', 'upstream/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
@@ -647,7 +647,7 @@ describe('after Accept', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
     expect(ran(w, 'git', 'branch')).toEqual([['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']])
-    expect(ran(w, 'git', 'rev-list')).toEqual([['git', 'rev-list', '--count', 'upstream/main..feat/zz99zz', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'feat/zz99zz', '@/repo']])
     expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
   })
@@ -694,9 +694,8 @@ describe('after Accept', () => {
     w.ahead = 3
     await press($)
     expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'upstream', 'main', '@/repo']])
-    const order = w.ran.map(r => r[1] === 'fetch' ? 'fetch' : r[1] === 'rev-list' ? 'count' : r[1] === 'log' ? 'log' : '').filter(Boolean)
-    expect(order).toEqual(['fetch', 'count', 'log'])
-    expect(ran(w, 'git', 'rev-list')).toEqual([['git', 'rev-list', '--count', 'upstream/main..feat/mg677r', '@/repo']])
+    const order = w.ran.map(r => r[1] === 'fetch' ? 'fetch' : r[1] === 'log' ? 'log' : '').filter(Boolean)
+    expect(order).toEqual(['fetch', 'log'])
     expect(ran(w, 'git', 'log')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
   })
 
@@ -707,7 +706,7 @@ describe('after Accept', () => {
     w.remotes = 'origin\tgit@github.com:upstream/repo.git (fetch)\n'
     await press($)
     expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'origin', 'main', '@/repo']])
-    expect(ran(w, 'git', 'rev-list')).toEqual([['git', 'rev-list', '--count', 'origin/main..feat/mg677r', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
   })
 
   test('a fork without its parent as a remote: nothing is counted, and the pane says which remote to add', async ($, on) => {
@@ -715,7 +714,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.remotes = 'origin\tgit@github.com:acme/repo.git (fetch)\n'
     await press($)
-    expect(ran(w, 'git', 'rev-list')).toEqual([])
+    expect(ran(w, 'git', 'log')).toEqual([])
     expect(ran(w, SPAWN)).toEqual([])
     expect(await failure($)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
   })
@@ -772,7 +771,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.refusals = [...w.refusals, { code: 'needs_commits', message: 'no commit names MG677R' }]
     await press($)
-    expect(ran(w, 'git', 'rev-list')).toEqual([])
+    expect(ran(w, 'git', 'log')).toEqual([])
     expect(ran(w, SPAWN)).toEqual([])
   })
 

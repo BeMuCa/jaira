@@ -13,12 +13,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:44:57Z
-updated-at: 2026-10-12T19:17:15Z
+updated-at: 2026-10-12T19:19:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48016
 claimed-at: 2026-10-12T18:49:39Z
 question: ""
 mode: conversational
+outcome-what: "Accept im Cockpit startet nach dem Move nach done den nächsten Schritt: PR über spawn.sh-Lane pr (/jaira-role-pr <id> --by-person), wenn der Branch Commits vor dem Default-Branch des PR-Ziels hat, alle Tickets seiner Commits in done sind und kein PR existiert; sonst das nächste Ticket aus jaira next ohne laufenden Tab als worker/dispatch. Jedes Scheitern sichtbar im Pane, Ticket bleibt done. jaira-role-pr legt die fertigen Tickets des Branches vor dem Push ins Logbook und beschreibt alle."
+outcome-why: "Accept schob ein Ticket nur nach done; danach musste die Person selbst den PR öffnen oder das nächste Ticket anstossen. Ein PR-Druck ist die Entscheidung einer Person, also darf Accept den PR öffnen."
+outcome-resolves: "DoD 1-7: afterAccept/pullTarget in register.tsx, Regel stepAfterAccept in board.ts, spawn.sh pr, jaira-role-pr --by-person + logbook vor Push, 18 Tests 'after Accept' + role_test, Release-Note GPFA7B"
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept: 'git rev-list --count base..branch' and 'git log --format=%s base..branch' walk the same range - drop rev-list, take ahead as the number of subject lines from the one git log
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx:337: afterAccept's doc comment ('What the press starts…') now sits above pullTarget's comment, so it reads as pullTarget's and afterAccept has none - move it down to afterAccept
+  core/mod/builtin/jaira-cockpit/tests/board.test.ts:591 test name 'a branch ahead of master…' - the base is the PR target's default branch now; say 'ahead of the target'
 ---
 
 # Accept im Cockpit stösst den nächsten Schritt an: PR öffnen oder nächstes Ticket starten
@@ -26,7 +33,7 @@ mode: conversational
 ## Definition of Done
 
 - [x] Nach Accept startet das Cockpit den entschiedenen nächsten Schritt (PR öffnen oder nächstes Ticket) ohne weiteren Befehl der Person; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:373 afterAccept() called from accept() :332 after the move; tests 'after Accept' > 'a branch ahead of master without a pull request…' and 'a pull request in any state already there: the next ticket starts…' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:591,608; claude plugin test: 99 pass, exit 0)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:373 afterAccept() called from accept() :332 after the move; tests 'after Accept' > 'a branch ahead of the target without a pull request…' and 'a pull request in any state already there: the next ticket starts…' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:591,608; claude plugin test: 99 pass, exit 0)
 - [x] Die Regel, welcher Schritt gilt, steht an einer Stelle im Code und ist im Kommentar begründet
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260-277 stepAfterAccept(ahead, pending, hasPullRequest) with the comment giving the reason; the only place the step is decided (register.tsx afterAccept calls it)
 - [x] Ein PR wird nur über den Accept-Druck einer Person geöffnet, nie von einem Agenten allein; Test
@@ -36,7 +43,7 @@ mode: conversational
 - [x] Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/GPFA7B.md (3 lines)
 - [x] Mehrere Tickets auf einem Branch: ein PR wird erst geöffnet, wenn jedes Ticket, das die Commits des Branches nennen (master..branch), in done ist; vorher -> 'next' mit Hinweis, welches Ticket noch fehlt. Ein Accept eines Tickets ohne eigenen Branch, dessen Id in einem anderen Branch steht, findet diesen Branch. Der PR nennt alle Tickets; Test
-  proof: board.ts:282 ticketsNamed, :294 pendingOf, :305 carrierBranch; register.tsx:351 pullTarget (base = target's default branch after git fetch: upstream/<default> in a fork) and afterAccept; SKILL.md 'Every ticket on the branch'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:655 'two tickets on one branch: no pull request while the other is not in done…', :667 '…both in done…', :676 'a ticket worked on another ticket's branch…', :692 'in a fork, ahead counts against the parent's default branch, fetched first…', :703 'not a fork…'; role_test.go TestPRFilesTheTicketsAwayBeforeThePush
+  proof: board.ts:282 ticketsNamed, :294 pendingOf, :305 carrierBranch; register.tsx:344 pullTarget (base = target's default branch after git fetch: upstream/<default> in a fork) and afterAccept :373 (one git log base..branch gives count and handles); SKILL.md 'Every ticket on the branch'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:655 'two tickets on one branch: no pull request while the other is not in done…', :667 '…both in done…', :676 'a ticket worked on another ticket's branch…', :692 'in a fork, ahead counts against the parent's default branch, fetched first…', :703 'not a fork…'; role_test.go TestPRFilesTheTicketsAwayBeforeThePush
 - [x] Der PR, den Accept öffnet, zeigt das Ticket im Endzustand: vor dem Push läuft 'jaira logbook <id>' und wird als 'chore(<ID>): file the ticket away' committet (jaira-role-pr bzw. die pr-Lane); Test
   proof: core/role/builtin/jaira-role-pr/SKILL.md '## File the finished tickets away' (after 'Which repository it goes to', before '## Push the branch'): jaira logbook <ID> + git add -A -- ':(glob).jaira/**/*<ID>-*.md' + commit chore(<ID>): file the ticket away…; core/role/role_test.go TestPRFilesTheTicketsAwayBeforeThePush
 
@@ -74,3 +81,8 @@ mode: conversational
 - **2026-10-12 19:12 · Alexander Sacharov** — DoD 6/7 gebaut. Entscheidungen: (a) Ticket ohne eigenen Branch: zuerst */<slug>, dann 'git log --branches --not master --grep=(<ID>) -n1' + 'git branch --contains' - billiger als jeden Branch einzeln zu loggen. (b) Branch ohne Worktree: das Cockpit legt ihn mit 'git worktree add ../.worktrees/<repo>-<slug> <branch>' wieder an, weil jaira-role-pr aus dem Worktree des Branches pushen muss; der frühere Critique-Fix startete den pr-Tab im Haupt-Checkout (master) - falsch. (c) Handles nur aus Subjects der Form type(ID): - so committet das Board. (d) Ein Handle, das jaira list nicht kennt, gilt als abgelegt (logbook) und hält nichts auf. (e) Logbook vor dem Push lebt in jaira-role-pr (nicht im Cockpit): pro Ticket im Terminal-Lane ein chore-Commit, nie --all. jaira show liest abgelegte Tickets aus dem Logbook weiter (geprüft an NZZDRH).
 - **2026-10-12 19:14 · Alexander Sacharov** — Alex 2026-10-12: vor dem Commit von DoD 6/7 beheben: master..branch zählt gegen das lokale master. Im Fork liegt das weit zurück (hier 43080ed7, upstream/master e486d04d), dann sind hunderte upstream-Commits 'vor master' und ihre Handles landen in der Liste. Basis muss der Default-Branch des PR-Zielrepos sein (bei Fork der Parent-Remote, z. B. upstream/master; sonst origin/HEAD), nach fetch. Test dazu. Danach committen und nach critique.
 - **2026-10-12 19:17 · Alexander Sacharov** — Alex' Fix (Basis) und Critique Runde 2 eingebaut. pullTarget() in register.tsx: forge -> gh/glab repo view origin -> Ziel (Parent im Fork) -> repo view Ziel -> Default-Branch -> passender Remote aus 'git remote -v' -> git fetch <remote> <branch> -> Basis <remote>/<branch>. Kein origin oder Forge unbekannt: Basis = lokaler Haupt-Worktree-Branch, ahead>0 meldet dann sichtbar, dass kein PR geht. Fork ohne Parent-Remote: sichtbarer Fehler mit 'git remote add upstream'. Kosten: jedes Accept mit Forge macht jetzt 2x repo view + fetch, auch auf dem 'next'-Weg - bewusst, weil die Branch-Suche per --grep schon die richtige Basis braucht. In jaira-role-pr denselben Fehler behoben (Handles gegen origin/HEAD gelesen): 'Which repository it goes to' steht jetzt vor 'File the finished tickets away'. Critique Runde 2: git add per Pfad ':(glob).jaira/**/*<ID>-*.md' statt .jaira/; Kommentar von branchesFor wieder an seiner Funktion.
+- **2026-10-12 19:18 · Alexander Sacharov** — critique (Runde 1, eigene Arbeit gegen den Diff gelesen): core/mod/builtin/jaira-cockpit/hooks/register.tsx afterAccept: 'git rev-list --count base..branch' and 'git log --format=%s base..branch' walk the same range - drop rev-list, take ahead as the number of subject lines from the one git log
+core/mod/builtin/jaira-cockpit/hooks/register.tsx:337: afterAccept's doc comment ('What the press starts…') now sits above pullTarget's comment, so it reads as pullTarget's and afterAccept has none - move it down to afterAccept
+core/mod/builtin/jaira-cockpit/tests/board.test.ts:591 test name 'a branch ahead of master…' - the base is the PR target's default branch now; say 'ahead of the target'. Stehen gelassen: Fork-Basis per pullTarget (Alex 19:14), 2x repo view + fetch auch auf dem next-Weg (Note 19:2x), git worktree add für einen Branch ohne Worktree, GitLab-Pfad (jaira-role-pr kann GitLab auch).
+- **2026-10-12 19:19 · Alexander Sacharov** — Pause: Critique-Runde-1-Fixes ungecommittet im Worktree (register.tsx, board.test.ts), Diff und Commit-Zeile an jaira-f5; warte auf Alex' OK, dann Commit und Critique Runde 2 (liest nur die 3 Befunde und ihre Antwort). Side-Critique-Tab geschlossen.
+- **2026-10-12 19:19 · Alexander Sacharov** — Alex 2026-10-12 (über jaira-f5): Commits, die nur Befunde von critique/optimize/testing schliessen, macht der Worker selbst ohne Warten; gefragt wird nur, wenn sich sichtbares oder von Alex gewähltes Verhalten ändert.
