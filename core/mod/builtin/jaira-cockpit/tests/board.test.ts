@@ -192,6 +192,11 @@ async function headLine($: Test$) {
   return (await ui.find({ type: 'Text', text: /^ {3}\S/ }))?.text.trim()
 }
 
+// The band as one string, in the order it is drawn: its frame's text.
+async function drawn($: Test$) {
+  return (await (await $.ui.mount(BAND)).find({ type: 'Box' }))!.text
+}
+
 // The band's session line, its parts as drawn with the colour of each: the
 // band's last row, from the context on.
 async function sessionLine(ui: { findAll: (q: { type: string }) => Promise<{ text: string; props: Record<string, unknown> }[]> }) {
@@ -504,6 +509,48 @@ describe('waiting for you', () => {
     const closed = await $.ui.mount(BAND)
     expect(await closed.find({ key: 'accept-GH56JK' })).toBeUndefined()
     expect(await closed.find({ key: 'more' })).toBeDefined()
+  })
+
+  test('the band reads top down: head, notice, waiting for you, decisions, the teammates\' tickets, the session line', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
+    const BERK = { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' }
+    w.tickets = [SIGNOFF, HUMAN, WORKING, BERK]
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'working' }]
+    await startSession($)
+    // A decision from a Discuss chat, as in the test of its own above.
+    await (await $.ui.mount(BAND)).press({ key: 'discuss-K7P2QX' })
+    w.bodies.K7P2QX = '## Progress\n\n- **1970-01-01 00:17 · Alex** — decision: a page of its own\n'
+    w.tickets = [SIGNOFF, { ...HUMAN, status: 'in-progress', question: '' }, WORKING, BERK]
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'idle' }]
+    await w.clock.advance(60_000)
+    // A notice: what Accept says.
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    w.usage.tokens = 80_000
+    await answer($)
+    await (await $.ui.mount(BAND)).press({ key: 'theirs' })
+    const band = await drawn($)
+    const at = ['jaira-cockpit', 'MG677R accepted: done', 'Waiting for you', 'MG677R | signoff', 'K7P2QX | decided in Discuss', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
+    expect(at.every(i => i >= 0)).toBe(true)
+    expect(at).toEqual([...at].sort((a, b) => a - b))
+  })
+
+  test('opened by +N more, the person\'s own tickets still sit above the teammates\'', async ($, on) => {
+    const w = world(on)
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
+    const own = ['MG677R', 'AB12CD', 'CD34EF', 'GH56JK']
+    w.tickets = [...own.map(handle => ({ ...SIGNOFF, handle })), { ...SIGNOFF, handle: 'QR34ST', assignee: 'Berk' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'more' })
+    await (await $.ui.mount(BAND)).press({ key: 'theirs' })
+    const band = await drawn($)
+    const theirs = band.indexOf('1 waiting for Berk')
+    for (const id of own) {
+      expect(band.indexOf(id)).toBeGreaterThanOrEqual(0)
+      expect(band.indexOf(id)).toBeLessThan(theirs)
+    }
+    expect(band.indexOf('show fewer')).toBeLessThan(theirs)
+    expect(band.indexOf('QR34ST | signoff | Berk')).toBeGreaterThan(theirs)
   })
 
   test('a ticket nobody explained yet offers no explanation to read', async ($, on) => {
