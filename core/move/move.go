@@ -8,6 +8,7 @@
 package move
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/gate"
@@ -121,6 +122,11 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 			}
 			t.Assignee = req.Actor
 		}
+		if sendsBack(env.Lanes, t.Status, req.To) {
+			if err := t.Doc().SetScalar(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
+				return err
+			}
+		}
 		if err := t.Doc().SetScalar(ticket.FieldStatus, req.To); err != nil {
 			return err
 		}
@@ -139,4 +145,21 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		res.Trimmed, res.Filed, res.SettleErr = lane.Settle(s, l, req.Folder, t.ID, req.Prepare)
 	}
 	return res, nil
+}
+
+// sendsBack reports a move to an earlier lane of the board, the one that
+// starts a new round. Parking does not: a ticket going to blocked and coming
+// back from it is the same round, whichever side of the work lane blocked is
+// drawn on. A lane this installation does not know counts nothing.
+func sendsBack(lanes *lane.Set, from, to string) bool {
+	f, t := lanes.Index(from), lanes.Index(to)
+	if f < 0 || t < 0 || t >= f {
+		return false
+	}
+	for _, id := range []string{from, to} {
+		if l, ok := lanes.Get(id); ok && l.RequiresBlockedReason {
+			return false
+		}
+	}
+	return true
 }

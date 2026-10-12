@@ -491,14 +491,19 @@ describe('waiting for you', () => {
       { ...SIGNOFF, handle: 'RS56TU', review: { verdict, gaps: 'No defect found — the tests cover each item' } },
       // Not reviewed yet: what the optimize lane removed is no gap.
       { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
+      // A round later: the old verdict stands beside this round's optimize gaps.
+      { ...HUMAN, handle: 'TU78VW', question: '', round: 3, review_round: 2, review: { verdict, gaps: 'Runde 3: nichts entfernt' } },
+      // The verdict of this very round, and one from before rounds were counted.
+      { ...SIGNOFF, handle: 'VW90XY', round: 3, review_round: 3, review: { verdict, gaps: '1. a test is missing' } },
+      { ...SIGNOFF, handle: 'XY12ZA', round: 2, review: { verdict, gaps: '1. a test is missing' } },
     ]
     await startSession($)
     // Every one of them is in the band, not cut off behind '+N more'.
     const band = await $.ui.mount(BAND)
     await band.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
-    expect(await open.find({ key: 'explain-WP1CHK' })).toBeDefined()
-    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP', 'MN12PQ', 'PQ34RS', 'RS56TU']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    for (const id of ['WP1CHK', 'VW90XY', 'XY12ZA']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
+    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP', 'MN12PQ', 'PQ34RS', 'RS56TU', 'TU78VW']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {

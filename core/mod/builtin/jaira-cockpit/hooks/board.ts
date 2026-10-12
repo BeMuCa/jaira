@@ -34,6 +34,10 @@ type Ticket = {
   question?: string
   assignee?: string
   review?: { verdict?: string; gaps?: string }
+  // The ticket's round, and the round its verdict was written in (0 or
+  // absent: unknown, a verdict from before jaira counted rounds).
+  round?: number
+  review_round?: number
 }
 
 function parse<T>(json: string): T | undefined {
@@ -99,7 +103,7 @@ export function snapshotOf(
       question: oneLine(t.question),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps),
+      explainable: explainable(oneLine(t.review?.verdict), t.review?.gaps, sameRound(t)),
     })
   }
   const ids = tickets.map(t => t.handle)
@@ -164,11 +168,19 @@ export function namesGap(gaps: string | undefined): boolean {
   return g !== '' && !NO_GAP.test(g)
 }
 
-// Whether the band offers Explain. The gaps count only once the review has
-// spoken: before it, the field holds what the optimize lane removed, not a
-// gap — whatever the lane is called.
-export function explainable(verdict: string, gaps: string | undefined): boolean {
-  return hasReservation(verdict) || (verdict !== '' && namesGap(gaps))
+// Whether the verdict was written in the ticket's current round. A later
+// round rewrites review-gaps in its loop lanes while the old verdict stands,
+// so the two belong together only then. A verdict whose round jaira did not
+// record is taken as current, as it was before rounds were counted.
+function sameRound(t: Ticket): boolean {
+  return !t.review_round || t.review_round === (t.round ?? 1)
+}
+
+// Whether the band offers Explain. The gaps count only beside a verdict of
+// the same round: before the review, the field holds what the optimize lane
+// removed, not a gap — whatever the lane is called.
+export function explainable(verdict: string, gaps: string | undefined, current = true): boolean {
+  return hasReservation(verdict) || (verdict !== '' && current && namesGap(gaps))
 }
 
 // A jaira older than the board it reads says so on a line of its own before

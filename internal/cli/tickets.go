@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -995,6 +996,13 @@ its end. Review fields keep their history across loop rounds that way.`,
 					if err := t.Doc().SetScalar(k, v); err != nil {
 						return err
 					}
+					// A verdict says which round it judged, so a reader can
+					// tell it from one a later round left standing.
+					if k == ticket.FieldReviewVerdict && strings.TrimSpace(v) != "" {
+						if err := t.Doc().SetScalar(ticket.FieldReviewRound, strconv.Itoa(ticket.CurrentRound(t))); err != nil {
+							return err
+						}
+					}
 				}
 				return nil
 			})
@@ -1079,7 +1087,7 @@ func newLanesCmd() *cobra.Command {
 						// Whose lane it is: true where a person alone moves work out
 						// (signoff, human). The cockpit mod's "waiting for you" band
 						// reads it rather than knowing lane names.
-						"human_exit": l.RequiresHumanExit,
+						"human_exit":     l.RequiresHumanExit,
 						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
@@ -1466,10 +1474,14 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		// Where this goes when the current step is finished, so the route is not
 		// re-derived by every caller from the column order and the ticket's
 		// Options. Empty when there is nowhere left to go.
-		"next_lane":  nextLaneID(t, lanes),
-		"created_at": nonZero(t.CreatedAt),
-		"updated_at": nonZero(t.UpdatedAt),
-		"updated_by": t.UpdatedBy,
+		// The round, and the one the verdict was written in (0: unknown),
+		// so a reader can tell a verdict from one a later round left standing.
+		"round":        ticket.CurrentRound(t),
+		"review_round": t.ReviewRound,
+		"next_lane":    nextLaneID(t, lanes),
+		"created_at":   nonZero(t.CreatedAt),
+		"updated_at":   nonZero(t.UpdatedAt),
+		"updated_by":   t.UpdatedBy,
 	}
 }
 

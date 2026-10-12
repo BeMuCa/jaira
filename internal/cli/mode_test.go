@@ -209,3 +209,25 @@ func TestResumeCarriesMode(t *testing.T) {
 		t.Errorf("a ticket without a mode announces one:\n%s", out)
 	}
 }
+
+// A verdict carries the round it judged; show --json carries both, and a
+// ticket without the fields reads as round 1 with an unknown verdict round.
+func TestReviewVerdictIsStampedWithItsRound(t *testing.T) {
+	dir, h := newModeTicket(t)
+	show := func() map[string]any { return jsonCLI(t, dir, "show", h) }
+	if got := show(); got["round"] != float64(1) || got["review_round"] != float64(0) {
+		t.Fatalf("an old ticket reads round=%v review_round=%v, want 1 and 0", got["round"], got["review_round"])
+	}
+	if out, err := runCLI(t, dir, "set", h, "round=3", "review-gaps=one test is missing"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if got := show(); got["review_round"] != float64(0) {
+		t.Fatalf("gaps alone stamped review_round=%v", got["review_round"])
+	}
+	if out, err := runCLI(t, dir, "set", h, "review-verdict=Accept."); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if got := show(); got["round"] != float64(3) || got["review_round"] != float64(3) {
+		t.Fatalf("after the verdict round=%v review_round=%v, want 3 and 3", got["round"], got["review_round"])
+	}
+}
