@@ -188,13 +188,15 @@ and the board's compact view (`v`) counts them per step.
 
 Three things, deliberately:
 
-- **Leave the human review lane.** It is a human checkpoint. A review agent writes
+- **Move work on out of the human review lane.** It is a human checkpoint. A review agent writes
   `review-summary`, `review-gaps` and `review-verdict`, then moves the ticket to
   human review and stops; a person accepts the work in the board or raises a
   follow-up. Attempting the move exits 3. When the person has reviewed the work
   and says so, the agent may finish the acceptance on their behalf with
   `--force`, which is reported in that command's output rather than written to
   the ticket — the decision stays human, only the keystroke is delegated.
+  Sending the work back to an earlier lane is not an acceptance and is not
+  refused: `jaira move <id> --to in-progress` needs no `--force`.
 - **Close a ticket without meeting its definition of done.** Every criterion must
   be marked done, the plan finished if the ticket has one, and the commits that
   carry the change recorded on the ticket. There is no evidence flag to pass.

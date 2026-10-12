@@ -118,7 +118,8 @@ Working a ticket:
 `jaira <command> --help` for everything else.
 
 Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.
-The human review lane cannot be left by an agent — a person accepts the work there.
+An agent cannot move work on out of the human review lane — a person accepts it there.
+Sending it back to an earlier lane is not an acceptance and needs no --force.
 
 A `jaira:local` marker — an HTML comment of that name — added by hand anywhere
 inside this block makes everything between it and the end marker survive the
