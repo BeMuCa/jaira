@@ -4,7 +4,7 @@
 // so it is the same in both dispatch modes and with Herdr tabs. register.tsx
 // runs the commands; this file only reads what they printed.
 
-import type { Tab } from './sessions.ts'
+import { carrierTab, type Tab } from './sessions.ts'
 
 export type Waiting = {
   id: string
@@ -207,13 +207,194 @@ export function mainRepoOf(gitCommonDir: string, fallback: string): string {
 // tree. Running `jaira move` anywhere else answers "on its ref and not on
 // your disk".
 export function worktreeFor(porcelain: string, id: string, fallback: string): string {
-  const slug = id.toLowerCase()
+  return worktreesOf(porcelain).find(w => isTicketsTree(w, id))?.path ?? fallback
+}
+
+type Worktree = { path: string; branch: string }
+
+function worktreesOf(porcelain: string): Worktree[] {
+  const out: Worktree[] = []
   for (const block of porcelain.split(/\n\n+/)) {
     const path = /^worktree (.+)$/m.exec(block)?.[1]
-    const branch = /^branch (.+)$/m.exec(block)?.[1] ?? ''
-    if (path !== undefined && (branch.endsWith(`/${slug}`) || path.endsWith(`-${slug}`))) return path
+    const branch = (/^branch (.+)$/m.exec(block)?.[1] ?? '').replace(/^refs\/heads\//, '')
+    if (path !== undefined) out.push({ path, branch })
   }
-  return fallback
+  return out
+}
+
+function isTicketsTree(w: Worktree, id: string): boolean {
+  const slug = id.toLowerCase()
+  return w.branch.endsWith(`/${slug}`) || w.path.endsWith(`-${slug}`)
+}
+
+// The branch a ticket's work rides on and the main working tree's, from the
+// same porcelain; undefined where there is none. The main tree's branch is
+// the base only where no forge can name one: in a fork the local master
+// lags the upstream by hundreds of commits, every one of them "ahead".
+export function branchesFor(porcelain: string, id: string): { ticket?: string; base?: string } {
+  const trees = worktreesOf(porcelain)
+  const ticket = trees.find(w => isTicketsTree(w, id))?.branch
+  const base = trees[0]?.branch
+  return { ...(ticket ? { ticket } : {}), ...(base ? { base } : {}) }
+}
+
+// Where a branch is checked out, off the same porcelain; undefined where it
+// is in no worktree. Without one, newWorktreeFor is where spawn.sh would have
+// put it: beside the repository, never inside it.
+export function worktreeOfBranch(porcelain: string, branch: string): string | undefined {
+  return worktreesOf(porcelain).find(w => w.branch === branch)?.path
+}
+
+export function newWorktreeFor(repo: string, branch: string): string {
+  const cut = repo.lastIndexOf('/')
+  return `${repo.slice(0, cut)}/.worktrees/${repo.slice(cut + 1)}-${branch.slice(branch.lastIndexOf('/') + 1)}`
+}
+
+// What an Accept starts once the ticket is in done — the one rule, decided
+// by Alex on GPFA7B. A branch with commits master does not have and no pull
+// request yet is finished work nobody can see: the press that accepted it is
+// a person's, which is the only thing allowed to open a pull request, so it
+// opens one. But a branch can carry several tickets, and a pull request
+// opened while one of them is still being worked proposes half the work: so
+// only once every ticket its commits name is in done (`pending` empty). Any
+// other case — a ticket still pending, the branch already proposed (a pull
+// request in any state, merged and closed included), or nothing ahead of
+// master — has no further step of its own, and the press moves the board on
+// to the next ticket instead. One button, so the rule decides, never the
+// person per press. The caller asks the forge only where the answer can
+// still change the step, and passes false otherwise. A forge that could not
+// be asked — offline, logged out, its repository no remote here — is
+// undefined: whether a pull request exists is unknown, so none is opened,
+// and the board moves on rather than wait for the network (Alex, GPFA7B
+// DoD 8); the press says why.
+export type StepAfterAccept = 'pr' | 'next'
+
+export function stepAfterAccept(ahead: number, pending: readonly string[], hasPullRequest: boolean | undefined): StepAfterAccept {
+  return ahead > 0 && pending.length === 0 && hasPullRequest === false ? 'pr' : 'next'
+}
+
+// The tickets a branch carries, off `git log --format=%s <base>..<branch>`:
+// every handle a subject names the way this board's commits do,
+// `type(A3K9QP): ...`, or several at once, `chore(A3K9QP,B7XQ2M): ...`,
+// once each.
+export function ticketsNamed(subjects: string): string[] {
+  const out: string[] = []
+  for (const line of subjects.split('\n')) {
+    const scope = /^[a-z]+\(([^)]*)\)!?:/.exec(line.trim())?.[1] ?? ''
+    for (const id of scope.split(/[\s,]+/)) if (/^[0-9A-Z]{6}$/.test(id) && !out.includes(id)) out.push(id)
+  }
+  return out
+}
+
+// The newest commit whose subject names a ticket, off `git log --format=%H
+// %s`, read as ticketsNamed reads a subject: the handle alone or among
+// others in the scope. The body is never read — a merge commit quotes the
+// subjects it brought in there, and would name every ticket it merged.
+export function commitNaming(log: string, id: string): string | undefined {
+  for (const line of log.split('\n')) {
+    const cut = line.indexOf(' ')
+    if (cut > 0 && ticketsNamed(line.slice(cut + 1)).includes(id)) return line.slice(0, cut)
+  }
+  return undefined
+}
+
+// Which of those are not in the terminal lane yet, off `jaira list --json`.
+// A handle the board does not list is filed away in the logbook — past done
+// — or no ticket of this board, and holds nothing up.
+export function pendingOf(listJson: string, named: readonly string[], terminal: string): string[] {
+  const tickets = parse<{ tickets?: { handle?: string; status?: string }[] }>(withoutWarnings(listJson))?.tickets ?? []
+  return named.filter(id => {
+    const status = tickets.find(t => t.handle === id)?.status
+    return status !== undefined && status !== terminal
+  })
+}
+
+// A ticket's branch without a worktree of its own, off a branch listing
+// (`--format=%(refname:short)`): the first that is not the base. Read from
+// `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
+// worktree removed after done leaves it behind — and from `git branch
+// --contains <a commit naming it>`, where it was worked on another ticket's
+// branch.
+export function carrierBranch(listing: string, base: string): string | undefined {
+  return listing.split('\n').map(l => l.trim()).find(b => b && b !== base)
+}
+
+// The forge jaira-role-pr would open a pull request on: `git config
+// jaira.forge` where it is set, else the host of origin. undefined where
+// neither settles it.
+export type Forge = 'github' | 'gitlab'
+
+export function forgeOf(forge: string, originUrl: string): Forge | undefined {
+  const on = forge.trim() || (/github\.com/i.test(originUrl) ? 'github' : /gitlab/i.test(originUrl) ? 'gitlab' : '')
+  return on === 'github' || on === 'gitlab' ? on : undefined
+}
+
+// Where a pull request of this branch would be, as jaira-role-pr settles it:
+// in a fork, the parent — asking origin there answers for the fork, finds
+// nothing, and a second pull request gets opened onto a merged branch. The
+// command describes a repository (origin's URL, or owner/repo);
+// targetRepoOf reads the target off origin's answer, defaultBranchOf the
+// branch pull requests go into off the target's.
+export function repoViewCommand(on: Forge, repo: string): string[] {
+  return on === 'github'
+    ? ['gh', 'repo', 'view', repo, '--json', 'isFork,parent,nameWithOwner,defaultBranchRef']
+    : ['glab', 'repo', 'view', repo, '-F', 'json']
+}
+
+export function targetRepoOf(on: Forge, viewJson: string): string | undefined {
+  if (on === 'github') {
+    const v = parse<{ nameWithOwner?: string; parent?: { name?: string; owner?: { login?: string } } | null }>(withoutWarnings(viewJson))
+    const parent = v?.parent?.owner?.login && v.parent.name ? `${v.parent.owner.login}/${v.parent.name}` : undefined
+    return parent ?? v?.nameWithOwner
+  }
+  const v = parse<{ path_with_namespace?: string; forked_from_project?: { path_with_namespace?: string } | null }>(withoutWarnings(viewJson))
+  return v?.forked_from_project?.path_with_namespace ?? v?.path_with_namespace
+}
+
+export function defaultBranchOf(on: Forge, viewJson: string): string | undefined {
+  const v = parse<{ defaultBranchRef?: { name?: string }; default_branch?: string }>(withoutWarnings(viewJson))
+  return (on === 'github' ? v?.defaultBranchRef?.name : v?.default_branch) || undefined
+}
+
+// The local remote that points at a repository, off `git remote -v`: the
+// one whose URL ends in owner/repo, SSH or HTTPS. undefined where none does —
+// a fork cloned without its upstream added.
+export function remoteFor(remotes: string, repo: string): string | undefined {
+  const tail = new RegExp(`[:/]${repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\.git)?$`, 'i')
+  for (const line of remotes.split('\n')) {
+    const [name, url] = line.trim().split(/\s+/)
+    if (name && url && tail.test(url)) return name
+  }
+  return undefined
+}
+
+// The pull requests of a branch in that repository, in every state. Both
+// tools print a JSON array, empty where there is none.
+export function pullRequestsCommand(on: Forge, repo: string, branch: string): string[] {
+  return on === 'github'
+    ? ['gh', 'pr', 'list', '--repo', repo, '--head', branch, '--state', 'all', '--json', 'number']
+    : ['glab', 'mr', 'list', '--repo', repo, '--source-branch', branch, '--all', '-F', 'json']
+}
+
+export function hasPullRequest(listJson: string): boolean | undefined {
+  const list = parse<unknown>(withoutWarnings(listJson))
+  return Array.isArray(list) ? list.length > 0 : undefined
+}
+
+// The lane spawn.sh is given for the next ticket: the role a teamlead starts
+// under the person's dispatch setting (~/.jaira/settings.json), "worker" only
+// where it says so, as settings.DispatchMode reads it.
+export function dispatchLane(settingsJson: string | undefined): 'worker' | 'dispatch' {
+  const dispatch = parse<{ dispatch?: unknown }>(settingsJson ?? '')?.dispatch
+  return typeof dispatch === 'string' && dispatch.trim() === 'worker' ? 'worker' : 'dispatch'
+}
+
+// The next ticket to start, off `jaira next --all --json`: the first one no
+// worker or dispatcher tab carries already, so an Accept never puts a second
+// agent on a ticket that is being worked. undefined when there is none.
+export function nextToStart(nextJson: string, tabs: readonly Tab[]): string | undefined {
+  const tickets = parse<{ tickets?: { handle?: string }[] }>(withoutWarnings(nextJson))?.tickets ?? []
+  return tickets.map(t => t.handle).find((h): h is string => !!h && carrierTab(tabs, h) === undefined)
 }
 
 // The directory holding .jaira/, from `cwd` upwards: the candidates in the

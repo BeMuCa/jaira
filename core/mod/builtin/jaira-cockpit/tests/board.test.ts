@@ -43,6 +43,27 @@ type World = {
   opened: { id: string; title?: string; focus?: boolean }[]
   closed: string[]
   clock: ReturnType<typeof mock.clock>
+  // After Accept: commits the ticket's branch has that the target lacks, the
+  // forge's answer for its pull requests (null: the tool failed), origin
+  // (null: none), `git config jaira.forge`, and `jaira next --all`.
+  ahead: number
+  prs: unknown[] | null
+  origin: string | null
+  forge: string
+  next: string[]
+  // `git branch --list '*/<slug>'`, read where the ticket has no worktree.
+  branches: string[]
+  // `git log --format=%s master..<branch>`; the commits on branches the
+  // base lacks, which `git log -E --grep` searches with the pattern it is
+  // given, and the branches `git branch --contains` gives the one it finds.
+  subjects: string[]
+  branchCommits: { sha: string; subject: string; body?: string }[]
+  holders: string[]
+  toasts: string[]
+  // `git remote -v`.
+  remotes: string
+  // The forge answers `repo view` but refuses `pr list`.
+  prListFails: boolean
 }
 
 const LANES = {
@@ -95,6 +116,18 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     opened: [],
     closed: [],
     clock: mock.clock(on, { now: 1_000_000 }),
+    ahead: 0,
+    prs: [],
+    origin: 'git@github.com:acme/repo.git',
+    forge: '',
+    next: [],
+    branches: [],
+    subjects: ['feat(MG677R): cache key'],
+    branchCommits: [],
+    holders: [],
+    toasts: [],
+    prListFails: false,
+    remotes: 'origin\tgit@github.com:acme/repo.git (fetch)\norigin\tgit@github.com:acme/repo.git (push)\nupstream\thttps://github.com/upstream/repo.git (fetch)\n',
   }
   const hasBoard = opts.board ?? true
   // The store, readable by the test; insertion order kept as the engine's is.
@@ -169,6 +202,45 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
+    const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
+    if (cmd === 'git' && args[0] === 'config') return w.forge ? ok(`${w.forge}\n`) : failed('')
+    if (cmd === 'git' && args[0] === 'remote' && args[1] === 'get-url') return w.origin === null ? failed("error: No such remote 'origin'") : ok(`${w.origin}\n`)
+    if ((cmd === 'gh' || cmd === 'glab') && w.prs === null) return failed(`${cmd}: command not found`)
+    if ((cmd === 'gh' || cmd === 'glab') && args[1] === 'list' && w.prListFails) return failed("HTTP 401: Bad credentials")
+    // origin is a fork of upstream/repo: pull requests are asked of the parent.
+    // Its default branch is main; the fork's own lags behind as master.
+    if (cmd === 'gh' && args[0] === 'repo') {
+      return ok(JSON.stringify(args[2] === 'upstream/repo'
+        ? { isFork: false, nameWithOwner: 'upstream/repo', parent: null, defaultBranchRef: { name: 'main' } }
+        : { isFork: true, nameWithOwner: 'acme/repo', parent: { name: 'repo', owner: { login: 'upstream' } }, defaultBranchRef: { name: 'master' } }))
+    }
+    if (cmd === 'glab' && args[0] === 'repo') {
+      return ok(JSON.stringify(args[2] === 'upstream/repo'
+        ? { path_with_namespace: 'upstream/repo', default_branch: 'main' }
+        : { path_with_namespace: 'acme/repo', forked_from_project: { path_with_namespace: 'upstream/repo' }, default_branch: 'master' }))
+    }
+    if (cmd === 'git' && args[0] === 'remote' && args[1] === '-v') return ok(w.remotes)
+    if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
+    if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
+    // Newest first, as git prints them. A --grep reads the whole message,
+    // body included; --format=%H %s prints the subject alone.
+    if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) {
+      const grep = args.find(a => a.startsWith('--grep='))
+      if (grep) {
+        const pattern = new RegExp(grep.slice('--grep='.length), 'm')
+        return ok(w.branchCommits.find(c => pattern.test(`${c.subject}\n\n${c.body ?? ''}`))?.sha ?? '')
+      }
+      return ok(w.branchCommits.map(c => `${c.sha} ${c.subject}`).join('\n'))
+    }
+    // As many subjects as commits ahead: the first `ahead` of them.
+    if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.concat(Array(Math.max(0, w.ahead - w.subjects.length)).fill('chore: more')).slice(0, w.ahead).join('\n'))
+    // The move a press forces lands: jaira list reads the ticket in done after it.
+    if (cmd === 'jaira' && args[0] === 'move' && args.includes('--force')) {
+      w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === args[1] ? { ...(x as object), status: args[3] } : x))
+      return ok()
+    }
+    if (cmd === 'gh' || cmd === 'glab') return ok(JSON.stringify(w.prs))
+    if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
     return ok()
@@ -283,7 +355,7 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
-    expect(w.opened).toEqual([])
+    expect(w.opened.filter(o => o.title === 'Accept MG677R failed')).toEqual([])
   })
 
   test('an error is shown whole in a pane of its own, never cut to a line', async ($, on) => {
@@ -534,13 +606,17 @@ describe('waiting for you', () => {
     const w = world(on, { herdr: true })
     w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
     const BERK = { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' }
-    w.tickets = [SIGNOFF, HUMAN, WORKING, BERK]
+    // Accept takes MG677R to done; AB12CD still waits in signoff below the notice.
+    const MINE = { ...SIGNOFF, handle: 'AB12CD' }
+    w.tickets = [SIGNOFF, MINE, HUMAN, WORKING, BERK]
+    // Accept's next step succeeds, so its notice stays on the band.
+    w.next = ['T8QS1Y']
     w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'working' }]
     await startSession($)
     // A decision from a Discuss chat, as in the test of its own above.
     await (await $.ui.mount(BAND)).press({ key: 'discuss-K7P2QX' })
     w.bodies.K7P2QX = '## Progress\n\n- **1970-01-01 00:17 · Alex** — decision: a page of its own\n'
-    w.tickets = [SIGNOFF, { ...HUMAN, status: 'in-progress', question: '' }, WORKING, BERK]
+    w.tickets = [SIGNOFF, MINE, { ...HUMAN, status: 'in-progress', question: '' }, WORKING, BERK]
     w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'idle' }]
     await w.clock.advance(60_000)
     // A notice: what Accept says.
@@ -549,7 +625,7 @@ describe('waiting for you', () => {
     await answer($)
     await (await $.ui.mount(BAND)).press({ key: 'theirs' })
     const band = await drawn($)
-    const at = ['jaira-cockpit', 'MG677R accepted: done', 'Waiting for you', 'MG677R | signoff', 'K7P2QX | decided in Discuss', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
+    const at = ['jaira-cockpit', 'MG677R accepted; T8QS1Y started', 'Waiting for you', 'AB12CD | signoff', 'K7P2QX | decided in Discuss', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
     expect(at.every(i => i >= 0)).toBe(true)
     expect(at).toEqual([...at].sort((a, b) => a - b))
   })
@@ -578,6 +654,274 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'explain-MG677R' })).toBeDefined()
     expect(await ui.find({ key: 'read-MG677R' })).toBeUndefined()
+  })
+})
+
+describe('after Accept', () => {
+  const press = async ($: Test$) => {
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-MG677R' })
+  }
+  const prLane = (w: World) => ran(w, SPAWN).filter(r => r.includes('pr'))
+  const failure = async ($: Test$) => {
+    const pane = await $.ui.mount(MESSAGE('Next step after MG677R failed'))
+    return (await pane.findAll({ type: 'Text' })).map(x => x.text).join('\n')
+  }
+
+  test('a branch ahead of the target without a pull request: the press opens one, by a person, in the ticket\'s worktree', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    await press($)
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
+    expect(ran(w, 'gh')).toEqual([
+      ['gh', 'repo', 'view', 'git@github.com:acme/repo.git', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
+      ['gh', 'repo', 'view', 'upstream/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
+      ['gh', 'pr', 'list', '--repo', 'upstream/repo', '--head', 'feat/mg677r', '--state', 'all', '--json', 'number', '@/repo'],
+    ])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    // After the move, never before it: the press accepted first.
+    const order = w.ran.map(r => r[0] === SPAWN ? 'spawn' : r.includes('--force') ? 'move' : '').filter(Boolean)
+    expect(order).toEqual(['move', 'spawn'])
+    expect(w.opened).toEqual([])
+  })
+
+  test('a pull request in any state already there: the next ticket starts, under the dispatch setting', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prs = [{ number: 12 }]
+    w.next = ['T8QS1Y', 'AB12CD']
+    w.tabs = [{ tab_id: 't9', label: 'T8QS1Y/worker' }]
+    w.files.set('/home/a/.jaira/settings.json', '{"dispatch":"worker"}')
+    await press($)
+    expect(prLane(w)).toEqual([])
+    expect(ran(w, 'jaira', 'next')).toEqual([['jaira', 'next', '--all', '--json', '@/repo']])
+    // T8QS1Y has a worker tab already: never a second agent on it.
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
+    expect(w.opened).toEqual([])
+  })
+
+  test('nothing ahead of the target: no pull request is asked for, and without a worker setting the dispatcher starts the next one', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.next = ['AB12CD']
+    await press($)
+    expect(ran(w, 'gh', 'pr')).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+  })
+
+  test('GitLab, by jaira.forge or by host, asks glab', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 1
+    w.forge = 'gitlab'
+    await press($)
+    expect(ran(w, 'glab', 'mr')).toEqual([['glab', 'mr', 'list', '--repo', 'upstream/repo', '--source-branch', 'feat/mg677r', '--all', '-F', 'json', '@/repo']])
+    expect(prLane(w)).toHaveLength(1)
+  })
+
+  test('a worktree removed after done leaves its branch: the branch is found, checked out again beside the repo, and the pull request opens there', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }]
+    w.branches = ['feat/zz99zz']
+    w.subjects = ['fix(ZZ99ZZ): one']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'branch')).toEqual([['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/zz99zz', '@/repo']])
+    expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'feat/zz99zz', '@/repo']])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
+  })
+
+  test('two tickets on one branch: no pull request while the other is not in done, the next ticket starts, and the press says which one is missing', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 4
+    w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter', 'feat(T8QS1Y): filter', 'docs: no ticket']
+    w.next = ['AB12CD']
+    await press($)
+    expect(ran(w, 'gh', 'pr')).toEqual([])
+    expect(prLane(w)).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; no pull request for feat/mg677r yet: T8QS1Y not in done')
+  })
+
+  test('two tickets on one branch, both in done: the pull request opens; a handle the board no longer lists is filed away and holds nothing up', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 4
+    w.tickets = [SIGNOFF, { ...WORKING, status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter', 'chore(OLD123): filed away long ago']
+    await press($)
+    expect(prLane(w)).toHaveLength(1)
+  })
+
+  test('a ticket worked on another ticket\'s branch finds that branch by the commits naming it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
+    w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
+    w.holders = ['master', 'feat/mg677r']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo']])
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
+    // Its worktree is the other ticket's: the role pushes from there.
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
+  test('the branch search finds a ticket named beside others in one subject, and never a handle that only starts the same', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'chore(MG677R,ZZ99ZZ): both']
+    w.branchCommits = [
+      { sha: 'wrong1', subject: 'fix(ZZ99ZZX): a longer handle' },
+      { sha: 'wrong2', subject: 'docs: mentions (ZZ99ZZ) in passing' },
+      { sha: 'abc123', subject: 'chore(MG677R,ZZ99ZZ): both' },
+    ]
+    w.holders = ['feat/mg677r']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
+  test('the branch search reads subjects only: a merge commit quoting the ticket in its body is passed over', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
+    w.branchCommits = [
+      { sha: 'merge1', subject: "Merge branch 'feat/other' into feat/stack", body: 'fix(ZZ99ZZ): on the same branch' },
+      { sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' },
+    ]
+    w.holders = ['feat/mg677r']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
+  })
+
+  test('in a fork, ahead counts against the parent\'s default branch, fetched first — never the lagging local master', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    await press($)
+    expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'upstream', 'main', '@/repo']])
+    const order = w.ran.map(r => r[1] === 'fetch' ? 'fetch' : r[1] === 'log' ? 'log' : '').filter(Boolean)
+    expect(order).toEqual(['fetch', 'log'])
+    expect(ran(w, 'git', 'log')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
+  })
+
+  test('not a fork: the base is origin\'s own default branch', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 1
+    w.origin = 'git@github.com:upstream/repo.git'
+    w.remotes = 'origin\tgit@github.com:upstream/repo.git (fetch)\n'
+    await press($)
+    expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'origin', 'main', '@/repo']])
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
+  })
+
+  test('a fork without its parent as a remote: nothing is counted, the next ticket starts, and the press says which remote to add', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.remotes = 'origin\tgit@github.com:acme/repo.git (fetch)\n'
+    w.next = ['AB12CD']
+    await press($)
+    expect(ran(w, 'git', 'log')).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
+  })
+
+  test('no gh: the pull request goes unchecked, the next ticket starts anyway, and the press says why', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prs = null
+    w.next = ['AB12CD']
+    await press($)
+    expect(prLane(w)).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
+    expect(w.opened).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; pull requests not checked (gh repo view: gh: command not found)')
+  })
+
+  test('a forge that answers the repository but not the pull requests: the next ticket starts all the same', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prListFails = true
+    w.next = ['AB12CD']
+    await press($)
+    expect(prLane(w)).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
+  })
+
+  test('a subject naming several tickets holds the pull request for each of them', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [SIGNOFF, WORKING, { ...WORKING, handle: 'AB12CD', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'chore(AB12CD,T8QS1Y): both at once']
+    w.next = ['QR34ST']
+    await press($)
+    expect(prLane(w)).toEqual([])
+    expect(w.toasts.at(-1)).toContain('no pull request for feat/mg677r yet: T8QS1Y not in done')
+  })
+
+  test('no remote: nothing starts, and the pane says so', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = null
+    await press($)
+    expect(ran(w, SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
+  })
+
+  test('a host neither GitHub nor GitLab: nothing starts, and the pane names the setting that settles it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.origin = 'git@git.example.de:acme/repo.git'
+    await press($)
+    expect(ran(w, SPAWN)).toEqual([])
+    expect(await failure($)).toContain('git config jaira.forge')
+  })
+
+  test('no next ticket: nothing starts, and the pane says so', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.next = ['T8QS1Y']
+    w.tabs = [{ tab_id: 't9', label: 'T8QS1Y/dispatch' }]
+    await press($)
+    expect(ran(w, SPAWN)).toEqual([])
+    expect(await failure($)).toContain('No ticket can be started next')
+  })
+
+  test('no Herdr: nothing starts, and the pane says the step needs it', async ($, on) => {
+    const w = world(on)
+    w.ahead = 3
+    await press($)
+    expect(ran(w, SPAWN)).toEqual([])
+    expect(await failure($)).toContain('needs a pull request')
+  })
+
+  test('a refused Accept starts no next step at all', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.refusals = [...w.refusals, { code: 'needs_commits', message: 'no commit names MG677R' }]
+    await press($)
+    expect(ran(w, 'git', 'log')).toEqual([])
+    expect(ran(w, SPAWN)).toEqual([])
+  })
+
+  test('an agent\'s session has no Accept, so it can never open a pull request', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    await startSession($)
+    await $.prompt.submit({ text: '/jaira-worker MG677R --parent jaira-4c', origin: { kind: 'composer' }, wait: false })
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'accept-MG677R' })).toBeUndefined()
+    expect(prLane(w)).toEqual([])
   })
 })
 
