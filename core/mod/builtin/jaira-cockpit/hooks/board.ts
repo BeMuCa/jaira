@@ -240,7 +240,7 @@ export const MIN_JAIRA = '0.3.7'
 // where it names none — a build from source says `dev`, which is no release
 // to compare with.
 export function versionOf(stdout: string): string | undefined {
-  return /\bversion\s+v?(\d+\.\d+\.\d+)\b/.exec(withoutWarnings(stdout))?.[1]
+  return /\bversion\s+(\d+\.\d+\.\d+)\b/.exec(stdout)?.[1]
 }
 
 // Whether `version` comes before `min`, part by part.
