@@ -17,7 +17,7 @@ declare module 'claude-code' {
       board: BoardView | null
       cache: CacheState
       threads: ThreadTally
-      // The ticket whose "what is missing?" field is open in the band.
+      // The ticket the Give back pane asks "what is missing?" about.
       giving: string | null
       // The ticket the pane shows.
       paneTicket: string | null
