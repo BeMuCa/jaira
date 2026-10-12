@@ -485,6 +485,10 @@ describe('waiting for you', () => {
       // None, with a remark after it, as reviewers on this board write it.
       { ...SIGNOFF, handle: 'GH56JK', review: { verdict, gaps: 'none — the docs could say more' } },
       { ...SIGNOFF, handle: 'JK78LM', review: { verdict, gaps: 'keine (blockierend); eine Kleinigkeit im Kommentar' } },
+      // Said in words rather than as 'none'.
+      { ...SIGNOFF, handle: 'MN12PQ', review: { verdict, gaps: 'keine Lücken' } },
+      { ...SIGNOFF, handle: 'PQ34RS', review: { verdict, gaps: 'No gaps found.' } },
+      { ...SIGNOFF, handle: 'RS56TU', review: { verdict, gaps: 'No defect found — the tests cover each item' } },
       // Not reviewed yet: what the optimize lane removed is no gap.
       { ...HUMAN, handle: 'LM90NP', question: '', review: { verdict: '', gaps: 'inlined the single-use close element' } },
     ]
@@ -494,7 +498,7 @@ describe('waiting for you', () => {
     await band.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
     expect(await open.find({ key: 'explain-WP1CHK' })).toBeDefined()
-    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
+    for (const id of ['AB12CD', 'EF34GH', 'GH56JK', 'JK78LM', 'LM90NP', 'MN12PQ', 'PQ34RS', 'RS56TU']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
   })
 
   test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {

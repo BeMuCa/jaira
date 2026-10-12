@@ -154,9 +154,10 @@ export function hasReservation(verdict: string): boolean {
 
 // A review's gaps name one unless they are empty or say there is none, alone
 // or before a remark: 'none', 'none — the docs could say more', 'keine
-// (blockierend) ...'. A verdict that reads as a yes ("the one weak spot ...
-// (gap 1)") still has something a person should have explained.
-const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+)\s*([—–\-:(.,;]|$)/i
+// (blockierend) ...', 'No gaps found.', 'keine Lücken'. A verdict that
+// reads as a yes ("the one weak spot ... (gap 1)") still has something a
+// person should have explained.
+const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+|no (gaps?|defects?|issues?|findings?)( found)?|keine (lücken?|mängel|befunde))\s*([—–\-:(.,;!]|$)/i
 
 export function namesGap(gaps: string | undefined): boolean {
   const g = oneLine(gaps)
