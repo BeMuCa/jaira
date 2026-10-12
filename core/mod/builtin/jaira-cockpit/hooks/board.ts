@@ -151,7 +151,7 @@ const REFUSAL = /^\s*(request|reject|refuse|fail|zur(ü|ue)ck|ablehn|nicht|not)\
 const CONNECTIVE = /\b(but|aber|however|jedoch)\b/i
 const NEGATED = new RegExp(`\\b(no|without|kein(e|en|er)?|ohne)\\s+([^\\s,;:.]+\\s+){0,2}?(${RESERVATION.source})`, 'gi')
 
-export function hasReservation(verdict: string): boolean {
+function hasReservation(verdict: string): boolean {
   const unnegated = verdict.replace(NEGATED, m => (CONNECTIVE.test(m) ? m : ''))
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
@@ -163,7 +163,7 @@ export function hasReservation(verdict: string): boolean {
 // person should have explained.
 const NO_GAP = /^(none|keine|nothing|nichts|n\/a|-+|no (gaps?|defects?|issues?|findings?)( found)?|keine (lücken?|mängel|befunde))\s*([—–\-:(.,;!]|$)/i
 
-export function namesGap(gaps: string | undefined): boolean {
+function namesGap(gaps: string | undefined): boolean {
   const g = oneLine(gaps)
   return g !== '' && !NO_GAP.test(g)
 }
@@ -179,7 +179,7 @@ function sameRound(t: Ticket): boolean {
 // Whether the band offers Explain. The gaps count only beside a verdict of
 // the same round: before the review, the field holds what the optimize lane
 // removed, not a gap — whatever the lane is called.
-export function explainable(verdict: string, gaps: string | undefined, current = true): boolean {
+function explainable(verdict: string, gaps: string | undefined, current: boolean): boolean {
   return hasReservation(verdict) || (verdict !== '' && current && namesGap(gaps))
 }
 
@@ -233,9 +233,9 @@ export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: 
 // the finding, why it counts, one line per option as `a) ...`, ending in
 // `[give back]` or `[accept]` when picking it is that step, and
 // `Empfehlung: <letter> - ...`. Its parts in the order written, the options
-// apart for the choice with what each does, and the option recommended. A note with no option
-// line — one written before the shape was asked for — is one part, whole,
-// as it was always shown.
+// apart for the choice with what each does, and the option recommended. A
+// note with no option line — one written before the shape was asked for —
+// is one part, whole, as it was always shown.
 export type Action = 'giveBack' | 'accept'
 export type Option = { key: string; text: string; action?: Action }
 export type Part = { kind: 'text'; text: string } | ({ kind: 'option' } & Option)
