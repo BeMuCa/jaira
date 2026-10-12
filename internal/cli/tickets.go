@@ -13,6 +13,7 @@ import (
 
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/project"
@@ -26,7 +27,10 @@ func newInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "Prepare this repository for jaira",
 		Long: `Creates .jaira/ with a tickets directory, plus a .gitignore so ephemeral
-session and lock state is never committed. Safe to run more than once.`,
+session and lock state is never committed. Safe to run more than once.
+
+A board that is already in git — a fresh clone of a shared board — is set up
+on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := ticket.At(g.dir)
@@ -62,7 +66,20 @@ session and lock state is never committed. Safe to run more than once.`,
 			// The board's own lanes go into the note, so the agent that opens this
 			// repository next reads the route it is actually on rather than a
 			// generic description of what a lane is.
-			p := board.Prepare(s.Root, laneFacts(boardLanes))
+			//
+			// A board that is already in git is shared, and stays shared. That is
+			// a decision taken before — typically a teammate running init in a
+			// fresh clone — and re-adding the ignore entry would silently stop
+			// their new tickets reaching anyone. "Already here" is not the test:
+			// 'jaira fetch' and lane loading create .jaira/ before any init, on
+			// boards that were never shared and must still start private.
+			shared := hasAttributes(s) || (&gitrepo.Repo{Dir: s.Root}).Tracks(ticket.DirName)
+			var p board.Prepared
+			if !shared {
+				p = board.Prepare(s.Root, laneFacts(boardLanes))
+			} else {
+				p.Notes, p.NoteErr = board.AnnounceInAgentFiles(s.Root, laneFacts(boardLanes))
+			}
 			// A board just prepared by this binary must not immediately be
 			// nagged about being out of date.
 			_ = release.Stamp(s.StateDir())
@@ -70,7 +87,7 @@ session and lock state is never committed. Safe to run more than once.`,
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
-					"private": true, "gitignore_written": p.Ignored,
+					"private": board.Ignored(s.Root), "gitignore_written": p.Ignored,
 					"state_dir":     s.SessionsDir(),
 					"agent_notes":   p.Notes,
 					"default_board": db.Path, "lanes": boardLanes.IDs(),
@@ -103,7 +120,11 @@ session and lock state is never committed. Safe to run more than once.`,
 			} else if line := announceLine(p.Notes); line != "" {
 				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
+			if shared {
+				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so .gitignore was left alone.\n")
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
+			}
 			return nil
 		},
 	}
