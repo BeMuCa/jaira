@@ -1,7 +1,7 @@
 ---
 id: 01M4RWRP4715D96XYCJ70YEJ6V
 title: Go-Tests lesen das maschinenlokale Default-Board aus ~/.jaira
-status: review
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,20 +18,21 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - d2577cb0dddd88ea6749b5cc986905e99e246cc1
 created-at: 2026-10-12T20:27:18Z
-updated-at: 2026-10-12T20:56:44Z
+updated-at: 2026-10-12T21:03:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-92214
 claimed-at: 2026-10-12T20:27:43Z
 outcome-what: "Auf upstream/master neu aufgesetzt: DefaultBoardPath und UserLanesDir folgen JAIRA_HOME ueber inUserHome (core/lane/lane.go); Beweistest core/lane/jairahome_test.go; Release-Note core/release/notes/0YEJ6V.md. Testisolation kommt von AK3Z6D."
 outcome-why: "Upstream isoliert die Tests schon (AK3Z6D); offen war nur, dass JAIRA_HOME Default-Board und Lane-Katalog nicht verlegte - die einzigen Per-User-Pfade ohne es."
 outcome-resolves: Default-Board und Lane-Katalog unter verlegtem JAIRA_HOME; Branch ohne Konflikte zu upstream
-review-summary: "none"
-review-gaps: "none: Diff ist nur inUserHome + Test + Notes-Datei; inUserHome war schon in Runde 1 die Zusammenlegung, nichts Weiteres zu entfernen"
+review-summary: "Ein Commit (d2577cb0) auf upstream/master, 0 Commits dahinter. core/lane/lane.go bekommt inUserHome(name): $JAIRA_HOME/<name> wenn gesetzt, sonst ~/.jaira/<name>. DefaultBoardPath und UserLanesDir nutzen es nach ihren eigenen Overrides (JAIRA_DEFAULT_BOARD, JAIRA_LANES_DIR), damit folgen Default-Board und Lane-Katalog JAIRA_HOME wie settings, identity, projects, store und update-cache schon. Dadurch greift die upstream-Testisolation (internal/testhome.Run setzt JAIRA_HOME) jetzt auch fuer diese zwei Pfade. Neu: Beweistest core/lane/jairahome_test.go und Release-Note core/release/notes/0YEJ6V.md (eine Zeile, Format korrekt)."
+review-gaps: "none: Diff deckt das DoD; Isolation aller Test-Pakete kommt von AK3Z6D, das auf diesem Branch enthalten ist. Geprueft und unkritisch: (1) SaveDefaultBoard schreibt unter gesetztem JAIRA_HOME jetzt dorthin statt nach ~/.jaira - beabsichtigt und in der Release-Note genannt; (2) letzte UserHomeDir-Nutzer ohne JAIRA_HOME sind role/target.go (~/.claude/skills, kein jaira-Zustand) und selfupdate/install.go - ausserhalb des Tickets. Worktree-Rest .jaira/milestones/ ist nicht von diesem Ticket."
 test-verdict: "pass: go vet + go test ./... -race -count=1 RC=0 auf feat/0yej6v-2 (29 Pakete ok, 0 FAIL) mit befuelltem ~/.jaira; TestJairaHomeHidesTheRealDefaultBoard rot ohne inUserHome, gruen mit; Binary: jaira init mit leerem JAIRA_HOME -> Built-ins inkl. backlog, ohne JAIRA_HOME -> Lanes aus ~/.jaira/default-board.md wie bisher"
-review-verdict: "Der Diff erfuellt das DoD auf seiner eigenen Basis und hat keine Defekte, ist aber so nicht mergebar: upstream hat das Test-Problem mit AK3Z6D bereits gruendlicher geloest, und der Branch kollidiert dort in 21 Dateien. Wert hat nur noch der Produktionsteil (DefaultBoardPath/UserLanesDir folgen JAIRA_HOME) samt Beweistest — der muss auf upstream/master neu aufgesetzt werden, die testhome-Haelfte faellt weg. Empfehlung: zurueck nach in-progress mit genau diesem Zuschnitt, oder schliessen, falls JAIRA_HOME fuer Default-Board/Lanes als Nutzerverhalten nicht gewollt ist."
-review-check: "1. git fetch upstream  2. git merge-tree --write-tree upstream/master feat/0yej6v | grep CONFLICT  -> 21 Zeilen CONFLICT, u.a. internal/testhome/testhome.go  3. git show upstream/master:internal/testhome/testhome.go | grep -n 'HOME\\|JAIRA_DEFAULT_BOARD'  -> upstream setzt HOME/USERPROFILE/JAIRA_HOME und loescht JAIRA_DEFAULT_BOARD/JAIRA_LANES_DIR schon  4. git show upstream/master:core/lane/defaultboard.go | grep -n JAIRA_HOME  -> keine Treffer: das ist der Teil, den nur dieser Branch hat  5. Auf feat/0yej6v: go test ./core/lane -run TestJairaHomeHidesTheRealDefaultBoard -count=1  -> ok"
+review-verdict: "Erfuellt das DoD, keine Defekte gefunden, mergebar ohne Konflikte. go test ./... -race -count=1 RC=0 auf feat/0yej6v-2 mit befuelltem ~/.jaira (selbst nachgeprueft). Nutzersichtbare Aenderung: wer JAIRA_HOME setzt, bekommt Default-Board und Lanes von dort - das ist der einzige Punkt, den eine Person bewusst akzeptieren sollte."
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-0yej6v  2. go test ./core/lane -run TestJairaHomeHidesTheRealDefaultBoard -count=1 -v  -> PASS  3. go test ./... -race -count=1 2>&1 | grep -c FAIL  -> 0 (mit deinem echten ~/.jaira/default-board.md)  4. go build -o /tmp/j ./cmd/jaira && d=$(mktemp -d) && git -C $d init -q && JAIRA_HOME=$(mktemp -d) /tmp/j -C $d init && /tmp/j -C $d lanes  -> Built-in-Lanes inkl. backlog, nicht die aus ~/.jaira/default-board.md  5. git log --oneline HEAD..upstream/master | wc -l  -> 0 (keine Konflikte)"
 ---
 
 # Go-Tests lesen das maschinenlokale Default-Board aus ~/.jaira
