@@ -14,9 +14,6 @@ export type Waiting = {
   // board's terminal one (signoff -> done); null where the next lane is
   // still work to do (human -> review), so a press never skips a review.
   acceptTo: string | null
-  // Every definition-of-done item ticked: Accept forces the person's exit,
-  // and must not force past an open item on the way.
-  dodComplete: boolean
 }
 
 export type Counts = { worker: number; review: number; person: number }
@@ -27,7 +24,6 @@ type Ticket = {
   title: string
   status: string
   next_lane?: string
-  dod_complete?: boolean
   question?: string
   review?: { verdict?: string }
 }
@@ -63,7 +59,6 @@ export function snapshotOf(lanesJson: string, listJson: string): { waiting: Wait
         verdict: oneLine(t.review?.verdict),
         question: oneLine(t.question),
         acceptTo: next?.terminal === true ? next.id : null,
-        dodComplete: t.dod_complete === true,
       })
     } else if (lane.agentic && lane.context === 'fresh') counts.review++
     else if (lane.agentic) counts.worker++
@@ -80,6 +75,24 @@ const REFUSAL = /^\s*(request|reject|refuse|fail|zur(ü|ue)ck|ablehn|nicht|not)\
 
 export function hasReservation(verdict: string): boolean {
   return RESERVATION.test(verdict) || REFUSAL.test(verdict)
+}
+
+// What stops a move besides the person's own exit, read off the error
+// `jaira move --dry-run --json` prints when a gate refuses: the first other
+// refusal, or undefined when the human exit (needs_human) is the only one.
+// That one Accept stands for; every other gate holds, as for a move made by
+// hand in the board. An error that lists no refusals is a refusal of its own.
+export function otherRefusal(errorJson: string): string | undefined {
+  type Refused = { error?: { message?: string; violations?: { code?: string; message?: string }[] } }
+  let error: Refused['error']
+  try {
+    error = (JSON.parse(errorJson) as Refused).error
+  } catch {
+    return oneLine(errorJson).slice(0, 200) || 'jaira refused the move'
+  }
+  if (error?.violations === undefined) return oneLine(error?.message).slice(0, 200) || 'jaira refused the move'
+  const other = error.violations.find(v => v.code !== 'needs_human')
+  return other === undefined ? undefined : oneLine(other.message).slice(0, 200)
 }
 
 // The main working tree, from `git rev-parse --git-common-dir`: spawn.sh puts

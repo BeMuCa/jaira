@@ -18,6 +18,9 @@ type World = {
   filled: string[]
   store: Map<string, unknown>
   status: (string | undefined)[]
+  // What a dry run of a move refuses, by code: a person's lane always refuses
+  // needs_human, the exit Accept stands for.
+  refusals: { code: string; message: string }[]
   clock: ReturnType<typeof mock.clock>
 }
 
@@ -32,8 +35,8 @@ const LANES = {
   ],
 }
 
-const SIGNOFF = { handle: 'MG677R', title: 'cache key', status: 'signoff', next_lane: 'done', dod_complete: true, question: '', review: { verdict: 'approve mit Vorbehalt: der Schluessel ignoriert den Branch' } }
-const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', next_lane: 'review', dod_complete: false, question: 'Popup oder eigene Seite?', review: { verdict: '' } }
+const SIGNOFF = { handle: 'MG677R', title: 'cache key', status: 'signoff', next_lane: 'done', question: '', review: { verdict: 'approve mit Vorbehalt: der Schluessel ignoriert den Branch' } }
+const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', next_lane: 'review', question: 'Popup oder eigene Seite?', review: { verdict: '' } }
 const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', question: '', review: {} }
 
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
@@ -53,6 +56,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; 
     filled: [],
     store: new Map(Object.entries(opts.store ?? {})),
     status: [],
+    refusals: [{ code: 'needs_human', message: 'lane "signoff" is a human checkpoint' }],
     clock: mock.clock(on, { now: 1_000_000 }),
   }
   const hasBoard = opts.board ?? true
@@ -103,6 +107,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; lang?: string; 
     const [cmd, ...args] = e.argv
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
+    if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
+      const error = JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
+      return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
@@ -157,7 +165,10 @@ describe('waiting for you', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
-    expect(ran(w, 'jaira', 'move', 'MG677R')).toEqual([['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toEqual([
+      ['jaira', 'move', 'MG677R', '--to', 'done', '--dry-run', '--json', '@/.worktrees/repo-mg677r'],
+      ['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r'],
+    ])
   })
 
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
@@ -170,14 +181,14 @@ describe('waiting for you', () => {
     void w
   })
 
-  test('Accept with an item of the definition of done still open moves nothing and says why', async ($, on) => {
+  test('Accept forces only the human exit: any other gate refusing moves nothing and says why', async ($, on) => {
     const w = world(on)
-    w.tickets = [{ ...SIGNOFF, dod_complete: false }]
+    w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'the definition of done is not met: criterion 1 is still open' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
-    expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(await ui.find({ type: 'Text', text: /the definition of done still has open items/ })).toBeDefined()
+    expect(ran(w, 'jaira', 'move').filter(r => r.includes('--force'))).toEqual([])
+    expect(await ui.find({ type: 'Text', text: /criterion 1 is still open/ })).toBeDefined()
   })
 
   test('a plain yes gets no Explain, however long the sentence', async ($, on) => {

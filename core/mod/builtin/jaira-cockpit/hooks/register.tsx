@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, mainRepoOf, snapshotOf, upwards, worktreeFor, type Waiting } from './board.ts'
+import { hasReservation, mainRepoOf, otherRefusal, snapshotOf, upwards, worktreeFor, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -220,20 +220,22 @@ async function say($: EngineInterface, text: string): Promise<void> {
 }
 
 // The person pressed Accept: that press is the human exit the lane asks for,
-// so the move is forced exactly as a person typing it by hand would.
-// Accept moves the ticket to its next lane, and only where that lane is the
-// terminal one (snapshotOf sets acceptTo): from signoff to done, never from
-// human past review and signoff. --force stands for the press, which is the
-// person's exit the lane asks for — and only for that: with an item of the
-// definition of done still open the press is refused, as the gate would.
+// and nothing more. Accept moves the ticket to its next lane, and only where
+// that lane is the terminal one (snapshotOf sets acceptTo): from signoff to
+// done, never from human past review and signoff. The gates run first as a
+// dry run; --force follows only when the human exit is all they refuse, so
+// an open definition-of-done item or plan step still stops the press.
 async function accept($: EngineInterface, w: Waiting): Promise<void> {
   const t = texts(await language($))
   if (!board || w.acceptTo === null) return
-  if (!w.dodComplete) {
-    await say($, t.failed(`${t.accept} ${w.id}`, t.dodOpen))
+  const dir = await ticketDir($, board, w.id)
+  const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
+  const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
+  if (refused !== undefined) {
+    await say($, t.failed(`${t.accept} ${w.id}`, refused))
     return
   }
-  const done = await jaira($, await ticketDir($, board, w.id), ['move', w.id, '--to', w.acceptTo, '--force'])
+  const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
   await say($, done.ok ? t.accepted(w.id, w.acceptTo) : t.failed(`${t.accept} ${w.id}`, done.why))
   await refreshBoard($)
 }

@@ -1,7 +1,7 @@
 // Self-contained, as a contract must be: these mirror hooks/board.ts and
 // hooks/lang.ts.
 export type Waiting = {
-  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; dodComplete: boolean
+  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null
 }
 export type Counts = { worker: number; review: number; person: number }
 export type Lang = 'en' | 'de' | 'ru'
