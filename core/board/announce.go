@@ -122,7 +122,8 @@ const agentNote = "## Task tracking: jaira\n" +
 	"`jaira <command> --help` for everything else.\n" +
 	"\n" +
 	"Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.\n" +
-	"The human review lane cannot be left by an agent — a person accepts the work there.\n" +
+	"An agent cannot move work on out of the human review lane — a person accepts it there.\n" +
+	"Sending it back to an earlier lane is not an acceptance and needs no --force.\n" +
 	"\n" +
 	"A `jaira:local` marker — an HTML comment of that name — added by hand anywhere\n" +
 	"inside this block makes everything between it and the end marker survive the\n" +
@@ -218,7 +219,9 @@ func laneSection(facts []LaneFact) string {
 			marks = append(marks, "**fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent")
 		case f.Agentic:
 			marks = append(marks, "yours to work")
-		case f.HumanExit, f.Question:
+		case f.HumanExit:
+			marks = append(marks, "**a person's, not yours** — you may move work in, or send it back to an earlier lane, never on")
+		case f.Question:
 			marks = append(marks, "**a person's, not yours** — you may move work in, never out")
 		default:
 			marks = append(marks, "no agent step; move through it")

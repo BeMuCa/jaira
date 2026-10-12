@@ -26,7 +26,7 @@ requires-question: false         # true means a ticket needs an open question be
 requires-specified: false        # true marks the first lane a ticket may not skip its promotion fields at.
 requires-outcome: false          # defaults to the value of terminal if this key is absent.
 requires-nonmodel-signal: false  # defaults to the value of terminal if this key is absent.
-requires-human-exit: false       # true means no agent may move a ticket out of this lane.
+requires-human-exit: false       # true means no agent may move a ticket on out of this lane; back to an earlier lane is allowed.
 requires-option: ""              # names a ticket Options entry; the lane only applies if it is ticked.
 rejects-to: ""                   # the lane work goes back to when this one finds it wanting: the loop's
                                   # back edge. Must name an installed lane, and not this one. A list —

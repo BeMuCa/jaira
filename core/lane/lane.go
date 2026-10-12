@@ -110,7 +110,8 @@ type Lane struct {
 	// uncommitted — but nothing is accepted that cannot be checked.
 	RequiresCommits bool
 
-	// RequiresHumanExit means no agent may move a ticket out of this lane. It is
+	// RequiresHumanExit means no agent may move a ticket on out of this lane —
+	// back to an earlier lane is allowed, since that accepts nothing. It is
 	// the difference between a review step that is conventionally respected and
 	// one that actually stops: an agent that decides its own work passed review
 	// would make the step decorative.

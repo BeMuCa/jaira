@@ -387,11 +387,16 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// A lane that stops for a human stops for a human. Without this the review
 	// step is decorative: the agent that did the work would decide its own work
 	// passed review, which is the one judgement it is least able to make.
-	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && req.To != t.Status && !req.Interactive {
+	//
+	// Sending work back to an earlier lane decides nothing — it is the opposite
+	// of accepting it — so only a move forward is refused. The
+	// alternative was --force for every send-back, and --force switches off
+	// every other refusal along with this one.
+	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && to > from && !req.Interactive {
 		vs = append(vs, Violation{
 			Code: CodeNeedsHuman,
 			Message: fmt.Sprintf(
-				"lane %q is a human checkpoint: open the board and sign this off, or accept it there. An agent cannot move a ticket out of it",
+				"lane %q is a human checkpoint: open the board and sign this off, or accept it there. An agent cannot move a ticket on from it, only back to an earlier lane",
 				cur.ID),
 		})
 	}
