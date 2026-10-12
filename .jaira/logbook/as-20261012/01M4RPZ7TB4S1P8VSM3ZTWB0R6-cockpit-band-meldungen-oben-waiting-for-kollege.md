@@ -1,7 +1,7 @@
 ---
 id: 01M4RPZ7TB4S1P8VSM3ZTWB0R6
 title: "Cockpit-Band: Meldungen oben, 'waiting for <Kollege>' immer unten"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,16 +17,22 @@ definition-of-done: "Das Band rendert in der Reihenfolge Kopfzeile, Meldung, 'Wa
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8a074857b0e696bdbe50056a9ea115d5e7797b40
+  - 5af87faaf4ad0059502ecc9315642350dcc0dc3b
 created-at: 2026-10-12T18:46:01Z
-updated-at: 2026-10-12T18:54:24Z
+updated-at: 2026-10-12T19:09:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48411
 claimed-at: 2026-10-12T18:49:44Z
 outcome-what: "AbovePrompt-Render in core/mod/builtin/jaira-cockpit/hooks/register.tsx umgeordnet: Meldung (notice) direkt unter der Kopfzeile, dann 'Waiting for you' mit +N more, dann Entscheidungen, dann der Kollegen-Block ('waiting for <name>' und seine Zeilen), zuletzt die Session-Zeile. Zwei Tests in tests/board.test.ts, Release-Note core/release/notes/TWB0R6.md."
 outcome-why: "Die Meldung stand unter dem Kollegen-Block; kam oder ging sie, sprang die Liste, und der Blick auf die eigene Arbeit fand sie an wechselnder Stelle."
 outcome-resolves: "Band hat feste Reihenfolge: Meldungen oben, eigene Arbeit in der Mitte, Kollegen unten (DoD 1, 2, 3)."
-review-summary: "core/mod/builtin/jaira-cockpit/tests/board.test.ts:509 defines the band-reading helper 'drawn' as a const inside describe('waiting for you'); the file's other band readers (headLine, sessionLine, :190-201) are top-level async functions with a comment — move it there as 'async function drawn($: Test$)'"
+review-summary: "In register.tsx (AbovePrompt-Render des Cockpit-Bands) sind zwei Blöcke verschoben, keine Logik neu: die Meldung (notice, z. B. 'MG677R accepted: done') steht jetzt direkt unter der Kopfzeile statt ganz unten, und die Entscheidungen ('<id> | decided in Discuss') stehen vor dem Kollegen-Block statt danach. Damit lautet die Reihenfolge Kopfzeile -> Meldung -> Waiting for you (+N more) -> Entscheidungen -> 'N waiting for <name>' mit seinen Zeilen -> Session-Zeile. Kommt oder geht die Meldung, verschiebt sich nur alles darunter gleichmäßig, die Kollegen bleiben immer unten. Zwei neue Tests in tests/board.test.ts lesen das ganze Band als einen String (Helfer drawn() neben headLine/sessionLine) und prüfen die Reihenfolge per indexOf: einmal mit allen Teilen gleichzeitig, einmal aufgeklappt (+N more und Kollegen offen). Release-Note core/release/notes/TWB0R6.md, eine Zeile."
+review-gaps: "Keine Fehler. Drei Randpunkte, keiner blockiert: (1) Entscheidungen haben weder Überschrift noch Abstand; ohne eigene wartende Tickets kleben sie direkt unter der Meldung - war vorher unter dem Kollegen-Block genauso, nur kosmetisch. (2) Der +N-more-Test war laut Notiz schon mit dem alten Code grün, er schützt nur vor Rückfall; DoD 2 ist damit belegt, aber nicht durch eine Änderung erzeugt. (3) Der Branch feat/twb0r6 ist von feat/qrhb35 (82aa5654) abgezweigt, das noch nicht gemergt ist: der PR stapelt sich darauf und kann erst nach QRHB35 sauber nach master. Geprüft: Diff 82aa5654..HEAD deckt sich mit outcome-what; claude plugin test in core/mod/builtin/jaira-cockpit: 83 pass, 0 fail; Critique-Befund (drawn() top-level) in 5af87faa umgesetzt."
+test-verdict: "pass: claude plugin test RC=0 (83 pass), claude plugin validate RC=0, go build ./... RC=0, go test ./core/mod/... RC=0; DoD 1-3 verified in the tree (register.tsx:809, board.test.ts:514 and :538 pass, TWB0R6.md one '- ' line); the order test fails on the old render; the live band in Claude Code was not looked at"
+review-verdict: "Der Diff erfüllt alle drei DoD-Punkte, die kleinste mögliche Form (nur Blöcke verschoben). Keine Defekte gefunden. Empfehlung: annehmen; beim PR beachten, dass er auf feat/qrhb35 aufsetzt."
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-twb0r6/core/mod/builtin/jaira-cockpit && claude plugin test  -> '83 pass, 0 fail'. 2. Im Claude-Code-Cockpit dieses Worktrees ein eigenes Ticket in signoff mit Accept annehmen. 3. Erwartet: die Zeile '<id> accepted: done' steht direkt unter der Kopfzeile 'jaira-cockpit', ÜBER 'Waiting for you'. 4. Hat ein Kollege wartende Tickets: die Zeile '[ N waiting for <name> ]' steht als letzte Liste, direkt über der Zeile 'context ...k | cache ...'. 5. Diese Kollegen-Zeile anklicken und, falls mehr als 3 eigene Tickets, '+N more' -> alle eigenen Tickets und 'show fewer' stehen weiter über 'N waiting for <name>'."
 ---
 
 # Cockpit-Band: Meldungen oben, 'waiting for <Kollege>' immer unten

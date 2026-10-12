@@ -40,11 +40,12 @@ jobs:
         run: |
           git config --global user.name jaira-ci
           git config --global user.email ci@example.invalid
-      # The pull request opened below runs no CI (a GITHUB_TOKEN push starts
-      # no workflow), so the tests the tag build runs (.goreleaser.yaml) run
-      # here on the cut tree, before anything is pushed. v0.3.7 failed in the
-      # tag build for want of this: .gitattributes did not pin the new
-      # notes/<version>/ folder.
+      # This is the one place a release is tested. The pull request opened
+      # below and its merge change only core/release/notes/**, which ci.yaml
+      # skips, and the tag build (release.yaml, .goreleaser.yaml) runs no
+      # tests. So the suite runs here, on the cut tree, before anything is
+      # pushed. v0.3.7 failed in the tag build for want of this:
+      # .gitattributes did not pin the new notes/<version>/ folder.
       - name: Test the cut tree
         run: go test ./...
       - name: Push release/<version> and open the pull request

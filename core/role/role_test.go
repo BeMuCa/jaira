@@ -464,6 +464,9 @@ esac
 		// never a role, so the tab answers and never works the ticket.
 		"explain": "Erklaere mir in einfachen Worten den Review-Befund zu Ticket ab12cd …",
 		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
+		// The cockpit's Accept, a person's press: the flag is what lets
+		// jaira-role-pr open the pull request instead of handing it back.
+		"pr": "/jaira-role-pr ab12cd --by-person",
 	} {
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
@@ -484,5 +487,37 @@ esac
 		} else if line != want {
 			t.Errorf("lane %s typed %q, want %q", lane, line, want)
 		}
+	}
+}
+
+// A pull request shows each ticket's file as the branch last committed it,
+// and the lanes after the last code commit commit nothing: jaira-role-pr files
+// the finished tickets away before it pushes, by handle, and describes every
+// ticket the branch's commits name (GPFA7B, after PRs #62 and #63 showed
+// their tickets in critique).
+func TestPRFilesTheTicketsAwayBeforeThePush(t *testing.T) {
+	body, err := File("jaira-role-pr", "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	pull := strings.Index(text, "jaira pull <ID>\njaira logbook <ID>")
+	if pull < 0 {
+		t.Error("jaira-role-pr must run jaira pull <ID> right before jaira logbook <ID>: a file older than the ref is refused")
+	}
+	file := strings.Index(text, "jaira logbook <ID>")
+	commit := strings.Index(text, `chore(<ID>): file the ticket away`)
+	push := strings.Index(text, "## Push the branch")
+	if file < 0 || commit < 0 || push < 0 || file > push || commit > push {
+		t.Errorf("jaira-role-pr must run jaira logbook <ID> and commit chore(<ID>): file the ticket away before ## Push the branch (at %d, %d, %d)", file, commit, push)
+	}
+	if strings.Contains(text, "Push what is committed and leave that file alone") || !strings.Contains(text, "Leave that file alone here: **File the finished tickets away**") {
+		t.Error("jaira-role-pr's 'Before you push anything' must point at the logbook step instead of leaving the ticket file alone without exception")
+	}
+	if strings.Contains(text, "git add .jaira/") || !strings.Contains(text, `git add -A -- ':(glob).jaira/**/*<ID>-*.md'`) {
+		t.Error("jaira-role-pr must stage the filed ticket by its own path, never .jaira/ whole")
+	}
+	if !strings.Contains(text, "git log --format=%s <that remote>/<its default branch>..HEAD") || strings.Index(text, "## Which repository it goes to") > file || !strings.Contains(text, "**Every ticket on the branch**") {
+		t.Error("jaira-role-pr must read every ticket the branch's commits name, against the target's default branch settled before it, and describe each of them")
 	}
 }

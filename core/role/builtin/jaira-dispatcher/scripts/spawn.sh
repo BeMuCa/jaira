@@ -24,13 +24,16 @@ spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-ro
                   in its own tab; a discuss chat sends it the decision.
   -h, --help      This text.
 
-Four lane names are special. <dispatch> starts the dispatcher itself in the tab
+Five lane names are special. <dispatch> starts the dispatcher itself in the tab
 (/jaira-dispatcher <ticket-id>) instead of one lane's worker; <worker> starts
 the worker that carries the whole ticket itself (/jaira-worker <ticket-id>),
 which is what a teamlead passes when settings.json says "dispatch": "worker".
 <explain> and <discuss> open a chat for a person about the ticket — the review
 finding explained, or the ticket's open question talked through — and are what
-the jaira-cockpit mod's buttons start, with --no-worktree.
+the jaira-cockpit mod's buttons start, with --no-worktree. <pr> starts
+/jaira-role-pr <ticket-id> --by-person: the cockpit's Accept starts it when
+a person accepted a ticket whose branch has no pull request yet, and nothing
+else may.
 Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
@@ -167,6 +170,11 @@ if [ "$lane" = dispatch ]; then
   prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
 elif [ "$lane" = worker ]; then
   prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
+elif [ "$lane" = pr ]; then
+  # A person pressed Accept in the cockpit: --by-person tells jaira-role-pr
+  # the invocation is theirs, so it opens the pull request instead of handing
+  # the create line back. Only that press passes this lane.
+  prompt="/jaira-role-pr $ticket --by-person"
 elif [ "$lane" = explain ]; then
   prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung an das Ticket, als eine Note mit genau diesen Zeilen, jede Zeile ein Teil: jaira note $ticket \"explain: <Befund: was gefunden wurde, ein bis zwei Saetze>\nWarum: <warum es zaehlt, ein bis zwei Saetze>\n1) <erste Option, eine Zeile> [give back]\n2) <zweite Option, eine Zeile> [accept]\nEmpfehlung: <Nummer> - <warum, ein Satz>\" - mit echten Zeilenumbruechen im Text, zwei bis vier Optionen mit 1) 2) 3) 4) am Zeilenanfang - dieselben Nummern, mit denen die Person im Cockpit waehlt, die Woerter Warum: und Empfehlung: genau so. Ans Ende jeder Option gehoert [give back], wenn sie heisst, die Arbeit zurueckzugeben und etwas zu aendern, [accept], wenn sie heisst, das Ticket so anzunehmen, und keine Marke, wenn sie keins von beidem ist. Das Cockpit zeigt die Note unter [Read explanation], und die Wahl dort fuehrt genau diesen Schritt aus. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 elif [ "$lane" = discuss ]; then

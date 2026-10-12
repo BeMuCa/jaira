@@ -1,0 +1,60 @@
+---
+id: 01M4RNA6A0Z1S2HCKT6K776466
+title: Ein Release testet einmal statt viermal
+status: critique
+ready: true
+creator: Alexander Sacharov
+assignee: Alexander Sacharov
+goal: "Ein Release laeuft die Test-Suite genau einmal: im Release-Knopf (release-notes.yaml, 'Test the cut tree') vor dem Release-PR. Der Release-PR, sein Merge nach master und der Tag-Build testen nicht noch einmal."
+context: |-
+  Was falsch ist: v0.3.7 (2026-10-12) hat die Tests viermal gefahren: 1) release-notes.yaml 'Test the cut tree' (ubuntu, ~45 s), 2) ci.yaml auf dem Release-PR #61 (3 OS), 3) ci.yaml auf push nach master nach dem Merge (3 OS), 4) .goreleaser.yaml before-hook 'go test ./...' im Tag-Build (ubuntu).
+  Der Release-PR aendert nur Dateien unter core/release/notes/** (cut verschiebt sie nach notes/<version>/). Der Baum ist byte-gleich mit dem, den der Knopf schon getestet hat.
+  Auslöser: Alex nach dem Merge von #61: 'wir machen zu viele Tests, bei PR, bei Merge und dann bei Tags'.
+  Entscheidung Alex: nur der Knopf testet. ci.yaml ueberspringt Commits, die nur core/release/notes/** aendern; der goreleaser-Hook verliert 'go test ./...' (go mod tidy bleibt).
+  Offen und zu pruefen: ist 'ci' / 'test (...)' in der Branch-Protection von BeMuCa/jaira master ein Pflicht-Check? Dann blockiert ein uebersprungener Workflow den Merge des Release-PR - dann statt paths-ignore einen Job, der bei reinen Notes-Aenderungen sofort gruen endet (gh api repos/BeMuCa/jaira/branches/master/protection).
+definition-of-done: "ci.yaml laeuft nicht (oder endet sofort gruen) fuer PRs und Pushes, die ausschliesslich core/release/notes/** aendern; jede andere Aenderung testet wie bisher auf 3 OS"
+tags:
+  - ci
+  - release
+blocked-by: []
+related:
+  - 01M4RCGVBXRPSJ3GA8P25HDAJZ
+  - 01M4QECQMKHK5BKWRZMFAR97K9
+commits: []
+created-at: 2026-10-12T18:17:03Z
+updated-at: 2026-10-12T18:19:43Z
+updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-68064
+claimed-at: 2026-10-12T18:17:28Z
+outcome-what: "ci.yaml ueberspringt Pushes/PRs, die nur core/release/notes/** aendern; goreleaser-Hook und release.yaml testen nicht mehr; Kommentare, CLAUDE.md und AGENTS.md nennen den Release-Knopf als einzigen Test-Ort"
+outcome-why: "v0.3.7 lief die Suite viermal (Knopf, Release-PR 3 OS, Push nach master 3 OS, Tag-Build) auf demselben Baum"
+outcome-resolves: "DoD 1-4: Release testet einmal, im Knopf; master hat keinen Pflicht-Check, der Release-PR bleibt mergebar"
+---
+
+# Ein Release testet einmal statt viermal
+
+## Definition of Done
+
+- [x] ci.yaml laeuft nicht (oder endet sofort gruen) fuer PRs und Pushes, die ausschliesslich core/release/notes/** aendern; jede andere Aenderung testet wie bisher auf 3 OS
+  proof: .github/workflows/ci.yaml:10-16 paths-ignore core/release/notes/** auf push und pull_request; Matrix 3 OS unveraendert
+- [x] .goreleaser.yaml before-hook ohne 'go test ./...'; release.yaml testet nicht mehr selbst; der Kommentar nennt den Knopf als einzigen Test-Ort
+  proof: .goreleaser.yaml:8-13 nur 'go mod tidy'; release.yaml ohne git-config/Test, Kommentar :8-9; release-notes.yaml:42-47 'the one place a release is tested'
+- [x] Branch-Protection geprueft und das Ergebnis als Note: ein Release-PR ist nach der Aenderung mergebar
+  proof: gh api repos/BeMuCa/jaira/branches/master: protected:false, rulesets []; siehe Note
+- [x] CLAUDE.md und AGENTS.md (Abschnitt 'Releasing is a button') sagen, wo ein Release getestet wird
+  proof: CLAUDE.md:245-249 und AGENTS.md:198-202 'A release is tested once, in step 1'
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+- **2026-10-12 18:17 · Alexander Sacharov** — parent session: jaira-4c
+- **2026-10-12 18:18 · Alexander Sacharov** — Branch-Protection gelesen (2026-10-12): gh api repos/BeMuCa/jaira/branches/master -> protected:false, required_status_checks leer; repos/BeMuCa/jaira/rulesets -> []; protection-Endpoint 404 (kein admin, aber branches/master liefert protected:false). Kein Pflicht-Check -> paths-ignore genuegt, ein uebersprungener ci-Workflow blockiert den Release-PR nicht. Faellt spaeter ein Pflicht-Check 'test (...)' dazu, braucht es statt paths-ignore einen sofort-gruenen Job.
+- **2026-10-12 18:18 · Alexander Sacharov** — Offene Entscheidungen: keine. Alex hat die Richtung im Kontext entschieden; paths-ignore vs. sofort-gruener Job entscheidet die Branch-Protection (keine) -> paths-ignore. Kein Release-Notes-Eintrag: nur CI, fuer Nutzer des Binaries unsichtbar.
+- **2026-10-12 18:19 · Alexander Sacharov** — paths-ignore statt Job-mit-Pfadfilter: master hat keinen Pflicht-Check (siehe Note). Auch ticket-commits faellt fuer reine Notes-Diffs weg — der Release-PR traegt keine Ticket-Datei, nichts zu pruefen. release.yaml: 'Configure git for fixture repositories' entfernt, es existierte nur fuer den Test im goreleaser-Hook; go mod tidy und der Changelog brauchen keine git-Identitaet. Kommentar in core/release/notes_test.go nannte goreleasers go test, auf den Knopf umgestellt.
