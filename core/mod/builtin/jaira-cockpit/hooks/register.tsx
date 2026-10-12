@@ -689,6 +689,8 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     startedAt = await $.clock.now()
+    // A reload drops the timers that free a pressed row; the lock is the host's and stays.
+    await update($, busyAtom, () => ({}))
     // Kept before reports were scoped to a project; no project may show them.
     for (const k of await $.store.keys()) if (isUnscoped(k)) await $.store.delete(k)
     // A session that ended without session.end leaves its mark; the 50 heard

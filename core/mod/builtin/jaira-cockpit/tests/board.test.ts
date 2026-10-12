@@ -328,6 +328,22 @@ describe('waiting for you', () => {
     expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
   })
 
+  test('a reload frees a row whose press it cut off', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    void ui.press({ key: 'accept-MG677R' })
+    await w.clock.settle()
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    await startSession($)
+    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    // The cut-off press ends before the test does.
+    await release(w)
+    await release(w)
+    await w.clock.advance(20_000)
+  })
+
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
     const w = world(on)
     await startSession($)
