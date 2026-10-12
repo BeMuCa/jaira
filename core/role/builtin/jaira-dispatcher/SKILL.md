@@ -477,7 +477,11 @@ Three lines at the end, on top of the per-lane lines. The teamlead pastes them
 to a human:
 
 - what changed
-- which lane the ticket sits in now
+- which lane the ticket sits in now, and your own context and prompt cache —
+  the first line the jaira-cockpit's `workers` tool
+  (`mcp__jaira-cockpit__workers`) gives you, `context 180k of 1000k, cache …`;
+  `context unknown` where that tool is not there. The teamlead reads it off
+  this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
 
 Everything else — which lanes ran, how long, what the diff was — stays with you

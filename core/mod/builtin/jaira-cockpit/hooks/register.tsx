@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { hasReservation, lanesOf, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -11,7 +11,8 @@ import {
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
 import {
-  backMessage, carrierOf, carrierTab, chooseWorker, isExpired, RECORD_PREFIX, startOf, tabsOf, type Role, type SessionRecord,
+  backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
+  workerLines, type Role, type SessionRecord,
 } from './sessions.ts'
 import { t } from './texts.ts'
 import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
@@ -404,11 +405,13 @@ async function writeRecord($: EngineInterface): Promise<void> {
     session: id,
     pane,
     cwd: await $.session.cwd(),
+    repo: await project($),
     ticket: carrying.ticket,
     role: carrying.role,
     lane: carrying.lane,
     ...(lastAnswerAt !== undefined ? { lastAnswerAt } : {}),
     tokens: usage.context.tokens ?? 0,
+    ...(usage.context.window ? { window: usage.context.window } : {}),
     ttl: ttlMs(usage.rateLimits),
     updatedAt: await $.clock.now(),
   }
@@ -434,11 +437,13 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
-async function giveBack($: EngineInterface, id: string, lane: string, reason: string): Promise<void> {
+async function giveBack($: EngineInterface, id: string, lane: string, reason: string, share: number): Promise<void> {
   if (!board) return
   const dir = await ticketDir($, board, id)
   const noted = await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
-  const moved = noted.ok ? await jaira($, dir, ['move', id, '--to', 'in-progress', '--force']) : noted
+  // Back to an earlier lane needs no --force since jaira 0.3.7, which this
+  // mod ships inside: so any other refusal of the move still stops it.
+  const moved = noted.ok ? await jaira($, dir, ['move', id, '--to', 'in-progress']) : noted
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
@@ -451,9 +456,9 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   // No Herdr: nobody to hand it to from here; the board says where it is.
   if (bin === undefined) return handedTo('none', 'no Herdr in this session')
   const tabs = await run($, [bin, 'tab', 'list'], dir)
-  const tab = tabs?.exitCode === 0 ? carrierTab(tabs.stdout, id) : undefined
+  const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
   const record = carrierOf(await readRecords($), id)
-  const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now() })
+  const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
   let why = choice.why
   if (choice.reuse && record) {
     // The pane may have gone since the tab list: only text that arrived
@@ -474,6 +479,32 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   const started = await run($, [script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
   if (started?.exitCode === 0) return handedTo('new', why)
   await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
+}
+
+// The workers of this board, for the teamlead (the tool) and a person
+// (/cockpit workers) alike: the asking session first, from its live figures,
+// then every agent carrying a ticket, with whom a new round would go to.
+async function workers($: EngineInterface, share: number): Promise<string> {
+  let self = ''
+  try {
+    const usage = await $.session.usage()
+    self = selfLine(usage.context.tokens ?? 0, usage.context.window, ttlMs(usage.rateLimits))
+  } catch {}
+  // A worker asking never looked for the board: it draws nothing.
+  if (board === undefined) board = await findBoard($)
+  if (board === null) return [self, t.workersNoBoard].filter(Boolean).join('\n')
+  const list = await run($, ['jaira', 'list', '--json'], board.dir)
+  const bin = await herdr($)
+  const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], board.dir)
+  const lines = workerLines({
+    records: await readRecords($),
+    repo: await project($),
+    ...(tabs?.exitCode === 0 ? { tabs: tabsOf(tabs.stdout) } : {}),
+    lanes: lanesOf(list?.exitCode === 0 ? list.stdout : ''),
+    now: await $.clock.now(),
+    share,
+  })
+  return [self, lines.length === 0 ? t.workersNone : t.workersTitle, ...lines].filter(Boolean).join('\n')
 }
 
 // ── context, cache, what was used ──────────────────────────────────────────
@@ -588,6 +619,9 @@ const USAGE_COMMAND = 'cockpit'
 export const register: Register = (on, options) => {
   const threshold = typeof options.cacheGuardTokens === 'number' ? options.cacheGuardTokens : 30_000
   const usdPerMTok = typeof options.usdPerMTok === 'number' ? options.usdPerMTok : 5
+  // The share of a model's window, in percent, past which a ticket's next
+  // round goes to a new worker.
+  const share = typeof options.workerContextShare === 'number' ? options.workerContextShare : DEFAULT_CONTEXT_SHARE
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
@@ -611,8 +645,8 @@ export const register: Register = (on, options) => {
     }
     await $.command.register({
       name: USAGE_COMMAND,
-      description: 'The jaira cockpit: report [id], threads, ticket <id>.',
-      argumentHint: 'report [id] | threads | ticket <id>',
+      description: 'The jaira cockpit: report [id], threads, ticket <id>, workers.',
+      argumentHint: 'report [id] | threads | ticket <id> | workers',
       immediate: true,
     })
     await $.tool.register({
@@ -623,6 +657,12 @@ export const register: Register = (on, options) => {
         type: 'object',
         properties: { ticket: { type: 'string', description: 'The ticket handle, e.g. MG677R.' } },
       },
+    })
+    await $.tool.register({
+      name: 'workers',
+      description:
+        "Lists this session's own context and prompt cache, then every agent carrying a ticket of this jaira board (worker or dispatcher, with an open Herdr tab): ticket, lane, context tokens, minutes its prompt cache stays warm, and whether the ticket's next round would go to the same worker or a new one, and why.",
+      inputSchema: { type: 'object', properties: {} },
     })
     await refreshBoard($)
     await refreshCache($)
@@ -696,6 +736,7 @@ export const register: Register = (on, options) => {
       const { ticket } = e as { ticket?: unknown }
       return { result: await reports($, typeof ticket === 'string' ? ticket : '') }
     }
+    if (e.tool === 'mcp__jaira-cockpit__workers') return { result: await workers($, share) }
     totals = { ...totals, tools: totals.tools + 1 }
     return next(e)
    }).catch(($, e, next) => next(e))
@@ -709,6 +750,7 @@ export const register: Register = (on, options) => {
   on('command.run', { command: USAGE_COMMAND }, async ($, e) => {
     const [sub = '', ...rest] = (e.args ?? '').trim().split(/\s+/)
     if (sub === 'report') return { text: await reports($, rest.join(' ')) }
+    if (sub === 'workers') return { text: await workers($, share) }
     if (sub === 'threads') return { text: listThreads(threads, turn, t.threadsTitle, t.threadsNone) }
     if (sub === 'ticket' && rest[0]) {
       const id = rest[0].toUpperCase()
@@ -871,7 +913,7 @@ export const register: Register = (on, options) => {
             if (reason.trim() === '') return
             void update($, givingAtom, () => null)
             void $.ui.close({ id: GIVE_BACK })
-            void giveBack($, w.id, w.lane, reason.trim())
+            void giveBack($, w.id, w.lane, reason.trim(), share)
           }}
         />
       </Box>

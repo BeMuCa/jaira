@@ -44,12 +44,15 @@ export const t = {
   reviews: (n: number) => `${n} review`,
   waitingFor: (n: number) => `${n} waiting for you`,
   usage: 'session',
+  workersTitle: 'Agents carrying a ticket of this board:',
+  workersNone: 'No agent carries a ticket of this board.',
+  workersNoBoard: 'No jaira board here.',
   paneTitle: (id: string) => `Ticket ${id}`,
   paneReports: 'Reports',
   paneUsage: 'Usage per agent',
   paneNothing: 'nothing recorded yet',
   usageText:
-    'Usage: /cockpit <subcommand>\n\n  report [id]   full text of the agent reports shortened for a ticket, newest first; without an id, the tickets that have some\n  threads       the conversation threads of this session and where each stands\n  ticket <id>   a pane with the ticket\'s reports and what its agents used',
+    'Usage: /cockpit <subcommand>\n\n  report [id]   full text of the agent reports shortened for a ticket, newest first; without an id, the tickets that have some\n  threads       the conversation threads of this session and where each stands\n  ticket <id>   a pane with the ticket\'s reports and what its agents used\n  workers       every agent carrying a ticket of this board: lane, context, cache, and whether a new round goes to it',
 }
 
 // The noise filter's own words: the digest line and /cockpit report.
