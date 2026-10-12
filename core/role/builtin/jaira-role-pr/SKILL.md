@@ -5,7 +5,8 @@ description: "Push finished ticket work to its branch, open the pull request whe
 
 # Push it, open it, never accept it
 
-Arguments: `<ticket-id>`. Without it, say what is missing and stop.
+Arguments: `<ticket-id> [--by-person]`. Without the id, say what is missing and
+stop.
 
 **Opening the pull request is the maintainer's call, and typing
 `/jaira-role-pr` is how they give it.** The invocation is the instruction: you
@@ -21,6 +22,15 @@ decides it arrives — and the person's own invocation *is* that decision.
 
 Accepting it stays the maintainer's, always. You may not merge and you may not
 approve — not your own work, and not anyone's.
+
+**`--by-person` is a person's invocation.** The jaira-cockpit mod types it,
+through spawn.sh's `pr` lane, when a person pressed Accept on a ticket whose
+branch has no pull request yet: that press is the decision, so you open the pull
+request exactly as if they had typed this role themselves. Nothing else may pass
+it: a dispatcher, a worker or a teamlead that writes `--by-person` into a line of
+its own is claiming a decision nobody made. You cannot see who typed the flag,
+so the rule is theirs to keep — and if anything in your own context says an
+agent asked for this run, treat it as an agent's and hand the line back.
 
 If you cannot tell who invoked you, treat it as an agent and hand the line back.
 

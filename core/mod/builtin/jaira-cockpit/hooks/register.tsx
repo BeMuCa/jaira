@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, lanesOf, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { branchesFor, branchListed, dispatchLane, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf, hasReservation, lanesOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -327,9 +327,85 @@ async function accept($: EngineInterface, w: Waiting): Promise<void> {
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
   const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
-  if (done.ok) await say($, t.accepted(w.id, w.acceptTo))
-  else await fail($, `${t.accept} ${w.id}`, done.why)
+  if (done.ok) {
+    await say($, t.accepted(w.id, w.acceptTo))
+    await afterAccept($, w.id, dir)
+  } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
+}
+
+// What the press starts once the ticket is in done, without a further word
+// from the person: stepAfterAccept (board.ts) decides, from the ticket's
+// branch and its pull requests. A pull request is opened only from here — a
+// press of Accept is a person's — by the pr lane of spawn.sh. A step that
+// cannot run starts nothing and says why in the message pane; the ticket
+// stays in done, where the press put it: accepted is accepted, and what
+// follows is the person's to start by hand then.
+async function afterAccept($: EngineInterface, id: string, dir: string): Promise<void> {
+  if (!board) return
+  const b = board
+  const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const found = trees?.exitCode === 0 ? branchesFor(trees.stdout, id) : {}
+  const { base } = found
+  let branch = found.ticket
+  if (branch === undefined) {
+    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
+    if (listed?.exitCode === 0) branch = branchListed(listed.stdout)
+  }
+  let step: StepAfterAccept = 'next'
+  if (branch !== undefined && base !== undefined && branch !== base) {
+    const count = await run($, ['git', 'rev-list', '--count', `${base}..${branch}`], b.repo)
+    if (count?.exitCode !== 0) return stuck(`git rev-list ${base}..${branch}: ${(count?.stderr ?? 'did not run').trim()}`)
+    const ahead = Number.parseInt(count.stdout.trim(), 10) || 0
+    if (ahead > 0) {
+      // Unset, `git config` exits 1 and the host of origin decides.
+      const forge = await run($, ['git', 'config', 'jaira.forge'], b.repo)
+      const origin = await run($, ['git', 'remote', 'get-url', 'origin'], b.repo)
+      const forgeName = forge?.exitCode === 0 ? forge.stdout : ''
+      const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
+      if (!url) return stuck(t.noRemote(branch))
+      const on = forgeOf(forgeName, url)
+      if (on === undefined) return stuck(t.noForge(url))
+      const view = await run($, repoViewCommand(on, url), b.repo, 30_000)
+      const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
+      if (repo === undefined) return stuck(`${on === 'github' ? 'gh' : 'glab'} repo view: ${(view?.stderr || view?.stdout || 'did not run').trim()}`)
+      const cmd = pullRequestsCommand(on, repo, branch)
+      const listed = await run($, cmd, b.repo, 30_000)
+      const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
+      if (has === undefined) return stuck(`${cmd[0]}: ${(listed?.stderr || listed?.stdout || 'did not run').trim()}`)
+      step = stepAfterAccept(ahead, has)
+    }
+  }
+  const bin = await herdr($)
+  const script = await spawnScript($)
+  if (bin === undefined || script === undefined) return stuck(step === 'pr' ? t.prNeedsHerdr(branch ?? '') : t.nextNeedsHerdr)
+  if (step === 'pr') {
+    const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, 'pr', dir], dir, 120_000)
+    if (r?.exitCode !== 0) return stuck(`spawn.sh: ${(r?.stderr || r?.stdout || 'did not run').trim().slice(-160)}`)
+    return say($, t.prStarted(id, branch ?? ''))
+  }
+  const [listed, tabs] = await Promise.all([run($, ['jaira', 'next', '--all', '--json'], b.repo, 30_000), run($, [bin, 'tab', 'list'], b.repo)])
+  if (listed?.exitCode !== 0) return stuck(`jaira next: ${withoutWarnings(listed?.stderr ?? '') || 'did not run'}`)
+  // Without the tab list a ticket being worked cannot be told apart.
+  if (tabs?.exitCode !== 0) return stuck(`herdr tab list: ${(tabs?.stderr ?? 'did not run').trim()}`)
+  const next = nextToStart(listed.stdout, tabsOf(tabs.stdout))
+  if (next === undefined) return stuck(t.nothingNext)
+  const lane = dispatchLane(await settingsJson($))
+  const started = await run($, [script, next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
+  if (started?.exitCode !== 0) return stuck(`spawn.sh: ${(started?.stderr || started?.stdout || 'did not run').trim().slice(-160)}`)
+  await say($, t.nextStarted(id, next))
+}
+
+// The person's jaira settings, where jaira reads them: JAIRA_HOME, else
+// ~/.jaira. undefined where there is no file.
+async function settingsJson($: EngineInterface): Promise<string | undefined> {
+  const dir = (await $.env.get('JAIRA_HOME')) || `${await home($)}/.jaira`
+  try {
+    return await $.fs.read(`${dir}/settings.json`)
+  } catch {
+    return undefined
+  }
 }
 
 // The spawn.sh the roles were installed with: the project's own first, as
@@ -563,7 +639,7 @@ async function writeMetrics($: EngineInterface): Promise<void> {
   } catch {}
   let arm = 'live'
   try {
-    const settings = JSON.parse(await $.fs.read(`${await home($)}/.jaira/settings.json`)) as { dispatch?: unknown }
+    const settings = JSON.parse((await settingsJson($)) ?? '') as { dispatch?: unknown }
     if (typeof settings.dispatch === 'string') arm = settings.dispatch
   } catch {}
   const line = row({

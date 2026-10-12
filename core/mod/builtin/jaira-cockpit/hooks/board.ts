@@ -4,7 +4,7 @@
 // so it is the same in both dispatch modes and with Herdr tabs. register.tsx
 // runs the commands; this file only reads what they printed.
 
-import type { Tab } from './sessions.ts'
+import { carrierTab, type Tab } from './sessions.ts'
 
 export type Waiting = {
   id: string
@@ -207,13 +207,116 @@ export function mainRepoOf(gitCommonDir: string, fallback: string): string {
 // tree. Running `jaira move` anywhere else answers "on its ref and not on
 // your disk".
 export function worktreeFor(porcelain: string, id: string, fallback: string): string {
-  const slug = id.toLowerCase()
+  return worktreesOf(porcelain).find(w => isTicketsTree(w, id))?.path ?? fallback
+}
+
+type Worktree = { path: string; branch: string }
+
+function worktreesOf(porcelain: string): Worktree[] {
+  const out: Worktree[] = []
   for (const block of porcelain.split(/\n\n+/)) {
     const path = /^worktree (.+)$/m.exec(block)?.[1]
-    const branch = /^branch (.+)$/m.exec(block)?.[1] ?? ''
-    if (path !== undefined && (branch.endsWith(`/${slug}`) || path.endsWith(`-${slug}`))) return path
+    const branch = (/^branch (.+)$/m.exec(block)?.[1] ?? '').replace(/^refs\/heads\//, '')
+    if (path !== undefined) out.push({ path, branch })
   }
-  return fallback
+  return out
+}
+
+function isTicketsTree(w: Worktree, id: string): boolean {
+  const slug = id.toLowerCase()
+  return w.branch.endsWith(`/${slug}`) || w.path.endsWith(`-${slug}`)
+}
+
+// The branch a ticket's work rides on and the one it arrives in, from the
+// same porcelain: the ticket's worktree's branch, and the main working
+// tree's — the first block, which is master wherever the board is driven
+// from the main checkout. No remote is asked: whether there is work to
+// propose is a fact of the local branches. undefined where there is none.
+// A ticket's branch without a worktree, from `git branch --list
+// --format=%(refname:short) '*/<slug>'`: spawn.sh names it
+// <prefix>/<slug>, and a worktree removed after done leaves it behind.
+export function branchListed(listing: string): string | undefined {
+  return listing.split('\n').map(l => l.trim()).find(Boolean)
+}
+
+export function branchesFor(porcelain: string, id: string): { ticket?: string; base?: string } {
+  const trees = worktreesOf(porcelain)
+  const ticket = trees.find(w => isTicketsTree(w, id))?.branch
+  const base = trees[0]?.branch
+  return { ...(ticket ? { ticket } : {}), ...(base ? { base } : {}) }
+}
+
+// What an Accept starts once the ticket is in done — the one rule, decided
+// by Alex on GPFA7B. A branch with commits master does not have and no pull
+// request yet is finished work nobody can see: the press that accepted it is
+// a person's, which is the only thing allowed to open a pull request, so it
+// opens one. Anything else — the branch already proposed (a pull request in
+// any state, merged and closed included), or nothing ahead of master — has
+// no further step of its own, and the press moves the board on to the next
+// ticket instead. One button, so the rule decides, never the person per press.
+export type StepAfterAccept = 'pr' | 'next'
+
+export function stepAfterAccept(ahead: number, hasPullRequest: boolean): StepAfterAccept {
+  return ahead > 0 && !hasPullRequest ? 'pr' : 'next'
+}
+
+// The forge jaira-role-pr would open a pull request on: `git config
+// jaira.forge` where it is set, else the host of origin. undefined where
+// neither settles it.
+export type Forge = 'github' | 'gitlab'
+
+export function forgeOf(forge: string, originUrl: string): Forge | undefined {
+  const on = forge.trim() || (/github\.com/i.test(originUrl) ? 'github' : /gitlab/i.test(originUrl) ? 'gitlab' : '')
+  return on === 'github' || on === 'gitlab' ? on : undefined
+}
+
+// Where a pull request of this branch would be, as jaira-role-pr settles it:
+// in a fork, the parent — asking origin there answers for the fork, finds
+// nothing, and a second pull request gets opened onto a merged branch. The
+// command describes origin; targetRepoOf reads the repository off it.
+export function repoViewCommand(on: Forge, originUrl: string): string[] {
+  return on === 'github'
+    ? ['gh', 'repo', 'view', originUrl, '--json', 'isFork,parent,nameWithOwner']
+    : ['glab', 'repo', 'view', originUrl, '-F', 'json']
+}
+
+export function targetRepoOf(on: Forge, viewJson: string): string | undefined {
+  if (on === 'github') {
+    const v = parse<{ nameWithOwner?: string; parent?: { name?: string; owner?: { login?: string } } | null }>(withoutWarnings(viewJson))
+    const parent = v?.parent?.owner?.login && v.parent.name ? `${v.parent.owner.login}/${v.parent.name}` : undefined
+    return parent ?? v?.nameWithOwner
+  }
+  const v = parse<{ path_with_namespace?: string; forked_from_project?: { path_with_namespace?: string } | null }>(withoutWarnings(viewJson))
+  return v?.forked_from_project?.path_with_namespace ?? v?.path_with_namespace
+}
+
+// The pull requests of a branch in that repository, in every state. Both
+// tools print a JSON array, empty where there is none.
+export function pullRequestsCommand(on: Forge, repo: string, branch: string): string[] {
+  return on === 'github'
+    ? ['gh', 'pr', 'list', '--repo', repo, '--head', branch, '--state', 'all', '--json', 'number']
+    : ['glab', 'mr', 'list', '--repo', repo, '--source-branch', branch, '--all', '-F', 'json']
+}
+
+export function hasPullRequest(listJson: string): boolean | undefined {
+  const list = parse<unknown>(withoutWarnings(listJson))
+  return Array.isArray(list) ? list.length > 0 : undefined
+}
+
+// The lane spawn.sh is given for the next ticket: the role a teamlead starts
+// under the person's dispatch setting (~/.jaira/settings.json), "worker" only
+// where it says so, as settings.DispatchMode reads it.
+export function dispatchLane(settingsJson: string | undefined): 'worker' | 'dispatch' {
+  const dispatch = parse<{ dispatch?: unknown }>(settingsJson ?? '')?.dispatch
+  return typeof dispatch === 'string' && dispatch.trim() === 'worker' ? 'worker' : 'dispatch'
+}
+
+// The next ticket to start, off `jaira next --all --json`: the first one no
+// worker or dispatcher tab carries already, so an Accept never puts a second
+// agent on a ticket that is being worked. undefined when there is none.
+export function nextToStart(nextJson: string, tabs: readonly Tab[]): string | undefined {
+  const tickets = parse<{ tickets?: { handle?: string }[] }>(withoutWarnings(nextJson))?.tickets ?? []
+  return tickets.map(t => t.handle).find((h): h is string => !!h && carrierTab(tabs, h) === undefined)
 }
 
 // The directory holding .jaira/, from `cwd` upwards: the candidates in the

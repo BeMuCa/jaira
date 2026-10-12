@@ -464,6 +464,9 @@ esac
 		// never a role, so the tab answers and never works the ticket.
 		"explain": "Erklaere mir in einfachen Worten den Review-Befund zu Ticket ab12cd …",
 		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
+		// The cockpit's Accept, a person's press: the flag is what lets
+		// jaira-role-pr open the pull request instead of handing it back.
+		"pr": "/jaira-role-pr ab12cd --by-person",
 	} {
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
