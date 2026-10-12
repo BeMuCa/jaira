@@ -248,6 +248,8 @@ describe('waiting for you', () => {
       return button!.children.map(c => (c as { props?: { color?: string } }).props?.color).find(Boolean)
     }
     expect(await colour('accept-MG677R')).toBe('success')
+    // Not the accent colour of a primary Button around it: green is the mark.
+    expect((await ui.find({ key: 'accept-MG677R' }))?.props.variant).toBeUndefined()
     expect(await colour('back-MG677R')).toBe('error')
     expect(await colour('explain-MG677R')).toBe('warning')
     expect(await colour('read-MG677R')).toBeUndefined()

@@ -855,7 +855,7 @@ export const register: Register = (on, options) => {
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any. */}
               {w.acceptTo !== null
-                ? <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w)}><Text color="success">{t.accept}</Text></Button>
+                ? <Button key={`accept-${w.id}`} label={t.accept} onPress={() => void accept($, w)}><Text color="success">{t.accept}</Text></Button>
                 : null}
               {hasInput
                 ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)}><Text color="error">{t.giveBack}</Text></Button>
