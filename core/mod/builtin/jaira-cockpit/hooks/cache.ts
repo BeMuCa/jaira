@@ -14,14 +14,14 @@ export function ttlMs(rateLimits: readonly unknown[]): number {
 }
 
 // The subscription windows the status line shows, by the `kind` the engine
-// gives them: `5h 36% · 7d 12%`, each only when it has a reading.
+// gives them: `5h 36% | 7d 12%`, each only when it has a reading.
 const WINDOWS: ReadonlyArray<[kind: string, label: string]> = [['five_hour', '5h'], ['seven_day', '7d']]
 
 export function windowsUsed(rateLimits: ReadonlyArray<{ kind: string; percentUsed: number }>): string {
   return WINDOWS.flatMap(([kind, label]) => {
     const w = rateLimits.find(r => r.kind === kind)
     return w === undefined ? [] : [`${label} ${Math.round(w.percentUsed)}%`]
-  }).join(' · ')
+  }).join(' | ')
 }
 
 // Past these the band points at /compact, then at a new session.

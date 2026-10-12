@@ -97,7 +97,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     return { value: undefined } as never
   })
   on('store.keys', () => ({ value: [...w.store.keys()] }))
-  mock.env(on, { HOME: '/home/a', ...(opts.herdr ? { HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1' } : {}) })
+  mock.env(on, { HOME: '/home/a', ...(opts.herdr ? { HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1', CLAUDE_CODE_MESSAGING_SOCKET: '/tmp/cc-socks-1000/77.sock' } : {}) })
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: undefined }) as never)
   on('tool.register', () => ({ value: undefined }) as never)
@@ -183,6 +183,20 @@ async function answer($: Test$, text = 'ok', tokens = 0) {
   } as never)
 }
 
+// The band's head line beside its title: the board's counts and what was used.
+async function headLine($: Test$) {
+  const ui = await $.ui.mount(BAND)
+  return (await ui.find({ type: 'Text', text: /^ {3}\S/ }))?.text.trim()
+}
+
+// The band's session line, its parts as drawn with the colour of each: the
+// band's last row, from the context on.
+async function sessionLine(ui: { findAll: (q: { type: string }) => Promise<{ text: string; props: Record<string, unknown> }[]> }) {
+  const texts = await ui.findAll({ type: 'Text' })
+  const parts = texts.slice(texts.findLastIndex(x => x.text.startsWith('context ')))
+  return { text: parts.map(x => x.text).join(''), colors: parts.filter(x => x.text !== ' | ').map(x => (x.props.color as string | undefined) ?? '') }
+}
+
 const ran = (w: World, ...prefix: string[]) => w.ran.filter(r => prefix.every((p, i) => r[i] === p))
 
 describe('waiting for you', () => {
@@ -194,8 +208,8 @@ describe('waiting for you', () => {
     expect((await ui.find({ type: 'Box' }))?.props.borderStyle).toBe('round')
     expect(await ui.find({ type: 'Text', text: 'jaira-cockpit' })).toBeDefined()
     expect((await ui.find({ text: 'Waiting for you' }))).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /MG677R · signoff · approve mit Vorbehalt/ }))).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /K7P2QX · human/ }))).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /MG677R \| signoff \| approve mit Vorbehalt/ }))).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /K7P2QX \| human/ }))).toBeDefined()
     expect(await ui.find({ text: /T8QS1Y/ })).toBeUndefined()
   })
 
@@ -313,7 +327,32 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ type: 'Text', text: /\? Popup oder eigene Seite\?/ })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
-    expect(ran(w, SPAWN)[0]?.slice(0, 5)).toEqual([SPAWN, '--no-worktree', 'k7p2qx', 'K7P2QX', 'discuss'])
+    // The chat sends its decision to this session, by its messaging socket.
+    expect(ran(w, SPAWN)[0]?.slice(0, 7)).toEqual([SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
+  })
+
+  test('a Discuss chat\'s decision comes back: its tab closes and the band offers it to read, once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    // 1_000_000 ms is 1970-01-01 00:16:40 UTC: jaira stamps notes to the minute.
+    w.bodies.K7P2QX = '## Progress\n\n- **1970-01-01 00:05 · Alex** — decision: an older one\n'
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'working' }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'discuss-K7P2QX' })
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    // The chat noted the decision and moved the ticket back itself.
+    w.bodies.K7P2QX += '- **1970-01-01 00:17 · Alex** — decision: a page of its own, back to in-progress\n'
+    w.tickets = [SIGNOFF, WORKING, { ...HUMAN, status: 'in-progress', question: '' }]
+    await w.clock.advance(60_000)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ type: 'Text', text: /K7P2QX \| decided in Discuss/ })).toBeDefined()
+    await band.press({ key: 'decision-K7P2QX' })
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Decision on K7P2QX', focus: true })
+    const pane = await $.ui.mount(MESSAGE('Decision on K7P2QX'))
+    expect(await pane.find({ type: 'Text', text: 'a page of its own, back to in-progress' })).toBeDefined()
+    expect(await (await $.ui.mount(BAND)).find({ key: 'decision-K7P2QX' })).toBeUndefined()
   })
 
   test('without Herdr, Explain says so instead of failing', async ($, on) => {
@@ -376,6 +415,29 @@ describe('waiting for you', () => {
     w.tickets = [SIGNOFF, { ...HUMAN, question: '' }, WORKING]
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
+  })
+
+  test('+N more opens every waiting ticket with its buttons, and show fewer closes them again', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      SIGNOFF,
+      HUMAN,
+      { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'approve' } },
+      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'approve' } },
+      { ...SIGNOFF, handle: 'GH56JK', review: { verdict: 'approve' } },
+    ]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'accept-GH56JK' })).toBeUndefined()
+    expect((await ui.find({ key: 'more' }))?.props.label).toBe('+2 more')
+    await ui.press({ key: 'more' })
+    const open = await $.ui.mount(BAND)
+    expect(await open.find({ key: 'accept-EF34GH' })).toBeDefined()
+    expect(await open.find({ key: 'back-GH56JK' })).toBeDefined()
+    await open.press({ key: 'fewer' })
+    const closed = await $.ui.mount(BAND)
+    expect(await closed.find({ key: 'accept-GH56JK' })).toBeUndefined()
+    expect(await closed.find({ key: 'more' })).toBeDefined()
   })
 
   test('a ticket nobody explained yet offers no explanation to read', async ($, on) => {
@@ -536,12 +598,13 @@ describe('context and cache', () => {
     w.usage.tokens = 142_000
     await answer($)
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ type: 'Text', text: 'context 142k · cache 60 min left · /compact advised' })).toBeDefined()
+    // What asks for action is drawn in the warning colour, a new session in red.
+    expect(await sessionLine(ui)).toEqual({ text: 'context 142k | cache 60 min left | /compact advised', colors: ['', '', 'warning'] })
     w.usage.tokens = 320_000
     w.usage.rateLimits = []
     await answer($)
     const again = await $.ui.mount(BAND)
-    expect(await again.find({ type: 'Text', text: 'context 320k · cache 5 min left · start a new session' })).toBeDefined()
+    expect(await sessionLine(again)).toEqual({ text: 'context 320k | cache 5 min left | start a new session', colors: ['', '', 'error'] })
   })
 })
 
@@ -628,7 +691,7 @@ describe('the cache guard', () => {
   })
 })
 
-describe('the status line', () => {
+describe('the head line, in the band\'s frame', () => {
   test('counts the agents that run and the tickets waiting for a person, and what was used', async ($, on) => {
     const w = world(on, { herdr: true })
     // T8QS1Y sits in in-progress and MG677R in signoff: lanes count no agent.
@@ -645,7 +708,7 @@ describe('the status line', () => {
       { tab_id: 'w1:t9', label: 'K7P2QX/review', agent_status: 'done' },
     ]
     await startSession($)
-    expect(w.status.at(-1)).toBe('2 worker · 1 review · 2 waiting for you · 5h 34%')
+    expect(await headLine($)).toBe('2 worker | 1 review | 2 waiting for you | 5h 34%')
   })
 
   test('without Herdr the workers are this session\'s running subagents on the board\'s tickets', async ($, on) => {
@@ -658,7 +721,7 @@ describe('the status line', () => {
       { id: 'a5', description: 'search the code', type: 'Explore', status: 'running' },
     ]
     await startSession($)
-    expect(w.status.at(-1)).toBe('2 worker · 1 review · 2 waiting for you · 5h 34%')
+    expect(await headLine($)).toBe('2 worker | 1 review | 2 waiting for you | 5h 34%')
   })
 
   test('a worker tab left open after its turn is no worker', async ($, on) => {
@@ -668,14 +731,14 @@ describe('the status line', () => {
       { tab_id: 'w1:t2', label: 'MG677R/review', agent_status: 'idle' },
     ]
     await startSession($)
-    expect(w.status.at(-1)).toBe('0 worker · 0 review · 2 waiting for you · 5h 34%')
+    expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
   })
 
   test('a jaira built before human_exit still shows the tickets waiting in signoff and human', async ($, on) => {
     const w = world(on)
     w.oldJaira = true
     await startSession($)
-    expect(w.status.at(-1)).toBe('0 worker · 0 review · 2 waiting for you · 5h 34%')
+    expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
@@ -685,13 +748,15 @@ describe('the status line', () => {
     const w = world(on, { board: false })
     w.usage.rateLimits = [{ kind: 'five_hour', percentUsed: 34 }, { kind: 'seven_day', percentUsed: 61.6 }]
     await startSession($)
-    expect(w.status.at(-1)).toBe('5h 34% · 7d 62%')
+    expect(await headLine($)).toBe('5h 34% | 7d 62%')
   })
 
   test('without a board it shows what was used alone', async ($, on) => {
     const w = world(on, { board: false })
     await startSession($)
-    expect(w.status.at(-1)).toBe('5h 34%')
+    expect(await headLine($)).toBe('5h 34%')
+    // One frame for everything: no status line of the mod's own below the prompt.
+    expect(w.status).toEqual([])
   })
 })
 

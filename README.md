@@ -686,25 +686,30 @@ changes for anybody.
 
 - Agent reports and task notifications that name a ticket reach the chat as
   one line, marked as shortened; `/cockpit report <id>` shows them whole.
-- The band above the prompt, in a frame titled `jaira-cockpit`, lists the
-  tickets waiting in a lane a person owns, with **Accept** (moves it to done
-  in the ticket's own worktree; offered only where the next lane ends the
-  board, and refused while an item of the definition of done is open) and
-  **Give back** (asks in a pane of its own what is missing, notes it, moves it
-  to in-progress and hands it to the worker that carried it while that is
-  still cheaper, else to a new one). A verdict with a reservation gets
-  **Explain**, an open question **Discuss**: each opens a Herdr tab of its
-  own. The Explain chat writes its explanation onto the ticket, and the band
-  offers it as **Read explanation**; its tab closes once the explanation is
-  there, a Discuss tab once the ticket's question is answered. When a button
+- Everything the mod shows sits in one frame above the prompt, titled
+  `jaira-cockpit`; its head line counts the workers and reviews at work (their
+  Herdr tabs, or this session's subagents) and the tickets waiting for you,
+  and shows the five-hour and seven-day windows used (off a subscription, what
+  the session cost). The mod keeps no status line of its own.
+- The frame lists the tickets waiting in a lane a person owns, with **Accept**
+  (moves it to done in the ticket's own worktree; offered only where the next
+  lane ends the board, and refused while an item of the definition of done is
+  open) and **Give back** (asks in a pane of its own what is missing, notes
+  it, moves it to in-progress and hands it to the worker that carried it while
+  that is still cheaper, else to a new one). Three show at first; **+N more**
+  opens the rest with their buttons, **show fewer** closes them. When a button
   fails, the error opens whole in a pane of its own.
-- The band also shows the context size and how long the prompt cache stays
-  warm, and a prompt of yours onto a cold cache with a large context is held
-  with a choice: send, compact first, start over, cancel.
-- The status line counts the workers and reviews at work (their Herdr tabs,
-  or this session's subagents), the tickets waiting for you, and shows the
-  five-hour and seven-day windows used (off a subscription, what the session
-  cost).
+- A verdict with a reservation gets **Explain**, an open question **Discuss**:
+  each opens a Herdr tab of its own. The Explain chat writes its explanation
+  onto the ticket and the frame offers it as **Read explanation**. The Discuss
+  chat writes the decision onto the ticket, moves the ticket back itself when
+  that is the decision (it accepts only on your explicit yes), sends your
+  session one line, and the frame offers **Read decision**. Each tab closes
+  once its note is there.
+- The frame's last line shows the context size and how long the prompt cache
+  stays warm, `/compact advised` and a cold cache in the warning colour; a
+  prompt of yours onto a cold cache with a large context is held with a
+  choice: send, compact first, start over, cancel.
 - After each of your turns a cheap model files it under a conversation
   thread; `/cockpit threads` shows which became a ticket, which wait for your
   answer and which were left lying.
@@ -713,8 +718,8 @@ changes for anybody.
   `scripts/lane-eval/metrics.sh`).
 - In a session that carries a ticket — the worker, lane or dispatcher a
   `spawn.sh` tab starts — the mod only writes the session's record and
-  metrics: messages to it arrive as written, and it has no band, status line,
-  threads or cache guard.
+  metrics: messages to it arrive as written, and it has no frame, threads or
+  cache guard.
 
 Every text is in English, whatever Claude Code's `language` setting. In a project without a board, or without `jaira` on `PATH`, the
 board parts stay out of sight and the rest works as usual — so the mod is

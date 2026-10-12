@@ -29,6 +29,12 @@ declare module 'claude-code' {
       message: { title: string; text: string } | null
       // The explanation an Explain chat wrote onto each ticket the band shows.
       explained: Record<string, string>
+      // The decisions Discuss chats wrote back, by ticket, until read.
+      decided: Record<string, string>
+      // What the person used: the five-hour and seven-day windows, or cost.
+      used: string
+      // Whether the band shows every waiting ticket, not the first three.
+      expanded: boolean
     }
   }
 }

@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { explanationOf, hasReservation, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { hasReservation, noteOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -43,11 +43,16 @@ const minuteAtom = atom({ plugin: 'jaira-cockpit', key: 'minute' } as const, 0)
 const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, null)
 const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, null)
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
+const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
+const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
+const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const BAND_TICKETS = 3
+// Between the parts of a line: the band's one separator.
+const SEP = ' | '
 
 // ── what this module keeps between events (a reload starts it over) ──────
 
@@ -210,30 +215,36 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents)
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows.
+  const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
   const explained: Record<string, string> = {}
-  const explainedAt: Record<string, number> = {}
-  for (const w of view.waiting.slice(0, BAND_TICKETS)) {
+  for (const w of shownIds) {
     if (!hasReservation(w.verdict)) continue
-    const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
-    const note = shown?.exitCode === 0 ? explanationOf(shown.stdout) : undefined
-    if (note === undefined) continue
-    explained[w.id] = note.text
-    explainedAt[w.id] = note.at
+    const note = await noteOn($, board.dir, w.id, 'explain')
+    if (note !== undefined) explained[w.id] = note.text
   }
   await update($, explainedAtom, () => explained)
-  // An Explain chat has done its part once its explanation is on the ticket
-  // (stamped to the minute, so from the minute it was opened), a Discuss chat
-  // once the ticket's question is answered: then its tab goes.
-  if (bin === undefined || tabs?.exitCode !== 0) return
+  // A chat has done its part once its note is on the ticket — stamped to the
+  // minute, so from the minute it was opened: an Explain chat's explanation,
+  // a Discuss chat's decision, which the band then offers to read. A Discuss
+  // chat whose question went away without one is done too. Its tab goes.
   for (const [label, since] of chats) {
     const [id = '', kind] = label.split('/')
+    const from = since - (since % 60_000)
+    const note = await noteOn($, board.dir, id, kind === 'explain' ? 'explain' : 'decision')
+    const fresh = note !== undefined && note.at >= from ? note : undefined
     const w = view.waiting.find(x => x.id === id)
-    const done = kind === 'explain' ? (explainedAt[id] ?? 0) >= since - (since % 60_000) : w === undefined || w.question === ''
+    const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
     chats.delete(label)
-    const tab = tabsOf(tabs.stdout).find(x => x.label === label)
-    if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], board.dir)
+    if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
+    const tab = bin !== undefined && tabs?.exitCode === 0 ? tabsOf(tabs.stdout).find(x => x.label === label) : undefined
+    if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
+}
+
+async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
+  const shown = await run($, ['jaira', 'show', id, '--json'], dir)
+  return shown?.exitCode === 0 ? noteOf(shown.stdout, kind) : undefined
 }
 
 // Where a ticket's work lives: running jaira anywhere else answers "on its
@@ -315,10 +326,28 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (bin === undefined || script === undefined || !board) return fail($, what, t.needsHerdr)
   const dir = await ticketDir($, board, id)
-  const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, kind, dir], dir, 120_000)
+  // A Discuss chat sends its decision to this session: its messaging socket
+  // is the address SendMessage takes.
+  const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
+  const parent = socket ? ['--parent', `uds:${socket}`] : []
+  const r = await run($, [script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
   if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   chats.set(`${id}/${kind}`, await $.clock.now())
   await say($, t.opened(id))
+}
+
+// '+N more' opens every waiting ticket in the band, with its buttons; the
+// band scrolls where they do not fit. Opened, the explanations of all of
+// them are read too.
+async function toggleMore($: EngineInterface, open: boolean): Promise<void> {
+  await update($, expandedAtom, () => open)
+  if (open) await refreshBoard($)
+}
+
+// A decision is read once: the pane shows it, the band lets it go.
+async function readDecision($: EngineInterface, id: string, text: string): Promise<void> {
+  await update($, decidedAtom, d => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)))
+  await show($, t.decisionOf(id), text)
 }
 
 // Give back asks what is missing in a pane of its own, opened with focus: a
@@ -416,7 +445,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
 }
 
-// ── context, cache, status line ──────────────────────────────────────────
+// ── context, cache, what was used ──────────────────────────────────────────
 
 async function refreshCache($: EngineInterface): Promise<void> {
   if (carrying !== undefined) return
@@ -428,12 +457,11 @@ async function refreshCache($: EngineInterface): Promise<void> {
   }
   const state: CacheState = { tokens: usage.context.tokens ?? 0, lastAnswerAt: lastAnswerAt ?? null, ttl: ttlMs(usage.rateLimits) }
   await update($, cacheAtom, () => state)
-  const view = await read($, boardAtom)
   // What the person used: the five-hour and seven-day windows on a
-  // subscription, else what this session cost.
+  // subscription, else what this session cost. The band's head line shows
+  // it beside the board's counts; the mod keeps no status line of its own.
   const used = windowsUsed(usage.rateLimits) || (usage.cost !== undefined ? `${t.usage} ${dollars(usage.cost.usd)}` : '')
-  const lanes = view === null ? '' : t.status(view.counts.worker, view.counts.review, view.counts.person)
-  $.ui.status([lanes, used].filter(s => s !== '').join(' · ') || undefined)
+  await update($, usedAtom, () => used)
 }
 
 // ── conversation threads ─────────────────────────────────────────────────
@@ -599,7 +627,6 @@ export const register: Register = (on, options) => {
     if (start !== undefined) {
       // From here on the session is an agent's: what session.start drew goes.
       carrying = start
-      $.ui.status(undefined)
       await update($, boardAtom, () => null)
       return next(e)
     }
@@ -662,38 +689,53 @@ export const register: Register = (on, options) => {
     const counts = await read($, threadsAtom)
     const notice = await read($, noticeAtom)
     const explained = await read($, explainedAtom)
+    const decided = await read($, decidedAtom)
+    const used = await read($, usedAtom)
+    const expanded = await read($, expandedAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
+    const decisions = Object.entries(decided)
     const c = cacheView(cache.tokens, now, cache.lastAnswerAt ?? undefined, cache.ttl)
     const hasCache = cache.tokens > 0
     const hasThreads = counts.questions + counts.stale > 0
-    if (waiting.length === 0 && !hasCache && !hasThreads && notice === null) return next(e)
+    // The head line: the board's counts and what was used, beside the title.
+    const head = [
+      ...(view !== null ? [t.workers(view.counts.worker), t.reviews(view.counts.review), t.waitingFor(view.counts.person)] : []),
+      ...(used !== '' ? [used] : []),
+    ]
+    if (head.length === 0 && waiting.length === 0 && decisions.length === 0 && !hasCache && !hasThreads && notice === null) return next(e)
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     // Mobile has no text field: there the band offers no Give back.
-    const Input = 'Input' in table ? table.Input : undefined
-    const cacheLine = [
-      t.context(c.k),
-      c.minutesLeft !== undefined ? t.cacheLeft(c.minutesLeft) : cache.lastAnswerAt !== null ? t.cacheCold : '',
-      c.hint === 'new' ? t.hintNew : c.hint === 'compact' ? t.hintCompact : '',
-      hasThreads ? t.threadsOpen(counts.questions, counts.stale) : '',
-    ].filter(s => s !== '').join(' · ')
+    const hasInput = 'Input' in table
+    // The session line: context, cache, the advice, threads; what asks for
+    // action in the warning colour.
+    const session: { text: string; color?: 'warning' | 'error' }[] = [
+      { text: t.context(c.k) },
+      ...(c.minutesLeft !== undefined ? [{ text: t.cacheLeft(c.minutesLeft) }] : cache.lastAnswerAt !== null ? [{ text: t.cacheCold, color: 'warning' as const }] : []),
+      ...(c.hint === 'new' ? [{ text: t.hintNew, color: 'error' as const }] : c.hint === 'compact' ? [{ text: t.hintCompact, color: 'warning' as const }] : []),
+      ...(hasThreads ? [{ text: t.threadsOpen(counts.questions, counts.stale), color: 'warning' as const }] : []),
+    ]
+    const shown = expanded ? waiting : waiting.slice(0, BAND_TICKETS)
     // A frame of its own, so the band reads as the cockpit's and not as chat.
     return (
       <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
-        <Text dimColor bold>{t.bandTitle}</Text>
-        {waiting.length > 0 ? <Text bold>{t.waiting}</Text> : null}
-        {waiting.slice(0, BAND_TICKETS).map(w => (
+        <Box flexDirection="row">
+          <Text bold color="claude">{t.bandTitle}</Text>
+          {head.length > 0 ? <Text dimColor wrap="truncate-end">{'   '}{head.join(SEP)}</Text> : null}
+        </Box>
+        {waiting.length > 0 ? <Box marginTop={1}><Text bold>{t.waiting}</Text></Box> : null}
+        {shown.map(w => (
           <Box key={`row-${w.id}`} flexDirection="column">
             <Box flexDirection="row">
               <Text wrap="truncate-end">
-                {w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}{' '}
+                <Text bold>{w.id}</Text>{SEP}{w.lane}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
               </Text>
               {w.acceptTo !== null
                 ? <Button key={`accept-${w.id}`} label={t.accept} variant="primary" onPress={() => void accept($, w)} />
                 : null}
-              {Input !== undefined
+              {hasInput
                 ? <Button key={`back-${w.id}`} label={t.giveBack} onPress={() => void askWhatIsMissing($, w)} />
                 : null}
               {hasReservation(w.verdict)
@@ -709,9 +751,36 @@ export const register: Register = (on, options) => {
             {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
           </Box>
         ))}
-        {waiting.length > BAND_TICKETS ? <Text dimColor>{t.more(waiting.length - BAND_TICKETS)}</Text> : null}
+        {waiting.length > BAND_TICKETS
+          ? (
+            <Box flexDirection="row">
+              <Button
+                key={expanded ? 'fewer' : 'more'}
+                label={expanded ? t.fewer : t.more(waiting.length - BAND_TICKETS)}
+                onPress={() => void toggleMore($, !expanded)}
+              />
+            </Box>
+          )
+          : null}
+        {decisions.map(([id, text]) => (
+          <Box key={`decided-${id}`} flexDirection="row">
+            <Text><Text bold>{id}</Text>{SEP}{t.decided}{' '}</Text>
+            <Button key={`decision-${id}`} label={t.readDecision} onPress={() => void readDecision($, id, text)} />
+          </Box>
+        ))}
         {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
-        {hasCache || hasThreads ? <Text dimColor wrap="truncate-end">{cacheLine}</Text> : null}
+        {hasCache || hasThreads
+          ? (
+            <Box marginTop={1} flexDirection="row">
+              {session.flatMap((part, i) => [
+                ...(i > 0 ? [<Text key={`sep-${i}`} dimColor>{SEP}</Text>] : []),
+                part.color !== undefined
+                  ? <Text key={`part-${i}`} color={part.color}>{part.text}</Text>
+                  : <Text key={`part-${i}`} dimColor>{part.text}</Text>,
+              ])}
+            </Box>
+          )
+          : null}
       </Box>
     )
   })

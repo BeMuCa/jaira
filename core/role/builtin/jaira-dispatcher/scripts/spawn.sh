@@ -17,10 +17,11 @@ spawn.sh [--no-worktree] [--parent <session>] <slug> <ticket-id> <lane> [repo-ro
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
-  --parent <s>    Only with the lane <dispatch> or <worker>: the session name
-                  of whoever starts it (a teamlead's name, as ListAgents shows
-                  it). It hands its questions there instead of asking the
-                  person in its own tab.
+  --parent <s>    Only with the lane <dispatch>, <worker> or <discuss>: the
+                  session of whoever starts it (a teamlead's name, as
+                  ListAgents shows it, or its uds: address). A dispatcher or
+                  worker hands its questions there instead of asking the person
+                  in its own tab; a discuss chat sends it the decision.
   -h, --help      This text.
 
 Four lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -169,7 +170,7 @@ elif [ "$lane" = worker ]; then
 elif [ "$lane" = explain ]; then
   prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung in wenigen Saetzen an das Ticket: jaira note $ticket \"explain: <Erklaerung>\" - das Cockpit zeigt sie dort unter [Read explanation]. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 elif [ "$lane" = discuss ]; then
-  prompt="Ticket $ticket wartet auf eine Entscheidung von mir (jaira show $ticket --json: das Feld question und die letzten Notes). Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Antwort mit jaira note $ticket an das Ticket und leere die Frage mit jaira set $ticket question=. Aendere keinen Code und bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
+  prompt="Ticket $ticket wartet auf eine Entscheidung von mir (jaira show $ticket --json: das Feld question und die letzten Notes). Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck: jaira move $ticket --to in-progress --what <...> --why <meine Entscheidung> --resolves <die Frage> (lehnt jaira das ab, weil die Lane einem Menschen gehoert: dieselbe Zeile mit --force, du handelst auf meine ausdrueckliche Entscheidung). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi

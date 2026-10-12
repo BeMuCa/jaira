@@ -150,22 +150,22 @@ export function otherRefusal(errorJson: string): string | undefined {
   return others.length === 0 ? undefined : others.map(v => v.message ?? v.code).join('\n')
 }
 
-// The explanation an Explain chat wrote onto the ticket, the newest one, read
-// off `jaira show --json`: a note under Progress that starts `explain:`, up to
-// the next note or section, and when it was written (jaira stamps notes to
-// the minute, in UTC). undefined when there is none yet.
-const EXPLAIN_NOTE = /^- \*\*(\d{4}-\d\d-\d\d \d\d:\d\d) · [^*]*\*\* — explain:\s*/
-
-export function explanationOf(showJson: string): { text: string; at: number } | undefined {
+// What a chat the band opened wrote back onto the ticket, the newest of its
+// kind, read off `jaira show --json`: an Explain chat's `explain:` note, a
+// Discuss chat's `decision:` note, up to the next note or section, and when
+// it was written (jaira stamps notes to the minute, in UTC). undefined when
+// there is none yet.
+export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: string; at: number } | undefined {
+  const lead = new RegExp(`^- \\*\\*(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d) · [^*]*\\*\\* — ${kind}:\\s*`)
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
   const lines = body.split('\n')
   let at = -1
-  for (let i = 0; i < lines.length; i++) if (EXPLAIN_NOTE.test(lines[i]!)) at = i
+  for (let i = 0; i < lines.length; i++) if (lead.test(lines[i]!)) at = i
   if (at < 0) return undefined
-  const stamp = EXPLAIN_NOTE.exec(lines[at]!)![1]!
+  const stamp = lead.exec(lines[at]!)![1]!
   const rest = lines.slice(at + 1)
   const end = rest.findIndex(l => l.startsWith('- **') || l.startsWith('#'))
-  const text = [lines[at]!.replace(EXPLAIN_NOTE, ''), ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
+  const text = [lines[at]!.replace(lead, ''), ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
   return { text, at: Date.parse(`${stamp.replace(' ', 'T')}:00Z`) }
 }
 
