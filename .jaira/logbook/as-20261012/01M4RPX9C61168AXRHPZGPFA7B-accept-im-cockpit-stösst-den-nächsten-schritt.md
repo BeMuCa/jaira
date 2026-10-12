@@ -1,7 +1,7 @@
 ---
 id: 01M4RPX9C61168AXRHPZGPFA7B
 title: "Accept im Cockpit stösst den nächsten Schritt an: PR öffnen oder nächstes Ticket starten"
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -11,9 +11,17 @@ definition-of-done: Nach Accept startet das Cockpit den entschiedenen nächsten 
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 0a2b3eb97871ba23a085ca6867c3993da4373aee
+  - 77733874491116cf097a730f50260ddf33c03373
+  - eea230b870de7f9f3d10125f33aa504226ffcc7b
+  - 546b2cef8db78b503c5ebc9860a593651999fa22
+  - 39bef9ddf6afab3f9a7109ea8ba77d261bb2ea6b
+  - 162e3415a28c9dbdc259b43a8b3f2091cffb8505
+  - 360876c40b23afd1e858c554e69f307a9b8d72c8
+  - 82f165f8ae04f21c4058afee704574f122a06918
 created-at: 2026-10-12T18:44:57Z
-updated-at: 2026-10-12T20:02:38Z
+updated-at: 2026-10-12T20:06:52Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-78907
 claimed-at: 2026-10-12T19:27:40Z
@@ -21,10 +29,10 @@ question: ""
 mode: conversational
 outcome-what: "Accept im Cockpit startet nach dem Move nach done den nächsten Schritt: PR über spawn.sh-Lane pr (/jaira-role-pr <id> --by-person), wenn der Branch Commits vor dem Default-Branch des PR-Ziels hat, alle Tickets seiner Commits in done sind und kein PR existiert; sonst das nächste Ticket aus jaira next ohne laufenden Tab als worker/dispatch. Jedes Scheitern sichtbar im Pane, Ticket bleibt done. jaira-role-pr legt die fertigen Tickets des Branches vor dem Push ins Logbook und beschreibt alle."
 outcome-why: "Accept schob ein Ticket nur nach done; danach musste die Person selbst den PR öffnen oder das nächste Ticket anstossen. Ein PR-Druck ist die Entscheidung einer Person, also darf Accept den PR öffnen."
-outcome-resolves: "DoD 1-12: afterAccept/decideStep/pullTarget in register.tsx, Regel stepAfterAccept + ticketsNamed + namingPattern in board.ts, spawn.sh pr, jaira-role-pr --by-person + pull und logbook vor Push, Forge stumm -> nächstes Ticket mit Hinweis, 23 Tests 'after Accept' + role_test, Release-Note GPFA7B"
+outcome-resolves: "DoD 1-13: afterAccept/decideStep/pullTarget in register.tsx, Regel stepAfterAccept + ticketsNamed + commitNaming in board.ts, spawn.sh pr, jaira-role-pr --by-person + pull und logbook vor Push, Forge stumm -> nächstes Ticket mit Hinweis, 24 Tests 'after Accept' + role_test, Release-Note GPFA7B"
 review-summary: "Accept im Cockpit-Band schiebt das Ticket wie bisher nach done und startet danach selbst den naechsten Schritt (register.tsx accept -> afterAccept -> decideStep). Die Regel steht an einer Stelle, stepAfterAccept in board.ts: PR nur, wenn der Branch Commits vor dem Default-Branch des PR-Ziels hat (im Fork upstream/<default>, vorher gefetcht), jedes Ticket, das seine Commits nennen, in done ist und der Forge sicher sagt, dass es keinen PR gibt; sonst das naechste Ticket aus 'jaira next --all' ohne laufenden Tab, als worker oder dispatch nach settings.json. Der PR laeuft ueber die neue spawn.sh-Lane pr (/jaira-role-pr <id> --by-person) im Worktree des Branches, notfalls per 'git worktree add' neu angelegt. Den Branch findet decideStep ueber den eigenen Worktree, dann '*/<slug>', dann ueber einen Commit, der die Id nennt (namingPattern, auch 'chore(A,ID):'). Ein Forge, der nicht antwortet, laesst nur den PR ungeprueft: naechstes Ticket startet, der Toast sagt warum. Jedes andere Scheitern zeigt der Message-Pane mit '<id> stays in done'. jaira-role-pr legt vor dem Push jedes fertige Ticket des Branches ins Logbook (jaira pull, jaira logbook, ein chore-Commit pro Ticket) und kennt --by-person als Accept-Druck einer Person. 3 Release-Zeilen in core/release/notes/GPFA7B.md."
 review-gaps: "1. Klein: die Branch-Suche ('git log --branches -E --grep=namingPattern') durchsucht die ganze Commit-Nachricht, nicht nur das Subject. Jede Zeile im Body, die mit 'type(ID):' beginnt, trifft. Echt geprueft: --grep fuer 9WSS49 findet zuerst den Merge-Commit e8df340d 'Merge pull request #45', weil dessen Body-Zeile 'chore(PAP369,N172JS,9WSS49): ...' ist. Der Kommentar in decideStep ('The same subjects ticketsNamed reads') stimmt also nicht; ticketsNamed liest nur %s. Folge: ein noch nicht gemergter Merge- oder Sammel-Commit, der die Id im Body zitiert, kann den falschen Branch liefern (-n 1 nimmt den neuesten Treffer). Auf Branches ausserhalb von base selten, aber moeglich. Abhilfe: 'git log --branches --not <base> --format=%H %s' lesen und mit ticketsNamed filtern statt --grep. 2. Klein: jaira-role-pr sagt 'jaira pull <ID> ... every time', aber nicht, was bei einem Fehler von pull gilt (z. B. Ticket hat einen anderen Assignee auf dem Ref und die Datei fehlt im Worktree -> ErrTaken; Board ohne nutzbaren Remote). 3. Offen wie vorher, von Alex so entschieden: kein echter Accept-Druck end to end gelaufen; 'git branch --contains' nimmt bei gestapelten Branches den alphabetisch ersten."
-test-verdict: "pass: go vet + go test ./... -race -count=1 + go build ./cmd/jaira RC=0; claude plugin test 102 pass; DoD 1-12 checked against the tree; DoD 12 pattern run with real git (finds f4f5f812 for 9WSS49), and the mock applies the same pattern, rejecting ZZ99ZZX and a passing mention; installed jaira pull --help says it refreshes an older file (DoD 11). Not exercised: a real Accept press (Alex, later)"
+test-verdict: "pass: go vet + go test ./... -race -count=1 + go build ./cmd/jaira RC=0; claude plugin test 103 pass, validate ok; DoD 13 checked with real git (9WSS49 -> f4f5f812, not merge e8df340d) and the merge-body test"
 review-verdict: "Der Diff erfuellt DoD 1-12. Tests gruen: claude plugin test im Mod-Ordner 102 pass / 0 fail, claude plugin validate ok, go test ./core/role ok. DoD 11 (pull vor logbook) und DoD 12 (Handle neben anderen) sind korrekt gebaut; pull frischt laut core/refsync/refsync.go:793 eine veraltete Datei wirklich auf. Kein Fehler gefunden, der einen PR oeffnet, wo keiner hingehoert: jeder Zweifel endet in 'next' oder im sichtbaren Fehler-Pane. Einziger neuer Befund ist Gap 1 (--grep trifft auch Body-Zeilen) - klein, kein Blocker. Unsicher bleibt der PR-Weg in der Praxis, bis ein echter Accept laeuft. Empfehlung: annehmen; Gap 1 entweder hier als DoD 13 oder bewusst stehen lassen."
 review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> am Ende '102 pass' und '0 fail'.  2. cd ../../../.. && go test ./core/role/ -run 'TestSpawnTypesTheRoleForItsLaneName|TestPRFilesTheTicketsAwayBeforeThePush' -v -> beide PASS.  3. Gap 1 sehen: git log --all -E -n 1 --format='%h %s' \"--grep=^[a-z]+\\(([^)]*[ ,])?9WSS49([ ,][^)]*)?\\)!?:\" -> zeigt e8df340d 'Merge pull request #45 ...', nicht f4f5f812.  4. Live: jaira roles install, dann Claude Code mit Cockpit in Herdr starten (HERDR_ENV=1).  5. Ticket in signoff, dessen Branch Commits vor upstream/master hat und keinen PR: im Band Accept -> Toast '<id>: opening the pull request for feat/<slug> in a Herdr tab'; neuer Tab tippt '/jaira-role-pr <id> --by-person'.  6. In diesem Tab: vor dem Push laufen 'jaira pull <ID>' und 'jaira logbook <ID>' ohne 'older than its ref', danach ein Commit 'chore(<ID>): file the ticket away...'.  7. Ticket in signoff, dessen Branch schon einen PR hat: Accept -> Toast '<id> accepted; <naechstes> started in a Herdr tab' und ein Worker- oder Dispatcher-Tab fuer das naechste Ticket.  8. gh auth logout, dann Accept -> naechstes Ticket startet trotzdem, der Toast endet mit 'pull requests not checked (...)'."
 ---
@@ -114,3 +122,4 @@ core/mod/builtin/jaira-cockpit/hooks/register.tsx decideStep comment: one line r
 - **2026-10-12 19:56 · Alexander Sacharov** — review (fresh, Runde 3): DoD 1-12 erfuellt, 102 Plugin-Tests + core/role gruen. Neuer kleiner Befund: decideStep's 'git log -E --grep=namingPattern' trifft auch Body-Zeilen, nicht nur Subjects (echt: 9WSS49 -> zuerst Merge-Commit e8df340d). Kommentar 'same subjects ticketsNamed reads' stimmt deshalb nicht. Abhilfe: --format='%H %s' lesen und mit ticketsNamed filtern. Kein Blocker.
 - **2026-10-12 19:58 · Alexander Sacharov** — Alex 2026-10-12: letzter Fix (Gap 1 Runde 3, DoD 13), danach ohne neues review annehmen - nach in-progress nur Tests laufen lassen und direkt nach signoff. Gaps 2-3 bewusst so.
 - **2026-10-12 20:02 · Alexander Sacharov** — DoD 13: Branch-Suche liest nur Subjects (git log --branches --not <base> --format='%H %s' + commitNaming/ticketsNamed), namingPattern entfernt. Alex 2026-10-12 (über jaira-f5): nach diesem letzten Fix kein critique/optimize/review mehr - Tests laufen lassen und direkt nach signoff (--force, falls das Gate sich sperrt).
+- **2026-10-12 20:06 · Alexander Sacharov** — Alex 2026-10-12: angenommen nach DoD 13 (Entscheidung 'letzter Fix, dann annehmen'); Gaps 2-3 der Runde 3 bewusst so; echter Accept-Druck wird beim ersten Live-Lauf geprüft.
