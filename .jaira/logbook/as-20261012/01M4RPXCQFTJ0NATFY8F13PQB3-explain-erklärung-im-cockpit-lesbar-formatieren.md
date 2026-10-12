@@ -1,7 +1,7 @@
 ---
 id: 01M4RPXCQFTJ0NATFY8F13PQB3
 title: Explain-Erklärung im Cockpit lesbar formatieren und Optionen direkt beantwortbar machen
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -11,9 +11,27 @@ definition-of-done: "Die Explain-Note hat eine feste Struktur (Befund, Begründu
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f5c71e0a0e210387ea5eeaee090c46d3fa62e47e
+  - 3a1d27bc4eb88c1f9d174f540e744dd527921055
+  - f31da7a920a43fb61b906b04fb0a7b1defae3b71
+  - 08d26f68c2a8ca330a13ed22a05bc61c18f3f00f
+  - 5a75ca0a5b5f72ee2785ccf0008344bc7567218f
+  - 17fa5391a6246be94f32544c3db3223f5cd086e4
+  - 1caba0da867994068699d1972c1c9cff96483502
+  - 705276b18be8fed08a5ea2b723b32c8ff08df55b
+  - 353ac57da124815b1649cc117d59c43d40d6548c
+  - 4d916bed47e57c1605570ecbc44d7cf4e4d867da
+  - 8c72239f51c062c14b76e2ff602ac27b8b4e38fe
+  - c7fe3487cd1ed13251803b51a09ee510e405eee5
+  - 7a4fc04053a00ac73e0a19dd79dcb77fd52be49d
+  - d2315240d8b21b5829d31ba8d755a00db22eef66
+  - ad6a3d232393bf05e1f9418d75c1aacdd5ee3f93
+  - 6bb3d0006db37cd4282cfa0b07738aedf83bc6f0
+  - 1836b9b9d4acfde0ee61c1b3ca606b4c38f17819
+  - 90103e6b42e1138da5452e596ece5fd66d578a0a
 created-at: 2026-10-12T18:45:00Z
-updated-at: 2026-10-12T21:07:01Z
+updated-at: 2026-10-12T21:10:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-36978
 claimed-at: 2026-10-12T20:33:02Z
@@ -140,3 +158,4 @@ Empfehlung: a - beide Fälle sind selten und harmlos, Gap 2 folgt deiner eigenen
 - **2026-10-12 20:57 · Alexander Sacharov** — critique Runde 7: Ziffern sind Engine-Hotkeys wie in einer Survey-Zeile, Farben die Theme-Namen der Band-Knöpfe (0EW5XK: success/error); nichts zu sagen.
 - **2026-10-12 21:03 · Alexander Sacharov** — review Runde 7 (fresh): Annehmen mit Vorbehalt. Offen: Release-Note verspricht Pfeiltasten (bei plain-Buttons unbelegt, nur live prüfbar). DoD-20-Text sagt noch A) B) C). '(1) …' im Befund würde zur Option. label doppelt die Ziffer auf Oberflächen ohne Kinder. Keine testing-Note für Runde 7. Geprüft: plugin test 94 pass, validate ok, go test move/ticket/cli ok; live nicht.
 - **2026-10-12 21:04 · Alexander Sacharov** — testing Runde 7 (nachgetragen, Review-Lücke 5): Gates grün - go build/vet, go test -count=1 ./... RC=0, plugin test 94 pass, role-Tests (spawn.sh) ok; probe-repo neu installiert, HCTB6M trägt eine nummerierte Erklärung mit Marken. Review Runde 7 gelesen: Lücken 1 (Release-Note verspricht Pfeiltasten), 4 (label '1: …' könnte auf Desktop '1: 1: …' ergeben), 6 (Testkommentar sagt noch 'letter') und 2 (DoD-20-Text sagt A) B) C), geliefert Ziffern nach Alex 20:53) sind Kleinkram nach dem Review - nicht eingebaut, Alex entscheidet; Pfeiltasten prüft Schritt b1-s21. Lücke 3 ('(1) ...' im Befund wird wählbar) gab es mit '(a)' schon.
+- **2026-10-12 21:10 · Alexander Sacharov** — Abnahme Runde 6 (Seite G9QSswp1b4Xb29tYuHTYJL): alle 8 Schritte ok (b1-s01, s13, s14, s18-s22, inkl. Pfeiltasten s21), 3 Maschinenchecks gruen; Alex im Chat: 'всё работает'. Angenommen.
