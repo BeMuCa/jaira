@@ -9,6 +9,10 @@ before:
   hooks:
     - go mod tidy
     - go test ./...
+    # Works out which release each core/release/notes file belongs to from
+    # the tags and writes the index the binary embeds. It writes into this
+    # checkout only, after the tests, and nothing is pushed back.
+    - go generate ./core/release
 
 builds:
   - id: jaira
