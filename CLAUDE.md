@@ -210,11 +210,10 @@ build, so an unwritten change is a change nobody is ever told about.
 
 One file per ticket is what keeps two pull requests from ever conflicting over
 release notes: each adds a file nobody else touches. A ticket with a second
-change adds a second line to its own file — but only until a tag holds that
-file. Once one does, a further change goes into a new file, `<TICKET>-2.md`,
-and never into the old one: the release build files a note by its file name,
-so a line added to a tagged file shows up under the old release, and a board
-stamped with that release never sees it.
+change adds a second line to its own file. A file directly in
+`core/release/notes/` is Unreleased; once a release has moved it away, a
+further change for the same ticket creates `core/release/notes/<TICKET>.md`
+again.
 
 Counts as client-facing: a new or renamed command or flag, changed CLI output or
 exit codes, a new or changed field in the ticket frontmatter, anything that
@@ -234,13 +233,18 @@ The format is a line scan, and breaking it silently corrupts what users read:
 Write each line as an instruction: what the reader must DO differently, not a
 record of what a commit did.
 
-Nobody assigns a note to a release by hand, and releasing needs no commit. The
-release build (`.goreleaser.yaml`) runs `go generate ./core/release`, which
-files each note under the oldest tag `v*` that holds it and writes the
-gitignored index `core/release/notes/versions` that the binary embeds. A build
-without it — `go build`, `go install` — shows every note as Unreleased. Never
-commit that index, and never move or rename a note once it is on master: the
-release it belongs to is read from the tag's tree.
+Releasing is a button, and nothing in it lands on master directly:
+
+1. Run the `release-notes` workflow from the Actions tab on master with the
+   version, `X.Y.Z`. It moves every file directly in `core/release/notes/` into
+   `core/release/notes/<version>/` on a branch `release/<version>` and opens a
+   pull request.
+2. Merging that pull request runs `release-tag`: it tags the merge commit
+   `v<version>` and starts `release.yaml`, which builds the binaries as before.
+
+The binary reads a release's version from its folder name. Never move a note
+into a version folder by hand, and never edit a note inside one: that release
+has shipped.
 
 `core/release/NOTES.md` holds the releases up to 0.3.6 and is closed history:
 nothing is added to it.

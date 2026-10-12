@@ -1,7 +1,7 @@
 ---
 id: 01M4QECQMKHK5BKWRZMFAR97K9
 title: "Release-Notes als eine Datei je Aenderung, die Version setzt der Release-Build"
-status: done
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -35,13 +35,13 @@ commits:
   - 1fcf5a7051cc561ef6c6f64f3d799e49d666baf8
   - 1abf2eb227e43be9caf4c0b1a607b74a4bf7f63f
 created-at: 2026-10-12T06:56:51Z
-updated-at: 2026-10-12T08:08:48Z
+updated-at: 2026-10-12T08:33:38Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-69610
-claimed-at: 2026-10-12T08:04:33Z
-outcome-what: "Review nach gap-1-Fix: DoD 1-5 erfuellt, Regel <TICKET>-2.md in CLAUDE.md/AGENTS.md"
-outcome-why: "Alex hat Option 1 gewaehlt; keine neuen Defekte"
-outcome-resolves: "review gap 1"
+claimed-by: DESKTOP-RFTCH11-89604
+claimed-at: 2026-10-12T08:27:32Z
+outcome-what: "Variante A: Release-Version aus dem Ordnernamen core/release/notes/<version>/; Knopf release-notes.yaml verschiebt per release.Cut und oeffnet PR release/<version>; release-tag.yaml taggt den Merge und startet release.yaml; Versionsindex und Regel <TICKET>-2.md entfernt"
+outcome-why: "Alex hat nach dem Merge-Vorschlag zu #55 Variante A gewaehlt: einfacher als ein Index beim Build, Version steht sichtbar im Repo"
+outcome-resolves: "DoD 6-9"
 review-summary: "Release-Notizen liegen jetzt je Ticket als eigene Datei core/release/notes/<TICKET>.md (Zeilen '- ...'); die 5 bisherigen Unreleased-Zeilen sind dorthin umgezogen, NOTES.md ist geschlossene Historie bis 0.3.6. Welche Version eine Datei bekommt, steht nirgends im Repo: der goreleaser-before-hook 'go generate ./core/release' ruft release.WriteIndex, das je Tag v* (nur --merged HEAD, aeltester zuerst) per git ls-tree die notes/ liest und die Datei dem aeltesten Tag zuordnet, der sie enthaelt; das Ergebnis geht in das gitignorte notes/versions, das mit eingebettet wird. Ohne Index (go build) zeigt composeNotes jede Datei unter Unreleased. Letzter Commit 1abf2eb ergaenzt in CLAUDE.md und AGENTS.md die von Alex gewaehlte Regel: sobald ein Tag die Datei haelt, geht eine weitere Aenderung in <TICKET>-2.md."
 review-gaps: "Gap 1 der vorigen Review ist mit 1abf2eb geschlossen, wie Alex es gewaehlt hat (Option 1, nur Regeltext, keine Pruefung). Offen und bewusst stehen gelassen: (a) die Regel '<TICKET>-2.md' erzwingt nichts - eine Zeile, die doch an eine getaggte Datei angehaengt wird, landet still unter der alten Version; (b) ein lokal per go generate erzeugtes notes/versions wird in spaetere go builds eingebettet und veraltet still (nur Entwicklerrechner). Nicht zum Ticket gehoerend: das untracked .jaira/milestones/ im worktree_diff (drei demo-Milestones vom 15.09.) - nicht mit committen. Sonst keine Defekte gefunden; release.yaml checkt mit fetch-depth: 0 aus, also sieht WriteIndex die Tags."
 test-verdict: "pass: Runde 3 nur Doku (1abf2eb); go test -count=1 -race ./core/release ./internal/wintrap RC=0; der Satz steht in CLAUDE.md und AGENTS.md; DoD-Proofs CLAUDE.md:199/AGENTS.md:152 zeigen weiter auf die Abschnittsueberschrift; Funktion seit Runde 2 unveraendert (Tag-Build v0.3.7 im Scratch-Klon gepruef)"
@@ -54,15 +54,23 @@ review-check: "1. go test ./core/release -race -run 'TestTwoBranches|TestWriteIn
 ## Definition of Done
 
 - [x] Eine Aenderung traegt ihre Release-Notiz als eigene Datei unter core/release/ ein; zwei Branches, die je eine anlegen, mergen ohne Konflikt - ein Test oder ein Skriptlauf mit zwei Branches belegt es
-  proof: core/release/index_test.go TestTwoBranchesAddingNotesMergeWithoutConflict (Gegenprobe: zwei Appends an eine Datei konfliktieren)
+  proof: core/release/notes_test.go TestTwoBranchesAddingNotesMergeWithoutConflict (Gegenprobe: zwei Appends an eine Datei konfliktieren)
 - [x] Ein Tag v<x.y.z> baut ein Binary, dessen 'jaira update' die neuen Eintraege unter '<x.y.z>' zeigt, ohne dass jemand NOTES.md vor dem Tag umbenannt hat - geprueft an einer Fixture-Repo mit zwei Tags
-  proof: core/release/index_test.go TestWriteIndexFilesNotesUnderTheTagThatFirstHeldThem (Fixture mit v0.1.0 und annotiertem v0.2.0; Nachbau von v0.1.0 sieht 0.2.0 nicht); Generator core/release/index.go WriteIndex, Hook .goreleaser.yaml
+  proof: Variante A: Version aus Ordnername notes/<version>/, kein Umbenennen in NOTES.md - core/release/notes_test.go TestCutMovesEveryNoteIntoTheVersionFolder; lokal: cut 0.3.7 + go build, jaira update --json bei Stempel 0.3.6 -> genau '0.3.7' mit 7 Zeilen. Der echte Tag-Build auf GitHub ist bis nach dem Merge ungeprueft
 - [x] Kein Release-Schritt schreibt auf master; ein Build ohne Pipeline (go build ./cmd/jaira) laeuft weiter und zeigt die neuen Eintraege als Unreleased
-  proof: go build ./cmd/jaira + jaira update --json bei Stempel 0.3.6 -> nur 'Unreleased' mit den 5 Notiz-Dateien; core/release/index_test.go TestComposeNotesWithoutIndexShowsEveryNoteUnreleased; .goreleaser.yaml go generate schreibt nur gitignortes core/release/notes/versions, kein push
+  proof: Kein Workflow pusht auf master: release-notes.yaml pusht nur release/<version>, release-tag.yaml nur den Tag; go build ./cmd/jaira zeigt Dateien direkt in notes/ als Unreleased - core/release/notes_test.go TestComposeNotesReadsVersionFolders, TestNotesUnchangedByMovingUnreleasedIntoFiles
 - [x] Die bestehenden Eintraege (Unreleased und alle Versionen) erscheinen nach dem Umbau in jaira update unveraendert - Test gegen den alten Stand
-  proof: core/release/index_test.go TestNotesUnchangedByMovingUnreleasedIntoFiles gegen core/release/testdata/NOTES-before-AR97K9.md
+  proof: core/release/notes_test.go TestNotesUnchangedByMovingUnreleasedIntoFiles gegen core/release/testdata/NOTES-before-AR97K9.md
 - [x] CLAUDE.md, AGENTS.md, der Agent-Block (falls er die Regel enthaelt) und der Format-Kommentar in NOTES.md sagen den neuen Weg; go test ./... -race gruen
-  proof: CLAUDE.md:199 und AGENTS.md:152 Abschnitt 'Client-facing changes go in core/release/notes/'; Format-Kommentar core/release/NOTES.md:1; Agent-Block (core/board/announce.go) enthaelt die Regel nicht; go test ./... -race exit 0
+  proof: CLAUDE.md:211 und :236, AGENTS.md:164 und :189 wortgleich (Abschnitt 'Client-facing changes go in core/release/notes/'); core/release/NOTES.md:4 Format-Kommentar; Agent-Block (core/board/announce.go) enthaelt die Regel nicht
+- [x] Eine GitHub Action mit workflow_dispatch (Eingabe version) verschiebt alle Dateien direkt unter core/release/notes/ nach core/release/notes/<version>/, legt Branch release/<version> an und oeffnet den PR; nichts geht direkt auf master
+  proof: .github/workflows/release-notes.yaml (workflow_dispatch input version, nur master; go run ./core/release/cut, Branch release/<version>, gh pr create); lokal geprueft: cut + commit in Kopie verschiebt 6 Dateien nach notes/0.3.7/, zweiter Lauf exit 1. UNGEPRUEFT bis nach Merge: Lauf auf GitHub, Repo-Einstellung 'Allow GitHub Actions to create pull requests'
+- [x] Der Merge eines release/<version>-PR setzt per Action den Tag v<version> auf den Merge-Commit, und release.yaml baut daraus wie bisher
+  proof: .github/workflows/release-tag.yaml (pull_request closed+merged, head release/X.Y.Z aus eigener Repo -> git tag -a v<version> merge_commit_sha, push, gh workflow run release.yaml --ref v<version>); release.yaml hat dafuer workflow_dispatch. UNGEPRUEFT bis nach Merge
+- [x] Das Binary nimmt die Version aus dem Ordnernamen notes/<version>/, Dateien direkt in notes/ zeigt es als Unreleased; go generate, notes/versions und die Regel <TICKET>-2.md sind entfernt; Tests decken Ordner, Unreleased und eine Probe des Verschiebeskripts ab
+  proof: core/release/release.go composeNotes/entryOf/newer; core/release/cut.go Cut; Tests core/release/notes_test.go TestComposeNotesReadsVersionFolders, TestComposeNotesWithoutNotesShowsOnlyHistory, TestCutMovesEveryNoteIntoTheVersionFolder, TestCutRefuses; index.go, gen/, notes/versions (.gitignore, .goreleaser.yaml) und Regel <TICKET>-2.md entfernt
+- [x] CLAUDE.md, AGENTS.md und der Format-Kommentar in NOTES.md beschreiben den Release-Ablauf (Knopf, PR, Merge setzt Tag); go test ./... -race gruen
+  proof: CLAUDE.md:236 / AGENTS.md:189 'Releasing is a button' (Knopf release-notes, PR release/<version>, Merge -> release-tag setzt v<version>, startet release.yaml); NOTES.md:4; go vet ./... und go test ./... -race exit 0
 
 ## Options
 
@@ -90,3 +98,6 @@ review-check: "1. go test ./core/release -race -run 'TestTwoBranches|TestWriteIn
 - **2026-10-12 07:43 · Alexander Sacharov** — Frage an Alex (review gap 1): Eine Zeile, die nach dem Tag an eine schon getaggte Notiz-Datei angehaengt wird, landet unter der alten Version. Optionen: 1) (Empfohlen) Vor signoff einen Satz in CLAUDE.md/AGENTS.md: sobald ein Tag die Datei enthaelt, geht eine weitere Aenderung in eine neue Datei <TICKET>-2.md - ~5 Min, Ticket geht zurueck nach in-progress. 2) Wie es ist abnehmen, Satz spaeter als eigenes Ticket. 3) Zusaetzlich zu 1 einen Test/Pruefung, die das Anhaengen an getaggte Dateien in CI ablehnt - ~30 Min.
 - **2026-10-12 08:02 · Alexander Sacharov** — Alex 12.10. zu review gap 1: Option 1 - ein Satz in CLAUDE.md/AGENTS.md: sobald ein Tag die Notiz-Datei enthaelt, kommt eine weitere Aenderung in eine neue Datei <TICKET>-2.md. Ticket zurueck nach in-progress, danach wieder signoff.
 - **2026-10-12 08:04 · Alexander Sacharov** — Gap 1 umgesetzt nach Alex' Option 1: Satz in CLAUDE.md und AGENTS.md (Abschnitt Client-facing), keine Code-Aenderung, kein Test (Option 3 nicht gewaehlt). Der Abschnitt kommt nicht aus core/board/announce.go - nichts zu generieren. Review-Gap 2 (lokal liegengebliebenes notes/versions veraltet still) bewusst nicht angefasst: nur Entwicklerrechner, nicht beauftragt.
+- **2026-10-12 08:25 · Alexander Sacharov** — Alex 12.10. nach dem Merge-Vorschlag zu #55: Variante A statt Versionsindex beim Build. Neue Notizen liegen in core/release/notes/<ID>.md; ein Release verschiebt alle Dateien aus notes/ nach notes/<version>/. Ausloeser: GitHub Action workflow_dispatch mit Eingabe version -> Branch release/<version> mit dem Verschieben, PR oeffnen. Merge eines release/*-PR -> zweite Action setzt den Tag v<version> auf den Merge-Commit -> release.yaml baut wie bisher. Nichts landet direkt auf master. Der Versionsindex (go generate, notes/versions, git tag --contains) entfaellt; das Binary liest die Version aus dem Ordnernamen; Dateien direkt in notes/ sind Unreleased. Damit entfaellt auch die Regel <TICKET>-2.md. PR #55 bleibt offen und waechst um diese Aenderung.
+- **2026-10-12 08:27 · Alexander Sacharov** — Variante A, selbst entschieden (keine offene Frage an Alex): (1) Verschieben als Go-Funktion release.Cut + core/release/cut/main.go statt Shell - so prueft go test das Skript direkt, plattformunabhaengig; ersetzt core/release/gen. (2) Eingabe version: fuehrendes v wird abgeschnitten, sonst genau X.Y.Z aus Ziffern; Cut verweigert, wenn notes/<version>/ schon existiert oder keine Datei direkt in notes/ liegt (leerer Release-PR waere ohne Commit). (3) Reihenfolge: Versionsordner absteigend nach X.Y.Z numerisch, darunter NOTES.md (bis 0.3.6); innerhalb eines Ordners nach Dateiname. (4) Tag-Action: ein Tag-Push mit GITHUB_TOKEN loest release.yaml NICHT aus (GitHub startet auf GITHUB_TOKEN-Events keine Workflows, ausser workflow_dispatch) - darum bekommt release.yaml zusaetzlich workflow_dispatch und die Tag-Action ruft 'gh workflow run release.yaml --ref v<version>'. (5) Release-Action laeuft nur auf master (if github.ref == refs/heads/master). Ungeprueft bis nach dem Merge: Repo-Einstellung 'Allow GitHub Actions to create and approve pull requests' muss an sein; ein von GITHUB_TOKEN geoeffneter PR startet ci.yaml nicht - verlangt Branch-Protection gruene CI, haengt der Release-PR.
+- **2026-10-12 08:33 · Alexander Sacharov** — in-progress Variante A: Bug selbst gefunden und behoben - echo "version=$(go run ...)" verschluckt den Exit-Code von cut, der naechste Schritt liefe mit leerer Version; jetzt Zuweisung in eigener Zeile, unter bash -eo pipefail (GitHub-Standard) lokal geprueft: Ablehnung stoppt den Schritt. Lokale Probe: Kopie des Baums, cut 0.3.7 + Commit = 6 Renames nach notes/0.3.7/; jaira update bei Stempel 0.3.6 (HOME im scratchpad, der Stempel liegt unter ~/.jaira/state/) zeigt genau 0.3.7 mit 7 Zeilen. Keine eigene Notiz-Datei fuer AR97K9: Nutzer des Binaries merken nichts.

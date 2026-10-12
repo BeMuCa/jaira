@@ -8,14 +8,10 @@
 //
 // They come from two places. NOTES.md holds every release up to 0.3.6 as fixed
 // history. Every change since is a file of its own under notes/, named after
-// its ticket, so two branches never edit the same lines. Which release a file
-// belongs to is not written in the repository at all: the release build runs
-// go generate, which works it out from the tags and writes notes/versions,
-// and that file is embedded with the rest. A build without it — go build,
-// go install — shows every note file as Unreleased.
+// its ticket, so two branches never edit the same lines. A file directly in
+// notes/ is Unreleased; releasing moves every one of them into
+// notes/<version>/ (see Cut), and the folder's name is the release.
 package release
-
-//go:generate go run ./gen
 
 import (
 	"embed"
@@ -23,6 +19,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -32,12 +30,9 @@ var notesMD string
 //go:embed notes
 var notesFS embed.FS
 
-// notesDir and indexFile name the per-change notes and the release index
-// inside the package directory; WriteIndex and the embed share them.
-const (
-	notesDir  = "notes"
-	indexFile = "versions"
-)
+// notesDir names the per-change notes inside the package directory; Cut and
+// the embed share it.
+const notesDir = "notes"
 
 // Current is the version of the running binary. It is a package-level var,
 // set once by cli.Execute, because the TUI also creates boards and plumbing a
@@ -51,54 +46,53 @@ type Entry struct {
 }
 
 // Notes returns the embedded release notes, newest release first: the note
-// files nothing has assigned to a release yet as Unreleased, then the releases
-// notes/versions names, then the fixed history in NOTES.md.
+// files directly in notes/ as Unreleased, then one release per notes/<version>/
+// folder, then the fixed history in NOTES.md.
 func Notes() []Entry { return composeNotes(notesMD, notesFS) }
 
-// composeNotes reads fsys as the package directory: notes/*.md for the
-// changes, notes/versions for which release each belongs to. Within a release
-// the files keep the index's order and the unassigned ones go by name, which
-// is the only order a build without git can know.
+// composeNotes reads fsys as the package directory. Within a release the
+// files go by name, and the releases by version number, newest first.
 func composeNotes(md string, fsys fs.FS) []Entry {
-	files, _ := fs.Glob(fsys, path.Join(notesDir, "*.md"))
-	changes := map[string][]string{}
+	var out []Entry
+	if e := entryOf(fsys, notesDir, "Unreleased"); len(e.Changes) > 0 {
+		out = append(out, e)
+	}
+	dirs, _ := fs.ReadDir(fsys, notesDir)
+	var versions []string
+	for _, d := range dirs {
+		if d.IsDir() {
+			versions = append(versions, d.Name())
+		}
+	}
+	sort.Slice(versions, func(i, j int) bool { return newer(versions[i], versions[j]) })
+	for _, v := range versions {
+		out = append(out, entryOf(fsys, path.Join(notesDir, v), v))
+	}
+	return append(out, parseNotes(md)...)
+}
+
+// entryOf is one release: the changes of every *.md file directly in dir.
+func entryOf(fsys fs.FS, dir, version string) Entry {
+	e := Entry{Version: version}
+	files, _ := fs.Glob(fsys, path.Join(dir, "*.md"))
 	for _, f := range files {
 		b, _ := fs.ReadFile(fsys, f)
-		changes[path.Base(f)] = changeLines(string(b))
+		e.Changes = append(e.Changes, changeLines(string(b))...)
 	}
+	return e
+}
 
-	var released []Entry
-	assigned := map[string]bool{}
-	index, _ := fs.ReadFile(fsys, path.Join(notesDir, indexFile))
-	for _, line := range strings.Split(string(index), "\n") {
-		version, name, ok := strings.Cut(strings.TrimSpace(line), " ")
-		if !ok || strings.HasPrefix(version, "#") {
-			continue
-		}
-		c, exists := changes[name]
-		if !exists {
-			continue
-		}
-		assigned[name] = true
-		if n := len(released); n == 0 || released[n-1].Version != version {
-			released = append(released, Entry{Version: version})
-		}
-		last := &released[len(released)-1]
-		last.Changes = append(last.Changes, c...)
-	}
-
-	var out []Entry
-	unreleased := Entry{Version: "Unreleased"}
-	for _, f := range files {
-		if name := path.Base(f); !assigned[name] {
-			unreleased.Changes = append(unreleased.Changes, changes[name]...)
+// newer compares two X.Y.Z versions number by number.
+func newer(a, b string) bool {
+	as, bs := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(as) && i < len(bs); i++ {
+		x, _ := strconv.Atoi(as[i])
+		y, _ := strconv.Atoi(bs[i])
+		if x != y {
+			return x > y
 		}
 	}
-	if len(unreleased.Changes) > 0 {
-		out = append(out, unreleased)
-	}
-	out = append(out, released...)
-	return append(out, parseNotes(md)...)
+	return len(as) > len(bs)
 }
 
 // changeLines is parseNotes for a note file, which has no headings: every

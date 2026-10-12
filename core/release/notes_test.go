@@ -1,10 +1,8 @@
 package release
 
 import (
-	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -92,68 +90,113 @@ func TestTwoBranchesAddingNotesMergeWithoutConflict(t *testing.T) {
 	}
 }
 
-// A tagged build files each note under the oldest tag that holds it, without
-// anybody having renamed anything before the tag; a note no tag holds stays
-// Unreleased. Rebuilding the older tag does not see the newer tag's version.
-func TestWriteIndexFilesNotesUnderTheTagThatFirstHeldThem(t *testing.T) {
-	repo, pkg := fixtureRepo(t)
-	addNote(t, repo, pkg, "AAAAAA.md", "first release change")
-	run(t, repo, "tag", "v0.1.0")
-	addNote(t, repo, pkg, "BBBBBB.md", "second release change")
-	run(t, repo, "tag", "-a", "-m", "annotated", "v0.2.0")
-	addNote(t, repo, pkg, "CCCCCC.md", "not released yet")
-
-	if err := WriteIndex(pkg); err != nil {
-		t.Fatalf("WriteIndex: %v", err)
-	}
-	all := composeNotes("## 0.0.1\n- a fixed change\n", os.DirFS(pkg))
-	want := []Entry{
-		{Version: "Unreleased", Changes: []string{"not released yet"}},
-		{Version: "0.2.0", Changes: []string{"second release change"}},
-		{Version: "0.1.0", Changes: []string{"first release change"}},
-		{Version: "0.0.1", Changes: []string{"a fixed change"}},
-	}
-	if !reflect.DeepEqual(all, want) {
-		t.Fatalf("composeNotes after WriteIndex = %#v, want %#v", all, want)
-	}
-	if got := sinceEntries(all, "0.1.0"); !reflect.DeepEqual(got, want[:2]) {
-		t.Fatalf("sinceEntries(0.1.0) = %#v, want %#v", got, want[:2])
-	}
-
-	run(t, repo, "checkout", "-q", "v0.1.0")
-	if err := WriteIndex(pkg); err != nil {
-		t.Fatalf("WriteIndex at v0.1.0: %v", err)
-	}
-	got := composeNotes("", os.DirFS(pkg))
-	if want := []Entry{{Version: "0.1.0", Changes: []string{"first release change"}}}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("composeNotes at v0.1.0 = %#v, want %#v", got, want)
-	}
-}
-
-// A build that never ran go generate — go build, go install — has no index
-// and shows every note file as Unreleased, in file-name order, above the fixed
-// history.
-func TestComposeNotesWithoutIndexShowsEveryNoteUnreleased(t *testing.T) {
+// Files directly in notes/ are Unreleased, every notes/<version>/ folder is
+// one release named after it, newest version first — 0.10.0 above 0.9.0, which
+// a sort by name would get wrong — and NOTES.md comes last. Inside a release
+// the files go by name, and only "- " lines are changes.
+func TestComposeNotesReadsVersionFolders(t *testing.T) {
 	fsys := fstest.MapFS{
-		"notes/BBBBBB.md": {Data: []byte("- second\n")},
-		"notes/AAAAAA.md": {Data: []byte("- first\nprose is ignored\n- first, again\n")},
+		"notes/BBBBBB.md":        {Data: []byte("- second\n")},
+		"notes/AAAAAA.md":        {Data: []byte("- first\nprose is ignored\n- first, again\n")},
+		"notes/0.9.0/CCCCCC.md":  {Data: []byte("- older release\n")},
+		"notes/0.10.0/EEEEEE.md": {Data: []byte("- newer release, second file\n")},
+		"notes/0.10.0/DDDDDD.md": {Data: []byte("- newer release, first file\n")},
 	}
 	got := composeNotes("## 0.0.1\n- a fixed change\n", fsys)
 	want := []Entry{
 		{Version: "Unreleased", Changes: []string{"first", "first, again", "second"}},
+		{Version: "0.10.0", Changes: []string{"newer release, first file", "newer release, second file"}},
+		{Version: "0.9.0", Changes: []string{"older release"}},
 		{Version: "0.0.1", Changes: []string{"a fixed change"}},
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("composeNotes without index = %#v, want %#v", got, want)
+		t.Fatalf("composeNotes = %#v, want %#v", got, want)
 	}
+	if got := sinceEntries(got, "0.9.0"); !reflect.DeepEqual(got, want[:2]) {
+		t.Fatalf("sinceEntries(0.9.0) = %#v, want %#v", got, want[:2])
+	}
+}
+
+// With no note files at all there is no Unreleased entry, only the history.
+func TestComposeNotesWithoutNotesShowsOnlyHistory(t *testing.T) {
+	got := composeNotes("## 0.0.1\n- a fixed change\n", fstest.MapFS{})
+	if want := []Entry{{Version: "0.0.1", Changes: []string{"a fixed change"}}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("composeNotes without notes = %#v, want %#v", got, want)
+	}
+}
+
+// Cut is what the release workflow runs: it moves every note directly in
+// notes/ into notes/<version>/, and afterwards those changes read as that
+// release while a note added later is Unreleased again.
+func TestCutMovesEveryNoteIntoTheVersionFolder(t *testing.T) {
+	pkg := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(pkg, notesDir, "0.1.0"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(pkg, notesDir, "0.1.0", "OLDOLD.md"), "- released before\n")
+	writeFile(t, filepath.Join(pkg, notesDir, "AAAAAA.md"), "- change a\n")
+	writeFile(t, filepath.Join(pkg, notesDir, "BBBBBB.md"), "- change b\n")
+
+	version, err := Cut(pkg, "v0.2.0")
+	if err != nil {
+		t.Fatalf("Cut: %v", err)
+	}
+	if version != "0.2.0" {
+		t.Fatalf("Cut returned %q, want the leading v dropped", version)
+	}
+	writeFile(t, filepath.Join(pkg, notesDir, "CCCCCC.md"), "- after the cut\n")
+
+	got := composeNotes("", os.DirFS(pkg))
+	want := []Entry{
+		{Version: "Unreleased", Changes: []string{"after the cut"}},
+		{Version: "0.2.0", Changes: []string{"change a", "change b"}},
+		{Version: "0.1.0", Changes: []string{"released before"}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("composeNotes after Cut = %#v, want %#v", got, want)
+	}
+}
+
+// Cut refuses what would make a broken release, and moves nothing when it does.
+func TestCutRefuses(t *testing.T) {
+	for _, tc := range []struct{ name, version string }{
+		{"not X.Y.Z", "0.2"},
+		{"not a number", "latest"},
+		{"released before", "0.1.0"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pkg := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(pkg, notesDir, "0.1.0"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(pkg, notesDir, "AAAAAA.md"), "- change a\n")
+			if _, err := Cut(pkg, tc.version); err == nil {
+				t.Fatalf("Cut(%q) succeeded", tc.version)
+			}
+			if _, err := os.Stat(filepath.Join(pkg, notesDir, "AAAAAA.md")); err != nil {
+				t.Fatalf("the note moved although Cut refused: %v", err)
+			}
+		})
+	}
+	t.Run("nothing to release", func(t *testing.T) {
+		pkg := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(pkg, notesDir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Cut(pkg, "0.2.0"); err == nil {
+			t.Fatal("Cut with no notes succeeded")
+		}
+		if _, err := os.Stat(filepath.Join(pkg, notesDir, "0.2.0")); err == nil {
+			t.Fatal("Cut with no notes left an empty release folder")
+		}
+	})
 }
 
 // Moving the Unreleased lines out of NOTES.md into note files must not change
 // what jaira update shows: every released section exactly, and the same
 // Unreleased changes. Their order inside Unreleased now follows the file
-// names, so that one is compared as a set. The index is left out because a
-// checkout that ran go generate after a later tag rightly files these lines
-// under that release.
+// names, so that one is compared as a set. Once a release folder exists this
+// test has done its job: those lines then rightly read as that release.
 func TestNotesUnchangedByMovingUnreleasedIntoFiles(t *testing.T) {
 	before, err := os.ReadFile(filepath.Join("testdata", "NOTES-before-AR97K9.md"))
 	if err != nil {
@@ -161,13 +204,7 @@ func TestNotesUnchangedByMovingUnreleasedIntoFiles(t *testing.T) {
 	}
 	want := parseNotes(string(before))
 
-	noIndex := fstest.MapFS{}
-	files, _ := fs.Glob(notesFS, path.Join(notesDir, "*.md"))
-	for _, f := range files {
-		b, _ := fs.ReadFile(notesFS, f)
-		noIndex[f] = &fstest.MapFile{Data: b}
-	}
-	got := composeNotes(notesMD, noIndex)
+	got := Notes()
 
 	if len(got) != len(want) {
 		t.Fatalf("got %d entries, want %d", len(got), len(want))

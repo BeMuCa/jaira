@@ -23,7 +23,3 @@ Thumbs.db
 
 # this project's lane files are this machine's, not the team's
 /.claude/worktrees
-
-# The release build's go generate writes which release each note file belongs
-# to; the repository never records it, so releasing needs no commit.
-/core/release/notes/versions

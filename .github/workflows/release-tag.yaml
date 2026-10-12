@@ -1,0 +1,42 @@
+name: release-tag
+
+# Merging a release/<version> pull request (opened by release-notes.yaml)
+# tags its merge commit v<version> and starts release.yaml on that tag. The
+# start is explicit because a tag pushed with GITHUB_TOKEN triggers no
+# workflow of its own.
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag:
+    if: >-
+      github.event.pull_request.merged &&
+      startsWith(github.event.pull_request.head.ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - name: Tag the merge commit and start the release build
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${HEAD_REF#release/}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "$HEAD_REF does not name a version X.Y.Z" >&2
+            exit 1
+          fi
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -a "v$VERSION" "$SHA" -m "v$VERSION"
+          git push origin "v$VERSION"
+          gh workflow run release.yaml --ref "v$VERSION"

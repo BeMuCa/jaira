@@ -3,8 +3,9 @@ Closed history — do not add to this file.
 
 This file holds the releases up to 0.3.6. A change since then goes into a file
 of its own, core/release/notes/<TICKET>.md, one line "- ..." per change and no
-heading; the release build files it under its version (see "Client-facing
-changes" in CLAUDE.md, and release.WriteIndex).
+heading; the release-notes workflow moves it into core/release/notes/<version>/
+when that version is released (see "Client-facing changes" in CLAUDE.md, and
+release.Cut).
 
 Format rules, kept because the parser still reads this file:
   - Newest release first.
