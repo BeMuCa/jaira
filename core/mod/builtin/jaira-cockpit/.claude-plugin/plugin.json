@@ -1,0 +1,8 @@
+{
+  "name": "jaira-cockpit",
+  "version": "0.1.0",
+  "description": "Keeps a jaira teamlead chat readable: agent reports arrive as one line per ticket, the full text stays behind /cockpit report <id>.",
+  "author": {
+    "name": "jaira"
+  }
+}
