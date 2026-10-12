@@ -31,13 +31,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T06:56:51Z
-updated-at: 2026-10-12T07:35:21Z
+updated-at: 2026-10-12T07:36:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37358
 claimed-at: 2026-10-12T07:23:55Z
-outcome-what: "Release-Notizen: eine Datei je Ticket unter core/release/notes/; der Release-Build (go generate in .goreleaser.yaml) schreibt einen gitignorten Index notes/versions, der jede Datei dem aeltesten Tag zuordnet, der sie enthaelt; NOTES.md ist ab 0.3.6 geschlossene Geschichte"
-outcome-why: "Jeder PR haengte seine Zeile ans Ende von '## Unreleased' - fast jeder PR nach einem anderen bekam einen Konflikt, und jedes Release brauchte einen eigenen Commit zum Umbenennen"
-outcome-resolves: "Zwei PRs fassen nie mehr dieselbe Zeile an; die Version setzt der Tag, nicht ein Commit"
+outcome-what: "wie zuvor; WriteIndex baut jetzt eine Gruppenliste je Tag, Kommentare zum alten Release-Cut nachgezogen"
+outcome-why: "critique 1"
+outcome-resolves: "critique-1-Befunde (a) und (b)"
+review-summary: |-
+  core/release/index.go:33-66 baut first-map + versions-slice und sucht dann je Version die Namen im Map zusammen (O(V*N), zwei Strukturen fuer eine Sache) - ls-tree liefert je Tag schon sortiert; eine Liste von Gruppen {version, names} beim Durchlauf aufbauen und rueckwaerts schreiben
+  core/release/release.go:80-87 (sinceEntries-Kommentar) und release_test.go TestEmbeddedNotesParseToAtLeastOneRealEntry/TestParseNotesKeepsAnEmptyLeadingSection beschreiben das leere '## Unreleased' nach jedem Release-Cut - diesen Cut gibt es nicht mehr; Kommentare auf den neuen Weg ziehen, Verhalten (leere Eintraege fallen weg) bleibt als Schutz
+  Stehen gelassen: eigener git()-Helfer statt core/gitref (dessen run ist an Ticket-Refs gebunden und unexportiert); WriteIndex im Paket release statt in gen/ (Note 'Plan-Begruendung': DoD-2-Test braucht Generator und Parser in einem Paket); testdata-Kopie des alten NOTES.md (DoD 4 verlangt den Vergleich mit dem alten Stand)
 ---
 
 # Release-Notes als eine Datei je Aenderung, die Version setzt der Release-Build
@@ -76,3 +80,4 @@ outcome-resolves: "Zwei PRs fassen nie mehr dieselbe Zeile an; die Version setzt
 - **2026-10-12 07:25 · Alexander Sacharov** — Offene Entscheidungen vor dem Plan: keine, die nur Alex treffen kann. Selbst entschieden: (1) Dateiname core/release/notes/<ticket-id>.md, Inhalt Zeilen '- ...' - eindeutig je Ticket, also konfliktfrei. (2) Zuordnung zur Version macht ein Generator im goreleaser-before-hook: Datei gehoert zum aeltesten Tag v*, in dessen Baum (git ls-tree) sie liegt - ein Aufruf je Tag statt git log+tag --contains je Datei, gleiches Ergebnis bei linearer Tag-Folge. Er schreibt eine gitignorte Indexdatei in core/release/notes/, die mit eingebettet wird; nichts wird committet. (3) Build ohne Generator (go build): Index fehlt -> jede Notiz-Datei steht unter Unreleased (DoD 3). (4) Versionierte Abschnitte 0.3.6 und aelter bleiben als feste Vergangenheit in NOTES.md; die 5 heutigen Unreleased-Zeilen (MG677R x2, K1W2JR, 8WFNQY, GDB5YJ) wandern als Dateien nach notes/, sonst landeten sie im naechsten Release-Binary unter 'Unreleased' statt '0.3.7'. (5) Reihenfolge innerhalb einer Version: nach Dateiname - ein Build ohne git kennt keine andere. Abschnitt 'Client-facing changes' ist in CLAUDE.md und AGENTS.md handgeschrieben (hinter jaira:local), nicht aus core/board/announce.go.
 - **2026-10-12 07:26 · Alexander Sacharov** — Plan-Begruendung: Indexdatei statt NOTES.md im CI umzuschreiben, weil dann ein Build ohne Generator dieselbe Quelle liest und nur die Versionszuordnung fehlt. Logik in package release (nicht in gen/main), damit die DoD-2-Fixture im selben Paket Generator und Parser zusammen pruefen kann. 'git tag --merged HEAD', damit ein Nachbau eines alten Tags keine Versionen spaeterer Tags vergibt. DoD 4 vergleicht Unreleased als Menge: die Reihenfolge innerhalb einer Version folgt jetzt dem Dateinamen.
 - **2026-10-12 07:32 · Alexander Sacharov** — Gelernt: git ls-tree <tag>:<pfad> filtert aus einem Unterverzeichnis heraus trotzdem nach dem cwd-Pfad und liefert nichts - darum --full-tree in WriteIndex (go generate laeuft in core/release). Keine eigene Notiz-Datei fuer AR97K9: jaira update zeigt dasselbe wie vorher, die Aenderung betrifft nur Beitragende (CLAUDE.md/AGENTS.md). Lokal geprueft: go build + jaira update --json bei Stempel 0.3.6 zeigt genau Unreleased mit 5 Zeilen. goreleaser prueft 'dirty' vor den before-hooks, und notes/versions ist gitignort - der Hook macht den Baum nicht schmutzig.
+- **2026-10-12 07:36 · Alexander Sacharov** — critique 1: (a) WriteIndex auf Gruppenliste {version, names} umbauen statt first-map + versions-slice. (b) veraltete Kommentare zum 'leeren Unreleased nach Release-Cut' in release.go (sinceEntries) und release_test.go nachziehen. Stehen gelassen mit Begruendung: eigener git()-Helfer, WriteIndex im Paket release, testdata-Kopie.

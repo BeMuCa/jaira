@@ -97,15 +97,14 @@ func TestEmbeddedNotesParseToAtLeastOneRealEntry(t *testing.T) {
 			return
 		}
 	}
-	// Entry zero is deliberately not the one checked: straight after a release
-	// cut it is an empty "## Unreleased", which is what the release procedure
-	// prescribes. What must hold is that some released section carries changes.
+	// Entry zero is deliberately not the one checked: it is the note files'
+	// Unreleased, which a release build may not have at all. What must hold is
+	// that some released section carries changes.
 	t.Fatalf("no entry in NOTES.md has both a version and changes: %#v", notes)
 }
 
-// An empty leading "## Unreleased" is the state NOTES.md is left in by every
-// release cut, so the parser has to keep recognising it as an entry of its own
-// rather than dropping it or letting the next section's changes fall into it.
+// A heading with nothing under it yet must stay an entry of its own rather
+// than be dropped or let the next section's changes fall into it.
 func TestParseNotesKeepsAnEmptyLeadingSection(t *testing.T) {
 	entries := parseNotes("## Unreleased\n\n## 0.1.0\n- a released change\n")
 	want := []Entry{
@@ -117,11 +116,10 @@ func TestParseNotesKeepsAnEmptyLeadingSection(t *testing.T) {
 	}
 }
 
-// The empty "## Unreleased" that every release cut leaves behind is an entry
-// the parser keeps, but nobody can read a heading with no points under it. It
-// must not reach Since()'s result — and on a board stamped with the version
-// that was just cut, the result must be empty, so "jaira update" can say
-// nothing has changed instead of printing a bare heading.
+// A heading with no points under it is an entry the parser keeps, but nobody
+// can read it. It must not reach Since()'s result — and on a board stamped
+// with the version that was just cut, the result must be empty, so "jaira
+// update" can say nothing has changed instead of printing a bare heading.
 func TestSinceDropsEntriesWithoutChanges(t *testing.T) {
 	all := parseNotes("## Unreleased\n\n## 0.1.0\n- a released change\n\n## 0.0.1\n- an older change\n")
 

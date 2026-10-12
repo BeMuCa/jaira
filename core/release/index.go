@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -29,8 +28,14 @@ func WriteIndex(pkgDir string) error {
 		return err
 	}
 
-	first := map[string]string{}
-	var versions []string
+	// Tags come oldest first, so the first tag that holds a note is its
+	// release; each tag's group is the notes it holds and no older tag did.
+	type group struct {
+		version string
+		names   []string
+	}
+	var groups []group
+	seen := map[string]bool{}
 	for _, tag := range strings.Fields(tags) {
 		// A tag from before notes/ existed has no such tree; that is the
 		// expected answer for it, not an error. --full-tree, because from a
@@ -40,29 +45,23 @@ func WriteIndex(pkgDir string) error {
 		if err != nil {
 			continue
 		}
-		version := strings.TrimPrefix(tag, "v")
+		g := group{version: strings.TrimPrefix(tag, "v")}
 		for _, name := range strings.Fields(names) {
-			if strings.HasSuffix(name, ".md") && first[name] == "" {
-				if len(versions) == 0 || versions[len(versions)-1] != version {
-					versions = append(versions, version)
-				}
-				first[name] = version
+			if strings.HasSuffix(name, ".md") && !seen[name] {
+				seen[name] = true
+				g.names = append(g.names, name)
 			}
+		}
+		if len(g.names) > 0 {
+			groups = append(groups, g)
 		}
 	}
 
 	var b strings.Builder
 	b.WriteString("# Written by go generate (core/release/gen) in the release build; never commit it.\n")
-	for i := len(versions) - 1; i >= 0; i-- {
-		var names []string
-		for name, v := range first {
-			if v == versions[i] {
-				names = append(names, name)
-			}
-		}
-		sort.Strings(names)
-		for _, name := range names {
-			fmt.Fprintf(&b, "%s %s\n", versions[i], name)
+	for i := len(groups) - 1; i >= 0; i-- {
+		for _, name := range groups[i].names {
+			fmt.Fprintf(&b, "%s %s\n", groups[i].version, name)
 		}
 	}
 	return os.WriteFile(filepath.Join(pkgDir, notesDir, indexFile), []byte(b.String()), 0o644)
