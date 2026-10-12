@@ -1,0 +1,1 @@
+- Tell the cockpit band's buttons apart by colour: Accept is green, Give back red and Explain yellow, in your terminal theme's own colours; Read explanation and Verdict stay plain.

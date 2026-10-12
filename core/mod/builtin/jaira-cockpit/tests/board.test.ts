@@ -236,6 +236,24 @@ describe('waiting for you', () => {
     ])
   })
 
+  test('Accept, Give back and Explain are told apart by the theme\'s colours; Read explanation and Verdict stay plain', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    // The colour a Button's label is drawn in: that of the Text it holds.
+    const colour = async (key: string) => {
+      const button = await ui.find({ key })
+      expect(button).toBeDefined()
+      return button!.children.map(c => (c as { props?: { color?: string } }).props?.color).find(Boolean)
+    }
+    expect(await colour('accept-MG677R')).toBe('success')
+    expect(await colour('back-MG677R')).toBe('error')
+    expect(await colour('explain-MG677R')).toBe('warning')
+    expect(await colour('read-MG677R')).toBeUndefined()
+    expect(await colour('verdict-MG677R')).toBeUndefined()
+  })
+
   test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
     const w = world(on)
     await startSession($)
