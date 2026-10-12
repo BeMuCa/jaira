@@ -176,11 +176,12 @@ function sameRound(t: Ticket): boolean {
   return !t.review_round || t.review_round === (t.round ?? 1)
 }
 
-// Whether the band offers Explain. The gaps count only beside a verdict of
-// the same round: before the review, the field holds what the optimize lane
-// removed, not a gap — whatever the lane is called.
+// Whether the band offers Explain: only for a verdict of the ticket's current
+// round, its reservation as much as the gaps beside it — before this round's
+// review the gaps hold what the optimize lane removed, and the verdict is
+// the last round's, whatever the lane is called.
 function explainable(verdict: string, gaps: string | undefined, current: boolean): boolean {
-  return hasReservation(verdict) || (verdict !== '' && current && namesGap(gaps))
+  return current && (hasReservation(verdict) || (verdict !== '' && namesGap(gaps)))
 }
 
 // A jaira older than the board it reads says so on a line of its own before
@@ -215,7 +216,7 @@ export function otherRefusal(errorJson: string): string | undefined {
 // Discuss chat's `decision:` note, up to the next note or section, and when
 // it was written (jaira stamps notes to the minute, in UTC). undefined when
 // there is none yet.
-export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: string; at: number } | undefined {
+export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: string; at: number; line: number } | undefined {
   const lead = new RegExp(`^- \\*\\*(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d) · [^*]*\\*\\* — ${kind}:\\s*`)
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
   const lines = body.split('\n')
@@ -226,7 +227,19 @@ export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: 
   const rest = lines.slice(at + 1)
   const end = rest.findIndex(l => l.startsWith('- **') || l.startsWith('#'))
   const text = [lines[at]!.replace(lead, ''), ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim()
-  return { text, at: Date.parse(`${stamp.replace(' ', 'T')}:00Z`) }
+  return { text, at: Date.parse(`${stamp.replace(' ', 'T')}:00Z`), line: at }
+}
+
+// A ticket's explanation and, once it was answered, the answer: read off the
+// notes, never off a session, so a restart cannot offer an answered choice
+// again. Answered means a decision: note written after the explain: note —
+// by its place in the notes, since both are stamped to the minute. A newer
+// explanation, a new round's finding, is open again.
+export function explanationNotes(showJson: string): { text: string; decided?: string } | undefined {
+  const explain = noteOf(showJson, 'explain')
+  if (explain === undefined) return undefined
+  const decision = noteOf(showJson, 'decision')
+  return decision !== undefined && decision.line > explain.line ? { text: explain.text, decided: decision.text } : { text: explain.text }
 }
 
 // An Explain chat's note, in the shape spawn.sh asks for: one line per part —

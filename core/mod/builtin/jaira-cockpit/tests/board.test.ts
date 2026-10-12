@@ -517,6 +517,52 @@ describe('waiting for you', () => {
     expect(w.submitted).toEqual([])
   })
 
+  test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
+    const w = world(on)
+    // Answered in an earlier session: the decision stands after the explanation.
+    w.bodies.MG677R = SHAPED + '\n- **2026-10-12 15:02 · Alex** — decision: c) clear the cache on checkout\n'
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    let pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ key: 'choose-MG677R' })).toBeUndefined()
+    expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
+    // A newer explanation, a new round's finding, is open again.
+    await pane.unmount()
+    w.bodies.MG677R += '- **2026-10-12 16:00 · Alex** — explain: A new finding.\na) fix it [give back]\n'
+    await w.clock.advance(60_000)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ key: 'choose-MG677R' })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /^Decided:/ })).toBeUndefined()
+  })
+
+  test('a choice made in this session is not offered again before the notes are next read', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = SHAPED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const first = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    await first.select({ key: 'choose-MG677R', value: 'b' })
+    await first.unmount()
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    expect(await pane.find({ key: 'choose-MG677R' })).toBeUndefined()
+    expect(await pane.find({ type: 'Text', text: 'Decided: b) accept it as it is' })).toBeDefined()
+  })
+
+  test('a verdict with a reservation from an earlier round offers no Explain', async ($, on) => {
+    const w = world(on)
+    const reserved = 'approve, but the cache key ignores the branch'
+    w.tickets = [
+      { ...SIGNOFF, handle: 'OLD123', round: 2, review_round: 1, review: { verdict: reserved, gaps: '' } },
+      { ...SIGNOFF, handle: 'NEW456', round: 2, review_round: 2, review: { verdict: reserved, gaps: '' } },
+    ]
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
+    expect(await band.find({ key: 'explain-NEW456' })).toBeDefined()
+  })
+
   test('Explain is offered once the review names a gap, whatever words the verdict uses', async ($, on) => {
     const w = world(on)
     // WP1CHK's verdict: no word of the reservation list, a gap all the same.

@@ -29,10 +29,11 @@ declare module 'claude-code' {
       message: { title: string; text: string } | null
       // The explanation the explanation pane shows, with its ticket, and
       // the ticket the own-answer pane asks about.
-      explaining: { id: string; text: string } | null
+      explaining: { id: string; text: string; decided?: string } | null
       answering: string | null
-      // The explanation an Explain chat wrote onto each ticket the band shows.
-      explained: Record<string, string>
+      // The explanation an Explain chat wrote onto each ticket the band shows,
+      // and the decision that answered it, when one did.
+      explained: Record<string, { text: string; decided?: string }>
       // The decisions Discuss chats wrote back, by ticket, until read.
       decided: Record<string, string>
       // What the person used: the five-hour and seven-day windows, or cost.

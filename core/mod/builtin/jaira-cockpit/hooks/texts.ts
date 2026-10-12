@@ -23,6 +23,7 @@ export const t = {
   explanationOf: (id: string) => `Explanation of ${id}`,
   decided: 'decided',
   choose: 'Your choice',
+  decidedAs: 'Decided:',
   ownAnswer: 'Own answer…',
   recommended: '(recommended)',
   ownLabel: 'Your answer',

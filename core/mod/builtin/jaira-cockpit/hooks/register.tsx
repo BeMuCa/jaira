@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { explanationOf, lanesOf, type Action, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { explanationNotes, explanationOf, lanesOf, type Action, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -249,11 +249,12 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows.
   const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
-  const explained: Record<string, string> = {}
+  const explained: Record<string, { text: string; decided?: string }> = {}
   for (const w of shownIds) {
     if (!w.explainable) continue
-    const note = await noteOn($, board.dir, w.id, 'explain')
-    if (note !== undefined) explained[w.id] = note.text
+    const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
+    const notes = shown?.exitCode === 0 ? explanationNotes(shown.stdout) : undefined
+    if (notes !== undefined) explained[w.id] = notes
   }
   await update($, explainedAtom, () => explained)
   // A chat has done its part once its note is on the ticket — stamped to the
@@ -391,8 +392,9 @@ async function readDecision($: EngineInterface, id: string, text: string): Promi
 // An explanation is read in a pane that takes the keyboard: its options are
 // a choice there, with an own answer beside them, and the choice goes onto
 // the ticket as a decision.
-async function readExplanation($: EngineInterface, id: string, text: string): Promise<void> {
-  await update($, explainingAtom, () => ({ id, text }))
+async function readExplanation($: EngineInterface, id: string, notes: { text: string; decided?: string }): Promise<void> {
+  const { text } = notes
+  await update($, explainingAtom, () => ({ id, ...notes }))
   const opened = await $.ui.open({ id: EXPLANATION, title: t.explanationOf(id), focus: true, closeOnEscape: true })
   if (!opened.isPlaced) $.ui.toast(`${t.explanationOf(id)}: ${text}`)
 }
@@ -417,6 +419,8 @@ async function decide($: EngineInterface, id: string, text: string, action: Acti
   const done = await jaira($, await ticketDir($, board, id), ['note', id, `decision: ${text}`])
   if (!done.ok) return fail($, `${t.decide} ${id}`, done.why)
   await update($, decidedAtom, d => ({ ...d, [id]: text }))
+  // Answered from here on, before the next look at the notes says so too.
+  await update($, explainedAtom, e => (e[id] === undefined ? e : { ...e, [id]: { ...e[id], decided: text } }))
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
   if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, text, share)
   if (action === 'accept' && w !== undefined && w.acceptTo !== null) return accept($, w)
@@ -982,7 +986,11 @@ export const register: Register = (on, options) => {
           ? <Text key={`part-${i}`} wrap="wrap">  <Text bold>{p.key})</Text> {p.text}{p.action !== undefined ? ` ${p.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}{p.key === x.recommended ? ` ${t.recommended}` : ''}</Text>
           // A paragraph a line apart; the options one under the other.
           : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}
-        {Select !== undefined
+        {/* Answered already, on the ticket: the choice is read, not offered again. */}
+        {explaining.decided !== undefined
+          ? <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {explaining.decided}</Text></Box>
+          : null}
+        {Select !== undefined && explaining.decided === undefined
           ? (
             <Box marginTop={1}>
               <Select
