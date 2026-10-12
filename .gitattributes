@@ -28,5 +28,5 @@ core/mod/builtin/** text eol=lf
 # shipped notify hook: CRLF makes it unrunnable, the same reason the role
 # scripts above are pinned.
 core/release/NOTES.md text eol=lf
-core/release/notes/*.md text eol=lf
+core/release/notes/**/*.md text eol=lf
 core/hook/example/*.sh text eol=lf

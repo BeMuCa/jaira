@@ -692,14 +692,18 @@ changes for anybody.
   Herdr tabs, or this session's subagents) and the tickets waiting for you,
   and shows the five-hour and seven-day windows used (off a subscription, what
   the session cost). The mod keeps no status line of its own.
-- The frame lists the tickets waiting in a lane a person owns, with **Accept**
-  (moves it to done in the ticket's own worktree; offered only where the next
-  lane ends the board, and refused while an item of the definition of done is
-  open) and **Give back** (asks in a pane of its own what is missing, notes
-  it, moves it to in-progress and hands it to the worker that carried it while
-  that is still cheaper, else to a new one). Three show at first; **+N more**
-  opens the rest with their buttons, **show fewer** closes them. When a button
-  fails, the error opens whole in a pane of its own.
+- The frame lists the tickets waiting in a lane a person owns that are yours
+  (their assignee is a name `jaira whoami` gives you) or nobody's, with
+  **Accept** (moves it to done in the ticket's own worktree; offered only
+  where the next lane ends the board, and refused while an item of the
+  definition of done is open) and **Give back** (asks in a pane of its own
+  what is missing, notes it, moves it to in-progress and hands it to the
+  worker that carried it while that is still cheaper, else to a new one).
+  Three show at first; **+N more** opens the rest with their buttons, **show
+  fewer** closes them. Your teammates' tickets sit in one line (`2 waiting for
+  Berk, Carla`) that opens to show them, with **Discuss** only, and count no
+  more as waiting for you. When a button fails, the error opens whole in a
+  pane of its own.
 - A verdict with a reservation gets **Explain**, an open question **Discuss**:
   each opens a Herdr tab of its own. The Explain chat writes its explanation
   onto the ticket and the frame offers it as **Read explanation**. The Discuss

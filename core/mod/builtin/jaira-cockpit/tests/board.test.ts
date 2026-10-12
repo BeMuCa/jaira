@@ -29,6 +29,8 @@ type World = {
   refusals: { code: string; message: string }[]
   // A jaira older than the board: it warns on a line before what it prints.
   warns: boolean
+  // What `jaira whoami --json` says; undefined: it says nothing.
+  me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
   bodies: Record<string, string>
   // The panes the plugin opened, and closed, by id and title.
@@ -144,6 +146,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
     }
+    if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
@@ -425,6 +428,43 @@ describe('waiting for you', () => {
     w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'done' }]
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([['herdr', 'tab', 'close', 'w1:t5', '@/repo']])
+  })
+
+  test('only the person\'s own and nobody\'s tickets get buttons and count; the teammates\' sit in one line that opens', async ($, on) => {
+    const w = world(on)
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov', 'alex@example.org'] }
+    w.tickets = [
+      { ...SIGNOFF, assignee: 'alex@EXAMPLE.org' },
+      { ...SIGNOFF, handle: 'AB12CD', assignee: '' },
+      { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' },
+      { ...HUMAN, assignee: 'Carla' },
+      WORKING,
+    ]
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-AB12CD' })).toBeDefined()
+    expect(await ui.find({ key: 'accept-EF34GH' })).toBeUndefined()
+    expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeUndefined()
+    expect((await ui.find({ key: 'theirs' }))?.props.label).toBe('2 waiting for Berk, Carla')
+    await ui.press({ key: 'theirs' })
+    const open = await $.ui.mount(BAND)
+    expect(await open.find({ type: 'Text', text: /EF34GH \| signoff \| Berk/ })).toBeDefined()
+    // A teammate's ticket: talked through, never accepted or given back from here.
+    expect(await open.find({ key: 'discuss-K7P2QX' })).toBeDefined()
+    for (const id of ['EF34GH', 'K7P2QX']) {
+      expect(await open.find({ key: `accept-${id}` })).toBeUndefined()
+      expect(await open.find({ key: `back-${id}` })).toBeUndefined()
+    }
+  })
+
+  test('without a word from jaira whoami every waiting ticket counts as the person\'s', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, assignee: 'Berk' }, HUMAN, WORKING]
+    await startSession($)
+    expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
+    expect(await (await $.ui.mount(BAND)).find({ key: 'theirs' })).toBeUndefined()
   })
 
   test('+N more opens every waiting ticket with its buttons, and show fewer closes them again', async ($, on) => {
@@ -832,6 +872,28 @@ describe('a session that carries a ticket', () => {
     const order = 'Ticket MG677R: review -> signoff, review-verdict="approve". Commit the fix with the ticket.'
     expect((await $.session.receive({ origin: { kind: 'peer' }, text: order })).text).toBe(order)
     expect((await $.prompt.submit({ text: order, origin: { kind: 'peer' }, wait: false })).text).toBe(order)
+  })
+
+  test('stays an agent\'s session after the mod is reloaded, though the line that started it never comes again', async ($, on) => {
+    // A reload starts the module over: only the store remembers the start line.
+    const w = world(on, { herdr: true, store: { 'carrying:abcdef12': { ticket: 'MG677R', role: 'worker', lane: '' } } })
+    await startSession($)
+    const order = 'Ticket MG677R: review -> signoff, review-verdict="approve". Commit the fix with the ticket.'
+    expect((await $.session.receive({ origin: { kind: 'peer' }, text: order })).text).toBe(order)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ text: /Waiting for you/ })).toBeUndefined()
+    w.usage.tokens = 50_000
+    await answer($, 'done')
+    expect(w.store.get('session:abcdef12')).toMatchObject({ ticket: 'MG677R', role: 'worker' })
+    await $.session.end({ reason: 'other' } as never)
+    expect(w.store.has('carrying:abcdef12')).toBe(false)
+  })
+
+  test('keeps what started it in the store for a reload to read back', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await $.prompt.submit(START)
+    expect(w.store.get('carrying:abcdef12')).toEqual({ ticket: 'MG677R', role: 'worker', lane: '' })
   })
 
   test('draws no band and no status line, files no thread and guards no cache, and still writes its record', async ($, on) => {

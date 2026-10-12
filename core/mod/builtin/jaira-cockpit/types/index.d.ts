@@ -1,12 +1,12 @@
 // Self-contained, as a contract must be: these mirror hooks/board.ts.
 export type Waiting = {
-  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null
+  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string
 }
 export type Counts = { worker: number; review: number; person: number }
 
 // What the cockpit's band and pane draw from, held by the host for the
 // session so a hot reload keeps it.
-export type BoardView = { waiting: Waiting[]; counts: Counts }
+export type BoardView = { waiting: Waiting[]; theirs: Waiting[]; counts: Counts }
 export type CacheState = { tokens: number; lastAnswerAt: number | null; ttl: number }
 export type ThreadTally = { questions: number; stale: number }
 
@@ -35,6 +35,8 @@ declare module 'claude-code' {
       used: string
       // Whether the band shows every waiting ticket, not the first three.
       expanded: boolean
+      // Whether the band shows the teammates' waiting tickets one by one.
+      theirsOpen: boolean
     }
   }
 }

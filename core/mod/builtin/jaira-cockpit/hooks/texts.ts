@@ -9,6 +9,7 @@ export const t = {
   discuss: 'Discuss',
   more: (n: number) => `+${n} more`,
   fewer: 'show fewer',
+  theirs: (n: number, names: string[]) => `${n} waiting for ${names.join(', ')}`,
   reasonLabel: 'What is missing?',
   reasonPlaceholder: 'goes onto the ticket as a note',
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,

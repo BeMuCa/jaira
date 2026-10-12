@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, noteOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { hasReservation, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -46,6 +46,7 @@ const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as cons
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
 const usedAtom = atom({ plugin: 'jaira-cockpit', key: 'used' } as const, '')
 const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const, false)
+const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -59,6 +60,10 @@ const SEP = ' | '
 // The board this session's directory belongs to: undefined until looked
 // for, null when there is none.
 let board: { dir: string; repo: string } | null | undefined
+// Who the person in this session is, by `jaira whoami`: their name and
+// aliases; undefined until asked, and when jaira could not say.
+let me: string[] | undefined
+let meAsked = false
 // The ticket this session carries, read off the line that started it.
 let carrying: { ticket: string; role: Role; lane: string } | undefined
 let lastAnswerAt: number | undefined
@@ -94,6 +99,22 @@ async function sessionId($: EngineInterface): Promise<string> {
   } catch {
     return ''
   }
+}
+
+// Whether this session carries a ticket. The line that started it comes once;
+// a reload of the mod — a new install, a hot reload — starts the module over,
+// so what that line said is kept in the store under the session's id and
+// read back once.
+const CARRYING_PREFIX = 'carrying:'
+let carryingRead = false
+
+async function carries($: EngineInterface): Promise<boolean> {
+  if (!carryingRead) {
+    carryingRead = true
+    const kept = (await $.store.get(CARRYING_PREFIX + (await sessionId($)))) as typeof carrying
+    if (carrying === undefined && kept !== undefined) carrying = kept
+  }
+  return carrying !== undefined
 }
 
 async function run($: EngineInterface, argv: string[], cwd: string, timeoutMs = 15_000) {
@@ -193,7 +214,7 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 }
 
 async function refreshBoard($: EngineInterface): Promise<void> {
-  if (carrying !== undefined) return
+  if (await carries($)) return
   if (board === undefined) board = await findBoard($)
   if (board === null) {
     await update($, boardAtom, () => null)
@@ -212,7 +233,12 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   try {
     agents = await $.agent.list()
   } catch {}
-  const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents)
+  if (!meAsked) {
+    meAsked = true
+    const who = await run($, ['jaira', 'whoami', '--json'], board.dir)
+    me = who?.exitCode === 0 ? whoOf(who.stdout) : undefined
+  }
+  const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs?.exitCode === 0 ? tabsOf(tabs.stdout) : [], agents, me)
   await update($, boardAtom, () => view)
   // What an Explain chat wrote back onto the tickets the band shows.
   const shownIds = (await read($, expandedAtom)) ? view.waiting : view.waiting.slice(0, BAND_TICKETS)
@@ -452,7 +478,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
 // ── context, cache, what was used ──────────────────────────────────────────
 
 async function refreshCache($: EngineInterface): Promise<void> {
-  if (carrying !== undefined) return
+  if (await carries($)) return
   let usage
   try {
     usage = await $.session.usage()
@@ -567,6 +593,10 @@ export const register: Register = (on, options) => {
     startedAt = await $.clock.now()
     // Kept before reports were scoped to a project; no project may show them.
     for (const k of await $.store.keys()) if (isUnscoped(k)) await $.store.delete(k)
+    // A session that ended without session.end leaves its mark; the 50 heard
+    // from last are plenty.
+    const carryingKeys = (await $.store.keys()).filter(k => k.startsWith(CARRYING_PREFIX))
+    for (const old of carryingKeys.slice(0, Math.max(0, carryingKeys.length - 50))) await $.store.delete(old)
     // Every session keeps its threads; the 20 heard from last are enough.
     const threadKeys = (await $.store.keys()).filter(k => k.startsWith(THREADS_PREFIX))
     for (const old of threadKeys.slice(0, Math.max(0, threadKeys.length - THREAD_SESSIONS))) await $.store.delete(old)
@@ -605,7 +635,7 @@ export const register: Register = (on, options) => {
   })
 
   on('session.receive', async ($, e, next) => {
-    if (carrying !== undefined) return next(e)
+    if (await carries($)) return next(e)
     if (!isAgentReport(e)) {
       untouched.add(e.text)
       return next(e)
@@ -616,7 +646,7 @@ export const register: Register = (on, options) => {
 
   on('prompt.submit', async ($, e, next) => {
     if (untouched.delete(e.text)) return next(e)
-    if (carrying !== undefined) return next(e)
+    if (await carries($)) return next(e)
     if (AGENT_ORIGINS.has(e.origin.kind)) {
       // A background task of this session always reports in its own block.
       if (e.origin.kind === 'task-notification' && !NOTIFICATION.test(e.text)) return next(e)
@@ -631,6 +661,7 @@ export const register: Register = (on, options) => {
     if (start !== undefined) {
       // From here on the session is an agent's: what session.start drew goes.
       carrying = start
+      await $.store.set(CARRYING_PREFIX + (await sessionId($)), start)
       await update($, boardAtom, () => null)
       return next(e)
     }
@@ -649,7 +680,7 @@ export const register: Register = (on, options) => {
     lastAnswerAt = await $.clock.now()
     turn++
     await writeRecord($)
-    if (carrying !== undefined) return result
+    if (await carries($)) return result
     await refreshCache($)
     await refreshBoard($)
     const human = personSaid
@@ -670,6 +701,7 @@ export const register: Register = (on, options) => {
 
   on('session.end', async ($, e, next) => {
     await writeMetrics($)
+    await $.store.delete(CARRYING_PREFIX + (await sessionId($)))
     return next(e)
   }).catch(($, e, next) => next(e))
 
@@ -687,7 +719,7 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey || carrying !== undefined) return next(e)
+    if (e.props.hasSurvey || (await carries($))) return next(e)
     const view = await read($, boardAtom)
     const cache = await read($, cacheAtom)
     const counts = await read($, threadsAtom)
@@ -696,9 +728,11 @@ export const register: Register = (on, options) => {
     const decided = await read($, decidedAtom)
     const used = await read($, usedAtom)
     const expanded = await read($, expandedAtom)
+    const theirsOpen = await read($, theirsOpenAtom)
     await read($, minuteAtom)
     const now = await $.clock.now()
     const waiting = view?.waiting ?? []
+    const theirs = view?.theirs ?? []
     const decisions = Object.entries(decided)
     const c = cacheView(cache.tokens, now, cache.lastAnswerAt ?? undefined, cache.ttl)
     const hasCache = cache.tokens > 0
@@ -708,7 +742,7 @@ export const register: Register = (on, options) => {
       ...(view !== null ? [t.workers(view.counts.worker), t.reviews(view.counts.review), t.waitingFor(view.counts.person)] : []),
       ...(used !== '' ? [used] : []),
     ]
-    if (head.length === 0 && waiting.length === 0 && decisions.length === 0 && !hasCache && !hasThreads && notice === null) return next(e)
+    if (head.length === 0 && waiting.length === 0 && theirs.length === 0 && decisions.length === 0 && !hasCache && !hasThreads && notice === null) return next(e)
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     // Mobile has no text field: there the band offers no Give back.
@@ -765,6 +799,32 @@ export const register: Register = (on, options) => {
               />
             </Box>
           )
+          : null}
+        {theirs.length > 0
+          ? (
+            <Box flexDirection="row" marginTop={1}>
+              <Button
+                key="theirs"
+                label={t.theirs(theirs.length, [...new Set(theirs.map(w => w.assignee))])}
+                onPress={() => void update($, theirsOpenAtom, open => !open)}
+              />
+            </Box>
+          )
+          : null}
+        {theirsOpen
+          ? theirs.map(w => (
+            <Box key={`their-${w.id}`} flexDirection="column">
+              <Box flexDirection="row">
+                <Text dimColor wrap="truncate-end">
+                  {w.id}{SEP}{w.lane}{SEP}{w.assignee}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
+                </Text>
+                {w.question !== ''
+                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void openChat($, w.id, 'discuss')} />
+                  : null}
+              </Box>
+              {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
+            </Box>
+          ))
           : null}
         {decisions.map(([id, text]) => (
           <Box key={`decided-${id}`} flexDirection="row">

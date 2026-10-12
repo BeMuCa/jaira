@@ -375,6 +375,58 @@ func TestWorkerNamesScriptsThatShip(t *testing.T) {
 // /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
 // Herdr is replaced by a stub that answers the three calls the script reads
 // and records what was typed — no tab is opened anywhere.
+// The Discuss chat brings its decision back: a note, a move back that jaira
+// takes for a ticket that already has its outcome, and a line to the session
+// that opened it. A move line carrying --what/--why/--resolves is refused for
+// such a ticket (outcome_not_yours), even with --force.
+func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	typed := filepath.Join(t.TempDir(), "typed")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:/tmp/cc-socks/7.sock", "ab12cd", "AB12CD", "discuss")
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
+	}
+	got, err := os.ReadFile(typed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := string(got)
+	for _, want := range []string{
+		`jaira note AB12CD "decision: `,
+		"jaira set AB12CD question=",
+		"jaira move AB12CD --to in-progress (",
+		"SendMessage an uds:/tmp/cc-socks/7.sock",
+	} {
+		if !strings.Contains(line, want) {
+			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+		}
+	}
+	if move, _, _ := strings.Cut(line[strings.Index(line, "jaira move "):], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
+		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+	}
+}
+
 func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
