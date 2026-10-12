@@ -38,7 +38,11 @@ starts for a whole ticket: the "dispatch" setting in ~/.jaira/settings.json.
 "lanes" (the default) starts jaira-dispatcher, one new agent per lane;
 "worker" starts jaira-worker, one agent through every lane, with only a lane
 marked context: fresh handed to a new one. --json carries it as dispatch and
-dispatch_role.`,
+dispatch_role.
+
+It also says which model the cockpit's explain and discuss chats start on: the
+"chat-model" setting, carried as chat_model and empty for the account's own
+default.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -60,6 +64,7 @@ dispatch_role.`,
 				}
 				return emit(w, map[string]any{
 					"roles": arr, "dispatch": cur.DispatchMode(), "dispatch_role": cur.DispatchRole(),
+					"chat_model": cur.ChatModelName(),
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -68,6 +73,11 @@ dispatch_role.`,
 			}
 			fmt.Fprintf(w, "\ndispatch: %s — a ticket handed to an agent goes to /%s (\"dispatch\" in %s)\n",
 				cur.DispatchMode(), cur.DispatchRole(), settings.Path())
+			chat := cur.ChatModelName()
+			if chat == "" {
+				chat = "account default"
+			}
+			fmt.Fprintf(w, "chat model: %s — what the cockpit's explain and discuss chats start on (\"chat-model\")\n", chat)
 			return nil
 		},
 	}

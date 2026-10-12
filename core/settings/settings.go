@@ -106,6 +106,35 @@ type Settings struct {
 	// was a choice, so nobody is switched over without asking for it. Read
 	// it through DispatchMode.
 	Dispatch string `json:"dispatch,omitempty"`
+
+	// ChatModel is the model the cockpit's chats start on — the explain and
+	// discuss tabs, which write a few lines for a person and need no more than
+	// a cheaper model. It is handed to 'claude --model' as it stands, so an
+	// alias (sonnet) and a full id both work. Empty means no --model at all:
+	// the account's own default, as before there was a setting. No lane
+	// reads it; their model comes from the lane's tier. Read it through
+	// ChatModelName.
+	ChatModel string `json:"chat-model,omitempty"`
+}
+
+// ChatModelChoices are the values the settings screen steps through, the
+// empty account default first. Anything else is written by hand.
+var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
+
+// ChatModelName returns the chat model, or "" when none is set or the value
+// is not a model name. spawn.sh puts it into the command line a tab runs, so
+// a value with anything but letters, digits and . _ - [ ] is treated as
+// unset rather than carried into a shell.
+func (s Settings) ChatModelName() string {
+	v := strings.TrimSpace(s.ChatModel)
+	for _, r := range v {
+		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			strings.ContainsRune("._-[]", r)
+		if !ok {
+			return ""
+		}
+	}
+	return v
 }
 
 // The two values of Dispatch.

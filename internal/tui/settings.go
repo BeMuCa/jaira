@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cmp"
 	"fmt"
 	"strconv"
 	"strings"
@@ -23,6 +24,9 @@ const (
 	// settingsActionDispatch flips the dispatch setting in place: there are
 	// two values, so enter is the whole editor.
 	settingsActionDispatch = "dispatch"
+	// settingsActionChatModel steps the chat model through its choices in
+	// place, the same way.
+	settingsActionChatModel = "chat-model"
 )
 
 // settingsEntry is one row in the menu: a name, what pressing enter on it
@@ -54,6 +58,11 @@ var settingsEntries = []settingsEntry{
 		desc:   "lanes: one new agent per lane (jaira-dispatcher); worker: one agent carries the ticket, only a fresh-context lane such as review gets a new one (jaira-worker). enter switches",
 		action: settingsActionDispatch,
 	},
+	{
+		name:   "Chat model",
+		desc:   "the model the cockpit's explain and discuss chats start on; account default passes no --model. enter steps through sonnet, haiku, opus; any other model by hand as chat-model in settings.json",
+		action: settingsActionChatModel,
+	},
 }
 
 // settingsScreen is the menu behind S: one door into both the lane screen and
@@ -75,11 +84,38 @@ type settingsScreen struct {
 	// dispatchErr what went wrong saving the last switch.
 	dispatch    string
 	dispatchErr string
+
+	// chatModel is the chat-model setting as settings.json has it now, and
+	// chatModelErr what went wrong saving the last step.
+	chatModel    string
+	chatModelErr string
 }
 
 func newSettingsScreen() *settingsScreen {
 	cur := settings.Load()
-	return &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode()}
+	return &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), chatModel: cur.ChatModelName()}
+}
+
+// stepChatModel moves the chat model on to the next of its choices and saves
+// at once. A value written by hand that is none of them steps back to the
+// account default, the first choice.
+func (s *settingsScreen) stepChatModel() string {
+	cur := settings.Load()
+	choices := settings.ChatModelChoices
+	next := choices[0]
+	for i, c := range choices {
+		if c == cur.ChatModelName() {
+			next = choices[(i+1)%len(choices)]
+		}
+	}
+	cur.ChatModel = next
+	if err := settings.Save(cur); err != nil {
+		s.chatModelErr = err.Error()
+		return settingsActionNone
+	}
+	// None, not saved: like dispatch, nothing on the board shows it.
+	s.chatModel, s.chatModelErr = next, ""
+	return settingsActionNone
 }
 
 // switchDispatch flips lanes and worker and saves at once, reading the file
@@ -158,6 +194,9 @@ func (s *settingsScreen) key(k string) string {
 		if a == settingsActionDispatch {
 			return s.switchDispatch()
 		}
+		if a == settingsActionChatModel {
+			return s.stepChatModel()
+		}
 		if a != settingsActionLogbookDays {
 			return a
 		}
@@ -185,6 +224,9 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionDispatch {
 			name += "  " + styMeta.Render(s.dispatch)
 		}
+		if e.action == settingsActionChatModel {
+			name += "  " + styMeta.Render(cmp.Or(s.chatModel, "account default"))
+		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
 		if e.action == settingsActionLogbookDays && s.err != "" {
@@ -192,6 +234,9 @@ func (s *settingsScreen) render(width, height int) string {
 		}
 		if e.action == settingsActionDispatch && s.dispatchErr != "" {
 			sb.WriteString(styErr.Render("      "+s.dispatchErr) + "\n")
+		}
+		if e.action == settingsActionChatModel && s.chatModelErr != "" {
+			sb.WriteString(styErr.Render("      "+s.chatModelErr) + "\n")
 		}
 	}
 

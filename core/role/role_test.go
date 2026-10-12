@@ -1,6 +1,7 @@
 package role
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -484,5 +485,108 @@ esac
 		} else if line != want {
 			t.Errorf("lane %s typed %q, want %q", lane, line, want)
 		}
+	}
+}
+
+// The cockpit's chats start on the chat-model setting and get the part of the
+// ticket they need typed in, instead of reading the whole of it; every other
+// lane starts plain claude as before. jaira and Herdr are stubs: jaira answers
+// the two calls spawn.sh makes, Herdr records what it is asked to run and type.
+func TestSpawnChatsStartOnTheChatModelWithTheirBrief(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skipf("no python3 on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	bin := t.TempDir()
+	ran := filepath.Join(t.TempDir(), "ran")
+	typed := filepath.Join(t.TempDir(), "typed")
+	model := filepath.Join(t.TempDir(), "model")
+	herdr := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane run")   printf '%s\n' "$4" > "` + ran + `" ;;
+  "pane send-text") printf '%s\n' "$4" > "` + typed + `" ;;
+esac
+`
+	body := "\n# T\n\n## Progress\n" +
+		"- **2026-10-01 10:00 · A** — first note\n" +
+		"- **2026-10-02 10:00 · A** — second note\n  goes on\n" +
+		"- **2026-10-03 10:00 · A** — third note\n" +
+		"- **2026-10-04 10:00 · A** — fourth note\n" +
+		"- **2026-10-05 10:00 · A** — fifth note\n"
+	show, _ := json.Marshal(map[string]any{
+		"handle": "AB12CD", "title": "T", "goal": "G", "question": "Q?",
+		"review":  map[string]string{"verdict": "V", "gaps": "a gap"},
+		"context": "LONG CONTEXT", "body": body,
+	})
+	jaira := `#!/usr/bin/env bash
+case "$*" in
+  "roles list --json") printf '{"chat_model": "%s"}\n' "$(cat "` + model + `")" ;;
+  *" show AB12CD --json") cat <<'JSON'
+` + string(show) + `
+JSON
+  ;;
+  *) exit 1 ;;
+esac
+`
+	for name, script := range map[string]string{"herdr": herdr, "jaira": jaira} {
+		if err := os.WriteFile(filepath.Join(bin, name), []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	run := func(lane, chatModel string) (start, prompt string) {
+		t.Helper()
+		if err := os.WriteFile(model, []byte(chatModel), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", lane)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+			"HERDR_WORKSPACE_ID=", "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
+		}
+		r, _ := os.ReadFile(ran)
+		p, _ := os.ReadFile(typed)
+		return strings.TrimSpace(string(r)), strings.TrimSpace(string(p))
+	}
+
+	for _, lane := range []string{"explain", "discuss"} {
+		start, prompt := run(lane, "sonnet")
+		if !strings.HasSuffix(start, "&& claude --model 'sonnet'") {
+			t.Errorf("%s started %q, want claude --model 'sonnet'", lane, start)
+		}
+		for _, want := range []string{`"verdict": "V"`, `"gaps": "a gap"`, `"question": "Q?"`,
+			"second note\n  goes on", "fifth note", `"notes_total": 5`} {
+			if !strings.Contains(prompt, strings.ReplaceAll(want, "\n", `\n`)) {
+				t.Errorf("%s prompt lacks %q:\n%s", lane, want, prompt)
+			}
+		}
+		for _, not := range []string{"first note", "LONG CONTEXT", "(jaira show"} {
+			if strings.Contains(prompt, not) {
+				t.Errorf("%s prompt carries %q, which it does not need:\n%s", lane, not, prompt)
+			}
+		}
+		if strings.Contains(prompt, "\n") {
+			t.Errorf("%s prompt spans lines; a newline typed into the tab sends it early:\n%s", lane, prompt)
+		}
+	}
+	if start, _ := run("explain", ""); !strings.HasSuffix(start, "&& claude") {
+		t.Errorf("no chat-model: started %q, want plain claude, the account default", start)
+	}
+	if start, _ := run("explain", "x'; rm -rf ~; '"); !strings.HasSuffix(start, "&& claude") {
+		t.Errorf("a chat-model that is no model name reached the command line: %q", start)
+	}
+	if start, prompt := run("review", "sonnet"); !strings.HasSuffix(start, "&& claude") || prompt != "/jaira-role-lane AB12CD review" {
+		t.Errorf("a lane must keep plain claude and its role: started %q, typed %q", start, prompt)
 	}
 }

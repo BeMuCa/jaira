@@ -30,7 +30,9 @@ the worker that carries the whole ticket itself (/jaira-worker <ticket-id>),
 which is what a teamlead passes when settings.json says "dispatch": "worker".
 <explain> and <discuss> open a chat for a person about the ticket — the review
 finding explained, or the ticket's open question talked through — and are what
-the jaira-cockpit mod's buttons start, with --no-worktree.
+the jaira-cockpit mod's buttons start, with --no-worktree. They start claude on
+the "chat-model" setting in ~/.jaira/settings.json — the account's default
+without one — and get the part of the ticket they need in their prompt.
 Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
@@ -126,9 +128,34 @@ pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$la
 # then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
 # sets the directory before any shell starts, so no cd function and no wrong home
 # can intervene, and `bash -lic` is what puts claude on PATH.
+# <explain> and <discuss> write a few lines for a person, so they start on the
+# chat-model setting rather than the account's default model, and they get the
+# part of the ticket they need typed into their prompt rather than reading the
+# whole of it: 'jaira show --json' carries every note and every DoD proof, most
+# of a chat's context for nothing. Without jaira or python3 here both stay as
+# they were — the account's model, and a prompt that reads the ticket itself.
+chat_model=""
+brief=""
+if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
+  chat_model="$(jaira roles list --json 2>/dev/null \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("chat_model",""))' 2>/dev/null)" || chat_model=""
+  # It lands in a command line: only a model name passes.
+  [[ "$chat_model" =~ ^[][A-Za-z0-9._-]*$ ]] || chat_model=""
+  brief="$(jaira -C "$wt" show "$ticket" --json 2>/dev/null | python3 -c '
+import sys, json, re
+t = json.load(sys.stdin)
+_, _, progress = t.get("body", "").partition("\n## Progress\n")
+notes = [n.strip() for n in re.split(r"(?m)^(?=- \*\*\d{4}-\d\d-\d\d \d\d:\d\d )", progress) if n.strip()]
+print(json.dumps({"id": t["handle"], "title": t.get("title", ""), "goal": t.get("goal", ""),
+  "question": t.get("question", ""), "review": t.get("review", {}),
+  "notes_last": notes[-4:], "notes_total": len(notes)}, ensure_ascii=False))
+' 2>/dev/null)" || brief=""
+fi
+claude="claude${chat_model:+ --model '$chat_model'}"
+
 case "$herdr" in
-  /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic claude" ;;
-  *)            start="cd '$wt' && claude" ;;
+  /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
+  *)            start="cd '$wt' && $claude" ;;
 esac
 
 "$herdr" pane run "$pane" "$start" >/dev/null
@@ -168,11 +195,18 @@ if [ "$lane" = dispatch ]; then
 elif [ "$lane" = worker ]; then
   prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
 elif [ "$lane" = explain ]; then
-  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes): was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung an das Ticket, als eine Note mit genau diesen Zeilen, jede Zeile ein Teil: jaira note $ticket \"explain: <Befund: was gefunden wurde, ein bis zwei Saetze>\nWarum: <warum es zaehlt, ein bis zwei Saetze>\na) <erste Option, eine Zeile> [give back]\nb) <zweite Option, eine Zeile> [accept]\nEmpfehlung: <Buchstabe> - <warum, ein Satz>\" - mit echten Zeilenumbruechen im Text, zwei bis vier Optionen mit a) b) c) d) am Zeilenanfang, die Woerter Warum: und Empfehlung: genau so. Ans Ende jeder Option gehoert [give back], wenn sie heisst, die Arbeit zurueckzugeben und etwas zu aendern, [accept], wenn sie heisst, das Ticket so anzunehmen, und keine Marke, wenn sie keins von beidem ist. Das Cockpit zeigt die Note unter [Read explanation], und die Wahl dort fuehrt genau diesen Schritt aus. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
+  src=" (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes)"
+  [ -z "$brief" ] || src=""
+  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket$src: was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung an das Ticket, als eine Note mit genau diesen Zeilen, jede Zeile ein Teil: jaira note $ticket \"explain: <Befund: was gefunden wurde, ein bis zwei Saetze>\nWarum: <warum es zaehlt, ein bis zwei Saetze>\na) <erste Option, eine Zeile> [give back]\nb) <zweite Option, eine Zeile> [accept]\nEmpfehlung: <Buchstabe> - <warum, ein Satz>\" - mit echten Zeilenumbruechen im Text, zwei bis vier Optionen mit a) b) c) d) am Zeilenanfang, die Woerter Warum: und Empfehlung: genau so. Ans Ende jeder Option gehoert [give back], wenn sie heisst, die Arbeit zurueckzugeben und etwas zu aendern, [accept], wenn sie heisst, das Ticket so anzunehmen, und keine Marke, wenn sie keins von beidem ist. Das Cockpit zeigt die Note unter [Read explanation], und die Wahl dort fuehrt genau diesen Schritt aus. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 elif [ "$lane" = discuss ]; then
-  prompt="Ticket $ticket wartet auf eine Entscheidung von mir (jaira show $ticket --json: das Feld question und die letzten Notes). Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck, genau so: jaira move $ticket --to in-progress (ohne --what/--why/--resolves: das Ticket hat sein Ergebnis schon, und die Entscheidung steht in der Note). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
+  src=" (jaira show $ticket --json: das Feld question und die letzten Notes)"
+  [ -z "$brief" ] || src=""
+  prompt="Ticket $ticket wartet auf eine Entscheidung von mir$src. Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck, genau so: jaira move $ticket --to in-progress (ohne --what/--why/--resolves: das Ticket hat sein Ergebnis schon, und die Entscheidung steht in der Note). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
 else
   prompt="/jaira-role-lane $ticket $lane"
+fi
+if [ -n "$brief" ]; then
+  prompt="$prompt Was du vom Ticket brauchst, steht hier - title, goal, question, review und die letzten Notes als JSON; lies das Ticket nicht noch einmal ganz: $brief"
 fi
 "$herdr" pane send-text "$pane" "$prompt" >/dev/null
 sleep 1

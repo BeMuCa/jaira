@@ -102,6 +102,39 @@ func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 	}
 }
 
+// spawn.sh reads the model for the cockpit's chats off 'roles list': empty
+// by default, the account's own, and what settings.json says once it says so.
+func TestRolesListReportsTheChatModel(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	dir := t.TempDir()
+	read := func() map[string]any {
+		t.Helper()
+		out, err := runCLI(t, dir, "--json", "roles", "list")
+		if err != nil {
+			t.Fatalf("roles list --json: %v\n%s", err, out)
+		}
+		var p map[string]any
+		if err := json.Unmarshal([]byte(out), &p); err != nil {
+			t.Fatalf("invalid json: %v\n%s", err, out)
+		}
+		return p
+	}
+	if p := read(); p["chat_model"] != "" {
+		t.Errorf("default chat_model %v, want empty", p["chat_model"])
+	}
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"chat-model": "sonnet"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if p := read(); p["chat_model"] != "sonnet" {
+		t.Errorf("chat_model %v, want sonnet", p["chat_model"])
+	}
+	out, err := runCLI(t, dir, "roles", "list")
+	if err != nil || !strings.Contains(out, "chat model: sonnet") {
+		t.Errorf("roles list does not name the chat model: %v\n%s", err, out)
+	}
+}
+
 // --project with no agent directory in the repository still lands somewhere an
 // agent looks: .claude/skills.
 func TestRolesInstallProjectWritesSevenRoles(t *testing.T) {

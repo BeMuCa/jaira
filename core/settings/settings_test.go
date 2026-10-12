@@ -226,3 +226,17 @@ func TestDispatchDefaultsToLanes(t *testing.T) {
 		t.Errorf("worker role %q, want jaira-worker", r)
 	}
 }
+
+// The chat model goes into a command line, so only a model name passes; no
+// setting means no --model, the account default.
+func TestChatModelName(t *testing.T) {
+	for in, want := range map[string]string{
+		"": "", "  ": "", "sonnet": "sonnet", " haiku ": "haiku",
+		"claude-sonnet-5-5": "claude-sonnet-5-5", "opus[1m]": "opus[1m]",
+		"sonnet; rm -rf ~": "", "it's": "", "$(id)": "", "a b": "",
+	} {
+		if got := (settings.Settings{ChatModel: in}).ChatModelName(); got != want {
+			t.Errorf("chat-model %q: %q, want %q", in, got, want)
+		}
+	}
+}

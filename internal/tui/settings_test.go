@@ -114,3 +114,43 @@ func TestSettingsEnterSwitchesDispatch(t *testing.T) {
 		t.Fatalf("after a second enter, dispatch = %q, want lanes", got)
 	}
 }
+
+// TestSettingsEnterStepsTheChatModel: the fifth entry steps the chat model
+// from the account default through sonnet, haiku and opus and back, saving
+// each step; a hand-written model shows as it is and steps back to default.
+func TestSettingsEnterStepsTheChatModel(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	m := newTestModel(t, 150, 32)
+	m.key(key("S"))
+	for range 4 {
+		m.key(key("j"))
+	}
+	if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  account default") {
+		t.Fatalf("the chat model row does not show the account default:\n%s", got)
+	}
+	for _, want := range []string{"sonnet", "haiku", "opus", ""} {
+		m.key(key("enter"))
+		if got := settings.Load().ChatModelName(); got != want {
+			t.Fatalf("after enter, chat-model = %q, want %q", got, want)
+		}
+	}
+	if m.mode != modeSettings {
+		t.Errorf("stepping must stay on the settings screen, mode = %v", m.mode)
+	}
+
+	if err := settings.Save(settings.Settings{ChatModel: "claude-sonnet-5-5"}); err != nil {
+		t.Fatal(err)
+	}
+	m.key(key("esc"))
+	m.key(key("S"))
+	for range 4 {
+		m.key(key("j"))
+	}
+	if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Chat model  claude-sonnet-5-5") {
+		t.Fatalf("a hand-written chat model is not shown as it is:\n%s", got)
+	}
+	m.key(key("enter"))
+	if got := settings.Load().ChatModelName(); got != "" {
+		t.Errorf("enter on a hand-written model: chat-model = %q, want the account default", got)
+	}
+}
