@@ -51,7 +51,7 @@ type World = {
   // base lacks, which `git log -E --grep` searches with the pattern it is
   // given, and the branches `git branch --contains` gives the one it finds.
   subjects: string[]
-  branchCommits: { sha: string; subject: string }[]
+  branchCommits: { sha: string; subject: string; body?: string }[]
   holders: string[]
   toasts: string[]
   // `git remote -v`.
@@ -206,9 +206,15 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'remote' && args[1] === '-v') return ok(w.remotes)
     if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
+    // Newest first, as git prints them. A --grep reads the whole message,
+    // body included; --format=%H %s prints the subject alone.
     if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) {
-      const pattern = new RegExp(args.find(a => a.startsWith('--grep='))!.slice('--grep='.length), 'm')
-      return ok(w.branchCommits.find(c => pattern.test(c.subject))?.sha ?? '')
+      const grep = args.find(a => a.startsWith('--grep='))
+      if (grep) {
+        const pattern = new RegExp(grep.slice('--grep='.length), 'm')
+        return ok(w.branchCommits.find(c => pattern.test(`${c.subject}\n\n${c.body ?? ''}`))?.sha ?? '')
+      }
+      return ok(w.branchCommits.map(c => `${c.sha} ${c.subject}`).join('\n'))
     }
     // As many subjects as commits ahead: the first `ahead` of them.
     if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.concat(Array(Math.max(0, w.ahead - w.subjects.length)).fill('chore: more')).slice(0, w.ahead).join('\n'))
@@ -691,7 +697,7 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
-    expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H', '-n', '1', '-E', '--grep=^[a-z]+\\(([^)]*[ ,])?ZZ99ZZ([ ,][^)]*)?\\)!?:', '@/repo']])
+    expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo']])
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     // Its worktree is the other ticket's: the role pushes from there.
     expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
@@ -713,6 +719,22 @@ describe('after Accept', () => {
     await ui.press({ key: 'accept-ZZ99ZZ' })
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
+  test('the branch search reads subjects only: a merge commit quoting the ticket in its body is passed over', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
+    w.branchCommits = [
+      { sha: 'merge1', subject: "Merge branch 'feat/other' into feat/stack", body: 'fix(ZZ99ZZ): on the same branch' },
+      { sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' },
+    ]
+    w.holders = ['feat/mg677r']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
   })
 
   test('in a fork, ahead counts against the parent\'s default branch, fetched first — never the lagging local master', async ($, on) => {

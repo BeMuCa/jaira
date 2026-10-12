@@ -286,11 +286,16 @@ export function ticketsNamed(subjects: string): string[] {
   return out
 }
 
-// The extended regular expression `git log -E --grep` finds a commit
-// naming one ticket by: the same subjects ticketsNamed reads, the handle
-// alone or among others in the scope.
-export function namingPattern(id: string): string {
-  return `^[a-z]+\\(([^)]*[ ,])?${id}([ ,][^)]*)?\\)!?:`
+// The newest commit whose subject names a ticket, off `git log --format=%H
+// %s`, read as ticketsNamed reads a subject: the handle alone or among
+// others in the scope. The body is never read — a merge commit quotes the
+// subjects it brought in there, and would name every ticket it merged.
+export function commitNaming(log: string, id: string): string | undefined {
+  for (const line of log.split('\n')) {
+    const cut = line.indexOf(' ')
+    if (cut > 0 && ticketsNamed(line.slice(cut + 1)).includes(id)) return line.slice(0, cut)
+  }
+  return undefined
 }
 
 // Which of those are not in the terminal lane yet, off `jaira list --json`.
