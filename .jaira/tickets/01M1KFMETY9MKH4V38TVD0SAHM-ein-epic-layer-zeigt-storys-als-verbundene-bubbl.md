@@ -1,21 +1,21 @@
 ---
 id: 01M1KFMETY9MKH4V38TVD0SAHM
 title: Ein Epic-Layer zeigt Storys als verbundene Bubbles ueber dem Board
-status: blocked
+status: pre-process
 ready: true
 creator: BeMuCa
-goal: "Mit L wechselt das TUI auf einen Epic/Story-Layer: Bubbles (eine je Epic, in Tag-Farbe) bilden einen Flow von 'erst A, dann B'; jede Bubble sammelt die Tickets ihres Tags, fuellt sich mit deren Fertigstellungsgrad, und Enter springt vom Bubble-Detail zum Ticket aufs Board"
+goal: "Mit L oeffnet das TUI einen Layer ueber die Milestones: jede platzierte Milestone ist eine Bubble in ihrer Farbe, gefuellt nach dem Anteil fertiger Tickets; Pfeile zeigen 'erst A, dann B' in Swimlanes; im Layer lassen sich Bubbles anlegen, verbinden, aendern und herausnehmen; Enter zeigt Ziel und Tickets, b springt ins auf den Milestone gefilterte Board."
 context: "Berk am 03.09., grosser Feature-Wunsch fuer ein naechstes Update - die Tag-Farben (79GEPW/AXTFG3) waren der erste Schritt dahin. Kern: eine zweite Ansicht (Taste L) mit Epics/Storys als Kreisen/Bubbles. Verbindungen als Pfeile = Reihenfolge (erst Thema A, dann B). Zuordnung Epic->Tickets laeuft ueber den Tag: Board-Farben zeigen, zu welchem Epic ein Ticket gehoert. Bedienung, wie von Berk beschrieben: initial eine Plus-Bubble; Enter oeffnet ein TUI-Template (wie Ticket-Anlage) und erstellt die Bubble (Default leer, zufaellige Farbe). Danach: rechts neben jeder Bubble eine Plus-Bubble (parallele/ungeordnete Epics, erste Reihe = Sammelreihe), darunter eine Plus-Bubble mit Pfeil (Nachfolger). Nach unten erstellte Bubbles bieten wieder rechts/unten an. y = Split/Abzweigung: von der Vorgaenger-Bubble eine zweite Kante zu einer neuen Bubble auf derselben Ebene wie die aktuelle (Berk ist offen fuer intuitivere Split-Gesten). Loeschen oeffnet einen Dialog: nur Bubble, oder Bubble samt Tickets ihres Tags - Default ohne Tickets. Fuellstand: Bubble fuellt sich mit Farbe nach Anteil fertiger Tickets ihres Tags. Bubble oeffnen: obere Haelfte die ausgefuellten Felder (z.B. Ziel des Epics), untere Haelfte die Ticket-Liste, dort auswaehlbar und mit Enter Sprung zum Ticket im Board. Vor dem Bauen zu brainstormen: Datenmodell (Bubble=Datei? Kanten wo?), Konfliktverhalten bei parallelen Sessions, ob Epic==Tag oder Epic hat einen Tag, Layout-Algorithmus im Terminal, und die Split-Geste."
 definition-of-done: L wechselt zwischen Board und Epic-Layer; Bubbles anlegen/verbinden/splitten/loeschen wie im Kontext; Fuellstand nach fertigen Tickets des Tags; Bubble-Detail springt per Enter zum Ticket; das Datenmodell uebersteht parallele Sessions und git-Merge
 tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-09-15T21:00:52Z
+updated-at: 2026-10-12T23:17:11Z
 assignee: BeMuCa
-updated-by: Alexander Sacharov
-claimed-by: EE-3NX6GL3-4179675
-claimed-at: 2026-09-04T16:44:21Z
+updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-3607167
+claimed-at: 2026-10-12T23:13:02Z
 outcome-what: "eingefroren, bis Berk ueber Epics gegen Milestones entschieden hat"
 outcome-why: "0YGWXQ hat Milestones gebaut und macht dieselbe Gruppierung; zwei Datenmodelle fuer eine Handlung sind eine Achse zu viel"
 outcome-resolves: "die Frage und die drei Wege stehen als PUNKT 4 auf QF08G3"
@@ -26,16 +26,34 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
 
 ## Definition of Done
 
-- [ ] L wechselt zwischen Board und Epic-Layer; Bubbles anlegen/verbinden/splitten/loeschen wie im Kontext; Fuellstand nach fertigen Tickets des Tags; Bubble-Detail springt per Enter zum Ticket; das Datenmodell uebersteht parallele Sessions und git-Merge
+- [-] L wechselt zwischen Board und Epic-Layer; Bubbles anlegen/verbinden/splitten/loeschen wie im Kontext; Fuellstand nach fertigen Tickets des Tags; Bubble-Detail springt per Enter zum Ticket; das Datenmodell uebersteht parallele Sessions und git-Merge
+- [ ] Milestone-Frontmatter kennt goal: und after: [..]; Lesen und Schreiben sind in core/milestone getestet, fremde Zeilen bleiben beim Schreiben erhalten
+- [ ] jaira milestone create --goal/--after und jaira milestone set <name> --goal/--after/--no-layer schreiben die Felder; milestone ls --json zeigt goal und after; Tests in internal/cli
+- [ ] Layout ist eine reine, getestete Funktion: Swimlane aus dem ersten Vorgaenger, Splits, Joins, Querpfeile, Swimlane-Reihenfolge nach created-at; Zyklen und unbekannte Namen fuehren nie zum Absturz
+- [ ] L oeffnet den Layer: Bubble-Rahmen in Milestone-Farbe, Fuellung Variante A (55% Richtung Weiss, Truecolor und 256-Farben-Ersatz), done/total, Auswahl mit dickem Rahmen, [+] an der Auswahl und oben rechts fuer eine neue Swimlane; ein leerer Layer zeigt nur [+]; TUI-Tests
+- [ ] Bedienung: Pfeiltasten waehlen; Enter auf [+] legt einen neuen Milestone an (Name, Ziel) oder verbindet einen vorhandenen; e aendert Ziel und Vorgaenger, c die Farbe, x nimmt die Bubble aus dem Layer (Nachfolger haengen um); Enter auf eine Bubble zeigt Ziel und Ticketliste, Enter oeffnet ein Ticket, b das gefilterte Board; TUI-Tests
+- [ ] Tasten: l oeffnet die Links auf dem Board und im Ticket-Detail, h und l wechseln keine Lanes mehr; Hilfe, Tastenleiste, README Keys, docs/COMMANDS.md und core/release/notes/D0SAHM.md nennen es
+- [ ] go vet ./... und go test ./... -race sind gruen; das gebaute Binary ist im echten Terminal (tmux) auf einer Board-Kopie durchgespielt
 
 ## Options
 
 - [x] brainstorm
-- [ ] planning
+- [x] planning
 
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] core/milestone: goal und after lesen/schreiben (Reihenfolge beibehalten, fremde Zeilen bleiben), Tests zuerst
+- [ ] core/milestone: ein gemeinsamer Schreibweg (Lock, atomar speichern, Ref aufzeichnen) fuer CLI und TUI, CLI darauf umstellen
+- [ ] core/milestone: Layout als reine Funktion (Swimlanes, Baum, Joins, Querpfeile, Zyklen) mit Tests
+- [ ] internal/cli: milestone create --goal/--after, milestone set, ls --json mit goal/after; Tests; docs/COMMANDS.md
+- [ ] internal/tui: Tasten umziehen (l = Links auf Board und im Detail, h/l keine Lane-Navigation, L = Layer) und bestehende Tests anpassen
+- [ ] internal/tui: Layer zeichnen (Bubbles, Fuellung A, Pfeile, Swimlane-Trenner, [+], Auswahl, Scrollen) mit Tests
+- [ ] internal/tui: Layer bedienen (Navigation, [+]-Auswahl, Formular neu, Verbinden-Picker, e, c, x mit Umhaengen) mit Tests
+- [ ] internal/tui: Milestone-Detail (Ziel, Ticketliste, enter, b ins gefilterte Board) mit Tests
+- [ ] Hilfe (?), Tastenleiste, README Keys, core/release/notes/D0SAHM.md
+- [ ] go vet, go test ./... -race, Binary in tmux auf einer Board-Kopie durchspielen
 
 ## Progress
 - **2026-09-04 16:50 · BeMuCa** — Brainstorm-Entscheidungspunkte (an Berk gestellt, 04.09.): K1 Speicherung: eine Markdown-Datei je Epic unter .jaira/epics/ (Frontmatter: name, tag, goal, after: [Vorgaenger-Epics] als Kanten) - hand-editierbar, diff-bar, Kantenliste merge=union. K2 Bindung: Epic HAT einen Tag (Feld) statt Epic==Tag - umbenennbar, Farbe bleibt allein in .jaira/tags; Fuellstand = fertige/alle Tickets des Tags. K3 Parallel-Sessions: WriteAtomic + Store-Lock wie core/tag. K4 Layout: Ebene = laengster Pfad von den Wurzeln; erste Reihe = Sammelreihe (parallel), darunter Nachfolger; Kanten als einfache Linien. K5 Split-Geste: Vorschlag 'v'=Kante-ziehen-Modus (deckt Split UND Merge) statt nur y; Berks y als Alternative. K6 Loeschen: Dialog Bubble-only (Default) vs. 'mit Tickets' = Tickets ARCHIVIEREN (umkehrbar), nie hart loeschen. K7 Anlage: L toggelt Layer, Plus-Bubbles rechts (parallel) und unten (Nachfolger), Enter -> TUI-Formular (name, ziel, tag, farbe optional, Default random).
@@ -48,3 +66,16 @@ Alex' Vorschlag: auf Milestones umsteigen. Entweder faellt dieses Ticket ganz, o
 Die drei Wege stehen ausformuliert auf QF08G3 (Urlaub-Uebergabe) als PUNKT 4, zusammen mit dem, was Berk gezeigt werden muss. Dort wird das gefuehrt, nicht hier.
 
 Die Brainstorm-Entscheidungspunkte K1-K7 vom 04.09. bleiben stehen und sind nicht verworfen: faellt die Entscheidung auf 'Ansicht behalten', sind K4 (Layout), K5 (Split-Geste) und K7 (Anlage) weiter gueltig, waehrend K1 (Speicherung), K2 (Bindung an den Tag) und K6 (Loeschen) durch den Milestone beantwortet waeren.
+- **2026-10-12 07:40 · BeMuCa** — 2026-10-12 Berk hat PUNKT 4 (QF08G3) entschieden: Weg b). Die Bubbles zeichnen Milestones (eine Bubble je Milestone, Fuellstand aus seiner Ticket-Liste, Farbe aus dem Milestone); Pfeile 'erst A, dann B' bleiben; kein eigenes Epic-Datenmodell, also kein .jaira/epics/. K1, K2, K6 vom 04.09. sind damit durch den Milestone beantwortet; K4, K5, K7 gelten weiter. Offen und jetzt im Brainstorm: wo die Pfeile gespeichert werden, Split-Geste, Layout.
+- **2026-10-12 08:04 · BeMuCa** — 2026-10-12 Brainstorm mit Berk, Frage 1 (Zweck der Pfeile): nur Bild. Ein Pfeil A->B zeigt 'erst A, dann B' und sonst nichts - kein Hinweis in next/Board, keine Sperre wie blocked-by. Grund: Pfeile, die etwas sperren, waeren ein zweites Abhaengigkeitssystem neben blocked-by. Hinweis/Regel koennen spaeter als eigenes Ticket kommen.
+- **2026-10-12 10:54 · BeMuCa** — 2026-10-12 Brainstorm, Frage 2 (wie viel im Layer bearbeitbar): alles im Layer, wie im urspruenglichen Kontext (Plus-Bubbles rechts/unten, Formular, Split, Loeschen). Berks Zusaetze: (1) eine Plus-Bubble fragt zuerst: neuen Milestone anlegen ODER einen bestehenden anschliessen; (2) der Rahmen jeder Bubble hat die Farbe des Milestones; (3) Swimlanes mit Assignee - Default kein Assignee, setzbar - damit man sieht, welche naechsten Schritte/Milestones eine Person hat. Offen: was genau eine Swimlane ist (Assignee je Milestone oder eigene Bahn).
+- **2026-10-12 11:28 · BeMuCa** — 2026-10-12 Brainstorm, Klaerung Swimlane (Berks Worte): eine Swimlane ist eine Spalte von Bubbles, die von oben nach unten laeuft, z.B. a->b->c, und daneben parallel d->e->f. Die Spalten stehen nebeneinander; jede Spalte ist eine Swimlane. Der Assignee haengt an der Swimlane, Default keiner, setzbar - so sieht man die naechsten Milestones einer Person.
+- **2026-10-12 12:14 · BeMuCa** — 2026-10-12 Brainstorm: Berk bestaetigt das Verstaendnis (Swimlanes = Spalten nebeneinander, Assignee je Swimlane, Default keiner; Rahmen in Milestone-Farbe; Plus-Bubble fragt neu/bestehend; Pfeile duerfen Swimlanes kreuzen; eine Bubble gehoert genau einer Swimlane; Milestones ohne Swimlane landen in 'nicht platziert'). Ergaenzung: innerhalb EINER Swimlane darf es sich verzweigen - a->b->c und b->g, g steht parallel neben c in derselben Swimlane (der Split aus dem urspruenglichen Kontext).
+- **2026-10-12 12:45 · BeMuCa** — 2026-10-12 Brainstorm: Berk bestaetigt: [+] rechts neben einer Bubble in einer Swimlane = Geschwister mit demselben Vorgaenger (Split innerhalb der Swimlane); nur [+] rechts der letzten Swimlane = neue Swimlane; Zweige duerfen wieder zusammenlaufen (c->h und g->h, zweiter Pfeil per 'bestehenden anschliessen'). Befund fuers Design: L ist auf dem Board belegt (Links, internal/tui/model.go:1418) - der Layer braucht eine andere Taste; frei auf dem Board sind u.a. o/O, w/W, f/F, b/B, e/E, y/Y (e/E/f/y/b/X nur im Detail belegt).
+- **2026-10-12 14:52 · BeMuCa** — 2026-10-12 Brainstorm, Frage Bubble-Detail (Berk): Milestone bekommt ein Ziel (Weg a). Oeffnet man eine Bubble: oben das Ziel als Text, darunter die Liste der zugeordneten Tickets mit Ticket-ID, Titel und Stand im Board (Lane). Von dort ein Ticket direkt oeffnen, oder das Board mit diesem Milestone als Filter oeffnen. Zusatzwunsch: die Milestone-Taste M soll wie u (User-Picker, internal/tui/users.go: space hakt an, enter schreibt user:a,b in den Filter, x leert) alle Milestones mit Farbe zeigen UND mehrere zum Anzeigen auswaehlen lassen - heute waehlt M genau einen (milestone:<name>). Vorschlag: das als eigenes Ticket, vor dem Layer.
+- **2026-10-12 16:03 · BeMuCa** — 2026-10-12 Brainstorm, Berk: KEINE Person je Swimlane und keine Assignees an Milestones - spaeter vielleicht. Die Milestone-Struktur bleibt, das Ticket ist nur die Visualisierung. Folge: Swimlanes brauchen keinen Namen und keine eigene Datei (Speicherfrage a/b/c entfaellt). Vorschlag: Swimlanes werden aus den Pfeilen abgeleitet - jeder Milestone traegt after: (Vorgaenger); der erste Vorgaenger bestimmt die Spalte, ein Milestone ohne Vorgaenger beginnt eine neue Spalte. Neue Felder am Milestone also nur goal: und after:. Leerer Layer zeigt nur [+]; noch nicht gesetzte Milestones erscheinen nicht als Bubble, man holt sie ueber [+] -> bestehenden anschliessen. Nachgeprueft: der Milestone-Ref refs/jaira/milestones/<name> ist ein Commit, dessen Baum <name>.md enthaelt; der Paket-Kommentar core/milestone/milestone.go sagt, unbekannte Zeilen bleiben beim Schreiben woertlich erhalten.
+- **2026-10-12 16:11 · BeMuCa** — 2026-10-12 Brainstorm, Anwendungsfaelle des Layers (von Berk bestaetigt): (1) Roadmap auf einen Blick - was kommt nach der aktuellen Runde, ohne extra Dokument; (2) Fortschritt je Runde ueber den Fuellstand, z.B. fuer Standup/Wochenrueckblick; (3) parallele Straenge nebeneinander sehen und wo sie zusammenlaufen; (4) 'warum machen wir das' nach Wochen - Ziel je Bubble plus Reihenfolge erzaehlen die Projektgeschichte, auch fuers Onboarding; (5) Schieflage erkennen - Nachfolger in Arbeit, waehrend der Vorgaenger noch fast leer ist (nur sichtbar, keine Sperre); (6) Absprung von einer Bubble ins Board, gefiltert auf diesen Milestone (PNC854).
+- **2026-10-12 21:46 · BeMuCa** — 2026-10-12 Brainstorm Teil 2 (Aussehen), Berk: L8 bestaetigt - [+] nur an der ausgewaehlten Bubble (rechts = Geschwister, unten = Nachfolger) plus immer eins ganz rechts oben fuer eine neue Swimlane. L9 offen: Berk will zuerst Fuellen mit Farbe sehen statt Balken - Fuellung links nach rechts in einer blassen Version der Milestone-Farbe (Richtung Weiss gemischt), Schrift auf der Fuellung schwarz bzw. nach Helligkeit; erst wenn unlesbar, Balken. Probe: Scratchpad fillprobe.py (Varianten 55%/75% Richtung Weiss, --256 fuer Terminals ohne Truecolor; jaira erkennt Truecolor schon in internal/tui/model.go m.trueColor). Tasten-Vorschlag von Berk: L oeffnet den Layer (wie im urspruenglichen Ziel), l oeffnet Links (heute L, master model.go:1558), l verliert 'Lane rechts' auf dem Board (master model.go:1514) - Pfeiltasten reichen. Offen: was mit h (Lane links, model.go:1512) und mit L im Ticket-Detail (model.go:1420) passiert. PAP369 (noch nicht gemerged) nennt L in Hilfe und Test - wer zuletzt merged, zieht nach.
+- **2026-10-12 22:50 · BeMuCa** — 2026-10-13 Berk: auch h raus (L1). Auf dem Board wechseln Lanes nur noch mit Pfeiltasten; l oeffnet Links, L den Layer. Offen: l statt L im Ticket-Detail (L2). L9-Probe als Artifact: https://claude.ai/artifact/KR5vTK6j1qW3msdo7nxttu (Varianten A 55%, B 75%, 256-Farben-Ersatz; dunkles/helles Terminal).
+- **2026-10-12 23:07 · BeMuCa** — 2026-10-13 Berk: L9 = Variante A - Fuellung links nach rechts, Milestone-Farbe zu 55% mit Weiss gemischt, Schrift auf der Fuellung schwarz (nach Helligkeit), 256-Farben-Terminals bekommen die naechste Standardfarbe; Farbwechsel an der Fuellkante ist ok. L2 = ja: auch im Ticket-Detail oeffnet l die Links (heute L, master internal/tui/model.go:1420). Teil 2 (Aussehen) damit komplett bestaetigt.
+- **2026-10-12 23:17 · BeMuCa** — 2026-10-13 Plan-Begruendung: Branch feat/D0SAHM-milestone-layer liegt auf PNC854 (ff585cb), weil b den Milestone-Filter des Boards nutzt und beide Aenderungen dieselbe Tastenbehandlung in internal/tui/model.go anfassen - so gibt es keinen Merge-Konflikt zwischen ihnen; PR-Reihenfolge PNC854, dann D0SAHM. Design steht in docs/superpowers/specs/2026-10-13-milestone-layer-design.md. Kern zuerst (Datenfelder, gemeinsamer Schreibweg, Layout als reine Funktion), weil TUI und CLI beide darauf bauen und die Layout-Regeln ohne Terminal testbar sein sollen. Der Layout-Raster laesst Platz fuer [+] in festen Luecken, damit sich beim Bewegen des Cursors nichts verschiebt (Berk mag kein wanderndes Board, siehe PAP369 'keep the board still').
