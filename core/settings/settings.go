@@ -185,7 +185,7 @@ func (s Settings) ChatModelFor(root string) (name, source string) {
 	if m := modelName(s.ChatModel); m != "" {
 		return m, "from settings.json on this machine"
 	}
-	return "", "account default, nothing configured"
+	return "", "nothing configured"
 }
 
 // modelName returns v trimmed, or "" when it is not a model name. spawn.sh

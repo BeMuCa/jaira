@@ -131,7 +131,7 @@ func TestSettingsEnterStepsTheChatModel(t *testing.T) {
 		}
 		return stripANSI(m.settingsScreen.render(150, 32))
 	}
-	if got := open(); !strings.Contains(got, "Chat model  account default — account default") {
+	if got := open(); !strings.Contains(got, "Chat model  account default — nothing configured") {
 		t.Fatalf("the chat model row does not show the account default:\n%s", got)
 	}
 	for _, want := range []string{"sonnet", "haiku", "opus", ""} {

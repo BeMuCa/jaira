@@ -111,9 +111,9 @@ func (s *settingsScreen) stepChatModel() string {
 		return settingsActionNone
 	}
 	choices := settings.ChatModelChoices
-	next := choices[0]
+	cur, next := settings.BoardChatModel(s.root), choices[0]
 	for i, c := range choices {
-		if c == settings.BoardChatModel(s.root) {
+		if c == cur {
 			next = choices[(i+1)%len(choices)]
 		}
 	}

@@ -280,7 +280,7 @@ func TestChatModelForPrefersTheBoard(t *testing.T) {
 	if _, err := os.Stat(settings.BoardChatModelPath(root)); !os.IsNotExist(err) {
 		t.Errorf("setting the board's model to empty must remove the file: %v", err)
 	}
-	if got, src := (settings.Settings{}).ChatModelFor(root); got != "" || !strings.Contains(src, "account default") {
+	if got, src := (settings.Settings{}).ChatModelFor(root); got != "" || src != "nothing configured" {
 		t.Errorf("nothing set: %q (%s), want the account default", got, src)
 	}
 }
