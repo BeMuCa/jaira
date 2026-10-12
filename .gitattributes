@@ -18,9 +18,10 @@ core/role/builtin/**/*.html text eol=lf
 
 # core/release/NOTES.md and the notes under core/release/notes are embedded
 # and read back line by line — a CRLF checkout turns every entry into one that
-# ends in \r. core/hook/example is the
-# shipped notify hook: CRLF makes it unrunnable, the same reason the role
-# scripts above are pinned.
+# ends in \r. The notes pattern takes ** because a release moves its notes into
+# notes/<version>/, a folder that does not exist until the release button runs.
+# core/hook/example is the shipped notify hook: CRLF makes it unrunnable, the
+# same reason the role scripts above are pinned.
 core/release/NOTES.md text eol=lf
-core/release/notes/*.md text eol=lf
+core/release/notes/**/*.md text eol=lf
 core/hook/example/*.sh text eol=lf
