@@ -16,6 +16,9 @@ export const t = {
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
   failed: (what: string) => `${what} failed`,
+  noteOn: (id: string) => `Note on ${id}`,
+  noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
+  tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   close: 'Close',
   bandTitle: 'jaira-cockpit',
   noRoom: 'No room for a pane here: widen the terminal and press Give back again.',

@@ -29,6 +29,12 @@ type World = {
   refusals: { code: string; message: string }[]
   // A jaira older than the board: it warns on a line before what it prints.
   warns: boolean
+  // What `jaira --version` names: before 0.3.7 a move back out of a
+  // person's lane without --force is refused.
+  version: string
+  // `jaira note` with a give-back reason fails after the move went through.
+  noteFails: boolean
+  toasts: string[]
   // What `jaira whoami --json` says; undefined: it says nothing.
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
@@ -82,6 +88,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     status: [],
     refusals: [{ code: 'needs_human', message: 'lane "signoff" is a human checkpoint' }],
     warns: false,
+    version: '0.3.7',
+    noteFails: false,
+    toasts: [],
     bodies: {},
     opened: [],
     closed: [],
@@ -121,7 +130,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.filled.push(e.text)
     return { isFilled: true } as never
   })
-  on('ui.toast', () => ({ value: undefined }))
+  on('ui.toast', ($, e) => {
+    w.toasts.push((e as unknown as { text: string }).text)
+    return { value: undefined }
+  })
   on('session.end', ($, e) => ({ sessionId: 'abcdef123456' }))
   on('session.receive', ($, e) => ({ text: e.text }))
   on('prompt.submit', ($, e) => ({ text: e.text, origin: e.origin }))
@@ -145,6 +157,13 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === '--version') return ok(`jaira version ${w.version}\n`)
+    if (cmd === 'jaira' && args[0] === 'move' && !args.includes('--force') && /^0\.3\.[0-6]$/.test(w.version)) {
+      return { value: { exitCode: 3, stdout: '', stderr: 'jaira: lane "signoff" is a human checkpoint; use --force', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'note' && w.noteFails && args[2]?.startsWith('Given back')) {
+      return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
@@ -600,6 +619,19 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'jaira', 'note', 'MG677R')[0]?.[3]).toBe('Given back from signoff: der Branch fehlt im Schluessel')
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '@/.worktrees/repo-mg677r'])
+    // The move first: the note is written only once the ticket went back.
+    const at = (verb: string) => w.ran.findIndex(r => r[0] === 'jaira' && r[1] === verb && r[2] === 'MG677R')
+    expect(at('move')).toBeLessThan(at('note'))
+  })
+
+  test('a refused move writes no note: the ticket stays where it is and the refusal is shown', async ($, on) => {
+    const w = world(on)
+    w.version = '0.3.6'
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Give back MG677R failed', focus: true })
   })
 
   // The limit is a share of the old worker's window, never a fixed size.
@@ -615,6 +647,20 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
     expect(ran(w, SPAWN)).toEqual([])
+  })
+
+  test('a note that fails after the move is shown with the reason typed, and the worker still gets the ticket', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(1_000_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    w.noteFails = true
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Note on MG677R failed', focus: true })
+    const pane = await $.ui.mount(MESSAGE('Note on MG677R failed'))
+    expect(await pane.find({ type: 'Text', text: /MG677R went back to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /jaira note MG677R 'Given back from signoff: der Branch fehlt im Schluessel'/ })).toBeDefined()
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
 
   test('past half of its window a new worker takes the round', async ($, on) => {
@@ -677,6 +723,38 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
     expect(ran(w, SPAWN)[0]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
+  })
+})
+
+describe('the jaira it runs beside', () => {
+  test('one older than the cockpit needs is said once, with the version installed and the one needed', async ($, on) => {
+    const w = world(on)
+    w.version = '0.3.6'
+    await startSession($)
+    await answer($)
+    await answer($)
+    expect(ran(w, 'jaira', '--version')).toHaveLength(1)
+    expect(w.toasts.filter(x => x.includes('too old'))).toEqual([
+      'jaira 0.3.6 is too old for this cockpit: it needs 0.3.7 or later. Give back will be refused until you update jaira.',
+    ])
+  })
+
+  for (const version of ['0.3.7', '0.10.0', 'dev']) {
+    test(`jaira ${version} is not warned about`, async ($, on) => {
+      const w = world(on)
+      w.version = version
+      await startSession($)
+      expect(ran(w, 'jaira', '--version')).toHaveLength(1)
+      expect(w.toasts.filter(x => x.includes('too old'))).toEqual([])
+    })
+  }
+
+  test('without a board jaira is not asked', async ($, on) => {
+    const w = world(on, { board: false })
+    w.version = '0.3.6'
+    await startSession($)
+    expect(ran(w, 'jaira', '--version')).toEqual([])
+    expect(w.toasts).toEqual([])
   })
 })
 
