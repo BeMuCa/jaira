@@ -1,7 +1,7 @@
 ---
 id: 01M1KFMETY9MKH4V38TVD0SAHM
 title: Ein Epic-Layer zeigt Storys als verbundene Bubbles ueber dem Board
-status: pre-process
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Mit L oeffnet das TUI einen Layer ueber die Milestones: jede platzierte Milestone ist eine Bubble in ihrer Farbe, gefuellt nach dem Anteil fertiger Tickets; Pfeile zeigen 'erst A, dann B' in Swimlanes; im Layer lassen sich Bubbles anlegen, verbinden, aendern und herausnehmen; Enter zeigt Ziel und Tickets, b springt ins auf den Milestone gefilterte Board."
@@ -11,7 +11,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-10-12T23:17:11Z
+updated-at: 2026-10-12T23:37:38Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3607167
@@ -27,9 +27,12 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
 ## Definition of Done
 
 - [-] L wechselt zwischen Board und Epic-Layer; Bubbles anlegen/verbinden/splitten/loeschen wie im Kontext; Fuellstand nach fertigen Tickets des Tags; Bubble-Detail springt per Enter zum Ticket; das Datenmodell uebersteht parallele Sessions und git-Merge
-- [ ] Milestone-Frontmatter kennt goal: und after: [..]; Lesen und Schreiben sind in core/milestone getestet, fremde Zeilen bleiben beim Schreiben erhalten
-- [ ] jaira milestone create --goal/--after und jaira milestone set <name> --goal/--after/--no-layer schreiben die Felder; milestone ls --json zeigt goal und after; Tests in internal/cli
-- [ ] Layout ist eine reine, getestete Funktion: Swimlane aus dem ersten Vorgaenger, Splits, Joins, Querpfeile, Swimlane-Reihenfolge nach created-at; Zyklen und unbekannte Namen fuehren nie zum Absturz
+- [x] Milestone-Frontmatter kennt goal: und after: [..]; Lesen und Schreiben sind in core/milestone getestet, fremde Zeilen bleiben beim Schreiben erhalten
+  proof: core/milestone/milestone.go parseAfter/SetGoal/SetAfter; TestParseReadsGoalAndAfter, TestSettersTouchOnlyTheirOwnLine
+- [x] jaira milestone create --goal/--after und jaira milestone set <name> --goal/--after/--no-layer schreiben die Felder; milestone ls --json zeigt goal und after; Tests in internal/cli
+  proof: internal/cli/milestones.go newMilestoneSetCmd; TestCreateWritesGoalAndAfter, TestSetChangesGoalAndPlacement, TestLsJSONCarriesGoalAndAfterOnlyWhenSet
+- [x] Layout ist eine reine, getestete Funktion: Swimlane aus dem ersten Vorgaenger, Splits, Joins, Querpfeile, Swimlane-Reihenfolge nach created-at; Zyklen und unbekannte Namen fuehren nie zum Absturz
+  proof: core/milestone/layout.go Layout; TestLayoutSplit, TestLayoutJoin, TestLayoutCycleNeverCrashesAndDropsOneArrow
 - [ ] L oeffnet den Layer: Bubble-Rahmen in Milestone-Farbe, Fuellung Variante A (55% Richtung Weiss, Truecolor und 256-Farben-Ersatz), done/total, Auswahl mit dickem Rahmen, [+] an der Auswahl und oben rechts fuer eine neue Swimlane; ein leerer Layer zeigt nur [+]; TUI-Tests
 - [ ] Bedienung: Pfeiltasten waehlen; Enter auf [+] legt einen neuen Milestone an (Name, Ziel) oder verbindet einen vorhandenen; e aendert Ziel und Vorgaenger, c die Farbe, x nimmt die Bubble aus dem Layer (Nachfolger haengen um); Enter auf eine Bubble zeigt Ziel und Ticketliste, Enter oeffnet ein Ticket, b das gefilterte Board; TUI-Tests
 - [ ] Tasten: l oeffnet die Links auf dem Board und im Ticket-Detail, h und l wechseln keine Lanes mehr; Hilfe, Tastenleiste, README Keys, docs/COMMANDS.md und core/release/notes/D0SAHM.md nennen es
@@ -44,10 +47,10 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] core/milestone: goal und after lesen/schreiben (Reihenfolge beibehalten, fremde Zeilen bleiben), Tests zuerst
-- [ ] core/milestone: ein gemeinsamer Schreibweg (Lock, atomar speichern, Ref aufzeichnen) fuer CLI und TUI, CLI darauf umstellen
-- [ ] core/milestone: Layout als reine Funktion (Swimlanes, Baum, Joins, Querpfeile, Zyklen) mit Tests
-- [ ] internal/cli: milestone create --goal/--after, milestone set, ls --json mit goal/after; Tests; docs/COMMANDS.md
+- [x] core/milestone: goal und after lesen/schreiben (Reihenfolge beibehalten, fremde Zeilen bleiben), Tests zuerst
+- [x] core/milestone: ein gemeinsamer Schreibweg (Lock, atomar speichern, Ref aufzeichnen) fuer CLI und TUI, CLI darauf umstellen
+- [x] core/milestone: Layout als reine Funktion (Swimlanes, Baum, Joins, Querpfeile, Zyklen) mit Tests
+- [x] internal/cli: milestone create --goal/--after, milestone set, ls --json mit goal/after; Tests; docs/COMMANDS.md
 - [ ] internal/tui: Tasten umziehen (l = Links auf Board und im Detail, h/l keine Lane-Navigation, L = Layer) und bestehende Tests anpassen
 - [ ] internal/tui: Layer zeichnen (Bubbles, Fuellung A, Pfeile, Swimlane-Trenner, [+], Auswahl, Scrollen) mit Tests
 - [ ] internal/tui: Layer bedienen (Navigation, [+]-Auswahl, Formular neu, Verbinden-Picker, e, c, x mit Umhaengen) mit Tests
@@ -79,3 +82,4 @@ Die Brainstorm-Entscheidungspunkte K1-K7 vom 04.09. bleiben stehen und sind nich
 - **2026-10-12 22:50 · BeMuCa** — 2026-10-13 Berk: auch h raus (L1). Auf dem Board wechseln Lanes nur noch mit Pfeiltasten; l oeffnet Links, L den Layer. Offen: l statt L im Ticket-Detail (L2). L9-Probe als Artifact: https://claude.ai/artifact/KR5vTK6j1qW3msdo7nxttu (Varianten A 55%, B 75%, 256-Farben-Ersatz; dunkles/helles Terminal).
 - **2026-10-12 23:07 · BeMuCa** — 2026-10-13 Berk: L9 = Variante A - Fuellung links nach rechts, Milestone-Farbe zu 55% mit Weiss gemischt, Schrift auf der Fuellung schwarz (nach Helligkeit), 256-Farben-Terminals bekommen die naechste Standardfarbe; Farbwechsel an der Fuellkante ist ok. L2 = ja: auch im Ticket-Detail oeffnet l die Links (heute L, master internal/tui/model.go:1420). Teil 2 (Aussehen) damit komplett bestaetigt.
 - **2026-10-12 23:17 · BeMuCa** — 2026-10-13 Plan-Begruendung: Branch feat/D0SAHM-milestone-layer liegt auf PNC854 (ff585cb), weil b den Milestone-Filter des Boards nutzt und beide Aenderungen dieselbe Tastenbehandlung in internal/tui/model.go anfassen - so gibt es keinen Merge-Konflikt zwischen ihnen; PR-Reihenfolge PNC854, dann D0SAHM. Design steht in docs/superpowers/specs/2026-10-13-milestone-layer-design.md. Kern zuerst (Datenfelder, gemeinsamer Schreibweg, Layout als reine Funktion), weil TUI und CLI beide darauf bauen und die Layout-Regeln ohne Terminal testbar sein sollen. Der Layout-Raster laesst Platz fuer [+] in festen Luecken, damit sich beim Bewegen des Cursors nichts verschiebt (Berk mag kein wanderndes Board, siehe PAP369 'keep the board still').
+- **2026-10-12 23:37 · BeMuCa** — core: Edit saves only when bytes changed (so a no-op re-add queues no ref); record failure comes back as *RecordError beside the saved milestone. CLI predecessor must EXIST on the board (placed not required); WouldCycle ignores unplaced milestones' edges. Cycle in a file: the newer milestone's arrow is dropped.

@@ -80,6 +80,9 @@ type Milestone struct {
 	Colour    int
 	CreatedAt time.Time
 	Status    string
+	Goal      string   // free text, one line; empty when the file has none
+	After     []string // predecessor names, first one decides the swimlane
+	Placed    bool     // an `after:` line exists; `after: []` is a swimlane top
 
 	lines   []string // the whole file, frontmatter included
 	members []string // ticket ids, in file order
@@ -262,6 +265,10 @@ func parse(text string) *Milestone {
 				m.Colour, _ = strconv.Atoi(value)
 			case "status":
 				m.Status = value
+			case "goal":
+				m.Goal = value
+			case "after":
+				m.After, m.Placed = parseAfter(value), true
 			case "created-at":
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					m.CreatedAt = t
@@ -320,30 +327,88 @@ func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
 // allowed to have started without it.
 func (m *Milestone) SetStatus(status string) {
 	m.Status = status
+	m.setFront("status", status, status == "")
+}
+
+// setFront is the one-line rewrite SetStatus pioneered, shared by every
+// frontmatter key jaira writes: replace the key's line where it stands, insert
+// it before the closing fence, or — remove — drop it. Nothing else in the file
+// moves.
+func (m *Milestone) setFront(key, value string, remove bool) {
 	end, hasFront := m.frontEnd()
 	idx := -1
 	if hasFront {
 		for i := 1; i < end; i++ {
-			key, _, ok := strings.Cut(strings.TrimSpace(m.lines[i]), ":")
-			if ok && strings.TrimSpace(key) == "status" {
+			k, _, ok := strings.Cut(strings.TrimSpace(m.lines[i]), ":")
+			if ok && strings.TrimSpace(k) == key {
 				idx = i
 				break
 			}
 		}
 	}
+	line := key + ": " + value
 	switch {
-	case status == "":
+	case remove:
 		if idx >= 0 {
 			m.lines = slices.Delete(slices.Clone(m.lines), idx, idx+1)
 		}
 	case idx >= 0:
 		m.lines = slices.Clone(m.lines)
-		m.lines[idx] = "status: " + status
+		m.lines[idx] = line
 	case hasFront:
-		m.lines = slices.Insert(slices.Clone(m.lines), end, "status: "+status)
+		m.lines = slices.Insert(slices.Clone(m.lines), end, line)
 	default:
-		m.lines = append([]string{"---", "status: " + status, "---", ""}, m.lines...)
+		m.lines = append([]string{"---", line, "---", ""}, m.lines...)
 	}
+}
+
+// SetGoal writes, replaces or (empty text) removes the goal line. One line of
+// text: a newline in it would end the value and leave the rest as a stray
+// frontmatter line, so line breaks become spaces.
+func (m *Milestone) SetGoal(text string) {
+	text = strings.Join(strings.Fields(text), " ")
+	m.Goal = text
+	m.setFront("goal", text, text == "")
+}
+
+// SetAfter places the milestone in the layer under the given predecessors; no
+// names makes it the top of a swimlane of its own (`after: []`). Names are
+// normalized and deduplicated, so what is written is what a reader gets back.
+func (m *Milestone) SetAfter(names []string) {
+	m.After, m.Placed = cleanNames(names), true
+	m.setFront("after", "["+strings.Join(m.After, ", ")+"]", false)
+}
+
+// Unplace takes the milestone out of the layer by removing its after line.
+func (m *Milestone) Unplace() {
+	m.After, m.Placed = nil, false
+	m.setFront("after", "", true)
+}
+
+// parseAfter reads the value of an after line: `[a, b]`, or the same without
+// brackets, which is what a hand-edit tends to produce.
+func parseAfter(value string) []string {
+	value = strings.TrimSpace(value)
+	value = strings.TrimSuffix(strings.TrimPrefix(value, "["), "]")
+	return cleanNames(strings.Split(value, ","))
+}
+
+// cleanNames normalizes predecessor names like milestone names, dropping what
+// does not normalize, empties and repeats, and keeps the order — the first
+// name is the one that decides the swimlane.
+func cleanNames(raw []string) []string {
+	var out []string
+	for _, r := range raw {
+		if strings.TrimSpace(r) == "" {
+			continue
+		}
+		n, _, err := NormalizeName(r)
+		if err != nil || slices.Contains(out, n) {
+			continue
+		}
+		out = append(out, n)
+	}
+	return out
 }
 
 // frontEnd reports where the frontmatter closes. It is a frontmatter only when

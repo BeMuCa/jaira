@@ -328,3 +328,86 @@ func names(all []*Milestone) []string {
 	}
 	return out
 }
+
+// goal and after are the two keys the layer adds. They are read by the same
+// frontmatter scan as the rest, so a file written by hand with either must
+// parse, and a file with neither must read as "not placed".
+func TestParseReadsGoalAndAfter(t *testing.T) {
+	m := FromBytes("c", []byte("---\ncolor: 45\ngoal: Version 0.4: out\nafter: [B, a-b , b, ]\n---\n- "+idA+"\n"))
+	if m.Goal != "Version 0.4: out" {
+		t.Errorf("goal = %q (a colon inside the value must survive)", m.Goal)
+	}
+	if !m.Placed || strings.Join(m.After, ",") != "b,a-b" {
+		t.Errorf("placed=%v after=%v, want normalized, deduplicated [b a-b]", m.Placed, m.After)
+	}
+	if bare := FromBytes("c", []byte("---\nafter: x, y\n---\n")); strings.Join(bare.After, ",") != "x,y" {
+		t.Errorf("no brackets: after = %v", bare.After)
+	}
+	empty := FromBytes("c", []byte("---\nafter: []\n---\n"))
+	if !empty.Placed || len(empty.After) != 0 {
+		t.Errorf("after: [] must be placed with no predecessor, got placed=%v after=%v", empty.Placed, empty.After)
+	}
+	none := FromBytes("c", []byte("---\ncolor: 45\n---\n"))
+	if none.Placed || none.Goal != "" {
+		t.Errorf("no keys: placed=%v goal=%q", none.Placed, none.Goal)
+	}
+}
+
+// The setters rewrite one line and leave the rest of the file as it was,
+// which is the promise every other edit keeps.
+func TestSettersTouchOnlyTheirOwnLine(t *testing.T) {
+	body := "---\ncolor: 45\n# keep me\nweird: thing\ncreated-at: 2026-09-15T10:00:00Z\n---\n\n# c\n- " + idA + "\n"
+	m := FromBytes("c", []byte(body))
+
+	m.SetGoal("ship it")
+	m.SetAfter([]string{"a", "b"})
+	want := "---\ncolor: 45\n# keep me\nweird: thing\ncreated-at: 2026-09-15T10:00:00Z\ngoal: ship it\nafter: [a, b]\n---\n\n# c\n- " + idA + "\n"
+	if got := string(m.Bytes()); got != want {
+		t.Errorf("after set:\n%s\nwant:\n%s", got, want)
+	}
+
+	m.SetGoal("changed")
+	m.SetAfter(nil)
+	if got := string(m.Bytes()); !strings.Contains(got, "goal: changed\nafter: []\n") || strings.Count(got, "goal:") != 1 {
+		t.Errorf("replace in place failed:\n%s", got)
+	}
+	if !m.Placed || len(m.After) != 0 {
+		t.Errorf("SetAfter(nil) must place as a lane top, placed=%v", m.Placed)
+	}
+
+	m.SetGoal("")
+	m.Unplace()
+	if got := string(m.Bytes()); got != body {
+		t.Errorf("removing both must give the original back:\n%s", got)
+	}
+	if m.Placed || m.Goal != "" {
+		t.Errorf("fields not cleared: placed=%v goal=%q", m.Placed, m.Goal)
+	}
+}
+
+// A file that began without frontmatter is given one rather than refused.
+func TestSetGoalOnAFileWithoutFrontmatter(t *testing.T) {
+	m := FromBytes("c", []byte("- "+idA+"\n"))
+	m.SetGoal("g")
+	if got := string(m.Bytes()); got != "---\ngoal: g\n---\n\n- "+idA+"\n" {
+		t.Errorf("got:\n%s", got)
+	}
+}
+
+// What a setter wrote reads back the same, through the file.
+func TestGoalAndAfterRoundTripThroughSave(t *testing.T) {
+	root := t.TempDir()
+	m := New("c", 45, time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))
+	m.SetGoal("a: b")
+	m.SetAfter([]string{"x"})
+	if err := m.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(root, "c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Goal != "a: b" || !got.Placed || strings.Join(got.After, ",") != "x" {
+		t.Errorf("round trip: goal=%q placed=%v after=%v", got.Goal, got.Placed, got.After)
+	}
+}
