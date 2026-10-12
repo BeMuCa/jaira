@@ -3,16 +3,14 @@
 // of the last days beneath them. Only the drawing: register.tsx reads the
 // board and hooks the pane, since every call on `$` lives there.
 
+import type { ElementTable } from 'claude-code'
 import { clockOf, HISTORY_DAYS, type Overview, type Row } from './overview.ts'
 import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
 
-// The elements the surface draws with, as $.ui.resolve hands them over.
-type Table = { Box: any; Button: any; Text: any }
-
 // `view` null: the board could not be read.
-export function drawOverview({ Box, Button, Text }: Table, view: Overview | null, close: () => void) {
+export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, close: () => void) {
   const closeButton = <Button key="overview-close" label={w.close} onPress={close} />
   if (view === null) return <Box flexDirection="column"><Text dimColor>{w.unread}</Text>{closeButton}</Box>
   const column = (key: string, heading: string, rows: Row[], extra: (r: Row) => string) => (

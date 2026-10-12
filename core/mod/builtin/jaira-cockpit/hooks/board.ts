@@ -33,7 +33,7 @@ type Ticket = {
   review?: { verdict?: string }
 }
 
-function parse<T>(json: string): T | undefined {
+export function parse<T>(json: string): T | undefined {
   try {
     return JSON.parse(json) as T
   } catch {
@@ -41,7 +41,7 @@ function parse<T>(json: string): T | undefined {
   }
 }
 
-const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
+export const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
 
 // A jaira built before `lanes --json` carried human_exit says nothing about
 // whose lane is whose: then the shipped board's person lanes are taken.
