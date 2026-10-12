@@ -151,14 +151,22 @@ through the same route.
 
 <!-- jaira:local -->
 
-## Client-facing changes go in core/release/NOTES.md
+## Client-facing changes go in core/release/notes/
 
-Every change a user of jaira can notice gets a line in `core/release/NOTES.md`,
-in the same commit as the change itself. Not a changelog generated from git
-later — a line written while you still know why it matters. The file is
-embedded into the binary with go:embed and is what `jaira update` reads back to
-someone whose board was last touched by an older build, so an unwritten change
-is a change nobody is ever told about.
+Every change a user of jaira can notice gets a note in
+`core/release/notes/<TICKET>.md` — the ticket's six-character handle, so
+`core/release/notes/AR97K9.md` — in the same commit as the change itself. Not a
+changelog generated from git later — a line written while you still know why it
+matters. The notes are embedded into the binary with go:embed and are what
+`jaira update` reads back to someone whose board was last touched by an older
+build, so an unwritten change is a change nobody is ever told about.
+
+One file per ticket is what keeps two pull requests from ever conflicting over
+release notes: each adds a file nobody else touches. A ticket with a second
+change adds a second line to its own file. A file directly in
+`core/release/notes/` is Unreleased; once a release has moved it away, a
+further change for the same ticket creates `core/release/notes/<TICKET>.md`
+again.
 
 Counts as client-facing: a new or renamed command or flag, changed CLI output or
 exit codes, a new or changed field in the ticket frontmatter, anything that
@@ -172,21 +180,27 @@ The format is a line scan, and breaking it silently corrupts what users read:
 
 - One change is exactly one line starting `- `. Never wrap it across two lines —
   a wrapped line is read as two separate, incomplete changes.
-- A section heading is `## ` followed by the version a build reports: the git
-  tag with its leading `v` stripped, so tag `v0.1.0` is `## 0.1.0`.
-- Newest section first. Everything else — prose, blank lines, HTML comments — is
-  ignored, so explaining yourself in the file is free.
+- Everything else in the file — prose, blank lines, HTML comments — is ignored.
+- No version heading. A note file never says which release it belongs to.
 
 Write each line as an instruction: what the reader must DO differently, not a
 record of what a commit did.
 
-New entries go under `## Unreleased` at the top. A version heading is written
-when that version is tagged, never before: once a tag exists for a version, that
-section is closed history and nothing may be added to it — a released note that
-grows after the fact describes a binary nobody has. Releasing means renaming
-`## Unreleased` to the version number being tagged and opening a fresh empty
-`## Unreleased` above it. If no `## Unreleased` section is there when you need
-one, add it.
+Releasing is a button, and nothing in it lands on master directly:
+
+1. Run the `release-notes` workflow from the Actions tab on master with the
+   version, `X.Y.Z`. It moves every file directly in `core/release/notes/` into
+   `core/release/notes/<version>/` on a branch `release/<version>` and opens a
+   pull request.
+2. Merging that pull request runs `release-tag`: it tags the merge commit
+   `v<version>` and starts `release.yaml`, which builds the binaries as before.
+
+The binary reads a release's version from its folder name. Never move a note
+into a version folder by hand, and never edit a note inside one: that release
+has shipped.
+
+`core/release/NOTES.md` holds the releases up to 0.3.6 and is closed history:
+nothing is added to it.
 
 ## Work rides on a branch and arrives through a PR
 

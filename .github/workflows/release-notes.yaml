@@ -1,0 +1,54 @@
+name: release-notes
+
+# The release button: run it from the Actions tab on master with the version
+# to release. It moves every file directly in core/release/notes/ into
+# core/release/notes/<version>/ on a branch release/<version> and opens a pull
+# request. Nothing is pushed to master; merging that pull request is the
+# release (release-tag.yaml tags it).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, X.Y.Z
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cut:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Move the notes into the release folder
+        id: cut
+        env:
+          VERSION: ${{ inputs.version }}
+        # Two lines, not one: inside echo "$(...)" a refusal from cut would
+        # be swallowed and the next step would run with an empty version.
+        run: |
+          version=$(go run ./core/release/cut "$VERSION")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Push release/<version> and open the pull request
+        env:
+          VERSION: ${{ steps.cut.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git ls-remote --exit-code --tags origin "v$VERSION" >/dev/null; then
+            echo "tag v$VERSION exists already" >&2
+            exit 1
+          fi
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch -c "release/$VERSION"
+          git add core/release/notes
+          git commit -m "chore(release): cut $VERSION"
+          git push origin "release/$VERSION"
+          gh pr create --base master --head "release/$VERSION" \
+            --title "release: v$VERSION" \
+            --body "Moves the release notes into core/release/notes/$VERSION/. Merging this pull request tags v$VERSION and builds the release."

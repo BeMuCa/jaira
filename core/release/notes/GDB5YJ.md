@@ -1,0 +1,1 @@
+- Press enter on an installed lane in the lanes screen (`S` → lanes) to remove it: it opens the same yes/no question as `x`, with no preselected, so a blind enter still removes nothing; enter on a not-installed lane or the `+` column adds as before, and `x` works unchanged.

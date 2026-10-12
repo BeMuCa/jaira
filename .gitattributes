@@ -16,9 +16,11 @@ core/role/builtin/**/*.sh text eol=lf
 core/role/builtin/**/*.py text eol=lf
 core/role/builtin/**/*.html text eol=lf
 
-# core/release/NOTES.md is embedded and read back line by line — a CRLF
-# checkout turns every entry into one that ends in \r. core/hook/example is the
+# core/release/NOTES.md and the notes under core/release/notes are embedded
+# and read back line by line — a CRLF checkout turns every entry into one that
+# ends in \r. core/hook/example is the
 # shipped notify hook: CRLF makes it unrunnable, the same reason the role
 # scripts above are pinned.
 core/release/NOTES.md text eol=lf
+core/release/notes/*.md text eol=lf
 core/hook/example/*.sh text eol=lf
