@@ -21,17 +21,14 @@ related:
   - 01M4P5FK818EAFZ68XFYNZZDRH
 commits: []
 created-at: 2026-10-12T15:33:33Z
-updated-at: 2026-10-12T18:25:04Z
+updated-at: 2026-10-12T18:25:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68234
 claimed-at: 2026-10-12T18:17:28Z
 outcome-what: "jaira-cockpit lists the board's workers (/cockpit workers, tool workers) with lane, context, cache and the next-round verdict; chooseWorker limits context by a share of the model window (workerContextShare, default 50%); Give back moves without --force; worker/dispatcher reports carry own context and cache; teamlead skill keeps a worker's tab open until its ticket comes back and then follows the workers verdict"
 outcome-why: "the teamlead could not see how full or how cold a worker was, and closed or reused workers by a rule of its own while a fixed 150k limit hit large tasks"
 outcome-resolves: "DoD 1-5: workers() register.tsx + workerLines sessions.ts with tests; skill report lines; teamlead section; release note QRHB35; Give back without --force"
-review-summary: |-
-  hooks/board.ts:120 lanesOf sits between the whoOf comment and whoOf - move it below whoOf with its own comment
-  hooks/sessions.ts workerLines judges with tabAlive=true when no tab list is known; Give back hands to nobody without Herdr - pass tabAlive: tab !== undefined so both say the same
-  hooks/register.tsx module-level 'let share' beside guarded(), which takes threshold/usdPerMTok as arguments - pass share into giveBack() and workers() the same way
+review-summary: "core/role/builtin/jaira-teamlead/SKILL.md step 2 dropped the old warning that a kept session acts on a stale board - the SendMessage must tell it to read jaira show <id> --json first, as the cockpit's backMessage does; step 3 has an over-long line - reflow"
 ---
 
 # Teamlead sieht Kontext und Cache jedes Workers und schliesst kalte Worker
@@ -66,3 +63,4 @@ review-summary: |-
 - **2026-10-12 18:21 · Alexander Sacharov** — Learned: $.session.usage().context.window exists (tests mock it at 1_000_000) - that is where the record's window comes from. Without Herdr in the asking session workerLines cannot see tabs, so it lists every record of this repo and judges as if the tab were alive; records are only written with HERDR_PANE_ID, so that case is rare.
 - **2026-10-12 18:23 · Alexander Sacharov** — Teamlead skill: the old sections 'Close what you started' (close at push) and 'Bringing one back' (always a new session) contradicted DoD3 and were rewritten into one section; the 'resume to ask it something' paragraph was kept. core/role/role_test.go TestCrossReferencesCarryThePrefix refuses a literal '/worker' in a skill, so the tab label is described in words.
 - **2026-10-12 18:24 · Alexander Sacharov** — critique round 1: (1) board.ts lanesOf landed under the whoOf comment - move; (2) workerLines without a tab list judged the tab alive, Give back without Herdr gives to nobody - use tab !== undefined; (3) share as module state does not fit guarded(threshold, usdPerMTok) - pass it as an argument. Left alone: the separate selfLine wording (DoD2 wants the worker's own figures, which only the live usage has).
+- **2026-10-12 18:25 · Alexander Sacharov** — critique round 2: code clean after round 1; teamlead skill step 2 must make the kept worker re-read the ticket (stale-board warning of the removed 'Bringing one back' section), step 3 reflow.

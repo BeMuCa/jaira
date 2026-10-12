@@ -174,12 +174,15 @@ The cockpit's Give back button decides by itself. When you send it back:
    rule Give back follows — tab alive, cache warm, context under the limit —
    so read it, never judge cache or context yourself.
 2. **Same worker:** send it the reason with `SendMessage` to the name
-   `ListAgents` gives its session, and `jaira note` on the ticket whom you
-   sent it to and why.
+   `ListAgents` gives its session, and tell it to read
+   `jaira show <id> --json` before anything else: other sessions wrote to the
+   board while it waited, and its context does not know. `jaira note` on the
+   ticket whom you sent it to and why.
 3. **New worker:** close the old tab first — its `tab_id` from
    `$HERDR_BIN_PATH tab list`, the tab spawn.sh labelled with the ticket id
-   and the role, then `$HERDR_BIN_PATH tab close <tab_id>` — and start a new one with `spawn.sh`
-   as above, so a ticket never has two worker tabs. Note why on the ticket.
+   and the role, then `$HERDR_BIN_PATH tab close <tab_id>` — and start a new
+   one with `spawn.sh` as above, so a ticket never has two worker tabs. Note
+   why on the ticket.
 4. **No `workers` tool** — the cockpit is not installed: a new worker.
 
 The limit is a share of the model's context window, the cockpit's setting
