@@ -184,10 +184,17 @@ Every one of them that sits in the board's terminal lane (`jaira show <ID>
 logbook file:
 
 ```bash
+jaira pull <ID>
 jaira logbook <ID>
 git add -A -- ':(glob).jaira/**/*<ID>-*.md'
 git commit -m "chore(<ID>): file the ticket away with its commits stamped"
 ```
+
+`jaira pull` first, every time: the move into done may have been written in
+another checkout — the cockpit's Accept moves a ticket wherever its file was —
+so the file in this worktree can be older than the ticket's ref, and `jaira
+logbook` refuses an older file. Pull brings it up to the ref, and is a no-op
+where it already is.
 
 By path, never `.jaira/` whole: the pathspec takes this ticket's file twice —
 gone from `tickets/`, new under `logbook/`, both named after its id — and

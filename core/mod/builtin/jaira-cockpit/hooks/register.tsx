@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { branchesFor, carrierBranch, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf, hasReservation, lanesOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { branchesFor, carrierBranch, namingPattern, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf, hasReservation, lanesOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -391,7 +391,8 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
     if (listed?.exitCode === 0) branch = carrierBranch(listed.stdout, found.base ?? '')
   }
   if (branch === undefined && base !== undefined) {
-    const named = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H', '-n', '1', '--fixed-strings', `--grep=(${id})`], b.repo)
+    // The same subjects ticketsNamed reads: `type(ID):` and `type(A,ID):`.
+    const named = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H', '-n', '1', '-E', `--grep=${namingPattern(id)}`], b.repo)
     const sha = named?.exitCode === 0 ? named.stdout.trim() : ''
     const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
     if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)

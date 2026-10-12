@@ -286,6 +286,13 @@ export function ticketsNamed(subjects: string): string[] {
   return out
 }
 
+// The extended regular expression `git log -E --grep` finds a commit
+// naming one ticket by: the same subjects ticketsNamed reads, the handle
+// alone or among others in the scope.
+export function namingPattern(id: string): string {
+  return `^[a-z]+\\(([^)]*[ ,])?${id}([ ,][^)]*)?\\)!?:`
+}
+
 // Which of those are not in the terminal lane yet, off `jaira list --json`.
 // A handle the board does not list is filed away in the logbook — past done
 // — or no ticket of this board, and holds nothing up.

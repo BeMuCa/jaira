@@ -47,10 +47,11 @@ type World = {
   next: string[]
   // `git branch --list '*/<slug>'`, read where the ticket has no worktree.
   branches: string[]
-  // `git log --format=%s master..<branch>`; the commit `git log --grep`
-  // finds naming a ticket and the branches `git branch --contains` gives it.
+  // `git log --format=%s master..<branch>`; the commits on branches the
+  // base lacks, which `git log -E --grep` searches with the pattern it is
+  // given, and the branches `git branch --contains` gives the one it finds.
   subjects: string[]
-  namedSha: string
+  branchCommits: { sha: string; subject: string }[]
   holders: string[]
   toasts: string[]
   // `git remote -v`.
@@ -113,7 +114,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     next: [],
     branches: [],
     subjects: ['feat(MG677R): cache key'],
-    namedSha: '',
+    branchCommits: [],
     holders: [],
     toasts: [],
     prListFails: false,
@@ -205,7 +206,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'remote' && args[1] === '-v') return ok(w.remotes)
     if (cmd === 'git' && args[0] === 'branch' && args[1] === '--contains') return ok(w.holders.join('\n'))
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
-    if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) return ok(w.namedSha)
+    if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) {
+      const pattern = new RegExp(args.find(a => a.startsWith('--grep='))!.slice('--grep='.length), 'm')
+      return ok(w.branchCommits.find(c => pattern.test(c.subject))?.sha ?? '')
+    }
     // As many subjects as commits ahead: the first `ahead` of them.
     if (cmd === 'git' && args[0] === 'log') return ok(w.subjects.concat(Array(Math.max(0, w.ahead - w.subjects.length)).fill('chore: more')).slice(0, w.ahead).join('\n'))
     // The move a press forces lands: jaira list reads the ticket in done after it.
@@ -682,14 +686,32 @@ describe('after Accept', () => {
     w.ahead = 2
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
-    w.namedSha = 'abc123\n'
+    w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
     w.holders = ['master', 'feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
-    expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H', '-n', '1', '--fixed-strings', '--grep=(ZZ99ZZ)', '@/repo']])
+    expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H', '-n', '1', '-E', '--grep=^[a-z]+\\(([^)]*[ ,])?ZZ99ZZ([ ,][^)]*)?\\)!?:', '@/repo']])
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     // Its worktree is the other ticket's: the role pushes from there.
+    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
+  test('the branch search finds a ticket named beside others in one subject, and never a handle that only starts the same', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.subjects = ['feat(MG677R): cache key', 'chore(MG677R,ZZ99ZZ): both']
+    w.branchCommits = [
+      { sha: 'wrong1', subject: 'fix(ZZ99ZZX): a longer handle' },
+      { sha: 'wrong2', subject: 'docs: mentions (ZZ99ZZ) in passing' },
+      { sha: 'abc123', subject: 'chore(MG677R,ZZ99ZZ): both' },
+    ]
+    w.holders = ['feat/mg677r']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 

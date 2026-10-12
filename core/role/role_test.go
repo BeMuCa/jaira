@@ -501,6 +501,10 @@ func TestPRFilesTheTicketsAwayBeforeThePush(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(body)
+	pull := strings.Index(text, "jaira pull <ID>\njaira logbook <ID>")
+	if pull < 0 {
+		t.Error("jaira-role-pr must run jaira pull <ID> right before jaira logbook <ID>: a file older than the ref is refused")
+	}
 	file := strings.Index(text, "jaira logbook <ID>")
 	commit := strings.Index(text, `chore(<ID>): file the ticket away`)
 	push := strings.Index(text, "## Push the branch")
