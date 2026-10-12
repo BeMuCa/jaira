@@ -1,7 +1,7 @@
 ---
 id: 01M4QED6YSC1DXTB8TY5F3VNVC
 title: move schreibt eine veraltete Ticket-Datei von der Platte ueber einen neueren Ref
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,17 +21,23 @@ tags:
   - concurrency
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 8a09630ee4aa14863b9c2e58ac01ee254265fe2a
+  - 5bf1e64bb95e7db0b1611482af2e197fada4d1eb
+  - e12c9cdb280960aeb6be02c3b7cc907f9527ad97
 created-at: 2026-10-12T06:57:07Z
-updated-at: 2026-10-12T07:37:09Z
+updated-at: 2026-10-12T08:05:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-37581
 claimed-at: 2026-10-12T07:24:00Z
-outcome-what: "Jeder Schreibweg (move auch mit --force, note, dod, claim, set, logbook, archive) verweigert eine Ticket-Datei, deren updated-at vor dem lokalen Ref liegt, und nennt beide Staende; jaira pull bringt eine vorhandene aeltere Datei auf den Stand des Refs."
-outcome-why: "move las die veraltete Datei und schrieb sie mit gueltigem Lease auf den Ref (K1W2JR: Review, Proofs, 9 Notes weg); pull war ein No-op, sobald eine Datei existierte, konnte den Zustand also nicht reparieren."
-outcome-resolves: "F3VNVC: eine Datei aelter als ihr Ref kann den Ref nicht mehr ueberschreiben, und pull ist der Weg, sie nachzuziehen."
-review-summary: "none"
-review-gaps: "refresh las den Ref zweimal (refTicket, dann Repo.Read fuer die Bytes); refTicket gibt jetzt die Bytes mit. Gelassen: winner() parst den Ref ebenfalls, liest aber nur Skalare ohne Decode - zwei verschiedene Bedarfe; doppelte Freshness-Pruefung in move.Move und Mutate ist gewollt (siehe critique-Note). Kein toter Code, gofmt sauber."
+outcome-what: "Review: Diff gegen die DoD geprueft, Tests mit -race gruen"
+outcome-why: "Frische Review-Lane vor der Abnahme durch eine Person"
+outcome-resolves: "F3VNVC: bereit fuer signoff, mit einem benannten Vorbehalt (Uhrenversatz)"
+review-summary: "Jeder Schreibweg durch den Store (Mutate: note, dod, claim, set, move; dazu Archive und Logbook) fragt vor dem Schreiben den Syncer, ob updated-at der Datei strikt vor updated-at des lokalen Refs liegt; wenn ja, verweigert er mit StaleError (beide Staende: Lane + Zeit, Hinweis auf jaira pull), Exit 3, reason stale_file. move prueft das schon vor dem Gate, damit --force nicht die Luecken der alten Datei ueberstimmt. jaira pull auf eine vorhandene Datei holt best effort, vergleicht mit dem Ref und ueberschreibt eine aeltere Datei mit den Ref-Bytes (Umbenennung bei geaendertem Titel), ohne Ref oder Claim anzufassen; liegt ein ungesendeter Schreibvorgang im Outbox, verweigert pull (reason unsent). NOTES.md-Zeile vorhanden."
+review-gaps: "1) Uhrenversatz kann falsch verweigern, entgegen der critique-Note ('nie eine falsche Verweigerung'): der lokale Ref bewegt sich erst nach erfolgreichem Push (Record, refsync.go:105). Schrieb ein Teammate mit vorgehender Uhr den Ref, und ich schreibe offline danach mit meiner Uhr (Zeit < seine), liegt meine Datei 'vor' dem Ref -> der naechste Befehl verweigert stale_file, und pull verweigert unsent: festgefahren bis online. Selten, aber der Kommentar an CheckFresh/die Note behaupten das Gegenteil. 2) refresh ueberschreibt Handaenderungen an der Datei, die nicht im Outbox liegen (nur Pending wird geprueft); ok, weil 'aelter' per Definition, aber nicht erwaehnt. 3) Kein Test fuer den Umbenennungs-Zweig in refresh (Titel auf dem Ref geaendert, alte Datei geloescht) und keiner fuer Archive/Logbook-Verweigerung. Keine Luecke gegen die DoD."
+test-verdict: "pass: go clean -testcache; go test ./... -race -count=1 RC=0; DoD 1-3 im Baum geprueft (Proofs-Zeilen stimmen); frisch gebautes Binary auf Scratch-Board: move --force auf alter Datei RC=3 mit beiden Staenden, --json reason stale_file, Ref unveraendert; pull meldet was/now und die Datei traegt den Ref-Stand; note danach geht; zweites pull ist wieder no-op"
+review-verdict: "DoD erfuellt: move --force verweigert eine aeltere Datei und nennt beide Staende (TestMoveRefusesAFileOlderThanItsRefEvenWithForce), pull frischt auf (TestPullBringsAStaleFileUpToItsRef), NOTES-Zeile da, go test ./... -race -count=1 gruen. Annehmbar mit Vorbehalt: der Uhrenversatz-Fall (gaps 1) ist ein echter, seltener Fehlweg; entweder hinnehmen und die Note/den Kommentar korrigieren, oder spaeter eigenes Ticket."
+review-check: "1. cd in einen Klon mit Remote, ein Ticket X mit Ref nehmen.  2. Datei von X auf alten Stand bringen: git show <alter-commit>:.jaira/tickets/<X>.md > .jaira/tickets/<X>.md  3. jaira move X --to done --force -> Ausgabe 'the ticket file here is older than its ref', Zeilen 'file:' und 'ref:', Exit-Code 3 (echo $?); git rev-parse refs/jaira/tickets/<ULID> unveraendert.  4. jaira note X test -> dieselbe Verweigerung.  5. jaira pull X -> 'was behind its ref and is up to date now' mit 'was:'/'now:'.  6. jaira note X test -> geht durch. Automatisch: go test ./internal/cli -run 'Stale|OlderThanItsRef' und go test ./core/refsync -run Unsent."
 ---
 
 # move schreibt eine veraltete Ticket-Datei von der Platte ueber einen neueren Ref
@@ -74,3 +80,7 @@ review-gaps: "refresh las den Ref zweimal (refTicket, dann Repo.Read fuer die By
 - Ein Ref ohne updated-at gibt kein Urteil (Store.Create setzt es nicht von selbst, die CLI schon) - dann bleibt alles wie vorher.
 - Test-Falle: runCLI ruft afterCommand nicht, die Ref-Schreibvorgaenge bleiben im Outbox; flushRefs() im Test aufrufen.
 - **2026-10-12 07:35 · Alexander Sacharov** — critique 1: refresh soll y.Store.Load(id) statt eigener ReadFile/ParseDoc/Decode-Kette nutzen (wie der alte AlreadyHere-Zweig). Bewusst stehen gelassen: Was/Now als fertige Saetze im JSON (die Verweigerung soll Menschen beide Staende nennen; ein Agent braucht nur reason=stale_file und pull); Ueberschreiben statt Merge im Refresh (Begruendung im Kommentar an refresh); doppelte Pruefung in move.Move und Mutate (vor dem Gate noetig, in Mutate fuer alle anderen Schreibwege). Uhrenversatz zwischen Maschinen fuehrt hoechstens zu falsch-negativ, also zum alten Verhalten, nie zu einer falschen Verweigerung, solange der Ref nur Inhalte traegt, die die Datei nicht hat.
+- **2026-10-12 07:40 · Alexander Sacharov** — testing: done, an die frische review-Lane uebergeben (eigener Herdr-Tab via run-lane.sh --no-worktree).
+- **2026-10-12 07:45 · Alexander Sacharov** — review: DoD erfuellt, Tests gruen. Vorbehalt fuer die Abnahme: Uhrenversatz zwischen Maschinen kann offline falsch verweigern (lokaler Ref bewegt sich erst nach Push; Ref mit Zeitstempel aus der Zukunft -> eigene spaetere Schreibvorgaenge wirken 'aelter', pull verweigert dann unsent). Die critique-Note behauptet das Gegenteil. Entscheidung fuer die Person: hinnehmen oder nachbessern.
+- **2026-10-12 08:02 · Alexander Sacharov** — Alex 12.10. zu review gap 1 (Uhrzeitversatz -> falsche Verweigerung): annehmen; im logbook-Commit den CheckFresh-Kommentar und die critique-Note korrigieren - 'nie eine falsche Verweigerung' stimmt nicht, Uhrzeitversatz kann eine erzeugen.
+- **2026-10-12 08:04 · Alexander Sacharov** — Korrektur zur critique-Note: 'nie eine falsche Verweigerung' stimmt nicht. Uhrenversatz kann eine aktuelle Datei verweigern: Teammate mit vorgehender Uhr schreibt den Ref, hier wird danach offline mit frueherem Stempel geschrieben; der lokale Ref bewegt sich erst nach einem Push, also meldet der naechste Schreibbefehl stale_file und pull unsent, bis das Remote erreichbar ist. Von Alex so angenommen (Option 1); der Kommentar an CheckFresh (core/refsync/refsync.go) sagt es jetzt.

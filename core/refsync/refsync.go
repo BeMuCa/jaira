@@ -724,6 +724,12 @@ func isStale(file, ref *ticket.Ticket) bool {
 // the compare-and-swap would accept — and that is the whole problem. A file
 // read from an older branch carries a perfectly current lease. Reading the
 // local ref also keeps a write off the network.
+//
+// The comparison trusts clocks, and skew between machines can refuse a write
+// that is in fact current: a teammate whose clock runs ahead writes the ref,
+// this clone then writes offline with an earlier stamp, and since the local ref
+// only moves after a push, the next write here reads as stale — and pull
+// refuses too, over the unsent write — until the remote is reachable again.
 func (y *Syncer) CheckFresh(t *ticket.Ticket) error {
 	if y == nil || t == nil || y.Usable() != nil {
 		return nil
