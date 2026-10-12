@@ -1,7 +1,7 @@
 ---
 id: 01M4RWVFXTPC084S81WSDSKZ70
 title: "Cockpit zeigt, was der Teamlead anlegt und was als Nächstes ansteht"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Knopf im Cockpit-Band oeffnet eine Board-Geschichte ueber mehrere Tage: Spalten wie Lanes (in Arbeit, in der Warteschlange, zurueckgestellt) und darunter, was in den letzten Tagen angelegt und zurueckgestellt wurde - damit man nach einer Nacht nicht verliert, was der Teamlead angelegt hat"
@@ -17,9 +17,14 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - adecb1eba291258a5b54a11218a70fc2af716b53
+  - eafa7e8648523039b46bcafc340d3ba68c071edc
+  - ca2f57ced067baf1209bf1cec563b1a213b0fefb
+  - e62c17242f65d4f00b5e2a355e26e93a160db8dd
+  - 776fc9af9b42e90364fabbc34374782a21c22182
 created-at: 2026-10-12T20:28:49Z
-updated-at: 2026-10-12T21:30:08Z
+updated-at: 2026-10-12T22:08:19Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 mode: ""
@@ -80,3 +85,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-dskz70/core/mod/builti
 - **2026-10-12 21:24 · Alexander Sacharov** — review (fresh): angenommen mit einem kleinen Befund - 'In work' (overview.ts:186-188) zaehlt jedes Ticket einer agentischen Lane, das jaira next --all nicht anbietet, als gehalten; next laesst aber auch nicht-Ready und durch blocked_by wartende Tickets weg (gate.Actionable). Die stehen dann mit leerem wer in In work. Fix waere: In work nur mit assignee/aktivem Claim, Rest in Queue oder eigene Markierung. Heute ohne Folge auf dem Board. Ausserdem steht der Merge von feat/13pqb3 in diesen Branch (Note 21:17) noch aus.
 - **2026-10-12 21:28 · Alexander Sacharov** — merge: origin/feat/13pqb3 (dc0a1b4a, PR #69: 13PQB3+0EW5XK+5A6RJZ) in feat/dskz70 gemergt. Drei Konflikte, alle 'beide fuegten nebeneinander an' - register.tsx (busyAtom/overviewAtom, EXPLANATION+ANSWER/OVERVIEW, Explanation-Pane/Overview-Pane) und types/index.d.ts (busy/overview): beide Seiten behalten. Danach plugin validate ok, tsc ok, claude plugin test 133/133, go test -race ./... RC=0. Review-Befund ('In work' zaehlt nicht-startbare Tickets) ist offen und liegt bei Alex in signoff.
 - **2026-10-12 21:30 · Alexander Sacharov** — fix nach Review-Befund (auf Anweisung jaira-f5, Alex schlaeft; bleibt in signoff, keine neue Review-Runde): 'In work' nimmt nur noch Tickets mit assignee (core/mod/builtin/jaira-cockpit/hooks/overview.ts:90). Ein Ticket, das jaira next mangels Ready oder wegen offenem blocked_by weglaesst und niemand haelt, steht in keiner Spalte. Test: W2W2W2 im Spalten-Test; ohne den Fix rot (132/1), mit gruen (133/0). Proofs DoD 4/5 auf die neuen Zeilen gesetzt.
+- **2026-10-12 22:07 · Alexander Sacharov** — Alex 2026-10-13 per Telefon: 'Переведи и я сделаю релиз' - angenommen ohne Live-Check; Fehler werden morgen als neuer Bugfix aufgenommen. Vom Teamlead nach done bewegt, PR #71 auf ready.
