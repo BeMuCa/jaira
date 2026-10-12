@@ -489,3 +489,28 @@ esac
 		}
 	}
 }
+
+// A pull request shows each ticket's file as the branch last committed it,
+// and the lanes after the last code commit commit nothing: jaira-role-pr files
+// the finished tickets away before it pushes, by handle, and describes every
+// ticket the branch's commits name (GPFA7B, after PRs #62 and #63 showed
+// their tickets in critique).
+func TestPRFilesTheTicketsAwayBeforeThePush(t *testing.T) {
+	body, err := File("jaira-role-pr", "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	file := strings.Index(text, "jaira logbook <ID>")
+	commit := strings.Index(text, `chore(<ID>): file the ticket away`)
+	push := strings.Index(text, "## Push the branch")
+	if file < 0 || commit < 0 || push < 0 || file > push || commit > push {
+		t.Errorf("jaira-role-pr must run jaira logbook <ID> and commit chore(<ID>): file the ticket away before ## Push the branch (at %d, %d, %d)", file, commit, push)
+	}
+	if strings.Contains(text, "git add .jaira/") || !strings.Contains(text, `git add -A -- ':(glob).jaira/**/*<ID>-*.md'`) {
+		t.Error("jaira-role-pr must stage the filed ticket by its own path, never .jaira/ whole")
+	}
+	if !strings.Contains(text, "git log --format=%s <that remote>/<its default branch>..HEAD") || strings.Index(text, "## Which repository it goes to") > file || !strings.Contains(text, "**Every ticket on the branch**") {
+		t.Error("jaira-role-pr must read every ticket the branch's commits name, against the target's default branch settled before it, and describe each of them")
+	}
+}

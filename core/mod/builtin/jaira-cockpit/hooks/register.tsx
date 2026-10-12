@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { branchesFor, branchListed, dispatchLane, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf, hasReservation, lanesOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import { branchesFor, branchListed, carrierBranch, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf, hasReservation, lanesOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -329,7 +329,7 @@ async function accept($: EngineInterface, w: Waiting): Promise<void> {
   const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
   if (done.ok) {
     await say($, t.accepted(w.id, w.acceptTo))
-    await afterAccept($, w.id, dir)
+    await afterAccept($, w.id, w.acceptTo)
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
 }
@@ -341,47 +341,99 @@ async function accept($: EngineInterface, w: Waiting): Promise<void> {
 // cannot run starts nothing and says why in the message pane; the ticket
 // stays in done, where the press put it: accepted is accepted, and what
 // follows is the person's to start by hand then.
-async function afterAccept($: EngineInterface, id: string, dir: string): Promise<void> {
+// The repository a pull request of this board goes to and the branch it
+// goes into, fetched: `upstream/main` in a fork, `origin/master` otherwise —
+// what "ahead" is counted against. undefined where origin is missing or no
+// forge can be told (the caller counts against the local base then, and a
+// pull request cannot be opened anyway); a string says why it failed.
+type Target = { on: Forge; repo: string; base: string }
+
+async function pullTarget($: EngineInterface, repoDir: string): Promise<Target | string | undefined> {
+  // Unset, `git config` exits 1 and the host of origin decides.
+  const forge = await run($, ['git', 'config', 'jaira.forge'], repoDir)
+  const origin = await run($, ['git', 'remote', 'get-url', 'origin'], repoDir)
+  const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
+  const on = url ? forgeOf(forge?.exitCode === 0 ? forge.stdout : '', url) : undefined
+  if (on === undefined) return undefined
+  const tool = on === 'github' ? 'gh' : 'glab'
+  const view = await run($, repoViewCommand(on, url), repoDir, 30_000)
+  const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
+  if (repo === undefined) return `${tool} repo view: ${(view?.stderr || view?.stdout || 'did not run').trim()}`
+  const targetView = await run($, repoViewCommand(on, repo), repoDir, 30_000)
+  const branch = targetView?.exitCode === 0 ? defaultBranchOf(on, targetView.stdout) : undefined
+  if (branch === undefined) return `${tool} repo view ${repo}: ${(targetView?.stderr || 'no default branch').trim()}`
+  const remotes = await run($, ['git', 'remote', '-v'], repoDir)
+  const remote = remotes?.exitCode === 0 ? remoteFor(remotes.stdout, repo) : undefined
+  if (remote === undefined) return t.noRemoteFor(repo)
+  const fetched = await run($, ['git', 'fetch', remote, branch], repoDir, 60_000)
+  if (fetched?.exitCode !== 0) return `git fetch ${remote} ${branch}: ${(fetched?.stderr ?? 'did not run').trim()}`
+  return { on, repo, base: `${remote}/${branch}` }
+}
+
+async function afterAccept($: EngineInterface, id: string, terminal: string): Promise<void> {
   if (!board) return
   const b = board
-  const stuck = (why: string) => fail($, t.afterAccept(id), `${why}\n${t.staysDone(id)}`)
+  // Why a pull request is not opened yet, said beside whatever happens instead.
+  let hint = ''
+  const stuck = (why: string) => fail($, t.afterAccept(id), [why, hint, t.staysDone(id)].filter(Boolean).join('\n'))
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const found = trees?.exitCode === 0 ? branchesFor(trees.stdout, id) : {}
-  const { base } = found
+  const target = await pullTarget($, b.repo)
+  if (typeof target === 'string') return stuck(target)
+  const base = target?.base ?? found.base
   let branch = found.ticket
+  // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
+  // when the worktree went; else the branch whose commits name the ticket,
+  // where it was worked on another ticket's branch.
   if (branch === undefined) {
     const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
     if (listed?.exitCode === 0) branch = branchListed(listed.stdout)
   }
+  if (branch === undefined && base !== undefined) {
+    const named = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H', '-n', '1', '--fixed-strings', `--grep=(${id})`], b.repo)
+    const sha = named?.exitCode === 0 ? named.stdout.trim() : ''
+    const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
+    if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)
+  }
   let step: StepAfterAccept = 'next'
-  if (branch !== undefined && base !== undefined && branch !== base) {
+  if (branch !== undefined && base !== undefined && branch !== found.base) {
     const count = await run($, ['git', 'rev-list', '--count', `${base}..${branch}`], b.repo)
     if (count?.exitCode !== 0) return stuck(`git rev-list ${base}..${branch}: ${(count?.stderr ?? 'did not run').trim()}`)
     const ahead = Number.parseInt(count.stdout.trim(), 10) || 0
+    let pending: string[] = []
     if (ahead > 0) {
-      // Unset, `git config` exits 1 and the host of origin decides.
-      const forge = await run($, ['git', 'config', 'jaira.forge'], b.repo)
-      const origin = await run($, ['git', 'remote', 'get-url', 'origin'], b.repo)
-      const forgeName = forge?.exitCode === 0 ? forge.stdout : ''
-      const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
-      if (!url) return stuck(t.noRemote(branch))
-      const on = forgeOf(forgeName, url)
-      if (on === undefined) return stuck(t.noForge(url))
-      const view = await run($, repoViewCommand(on, url), b.repo, 30_000)
-      const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
-      if (repo === undefined) return stuck(`${on === 'github' ? 'gh' : 'glab'} repo view: ${(view?.stderr || view?.stdout || 'did not run').trim()}`)
-      const cmd = pullRequestsCommand(on, repo, branch)
-      const listed = await run($, cmd, b.repo, 30_000)
-      const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
-      if (has === undefined) return stuck(`${cmd[0]}: ${(listed?.stderr || listed?.stdout || 'did not run').trim()}`)
-      step = stepAfterAccept(ahead, has)
+      const [subjects, list] = await Promise.all([
+        run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo),
+        run($, ['jaira', 'list', '--json'], b.dir, 30_000),
+      ])
+      if (subjects?.exitCode !== 0 || list?.exitCode !== 0) return stuck(`git log / jaira list: ${(subjects?.stderr || list?.stderr || 'did not run').trim()}`)
+      pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
+      if (pending.length > 0) hint = t.prWaits(branch, pending)
     }
+    let has = false
+    if (ahead > 0 && pending.length === 0) {
+      if (target === undefined) return stuck(t.noForge(branch))
+      const cmd = pullRequestsCommand(target.on, target.repo, branch)
+      const listed = await run($, cmd, b.repo, 30_000)
+      const answer = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
+      if (answer === undefined) return stuck(`${cmd[0]}: ${(listed?.stderr || listed?.stdout || 'did not run').trim()}`)
+      has = answer
+    }
+    step = stepAfterAccept(ahead, pending, has)
   }
   const bin = await herdr($)
   const script = await spawnScript($)
   if (bin === undefined || script === undefined) return stuck(step === 'pr' ? t.prNeedsHerdr(branch ?? '') : t.nextNeedsHerdr)
-  if (step === 'pr') {
-    const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, 'pr', dir], dir, 120_000)
+  if (step === 'pr' && branch !== undefined) {
+    // In the worktree that carries the branch — the role pushes from there —
+    // checked out again beside the repository where it went after done.
+    let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
+    if (wt === undefined) {
+      wt = newWorktreeFor(b.repo, branch)
+      const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
+      if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${(added?.stderr ?? 'did not run').trim()}`)
+    }
+    const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
     if (r?.exitCode !== 0) return stuck(`spawn.sh: ${(r?.stderr || r?.stdout || 'did not run').trim().slice(-160)}`)
     return say($, t.prStarted(id, branch ?? ''))
   }
@@ -394,7 +446,7 @@ async function afterAccept($: EngineInterface, id: string, dir: string): Promise
   const lane = dispatchLane(await settingsJson($))
   const started = await run($, [script, next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
   if (started?.exitCode !== 0) return stuck(`spawn.sh: ${(started?.stderr || started?.stdout || 'did not run').trim().slice(-160)}`)
-  await say($, t.nextStarted(id, next))
+  await say($, [t.nextStarted(id, next), hint].filter(Boolean).join('; '))
 }
 
 // The person's jaira settings, where jaira reads them: JAIRA_HOME, else

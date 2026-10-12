@@ -227,18 +227,10 @@ function isTicketsTree(w: Worktree, id: string): boolean {
   return w.branch.endsWith(`/${slug}`) || w.path.endsWith(`-${slug}`)
 }
 
-// The branch a ticket's work rides on and the one it arrives in, from the
-// same porcelain: the ticket's worktree's branch, and the main working
-// tree's — the first block, which is master wherever the board is driven
-// from the main checkout. No remote is asked: whether there is work to
-// propose is a fact of the local branches. undefined where there is none.
-// A ticket's branch without a worktree, from `git branch --list
-// --format=%(refname:short) '*/<slug>'`: spawn.sh names it
-// <prefix>/<slug>, and a worktree removed after done leaves it behind.
-export function branchListed(listing: string): string | undefined {
-  return listing.split('\n').map(l => l.trim()).find(Boolean)
-}
-
+// The branch a ticket's work rides on and the main working tree's, from the
+// same porcelain; undefined where there is none. The main tree's branch is
+// the base only where no forge can name one: in a fork the local master
+// lags the upstream by hundreds of commits, every one of them "ahead".
 export function branchesFor(porcelain: string, id: string): { ticket?: string; base?: string } {
   const trees = worktreesOf(porcelain)
   const ticket = trees.find(w => isTicketsTree(w, id))?.branch
@@ -246,18 +238,72 @@ export function branchesFor(porcelain: string, id: string): { ticket?: string; b
   return { ...(ticket ? { ticket } : {}), ...(base ? { base } : {}) }
 }
 
+// A ticket's branch without a worktree, from `git branch --list
+// --format=%(refname:short) '*/<slug>'`: spawn.sh names it
+// <prefix>/<slug>, and a worktree removed after done leaves it behind.
+export function branchListed(listing: string): string | undefined {
+  return listing.split('\n').map(l => l.trim()).find(Boolean)
+}
+
+// Where a branch is checked out, off the same porcelain; undefined where it
+// is in no worktree. Without one, newWorktreeFor is where spawn.sh would have
+// put it: beside the repository, never inside it.
+export function worktreeOfBranch(porcelain: string, branch: string): string | undefined {
+  return worktreesOf(porcelain).find(w => w.branch === branch)?.path
+}
+
+export function newWorktreeFor(repo: string, branch: string): string {
+  const cut = repo.lastIndexOf('/')
+  return `${repo.slice(0, cut)}/.worktrees/${repo.slice(cut + 1)}-${branch.slice(branch.lastIndexOf('/') + 1)}`
+}
+
 // What an Accept starts once the ticket is in done — the one rule, decided
 // by Alex on GPFA7B. A branch with commits master does not have and no pull
 // request yet is finished work nobody can see: the press that accepted it is
 // a person's, which is the only thing allowed to open a pull request, so it
-// opens one. Anything else — the branch already proposed (a pull request in
-// any state, merged and closed included), or nothing ahead of master — has
-// no further step of its own, and the press moves the board on to the next
-// ticket instead. One button, so the rule decides, never the person per press.
+// opens one. But a branch can carry several tickets, and a pull request
+// opened while one of them is still being worked proposes half the work: so
+// only once every ticket its commits name is in done (`pending` empty). Any
+// other case — a ticket still pending, the branch already proposed (a pull
+// request in any state, merged and closed included), or nothing ahead of
+// master — has no further step of its own, and the press moves the board on
+// to the next ticket instead. One button, so the rule decides, never the
+// person per press. The caller asks the forge only where the answer can
+// still change the step, and passes false otherwise.
 export type StepAfterAccept = 'pr' | 'next'
 
-export function stepAfterAccept(ahead: number, hasPullRequest: boolean): StepAfterAccept {
-  return ahead > 0 && !hasPullRequest ? 'pr' : 'next'
+export function stepAfterAccept(ahead: number, pending: readonly string[], hasPullRequest: boolean): StepAfterAccept {
+  return ahead > 0 && pending.length === 0 && !hasPullRequest ? 'pr' : 'next'
+}
+
+// The tickets a branch carries, off `git log --format=%s <base>..<branch>`:
+// every handle a subject names the way this board's commits do,
+// `type(A3K9QP): ...`, once each.
+export function ticketsNamed(subjects: string): string[] {
+  const out: string[] = []
+  for (const line of subjects.split('\n')) {
+    const id = /^[a-z]+\(([0-9A-Z]{6})\)!?:/.exec(line.trim())?.[1]
+    if (id !== undefined && !out.includes(id)) out.push(id)
+  }
+  return out
+}
+
+// Which of those are not in the terminal lane yet, off `jaira list --json`.
+// A handle the board does not list is filed away in the logbook — past done
+// — or no ticket of this board, and holds nothing up.
+export function pendingOf(listJson: string, named: readonly string[], terminal: string): string[] {
+  const tickets = parse<{ tickets?: { handle?: string; status?: string }[] }>(withoutWarnings(listJson))?.tickets ?? []
+  return named.filter(id => {
+    const status = tickets.find(t => t.handle === id)?.status
+    return status !== undefined && status !== terminal
+  })
+}
+
+// The branch that carries a ticket with no branch of its own, off `git
+// branch --contains <a commit naming it> --format=%(refname:short)`: the
+// first that is not the base.
+export function carrierBranch(listing: string, base: string): string | undefined {
+  return listing.split('\n').map(l => l.trim()).find(b => b && b !== base)
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config
@@ -273,11 +319,13 @@ export function forgeOf(forge: string, originUrl: string): Forge | undefined {
 // Where a pull request of this branch would be, as jaira-role-pr settles it:
 // in a fork, the parent — asking origin there answers for the fork, finds
 // nothing, and a second pull request gets opened onto a merged branch. The
-// command describes origin; targetRepoOf reads the repository off it.
-export function repoViewCommand(on: Forge, originUrl: string): string[] {
+// command describes a repository (origin's URL, or owner/repo);
+// targetRepoOf reads the target off origin's answer, defaultBranchOf the
+// branch pull requests go into off the target's.
+export function repoViewCommand(on: Forge, repo: string): string[] {
   return on === 'github'
-    ? ['gh', 'repo', 'view', originUrl, '--json', 'isFork,parent,nameWithOwner']
-    : ['glab', 'repo', 'view', originUrl, '-F', 'json']
+    ? ['gh', 'repo', 'view', repo, '--json', 'isFork,parent,nameWithOwner,defaultBranchRef']
+    : ['glab', 'repo', 'view', repo, '-F', 'json']
 }
 
 export function targetRepoOf(on: Forge, viewJson: string): string | undefined {
@@ -288,6 +336,23 @@ export function targetRepoOf(on: Forge, viewJson: string): string | undefined {
   }
   const v = parse<{ path_with_namespace?: string; forked_from_project?: { path_with_namespace?: string } | null }>(withoutWarnings(viewJson))
   return v?.forked_from_project?.path_with_namespace ?? v?.path_with_namespace
+}
+
+export function defaultBranchOf(on: Forge, viewJson: string): string | undefined {
+  const v = parse<{ defaultBranchRef?: { name?: string }; default_branch?: string }>(withoutWarnings(viewJson))
+  return (on === 'github' ? v?.defaultBranchRef?.name : v?.default_branch) || undefined
+}
+
+// The local remote that points at a repository, off `git remote -v`: the
+// one whose URL ends in owner/repo, SSH or HTTPS. undefined where none does —
+// a fork cloned without its upstream added.
+export function remoteFor(remotes: string, repo: string): string | undefined {
+  const tail = new RegExp(`[:/]${repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\.git)?$`, 'i')
+  for (const line of remotes.split('\n')) {
+    const [name, url] = line.trim().split(/\s+/)
+    if (name && url && tail.test(url)) return name
+  }
+  return undefined
 }
 
 // The pull requests of a branch in that repository, in every state. Both

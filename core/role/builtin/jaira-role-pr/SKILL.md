@@ -98,16 +98,6 @@ GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
 word.
 
-## Push the branch
-
-```bash
-git push -u origin HEAD
-```
-
-You push either way. Whether a pull request is then opened, or the create line
-goes back for a person to run, is settled at the create command below and
-nowhere else.
-
 ## Which repository it goes to
 
 `origin` is not the answer. In a fork `origin` is your fork, and a pull request
@@ -169,6 +159,54 @@ apart by what they say, and a rung answered early answers wrong.
 Everything below takes that repository as `<owner/repo>`: every rung leaves you
 holding one, so every command below names it.
 
+## File the finished tickets away
+
+The pull request shows each ticket's file as the branch last committed it. The
+lanes after the last code commit — critique, testing, review — commit nothing,
+so without this step the reviewer reads a ticket that still says `critique`
+while the work is long accepted.
+
+A branch can carry more than one ticket. Read every handle its commits name,
+counted against the default branch of `<owner/repo>` — not `origin/HEAD`: in a
+fork that is your fork's own default branch, which lags the upstream, and every
+upstream commit since would count as this branch's:
+
+```bash
+git remote -v                            # the remote whose URL is <owner/repo>
+git fetch <that remote> <its default branch>
+git log --format=%s <that remote>/<its default branch>..HEAD    # type(<ID>): ... — each <ID> once
+```
+
+Every one of them that sits in the board's terminal lane (`jaira show <ID>
+--json`, `status`) is filed away now, before the push, and committed with its
+logbook file:
+
+```bash
+jaira logbook <ID>
+git add -A -- ':(glob).jaira/**/*<ID>-*.md'
+git commit -m "chore(<ID>): file the ticket away with its commits stamped"
+```
+
+By path, never `.jaira/` whole: the pathspec takes this ticket's file twice —
+gone from `tickets/`, new under `logbook/`, both named after its id — and
+nothing another session left modified beside it. One commit per ticket, so the
+handle in each subject is the ticket it files.
+Name tickets by handle, never `jaira logbook --all`: that files every finished
+ticket on the board, other people's included, into a commit named after one.
+A ticket not in the terminal lane yet stays on the board as it is — filing it is
+not yours to decide. Invoked with `--by-person`, every ticket of the branch is
+in done already: the cockpit opens a pull request only then.
+
+## Push the branch
+
+```bash
+git push -u origin HEAD
+```
+
+You push either way. Whether a pull request is then opened, or the create line
+goes back for a person to run, is settled at the create command below and
+nowhere else.
+
 ## Does it already have one open
 
 Ask the repository you just settled on — not `origin`, or a fork answers for the
@@ -203,6 +241,11 @@ jaira show <id> --json
 ```
 
 - **Title**: `<type>(<id>): <what changed>`, the same shape the commits use.
+- **Every ticket on the branch**: a branch whose commits name more than one
+  handle (the list from **File the finished tickets away**) gets Why, What and
+  How to check for each of them, under its handle — the title names the ticket
+  you were invoked with, the body all of them. `jaira show <ID> --json` reads a
+  filed ticket too, off its logbook file.
 - **Why**: the ticket's context and goal, in the ticket's own words. A reviewer
   who was not in the session reads this first.
 - **What**: outcome-what and outcome-resolves.
