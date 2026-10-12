@@ -32,6 +32,8 @@ type World = {
   // What `jaira --version` names: before 0.3.7 a move back out of a
   // person's lane without --force is refused.
   version: string
+  // `jaira note` with a give-back reason fails after the move went through.
+  noteFails: boolean
   toasts: string[]
   // What `jaira whoami --json` says; undefined: it says nothing.
   me?: { identity: string; aliases: string[] }
@@ -87,6 +89,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     refusals: [{ code: 'needs_human', message: 'lane "signoff" is a human checkpoint' }],
     warns: false,
     version: '0.3.7',
+    noteFails: false,
     toasts: [],
     bodies: {},
     opened: [],
@@ -158,6 +161,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === '--version') return ok(`jaira version ${w.version}\n`)
     if (cmd === 'jaira' && args[0] === 'move' && !args.includes('--force') && /^0\.3\.[0-6]$/.test(w.version)) {
       return { value: { exitCode: 3, stdout: '', stderr: 'jaira: lane "signoff" is a human checkpoint; use --force', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'note' && w.noteFails && args[2]?.startsWith('Given back')) {
+      return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
@@ -594,6 +600,20 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
     expect(ran(w, SPAWN)).toEqual([])
+  })
+
+  test('a note that fails after the move is shown with the reason typed, and the worker still gets the ticket', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(1_000_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    w.noteFails = true
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Note on MG677R failed', focus: true })
+    const pane = await $.ui.mount(MESSAGE('Note on MG677R failed'))
+    expect(await pane.find({ type: 'Text', text: /MG677R went back to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /jaira note MG677R 'Given back from signoff: der Branch fehlt im Schluessel'/ })).toBeDefined()
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
 
   test('past half of its window a new worker takes the round', async ($, on) => {

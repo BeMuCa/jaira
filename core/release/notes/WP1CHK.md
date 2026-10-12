@@ -1,1 +1,2 @@
 - Update jaira to 0.3.7 or later if you installed jaira-cockpit from the marketplace: the cockpit now names the jaira it found and the one it needs when yours is older, and Give back moves the ticket before it writes its note, so a refused Give back leaves no note claiming the ticket went back.
+- If Give back opens a pane titled 'Note on <id> failed', paste the 'jaira note' line it shows: the ticket already went back to in-progress, but the reason you typed is not on it yet.

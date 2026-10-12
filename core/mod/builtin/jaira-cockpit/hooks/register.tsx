@@ -445,7 +445,7 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
   return out
 }
 
-// Give back: move and note first, then the work goes to the worker that
+// Give back: move, then note, then the work goes to the worker that
 // carried it while that is cheaper — its tab alive, its cache warm, its
 // context small — else its tab is closed FIRST and a new worker started, so
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
@@ -459,7 +459,12 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   // note written before a refused move would say the ticket went back.
   const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
-  await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
+  // The reason is the one thing the person typed: a note that did not land is
+  // shown with its text, and the handover still goes on — the ticket already
+  // sits in in-progress, and nothing here could hand it out again.
+  const note = `Given back from ${lane}: ${reason}`
+  const noted = await jaira($, dir, ['note', id, note])
+  if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note))
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
