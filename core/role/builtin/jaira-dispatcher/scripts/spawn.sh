@@ -121,13 +121,6 @@ if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID")
 pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$lane" --no-focus \
   | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
 
-# The tab's shell runs on the machine Herdr itself runs on. When that is Windows
-# and this script runs in WSL, that shell has no /home/... at all: --cwd is
-# resolved against Windows and dropped, `cd "$wt"` fails, and claude comes up in
-# the Windows home in front of its trust dialog — which the send-keys below would
-# then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
-# sets the directory before any shell starts, so no cd function and no wrong home
-# can intervene, and `bash -lic` is what puts claude on PATH.
 # <explain> and <discuss> write a few lines for a person, so they start on the
 # chat-model setting rather than the account's default model, and they get the
 # part of the ticket they need typed into their prompt rather than reading the
@@ -153,6 +146,13 @@ print(json.dumps({"id": t["handle"], "title": t.get("title", ""), "goal": t.get(
 fi
 claude="claude${chat_model:+ --model '$chat_model'}"
 
+# The tab's shell runs on the machine Herdr itself runs on. When that is Windows
+# and this script runs in WSL, that shell has no /home/... at all: --cwd is
+# resolved against Windows and dropped, `cd "$wt"` fails, and claude comes up in
+# the Windows home in front of its trust dialog — which the send-keys below would
+# then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
+# sets the directory before any shell starts, so no cd function and no wrong home
+# can intervene, and `bash -lic` is what puts claude on PATH.
 case "$herdr" in
   /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
   *)            start="cd '$wt' && $claude" ;;

@@ -1,7 +1,7 @@
 ---
 id: 01M4RT77BG3PBG7PQ33V5A6RJZ
 title: "Explain- und Discuss-Chats starten mit sonnet und lesen nur, was sie brauchen"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,13 +20,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T19:42:48Z
-updated-at: 2026-10-12T19:51:38Z
+updated-at: 2026-10-12T19:53:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65469
 claimed-at: 2026-10-12T19:43:51Z
 outcome-what: "Neues Setting chat-model (~/.jaira/settings.json, Settings-Screen S 'Chat model', jaira roles list --json chat_model); spawn.sh startet explain/discuss mit claude --model <wert> und tippt nur title/goal/question/review/letzte 4 Notes als JSON in den Prompt"
 outcome-why: "Ein Explain-Chat lud ~56k Kontext auf Opus fuer 4-5 Zeilen; Alex: sonnet, aber ueber die Einstellung"
 outcome-resolves: "DoD 1-3: settings.go ChatModelName, tui settings.go stepChatModel, roles.go chat_model, spawn.sh brief + --model; Tests in settings, cli, tui, role; Messung 31741->4404 Zeichen"
+review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:131 the new chat-model/brief block sits between the WSL comment and the case it explains; move the block above '# The tab's shell runs on the machine Herdr itself runs on' so that comment stays on its case"
 ---
 
 # Explain- und Discuss-Chats starten mit sonnet und lesen nur, was sie brauchen
@@ -34,9 +35,9 @@ outcome-resolves: "DoD 1-3: settings.go ChatModelName, tui settings.go stepChatM
 ## Definition of Done
 
 - [x] Das Modell für explain- und discuss-Chats kommt aus einer Projekt-Einstellung (in den jaira-Settings, auch auf dem Settings-Screen S sichtbar), z. B. chat-model; spawn.sh startet dann 'claude --model <wert>'. Ohne Einstellung bleibt es beim Konto-Default wie heute, nichts ist fest verdrahtet; andere Lanes unverändert; Test
-  proof: core/settings/settings.go:117 chat-model, :128 ChatModelName; internal/cli/roles.go:67 chat_model; internal/tui/settings.go:62 Chat model row; core/role/builtin/jaira-dispatcher/scripts/spawn.sh:154 --model nur bei explain/discuss; tests TestChatModelName, TestRolesListReportsTheChatModel, TestSettingsEnterStepsTheChatModel, TestSpawnChatsStartOnTheChatModelWithTheirBrief (review lane bleibt plain claude)
+  proof: core/settings/settings.go:117 chat-model, :128 ChatModelName; internal/cli/roles.go:67 chat_model; internal/tui/settings.go:62 Chat model row; core/role/builtin/jaira-dispatcher/scripts/spawn.sh:147 --model nur bei explain/discuss; tests TestChatModelName, TestRolesListReportsTheChatModel, TestSettingsEnterStepsTheChatModel, TestSpawnChatsStartOnTheChatModelWithTheirBrief (review lane bleibt plain claude)
 - [x] Der Explain-Prompt liest nur review.* und die letzten Notes (z. B. jaira show --json | Auszug), nicht den ganzen Ticket-JSON; der Startkontext eines Explain-Chats ist messbar kleiner (vorher/nachher in einer Note)
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:144 Auszug title/goal/question/review/letzte 4 Notes in den Prompt; test TestSpawnChatsStartOnTheChatModelWithTheirBrief (core/role/role_test.go:495); Messung vorher/nachher in Note (31741 -> 4404 Zeichen bei 13PQB3)
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:137 Auszug title/goal/question/review/letzte 4 Notes in den Prompt; test TestSpawnChatsStartOnTheChatModelWithTheirBrief (core/role/role_test.go:495); Messung vorher/nachher in Note (31741 -> 4404 Zeichen bei 13PQB3)
 - [x] Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/5A6RJZ.md
 
@@ -61,3 +62,4 @@ outcome-resolves: "DoD 1-3: settings.go ChatModelName, tui settings.go stepChatM
 - **2026-10-12 19:43 · Alexander Sacharov** — parent session: jaira-f5
 - **2026-10-12 19:45 · Alexander Sacharov** — decisions (worker, settled without asking): (1) Einstellung = chat-model in ~/.jaira/settings.json (core/settings), wie die Teamlead-Note sagt; maschinenweit wie dispatch, nicht pro Repo. (2) Settings-Screen S: Zeile 'Chat model', enter schaltet reihum account default -> sonnet -> haiku -> opus -> default (wie Agents per ticket); jeder andere Wert (z. B. claude-sonnet-5-5) per Hand in settings.json, wird angezeigt. (3) spawn.sh liest den Wert über 'jaira roles list --json' (neues Feld chat_model, neben dispatch); Werte ausser [A-Za-z0-9._[]-] gelten als leer, weil der Wert in eine Shell-Zeile geht. (4) Kontext: spawn.sh holt selbst 'jaira show --json' und tippt nur title, goal, question, review.* und die letzten 4 Notes als kompaktes JSON in den Prompt - der Chat braucht keinen Tool-Call zum Lesen. Ohne jaira/python3 fällt der Prompt auf den alten Lesehinweis zurück. Gilt für explain und discuss (Ziel nennt beide).
 - **2026-10-12 19:51 · Alexander Sacharov** — Messung Startkontext (Zeichen, was der Chat vom Ticket liest): vorher 'jaira show --json' = 31741 bei 13PQB3 (28 Notes, 14 DoD mit Beweisen), 7114 bei 5A6RJZ; nachher der Auszug in spawn.sh = 4404 bzw. 2030. Also ~7x weniger auf einem langen Ticket, ~6-7k Tokens gespart, plus kein Tool-Call zum Lesen. Grundlast der Claude-Code-Sitzung (~20-30k) und CLAUDE.md bleiben, wie die Context-Notiz sagt. Dead end: --notes-last wirkt auf --json nicht (beide 31741), daher die Extraktion in spawn.sh statt eines jaira-Flags.
+- **2026-10-12 19:52 · Alexander Sacharov** — critique Runde 1: ein Befund - spawn.sh: der neue chat-model/brief-Block steht zwischen dem WSL-Kommentar und dem case, den der erklärt; Block über den WSL-Kommentar ziehen. Bewusst stehen gelassen: Prüfung des Modellnamens doppelt (Go ChatModelName für roles list/TUI, Bash-Regex dort, wo der Wert in die Kommandozeile geht) - die Bash-Prüfung schützt die Stelle, an der es zählt, auch gegen ein jaira, das den Wert anders liefert; Lesen über 'jaira roles list --json' statt eines eigenen Kommandos, weil dispatch schon dort steht und der Teamlead es so liest.
