@@ -125,14 +125,14 @@ type Settings struct {
 // empty account default first. Anything else is written by hand.
 var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
 
-// ChatModelFile is the board's own chat model under .jaira: one line, the
+// chatModelFile is the board's own chat model under .jaira: one line, the
 // model, shared with everybody who works the board. Its own file, like
 // lanes/order and tags, because a line is the smallest thing git merges.
-const ChatModelFile = "chat-model"
+const chatModelFile = "chat-model"
 
 // BoardChatModelPath is where the board at root names its chat model.
 func BoardChatModelPath(root string) string {
-	return filepath.Join(root, ticket.DirName, ChatModelFile)
+	return filepath.Join(root, ticket.DirName, chatModelFile)
 }
 
 // chatModelHeader is written above the model, for whoever opens the file.

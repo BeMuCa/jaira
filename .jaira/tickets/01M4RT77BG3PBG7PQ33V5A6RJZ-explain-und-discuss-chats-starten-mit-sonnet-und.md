@@ -1,7 +1,7 @@
 ---
 id: 01M4RT77BG3PBG7PQ33V5A6RJZ
 title: "Explain- und Discuss-Chats starten mit sonnet und lesen nur, was sie brauchen"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,15 +20,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T19:42:48Z
-updated-at: 2026-10-12T20:08:02Z
+updated-at: 2026-10-12T20:09:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-65469
 claimed-at: 2026-10-12T19:43:51Z
 outcome-what: "Setting chat-model: Board-Datei .jaira/chat-model zuerst, dann ~/.jaira/settings.json, sonst Konto-Default (core/settings ChatModelFor); Settings-Screen S 'Chat model' schaltet den Board-Wert und zeigt die Quelle; jaira roles list --json chat_model/chat_model_source; spawn.sh startet explain/discuss mit claude --model <wert> und tippt nur title/goal/question/review/letzte 4 Notes als JSON in den Prompt"
 outcome-why: "Ein Explain-Chat lud ~56k Kontext auf Opus fuer 4-5 Zeilen; Alex: sonnet ueber eine Projekt-Einstellung mit Rechner-Fallback"
 outcome-resolves: "DoD 1-4: settings.go ChatModelFor/BoardChatModel, tui settings.go stepChatModel, roles.go chat_model, spawn.sh brief + --model; Tests in settings, cli, tui, role; Messung 31741->4404 Zeichen"
-review-summary: "core/settings/settings.go:188 the empty case's source is 'account default, nothing configured', so S shows 'account default — account default, nothing configured'; make the source 'nothing configured'. internal/tui/settings.go:116 reads BoardChatModel once per choice inside the loop; read it once before the loop"
-review-gaps: "1) Die WSL-Startzeile ist nicht automatisch getestet: der Test deckt nur den Zweig 'cd … && claude --model …' ab. Auf Alex' Rechner (Herdr ist eine Windows-Binary) läuft aber der andere Zweig: wsl.exe --cd '…' -- bash -lic \"claude --model 'sonnet'\". Ob die doppelten Anführungszeichen durch die Windows-Shell und wsl.exe bis zu bash kommen, hat niemand mit echtem Herdr geprüft (testing nutzte einen Stub). Geht das schief, startet der Chat still auf dem Konto-Default oder gar nicht. 2) DoD 1 sagt 'Projekt-Einstellung'; gebaut ist eine Einstellung pro Rechner (~/.jaira/settings.json, wie dispatch). Die Teamlead-Note deckt das (core/settings), aber Alex sollte wissen: sonnet gilt dann für alle Repos auf dem Rechner. Sonst keine Defekte gefunden; go test für settings, role, cli, tui grün."
+review-summary: "none"
+review-gaps: "round 2: unexported ChatModelFile (one user, BoardChatModelPath). Left: BoardChatModel's first-line reader beside lane.readIDList (core/lane/order.go:32) - that one returns every line and is unexported in another package, so sharing it would cost an export for a three-line loop; round 1's fold of the roles test stands"
 test-verdict: "pass: go build/vet + go test -race -count=1 ./... RC=0; DoD 1-3 verified in the tree; built binary: roles list shows 'chat model: sonnet' and chat_model in --json; spawn.sh with stub Herdr + real jaira on 13PQB3: explain starts claude --model 'sonnet', review lane plain claude, empty setting plain claude; explain prompt 5650 chars incl. ticket excerpt (was: prompt + agent reading 31741 chars of show --json)"
 review-verdict: "Der Diff erfüllt alle drei DoD-Punkte, keine Defekte im Code gefunden. Vorbehalt: der WSL/Windows-Herdr-Startweg - der, den Alex tatsächlich benutzt - ist nur per Stub geprüft; vor dem Annehmen einmal echt ausprobieren (review-check Schritt 3-5). Und die Einstellung gilt pro Rechner, nicht pro Projekt."
 review-check: "1. Im Repo: go build -o /tmp/jaira ./cmd/jaira  2. /tmp/jaira roles list → letzte Zeile lautet 'chat model: account default …'  3. /tmp/jaira öffnen, S drücken, 4x j, enter → Zeile 'Chat model  sonnet'; ~/.jaira/settings.json enthält jetzt \"chat-model\": \"sonnet\"  4. Mit dieser Binary auf PATH im Cockpit bei einem Ticket mit Review-Lücke Explain drücken → im neuen Herdr-Tab startet claude; dort /status eingeben → Modell ist Sonnet, nicht Opus  5. Im selben Tab: der erste Prompt endet mit '… als JSON; lies das Ticket nicht noch einmal ganz: {\"id\": …' und der Chat ruft nicht 'jaira show --json' auf  6. Settings S zurück auf 'account default' stellen, Explain erneut → /status zeigt wieder das Konto-Default. Automatisch: go test ./core/role -run TestSpawnChatsStartOnTheChatModelWithTheirBrief"
@@ -75,3 +75,4 @@ review-check: "1. Im Repo: go build -o /tmp/jaira ./cmd/jaira  2. /tmp/jaira rol
 - **2026-10-12 20:02 · Alexander Sacharov** — Alex 2026-10-12: Projekt-Einstellung mit Fallback auf den Rechner (DoD 4). Review-Gap 1 (WSL-Startzeile nur per Stub) prüft Alex live, wenn der Ticket wieder in signoff ist.
 - **2026-10-12 20:07 · Alexander Sacharov** — Runde 2 (DoD 4) decisions: Board-Wert in eigener Datei .jaira/chat-model (eine Zeile, # Kommentare, wie lanes/order und tags - kein neues key:value-Format für einen Wert). S schaltet den Board-Wert (der gewinnt), nicht settings.json; 'none' löscht die Datei, dann gilt der Rechner-Fallback - den setzt man von Hand. roles list liest mit bestEffortRoot(), spawn.sh ruft es mit -C $wt, ausserhalb eines Boards nur der Rechner. ChatModelName() ist weg, ChatModelFor(root) liefert Wert + Quelle (roles list --json chat_model_source, S zeigt sie).
 - **2026-10-12 20:07 · Alexander Sacharov** — critique Runde 3 (DoD 4): zwei Befunde - (1) leere Quelle heisst 'account default, nothing configured', S zeigt dann 'account default — account default, ...' -> Quelle 'nothing configured'. (2) stepChatModel liest .jaira/chat-model in der Schleife je Wahl -> einmal davor. Stehen gelassen: Guard root=='' in stepChatModel (verhindert Schreiben relativ zum cwd), settings-Paket hält jetzt auch eine Board-Datei (wie RemoteFor schon git config jaira.remote liest).
+- **2026-10-12 20:09 · Alexander Sacharov** — critique Runde 4: beide Befunde aus Runde 3 behoben. Nichts weiter.
