@@ -22,7 +22,7 @@ export type Waiting = {
 
 export type Counts = { worker: number; review: number; person: number }
 
-type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
+export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean }
 type Ticket = {
   handle: string
   title: string
@@ -47,7 +47,7 @@ const oneLine = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
 // whose lane is whose: then the shipped board's person lanes are taken.
 const PERSON_LANES = new Set(['human', 'signoff'])
 
-function isPersons(lane: Lane): boolean {
+export function isPersons(lane: Lane): boolean {
   return lane.human_exit ?? PERSON_LANES.has(lane.id)
 }
 

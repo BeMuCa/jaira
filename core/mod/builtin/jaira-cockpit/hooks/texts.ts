@@ -84,3 +84,19 @@ export const filterWords = {
   last: 'last',
   of: 'of',
 }
+
+// The Overview pane's words: the board at a glance and its last days.
+export const overviewWords = {
+  button: 'Overview',
+  title: 'Board overview',
+  working: 'In work',
+  queue: 'Queue',
+  parked: 'Put back',
+  none: 'none',
+  history: (days: number) => `Created and put back, last ${days} days`,
+  createdBy: (who: string) => (who === '' ? 'created' : `created by ${who}`),
+  parkedBy: (who: string) => (who === '' ? 'put back' : `put back by ${who}`),
+  unread: 'The board could not be read (jaira lanes, list or next failed).',
+  noRoom: 'No room for a pane here: widen the terminal and press Overview again.',
+  close: 'Close',
+}
