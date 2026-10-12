@@ -5,17 +5,34 @@
 // The notes are never copied to disk anywhere: a copy can drift from the
 // binary that reads it, but the binary always knows what is in itself. So the
 // notes are embedded with go:embed and read straight out of the executable.
+//
+// They come from two places. NOTES.md holds every release up to 0.3.6 as fixed
+// history. Every change since is a file of its own under notes/, named after
+// its ticket, so two branches never edit the same lines. A file directly in
+// notes/ is Unreleased; releasing moves every one of them into
+// notes/<version>/ (see Cut), and the folder's name is the release.
 package release
 
 import (
-	_ "embed"
+	"embed"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 )
 
 //go:embed NOTES.md
 var notesMD string
+
+//go:embed notes
+var notesFS embed.FS
+
+// notesDir names the per-change notes inside the package directory; Cut and
+// the embed share it.
+const notesDir = "notes"
 
 // Current is the version of the running binary. It is a package-level var,
 // set once by cli.Execute, because the TUI also creates boards and plumbing a
@@ -28,8 +45,67 @@ type Entry struct {
 	Changes []string
 }
 
-// Notes parses the embedded NOTES.md, newest release first, in file order.
-func Notes() []Entry { return parseNotes(notesMD) }
+// Notes returns the embedded release notes, newest release first: the note
+// files directly in notes/ as Unreleased, then one release per notes/<version>/
+// folder, then the fixed history in NOTES.md.
+func Notes() []Entry { return composeNotes(notesMD, notesFS) }
+
+// composeNotes reads fsys as the package directory. Within a release the
+// files go by name, and the releases by version number, newest first.
+func composeNotes(md string, fsys fs.FS) []Entry {
+	var out []Entry
+	if e := entryOf(fsys, notesDir, "Unreleased"); len(e.Changes) > 0 {
+		out = append(out, e)
+	}
+	dirs, _ := fs.ReadDir(fsys, notesDir)
+	var versions []string
+	for _, d := range dirs {
+		if d.IsDir() {
+			versions = append(versions, d.Name())
+		}
+	}
+	sort.Slice(versions, func(i, j int) bool { return newer(versions[i], versions[j]) })
+	for _, v := range versions {
+		out = append(out, entryOf(fsys, path.Join(notesDir, v), v))
+	}
+	return append(out, parseNotes(md)...)
+}
+
+// entryOf is one release: the changes of every *.md file directly in dir.
+func entryOf(fsys fs.FS, dir, version string) Entry {
+	e := Entry{Version: version}
+	files, _ := fs.Glob(fsys, path.Join(dir, "*.md"))
+	for _, f := range files {
+		b, _ := fs.ReadFile(fsys, f)
+		e.Changes = append(e.Changes, changeLines(string(b))...)
+	}
+	return e
+}
+
+// newer compares two X.Y.Z versions number by number.
+func newer(a, b string) bool {
+	as, bs := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(as) && i < len(bs); i++ {
+		x, _ := strconv.Atoi(as[i])
+		y, _ := strconv.Atoi(bs[i])
+		if x != y {
+			return x > y
+		}
+	}
+	return len(as) > len(bs)
+}
+
+// changeLines is parseNotes for a note file, which has no headings: every
+// "- " line is one change.
+func changeLines(s string) []string {
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		if strings.HasPrefix(line, "- ") {
+			out = append(out, strings.TrimSpace(strings.TrimPrefix(line, "- ")))
+		}
+	}
+	return out
+}
 
 // parseNotes is a line scan: "## " starts a release, "- " inside one is a
 // change. Everything else — prose, blank lines, HTML comments — is ignored,
@@ -59,12 +135,12 @@ func Since(stamped string) []Entry { return sinceEntries(Notes(), stamped) }
 // sinceEntries holds the selection logic apart from Notes() so tests can
 // drive it against a fixture instead of the real embedded NOTES.md.
 //
-// Entries without changes are dropped from the result. Straight after a
-// release cut the file starts with an empty "## Unreleased", and parseNotes
-// keeps it on purpose — but a reader of "jaira update" has nothing to read in
-// a heading with no points under it, and an entry like that also hid the
-// "Nothing has changed since ..." branch from every board stamped with the
-// current version. The section stays in the file; it just does not travel.
+// Entries without changes are dropped from the result. A heading with no
+// points under it — once the empty "## Unreleased" every release cut left in
+// NOTES.md, now a note file without a "- " line — gives a reader of "jaira
+// update" nothing to read, and an entry like that also hid the "Nothing has
+// changed since ..." branch from every board stamped with the current
+// version. Notes() keeps it; it just does not travel.
 func sinceEntries(all []Entry, stamped string) []Entry {
 	var out []Entry
 	for _, e := range selectSince(all, stamped) {

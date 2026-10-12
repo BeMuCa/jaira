@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -109,6 +110,17 @@ one the real move would have returned.`,
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s is already in %s\n", ticket.Handle(t.ID), to)
 				return nil
+			}
+
+			// The outcome is the output of the lane that produces it, and every
+			// later lane reads it as input. A move out of another lane may fill
+			// an empty field but not replace what is there: on 2026-10-11 review
+			// agents passing --what wiped the implementer's account. Replacing
+			// it on purpose is a 'jaira set', which says so.
+			if err := guardOutcome(t, env.Lanes, map[string]string{
+				ticket.FieldOutcomeWhat: what, ticket.FieldOutcomeWhy: why, ticket.FieldOutcomeResolves: resolves,
+			}); err != nil {
+				return err
 			}
 
 			// Apply the outcome and question fields first: a gate may require
@@ -498,11 +510,16 @@ func emitPerLane(cmd *cobra.Command, env gate.Env, ready []*ticket.Ticket) error
 // the board. It used to do it in silence, so two sessions could work the same
 // ticket with nothing anywhere saying the second had walked over the first.
 // Stderr, so it cannot corrupt --json on stdout.
+//
+// The line names the command that clears the claim: a warning that repeats on
+// every 'next' with nothing to do about it is one people learn to ignore. The
+// hint lives here and not in staleClaimLine, because 'claim' prints that same
+// line after it has already taken the claim over, where releasing is wrong.
 func warnStaleClaims(cmd *cobra.Command, ts []*ticket.Ticket) {
 	id := session.DefaultID()
 	for _, t := range ts {
 		if line := staleClaimLine(t, id); line != "" {
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", line)
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s; clear it with: jaira claim %s --release\n", line, ticket.Handle(t.ID))
 		}
 	}
 }
@@ -667,7 +684,11 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// input-requires would mean editing every lane file and widening
 			// ticket.SuppliedFields, whose comment explains why that list
 			// stays narrow.
-			"mode":     t.Mode,
+			"mode": t.Mode,
+			// context sits beside mode for the same reason: it says who runs
+			// the lane. "fresh" means not the session that carried the ticket
+			// here — a new agent that has seen none of its work.
+			"context":  l.Context,
 			"prompt":   l.Prompt,
 			"input":    fields,
 			"diff":     diff,
@@ -710,6 +731,9 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	head := fmt.Sprintf("tier: %s", dash(l.ModelTier))
 	if t.Mode != "" {
 		head += fmt.Sprintf(", mode: %s", t.Mode)
+	}
+	if l.Context != "" {
+		head += fmt.Sprintf(", context: %s", l.Context)
 	}
 	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
 	if l.Prompt != "" {
@@ -756,6 +780,31 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		fmt.Fprintf(w, "## Missing required input\n\n")
 		for _, m := range missing {
 			fmt.Fprintf(w, "- %s\n", m)
+		}
+	}
+	return nil
+}
+
+// guardOutcome refuses a move that would replace an outcome field the lane
+// being left does not produce. An empty field, the same value again, and the
+// producing lane rewriting its own output on a later round all pass.
+func guardOutcome(t *ticket.Ticket, lanes *lane.Set, incoming map[string]string) error {
+	var produces []string
+	if l, ok := lanes.Get(t.Status); ok {
+		produces = l.OutputProduces
+	}
+	for _, field := range []string{ticket.FieldOutcomeWhat, ticket.FieldOutcomeWhy, ticket.FieldOutcomeResolves} {
+		val, have := incoming[field], fieldValue(t, field)
+		if val == "" || have == "" || val == have || slices.Contains(produces, field) {
+			continue
+		}
+		return &codedError{
+			code:   ExitValidation,
+			reason: "outcome_not_yours",
+			message: fmt.Sprintf("%s already holds the account of the lane that produces it, and %s does not; "+
+				"move without --what/--why/--resolves and put this lane's findings in its own fields, "+
+				"or replace it on purpose with 'jaira set %s %s=...'",
+				field, t.Status, ticket.Handle(t.ID), field),
 		}
 	}
 	return nil

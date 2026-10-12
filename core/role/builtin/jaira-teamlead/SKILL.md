@@ -71,6 +71,26 @@ answers.
 One dispatcher per ticket. Hand it the id and nothing else — the dispatcher
 skill carries the rest.
 
+**Which one is the person's choice, and you read it, you do not pick it:**
+
+```bash
+jaira --json roles list      # "dispatch": "lanes" | "worker", "dispatch_role"
+```
+
+- `lanes` — the default: `jaira-dispatcher`, which starts a new agent for
+  every lane. Everything below is written for it.
+- `worker` — the person opted in with `"dispatch": "worker"` in
+  `~/.jaira/settings.json` (or on the board's settings screen, `S`):
+  `jaira-worker`, which carries the ticket through every lane itself and hands
+  only a lane marked fresh context — `review` on the shipped board — to a new
+  agent. Start it exactly as below, with the lane name `worker` where it says
+  `dispatch`, and `/jaira-worker` where it says `/jaira-dispatcher`. It asks,
+  reports and stops by the same rules, so the rest of this file holds for it
+  unchanged; "dispatcher" below means whichever of the two you started.
+
+Read it once per ticket you start, not once per session: the person can switch
+it on the settings screen while you run.
+
 **If Herdr is here (`HERDR_ENV=1`), the dispatcher gets its own tab**, the same
 way its workers do. Start it with
 `.claude/skills/jaira-dispatcher/scripts/spawn.sh` — `~/.claude/skills/...` when
@@ -93,7 +113,8 @@ under that name; `$HERDR_BIN_PATH` names it. A dispatcher in a tab outlives you:
 the human can kill your session, start a new teamlead, and the work is still
 running — which is the whole reason the board exists.
 
-Without Herdr, start it as a subagent instead:
+Without Herdr, start it as a subagent instead — "the worker skill" in place of
+"the dispatcher skill" when the setting says `worker`:
 
 ```
 Agent(subagent_type: "claude",
@@ -134,41 +155,53 @@ board.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 
-## Close what you started
+## A tab stays open until its ticket comes back
 
-A dispatcher you put in a tab cannot close that tab — you created it, so it is
-yours. Read its three lines, tell the human, then close the tab.
+A worker or dispatcher you put in a tab cannot close that tab — you created it,
+so it is yours. But you never stop or close it while it works, and never while
+its ticket waits for a person in a human lane or signoff: read its three lines,
+tell the human, and leave the tab. Its second line says how full its context
+is and how long its prompt cache stays warm; the jaira-cockpit's `workers`
+tool (`mcp__jaira-cockpit__workers`, `/cockpit workers` for the person) says
+the same for every worker of the board at any time.
 
-**Close it once the branch is pushed and the work is reported, not once a pull
-request exists.** That is where an agent's part ends: opening the pull request
-is the human's call, and from there people and CI are what the ticket waits on,
-which is hours or days. A finished dispatcher left sitting there is a live
-session doing nothing, and on five tickets it is five of them — with nothing in
-the tab strip to tell a waiting one from a working one.
+The tab is decided about once, when the ticket comes back into a new round —
+given back from signoff or a human lane, a review comment, a failing CI run.
+The cockpit's Give back button decides by itself. When you send it back:
+
+1. Ask the `workers` tool. The ticket's line ends in
+   `next round: same worker (…)` or `next round: new worker (…)`. That is the
+   rule Give back follows — tab alive, cache warm, context under the limit —
+   so read it, never judge cache or context yourself.
+2. **Same worker:** send it the reason with `SendMessage` to the name
+   `ListAgents` gives its session, and tell it to read
+   `jaira show <id> --json` before anything else: other sessions wrote to the
+   board while it waited, and its context does not know. `jaira note` on the
+   ticket whom you sent it to and why.
+3. **New worker:** close the old tab first — its `tab_id` from
+   `$HERDR_BIN_PATH tab list`, the tab spawn.sh labelled with the ticket id
+   and the role, then `$HERDR_BIN_PATH tab close <tab_id>` — and start a new
+   one with `spawn.sh` as above, so a ticket never has two worker tabs. Note
+   why on the ticket.
+4. **No `workers` tool** — the cockpit is not installed: a new worker.
+
+The limit is a share of the model's context window, the cockpit's setting
+`workerContextShare` (percent, default 50), never a fixed number of tokens: a
+large task on a large window keeps its worker. Close the tab for good when the
+ticket reaches `done`.
 
 Its worktree outlives it, and by longer than the pull request: leave that until
 the ticket is in `done`. Review comments come back to the branch and want
 somewhere to land, and a merged pull request is not the end of that — a ticket
 that has not been accepted can still come back.
 
-## Bringing one back
-
-When the work comes back — a review comment, a failing CI run — start a **new**
-session, not the closed one. Everything durable is outside its context already:
-the decisions in `jaira note`, the criteria in the definition of done, the
-change in git, the argument in the pull request thread.
-
-That is also the test. If reviving a dispatcher would genuinely help, something
-was not written down, and the fix is the writing, not the resurrection. A
-resumed session carries a snapshot of a board that other sessions have since
-written to: it does not know that, and it acts confidently on state that has
-moved. Empty beats stale.
-
-The person may resume the old session anyway — `claude --resume` in that
-directory — and there is one good reason to: **to ask it something.** Why it
-chose a route, what it saw in a log, what it rejected. It is the only holder of
-that answer. Resume one to learn what happened; start a new one to do what comes
-next.
+A new worker needs nothing from the old one: the decisions are in `jaira note`,
+the criteria in the definition of done, the change in git, the argument in the
+pull request thread. If it would, something was not written down, and the fix
+is the writing. A closed session may still be resumed — `claude --resume` in
+that directory — for one good reason: **to ask it something.** Why it chose a
+route, what it saw in a log, what it rejected. Resume one to learn what
+happened; start a new one to do what comes next.
 
 And what comes back is usually not a dispatcher at all. A failed CI run is one
 worker's job — `/jaira-role-tester <id>` to read the log and separate an inherited

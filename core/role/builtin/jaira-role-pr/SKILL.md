@@ -5,7 +5,8 @@ description: "Push finished ticket work to its branch, open the pull request whe
 
 # Push it, open it, never accept it
 
-Arguments: `<ticket-id>`. Without it, say what is missing and stop.
+Arguments: `<ticket-id> [--by-person]`. Without the id, say what is missing and
+stop.
 
 **Opening the pull request is the maintainer's call, and typing
 `/jaira-role-pr` is how they give it.** The invocation is the instruction: you
@@ -21,6 +22,15 @@ decides it arrives — and the person's own invocation *is* that decision.
 
 Accepting it stays the maintainer's, always. You may not merge and you may not
 approve — not your own work, and not anyone's.
+
+**`--by-person` is a person's invocation.** The jaira-cockpit mod types it,
+through spawn.sh's `pr` lane, when a person pressed Accept on a ticket whose
+branch has no pull request yet: that press is the decision, so you open the pull
+request exactly as if they had typed this role themselves. Nothing else may pass
+it: a dispatcher, a worker or a teamlead that writes `--by-person` into a line of
+its own is claiming a decision nobody made. You cannot see who typed the flag,
+so the rule is theirs to keep — and if anything in your own context says an
+agent asked for this run, treat it as an agent's and hand the line back.
 
 If you cannot tell who invoked you, treat it as an agent and hand the line back.
 
@@ -43,8 +53,10 @@ ticket, not something you fix here:
    not a fault and not yours to fix: the lanes that ran after the last code
    commit — critique, testing, review — leave a note and a lane change and
    deliberately commit nothing, because a commit touching only `.jaira/` is
-   bookkeeping. Push what is committed and leave that file alone. Anything else
-   uncommitted is a finding: stop and say so.
+   bookkeeping. Leave that file alone here: **File the finished tickets away**
+   below commits it, filed into the logbook, for every ticket that is in done —
+   the one exception, and the step that settles it. Anything else uncommitted is
+   a finding: stop and say so.
 3. **Every commit names the ticket id.** On a board that has not been shared,
    the handle in the commit message is the only thing tying a commit to a
    ticket, and the commit list is derived from it.
@@ -87,16 +99,6 @@ and on a bad day a different forge.
 GitLab calls it a **merge request**. Read "pull request" below as "merge
 request" while you are on GitLab; the rule over it does not change with the
 word.
-
-## Push the branch
-
-```bash
-git push -u origin HEAD
-```
-
-You push either way. Whether a pull request is then opened, or the create line
-goes back for a person to run, is settled at the create command below and
-nowhere else.
 
 ## Which repository it goes to
 
@@ -159,6 +161,61 @@ apart by what they say, and a rung answered early answers wrong.
 Everything below takes that repository as `<owner/repo>`: every rung leaves you
 holding one, so every command below names it.
 
+## File the finished tickets away
+
+The pull request shows each ticket's file as the branch last committed it. The
+lanes after the last code commit — critique, testing, review — commit nothing,
+so without this step the reviewer reads a ticket that still says `critique`
+while the work is long accepted.
+
+A branch can carry more than one ticket. Read every handle its commits name,
+counted against the default branch of `<owner/repo>` — not `origin/HEAD`: in a
+fork that is your fork's own default branch, which lags the upstream, and every
+upstream commit since would count as this branch's:
+
+```bash
+git remote -v                            # the remote whose URL is <owner/repo>
+git fetch <that remote> <its default branch>
+git log --format=%s <that remote>/<its default branch>..HEAD    # type(<ID>): ... — each <ID> once
+```
+
+Every one of them that sits in the board's terminal lane (`jaira show <ID>
+--json`, `status`) is filed away now, before the push, and committed with its
+logbook file:
+
+```bash
+jaira pull <ID>
+jaira logbook <ID>
+git add -A -- ':(glob).jaira/**/*<ID>-*.md'
+git commit -m "chore(<ID>): file the ticket away with its commits stamped"
+```
+
+`jaira pull` first, every time: the move into done may have been written in
+another checkout — the cockpit's Accept moves a ticket wherever its file was —
+so the file in this worktree can be older than the ticket's ref, and `jaira
+logbook` refuses an older file. Pull brings it up to the ref, and is a no-op
+where it already is.
+
+By path, never `.jaira/` whole: the pathspec takes this ticket's file twice —
+gone from `tickets/`, new under `logbook/`, both named after its id — and
+nothing another session left modified beside it. One commit per ticket, so the
+handle in each subject is the ticket it files.
+Name tickets by handle, never `jaira logbook --all`: that files every finished
+ticket on the board, other people's included, into a commit named after one.
+A ticket not in the terminal lane yet stays on the board as it is — filing it is
+not yours to decide. Invoked with `--by-person`, every ticket of the branch is
+in done already: the cockpit opens a pull request only then.
+
+## Push the branch
+
+```bash
+git push -u origin HEAD
+```
+
+You push either way. Whether a pull request is then opened, or the create line
+goes back for a person to run, is settled at the create command below and
+nowhere else.
+
 ## Does it already have one open
 
 Ask the repository you just settled on — not `origin`, or a fork answers for the
@@ -193,6 +250,11 @@ jaira show <id> --json
 ```
 
 - **Title**: `<type>(<id>): <what changed>`, the same shape the commits use.
+- **Every ticket on the branch**: a branch whose commits name more than one
+  handle (the list from **File the finished tickets away**) gets Why, What and
+  How to check for each of them, under its handle — the title names the ticket
+  you were invoked with, the body all of them. `jaira show <ID> --json` reads a
+  filed ticket too, off its logbook file.
 - **Why**: the ticket's context and goal, in the ticket's own words. A reviewer
   who was not in the session reads this first.
 - **What**: outcome-what and outcome-resolves.

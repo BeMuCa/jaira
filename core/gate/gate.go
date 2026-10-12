@@ -10,6 +10,7 @@ package gate
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -386,11 +387,16 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 	// A lane that stops for a human stops for a human. Without this the review
 	// step is decorative: the agent that did the work would decide its own work
 	// passed review, which is the one judgement it is least able to make.
-	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && req.To != t.Status && !req.Interactive {
+	//
+	// Sending work back to an earlier lane decides nothing — it is the opposite
+	// of accepting it — so only a move forward is refused. The
+	// alternative was --force for every send-back, and --force switches off
+	// every other refusal along with this one.
+	if cur, ok := env.Lanes.Get(t.Status); ok && cur.RequiresHumanExit && to > from && !req.Interactive {
 		vs = append(vs, Violation{
 			Code: CodeNeedsHuman,
 			Message: fmt.Sprintf(
-				"lane %q is a human checkpoint: open the board and sign this off, or accept it there. An agent cannot move a ticket out of it",
+				"lane %q is a human checkpoint: open the board and sign this off, or accept it there. An agent cannot move a ticket on from it, only back to an earlier lane",
 				cur.ID),
 		})
 	}
@@ -465,6 +471,26 @@ func OutputOwed(l *lane.Lane, t *ticket.Ticket) []string {
 		}
 	}
 	return owed
+}
+
+// InputMissing names the inputs a lane declares that this ticket has not
+// filled and that no earlier lane could be skipped for — fields in
+// ticket.SuppliedFields are left out, because the ticket carries those from
+// creation and their absence is reported as a promotion field instead. What
+// remains is what an earlier lane was meant to produce: a ticket created
+// straight into in-progress has no plan, and this is what says so.
+func InputMissing(l *lane.Lane, t *ticket.Ticket) []string {
+	if l == nil || t == nil {
+		return nil
+	}
+	var missing []string
+	for _, f := range l.InputRequires {
+		if slices.Contains(ticket.SuppliedFields, f) || fieldFilled(t, f) {
+			continue
+		}
+		missing = append(missing, f)
+	}
+	return missing
 }
 
 // specifiedBoundary returns the display-order position of the first lane that

@@ -203,6 +203,36 @@ func laneTestStore(t *testing.T) (*ticket.Store, string) {
 	return s, catalogue
 }
 
+// laneScreenWithOneAvailable opens the lane screen on a board that has every
+// built-in lane installed and exactly one catalogue lane, id, that is not:
+// ls.available is [id]. The project directory is materialised first — with
+// no project directory of its own, D-03's fallback merges the whole
+// catalogue into the board itself, and id would never show up as merely
+// available.
+func laneScreenWithOneAvailable(t *testing.T, id string) *laneScreen {
+	t.Helper()
+	s, catalogue := laneTestStore(t)
+	builtins, err := lane.Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range builtins {
+		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeLaneFile(t, catalogue, id+".md", "---\nid: "+id+"\nname: "+id+"\nafter: human\nprecedence: 41\n---\n")
+	set, err := lane.Load(s.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newLaneScreen(s, set)
+	if len(ls.available) != 1 || ls.available[0].ID != id {
+		t.Fatalf("setup: available = %v, want exactly [%s]", ls.available, id)
+	}
+	return ls
+}
+
 func writeLaneFile(t *testing.T, dir, filename, body string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -546,35 +576,7 @@ func TestLaneScreenXRefusesWhenTicketPresent(t *testing.T) {
 // not-installed (available) catalogue lane deletes its file from disk and it
 // disappears from ls.available after the reload x triggers.
 func TestLaneScreenXDeletesAvailableCatalogueLane(t *testing.T) {
-	s, catalogue := laneTestStore(t)
-	// Materialise the project directory first: with no project directory of
-	// its own, D-03's fallback merges the whole catalogue into the board
-	// itself, and my-lane would never show up as merely available — see
-	// TestLaneScreenPlusColumnOpensCatalogueListingOnlyMissingLanes.
-	builtins, err := lane.Builtins()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, l := range builtins {
-		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
-			t.Fatal(err)
-		}
-	}
-	writeLaneFile(t, catalogue, "new-lane.md", `---
-id: my-lane
-name: My Lane
-after: human
-precedence: 41
----
-`)
-	set, err := lane.Load(s.Root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ls := newLaneScreen(s, set)
-	if len(ls.available) != 1 || ls.available[0].ID != "my-lane" {
-		t.Fatalf("setup: available = %v, want exactly [my-lane]", ls.available)
-	}
+	ls := laneScreenWithOneAvailable(t, "my-lane")
 	ls.idx = len(ls.lanes) // the available lane's column
 
 	path := ls.available[0].Source
@@ -601,31 +603,7 @@ precedence: 41
 // (default no) after x on an available catalogue lane leaves its file in
 // place.
 func TestLaneScreenXOnAvailableDefaultNoLeavesFileOnDisk(t *testing.T) {
-	s, catalogue := laneTestStore(t)
-	builtins, err := lane.Builtins()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, l := range builtins {
-		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
-			t.Fatal(err)
-		}
-	}
-	writeLaneFile(t, catalogue, "new-lane.md", `---
-id: my-lane
-name: My Lane
-after: human
-precedence: 41
----
-`)
-	set, err := lane.Load(s.Root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ls := newLaneScreen(s, set)
-	if len(ls.available) != 1 || ls.available[0].ID != "my-lane" {
-		t.Fatalf("setup: available = %v, want exactly [my-lane]", ls.available)
-	}
+	ls := laneScreenWithOneAvailable(t, "my-lane")
 	ls.idx = len(ls.lanes)
 	path := ls.available[0].Source
 
@@ -716,32 +694,7 @@ func TestLaneScreenConfirmEscCancelsWithoutFinishing(t *testing.T) {
 // directory of its own, D-03's fallback already shows the whole catalogue,
 // so nothing would be missing from it to demonstrate the filter.
 func TestLaneScreenPlusColumnOpensCatalogueListingOnlyMissingLanes(t *testing.T) {
-	s, catalogue := laneTestStore(t)
-	builtins, err := lane.Builtins()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, l := range builtins {
-		if _, err := lane.Export(l, lane.ProjectLanesDir(s.Root), false); err != nil {
-			t.Fatal(err)
-		}
-	}
-	writeLaneFile(t, catalogue, "extra.md", `---
-id: extra
-name: Extra
-after: human
-precedence: 41
----
-`)
-	set, err := lane.Load(s.Root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ls := newLaneScreen(s, set)
-	// The not-installed lane shows as its own dimmed column before '+'.
-	if len(ls.available) != 1 || ls.available[0].ID != "extra" {
-		t.Fatalf("available = %v, want exactly [extra]", ls.available)
-	}
+	ls := laneScreenWithOneAvailable(t, "extra")
 	ls.idx = len(ls.lanes) + len(ls.available) // the '+' column
 
 	ls.key("enter")
@@ -761,5 +714,80 @@ precedence: 41
 	}
 	if _, ok := ls.set.Get("extra"); !ok {
 		t.Error("chosen lane was not added to the project")
+	}
+}
+
+// TestLaneScreenEnterTogglesAddAndRemove asserts enter is one toggle on a
+// column: on a not-installed lane it adds it straight away, and on an
+// installed lane it opens the same yes/no confirmation x opens — default
+// no, so a bare enter removes nothing — and removes the lane only once
+// right selects yes.
+func TestLaneScreenEnterTogglesAddAndRemove(t *testing.T) {
+	ls := laneScreenWithOneAvailable(t, "extra")
+	path := ls.available[0].Source
+
+	// enter on the not-installed lane adds it, with no confirmation.
+	ls.idx = len(ls.lanes)
+	ls.key("enter")
+	if ls.isErr {
+		t.Fatalf("enter on an available lane failed: %s", ls.msg)
+	}
+	if ls.confirm != nil {
+		t.Fatal("enter on an available lane must add it, not ask to remove it")
+	}
+	if _, ok := ls.set.Get("extra"); !ok {
+		t.Fatal("enter on an available lane did not add it")
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Errorf("adding must leave the catalogue file in place: %v", err)
+	}
+
+	// enter on the now-installed lane asks, defaulting to no.
+	ls.idx = -1
+	for i, l := range ls.lanes {
+		if l.ID == "extra" {
+			ls.idx = i
+		}
+	}
+	if ls.idx < 0 {
+		t.Fatal("added lane is not among the installed columns")
+	}
+	before := len(ls.lanes)
+	ls.key("enter")
+	if ls.confirm == nil || ls.confirm.id != "extra" || ls.confirm.path != "" {
+		t.Fatalf("enter on an installed lane must open the board-removal confirmation, got %+v", ls.confirm)
+	}
+	if ls.confirm.yes {
+		t.Error("confirmation opened by enter must default to no")
+	}
+	ls.key("enter")
+	if len(ls.lanes) != before {
+		t.Fatalf("enter, enter removed a lane: lanes = %d, want %d", len(ls.lanes), before)
+	}
+
+	ls.key("enter")
+	ls.key("right")
+	ls.key("enter")
+	if ls.isErr {
+		t.Fatalf("enter, right, enter failed: %s", ls.msg)
+	}
+	if _, ok := ls.set.Get("extra"); ok {
+		t.Error("enter, right, enter must remove the installed lane")
+	}
+	if len(ls.lanes) != before-1 {
+		t.Errorf("lanes = %d after removal, want %d", len(ls.lanes), before-1)
+	}
+}
+
+// TestLaneScreenFooterNamesEnterAndX asserts the footer names both ways to
+// remove a lane: enter as the add/remove toggle, and x as before.
+func TestLaneScreenFooterNamesEnterAndX(t *testing.T) {
+	m := newTestModel(t, 150, 40)
+	ls := newLaneScreen(m.store, m.lanes)
+	out := stripANSI(ls.render(150, 40))
+	for _, want := range []string{"enter add/remove", "x remove"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("footer must say %q:\n%s", want, out)
+		}
 	}
 }

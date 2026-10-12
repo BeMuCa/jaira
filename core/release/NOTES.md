@@ -1,5 +1,13 @@
 <!--
-Format rules — read before editing:
+Closed history — do not add to this file.
+
+This file holds the releases up to 0.3.6. A change since then goes into a file
+of its own, core/release/notes/<TICKET>.md, one line "- ..." per change and no
+heading; the release-notes workflow moves it into core/release/notes/<version>/
+when that version is released (see "Client-facing changes" in CLAUDE.md, and
+release.Cut).
+
+Format rules, kept because the parser still reads this file:
   - Newest release first.
   - A release starts with a line reading exactly "## " followed by the exact
     version string a build of that release reports (the git tag with its
@@ -9,12 +17,9 @@ Format rules — read before editing:
     wrapped line is read as two separate, incomplete changes.
   - Anything else (this comment, blank lines, prose) is ignored, so it is
     free to use for context.
-  - Write each change as an instruction: what the reader must DO differently,
-    not a record of what commit did what.
 -->
 
-## Unreleased
-- Run `jaira init` as the first command in a fresh clone of a shared board, then `jaira fetch`: init no longer appends `/.jaira/` to `.gitignore` on a board that is already in git (it used to make the board private again for everyone who committed that line), says `This board is shared` instead, and `--json` reports `private` as the board actually is. If a teammate's init already added the line, delete it from `.gitignore`.
+## 0.3.6
 - Answer questions in your teamlead's tab only: run `jaira roles install --force` (add `--global` if you installed them globally), and a lane worker no longer asks you anything — it writes the question with numbered options onto the ticket (`jaira note` plus the `question` field) and stops, `run-lane.sh` exits 5 on it, and a dispatcher started with `spawn.sh --parent <teamlead-session>` sends its own and its workers' questions to that teamlead with `SendMessage` instead of asking in its tab. You may still type into a dispatcher's tab; it answers there, notes the decision on the ticket and tells its teamlead, which then does not ask again.
 - Rest the cursor on a board card that has links to see them: a line runs from it to every linked card on screen — red for blocked-by/blocks, blue for parent/child, green for follows, grey for related — straight across the cards between, and the status bar names the colours drawn and counts the links whose card is not on screen (`L` still lists them all).
 - Press `u` on the board to show only some people's tickets: tick names with space and press enter, and the `/` filter gets `user:name,other`, which matches a ticket's assignee or creator by exact name; `x` in that list shows everyone again.

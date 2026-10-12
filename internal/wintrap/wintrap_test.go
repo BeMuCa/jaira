@@ -116,6 +116,8 @@ func TestMatchPattern(t *testing.T) {
 		{"core/role/builtin/**/*.md", "core/lane/builtin/todo.md", false},
 		{"*.md", "core/release/NOTES.md", true},
 		{"/NOTES.md", "NOTES.md", true},
+		{"core/release/notes/**/*.md", "core/release/notes/AR97K9.md", true},
+		{"core/release/notes/**/*.md", "core/release/notes/9.9.9/AR97K9.md", true},
 	}
 	for _, tc := range cases {
 		if got := matchPattern(tc.pattern, tc.path); got != tc.want {

@@ -230,7 +230,8 @@ should not be: an agent that starts work with no checkable target produces work
 you cannot review. Acquiring a definition of done is the price of admission to a
 run.
 
-`REVIEW` is a **human checkpoint**: no agent may move a ticket out of it. The
+`REVIEW` is a **human checkpoint**: no agent may move a ticket on out of it —
+sending it back to an earlier lane is allowed, since that accepts nothing. The
 review agent writes its verdict and stops; you accept the work in the board, or
 raise a follow-up ticket that carries the context across and links back.
 
@@ -666,6 +667,7 @@ and `--force` replaces it too.
 | `jaira` | Teaches the agent the CLI. Ships in `.claude/skills/jaira/`, not through `roles install`. |
 | `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
 | `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
+| `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
 | `/jaira-role-lane <id> <lane>` | Works exactly one lane, then stops. |
 | `/jaira-role-brainstorm <idea>` | Turns an idea into tickets, or says it is not one. |
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
@@ -683,6 +685,13 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   start it yourself for a single ticket. Under Herdr each worker gets a tab of
   its own, which `scripts/run-lane.sh` closes once the worker has finished and
   the ticket has left its lane.
+- `/jaira-worker <id>` is the same job done by one agent: it works every lane
+  itself and hands only a lane marked `context: fresh` in its lane file — on a
+  board where no lane says, the last agentic lane before the first lane a person
+  owns, `review` on the shipped board — to a new agent in a tab of its own.
+  Turn it on with `"dispatch": "worker"` in `~/.jaira/settings.json`, or on the
+  board's settings screen (`S`, "Agents per ticket"); a teamlead then starts it
+  instead of the dispatcher. `jaira roles list` says which is set.
 - `/jaira-teamlead` is for several tickets at once: it decides the order, says
   what is not worth doing, and starts one dispatcher per ticket.
 - `/jaira-role-acceptance <id>...` turns the tickets waiting for you into one
@@ -708,6 +717,71 @@ the teamlead that started it, the teamlead asks you, and your answer goes back
 down as a note the next worker reads:
 
 <img src="docs/img/demo-chain.gif" alt="A brainstorm worker stops on a question; it travels worker → dispatcher → teamlead → person, and the answer travels back until the ticket reaches todo" width="100%">
+
+### The cockpit: a Claude Code mod for the session you work from
+
+`jaira roles install` also writes `jaira-cockpit`, a Claude Code mod, beside the
+roles. Claude Code loads it by itself from the next session on — from
+`~/.claude/skills` with `--global`, from the project's `.claude/skills` with
+`--project` once you have trusted the workspace. Without that install nothing
+changes for anybody.
+
+- Agent reports and task notifications that name a ticket reach the chat as
+  one line, marked as shortened; `/cockpit report <id>` shows them whole.
+- Everything the mod shows sits in one frame above the prompt, titled
+  `jaira-cockpit`; its head line counts the workers and reviews at work (their
+  Herdr tabs, or this session's subagents) and the tickets waiting for you,
+  and shows the five-hour and seven-day windows used (off a subscription, what
+  the session cost). The mod keeps no status line of its own.
+- The frame lists the tickets waiting in a lane a person owns that are yours
+  (their assignee is a name `jaira whoami` gives you) or nobody's, with
+  **Accept** (moves it to done in the ticket's own worktree; offered only
+  where the next lane ends the board, and refused while an item of the
+  definition of done is open) and **Give back** (asks in a pane of its own
+  what is missing, notes it, moves it to in-progress and hands it to the
+  worker that carried it while that is still cheaper, else to a new one).
+  Three show at first; **+N more** opens the rest with their buttons, **show
+  fewer** closes them. Your teammates' tickets sit in one line (`2 waiting for
+  Berk, Carla`) that opens to show them, with **Discuss** only, and count no
+  more as waiting for you. When a button fails, the error opens whole in a
+  pane of its own.
+- A verdict with a reservation gets **Explain**, an open question **Discuss**:
+  each opens a Herdr tab of its own. The Explain chat writes its explanation
+  onto the ticket and the frame offers it as **Read explanation**. The Discuss
+  chat writes the decision onto the ticket, moves the ticket back itself when
+  that is the decision (it accepts only on your explicit yes), sends your
+  session one line, and the frame offers **Read decision**. Each tab closes
+  once its note is there.
+- The frame's last line shows the context size and how long the prompt cache
+  stays warm, `/compact advised` and a cold cache in the warning colour; a
+  prompt of yours onto a cold cache with a large context is held with a
+  choice: send, compact first, start over, cancel.
+- After each of your turns a cheap model files it under a conversation
+  thread; `/cockpit threads` shows which became a ticket, which wait for your
+  answer and which were left lying.
+- `/cockpit ticket <id>` opens a pane with a ticket's reports and what its
+  agents used (`~/.jaira/metrics.csv`, one row per session, in the columns of
+  `scripts/lane-eval/metrics.sh`).
+- In a session that carries a ticket — the worker, lane or dispatcher a
+  `spawn.sh` tab starts — the mod only writes the session's record and
+  metrics: messages to it arrive as written, and it has no frame, threads or
+  cache guard.
+
+Every text is in English, whatever Claude Code's `language` setting. In a project without a board, or without `jaira` on `PATH`, the
+board parts stay out of sight and the rest works as usual — so the mod is
+useful without jaira too. Install it on its own, without jaira, by typing at a
+Claude Code prompt:
+
+```
+/plugin install jaira-cockpit --marketplace BeMuCa/jaira
+```
+
+Answer `y` to add the marketplace, then pick a scope.
+
+Installed this way the mod runs beside whatever `jaira` is on `PATH`, and it
+needs jaira 0.3.7 or later: Give back moves a ticket out of a person's lane
+without `--force`, which older builds refuse. With an older jaira the cockpit
+says so once, with both versions, when it finds the board.
 
 ## Working with an agent
 
@@ -786,7 +860,7 @@ jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira share                publish the board (--undo to make it private)
-jaira roles install        write the teamlead, dispatcher and worker prompts as skills
+jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.

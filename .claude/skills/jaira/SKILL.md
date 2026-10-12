@@ -319,7 +319,8 @@ plus `blocked`.
   recorded on the ticket. There is no evidence flag to pass; you cannot certify
   your own work complete, and you should not try to route around it.
 
-  The human review lane cannot be left by an agent on its own judgement — but
+  The human review lane cannot be left forward by an agent on its own judgement
+  (sending the work back to an earlier lane needs no override) — but
   when the user has reviewed the work in this conversation and tells you it
   passed, finishing the acceptance for them is legitimate:
   `jaira move <handle> --to done --force`. The override is reported in that

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -76,9 +77,9 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			shared := hasAttributes(s) || (&gitrepo.Repo{Dir: s.Root}).Tracks(ticket.DirName)
 			var p board.Prepared
 			if !shared {
-				p = board.Prepare(s.Root, laneFacts(boardLanes))
+				p = board.Prepare(s.Root, boardLanes.Facts())
 			} else {
-				p.Notes, p.NoteErr = board.AnnounceInAgentFiles(s.Root, laneFacts(boardLanes))
+				p.Notes, p.NoteErr = board.AnnounceInAgentFiles(s.Root, boardLanes.Facts())
 			}
 			// A board just prepared by this binary must not immediately be
 			// nagged about being out of date.
@@ -331,9 +332,19 @@ already know it is yours; --assignee wins over it.`,
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
 			onRefOnly, why := fileOnRefOnly(t)
+			targetLane, _ := lanes.Get(target)
+			skipped, emptyInputs := skippedByCreate(lanes, t, targetLane)
 			if g.jsonOut {
 				payload := ticketJSON(t, lanes)
 				payload["on-ref-only"] = onRefOnly
+				// Only when --lane went past something, so an ordinary
+				// create's payload is unchanged.
+				if len(skipped) > 0 {
+					payload["skipped_lanes"] = skipped
+				}
+				if len(emptyInputs) > 0 {
+					payload["empty_inputs"] = emptyInputs
+				}
 				// Both modes are named, and the file mode says why. An agent
 				// that only sees "on-ref-only": false learns nothing it can act
 				// on, which is how seventeen tickets went to disk unnoticed.
@@ -346,6 +357,16 @@ already know it is yours; --assignee wins over it.`,
 				fmt.Fprintln(cmd.OutOrStdout(), n)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Created %s  %s\n", ticket.Handle(t.ID), t.Title)
+			// Creating straight into a later lane is a legitimate shortcut,
+			// so this says what it cost rather than refusing it: without it a
+			// ticket sat in Implementing with a placeholder for a plan and
+			// nobody was told.
+			if len(skipped) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Skipped on the way to %s: %s\n", target, strings.Join(skipped, ", "))
+			}
+			if len(emptyInputs) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Empty, though %s takes it as input: %s\n", target, strings.Join(emptyInputs, ", "))
+			}
 			if len(added) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "New on this board: %s. Run 'jaira tags' before naming a tag, and reuse one for the same subject.\n",
 					strings.Join(added, ", "))
@@ -471,6 +492,37 @@ func managedField(k string) bool {
 		return true
 	}
 	return false
+}
+
+// skippedByCreate reports what creating a ticket straight into a later lane
+// costs it: the lanes on this ticket's path that it never passed through, and
+// the inputs the target lane declares that are empty because of that.
+//
+// A lane only counts as skipped when the ticket would have visited it —
+// Lane.OnPath, the rule set.Next walks by — so a parking or question lane is not reported as
+// something the shortcut took away. A lane whose option is left unticked is
+// the one exception: it counts when it produces one of the empty inputs, or
+// "plan is empty" would stand beside a list that leaves out pre-process, the
+// lane that writes it. An empty input counts only when no flag on create could
+// have filled it (ticket.SuppliedFields): those are what a skipped lane would
+// have produced, and they are already reported as "still needed" when they
+// are missing.
+func skippedByCreate(set *lane.Set, t *ticket.Ticket, target *lane.Lane) (skipped, empty []string) {
+	if target.RequiresBlockedReason {
+		return nil, nil
+	}
+	from, to := set.Index(set.Default().ID), set.Index(target.ID)
+	if to <= from {
+		return nil, nil
+	}
+	empty = gate.InputMissing(target, t)
+	for _, l := range set.Lanes[from:to] {
+		writesEmpty := slices.ContainsFunc(l.OutputProduces, func(f string) bool { return slices.Contains(empty, f) })
+		if l.OnPath(t) || (writesEmpty && !l.RequiresBlockedReason && !l.RequiresQuestion) {
+			skipped = append(skipped, l.ID)
+		}
+	}
+	return skipped, empty
 }
 
 func missingFields(t *ticket.Ticket) []string {
@@ -1049,6 +1101,11 @@ func newLanesCmd() *cobra.Command {
 						"id": l.ID, "name": l.Name, "precedence": l.Precedence,
 						"agentic": l.Agentic, "terminal": l.Terminal,
 						"model_tier": l.ModelTier, "builtin": l.Builtin,
+						"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
+						// Whose lane it is: true where a person alone moves work out
+						// (signoff, human). The cockpit mod's "waiting for you" band
+						// reads it rather than knowing lane names.
+						"human_exit": l.RequiresHumanExit,
 						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
@@ -1069,13 +1126,25 @@ func newLanesCmd() *cobra.Command {
 			// and 'lanes show <id>' is where it lives instead.
 			// RANK, not PREC: column order follows after:, never this number — it
 			// is the rank a merge uses to decide which lane wins, nothing more.
-			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %s\n", "ID", "NAME", "RANK", "AGENTIC", "TIER", "SOURCE")
+			fmt.Fprintf(w, "%-14s %-16s %-6s %-8s %-8s %-8s %s\n", "ID", "NAME", "RANK", "AGENTIC", "TIER", "CONTEXT", "SOURCE")
+			implied, invalid := false, false
 			for _, l := range lanes.Lanes {
 				src := "built-in"
 				if !l.Builtin {
 					src = l.Source
 				}
-				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), src)
+				fmt.Fprintf(w, "%-14s %-16s %-6d %-8t %-8s %-8s %s\n", l.ID, l.Name, l.Precedence, l.Agentic, dash(l.ModelTier), laneContext(l), src)
+				implied = implied || l.ContextImplied
+				invalid = invalid || l.ContextInvalid != ""
+			}
+			if implied || invalid {
+				fmt.Fprintln(w)
+			}
+			if implied {
+				fmt.Fprintf(w, "* %s\n", impliedContextNote)
+			}
+			if invalid {
+				fmt.Fprintf(w, "! %s\n", invalidContextNote)
 			}
 			if len(available) > 0 {
 				fmt.Fprintf(w, "\nShipped with this binary, not on this board — no network needed:\n")
@@ -1188,6 +1257,8 @@ func newLanesShowCmd() *cobra.Command {
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
 					"rejects_to": l.RejectsTo, "holds": l.Holds,
+					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
+					"human_exit": l.RequiresHumanExit,
 				})
 			}
 			w := cmd.OutOrStdout()
@@ -1202,6 +1273,13 @@ func newLanesShowCmd() *cobra.Command {
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)
 			fmt.Fprintf(w, "Tier:        %s\n", dash(l.ModelTier))
+			if l.ContextImplied {
+				fmt.Fprintf(w, "Context:     fresh — %s\n", impliedContextNote)
+			} else if l.ContextInvalid != "" {
+				fmt.Fprintf(w, "Context:     fresh — %s\n", lane.ContextInvalidMessage(l))
+			} else {
+				fmt.Fprintf(w, "Context:     %s\n", dash(l.Context))
+			}
 			fmt.Fprintf(w, "Input:       %s\n", dash(strings.Join(l.InputRequires, ", ")))
 			fmt.Fprintf(w, "Output:      %s\n", dash(strings.Join(l.OutputProduces, ", ")))
 			if l.Holds > 0 {
@@ -1436,26 +1514,25 @@ func truncate(s string, n int) string {
 	return string(r[:n-1]) + "…"
 }
 
-// laneFacts reads a board's pipeline into the plain form core/board renders.
-//
-// The translation lives here rather than in core/board because that package is
-// stdlib-only on purpose — both the CLI and the TUI call it, and it must not
-// pull core/lane behind them.
-func laneFacts(lanes *lane.Set) []board.LaneFact {
-	if lanes == nil {
-		return nil
+// impliedContextNote says why a lane whose file never mentions context: is
+// fresh, in the words both 'jaira lanes' and 'lanes show' print it in.
+const impliedContextNote = "no lane on this board declares a valid context:, so the last agentic lane before the first lane a person owns runs fresh"
+
+// invalidContextNote explains the "!" a lane gets in the CONTEXT column when
+// its file sets a value jaira cannot read.
+const invalidContextNote = "this lane's context: is neither fresh nor shared, so it runs fresh until the file is fixed; 'jaira validate' fails on it"
+
+// laneContext is the CONTEXT column: the value, with "*" when the board's
+// default supplied it rather than the lane's file, and "!" when the file
+// says something that is neither value.
+func laneContext(l *lane.Lane) string {
+	if l.ContextImplied {
+		return l.Context + "*"
 	}
-	out := make([]board.LaneFact, 0, len(lanes.Lanes))
-	for _, l := range lanes.Lanes {
-		out = append(out, board.LaneFact{
-			ID: l.ID, Name: l.Name, Description: l.Description,
-			ModelTier: l.ModelTier, Agentic: l.Agentic, Terminal: l.Terminal,
-			HumanExit: l.RequiresHumanExit, Question: l.RequiresQuestion,
-			Parking: l.RequiresBlockedReason, RejectsTo: l.RejectsTo,
-			Produces: l.OutputProduces,
-		})
+	if l.ContextInvalid != "" {
+		return l.Context + "!"
 	}
-	return out
+	return dash(l.Context)
 }
 
 // filedAway says where a ticket lives once it has left the board, and nothing

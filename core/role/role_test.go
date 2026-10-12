@@ -23,6 +23,7 @@ var wantRoles = []string{
 	"jaira-role-research",
 	"jaira-role-tester",
 	"jaira-teamlead",
+	"jaira-worker",
 }
 
 func TestBuiltinsAreTheShippedRoles(t *testing.T) {
@@ -149,6 +150,16 @@ func TestInstallWritesEveryFile(t *testing.T) {
 		if _, err := os.Stat(p); err != nil {
 			t.Errorf("after install: %v", err)
 		}
+	}
+	// The cockpit mod goes beside the roles, where Claude Code loads a
+	// plugin folder by itself.
+	for _, rel := range []string{".claude-plugin/plugin.json", "hooks/register.tsx"} {
+		if _, err := os.Stat(filepath.Join(dir, "jaira-cockpit", filepath.FromSlash(rel))); err != nil {
+			t.Errorf("mod after install: %v", err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "jaira-cockpit", "tests")); !os.IsNotExist(err) {
+		t.Errorf("the mod's tests were installed: %v", err)
 	}
 	// A shipped script must arrive executable, or the prompt that calls it is
 	// a broken instruction. Windows has no POSIX execute bit — os.Chmod there
@@ -339,5 +350,174 @@ func TestProjectTargetIsTheClaudeSkillsDirectory(t *testing.T) {
 	got := ProjectTarget(root)
 	if want := filepath.Join(root, ".claude", "skills"); got != want {
 		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+// The worker uses the dispatcher's scripts rather than carrying copies that
+// drift: both roles are installed side by side, so the paths it names are
+// beside it. A rename of either file has to fail here, not in a pane.
+func TestWorkerNamesScriptsThatShip(t *testing.T) {
+	b, err := File("jaira-worker", skillFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{"scripts/spawn.sh", "scripts/run-lane.sh"} {
+		if !strings.Contains(string(b), "jaira-dispatcher/"+rel) {
+			t.Errorf("jaira-worker does not name jaira-dispatcher/%s", rel)
+		}
+		if _, err := File("jaira-dispatcher", rel); err != nil {
+			t.Errorf("jaira-dispatcher/%s does not ship: %v", rel, err)
+		}
+	}
+}
+
+// The Discuss chat brings its decision back: a note, a move back that jaira
+// takes for a ticket that already has its outcome, and a line to the session
+// that opened it. A move line carrying --what/--why/--resolves is refused for
+// such a ticket (outcome_not_yours), even with --force.
+func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	typed := filepath.Join(t.TempDir(), "typed")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:/tmp/cc-socks/7.sock", "ab12cd", "AB12CD", "discuss")
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
+	}
+	got, err := os.ReadFile(typed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := string(got)
+	for _, want := range []string{
+		`jaira note AB12CD "decision: `,
+		"jaira set AB12CD question=",
+		"jaira move AB12CD --to in-progress (",
+		"SendMessage an uds:/tmp/cc-socks/7.sock",
+	} {
+		if !strings.Contains(line, want) {
+			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+		}
+	}
+	at := strings.Index(line, "jaira move ")
+	if at < 0 {
+		t.Fatalf("discuss prompt has no move back:\n%s", line)
+	}
+	if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
+		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+	}
+}
+
+// spawn.sh types the role into the tab it opened; "worker" must start
+// /jaira-worker and "dispatch" /jaira-dispatcher, --parent carried along.
+// Herdr is replaced by a stub that answers the three calls the script reads
+// and records what was typed — no tab is opened anywhere.
+func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skipf("no python3 on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := Install(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	typed := filepath.Join(t.TempDir(), "typed")
+	stub := filepath.Join(t.TempDir(), "herdr")
+	script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	for lane, want := range map[string]string{
+		"worker":   "/jaira-worker ab12cd --parent lead",
+		"dispatch": "/jaira-dispatcher ab12cd --parent lead",
+		"review":   "/jaira-role-lane ab12cd review",
+		// A person's chats, which the cockpit mod opens: a plain request,
+		// never a role, so the tab answers and never works the ticket.
+		"explain": "Erklaere mir in einfachen Worten den Review-Befund zu Ticket ab12cd …",
+		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
+		// The cockpit's Accept, a person's press: the flag is what lets
+		// jaira-role-pr open the pull request instead of handing it back.
+		"pr": "/jaira-role-pr ab12cd --by-person",
+	} {
+		_ = os.Remove(typed)
+		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
+		}
+		got, err := os.ReadFile(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		line := strings.TrimSpace(string(got))
+		if prefix, ok := strings.CutSuffix(want, " …"); ok {
+			if !strings.HasPrefix(line, prefix) || strings.HasPrefix(line, "/") {
+				t.Errorf("lane %s typed %q, want a plain request starting %q", lane, line, prefix)
+			}
+		} else if line != want {
+			t.Errorf("lane %s typed %q, want %q", lane, line, want)
+		}
+	}
+}
+
+// A pull request shows each ticket's file as the branch last committed it,
+// and the lanes after the last code commit commit nothing: jaira-role-pr files
+// the finished tickets away before it pushes, by handle, and describes every
+// ticket the branch's commits name (GPFA7B, after PRs #62 and #63 showed
+// their tickets in critique).
+func TestPRFilesTheTicketsAwayBeforeThePush(t *testing.T) {
+	body, err := File("jaira-role-pr", "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	pull := strings.Index(text, "jaira pull <ID>\njaira logbook <ID>")
+	if pull < 0 {
+		t.Error("jaira-role-pr must run jaira pull <ID> right before jaira logbook <ID>: a file older than the ref is refused")
+	}
+	file := strings.Index(text, "jaira logbook <ID>")
+	commit := strings.Index(text, `chore(<ID>): file the ticket away`)
+	push := strings.Index(text, "## Push the branch")
+	if file < 0 || commit < 0 || push < 0 || file > push || commit > push {
+		t.Errorf("jaira-role-pr must run jaira logbook <ID> and commit chore(<ID>): file the ticket away before ## Push the branch (at %d, %d, %d)", file, commit, push)
+	}
+	if strings.Contains(text, "Push what is committed and leave that file alone") || !strings.Contains(text, "Leave that file alone here: **File the finished tickets away**") {
+		t.Error("jaira-role-pr's 'Before you push anything' must point at the logbook step instead of leaving the ticket file alone without exception")
+	}
+	if strings.Contains(text, "git add .jaira/") || !strings.Contains(text, `git add -A -- ':(glob).jaira/**/*<ID>-*.md'`) {
+		t.Error("jaira-role-pr must stage the filed ticket by its own path, never .jaira/ whole")
+	}
+	if !strings.Contains(text, "git log --format=%s <that remote>/<its default branch>..HEAD") || strings.Index(text, "## Which repository it goes to") > file || !strings.Contains(text, "**Every ticket on the branch**") {
+		t.Error("jaira-role-pr must read every ticket the branch's commits name, against the target's default branch settled before it, and describe each of them")
 	}
 }

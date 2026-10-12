@@ -1,0 +1,1 @@
+- Clear a claim a killed session left behind with the command `jaira next` now prints beside its abandoned-claim warning, `jaira claim <id> --release`: it releases somebody else's claim once it is older than 30 minutes, and the warning stops.

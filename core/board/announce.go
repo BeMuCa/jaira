@@ -83,10 +83,12 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  Not what the checklist and git already record. A killed session never gets a\n" +
 	"  turn to write anything down, so do not save it for the end\n" +
 	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish\n" +
-	"  the step. jaira works out the commit list itself from git history — the union\n" +
-	"  of the ticket file's own history and commits naming its id — so nothing needs\n" +
-	"  to be typed here; it is written onto the ticket once, when the ticket leaves\n" +
-	"  the board\n" +
+	"  the step. The three outcome flags belong to the lane that produces the outcome\n" +
+	"  (in-progress); every later lane reads it, moves without them, and is refused\n" +
+	"  when it would replace it. jaira works out the commit list itself from git\n" +
+	"  history — the union of the ticket file's own history and commits naming its\n" +
+	"  id — so nothing needs to be typed here; it is written onto the ticket once,\n" +
+	"  when the ticket leaves the board\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
 	"- **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
@@ -120,7 +122,8 @@ const agentNote = "## Task tracking: jaira\n" +
 	"`jaira <command> --help` for everything else.\n" +
 	"\n" +
 	"Do not edit files under `.jaira/tickets/` directly; the CLI is the write path.\n" +
-	"The human review lane cannot be left by an agent — a person accepts the work there.\n" +
+	"An agent cannot move work on out of the human review lane — a person accepts it there.\n" +
+	"Sending it back to an earlier lane is not an acceptance and needs no --force.\n" +
 	"\n" +
 	"A `jaira:local` marker — an HTML comment of that name — added by hand anywhere\n" +
 	"inside this block makes everything between it and the end marker survive the\n" +
@@ -146,6 +149,8 @@ type LaneFact struct {
 	Parking     bool
 	RejectsTo   []string
 	Produces    []string
+	// Fresh marks a lane a new agent works, not the one carrying the ticket.
+	Fresh bool
 }
 
 // OrList writes lane ids as a reader would say them — "in-progress",
@@ -208,9 +213,15 @@ func laneSection(facts []LaneFact) string {
 	for _, f := range facts {
 		var marks []string
 		switch {
+		case f.Agentic && f.Fresh:
+			// Said where the lane is listed, because the agent carrying a
+			// ticket reads this list to learn where its own part stops.
+			marks = append(marks, "**fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent")
 		case f.Agentic:
 			marks = append(marks, "yours to work")
-		case f.HumanExit, f.Question:
+		case f.HumanExit:
+			marks = append(marks, "**a person's, not yours** — you may move work in, or send it back to an earlier lane, never on")
+		case f.Question:
 			marks = append(marks, "**a person's, not yours** — you may move work in, never out")
 		default:
 			marks = append(marks, "no agent step; move through it")

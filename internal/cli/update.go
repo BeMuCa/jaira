@@ -100,9 +100,9 @@ installed.`,
 			var notesWritten []string
 			var noteErr error
 			if agentFile != "" {
-				notesWritten, noteErr = board.ChooseAgentFiles(s.Root, agentFile, laneFacts(boardLanes))
+				notesWritten, noteErr = board.ChooseAgentFiles(s.Root, agentFile, boardLanes.Facts())
 			} else {
-				notesWritten, noteErr = board.AnnounceInAgentFiles(s.Root, laneFacts(boardLanes))
+				notesWritten, noteErr = board.AnnounceInAgentFiles(s.Root, boardLanes.Facts())
 			}
 			if noteErr != nil {
 				return fail(ExitError, "prepare_failed", "could not update an agent instruction file: %v", noteErr)

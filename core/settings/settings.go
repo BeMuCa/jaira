@@ -97,6 +97,39 @@ type Settings struct {
 	// and has to be told apart from a file that never mentions it, which
 	// means DefaultLogbookDays. Read it through LogbookWindow.
 	LogbookDays *int `json:"logbook-days,omitempty"`
+
+	// Dispatch picks how a ticket is carried through its lanes when an agent
+	// is handed the whole of it: "lanes", one new agent per lane through
+	// jaira-dispatcher, or "worker", one agent through every lane with only a
+	// lane marked context: fresh handed to a new one, through jaira-worker.
+	// Empty or anything else means "lanes" — the way that ran before there
+	// was a choice, so nobody is switched over without asking for it. Read
+	// it through DispatchMode.
+	Dispatch string `json:"dispatch,omitempty"`
+}
+
+// The two values of Dispatch.
+const (
+	DispatchLanes  = "lanes"
+	DispatchWorker = "worker"
+)
+
+// DispatchMode returns DispatchWorker when the settings ask for it and
+// DispatchLanes otherwise — a typo falls back to what ran before rather than
+// stopping a teamlead from starting anything.
+func (s Settings) DispatchMode() string {
+	if strings.TrimSpace(s.Dispatch) == DispatchWorker {
+		return DispatchWorker
+	}
+	return DispatchLanes
+}
+
+// DispatchRole is the role a teamlead starts for one ticket under that mode.
+func (s Settings) DispatchRole() string {
+	if s.DispatchMode() == DispatchWorker {
+		return "jaira-worker"
+	}
+	return "jaira-dispatcher"
 }
 
 // Path is the settings file, honouring JAIRA_HOME so tests and a sandboxed run
