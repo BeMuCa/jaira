@@ -70,7 +70,8 @@ func TestRolesListJSON(t *testing.T) {
 
 // The teamlead reads which role to start for a ticket off 'roles list': the
 // dispatcher by default, the worker once settings.json says "dispatch":
-// "worker".
+// "worker". spawn.sh reads the model for the cockpit's chats off it too:
+// empty, the account's own, until settings.json says "chat-model".
 func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("JAIRA_HOME", home)
@@ -87,51 +88,21 @@ func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 		}
 		return p
 	}
-	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" {
-		t.Errorf("default: dispatch=%v role=%v, want lanes/jaira-dispatcher", p["dispatch"], p["dispatch_role"])
+	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" || p["chat_model"] != "" {
+		t.Errorf("default: dispatch=%v role=%v chat_model=%v, want lanes/jaira-dispatcher/empty", p["dispatch"], p["dispatch_role"], p["chat_model"])
 	}
-	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "worker"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "worker", "chat-model": "sonnet"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" {
-		t.Errorf("opted in: dispatch=%v role=%v, want worker/jaira-worker", p["dispatch"], p["dispatch_role"])
+	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" || p["chat_model"] != "sonnet" {
+		t.Errorf("opted in: dispatch=%v role=%v chat_model=%v, want worker/jaira-worker/sonnet", p["dispatch"], p["dispatch_role"], p["chat_model"])
 	}
 	out, err := runCLI(t, dir, "roles", "list")
 	if err != nil || !strings.Contains(out, "dispatch: worker — a ticket handed to an agent goes to /jaira-worker") {
 		t.Errorf("roles list does not say which role a ticket goes to: %v\n%s", err, out)
 	}
-}
-
-// spawn.sh reads the model for the cockpit's chats off 'roles list': empty
-// by default, the account's own, and what settings.json says once it says so.
-func TestRolesListReportsTheChatModel(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("JAIRA_HOME", home)
-	dir := t.TempDir()
-	read := func() map[string]any {
-		t.Helper()
-		out, err := runCLI(t, dir, "--json", "roles", "list")
-		if err != nil {
-			t.Fatalf("roles list --json: %v\n%s", err, out)
-		}
-		var p map[string]any
-		if err := json.Unmarshal([]byte(out), &p); err != nil {
-			t.Fatalf("invalid json: %v\n%s", err, out)
-		}
-		return p
-	}
-	if p := read(); p["chat_model"] != "" {
-		t.Errorf("default chat_model %v, want empty", p["chat_model"])
-	}
-	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"chat-model": "sonnet"}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if p := read(); p["chat_model"] != "sonnet" {
-		t.Errorf("chat_model %v, want sonnet", p["chat_model"])
-	}
-	out, err := runCLI(t, dir, "roles", "list")
-	if err != nil || !strings.Contains(out, "chat model: sonnet") {
-		t.Errorf("roles list does not name the chat model: %v\n%s", err, out)
+	if !strings.Contains(out, "chat model: sonnet") {
+		t.Errorf("roles list does not name the chat model:\n%s", out)
 	}
 }
 
