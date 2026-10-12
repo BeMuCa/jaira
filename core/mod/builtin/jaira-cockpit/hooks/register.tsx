@@ -456,7 +456,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   // No Herdr: nobody to hand it to from here; the board says where it is.
   if (bin === undefined) return handedTo('none', 'no Herdr in this session')
   const tabs = await run($, [bin, 'tab', 'list'], dir)
-  const tab = tabs?.exitCode === 0 ? carrierTab(tabs.stdout, id) : undefined
+  const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
   const record = carrierOf(await readRecords($), id)
   const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
   let why = choice.why

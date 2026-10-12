@@ -57,9 +57,9 @@ export const DEFAULT_CONTEXT_SHARE = 50
 
 // A record that does not say its window counts as the smallest one in use:
 // rather a new worker too many than one carried on too full.
-export const UNKNOWN_WINDOW = 200_000
+const UNKNOWN_WINDOW = 200_000
 
-export function contextLimit(record: SessionRecord, sharePercent: number): number {
+function contextLimit(record: SessionRecord, sharePercent: number): number {
   return Math.round(((record.window ?? UNKNOWN_WINDOW) * sharePercent) / 100)
 }
 
@@ -98,11 +98,7 @@ export function tabsOf(tabListJson: string): Tab[] {
   }
 }
 
-export function carrierTab(tabListJson: string, ticket: string): Tab | undefined {
-  return carrierTabIn(tabsOf(tabListJson), ticket)
-}
-
-function carrierTabIn(tabs: readonly Tab[], ticket: string): Tab | undefined {
+export function carrierTab(tabs: readonly Tab[], ticket: string): Tab | undefined {
   return tabs.find(t => t.label === `${ticket}/worker` || t.label === `${ticket}/dispatch`)
 }
 
@@ -137,7 +133,7 @@ export function workerLines(input: {
   }
   const lines: string[] = []
   for (const ticket of [...tickets].sort()) {
-    const tab = tabs === undefined ? undefined : carrierTabIn(tabs, ticket)
+    const tab = tabs === undefined ? undefined : carrierTab(tabs, ticket)
     if (tabs !== undefined && tab === undefined) continue
     const record = carrierOf(ours, ticket)
     const head = `${ticket} · ${lanes.get(ticket) ?? '?'} · ${record?.role ?? tab?.label.split('/')[1] ?? '?'}`
