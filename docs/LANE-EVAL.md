@@ -26,12 +26,13 @@ the binary.
 
 Only a person's own session can start a workflow. Ask Claude in this
 repository to run the workflow `lane-eval` with these args (paths absolute,
-`out` a directory that does not exist yet):
+`out` a directory that does not exist yet and does not lie under `$TMPDIR` or
+`/tmp`, where the judge folders go — `clone.sh` refuses that layout):
 
 ```json
 {
   "repo": "/home/alex/projects/jaira",
-  "out": "/tmp/lane-eval-2026-10-11",
+  "out": "/home/alex/lane-eval/2026-10-11",
   "tickets": ["BG5QJ6", {"id": "GDB5YJ", "base": "43080ed"}],
   "n": 3
 }
@@ -48,22 +49,48 @@ clone can be opened afterwards to see what an agent did.
 
 ## Read the result
 
-When the workflow is done, take the transcript directory from its result and run:
+When the workflow is done, run:
 
 ```bash
-bash scripts/lane-eval/metrics.sh <out> <transcript dir>
+bash scripts/lane-eval/metrics.sh <out> ~/.claude/projects/<project>/<session>/subagents
 ```
+
+Pass the session's whole `subagents` directory, not the run's own
+`subagents/workflows/<run id>/` (the `Transcript dir` the Workflow tool prints).
+The workflow's agents lie in the run's directory, but where Claude Code puts an
+agent that one of them starts with the Agent tool is not seen yet: no arm agent
+started one in the first real run (2026-10-11). Outside a workflow such an agent
+lies flat in `<session>/subagents/`. `find` walks the directory recursively, so
+the session's directory covers both places, and the `id=` in the marker keeps
+other runs and the session's own subagents out. Given only the run's directory,
+a nested agent stored beside it would be missed without a word, and the arm
+would look cheaper than it is.
 
 It writes `<out>/metrics.csv`, one row per agent:
 
 ```
-arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tokens,cost_eq,peak_context,duration_ms,tool_uses,loops,verdict
+arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tokens,cost_eq,peak_context,duration_ms,tool_uses,subagents,loops,verdict
 ```
 
 - All numbers per agent come from its transcript, because a workflow's
   `agent()` returns only the agent's answer. Every arm agent's prompt starts
   with a `[lane-eval id=… arm=… …]` line; that line is how the script finds it.
+  The transcript does not start with it: the workflow harness puts the request
+  that started the workflow first and the prompt, indented, in the second user
+  message, so the script looks for the marker at the start of any line of the
+  first two. The transcripts lie in
+  `~/.claude/projects/<project>/<session>/subagents/workflows/<run id>/`, the
+  `Transcript dir` the Workflow tool prints when it starts, inside the
+  session's `subagents` directory given to the script above.
   Setup, judges and the recorder carry none and are not counted.
+- An agent an arm agent starts itself with the Agent tool carries no marker
+  either, but it is part of that arm's cost. Claude Code writes
+  `agent-<id>.meta.json` beside every subagent transcript, with
+  `parentAgentId`; the script follows it up to the nearest marked agent and adds
+  the nested one's tokens, `cost_eq` and tool uses to that row (`peak_context`
+  is the larger of the two). `subagents` says how many were added. A session
+  started in its own terminal tab (Herdr's `spawn.sh`) is not a subagent, has
+  no `parentAgentId` and stays uncounted; the workflow's prompts start none.
 - `input_tokens`, `cache_write_tokens`, `cache_read_tokens`, `output_tokens` are
   what the agent consumed: each assistant message counted once (the transcript
   repeats it per content block, under one message id), summed over all turns.
@@ -84,7 +111,8 @@ arm,ticket,run,lane,input_tokens,cache_write_tokens,cache_read_tokens,output_tok
   arm, `tie`, `split` when the two passes disagree (position decided, not
   quality), `unjudged` when a judge or the other arm is missing.
 
-`<out>/summary.csv` has one line per arm: runs, agents, the token columns and
+`<out>/summary.csv` has one line per arm: runs, agents, the subagents added to
+them, the token columns and
 `cost_eq` summed (and `cost_eq` per run), the largest `peak_context`, time, tool
 uses, loops per run, and the verdict counts.
 
@@ -92,10 +120,22 @@ uses, loops per run, and the verdict counts.
 
 - The judge folders are fresh temp directories outside `<out>`
   (`$TMPDIR/judge.XXXXXXXX`, one per pass), holding `ticket.md`, `X.diff`,
-  `Y.diff` and, for a golden ticket, `reference.diff`. The judge's prompt names
+  `Y.diff`, `X.ticket.md`, `Y.ticket.md` and, for a golden ticket,
+  `reference.diff`. The judge's prompt names
   only its folder; neither the folder's path nor anything beside it names an
   arm, a clone or `<out>`. Which diff was X and which Y, and where each folder
   is, stands only in `<out>/KEY.txt`.
+- `X.ticket.md` and `Y.ticket.md` are what each arm wrote onto its ticket: the
+  definition of done with each item's proof and the outcome, followed by the
+  commits the clone made since its base, with their subjects. jaira derives a
+  ticket's commit list only when it is filed away, so on the board that field
+  is still empty and the clone's history stands in for it. The judge needs them because the typical mistakes of an
+  arm sit there, not in the diff: on the hand-run A/B test of 2026-10-11 the
+  lane-per-agent arm left a `--proof` pointing at a line optimize had moved and
+  put two SHAs into one commits entry (a mistake jaira's derived commit list
+  has since made impossible), and a judge reading diffs alone saw
+  neither. Notes, author, lane history and timestamps stay out: how an agent
+  writes its notes tells the arms apart.
 - An arm agent's prompt names no path but its clone, and its first instruction
   is `cd <clone>`. The clone has no remote.
 
@@ -106,7 +146,8 @@ What is left, because a workflow cannot do more:
   `cd`. A forgotten `cd` still writes to the real board.
 - Agents use the real `~/.jaira` (roles, notify hook) and the real `~/.claude`.
 - Nothing stops a judge from listing `/tmp`; the path just no longer leads it to
-  `<out>` or a name that gives the arm away.
+  `<out>` or a name that gives the arm away, since an `<out>` under the temp
+  root is refused.
 - The judge folders are not removed; old passes stay in `$TMPDIR` until it is
   cleaned.
 

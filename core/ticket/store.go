@@ -199,6 +199,33 @@ func (s *Store) recordFiled(id, path string) error {
 	return nil
 }
 
+// ErrStale means the ticket file on this disk is older than the ticket's ref.
+// Writing it would put the old state back on the ref, over everything the team
+// recorded since — which is how a review, its proofs and nine notes once left a
+// ticket in one 'move --force'.
+var ErrStale = errors.New("ticket: the file on your disk is older than its ref; pull it first")
+
+// FreshnessChecker is what a Recorder implements when it can tell a stale file
+// from a current one. It is a separate, optional interface because Record runs
+// after the write and must never veto it; this runs before.
+type FreshnessChecker interface {
+	// CheckFresh returns an error wrapping ErrStale when what the ticket's ref
+	// says is newer than the file t was read from, and nil otherwise —
+	// including when there is no ref to compare with.
+	CheckFresh(t *Ticket) error
+}
+
+// CheckFresh refuses a ticket whose file is older than its ref. Mutate calls it
+// on every write; a caller that judges the ticket before writing — the gate in
+// a move — calls it first, so the refusals it reads are not the stale file's.
+func (s *Store) CheckFresh(t *Ticket) error {
+	c, ok := s.Recorder.(FreshnessChecker)
+	if !ok || t == nil || t.ReadOnly {
+		return nil
+	}
+	return c.CheckFresh(t)
+}
+
 func (s *Store) record(id string, content []byte) error {
 	if s.Recorder == nil {
 		return nil
@@ -275,6 +302,11 @@ func (s *Store) Archive(id string) (string, error) {
 	if err := onlyOnRef(t); err != nil {
 		return "", err
 	}
+	// Filing puts the file's last state on the ref, so a stale file would
+	// file away the old ticket over the current one.
+	if err := s.CheckFresh(t); err != nil {
+		return "", err
+	}
 	if err := os.MkdirAll(s.ArchiveDir(), 0o755); err != nil {
 		return "", err
 	}
@@ -339,6 +371,11 @@ func (s *Store) Logbook(id, folder string) (string, error) {
 		return "", err
 	}
 	if err := onlyOnRef(t); err != nil {
+		return "", err
+	}
+	// Filing puts the file's last state on the ref, so a stale file would
+	// file away the old ticket over the current one.
+	if err := s.CheckFresh(t); err != nil {
 		return "", err
 	}
 	dir := filepath.Join(s.LogbookDir(), filepath.Base(folder))
@@ -1256,6 +1293,11 @@ func (s *Store) Mutate(idOrPrefix string, fn func(*Ticket) error) (*Ticket, erro
 	}
 	t, err := Decode(d, path)
 	if err != nil {
+		return nil, err
+	}
+	// Checked against the bytes just read under the lock, before fn changes
+	// anything: after Touch the file would always look newest.
+	if err := s.CheckFresh(t); err != nil {
 		return nil, err
 	}
 	if err := fn(t); err != nil {

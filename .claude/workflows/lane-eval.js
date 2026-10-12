@@ -185,10 +185,10 @@ async function judgePair(units, pair) {
     { label: `prep ${pair.ticket} r${pair.run}`, phase: 'Judge', schema: PREP, effort: 'low' })
   if (!prep) return { units: ok, judged: null }
   // The judge's prompt names only its folder: a temp directory outside OUT holding
-  // the four files and nothing else - no arm, no clone path, no KEY.txt.
-  const judge = (p) => agent(`You are a blind judge. Your first command is \`cd ${prep[p]}\`. Read ONLY the files in that folder: ticket.md (what was demanded), X.diff and Y.diff (two independent attempts at it) and, if present, reference.diff (the change that was accepted back then — a reference, not a target to copy). Open no other path, run no git, and do not try to find out how either diff was produced.
+  // the judge files and nothing else - no arm, no clone path, no KEY.txt.
+  const judge = (p) => agent(`You are a blind judge. Your first command is \`cd ${prep[p]}\`. Read ONLY the files in that folder: ticket.md (what was demanded), X.diff and Y.diff (two independent attempts at it), X.ticket.md and Y.ticket.md (what each attempt recorded on its ticket: the Definition of Done with the proof given for each item, the outcome, and the commits it made) and, if present, reference.diff (the change that was accepted back then — a reference, not a target to copy). Open no other path, run no git, and do not try to find out how either diff was produced.
 
-Decide which diff is the better change to merge for this ticket: does it meet every Definition of Done item, is it correct, does it stay in scope, is it tested, would a reviewer understand it. An empty or broken diff fails. Prefer neither position; answer tie only if you cannot separate them.`,
+Decide which attempt is the better change to merge for this ticket: does it meet every Definition of Done item, is it correct, does it stay in scope, is it tested, would a reviewer understand it. Its ticket is part of it: a proof that names a line or test the diff does not contain, an item ticked that the diff does not make true, or a commit that does not belong to the change counts against it. An empty or broken diff fails. Prefer neither position; answer tie only if you cannot separate them.`,
     { label: `judge ${pair.ticket} r${pair.run} ${p}`, phase: 'Judge', schema: JUDGE })
   const [j1, j2] = await parallel([() => judge('p1'), () => judge('p2')])
   const w1 = winnerOf(j1, ax, ay), w2 = winnerOf(j2, ay, ax)
