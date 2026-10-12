@@ -737,6 +737,11 @@ Claude Code prompt:
 
 Answer `y` to add the marketplace, then pick a scope.
 
+Installed this way the mod runs beside whatever `jaira` is on `PATH`, and it
+needs jaira 0.3.7 or later: Give back moves a ticket out of a person's lane
+without `--force`, which older builds refuse. With an older jaira the cockpit
+says so once, with both versions, when it finds the board.
+
 ## Working with an agent
 
 The whole integration surface is: run a command, read the JSON, branch on the

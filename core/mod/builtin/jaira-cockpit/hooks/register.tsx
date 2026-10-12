@@ -1,7 +1,10 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { hasReservation, lanesOf, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import {
+  hasReservation, isOlder, lanesOf, MIN_JAIRA, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  type Agent, type Waiting,
+} from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -216,7 +219,10 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 
 async function refreshBoard($: EngineInterface): Promise<void> {
   if (await carries($)) return
-  if (board === undefined) board = await findBoard($)
+  if (board === undefined) {
+    board = await findBoard($)
+    if (board !== null) await checkVersion($, board.dir)
+  }
   if (board === null) {
     await update($, boardAtom, () => null)
     return
@@ -272,6 +278,14 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
+}
+
+// Once a session, when the board is found: a jaira older than the cockpit
+// needs is said out loud, with both versions, before a press fails on it.
+async function checkVersion($: EngineInterface, dir: string): Promise<void> {
+  const r = await run($, ['jaira', '--version'], dir)
+  const installed = r?.exitCode === 0 ? versionOf(r.stdout) : undefined
+  if (installed !== undefined && isOlder(installed, MIN_JAIRA)) await say($, t.tooOld(installed, MIN_JAIRA))
 }
 
 async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
@@ -431,7 +445,7 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
   return out
 }
 
-// Give back: note and move first, then the work goes to the worker that
+// Give back: move and note first, then the work goes to the worker that
 // carried it while that is cheaper — its tab alive, its cache warm, its
 // context small — else its tab is closed FIRST and a new worker started, so
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
@@ -440,11 +454,12 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 async function giveBack($: EngineInterface, id: string, lane: string, reason: string, share: number): Promise<void> {
   if (!board) return
   const dir = await ticketDir($, board, id)
-  const noted = await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
-  // Back to an earlier lane needs no --force since jaira 0.3.7, which this
-  // mod ships inside: so any other refusal of the move still stops it.
-  const moved = noted.ok ? await jaira($, dir, ['move', id, '--to', 'in-progress']) : noted
+  // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
+  // so any other refusal of the move still stops it. The move goes first: a
+  // note written before a refused move would say the ticket went back.
+  const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
+  await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'

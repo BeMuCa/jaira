@@ -1,6 +1,6 @@
 {
   "name": "jaira-cockpit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Keeps a jaira teamlead chat readable and shows what waits on the board: agent reports as one line, tickets waiting for a person with Accept / Give back, context and prompt-cache in the band, a guard against sending onto a cold cache, conversation threads, the workers of the board with their context and cache.",
   "author": {
     "name": "jaira"
