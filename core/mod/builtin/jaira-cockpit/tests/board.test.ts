@@ -29,6 +29,12 @@ type World = {
   refusals: { code: string; message: string }[]
   // A jaira older than the board: it warns on a line before what it prints.
   warns: boolean
+  // What `jaira --version` names: before 0.3.7 a move back out of a
+  // person's lane without --force is refused.
+  version: string
+  // `jaira note` with a give-back reason fails after the move went through.
+  noteFails: boolean
+  toasts: string[]
   // What `jaira whoami --json` says; undefined: it says nothing.
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
@@ -103,6 +109,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     status: [],
     refusals: [{ code: 'needs_human', message: 'lane "signoff" is a human checkpoint' }],
     warns: false,
+    version: '0.3.7',
+    noteFails: false,
+    toasts: [],
     bodies: {},
     opened: [],
     closed: [],
@@ -181,6 +190,13 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === '--version') return ok(`jaira version ${w.version}\n`)
+    if (cmd === 'jaira' && args[0] === 'move' && !args.includes('--force') && /^0\.3\.[0-6]$/.test(w.version)) {
+      return { value: { exitCode: 3, stdout: '', stderr: 'jaira: lane "signoff" is a human checkpoint; use --force', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (cmd === 'jaira' && args[0] === 'note' && w.noteFails && args[2]?.startsWith('Given back')) {
+      return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
@@ -265,6 +281,11 @@ async function answer($: Test$, text = 'ok', tokens = 0) {
 async function headLine($: Test$) {
   const ui = await $.ui.mount(BAND)
   return (await ui.find({ type: 'Text', text: /^ {3}\S/ }))?.text.trim()
+}
+
+// The band as one string, in the order it is drawn: its frame's text.
+async function drawn($: Test$) {
+  return (await (await $.ui.mount(BAND)).find({ type: 'Box' }))!.text
 }
 
 // The band's session line, its parts as drawn with the colour of each: the
@@ -579,6 +600,52 @@ describe('waiting for you', () => {
     const closed = await $.ui.mount(BAND)
     expect(await closed.find({ key: 'accept-GH56JK' })).toBeUndefined()
     expect(await closed.find({ key: 'more' })).toBeDefined()
+  })
+
+  test('the band reads top down: head, notice, waiting for you, decisions, the teammates\' tickets, the session line', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
+    const BERK = { ...SIGNOFF, handle: 'EF34GH', assignee: 'Berk' }
+    // Accept takes MG677R to done; AB12CD still waits in signoff below the notice.
+    const MINE = { ...SIGNOFF, handle: 'AB12CD' }
+    w.tickets = [SIGNOFF, MINE, HUMAN, WORKING, BERK]
+    // Accept's next step succeeds, so its notice stays on the band.
+    w.next = ['T8QS1Y']
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'working' }]
+    await startSession($)
+    // A decision from a Discuss chat, as in the test of its own above.
+    await (await $.ui.mount(BAND)).press({ key: 'discuss-K7P2QX' })
+    w.bodies.K7P2QX = '## Progress\n\n- **1970-01-01 00:17 · Alex** — decision: a page of its own\n'
+    w.tickets = [SIGNOFF, MINE, { ...HUMAN, status: 'in-progress', question: '' }, WORKING, BERK]
+    w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'idle' }]
+    await w.clock.advance(60_000)
+    // A notice: what Accept says.
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    w.usage.tokens = 80_000
+    await answer($)
+    await (await $.ui.mount(BAND)).press({ key: 'theirs' })
+    const band = await drawn($)
+    const at = ['jaira-cockpit', 'MG677R accepted; T8QS1Y started', 'Waiting for you', 'AB12CD | signoff', 'K7P2QX | decided in Discuss', '1 waiting for Berk', 'EF34GH | signoff | Berk', 'context 80k'].map(part => band.indexOf(part))
+    expect(at.every(i => i >= 0)).toBe(true)
+    expect(at).toEqual([...at].sort((a, b) => a - b))
+  })
+
+  test('opened by +N more, the person\'s own tickets still sit above the teammates\'', async ($, on) => {
+    const w = world(on)
+    w.me = { identity: 'Alexander Sacharov', aliases: ['Alexander Sacharov'] }
+    const own = ['MG677R', 'AB12CD', 'CD34EF', 'GH56JK']
+    w.tickets = [...own.map(handle => ({ ...SIGNOFF, handle })), { ...SIGNOFF, handle: 'QR34ST', assignee: 'Berk' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'more' })
+    await (await $.ui.mount(BAND)).press({ key: 'theirs' })
+    const band = await drawn($)
+    const theirs = band.indexOf('1 waiting for Berk')
+    for (const id of own) {
+      expect(band.indexOf(id)).toBeGreaterThanOrEqual(0)
+      expect(band.indexOf(id)).toBeLessThan(theirs)
+    }
+    expect(band.indexOf('show fewer')).toBeLessThan(theirs)
+    expect(band.indexOf('QR34ST | signoff | Berk')).toBeGreaterThan(theirs)
   })
 
   test('a ticket nobody explained yet offers no explanation to read', async ($, on) => {
@@ -896,6 +963,19 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'jaira', 'note', 'MG677R')[0]?.[3]).toBe('Given back from signoff: der Branch fehlt im Schluessel')
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress', '@/.worktrees/repo-mg677r'])
+    // The move first: the note is written only once the ticket went back.
+    const at = (verb: string) => w.ran.findIndex(r => r[0] === 'jaira' && r[1] === verb && r[2] === 'MG677R')
+    expect(at('move')).toBeLessThan(at('note'))
+  })
+
+  test('a refused move writes no note: the ticket stays where it is and the refusal is shown', async ($, on) => {
+    const w = world(on)
+    w.version = '0.3.6'
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Give back MG677R failed', focus: true })
   })
 
   // The limit is a share of the old worker's window, never a fixed size.
@@ -911,6 +991,20 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
     expect(ran(w, SPAWN)).toEqual([])
+  })
+
+  test('a note that fails after the move is shown with the reason typed, and the worker still gets the ticket', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(1_000_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
+    w.noteFails = true
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Note on MG677R failed', focus: true })
+    const pane = await $.ui.mount(MESSAGE('Note on MG677R failed'))
+    expect(await pane.find({ type: 'Text', text: /MG677R went back to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /jaira note MG677R 'Given back from signoff: der Branch fehlt im Schluessel'/ })).toBeDefined()
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
 
   test('past half of its window a new worker takes the round', async ($, on) => {
@@ -973,6 +1067,38 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
     expect(ran(w, SPAWN)[0]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
+  })
+})
+
+describe('the jaira it runs beside', () => {
+  test('one older than the cockpit needs is said once, with the version installed and the one needed', async ($, on) => {
+    const w = world(on)
+    w.version = '0.3.6'
+    await startSession($)
+    await answer($)
+    await answer($)
+    expect(ran(w, 'jaira', '--version')).toHaveLength(1)
+    expect(w.toasts.filter(x => x.includes('too old'))).toEqual([
+      'jaira 0.3.6 is too old for this cockpit: it needs 0.3.7 or later. Give back will be refused until you update jaira.',
+    ])
+  })
+
+  for (const version of ['0.3.7', '0.10.0', 'dev']) {
+    test(`jaira ${version} is not warned about`, async ($, on) => {
+      const w = world(on)
+      w.version = version
+      await startSession($)
+      expect(ran(w, 'jaira', '--version')).toHaveLength(1)
+      expect(w.toasts.filter(x => x.includes('too old'))).toEqual([])
+    })
+  }
+
+  test('without a board jaira is not asked', async ($, on) => {
+    const w = world(on, { board: false })
+    w.version = '0.3.6'
+    await startSession($)
+    expect(ran(w, 'jaira', '--version')).toEqual([])
+    expect(w.toasts).toEqual([])
   })
 })
 

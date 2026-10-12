@@ -410,3 +410,24 @@ export function upwards(cwd: string): string[] {
   }
   return dirs
 }
+
+// The oldest jaira the cockpit relies on: Give back moves a ticket back out
+// of a person's lane without --force, which jaira refuses before 0.3.7. The
+// mod also installs on its own from the marketplace, beside any jaira, so
+// this is the one place that says which one it needs.
+export const MIN_JAIRA = '0.3.7'
+
+// The version `jaira --version` printed (`jaira version 0.3.7`), or undefined
+// where it names none — a build from source says `dev`, which is no release
+// to compare with.
+export function versionOf(stdout: string): string | undefined {
+  return /\bversion\s+(\d+\.\d+\.\d+)\b/.exec(stdout)?.[1]
+}
+
+// Whether `version` comes before `min`, part by part.
+export function isOlder(version: string, min: string): boolean {
+  const a = version.split('.').map(Number)
+  const b = min.split('.').map(Number)
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i]! < b[i]!
+  return false
+}

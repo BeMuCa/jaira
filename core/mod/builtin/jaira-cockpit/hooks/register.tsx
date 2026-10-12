@@ -1,7 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
-import { branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf, hasReservation, lanesOf, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, withoutWarnings, upwards, worktreeFor, type Agent, type Waiting } from './board.ts'
+import {
+  branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, dispatchLane, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  hasReservation, isOlder, lanesOf, MIN_JAIRA, nextToStart, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  type Agent, type Waiting,
+} from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest } from './digest.ts'
 import {
@@ -216,7 +220,10 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 
 async function refreshBoard($: EngineInterface): Promise<void> {
   if (await carries($)) return
-  if (board === undefined) board = await findBoard($)
+  if (board === undefined) {
+    board = await findBoard($)
+    if (board !== null) await checkVersion($, board.dir)
+  }
   if (board === null) {
     await update($, boardAtom, () => null)
     return
@@ -272,6 +279,14 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
+}
+
+// Once a session, when the board is found: a jaira older than the cockpit
+// needs is said out loud, with both versions, before a press fails on it.
+async function checkVersion($: EngineInterface, dir: string): Promise<void> {
+  const r = await run($, ['jaira', '--version'], dir)
+  const installed = r?.exitCode === 0 ? versionOf(r.stdout) : undefined
+  if (installed !== undefined && isOlder(installed, MIN_JAIRA)) await say($, t.tooOld(installed, MIN_JAIRA))
 }
 
 async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
@@ -568,7 +583,7 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
   return out
 }
 
-// Give back: note and move first, then the work goes to the worker that
+// Give back: move, then note, then the work goes to the worker that
 // carried it while that is cheaper — its tab alive, its cache warm, its
 // context small — else its tab is closed FIRST and a new worker started, so
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
@@ -577,11 +592,17 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 async function giveBack($: EngineInterface, id: string, lane: string, reason: string, share: number): Promise<void> {
   if (!board) return
   const dir = await ticketDir($, board, id)
-  const noted = await jaira($, dir, ['note', id, `Given back from ${lane}: ${reason}`])
-  // Back to an earlier lane needs no --force since jaira 0.3.7, which this
-  // mod ships inside: so any other refusal of the move still stops it.
-  const moved = noted.ok ? await jaira($, dir, ['move', id, '--to', 'in-progress']) : noted
+  // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
+  // so any other refusal of the move still stops it. The move goes first: a
+  // note written before a refused move would say the ticket went back.
+  const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
+  // The reason is the one thing the person typed: a note that did not land is
+  // shown with its text, and the handover still goes on — the ticket already
+  // sits in in-progress, and nothing here could hand it out again.
+  const note = `Given back from ${lane}: ${reason}`
+  const noted = await jaira($, dir, ['note', id, note])
+  if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note))
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
@@ -943,6 +964,9 @@ export const register: Register = (on, options) => {
           <Text bold color="claude">{t.bandTitle}</Text>
           {head.length > 0 ? <Text dimColor wrap="truncate-end">{'   '}{head.join(SEP)}</Text> : null}
         </Box>
+        {/* What just happened on top, this person's own work below it, the
+            teammates' tickets last of all lists. */}
+        {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
         {waiting.length > 0 ? <Box marginTop={1}><Text bold>{t.waiting}</Text></Box> : null}
         {shown.map(w => (
           <Box key={`row-${w.id}`} flexDirection="column">
@@ -980,6 +1004,12 @@ export const register: Register = (on, options) => {
             </Box>
           )
           : null}
+        {decisions.map(([id, text]) => (
+          <Box key={`decided-${id}`} flexDirection="row">
+            <Text><Text bold>{id}</Text>{SEP}{t.decided}{' '}</Text>
+            <Button key={`decision-${id}`} label={t.readDecision} onPress={() => void readDecision($, id, text)} />
+          </Box>
+        ))}
         {theirs.length > 0
           ? (
             <Box flexDirection="row" marginTop={1}>
@@ -1006,13 +1036,6 @@ export const register: Register = (on, options) => {
             </Box>
           ))
           : null}
-        {decisions.map(([id, text]) => (
-          <Box key={`decided-${id}`} flexDirection="row">
-            <Text><Text bold>{id}</Text>{SEP}{t.decided}{' '}</Text>
-            <Button key={`decision-${id}`} label={t.readDecision} onPress={() => void readDecision($, id, text)} />
-          </Box>
-        ))}
-        {notice !== null ? <Text dimColor wrap="truncate-end">{notice}</Text> : null}
         {hasCache || hasThreads
           ? (
             <Box marginTop={1} flexDirection="row">
