@@ -192,6 +192,11 @@ async function headLine($: Test$) {
   return (await ui.find({ type: 'Text', text: /^ {3}\S/ }))?.text.trim()
 }
 
+// The band as one string, in the order it is drawn: its frame's text.
+async function drawn($: Test$) {
+  return (await (await $.ui.mount(BAND)).find({ type: 'Box' }))!.text
+}
+
 // The band's session line, its parts as drawn with the colour of each: the
 // band's last row, from the context on.
 async function sessionLine(ui: { findAll: (q: { type: string }) => Promise<{ text: string; props: Record<string, unknown> }[]> }) {
@@ -505,9 +510,6 @@ describe('waiting for you', () => {
     expect(await closed.find({ key: 'accept-GH56JK' })).toBeUndefined()
     expect(await closed.find({ key: 'more' })).toBeDefined()
   })
-
-  // The band as one string, in the order it is drawn.
-  const drawn = async ($: Test$) => (await (await $.ui.mount(BAND)).find({ type: 'Box' }))!.text
 
   test('the band reads top down: head, notice, waiting for you, decisions, the teammates\' tickets, the session line', async ($, on) => {
     const w = world(on, { herdr: true })

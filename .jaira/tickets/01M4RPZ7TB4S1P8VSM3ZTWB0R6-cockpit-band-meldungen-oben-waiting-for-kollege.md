@@ -19,13 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:46:01Z
-updated-at: 2026-10-12T18:53:30Z
+updated-at: 2026-10-12T18:54:24Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-48411
 claimed-at: 2026-10-12T18:49:44Z
 outcome-what: "AbovePrompt-Render in core/mod/builtin/jaira-cockpit/hooks/register.tsx umgeordnet: Meldung (notice) direkt unter der Kopfzeile, dann 'Waiting for you' mit +N more, dann Entscheidungen, dann der Kollegen-Block ('waiting for <name>' und seine Zeilen), zuletzt die Session-Zeile. Zwei Tests in tests/board.test.ts, Release-Note core/release/notes/TWB0R6.md."
 outcome-why: "Die Meldung stand unter dem Kollegen-Block; kam oder ging sie, sprang die Liste, und der Blick auf die eigene Arbeit fand sie an wechselnder Stelle."
 outcome-resolves: "Band hat feste Reihenfolge: Meldungen oben, eigene Arbeit in der Mitte, Kollegen unten (DoD 1, 2, 3)."
+review-summary: "core/mod/builtin/jaira-cockpit/tests/board.test.ts:509 defines the band-reading helper 'drawn' as a const inside describe('waiting for you'); the file's other band readers (headLine, sessionLine, :190-201) are top-level async functions with a comment — move it there as 'async function drawn($: Test$)'"
 ---
 
 # Cockpit-Band: Meldungen oben, 'waiting for <Kollege>' immer unten
@@ -33,9 +34,9 @@ outcome-resolves: "Band hat feste Reihenfolge: Meldungen oben, eigene Arbeit in 
 ## Definition of Done
 
 - [x] Das Band rendert in der Reihenfolge Kopfzeile, Meldung, 'Waiting for you', Entscheidungen, Kollegen, Session-Zeile; Test mit allen Teilen gleichzeitig
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:809; test 'waiting for you > the band reads top down: head, notice, waiting for you, decisions, the teammates' tickets, the session line' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:512), fails on the old order
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:809; test 'waiting for you > the band reads top down: head, notice, waiting for you, decisions, the teammates' tickets, the session line' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:514), fails on the old order
 - [x] Der Kollegen-Block steht auch aufgeklappt ('+N more') unter allen eigenen Tickets; Test
-  proof: test 'waiting for you > opened by +N more, the person's own tickets still sit above the teammates'' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:536)
+  proof: test 'waiting for you > opened by +N more, the person's own tickets still sit above the teammates'' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:538)
 - [x] Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/TWB0R6.md:1
 
@@ -58,3 +59,4 @@ outcome-resolves: "Band hat feste Reihenfolge: Meldungen oben, eigene Arbeit in 
 - **2026-10-12 18:49 · Alexander Sacharov** — parent session: jaira-f5
 - **2026-10-12 18:50 · Alexander Sacharov** — Offene Entscheidungen: keine. Reihenfolge steht im Kontext wörtlich; Session-Zeile bleibt letzte Zeile.
 - **2026-10-12 18:53 · Alexander Sacharov** — Testweg: der Wurzel-Box-Text aus ui.find({type:'Box'}) ist das ganze Band in Zeichenreihenfolge; indexOf darauf prüft die Reihenfolge über Text und Button hinweg (findAll nur über Text sieht die Kollegen-Zeile nicht, sie ist ein Button). Der +N-more-Test war schon mit dem alten Code grün: theirs stand dort schon unter dem more-Knopf - er schützt nur vor Rückfall. Der Reihenfolge-Test schlägt mit dem alten Render fehl (geprüft durch Rücksetzen von register.tsx). Lauf: claude plugin test in core/mod/builtin/jaira-cockpit, 83 pass.
+- **2026-10-12 18:53 · Alexander Sacharov** — critique: drawn() in tests/board.test.ts gehört als top-level async function neben headLine/sessionLine (:190-201), nicht als const im describe. Sonst nichts: Render-Umbau ist die kleinste Form (nur Blöcke verschoben, keine neue Logik); Plan-Punkt 2 sagt findAll(Text), gebaut ist Wurzel-Box-Text - die Testweg-Notiz erklärt das, kein Befund.
