@@ -393,10 +393,9 @@ async function readDecision($: EngineInterface, id: string, text: string): Promi
 // a choice there, with an own answer beside them, and the choice goes onto
 // the ticket as a decision.
 async function readExplanation($: EngineInterface, id: string, notes: { text: string; decided?: string }): Promise<void> {
-  const { text } = notes
   await update($, explainingAtom, () => ({ id, ...notes }))
   const opened = await $.ui.open({ id: EXPLANATION, title: t.explanationOf(id), focus: true, closeOnEscape: true })
-  if (!opened.isPlaced) $.ui.toast(`${t.explanationOf(id)}: ${text}`)
+  if (!opened.isPlaced) $.ui.toast(`${t.explanationOf(id)}: ${notes.text}`)
 }
 
 // An own answer is typed in a pane of its own, opened with focus, as Give

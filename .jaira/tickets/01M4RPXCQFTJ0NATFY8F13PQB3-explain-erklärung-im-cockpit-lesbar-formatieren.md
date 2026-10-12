@@ -1,7 +1,7 @@
 ---
 id: 01M4RPXCQFTJ0NATFY8F13PQB3
 title: Explain-Erklärung im Cockpit lesbar formatieren und Optionen direkt beantwortbar machen
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,15 +13,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T18:45:00Z
-updated-at: 2026-10-12T19:55:12Z
+updated-at: 2026-10-12T19:56:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75316
 claimed-at: 2026-10-12T19:45:09Z
 outcome-what: "Runde 4: (15) explainable() lässt Vorbehalt und gaps nur bei einem Verdikt der aktuellen Runde zählen; (16) 'beantwortet' kommt aus den Notes - decision: nach explain: (Zeilenfolge) -, das Pane zeigt dann 'Decided: ...' statt der Auswahl, auch nach Neustart; eine neuere explain:-Note ist wieder offen; die eigene Wahl gilt sofort als beantwortet."
 outcome-why: "Review Runde 3: altes Vorbehalt-Verdikt hob Explain in Runde 2+ (Alex: beheben). Alex' Screenshot 19:50: nach Neustart bot Read explanation die Runde-1-Auswahl wieder an, obwohl c) entschieden war."
 outcome-resolves: "DoD 15-16: board.ts explainable/explanationNotes, register.tsx Pane, drei neue Tests (alle rot auf dem alten Code), 93 pass"
-review-summary: "Runde 3 auf DoD 1-9: (1) NO_GAP in board.ts erkennt jetzt auch 'keine Lücken', 'No gaps found', 'No defect found' (und issues/findings/Mängel/Befunde) als keine Lücke. (2) jaira zählt Runden: move.Move schreibt bei jeder Rücksendung in eine frühere Lane round: N+1 (blocked hin und zurück zählt nicht, fehlendes Feld = Runde 1); 'jaira set review-verdict=...' stempelt review-round: <aktuelle Runde>; beide als nackte Zahl in der Datei und als round/review_round in show/list --json. Das Cockpit zählt review.gaps für Explain nur, wenn review_round fehlt oder gleich round ist. (3) Im Explain-Pane zeigt das Select nur Buchstaben (a), b) (recommended), Own answer…), die Optionen stehen darüber ganz und umbrochen. (4) Optionen mit Marke [give back]/[accept] (spawn.sh verlangt sie jetzt) führen nach der decision-Note sofort giveBack()/accept() aus; Eigene Antwort = immer Give back mit dem Text als Grund; eine Wahl ohne Marke (oder Accept, wo das Band kein Accept anbietet) geht per prompt.submit als Zeile in die Sitzung des Bands."
-review-gaps: "1. Ein Verdikt aus einer alten Runde löst Explain weiter aus, wenn es ein Vorbehaltswort trägt: explainable() in core/mod/builtin/jaira-cockpit/hooks/board.ts prüft nur die gaps gegen sameRound, hasReservation(verdict) nicht. DoD 11 verlangt wörtlich nur die gaps, der Fehlalarm-Fall 'altes Verdikt in Runde 2+' bleibt so halb offen. 2. sendsBack() zählt jede Bewegung nach links als neue Runde, auch review -> human mit Frage (human steht in der Lane-Reihenfolge vor review): das gerade gestempelte Verdikt passt dann nicht mehr zur Runde, Explain aus gaps verschwindet in human. Selten, die Frage zeigt das Band ohnehin. 3. Live im Cockpit (Herdr) ist das Pane nicht geprüft, nur über pane.select im Test. 4. Bekannt aus critique: 'jaira set round=N review-verdict=...' in einem Aufruf stempelt die Runde von vor dem Aufruf; review-verdict= leeren lässt review-round stehen."
+review-summary: "none"
+review-gaps: "none - inlined a single-use destructuring in readExplanation; explanationNotes reads one jaira show per ticket where two noteOn calls would have run two"
 test-verdict: "pass: go build, go vet, go test -count=1 ./... RC=0; claude plugin test 90 pass; scratch board with the branch binary: review->in-progress makes round: 2, blocked and back keeps 2, review-verdict writes review-round: 2, bare numbers in the file, show/list --json carry round/review_round; spawn.sh explain prompt expands with [give back]/[accept]. DoD 10-14 checked against their proofs. Not exercised: the live pane in a Herdr cockpit session"
 review-verdict: "Accept. Der Diff erfüllt DoD 1-14; go build/vet, go test ./core/move ./core/ticket ./internal/cli und claude plugin test (90 pass) sind grün. Kein blockierender Fehler; Lücke 1 (altes Verdikt mit Vorbehaltswort löst Explain in Runde 2+ noch aus) ist eine kleine Restunschärfe von DoD 11, bewusst annehmen oder als einen Einzeiler in explainable() nachziehen."
 review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> '90 pass, 0 fail'. 2. cd ../../../.. && go test ./core/move -run TestMoveCountsARoundOnEverySendBack ./internal/cli -run TestReviewVerdictIsStampedWithItsRound -> ok. 3. Auf einem Wegwerf-Board: jaira move <id> --to in-progress aus review -> in der Ticketdatei steht 'round: 2' (ohne Anführungszeichen); danach jaira set <id> review-verdict=Accept. -> 'review-round: 2' steht daneben; jaira show <id> --json zeigt round 2, review_round 2. 4. Claude Code mit HERDR_ENV=1 starten, ein signoff-Ticket mit review-gaps='1. a test is missing' -> das Band zeigt Explain; Explain drücken, der Chat schreibt die Note mit Optionen, die auf [give back]/[accept] enden. 5. 'Read explanation' -> die Optionen stehen ganz und umbrochen über der Auswahl, die Auswahl zeigt nur 'a) (recommended)', 'b)', ..., 'Own answer…'. 6. Die [give back]-Option mit Enter wählen -> das Ticket geht ohne zweiten Druck nach in-progress, auf dem Ticket stehen 'decision: a) ...' und 'Given back from signoff: a) ...'. 7. Bei einem zweiten Ticket eine Option ohne Marke wählen -> in der Unterhaltung des Bands erscheint 'Decision on <id> in the cockpit's explanation pane, noted on the ticket and not acted on: ...'."
@@ -35,19 +35,19 @@ mode: conversational
 - [x] Die Explain-Note hat eine feste Struktur (Befund, Begründung, Optionen je Zeile, Empfehlung), vorgegeben im Explain-Prompt von spawn.sh
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:171 (explain prompt: Befund / Warum: / a) b) ... with [give back]/[accept] / Empfehlung:, one line each)
 - [x] Das Pane 'Explanation of <id>' zeigt diese Struktur mit Absätzen und einer Zeile je Option; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:261 explanationOf, core/mod/builtin/jaira-cockpit/hooks/register.tsx:974 pane; test 'a shaped explanation reads as paragraphs ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:432)
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:261 explanationOf, core/mod/builtin/jaira-cockpit/hooks/register.tsx:973 pane; test 'a shaped explanation reads as paragraphs ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:432)
 - [x] Jede Option ist im Pane wählbar; die Wahl landet als 'decision:'-Note auf dem Ticket und das Band zeigt sie; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:417 decide (decision: note, band shows 'decided'); tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:458, core/mod/builtin/jaira-cockpit/tests/board.test.ts:495, core/mod/builtin/jaira-cockpit/tests/board.test.ts:509
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:416 decide (decision: note, band shows 'decided'); tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:458, core/mod/builtin/jaira-cockpit/tests/board.test.ts:495, core/mod/builtin/jaira-cockpit/tests/board.test.ts:509
 - [x] Eine alte Explain-Note ohne Struktur wird weiter angezeigt wie bisher; Test
   proof: test 'what the Explain chat wrote onto the ticket is read in the cockpit' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:392): unshaped note shown as one Text, whole
 - [x] Zeile in core/release/notes/<ID>.md
   proof: core/release/notes/13PQB3.md
 - [x] Neben den Optionen gibt es immer 'Eigene Antwort': ein Textfeld im Pane, der Text landet als 'decision:'-Note wie eine gewählte Option; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1020 answer pane; test 'an own answer is typed in a pane that takes the keyboard and gives the work back ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:475)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1019 answer pane; test 'an own answer is typed in a pane that takes the keyboard and gives the work back ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:475)
 - [x] Das Pane ist interaktiv: Optionen und 'Eigene Antwort' per Pfeiltasten/Enter wählbar, Fokus liegt beim Öffnen auf der Liste (wie das Give-back-Pane mit focus: true); Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:997 Select autoFocus in a pane opened with focus: true; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:432, core/mod/builtin/jaira-cockpit/tests/board.test.ts:475
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:996 Select autoFocus in a pane opened with focus: true; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:432, core/mod/builtin/jaira-cockpit/tests/board.test.ts:475
 - [x] Der volle Text des Review-Verdikts ist aus dem Band lesbar: ein Druck auf die (abgeschnittene) Verdikt-Zeile oder ein Knopf öffnet ihn ganz im Pane, auch ohne Explain-Note; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:878 Verdict button; test 'the whole review verdict is read from the band ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:598)
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:877 Verdict button; test 'the whole review verdict is read from the band ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:598)
 - [x] Explain erscheint, sobald das Review eine Lücke nennt (review.gaps nicht leer bzw. nicht 'none'), nicht nur wenn das Verdikt ein Wort aus RESERVATION trifft; Test mit dem WP1CHK-Verdikt
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:183 explainable, :166 namesGap; test 'Explain is offered once the review names a gap ...' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:566) with WP1CHK's verdict
 - [x] NO_GAP erkennt auch 'keine Lücken', 'No gaps found', 'No defect found' als keine Lücke; Test (Alex decision c, 19:21)
@@ -55,15 +55,15 @@ mode: conversational
 - [x] review.gaps zählen für Explain nur, wenn das Verdikt aus derselben Runde stammt wie die gaps; Test (Alex decision c, 19:21)
   proof: core/move/move.go:154 sendsBack; internal/cli/tickets.go:1002 review-round; core/mod/builtin/jaira-cockpit/hooks/board.ts:175 sameRound; tests TestMoveCountsARoundOnEverySendBack (core/move/move_test.go:177), TestReviewVerdictIsStampedWithItsRound (internal/cli/mode_test.go:216), core/mod/builtin/jaira-cockpit/tests/board.test.ts:566
 - [x] Im Auswahl-Pane sind lange Optionen ganz lesbar (umbrechen statt abschneiden); Test (Alex decision 19:22: 'при выборе текст обрублен')
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:999 Select letters only, options wrap above; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:432
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:998 Select letters only, options wrap above; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:432
 - [x] Eine im Pane getroffene decision erreicht jemanden: die Sitzung, die das Ticket trägt oder den Teamlead (wie Discuss per SendMessage), statt nur als Note zu liegen; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:417 decide -> $.prompt.submit for a choice with no step; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:458
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:416 decide -> $.prompt.submit for a choice with no step; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:458
 - [x] Die Wahl im Explain-Pane handelt selbst, ohne zweiten Druck: eine Option, die zurückgibt (oder eine eigene Antwort, die etwas ändern will), führt Give back mit der Wahl als Grund aus; eine Option 'annehmen' führt Accept aus. Nur notieren reicht nicht; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:258 MARK, core/mod/builtin/jaira-cockpit/hooks/register.tsx:417 decide -> giveBack()/accept(); core/role/builtin/jaira-dispatcher/scripts/spawn.sh:171; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:495, core/mod/builtin/jaira-cockpit/tests/board.test.ts:509, core/mod/builtin/jaira-cockpit/tests/board.test.ts:475
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:258 MARK, core/mod/builtin/jaira-cockpit/hooks/register.tsx:416 decide -> giveBack()/accept(); core/role/builtin/jaira-dispatcher/scripts/spawn.sh:171; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:495, core/mod/builtin/jaira-cockpit/tests/board.test.ts:509, core/mod/builtin/jaira-cockpit/tests/board.test.ts:475
 - [x] hasReservation zählt ein Verdikt nur aus der aktuellen Runde (sameRound wie bei den gaps); Test mit altem Vorbehalt-Verdikt in Runde 2
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:183 explainable gates reservation and gaps on sameRound; test core/mod/builtin/jaira-cockpit/tests/board.test.ts:333
 - [x] Nach einem Neustart von Claude Code bietet das Cockpit eine schon beantwortete Explain-Note nicht wieder zur Wahl an: ob beantwortet, wird aus den Ticket-Notes gelesen (decision: nach der explain:-Note, gleiche Runde), nicht aus Sitzungszustand; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:238 explanationNotes, core/mod/builtin/jaira-cockpit/hooks/register.tsx:989 'Decided:'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:520, core/mod/builtin/jaira-cockpit/tests/board.test.ts:539
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:238 explanationNotes, core/mod/builtin/jaira-cockpit/hooks/register.tsx:988 'Decided:'; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:520, core/mod/builtin/jaira-cockpit/tests/board.test.ts:539
 
 ## Options
 
@@ -113,3 +113,4 @@ Empfehlung: a - beide Fälle sind selten und harmlos, Gap 2 folgt deiner eigenen
 - **2026-10-12 19:49 · Alexander Sacharov** — Alex 2026-10-12: Review-Rest (1) hasReservation ohne sameRound beheben (DoD 15); (2) review->human mit Frage = neue Runde bewusst so lassen, in human gibt es Discuss.
 - **2026-10-12 19:50 · Alexander Sacharov** — Alex 2026-10-12 (Screenshot): nach Neustart von Claude zeigt 'Read explanation' von 13PQB3 wieder die alte Erklärung aus Runde 1 mit Auswahl a/b/c ('Your choice: a) (recommended)'), obwohl um 19:21 schon c) entschieden wurde - 'wenn man Claude neu startet, gehen die Antworten kaputt'. DoD 16.
 - **2026-10-12 19:50 · Alexander Sacharov** — Runde 4, selbst entschieden: DoD 16 - 'beantwortet' = die neueste decision:-Note steht im Ticket-Body NACH der neuesten explain:-Note (Reihenfolge der Zeilen, nicht Zeitstempel: beide sind auf die Minute gestempelt und können in derselben Minute stehen). Notes tragen keine Runde; eine neue Runde mit neuem Befund bringt eine neue explain:-Note, und die ist dann wieder offen. Ein beantwortetes Pane zeigt die Erklärung und 'Decided: <Wahl>' statt der Auswahl - lesen ja, ein zweites Mal entscheiden nein. Beides aus einem 'jaira show' je Ticket. DoD 15 - explainable(): Runde gilt für Vorbehalt und gaps gleichermassen.
+- **2026-10-12 19:55 · Alexander Sacharov** — critique Runde 4: Form passt - 'beantwortet' liegt nur in den Notes (explanationNotes), die Sitzung hält nichts ausser dem sofortigen Eintrag nach der eigenen Wahl, den der nächste Blick auf die Notes ohnehin bestätigt. Nichts zu sagen.
