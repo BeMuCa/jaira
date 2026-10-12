@@ -1,7 +1,7 @@
 ---
 id: 01M4QECQMKHK5BKWRZMFAR97K9
 title: "Release-Notes als eine Datei je Aenderung, die Version setzt der Release-Build"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -29,20 +29,24 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 06094d3bb92243c16d3732f3e3a33795c1f1109e
+  - dffae51a85b55d4290a471d32ab6e476057d9f90
+  - 1fcf5a7051cc561ef6c6f64f3d799e49d666baf8
+  - 1abf2eb227e43be9caf4c0b1a607b74a4bf7f63f
 created-at: 2026-10-12T06:56:51Z
-updated-at: 2026-10-12T08:04:56Z
+updated-at: 2026-10-12T08:08:48Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-69610
 claimed-at: 2026-10-12T08:04:33Z
-outcome-what: "Regel ergaenzt: nach dem Tag kommt eine weitere Aenderung in <TICKET>-2.md, nie in die getaggte Datei"
-outcome-why: "review gap 1, Alex Option 1: der Index ordnet nach Dateiname zu, eine angehaengte Zeile landete unter der alten Version"
+outcome-what: "Review nach gap-1-Fix: DoD 1-5 erfuellt, Regel <TICKET>-2.md in CLAUDE.md/AGENTS.md"
+outcome-why: "Alex hat Option 1 gewaehlt; keine neuen Defekte"
 outcome-resolves: "review gap 1"
-review-summary: "Release notes since 0.3.6 are one file per ticket under core/release/notes/<TICKET>.md ('- ' lines, no heading); NOTES.md keeps 0.3.6 and older as closed history. Notes() = note files without index entry as Unreleased + releases from the embedded notes/versions + NOTES.md. The goreleaser before-hook runs 'go generate ./core/release' (core/release/gen -> release.WriteIndex): for every tag v* merged into HEAD, oldest first, git ls-tree of core/release/notes; a file belongs to the first tag holding it; written to the gitignored notes/versions, nothing committed. go build without generate shows all notes as Unreleased. The 5 former Unreleased lines moved into MG677R/K1W2JR/8WFNQY/GDB5YJ.md; CLAUDE.md/AGENTS.md describe the new way; .gitattributes pins notes/*.md to LF. Release CI clones with fetch-depth 0, so the tags are there."
-review-gaps: "1) A line added to a note file AFTER its ticket's file was tagged is filed under the old release: WriteIndex assigns by file name (core/release/index.go, seen[name]), not by line. A board stamped with that release never sees the line in jaira update, and the old release section of newer binaries shows a change that release never had. CLAUDE.md/AGENTS.md even say 'A ticket with a second change adds a second line to its own file' without limiting it to before the tag, and the diff dropped the old rule 'a released note that grows after the fact describes a binary nobody has'. Fix: one sentence in CLAUDE.md/AGENTS.md: once a tag holds the file, a further change goes into a new file (e.g. <TICKET>-2.md), never into the old one; optionally a test. 2) Minor: a notes/versions left over from a local go generate is embedded into every later local go build and goes stale silently - only a developer machine is affected, not the release. DoD 1-5 are otherwise met by the diff; go test ./core/release -race green."
-test-verdict: "pass: go build/vet + go test -count=1 -race ./... RC=0; DoD 1-5 im Baum geprueft (vier benannte Tests gruen, Proof-Zeilen CLAUDE.md:199, AGENTS.md:152, NOTES.md:1 stimmen); Funktion: Scratch-Klon mit lokalem Tag v0.3.7 -> go generate schreibt Index, git status leer, Binary mit -X main.version=0.3.7 zeigt bei Stempel 0.3.6 genau '0.3.7' mit 5 Zeilen und danach 'Nothing has changed'; go build ohne Generator zeigt dieselben 5 als Unreleased"
-review-verdict: "DoD met, one gap: the docs allow appending to a released note file, which the index then files under the old version (gap 1). Small doc fix, not a blocker; the person decides whether it is done before signoff or afterwards."
-review-check: "1. cd into the worktree, run: go test ./core/release -race -v -run 'TestTwoBranches|TestWriteIndex|TestComposeNotesWithoutIndex|TestNotesUnchanged' - all four PASS. 2. go build -o /tmp/jaira ./cmd/jaira, then in a scratch board run /tmp/jaira update --json on a board stamped 0.3.6 - exactly one 'Unreleased' section with 5 lines (MG677R x2, K1W2JR, 8WFNQY, GDB5YJ). 3. cd core/release && go generate . && cat notes/versions - only the comment line (no tag holds notes/ yet); git status shows nothing new (the file is gitignored). Then rm notes/versions. 4. Read CLAUDE.md section 'Client-facing changes go in core/release/notes/' and decide gap 1: the sentence 'A ticket with a second change adds a second line to its own file' should be limited to before the tag."
+review-summary: "Release-Notizen liegen jetzt je Ticket als eigene Datei core/release/notes/<TICKET>.md (Zeilen '- ...'); die 5 bisherigen Unreleased-Zeilen sind dorthin umgezogen, NOTES.md ist geschlossene Historie bis 0.3.6. Welche Version eine Datei bekommt, steht nirgends im Repo: der goreleaser-before-hook 'go generate ./core/release' ruft release.WriteIndex, das je Tag v* (nur --merged HEAD, aeltester zuerst) per git ls-tree die notes/ liest und die Datei dem aeltesten Tag zuordnet, der sie enthaelt; das Ergebnis geht in das gitignorte notes/versions, das mit eingebettet wird. Ohne Index (go build) zeigt composeNotes jede Datei unter Unreleased. Letzter Commit 1abf2eb ergaenzt in CLAUDE.md und AGENTS.md die von Alex gewaehlte Regel: sobald ein Tag die Datei haelt, geht eine weitere Aenderung in <TICKET>-2.md."
+review-gaps: "Gap 1 der vorigen Review ist mit 1abf2eb geschlossen, wie Alex es gewaehlt hat (Option 1, nur Regeltext, keine Pruefung). Offen und bewusst stehen gelassen: (a) die Regel '<TICKET>-2.md' erzwingt nichts - eine Zeile, die doch an eine getaggte Datei angehaengt wird, landet still unter der alten Version; (b) ein lokal per go generate erzeugtes notes/versions wird in spaetere go builds eingebettet und veraltet still (nur Entwicklerrechner). Nicht zum Ticket gehoerend: das untracked .jaira/milestones/ im worktree_diff (drei demo-Milestones vom 15.09.) - nicht mit committen. Sonst keine Defekte gefunden; release.yaml checkt mit fetch-depth: 0 aus, also sieht WriteIndex die Tags."
+test-verdict: "pass: Runde 3 nur Doku (1abf2eb); go test -count=1 -race ./core/release ./internal/wintrap RC=0; der Satz steht in CLAUDE.md und AGENTS.md; DoD-Proofs CLAUDE.md:199/AGENTS.md:152 zeigen weiter auf die Abschnittsueberschrift; Funktion seit Runde 2 unveraendert (Tag-Build v0.3.7 im Scratch-Klon gepruef)"
+review-verdict: "Der Diff erfuellt DoD 1-5; go test ./core/release -race und go vet gruen. Keine neuen Defekte. Die Restluecken (a) und (b) sind bekannt und von Alex nicht beauftragt - bereit fuer die Abnahme."
+review-check: "1. go test ./core/release -race -run 'TestTwoBranches|TestWriteIndex|TestComposeNotesWithoutIndex|TestNotesUnchanged' -v  -> vier PASS. 2. go build -o /tmp/jaira ./cmd/jaira  3. ls core/release/notes  -> 8WFNQY.md GDB5YJ.md K1W2JR.md MG677R.md, kein versions. 4. /tmp/jaira update --json auf einem Board mit Stempel 0.3.6  -> genau ein Eintrag 'Unreleased' mit 5 Zeilen. 5. Lies CLAUDE.md Abschnitt 'Client-facing changes go in core/release/notes/'  -> der Satz zu <TICKET>-2.md steht dort, wortgleich in AGENTS.md."
 ---
 
 # Release-Notes als eine Datei je Aenderung, die Version setzt der Release-Build
