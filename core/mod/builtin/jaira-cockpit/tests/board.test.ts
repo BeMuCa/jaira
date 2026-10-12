@@ -1915,6 +1915,8 @@ describe('the overview', () => {
       SIGNOFF,
       HUMAN,
       { ...WORKING, assignee: 'Alex', updated_at: ago(0.1) },
+      // Not offered by next for an open blocked_by, and nobody on it: in nobody's work.
+      { handle: 'W2W2W2', title: 'waits', status: 'in-progress', assignee: '', updated_at: ago(0.1) },
       { handle: 'Q1Q1Q1', title: 'queued', status: 'critique', assignee: '', updated_at: ago(0.2) },
       { handle: 'B1B1B1', title: 'later', status: 'backlog', creator: 'Berk', updated_by: 'Berk', updated_at: ago(20), created_at: ago(20) },
       { handle: 'X1X1X1', title: 'stuck', status: 'blocked', updated_by: 'Alex', blocked_reason: 'waits on Berk', updated_at: ago(15), created_at: ago(30) },
@@ -1938,7 +1940,7 @@ describe('the overview', () => {
     expect(texts.indexOf('X1X1X1 | blocked | stuck')).toBeLessThan(texts.indexOf('B1B1B1 | backlog | later'))
     expect(texts).toContain('  Alex: waits on Berk')
     // A person's lanes are the band's, the terminal lane is nobody's.
-    expect(texts.filter(x => /MG677R|K7P2QX|D1D1D1/.test(x))).toEqual([])
+    expect(texts.filter(x => /MG677R|K7P2QX|D1D1D1|W2W2W2/.test(x))).toEqual([])
     await pane.press({ key: 'overview-close' })
     expect(w.closed).toContain('cockpit-overview')
   })

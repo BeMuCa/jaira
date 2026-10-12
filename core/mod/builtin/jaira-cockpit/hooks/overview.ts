@@ -58,13 +58,15 @@ export function clockOf(at: string): string {
 // A missing or unreadable time is none: never within the history.
 const time = (at: string) => (Number.isNaN(Date.parse(at)) ? -Infinity : Date.parse(at))
 
-// In work: a ticket in an agent's lane that jaira next does not offer, so
-// somebody holds it. In the queue: what jaira next offers, short of what was
-// put back and what waits for a person (the band shows those). Put back:
-// every ticket in backlog or blocked. Each list the last touched first. The
-// history: every ticket created in the last HISTORY_DAYS, and every one put
-// back since then on a later day than it was created — jaira keeps no time a
-// ticket changed lanes, so its last change stands for it.
+// In work: a ticket in an agent's lane that jaira next does not offer and
+// somebody is assigned to; one next leaves out for want of readiness or for
+// an open blocked_by, with nobody on it, is in nobody's work. In the queue:
+// what jaira next offers, short of what was put back and what waits for a
+// person (the band shows those). Put back: every ticket in backlog or
+// blocked. Each list the last touched first. The history: every ticket
+// created in the last HISTORY_DAYS, and every one put back since then on a
+// later day than it was created — jaira keeps no time a ticket changed
+// lanes, so its last change stands for it.
 export function overviewOf(lanesJson: string, listJson: string, nextJson: string, now: number): Overview {
   const lanes = new Map((parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []).map(l => [l.id, l]))
   const tickets = parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []
@@ -85,7 +87,7 @@ export function overviewOf(lanesJson: string, listJson: string, nextJson: string
     if (PARKED.has(t.status)) parked.push(row(t, t.updated_by || t.creator))
     else if (lane === undefined || lane.terminal === true || isPersons(lane)) continue
     else if (startable.has(t.handle)) queue.push(row(t, t.assignee))
-    else if (lane.agentic) working.push(row(t, t.assignee))
+    else if (lane.agentic && (t.assignee ?? '').trim() !== '') working.push(row(t, t.assignee))
   }
   const since = now - HISTORY_DAYS * 86_400_000
   const events: Event[] = []

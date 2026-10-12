@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T20:28:49Z
-updated-at: 2026-10-12T21:28:40Z
+updated-at: 2026-10-12T21:30:08Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 mode: ""
@@ -46,9 +46,9 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-dskz70/core/mod/builti
 - [x] Tests in core/mod/builtin/jaira-cockpit/tests decken Knopf und Pane ab; Zeile in den Release-Notes
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:1544 describe 'the overview' (5 Tests: Knopf, kein Board, Spalten, Geschichte, Lesefehler); core/release/notes/DSKZ70.md:1
 - [x] Pane-Aufbau: Spalten wie Lanes - 'in Arbeit' (Handle, Lane, Titel, Autor/Worker), 'Warteschlange' (startbar laut jaira next), 'zurueckgestellt' (backlog + blocked mit Grund); Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:68 overviewOf (in Arbeit/Warteschlange laut jaira next --all/zurueckgestellt mit blocked_reason); core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:30 drei Spalten nebeneinander; test 'Overview reads the board afresh and shows in work, queue and put back, each row Handle | Lane | Titel'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:70 overviewOf (in Arbeit nur mit assignee / Warteschlange laut jaira next --all / zurueckgestellt mit blocked_reason); core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:30 drei Spalten nebeneinander; test 'Overview reads the board afresh and shows in work, queue and put back, each row Handle | Lane | Titel'
 - [x] Geschichte: was in den letzten Tagen angelegt oder nach backlog/blocked gestellt wurde, nach Tag gruppiert, mit Autor; ueberlebt Sitzungsende, Neustart und Nacht (aus Ticketdaten/git, nicht aus Sitzungsspeicher); Zeitraum begruendet in einer Note; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:27 HISTORY_DAYS=7 (Grund in Note), :97 put back aus updated_at/updated_by, nur jaira list --json; test 'the history: created and put back over the last seven days, by day, newest first, with who'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:27 HISTORY_DAYS=7 (Grund in Note), :99 put back aus updated_at/updated_by, nur jaira list --json; test 'the history: created and put back over the last seven days, by day, newest first, with who'
 - [x] jaira-teamlead SKILL.md: beim Start auch die zuletzt angelegten/zurueckgestellten Tickets der letzten Tage lesen und nennen (dieselbe Datenquelle wie der Pane)
   proof: core/role/builtin/jaira-teamlead/SKILL.md:26 (Abschnitt 'Read the board first': created/put back der letzten 7 Tage aus jaira list --json, Regel wie overview.ts:78)
 - [x] Zeile in core/release/notes/DSKZ70.md
@@ -79,3 +79,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-dskz70/core/mod/builti
 - **2026-10-12 21:21 · Alexander Sacharov** — testing: Funktion auf echten Daten via node --experimental-strip-types gegen hooks/overview.ts (Scratch, nicht im Repo). Gesehen und so gelassen: (1) PNC854 in 'human' steht in Queue - diese Board-Lane human hat human_exit=false, das Band (board.ts isPersons) zeigt sie dort ebenso nicht; beide lesen dieselbe Regel. (2) D28H7V erscheint am 07.10 als 'put back' wegen einer Note an dem Tag - die von Alex akzeptierte updated_at-Grenze. (3) Ein beanspruchtes Ticket in todo faellt weiter aus allen Spalten (Kritik-Note); auf dem echten Board gerade keins, kein DoD-Bruch.
 - **2026-10-12 21:24 · Alexander Sacharov** — review (fresh): angenommen mit einem kleinen Befund - 'In work' (overview.ts:186-188) zaehlt jedes Ticket einer agentischen Lane, das jaira next --all nicht anbietet, als gehalten; next laesst aber auch nicht-Ready und durch blocked_by wartende Tickets weg (gate.Actionable). Die stehen dann mit leerem wer in In work. Fix waere: In work nur mit assignee/aktivem Claim, Rest in Queue oder eigene Markierung. Heute ohne Folge auf dem Board. Ausserdem steht der Merge von feat/13pqb3 in diesen Branch (Note 21:17) noch aus.
 - **2026-10-12 21:28 · Alexander Sacharov** — merge: origin/feat/13pqb3 (dc0a1b4a, PR #69: 13PQB3+0EW5XK+5A6RJZ) in feat/dskz70 gemergt. Drei Konflikte, alle 'beide fuegten nebeneinander an' - register.tsx (busyAtom/overviewAtom, EXPLANATION+ANSWER/OVERVIEW, Explanation-Pane/Overview-Pane) und types/index.d.ts (busy/overview): beide Seiten behalten. Danach plugin validate ok, tsc ok, claude plugin test 133/133, go test -race ./... RC=0. Review-Befund ('In work' zaehlt nicht-startbare Tickets) ist offen und liegt bei Alex in signoff.
+- **2026-10-12 21:30 · Alexander Sacharov** — fix nach Review-Befund (auf Anweisung jaira-f5, Alex schlaeft; bleibt in signoff, keine neue Review-Runde): 'In work' nimmt nur noch Tickets mit assignee (core/mod/builtin/jaira-cockpit/hooks/overview.ts:90). Ein Ticket, das jaira next mangels Ready oder wegen offenem blocked_by weglaesst und niemand haelt, steht in keiner Spalte. Test: W2W2W2 im Spalten-Test; ohne den Fix rot (132/1), mit gruen (133/0). Proofs DoD 4/5 auf die neuen Zeilen gesetzt.
