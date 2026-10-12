@@ -4,6 +4,8 @@
 // so it is the same in both dispatch modes and with Herdr tabs. register.tsx
 // runs the commands; this file only reads what they printed.
 
+import type { Tab } from './sessions.ts'
+
 export type Waiting = {
   id: string
   title: string
@@ -46,9 +48,24 @@ function isPersons(lane: Lane): boolean {
   return lane.human_exit ?? PERSON_LANES.has(lane.id)
 }
 
-// The tickets waiting in a lane a person owns, and how many there are.
-// Workers and reviews are counted by liveCounts, as agents that run.
-export function snapshotOf(lanesJson: string, listJson: string): { waiting: Waiting[]; counts: Counts } {
+export type Agent = { description: string; name?: string; status: string }
+
+// The chats a person opens from the band are theirs, not an agent at work.
+const PERSONS_TABS = new Set(['explain', 'discuss'])
+const WORKING = new Set(['pending', 'running', 'waiting'])
+
+// The tickets waiting in a lane a person owns, and how many there are; and
+// the agents at work on this board's tickets, by kind: a Herdr tab spawn.sh
+// labelled `<id>/<lane>`, and a subagent of this session whose description
+// or name carries a ticket's id. One whose lane is the fresh one is a review,
+// every other a worker. A tab or an agent naming no ticket of this board is
+// not counted.
+export function snapshotOf(
+  lanesJson: string,
+  listJson: string,
+  tabs: readonly Tab[],
+  agents: readonly Agent[],
+): { waiting: Waiting[]; counts: Counts } {
   const lanes = parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []
   const tickets = parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []
   const byId = new Map(lanes.map(l => [l.id, l]))
@@ -56,54 +73,33 @@ export function snapshotOf(lanesJson: string, listJson: string): { waiting: Wait
   const counts: Counts = { worker: 0, review: 0, person: 0 }
   for (const t of tickets) {
     const lane = byId.get(t.status)
-    if (lane === undefined) continue
-    if (isPersons(lane)) {
-      counts.person++
-      const next = t.next_lane === undefined ? undefined : byId.get(t.next_lane)
-      waiting.push({
-        id: t.handle,
-        title: t.title,
-        lane: t.status,
-        verdict: oneLine(t.review?.verdict),
-        question: oneLine(t.question),
-        acceptTo: next?.terminal === true ? next.id : null,
-      })
-    }
+    if (lane === undefined || !isPersons(lane)) continue
+    counts.person++
+    const next = t.next_lane === undefined ? undefined : byId.get(t.next_lane)
+    waiting.push({
+      id: t.handle,
+      title: t.title,
+      lane: t.status,
+      verdict: oneLine(t.review?.verdict),
+      question: oneLine(t.question),
+      acceptTo: next?.terminal === true ? next.id : null,
+    })
   }
-  return { waiting, counts }
-}
-
-export type Agent = { description: string; name?: string; status: string }
-
-// The chats a person opens from the band are theirs, not an agent at work.
-const PERSONS_TABS = new Set(['explain', 'discuss'])
-const WORKING = new Set(['pending', 'running', 'waiting'])
-
-// The agents at work on this board's tickets, by kind: a Herdr tab spawn.sh
-// labelled `<id>/<lane>`, and a subagent of this session whose description
-// or name carries a ticket's id. One whose lane is the fresh one is a review,
-// every other a worker. A tab or an agent naming no ticket of this board is
-// not counted.
-export function liveCounts(lanesJson: string, listJson: string, tabListJson: string | undefined, agents: readonly Agent[]): { worker: number; review: number } {
-  const lanes = parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []
-  const ids = new Set((parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []).map(t => t.handle))
-  const fresh = new Set(lanes.filter(l => l.agentic && l.context === 'fresh').map(l => l.id))
-  const counts = { worker: 0, review: 0 }
-  const tabs = tabListJson === undefined ? [] : parse<{ result?: { tabs?: { label?: string }[] } }>(tabListJson)?.result?.tabs ?? []
-  for (const { label = '' } of tabs) {
+  const ids = tickets.map(t => t.handle)
+  const fresh = lanes.filter(l => l.agentic && l.context === 'fresh').map(l => l.id)
+  for (const { label } of tabs) {
     const [id = '', lane = ''] = label.split('/')
-    if (!ids.has(id) || lane === '' || PERSONS_TABS.has(lane)) continue
-    if (fresh.has(lane)) counts.review++
+    if (!ids.includes(id) || lane === '' || PERSONS_TABS.has(lane)) continue
+    if (fresh.includes(lane)) counts.review++
     else counts.worker++
   }
   for (const a of agents) {
-    if (!WORKING.has(a.status)) continue
     const said = `${a.description} ${a.name ?? ''}`
-    if (![...ids].some(id => said.includes(id))) continue
-    if ([...fresh].some(lane => new RegExp(`\\b${lane}\\b`, 'i').test(said))) counts.review++
+    if (!WORKING.has(a.status) || !ids.some(id => said.includes(id))) continue
+    if (fresh.some(lane => new RegExp(`\\b${lane}\\b`, 'i').test(said))) counts.review++
     else counts.worker++
   }
-  return counts
+  return { waiting, counts }
 }
 
 // A review verdict a person should have explained: one that names a

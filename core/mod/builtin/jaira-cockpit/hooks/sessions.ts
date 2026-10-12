@@ -72,14 +72,16 @@ export function chooseWorker(input: { record?: SessionRecord; tabAlive: boolean;
 // spawn.sh labels it `<id>/worker` or `<id>/dispatch`.
 export type Tab = { tab_id: string; label: string }
 
-export function carrierTab(tabListJson: string, ticket: string): Tab | undefined {
-  let tabs: Tab[] = []
+export function tabsOf(tabListJson: string): Tab[] {
   try {
-    tabs = (JSON.parse(tabListJson) as { result?: { tabs?: Tab[] } }).result?.tabs ?? []
+    return (JSON.parse(tabListJson) as { result?: { tabs?: Tab[] } }).result?.tabs ?? []
   } catch {
-    return undefined
+    return []
   }
-  return tabs.find(t => t.label === `${ticket}/worker` || t.label === `${ticket}/dispatch`)
+}
+
+export function carrierTab(tabListJson: string, ticket: string): Tab | undefined {
+  return tabsOf(tabListJson).find(t => t.label === `${ticket}/worker` || t.label === `${ticket}/dispatch`)
 }
 
 // What the cockpit types into a pane leads with this, so the cockpit in that
