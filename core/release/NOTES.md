@@ -1,5 +1,13 @@
 <!--
-Format rules — read before editing:
+Closed history — do not add to this file.
+
+This file holds the releases up to 0.3.6. A change since then goes into a file
+of its own, core/release/notes/<TICKET>.md, one line "- ..." per change and no
+heading; the release-notes workflow moves it into core/release/notes/<version>/
+when that version is released (see "Client-facing changes" in CLAUDE.md, and
+release.Cut).
+
+Format rules, kept because the parser still reads this file:
   - Newest release first.
   - A release starts with a line reading exactly "## " followed by the exact
     version string a build of that release reports (the git tag with its
@@ -9,18 +17,7 @@ Format rules — read before editing:
     wrapped line is read as two separate, incomplete changes.
   - Anything else (this comment, blank lines, prose) is ignored, so it is
     free to use for context.
-  - Write each change as an instruction: what the reader must DO differently,
-    not a record of what commit did what.
 -->
-
-## Unreleased
-- Get the jaira-cockpit mod for the Claude Code session you work from by running `jaira roles install --force` (add `--global` to have it in every project; with `--project` Claude Code loads it once you trust the workspace) and starting a new session: agent reports arrive as one line (`/cockpit report <id>` shows them whole), the band above the prompt lists tickets waiting for you with Accept / Give back / Explain / Discuss, shows context size and prompt-cache time left, holds a prompt of yours onto a cold cache with a large context, files your turns into conversation threads (`/cockpit threads`), `/cockpit ticket <id>` opens a pane, and each session adds a row to `~/.jaira/metrics.csv`; the status line counts the workers and reviews at work (Herdr tabs or this session's subagents) and shows the five-hour and seven-day windows used, and every text is in English whatever Claude Code's `language` setting. Without jaira, `/plugin install jaira-cockpit --marketplace BeMuCa/jaira` installs the same mod.
-- Tell a person's lane from an agent's in `jaira lanes --json` by the new `human_exit` field (true for `signoff` and `human` on the shipped board, also in `jaira lanes show --json`), and open a chat about a ticket with `spawn.sh --no-worktree <slug> <id> explain` (a review finding explained in plain words) or `... discuss` (the ticket's open question talked through and noted back) — run `jaira roles install --force` (add `--global` if you installed them globally) to get the new `spawn.sh`.
-- Let one agent carry a whole ticket instead of one new agent per lane: set `"dispatch": "worker"` in `~/.jaira/settings.json` (or press `S` on the board and switch "Agents per ticket"), then run `jaira roles install --force` (add `--global` if you installed them globally) — the teamlead then starts the new `/jaira-worker`, which works every lane itself in its own Herdr tab and hands only the fresh-context lane (`review` on the shipped board) to a new agent in a tab of its own; `jaira roles list` shows which is set (`--json`: `dispatch`, `dispatch_role`), and `spawn.sh` takes the lane name `worker`. Without the setting the roles work as before: `/jaira-dispatcher` still starts one agent per lane.
-- Mark a lane that a new agent must run with `context: fresh` in its file under `.jaira/lanes/` (`context: shared` says the carrying agent runs it); on a board where no lane says either, the last agentic lane before the first lane a person owns is fresh — `review` on the shipped board — and `jaira lanes` shows it in the new CONTEXT column (`fresh*` when implied), `jaira lanes show` and `show --for-lane` print it, `--json` carries `context`, and `jaira update` marks it in the agent block of CLAUDE.md/AGENTS.md, so every session that drives the board itself hands that lane to a new agent, whatever `dispatch` is set to. Any other value (a typo like `Fresh`) keeps the lane on the board and runs it fresh, with a warning, a `!` in `jaira lanes` and a failing `jaira validate` until you fix the file.
-- Clear a claim a killed session left behind with the command `jaira next` now prints beside its abandoned-claim warning, `jaira claim <id> --release`: it releases somebody else's claim once it is older than 30 minutes, and the warning stops.
-- Read the two new lines under `jaira create --lane <later lane>` before working the ticket: `Skipped on the way to <lane>:` names the lanes it never passed through (a lane whose option the ticket leaves unticked only when it is the one that writes an input left empty, so `--lane in-progress` names pre-process), and `Empty, though <lane> takes it as input:` names the inputs that lane expects but no earlier lane wrote (a ticket created into in-progress has no plan); `--json` carries them as `skipped_lanes` and `empty_inputs`. Without `--lane` nothing changes.
-- Press enter on an installed lane in the lanes screen (`S` → lanes) to remove it: it opens the same yes/no question as `x`, with no preselected, so a blind enter still removes nothing; enter on a not-installed lane or the `+` column adds as before, and `x` works unchanged.
 
 ## 0.3.6
 - Answer questions in your teamlead's tab only: run `jaira roles install --force` (add `--global` if you installed them globally), and a lane worker no longer asks you anything — it writes the question with numbered options onto the ticket (`jaira note` plus the `question` field) and stops, `run-lane.sh` exits 5 on it, and a dispatcher started with `spawn.sh --parent <teamlead-session>` sends its own and its workers' questions to that teamlead with `SendMessage` instead of asking in its tab. You may still type into a dispatcher's tab; it answers there, notes the decision on the ticket and tells its teamlead, which then does not ask again.

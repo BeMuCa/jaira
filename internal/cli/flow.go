@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -109,6 +110,17 @@ one the real move would have returned.`,
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s is already in %s\n", ticket.Handle(t.ID), to)
 				return nil
+			}
+
+			// The outcome is the output of the lane that produces it, and every
+			// later lane reads it as input. A move out of another lane may fill
+			// an empty field but not replace what is there: on 2026-10-11 review
+			// agents passing --what wiped the implementer's account. Replacing
+			// it on purpose is a 'jaira set', which says so.
+			if err := guardOutcome(t, env.Lanes, map[string]string{
+				ticket.FieldOutcomeWhat: what, ticket.FieldOutcomeWhy: why, ticket.FieldOutcomeResolves: resolves,
+			}); err != nil {
+				return err
 			}
 
 			// Apply the outcome and question fields first: a gate may require
@@ -768,6 +780,31 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		fmt.Fprintf(w, "## Missing required input\n\n")
 		for _, m := range missing {
 			fmt.Fprintf(w, "- %s\n", m)
+		}
+	}
+	return nil
+}
+
+// guardOutcome refuses a move that would replace an outcome field the lane
+// being left does not produce. An empty field, the same value again, and the
+// producing lane rewriting its own output on a later round all pass.
+func guardOutcome(t *ticket.Ticket, lanes *lane.Set, incoming map[string]string) error {
+	var produces []string
+	if l, ok := lanes.Get(t.Status); ok {
+		produces = l.OutputProduces
+	}
+	for _, field := range []string{ticket.FieldOutcomeWhat, ticket.FieldOutcomeWhy, ticket.FieldOutcomeResolves} {
+		val, have := incoming[field], fieldValue(t, field)
+		if val == "" || have == "" || val == have || slices.Contains(produces, field) {
+			continue
+		}
+		return &codedError{
+			code:   ExitValidation,
+			reason: "outcome_not_yours",
+			message: fmt.Sprintf("%s already holds the account of the lane that produces it, and %s does not; "+
+				"move without --what/--why/--resolves and put this lane's findings in its own fields, "+
+				"or replace it on purpose with 'jaira set %s %s=...'",
+				field, t.Status, ticket.Handle(t.ID), field),
 		}
 	}
 	return nil

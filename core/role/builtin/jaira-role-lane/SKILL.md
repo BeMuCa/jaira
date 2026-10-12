@@ -78,7 +78,10 @@ reads, and reports what it finds to the dispatcher that started it:
 - `jaira dod <id> <n> --doing|--done` as you go, not at the end
 - `jaira note <id> <text>` at every pause — dead ends, why this and not that.
   A killed session never gets a turn to write anything down.
-- `jaira move <id> --to <next-lane> --what … --why … --resolves …`
+- `jaira move <id> --to <next-lane>`, with `--what … --why … --resolves …` only
+  from the lane whose outputs name them (in-progress). Every later lane reads
+  the outcome as its input: it moves without them, and a move that would
+  replace the outcome is refused
 - **did you change code?** Then commit it and the ticket file together:
   `git add` the files you changed and `.jaira/tickets/<this ticket>.md` by path
   — never `-A`, another session may be working in the same worktree — and name

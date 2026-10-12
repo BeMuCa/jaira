@@ -126,6 +126,10 @@ func report(err error) int {
 			// away, so it gets the gate's exit code rather than the
 			// unexpected-error one.
 			code, reason = ExitValidation, "on_ref_only"
+		case errors.Is(err, ticket.ErrStale):
+			// The same kind of refusal: nothing is wrong with the ticket, the
+			// copy here is behind, and 'jaira pull' brings it up.
+			code, reason = ExitValidation, "stale_file"
 		case errors.Is(err, ticket.ErrNoStore):
 			code, reason = ExitError, "no_store"
 		case errors.Is(err, ticket.ErrUnsafeYAML):

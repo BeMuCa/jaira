@@ -33,7 +33,10 @@ Two things can refuse it, and they mean different things:
             first; re-read and decide
 
 Pulling a ticket you already have is a successful no-op, so this is safe to
-repeat.
+repeat — unless the file here is older than the ticket's ref, as a file on a
+branch that missed the lanes which commit nothing is. Then the file is brought
+up to the ref, and the output names both states. The claim on the ref stays as
+it was. A file holding a write that has not been sent is left alone.
 
 This is the one command that needs the network. That is not an exception to
 working offline but a consequence of it: with no route to the remote there is
@@ -61,12 +64,21 @@ no ref to read, so there is nothing to take over.`,
 				return refusePull(got, "race",
 					"%s was taken while you were pulling it: %s\n  nothing was written here; run 'jaira fetch' and decide",
 					ticket.Handle(id), describe(got))
+			case errors.Is(err, refsync.ErrUnsent):
+				return refusePull(got, "unsent",
+					"%s: %v\n  the file here is not lost; to take the ref's state instead, move the file aside and pull again",
+					ticket.Handle(id), err)
 			case err != nil:
 				return err
 			}
 
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), got)
+			}
+			if got.Was != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s was behind its ref and is up to date now: %s\n", ticket.Handle(got.ID), got.Path)
+				fmt.Fprintf(cmd.OutOrStdout(), "  was: %s\n  now: %s\n", got.Was, got.Now)
+				return nil
 			}
 			if got.AlreadyHere {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s is already here: %s\n", ticket.Handle(got.ID), got.Path)

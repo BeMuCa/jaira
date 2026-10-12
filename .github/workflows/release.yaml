@@ -2,10 +2,13 @@ name: release
 
 # Pushing a tag like v0.1.0 builds the six static binaries (.goreleaser.yaml)
 # and publishes them as a GitHub release — which is what scripts/install.sh
-# and the README's download instructions point at.
+# and the README's download instructions point at. release-tag.yaml starts it
+# by hand on the tag it just pushed, which is why it also takes
+# workflow_dispatch: a tag pushed with GITHUB_TOKEN triggers nothing itself.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write

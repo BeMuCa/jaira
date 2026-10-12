@@ -83,10 +83,12 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  Not what the checklist and git already record. A killed session never gets a\n" +
 	"  turn to write anything down, so do not save it for the end\n" +
 	"- `jaira move <id> --to <lane> --what <...> --why <...> --resolves <...>` — finish\n" +
-	"  the step. jaira works out the commit list itself from git history — the union\n" +
-	"  of the ticket file's own history and commits naming its id — so nothing needs\n" +
-	"  to be typed here; it is written onto the ticket once, when the ticket leaves\n" +
-	"  the board\n" +
+	"  the step. The three outcome flags belong to the lane that produces the outcome\n" +
+	"  (in-progress); every later lane reads it, moves without them, and is refused\n" +
+	"  when it would replace it. jaira works out the commit list itself from git\n" +
+	"  history — the union of the ticket file's own history and commits naming its\n" +
+	"  id — so nothing needs to be typed here; it is written onto the ticket once,\n" +
+	"  when the ticket leaves the board\n" +
 	"- `jaira resume` — work left in progress, with everything recorded about it\n" +
 	"- **every commit names the ticket id** — `fix(A3K9QP): ...`. jaira derives a\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
