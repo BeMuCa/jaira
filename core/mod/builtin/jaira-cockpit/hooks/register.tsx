@@ -326,19 +326,20 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
     await say($, t.failed(`${t.giveBack} ${id}`, moved.why))
     return
   }
-  const bin = await herdr($)
-  if (bin === undefined) {
-    // No Herdr: nobody to hand it to from here; the board says where it is.
-    await jaira($, dir, ['note', id, 'cockpit: Rueckgabe an niemanden (kein Worker gestartet) - kein Herdr in dieser Sitzung'])
-    await say($, t.returnedTo(id, 'none'))
+  // Who got it, as it happened: the note and the toast say only that.
+  const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
+    const to = who === 'old' ? 'den alten Worker' : who === 'new' ? 'einen neuen Worker' : 'niemanden (kein Worker gestartet)'
+    await jaira($, dir, ['note', id, `cockpit: Rueckgabe an ${to} - ${why}`])
+    await say($, t.returnedTo(id, who))
     await refreshBoard($)
-    return
   }
+  const bin = await herdr($)
+  // No Herdr: nobody to hand it to from here; the board says where it is.
+  if (bin === undefined) return handedTo('none', 'kein Herdr in dieser Sitzung')
   const tabs = await run($, [bin, 'tab', 'list'], dir)
   const tab = tabs?.exitCode === 0 ? carrierTab(tabs.stdout, id) : undefined
   const record = carrierOf(await readRecords($), id)
   const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now() })
-  // Who got it, as it happened: the note and the toast say only that.
   let who: 'old' | 'new' | 'none' = 'old'
   let why = choice.why
   if (choice.reuse && record) {
@@ -359,10 +360,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
       if (who === 'none') why = `${choice.why}; spawn.sh schlug fehl: ${(started?.stderr ?? '').trim().slice(-160)}`
     }
   }
-  const to = who === 'old' ? 'den alten Worker' : who === 'new' ? 'einen neuen Worker' : 'niemanden (kein Worker gestartet)'
-  await jaira($, dir, ['note', id, `cockpit: Rueckgabe an ${to} - ${why}`])
-  await say($, t.returnedTo(id, who))
-  await refreshBoard($)
+  await handedTo(who, why)
 }
 
 // ── context, cache, status line ──────────────────────────────────────────
