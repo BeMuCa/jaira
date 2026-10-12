@@ -372,16 +372,15 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // Which step the press starts, and on which branch: the ticket's branch
 // found, counted against the pull request's target, its tickets read, its
 // pull requests asked for — stepAfterAccept (board.ts) decides from that.
-// A forge that cannot be asked — offline, logged out, its repository no
-// remote here — leaves the pull request unchecked and never the board: the step is 'next', and the hint
-// says why no pull request was looked at. A string is a failure that stops
-// both steps.
+// A forge that cannot be asked leaves the pull request unchecked, never the
+// board: the rule gets undefined for it, and the hint says why no pull
+// request was looked at. A string is a failure that stops both steps.
 type Decided = { step: StepAfterAccept; branch?: string; hint: string }
 
 async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
   const found = branchesFor(porcelain, id)
   const target = await pullTarget($, b.repo)
-  if (typeof target === 'string') return { step: 'next', hint: t.prUnchecked(target) }
+  if (typeof target === 'string') return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(target) }
   const base = target?.base ?? found.base
   let branch = found.ticket
   // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
@@ -411,8 +410,7 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   const cmd = pullRequestsCommand(target.on, target.repo, branch)
   const listed = await run($, cmd, b.repo, 30_000)
   const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
-  if (has === undefined) return { step: 'next', branch, hint: t.prUnchecked(`${cmd[0]}: ${output(listed)}`) }
-  return { step: stepAfterAccept(ahead, pending, has), branch, hint: '' }
+  return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '' }
 }
 
 // What the press starts once the ticket is in done, without a further word

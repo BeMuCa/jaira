@@ -262,11 +262,15 @@ export function newWorktreeFor(repo: string, branch: string): string {
 // master — has no further step of its own, and the press moves the board on
 // to the next ticket instead. One button, so the rule decides, never the
 // person per press. The caller asks the forge only where the answer can
-// still change the step, and passes false otherwise.
+// still change the step, and passes false otherwise. A forge that could not
+// be asked — offline, logged out, its repository no remote here — is
+// undefined: whether a pull request exists is unknown, so none is opened,
+// and the board moves on rather than wait for the network (Alex, GPFA7B
+// DoD 8); the press says why.
 export type StepAfterAccept = 'pr' | 'next'
 
-export function stepAfterAccept(ahead: number, pending: readonly string[], hasPullRequest: boolean): StepAfterAccept {
-  return ahead > 0 && pending.length === 0 && !hasPullRequest ? 'pr' : 'next'
+export function stepAfterAccept(ahead: number, pending: readonly string[], hasPullRequest: boolean | undefined): StepAfterAccept {
+  return ahead > 0 && pending.length === 0 && hasPullRequest === false ? 'pr' : 'next'
 }
 
 // The tickets a branch carries, off `git log --format=%s <base>..<branch>`:
