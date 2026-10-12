@@ -1,7 +1,7 @@
 ---
 id: 01M4R72WDX2JTP49N1PHQ484YS
 title: "Aus signoff zurückschicken geht ohne --force, nur done braucht es"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,14 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-12T14:08:23Z
-updated-at: 2026-10-12T14:15:51Z
+updated-at: 2026-10-12T14:16:36Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1804
 claimed-at: 2026-10-12T14:08:49Z
 outcome-what: "Gate refuses leaving a requires-human-exit lane only when the target is not earlier in the lane order (core/gate/gate.go:394); agent block, README, docs/AGENTS.md, jaira skill and lane template say the same"
 outcome-why: "Sending work back accepts nothing; making it a --force switched off every other refusal on the move, which on 2026-10-12 hid a stale-file overwrite on K1W2JR"
 outcome-resolves: "Agents and '!' commands send a ticket from signoff back to in-progress with a plain move; done and later lanes stay a person's (humanexit_test.go)"
-review-summary: "core/gate/gate.go:394 'req.To != t.Status && to >= from' says 'to > from' twice — lane indices are unique, so same lane means same index; write 'to > from' like the OutputOwed check below it"
+review-summary: "none"
+review-gaps: "removed hasCode from core/gate/humanexit_test.go — findViolation (core/gate/gate_test.go:190) already does it; left internal/tui/signoff_test.go TestHumanExitGate, which covers signoff->done from the TUI side and would only move, not shrink, if folded into core/gate; no dead code, no hot path touched"
 ---
 
 # Aus signoff zurückschicken geht ohne --force, nur done braucht es
@@ -65,3 +66,4 @@ review-summary: "core/gate/gate.go:394 'req.To != t.Status && to >= from' says '
 - **2026-10-12 14:09 · Alexander Sacharov** — Entschieden ohne Rückfrage: (1) Regel = Ziel-Index < Index der aktuellen Lane in der Lane-Reihenfolge (lane.Index), sonst Sperre wie bisher. Damit bleibt auch signoff->blocked gesperrt (blocked steht am Ende der Reihenfolge) — Parken ist kein Zurückschicken, und das Ticket würde nach dem Entblocken wieder in signoff landen, also gibt es dafür keinen Bedarf. (2) Release-Notiz als core/release/notes/Q484YS.md wie im DoD; das Verzeichnis kommt mit AR97K9 (origin/feat/ar97k9, noch nicht auf master) — bis dahin liest release.go die Datei nicht, beim Merge von AR97K9 wird sie automatisch mitgelesen.
 - **2026-10-12 14:10 · Alexander Sacharov** — Plan-Begründung: Die Richtung steht schon in CheckAdvance als from/to (env.Lanes.Index), dieselbe Größe benutzen die OutputOwed- und Spec-Zone-Prüfungen — kein neuer Begriff nötig. Lane 'human' ist RequiresQuestion, nicht RequiresHumanExit; ihr 'never out' im Agent-Block bleibt, nur der HumanExit-Fall bekommt neuen Text (core/board/announce.go:220).
 - **2026-10-12 14:14 · Alexander Sacharov** — critique 1: gate.go:394 Bedingung auf 'to > from' vereinfachen (req.To != t.Status ist bei eindeutigen Lane-Indizes dasselbe wie to != from). Sonst nichts: Gate ist der richtige Ort (TUI/CLI haben keine eigene Exit-Prüfung, nur Anzeige in internal/tui), from/to existieren schon, Builtins() parst bei jedem Load neu, also leckt die Mutation in TestHumanExitRuleFollowsTheContract nicht. Rollen-Skills (worker/dispatcher 'never out of it') bleiben: sie beschreiben, dass der Agent an einer Menschen-Lane stoppt, nicht das Gate.
+- **2026-10-12 14:16 · Alexander Sacharov** — critique 2: nichts mehr — Befund aus critique 1 ist in 37208bf behoben, der Rest steht auf der Notiz zu critique 1.
