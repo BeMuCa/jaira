@@ -980,13 +980,11 @@ export const register: Register = (on, options) => {
       void $.ui.close({ id: EXPLANATION })
       void decide($, id, `${o.key}) ${o.text}`, o.action, share)
     }
-    // An option whole, as many rows as it needs: what it says, what picking
-    // it does, whether the review recommends it.
-    const line = (o: Option) => (
-      <Text wrap="wrap">
-        {o.text}{o.action !== undefined ? ` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}{o.key === x.recommended ? ` ${t.recommended}` : ''}
-      </Text>
-    )
+    // An option whole: what it says, what picking it does, whether the
+    // review recommends it. Drawn as many rows as it needs.
+    const said = (o: Option) =>
+      `${o.text}${o.action !== undefined ? ` ${o.action === 'accept' ? t.actionAccept : t.actionGiveBack}` : ''}${o.key === x.recommended ? ` ${t.recommended}` : ''}`
+    const line = (o: Option) => <Text wrap="wrap">{said(o)}</Text>
     return (
       <Box flexDirection="column">
         <Text bold>{t.explanationOf(id)}</Text>
@@ -995,7 +993,7 @@ export const register: Register = (on, options) => {
           // Select draws one line per option and cuts a long one, so the
           // choice would hide what is chosen. Its letter picks it too.
           ? open
-            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={p.key} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
+            ? <Button key={`pick-${id}-${p.key}`} plain hotkey={p.key} label={`${p.key}) ${said(p)}`} {...(p.key === (x.recommended ?? x.options[0]?.key) ? { autoFocus: true as const } : {})} onPress={() => pick(p)}>{line(p)}</Button>
             : <Box key={`part-${i}`} flexDirection="row"><Text bold>{`  ${p.key}) `}</Text>{line(p)}</Box>
           // A paragraph a line apart; the options one under the other.
           : <Box key={`part-${i}`} marginTop={i > 0 ? 1 : 0} marginBottom={x.parts[i + 1]?.kind === 'option' ? 1 : 0}><Text wrap="wrap">{p.text}</Text></Box>)}

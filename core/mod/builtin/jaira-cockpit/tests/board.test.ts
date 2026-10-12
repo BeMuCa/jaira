@@ -450,6 +450,8 @@ describe('waiting for you', () => {
       const row = await pane.find({ key: `pick-MG677R-${k}` })
       expect(row?.props.hotkey).toBe(k)
       expect(row?.text).toBe(text)
+      // A surface that draws no children draws the label: the whole option too.
+      expect(row?.props.label).toBe(`${k}) ${text}`)
       expect((await pane.find({ type: 'Text', text }))?.props.wrap).toBe('wrap')
     }
     expect((await pane.find({ key: 'pick-MG677R-a' }))?.props.autoFocus).toBe(true)
