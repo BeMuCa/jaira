@@ -21,13 +21,14 @@ import (
 // do. That init is the share-state hazard this fixture checks first.
 func sharedClone(t *testing.T) string {
 	t.Helper()
-	gitIdentity(t)
 	t.Setenv("JAIRA_HOME", filepath.Join(t.TempDir(), "home"))
 	origin := filepath.Join(t.TempDir(), "origin")
 	if err := os.MkdirAll(origin, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	gitRun(t, origin, "init", "--quiet", "-b", "master", ".")
+	gitRun(t, origin, "config", "user.name", "ada")
+	gitRun(t, origin, "config", "user.email", "ada@example.test")
 	if out, err := runCLI(t, origin, "init"); err != nil {
 		t.Fatalf("jaira init: %v\n%s", err, out)
 	}
@@ -52,27 +53,17 @@ func sharedClone(t *testing.T) string {
 // privateBoard is a board 'jaira init' made and nobody shared.
 func privateBoard(t *testing.T) string {
 	t.Helper()
-	gitIdentity(t)
 	t.Setenv("JAIRA_HOME", filepath.Join(t.TempDir(), "home"))
 	dir := t.TempDir()
 	gitRun(t, dir, "init", "--quiet", "-b", "master", ".")
+	gitRun(t, dir, "config", "user.name", "ada")
+	gitRun(t, dir, "config", "user.email", "ada@example.test")
 	if out, err := runCLI(t, dir, "init"); err != nil {
 		t.Fatalf("jaira init: %v\n%s", err, out)
 	}
 	gitRun(t, dir, "add", ".gitignore")
 	gitRun(t, dir, "commit", "--quiet", "-m", "jaira board stays private")
 	return dir
-}
-
-// gitIdentity lets the fixtures commit on a machine with no git identity.
-func gitIdentity(t *testing.T) {
-	t.Helper()
-	for k, v := range map[string]string{
-		"GIT_AUTHOR_NAME": "ada", "GIT_AUTHOR_EMAIL": "ada@example.test",
-		"GIT_COMMITTER_NAME": "ada", "GIT_COMMITTER_EMAIL": "ada@example.test",
-	} {
-		t.Setenv(k, v)
-	}
 }
 
 func readIgnore(t *testing.T, dir string) string {
