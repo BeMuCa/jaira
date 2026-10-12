@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -305,9 +306,19 @@ already know it is yours; --assignee wins over it.`,
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
 			onRefOnly, why := fileOnRefOnly(t)
+			targetLane, _ := lanes.Get(target)
+			skipped, emptyInputs := skippedByCreate(lanes, t, targetLane)
 			if g.jsonOut {
 				payload := ticketJSON(t, lanes)
 				payload["on-ref-only"] = onRefOnly
+				// Only when --lane went past something, so an ordinary
+				// create's payload is unchanged.
+				if len(skipped) > 0 {
+					payload["skipped_lanes"] = skipped
+				}
+				if len(emptyInputs) > 0 {
+					payload["empty_inputs"] = emptyInputs
+				}
 				// Both modes are named, and the file mode says why. An agent
 				// that only sees "on-ref-only": false learns nothing it can act
 				// on, which is how seventeen tickets went to disk unnoticed.
@@ -320,6 +331,16 @@ already know it is yours; --assignee wins over it.`,
 				fmt.Fprintln(cmd.OutOrStdout(), n)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Created %s  %s\n", ticket.Handle(t.ID), t.Title)
+			// Creating straight into a later lane is a legitimate shortcut,
+			// so this says what it cost rather than refusing it: without it a
+			// ticket sat in Implementing with a placeholder for a plan and
+			// nobody was told.
+			if len(skipped) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Skipped on the way to %s: %s\n", target, strings.Join(skipped, ", "))
+			}
+			if len(emptyInputs) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Empty, though %s takes it as input: %s\n", target, strings.Join(emptyInputs, ", "))
+			}
 			if len(added) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "New on this board: %s. Run 'jaira tags' before naming a tag, and reuse one for the same subject.\n",
 					strings.Join(added, ", "))
@@ -445,6 +466,37 @@ func managedField(k string) bool {
 		return true
 	}
 	return false
+}
+
+// skippedByCreate reports what creating a ticket straight into a later lane
+// costs it: the lanes on this ticket's path that it never passed through, and
+// the inputs the target lane declares that are empty because of that.
+//
+// A lane only counts as skipped when the ticket would have visited it —
+// Lane.OnPath, the rule set.Next walks by — so a parking or question lane is not reported as
+// something the shortcut took away. A lane whose option is left unticked is
+// the one exception: it counts when it produces one of the empty inputs, or
+// "plan is empty" would stand beside a list that leaves out pre-process, the
+// lane that writes it. An empty input counts only when no flag on create could
+// have filled it (ticket.SuppliedFields): those are what a skipped lane would
+// have produced, and they are already reported as "still needed" when they
+// are missing.
+func skippedByCreate(set *lane.Set, t *ticket.Ticket, target *lane.Lane) (skipped, empty []string) {
+	if target.RequiresBlockedReason {
+		return nil, nil
+	}
+	from, to := set.Index(set.Default().ID), set.Index(target.ID)
+	if to <= from {
+		return nil, nil
+	}
+	empty = gate.InputMissing(target, t)
+	for _, l := range set.Lanes[from:to] {
+		writesEmpty := slices.ContainsFunc(l.OutputProduces, func(f string) bool { return slices.Contains(empty, f) })
+		if l.OnPath(t) || (writesEmpty && !l.RequiresBlockedReason && !l.RequiresQuestion) {
+			skipped = append(skipped, l.ID)
+		}
+	}
+	return skipped, empty
 }
 
 func missingFields(t *ticket.Ticket) []string {

@@ -10,6 +10,7 @@ package gate
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -465,6 +466,26 @@ func OutputOwed(l *lane.Lane, t *ticket.Ticket) []string {
 		}
 	}
 	return owed
+}
+
+// InputMissing names the inputs a lane declares that this ticket has not
+// filled and that no earlier lane could be skipped for — fields in
+// ticket.SuppliedFields are left out, because the ticket carries those from
+// creation and their absence is reported as a promotion field instead. What
+// remains is what an earlier lane was meant to produce: a ticket created
+// straight into in-progress has no plan, and this is what says so.
+func InputMissing(l *lane.Lane, t *ticket.Ticket) []string {
+	if l == nil || t == nil {
+		return nil
+	}
+	var missing []string
+	for _, f := range l.InputRequires {
+		if slices.Contains(ticket.SuppliedFields, f) || fieldFilled(t, f) {
+			continue
+		}
+		missing = append(missing, f)
+	}
+	return missing
 }
 
 // specifiedBoundary returns the display-order position of the first lane that
