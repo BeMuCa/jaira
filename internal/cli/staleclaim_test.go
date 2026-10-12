@@ -70,4 +70,52 @@ func TestClaimReportsTakingOverAnAbandonedClaim(t *testing.T) {
 	if !strings.Contains(out, "3h ago") {
 		t.Errorf("the warning does not say how old the claim was:\n%s", out)
 	}
+	// 'next' adds the release command to this same line; here the claim is
+	// already ours, and telling the new holder to release it would be wrong.
+	if strings.Contains(out, "--release") {
+		t.Errorf("taking over a claim tells the new holder to release it:\n%s", out)
+	}
+}
+
+// 'next' names the command that clears an abandoned claim, and running exactly
+// that command clears it: a warning repeated on every 'next' with nothing to do
+// about it is one people learn to ignore, and a killed session never gets a
+// turn to give its claim back.
+func TestNextNamesTheCommandThatClearsAnAbandonedClaim(t *testing.T) {
+	dir, s, tk := claimFixture(t)
+	h := ticket.Handle(tk.ID)
+	if _, err := s.Mutate(tk.ID, func(x *ticket.Ticket) error {
+		// Specified, so 'next' hands it out, and claimed by a session that died
+		// eleven hours ago — the requirementsgenie board's case.
+		for f, v := range map[string]string{
+			ticket.FieldGoal: "g", ticket.FieldDoD: "d", ticket.FieldContext: "c",
+			ticket.FieldAssignee: "berk", ticket.FieldClaimedBy: "dead-session",
+		} {
+			if err := x.Doc().SetScalar(f, v); err != nil {
+				return err
+			}
+		}
+		return x.Doc().SetRaw(ticket.FieldClaimedAt, ticket.FormatTime(time.Now().Add(-11*time.Hour)))
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runCLI(t, dir, "next", "--all")
+	if err != nil {
+		t.Fatalf("next: %v\n%s", err, out)
+	}
+	hint := "jaira claim " + h + " --release"
+	if !strings.Contains(out, "abandoned claim by dead-session") || !strings.Contains(out, hint) {
+		t.Fatalf("the warning does not name %q:\n%s", hint, out)
+	}
+
+	if out, err := runCLI(t, dir, "claim", h, "--release"); err != nil {
+		t.Fatalf("the named command failed: %v\n%s", err, out)
+	}
+	if got, _ := s.Load(tk.ID); got.ClaimedBy != "" {
+		t.Errorf("the abandoned claim is still on the ticket: %q", got.ClaimedBy)
+	}
+	if out, _ := runCLI(t, dir, "next", "--all"); strings.Contains(out, "abandoned") {
+		t.Errorf("the warning survives the release:\n%s", out)
+	}
 }
