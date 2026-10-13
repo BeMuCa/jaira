@@ -137,7 +137,7 @@ func TestCrossReferencesCarryThePrefix(t *testing.T) {
 
 func TestInstallWritesEveryFile(t *testing.T) {
 	dir := t.TempDir()
-	results, err := Install(dir, false)
+	results, err := install(dir, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,10 +181,10 @@ func TestInstallWritesEveryFile(t *testing.T) {
 
 func TestSecondRunChangesNothing(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
-	results, err := Install(dir, false)
+	results, err := install(dir, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func TestSecondRunChangesNothing(t *testing.T) {
 
 func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 	mine := filepath.Join(dir, "jaira-role-lane", skillFile)
@@ -209,7 +209,7 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	results, err := Install(dir, false)
+	results, err := install(dir, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestEditedFileIsLeftAloneAndReported(t *testing.T) {
 		t.Error("the edited file was overwritten without --force")
 	}
 
-	results, err = Install(dir, true)
+	results, err = install(dir, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 		t.Skip("no POSIX execute bit on windows")
 	}
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
@@ -257,7 +257,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	if err := os.Chmod(script, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 	if fi, err := os.Stat(script); err != nil {
@@ -270,7 +270,7 @@ func TestInstallRestoresTheExecuteBit(t *testing.T) {
 	if err := os.WriteFile(script, []byte("#!/bin/sh\necho mine\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Install(dir, true); err != nil {
+	if _, err := install(dir, true, true); err != nil {
 		t.Fatal(err)
 	}
 	fi, err := os.Stat(script)
@@ -296,7 +296,7 @@ func TestEmbeddedScriptsParse(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 
@@ -348,9 +348,16 @@ func actionFor(results []Result, path string) Action {
 
 func TestProjectTargetIsTheClaudeSkillsDirectory(t *testing.T) {
 	root := t.TempDir()
-	got := ProjectTarget(root)
+	a, ok := AgentNamed(DefaultAgent)
+	if !ok {
+		t.Fatalf("no agent named %q", DefaultAgent)
+	}
+	got, also := a.ProjectTarget(root)
 	if want := filepath.Join(root, ".claude", "skills"); got != want {
 		t.Fatalf("got %q, want %q", got, want)
+	}
+	if len(also) != 0 {
+		t.Errorf("claude reads only .claude/skills, got also %v", also)
 	}
 }
 
@@ -382,7 +389,7 @@ func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
 		t.Skipf("no bash on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 	typed := filepath.Join(t.TempDir(), "typed")
@@ -441,7 +448,7 @@ func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
 		t.Skipf("no python3 on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 	typed := filepath.Join(t.TempDir(), "typed")
@@ -536,7 +543,7 @@ func TestSpawnChatsStartOnTheChatModelWithTheirBrief(t *testing.T) {
 		t.Skipf("no python3 on this machine: %v", err)
 	}
 	dir := t.TempDir()
-	if _, err := Install(dir, false); err != nil {
+	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()

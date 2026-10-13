@@ -58,6 +58,9 @@ const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const,
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
 const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
+const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
+const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
+const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -1264,7 +1267,13 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
-    drawOverview($.ui.resolve(e), await read($, overviewAtom), () => void $.ui.close({ id: OVERVIEW })))
+    drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom), people: await read($, overviewPeopleAtom) }, {
+      close: () => void $.ui.close({ id: OVERVIEW }),
+      tab: tab => void update($, overviewTabAtom, () => tab),
+      fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
+      person: name => void update($, overviewPeopleAtom, p => (p.includes(name) ? p.filter(x => x !== name) : [...p, name])),
+      everybody: () => void update($, overviewPeopleAtom, () => []),
+    }))
 
   on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
     const message = await read($, messageAtom)

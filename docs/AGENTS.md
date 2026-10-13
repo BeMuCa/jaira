@@ -269,6 +269,21 @@ file alone.
 For Claude Code there is also a skill in `.claude/skills/jaira/`; copy it to
 `~/.claude/skills/jaira/` to have it available in every repository.
 
+The roles that drive a board — teamlead, dispatcher, worker and the lane
+agents — are skills too, and `jaira roles install` writes them where your agent
+reads skills. `--agent` names the agent, `claude` by default:
+
+| Agent | `--project` | `--global` |
+|---|---|---|
+| `claude` | `.claude/skills` | `~/.claude/skills` |
+| `copilot` | `.github/skills` | `~/.copilot/skills` |
+
+GitHub Copilot (VS Code, Copilot CLI and the cloud agent) also reads
+`.claude/skills` and `.agents/skills` in a repository, and `~/.agents/skills` at
+home. When the roles already sit in one of those, `--agent copilot` writes
+nothing and says where they are: a second copy would register every role
+twice. For any other agent, `--into <dir>` names its skills directory.
+
 ## A note on model tiers
 
 A lane can declare `model-tier: cheap` or `strong`. jaira does not run models and

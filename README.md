@@ -38,8 +38,17 @@ curl -fsSL https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install
 ```
 
 That downloads the latest release for your OS, verifies its checksum, and puts
-the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). Or build from
-source:
+the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). On Windows,
+in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | iex
+```
+
+That does the same for Windows: `jaira.exe` goes to
+`%LOCALAPPDATA%\Programs\jaira` (override with `JAIRA_INSTALL_DIR`), which it
+adds to your user `PATH` — no admin rights, and running it again updates in
+place. Or build from source:
 
 ```bash
 go install github.com/BeMuCa/jaira/cmd/jaira@latest
@@ -658,6 +667,9 @@ has already blocked once) so it cannot trap you in a session.
 
 `jaira roles install --global` (or `--project`, so the roles arrive with a
 clone) writes the agent prompts that drive a board into your skills directory.
+`--agent copilot` writes them where GitHub Copilot reads skills —
+`.github/skills` or `~/.copilot/skills` — instead of Claude Code's; see
+[docs/AGENTS.md](docs/AGENTS.md).
 They are compiled into the binary, so they match the version you run. Run it
 again after an upgrade: a prompt you have edited is left alone and reported,
 and `--force` replaces it too.
@@ -870,7 +882,7 @@ jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira whoami               the identity jaira acts as, and the state of this board
 jaira share                publish the board (--undo to make it private)
-jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod
+jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod (--agent copilot for Copilot)
 jaira hook print           print a Claude Code Stop-hook snippet that refuses to end a session with agentic lanes unworked
 jaira completion <shell>   print the completion script for bash, fish, powershell or zsh
 jaira help <command>       the full help of one command, the same as <command> --help
