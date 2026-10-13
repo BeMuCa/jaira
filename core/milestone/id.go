@@ -88,6 +88,16 @@ func SplitFile(base string) (name, id string, ok bool) {
 	return base[:i], base[i+1:], true
 }
 
+// FileIdentity is the name and ID a milestone file's base name (without .md)
+// stands for, and whether the ID is in the name. A file written before IDs
+// existed is its whole base name with the ID LegacyID computes for it.
+func FileIdentity(base string) (name, id string, idNamed bool) {
+	if name, id, ok := SplitFile(base); ok {
+		return name, id, true
+	}
+	return base, LegacyID(base), false
+}
+
 // FileNamed is the test for a file base name (no .md) that belongs to a
 // milestone called name, with or without an ID in it.
 func FileNamed(name string) func(base string) bool {

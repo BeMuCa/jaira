@@ -289,11 +289,7 @@ func FromBytes(file string, content []byte) *Milestone {
 	m := parse(string(content))
 	base := strings.TrimSuffix(file, ".md")
 	m.file = base + ".md"
-	if name, id, ok := SplitFile(base); ok {
-		m.Name, m.ID = name, id
-	} else {
-		m.Name, m.ID = base, LegacyID(base)
-	}
+	m.Name, m.ID, _ = FileIdentity(base)
 	return m
 }
 

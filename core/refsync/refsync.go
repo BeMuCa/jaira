@@ -352,10 +352,8 @@ func milestoneFiles(root string) []diskMilestone {
 		if !ok || e.IsDir() {
 			continue
 		}
-		m := diskMilestone{File: e.Name(), Name: base, ID: milestone.LegacyID(base)}
-		if name, id, ok := milestone.SplitFile(base); ok {
-			m.Name, m.ID, m.IDNamed = name, id, true
-		}
+		m := diskMilestone{File: e.Name()}
+		m.Name, m.ID, m.IDNamed = milestone.FileIdentity(base)
 		out = append(out, m)
 	}
 	return out
