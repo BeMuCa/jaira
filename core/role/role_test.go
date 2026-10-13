@@ -348,9 +348,16 @@ func actionFor(results []Result, path string) Action {
 
 func TestProjectTargetIsTheClaudeSkillsDirectory(t *testing.T) {
 	root := t.TempDir()
-	got := ProjectTarget(root)
+	a, ok := AgentNamed(DefaultAgent)
+	if !ok {
+		t.Fatalf("no agent named %q", DefaultAgent)
+	}
+	got, also := a.ProjectTarget(root)
 	if want := filepath.Join(root, ".claude", "skills"); got != want {
 		t.Fatalf("got %q, want %q", got, want)
+	}
+	if len(also) != 0 {
+		t.Errorf("claude reads only .claude/skills, got also %v", also)
 	}
 }
 

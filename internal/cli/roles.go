@@ -85,9 +85,9 @@ from as chat_model_source.`,
 
 func newRolesInstallCmd() *cobra.Command {
 	var project, global, force bool
-	var into string
+	var into, agentName string
 	cmd := &cobra.Command{
-		Use:   "install --project|--global|--into <dir>",
+		Use:   "install --project|--global|--into <dir> [--agent <name>]",
 		Short: "Write the role prompts into a skills directory",
 		Long: `Writes every built-in role as <skills>/<role-id>/SKILL.md, together with any
 files the role ships beside its prompt, and the jaira-cockpit mod as
@@ -101,6 +101,14 @@ with a clone. --global writes into ~/.claude/skills, for every repository you
 work in. --into names a skills directory instead, for an agent that reads
 somewhere else.
 
+--agent names the agent to install for, claude by default. --agent copilot
+writes into .github/skills with --project and ~/.copilot/skills with --global,
+and leaves the cockpit out, which only Claude Code loads. Copilot also reads
+.claude/skills and .agents/skills in a repository and ~/.agents/skills at home:
+when the roles already sit in one of those, nothing is written, because a
+second copy would register every role twice. --agent and --into exclude each
+other: --into already names the directory.
+
 A file you have edited is never replaced. It is left exactly as it is and
 reported, and the command exits 3 so a script can tell "installed" from
 "installed except the ones you changed"; --force replaces it. A file already
@@ -108,44 +116,71 @@ identical to the built-in one is not an edit — a second run reports it as
 unchanged and exits 0.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			agent, ok := role.AgentNamed(agentName)
+			if !ok {
+				return fail(ExitUsage, "usage", "unknown agent %q; known agents: %s", agentName, role.AgentNames())
+			}
 			var target string
+			var also []string
 			switch {
 			case into != "":
 				if project || global {
 					return fail(ExitUsage, "usage", "--into replaces --project and --global; pass one of the three")
 				}
+				if cmd.Flags().Changed("agent") {
+					return fail(ExitUsage, "usage", "--into names the directory itself; pass --agent with --project or --global")
+				}
 				target = into
 			case project == global:
 				return fail(ExitUsage, "usage", "choose exactly one of --project, --global or --into")
 			case global:
-				dir, err := role.GlobalTarget()
+				dir, rest, err := agent.GlobalTarget()
 				if err != nil {
 					return err
 				}
-				target = dir
+				target, also = dir, rest
 			default:
 				s, err := openStore()
 				if err != nil {
 					return err
 				}
-				target = role.ProjectTarget(s.Root)
+				target, also = agent.ProjectTarget(s.Root)
 			}
 
-			results, err := role.Install(target, force)
+			// The roles already sitting where this agent reads them is an
+			// install that is finished, not one to repeat beside it.
+			present, err := role.InstalledIn(also)
 			if err != nil {
 				return err
 			}
-			return reportRoleInstall(cmd, target, results)
+			if present != "" {
+				w := cmd.OutOrStdout()
+				if g.jsonOut {
+					return emit(w, map[string]any{
+						"agent": agent.Name, "directory": target, "already_in": present,
+						"installed": []map[string]any{}, "skipped": false,
+					})
+				}
+				fmt.Fprintf(w, "%s already reads the roles in %s; nothing written to %s\n", agent.Name, present, target)
+				return nil
+			}
+
+			results, err := agent.Install(target, force)
+			if err != nil {
+				return err
+			}
+			return reportRoleInstall(cmd, agent.Name, target, results)
 		},
 	}
-	cmd.Flags().BoolVar(&project, "project", false, "write into .claude/skills in this repository")
-	cmd.Flags().BoolVar(&global, "global", false, "write into ~/.claude/skills")
+	cmd.Flags().BoolVar(&project, "project", false, "write into the agent's skills directory in this repository (.claude/skills)")
+	cmd.Flags().BoolVar(&global, "global", false, "write into the agent's personal skills directory (~/.claude/skills)")
 	cmd.Flags().StringVar(&into, "into", "", "write into this skills directory instead")
+	cmd.Flags().StringVar(&agentName, "agent", role.DefaultAgent, "the agent to install for: "+role.AgentNames())
 	cmd.Flags().BoolVar(&force, "force", false, "replace a file you have edited")
 	return cmd
 }
 
-func reportRoleInstall(cmd *cobra.Command, target string, results []role.Result) error {
+func reportRoleInstall(cmd *cobra.Command, agent, target string, results []role.Result) error {
 	w := cmd.OutOrStdout()
 	skipped := role.SkippedAny(results)
 	if g.jsonOut {
@@ -155,7 +190,7 @@ func reportRoleInstall(cmd *cobra.Command, target string, results []role.Result)
 				"role": r.Role, "path": r.Path, "action": string(r.Action),
 			})
 		}
-		if err := emit(w, map[string]any{"directory": target, "installed": arr, "skipped": skipped}); err != nil {
+		if err := emit(w, map[string]any{"agent": agent, "directory": target, "installed": arr, "skipped": skipped}); err != nil {
 			return err
 		}
 	} else {
