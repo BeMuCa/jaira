@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-13T20:51:46Z
+updated-at: 2026-10-13T20:51:48Z
 updated-by: BeMuCa
 ---
 
@@ -42,4 +42,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: der Agent soll einen auf ein neues Release ansprechen (DoD 2). Zur Frage 'feste Uhrzeit?': nein - core/selfupdate/cache.go PollCache prueft, sobald jaira laeuft und die letzte Pruefung aelter als 24 h ist (MaxAge, cache.go:20); wer erst spaeter online kommt, bekommt die Pruefung dann. Das Upgrade selbst bleibt ein Befehl (jaira self upgrade), es laeuft nicht von allein. Gehoert zu PWAF22: nach dem Upgrade muessen Block und Skills nachgezogen werden.
