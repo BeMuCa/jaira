@@ -667,6 +667,9 @@ has already blocked once) so it cannot trap you in a session.
 
 `jaira roles install --global` (or `--project`, so the roles arrive with a
 clone) writes the agent prompts that drive a board into your skills directory.
+`--agent copilot` writes them where GitHub Copilot reads skills —
+`.github/skills` or `~/.copilot/skills` — instead of Claude Code's; see
+[docs/AGENTS.md](docs/AGENTS.md).
 They are compiled into the binary, so they match the version you run. Run it
 again after an upgrade: a prompt you have edited is left alone and reported,
 and `--force` replaces it too.
@@ -869,7 +872,7 @@ jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira share                publish the board (--undo to make it private)
-jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod
+jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod (--agent copilot for Copilot)
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.

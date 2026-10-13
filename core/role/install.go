@@ -34,7 +34,7 @@ type Result struct {
 	Action Action
 }
 
-// Install writes every embedded role into dstSkillsDir as
+// install writes every embedded role into dstSkillsDir as
 // <dstSkillsDir>/<role-id>/<file>, and every embedded mod as
 // <dstSkillsDir>/<mod-id>/<file>, and reports what happened to each file.
 //
@@ -43,7 +43,10 @@ type Result struct {
 // file identical to the embedded one is an already-finished install and must
 // not be an error, while a file that differs is somebody's own version and must
 // not be touched. Only --force collapses the last case back into a write.
-func Install(dstSkillsDir string, force bool) ([]Result, error) {
+//
+// The mods are written only with mods set: they are Claude Code plugin
+// folders, and a harness that does not load them would hold files nothing reads.
+func install(dstSkillsDir string, force, mods bool) ([]Result, error) {
 	roles, err := Builtins()
 	if err != nil {
 		return nil, err
@@ -70,11 +73,14 @@ func Install(dstSkillsDir string, force bool) ([]Result, error) {
 	// The mods jaira ships go beside the roles: a plugin folder in a skills
 	// directory is one Claude Code loads by itself, so this is their install.
 	// Same three-way comparison, so an edited mod file is left alone too.
-	mods, err := mod.Builtins()
+	if !mods {
+		return out, nil
+	}
+	builtins, err := mod.Builtins()
 	if err != nil {
 		return out, err
 	}
-	for _, m := range mods {
+	for _, m := range builtins {
 		for _, rel := range m.Files {
 			want, err := mod.File(m.ID, rel)
 			if err != nil {
@@ -150,4 +156,9 @@ func SkippedAny(results []Result) bool {
 		}
 	}
 	return false
+}
+
+// Install is install for this agent: with the mods where it loads them.
+func (a Agent) Install(dstSkillsDir string, force bool) ([]Result, error) {
+	return install(dstSkillsDir, force, a.Mods)
 }

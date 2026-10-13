@@ -287,3 +287,83 @@ func TestRolesInstallNeedsExactlyOneTarget(t *testing.T) {
 		}
 	}
 }
+
+// --agent copilot writes where every Copilot surface reads: .github/skills in
+// the repository, ~/.copilot/skills at home — and not the cockpit, which only
+// Claude Code loads.
+func TestRolesInstallAgentCopilotWritesWhereCopilotReads(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	dir := lanesTestProject(t)
+	for _, c := range []struct {
+		flag, want string
+	}{
+		{"--project", filepath.Join(dir, ".github", "skills")},
+		{"--global", filepath.Join(home, ".copilot", "skills")},
+	} {
+		out, err := runCLI(t, dir, "roles", "install", "--agent", "copilot", c.flag)
+		if err != nil {
+			t.Fatalf("roles install --agent copilot %s: %v\n%s", c.flag, err, out)
+		}
+		if _, err := os.Stat(filepath.Join(c.want, "jaira-teamlead", "SKILL.md")); err != nil {
+			t.Errorf("%s: not written into %s: %v", c.flag, c.want, err)
+		}
+		if _, err := os.Stat(filepath.Join(c.want, "jaira-cockpit")); !os.IsNotExist(err) {
+			t.Errorf("%s: the cockpit was written for copilot, which does not load it", c.flag)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".claude", "skills")); !os.IsNotExist(err) {
+		t.Error(".claude/skills was written to; --agent copilot writes into .github/skills")
+	}
+}
+
+// Copilot reads .claude/skills too: roles already there are installed for it,
+// and a copy in .github/skills would register every one of them twice.
+func TestRolesInstallAgentCopilotSkipsWhereRolesAlreadyAre(t *testing.T) {
+	dir := lanesTestProject(t)
+	if out, err := runCLI(t, dir, "roles", "install", "--project"); err != nil {
+		t.Fatalf("roles install --project: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, dir, "roles", "install", "--agent", "copilot", "--project")
+	if code := exitCode(err); code != ExitOK {
+		t.Fatalf("exited %d, want 0\n%s", code, out)
+	}
+	if lines := strings.Split(strings.TrimSpace(out), "\n"); len(lines) != 1 ||
+		!strings.Contains(lines[0], filepath.Join(dir, ".claude", "skills")) ||
+		!strings.Contains(lines[0], "'jaira roles install --project'") {
+		t.Errorf("want one line naming .claude/skills and how to update the roles there, got:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".github", "skills")); !os.IsNotExist(err) {
+		t.Error(".github/skills was written to beside the roles in .claude/skills")
+	}
+}
+
+func TestRolesInstallAgentRefusesUnknownAndInto(t *testing.T) {
+	dir := lanesTestProject(t)
+	out, err := runCLI(t, dir, "roles", "install", "--agent", "vim", "--project")
+	if code := exitCode(err); code != ExitUsage {
+		t.Errorf("unknown agent exited %d, want %d\n%s", code, ExitUsage, out)
+	}
+	if msg := fmt.Sprint(err) + out; !strings.Contains(msg, "claude") || !strings.Contains(msg, "copilot") {
+		t.Errorf("unknown agent does not name the known ones: %s", msg)
+	}
+	out, err = runCLI(t, dir, "roles", "install", "--agent", "copilot", "--into", t.TempDir())
+	if code := exitCode(err); code != ExitUsage {
+		t.Errorf("--agent with --into exited %d, want %d\n%s", code, ExitUsage, out)
+	}
+}
+
+// The flag help names the directory of every agent, not only Claude's: with
+// --agent copilot, .claude/skills would be the wrong answer.
+func TestRolesInstallHelpNamesEveryAgentsDirectories(t *testing.T) {
+	out, err := runCLI(t, t.TempDir(), "roles", "install", "--help")
+	if err != nil {
+		t.Fatalf("roles install --help: %v\n%s", err, out)
+	}
+	for _, want := range []string{"copilot: .github/skills", "copilot: ~/.copilot/skills", "claude: .claude/skills", "claude: ~/.claude/skills"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("--help does not name %q:\n%s", want, out)
+		}
+	}
+}
