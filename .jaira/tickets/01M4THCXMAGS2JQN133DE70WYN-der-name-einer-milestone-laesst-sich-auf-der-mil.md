@@ -1,7 +1,7 @@
 ---
 id: 01M4THCXMAGS2JQN133DE70WYN
 title: Der Name einer Milestone laesst sich auf der Milestone Roadmap und per CLI aendern
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Wer eine Milestone umbenennen will, tut das im Bearbeiten-Dialog der Milestone Roadmap (e) oder mit jaira milestone rename <alt> <neu>; danach heisst sie ueberall neu - Datei, Ref und die after:-Verweise ihrer Nachfolger - und kein anderer Klon behaelt eine verwaiste Kopie unter dem alten Namen."
@@ -20,16 +20,17 @@ related: []
 follows: 01M1KFMETY9MKH4V38TVD0SAHM
 commits: []
 created-at: 2026-10-13T11:47:07Z
-updated-at: 2026-10-13T12:34:14Z
+updated-at: 2026-10-13T12:48:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-1775362
-claimed-at: 2026-10-13T12:29:45Z
+claimed-by: EE-3NX6GL3-1824960
+claimed-at: 2026-10-13T12:44:01Z
 executed-by: opus
 outcome-what: "Critique 1 answered: milestone.CheckFree (core/milestone/write.go) is the one 'is this name free on disk' check, called by Rename and by both create doors (CLI create, TUI createMilestone). The e-form keeps an unchanged hand-written name (Q4.md) instead of renaming it to its normalized form."
 outcome-why: "The same three-way switch was written three times and a nil,nil bug had to be fixed twice; normalizing an unchanged name renamed hand-named files on every goal edit."
 outcome-resolves: "DoD1-3 unchanged and still covered by their tests; TestEditKeepsAHandWrittenName pins the hand-name case. vet + go test ./... -race green (28 ok)."
-review-summary: "core/milestone/write.go:150-157, internal/cli/milestones.go:127-141, internal/tui/layer.go:398-405 write the same 'is this name free on disk' switch three times (on the board -> exists, filed and HoldsName -> refused, rename mark -> free, other error -> returned); the nil,nil panic of the 12:07 note had to be fixed in two copies. Export it once as milestone.CheckFree(root, name) error returning *ExistsError / *FiledError / nil, call it from Rename and from both create build funcs, each door wording the two errors itself."
+review-summary: "none"
+review-gaps: "Removed: rename's refusal clause written three times in internal/cli/milestones.go newMilestoneRenameCmd -> one const; Contains+Index double scan in internal/tui/layer.go renameMilestone -> one slices.Index. Left, with reason: Rename's successor loop (core/milestone/write.go) does what ReattachSuccessors (core/milestone/layout.go:171) does with a different replacement - sharing means widening a function outside this change, candidate for a follow-up; ms.RenamedTo = to is never read again but keeps the struct equal to its bytes like every Set* does; the e-form checks goal/after before the rename and again under the lock (settled design, not a hot path); fetch's splitRenamed loads each filed file again (fetch only, filed names only; moving it into refsync changes its API); TUI nameFiled vs CLI refuseIfFiled, FiledError.Error vs refuseRenamed are the existing core-message/CLI-wording split. Looked at, not a defect: the board filter does not follow a rename of a hand-named uppercase milestone (Q4), but Index.Matches normalizes the filter value, so such a milestone was never matchable by the filter to begin with. Pre-existing, not touched: SetAfter normalizes every name, so a successor's hand-written uppercase predecessor is lowercased on any after: rewrite (Edit's reattach does the same); the doc comments above refuseIfFiled and in editRefusal list the doors without rename."
 ---
 
 # Der Name einer Milestone laesst sich auf der Milestone Roadmap und per CLI aendern
@@ -79,3 +80,5 @@ review-summary: "core/milestone/write.go:150-157, internal/cli/milestones.go:127
 - **2026-10-13 12:17 · BeMuCa** — Nebenbefund (nicht in diesem Ticket behoben): jaira show --for-lane <lane> --json gibt unter input.notes von einer mehrzeiligen Notiz nur die erste Zeile weiter - die pre-process-Notiz mit den acht Entscheidungen kam bei critique nur als Ueberschrift an. In der Ticketdatei steht sie vollstaendig. Ab hier schreibe ich Notizen einzeilig. Der critique-Agent bekam die volle Progress-Sektion aus der Datei.
 - **2026-10-13 12:28 · BeMuCa** — critique pass 1 (opus subagent, whole diff 6fa3639, full notes from the ticket file): one finding, clear fix - the free-name-on-disk switch exists three times (Rename, CLI create, TUI createMilestone); export it as milestone.CheckFree and call it from all three. All eight pre-process decisions left standing with their recorded reasons. Not a critique finding but a defect in this change, fixed in the same round: internal/tui/layer.go submitLayerForm normalizes the name field and compares with the raw f.edit, so a hand-named file like Q4.md would be renamed to q4 on any e save - compare the unchanged field text with f.edit first.
 - **2026-10-13 12:29 · BeMuCa** — in-progress after critique 1: milestone.CheckFree(root, name) in core/milestone/write.go answers 'is this name free on disk' once (*ExistsError, *FiledError, nil for no file or a rename mark); Rename, the CLI create build and the layer's createMilestone call it and word the errors themselves - the three copies are gone, and the TUI lost its os import. submitLayerForm now normalizes the name field only when it differs from f.edit, so an unchanged hand name (Q4.md) is never renamed; TestEditKeepsAHandWrittenName fails with the old compare (checked by mutation).
+- **2026-10-13 12:36 · BeMuCa** — critique pass 2 (same opus subagent, read only finding L1 and b1592e7): none. L1 addressed - CheckFree answers the four disk states (no file free, on board ExistsError, holding filing FiledError, rename mark free) exactly as the three removed copies did for all callers; the CLI rename's fe.Name == to check still matches. vet + go test of core/milestone, internal/cli, internal/tui, core/refsync ok (my full -race run before the commit: 28 ok).
+- **2026-10-13 12:44 · BeMuCa** — optimize (opus subagent): two cleanups, behaviour unchanged - one const for rename's refusal clause, one slices.Index in renameMilestone. Everything considered and left is in review-gaps with its reason. Its remark that the filter does not follow a hand-named Q4 is not a defect of this change: core/milestone Index.Matches normalizes the filter value, so milestone:q4 never matched a file named Q4.md before either.

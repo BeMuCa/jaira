@@ -387,8 +387,9 @@ func (m *Model) renameMilestone(from, to string) error {
 		l.sel.name = to
 	}
 	l.form.edit = to
-	if _, names := splitTerm(m.filter, "milestone"); slices.Contains(names, from) {
-		names[slices.Index(names, from)] = to
+	_, names := splitTerm(m.filter, "milestone")
+	if i := slices.Index(names, from); i >= 0 {
+		names[i] = to
 		m.setFilterTerm("milestone", names...)
 	}
 	return nil

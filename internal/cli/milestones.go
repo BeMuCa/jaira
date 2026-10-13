@@ -356,10 +356,9 @@ refused (exit 3); an old name that is not on the board exits 5.`,
 				return fail(ExitUsage, "bad_milestone", "%v", err)
 			}
 
+			const twice = "renaming another milestone to it would make a second milestone with the same name"
 			ms, err := milestone.Rename(s.Root, s, refs, from, to, func(name string) error {
-				return refuseIfFiled(s, name,
-					"renaming another milestone to it would make a second milestone with the same name",
-					"; renaming another milestone to it would make a second milestone with the same name")
+				return refuseIfFiled(s, name, twice, "; "+twice)
 			})
 			var ee *milestone.ExistsError
 			var fe *milestone.FiledError
@@ -368,8 +367,7 @@ refused (exit 3); an old name that is not on the board exits 5.`,
 				return fail(ExitValidation, "milestone_exists",
 					"milestone %q already exists at %s — a rename needs a name no milestone has", to, milestone.Path(s.Root, to))
 			case errors.As(err, &fe) && fe.Name == to && to != from:
-				return refuseFiledOnDisk(s.Root, to,
-					"renaming another milestone to it would make a second milestone with the same name")
+				return refuseFiledOnDisk(s.Root, to, twice)
 			}
 			if err := editRefusal(s, from, err,
 				"there is no copy of it here to rename",
