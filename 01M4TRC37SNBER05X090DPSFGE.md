@@ -20,7 +20,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:49:00Z
-updated-at: 2026-10-13T13:49:00Z
+updated-at: 2026-10-13T14:16:55Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # git status im Haupt-Checkout zeigt keine Ticket-Dateien, die kein Commit mehr mitnimmt
