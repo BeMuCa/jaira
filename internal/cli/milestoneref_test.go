@@ -729,3 +729,193 @@ func TestLogbookAndRestoreSpeakIDFileNamesAndMigrateAnOldOne(t *testing.T) {
 		t.Errorf("the ID ref carries %q (%v)", file, err)
 	}
 }
+
+// aTicket files a ticket on a two-board clone and returns its handle.
+func aTicket(t *testing.T, dir string) string {
+	t.Helper()
+	if out, err := runCLI(t, dir, "create", "work to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	return handleFromList(t, dir, "work to group")
+}
+
+func milestoneDirNames(t *testing.T, dir string) string {
+	t.Helper()
+	entries, err := os.ReadDir(milestone.Dir(dir))
+	if err != nil {
+		return ""
+	}
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	return strings.Join(names, ",")
+}
+
+// DoD 2: a rename and a create of the same name, made at once on two clones
+// that have not fetched, leave both milestones standing, in either order: they
+// are two refs with two IDs, and nothing needs to be settled between them.
+func TestARenameAndACreateOfTheSameNameAtOnceLoseNothing(t *testing.T) {
+	for _, renameFirst := range []bool{true, false} {
+		ada, grace := twoBoards(t)
+		if out, err := runAndSend(t, ada, "milestone", "create", "backend"); err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+		if out, err := runCLI(t, grace, "fetch"); err != nil {
+			t.Fatalf("fetch: %v\n%s", err, out)
+		}
+		backend, err := milestone.Load(ada, "backend")
+		if err != nil {
+			t.Fatal(err)
+		}
+		rename := func() {
+			if out, err := runAndSend(t, ada, "milestone", "rename", "backend", "frontend"); err != nil {
+				t.Fatalf("rename: %v\n%s", err, out)
+			}
+		}
+		create := func() {
+			if out, err := runAndSend(t, grace, "milestone", "create", "frontend"); err != nil {
+				t.Fatalf("create: %v\n%s", err, out)
+			}
+		}
+		if renameFirst {
+			rename()
+			create()
+		} else {
+			create()
+			rename()
+		}
+		for _, dir := range []string{ada, grace} {
+			if out, err := runCLI(t, dir, "fetch"); err != nil {
+				t.Fatalf("fetch: %v\n%s", err, out)
+			}
+		}
+
+		var ids [2]string
+		for i, dir := range []string{ada, grace} {
+			j := jsonCLI(t, dir, "milestone", "ls")
+			rows, _ := j["milestones"].([]any)
+			if len(rows) != 2 {
+				t.Fatalf("renameFirst=%v: %s has %d milestones, want both: %v", renameFirst, dir, len(rows), rows)
+			}
+			a, b := rows[0].(map[string]any), rows[1].(map[string]any)
+			if a["name"] != "frontend" || b["name"] != "frontend" || a["id"] == b["id"] {
+				t.Fatalf("renameFirst=%v: %s sees %v", renameFirst, dir, rows)
+			}
+			if a["id"].(string) > b["id"].(string) {
+				a, b = b, a
+			}
+			ids[i] = a["id"].(string) + "," + b["id"].(string)
+		}
+		if ids[0] != ids[1] {
+			t.Errorf("the two boards disagree on the IDs: %v", ids)
+		}
+		for _, dir := range []string{ada, grace} {
+			if names := milestoneDirNames(t, dir); strings.Count(names, "frontend-") != 2 || strings.Contains(names, "backend") {
+				t.Errorf("renameFirst=%v: %s holds %s", renameFirst, dir, names)
+			}
+		}
+		file, _, _, err := (&gitref.Repo{Dir: ada, Remote: "origin"}).ReadMilestone(backend.ID)
+		if err != nil || file != "frontend-"+backend.ID+".md" {
+			t.Errorf("the renamed milestone's ref carries %q (%v)", file, err)
+		}
+		task := aTicket(t, ada)
+		_, err = runCLI(t, ada, "milestone", "add", "frontend", task)
+		if err == nil || exitCode(err) != ExitValidation || strings.Count(err.Error(), "frontend-") < 2 {
+			t.Errorf("the name is ambiguous now and says both forms: %v", err)
+		}
+		if out, err := runCLI(t, ada, "milestone", "add", "frontend-"+backend.ID, task); err != nil {
+			t.Errorf("the name-ID form is the way out: %v\n%s", err, out)
+		}
+	}
+}
+
+// DoD 4: boards from before IDs, and a remote that has only name refs, move to
+// IDs without anybody speaking to anybody: reading never writes, the first
+// write moves every old file and pushes the ID refs, the old name refs stay on
+// the remote untouched, the other clone ends with the same bytes and no double,
+// and a name ref that turns up later is taken once and then ignored.
+func TestOldBoardsAndOldRefsMoveToIDsWithoutAgreement(t *testing.T) {
+	ada, grace := twoBoards(t)
+	remote := &gitref.Repo{Dir: ada, Remote: "origin"}
+	q4 := "---\ncolor: 45\nafter: []\n---\n\n# q4\n"
+	q5 := "---\ncolor: 46\nafter: [q4]\n---\n\n# q5\n"
+	for name, body := range map[string]string{"q4": q4, "q5": q5} {
+		if _, err := remote.WriteMilestone(name, name+".md", []byte(body), ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	nameRefs := func() string {
+		return gitOut(t, ada, "ls-remote", "origin", gitref.MilestonePrefix+"q*")
+	}
+	before := nameRefs()
+
+	// grace has old files on disk, nothing fetched: reading changes nothing
+	oldMilestoneFiles(t, grace, map[string]string{"q4.md": q4, "q5.md": q5})
+	j := jsonCLI(t, grace, "milestone", "ls")
+	rows, _ := j["milestones"].([]any)
+	if len(rows) != 2 || rows[0].(map[string]any)["id"] != milestone.LegacyID("q4") {
+		t.Fatalf("grace's ls: %v", rows)
+	}
+	if names := milestoneDirNames(t, grace); names != "q4.md,q5.md" {
+		t.Fatalf("reading wrote: %s", names)
+	}
+	if b, _ := os.ReadFile(filepath.Join(milestone.Dir(grace), "q5.md")); string(b) != q5 {
+		t.Fatal("reading changed a file")
+	}
+
+	// ada fetches the name refs, then her first write sends the ID refs
+	if out, err := runCLI(t, ada, "fetch"); err != nil {
+		t.Fatalf("ada's fetch: %v\n%s", err, out)
+	}
+	task := aTicket(t, ada)
+	if out, err := runAndSend(t, ada, "milestone", "add", "q4", task); err != nil {
+		t.Fatalf("add: %v\n%s", err, out)
+	}
+	id4, id5 := milestone.LegacyID("q4"), milestone.LegacyID("q5")
+	if want := "q4-" + id4 + ".md,q5-" + id5 + ".md"; milestoneDirNames(t, ada) != want {
+		t.Fatalf("ada holds %s, want %s", milestoneDirNames(t, ada), want)
+	}
+	for _, id := range []string{id4, id5} {
+		if _, _, _, err := remote.ReadMilestone(id); err != nil {
+			t.Errorf("the ID ref %s was not pushed: %v", id, err)
+		}
+	}
+	if nameRefs() != before {
+		t.Errorf("the old name refs changed:\nbefore %safter %s", before, nameRefs())
+	}
+
+	// grace fetches: same bytes as ada, the old files gone, no double
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fetch: %v\n%s", err, out)
+	}
+	if got := milestoneDirNames(t, grace); got != milestoneDirNames(t, ada) {
+		t.Errorf("grace holds %s, ada %s", got, milestoneDirNames(t, ada))
+	}
+	for _, f := range strings.Split(milestoneDirNames(t, ada), ",") {
+		a, _ := os.ReadFile(filepath.Join(milestone.Dir(ada), f))
+		g, _ := os.ReadFile(filepath.Join(milestone.Dir(grace), f))
+		if string(a) != string(g) {
+			t.Errorf("%s differs between the clones:\n%s\n%s", f, a, g)
+		}
+	}
+
+	// an old name ref turning up later is taken once, then ignored
+	if _, err := remote.WriteMilestone("q6", "q6.md", []byte("---\ncolor: 47\n---\n"), ""); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, grace, "fetch", "--json"); err != nil || !strings.Contains(out, "milestones_migrated") || !strings.Contains(out, "q6.md") || !strings.Contains(out, "q6-") {
+		t.Fatalf("grace's third fetch: %v\n%s", err, out)
+	}
+	flushRefs()
+	id6 := milestone.LegacyID("q6")
+	if got := milestoneDirNames(t, grace); !strings.Contains(got, "q6-"+id6+".md") || strings.Contains(got, "q6.md") {
+		t.Errorf("q6 was not taken and moved: %s", got)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fourth fetch: %v\n%s", err, out)
+	}
+	if got := milestoneDirNames(t, grace); strings.Contains(got, "q6.md") || strings.Count(got, "q6-") != 1 {
+		t.Errorf("q6 came back or doubled: %s", got)
+	}
+}
