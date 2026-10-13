@@ -1930,9 +1930,11 @@ describe('the overview', () => {
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-overview', title: 'Board overview', focus: true })
     const pane = await $.ui.mount(OVERVIEW)
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
-    // Three columns side by side, like lanes.
-    const row = await pane.find({ type: 'Box', props: { flexDirection: 'row' } } as never)
-    expect(row?.text).toMatch(/^In work \(1\).*Queue \(1\).*Put back \(2\)/)
+    // Queue is the open tab: one section beneath the other, each heading a fold button with its count.
+    const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
+    expect(labels).toEqual(['Queue', 'Log', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
+    expect((await pane.findAll({ type: 'Box' })).filter(b => 'width' in b.props)).toEqual([])
+    expect(texts).not.toContain('Created and put back, last 7 days')
     expect(texts).toContain('T8QS1Y | in-progress | filter')
     expect(texts).toContain('  Alex')
     expect(texts).toContain('Q1Q1Q1 | critique | queued')
@@ -1955,8 +1957,11 @@ describe('the overview', () => {
     ]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const texts = (await (await $.ui.mount(OVERVIEW)).findAll({ type: 'Text' })).map(x => x.text)
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
     expect(texts).toContain('Created and put back, last 7 days')
+    expect(texts.filter(x => /^In work|^Put back/.test(x))).toEqual([])
     const history = texts.slice(texts.indexOf('Created and put back, last 7 days') + 1)
     const days = history.filter(x => /^── \d{4}-\d\d-\d\d ──$/.test(x))
     expect(days).toHaveLength(4)
@@ -1968,6 +1973,132 @@ describe('the overview', () => {
       'P1P1P1 | blocked | put back | put back by Alex',
       'P1P1P1 | blocked | put back | created by Berk',
     ])
+  })
+
+  test('a title is never cut off: rows wrap', async ($, on) => {
+    const w = world(on)
+    const long = 'a title long enough that three columns of a third each would have cut it off well before its end'
+    w.tickets = [{ ...WORKING, assignee: 'Alex', title: long, updated_at: ago(0.1) }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const row = await (await $.ui.mount(OVERVIEW)).find({ type: 'Text', text: `T8QS1Y | in-progress | ${long}` })
+    expect(row?.props).toMatchObject({ wrap: 'wrap' })
+  })
+
+  test('a heading folds its section, and tab and folds outlive closing the pane', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }, { handle: 'Q1Q1Q1', title: 'queued', status: 'critique', assignee: '', updated_at: ago(0.2) }]
+    w.next = ['Q1Q1Q1']
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    let pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-fold-working' })
+    expect((await pane.find({ key: 'overview-fold-working' }))?.props.label).toBe('▸ In work (1)')
+    expect(await pane.find({ type: 'Text', text: 'T8QS1Y | in-progress | filter' })).toBeUndefined()
+    expect(await pane.find({ type: 'Text', text: 'Q1Q1Q1 | critique | queued' })).toBeDefined()
+    await pane.press({ key: 'overview-tab-log' })
+    await pane.press({ key: 'overview-close' })
+    await pane.unmount()
+    // Opened again: still on Log, and back on Queue the section is still folded.
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    pane = await $.ui.mount(OVERVIEW)
+    expect(await pane.find({ type: 'Text', text: 'Created and put back, last 7 days' })).toBeDefined()
+    await pane.press({ key: 'overview-tab-queue' })
+    expect((await pane.find({ key: 'overview-fold-working' }))?.props.label).toBe('▸ In work (1)')
+    await pane.press({ key: 'overview-fold-working' })
+    expect(await pane.find({ type: 'Text', text: 'T8QS1Y | in-progress | filter' })).toBeDefined()
+  })
+
+  test('in work, queue and put back each carry their own colour, at the heading and at every row', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...WORKING, assignee: 'Alex', updated_at: ago(0.1) },
+      { handle: 'Q1Q1Q1', title: 'queued', status: 'critique', assignee: '', updated_at: ago(0.2) },
+      { handle: 'X1X1X1', title: 'stuck', status: 'blocked', updated_by: 'Alex', blocked_reason: 'waits', updated_at: ago(15), created_at: ago(30) },
+    ]
+    w.next = ['Q1Q1Q1']
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    const colorOf = async (text: string) => (await pane.find({ type: 'Text', text: new RegExp(`^${text.replace(/[()]/g, '\\$&')}$`) }))?.props.color
+    const groups = [
+      [await colorOf('▾ In work (1)'), await colorOf('T8QS1Y')],
+      [await colorOf('▾ Queue (1)'), await colorOf('Q1Q1Q1')],
+      [await colorOf('▾ Put back (1)'), await colorOf('X1X1X1')],
+    ]
+    for (const [heading, row] of groups) {
+      expect(heading).toBeDefined()
+      expect(row).toBe(heading)
+    }
+    expect(new Set(groups.map(g => g[0])).size).toBe(3)
+  })
+
+  test('a person has one colour, derived from the name: the same in both tabs and after reopening', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { ...WORKING, assignee: 'Alex', creator: 'Berk', created_at: ago(1), updated_at: ago(0.1) },
+      { handle: 'X1X1X1', title: 'stuck', status: 'blocked', creator: 'Alex', updated_by: 'Berk', blocked_reason: 'waits', updated_at: ago(2), created_at: ago(3) },
+    ]
+    await startSession($)
+    const colours = async (name: string) => {
+      await (await $.ui.mount(BAND)).press({ key: 'overview' })
+      const pane = await $.ui.mount(OVERVIEW)
+      const found = [...await pane.findAll({ type: 'Text', text: new RegExp(`^${name}$`) })]
+      await pane.press({ key: 'overview-tab-log' })
+      found.push(...await pane.findAll({ type: 'Text', text: new RegExp(`^${name}$`) }))
+      await pane.press({ key: 'overview-tab-queue' })
+      await pane.press({ key: 'overview-close' })
+      await pane.unmount()
+      return found.map(x => x.props.color)
+    }
+    const alex = [...await colours('Alex'), ...await colours('Alex')]
+    const berk = await colours('Berk')
+    // Alex: in work, created in the log, twice over; Berk: put back, in both tabs.
+    expect(alex.length).toBeGreaterThanOrEqual(4)
+    expect(new Set(alex).size).toBe(1)
+    expect(new Set(berk).size).toBe(1)
+    expect(alex[0]).toBeDefined()
+    expect(berk[0]).not.toBe(alex[0])
+    expect(['claude', 'suggestion', 'warning']).not.toContain(alex[0])
+  })
+
+  test('the Log filters to the people chosen, several at once, All clears it, and the choice outlives closing the pane', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new today', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'by Berk', status: 'backlog', creator: 'Berk', updated_by: 'Berk', created_at: ago(3), updated_at: ago(3) },
+      { handle: 'C1C1C1', title: 'by Carla', status: 'backlog', creator: 'Carla', updated_by: 'Carla', created_at: ago(5), updated_at: ago(5) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    let pane = await $.ui.mount(OVERVIEW)
+    // Queue has no filter: only the Log does.
+    expect(await pane.find({ key: 'overview-people-all' })).toBeUndefined()
+    await pane.press({ key: 'overview-tab-log' })
+    const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
+    expect(labels).toEqual(['Queue', 'Log', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
+    // A name button is drawn in that person's colour.
+    expect((await pane.find({ type: 'Text', text: /^Berk$/ }))?.props.color).toBeDefined()
+    const handles = async () => (await pane.findAll({ type: 'Text', text: /^\d\d:\d\d {2}/ })).map(x => x.text.slice(7, 13))
+    const days = async () => (await pane.findAll({ type: 'Text', text: /^── / })).length
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'C1C1C1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await handles()).toEqual(['B1B1B1'])
+    // A day with nobody chosen drops out.
+    expect(await days()).toBe(1)
+    expect((await pane.find({ key: 'overview-person-Berk' }))?.props.variant).toBe('primary')
+    await pane.press({ key: 'overview-person-Carla' })
+    expect(await handles()).toEqual(['B1B1B1', 'C1C1C1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await handles()).toEqual(['C1C1C1'])
+    await pane.press({ key: 'overview-close' })
+    await pane.unmount()
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    pane = await $.ui.mount(OVERVIEW)
+    expect(await handles()).toEqual(['C1C1C1'])
+    await pane.press({ key: 'overview-people-all' })
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'C1C1C1'])
+    expect((await pane.find({ key: 'overview-people-all' }))?.props.variant).toBe('primary')
   })
 
   test('a board that cannot be read says so', async ($, on) => {
