@@ -1,7 +1,7 @@
 ---
 id: 01M4VCZS1N1T0BHQVR8ATP44SC
 title: "Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,16 +25,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T19:49:16Z
-updated-at: 2026-10-13T20:01:54Z
+updated-at: 2026-10-13T20:14:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-427304
 claimed-at: 2026-10-13T19:49:40Z
 outcome-what: "spawn.sh/run-lane.sh lesen JSON mit dem neuen 'jaira json get' statt python3; der Chat-Brief kommt aus 'jaira show --brief'; der WSL-Start haengt an WSL_DISTRO_NAME//proc/version statt an .exe, unter Git Bash startet claude nativ im per cygpath -w uebersetzten Worktree; Python-Rollen nehmen JAIRA_PYTHON/'python'-Einstellung (roles list --json: python) und schreiben UTF-8"
 outcome-why: Auf nativem Windows ist python3 fehlend oder der Store-Stub und herdr.exe wurde fuer WSL gehalten - spawn.sh liess leere Tabs stehen
 outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
-review-summary: "Runde 2: keine Befunde. Die drei aus Runde 1 sind behoben (on=$(start_on) einmal; ticketBrief zaehlt Notes wie trimNotes; json-get-Hilfe nennt Eingabe ohne JSON). Form passt: Einstellung python folgt ChatModelFor/settings.go, --brief sitzt bei show neben --notes-last."
-round: 2
-review-gaps: "Notes-Scan von trimNotes in progressEntries (tickets.go) gezogen, ticketBrief nutzt ihn statt eigener Schleife; Test-Build in core/role/jairabin_test.go haengt .exe an (wintrap-Regel 4, die ein go-Aufruf ueber Variable umgangen hatte) und buildError-Typ entfernt. Gelassen: progressNotes in resume.go scannt weiter selbst (vorher schon so, liefert nur Erstzeilen)."
+review-summary: "spawn.sh und run-lane.sh lesen jedes JSON-Feld (Pane-ID, tab_id, agent_status, status/question, chat_model) mit dem neuen Unterbefehl 'jaira json get <pfad> [--default v]' (internal/cli/jsonget.go: Punktpfad, Arrays per Index, String roh, null leer, sonst kompaktes JSON, fehlend/kein JSON -> Exit 5). Der Python-Brief fuer explain/discuss ist jetzt 'jaira show <id> --brief' in Go, mit derselben Notiz-Zaehlung wie trimNotes (progressEntries herausgezogen). spawn.sh entscheidet den Start einmal in start_on(): MINGW/MSYS/CYGWIN -> nativ; sonst WSL nur wenn herdr unter /mnt oder .exe UND WSL_DISTRO_NAME oder microsoft in /proc/version; nativ wird der Worktree per cygpath -w uebersetzt und als --cwd und 'cd' benutzt. Python-Rollen fragen 'jaira roles list --json | jaira json get python' (JAIRA_PYTHON > settings 'python' > python3, settings.PythonCommand), die drei .py-Skripte stellen stdout/stderr auf UTF-8, collect.py liest git-Ausgabe als UTF-8. Tests: jsonget, brief, roles list python, Stub-Test WSL vs Git Bash gegen das gebaute Binary, kein python3 in Rollen. Release-Note core/release/notes/TP44SC.md."
+round: 3
+review-gaps: "(1) Nativer Windows-Pfad nur per Stub geprueft: der Tab bekommt \"cd 'C:\\...' && claude\" - das geht in Git Bash und PowerShell 7, nicht in cmd.exe und nicht in Windows PowerShell 5.1 (kein &&); welche Shell Herdr fuer Windows im Tab startet, ist nirgends belegt. Handcheck auf Windows steht aus (Notiz 19:58 sagt das selbst). (2) Ein altes jaira vorne auf dem PATH plus neue Skripte: 'jaira json' ist dort unbekannt, spawn.sh stirbt nach 'tab create' und laesst wieder einen leeren Tab stehen - die Release-Note sagt nur 'roles install again', nicht 'mit dem neuen Binary'. (3) Klein: --brief erbt von progressEntries, dass eine Notiz-Folgezeile, die mit '#' beginnt (z.B. '#79 ...'), den Progress-Abschnitt beendet und alle spaeteren Notizen verschluckt; und jede '- '-Folgezeile zaehlt als eigene Notiz, wo das alte Python nur '- **Datum' trennte. (4) SKILL.md: $(...) unquoted zerlegt einen Python-Pfad mit Leerzeichen (C:\\Program Files\\...) - als 'Kommando, kein Pfad' dokumentiert, also bewusst. Keine Defekte im WSL-/Linux-Pfad gefunden."
+test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1-5 im Baum geprueft; run-lane.sh mit herdr/jaira-Stubs durchgespielt (Status gelesen, Warten, Zusammenfassung mit Umlaut, Tab per tab_id geschlossen, RC=0); JAIRA_PYTHON='uv run --no-project python' laeuft ueber die SKILL-Zeile; spawn.sh live auf WSL (DoD 4). Nicht pruefbar hier: echtes natives Windows (Git Bash) - nur Stub"
+review-verdict: "Erfuellt die DoD fuer WSL und Linux: kein python3 mehr in spawn.sh/run-lane.sh, json get und --brief getestet, WSL-Erkennung richtig und per Stub fuer beide Faelle abgesichert, Tests gruen (internal/cli, core/role, core/settings). Unsicher bleibt genau das, was Issue #79 betrifft: der native Git-Bash-Start ist nicht auf Windows gelaufen. Freigabe empfohlen unter der Bedingung, dass jemand den Handcheck auf Windows macht, bevor 'Fixes #79' das Issue schliesst."
+review-round: 2
+review-check: "1. cd ~/projects/.worktrees/jaira-tp44sc && go test ./internal/cli ./core/role ./core/settings  -> alle drei 'ok'. 2. go build -o /tmp/j ./cmd/jaira && echo '{\"result\":{\"pane\":{\"pane_id\":\"w1:p2\"}}}' | /tmp/j json get result.pane.pane_id  -> druckt w1:p2. 3. echo '{}' | /tmp/j json get x; echo $?  -> Fehlermeldung, Exit 5; mit --default - druckt '-'. 4. /tmp/j show TP44SC --brief  -> eine JSON-Zeile mit id, title, goal, question, review, notes_last (max 4), notes_total. 5. JAIRA_PYTHON='uv run python' /tmp/j roles list | tail -1  -> 'python: uv run python ... (from JAIRA_PYTHON)'. 6. Auf nativem Windows (Git Bash, Herdr fuer Windows, kein python3, HERDR_ENV=1): neues jaira installieren, 'jaira roles install --global', dann 'spawn.sh --no-worktree <slug> TP44SC livecheck-noop' -> ein Tab oeffnet im Worktree (C:\\...), claude startet ohne Trust-Dialog in /, kein 'Python' in der Ausgabe. Schritt 6 ist der einzige, der Issue #79 wirklich belegt."
 ---
 
 # Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt
@@ -48,9 +52,15 @@ review-gaps: "Notes-Scan von trimNotes in progressEntries (tickets.go) gezogen, 
 - [x] spawn.sh nimmt den WSL-Weg nur bei WSL_DISTRO_NAME oder microsoft in /proc/version; unter MINGW/MSYS startet es claude nativ im Worktree; Test mit Stub fuer beide Faelle
   proof: spawn.sh start_on()/on; core/role/role_test.go TestSpawnStartsClaudeWhereItsShellRuns (wsl + git bash stubs)
 - [x] Auf dieser WSL-Maschine startet spawn.sh weiter einen Worker-Tab wie bisher (live geprueft)
-  proof: live 2026-10-13: spawn.sh --no-worktree mit herdr.exe unter /mnt/c -> Tab w3:tET, claude idle->working, pane tokens wsl=Ubuntu-24.04 dir=~/projects/.worktrees/jaira-tp44sc; Tab danach geschlossen
+  proof: live 13.10. zweimal, zuletzt nach Luecken-Fix: Tab w3:pGA, wsl=Ubuntu-24.04, dir=~/projects/.worktrees/jaira-tp44sc, claude working; Tab geschlossen
 - [x] Release-Note als Datei core/release/notes/<Handle>.md; der Pull Request nennt 'Fixes #79'
   proof: core/release/notes/TP44SC.md; 'Fixes #79' steht im Commit-Body und gehoert in die PR-Beschreibung
+- [x] Der native Tab-Start haengt nicht von der Shell im Herdr-Tab ab (cwd ueber herdr oder expliziter bash-Start); Note nennt den Weg
+  proof: spawn.sh start_on()=windows -> --cwd (cygpath -w) + nacktes claude; TestSpawnStartsClaudeWhereItsShellRuns (git bash: Tab laeuft 'claude', --cwd C:\work\repo); Weg in Note 13.10.
+- [x] spawn.sh prueft vor 'tab create', ob das jaira auf dem PATH 'json get' kann, und bricht sonst ohne leeren Tab mit Meldung ab; die Release-Note sagt 'erst neues Binary, dann roles install'
+  proof: spawn.sh Check vor tab create; TestSpawnStopsBeforeATabWhenJairaIsTooOld; live: altes jaira -> RC=1 mit Meldung, kein Tab; core/release/notes/TP44SC.md Zeile 1
+- [x] --brief trennt Notizen nur an '- **Datum'; Folgezeilen mit '#' oder '- ' bleiben in ihrer Notiz; getestet
+  proof: internal/cli/tickets.go briefNote/ticketBrief; TestTicketBriefCarriesTheNewestNotes (#79- und '- '-Folgezeile)
 
 ## Options
 
@@ -68,3 +78,6 @@ review-gaps: "Notes-Scan von trimNotes in progressEntries (tickets.go) gezogen, 
 - **2026-10-13 19:58 · Alexander Sacharov** — critique runde 1: spawn.sh:~114 start_on() wird zweimal aufgerufen (cwd und start); einmal in on=$(start_on) halten
 internal/cli/tickets.go ticketBrief parst Notes mit eigener Regex neben trimNotes/progressNotes (tickets.go, resume.go) - eine Note muss dasselbe heissen wie dort: Zeile mit "- " unter ## Progress, Folgezeilen gehoeren dazu
 internal/cli/jsonget.go Long-Text: auch Eingabe ohne JSON endet in Exit 5 / --default; so sagen
+- **2026-10-13 20:08 · Alexander Sacharov** — review (fresh): DoD auf WSL/Linux erfuellt, Tests gruen. Offen vor 'Fixes #79': Handcheck auf nativem Windows - welche Shell der Herdr-Tab startet (cmd/PS5.1 koennen "cd '...' && claude" nicht). Altes jaira auf PATH + neue Skripte = leerer Tab wie vorher; Release-Note koennte 'erst jaira aktualisieren' sagen. Details in review-gaps.
+- **2026-10-13 20:11 · Alexander Sacharov** — Alex am 13.10. (aus signoff zurueck): review-gaps 1-3 beheben, danach Handcheck auf nativem Windows. (1) Der native Start darf nicht von der Shell im Herdr-Tab abhaengen (cmd, PowerShell 5.1 kennen kein &&): Arbeitsverzeichnis ueber herdr selbst setzen, falls 'tab create'/'pane run' ein cwd kennt (herdr --skill / --help pruefen), sonst explizit ueber Git Bash starten (bash.exe -lc). Welcher Weg und warum: in eine Note. (2) Release-Note sagt: erst das neue Binary installieren, dann 'jaira roles install' - und spawn.sh prueft frueh, VOR 'tab create', ob 'jaira json' da ist, und bricht mit klarer Meldung ab statt einen leeren Tab zu hinterlassen. (3) --brief: eine Notiz endet nur an der naechsten '- **Datum'-Zeile wie im alten Python; Folgezeilen mit '#' oder '- ' gehoeren zur Notiz; Test dafuer. An denselben Worker, Cache warm.
+- **2026-10-13 20:12 · Alexander Sacharov** — Weg fuer DoD6 (Luecke 1): 'herdr tab create --help' kennt --cwd <PATH>; auf Windows (Git Bash/MSYS/Cygwin) bekommt der Tab das Verzeichnis nur ueber --cwd (cygpath -w) und als Kommando nur 'claude [--model x]' ohne cd, ohne &&, ohne Quotes - das versteht cmd, PowerShell 5.1/7 und bash gleich. Nicht bash.exe -lc: der Pfad zu bash.exe ist auf jeder Maschine anders und aus der Tab-Shell heraus nicht sicher auffindbar. Linux/macOS behalten 'cd ... && claude', WSL behaelt wsl.exe --cd. Risiko fuer den Handcheck: ob Herdr fuer Windows --cwd mit C:\-Pfad wirklich setzt. Luecke 3 (--brief) folgt Alex' Vorgabe und kehrt damit Critique-Befund 1/2 (gleich wie trimNotes zaehlen) um: getrennt wird nur an '- **Datum'.

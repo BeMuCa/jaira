@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -762,32 +763,30 @@ many there are as notes_total.`,
 	return cmd
 }
 
+// briefNote is where one progress note starts: its dated, bold heading.
+// Every line up to the next one belongs to it, whatever it starts with — a
+// continuation line reading "#79 ..." or "- a list" is still the same note.
+var briefNote = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
+
 // briefNotes is how many of the newest notes a brief carries.
 const briefNotes = 4
 
 // ticketBrief is the part of a ticket the cockpit's explain and discuss chats
 // are handed in their prompt instead of reading all of it: every note and every
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
-// python3, which a Windows machine may not have (issue #79). A note is what
-// progressEntries finds, its continuation lines with it, and the fields keep
-// spawn.sh's order.
+// python3, which a Windows machine may not have (issue #79), and it splits as
+// that did: at a dated note heading only, and the fields keep its order.
 func ticketBrief(j map[string]any, body string) any {
-	lines := strings.Split(body, "\n")
-	starts := progressEntries(lines)
 	notes := []string{}
-	for i, at := range starts {
-		// A note runs to the next one, or to the heading that ends the section.
-		end := len(lines)
-		if i+1 < len(starts) {
-			end = starts[i+1]
-		}
-		for k := at + 1; k < end; k++ {
-			if strings.HasPrefix(strings.TrimSpace(lines[k]), "#") {
-				end = k
-				break
+	if _, progress, ok := strings.Cut(body, "\n"+noteHeading+"\n"); ok {
+		starts := briefNote.FindAllStringIndex(progress, -1)
+		for i, at := range starts {
+			end := len(progress)
+			if i+1 < len(starts) {
+				end = starts[i+1][0]
 			}
+			notes = append(notes, strings.TrimSpace(progress[at[0]:end]))
 		}
-		notes = append(notes, strings.TrimSpace(strings.Join(lines[at:end], "\n")))
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {
@@ -949,7 +948,7 @@ func trimNotes(body string, n int) (string, int) {
 
 // progressEntries returns the index of every line that starts a Progress
 // note. Collected exactly as progressNotes reads them, so "a note" means the
-// same thing to the reader, the trimmer and the brief.
+// same thing to the reader and to the trimmer.
 func progressEntries(lines []string) []int {
 	in := false
 	var entries []int

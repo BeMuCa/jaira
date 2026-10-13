@@ -112,26 +112,36 @@ if [ ! -d "$wt" ]; then
 fi
 
 # Where the tab's command has to start claude: inside WSL when this script runs
-# in WSL and Herdr is the Windows one, natively everywhere else. Git Bash and
-# MSYS are asked first: they are Windows, whatever /proc/version there says.
+# in WSL and Herdr is the Windows one, natively on Windows when it runs in Git
+# Bash, MSYS or Cygwin — they are Windows, whatever /proc/version there says —
+# and in a Unix shell everywhere else.
 start_on() {
   case "$(uname -s 2>/dev/null)" in
-    MINGW*|MSYS*|CYGWIN*) echo native; return ;;
+    MINGW*|MSYS*|CYGWIN*) echo windows; return ;;
   esac
-  case "$herdr" in /mnt/*|*.exe) ;; *) echo native; return ;; esac
+  case "$herdr" in /mnt/*|*.exe) ;; *) echo unix; return ;; esac
   if [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/version 2>/dev/null; then
     echo wsl
   else
-    echo native
+    echo unix
   fi
 }
 
-# The directory as Herdr takes it. A native Windows Herdr reads C:\..., not the
+# The directory as Herdr takes it. A Windows Herdr reads C:\..., not the
 # /c/... Git Bash shows; cygpath, which Git Bash and MSYS ship, translates it.
 on="$(start_on)"
 cwd="$wt"
-if [ "$on" = native ] && command -v cygpath >/dev/null 2>&1; then
+if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
   cwd="$(cygpath -w "$wt")"
+fi
+
+# Every JSON below is read with 'jaira json get', so a jaira from before it —
+# the roles reinstalled, the binary not — would fail right after 'tab create'
+# and leave an empty tab standing (#79). Ask first, before anything is opened.
+if ! jaira json get ok --default ok <<<'{}' >/dev/null 2>&1; then
+  echo "the jaira on PATH ($(command -v jaira || echo none)) has no 'jaira json get':" \
+       "install the new jaira first, then run 'jaira roles install' again" >&2
+  exit 1
 fi
 
 # Named, because without --workspace Herdr decides for itself where the tab
@@ -179,9 +189,14 @@ claude="claude${chat_model:+ --model '$chat_model'}"
 # Herdr of a native Windows machine, where this runs in Git Bash, the tab is
 # already on the right machine, and wsl.exe would start in a distro that cannot
 # reach C:\ under that path and leave claude at its trust dialog in / (#79).
+# On Windows the tab's shell may be cmd or PowerShell 5.1, which know neither
+# && nor single quotes: --cwd above has put the tab in the worktree already, so
+# it gets the bare command, which every one of them runs alike. The model name
+# needs no quotes — only letters, digits and . _ - [ ] pass.
 case "$on" in
-  wsl) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  *)   start="cd '$cwd' && $claude" ;;
+  wsl)     start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
+  windows) start="claude${chat_model:+ --model $chat_model}" ;;
+  *)       start="cd '$cwd' && $claude" ;;
 esac
 
 "$herdr" pane run "$pane" "$start" >/dev/null

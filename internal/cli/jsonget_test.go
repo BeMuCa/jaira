@@ -41,12 +41,14 @@ func TestJSONGetPrintsOneField(t *testing.T) {
 }
 
 // The brief the cockpit's chats get typed in: the newest four notes whole,
-// continuation lines included, how many there are, and nothing of the context.
+// continuation lines included — one that starts "#" or "- " too, a note ends
+// only at the next dated heading — how many there are, and nothing of the
+// context.
 func TestTicketBriefCarriesTheNewestNotes(t *testing.T) {
 	body := "\n# T\n\n## Progress\n" +
 		"- **2026-10-01 10:00 · A** — first note\n" +
 		"- **2026-10-02 10:00 · A** — second note\n  goes on\n" +
-		"- **2026-10-03 10:00 · A** — third note\n" +
+		"- **2026-10-03 10:00 · A** — third note\n#79 is the issue\n- a list line\n" +
 		"- **2026-10-04 10:00 · A** — fourth note\n" +
 		"- **2026-10-05 10:00 · A** — fifth note\n"
 	j := map[string]any{"handle": "AB12CD", "title": "T", "goal": "G", "question": "Q?",
@@ -56,7 +58,7 @@ func TestTicketBriefCarriesTheNewestNotes(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{`{"id":"AB12CD","title":"T","goal":"G","question":"Q?","review":{"verdict":"V"},`,
-		`second note\n  goes on`, "fifth note", `"notes_total":5}`} {
+		`second note\n  goes on`, `third note\n#79 is the issue\n- a list line`, "fifth note", `"notes_total":5}`} {
 		if !strings.Contains(line, want) {
 			t.Errorf("brief lacks %q:\n%s", want, line)
 		}

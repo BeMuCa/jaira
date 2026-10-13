@@ -643,7 +643,8 @@ func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
 		name, uname, distro, wantCwd, wantStart string
 	}{
 		{"wsl", "Linux", "Ubuntu", "<wt>", "wsl.exe --cd '<wt>' -- bash -lic \"claude\""},
-		{"git bash", "MINGW64_NT-10.0-22631", "", `C:\work\repo`, `cd 'C:\work\repo' && claude`},
+		// cmd and PowerShell 5.1 know no &&: --cwd puts the tab in place.
+		{"git bash", "MINGW64_NT-10.0-22631", "", `C:\work\repo`, `claude`},
 	} {
 		bin := t.TempDir()
 		ran := filepath.Join(bin, "ran")
@@ -714,5 +715,44 @@ func TestRolesNeverRunPython3ByName(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Roles reinstalled, binary not: the jaira on PATH has no 'json get', and
+// spawn.sh would die after 'tab create' with an empty tab standing (#79). It
+// asks first and stops before Herdr is called at all.
+func TestSpawnStopsBeforeATabWhenJairaIsTooOld(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := install(dir, false, true); err != nil {
+		t.Fatal(err)
+	}
+	bin := t.TempDir()
+	called := filepath.Join(bin, "called")
+	for name, script := range map[string]string{
+		"herdr": "#!/usr/bin/env bash\necho \"$*\" >> '" + called + "'\n",
+		"jaira": "#!/usr/bin/env bash\necho 'jaira takes no arguments, received 3' >&2\nexit 2\n",
+	} {
+		if err := os.WriteFile(filepath.Join(bin, name), []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", "review")
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+		"HERDR_WORKSPACE_ID=", "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("spawn.sh went on with a jaira that has no json get:\n%s", out)
+	}
+	if !strings.Contains(string(out), "install the new jaira first") {
+		t.Errorf("spawn.sh does not say what to do:\n%s", out)
+	}
+	if b, _ := os.ReadFile(called); len(b) > 0 {
+		t.Errorf("Herdr was called before the check: %s", b)
 	}
 }
