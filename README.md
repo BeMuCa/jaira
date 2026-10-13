@@ -837,15 +837,23 @@ jaira self upgrade         replace the jaira binary with the latest release
 jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket
+jaira links <id>           every ticket connected to this one, wherever it lives now
 jaira set <id> k=v...      set fields
+jaira tags                 the tags this board uses; read it before you tag anything
+jaira tag <id> <name>...   add tags to a ticket
+jaira milestone ls         the board's milestones; read it before you create one
+jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
+jaira note <id> <text>     record what you worked out, so a later session can pick it up
 jaira validate             check every ticket on the board for damage
 jaira logbook <id>         file a finished ticket under today, commits stamped
 jaira logbook              list what left the board in the last logbook-days (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
+jaira restore <file>       put an archived or logged ticket, or a filed milestone, back
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket
+jaira resume               work left in progress, with everything recorded about it
 jaira fetch                fetch the tickets travelling on their own git refs
 jaira pull <id>            take a ticket over and put it on your disk
 jaira release <id>         hand a ticket back so somebody else can take it
@@ -859,8 +867,10 @@ jaira tasks                emit the board as a task list
 jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
+jaira whoami               the identity jaira acts as, and the state of this board
 jaira share                publish the board (--undo to make it private)
 jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod
+jaira hook print           a Claude Code Stop hook that refuses to end a session with agentic lanes unworked
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.
