@@ -1,7 +1,8 @@
 ---
 color: 73
 created-at: 2026-10-13T14:15:54Z
-goal: Was Berk und Claude am 2026-10-13 beim Arbeiten mit jaira aufgefallen ist und Fehler oder Umwege verursacht hat
+goal: Was am 13.10. beim Arbeiten mit jaira schiefging oder umstaendlich war, ist behoben: veraltete Ticket-Kopien, Lane-Namen, Testbuilds, Versionen, Updates und Skills
+after: [ram-cpu]
 ---
 
 # jaira-improvement-findings-1
