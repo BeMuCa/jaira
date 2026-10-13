@@ -96,14 +96,15 @@ by itself from the next session on (from .claude/skills once you trust the
 workspace). It keeps a teamlead chat readable and shows what waits on the
 board; /cockpit inside Claude Code lists what it does.
 
---project writes into .claude/skills in this repository, so the roles arrive
-with a clone. --global writes into ~/.claude/skills, for every repository you
-work in. --into names a skills directory instead, for an agent that reads
-somewhere else.
+--project writes into the agent's skills directory in this repository, so the
+roles arrive with a clone. --global writes into the agent's personal skills
+directory, for every repository you work in. --into names a skills directory
+instead, for an agent jaira does not know.
 
---agent names the agent to install for, claude by default. --agent copilot
-writes into .github/skills with --project and ~/.copilot/skills with --global,
-and leaves the cockpit out, which only Claude Code loads. Copilot also reads
+--agent names the agent to install for, and so the directory: claude by
+default, into .claude/skills or ~/.claude/skills. --agent copilot writes into
+.github/skills with --project and ~/.copilot/skills with --global, and leaves
+the cockpit out, which only Claude Code loads. Copilot also reads
 .claude/skills and .agents/skills in a repository and ~/.agents/skills at home:
 when the roles already sit in one of those, nothing is written, because a
 second copy would register every role twice. --agent and --into exclude each
