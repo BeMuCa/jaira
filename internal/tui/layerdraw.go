@@ -23,7 +23,7 @@ const (
 	bubbleW   = 16 // a bubble, border included
 	bubbleH   = 4
 	cellW     = 21 // a grid column: the bubble and the 5-column gap after it
-	cellH     = 6  // a grid row: the bubble and the two connector rows under it
+	cellH     = 7  // a grid row: the bubble and three connector rows — the split, the extra arrows' row, the ▼
 	laneGap   = 3  // extra columns between swimlanes; the ┊ stands in them
 	layerLeft = 2  // room left of the first lane for an arrow's vertical run
 	layerTop  = 1  // room above the first row for an arrow into a swimlane top
@@ -120,7 +120,9 @@ func (m *Model) layerScene() *layerScene {
 			sc.targets = append(sc.targets, sceneTarget{layerTarget{onBelow, b.Name}, image.Rect(p.X+6, p.Y+bubbleH, p.X+10, p.Y+bubbleH+1)})
 		}
 	}
-	sc.targets = append(sc.targets, sceneTarget{layerTarget{kind: onFar}, image.Rect(sc.farX, layerTop+1, sc.farX+3, layerTop+2)})
+	// The far [+] steers on the top row's middle, like the [+] beside a
+	// bubble, so ↑ from a top bubble does not jump to it.
+	sc.targets = append(sc.targets, sceneTarget{layerTarget{kind: onFar}, image.Rect(sc.farX, layerTop+1, sc.farX+3, layerTop+3)})
 	return sc
 }
 
@@ -491,47 +493,42 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 	}
 	var exits []exit
 	lines := newArrowLines()
-	// down drops from a bubble's bottom border at column x, runs along the
-	// first connector row to the target's centre and ends in its ▼ — the shape
-	// of a split, which a join into the next row is too.
-	down := func(p, t image.Point, x int, strong bool) {
-		row := p.Y + bubbleH
-		lines.link(image.Pt(x, row-1), image.Pt(x, row), strong)
-		lines.link(image.Pt(x, row), image.Pt(t.X+7, row), strong)
-		lines.link(image.Pt(t.X+7, row), image.Pt(t.X+7, row+1), strong)
-		lines.arrow(image.Pt(t.X+7, row+1), strong)
-	}
 
-	// Parent arrows: down from the centre to every child.
+	// Parent arrows: down from the centre into the first connector row, along
+	// it to every child — a split — and down past the second row to the ▼.
 	for _, b := range sc.grid.Bubbles {
 		if b.Parent == "" {
 			continue
 		}
-		p := sc.at[b.Parent]
-		down(p, sc.at[b.Name], p.X+7, true)
+		p, t := sc.at[b.Parent], sc.at[b.Name]
+		x, row, tx := p.X+7, p.Y+bubbleH, t.X+7
+		lines.path([]image.Point{{x, row - 1}, {x, row}, {tx, row}, {tx, row + 2}}, true)
+		lines.arrow(image.Pt(tx, row+2), true)
 		exits = append(exits, exit{b.Parent, 7})
 	}
 
-	// Extra arrows into the next row leave the centre like a split, so a join
-	// (c→h beside g→h) reads as one. Any other leaves right of centre, down
-	// into the gap under the predecessor, along it to the gap left of the
-	// target, down (or up) that gap to the row above the target, and in to its
-	// centre.
+	// Extra arrows travel the second connector row, which no split uses, so
+	// one can only ever cross another arrow's drop (┼) or end in its own
+	// target's (├ ┤) — never run along a split and seem to end at a sibling's
+	// junction. Each leaves right of centre, down to that row, along it — to
+	// the target's centre when the target is in the next row, a join; else to
+	// the gap left of the target, down (or up) that gap to the row above the
+	// target, and in to its centre.
 	for _, a := range sc.grid.Arrows {
 		if !a.Extra {
 			continue
 		}
 		p, t := sc.at[a.From], sc.at[a.To]
+		sx, row, tx := p.X+11, p.Y+bubbleH+1, t.X+7
+		pts := []image.Point{{sx, row - 2}, {sx, row}}
 		if t.Y == p.Y+cellH {
-			down(p, t, p.X+7, false)
-			exits = append(exits, exit{a.From, 7})
-			continue
+			pts = append(pts, image.Pt(tx, row), image.Pt(tx, t.Y-1))
+		} else {
+			gx := t.X - 2
+			pts = append(pts, image.Pt(gx, row), image.Pt(gx, t.Y-1), image.Pt(tx, t.Y-1))
 		}
-		sx, gx, row := p.X+11, t.X-2, p.Y+bubbleH
-		lines.path([]image.Point{
-			{sx, row - 1}, {sx, row}, {gx, row}, {gx, t.Y - 1}, {t.X + 7, t.Y - 1},
-		}, false)
-		lines.arrow(image.Pt(t.X+7, t.Y-1), false)
+		lines.path(pts, false)
+		lines.arrow(image.Pt(tx, t.Y-1), false)
 		exits = append(exits, exit{a.From, 11})
 	}
 	lines.draw(cv, dim)

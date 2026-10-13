@@ -157,6 +157,56 @@ func TestJoinArrowMeetsTheParentArrow(t *testing.T) {
 	}
 }
 
+// An extra arrow into the next row must not run along the split of the bubble
+// above its target: with a sibling between, it would end at the sibling's
+// junction and name the wrong successor (review of 2026-10-13). It travels a
+// row of its own instead and crosses the sibling's drop.
+func TestExtraArrowNeverEndsAtASiblingsJunction(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	mkPlaced(t, m, "runde-1", 0, nil)
+	mkPlaced(t, m, "runde-2", 1, []string{"runde-1", "parallel"})
+	mkPlaced(t, m, "runde-2b", 2, []string{"runde-1"})
+	mkPlaced(t, m, "parallel", 3, nil)
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	out := stripANSI(m.render())
+
+	travel := false
+	for _, line := range strings.Split(out, "\n") {
+		i, j := strings.Index(line, "├"), strings.LastIndex(line, "┘")
+		if i < 0 || j <= i {
+			continue
+		}
+		if between := line[i+len("├") : j]; strings.Trim(between, "─┼┊") == "" && strings.Contains(between, "┼") {
+			travel = true
+		}
+	}
+	if !travel {
+		t.Errorf("the arrow from parallel must cross runde-2b's drop (┼) on its way to runde-2 (├):\n%s", out)
+	}
+	if strings.Contains(out, "┬──") && strings.Contains(out, "──┘") {
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "├") && strings.Contains(line, "┬") && strings.Contains(line, "┘") {
+				t.Errorf("a split line must not run on into another lane's arrow:\n%s", out)
+			}
+		}
+	}
+}
+
+// ↑ on a bubble of the top row has nowhere to go; it must not jump to the far
+// [+], which sits on the same row.
+func TestUpOnTheTopRowStays(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	mkPlaced(t, m, "a", 0, nil)
+	mkPlaced(t, m, "b", 1, nil)
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	m.key(keyUp)
+	if m.layer.sel != (layerTarget{onBubble, "a"}) {
+		t.Errorf("↑ on the top row must stay put, got %+v", m.layer.sel)
+	}
+}
+
 // The fill: proportional over 14 cells, never empty or full for work that is
 // partly done.
 func TestFilledCells(t *testing.T) {
@@ -471,6 +521,23 @@ func TestColourKeyStepsThroughThePalette(t *testing.T) {
 	m.key(key("c"))
 	if got := loadMilestone(t, m, "a").Colour; got != milestone.Palette[1] {
 		t.Errorf("c steps to the next colour, got %d", got)
+	}
+}
+
+// c skips a colour another milestone already wears, so the keypress meant to
+// tell two bubbles apart never makes them alike.
+func TestColourKeySkipsAColourInUse(t *testing.T) {
+	m := newTestModel(t, 120, 40)
+	mkPlaced(t, m, "a", 0, nil) // Palette[0]
+	mkPlaced(t, m, "b", 1, nil) // Palette[1]
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	if m.layer.sel != (layerTarget{onBubble, "a"}) {
+		t.Fatalf("the cursor must start on a, got %+v", m.layer.sel)
+	}
+	m.key(key("c"))
+	if got := loadMilestone(t, m, "a").Colour; got != milestone.Palette[2] {
+		t.Errorf("c must pass over b's colour %d to %d, got %d", milestone.Palette[1], milestone.Palette[2], got)
 	}
 }
 

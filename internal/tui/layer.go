@@ -483,12 +483,27 @@ func (m *Model) connectMilestone(name string, after []string) {
 	m.layerWritten(name, stageLayer)
 }
 
-// nextMilestoneColour gives the milestone the next colour of the palette, so
-// two neighbours that came out alike can be told apart in a keypress or two.
+// nextMilestoneColour gives the milestone the next colour of the palette that
+// no other milestone wears, so two neighbours that came out alike can be told
+// apart in a keypress or two. Once every colour is taken it is simply the next.
 func (m *Model) nextMilestoneColour(name string) {
+	used := map[int]bool{}
+	for _, other := range m.milestones {
+		if other.Name != name {
+			used[other.Colour] = true
+		}
+	}
 	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
+		n := len(milestone.Palette)
 		i := slices.Index(milestone.Palette, ms.Colour)
-		ms.SetColour(milestone.Palette[(i+1)%len(milestone.Palette)])
+		next := milestone.Palette[(i+1)%n]
+		for k := 1; k < n; k++ {
+			if c := milestone.Palette[(i+k)%n]; !used[c] {
+				next = c
+				break
+			}
+		}
+		ms.SetColour(next)
 		return nil
 	})
 	if err := m.recordOnly(err); err != nil {
