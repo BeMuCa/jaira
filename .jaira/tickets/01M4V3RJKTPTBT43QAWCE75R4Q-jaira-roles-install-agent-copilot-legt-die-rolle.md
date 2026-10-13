@@ -1,7 +1,7 @@
 ---
 id: 01M4V3RJKTPTBT43QAWCE75R4Q
 title: "jaira roles install --agent copilot legt die Rollen dort ab, wo Copilot sie liest"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,16 +21,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T17:08:03Z
-updated-at: 2026-10-13T17:41:32Z
+updated-at: 2026-10-13T17:42:46Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-268128
 claimed-at: 2026-10-13T17:40:17Z
 outcome-what: "'jaira roles install' hat --agent (Default claude, neu copilot): eine Agent-Tabelle in core/role/target.go nennt je Agent das Projekt- und das globale Skills-Verzeichnis und die weiteren, die er liest; copilot schreibt nach .github/skills bzw. ~/.copilot/skills ohne das Cockpit-Mod, schreibt nichts wenn die Rollen schon in .claude/skills/.agents/skills liegen, unbekannter Agent und --agent mit --into enden mit Exit 2"
 outcome-why: "Wer mit GitHub Copilot arbeitet, bekam die Rollen nur ueber --into und musste das Verzeichnis selbst kennen"
 outcome-resolves: "Alle fuenf DoD-Punkte: Recherche-Note mit Quellen, Zielverzeichnisse, keine Doppelkopie, Usage-Fehler, Doku und Release-Note"
-review-summary: "Neues Flag --agent an 'jaira roles install' (Default claude). core/role/target.go ersetzt die Konstante .claude/skills durch eine Agent-Tabelle mit zwei Zeilen: claude (.claude/skills, ~/.claude/skills, mit Cockpit-Mod) und copilot (.github/skills, ~/.copilot/skills, ohne Mod). Pro Agent stehen zusaetzlich die Verzeichnisse, die Copilot sowieso liest (.claude/skills und .agents/skills im Repo, ~/.agents/skills zu Hause); liegt dort schon eine jaira-Rolle (role.InstalledIn), schreibt der Befehl nichts, gibt eine Zeile 'copilot already reads the roles in <dir>' aus und endet mit 0. Unbekannter Agent und --agent zusammen mit --into enden mit Exit 2 und nennen die bekannten Agenten. Das exportierte role.Install ist weg; der einzige Einstieg ist Agent.Install, die Tests in core/role rufen install(dir, force, true). Hilfe-Text, README, docs/AGENTS.md (Tabelle) und Release-Note core/release/notes/E75R4Q.md sind ergaenzt; die JSON-Ausgabe hat jetzt ein Feld agent."
+review-summary: "none"
 round: 3
-review-gaps: "1. Die Reihenfolge entscheidet: erst --agent copilot --project, dann ein normales --project ergibt die Rollen fuer Copilot doppelt (.github/skills und .claude/skills); danach aktualisiert --agent copilot .github/skills nicht mehr, die alte Kopie bleibt liegen. Von testing schon notiert, ausserhalb der DoD, bewusst so entschieden - aber ein Nutzer bemerkt es nicht. 2. Die Ein-Zeilen-Meldung 'already reads the roles in .claude/skills' sagt nicht, dass man die Rollen dort mit 'jaira roles install --project' (ohne --agent) aktualisiert; nach einem Upgrade laeuft --agent copilot sonst ins Leere. 3. Die Flag-Hilfen von --project/--global nennen in Klammern immer die Claude-Pfade (.claude/skills, ~/.claude/skills), auch fuer copilot - der Long-Text stimmt, die Flag-Zeile ist irrefuehrend. 4. Agentname ist case-sensitiv ('Copilot' -> Exit 2); die Meldung nennt die richtigen Namen, also unkritisch."
+review-gaps: "core/role/target.go UpdateCommand: ProjectTarget wurde auch im global-Fall berechnet und verworfen - jetzt if/else. Sonst nichts: Dirs und UpdateCommand haben je einen Aufrufer, aber sie halten das Pfadwissen in der Tabelle statt im CLI."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1-5 im Baum geprueft; Binary auf Scratch-Repo: copilot --project schreibt 19 Dateien nach .github/skills ohne jaira-cockpit, --global nach ~/.copilot/skills, bei Rollen in .claude/skills eine Zeile und RC=0, --agent vim und --agent mit --into RC=2, ohne --agent unveraendert ~/.claude/skills"
 review-verdict: "Der Diff erfuellt alle fuenf DoD-Punkte; go build, go vet und go test ./core/role ./internal/cli sind gruen, und ein manueller Lauf mit dem gebauten Binary verhaelt sich wie beschrieben. Kein Defekt gefunden, der die Abnahme verhindert. Punkte 2 und 3 aus review-gaps sind kleine Text-Nachbesserungen, die eine Person vor dem Merge noch verlangen kann; Punkt 1 ist eine bewusste Grenze."
 review-round: 2
@@ -81,3 +81,4 @@ Warum: Nach einem Upgrade laeuft "jaira roles install --agent copilot" sonst ins
 3) Texte nachbessern und zusaetzlich die doppelte Installation (.github/skills und .claude/skills je nach Reihenfolge) abfangen [give back]
 Empfehlung: 1 - zwei Textzeilen, wenige Minuten Arbeit, und genau das hat Alex am 13.10. beim Zuruecksenden aus signoff schon verlangt; die Doppel-Installation ist bewusst ausserhalb der DoD.
 - **2026-10-13 17:41 · Alexander Sacharov** — DoD 6: Hinweis-Befehl kommt aus role.UpdateCommand - das --project/--global des Agenten, der genau dorthin schreibt (.claude/skills -> 'jaira roles install --project'), sonst --into <dir> (.agents/skills schreibt kein Agent). Flag-Hilfe aus role.Dirs, also aus derselben Tabelle - ein neuer Agent erscheint dort von selbst. Proof von DoD 3 auf roles.go:171 nachgezogen.
+- **2026-10-13 17:41 · Alexander Sacharov** — critique Runde 3 (DoD 6): UpdateCommand und Dirs lesen dieselbe Agent-Tabelle wie die Ziele - kein zweites Wissen ueber Pfade; nichts weiter.

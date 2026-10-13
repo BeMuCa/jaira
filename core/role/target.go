@@ -149,12 +149,14 @@ func UpdateCommand(dir, root string, global bool) (string, error) {
 		scope = "--global"
 	}
 	for _, a := range agents {
-		target, _ := a.ProjectTarget(root)
+		var target string
 		if global {
 			var err error
 			if target, _, err = a.GlobalTarget(); err != nil {
 				return "", err
 			}
+		} else {
+			target, _ = a.ProjectTarget(root)
 		}
 		if target != dir {
 			continue
