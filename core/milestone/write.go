@@ -53,7 +53,7 @@ func (e *FiledError) Error() string {
 	return fmt.Sprintf("milestone %q has been filed; 'jaira restore %s.md', run where it was filed, brings it back", e.Name, e.Name)
 }
 
-// ExistsError is Rename's refusal of a new name a milestone on the board
+// ExistsError is CheckFree's answer for a name a milestone on the board
 // already has.
 type ExistsError struct{ Name string }
 
@@ -124,12 +124,10 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 // instead would reach none of them: a fetch writes a marked ref over the file
 // a clone already has, and deletes nothing (refsync.IncomingMilestones).
 //
-// to has to be free. A milestone on the board under it is an *ExistsError, a
-// filed one lying here a *FiledError, and taken asks what this directory
-// cannot show — a filing in this tree's logbook or on a ref — refusing in the
-// caller's words. The mark an earlier rename left is free (HoldsName), which
-// is what lets a rename be taken back. from itself refuses the way Edit does,
-// and renaming it to its own name writes nothing.
+// to has to be free: CheckFree asks the directory, and taken asks what the
+// directory cannot show — a filing in this tree's logbook or on a ref —
+// refusing in the caller's words. from itself refuses the way Edit does, and
+// renaming it to its own name writes nothing.
 func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(name string) error) (*Milestone, error) {
 	unlock, err := lock.Lock(LockName)
 	if err != nil {
@@ -147,12 +145,7 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 	if to == from {
 		return ms, nil
 	}
-	switch have, err := Load(root, to); {
-	case err == nil && !have.Filed():
-		return ms, &ExistsError{Name: to}
-	case err == nil && have.HoldsName():
-		return ms, &FiledError{Name: to}
-	case err != nil && !errors.Is(err, os.ErrNotExist):
+	if err := CheckFree(root, to); err != nil {
 		return ms, err
 	}
 	if err := taken(to); err != nil {
@@ -190,6 +183,28 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 		err = &RecordError{Name: from, Err: recErr}
 	}
 	return renamed, err
+}
+
+// CheckFree asks the milestone directory whether a name can be given out: a
+// milestone on the board under it is an *ExistsError, a filed one lying here
+// a *FiledError. No file is free, and so is the mark an earlier rename left
+// (HoldsName) — which is what lets a rename be taken back and a new milestone
+// take the old name. What the directory cannot show, a filing in this tree's
+// logbook or on a ref, is the caller's to ask. Every door that hands out a
+// name asks here: Rename, and the CLI's and the layer's create.
+func CheckFree(root, name string) error {
+	have, err := Load(root, name)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return nil
+	case err != nil:
+		return err
+	case !have.Filed():
+		return &ExistsError{Name: name}
+	case have.HoldsName():
+		return &FiledError{Name: name}
+	}
+	return nil
 }
 
 // retitle rewrites the "# <name>" heading New puts under the frontmatter, so

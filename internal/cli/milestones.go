@@ -124,19 +124,21 @@ a milestone on this board, and the arrows may not form a loop.`,
 			}
 
 			ms, err := milestone.Create(s.Root, s, refs, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
-				if have, err := milestone.Load(s.Root, name); err == nil && have.HoldsName() {
+				var ee *milestone.ExistsError
+				var fe *milestone.FiledError
+				switch err := milestone.CheckFree(s.Root, name); {
+				case errors.As(err, &fe):
 					// The file is here but marked, which a fetch of somebody
 					// else's filing leaves behind. It is not on the board, so
 					// "already exists" would send the reader looking for a
-					// milestone no listing names. The mark of a rename holds
-					// nothing, and the new file is written over it.
+					// milestone no listing names.
 					return nil, refuseFiledOnDisk(s.Root, name,
 						"taking the line out here instead would leave that tree's copy stranded in its logbook")
-				} else if err == nil && !have.Filed() {
+				case errors.As(err, &ee):
 					return nil, fail(ExitValidation, "milestone_exists",
 						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
 						name, milestone.Path(s.Root, name), name)
-				} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+				case err != nil:
 					return nil, err
 				}
 				// Filed under this name, here or in the tree that wrote the

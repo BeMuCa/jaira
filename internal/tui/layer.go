@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -306,13 +305,20 @@ func (m *Model) formReturn() layerStage {
 func (m *Model) submitLayerForm() {
 	l := m.layer
 	f := l.form
-	name, _, err := milestone.NormalizeName(strings.TrimSpace(f.vals[0]))
-	if strings.TrimSpace(f.vals[0]) == "" {
-		err = errors.New("a milestone needs a name")
-	}
-	if err != nil {
-		l.err = err.Error()
-		return
+	// A name typed here is filed the way 'jaira milestone create' files it. A
+	// name left as it stood is the file's own, kept as it is: normalizing it
+	// would rename a hand-named Q4.md to q4 on every save of its goal.
+	name := strings.TrimSpace(f.vals[0])
+	if f.edit == "" || name != f.edit {
+		n, _, err := milestone.NormalizeName(name)
+		if name == "" {
+			err = errors.New("a milestone needs a name")
+		}
+		if err != nil {
+			l.err = err.Error()
+			return
+		}
+		name = n
 	}
 	if f.edit == "" {
 		if err := m.createMilestone(name, f.vals[1], m.placement(l.sel)); err != nil {
@@ -395,11 +401,10 @@ func (m *Model) renameMilestone(from, to string) error {
 func (m *Model) createMilestone(name, goal string, after []string) error {
 	root := m.store.Root
 	_, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
-		if have, err := milestone.Load(root, name); err == nil && have.HoldsName() {
-			return nil, &milestone.FiledError{Name: name}
-		} else if err == nil && !have.Filed() {
+		var ee *milestone.ExistsError
+		if err := milestone.CheckFree(root, name); errors.As(err, &ee) {
 			return nil, fmt.Errorf("milestone %q already exists — c on a [+] connects it", name)
-		} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		} else if err != nil {
 			return nil, err
 		}
 		if err := m.nameFiled(name); err != nil {

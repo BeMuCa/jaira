@@ -519,6 +519,28 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	}
 }
 
+// A name left as it stood is the file's own: e on a hand-named Q4.md saves
+// the goal and does not rename the file to the normalized q4.
+func TestEditKeepsAHandWrittenName(t *testing.T) {
+	m := newTestModel(t, 160, 40)
+	mkPlaced(t, m, "Q4", 0, nil)
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	m.key(key("e"))
+	m.key(key("tab"))
+	typeInto(m, "ship")
+	m.key(key("enter"))
+	if m.layer.stage != stageLayer || m.layer.err != "" {
+		t.Fatalf("the save must close the form, stage %v err %q", m.layer.stage, m.layer.err)
+	}
+	if got := loadMilestone(t, m, "Q4"); got.Goal != "ship" {
+		t.Errorf("Q4 must carry the goal, got %q", got.Goal)
+	}
+	if _, err := os.Stat(milestone.Path(m.store.Root, "q4")); !os.IsNotExist(err) {
+		t.Errorf("saving the goal renamed Q4 to q4: %v", err)
+	}
+}
+
 // c on a [+] connects a milestone that exists: an unplaced one is placed
 // there, the bubble itself is never offered, and one that would close a loop
 // is left out.
