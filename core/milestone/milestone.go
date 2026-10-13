@@ -83,7 +83,7 @@ type Milestone struct {
 	CreatedAt time.Time
 	Status    string
 	Goal      string   // free text, one line; empty when the file has none
-	After     []string // predecessor names, first one decides the swimlane
+	After     []string // predecessor IDs (a name only for a hand-written line), first one decides the swimlane
 	Placed    bool     // an `after:` line exists; `after: []` is a swimlane top
 
 	file    string   // the file name it was read under, .md included; empty for a milestone never written
