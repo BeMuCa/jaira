@@ -178,7 +178,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[0], name)
 			}
 			fmt.Fprintf(w, "Milestone %q created with %d ticket(s): %s\n",
-				name, len(ms.Members()), milestonePath(s.Root, name))
+				name, len(ms.Members()), ms.Path(s.Root))
 			return nil
 		},
 	}
