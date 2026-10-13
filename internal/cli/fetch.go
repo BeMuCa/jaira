@@ -27,13 +27,22 @@ func newFetchCmd() *cobra.Command {
 refs/jaira/tickets/* and the milestones under refs/jaira/milestones/* — and
 reports what they say. A milestone whose file is new or newer is written to
 .jaira/milestones/, so the groups a teammate planned arrive with the tickets.
+A milestone's ref is named after its ID and carries the file under its current
+name, so a rename arrives as the same ref with another file name: the file this
+disk has under the old name — and any other file with that ID — is removed, the
+one thing a fetch deletes. A file with another ID is another milestone, and is
+never touched.
+
+Milestone files and refs from before IDs are moved to ID names once, here or on
+the first milestone write of this build; the ID is computed from the old name,
+so every clone agrees. The move is told (--json: milestones_migrated), and the
+old name refs stay on the remote, ignored once the ID ref exists.
 
 A milestone somebody filed is reported apart from those: its ref carries
 "status: filed", and that line is what keeps a milestone off a board. A file
 you already have is marked with it, so the group leaves your board too; a
-filed milestone you never had is not written at all. Nothing is deleted here.
-A milestone somebody renamed leaves the same mark under its old name and is
-listed as "old → new" (--json: milestones_renamed, old name to new).
+filed milestone you never had is not written at all. A milestone somebody
+renamed is listed as "old → new" (--json: milestones_renamed, old name to new).
 
 This is how a ticket assigned to you arrives without anyone sharing a branch:
 the ref carries the whole ticket file, so it is readable with no checkout and
@@ -168,7 +177,7 @@ func printFiledMilestones(w io.Writer, names []string) {
 	for _, n := range names {
 		fmt.Fprintf(w, "  %s\n", n)
 	}
-	fmt.Fprintf(w, "Whoever filed one brings it back with 'jaira restore <name>.md'.\n")
+	fmt.Fprintf(w, "Whoever filed one brings it back with 'jaira restore <file>' (the file name in the logbook).\n")
 }
 
 // announceArrivals raises one notification per ticket newly assigned to this

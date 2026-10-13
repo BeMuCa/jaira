@@ -342,10 +342,14 @@ So every write also puts the ticket on a ref of its own, and a milestone —
 the file that names which tickets belong to one round of work — travels the
 same way, for the same reason: it has to reach everybody without waiting for a
 branch to be merged.
+A milestone's ref is named after its ID, a random six characters, and the
+name is only the file name in its tree: renaming one is an ordinary write on
+its one ref, so two people renaming and creating at once leave two milestones
+and never none.
 
 ```
 refs/jaira/tickets/<id>         one ref per ticket, its tree carries <id>.md
-refs/jaira/milestones/<name>    one ref per milestone, its tree carries <name>.md
+refs/jaira/milestones/<ID>      one ref per milestone, its tree carries <name>-<ID>.md
 ```
 
 Those refs belong to no branch. The default refspec does not fetch them, so a
@@ -463,7 +467,7 @@ repository on a shared drive without any of them knowing what jaira is.
 | see what exists | `ls-remote origin 'refs/jaira/*'` — the whole board, tickets and milestones, in one round trip |
 | collect it | `fetch --prune origin '+refs/jaira/*:refs/jaira/*'` — both namespaces in one refspec, or you get cards whose milestone file nobody has |
 | read a ticket without a checkout | `show refs/jaira/tickets/<id>:<id>.md` |
-| read a milestone without a checkout | `show refs/jaira/milestones/<name>:<name>.md` |
+| read a milestone without a checkout | `ls-tree --name-only refs/jaira/milestones/<ID>`, then `show refs/jaira/milestones/<ID>:<name>-<ID>.md` |
 | a ticket's history | `log refs/jaira/tickets/<id>` — every move it ever made |
 | has it landed | `rev-list -1 <branch> -- .jaira/logbook/*/<id>* .jaira/archive/<id>*` |
 | the backup branch | the same three plumbing commands, one tree with every ticket in it |
@@ -854,7 +858,7 @@ jaira set <id> k=v...      set fields
 jaira tags                 the tags this board uses; read it before you tag anything
 jaira tag <id> <name>...   add tags to a ticket
 jaira milestone ls         the board's milestones; read it before you create one
-jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename
+jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename (the name only)
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira note <id> <text>     record what you worked out, so a later session can pick it up
 jaira validate             check every ticket on the board for damage

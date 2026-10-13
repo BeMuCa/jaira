@@ -156,20 +156,22 @@ than trimmed down. Colors live once per board in `.jaira/tags`, one
 ## Before creating a milestone
 
 A milestone is the set of tickets that belong to one round of work, kept in
-`.jaira/milestones/<name>.md`, one ticket id per line. Read the list before
-starting one:
+`.jaira/milestones/<name>-<ID>.md`, one ticket id per line; the six characters
+after the last dash are the ID, which stays when the name changes. Read the list
+before starting one:
 
 ```bash
-jaira milestone ls --json                # name, color, ticket count, goal, place on the roadmap
-jaira milestone create <name> [id...]    # start one; 'add' and 'rm <name> <id>...' change it
-jaira milestone rename <old> <new>       # never rename the file by hand
+jaira milestone ls --json                # id, name, color, ticket count, goal, place on the roadmap
+jaira milestone create <name> [id...]    # start one; 'add' and 'rm <milestone> <id>...' change it
+jaira milestone rename <old> <new>       # changes the name only; the ID and the ref stay
 jaira list --milestone <name> --json     # every ticket in it
 ```
 
 Reuse the milestone that is already there for that round of work — "q4" and
 "quarter-four" on one board are two names for one round, and each filters to
 half of it. `create` on a name that exists is refused (exit 3) and points at
-`jaira milestone add`.
+`jaira milestone add`. Every command takes a milestone as its name, its ID or
+`<name>-<ID>`; a name two milestones carry exits 3 and names both forms.
 
 `--after <a,b>` on `create` or `jaira milestone set` places a milestone on the
 Milestone Roadmap under those milestones (`--after ""` makes it the top of a

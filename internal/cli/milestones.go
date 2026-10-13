@@ -40,7 +40,11 @@ func newMilestoneCmd() *cobra.Command {
 		Use:   "milestone",
 		Short: "Group tickets into a round of work",
 		Long: `A milestone is the set of tickets that belong to one round of work, kept in its
-own file under ` + "`.jaira/milestones/<name>.md`" + `.
+own file under ` + "`.jaira/milestones/<name>-<ID>.md`" + `. The six characters after
+the last dash are its ID, which stays when the name changes: the ref it travels
+on is named after the ID, and every command takes a milestone as its name, its
+ID or ` + "`<name>-<ID>`" + ` — a name two milestones carry is refused (exit 3) with
+both forms to run it again with.
 
 It is a file rather than a field on each ticket because of what happens at the
 end of a round: the work that did not finish has to appear in the next one, and
@@ -60,8 +64,8 @@ bar down their RIGHT edge — the left edge belongs to the tags. On the board, M
 opens the picker and narrows everything to the milestones ticked in it.
 
 A milestone leaves the board only when somebody says so: ` + "`jaira logbook <name>`" + `
-files it once all its tickets are finished, and ` + "`jaira restore <name>.md`" + ` brings
-it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
+files it once all its tickets are finished, and ` + "`jaira restore <file>`" + ` — the
+file name the logbook shows — brings it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
 	}
 	cmd.AddCommand(
 		newMilestoneCreateCmd(),
@@ -80,8 +84,9 @@ func newMilestoneCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <name> [id...]",
 		Short: "Start a milestone, optionally with its first tickets",
-		Long: `Creates ` + "`.jaira/milestones/<name>.md`" + ` and puts any tickets named after the
-name into it.
+		Long: `Creates ` + "`.jaira/milestones/<name>-<ID>.md`" + `, with a random ID that no milestone on
+this disk or ref in this clone has, and puts any tickets named after the name
+into it.
 
 The colour is picked for you, at random from the colours no other milestone on
 this board is using: concurrent milestones are never many, so a clash once the
@@ -89,14 +94,12 @@ palette is spent is survivable, and nobody should have to choose one. --color
 <1-255> overrides it; 0 is not black here but "no colour", and would paint no
 cell on any card.
 
-A name that belongs to a filed milestone is refused rather than reused: its
-ref still holds it, and a second milestone under one name is one identity that
-looks different on every machine. ` + "`jaira restore <name>.md`" + ` brings the filed one
-back instead. A name a teammate's milestone has on its ref is refused too, while
-no ` + "`jaira fetch`" + ` has written it here yet: creating it would overwrite theirs.
+A name a milestone on the board has is refused (exit 3). A filed milestone, or
+one a teammate made that no ` + "`jaira fetch`" + ` has written here yet, does not hold its
+name: the ID tells them apart, and two with one name show as <name>-<ID>.
 
-Names are lowercase kebab, the same rule tags follow — the name is also the
-filename, so it has to be safe in a path. "Round One" is filed as "round-one"
+Names are lowercase kebab, the same rule tags follow — the name is part of the
+file name, so it has to be safe in a path. "Round One" is filed as "round-one"
 and you are told so.
 
 --goal <text> says in one line what the milestone is for, and --after <a,b>
@@ -217,7 +220,7 @@ plan, and a milestone that deleted itself when emptied would take a freshly
 created one with it the moment you changed your mind about its first ticket.
 
 ` + "`jaira logbook <name>`" + ` is the command that takes a milestone off the board,
-and ` + "`jaira restore <name>.md`" + ` brings it back.`,
+and ` + "`jaira restore <file>`" + ` brings it back.`,
 		Args: minArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return editMembers(cmd, args, false)
@@ -320,21 +323,17 @@ func newMilestoneRenameCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "rename <old> <new>",
 		Short: "Give a milestone a new name",
-		Long: `Renames the milestone everywhere its name is: the file becomes
-` + "`.jaira/milestones/<new>.md`" + `, its ref ` + "`refs/jaira/milestones/<new>`" + `, and every
-milestone that comes after it names <new> in its ` + "`after:`" + ` line. Tickets, goal,
-colour and place on the Milestone Roadmap stay as they were.
+		Long: `Changes the name of a milestone and nothing else: the file becomes
+` + "`.jaira/milestones/<new>-<ID>.md`" + ` on the same ref, so it is one write, and the ID,
+the tickets, the goal, the colour, the place on the Milestone Roadmap and the
+` + "`after:`" + ` lines of the milestones that follow it (they name the ID) all stay as
+they were. A clone that has the milestone gets the file under its new name on its
+next ` + "`jaira fetch`" + `.
 
-The old name's ref stays up, marked ` + "`status: filed`" + ` and ` + "`renamed-to: <new>`" + `: a
-clone that has the old file gets it marked on its next ` + "`jaira fetch`" + ` and stops
-showing it, which a ref taken down would never tell it. The old name is free
-again afterwards — there is nothing to restore — so a rename can be taken back
-by renaming once more.
-
-The new name follows the rules of ` + "`create`" + `: lowercase kebab, and you are told
-when it was changed. A name a milestone on the board, a filed one, or a
-teammate's milestone not fetched yet has is refused (exit 3); an old name that
-is not on the board exits 5, or 3 when it was filed.`,
+<old> is the milestone's name, ID or <name>-<ID>. The new name follows the rules
+of ` + "`create`" + `: lowercase kebab, and you are told when it was changed. A name a
+milestone on the board has is refused (exit 3); an old name that is not on the
+board exits 5, or 3 when it was filed.`,
 		Args: exactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
