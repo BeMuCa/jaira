@@ -365,13 +365,12 @@ func (m *Model) submitLayerForm() {
 	})
 	if err := m.recordOnly(err); err != nil {
 		l.err = err.Error()
-		if name == f.edit {
-			return
-		}
-		// The rename went through and only the rest was refused: the
-		// picture behind the open form shows the new name.
-		if err := m.reload(); err != nil {
-			m.notify(err.Error(), true)
+		if name != f.edit {
+			// The rename went through and only the rest was refused: the
+			// picture behind the open form shows the new name.
+			if err := m.reload(); err != nil {
+				m.notify(err.Error(), true)
+			}
 		}
 		return
 	}
