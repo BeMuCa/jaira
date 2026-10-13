@@ -960,6 +960,10 @@ func TestCreateOnATwinnedNameNamesARealFile(t *testing.T) {
 	if err == nil {
 		t.Fatalf("create on a taken name succeeded:\n%s", out)
 	}
+	// The hint must be a form 'add' takes, not the name two milestones share.
+	if !strings.Contains(out+err.Error(), "milestone add <dup-") {
+		t.Errorf("hint does not spell the <name>-<ID> forms:\n%s%v", out, err)
+	}
 	entries, _ := os.ReadDir(milestone.Dir(ada))
 	found := false
 	for _, e := range entries {

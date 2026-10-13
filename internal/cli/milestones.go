@@ -135,9 +135,22 @@ a milestone on this board, and the arrows may not form a loop.`,
 				var ee *milestone.ExistsError
 				switch err := milestone.CheckFree(s.Root, name); {
 				case errors.As(err, &ee):
+					// A name two milestones carry is refused by 'add' as ambiguous, so
+					// the hint spells the <name>-<ID> forms it accepts.
+					labels := milestone.Labels(existing)
+					var forms []string
+					for _, m := range existing {
+						if m.Name == name {
+							forms = append(forms, labels[m.ID])
+						}
+					}
+					target := strings.Join(forms, "|")
+					if len(forms) > 1 {
+						target = "<" + target + ">"
+					}
 					return nil, fail(ExitValidation, "milestone_exists",
 						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
-						name, milestonePath(s.Root, name), name)
+						name, milestonePath(s.Root, name), target)
 				case err != nil:
 					return nil, err
 				}

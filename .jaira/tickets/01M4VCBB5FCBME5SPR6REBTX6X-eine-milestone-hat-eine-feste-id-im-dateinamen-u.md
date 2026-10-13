@@ -1,7 +1,7 @@
 ---
 id: 01M4VCBB5FCBME5SPR6REBTX6X
 title: "Eine Milestone hat eine feste ID im Dateinamen, und Umbenennen aendert nur ihren Namen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Eine Milestone ist an einer festen 6-stelligen ID erkennbar (Datei <name>-<ID>.md, Ref refs/jaira/milestones/<ID>, after: nennt IDs), sodass Umbenennen ein gewoehnlicher Schreibvorgang auf ihrem einen Ref ist und keine Milestone verschwindet, wenn zwei Leute gleichzeitig umbenennen oder anlegen."
@@ -39,14 +39,14 @@ commits:
   - f2f3c1342d8b973a74d532f2f65866d6cdc8226f
   - 81eccd1fa9308abff3dcacecdeb5e63a4ef86300
 created-at: 2026-10-13T19:38:06Z
-updated-at: 2026-10-13T23:16:56Z
+updated-at: 2026-10-13T23:21:31Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3114333
 claimed-at: 2026-10-13T20:16:03Z
-outcome-what: "Milestones get a fixed 6-char ID in the file name (<name>-<ID>.md), refs keyed by ID, so rename is one write; refs, migration of old files, name/ID/<name>-<ID> resolution (exit 3 on an ambiguous name), after: as IDs, board/roadmap/ls by name. Rounds 2-3: ls --json reads the board once, create names the file it wrote, restore of an old <name>.md beside a live twin unfiles the restored one by ID, milestonePath names a real file for twin names, help/output/comments no longer say a filed milestone holds its name."
-outcome-why: "A rename touched the file, the ref and every milestone's after: line, and names could collide across clones; an ID makes identity stable and the name only a label."
-outcome-resolves: "Every EBTX6X definition-of-done item; optimize round 2 findings (restore twin bug, false 'name stays taken' text, milestonePath twin path); full race suite green."
+outcome-what: "A milestone is a file <name>-<ID>.md with a fixed 6-char ID (ref keyed by ID, rename = one write); old <name>.md files migrate with a computed ID; commands take name, ID or <name>-<ID>, a shared name exits 3 listing the forms (create's add hint too); after: holds IDs; a filed milestone no longer holds its name; logbook/help/release note and comments match."
+outcome-why: "A name as identity made rename a multi-file, multi-clone rewrite and let two clones collide; an ID in the file name makes rename one write and names unique."
+outcome-resolves: "EBTX6X: milestone identity by ID; rounds 1-4 critique findings (filed-door comment, release note, help wrap, twinned-name hint)"
 review-summary: |-
   1. internal/cli/milestones.go:672-675 still false after optimize 1/1 (2): "The third door into a filed milestone's file, after logbook" and "Refuse it where the other two refuse it" - refuseFiledOnDisk has two callers (logbook.go:386, milestones.go:676); write "The second door ..., after logbook" and "Refuse it the way logbook does", and rewrap the 125-char first line to the paragraph's width
   2. core/release/notes/EBTX6X.md:7 tells a 0.4.x reader of no change they can see: logbook output (logbook.go:436) does not say the name is free, only the help does; a ref marked "filed" hiding it on every clone is 0.4.0 behaviour (v0.4.0 logbook.go:438); no released build has two milestones of one name (v0.4.2 create printed <name>.md, which existed) - delete line 7; line 6 already carries the change (end line 6 with "; `jaira logbook` no longer says the name stays taken." if the wording change is to be told)
