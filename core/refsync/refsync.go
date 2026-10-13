@@ -1149,6 +1149,7 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 	for _, id := range wanted {
 		content, ok := contents[id]
 		if !ok {
+			delete(y.extraCache, id)
 			continue
 		}
 		var t *ticket.Ticket

@@ -960,3 +960,29 @@ func TestExtraKeepsOrderWhenOneRefMoved(t *testing.T) {
 		t.Fatalf("second Extra = %v, want the same order %v", second, first)
 	}
 }
+
+// A cached ref-only ticket whose ref moves to a commit with no ticket file is
+// dropped, not served from the cache.
+func TestExtraDropsCachedTicketWhoseRefLostItsFile(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := fileOnRef(t, ada, "on its ref")
+	if out, err := ada.syncer.Extra(map[string]bool{}); err != nil || len(out) != 1 {
+		t.Fatalf("first Extra = %d tickets, err %v", len(out), err)
+	}
+
+	dir := ada.syncer.Repo.Dir
+	git := func(args ...string) string {
+		out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	empty := git("hash-object", "-t", "tree", "/dev/null")
+	c := git("-c", "user.name=x", "-c", "user.email=x@x", "commit-tree", empty, "-m", "x")
+	git("update-ref", gitref.RefName(id), c)
+
+	if out, err := ada.syncer.Extra(map[string]bool{}); err != nil || len(out) != 0 {
+		t.Fatalf("Extra after the ref lost its file = %d tickets, err %v; want 0", len(out), err)
+	}
+}
