@@ -63,6 +63,16 @@ root="${4:-$PWD}"
 herdr="${HERDR_BIN_PATH:-herdr}"
 [ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
 
+# Every JSON below is read with 'jaira json get', so a jaira from before it —
+# the roles reinstalled, the binary not — would fail right after 'tab create'
+# and leave an empty tab standing (#79). Ask first, before a worktree or a tab
+# is made.
+if ! jaira json get ok --default ok <<<'{}' >/dev/null 2>&1; then
+  echo "the jaira on PATH ($(command -v jaira || echo none)) has no 'jaira json get':" \
+       "install the new jaira first, then run 'jaira roles install' again" >&2
+  exit 1
+fi
+
 # Beside the repository, never inside it: a worktree under the repo is a second
 # copy of the sources on a different branch, and grep -r / find / ls -R walk
 # straight into it. Derived, so no path is baked in for one machine.
@@ -133,15 +143,6 @@ on="$(start_on)"
 cwd="$wt"
 if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
   cwd="$(cygpath -w "$wt")"
-fi
-
-# Every JSON below is read with 'jaira json get', so a jaira from before it —
-# the roles reinstalled, the binary not — would fail right after 'tab create'
-# and leave an empty tab standing (#79). Ask first, before anything is opened.
-if ! jaira json get ok --default ok <<<'{}' >/dev/null 2>&1; then
-  echo "the jaira on PATH ($(command -v jaira || echo none)) has no 'jaira json get':" \
-       "install the new jaira first, then run 'jaira roles install' again" >&2
-  exit 1
 fi
 
 # Named, because without --workspace Herdr decides for itself where the tab
