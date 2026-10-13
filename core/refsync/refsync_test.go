@@ -882,3 +882,43 @@ func TestPullLeavesAStaleFileWithAnUnsentWriteAlone(t *testing.T) {
 		t.Error("the refused pull changed the file")
 	}
 }
+
+// A ref-only ticket whose ref has not moved is not read or decoded again, and a
+// ref that moved is.
+func TestExtraSkipsUnchangedRefs(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := fileOnRef(t, ada, "on its ref")
+
+	list := func() string {
+		out, err := ada.syncer.Extra(map[string]bool{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var titles []string
+		for _, x := range out {
+			titles = append(titles, x.Title)
+		}
+		return strings.Join(titles, ";")
+	}
+	if got := list(); got != "on its ref" {
+		t.Fatalf("first Extra = %q", got)
+	}
+	dec0, _ := ticket.Counts()
+	if got := list(); got != "on its ref" {
+		t.Fatalf("second Extra = %q", got)
+	}
+	if dec1, _ := ticket.Counts(); dec1 != dec0 {
+		t.Fatalf("an unchanged ref was decoded again: %d decodes", dec1-dec0)
+	}
+
+	content, sha, err := ada.syncer.Repo.Read(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Repo.Write(id, []byte(strings.Replace(string(content), "on its ref", "ref changed", 1)), sha); err != nil {
+		t.Fatalf("rewrite ref: %v", err)
+	}
+	if got := list(); got != "ref changed" {
+		t.Fatalf("a changed ref did not show: %q", got)
+	}
+}

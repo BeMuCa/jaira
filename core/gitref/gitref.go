@@ -419,6 +419,27 @@ func (r *Repo) ReadMany(ids []string) (map[string][]byte, error) {
 	return out, nil
 }
 
+// ListHashes is List with the commit each ref points at, in one git invocation.
+// A ref's commit hash is its content's address, so a caller that remembers the
+// hash it last decoded knows without reading anything whether the ticket changed.
+func (r *Repo) ListHashes() (map[string]string, error) {
+	out, err := r.value("for-each-ref", "--format=%(objectname) %(refname)", Prefix)
+	if err != nil {
+		return nil, err
+	}
+	hashes := map[string]string{}
+	for _, line := range strings.Split(out, "\n") {
+		hash, ref, ok := strings.Cut(strings.TrimSpace(line), " ")
+		if !ok {
+			continue
+		}
+		if name := strings.TrimPrefix(ref, Prefix); name != ref && name != "" {
+			hashes[name] = hash
+		}
+	}
+	return hashes, nil
+}
+
 // BlobsOf resolves the blob each ticket ref carries, in one git invocation.
 //
 // A snapshot reuses these blobs rather than hashing the content again: the
