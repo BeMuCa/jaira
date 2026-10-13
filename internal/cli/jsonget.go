@@ -37,8 +37,8 @@ func newJSONGetCmd() *cobra.Command {
 joined by dots, a number for an array element (result.pane.pane_id, items.0).
 
 A string prints as it is, without quotes; null prints nothing; anything else
-prints as compact JSON. A path that is not there exits 5, unless --default
-names what to print instead.`,
+prints as compact JSON. A path that is not there, or input that is no JSON,
+exits 5, unless --default names what to print instead.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v, err := jsonAt(cmd.InOrStdin(), args[0])

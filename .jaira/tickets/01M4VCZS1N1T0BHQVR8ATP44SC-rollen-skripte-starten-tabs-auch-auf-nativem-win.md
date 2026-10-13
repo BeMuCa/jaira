@@ -25,13 +25,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T19:49:16Z
-updated-at: 2026-10-13T19:58:14Z
+updated-at: 2026-10-13T19:59:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-427304
 claimed-at: 2026-10-13T19:49:40Z
 outcome-what: "spawn.sh/run-lane.sh lesen JSON mit dem neuen 'jaira json get' statt python3; der Chat-Brief kommt aus 'jaira show --brief'; der WSL-Start haengt an WSL_DISTRO_NAME//proc/version statt an .exe, unter Git Bash startet claude nativ im per cygpath -w uebersetzten Worktree; Python-Rollen nehmen JAIRA_PYTHON/'python'-Einstellung (roles list --json: python) und schreiben UTF-8"
 outcome-why: Auf nativem Windows ist python3 fehlend oder der Store-Stub und herdr.exe wurde fuer WSL gehalten - spawn.sh liess leere Tabs stehen
 outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
+review-summary: |-
+  spawn.sh:~114 start_on() wird zweimal aufgerufen (cwd und start); einmal in on=$(start_on) halten
+  internal/cli/tickets.go ticketBrief parst Notes mit eigener Regex neben trimNotes/progressNotes (tickets.go, resume.go) - eine Note muss dasselbe heissen wie dort: Zeile mit "- " unter ## Progress, Folgezeilen gehoeren dazu
+  internal/cli/jsonget.go Long-Text: auch Eingabe ohne JSON endet in Exit 5 / --default; so sagen
+round: 2
 ---
 
 # Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt
@@ -43,7 +48,7 @@ outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
 - [x] Rollen, die ein Python-Skript laufen lassen, nehmen das Kommando aus JAIRA_PYTHON bzw. der Einstellung 'python' (Default python3); die Skripte schreiben stdout als UTF-8
   proof: core/settings/settings.go PythonCommand; roles list python key (TestRolesListReportsThePythonCommand); SKILL.md lines ask jaira; build.py/collect.py reconfigure stdout (TestRolesNeverRunPython3ByName)
 - [x] spawn.sh nimmt den WSL-Weg nur bei WSL_DISTRO_NAME oder microsoft in /proc/version; unter MINGW/MSYS startet es claude nativ im Worktree; Test mit Stub fuer beide Faelle
-  proof: spawn.sh start_on(); core/role/role_test.go TestSpawnStartsClaudeWhereItsShellRuns (wsl + git bash stubs)
+  proof: spawn.sh start_on()/on; core/role/role_test.go TestSpawnStartsClaudeWhereItsShellRuns (wsl + git bash stubs)
 - [x] Auf dieser WSL-Maschine startet spawn.sh weiter einen Worker-Tab wie bisher (live geprueft)
   proof: live 2026-10-13: spawn.sh --no-worktree mit herdr.exe unter /mnt/c -> Tab w3:tET, claude idle->working, pane tokens wsl=Ubuntu-24.04 dir=~/projects/.worktrees/jaira-tp44sc; Tab danach geschlossen
 - [x] Release-Note als Datei core/release/notes/<Handle>.md; der Pull Request nennt 'Fixes #79'
@@ -62,3 +67,6 @@ outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
 - **2026-10-13 19:49 · Alexander Sacharov** — parent session: jaira-6a
 - **2026-10-13 19:50 · Alexander Sacharov** — decision (worker, keine offene Frage fuer die Person): (1) Unterbefehl 'jaira json get <pfad> [--default v]': liest JSON von stdin, Pfad mit Punkten (result.pane.pane_id), String roh, Objekt/Array kompakt als JSON ohne \u-Escapes; fehlt der Pfad und kein --default -> Exit 1. (2) Der Brief fuer explain/discuss war eine Python-Umformung, kein Feld: er kommt jetzt aus 'jaira show <id> --brief' (Go, gleiche Felder title/goal/question/review/notes_last(4)/notes_total). (3) Python-Kommando: 'jaira roles list --json' traegt 'python' (JAIRA_PYTHON > settings 'python' > python3); die SKILL.md lesen es so und rufen $py unquoted auf, damit 'uv run python' geht. (4) Script-Tests bauen das echte Binary einmal per go build, statt python3 vorauszusetzen.
 - **2026-10-13 19:58 · Alexander Sacharov** — Live-Check DoD4: Lane-Name 'livecheck-noop' benutzt, damit der gestartete claude nichts Echtes tut; Tab sofort geschlossen, Ticket unveraendert. Achtung Deployment: die neuen Skripte brauchen ein jaira mit 'json get' auf dem PATH - roles install aus demselben Binary liefert das automatisch, ein altes jaira + neue Skripte nicht. Native Windows (Git Bash) nur per Stub getestet: Handcheck durch Alex/sashasoft90 auf Windows noetig. Fuer den PR: 'Fixes #79' in die Beschreibung.
+- **2026-10-13 19:58 · Alexander Sacharov** — critique runde 1: spawn.sh:~114 start_on() wird zweimal aufgerufen (cwd und start); einmal in on=$(start_on) halten
+internal/cli/tickets.go ticketBrief parst Notes mit eigener Regex neben trimNotes/progressNotes (tickets.go, resume.go) - eine Note muss dasselbe heissen wie dort: Zeile mit "- " unter ## Progress, Folgezeilen gehoeren dazu
+internal/cli/jsonget.go Long-Text: auch Eingabe ohne JSON endet in Exit 5 / --default; so sagen

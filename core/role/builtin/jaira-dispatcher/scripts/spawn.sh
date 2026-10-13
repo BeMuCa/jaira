@@ -128,8 +128,9 @@ start_on() {
 
 # The directory as Herdr takes it. A native Windows Herdr reads C:\..., not the
 # /c/... Git Bash shows; cygpath, which Git Bash and MSYS ship, translates it.
+on="$(start_on)"
 cwd="$wt"
-if [ "$(start_on)" = native ] && command -v cygpath >/dev/null 2>&1; then
+if [ "$on" = native ] && command -v cygpath >/dev/null 2>&1; then
   cwd="$(cygpath -w "$wt")"
 fi
 
@@ -178,7 +179,7 @@ claude="claude${chat_model:+ --model '$chat_model'}"
 # Herdr of a native Windows machine, where this runs in Git Bash, the tab is
 # already on the right machine, and wsl.exe would start in a distro that cannot
 # reach C:\ under that path and leave claude at its trust dialog in / (#79).
-case "$(start_on)" in
+case "$on" in
   wsl) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
   *)   start="cd '$cwd' && $claude" ;;
 esac

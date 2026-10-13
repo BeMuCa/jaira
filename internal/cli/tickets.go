@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -763,30 +762,27 @@ many there are as notes_total.`,
 	return cmd
 }
 
-// briefNote is where one progress note starts: its dated, bold heading.
-// A line that does not start one is a continuation of the note above.
-var briefNote = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
-
 // briefNotes is how many of the newest notes a brief carries.
 const briefNotes = 4
 
 // ticketBrief is the part of a ticket the cockpit's explain and discuss chats
 // are handed in their prompt instead of reading all of it: every note and every
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
-// python3, which a Windows machine may not have (issue #79). Notes are whole,
-// continuation lines included, and the fields keep spawn.sh's order.
+// python3, which a Windows machine may not have (issue #79). A note is what
+// trimNotes counts, its continuation lines with it, and the fields keep
+// spawn.sh's order.
 func ticketBrief(j map[string]any, body string) any {
 	var notes []string
-	if _, progress, ok := strings.Cut(body, "\n## Progress\n"); ok {
-		starts := briefNote.FindAllStringIndex(progress, -1)
-		for i, at := range starts {
-			end := len(progress)
-			if i+1 < len(starts) {
-				end = starts[i+1][0]
-			}
-			if n := strings.TrimSpace(progress[at[0]:end]); n != "" {
-				notes = append(notes, n)
-			}
+	in := false
+	for _, line := range strings.Split(body, "\n") {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(trimmed, "#"):
+			in = strings.EqualFold(trimmed, noteHeading)
+		case in && strings.HasPrefix(trimmed, "- "):
+			notes = append(notes, trimmed)
+		case in && trimmed != "" && len(notes) > 0:
+			notes[len(notes)-1] += "\n" + line
 		}
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
