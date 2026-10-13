@@ -21,13 +21,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T17:08:03Z
-updated-at: 2026-10-13T17:13:48Z
+updated-at: 2026-10-13T17:15:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-201739
 claimed-at: 2026-10-13T17:08:32Z
 outcome-what: "'jaira roles install' hat --agent (Default claude, neu copilot): eine Agent-Tabelle in core/role/target.go nennt je Agent das Projekt- und das globale Skills-Verzeichnis und die weiteren, die er liest; copilot schreibt nach .github/skills bzw. ~/.copilot/skills ohne das Cockpit-Mod, schreibt nichts wenn die Rollen schon in .claude/skills/.agents/skills liegen, unbekannter Agent und --agent mit --into enden mit Exit 2"
 outcome-why: "Wer mit GitHub Copilot arbeitet, bekam die Rollen nur ueber --into und musste das Verzeichnis selbst kennen"
 outcome-resolves: "Alle fuenf DoD-Punkte: Recherche-Note mit Quellen, Zielverzeichnisse, keine Doppelkopie, Usage-Fehler, Doku und Release-Note"
+review-summary: "core/role/install.go:46 behaelt das exportierte Install(dir, force) nur noch fuer core/role/role_test.go; das CLI ruft Agent.Install. Exportiertes Install streichen, Tests rufen das unexportierte install(dir, force, true) - ein Einstieg statt zwei."
+round: 2
 ---
 
 # jaira roles install --agent copilot legt die Rollen dort ab, wo Copilot sie liest
@@ -59,3 +61,5 @@ outcome-resolves: "Alle fuenf DoD-Punkte: Recherche-Note mit Quellen, Zielverzei
 - **2026-10-13 17:09 · Alexander Sacharov** — Recherche (Stand 13.10.2026, Quellen): Copilot liest Skills projektweit aus .github/skills, .claude/skills und .agents/skills - gleich fuer VS Code, Copilot CLI und Coding/Cloud Agent. Persoenlich: CLI und Cloud Agent lesen ~/.copilot/skills und ~/.agents/skills (NICHT ~/.claude/skills); VS Code liest zusaetzlich ~/.claude/skills. SKILL.md mit YAML-Frontmatter name (lowercase, Bindestriche, = Verzeichnisname, max 64) und description (max 1024) ist genau das Format, das die Rollen schreiben. Doppelte Namen: VS Code zeigt beide Skills an, GitHub-Doku sagt nichts. Quellen: https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-skills ; https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/create-skills ; https://code.visualstudio.com/docs/agent-customization/agent-skills ; https://learn.microsoft.com/en-us/visualstudio/ide/copilot-agent-skills
 - **2026-10-13 17:09 · Alexander Sacharov** — decision: Ziel fuer --agent copilot: --project -> .github/skills, --global -> ~/.copilot/skills (die Verzeichnisse, die alle drei Copilot-Oberflaechen lesen und die Copilot selbst empfiehlt). Keine zweite Kopie: liegt schon eine jaira-Rolle in einem anderen Verzeichnis, das ALLE Copilot-Oberflaechen lesen (projekt: .claude/skills, .agents/skills; global: ~/.agents/skills), schreibt der Befehl nichts und sagt in einer Zeile wo sie liegen, Exit 0. ~/.claude/skills zaehlt global NICHT: Copilot CLI und Cloud Agent sehen es nicht - sonst haette die CLI gar keine Rollen; Preis: VS Code zeigt sie dann doppelt. Das jaira-cockpit-Mod (Claude-Code-Plugin, keine SKILL.md) wird fuer copilot nicht geschrieben.
 - **2026-10-13 17:13 · Alexander Sacharov** — Install bekam eine Agent-Methode statt eines dritten Parameters: die zehn Install(dir, force)-Aufrufe in core/role/role_test.go bleiben so unveraendert. Geprueft wird 'schon installiert' ueber irgendeine Rollen-SKILL.md, nicht ueber alle: schon eine einzige waere doppelt registriert.
+- **2026-10-13 17:14 · Alexander Sacharov** — critique: core/role/install.go:46 behaelt das exportierte Install(dir, force) nur noch fuer core/role/role_test.go; das CLI ruft Agent.Install. Exportiertes Install streichen, Tests rufen das unexportierte install(dir, force, true) - ein Einstieg statt zwei. Alles andere bleibt stehen: Agent-Tabelle in target.go ist die vom Ticket verlangte 'eine Zeile pro Agent'; ~/.claude/skills nicht in AlsoGlobal ist in der decision-Note begruendet.
+- **2026-10-13 17:15 · Alexander Sacharov** — Nach critique: exportiertes role.Install entfernt; einziger Einstieg ist Agent.Install, die Tests in core/role rufen install(dir, force, true). Die fruehere Note zur Agent-Methode gilt nur noch insoweit.
