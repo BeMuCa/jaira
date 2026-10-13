@@ -27,8 +27,9 @@ function personColor(name: string): string {
 }
 
 type OverviewTab = 'queue' | 'log'
-type OverviewState = { tab: OverviewTab; folded: Record<string, boolean> }
-type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void }
+// `people`: the names the Log is filtered to; empty shows everybody.
+type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: string[] }
+type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void; person: (name: string) => void; everybody: () => void }
 
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions) {
@@ -66,10 +67,23 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
     section('queue', w.queue, view.queue),
     section('parked', w.parked, view.parked),
   ]
+  // The Log filters to the people chosen, several at once, as `u` does on the
+  // board; a day with nobody chosen in it drops out.
+  const names = [...new Set(view.history.flatMap(d => d.events.map(ev => ev.who)).filter(Boolean))].sort()
+  const chosen = (who: string) => state.people.length === 0 || state.people.includes(who)
+  const days = view.history.map(d => ({ ...d, events: d.events.filter(ev => chosen(ev.who)) })).filter(d => d.events.length > 0)
   const log = [
+    <Box key="people" flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
+      <Button key="overview-people-all" label={w.everybody} variant={state.people.length === 0 ? 'primary' : undefined} dimColor={state.people.length !== 0} onPress={act.everybody} />
+      {names.map(name => (
+        <Button key={`overview-person-${name}`} label={name} variant={state.people.includes(name) ? 'primary' : undefined} dimColor={!state.people.includes(name)} onPress={() => act.person(name)}>
+          <Text color={personColor(name)}>{name}</Text>
+        </Button>
+      ))}
+    </Box>,
     <Box key="history" marginTop={1}><Text bold>{w.history(HISTORY_DAYS)}</Text></Box>,
-    view.history.length === 0 ? <Text key="history-none" dimColor>{w.none}</Text> : null,
-    ...view.history.map(d => (
+    days.length === 0 ? <Text key="history-none" dimColor>{w.none}</Text> : null,
+    ...days.map(d => (
       <Box key={`day-${d.day}`} flexDirection="column">
         <Text dimColor>── {d.day} ──</Text>
         {d.events.map(ev => (

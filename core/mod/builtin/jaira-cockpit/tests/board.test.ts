@@ -2062,6 +2062,45 @@ describe('the overview', () => {
     expect(['claude', 'suggestion', 'warning']).not.toContain(alex[0])
   })
 
+  test('the Log filters to the people chosen, several at once, All clears it, and the choice outlives closing the pane', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new today', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'by Berk', status: 'backlog', creator: 'Berk', updated_by: 'Berk', created_at: ago(3), updated_at: ago(3) },
+      { handle: 'C1C1C1', title: 'by Carla', status: 'backlog', creator: 'Carla', updated_by: 'Carla', created_at: ago(5), updated_at: ago(5) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    let pane = await $.ui.mount(OVERVIEW)
+    // Queue has no filter: only the Log does.
+    expect(await pane.find({ key: 'overview-people-all' })).toBeUndefined()
+    await pane.press({ key: 'overview-tab-log' })
+    const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
+    expect(labels).toEqual(['Queue', 'Log', 'All', 'Alex', 'Berk', 'Carla', 'Close'])
+    // A name button is drawn in that person's colour.
+    expect((await pane.find({ type: 'Text', text: /^Berk$/ }))?.props.color).toBeDefined()
+    const handles = async () => (await pane.findAll({ type: 'Text', text: /^\d\d:\d\d {2}/ })).map(x => x.text.slice(7, 13))
+    const days = async () => (await pane.findAll({ type: 'Text', text: /^── / })).length
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'C1C1C1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await handles()).toEqual(['B1B1B1'])
+    // A day with nobody chosen drops out.
+    expect(await days()).toBe(1)
+    expect((await pane.find({ key: 'overview-person-Berk' }))?.props.variant).toBe('primary')
+    await pane.press({ key: 'overview-person-Carla' })
+    expect(await handles()).toEqual(['B1B1B1', 'C1C1C1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await handles()).toEqual(['C1C1C1'])
+    await pane.press({ key: 'overview-close' })
+    await pane.unmount()
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    pane = await $.ui.mount(OVERVIEW)
+    expect(await handles()).toEqual(['C1C1C1'])
+    await pane.press({ key: 'overview-people-all' })
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'C1C1C1'])
+    expect((await pane.find({ key: 'overview-people-all' }))?.props.variant).toBe('primary')
+  })
+
   test('a board that cannot be read says so', async ($, on) => {
     const w = world(on)
     w.nextFails = true

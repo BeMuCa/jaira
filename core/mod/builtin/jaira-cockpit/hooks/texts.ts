@@ -108,6 +108,7 @@ export const overviewWords = {
   parked: 'Put back',
   tabQueue: 'Queue',
   tabLog: 'Log',
+  everybody: 'All',
   none: 'none',
   history: (days: number) => `Created and put back, last ${days} days`,
   created: 'created',
