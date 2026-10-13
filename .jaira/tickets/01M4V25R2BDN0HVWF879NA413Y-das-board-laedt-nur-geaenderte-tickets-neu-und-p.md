@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T16:40:17Z
-updated-at: 2026-10-13T21:06:13Z
+updated-at: 2026-10-13T21:13:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3239170
@@ -32,7 +32,8 @@ claimed-at: 2026-10-13T21:01:47Z
 
 ## Definition of Done
 
-- [ ] Decode parst den YAML-Kopf eines Tickets genau einmal; gleiche Ausgabe wie vorher, belegt durch einen Test ueber vorhandene Ticket-Dateien
+- [x] Decode parst den YAML-Kopf eines Tickets genau einmal; gleiche Ausgabe wie vorher, belegt durch einen Test ueber vorhandene Ticket-Dateien
+  proof: core/ticket/schema.go Decode/decodeFields, frontmatter.go Fields; TestDecodeParsesOnceAndMatchesBefore, TestDecodeMatchesBeforeOnEdgeCases
 - [ ] Ein Ticket, dessen Datei (Zeit und Groesse) und Ref-Hash sich seit dem letzten Laden nicht geaendert haben, wird nicht neu gelesen und dekodiert; eine Aenderung gleicher Groesse wird trotzdem gefunden; Tests decken beide Faelle
 - [ ] Der Datei-Waechter gibt die geaenderten Dateien weiter, und nur diese werden neu gelesen; das volle Neuladen laeuft nur noch als seltenes Sicherheitsnetz
 - [ ] Gemessen auf diesem Repo: CPU des offenen Boards im Leerlauf vorher und nachher, Zahlen als Notiz am Ticket; go test ./... -race gruen
@@ -47,8 +48,8 @@ claimed-at: 2026-10-13T21:01:47Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [~] A (DoD 1): Test zuerst mit decodeBefore als Kopie des heutigen Decode ueber .jaira/tickets + logbook + Randfaelle; dann Fields/ticketFields/decodeFields + Counts(); Decode parst einmal; ein gruener Commit
-- [ ] B: lane.parse liest ueber ein einziges d.Fields() (str, list, Has, rejects-to); go test ./core/lane gruen; ein Commit
+- [x] A (DoD 1): Test zuerst mit decodeBefore als Kopie des heutigen Decode ueber .jaira/tickets + logbook + Randfaelle; dann Fields/ticketFields/decodeFields + Counts(); Decode parst einmal; ein gruener Commit
+- [~] B: lane.parse liest ueber ein einziges d.Fields() (str, list, Has, rejects-to); go test ./core/lane gruen; ein Commit
 - [ ] C: Ticket.Clone() mit eigenen Slices und Doc-Kopie + Test, dass Aendern der Kopie das Original nicht beruehrt; ein Commit
 - [ ] D (DoD 2, Dateien): Kopf-Cache im Store (EnableCache, cached, racyWindow 2 s, Forget/ForgetAll, loadHeader + idOf, Clone pro Treffer); Tests: unveraendert = 0 Lesen/0 Decode, gleich grosse Aenderung mit gleicher mtime wird gefunden, ForgetAll findet sie auch ausserhalb des Fensters, Kopie aendern laesst Cache heil, geloeschte Datei verschwindet, Cache aus = alter Weg; ein Commit
 - [ ] E (DoD 2, Refs): gitref.ListHashes hinter ReadMany + Hash-Cache in refsync.Extra; Test mit fileOnRef: zweites Extra ohne Decode, geaenderter Ref erscheint; ein Commit
