@@ -55,7 +55,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira` | the home screen: every board, and what each needs |
 | `jaira board` | open the board here directly |
 | `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--milestone`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
-| `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid |
+| `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid; `--brief` prints one line of JSON with only what a chat about the ticket needs: id, title, goal, question, review, the newest four notes as `notes_last` and how many there are as `notes_total` |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |
 | `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
 | `jaira tags` | the tags this board already uses: name, colour swatch, colour number and how many open tickets carry each (`--json`: `name`, `color`, `open`). **Read this before tagging** and reuse the name already there for that subject — never invent a synonym, since "ui", "frontend" and "gui" on one board are three names for one thing and filter to nothing. Writes nothing: a listing that edited the board would race every other session reading it, so a tag with no colour is shown without one |
@@ -167,6 +167,7 @@ field per ticket.
 | `jaira sync-tasks` | mirror an agent's task list into the backlog |
 | `jaira checkpoint` | record what this session is working on |
 | `jaira merge-driver` | called by git; not run by hand |
+| `jaira json get <path>` | read one JSON document from stdin and print the value at `<path>`: keys joined by dots, a number for an array element (`result.pane.pane_id`, `items.0`). A string prints without quotes, null prints nothing, anything else prints as compact JSON. A path that is not there, or input that is no JSON, exits 5, unless `--default <v>` names what to print instead |
 | `jaira hook print` | print a Claude Code Stop-hook snippet for `~/.claude/settings.json` that refuses to end a session while an agentic lane still has work waiting. Opt-in: nothing is installed, and the hook lets the session end when it cannot read a board |
 
 ## Keys
