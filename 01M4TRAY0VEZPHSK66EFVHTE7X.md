@@ -2,7 +2,7 @@
 id: 01M4TRAY0VEZPHSK66EFVHTE7X
 title: "Ein selbst gebauter jaira zeigt, aus welchem Commit er stammt"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
 goal: "jaira --version und der Projektkopf zeigen bei einem lokalen Build den Commit, so wie ein Release-Build seinen Tag zeigt."
 context: |-
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:21Z
-updated-at: 2026-10-13T14:16:48Z
+updated-at: 2026-10-13T14:16:51Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
