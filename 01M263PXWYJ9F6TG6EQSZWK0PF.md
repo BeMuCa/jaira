@@ -17,7 +17,7 @@ tags:
 blocked-by: []
 commits: []
 created-at: 2026-09-10T16:51:42Z
-updated-at: 2026-10-13T13:49:04Z
+updated-at: 2026-10-13T14:21:09Z
 updated-by: BeMuCa
 ---
 
@@ -26,6 +26,7 @@ updated-by: BeMuCa
 ## Definition of Done
 
 - [ ] Ein Ticket mit gefuelltem question-Feld ist auf der Board-Karte als solches erkennbar, unabhaengig von seiner Lane; ein Test deckt eine Frage ausserhalb der human-Lane ab; go test ./... -race gruen
+- [ ] Verlaesst ein Ticket die human-Lane, leert jaira das question-Feld; Frage und Antwort bleiben als Notiz im Ticket lesbar (wie die Antwort hineinkommt, z.B. --answer beim move, entscheidet brainstorm); damit heisst ein gefuelltes question-Feld wieder 'unbeantwortet'; ein Test deckt den Weg aus human ab
 
 ## Options
 
