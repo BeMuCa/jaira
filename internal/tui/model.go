@@ -316,6 +316,9 @@ func New(s *ticket.Store) (*Model, error) {
 	// the board files the write and a command with a route sends it.
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
+	// The board lists every 2 seconds, so it is the one reader worth a cache of
+	// decoded tickets; the CLI is one-shot and never asks for it.
+	s.EnableCache()
 	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
@@ -347,6 +350,7 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	s.Actor = m.me
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
+	s.EnableCache()
 	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0

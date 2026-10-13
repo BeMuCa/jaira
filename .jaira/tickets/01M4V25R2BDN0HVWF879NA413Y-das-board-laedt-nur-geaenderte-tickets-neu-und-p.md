@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T16:40:17Z
-updated-at: 2026-10-13T21:16:33Z
+updated-at: 2026-10-13T21:18:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3239170
@@ -52,8 +52,8 @@ claimed-at: 2026-10-13T21:01:47Z
 - [x] B: lane.parse liest ueber ein einziges d.Fields() (str, list, Has, rejects-to); go test ./core/lane gruen; ein Commit
 - [x] C: Ticket.Clone() mit eigenen Slices und Doc-Kopie + Test, dass Aendern der Kopie das Original nicht beruehrt; ein Commit
 - [x] D (DoD 2, Dateien): Kopf-Cache im Store (EnableCache, cached, racyWindow 2 s, Forget/ForgetAll, loadHeader + idOf, Clone pro Treffer); Tests: unveraendert = 0 Lesen/0 Decode, gleich grosse Aenderung mit gleicher mtime wird gefunden, ForgetAll findet sie auch ausserhalb des Fensters, Kopie aendern laesst Cache heil, geloeschte Datei verschwindet, Cache aus = alter Weg; ein Commit
-- [~] E (DoD 2, Refs): gitref.ListHashes hinter ReadMany + Hash-Cache in refsync.Extra; Test mit fileOnRef: zweites Extra ohne Decode, geaenderter Ref erscheint; ein Commit
-- [ ] F1 (DoD 5): Board schaltet den Cache ein (New, switchBoard); Test in internal/tui: Takt ohne Aenderung laesst Counts unveraendert, Titel per store.Mutate geaendert -> naechster Takt zeigt ihn mit genau 1 Decode; ein Commit
+- [x] E (DoD 2, Refs): gitref.ListHashes hinter ReadMany + Hash-Cache in refsync.Extra; Test mit fileOnRef: zweites Extra ohne Decode, geaenderter Ref erscheint; ein Commit
+- [~] F1 (DoD 5): Board schaltet den Cache ein (New, switchBoard); Test in internal/tui: Takt ohne Aenderung laesst Counts unveraendert, Titel per store.Mutate geaendert -> naechster Takt zeigt ihn mit genau 1 Decode; ein Commit
 - [ ] F2 (DoD 3, Waechter): chan []string, changeMsg{paths}, Forget vor reload; Tests: changeMsg mit einem Pfad liest nur diesen neu (1 Decode, auch bei gleicher Groesse+mtime), echtes fsnotify-Ereignis kommt mit Pfad an (5 s Timeout, Skip ohne Watcher); ein Commit
 - [ ] F3 (DoD 3, Sicherheitsnetz): fullReparseEvery 15 min + m.fullAt + ForgetAll im Takt, Kommentare an reload/tick umschreiben, core/release/notes/NA413Y.md im selben Commit; Test: unsichtbare Aenderung erscheint erst, wenn fullAt aelter als 15 min ist
 - [ ] G (DoD 4): CPU im Leerlauf vorher (82b2252a) und nachher auf einer Kopie dieses Repos ohne Remote messen, Rezept in der Bauplan-Notiz; Zahlen + go test ./... -race als Notiz; kein Commit
