@@ -417,7 +417,7 @@ func (m *Model) drawBubble(cv *layerCanvas, ms *milestone.Milestone, at image.Po
 	cv.text(x+1, y, strings.Repeat(h, fillCells), bst)
 	cv.put(x+bubbleW-1, y, tr, bst)
 
-	name := []rune(ms.Name)
+	name := []rune(m.milestoneLabel(ms.ID))
 	if len(name) > nameMax {
 		name = append(name[:nameMax-1], '…')
 	}
@@ -657,8 +657,9 @@ func (m *Model) layerHeader(sc *layerScene) string {
 		}
 		// Cut before styling: a cut through an escape sequence would leave
 		// the colour running into the picture.
-		goal = truncate(goal, width-lipgloss.Width(roadmapTitle+" ·  · "+ms.Name))
-		return head + styMeta.Render(" · ") + ms.Name + styMeta.Render(" · "+goal)
+		label := m.milestoneLabel(ms.ID)
+		goal = truncate(goal, width-lipgloss.Width(roadmapTitle+" ·  · "+label))
+		return head + styMeta.Render(" · ") + label + styMeta.Render(" · "+goal)
 	default:
 		return head + styMeta.Render(truncate(" · [+] a new milestone, "+m.placementText(l.sel), width-len(roadmapTitle)))
 	}
@@ -713,9 +714,9 @@ func (m *Model) renderLayerDialog() string {
 		}
 		for i, id := range l.pick {
 			ms := m.milestoneByID(id)
-			marker, label := "  ", ms.Name
+			marker, label := "  ", m.milestoneLabel(id)
 			if i == l.pickIdx {
-				marker, label = stySelected.Render("▌ "), stySelected.Render(ms.Name)
+				marker, label = stySelected.Render("▌ "), stySelected.Render(label)
 			}
 			note := "not on the roadmap yet: placed here"
 			switch {
@@ -752,7 +753,7 @@ func (m *Model) renderMilestoneDetail() string {
 	width := max(20, m.width)
 	var head []string
 	done, total := m.milestoneDone(ms)
-	head = append(head, milestoneMark(ms)+" "+styLaneTitle.Render(ms.Name)+styMeta.Render(fmt.Sprintf("  %d/%d done", done, total)))
+	head = append(head, milestoneMark(ms)+" "+styLaneTitle.Render(m.milestoneLabel(ms.ID))+styMeta.Render(fmt.Sprintf("  %d/%d done", done, total)))
 	head = append(head, styBar.Render(strings.Repeat("─", min(width, 78))))
 	goal := ms.Goal
 	if goal == "" {
@@ -768,7 +769,7 @@ func (m *Model) renderMilestoneDetail() string {
 	}
 	head = append(head, styMeta.Render("after  ")+after, "")
 	if len(l.rows) == 0 {
-		head = append(head, styMeta.Render("No tickets in it yet — 'jaira milestone add "+ms.Name+" <id>' puts one in."))
+		head = append(head, styMeta.Render("No tickets in it yet — 'jaira milestone add "+m.milestoneLabel(ms.ID)+" <id>' puts one in."))
 	}
 
 	const whereW = 16

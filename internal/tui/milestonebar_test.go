@@ -337,3 +337,60 @@ func sameInts(a, b []int) bool {
 	}
 	return true
 }
+
+// mkMilestoneWithID is mkMilestone for the case the name does not decide: two
+// milestones of one name, told apart by the ID in their file names.
+func mkMilestoneWithID(t *testing.T, m *Model, name, id string, colour int, ids ...string) {
+	t.Helper()
+	ms := milestone.New(name, colour, nowish())
+	ms.ID = id
+	for _, tid := range ids {
+		ms.Add(tid)
+	}
+	if err := ms.Save(m.store.Root); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The picker shows a milestone by its name, without the ID; two that share a
+// name are shown as <name>-<ID> and a tick on one filters only that one.
+func TestPickerShowsNamesWithoutIDsExceptForTwins(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	if len(m.tickets) < 3 {
+		t.Fatalf("need three tickets, the board has %d", len(m.tickets))
+	}
+	one, two := m.tickets[0].ID, m.tickets[1].ID
+	mkMilestone(t, m, "solo", 45, m.tickets[2].ID)
+	mkMilestoneWithID(t, m, "twin", "AAAAAA", 46, one)
+	mkMilestoneWithID(t, m, "twin", "BBBBBB", 47, two)
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+
+	m.Update(key("M"))
+	out := stripANSI(m.renderMilestones())
+	if !strings.Contains(out, "solo") || strings.Contains(out, "solo-") {
+		t.Errorf("a single name must show without its ID:\n%s", out)
+	}
+	for _, want := range []string{"twin-AAAAAA", "twin-BBBBBB"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("twins must show as name-ID, no %q:\n%s", want, out)
+		}
+	}
+	// rows are solo, twin-AAAAAA, twin-BBBBBB: tick the first twin
+	m.Update(key("j"))
+	m.Update(key(" "))
+	m.Update(key("enter"))
+	if m.filter != "milestone:twin-AAAAAA" {
+		t.Fatalf("filter = %q", m.filter)
+	}
+	shown := map[string]bool{}
+	for _, c := range m.cols {
+		for _, tk := range c.tickets {
+			shown[tk.ID] = true
+		}
+	}
+	if len(shown) != 1 || !shown[one] {
+		t.Errorf("a tick on one twin must filter to that one, board shows %v", shown)
+	}
+}

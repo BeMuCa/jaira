@@ -763,3 +763,28 @@ func TestArchivedTicketCountsAsTheLinkIndexSays(t *testing.T) {
 		t.Errorf("the detail must list both, titled, as archived:\n%s", out)
 	}
 }
+
+// Two milestones of one name are told apart on the roadmap by their ID, and
+// the milestone detail says which one it is; a single name shows alone.
+func TestRoadmapShowsNameIDsOnlyForTwins(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	for _, c := range []struct{ name, id string }{{"twin", "AAAAAA"}, {"twin", "BBBBBB"}, {"solo", "CCCCCC"}} {
+		ms := milestone.New(c.name, 45, nowish())
+		ms.ID = c.id
+		ms.SetAfter(nil)
+		if err := ms.Save(m.store.Root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	out := stripANSI(m.render())
+	for _, want := range []string{"twin-AAAAAA", "twin-BBBBBB", "solo"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the roadmap lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "solo-CCCCCC") {
+		t.Errorf("a single name was shown with its ID:\n%s", out)
+	}
+}

@@ -927,6 +927,20 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	solo, _ := milestone.Load(dir, "solo")
 	one, two := mkTicket(t, dir, "one"), mkTicket(t, dir, "two")
 
+	// ls names a milestone without its ID unless another shares the name
+	out, err := runCLI(t, dir, "milestone", "ls")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"dup-" + first.ID, "dup-ZZZZZ9", "solo "} {
+		if !strings.Contains(out, want) {
+			t.Errorf("ls lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "solo-") {
+		t.Errorf("ls shows a single name with its ID:\n%s", out)
+	}
+
 	// both forms are named, and nothing is written
 	for _, args := range [][]string{
 		{"milestone", "add", "dup", one}, {"milestone", "rm", "dup", one},

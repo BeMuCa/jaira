@@ -1682,11 +1682,13 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 	return slots
 }
 
-// milestoneNames is the milestone picker's rows as the names they show.
+// milestoneNames is the milestone picker's rows as the labels they show: the
+// name, and <name>-<ID> where two milestones share one.
 func (m *Model) milestoneNames() []string {
+	labels := milestone.Labels(m.milestones)
 	out := make([]string, len(m.milestones))
 	for i, ms := range m.milestones {
-		out[i] = ms.Name
+		out[i] = labels[ms.ID]
 	}
 	return out
 }

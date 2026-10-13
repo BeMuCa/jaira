@@ -141,8 +141,8 @@ func (m *Model) spellAsID(token string) string {
 
 // milestoneLabel is what a milestone is called on screen.
 func (m *Model) milestoneLabel(id string) string {
-	if ms := m.milestoneByID(id); ms != nil {
-		return ms.Name
+	if label, ok := milestone.Labels(m.milestones)[id]; ok {
+		return label
 	}
 	return id
 }

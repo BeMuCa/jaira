@@ -1616,15 +1616,16 @@ func (m *Model) renderMilestones() string {
 	if len(m.milestones) == 0 {
 		b.WriteString(styMeta.Render("No milestones on this board.") + "\n")
 	}
+	labels := milestone.Labels(m.milestones)
 	for i, ms := range m.milestones {
 		marker := "  "
-		name := ms.Name
+		name := labels[ms.ID]
 		if i == m.pick.idx {
 			marker = stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
 		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
-		b.WriteString(marker + m.tickMark(ms.Name) + " " + milestoneMark(ms) + " " + name + count + "\n")
+		b.WriteString(marker + m.tickMark(labels[ms.ID]) + " " + milestoneMark(ms) + " " + name + count + "\n")
 	}
 	for _, l := range wrapHints([]string{"space tick", "enter show only the ticked", "x show everything again", "esc close"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))

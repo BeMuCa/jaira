@@ -516,6 +516,7 @@ work and each filters to half of it.`,
 				return nil
 			}
 			colours := colourable(w)
+			labels := milestone.Labels(all)
 			fmt.Fprintln(w)
 			for _, ms := range all {
 				known := ms.HasColour()
@@ -528,7 +529,7 @@ work and each filters to half of it.`,
 					goal = "  " + truncate(ms.Goal, 50)
 				}
 				fmt.Fprintf(w, "  %s %-24s %s  %3d ticket(s)%s\n",
-					swatch(ms.Colour, known, colours), ms.Name, value, len(ms.Members()), goal)
+					swatch(ms.Colour, known, colours), labels[ms.ID], value, len(ms.Members()), goal)
 			}
 			fmt.Fprintf(w, "\nFiles: %s\n", milestone.Dir(s.Root))
 			return nil

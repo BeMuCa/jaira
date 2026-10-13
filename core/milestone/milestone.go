@@ -661,6 +661,24 @@ func AssignColour(existing []*Milestone, name string) int {
 	return free[rand.IntN(len(free))]
 }
 
+// Labels is how each of these milestones is called on screen, by ID: its
+// name, and <name>-<ID> only for the ones that share a name with another —
+// the one case in which a name does not tell them apart.
+func Labels(all []*Milestone) map[string]string {
+	count := make(map[string]int, len(all))
+	for _, m := range all {
+		count[m.Name]++
+	}
+	out := make(map[string]string, len(all))
+	for _, m := range all {
+		out[m.ID] = m.Name
+		if count[m.Name] > 1 {
+			out[m.ID] = m.Name + "-" + m.ID
+		}
+	}
+	return out
+}
+
 // Index answers, for one ticket id, which milestones hold it — the direction
 // every reader needs and the file does not give. Multiple membership is
 // allowed: a ticket carried over from one round into the next is in both files
