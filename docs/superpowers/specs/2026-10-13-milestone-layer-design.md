@@ -134,7 +134,7 @@ moves while the cursor moves:
 | arrows | layer | move to the nearest bubble or `[+]` in that direction |
 | `enter` | `[+]` | choose: `n` new milestone · `c` connect an existing one |
 | `enter` | bubble | milestone detail |
-| `e` | bubble / detail | edit goal and predecessors |
+| `e` | bubble / detail | edit name, goal and predecessors |
 | `c` | bubble | next palette colour |
 | `x` | bubble | take it out of the layer (y/n) |
 | `↑↓` `enter` | detail | pick a ticket, open it |
@@ -149,8 +149,9 @@ moves while the cursor moves:
   ones. An unplaced pick is placed where the `[+]` was; a placed pick only gains
   the extra arrow (it does not move).
 - **Edit** (`e`): goal (text) and predecessors (comma-separated names; empty =
-  swimlane top). Unknown names and cycles are refused with a message. The name
-  itself is not editable: jaira has no rename anywhere today.
+  swimlane top). Unknown names and cycles are refused with a message. Since
+  E70WYN the name is the form's first field too, and a changed name renames
+  the milestone the way `jaira milestone rename` does.
 - **Remove** (`x`): drops the `after:` line, so the milestone leaves the layer
   and keeps its tickets. Its successors are re-attached to its predecessors
   (the chain stays connected). Deleting milestones is N71NVG's.

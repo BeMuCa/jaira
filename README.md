@@ -912,7 +912,7 @@ jk  next / previous ticket                       l   every ticket linked to it
 
 On the Milestone Roadmap (L):
 ←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
-e     goal and predecessors        c      next colour
+e     name, goal, predecessors     c      next colour
 x     take it off the roadmap     L esc  back to the board
 In an open milestone: ↑↓ ticket, enter opens it, b the board filtered to it, esc back.
 

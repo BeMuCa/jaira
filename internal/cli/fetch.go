@@ -3,10 +3,13 @@ package cli
 import (
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 	"sort"
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/notify"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -29,6 +32,8 @@ A milestone somebody filed is reported apart from those: its ref carries
 "status: filed", and that line is what keeps a milestone off a board. A file
 you already have is marked with it, so the group leaves your board too; a
 filed milestone you never had is not written at all. Nothing is deleted here.
+A milestone somebody renamed leaves the same mark under its old name and is
+listed as "old → new" (--json: milestones_renamed, old name to new).
 
 This is how a ticket assigned to you arrives without anyone sharing a branch:
 the ref carries the whole ticket file, so it is readable with no checkout and
@@ -71,17 +76,20 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if err != nil {
 				return err
 			}
+			filedMilestones, renamedMilestones := splitRenamed(s.Root, filedMilestones)
 			departed := refs.Departed()
 			stranded := strandedHere()
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
-					"milestones":       strOrEmpty(openedMilestones),
-					"milestones_filed": strOrEmpty(filedMilestones),
+					"milestones":         strOrEmpty(openedMilestones),
+					"milestones_filed":   strOrEmpty(filedMilestones),
+					"milestones_renamed": renamedMilestones,
 				})
 			}
 			printMilestones(cmd.OutOrStdout(), openedMilestones)
 			printFiledMilestones(cmd.OutOrStdout(), filedMilestones)
+			printRenamedMilestones(cmd.OutOrStdout(), renamedMilestones)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)
@@ -112,6 +120,22 @@ func fetchMilestones(s *ticket.Store) (opened, filed []string, err error) {
 	}
 	defer unlock()
 	return refs.IncomingMilestones(s.Root)
+}
+
+// splitRenamed takes the marks a rename left out of the filed names a fetch
+// wrote, as old name -> new name. Listed as filed, a rename would send the
+// reader to a 'jaira restore' that has nothing to bring back. The file the
+// fetch just wrote carries the new name.
+func splitRenamed(root string, filed []string) (still []string, renamed map[string]string) {
+	renamed = map[string]string{}
+	for _, name := range filed {
+		if ms, err := milestone.Load(root, name); err == nil && ms.RenamedTo != "" {
+			renamed[name] = ms.RenamedTo
+			continue
+		}
+		still = append(still, name)
+	}
+	return still, renamed
 }
 
 // printMilestones says which milestone files this fetch put on disk. Named
@@ -226,5 +250,17 @@ func printArrivals(w io.Writer, arrivals []refsync.Arrival) {
 			marks += " ref-only"
 		}
 		fmt.Fprintf(w, "%-8s %-12s %s%s\n", ticket.Handle(a.ID), a.Status, a.Title, marks)
+	}
+}
+
+// printRenamedMilestones says which milestones somebody renamed: the old name
+// is off this board, and the milestone is on it under the new one.
+func printRenamedMilestones(w io.Writer, renamed map[string]string) {
+	if len(renamed) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones renamed elsewhere:\n")
+	for _, old := range slices.Sorted(maps.Keys(renamed)) {
+		fmt.Fprintf(w, "  %s → %s\n", old, renamed[old])
 	}
 }

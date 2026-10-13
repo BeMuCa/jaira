@@ -473,3 +473,67 @@ func TestRefSubjectNamesEachKindTheWayItIsAddressed(t *testing.T) {
 		t.Errorf("the milestone advice is still the ticket's: %q", a)
 	}
 }
+
+// A rename has to reach a clone that already has the milestone: the old name
+// leaves her board and the new one arrives, with what came after it naming
+// the new name. A new ref alone would leave her both — a fetch writes refs and
+// deletes nothing — so the old ref stays up with a mark she reads. The mark
+// holds no name, so the rename can be taken back, and that reaches her too.
+func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
+	ada, grace := twoBoards(t)
+	for _, args := range [][]string{
+		{"milestone", "create", "round-one", "--after", ""},
+		{"milestone", "create", "round-two", "--after", "round-one"},
+	} {
+		if out, err := runAndSend(t, ada, args...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's first fetch: %v\n%s", err, out)
+	}
+	if _, err := milestone.Load(grace, "round-one"); err != nil {
+		t.Fatalf("grace has to have the milestone before it is renamed: %v", err)
+	}
+
+	onGrace := func(want, after string) {
+		t.Helper()
+		all, err := milestone.LoadAll(grace)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var names []string
+		for _, ms := range all {
+			names = append(names, ms.Name)
+			if ms.Name == "round-two" && strings.Join(ms.After, ",") != after {
+				t.Errorf("grace's round-two comes after %v, want %s", ms.After, after)
+			}
+		}
+		if strings.Join(names, ",") != want {
+			t.Errorf("grace's board has %v, want %s", names, want)
+		}
+	}
+
+	if out, err := runAndSend(t, ada, "milestone", "rename", "round-one", "first-round"); err != nil {
+		t.Fatalf("rename: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, grace, "fetch")
+	if err != nil {
+		t.Fatalf("grace's second fetch: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "round-one → first-round") || strings.Contains(out, "filed elsewhere") {
+		t.Errorf("the fetch must report the rename, not a filing:\n%s", out)
+	}
+	onGrace("first-round,round-two", "first-round")
+	if out, _ := runCLI(t, grace, "milestone", "ls"); strings.Contains(out, "round-one") {
+		t.Errorf("grace's 'milestone ls' still names the old name:\n%s", out)
+	}
+
+	if out, err := runAndSend(t, ada, "milestone", "rename", "first-round", "round-one"); err != nil {
+		t.Fatalf("renaming back: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's third fetch: %v\n%s", err, out)
+	}
+	onGrace("round-one,round-two", "round-one")
+}

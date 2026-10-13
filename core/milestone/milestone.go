@@ -17,6 +17,8 @@
 // clone that fetches — it stops the file being written back to disk, and it
 // holds the name until somebody restores it. No line means the milestone is on
 // the board, which is the state every file written before this existed is in.
+// A rename leaves the same mark under the old name, with `renamed-to: <new>`
+// beside it, so every other clone drops the old name too (see Rename).
 //
 // The file is read and written the way a ticket file is — frontmatter for the
 // facts about the milestone, one line per member below it — and the lines are
@@ -83,6 +85,7 @@ type Milestone struct {
 	Goal      string   // free text, one line; empty when the file has none
 	After     []string // predecessor names, first one decides the swimlane
 	Placed    bool     // an `after:` line exists; `after: []` is a swimlane top
+	RenamedTo string   // on the mark a rename leaves under the old name: the new one
 
 	lines   []string // the whole file, frontmatter included
 	members []string // ticket ids, in file order
@@ -269,6 +272,8 @@ func parse(text string) *Milestone {
 				m.Goal = value
 			case "after":
 				m.After, m.Placed = parseAfter(value), true
+			case "renamed-to":
+				m.RenamedTo = value
 			case "created-at":
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					m.CreatedAt = t
@@ -314,6 +319,13 @@ const StatusFiled = "filed"
 // carries its colour, and a fetch that finds its ref leaves the ref alone
 // rather than writing the file back to disk.
 func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
+
+// HoldsName reports whether this filed milestone keeps its name taken. A
+// filing does, because 'jaira restore' needs the name back. The mark a rename
+// leaves under the old name does not: the milestone lives on under the new
+// one, there is nothing to restore, and holding the name would make a
+// mistyped rename impossible to take back.
+func (m *Milestone) HoldsName() bool { return m.Filed() && m.RenamedTo == "" }
 
 // SetStatus writes, replaces or removes the status line in the frontmatter and
 // touches nothing else — the same rule Add and Remove follow. Rebuilding the

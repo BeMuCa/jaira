@@ -164,3 +164,83 @@ func TestEditTakingAMilestoneOutClosesTheChain(t *testing.T) {
 		t.Errorf("recorded %v, want b and c only", rec.names)
 	}
 }
+
+// A rename is the file under its new name, every successor naming the new
+// name, and a mark left under the old one for the other clones — in one
+// locked write. This disk keeps no file under the old name.
+func TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "a", "---\ncolor: 45\ngoal: g\nafter: []\n---\n\n# a\n\n- "+idA+"\n")
+	write(t, root, "b", "---\ncolor: 46\nafter: [x, a]\n---\n")
+	write(t, root, "c", "---\ncolor: 47\n---\n")
+	lk, rec := &fakeLock{}, &fakeRec{}
+	ms, err := Rename(root, lk, rec, "a", "z", func(string) error { return nil })
+	if err != nil || ms.Name != "z" {
+		t.Fatalf("rename: %v", err)
+	}
+	if lk.taken != 1 {
+		t.Errorf("the rename and the successors must share one lock, taken %d times", lk.taken)
+	}
+	if _, err := os.Stat(Path(root, "a")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("the old file is still on disk: %v", err)
+	}
+	z, err := Load(root, "z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if z.Goal != "g" || !z.Has(idA) || !z.Placed || z.Filed() {
+		t.Errorf("z must carry a's goal, ticket and place: %s", z.Bytes())
+	}
+	if body := string(z.Bytes()); !strings.Contains(body, "\n# z\n") || strings.Contains(body, "# a") {
+		t.Errorf("the heading keeps the old name:\n%s", body)
+	}
+	if b, _ := Load(root, "b"); strings.Join(b.After, ",") != "x,z" {
+		t.Errorf("b must name z where it named a, got %v", b.After)
+	}
+	if strings.Join(rec.names, ",") != "z,b,a" {
+		t.Errorf("recorded %v, want z, b and the mark on a", rec.names)
+	}
+	mark := FromBytes("a", rec.last)
+	if !mark.Filed() || mark.RenamedTo != "z" || mark.HoldsName() {
+		t.Errorf("the old ref must carry a rename mark that frees the name:\n%s", rec.last)
+	}
+}
+
+// The new name has to be free — on the board, filed here, or as the caller's
+// taken says — while the mark an earlier rename left is free, so a rename can
+// be taken back.
+func TestRenameRefusesATakenNameButNotTheMarkOfARename(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "a", "---\ncolor: 45\n---\n")
+	write(t, root, "b", "---\ncolor: 46\n---\n")
+	write(t, root, "f", "---\ncolor: 47\nstatus: filed\n---\n")
+	write(t, root, "old", "---\ncolor: 48\nstatus: filed\nrenamed-to: a\n---\n")
+	rec := &fakeRec{}
+	free := func(string) error { return nil }
+
+	var ee *ExistsError
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "b", free); !errors.As(err, &ee) || ee.Name != "b" {
+		t.Errorf("onto a milestone on the board: %v", err)
+	}
+	var fe *FiledError
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "f", free); !errors.As(err, &fe) || fe.Name != "f" || fe.RenamedTo != "" {
+		t.Errorf("onto a filed one: %v", err)
+	}
+	boom := errors.New("filed on a ref")
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "n", func(string) error { return boom }); !errors.Is(err, boom) {
+		t.Errorf("taken must be asked: %v", err)
+	}
+	if _, err := Rename(root, &fakeLock{}, rec, "old", "n", free); !errors.As(err, &fe) || fe.RenamedTo != "a" {
+		t.Errorf("a mark is not a milestone to rename: %v", err)
+	}
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "a", free); err != nil || len(rec.names) != 0 {
+		t.Fatalf("refusals and a rename to the same name write nothing: err=%v recorded=%v", err, rec.names)
+	}
+
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "old", free); err != nil {
+		t.Fatalf("renaming back onto a rename's mark: %v", err)
+	}
+	if old, err := Load(root, "old"); err != nil || old.Filed() || old.RenamedTo != "" {
+		t.Errorf("old must be on the board again, unmarked: %v\n%s", err, old.Bytes())
+	}
+}

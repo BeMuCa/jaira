@@ -421,8 +421,8 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	}
 }
 
-// e edits goal and predecessors; an unknown name and a loop are refused with
-// the CLI's own words, and an empty list makes the bubble a swimlane top.
+// e edits name, goal and predecessors; an unknown name and a loop are refused
+// with the CLI's own words, and an empty list makes the bubble a swimlane top.
 func TestEditGoalAndPredecessors(t *testing.T) {
 	m := newTestModel(t, 160, 40)
 	mkPlaced(t, m, "a", 0, nil)
@@ -431,9 +431,10 @@ func TestEditGoalAndPredecessors(t *testing.T) {
 	m.key(key("L"))
 
 	m.key(key("e")) // on a
-	if m.layer.stage != stageForm || m.layer.form.vals != [2]string{"", ""} {
-		t.Fatalf("e must open the form with a's goal and predecessors, got %+v", m.layer.form)
+	if m.layer.stage != stageForm || strings.Join(m.layer.form.vals, "|") != "a||" {
+		t.Fatalf("e must open the form with a's name, goal and predecessors, got %+v", m.layer.form)
 	}
+	m.key(key("tab"))
 	m.key(key("tab"))
 	typeInto(m, "zzz")
 	m.key(key("enter"))
@@ -455,9 +456,10 @@ func TestEditGoalAndPredecessors(t *testing.T) {
 
 	m.key(keyDown) // b
 	m.key(key("e"))
-	if m.layer.form.vals[1] != "a" {
-		t.Fatalf("the form starts from b's predecessors, got %q", m.layer.form.vals[1])
+	if m.layer.form.vals[2] != "a" {
+		t.Fatalf("the form starts from b's predecessors, got %q", m.layer.form.vals[2])
 	}
+	m.key(key("tab"))
 	typeInto(m, "write the docs")
 	m.key(key("tab"))
 	m.key(key("backspace"))
@@ -465,6 +467,55 @@ func TestEditGoalAndPredecessors(t *testing.T) {
 	b := loadMilestone(t, m, "b")
 	if b.Goal != "write the docs" || !b.Placed || len(b.After) != 0 {
 		t.Errorf("want goal set and b a swimlane top, got goal %q placed %v after %v", b.Goal, b.Placed, b.After)
+	}
+}
+
+// A changed name in e renames the milestone the way 'jaira milestone rename'
+// does: the file moves, what came after it names the new name, and the
+// cursor and a board narrowed to it stay with it. A taken name is refused
+// with nothing written — the goal typed beside it included.
+func TestEditRenamesAMilestone(t *testing.T) {
+	m := newTestModel(t, 160, 40)
+	mkPlaced(t, m, "a", 0, nil)
+	mkPlaced(t, m, "b", 1, []string{"a"})
+	reloadOrFail(t, m)
+	m.setFilterTerm("milestone", "a")
+	m.key(key("L"))
+
+	m.key(key("e")) // on a
+	m.key(key("backspace"))
+	typeInto(m, "b")
+	m.key(key("tab"))
+	typeInto(m, "new goal")
+	m.key(key("enter"))
+	if m.layer.stage != stageForm || !strings.Contains(m.layer.err, `"b" already exists`) {
+		t.Fatalf("want the form kept open with the refusal, stage %v err %q", m.layer.stage, m.layer.err)
+	}
+	if loadMilestone(t, m, "a").Goal != "" {
+		t.Error("a refused rename must write nothing, the goal included")
+	}
+
+	m.key(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
+	m.key(key("backspace"))
+	typeInto(m, "First Round")
+	m.key(key("enter"))
+	if m.layer.stage != stageLayer || m.layer.err != "" {
+		t.Fatalf("the rename must close the form, stage %v err %q", m.layer.stage, m.layer.err)
+	}
+	if _, err := os.Stat(milestone.Path(m.store.Root, "a")); !os.IsNotExist(err) {
+		t.Errorf("the old file is still there: %v", err)
+	}
+	if got := loadMilestone(t, m, "first-round"); got.Goal != "new goal" || !got.Placed || len(got.After) != 0 {
+		t.Errorf("first-round must carry the goal and a's place, got goal %q placed %v after %v", got.Goal, got.Placed, got.After)
+	}
+	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != "first-round" {
+		t.Errorf("b must come after first-round, got %v", b.After)
+	}
+	if m.layer.sel != (layerTarget{kind: onBubble, name: "first-round"}) {
+		t.Errorf("the cursor must stay on the renamed bubble, got %+v", m.layer.sel)
+	}
+	if m.filter != "milestone:first-round" {
+		t.Errorf("the board filter must follow the rename, got %q", m.filter)
 	}
 }
 

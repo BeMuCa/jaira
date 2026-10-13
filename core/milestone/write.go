@@ -2,7 +2,10 @@ package milestone
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"os"
+	"slices"
 )
 
 // LockName keys the store lock every milestone write is made under. One name
@@ -39,11 +42,22 @@ func (e *RecordError) Unwrap() error { return e.Err }
 // FiledError is Edit's refusal of a milestone whose file still lies here but
 // is marked filed — what a fetch of somebody else's filing leaves behind.
 // Writing it would put the change on its ref for every clone that fetches.
-type FiledError struct{ Name string }
+// RenamedTo is set when the mark is the one a rename left: then there is
+// nothing to restore, and the new name is the thing to say.
+type FiledError struct{ Name, RenamedTo string }
 
 func (e *FiledError) Error() string {
+	if e.RenamedTo != "" {
+		return fmt.Sprintf("milestone %q was renamed to %q", e.Name, e.RenamedTo)
+	}
 	return fmt.Sprintf("milestone %q has been filed; 'jaira restore %s.md', run where it was filed, brings it back", e.Name, e.Name)
 }
+
+// ExistsError is Rename's refusal of a new name a milestone on the board
+// already has.
+type ExistsError struct{ Name string }
+
+func (e *ExistsError) Error() string { return fmt.Sprintf("milestone %q already exists", e.Name) }
 
 // Edit is the one write path for a milestone that exists: lock, read, let fn
 // change it, save atomically, record the ref. The CLI and the board both
@@ -73,7 +87,7 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		return nil, err
 	}
 	if ms.Filed() {
-		return ms, &FiledError{Name: name}
+		return ms, &FiledError{Name: name, RenamedTo: ms.RenamedTo}
 	}
 	before, wasPlaced := ms.Bytes(), ms.Placed
 	if err := fn(ms); err != nil {
@@ -98,21 +112,96 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 			}
 		}
 	}
-	// Every file is saved before a ref failure is reported: the ref is best
-	// effort, the save is the write.
-	var recErr error
-	for _, m := range append([]*Milestone{ms}, succ...) {
-		switch err := saveAndRecord(root, rec, m).(type) {
-		case nil:
-		case *RecordError:
-			if recErr == nil {
-				recErr = err
-			}
-		default:
-			return ms, err
+	return ms, saveAll(root, rec, append([]*Milestone{ms}, succ...))
+}
+
+// Rename gives the milestone from the name to. The name is the file name and
+// the ref name, so a rename is three writes under the one lock: the file
+// under its new name, every successor's after line naming the new name where
+// it named the old one, and a mark under the old name — the old file marked
+// filed, with renamed-to: <to>, put on the old ref. The old file goes from
+// this disk; the mark is for every other clone. Taking the old ref down
+// instead would reach none of them: a fetch writes a marked ref over the file
+// a clone already has, and deletes nothing (refsync.IncomingMilestones).
+//
+// to has to be free. A milestone on the board under it is an *ExistsError, a
+// filed one lying here a *FiledError, and taken asks what this directory
+// cannot show — a filing in this tree's logbook or on a ref — refusing in the
+// caller's words. The mark an earlier rename left is free (HoldsName), which
+// is what lets a rename be taken back. from itself refuses the way Edit does,
+// and renaming it to its own name writes nothing.
+func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(name string) error) (*Milestone, error) {
+	unlock, err := lock.Lock(LockName)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+
+	ms, err := Load(root, from)
+	if err != nil {
+		return nil, err
+	}
+	if ms.Filed() {
+		return ms, &FiledError{Name: from, RenamedTo: ms.RenamedTo}
+	}
+	if to == from {
+		return ms, nil
+	}
+	switch have, err := Load(root, to); {
+	case err == nil && !have.Filed():
+		return ms, &ExistsError{Name: to}
+	case err == nil && have.HoldsName():
+		return ms, &FiledError{Name: to}
+	case err != nil && !errors.Is(err, os.ErrNotExist):
+		return ms, err
+	}
+	if err := taken(to); err != nil {
+		return ms, err
+	}
+
+	all, err := LoadAll(root)
+	if err != nil {
+		return ms, err
+	}
+	renamed := FromBytes(to, ms.Bytes())
+	renamed.retitle(from, to)
+	writes := []*Milestone{renamed}
+	for _, m := range all { // LoadAll's order, by name
+		if i := slices.Index(m.After, from); i >= 0 && m.Name != from {
+			after := slices.Clone(m.After)
+			after[i] = to
+			m.SetAfter(after)
+			writes = append(writes, m)
 		}
 	}
-	return ms, recErr
+	// The new file before the old one goes: a rename cut short leaves the
+	// milestone twice, never nowhere.
+	err = saveAll(root, rec, writes)
+	if _, recordOnly := err.(*RecordError); err != nil && !recordOnly {
+		return renamed, err
+	}
+	if rmErr := os.Remove(Path(root, from)); rmErr != nil {
+		return renamed, rmErr
+	}
+	ms.SetStatus(StatusFiled)
+	ms.RenamedTo = to
+	ms.setFront("renamed-to", to, false)
+	if recErr := rec.RecordMilestone(from, ms.Bytes()); recErr != nil && err == nil {
+		err = &RecordError{Name: from, Err: recErr}
+	}
+	return renamed, err
+}
+
+// retitle rewrites the "# <name>" heading New puts under the frontmatter, so
+// a renamed file does not open with its old name. Only that exact line: any
+// other is somebody's prose.
+func (m *Milestone) retitle(from, to string) {
+	for i, line := range m.lines {
+		if line == "# "+from {
+			m.lines[i] = "# " + to
+			return
+		}
+	}
 }
 
 // Create is Edit's counterpart for a milestone that does not exist yet. build
@@ -136,6 +225,26 @@ func Create(root string, lock Locker, rec Recorder, build func(existing []*Miles
 		return nil, err
 	}
 	return ms, saveAndRecord(root, rec, ms)
+}
+
+// saveAll saves every milestone and queues each for its ref. Every file is
+// saved before a ref failure is reported: the ref is best effort, the save is
+// the write. A failed save stops it; otherwise the first ref failure comes
+// back, as a *RecordError.
+func saveAll(root string, rec Recorder, ms []*Milestone) error {
+	var recErr error
+	for _, m := range ms {
+		switch err := saveAndRecord(root, rec, m).(type) {
+		case nil:
+		case *RecordError:
+			if recErr == nil {
+				recErr = err
+			}
+		default:
+			return err
+		}
+	}
+	return recErr
 }
 
 func saveAndRecord(root string, rec Recorder, ms *Milestone) error {

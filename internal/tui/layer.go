@@ -50,7 +50,7 @@ type layerStage int
 const (
 	stageLayer  layerStage = iota
 	stageChoose            // enter on a [+]: a new milestone or an existing one
-	stageForm              // name and goal, or goal and predecessors
+	stageForm              // name and goal, or name, goal and predecessors
 	stagePick              // the milestones that can be connected here
 	stageRemove            // x: asked before the bubble leaves the layer
 	stageDetail            // enter on a bubble: its goal and its tickets
@@ -82,12 +82,12 @@ type layerView struct {
 	err string // why the last choice was refused, shown where it was made
 }
 
-// layerForm is the two-field form behind a new milestone (name, goal) and
-// behind e (goal, predecessors).
+// layerForm is the form behind a new milestone (name, goal) and behind e
+// (name, goal, predecessors).
 type layerForm struct {
 	edit   string // the milestone e is editing; "" for a new one
-	labels [2]string
-	vals   [2]string
+	labels []string
+	vals   []string
 	field  int
 }
 
@@ -245,7 +245,7 @@ func (m *Model) keyLayerChoose(s string) {
 	case "esc", "q":
 		l.stage = stageLayer
 	case "n":
-		l.form = layerForm{labels: [2]string{"name", "goal"}}
+		l.form = layerForm{labels: []string{"name", "goal"}, vals: make([]string, 2)}
 		l.err = ""
 		l.stage = stageForm
 	case "c":
@@ -256,8 +256,8 @@ func (m *Model) keyLayerChoose(s string) {
 	}
 }
 
-// startLayerEdit opens the form behind e on a milestone: its goal and its
-// predecessors as they stand.
+// startLayerEdit opens the form behind e on a milestone: its name, its goal
+// and its predecessors as they stand.
 func (m *Model) startLayerEdit(name string) {
 	ms := m.milestoneNamed(name)
 	if ms == nil {
@@ -266,8 +266,8 @@ func (m *Model) startLayerEdit(name string) {
 	l := m.layer
 	l.form = layerForm{
 		edit:   name,
-		labels: [2]string{"goal", "after"},
-		vals:   [2]string{ms.Goal, strings.Join(ms.After, ", ")},
+		labels: []string{"name", "goal", "after"},
+		vals:   []string{name, ms.Goal, strings.Join(ms.After, ", ")},
 	}
 	l.err = ""
 	l.stage = stageForm
@@ -279,8 +279,10 @@ func (m *Model) keyLayerForm(s, text string) {
 	switch s {
 	case "esc":
 		l.stage = m.formReturn()
-	case "tab", "shift+tab", "up", "down":
-		f.field = 1 - f.field
+	case "tab", "down":
+		f.field = (f.field + 1) % len(f.vals)
+	case "shift+tab", "up":
+		f.field = (f.field + len(f.vals) - 1) % len(f.vals)
 	case "backspace":
 		if r := []rune(f.vals[f.field]); len(r) > 0 {
 			f.vals[f.field] = string(r[:len(r)-1])
@@ -304,15 +306,15 @@ func (m *Model) formReturn() layerStage {
 func (m *Model) submitLayerForm() {
 	l := m.layer
 	f := l.form
+	name, _, err := milestone.NormalizeName(strings.TrimSpace(f.vals[0]))
+	if strings.TrimSpace(f.vals[0]) == "" {
+		err = errors.New("a milestone needs a name")
+	}
+	if err != nil {
+		l.err = err.Error()
+		return
+	}
 	if f.edit == "" {
-		name, _, err := milestone.NormalizeName(strings.TrimSpace(f.vals[0]))
-		if strings.TrimSpace(f.vals[0]) == "" {
-			err = errors.New("a milestone needs a name")
-		}
-		if err != nil {
-			l.err = err.Error()
-			return
-		}
 		if err := m.createMilestone(name, f.vals[1], m.placement(l.sel)); err != nil {
 			l.err = err.Error()
 			return
@@ -321,20 +323,37 @@ func (m *Model) submitLayerForm() {
 		return
 	}
 
-	preds, err := milestone.ParseNames(f.vals[1])
+	// Goal and predecessors are checked before the name changes, so a form
+	// refused here has written nothing; the rename goes the way 'jaira
+	// milestone rename' goes, and the rest is written under the new name.
+	preds, err := milestone.ParseNames(f.vals[2])
 	if err != nil {
 		l.err = err.Error()
 		return
 	}
-	_, err = milestone.Edit(m.store.Root, m.store, m.refSync, f.edit, func(ms *milestone.Milestone) error {
+	all, err := milestone.LoadAll(m.store.Root)
+	if err == nil {
+		err = milestone.CheckAfter(all, f.edit, preds)
+	}
+	if err != nil {
+		l.err = err.Error()
+		return
+	}
+	if name != f.edit {
+		if err := m.renameMilestone(f.edit, name); err != nil {
+			l.err = err.Error()
+			return
+		}
+	}
+	_, err = milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
 		all, err := milestone.LoadAll(m.store.Root)
 		if err != nil {
 			return err
 		}
-		if err := milestone.CheckAfter(all, f.edit, preds); err != nil {
+		if err := milestone.CheckAfter(all, name, preds); err != nil {
 			return err
 		}
-		ms.SetGoal(f.vals[0])
+		ms.SetGoal(f.vals[1])
 		ms.SetAfter(preds)
 		return nil
 	})
@@ -342,7 +361,31 @@ func (m *Model) submitLayerForm() {
 		l.err = err.Error()
 		return
 	}
-	m.layerWritten(f.edit, m.formReturn())
+	m.layerWritten(name, m.formReturn())
+}
+
+// renameMilestone renames through milestone.Rename, the path 'jaira milestone
+// rename' takes, refusing a new name that is taken the way createMilestone
+// refuses it. From then on the open form and detail are about the new name,
+// and a board narrowed to the old name stays narrowed to the milestone.
+func (m *Model) renameMilestone(from, to string) error {
+	_, err := milestone.Rename(m.store.Root, m.store, m.refSync, from, to, m.nameFiled)
+	if err := m.recordOnly(err); err != nil {
+		return err
+	}
+	l := m.layer
+	if l.detailName == from {
+		l.detailName = to
+	}
+	if l.sel.name == from {
+		l.sel.name = to
+	}
+	l.form.edit = to
+	if _, names := splitTerm(m.filter, "milestone"); slices.Contains(names, from) {
+		names[slices.Index(names, from)] = to
+		m.setFilterTerm("milestone", names...)
+	}
+	return nil
 }
 
 // createMilestone writes a new milestone placed after the given names, as
@@ -352,19 +395,15 @@ func (m *Model) submitLayerForm() {
 func (m *Model) createMilestone(name, goal string, after []string) error {
 	root := m.store.Root
 	_, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
-		if have, err := milestone.Load(root, name); err == nil {
-			if have.Filed() {
-				return nil, &milestone.FiledError{Name: name}
-			}
+		if have, err := milestone.Load(root, name); err == nil && have.HoldsName() {
+			return nil, &milestone.FiledError{Name: name}
+		} else if err == nil && !have.Filed() {
 			return nil, fmt.Errorf("milestone %q already exists — c on a [+] connects it", name)
-		} else if !errors.Is(err, os.ErrNotExist) {
+		} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
-		switch where, at := m.refSync.MilestoneFiled(m.store, name); at {
-		case refsync.MilestoneFiledHere:
-			return nil, fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back", name, where, name)
-		case refsync.MilestoneFiledOnRef:
-			return nil, fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
+		if err := m.nameFiled(name); err != nil {
+			return nil, err
 		}
 		if err := milestone.CheckAfter(existing, name, after); err != nil {
 			return nil, err
@@ -375,6 +414,18 @@ func (m *Model) createMilestone(name, goal string, after []string) error {
 		return ms, nil
 	})
 	return m.recordOnly(err)
+}
+
+// nameFiled refuses a name a filing holds where the milestone directory does
+// not show it: in this tree's logbook, or on a ref somebody else marked.
+func (m *Model) nameFiled(name string) error {
+	switch where, at := m.refSync.MilestoneFiled(m.store, name); at {
+	case refsync.MilestoneFiledHere:
+		return fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back", name, where, name)
+	case refsync.MilestoneFiledOnRef:
+		return fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
+	}
+	return nil
 }
 
 // recordOnly drops the one error a write may end with although it happened:

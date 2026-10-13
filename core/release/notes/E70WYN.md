@@ -1,0 +1,4 @@
+- Rename a milestone with `jaira milestone rename <old> <new>`: the file, its ref and the `after:` lines of the milestones that come after it take the new name; a name a milestone on the board or a filed one has is refused (exit 3), and the old name is free again afterwards, so a rename can be taken back.
+- Expect a milestone a teammate renamed to show only under its new name after your next `jaira fetch`, which lists it as `old → new` (`--json`: `milestones_renamed`, old name to new) rather than among the filed ones.
+- On the Milestone Roadmap, `e` now opens with the milestone's name as the first field: change it there to rename the milestone the same way; `tab` or `↓` and `shift+tab` or `↑` move between name, goal and predecessors.
+- Read the new name off the refusal when `jaira milestone add`, `rm`, `set`, `rename` or `jaira logbook` meet an old name a fetched rename left behind: it says `renamed to "<new>"` (exit 5) instead of pointing at `jaira restore`.

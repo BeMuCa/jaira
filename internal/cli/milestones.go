@@ -48,10 +48,11 @@ the next milestone's file and move the unfinished lines into it — one edit
 instead of twenty.
 
 The file is hand-editable and reads in a diff, like a ticket. The file name IS
-the milestone's name — rename the file to rename the milestone; the frontmatter
-carries its colour and when it was created, and below it one ticket id per
-line. jaira keeps every other line exactly as it found it, so comments,
-blank lines and an order you chose all survive.
+the milestone's name — ` + "`jaira milestone rename <old> <new>`" + ` renames it, since
+renaming the file by hand leaves its ref behind and the next fetch writes the
+old file back; the frontmatter carries its colour and when it was created, and
+below it one ticket id per line. jaira keeps every other line exactly as it
+found it, so comments, blank lines and an order you chose all survive.
 
 Each milestone is given a random free colour, which its cards then show as a
 bar down their RIGHT edge — the left edge belongs to the tags. On the board, M
@@ -66,6 +67,7 @@ it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
 		newMilestoneAddCmd(),
 		newMilestoneRmCmd(),
 		newMilestoneSetCmd(),
+		newMilestoneRenameCmd(),
 		newMilestoneLsCmd(),
 	)
 	return cmd
@@ -122,18 +124,19 @@ a milestone on this board, and the arrows may not form a loop.`,
 			}
 
 			ms, err := milestone.Create(s.Root, s, refs, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
-				if have, err := milestone.Load(s.Root, name); err == nil && have.Filed() {
+				if have, err := milestone.Load(s.Root, name); err == nil && have.HoldsName() {
 					// The file is here but marked, which a fetch of somebody
 					// else's filing leaves behind. It is not on the board, so
 					// "already exists" would send the reader looking for a
-					// milestone no listing names.
+					// milestone no listing names. The mark of a rename holds
+					// nothing, and the new file is written over it.
 					return nil, refuseFiledOnDisk(s.Root, name,
 						"taking the line out here instead would leave that tree's copy stranded in its logbook")
-				} else if err == nil {
+				} else if err == nil && !have.Filed() {
 					return nil, fail(ExitValidation, "milestone_exists",
 						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
 						name, milestone.Path(s.Root, name), name)
-				} else if !errors.Is(err, os.ErrNotExist) {
+				} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 					return nil, err
 				}
 				// Filed under this name, here or in the tree that wrote the
@@ -318,6 +321,79 @@ filed milestone is refused like everywhere else.`,
 	return cmd
 }
 
+func newMilestoneRenameCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "rename <old> <new>",
+		Short: "Give a milestone a new name",
+		Long: `Renames the milestone everywhere its name is: the file becomes
+` + "`.jaira/milestones/<new>.md`" + `, its ref ` + "`refs/jaira/milestones/<new>`" + `, and every
+milestone that comes after it names <new> in its ` + "`after:`" + ` line. Tickets, goal,
+colour and place on the Milestone Roadmap stay as they were.
+
+The old name's ref stays up, marked ` + "`status: filed`" + ` and ` + "`renamed-to: <new>`" + `: a
+clone that has the old file gets it marked on its next ` + "`jaira fetch`" + ` and stops
+showing it, which a ref taken down would never tell it. The old name is free
+again afterwards — there is nothing to restore — so a rename can be taken back
+by renaming once more.
+
+The new name follows the rules of ` + "`create`" + `: lowercase kebab, and you are told
+when it was changed. A name a milestone on the board or a filed one has is
+refused (exit 3); an old name that is not on the board exits 5.`,
+		Args: exactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s, err := openStore()
+			if err != nil {
+				return err
+			}
+			from, _, err := milestone.NormalizeName(args[0])
+			if err != nil {
+				return fail(ExitUsage, "bad_milestone", "%v", err)
+			}
+			to, changed, err := milestone.NormalizeName(args[1])
+			if err != nil {
+				return fail(ExitUsage, "bad_milestone", "%v", err)
+			}
+
+			ms, err := milestone.Rename(s.Root, s, refs, from, to, func(name string) error {
+				return refuseIfFiled(s, name,
+					"renaming another milestone to it would make a second milestone with the same name",
+					"; renaming another milestone to it would make a second milestone with the same name")
+			})
+			var ee *milestone.ExistsError
+			var fe *milestone.FiledError
+			switch {
+			case errors.As(err, &ee):
+				return fail(ExitValidation, "milestone_exists",
+					"milestone %q already exists at %s — a rename needs a name no milestone has", to, milestone.Path(s.Root, to))
+			case errors.As(err, &fe) && fe.Name == to && to != from:
+				return refuseFiledOnDisk(s.Root, to,
+					"renaming another milestone to it would make a second milestone with the same name")
+			}
+			if err := editRefusal(s, from, err,
+				"there is no copy of it here to rename",
+				", and then it can be renamed"); err != nil {
+				return err
+			}
+
+			w := cmd.OutOrStdout()
+			if g.jsonOut {
+				out := milestoneJSON(ms, milestone.Path(s.Root, ms.Name))
+				out["renamed_from"] = from
+				return emit(w, out)
+			}
+			if to == from {
+				fmt.Fprintf(w, "Nothing to do: milestone %q already has that name.\n", from)
+				return nil
+			}
+			if changed {
+				fmt.Fprintf(w, "Filed %q as %q.\n", args[1], to)
+			}
+			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", from, to, milestone.Path(s.Root, to))
+			return nil
+		},
+	}
+}
+
 // parseMilestoneNames is milestone.ParseNames with the CLI's exit code. The
 // empty string is the empty list, which --after reads as "a swimlane of its
 // own".
@@ -490,6 +566,15 @@ func refuseFiledOnDisk(root, name, instead string) error {
 	return refuseFiledElsewhere(name, "its file at "+milestone.Path(root, name), instead)
 }
 
+// refuseRenamed is the door of a name a rename left behind: its file lies
+// here marked, put there by a fetch of somebody's rename. Nothing was filed
+// and 'jaira restore' brings nothing back — the milestone is where the mark
+// points, so that is the whole answer.
+func refuseRenamed(name, to string) error {
+	return fail(ExitNotFound, "milestone_renamed",
+		"milestone %q was renamed to %q — use that name; 'jaira milestone ls' lists them", name, to)
+}
+
 // refuseFiledInLogbook is the other state: the file is not on disk any more
 // because this very tree filed it, so the way back runs here. `where` is the
 // logbook folder the copy lies in, and `then` is the caller's closing clause,
@@ -567,6 +652,8 @@ func editRefusal(s *ticket.Store, name string, err error, onRef, inLogbook strin
 	switch err := warnIfRecordOnly(err); {
 	case err == nil:
 		return nil
+	case errors.As(err, &fe) && fe.RenamedTo != "":
+		return refuseRenamed(name, fe.RenamedTo)
 	case errors.As(err, &fe):
 		// The third door into a filed milestone's file, after create and
 		// logbook. The write would not lose the mark, but it does not stay

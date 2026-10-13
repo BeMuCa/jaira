@@ -1752,7 +1752,7 @@ func (m *Model) renderHelp() string {
 		{"← → ↑ ↓", "the nearest bubble or [+] in that direction"},
 		{"enter", "on a bubble: its goal and its tickets — enter opens one, b shows the board filtered to it, esc comes back"},
 		{"enter", "on a [+]: n a new milestone there, c connect one that exists"},
-		{"e", "edit a milestone's goal and what it comes after (comma-separated; empty makes it the top of a swimlane)"},
+		{"e", "edit a milestone's name, goal and what it comes after (comma-separated; empty makes it the top of a swimlane); a new name renames it everywhere"},
 		{"c", "give it the next colour no other milestone has"},
 		{"x", "take it off the roadmap, after y: its tickets stay, what came after it moves up"},
 		{"L esc q", "back to the board"},

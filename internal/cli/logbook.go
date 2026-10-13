@@ -385,6 +385,9 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	// The routes where the file is NOT here are answered above, before
 	// milestone.Load is even asked for an ms: this check cannot see them.
 	if ms.Filed() {
+		if ms.RenamedTo != "" {
+			return refuseRenamed(name, ms.RenamedTo)
+		}
 		return refuseFiledOnDisk(s.Root, name,
 			"there is no copy of it here to bring back, so filing it again would only stamp today's folder on somebody else's record of it")
 	}

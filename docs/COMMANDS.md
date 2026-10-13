@@ -133,6 +133,7 @@ field per ticket.
 | `jaira milestone add <name> <id>…` | put tickets into a milestone — every id in one write of one file, which is the point: grouping twenty tickets is one edit, not twenty ticket files each travelling on its own ref. A ticket already in it is left where it is rather than moved to the end |
 | `jaira milestone rm <name> <id>…` | take tickets out of a milestone, in one write, leaving every other line where it was. **The milestone itself stays standing**, even when its last ticket leaves: it goes away on command and never on its own, or a milestone you just created would vanish the moment you took a ticket back out. `jaira logbook <name>` is the command that takes it off the board |
 | `jaira milestone set <name> [--goal <text>] [--after <a,b>] [--no-roadmap]` | rewrite the `goal:` and `after:` lines of the milestone's file and nothing else. `--goal ""` removes the goal; `--after` places it on the roadmap (`""` = top of its own swimlane); `--no-roadmap` takes it out again and hangs what came after it on what came before it, as `x` on the roadmap does. At least one flag; `--after` and `--no-roadmap` exclude each other (exit 2). Unknown predecessor exit 5, a loop exit 3, a filed milestone exit 3 |
+| `jaira milestone rename <old> <new>` | rename a milestone everywhere its name is: the file becomes `.jaira/milestones/<new>.md`, its ref `refs/jaira/milestones/<new>`, and every milestone that comes after it names `<new>` in its `after:` line; tickets, goal, colour and place on the roadmap stay. The old ref stays up marked `status: filed` and `renamed-to: <new>`, so a clone that has the old file gets it marked on its next `jaira fetch` (listed there as `old → new`, `--json`: `milestones_renamed`) and stops showing it. The old name is free again, so a rename can be taken back. A name a milestone on the board or a filed one has is refused (exit 3); an old name not on the board exits 5, and one a fetched rename marked says where it went (exit 5). On the roadmap, `e` does the same through its name field |
 | `jaira milestone ls` | this board's milestones: colour swatch, colour number and how many tickets each holds (`--json`: `milestones`, `count`, `dir`; each milestone carries `goal` when it has one and `after` — possibly `[]` — only when it is placed on the roadmap). **Read it before creating one**, for the reason `jaira tags` is read before tagging — "q4" and "quarter-four" are two names for one round of work and each filters to half of it |
 | `jaira dod <id> <n> --doing\|--done\|--todo\|--superseded` | mark a checklist item; `[-]` superseded is retired, not achieved — it stops blocking completion and never reports as done |
 | `jaira dod <id> <n> --text "…"` | reword one item, leaving its state and its proof alone |
@@ -199,7 +200,7 @@ On the Milestone Roadmap (`L` on the board):
 
 ```
 ←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
-e     goal and predecessors        c      next colour
+e     name, goal, predecessors     c      next colour
 x     take it off the roadmap     L esc  back to the board
 ```
 

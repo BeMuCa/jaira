@@ -272,8 +272,9 @@ const (
 // been filed, and where that was found. A filed name stays taken: two
 // milestones called the same thing are one identity that looks different on
 // every machine, which is the confusion a name exists to prevent. Every door
-// that hands out a name — the CLI's create and the layer's — asks here, so a
-// state added later reaches all of them.
+// that hands out a name — the CLI's create and rename and the layer's — asks
+// here, so a state added later reaches all of them. The mark a rename leaves
+// on the old name's ref is not a filing here: it holds nothing (HoldsName).
 //
 // Two places are looked at because neither alone covers both boards. The ref
 // is the one an unshared clone does not have, and the logbook is the one a
@@ -294,7 +295,7 @@ func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, Milestone
 	}
 	if y != nil && y.Usable() == nil {
 		if content, _, err := y.Repo.ReadMilestone(name); err == nil {
-			if milestone.FromBytes(name, content).Filed() {
+			if milestone.FromBytes(name, content).HoldsName() {
 				return gitref.MilestoneRefName(name), MilestoneFiledOnRef
 			}
 		}
