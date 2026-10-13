@@ -13,19 +13,22 @@ import (
 // fail — a hand-edited file with a typo or a loop in it is drawn as well as it
 // can be, not refused.
 
+// Everything here is keyed by milestone ID, never by name: a name can change
+// or be carried by two milestones, an ID is the one thing that stays.
+
 // Bubble is one placed milestone on the grid. Col is absolute across all
 // lanes, Row is the depth below the lane's top, Lane indexes Grid.Lanes.
 type Bubble struct {
-	Name   string
+	ID     string
 	Lane   int
 	Col    int
 	Row    int
-	Parent string // "" for a lane top
+	Parent string // ID of the parent; "" for a lane top
 }
 
 // Lane is one swimlane: the tree under one top, as a span of columns.
 type Lane struct {
-	Top   string
+	Top   string // ID of the lane's top
 	Col   int
 	Width int
 }
@@ -34,7 +37,7 @@ type Lane struct {
 // parent arrow every non-top bubble has and true for every further
 // predecessor — a join inside one lane, or an arrow across lanes.
 type Arrow struct {
-	From, To string
+	From, To string // IDs
 	Extra    bool
 }
 
@@ -53,13 +56,56 @@ func byAge(a, b *Milestone) int {
 	if c := a.CreatedAt.Compare(b.CreatedAt); c != 0 {
 		return c
 	}
-	switch {
-	case a.Name < b.Name:
-		return -1
-	case a.Name > b.Name:
-		return 1
+	if c := strings.Compare(a.Name, b.Name); c != 0 {
+		return c
 	}
-	return 0
+	return strings.Compare(a.ID, b.ID)
+}
+
+// resolver reads after: tokens against the milestones on the board. A token is
+// an ID when it is one and a milestone has it, and otherwise a name — the
+// fallback that keeps a hand-written or older file readable — when exactly one
+// milestone carries it. Anything else resolves to nothing.
+type resolver struct {
+	byID   map[string]*Milestone
+	byName map[string][]*Milestone
+}
+
+func newResolver(all []*Milestone) resolver {
+	r := resolver{byID: make(map[string]*Milestone, len(all)), byName: map[string][]*Milestone{}}
+	for _, m := range all {
+		r.byID[m.ID] = m
+		r.byName[m.Name] = append(r.byName[m.Name], m)
+	}
+	return r
+}
+
+// resolve returns the ID a token names, or "".
+func (r resolver) resolve(tok string) string {
+	if IsID(tok) {
+		if m, ok := r.byID[tok]; ok {
+			return m.ID
+		}
+	}
+	if ms := r.byName[tok]; len(ms) == 1 {
+		return ms[0].ID
+	}
+	return ""
+}
+
+// Resolve returns the ID an after: token names among these milestones — the
+// token as an ID, or as the one milestone that carries it as a name — or "".
+func Resolve(all []*Milestone, token string) string { return newResolver(all).resolve(token) }
+
+// ids resolves a list of tokens, dropping what names nothing and repeats.
+func (r resolver) ids(tokens []string) []string {
+	var out []string
+	for _, t := range tokens {
+		if id := r.resolve(t); id != "" && !slices.Contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	return out
 }
 
 // usableEdges returns, for every placed milestone, the predecessors that may
@@ -68,24 +114,21 @@ func byAge(a, b *Milestone) int {
 // ones kept so far, so when a file contains a loop the arrow written by the
 // newer milestone is the one dropped — and the same one on every machine.
 func usableEdges(placed []*Milestone) map[string][]string {
-	known := make(map[string]bool, len(placed))
-	for _, m := range placed {
-		known[m.Name] = true
-	}
+	r := newResolver(placed)
 	kept := make(map[string][]string, len(placed))
 	for _, m := range placed {
-		for _, p := range m.After {
-			if !known[p] || chain(kept, p, m.Name) != nil {
+		for _, p := range r.ids(m.After) {
+			if chain(kept, p, m.ID) != nil {
 				continue
 			}
-			kept[m.Name] = append(kept[m.Name], p)
+			kept[m.ID] = append(kept[m.ID], p)
 		}
 	}
 	return kept
 }
 
 // chain is the way from `from` to `target` following predecessor edges,
-// `from == target` included: the names along it, or nil when there is none.
+// `from == target` included: the IDs along it, or nil when there is none.
 func chain(preds map[string][]string, from, target string) []string {
 	seen := map[string]bool{}
 	var walk func(n string) []string
@@ -108,19 +151,20 @@ func chain(preds map[string][]string, from, target string) []string {
 }
 
 func predecessors(all []*Milestone) map[string][]string {
+	r := newResolver(all)
 	preds := make(map[string][]string, len(all))
 	for _, m := range all {
 		if m.Placed {
-			preds[m.Name] = m.After
+			preds[m.ID] = r.ids(m.After)
 		}
 	}
 	return preds
 }
 
-// CyclePath names the loop that making `pred` a predecessor of `succ` would
-// close, in the direction the arrows run and closed on its first name: for
+// CyclePath names, by ID, the loop that making `pred` a predecessor of `succ`
+// would close, in the direction the arrows run and closed on its first ID: for
 // a→b→c and a new arrow c→a it is [a b c a]. Nil when there is no loop.
-// Unknown names and unplaced milestones contribute no edges, as they do not
+// Unknown tokens and unplaced milestones contribute no edges, as they do not
 // when drawing.
 func CyclePath(all []*Milestone, succ, pred string) []string {
 	path := chain(predecessors(all), pred, succ) // pred, ..., succ: against the arrows
@@ -133,6 +177,7 @@ func CyclePath(all []*Milestone, succ, pred string) []string {
 
 // PredecessorError is CheckAfter's refusal: Pred names no milestone on the
 // board, or — Cycle set — making it a predecessor of Name closes that loop.
+// Cycle is spelled in names, for a person to read.
 type PredecessorError struct {
 	Name, Pred string
 	Cycle      []string // nil when Pred is unknown
@@ -149,50 +194,75 @@ func (e *PredecessorError) Error() string {
 // CheckAfter refuses what the layer must never be handed: a predecessor no
 // milestone on the board carries, and an arrow that would close a loop. The
 // drawing ignores both rather than failing, so every write that places a
-// milestone — the CLI's and the layer's — asks this first.
-func CheckAfter(all []*Milestone, name string, preds []string) error {
-	for _, p := range preds {
-		if !slices.ContainsFunc(all, func(m *Milestone) bool { return m.Name == p }) {
-			return &PredecessorError{Name: name, Pred: p}
+// milestone — the CLI's and the layer's — asks this first. id is the
+// milestone being placed, and each token is an ID or a name as after: reads
+// them.
+func CheckAfter(all []*Milestone, id string, tokens []string) error {
+	r := newResolver(all)
+	name := id
+	if m, ok := r.byID[id]; ok {
+		name = m.Name
+	}
+	for _, tok := range tokens {
+		pid := r.resolve(tok)
+		if pid == "" {
+			return &PredecessorError{Name: name, Pred: tok}
 		}
-		if path := CyclePath(all, name, p); path != nil {
-			return &PredecessorError{Name: name, Pred: p, Cycle: path}
+		if path := CyclePath(all, id, pid); path != nil {
+			names := make([]string, len(path))
+			for i, p := range path {
+				names[i] = p
+				if m, ok := r.byID[p]; ok {
+					names[i] = m.Name
+				}
+			}
+			return &PredecessorError{Name: name, Pred: r.byID[pid].Name, Cycle: names}
 		}
 	}
 	return nil
 }
 
-// ReattachSuccessors computes what taking `name` out of the layer does to the
-// milestones that come after it: in each one's after list the name is replaced
-// by the removed milestone's own predecessors, order kept, repeats dropped, so
-// the chain closes up instead of breaking. A successor left with nothing
+// ReattachSuccessors computes what taking the milestone with this ID out of
+// the layer does to the milestones that come after it: in each one's after
+// list the token naming it is replaced by the removed milestone's own
+// predecessors, order kept, repeats dropped, so the chain closes up instead of
+// breaking. Every token that names a milestone comes back as that milestone's
+// ID; one that names nothing is kept as written. A successor left with nothing
 // becomes a swimlane top (an empty, non-nil list). Only the milestones that
-// name it are in the result, and writing it back is the caller's job.
-func ReattachSuccessors(all []*Milestone, name string) map[string][]string {
+// name it are in the result, keyed by ID, and writing it back is the caller's
+// job.
+func ReattachSuccessors(all []*Milestone, id string) map[string][]string {
+	r := newResolver(all)
+	spell := func(tok string) string {
+		if rid := r.resolve(tok); rid != "" {
+			return rid
+		}
+		return tok
+	}
 	var own []string
-	for _, m := range all {
-		if m.Name == name {
-			own = m.After
+	if m, ok := r.byID[id]; ok {
+		for _, p := range m.After {
+			own = append(own, spell(p))
 		}
 	}
 	out := map[string][]string{}
 	for _, m := range all {
-		if !m.Placed || m.Name == name || !slices.Contains(m.After, name) {
+		if !m.Placed || m.ID == id || !slices.Contains(r.ids(m.After), id) {
 			continue
 		}
 		next := []string{}
 		for _, p := range m.After {
-			repl := []string{p}
-			if p == name {
+			repl := []string{spell(p)}
+			if r.resolve(p) == id {
 				repl = own
 			}
-			for _, r := range repl {
-				if r != m.Name && !slices.Contains(next, r) {
-					next = append(next, r)
+			for _, x := range repl {
+				if x != m.ID && !slices.Contains(next, x) {
+					next = append(next, x)
 				}
 			}
 		}
-		out[m.Name] = next
+		out[m.ID] = next
 	}
 	return out
 }
@@ -216,17 +286,21 @@ func Layout(all []*Milestone) Grid {
 	}
 	slices.SortFunc(placed, byAge)
 	kept := usableEdges(placed)
+	r := newResolver(placed)
 
 	parent := map[string]string{}
 	children := map[string][]string{}
 	var tops []string
 	for _, m := range placed { // oldest first, so children come out ordered
-		if len(m.After) > 0 && len(kept[m.Name]) > 0 && kept[m.Name][0] == m.After[0] {
-			parent[m.Name] = m.After[0]
-			children[m.After[0]] = append(children[m.After[0]], m.Name)
-		} else {
-			tops = append(tops, m.Name)
+		if first := ""; len(m.After) > 0 {
+			first = r.resolve(m.After[0])
+			if first != "" && len(kept[m.ID]) > 0 && kept[m.ID][0] == first {
+				parent[m.ID] = first
+				children[first] = append(children[first], m.ID)
+				continue
+			}
 		}
+		tops = append(tops, m.ID)
 	}
 
 	width := map[string]int{}
@@ -254,7 +328,7 @@ func Layout(all []*Milestone) Grid {
 			bc = col[children[n][0]]
 		}
 		col[n] = bc
-		g.Bubbles = append(g.Bubbles, Bubble{Name: n, Lane: lane, Col: bc, Row: row, Parent: parent[n]})
+		g.Bubbles = append(g.Bubbles, Bubble{ID: n, Lane: lane, Col: bc, Row: row, Parent: parent[n]})
 	}
 	next := 0
 	for i, top := range tops {
@@ -276,13 +350,13 @@ func Layout(all []*Milestone) Grid {
 
 	for _, b := range g.Bubbles {
 		if b.Parent != "" {
-			g.Arrows = append(g.Arrows, Arrow{From: b.Parent, To: b.Name})
+			g.Arrows = append(g.Arrows, Arrow{From: b.Parent, To: b.ID})
 		}
-		for _, p := range kept[b.Name] {
+		for _, p := range kept[b.ID] {
 			if p == b.Parent {
 				continue
 			}
-			g.Arrows = append(g.Arrows, Arrow{From: p, To: b.Name, Extra: true})
+			g.Arrows = append(g.Arrows, Arrow{From: p, To: b.ID, Extra: true})
 		}
 	}
 	return g

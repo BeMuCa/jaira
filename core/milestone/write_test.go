@@ -157,8 +157,8 @@ func TestEditTakingAMilestoneOutClosesTheChain(t *testing.T) {
 	if b, _ := Load(root, "b"); b.Placed || !b.Has(idA) {
 		t.Errorf("b must leave the layer and keep its ticket, placed %v", b.Placed)
 	}
-	if c, _ := Load(root, "c"); strings.Join(c.After, ",") != "a,x" {
-		t.Errorf("c must now come after a, got %v", c.After)
+	if c, _ := Load(root, "c"); strings.Join(c.After, ",") != LegacyID("a")+",x" {
+		t.Errorf("c must now come after a (by ID), got %v", c.After)
 	}
 	if strings.Join(rec.names, ",") != "b,c" {
 		t.Errorf("recorded %v, want b and c only", rec.names)

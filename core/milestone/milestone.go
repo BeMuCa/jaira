@@ -535,13 +535,21 @@ func parseAfter(value string) []string {
 	return cleanNames(strings.Split(value, ","))
 }
 
-// cleanNames normalizes predecessor names like milestone names, dropping what
-// does not normalize, empties and repeats, and keeps the order — the first
-// name is the one that decides the swimlane.
+// cleanNames cleans a list of predecessor tokens: an ID stays exactly as it
+// is — it is upper case, and lowering it would make it a name — and anything
+// else is normalized like a milestone name, dropping what does not normalize,
+// empties and repeats. The order is kept — the first one is the one that
+// decides the swimlane.
 func cleanNames(raw []string) []string {
 	var out []string
 	for _, r := range raw {
 		if strings.TrimSpace(r) == "" {
+			continue
+		}
+		if id := strings.TrimSpace(r); IsID(id) {
+			if !slices.Contains(out, id) {
+				out = append(out, id)
+			}
 			continue
 		}
 		n, _, err := NormalizeName(r)

@@ -20,7 +20,7 @@ func ms(name string, minute int, after ...string) *Milestone {
 func at(t *testing.T, g Grid, name string) Bubble {
 	t.Helper()
 	for _, b := range g.Bubbles {
-		if b.Name == name {
+		if b.ID == LegacyID(name) {
 			return b
 		}
 	}
@@ -50,10 +50,10 @@ func TestLayoutSingleLaneIsAColumn(t *testing.T) {
 			t.Errorf("%s at %s, want %s", name, got, want)
 		}
 	}
-	if len(g.Lanes) != 1 || g.Lanes[0].Top != "a" || g.Lanes[0].Col != 0 || g.Lanes[0].Width != 1 {
+	if len(g.Lanes) != 1 || g.Lanes[0].Top != LegacyID("a") || g.Lanes[0].Col != 0 || g.Lanes[0].Width != 1 {
 		t.Errorf("lanes: %+v", g.Lanes)
 	}
-	if at(t, g, "c").Parent != "b" || at(t, g, "a").Parent != "" {
+	if at(t, g, "c").Parent != LegacyID("b") || at(t, g, "a").Parent != "" {
 		t.Error("parents wrong")
 	}
 }
@@ -93,7 +93,7 @@ func TestLayoutSubtreeWidthPushesTheSibling(t *testing.T) {
 // second an extra arrow flagged as a join.
 func TestLayoutJoin(t *testing.T) {
 	g := Layout([]*Milestone{ms("a", 0), ms("c", 1, "a"), ms("g", 2, "a"), ms("h", 3, "c", "g")})
-	if at(t, g, "h").Parent != "c" {
+	if at(t, g, "h").Parent != LegacyID("c") {
 		t.Errorf("parent = %q", at(t, g, "h").Parent)
 	}
 	var extra []Arrow
@@ -102,7 +102,7 @@ func TestLayoutJoin(t *testing.T) {
 			extra = append(extra, a)
 		}
 	}
-	if len(extra) != 1 || extra[0] != (Arrow{From: "g", To: "h", Extra: true}) {
+	if len(extra) != 1 || extra[0] != (Arrow{From: LegacyID("g"), To: LegacyID("h"), Extra: true}) {
 		t.Errorf("extra arrows: %+v", extra)
 	}
 	if len(g.Arrows) != 4 { // three parent arrows (c,g,h) + the join
@@ -113,7 +113,7 @@ func TestLayoutJoin(t *testing.T) {
 func TestLayoutCrossLaneArrowAndLaneOrder(t *testing.T) {
 	// Lane order follows the top's created-at, not the name: "zed" is older.
 	g := Layout([]*Milestone{ms("alpha", 5), ms("zed", 1), ms("x", 6, "zed", "alpha")})
-	if g.Lanes[0].Top != "zed" || g.Lanes[1].Top != "alpha" {
+	if g.Lanes[0].Top != LegacyID("zed") || g.Lanes[1].Top != LegacyID("alpha") {
 		t.Fatalf("lanes: %+v", g.Lanes)
 	}
 	if g.Lanes[1].Col != 1 {
@@ -124,7 +124,7 @@ func TestLayoutCrossLaneArrowAndLaneOrder(t *testing.T) {
 	}
 	found := false
 	for _, a := range g.Arrows {
-		if a.From == "alpha" && a.To == "x" && a.Extra {
+		if a.From == LegacyID("alpha") && a.To == LegacyID("x") && a.Extra {
 			found = true
 		}
 	}
@@ -135,7 +135,7 @@ func TestLayoutCrossLaneArrowAndLaneOrder(t *testing.T) {
 
 func TestLayoutLaneTiesBreakByName(t *testing.T) {
 	g := Layout([]*Milestone{ms("b", 0), ms("a", 0)})
-	if g.Lanes[0].Top != "a" {
+	if g.Lanes[0].Top != LegacyID("a") {
 		t.Errorf("lanes: %+v", g.Lanes)
 	}
 }
@@ -151,7 +151,7 @@ func TestLayoutIgnoresUnknownAndUnplacedPredecessors(t *testing.T) {
 	if at(t, g, "b").Parent != "" {
 		t.Error("b must be a lane top")
 	}
-	if len(g.Arrows) != 1 || g.Arrows[0].From != "a" || !g.Arrows[0].Extra {
+	if len(g.Arrows) != 1 || g.Arrows[0].From != LegacyID("a") || !g.Arrows[0].Extra {
 		t.Errorf("arrows: %+v", g.Arrows)
 	}
 }
@@ -163,7 +163,7 @@ func TestLayoutCycleNeverCrashesAndDropsOneArrow(t *testing.T) {
 	}
 	n := 0
 	for _, a := range g.Arrows {
-		if (a.From == "a" && a.To == "b") || (a.From == "b" && a.To == "a") {
+		if (a.From == LegacyID("a") && a.To == LegacyID("b")) || (a.From == LegacyID("b") && a.To == LegacyID("a")) {
 			n++
 		}
 	}
@@ -203,7 +203,7 @@ func TestCyclePathFindsEveryLoop(t *testing.T) {
 		{"a", "x", false},
 	}
 	for _, c := range cases {
-		if got := CyclePath(all, c.succ, c.pred) != nil; got != c.want {
+		if got := CyclePath(all, LegacyID(c.succ), LegacyID(c.pred)) != nil; got != c.want {
 			t.Errorf("CyclePath(%s after %s) != nil is %v, want %v", c.succ, c.pred, got, c.want)
 		}
 	}
@@ -219,52 +219,84 @@ func TestReattachSuccessors(t *testing.T) {
 		ms("t", 6),
 		ms("s4", 7, "t", "r"),
 	}
-	got := ReattachSuccessors(all, "m")
-	want := map[string][]string{"s1": {"p", "q"}, "s2": {"x", "p", "q"}}
+	got := ReattachSuccessors(all, LegacyID("m"))
+	want := map[string][]string{LegacyID("s1"): {LegacyID("p"), LegacyID("q")}, LegacyID("s2"): {"x", LegacyID("p"), LegacyID("q")}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 
 	// A successor whose only predecessor was the removed top has none left and
 	// becomes a lane top: an empty, non-nil list.
-	got = ReattachSuccessors([]*Milestone{ms("m", 0), ms("s", 1, "m")}, "m")
-	if v, ok := got["s"]; !ok || v == nil || len(v) != 0 {
+	got = ReattachSuccessors([]*Milestone{ms("m", 0), ms("s", 1, "m")}, LegacyID("m"))
+	if v, ok := got[LegacyID("s")]; !ok || v == nil || len(v) != 0 {
 		t.Errorf("got %#v, want s -> []", got)
 	}
 	// A hand-edited file naming itself is not its own successor: taking it
 	// out must not put it straight back in as a top.
-	if got = ReattachSuccessors([]*Milestone{ms("m", 0, "m")}, "m"); len(got) != 0 {
+	if got = ReattachSuccessors([]*Milestone{ms("m", 0, "m")}, LegacyID("m")); len(got) != 0 {
 		t.Errorf("got %#v, want nothing", got)
 	}
 }
 
 func TestCyclePathNamesTheLoopInArrowDirection(t *testing.T) {
 	all := []*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b")}
-	if got := strings.Join(CyclePath(all, "a", "c"), " "); got != "a b c a" {
+	a, b, c := LegacyID("a"), LegacyID("b"), LegacyID("c")
+	if got := strings.Join(CyclePath(all, a, c), " "); got != strings.Join([]string{a, b, c, a}, " ") {
 		t.Errorf("got %q", got)
 	}
-	if CyclePath(all, "c", "a") != nil {
+	if CyclePath(all, c, a) != nil {
 		t.Error("no loop expected")
 	}
-	if got := CyclePath(all, "a", "a"); len(got) != 2 {
+	if got := CyclePath(all, a, a); len(got) != 2 {
 		t.Errorf("self: %v", got)
 	}
 }
 
 func TestCheckAfter(t *testing.T) {
 	all := []*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b")}
-	if err := CheckAfter(all, "c", []string{"a", "b"}); err != nil {
+	if err := CheckAfter(all, LegacyID("c"), []string{"a", "b"}); err != nil {
 		t.Errorf("valid predecessors refused: %v", err)
 	}
 	var pe *PredecessorError
-	if err := CheckAfter(all, "c", []string{"a", "ghost"}); !errors.As(err, &pe) || pe.Pred != "ghost" || pe.Cycle != nil {
+	if err := CheckAfter(all, LegacyID("c"), []string{"a", "ghost"}); !errors.As(err, &pe) || pe.Pred != "ghost" || pe.Cycle != nil {
 		t.Errorf("unknown: %v", err)
 	} else if !strings.Contains(err.Error(), `no milestone "ghost"`) {
 		t.Errorf("unknown message: %v", err)
 	}
-	if err := CheckAfter(all, "a", []string{"c"}); !errors.As(err, &pe) || strings.Join(pe.Cycle, " ") != "a b c a" {
+	if err := CheckAfter(all, LegacyID("a"), []string{"c"}); !errors.As(err, &pe) || strings.Join(pe.Cycle, " ") != "a b c a" {
 		t.Errorf("cycle: %v", err)
 	} else if !strings.Contains(err.Error(), "a -> b -> c -> a") {
 		t.Errorf("cycle message: %v", err)
+	}
+}
+
+// after: tokens are IDs; a name still resolves when exactly one milestone
+// carries it, and the layout draws the same either way.
+func TestLayoutAndCheckAfterReadIDsAndNames(t *testing.T) {
+	a := ms("a", 0)
+	byID := ms("b", 1)
+	byID.SetAfter([]string{a.ID})
+	byName := ms("c", 2, "a")
+	g := Layout([]*Milestone{a, byID, byName})
+	if at(t, g, "b").Parent != a.ID || at(t, g, "c").Parent != a.ID {
+		t.Errorf("an ID token and a name token must both reach a: %+v", g.Bubbles)
+	}
+	if err := CheckAfter([]*Milestone{a, byID}, byID.ID, []string{a.ID}); err != nil {
+		t.Errorf("ID token refused: %v", err)
+	}
+	// two milestones with one name: the name names neither, the IDs do
+	twin := New("a", 45, time.Date(2026, 10, 1, 0, 9, 0, 0, time.UTC))
+	twin.ID = "ZZZZZZ"
+	all := []*Milestone{a, twin, ms("d", 3)}
+	if err := CheckAfter(all, LegacyID("d"), []string{"a"}); err == nil {
+		t.Error("an ambiguous name was accepted")
+	}
+	if err := CheckAfter(all, LegacyID("d"), []string{"ZZZZZZ"}); err != nil {
+		t.Errorf("the twin's ID refused: %v", err)
+	}
+	// SetAfter keeps an ID exactly as written
+	byID.SetAfter([]string{"ZZZZZZ", "Api Umbau"})
+	if got := strings.Join(byID.After, ","); got != "ZZZZZZ,api-umbau" {
+		t.Errorf("After = %q", got)
 	}
 }

@@ -13,6 +13,9 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
+// lid is the ID a milestone made with the old file format gets from its name.
+func lid(name string) string { return milestone.LegacyID(name) }
+
 // mkPlaced writes a milestone placed in the layer after the given names (none:
 // a swimlane top), created at the given minute so lanes and children come out
 // in a known order.
@@ -118,7 +121,7 @@ func TestLayerDrawsBubblesArrowsAndPlus(t *testing.T) {
 	}
 
 	m.key(keyDown) // onto docs: a child without children of its own
-	if m.layer.sel != (layerTarget{onBubble, "docs"}) {
+	if m.layer.sel != (layerTarget{onBubble, lid("docs")}) {
 		t.Fatalf("↓ from api must land on docs, got %+v", m.layer.sel)
 	}
 	if n := strings.Count(stripANSI(m.render()), "[+]"); n != 3 {
@@ -218,7 +221,7 @@ func TestUpOnTheTopRowStays(t *testing.T) {
 	reloadOrFail(t, m)
 	m.key(key("L"))
 	m.key(keyUp)
-	if m.layer.sel != (layerTarget{onBubble, "a"}) {
+	if m.layer.sel != (layerTarget{onBubble, lid("a")}) {
 		t.Errorf("↑ on the top row must stay put, got %+v", m.layer.sel)
 	}
 }
@@ -286,15 +289,15 @@ func TestLayerNavigationIsGeometric(t *testing.T) {
 		k    tea.KeyPressMsg
 		want layerTarget
 	}{
-		{keyDown, layerTarget{onBubble, "b"}},
-		{keyRight, layerTarget{onRight, "b"}},
-		{keyRight, layerTarget{onBubble, "c"}},
-		{keyDown, layerTarget{onBelow, "c"}},
-		{keyUp, layerTarget{onBubble, "c"}},
-		{keyUp, layerTarget{onBubble, "a"}},
-		{keyRight, layerTarget{onBubble, "d"}},
+		{keyDown, layerTarget{onBubble, lid("b")}},
+		{keyRight, layerTarget{onRight, lid("b")}},
+		{keyRight, layerTarget{onBubble, lid("c")}},
+		{keyDown, layerTarget{onBelow, lid("c")}},
+		{keyUp, layerTarget{onBubble, lid("c")}},
+		{keyUp, layerTarget{onBubble, lid("a")}},
+		{keyRight, layerTarget{onBubble, lid("d")}},
 		{keyRight, layerTarget{onFar, ""}},
-		{keyLeft, layerTarget{onBubble, "d"}},
+		{keyLeft, layerTarget{onBubble, lid("d")}},
 	}
 	for i, s := range steps {
 		m.key(s.k)
@@ -351,7 +354,7 @@ func TestNewMilestoneFromTheFarPlus(t *testing.T) {
 	if !ms.HasColour() {
 		t.Error("a new milestone is given a colour, as the CLI gives one")
 	}
-	if m.mode != modeLayer || m.layer.stage != stageLayer || m.layer.sel != (layerTarget{onBubble, "release-zero"}) {
+	if m.mode != modeLayer || m.layer.stage != stageLayer || m.layer.sel != (layerTarget{onBubble, lid("release-zero")}) {
 		t.Errorf("the cursor must land on the new bubble, mode %v stage %v sel %+v", m.mode, m.layer.stage, m.layer.sel)
 	}
 }
@@ -364,7 +367,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	m.key(key("L"))
 
 	m.key(keyDown) // the [+] under a
-	if m.layer.sel != (layerTarget{onBelow, "a"}) {
+	if m.layer.sel != (layerTarget{onBelow, lid("a")}) {
 		t.Fatalf("want the [+] under a, got %+v", m.layer.sel)
 	}
 	m.key(key("enter"))
@@ -376,7 +379,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	}
 
 	m.key(keyRight) // b's sibling [+]
-	if m.layer.sel != (layerTarget{onRight, "b"}) {
+	if m.layer.sel != (layerTarget{onRight, lid("b")}) {
 		t.Fatalf("want the [+] beside b, got %+v", m.layer.sel)
 	}
 	m.key(key("enter"))
@@ -511,7 +514,7 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != "first-round" {
 		t.Errorf("b must come after first-round, got %v", b.After)
 	}
-	if m.layer.sel != (layerTarget{kind: onBubble, name: "first-round"}) {
+	if m.layer.sel != (layerTarget{kind: onBubble, id: lid("first-round")}) {
 		t.Errorf("the cursor must stay on the renamed bubble, got %+v", m.layer.sel)
 	}
 	if m.filter != "milestone:first-round" {
@@ -566,7 +569,7 @@ func TestConnectExistingMilestone(t *testing.T) {
 	m.key(keyDown)      // the [+] under b
 	m.key(key("enter")) // new or connect
 	m.key(key("c"))
-	if got := strings.Join(m.layer.pick, ","); got != "loose" {
+	if got := strings.Join(m.layer.pick, ","); got != lid("loose") {
 		t.Fatalf("under b the picker offers loose alone (not b, and a would close a loop), got %q", got)
 	}
 	m.key(key("enter"))
@@ -591,7 +594,7 @@ func TestConnectPlacedMilestoneAddsAnArrow(t *testing.T) {
 	m.key(key("c"))
 	idx := -1
 	for i, n := range m.layer.pick {
-		if n == "y" {
+		if n == lid("y") {
 			idx = i
 		}
 	}
@@ -632,7 +635,7 @@ func TestColourKeySkipsAColourInUse(t *testing.T) {
 	mkPlaced(t, m, "b", 1, nil) // Palette[1]
 	reloadOrFail(t, m)
 	m.key(key("L"))
-	if m.layer.sel != (layerTarget{onBubble, "a"}) {
+	if m.layer.sel != (layerTarget{onBubble, lid("a")}) {
 		t.Fatalf("the cursor must start on a, got %+v", m.layer.sel)
 	}
 	m.key(key("c"))
@@ -670,7 +673,7 @@ func TestRemoveReattachesSuccessors(t *testing.T) {
 		t.Errorf("b must leave the layer and keep its ticket, placed %v", b.Placed)
 	}
 	for _, n := range []string{"c", "d"} {
-		if got := loadMilestone(t, m, n).After; len(got) != 1 || got[0] != "a" {
+		if got := loadMilestone(t, m, n).After; len(got) != 1 || got[0] != lid("a") {
 			t.Errorf("%s must now come after a, got %v", n, got)
 		}
 	}

@@ -104,9 +104,9 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		if err != nil {
 			return ms, err
 		}
-		reattach := ReattachSuccessors(all, ms.Name)
+		reattach := ReattachSuccessors(all, ms.ID)
 		for _, m := range all { // LoadAll's order, by name
-			if after, ok := reattach[m.Name]; ok {
+			if after, ok := reattach[m.ID]; ok {
 				m.SetAfter(after)
 				succ = append(succ, m)
 			}
@@ -160,10 +160,24 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 	renamed := FromBytes(to, ms.Bytes())
 	renamed.retitle(from, to)
 	writes := []*Milestone{renamed}
+	r := newResolver(all)
 	for _, m := range all { // LoadAll's order, by name
-		if i := slices.Index(m.After, from); i >= 0 && m.Name != from {
-			after := slices.Clone(m.After)
-			after[i] = to
+		if m.ID == ms.ID {
+			continue
+		}
+		after, changed := slices.Clone(m.After), false
+		for i, tok := range after {
+			if r.resolve(tok) != ms.ID {
+				continue
+			}
+			// The renamed milestone's ID is the one the new name gives it,
+			// until IDs stop following names.
+			after[i], changed = to, true
+			if IsID(tok) {
+				after[i] = renamed.ID
+			}
+		}
+		if changed {
 			m.SetAfter(after)
 			writes = append(writes, m)
 		}

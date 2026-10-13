@@ -688,7 +688,7 @@ func TestSetNoLayerHangsTheSuccessorsOnThePredecessors(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-roadmap"); err != nil {
 		t.Fatalf("set --no-roadmap: %v\n%s", err, out)
 	}
-	if c, _ := milestone.Load(dir, "c"); len(c.After) != 1 || c.After[0] != "a" {
+	if c, _ := milestone.Load(dir, "c"); len(c.After) != 1 || c.After[0] != milestone.LegacyID("a") {
 		t.Errorf("c must now come after a, got %v", c.After)
 	}
 }

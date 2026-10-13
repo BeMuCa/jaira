@@ -169,7 +169,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 					ms.SetGoal(goal)
 				}
 				if cmd.Flags().Changed("after") {
-					if err := checkPredecessors(existing, name, preds); err != nil {
+					if err := checkPredecessors(existing, ms.ID, preds); err != nil {
 						return nil, err
 					}
 					ms.SetAfter(preds)
@@ -290,7 +290,7 @@ filed milestone is refused like everywhere else.`,
 					if err != nil {
 						return err
 					}
-					if err := checkPredecessors(all, name, preds); err != nil {
+					if err := checkPredecessors(all, ms.ID, preds); err != nil {
 						return err
 					}
 					ms.SetAfter(preds)
@@ -413,9 +413,9 @@ func parseMilestoneNames(raw string) ([]string, error) {
 // checkPredecessors is milestone.CheckAfter with the CLI's exit codes: an
 // unknown predecessor is not found (5), an arrow that closes a loop is a
 // validation error (3).
-func checkPredecessors(all []*milestone.Milestone, name string, preds []string) error {
+func checkPredecessors(all []*milestone.Milestone, id string, preds []string) error {
 	var pe *milestone.PredecessorError
-	if err := milestone.CheckAfter(all, name, preds); !errors.As(err, &pe) {
+	if err := milestone.CheckAfter(all, id, preds); !errors.As(err, &pe) {
 		return err
 	}
 	if pe.Cycle != nil {

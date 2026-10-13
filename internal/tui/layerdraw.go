@@ -39,7 +39,7 @@ const (
 // layout is a pure function and cheap.
 type layerScene struct {
 	grid    milestone.Grid
-	byName  map[string]*milestone.Milestone
+	byID    map[string]*milestone.Milestone
 	bubble  map[string]milestone.Bubble
 	at      map[string]image.Point // a bubble's top-left cell
 	targets []sceneTarget
@@ -59,12 +59,12 @@ func (m *Model) layerScene() *layerScene {
 	l := m.layer
 	sc := &layerScene{
 		grid:   milestone.Layout(m.milestones),
-		byName: map[string]*milestone.Milestone{},
+		byID:   map[string]*milestone.Milestone{},
 		bubble: map[string]milestone.Bubble{},
 		at:     map[string]image.Point{},
 	}
 	for _, ms := range m.milestones {
-		sc.byName[ms.Name] = ms
+		sc.byID[ms.ID] = ms
 	}
 	cols, rows := 0, 1
 	for _, ln := range sc.grid.Lanes {
@@ -72,8 +72,8 @@ func (m *Model) layerScene() *layerScene {
 	}
 	hasChild := map[string]bool{}
 	for _, b := range sc.grid.Bubbles {
-		sc.bubble[b.Name] = b
-		sc.at[b.Name] = image.Pt(layerLeft+b.Col*cellW+b.Lane*laneGap, layerTop+b.Row*cellH)
+		sc.bubble[b.ID] = b
+		sc.at[b.ID] = image.Pt(layerLeft+b.Col*cellW+b.Lane*laneGap, layerTop+b.Row*cellH)
 		rows = max(rows, b.Row+1)
 		if b.Parent != "" {
 			hasChild[b.Parent] = true
@@ -84,21 +84,21 @@ func (m *Model) layerScene() *layerScene {
 	sc.h = layerTop + rows*cellH
 
 	// The cursor first, because which [+] are offered depends on it.
-	b, ok := sc.bubble[l.sel.name]
+	b, ok := sc.bubble[l.sel.id]
 	switch {
 	case l.sel.kind == onFar:
 	case !ok:
 		l.sel = layerTarget{kind: onFar}
 		if len(sc.grid.Bubbles) > 0 {
-			l.sel = layerTarget{kind: onBubble, name: sc.grid.Bubbles[0].Name}
+			l.sel = layerTarget{kind: onBubble, id: sc.grid.Bubbles[0].ID}
 		}
-	case l.sel.kind == onRight && b.Parent == "", l.sel.kind == onBelow && hasChild[b.Name]:
+	case l.sel.kind == onRight && b.Parent == "", l.sel.kind == onBelow && hasChild[b.ID]:
 		l.sel.kind = onBubble
 	}
 
 	for _, b := range sc.grid.Bubbles {
-		p := sc.at[b.Name]
-		sc.targets = append(sc.targets, sceneTarget{layerTarget{onBubble, b.Name}, image.Rect(p.X, p.Y, p.X+bubbleW, p.Y+bubbleH)})
+		p := sc.at[b.ID]
+		sc.targets = append(sc.targets, sceneTarget{layerTarget{onBubble, b.ID}, image.Rect(p.X, p.Y, p.X+bubbleW, p.Y+bubbleH)})
 	}
 	// The [+] of the bubble the cursor is on, or of the bubble whose [+] it
 	// is on: drawn in space the layout reserves, so offering them moves
@@ -112,13 +112,13 @@ func (m *Model) layerScene() *layerScene {
 	// on its centre column — so ↑↓ never stops on the [+] beside a bubble
 	// and ←→ never on the one under it. "[+]" is drawn at the box's corner.
 	if l.sel.kind != onFar {
-		b := sc.bubble[l.sel.name]
-		p := sc.at[b.Name]
+		b := sc.bubble[l.sel.id]
+		p := sc.at[b.ID]
 		if b.Parent != "" {
-			sc.targets = append(sc.targets, sceneTarget{layerTarget{onRight, b.Name}, image.Rect(p.X+bubbleW+1, p.Y+1, p.X+bubbleW+4, p.Y+3)})
+			sc.targets = append(sc.targets, sceneTarget{layerTarget{onRight, b.ID}, image.Rect(p.X+bubbleW+1, p.Y+1, p.X+bubbleW+4, p.Y+3)})
 		}
-		if !hasChild[b.Name] {
-			sc.targets = append(sc.targets, sceneTarget{layerTarget{onBelow, b.Name}, image.Rect(p.X+6, p.Y+bubbleH, p.X+10, p.Y+bubbleH+1)})
+		if !hasChild[b.ID] {
+			sc.targets = append(sc.targets, sceneTarget{layerTarget{onBelow, b.ID}, image.Rect(p.X+6, p.Y+bubbleH, p.X+10, p.Y+bubbleH+1)})
 		}
 	}
 	// The far [+] steers on the top row's middle, like the [+] beside a
@@ -493,8 +493,8 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 	// than whichever arrow happened to be drawn last. A cell any parent arrow
 	// passes through is drawn plain; one only extra arrows use, dim.
 	type exit struct {
-		name string
-		dx   int
+		id string
+		dx int
 	}
 	var exits []exit
 	lines := newArrowLines()
@@ -505,7 +505,7 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 		if b.Parent == "" {
 			continue
 		}
-		p, t := sc.at[b.Parent], sc.at[b.Name]
+		p, t := sc.at[b.Parent], sc.at[b.ID]
 		x, row, tx := p.X+7, p.Y+bubbleH, t.X+7
 		lines.path([]image.Point{{x, row - 1}, {x, row}, {tx, row}, {tx, row + 2}}, true)
 		lines.arrow(image.Pt(tx, row+2), true)
@@ -542,15 +542,15 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 
 	selBubble := ""
 	if l.sel.kind == onBubble {
-		selBubble = l.sel.name
+		selBubble = l.sel.id
 	}
 	for _, b := range sc.grid.Bubbles {
-		ms := sc.byName[b.Name]
+		ms := sc.byID[b.ID]
 		done, total := m.milestoneDone(ms)
-		m.drawBubble(cv, ms, sc.at[b.Name], done, total, b.Name == selBubble)
+		m.drawBubble(cv, ms, sc.at[b.ID], done, total, b.ID == selBubble)
 	}
 	for _, e := range exits {
-		bubbleExit(cv, sc.at[e.name], e.dx, e.name == selBubble, sc.byName[e.name])
+		bubbleExit(cv, sc.at[e.id], e.dx, e.id == selBubble, sc.byID[e.id])
 	}
 
 	for _, t := range sc.targets {
@@ -650,7 +650,7 @@ func (m *Model) layerHeader(sc *layerScene) string {
 	width := max(1, m.width)
 	switch l.sel.kind {
 	case onBubble:
-		ms := sc.byName[l.sel.name]
+		ms := sc.byID[l.sel.id]
 		goal := "no goal yet — e writes one"
 		if ms.Goal != "" {
 			goal = ms.Goal
@@ -711,11 +711,11 @@ func (m *Model) renderLayerDialog() string {
 		if len(l.pick) == 0 {
 			b.WriteString(styMeta.Render("Nothing to connect here: every other milestone already comes after it, or would close a loop.") + "\n")
 		}
-		for i, name := range l.pick {
-			ms := m.milestoneNamed(name)
-			marker, label := "  ", name
+		for i, id := range l.pick {
+			ms := m.milestoneByID(id)
+			marker, label := "  ", ms.Name
 			if i == l.pickIdx {
-				marker, label = stySelected.Render("▌ "), stySelected.Render(name)
+				marker, label = stySelected.Render("▌ "), stySelected.Render(ms.Name)
 			}
 			note := "not on the roadmap yet: placed here"
 			switch {
@@ -733,7 +733,7 @@ func (m *Model) renderLayerDialog() string {
 		hints("↑↓ pick", "enter connect", "esc back")
 
 	case stageRemove:
-		b.WriteString(styLaneTitle.Render("Take "+l.sel.name+" off the roadmap?") + "\n\n")
+		b.WriteString(styLaneTitle.Render("Take "+m.milestoneLabel(l.sel.id)+" off the roadmap?") + "\n\n")
 		b.WriteString(styMeta.Render("Its tickets stay in it. What came after it moves up to what came before it.") + "\n")
 		hints("y take it out", "n keep it")
 	}
@@ -745,7 +745,7 @@ func (m *Model) renderLayerDialog() string {
 // scrolls with its cursor.
 func (m *Model) renderMilestoneDetail() string {
 	l := m.layer
-	ms := m.milestoneNamed(l.detailName)
+	ms := m.milestoneByID(l.detailID)
 	if ms == nil {
 		return m.renderLayerGrid()
 	}
