@@ -163,7 +163,7 @@ func (m *Milestone) Remove(id string) bool {
 // New builds a milestone that has never been written, with the colour the
 // caller picked. It is not on disk until Save.
 func New(name string, colour int, now time.Time) *Milestone {
-	m := &Milestone{Name: name, ID: LegacyID(name), file: name + ".md", Colour: colour, CreatedAt: now}
+	m := &Milestone{Name: name, ID: NewID(), Colour: colour, CreatedAt: now}
 	m.lines = []string{
 		"---",
 		"color: " + strconv.Itoa(colour),
@@ -454,23 +454,22 @@ const StatusFiled = "filed"
 // rather than writing the file back to disk.
 func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
 
-// RenamedTo is the value of the `renamed-to:` line a rename of the name-keyed
-// era left in the file it marked under the old name, or "" when the file has
-// none. Such a file is not a milestone any more. It reads the raw lines — the
-// field it was parsed into is gone.
-func RenamedTo(content []byte) string {
+// MarkedRenamed reports whether a milestone file carries the line a rename of
+// the name-keyed era left under the old name. It reads the raw lines, not the
+// parsed field, so it still answers once that field is gone.
+func MarkedRenamed(content []byte) bool {
 	m := &Milestone{}
 	m.lines = strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
 	end, ok := m.frontEnd()
 	if !ok {
-		return ""
+		return false
 	}
 	for _, line := range m.lines[1:end] {
-		if k, v, _ := strings.Cut(strings.TrimSpace(line), ":"); strings.TrimSpace(k) == "renamed-to" {
-			return strings.TrimSpace(v)
+		if k, _, _ := strings.Cut(strings.TrimSpace(line), ":"); strings.TrimSpace(k) == "renamed-to" {
+			return true
 		}
 	}
-	return ""
+	return false
 }
 
 // HoldsName reports whether this filed milestone keeps its name taken. A

@@ -22,7 +22,12 @@ func lid(name string) string { return milestone.LegacyID(name) }
 func mkPlaced(t *testing.T, m *Model, name string, minute int, after []string, ids ...string) {
 	t.Helper()
 	ms := milestone.New(name, milestone.Palette[minute%len(milestone.Palette)], nowish().Add(time.Duration(minute)*time.Minute))
-	ms.SetAfter(after)
+	ms.ID = lid(name)
+	tokens := make([]string, len(after))
+	for i, n := range after {
+		tokens[i] = lid(n) // a predecessor named by its ID, as jaira writes it
+	}
+	ms.SetAfter(tokens)
 	for _, id := range ids {
 		ms.Add(id)
 	}
@@ -252,6 +257,7 @@ func TestBubbleFillColourCodes(t *testing.T) {
 		m := newTestModel(t, 120, 40)
 		m.trueColor = c.trueColor
 		ms := milestone.New("salmon", 209, nowish())
+		ms.ID = lid("salmon")
 		ms.SetAfter(nil)
 		ms.Add(titled(t, m, "Add session test harness"))
 		ms.Add(titled(t, m, "Fix session cookie dropped on 302"))
@@ -354,7 +360,7 @@ func TestNewMilestoneFromTheFarPlus(t *testing.T) {
 	if !ms.HasColour() {
 		t.Error("a new milestone is given a colour, as the CLI gives one")
 	}
-	if m.mode != modeLayer || m.layer.stage != stageLayer || m.layer.sel != (layerTarget{onBubble, lid("release-zero")}) {
+	if m.mode != modeLayer || m.layer.stage != stageLayer || m.layer.sel.kind != onBubble || m.layer.sel.id != ms.ID {
 		t.Errorf("the cursor must land on the new bubble, mode %v stage %v sel %+v", m.mode, m.layer.stage, m.layer.sel)
 	}
 }
@@ -379,7 +385,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	}
 
 	m.key(keyRight) // b's sibling [+]
-	if m.layer.sel != (layerTarget{onRight, lid("b")}) {
+	if bID := loadMilestone(t, m, "b").ID; m.layer.sel != (layerTarget{onRight, bID}) {
 		t.Fatalf("want the [+] beside b, got %+v", m.layer.sel)
 	}
 	m.key(key("enter"))
@@ -505,16 +511,16 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	if m.layer.stage != stageLayer || m.layer.err != "" {
 		t.Fatalf("the rename must close the form, stage %v err %q", m.layer.stage, m.layer.err)
 	}
-	if _, err := os.Stat(filepath.Join(milestone.Dir(m.store.Root), "a.md")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(milestone.Dir(m.store.Root), "a-"+lid("a")+".md")); !os.IsNotExist(err) {
 		t.Errorf("the old file is still there: %v", err)
 	}
 	if got := loadMilestone(t, m, "first-round"); got.Goal != "new goal" || !got.Placed || len(got.After) != 0 {
 		t.Errorf("first-round must carry the goal and a's place, got goal %q placed %v after %v", got.Goal, got.Placed, got.After)
 	}
-	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != lid("first-round") {
-		t.Errorf("b must come after first-round, got %v", b.After)
+	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != lid("a") {
+		t.Errorf("b must still come after the renamed milestone by its ID, got %v", b.After)
 	}
-	if m.layer.sel != (layerTarget{kind: onBubble, id: lid("first-round")}) {
+	if m.layer.sel != (layerTarget{kind: onBubble, id: lid("a")}) {
 		t.Errorf("the cursor must stay on the renamed bubble, got %+v", m.layer.sel)
 	}
 	if m.filter != "milestone:first-round" {
@@ -547,8 +553,8 @@ func TestEditKeepsAHandWrittenName(t *testing.T) {
 	}
 	var upper, lower bool
 	for _, e := range entries {
-		upper = upper || e.Name() == "Q4.md"
-		lower = lower || e.Name() == "q4.md"
+		upper = upper || strings.HasPrefix(e.Name(), "Q4-")
+		lower = lower || strings.HasPrefix(e.Name(), "q4-")
 	}
 	if !upper || lower {
 		t.Errorf("saving the goal must keep Q4.md as it is: Q4.md there %v, q4.md there %v", upper, lower)
@@ -692,6 +698,7 @@ func TestMilestoneDetail(t *testing.T) {
 		t.Fatal(err)
 	}
 	ms := milestone.New("round", 45, nowish())
+	ms.ID = lid("round")
 	ms.SetGoal("the round is done")
 	ms.SetAfter(nil)
 	for _, id := range []string{todo, done, old} {

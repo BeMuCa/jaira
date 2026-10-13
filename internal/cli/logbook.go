@@ -366,6 +366,9 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	}
 	defer unlock()
 
+	if _, err := migrateHeld(s); err != nil {
+		return err
+	}
 	ms, err := milestone.Load(s.Root, name)
 	if err != nil {
 		return err

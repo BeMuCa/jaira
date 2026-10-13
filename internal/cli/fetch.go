@@ -124,6 +124,12 @@ func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[strin
 	if renamed == nil {
 		renamed = map[string]string{}
 	}
+	if err != nil {
+		return opened, filed, renamed, err
+	}
+	// Taken in after the refs, so a name-keyed ref that only now brought an old
+	// file is moved to its ID in the same fetch.
+	_, err = migrateHeld(s)
 	return opened, filed, renamed, err
 }
 

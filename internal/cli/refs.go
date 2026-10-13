@@ -9,6 +9,7 @@ import (
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/hook"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/outbox"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -252,7 +253,7 @@ func flushRefs() {
 		return
 	}
 	for _, r := range reports {
-		key, name := refSubject(r.Kind, r.ID)
+		key, name := refSubject(r.Kind, r.ID, r.File)
 		switch r.Outcome {
 		case outbox.Sent:
 			// The normal case says nothing. A line on every write would be
@@ -281,13 +282,17 @@ func flushRefs() {
 //
 // The two kinds are not interchangeable. A ticket is addressed by a handle,
 // the last six characters of its id, which is what every other jaira message
-// prints and what the user types back. A milestone is addressed by its name,
-// and a name put through ticket.Handle comes out as its last six characters —
-// 'next-release' printed as 'elease', a word that names nothing and that no
-// command accepts.
-func refSubject(kind outbox.Kind, id string) (key, name string) {
+// prints and what the user types back. A milestone is known by its name, which
+// the file it travels under carries (<name>-<ID>.md); a name put through
+// ticket.Handle comes out as its last six characters — 'next-release' printed
+// as 'elease', a word that names nothing and that no command accepts. An entry
+// an older build queued has no file and was keyed by its name.
+func refSubject(kind outbox.Kind, id, file string) (key, name string) {
 	if kind == outbox.KindMilestone {
-		return "milestone", id
+		if file == "" {
+			return "milestone", id
+		}
+		return "milestone", milestone.FromBytes(file, nil).Name
 	}
 	return "ticket", ticket.Handle(id)
 }

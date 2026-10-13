@@ -325,15 +325,18 @@ func TestFiledMilestoneFindsBothLogbookFolders(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, name+".md"), []byte("---\nstatus: filed\n---\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		where, filed := s.FiledMilestone(func(base string) bool { return base == name })
+		where, file, filed := s.FiledMilestone(func(base string) bool { return base == name })
 		if !filed {
 			t.Fatalf("FiledMilestone(%q) did not find it under %s", name, sub)
+		}
+		if file != name+".md" {
+			t.Errorf("FiledMilestone(%q) file = %q", name, file)
 		}
 		if want := filepath.Join(DirName, sub, "as-20260823", MilestonesSubdir); where != want {
 			t.Errorf("FiledMilestone(%q) = %q, want %q", name, where, want)
 		}
 	}
-	if _, filed := s.FiledMilestone(func(base string) bool { return base == "never-planned" }); filed {
+	if _, _, filed := s.FiledMilestone(func(base string) bool { return base == "never-planned" }); filed {
 		t.Error("FiledMilestone found a milestone nobody filed")
 	}
 }

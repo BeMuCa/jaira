@@ -21,6 +21,9 @@ func dirNames(t *testing.T, root string) string {
 	return strings.Join(names, ",")
 }
 
+// writeOld puts a file where the format before IDs kept it: <name>.md.
+func writeOld(t *testing.T, root, name, body string) { writeFile(t, root, name+".md", body) }
+
 // Two clones migrating the same old file write the same bytes under the same
 // name: the ID is computed, and after: names become the IDs those names get.
 func TestMigrateGivesEveryCloneTheSameFile(t *testing.T) {
@@ -28,8 +31,8 @@ func TestMigrateGivesEveryCloneTheSameFile(t *testing.T) {
 	var rec [2]*fakeRec
 	for i := range got {
 		root := t.TempDir()
-		write(t, root, "q4", "---\ncolor: 45\n---\n\n# q4\n\n- "+idA+"\n")
-		write(t, root, "q5", "---\ncolor: 46\nafter: [q4, ghost]\n---\n")
+		writeOld(t, root, "q4", "---\ncolor: 45\n---\n\n# q4\n\n- "+idA+"\n")
+		writeOld(t, root, "q5", "---\ncolor: 46\nafter: [q4, ghost]\n---\n")
 		rec[i] = &fakeRec{}
 		moved, err := Migrate(root, rec[i])
 		if err != nil {
@@ -73,10 +76,10 @@ func TestMigrateContentChangesNothingElse(t *testing.T) {
 // queued again.
 func TestMigrateRemovesMarksKeepsNewerTargetsAndSkipsExistingRefs(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "old", "---\ncolor: 45\nstatus: filed\nrenamed-to: new\n---\n")
-	write(t, root, "both", "---\ncolor: 45\n---\n")
+	writeOld(t, root, "old", "---\ncolor: 45\nstatus: filed\nrenamed-to: new\n---\n")
+	writeOld(t, root, "both", "---\ncolor: 45\n---\n")
 	writeFile(t, root, "both-"+LegacyID("both")+".md", "---\ncolor: 99\n---\n")
-	write(t, root, "ref", "---\ncolor: 47\n---\n")
+	writeOld(t, root, "ref", "---\ncolor: 47\n---\n")
 	writeFile(t, root, "kept-K3F9QZ.md", "---\ncolor: 48\n---\n")
 	rec := &fakeRec{have: map[string]bool{LegacyID("ref"): true}}
 	if _, err := Migrate(root, rec); err != nil {
@@ -95,7 +98,7 @@ func TestMigrateRemovesMarksKeepsNewerTargetsAndSkipsExistingRefs(t *testing.T) 
 
 func TestMigrateReportsARecordFailureAfterTheMove(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "q4", "---\ncolor: 45\n---\n")
+	writeOld(t, root, "q4", "---\ncolor: 45\n---\n")
 	_, err := Migrate(root, &fakeRec{err: errors.New("no remote")})
 	var re *RecordError
 	if !errors.As(err, &re) {

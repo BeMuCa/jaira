@@ -10,7 +10,7 @@ import (
 )
 
 // write puts a milestone file on disk verbatim, the way a person editing it
-// by hand would leave it.
+// by hand would leave it, under the ID file name its name gets from LegacyID.
 func write(t *testing.T, root, name, body string) {
 	t.Helper()
 	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
@@ -442,8 +442,10 @@ func TestParseNames(t *testing.T) {
 	}
 }
 
-// testPath is where a file written before IDs existed lies.
-func testPath(root, name string) string { return filepath.Join(Dir(root), name+".md") }
+// testPath is where write puts a milestone: <name>-<LegacyID(name)>.md.
+func testPath(root, name string) string {
+	return filepath.Join(Dir(root), name+"-"+LegacyID(name)+".md")
+}
 
 func writeFile(t *testing.T, root, file, body string) {
 	t.Helper()

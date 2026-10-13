@@ -13,6 +13,7 @@ import (
 func mkMilestone(t *testing.T, m *Model, name string, colour int, ids ...string) {
 	t.Helper()
 	ms := milestone.New(name, colour, nowish())
+	ms.ID = milestone.LegacyID(name)
 	for _, id := range ids {
 		ms.Add(id)
 	}

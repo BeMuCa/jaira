@@ -460,7 +460,8 @@ func (s *Store) logbookFolders() ([]string, error) {
 }
 
 // FiledMilestone reports whether a milestone lies filed in the logbook, and
-// where, as a path relative to the repository root. match is asked the base
+// where, as a path relative to the repository root, and under which file name
+// — the one 'jaira restore' takes. match is asked the base
 // name of every file there, without .md, because what a file is called is the
 // caller's to read: this package does not know that a milestone file may carry
 // an ID.
@@ -469,35 +470,37 @@ func (s *Store) logbookFolders() ([]string, error) {
 // was called before it was one — because a name Restore can still bring back
 // is a name that is still taken. A hand-rolled walk over LogbookDir alone
 // misses that older folder and hands the name out twice.
-func (s *Store) FiledMilestone(match func(base string) bool) (string, bool) {
+func (s *Store) FiledMilestone(match func(base string) bool) (where, file string, ok bool) {
 	folders, err := s.logbookFolders()
 	if err != nil {
-		return "", false
+		return "", "", false
 	}
 	for _, folder := range folders {
 		dir := filepath.Join(folder, MilestonesSubdir)
-		if !dirHasMilestone(dir, match) {
+		file := milestoneFileIn(dir, match)
+		if file == "" {
 			continue
 		}
 		if rel, err := filepath.Rel(s.Root, dir); err == nil {
-			return rel, true
+			return rel, file, true
 		}
-		return dir, true
+		return dir, file, true
 	}
-	return "", false
+	return "", "", false
 }
 
-func dirHasMilestone(dir string, match func(base string) bool) bool {
+// milestoneFileIn is the first file in dir whose base name match accepts, or "".
+func milestoneFileIn(dir string, match func(base string) bool) string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, e := range entries {
 		if base, ok := strings.CutSuffix(e.Name(), ".md"); ok && !e.IsDir() && match(base) {
-			return true
+			return e.Name()
 		}
 	}
-	return false
+	return ""
 }
 
 // LogbookFolderDay reads the day a logbook folder was filed on off its name,

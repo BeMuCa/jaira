@@ -364,9 +364,7 @@ is not on the board exits 5, or 3 when it was filed.`,
 			}
 
 			const twice = "renaming another milestone to it would make a second milestone with the same name"
-			ms, err := milestone.Rename(s.Root, s, refs, from, to, func(name string) error {
-				return refuseIfTaken(s, name, twice, "; "+twice)
-			})
+			ms, err := milestone.Rename(s.Root, s, refs, from, to)
 			var ee *milestone.ExistsError
 			var fe *milestone.FiledError
 			switch {
@@ -570,16 +568,17 @@ work and each filters to half of it.`,
 // archive".
 //
 // `carries` names the thing that holds the mark, in the reader's terms.
-func refuseFiledElsewhere(name, carries, instead string) error {
+func refuseFiledElsewhere(name, file, carries, instead string) error {
 	return fail(ExitValidation, "milestone_filed",
-		"milestone %q has been filed: %s is marked %q, which is what keeps it off the board — 'jaira restore %s.md' in the tree that filed it puts it back, and %s",
-		name, carries, milestone.StatusFiled, name, instead)
+		"milestone %q has been filed: %s is marked %q, which is what keeps it off the board — 'jaira restore %s' in the tree that filed it puts it back, and %s",
+		name, carries, milestone.StatusFiled, file, instead)
 }
 
 // refuseFiledOnDisk: the file is lying here and carries the mark, which is
 // what a fetch of somebody else's filing leaves behind.
 func refuseFiledOnDisk(root, name, instead string) error {
-	return refuseFiledElsewhere(name, "its file at "+milestonePath(root, name), instead)
+	path := milestonePath(root, name)
+	return refuseFiledElsewhere(name, filepath.Base(path), "its file at "+path, instead)
 }
 
 // refuseRenamed is the door of a name a rename left behind: its file lies
@@ -595,10 +594,10 @@ func refuseRenamed(name, to string) error {
 // because this very tree filed it, so the way back runs here. `where` is the
 // logbook folder the copy lies in, and `then` is the caller's closing clause,
 // punctuation included — it follows the colour with no separator of its own.
-func refuseFiledInLogbook(name, where, then string) error {
+func refuseFiledInLogbook(name, file, where, then string) error {
 	return fail(ExitValidation, "milestone_filed",
-		"milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back with its ticket list and its colour%s",
-		name, where, name, then)
+		"milestone %q has been filed into the logbook (%s) — 'jaira restore %s' brings it back with its ticket list and its colour%s",
+		name, where, file, then)
 }
 
 // refuseIfFiled is the door itself: it asks where the name is filed and hands
@@ -618,16 +617,16 @@ func refuseFiledInLogbook(name, where, then string) error {
 // refuseFiledInLogbook take them — the wording differs because the way back
 // differs.
 func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
-	switch where, at := refs.MilestoneFiled(s, name); at {
+	switch where, file, at := refs.MilestoneFiled(s, name); at {
 	case refsync.MilestoneFiledOnRef:
 		// Nothing is filed under this name in this tree's logbook and the mark
 		// is on the ref, so the copy 'jaira restore' needs lies in whichever
 		// tree filed it. The ref is what `carries` names because, with no file
 		// and no logbook entry here, it is the only thing the reader can go
 		// and look at.
-		return refuseFiledElsewhere(name, "its ref "+where, onRef)
+		return refuseFiledElsewhere(name, file, "its ref "+where, onRef)
 	case refsync.MilestoneFiledHere:
-		return refuseFiledInLogbook(name, where, inLogbook)
+		return refuseFiledInLogbook(name, file, where, inLogbook)
 	}
 	return nil
 }
@@ -653,9 +652,18 @@ func refuseIfTaken(s *ticket.Store, name, onRef, inLogbook string) error {
 // milestone.Create and milestone.Edit, which record it. Best effort, see
 // warnIfRecordOnly.
 func recordMilestone(ms *milestone.Milestone) {
-	if err := refs.RecordMilestone(ms.Name, ms.Name+".md", ms.Bytes()); err != nil {
+	if err := refs.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
 		warnIfRecordOnly(&milestone.RecordError{Name: ms.Name, Err: err})
 	}
+}
+
+// migrateHeld moves milestone files written before IDs existed to their ID
+// names, for a command that already holds the milestone lock and writes a
+// milestone outside milestone.Edit and milestone.Create (fetch, logbook,
+// restore). It returns what moved.
+func migrateHeld(s *ticket.Store) ([]string, error) {
+	moved, err := milestone.Migrate(s.Root, refs)
+	return moved, warnIfRecordOnly(err)
 }
 
 // warnIfRecordOnly turns the one failure the write path reports beside a

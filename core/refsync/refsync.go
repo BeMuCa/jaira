@@ -213,10 +213,9 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 //
 // A ref named after an old name — written before IDs existed — is read as the
 // ID LegacyID gives that name. It is skipped once a milestone has moved on
-// from it (the ID ref is here, or is on this disk); the mark a rename of that
-// era left removes the old file this disk may still have and is reported as a
-// rename; otherwise it is taken like an old file and migrated by the next
-// write.
+// from it (the ID ref is here, or is on this disk) and when it carries the
+// mark a rename of that era left; otherwise it is taken like an old file and
+// migrated by the next write.
 //
 // A ref whose file says it has been filed is written over a file this tree
 // already has: the marked line is what keeps a milestone off the board, so
@@ -250,15 +249,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			if ref.ID != key {
 				continue
 			}
-		} else if to := milestone.RenamedTo(content); to != "" {
-			// The mark a rename of the name-keyed era left: the milestone is
-			// under its new name now, so the old file goes if this disk still
-			// has it, and nothing is written.
-			if err := os.Remove(filepath.Join(milestone.Dir(root), file)); err == nil {
-				renamed[ref.Name] = to
-			}
-			continue
-		} else if y.hasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
+		} else if milestone.MarkedRenamed(content) || y.hasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
 			continue
 		}
 		path := filepath.Join(milestone.Dir(root), file)
@@ -395,7 +386,7 @@ const (
 // tree they are standing in — and hide the copy lying right here. The ref
 // answer is therefore the one left over: nothing in this logbook, so the copy
 // is somewhere else.
-func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, MilestoneFiledAt) {
+func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (where, file string, at MilestoneFiledAt) {
 	named := func(base string) bool {
 		if base == name {
 			return true
@@ -403,17 +394,17 @@ func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, Milestone
 		n, _, ok := milestone.SplitFile(base)
 		return ok && n == name
 	}
-	if where, ok := s.FiledMilestone(named); ok {
-		return where, MilestoneFiledHere
+	if where, file, ok := s.FiledMilestone(named); ok {
+		return where, file, MilestoneFiledHere
 	}
 	if y != nil && y.Usable() == nil {
 		if _, content, _, err := y.Repo.ReadMilestone(name); err == nil {
 			if milestone.FromBytes(name, content).HoldsName() {
-				return gitref.MilestoneRefName(name), MilestoneFiledOnRef
+				return gitref.MilestoneRefName(name), name + ".md", MilestoneFiledOnRef
 			}
 		}
 	}
-	return "", MilestoneNotFiled
+	return "", "", MilestoneNotFiled
 }
 
 // MilestoneOnRef reports whether this tree's ref under name carries a

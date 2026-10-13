@@ -426,7 +426,7 @@ func (m *Model) submitLayerForm() {
 // and a board narrowed to the old name stays narrowed to the milestone.
 func (m *Model) renameMilestone(fromID, to string) (*milestone.Milestone, error) {
 	from := m.milestoneLabel(fromID)
-	renamed, err := milestone.Rename(m.store.Root, m.store, m.refSync, fromID, to, m.nameTaken)
+	renamed, err := milestone.Rename(m.store.Root, m.store, m.refSync, fromID, to)
 	if err := m.recordOnly(err); err != nil {
 		return nil, err
 	}
@@ -481,11 +481,11 @@ func (m *Model) createMilestone(name, goal string, after []string) (*milestone.M
 // filing in this tree's logbook or on a ref somebody else marked, or a
 // teammate's milestone on its ref that no fetch has written here yet.
 func (m *Model) nameTaken(name string) error {
-	switch where, at := m.refSync.MilestoneFiled(m.store, name); at {
+	switch where, file, at := m.refSync.MilestoneFiled(m.store, name); at {
 	case refsync.MilestoneFiledHere:
-		return fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back", name, where, name)
+		return fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s' brings it back", name, where, file)
 	case refsync.MilestoneFiledOnRef:
-		return fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
+		return fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s', run there, brings it back", name, file)
 	}
 	if m.refSync.MilestoneOnRef(name) {
 		return fmt.Errorf("milestone %q exists on the remote but not here yet — 'jaira fetch' brings it", name)

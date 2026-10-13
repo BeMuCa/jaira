@@ -3,6 +3,7 @@ package milestone
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -46,8 +47,8 @@ func TestCreateSavesRecordsAndHoldsTheLockOnlyWhileBuilding(t *testing.T) {
 	if lk.held != 0 || lk.taken != 1 {
 		t.Errorf("lock held=%d taken=%d", lk.held, lk.taken)
 	}
-	if _, err := os.Stat(testPath(root, "a")); err != nil {
-		t.Error("not saved")
+	if _, err := os.Stat(ms.Path(root)); err != nil || filepath.Base(ms.Path(root)) != "a-"+ms.ID+".md" {
+		t.Errorf("not saved as a-%s.md: %v", ms.ID, err)
 	}
 	if len(rec.names) != 1 || string(rec.last) != string(ms.Bytes()) {
 		t.Errorf("recorded %v", rec.names)
@@ -163,31 +164,30 @@ func TestEditTakingAMilestoneOutClosesTheChain(t *testing.T) {
 	if c, _ := Load(root, "c"); strings.Join(c.After, ",") != LegacyID("a")+",x" {
 		t.Errorf("c must now come after a (by ID), got %v", c.After)
 	}
-	if strings.Join(rec.names, ",") != "b,c" {
+	if strings.Join(rec.names, ",") != LegacyID("b")+","+LegacyID("c") {
 		t.Errorf("recorded %v, want b and c only", rec.names)
 	}
 }
 
-// A rename is the file under its new name, every successor naming the new
-// name, and a mark left under the old one for the other clones — in one
-// locked write. This disk keeps no file under the old name.
-func TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName(t *testing.T) {
+// A rename is the file under its new name on the same ID: one write on the
+// one ref, no successor touched, nothing left behind under the old name.
+func TestRenameChangesOnlyTheFileNameOnTheSameRef(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "a", "---\ncolor: 45\ngoal: g\nafter: []\n---\n\n# a\n\n- "+idA+"\n")
-	write(t, root, "b", "---\ncolor: 46\nafter: [x, a]\n---\n")
-	write(t, root, "c", "---\ncolor: 47\n---\n")
+	writeFile(t, root, "a-AAAAAA.md", "---\ncolor: 45\ngoal: g\nafter: []\n---\n\n# a\n\n- "+idA+"\n")
+	succ := "---\ncolor: 46\nafter: [x, AAAAAA]\n---\n"
+	writeFile(t, root, "b-BBBBBB.md", succ)
 	lk, rec := &fakeLock{}, &fakeRec{}
-	ms, err := Rename(root, lk, rec, "a", "z", func(string) error { return nil })
-	if err != nil || ms.Name != "z" {
-		t.Fatalf("rename: %v", err)
+	ms, err := Rename(root, lk, rec, "a", "z")
+	if err != nil || ms.Name != "z" || ms.ID != "AAAAAA" {
+		t.Fatalf("rename: %v %+v", err, ms)
 	}
 	if lk.taken != 1 {
-		t.Errorf("the rename and the successors must share one lock, taken %d times", lk.taken)
+		t.Errorf("one lock, taken %d times", lk.taken)
 	}
-	if _, err := os.Stat(testPath(root, "a")); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("the old file is still on disk: %v", err)
+	if got := dirNames(t, root); got != "b-BBBBBB.md,z-AAAAAA.md" {
+		t.Errorf("directory %s", got)
 	}
-	z, err := Load(root, "z")
+	z, err := Load(root, "AAAAAA")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,54 +197,86 @@ func TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName(t *testing.T) {
 	if body := string(z.Bytes()); !strings.Contains(body, "\n# z\n") || strings.Contains(body, "# a") {
 		t.Errorf("the heading keeps the old name:\n%s", body)
 	}
-	if b, _ := Load(root, "b"); strings.Join(b.After, ",") != "x,"+LegacyID("z") {
-		t.Errorf("b must name z where it named a, got %v", b.After)
+	if b, _ := os.ReadFile(filepath.Join(Dir(root), "b-BBBBBB.md")); string(b) != succ {
+		t.Errorf("a successor was rewritten:\n%s", b)
 	}
-	if strings.Join(rec.names, ",") != "z,b,a" {
-		t.Errorf("recorded %v, want z, b and the mark on a", rec.names)
-	}
-	mark := FromBytes("a", rec.last)
-	if !mark.Filed() || mark.RenamedTo != "z" || mark.HoldsName() {
-		t.Errorf("the old ref must carry a rename mark that frees the name:\n%s", rec.last)
+	if strings.Join(rec.names, ",") != "AAAAAA" {
+		t.Errorf("recorded %v, want one write on the ID ref", rec.names)
 	}
 }
 
-// The new name has to be free — on the board, filed here, or as the caller's
-// taken says — while the mark an earlier rename left is free, so a rename can
-// be taken back.
-func TestRenameRefusesATakenNameButNotTheMarkOfARename(t *testing.T) {
+// The new name has to be free on this board; a filed milestone refuses, and a
+// rename to the name it already has writes nothing.
+func TestRenameRefusals(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "a", "---\ncolor: 45\n---\n")
-	write(t, root, "b", "---\ncolor: 46\n---\n")
-	write(t, root, "f", "---\ncolor: 47\nstatus: filed\n---\n")
-	write(t, root, "old", "---\ncolor: 48\nstatus: filed\nrenamed-to: a\n---\n")
+	writeFile(t, root, "a-AAAAAA.md", "---\ncolor: 45\n---\n")
+	writeFile(t, root, "b-BBBBBB.md", "---\ncolor: 46\n---\n")
+	writeFile(t, root, "f-FFFFFF.md", "---\ncolor: 47\nstatus: filed\n---\n")
 	rec := &fakeRec{}
-	free := func(string) error { return nil }
 
 	var ee *ExistsError
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "b", free); !errors.As(err, &ee) || ee.Name != "b" {
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "b"); !errors.As(err, &ee) || ee.Name != "b" {
 		t.Errorf("onto a milestone on the board: %v", err)
 	}
 	var fe *FiledError
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "f", free); !errors.As(err, &fe) || fe.Name != "f" || fe.RenamedTo != "" {
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "f"); !errors.As(err, &fe) || fe.Name != "f" {
 		t.Errorf("onto a filed one: %v", err)
 	}
-	boom := errors.New("filed on a ref")
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "n", func(string) error { return boom }); !errors.Is(err, boom) {
-		t.Errorf("taken must be asked: %v", err)
+	if _, err := Rename(root, &fakeLock{}, rec, "f", "n"); !errors.As(err, &fe) || fe.Name != "f" {
+		t.Errorf("a filed milestone is not renamed: %v", err)
 	}
-	if _, err := Rename(root, &fakeLock{}, rec, "old", "n", free); !errors.As(err, &fe) || fe.RenamedTo != "a" {
-		t.Errorf("a mark is not a milestone to rename: %v", err)
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "a"); err != nil || len(rec.names) != 0 {
+		t.Fatalf("a rename to the same name writes nothing: err=%v recorded=%v", err, rec.names)
 	}
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "a", free); err != nil || len(rec.names) != 0 {
-		t.Fatalf("refusals and a rename to the same name write nothing: err=%v recorded=%v", err, rec.names)
+	if _, err := Rename(root, &fakeLock{}, rec, "nothing", "n"); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("an unknown milestone: %v", err)
 	}
+}
 
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "old", free); err != nil {
-		t.Fatalf("renaming back onto a rename's mark: %v", err)
+// Two milestones with one name are told apart by their ID, and a rename of one
+// leaves the other alone.
+func TestRenameOfOneOfTwoSameNamedMilestones(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "dup-AAAAAA.md", "---\ncolor: 45\n---\n")
+	writeFile(t, root, "dup-BBBBBB.md", "---\ncolor: 46\n---\n")
+	if _, err := Rename(root, &fakeLock{}, &fakeRec{}, "dup", "z"); err == nil {
+		t.Fatal("an ambiguous name was renamed")
 	}
-	if old, err := Load(root, "old"); err != nil || old.Filed() || old.RenamedTo != "" {
-		t.Errorf("old must be on the board again, unmarked: %v\n%s", err, old.Bytes())
+	if _, err := Rename(root, &fakeLock{}, &fakeRec{}, "BBBBBB", "z"); err != nil {
+		t.Fatal(err)
+	}
+	if got := dirNames(t, root); got != "dup-AAAAAA.md,z-BBBBBB.md" {
+		t.Errorf("directory %s", got)
+	}
+}
+
+// A write on a board that still has files from before IDs moves them all
+// first, under the lock; a new milestone is rolled a fresh ID when the one it
+// drew is taken, filed milestones and refs counting.
+func TestWritesMigrateFirstAndCreateAvoidsTakenIDs(t *testing.T) {
+	root := t.TempDir()
+	writeOld(t, root, "q4", "---\ncolor: 45\n---\n")
+	rec := &fakeRec{}
+	ms, err := Create(root, &fakeLock{}, rec, func([]*Milestone) (*Milestone, error) {
+		return New("q5", 46, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := dirNames(t, root); got != "q4-"+LegacyID("q4")+".md,q5-"+ms.ID+".md" {
+		t.Errorf("directory %s", got)
+	}
+	if strings.Join(rec.names, ",") != LegacyID("q4")+","+ms.ID {
+		t.Errorf("recorded %v", rec.names)
+	}
+	taken := New("t", 45, time.Now())
+	rec = &fakeRec{have: map[string]bool{taken.ID: true}}
+	got, err := Create(root, &fakeLock{}, rec, func([]*Milestone) (*Milestone, error) { return taken, nil })
+	if err != nil || got.ID == "" || got.ID == rec.names[0] && rec.have[got.ID] {
+		t.Errorf("a ref's ID was reused: %v %v", got, err)
+	}
+	if rec.have[got.ID] {
+		t.Errorf("ID %s has a ref already", got.ID)
 	}
 }
 

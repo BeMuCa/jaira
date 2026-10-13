@@ -321,6 +321,9 @@ type Result struct {
 	Op      Op
 	Outcome Outcome
 	Err     error
+	// File is the file a milestone entry was to be committed under, which is
+	// what carries the name a person knows it by; empty for a ticket.
+	File string
 }
 
 // Flush sends what it can and reports each entry.
@@ -348,17 +351,17 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Sent})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
 		case errors.Is(sendErr, gitref.ErrRaceLost):
 			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
 		case errors.Is(sendErr, gitref.ErrOffline), errors.Is(sendErr, gitref.ErrNoGit):
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Unsent, Err: sendErr})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Unsent, Err: sendErr})
 			return results, nil
 		default:
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Failed, Err: sendErr})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Failed, Err: sendErr})
 		}
 	}
 	return results, nil

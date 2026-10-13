@@ -13,6 +13,7 @@ import (
 // after a fixed start, so tests state order by number.
 func ms(name string, minute int, after ...string) *Milestone {
 	m := New(name, 45, time.Date(2026, 10, 1, 0, minute, 0, 0, time.UTC))
+	m.ID = LegacyID(name)
 	m.SetAfter(after)
 	return m
 }
@@ -38,6 +39,7 @@ func TestLayoutEmptyAndUnplaced(t *testing.T) {
 		t.Errorf("empty input: %+v", g)
 	}
 	loose := New("loose", 45, time.Now()) // no after line: not in the layer
+	loose.ID = LegacyID("loose")
 	if g := Layout([]*Milestone{loose}); len(g.Bubbles) != 0 {
 		t.Errorf("an unplaced milestone must not be drawn: %+v", g.Bubbles)
 	}
@@ -142,6 +144,7 @@ func TestLayoutLaneTiesBreakByName(t *testing.T) {
 
 func TestLayoutIgnoresUnknownAndUnplacedPredecessors(t *testing.T) {
 	loose := New("loose", 45, time.Now())
+	loose.ID = LegacyID("loose")
 	g := Layout([]*Milestone{ms("a", 0, "ghost"), ms("b", 1, "loose", "a"), loose})
 	if at(t, g, "a").Parent != "" || len(g.Lanes) != 2 {
 		t.Errorf("a with an unknown predecessor must be a lane top: %+v", g)
