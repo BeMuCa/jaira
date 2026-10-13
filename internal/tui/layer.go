@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -66,13 +66,6 @@ type layerView struct {
 	// would otherwise leave the window.
 	panX, panY int
 
-	// filed maps every ticket id filed away — logbook or archive, any day —
-	// to its file. Read off the file names when the layer opens and on every
-	// reload while it is open: the board itself loads only the last days of
-	// the logbook, and a milestone whose tickets were filed a month ago is
-	// still done.
-	filed map[string]string
-
 	stage layerStage
 	form  layerForm
 
@@ -101,13 +94,14 @@ type layerForm struct {
 // memberRow is one ticket in the milestone detail.
 type memberRow struct {
 	id, title string
+	place     link.Place
 	where     string // the lane's name, "logbook", or why it is nowhere
 }
 
 // openLayer shows the layer, the cursor on the first bubble — or on the one
 // [+] an empty layer has.
 func (m *Model) openLayer() {
-	m.layer = &layerView{filed: m.store.FiledAwayIDs()}
+	m.layer = &layerView{}
 	m.mode = modeLayer
 	m.layerScene() // settles the cursor on something that exists
 }
@@ -118,14 +112,13 @@ func (m *Model) closeLayer() {
 	m.mode = modeBoard
 }
 
-// refreshLayer is reload's part for an open layer: the logbook may have grown,
-// and an open detail lists what its milestone now holds.
+// refreshLayer is reload's part for an open layer: an open detail lists what
+// its milestone now holds.
 func (m *Model) refreshLayer() {
 	l := m.layer
 	if l == nil {
 		return
 	}
-	l.filed = m.store.FiledAwayIDs()
 	if l.stage == stageDetail {
 		ms := m.milestoneNamed(l.detailName)
 		if ms == nil {
@@ -147,29 +140,20 @@ func (m *Model) milestoneNamed(name string) *milestone.Milestone {
 	return nil
 }
 
-// loggedFile reports whether a filed-away file lies in the logbook rather
-// than in the archive. An archived ticket was dropped, not finished, so it
-// counts for nothing.
-func (m *Model) loggedFile(path string) bool {
-	return filepath.Dir(path) != m.store.ArchiveDir()
-}
-
-// milestoneDone counts a milestone's tickets and how many of them are done:
-// in the board's terminal lane, or filed into the logbook on any day.
-func (m *Model) milestoneDone(ms *milestone.Milestone, status map[string]string) (done, total int) {
-	terminal := ""
-	if t := m.lanes.Terminal(); t != nil {
-		terminal = t.ID
-	}
-	for _, id := range ms.Members() {
-		total++
-		if path, ok := m.layer.filed[id]; ok && m.loggedFile(path) {
-			done++
-		} else if st, ok := status[id]; ok && terminal != "" && st == terminal {
+// milestoneDone counts a milestone's tickets and how many of them are done,
+// asking the relation index the link window and the gate ask: a ticket in a
+// terminal lane, one filed into the logbook on any day, or one archived from
+// a terminal lane. The board loads only the last days of the logbook; the
+// index sees all of it.
+func (m *Model) milestoneDone(ms *milestone.Milestone) (done, total int) {
+	ix := m.linkIndex()
+	members := ms.Members()
+	for _, id := range members {
+		if ix.Satisfied(id) {
 			done++
 		}
 	}
-	return done, total
+	return done, len(members)
 }
 
 // keyLayer drives the layer and whatever is open on top of it.
@@ -561,39 +545,24 @@ func (m *Model) openMilestoneDetail(name string) {
 	l.stage = stageDetail
 }
 
-// memberRows lists a milestone's tickets where they are now: the lane of one
-// on the board, the logbook for a filed one. A ticket filed before the days
-// the board loads is read for its title alone, here and only here — the
-// layer's counts never read a file.
+// memberRows lists a milestone's tickets where they are now — the lane of
+// one on the board, the logbook, the archive — as the relation index finds
+// them, which reads a filed ticket's header for its title and nothing more.
 func (m *Model) memberRows(ms *milestone.Milestone) []memberRow {
-	board := make(map[string]*ticket.Ticket, len(m.tickets))
-	for _, t := range m.tickets {
-		board[t.ID] = t
-	}
-	for _, lg := range m.logged {
-		if _, ok := board[lg.Ticket.ID]; !ok {
-			board[lg.Ticket.ID] = lg.Ticket
-		}
-	}
+	ix := m.linkIndex()
 	var out []memberRow
 	for _, id := range ms.Members() {
-		r := memberRow{id: id}
-		path, filed := m.layer.filed[id]
-		t := board[id]
-		switch {
-		case t != nil && !m.isLogged(t):
-			r.title, r.where = t.Title, t.Status
-			if ln, ok := m.lanes.Get(t.Status); ok {
+		ref, _ := ix.Lookup(id)
+		r := memberRow{id: id, title: ref.Title, place: ref.Place}
+		switch ref.Place {
+		case link.PlaceBoard, link.PlaceRef:
+			r.where = ref.Lane
+			if ln, ok := m.lanes.Get(ref.Lane); ok {
 				r.where = ln.Name
 			}
-		case filed && m.loggedFile(path):
+		case link.PlaceLogbook:
 			r.where = "logbook"
-			if t != nil {
-				r.title = t.Title
-			} else if h, err := ticket.LoadHeader(path); err == nil {
-				r.title = h.Title
-			}
-		case filed:
+		case link.PlaceArchive:
 			r.where = "archived"
 		default:
 			r.where = "not on this board"
@@ -642,10 +611,10 @@ func (m *Model) openMember(r memberRow) {
 		return
 	}
 	h := ticket.Handle(r.id)
-	switch r.where {
-	case "logbook":
+	switch r.place {
+	case link.PlaceLogbook:
 		m.notify(fmt.Sprintf("%s was filed into the logbook before the days the board shows.\n\n'jaira show %s' reads it.", h, h), false)
-	case "archived", "not on this board":
+	case link.PlaceArchive, link.PlaceUnknown:
 		m.notify(fmt.Sprintf("%s is %s, so there is no card to open.", h, r.where), false)
 	default:
 		m.notify(fmt.Sprintf("%s is on the board but the filter %s hides it.\n\nClear the filter with esc on the board, then try again.", h, m.filter), false)

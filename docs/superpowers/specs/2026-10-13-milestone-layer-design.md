@@ -98,10 +98,11 @@ crash); the layer itself refuses to create them.
   the gap below the predecessor, horizontally to the gap column left of the
   target, vertically to the gap row above the target, horizontally to its
   centre, `▼`.
-- Done = the ticket is in the board's terminal lane, or it is filed in the
-  logbook (any day, not only the board's logbook window: the ids are read from
-  the logbook's file names, nothing is parsed). Archived and unknown ids count
-  for nothing.
+- Done = what core/link's relation index answers for the gate and the link
+  window (`Satisfied`): the ticket is in a terminal lane, filed in the logbook
+  on any day (not only the board's logbook window), or archived from a
+  terminal lane. Unknown ids count for nothing. (Critique, 2026-10-13: the
+  layer first kept its own answer beside the index; one answer is the point.)
 
 ### The `[+]` targets (L8)
 

@@ -534,17 +534,13 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 	}
 	lines.draw(cv, dim)
 
-	status := make(map[string]string, len(m.tickets))
-	for _, t := range m.tickets {
-		status[t.ID] = t.Status
-	}
 	selBubble := ""
 	if l.sel.kind == onBubble {
 		selBubble = l.sel.name
 	}
 	for _, b := range sc.grid.Bubbles {
 		ms := sc.byName[b.Name]
-		done, total := m.milestoneDone(ms, status)
+		done, total := m.milestoneDone(ms)
 		m.drawBubble(cv, ms, sc.at[b.Name], done, total, b.Name == selBubble)
 	}
 	for _, e := range exits {
@@ -757,11 +753,7 @@ func (m *Model) renderMilestoneDetail() string {
 	if ms.HasColour() {
 		mark = swatch(ms.Colour)
 	}
-	status := make(map[string]string, len(m.tickets))
-	for _, t := range m.tickets {
-		status[t.ID] = t.Status
-	}
-	done, total := m.milestoneDone(ms, status)
+	done, total := m.milestoneDone(ms)
 	head = append(head, mark+" "+styLaneTitle.Render(ms.Name)+styMeta.Render(fmt.Sprintf("  %d/%d done", done, total)))
 	head = append(head, styBar.Render(strings.Repeat("─", min(width, 78))))
 	goal := ms.Goal

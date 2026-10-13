@@ -567,3 +567,27 @@ func TestMilestoneDetail(t *testing.T) {
 		t.Errorf("b must show the board filtered to the milestone, mode %v filter %q", m.mode, m.filter)
 	}
 }
+
+// A bubble asks core/link whether a ticket is done, the answer the link window
+// and the gate give: an archived ticket counts when it left from the terminal
+// lane ("archive · done") and not when it was dropped on the way.
+func TestArchivedTicketCountsAsTheLinkIndexSays(t *testing.T) {
+	m := newTestModel(t, 140, 40)
+	finished := titled(t, m, "Add session test harness") // in done
+	dropped := titled(t, m, "Refactor auth middleware")  // in todo
+	for _, id := range []string{finished, dropped} {
+		if _, err := m.store.Archive(id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mkPlaced(t, m, "round", 0, nil, finished, dropped)
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	if out := stripANSI(m.render()); !strings.Contains(out, "1/2") {
+		t.Errorf("want 1/2: the finished archived ticket is done, the dropped one is not\n%s", out)
+	}
+	m.key(key("enter"))
+	if out := stripANSI(m.render()); !strings.Contains(out, "Add session test harness") || strings.Count(out, "archived") != 2 {
+		t.Errorf("the detail must list both, titled, as archived:\n%s", out)
+	}
+}

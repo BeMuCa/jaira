@@ -205,8 +205,9 @@ x     take it out of the layer     L esc  back to the board
 
 In an open milestone: `↑↓` pick a ticket, `enter` opens it, `b` shows the board
 filtered to the milestone (`milestone:<name>`), `esc` goes back to the layer.
-A bubble counts a ticket done when it is in the terminal lane or filed into the
-logbook on any day; archived tickets count for nothing. `x` drops the
+A bubble counts a ticket done when it is in the terminal lane, filed into the
+logbook on any day, or archived from the terminal lane — what the link window
+calls done. `x` drops the
 milestone's `after:` line and hangs what came after it on what came before it.
 
 In an open ticket:
