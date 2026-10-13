@@ -1,0 +1,1 @@
+- Run `jaira update` so the jaira block in CLAUDE.md and AGENTS.md names the milestone commands: your agents then read `jaira milestone ls` before creating a milestone, and know `create`, `add`, `rm`, `set`, `rename`, `jaira logbook <name>` and `--after`/`--no-roadmap` for the Milestone Roadmap.
