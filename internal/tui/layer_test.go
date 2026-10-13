@@ -129,6 +129,37 @@ func TestLayerDrawsBubblesArrowsAndPlus(t *testing.T) {
 	}
 }
 
+// A join into the next row (docs→final beside tests→final) is drawn as one
+// line meeting the parent arrow in a junction, not as a second line looping
+// round the left of the lane and crossing it.
+func TestJoinArrowMeetsTheParentArrow(t *testing.T) {
+	m := newTestModel(t, 160, 40)
+	mkPlaced(t, m, "api", 0, nil)
+	mkPlaced(t, m, "docs", 1, []string{"api"})
+	mkPlaced(t, m, "tests", 2, []string{"api"})
+	mkPlaced(t, m, "final", 3, []string{"docs", "tests"})
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	out := stripANSI(m.render())
+
+	joined := false
+	for _, line := range strings.Split(out, "\n") {
+		if i, j := strings.Index(line, "├"), strings.Index(line, "┘"); i >= 0 && j > i &&
+			strings.Trim(line[i+len("├"):j], "─") == "" {
+			joined = true
+		}
+	}
+	if !joined {
+		t.Errorf("the join must run ├────┘ from the parent arrow to tests:\n%s", out)
+	}
+	if strings.ContainsAny(out, "┌└") {
+		t.Errorf("no arrow may loop round the side of the lane:\n%s", out)
+	}
+	if n := strings.Count(out, "▼"); n != 3 {
+		t.Errorf("docs, tests and final get one ▼ each, the join shares final's: %d\n%s", n, out)
+	}
+}
+
 // The fill: proportional over 14 cells, never empty or full for work that is
 // partly done.
 func TestFilledCells(t *testing.T) {

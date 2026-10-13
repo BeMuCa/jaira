@@ -251,29 +251,88 @@ func (cv *layerCanvas) line(y, x0, w int) string {
 	return strings.TrimRight(b.String(), " ")
 }
 
-// Directions as cell steps, and the sides of a cell a line can leave by.
-var (
-	goUp, goDown, goLeft, goRight = image.Pt(0, -1), image.Pt(0, 1), image.Pt(-1, 0), image.Pt(1, 0)
-	sideOf                        = map[image.Point]int{goUp: 1, goDown: 2, goLeft: 4, goRight: 8}
-	lineGlyph                     = map[int]rune{1 | 2: '│', 4 | 8: '─', 1 | 8: '└', 1 | 4: '┘', 2 | 8: '┌', 2 | 4: '┐'}
+// The sides of a cell a line can leave by, as bits, and the glyph for every
+// combination: one arrow's corner and another's straight run through the same
+// cell make a junction, not a broken line.
+const (
+	sideUp = 1 << iota
+	sideDown
+	sideLeft
+	sideRight
 )
 
-// route draws a line through axis-aligned points, the turns joined by the
-// right corner, and ends it with ▼. The line enters its first point from
-// above — out of the bubble's bottom border.
-func (cv *layerCanvas) route(pts []image.Point, st int) {
-	in := goDown
-	for i := 0; i+1 < len(pts); i++ {
-		a, b := pts[i], pts[i+1]
-		d := image.Pt(sign(b.X-a.X), sign(b.Y-a.Y))
-		cv.put(a.X, a.Y, lineGlyph[sideOf[image.Pt(-in.X, -in.Y)]|sideOf[d]], st)
-		for p := a.Add(d); p != b; p = p.Add(d) {
-			cv.put(p.X, p.Y, lineGlyph[sideOf[d]|sideOf[image.Pt(-d.X, -d.Y)]], st)
-		}
-		in = d
+var sideGlyph = [16]rune{
+	sideUp: '│', sideDown: '│', sideUp | sideDown: '│',
+	sideLeft: '─', sideRight: '─', sideLeft | sideRight: '─',
+	sideUp | sideRight: '└', sideUp | sideLeft: '┘', sideDown | sideRight: '┌', sideDown | sideLeft: '┐',
+	sideUp | sideDown | sideRight: '├', sideUp | sideDown | sideLeft: '┤',
+	sideDown | sideLeft | sideRight: '┬', sideUp | sideLeft | sideRight: '┴',
+	sideUp | sideDown | sideLeft | sideRight: '┼',
+}
+
+// arrowLines collects the layer's arrows as line pieces per cell — which
+// sides of the cell a line leaves by, and whether a parent arrow (strong) or
+// only extra arrows use it — and the cells their ▼ sit in.
+type arrowLines struct {
+	sides  map[image.Point]int
+	strong map[image.Point]bool
+	heads  map[image.Point]bool // ▼, strong when a parent arrow ends there
+}
+
+func newArrowLines() *arrowLines {
+	return &arrowLines{sides: map[image.Point]int{}, strong: map[image.Point]bool{}, heads: map[image.Point]bool{}}
+}
+
+func (l *arrowLines) mark(p image.Point, side int, strong bool) {
+	l.sides[p] |= side
+	l.strong[p] = l.strong[p] || strong
+}
+
+// link joins two cells on one axis.
+func (l *arrowLines) link(a, b image.Point, strong bool) {
+	d := image.Pt(sign(b.X-a.X), sign(b.Y-a.Y))
+	fwd, back := sideDown, sideUp
+	switch {
+	case d.Y < 0:
+		fwd, back = sideUp, sideDown
+	case d.X > 0:
+		fwd, back = sideRight, sideLeft
+	case d.X < 0:
+		fwd, back = sideLeft, sideRight
 	}
-	end := pts[len(pts)-1]
-	cv.put(end.X, end.Y, '▼', st)
+	for p := a; p != b; p = p.Add(d) {
+		l.mark(p, fwd, strong)
+		l.mark(p.Add(d), back, strong)
+	}
+}
+
+// path joins axis-aligned points in order.
+func (l *arrowLines) path(pts []image.Point, strong bool) {
+	for i := 0; i+1 < len(pts); i++ {
+		l.link(pts[i], pts[i+1], strong)
+	}
+}
+
+func (l *arrowLines) arrow(p image.Point, strong bool) {
+	l.heads[p] = l.heads[p] || strong
+}
+
+// draw puts the lines on the canvas: plain where a parent arrow runs, dim
+// where only extra arrows do. Arrow heads go last, over the line ending in
+// them.
+func (l *arrowLines) draw(cv *layerCanvas, dim int) {
+	style := func(strong bool) int {
+		if strong {
+			return 0
+		}
+		return dim
+	}
+	for p, s := range l.sides {
+		cv.put(p.X, p.Y, sideGlyph[s], style(l.strong[p]))
+	}
+	for p, strong := range l.heads {
+		cv.put(p.X, p.Y, '▼', style(strong))
+	}
 }
 
 func sign(n int) int {
@@ -420,56 +479,60 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 		}
 	}
 
-	// Extra arrows: down into the gap under the predecessor, along it to the
-	// gap left of the target, down (or up) that gap to the row above the
-	// target, and in to its centre. They leave right of centre, where the
-	// parent arrow does not.
+	// Arrows are collected as line pieces first and turned into glyphs once,
+	// so where two arrows meet the cell shows the junction (├ ┤ ┬ ┴ ┼) rather
+	// than whichever arrow happened to be drawn last. A cell any parent arrow
+	// passes through is drawn plain; one only extra arrows use, dim.
 	type exit struct {
 		name string
 		dx   int
 	}
 	var exits []exit
+	lines := newArrowLines()
+	// down drops from a bubble's bottom border at column x, runs along the
+	// first connector row to the target's centre and ends in its ▼ — the shape
+	// of a split, which a join into the next row is too.
+	down := func(p, t image.Point, x int, strong bool) {
+		row := p.Y + bubbleH
+		lines.link(image.Pt(x, row-1), image.Pt(x, row), strong)
+		lines.link(image.Pt(x, row), image.Pt(t.X+7, row), strong)
+		lines.link(image.Pt(t.X+7, row), image.Pt(t.X+7, row+1), strong)
+		lines.arrow(image.Pt(t.X+7, row+1), strong)
+	}
+
+	// Parent arrows: down from the centre to every child.
+	for _, b := range sc.grid.Bubbles {
+		if b.Parent == "" {
+			continue
+		}
+		p := sc.at[b.Parent]
+		down(p, sc.at[b.Name], p.X+7, true)
+		exits = append(exits, exit{b.Parent, 7})
+	}
+
+	// Extra arrows into the next row leave the centre like a split, so a join
+	// (c→h beside g→h) reads as one. Any other leaves right of centre, down
+	// into the gap under the predecessor, along it to the gap left of the
+	// target, down (or up) that gap to the row above the target, and in to its
+	// centre.
 	for _, a := range sc.grid.Arrows {
 		if !a.Extra {
 			continue
 		}
 		p, t := sc.at[a.From], sc.at[a.To]
-		sx, gx := p.X+11, t.X-2
-		cv.route([]image.Point{
-			{sx, p.Y + bubbleH}, {gx, p.Y + bubbleH}, {gx, t.Y - 1}, {t.X + 7, t.Y - 1},
-		}, dim)
+		if t.Y == p.Y+cellH {
+			down(p, t, p.X+7, false)
+			exits = append(exits, exit{a.From, 7})
+			continue
+		}
+		sx, gx, row := p.X+11, t.X-2, p.Y+bubbleH
+		lines.path([]image.Point{
+			{sx, row - 1}, {sx, row}, {gx, row}, {gx, t.Y - 1}, {t.X + 7, t.Y - 1},
+		}, false)
+		lines.arrow(image.Pt(t.X+7, t.Y-1), false)
 		exits = append(exits, exit{a.From, 11})
 	}
-
-	// Parent arrows: straight down to an only child, or split along the first
-	// connector row to every child, each with its ▼.
-	children := map[string][]string{}
-	for _, b := range sc.grid.Bubbles { // ordered by column within a row
-		if b.Parent != "" {
-			children[b.Parent] = append(children[b.Parent], b.Name)
-		}
-	}
-	for parent, kids := range children {
-		p := sc.at[parent]
-		c0, row := p.X+7, p.Y+bubbleH
-		last := sc.at[kids[len(kids)-1]].X + 7
-		if len(kids) == 1 {
-			cv.put(c0, row, '│', 0)
-		} else {
-			for x := c0; x <= last; x++ {
-				cv.put(x, row, '─', 0)
-			}
-			cv.put(c0, row, '├', 0)
-			for _, k := range kids[1 : len(kids)-1] {
-				cv.put(sc.at[k].X+7, row, '┬', 0)
-			}
-			cv.put(last, row, '┐', 0)
-		}
-		for _, k := range kids {
-			cv.put(sc.at[k].X+7, row+1, '▼', 0)
-		}
-		exits = append(exits, exit{parent, 7})
-	}
+	lines.draw(cv, dim)
 
 	status := make(map[string]string, len(m.tickets))
 	for _, t := range m.tickets {

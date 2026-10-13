@@ -11,7 +11,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-10-13T00:43:44Z
+updated-at: 2026-10-13T00:59:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3607167
@@ -39,7 +39,8 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
   proof: internal/tui/layer.go:175 keyLayer, :370 createMilestone, :528 connectMilestone, :557 nextMilestoneColour, :588 removeFromLayer, :690 keyMilestoneDetail; TestLayerNavigationIsGeometric, TestNewMilestoneFromTheFarPlus, TestNewMilestoneBelowAndBeside, TestConnectExistingMilestone, TestConnectPlacedMilestoneAddsAnArrow, TestEditGoalAndPredecessors, TestColourKeyStepsThroughThePalette, TestRemoveReattachesSuccessors, TestMilestoneDetail
 - [x] Tasten: l oeffnet die Links auf dem Board und im Ticket-Detail, h und l wechseln keine Lanes mehr; Hilfe, Tastenleiste, README Keys, docs/COMMANDS.md und core/release/notes/D0SAHM.md nennen es
   proof: internal/tui/model.go:1495 arrows only, :1539 l links, :1543 L layer, :1400 l in detail; view.go:1045 key bar, :1100 detail hints, renderHelp; README.md Keys; docs/COMMANDS.md Keys; core/release/notes/D0SAHM.md; TestBoardArrowsChangeLanesAndLOpensLinks, TestLinkKeyWorksOnAnOpenTicketAndReturnsToIt, TestHelpNamesTheMovedKeys, TestNarrowBoardShowsAllKeysAndFits, TestNarrowDetailShowsAllKeysAndFits
-- [ ] go vet ./... und go test ./... -race sind gruen; das gebaute Binary ist im echten Terminal (tmux) auf einer Board-Kopie durchgespielt
+- [x] go vet ./... und go test ./... -race sind gruen; das gebaute Binary ist im echten Terminal (tmux) auf einer Board-Kopie durchgespielt
+  proof: go vet ./... + go test ./... -race -count=1 -timeout 40m: 28 ok, exit 0 (2026-10-13); binary in tmux 160x50 on a remote-less copy of this repo's board: L, fill/colours, navigation, [+] new sibling (file: goal/after/color), x with re-attach (abschluss after [release-0-4, tests]), detail, b -> filter milestone:release-0-4
 
 ## Options
 
@@ -59,7 +60,7 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
 - [x] internal/tui: Layer bedienen (Navigation, [+]-Auswahl, Formular neu, Verbinden-Picker, e, c, x mit Umhaengen) mit Tests
 - [x] internal/tui: Milestone-Detail (Ziel, Ticketliste, enter, b ins gefilterte Board) mit Tests
 - [x] Hilfe (?), Tastenleiste, README Keys, core/release/notes/D0SAHM.md
-- [ ] go vet, go test ./... -race, Binary in tmux auf einer Board-Kopie durchspielen
+- [x] go vet, go test ./... -race, Binary in tmux auf einer Board-Kopie durchspielen
 
 ## Progress
 - **2026-09-04 16:50 · BeMuCa** — Brainstorm-Entscheidungspunkte (an Berk gestellt, 04.09.): K1 Speicherung: eine Markdown-Datei je Epic unter .jaira/epics/ (Frontmatter: name, tag, goal, after: [Vorgaenger-Epics] als Kanten) - hand-editierbar, diff-bar, Kantenliste merge=union. K2 Bindung: Epic HAT einen Tag (Feld) statt Epic==Tag - umbenennbar, Farbe bleibt allein in .jaira/tags; Fuellstand = fertige/alle Tickets des Tags. K3 Parallel-Sessions: WriteAtomic + Store-Lock wie core/tag. K4 Layout: Ebene = laengster Pfad von den Wurzeln; erste Reihe = Sammelreihe (parallel), darunter Nachfolger; Kanten als einfache Linien. K5 Split-Geste: Vorschlag 'v'=Kante-ziehen-Modus (deckt Split UND Merge) statt nur y; Berks y als Alternative. K6 Loeschen: Dialog Bubble-only (Default) vs. 'mit Tickets' = Tickets ARCHIVIEREN (umkehrbar), nie hart loeschen. K7 Anlage: L toggelt Layer, Plus-Bubbles rechts (parallel) und unten (Nachfolger), Enter -> TUI-Formular (name, ziel, tag, farbe optional, Default random).
@@ -88,3 +89,4 @@ Die Brainstorm-Entscheidungspunkte K1-K7 vom 04.09. bleiben stehen und sind nich
 - **2026-10-12 23:37 · BeMuCa** — core: Edit saves only when bytes changed (so a no-op re-add queues no ref); record failure comes back as *RecordError beside the saved milestone. CLI predecessor must EXIST on the board (placed not required); WouldCycle ignores unplaced milestones' edges. Cycle in a file: the newer milestone's arrow is dropped.
 - **2026-10-13 00:26 · BeMuCa** — TUI layer (plan 5-9): internal/tui/layer.go (state, keys, writes through milestone.Create/Edit) and layerdraw.go (own rune/style canvas, geometry, fill, arrows, dialogs, detail). Decisions beyond the spec: (1) connecting a PLACED swimlane top under a [+] moves it there with its subtree - its first predecessor decides the lane, so an arrow into a top cannot stay extra; the picker says so. (2) navigation measures in grid steps (a 21-cell column and a 6-row row weigh the same), cross axis x2; with raw cells, right from a top reached a child one row down before the next lane's top. (3) the [+] boxes the cursor steers by are centred on the bubble's axis so up/down never stops on the [+] beside a bubble. (4) member tickets opened from the milestone detail go through selectByID+openDetail so m/e act on the shown ticket; a logbook ticket older than the board's window or one hidden by the filter gets a message instead. (5) extra arrows run on the first connector row per the spec; where that row also carries a parent split line they merge visually. Core: added Milestone.SetColour for c. Done count uses store.FiledAwayIDs() minus the archive dir (file names only).
 - **2026-10-13 00:26 · BeMuCa** — Testing gotchas: go test ./internal/tui -race takes ~18 min on this machine under load, past go test's default 10m timeout - run with -timeout 40m. Do not add files to internal/ while go test ./... runs: internal/cli TestTwoBranchesThatBothCreateTheTicketStillMergeFieldAware builds the binary from the working tree at run time and fails on half-written code.
+- **2026-10-13 00:59 · BeMuCa** — 2026-10-13 Abnahmelauf im echten Terminal (tmux, Kopie dieses Boards ohne Remote): der Zusammenfuehrungs-Pfeil lief per Umweg links um die Swimlane und kreuzte die Elternlinie, der Querpfeil lag als zweite Linie auf der Split-Zeile ('┐──┐'). Neu: Pfeile sammeln Linienstuecke je Zelle und bekommen daraus ihr Zeichen (├┤┬┴┼); Extra-Pfeile in die naechste Zeile verlassen die Mitte wie ein Split. Test TestJoinArrowMeetsTheParentArrow (faellt mit dem alten Code). Nebenbefund: die TUI braucht im Leerlauf auf diesem Board ~50-70% eines Kerns - master genauso (gemessen, Maschine stark ausgelastet), kommt also nicht vom Layer; gehoert zur RAM/Effizienz-Untersuchung (2-Sekunden-Reload).
