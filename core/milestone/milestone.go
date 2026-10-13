@@ -454,6 +454,25 @@ const StatusFiled = "filed"
 // rather than writing the file back to disk.
 func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
 
+// RenamedTo is the value of the `renamed-to:` line a rename of the name-keyed
+// era left in the file it marked under the old name, or "" when the file has
+// none. Such a file is not a milestone any more. It reads the raw lines — the
+// field it was parsed into is gone.
+func RenamedTo(content []byte) string {
+	m := &Milestone{}
+	m.lines = strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
+	end, ok := m.frontEnd()
+	if !ok {
+		return ""
+	}
+	for _, line := range m.lines[1:end] {
+		if k, v, _ := strings.Cut(strings.TrimSpace(line), ":"); strings.TrimSpace(k) == "renamed-to" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
 // HoldsName reports whether this filed milestone keeps its name taken. A
 // filing does, because 'jaira restore' needs the name back. The mark a rename
 // leaves under the old name does not: the milestone lives on under the new

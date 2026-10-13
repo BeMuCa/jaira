@@ -202,6 +202,22 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 // so a local file that differs is overwritten, and the previous content is in
 // git if it was ever committed.
 //
+// A milestone's ref is named after its ID and carries the file under its
+// current name, so a rename arrives as the same ref with another file name.
+// That is the one thing a fetch removes: every other file on this disk with
+// the ref's ID is the milestone under its old name — or a copy git merged in
+// beside it — and the ref decides which is right, before the file is compared.
+// A file with another ID is another milestone, whatever it is called, and is
+// never touched. The names removed this way come back as renamed, old name to
+// new.
+//
+// A ref named after an old name — written before IDs existed — is read as the
+// ID LegacyID gives that name. It is skipped once a milestone has moved on
+// from it (the ID ref is here, or is on this disk); the mark a rename of that
+// era left removes the old file this disk may still have and is reported as a
+// rename; otherwise it is taken like an old file and migrated by the next
+// write.
+//
 // A ref whose file says it has been filed is written over a file this tree
 // already has: the marked line is what keeps a milestone off the board, so
 // writing it is how a clone that already has the file learns it was filed at
@@ -213,46 +229,130 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 // A filed milestone this tree does NOT have is not written: there is nothing
 // here to correct, and putting the file on disk would leave a second copy
 // beside the one in the logbook of the tree that filed it — which is the tree
-// 'jaira restore' would then refuse, because the name is back on the board.
-//
-// Nothing is ever deleted here: a milestone the refs no longer carry is left
-// where it is. jaira does not delete a file it has only read, and whoever
-// wants that board tidy files it there too.
-func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, err error) {
+// 'jaira restore' would then refuse, because the milestone is back on the
+// board.
+func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed map[string]string, err error) {
 	if y == nil || y.Usable() != nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
-	names, err := y.Repo.ListMilestones()
+	keys, err := y.Repo.ListMilestones()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	for _, name := range names {
-		file, content, _, err := y.Repo.ReadMilestone(name)
+	renamed = map[string]string{}
+	for _, key := range keys {
+		file, content, _, err := y.Repo.ReadMilestone(key)
 		if err != nil {
 			continue
 		}
+		ref := milestone.FromBytes(file, content)
+		if milestone.IsID(key) {
+			if ref.ID != key {
+				continue
+			}
+		} else if to := milestone.RenamedTo(content); to != "" {
+			// The mark a rename of the name-keyed era left: the milestone is
+			// under its new name now, so the old file goes if this disk still
+			// has it, and nothing is written.
+			if err := os.Remove(filepath.Join(milestone.Dir(root), file)); err == nil {
+				renamed[ref.Name] = to
+			}
+			continue
+		} else if y.hasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
+			continue
+		}
 		path := filepath.Join(milestone.Dir(root), file)
+		others, hadFile := otherFilesWithID(root, ref.ID, file)
+		for _, other := range others {
+			if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
+				return wrote, filed, renamed, err
+			}
+			if other.Name != ref.Name {
+				renamed[other.Name] = ref.Name
+			}
+		}
 		have, haveErr := os.ReadFile(path)
 		if haveErr == nil && bytes.Equal(have, content) {
 			continue
 		}
-		isFiled := milestone.FromBytes(file, content).Filed()
-		if isFiled && haveErr != nil {
+		isFiled := ref.Filed()
+		if isFiled && !hadFile && len(others) == 0 {
 			continue
 		}
 		if err := os.MkdirAll(milestone.Dir(root), 0o755); err != nil {
-			return wrote, filed, err
+			return wrote, filed, renamed, err
 		}
 		if err := ticket.WriteAtomic(path, content); err != nil {
-			return wrote, filed, err
+			return wrote, filed, renamed, err
 		}
 		if isFiled {
-			filed = append(filed, name)
+			filed = append(filed, ref.Name)
 			continue
 		}
-		wrote = append(wrote, name)
+		wrote = append(wrote, ref.Name)
 	}
-	return wrote, filed, nil
+	return wrote, filed, renamed, nil
+}
+
+// hasMilestoneRef reports whether this tree has the ref of the milestone with
+// this ID.
+func (y *Syncer) hasMilestoneRef(id string) bool {
+	_, err := y.Repo.MilestoneSHA(id)
+	return err == nil
+}
+
+// diskHasIDFile reports whether a file named <name>-<ID>.md for this ID lies
+// on the board: the milestone has moved to its ID on this disk already.
+func diskHasIDFile(root, id string) bool {
+	for _, m := range milestoneFiles(root) {
+		if m.ID == id && m.IDNamed {
+			return true
+		}
+	}
+	return false
+}
+
+// otherFilesWithID lists the files on the board that carry this ID under a
+// file name other than file, and whether file itself is there.
+func otherFilesWithID(root, id, file string) (others []diskMilestone, hadFile bool) {
+	for _, m := range milestoneFiles(root) {
+		switch {
+		case m.ID != id:
+		case m.File == file:
+			hadFile = true
+		default:
+			others = append(others, m)
+		}
+	}
+	return others, hadFile
+}
+
+// diskMilestone is one file under .jaira/milestones read for what its name
+// says: the milestone name and ID, and whether the ID is in the file name or
+// was computed for an old one.
+type diskMilestone struct {
+	File, Name, ID string
+	IDNamed        bool
+}
+
+func milestoneFiles(root string) []diskMilestone {
+	entries, err := os.ReadDir(milestone.Dir(root))
+	if err != nil {
+		return nil
+	}
+	var out []diskMilestone
+	for _, e := range entries {
+		base, ok := strings.CutSuffix(e.Name(), ".md")
+		if !ok || e.IsDir() {
+			continue
+		}
+		m := diskMilestone{File: e.Name(), Name: base, ID: milestone.LegacyID(base)}
+		if name, id, ok := milestone.SplitFile(base); ok {
+			m.Name, m.ID, m.IDNamed = name, id, true
+		}
+		out = append(out, m)
+	}
+	return out
 }
 
 // MilestoneFiledAt says where the mark on a filed name was found, because the

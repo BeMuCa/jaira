@@ -72,11 +72,12 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			// disk: a milestone has no lane and no editor here, the file IS
 			// the interface, so a group that stayed on a ref would be a group
 			// nobody can open.
-			openedMilestones, filedMilestones, err := fetchMilestones(s)
+			openedMilestones, filedMilestones, renamedMilestones, err := fetchMilestones(s)
 			if err != nil {
 				return err
 			}
-			filedMilestones, renamedMilestones := splitRenamed(s.Root, filedMilestones)
+			filedMilestones, renamedByMark := splitRenamed(s.Root, filedMilestones)
+			maps.Copy(renamedMilestones, renamedByMark)
 			departed := refs.Departed()
 			stranded := strandedHere()
 			if g.jsonOut {
@@ -113,13 +114,17 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 // Only this call is inside the lock: refs.Incoming() has already made the
 // network round trip by the time we get here, and holding a store lock across
 // one would block every milestone write for the length of a fetch.
-func fetchMilestones(s *ticket.Store) (opened, filed []string, err error) {
+func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[string]string, err error) {
 	unlock, err := s.Lock(milestoneLockName)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer unlock()
-	return refs.IncomingMilestones(s.Root)
+	opened, filed, renamed, err = refs.IncomingMilestones(s.Root)
+	if renamed == nil {
+		renamed = map[string]string{}
+	}
+	return opened, filed, renamed, err
 }
 
 // splitRenamed takes the marks a rename left out of the filed names a fetch
