@@ -1,7 +1,7 @@
 ---
 id: 01M4THCXMAGS2JQN133DE70WYN
 title: Der Name einer Milestone laesst sich auf der Milestone Roadmap und per CLI aendern
-status: testing
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Wer eine Milestone umbenennen will, tut das im Bearbeiten-Dialog der Milestone Roadmap (e) oder mit jaira milestone rename <alt> <neu>; danach heisst sie ueberall neu - Datei, Ref und die after:-Verweise ihrer Nachfolger - und kein anderer Klon behaelt eine verwaiste Kopie unter dem alten Namen."
@@ -20,19 +20,19 @@ related: []
 follows: 01M1KFMETY9MKH4V38TVD0SAHM
 commits: []
 created-at: 2026-10-13T11:47:07Z
-updated-at: 2026-10-13T13:39:30Z
+updated-at: 2026-10-13T13:55:49Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-1970307
-claimed-at: 2026-10-13T13:33:56Z
+claimed-by: EE-3NX6GL3-2027604
+claimed-at: 2026-10-13T13:50:35Z
 executed-by: opus
-outcome-what: "Review 1 answered: refsync.MilestoneOnRef + CLI refuseIfTaken + TUI nameTaken refuse a name a teammate's milestone has on this tree's ref but not yet on disk (exit 3, 'jaira fetch brings it here') for rename and create; rename help/COMMANDS exit code for a filed old name; TUI reloads when goal/after is refused after a rename; release note line for the new refusal."
-outcome-why: "Every write's flush fetches refs without writing files, so rename and create, asking only the disk and filings, silently overwrote a teammate's milestone on the remote (reproduced by review) - DoD 1 asks for a taken name to be refused."
-outcome-resolves: "DoD 1: TestANameOnlyOnARefIsTakenForRenameAndCreate (two clones) - rename b zeta and create zeta exit 3 while zeta is only on ada's ref, grace's zeta keeps its goal; fails without the check. DoD 2-4 unchanged; vet + go test ./... -race green (28 ok)."
+outcome-what: "Review 2 answered: core/outbox Box.PendingMilestone; refsync MilestoneOnRef lets this clone's queued milestone write decide before the local ref, so a queued rename mark frees the old name at once; release note line 5 reworded."
+outcome-why: "The local ref moves only when the remote accepts a push, so taking a rename back was refused as a teammate's milestone until the mark was sent - in the TUI up to the 10-minute fetch tick."
+outcome-resolves: "DoD 1 (taken names refused, own rename takeable back): TestARenameCanBeTakenBackBeforeItsMarkIsSent fails without the pending check; TestANameOnlyOnARefIsTakenForRenameAndCreate still passes. vet + go test ./... -race green (28 ok)."
 review-summary: "none"
-review-gaps: "Optimize after review 1 (commit 3c08f8a only): folded the doubled return in submitLayerForm's refused-Edit branch into one if (internal/tui/layer.go). Left: refsync MilestoneOnRef repeats the ref read of MilestoneFiled - folding it in as a new MilestoneFiledAt would reach refuseIfFiled's other callers (logbook, editRefusal) and reshape what critique settled; create/rename read the target's ref twice (once per command, not hot); CLI refuseIfTaken vs TUI nameTaken follows the existing CLI/TUI split. Earlier optimize round (f840f0e): one const for rename's refusal clause, one slices.Index in renameMilestone; Rename's successor loop vs ReattachSuccessors (layout.go) left as a follow-up candidate; pre-existing: SetAfter lowercases hand-written predecessor names, refuseIfFiled/editRefusal comments do not list rename."
-test-verdict: "pass: vet clean, go test ./... -race -count=1 green (28 ok, exit 0); DoD 1-3 proof tests re-run by name and pass; binary (f840f0e) played in tmux on a board copy without remote - e-form name first, taken name refused, rename from layer and detail, successors and board filter follow; two clones + third clone on a local bare repo: after fetch the second clone lists only the new name, the third never gets the old file, renaming back reaches both"
-review-verdict: "not yet: DoD 1 is met for names on disk, in the logbook or filed on a ref, but a teammate's milestone that is only on the ref is silently overwritten (reproduced) - back to in-progress for the shared name check; the minors go along where cheap, the rest is listed for Berk."
+review-gaps: "Review pass 2: pass-1 defect closed (rename/create onto a teammate's ref-only name exit 3, reproduced on HEAD). NEW DEFECT from 3c08f8a: refsync MilestoneOnRef reads only the local ref, which moves only when a push is accepted - right after 'rename a alpha' the ref a still holds the live original while the mark waits in the outbox, so taking the rename back (rename alpha a) or 'create a' is refused with 'a teammate's milestone ... jaira fetch'; in the TUI that lasts up to the 10-minute fetch tick; following the advice makes jaira fetch write a.md back beside alpha until the queue is sent. Fix: a queued milestone write for the name decides before the ref. MINOR: release note line 5 quotes the refusal text inexactly. Known gaps for Berk (a)(b)(c)(f) unchanged."
+test-verdict: "pass: vet clean, go test ./... -race -count=1 green at e56ee81 (28 ok, exit 0); all DoD proof tests re-run by name incl. TestANameOnlyOnARefIsTakenForRenameAndCreate; scratch build on a local bare repo: ada's rename b zeta refused (exit 3, 'jaira fetch') while grace's zeta is only on ada's ref, grace's zeta keeps its goal; TUI smoke on the board copy without remote: e renames basis to runde-0, successors follow"
+review-verdict: "not yet: the ref-only defect is closed, but the fix refuses taking a rename back while its mark is unsent (reproduced offline, the TUI hits it online for up to 10 minutes) - back to in-progress."
 ---
 
 # Der Name einer Milestone laesst sich auf der Milestone Roadmap und per CLI aendern
@@ -40,13 +40,13 @@ review-verdict: "not yet: DoD 1 is met for names on disk, in the logbook or file
 ## Definition of Done
 
 - [x] jaira milestone rename <alt> <neu> benennt Datei und Ref um, schreibt die after:-Listen aller Nachfolger um und lehnt einen vergebenen oder abgelegten Namen ab; Tests in internal/cli
-  proof: core/milestone/write.go Rename; internal/cli/milestones.go newMilestoneRenameCmd; TestRenameMovesTheMilestoneAndItsSuccessorsFollow, TestRenameRefusalsAndTheMarkOfARename, TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName, TestRenameRefusesATakenNameButNotTheMarkOfARename
+  proof: core/milestone/write.go Rename + CheckFree; internal/cli/milestones.go newMilestoneRenameCmd + refuseIfTaken; core/refsync MilestoneOnRef; TestRenameMovesTheMilestoneAndItsSuccessorsFollow, TestRenameRefusalsAndTheMarkOfARename, TestANameOnlyOnARefIsTakenForRenameAndCreate, TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName, TestRenameRefusesATakenNameButNotTheMarkOfARename
 - [x] Im e-Dialog der Milestone Roadmap ist der Name das erste Feld; ein geaenderter Name benennt ueber denselben Weg um; TUI-Test
   proof: internal/tui/layer.go startLayerEdit (name first), submitLayerForm -> renameMilestone -> milestone.Rename; TestEditRenamesAMilestone, TestEditGoalAndPredecessors
 - [x] Ein zweiter Klon, der nach dem Umbenennen fetcht, hat danach nur die Milestone unter dem neuen Namen und nicht zusaetzlich die alte; Test mit zwei Repos wie in den refsync-Tests
   proof: internal/cli/milestoneref_test.go TestARenamedMilestoneArrivesUnderItsNewNameOnly (two clones, bare remote; fails without the mark on the old ref)
 - [x] go vet und go test ./... -race gruen; im echten Terminal auf einer Board-Kopie ohne Remote durchgespielt; Release-Notiz unter core/release/notes/
-  proof: go vet ./... clean + go test ./... -race -count=1: 28 ok, exit 0 (at f840f0e); tmux play of the scratch build on a copy of fix2/board (no remote): e shows name first, taken name refused in the form, rename from layer and from detail, board filter followed; core/release/notes/E70WYN.md
+  proof: go vet ./... clean + go test ./... -race -count=1: 28 ok, exit 0 (at e56ee81); tmux play of the scratch build on a board copy without remote (e shows name first, taken name refused, rename from layer and detail, filter follows; smoke again at e56ee81); core/release/notes/E70WYN.md
 
 ## Options
 
@@ -90,3 +90,6 @@ review-verdict: "not yet: DoD 1 is met for names on disk, in the logbook or file
 - **2026-10-13 13:18 · BeMuCa** — in-progress after review 1: refsync.MilestoneOnRef(name) - this tree's ref under name carries a milestone not filed; CLI refuseIfTaken (refuseIfFiled + that check, exit 3 'exists on its ref but not on this disk yet - jaira fetch brings it here') replaces refuseIfFiled in create and in rename's taken; TUI nameFiled renamed nameTaken with the same check. This also closes the hole create had before this ticket. TestANameOnlyOnARefIsTakenForRenameAndCreate (two clones) fails without the check - verified by mutation. Cheap minors done: rename help and COMMANDS give exit 3 for a filed old name; the TUI reloads when goal/after is refused after a rename went through (no test: needs a concurrent writer between the pre-check and the locked write). Release note line 5 added for the new refusal.
 - **2026-10-13 13:29 · BeMuCa** — critique after review 1 (opus subagent, read only the review defect and 3c08f8a): none. MilestoneOnRef sits beside MilestoneFiled without overlap (filed ref / live ref / rename mark = neither); create and rename share refuseIfTaken (CLI) and nameTaken (TUI); the check cannot live in core CheckFree because core/milestone cannot import refsync; rename back and unshared boards unaffected.
 - **2026-10-13 13:34 · BeMuCa** — optimize after review 1 (opus subagent, 3c08f8a only): one control-flow fold in submitLayerForm, behaviour unchanged; rest left with reasons in review-gaps.
+- **2026-10-13 13:40 · BeMuCa** — testing after review 1: clones2 (local bare repo): grace create zeta --goal; ada create b (flush brings ref zeta, no zeta.md); ada rename b zeta -> exit 3 'exists on its ref refs/jaira/milestones/zeta but not on this disk yet'; the detached fetch after that command then wrote zeta.md, so create zeta answered 'already exists' (disk) - both doors refuse; rename b beta ok; grace fetch: beta arrives, zeta still 'grace's plan'. TUI smoke at e56ee81 on the play board: e on basis -> runde-0, runde-2 after [runde-0, parallel], runde-2b after [runde-0].
+- **2026-10-13 13:49 · BeMuCa** — review pass 2 -> in-progress: MilestoneOnRef must let this clone's queued milestone write decide before the local ref (a rename mark queued = name free). Plan: export outbox Box.PendingMilestone (the accessor 0YGWXQ's critique removed for lack of a caller - now it has one), read it first in MilestoneOnRef; CLI test: rename a alpha then alpha a without a flush in between. Release note line 5 reworded. Adjacent, pre-existing, not fixed here: IncomingMilestones writes a ref over a local milestone file even when this clone has an unsent write for it, so any milestone edit made offline is undone on disk by a fetch until the queue is sent.
+- **2026-10-13 13:50 · BeMuCa** — in-progress after review 2: core/outbox Box.PendingMilestone(name) exported; refsync MilestoneOnRef reads this clone's queued write for the name before the local ref, so a queued rename mark frees the name at once. TestARenameCanBeTakenBackBeforeItsMarkIsSent (two clones, both renames without a flush between) fails without it - checked by mutation; grace then sees a and b, b after [a]. Release note line 5 no longer quotes the message text.

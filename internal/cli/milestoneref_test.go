@@ -570,3 +570,46 @@ func TestANameOnlyOnARefIsTakenForRenameAndCreate(t *testing.T) {
 		t.Errorf("grace's zeta was overwritten: %v %+v", err, zeta)
 	}
 }
+
+// A ref moves only when the remote accepts a write, so right after a rename
+// the old name's ref still holds the milestone while its mark waits in the
+// outbox. Taking the rename back before anything was sent is not refused as
+// a teammate's milestone, and what arrives elsewhere is the milestone under
+// its old name again.
+func TestARenameCanBeTakenBackBeforeItsMarkIsSent(t *testing.T) {
+	ada, grace := twoBoards(t)
+	for _, args := range [][]string{
+		{"milestone", "create", "a", "--after", ""},
+		{"milestone", "create", "b", "--after", "a"},
+	} {
+		if out, err := runAndSend(t, ada, args...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	// runCLI sends nothing: both renames stay in the outbox.
+	if out, err := runCLI(t, ada, "milestone", "rename", "a", "alpha"); err != nil {
+		t.Fatalf("rename: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, ada, "milestone", "rename", "alpha", "a"); err != nil {
+		t.Fatalf("taking the rename back before its mark was sent: %v\n%s", err, out)
+	}
+	flushRefs()
+
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fetch: %v\n%s", err, out)
+	}
+	all, err := milestone.LoadAll(grace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, ms := range all {
+		names = append(names, ms.Name)
+	}
+	if strings.Join(names, ",") != "a,b" {
+		t.Errorf("grace's board has %v, want a and b", names)
+	}
+	if b, _ := milestone.Load(grace, "b"); strings.Join(b.After, ",") != "a" {
+		t.Errorf("grace's b comes after %v, want a", b.After)
+	}
+}

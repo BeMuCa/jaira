@@ -310,11 +310,20 @@ func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, Milestone
 // name and asks only the disk would write over a teammate's milestone. A
 // filed ref is MilestoneFiled's to answer, and the mark a rename left holds
 // nothing.
+//
+// A write this clone has queued for the name decides before the ref does:
+// the ref moves only when the remote accepts the write, so right after a
+// rename the old name's ref still holds the milestone while its mark waits
+// in the outbox — and taking the rename back must not be refused as a
+// teammate's milestone.
 func (y *Syncer) MilestoneOnRef(name string) bool {
 	if y == nil || y.Usable() != nil {
 		return false
 	}
 	content, _, err := y.Repo.ReadMilestone(name)
+	if e, ok := y.Box.PendingMilestone(name); ok {
+		content, err = []byte(e.Content), nil
+	}
 	return err == nil && !milestone.FromBytes(name, content).Filed()
 }
 
