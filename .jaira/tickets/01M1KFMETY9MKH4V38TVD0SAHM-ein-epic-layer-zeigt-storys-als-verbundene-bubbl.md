@@ -1,7 +1,7 @@
 ---
 id: 01M1KFMETY9MKH4V38TVD0SAHM
 title: Ein Epic-Layer zeigt Storys als verbundene Bubbles ueber dem Board
-status: signoff
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Mit L oeffnet das TUI einen Layer ueber die Milestones: jede platzierte Milestone ist eine Bubble in ihrer Farbe, gefuellt nach dem Anteil fertiger Tickets; Pfeile zeigen 'erst A, dann B' in Swimlanes; im Layer lassen sich Bubbles anlegen, verbinden, aendern und herausnehmen; Enter zeigt Ziel und Tickets, b springt ins auf den Milestone gefilterte Board."
@@ -11,7 +11,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-10-13T02:25:29Z
+updated-at: 2026-10-13T11:51:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-208439
@@ -75,7 +75,7 @@ review-check: |-
 - [x] Tasten: l oeffnet die Links auf dem Board und im Ticket-Detail, h und l wechseln keine Lanes mehr; Hilfe, Tastenleiste, README Keys, docs/COMMANDS.md und core/release/notes/D0SAHM.md nennen es
   proof: internal/tui/model.go:1495 arrows only, :1539 l links, :1543 L layer, :1400 l in detail; view.go:1045 key bar, :1100 detail hints, renderHelp; README.md Keys; docs/COMMANDS.md Keys; core/release/notes/D0SAHM.md; TestBoardArrowsChangeLanesAndLOpensLinks, TestLinkKeyWorksOnAnOpenTicketAndReturnsToIt, TestHelpNamesTheMovedKeys, TestNarrowBoardShowsAllKeysAndFits, TestNarrowDetailShowsAllKeysAndFits
 - [x] go vet ./... und go test ./... -race sind gruen; das gebaute Binary ist im echten Terminal (tmux) auf einer Board-Kopie durchgespielt
-  proof: go vet ./... + go test ./... -race -count=1 -timeout 40m: 28 ok, exit 0 (2026-10-13); binary in tmux 160x50 on a remote-less copy of this repo's board: L, fill/colours, navigation, [+] new sibling (file: goal/after/color), x with re-attach (abschluss after [release-0-4, tests]), detail, b -> filter milestone:release-0-4
+  proof: nach Berks Aenderungen (Milestone Roadmap, versetzte Pfeilspitzen): go vet + go test ./... -race: 28 ok, exit 0 (2026-10-13); TestJoinArrowArrivesBesideTheParentArrow, TestExtraArrowNeverEndsAtASiblingsJunction (beide fallen mit Spitze in der Mitte)
 
 ## Options
 
@@ -140,3 +140,4 @@ internal/tui/layer.go:381-388 createMilestone re-derives the filed-here/filed-on
 - **2026-10-13 01:42 · BeMuCa** — optimize pass 2 (after 7b50c13): looked again at the whole diff and the new tests' helpers (mkPlaced vs milestonebar_test mkMilestone - differ in created-at and after; keyUp/Down/Left/Right - key()/keyCodeFor knows no arrows); nothing left to remove. review-gaps says what was removed and what was kept and why.
 - **2026-10-13 02:15 · BeMuCa** — review 2026-10-13 (second model): passed to signoff with one real flaw for Berk to decide. An extra arrow into the next row shares the split row of the bubble above (internal/tui/layerdraw.go:525 down()) and, when another child's junction lies between, its dim line ends at that junction - the picture then names the wrong successor. Repro: runde-1 with children runde-2, runde-2b; parallel as its own lane to the right; runde-2 after [runde-1, parallel] -> the line from parallel stops at the ┬ over runde-2b. Side effect of the 00:59 call (next-row extra arrows leave like a split), not recorded before. Smaller: Up on a top-row bubble jumps to the far [+] (its box at layerdraw.go:123 sits half a row higher); the [+] under a bubble covers an extra arrow's corner; an unplaced predecessor is accepted and silently draws nothing.
 - **2026-10-13 02:25 · BeMuCa** — 2026-10-13 Nach dem review (Ticket steht in signoff, das nur ein Mensch verlaesst, deshalb ohne Lane-Wechsel): review-gaps 1, 2, 3 und 6 behoben. (1) Zusatzpfeile laufen jetzt auf einer eigenen Verbindungszeile zwischen Split und ▼ (cellH 6 -> 7) und verlassen die Bubble immer rechts der Mitte; sie kreuzen fremde Stiche (┼) und muenden nur in den Strich ihres eigenen Ziels (├/┤) - das Beispiel aus review-check Schritt 8 zeigt jetzt die blasse Linie von parallel, die runde-2b kreuzt und bei runde-2 ankommt. TestExtraArrowNeverEndsAtASiblingsJunction (faellt mit dem alten Code). (2) Das [+] ganz rechts steuert auf der Mitte der obersten Reihe, ↑ auf einer Top-Bubble bleibt stehen: TestUpOnTheTopRowStays. (3) Das [+] unter einer Bubble liegt nicht mehr auf einem Zusatzpfeil, weil der jetzt bei x+11 austritt. (6) c ueberspringt Farben, die eine andere Milestone traegt: TestColourKeySkipsAColourInUse. Gaps 4, 5, 7, 8 bewusst gelassen (4 und 5 sind aufgezeichnete Entscheidungen, 7 ist Handbearbeitung mit YAML-Blockliste, 8 gehoert in ein eigenes Ticket). Die vier review-Felder beschreiben den Stand vor diesem Commit. go vet + go test ./... -race: 28 ok, exit 0.
+- **2026-10-13 11:41 · BeMuCa** — 2026-10-13 Berk hat den Layer angesehen (Screenshot) und in signoff Aenderungen verlangt: (a) 'L Layer' heisst kuenftig 'Milestone Roadmap'; (b) Zusatzpfeile, die mit anderen Pfeilen auf einer Linie laufen, sind nicht zu erkennen (demo-board -> second-milestone lief ueber die Strich-Kreuzung): die Ankunft soll leicht versetzt neben dem normalen Pfeil liegen, damit man sie sieht. Ruecksendung aus signoff nach in-progress auf Berks Wort, ausgefuehrt von Claude (--force). Umbenennen des Milestone-Namens im Bearbeiten-Dialog wird ein eigenes Ticket.

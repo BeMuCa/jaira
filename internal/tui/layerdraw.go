@@ -24,6 +24,7 @@ const (
 	bubbleH   = 4
 	cellW     = 21 // a grid column: the bubble and the 5-column gap after it
 	cellH     = 7  // a grid row: the bubble and three connector rows — the split, the extra arrows' row, the ▼
+	extraHead = 4  // where an extra arrow's ▼ lands, three left of the parent arrow's at 7
 	laneGap   = 3  // extra columns between swimlanes; the ┊ stands in them
 	layerLeft = 2  // room left of the first lane for an arrow's vertical run
 	layerTop  = 1  // room above the first row for an arrow into a swimlane top
@@ -463,6 +464,10 @@ func bubbleBorder(ms *milestone.Milestone, sel bool) lipgloss.Style {
 	return st
 }
 
+// roadmapTitle is what the layer is called on screen: Berk named it the
+// Milestone Roadmap (2026-10-13); the code keeps calling it the layer.
+const roadmapTitle = "Milestone Roadmap"
+
 const emptyLayerHint = "enter: place the first milestone"
 
 // drawLayer paints the whole picture: swimlane separators first, then the
@@ -508,18 +513,20 @@ func (m *Model) drawLayer(sc *layerScene) *layerCanvas {
 	}
 
 	// Extra arrows travel the second connector row, which no split uses, so
-	// one can only ever cross another arrow's drop (┼) or end in its own
-	// target's (├ ┤) — never run along a split and seem to end at a sibling's
-	// junction. Each leaves right of centre, down to that row, along it — to
-	// the target's centre when the target is in the next row, a join; else to
-	// the gap left of the target, down (or up) that gap to the row above the
-	// target, and in to its centre.
+	// one can only ever cross another arrow's drop (┼) — never run along a
+	// split and seem to end at a sibling's junction. They arrive with a ▼ of
+	// their own, left of the target's centre: ending in the parent's drop
+	// instead made an arrival look like one more crossing (Berk, 2026-10-13).
+	// Each leaves right of centre, down to that row, along it — straight to
+	// its ▼ when the target is in the next row, a join; else to the gap left
+	// of the target, down (or up) that gap to the row above the target, and
+	// in to its ▼.
 	for _, a := range sc.grid.Arrows {
 		if !a.Extra {
 			continue
 		}
 		p, t := sc.at[a.From], sc.at[a.To]
-		sx, row, tx := p.X+11, p.Y+bubbleH+1, t.X+7
+		sx, row, tx := p.X+11, p.Y+bubbleH+1, t.X+extraHead
 		pts := []image.Point{{sx, row - 2}, {sx, row}}
 		if t.Y == p.Y+cellH {
 			pts = append(pts, image.Pt(tx, row), image.Pt(tx, t.Y-1))
@@ -639,7 +646,7 @@ func (m *Model) renderLayerGrid() string {
 // or what a [+] would create — the one line of words the picture needs.
 func (m *Model) layerHeader(sc *layerScene) string {
 	l := m.layer
-	head := styLaneTitle.Render("Milestones")
+	head := styLaneTitle.Render(roadmapTitle)
 	width := max(1, m.width)
 	switch l.sel.kind {
 	case onBubble:
@@ -650,10 +657,10 @@ func (m *Model) layerHeader(sc *layerScene) string {
 		}
 		// Cut before styling: a cut through an escape sequence would leave
 		// the colour running into the picture.
-		goal = truncate(goal, width-lipgloss.Width("Milestones ·  · "+ms.Name))
+		goal = truncate(goal, width-lipgloss.Width(roadmapTitle+" ·  · "+ms.Name))
 		return head + styMeta.Render(" · ") + ms.Name + styMeta.Render(" · "+goal)
 	default:
-		return head + styMeta.Render(truncate(" · [+] a new milestone, "+m.placementText(l.sel), width-len("Milestones")))
+		return head + styMeta.Render(truncate(" · [+] a new milestone, "+m.placementText(l.sel), width-len(roadmapTitle)))
 	}
 }
 
@@ -710,7 +717,7 @@ func (m *Model) renderLayerDialog() string {
 			if i == l.pickIdx {
 				marker, label = stySelected.Render("▌ "), stySelected.Render(name)
 			}
-			note := "not in the layer yet: placed here"
+			note := "not on the roadmap yet: placed here"
 			switch {
 			case ms == nil || !ms.Placed:
 			case len(ms.After) == 0:
@@ -726,7 +733,7 @@ func (m *Model) renderLayerDialog() string {
 		hints("↑↓ pick", "enter connect", "esc back")
 
 	case stageRemove:
-		b.WriteString(styLaneTitle.Render("Take "+l.sel.name+" out of the layer?") + "\n\n")
+		b.WriteString(styLaneTitle.Render("Take "+l.sel.name+" off the roadmap?") + "\n\n")
 		b.WriteString(styMeta.Render("Its tickets stay in it. What came after it moves up to what came before it.") + "\n")
 		hints("y take it out", "n keep it")
 	}
@@ -755,7 +762,7 @@ func (m *Model) renderMilestoneDetail() string {
 	after := "top of its own swimlane"
 	switch {
 	case !ms.Placed:
-		after = "not in the layer"
+		after = "not on the roadmap"
 	case len(ms.After) > 0:
 		after = strings.Join(ms.After, ", ")
 	}

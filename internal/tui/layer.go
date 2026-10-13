@@ -525,7 +525,7 @@ func (m *Model) keyLayerRemove(s string) {
 
 // removeFromLayer takes a milestone out of the layer — its after line goes,
 // its tickets stay — and milestone.Edit closes the chain behind it under the
-// same lock, exactly as 'jaira milestone set --no-layer' does: what came after
+// same lock, exactly as 'jaira milestone set --no-roadmap' does: what came after
 // it now comes after what came before it. The cursor goes to the first of
 // those, so the change is the thing in front of the reader.
 func (m *Model) removeFromLayer(name string) {

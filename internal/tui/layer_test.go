@@ -59,8 +59,8 @@ func TestLOpensTheLayerAndClosesIt(t *testing.T) {
 		if m.mode != modeLayer || m.layer == nil {
 			t.Fatalf("L must open the layer, mode = %v", m.mode)
 		}
-		if out := stripANSI(m.render()); !strings.Contains(out, "Milestones") {
-			t.Errorf("the layer must name itself:\n%s", out)
+		if out := stripANSI(m.render()); !strings.Contains(out, "Milestone Roadmap") {
+			t.Errorf("the layer must name itself the Milestone Roadmap:\n%s", out)
 		}
 		m.key(key(closeKey))
 		if m.mode != modeBoard || m.layer != nil {
@@ -126,10 +126,41 @@ func TestLayerDrawsBubblesArrowsAndPlus(t *testing.T) {
 	}
 }
 
-// A join into the next row (docs→final beside tests→final) is drawn as one
-// line meeting the parent arrow in a junction, not as a second line looping
-// round the left of the lane and crossing it.
-func TestJoinArrowMeetsTheParentArrow(t *testing.T) {
+// travelsLeftTo reports whether one line of the picture carries an extra
+// arrow that comes from the right (┘), runs left over nothing but line and
+// crossings, and turns down (┌) into a ▼ of its own — with at least `crossings`
+// drops crossed on the way.
+func travelsLeftTo(out string, crossings int) bool {
+	lines := strings.Split(out, "\n")
+	for k, line := range lines {
+		r := []rune(line)
+		for i, c := range r {
+			if c != '┌' {
+				continue
+			}
+			for j := i + 1; j < len(r); j++ {
+				if r[j] == '┘' {
+					run := string(r[i+1 : j])
+					if strings.Trim(run, "─┼┊") == "" && strings.Count(run, "┼") >= crossings &&
+						k+1 < len(lines) && i < len([]rune(lines[k+1])) && []rune(lines[k+1])[i] == '▼' {
+						return true
+					}
+					break
+				}
+				if !strings.ContainsRune("─┼┊", r[j]) {
+					break
+				}
+			}
+		}
+	}
+	return false
+}
+
+// A join into the next row (docs→final beside tests→final) arrives with a ▼
+// of its own beside the parent arrow's, crossing the parent's drop on the
+// way: ending in the drop made an arrival look like one more crossing
+// (Berk, 2026-10-13). It never loops round the side of the lane.
+func TestJoinArrowArrivesBesideTheParentArrow(t *testing.T) {
 	m := newTestModel(t, 160, 40)
 	mkPlaced(t, m, "api", 0, nil)
 	mkPlaced(t, m, "docs", 1, []string{"api"})
@@ -139,28 +170,25 @@ func TestJoinArrowMeetsTheParentArrow(t *testing.T) {
 	m.key(key("L"))
 	out := stripANSI(m.render())
 
-	joined := false
-	for _, line := range strings.Split(out, "\n") {
-		if i, j := strings.Index(line, "├"), strings.Index(line, "┘"); i >= 0 && j > i &&
-			strings.Trim(line[i+len("├"):j], "─") == "" {
-			joined = true
-		}
+	if !travelsLeftTo(out, 1) {
+		t.Errorf("the join must run ┌──┼──┘ from tests across docs' drop into a ▼ of its own:\n%s", out)
 	}
-	if !joined {
-		t.Errorf("the join must run ├────┘ from the parent arrow to tests:\n%s", out)
+	if !strings.Contains(out, "▼  ▼") {
+		t.Errorf("final must show the join's ▼ three left of the parent arrow's:\n%s", out)
 	}
-	if strings.ContainsAny(out, "┌└") {
+	if strings.Contains(out, "└") {
 		t.Errorf("no arrow may loop round the side of the lane:\n%s", out)
 	}
-	if n := strings.Count(out, "▼"); n != 3 {
-		t.Errorf("docs, tests and final get one ▼ each, the join shares final's: %d\n%s", n, out)
+	if n := strings.Count(out, "▼"); n != 4 {
+		t.Errorf("docs, tests and final get one ▼ each, and the join one of its own: %d\n%s", n, out)
 	}
 }
 
 // An extra arrow into the next row must not run along the split of the bubble
 // above its target: with a sibling between, it would end at the sibling's
 // junction and name the wrong successor (review of 2026-10-13). It travels a
-// row of its own instead and crosses the sibling's drop.
+// row of its own, crosses the sibling's drop and the target's, and arrives
+// in a ▼ of its own.
 func TestExtraArrowNeverEndsAtASiblingsJunction(t *testing.T) {
 	m := newTestModel(t, 200, 40)
 	mkPlaced(t, m, "runde-1", 0, nil)
@@ -171,24 +199,12 @@ func TestExtraArrowNeverEndsAtASiblingsJunction(t *testing.T) {
 	m.key(key("L"))
 	out := stripANSI(m.render())
 
-	travel := false
+	if !travelsLeftTo(out, 2) {
+		t.Errorf("the arrow from parallel must cross runde-2b's and runde-2's drops (┼ ┼) into a ▼ of its own:\n%s", out)
+	}
 	for _, line := range strings.Split(out, "\n") {
-		i, j := strings.Index(line, "├"), strings.LastIndex(line, "┘")
-		if i < 0 || j <= i {
-			continue
-		}
-		if between := line[i+len("├") : j]; strings.Trim(between, "─┼┊") == "" && strings.Contains(between, "┼") {
-			travel = true
-		}
-	}
-	if !travel {
-		t.Errorf("the arrow from parallel must cross runde-2b's drop (┼) on its way to runde-2 (├):\n%s", out)
-	}
-	if strings.Contains(out, "┬──") && strings.Contains(out, "──┘") {
-		for _, line := range strings.Split(out, "\n") {
-			if strings.Contains(line, "├") && strings.Contains(line, "┬") && strings.Contains(line, "┘") {
-				t.Errorf("a split line must not run on into another lane's arrow:\n%s", out)
-			}
+		if strings.Contains(line, "├") && strings.Contains(line, "┬") && strings.Contains(line, "┘") {
+			t.Errorf("a split line must not run on into another lane's arrow:\n%s", out)
 		}
 	}
 }
@@ -560,7 +576,7 @@ func TestRemoveReattachesSuccessors(t *testing.T) {
 		t.Fatal("n must keep b in the layer")
 	}
 	m.key(key("x"))
-	if out := stripANSI(m.render()); !strings.Contains(out, "out of the layer?") {
+	if out := stripANSI(m.render()); !strings.Contains(out, "off the roadmap?") {
 		t.Errorf("x must ask first:\n%s", out)
 	}
 	m.key(key("y"))

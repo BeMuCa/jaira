@@ -59,7 +59,7 @@ func (e *FiledError) Error() string {
 // When fn takes a placed milestone out of the layer, Edit also closes the
 // chain behind it under the same lock: every milestone that came after it now
 // comes after what came before it (ReattachSuccessors). Here and not in the
-// callers, so the layer's x and 'jaira milestone set --no-layer' cannot leave
+// callers, so the layer's x and 'jaira milestone set --no-roadmap' cannot leave
 // two different pictures behind.
 func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Milestone) error) (*Milestone, error) {
 	unlock, err := lock.Lock(LockName)

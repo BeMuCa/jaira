@@ -656,11 +656,11 @@ func TestSetChangesGoalAndPlacement(t *testing.T) {
 	if b.Goal != "second" || !b.Placed || len(b.After) != 1 || b.After[0] != "a" {
 		t.Errorf("b: goal=%q placed=%v after=%v", b.Goal, b.Placed, b.After)
 	}
-	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-layer"); err != nil {
-		t.Fatalf("set --no-layer: %v\n%s", err, out)
+	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-roadmap"); err != nil {
+		t.Fatalf("set --no-roadmap: %v\n%s", err, out)
 	}
 	if b, _ = milestone.Load(dir, "b"); b.Placed || b.Goal != "second" {
-		t.Errorf("--no-layer must remove only the after line: placed=%v goal=%q", b.Placed, b.Goal)
+		t.Errorf("--no-roadmap must remove only the after line: placed=%v goal=%q", b.Placed, b.Goal)
 	}
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--goal", ""); err != nil {
 		t.Fatalf("set --goal \"\": %v\n%s", err, out)
@@ -674,7 +674,7 @@ func TestSetChangesGoalAndPlacement(t *testing.T) {
 	}
 }
 
-// --no-layer is the layer's x: the chain behind the milestone closes up, so
+// --no-roadmap is the layer's x: the chain behind the milestone closes up, so
 // an agent and a person taking the same milestone out leave the same picture.
 func TestSetNoLayerHangsTheSuccessorsOnThePredecessors(t *testing.T) {
 	dir := emptyStore(t)
@@ -685,8 +685,8 @@ func TestSetNoLayerHangsTheSuccessorsOnThePredecessors(t *testing.T) {
 			t.Fatalf("%v: %v\n%s", args, err, out)
 		}
 	}
-	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-layer"); err != nil {
-		t.Fatalf("set --no-layer: %v\n%s", err, out)
+	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-roadmap"); err != nil {
+		t.Fatalf("set --no-roadmap: %v\n%s", err, out)
 	}
 	if c, _ := milestone.Load(dir, "c"); len(c.After) != 1 || c.After[0] != "a" {
 		t.Errorf("c must now come after a, got %v", c.After)
@@ -700,7 +700,7 @@ func TestSetUsageErrors(t *testing.T) {
 	}
 	for _, args := range [][]string{
 		{"milestone", "set", "a"},
-		{"milestone", "set", "a", "--after", "a", "--no-layer"},
+		{"milestone", "set", "a", "--after", "a", "--no-roadmap"},
 	} {
 		out, err := runCLI(t, dir, args...)
 		if err == nil || exitCode(err) != ExitUsage {

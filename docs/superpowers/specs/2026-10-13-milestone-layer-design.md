@@ -4,6 +4,13 @@
 are in the ticket's notes) · status: **approved by Berk to build** ("Ich vertrau
 all deinen Entscheidungen").
 
+
+**Renamed 2026-10-13 (Berk):** users see this view as the **Milestone Roadmap**
+(header, help, key bar, docs; the CLI flag is `--no-roadmap`). The code and
+this spec keep calling it the layer. Extra arrows arrive in a ▼ of their own,
+three columns left of the parent arrow's, so an arrival never looks like a
+crossing.
+
 ## Problem
 
 The board answers "where does each ticket stand". Nothing answers "what comes
@@ -164,7 +171,7 @@ moves while the cursor moves:
 
 - `jaira milestone create <name> --goal <text> --after <a,b>` (`--after ""`
   = top of a new swimlane).
-- `jaira milestone set <name> [--goal <text>] [--after <a,b>] [--no-layer]`.
+- `jaira milestone set <name> [--goal <text>] [--after <a,b>] [--no-roadmap]`.
 - `jaira milestone ls --json` carries `goal` and `after` (`after` absent =
   not placed).
 

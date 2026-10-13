@@ -96,9 +96,9 @@ filename, so it has to be safe in a path. "Round One" is filed as "round-one"
 and you are told so.
 
 --goal <text> says in one line what the milestone is for, and --after <a,b>
-puts it in the layer on the board (L) under those milestones; the first one
+puts it on the Milestone Roadmap (L on the board) under those milestones; the first one
 decides its swimlane. --after "" makes it the top of a swimlane of its own.
-Without --after the milestone stays out of the layer. A predecessor has to be
+Without --after the milestone stays off the roadmap. A predecessor has to be
 a milestone on this board, and the arrows may not form a loop.`,
 		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -185,7 +185,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 	}
 	cmd.Flags().IntVar(&colour, "color", -1, "ANSI-256 colour (1-255; 0 paints no cell) instead of a random free one")
 	cmd.Flags().StringVar(&goal, "goal", "", "one line saying what the milestone is for")
-	cmd.Flags().StringVar(&after, "after", "", "comma-separated milestones this one follows, placing it in the layer; \"\" makes it a swimlane top")
+	cmd.Flags().StringVar(&after, "after", "", "comma-separated milestones this one follows, placing it on the Milestone Roadmap; \"\" makes it a swimlane top")
 	return cmd
 }
 
@@ -231,32 +231,32 @@ and ` + "`jaira restore <name>.md`" + ` brings it back.`,
 
 func newMilestoneSetCmd() *cobra.Command {
 	var goal, after string
-	var noLayer bool
+	var noRoadmap bool
 	cmd := &cobra.Command{
-		Use:   "set <name> [--goal <text>] [--after <a,b>] [--no-layer]",
-		Short: "Change a milestone's goal or its place in the layer",
+		Use:   "set <name> [--goal <text>] [--after <a,b>] [--no-roadmap]",
+		Short: "Change a milestone's goal or its place on the Milestone Roadmap",
 		Long: `Rewrites the ` + "`goal:`" + ` and ` + "`after:`" + ` lines of the milestone's file and nothing else.
 
 --goal <text> sets the one-line goal; --goal "" removes it.
---after <a,b> places the milestone in the layer (L on the board) under those
+--after <a,b> places the milestone on the Milestone Roadmap (L on the board) under those
 milestones. The first one decides its swimlane, every further one is an extra
 arrow. --after "" makes it the top of a swimlane of its own.
---no-layer takes it out of the layer again; its tickets stay where they are,
-and what came after it now comes after what came before it, as x in the
-layer does.
+--no-roadmap takes it off the roadmap again; its tickets stay where they are,
+and what came after it now comes after what came before it, as x on the
+roadmap does.
 
-At least one flag is needed, and --after and --no-layer exclude each other. A
+At least one flag is needed, and --after and --no-roadmap exclude each other. A
 predecessor has to be a milestone on this board (exit 5 otherwise), and an
 arrow that would close a loop is refused (exit 3) with the loop named. A
 filed milestone is refused like everywhere else.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			setGoal, setAfter := cmd.Flags().Changed("goal"), cmd.Flags().Changed("after")
-			if !setGoal && !setAfter && !noLayer {
-				return fail(ExitUsage, "usage", "milestone set needs at least one of --goal, --after, --no-layer")
+			if !setGoal && !setAfter && !noRoadmap {
+				return fail(ExitUsage, "usage", "milestone set needs at least one of --goal, --after, --no-roadmap")
 			}
-			if setAfter && noLayer {
-				return fail(ExitUsage, "usage", "--after places the milestone in the layer and --no-layer takes it out; give one")
+			if setAfter && noRoadmap {
+				return fail(ExitUsage, "usage", "--after places the milestone on the roadmap and --no-roadmap takes it off; give one")
 			}
 			s, err := openStore()
 			if err != nil {
@@ -286,7 +286,7 @@ filed milestone is refused like everywhere else.`,
 					}
 					ms.SetAfter(preds)
 				}
-				if noLayer {
+				if noRoadmap {
 					ms.Unplace()
 				}
 				if setGoal {
@@ -314,7 +314,7 @@ filed milestone is refused like everywhere else.`,
 	}
 	cmd.Flags().StringVar(&goal, "goal", "", "one line saying what the milestone is for (\"\" removes it)")
 	cmd.Flags().StringVar(&after, "after", "", "comma-separated milestones this one follows; \"\" makes it a swimlane top")
-	cmd.Flags().BoolVar(&noLayer, "no-layer", false, "take the milestone out of the layer")
+	cmd.Flags().BoolVar(&noRoadmap, "no-roadmap", false, "take the milestone off the Milestone Roadmap")
 	return cmd
 }
 
