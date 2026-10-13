@@ -2,6 +2,7 @@ package ticket
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -560,6 +561,25 @@ func (o Outcome) Filled() bool {
 
 // Doc exposes the underlying document for mutation.
 func (t *Ticket) Doc() *Doc { return t.doc }
+
+// Clone returns a copy that shares nothing mutable with t: every slice and the
+// document are copied, so a caller that edits the copy cannot reach the
+// original. The header cache hands out clones for that reason.
+func (t *Ticket) Clone() *Ticket {
+	c := *t
+	c.BlockedBy = slices.Clone(t.BlockedBy)
+	c.Commits = slices.Clone(t.Commits)
+	c.Tags = slices.Clone(t.Tags)
+	c.Related = slices.Clone(t.Related)
+	c.DoDItems = slices.Clone(t.DoDItems)
+	c.PlanItems = slices.Clone(t.PlanItems)
+	c.Options = slices.Clone(t.Options)
+	if t.doc != nil {
+		d := *t.doc
+		c.doc = &d
+	}
+	return &c
+}
 
 // Decode projects a parsed document into a Ticket.
 func Decode(d *Doc, path string) (*Ticket, error) {

@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T16:40:17Z
-updated-at: 2026-10-13T21:13:10Z
+updated-at: 2026-10-13T21:13:58Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3239170
@@ -49,8 +49,8 @@ claimed-at: 2026-10-13T21:01:47Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] A (DoD 1): Test zuerst mit decodeBefore als Kopie des heutigen Decode ueber .jaira/tickets + logbook + Randfaelle; dann Fields/ticketFields/decodeFields + Counts(); Decode parst einmal; ein gruener Commit
-- [~] B: lane.parse liest ueber ein einziges d.Fields() (str, list, Has, rejects-to); go test ./core/lane gruen; ein Commit
-- [ ] C: Ticket.Clone() mit eigenen Slices und Doc-Kopie + Test, dass Aendern der Kopie das Original nicht beruehrt; ein Commit
+- [x] B: lane.parse liest ueber ein einziges d.Fields() (str, list, Has, rejects-to); go test ./core/lane gruen; ein Commit
+- [~] C: Ticket.Clone() mit eigenen Slices und Doc-Kopie + Test, dass Aendern der Kopie das Original nicht beruehrt; ein Commit
 - [ ] D (DoD 2, Dateien): Kopf-Cache im Store (EnableCache, cached, racyWindow 2 s, Forget/ForgetAll, loadHeader + idOf, Clone pro Treffer); Tests: unveraendert = 0 Lesen/0 Decode, gleich grosse Aenderung mit gleicher mtime wird gefunden, ForgetAll findet sie auch ausserhalb des Fensters, Kopie aendern laesst Cache heil, geloeschte Datei verschwindet, Cache aus = alter Weg; ein Commit
 - [ ] E (DoD 2, Refs): gitref.ListHashes hinter ReadMany + Hash-Cache in refsync.Extra; Test mit fileOnRef: zweites Extra ohne Decode, geaenderter Ref erscheint; ein Commit
 - [ ] F1 (DoD 5): Board schaltet den Cache ein (New, switchBoard); Test in internal/tui: Takt ohne Aenderung laesst Counts unveraendert, Titel per store.Mutate geaendert -> naechster Takt zeigt ihn mit genau 1 Decode; ein Commit

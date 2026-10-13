@@ -161,3 +161,36 @@ func TestDecodeMatchesBeforeOnEdgeCases(t *testing.T) {
 		compareDecode(t, name, []byte(src))
 	}
 }
+
+// Clone shares nothing mutable with the original, and equals it until edited.
+func TestCloneIsIndependent(t *testing.T) {
+	src := "---\nid: A1\nstatus: todo\ntags:\n  - a\nrelated: []\nblocked-by: [X]\n---\n## Definition of Done\n\n- [ ] one\n\n## Plan\n\n- [ ] step\n\n## Options\n\n- [x] planning\n"
+	d, err := ParseDoc([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	orig, err := Decode(d, "p")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := orig.Clone()
+	if !reflect.DeepEqual(orig, c) {
+		t.Fatalf("clone differs from original:\n%+v\n%+v", orig, c)
+	}
+	c.Tags[0] = "changed"
+	c.BlockedBy[0] = "changed"
+	c.DoDItems[0].Text = "changed"
+	c.PlanItems[0].Text = "changed"
+	c.Options[0].Text = "changed"
+	c.Assignee = "changed"
+	if err := c.Doc().SetScalar("status", "done"); err != nil {
+		t.Fatal(err)
+	}
+	if orig.Tags[0] != "a" || orig.BlockedBy[0] != "X" || orig.DoDItems[0].Text != "one" ||
+		orig.PlanItems[0].Text != "step" || orig.Options[0].Text != "planning" || orig.Assignee != "" {
+		t.Fatalf("editing the clone reached the original: %+v", orig)
+	}
+	if v, _, _ := orig.Doc().Scalar("status"); v != "todo" {
+		t.Fatalf("editing the clone's doc reached the original's doc: status=%q", v)
+	}
+}
