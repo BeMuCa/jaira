@@ -104,7 +104,7 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		if err != nil {
 			return ms, err
 		}
-		if ids := spellAsIDs(all, ms.After); !slices.Equal(ids, ms.After) {
+		if ids := SpellAsIDs(all, ms.After); !slices.Equal(ids, ms.After) {
 			ms.SetAfter(ids)
 		}
 	}
@@ -147,16 +147,13 @@ func lockAndMigrate(root string, lock Locker, rec Recorder) (func(), error) {
 	return unlock, nil
 }
 
-// spellAsIDs gives every token that names exactly one milestone as that
+// SpellAsIDs gives every token that names exactly one milestone as that
 // milestone's ID, and leaves the others as they are.
-func spellAsIDs(all []*Milestone, tokens []string) []string {
+func SpellAsIDs(all []*Milestone, tokens []string) []string {
 	r := newResolver(all)
 	out := make([]string, len(tokens))
 	for i, tok := range tokens {
-		if id := r.resolve(tok); id != "" {
-			tok = id
-		}
-		out[i] = tok
+		out[i] = r.spell(tok)
 	}
 	return out
 }

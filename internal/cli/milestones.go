@@ -746,20 +746,11 @@ func milestoneJSON(ms *milestone.Milestone, root string) map[string]any {
 // afterIDs is a milestone's predecessors as IDs. A token a hand wrote as a
 // name is spelled as the ID it names, and one that names nothing as it stands.
 func afterIDs(root string, ms *milestone.Milestone) []string {
-	out := append([]string{}, ms.After...)
-	var all []*milestone.Milestone
-	for i, tok := range out {
-		if milestone.IsID(tok) {
-			continue
-		}
-		if all == nil {
-			all, _ = milestone.LoadAll(root)
-		}
-		if id := milestone.Resolve(all, tok); id != "" {
-			out[i] = id
-		}
+	if len(ms.After) == 0 {
+		return []string{}
 	}
-	return out
+	all, _ := milestone.LoadAll(root)
+	return milestone.SpellAsIDs(all, ms.After)
 }
 
 // milestoneKey is a milestone argument as typed: an ID, a <name>-<ID> or a name,

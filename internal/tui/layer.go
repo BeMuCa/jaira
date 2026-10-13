@@ -130,15 +130,6 @@ func (m *Model) refreshLayer() {
 	}
 }
 
-// spellAsID is an after: token as the ID it names, or as written when it names
-// no milestone.
-func (m *Model) spellAsID(token string) string {
-	if id := milestone.Resolve(m.milestones, token); id != "" {
-		return id
-	}
-	return token
-}
-
 // milestoneLabel is what a milestone is called on screen.
 func (m *Model) milestoneLabel(id string) string {
 	if label, ok := milestone.Labels(m.milestones)[id]; ok {
@@ -238,7 +229,7 @@ func (m *Model) placement(t layerTarget) []string {
 	switch t.kind {
 	case onRight:
 		if ms := m.milestoneByID(t.id); ms != nil && len(ms.After) > 0 {
-			return []string{m.spellAsID(ms.After[0])}
+			return []string{milestone.SpellAsID(m.milestones, ms.After[0])}
 		}
 	case onBelow:
 		return []string{t.id}

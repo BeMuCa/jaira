@@ -93,6 +93,17 @@ func (r resolver) resolve(tok string) string {
 	return ""
 }
 
+// spell is a token as the ID it names, or as written when it names nothing.
+func (r resolver) spell(tok string) string {
+	if id := r.resolve(tok); id != "" {
+		return id
+	}
+	return tok
+}
+
+// SpellAsID is SpellAsIDs for one token.
+func SpellAsID(all []*Milestone, token string) string { return newResolver(all).spell(token) }
+
 // Resolve returns the ID an after: token names among these milestones — the
 // token as an ID, or as the one milestone that carries it as a name — or "".
 func Resolve(all []*Milestone, token string) string { return newResolver(all).resolve(token) }
@@ -233,16 +244,10 @@ func CheckAfter(all []*Milestone, id string, tokens []string) error {
 // job.
 func ReattachSuccessors(all []*Milestone, id string) map[string][]string {
 	r := newResolver(all)
-	spell := func(tok string) string {
-		if rid := r.resolve(tok); rid != "" {
-			return rid
-		}
-		return tok
-	}
 	var own []string
 	if m, ok := r.byID[id]; ok {
 		for _, p := range m.After {
-			own = append(own, spell(p))
+			own = append(own, r.spell(p))
 		}
 	}
 	out := map[string][]string{}
@@ -252,7 +257,7 @@ func ReattachSuccessors(all []*Milestone, id string) map[string][]string {
 		}
 		next := []string{}
 		for _, p := range m.After {
-			repl := []string{spell(p)}
+			repl := []string{r.spell(p)}
 			if r.resolve(p) == id {
 				repl = own
 			}
