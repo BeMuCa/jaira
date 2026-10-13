@@ -25,10 +25,15 @@ related: []
 follows: 01M4RWVFXTPC084S81WSDSKZ70
 commits: []
 created-at: 2026-10-13T06:46:08Z
-updated-at: 2026-10-13T06:52:59Z
+updated-at: 2026-10-13T06:54:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6022
 claimed-at: 2026-10-13T06:47:43Z
+outcome-what: "Overview-Pane: zwei Tabs (Queue, Log); im Queue-Tab stehen In work, Queue, Put back untereinander in voller Breite, jede Ueberschrift ein Klapp-Knopf mit Anzahl; Titel umbrechen statt abgeschnitten zu werden; Tab und Klapp-Zustand in zwei Sitzungs-Atomen"
+outcome-why: "Drei Spalten zu 33% schnitten jeden Titel ab; Alex konnte die Ticket-Namen nicht ganz lesen"
+outcome-resolves: "Alle fuenf DoD-Punkte: Tabs mit Queue als Vorgabe, wrap statt truncate, Klapp-Knoepfe offen per Vorgabe, Zustand ueber Schliessen/Oeffnen, Release-Note"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:23 tabButton baut ein Text-Kind (bold/dimColor) in den Button, um den aktiven Tab zu markieren; ButtonProps hat dafuer variant='primary' und dimColor selbst (claude-code.d.ts ButtonProps) - <Button label variant={aktiv ? 'primary' : undefined} dimColor={!aktiv} />, kein Kind"
+round: 2
 ---
 
 # Overview im Cockpit als Liste mit einklappbaren Abschnitten statt drei Spalten
@@ -36,11 +41,11 @@ claimed-at: 2026-10-13T06:47:43Z
 ## Definition of Done
 
 - [x] Das Pane hat oben zwei Tabs: 'Queue' (in Arbeit, Warteschlange, zurueckgestellt - untereinander, volle Breite) und 'Log' (die Geschichte der letzten Tage); Queue ist beim Oeffnen aktiv
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:66 Tabs Queue/Log, :49 Abschnitte untereinander ohne width; core/mod/builtin/jaira-cockpit/hooks/register.tsx:61 overviewTabAtom Vorgabe 'queue'; test 'Overview reads the board afresh and shows in work, queue and put back, each row Handle | Lane | Titel'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:68 Tabs Queue/Log (aktiver variant=primary), :46 Abschnitte untereinander ohne width; core/mod/builtin/jaira-cockpit/hooks/register.tsx:61 overviewTabAtom Vorgabe 'queue'; test 'Overview reads the board afresh and shows in work, queue and put back, each row Handle | Lane | Titel'
 - [x] Ein Ticket-Titel wird nicht mehr abgeschnitten, sondern umbricht bei Bedarf
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:40 wrap="wrap" statt truncate-end; test 'a title is never cut off: rows wrap'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:38 wrap="wrap" statt truncate-end; test 'a title is never cut off: rows wrap'
 - [x] Jede Abschnitt-Ueberschrift im Queue-Tab ist ein Knopf mit Anzahl, der den Abschnitt ein- und ausklappt; beim ersten Oeffnen sind alle aufgeklappt
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:30 section(): Knopf '▾/▸ Name (n)' klappt; Vorgabe offen (folded leer); test 'a heading folds its section, and tab and folds outlive closing the pane'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:26 section(): Knopf '▾/▸ Name (n)' klappt; Vorgabe offen (folded leer); test 'a heading folds its section, and tab and folds outlive closing the pane'
 - [x] Klapp-Zustand und gewaehlter Tab bleiben erhalten, solange die Sitzung laeuft, auch ueber Schliessen und Wiederoeffnen des Panes
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:61-62 overviewTabAtom/overviewFoldedAtom (Sitzungs-Atome, nicht beim Oeffnen zurueckgesetzt), :1269; test 'a heading folds its section, and tab and folds outlive closing the pane'
 - [x] Release-Note als Datei core/release/notes/4ZM13S.md (seit AR97K9 eine Datei je Aenderung)
@@ -59,3 +64,4 @@ claimed-at: 2026-10-13T06:47:43Z
 - **2026-10-13 06:46 · Alexander Sacharov** — Alex am 13.10., nachgereicht: oben Tabs statt Tabelle-und-darunter-Log. Tab 'Queue' traegt die einklappbaren Abschnitte, Tab 'Log' die Geschichte. Die Geschichte ist damit KEIN vierter Abschnitt im Queue-Tab (Context-Zeile dazu ueberholt). Tab-Umschalter wie expandedAtom: ein Atom, Buttons.
 - **2026-10-13 06:47 · Alexander Sacharov** — parent session: jaira-78
 - **2026-10-13 06:52 · Alexander Sacharov** — Gefunden: ein Atom-update aus einem Pane-Knopf zeichnet das gemountete Pane neu (Test drueckt und liest auf demselben Handle) - kein refresh noetig. Zweimal $.ui.mount(OVERVIEW) ohne unmount wirft 'mounted already'. Abschnitt-Knopf traegt Pfeil+Anzahl im label (▾ offen, ▸ zu); aktiver Tab fett, der andere gedimmt, als Button-Kind. Tests: claude plugin test core/mod/builtin/jaira-cockpit
+- **2026-10-13 06:53 · Alexander Sacharov** — critique 1: tabButton (overview-pane.tsx:23) markiert den aktiven Tab ueber ein Text-Kind; die Engine hat dafuer Button-Props variant='primary' und dimColor - die nehmen, kein Kind. Stehen gelassen: types/index.d.ts wiederholt 'queue'|'log' absichtlich (Kopf der Datei: self-contained contract, mirrors hooks/*); inline update-Callbacks in register.tsx:1269 statt eigener toggle-Funktion, weil anders als toggleMore kein refreshBoard folgt.

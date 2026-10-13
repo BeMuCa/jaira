@@ -20,9 +20,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   const closeButton = <Button key="overview-close" label={w.close} onPress={act.close} />
   if (view === null) return <Box flexDirection="column"><Text dimColor>{w.unread}</Text>{closeButton}</Box>
   const tabButton = (tab: OverviewTab, label: string) => (
-    <Button key={`overview-tab-${tab}`} label={label} onPress={() => act.tab(tab)}>
-      <Text bold={state.tab === tab} dimColor={state.tab !== tab}>{label}</Text>
-    </Button>
+    <Button key={`overview-tab-${tab}`} label={label} variant={state.tab === tab ? 'primary' : undefined} dimColor={state.tab !== tab} onPress={() => act.tab(tab)} />
   )
   // A section folds at its heading; open until the person folds it.
   const section = (key: string, heading: string, rows: Row[], extra: (r: Row) => string) => {
