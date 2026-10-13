@@ -47,8 +47,9 @@ function Test-JairaChecksum([string]$ArchivePath, [string]$ChecksumsPath) {
 # reports whether it changed anything. The value is read and written raw
 # through the registry: [Environment]::SetEnvironmentVariable would expand
 # entries like %USERPROFILE%\bin into fixed paths for good.
-function Add-JairaUserPath([string]$Dir, [string]$Key = 'HKCU:\Environment') {
-	$item = Get-Item -LiteralPath $Key
+function Add-JairaUserPath([string]$Dir) {
+	$key = 'HKCU:\Environment'
+	$item = Get-Item -LiteralPath $key
 	$raw = $item.GetValue('Path', '', 'DoNotExpandEnvironmentNames')
 	$norm = $Dir.TrimEnd('\')
 	foreach ($entry in $raw -split ';') {
@@ -56,7 +57,7 @@ function Add-JairaUserPath([string]$Dir, [string]$Key = 'HKCU:\Environment') {
 		if ($e -and $e -eq $norm) { return $false }
 	}
 	$new = if ($raw) { $raw.TrimEnd(';') + ';' + $Dir } else { $Dir }
-	Set-ItemProperty -LiteralPath $Key -Name Path -Value $new -Type ExpandString
+	Set-ItemProperty -LiteralPath $key -Name Path -Value $new -Type ExpandString
 	return $true
 }
 
