@@ -161,13 +161,13 @@ func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 	if filepath.Base(filepath.Dir(dst)) != ticket.MilestonesSubdir {
 		return "", nil
 	}
-	name := strings.TrimSuffix(filepath.Base(dst), ".md")
+	name, id, _ := milestone.FileIdentity(strings.TrimSuffix(filepath.Base(dst), ".md"))
 	moved, err := migrateHeld(s)
 	reportMigrated(moved)
 	if err != nil {
 		return "", err
 	}
-	ms, err := milestone.Load(s.Root, name)
+	ms, err := milestone.Load(s.Root, id)
 	if err != nil {
 		return "", fmt.Errorf("%s was moved back to %s but could not be read, so it is still filed: %w",
 			filepath.Base(dst), milestone.Dir(s.Root), err)

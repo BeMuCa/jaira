@@ -919,3 +919,29 @@ func TestOldBoardsAndOldRefsMoveToIDsWithoutAgreement(t *testing.T) {
 		t.Errorf("q6 came back or doubled: %s", got)
 	}
 }
+
+// An old <name>.md in the logbook restored beside a live milestone of the same
+// name must bring back that file's milestone, not report the live one.
+func TestRestoreOldFileBesideALiveTwinUnfilesTheRestoredOne(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "old-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	folder := filepath.Join(ada, ticket.DirName, ticket.LogbookSubdir, "ada-20260101", ticket.MilestonesSubdir)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "old-one.md"), []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runAndSend(t, ada, "restore", "old-one.md"); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	got, err := milestone.Load(ada, milestone.LegacyID("old-one"))
+	if err != nil {
+		t.Fatalf("load restored: %v", err)
+	}
+	if got.Filed() {
+		t.Errorf("the restored milestone is still filed")
+	}
+}
