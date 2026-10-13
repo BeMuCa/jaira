@@ -87,7 +87,7 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		return nil, err
 	}
 	if ms.Filed() {
-		return ms, &FiledError{Name: name, RenamedTo: ms.RenamedTo}
+		return ms, &FiledError{Name: ms.Name, RenamedTo: ms.RenamedTo}
 	}
 	before, wasPlaced := ms.Bytes(), ms.Placed
 	if err := fn(ms); err != nil {
@@ -104,7 +104,7 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		if err != nil {
 			return ms, err
 		}
-		reattach := ReattachSuccessors(all, name)
+		reattach := ReattachSuccessors(all, ms.Name)
 		for _, m := range all { // LoadAll's order, by name
 			if after, ok := reattach[m.Name]; ok {
 				m.SetAfter(after)
@@ -174,7 +174,7 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 	if _, recordOnly := err.(*RecordError); err != nil && !recordOnly {
 		return renamed, err
 	}
-	if rmErr := os.Remove(Path(root, from)); rmErr != nil {
+	if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
 		return renamed, rmErr
 	}
 	ms.SetStatus(StatusFiled)

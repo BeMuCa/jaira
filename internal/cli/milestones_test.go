@@ -70,8 +70,8 @@ func TestCreateNormalizesTheNameAndSaysSo(t *testing.T) {
 	if !strings.Contains(out, `Filed "Round One" as "round-one"`) {
 		t.Errorf("create did not say what it filed the name as:\n%s", out)
 	}
-	if _, err := os.Stat(milestone.Path(dir, "round-one")); err != nil {
-		t.Errorf("no file at %s: %v", milestone.Path(dir, "round-one"), err)
+	if _, err := os.Stat(milestonePath(dir, "round-one")); err != nil {
+		t.Errorf("no file at %s: %v", milestonePath(dir, "round-one"), err)
 	}
 	// Creating the same milestone twice is a mistake to report, not a silent
 	// overwrite of a file somebody has been editing.
@@ -443,7 +443,7 @@ func TestAddAndRmRefuseAFiledMilestoneOnDisk(t *testing.T) {
 		// The refusal has to name the file, its mark and where the way back
 		// runs — the same three things create's refusal names, because the
 		// reader is standing in front of the same file.
-		for _, want := range []string{milestone.Path(dir, "round-one"), milestone.StatusFiled, "jaira restore round-one.md"} {
+		for _, want := range []string{milestonePath(dir, "round-one"), milestone.StatusFiled, "jaira restore round-one.md"} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("the %s refusal does not mention %q: %v", verb, want, err)
 			}
@@ -528,7 +528,7 @@ func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
 			t.Fatalf("'%s' went through a filed milestone:\n%s", door, out)
 		}
 		for _, want := range []string{
-			milestone.Path(dir, "round-one"),
+			milestonePath(dir, "round-one"),
 			milestone.StatusFiled,
 			"jaira restore round-one.md",
 			"the tree that filed it",
@@ -578,7 +578,7 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 	}
 	// The file has not moved either: the lock is taken before s.Restore, not
 	// between the move and the unfiling.
-	if _, err := os.Stat(milestone.Path(dir, "round-one")); !os.IsNotExist(err) {
+	if _, err := os.Stat(milestonePath(dir, "round-one")); !os.IsNotExist(err) {
 		unlock()
 		t.Fatalf("the milestone file was moved back while the lock was held (stat: %v)", err)
 	}
@@ -637,7 +637,7 @@ func TestCreateRefusesAnUnknownPredecessorAndWritesNothing(t *testing.T) {
 	if !strings.Contains(err.Error(), `no milestone "ghost"`) {
 		t.Errorf("message: %v", err)
 	}
-	if _, err := os.Stat(milestone.Path(dir, "ui")); err == nil {
+	if _, err := os.Stat(milestonePath(dir, "ui")); err == nil {
 		t.Error("the refused create left a file")
 	}
 }
@@ -812,7 +812,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 	if !strings.Contains(out, `Filed "First Round" as "first-round"`) || !strings.Contains(out, `renamed to "first-round"`) {
 		t.Errorf("rename does not say what it did:\n%s", out)
 	}
-	if _, err := os.Stat(milestone.Path(dir, "round-one")); !os.IsNotExist(err) {
+	if _, err := os.Stat(milestonePath(dir, "round-one")); !os.IsNotExist(err) {
 		t.Errorf("the old file is still there: %v", err)
 	}
 	ms, err := milestone.Load(dir, "first-round")
@@ -878,7 +878,7 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 	}
 
 	// What a fetch of somebody's rename of "old" to "a" leaves here.
-	if err := os.WriteFile(milestone.Path(dir, "old"), []byte("---\ncolor: 45\nstatus: filed\nrenamed-to: a\n---\n"), 0o644); err != nil {
+	if err := os.WriteFile(milestonePath(dir, "old"), []byte("---\ncolor: 45\nstatus: filed\nrenamed-to: a\n---\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	id := mkTicket(t, dir, "work")

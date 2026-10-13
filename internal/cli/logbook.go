@@ -424,7 +424,7 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	recordMilestone(ms)
 
 	folder := logbookFolder()
-	dst, err := s.LogbookMilestone(name, folder)
+	dst, err := s.LogbookMilestone(ms.FileName(), folder)
 	if err != nil {
 		return err
 	}

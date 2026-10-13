@@ -236,7 +236,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, err err
 		if haveErr == nil && bytes.Equal(have, content) {
 			continue
 		}
-		isFiled := milestone.FromBytes(name, content).Filed()
+		isFiled := milestone.FromBytes(file, content).Filed()
 		if isFiled && haveErr != nil {
 			continue
 		}
@@ -290,7 +290,14 @@ const (
 // answer is therefore the one left over: nothing in this logbook, so the copy
 // is somewhere else.
 func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, MilestoneFiledAt) {
-	if where, ok := s.FiledMilestone(name); ok {
+	named := func(base string) bool {
+		if base == name {
+			return true
+		}
+		n, _, ok := milestone.SplitFile(base)
+		return ok && n == name
+	}
+	if where, ok := s.FiledMilestone(named); ok {
 		return where, MilestoneFiledHere
 	}
 	if y != nil && y.Usable() == nil {

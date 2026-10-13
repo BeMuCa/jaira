@@ -43,7 +43,7 @@ func TestCreateSavesRecordsAndHoldsTheLockOnlyWhileBuilding(t *testing.T) {
 	if lk.held != 0 || lk.taken != 1 {
 		t.Errorf("lock held=%d taken=%d", lk.held, lk.taken)
 	}
-	if _, err := os.Stat(Path(root, "a")); err != nil {
+	if _, err := os.Stat(testPath(root, "a")); err != nil {
 		t.Error("not saved")
 	}
 	if len(rec.names) != 1 || string(rec.last) != string(ms.Bytes()) {
@@ -59,7 +59,7 @@ func TestCreateRefusalWritesNothing(t *testing.T) {
 	if !errors.Is(err, boom) || len(rec.names) != 0 {
 		t.Errorf("err=%v recorded=%v", err, rec.names)
 	}
-	if _, err := os.Stat(Path(root, "a")); err == nil {
+	if _, err := os.Stat(testPath(root, "a")); err == nil {
 		t.Error("file written despite refusal")
 	}
 }
@@ -99,7 +99,7 @@ func TestEditPassesAMissingFileAndAFnRefusalThrough(t *testing.T) {
 	if !errors.Is(err, boom) || len(rec.names) != 0 {
 		t.Errorf("err=%v recorded=%v", err, rec.names)
 	}
-	b, _ := os.ReadFile(Path(root, "a"))
+	b, _ := os.ReadFile(testPath(root, "a"))
 	if strings.Contains(string(b), "goal") {
 		t.Error("a refused edit was saved")
 	}
@@ -181,7 +181,7 @@ func TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName(t *testing.T) {
 	if lk.taken != 1 {
 		t.Errorf("the rename and the successors must share one lock, taken %d times", lk.taken)
 	}
-	if _, err := os.Stat(Path(root, "a")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(testPath(root, "a")); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the old file is still on disk: %v", err)
 	}
 	z, err := Load(root, "z")

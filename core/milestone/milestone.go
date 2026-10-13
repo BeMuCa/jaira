@@ -31,6 +31,7 @@ package milestone
 
 import (
 	"fmt"
+	"io/fs"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -51,9 +52,6 @@ const Subdir = ticket.MilestonesSubdir
 
 // Dir is the milestone directory of a board rooted at root.
 func Dir(root string) string { return filepath.Join(root, ticket.DirName, Subdir) }
-
-// Path is the file one milestone lives in.
-func Path(root, name string) string { return filepath.Join(Dir(root), name+".md") }
 
 // Palette is the set of colours a new milestone can be given. It is the tag
 // palette: the two marks sit on opposite edges of a card and are never
@@ -79,6 +77,7 @@ func NormalizeName(raw string) (string, bool, error) {
 // facts parsed out of them.
 type Milestone struct {
 	Name      string
+	ID        string // the six characters that stay when the name changes
 	Colour    int
 	CreatedAt time.Time
 	Status    string
@@ -87,9 +86,22 @@ type Milestone struct {
 	Placed    bool     // an `after:` line exists; `after: []` is a swimlane top
 	RenamedTo string   // on the mark a rename leaves under the old name: the new one
 
+	file    string   // the file name it was read under, .md included; empty for a milestone never written
 	lines   []string // the whole file, frontmatter included
 	members []string // ticket ids, in file order
 }
+
+// FileName is the file this milestone lives in under the milestone directory:
+// the name it was read under, or <name>-<ID>.md for one never written.
+func (m *Milestone) FileName() string {
+	if m.file != "" {
+		return m.file
+	}
+	return m.Name + "-" + m.ID + ".md"
+}
+
+// Path is the file this milestone lives in.
+func (m *Milestone) Path(root string) string { return filepath.Join(Dir(root), m.FileName()) }
 
 // Members lists the ticket ids this milestone holds, in the order the file
 // gives them. File order is the order the card's marks are painted in, so it
@@ -150,7 +162,7 @@ func (m *Milestone) Remove(id string) bool {
 // New builds a milestone that has never been written, with the colour the
 // caller picked. It is not on disk until Save.
 func New(name string, colour int, now time.Time) *Milestone {
-	m := &Milestone{Name: name, Colour: colour, CreatedAt: now}
+	m := &Milestone{Name: name, ID: LegacyID(name), file: name + ".md", Colour: colour, CreatedAt: now}
 	m.lines = []string{
 		"---",
 		"color: " + strconv.Itoa(colour),
@@ -166,31 +178,143 @@ func New(name string, colour int, now time.Time) *Milestone {
 	return m
 }
 
-// Load reads one milestone by name. A missing file reports os.ErrNotExist, so
-// a caller can tell "no such milestone" from "unreadable".
+// AmbiguousError is Load's answer when a name is carried by more than one
+// milestone: nothing is chosen for the caller, who is handed the <name>-<ID>
+// forms that tell the milestones apart.
+type AmbiguousError struct {
+	Name    string
+	Choices []string
+}
+
+func (e *AmbiguousError) Error() string {
+	return fmt.Sprintf("milestone %q is the name of %d milestones; say which one: %s",
+		e.Name, len(e.Choices), strings.Join(e.Choices, " or "))
+}
+
+// Load reads one milestone, filed ones included, by whatever the caller has:
+// its ID (any case), its <name>-<ID> file name, or a name. A name that two
+// milestones carry is an *AmbiguousError, and a name on the board is preferred
+// over the same name on a file that is filed. Nothing found reports
+// os.ErrNotExist, so a caller can tell "no such milestone" from "unreadable".
 //
-// The file name is the milestone's name, always — the frontmatter does not
-// carry one. The file is hand-editable by design, and a name written inside it
+// The name and the ID come from the file name — the frontmatter does not carry
+// either. The file is hand-editable by design, and a name written inside it
 // would be a second truth: edit that line and the next Save files the
-// milestone under a different name, leaving the old file and its ref behind.
-func Load(root, name string) (*Milestone, error) {
-	path := Path(root, name)
-	b, err := os.ReadFile(path)
+// milestone under a different name, leaving the old file behind.
+func Load(root, key string) (*Milestone, error) {
+	all, err := scan(root)
 	if err != nil {
 		return nil, err
 	}
-	return FromBytes(name, b), nil
+	if id := strings.ToUpper(key); IsID(id) {
+		for _, m := range all {
+			if m.ID == id {
+				return m, nil
+			}
+		}
+	}
+	if i := strings.LastIndexByte(key, '-'); i > 0 {
+		if name, id, ok := SplitFile(key[:i+1] + strings.ToUpper(key[i+1:])); ok {
+			for _, m := range all {
+				if m.ID == id && m.Name == name {
+					return m, nil
+				}
+			}
+		}
+	}
+	if name, _, err := NormalizeName(key); err == nil {
+		var live, filed []*Milestone
+		for _, m := range all {
+			switch {
+			// A name as typed also finds a hand-named file as it stands, Q4.md.
+			case m.Name != name && m.Name != key:
+			case m.Filed():
+				filed = append(filed, m)
+			default:
+				live = append(live, m)
+			}
+		}
+		found := live
+		if len(found) == 0 {
+			found = filed
+		}
+		switch len(found) {
+		case 0:
+		case 1:
+			return found[0], nil
+		default:
+			e := &AmbiguousError{Name: name}
+			for _, m := range found {
+				e.Choices = append(e.Choices, m.Name+"-"+m.ID)
+			}
+			return nil, e
+		}
+	}
+	return nil, &fs.PathError{Op: "load", Path: key, Err: fs.ErrNotExist}
 }
 
 // FromBytes reads a milestone out of bytes that are not on this disk — what a
-// ref carries. The ref is the only place a milestone filed on another machine
-// can be read from, and the caller has to be able to ask its status without
-// first writing it to the board, which is the very thing a filed milestone
-// must not do.
-func FromBytes(name string, content []byte) *Milestone {
+// ref carries — under the file name the ref carries them as. The ref is the
+// only place a milestone filed on another machine can be read from, and the
+// caller has to be able to ask its status without first writing it to the
+// board, which is the very thing a filed milestone must not do.
+func FromBytes(file string, content []byte) *Milestone {
 	m := parse(string(content))
-	m.Name = name
+	base := strings.TrimSuffix(file, ".md")
+	m.file = base + ".md"
+	if name, id, ok := SplitFile(base); ok {
+		m.Name, m.ID = name, id
+	} else {
+		m.Name, m.ID = base, LegacyID(base)
+	}
 	return m
+}
+
+// scan reads every milestone file under the board, filed ones included,
+// sorted by name and then ID. A file written before IDs existed is read as
+// <name>.md with the ID LegacyID gives it, without being touched: reading
+// never writes. Two files that carry one ID — a rename merged by git — are one
+// milestone, and the first by file name is the one that counts until a fetch
+// lets the ref decide.
+//
+// A file that cannot be read is skipped rather than failing the read: the
+// board is glanced at constantly, and one malformed file must not be able to
+// stop it from opening.
+func scan(root string) ([]*Milestone, error) {
+	if root == "" {
+		return nil, nil
+	}
+	entries, err := os.ReadDir(Dir(root))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var out []*Milestone
+	seen := map[string]bool{}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(Dir(root), e.Name()))
+		if err != nil {
+			continue
+		}
+		m := FromBytes(e.Name(), b)
+		if seen[m.ID] {
+			continue
+		}
+		seen[m.ID] = true
+		out = append(out, m)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Name != out[j].Name {
+			return out[i].Name < out[j].Name
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
 }
 
 // LoadAll reads every milestone that is ON the board, sorted by name. An
@@ -203,36 +327,18 @@ func FromBytes(name string, content []byte) *Milestone {
 // moves it into the logbook, but a fetch writes the marked file back the way
 // it writes every other one, and a filing that got as far as marking the file
 // and no further has left it lying here too. One read of the line answers all
-// three. Load reads a filed milestone by name, which is how a restore gets at
-// it.
-//
-// A file that does not parse is skipped rather than failing the read: the
-// board is glanced at constantly, and one malformed file must not be able to
-// stop it from opening.
+// three. Load reads a filed milestone, which is how a restore gets at it.
 func LoadAll(root string) ([]*Milestone, error) {
-	if root == "" {
-		return nil, nil
-	}
-	entries, err := os.ReadDir(Dir(root))
+	all, err := scan(root)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
-	var out []*Milestone
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
-			continue
+	out := all[:0]
+	for _, m := range all {
+		if !m.Filed() {
+			out = append(out, m)
 		}
-		name := strings.TrimSuffix(e.Name(), ".md")
-		m, err := Load(root, name)
-		if err != nil || m.Filed() {
-			continue
-		}
-		out = append(out, m)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out, nil
 }
 
@@ -484,7 +590,7 @@ func (m *Milestone) Save(root string) error {
 	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
 		return err
 	}
-	return ticket.WriteAtomic(Path(root, m.Name), m.Bytes())
+	return ticket.WriteAtomic(m.Path(root), m.Bytes())
 }
 
 // AssignColour picks a colour for a new milestone: a random one none of the

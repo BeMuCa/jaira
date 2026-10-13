@@ -399,7 +399,7 @@ func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
 	// And it has written nothing while waiting: a fetch that blocked only
 	// after putting the file down would pass the wait above and still lose a
 	// concurrent add's write.
-	if _, err := os.Stat(milestone.Path(grace, "round-one")); !os.IsNotExist(err) {
+	if _, err := os.Stat(milestonePath(grace, "round-one")); !os.IsNotExist(err) {
 		unlock()
 		t.Fatalf("the fetch wrote the milestone file while the lock was held (stat: %v)", err)
 	}
@@ -553,7 +553,7 @@ func TestANameOnlyOnARefIsTakenForRenameAndCreate(t *testing.T) {
 	if gitOut(t, ada, "for-each-ref", gitref.MilestoneRefName("zeta")) == "" {
 		t.Fatal("ada's flush must have brought grace's ref")
 	}
-	if _, err := os.Stat(milestone.Path(ada, "zeta")); !os.IsNotExist(err) {
+	if _, err := os.Stat(milestonePath(ada, "zeta")); !os.IsNotExist(err) {
 		t.Fatalf("zeta must not be on ada's disk yet: %v", err)
 	}
 

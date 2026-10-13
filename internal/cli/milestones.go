@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -139,7 +140,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 				case errors.As(err, &ee):
 					return nil, fail(ExitValidation, "milestone_exists",
 						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
-						name, milestone.Path(s.Root, name), name)
+						name, milestonePath(s.Root, name), name)
 				case err != nil:
 					return nil, err
 				}
@@ -181,13 +182,13 @@ a milestone on this board, and the arrows may not form a loop.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, milestoneJSON(ms, milestone.Path(s.Root, name)))
+				return emit(w, milestoneJSON(ms, milestonePath(s.Root, name)))
 			}
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[0], name)
 			}
 			fmt.Fprintf(w, "Milestone %q created with %d ticket(s): %s\n",
-				name, len(ms.Members()), milestone.Path(s.Root, name))
+				name, len(ms.Members()), milestonePath(s.Root, name))
 			return nil
 		},
 	}
@@ -310,13 +311,13 @@ filed milestone is refused like everywhere else.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, milestoneJSON(ms, milestone.Path(s.Root, name)))
+				return emit(w, milestoneJSON(ms, milestonePath(s.Root, name)))
 			}
 			if string(before) == string(ms.Bytes()) {
 				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", name)
 				return nil
 			}
-			fmt.Fprintf(w, "Milestone %q updated: %s\n", name, milestone.Path(s.Root, name))
+			fmt.Fprintf(w, "Milestone %q updated: %s\n", name, milestonePath(s.Root, name))
 			return nil
 		},
 	}
@@ -369,7 +370,7 @@ is not on the board exits 5, or 3 when it was filed.`,
 			switch {
 			case errors.As(err, &ee):
 				return fail(ExitValidation, "milestone_exists",
-					"milestone %q already exists at %s — a rename needs a name no milestone has", to, milestone.Path(s.Root, to))
+					"milestone %q already exists at %s — a rename needs a name no milestone has", to, milestonePath(s.Root, to))
 			case errors.As(err, &fe) && fe.Name == to && to != from:
 				return refuseFiledOnDisk(s.Root, to, twice)
 			}
@@ -381,7 +382,7 @@ is not on the board exits 5, or 3 when it was filed.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				out := milestoneJSON(ms, milestone.Path(s.Root, ms.Name))
+				out := milestoneJSON(ms, milestonePath(s.Root, ms.Name))
 				out["renamed_from"] = from
 				return emit(w, out)
 			}
@@ -392,7 +393,7 @@ is not on the board exits 5, or 3 when it was filed.`,
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[1], to)
 			}
-			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", from, to, milestone.Path(s.Root, to))
+			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", from, to, milestonePath(s.Root, to))
 			return nil
 		},
 	}
@@ -464,7 +465,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 
 	w := cmd.OutOrStdout()
 	if g.jsonOut {
-		out := milestoneJSON(ms, milestone.Path(s.Root, name))
+		out := milestoneJSON(ms, milestonePath(s.Root, name))
 		out["changed"] = strOrEmpty(touched)
 		return emit(w, out)
 	}
@@ -507,7 +508,7 @@ work and each filters to half of it.`,
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, ms := range all {
-					arr = append(arr, milestoneJSON(ms, milestone.Path(s.Root, ms.Name)))
+					arr = append(arr, milestoneJSON(ms, milestonePath(s.Root, ms.Name)))
 				}
 				return emit(w, map[string]any{
 					"milestones": arr, "count": len(arr), "dir": milestone.Dir(s.Root),
@@ -567,7 +568,7 @@ func refuseFiledElsewhere(name, carries, instead string) error {
 // refuseFiledOnDisk: the file is lying here and carries the mark, which is
 // what a fetch of somebody else's filing leaves behind.
 func refuseFiledOnDisk(root, name, instead string) error {
-	return refuseFiledElsewhere(name, "its file at "+milestone.Path(root, name), instead)
+	return refuseFiledElsewhere(name, "its file at "+milestonePath(root, name), instead)
 }
 
 // refuseRenamed is the door of a name a rename left behind: its file lies
@@ -739,4 +740,14 @@ func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
 		out["created_at"] = ms.CreatedAt.UTC().Format(time.RFC3339)
 	}
 	return out
+}
+
+// milestonePath is the file a milestone lives in, found by whatever names it:
+// the file's name carries an ID that the argument may not. A milestone nobody
+// has written yet gets the name-only path, the place the old format kept it.
+func milestonePath(root, key string) string {
+	if ms, err := milestone.Load(root, key); err == nil {
+		return ms.Path(root)
+	}
+	return filepath.Join(milestone.Dir(root), key+".md")
 }

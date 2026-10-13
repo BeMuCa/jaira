@@ -502,7 +502,7 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	if m.layer.stage != stageLayer || m.layer.err != "" {
 		t.Fatalf("the rename must close the form, stage %v err %q", m.layer.stage, m.layer.err)
 	}
-	if _, err := os.Stat(milestone.Path(m.store.Root, "a")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(milestone.Dir(m.store.Root), "a.md")); !os.IsNotExist(err) {
 		t.Errorf("the old file is still there: %v", err)
 	}
 	if got := loadMilestone(t, m, "first-round"); got.Goal != "new goal" || !got.Placed || len(got.After) != 0 {
@@ -538,7 +538,7 @@ func TestEditKeepsAHandWrittenName(t *testing.T) {
 	}
 	// The directory's own spelling, not os.Stat: a case-insensitive disk
 	// (macOS, Windows) finds Q4.md under the name q4.md.
-	entries, err := os.ReadDir(filepath.Dir(milestone.Path(m.store.Root, "Q4")))
+	entries, err := os.ReadDir(milestone.Dir(m.store.Root))
 	if err != nil {
 		t.Fatal(err)
 	}
