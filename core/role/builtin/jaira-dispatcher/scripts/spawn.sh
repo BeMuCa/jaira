@@ -111,6 +111,28 @@ if [ ! -d "$wt" ]; then
   fi
 fi
 
+# Where the tab's command has to start claude: inside WSL when this script runs
+# in WSL and Herdr is the Windows one, natively everywhere else. Git Bash and
+# MSYS are asked first: they are Windows, whatever /proc/version there says.
+start_on() {
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*) echo native; return ;;
+  esac
+  case "$herdr" in /mnt/*|*.exe) ;; *) echo native; return ;; esac
+  if [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/version 2>/dev/null; then
+    echo wsl
+  else
+    echo native
+  fi
+}
+
+# The directory as Herdr takes it. A native Windows Herdr reads C:\..., not the
+# /c/... Git Bash shows; cygpath, which Git Bash and MSYS ship, translates it.
+cwd="$wt"
+if [ "$(start_on)" = native ] && command -v cygpath >/dev/null 2>&1; then
+  cwd="$(cygpath -w "$wt")"
+fi
+
 # Named, because without --workspace Herdr decides for itself where the tab
 # lands: the worker can open in a window nobody is looking at, and a worker
 # nobody sees is one nobody notices dying. Herdr exports its own workspace into
@@ -121,32 +143,27 @@ if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID")
 # A tab per worker, never a split. A split divides the height of one screen: at
 # four workers each strip is a few lines, and nobody can read what any of them is
 # doing — which is the whole reason a worker gets a surface of its own.
-pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$lane" --no-focus \
-  | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
+# JSON is read with 'jaira json get', never python3: on Windows python3 is
+# missing or the Store's stub, which prints "Python" and exits 49 (issue #79),
+# and jq is not everywhere either. jaira is on every machine that has the roles.
+pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus \
+  | jaira json get result.root_pane.pane_id)"
 
 # <explain> and <discuss> write a few lines for a person, so they start on the
 # chat model 'jaira roles list' names for this board (its .jaira/chat-model,
 # else this machine's settings.json) rather than the account's default model,
 # and they get the part of the ticket they need typed into their prompt rather
 # than reading the whole of it: 'jaira show --json' carries every note and every DoD proof, most
-# of a chat's context for nothing. Without jaira or python3 here both stay as
-# they were — the account's model, and a prompt that reads the ticket itself.
+# of a chat's context for nothing. When jaira cannot answer, both stay as they
+# were — the account's model, and a prompt that reads the ticket itself.
 chat_model=""
 brief=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   chat_model="$(jaira -C "$wt" roles list --json 2>/dev/null \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("chat_model",""))' 2>/dev/null)" || chat_model=""
+    | jaira json get chat_model 2>/dev/null)" || chat_model=""
   # It lands in a command line: only a model name passes.
   [[ "$chat_model" =~ ^[][A-Za-z0-9._-]*$ ]] || chat_model=""
-  brief="$(jaira -C "$wt" show "$ticket" --json 2>/dev/null | python3 -c '
-import sys, json, re
-t = json.load(sys.stdin)
-_, _, progress = t.get("body", "").partition("\n## Progress\n")
-notes = [n.strip() for n in re.split(r"(?m)^(?=- \*\*\d{4}-\d\d-\d\d \d\d:\d\d )", progress) if n.strip()]
-print(json.dumps({"id": t["handle"], "title": t.get("title", ""), "goal": t.get("goal", ""),
-  "question": t.get("question", ""), "review": t.get("review", {}),
-  "notes_last": notes[-4:], "notes_total": len(notes)}, ensure_ascii=False))
-' 2>/dev/null)" || brief=""
+  brief="$(jaira -C "$wt" show "$ticket" --brief 2>/dev/null)" || brief=""
 fi
 claude="claude${chat_model:+ --model '$chat_model'}"
 
@@ -157,9 +174,13 @@ claude="claude${chat_model:+ --model '$chat_model'}"
 # then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
 # sets the directory before any shell starts, so no cd function and no wrong home
 # can intervene, and `bash -lic` is what puts claude on PATH.
-case "$herdr" in
-  /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  *)            start="cd '$wt' && $claude" ;;
+# Only when this script really runs in WSL: a herdr.exe is just as much the
+# Herdr of a native Windows machine, where this runs in Git Bash, the tab is
+# already on the right machine, and wsl.exe would start in a distro that cannot
+# reach C:\ under that path and leave claude at its trust dialog in / (#79).
+case "$(start_on)" in
+  wsl) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
+  *)   start="cd '$cwd' && $claude" ;;
 esac
 
 "$herdr" pane run "$pane" "$start" >/dev/null
@@ -167,8 +188,8 @@ esac
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
   sleep 2
-  st="$("$herdr" pane get "$pane" \
-    | python3 -c 'import sys,json;p=json.load(sys.stdin)["result"]["pane"];print(p.get("agent","-"),p.get("agent_status","-"))')"
+  pj="$("$herdr" pane get "$pane")"
+  st="$(jaira json get result.pane.agent --default - <<<"$pj") $(jaira json get result.pane.agent_status --default - <<<"$pj")"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done
 # Only the two states the loop breaks on may pass. Anything else — above all

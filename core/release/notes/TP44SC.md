@@ -1,0 +1,4 @@
+- On native Windows (Git Bash with Herdr for Windows), run `jaira roles install` again: spawn.sh and run-lane.sh no longer need python3, and a herdr.exe no longer sends the tab into WSL unless the script itself runs in WSL.
+- If python3 is not the command for Python on your machine, set `"python": "uv run python"` (or any command) in `~/.jaira/settings.json`, or `JAIRA_PYTHON` in the environment; the acceptance and logbook-summary roles run their scripts with it, and `jaira roles list` shows which one is used.
+- Read a single field of JSON in a shell script with `jaira json get <path>` (e.g. `result.pane.pane_id`), with `--default <value>` for a path that may be missing.
+- Use `jaira show <id> --brief` for one line of JSON with a ticket's title, goal, question, review and newest four notes.
