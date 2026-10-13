@@ -2,7 +2,7 @@
 id: 01M4TRC37SNBER05X090DPSFGE
 title: "git status im Haupt-Checkout zeigt keine Ticket-Dateien, die kein Commit mehr mitnimmt"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
 goal: "Ein Blick auf git status zeigt nur Aenderungen, die jemand committen soll; Ticket-Kopien, die nur ihr Ref traegt, stehen dort nicht als Rauschen."
 context: |-
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:49:00Z
-updated-at: 2026-10-13T14:16:55Z
+updated-at: 2026-10-13T14:16:57Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
