@@ -362,6 +362,13 @@ func (m *Milestone) setFront(key, value string, remove bool) {
 	}
 }
 
+// SetColour writes the colour line where it stands — the layer's c, which
+// steps a milestone through the palette.
+func (m *Milestone) SetColour(colour int) {
+	m.Colour = colour
+	m.setFront("color", strconv.Itoa(colour), false)
+}
+
 // SetGoal writes, replaces or (empty text) removes the goal line. One line of
 // text: a newline in it would end the value and leave the rest as a stray
 // frontmatter line, so line breaks become spaces.

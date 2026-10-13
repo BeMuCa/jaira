@@ -149,6 +149,8 @@ func (m *Model) render() string {
 			return m.modalOver(m.renderLinks(), m.links.from)
 		}
 		return m.renderBoard()
+	case modeLayer:
+		return m.renderLayer()
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:
@@ -1040,7 +1042,7 @@ func (m *Model) statusBar() string {
 	if m.glow {
 		cHint = "c plain"
 	}
-	keys := []string{"enter open", "l links", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "l links", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "L layer", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1674,6 +1676,7 @@ func (m *Model) renderHelp() string {
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
 			{"c", "fill the selected card in its tag's colour (press again for plain grey)"},
+			{"L", "the milestone layer (its keys are further down)"},
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},
@@ -1731,6 +1734,25 @@ func (m *Model) renderHelp() string {
 		{styOK.Render("⎙ filed 4 Oct"), "in the logbook, filed that day: read-only, 'jaira restore' brings it back"},
 	} {
 		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
+	}
+	b.WriteString("\n")
+
+	// The layer is a screen of its own, so its keys follow the board's marks
+	// rather than sitting among the board's keys.
+	b.WriteString(styLaneTitle.Render("Milestone layer (L)") + "\n")
+	b.WriteString(styledWrap(styMeta, "Each milestone placed in the layer is a bubble, filled as far as its tickets are done; "+
+		"arrows run from what comes first to what comes after.", max(20, m.width-2), 0) + "\n")
+	for _, k := range [][2]string{
+		{"← → ↑ ↓", "the nearest bubble or [+] in that direction"},
+		{"enter", "on a bubble: its goal and its tickets — enter opens one, b shows the board filtered to it, esc comes back"},
+		{"enter", "on a [+]: n a new milestone there, c connect one that exists"},
+		{"e", "edit a milestone's goal and what it comes after (comma-separated; empty makes it the top of a swimlane)"},
+		{"c", "give it the next colour"},
+		{"x", "take it out of the layer, after y: its tickets stay, what came after it moves up"},
+		{"L esc q", "back to the board"},
+	} {
+		fmt.Fprintf(&b, "  %s  %s\n", styHelpKey.Render(fmt.Sprintf("%-9s", k[0])),
+			styledWrap(styMeta, k[1], max(9, m.width-15), 13))
 	}
 	b.WriteString("\n")
 

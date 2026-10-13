@@ -891,6 +891,7 @@ z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
 M         only some milestones' tickets (space ticks, enter applies)
 l         every ticket linked to the selected one (l or esc closes it)
+L         milestone layer: bubbles filled by done/total, arrows for what comes after what
 S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
@@ -908,6 +909,12 @@ b   open the ticket this one is blocked by       m   move it
 X   delete its file (type the handle back)       tab other pane, in the split
 jk  next / previous ticket                       l   every ticket linked to it
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
+
+In the milestone layer (L):
+←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
+e     goal and predecessors        c      next colour
+x     take it out of the layer     L esc  back to the board
+In an open milestone: ↑↓ ticket, enter opens it, b the board filtered to it, esc back.
 
 On the board list (p, and the launcher):
 x   remove a board — choose what goes, the cursor starts on No

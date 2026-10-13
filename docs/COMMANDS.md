@@ -184,6 +184,7 @@ v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
 l         every ticket linked to the selected one (l or esc closes it)
+L         milestone layer: bubbles filled by done/total, arrows for what comes after what
 S         settings: lanes, the default board, days of logbook shown
 ```
 
@@ -193,6 +194,20 @@ in teal and marked `⎙ filed <day>`. They are read-only: `enter` opens one, and
 every key that would change it answers with the `jaira restore` line instead.
 The settings screen (`S`) shows the number and edits it: `enter` on the row,
 type the days, `enter` saves.
+
+In the milestone layer (`L` on the board):
+
+```
+←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
+e     goal and predecessors        c      next colour
+x     take it out of the layer     L esc  back to the board
+```
+
+In an open milestone: `↑↓` pick a ticket, `enter` opens it, `b` shows the board
+filtered to the milestone (`milestone:<name>`), `esc` goes back to the layer.
+A bubble counts a ticket done when it is in the terminal lane or filed into the
+logbook on any day; archived tickets count for nothing. `x` drops the
+milestone's `after:` line and hangs what came after it on what came before it.
 
 In an open ticket:
 

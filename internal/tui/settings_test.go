@@ -11,7 +11,7 @@ import (
 
 // TestSettingsOpensFromBoardAndLNoLongerLanes asserts S is the one door to
 // settings, and that L does not reach the lane screen it used to open. L now
-// opens the link window instead, so the guard is about where it does not go.
+// opens the milestone layer instead, so the guard is about where it does not go.
 func TestSettingsOpensFromBoardAndLNoLongerLanes(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 

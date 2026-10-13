@@ -93,6 +93,10 @@ func (m *Model) underlying(md mode) string {
 		if m.links != nil {
 			return m.modalOver(m.renderLinks(), m.links.from)
 		}
+	case modeLayer:
+		if m.layer != nil {
+			return m.renderLayerBase()
+		}
 	}
 	return m.renderBoard()
 }

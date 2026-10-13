@@ -11,7 +11,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-10-13T00:21:43Z
+updated-at: 2026-10-13T00:43:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3607167
@@ -33,9 +33,12 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
   proof: internal/cli/milestones.go newMilestoneSetCmd; TestCreateWritesGoalAndAfter, TestSetChangesGoalAndPlacement, TestLsJSONCarriesGoalAndAfterOnlyWhenSet
 - [x] Layout ist eine reine, getestete Funktion: Swimlane aus dem ersten Vorgaenger, Splits, Joins, Querpfeile, Swimlane-Reihenfolge nach created-at; Zyklen und unbekannte Namen fuehren nie zum Absturz
   proof: core/milestone/layout.go Layout; TestLayoutSplit, TestLayoutJoin, TestLayoutCycleNeverCrashesAndDropsOneArrow
-- [ ] L oeffnet den Layer: Bubble-Rahmen in Milestone-Farbe, Fuellung Variante A (55% Richtung Weiss, Truecolor und 256-Farben-Ersatz), done/total, Auswahl mit dickem Rahmen, [+] an der Auswahl und oben rechts fuer eine neue Swimlane; ein leerer Layer zeigt nur [+]; TUI-Tests
-- [ ] Bedienung: Pfeiltasten waehlen; Enter auf [+] legt einen neuen Milestone an (Name, Ziel) oder verbindet einen vorhandenen; e aendert Ziel und Vorgaenger, c die Farbe, x nimmt die Bubble aus dem Layer (Nachfolger haengen um); Enter auf eine Bubble zeigt Ziel und Ticketliste, Enter oeffnet ein Ticket, b das gefilterte Board; TUI-Tests
-- [ ] Tasten: l oeffnet die Links auf dem Board und im Ticket-Detail, h und l wechseln keine Lanes mehr; Hilfe, Tastenleiste, README Keys, docs/COMMANDS.md und core/release/notes/D0SAHM.md nennen es
+- [x] L oeffnet den Layer: Bubble-Rahmen in Milestone-Farbe, Fuellung Variante A (55% Richtung Weiss, Truecolor und 256-Farben-Ersatz), done/total, Auswahl mit dickem Rahmen, [+] an der Auswahl und oben rechts fuer eine neue Swimlane; ein leerer Layer zeigt nur [+]; TUI-Tests
+  proof: internal/tui/layerdraw.go:408 drawLayer, :340 drawBubble, :294 bubbleFill, :327 filledCells; TestLOpensTheLayerAndClosesIt, TestEmptyLayerShowsOnlyThePlus, TestLayerDrawsBubblesArrowsAndPlus, TestBubbleFillColourCodes, TestFilledCells, TestLayerPansToTheSelection
+- [x] Bedienung: Pfeiltasten waehlen; Enter auf [+] legt einen neuen Milestone an (Name, Ziel) oder verbindet einen vorhandenen; e aendert Ziel und Vorgaenger, c die Farbe, x nimmt die Bubble aus dem Layer (Nachfolger haengen um); Enter auf eine Bubble zeigt Ziel und Ticketliste, Enter oeffnet ein Ticket, b das gefilterte Board; TUI-Tests
+  proof: internal/tui/layer.go:175 keyLayer, :370 createMilestone, :528 connectMilestone, :557 nextMilestoneColour, :588 removeFromLayer, :690 keyMilestoneDetail; TestLayerNavigationIsGeometric, TestNewMilestoneFromTheFarPlus, TestNewMilestoneBelowAndBeside, TestConnectExistingMilestone, TestConnectPlacedMilestoneAddsAnArrow, TestEditGoalAndPredecessors, TestColourKeyStepsThroughThePalette, TestRemoveReattachesSuccessors, TestMilestoneDetail
+- [x] Tasten: l oeffnet die Links auf dem Board und im Ticket-Detail, h und l wechseln keine Lanes mehr; Hilfe, Tastenleiste, README Keys, docs/COMMANDS.md und core/release/notes/D0SAHM.md nennen es
+  proof: internal/tui/model.go:1495 arrows only, :1539 l links, :1543 L layer, :1400 l in detail; view.go:1045 key bar, :1100 detail hints, renderHelp; README.md Keys; docs/COMMANDS.md Keys; core/release/notes/D0SAHM.md; TestBoardArrowsChangeLanesAndLOpensLinks, TestLinkKeyWorksOnAnOpenTicketAndReturnsToIt, TestHelpNamesTheMovedKeys, TestNarrowBoardShowsAllKeysAndFits, TestNarrowDetailShowsAllKeysAndFits
 - [ ] go vet ./... und go test ./... -race sind gruen; das gebaute Binary ist im echten Terminal (tmux) auf einer Board-Kopie durchgespielt
 
 ## Options
@@ -52,10 +55,10 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
 - [x] core/milestone: Layout als reine Funktion (Swimlanes, Baum, Joins, Querpfeile, Zyklen) mit Tests
 - [x] internal/cli: milestone create --goal/--after, milestone set, ls --json mit goal/after; Tests; docs/COMMANDS.md
 - [x] internal/tui: Tasten umziehen (l = Links auf Board und im Detail, h/l keine Lane-Navigation, L = Layer) und bestehende Tests anpassen
-- [ ] internal/tui: Layer zeichnen (Bubbles, Fuellung A, Pfeile, Swimlane-Trenner, [+], Auswahl, Scrollen) mit Tests
-- [ ] internal/tui: Layer bedienen (Navigation, [+]-Auswahl, Formular neu, Verbinden-Picker, e, c, x mit Umhaengen) mit Tests
-- [ ] internal/tui: Milestone-Detail (Ziel, Ticketliste, enter, b ins gefilterte Board) mit Tests
-- [ ] Hilfe (?), Tastenleiste, README Keys, core/release/notes/D0SAHM.md
+- [x] internal/tui: Layer zeichnen (Bubbles, Fuellung A, Pfeile, Swimlane-Trenner, [+], Auswahl, Scrollen) mit Tests
+- [x] internal/tui: Layer bedienen (Navigation, [+]-Auswahl, Formular neu, Verbinden-Picker, e, c, x mit Umhaengen) mit Tests
+- [x] internal/tui: Milestone-Detail (Ziel, Ticketliste, enter, b ins gefilterte Board) mit Tests
+- [x] Hilfe (?), Tastenleiste, README Keys, core/release/notes/D0SAHM.md
 - [ ] go vet, go test ./... -race, Binary in tmux auf einer Board-Kopie durchspielen
 
 ## Progress
@@ -83,3 +86,5 @@ Die Brainstorm-Entscheidungspunkte K1-K7 vom 04.09. bleiben stehen und sind nich
 - **2026-10-12 23:07 · BeMuCa** — 2026-10-13 Berk: L9 = Variante A - Fuellung links nach rechts, Milestone-Farbe zu 55% mit Weiss gemischt, Schrift auf der Fuellung schwarz (nach Helligkeit), 256-Farben-Terminals bekommen die naechste Standardfarbe; Farbwechsel an der Fuellkante ist ok. L2 = ja: auch im Ticket-Detail oeffnet l die Links (heute L, master internal/tui/model.go:1420). Teil 2 (Aussehen) damit komplett bestaetigt.
 - **2026-10-12 23:17 · BeMuCa** — 2026-10-13 Plan-Begruendung: Branch feat/D0SAHM-milestone-layer liegt auf PNC854 (ff585cb), weil b den Milestone-Filter des Boards nutzt und beide Aenderungen dieselbe Tastenbehandlung in internal/tui/model.go anfassen - so gibt es keinen Merge-Konflikt zwischen ihnen; PR-Reihenfolge PNC854, dann D0SAHM. Design steht in docs/superpowers/specs/2026-10-13-milestone-layer-design.md. Kern zuerst (Datenfelder, gemeinsamer Schreibweg, Layout als reine Funktion), weil TUI und CLI beide darauf bauen und die Layout-Regeln ohne Terminal testbar sein sollen. Der Layout-Raster laesst Platz fuer [+] in festen Luecken, damit sich beim Bewegen des Cursors nichts verschiebt (Berk mag kein wanderndes Board, siehe PAP369 'keep the board still').
 - **2026-10-12 23:37 · BeMuCa** — core: Edit saves only when bytes changed (so a no-op re-add queues no ref); record failure comes back as *RecordError beside the saved milestone. CLI predecessor must EXIST on the board (placed not required); WouldCycle ignores unplaced milestones' edges. Cycle in a file: the newer milestone's arrow is dropped.
+- **2026-10-13 00:26 · BeMuCa** — TUI layer (plan 5-9): internal/tui/layer.go (state, keys, writes through milestone.Create/Edit) and layerdraw.go (own rune/style canvas, geometry, fill, arrows, dialogs, detail). Decisions beyond the spec: (1) connecting a PLACED swimlane top under a [+] moves it there with its subtree - its first predecessor decides the lane, so an arrow into a top cannot stay extra; the picker says so. (2) navigation measures in grid steps (a 21-cell column and a 6-row row weigh the same), cross axis x2; with raw cells, right from a top reached a child one row down before the next lane's top. (3) the [+] boxes the cursor steers by are centred on the bubble's axis so up/down never stops on the [+] beside a bubble. (4) member tickets opened from the milestone detail go through selectByID+openDetail so m/e act on the shown ticket; a logbook ticket older than the board's window or one hidden by the filter gets a message instead. (5) extra arrows run on the first connector row per the spec; where that row also carries a parent split line they merge visually. Core: added Milestone.SetColour for c. Done count uses store.FiledAwayIDs() minus the archive dir (file names only).
+- **2026-10-13 00:26 · BeMuCa** — Testing gotchas: go test ./internal/tui -race takes ~18 min on this machine under load, past go test's default 10m timeout - run with -timeout 40m. Do not add files to internal/ while go test ./... runs: internal/cli TestTwoBranchesThatBothCreateTheTicketStillMergeFieldAware builds the binary from the working tree at run time and fails on half-written code.

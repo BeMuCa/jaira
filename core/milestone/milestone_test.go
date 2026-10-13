@@ -385,6 +385,19 @@ func TestSettersTouchOnlyTheirOwnLine(t *testing.T) {
 	}
 }
 
+// The layer's c rewrites the colour where it stands and nothing else.
+func TestSetColourRewritesOnlyTheColourLine(t *testing.T) {
+	body := "---\ncolor: 45\n# keep me\ncreated-at: 2026-09-15T10:00:00Z\n---\n\n# c\n- " + idA + "\n"
+	m := FromBytes("c", []byte(body))
+	m.SetColour(209)
+	if got, want := string(m.Bytes()), strings.Replace(body, "color: 45", "color: 209", 1); got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+	if m.Colour != 209 {
+		t.Errorf("Colour = %d, want 209", m.Colour)
+	}
+}
+
 // A file that began without frontmatter is given one rather than refused.
 func TestSetGoalOnAFileWithoutFrontmatter(t *testing.T) {
 	m := FromBytes("c", []byte("- "+idA+"\n"))

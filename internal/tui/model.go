@@ -59,6 +59,7 @@ const (
 	modeMilestones
 	modeLinks
 	modeUsers
+	modeLayer
 )
 
 // Model is the board's state.
@@ -164,6 +165,9 @@ type Model struct {
 	// card on screen asks the gate whether it is blocked, and rebuilding
 	// this for each of them would list the logbook once per card.
 	index *link.Index
+
+	// layer is the open milestone layer, nil when it is closed; see layer.go.
+	layer *layerView
 
 	// links is the open link window, nil when it is closed. It holds its own
 	// rows because building them reads the logbook, which must not happen
@@ -411,6 +415,7 @@ func (m *Model) reload() error {
 	m.refMarks()
 	m.rebuild()
 	m.refreshLiveBoards()
+	m.refreshLayer()
 	return nil
 }
 
@@ -1104,6 +1109,11 @@ func (m *Model) insertText(text string) {
 
 	case modeCreate, modeDelete:
 		m.input += foldToOneLine(text)
+
+	case modeLayer:
+		if l := m.layer; l != nil && l.stage == stageForm {
+			l.form.vals[l.form.field] += foldToOneLine(text)
+		}
 	}
 }
 
@@ -1246,6 +1256,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeLinks:
 		m.keyLinks(s)
 		return m, nil
+
+	case modeLayer:
+		return m.keyLayer(k)
 
 	case modeMessage:
 		// A refused move offers its own way out. f arms the override and y takes
@@ -1527,6 +1540,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Everything connected to this card, wherever the other end now
 		// lives — the board, a ref, the logbook, the archive.
 		m.openLinks()
+	case "L":
+		// The board's second view: the milestones as bubbles, what comes
+		// after what, and how far along each one is.
+		m.openLayer()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -1708,7 +1725,7 @@ func (m *Model) moveCard(d int) {
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
 	switch m.mode {
-	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks:
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks, modeLayer:
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.
