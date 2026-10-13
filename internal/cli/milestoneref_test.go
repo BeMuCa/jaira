@@ -537,3 +537,36 @@ func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 	}
 	onGrace("round-one,round-two", "round-one")
 }
+
+// A name a teammate's milestone has is taken before any fetch has written it
+// here: every write's flush brings the refs, and only 'jaira fetch' writes
+// their files. Asking the disk alone, rename and create both wrote over the
+// teammate's milestone on the remote.
+func TestANameOnlyOnARefIsTakenForRenameAndCreate(t *testing.T) {
+	ada, grace := twoBoards(t)
+	if out, err := runAndSend(t, grace, "milestone", "create", "zeta", "--goal", "grace's plan"); err != nil {
+		t.Fatalf("grace's create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "milestone", "create", "b"); err != nil {
+		t.Fatalf("ada's create: %v\n%s", err, out)
+	}
+	if gitOut(t, ada, "for-each-ref", gitref.MilestoneRefName("zeta")) == "" {
+		t.Fatal("ada's flush must have brought grace's ref")
+	}
+	if _, err := os.Stat(milestone.Path(ada, "zeta")); !os.IsNotExist(err) {
+		t.Fatalf("zeta must not be on ada's disk yet: %v", err)
+	}
+
+	for _, args := range [][]string{{"milestone", "rename", "b", "zeta"}, {"milestone", "create", "zeta"}} {
+		_, err := runAndSend(t, ada, args...)
+		if err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "jaira fetch") {
+			t.Errorf("%v: want exit 3 sending ada to 'jaira fetch', got %v", args, err)
+		}
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fetch: %v\n%s", err, out)
+	}
+	if zeta, err := milestone.Load(grace, "zeta"); err != nil || zeta.Goal != "grace's plan" {
+		t.Errorf("grace's zeta was overwritten: %v %+v", err, zeta)
+	}
+}

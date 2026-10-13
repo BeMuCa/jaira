@@ -125,8 +125,9 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 // a clone already has, and deletes nothing (refsync.IncomingMilestones).
 //
 // to has to be free: CheckFree asks the directory, and taken asks what the
-// directory cannot show — a filing in this tree's logbook or on a ref —
-// refusing in the caller's words. from itself refuses the way Edit does, and
+// directory cannot show — a filing in this tree's logbook or on a ref, or a
+// teammate's milestone on a ref no fetch has written here — refusing in the
+// caller's words. from itself refuses the way Edit does, and
 // renaming it to its own name writes nothing.
 func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(name string) error) (*Milestone, error) {
 	unlock, err := lock.Lock(LockName)
@@ -190,7 +191,8 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 // a *FiledError. No file is free, and so is the mark an earlier rename left
 // (HoldsName) — which is what lets a rename be taken back and a new milestone
 // take the old name. What the directory cannot show, a filing in this tree's
-// logbook or on a ref, is the caller's to ask. Every door that hands out a
+// logbook or on a ref or a milestone on a ref not fetched yet, is the
+// caller's to ask. Every door that hands out a
 // name asks here: Rename, and the CLI's and the layer's create.
 func CheckFree(root, name string) error {
 	have, err := Load(root, name)

@@ -330,7 +330,7 @@ func (m *Model) submitLayerForm() {
 	}
 
 	// Goal and predecessors are checked before the name changes, so a form
-	// refused here has written nothing; the rename goes the way 'jaira
+	// these checks refuse has written nothing; the rename goes the way 'jaira
 	// milestone rename' goes, and the rest is written under the new name.
 	preds, err := milestone.ParseNames(f.vals[2])
 	if err != nil {
@@ -365,6 +365,14 @@ func (m *Model) submitLayerForm() {
 	})
 	if err := m.recordOnly(err); err != nil {
 		l.err = err.Error()
+		if name == f.edit {
+			return
+		}
+		// The rename went through and only the rest was refused: the
+		// picture behind the open form shows the new name.
+		if err := m.reload(); err != nil {
+			m.notify(err.Error(), true)
+		}
 		return
 	}
 	m.layerWritten(name, m.formReturn())
@@ -375,7 +383,7 @@ func (m *Model) submitLayerForm() {
 // refuses it. From then on the open form and detail are about the new name,
 // and a board narrowed to the old name stays narrowed to the milestone.
 func (m *Model) renameMilestone(from, to string) error {
-	_, err := milestone.Rename(m.store.Root, m.store, m.refSync, from, to, m.nameFiled)
+	_, err := milestone.Rename(m.store.Root, m.store, m.refSync, from, to, m.nameTaken)
 	if err := m.recordOnly(err); err != nil {
 		return err
 	}
@@ -408,7 +416,7 @@ func (m *Model) createMilestone(name, goal string, after []string) error {
 		} else if err != nil {
 			return nil, err
 		}
-		if err := m.nameFiled(name); err != nil {
+		if err := m.nameTaken(name); err != nil {
 			return nil, err
 		}
 		if err := milestone.CheckAfter(existing, name, after); err != nil {
@@ -422,14 +430,18 @@ func (m *Model) createMilestone(name, goal string, after []string) error {
 	return m.recordOnly(err)
 }
 
-// nameFiled refuses a name a filing holds where the milestone directory does
-// not show it: in this tree's logbook, or on a ref somebody else marked.
-func (m *Model) nameFiled(name string) error {
+// nameTaken refuses a name the milestone directory does not show as taken: a
+// filing in this tree's logbook or on a ref somebody else marked, or a
+// teammate's milestone on its ref that no fetch has written here yet.
+func (m *Model) nameTaken(name string) error {
 	switch where, at := m.refSync.MilestoneFiled(m.store, name); at {
 	case refsync.MilestoneFiledHere:
 		return fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back", name, where, name)
 	case refsync.MilestoneFiledOnRef:
 		return fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
+	}
+	if m.refSync.MilestoneOnRef(name) {
+		return fmt.Errorf("milestone %q exists on the remote but not here yet — 'jaira fetch' brings it", name)
 	}
 	return nil
 }

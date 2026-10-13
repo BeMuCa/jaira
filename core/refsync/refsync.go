@@ -303,6 +303,21 @@ func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, Milestone
 	return "", MilestoneNotFiled
 }
 
+// MilestoneOnRef reports whether this tree's ref under name carries a
+// milestone that is on the board — one somebody else made that no fetch has
+// written to this disk yet. Every write command's flush brings the refs up to
+// date and only 'jaira fetch' writes their files, so a door that hands out a
+// name and asks only the disk would write over a teammate's milestone. A
+// filed ref is MilestoneFiled's to answer, and the mark a rename left holds
+// nothing.
+func (y *Syncer) MilestoneOnRef(name string) bool {
+	if y == nil || y.Usable() != nil {
+		return false
+	}
+	content, _, err := y.Repo.ReadMilestone(name)
+	return err == nil && !milestone.FromBytes(name, content).Filed()
+}
+
 // Winner describes the state that beat a rejected write, read from the ref
 // itself. A rejection that only says "you lost" leaves the user to go and find
 // out who and what — which they cannot do without knowing the ref exists.

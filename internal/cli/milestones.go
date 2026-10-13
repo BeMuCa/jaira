@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/tag"
@@ -91,7 +92,8 @@ cell on any card.
 A name that belongs to a filed milestone is refused rather than reused: its
 ref still holds it, and a second milestone under one name is one identity that
 looks different on every machine. ` + "`jaira restore <name>.md`" + ` brings the filed one
-back instead.
+back instead. A name a teammate's milestone has on its ref is refused too, while
+no ` + "`jaira fetch`" + ` has written it here yet: creating it would overwrite theirs.
 
 Names are lowercase kebab, the same rule tags follow — the name is also the
 filename, so it has to be safe in a path. "Round One" is filed as "round-one"
@@ -143,7 +145,8 @@ a milestone on this board, and the arrows may not form a loop.`,
 				}
 				// Filed under this name, here or in the tree that wrote the
 				// ref: the name stays taken until 'jaira restore' gives it up.
-				if err := refuseIfFiled(s, name,
+				// Or a teammate's milestone no fetch has written here yet.
+				if err := refuseIfTaken(s, name,
 					"creating it again here would make a second milestone with the same name",
 					"; creating it again would make a second milestone with the same name"); err != nil {
 					return nil, err
@@ -339,8 +342,9 @@ again afterwards — there is nothing to restore — so a rename can be taken ba
 by renaming once more.
 
 The new name follows the rules of ` + "`create`" + `: lowercase kebab, and you are told
-when it was changed. A name a milestone on the board or a filed one has is
-refused (exit 3); an old name that is not on the board exits 5.`,
+when it was changed. A name a milestone on the board, a filed one, or a
+teammate's milestone not fetched yet has is refused (exit 3); an old name that
+is not on the board exits 5, or 3 when it was filed.`,
 		Args: exactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -358,7 +362,7 @@ refused (exit 3); an old name that is not on the board exits 5.`,
 
 			const twice = "renaming another milestone to it would make a second milestone with the same name"
 			ms, err := milestone.Rename(s.Root, s, refs, from, to, func(name string) error {
-				return refuseIfFiled(s, name, twice, "; "+twice)
+				return refuseIfTaken(s, name, twice, "; "+twice)
 			})
 			var ee *milestone.ExistsError
 			var fe *milestone.FiledError
@@ -612,6 +616,22 @@ func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
 		return refuseFiledElsewhere(name, "its ref "+where, onRef)
 	case refsync.MilestoneFiledHere:
 		return refuseFiledInLogbook(name, where, inLogbook)
+	}
+	return nil
+}
+
+// refuseIfTaken is refuseIfFiled for a door that hands out a name, plus the
+// one state only such a door has to fear: a teammate's milestone on its ref
+// that no fetch has written to this disk yet (refsync MilestoneOnRef).
+// Writing the name would overwrite theirs on the remote.
+func refuseIfTaken(s *ticket.Store, name, onRef, inLogbook string) error {
+	if err := refuseIfFiled(s, name, onRef, inLogbook); err != nil {
+		return err
+	}
+	if refs.MilestoneOnRef(name) {
+		return fail(ExitValidation, "milestone_exists",
+			"milestone %q exists on its ref %s but not on this disk yet — 'jaira fetch' brings it here; writing the name now would overwrite it",
+			name, gitref.MilestoneRefName(name))
 	}
 	return nil
 }
