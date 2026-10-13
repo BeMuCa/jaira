@@ -157,9 +157,9 @@ func gitOut(t *testing.T, dir string, args ...string) string {
 }
 
 // Filing a milestone must not take its ref down, and this is why: a ref is
-// what every other clone reads. Taken down, a clone that has the file would never
-// hear it was filed. Left up and marked, it says "filed" to everyone who fetches — the file is not written to
-// their board.
+// what every other clone reads. Taken down, a clone that has the file would
+// never hear it was filed. Left up and marked, it says "filed" to everyone who
+// fetches — the file is not written to their board.
 func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
 	ada, grace := twoBoards(t)
 

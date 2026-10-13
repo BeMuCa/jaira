@@ -669,10 +669,11 @@ func editRefusal(s *ticket.Store, name string, err error, inLogbook string) erro
 	case errors.As(err, &amb):
 		return refuseAmbiguous(amb)
 	case errors.As(err, &fe):
-		// The third door into a filed milestone's file, after logbook. The write would not lose the mark, but it does not stay
-		// local either: the ref write would put it on the ref, so every
-		// clone that fetches sees a milestone the filer took off the board
-		// being edited. Refuse it where the other two refuse it.
+		// The second door into a filed milestone's file, after logbook.
+		// The write would not lose the mark, but it does not stay local
+		// either: the ref write would put it on the ref, so every clone
+		// that fetches sees a milestone the filer took off the board
+		// being edited. Refuse it the way logbook does.
 		return refuseFiledOnDisk(s.Root, fe.Name, fe.File,
 			"editing it here instead would push the change onto its ref for everyone who fetches")
 	case errors.Is(err, os.ErrNotExist):

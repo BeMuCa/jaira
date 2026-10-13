@@ -63,8 +63,9 @@ stops naming it, no card carries its colour and the board's M filter forgets
 it. Its ref stays up carrying the status "filed": that line is what keeps a
 milestone off a board, so a clone that already has the file has it marked on
 the next fetch and stops showing the group. The name is free again: a new
-milestone of that name gets its own ID, and a restore keeps both. Only a milestone you name by hand — --all sweeps
-the terminal lane and never takes a group with it. A milestone is filed only
+milestone of that name gets its own ID, and a restore keeps both. Only a
+milestone you name by hand — --all sweeps the terminal lane and never takes
+a group with it. A milestone is filed only
 once every ticket in it has reached the terminal lane or left the board.
 
 'jaira archive' is for a ticket that is not being worked — abandoned,
