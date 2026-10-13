@@ -641,7 +641,7 @@ func refuseIfTaken(s *ticket.Store, name, onRef, inLogbook string) error {
 // milestone.Create and milestone.Edit, which record it. Best effort, see
 // warnIfRecordOnly.
 func recordMilestone(ms *milestone.Milestone) {
-	if err := refs.RecordMilestone(ms.Name, ms.Bytes()); err != nil {
+	if err := refs.RecordMilestone(ms.Name, ms.Name+".md", ms.Bytes()); err != nil {
 		warnIfRecordOnly(&milestone.RecordError{Name: ms.Name, Err: err})
 	}
 }

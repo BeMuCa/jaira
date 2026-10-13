@@ -184,7 +184,7 @@ func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
 	// The ref is up and says so. Read through gitref rather than the file,
 	// because the ref is the only thing the other clone will ever see.
 	repo := &gitref.Repo{Dir: ada, Remote: "origin"}
-	content, _, err := repo.ReadMilestone("round-one")
+	_, content, _, err := repo.ReadMilestone("round-one")
 	if err != nil {
 		t.Fatalf("the ref of a filed milestone was taken down: %v", err)
 	}

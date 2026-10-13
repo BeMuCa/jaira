@@ -16,7 +16,7 @@ const milestoneFile = "---\nname: round-one\ncolor: 45\n---\n\n- 01TEST\n"
 func TestMilestoneArrivesWithoutASharedBranch(t *testing.T) {
 	ada, grace := twoClones(t)
 
-	if _, err := ada.WriteMilestone("round-one", []byte(milestoneFile), ""); err != nil {
+	if _, err := ada.WriteMilestone("round-one", "round-one.md", []byte(milestoneFile), ""); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	// Nothing was merged, and grace has none of ada's branches.
@@ -26,12 +26,15 @@ func TestMilestoneArrivesWithoutASharedBranch(t *testing.T) {
 	if err := grace.Fetch(); err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
-	got, sha, err := grace.ReadMilestone("round-one")
+	file, got, sha, err := grace.ReadMilestone("round-one")
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
 	if string(got) != milestoneFile {
 		t.Errorf("milestone came back changed:\n%q", got)
+	}
+	if file != "round-one.md" {
+		t.Errorf("read gave file %q", file)
 	}
 	if sha == "" {
 		t.Error("read gave no lease to write back against")
@@ -53,7 +56,7 @@ func TestTheTwoNamespacesStayApart(t *testing.T) {
 	}
 	// Deliberately the same key on both sides: this is the collision the path
 	// segment exists to prevent.
-	if _, err := ada.WriteMilestone("01TEST", []byte(milestoneFile), ""); err != nil {
+	if _, err := ada.WriteMilestone("01TEST", "01TEST.md", []byte(milestoneFile), ""); err != nil {
 		t.Fatalf("write milestone: %v", err)
 	}
 
@@ -77,7 +80,7 @@ func TestTheTwoNamespacesStayApart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotMilestone, _, err := ada.ReadMilestone("01TEST")
+	_, gotMilestone, _, err := ada.ReadMilestone("01TEST")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,21 +104,21 @@ func TestTheTwoNamespacesStayApart(t *testing.T) {
 func TestAStaleMilestoneWriteLoses(t *testing.T) {
 	ada, grace := twoClones(t)
 
-	if _, err := ada.WriteMilestone("round-one", []byte(milestoneFile), ""); err != nil {
+	if _, err := ada.WriteMilestone("round-one", "round-one.md", []byte(milestoneFile), ""); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	if err := grace.Fetch(); err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
-	_, lease, err := grace.ReadMilestone("round-one")
+	_, _, lease, err := grace.ReadMilestone("round-one")
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
 	// ada edits first; grace still holds the lease from before.
-	if _, err := ada.WriteMilestone("round-one", []byte(milestoneFile+"- 02TEST\n"), firstSHA(t, ada, "round-one")); err != nil {
+	if _, err := ada.WriteMilestone("round-one", "round-one.md", []byte(milestoneFile+"- 02TEST\n"), firstSHA(t, ada, "round-one")); err != nil {
 		t.Fatalf("second write: %v", err)
 	}
-	if _, err := grace.WriteMilestone("round-one", []byte("---\nname: round-one\n---\n"), lease); err == nil {
+	if _, err := grace.WriteMilestone("round-one", "round-one.md", []byte("---\nname: round-one\n---\n"), lease); err == nil {
 		t.Error("a write against a stale lease was accepted")
 	}
 }
@@ -127,4 +130,30 @@ func firstSHA(t *testing.T, r *gitref.Repo, name string) string {
 		t.Fatalf("MilestoneSHA(%s): %v", name, err)
 	}
 	return sha
+}
+
+// The ref is keyed by one thing and its file named by another: the name a
+// milestone is renamed to travels as a different tree entry on the same ref.
+func TestAMilestoneRefCarriesItsFileName(t *testing.T) {
+	ada, grace := twoClones(t)
+
+	if _, err := ada.WriteMilestone("ABC123", "x-ABC123.md", []byte(milestoneFile), ""); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := grace.Fetch(); err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	file, got, lease, err := grace.ReadMilestone("ABC123")
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if file != "x-ABC123.md" || string(got) != milestoneFile {
+		t.Errorf("read = %q, %q", file, got)
+	}
+	if _, err := grace.WriteMilestone("ABC123", "y-ABC123.md", []byte(milestoneFile), lease); err != nil {
+		t.Fatalf("rename write: %v", err)
+	}
+	if file, _, _, err := grace.ReadMilestone("ABC123"); err != nil || file != "y-ABC123.md" {
+		t.Errorf("after the rename read = %q, %v; want y-ABC123.md", file, err)
+	}
 }

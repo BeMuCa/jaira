@@ -89,6 +89,11 @@ type Entry struct {
 	// nobody ever reviewed.
 	Content string `json:"content,omitempty"`
 
+	// File is the file name a milestone is committed under on its ref. Empty
+	// on a ticket, and on a milestone entry an older build queued, whose ref
+	// carried <key>.md.
+	File string `json:"file,omitempty"`
+
 	QueuedAt  time.Time `json:"queued-at"`
 	UpdatedAt time.Time `json:"updated-at"`
 	By        string    `json:"by,omitempty"`
@@ -120,18 +125,18 @@ func (b *Box) legacyPath(id string) string { return filepath.Join(b.Dir, id+".js
 // ticket. Superseding is correct rather than lossy: the entry carries the whole
 // ticket, so the newer bytes already contain everything the older ones said.
 func (b *Box) Queue(id string, op Op, content []byte, lease, by string) error {
-	return b.queueKind(KindTicket, id, op, content, lease, by)
+	return b.queueKind(KindTicket, id, "", op, content, lease, by)
 }
 
 // QueueMilestone files a pending write of a milestone file, under the same
 // rules: whole content, the lease the remote last confirmed, superseding any
 // earlier unsent write of the same milestone.
-func (b *Box) QueueMilestone(name string, op Op, content []byte, lease, by string) error {
-	return b.queueKind(KindMilestone, name, op, content, lease, by)
+func (b *Box) QueueMilestone(key, file string, op Op, content []byte, lease, by string) error {
+	return b.queueKind(KindMilestone, key, file, op, content, lease, by)
 }
 
 // queueKind is what both of those are.
-func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by string) error {
+func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, lease, by string) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
@@ -142,7 +147,7 @@ func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by 
 	now := time.Now().UTC()
 	e := Entry{
 		ID: key, Op: op, Ref: ref, Kind: kind,
-		Lease: lease, Content: string(content),
+		Lease: lease, Content: string(content), File: file,
 		QueuedAt: now, UpdatedAt: now, By: by,
 	}
 	if old, ok := b.pendingKind(kind, key); ok {
@@ -288,7 +293,7 @@ func (b *Box) dropKind(kind Kind, key string) error {
 type Sender interface {
 	Write(id string, content []byte, lease string) (string, error)
 	Delete(id, lease string) error
-	WriteMilestone(name string, content []byte, lease string) (string, error)
+	WriteMilestone(key, file string, content []byte, lease string) (string, error)
 }
 
 // Outcome is what became of one queued write during a flush.
@@ -370,7 +375,11 @@ func send(s Sender, kind Kind, e Entry) error {
 		if e.Op != OpWrite {
 			return fmt.Errorf("outbox: unknown milestone op %q", e.Op)
 		}
-		_, err := s.WriteMilestone(e.ID, []byte(e.Content), e.Lease)
+		file := e.File
+		if file == "" {
+			file = e.ID + ".md"
+		}
+		_, err := s.WriteMilestone(e.ID, file, []byte(e.Content), e.Lease)
 		return err
 	}
 	switch e.Op {

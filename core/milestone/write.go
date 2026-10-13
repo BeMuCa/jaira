@@ -24,7 +24,7 @@ type Locker interface {
 // nil *Syncer is a valid Recorder that does nothing, which is how a board with
 // no remote stays a supported way to work.
 type Recorder interface {
-	RecordMilestone(name string, content []byte) error
+	RecordMilestone(key, file string, content []byte) error
 }
 
 // RecordError reports that the file was saved and only the ref could not be
@@ -180,7 +180,7 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 	ms.SetStatus(StatusFiled)
 	ms.RenamedTo = to
 	ms.setFront("renamed-to", to, false)
-	if recErr := rec.RecordMilestone(from, ms.Bytes()); recErr != nil && err == nil {
+	if recErr := rec.RecordMilestone(from, from+".md", ms.Bytes()); recErr != nil && err == nil {
 		err = &RecordError{Name: from, Err: recErr}
 	}
 	return renamed, err
@@ -268,7 +268,7 @@ func saveAndRecord(root string, rec Recorder, ms *Milestone) error {
 	if err := ms.Save(root); err != nil {
 		return err
 	}
-	if err := rec.RecordMilestone(ms.Name, ms.Bytes()); err != nil {
+	if err := rec.RecordMilestone(ms.Name, ms.Name+".md", ms.Bytes()); err != nil {
 		return &RecordError{Name: ms.Name, Err: err}
 	}
 	return nil

@@ -176,15 +176,15 @@ func (y *Syncer) RecordFiled(id string, content []byte) error {
 // twenty tickets are grouped in one edit — if that edit then waited for a
 // branch to be merged, the file everybody is supposed to read would be the
 // file nobody has.
-func (y *Syncer) RecordMilestone(name string, content []byte) error {
+func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 	if y == nil || y.Usable() != nil {
 		return nil
 	}
-	lease, err := y.Repo.MilestoneSHA(name)
+	lease, err := y.Repo.MilestoneSHA(key)
 	if err != nil && !errors.Is(err, gitref.ErrNoRef) {
 		return err
 	}
-	if err := y.Box.QueueMilestone(name, outbox.OpWrite, content, lease, y.Actor); err != nil {
+	if err := y.Box.QueueMilestone(key, file, outbox.OpWrite, content, lease, y.Actor); err != nil {
 		return err
 	}
 	y.dirty = true
@@ -227,11 +227,11 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, err err
 		return nil, nil, err
 	}
 	for _, name := range names {
-		content, _, err := y.Repo.ReadMilestone(name)
+		file, content, _, err := y.Repo.ReadMilestone(name)
 		if err != nil {
 			continue
 		}
-		path := milestone.Path(root, name)
+		path := filepath.Join(milestone.Dir(root), file)
 		have, haveErr := os.ReadFile(path)
 		if haveErr == nil && bytes.Equal(have, content) {
 			continue
@@ -294,7 +294,7 @@ func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, Milestone
 		return where, MilestoneFiledHere
 	}
 	if y != nil && y.Usable() == nil {
-		if content, _, err := y.Repo.ReadMilestone(name); err == nil {
+		if _, content, _, err := y.Repo.ReadMilestone(name); err == nil {
 			if milestone.FromBytes(name, content).HoldsName() {
 				return gitref.MilestoneRefName(name), MilestoneFiledOnRef
 			}
@@ -320,7 +320,7 @@ func (y *Syncer) MilestoneOnRef(name string) bool {
 	if y == nil || y.Usable() != nil {
 		return false
 	}
-	content, _, err := y.Repo.ReadMilestone(name)
+	_, content, _, err := y.Repo.ReadMilestone(name)
 	if e, ok := y.Box.PendingMilestone(name); ok {
 		content, err = []byte(e.Content), nil
 	}

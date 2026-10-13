@@ -254,28 +254,53 @@ func (r *Repo) refSHA(ref string) (string, error) {
 }
 
 // Read returns the ticket file carried by the local ref.
-func (r *Repo) Read(id string) ([]byte, string, error) { return r.refRead(RefName(id), id) }
-
-// ReadMilestone returns the milestone file carried by the local ref, with the
-// SHA that is the lease for writing it back.
-func (r *Repo) ReadMilestone(name string) ([]byte, string, error) {
-	return r.refRead(MilestoneRefName(name), name)
+func (r *Repo) Read(id string) ([]byte, string, error) {
+	content, sha, err := r.refRead(RefName(id), id+".md")
+	return content, sha, err
 }
 
-// refRead reads the one file a jaira ref carries: <name>.md at its root, named
-// after whatever the ref is keyed by. One file per ref rather than a directory,
-// so reading is a single git show and a ref can never hold two answers.
-func (r *Repo) refRead(ref, name string) ([]byte, string, error) {
+// ReadMilestone returns the file name the local ref carries its milestone
+// under, the file, and the SHA that is the lease for writing it back. The name
+// is read from the tree rather than derived from the key, because a milestone's
+// ref is keyed by something that is not its file name.
+func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha string, err error) {
+	ref := MilestoneRefName(key)
+	sha, err = r.refSHA(ref)
+	if err != nil {
+		return "", nil, "", err
+	}
+	out, errb, runErr := r.run("", "ls-tree", "--name-only", sha)
+	if runErr != nil {
+		if errors.Is(runErr, ErrNoGit) {
+			return "", nil, "", runErr
+		}
+		return "", nil, "", fmt.Errorf("gitref: ref %s: %s", ref, strings.TrimSpace(errb))
+	}
+	entries := strings.Fields(out)
+	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+		return "", nil, "", fmt.Errorf("gitref: ref %s does not carry exactly one .md file", ref)
+	}
+	content, _, err = r.refRead(ref, entries[0])
+	if err != nil {
+		return "", nil, "", err
+	}
+	return entries[0], content, sha, nil
+}
+
+// refRead reads the one file a jaira ref carries, named entry at its root. One
+// file per ref rather than a directory, so reading is a single git show and a
+// ref can never hold two answers.
+func (r *Repo) refRead(ref, entry string) ([]byte, string, error) {
 	sha, err := r.refSHA(ref)
 	if err != nil {
 		return nil, "", err
 	}
-	out, errb, runErr := r.run("", "show", sha+":"+name+".md")
+	out, errb, runErr := r.run("", "show", sha+":"+entry)
 	if runErr != nil {
 		if errors.Is(runErr, ErrNoGit) {
 			return nil, "", runErr
 		}
-		return nil, "", fmt.Errorf("gitref: ref %s carries no %s.md: %s", ref, name, strings.TrimSpace(errb))
+		return nil, "", fmt.Errorf("gitref: ref %s carries no %s: %s", ref, entry, strings.TrimSpace(errb))
 	}
 	return []byte(out), sha, nil
 }
@@ -317,27 +342,28 @@ func (r *Repo) ReadParent(id string) ([]byte, error) {
 // An empty lease means "no ref yet" and requires the remote to have none
 // either.
 func (r *Repo) Write(id string, content []byte, lease string) (string, error) {
-	return r.refWrite(RefName(id), id, content, lease)
+	return r.refWrite(RefName(id), id+".md", content, lease)
 }
 
 // WriteMilestone puts a milestone file on its ref and pushes it, under the same
 // compare-and-swap as a ticket. A milestone is edited by hand as often as by
 // jaira, so losing a race here means the same thing it means for a ticket: the
 // caller's bytes are stale and must be re-read, never force-pushed over.
-func (r *Repo) WriteMilestone(name string, content []byte, lease string) (string, error) {
-	return r.refWrite(MilestoneRefName(name), name, content, lease)
+func (r *Repo) WriteMilestone(key, file string, content []byte, lease string) (string, error) {
+	return r.refWrite(MilestoneRefName(key), file, content, lease)
 }
 
-func (r *Repo) refWrite(ref, name string, content []byte, lease string) (string, error) {
+// refWrite commits one file, named entry, as the whole tree of the ref.
+func (r *Repo) refWrite(ref, entry string, content []byte, lease string) (string, error) {
 	blob, err := r.hashObject(content)
 	if err != nil {
 		return "", err
 	}
-	tree, err := r.mktree(name+".md", blob)
+	tree, err := r.mktree(entry, blob)
 	if err != nil {
 		return "", err
 	}
-	args := []string{"commit-tree", tree, "-m", "jaira: " + name}
+	args := []string{"commit-tree", tree, "-m", "jaira: " + strings.TrimSuffix(entry, ".md")}
 	if lease != "" {
 		args = append(args, "-p", lease)
 	}

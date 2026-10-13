@@ -22,7 +22,7 @@ type fakeRec struct {
 	err   error
 }
 
-func (r *fakeRec) RecordMilestone(name string, content []byte) error {
+func (r *fakeRec) RecordMilestone(name, file string, content []byte) error {
 	r.names = append(r.names, name)
 	r.last = content
 	return r.err

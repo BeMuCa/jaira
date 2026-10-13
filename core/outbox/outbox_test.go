@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -43,12 +45,12 @@ func (f *fakeSender) Delete(id, lease string) error {
 	return nil
 }
 
-func (f *fakeSender) WriteMilestone(name string, content []byte, lease string) (string, error) {
+func (f *fakeSender) WriteMilestone(name, file string, content []byte, lease string) (string, error) {
 	f.seen[name] = lease
 	if err := f.err[name]; err != nil {
 		return "", err
 	}
-	f.wrote = append(f.wrote, "milestone/"+name+":"+string(content))
+	f.wrote = append(f.wrote, "milestone/"+name+"/"+file+":"+string(content))
 	return "sha-" + name, nil
 }
 
@@ -357,5 +359,27 @@ func TestQueueSupersedesTheEntryAnOlderBuildLeft(t *testing.T) {
 	}
 	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
 		t.Errorf("flat entry still on disk at %s", legacy)
+	}
+}
+
+// A milestone entry names the file its ref carries; one an older build queued
+// has none, and goes out under <key>.md as it always did.
+func TestAMilestoneIsSentUnderItsFileName(t *testing.T) {
+	b := box(t)
+	if err := b.QueueMilestone("ABC123", "backend-ABC123.md", outbox.OpWrite, []byte("new"), "", "ada"); err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	old := filepath.Join(b.Dir, "milestones", "q4.json")
+	if err := os.WriteFile(old, []byte(`{"id":"q4","op":"write","ref":"refs/jaira/milestones/q4","kind":"milestones","lease":"","content":"old"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := newFake()
+	if _, err := b.Flush(f); err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	sort.Strings(f.wrote)
+	want := []string{"milestone/ABC123/backend-ABC123.md:new", "milestone/q4/q4.md:old"}
+	if !slices.Equal(f.wrote, want) {
+		t.Errorf("sent %v, want %v", f.wrote, want)
 	}
 }
