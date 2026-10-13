@@ -934,22 +934,8 @@ func trimNotes(body string, n int) (string, int) {
 		return body, 0
 	}
 	lines := strings.Split(body, "\n")
-	entries := progressEntries(lines)
-	if len(entries) <= n {
-		return body, 0
-	}
-	// From the first kept entry, not from the heading: a continuation line under
-	// a kept note belongs to it and must travel with it.
-	cut := entries[len(entries)-n]
-	out := append([]string{}, lines[:entries[0]]...)
-	out = append(out, lines[cut:]...)
-	return strings.Join(out, "\n"), len(entries) - n
-}
-
-// progressEntries returns the index of every line that starts a Progress
-// note. Collected exactly as progressNotes reads them, so "a note" means the
-// same thing to the reader and to the trimmer.
-func progressEntries(lines []string) []int {
+	// Collected exactly as progressNotes reads them, so "a note" means the same
+	// thing to the reader and to the trimmer.
 	in := false
 	var entries []int
 	for i, line := range lines {
@@ -962,7 +948,15 @@ func progressEntries(lines []string) []int {
 			entries = append(entries, i)
 		}
 	}
-	return entries
+	if len(entries) <= n {
+		return body, 0
+	}
+	// From the first kept entry, not from the heading: a continuation line under
+	// a kept note belongs to it and must travel with it.
+	cut := entries[len(entries)-n]
+	out := append([]string{}, lines[:entries[0]]...)
+	out = append(out, lines[cut:]...)
+	return strings.Join(out, "\n"), len(entries) - n
 }
 
 func newSetCmd() *cobra.Command {

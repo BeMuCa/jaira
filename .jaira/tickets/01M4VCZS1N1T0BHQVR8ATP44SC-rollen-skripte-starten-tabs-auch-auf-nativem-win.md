@@ -1,7 +1,7 @@
 ---
 id: 01M4VCZS1N1T0BHQVR8ATP44SC
 title: "Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,16 +25,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T19:49:16Z
-updated-at: 2026-10-13T20:16:07Z
+updated-at: 2026-10-13T20:17:00Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-427304
 claimed-at: 2026-10-13T19:49:40Z
 outcome-what: "spawn.sh/run-lane.sh lesen JSON mit dem neuen 'jaira json get' statt python3; der Chat-Brief kommt aus 'jaira show --brief'; der WSL-Start haengt an WSL_DISTRO_NAME//proc/version statt an .exe, unter Git Bash startet claude nativ im per cygpath -w uebersetzten Worktree; Python-Rollen nehmen JAIRA_PYTHON/'python'-Einstellung (roles list --json: python) und schreiben UTF-8"
 outcome-why: Auf nativem Windows ist python3 fehlend oder der Store-Stub und herdr.exe wurde fuer WSL gehalten - spawn.sh liess leere Tabs stehen
 outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
-review-summary: "spawn.sh: der Check auf 'jaira json get' sitzt nach 'git worktree add' - ein altes jaira laesst dann einen leeren Worktree samt Branch stehen; direkt hinter den HERDR_ENV-Check ziehen, vor alles, was etwas anlegt"
+review-summary: "Runde 4: keine Befunde. Weg fuer den Windows-Start (--cwd + nacktes claude) ist der einfachste, der von der Tab-Shell nicht abhaengt; bash.exe -lc verworfen (Pfad maschinenabhaengig, Note 13.10.). Check auf altes jaira jetzt vor Worktree und Tab."
 round: 4
-review-gaps: "(1) Nativer Windows-Pfad nur per Stub geprueft: der Tab bekommt \"cd 'C:\\...' && claude\" - das geht in Git Bash und PowerShell 7, nicht in cmd.exe und nicht in Windows PowerShell 5.1 (kein &&); welche Shell Herdr fuer Windows im Tab startet, ist nirgends belegt. Handcheck auf Windows steht aus (Notiz 19:58 sagt das selbst). (2) Ein altes jaira vorne auf dem PATH plus neue Skripte: 'jaira json' ist dort unbekannt, spawn.sh stirbt nach 'tab create' und laesst wieder einen leeren Tab stehen - die Release-Note sagt nur 'roles install again', nicht 'mit dem neuen Binary'. (3) Klein: --brief erbt von progressEntries, dass eine Notiz-Folgezeile, die mit '#' beginnt (z.B. '#79 ...'), den Progress-Abschnitt beendet und alle spaeteren Notizen verschluckt; und jede '- '-Folgezeile zaehlt als eigene Notiz, wo das alte Python nur '- **Datum' trennte. (4) SKILL.md: $(...) unquoted zerlegt einen Python-Pfad mit Leerzeichen (C:\\Program Files\\...) - als 'Kommando, kein Pfad' dokumentiert, also bewusst. Keine Defekte im WSL-/Linux-Pfad gefunden."
+review-gaps: "progressEntries (aus Runde 1) zurueck in trimNotes gefaltet: seit --brief an '- **Datum' trennt, hatte es nur noch einen Aufrufer; trimNotes ist wieder wie auf master. Sonst nichts: der jaira-Check ist ein Aufruf, die Windows-Zeile eine case-Zeile."
 test-verdict: "pass: go test -race -count=1 ./... RC=0; DoD 1-5 im Baum geprueft; run-lane.sh mit herdr/jaira-Stubs durchgespielt (Status gelesen, Warten, Zusammenfassung mit Umlaut, Tab per tab_id geschlossen, RC=0); JAIRA_PYTHON='uv run --no-project python' laeuft ueber die SKILL-Zeile; spawn.sh live auf WSL (DoD 4). Nicht pruefbar hier: echtes natives Windows (Git Bash) - nur Stub"
 review-verdict: "Erfuellt die DoD fuer WSL und Linux: kein python3 mehr in spawn.sh/run-lane.sh, json get und --brief getestet, WSL-Erkennung richtig und per Stub fuer beide Faelle abgesichert, Tests gruen (internal/cli, core/role, core/settings). Unsicher bleibt genau das, was Issue #79 betrifft: der native Git-Bash-Start ist nicht auf Windows gelaufen. Freigabe empfohlen unter der Bedingung, dass jemand den Handcheck auf Windows macht, bevor 'Fixes #79' das Issue schliesst."
 review-round: 2
