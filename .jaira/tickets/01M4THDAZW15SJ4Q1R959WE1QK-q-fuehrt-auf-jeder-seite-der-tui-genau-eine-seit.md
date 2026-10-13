@@ -1,7 +1,7 @@
 ---
 id: 01M4THDAZW15SJ4Q1R959WE1QK
 title: q fuehrt auf jeder Seite der TUI genau eine Seite zurueck
-status: critique
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Auf jeder Seite der TUI fuehrt q eine Seite zurueck - dorthin, wohin auch esc fuehrt -, und nur auf der obersten Seite beendet q jaira."
@@ -21,15 +21,17 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T11:47:20Z
-updated-at: 2026-10-13T14:17:04Z
+updated-at: 2026-10-13T14:20:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-2027046
-claimed-at: 2026-10-13T13:50:27Z
+claimed-by: EE-3NX6GL3-2149725
+claimed-at: 2026-10-13T14:17:26Z
 outcome-what: "Kompaktansicht: esc beendet wie q (model.go:1211) - zurueck zum Launcher bzw. raus bei 'jaira board'. Lane-Katalog: q schliesst wie esc (lanes.go:207). notify: Einstellungen, Lane-Editor, Standard-Board und Projektliste sind ihr eigener Rueckweg, und modal.go underlying zeichnet sie unter der Meldung. Projektliste: ein Board, das nicht aufgeht, zeigt seinen Fehler statt ihn zu verschlucken. Hilfe-Zeile fuer q (view.go:1672), README.md und docs/COMMANDS.md unter Keys, Release-Notiz core/release/notes/9WE1QK.md. Neuer Test internal/tui/qback_test.go (27 Board-Seiten, 5 Launcher-Seiten, Board als oberste Seite, Hilfe)."
 outcome-why: "Berk 2026-10-13: 'Man soll konsistent mit q eine Seite zurueck kommen. Bei manchen muss man esc druecken.' Drei Stellen brachen die Regel: esc tat in der Kompaktansicht nichts, q schloss den Lane-Katalog nicht, und Meldungen auf vier Seiten warfen aufs Board statt zurueck."
 outcome-resolves: "DoD 1: compact_view-Fall im Tabellentest (q und esc beenden beide, wie q auf dem Board). DoD 2: lane_catalogue-Fall. DoD 3: TestMessageDismissesToThePageItWasRaisedOn mit settings/lane editor/default board/boards plus TestABoardThatWillNotOpenSaysSoOverTheList. DoD 4: TestQGoesWhereEscGoesOnEveryPage + TestQGoesWhereEscGoesOnTheLauncher + TestHelpNamesQAsOnePageBack; Textfelder bewusst ausgenommen. DoD 5: go vet + go test ./... -race gruen, Release-Notiz geschrieben. Gegenprobe: ohne die Fixes scheitern genau compact_view, lane_catalogue und die vier Meldungsfaelle."
 executed-by: claude-opus-5-5
+review-summary: "none"
+review-gaps: none
 ---
 
 # q fuehrt auf jeder Seite der TUI genau eine Seite zurueck
@@ -74,3 +76,7 @@ executed-by: claude-opus-5-5
 - **2026-10-13 14:00 · BeMuCa** — in-progress: Test-Aufbau internal/tui/qback_test.go - jede Seite wird auf ZWEI frischen Modellen gleich geoeffnet (einmal q, einmal esc), weil sich ein Model nicht klonen laesst. Verglichen wird page(m) (Modus plus Unterseite: Katalog/Rueckfrage im Lane-Editor, Stufe der Roadmap, detailFrom), nicht der gerenderte Bildschirm - zwei Fixture-Boards liegen in verschiedenen Temp-Ordnern, ein Render-Vergleich waere daran gescheitert. Jeder Fall nennt die Seite, die er erreichen muss (at), sonst haette z.B. ein Picker, der statt sich zu oeffnen eine Meldung zeigt, still bestanden. Gegenprobe: ohne die Fixes in model.go/lanes.go schlagen genau 'compact view' und 'lane catalogue' fehl.
 - **2026-10-13 14:05 · BeMuCa** — in-progress: die Hilfe bekommt EINE Zeile fuer q (view.go renderHelp, Abschnitt 'Move around'), nicht drei. Grund: TestHelpExplainsEveryCardMark (150x60) und TestHelpNamesZ (40x40) pruefen, ob Eintraege im sichtbaren Fenster stehen - schon drei Zeilen schoben '@name' und 'z' unter den Rand. Bei 40 Spalten bricht auch eine Zeile mehrfach um, darum TestHelpNamesZ von Hoehe 40 auf 50 (44 war das Minimum; die Absicht des Tests ist die Breite, nicht die Hoehe). Die ausfuehrliche Regel (Board ist oberste Seite, Kompaktansicht wie Board, Textfelder nur esc) steht in README.md und docs/COMMANDS.md unter Keys.
 - **2026-10-13 14:06 · BeMuCa** — in-progress: Folge der notify-Aenderung - eine Meldung wird ueber underlying(returnTo) gezeichnet (modal.go:82), und das kannte Einstellungen, Lane-Editor, Standard-Board und Projektliste nicht: die Meldung stand ueber dem Board, und erst beim Schliessen kam die Einstellungsseite zum Vorschein. underlying zeichnet diese vier Seiten jetzt selbst, so dass Schliessen nur den Kasten wegnimmt (die Regel, die der Kommentar dort schon nennt). TestMessageDismissesToThePageItWasRaisedOn vergleicht dafuer die oberste Bildschirmzeile (sie liegt ueber dem Kasten) vor und nach dem Schliessen.
+- **2026-10-13 14:18 · BeMuCa** — critique (Pass 1, ganzer Diff): ein Befund - die erste Zeile der Release-Notiz ist mehrdeutig ('are left with q'), siehe review-summary; Fix: Satz umstellen, so dass klar ist, dass q nur Board und Launcher verlaesst. Bewusst stehen gelassen: (a) underlying (modal.go) wiederholt die vier Seiten-Renderer aus view.go - dasselbe Muster wie Detail/Lane-Fokus/Kompaktansicht dort schon, inkl. nil-Pruefung wie bei links/layer. (b) Hintergrund-Meldungen ueber Hilfe, Board-entfernen-Dialog, Legende, Pickern und Textfeldern schliessen weiter aufs Board - ausserhalb der vier Seiten, die DoD 3 nennt; Legende/Picker koennten es ohne Umbau gar nicht (returnTo). (c) README.md und docs/COMMANDS.md tragen denselben q-Absatz - die Keys-Tabellen sind dort schon doppelt. (d) Fusszeilen 'q quit' auf Board und Kompaktansicht unveraendert - gleich wie das Board, und das Modell weiss nicht, ob ein Launcher davor lief.
+- **2026-10-13 14:18 · BeMuCa** — in-progress (Runde 2): Befund aus critique umgesetzt - erste Zeile der Release-Notiz umgestellt, jetzt eindeutig: 'q leaves only the board (...) and the launcher itself'. Kein Code geaendert.
+- **2026-10-13 14:19 · BeMuCa** — critique (Pass 2): nur der Befund aus Pass 1 gelesen - die Release-Notiz sagt jetzt eindeutig, dass q nur Board und Launcher verlaesst. Nichts mehr offen; die in Pass 1 stehen gelassenen Punkte (a)-(d) bleiben geschlossen.
+- **2026-10-13 14:20 · BeMuCa** — optimize: nichts entfernt. Geprueft und stehen gelassen: (1) Duplikat - modal.go underlying wiederholt die Renderer von Einstellungen/Lane-Editor/Standard-Board/Projektliste aus der Haupt-Switch in view.go (~155-161); die Haupt-Switch auf underlying umzubiegen haette view.go ohne Not mitgezogen, und underlying wiederholt Detail/Lane-Fokus/Kompaktansicht dort schon genauso. (2) Die nil-Pruefungen in underlying sind kein Fluff: returnTo bleibt nach dem Schliessen stehen (z.B. modeSettings bei settingsScreen==nil), und ein Render-Panic waere der teuerste Fehler; links/layer pruefen dort ebenso. (3) Testhelfer quits/pressAll/withBoards/page in qback_test.go - im Paket gibt es nichts Gleiches (grep QuitMsg, '...string'). (4) Vorher schon toter Code, nicht angefasst: model.go modePipeline 'if quit' nach pipelineKey - pipelineKey gibt nie true zurueck (pipeline.go:290).
