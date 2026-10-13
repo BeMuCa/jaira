@@ -97,6 +97,20 @@ func (m *Model) underlying(md mode) string {
 		if m.layer != nil {
 			return m.renderLayerBase()
 		}
+	case modeSettings:
+		if m.settingsScreen != nil {
+			return m.settingsScreen.render(m.width, m.height)
+		}
+	case modeLanes:
+		if m.laneScreen != nil {
+			return m.laneScreen.render(m.width, m.height)
+		}
+	case modeDefaultBoard:
+		if m.board != nil {
+			return m.board.render(m.width, m.height)
+		}
+	case modeProjects:
+		return m.renderProjects()
 	}
 	return m.renderBoard()
 }

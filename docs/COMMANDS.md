@@ -189,6 +189,13 @@ L         Milestone Roadmap: bubbles filled by done/total, arrows for what comes
 S         settings: lanes, the default board, days of logbook shown
 ```
 
+`q` goes one page back, on every page, to the same place `esc` goes. The board
+is the top page: there `q` goes back to the launcher, or quits jaira when it
+was started without one (`jaira board`), and `esc` clears the filter. The
+compact view is the board seen another way, so `q` and `esc` both leave it the
+way `q` leaves the board. In a text field `q` is a letter, and `esc` is the way
+back.
+
 The terminal lane ends with the logbook of the last `logbook-days` days
 (`~/.jaira/settings.json`, 28 when unset, `0` hides them), newest first, filled
 in teal and marked `⎙ filed <day>`. They are read-only: `enter` opens one, and
@@ -254,7 +261,8 @@ In the picker: `a` add · `i` create a board here · `s` scan two levels · `spa
 toggle a result · `enter` add what is selected.
 
 Compact view: `a`/`d` or `←`/`→` move · `enter` open the step full width ·
-`1`-`9` switch project · `v` back to the board.
+`1`-`9` switch project · `v` back to the board · `q`/`esc` leave it as `q`
+leaves the board.
 
 In an opened step: `jk` ticket · `gG` first/last · `hl` next/previous lane
 (stays in this view) · `enter` open ticket · `q`/`esc`/`v` back to the compact

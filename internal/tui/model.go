@@ -1205,7 +1205,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modePipeline:
-		if s == "q" || s == "ctrl+c" {
+		// The compact view is the board seen another way, not a page below it,
+		// so q and esc leave it exactly as q leaves the board: back to the
+		// launcher, or out of jaira when it was started without one.
+		if s == "q" || s == "esc" || s == "ctrl+c" {
 			m.Close()
 			return m, tea.Quit
 		}
@@ -1346,7 +1349,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.projIdx < len(m.projects) {
 				cmd := m.switchBoard(m.projects[m.projIdx].Root)
-				m.mode = modeBoard
+				// A board that would not open says why, over this list.
+				if m.mode != modeMessage {
+					m.mode = modeBoard
+				}
 				return m, cmd
 			}
 		case "x":
@@ -1719,13 +1725,14 @@ func (m *Model) moveCard(d int) {
 // notify puts a message on screen. Dismissing it goes back to the page it was
 // raised on. A message raised by the move picker keeps the picker's own answer:
 // the picker is on its way out, and the page behind it is what the message
-// belongs to. The screens that own their own state (settings, the lane editor,
-// the default-board picker) still dismiss to the board, which is what they did
-// before this existed.
+// belongs to. The rest dismiss to the board: the legend and the u/M pickers
+// keep their own way back in returnTo, which a message over them would
+// overwrite.
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
 	switch m.mode {
-	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks, modeLayer:
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks, modeLayer,
+		modeSettings, modeLanes, modeDefaultBoard, modeProjects:
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.

@@ -1,9 +1,14 @@
 package tui
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/project"
 )
 
 // press sends one key through the real dispatch, so a test cannot pass against
@@ -79,11 +84,31 @@ func TestMessageDismissesToThePageItWasRaisedOn(t *testing.T) {
 		{"compact view", func(t *testing.T, m *Model) { m.mode = modePipeline }, modePipeline},
 		{"open ticket", openTicketInLaneFocus, modeDetail},
 		{"board", func(t *testing.T, m *Model) { m.mode = modeBoard }, modeBoard},
-		// Screens that own their own state keep dismissing to the board.
 		{"settings", func(t *testing.T, m *Model) {
 			m.settingsScreen = newSettingsScreen(m.store.Root)
 			m.mode = modeSettings
-		}, modeBoard},
+		}, modeSettings},
+		{"lane editor", func(t *testing.T, m *Model) {
+			m.settingsScreen = newSettingsScreen(m.store.Root)
+			m.laneScreen = newLaneScreen(m.store, m.lanes)
+			m.mode = modeLanes
+		}, modeLanes},
+		{"default board", func(t *testing.T, m *Model) {
+			db, err := lane.LoadDefaultBoard()
+			if err != nil {
+				t.Fatal(err)
+			}
+			m.settingsScreen = newSettingsScreen(m.store.Root)
+			m.board = newDefaultBoardScreen(m.lanes, db)
+			m.mode = modeDefaultBoard
+		}, modeDefaultBoard},
+		{"boards", func(t *testing.T, m *Model) {
+			m.projects = []project.Project{{Root: m.store.Root, Name: "current"}}
+			m.mode = modeProjects
+		}, modeProjects},
+		// The legend keeps its own way back in returnTo, which a message over
+		// it would overwrite, so it still dismisses to the board.
+		{"legend", func(t *testing.T, m *Model) { press(m, "t") }, modeBoard},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -93,11 +118,42 @@ func TestMessageDismissesToThePageItWasRaisedOn(t *testing.T) {
 			if m.mode != modeMessage {
 				t.Fatalf("notify did not show a message: mode = %v", m.mode)
 			}
+			// The top row sits above the box, so it shows what the message
+			// covers — which has to be the page it goes back to.
+			under := strings.SplitN(stripANSI(m.render()), "\n", 2)[0]
 			press(m, "esc")
 			if m.mode != c.want {
 				t.Errorf("dismissed to %v, want %v", m.mode, c.want)
 			}
+			if back := strings.SplitN(stripANSI(m.render()), "\n", 2)[0]; back != under {
+				t.Errorf("the message covered %q, but dismissing it showed %q", under, back)
+			}
 		})
+	}
+}
+
+// A board that will not open says so over the list it was chosen from, and
+// the message goes back to that list rather than to a board nobody switched to.
+func TestABoardThatWillNotOpenSaysSoOverTheList(t *testing.T) {
+	m := newTestModel(t, 120, 34)
+	m.projects = []project.Project{
+		{Root: m.store.Root, Name: "current"},
+		{Root: filepath.Join(t.TempDir(), "gone"), Name: "gone"},
+	}
+	m.mode = modeProjects
+	m.projIdx = 1
+	before := m.store
+
+	press(m, "enter")
+	if m.mode != modeMessage {
+		t.Fatalf("a failed switch showed no message: mode = %v", m.mode)
+	}
+	if m.store != before {
+		t.Error("a failed switch swapped the store")
+	}
+	press(m, "q")
+	if m.mode != modeProjects {
+		t.Errorf("dismissed to %v, want modeProjects", m.mode)
 	}
 }
 

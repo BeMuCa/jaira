@@ -896,7 +896,7 @@ S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
 an arrow lit when work just moved. ad/←→ pick a step, enter opens it full width,
-1-9 switch project.
+1-9 switch project, q/esc leave it as q leaves the board.
 
 In an opened step: jk ticket, gG first/last, hl next/previous lane (stays in
 this view), enter open ticket, q/esc/v back to the compact view.
@@ -919,6 +919,13 @@ In an open milestone: ↑↓ ticket, enter opens it, b the board filtered to it,
 On the board list (p, and the launcher):
 x   remove a board — choose what goes, the cursor starts on No
 ```
+
+`q` goes one page back, on every page, to the same place `esc` goes. The board
+is the top page: there `q` goes back to the launcher, or quits jaira when it
+was started without one (`jaira board`), and `esc` clears the filter. The
+compact view is the board seen another way, so `q` and `esc` both leave it the
+way `q` leaves the board. In a text field `q` is a letter, and `esc` is the way
+back.
 
 Every screen is clamped to the terminal: a line wider than the window is cut
 rather than wrapped, because a wrapped line pushes everything under it down and

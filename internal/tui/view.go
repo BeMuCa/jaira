@@ -1669,6 +1669,7 @@ func (m *Model) renderHelp() string {
 			{"← →", "previous / next lane"},
 			{"j k ↓ ↑", "previous / next card"},
 			{"g G", "first / last card in lane"},
+			{"q", "one page back, to where esc goes; on the board: back to the launcher, or quit; in a text field q is a letter"},
 		}},
 		{"Look at things", [][2]string{
 			{"enter", "open the selected ticket"},

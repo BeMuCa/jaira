@@ -1,0 +1,3 @@
+- Press `q` to go one page back on any page of the board, the same as `esc`: in the lane catalogue of the lane editor `q` now closes the catalogue, and only the board (back to the launcher, or quit when started with `jaira board`) and the launcher itself are left with `q`; in a text field `q` stays a letter and `esc` is the way back.
+- Expect `esc` in the compact view (`v`) to leave it the way `q` does: back to the launcher, or quit when jaira was started with `jaira board` — it used to do nothing.
+- Expect a message shown on the settings, lane editor, default board or board list screen to close back to that screen, not to the board; a board from the list `p` that cannot be opened now says why instead of failing silently.
