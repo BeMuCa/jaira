@@ -970,17 +970,9 @@ func TestExtraDropsCachedTicketWhoseRefLostItsFile(t *testing.T) {
 		t.Fatalf("first Extra = %d tickets, err %v", len(out), err)
 	}
 
-	dir := ada.syncer.Repo.Dir
-	git := func(args ...string) string {
-		out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput()
-		if err != nil {
-			t.Fatalf("git %v: %v %s", args, err, out)
-		}
-		return strings.TrimSpace(string(out))
-	}
-	empty := git("hash-object", "-t", "tree", "/dev/null")
-	c := git("-c", "user.name=x", "-c", "user.email=x@x", "commit-tree", empty, "-m", "x")
-	git("update-ref", gitref.RefName(id), c)
+	empty := strings.TrimSpace(run(t, ada.dir, "git", "hash-object", "-t", "tree", "/dev/null"))
+	c := strings.TrimSpace(run(t, ada.dir, "git", "commit-tree", empty, "-m", "x"))
+	run(t, ada.dir, "git", "update-ref", gitref.RefName(id), c)
 
 	if out, err := ada.syncer.Extra(map[string]bool{}); err != nil || len(out) != 0 {
 		t.Fatalf("Extra after the ref lost its file = %d tickets, err %v; want 0", len(out), err)
