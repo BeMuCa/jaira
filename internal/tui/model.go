@@ -252,7 +252,8 @@ type Model struct {
 	// watch carries filesystem events. A watcher is more responsive than the
 	// timer, but the timer stays as a backstop because change notifications are
 	// unreliable on some filesystems, notably Windows drives mounted into WSL2.
-	watch  chan struct{}
+	// Each event names the files that changed, so only those are read again.
+	watch  chan []string
 	closer func()
 
 	// thinEmpty is whether lanes holding no tickets are drawn thin on the
@@ -855,7 +856,8 @@ func (m *Model) Init() tea.Cmd {
 // Failure is not fatal: the periodic rescan already keeps the board correct, so a
 // platform without working notifications is merely less immediate.
 func (m *Model) startWatching() {
-	m.watch = make(chan struct{}, 1)
+	ch := make(chan []string, 1)
+	m.watch = ch
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return
@@ -867,27 +869,36 @@ func (m *Model) startWatching() {
 
 	go func() {
 		// Coalesce bursts: a git pull touches many files at once, and re-rendering
-		// per event would thrash the screen for one logical change.
-		var pending bool
+		// per event would thrash the screen for one logical change. The names
+		// collect meanwhile, so the burst arrives as one list of files.
+		pending := map[string]struct{}{}
 		debounce := time.NewTimer(time.Hour)
 		defer debounce.Stop()
 		for {
 			select {
-			case _, ok := <-w.Events:
+			case ev, ok := <-w.Events:
 				if !ok {
 					return
 				}
-				if !pending {
-					pending = true
+				if len(pending) == 0 {
 					debounce.Reset(200 * time.Millisecond)
 				}
+				pending[ev.Name] = struct{}{}
 			case <-debounce.C:
-				if pending {
-					pending = false
-					select {
-					case m.watch <- struct{}{}:
-					default:
-					}
+				if len(pending) == 0 {
+					continue
+				}
+				paths := make([]string, 0, len(pending))
+				for p := range pending {
+					paths = append(paths, p)
+				}
+				select {
+				case ch <- paths:
+					pending = map[string]struct{}{}
+				default:
+					// The board has not taken the last list yet. Keep these names
+					// and try again, rather than dropping the change.
+					debounce.Reset(200 * time.Millisecond)
 				}
 			case _, ok := <-w.Errors:
 				if !ok {
@@ -905,15 +916,15 @@ func (m *Model) Close() {
 	}
 }
 
-type changeMsg struct{}
+// changeMsg says which files the watcher saw change.
+type changeMsg struct{ paths []string }
 
-func waitForChange(ch chan struct{}) tea.Cmd {
+func waitForChange(ch chan []string) tea.Cmd {
 	if ch == nil {
 		return nil
 	}
 	return func() tea.Msg {
-		<-ch
-		return changeMsg{}
+		return changeMsg{paths: <-ch}
 	}
 }
 
@@ -1014,6 +1025,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case changeMsg:
+		// Only these files are read again; every other ticket comes from the cache.
+		m.store.Forget(msg.paths...)
 		_ = m.reload()
 		return m, waitForChange(m.watch)
 
