@@ -1,7 +1,7 @@
 ---
 id: 01M4VCZS1N1T0BHQVR8ATP44SC
 title: "Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt"
-status: done
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -31,17 +31,17 @@ commits:
   - 469b9b57ed1cf44391e18b9144360932976dd010
   - 4f1f517e7ee61d7185f73d5d2e78fe83e045b305
 created-at: 2026-10-13T19:49:16Z
-updated-at: 2026-10-13T20:49:58Z
+updated-at: 2026-10-13T21:16:07Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-6892
-claimed-at: 2026-10-13T20:23:02Z
+claimed-by: DESKTOP-RFTCH11-59767
+claimed-at: 2026-10-13T21:10:22Z
 outcome-what: "spawn.sh/run-lane.sh lesen JSON mit dem neuen 'jaira json get' statt python3; der Chat-Brief kommt aus 'jaira show --brief'; der WSL-Start haengt an WSL_DISTRO_NAME//proc/version statt an .exe, unter Git Bash startet claude nativ im per cygpath -w uebersetzten Worktree; Python-Rollen nehmen JAIRA_PYTHON/'python'-Einstellung (roles list --json: python) und schreiben UTF-8"
 outcome-why: Auf nativem Windows ist python3 fehlend oder der Store-Stub und herdr.exe wurde fuer WSL gehalten - spawn.sh liess leere Tabs stehen
 outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
-review-summary: "Sechs Commits. spawn.sh und run-lane.sh lesen jedes JSON-Feld mit dem neuen 'jaira json get <pfad> [--default v]' (internal/cli/jsonget.go: Pfad mit Punkten, String roh, null leer, sonst kompaktes JSON ohne \\u-Escapes, fehlt -> Exit 5) statt python3 -c. Der Chat-Brief fuer explain/discuss kommt aus 'jaira show <id> --brief' (tickets.go ticketBrief, trennt Notizen nur an '- **Datum'). spawn.sh prueft direkt nach dem HERDR_ENV-Check, ob das jaira auf PATH 'json get' kann, und bricht sonst vor Worktree und Tab ab. start_on() entscheidet einmal: MINGW/MSYS/CYGWIN -> windows (Tab per --cwd im cygpath -w-Pfad, Kommando nur 'claude [--model x]', unabhaengig von cmd/PowerShell/bash im Tab); herdr.exe oder /mnt/* plus WSL_DISTRO_NAME oder microsoft in /proc/version -> wsl.exe --cd wie bisher; sonst 'cd ... && claude'. Python-Rollen (acceptance, logbook-summary) holen das Kommando aus 'jaira roles list --json' (Feld python: JAIRA_PYTHON > settings 'python' > python3) und setzen stdout/stderr selbst auf UTF-8. Release-Note core/release/notes/TP44SC.md, fuenf Zeilen, die erste sagt 'erst Binary, dann roles install'."
-round: 4
-review-gaps: "(1) Der Kern von Issue #79 ist weiter nicht auf Windows gelaufen: Git-Bash-Start, --cwd mit C:\\-Pfad in Herdr fuer Windows und 'jaira roles list --json | jaira json get python' unter uv sind nur per Stub (TestSpawnStartsClaudeWhereItsShellRuns) bzw. auf Linux geprueft. Der Handcheck aus der Note vom 13.10. 20:20 steht aus. (2) docs/COMMANDS.md nennt weder 'jaira json get' (passt unter 'Agent plumbing') noch 'show --brief' neben '--notes-last' in Zeile 58; die Release-Note nennt beide, die Befehlsreferenz nicht. (3) Nebensache: --brief zaehlt Text zwischen '## Progress' und der ersten datierten Notiz nicht mehr mit, das alte Python tat es; auf echten Tickets steht dort nichts. Keine Defekte im Diff gefunden: Tests gruen (internal/cli, core/role, core/settings, go vet sauber), kein python3 mehr in den Skripten, json get von Hand geprueft (Pfad, Exit 5, --default, null, Umlaute), --brief auf diesem Ticket = 9 Notizen, die mehrzeilige 20:20-Notiz bleibt ganz."
-test-verdict: "pass: go test -race -count=1 ./... RC=0 nach Luecken-Fix; DoD 1-8 im Baum geprueft; altes jaira -> spawn.sh RC=1 mit Meldung, kein Tab (live); WSL-Tab live nach letztem Stand (w3:pGB, dir=Worktree); --brief am echten Ticket. Nicht pruefbar hier: natives Windows - Schritte in Note"
+review-summary: "CI-Runde: Fix nur im Test, spawn.sh unveraendert - richtig so, eine Test-Env-Weiche im Skript waere Testcode im ausgelieferten Pfad. spawnOn() (core/role/role_test.go) weicht bewusst vom PATH-Stub-Muster der anderen Spawn-Tests ab; der Kommentar sagt warum (Git-bash.exe setzt /usr/bin vorn). Kein einfacherer Weg gefunden. Rest: Note 21:09/CI-Fix."
+round: 5
+review-gaps: "CI-Runde: eine Ein-Eintrag-Map fuer den herdr.exe-Stub in TestSpawnStartsClaudeWhereItsShellRuns auf ein WriteFile reduziert (die uname/cygpath-Eintraege sind entfallen). Sonst nichts: spawnOn hat zwei Aufrufer, keine Duplikate im Repo (grep 'export -f' leer)."
+test-verdict: "pass lokal: go test ./... RC=0, go vet + GOOS=windows go vet sauber, core/role -race ok; exportierte Funktion schlaegt /usr/bin auf PATH (von Hand geprueft). Windows-Beleg = CI auf PR #80 (DoD 9)."
 review-verdict: "Der Diff erfuellt die DoD 1-8 fuer WSL und Linux, ohne Defekte, die ich finden konnte. Was Issue #79 wirklich belegt, der Start auf nativem Windows, ist ungeprueft. Freigabe empfohlen, sobald der Windows-Handcheck gelaufen ist; vorher sollte 'Fixes #79' das Issue nicht schliessen. Lueckenpunkt 2 (COMMANDS.md) ist eine Zeile und kann vor dem PR mit."
 review-round: 4
 review-check: "1. cd ~/projects/.worktrees/jaira-tp44sc && go test ./internal/cli ./core/role ./core/settings  -> drei Zeilen 'ok'. 2. go build -o /tmp/j ./cmd/jaira && echo '{\"result\":{\"pane\":{\"pane_id\":\"w1:p2\"}}}' | /tmp/j json get result.pane.pane_id  -> w1:p2. 3. echo '{}' | /tmp/j json get x; echo $?  -> Meldung 'no key \"x\"', dann 5. 4. echo '{}' | /tmp/j json get x --default -  -> '-'. 5. /tmp/j show TP44SC --brief  -> eine JSON-Zeile mit id, title, goal, question, review, notes_last (4 Eintraege), notes_total 9 oder mehr. 6. JAIRA_PYTHON='uv run python' /tmp/j roles list | tail -1  -> 'python: uv run python ... (from JAIRA_PYTHON)'. 7. Windows-Handcheck, Schritte 0-6 aus der Note vom 13.10. 20:20: neuer Tab steht in C:\\<pfad>, claude laeuft, kein 'Python' in der Ausgabe; mit altem jaira -> 'install the new jaira first', Exit 1, kein Tab. Nur Schritt 7 belegt Issue #79."
@@ -67,6 +67,7 @@ review-check: "1. cd ~/projects/.worktrees/jaira-tp44sc && go test ./internal/cl
   proof: spawn.sh Check vor tab create; TestSpawnStopsBeforeATabWhenJairaIsTooOld; live: altes jaira -> RC=1 mit Meldung, kein Tab; core/release/notes/TP44SC.md Zeile 1
 - [x] --brief trennt Notizen nur an '- **Datum'; Folgezeilen mit '#' oder '- ' bleiben in ihrer Notiz; getestet
   proof: internal/cli/tickets.go briefNote/ticketBrief; TestTicketBriefCarriesTheNewestNotes (#79- und '- '-Folgezeile)
+- [ ] CI auf PR #80 gruen, auch test (windows-latest); keine Spawn-Tests auf Windows uebersprungen
 
 ## Options
 
@@ -99,3 +100,7 @@ internal/cli/jsonget.go Long-Text: auch Eingabe ohne JSON endet in Exit 5 / --de
 6) Gegenprobe altes jaira: PATH ohne Schritt-1-Ordner, Schritt 4 wiederholen -> Meldung "install the new jaira first ...", Exit 1, kein Tab
 Branch feat/tp44sc ist lokal, nicht gepusht - Schritt 0 laeuft im WSL-Worktree.
 - **2026-10-13 20:23 · Alexander Sacharov** — review (fresh, Runde 3): keine Defekte im Diff, Tests gruen. Offen: Windows-Handcheck (Note 20:20) vor 'Fixes #79'; docs/COMMANDS.md nennt 'json get' und 'show --brief' nicht. Details in review-gaps.
+- **2026-10-13 21:09 · Alexander Sacharov** — CI rot auf PR #80 (13.10., Run 38466031469, nur test (windows-latest); ubuntu/macos gruen). Zurueck in in-progress. Fehler in core/role/role_test.go, nicht in der Logik: (1) TestSpawnStartsClaudeWhereItsShellRuns:678/682 - auf dem Windows-Runner laeuft das Skript selbst unter Git Bash (MINGW), die WSL-/Git-Bash-Stubs schalten den Startweg dort nicht um; Fall 'wsl' bekam 'claude' statt 'wsl.exe --cd ...', Fall 'git bash' bekam die echte Temp-Pfad statt C:\work\repo. (2) TestSpawnChatsStartOnTheChatModelWithTheirBrief:598-622 - auf Windows startet der Tab nativ, die Kommandozeile ist 'claude --model sonnet' ohne Quotes; der Test erwartet die WSL/Linux-Form. Erwartung: die Erkennung im Test steuerbar machen (z. B. uname/WSL-Signal per Env im Stub, wie die Stubs es fuer herdr tun) oder die Erwartung je Plattform richtig stellen - nicht die Tests auf Windows ueberspringen. Vor dem Push: GOOS=windows go vet ./... und, wo moeglich, die Tests mit erzwungenem MINGW-Fall lokal laufen lassen.
+- **2026-10-13 21:10 · Alexander Sacharov** — CI-Runde an einen neuen Worker (Tab w3:pGD): der alte Tab war nach done geschlossen.
+- **2026-10-13 21:10 · Alexander Sacharov** — parent session: jaira-6a (CI-Runde, Worker in Tab w3:pGD)
+- **2026-10-13 21:12 · Alexander Sacharov** — CI-Fix: Ursache der Windows-Fehler - Git fuer Windows' bash.exe setzt /usr/bin vor den PATH, den der Test uebergibt; die uname-/cygpath-Stubs in bin/ wurden nie erreicht (jaira-Stub schon, der liegt nicht in /usr/bin). Fix nur im Test: spawnOn() startet spawn.sh ueber bash -c mit exportierten Funktionen uname/cygpath (export -f), die vor jedem PATH greifen. Chat-Test laeuft damit als Linux, spawn.sh bleibt unveraendert. Lokal: go test core/role internal/cli core/settings ok, GOOS=windows go vet ok.

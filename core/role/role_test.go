@@ -580,7 +580,7 @@ esac
 		if err := os.WriteFile(model, []byte(chatModel), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", lane)
+		cmd := spawnOn(bash, "Linux", spawn, "--no-worktree", "ab12cd", "AB12CD", lane)
 		cmd.Dir = t.TempDir()
 		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
 			"HERDR_WORKSPACE_ID=", "PATH="+bin+string(os.PathListSeparator)+path)
@@ -626,8 +626,8 @@ esac
 // A herdr.exe is the Herdr of WSL and of native Windows alike, so spawn.sh
 // tells the two apart by the machine it runs on (issue #79): in WSL the tab
 // crosses back with wsl.exe --cd; in Git Bash it starts claude where it is,
-// in the worktree as Windows spells it. uname and cygpath are stubs, so both
-// cases run on any machine.
+// in the worktree as Windows spells it. uname and cygpath are stubbed, so both
+// cases run on any machine, Windows included.
 func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
@@ -649,24 +649,18 @@ func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
 		bin := t.TempDir()
 		ran := filepath.Join(bin, "ran")
 		created := filepath.Join(bin, "created")
-		stubs := map[string]string{
-			"herdr.exe": `#!/usr/bin/env bash
+		herdr := `#!/usr/bin/env bash
 case "$1 $2" in
   "tab create") printf '%s\n' "$@" > "` + created + `"; echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
   "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
   "pane run")   printf '%s\n' "$4" > "` + ran + `" ;;
 esac
-`,
-			"uname":   "#!/usr/bin/env bash\necho '" + c.uname + "'\n",
-			"cygpath": "#!/usr/bin/env bash\necho 'C:\\work\\repo'\n",
-		}
-		for name, script := range stubs {
-			if err := os.WriteFile(filepath.Join(bin, name), []byte(script), 0o755); err != nil {
-				t.Fatal(err)
-			}
+`
+		if err := os.WriteFile(filepath.Join(bin, "herdr.exe"), []byte(herdr), 0o755); err != nil {
+			t.Fatal(err)
 		}
 		wt := t.TempDir()
-		cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", "review", wt)
+		cmd := spawnOn(bash, c.uname, spawn, "--no-worktree", "ab12cd", "AB12CD", "review", wt)
 		cmd.Dir = wt
 		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr.exe"),
 			"HERDR_WORKSPACE_ID=", "WSL_DISTRO_NAME="+c.distro, "PATH="+bin+string(os.PathListSeparator)+path)
@@ -682,6 +676,15 @@ esac
 			t.Errorf("%s: tab create got %q, want --cwd %s", c.name, args, c.wantCwd)
 		}
 	}
+}
+
+// spawnOn runs spawn.sh in a shell whose uname answers uname and whose cygpath
+// answers C:\work\repo. They are exported functions, not stubs on PATH: on
+// Windows, Git's bash.exe puts /usr/bin ahead of any PATH it is handed, so a
+// stub there is never reached and the script sees the runner's own Git Bash.
+func spawnOn(bash, uname, spawn string, args ...string) *exec.Cmd {
+	stub := `uname() { echo '` + uname + `'; }; cygpath() { echo 'C:\work\repo'; }; export -f uname cygpath; exec "$BASH" "$@"`
+	return exec.Command(bash, append([]string{"-c", stub, "bash", spawn}, args...)...)
 }
 
 // No role runs python3 by name: on Windows it is missing or the Store's stub
