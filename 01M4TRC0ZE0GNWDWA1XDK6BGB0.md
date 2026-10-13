@@ -21,7 +21,9 @@ related: []
 follows: 01M2HW4788Z5G0M05G3PJDXV60
 commits: []
 created-at: 2026-10-13T13:48:57Z
-updated-at: 2026-10-13T13:48:57Z
+updated-at: 2026-10-13T14:16:08Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Das Board zeigt den Stand des Refs, wenn die Ticket-Datei dahinter zurueckliegt
