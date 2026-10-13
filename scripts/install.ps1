@@ -49,8 +49,7 @@ function Test-JairaChecksum([string]$ArchivePath, [string]$ChecksumsPath) {
 # entries like %USERPROFILE%\bin into fixed paths for good.
 function Add-JairaUserPath([string]$Dir) {
 	$key = 'HKCU:\Environment'
-	$item = Get-Item -LiteralPath $key
-	$raw = $item.GetValue('Path', '', 'DoNotExpandEnvironmentNames')
+	$raw = (Get-Item -LiteralPath $key).GetValue('Path', '', 'DoNotExpandEnvironmentNames')
 	$norm = $Dir.TrimEnd('\')
 	foreach ($entry in $raw -split ';') {
 		$e = [Environment]::ExpandEnvironmentVariables($entry).TrimEnd('\')

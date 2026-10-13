@@ -1,7 +1,7 @@
 ---
 id: 01M4V3R2EJ9KBB70ZDN68Z6ZN0
 title: Windows installiert jaira mit einer PowerShell-Zeile
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,15 +22,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T17:07:46Z
-updated-at: 2026-10-13T17:16:36Z
+updated-at: 2026-10-13T17:17:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-201480
 claimed-at: 2026-10-13T17:08:28Z
 outcome-what: "Neues scripts/install.ps1: findet das neueste Release, laedt das Zip fuer amd64/arm64, prueft SHA-256 gegen checksums.txt, legt jaira.exe in %LOCALAPPDATA%\\Programs\\jaira (oder JAIRA_INSTALL_DIR) und haengt das Verzeichnis einmal an den User-PATH. README und install.sh nennen die Windows-Zeile, Release-Note 8Z6ZN0.md."
 outcome-why: Auf Windows gab es keinen Installer; install.sh brach ab und schickte zum Zip - ein Windows-Kollege musste entpacken und PATH von Hand setzen.
 outcome-resolves: "Windows installiert jaira mit 'irm .../install.ps1 | iex' ohne Adminrechte; ein zweiter Lauf aktualisiert. Getestet unter PowerShell 5.1 und 7.4."
-review-summary: "scripts/install.ps1 Add-JairaUserPath: der Parameter $Key existiert nur fuer einen Test, der nicht im Repo liegt (scratchpad unit.ps1) - ein einziger Aufrufer, immer HKCU:\\Environment; Parameter streichen und den Schluessel im Funktionskoerper festschreiben"
+review-summary: "none"
 round: 2
+review-gaps: "scripts/install.ps1 Add-JairaUserPath: Einmal-Variable $item in den GetValue-Aufruf gefaltet. Geprueft und gelassen: core/selfupdate macht dasselbe fuer bestehende Installationen in Go - install.ps1 ist noetig, weil vorher noch kein Binary da ist, und uebernimmt bewusst dessen .old-<pid>-Namen; $version bleibt als Spiegel von install.sh; kein toter Code."
 ---
 
 # Windows installiert jaira mit einer PowerShell-Zeile
@@ -62,3 +63,4 @@ round: 2
 - **2026-10-13 17:08 · Alexander Sacharov** — Offene Entscheidungen: keine. Selbst entschieden: Architektur ueber PROCESSOR_ARCHITEW6432/PROCESSOR_ARCHITECTURE (AMD64->amd64, ARM64->arm64, sonst Abbruch - 32-bit x86 gibt es nicht als Release). Version ueber api.github.com/releases/latest wie install.sh. PATH-Vergleich ohne Gross/Klein und ohne abschliessenden Backslash. User-PATH ueber [Environment]::SetEnvironmentVariable(...,'User') und zusaetzlich in der laufenden Sitzung. Getestet wird mit powershell.exe 5.1 aus WSL (/mnt/c/Windows/System32/WindowsPowerShell).
 - **2026-10-13 17:14 · Alexander Sacharov** — Gefunden: (1) Windows PowerShell 5.1, aus einer Umgebung mit pwsh-7-PSModulePath gestartet (so auf Alex' Rechner), findet Get-FileHash nicht - daher SHA256 ueber .NET. (2) Der zweite Lauf scheiterte zuerst an Copy-Item: das gerade installierte jaira.exe lief noch (vermutlich der Update-Check im Hintergrund). Loesung wie self upgrade: altes exe nach jaira.exe.old-<pid> umbenennen, dann kopieren, Reste wegfegen. (3) Datei ist bewusst reines ASCII: ohne BOM liest 5.1 eine lokal gespeicherte Datei als ANSI, und ein UTF-8-Gedankenstrich enthaelt Byte 0x94, das PowerShell als Anfuehrungszeichen liest. Tests: scratchpad unit.ps1 (Funktionen, Wegwerf-Key HKCU:\Software\JairaInstallTest) und e2e.ps1 (echter Release v0.4.1, zwei Laeufe, User-PATH vorher gesichert und danach exakt wiederhergestellt), beide gruen unter 5.1.22621 und 7.4.6.
 - **2026-10-13 17:16 · Alexander Sacharov** — critique runde 1: scripts/install.ps1 Add-JairaUserPath: der Parameter $Key existiert nur fuer einen Test, der nicht im Repo liegt (scratchpad unit.ps1) - ein einziger Aufrufer, immer HKCU:\Environment; Parameter streichen und den Schluessel im Funktionskoerper festschreiben. Bewusst stehen gelassen: Add-Type/SendMessageTimeout statt [Environment]::SetEnvironmentVariable - letzteres schreibt REG_SZ und liest expandiert, wuerde also %USERPROFILE%-Eintraege im User-PATH fest verdrahten (rustup und scoop gehen denselben Weg). Expand-Archive bleibt: lief im e2e unter 5.1 mit dem pwsh-7-Modulpfad.
+- **2026-10-13 17:16 · Alexander Sacharov** — critique runde 2: der eine Befund (Parameter $Key) ist erledigt, HKCU:\Environment steht jetzt im Funktionskoerper; e2e unter 5.1 und 7 erneut gruen. Nichts weiter.
