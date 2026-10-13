@@ -15,9 +15,9 @@ import (
 // person or an agent reading them never finds.
 //
 // The list is the one cobra's usage template prints: the root's available
-// commands, which leaves out hidden ones like merge-driver. help and completion
-// are not on a fresh root — cobra adds them at Execute and documents them
-// itself.
+// commands and help, which leaves out hidden ones like merge-driver. help and
+// completion are not on a fresh root until cobra adds them at Execute, so they
+// are added here the same way.
 func TestEveryCommandIsDocumented(t *testing.T) {
 	read := func(path string) string {
 		t.Helper()
@@ -25,7 +25,9 @@ func TestEveryCommandIsDocumented(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return string(b)
+		// Neither file is pinned eol=lf in .gitattributes, so a Windows
+		// checkout with core.autocrlf hands both over with CRLF line endings.
+		return strings.ReplaceAll(string(b), "\r\n", "\n")
 	}
 	_, section, ok := strings.Cut(read("README.md"), "\n## Commands\n")
 	if !ok {
@@ -34,8 +36,11 @@ func TestEveryCommandIsDocumented(t *testing.T) {
 	section, _, _ = strings.Cut(section, "\n## ")
 	reference := read(filepath.Join("docs", "COMMANDS.md"))
 
-	for _, c := range newRoot("test").Commands() {
-		if !c.IsAvailableCommand() {
+	root := newRoot("test")
+	root.InitDefaultHelpCmd()
+	root.InitDefaultCompletionCmd()
+	for _, c := range root.Commands() {
+		if !c.IsAvailableCommand() && c.Name() != "help" {
 			continue
 		}
 		name := regexp.QuoteMeta(c.Name())

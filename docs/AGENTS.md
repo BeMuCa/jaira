@@ -153,6 +153,31 @@ Names are stored lowercase-kebab; anything outside `[a-z0-9-]` is refused rather
 than trimmed down. Colors live once per board in `.jaira/tags`, one
 `name: <ansi256>` line per tag, hand-editable.
 
+## Before creating a milestone
+
+A milestone is the set of tickets that belong to one round of work, kept in
+`.jaira/milestones/<name>.md`, one ticket id per line. Read the list before
+starting one:
+
+```bash
+jaira milestone ls --json                # name, color, ticket count, goal, place on the roadmap
+jaira milestone create <name> [id...]    # start one; 'add' and 'rm <name> <id>...' change it
+jaira milestone rename <old> <new>       # never rename the file by hand
+jaira list --milestone <name> --json     # every ticket in it
+```
+
+Reuse the milestone that is already there for that round of work — "q4" and
+"quarter-four" on one board are two names for one round, and each filters to
+half of it. `create` on a name that exists is refused (exit 3) and points at
+`jaira milestone add`.
+
+`--after <a,b>` on `create` or `jaira milestone set` places a milestone on the
+Milestone Roadmap under those milestones (`--after ""` makes it the top of a
+swimlane of its own); `jaira milestone set <name> --no-roadmap` takes it off. An
+unknown predecessor exits 5, an arrow that would close a loop exits 3. A
+milestone leaves the board only through `jaira logbook <name>`, once every ticket
+in it is finished; emptying it with `rm` leaves it standing.
+
 ## Leaving a trail
 
 Write `jaira note <id> <text>` before you stop, or when something did not

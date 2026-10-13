@@ -847,6 +847,7 @@ jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --s
 jaira note <id> <text>     record what you worked out, so a later session can pick it up
 jaira validate             check every ticket on the board for damage
 jaira logbook <id>         file a finished ticket under today, commits stamped
+jaira logbook <milestone>  file a milestone once every ticket in it is finished
 jaira logbook              list what left the board in the last logbook-days (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
 jaira restore <file>       put an archived or logged ticket, or a filed milestone, back
@@ -870,7 +871,9 @@ jaira projects add <path>  register a board (--scan searches two levels down)
 jaira whoami               the identity jaira acts as, and the state of this board
 jaira share                publish the board (--undo to make it private)
 jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod
-jaira hook print           a Claude Code Stop hook that refuses to end a session with agentic lanes unworked
+jaira hook print           print a Claude Code Stop-hook snippet that refuses to end a session with agentic lanes unworked
+jaira completion <shell>   print the completion script for bash, fish, powershell or zsh
+jaira help <command>       the full help of one command, the same as <command> --help
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.

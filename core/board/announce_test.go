@@ -174,8 +174,8 @@ func TestAgentNoteNamesTheMilestoneCommands(t *testing.T) {
 		"`add`/`rm <name> <id>...`",
 		"`rename <old> <new>`",
 		"`jaira logbook <name>`",
-		"`--after <a,b>`",
-		"`set --no-roadmap`",
+		"`jaira milestone create|set <name> --after <a,b>`",
+		"`jaira milestone set <name> --no-roadmap`",
 	} {
 		if !strings.Contains(agentNote, want) {
 			t.Errorf("agentNote does not contain %s", want)

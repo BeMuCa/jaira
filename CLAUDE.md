@@ -59,9 +59,9 @@ Capturing and picking work:
   is already there; "q4" and "quarter-four" are two names for one round of work.
   `jaira milestone create <name> [id...]` starts one, `add`/`rm <name> <id>...`
   put tickets in and take them out, `rename <old> <new>` renames it everywhere,
-  and `jaira logbook <name>` files it once its tickets are finished. `create`
-  and `set` take `--after <a,b>` to place it on the Milestone Roadmap, and
-  `set --no-roadmap` takes it off again
+  and `jaira logbook <name>` files it once its tickets are finished.
+  `jaira milestone create|set <name> --after <a,b>` places it on the Milestone
+  Roadmap, and `jaira milestone set <name> --no-roadmap` takes it off again
 
 Working a ticket:
 

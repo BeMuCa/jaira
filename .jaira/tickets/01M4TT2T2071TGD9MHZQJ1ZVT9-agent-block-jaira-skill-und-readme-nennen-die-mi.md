@@ -19,14 +19,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T14:18:52Z
-updated-at: 2026-10-13T17:10:20Z
+updated-at: 2026-10-13T17:36:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-2510012
-claimed-at: 2026-10-13T16:56:10Z
-outcome-what: "Agent block (core/board/announce.go) gained an 8-line milestone entry after the jaira tags entry: 'jaira milestone ls' read before creating, create/add/rm/rename, 'jaira logbook <name>', --after on create/set and set --no-roadmap; CLAUDE.md and AGENTS.md regenerated with 'jaira update'. .claude/skills/jaira/SKILL.md gained a Milestones section modeled on the Tags section. README '## Commands' gained 9 lines and docs/COMMANDS.md 7 rows, so both name every command 'jaira --help' lists. Two tests: TestAgentNoteNamesTheMilestoneCommands and TestEveryCommandIsDocumented. Release note core/release/notes/J1ZVT9.md."
-outcome-why: "The milestone commands were only in --help and COMMANDS.md, so an agent never learned it could create, fill, rename or place milestones; Berk asked whether Claude can do that at all. README and COMMANDS.md had drifted from the binary (9 and 6 commands missing) with nothing tying them to it."
-outcome-resolves: "DoD 1: the block names ls as read-before-create plus create/add/rm/set/rename and --after, pinned by TestAgentNoteNamesTheMilestoneCommands; CLAUDE.md/AGENTS.md carry exactly those 8 new lines. DoD 2: SKILL.md section covers ls first, the commands, roadmap --after/--no-roadmap, rename, logbook <name>. DoD 3 and 5: TestEveryCommandIsDocumented went red with the 9+6 misses and is green now; it fails for any future command missing from either document. DoD 4: go vet and go test ./... -race green; release note written."
+claimed-by: j1zvt9-babysitter
+claimed-at: 2026-10-13T17:36:07Z
+outcome-what: "Agent block (core/board/announce.go:61-68) gained an 8-line milestone entry after the jaira tags entry: 'jaira milestone ls' read before creating, create/add/rm/rename, 'jaira logbook <name>', 'jaira milestone create|set <name> --after <a,b>' and 'jaira milestone set <name> --no-roadmap'; CLAUDE.md and AGENTS.md regenerated with 'jaira update'. .claude/skills/jaira/SKILL.md gained a Milestones section modeled on the Tags section, docs/AGENTS.md one beside 'Before tagging anything'. README '## Commands' gained 13 lines and docs/COMMANDS.md 9 rows, so both name every command 'jaira --help' lists, help and completion included. Tests: TestAgentNoteNamesTheMilestoneCommands and TestEveryCommandIsDocumented (CRLF-safe). Release note core/release/notes/J1ZVT9.md."
+outcome-why: "The milestone commands were only in --help and COMMANDS.md, so an agent never learned it could create, fill, rename or place milestones; Berk asked whether Claude can do that at all. README and COMMANDS.md had drifted from the binary (9 and 6 commands missing) with nothing tying them to it. Review pass 1 found the doc test would fail on windows-latest (unpinned docs checked out with CRLF) and that a bare 'set' in the block reads as 'jaira set'."
+outcome-resolves: "DoD 1: the block names ls as read-before-create plus create/add/rm/set/rename and --after, pinned by TestAgentNoteNamesTheMilestoneCommands; CLAUDE.md/AGENTS.md carry exactly those lines (validate: agent_note_stale []). DoD 2: SKILL.md section covers ls first, the commands, roadmap --after/--no-roadmap, rename, logbook <name>. DoD 3 and 5: TestEveryCommandIsDocumented builds the list exactly as cobra's usage template does (available commands plus help, help and completion added as Execute would) and fails for any without a README line or COMMANDS.md row; it passes on a CRLF copy and fails when a line is removed. DoD 4: go vet and go test ./... -race green; release note written."
+review-summary: "Two commits. docs: README '## Commands' gains 9 lines, docs/COMMANDS.md 7 rows (links, fetch, pull, release, snapshot, roles list/install), and internal/cli/commands_doc_test.go fails for any top-level command of a fresh root with no README line or COMMANDS.md row. feat: the agent block (core/board/announce.go) gains an 8-line milestone entry after the tags entry, pinned by TestAgentNoteNamesTheMilestoneCommands; CLAUDE.md/AGENTS.md regenerated; .claude/skills/jaira/SKILL.md gains a Milestones section; release note J1ZVT9.md. Content checked against --help and source: accurate."
+review-gaps: "1. DEFECT internal/cli/commands_doc_test.go:30 parses README on '\\n' but README.md and docs/COMMANDS.md have no eol=lf pin; on windows-latest (core.autocrlf) the Cut fails - reproduced with a CRLF copy: 'README.md has no ## Commands section'. 2. DoD 3/5 say every command --help lists; help and completion are listed but undocumented and skipped by the test. 3. announce.go: bare '`set --no-roadmap`' reads as the ticket command 'jaira set'. 4. README hook print line calls it the hook; --help says it prints a snippet. 5. release note says agents 'then read' ls - the block only tells them to. 6. README never names 'jaira logbook <milestone>'. 7. docs/AGENTS.md has 'Before tagging anything' (added by 79GEPW in 9236dcb3) but nothing on milestones. 8. test covers top-level commands only; 'jaira hook example' has no COMMANDS.md row (pre-existing)."
+test-verdict: "pass: go build/vet + go test ./... -race -count=1 green at 17eae0d2 (29 ok, exit 0); DoD 1-5 verified in the tree; branch build's --help lists 40 commands and README/COMMANDS.md miss only cobra's help and completion; both new tests fail when a README line, a COMMANDS.md row or the block's milestone ls is removed; fresh no-remote 'jaira init' renders the 8 milestone lines into CLAUDE.md and AGENTS.md; on a no-remote copy of this board validate reports agent_note_stale [] and update leaves both files unchanged and lists the J1ZVT9 note"
+review-verdict: "fail: windows-latest CI would go red on the new doc test (gap 1); back to in-progress with gaps 1-7"
+review-check: "pending: written on the next review pass"
 ---
 
 # Agent-Block, jaira-Skill und README nennen die Milestone-Befehle, so wie sie die Tag-Befehle nennen
@@ -38,11 +43,11 @@ outcome-resolves: "DoD 1: the block names ls as read-before-create plus create/a
 - [x] .claude/skills/jaira/SKILL.md hat einen Milestone-Abschnitt nach dem Muster des Tags-Abschnitts: Liste vor dem Anlegen lesen, die Befehle, Roadmap mit --after/--no-roadmap, rename, logbook <milestone>
   proof: .claude/skills/jaira/SKILL.md:204 '## Milestones: read the list before you start one' - ls first, create/add/rm/rename, list --milestone, roadmap --after/--no-roadmap, logbook <name>, restore
 - [x] README.md '## Commands' nennt jeden Befehl, den 'jaira --help' listet, in einer Zeile (am 2026-10-13 fehlten: hook, links, milestone, note, restore, resume, tag, tags, whoami)
-  proof: README.md:840-873 (9 new lines); TestEveryCommandIsDocumented (internal/cli/commands_doc_test.go:21)
+  proof: README.md:840-876 - 13 new lines incl. help and completion; TestEveryCommandIsDocumented (internal/cli/commands_doc_test.go:21) checks every command --help lists, help and completion included, CRLF-safe
 - [x] go test ./... -race gruen; Release-Notiz unter core/release/notes/
-  proof: go vet ./... && go test ./... -race -count=1: 29 packages ok, exit 0; core/release/notes/J1ZVT9.md
+  proof: go vet ./... && go test ./... -race -count=1: 29 packages ok, exit 0 (after review pass 1); core/release/notes/J1ZVT9.md
 - [x] docs/COMMANDS.md beschreibt jeden Befehl, den 'jaira --help' listet (am 2026-10-13 fehlten: links, pull, release, roles, snapshot); ein Test vergleicht die Befehlsliste mit README und COMMANDS.md, damit kein neuer Befehl wieder fehlt
-  proof: docs/COMMANDS.md:60 links, :154-157 fetch/pull/release/snapshot, :178-179 roles list/install (fetch was missing too); TestEveryCommandIsDocumented checks README and COMMANDS.md
+  proof: docs/COMMANDS.md:60 links, :69 help, :131 completion, :156-159 fetch/pull/release/snapshot, :180-181 roles list/install (fetch was missing too); TestEveryCommandIsDocumented checks README and COMMANDS.md
 
 ## Options
 
@@ -62,6 +67,8 @@ outcome-resolves: "DoD 1: the block names ls as read-before-create plus create/a
 - [x] .claude/skills/jaira/SKILL.md: Milestones section after the Tags section - ls before create, the commands, roadmap --after/--no-roadmap, rename, logbook <name>
 - [x] core/release/notes/J1ZVT9.md: one line telling users to run jaira update for the new block lines
 - [x] go vet ./... and go test ./... -race green; commit with ticket file, docs(J1ZVT9)/feat(J1ZVT9)
+- [x] review pass 1: commands_doc_test.go normalises \r\n, mirrors --help exactly (help + completion); README/COMMANDS.md lines for help and completion
+- [x] review pass 1: block names 'jaira milestone set'/'create|set' in full; README hook print + logbook <milestone> lines; release note wording; docs/AGENTS.md milestone section; regenerate CLAUDE.md/AGENTS.md; suite green; commit
 
 ## Progress
 - **2026-10-13 16:54 · BeMuCa** — Berk 2026-10-13: Umfang festgelegt - README und docs/COMMANDS.md nennen JEDEN Befehl; Agent-Block und jaira-Skill bekommen nur die Milestone-Befehle, wie damals die Tags (a208d43b, 79GEPW). Grund fuer den kleinen Block: er wird in jede Agent-Sitzung geladen. Kommt in PR #74 (feat/milestone-roadmap); Arbeit im Worktree /home/berk/git/jAIra-J1ZVT9 auf diesem Branch.
@@ -77,3 +84,16 @@ outcome-resolves: "DoD 1: the block names ls as read-before-create plus create/a
 - Regenerated CLAUDE.md/AGENTS.md with the branch build's 'jaira update' on a 'git init' copy of the tracked files + .jaira/ (0 remotes, HOME/JAIRA_HOME in scratch); the diff there was exactly the 8 new block lines per file, then both files copied back.
 - Every command in the SKILL.md section was run on that copy: 'Round One' -> round-one; set --after nosuch exit 5; a loop exit 3 with the cycle named; --after with --no-roadmap exit 2; logbook <name> exit 3 while a ticket is short of done; rename moved the file.
 - Left alone on purpose (scope): README line 'jaira fetch' still says only tickets while its --help says tickets and milestones; 'jaira hook example' has no COMMANDS.md row (the test checks top-level commands only).
+- **2026-10-13 17:11 · BeMuCa** — critique pass 1 (whole diff, both commits): nothing found.
+- Simpler shape: the doc test is one loop over newRoot().Commands() with two regexes; a parsed --help would be more fragile and say the same. The announce test copies TestAgentNoteNamesTheConversationalMode (core/board/announce_test.go).
+- Fit: reading ../../README.md follows core/lane/shipped_test.go; the block entry sits beside the tags entry it was modeled on (a208d43b) and is the same length, 8 lines; the SKILL section follows 'Tags: read the vocabulary...'. No existing doc-vs-binary test to reuse (only market/shipped tests read repo docs).
+- Speculative: none. Right place: block text in core/board, the command-list test in internal/cli where newRoot lives.
+- Let stand: the SKILL section (49 lines) is longer than Tags (33) because the roadmap flags and the exit codes an agent branches on (5 unknown predecessor, 3 loop/existing name) have no shorter home.
+- **2026-10-13 17:12 · BeMuCa** — optimize: nothing to remove.
+- Duplication: no helper in the repo lists the root's commands (no other IsAvailableCommand) or reads repo files for tests beyond core/lane/shipped_test.go:16, which inlines its path the same way.
+- Dead code / fluff: the read closure has two callers, QuoteMeta'd name is used by both regexes; the announce test is one table loop.
+- Cost: two regex compiles per command, about 45 commands, test-only - not worth hoisting.
+- **2026-10-13 17:17 · BeMuCa** — testing: what was run besides the suite.
+- Mutation in a scratch copy: deleting README 'jaira whoami' and the COMMANDS.md 'jaira snapshot' row turned TestEveryCommandIsDocumented red with exactly those two; renaming 'jaira milestone ls' in announce.go turned TestAgentNoteNamesTheMilestoneCommands red.
+- The 'note names X which is not in blocked-by' and 'cannot leave the backlog' warnings from validate on the board copy are other tickets' and predate this branch.
+- **2026-10-13 17:29 · BeMuCa** — review pass 1 -> back to in-progress. Must fix: commands_doc_test.go reads README/COMMANDS.md and cuts on '\n'; neither file is pinned eol=lf (.gitattributes pins only embedded files), so the windows-latest job (autocrlf) fails - reproduced on a CRLF copy. Fix in the test: normalise \r\n before parsing, rather than pinning two docs files' checkout. Also take, cheap and inside the goal: (a) test mirrors --help exactly - InitDefaultHelpCmd/InitDefaultCompletionCmd and the usage template's 'IsAvailableCommand or help' - plus README/COMMANDS.md lines for help and completion, so DoD 3/5 hold literally; (b) block: write 'jaira milestone set' / 'jaira milestone create|set' out, bare 'set' reads as 'jaira set'; (c) README hook print = prints a snippet; (d) release note: 'tells your agents to read'; (e) README line for 'jaira logbook <milestone>'; (f) docs/AGENTS.md section next to 'Before tagging anything'. Leave: subcommand coverage (hook example row) - outside the DoD, report as a gap.

@@ -66,6 +66,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira sessions` | sessions working this tree |
 | `jaira resume` | everything left mid-flight, with its notes |
 | `jaira validate` | check every ticket for damage; `--strict` fails on warnings. Also warns when the generated agent block no longer matches this board's lanes — which happens when a lane file is edited by hand rather than through `jaira lanes` |
+| `jaira help <command>` | the full help of one command, the same as `jaira <command> --help`; `jaira help` alone prints the list of commands |
 
 ### Being one person under several names
 
@@ -127,6 +128,7 @@ field per ticket.
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md`. A new board is gitignored (private); a board already in git — a fresh clone of a shared one — keeps `.gitignore` as it is, so it is the first command a joining teammate runs |
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it. Regenerates the agent block, including the section describing this board's own lanes, so adopting a lane is when the note catches up with the board |
 | `jaira self upgrade` | replace the running jaira binary with the latest release, verifying its checksum first; `--check` reports without installing, `--version vX.Y.Z` pins or downgrades; refuses a Homebrew or `go install` build, naming the right way to upgrade that install instead. Whether a newer release exists is checked at most once a day in the background and shown as a status line in the launcher's and the board's footer — never printed by a CLI command, which stay quiet on purpose. `JAIRA_NO_UPDATE_CHECK=1` turns the check off. |
+| `jaira completion <shell>` | print the shell completion script for `bash`, `fish`, `powershell` or `zsh`; `jaira completion <shell> --help` says how to load it, for one session or for every new one |
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--tag` (repeatable; run `jaira tags` first), `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields; list fields take a comma-separated value, `tags=ui,backend` included |
 | `jaira tag <id> <name>…` | add topic tags to a ticket. Run `jaira tags` first. A name the board knows is reused and said to be; a new one gets a free colour from the palette. Names are stored lowercase-kebab — "My UI" is filed as `my-ui`, and you are told so; anything outside `[a-z0-9-]` is refused rather than trimmed down, because a quietly shortened name is a second name for one subject. `--color <0-255>` picks the colour instead, and recolours a tag that already has one; it takes exactly one name. Under `--json` the payload carries `tags_new` and `tags_reused` |
