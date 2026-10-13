@@ -138,6 +138,17 @@ func TestQGoesWhereEscGoesOnEveryPage(t *testing.T) {
 			pressAll(m, "L", "x")
 		}, modeLayer, false},
 	}
+	// Where the mode alone cannot tell a dialog from the screen under it: a
+	// dialog that failed to open would leave q and esc agreeing on that screen.
+	inside := map[string]string{
+		"lane catalogue":          "catalogue true",
+		"removing a lane":         "confirm true",
+		"roadmap":                 fmt.Sprintf("stage %d", stageLayer),
+		"roadmap: new or connect": fmt.Sprintf("stage %d", stageChoose),
+		"roadmap: connect":        fmt.Sprintf("stage %d", stagePick),
+		"roadmap: open milestone": fmt.Sprintf("stage %d", stageDetail),
+		"roadmap: take off":       fmt.Sprintf("stage %d", stageRemove),
+	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			land := func(k string) (string, bool) {
@@ -147,6 +158,9 @@ func TestQGoesWhereEscGoesOnEveryPage(t *testing.T) {
 					t.Fatalf("the page did not open: mode = %v, want %v", m.mode, c.at)
 				}
 				before := page(m)
+				if want := inside[c.name]; !strings.Contains(before, want) {
+					t.Fatalf("the page did not open: %s, want %s", before, want)
+				}
 				quit := quits(press(m, k))
 				if quit != c.quits {
 					t.Errorf("%s: quits = %t, want %t", k, quit, c.quits)
@@ -227,5 +241,20 @@ func TestHelpNamesQAsOnePageBack(t *testing.T) {
 	m.mode = modeHelp
 	if out := stripANSI(m.render()); !strings.Contains(out, "one page back") {
 		t.Errorf("the help does not call q one page back:\n%s", out)
+	}
+}
+
+// The compact view says on screen and in the help that esc leaves it now, not
+// only q.
+func TestCompactViewSaysEscLeavesIt(t *testing.T) {
+	m := newTestModel(t, 140, 40)
+	m.mode = modePipeline
+	if out := stripANSI(m.render()); !strings.Contains(out, "q/esc quit") {
+		t.Errorf("the compact view's hints do not name esc:\n%s", out)
+	}
+	m.mode = modeHelp
+	m.height = 200
+	if out := stripANSI(m.render()); !strings.Contains(out, "leave it, as q leaves the board") {
+		t.Errorf("the help does not say how the compact view is left:\n%s", out)
 	}
 }

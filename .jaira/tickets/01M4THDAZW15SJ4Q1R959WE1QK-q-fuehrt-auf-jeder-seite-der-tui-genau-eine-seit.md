@@ -1,7 +1,7 @@
 ---
 id: 01M4THDAZW15SJ4Q1R959WE1QK
 title: q fuehrt auf jeder Seite der TUI genau eine Seite zurueck
-status: testing
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Auf jeder Seite der TUI fuehrt q eine Seite zurueck - dorthin, wohin auch esc fuehrt -, und nur auf der obersten Seite beendet q jaira."
@@ -21,17 +21,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T11:47:20Z
-updated-at: 2026-10-13T14:20:17Z
+updated-at: 2026-10-13T14:58:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
-claimed-by: EE-3NX6GL3-2149725
-claimed-at: 2026-10-13T14:17:26Z
+claimed-by: EE-3NX6GL3-2263413
+claimed-at: 2026-10-13T14:52:29Z
 outcome-what: "Kompaktansicht: esc beendet wie q (model.go:1211) - zurueck zum Launcher bzw. raus bei 'jaira board'. Lane-Katalog: q schliesst wie esc (lanes.go:207). notify: Einstellungen, Lane-Editor, Standard-Board und Projektliste sind ihr eigener Rueckweg, und modal.go underlying zeichnet sie unter der Meldung. Projektliste: ein Board, das nicht aufgeht, zeigt seinen Fehler statt ihn zu verschlucken. Hilfe-Zeile fuer q (view.go:1672), README.md und docs/COMMANDS.md unter Keys, Release-Notiz core/release/notes/9WE1QK.md. Neuer Test internal/tui/qback_test.go (27 Board-Seiten, 5 Launcher-Seiten, Board als oberste Seite, Hilfe)."
 outcome-why: "Berk 2026-10-13: 'Man soll konsistent mit q eine Seite zurueck kommen. Bei manchen muss man esc druecken.' Drei Stellen brachen die Regel: esc tat in der Kompaktansicht nichts, q schloss den Lane-Katalog nicht, und Meldungen auf vier Seiten warfen aufs Board statt zurueck."
 outcome-resolves: "DoD 1: compact_view-Fall im Tabellentest (q und esc beenden beide, wie q auf dem Board). DoD 2: lane_catalogue-Fall. DoD 3: TestMessageDismissesToThePageItWasRaisedOn mit settings/lane editor/default board/boards plus TestABoardThatWillNotOpenSaysSoOverTheList. DoD 4: TestQGoesWhereEscGoesOnEveryPage + TestQGoesWhereEscGoesOnTheLauncher + TestHelpNamesQAsOnePageBack; Textfelder bewusst ausgenommen. DoD 5: go vet + go test ./... -race gruen, Release-Notiz geschrieben. Gegenprobe: ohne die Fixes scheitern genau compact_view, lane_catalogue und die vier Meldungsfaelle."
 executed-by: claude-opus-5-5
 review-summary: "none"
-review-gaps: none
+review-gaps: "(1) core/release/notes/9WE1QK.md:1 sagt \"q leaves only the board ... and the launcher\", Zeile 2 sagt, q verlaesst auch die Kompaktansicht - Widerspruch; (2) pipeline.go:265 Fusszeile der Kompaktansicht nennt nur \"q quit\", und der Hilfe-Abschnitt \"Compact view\" (view.go ~1704) sagt nicht, dass q/esc sie verlassen; (3) qback_test.go: at prueft nur den Modus - Katalog, Lane-Rueckfrage und die Roadmap-Dialoge koennten leer bestehen, wenn sich der Dialog nicht oeffnet"
+test-verdict: "pass: go vet + go test ./... -race -count=1 gruen (exit 0, internal/tui 351s, Stand af1282a7 + Release-Notiz); DoD 1-5 im Baum nachgeprueft (model.go:1211, lanes.go:207, notify/underlying, qback_test.go, Hilfe view.go:1672, core/release/notes/9WE1QK.md); von Hand in tmux auf einer Board-Kopie ohne Remote, mit und ohne Launcher, jede Seite durchgespielt"
 ---
 
 # q fuehrt auf jeder Seite der TUI genau eine Seite zurueck
@@ -45,9 +46,9 @@ review-gaps: none
 - [x] Eine Meldung schliesst zurueck auf die Seite, die sie gezeigt hat (Einstellungen, Lanes, Standard-Board, Projekte)
   proof: internal/tui/model.go notify: modeSettings, modeLanes, modeDefaultBoard, modeProjects merken sich als returnTo; modal.go underlying zeichnet sie unter der Meldung; model.go modeProjects enter laesst eine Fehlermeldung stehen; TestMessageDismissesToThePageItWasRaisedOn, TestABoardThatWillNotOpenSaysSoOverTheList
 - [x] Ein Test geht jede Seite durch und prueft, dass q dorthin fuehrt, wohin esc fuehrt (Textfelder ausgenommen); die Hilfe nennt q als 'eine Seite zurueck'
-  proof: internal/tui/qback_test.go TestQGoesWhereEscGoesOnEveryPage (27 Seiten), TestQOnTheBoardLeavesIt, TestQGoesWhereEscGoesOnTheLauncher (5 Seiten), TestHelpNamesQAsOnePageBack; Hilfe internal/tui/view.go:1672
+  proof: internal/tui/qback_test.go TestQGoesWhereEscGoesOnEveryPage (27 Seiten, Unterzustand geprueft), TestQOnTheBoardLeavesIt, TestQGoesWhereEscGoesOnTheLauncher (5 Seiten), TestHelpNamesQAsOnePageBack, TestCompactViewSaysEscLeavesIt; Hilfe internal/tui/view.go:1672 und 1706
 - [x] go test ./... -race gruen; Release-Notiz unter core/release/notes/
-  proof: go vet ./... && go test ./... -race -count=1: alle Pakete ok (internal/tui 290s); core/release/notes/9WE1QK.md
+  proof: go vet ./... && go test ./... -race -count=1: alle Pakete ok (internal/tui 261s, Stand nach review-Runde); core/release/notes/9WE1QK.md
 
 ## Options
 
@@ -80,3 +81,6 @@ review-gaps: none
 - **2026-10-13 14:18 · BeMuCa** — in-progress (Runde 2): Befund aus critique umgesetzt - erste Zeile der Release-Notiz umgestellt, jetzt eindeutig: 'q leaves only the board (...) and the launcher itself'. Kein Code geaendert.
 - **2026-10-13 14:19 · BeMuCa** — critique (Pass 2): nur der Befund aus Pass 1 gelesen - die Release-Notiz sagt jetzt eindeutig, dass q nur Board und Launcher verlaesst. Nichts mehr offen; die in Pass 1 stehen gelassenen Punkte (a)-(d) bleiben geschlossen.
 - **2026-10-13 14:20 · BeMuCa** — optimize: nichts entfernt. Geprueft und stehen gelassen: (1) Duplikat - modal.go underlying wiederholt die Renderer von Einstellungen/Lane-Editor/Standard-Board/Projektliste aus der Haupt-Switch in view.go (~155-161); die Haupt-Switch auf underlying umzubiegen haette view.go ohne Not mitgezogen, und underlying wiederholt Detail/Lane-Fokus/Kompaktansicht dort schon genauso. (2) Die nil-Pruefungen in underlying sind kein Fluff: returnTo bleibt nach dem Schliessen stehen (z.B. modeSettings bei settingsScreen==nil), und ein Render-Panic waere der teuerste Fehler; links/layer pruefen dort ebenso. (3) Testhelfer quits/pressAll/withBoards/page in qback_test.go - im Paket gibt es nichts Gleiches (grep QuitMsg, '...string'). (4) Vorher schon toter Code, nicht angefasst: model.go modePipeline 'if quit' nach pipelineKey - pipelineKey gibt nie true zurueck (pipeline.go:290).
+- **2026-10-13 14:30 · BeMuCa** — testing: von Hand gesehen (Binary mit -race nach scratchpad gebaut, Board-Kopie ohne Remote, HOME/JAIRA_HOME im Scratch, 140x45, 3 s je Taste). Ohne Launcher (jaira board): v dann esc -> jaira beendet; v dann q -> beendet; v, enter, q -> Kompaktansicht, nochmal q -> beendet. Mit Launcher: Board aus Launcher, v, esc -> Launcher; v, q -> Launcher; Board q -> Launcher; v, enter, q, q -> Kompaktansicht, dann Launcher. Lane-Katalog: S, enter, l bis '+', enter -> 'Add a lane'; q -> Lane-Editor ohne Katalog; q -> Einstellungen; q -> Board. Projektliste p mit kaputtem Board (.jaira ohne tickets/), enter -> Kasten 'REFUSED ticket: no .jaira directory found' UEBER der Liste; q -> Liste. p, x -> 'Remove board'; q -> Liste; q -> Board. Detail, ?, t, u, M, l, m: q jeweils zurueck aufs Board. Roadmap L: enter auf Blase -> Blase offen, q -> Roadmap; x -> 'Take runde-1 off the roadmap?', q -> Roadmap; auf [+] enter -> n/c-Dialog, q -> zu; enter, c -> 'Connect, after parallel', q -> Roadmap; q -> Board. S, j, enter -> Default board, q -> Settings. Lane-Editor x -> 'remove backlog from this board? no yes', q -> Lane-Editor. Launcher: a, d, x, a+s jeweils q -> eine Seite zurueck; esc und q auf dem Launcher -> beendet. Filter /: q wird getippt ('/q'), esc schliesst. Beobachtung, nicht Teil der DoD: die Fusszeilen nennen weiter nur esc ('esc dismiss' im Meldungskasten, 'esc cancel' im Katalog, 'esc back' im Lane-Editor) und Board/Kompaktansicht sagen 'q quit', auch wenn q zum Launcher fuehrt - moegliches Folgeticket.
+- **2026-10-13 14:52 · BeMuCa** — review (Pass 1, mit unabhaengigem Zweitgutachten eines frischen Modells): zurueck nach in-progress fuer drei kleine Dinge - (1) Release-Notiz Zeile 1 widerspricht Zeile 2 (q verlaesst auch die Kompaktansicht): Zeile 1 auf 'leaves only the board and its compact view (...) and the launcher' aendern. (2) Kompaktansicht sagt nirgends, dass esc sie jetzt verlaesst: Fusszeile pipeline.go:265 'q quit' -> 'q esc quit' (gleiche Form wie die anderen Hints), und im Hilfe-Abschnitt 'Compact view' eine Zeile {'q esc', 'leave it, as q leaves the board'}. (3) qback_test.go: neben 'at' auch den inneren Zustand vor dem Tastendruck pruefen (page(m) enthaelt 'catalogue true' / 'confirm true' / 'stage N'), sonst bestehen Katalog, Lane-Rueckfrage und Roadmap-Dialoge leer, falls der Dialog nicht aufgeht. Bewusst NICHT umgesetzt: kuerzere q-Hilfezeile, damit TestHelpNamesZ bei Hoehe 40 bleibt - schon ausprobiert, auch 'one page back, as esc; on the board: the launcher, or quit' schiebt z bei 40x40 aus dem Fenster (siehe in-progress-Notiz). Offen fuer Berk, nicht im Code: esc mehrfach auf dem Weg Ticket -> Lane-Ansicht -> Kompaktansicht beendet jetzt das Board, auf dem Weg ueber das Board nie (dort leert esc den Filter) - so verlangt es DoD 1. Folgeticket-Kandidat (vorher schon da, jetzt sichtbar): scheitert in switchBoard das reload() NACH dem Tausch des Stores (model.go ~361), bleibt das Board halb gewechselt (Store = kaputtes Board, alter Watcher zu, kein neuer).
+- **2026-10-13 14:58 · BeMuCa** — in-progress (Runde 3, Befunde aus review): (1) Release-Notiz Zeile 1 nennt jetzt Board UND Kompaktansicht. (2) Kompaktansicht: Fusszeile 'q/esc quit' (pipeline.go:265, Schreibweise wie 'q/esc/v back' der Lane-Ansicht), Hilfe-Abschnitt 'Compact view' hat die Zeile 'q esc  leave it, as q leaves the board' (view.go ~1706); TestHelpExplainsEveryCardMark (150x60) haelt das noch aus. Neuer Test TestCompactViewSaysEscLeavesIt. (3) qback_test.go: Map 'inside' prueft fuer Katalog, Lane-Rueckfrage und alle Roadmap-Stufen den inneren Zustand vor dem Tastendruck; Gegenprobe: mit falschem Erwartungswert scheitert der Fall mit 'the page did not open'. go vet + go test ./... -race gruen (internal/tui 261s).

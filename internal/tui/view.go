@@ -1703,6 +1703,7 @@ func (m *Model) renderHelp() string {
 		}},
 		{"Compact view", [][2]string{
 			{"v", "the whole flow at a glance, agents counted per step"},
+			{"q esc", "leave it, as q leaves the board"},
 			{"enter", "open the highlighted step: one lane, filling the screen"},
 			{"h l ← →", "in that view, next / previous lane, without leaving it"},
 			{"q esc v", "back to the compact view"},
