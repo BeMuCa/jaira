@@ -908,3 +908,69 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 		t.Errorf("the new milestone kept the mark: %s", ms.Bytes())
 	}
 }
+
+// A milestone argument is an ID, a <name>-<ID> or a name, whichever the reader
+// has; a name two milestones carry changes nothing and names both forms.
+func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "dup"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	first, _ := milestone.Load(dir, "dup")
+	twin := filepath.Join(milestone.Dir(dir), "dup-ZZZZZ9.md")
+	if err := os.WriteFile(twin, []byte("---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, dir, "milestone", "create", "solo"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	solo, _ := milestone.Load(dir, "solo")
+	one, two := mkTicket(t, dir, "one"), mkTicket(t, dir, "two")
+
+	// both forms are named, and nothing is written
+	for _, args := range [][]string{
+		{"milestone", "add", "dup", one}, {"milestone", "rm", "dup", one},
+		{"milestone", "set", "dup", "--goal", "x"}, {"milestone", "rename", "dup", "other"},
+	} {
+		_, err := runCLI(t, dir, args...)
+		if err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "dup-"+first.ID) || !strings.Contains(err.Error(), "dup-ZZZZZ9") {
+			t.Errorf("%v: want exit 3 naming both forms, got %v", args, err)
+		}
+	}
+	if got, _ := os.ReadFile(twin); strings.Contains(string(got), "goal") {
+		t.Error("an ambiguous set wrote")
+	}
+	if _, err := runCLI(t, dir, "logbook", "dup"); err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "dup-ZZZZZ9") {
+		t.Errorf("logbook dup: %v", err)
+	}
+
+	// the three forms, upper and lower case
+	if out, err := runCLI(t, dir, "milestone", "add", "dup-ZZZZZ9", one); err != nil || !strings.Contains(out, `"dup"`) {
+		t.Errorf("name-ID: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "add", strings.ToLower(first.ID), two); err != nil {
+		t.Errorf("ID in lower case: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "add", solo.ID, one); err != nil {
+		t.Errorf("ID: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "set", "solo", "--goal", "g"); err != nil {
+		t.Errorf("name: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "rename", "ZZZZZ9", "twin"); err != nil || !strings.Contains(out, `"dup" renamed to "twin"`) {
+		t.Errorf("rename by ID: %v\n%s", err, out)
+	}
+	if a, _ := milestone.Load(dir, "dup"); a.ID != first.ID || len(a.Members()) != 1 || !strings.HasSuffix(a.Members()[0], two) {
+		t.Errorf("the name now means the one that kept it: %+v", a)
+	}
+
+	// list --milestone: ID, name-ID and name
+	for _, want := range []string{solo.ID, strings.ToLower(solo.ID), "solo-" + solo.ID, "solo"} {
+		if out, _ := runCLI(t, dir, "list", "--milestone", want); !strings.Contains(out, one) {
+			t.Errorf("list --milestone %s misses the ticket:\n%s", want, out)
+		}
+	}
+	if out, _ := runCLI(t, dir, "list", "--milestone", "dup"); strings.Contains(out, one) {
+		t.Errorf("list --milestone dup holds the ticket that is in twin and solo:\n%s", out)
+	}
+}

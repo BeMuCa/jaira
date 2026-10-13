@@ -257,11 +257,15 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 		// A ticket first, a milestone second. A milestone name is chosen
 		// freely and could be spelled like a handle, and the ticket is both
 		// the older and the far commoner meaning of an argument here.
-		name, nerr := milestoneNamed(s, idArg)
+		ms, nerr := milestoneNamed(s, idArg)
+		var amb *milestone.AmbiguousError
 		switch {
 		case nerr == nil:
-			return logbookMilestone(s, name, w)
+			return logbookMilestone(s, ms.ID, ms.Name, w)
+		case errors.As(nerr, &amb):
+			return refuseAmbiguous(amb)
 		case errors.Is(nerr, os.ErrNotExist):
+			name, _, _ := milestone.NormalizeName(idArg)
 			// The file has left the board, which is exactly what filing does
 			// to it: this tree filed it, or this clone only ever saw the
 			// marked ref. milestone.Load answers with the same ErrNotExist a
@@ -322,32 +326,23 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 }
 
 // milestoneNamed resolves an argument to a milestone on this board, or reports
-// why it is not one. Only an exact name: a milestone is a name from a closed
-// set, the same way the --milestone filter treats it.
-func milestoneNamed(s *ticket.Store, arg string) (string, error) {
-	name, _, err := milestone.NormalizeName(arg)
-	if err != nil {
-		return "", err
+// why it is not one: an ID, a <name>-<ID> or an exact name, as milestone.Load
+// reads them. A name two milestones carry is an *milestone.AmbiguousError.
+func milestoneNamed(s *ticket.Store, arg string) (*milestone.Milestone, error) {
+	if _, _, err := milestone.NormalizeName(arg); err != nil {
+		return nil, err
 	}
-	if _, err := milestone.Load(s.Root, name); err != nil {
-		// The name travels with the error: a caller that has to ask whether
-		// this name was filed needs the normalized spelling, and the file
-		// being gone is one of the answers it asks about.
-		return name, err
-	}
-	return name, nil
+	return milestone.Load(s.Root, strings.TrimSpace(arg))
 }
 
 // logbookMilestone files a milestone: off the board, into the logbook, with
 // its ref left standing and marked.
 //
 // The ref is the part worth reading twice. Taking it down would be the obvious
-// move and is the wrong one: refsync.IncomingMilestones writes to disk every
-// milestone the refs carry, so a removed ref frees the name for a second
-// milestone with the same identity, while a ref that says "filed" is read by
-// every clone — it stops the file coming back and holds the name until
-// 'jaira restore' gives it up.
-func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
+// move and is the wrong one: nothing would tell the other clones, while a ref
+// that says "filed" is read by every clone — it stops the file coming back and
+// marks the one they already have.
+func logbookMilestone(s *ticket.Store, key, name string, w io.Writer) error {
 	env, _, err := loadEnv(s)
 	if err != nil {
 		return err
@@ -369,7 +364,7 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	ms, err := milestone.Load(s.Root, name)
+	ms, err := milestone.Load(s.Root, key)
 	if err != nil {
 		return err
 	}
@@ -388,7 +383,7 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	// The routes where the file is NOT here are answered above, before
 	// milestone.Load is even asked for an ms: this check cannot see them.
 	if ms.Filed() {
-		return refuseFiledOnDisk(s.Root, name,
+		return refuseFiledOnDisk(s.Root, key,
 			"there is no copy of it here to bring back, so filing it again would only stamp today's folder on somebody else's record of it")
 	}
 	// The same gate a ticket passes, asked of a group: a milestone with

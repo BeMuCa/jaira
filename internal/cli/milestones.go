@@ -261,9 +261,9 @@ filed milestone is refused like everywhere else.`,
 			if err := migrateMilestones(s); err != nil {
 				return err
 			}
-			name, _, err := milestone.NormalizeName(args[0])
+			name, err := milestoneKey(args[0])
 			if err != nil {
-				return fail(ExitUsage, "bad_milestone", "%v", err)
+				return err
 			}
 			var preds []string
 			if setAfter {
@@ -303,10 +303,10 @@ filed milestone is refused like everywhere else.`,
 				return emit(w, milestoneJSON(ms, s.Root))
 			}
 			if string(before) == string(ms.Bytes()) {
-				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", name)
+				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", ms.Name)
 				return nil
 			}
-			fmt.Fprintf(w, "Milestone %q updated: %s\n", name, milestonePath(s.Root, name))
+			fmt.Fprintf(w, "Milestone %q updated: %s\n", ms.Name, ms.Path(s.Root))
 			return nil
 		},
 	}
@@ -344,15 +344,19 @@ is not on the board exits 5, or 3 when it was filed.`,
 			if err := migrateMilestones(s); err != nil {
 				return err
 			}
-			from, _, err := milestone.NormalizeName(args[0])
+			from, err := milestoneKey(args[0])
 			if err != nil {
-				return fail(ExitUsage, "bad_milestone", "%v", err)
+				return err
 			}
 			to, changed, err := milestone.NormalizeName(args[1])
 			if err != nil {
 				return fail(ExitUsage, "bad_milestone", "%v", err)
 			}
 
+			fromName := from
+			if old, lerr := milestone.Load(s.Root, from); lerr == nil {
+				fromName = old.Name
+			}
 			ms, err := milestone.Rename(s.Root, s, refs, from, to)
 			var ee *milestone.ExistsError
 			if errors.As(err, &ee) {
@@ -366,17 +370,17 @@ is not on the board exits 5, or 3 when it was filed.`,
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
 				out := milestoneJSON(ms, s.Root)
-				out["renamed_from"] = from
+				out["renamed_from"] = fromName
 				return emit(w, out)
 			}
-			if to == from {
-				fmt.Fprintf(w, "Nothing to do: milestone %q already has that name.\n", from)
+			if to == fromName {
+				fmt.Fprintf(w, "Nothing to do: milestone %q already has that name.\n", fromName)
 				return nil
 			}
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[1], to)
 			}
-			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", from, to, milestonePath(s.Root, to))
+			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", fromName, to, ms.Path(s.Root))
 			return nil
 		},
 	}
@@ -428,9 +432,9 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 	if err := migrateMilestones(s); err != nil {
 		return err
 	}
-	name, _, err := milestone.NormalizeName(args[0])
+	name, err := milestoneKey(args[0])
 	if err != nil {
-		return fail(ExitUsage, "bad_milestone", "%v", err)
+		return err
 	}
 	ids, err := resolveAll(s, args[1:])
 	if err != nil {
@@ -467,13 +471,13 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		verb = "removed from"
 	}
 	if len(touched) == 0 {
-		fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", name)
+		fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", ms.Name)
 		return nil
 	}
 	for _, id := range touched {
-		fmt.Fprintf(w, "%s %s %q\n", ticket.Handle(id), verb, name)
+		fmt.Fprintf(w, "%s %s %q\n", ticket.Handle(id), verb, ms.Name)
 	}
-	fmt.Fprintf(w, "%s now holds %d ticket(s).\n", name, len(ms.Members()))
+	fmt.Fprintf(w, "%s now holds %d ticket(s).\n", ms.Name, len(ms.Members()))
 	return nil
 }
 
@@ -560,8 +564,11 @@ func refuseFiledElsewhere(name, file, carries, instead string) error {
 
 // refuseFiledOnDisk: the file is lying here and carries the mark, which is
 // what a fetch of somebody else's filing leaves behind.
-func refuseFiledOnDisk(root, name, instead string) error {
-	path := milestonePath(root, name)
+func refuseFiledOnDisk(root, key, instead string) error {
+	name, path := key, milestonePath(root, key)
+	if ms, err := milestone.Load(root, key); err == nil {
+		name = ms.Name
+	}
 	return refuseFiledElsewhere(name, filepath.Base(path), "its file at "+path, instead)
 }
 
@@ -662,9 +669,12 @@ func warnIfRecordOnly(err error) error {
 // refuseIfFiled takes it.
 func editRefusal(s *ticket.Store, name string, err error, inLogbook string) error {
 	var fe *milestone.FiledError
+	var amb *milestone.AmbiguousError
 	switch err := warnIfRecordOnly(err); {
 	case err == nil:
 		return nil
+	case errors.As(err, &amb):
+		return refuseAmbiguous(amb)
 	case errors.As(err, &fe):
 		// The third door into a filed milestone's file, after create and
 		// logbook. The write would not lose the mark, but it does not stay
@@ -750,6 +760,24 @@ func afterIDs(root string, ms *milestone.Milestone) []string {
 		}
 	}
 	return out
+}
+
+// milestoneKey is a milestone argument as typed: an ID, a <name>-<ID> or a name,
+// which milestone.Load reads in that order. It is refused when it could not be
+// any of them; it is not lower-cased, because an ID is upper case.
+func milestoneKey(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if _, _, err := milestone.NormalizeName(raw); err != nil {
+		return "", fail(ExitUsage, "bad_milestone", "%v", err)
+	}
+	return raw, nil
+}
+
+// refuseAmbiguous is a name two milestones carry: nothing was written, and the
+// refusal names both <name>-<ID> forms to say again.
+func refuseAmbiguous(amb *milestone.AmbiguousError) error {
+	return fail(ExitValidation, "milestone_ambiguous",
+		"%v — nothing was written; run it again with one of them", amb)
 }
 
 // milestonePath is the file a milestone lives in, found by whatever names it:

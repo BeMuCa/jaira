@@ -691,17 +691,20 @@ func (i Index) Names(id string) []string {
 	return out
 }
 
-// Matches reports whether a ticket belongs to the named milestone. The
-// comparison is equality on the normalized name, not a substring: a milestone
-// is a name from a closed set, and a filter is a question whose answer to an
-// impossible name is "no".
+// Matches reports whether a ticket belongs to the milestone want names: by its
+// ID, by its <name>-<ID>, or by its name — and a name hits every milestone that
+// carries it, since filtering writes nothing and two milestones of one name are
+// the same question. Letter case is not told apart. The comparison is equality,
+// not a substring: a milestone is one of a closed set, and a filter is a
+// question whose answer to an impossible name is "no".
 func (i Index) Matches(id, want string) bool {
-	name, _, err := NormalizeName(want)
-	if err != nil {
-		return false
-	}
+	want = strings.TrimSpace(want)
+	name, _, nameErr := NormalizeName(want)
 	for _, m := range i[id] {
-		if m.Name == name {
+		if strings.EqualFold(m.ID, want) || strings.EqualFold(m.Name+"-"+m.ID, want) {
+			return true
+		}
+		if nameErr == nil && (m.Name == name || m.Name == want) {
 			return true
 		}
 	}
