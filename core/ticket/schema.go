@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -562,20 +563,45 @@ func (t *Ticket) Doc() *Doc { return t.doc }
 
 // Decode projects a parsed document into a Ticket.
 func Decode(d *Doc, path string) (*Ticket, error) {
-	if err := d.Validate(); err != nil {
+	f, err := d.ticketFields()
+	if err != nil {
+		return nil, err
+	}
+	return decodeFields(d, f, path)
+}
+
+// Counts reports how many tickets decodeFields has built and how many ticket
+// frontmatters have been parsed, since the process started. Tests read the
+// difference across an operation to prove it did no work.
+func Counts() (decodes, headerParses int64) {
+	return decodeCount.Load(), headerParseCount.Load()
+}
+
+var decodeCount, headerParseCount atomic.Int64
+
+// ticketFields is Fields for a ticket's frontmatter, counted. Lane files and
+// other YAML go through Fields directly and are not counted.
+func (d *Doc) ticketFields() (*Fields, error) {
+	headerParseCount.Add(1)
+	return d.Fields()
+}
+
+func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
+	decodeCount.Add(1)
+	if err := f.validate(); err != nil {
 		return nil, err
 	}
 	t := &Ticket{Path: path, doc: d, Body: d.Body()}
 
 	str := func(key string) string {
-		v, _, err := d.Scalar(key)
+		v, _, err := f.Scalar(key)
 		if err != nil {
 			return ""
 		}
 		return v
 	}
 	list := func(key string) []string {
-		v, err := d.List(key)
+		v, err := f.List(key)
 		if err != nil {
 			return nil
 		}

@@ -127,18 +127,48 @@ func (d *Doc) SetBody(body string) {
 // ticket using them could be silently restructured by a naive rewrite, so the
 // tool refuses to touch such a file rather than risking corruption (STORE-10).
 func (d *Doc) Validate() error {
+	f, err := d.Fields()
+	if err != nil {
+		return err
+	}
+	return f.validate()
+}
+
+// Fields is one parse of a frontmatter block. Reading many keys through it costs
+// one parse where the same reads through Doc cost one each.
+type Fields struct {
+	root ast.Node                // nil for an empty frontmatter
+	vals []*ast.MappingValueNode // nil when root is not a mapping
+}
+
+// Fields parses the frontmatter once. The result reads only; it does not follow
+// later writes to the Doc.
+func (d *Doc) Fields() (*Fields, error) {
 	f, err := parser.ParseBytes([]byte(d.fm), parser.ParseComments)
 	if err != nil {
-		return fmt.Errorf("ticket: frontmatter is not valid YAML: %w", err)
+		return nil, fmt.Errorf("ticket: frontmatter is not valid YAML: %w", err)
 	}
 	if len(f.Docs) == 0 || f.Docs[0].Body == nil {
+		return &Fields{}, nil
+	}
+	out := &Fields{root: f.Docs[0].Body}
+	switch b := out.root.(type) {
+	case *ast.MappingNode:
+		out.vals = b.Values
+	case *ast.MappingValueNode:
+		out.vals = []*ast.MappingValueNode{b}
+	}
+	return out, nil
+}
+
+func (f *Fields) validate() error {
+	if f == nil || f.root == nil {
 		return nil // empty frontmatter is structurally fine
 	}
-	if _, ok := f.Docs[0].Body.(*ast.MappingNode); !ok {
-		// A single key/value parses as MappingValueNode rather than MappingNode.
-		if _, ok := f.Docs[0].Body.(*ast.MappingValueNode); !ok {
-			return fmt.Errorf("%w: root is %T, expected a mapping", ErrUnsafeYAML, f.Docs[0].Body)
-		}
+	switch f.root.(type) {
+	case *ast.MappingNode, *ast.MappingValueNode:
+	default:
+		return fmt.Errorf("%w: root is %T, expected a mapping", ErrUnsafeYAML, f.root)
 	}
 	var bad string
 	ast.Walk(visitorFunc(func(n ast.Node) ast.Visitor {
@@ -151,11 +181,36 @@ func (d *Doc) Validate() error {
 			bad = "merge key (<<)"
 		}
 		return nil
-	}), f.Docs[0].Body)
+	}), f.root)
 	if bad != "" {
 		return fmt.Errorf("%w: found a YAML %s; edit the file by hand or remove it", ErrUnsafeYAML, bad)
 	}
 	return nil
+}
+
+func (f *Fields) find(key string) *ast.MappingValueNode {
+	if f == nil {
+		return nil
+	}
+	for _, v := range f.vals {
+		if v.Key.GetToken().Value == key {
+			return v
+		}
+	}
+	return nil
+}
+
+// Has reports whether a top-level key is present.
+func (f *Fields) Has(key string) bool { return f.find(key) != nil }
+
+// Scalar reads a top-level scalar field, like Doc.Scalar.
+func (f *Fields) Scalar(key string) (string, bool, error) {
+	return scalarOf(key, f.find(key))
+}
+
+// List reads a top-level list field, like Doc.List.
+func (f *Fields) List(key string) ([]string, error) {
+	return listOf(key, f.find(key))
 }
 
 type visitorFunc func(ast.Node) ast.Visitor
@@ -169,21 +224,15 @@ func (v visitorFunc) Visit(n ast.Node) ast.Visitor {
 
 // topLevel returns the frontmatter's top-level key/value pairs in source order.
 func (d *Doc) topLevel() ([]*ast.MappingValueNode, error) {
-	f, err := parser.ParseBytes([]byte(d.fm), parser.ParseComments)
+	f, err := d.Fields()
 	if err != nil {
-		return nil, fmt.Errorf("ticket: frontmatter is not valid YAML: %w", err)
+		return nil, err
 	}
-	if len(f.Docs) == 0 || f.Docs[0].Body == nil {
-		return nil, nil
+	switch f.root.(type) {
+	case nil, *ast.MappingNode, *ast.MappingValueNode:
+		return f.vals, nil
 	}
-	switch b := f.Docs[0].Body.(type) {
-	case *ast.MappingNode:
-		return b.Values, nil
-	case *ast.MappingValueNode:
-		return []*ast.MappingValueNode{b}, nil
-	default:
-		return nil, fmt.Errorf("%w: root is %T", ErrUnsafeYAML, b)
-	}
+	return nil, fmt.Errorf("%w: root is %T", ErrUnsafeYAML, f.root)
 }
 
 func (d *Doc) find(key string) (*ast.MappingValueNode, error) {
@@ -623,8 +672,15 @@ func (d *Doc) SetList(key string, items []string) error {
 // List reads a top-level list field. Absent or empty yields nil.
 func (d *Doc) List(key string) ([]string, error) {
 	node, err := d.find(key)
-	if err != nil || node == nil {
+	if err != nil {
 		return nil, err
+	}
+	return listOf(key, node)
+}
+
+func listOf(key string, node *ast.MappingValueNode) ([]string, error) {
+	if node == nil {
+		return nil, nil
 	}
 	seq, ok := node.Value.(*ast.SequenceNode)
 	if !ok {
@@ -640,8 +696,15 @@ func (d *Doc) List(key string) ([]string, error) {
 // Scalar reads a top-level scalar field.
 func (d *Doc) Scalar(key string) (string, bool, error) {
 	node, err := d.find(key)
-	if err != nil || node == nil {
+	if err != nil {
 		return "", false, err
+	}
+	return scalarOf(key, node)
+}
+
+func scalarOf(key string, node *ast.MappingValueNode) (string, bool, error) {
+	if node == nil {
+		return "", false, nil
 	}
 	switch v := node.Value.(type) {
 	case *ast.SequenceNode, *ast.MappingNode, *ast.MappingValueNode:
