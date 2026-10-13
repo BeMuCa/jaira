@@ -10,9 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
-	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -132,28 +130,12 @@ a milestone on this board, and the arrows may not form a loop.`,
 
 			ms, err := milestone.Create(s.Root, s, refs, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
 				var ee *milestone.ExistsError
-				var fe *milestone.FiledError
 				switch err := milestone.CheckFree(s.Root, name); {
-				case errors.As(err, &fe):
-					// The file is here but marked, which a fetch of somebody
-					// else's filing leaves behind. It is not on the board, so
-					// "already exists" would send the reader looking for a
-					// milestone no listing names.
-					return nil, refuseFiledOnDisk(s.Root, name,
-						"taking the line out here instead would leave that tree's copy stranded in its logbook")
 				case errors.As(err, &ee):
 					return nil, fail(ExitValidation, "milestone_exists",
 						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
 						name, milestonePath(s.Root, name), name)
 				case err != nil:
-					return nil, err
-				}
-				// Filed under this name, here or in the tree that wrote the
-				// ref: the name stays taken until 'jaira restore' gives it up.
-				// Or a teammate's milestone no fetch has written here yet.
-				if err := refuseIfTaken(s, name,
-					"creating it again here would make a second milestone with the same name",
-					"; creating it again would make a second milestone with the same name"); err != nil {
 					return nil, err
 				}
 				c := colour
@@ -312,9 +294,7 @@ filed milestone is refused like everywhere else.`,
 				}
 				return nil
 			})
-			if err := editRefusal(s, name, err,
-				"there is no copy of it here to change",
-				", and then it can be changed again"); err != nil {
+			if err := editRefusal(s, name, err, ", and then it can be changed again"); err != nil {
 				return err
 			}
 
@@ -373,20 +353,13 @@ is not on the board exits 5, or 3 when it was filed.`,
 				return fail(ExitUsage, "bad_milestone", "%v", err)
 			}
 
-			const twice = "renaming another milestone to it would make a second milestone with the same name"
 			ms, err := milestone.Rename(s.Root, s, refs, from, to)
 			var ee *milestone.ExistsError
-			var fe *milestone.FiledError
-			switch {
-			case errors.As(err, &ee):
+			if errors.As(err, &ee) {
 				return fail(ExitValidation, "milestone_exists",
-					"milestone %q already exists at %s — a rename needs a name no milestone has", to, milestonePath(s.Root, to))
-			case errors.As(err, &fe) && fe.Name == to && to != from:
-				return refuseFiledOnDisk(s.Root, to, twice)
+					"milestone %q already exists at %s — a rename needs a name no milestone on the board has", to, milestonePath(s.Root, to))
 			}
-			if err := editRefusal(s, from, err,
-				"there is no copy of it here to rename",
-				", and then it can be renamed"); err != nil {
+			if err := editRefusal(s, from, err, ", and then it can be renamed"); err != nil {
 				return err
 			}
 
@@ -479,9 +452,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		}
 		return nil
 	})
-	if err := editRefusal(s, name, err,
-		"there is no copy of it here for tickets to go in and out of",
-		", and then tickets can go in and out of it again"); err != nil {
+	if err := editRefusal(s, name, err, ", and then tickets can go in and out of it again"); err != nil {
 		return err
 	}
 
@@ -594,15 +565,6 @@ func refuseFiledOnDisk(root, name, instead string) error {
 	return refuseFiledElsewhere(name, filepath.Base(path), "its file at "+path, instead)
 }
 
-// refuseRenamed is the door of a name a rename left behind: its file lies
-// here marked, put there by a fetch of somebody's rename. Nothing was filed
-// and 'jaira restore' brings nothing back — the milestone is where the mark
-// points, so that is the whole answer.
-func refuseRenamed(name, to string) error {
-	return fail(ExitNotFound, "milestone_renamed",
-		"milestone %q was renamed to %q — use that name; 'jaira milestone ls' lists them", name, to)
-}
-
 // refuseFiledInLogbook is the other state: the file is not on disk any more
 // because this very tree filed it, so the way back runs here. `where` is the
 // logbook folder the copy lies in, and `then` is the caller's closing clause,
@@ -613,49 +575,23 @@ func refuseFiledInLogbook(name, file, where, then string) error {
 		name, where, file, then)
 }
 
-// refuseIfFiled is the door itself: it asks where the name is filed and hands
-// back the refusal that state owes the reader, or nil when the name is not
-// filed at all and the caller may carry on. Every door into a filed milestone
-// — create, add/rm and 'jaira logbook <name>' — stands in front of the same
-// two states and differs only in its closing clause, so each one passes the
-// two clauses and is a single `if err := ...; err != nil`.
+// refuseIfFiled is the door itself: it asks whether the name is filed in this
+// tree's logbook and hands back the refusal that owes the reader, or nil when
+// it is not and the caller may carry on. Every door into a filed milestone —
+// add/rm/set/rename and 'jaira logbook <name>' — stands in front of the same
+// state and differs only in its closing clause, so each one passes the clause
+// and is a single `if err := ...; err != nil`.
 //
-// Written here because the state→refusal mapping was written out at each door
-// instead: the refusal TEXT was already shared, but a fourth door had to
-// rediscover which state maps to which helper, and a state added later would
-// have to be added at every door or be silently dropped at one.
+// `inLogbook` is the caller's closing clause, punctuation included, exactly as
+// refuseFiledInLogbook takes it.
 //
-// `onRef` and `inLogbook` are the caller's closing clauses for the two states,
-// punctuation included, exactly as refuseFiledElsewhere and
-// refuseFiledInLogbook take them — the wording differs because the way back
-// differs.
-func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
-	switch where, file, at := refs.MilestoneFiled(s, name); at {
-	case refsync.MilestoneFiledOnRef:
-		// Nothing is filed under this name in this tree's logbook and the mark
-		// is on the ref, so the copy 'jaira restore' needs lies in whichever
-		// tree filed it. The ref is what `carries` names because, with no file
-		// and no logbook entry here, it is the only thing the reader can go
-		// and look at.
-		return refuseFiledElsewhere(name, file, "its ref "+where, onRef)
-	case refsync.MilestoneFiledHere:
+// Only the logbook is asked. A milestone filed in another tree reaches this
+// one as a marked file or not at all, and the marked file is answered by
+// refuseFiledOnDisk; a name that is filed holds nothing against a new
+// milestone, which is told from it by its ID.
+func refuseIfFiled(s *ticket.Store, name, inLogbook string) error {
+	if where, file, ok := s.FiledMilestone(milestone.FileNamed(name)); ok {
 		return refuseFiledInLogbook(name, file, where, inLogbook)
-	}
-	return nil
-}
-
-// refuseIfTaken is refuseIfFiled for a door that hands out a name, plus the
-// one state only such a door has to fear: a teammate's milestone on its ref
-// that no fetch has written to this disk yet (refsync MilestoneOnRef).
-// Writing the name would overwrite theirs on the remote.
-func refuseIfTaken(s *ticket.Store, name, onRef, inLogbook string) error {
-	if err := refuseIfFiled(s, name, onRef, inLogbook); err != nil {
-		return err
-	}
-	if refs.MilestoneOnRef(name) {
-		return fail(ExitValidation, "milestone_exists",
-			"milestone %q exists on its ref %s but not on this disk yet — 'jaira fetch' brings it here; writing the name now would overwrite it",
-			name, gitref.MilestoneRefName(name))
 	}
 	return nil
 }
@@ -722,15 +658,13 @@ func warnIfRecordOnly(err error) error {
 
 // editRefusal words what milestone.Edit refused for a command that changes a
 // milestone, and downgrades a ref that could not be queued to its warning.
-// onRef and inLogbook are the command's closing clauses for a name no file
-// carries, as refuseIfFiled takes them.
-func editRefusal(s *ticket.Store, name string, err error, onRef, inLogbook string) error {
+// inLogbook is the command's closing clause for a name no file carries, as
+// refuseIfFiled takes it.
+func editRefusal(s *ticket.Store, name string, err error, inLogbook string) error {
 	var fe *milestone.FiledError
 	switch err := warnIfRecordOnly(err); {
 	case err == nil:
 		return nil
-	case errors.As(err, &fe) && fe.RenamedTo != "":
-		return refuseRenamed(name, fe.RenamedTo)
 	case errors.As(err, &fe):
 		// The third door into a filed milestone's file, after create and
 		// logbook. The write would not lose the mark, but it does not stay
@@ -745,7 +679,7 @@ func editRefusal(s *ticket.Store, name string, err error, onRef, inLogbook strin
 		// with. Saying "create it" here sends the reader into the
 		// refusal create raises for a filed name, two steps for one
 		// answer, and the first one points the wrong way.
-		if err := refuseIfFiled(s, name, onRef, inLogbook); err != nil {
+		if err := refuseIfFiled(s, name, inLogbook); err != nil {
 			return err
 		}
 		return fail(ExitNotFound, "no_such_milestone",

@@ -205,8 +205,9 @@ func TestRenameChangesOnlyTheFileNameOnTheSameRef(t *testing.T) {
 	}
 }
 
-// The new name has to be free on this board; a filed milestone refuses, and a
-// rename to the name it already has writes nothing.
+// The new name has to be free on this board; a filed milestone is not
+// renamed, a rename to the name it already has writes nothing, and a filed
+// milestone does not hold its name.
 func TestRenameRefusals(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "a-AAAAAA.md", "---\ncolor: 45\n---\n")
@@ -219,10 +220,7 @@ func TestRenameRefusals(t *testing.T) {
 		t.Errorf("onto a milestone on the board: %v", err)
 	}
 	var fe *FiledError
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "f"); !errors.As(err, &fe) || fe.Name != "f" {
-		t.Errorf("onto a filed one: %v", err)
-	}
-	if _, err := Rename(root, &fakeLock{}, rec, "f", "n"); !errors.As(err, &fe) || fe.Name != "f" {
+	if _, err := Rename(root, &fakeLock{}, rec, "f", "n"); !errors.As(err, &fe) || fe.Name != "f" || fe.File != "f-FFFFFF.md" {
 		t.Errorf("a filed milestone is not renamed: %v", err)
 	}
 	if _, err := Rename(root, &fakeLock{}, rec, "a", "a"); err != nil || len(rec.names) != 0 {
@@ -230,6 +228,12 @@ func TestRenameRefusals(t *testing.T) {
 	}
 	if _, err := Rename(root, &fakeLock{}, rec, "nothing", "n"); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("an unknown milestone: %v", err)
+	}
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "f"); err != nil {
+		t.Errorf("a filed milestone held its name: %v", err)
+	}
+	if got := dirNames(t, root); got != "b-BBBBBB.md,f-AAAAAA.md,f-FFFFFF.md" {
+		t.Errorf("directory %s", got)
 	}
 }
 

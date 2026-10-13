@@ -381,13 +381,15 @@ func TestFilingAMilestoneTakesItOffTheBoardAndRestoreBringsItBack(t *testing.T) 
 		t.Errorf("the logbook listing does not name the filed milestone:\n%s", out)
 	}
 
-	// The name is taken until somebody gives it up.
-	out, err = runCLI(t, dir, "milestone", "create", "round-one")
-	if err == nil {
-		t.Fatalf("a filed milestone's name was handed out again:\n%s", out)
+	// A filed milestone does not hold its name: the ID tells a new one from it.
+	if out, err := runCLI(t, dir, "milestone", "create", "round-one"); err != nil {
+		t.Fatalf("a filed milestone's name could not be used again: %v\n%s", err, out)
 	}
-	if !strings.Contains(err.Error(), "jaira restore") {
-		t.Errorf("the refusal does not say how to get it back: %v", err)
+	if again, err := milestone.Load(dir, "round-one"); err != nil || again.ID == before.ID {
+		t.Fatalf("the new milestone has the filed one's ID: %v %+v", err, again)
+	}
+	if out, err := runCLI(t, dir, "milestone", "rename", "round-one", "round-two"); err != nil {
+		t.Fatalf("freeing the name again: %v\n%s", err, out)
 	}
 
 	if out, err := runCLI(t, dir, "restore", before.FileName()); err != nil {
@@ -517,7 +519,6 @@ func TestEveryDoorIntoAFiledMilestoneSaysTheSameThings(t *testing.T) {
 	}
 
 	doors := map[string][]string{
-		"create":  {"milestone", "create", "round-one"},
 		"add":     {"milestone", "add", "round-one", other},
 		"rm":      {"milestone", "rm", "round-one", other},
 		"logbook": {"logbook", "round-one"},

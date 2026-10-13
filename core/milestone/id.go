@@ -87,3 +87,15 @@ func SplitFile(base string) (name, id string, ok bool) {
 	}
 	return base[:i], base[i+1:], true
 }
+
+// FileNamed is the test for a file base name (no .md) that belongs to a
+// milestone called name, with or without an ID in it.
+func FileNamed(name string) func(base string) bool {
+	return func(base string) bool {
+		if base == name {
+			return true
+		}
+		n, _, ok := SplitFile(base)
+		return ok && n == name
+	}
+}

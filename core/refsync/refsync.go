@@ -213,9 +213,10 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 //
 // A ref named after an old name — written before IDs existed — is read as the
 // ID LegacyID gives that name. It is skipped once a milestone has moved on
-// from it (the ID ref is here, or is on this disk) and when it carries the
-// mark a rename of that era left; otherwise it is taken like an old file and
-// migrated by the next write.
+// from it (the ID ref is here, or is on this disk); the mark a rename of that
+// era left removes the old file this disk may still have and is reported as a
+// rename; otherwise it is taken like an old file and migrated by the next
+// write.
 //
 // A ref whose file says it has been filed is written over a file this tree
 // already has: the marked line is what keeps a milestone off the board, so
@@ -249,7 +250,15 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			if ref.ID != key {
 				continue
 			}
-		} else if milestone.MarkedRenamed(content) || y.hasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
+		} else if to := milestone.RenamedTo(content); to != "" {
+			// The mark a rename of the name-keyed era left: the milestone is
+			// under its new name now, so the old file goes if this disk still
+			// has it, and nothing is written.
+			if err := os.Remove(filepath.Join(milestone.Dir(root), file)); err == nil {
+				renamed[ref.Name] = to
+			}
+			continue
+		} else if y.hasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
 			continue
 		}
 		path := filepath.Join(milestone.Dir(root), file)
@@ -350,85 +359,6 @@ func milestoneFiles(root string) []diskMilestone {
 		out = append(out, m)
 	}
 	return out
-}
-
-// MilestoneFiledAt says where the mark on a filed name was found, because the
-// two places are not interchangeable to the person reading the refusal. A
-// logbook copy lies in this tree and 'jaira restore' here brings it back; a
-// marked ref is somebody else's filing, and the only copy that can come back
-// is in their tree.
-type MilestoneFiledAt int
-
-const (
-	MilestoneNotFiled MilestoneFiledAt = iota
-	MilestoneFiledOnRef
-	MilestoneFiledHere
-)
-
-// MilestoneFiled reports whether this name belongs to a milestone that has
-// been filed, and where that was found. A filed name stays taken: two
-// milestones called the same thing are one identity that looks different on
-// every machine, which is the confusion a name exists to prevent. Every door
-// that hands out a name — the CLI's create and rename and the layer's — asks
-// here, so a state added later reaches all of them. The mark a rename leaves
-// on the old name's ref is not a filing here: it holds nothing (HoldsName).
-//
-// Two places are looked at because neither alone covers both boards. The ref
-// is the one an unshared clone does not have, and the logbook is the one a
-// clone that never fetched does not see — a board that has never been shared
-// has no refs at all, and would otherwise hand out the same name twice. A nil
-// syncer is such a board: only the logbook is asked.
-//
-// This tree's logbook is asked first, and that order decides what the caller
-// may say. The tree that filed the milestone has both: the copy in its own
-// logbook AND the mark on the ref it wrote. Asking the ref first would tell
-// the filer that the way back runs in "the tree that filed it" — which is the
-// tree they are standing in — and hide the copy lying right here. The ref
-// answer is therefore the one left over: nothing in this logbook, so the copy
-// is somewhere else.
-func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (where, file string, at MilestoneFiledAt) {
-	named := func(base string) bool {
-		if base == name {
-			return true
-		}
-		n, _, ok := milestone.SplitFile(base)
-		return ok && n == name
-	}
-	if where, file, ok := s.FiledMilestone(named); ok {
-		return where, file, MilestoneFiledHere
-	}
-	if y != nil && y.Usable() == nil {
-		if _, content, _, err := y.Repo.ReadMilestone(name); err == nil {
-			if milestone.FromBytes(name, content).HoldsName() {
-				return gitref.MilestoneRefName(name), name + ".md", MilestoneFiledOnRef
-			}
-		}
-	}
-	return "", "", MilestoneNotFiled
-}
-
-// MilestoneOnRef reports whether this tree's ref under name carries a
-// milestone that is on the board — one somebody else made that no fetch has
-// written to this disk yet. Every write command's flush brings the refs up to
-// date and only 'jaira fetch' writes their files, so a door that hands out a
-// name and asks only the disk would write over a teammate's milestone. A
-// filed ref is MilestoneFiled's to answer, and the mark a rename left holds
-// nothing.
-//
-// A write this clone has queued for the name decides before the ref does:
-// the ref moves only when the remote accepts the write, so right after a
-// rename the old name's ref still holds the milestone while its mark waits
-// in the outbox — and taking the rename back must not be refused as a
-// teammate's milestone.
-func (y *Syncer) MilestoneOnRef(name string) bool {
-	if y == nil || y.Usable() != nil {
-		return false
-	}
-	_, content, _, err := y.Repo.ReadMilestone(name)
-	if e, ok := y.Box.PendingMilestone(name); ok {
-		content, err = []byte(e.Content), nil
-	}
-	return err == nil && !milestone.FromBytes(name, content).Filed()
 }
 
 // Winner describes the state that beat a rejected write, read from the ref

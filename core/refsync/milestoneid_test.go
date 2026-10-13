@@ -136,3 +136,21 @@ func TestAnIDRefWhoseFileNamesAnotherIDIsSkipped(t *testing.T) {
 		t.Errorf("disk has %s", got)
 	}
 }
+
+// The mark a rename of the name-keyed era left removes the old file this disk
+// still has, says where it went, and is never written; with no such file there
+// is nothing to do.
+func TestAnOldRenameMarkRemovesTheOldFileAndIsReported(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	putDisk(t, grace, "q6.md", body)
+	putRef(t, ada, "q6", "q6.md", "---\ncolor: 45\nstatus: filed\nrenamed-to: q7\n---\n")
+	putRef(t, ada, "q8", "q8.md", "---\ncolor: 45\nstatus: filed\nrenamed-to: q9\n---\n")
+
+	wrote, filed, renamed := incoming(t, ada, grace)
+	if got := diskFiles(t, grace); got != "" {
+		t.Errorf("disk has %s", got)
+	}
+	if len(wrote)+len(filed) != 0 || len(renamed) != 1 || renamed["q6"] != "q7" {
+		t.Errorf("wrote %v filed %v renamed %v", wrote, filed, renamed)
+	}
+}

@@ -45,17 +45,12 @@ func (e *RecordError) Unwrap() error { return e.Err }
 // FiledError is Edit's refusal of a milestone whose file still lies here but
 // is marked filed — what a fetch of somebody else's filing leaves behind.
 // Writing it would put the change on its ref for every clone that fetches.
-// RenamedTo is set when the mark is the one a rename left: then there is
-// nothing to restore, and the new name is the thing to say.
 type FiledError struct {
-	Name, RenamedTo string
-	File            string // the file it lies in, which is what 'jaira restore' takes
+	Name string
+	File string // the file it lies in, which is what 'jaira restore' takes
 }
 
 func (e *FiledError) Error() string {
-	if e.RenamedTo != "" {
-		return fmt.Sprintf("milestone %q was renamed to %q", e.Name, e.RenamedTo)
-	}
 	return fmt.Sprintf("milestone %q has been filed; 'jaira restore %s', run where it was filed, brings it back", e.Name, e.File)
 }
 
@@ -93,7 +88,7 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		return nil, err
 	}
 	if ms.Filed() {
-		return ms, &FiledError{Name: ms.Name, RenamedTo: ms.RenamedTo, File: ms.FileName()}
+		return ms, &FiledError{Name: ms.Name, File: ms.FileName()}
 	}
 	before, wasPlaced := ms.Bytes(), ms.Placed
 	if err := fn(ms); err != nil {
@@ -187,7 +182,7 @@ func Rename(root string, lock Locker, rec Recorder, from, to string) (*Milestone
 		return nil, err
 	}
 	if ms.Filed() {
-		return ms, &FiledError{Name: ms.Name, RenamedTo: ms.RenamedTo, File: ms.FileName()}
+		return ms, &FiledError{Name: ms.Name, File: ms.FileName()}
 	}
 	if to == ms.Name {
 		return ms, nil
@@ -210,27 +205,19 @@ func Rename(root string, lock Locker, rec Recorder, from, to string) (*Milestone
 }
 
 // CheckFree asks the milestone directory whether a name can be given out: a
-// milestone on the board under it is an *ExistsError, a filed one lying here
-// a *FiledError. No file is free, and so is the mark an earlier rename left
-// (HoldsName) — which is what lets a rename be taken back and a new milestone
-// take the old name. What the directory cannot show, a filing in this tree's
-// logbook or on a ref or a milestone on a ref not fetched yet, is the
-// caller's to ask. Every door that hands out a
-// name asks here: Rename, and the CLI's and the layer's create.
+// milestone on the board under it is an *ExistsError, and nothing else holds a
+// name. A filed one does not — its ID tells it from a new one — and neither
+// does a milestone on a ref nobody has fetched here yet: the names of two
+// people's milestones are told apart by ID, so a double is something to see
+// and rename, not something to prevent across machines. Every door that hands
+// out a name asks here: Rename, and the CLI's and the layer's create.
 func CheckFree(root, name string) error {
-	have, err := Load(root, name)
-	var amb *AmbiguousError
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return nil
-	case errors.As(err, &amb):
-		return &ExistsError{Name: name}
-	case err != nil:
+	all, err := LoadAll(root)
+	if err != nil {
 		return err
-	case !have.Filed():
+	}
+	if slices.ContainsFunc(all, func(m *Milestone) bool { return m.Name == name }) {
 		return &ExistsError{Name: name}
-	case have.HoldsName():
-		return &FiledError{Name: name, File: have.FileName()}
 	}
 	return nil
 }

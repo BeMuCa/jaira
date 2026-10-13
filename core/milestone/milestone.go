@@ -12,13 +12,13 @@
 //
 // A milestone that has been filed into the logbook carries `status: filed` in
 // its frontmatter, and that line is what keeps it off the board. It is written
-// onto the ref too, on purpose: a ref taken down would free the name again and
-// tell no other clone anything, while a ref saying "filed" is read by every
-// clone that fetches — it stops the file being written back to disk, and it
-// holds the name until somebody restores it. No line means the milestone is on
-// the board, which is the state every file written before this existed is in.
-// A rename leaves the same mark under the old name, with `renamed-to: <new>`
-// beside it, so every other clone drops the old name too (see Rename).
+// onto the ref too, on purpose: a ref taken down would tell no other clone
+// anything, while a ref saying "filed" is read by every clone that fetches — it
+// is not written back to a clone that never had it. No line means the milestone
+// is on the board, which is the state every file written before this existed is
+// in. A filed milestone does not hold its name: the ID is what tells two
+// milestones apart, so a new one may take the name and a restore beside it is a
+// visible double, not a loss.
 //
 // The file is read and written the way a ticket file is — frontmatter for the
 // facts about the milestone, one line per member below it — and the lines are
@@ -85,7 +85,6 @@ type Milestone struct {
 	Goal      string   // free text, one line; empty when the file has none
 	After     []string // predecessor names, first one decides the swimlane
 	Placed    bool     // an `after:` line exists; `after: []` is a swimlane top
-	RenamedTo string   // on the mark a rename leaves under the old name: the new one
 
 	file    string   // the file name it was read under, .md included; empty for a milestone never written
 	lines   []string // the whole file, frontmatter included
@@ -406,8 +405,6 @@ func parse(text string) *Milestone {
 				m.Goal = value
 			case "after":
 				m.After, m.Placed = parseAfter(value), true
-			case "renamed-to":
-				m.RenamedTo = value
 			case "created-at":
 				if t, err := time.Parse(time.RFC3339, value); err == nil {
 					m.CreatedAt = t
@@ -454,30 +451,24 @@ const StatusFiled = "filed"
 // rather than writing the file back to disk.
 func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
 
-// MarkedRenamed reports whether a milestone file carries the line a rename of
-// the name-keyed era left under the old name. It reads the raw lines, not the
-// parsed field, so it still answers once that field is gone.
-func MarkedRenamed(content []byte) bool {
+// RenamedTo is the value of the `renamed-to:` line a rename of the name-keyed
+// era left in the file it marked under the old name, or "" when the file has
+// none. Such a file is not a milestone any more. It reads the raw lines — the
+// field it was parsed into is gone.
+func RenamedTo(content []byte) string {
 	m := &Milestone{}
 	m.lines = strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
 	end, ok := m.frontEnd()
 	if !ok {
-		return false
+		return ""
 	}
 	for _, line := range m.lines[1:end] {
-		if k, _, _ := strings.Cut(strings.TrimSpace(line), ":"); strings.TrimSpace(k) == "renamed-to" {
-			return true
+		if k, v, _ := strings.Cut(strings.TrimSpace(line), ":"); strings.TrimSpace(k) == "renamed-to" {
+			return strings.TrimSpace(v)
 		}
 	}
-	return false
+	return ""
 }
-
-// HoldsName reports whether this filed milestone keeps its name taken. A
-// filing does, because 'jaira restore' needs the name back. The mark a rename
-// leaves under the old name does not: the milestone lives on under the new
-// one, there is nothing to restore, and holding the name would make a
-// mistyped rename impossible to take back.
-func (m *Milestone) HoldsName() bool { return m.Filed() && m.RenamedTo == "" }
 
 // SetStatus writes, replaces or removes the status line in the frontmatter and
 // touches nothing else — the same rule Add and Remove follow. Rebuilding the

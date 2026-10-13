@@ -279,8 +279,7 @@ func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
 	ticketID := handleFromList(t, ada, "something to group")
 
 	doors := map[string][]string{
-		"create": {"milestone", "create", "round-one"},
-		"add":    {"milestone", "add", "round-one", ticketID},
+		"add": {"milestone", "add", "round-one", ticketID},
 		// Filing the same milestone twice: the copy is in this tree's
 		// logbook, so this door owes the reader the restore that runs here
 		// like the other two do.

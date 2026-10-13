@@ -182,13 +182,6 @@ func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, leas
 // asks this to mark a card as carrying something not yet sent.
 func (b *Box) Pending(id string) (Entry, bool) { return b.pendingKind(KindTicket, id) }
 
-// PendingMilestone returns the unsent write for one milestone, if there is
-// one. It is newer than the milestone's ref, which moves only when the remote
-// accepts the write.
-func (b *Box) PendingMilestone(name string) (Entry, bool) {
-	return b.pendingKind(KindMilestone, name)
-}
-
 // pendingKind reads one entry. A ticket is also looked for at the flat path an
 // older build used, so upgrading does not strand a queued write.
 func (b *Box) pendingKind(kind Kind, key string) (Entry, bool) {

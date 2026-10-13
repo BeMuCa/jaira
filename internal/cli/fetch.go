@@ -10,7 +10,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/notify"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -77,8 +76,6 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if err != nil {
 				return err
 			}
-			filedMilestones, renamedByMark := splitRenamed(s.Root, filedMilestones)
-			maps.Copy(renamedMilestones, renamedByMark)
 			departed := refs.Departed()
 			stranded := strandedHere()
 			if g.jsonOut {
@@ -134,22 +131,6 @@ func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[strin
 	// file is moved to its ID in the same fetch.
 	migrated, err = migrateHeld(s)
 	return opened, filed, renamed, migrated, err
-}
-
-// splitRenamed takes the marks a rename left out of the filed names a fetch
-// wrote, as old name -> new name. Listed as filed, a rename would send the
-// reader to a 'jaira restore' that has nothing to bring back. The file the
-// fetch just wrote carries the new name.
-func splitRenamed(root string, filed []string) (still []string, renamed map[string]string) {
-	renamed = map[string]string{}
-	for _, name := range filed {
-		if ms, err := milestone.Load(root, name); err == nil && ms.RenamedTo != "" {
-			renamed[name] = ms.RenamedTo
-			continue
-		}
-		still = append(still, name)
-	}
-	return still, renamed
 }
 
 // printMigratedMilestones says that old milestone files were moved to their ID

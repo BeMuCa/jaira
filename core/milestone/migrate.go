@@ -66,7 +66,7 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 		if err != nil {
 			return moved, err
 		}
-		if MarkedRenamed(content) {
+		if RenamedTo(content) != "" {
 			if err := os.Remove(old); err != nil {
 				return moved, err
 			}

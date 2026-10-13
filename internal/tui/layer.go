@@ -12,7 +12,6 @@ import (
 
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
-	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -448,8 +447,7 @@ func (m *Model) renameMilestone(fromID, to string) (*milestone.Milestone, error)
 
 // createMilestone writes a new milestone placed after the given names, as
 // 'jaira milestone create --goal --after' does: under the lock, with a colour
-// no other milestone uses, refusing a name that is taken — on the board, or
-// filed.
+// no other milestone uses, refusing a name a milestone on the board has.
 func (m *Model) createMilestone(name, goal string, after []string) (*milestone.Milestone, error) {
 	root := m.store.Root
 	ms, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
@@ -457,9 +455,6 @@ func (m *Model) createMilestone(name, goal string, after []string) (*milestone.M
 		if err := milestone.CheckFree(root, name); errors.As(err, &ee) {
 			return nil, fmt.Errorf("milestone %q already exists — c on a [+] connects it", name)
 		} else if err != nil {
-			return nil, err
-		}
-		if err := m.nameTaken(name); err != nil {
 			return nil, err
 		}
 		ms := milestone.New(name, milestone.AssignColour(existing, name), time.Now())
@@ -475,22 +470,6 @@ func (m *Model) createMilestone(name, goal string, after []string) (*milestone.M
 		return ms, nil
 	})
 	return ms, m.recordOnly(err)
-}
-
-// nameTaken refuses a name the milestone directory does not show as taken: a
-// filing in this tree's logbook or on a ref somebody else marked, or a
-// teammate's milestone on its ref that no fetch has written here yet.
-func (m *Model) nameTaken(name string) error {
-	switch where, file, at := m.refSync.MilestoneFiled(m.store, name); at {
-	case refsync.MilestoneFiledHere:
-		return fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s' brings it back", name, where, file)
-	case refsync.MilestoneFiledOnRef:
-		return fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s', run there, brings it back", name, file)
-	}
-	if m.refSync.MilestoneOnRef(name) {
-		return fmt.Errorf("milestone %q exists on the remote but not here yet — 'jaira fetch' brings it", name)
-	}
-	return nil
 }
 
 // recordOnly drops the one error a write may end with although it happened:

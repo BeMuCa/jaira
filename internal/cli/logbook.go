@@ -269,9 +269,7 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 			// is told the name is not a ticket — in the two states where
 			// create and add/rm refuse it by name. This is the door's only
 			// route past the ms.Filed() check below, which needs an ms.
-			if err := refuseIfFiled(s, name,
-				"filing it again here would only stamp today's folder on somebody else's record of it",
-				", and only a milestone that is on the board can be filed"); err != nil {
+			if err := refuseIfFiled(s, name, ", and only a milestone that is on the board can be filed"); err != nil {
 				return err
 			}
 		}
@@ -390,9 +388,6 @@ func logbookMilestone(s *ticket.Store, name string, w io.Writer) error {
 	// The routes where the file is NOT here are answered above, before
 	// milestone.Load is even asked for an ms: this check cannot see them.
 	if ms.Filed() {
-		if ms.RenamedTo != "" {
-			return refuseRenamed(name, ms.RenamedTo)
-		}
 		return refuseFiledOnDisk(s.Root, name,
 			"there is no copy of it here to bring back, so filing it again would only stamp today's folder on somebody else's record of it")
 	}

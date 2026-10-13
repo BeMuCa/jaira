@@ -397,7 +397,8 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	}
 }
 
-// A taken name is refused in the form and nothing is written.
+// A name a milestone on the board has is refused in the form and nothing is
+// written.
 func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 	mkMilestone(t, m, "taken", 45)
@@ -414,8 +415,8 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 		t.Error("a refused name must not touch the milestone that has it")
 	}
 
-	// A name filed into this tree's logbook stays taken: the layer asks the
-	// same question 'jaira milestone create' asks.
+	// A name filed into this tree's logbook is free: the ID tells a new
+	// milestone from the filed one, as 'jaira milestone create' says too.
 	dir := filepath.Join(m.store.LogbookDir(), "bc-20200101", ticket.MilestonesSubdir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -425,8 +426,8 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	}
 	m.layer.form.vals[0] = "gone"
 	m.key(key("enter"))
-	if !strings.Contains(m.layer.err, "filed into the logbook") {
-		t.Errorf("want the filed refusal, err %q", m.layer.err)
+	if m.layer.err != "" || loadMilestone(t, m, "gone").Name != "gone" {
+		t.Errorf("a filed name must be usable again, err %q", m.layer.err)
 	}
 }
 
