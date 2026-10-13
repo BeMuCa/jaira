@@ -38,8 +38,17 @@ curl -fsSL https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install
 ```
 
 That downloads the latest release for your OS, verifies its checksum, and puts
-the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). Or build from
-source:
+the binary in `~/.local/bin` (override with `JAIRA_INSTALL_DIR`). On Windows,
+in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | iex
+```
+
+That does the same for Windows: `jaira.exe` goes to
+`%LOCALAPPDATA%\Programs\jaira` (override with `JAIRA_INSTALL_DIR`), which it
+adds to your user `PATH` — no admin rights, and running it again updates in
+place. Or build from source:
 
 ```bash
 go install github.com/BeMuCa/jaira/cmd/jaira@latest

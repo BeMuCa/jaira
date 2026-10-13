@@ -5,8 +5,9 @@
 #
 # Downloads the release archive for this OS/arch, verifies its checksum, and
 # puts the binary in ~/.local/bin (override with JAIRA_INSTALL_DIR). No root,
-# no dependencies beyond curl or wget plus tar. On Windows, download the zip
-# from the releases page instead, or use: go install github.com/BeMuCa/jaira/cmd/jaira@latest
+# no dependencies beyond curl or wget plus tar. On Windows, use install.ps1 in
+# PowerShell instead:
+#   irm https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.ps1 | iex
 set -eu
 
 REPO="BeMuCa/jaira"
@@ -27,7 +28,8 @@ os=$(uname -s | tr '[:upper:]' '[:lower:]')
 case "$os" in
 linux | darwin) ;;
 *)
-	echo "error: unsupported OS '$os' — on Windows, grab the zip from https://github.com/$REPO/releases" >&2
+	echo "error: unsupported OS '$os' — on Windows, run this in PowerShell instead:" >&2
+	echo "  irm https://raw.githubusercontent.com/$REPO/master/scripts/install.ps1 | iex" >&2
 	exit 1
 	;;
 esac
