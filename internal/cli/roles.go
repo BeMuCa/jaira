@@ -120,7 +120,7 @@ unchanged and exits 0.`,
 			if !ok {
 				return fail(ExitUsage, "usage", "unknown agent %q; known agents: %s", agentName, role.AgentNames())
 			}
-			var target string
+			var target, root string
 			var also []string
 			switch {
 			case into != "":
@@ -144,7 +144,8 @@ unchanged and exits 0.`,
 				if err != nil {
 					return err
 				}
-				target, also = agent.ProjectTarget(s.Root)
+				root = s.Root
+				target, also = agent.ProjectTarget(root)
 			}
 
 			// The roles already sitting where this agent reads them is an
@@ -154,14 +155,21 @@ unchanged and exits 0.`,
 				return err
 			}
 			if present != "" {
+				// Without the command a later upgrade runs --agent copilot
+				// again, is told the same thing, and the copy it reads stays old.
+				update, err := role.UpdateCommand(present, root, global)
+				if err != nil {
+					return err
+				}
 				w := cmd.OutOrStdout()
 				if g.jsonOut {
 					return emit(w, map[string]any{
 						"agent": agent.Name, "directory": target, "already_in": present,
-						"installed": []map[string]any{}, "skipped": false,
+						"update": update, "installed": []map[string]any{}, "skipped": false,
 					})
 				}
-				fmt.Fprintf(w, "%s already reads the roles in %s; nothing written to %s\n", agent.Name, present, target)
+				fmt.Fprintf(w, "%s already reads the roles in %s; nothing written to %s — update them there with '%s'\n",
+					agent.Name, present, target, update)
 				return nil
 			}
 
@@ -172,8 +180,8 @@ unchanged and exits 0.`,
 			return reportRoleInstall(cmd, agent.Name, target, results)
 		},
 	}
-	cmd.Flags().BoolVar(&project, "project", false, "write into the agent's skills directory in this repository (.claude/skills)")
-	cmd.Flags().BoolVar(&global, "global", false, "write into the agent's personal skills directory (~/.claude/skills)")
+	cmd.Flags().BoolVar(&project, "project", false, "write into the agent's skills directory in this repository ("+role.Dirs(false)+")")
+	cmd.Flags().BoolVar(&global, "global", false, "write into the agent's personal skills directory ("+role.Dirs(true)+")")
 	cmd.Flags().StringVar(&into, "into", "", "write into this skills directory instead")
 	cmd.Flags().StringVar(&agentName, "agent", role.DefaultAgent, "the agent to install for: "+role.AgentNames())
 	cmd.Flags().BoolVar(&force, "force", false, "replace a file you have edited")

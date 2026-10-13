@@ -124,3 +124,45 @@ func InstalledIn(dirs []string) (string, error) {
 	}
 	return "", nil
 }
+
+// Dirs lists, for a flag's help, the directory each agent writes in one scope:
+// "claude: .claude/skills, copilot: .github/skills", or with ~/ for global.
+func Dirs(global bool) string {
+	parts := make([]string, len(agents))
+	for i, a := range agents {
+		dir := a.Project
+		if global {
+			dir = "~/" + a.Global
+		}
+		parts[i] = a.Name + ": " + dir
+	}
+	return strings.Join(parts, ", ")
+}
+
+// UpdateCommand returns the jaira command that updates the roles already in
+// dir: the --project or --global run of the agent that writes there, and
+// --into for a directory none of them writes. root is the repository root
+// for a project scope, ignored for global.
+func UpdateCommand(dir, root string, global bool) (string, error) {
+	scope := "--project"
+	if global {
+		scope = "--global"
+	}
+	for _, a := range agents {
+		target, _ := a.ProjectTarget(root)
+		if global {
+			var err error
+			if target, _, err = a.GlobalTarget(); err != nil {
+				return "", err
+			}
+		}
+		if target != dir {
+			continue
+		}
+		if a.Name == DefaultAgent {
+			return "jaira roles install " + scope, nil
+		}
+		return "jaira roles install --agent " + a.Name + " " + scope, nil
+	}
+	return "jaira roles install --into " + dir, nil
+}

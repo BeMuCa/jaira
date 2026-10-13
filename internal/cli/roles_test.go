@@ -330,8 +330,9 @@ func TestRolesInstallAgentCopilotSkipsWhereRolesAlreadyAre(t *testing.T) {
 		t.Fatalf("exited %d, want 0\n%s", code, out)
 	}
 	if lines := strings.Split(strings.TrimSpace(out), "\n"); len(lines) != 1 ||
-		!strings.Contains(lines[0], filepath.Join(dir, ".claude", "skills")) {
-		t.Errorf("want one line naming .claude/skills, got:\n%s", out)
+		!strings.Contains(lines[0], filepath.Join(dir, ".claude", "skills")) ||
+		!strings.Contains(lines[0], "'jaira roles install --project'") {
+		t.Errorf("want one line naming .claude/skills and how to update the roles there, got:\n%s", out)
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".github", "skills")); !os.IsNotExist(err) {
 		t.Error(".github/skills was written to beside the roles in .claude/skills")
@@ -350,5 +351,19 @@ func TestRolesInstallAgentRefusesUnknownAndInto(t *testing.T) {
 	out, err = runCLI(t, dir, "roles", "install", "--agent", "copilot", "--into", t.TempDir())
 	if code := exitCode(err); code != ExitUsage {
 		t.Errorf("--agent with --into exited %d, want %d\n%s", code, ExitUsage, out)
+	}
+}
+
+// The flag help names the directory of every agent, not only Claude's: with
+// --agent copilot, .claude/skills would be the wrong answer.
+func TestRolesInstallHelpNamesEveryAgentsDirectories(t *testing.T) {
+	out, err := runCLI(t, t.TempDir(), "roles", "install", "--help")
+	if err != nil {
+		t.Fatalf("roles install --help: %v\n%s", err, out)
+	}
+	for _, want := range []string{"copilot: .github/skills", "copilot: ~/.copilot/skills", "claude: .claude/skills", "claude: ~/.claude/skills"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("--help does not name %q:\n%s", want, out)
+		}
 	}
 }
