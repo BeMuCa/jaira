@@ -21,6 +21,15 @@ func mkTicket(t *testing.T, dir, title string) string {
 	return firstTitledHandle(t, dir, title)
 }
 
+// milestonePath is the file of the milestone this key names, filed ones
+// included, or the name-only path no file has when none is there.
+func milestonePath(root, key string) string {
+	if ms, err := milestone.Load(root, key); err == nil {
+		return ms.Path(root)
+	}
+	return filepath.Join(milestone.Dir(root), key+".md")
+}
+
 // Grouping twenty tickets has to be one edit of one file — that is the whole
 // reason a milestone is a file and not a field on each ticket.
 func TestOneAddCallWritesOneFileForEveryTicket(t *testing.T) {
@@ -869,7 +878,7 @@ func TestRenameRefusalsAndTheMarkOfARename(t *testing.T) {
 		code int
 		says string
 	}{
-		{[]string{"a", "b"}, ExitValidation, "already exists"},
+		{[]string{"a", "b"}, ExitValidation, "already exists at " + milestonePath(dir, "b")},
 		{[]string{"nope", "c"}, ExitNotFound, `no milestone "nope"`},
 		{[]string{"a", "no/slash"}, ExitUsage, "no/slash"},
 	} {

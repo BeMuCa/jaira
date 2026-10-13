@@ -150,7 +150,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 					}
 					return nil, fail(ExitValidation, "milestone_exists",
 						"milestone %q already exists at %s — 'jaira milestone add %s <id>' puts tickets in it",
-						name, milestonePath(s.Root, name), target)
+						name, filepath.Join(milestone.Dir(s.Root), ee.File), target)
 				case err != nil:
 					return nil, err
 				}
@@ -373,7 +373,7 @@ board exits 5, or 3 when it was filed.`,
 			var ee *milestone.ExistsError
 			if errors.As(err, &ee) {
 				return fail(ExitValidation, "milestone_exists",
-					"milestone %q already exists at %s — a rename needs a name no milestone on the board has", to, milestonePath(s.Root, to))
+					"milestone %q already exists at %s — a rename needs a name no milestone on the board has", to, filepath.Join(milestone.Dir(s.Root), ee.File))
 			}
 			if err := editRefusal(s, from, err, ", and then it can be renamed"); err != nil {
 				return err
@@ -780,23 +780,4 @@ func milestoneKey(raw string) (string, error) {
 func refuseAmbiguous(amb *milestone.AmbiguousError) error {
 	return fail(ExitValidation, "milestone_ambiguous",
 		"%v — nothing was written; run it again with one of them", amb)
-}
-
-// milestonePath is the file a milestone lives in, found by whatever names it:
-// the file's name carries an ID that the argument may not. A milestone nobody
-// has written yet gets the name-only path, the place the old format kept it.
-// Of two milestones that share the name the first one's file is named: a
-// path that is there beats a name-only one no file has.
-func milestonePath(root, key string) string {
-	if ms, err := milestone.Load(root, key); err == nil {
-		return ms.Path(root)
-	}
-	if all, err := milestone.LoadAll(root); err == nil {
-		for _, ms := range all {
-			if ms.Name == key {
-				return ms.Path(root)
-			}
-		}
-	}
-	return filepath.Join(milestone.Dir(root), key+".md")
 }

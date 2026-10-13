@@ -56,7 +56,10 @@ func (e *FiledError) Error() string {
 
 // ExistsError is CheckFree's answer for a name a milestone on the board
 // already has.
-type ExistsError struct{ Name string }
+type ExistsError struct {
+	Name string
+	File string // the file of the one that has it; of two, the first by ID
+}
 
 func (e *ExistsError) Error() string { return fmt.Sprintf("milestone %q already exists", e.Name) }
 
@@ -213,8 +216,8 @@ func CheckFree(root, name string) error {
 	if err != nil {
 		return err
 	}
-	if slices.ContainsFunc(all, func(m *Milestone) bool { return m.Name == name }) {
-		return &ExistsError{Name: name}
+	if i := slices.IndexFunc(all, func(m *Milestone) bool { return m.Name == name }); i >= 0 {
+		return &ExistsError{Name: name, File: all[i].FileName()}
 	}
 	return nil
 }

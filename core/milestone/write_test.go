@@ -216,7 +216,7 @@ func TestRenameRefusals(t *testing.T) {
 	rec := &fakeRec{}
 
 	var ee *ExistsError
-	if _, err := Rename(root, &fakeLock{}, rec, "a", "b"); !errors.As(err, &ee) || ee.Name != "b" {
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "b"); !errors.As(err, &ee) || ee.Name != "b" || ee.File != "b-BBBBBB.md" {
 		t.Errorf("onto a milestone on the board: %v", err)
 	}
 	var fe *FiledError
