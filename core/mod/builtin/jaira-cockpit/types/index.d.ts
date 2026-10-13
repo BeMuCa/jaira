@@ -54,6 +54,10 @@ declare module 'claude-code' {
       // The board the Overview pane shows, read when its button was pressed;
       // null when that read failed.
       overview: Overview | null
+      // The Overview pane's tab and its folded sections, kept for the
+      // session across closing and opening the pane.
+      overviewTab: 'queue' | 'log'
+      overviewFolded: Record<string, boolean>
     }
   }
 }

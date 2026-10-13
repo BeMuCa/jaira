@@ -58,6 +58,8 @@ const expandedAtom = atom({ plugin: 'jaira-cockpit', key: 'expanded' } as const,
 const theirsOpenAtom = atom({ plugin: 'jaira-cockpit', key: 'theirsOpen' } as const, false)
 const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
+const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
+const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
 
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
@@ -1264,7 +1266,11 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: OVERVIEW }, async ($, e) =>
-    drawOverview($.ui.resolve(e), await read($, overviewAtom), () => void $.ui.close({ id: OVERVIEW })))
+    drawOverview($.ui.resolve(e), await read($, overviewAtom), { tab: await read($, overviewTabAtom), folded: await read($, overviewFoldedAtom) }, {
+      close: () => void $.ui.close({ id: OVERVIEW }),
+      tab: tab => void update($, overviewTabAtom, () => tab),
+      fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
+    }))
 
   on('ui.render', { component: 'Pane', requestId: MESSAGE }, async ($, e) => {
     const message = await read($, messageAtom)

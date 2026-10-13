@@ -1930,9 +1930,11 @@ describe('the overview', () => {
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-overview', title: 'Board overview', focus: true })
     const pane = await $.ui.mount(OVERVIEW)
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
-    // Three columns side by side, like lanes.
-    const row = await pane.find({ type: 'Box', props: { flexDirection: 'row' } } as never)
-    expect(row?.text).toMatch(/^In work \(1\).*Queue \(1\).*Put back \(2\)/)
+    // Queue is the open tab: one section beneath the other, each heading a fold button with its count.
+    const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
+    expect(labels).toEqual(['Queue', 'Log', '▾ In work (1)', '▾ Queue (1)', '▾ Put back (2)', 'Close'])
+    expect((await pane.findAll({ type: 'Box' })).filter(b => 'width' in b.props)).toEqual([])
+    expect(texts).not.toContain('Created and put back, last 7 days')
     expect(texts).toContain('T8QS1Y | in-progress | filter')
     expect(texts).toContain('  Alex')
     expect(texts).toContain('Q1Q1Q1 | critique | queued')
@@ -1955,8 +1957,11 @@ describe('the overview', () => {
     ]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    const texts = (await (await $.ui.mount(OVERVIEW)).findAll({ type: 'Text' })).map(x => x.text)
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
     expect(texts).toContain('Created and put back, last 7 days')
+    expect(texts.filter(x => /^In work|^Put back/.test(x))).toEqual([])
     const history = texts.slice(texts.indexOf('Created and put back, last 7 days') + 1)
     const days = history.filter(x => /^── \d{4}-\d\d-\d\d ──$/.test(x))
     expect(days).toHaveLength(4)
@@ -1968,6 +1973,40 @@ describe('the overview', () => {
       'P1P1P1 | blocked | put back | put back by Alex',
       'P1P1P1 | blocked | put back | created by Berk',
     ])
+  })
+
+  test('a title is never cut off: rows wrap', async ($, on) => {
+    const w = world(on)
+    const long = 'a title long enough that three columns of a third each would have cut it off well before its end'
+    w.tickets = [{ ...WORKING, assignee: 'Alex', title: long, updated_at: ago(0.1) }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const row = await (await $.ui.mount(OVERVIEW)).find({ type: 'Text', text: `T8QS1Y | in-progress | ${long}` })
+    expect(row?.props).toMatchObject({ wrap: 'wrap' })
+  })
+
+  test('a heading folds its section, and tab and folds outlive closing the pane', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }, { handle: 'Q1Q1Q1', title: 'queued', status: 'critique', assignee: '', updated_at: ago(0.2) }]
+    w.next = ['Q1Q1Q1']
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    let pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-fold-working' })
+    expect((await pane.find({ key: 'overview-fold-working' }))?.props.label).toBe('▸ In work (1)')
+    expect(await pane.find({ type: 'Text', text: 'T8QS1Y | in-progress | filter' })).toBeUndefined()
+    expect(await pane.find({ type: 'Text', text: 'Q1Q1Q1 | critique | queued' })).toBeDefined()
+    await pane.press({ key: 'overview-tab-log' })
+    await pane.press({ key: 'overview-close' })
+    await pane.unmount()
+    // Opened again: still on Log, and back on Queue the section is still folded.
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    pane = await $.ui.mount(OVERVIEW)
+    expect(await pane.find({ type: 'Text', text: 'Created and put back, last 7 days' })).toBeDefined()
+    await pane.press({ key: 'overview-tab-queue' })
+    expect((await pane.find({ key: 'overview-fold-working' }))?.props.label).toBe('▸ In work (1)')
+    await pane.press({ key: 'overview-fold-working' })
+    expect(await pane.find({ type: 'Text', text: 'T8QS1Y | in-progress | filter' })).toBeDefined()
   })
 
   test('a board that cannot be read says so', async ($, on) => {

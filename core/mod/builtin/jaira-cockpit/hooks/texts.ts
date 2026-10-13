@@ -106,6 +106,8 @@ export const overviewWords = {
   working: 'In work',
   queue: 'Queue',
   parked: 'Put back',
+  tabQueue: 'Queue',
+  tabLog: 'Log',
   none: 'none',
   history: (days: number) => `Created and put back, last ${days} days`,
   createdBy: (who: string) => (who === '' ? 'created' : `created by ${who}`),
