@@ -17,10 +17,13 @@ func (f *fakeLock) Lock(string) (func(), error) {
 }
 
 type fakeRec struct {
+	have  map[string]bool // IDs that already have a ref
 	names []string
 	last  []byte
 	err   error
 }
+
+func (r *fakeRec) HasMilestoneRef(id string) bool { return r.have[id] }
 
 func (r *fakeRec) RecordMilestone(name, file string, content []byte) error {
 	r.names = append(r.names, name)

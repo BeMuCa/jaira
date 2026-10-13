@@ -25,6 +25,9 @@ type Locker interface {
 // no remote stays a supported way to work.
 type Recorder interface {
 	RecordMilestone(key, file string, content []byte) error
+	// HasMilestoneRef reports whether the milestone with this ID already has
+	// its ref in this tree.
+	HasMilestoneRef(id string) bool
 }
 
 // RecordError reports that the file was saved and only the ref could not be

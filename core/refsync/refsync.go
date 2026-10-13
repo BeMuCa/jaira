@@ -294,6 +294,12 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 	return wrote, filed, renamed, nil
 }
 
+// HasMilestoneRef is hasMilestoneRef for a syncer that may be nil or without
+// a remote, which has no refs.
+func (y *Syncer) HasMilestoneRef(id string) bool {
+	return y != nil && y.Usable() == nil && y.hasMilestoneRef(id)
+}
+
 // hasMilestoneRef reports whether this tree has the ref of the milestone with
 // this ID.
 func (y *Syncer) hasMilestoneRef(id string) bool {
