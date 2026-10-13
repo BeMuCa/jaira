@@ -11,32 +11,50 @@ import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
 
+// Each group its own colour, at its heading and at every row's handle, so the
+// three read apart at a glance. Theme keys: they follow the person's theme.
+const GROUP = { working: 'claude', queue: 'suggestion', parked: 'warning' } as const
+
+// A person's colour, derived from the name and nothing else: the same person
+// reads the same in both tabs and after every reopening. ANSI names, apart
+// from the group colours, which the terminal's own scheme keeps readable.
+const PEOPLE = ['cyan', 'magenta', 'green', 'cyanBright', 'magentaBright', 'greenBright']
+
+function personColor(name: string): string {
+  let h = 0x811c9dc5
+  for (const c of name) h = Math.imul(h ^ c.codePointAt(0)!, 0x01000193)
+  return PEOPLE[(h >>> 0) % PEOPLE.length]!
+}
+
 type OverviewTab = 'queue' | 'log'
 type OverviewState = { tab: OverviewTab; folded: Record<string, boolean> }
 type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void }
 
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions) {
+  const person = (who: string, key: string) => <Text key={key} color={personColor(who)}>{who}</Text>
   const closeButton = <Button key="overview-close" label={w.close} onPress={act.close} />
   if (view === null) return <Box flexDirection="column"><Text dimColor>{w.unread}</Text>{closeButton}</Box>
   const tabButton = (tab: OverviewTab, label: string) => (
     <Button key={`overview-tab-${tab}`} label={label} variant={state.tab === tab ? 'primary' : undefined} dimColor={state.tab !== tab} onPress={() => act.tab(tab)} />
   )
   // A section folds at its heading; open until the person folds it.
-  const section = (key: string, heading: string, rows: Row[], extra: (r: Row) => string) => {
+  const section = (key: keyof typeof GROUP, heading: string, rows: Row[]) => {
     const open = state.folded[key] !== true
     const label = `${open ? '▾' : '▸'} ${heading} (${rows.length})`
     return (
       <Box key={key} flexDirection="column" marginTop={1}>
         <Box flexDirection="row">
-          <Button key={`overview-fold-${key}`} label={label} onPress={() => act.fold(key)} />
+          <Button key={`overview-fold-${key}`} label={label} onPress={() => act.fold(key)}><Text bold color={GROUP[key]}>{label}</Text></Button>
         </Box>
         {open && rows.length === 0 ? <Text dimColor>{w.none}</Text> : null}
         {open
           ? rows.map(r => (
             <Box key={`${key}-${r.id}`} flexDirection="column">
-              <Text wrap="wrap"><Text bold>{r.id}</Text>{SEP}{r.lane}{SEP}{r.title}</Text>
-              {extra(r) !== '' ? <Text dimColor wrap="wrap">  {extra(r)}</Text> : null}
+              <Text wrap="wrap"><Text bold color={GROUP[key]}>{r.id}</Text><Text dimColor>{SEP}{r.lane}{SEP}</Text>{r.title}</Text>
+              {r.who !== '' || r.reason !== ''
+                ? <Text wrap="wrap">  {r.who !== '' ? person(r.who, 'who') : null}{r.reason !== '' ? <Text dimColor>{r.who !== '' ? ': ' : ''}{r.reason}</Text> : null}</Text>
+                : null}
             </Box>
           ))
           : null}
@@ -44,9 +62,9 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
     )
   }
   const queue = [
-    section('working', w.working, view.working, r => r.who),
-    section('queue', w.queue, view.queue, r => r.who),
-    section('parked', w.parked, view.parked, r => [r.who, r.reason].filter(Boolean).join(': ')),
+    section('working', w.working, view.working),
+    section('queue', w.queue, view.queue),
+    section('parked', w.parked, view.parked),
   ]
   const log = [
     <Box key="history" marginTop={1}><Text bold>{w.history(HISTORY_DAYS)}</Text></Box>,
@@ -56,7 +74,9 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
         <Text dimColor>── {d.day} ──</Text>
         {d.events.map(ev => (
           <Text key={`${d.day}-${ev.kind}-${ev.id}`} wrap="wrap">
-            {clockOf(ev.at)}  <Text bold>{ev.id}</Text>{SEP}{ev.lane}{SEP}{ev.title}{SEP}{ev.kind === 'created' ? w.createdBy(ev.who) : w.parkedBy(ev.who)}
+            {clockOf(ev.at)}  <Text bold>{ev.id}</Text><Text dimColor>{SEP}{ev.lane}{SEP}</Text>{ev.title}<Text dimColor>{SEP}</Text>
+            {ev.kind === 'created' ? w.created : <Text color={GROUP.parked}>{w.putBack}</Text>}
+            {ev.who !== '' ? [w.by, person(ev.who, 'who')] : null}
           </Text>
         ))}
       </Box>
