@@ -13,7 +13,7 @@ related:
   - 01M2HX55H2EPFZ8M3AFW0S1A7M
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-13T20:51:52Z
+updated-at: 2026-10-13T20:51:54Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -53,4 +53,4 @@ context: |-
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden und jaira update automatisch laufen (DoD 5 und 6). Anlass: am 13.10. war ~/.claude/skills/jaira-role-pr noch vom 06.10. und kannte das Ablegen vor dem PR nicht - Alex musste im PR #74 nachfordern. Weder git pull noch jaira update ziehen die Rollen-Skills heute nach (jaira roles install --help). Gehoert mit T8A8KM zusammen.
