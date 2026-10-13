@@ -13,7 +13,7 @@ related:
   - 01M2HX55H2EPFZ8M3AFW0S1A7M
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-13T20:51:44Z
+updated-at: 2026-10-13T20:51:50Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -40,6 +40,7 @@ context: |-
 - [ ] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
 - [ ] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- [ ] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
 
 ## Options
 
