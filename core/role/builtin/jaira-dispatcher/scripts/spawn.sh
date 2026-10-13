@@ -63,6 +63,16 @@ root="${4:-$PWD}"
 herdr="${HERDR_BIN_PATH:-herdr}"
 [ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
 
+# Every JSON below is read with 'jaira json get', so a jaira from before it —
+# the roles reinstalled, the binary not — would fail right after 'tab create'
+# and leave an empty tab standing (#79). Ask first, before a worktree or a tab
+# is made.
+if ! jaira json get ok --default ok <<<'{}' >/dev/null 2>&1; then
+  echo "the jaira on PATH ($(command -v jaira || echo none)) has no 'jaira json get':" \
+       "install the new jaira first, then run 'jaira roles install' again" >&2
+  exit 1
+fi
+
 # Beside the repository, never inside it: a worktree under the repo is a second
 # copy of the sources on a different branch, and grep -r / find / ls -R walk
 # straight into it. Derived, so no path is baked in for one machine.
@@ -111,6 +121,30 @@ if [ ! -d "$wt" ]; then
   fi
 fi
 
+# Where the tab's command has to start claude: inside WSL when this script runs
+# in WSL and Herdr is the Windows one, natively on Windows when it runs in Git
+# Bash, MSYS or Cygwin — they are Windows, whatever /proc/version there says —
+# and in a Unix shell everywhere else.
+start_on() {
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*) echo windows; return ;;
+  esac
+  case "$herdr" in /mnt/*|*.exe) ;; *) echo unix; return ;; esac
+  if [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/version 2>/dev/null; then
+    echo wsl
+  else
+    echo unix
+  fi
+}
+
+# The directory as Herdr takes it. A Windows Herdr reads C:\..., not the
+# /c/... Git Bash shows; cygpath, which Git Bash and MSYS ship, translates it.
+on="$(start_on)"
+cwd="$wt"
+if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
+  cwd="$(cygpath -w "$wt")"
+fi
+
 # Named, because without --workspace Herdr decides for itself where the tab
 # lands: the worker can open in a window nobody is looking at, and a worker
 # nobody sees is one nobody notices dying. Herdr exports its own workspace into
@@ -121,32 +155,27 @@ if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID")
 # A tab per worker, never a split. A split divides the height of one screen: at
 # four workers each strip is a few lines, and nobody can read what any of them is
 # doing — which is the whole reason a worker gets a surface of its own.
-pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$wt" --label "$ticket/$lane" --no-focus \
-  | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
+# JSON is read with 'jaira json get', never python3: on Windows python3 is
+# missing or the Store's stub, which prints "Python" and exits 49 (issue #79),
+# and jq is not everywhere either. jaira is on every machine that has the roles.
+pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus \
+  | jaira json get result.root_pane.pane_id)"
 
 # <explain> and <discuss> write a few lines for a person, so they start on the
 # chat model 'jaira roles list' names for this board (its .jaira/chat-model,
 # else this machine's settings.json) rather than the account's default model,
 # and they get the part of the ticket they need typed into their prompt rather
 # than reading the whole of it: 'jaira show --json' carries every note and every DoD proof, most
-# of a chat's context for nothing. Without jaira or python3 here both stay as
-# they were — the account's model, and a prompt that reads the ticket itself.
+# of a chat's context for nothing. When jaira cannot answer, both stay as they
+# were — the account's model, and a prompt that reads the ticket itself.
 chat_model=""
 brief=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   chat_model="$(jaira -C "$wt" roles list --json 2>/dev/null \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin).get("chat_model",""))' 2>/dev/null)" || chat_model=""
+    | jaira json get chat_model 2>/dev/null)" || chat_model=""
   # It lands in a command line: only a model name passes.
   [[ "$chat_model" =~ ^[][A-Za-z0-9._-]*$ ]] || chat_model=""
-  brief="$(jaira -C "$wt" show "$ticket" --json 2>/dev/null | python3 -c '
-import sys, json, re
-t = json.load(sys.stdin)
-_, _, progress = t.get("body", "").partition("\n## Progress\n")
-notes = [n.strip() for n in re.split(r"(?m)^(?=- \*\*\d{4}-\d\d-\d\d \d\d:\d\d )", progress) if n.strip()]
-print(json.dumps({"id": t["handle"], "title": t.get("title", ""), "goal": t.get("goal", ""),
-  "question": t.get("question", ""), "review": t.get("review", {}),
-  "notes_last": notes[-4:], "notes_total": len(notes)}, ensure_ascii=False))
-' 2>/dev/null)" || brief=""
+  brief="$(jaira -C "$wt" show "$ticket" --brief 2>/dev/null)" || brief=""
 fi
 claude="claude${chat_model:+ --model '$chat_model'}"
 
@@ -157,9 +186,18 @@ claude="claude${chat_model:+ --model '$chat_model'}"
 # then answer on the human's behalf. Cross back into WSL instead: wsl.exe --cd
 # sets the directory before any shell starts, so no cd function and no wrong home
 # can intervene, and `bash -lic` is what puts claude on PATH.
-case "$herdr" in
-  /mnt/*|*.exe) start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  *)            start="cd '$wt' && $claude" ;;
+# Only when this script really runs in WSL: a herdr.exe is just as much the
+# Herdr of a native Windows machine, where this runs in Git Bash, the tab is
+# already on the right machine, and wsl.exe would start in a distro that cannot
+# reach C:\ under that path and leave claude at its trust dialog in / (#79).
+# On Windows the tab's shell may be cmd or PowerShell 5.1, which know neither
+# && nor single quotes: --cwd above has put the tab in the worktree already, so
+# it gets the bare command, which every one of them runs alike. The model name
+# needs no quotes — only letters, digits and . _ - [ ] pass.
+case "$on" in
+  wsl)     start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
+  windows) start="claude${chat_model:+ --model $chat_model}" ;;
+  *)       start="cd '$cwd' && $claude" ;;
 esac
 
 "$herdr" pane run "$pane" "$start" >/dev/null
@@ -167,8 +205,8 @@ esac
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
   sleep 2
-  st="$("$herdr" pane get "$pane" \
-    | python3 -c 'import sys,json;p=json.load(sys.stdin)["result"]["pane"];print(p.get("agent","-"),p.get("agent_status","-"))')"
+  pj="$("$herdr" pane get "$pane")"
+  st="$(jaira json get result.pane.agent --default - <<<"$pj") $(jaira json get result.pane.agent_status --default - <<<"$pj")"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done
 # Only the two states the loop breaks on may pass. Anything else — above all

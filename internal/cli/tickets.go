@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -699,6 +700,7 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 func newShowCmd() *cobra.Command {
 	var forLane string
 	var notesLast int
+	var brief bool
 	cmd := &cobra.Command{
 		Use:   "show <id>",
 		Short: "Show one ticket in full",
@@ -708,7 +710,11 @@ Notes append without bound, and the body is printed last, so on a long-running
 ticket the note that says where the work stands ends up furthest down the page.
 --notes-last <n> keeps the newest n and says how many it hid. Nothing is removed
 from the ticket, and the count is always printed, so a reader is never left
-thinking they have seen everything.`,
+thinking they have seen everything.
+
+--brief prints one line of JSON with only what a chat about the ticket needs:
+id, title, goal, question, review, the newest four notes as notes_last and how
+many there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -729,6 +735,14 @@ thinking they have seen everything.`,
 			if forLane != "" {
 				return showForLane(cmd, s, env, t, forLane)
 			}
+			if brief {
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body))
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), line)
+				return nil
+			}
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
 				j["body"] = t.Body
@@ -745,7 +759,45 @@ thinking they have seen everything.`,
 	}
 	cmd.Flags().StringVar(&forLane, "for-lane", "", "assemble the bounded input a lane's agent should receive")
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
+	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
 	return cmd
+}
+
+// briefNote is where one progress note starts: its dated, bold heading.
+// Every line up to the next one belongs to it, whatever it starts with — a
+// continuation line reading "#79 ..." or "- a list" is still the same note.
+var briefNote = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
+
+// briefNotes is how many of the newest notes a brief carries.
+const briefNotes = 4
+
+// ticketBrief is the part of a ticket the cockpit's explain and discuss chats
+// are handed in their prompt instead of reading all of it: every note and every
+// proof is most of a chat's context for nothing. spawn.sh used to build it with
+// python3, which a Windows machine may not have (issue #79), and it splits as
+// that did: at a dated note heading only, and the fields keep its order.
+func ticketBrief(j map[string]any, body string) any {
+	notes := []string{}
+	if _, progress, ok := strings.Cut(body, "\n"+noteHeading+"\n"); ok {
+		starts := briefNote.FindAllStringIndex(progress, -1)
+		for i, at := range starts {
+			end := len(progress)
+			if i+1 < len(starts) {
+				end = starts[i+1][0]
+			}
+			notes = append(notes, strings.TrimSpace(progress[at[0]:end]))
+		}
+	}
+	last := notes[max(0, len(notes)-briefNotes):]
+	return struct {
+		ID         any      `json:"id"`
+		Title      any      `json:"title"`
+		Goal       any      `json:"goal"`
+		Question   any      `json:"question"`
+		Review     any      `json:"review"`
+		NotesLast  []string `json:"notes_last"`
+		NotesTotal int      `json:"notes_total"`
+	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], last, len(notes)}
 }
 
 // printDetail renders one ticket for a person. notesLast caps how many Progress

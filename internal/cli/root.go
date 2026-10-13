@@ -214,6 +214,7 @@ Exit codes:
 		newNextCmd(),
 		newLanesCmd(),
 		newRolesCmd(),
+		newJSONCmd(),
 		newBoardCmd(),
 		newMergeDriverCmd(),
 		newResolveCmd(),
