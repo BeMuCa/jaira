@@ -131,6 +131,15 @@ func (m *Model) refreshLayer() {
 	}
 }
 
+// spellAsID is an after: token as the ID it names, or as written when it names
+// no milestone.
+func (m *Model) spellAsID(token string) string {
+	if id := milestone.Resolve(m.milestones, token); id != "" {
+		return id
+	}
+	return token
+}
+
 // milestoneLabel is what a milestone is called on screen.
 func (m *Model) milestoneLabel(id string) string {
 	if ms := m.milestoneByID(id); ms != nil {
@@ -230,12 +239,10 @@ func (m *Model) placement(t layerTarget) []string {
 	switch t.kind {
 	case onRight:
 		if ms := m.milestoneByID(t.id); ms != nil && len(ms.After) > 0 {
-			return []string{ms.After[0]}
+			return []string{m.spellAsID(ms.After[0])}
 		}
 	case onBelow:
-		if ms := m.milestoneByID(t.id); ms != nil {
-			return []string{ms.Name}
-		}
+		return []string{t.id}
 	}
 	return []string{}
 }
@@ -244,7 +251,7 @@ func (m *Model) placement(t layerTarget) []string {
 // the dialogs behind it.
 func (m *Model) placementText(t layerTarget) string {
 	if after := m.placement(t); len(after) > 0 {
-		return "after " + after[0]
+		return "after " + m.milestoneLabel(after[0])
 	}
 	return "a swimlane of its own"
 }
@@ -278,10 +285,23 @@ func (m *Model) startLayerEdit(id string) {
 		edit:   ms.Name,
 		editID: ms.ID,
 		labels: []string{"name", "goal", "after"},
-		vals:   []string{ms.Name, ms.Goal, strings.Join(ms.After, ", ")},
+		vals:   []string{ms.Name, ms.Goal, strings.Join(m.afterLabels(ms.After), ", ")},
 	}
 	l.err = ""
 	l.stage = stageForm
+}
+
+// afterLabels is a milestone's predecessors as the form shows them: by name,
+// whatever after: holds.
+func (m *Model) afterLabels(tokens []string) []string {
+	out := make([]string, len(tokens))
+	for i, tok := range tokens {
+		out[i] = tok
+		if id := milestone.Resolve(m.milestones, tok); id != "" {
+			out[i] = m.milestoneLabel(id)
+		}
+	}
+	return out
 }
 
 func (m *Model) keyLayerForm(s, text string) {
@@ -352,7 +372,10 @@ func (m *Model) submitLayerForm() {
 	}
 	all, err := milestone.LoadAll(m.store.Root)
 	if err == nil {
-		err = milestone.CheckAfter(all, f.editID, preds)
+		var ids []string
+		if ids, err = milestone.ResolveRefs(all, preds); err == nil {
+			err = milestone.CheckAfter(all, f.editID, ids)
+		}
 	}
 	if err != nil {
 		l.err = err.Error()
@@ -372,11 +395,15 @@ func (m *Model) submitLayerForm() {
 		if err != nil {
 			return err
 		}
-		if err := milestone.CheckAfter(all, id, preds); err != nil {
+		ids, err := milestone.ResolveRefs(all, preds)
+		if err == nil {
+			err = milestone.CheckAfter(all, id, ids)
+		}
+		if err != nil {
 			return err
 		}
 		ms.SetGoal(f.vals[1])
-		ms.SetAfter(preds)
+		ms.SetAfter(ids)
 		return nil
 	})
 	if err := m.recordOnly(err); err != nil {
@@ -436,11 +463,15 @@ func (m *Model) createMilestone(name, goal string, after []string) (*milestone.M
 			return nil, err
 		}
 		ms := milestone.New(name, milestone.AssignColour(existing, name), time.Now())
-		if err := milestone.CheckAfter(existing, ms.ID, after); err != nil {
+		ids, err := milestone.ResolveRefs(existing, after)
+		if err == nil {
+			err = milestone.CheckAfter(existing, ms.ID, ids)
+		}
+		if err != nil {
 			return nil, err
 		}
 		ms.SetGoal(goal)
-		ms.SetAfter(after)
+		ms.SetAfter(ids)
 		return ms, nil
 	})
 	return ms, m.recordOnly(err)
@@ -552,12 +583,16 @@ func (m *Model) connectMilestone(id string, after []string) {
 		if err != nil {
 			return err
 		}
-		next := after
-		if ms.Placed {
-			next = append(slices.Clone(ms.After), after...)
+		ids, err := milestone.ResolveRefs(all, after)
+		if err == nil {
+			err = milestone.CheckAfter(all, id, ids)
 		}
-		if err := milestone.CheckAfter(all, id, after); err != nil {
+		if err != nil {
 			return err
+		}
+		next := ids
+		if ms.Placed {
+			next = append(slices.Clone(ms.After), ids...)
 		}
 		ms.SetAfter(next)
 		return nil

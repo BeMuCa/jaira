@@ -617,7 +617,7 @@ func TestCreateWritesGoalAndAfter(t *testing.T) {
 		t.Errorf("api: goal=%q placed=%v after=%v (--after \"\" is a swimlane top)", api.Goal, api.Placed, api.After)
 	}
 	ui, _ := milestone.Load(dir, "ui")
-	if !ui.Placed || len(ui.After) != 1 || ui.After[0] != "api" {
+	if !ui.Placed || len(ui.After) != 1 || ui.After[0] != milestone.LegacyID("api") {
 		t.Errorf("ui: placed=%v after=%v", ui.Placed, ui.After)
 	}
 	if plain, _ := milestone.Load(dir, "plain"); plain.Placed || plain.Goal != "" {
@@ -653,7 +653,7 @@ func TestSetChangesGoalAndPlacement(t *testing.T) {
 		t.Fatalf("set: %v\n%s", err, out)
 	}
 	b, _ := milestone.Load(dir, "b")
-	if b.Goal != "second" || !b.Placed || len(b.After) != 1 || b.After[0] != "a" {
+	if b.Goal != "second" || !b.Placed || len(b.After) != 1 || b.After[0] != milestone.LegacyID("a") {
 		t.Errorf("b: goal=%q placed=%v after=%v", b.Goal, b.Placed, b.After)
 	}
 	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-roadmap"); err != nil {
@@ -775,7 +775,7 @@ func TestLsJSONCarriesGoalAndAfterOnlyWhenSet(t *testing.T) {
 	if a, ok := rows["top"]["after"].([]any); !ok || len(a) != 0 {
 		t.Errorf("top after must be present and empty: %#v", rows["top"]["after"])
 	}
-	if a, _ := rows["next"]["after"].([]any); len(a) != 1 || a[0] != "top" {
+	if a, _ := rows["next"]["after"].([]any); len(a) != 1 || a[0] != milestone.LegacyID("top") {
 		t.Errorf("next after: %#v", rows["next"]["after"])
 	}
 	if _, ok := rows["next"]["goal"]; ok {
@@ -822,7 +822,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 	if ms.Goal != "ship it" || len(ms.Members()) != 1 || !ms.Placed || len(ms.After) != 0 {
 		t.Errorf("first-round must keep goal, ticket and place: %s", ms.Bytes())
 	}
-	if two, _ := milestone.Load(dir, "round-two"); strings.Join(two.After, ",") != "first-round" {
+	if two, _ := milestone.Load(dir, "round-two"); strings.Join(two.After, ",") != milestone.LegacyID("first-round") {
 		t.Errorf("round-two must come after first-round, got %v", two.After)
 	}
 	if out, _ := runCLI(t, dir, "milestone", "ls"); strings.Contains(out, "round-one") || !strings.Contains(out, "first-round") {
@@ -835,7 +835,7 @@ func TestRenameMovesTheMilestoneAndItsSuccessorsFollow(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "rename", "first-round", "round-one"); err != nil {
 		t.Fatalf("renaming back: %v\n%s", err, out)
 	}
-	if two, _ := milestone.Load(dir, "round-two"); strings.Join(two.After, ",") != "round-one" {
+	if two, _ := milestone.Load(dir, "round-two"); strings.Join(two.After, ",") != milestone.LegacyID("round-one") {
 		t.Errorf("round-two must follow the rename back, got %v", two.After)
 	}
 }

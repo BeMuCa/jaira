@@ -30,6 +30,7 @@
 package milestone
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"math/rand/v2"
@@ -206,6 +207,11 @@ func Load(root, key string) (*Milestone, error) {
 	if err != nil {
 		return nil, err
 	}
+	return lookup(all, key)
+}
+
+// lookup is Load's resolution over a list already read.
+func lookup(all []*Milestone, key string) (*Milestone, error) {
 	if id := strings.ToUpper(key); IsID(id) {
 		for _, m := range all {
 			if m.ID == id {
@@ -251,6 +257,28 @@ func Load(root, key string) (*Milestone, error) {
 		}
 	}
 	return nil, &fs.PathError{Op: "load", Path: key, Err: fs.ErrNotExist}
+}
+
+// ResolveRefs turns the predecessors a person typed — each an ID, a
+// <name>-<ID> or a name, as Load reads them — into the IDs after: stores.
+// all is the milestones on the board. A token nobody carries is a
+// *PredecessorError and a name two milestones carry an *AmbiguousError, so a
+// write that refuses has written nothing; repeats are dropped.
+func ResolveRefs(all []*Milestone, tokens []string) ([]string, error) {
+	out := []string{}
+	for _, tok := range tokens {
+		m, err := lookup(all, tok)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+			return nil, &PredecessorError{Pred: tok}
+		case err != nil:
+			return nil, err
+		}
+		if !slices.Contains(out, m.ID) {
+			out = append(out, m.ID)
+		}
+	}
+	return out, nil
 }
 
 // FromBytes reads a milestone out of bytes that are not on this disk — what a

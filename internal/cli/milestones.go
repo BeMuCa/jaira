@@ -169,10 +169,11 @@ a milestone on this board, and the arrows may not form a loop.`,
 					ms.SetGoal(goal)
 				}
 				if cmd.Flags().Changed("after") {
-					if err := checkPredecessors(existing, ms.ID, preds); err != nil {
+					ids, err := resolvePredecessors(existing, ms.ID, preds)
+					if err != nil {
 						return nil, err
 					}
-					ms.SetAfter(preds)
+					ms.SetAfter(ids)
 				}
 				return ms, nil
 			})
@@ -182,7 +183,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, milestoneJSON(ms, milestonePath(s.Root, name)))
+				return emit(w, milestoneJSON(ms, s.Root))
 			}
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[0], name)
@@ -290,10 +291,11 @@ filed milestone is refused like everywhere else.`,
 					if err != nil {
 						return err
 					}
-					if err := checkPredecessors(all, ms.ID, preds); err != nil {
+					ids, err := resolvePredecessors(all, ms.ID, preds)
+					if err != nil {
 						return err
 					}
-					ms.SetAfter(preds)
+					ms.SetAfter(ids)
 				}
 				if noRoadmap {
 					ms.Unplace()
@@ -311,7 +313,7 @@ filed milestone is refused like everywhere else.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, milestoneJSON(ms, milestonePath(s.Root, name)))
+				return emit(w, milestoneJSON(ms, s.Root))
 			}
 			if string(before) == string(ms.Bytes()) {
 				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", name)
@@ -382,7 +384,7 @@ is not on the board exits 5, or 3 when it was filed.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				out := milestoneJSON(ms, milestonePath(s.Root, ms.Name))
+				out := milestoneJSON(ms, s.Root)
 				out["renamed_from"] = from
 				return emit(w, out)
 			}
@@ -410,18 +412,27 @@ func parseMilestoneNames(raw string) ([]string, error) {
 	return names, nil
 }
 
-// checkPredecessors is milestone.CheckAfter with the CLI's exit codes: an
-// unknown predecessor is not found (5), an arrow that closes a loop is a
+// resolvePredecessors reads what --after was given as IDs and checks them
+// against the board, with the CLI's exit codes: an unknown predecessor is not
+// found (5), a name two milestones carry or an arrow that closes a loop is a
 // validation error (3).
-func checkPredecessors(all []*milestone.Milestone, id string, preds []string) error {
+func resolvePredecessors(all []*milestone.Milestone, id string, preds []string) ([]string, error) {
+	ids, err := milestone.ResolveRefs(all, preds)
+	if err == nil {
+		err = milestone.CheckAfter(all, id, ids)
+	}
+	var amb *milestone.AmbiguousError
+	if errors.As(err, &amb) {
+		return nil, fail(ExitValidation, "milestone_ambiguous", "%v", amb)
+	}
 	var pe *milestone.PredecessorError
-	if err := milestone.CheckAfter(all, id, preds); !errors.As(err, &pe) {
-		return err
+	if !errors.As(err, &pe) {
+		return ids, err
 	}
 	if pe.Cycle != nil {
-		return fail(ExitValidation, "milestone_cycle", "%v", pe)
+		return nil, fail(ExitValidation, "milestone_cycle", "%v", pe)
 	}
-	return fail(ExitNotFound, "no_such_milestone",
+	return nil, fail(ExitNotFound, "no_such_milestone",
 		"%v — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it", pe, pe.Pred)
 }
 
@@ -465,7 +476,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 
 	w := cmd.OutOrStdout()
 	if g.jsonOut {
-		out := milestoneJSON(ms, milestonePath(s.Root, name))
+		out := milestoneJSON(ms, s.Root)
 		out["changed"] = strOrEmpty(touched)
 		return emit(w, out)
 	}
@@ -508,7 +519,7 @@ work and each filters to half of it.`,
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, ms := range all {
-					arr = append(arr, milestoneJSON(ms, milestonePath(s.Root, ms.Name)))
+					arr = append(arr, milestoneJSON(ms, s.Root))
 				}
 				return emit(w, map[string]any{
 					"milestones": arr, "count": len(arr), "dir": milestone.Dir(s.Root),
@@ -715,18 +726,19 @@ func resolveAll(s *ticket.Store, args []string) ([]string, error) {
 	return out, nil
 }
 
-func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
+func milestoneJSON(ms *milestone.Milestone, root string) map[string]any {
 	ids := ms.Members()
 	members := make([]map[string]string, 0, len(ids))
 	for _, id := range ids {
 		members = append(members, map[string]string{"id": id, "handle": ticket.Handle(id)})
 	}
 	out := map[string]any{
+		"id":      ms.ID,
 		"name":    ms.Name,
 		"color":   ms.Colour,
 		"tickets": members,
 		"count":   len(members),
-		"file":    path,
+		"file":    ms.Path(root),
 	}
 	if ms.Goal != "" {
 		out["goal"] = ms.Goal
@@ -734,10 +746,29 @@ func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
 	if ms.Placed {
 		// Present only when placed, and then even when empty: [] is "top of a
 		// swimlane of its own", which a reader must tell from "not in the layer".
-		out["after"] = append([]string{}, ms.After...)
+		out["after"] = afterIDs(root, ms)
 	}
 	if !ms.CreatedAt.IsZero() {
 		out["created_at"] = ms.CreatedAt.UTC().Format(time.RFC3339)
+	}
+	return out
+}
+
+// afterIDs is a milestone's predecessors as IDs. A token a hand wrote as a
+// name is spelled as the ID it names, and one that names nothing as it stands.
+func afterIDs(root string, ms *milestone.Milestone) []string {
+	out := append([]string{}, ms.After...)
+	var all []*milestone.Milestone
+	for i, tok := range out {
+		if milestone.IsID(tok) {
+			continue
+		}
+		if all == nil {
+			all, _ = milestone.LoadAll(root)
+		}
+		if id := milestone.Resolve(all, tok); id != "" {
+			out[i] = id
+		}
 	}
 	return out
 }

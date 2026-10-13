@@ -374,7 +374,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	m.key(key("n"))
 	typeInto(m, "b")
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "b").After; len(got) != 1 || got[0] != "a" {
+	if got := loadMilestone(t, m, "b").After; len(got) != 1 || got[0] != lid("a") {
 		t.Fatalf("the [+] under a makes a successor of a, after = %v", got)
 	}
 
@@ -386,7 +386,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	m.key(key("n"))
 	typeInto(m, "c")
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "c").After; len(got) != 1 || got[0] != "a" {
+	if got := loadMilestone(t, m, "c").After; len(got) != 1 || got[0] != lid("a") {
 		t.Errorf("the [+] beside b makes a sibling: after a, got %v", got)
 	}
 }
@@ -511,7 +511,7 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	if got := loadMilestone(t, m, "first-round"); got.Goal != "new goal" || !got.Placed || len(got.After) != 0 {
 		t.Errorf("first-round must carry the goal and a's place, got goal %q placed %v after %v", got.Goal, got.Placed, got.After)
 	}
-	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != "first-round" {
+	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != lid("first-round") {
 		t.Errorf("b must come after first-round, got %v", b.After)
 	}
 	if m.layer.sel != (layerTarget{kind: onBubble, id: lid("first-round")}) {
@@ -573,7 +573,7 @@ func TestConnectExistingMilestone(t *testing.T) {
 		t.Fatalf("under b the picker offers loose alone (not b, and a would close a loop), got %q", got)
 	}
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "loose").After; len(got) != 1 || got[0] != "b" {
+	if got := loadMilestone(t, m, "loose").After; len(got) != 1 || got[0] != lid("b") {
 		t.Errorf("loose must be placed after b, got %v", got)
 	}
 }
@@ -603,7 +603,7 @@ func TestConnectPlacedMilestoneAddsAnArrow(t *testing.T) {
 	}
 	m.layer.pickIdx = idx
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "y").After; len(got) != 2 || got[0] != "x" || got[1] != "b" {
+	if got := loadMilestone(t, m, "y").After; len(got) != 2 || got[0] != lid("x") || got[1] != lid("b") {
 		t.Errorf("y keeps x first and gains b, got %v", got)
 	}
 	if out := stripANSI(m.render()); !strings.Contains(out, "└") && !strings.Contains(out, "┘") {

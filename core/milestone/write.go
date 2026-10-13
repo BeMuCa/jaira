@@ -96,6 +96,17 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 	if bytes.Equal(before, ms.Bytes()) {
 		return ms, nil
 	}
+	if ms.Placed {
+		// A name a hand wrote in after: becomes the ID it names, now that the
+		// file is being written anyway.
+		all, err := LoadAll(root)
+		if err != nil {
+			return ms, err
+		}
+		if ids := spellAsIDs(all, ms.After); !slices.Equal(ids, ms.After) {
+			ms.SetAfter(ids)
+		}
+	}
 	var succ []*Milestone
 	if wasPlaced && !ms.Placed {
 		// Read before the save, while this milestone's own after line is
@@ -113,6 +124,20 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 		}
 	}
 	return ms, saveAll(root, rec, append([]*Milestone{ms}, succ...))
+}
+
+// spellAsIDs gives every token that names exactly one milestone as that
+// milestone's ID, and leaves the others as they are.
+func spellAsIDs(all []*Milestone, tokens []string) []string {
+	r := newResolver(all)
+	out := make([]string, len(tokens))
+	for i, tok := range tokens {
+		if id := r.resolve(tok); id != "" {
+			tok = id
+		}
+		out[i] = tok
+	}
+	return out
 }
 
 // Rename gives the milestone from the name to. The name is the file name and
@@ -172,10 +197,7 @@ func Rename(root string, lock Locker, rec Recorder, from, to string, taken func(
 			}
 			// The renamed milestone's ID is the one the new name gives it,
 			// until IDs stop following names.
-			after[i], changed = to, true
-			if IsID(tok) {
-				after[i] = renamed.ID
-			}
+			after[i], changed = renamed.ID, true
 		}
 		if changed {
 			m.SetAfter(after)

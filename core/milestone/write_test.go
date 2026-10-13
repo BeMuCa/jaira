@@ -194,7 +194,7 @@ func TestRenameMovesTheFileRewritesSuccessorsAndMarksTheOldName(t *testing.T) {
 	if body := string(z.Bytes()); !strings.Contains(body, "\n# z\n") || strings.Contains(body, "# a") {
 		t.Errorf("the heading keeps the old name:\n%s", body)
 	}
-	if b, _ := Load(root, "b"); strings.Join(b.After, ",") != "x,z" {
+	if b, _ := Load(root, "b"); strings.Join(b.After, ",") != "x,"+LegacyID("z") {
 		t.Errorf("b must name z where it named a, got %v", b.After)
 	}
 	if strings.Join(rec.names, ",") != "z,b,a" {
@@ -242,5 +242,49 @@ func TestRenameRefusesATakenNameButNotTheMarkOfARename(t *testing.T) {
 	}
 	if old, err := Load(root, "old"); err != nil || old.Filed() || old.RenamedTo != "" {
 		t.Errorf("old must be on the board again, unmarked: %v\n%s", err, old.Bytes())
+	}
+}
+
+// A name a hand wrote in after: becomes the ID it names the next time Edit
+// writes the file anyway; a token that names nothing stays as written, and a
+// write that has nothing to change leaves the hand's spelling alone.
+func TestEditSpellsHandWrittenNamesAsIDs(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "a-K3F9QZ.md", "---\ncolor: 45\nafter: []\n---\n")
+	write(t, root, "b", "---\ncolor: 46\nafter: [a,ghost]\n---\n")
+	lk, rec := &fakeLock{}, &fakeRec{}
+	if _, err := Edit(root, lk, rec, "b", func(m *Milestone) error { m.Add(idA); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := Load(root, "b"); strings.Join(b.After, ",") != "K3F9QZ,ghost" {
+		t.Errorf("after = %v, want [K3F9QZ ghost]", b.After)
+	}
+	before, _ := os.ReadFile(testPath(root, "b"))
+	if _, err := Edit(root, lk, rec, "b", func(m *Milestone) error { m.Add(idB); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(testPath(root, "b")); strings.Count(string(got), "after:") != 1 || !strings.Contains(string(got), "after: [K3F9QZ, ghost]") || len(got) <= len(before) {
+		t.Errorf("second write:\n%s", got)
+	}
+}
+
+func TestResolveRefs(t *testing.T) {
+	all := []*Milestone{
+		FromBytes("a-K3F9QZ.md", nil), FromBytes("dup-AAAAAA.md", nil), FromBytes("dup-BBBBBB.md", nil), FromBytes("old.md", nil),
+	}
+	got, err := ResolveRefs(all, []string{"a", "K3F9QZ", "k3f9qz", "dup-bbbbbb", "old"})
+	if err != nil || strings.Join(got, ",") != "K3F9QZ,BBBBBB,"+LegacyID("old") {
+		t.Fatalf("got %v, %v", got, err)
+	}
+	var pe *PredecessorError
+	if _, err := ResolveRefs(all, []string{"ghost"}); !errors.As(err, &pe) || pe.Pred != "ghost" {
+		t.Errorf("unknown: %v", err)
+	}
+	var amb *AmbiguousError
+	if _, err := ResolveRefs(all, []string{"dup"}); !errors.As(err, &amb) || len(amb.Choices) != 2 {
+		t.Errorf("ambiguous: %v", err)
+	}
+	if got, err := ResolveRefs(all, nil); err != nil || got == nil || len(got) != 0 {
+		t.Errorf("empty: %#v, %v", got, err)
 	}
 }

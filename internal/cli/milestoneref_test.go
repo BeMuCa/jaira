@@ -505,8 +505,8 @@ func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 		var names []string
 		for _, ms := range all {
 			names = append(names, ms.Name)
-			if ms.Name == "round-two" && strings.Join(ms.After, ",") != after {
-				t.Errorf("grace's round-two comes after %v, want %s", ms.After, after)
+			if ms.Name == "round-two" && strings.Join(ms.After, ",") != milestone.LegacyID(after) {
+				t.Errorf("grace's round-two comes after %v, want the ID of %s", ms.After, after)
 			}
 		}
 		if strings.Join(names, ",") != want {
@@ -609,7 +609,7 @@ func TestARenameCanBeTakenBackBeforeItsMarkIsSent(t *testing.T) {
 	if strings.Join(names, ",") != "a,b" {
 		t.Errorf("grace's board has %v, want a and b", names)
 	}
-	if b, _ := milestone.Load(grace, "b"); strings.Join(b.After, ",") != "a" {
-		t.Errorf("grace's b comes after %v, want a", b.After)
+	if b, _ := milestone.Load(grace, "b"); strings.Join(b.After, ",") != milestone.LegacyID("a") {
+		t.Errorf("grace's b comes after %v, want the ID of a", b.After)
 	}
 }
