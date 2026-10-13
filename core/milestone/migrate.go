@@ -58,7 +58,8 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 		if !ok || e.IsDir() {
 			continue
 		}
-		if _, _, split := SplitFile(base); split {
+		_, id, idNamed := FileIdentity(base)
+		if idNamed {
 			continue
 		}
 		old := filepath.Join(Dir(root), e.Name())
@@ -72,7 +73,6 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 			}
 			continue
 		}
-		id := LegacyID(base)
 		target := base + "-" + id + ".md"
 		if _, err := os.Stat(filepath.Join(Dir(root), target)); err == nil {
 			if err := os.Remove(old); err != nil {

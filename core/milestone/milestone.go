@@ -258,12 +258,14 @@ func lookup(all []*Milestone, key string) (*Milestone, error) {
 	return nil, &fs.PathError{Op: "load", Path: key, Err: fs.ErrNotExist}
 }
 
-// ResolveRefs turns the predecessors a person typed — each an ID, a
-// <name>-<ID> or a name, as Load reads them — into the IDs after: stores.
-// all is the milestones on the board. A token nobody carries is a
-// *PredecessorError and a name two milestones carry an *AmbiguousError, so a
-// write that refuses has written nothing; repeats are dropped.
-func ResolveRefs(all []*Milestone, tokens []string) ([]string, error) {
+// ResolveRefs turns the predecessors a person typed for the milestone with
+// this ID — each an ID, a <name>-<ID> or a name, as Load reads them — into the
+// IDs after: stores, and puts them through CheckAfter. all is the milestones
+// on the board. A token nobody carries is a *PredecessorError, a name two
+// milestones carry an *AmbiguousError and an arrow that closes a loop
+// CheckAfter's refusal, so a write that refuses has written nothing; repeats
+// are dropped.
+func ResolveRefs(all []*Milestone, id string, tokens []string) ([]string, error) {
 	out := []string{}
 	for _, tok := range tokens {
 		m, err := lookup(all, tok)
@@ -276,6 +278,9 @@ func ResolveRefs(all []*Milestone, tokens []string) ([]string, error) {
 		if !slices.Contains(out, m.ID) {
 			out = append(out, m.ID)
 		}
+	}
+	if err := CheckAfter(all, id, out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

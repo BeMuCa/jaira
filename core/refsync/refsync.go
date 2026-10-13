@@ -258,7 +258,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 				renamed[ref.Name] = to
 			}
 			continue
-		} else if y.hasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
+		} else if y.HasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
 			continue
 		}
 		path := filepath.Join(milestone.Dir(root), file)
@@ -294,15 +294,12 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 	return wrote, filed, renamed, nil
 }
 
-// HasMilestoneRef is hasMilestoneRef for a syncer that may be nil or without
-// a remote, which has no refs.
+// HasMilestoneRef reports whether this tree has the ref of the milestone with
+// this ID. A syncer that is nil or without a remote has no refs.
 func (y *Syncer) HasMilestoneRef(id string) bool {
-	return y != nil && y.Usable() == nil && y.hasMilestoneRef(id)
-}
-
-// hasMilestoneRef reports whether this tree has the ref of the milestone with
-// this ID.
-func (y *Syncer) hasMilestoneRef(id string) bool {
+	if y == nil || y.Usable() != nil {
+		return false
+	}
 	_, err := y.Repo.MilestoneSHA(id)
 	return err == nil
 }

@@ -297,9 +297,8 @@ func Layout(all []*Milestone) Grid {
 	children := map[string][]string{}
 	var tops []string
 	for _, m := range placed { // oldest first, so children come out ordered
-		if first := ""; len(m.After) > 0 {
-			first = r.resolve(m.After[0])
-			if first != "" && len(kept[m.ID]) > 0 && kept[m.ID][0] == first {
+		if len(m.After) > 0 {
+			if first := r.resolve(m.After[0]); first != "" && len(kept[m.ID]) > 0 && kept[m.ID][0] == first {
 				parent[m.ID] = first
 				children[first] = append(children[first], m.ID)
 				continue

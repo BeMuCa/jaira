@@ -280,7 +280,7 @@ func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha strin
 	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
 		return "", nil, "", fmt.Errorf("gitref: ref %s does not carry exactly one .md file", ref)
 	}
-	content, _, err = r.refRead(ref, entries[0])
+	content, err = r.readEntry(ref, sha, entries[0])
 	if err != nil {
 		return "", nil, "", err
 	}
@@ -295,14 +295,23 @@ func (r *Repo) refRead(ref, entry string) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+	content, err := r.readEntry(ref, sha, entry)
+	if err != nil {
+		return nil, "", err
+	}
+	return content, sha, nil
+}
+
+// readEntry is the file named entry in commit sha, which ref points at.
+func (r *Repo) readEntry(ref, sha, entry string) ([]byte, error) {
 	out, errb, runErr := r.run("", "show", sha+":"+entry)
 	if runErr != nil {
 		if errors.Is(runErr, ErrNoGit) {
-			return nil, "", runErr
+			return nil, runErr
 		}
-		return nil, "", fmt.Errorf("gitref: ref %s carries no %s: %s", ref, entry, strings.TrimSpace(errb))
+		return nil, fmt.Errorf("gitref: ref %s carries no %s: %s", ref, entry, strings.TrimSpace(errb))
 	}
-	return []byte(out), sha, nil
+	return []byte(out), nil
 }
 
 // ReadParent returns the ticket file as it was one commit earlier on the ref —

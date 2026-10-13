@@ -311,19 +311,19 @@ func TestResolveRefs(t *testing.T) {
 	all := []*Milestone{
 		FromBytes("a-K3F9QZ.md", nil), FromBytes("dup-AAAAAA.md", nil), FromBytes("dup-BBBBBB.md", nil), FromBytes("old.md", nil),
 	}
-	got, err := ResolveRefs(all, []string{"a", "K3F9QZ", "k3f9qz", "dup-bbbbbb", "old"})
+	got, err := ResolveRefs(all, "ZZZZZZ", []string{"a", "K3F9QZ", "k3f9qz", "dup-bbbbbb", "old"})
 	if err != nil || strings.Join(got, ",") != "K3F9QZ,BBBBBB,"+LegacyID("old") {
 		t.Fatalf("got %v, %v", got, err)
 	}
 	var pe *PredecessorError
-	if _, err := ResolveRefs(all, []string{"ghost"}); !errors.As(err, &pe) || pe.Pred != "ghost" {
+	if _, err := ResolveRefs(all, "ZZZZZZ", []string{"ghost"}); !errors.As(err, &pe) || pe.Pred != "ghost" {
 		t.Errorf("unknown: %v", err)
 	}
 	var amb *AmbiguousError
-	if _, err := ResolveRefs(all, []string{"dup"}); !errors.As(err, &amb) || len(amb.Choices) != 2 {
+	if _, err := ResolveRefs(all, "ZZZZZZ", []string{"dup"}); !errors.As(err, &amb) || len(amb.Choices) != 2 {
 		t.Errorf("ambiguous: %v", err)
 	}
-	if got, err := ResolveRefs(all, nil); err != nil || got == nil || len(got) != 0 {
+	if got, err := ResolveRefs(all, "ZZZZZZ", nil); err != nil || got == nil || len(got) != 0 {
 		t.Errorf("empty: %#v, %v", got, err)
 	}
 }

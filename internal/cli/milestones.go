@@ -172,7 +172,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, milestoneJSON(ms, s.Root))
+				return emit(w, milestoneJSON(ms, s.Root, nil))
 			}
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[0], name)
@@ -303,7 +303,7 @@ filed milestone is refused like everywhere else.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, milestoneJSON(ms, s.Root))
+				return emit(w, milestoneJSON(ms, s.Root, nil))
 			}
 			if string(before) == string(ms.Bytes()) {
 				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", ms.Name)
@@ -368,7 +368,7 @@ board exits 5, or 3 when it was filed.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				out := milestoneJSON(ms, s.Root)
+				out := milestoneJSON(ms, s.Root, nil)
 				out["renamed_from"] = fromName
 				return emit(w, out)
 			}
@@ -401,10 +401,7 @@ func parseMilestoneNames(raw string) ([]string, error) {
 // found (5), a name two milestones carry or an arrow that closes a loop is a
 // validation error (3).
 func resolvePredecessors(all []*milestone.Milestone, id string, preds []string) ([]string, error) {
-	ids, err := milestone.ResolveRefs(all, preds)
-	if err == nil {
-		err = milestone.CheckAfter(all, id, ids)
-	}
+	ids, err := milestone.ResolveRefs(all, id, preds)
 	var amb *milestone.AmbiguousError
 	if errors.As(err, &amb) {
 		return nil, fail(ExitValidation, "milestone_ambiguous", "%v", amb)
@@ -461,7 +458,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 
 	w := cmd.OutOrStdout()
 	if g.jsonOut {
-		out := milestoneJSON(ms, s.Root)
+		out := milestoneJSON(ms, s.Root, nil)
 		out["changed"] = strOrEmpty(touched)
 		return emit(w, out)
 	}
@@ -504,7 +501,7 @@ work and each filters to half of it.`,
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(all))
 				for _, ms := range all {
-					arr = append(arr, milestoneJSON(ms, s.Root))
+					arr = append(arr, milestoneJSON(ms, s.Root, all))
 				}
 				return emit(w, map[string]any{
 					"milestones": arr, "count": len(arr), "dir": milestone.Dir(s.Root),
@@ -564,12 +561,8 @@ func refuseFiledElsewhere(name, file, carries, instead string) error {
 
 // refuseFiledOnDisk: the file is lying here and carries the mark, which is
 // what a fetch of somebody else's filing leaves behind.
-func refuseFiledOnDisk(root, key, instead string) error {
-	name, path := key, milestonePath(root, key)
-	if ms, err := milestone.Load(root, key); err == nil {
-		name = ms.Name
-	}
-	return refuseFiledElsewhere(name, filepath.Base(path), "its file at "+path, instead)
+func refuseFiledOnDisk(root, name, file, instead string) error {
+	return refuseFiledElsewhere(name, file, "its file at "+filepath.Join(milestone.Dir(root), file), instead)
 }
 
 // refuseFiledInLogbook is the other state: the file is not on disk any more
@@ -681,7 +674,7 @@ func editRefusal(s *ticket.Store, name string, err error, inLogbook string) erro
 		// local either: the ref write would put it on the ref, so every
 		// clone that fetches sees a milestone the filer took off the board
 		// being edited. Refuse it where the other two refuse it.
-		return refuseFiledOnDisk(s.Root, name,
+		return refuseFiledOnDisk(s.Root, fe.Name, fe.File,
 			"editing it here instead would push the change onto its ref for everyone who fetches")
 	case errors.Is(err, os.ErrNotExist):
 		// Filed in this very tree: the file moved to the logbook, so Load
@@ -715,7 +708,10 @@ func resolveAll(s *ticket.Store, args []string) ([]string, error) {
 	return out, nil
 }
 
-func milestoneJSON(ms *milestone.Milestone, root string) map[string]any {
+// milestoneJSON is one milestone as --json gives it. all is the board's
+// milestones when the caller has read them already; nil reads them only when
+// a predecessor has to be spelled.
+func milestoneJSON(ms *milestone.Milestone, root string, all []*milestone.Milestone) map[string]any {
 	ids := ms.Members()
 	members := make([]map[string]string, 0, len(ids))
 	for _, id := range ids {
@@ -735,7 +731,7 @@ func milestoneJSON(ms *milestone.Milestone, root string) map[string]any {
 	if ms.Placed {
 		// Present only when placed, and then even when empty: [] is "top of a
 		// swimlane of its own", which a reader must tell from "not in the layer".
-		out["after"] = afterIDs(root, ms)
+		out["after"] = afterIDs(root, ms, all)
 	}
 	if !ms.CreatedAt.IsZero() {
 		out["created_at"] = ms.CreatedAt.UTC().Format(time.RFC3339)
@@ -745,11 +741,13 @@ func milestoneJSON(ms *milestone.Milestone, root string) map[string]any {
 
 // afterIDs is a milestone's predecessors as IDs. A token a hand wrote as a
 // name is spelled as the ID it names, and one that names nothing as it stands.
-func afterIDs(root string, ms *milestone.Milestone) []string {
+func afterIDs(root string, ms *milestone.Milestone, all []*milestone.Milestone) []string {
 	if len(ms.After) == 0 {
 		return []string{}
 	}
-	all, _ := milestone.LoadAll(root)
+	if all == nil {
+		all, _ = milestone.LoadAll(root)
+	}
 	return milestone.SpellAsIDs(all, ms.After)
 }
 

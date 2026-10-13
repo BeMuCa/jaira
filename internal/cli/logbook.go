@@ -383,7 +383,7 @@ func logbookMilestone(s *ticket.Store, key, name string, w io.Writer) error {
 	// The routes where the file is NOT here are answered above, before
 	// milestone.Load is even asked for an ms: this check cannot see them.
 	if ms.Filed() {
-		return refuseFiledOnDisk(s.Root, key,
+		return refuseFiledOnDisk(s.Root, ms.Name, ms.FileName(),
 			"there is no copy of it here to bring back, so filing it again would only stamp today's folder on somebody else's record of it")
 	}
 	// The same gate a ticket passes, asked of a group: a milestone with

@@ -362,10 +362,7 @@ func (m *Model) submitLayerForm() {
 	}
 	all, err := milestone.LoadAll(m.store.Root)
 	if err == nil {
-		var ids []string
-		if ids, err = milestone.ResolveRefs(all, preds); err == nil {
-			err = milestone.CheckAfter(all, f.editID, ids)
-		}
+		_, err = milestone.ResolveRefs(all, f.editID, preds)
 	}
 	if err != nil {
 		l.err = err.Error()
@@ -385,10 +382,7 @@ func (m *Model) submitLayerForm() {
 		if err != nil {
 			return err
 		}
-		ids, err := milestone.ResolveRefs(all, preds)
-		if err == nil {
-			err = milestone.CheckAfter(all, id, ids)
-		}
+		ids, err := milestone.ResolveRefs(all, id, preds)
 		if err != nil {
 			return err
 		}
@@ -449,10 +443,7 @@ func (m *Model) createMilestone(name, goal string, after []string) (*milestone.M
 			return nil, err
 		}
 		ms := milestone.New(name, milestone.AssignColour(existing, name), time.Now())
-		ids, err := milestone.ResolveRefs(existing, after)
-		if err == nil {
-			err = milestone.CheckAfter(existing, ms.ID, ids)
-		}
+		ids, err := milestone.ResolveRefs(existing, ms.ID, after)
 		if err != nil {
 			return nil, err
 		}
@@ -553,10 +544,7 @@ func (m *Model) connectMilestone(id string, after []string) {
 		if err != nil {
 			return err
 		}
-		ids, err := milestone.ResolveRefs(all, after)
-		if err == nil {
-			err = milestone.CheckAfter(all, id, ids)
-		}
+		ids, err := milestone.ResolveRefs(all, id, after)
 		if err != nil {
 			return err
 		}
