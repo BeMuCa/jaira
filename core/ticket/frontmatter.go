@@ -228,11 +228,19 @@ func (d *Doc) topLevel() ([]*ast.MappingValueNode, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := f.mappingErr(); err != nil {
+		return nil, err
+	}
+	return f.vals, nil
+}
+
+// mappingErr is the error a read of a key reports when the head is not a mapping.
+func (f *Fields) mappingErr() error {
 	switch f.root.(type) {
 	case nil, *ast.MappingNode, *ast.MappingValueNode:
-		return f.vals, nil
+		return nil
 	}
-	return nil, fmt.Errorf("%w: root is %T", ErrUnsafeYAML, f.root)
+	return fmt.Errorf("%w: root is %T", ErrUnsafeYAML, f.root)
 }
 
 func (d *Doc) find(key string) (*ast.MappingValueNode, error) {

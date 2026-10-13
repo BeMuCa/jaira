@@ -108,6 +108,10 @@ type Store struct {
 	// Two files with one id is an ambiguity a person has to settle, so it is
 	// surfaced rather than resolved by read order.
 	dupIDs []string
+
+	// cache, when EnableCache was called, remembers each ticket file's decoded
+	// header between listings. A pointer, so a copied Store does not copy a mutex.
+	cache *headerCache
 }
 
 // TicketSource hands over tickets that exist for this board without a file
@@ -980,6 +984,16 @@ func (s *Store) readHeader(path string) (*Doc, error) {
 //
 // The probe remains where it is still correct: idOf only needs the id.
 func (s *Store) loadHeader(path string) (*Ticket, error) {
+	if s.cache != nil {
+		e, err := s.cached(path)
+		if err != nil {
+			return nil, err
+		}
+		if e.err != nil {
+			return nil, e.err
+		}
+		return e.t.Clone(), nil
+	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -1223,6 +1237,13 @@ func (s *Store) idIndex() (map[string]string, error) {
 
 // idOf reads just the id from a ticket file.
 func (s *Store) idOf(path string) (string, error) {
+	if s.cache != nil {
+		e, err := s.cached(path)
+		if err != nil {
+			return "", err
+		}
+		return e.id, e.idErr
+	}
 	d, err := s.readHeader(path)
 	if err != nil {
 		return "", err
