@@ -1122,8 +1122,7 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 			delete(y.extraCache, id)
 		}
 	}
-	var out []*ticket.Ticket
-	var wanted []string
+	var kept, wanted []string
 	ids := make([]string, 0, len(hashes))
 	for id := range hashes {
 		ids = append(ids, id)
@@ -1140,10 +1139,8 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 			// which means it left this board deliberately.
 			continue
 		}
+		kept = append(kept, id)
 		if e, ok := y.extraCache[id]; ok && e.hash == hash {
-			if e.t != nil {
-				out = append(out, e.t.Clone())
-			}
 			continue
 		}
 		wanted = append(wanted, id)
@@ -1164,8 +1161,11 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 			}
 		}
 		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
-		if t != nil {
-			out = append(out, t.Clone())
+	}
+	var out []*ticket.Ticket
+	for _, id := range kept {
+		if e, ok := y.extraCache[id]; ok && e.t != nil {
+			out = append(out, e.t.Clone())
 		}
 	}
 	return out, nil

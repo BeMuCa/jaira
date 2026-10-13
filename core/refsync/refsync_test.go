@@ -922,3 +922,41 @@ func TestExtraSkipsUnchangedRefs(t *testing.T) {
 		t.Fatalf("a changed ref did not show: %q", got)
 	}
 }
+
+// A second Extra call keeps the order of the first even when one ref moved:
+// the order is by ticket id, not by which refs were re-read.
+func TestExtraKeepsOrderWhenOneRefMoved(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	a := fileOnRef(t, ada, "first on its ref")
+	b := fileOnRef(t, ada, "second on its ref")
+	if a > b {
+		a, b = b, a
+	}
+
+	list := func() []string {
+		out, err := ada.syncer.Extra(map[string]bool{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var ids []string
+		for _, x := range out {
+			ids = append(ids, x.ID)
+		}
+		return ids
+	}
+	first := list()
+	if len(first) != 2 || first[0] != a || first[1] != b {
+		t.Fatalf("first Extra = %v, want [%s %s]", first, a, b)
+	}
+
+	content, sha, err := ada.syncer.Repo.Read(a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Repo.Write(a, []byte(strings.Replace(string(content), "on its ref", "moved", 1)), sha); err != nil {
+		t.Fatalf("rewrite ref: %v", err)
+	}
+	if second := list(); len(second) != 2 || second[0] != a || second[1] != b {
+		t.Fatalf("second Extra = %v, want the same order %v", second, first)
+	}
+}

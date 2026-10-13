@@ -244,16 +244,14 @@ func (f *Fields) mappingErr() error {
 }
 
 func (d *Doc) find(key string) (*ast.MappingValueNode, error) {
-	vals, err := d.topLevel()
+	f, err := d.Fields()
 	if err != nil {
 		return nil, err
 	}
-	for _, v := range vals {
-		if v.Key.GetToken().Value == key {
-			return v, nil
-		}
+	if err := f.mappingErr(); err != nil {
+		return nil, err
 	}
-	return nil, nil
+	return f.find(key), nil
 }
 
 // Has reports whether a top-level key is present.

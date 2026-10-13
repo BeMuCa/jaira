@@ -1,7 +1,7 @@
 ---
 id: 01M4V25R2BDN0HVWF879NA413Y
 title: Das Board laedt nur geaenderte Tickets neu und parst jedes nur einmal
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Ein offenes Board braucht im Leerlauf kaum CPU und friert nicht mehr ein, weil es nur liest und dekodiert, was sich geaendert hat."
@@ -21,11 +21,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T16:40:17Z
-updated-at: 2026-10-13T21:22:12Z
+updated-at: 2026-10-13T21:49:36Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3239170
 claimed-at: 2026-10-13T21:01:47Z
+outcome-what: "Decode parses a ticket head once (Fields); lane files likewise; Ticket.Clone; Store.EnableCache header cache keyed by file time+size with a 2 s racy-window byte compare and Forget/ForgetAll; ref-only tickets cached by ref commit hash (gitref.ListHashes); the board enables the cache, the watcher passes changed paths, and a 15 min full re-decode is the safety net; release note core/release/notes/NA413Y.md. Round 2: Extra builds its result in one pass over the sorted ids so the order no longer depends on which refs moved; Doc.find reuses Fields.find"
+outcome-why: "An idle board used 50-80 % of a CPU core because every 2 s tick re-read and re-decoded every ticket, parsing the YAML head about 34 times each"
+outcome-resolves: "DoD1: TestDecodeParsesOnceAndMatchesBefore compares Decode with a verbatim copy of the old one over all repo tickets and counts 1 decode + 1 parse each. DoD2: cache.go skips unchanged time+size (TestCacheUnchangedReadsAndDecodesNothing), same-size change found by racy-window compare/Forget/ForgetAll, ref hash cache TestExtraSkipsUnchangedRefs. DoD3: watcher sends paths, only they are Forgotten (TestChangeMsgRereadsOnlyTheNamedFile); full reparse every 15 min (TestFullReparseFindsInvisibleChange). DoD4: idle CPU 61.9/64.0 % before to 1.7/1.4 % after on a 34-ticket copy, go test ./... -race green. DoD5: TestIdleTickDecodesNothingAndChangeAppearsNextTick counts 0 decodes/parses on idle ticks and shows a change next tick. Round 2: critique findings fixed, TestExtraKeepsOrderWhenOneRefMoved pins the Extra order"
+review-summary: |-
+  core/refsync/refsync.go:1131 says the sort keeps "the order List gave, which callers have always seen", but out appends cache hits (:1145) before freshly read refs (:1168), so from the second call on the order depends on which refs moved — decode wanted into extraCache first, then build out in one pass over the sorted ids (one append+Clone site instead of two, and the comment holds)
+  core/ticket/frontmatter.go:246-257 Doc.find repeats the first-key-wins loop that Fields.find (:191) now owns — make Doc.find call d.Fields(), f.mappingErr(), then return f.find(key), so Doc and Fields reads cannot drift apart
+  internal/tui/idle_test.go:57 doc comment names agedTicket; the function is agedBoard — rename it in the comment
+round: 2
 ---
 
 # Das Board laedt nur geaenderte Tickets neu und parst jedes nur einmal
@@ -34,10 +42,14 @@ claimed-at: 2026-10-13T21:01:47Z
 
 - [x] Decode parst den YAML-Kopf eines Tickets genau einmal; gleiche Ausgabe wie vorher, belegt durch einen Test ueber vorhandene Ticket-Dateien
   proof: core/ticket/schema.go Decode/decodeFields, frontmatter.go Fields; TestDecodeParsesOnceAndMatchesBefore, TestDecodeMatchesBeforeOnEdgeCases
-- [ ] Ein Ticket, dessen Datei (Zeit und Groesse) und Ref-Hash sich seit dem letzten Laden nicht geaendert haben, wird nicht neu gelesen und dekodiert; eine Aenderung gleicher Groesse wird trotzdem gefunden; Tests decken beide Faelle
-- [ ] Der Datei-Waechter gibt die geaenderten Dateien weiter, und nur diese werden neu gelesen; das volle Neuladen laeuft nur noch als seltenes Sicherheitsnetz
-- [ ] Gemessen auf diesem Repo: CPU des offenen Boards im Leerlauf vorher und nachher, Zahlen als Notiz am Ticket; go test ./... -race gruen
-- [ ] CPU-Test: ein Test belegt, dass ein Takt ohne Aenderung kein Ticket dekodiert und keinen YAML-Kopf parst (gezaehlt, nicht in CPU-Prozent, damit er im CI stabil ist), und dass eine Aenderung trotzdem im naechsten Takt erscheint
+- [x] Ein Ticket, dessen Datei (Zeit und Groesse) und Ref-Hash sich seit dem letzten Laden nicht geaendert haben, wird nicht neu gelesen und dekodiert; eine Aenderung gleicher Groesse wird trotzdem gefunden; Tests decken beide Faelle
+  proof: core/ticket/cache.go:72 cached; TestCacheUnchangedReadsAndDecodesNothing (0 reads/0 decodes), TestCacheRacyWindowComparesBytes + TestCacheSameSizeSameTimeFoundAfterForget (same-size change found); core/refsync/refsync.go:1092 Extra, TestExtraSkipsUnchangedRefs (ref hash)
+- [x] Der Datei-Waechter gibt die geaenderten Dateien weiter, und nur diese werden neu gelesen; das volle Neuladen laeuft nur noch als seltenes Sicherheitsnetz
+  proof: internal/tui/model.go:867 startWatching (chan []string), :1052 changeMsg Forget(paths); :1002 fullReparseEvery; TestChangeMsgRereadsOnlyTheNamedFile, TestWatcherReportsChangedPath, TestFullReparseFindsInvisibleChange
+- [x] Gemessen auf diesem Repo: CPU des offenen Boards im Leerlauf vorher und nachher, Zahlen als Notiz am Ticket; go test ./... -race gruen
+  proof: measured, see note: idle CPU 61.9/64.0 % before (82b2252a) -> 1.7/1.4 % after on a 34-ticket copy; go test ./... -race all 29 packages ok
+- [x] CPU-Test: ein Test belegt, dass ein Takt ohne Aenderung kein Ticket dekodiert und keinen YAML-Kopf parst (gezaehlt, nicht in CPU-Prozent, damit er im CI stabil ist), und dass eine Aenderung trotzdem im naechsten Takt erscheint
+  proof: internal/tui/idle_test.go:27 TestIdleTickDecodesNothingAndChangeAppearsNextTick (Counts decodes+headerParses 0 over idle ticks; changed title shown next tick with 1 decode)
 
 ## Options
 
@@ -55,8 +67,8 @@ claimed-at: 2026-10-13T21:01:47Z
 - [x] E (DoD 2, Refs): gitref.ListHashes hinter ReadMany + Hash-Cache in refsync.Extra; Test mit fileOnRef: zweites Extra ohne Decode, geaenderter Ref erscheint; ein Commit
 - [x] F1 (DoD 5): Board schaltet den Cache ein (New, switchBoard); Test in internal/tui: Takt ohne Aenderung laesst Counts unveraendert, Titel per store.Mutate geaendert -> naechster Takt zeigt ihn mit genau 1 Decode; ein Commit
 - [x] F2 (DoD 3, Waechter): chan []string, changeMsg{paths}, Forget vor reload; Tests: changeMsg mit einem Pfad liest nur diesen neu (1 Decode, auch bei gleicher Groesse+mtime), echtes fsnotify-Ereignis kommt mit Pfad an (5 s Timeout, Skip ohne Watcher); ein Commit
-- [~] F3 (DoD 3, Sicherheitsnetz): fullReparseEvery 15 min + m.fullAt + ForgetAll im Takt, Kommentare an reload/tick umschreiben, core/release/notes/NA413Y.md im selben Commit; Test: unsichtbare Aenderung erscheint erst, wenn fullAt aelter als 15 min ist
-- [ ] G (DoD 4): CPU im Leerlauf vorher (82b2252a) und nachher auf einer Kopie dieses Repos ohne Remote messen, Rezept in der Bauplan-Notiz; Zahlen + go test ./... -race als Notiz; kein Commit
+- [x] F3 (DoD 3, Sicherheitsnetz): fullReparseEvery 15 min + m.fullAt + ForgetAll im Takt, Kommentare an reload/tick umschreiben, core/release/notes/NA413Y.md im selben Commit; Test: unsichtbare Aenderung erscheint erst, wenn fullAt aelter als 15 min ist
+- [x] G (DoD 4): CPU im Leerlauf vorher (82b2252a) und nachher auf einer Kopie dieses Repos ohne Remote messen, Rezept in der Bauplan-Notiz; Zahlen + go test ./... -race als Notiz; kein Commit
 
 ## Progress
 - **2026-10-13 16:56 · BeMuCa** — Berk 2026-10-13: will einen CPU-Test (DoD 5). Seine Idee zu den Intervallen: Refs alle 2 s pruefen, Zeit+Groesse nur alle paar Minuten (15?), weil Refs fuer alles KI-Getriebene reichen. Einschaetzung Claude: Refs fangen jeden Schreibvorgang ueber jaira (Agenten und Menschen ueber CLI/TUI), aber keine Handaenderung an Ticket-Dateien, kein git checkout/pull/merge und keine Dateien ohne Ref (lanes, tags, settings). Gemessen 2026-10-13 auf diesem Repo: stat aller 34 Ticket-Dateien 0,04 ms, git for-each-ref refs/jaira (77 Refs) 1,5 ms. Beides ist alle 2 s praktisch gratis - teuer ist nur das Parsen. Vorschlag: Refs + Zeit/Groesse alle 2 s, geparst wird nur, was sich geaendert hat; das volle Neu-Parsen als Sicherheitsnetz alle ~15 min (dort passen Berks 15). Der Datei-Waechter meldet Dateiaenderungen ohnehin sofort. Endgueltig beim Start nach PR #74.
@@ -118,3 +130,6 @@ G. Messung DoD 4 (kein Commit). Nie jaira gegen /home/berk/git/* laufen lassen, 
 - vorher: git -C /home/berk/git/jAIra-NA413Y archive 82b2252a | tar -x -C $S/base; dort go build -o $S/jaira-before ./cmd/jaira. nachher: go build -o $S/jaira-after ./cmd/jaira im Worktree. Ohne -race: der Race-Detektor verfaelscht die CPU.
 - je Binary: tmux new-session -d -s cpu -x 200 -y 50 "cd $S/cpu-board && JAIRA_HOME=$S/jhome <binary>"; 10 s warten; pid = tmux list-panes -t cpu -F '#{pane_pid}'; Felder 14+15 aus /proc/<pid>/stat jetzt und nach 60 s; CPU% = Differenz / (getconf CLK_TCK * 60) * 100; tmux kill-session -t cpu.
 - Notiz: beide Zahlen, Ticket-Zahl der Kopie, Befehl; dazu go test ./... -race (Ausgabe-Ende woertlich).
+- **2026-10-13 21:41 · BeMuCa** — DoD 4 measured 2026-10-13 on a copy of this repo (34 tickets, origin removed, HOME and JAIRA_HOME in scratchpad, binaries built without -race): idle board CPU over 60 s after 8 s warm-up, two runs each. BEFORE (82b2252a): 61.9 % and 64.0 % of one core. AFTER (3d1c6bca): 1.7 % and 1.4 %. Command: tmux new-session -d -x 200 -y 50 'cd <copy> && HOME=.. JAIRA_HOME=.. exec <bin>'; Enter on the project screen; utime+stime from /proc/<pid>/stat now and +60 s, / (CLK_TCK*60). Dead end: with an empty projects.json the binary stops on the project screen, which idles at ~0.9 % for both binaries; Enter opens the board, only then the numbers mean anything. go test ./... -race -count=1 -timeout 40m on the final tree: all 29 packages ok, exit 0 (internal/tui 83.6s).
+- **2026-10-13 21:46 · BeMuCa** — critique (pass 1, whole diff read): three findings, all small, fix is clear. (1) core/refsync/refsync.go:1131 comment claims the sort keeps List's order, but cache hits are appended (:1145) before fresh refs (:1168) — decode wanted into extraCache first, then append in one pass over sorted ids. No caller breaks today (board sorts at internal/tui/model.go:525, CLI starts with an empty cache), the comment is what is wrong. (2) core/ticket/frontmatter.go:246-257 Doc.find duplicates Fields.find (:191) — Doc.find = Fields() + mappingErr() + f.find(key). (3) internal/tui/idle_test.go:57 comment says agedTicket, func is agedBoard. Let stand, per the 21:03 Bauplan/Intervall notes: 15 min ForgetAll in the TUI tick rather than per-entry expiry in cache.go (ForgetAll also drops entries of renamed/filed paths), 2 s racy window with byte compare, cache off for the CLI and Load uncached, exported Counts + unexported fileReads for tests, ListHashes placed after ReadMany instead of on listNames/namesFrom (milestone branch works there), defensive Ticket.Clone. Also let stand: lane.go parse-once (same Fields, not counted), watcher retry on a full channel instead of dropping names, raw bytes kept per entry for the racy compare. Next pass reads only these three.
+- **2026-10-13 21:49 · BeMuCa** — in-progress round 2: fixed critique findings. Extra now decodes wanted into extraCache first, then builds out in one pass over the sorted kept ids; TestExtraKeepsOrderWhenOneRefMoved fails on the old code (moved lowest id came out last), passes now. Doc.find reuses Fields.find. Comment typo agedBoard.

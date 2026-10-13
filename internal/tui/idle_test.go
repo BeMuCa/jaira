@@ -54,7 +54,7 @@ func TestIdleTickDecodesNothingAndChangeAppearsNextTick(t *testing.T) {
 	}
 }
 
-// agedTicket pushes every ticket file an hour into the past, outside the racy
+// agedBoard pushes every ticket file an hour into the past, outside the racy
 // window, and lets the board cache them.
 func agedBoard(t *testing.T) *Model {
 	t.Helper()
