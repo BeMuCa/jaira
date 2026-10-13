@@ -451,6 +451,9 @@ func (y *Syncer) Flush() ([]Report, error) {
 		return nil, err
 	}
 
+	if err := y.tidyMilestoneEntries(); err != nil {
+		return nil, err
+	}
 	results, err := y.Box.Flush(y.Repo)
 	if err != nil {
 		return nil, err
@@ -468,6 +471,49 @@ func (y *Syncer) Flush() ([]Report, error) {
 		reports = append(reports, rep)
 	}
 	return reports, nil
+}
+
+// tidyMilestoneEntries settles the milestone writes the queue may still hold
+// from before IDs, on the refs this flush has just fetched. An entry keyed by a
+// name is rekeyed to the ID LegacyID computes for it — as the file it names
+// would be moved — unless it is the mark of a rename, which is dropped, or the
+// ID already has an entry. And a first write of a milestone (no lease) that
+// the fetched ref already carries, file and bytes, is dropped: two clones moved
+// the same old file to the same ID, and the second one to push must not be told
+// that the remote wins over a write that said the same thing.
+func (y *Syncer) tidyMilestoneEntries() error {
+	entries, err := y.Box.List()
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.Kind != outbox.KindMilestone {
+			continue
+		}
+		if !milestone.IsID(e.ID) {
+			if milestone.RenamedTo([]byte(e.Content)) != "" {
+				if err := y.Box.DropMilestone(e.ID); err != nil {
+					return err
+				}
+				continue
+			}
+			id := milestone.LegacyID(e.ID)
+			if err := y.Box.RekeyMilestone(e.ID, id, e.ID+"-"+id+".md", milestone.MigrateContent([]byte(e.Content)), ""); err != nil {
+				return err
+			}
+			continue
+		}
+		if e.Lease != "" {
+			continue
+		}
+		file, content, _, err := y.Repo.ReadMilestone(e.ID)
+		if err == nil && file == e.File && string(content) == e.Content {
+			if err := y.Box.DropMilestone(e.ID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Pending reports an unsent write for one ticket, for the marker on a board

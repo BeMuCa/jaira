@@ -154,3 +154,74 @@ func TestAnOldRenameMarkRemovesTheOldFileAndIsReported(t *testing.T) {
 		t.Errorf("wrote %v filed %v renamed %v", wrote, filed, renamed)
 	}
 }
+
+func oldEntry(t *testing.T, s side, name, content string) {
+	t.Helper()
+	dir := filepath.Join(s.syncer.Box.Dir, "milestones")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	doc := `{"id":"` + name + `","op":"write","ref":"refs/jaira/milestones/` + name + `","kind":"milestones","lease":"","content":` + quote(content) + `,"queued-at":"2026-10-01T10:00:00Z","updated-at":"2026-10-01T10:00:00Z","by":"ada"}`
+	if err := os.WriteFile(filepath.Join(dir, name+".json"), []byte(doc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func quote(s string) string { return `"` + strings.NewReplacer("\n", `\n`, `"`, `\"`).Replace(s) + `"` }
+
+// A write an older build queued under a name goes out on the ID ref its file
+// moves to; the mark of a rename is dropped and sent nowhere.
+func TestAnOldMilestoneEntryIsRekeyedToItsID(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	oldEntry(t, ada, "backend", "---\ncolor: 45\nafter: [ui]\n---\n")
+	oldEntry(t, ada, "gone", "---\ncolor: 45\nstatus: filed\nrenamed-to: elsewhere\n---\n")
+
+	reports, err := ada.syncer.Flush()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range reports {
+		if r.Outcome != "sent" {
+			t.Errorf("report %+v", r)
+		}
+	}
+	id := milestone.LegacyID("backend")
+	file, content, _, err := ada.syncer.Repo.ReadMilestone(id)
+	if err != nil || file != "backend-"+id+".md" || !strings.Contains(string(content), "after: ["+milestone.LegacyID("ui")+"]") {
+		t.Errorf("the ID ref carries %q %q (%v)", file, content, err)
+	}
+	if _, err := ada.syncer.Repo.MilestoneSHA("backend"); err == nil {
+		t.Error("the old name got a ref")
+	}
+	if _, err := ada.syncer.Repo.MilestoneSHA("gone"); err == nil {
+		t.Error("the mark of a rename was sent")
+	}
+	if left, _ := ada.syncer.Box.List(); len(left) != 0 {
+		t.Errorf("entries left: %+v", left)
+	}
+}
+
+// Two clones that moved the same old file write the same first entry; the one
+// that pushes second finds the ref already says it and drops its entry, with no
+// report of a lost race.
+func TestAnIdenticalFirstMilestoneEntryIsDroppedSilently(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	id := milestone.LegacyID("q4")
+	file := "q4-" + id + ".md"
+	if err := ada.syncer.RecordMilestone(id, file, []byte(body)); err != nil {
+		t.Fatal(err)
+	}
+	if err := grace.syncer.RecordMilestone(id, file, []byte(body)); err != nil {
+		t.Fatal(err)
+	}
+	if reports, err := ada.syncer.Flush(); err != nil || len(reports) != 1 || reports[0].Outcome != "sent" {
+		t.Fatalf("ada: %+v %v", reports, err)
+	}
+	reports, err := grace.syncer.Flush()
+	if err != nil || len(reports) != 0 {
+		t.Errorf("grace's identical entry was reported: %+v %v", reports, err)
+	}
+	if left, _ := grace.syncer.Box.List(); len(left) != 0 {
+		t.Errorf("entries left: %+v", left)
+	}
+}

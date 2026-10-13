@@ -264,6 +264,38 @@ func (b *Box) readDir(dir string, kind Kind) ([]Entry, error) {
 // Drop removes a queued write.
 func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
 
+// DropMilestone removes a queued write of a milestone.
+func (b *Box) DropMilestone(key string) error { return b.dropKind(KindMilestone, key) }
+
+// RekeyMilestone replaces the write an older build queued under oldKey — a
+// milestone's name — with one under newKey, its ID, naming the file to commit.
+// The new entry keeps when and by whom the old one was queued. If newKey
+// already has a write queued, that one stands: it is newer than anything an
+// old build could have said, and the old entry is dropped.
+func (b *Box) RekeyMilestone(oldKey, newKey, file string, content []byte, lease string) error {
+	old, ok := b.pendingKind(KindMilestone, oldKey)
+	if !ok {
+		return nil
+	}
+	if _, exists := b.pendingKind(KindMilestone, newKey); exists {
+		return b.DropMilestone(oldKey)
+	}
+	e := Entry{
+		ID: newKey, Op: OpWrite, Ref: gitref.MilestoneRefName(newKey), Kind: KindMilestone,
+		Lease: lease, Content: string(content), File: file,
+		QueuedAt: old.QueuedAt, UpdatedAt: time.Now().UTC(), By: old.By,
+	}
+	path := b.path(KindMilestone, newKey)
+	data, err := json.MarshalIndent(e, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := ticket.WriteAtomic(path, append(data, '\n')); err != nil {
+		return err
+	}
+	return b.DropMilestone(oldKey)
+}
+
 // dropKind removes a queued write of either kind, including one an older build
 // filed at the flat path.
 func (b *Box) dropKind(kind Kind, key string) error {
