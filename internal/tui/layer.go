@@ -406,9 +406,9 @@ func (m *Model) layerWritten(name string, back layerStage) {
 
 // connectable lists what c on a [+] may connect there: every milestone but
 // the bubble itself, without one that already comes after the same
-// predecessor or that would close a loop. The far [+] starts a swimlane, so it
-// offers only the milestones not in the layer yet — a placed one there would
-// gain no arrow.
+// predecessor or that the write's own check (CheckAfter) would refuse — a
+// loop. The far [+] starts a swimlane, so it offers only the milestones not in
+// the layer yet — a placed one there would gain no arrow.
 func (m *Model) connectable(t layerTarget) []string {
 	after := m.placement(t)
 	var out []string
@@ -426,7 +426,7 @@ func (m *Model) connectable(t layerTarget) []string {
 		if ms.Placed && slices.Contains(ms.After, p) {
 			continue
 		}
-		if milestone.WouldCycle(m.milestones, ms.Name, p) {
+		if milestone.CheckAfter(m.milestones, ms.Name, []string{p}) != nil {
 			continue
 		}
 		out = append(out, ms.Name)

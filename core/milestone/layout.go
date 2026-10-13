@@ -32,11 +32,10 @@ type Lane struct {
 
 // Arrow runs from a predecessor to its successor. Extra is false for the
 // parent arrow every non-top bubble has and true for every further
-// predecessor; Cross is set on an extra arrow that leaves its lane, and an
-// extra arrow without it is a join inside one lane.
+// predecessor — a join inside one lane, or an arrow across lanes.
 type Arrow struct {
-	From, To     string
-	Extra, Cross bool
+	From, To string
+	Extra    bool
 }
 
 // Grid is the layout: bubbles ordered by lane, row, column; lanes left to
@@ -76,7 +75,7 @@ func usableEdges(placed []*Milestone) map[string][]string {
 	kept := make(map[string][]string, len(placed))
 	for _, m := range placed {
 		for _, p := range m.After {
-			if !known[p] || reaches(kept, p, m.Name) {
+			if !known[p] || chain(kept, p, m.Name) != nil {
 				continue
 			}
 			kept[m.Name] = append(kept[m.Name], p)
@@ -85,14 +84,8 @@ func usableEdges(placed []*Milestone) map[string][]string {
 	return kept
 }
 
-// reaches reports whether following predecessor edges from `from` arrives at
-// `target`, `from == target` included.
-func reaches(preds map[string][]string, from, target string) bool {
-	return chain(preds, from, target) != nil
-}
-
-// chain is reaches with the way there: the names from `from` to `target`
-// following predecessor edges, or nil when there is none.
+// chain is the way from `from` to `target` following predecessor edges,
+// `from == target` included: the names along it, or nil when there is none.
 func chain(preds map[string][]string, from, target string) []string {
 	seen := map[string]bool{}
 	var walk func(n string) []string
@@ -124,16 +117,11 @@ func predecessors(all []*Milestone) map[string][]string {
 	return preds
 }
 
-// WouldCycle reports whether making `pred` a predecessor of `succ` would close
-// a loop — the check the layer runs before it writes an arrow. Unknown names
-// and unplaced milestones contribute no edges, as they do not when drawing.
-func WouldCycle(all []*Milestone, succ, pred string) bool {
-	return CyclePath(all, succ, pred) != nil
-}
-
-// CyclePath names the loop WouldCycle refuses, in the direction the arrows
-// run and closed on its first name: for a→b→c and a new arrow c→a it is
-// [a b c a]. Nil when there is no loop.
+// CyclePath names the loop that making `pred` a predecessor of `succ` would
+// close, in the direction the arrows run and closed on its first name: for
+// a→b→c and a new arrow c→a it is [a b c a]. Nil when there is no loop.
+// Unknown names and unplaced milestones contribute no edges, as they do not
+// when drawing.
 func CyclePath(all []*Milestone, succ, pred string) []string {
 	path := chain(predecessors(all), pred, succ) // pred, ..., succ: against the arrows
 	if path == nil {
@@ -268,16 +256,12 @@ func Layout(all []*Milestone) Grid {
 		col[n] = bc
 		g.Bubbles = append(g.Bubbles, Bubble{Name: n, Lane: lane, Col: bc, Row: row, Parent: parent[n]})
 	}
-	laneOf := map[string]int{}
 	next := 0
 	for i, top := range tops {
 		w := measure(top)
 		g.Lanes = append(g.Lanes, Lane{Top: top, Col: next, Width: w})
 		place(top, i, next, 0)
 		next += w
-	}
-	for _, b := range g.Bubbles {
-		laneOf[b.Name] = b.Lane
 	}
 	sort.SliceStable(g.Bubbles, func(i, j int) bool {
 		a, b := g.Bubbles[i], g.Bubbles[j]
@@ -298,7 +282,7 @@ func Layout(all []*Milestone) Grid {
 			if p == b.Parent {
 				continue
 			}
-			g.Arrows = append(g.Arrows, Arrow{From: p, To: b.Name, Extra: true, Cross: laneOf[p] != b.Lane})
+			g.Arrows = append(g.Arrows, Arrow{From: p, To: b.Name, Extra: true})
 		}
 	}
 	return g

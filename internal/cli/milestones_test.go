@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -602,16 +601,6 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 	}
 }
 
-// exitCodeOf pulls the exit code a command asked for out of its error.
-func exitCodeOf(t *testing.T, err error) int {
-	t.Helper()
-	var ce *codedError
-	if !errors.As(err, &ce) {
-		t.Fatalf("error %v carries no exit code", err)
-	}
-	return ce.code
-}
-
 func TestCreateWritesGoalAndAfter(t *testing.T) {
 	dir := emptyStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "api", "--goal", "Version 0.4: out", "--after", ""); err != nil {
@@ -642,7 +631,7 @@ func TestCreateRefusesAnUnknownPredecessorAndWritesNothing(t *testing.T) {
 	if err == nil {
 		t.Fatalf("accepted an unknown predecessor:\n%s", out)
 	}
-	if code := exitCodeOf(t, err); code != ExitNotFound {
+	if code := exitCode(err); code != ExitNotFound {
 		t.Errorf("exit %d, want %d", code, ExitNotFound)
 	}
 	if !strings.Contains(err.Error(), `no milestone "ghost"`) {
@@ -714,7 +703,7 @@ func TestSetUsageErrors(t *testing.T) {
 		{"milestone", "set", "a", "--after", "a", "--no-layer"},
 	} {
 		out, err := runCLI(t, dir, args...)
-		if err == nil || exitCodeOf(t, err) != ExitUsage {
+		if err == nil || exitCode(err) != ExitUsage {
 			t.Errorf("%v: err=%v\n%s", args, err, out)
 		}
 	}
@@ -730,11 +719,11 @@ func TestSetRefusesAnUnknownPredecessorAndACycle(t *testing.T) {
 		}
 	}
 	_, err := runCLI(t, dir, "milestone", "set", "a", "--after", "ghost")
-	if err == nil || exitCodeOf(t, err) != ExitNotFound {
+	if err == nil || exitCode(err) != ExitNotFound {
 		t.Errorf("unknown predecessor: %v", err)
 	}
 	_, err = runCLI(t, dir, "milestone", "set", "a", "--after", "c")
-	if err == nil || exitCodeOf(t, err) != ExitValidation {
+	if err == nil || exitCode(err) != ExitValidation {
 		t.Fatalf("cycle: %v", err)
 	}
 	if !strings.Contains(err.Error(), "a -> b -> c -> a") {
@@ -756,11 +745,11 @@ func TestSetRefusesAFiledMilestoneAndAMissingOne(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := runCLI(t, dir, "milestone", "set", "a", "--goal", "x")
-	if err == nil || exitCodeOf(t, err) != ExitValidation || !strings.Contains(err.Error(), "jaira restore a.md") {
+	if err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "jaira restore a.md") {
 		t.Errorf("filed: %v", err)
 	}
 	_, err = runCLI(t, dir, "milestone", "set", "nope", "--goal", "x")
-	if err == nil || exitCodeOf(t, err) != ExitNotFound {
+	if err == nil || exitCode(err) != ExitNotFound {
 		t.Errorf("missing: %v", err)
 	}
 }

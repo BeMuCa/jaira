@@ -102,7 +102,7 @@ func TestLayoutJoin(t *testing.T) {
 			extra = append(extra, a)
 		}
 	}
-	if len(extra) != 1 || extra[0] != (Arrow{From: "g", To: "h", Extra: true, Cross: false}) {
+	if len(extra) != 1 || extra[0] != (Arrow{From: "g", To: "h", Extra: true}) {
 		t.Errorf("extra arrows: %+v", extra)
 	}
 	if len(g.Arrows) != 4 { // three parent arrows (c,g,h) + the join
@@ -124,7 +124,7 @@ func TestLayoutCrossLaneArrowAndLaneOrder(t *testing.T) {
 	}
 	found := false
 	for _, a := range g.Arrows {
-		if a.From == "alpha" && a.To == "x" && a.Extra && a.Cross {
+		if a.From == "alpha" && a.To == "x" && a.Extra {
 			found = true
 		}
 	}
@@ -151,7 +151,7 @@ func TestLayoutIgnoresUnknownAndUnplacedPredecessors(t *testing.T) {
 	if at(t, g, "b").Parent != "" {
 		t.Error("b must be a lane top")
 	}
-	if len(g.Arrows) != 1 || g.Arrows[0].From != "a" || !g.Arrows[0].Extra || !g.Arrows[0].Cross {
+	if len(g.Arrows) != 1 || g.Arrows[0].From != "a" || !g.Arrows[0].Extra {
 		t.Errorf("arrows: %+v", g.Arrows)
 	}
 }
@@ -189,7 +189,7 @@ func TestLayoutIsDeterministic(t *testing.T) {
 	}
 }
 
-func TestWouldCycle(t *testing.T) {
+func TestCyclePathFindsEveryLoop(t *testing.T) {
 	all := []*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b"), ms("x", 3)}
 	cases := []struct {
 		succ, pred string
@@ -203,8 +203,8 @@ func TestWouldCycle(t *testing.T) {
 		{"a", "x", false},
 	}
 	for _, c := range cases {
-		if got := WouldCycle(all, c.succ, c.pred); got != c.want {
-			t.Errorf("WouldCycle(%s after %s) = %v, want %v", c.succ, c.pred, got, c.want)
+		if got := CyclePath(all, c.succ, c.pred) != nil; got != c.want {
+			t.Errorf("CyclePath(%s after %s) != nil is %v, want %v", c.succ, c.pred, got, c.want)
 		}
 	}
 }
@@ -235,9 +235,6 @@ func TestReattachSuccessors(t *testing.T) {
 	// out must not put it straight back in as a top.
 	if got = ReattachSuccessors([]*Milestone{ms("m", 0, "m")}, "m"); len(got) != 0 {
 		t.Errorf("got %#v, want nothing", got)
-	}
-	if strings.Join(nil, "") != "" {
-		t.Fatal("unreachable")
 	}
 }
 

@@ -397,12 +397,8 @@ func filledCells(done, total int) int {
 // drawBubble draws one milestone: the border in its colour (thick and bold
 // when selected), its name, done/total, and the fill behind both rows.
 func (m *Model) drawBubble(cv *layerCanvas, ms *milestone.Milestone, at image.Point, done, total int, sel bool) {
-	border := lipgloss.NewStyle().Bold(sel)
-	if ms.HasColour() {
-		border = border.Foreground(lipgloss.Color(strconv.Itoa(ms.Colour)))
-	}
 	fill, ink := m.bubbleFill(ms.Colour)
-	bst := cv.style(border)
+	bst := cv.style(bubbleBorder(ms, sel))
 	tst := 0
 	if sel {
 		tst = cv.style(lipgloss.NewStyle().Bold(true))
@@ -448,15 +444,21 @@ func (m *Model) drawBubble(cv *layerCanvas, ms *milestone.Milestone, at image.Po
 // bubbleExit is where an arrow leaves a bubble's bottom border, drawn in the
 // border's own style so the line visibly belongs to it.
 func bubbleExit(cv *layerCanvas, at image.Point, dx int, sel bool, ms *milestone.Milestone) {
-	st := lipgloss.NewStyle().Bold(sel)
-	if ms.HasColour() {
-		st = st.Foreground(lipgloss.Color(strconv.Itoa(ms.Colour)))
-	}
 	tee := '┬'
 	if sel {
 		tee = '┯'
 	}
-	cv.put(at.X+dx, at.Y+bubbleH-1, tee, cv.style(st))
+	cv.put(at.X+dx, at.Y+bubbleH-1, tee, cv.style(bubbleBorder(ms, sel)))
+}
+
+// bubbleBorder is a bubble's border style: the milestone's colour, bold when
+// selected.
+func bubbleBorder(ms *milestone.Milestone, sel bool) lipgloss.Style {
+	st := lipgloss.NewStyle().Bold(sel)
+	if ms.HasColour() {
+		st = st.Foreground(lipgloss.Color(strconv.Itoa(ms.Colour)))
+	}
+	return st
 }
 
 const emptyLayerHint = "enter: place the first milestone"
@@ -711,10 +713,6 @@ func (m *Model) renderLayerDialog() string {
 			if i == l.pickIdx {
 				marker, label = stySelected.Render("▌ "), stySelected.Render(name)
 			}
-			mark := styMeta.Render("·")
-			if ms != nil && ms.HasColour() {
-				mark = swatch(ms.Colour)
-			}
 			note := "not in the layer yet: placed here"
 			switch {
 			case ms == nil || !ms.Placed:
@@ -725,7 +723,7 @@ func (m *Model) renderLayerDialog() string {
 			default:
 				note = "stays where it is, gains the arrow"
 			}
-			b.WriteString(marker + mark + " " + label + styMeta.Render("  "+note) + "\n")
+			b.WriteString(marker + milestoneMark(ms) + " " + label + styMeta.Render("  "+note) + "\n")
 		}
 		errLine()
 		hints("↑↓ pick", "enter connect", "esc back")
@@ -749,12 +747,8 @@ func (m *Model) renderMilestoneDetail() string {
 	}
 	width := max(20, m.width)
 	var head []string
-	mark := styMeta.Render("·")
-	if ms.HasColour() {
-		mark = swatch(ms.Colour)
-	}
 	done, total := m.milestoneDone(ms)
-	head = append(head, mark+" "+styLaneTitle.Render(ms.Name)+styMeta.Render(fmt.Sprintf("  %d/%d done", done, total)))
+	head = append(head, milestoneMark(ms)+" "+styLaneTitle.Render(ms.Name)+styMeta.Render(fmt.Sprintf("  %d/%d done", done, total)))
 	head = append(head, styBar.Render(strings.Repeat("─", min(width, 78))))
 	goal := ms.Goal
 	if goal == "" {

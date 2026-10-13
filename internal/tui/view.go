@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -1596,6 +1597,15 @@ func swatch(colour int) string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(colour))).Render("■")
 }
 
+// milestoneMark is a milestone's swatch in a list, and a dim dot for one with
+// no colour or one gone since the list was built.
+func milestoneMark(ms *milestone.Milestone) string {
+	if ms == nil || !ms.HasColour() {
+		return styMeta.Render("·")
+	}
+	return swatch(ms.Colour)
+}
+
 // renderMilestones is the picker behind M: the board's rounds of work, each in
 // the colour it paints on the right edge of its cards, so the list and the
 // board read as the same thing.
@@ -1613,12 +1623,8 @@ func (m *Model) renderMilestones() string {
 			marker = stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
-		mark := styMeta.Render("·")
-		if ms.HasColour() {
-			mark = swatch(ms.Colour)
-		}
 		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
-		b.WriteString(marker + m.tickMark(ms.Name) + " " + mark + " " + name + count + "\n")
+		b.WriteString(marker + m.tickMark(ms.Name) + " " + milestoneMark(ms) + " " + name + count + "\n")
 	}
 	for _, l := range wrapHints([]string{"space tick", "enter show only the ticked", "x show everything again", "esc close"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))

@@ -44,12 +44,6 @@ func reloadOrFail(t *testing.T, m *Model) {
 	}
 }
 
-func typeText(m *Model, s string) {
-	for _, r := range s {
-		m.key(key(string(r)))
-	}
-}
-
 var (
 	keyUp    = tea.KeyPressMsg{Code: tea.KeyUp}
 	keyDown  = tea.KeyPressMsg{Code: tea.KeyDown}
@@ -279,9 +273,9 @@ func TestNewMilestoneFromTheFarPlus(t *testing.T) {
 		t.Fatalf("enter on a [+] must offer new or connect, stage %v", m.layer.stage)
 	}
 	m.key(key("n"))
-	typeText(m, "Release Zero")
+	typeInto(m, "Release Zero")
 	m.key(key("tab"))
-	typeText(m, "zero is out")
+	typeInto(m, "zero is out")
 	m.key(key("enter"))
 
 	ms := loadMilestone(t, m, "release-zero")
@@ -309,7 +303,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	}
 	m.key(key("enter"))
 	m.key(key("n"))
-	typeText(m, "b")
+	typeInto(m, "b")
 	m.key(key("enter"))
 	if got := loadMilestone(t, m, "b").After; len(got) != 1 || got[0] != "a" {
 		t.Fatalf("the [+] under a makes a successor of a, after = %v", got)
@@ -321,7 +315,7 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	}
 	m.key(key("enter"))
 	m.key(key("n"))
-	typeText(m, "c")
+	typeInto(m, "c")
 	m.key(key("enter"))
 	if got := loadMilestone(t, m, "c").After; len(got) != 1 || got[0] != "a" {
 		t.Errorf("the [+] beside b makes a sibling: after a, got %v", got)
@@ -336,7 +330,7 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	m.key(key("L"))
 	m.key(key("enter"))
 	m.key(key("n"))
-	typeText(m, "taken")
+	typeInto(m, "taken")
 	m.key(key("enter"))
 	if m.layer.stage != stageForm || !strings.Contains(m.layer.err, "already exists") {
 		t.Errorf("want the form kept open with the refusal, stage %v err %q", m.layer.stage, m.layer.err)
@@ -375,7 +369,7 @@ func TestEditGoalAndPredecessors(t *testing.T) {
 		t.Fatalf("e must open the form with a's goal and predecessors, got %+v", m.layer.form)
 	}
 	m.key(key("tab"))
-	typeText(m, "zzz")
+	typeInto(m, "zzz")
 	m.key(key("enter"))
 	if want := `no milestone "zzz" on this board to come after`; m.layer.err != want {
 		t.Errorf("unknown predecessor: err %q, want %q", m.layer.err, want)
@@ -383,7 +377,7 @@ func TestEditGoalAndPredecessors(t *testing.T) {
 	for range 3 {
 		m.key(key("backspace"))
 	}
-	typeText(m, "b")
+	typeInto(m, "b")
 	m.key(key("enter"))
 	if want := `milestone "a" cannot come after "b": that closes a cycle, a -> b -> a`; m.layer.err != want {
 		t.Errorf("loop: err %q, want %q", m.layer.err, want)
@@ -398,7 +392,7 @@ func TestEditGoalAndPredecessors(t *testing.T) {
 	if m.layer.form.vals[1] != "a" {
 		t.Fatalf("the form starts from b's predecessors, got %q", m.layer.form.vals[1])
 	}
-	typeText(m, "write the docs")
+	typeInto(m, "write the docs")
 	m.key(key("tab"))
 	m.key(key("backspace"))
 	m.key(key("enter"))
