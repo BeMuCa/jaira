@@ -256,6 +256,10 @@ type Model struct {
 	watch  chan []string
 	closer func()
 
+	// fullAt is when every ticket was last decoded from scratch; see
+	// fullReparseEvery.
+	fullAt time.Time
+
 	// thinEmpty is whether lanes holding no tickets are drawn thin on the
 	// multi-column board. Session-only, reset on every launch: nothing about
 	// the board's *view* is persisted today — the filter, the cursor and the
@@ -320,6 +324,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// The board lists every 2 seconds, so it is the one reader worth a cache of
 	// decoded tickets; the CLI is one-shot and never asks for it.
 	s.EnableCache()
+	m.fullAt = time.Now()
 	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
@@ -352,6 +357,7 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
 	s.EnableCache()
+	m.fullAt = time.Now()
 	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
@@ -373,10 +379,13 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 
 // reload rebuilds the whole view from disk.
 //
-// A full rescan is used rather than applying incremental changes: at any
-// plausible ticket count it is cheap, and an incremental path would be a second
-// source of truth that has to stay consistent with edits made entirely outside
-// this process (a git pull, another session, a hand edit).
+// Every list is read again, but a ticket file is only decoded again when its
+// modification time or size moved, its ref moved, or the file watcher named it
+// (see Store.EnableCache). Decoding every ticket every 2 seconds was what kept
+// an idle board at 50-80 % of a CPU core; stat-ing the files costs nothing
+// measurable. Reading from disk each time, rather than applying events to the
+// view, keeps edits made entirely outside this process (a git pull, another
+// session, a hand edit) on the same path as our own.
 func (m *Model) reload() error {
 	lanes, err := lane.Load(m.store.Root)
 	if err != nil {
@@ -982,9 +991,21 @@ func (m *Model) flashLine() string {
 
 type tickMsg time.Time
 
+// fullReparseEvery is how often the tick throws the ticket cache away and
+// decodes everything. The 2-second tick already sees a changed size or
+// modification time and a moved ref, and the watcher names the files it saw
+// change. What neither sees is an edit that keeps a file's size and its
+// timestamp, outside the cache's 2-second racy window (cp -p, tar, rsync -t, a
+// clock that differs on a network drive). That is rare, so this catches it late
+// and cheaply: one decode per ticket, once per interval. It also drops cache
+// entries for paths that no longer exist.
+const fullReparseEvery = 15 * time.Minute
+
 // tick drives a periodic rescan. A file watcher is more responsive, but a timer
 // is the backstop that keeps the board correct on filesystems where change
-// notifications are unreliable — notably Windows drives mounted into WSL2.
+// notifications are unreliable — notably Windows drives mounted into WSL2,
+// where a git pull would otherwise stay invisible. Each tick stats every ticket
+// file and decodes only what changed.
 func tick() tea.Cmd {
 	return tea.Tick(2*time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
@@ -1005,6 +1026,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
+		if time.Since(m.fullAt) >= fullReparseEvery {
+			m.store.ForgetAll()
+			m.fullAt = time.Now()
+		}
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
 		return m, tick()

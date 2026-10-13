@@ -138,3 +138,30 @@ func TestWatcherReportsChangedPath(t *testing.T) {
 		t.Fatal("no change event within 5s")
 	}
 }
+
+// An edit that keeps size and timestamp is not seen by an ordinary tick; the
+// full re-parse, due every fullReparseEvery, finds it.
+func TestFullReparseFindsInvisibleChange(t *testing.T) {
+	m := agedBoard(t)
+	defer m.Close()
+	tk := m.tickets[0]
+	rewriteKeepingSizeAndTime(t, tk.Path, tk.Title, strings.ToUpper(tk.Title))
+
+	m.Update(tickMsg(time.Now()))
+	if got := titleOf(m, tk.ID); got != tk.Title {
+		t.Fatalf("the change should be invisible before the full re-parse is due: %q", got)
+	}
+	m.fullAt = time.Now().Add(-fullReparseEvery + time.Minute)
+	m.Update(tickMsg(time.Now()))
+	if got := titleOf(m, tk.ID); got != tk.Title {
+		t.Fatalf("seen before the full re-parse was due: %q", got)
+	}
+	m.fullAt = time.Now().Add(-fullReparseEvery - time.Second)
+	m.Update(tickMsg(time.Now()))
+	if got := titleOf(m, tk.ID); got != strings.ToUpper(tk.Title) {
+		t.Fatalf("the full re-parse did not find the change: %q", got)
+	}
+	if time.Since(m.fullAt) > time.Minute {
+		t.Fatal("fullAt was not reset after the full re-parse")
+	}
+}
