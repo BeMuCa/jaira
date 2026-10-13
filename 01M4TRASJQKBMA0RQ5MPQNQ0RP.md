@@ -2,7 +2,7 @@
 id: 01M4TRASJQKBMA0RQ5MPQNQ0RP
 title: "Der Agent-Block sagt, dass ein Agent ein Ticket aus human weiterschiebt, sobald die Frage beantwortet ist"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
 goal: "Was der erzeugte Agent-Block ueber die human-Lane sagt, stimmt mit ihrem Gate ueberein."
 context: |-
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T13:48:17Z
-updated-at: 2026-10-13T14:16:36Z
+updated-at: 2026-10-13T14:16:38Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
