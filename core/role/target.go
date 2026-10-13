@@ -35,7 +35,7 @@ type Agent struct {
 	Mods bool
 }
 
-// Agents is every harness 'jaira roles install --agent' knows, the default
+// agents is every harness 'jaira roles install --agent' knows, the default
 // first. A further one is a further entry.
 //
 // Copilot, as of 2026-10: VS Code, Copilot CLI and the cloud agent all read
@@ -44,7 +44,7 @@ type Agent struct {
 // ~/.agents/skills, and only VS Code reads ~/.claude/skills as well — which is
 // why that one does not count as already installed: the CLI would be left
 // without roles. Sources are on ticket E75R4Q.
-var Agents = []Agent{
+var agents = []Agent{
 	{Name: "claude", Project: ".claude/skills", Global: ".claude/skills", Mods: true},
 	{
 		Name: "copilot", Project: ".github/skills", Global: ".copilot/skills",
@@ -58,7 +58,7 @@ const DefaultAgent = "claude"
 
 // AgentNamed returns the agent called name, and false when there is none.
 func AgentNamed(name string) (Agent, bool) {
-	for _, a := range Agents {
+	for _, a := range agents {
 		if a.Name == name {
 			return a, true
 		}
@@ -68,8 +68,8 @@ func AgentNamed(name string) (Agent, bool) {
 
 // AgentNames lists the known agents, for a message naming them.
 func AgentNames() string {
-	names := make([]string, len(Agents))
-	for i, a := range Agents {
+	names := make([]string, len(agents))
+	for i, a := range agents {
 		names[i] = a.Name
 	}
 	return strings.Join(names, ", ")
