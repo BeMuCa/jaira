@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -8,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // mkPlaced writes a milestone placed in the layer after the given names (none:
@@ -340,6 +343,21 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	}
 	if loadMilestone(t, m, "taken").Placed {
 		t.Error("a refused name must not touch the milestone that has it")
+	}
+
+	// A name filed into this tree's logbook stays taken: the layer asks the
+	// same question 'jaira milestone create' asks.
+	dir := filepath.Join(m.store.LogbookDir(), "bc-20200101", ticket.MilestonesSubdir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "gone.md"), []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.layer.form.vals[0] = "gone"
+	m.key(key("enter"))
+	if !strings.Contains(m.layer.err, "filed into the logbook") {
+		t.Errorf("want the filed refusal, err %q", m.layer.err)
 	}
 }
 

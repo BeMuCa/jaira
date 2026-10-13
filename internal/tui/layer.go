@@ -3,16 +3,17 @@ package tui
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -336,20 +337,17 @@ func (m *Model) submitLayerForm() {
 		return
 	}
 
-	preds, err := parseLayerNames(f.vals[1])
+	preds, err := milestone.ParseNames(f.vals[1])
 	if err != nil {
 		l.err = err.Error()
 		return
 	}
 	_, err = milestone.Edit(m.store.Root, m.store, m.refSync, f.edit, func(ms *milestone.Milestone) error {
-		if err := refuseFiledMilestone(ms); err != nil {
-			return err
-		}
 		all, err := milestone.LoadAll(m.store.Root)
 		if err != nil {
 			return err
 		}
-		if err := checkLayerPredecessors(all, f.edit, preds); err != nil {
+		if err := milestone.CheckAfter(all, f.edit, preds); err != nil {
 			return err
 		}
 		ms.SetGoal(f.vals[0])
@@ -369,24 +367,22 @@ func (m *Model) submitLayerForm() {
 // filed.
 func (m *Model) createMilestone(name, goal string, after []string) error {
 	root := m.store.Root
-	_, err := milestone.Create(root, m.store, m.refSync, name, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
+	_, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
 		if have, err := milestone.Load(root, name); err == nil {
 			if have.Filed() {
-				return nil, fmt.Errorf("milestone %q has been filed; 'jaira restore %s.md', run where it was filed, brings it back", name, name)
+				return nil, &milestone.FiledError{Name: name}
 			}
 			return nil, fmt.Errorf("milestone %q already exists — c on a [+] connects it", name)
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
-		if where, ok := m.store.FiledMilestone(name); ok {
+		switch where, at := m.refSync.MilestoneFiled(m.store, name); at {
+		case refsync.MilestoneFiledHere:
 			return nil, fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back", name, where, name)
+		case refsync.MilestoneFiledOnRef:
+			return nil, fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
 		}
-		if y := m.refSync; y != nil && y.Usable() == nil {
-			if content, _, err := y.Repo.ReadMilestone(name); err == nil && milestone.FromBytes(name, content).Filed() {
-				return nil, fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
-			}
-		}
-		if err := checkLayerPredecessors(existing, name, after); err != nil {
+		if err := milestone.CheckAfter(existing, name, after); err != nil {
 			return nil, err
 		}
 		ms := milestone.New(name, milestone.AssignColour(existing, name), time.Now())
@@ -395,52 +391,6 @@ func (m *Model) createMilestone(name, goal string, after []string) error {
 		return ms, nil
 	})
 	return m.recordOnly(err)
-}
-
-// parseLayerNames reads the predecessor field: comma-separated names, stored
-// the way milestone names are. Empty is the empty list — a swimlane top.
-func parseLayerNames(raw string) ([]string, error) {
-	out := []string{}
-	for _, part := range strings.Split(raw, ",") {
-		if strings.TrimSpace(part) == "" {
-			continue
-		}
-		n, _, err := milestone.NormalizeName(part)
-		if err != nil {
-			return nil, err
-		}
-		if !slices.Contains(out, n) {
-			out = append(out, n)
-		}
-	}
-	return out, nil
-}
-
-// checkLayerPredecessors refuses a predecessor no milestone on the board
-// carries and an arrow that would close a loop, in the words the CLI's
-// checkPredecessors uses — the drawing ignores both, so this is where they
-// are stopped.
-func checkLayerPredecessors(all []*milestone.Milestone, name string, preds []string) error {
-	for _, p := range preds {
-		if !slices.ContainsFunc(all, func(ms *milestone.Milestone) bool { return ms.Name == p }) {
-			return fmt.Errorf("no milestone %q on this board to come after", p)
-		}
-		if path := milestone.CyclePath(all, name, p); path != nil {
-			return fmt.Errorf("milestone %q cannot come after %q: that closes a cycle, %s",
-				name, p, strings.Join(path, " -> "))
-		}
-	}
-	return nil
-}
-
-// refuseFiledMilestone stops an edit of a milestone whose file still lies
-// here but is marked filed — what a fetch of somebody else's filing leaves.
-// Writing it would push the change onto its ref for everyone.
-func refuseFiledMilestone(ms *milestone.Milestone) error {
-	if ms.Filed() {
-		return fmt.Errorf("milestone %q has been filed; 'jaira restore %s.md', run where it was filed, brings it back", ms.Name, ms.Name)
-	}
-	return nil
 }
 
 // recordOnly drops the one error a write may end with although it happened:
@@ -528,9 +478,6 @@ func (m *Model) keyLayerPick(s string) {
 func (m *Model) connectMilestone(name string, after []string) {
 	l := m.layer
 	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
-		if err := refuseFiledMilestone(ms); err != nil {
-			return err
-		}
 		all, err := milestone.LoadAll(m.store.Root)
 		if err != nil {
 			return err
@@ -539,7 +486,7 @@ func (m *Model) connectMilestone(name string, after []string) {
 		if ms.Placed {
 			next = append(slices.Clone(ms.After), after...)
 		}
-		if err := checkLayerPredecessors(all, name, after); err != nil {
+		if err := milestone.CheckAfter(all, name, after); err != nil {
 			return err
 		}
 		ms.SetAfter(next)
@@ -556,9 +503,6 @@ func (m *Model) connectMilestone(name string, after []string) {
 // two neighbours that came out alike can be told apart in a keypress or two.
 func (m *Model) nextMilestoneColour(name string) {
 	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
-		if err := refuseFiledMilestone(ms); err != nil {
-			return err
-		}
 		i := slices.Index(milestone.Palette, ms.Colour)
 		ms.SetColour(milestone.Palette[(i+1)%len(milestone.Palette)])
 		return nil
@@ -581,23 +525,14 @@ func (m *Model) keyLayerRemove(s string) {
 }
 
 // removeFromLayer takes a milestone out of the layer — its after line goes,
-// its tickets stay — and closes the chain behind it: what came after it now
-// comes after what came before it. The successors are worked out under the
-// lock the removal holds, then each is written on its own, the way 'jaira
-// milestone set' would write them one after another.
+// its tickets stay — and milestone.Edit closes the chain behind it under the
+// same lock, exactly as 'jaira milestone set --no-layer' does: what came after
+// it now comes after what came before it. The cursor goes to the first of
+// those, so the change is the thing in front of the reader.
 func (m *Model) removeFromLayer(name string) {
-	l := m.layer
-	l.stage = stageLayer
-	var reattach map[string][]string
+	m.layer.stage = stageLayer
+	moved := slices.Sorted(maps.Keys(milestone.ReattachSuccessors(m.milestones, name)))
 	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
-		if err := refuseFiledMilestone(ms); err != nil {
-			return err
-		}
-		all, err := milestone.LoadAll(m.store.Root)
-		if err != nil {
-			return err
-		}
-		reattach = milestone.ReattachSuccessors(all, name)
 		ms.Unplace()
 		return nil
 	})
@@ -605,30 +540,11 @@ func (m *Model) removeFromLayer(name string) {
 		m.notify(err.Error(), true)
 		return
 	}
-	succ := make([]string, 0, len(reattach))
-	for s := range reattach {
-		succ = append(succ, s)
+	first := ""
+	if len(moved) > 0 {
+		first = moved[0]
 	}
-	sort.Strings(succ)
-	for _, s := range succ {
-		_, err := milestone.Edit(m.store.Root, m.store, m.refSync, s, func(ms *milestone.Milestone) error {
-			ms.SetAfter(reattach[s])
-			return nil
-		})
-		if err := m.recordOnly(err); err != nil {
-			m.notify(fmt.Sprintf("%q left the layer, but %q could not be moved up: %v", name, s, err), true)
-			_ = m.reload()
-			return
-		}
-	}
-	if err := m.reload(); err != nil {
-		m.notify(err.Error(), true)
-		return
-	}
-	l.sel = layerTarget{}
-	if len(succ) > 0 {
-		l.sel = layerTarget{kind: onBubble, name: succ[0]}
-	}
+	m.layerWritten(first, stageLayer)
 }
 
 // openMilestoneDetail shows one milestone: its goal, where it sits, and its

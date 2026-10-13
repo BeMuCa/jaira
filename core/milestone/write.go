@@ -36,6 +36,15 @@ type RecordError struct {
 func (e *RecordError) Error() string { return fmt.Sprintf("milestone %q: %v", e.Name, e.Err) }
 func (e *RecordError) Unwrap() error { return e.Err }
 
+// FiledError is Edit's refusal of a milestone whose file still lies here but
+// is marked filed — what a fetch of somebody else's filing leaves behind.
+// Writing it would put the change on its ref for every clone that fetches.
+type FiledError struct{ Name string }
+
+func (e *FiledError) Error() string {
+	return fmt.Sprintf("milestone %q has been filed; 'jaira restore %s.md', run where it was filed, brings it back", e.Name, e.Name)
+}
+
 // Edit is the one write path for a milestone that exists: lock, read, let fn
 // change it, save atomically, record the ref. The CLI and the board both
 // write through it so they cannot drift — what a person does in the layer is
@@ -45,7 +54,13 @@ func (e *RecordError) Unwrap() error { return e.Err }
 // saved only when fn changed its bytes, because a re-add of a ticket already
 // there is not a write and must not queue a ref. A missing file comes back as
 // the Load error (errors.Is os.ErrNotExist) so the caller can say why in its
-// own words.
+// own words, and a filed one as a *FiledError before fn runs.
+//
+// When fn takes a placed milestone out of the layer, Edit also closes the
+// chain behind it under the same lock: every milestone that came after it now
+// comes after what came before it (ReattachSuccessors). Here and not in the
+// callers, so the layer's x and 'jaira milestone set --no-layer' cannot leave
+// two different pictures behind.
 func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Milestone) error) (*Milestone, error) {
 	unlock, err := lock.Lock(LockName)
 	if err != nil {
@@ -57,14 +72,47 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 	if err != nil {
 		return nil, err
 	}
-	before := ms.Bytes()
+	if ms.Filed() {
+		return ms, &FiledError{Name: name}
+	}
+	before, wasPlaced := ms.Bytes(), ms.Placed
 	if err := fn(ms); err != nil {
 		return ms, err
 	}
 	if bytes.Equal(before, ms.Bytes()) {
 		return ms, nil
 	}
-	return ms, saveAndRecord(root, rec, ms)
+	var succ []*Milestone
+	if wasPlaced && !ms.Placed {
+		// Read before the save, while this milestone's own after line is
+		// still on disk: it is what its successors move up to.
+		all, err := LoadAll(root)
+		if err != nil {
+			return ms, err
+		}
+		reattach := ReattachSuccessors(all, name)
+		for _, m := range all { // LoadAll's order, by name
+			if after, ok := reattach[m.Name]; ok {
+				m.SetAfter(after)
+				succ = append(succ, m)
+			}
+		}
+	}
+	// Every file is saved before a ref failure is reported: the ref is best
+	// effort, the save is the write.
+	var recErr error
+	for _, m := range append([]*Milestone{ms}, succ...) {
+		switch err := saveAndRecord(root, rec, m).(type) {
+		case nil:
+		case *RecordError:
+			if recErr == nil {
+				recErr = err
+			}
+		default:
+			return ms, err
+		}
+	}
+	return ms, recErr
 }
 
 // Create is Edit's counterpart for a milestone that does not exist yet. build
@@ -72,7 +120,7 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 // colour and checking the name is free are both reads that must not race a
 // second creation; it returns the milestone to write, or refuses with an error
 // and nothing is written.
-func Create(root string, lock Locker, rec Recorder, name string, build func(existing []*Milestone) (*Milestone, error)) (*Milestone, error) {
+func Create(root string, lock Locker, rec Recorder, build func(existing []*Milestone) (*Milestone, error)) (*Milestone, error) {
 	unlock, err := lock.Lock(LockName)
 	if err != nil {
 		return nil, err

@@ -392,6 +392,23 @@ func (m *Milestone) Unplace() {
 	m.setFront("after", "", true)
 }
 
+// ParseNames reads a comma-separated list of milestone names the way --after
+// and the layer's form take it. Unlike a file being read, typed input is
+// refused when a name cannot be one, rather than having it quietly left out.
+// Empty is the empty list: a swimlane top.
+func ParseNames(raw string) ([]string, error) {
+	parts := strings.Split(raw, ",")
+	for _, p := range parts {
+		if strings.TrimSpace(p) == "" {
+			continue
+		}
+		if _, _, err := NormalizeName(p); err != nil {
+			return nil, err
+		}
+	}
+	return cleanNames(parts), nil
+}
+
 // parseAfter reads the value of an after line: `[a, b]`, or the same without
 // brackets, which is what a hand-edit tends to produce.
 func parseAfter(value string) []string {

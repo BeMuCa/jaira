@@ -4,14 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -123,7 +121,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 				}
 			}
 
-			ms, err := milestone.Create(s.Root, s, refs, name, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
+			ms, err := milestone.Create(s.Root, s, refs, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
 				if have, err := milestone.Load(s.Root, name); err == nil && have.Filed() {
 					// The file is here but marked, which a fetch of somebody
 					// else's filing leaves behind. It is not on the board, so
@@ -243,7 +241,9 @@ func newMilestoneSetCmd() *cobra.Command {
 --after <a,b> places the milestone in the layer (L on the board) under those
 milestones. The first one decides its swimlane, every further one is an extra
 arrow. --after "" makes it the top of a swimlane of its own.
---no-layer takes it out of the layer again; its tickets stay where they are.
+--no-layer takes it out of the layer again; its tickets stay where they are,
+and what came after it now comes after what came before it, as x in the
+layer does.
 
 At least one flag is needed, and --after and --no-layer exclude each other. A
 predecessor has to be a milestone on this board (exit 5 otherwise), and an
@@ -275,10 +275,6 @@ filed milestone is refused like everywhere else.`,
 
 			var before []byte
 			ms, err := milestone.Edit(s.Root, s, refs, name, func(ms *milestone.Milestone) error {
-				if ms.Filed() {
-					return refuseFiledOnDisk(s.Root, name,
-						"editing it here instead would push the change onto its ref for everyone who fetches")
-				}
 				before = ms.Bytes()
 				if setAfter {
 					all, err := milestone.LoadAll(s.Root)
@@ -298,12 +294,9 @@ filed milestone is refused like everywhere else.`,
 				}
 				return nil
 			})
-			if err := warnIfRecordOnly(err); err != nil {
-				if errors.Is(err, os.ErrNotExist) {
-					return refuseMissingMilestone(s, name,
-						"there is no copy of it here to change",
-						", and then it can be changed again")
-				}
+			if err := editRefusal(s, name, err,
+				"there is no copy of it here to change",
+				", and then it can be changed again"); err != nil {
 				return err
 			}
 
@@ -325,44 +318,30 @@ filed milestone is refused like everywhere else.`,
 	return cmd
 }
 
-// parseMilestoneNames reads a comma-separated list of milestone names the way
-// they are stored. The empty string is the empty list, which --after reads as
-// "a swimlane of its own".
+// parseMilestoneNames is milestone.ParseNames with the CLI's exit code. The
+// empty string is the empty list, which --after reads as "a swimlane of its
+// own".
 func parseMilestoneNames(raw string) ([]string, error) {
-	var out []string
-	for _, part := range strings.Split(raw, ",") {
-		if strings.TrimSpace(part) == "" {
-			continue
-		}
-		n, _, err := milestone.NormalizeName(part)
-		if err != nil {
-			return nil, fail(ExitUsage, "bad_milestone", "%v", err)
-		}
-		if !slices.Contains(out, n) {
-			out = append(out, n)
-		}
+	names, err := milestone.ParseNames(raw)
+	if err != nil {
+		return nil, fail(ExitUsage, "bad_milestone", "%v", err)
 	}
-	return out, nil
+	return names, nil
 }
 
-// checkPredecessors refuses what the layer must never be handed: a name no
-// milestone on this board carries, and an arrow that would close a loop. The
-// drawing ignores both rather than failing, so this is the one place they are
-// stopped — before anything is written.
+// checkPredecessors is milestone.CheckAfter with the CLI's exit codes: an
+// unknown predecessor is not found (5), an arrow that closes a loop is a
+// validation error (3).
 func checkPredecessors(all []*milestone.Milestone, name string, preds []string) error {
-	for _, p := range preds {
-		if !slices.ContainsFunc(all, func(m *milestone.Milestone) bool { return m.Name == p }) {
-			return fail(ExitNotFound, "no_such_milestone",
-				"no milestone %q on this board to come after — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
-				p, p)
-		}
-		if path := milestone.CyclePath(all, name, p); path != nil {
-			return fail(ExitValidation, "milestone_cycle",
-				"milestone %q cannot come after %q: that closes a cycle, %s",
-				name, p, strings.Join(path, " -> "))
-		}
+	var pe *milestone.PredecessorError
+	if err := milestone.CheckAfter(all, name, preds); !errors.As(err, &pe) {
+		return err
 	}
-	return nil
+	if pe.Cycle != nil {
+		return fail(ExitValidation, "milestone_cycle", "%v", pe)
+	}
+	return fail(ExitNotFound, "no_such_milestone",
+		"%v — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it", pe, pe.Pred)
 }
 
 // editMembers is add and rm, which differ only in which way the lines move.
@@ -384,15 +363,6 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 
 	var touched []string
 	ms, err := milestone.Edit(s.Root, s, refs, name, func(ms *milestone.Milestone) error {
-		if ms.Filed() {
-			// The third door into a filed milestone's file, after create and
-			// logbook. The write would not lose the mark, but it does not stay
-			// local either: the ref write would put it on the ref, so every
-			// clone that fetches sees a milestone the filer took off the board
-			// being edited. Refuse it where the other two refuse it.
-			return refuseFiledOnDisk(s.Root, name,
-				"editing it here instead would push the change onto its ref for everyone who fetches")
-		}
 		for _, id := range ids {
 			changed := false
 			if add {
@@ -406,17 +376,9 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		}
 		return nil
 	})
-	if err := warnIfRecordOnly(err); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			// Filed in this very tree: the file moved to the logbook, so Load
-			// answers the same ErrNotExist a name nobody ever used answers
-			// with. Saying "create it" here sends the reader into the
-			// refusal create raises for a filed name, two steps for one
-			// answer, and the first one points the wrong way.
-			return refuseMissingMilestone(s, name,
-				"there is no copy of it here for tickets to go in and out of",
-				", and then tickets can go in and out of it again")
-		}
+	if err := editRefusal(s, name, err,
+		"there is no copy of it here for tickets to go in and out of",
+		", and then tickets can go in and out of it again"); err != nil {
 		return err
 	}
 
@@ -496,50 +458,6 @@ work and each filters to half of it.`,
 	}
 }
 
-// milestoneFiledAt says where the mark on a filed name was found, because the
-// two places are not interchangeable to the person reading the refusal. A
-// logbook copy lies in this tree and 'jaira restore' here brings it back; a
-// marked ref is somebody else's filing, and the only copy that can come back
-// is in their tree.
-type milestoneFiledAt int
-
-const (
-	milestoneNotFiled milestoneFiledAt = iota
-	milestoneFiledOnRef
-	milestoneFiledHere
-)
-
-// milestoneFiled reports whether this name belongs to a milestone that has
-// been filed, and where that was found. A filed name stays taken: two
-// milestones called the same thing are one identity that looks different on
-// every machine, which is the confusion a name exists to prevent.
-//
-// Two places are looked at because neither alone covers both boards. The ref
-// is the one an unshared clone does not have, and the logbook is the one a
-// clone that never fetched does not see — a board that has never been shared
-// has no refs at all, and would otherwise hand out the same name twice.
-//
-// This tree's logbook is asked first, and that order decides what the caller
-// may say. The tree that filed the milestone has both: the copy in its own
-// logbook AND the mark on the ref it wrote. Asking the ref first would tell
-// the filer that the way back runs in "the tree that filed it" — which is the
-// tree they are standing in — and hide the copy lying right here. The ref
-// answer is therefore the one left over: nothing in this logbook, so the copy
-// is somewhere else.
-func milestoneFiled(s *ticket.Store, name string) (string, milestoneFiledAt) {
-	if where, ok := s.FiledMilestone(name); ok {
-		return where, milestoneFiledHere
-	}
-	if refs != nil && refs.Usable() == nil {
-		if content, _, err := refs.Repo.ReadMilestone(name); err == nil {
-			if milestone.FromBytes(name, content).Filed() {
-				return gitref.MilestoneRefName(name), milestoneFiledOnRef
-			}
-		}
-	}
-	return "", milestoneNotFiled
-}
-
 // These are the refusals a filed milestone raises, each written in one place.
 // Which one a reader gets depends on the state they are in and not on the
 // command they typed: create, add/rm and logbook all stand in front of the
@@ -599,15 +517,15 @@ func refuseFiledInLogbook(name, where, then string) error {
 // refuseFiledInLogbook take them — the wording differs because the way back
 // differs.
 func refuseIfFiled(s *ticket.Store, name, onRef, inLogbook string) error {
-	switch where, at := milestoneFiled(s, name); at {
-	case milestoneFiledOnRef:
+	switch where, at := refs.MilestoneFiled(s, name); at {
+	case refsync.MilestoneFiledOnRef:
 		// Nothing is filed under this name in this tree's logbook and the mark
 		// is on the ref, so the copy 'jaira restore' needs lies in whichever
 		// tree filed it. The ref is what `carries` names because, with no file
 		// and no logbook entry here, it is the only thing the reader can go
 		// and look at.
 		return refuseFiledElsewhere(name, "its ref "+where, onRef)
-	case milestoneFiledHere:
+	case refsync.MilestoneFiledHere:
 		return refuseFiledInLogbook(name, where, inLogbook)
 	}
 	return nil
@@ -640,15 +558,38 @@ func warnIfRecordOnly(err error) error {
 	return nil
 }
 
-// refuseMissingMilestone is the answer to a name no file carries: a filing
-// made in this tree gets the filed refusal, anything else gets "no such".
-func refuseMissingMilestone(s *ticket.Store, name, onRef, inLogbook string) error {
-	if err := refuseIfFiled(s, name, onRef, inLogbook); err != nil {
+// editRefusal words what milestone.Edit refused for a command that changes a
+// milestone, and downgrades a ref that could not be queued to its warning.
+// onRef and inLogbook are the command's closing clauses for a name no file
+// carries, as refuseIfFiled takes them.
+func editRefusal(s *ticket.Store, name string, err error, onRef, inLogbook string) error {
+	var fe *milestone.FiledError
+	switch err := warnIfRecordOnly(err); {
+	case err == nil:
+		return nil
+	case errors.As(err, &fe):
+		// The third door into a filed milestone's file, after create and
+		// logbook. The write would not lose the mark, but it does not stay
+		// local either: the ref write would put it on the ref, so every
+		// clone that fetches sees a milestone the filer took off the board
+		// being edited. Refuse it where the other two refuse it.
+		return refuseFiledOnDisk(s.Root, name,
+			"editing it here instead would push the change onto its ref for everyone who fetches")
+	case errors.Is(err, os.ErrNotExist):
+		// Filed in this very tree: the file moved to the logbook, so Load
+		// answers the same ErrNotExist a name nobody ever used answers
+		// with. Saying "create it" here sends the reader into the
+		// refusal create raises for a filed name, two steps for one
+		// answer, and the first one points the wrong way.
+		if err := refuseIfFiled(s, name, onRef, inLogbook); err != nil {
+			return err
+		}
+		return fail(ExitNotFound, "no_such_milestone",
+			"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
+			name, name)
+	default:
 		return err
 	}
-	return fail(ExitNotFound, "no_such_milestone",
-		"no milestone %q on this board — 'jaira milestone ls' lists them, 'jaira milestone create %s' starts it",
-		name, name)
 }
 
 // resolveAll turns handles, prefixes and full ids into full ids, refusing the

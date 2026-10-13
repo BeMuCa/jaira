@@ -31,7 +31,7 @@ func (r *fakeRec) RecordMilestone(name string, content []byte) error {
 func TestCreateSavesRecordsAndHoldsTheLockOnlyWhileBuilding(t *testing.T) {
 	root := t.TempDir()
 	lk, rec := &fakeLock{}, &fakeRec{}
-	ms, err := Create(root, lk, rec, "a", func(existing []*Milestone) (*Milestone, error) {
+	ms, err := Create(root, lk, rec, func(existing []*Milestone) (*Milestone, error) {
 		if lk.held != 1 {
 			t.Error("build must run under the lock")
 		}
@@ -55,7 +55,7 @@ func TestCreateRefusalWritesNothing(t *testing.T) {
 	root := t.TempDir()
 	rec := &fakeRec{}
 	boom := errors.New("no")
-	_, err := Create(root, &fakeLock{}, rec, "a", func([]*Milestone) (*Milestone, error) { return nil, boom })
+	_, err := Create(root, &fakeLock{}, rec, func([]*Milestone) (*Milestone, error) { return nil, boom })
 	if !errors.Is(err, boom) || len(rec.names) != 0 {
 		t.Errorf("err=%v recorded=%v", err, rec.names)
 	}
@@ -118,5 +118,49 @@ func TestRecordFailureIsReportedBesideTheSavedMilestone(t *testing.T) {
 	}
 	if got, _ := Load(root, "a"); got.Goal != "g" {
 		t.Error("save was lost")
+	}
+}
+
+// A filed milestone's file can still lie here — a fetch of somebody else's
+// filing leaves it — and writing it would put the change on its ref for every
+// clone. Edit refuses it before fn runs, so no caller has to remember to.
+func TestEditRefusesAFiledMilestone(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "a", "---\ncolor: 45\nstatus: filed\n---\n")
+	rec := &fakeRec{}
+	_, err := Edit(root, &fakeLock{}, rec, "a", func(*Milestone) error {
+		t.Error("fn ran on a filed milestone")
+		return nil
+	})
+	var fe *FiledError
+	if !errors.As(err, &fe) || fe.Name != "a" || len(rec.names) != 0 {
+		t.Errorf("err=%v recorded=%v", err, rec.names)
+	}
+}
+
+// Taking a milestone out of the layer closes the chain behind it in the same
+// locked write, whoever calls Edit: what came after it now comes after what
+// came before it, and a milestone that does not name it is not written.
+func TestEditTakingAMilestoneOutClosesTheChain(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "a", "---\ncolor: 45\nafter: []\n---\n")
+	write(t, root, "b", "---\ncolor: 46\nafter: [a]\n---\n- "+idA+"\n")
+	write(t, root, "c", "---\ncolor: 47\nafter: [b, x]\n---\n")
+	write(t, root, "d", "---\ncolor: 48\nafter: [a]\n---\n")
+	lk, rec := &fakeLock{}, &fakeRec{}
+	if _, err := Edit(root, lk, rec, "b", func(m *Milestone) error { m.Unplace(); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if lk.taken != 1 {
+		t.Errorf("the removal and the re-attach must share one lock, taken %d times", lk.taken)
+	}
+	if b, _ := Load(root, "b"); b.Placed || !b.Has(idA) {
+		t.Errorf("b must leave the layer and keep its ticket, placed %v", b.Placed)
+	}
+	if c, _ := Load(root, "c"); strings.Join(c.After, ",") != "a,x" {
+		t.Errorf("c must now come after a, got %v", c.After)
+	}
+	if strings.Join(rec.names, ",") != "b,c" {
+		t.Errorf("recorded %v, want b and c only", rec.names)
 	}
 }

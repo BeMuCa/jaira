@@ -1,6 +1,7 @@
 package milestone
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -230,6 +231,11 @@ func TestReattachSuccessors(t *testing.T) {
 	if v, ok := got["s"]; !ok || v == nil || len(v) != 0 {
 		t.Errorf("got %#v, want s -> []", got)
 	}
+	// A hand-edited file naming itself is not its own successor: taking it
+	// out must not put it straight back in as a top.
+	if got = ReattachSuccessors([]*Milestone{ms("m", 0, "m")}, "m"); len(got) != 0 {
+		t.Errorf("got %#v, want nothing", got)
+	}
 	if strings.Join(nil, "") != "" {
 		t.Fatal("unreachable")
 	}
@@ -245,5 +251,23 @@ func TestCyclePathNamesTheLoopInArrowDirection(t *testing.T) {
 	}
 	if got := CyclePath(all, "a", "a"); len(got) != 2 {
 		t.Errorf("self: %v", got)
+	}
+}
+
+func TestCheckAfter(t *testing.T) {
+	all := []*Milestone{ms("a", 0), ms("b", 1, "a"), ms("c", 2, "b")}
+	if err := CheckAfter(all, "c", []string{"a", "b"}); err != nil {
+		t.Errorf("valid predecessors refused: %v", err)
+	}
+	var pe *PredecessorError
+	if err := CheckAfter(all, "c", []string{"a", "ghost"}); !errors.As(err, &pe) || pe.Pred != "ghost" || pe.Cycle != nil {
+		t.Errorf("unknown: %v", err)
+	} else if !strings.Contains(err.Error(), `no milestone "ghost"`) {
+		t.Errorf("unknown message: %v", err)
+	}
+	if err := CheckAfter(all, "a", []string{"c"}); !errors.As(err, &pe) || strings.Join(pe.Cycle, " ") != "a b c a" {
+		t.Errorf("cycle: %v", err)
+	} else if !strings.Contains(err.Error(), "a -> b -> c -> a") {
+		t.Errorf("cycle message: %v", err)
 	}
 }

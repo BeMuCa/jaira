@@ -424,3 +424,19 @@ func TestGoalAndAfterRoundTripThroughSave(t *testing.T) {
 		t.Errorf("round trip: goal=%q placed=%v after=%v", got.Goal, got.Placed, got.After)
 	}
 }
+
+// ParseNames is what --after and the layer's form read: names stored the way
+// milestone names are, repeats dropped, order kept, and a name that cannot be
+// one refused rather than quietly left out.
+func TestParseNames(t *testing.T) {
+	got, err := ParseNames(" API Umbau, ui,,api-umbau ")
+	if err != nil || strings.Join(got, ",") != "api-umbau,ui" {
+		t.Errorf("got %v, %v", got, err)
+	}
+	if got, err := ParseNames(""); err != nil || len(got) != 0 {
+		t.Errorf("empty: %v, %v", got, err)
+	}
+	if _, err := ParseNames("ok, ???"); err == nil {
+		t.Error("a name that does not normalize must be refused")
+	}
+}

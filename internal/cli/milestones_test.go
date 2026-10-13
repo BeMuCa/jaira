@@ -685,6 +685,25 @@ func TestSetChangesGoalAndPlacement(t *testing.T) {
 	}
 }
 
+// --no-layer is the layer's x: the chain behind the milestone closes up, so
+// an agent and a person taking the same milestone out leave the same picture.
+func TestSetNoLayerHangsTheSuccessorsOnThePredecessors(t *testing.T) {
+	dir := emptyStore(t)
+	for _, args := range [][]string{
+		{"create", "a", "--after", ""}, {"create", "b", "--after", "a"}, {"create", "c", "--after", "b"},
+	} {
+		if out, err := runCLI(t, dir, append([]string{"milestone"}, args...)...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	if out, err := runCLI(t, dir, "milestone", "set", "b", "--no-layer"); err != nil {
+		t.Fatalf("set --no-layer: %v\n%s", err, out)
+	}
+	if c, _ := milestone.Load(dir, "c"); len(c.After) != 1 || c.After[0] != "a" {
+		t.Errorf("c must now come after a, got %v", c.After)
+	}
+}
+
 func TestSetUsageErrors(t *testing.T) {
 	dir := emptyStore(t)
 	if out, err := runCLI(t, dir, "milestone", "create", "a"); err != nil {

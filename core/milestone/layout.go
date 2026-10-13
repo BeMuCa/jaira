@@ -1,8 +1,10 @@
 package milestone
 
 import (
+	"fmt"
 	"slices"
 	"sort"
+	"strings"
 )
 
 // The layer draws placed milestones as bubbles on a grid. Everything here is a
@@ -141,6 +143,37 @@ func CyclePath(all []*Milestone, succ, pred string) []string {
 	return append(path, succ)
 }
 
+// PredecessorError is CheckAfter's refusal: Pred names no milestone on the
+// board, or — Cycle set — making it a predecessor of Name closes that loop.
+type PredecessorError struct {
+	Name, Pred string
+	Cycle      []string // nil when Pred is unknown
+}
+
+func (e *PredecessorError) Error() string {
+	if e.Cycle == nil {
+		return fmt.Sprintf("no milestone %q on this board to come after", e.Pred)
+	}
+	return fmt.Sprintf("milestone %q cannot come after %q: that closes a cycle, %s",
+		e.Name, e.Pred, strings.Join(e.Cycle, " -> "))
+}
+
+// CheckAfter refuses what the layer must never be handed: a predecessor no
+// milestone on the board carries, and an arrow that would close a loop. The
+// drawing ignores both rather than failing, so every write that places a
+// milestone — the CLI's and the layer's — asks this first.
+func CheckAfter(all []*Milestone, name string, preds []string) error {
+	for _, p := range preds {
+		if !slices.ContainsFunc(all, func(m *Milestone) bool { return m.Name == p }) {
+			return &PredecessorError{Name: name, Pred: p}
+		}
+		if path := CyclePath(all, name, p); path != nil {
+			return &PredecessorError{Name: name, Pred: p, Cycle: path}
+		}
+	}
+	return nil
+}
+
 // ReattachSuccessors computes what taking `name` out of the layer does to the
 // milestones that come after it: in each one's after list the name is replaced
 // by the removed milestone's own predecessors, order kept, repeats dropped, so
@@ -156,7 +189,7 @@ func ReattachSuccessors(all []*Milestone, name string) map[string][]string {
 	}
 	out := map[string][]string{}
 	for _, m := range all {
-		if !m.Placed || !slices.Contains(m.After, name) {
+		if !m.Placed || m.Name == name || !slices.Contains(m.After, name) {
 			continue
 		}
 		next := []string{}

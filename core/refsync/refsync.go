@@ -255,6 +255,53 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, err err
 	return wrote, filed, nil
 }
 
+// MilestoneFiledAt says where the mark on a filed name was found, because the
+// two places are not interchangeable to the person reading the refusal. A
+// logbook copy lies in this tree and 'jaira restore' here brings it back; a
+// marked ref is somebody else's filing, and the only copy that can come back
+// is in their tree.
+type MilestoneFiledAt int
+
+const (
+	MilestoneNotFiled MilestoneFiledAt = iota
+	MilestoneFiledOnRef
+	MilestoneFiledHere
+)
+
+// MilestoneFiled reports whether this name belongs to a milestone that has
+// been filed, and where that was found. A filed name stays taken: two
+// milestones called the same thing are one identity that looks different on
+// every machine, which is the confusion a name exists to prevent. Every door
+// that hands out a name — the CLI's create and the layer's — asks here, so a
+// state added later reaches all of them.
+//
+// Two places are looked at because neither alone covers both boards. The ref
+// is the one an unshared clone does not have, and the logbook is the one a
+// clone that never fetched does not see — a board that has never been shared
+// has no refs at all, and would otherwise hand out the same name twice. A nil
+// syncer is such a board: only the logbook is asked.
+//
+// This tree's logbook is asked first, and that order decides what the caller
+// may say. The tree that filed the milestone has both: the copy in its own
+// logbook AND the mark on the ref it wrote. Asking the ref first would tell
+// the filer that the way back runs in "the tree that filed it" — which is the
+// tree they are standing in — and hide the copy lying right here. The ref
+// answer is therefore the one left over: nothing in this logbook, so the copy
+// is somewhere else.
+func (y *Syncer) MilestoneFiled(s *ticket.Store, name string) (string, MilestoneFiledAt) {
+	if where, ok := s.FiledMilestone(name); ok {
+		return where, MilestoneFiledHere
+	}
+	if y != nil && y.Usable() == nil {
+		if content, _, err := y.Repo.ReadMilestone(name); err == nil {
+			if milestone.FromBytes(name, content).Filed() {
+				return gitref.MilestoneRefName(name), MilestoneFiledOnRef
+			}
+		}
+	}
+	return "", MilestoneNotFiled
+}
+
 // Winner describes the state that beat a rejected write, read from the ref
 // itself. A rejection that only says "you lost" leaves the user to go and find
 // out who and what — which they cannot do without knowing the ref exists.
