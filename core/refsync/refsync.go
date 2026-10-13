@@ -17,8 +17,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -1123,13 +1125,8 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 		}
 	}
 	var kept, wanted []string
-	ids := make([]string, 0, len(hashes))
-	for id := range hashes {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids) // the order List gave, which callers have always seen
-	for _, id := range ids {
-		hash := hashes[id]
+	// By id: the order List gave, which callers have always seen.
+	for _, id := range slices.Sorted(maps.Keys(hashes)) {
 		if have[id] {
 			continue
 		}
@@ -1140,7 +1137,7 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 			continue
 		}
 		kept = append(kept, id)
-		if e, ok := y.extraCache[id]; ok && e.hash == hash {
+		if e, ok := y.extraCache[id]; ok && e.hash == hashes[id] {
 			continue
 		}
 		wanted = append(wanted, id)

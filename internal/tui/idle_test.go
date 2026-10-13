@@ -12,15 +12,6 @@ import (
 
 // Not parallel: ticket.Counts is process-wide.
 
-func titleOf(m *Model, id string) string {
-	for _, t := range m.tickets {
-		if t.ID == id {
-			return t.Title
-		}
-	}
-	return ""
-}
-
 // A tick on a board where nothing changed decodes no ticket and parses no
 // frontmatter; a change made behind the board's back shows on the next tick,
 // and costs exactly one decode.
@@ -46,7 +37,7 @@ func TestIdleTickDecodesNothingAndChangeAppearsNextTick(t *testing.T) {
 	dec2, _ := ticket.Counts()
 	m.Update(tickMsg(time.Now()))
 	dec3, _ := ticket.Counts()
-	if got := titleOf(m, id); got != "changed behind the board" {
+	if got := byID(t, m, id).Title; got != "changed behind the board" {
 		t.Fatalf("the change did not show on the next tick: title %q", got)
 	}
 	if dec3-dec2 != 1 {
@@ -101,14 +92,14 @@ func TestChangeMsgRereadsOnlyTheNamedFile(t *testing.T) {
 	rewriteKeepingSizeAndTime(t, tk.Path, tk.Title, strings.ToUpper(tk.Title))
 
 	m.Update(tickMsg(time.Now()))
-	if got := titleOf(m, tk.ID); got != tk.Title {
+	if got := byID(t, m, tk.ID).Title; got != tk.Title {
 		t.Fatalf("a tick alone saw an invisible change: %q", got)
 	}
 
 	dec0, par0 := ticket.Counts()
 	m.Update(changeMsg{paths: []string{tk.Path}})
 	dec1, par1 := ticket.Counts()
-	if got := titleOf(m, tk.ID); got != strings.ToUpper(tk.Title) {
+	if got := byID(t, m, tk.ID).Title; got != strings.ToUpper(tk.Title) {
 		t.Fatalf("the named file was not reread: %q", got)
 	}
 	if dec1-dec0 != 1 || par1-par0 != 1 {
@@ -148,17 +139,17 @@ func TestFullReparseFindsInvisibleChange(t *testing.T) {
 	rewriteKeepingSizeAndTime(t, tk.Path, tk.Title, strings.ToUpper(tk.Title))
 
 	m.Update(tickMsg(time.Now()))
-	if got := titleOf(m, tk.ID); got != tk.Title {
+	if got := byID(t, m, tk.ID).Title; got != tk.Title {
 		t.Fatalf("the change should be invisible before the full re-parse is due: %q", got)
 	}
 	m.fullAt = time.Now().Add(-fullReparseEvery + time.Minute)
 	m.Update(tickMsg(time.Now()))
-	if got := titleOf(m, tk.ID); got != tk.Title {
+	if got := byID(t, m, tk.ID).Title; got != tk.Title {
 		t.Fatalf("seen before the full re-parse was due: %q", got)
 	}
 	m.fullAt = time.Now().Add(-fullReparseEvery - time.Second)
 	m.Update(tickMsg(time.Now()))
-	if got := titleOf(m, tk.ID); got != strings.ToUpper(tk.Title) {
+	if got := byID(t, m, tk.ID).Title; got != strings.ToUpper(tk.Title) {
 		t.Fatalf("the full re-parse did not find the change: %q", got)
 	}
 	if time.Since(m.fullAt) > time.Minute {

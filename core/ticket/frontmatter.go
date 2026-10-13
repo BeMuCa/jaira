@@ -162,7 +162,7 @@ func (d *Doc) Fields() (*Fields, error) {
 }
 
 func (f *Fields) validate() error {
-	if f == nil || f.root == nil {
+	if f.root == nil {
 		return nil // empty frontmatter is structurally fine
 	}
 	switch f.root.(type) {
@@ -222,8 +222,9 @@ func (v visitorFunc) Visit(n ast.Node) ast.Visitor {
 	return v
 }
 
-// topLevel returns the frontmatter's top-level key/value pairs in source order.
-func (d *Doc) topLevel() ([]*ast.MappingValueNode, error) {
+// topLevel parses the frontmatter for reading its top-level keys, refusing a
+// head that is not a mapping.
+func (d *Doc) topLevel() (*Fields, error) {
 	f, err := d.Fields()
 	if err != nil {
 		return nil, err
@@ -231,7 +232,7 @@ func (d *Doc) topLevel() ([]*ast.MappingValueNode, error) {
 	if err := f.mappingErr(); err != nil {
 		return nil, err
 	}
-	return f.vals, nil
+	return f, nil
 }
 
 // mappingErr is the error a read of a key reports when the head is not a mapping.
@@ -244,11 +245,8 @@ func (f *Fields) mappingErr() error {
 }
 
 func (d *Doc) find(key string) (*ast.MappingValueNode, error) {
-	f, err := d.Fields()
+	f, err := d.topLevel()
 	if err != nil {
-		return nil, err
-	}
-	if err := f.mappingErr(); err != nil {
 		return nil, err
 	}
 	return f.find(key), nil
@@ -262,12 +260,12 @@ func (d *Doc) Has(key string) bool {
 
 // Keys lists the top-level keys in source order.
 func (d *Doc) Keys() []string {
-	vals, err := d.topLevel()
+	f, err := d.topLevel()
 	if err != nil {
 		return nil
 	}
-	out := make([]string, 0, len(vals))
-	for _, v := range vals {
+	out := make([]string, 0, len(f.vals))
+	for _, v := range f.vals {
 		out = append(out, v.Key.GetToken().Value)
 	}
 	return out
