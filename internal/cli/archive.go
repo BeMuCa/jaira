@@ -147,8 +147,8 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 //
 // Both halves are needed. Without the line removed the milestone is not on the
 // board at all — the line is what LoadAll reads; without the ref rewritten the
-// ref still says "filed", so every other clone keeps hiding it and the name
-// stays taken against the person who just asked for it back.
+// ref still says "filed", so every other clone keeps hiding it from the person
+// who just asked for it back.
 //
 // A failure here fails the restore rather than being swallowed: the file has
 // been moved back by then, so reporting success would put a milestone nobody

@@ -157,10 +157,9 @@ func gitOut(t *testing.T, dir string, args ...string) string {
 }
 
 // Filing a milestone must not take its ref down, and this is why: a ref is
-// what every other clone reads. Taken down, the name is free again and two
-// machines can plan two different milestones under one identity. Left up and
-// marked, it says "filed" to everyone who fetches — the file is not written to
-// their board, and the name stays taken.
+// what every other clone reads. Taken down, a clone that has the file would never
+// hear it was filed. Left up and marked, it says "filed" to everyone who fetches — the file is not written to
+// their board.
 func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
 	ada, grace := twoBoards(t)
 
@@ -943,5 +942,32 @@ func TestRestoreOldFileBesideALiveTwinUnfilesTheRestoredOne(t *testing.T) {
 	}
 	if got.Filed() {
 		t.Errorf("the restored milestone is still filed")
+	}
+}
+
+// Two milestones sharing a name: create's "already exists at" must name a file
+// that is there, not a name-only path no milestone has.
+func TestCreateOnATwinnedNameNamesARealFile(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "dup"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	twin := "dup-" + milestone.LegacyID("dup") + ".md"
+	if err := os.WriteFile(filepath.Join(milestone.Dir(ada), twin), []byte("---\ncolor: 45\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runAndSend(t, ada, "milestone", "create", "dup")
+	if err == nil {
+		t.Fatalf("create on a taken name succeeded:\n%s", out)
+	}
+	entries, _ := os.ReadDir(milestone.Dir(ada))
+	found := false
+	for _, e := range entries {
+		if strings.Contains(out+err.Error(), e.Name()) {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("refusal names no file that exists (%v):\n%s%v", entries, out, err)
 	}
 }

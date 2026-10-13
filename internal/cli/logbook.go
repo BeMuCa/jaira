@@ -62,8 +62,8 @@ into .jaira/logbook/<initials>-<yyyymmdd>/milestones/, 'jaira milestone ls'
 stops naming it, no card carries its colour and the board's M filter forgets
 it. Its ref stays up carrying the status "filed": that line is what keeps a
 milestone off a board, so a clone that already has the file has it marked on
-the next fetch and stops showing the group, and the name stays taken until
-somebody restores it. Only a milestone you name by hand — --all sweeps
+the next fetch and stops showing the group. The name is free again: a new
+milestone of that name gets its own ID, and a restore keeps both. Only a milestone you name by hand — --all sweeps
 the terminal lane and never takes a group with it. A milestone is filed only
 once every ticket in it has reached the terminal lane or left the board.
 
@@ -433,7 +433,7 @@ func logbookMilestone(s *ticket.Store, key, name string, w io.Writer) error {
 	fmt.Fprintf(w, "Logged milestone %s (%d ticket(s)).\n", name, len(ms.Members()))
 	fmt.Fprintf(w, "Moved to %s — restore it with 'jaira restore %s'.\n",
 		filepath.Join(ticket.DirName, ticket.LogbookSubdir, folder, ticket.MilestonesSubdir), filepath.Base(dst))
-	fmt.Fprintf(w, "Its ref stays up marked %q, so the name stays taken until you do.\n", milestone.StatusFiled)
+	fmt.Fprintf(w, "Its ref stays up marked %q, so every clone keeps it off the board until you do.\n", milestone.StatusFiled)
 	return nil
 }
 

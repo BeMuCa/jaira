@@ -467,9 +467,10 @@ func (s *Store) logbookFolders() ([]string, error) {
 // an ID.
 //
 // It looks in every folder Restore looks in — including the one the logbook
-// was called before it was one — because a name Restore can still bring back
-// is a name that is still taken. A hand-rolled walk over LogbookDir alone
-// misses that older folder and hands the name out twice.
+// was called before it was one — because a milestone Restore can still bring
+// back is one the commands that need it on the board should point at restore
+// for. A hand-rolled walk over LogbookDir alone misses that older folder and
+// answers "no such milestone" for it.
 func (s *Store) FiledMilestone(match func(base string) bool) (where, file string, ok bool) {
 	folders, err := s.logbookFolders()
 	if err != nil {

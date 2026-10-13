@@ -669,8 +669,7 @@ func editRefusal(s *ticket.Store, name string, err error, inLogbook string) erro
 	case errors.As(err, &amb):
 		return refuseAmbiguous(amb)
 	case errors.As(err, &fe):
-		// The third door into a filed milestone's file, after create and
-		// logbook. The write would not lose the mark, but it does not stay
+		// The third door into a filed milestone's file, after logbook. The write would not lose the mark, but it does not stay
 		// local either: the ref write would put it on the ref, so every
 		// clone that fetches sees a milestone the filer took off the board
 		// being edited. Refuse it where the other two refuse it.
@@ -679,9 +678,9 @@ func editRefusal(s *ticket.Store, name string, err error, inLogbook string) erro
 	case errors.Is(err, os.ErrNotExist):
 		// Filed in this very tree: the file moved to the logbook, so Load
 		// answers the same ErrNotExist a name nobody ever used answers
-		// with. Saying "create it" here sends the reader into the
-		// refusal create raises for a filed name, two steps for one
-		// answer, and the first one points the wrong way.
+		// with. Saying "create it" here would start a second
+		// milestone under the name when the reader means the filed one,
+		// so point at restore first.
 		if err := refuseIfFiled(s, name, inLogbook); err != nil {
 			return err
 		}
@@ -772,9 +771,18 @@ func refuseAmbiguous(amb *milestone.AmbiguousError) error {
 // milestonePath is the file a milestone lives in, found by whatever names it:
 // the file's name carries an ID that the argument may not. A milestone nobody
 // has written yet gets the name-only path, the place the old format kept it.
+// Of two milestones that share the name the first one's file is named: a
+// path that is there beats a name-only one no file has.
 func milestonePath(root, key string) string {
 	if ms, err := milestone.Load(root, key); err == nil {
 		return ms.Path(root)
+	}
+	if all, err := milestone.LoadAll(root); err == nil {
+		for _, ms := range all {
+			if ms.Name == key {
+				return ms.Path(root)
+			}
+		}
 	}
 	return filepath.Join(milestone.Dir(root), key+".md")
 }

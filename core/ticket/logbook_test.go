@@ -310,10 +310,10 @@ func TestLoggedSinceReadsTheWindowNewestFirst(t *testing.T) {
 	}
 }
 
-// FiledMilestone answers "is this name still taken", and it has to look
-// wherever Restore looks: a milestone in the folder the logbook had before it
-// was called one can still be brought back, so its name is not free. A walk
-// over LogbookDir alone misses it and hands the name out twice.
+// FiledMilestone answers "is a milestone of this name filed", and it has to
+// look wherever Restore looks: a milestone in the folder the logbook had before
+// it was called one can still be brought back. A walk over LogbookDir alone
+// misses it.
 func TestFiledMilestoneFindsBothLogbookFolders(t *testing.T) {
 	s, _ := syncTestStore(t)
 	for _, sub := range []string{LogbookSubdir, legacyLogbookSubdir} {
