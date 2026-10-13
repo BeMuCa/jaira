@@ -536,8 +536,19 @@ func TestEditKeepsAHandWrittenName(t *testing.T) {
 	if got := loadMilestone(t, m, "Q4"); got.Goal != "ship" {
 		t.Errorf("Q4 must carry the goal, got %q", got.Goal)
 	}
-	if _, err := os.Stat(milestone.Path(m.store.Root, "q4")); !os.IsNotExist(err) {
-		t.Errorf("saving the goal renamed Q4 to q4: %v", err)
+	// The directory's own spelling, not os.Stat: a case-insensitive disk
+	// (macOS, Windows) finds Q4.md under the name q4.md.
+	entries, err := os.ReadDir(filepath.Dir(milestone.Path(m.store.Root, "Q4")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var upper, lower bool
+	for _, e := range entries {
+		upper = upper || e.Name() == "Q4.md"
+		lower = lower || e.Name() == "q4.md"
+	}
+	if !upper || lower {
+		t.Errorf("saving the goal must keep Q4.md as it is: Q4.md there %v, q4.md there %v", upper, lower)
 	}
 }
 
