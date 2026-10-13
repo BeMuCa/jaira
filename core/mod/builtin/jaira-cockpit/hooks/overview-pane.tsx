@@ -32,7 +32,7 @@ type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fol
 
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions) {
-  const person = (who: string, key: string) => <Text key={key} color={personColor(who)}>{who}</Text>
+  const person = (who: string) => <Text key="who" color={personColor(who)}>{who}</Text>
   const closeButton = <Button key="overview-close" label={w.close} onPress={act.close} />
   if (view === null) return <Box flexDirection="column"><Text dimColor>{w.unread}</Text>{closeButton}</Box>
   const tabButton = (tab: OverviewTab, label: string) => (
@@ -53,7 +53,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
             <Box key={`${key}-${r.id}`} flexDirection="column">
               <Text wrap="wrap"><Text bold color={GROUP[key]}>{r.id}</Text><Text dimColor>{SEP}{r.lane}{SEP}</Text>{r.title}</Text>
               {r.who !== '' || r.reason !== ''
-                ? <Text wrap="wrap">  {r.who !== '' ? person(r.who, 'who') : null}{r.reason !== '' ? <Text dimColor>{r.who !== '' ? ': ' : ''}{r.reason}</Text> : null}</Text>
+                ? <Text wrap="wrap">  {r.who !== '' ? person(r.who) : null}{r.reason !== '' ? <Text dimColor>{r.who !== '' ? ': ' : ''}{r.reason}</Text> : null}</Text>
                 : null}
             </Box>
           ))
@@ -76,7 +76,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
           <Text key={`${d.day}-${ev.kind}-${ev.id}`} wrap="wrap">
             {clockOf(ev.at)}  <Text bold>{ev.id}</Text><Text dimColor>{SEP}{ev.lane}{SEP}</Text>{ev.title}<Text dimColor>{SEP}</Text>
             {ev.kind === 'created' ? w.created : <Text color={GROUP.parked}>{w.putBack}</Text>}
-            {ev.who !== '' ? [w.by, person(ev.who, 'who')] : null}
+            {ev.who !== '' ? [w.by, person(ev.who)] : null}
           </Text>
         ))}
       </Box>
