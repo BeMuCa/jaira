@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T20:51:21Z
-updated-at: 2026-10-13T20:51:21Z
+updated-at: 2026-10-13T20:51:39Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Die Skill-Sammlungen aus dem Inspirations-Artifact sind durchgesehen und in Tickets uebersetzt
