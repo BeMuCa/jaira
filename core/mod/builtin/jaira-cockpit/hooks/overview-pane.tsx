@@ -11,9 +11,9 @@ import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
 
-export type OverviewTab = 'queue' | 'log'
-export type OverviewState = { tab: OverviewTab; folded: Record<string, boolean> }
-export type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void }
+type OverviewTab = 'queue' | 'log'
+type OverviewState = { tab: OverviewTab; folded: Record<string, boolean> }
+type OverviewActions = { close: () => void; tab: (tab: OverviewTab) => void; fold: (key: string) => void }
 
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions) {

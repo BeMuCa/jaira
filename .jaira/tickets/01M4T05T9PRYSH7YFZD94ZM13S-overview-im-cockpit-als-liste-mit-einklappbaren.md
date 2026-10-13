@@ -1,7 +1,7 @@
 ---
 id: 01M4T05T9PRYSH7YFZD94ZM13S
 title: Overview im Cockpit als Liste mit einklappbaren Abschnitten statt drei Spalten
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,15 +25,16 @@ related: []
 follows: 01M4RWVFXTPC084S81WSDSKZ70
 commits: []
 created-at: 2026-10-13T06:46:08Z
-updated-at: 2026-10-13T06:54:37Z
+updated-at: 2026-10-13T06:55:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6022
 claimed-at: 2026-10-13T06:47:43Z
 outcome-what: "Overview-Pane: zwei Tabs (Queue, Log); im Queue-Tab stehen In work, Queue, Put back untereinander in voller Breite, jede Ueberschrift ein Klapp-Knopf mit Anzahl; Titel umbrechen statt abgeschnitten zu werden; Tab und Klapp-Zustand in zwei Sitzungs-Atomen"
 outcome-why: "Drei Spalten zu 33% schnitten jeden Titel ab; Alex konnte die Ticket-Namen nicht ganz lesen"
 outcome-resolves: "Alle fuenf DoD-Punkte: Tabs mit Queue als Vorgabe, wrap statt truncate, Klapp-Knoepfe offen per Vorgabe, Zustand ueber Schliessen/Oeffnen, Release-Note"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:23 tabButton baut ein Text-Kind (bold/dimColor) in den Button, um den aktiven Tab zu markieren; ButtonProps hat dafuer variant='primary' und dimColor selbst (claude-code.d.ts ButtonProps) - <Button label variant={aktiv ? 'primary' : undefined} dimColor={!aktiv} />, kein Kind"
+review-summary: "none"
 round: 2
+review-gaps: "overview-pane.tsx:14-16 OverviewTab/State/Actions nicht mehr exportiert (niemand importiert sie). Gelassen: Klapp-Atom neben expandedAtom (register.tsx:57) - verschiedene Aufgaben, toggleMore laedt zusaetzlich das Board neu; texts.ts tabQueue='Queue' neben queue='Queue' - Tab und Abschnitt sind zwei Dinge, die nur heute gleich heissen; types/index.d.ts wiederholt den Tab-Typ absichtlich (self-contained contract)."
 ---
 
 # Overview im Cockpit als Liste mit einklappbaren Abschnitten statt drei Spalten
@@ -65,3 +66,4 @@ round: 2
 - **2026-10-13 06:47 · Alexander Sacharov** — parent session: jaira-78
 - **2026-10-13 06:52 · Alexander Sacharov** — Gefunden: ein Atom-update aus einem Pane-Knopf zeichnet das gemountete Pane neu (Test drueckt und liest auf demselben Handle) - kein refresh noetig. Zweimal $.ui.mount(OVERVIEW) ohne unmount wirft 'mounted already'. Abschnitt-Knopf traegt Pfeil+Anzahl im label (▾ offen, ▸ zu); aktiver Tab fett, der andere gedimmt, als Button-Kind. Tests: claude plugin test core/mod/builtin/jaira-cockpit
 - **2026-10-13 06:53 · Alexander Sacharov** — critique 1: tabButton (overview-pane.tsx:23) markiert den aktiven Tab ueber ein Text-Kind; die Engine hat dafuer Button-Props variant='primary' und dimColor - die nehmen, kein Kind. Stehen gelassen: types/index.d.ts wiederholt 'queue'|'log' absichtlich (Kopf der Datei: self-contained contract, mirrors hooks/*); inline update-Callbacks in register.tsx:1269 statt eigener toggle-Funktion, weil anders als toggleMore kein refreshBoard folgt.
+- **2026-10-13 06:54 · Alexander Sacharov** — critique 2: Befund 1 behoben (292d41a9, overview-pane.tsx:23 variant/dimColor); nichts weiter.
