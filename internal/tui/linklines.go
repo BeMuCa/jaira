@@ -163,7 +163,7 @@ func linkLegend(drawn []lineLink, offscreen int) string {
 		if s != "" {
 			s += styMeta.Render(" · ")
 		}
-		s += styMeta.Render(fmt.Sprintf("%d %s off screen · L", offscreen, noun))
+		s += styMeta.Render(fmt.Sprintf("%d %s off screen · l", offscreen, noun))
 	}
 	return s
 }

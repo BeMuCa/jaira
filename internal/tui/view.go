@@ -1040,7 +1040,7 @@ func (m *Model) statusBar() string {
 	if m.glow {
 		cHint = "c plain"
 	}
-	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "l links", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1095,7 +1095,7 @@ func (m *Model) renderDelete() string {
 // jk, paging) is deliberately not listed: the footer names actions, the help
 // screen teaches movement. b appears only when there is a blocker to jump to.
 func (m *Model) detailHints(t *ticket.Ticket) string {
-	hint := "e fields · E editor · y copy id · m move · n follow-up · X delete"
+	hint := "e fields · E editor · y copy id · m move · l links · n follow-up · X delete"
 	if len(t.BlockedBy) > 0 {
 		hint += " · b blocked-by"
 	}
@@ -1658,7 +1658,7 @@ func (m *Model) renderHelp() string {
 		keys [][2]string
 	}{
 		{"Move around", [][2]string{
-			{"h l ← →", "previous / next lane"},
+			{"← →", "previous / next lane"},
 			{"j k ↓ ↑", "previous / next card"},
 			{"g G", "first / last card in lane"},
 		}},
@@ -1666,7 +1666,7 @@ func (m *Model) renderHelp() string {
 			{"enter", "open the selected ticket"},
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
-			{"L", "every ticket linked to this one, logbook and archive included"},
+			{"l", "every ticket linked to this one, logbook and archive included"},
 			{"/", "filter as you type; key:value narrows to one field, spaces combine, a comma means or, \"quotes\" keep words together"},
 			{"M", "narrow the board to some milestones: space ticks them, enter applies (x there shows everything again)"},
 			{"u", "narrow the board to some people: space ticks them, enter applies (x there shows everyone)"},

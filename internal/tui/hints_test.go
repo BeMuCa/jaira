@@ -36,7 +36,7 @@ func TestWrapHintsKeepsEveryItem(t *testing.T) {
 func TestNarrowBoardShowsAllKeysAndFits(t *testing.T) {
 	m := newTestModel(t, 30, 24)
 	out := stripANSI(m.render())
-	for _, key := range []string{"enter open", "v compact", "z thin empty", "t tags", "u users", "M milestones", "n new", "m move", "S settings", "/ filter", "? help", "q quit"} {
+	for _, key := range []string{"enter open", "l links", "v compact", "z thin empty", "t tags", "u users", "M milestones", "n new", "m move", "S settings", "/ filter", "? help", "q quit"} {
 		if !strings.Contains(out, key) {
 			t.Errorf("narrow board lost the %q hint", key)
 		}
@@ -51,13 +51,34 @@ func TestNarrowDetailShowsAllKeysAndFits(t *testing.T) {
 	m := newTestModel(t, 34, 20)
 	m.detail = longTicket()
 	out := stripANSI(m.renderDetail())
-	for _, key := range []string{"e fields", "E editor", "y copy id", "m move", "esc back"} {
+	for _, key := range []string{"e fields", "E editor", "y copy id", "m move", "l links", "esc back"} {
 		if !strings.Contains(out, key) {
 			t.Errorf("narrow detail footer lost %q:\n%s", key, out)
 		}
 	}
 	if got := len(strings.Split(out, "\n")); got > 20 {
 		t.Errorf("detail rendered %d lines into a 20-line terminal", got)
+	}
+}
+
+// The help teaches the keys where they are now: the arrows change lanes on
+// the board, and l is the link window.
+func TestHelpNamesTheMovedKeys(t *testing.T) {
+	m := newTestModel(t, 120, 200)
+	m.key(key("?"))
+	out := stripANSI(m.render())
+	for _, line := range strings.Split(out, "\n") {
+		f := strings.Fields(line)
+		switch {
+		case strings.Contains(line, "previous / next lane") && !strings.Contains(line, "in that view"):
+			if f[0] != "←" {
+				t.Errorf("the board's lane keys are the arrows alone, help says %q", line)
+			}
+		case strings.Contains(line, "every ticket linked to this one"):
+			if f[0] != "l" {
+				t.Errorf("the link window is l, help says %q", line)
+			}
+		}
 	}
 }
 

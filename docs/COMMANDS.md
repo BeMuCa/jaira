@@ -175,7 +175,7 @@ field per ticket.
 Board:
 
 ```
-h l ← →   lane            enter   open ticket      n   new ticket
+← →       lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field:
                                   id title goal context assignee user lane tag body;
                                   spaces combine, a comma means or, "quotes" keep words together)
@@ -183,6 +183,7 @@ g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
+l         every ticket linked to the selected one (l or esc closes it)
 S         settings: lanes, the default board, days of logbook shown
 ```
 
@@ -201,6 +202,7 @@ E   edit body and checklists in $EDITOR        f   follow-up from the review
 y   copy the full ticket id                    n   follow-up beside this one
 b   open the ticket this one is blocked by     m   move it
 jk  next / previous ticket                     tab other pane, in the split
+l   every ticket linked to it
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 ```
 

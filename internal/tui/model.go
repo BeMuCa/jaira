@@ -1384,7 +1384,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detail = nil
 		case "n":
 			m.startFollowUp()
-		case "L":
+		case "l":
 			// The same window, over the open ticket rather than over the
 			// board. This is where it is wanted most: reading one ticket is
 			// exactly when "what else is this attached to" comes up.
@@ -1476,9 +1476,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		m.Close()
 		return m, tea.Quit
-	case "h", "left":
+	// The arrows alone change lanes: l opens the link window and L the
+	// milestone layer, and an h left meaning "lane left" beside them would
+	// be half of a pair whose other half now does something else.
+	case "left":
 		m.moveLane(-1)
-	case "l", "right":
+	case "right":
 		m.moveLane(1)
 	case "j", "down":
 		m.moveCard(1)
@@ -1520,7 +1523,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Next to the milestone picker in purpose: narrowing the board to
 		// some of the people on it, through the same one filter.
 		m.openUsers()
-	case "L":
+	case "l":
 		// Everything connected to this card, wherever the other end now
 		// lives — the board, a ref, the logbook, the archive.
 		m.openLinks()

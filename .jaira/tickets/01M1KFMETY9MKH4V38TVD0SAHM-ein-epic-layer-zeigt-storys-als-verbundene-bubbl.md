@@ -11,7 +11,7 @@ tags: []
 blocked-by: []
 commits: []
 created-at: 2026-09-03T11:14:30Z
-updated-at: 2026-10-12T23:37:38Z
+updated-at: 2026-10-13T00:21:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3607167
@@ -51,7 +51,7 @@ blocked-reason: wartet auf Berks Entscheidung Epics gegen Milestones; die drei W
 - [x] core/milestone: ein gemeinsamer Schreibweg (Lock, atomar speichern, Ref aufzeichnen) fuer CLI und TUI, CLI darauf umstellen
 - [x] core/milestone: Layout als reine Funktion (Swimlanes, Baum, Joins, Querpfeile, Zyklen) mit Tests
 - [x] internal/cli: milestone create --goal/--after, milestone set, ls --json mit goal/after; Tests; docs/COMMANDS.md
-- [ ] internal/tui: Tasten umziehen (l = Links auf Board und im Detail, h/l keine Lane-Navigation, L = Layer) und bestehende Tests anpassen
+- [x] internal/tui: Tasten umziehen (l = Links auf Board und im Detail, h/l keine Lane-Navigation, L = Layer) und bestehende Tests anpassen
 - [ ] internal/tui: Layer zeichnen (Bubbles, Fuellung A, Pfeile, Swimlane-Trenner, [+], Auswahl, Scrollen) mit Tests
 - [ ] internal/tui: Layer bedienen (Navigation, [+]-Auswahl, Formular neu, Verbinden-Picker, e, c, x mit Umhaengen) mit Tests
 - [ ] internal/tui: Milestone-Detail (Ziel, Ticketliste, enter, b ins gefilterte Board) mit Tests

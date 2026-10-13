@@ -882,7 +882,7 @@ supply, so an agent can fix and retry without parsing prose.
 ## Keys
 
 ```
-h l ← →   lane            enter   open ticket      n   new ticket
+← →       lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field;
                                   spaces combine, a comma means or)
 g G       first / last    m       move ticket      ?   help
@@ -890,6 +890,7 @@ v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
 M         only some milestones' tickets (space ticks, enter applies)
+l         every ticket linked to the selected one (l or esc closes it)
 S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
@@ -905,7 +906,7 @@ E   edit body and checklists in $EDITOR          f   follow-up from the review
 y   copy the full ticket id                      n   follow-up beside this one
 b   open the ticket this one is blocked by       m   move it
 X   delete its file (type the handle back)       tab other pane, in the split
-jk  next / previous ticket
+jk  next / previous ticket                       l   every ticket linked to it
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 
 On the board list (p, and the launcher):

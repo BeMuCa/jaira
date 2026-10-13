@@ -252,7 +252,7 @@ func TestLinkWithoutACardOnScreenIsCounted(t *testing.T) {
 	m.selectByID(id)
 	out := stripANSI(m.render())
 
-	if !strings.Contains(out, "1 link off screen · L") {
+	if !strings.Contains(out, "1 link off screen · l") {
 		t.Errorf("the bar does not count the undrawn link:\n%s", out)
 	}
 	if !strings.Contains(out, "related") {
@@ -266,7 +266,7 @@ func TestLinkWithoutACardOnScreenIsCounted(t *testing.T) {
 // Lines belong to the board alone: an open ticket, the link window over the
 // board, and the move picker all show it without them.
 func TestLinkLinesOnlyOnTheBoard(t *testing.T) {
-	for _, k := range []string{"enter", "L", "m"} {
+	for _, k := range []string{"enter", "l", "m"} {
 		m := newTestModel(t, 200, 40)
 		m.selectByID(titled(t, m, "Refactor auth middleware"))
 		if !strings.Contains(stripANSI(m.render()), "━") {
@@ -395,7 +395,7 @@ func TestOffScreenCountShownAtEveryWidth(t *testing.T) {
 		id := addTicket(t, m, "Card with a dangling blocker", "todo", time.Now().Add(time.Hour), nil,
 			map[string][]string{ticket.FieldBlockedBy: {ticket.NewID(time.Unix(0, 0))}})
 		m.selectByID(id)
-		if out := stripANSI(m.render()); !strings.Contains(out, "1 link off screen · L") {
+		if out := stripANSI(m.render()); !strings.Contains(out, "1 link off screen · l") {
 			t.Errorf("width %d: the count is not on screen", w)
 		}
 	}
@@ -486,7 +486,7 @@ func TestAmbiguousHandleDrawsNoLine(t *testing.T) {
 			t.Errorf("an ambiguous reference drew %q", g)
 		}
 	}
-	if !strings.Contains(out, "1 link off screen · L") {
+	if !strings.Contains(out, "1 link off screen · l") {
 		t.Errorf("the ambiguous reference is not counted:\n%s", out)
 	}
 }
