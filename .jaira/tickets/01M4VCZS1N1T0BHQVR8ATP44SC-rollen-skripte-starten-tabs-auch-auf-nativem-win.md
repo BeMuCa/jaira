@@ -1,7 +1,7 @@
 ---
 id: 01M4VCZS1N1T0BHQVR8ATP44SC
 title: "Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,18 +25,16 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-13T19:49:16Z
-updated-at: 2026-10-13T19:59:59Z
+updated-at: 2026-10-13T20:01:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-427304
 claimed-at: 2026-10-13T19:49:40Z
 outcome-what: "spawn.sh/run-lane.sh lesen JSON mit dem neuen 'jaira json get' statt python3; der Chat-Brief kommt aus 'jaira show --brief'; der WSL-Start haengt an WSL_DISTRO_NAME//proc/version statt an .exe, unter Git Bash startet claude nativ im per cygpath -w uebersetzten Worktree; Python-Rollen nehmen JAIRA_PYTHON/'python'-Einstellung (roles list --json: python) und schreiben UTF-8"
 outcome-why: Auf nativem Windows ist python3 fehlend oder der Store-Stub und herdr.exe wurde fuer WSL gehalten - spawn.sh liess leere Tabs stehen
 outcome-resolves: "GitHub-Issue BeMuCa/jaira#79"
-review-summary: |-
-  spawn.sh:~114 start_on() wird zweimal aufgerufen (cwd und start); einmal in on=$(start_on) halten
-  internal/cli/tickets.go ticketBrief parst Notes mit eigener Regex neben trimNotes/progressNotes (tickets.go, resume.go) - eine Note muss dasselbe heissen wie dort: Zeile mit "- " unter ## Progress, Folgezeilen gehoeren dazu
-  internal/cli/jsonget.go Long-Text: auch Eingabe ohne JSON endet in Exit 5 / --default; so sagen
+review-summary: "Runde 2: keine Befunde. Die drei aus Runde 1 sind behoben (on=$(start_on) einmal; ticketBrief zaehlt Notes wie trimNotes; json-get-Hilfe nennt Eingabe ohne JSON). Form passt: Einstellung python folgt ChatModelFor/settings.go, --brief sitzt bei show neben --notes-last."
 round: 2
+review-gaps: "Notes-Scan von trimNotes in progressEntries (tickets.go) gezogen, ticketBrief nutzt ihn statt eigener Schleife; Test-Build in core/role/jairabin_test.go haengt .exe an (wintrap-Regel 4, die ein go-Aufruf ueber Variable umgangen hatte) und buildError-Typ entfernt. Gelassen: progressNotes in resume.go scannt weiter selbst (vorher schon so, liefert nur Erstzeilen)."
 ---
 
 # Rollen-Skripte starten Tabs auch auf nativem Windows (Git Bash): kein python3, WSL nicht an .exe erkannt
@@ -44,7 +42,7 @@ round: 2
 ## Definition of Done
 
 - [x] spawn.sh und run-lane.sh rufen kein python3 mehr auf; JSON-Felder holt ein jaira-Unterbefehl, getestet
-  proof: internal/cli/jsonget.go newJSONGetCmd + show --brief; TestJSONGetPrintsOneField, TestTicketBriefCarriesTheNewestNotes, core/role TestSpawn* run against the built binary
+  proof: internal/cli/jsonget.go newJSONGetCmd + show --brief (tickets.go ticketBrief); TestJSONGetPrintsOneField, TestTicketBriefCarriesTheNewestNotes, core/role TestSpawn* gegen das gebaute Binary (jairabin_test.go)
 - [x] Rollen, die ein Python-Skript laufen lassen, nehmen das Kommando aus JAIRA_PYTHON bzw. der Einstellung 'python' (Default python3); die Skripte schreiben stdout als UTF-8
   proof: core/settings/settings.go PythonCommand; roles list python key (TestRolesListReportsThePythonCommand); SKILL.md lines ask jaira; build.py/collect.py reconfigure stdout (TestRolesNeverRunPython3ByName)
 - [x] spawn.sh nimmt den WSL-Weg nur bei WSL_DISTRO_NAME oder microsoft in /proc/version; unter MINGW/MSYS startet es claude nativ im Worktree; Test mit Stub fuer beide Faelle

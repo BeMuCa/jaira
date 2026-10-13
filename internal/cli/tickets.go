@@ -769,26 +769,27 @@ const briefNotes = 4
 // are handed in their prompt instead of reading all of it: every note and every
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
 // python3, which a Windows machine may not have (issue #79). A note is what
-// trimNotes counts, its continuation lines with it, and the fields keep
+// progressEntries finds, its continuation lines with it, and the fields keep
 // spawn.sh's order.
 func ticketBrief(j map[string]any, body string) any {
-	var notes []string
-	in := false
-	for _, line := range strings.Split(body, "\n") {
-		trimmed := strings.TrimSpace(line)
-		switch {
-		case strings.HasPrefix(trimmed, "#"):
-			in = strings.EqualFold(trimmed, noteHeading)
-		case in && strings.HasPrefix(trimmed, "- "):
-			notes = append(notes, trimmed)
-		case in && trimmed != "" && len(notes) > 0:
-			notes[len(notes)-1] += "\n" + line
+	lines := strings.Split(body, "\n")
+	starts := progressEntries(lines)
+	notes := []string{}
+	for i, at := range starts {
+		// A note runs to the next one, or to the heading that ends the section.
+		end := len(lines)
+		if i+1 < len(starts) {
+			end = starts[i+1]
 		}
+		for k := at + 1; k < end; k++ {
+			if strings.HasPrefix(strings.TrimSpace(lines[k]), "#") {
+				end = k
+				break
+			}
+		}
+		notes = append(notes, strings.TrimSpace(strings.Join(lines[at:end], "\n")))
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
-	if last == nil {
-		last = []string{}
-	}
 	return struct {
 		ID         any      `json:"id"`
 		Title      any      `json:"title"`
@@ -934,8 +935,22 @@ func trimNotes(body string, n int) (string, int) {
 		return body, 0
 	}
 	lines := strings.Split(body, "\n")
-	// Collected exactly as progressNotes reads them, so "a note" means the same
-	// thing to the reader and to the trimmer.
+	entries := progressEntries(lines)
+	if len(entries) <= n {
+		return body, 0
+	}
+	// From the first kept entry, not from the heading: a continuation line under
+	// a kept note belongs to it and must travel with it.
+	cut := entries[len(entries)-n]
+	out := append([]string{}, lines[:entries[0]]...)
+	out = append(out, lines[cut:]...)
+	return strings.Join(out, "\n"), len(entries) - n
+}
+
+// progressEntries returns the index of every line that starts a Progress
+// note. Collected exactly as progressNotes reads them, so "a note" means the
+// same thing to the reader, the trimmer and the brief.
+func progressEntries(lines []string) []int {
 	in := false
 	var entries []int
 	for i, line := range lines {
@@ -948,15 +963,7 @@ func trimNotes(body string, n int) (string, int) {
 			entries = append(entries, i)
 		}
 	}
-	if len(entries) <= n {
-		return body, 0
-	}
-	// From the first kept entry, not from the heading: a continuation line under
-	// a kept note belongs to it and must travel with it.
-	cut := entries[len(entries)-n]
-	out := append([]string{}, lines[:entries[0]]...)
-	out = append(out, lines[cut:]...)
-	return strings.Join(out, "\n"), len(entries) - n
+	return entries
 }
 
 func newSetCmd() *cobra.Command {

@@ -1,9 +1,11 @@
 package role
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 )
@@ -21,17 +23,17 @@ var built struct {
 // jaira that has it, not whichever one the machine has installed.
 func jairaPath(t *testing.T) string {
 	t.Helper()
-	goBin, err := exec.LookPath("go")
-	if err != nil {
-		t.Skipf("no go toolchain to build jaira with: %v", err)
-	}
 	built.once.Do(func() {
 		if built.dir, built.err = os.MkdirTemp("", "jaira-bin-"); built.err != nil {
 			return
 		}
-		cmd := exec.Command(goBin, "build", "-o", filepath.Join(built.dir, "jaira"), "github.com/BeMuCa/jaira/cmd/jaira")
-		if out, err := cmd.CombinedOutput(); err != nil {
-			built.err = &buildError{err, string(out)}
+		bin := filepath.Join(built.dir, "jaira")
+		if runtime.GOOS == "windows" {
+			bin += ".exe"
+		}
+		//wintrap:ok the .exe suffix is on bin already, from the line above
+		if out, err := exec.Command("go", "build", "-o", bin, "github.com/BeMuCa/jaira/cmd/jaira").CombinedOutput(); err != nil {
+			built.err = fmt.Errorf("%w\n%s", err, out)
 		}
 	})
 	if built.err != nil {
@@ -39,10 +41,3 @@ func jairaPath(t *testing.T) string {
 	}
 	return built.dir + string(os.PathListSeparator) + os.Getenv("PATH")
 }
-
-type buildError struct {
-	err error
-	out string
-}
-
-func (e *buildError) Error() string { return e.err.Error() + "\n" + e.out }
