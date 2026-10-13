@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -109,6 +110,9 @@ a milestone on this board, and the arrows may not form a loop.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
+				return err
+			}
+			if err := migrateMilestones(s); err != nil {
 				return err
 			}
 			name, changed, err := milestone.NormalizeName(args[0])
@@ -272,6 +276,9 @@ filed milestone is refused like everywhere else.`,
 			if err != nil {
 				return err
 			}
+			if err := migrateMilestones(s); err != nil {
+				return err
+			}
 			name, _, err := milestone.NormalizeName(args[0])
 			if err != nil {
 				return fail(ExitUsage, "bad_milestone", "%v", err)
@@ -352,6 +359,9 @@ is not on the board exits 5, or 3 when it was filed.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
+				return err
+			}
+			if err := migrateMilestones(s); err != nil {
 				return err
 			}
 			from, _, err := milestone.NormalizeName(args[0])
@@ -440,6 +450,9 @@ func resolvePredecessors(all []*milestone.Milestone, id string, preds []string) 
 func editMembers(cmd *cobra.Command, args []string, add bool) error {
 	s, err := openStore()
 	if err != nil {
+		return err
+	}
+	if err := migrateMilestones(s); err != nil {
 		return err
 	}
 	name, _, err := milestone.NormalizeName(args[0])
@@ -664,6 +677,30 @@ func recordMilestone(ms *milestone.Milestone) {
 func migrateHeld(s *ticket.Store) ([]string, error) {
 	moved, err := milestone.Migrate(s.Root, refs)
 	return moved, warnIfRecordOnly(err)
+}
+
+// migrateMilestones is migrateHeld for a command that does not hold the lock
+// yet: the first milestone command a board sees after an upgrade moves every
+// old file, and says so.
+func migrateMilestones(s *ticket.Store) error {
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	moved, err := migrateHeld(s)
+	reportMigrated(moved)
+	return err
+}
+
+// reportMigrated tells what a migration moved. On stderr, in the shape the
+// caller asked for, like every other warning a write carries.
+func reportMigrated(moved []string) {
+	if len(moved) == 0 {
+		return
+	}
+	warnRef(map[string]any{"milestones_migrated": moved},
+		"jaira: moved %d milestone file(s) to ID names: %s", len(moved), strings.Join(moved, ", "))
 }
 
 // warnIfRecordOnly turns the one failure the write path reports beside a

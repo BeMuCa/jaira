@@ -162,7 +162,9 @@ func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 		return "", nil
 	}
 	name := strings.TrimSuffix(filepath.Base(dst), ".md")
-	if _, err := migrateHeld(s); err != nil {
+	moved, err := migrateHeld(s)
+	reportMigrated(moved)
+	if err != nil {
 		return "", err
 	}
 	ms, err := milestone.Load(s.Root, name)

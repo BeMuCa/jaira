@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -72,7 +73,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			// disk: a milestone has no lane and no editor here, the file IS
 			// the interface, so a group that stayed on a ref would be a group
 			// nobody can open.
-			openedMilestones, filedMilestones, renamedMilestones, err := fetchMilestones(s)
+			openedMilestones, filedMilestones, renamedMilestones, migratedMilestones, err := fetchMilestones(s)
 			if err != nil {
 				return err
 			}
@@ -83,14 +84,16 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
-					"milestones":         strOrEmpty(openedMilestones),
-					"milestones_filed":   strOrEmpty(filedMilestones),
-					"milestones_renamed": renamedMilestones,
+					"milestones":          strOrEmpty(openedMilestones),
+					"milestones_filed":    strOrEmpty(filedMilestones),
+					"milestones_renamed":  renamedMilestones,
+					"milestones_migrated": strOrEmpty(migratedMilestones),
 				})
 			}
 			printMilestones(cmd.OutOrStdout(), openedMilestones)
 			printFiledMilestones(cmd.OutOrStdout(), filedMilestones)
 			printRenamedMilestones(cmd.OutOrStdout(), renamedMilestones)
+			printMigratedMilestones(cmd.OutOrStdout(), migratedMilestones)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)
@@ -114,10 +117,10 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 // Only this call is inside the lock: refs.Incoming() has already made the
 // network round trip by the time we get here, and holding a store lock across
 // one would block every milestone write for the length of a fetch.
-func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[string]string, err error) {
+func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[string]string, migrated []string, err error) {
 	unlock, err := s.Lock(milestoneLockName)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	defer unlock()
 	opened, filed, renamed, err = refs.IncomingMilestones(s.Root)
@@ -125,12 +128,12 @@ func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[strin
 		renamed = map[string]string{}
 	}
 	if err != nil {
-		return opened, filed, renamed, err
+		return opened, filed, renamed, nil, err
 	}
 	// Taken in after the refs, so a name-keyed ref that only now brought an old
 	// file is moved to its ID in the same fetch.
-	_, err = migrateHeld(s)
-	return opened, filed, renamed, err
+	migrated, err = migrateHeld(s)
+	return opened, filed, renamed, migrated, err
 }
 
 // splitRenamed takes the marks a rename left out of the filed names a fetch
@@ -147,6 +150,15 @@ func splitRenamed(root string, filed []string) (still []string, renamed map[stri
 		still = append(still, name)
 	}
 	return still, renamed
+}
+
+// printMigratedMilestones says that old milestone files were moved to their ID
+// names: the move is a write nobody asked for by name, so it is told.
+func printMigratedMilestones(w io.Writer, moved []string) {
+	if len(moved) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMoved %d milestone file(s) to ID names: %s\n", len(moved), strings.Join(moved, ", "))
 }
 
 // printMilestones says which milestone files this fetch put on disk. Named

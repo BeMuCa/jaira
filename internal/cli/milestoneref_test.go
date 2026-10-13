@@ -643,3 +643,90 @@ func TestTheFirstWriteMovesEveryOldFileToItsID(t *testing.T) {
 		t.Errorf("q5 comes after %v, want q4's ID", q5.After)
 	}
 }
+
+func oldMilestoneFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	if err := os.MkdirAll(milestone.Dir(dir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(milestone.Dir(dir), name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// The move is a write nobody asked for by name, so it is told — once, on the
+// first command that writes, and not again.
+func TestTheMoveToIDNamesIsToldOnTheFirstWriteOnly(t *testing.T) {
+	dir := emptyStore(t)
+	oldMilestoneFiles(t, dir, map[string]string{"q4.md": "---\ncolor: 45\n---\n", "q5.md": "---\ncolor: 46\n---\n"})
+
+	_, stderr := captureStdio(t, func() {
+		if out, err := runCLI(t, dir, "milestone", "create", "q6"); err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+	})
+	for _, want := range []string{"moved 2 milestone file(s) to ID names", "q4.md -> q4-" + milestone.LegacyID("q4") + ".md", "q5.md -> q5-" + milestone.LegacyID("q5") + ".md"} {
+		if !strings.Contains(stderr, want) {
+			t.Errorf("the message lacks %q:\n%s", want, stderr)
+		}
+	}
+	_, stderr = captureStdio(t, func() {
+		if out, err := runCLI(t, dir, "milestone", "create", "q7"); err != nil {
+			t.Fatalf("second create: %v\n%s", err, out)
+		}
+	})
+	if strings.Contains(stderr, "moved") {
+		t.Errorf("a second write told the move again:\n%s", stderr)
+	}
+}
+
+// Filing and restoring speak file names: the logbook keeps <name>-<ID>.md and
+// restore takes it back to the board and to its ref; an OLD <name>.md found in
+// a logbook lands as <name>-<LegacyID>.md, on its ID ref, with the move told.
+func TestLogbookAndRestoreSpeakIDFileNamesAndMigrateAnOldOne(t *testing.T) {
+	ada, _ := twoBoards(t)
+	done := mkDoneTicket(t, ada, "finished")
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one", done); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(ada, "round-one")
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	} else if !strings.Contains(out, "jaira restore "+ms.FileName()) {
+		t.Errorf("logbook names no restorable file %s:\n%s", ms.FileName(), out)
+	}
+	if out, err := runAndSend(t, ada, "restore", ms.FileName()); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	if back, err := milestone.Load(ada, "round-one"); err != nil || back.ID != ms.ID || back.Filed() {
+		t.Fatalf("restore: %v %+v", err, back)
+	}
+
+	// An old filed file in the logbook, as an old build left it.
+	folder := filepath.Join(ada, ticket.DirName, ticket.LogbookSubdir, "ada-20260101", ticket.MilestonesSubdir)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "old-one.md"), []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, stderr := captureStdio(t, func() {
+		if out, err := runAndSend(t, ada, "restore", "old-one.md"); err != nil {
+			t.Fatalf("restore old: %v\n%s", err, out)
+		}
+	})
+	id := milestone.LegacyID("old-one")
+	got, err := milestone.Load(ada, "old-one")
+	if err != nil || got.ID != id || got.FileName() != "old-one-"+id+".md" || got.Filed() {
+		t.Fatalf("restored old file: %v %+v", err, got)
+	}
+	if !strings.Contains(stderr, "old-one.md -> old-one-"+id+".md") {
+		t.Errorf("the move was not told:\n%s", stderr)
+	}
+	file, _, _, err := (&gitref.Repo{Dir: ada, Remote: "origin"}).ReadMilestone(id)
+	if err != nil || file != "old-one-"+id+".md" {
+		t.Errorf("the ID ref carries %q (%v)", file, err)
+	}
+}
