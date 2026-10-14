@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-13T20:51:58Z
+updated-at: 2026-10-14T07:47:22Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -33,6 +33,9 @@ related:
 
 - [ ] Ist im Cache ein neueres Release als release.Current, steht im Projektkopf unter der Version eine Pille '^ <version>'; bei gleicher Version und bei unbekanntem Cache steht keine Pille; ein Test deckt alle drei Faelle; go test ./... -race gruen
 - [ ] Ein Agent, der mit jaira arbeitet, erfaehrt von einem neueren Release und sagt es dem Nutzer: jaira nennt es in einer Ausgabe, die ein Agent sieht (z.B. jaira resume/next), und der Agent-Block sagt 'meldet jaira ein neueres Release, sag es dem Nutzer und nenne jaira self upgrade'; Test
+- [ ] Nach einem Upgrade oder 'jaira update' zeigt der TUI einmal ein Popup mit den Release-Notes seit der Version, die zuletzt auf diesem Board lief; eine Taste schliesst es; bis zum naechsten Versionswechsel erscheint es nicht wieder; Test
+- [ ] Eine Release-Note-Zeile kann als wichtig markiert werden (Vorschlag: '- ! <text>', bleibt fuer alte Binaries eine normale Zeile); sie steht im Popup und in der Ausgabe von 'jaira update' hervorgehoben; der Abschnitt zu core/release/notes/ in CLAUDE.md nennt die Markierung; Test
+- [ ] Auf der Launcher-Seite oeffnet ein Hotkey die Release-Notes (neueste Version zuerst); die Hilfezeile nennt die Taste; Test
 
 ## Options
 
