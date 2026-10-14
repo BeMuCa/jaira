@@ -621,6 +621,16 @@ describe('waiting for you', () => {
     expect(asked).not.toContain('subagent')
   })
 
+  test('without Herdr, a double click on Explain or Discuss sends one request', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await Promise.all([ui.press({ key: 'discuss-K7P2QX' }), ui.press({ key: 'discuss-K7P2QX' })])
+    expect(w.submitted).toHaveLength(1)
+    await Promise.all([ui.press({ key: 'explain-MG677R' }), ui.press({ key: 'explain-MG677R' })])
+    expect(w.submitted).toHaveLength(2)
+  })
+
   test('with Herdr but no spawn.sh, Explain says spawn.sh is missing', async ($, on) => {
     const w = world(on, { herdr: true, spawn: false })
     await startSession($)

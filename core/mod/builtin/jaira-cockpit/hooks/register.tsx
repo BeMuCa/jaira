@@ -502,7 +502,7 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
   }
 }
 
-// A press on Accept, Give back or Explain: the row's three lock, drawn dim,
+// A press on Accept, Give back, Explain or Discuss: the row's buttons lock, drawn dim,
 // until the action has done its part or BUSY_MS has passed; a press on a
 // locked row does nothing, so a slow answer is not asked for twice.
 async function once($: EngineInterface, id: string, action: () => Promise<void>): Promise<void> {
@@ -1115,7 +1115,7 @@ export const register: Register = (on, options) => {
                 ? <Button key={`verdict-${w.id}`} label={t.verdict} onPress={() => void show($, t.verdictOf(w.id), w.verdict)} />
                 : null}
               {w.question !== ''
-                ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void openChat($, w.id, 'discuss')} />
+                ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
                 : null}
             </Box>
             {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
@@ -1157,7 +1157,7 @@ export const register: Register = (on, options) => {
                   {w.id}{SEP}{w.lane}{SEP}{w.assignee}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
                 </Text>
                 {w.question !== ''
-                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void openChat($, w.id, 'discuss')} />
+                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
                   : null}
               </Box>
               {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}

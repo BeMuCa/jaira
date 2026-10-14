@@ -177,7 +177,24 @@ if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   [[ "$chat_model" =~ ^[][A-Za-z0-9._-]*$ ]] || chat_model=""
   brief="$(jaira -C "$wt" show "$ticket" --brief 2>/dev/null)" || brief=""
 fi
-claude="claude${chat_model:+ --model '$chat_model'}"
+# Their request, brief included, runs to thousands of characters, and typed
+# into the tab it lost its middle on the way herdr.exe -> wsl.exe -> claude
+# (42C3RZ: 1395 characters arrived, the 'jaira note' instruction gone). It goes
+# into a file instead, and the tab is typed one short line that points at it.
+# The file sits in a folder of its own outside the repository — inside it,
+# git status would show it — and claude starts with that folder added, or its
+# Read would ask before opening the file. Native Windows claude reads the
+# Windows spelling of the path, which cygpath gives.
+chat_dir=""
+if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
+  chat_dir="$(mktemp -d "${TMPDIR:-/tmp}/jaira-chat.XXXXXX")"
+  chat_file="$chat_dir/$ticket-$lane.md"
+  chat_dir_win="$chat_dir"; chat_file_win="$chat_file"
+  if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
+    chat_dir_win="$(cygpath -w "$chat_dir")"; chat_file_win="$(cygpath -w "$chat_file")"
+  fi
+fi
+claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat_dir'}"
 
 # The tab's shell runs on the machine Herdr itself runs on. When that is Windows
 # and this script runs in WSL, that shell has no /home/... at all: --cwd is
@@ -196,7 +213,7 @@ claude="claude${chat_model:+ --model '$chat_model'}"
 # needs no quotes — only letters, digits and . _ - [ ] pass.
 case "$on" in
   wsl)     start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  windows) start="claude${chat_model:+ --model $chat_model}" ;;
+  windows) start="claude${chat_model:+ --model $chat_model}${chat_dir:+ --add-dir \"$chat_dir_win\"}" ;;
   *)       start="cd '$cwd' && $claude" ;;
 esac
 
@@ -257,6 +274,11 @@ else
 fi
 if [ -n "$brief" ]; then
   prompt="$prompt Was du vom Ticket brauchst, steht hier - title, goal, question, review und die letzten Notes als JSON; lies das Ticket nicht noch einmal ganz: $brief"
+fi
+if [ -n "$chat_dir" ]; then
+  printf '%s\n' "$prompt" > "$chat_file"
+  if [ "$on" = windows ]; then chat_file="$chat_file_win"; fi
+  prompt="Lies die Datei $chat_file ganz und tu, was darin steht."
 fi
 "$herdr" pane send-text "$pane" "$prompt" >/dev/null
 sleep 1
