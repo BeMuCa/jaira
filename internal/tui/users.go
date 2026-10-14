@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"unicode"
 
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -53,65 +52,17 @@ func (m *Model) openUsers() {
 		return strings.ToLower(rows[i].name) < strings.ToLower(rows[j].name)
 	})
 
-	m.users, m.userIdx = rows, 0
-	m.userPicked = map[string]bool{}
-	_, picked := splitTerm(m.filter, "user")
-	for _, name := range picked {
-		m.userPicked[name] = true
-	}
-	m.returnTo = m.mode
-	m.mode = modeUsers
+	m.users = rows
+	m.openTicks(modeUsers, "user")
 }
 
-// applyUsers writes the ticked people into the board filter in place of any
-// user: condition it had, keeping everything else typed there. Like the
-// milestone picker it writes the ordinary filter rather than a second kind
-// of narrowing, so / shows it and esc on the board clears it.
-func (m *Model) applyUsers() {
-	var picked []string
-	for _, u := range m.users {
-		if !m.userPicked[strings.ToLower(u.name)] {
-			continue
-		}
-		name := u.name
-		// Quoted where the filter would otherwise cut the name apart: at a
-		// space between words, or at a comma between alternatives.
-		if strings.ContainsFunc(name, func(r rune) bool { return unicode.IsSpace(r) || r == ',' }) {
-			name = `"` + name + `"`
-		}
-		picked = append(picked, name)
+// userNames is the user picker's rows as the names they show.
+func (m *Model) userNames() []string {
+	out := make([]string, len(m.users))
+	for i, u := range m.users {
+		out[i] = u.name
 	}
-	m.setFilterTerm("user", picked...)
-}
-
-// keyUsers drives the user picker. esc leaves the filter as it was: the
-// ticks live in the picker until enter writes them.
-func (m *Model) keyUsers(s string) {
-	n := len(m.users)
-	switch s {
-	case "esc", "u", "q":
-		m.mode = m.returnTo
-	case "j", "down":
-		if n > 0 {
-			m.userIdx = (m.userIdx + 1) % n
-		}
-	case "k", "up":
-		if n > 0 {
-			m.userIdx = (m.userIdx - 1 + n) % n
-		}
-	case "space":
-		if m.userIdx >= 0 && m.userIdx < n {
-			k := strings.ToLower(m.users[m.userIdx].name)
-			m.userPicked[k] = !m.userPicked[k]
-		}
-	case "enter":
-		m.applyUsers()
-		m.mode = m.returnTo
-	case "x":
-		m.userPicked = map[string]bool{}
-		m.applyUsers()
-		m.mode = m.returnTo
-	}
+	return out
 }
 
 // renderUsers draws the user picker.
@@ -124,14 +75,10 @@ func (m *Model) renderUsers() string {
 	}
 	for i, u := range m.users {
 		marker, name := "  ", u.name
-		if i == m.userIdx {
+		if i == m.pick.idx {
 			marker, name = stySelected.Render("▌ "), stySelected.Render(name)
 		}
-		tick := styMeta.Render("○")
-		if m.userPicked[strings.ToLower(u.name)] {
-			tick = styOK.Render("●")
-		}
-		b.WriteString(marker + tick + " " + name + styMeta.Render(fmt.Sprintf("  %d", u.count)) + "\n")
+		b.WriteString(marker + m.tickMark(u.name) + " " + name + styMeta.Render(fmt.Sprintf("  %d", u.count)) + "\n")
 	}
 	for _, l := range wrapHints([]string{"space tick", "enter show only the ticked", "x show everyone again", "esc close"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))

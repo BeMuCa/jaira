@@ -113,7 +113,7 @@ func (m *Model) keyLinks(s string) {
 		return
 	}
 	switch s {
-	case "esc", "q", "L":
+	case "esc", "q", "l":
 		m.mode = v.from
 		m.links = nil
 	case "j", "down":

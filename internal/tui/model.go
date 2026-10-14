@@ -59,6 +59,7 @@ const (
 	modeMilestones
 	modeLinks
 	modeUsers
+	modeLayer
 )
 
 // Model is the board's state.
@@ -78,15 +79,11 @@ type Model struct {
 	// direction a card and the filter both need and the files do not give.
 	milestones []*milestone.Milestone
 	mstones    milestone.Index
-	// msIdx is the cursor in the milestone picker, the one gesture that pulls
-	// the board down to a single round of work.
-	msIdx int
-	// users is the user picker's list, userIdx its cursor, and userPicked
-	// the names ticked in it, lower-cased. All three are built when the
-	// picker opens.
-	users      []userRow
-	userIdx    int
-	userPicked map[string]bool
+	// users is the user picker's list, built when the picker opens.
+	users []userRow
+	// pick is the cursor and the ticks of the open picker, u's or M's; see
+	// ticks.go.
+	pick tickPicker
 
 	tickets []*ticket.Ticket
 	cols    []column
@@ -169,6 +166,9 @@ type Model struct {
 	// this for each of them would list the logbook once per card.
 	index *link.Index
 
+	// layer is the open milestone layer, nil when it is closed; see layer.go.
+	layer *layerView
+
 	// links is the open link window, nil when it is closed. It holds its own
 	// rows because building them reads the logbook, which must not happen
 	// per keypress.
@@ -247,7 +247,10 @@ type Model struct {
 	// what the person just did, this one to what happened while they were
 	// doing it.
 	flashMsg string
-	flashAt  time.Time
+	// twinned is the twins the board last flashed about, so a reload that
+	// finds the same ones does not say it again.
+	twinned string
+	flashAt time.Time
 
 	// watch carries filesystem events. A watcher is more responsive than the
 	// timer, but the timer stays as a backstop because change notifications are
@@ -390,6 +393,7 @@ func (m *Model) reload() error {
 	}
 	m.milestones = all
 	m.mstones = milestone.Build(all)
+	m.flashTwins()
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
@@ -415,6 +419,7 @@ func (m *Model) reload() error {
 	m.refMarks()
 	m.rebuild()
 	m.refreshLiveBoards()
+	m.refreshLayer()
 	return nil
 }
 
@@ -956,6 +961,28 @@ func (m *Model) readyToFile() int {
 // flash puts a line on the board without taking the screen.
 func (m *Model) flash(msg string) { m.flashMsg, m.flashAt = msg, time.Now() }
 
+// flashTwins says, once per set of twins, that two milestones share a name and
+// how to end it. The same twins found again on the next reload stay quiet.
+func (m *Model) flashTwins() {
+	twins := milestone.Twins(m.milestones)
+	var key []string
+	for _, t := range twins {
+		key = append(key, strings.Join(t.Labels, ","))
+	}
+	if k := strings.Join(key, ";"); k != m.twinned {
+		// A fetch's news is up: the twins wait for the next reload rather
+		// than replace it.
+		if len(twins) > 0 && m.flashLine() != "" {
+			return
+		}
+		m.twinned = k
+		if len(twins) > 0 {
+			t := twins[0]
+			m.flash(fmt.Sprintf("⚠ milestones named %q: rename one with %s", t.Name, t.RenameCommand()))
+		}
+	}
+}
+
 // flashLine returns what to show, or "" once it has been up long enough.
 func (m *Model) flashLine() string {
 	if m.flashMsg == "" || time.Since(m.flashAt) > flashFor {
@@ -1004,6 +1031,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
 		_ = m.reload()
 		return m, nil
@@ -1108,6 +1136,11 @@ func (m *Model) insertText(text string) {
 
 	case modeCreate, modeDelete:
 		m.input += foldToOneLine(text)
+
+	case modeLayer:
+		if l := m.layer; l != nil && l.stage == stageForm {
+			l.form.vals[l.form.field] += foldToOneLine(text)
+		}
 	}
 }
 
@@ -1199,7 +1232,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modePipeline:
-		if s == "q" || s == "ctrl+c" {
+		// The compact view is the board seen another way, not a page below it,
+		// so q and esc leave it exactly as q leaves the board: back to the
+		// launcher, or out of jaira when it was started without one.
+		if s == "q" || s == "esc" || s == "ctrl+c" {
 			m.Close()
 			return m, tea.Quit
 		}
@@ -1240,45 +1276,19 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeUsers:
-		m.keyUsers(s)
+		m.keyTicks(s, "u", m.userNames())
 		return m, nil
 
 	case modeMilestones:
-		n := len(m.milestones)
-		switch s {
-		case "esc", "M", "q":
-			m.mode = m.returnTo
-		case "j", "down":
-			if n > 0 {
-				m.msIdx = (m.msIdx + 1) % n
-			}
-		case "k", "up":
-			if n > 0 {
-				m.msIdx = (m.msIdx - 1 + n) % n
-			}
-		case "enter":
-			// The gesture writes the ordinary filter rather than carrying a
-			// second kind of narrowing beside it: one filter means esc clears
-			// this the same way it clears a typed one, and / shows what the
-			// board is currently narrowed to.
-			// Only the milestone: part: whatever else narrows the board — the
-			// people the user picker ticked, a typed word — stays.
-			if m.msIdx >= 0 && m.msIdx < n {
-				m.setFilterTerm("milestone", m.milestones[m.msIdx].Name)
-			}
-			m.mode = m.returnTo
-		case "x":
-			// Out of the milestone and back to the board, without having to
-			// remember that esc on the board does it — keeping the rest of
-			// the filter, as enter does.
-			m.setFilterTerm("milestone")
-			m.mode = m.returnTo
-		}
+		m.keyTicks(s, "M", m.milestoneNames())
 		return m, nil
 
 	case modeLinks:
 		m.keyLinks(s)
 		return m, nil
+
+	case modeLayer:
+		return m.keyLayer(k)
 
 	case modeMessage:
 		// A refused move offers its own way out. f arms the override and y takes
@@ -1366,7 +1376,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.projIdx < len(m.projects) {
 				cmd := m.switchBoard(m.projects[m.projIdx].Root)
-				m.mode = modeBoard
+				// A board that would not open says why, over this list.
+				if m.mode != modeMessage {
+					m.mode = modeBoard
+				}
 				return m, cmd
 			}
 		case "x":
@@ -1417,7 +1430,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detail = nil
 		case "n":
 			m.startFollowUp()
-		case "L":
+		case "l":
 			// The same window, over the open ticket rather than over the
 			// board. This is where it is wanted most: reading one ticket is
 			// exactly when "what else is this attached to" comes up.
@@ -1509,9 +1522,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		m.Close()
 		return m, tea.Quit
-	case "h", "left":
+	// The arrows alone change lanes: l opens the link window and L the
+	// milestone layer, and an h left meaning "lane left" beside them would
+	// be half of a pair whose other half now does something else.
+	case "left":
 		m.moveLane(-1)
-	case "l", "right":
+	case "right":
 		m.moveLane(1)
 	case "j", "down":
 		m.moveCard(1)
@@ -1542,23 +1558,25 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = modeLegend
 	case "M":
 		// Not m: m is move and must keep meaning that. The picker narrows the
-		// board to one round of work in one gesture, which is the whole reason
+		// board to the rounds of work ticked in it, which is the whole reason
 		// a milestone is worth having.
 		if len(m.milestones) == 0 {
 			m.notify("No milestones on this board yet.\n\nCreate one with 'jaira milestone create <name>' and add tickets to it.", false)
 		} else {
-			m.returnTo = m.mode
-			m.msIdx = 0
-			m.mode = modeMilestones
+			m.openTicks(modeMilestones, "milestone")
 		}
 	case "u":
 		// Next to the milestone picker in purpose: narrowing the board to
 		// some of the people on it, through the same one filter.
 		m.openUsers()
-	case "L":
+	case "l":
 		// Everything connected to this card, wherever the other end now
 		// lives — the board, a ref, the logbook, the archive.
 		m.openLinks()
+	case "L":
+		// The board's second view: the milestones as bubbles, what comes
+		// after what, and how far along each one is.
+		m.openLayer()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -1691,6 +1709,17 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 	return slots
 }
 
+// milestoneNames is the milestone picker's rows as the labels they show: the
+// name, and <name>-<ID> where two milestones share one.
+func (m *Model) milestoneNames() []string {
+	labels := milestone.Labels(m.milestones)
+	out := make([]string, len(m.milestones))
+	for i, ms := range m.milestones {
+		out[i] = labels[ms.ID]
+	}
+	return out
+}
+
 // activeTags is every tag carried by a ticket on the board, deduplicated and
 // sorted. It reads m.tickets — every ticket the board holds, not only the
 // ones a lane happens to have on screen — so the legend does not change
@@ -1725,13 +1754,14 @@ func (m *Model) moveCard(d int) {
 // notify puts a message on screen. Dismissing it goes back to the page it was
 // raised on. A message raised by the move picker keeps the picker's own answer:
 // the picker is on its way out, and the page behind it is what the message
-// belongs to. The screens that own their own state (settings, the lane editor,
-// the default-board picker) still dismiss to the board, which is what they did
-// before this existed.
+// belongs to. The rest dismiss to the board: the legend and the u/M pickers
+// keep their own way back in returnTo, which a message over them would
+// overwrite.
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
 	switch m.mode {
-	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks:
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks, modeLayer,
+		modeSettings, modeLanes, modeDefaultBoard, modeProjects:
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.

@@ -89,9 +89,29 @@ type Entry struct {
 	// nobody ever reviewed.
 	Content string `json:"content,omitempty"`
 
+	// File is the file name a milestone is committed under on its ref. Empty
+	// on a ticket, and on a milestone entry an older build queued, whose ref
+	// carried <key>.md.
+	File string `json:"file,omitempty"`
+
+	// Migration is set on a milestone's first write when it moves an older
+	// milestone file to its ID: what that file migrated to, and where it came
+	// from. It is sent as a commit of its own before Content, whatever edits
+	// replaced Content in the meantime.
+	Migration *Migration `json:"migration,omitempty"`
+
 	QueuedAt  time.Time `json:"queued-at"`
 	UpdatedAt time.Time `json:"updated-at"`
 	By        string    `json:"by,omitempty"`
+}
+
+// Migration is the move of an older milestone file to its ID, as the commit that
+// records it holds it.
+type Migration struct {
+	File    string `json:"file"`
+	Content string `json:"content"`
+	// From is the tip of the old name ref the file came from, "none" without one.
+	From string `json:"from"`
 }
 
 // Age is how long this write has been waiting to be sent.
@@ -108,7 +128,22 @@ func At(s *ticket.Store) *Box { return &Box{Dir: filepath.Join(s.StateDir(), "ou
 // Every caller passes a kind it named itself or one that came back normalized
 // off disk, so there is nothing to default here.
 func (b *Box) path(kind Kind, key string) string {
+	if kind == KindMilestone {
+		return filepath.Join(b.Dir, milestoneDir, key+".json")
+	}
 	return filepath.Join(b.Dir, string(kind), key+".json")
+}
+
+// milestoneDir is where a milestone write keyed by its ID is filed. It is NOT
+// "milestones": an older build lists that folder and sends what it finds under
+// <key>.md, which for an ID key is a ghost milestone named after the ID. A
+// folder it has never heard of is one it cannot flush.
+const milestoneDir = "milestone-ids"
+
+// oldMilestonePath is the folder an older build files name-keyed milestone
+// writes in. Still read; nothing new is written there.
+func (b *Box) oldMilestonePath(key string) string {
+	return filepath.Join(b.Dir, string(KindMilestone), key+".json")
 }
 
 // legacyPath is where a ticket entry was filed before there were kinds. Still
@@ -120,18 +155,26 @@ func (b *Box) legacyPath(id string) string { return filepath.Join(b.Dir, id+".js
 // ticket. Superseding is correct rather than lossy: the entry carries the whole
 // ticket, so the newer bytes already contain everything the older ones said.
 func (b *Box) Queue(id string, op Op, content []byte, lease, by string) error {
-	return b.queueKind(KindTicket, id, op, content, lease, by)
+	return b.queueKind(KindTicket, id, "", op, content, lease, by, nil)
 }
 
 // QueueMilestone files a pending write of a milestone file, under the same
 // rules: whole content, the lease the remote last confirmed, superseding any
 // earlier unsent write of the same milestone.
-func (b *Box) QueueMilestone(name string, op Op, content []byte, lease, by string) error {
-	return b.queueKind(KindMilestone, name, op, content, lease, by)
+func (b *Box) QueueMilestone(key, file string, op Op, content []byte, lease, by string) error {
+	return b.queueKind(KindMilestone, key, file, op, content, lease, by, nil)
 }
 
-// queueKind is what both of those are.
-func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by string) error {
+// QueueMigration files the first write of a milestone's ref when it moves an
+// older file to its ID: the migrated content, and the old ref's tip (or
+// "none"), which are sent as a commit of their own. Later edits replace the
+// content and leave the migration as it is.
+func (b *Box) QueueMigration(key, file string, migrated []byte, from, by string) error {
+	return b.queueKind(KindMilestone, key, file, OpWrite, migrated, "", by, &Migration{File: file, Content: string(migrated), From: from})
+}
+
+// queueKind is what all three of those are.
+func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, lease, by string, mig *Migration) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
@@ -142,12 +185,15 @@ func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by 
 	now := time.Now().UTC()
 	e := Entry{
 		ID: key, Op: op, Ref: ref, Kind: kind,
-		Lease: lease, Content: string(content),
-		QueuedAt: now, UpdatedAt: now, By: by,
+		Lease: lease, Content: string(content), File: file,
+		QueuedAt: now, UpdatedAt: now, By: by, Migration: mig,
 	}
 	if old, ok := b.pendingKind(kind, key); ok {
 		e.Lease = old.Lease
 		e.QueuedAt = old.QueuedAt
+		if e.Migration == nil && e.Lease == "" {
+			e.Migration = old.Migration
+		}
 	}
 	path := b.path(kind, key)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -170,6 +216,11 @@ func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by 
 			return err
 		}
 	}
+	if kind == KindMilestone {
+		if err := os.Remove(b.oldMilestonePath(key)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -177,12 +228,19 @@ func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by 
 // asks this to mark a card as carrying something not yet sent.
 func (b *Box) Pending(id string) (Entry, bool) { return b.pendingKind(KindTicket, id) }
 
+// PendingMilestone returns the unsent write for one milestone key, if there is
+// one, in either folder a milestone write is filed in.
+func (b *Box) PendingMilestone(key string) (Entry, bool) { return b.pendingKind(KindMilestone, key) }
+
 // pendingKind reads one entry. A ticket is also looked for at the flat path an
 // older build used, so upgrading does not strand a queued write.
 func (b *Box) pendingKind(kind Kind, key string) (Entry, bool) {
 	e, ok := readEntry(b.path(kind, key))
 	if !ok && kind == KindTicket {
 		e, ok = readEntry(b.legacyPath(key))
+	}
+	if !ok && kind == KindMilestone {
+		e, ok = readEntry(b.oldMilestonePath(key))
 	}
 	if !ok {
 		return Entry{}, false
@@ -215,8 +273,15 @@ func (b *Box) List() ([]Entry, error) {
 		return nil, err
 	}
 	out = append(out, flat...)
-	for _, kind := range []Kind{KindTicket, KindMilestone} {
-		got, err := b.readDir(filepath.Join(b.Dir, string(kind)), kind)
+	for _, d := range []struct {
+		dir  string
+		kind Kind
+	}{
+		{string(KindTicket), KindTicket},
+		{milestoneDir, KindMilestone},
+		{string(KindMilestone), KindMilestone},
+	} {
+		got, err := b.readDir(filepath.Join(b.Dir, d.dir), d.kind)
 		if err != nil {
 			return nil, err
 		}
@@ -259,11 +324,51 @@ func (b *Box) readDir(dir string, kind Kind) ([]Entry, error) {
 // Drop removes a queued write.
 func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
 
+// DropMilestone removes a queued write of a milestone.
+func (b *Box) DropMilestone(key string) error { return b.dropKind(KindMilestone, key) }
+
+// RekeyMilestone replaces the write an older build queued under oldKey — a
+// milestone's name — with one under newKey, its ID, naming the file to commit.
+// The new entry keeps when and by whom the old one was queued. If newKey
+// already has a write queued, that one stands: it is newer than anything an
+// old build could have said, and the old entry is dropped.
+func (b *Box) RekeyMilestone(oldKey, newKey, file string, content []byte, lease string) error {
+	old, ok := b.pendingKind(KindMilestone, oldKey)
+	if !ok {
+		return nil
+	}
+	if _, exists := b.pendingKind(KindMilestone, newKey); exists {
+		return b.DropMilestone(oldKey)
+	}
+	e := Entry{
+		ID: newKey, Op: OpWrite, Ref: gitref.MilestoneRefName(newKey), Kind: KindMilestone,
+		Lease: lease, Content: string(content), File: file,
+		QueuedAt: old.QueuedAt, UpdatedAt: time.Now().UTC(), By: old.By,
+	}
+	path := b.path(KindMilestone, newKey)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(e, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := ticket.WriteAtomic(path, append(data, '\n')); err != nil {
+		return err
+	}
+	return b.DropMilestone(oldKey)
+}
+
 // dropKind removes a queued write of either kind, including one an older build
 // filed at the flat path.
 func (b *Box) dropKind(kind Kind, key string) error {
 	if err := os.Remove(b.path(kind, key)); err != nil && !os.IsNotExist(err) {
 		return err
+	}
+	if kind == KindMilestone {
+		if err := os.Remove(b.oldMilestonePath(key)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 	}
 	if kind != KindTicket {
 		return nil
@@ -281,7 +386,13 @@ func (b *Box) dropKind(kind Kind, key string) error {
 type Sender interface {
 	Write(id string, content []byte, lease string) (string, error)
 	Delete(id, lease string) error
-	WriteMilestone(name string, content []byte, lease string) (string, error)
+	WriteMilestone(key, file string, content []byte, lease string) (string, error)
+}
+
+// migrationSender is a Sender that can write a milestone's migration as a
+// commit of its own (gitref.Repo.WriteMigration).
+type migrationSender interface {
+	WriteMigration(key, file string, migrated []byte, from, editFile string, edit []byte) (string, error)
 }
 
 // Outcome is what became of one queued write during a flush.
@@ -309,6 +420,9 @@ type Result struct {
 	Op      Op
 	Outcome Outcome
 	Err     error
+	// File is the file a milestone entry was to be committed under, which is
+	// what carries the name a person knows it by; empty for a ticket.
+	File string
 }
 
 // Flush sends what it can and reports each entry.
@@ -336,17 +450,22 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Sent})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
 		case errors.Is(sendErr, gitref.ErrRaceLost):
-			if err := b.dropKind(kind, e.ID); err != nil {
-				return results, err
+			// A refused milestone write stays queued: its caller merges it into
+			// the winner and replaces it, and a failure on the way must not lose
+			// the edit.
+			if kind != KindMilestone {
+				if err := b.dropKind(kind, e.ID); err != nil {
+					return results, err
+				}
 			}
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
 		case errors.Is(sendErr, gitref.ErrOffline), errors.Is(sendErr, gitref.ErrNoGit):
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Unsent, Err: sendErr})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Unsent, Err: sendErr})
 			return results, nil
 		default:
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Failed, Err: sendErr})
+			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Failed, Err: sendErr})
 		}
 	}
 	return results, nil
@@ -363,7 +482,15 @@ func send(s Sender, kind Kind, e Entry) error {
 		if e.Op != OpWrite {
 			return fmt.Errorf("outbox: unknown milestone op %q", e.Op)
 		}
-		_, err := s.WriteMilestone(e.ID, []byte(e.Content), e.Lease)
+		file := e.File
+		if file == "" {
+			file = e.ID + ".md"
+		}
+		if m, ok := s.(migrationSender); ok && e.Migration != nil && e.Lease == "" {
+			_, err := m.WriteMigration(e.ID, e.Migration.File, []byte(e.Migration.Content), e.Migration.From, file, []byte(e.Content))
+			return err
+		}
+		_, err := s.WriteMilestone(e.ID, file, []byte(e.Content), e.Lease)
 		return err
 	}
 	switch e.Op {

@@ -407,8 +407,8 @@ func (s *Store) Logbook(id, folder string) (string, error) {
 // milestone's name is chosen freely and could be spelled like a ticket file.
 // Restore has to know from where it found a file where the file belongs, and a
 // folder says that without guessing at names.
-func (s *Store) LogbookMilestone(name, folder string) (string, error) {
-	src := filepath.Join(s.MilestonesDir(), filepath.Base(name)+".md")
+func (s *Store) LogbookMilestone(file, folder string) (string, error) {
+	src := filepath.Join(s.MilestonesDir(), filepath.Base(file))
 	if _, err := os.Stat(src); err != nil {
 		return "", err
 	}
@@ -459,29 +459,49 @@ func (s *Store) logbookFolders() ([]string, error) {
 	return out, nil
 }
 
-// FiledMilestone reports whether a milestone of this name lies filed in the
-// logbook, and where, as a path relative to the repository root.
+// FiledMilestone reports whether a milestone lies filed in the logbook, and
+// where, as a path relative to the repository root, and under which file name
+// — the one 'jaira restore' takes. match is asked the base
+// name of every file there, without .md, because what a file is called is the
+// caller's to read: this package does not know that a milestone file may carry
+// an ID.
 //
 // It looks in every folder Restore looks in — including the one the logbook
-// was called before it was one — because a name Restore can still bring back
-// is a name that is still taken. A hand-rolled walk over LogbookDir alone
-// misses that older folder and hands the name out twice.
-func (s *Store) FiledMilestone(name string) (string, bool) {
+// was called before it was one — because a milestone Restore can still bring
+// back is one the commands that need it on the board should point at restore
+// for. A hand-rolled walk over LogbookDir alone misses that older folder and
+// answers "no such milestone" for it.
+func (s *Store) FiledMilestone(match func(base string) bool) (where, file string, ok bool) {
 	folders, err := s.logbookFolders()
 	if err != nil {
-		return "", false
+		return "", "", false
 	}
 	for _, folder := range folders {
 		dir := filepath.Join(folder, MilestonesSubdir)
-		if _, err := os.Stat(filepath.Join(dir, name+".md")); err != nil {
+		file := milestoneFileIn(dir, match)
+		if file == "" {
 			continue
 		}
 		if rel, err := filepath.Rel(s.Root, dir); err == nil {
-			return rel, true
+			return rel, file, true
 		}
-		return dir, true
+		return dir, file, true
 	}
-	return "", false
+	return "", "", false
+}
+
+// milestoneFileIn is the first file in dir whose base name match accepts, or "".
+func milestoneFileIn(dir string, match func(base string) bool) string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if base, ok := strings.CutSuffix(e.Name(), ".md"); ok && !e.IsDir() && match(base) {
+			return e.Name()
+		}
+	}
+	return ""
 }
 
 // LogbookFolderDay reads the day a logbook folder was filed on off its name,

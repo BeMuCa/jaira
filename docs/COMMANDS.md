@@ -54,9 +54,10 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 |---|---|
 | `jaira` | the home screen: every board, and what each needs |
 | `jaira board` | open the board here directly |
-| `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--milestone`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
+| `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--milestone <name|ID|name-ID>`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
 | `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |
+| `jaira links <id>` | what this ticket waits on, blocks, is part of, contains, relates to and follows — in both directions, and wherever the other end now lives: on the board, on a ref nobody pulled yet, in the logbook or in the archive. Children are not a stored list: each ticket names its `parent` and the tree is read back from that, so an epic nests as deep as it needs |
 | `jaira next` | the next actionable ticket; `--lane`, `--assignee`, `--all`, `--per-lane` |
 | `jaira tags` | the tags this board already uses: name, colour swatch, colour number and how many open tickets carry each (`--json`: `name`, `color`, `open`). **Read this before tagging** and reuse the name already there for that subject — never invent a synonym, since "ui", "frontend" and "gui" on one board are three names for one thing and filter to nothing. Writes nothing: a listing that edited the board would race every other session reading it, so a tag with no colour is shown without one |
 | `jaira lanes` | the installed lanes |
@@ -65,6 +66,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira sessions` | sessions working this tree |
 | `jaira resume` | everything left mid-flight, with its notes |
 | `jaira validate` | check every ticket for damage; `--strict` fails on warnings. Also warns when the generated agent block no longer matches this board's lanes — which happens when a lane file is edited by hand rather than through `jaira lanes` |
+| `jaira help <command>` | the full help of one command, the same as `jaira <command> --help`; `jaira help` alone prints the list of commands |
 
 ### Being one person under several names
 
@@ -126,13 +128,16 @@ field per ticket.
 | `jaira init` | prepare a repository; writes a jaira section into `CLAUDE.md`. A new board is gitignored (private); a board already in git — a fresh clone of a shared one — keeps `.gitignore` as it is, so it is the first command a joining teammate runs |
 | `jaira update` | re-apply this repository's jaira setup and print what changed since the version that last did it. Regenerates the agent block, including the section describing this board's own lanes, so adopting a lane is when the note catches up with the board |
 | `jaira self upgrade` | replace the running jaira binary with the latest release, verifying its checksum first; `--check` reports without installing, `--version vX.Y.Z` pins or downgrades; refuses a Homebrew or `go install` build, naming the right way to upgrade that install instead. Whether a newer release exists is checked at most once a day in the background and shown as a status line in the launcher's and the board's footer — never printed by a CLI command, which stay quiet on purpose. `JAIRA_NO_UPDATE_CHECK=1` turns the check off. |
+| `jaira completion <shell>` | print the shell completion script for `bash`, `fish`, `powershell` or `zsh`; `jaira completion <shell> --help` says how to load it, for one session or for every new one |
 | `jaira create <title>` | create a ticket; `--goal`, `--context`, `--dod`, `--assignee`, `--mine` (assign it to you now; a plain create belongs to nobody), `--lane`, `--tier`, `--tag` (repeatable; run `jaira tags` first), `--blocked-by`, `--follows` (the ticket this one follows on from; must resolve) |
 | `jaira set <id> k=v…` | set frontmatter fields; list fields take a comma-separated value, `tags=ui,backend` included |
 | `jaira tag <id> <name>…` | add topic tags to a ticket. Run `jaira tags` first. A name the board knows is reused and said to be; a new one gets a free colour from the palette. Names are stored lowercase-kebab — "My UI" is filed as `my-ui`, and you are told so; anything outside `[a-z0-9-]` is refused rather than trimmed down, because a quietly shortened name is a second name for one subject. `--color <0-255>` picks the colour instead, and recolours a tag that already has one; it takes exactly one name. Under `--json` the payload carries `tags_new` and `tags_reused` |
-| `jaira milestone create <name> [id...]` | start a milestone — the set of tickets that belong to one round of work — as `.jaira/milestones/<name>.md`, with any tickets named put into it. The colour is picked at random from the ones no other milestone uses; `--color <1-255>` overrides it (0 is "no colour" and is refused). Names are lowercase-kebab like tags, because the name is also the filename. A name belonging to a **filed** milestone is refused (exit 3): its ref still holds it, and `jaira restore <name>.md`, run in the tree that filed it, brings that one back |
-| `jaira milestone add <name> <id>…` | put tickets into a milestone — every id in one write of one file, which is the point: grouping twenty tickets is one edit, not twenty ticket files each travelling on its own ref. A ticket already in it is left where it is rather than moved to the end |
-| `jaira milestone rm <name> <id>…` | take tickets out of a milestone, in one write, leaving every other line where it was. **The milestone itself stays standing**, even when its last ticket leaves: it goes away on command and never on its own, or a milestone you just created would vanish the moment you took a ticket back out. `jaira logbook <name>` is the command that takes it off the board |
-| `jaira milestone ls` | this board's milestones: colour swatch, colour number and how many tickets each holds (`--json`: `milestones`, `count`, `dir`). **Read it before creating one**, for the reason `jaira tags` is read before tagging — "q4" and "quarter-four" are two names for one round of work and each filters to half of it |
+| `jaira milestone create <name> [id...] [--goal <text>] [--after <a,b>]` | start a milestone — the set of tickets that belong to one round of work — as `.jaira/milestones/<name>-<ID>.md` — a random six-character ID (upper case, digits and letters, at least one letter) after the last dash is what the milestone *is*, the name is its label — and on `refs/jaira/milestones/<ID>`, with any tickets named put into it. The colour is picked at random from the ones no other milestone uses; `--color <1-255>` overrides it (0 is "no colour" and is refused). Names are lowercase-kebab like tags, because the name is part of the file name. A name a milestone on the board has is refused (exit 3); a filed milestone, or one a teammate made that you have not fetched yet, does not hold its name — the IDs tell them apart, and a double is shown as `<name>-<ID>`. `--goal` writes a one-line goal; `--after a,b` puts it on the roadmap (`L` on the board) under those milestones — each a name, an ID or a `<name>-<ID>`, stored as the ID — the first deciding its swimlane, and `--after ""` makes it the top of a swimlane of its own. An unknown predecessor is refused (exit 5), an arrow that closes a loop too (exit 3, the loop named) |
+| `jaira milestone add <milestone> <id>…` | put tickets into a milestone — every id in one write of one file, which is the point: grouping twenty tickets is one edit, not twenty ticket files each travelling on its own ref. A ticket already in it is left where it is rather than moved to the end |
+| `jaira milestone rm <milestone> <id>…` | take tickets out of a milestone, in one write, leaving every other line where it was. **The milestone itself stays standing**, even when its last ticket leaves: it goes away on command and never on its own, or a milestone you just created would vanish the moment you took a ticket back out. `jaira logbook <name>` is the command that takes it off the board |
+| `jaira milestone set <milestone> [--goal <text>] [--after <a,b>] [--no-roadmap]` | rewrite the `goal:` and `after:` lines of the milestone's file and nothing else. `--goal ""` removes the goal; `--after` places it on the roadmap (`""` = top of its own swimlane); `--no-roadmap` takes it out again and hangs what came after it on what came before it, as `x` on the roadmap does. At least one flag; `--after` and `--no-roadmap` exclude each other (exit 2). Unknown predecessor exit 5, a loop exit 3, a filed milestone exit 3 |
+| `jaira milestone rename <old> <new>` | give a milestone a new name: the file becomes `.jaira/milestones/<new>-<ID>.md` and nothing else changes — its ref, its ID, its tickets, its place on the roadmap and the `after:` lines of the milestones that follow it (they name the ID) stay as they are, so it is one write on one ref. A clone that has the milestone gets the file under its new name on its next `jaira fetch` (listed there as `old → new`, `--json`: `milestones_renamed`). A name a milestone on the board has is refused (exit 3); an old name not on the board exits 5, a filed one 3. On the roadmap, `e` does the same through its name field |
+| `jaira milestone ls` | this board's milestones: colour swatch, colour number and how many tickets each holds (`--json`: `milestones`, `count`, `dir`; each milestone carries its `id`, `goal` when it has one, and `after` — IDs, possibly `[]` — only when it is placed on the roadmap). A milestone shows by name; two with one name show as `<name>-<ID>`. **Read it before creating one**, for the reason `jaira tags` is read before tagging — "q4" and "quarter-four" are two names for one round of work and each filters to half of it |
 | `jaira dod <id> <n> --doing\|--done\|--todo\|--superseded` | mark a checklist item; `[-]` superseded is retired, not achieved — it stops blocking completion and never reports as done |
 | `jaira dod <id> <n> --text "…"` | reword one item, leaving its state and its proof alone |
 | `jaira dod <id> --add "…"` | append checklist items; repeat for several |
@@ -143,11 +148,15 @@ field per ticket.
 | `jaira claim <id>` | take a 30-minute lease so two sessions do not collide; taking over a lease that has expired is allowed and is reported, on stderr and as `took_over` in `--json` |
 | `jaira archive <id>` | take a ticket off the board (nothing is deleted); stamps derived commits first, best-effort |
 | `jaira logbook [id]` | take a terminal-lane ticket off the board into `.jaira/logbook/<initials>-<yyyymmdd>/`, stamping its derived commits first; with no argument, lists what went into the logbook in the last `logbook-days` days (`~/.jaira/settings.json`, 28 when unset — the same window the board shows below its terminal lane), read off each folder's date, and says how many older entries it left out and which setting cut them — `--since` sets the window for one listing and wins over the setting (`4w`, `10d`, in weeks or days), `--since 0` and `logbook-days 0` list everything, and `--json` carries `hidden` and `since` beside `logbook` and `count`. `--since` with an id or `--all` is a usage error. Exit codes: 3 if the ticket has not reached the terminal lane, 5 for an unknown id, 2 for too many arguments |
-| `jaira logbook <milestone>` | the same for a milestone named by hand — `--all` sweeps the terminal lane and never takes a group with it. The file moves into `.jaira/logbook/<initials>-<yyyymmdd>/milestones/`, `jaira milestone ls` stops naming it, no card carries its colour and the board's `M` filter forgets it. Refused (exit 3) while any ticket in it is short of the terminal lane. **Its ref is not taken down**: it stays up carrying `status: filed` — that line, not the file's whereabouts, is what keeps a milestone off a board — so a clone that already has the file gets it marked on its next `jaira fetch` and stops showing the group, and the name stays taken |
-| `jaira restore <file>` | put an archived or logged ticket back, or a filed milestone — a file found under `logbook/<folder>/milestones/` goes back to `.jaira/milestones/` with its ticket list and colour intact, and its ref is unmarked in the same breath so the other clones stop hiding it. If the mark cannot be taken off, the restore fails (exit 1) instead of reporting a milestone the board cannot show |
+| `jaira logbook <milestone>` | the same for a milestone given by name, ID or `<name>-<ID>` (a ticket handle is tried first) — `--all` sweeps the terminal lane and never takes a group with it. The file moves into `.jaira/logbook/<initials>-<yyyymmdd>/milestones/`, `jaira milestone ls` stops naming it, no card carries its colour and the board's `M` filter forgets it. Refused (exit 3) while any ticket in it is short of the terminal lane. **Its ref is not taken down**: it stays up carrying `status: filed` — that line, not the file's whereabouts, is what keeps a milestone off a board — so a clone that already has the file gets it marked on its next `jaira fetch` and stops showing the group |
+| `jaira restore <file>` | put an archived or logged ticket back, or a filed milestone — a file found under `logbook/<folder>/milestones/` goes back to `.jaira/milestones/` — under the file name it had, `<name>-<ID>.md`; a `<name>.md` from before IDs comes back as `<name>-<ID>.md` with the ID computed from its name — with its ticket list and colour intact, and its ref is unmarked in the same breath so the other clones stop hiding it. If the mark cannot be taken off, the restore fails (exit 1) instead of reporting a milestone the board cannot show |
 | `jaira delete <id>` | remove a ticket's file for good; asks for the handle typed back, `--force` skips it. Refused while another ticket still points at it. Archive is almost always what you want |
 | `jaira resolve <id>` | settle the fields a merge could not |
 | `jaira share` | publish the board; `--undo` makes it private again |
+| `jaira fetch` | fetch `refs/jaira/*` from the board's remote — the tickets under `refs/jaira/tickets/*`, the milestones under `refs/jaira/milestones/*` — and report what they say. The board's own background fetch does the same for milestones, so the board shows them without this command, and names what changed on its status line. A milestone whose file is new or newer is written to `.jaira/milestones/` — except one with a write you have not sent yet, which keeps your file and goes out on the next send (if a teammate's write landed first, your edit is merged into theirs at that send and goes out again: a field you both changed keeps theirs, yours is written into the file as a comment, and a rename of yours is kept unless they renamed it too); a ref is named after the milestone's ID and carries the file under its current name, so a rename arrives as the same ref with another file name and the old file with that ID is removed (the one thing a fetch deletes; a file with another ID is another milestone and stays). Files and refs from before IDs are moved to ID names once — usually silently by the automatic background fetch, and told (`--json`: `milestones_migrated`) only by a foreground `jaira fetch` or a milestone command that writes (`jaira milestone ls` moves nothing); the ID is computed from the old name, so every clone agrees. The command that moves them fetches first when the remote is reachable. The old name refs stay on the remote, and what a 0.4.x build writes to one later, or to an old `<name>.md`, is merged into the ID milestone on a fetch: tickets added or removed, and any field only it changed, are taken; a field changed on both sides keeps this side and the 0.4.x value is reported on stderr, in the fetch report and in `--json` as `milestones_conflicts`, and written into the file as a comment. One somebody filed is reported apart: a file you have is marked `status: filed`, so the group leaves your board too, and one you never had is not written. One somebody renamed is listed as `old → new` (`--json`: `milestones_renamed`). A ticket newly assigned to you raises a desktop notification unless `"notify-off": true` is in `~/.jaira/settings.json`; `--quiet` skips it |
+| `jaira pull <id>` | take over a ticket that lives on its ref and write it here as a file: you are recorded as its assignee on the ref first, and only then is the file put in `.jaira/tickets/`, so losing the race leaves you with no file rather than with somebody else's ticket. Refused when somebody else already pulled it — the message names them, `--steal` takes it anyway — or when another clone landed first in the same instant: re-read and decide. Pulling a ticket you already have is a no-op, unless the file here is older than its ref; then it is brought up to the ref. The one command that needs the network |
+| `jaira release <id>` | the other half of `pull`: take your name off the ticket's ref as its assignee and remove the file from here — ref first, file second, so a failure leaves it still yours. Nothing is lost: the ref carries the ticket and committed work stays in the history. A ticket that is not yours is refused, naming who has it; `--force` releases it anyway. A ticket with no ref is put on one first, which is how a ticket created while the board had no usable remote gets back where it belongs |
+| `jaira snapshot` | write every ticket that is on a ref into the snapshot branch — under `board/`, with git plumbing, never checked out — as the backup for whoever clones for the first time and has no refs; then remove the refs of tickets filed away (logbook or archive) in one of the `landing-branches` from `~/.jaira/settings.json` (globs allowed). With no landing branch resolvable nothing is removed. `--drop <id>` removes one ticket's ref without waiting for it to land. Normally nobody runs it: it runs in the background when the last snapshot is older than three days |
 | `jaira projects add <path>` | register a board; `--scan` searches two levels down |
 | `jaira lanes use <id>` | copy a lane's catalogue or shipped version onto this board; `--force` overwrites the board's copy (how a lane is reset to the shipped one). Like `add`, `remove` and `move`, it regenerates the agent block, since changing the pipeline is when the note stops being true |
 | `jaira lanes add <id>` | add a built-in or catalogue lane to this board, placed where its `after:` chain points — followed through lanes this board has not installed, so the success line names the neighbour it landed after. A board is its lane directory — the lane's file is written there, and that is what puts it on the board |
@@ -167,14 +176,17 @@ field per ticket.
 | `jaira sync-tasks` | mirror an agent's task list into the backlog |
 | `jaira checkpoint` | record what this session is working on |
 | `jaira merge-driver` | called by git; not run by hand |
+| `jaira json get <path>` | print one field of the JSON on stdin: keys joined by dots, a number for an array element (`result.pane.pane_id`, `items.0`); a string prints without quotes, `null` prints nothing. For shell scripts that cannot count on `jq` or `python3` |
 | `jaira hook print` | print a Claude Code Stop-hook snippet for `~/.claude/settings.json` that refuses to end a session while an agentic lane still has work waiting. Opt-in: nothing is installed, and the hook lets the session end when it cannot read a board |
+| `jaira roles list` | the agent role prompts built into this binary — a teamlead, a dispatcher who carries one ticket lane by lane, and the agents they hand lanes to — and which one a teamlead starts for a whole ticket: `"dispatch"` in `~/.jaira/settings.json`, `lanes` (the default, jaira-dispatcher, one new agent per lane) or `worker` (jaira-worker, one agent through every lane). Also the model the cockpit's chats start on. `--json`: `roles`, `dispatch`, `dispatch_role`, `chat_model`, `chat_model_source` |
+| `jaira roles install --project\|--global\|--into <dir>` | write every role as `<skills>/<role-id>/SKILL.md`, with any files it ships beside its prompt, and the jaira-cockpit mod as `<skills>/jaira-cockpit/`: `--project` into `.claude/skills` in this repository, `--global` into `~/.claude/skills`, `--into` a skills directory of your choice. A file you have edited is left as it is and reported, and the command exits 3; `--force` replaces it. A file identical to the built-in one is reported unchanged |
 
 ## Keys
 
 Board:
 
 ```
-h l ← →   lane            enter   open ticket      n   new ticket
+← →       lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field:
                                   id title goal context assignee user lane tag body;
                                   spaces combine, a comma means or, "quotes" keep words together)
@@ -182,8 +194,17 @@ g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
+l         every ticket linked to the selected one (l or esc closes it)
+L         Milestone Roadmap: bubbles filled by done/total, arrows for what comes after what
 S         settings: lanes, the default board, days of logbook shown
 ```
+
+`q` goes one page back, on every page, to the same place `esc` goes. The board
+is the top page: there `q` goes back to the launcher, or quits jaira when it
+was started without one (`jaira board`), and `esc` clears the filter. The
+compact view is the board seen another way, so `q` and `esc` both leave it the
+way `q` leaves the board. In a text field `q` is a letter, and `esc` is the way
+back.
 
 The terminal lane ends with the logbook of the last `logbook-days` days
 (`~/.jaira/settings.json`, 28 when unset, `0` hides them), newest first, filled
@@ -191,6 +212,21 @@ in teal and marked `⎙ filed <day>`. They are read-only: `enter` opens one, and
 every key that would change it answers with the `jaira restore` line instead.
 The settings screen (`S`) shows the number and edits it: `enter` on the row,
 type the days, `enter` saves.
+
+On the Milestone Roadmap (`L` on the board):
+
+```
+←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
+e     name, goal, predecessors     c      next colour
+x     take it off the roadmap     L esc  back to the board
+```
+
+In an open milestone: `↑↓` pick a ticket, `enter` opens it, `b` shows the board
+filtered to the milestone (`milestone:<name>`, or `milestone:<name>-<ID>` where two share a name), `esc` goes back to the roadmap.
+A bubble counts a ticket done when it is in the terminal lane, filed into the
+logbook on any day, or archived from the terminal lane — what the link window
+calls done. `x` drops the
+milestone's `after:` line and hangs what came after it on what came before it.
 
 In an open ticket:
 
@@ -200,6 +236,7 @@ E   edit body and checklists in $EDITOR        f   follow-up from the review
 y   copy the full ticket id                    n   follow-up beside this one
 b   open the ticket this one is blocked by     m   move it
 jk  next / previous ticket                     tab other pane, in the split
+l   every ticket linked to it
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
 ```
 
@@ -234,7 +271,8 @@ In the picker: `a` add · `i` create a board here · `s` scan two levels · `spa
 toggle a result · `enter` add what is selected.
 
 Compact view: `a`/`d` or `←`/`→` move · `enter` open the step full width ·
-`1`-`9` switch project · `v` back to the board.
+`1`-`9` switch project · `v` back to the board · `q`/`esc` leave it as `q`
+leaves the board.
 
 In an opened step: `jk` ticket · `gG` first/last · `hl` next/previous lane
 (stays in this view) · `enter` open ticket · `q`/`esc`/`v` back to the compact

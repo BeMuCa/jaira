@@ -222,11 +222,11 @@ func (ix *Index) loadFiled(id string) *ticket.Ticket {
 	return t
 }
 
-// lookup resolves one id to everything a reader needs to see it, wherever it
+// Lookup resolves one id to everything a reader needs to see it, wherever it
 // lives. The second result is false when the id is not known here at all —
 // which, unlike before, now genuinely means "nowhere", not merely "not on the
 // board".
-func (ix *Index) lookup(id string) (Ref, bool) {
+func (ix *Index) Lookup(id string) (Ref, bool) {
 	ref, ok := ix.place(id)
 	if !ok || (ref.Place != PlaceLogbook && ref.Place != PlaceArchive) {
 		return ref, ok
@@ -283,7 +283,7 @@ func (ix *Index) place(id string) (Ref, bool) {
 	ref := Ref{ID: id, Place: placeOf(path), Path: path}
 	// The logbook only ever receives finished work, so a ticket found there
 	// is done before its file is read at all. The archive is a drawer, not a
-	// verdict, so that one has to be opened — by lookup, not here.
+	// verdict, so that one has to be opened — by Lookup, not here.
 	if ref.Place == PlaceLogbook {
 		ref.Done = true
 	}
@@ -307,7 +307,7 @@ func (ix *Index) Satisfied(id string) bool {
 		return false
 	}
 	if ref.Place == PlaceArchive {
-		ref, _ = ix.lookup(id)
+		ref, _ = ix.Lookup(id)
 	}
 	return ref.Done
 }
@@ -357,7 +357,7 @@ func (ix *Index) Relations(id string) []Entry {
 		if otherID == "" || otherID == id {
 			return
 		}
-		ref, ok := ix.lookup(otherID)
+		ref, ok := ix.Lookup(otherID)
 		if !ok {
 			// An id nothing here knows is still worth showing: a dangling
 			// link is a fact about this ticket, and hiding it is how a typo
@@ -426,7 +426,7 @@ func (ix *Index) childTree(id string, kids map[string][]*ticket.Ticket, seen map
 			continue
 		}
 		seen[t.ID] = true
-		ref, ok := ix.lookup(t.ID)
+		ref, ok := ix.Lookup(t.ID)
 		if !ok {
 			ref = Ref{ID: t.ID, Place: PlaceUnknown}
 		}

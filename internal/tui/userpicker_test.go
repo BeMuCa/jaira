@@ -35,7 +35,7 @@ func pickUser(t *testing.T, m *Model, name string) {
 	t.Helper()
 	for i, u := range m.users {
 		if u.name == name {
-			m.userIdx = i
+			m.pick.idx = i
 			m.key(key(" "))
 			return
 		}
@@ -114,7 +114,7 @@ func TestUserPickerKeepsTheRestOfTheFilter(t *testing.T) {
 
 	m.key(key("u"))
 	for _, u := range m.users {
-		if ticked := m.userPicked[strings.ToLower(u.name)]; ticked != (u.name == "sam") {
+		if ticked := m.pick.picked[strings.ToLower(u.name)]; ticked != (u.name == "sam") {
 			t.Errorf("reopened, %q ticked = %v", u.name, ticked)
 		}
 	}
@@ -187,6 +187,7 @@ func TestMilestonePickerKeepsTheUserFilter(t *testing.T) {
 	m.rebuild()
 
 	m.key(key("M"))
+	m.key(key(" "))
 	m.key(key("enter"))
 	if want := "user:sam milestone:round-one"; m.filter != want {
 		t.Errorf("after picking a milestone: filter = %q, want %q", m.filter, want)

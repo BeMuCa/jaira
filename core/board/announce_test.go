@@ -161,3 +161,25 @@ func TestAgentNoteNamesTheConversationalMode(t *testing.T) {
 		t.Errorf("agentNote names mode but not the one value it takes")
 	}
 }
+
+// TestAgentNoteNamesTheMilestoneCommands guards the entry that tells an agent
+// milestones exist at all. Before it, the commands were only in --help and
+// docs/COMMANDS.md, and an agent asked to group tickets did not know it could.
+// Like `jaira tags`, the listing is named as the thing to read before creating.
+func TestAgentNoteNamesTheMilestoneCommands(t *testing.T) {
+	for _, want := range []string{
+		"`jaira milestone ls`",
+		"**Read it before you create one**",
+		"`jaira milestone create <name> [id...]`",
+		"`add`/`rm <milestone> <id>...`",
+		"`<name>-<ID>`",
+		"`rename <old> <new>`",
+		"`jaira logbook <milestone>`",
+		"`jaira milestone create|set <name> --after <a,b>`",
+		"`jaira milestone set <name> --no-roadmap`",
+	} {
+		if !strings.Contains(agentNote, want) {
+			t.Errorf("agentNote does not contain %s", want)
+		}
+	}
+}

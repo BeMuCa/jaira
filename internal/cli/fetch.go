@@ -3,10 +3,14 @@ package cli
 import (
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/notify"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -24,16 +28,35 @@ func newFetchCmd() *cobra.Command {
 refs/jaira/tickets/* and the milestones under refs/jaira/milestones/* — and
 reports what they say. A milestone whose file is new or newer is written to
 .jaira/milestones/, so the groups a teammate planned arrive with the tickets.
+A milestone's ref is named after its ID and carries the file under its current
+name, so a rename arrives as the same ref with another file name: the file this
+disk has under the old name — and any other file with that ID — is removed, the
+one thing a fetch deletes. A file with another ID is another milestone, and is
+never touched.
+
+Milestone files and refs from before IDs are moved to ID names once; the ID is
+computed from the old name, so every clone agrees. The automatic background
+fetch usually does it silently; only this command run in the foreground, or a
+milestone command that writes ('jaira milestone ls' moves nothing), tells it
+(--json: milestones_migrated). The old name refs stay on the remote, and what an
+older build writes to one later, or to an old <name>.md, is merged into the ID
+milestone: tickets added or removed and any field only it changed are taken; a
+field changed on both sides keeps this side and the older value is reported
+(--json: milestones_conflicts) and written into the file as a comment.
 
 A milestone somebody filed is reported apart from those: its ref carries
 "status: filed", and that line is what keeps a milestone off a board. A file
 you already have is marked with it, so the group leaves your board too; a
-filed milestone you never had is not written at all. Nothing is deleted here.
+filed milestone you never had is not written at all. A milestone somebody
+renamed is listed as "old → new" (--json: milestones_renamed, old name to new).
 
 This is how a ticket assigned to you arrives without anyone sharing a branch:
 the ref carries the whole ticket file, so it is readable with no checkout and
 nothing to merge. Refs are outside refs/heads, so the default refspec does not
 carry them and a teammate who does not use jaira sees none of this.
+
+Two milestones that share a name are warned about on stderr, with the rename
+that ends it (--json: milestones_twins); nothing is refused for it.
 
 A ticket newly assigned to you also raises a desktop notification, unless
 notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
@@ -67,21 +90,34 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			// disk: a milestone has no lane and no editor here, the file IS
 			// the interface, so a group that stayed on a ref would be a group
 			// nobody can open.
-			openedMilestones, filedMilestones, err := fetchMilestones(s)
+			openedMilestones, filedMilestones, renamedMilestones, migratedMilestones, conflictMilestones, err := fetchMilestones(s)
 			if err != nil {
 				return err
 			}
+			reportConflicts(conflictMilestones)
 			departed := refs.Departed()
 			stranded := strandedHere()
+			var twins []milestone.Twin
+			if all, err := milestone.LoadAll(s.Root); err == nil {
+				twins = milestone.Twins(all)
+			}
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
-					"milestones":       strOrEmpty(openedMilestones),
-					"milestones_filed": strOrEmpty(filedMilestones),
+					"milestones":           strOrEmpty(openedMilestones),
+					"milestones_filed":     strOrEmpty(filedMilestones),
+					"milestones_renamed":   renamedMilestones,
+					"milestones_migrated":  strOrEmpty(migratedMilestones),
+					"milestones_conflicts": conflictsOrEmpty(conflictMilestones),
+					"milestones_twins":     twinsJSON(twins),
 				})
 			}
 			printMilestones(cmd.OutOrStdout(), openedMilestones)
 			printFiledMilestones(cmd.OutOrStdout(), filedMilestones)
+			printRenamedMilestones(cmd.OutOrStdout(), renamedMilestones)
+			printMigratedMilestones(cmd.OutOrStdout(), migratedMilestones)
+			printMilestoneConflicts(cmd.OutOrStdout(), conflictMilestones)
+			printTwins(twins)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)
@@ -105,13 +141,38 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 // Only this call is inside the lock: refs.Incoming() has already made the
 // network round trip by the time we get here, and holding a store lock across
 // one would block every milestone write for the length of a fetch.
-func fetchMilestones(s *ticket.Store) (opened, filed []string, err error) {
-	unlock, err := s.Lock(milestoneLockName)
-	if err != nil {
-		return nil, nil, err
+func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[string]string, migrated []string, conflicts []milestone.Conflict, err error) {
+	res, err := refs.FetchMilestones(s)
+	return res.Wrote, res.Filed, res.Renamed, res.Moved, res.Conflicts, warnIfRecordOnly(err)
+}
+
+// conflictsOrEmpty keeps the JSON key an array when there is nothing to tell.
+func conflictsOrEmpty(c []milestone.Conflict) []milestone.Conflict {
+	if c == nil {
+		return []milestone.Conflict{}
 	}
-	defer unlock()
-	return refs.IncomingMilestones(s.Root)
+	return c
+}
+
+// printMilestoneConflicts says which edits an older build made that clashed
+// with this side's and were not taken. The value is in the milestone file too.
+func printMilestoneConflicts(w io.Writer, conflicts []milestone.Conflict) {
+	if len(conflicts) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nEdits an older build made to a milestone that clash with yours (yours kept, theirs written into the file as a comment):\n")
+	for _, c := range conflicts {
+		fmt.Fprintf(w, "  %s\n", c)
+	}
+}
+
+// printMigratedMilestones says that old milestone files were moved to their ID
+// names: the move is a write nobody asked for by name, so it is told.
+func printMigratedMilestones(w io.Writer, moved []string) {
+	if len(moved) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMoved %d milestone file(s) to ID names: %s\n", len(moved), strings.Join(moved, ", "))
 }
 
 // printMilestones says which milestone files this fetch put on disk. Named
@@ -140,7 +201,7 @@ func printFiledMilestones(w io.Writer, names []string) {
 	for _, n := range names {
 		fmt.Fprintf(w, "  %s\n", n)
 	}
-	fmt.Fprintf(w, "Whoever filed one brings it back with 'jaira restore <name>.md'.\n")
+	fmt.Fprintf(w, "Whoever filed one brings it back with 'jaira restore <file>' (the file name in the logbook).\n")
 }
 
 // announceArrivals raises one notification per ticket newly assigned to this
@@ -226,5 +287,17 @@ func printArrivals(w io.Writer, arrivals []refsync.Arrival) {
 			marks += " ref-only"
 		}
 		fmt.Fprintf(w, "%-8s %-12s %s%s\n", ticket.Handle(a.ID), a.Status, a.Title, marks)
+	}
+}
+
+// printRenamedMilestones says which milestones somebody renamed: the old name
+// is off this board, and the milestone is on it under the new one.
+func printRenamedMilestones(w io.Writer, renamed map[string]string) {
+	if len(renamed) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "\nMilestones renamed elsewhere:\n")
+	for _, old := range slices.Sorted(maps.Keys(renamed)) {
+		fmt.Fprintf(w, "  %s → %s\n", old, renamed[old])
 	}
 }

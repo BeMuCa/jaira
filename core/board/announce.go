@@ -58,6 +58,17 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  at capture. A name jaira has not seen is new and gets a colour in the\n" +
 	"  hand-editable `.jaira/tags`; the board filter and `jaira list --tag <name>`\n" +
 	"  read them back\n" +
+	"- `jaira milestone ls` — the milestones this board already has, with how many\n" +
+	"  tickets each holds. **Read it before you create one** and reuse the name that\n" +
+	"  is already there; \"q4\" and \"quarter-four\" are two names for one round of work.\n" +
+	"  `jaira milestone create <name> [id...]` starts one, `add`/`rm <milestone> <id>...`\n" +
+	"  put tickets in and take them out, `rename <old> <new>` changes only its name,\n" +
+	"  and `jaira logbook <milestone>` files it once its tickets are finished. A\n" +
+	"  milestone lives in `<name>-<ID>.md`; give a command its name, its ID or\n" +
+	"  `<name>-<ID>` — a command that writes refuses a name two carry (exit 3) and\n" +
+	"  names both forms, while `jaira list --milestone <name>` shows both.\n" +
+	"  `jaira milestone create|set <name> --after <a,b>` places it on the Milestone\n" +
+	"  Roadmap, and `jaira milestone set <name> --no-roadmap` takes it off again\n" +
 	"\n" +
 	"Working a ticket:\n" +
 	"\n" +
