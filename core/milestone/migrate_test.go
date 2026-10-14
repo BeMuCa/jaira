@@ -108,3 +108,19 @@ func TestMigrateReportsARecordFailureAfterTheMove(t *testing.T) {
 		t.Error("the file did not move")
 	}
 }
+
+// A ref that could not be queued for one moved file does not leave the files
+// after it unmoved: every old file is moved, and the failure is reported once.
+func TestMigrateMovesEveryFileDespiteARecordFailure(t *testing.T) {
+	root := t.TempDir()
+	writeOld(t, root, "q4", "---\ncolor: 45\n---\n")
+	writeOld(t, root, "q5", "---\ncolor: 46\n---\n")
+	moved, err := Migrate(root, &fakeRec{err: errors.New("no remote")})
+	var re *RecordError
+	if !errors.As(err, &re) {
+		t.Fatalf("err = %v", err)
+	}
+	if len(moved) != 2 || dirNames(t, root) != "q4-"+LegacyID("q4")+".md,q5-"+LegacyID("q5")+".md" {
+		t.Errorf("moved %v, directory %s", moved, dirNames(t, root))
+	}
+}

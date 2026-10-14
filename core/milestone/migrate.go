@@ -43,7 +43,10 @@ func MigrateContent(content []byte) []byte {
 // mark a rename of the name-keyed era left under its old name is not a
 // milestone and is removed. A migrated file whose ID has no ref in this tree
 // is queued for it, so the move reaches the remote; the old name's ref stays
-// where it is.
+// where it is. A ref that cannot be queued does not stop the walk: the move
+// is done and the next fetch or write queues it again, so the remaining files
+// are moved too and the first such failure is returned, as a RecordError, after
+// all of them.
 func Migrate(root string, rec Recorder) ([]string, error) {
 	entries, err := os.ReadDir(Dir(root))
 	if err != nil {
@@ -53,6 +56,7 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 		return nil, err
 	}
 	var moved []string
+	var recErr *RecordError
 	for _, e := range entries {
 		base, ok := strings.CutSuffix(e.Name(), ".md")
 		if !ok || e.IsDir() {
@@ -91,10 +95,15 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 		moved = append(moved, e.Name()+" -> "+target)
 		if !rec.HasMilestoneRef(id) {
 			if err := rec.RecordMilestone(id, target, migrated); err != nil {
-				return moved, &RecordError{Name: base, Err: err}
+				if recErr == nil {
+					recErr = &RecordError{Name: base, Err: err}
+				}
 			}
 		}
 	}
 	sort.Strings(moved)
+	if recErr != nil {
+		return moved, recErr
+	}
 	return moved, nil
 }
