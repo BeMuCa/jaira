@@ -133,8 +133,8 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 // lockAndMigrate takes the milestone lock and, under it, moves any file
 // written before IDs existed to its ID name (Migrate), so a write never meets
 // the old format and no caller can forget to. A ref that could not be queued
-// for a moved file is not a reason to stop: the move happened, and the next
-// fetch or write queues it again.
+// for a moved file is not a reason to stop: the move happened, and only that
+// milestone's own next write queues it.
 func lockAndMigrate(root string, lock Locker, rec Recorder) (func(), error) {
 	unlock, err := lock.Lock(LockName)
 	if err != nil {
