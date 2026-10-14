@@ -1625,6 +1625,9 @@ func (m *Model) renderMilestones() string {
 			name = stySelected.Render(name)
 		}
 		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
+		if m.isTwin(ms.ID) {
+			count += styWarn.Render(" ⚠ same name")
+		}
 		b.WriteString(marker + m.tickMark(labels[ms.ID]) + " " + milestoneMark(ms) + " " + name + count + "\n")
 	}
 	for _, l := range wrapHints([]string{"space tick", "enter show only the ticked", "x show everything again", "esc close"}, max(1, m.width)) {

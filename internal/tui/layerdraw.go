@@ -422,8 +422,13 @@ func (m *Model) drawBubble(cv *layerCanvas, ms *milestone.Milestone, at image.Po
 		name = append(name[:nameMax-1], '…')
 	}
 	count := fmt.Sprintf("%d/%d ", done, total)
+	// A ⚠ where the name's leading space is: two milestones share it.
+	lead := " "
+	if m.isTwin(ms.ID) {
+		lead = "⚠"
+	}
 	rowsText := [2]string{
-		fmt.Sprintf("%-*s", fillCells, " "+string(name)),
+		fmt.Sprintf("%-*s", fillCells, lead+string(name)),
 		fmt.Sprintf("%*s", fillCells, count),
 	}
 	cells := filledCells(done, total)

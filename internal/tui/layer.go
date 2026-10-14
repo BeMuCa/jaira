@@ -138,6 +138,13 @@ func (m *Model) milestoneLabel(id string) string {
 	return id
 }
 
+// isTwin is whether another milestone on the board has this one's name, which
+// is exactly when its label carries the ID.
+func (m *Model) isTwin(id string) bool {
+	ms := m.milestoneByID(id)
+	return ms != nil && m.milestoneLabel(id) != ms.Name
+}
+
 func (m *Model) milestoneByID(id string) *milestone.Milestone {
 	for _, ms := range m.milestones {
 		if ms.ID == id {

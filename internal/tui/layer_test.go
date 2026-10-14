@@ -788,3 +788,46 @@ func TestRoadmapShowsNameIDsOnlyForTwins(t *testing.T) {
 		t.Errorf("a single name was shown with its ID:\n%s", out)
 	}
 }
+
+// Twins are marked where they are drawn and the board says how to end it: a
+// flash line, once, naming the rename; a board without twins shows none.
+func TestTwinnedMilestonesAreMarkedAndFlashed(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	save := func(name, id string) {
+		ms := milestone.New(name, 45, nowish())
+		ms.ID = id
+		ms.SetAfter(nil)
+		if err := ms.Save(m.store.Root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("solo", "CCCCCC")
+	reloadOrFail(t, m)
+	if m.flashLine() != "" {
+		t.Errorf("flash without twins: %q", m.flashLine())
+	}
+	save("twin", "AAAAAA")
+	save("twin", "BBBBBB")
+	reloadOrFail(t, m)
+	if line := m.flashLine(); !strings.Contains(line, "twin-AAAAAA") || !strings.Contains(line, "jaira milestone rename twin-AAAAAA") {
+		t.Errorf("the flash does not say how to resolve it: %q", line)
+	}
+	m.flashMsg = ""
+	reloadOrFail(t, m)
+	if m.flashLine() != "" {
+		t.Errorf("the same twins flashed again on a reload: %q", m.flashLine())
+	}
+	m.key(key("M"))
+	picker := stripANSI(m.render())
+	m.key(key("esc"))
+	m.key(key("L"))
+	roadmap := stripANSI(m.render())
+	for where, out := range map[string]string{"picker": picker, "roadmap": roadmap} {
+		if strings.Count(out, "⚠") < 2 {
+			t.Errorf("the %s does not mark both twins:\n%s", where, out)
+		}
+	}
+	if strings.Contains(strings.Split(roadmap, "solo")[0], "⚠solo") {
+		t.Errorf("a single name was marked")
+	}
+}
