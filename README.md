@@ -888,6 +888,7 @@ jaira whoami               the identity jaira acts as, and the state of this boa
 jaira share                publish the board (--undo to make it private)
 jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod (--agent copilot for Copilot)
 jaira hook print           print a Claude Code Stop-hook snippet that refuses to end a session with agentic lanes unworked
+jaira json get <path>      print one field of the JSON on stdin, for shell scripts that cannot count on jq or python3
 jaira completion <shell>   print the completion script for bash, fish, powershell or zsh
 jaira help <command>       the full help of one command, the same as <command> --help
 ```
