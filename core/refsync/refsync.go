@@ -201,7 +201,9 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 // a group somebody planned is of no use as a ref nobody has checked out. The
 // ref is the newer state by construction — it is what the remote accepted —
 // so a local file that differs is overwritten, and the previous content is in
-// git if it was ever committed.
+// git if it was ever committed. The one exception is a milestone with a write
+// still queued in the outbox: that file is newer than the ref and is left
+// alone until the write has been sent or rejected.
 //
 // A milestone's ref is named after its ID and carries the file under its
 // current name, so a rename arrives as the same ref with another file name.
@@ -273,6 +275,13 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			conflicts = append(conflicts, cs...)
 			continue
 		}
+		// A write of this milestone that has not been sent is newer than the
+		// ref. It goes out on the next flush under the lease it was queued
+		// with: if nobody wrote the ref since, it lands; if somebody did, the
+		// flush drops it as a lost race and the next fetch writes theirs.
+		if y.pendingMilestone(key, ref.Name, ref.ID) {
+			continue
+		}
 		path := filepath.Join(milestone.Dir(root), file)
 		others, hadFile := otherFilesWithID(root, ref.ID, file)
 		// A file of the old format that lies beside the ID: the older build's
@@ -331,6 +340,17 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		wrote = append(wrote, ref.Name)
 	}
 	return wrote, filed, renamed, conflicts, nil
+}
+
+// pendingMilestone reports whether a write of this milestone is queued, under
+// its ref key, its ID or its old name.
+func (y *Syncer) pendingMilestone(keys ...string) bool {
+	for _, k := range keys {
+		if _, ok := y.Box.PendingMilestone(k); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // adoptOldRef merges what an older build wrote to an old name ref since the

@@ -244,3 +244,30 @@ func TestAnIdenticalFirstMilestoneEntryIsDroppedSilently(t *testing.T) {
 		t.Errorf("entries left: %+v", left)
 	}
 }
+
+// A fetch never resets a milestone edit that has not been sent: the queued
+// write is newer than the ref, and goes out on the next flush under its lease.
+func TestAFetchKeepsALocalMilestoneEditThatIsStillQueued(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	const file = "backend-K3F9QZ.md"
+	putRef(t, ada, "K3F9QZ", file, body)
+	incoming(t, ada, grace) // grace now has the old value on disk
+	edited := "---\ncolor: 99\n---\n"
+	putDisk(t, grace, file, edited)
+	if err := grace.syncer.RecordMilestone("K3F9QZ", file, []byte(edited)); err != nil {
+		t.Fatal(err)
+	}
+
+	wrote, _, _ := incoming(t, ada, grace)
+	got, _ := os.ReadFile(filepath.Join(milestone.Dir(grace.store.Root), file))
+	if string(got) != edited || len(wrote) != 0 {
+		t.Errorf("file is %q wrote %v, want the queued edit kept", got, wrote)
+	}
+	if _, err := grace.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	_, onRef, _, err := grace.syncer.Repo.ReadMilestone("K3F9QZ")
+	if err != nil || string(onRef) != edited {
+		t.Errorf("ref carries %q (%v) after the flush", onRef, err)
+	}
+}
