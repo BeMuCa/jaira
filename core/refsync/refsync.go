@@ -327,11 +327,15 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		// killed leaves it where the next fetch finds it. Another file with
 		// this ID in its name carries nothing but a name, and goes as soon as
 		// the ref is on disk.
-		var oldSides [][]byte
+		type oldSide struct {
+			name    string
+			content []byte
+		}
+		var oldSides []oldSide
 		for _, other := range others {
 			if !other.IDNamed {
 				if b, err := os.ReadFile(filepath.Join(milestone.Dir(root), other.File)); err == nil {
-					oldSides = append(oldSides, b)
+					oldSides = append(oldSides, oldSide{strings.TrimSuffix(other.File, ".md"), b})
 				}
 			}
 		}
@@ -350,8 +354,11 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			return nil
 		}
 		adoptOld := func() error {
-			for _, b := range oldSides {
-				adopted, cs, err := milestone.AdoptOld(root, y, ref.ID, ref.Name, b, "")
+			for _, o := range oldSides {
+				if milestone.StaleOld(y, o.name, o.content) {
+					continue
+				}
+				adopted, cs, err := milestone.AdoptOld(root, y, ref.ID, ref.Name, o.content, "")
 				if err != nil {
 					return err
 				}
@@ -469,6 +476,15 @@ func (y *Syncer) OldRefSHA(name string) string {
 		return ""
 	}
 	return sha
+}
+
+// OldRefHad reports whether content is a state the ref of an old milestone
+// name has carried. Such an old file is a stale copy, not an edit.
+func (y *Syncer) OldRefHad(name string, content []byte) bool {
+	if y == nil || y.Usable() != nil {
+		return false
+	}
+	return y.Repo.MilestoneHad(name, content)
 }
 
 // FetchRefs brings the refs here and reports whether it did. An unreachable

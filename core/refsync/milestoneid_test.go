@@ -410,3 +410,56 @@ func TestAnOldNameRefThatSortsFirstIsAdoptedIntoAnIDFileThatIsNotThereYet(t *tes
 		t.Errorf("the old edit is not in the ID file:\n%s", got)
 	}
 }
+
+// An old file that is a state the old name ref already carried is a copy this
+// clone never updated, not an edit: the merge is not run the wrong way round.
+func staleCopy(t *testing.T, s0, s1, newSide string) string {
+	t.Helper()
+	ada, grace, _ := twoSides(t)
+	id := milestone.LegacyID("alpha")
+	putRef(t, ada, "alpha", "alpha.md", s0)
+	putRef(t, ada, "alpha", "alpha.md", s1)
+	from, err := ada.syncer.Repo.MilestoneSHA("alpha")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := "alpha-" + id + ".md"
+	if _, err := ada.syncer.Repo.WriteMigration(id, file, []byte(s1), from, file, []byte(newSide)); err != nil {
+		t.Fatal(err)
+	}
+	putDisk(t, grace, "alpha.md", s0)
+	if err := grace.syncer.Repo.Fetch(); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := grace.syncer.IncomingMilestones(grace.store.Root); err != nil {
+		t.Fatalf("incoming: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(milestone.Dir(grace.store.Root), file))
+	if err != nil {
+		t.Fatalf("the ID file did not arrive: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(milestone.Dir(grace.store.Root), "alpha.md")); err == nil {
+		t.Errorf("the old file is still there")
+	}
+	return string(got)
+}
+
+func TestAStaleOldFileDoesNotBringARemovedTicketBack(t *testing.T) {
+	const t1, t2 = "01M2GGKMFB1XXK7V8AFW0YGWX1", "01M2GGKMFB1XXK7V8AFW0YGWX2"
+	s0 := body + "\n- " + t1 + "\n"
+	s1 := s0 + "- " + t2 + "\n"
+	got := staleCopy(t, s0, s1, s0)
+	if strings.Contains(got, t2) || !strings.Contains(got, t1) {
+		t.Errorf("a ticket removed with the new build came back:\n%s", got)
+	}
+}
+
+func TestAStaleOldFileDoesNotDropATicketAddedBack(t *testing.T) {
+	const t1, t3 = "01M2GGKMFB1XXK7V8AFW0YGWX1", "01M2GGKMFB1XXK7V8AFW0YGWX3"
+	s0 := body + "\n- " + t1 + "\n- " + t3 + "\n"
+	s1 := body + "\n- " + t1 + "\n"
+	got := staleCopy(t, s0, s1, s0)
+	if !strings.Contains(got, t3) || !strings.Contains(got, t1) {
+		t.Errorf("a ticket added back with the new build was dropped:\n%s", got)
+	}
+}

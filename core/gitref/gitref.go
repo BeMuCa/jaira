@@ -810,6 +810,27 @@ func namesFrom(out, prefix string, refOf func(string) string) []string {
 	return names
 }
 
+// MilestoneHad reports whether content is a state the ref of this milestone
+// key has carried: its blob is reachable from the ref. False when there is no
+// ref, and on any error.
+func (r *Repo) MilestoneHad(key string, content []byte) bool {
+	want, _, err := r.run(string(content), "hash-object", "--stdin")
+	if err != nil {
+		return false
+	}
+	want = strings.TrimSpace(want)
+	out, _, err := r.run("", "rev-list", "--objects", MilestoneRefName(key))
+	if err != nil || want == "" {
+		return false
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(line, want) && (len(line) == len(want) || line[len(want)] == ' ') {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Repo) hashObject(content []byte) (string, error) {
 	out, errb, err := r.run(string(content), "hash-object", "-w", "--stdin")
 	if err != nil {

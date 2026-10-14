@@ -62,6 +62,21 @@ type Result struct {
 // base: the tip SHA of the old name's ref, "" when there is none.
 type oldRefTip interface{ OldRefSHA(name string) string }
 
+// oldRefHistory is what Migrate asks a Recorder that knows refs: whether the
+// old name ref has carried this very content.
+type oldRefHistory interface {
+	OldRefHad(name string, content []byte) bool
+}
+
+// StaleOld reports whether an old <name>.md holds a state the old name ref
+// already carried. That is a copy a clone never updated, not an edit made
+// here: it adopts nothing, and what the ref carries since the move is adopted
+// from the ref.
+func StaleOld(rec Recorder, name string, content []byte) bool {
+	r, ok := rec.(oldRefHistory)
+	return ok && r.OldRefHad(name, content)
+}
+
 // migrationRecorder is a Recorder that queues the move as a commit of its own
 // (outbox.Box.QueueMigration), with the old ref's tip it came from.
 type migrationRecorder interface {
@@ -160,19 +175,21 @@ func Migrate(root string, rec Recorder) (Result, error) {
 				// remove the milestone.
 				continue
 			}
-			adopted, conflicts, err := AdoptOld(root, rec, id, base, content, tip(base))
-			var re *RecordError
-			if errors.As(err, &re) {
-				if recErr == nil {
-					recErr = re
+			if !StaleOld(rec, base, content) {
+				adopted, conflicts, err := AdoptOld(root, rec, id, base, content, tip(base))
+				var re *RecordError
+				if errors.As(err, &re) {
+					if recErr == nil {
+						recErr = re
+					}
+				} else if err != nil {
+					return res, err
 				}
-			} else if err != nil {
-				return res, err
+				if adopted {
+					res.Adopted = append(res.Adopted, base)
+				}
+				res.Conflicts = append(res.Conflicts, conflicts...)
 			}
-			if adopted {
-				res.Adopted = append(res.Adopted, base)
-			}
-			res.Conflicts = append(res.Conflicts, conflicts...)
 			if err := os.Remove(old); err != nil {
 				return res, err
 			}

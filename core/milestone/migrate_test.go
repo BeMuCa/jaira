@@ -212,3 +212,25 @@ func TestAdoptOldKeepsTheBaseWhenTheMergeCannotBeWritten(t *testing.T) {
 		t.Errorf("the base moved on although nothing was written: %+v", base)
 	}
 }
+
+type fakeHistory struct {
+	Recorder
+	had string
+}
+
+func (f fakeHistory) OldRefHad(name string, content []byte) bool {
+	return name == "alpha" && string(content) == f.had
+}
+
+func TestStaleOldIsAStateTheOldRefCarried(t *testing.T) {
+	if StaleOld(nil, "alpha", []byte("x")) {
+		t.Error("a recorder that knows no refs has no history")
+	}
+	f := fakeHistory{had: "x"}
+	if !StaleOld(f, "alpha", []byte("x")) {
+		t.Error("a state of the old ref is stale")
+	}
+	if StaleOld(f, "alpha", []byte("y")) || StaleOld(f, "beta", []byte("x")) {
+		t.Error("anything else is an edit")
+	}
+}

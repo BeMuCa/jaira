@@ -251,8 +251,9 @@ standing. `jaira logbook <name>` files it once every ticket in it has reached
 the terminal lane or left the board, and `jaira restore <file>` (the file name
 the logbook shows, `<name>-<ID>.md`) brings it back.
 
-A `<milestone>` is its name, its ID or `<name>-<ID>`. A name two milestones
-carry exits 3 and names both forms; run it again with one of them.
+A `<milestone>` is its name, its ID or `<name>-<ID>`. A command that writes
+refuses a name two milestones carry (exit 3) and names both forms; run it again
+with one of them. `jaira list --milestone <name>` is a filter and shows both.
 
 ## Before you stop, and when you start
 
