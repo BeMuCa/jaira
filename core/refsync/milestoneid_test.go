@@ -201,6 +201,25 @@ func TestAnOldMilestoneEntryIsRekeyedToItsID(t *testing.T) {
 	}
 }
 
+// An older build on the same clone queues a write keyed by the file's base
+// name, <name>-<ID>: it goes out on that ID's ref in that file, not as a new
+// ref for a ghost milestone whose ID is the hash of the whole base name.
+func TestAnOldEntryKeyedByNameAndIDKeepsItsID(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	oldEntry(t, ada, "alpha-MB9HR0", "---\ncolor: 45\n---\n")
+
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	file, _, _, err := ada.syncer.Repo.ReadMilestone("MB9HR0")
+	if err != nil || file != "alpha-MB9HR0.md" {
+		t.Errorf("the ID ref carries %q (%v)", file, err)
+	}
+	if _, err := ada.syncer.Repo.MilestoneSHA(milestone.LegacyID("alpha-MB9HR0")); err == nil {
+		t.Error("the base name got a ghost ref")
+	}
+}
+
 // Two clones that moved the same old file write the same first entry; the one
 // that pushes second finds the ref already says it and drops its entry, with no
 // report of a lost race.

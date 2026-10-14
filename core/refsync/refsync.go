@@ -470,9 +470,10 @@ func (y *Syncer) Flush() ([]Report, error) {
 
 // tidyMilestoneEntries settles the milestone writes the queue may still hold
 // from before IDs, on the refs this flush has just fetched. An entry keyed by a
-// name is rekeyed to the ID LegacyID computes for it — as the file it names
-// would be moved — unless it is the mark of a rename, which is dropped, or the
-// ID already has an entry. And a first write of a milestone (no lease) that
+// name is rekeyed to the ID of the file it names (FileIdentity: the ID in a
+// <name>-<ID> key, else the one LegacyID computes) — as the file would be
+// moved — unless it is the mark of a rename, which is dropped, or the ID
+// already has an entry. And a first write of a milestone (no lease) that
 // the fetched ref already carries, file and bytes, is dropped: two clones moved
 // the same old file to the same ID, and the second one to push must not be told
 // that the remote wins over a write that said the same thing. An ID-keyed
@@ -493,8 +494,8 @@ func (y *Syncer) tidyMilestoneEntries() error {
 				}
 				continue
 			}
-			id := milestone.LegacyID(e.ID)
-			if err := y.Box.RekeyMilestone(e.ID, id, e.ID+"-"+id+".md", milestone.MigrateContent([]byte(e.Content)), ""); err != nil {
+			name, id, _ := milestone.FileIdentity(e.ID)
+			if err := y.Box.RekeyMilestone(e.ID, id, name+"-"+id+".md", milestone.MigrateContent([]byte(e.Content)), ""); err != nil {
 				return err
 			}
 			continue
