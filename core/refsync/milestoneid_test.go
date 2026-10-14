@@ -44,7 +44,7 @@ func incoming(t *testing.T, ada, grace side) (wrote, filed []string, renamed map
 	if err := grace.syncer.Repo.Fetch(); err != nil {
 		t.Fatal(err)
 	}
-	wrote, filed, renamed, err := grace.syncer.IncomingMilestones(grace.store.Root)
+	wrote, filed, renamed, _, err := grace.syncer.IncomingMilestones(grace.store.Root)
 	if err != nil {
 		t.Fatal(err)
 	}

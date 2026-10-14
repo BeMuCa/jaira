@@ -1,6 +1,8 @@
 package milestone
 
 import (
+	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -31,11 +33,47 @@ func MigrateContent(content []byte) []byte {
 	return m.Bytes()
 }
 
+// Pending reports whether a file written before IDs existed lies in the
+// milestone directory, which is when Migrate has something to do.
+func Pending(root string) bool {
+	entries, err := os.ReadDir(Dir(root))
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		base, ok := strings.CutSuffix(e.Name(), ".md")
+		if _, _, idNamed := FileIdentity(base); ok && !e.IsDir() && !idNamed {
+			return true
+		}
+	}
+	return false
+}
+
+// Result is what Migrate did: the files it moved ("old.md -> new.md"), the
+// milestones that took an edit an older build had made to their old file, and
+// the fields where that edit clashed with this side's.
+type Result struct {
+	Moved     []string
+	Adopted   []string
+	Conflicts []Conflict
+}
+
+// oldRefTip is what Migrate asks a Recorder that knows refs, to record the
+// base: the tip SHA of the old name's ref, "" when there is none.
+type oldRefTip interface{ OldRefSHA(name string) string }
+
 // Migrate moves every milestone file written before IDs existed to its
 // <name>-<ID>.md name, once, with the ID LegacyID computes from the old name —
 // the same on every clone, so clones that migrate without ever speaking to
 // one another agree. The caller holds the milestone lock. It returns one
 // "old.md -> new.md" per file it moved.
+//
+// Each move records a Base, the old content and the tip of the old name ref.
+// An old <name>.md that turns up beside its ID file later — an older build
+// wrote it again — is not simply removed: what it changed since the base is
+// adopted into the ID file (Adopt), and the ref write is queued. An old file
+// that is the very file the ID file is (a case-insensitive file system) is
+// left alone.
 //
 // The new file is written before the old one is removed, so a crash leaves
 // the milestone twice, never nowhere, and a second run finishes the move. A
@@ -47,16 +85,22 @@ func MigrateContent(content []byte) []byte {
 // is done, and only that milestone's own next write queues it, so the
 // remaining files are moved too and the first such failure is returned, as a
 // RecordError, after all of them.
-func Migrate(root string, rec Recorder) ([]string, error) {
+func Migrate(root string, rec Recorder) (Result, error) {
+	var res Result
 	entries, err := os.ReadDir(Dir(root))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return res, nil
 		}
-		return nil, err
+		return res, err
 	}
-	var moved []string
 	var recErr *RecordError
+	tip := func(name string) string {
+		if r, ok := rec.(oldRefTip); ok {
+			return r.OldRefSHA(name)
+		}
+		return ""
+	}
 	for _, e := range entries {
 		base, ok := strings.CutSuffix(e.Name(), ".md")
 		if !ok || e.IsDir() {
@@ -69,30 +113,50 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 		old := filepath.Join(Dir(root), e.Name())
 		content, err := os.ReadFile(old)
 		if err != nil {
-			return moved, err
+			return res, err
 		}
 		if RenamedTo(content) != "" {
 			if err := os.Remove(old); err != nil {
-				return moved, err
+				return res, err
 			}
 			continue
 		}
 		target := base + "-" + id + ".md"
-		if _, err := os.Stat(filepath.Join(Dir(root), target)); err == nil {
-			if err := os.Remove(old); err != nil {
-				return moved, err
+		targetPath := filepath.Join(Dir(root), target)
+		if tInfo, err := os.Stat(targetPath); err == nil {
+			if oInfo, err := os.Stat(old); err == nil && os.SameFile(oInfo, tInfo) {
+				// One file under two spellings: removing the old name would
+				// remove the milestone.
+				continue
 			}
-			moved = append(moved, e.Name()+" -> "+target)
+			adopted, conflicts, err := AdoptOld(root, rec, id, base, content, tip(base))
+			var re *RecordError
+			if errors.As(err, &re) {
+				if recErr == nil {
+					recErr = re
+				}
+			} else if err != nil {
+				return res, err
+			}
+			if adopted {
+				res.Adopted = append(res.Adopted, base)
+			}
+			res.Conflicts = append(res.Conflicts, conflicts...)
+			if err := os.Remove(old); err != nil {
+				return res, err
+			}
+			res.Moved = append(res.Moved, e.Name()+" -> "+target)
 			continue
 		}
 		migrated := MigrateContent(content)
-		if err := ticket.WriteAtomic(filepath.Join(Dir(root), target), migrated); err != nil {
-			return moved, err
+		if err := ticket.WriteAtomic(targetPath, migrated); err != nil {
+			return res, err
 		}
+		_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip(base)})
 		if err := os.Remove(old); err != nil {
-			return moved, err
+			return res, err
 		}
-		moved = append(moved, e.Name()+" -> "+target)
+		res.Moved = append(res.Moved, e.Name()+" -> "+target)
 		if !rec.HasMilestoneRef(id) {
 			if err := rec.RecordMilestone(id, target, migrated); err != nil {
 				if recErr == nil {
@@ -101,9 +165,66 @@ func Migrate(root string, rec Recorder) ([]string, error) {
 			}
 		}
 	}
-	sort.Strings(moved)
+	sort.Strings(res.Moved)
 	if recErr != nil {
-		return moved, recErr
+		return res, recErr
 	}
-	return moved, nil
+	return res, nil
+}
+
+// AdoptOld merges what an older build wrote to its old file or old name ref
+// (old, the whole file; tip, the ref's SHA when it came from one) into the ID
+// file of the milestone with this ID, and queues the ref write. It does nothing
+// when no base was recorded, when the old side is what the base says, or when
+// no ID file lies here. The base then becomes the old side as it is now, so
+// the same edit is merged, and reported, once.
+func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string) (adopted bool, conflicts []Conflict, err error) {
+	base, ok := LoadBase(root, id)
+	if !ok {
+		return false, nil, nil
+	}
+	migrated := MigrateContent(old)
+	if base.Content == string(migrated) {
+		if tip != base.OldSHA {
+			_ = SaveBase(root, id, Base{Content: base.Content, OldSHA: tip})
+		}
+		return false, nil, nil
+	}
+	entries, err := os.ReadDir(Dir(root))
+	if err != nil {
+		return false, nil, err
+	}
+	var file string
+	for _, e := range entries {
+		if b, ok := strings.CutSuffix(e.Name(), ".md"); ok && !e.IsDir() {
+			if _, got, idNamed := FileIdentity(b); idNamed && got == id {
+				file = e.Name()
+				break
+			}
+		}
+	}
+	if file == "" {
+		return false, nil, nil
+	}
+	path := filepath.Join(Dir(root), file)
+	cur, err := os.ReadFile(path)
+	if err != nil {
+		return false, nil, err
+	}
+	all, err := LoadAll(root)
+	if err != nil {
+		return false, nil, err
+	}
+	merged, conflicts := Adopt(name, []byte(base.Content), old, cur, all)
+	_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip})
+	if bytes.Equal(merged, cur) {
+		return false, conflicts, nil
+	}
+	if err := ticket.WriteAtomic(path, merged); err != nil {
+		return false, conflicts, err
+	}
+	if err := rec.RecordMilestone(id, file, merged); err != nil {
+		return true, conflicts, &RecordError{Name: name, Err: err}
+	}
+	return true, conflicts, nil
 }

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -231,17 +232,17 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 // beside the one in the logbook of the tree that filed it — which is the tree
 // 'jaira restore' would then refuse, because the milestone is back on the
 // board.
-func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed map[string]string, err error) {
+func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed map[string]string, conflicts []milestone.Conflict, err error) {
 	if y == nil || y.Usable() != nil {
-		return nil, nil, nil, nil
+		return nil, nil, nil, nil, nil
 	}
 	keys, err := y.Repo.ListMilestones()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	renamed = map[string]string{}
 	for _, key := range keys {
-		file, content, _, err := y.Repo.ReadMilestone(key)
+		file, content, sha, err := y.Repo.ReadMilestone(key)
 		if err != nil {
 			continue
 		}
@@ -259,20 +260,55 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			}
 			continue
 		} else if y.HasMilestoneRef(ref.ID) || diskHasIDFile(root, ref.ID) {
+			// The milestone has moved on to its ID, but an older build may
+			// still write this ref: what it changed since the move is merged
+			// into the ID milestone rather than ignored.
+			adopted, cs, err := y.adoptOldRef(root, key, ref.ID, content, sha)
+			if err != nil {
+				return wrote, filed, renamed, conflicts, err
+			}
+			if adopted {
+				wrote = append(wrote, ref.Name)
+			}
+			conflicts = append(conflicts, cs...)
 			continue
 		}
 		path := filepath.Join(milestone.Dir(root), file)
 		others, hadFile := otherFilesWithID(root, ref.ID, file)
+		// A file of the old format that lies beside the ID: the older build's
+		// edits in it are merged into the ID file once the ref is on disk.
+		var oldSides [][]byte
 		for _, other := range others {
+			if !other.IDNamed {
+				if b, err := os.ReadFile(filepath.Join(milestone.Dir(root), other.File)); err == nil {
+					oldSides = append(oldSides, b)
+				}
+			}
 			if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
-				return wrote, filed, renamed, err
+				return wrote, filed, renamed, conflicts, err
 			}
 			if other.Name != ref.Name {
 				renamed[other.Name] = ref.Name
 			}
 		}
+		adoptOld := func() error {
+			for _, b := range oldSides {
+				adopted, cs, err := milestone.AdoptOld(root, y, ref.ID, ref.Name, b, "")
+				if err != nil {
+					return err
+				}
+				if adopted && !slices.Contains(wrote, ref.Name) {
+					wrote = append(wrote, ref.Name)
+				}
+				conflicts = append(conflicts, cs...)
+			}
+			return nil
+		}
 		have, haveErr := os.ReadFile(path)
 		if haveErr == nil && bytes.Equal(have, content) {
+			if err := adoptOld(); err != nil {
+				return wrote, filed, renamed, conflicts, err
+			}
 			continue
 		}
 		isFiled := ref.Filed()
@@ -280,10 +316,13 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			continue
 		}
 		if err := os.MkdirAll(milestone.Dir(root), 0o755); err != nil {
-			return wrote, filed, renamed, err
+			return wrote, filed, renamed, conflicts, err
 		}
 		if err := ticket.WriteAtomic(path, content); err != nil {
-			return wrote, filed, renamed, err
+			return wrote, filed, renamed, conflicts, err
+		}
+		if err := adoptOld(); err != nil {
+			return wrote, filed, renamed, conflicts, err
 		}
 		if isFiled {
 			filed = append(filed, ref.Name)
@@ -291,7 +330,40 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		}
 		wrote = append(wrote, ref.Name)
 	}
-	return wrote, filed, renamed, nil
+	return wrote, filed, renamed, conflicts, nil
+}
+
+// adoptOldRef merges what an older build wrote to an old name ref since the
+// base recorded when its milestone moved to its ID into the ID file
+// (milestone.AdoptOld). A ref that has not moved since the base is skipped
+// without reading it again.
+func (y *Syncer) adoptOldRef(root, name, id string, content []byte, sha string) (bool, []milestone.Conflict, error) {
+	if base, ok := milestone.LoadBase(root, id); ok && sha != "" && sha == base.OldSHA {
+		return false, nil, nil
+	}
+	return milestone.AdoptOld(root, y, id, name, content, sha)
+}
+
+// OldRefSHA is the tip of the ref an old milestone name had before IDs, "" when
+// this tree has none. Migrate records it with the base.
+func (y *Syncer) OldRefSHA(name string) string {
+	if y == nil || y.Usable() != nil {
+		return ""
+	}
+	sha, err := y.Repo.MilestoneSHA(name)
+	if err != nil {
+		return ""
+	}
+	return sha
+}
+
+// FetchRefs brings the refs here and reports whether it did. An unreachable
+// remote is not an error: whoever asks carries on without it.
+func (y *Syncer) FetchRefs() bool {
+	if y == nil || y.Usable() != nil {
+		return false
+	}
+	return y.Repo.Fetch() == nil
 }
 
 // HasMilestoneRef reports whether this tree has the ref of the milestone with

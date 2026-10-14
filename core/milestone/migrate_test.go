@@ -34,7 +34,8 @@ func TestMigrateGivesEveryCloneTheSameFile(t *testing.T) {
 		writeOld(t, root, "q4", "---\ncolor: 45\n---\n\n# q4\n\n- "+idA+"\n")
 		writeOld(t, root, "q5", "---\ncolor: 46\nafter: [q4, ghost]\n---\n")
 		rec[i] = &fakeRec{}
-		moved, err := Migrate(root, rec[i])
+		res, err := Migrate(root, rec[i])
+		moved := res.Moved
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -45,7 +46,7 @@ func TestMigrateGivesEveryCloneTheSameFile(t *testing.T) {
 			t.Fatalf("directory %s", names)
 		}
 		got[i], _ = os.ReadFile(filepath.Join(Dir(root), "q5-"+LegacyID("q5")+".md"))
-		if again, err := Migrate(root, rec[i]); err != nil || len(again) != 0 {
+		if again, err := Migrate(root, rec[i]); err != nil || len(again.Moved) != 0 {
 			t.Errorf("second run moved %v, %v", again, err)
 		}
 	}
@@ -115,7 +116,8 @@ func TestMigrateMovesEveryFileDespiteARecordFailure(t *testing.T) {
 	root := t.TempDir()
 	writeOld(t, root, "q4", "---\ncolor: 45\n---\n")
 	writeOld(t, root, "q5", "---\ncolor: 46\n---\n")
-	moved, err := Migrate(root, &fakeRec{err: errors.New("no remote")})
+	res, err := Migrate(root, &fakeRec{err: errors.New("no remote")})
+	moved := res.Moved
 	var re *RecordError
 	if !errors.As(err, &re) {
 		t.Fatalf("err = %v", err)

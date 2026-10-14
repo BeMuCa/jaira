@@ -626,14 +626,40 @@ func recordMilestone(ms *milestone.Milestone) {
 // milestone outside milestone.Edit and milestone.Create (fetch, logbook,
 // restore). It returns what moved.
 func migrateHeld(s *ticket.Store) ([]string, error) {
-	moved, err := milestone.Migrate(s.Root, refs)
-	return moved, warnIfRecordOnly(err)
+	res, err := migrateHeldResult(s)
+	reportConflicts(res.Conflicts)
+	return res.Moved, err
+}
+
+// migrateHeldResult is migrateHeld with what the move adopted from an older
+// build, for the caller that reports it itself (fetch).
+func migrateHeldResult(s *ticket.Store) (milestone.Result, error) {
+	res, err := milestone.Migrate(s.Root, refs)
+	return res, warnIfRecordOnly(err)
+}
+
+// reportConflicts tells, on stderr in the shape the caller asked for, the edits
+// an older build made that this side's did not take.
+func reportConflicts(conflicts []milestone.Conflict) {
+	for _, c := range conflicts {
+		warnRef(map[string]any{"milestones_conflicts": []milestone.Conflict{c}}, "jaira: %s", c)
+	}
 }
 
 // migrateMilestones is migrateHeld for a command that does not hold the lock
-// yet: the first milestone command a board sees after an upgrade moves every
-// old file, and says so.
+// yet: the first milestone command that writes, after an upgrade, moves every
+// old file, and says so ('jaira milestone ls' moves nothing).
 func migrateMilestones(s *ticket.Store) error {
+	// The write that moves old files fetches first, so an edit an older build
+	// sent to the old name ref reaches the file before it is moved and the ID
+	// ref is born with it. No network means no fetch, and the move goes ahead:
+	// the base it records lets the next fetch adopt that edit.
+	if milestone.Pending(s.Root) && refs.FetchRefs() {
+		_, _, _, moved, conflicts, err := fetchMilestones(s)
+		reportMigrated(moved)
+		reportConflicts(conflicts)
+		return err
+	}
 	unlock, err := s.Lock(milestoneLockName)
 	if err != nil {
 		return err
