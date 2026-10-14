@@ -475,7 +475,8 @@ func (y *Syncer) Flush() ([]Report, error) {
 // ID already has an entry. And a first write of a milestone (no lease) that
 // the fetched ref already carries, file and bytes, is dropped: two clones moved
 // the same old file to the same ID, and the second one to push must not be told
-// that the remote wins over a write that said the same thing.
+// that the remote wins over a write that said the same thing. An ID-keyed
+// entry still in the folder an older build lists is moved out of it.
 func (y *Syncer) tidyMilestoneEntries() error {
 	entries, err := y.Box.List()
 	if err != nil {
@@ -497,6 +498,9 @@ func (y *Syncer) tidyMilestoneEntries() error {
 				return err
 			}
 			continue
+		}
+		if err := y.Box.AdoptMilestone(e.ID); err != nil {
+			return err
 		}
 		if e.Lease != "" {
 			continue

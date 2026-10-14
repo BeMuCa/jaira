@@ -113,7 +113,23 @@ func At(s *ticket.Store) *Box { return &Box{Dir: filepath.Join(s.StateDir(), "ou
 // Every caller passes a kind it named itself or one that came back normalized
 // off disk, so there is nothing to default here.
 func (b *Box) path(kind Kind, key string) string {
+	if kind == KindMilestone {
+		return filepath.Join(b.Dir, milestoneDir, key+".json")
+	}
 	return filepath.Join(b.Dir, string(kind), key+".json")
+}
+
+// milestoneDir is where a milestone write keyed by its ID is filed. It is NOT
+// "milestones": an older build lists that folder and sends what it finds under
+// <key>.md, which for an ID key is a ghost milestone named after the ID. A
+// folder it has never heard of is one it cannot flush.
+const milestoneDir = "milestone-ids"
+
+// oldMilestonePath is the folder an older build files name-keyed milestone
+// writes in — and this build filed ID-keyed ones in before milestoneDir
+// existed. Still read; nothing new is written there.
+func (b *Box) oldMilestonePath(key string) string {
+	return filepath.Join(b.Dir, string(KindMilestone), key+".json")
 }
 
 // legacyPath is where a ticket entry was filed before there were kinds. Still
@@ -175,6 +191,11 @@ func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, leas
 			return err
 		}
 	}
+	if kind == KindMilestone {
+		if err := os.Remove(b.oldMilestonePath(key)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -188,6 +209,9 @@ func (b *Box) pendingKind(kind Kind, key string) (Entry, bool) {
 	e, ok := readEntry(b.path(kind, key))
 	if !ok && kind == KindTicket {
 		e, ok = readEntry(b.legacyPath(key))
+	}
+	if !ok && kind == KindMilestone {
+		e, ok = readEntry(b.oldMilestonePath(key))
 	}
 	if !ok {
 		return Entry{}, false
@@ -220,8 +244,15 @@ func (b *Box) List() ([]Entry, error) {
 		return nil, err
 	}
 	out = append(out, flat...)
-	for _, kind := range []Kind{KindTicket, KindMilestone} {
-		got, err := b.readDir(filepath.Join(b.Dir, string(kind)), kind)
+	for _, d := range []struct {
+		dir  string
+		kind Kind
+	}{
+		{string(KindTicket), KindTicket},
+		{milestoneDir, KindMilestone},
+		{string(KindMilestone), KindMilestone},
+	} {
+		got, err := b.readDir(filepath.Join(b.Dir, d.dir), d.kind)
 		if err != nil {
 			return nil, err
 		}
@@ -267,6 +298,31 @@ func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
 // DropMilestone removes a queued write of a milestone.
 func (b *Box) DropMilestone(key string) error { return b.dropKind(KindMilestone, key) }
 
+// AdoptMilestone moves an ID-keyed write this build filed in the folder an
+// older build also lists into milestoneDir, as it is: when it was queued, its
+// lease and its file survive. Nothing to move is not an error. If the key
+// already has an entry in milestoneDir that one stands, being the newer.
+func (b *Box) AdoptMilestone(key string) error {
+	old := b.oldMilestonePath(key)
+	data, err := os.ReadFile(old)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	dst := b.path(KindMilestone, key)
+	if _, err := os.Stat(dst); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return err
+		}
+		if err := ticket.WriteAtomic(dst, data); err != nil {
+			return err
+		}
+	}
+	return os.Remove(old)
+}
+
 // RekeyMilestone replaces the write an older build queued under oldKey — a
 // milestone's name — with one under newKey, its ID, naming the file to commit.
 // The new entry keeps when and by whom the old one was queued. If newKey
@@ -286,6 +342,9 @@ func (b *Box) RekeyMilestone(oldKey, newKey, file string, content []byte, lease 
 		QueuedAt: old.QueuedAt, UpdatedAt: time.Now().UTC(), By: old.By,
 	}
 	path := b.path(KindMilestone, newKey)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
 		return err
@@ -301,6 +360,11 @@ func (b *Box) RekeyMilestone(oldKey, newKey, file string, content []byte, lease 
 func (b *Box) dropKind(kind Kind, key string) error {
 	if err := os.Remove(b.path(kind, key)); err != nil && !os.IsNotExist(err) {
 		return err
+	}
+	if kind == KindMilestone {
+		if err := os.Remove(b.oldMilestonePath(key)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 	}
 	if kind != KindTicket {
 		return nil
