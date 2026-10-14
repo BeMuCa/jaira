@@ -1,7 +1,7 @@
 ---
 id: 01M4WS20HSNGR8XKP3RCF914QH
 title: "Epics: Funktionen als eigene Art auf eigenen Refs, nicht als Ticket"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,17 +23,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-14T08:39:27Z
-updated-at: 2026-10-14T13:16:18Z
+updated-at: 2026-10-14T13:26:43Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-81098
-claimed-at: 2026-10-14T08:46:03Z
+claimed-by: DESKTOP-RFTCH11-96726
+claimed-at: 2026-10-14T13:23:08Z
 mode: ""
 outcome-what: "Epics: jaira epic create/add/rm/ls/show auf refs/jaira/epics/<name> (nur Ref, keine Datei), Fortschritt X von Y inkl. follows/parent-Folge-Tickets, ls --unassigned; jaira create setzt follows aus dem Ticket-Handle im Branch-Namen, --follows none schaltet ab"
 outcome-why: "Ein Teamlead sieht auf ~100 Tickets nicht, wie weit eine Funktion ist; Folge-Tickets ohne --follows fielen aus jeder Gruppierung"
 outcome-resolves: F914QH
-review-summary: "none"
-round: 2
-review-gaps: "folded the member-list JSON of milestoneJSON and epicJSON into memberRefs (internal/cli/milestones.go); links.go now calls boardIndex (internal/cli/links.go) instead of its own copy of lane.Load + partial s.List + link.Build; epic.LockName unexported (one caller). Left: core/epic frontEnd/Bytes/Add/Remove mirror core/milestone by decision (critique note); Count rebuilds the follows/parent map per epic in 'epic ls' — O(epics x tickets), only on epic commands, not worth a second API"
+review-summary: "Neues Paket core/epic: ein Epic ist eine Markdown-Datei (Frontmatter title/description/created-at, darunter eine Zeile '- <ticket-id>' pro Mitglied) auf refs/jaira/epics/<name>, ohne Datei im Worktree. Gelesen wird das ungesendete Outbox-Entry, sonst die lokale Ref; geschrieben über outbox.KindEpic mit Lease wie Milestones. Verliert ein Push das Rennen, merged refsync.rebaseEpic dreiseitig (Basis = Lease-Commit) die Mitglieder- und Titeländerungen und sendet bis zu 3x neu, statt den Eintrag zu verwerfen. CLI: jaira epic create/add/rm/ls/show, ls --unassigned, alles mit --json; Fortschritt = Mitglieder plus transitiv alle Tickets mit follows/parent darauf (Board + Logbook), erledigt = link.Index.Satisfied. jaira create setzt ohne --follows follows auf das Ticket, dessen Handle im Branch-Namen steht, sagt es an; --follows none schaltet ab. Dazu: refs.go meldet Epics beim Namen, milestones/links teilen memberRefs/boardIndex, docs/COMMANDS.md und core/release/notes/F914QH.md."
+round: 3
+review-gaps: "(1) Agent-Block nicht angepasst: Option 1 der DoD-5-Entscheidung war 'automatisch aus dem Branch + Hinweis im Agent-Block'; core/board/announce.go erwähnt weder jaira epic noch den Branch-Default noch --follows none — Agents lernen es nur aus der Ausgabe von create. (2) Nach einem verlorenen Rennen druckt 'jaira epic add' die Zahl vor dem Merge ('now lists 2'), obwohl die Ref danach 3 Mitglieder trägt; der Merge selbst bleibt still (Sent sagt nichts). Kosmetisch, im Zwei-Klon-Test nachgestellt. (3) Kein Befehl, um Titel/Beschreibung zu ändern oder ein Epic zu löschen; ohne Arbeitsdatei geht das nur mit git-Plumbing. Ein vertipptes Epic bleibt für immer in 'epic ls'. Nicht in der DoD verlangt. (4) rebaseEpic: der erste Versuch liest die lokale, noch alte Ref und verliert sicher ein zweites Mal, erst nach Fetch greift der Merge — kostet einen Push-Roundtrip, effektiv 2 statt 3 Versuche. Kein Fehler."
+test-verdict: "pass: go vet ./... (RC=0), go test -race -count=1 ./... (RC=0); DoD 1-6 checked in the tree against their proofs; on a scratch remote with two clones: create/add/rm/ls/show, fetch to the second clone, parent-follow-up counted 0->1 of 2 after move to done and still counted after jaira logbook, ls --unassigned lists only the unrelated ticket, unknown epic exit 5, duplicate create exit 3"
+review-verdict: "Der Diff erfüllt alle sechs DoD-Punkte; go test ./... und go vet sind grün, Ende-zu-Ende mit Bare-Remote nachgestellt (Epic nur auf Ref, X von Y inkl. Folge-Tickets, --unassigned, Branch-follows, zwei Klone fügen gleichzeitig hinzu und beide landen). Kein Defekt gefunden, der die Annahme blockiert. Offen für die Person: Gap (1) — der versprochene Hinweis im Agent-Block fehlt; entscheiden, ob er hier nachgezogen wird oder entfällt."
+review-round: 2
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. In einem Repo mit Remote: /tmp/jaira create Alpha --goal g --context c --dod d, dann /tmp/jaira create Beta --goal g --context c --dod d --follows <Alpha-Handle>  3. /tmp/jaira epic create 'Magic Login' <Alpha-Handle> --title 'Magic login' → meldet 'Filed as magic-login'  4. /tmp/jaira epic show magic-login → '0 of 2 done', Beta mit '(follow-up)'  5. git show refs/jaira/epics/magic-login:magic-login.md → Frontmatter + eine '- <id>'-Zeile; ls .jaira zeigt kein epics/  6. /tmp/jaira epic ls --unassigned → listet nur Tickets ohne Epic  7. git checkout -b feat/<alpha-handle-klein>; /tmp/jaira create Delta --goal g --context c --dod d → Zeile 'Follows <Alpha>, from branch …'; mit --follows none fehlt sie  8. Gleichzeitiges Hinzufügen aus zwei Klonen: go test ./internal/cli -run TestTwoClonesSortingIntoOneEpicBothLand"
 ---
 
 # Epics: Funktionen als eigene Art auf eigenen Refs, nicht als Ticket
@@ -52,6 +56,8 @@ review-gaps: "folded the member-list JSON of milestoneJSON and epicJSON into mem
   proof: internal/cli/tickets.go:153 branchTicket + --follows none; TestCreateFollowsTheTicketTheBranchIsNamedAfter
 - [x] Tests, docs/COMMANDS.md, Release-Note core/release/notes/<ID>.md
   proof: core/epic/epic_test.go, internal/cli/epics_test.go, TestCreateFollowsTheTicketTheBranchIsNamedAfter (go test ./... exit 0); docs/COMMANDS.md jaira epic rows + create --follows; core/release/notes/F914QH.md
+- [x] Der Agent-Block (core/board/announce.go) sagt in je einer Zeile: auf einem Ticket-Branch setzt jaira create follows auf dieses Ticket (--follows none schaltet ab); jaira epic (was ein Epic ist, ls/show/add)
+  proof: core/board/announce.go:51 (branch follows) and :64 (jaira epic); same lines in CLAUDE.md/AGENTS.md; go test ./core/board ./internal/cli green; jaira validate reports no stale agent block
 
 ## Options
 
@@ -82,3 +88,6 @@ review-gaps: "folded the member-list JSON of milestoneJSON and epicJSON into mem
 - **2026-10-14 08:57 · Alexander Sacharov** — Pause (conversational): DoD 1-4 fertig, nicht committet; Diff und Commit-Zeile an jaira-34, warte auf Freigabe. Danach: Plan 6 (follows aus Branch-Handle in internal/cli/tickets.go um Zeile 192, '--follows none'), Plan 7 (docs/COMMANDS.md, core/release/notes/F914QH.md). jaira-rftqkp-b4 wartet auf die Commit-SHA von core/epic.
 - **2026-10-14 13:12 · Alexander Sacharov** — critique: (1) internal/cli/refs.go refSubject/rejectedAdvice fehlen KindEpic — Epic-Meldungen nennen sonst den Namen per ticket.Handle verstümmelt; fixen. Bewusst stehen gelassen: (a) core/epic dupliziert frontEnd/Bytes/Add/Remove aus core/milestone (~50 Zeilen) statt einen gemeinsamen Zeilen-Datei-Typ zu ziehen — Milestone trägt status/color und Logbook-Ablage, ein gemeinsamer Typ koppelte zwei Formate, die getrennt wachsen sollen; ParseMember ist geteilt, damit die Mitgliedszeile nicht auseinanderläuft. (b) Covered liest über link.Index.All das ganze Logbook — nur in epic-Befehlen, nie beim Board-Rendern; nötig, weil abgelegte Folge-Tickets mitzählen.
 - **2026-10-14 13:13 · Alexander Sacharov** — critique Runde 2: refs.go-Fund behoben (4400dddb, TestAnEpicIsReportedByItsName); sonst nichts — die zwei bewusst stehen gelassenen Punkte stehen in der critique-Note davor.
+- **2026-10-14 13:23 · Alexander Sacharov** — review: alle DoD-Punkte erfüllt, Tests grün, E2E mit Bare-Remote nachgestellt. Offen für Alex: Option 1 versprach einen Hinweis im Agent-Block (core/board/announce.go) zu Branch-follows/--follows none und jaira epic — fehlt. Kleinkram: 'epic add' druckt nach verlorenem Rennen die Zahl vor dem Merge; kein Befehl zum Umbenennen/Löschen eines Epics.
+- **2026-10-14 13:24 · Alexander Sacharov** — Abnahme-Seite: https://claude.ai/artifact/TzzQLMxeCQuumLtkD43Lxk (3 Person-Schritte statt 8 Review-Check-Schritten; Maschinen-Checks grün). Offen für Alex: Review-Gap 1 — Hinweis im Agent-Block (Branch-follows, jaira epic) hier nachziehen oder weglassen.
+- **2026-10-14 13:25 · Alexander Sacharov** — decision (Alex 14.10., über jaira-34): Review-Gap 1 wird hier erledigt — Agent-Block in core/board/announce.go bekommt je eine kurze Zeile zu Branch-follows (--follows none) und zu jaira epic (ls/show/add). Die kleinen Review-Punkte (Zahl vor dem Merge, kein rename/delete, erste rebaseEpic-Runde) bleiben bewusst stehen.

@@ -48,6 +48,9 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  adjectives, no jargon and no preamble. It may span several lines, but someone\n" +
 	"  should be able to act after the first two. If acting on it would need a\n" +
 	"  question answered first, it is not finished\n" +
+	"- a ticket you find while working another one follows on from it: on that\n" +
+	"  ticket's branch (`feat/a3k9qp`) `jaira create` sets `follows` to it by itself and\n" +
+	"  says so; `--follows none` when the new ticket is unrelated\n" +
 	"- `jaira list --actionable --json` — everything that could be started right now\n" +
 	"- `jaira next --json` — the single next actionable ticket\n" +
 	"- `jaira tags` — the tags this board already uses, with how many open tickets\n" +
@@ -58,6 +61,10 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  at capture. A name jaira has not seen is new and gets a colour in the\n" +
 	"  hand-editable `.jaira/tags`; the board filter and `jaira list --tag <name>`\n" +
 	"  read them back\n" +
+	"- `jaira epic ls` — the features this board is built out of, each with done X of Y\n" +
+	"  (follow-ups counted); an epic is a description plus a ticket list on its own\n" +
+	"  ref, not a ticket. `jaira epic show <name>` lists its tickets, `jaira epic add\n" +
+	"  <name> <id>...` sorts tickets in, `jaira epic ls --unassigned` lists the rest\n" +
 	"\n" +
 	"Working a ticket:\n" +
 	"\n" +
