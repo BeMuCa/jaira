@@ -38,9 +38,9 @@ import (
 // provider's web UI.
 const Prefix = Root + "tickets/"
 
-// Root is the namespace both kinds of ref live under. There are two kinds
-// because two different things travel this way: a ticket, keyed by its id, and
-// a milestone, keyed by its name. They are kept apart by a path segment rather
+// Root is the namespace every kind of ref lives under. There are several kinds
+// because different things travel this way: a ticket, keyed by its id, and
+// a milestone or an epic, keyed by its name. They are kept apart by a path segment rather
 // than sharing one flat space — a milestone called "0YGWXQ" and a ticket whose
 // handle is 0YGWXQ would otherwise be one ref, and whichever was written last
 // would silently be the other one's content.
@@ -54,6 +54,15 @@ const MilestonePrefix = Root + "milestones/"
 
 // MilestoneRefName is the ref a milestone travels on.
 func MilestoneRefName(name string) string { return MilestonePrefix + name }
+
+// EpicPrefix is where an epic travels — and, unlike a milestone, the only
+// place it lives: an epic has no working file on disk. The member list is
+// written by whoever sorts a ticket into it, often while an agent works that
+// ticket, so it must never share a file with anything a branch carries.
+const EpicPrefix = Root + "epics/"
+
+// EpicRefName is the ref an epic travels on.
+func EpicRefName(name string) string { return EpicPrefix + name }
 
 // DefaultRemote is where refs go when nothing is configured.
 const DefaultRemote = "origin"
@@ -236,6 +245,9 @@ func (r *Repo) SHA(id string) (string, error) { return r.refSHA(RefName(id)) }
 // ticket's.
 func (r *Repo) MilestoneSHA(name string) (string, error) { return r.refSHA(MilestoneRefName(name)) }
 
+// EpicSHA is the lease for an epic's ref.
+func (r *Repo) EpicSHA(name string) (string, error) { return r.refSHA(EpicRefName(name)) }
+
 // refSHA is what both of those are: one ref, one compare-and-swap value. The
 // kind of thing on the ref changes nothing about how it is read, which is why
 // the second namespace costs a path segment rather than a second mechanism.
@@ -304,6 +316,18 @@ func (r *Repo) ReadMilestoneFileAt(sha string) (string, []byte, error) {
 	}
 	content, err := r.readEntry(sha, sha, entries[0])
 	return entries[0], content, err
+}
+
+// ReadEpic returns the epic file carried by the local ref, with its lease.
+func (r *Repo) ReadEpic(name string) ([]byte, string, error) {
+	return r.refRead(EpicRefName(name), name+".md")
+}
+
+// ReadEpicAt returns the epic file as one commit of its ref carried it. A
+// lost race is rebased from here: the commit the losing write was leased
+// against is the state both sides started from.
+func (r *Repo) ReadEpicAt(name, sha string) ([]byte, error) {
+	return r.readEntry(EpicRefName(name), sha, name+".md")
 }
 
 // refRead reads the one file a jaira ref carries, named entry at its root. One
@@ -379,6 +403,12 @@ func (r *Repo) Write(id string, content []byte, lease string) (string, error) {
 // caller's bytes are stale and must be re-read, never force-pushed over.
 func (r *Repo) WriteMilestone(key, file string, content []byte, lease string) (string, error) {
 	return r.refWrite(MilestoneRefName(key), file, content, lease)
+}
+
+// WriteEpic puts an epic file on its ref and pushes it, under the same
+// compare-and-swap as a milestone.
+func (r *Repo) WriteEpic(name string, content []byte, lease string) (string, error) {
+	return r.refWrite(EpicRefName(name), name+".md", content, lease)
 }
 
 // MigratedFromTrailer is the message trailer of the commit that moved a
@@ -764,7 +794,7 @@ func (r *Repo) Landed(id string, branches []string) string {
 // everyone else's board forever, deleted for its owner and immortal for
 // everyone else.
 func (r *Repo) Fetch() error {
-	// Root, not Prefix: one fetch brings both kinds of ref, so a milestone
+	// Root, not Prefix: one fetch brings every kind of ref, so a milestone
 	// arrives on the same refresh its tickets do. Fetching them separately
 	// would mean a board that shows a group nobody here has the file for, or
 	// a file naming tickets that have not arrived — either way a half-state
@@ -784,6 +814,9 @@ func (r *Repo) List() ([]string, error) { return r.listNames(Prefix) }
 
 // ListMilestones returns the milestone names that have a local ref.
 func (r *Repo) ListMilestones() ([]string, error) { return r.listNames(MilestonePrefix) }
+
+// ListEpics returns the epic names that have a local ref.
+func (r *Repo) ListEpics() ([]string, error) { return r.listNames(EpicPrefix) }
 
 func (r *Repo) listNames(prefix string) ([]string, error) {
 	out, err := r.value("for-each-ref", "--format=%(refname)", prefix)

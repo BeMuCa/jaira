@@ -48,6 +48,9 @@ const (
 	KindTicket Kind = "tickets"
 	// KindMilestone is a milestone file's ref.
 	KindMilestone Kind = "milestones"
+	// KindEpic is an epic's ref. An epic has no file on disk, so this
+	// queue is also where an unsent epic is read back from.
+	KindEpic Kind = "epics"
 )
 
 func (k Kind) or(def Kind) Kind {
@@ -165,6 +168,16 @@ func (b *Box) QueueMilestone(key, file string, op Op, content []byte, lease, by 
 	return b.queueKind(KindMilestone, key, file, op, content, lease, by, nil)
 }
 
+// QueueEpic files a pending write of an epic, under the same rules.
+func (b *Box) QueueEpic(name string, content []byte, lease, by string) error {
+	return b.queueKind(KindEpic, name, "", OpWrite, content, lease, by, nil)
+}
+
+// PendingEpic returns the unsent write of one epic. It is what an epic is
+// read from while it waits: with no file on disk, the queue holds the only
+// copy of an edit made offline.
+func (b *Box) PendingEpic(name string) (Entry, bool) { return b.pendingKind(KindEpic, name) }
+
 // QueueMigration files the first write of a milestone's ref when it moves an
 // older file to its ID: the migrated content, and the old ref's tip (or
 // "none"), which are sent as a commit of their own. Later edits replace the
@@ -173,14 +186,17 @@ func (b *Box) QueueMigration(key, file string, migrated []byte, from, by string)
 	return b.queueKind(KindMilestone, key, file, OpWrite, migrated, "", by, &Migration{File: file, Content: string(migrated), From: from})
 }
 
-// queueKind is what all three of those are.
+// queueKind is what all of those are.
 func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, lease, by string, mig *Migration) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
 	ref := gitref.RefName(key)
-	if kind == KindMilestone {
+	switch kind {
+	case KindMilestone:
 		ref = gitref.MilestoneRefName(key)
+	case KindEpic:
+		ref = gitref.EpicRefName(key)
 	}
 	now := time.Now().UTC()
 	e := Entry{
@@ -280,6 +296,7 @@ func (b *Box) List() ([]Entry, error) {
 		{string(KindTicket), KindTicket},
 		{milestoneDir, KindMilestone},
 		{string(KindMilestone), KindMilestone},
+		{string(KindEpic), KindEpic},
 	} {
 		got, err := b.readDir(filepath.Join(b.Dir, d.dir), d.kind)
 		if err != nil {
@@ -326,6 +343,9 @@ func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
 
 // DropMilestone removes a queued write of a milestone.
 func (b *Box) DropMilestone(key string) error { return b.dropKind(KindMilestone, key) }
+
+// DropEpic removes a queued write of an epic.
+func (b *Box) DropEpic(name string) error { return b.dropKind(KindEpic, name) }
 
 // RekeyMilestone replaces the write an older build queued under oldKey — a
 // milestone's name — with one under newKey, its ID, naming the file to commit.
@@ -387,6 +407,7 @@ type Sender interface {
 	Write(id string, content []byte, lease string) (string, error)
 	Delete(id, lease string) error
 	WriteMilestone(key, file string, content []byte, lease string) (string, error)
+	WriteEpic(name string, content []byte, lease string) (string, error)
 }
 
 // migrationSender is a Sender that can write a milestone's migration as a
@@ -452,10 +473,11 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			}
 			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
 		case errors.Is(sendErr, gitref.ErrRaceLost):
-			// A refused milestone write stays queued: its caller merges it into
-			// the winner and replaces it, and a failure on the way must not lose
-			// the edit.
-			if kind != KindMilestone {
+			// A refused milestone or epic write stays queued: its caller merges
+			// it into the winner and replaces it, and a failure on the way must
+			// not lose the edit — for an epic, which has no file on disk, the
+			// entry is the only copy of it.
+			if kind != KindMilestone && kind != KindEpic {
 				if err := b.dropKind(kind, e.ID); err != nil {
 					return results, err
 				}
@@ -475,12 +497,19 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 // back as an error, which Flush reports as Failed and leaves queued: the entry
 // is unreadable, not unwanted.
 //
-// A milestone is only ever written, never deleted: no command deletes one —
-// removing a milestone is rm on its file — so there is nothing to queue.
+// A milestone or an epic is only ever written, never deleted: no command
+// deletes one, so there is nothing to queue.
 func send(s Sender, kind Kind, e Entry) error {
-	if kind == KindMilestone {
+	switch kind {
+	case KindEpic:
 		if e.Op != OpWrite {
-			return fmt.Errorf("outbox: unknown milestone op %q", e.Op)
+			return fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
+		}
+		_, err := s.WriteEpic(e.ID, []byte(e.Content), e.Lease)
+		return err
+	case KindMilestone:
+		if e.Op != OpWrite {
+			return fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
 		}
 		file := e.File
 		if file == "" {

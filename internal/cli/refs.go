@@ -293,13 +293,17 @@ func flushRefs() {
 // the file it travels under carries (<name>-<ID>.md); a name put through
 // ticket.Handle comes out as its last six characters — 'next-release' printed
 // as 'elease', a word that names nothing and that no command accepts. An entry
-// an older build queued has no file and was keyed by its name.
+// an older build queued has no file and was keyed by its name. An epic is
+// keyed by its name and has no file.
 func refSubject(kind outbox.Kind, id, file string) (key, name string) {
-	if kind == outbox.KindMilestone {
+	switch kind {
+	case outbox.KindMilestone:
 		if file == "" {
 			return "milestone", id
 		}
 		return "milestone", milestone.FromBytes(file, nil).Name
+	case outbox.KindEpic:
+		return "epic", id
 	}
 	return "ticket", ticket.Handle(id)
 }
@@ -327,9 +331,15 @@ func mergedClashes(cs []milestone.Conflict) string {
 // not merged this time: it is merged at the next send, or nothing of it was
 // left to send. Telling a milestone writer their file is unchanged would be
 // describing a ticket to them.
+//
+// An epic is merged rather than lost (refsync.rebaseEpic), so it reaches this
+// line only when the merge could not be sent either; the merge stays queued.
 func rejectedAdvice(kind outbox.Kind) string {
-	if kind == outbox.KindMilestone {
+	switch kind {
+	case outbox.KindMilestone:
 		return "the remote's version wins; your edit stays queued and is merged into it at the next send, unless there is nothing of it left to send"
+	case outbox.KindEpic:
+		return "your change is merged onto theirs and stays queued; it goes out with your next command"
 	}
 	return "your file is unchanged; the board shows both sides once the ref is fetched"
 }

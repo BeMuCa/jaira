@@ -794,11 +794,7 @@ func resolveAll(s *ticket.Store, args []string) ([]string, error) {
 // milestones when the caller has read them already; nil reads them only when
 // a predecessor has to be spelled.
 func milestoneJSON(ms *milestone.Milestone, root string, all []*milestone.Milestone) map[string]any {
-	ids := ms.Members()
-	members := make([]map[string]string, 0, len(ids))
-	for _, id := range ids {
-		members = append(members, map[string]string{"id": id, "handle": ticket.Handle(id)})
-	}
+	members := memberRefs(ms.Members())
 	out := map[string]any{
 		"id":      ms.ID,
 		"name":    ms.Name,
@@ -817,6 +813,16 @@ func milestoneJSON(ms *milestone.Milestone, root string, all []*milestone.Milest
 	}
 	if !ms.CreatedAt.IsZero() {
 		out["created_at"] = ms.CreatedAt.UTC().Format(time.RFC3339)
+	}
+	return out
+}
+
+// memberRefs is a member list as --json prints it, for milestones and epics
+// alike: the full id and the handle a person types back.
+func memberRefs(ids []string) []map[string]string {
+	out := make([]map[string]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, map[string]string{"id": id, "handle": ticket.Handle(id)})
 	}
 	return out
 }

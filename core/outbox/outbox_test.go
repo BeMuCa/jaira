@@ -54,6 +54,15 @@ func (f *fakeSender) WriteMilestone(name, file string, content []byte, lease str
 	return "sha-" + name, nil
 }
 
+func (f *fakeSender) WriteEpic(name string, content []byte, lease string) (string, error) {
+	f.seen[name] = lease
+	if err := f.err[name]; err != nil {
+		return "", err
+	}
+	f.wrote = append(f.wrote, "epic/"+name+":"+string(content))
+	return "sha-" + name, nil
+}
+
 func box(t *testing.T) *outbox.Box {
 	t.Helper()
 	return &outbox.Box{Dir: filepath.Join(t.TempDir(), "outbox")}

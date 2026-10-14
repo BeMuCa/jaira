@@ -859,6 +859,8 @@ jaira tags                 the tags this board uses; read it before you tag anyt
 jaira tag <id> <name>...   add tags to a ticket
 jaira milestone ls         the board's milestones; read it before you create one
 jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename (the name only)
+jaira epic ls              the features this board is built of, done X of Y; --unassigned the rest
+jaira epic <cmd>           create, add, rm, show — an epic lives on its own ref, not in a file
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
 jaira note <id> <text>     record what you worked out, so a later session can pick it up
 jaira validate             check every ticket on the board for damage

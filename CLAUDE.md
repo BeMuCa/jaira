@@ -44,6 +44,9 @@ Capturing and picking work:
   adjectives, no jargon and no preamble. It may span several lines, but someone
   should be able to act after the first two. If acting on it would need a
   question answered first, it is not finished
+- a ticket you find while working another one follows on from it: on that
+  ticket's branch (`feat/a3k9qp`) `jaira create` sets `follows` to it by itself and
+  says so; `--follows none` when the new ticket is unrelated
 - `jaira list --actionable --json` — everything that could be started right now
 - `jaira next --json` — the single next actionable ticket
 - `jaira tags` — the tags this board already uses, with how many open tickets
@@ -65,6 +68,10 @@ Capturing and picking work:
   names both forms, while `jaira list --milestone <name>` shows both.
   `jaira milestone create|set <name> --after <a,b>` places it on the Milestone
   Roadmap, and `jaira milestone set <name> --no-roadmap` takes it off again
+- `jaira epic ls` — the features this board is built out of, each with done X of Y
+  (follow-ups counted); an epic is a description plus a ticket list on its own
+  ref, not a ticket. `jaira epic show <name>` lists its tickets, `jaira epic add
+  <name> <id>...` sorts tickets in, `jaira epic ls --unassigned` lists the rest
 
 Working a ticket:
 

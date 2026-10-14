@@ -226,7 +226,7 @@ func prose(m *Milestone) string {
 	}
 	var kept []string
 	for _, l := range m.lines[start:] {
-		if _, member := parseMember(l); !member && !isConflictNote(l) {
+		if _, member := ParseMember(l); !member && !isConflictNote(l) {
 			kept = append(kept, l)
 		}
 	}
