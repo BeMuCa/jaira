@@ -301,7 +301,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			if err != nil {
 				return wrote, filed, renamed, conflicts, err
 			}
-			if adopted {
+			if adopted && !slices.Contains(wrote, ref.Name) {
 				wrote = append(wrote, ref.Name)
 			}
 			conflicts = append(conflicts, cs...)
@@ -387,7 +387,9 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			filed = append(filed, ref.Name)
 			continue
 		}
-		wrote = append(wrote, ref.Name)
+		if !slices.Contains(wrote, ref.Name) {
+			wrote = append(wrote, ref.Name)
+		}
 	}
 	return wrote, filed, renamed, conflicts, nil
 }
