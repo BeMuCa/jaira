@@ -1,7 +1,6 @@
 ---
 color: 197
 created-at: 2026-09-15T17:26:35Z
-after: []
 ---
 
 # demo-board-dateien
