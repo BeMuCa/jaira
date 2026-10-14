@@ -2,9 +2,11 @@ package ticket
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -560,22 +562,66 @@ func (o Outcome) Filled() bool {
 // Doc exposes the underlying document for mutation.
 func (t *Ticket) Doc() *Doc { return t.doc }
 
+// Clone returns a copy that shares nothing mutable with t: every slice and the
+// document are copied, so a caller that edits the copy cannot reach the
+// original. The header cache hands out clones for that reason.
+func (t *Ticket) Clone() *Ticket {
+	c := *t
+	c.BlockedBy = slices.Clone(t.BlockedBy)
+	c.Commits = slices.Clone(t.Commits)
+	c.Tags = slices.Clone(t.Tags)
+	c.Related = slices.Clone(t.Related)
+	c.DoDItems = slices.Clone(t.DoDItems)
+	c.PlanItems = slices.Clone(t.PlanItems)
+	c.Options = slices.Clone(t.Options)
+	if t.doc != nil {
+		d := *t.doc
+		c.doc = &d
+	}
+	return &c
+}
+
 // Decode projects a parsed document into a Ticket.
 func Decode(d *Doc, path string) (*Ticket, error) {
-	if err := d.Validate(); err != nil {
+	f, err := d.ticketFields()
+	if err != nil {
+		return nil, err
+	}
+	return decodeFields(d, f, path)
+}
+
+// Counts reports how many tickets decodeFields has built and how many ticket
+// frontmatters have been parsed, since the process started. Tests read the
+// difference across an operation to prove it did no work.
+func Counts() (decodes, headerParses int64) {
+	return decodeCount.Load(), headerParseCount.Load()
+}
+
+var decodeCount, headerParseCount atomic.Int64
+
+// ticketFields is Fields for a ticket's frontmatter, counted. Lane files and
+// other YAML go through Fields directly and are not counted.
+func (d *Doc) ticketFields() (*Fields, error) {
+	headerParseCount.Add(1)
+	return d.Fields()
+}
+
+func decodeFields(d *Doc, f *Fields, path string) (*Ticket, error) {
+	decodeCount.Add(1)
+	if err := f.validate(); err != nil {
 		return nil, err
 	}
 	t := &Ticket{Path: path, doc: d, Body: d.Body()}
 
 	str := func(key string) string {
-		v, _, err := d.Scalar(key)
+		v, _, err := f.Scalar(key)
 		if err != nil {
 			return ""
 		}
 		return v
 	}
 	list := func(key string) []string {
-		v, err := d.List(key)
+		v, err := f.List(key)
 		if err != nil {
 			return nil
 		}

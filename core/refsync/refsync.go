@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -69,6 +70,17 @@ type Syncer struct {
 	// wrote a ticket has a reason to send, and jaira list must never wait for
 	// a remote.
 	dirty bool
+
+	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
+	// with the commit hash it was decoded from. A hash is a content address, so
+	// an equal hash needs no read and no decode, and no safety net behind it.
+	extraMu    sync.Mutex
+	extraCache map[string]extraEntry
+}
+
+type extraEntry struct {
+	hash string
+	t    *ticket.Ticket // nil: the ref held something that is not a ticket
 }
 
 // Dirty reports whether this process queued a write. A caller uses it to decide
@@ -1486,7 +1498,7 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
 	}
-	ids, err := y.Repo.List()
+	hashes, err := y.Repo.ListHashes()
 	if err != nil {
 		return nil, err
 	}
@@ -1505,8 +1517,19 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 			filed[id] = true
 		}
 	}
-	wanted := make([]string, 0, len(ids))
-	for _, id := range ids {
+	y.extraMu.Lock()
+	defer y.extraMu.Unlock()
+	if y.extraCache == nil {
+		y.extraCache = map[string]extraEntry{}
+	}
+	for id := range y.extraCache {
+		if _, listed := hashes[id]; !listed {
+			delete(y.extraCache, id)
+		}
+	}
+	var kept, wanted []string
+	// By id: the order List gave, which callers have always seen.
+	for _, id := range slices.Sorted(maps.Keys(hashes)) {
 		if have[id] {
 			continue
 		}
@@ -1516,27 +1539,35 @@ func (y *Syncer) Extra(have map[string]bool) ([]*ticket.Ticket, error) {
 			// which means it left this board deliberately.
 			continue
 		}
+		kept = append(kept, id)
+		if e, ok := y.extraCache[id]; ok && e.hash == hashes[id] {
+			continue
+		}
 		wanted = append(wanted, id)
 	}
 	contents, err := y.Repo.ReadMany(wanted)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*ticket.Ticket, 0, len(contents))
 	for _, id := range wanted {
 		content, ok := contents[id]
 		if !ok {
+			delete(y.extraCache, id)
 			continue
 		}
-		d, err := ticket.ParseDoc(content)
-		if err != nil {
-			continue // a ref whose tree is not a ticket is not this tool's
+		var t *ticket.Ticket
+		if d, err := ticket.ParseDoc(content); err == nil { // a ref whose tree is not a ticket is not this tool's
+			if tk, err := ticket.Decode(d, ""); err == nil {
+				t = tk
+			}
 		}
-		t, err := ticket.Decode(d, "")
-		if err != nil {
-			continue
+		y.extraCache[id] = extraEntry{hash: hashes[id], t: t}
+	}
+	var out []*ticket.Ticket
+	for _, id := range kept {
+		if e, ok := y.extraCache[id]; ok && e.t != nil {
+			out = append(out, e.t.Clone())
 		}
-		out = append(out, t)
 	}
 	return out, nil
 }

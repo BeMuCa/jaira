@@ -280,15 +280,18 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	if err != nil {
 		return nil, fmt.Errorf("lane %s: %w", source, err)
 	}
+	// One parse of the file serves every read below. An unparsable head leaves f
+	// nil, which reads as empty, as each Doc read did on its own.
+	f, _ := d.Fields()
 	str := func(k string) string {
-		v, _, err := d.Scalar(k)
+		v, _, err := f.Scalar(k)
 		if err != nil {
 			return ""
 		}
 		return v
 	}
 	list := func(k string) []string {
-		v, err := d.List(k)
+		v, err := f.List(k)
 		if err != nil {
 			return nil
 		}
@@ -298,7 +301,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	// Distinguishing "absent" from "explicitly false" matters for the defaults
 	// below: a lane that says nothing about evidence must not thereby escape it.
 	boolOr := func(k string, def bool) bool {
-		if !d.Has(k) {
+		if !f.Has(k) {
 			return def
 		}
 		return boolOf(k)
@@ -343,7 +346,7 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 	l.RequiresBlockedReason = boolOf("requires-blocked-reason")
 	l.RequiresCommits = boolOf("requires-commits")
 	l.RequiresOption = strings.TrimSpace(str("requires-option"))
-	l.RejectsTo = rejectsTo(d)
+	l.RejectsTo = rejectsTo(f)
 	l.Context = strings.TrimSpace(str("context"))
 	if l.Context != "" && l.Context != ContextFresh && l.Context != ContextShared {
 		// Fresh is the safe reading of a value nobody can read: a typo then
@@ -399,13 +402,13 @@ func parse(src []byte, source string, builtin bool) (*Lane, error) {
 // Both are kept because the scalar is what is already committed in every
 // catalogue and project lane file, and the file format is the API.
 //
-// Doc.Scalar refuses a sequence and Doc.List refuses a scalar, so asking both
+// Scalar refuses a sequence and List refuses a scalar, so asking both
 // and taking whichever answered is the whole of it.
-func rejectsTo(d *ticket.Doc) []string {
+func rejectsTo(f *ticket.Fields) []string {
 	var out []string
-	items, err := d.List("rejects-to")
+	items, err := f.List("rejects-to")
 	if err != nil || len(items) == 0 {
-		v, _, err := d.Scalar("rejects-to")
+		v, _, err := f.Scalar("rejects-to")
 		if err != nil {
 			return nil
 		}

@@ -255,8 +255,13 @@ type Model struct {
 	// watch carries filesystem events. A watcher is more responsive than the
 	// timer, but the timer stays as a backstop because change notifications are
 	// unreliable on some filesystems, notably Windows drives mounted into WSL2.
-	watch  chan struct{}
+	// Each event names the files that changed, so only those are read again.
+	watch  chan []string
 	closer func()
+
+	// fullAt is when every ticket was last decoded from scratch; see
+	// fullReparseEvery.
+	fullAt time.Time
 
 	// thinEmpty is whether lanes holding no tickets are drawn thin on the
 	// multi-column board. Session-only, reset on every launch: nothing about
@@ -319,6 +324,10 @@ func New(s *ticket.Store) (*Model, error) {
 	// the board files the write and a command with a route sends it.
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
+	// The board lists every 2 seconds, so it is the one reader worth a cache of
+	// decoded tickets; the CLI is one-shot and never asks for it.
+	s.EnableCache()
+	m.fullAt = time.Now()
 	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
@@ -350,6 +359,8 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	s.Actor = m.me
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
+	s.EnableCache()
+	m.fullAt = time.Now()
 	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
@@ -371,10 +382,13 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 
 // reload rebuilds the whole view from disk.
 //
-// A full rescan is used rather than applying incremental changes: at any
-// plausible ticket count it is cheap, and an incremental path would be a second
-// source of truth that has to stay consistent with edits made entirely outside
-// this process (a git pull, another session, a hand edit).
+// Every list is read again, but a ticket file is only decoded again when its
+// modification time or size moved, its ref moved, or the file watcher named it
+// (see Store.EnableCache). Decoding every ticket every 2 seconds was what kept
+// an idle board at 50-80 % of a CPU core; stat-ing the files costs nothing
+// measurable. Reading from disk each time, rather than applying events to the
+// view, keeps edits made entirely outside this process (a git pull, another
+// session, a hand edit) on the same path as our own.
 func (m *Model) reload() error {
 	lanes, err := lane.Load(m.store.Root)
 	if err != nil {
@@ -855,7 +869,8 @@ func (m *Model) Init() tea.Cmd {
 // Failure is not fatal: the periodic rescan already keeps the board correct, so a
 // platform without working notifications is merely less immediate.
 func (m *Model) startWatching() {
-	m.watch = make(chan struct{}, 1)
+	ch := make(chan []string, 1)
+	m.watch = ch
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return
@@ -867,27 +882,36 @@ func (m *Model) startWatching() {
 
 	go func() {
 		// Coalesce bursts: a git pull touches many files at once, and re-rendering
-		// per event would thrash the screen for one logical change.
-		var pending bool
+		// per event would thrash the screen for one logical change. The names
+		// collect meanwhile, so the burst arrives as one list of files.
+		pending := map[string]struct{}{}
 		debounce := time.NewTimer(time.Hour)
 		defer debounce.Stop()
 		for {
 			select {
-			case _, ok := <-w.Events:
+			case ev, ok := <-w.Events:
 				if !ok {
 					return
 				}
-				if !pending {
-					pending = true
+				if len(pending) == 0 {
 					debounce.Reset(200 * time.Millisecond)
 				}
+				pending[ev.Name] = struct{}{}
 			case <-debounce.C:
-				if pending {
-					pending = false
-					select {
-					case m.watch <- struct{}{}:
-					default:
-					}
+				if len(pending) == 0 {
+					continue
+				}
+				paths := make([]string, 0, len(pending))
+				for p := range pending {
+					paths = append(paths, p)
+				}
+				select {
+				case ch <- paths:
+					pending = map[string]struct{}{}
+				default:
+					// The board has not taken the last list yet. Keep these names
+					// and try again, rather than dropping the change.
+					debounce.Reset(200 * time.Millisecond)
 				}
 			case _, ok := <-w.Errors:
 				if !ok {
@@ -905,15 +929,15 @@ func (m *Model) Close() {
 	}
 }
 
-type changeMsg struct{}
+// changeMsg says which files the watcher saw change.
+type changeMsg struct{ paths []string }
 
-func waitForChange(ch chan struct{}) tea.Cmd {
+func waitForChange(ch chan []string) tea.Cmd {
 	if ch == nil {
 		return nil
 	}
 	return func() tea.Msg {
-		<-ch
-		return changeMsg{}
+		return changeMsg{paths: <-ch}
 	}
 }
 
@@ -993,9 +1017,21 @@ func (m *Model) flashLine() string {
 
 type tickMsg time.Time
 
+// fullReparseEvery is how often the tick throws the ticket cache away and
+// decodes everything. The 2-second tick already sees a changed size or
+// modification time and a moved ref, and the watcher names the files it saw
+// change. What neither sees is an edit that keeps a file's size and its
+// timestamp, outside the cache's 2-second racy window (cp -p, tar, rsync -t, a
+// clock that differs on a network drive). That is rare, so this catches it late
+// and cheaply: one decode per ticket, once per interval. It also drops cache
+// entries for paths that no longer exist.
+const fullReparseEvery = 15 * time.Minute
+
 // tick drives a periodic rescan. A file watcher is more responsive, but a timer
 // is the backstop that keeps the board correct on filesystems where change
-// notifications are unreliable — notably Windows drives mounted into WSL2.
+// notifications are unreliable — notably Windows drives mounted into WSL2,
+// where a git pull would otherwise stay invisible. Each tick stats every ticket
+// file and decodes only what changed.
 func tick() tea.Cmd {
 	return tea.Tick(2*time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
@@ -1016,6 +1052,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
+		if time.Since(m.fullAt) >= fullReparseEvery {
+			m.store.ForgetAll()
+			m.fullAt = time.Now()
+		}
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
 		return m, tick()
@@ -1037,6 +1077,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case changeMsg:
+		// Only these files are read again; every other ticket comes from the cache.
+		m.store.Forget(msg.paths...)
 		_ = m.reload()
 		return m, waitForChange(m.watch)
 
