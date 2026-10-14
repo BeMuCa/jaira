@@ -1,7 +1,7 @@
 ---
 id: 01M4VCBB5FCBME5SPR6REBTX6X
 title: "Eine Milestone hat eine feste ID im Dateinamen, und Umbenennen aendert nur ihren Namen"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 goal: "Eine Milestone ist an einer festen 6-stelligen ID erkennbar (Datei <name>-<ID>.md, Ref refs/jaira/milestones/<ID>, after: nennt IDs), sodass Umbenennen ein gewoehnlicher Schreibvorgang auf ihrem einen Ref ist und keine Milestone verschwindet, wenn zwei Leute gleichzeitig umbenennen oder anlegen."
@@ -37,9 +37,48 @@ commits:
   - da67060a4e9f921b57789ba2874cc9e4487815a2
   - b791c61f37f48881ca6eabdb181bbc9098104a6c
   - f2f3c1342d8b973a74d532f2f65866d6cdc8226f
+  - 54fbb0b535d2b53e23d6658c5bc9dc7b504e0484
   - 81eccd1fa9308abff3dcacecdeb5e63a4ef86300
+  - 4623803ca3d2514ee38fd6a0ca40f069c7bf7a35
+  - a93a08f62d5b34eeb68633aa2ad3c01041e33f96
+  - 7e6b000e6f0441db81b5c622b7f4f0082add250c
+  - a5a0bf614ad34fac414923fc9e5729f0c5259298
+  - dd5f9686553e6e28a84c88725f89b8ca98b4c48b
+  - cc21b963cbfc35ffd9f27e8d093be03d9cca7c4c
+  - 6bd37af78f29b2794678dd99e1d689ef7dd341c3
+  - 6cd7f92260008e72ad888ef842cb7378fdcc5b1c
+  - 1741783e561f9546556114fde02e87db318caf14
+  - bb1deb3ce615843ba02ccfd0f79b12a831bc79af
+  - 03f2f16ee3c7bc2ac6b93233b8da63f5260e4f74
+  - ff25fe53acee8ae94b2cb142cd9b8de7f6b6b396
+  - 32e4732d6e00bbba33bd44e54d7db63a79e9b079
+  - 698749bb2e36534991d3189212e40a3720ee5729
+  - 3175363ba9b4690912d40bd82161e3a9d00aa032
+  - 20dc8f58db4f205e85a4f2898c3e6c281823c023
+  - 42e1ee9906a550391e511b500a3050105d61c740
+  - 963cc6f6349437e8afeb90e3a29fb5f533ca4c3b
+  - 974857b91d7adbf087c7215e0568a130148732ec
+  - ca71b0c504be3c53456b15d57f87852cf5f72493
+  - b51884d12da4aa3fade2b108248b9f6e9e96393f
+  - 950d105f840f4fa04494dee0d622840865f137a6
+  - 90a893ccfcffc26a2ccf12a941eafcfb83d3c75c
+  - dbbdaf5e31b536b240372a377241d77f1f162d74
+  - 3d743bc07626aa1f05ed7337be054d7a77213084
+  - 357f59a53d0a02bf50a9b9754d9834f76014fcb1
+  - 1eab8a55bf02d8d756919c1e7bab7e330c99d826
+  - 980d8e7e4aa8817f56033d3ecb0b2296f1baf05c
+  - 89e13fbbd0d076d5ffa7bc530768db97f4f3497d
+  - 27475fa7ae2bc990c943cee276b65ef763fc3b4a
+  - 69b246649bfdc0d6eaff67faf02c024289c22db7
+  - 1f1a6f6096489d2ea16e2df106790c5b6a75a5be
+  - 35b70935f04d59d3d585d3f15701467b4556a37f
+  - abcd1698ed6305e495d656d84bf2bd03603f6800
+  - 2d2c3cd939f5126ddfb41717355dc2f3747a303c
+  - 5044cd7955a91dbc87c5c968e83fc8f0dbfcdd00
+  - 6b727eacf54b1ec45ac6a450dd24bbf7455da314
+  - f09401796ace029d52761cd370b8dfa9d4c6f13e
 created-at: 2026-10-13T19:38:06Z
-updated-at: 2026-10-14T10:20:42Z
+updated-at: 2026-10-14T11:52:54Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3114333
@@ -305,3 +344,5 @@ DEFEKT 1: ein Klon, dessen alte <name>.md beim Update veraltet ist (ein 0.4.x-Ko
 DEFEKT 2: .claude/skills/jaira/SKILL.md:254-255 sagt, ein Name, den zwei tragen, ende immer mit Exit 3; fuer jaira list --milestone <name> falsch (Filter, Exit 0). Wortlaut aus docs/AGENTS.md:174 uebernehmen.
 Kein go test gelaufen (Berks Anweisung); gofmt/vet/build auf einem Export von 5044cd79 sauber.
 - **2026-10-14 10:16 · BeMuCa** — in-progress 12 (6b727eac): an old <name>.md whose bytes are a blob in the old name ref's history (git rev-list --objects, hash-object without -w) is a stale copy: adopts nothing, base untouched, file removed (core/milestone StaleOld, both callers: Migrate and IncomingMilestones adoptOld). Not a timestamp/lease rule: a file mtime says nothing after git checkouts/clones, and the ref history is the one record both sides share. Rule applies to old files only; adoptOldRef is unchanged, so a 0.4.x edit after the move still arrives. Residual: a 0.4.x edit that restores an earlier state exactly (e.g. add t2 then rm t2 in the old build) is taken for stale and not adopted. SKILL.md was the only copy of the false 'exits 3' sentence. No go test run (Berk); stale2/stale3 hand-verified OK, probes in scratchpad/ebtx6x-ip12/.
+- **2026-10-14 10:28 · BeMuCa** — Finale volle Suite (go test ./... -race) auf 6b727eac: alles gruen bis auf 2 Tests in core/refsync (TestAStaleOldFileDoesNotBringARemovedTicketBack, TestAStaleOldFileDoesNotDropATicketAddedBack). Ursache nur im Test-Aufbau: staleCopy schrieb den zweiten Stand des alten Refs mit leerem Lease ('the ticket moved since it was read'). Behoben in f0940179 (zweiter Write unter dem Lease des ersten); danach core/refsync komplett gruen mit -race. Produktionscode unveraendert.
+- **2026-10-14 11:52 · BeMuCa** — Abnahme: Berk am 14.10. im Chat ('L6 ist ein ja'), nach der finalen vollen Suite auf 6b727eac und dem Test-Fix f0940179. Der Agent hat den Move nach done in seinem Auftrag mit --force ausgefuehrt.
