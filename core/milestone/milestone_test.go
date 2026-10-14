@@ -550,3 +550,30 @@ func TestLoadFindsAHandNamedFileAsItStands(t *testing.T) {
 		t.Errorf("Load(Q4) = %v, %v", m, err)
 	}
 }
+
+// Twins are the names the board holds more than once, in file order, each with
+// the labels that tell its milestones apart and the command that renames one.
+func TestTwinsListsEveryNameHeldTwice(t *testing.T) {
+	mk := func(name, id string) *Milestone {
+		m := New(name, 0, time.Now())
+		m.ID = id
+		return m
+	}
+	all := []*Milestone{mk("backend", "23G8MG"), mk("solo", "AAAAAA"), mk("backend", "4K2ZZ9"), mk("ui", "BBBBBB"), mk("ui", "CCCCCC"), mk("backend", "DDDDD1")}
+	got := Twins(all)
+	if len(got) != 2 {
+		t.Fatalf("Twins = %+v, want backend and ui", got)
+	}
+	if got[0].Name != "backend" || strings.Join(got[0].Labels, " ") != "backend-23G8MG backend-4K2ZZ9 backend-DDDDD1" {
+		t.Errorf("first twin = %+v", got[0])
+	}
+	if want := "jaira milestone rename backend-23G8MG <new-name>"; got[0].RenameCommand() != want {
+		t.Errorf("RenameCommand = %q, want %q", got[0].RenameCommand(), want)
+	}
+	if got[1].Name != "ui" {
+		t.Errorf("second twin = %+v", got[1])
+	}
+	if Twins(all[:2]) != nil || Twins(nil) != nil {
+		t.Errorf("no twins must give nil")
+	}
+}

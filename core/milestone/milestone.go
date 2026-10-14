@@ -680,6 +680,40 @@ func Labels(all []*Milestone) map[string]string {
 	return out
 }
 
+// Twin is one name that two or more milestones on the board share: the
+// <name>-<ID> labels that tell them apart, in file order.
+type Twin struct {
+	Name   string
+	Labels []string
+}
+
+// RenameCommand is the command that ends the twinning, renaming the first.
+func (t Twin) RenameCommand() string {
+	return "jaira milestone rename " + t.Labels[0] + " <new-name>"
+}
+
+// Twins is every name these milestones share, in the order the names first
+// appear. nil when no two milestones are called the same — the one rule every
+// warning about twins reads, so the CLI and the board cannot disagree.
+func Twins(all []*Milestone) []Twin {
+	labels := Labels(all)
+	var out []Twin
+	at := map[string]int{}
+	for _, m := range all {
+		if labels[m.ID] == m.Name {
+			continue
+		}
+		i, ok := at[m.Name]
+		if !ok {
+			i = len(out)
+			at[m.Name] = i
+			out = append(out, Twin{Name: m.Name})
+		}
+		out[i].Labels = append(out[i].Labels, labels[m.ID])
+	}
+	return out
+}
+
 // Index answers, for one ticket id, which milestones hold it — the direction
 // every reader needs and the file does not give. Multiple membership is
 // allowed: a ticket carried over from one round into the next is in both files
