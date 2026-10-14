@@ -277,6 +277,9 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		return nil, nil, nil, nil, err
 	}
 	renamed = map[string]string{}
+	// ID keys first: an old name ref's edit is adopted into the ID file in the
+	// same fetch that writes it, whatever the name sorts like.
+	sort.SliceStable(keys, func(i, j int) bool { return milestone.IsID(keys[i]) && !milestone.IsID(keys[j]) })
 	for _, key := range keys {
 		file, content, sha, err := y.Repo.ReadMilestone(key)
 		if err != nil {

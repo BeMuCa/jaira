@@ -237,23 +237,10 @@ func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string
 		}
 		return false, nil, nil
 	}
-	entries, err := os.ReadDir(Dir(root))
-	if err != nil {
-		return false, nil, err
-	}
-	var file string
-	for _, e := range entries {
-		if b, ok := strings.CutSuffix(e.Name(), ".md"); ok && !e.IsDir() {
-			if _, got, idNamed := FileIdentity(b); idNamed && got == id {
-				file = e.Name()
-				break
-			}
-		}
-	}
-	if file == "" {
+	path := idFilePath(root, id, "")
+	if path == "" {
 		return false, nil, nil
 	}
-	path := filepath.Join(Dir(root), file)
 	cur, err := os.ReadFile(path)
 	if err != nil {
 		return false, nil, err
@@ -273,7 +260,7 @@ func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string
 		return false, conflicts, err
 	}
 	_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip})
-	if err := rec.RecordMilestone(id, file, merged); err != nil {
+	if err := rec.RecordMilestone(id, filepath.Base(path), merged); err != nil {
 		return true, conflicts, &RecordError{Name: name, Err: err}
 	}
 	return true, conflicts, nil

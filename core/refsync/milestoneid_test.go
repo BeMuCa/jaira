@@ -382,3 +382,31 @@ func TestARefusedMovingWriteKeepsTheRenameMadeAfterTheMove(t *testing.T) {
 		}
 	}
 }
+
+// A clone with no milestones directory yet gets an old name ref that sorts
+// before its ID ref ("0-alpha" < "<ID>"), carrying an edit an older build made
+// after the move: one fetch brings the ID file and merges the edit, and the
+// missing directory is not an error.
+func TestAnOldNameRefThatSortsFirstIsAdoptedIntoAnIDFileThatIsNotThereYet(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	id := milestone.LegacyID("0-alpha")
+	const tk = "01M2GGKMFB1XXK7V8AFW0YGWX1"
+	putRef(t, ada, id, "0-alpha-"+id+".md", body)
+	putRef(t, ada, "0-alpha", "0-alpha.md", body+"\n- "+tk+"\n")
+	if err := os.RemoveAll(milestone.Dir(grace.store.Root)); err != nil {
+		t.Fatal(err)
+	}
+	if err := grace.syncer.Repo.Fetch(); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := grace.syncer.IncomingMilestones(grace.store.Root); err != nil {
+		t.Fatalf("incoming: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(milestone.Dir(grace.store.Root), "0-alpha-"+id+".md"))
+	if err != nil {
+		t.Fatalf("the ID file did not arrive: %v", err)
+	}
+	if !strings.Contains(string(got), tk) {
+		t.Errorf("the old edit is not in the ID file:\n%s", got)
+	}
+}
