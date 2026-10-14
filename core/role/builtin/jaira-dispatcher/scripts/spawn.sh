@@ -278,7 +278,7 @@ fi
 if [ -n "$chat_dir" ]; then
   printf '%s\n' "$prompt" > "$chat_file"
   if [ "$on" = windows ]; then chat_file="$chat_file_win"; fi
-  prompt="Lies die Datei $chat_file ganz und tu, was darin steht."
+  prompt="Lies die Datei \"$chat_file\" ganz und tu, was darin steht."
 fi
 "$herdr" pane send-text "$pane" "$prompt" >/dev/null
 sleep 1

@@ -625,10 +625,20 @@ describe('waiting for you', () => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await Promise.all([ui.press({ key: 'discuss-K7P2QX' }), ui.press({ key: 'discuss-K7P2QX' })])
+    // A person's double click: the second press a moment after the first
+    // has long returned.
+    await ui.press({ key: 'discuss-K7P2QX' })
+    await w.clock.advance(300)
+    await ui.press({ key: 'discuss-K7P2QX' })
     expect(w.submitted).toHaveLength(1)
-    await Promise.all([ui.press({ key: 'explain-MG677R' }), ui.press({ key: 'explain-MG677R' })])
+    await ui.press({ key: 'explain-MG677R' })
+    await w.clock.advance(300)
+    await ui.press({ key: 'explain-MG677R' })
     expect(w.submitted).toHaveLength(2)
+    // Pressed again after the lock, it is asked again.
+    await w.clock.advance(20_000)
+    await ui.press({ key: 'explain-MG677R' })
+    expect(w.submitted).toHaveLength(3)
   })
 
   test('with Herdr but no spawn.sh, Explain says spawn.sh is missing', async ($, on) => {

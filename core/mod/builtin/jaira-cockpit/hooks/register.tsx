@@ -504,8 +504,11 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
 
 // A press on Accept, Give back, Explain or Discuss: the row's buttons lock, drawn dim,
 // until the action has done its part or BUSY_MS has passed; a press on a
-// locked row does nothing, so a slow answer is not asked for twice.
-async function once($: EngineInterface, id: string, action: () => Promise<void>): Promise<void> {
+// locked row does nothing, so a slow answer is not asked for twice. An action
+// that answers 'hold' is done at once but keeps the row locked to BUSY_MS: a
+// request sent to this session has no end to wait for, and a double click
+// would send it twice.
+async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>): Promise<void> {
   const at = await $.clock.now()
   let took = false
   await update($, busyAtom, busy => {
@@ -519,10 +522,11 @@ async function once($: EngineInterface, id: string, action: () => Promise<void>)
     return rest
   })
   $.clock.after(BUSY_MS, () => void free())
+  let held = false
   try {
-    await action()
+    held = (await action()) === 'hold'
   } finally {
-    await free()
+    if (!held) await free()
   }
 }
 
@@ -561,14 +565,14 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 // Without Herdr this session is asked instead: Explain by a subagent, which
 // writes the same note a tab would; Discuss here, since a subagent cannot
 // talk with a person.
-async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void> {
+async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
   const dir = await ticketDir($, board, id)
   if ((await herdr($)) === undefined) {
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
     void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
-    return
+    return 'hold'
   }
   const script = await spawnScript($)
   if (script === undefined) return fail($, what, t.noSpawn)

@@ -705,7 +705,8 @@ func spawnOn(bash, uname, spawn string, args ...string) *exec.Cmd {
 }
 
 // What a chat tab is typed: one line pointing at the file its request is in.
-const chatLead, chatTail = "Lies die Datei ", " ganz und tu, was darin steht."
+// The path is quoted: a %TEMP% with a space in it is one path, not two words.
+const chatLead, chatTail = `Lies die Datei "`, `" ganz und tu, was darin steht.`
 
 // chatRequest reads the request a chat tab was pointed at, and fails the test
 // when the line typed is not such a pointer.
