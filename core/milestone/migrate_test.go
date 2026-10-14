@@ -93,11 +93,39 @@ func TestMigrateRemovesMarksKeepsNewerTargetsAndSkipsExistingRefs(t *testing.T) 
 		t.Error("the newer target was overwritten")
 	}
 	// "ref" has its ref and was not queued again. "both" had an old file next
-	// to its target and no base anywhere - no migration commit, nothing recorded
-	// here: its ID file was never moved from that old file, so there is nothing
-	// to adopt and nothing is written.
-	if len(rec.names) != 0 {
-		t.Errorf("recorded %v: nothing was to be written again", rec.names)
+	// to its target and no base anywhere (no migration commit, nothing recorded
+	// here): merged against an empty base, the target's color wins, the old one
+	// is told in a comment, and that note is the one write.
+	if len(rec.names) != 1 || rec.names[0] != LegacyID("both") {
+		t.Errorf("recorded %v: only the target that took a note is written again", rec.names)
+	}
+	if b, _ := os.ReadFile(filepath.Join(Dir(root), "both-"+LegacyID("both")+".md")); !strings.Contains(string(b), "color 45") && !strings.Contains(string(b), "color too") {
+		t.Errorf("the old value was dropped without a word:\n%s", b)
+	}
+}
+
+// An ID file with no base anywhere (an ID ref with no migration commit, no
+// base recorded here) and an old file an older build wrote later: the old
+// file's edit is adopted, whole, never dropped with the old file.
+func TestMigrateAdoptsAnOldEditWhenNoBaseExists(t *testing.T) {
+	root := t.TempDir()
+	id := LegacyID("alpha")
+	writeFile(t, root, "alpha-"+id+".md", adoptBase)
+	writeOld(t, root, "alpha", adoptBase+"- "+idB+"\n")
+	rec := &fakeRec{}
+	res, err := Migrate(root, rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(Dir(root), "alpha-"+id+".md"))
+	if !strings.Contains(string(b), idB) {
+		t.Errorf("the older build's ticket was dropped:\n%s", b)
+	}
+	if len(res.Adopted) != 1 || len(rec.names) != 1 {
+		t.Errorf("adopted %v, recorded %v", res.Adopted, rec.names)
+	}
+	if got := dirNames(t, root); got != "alpha-"+id+".md" {
+		t.Errorf("directory %s", got)
 	}
 }
 

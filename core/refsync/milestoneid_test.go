@@ -347,3 +347,38 @@ func TestARefusedMilestoneMergeWaitsForTheLockAndTakesAWriteQueuedMeanwhile(t *t
 		t.Errorf("queued %+v (%v), want the newer write merged into the winner", e, ok)
 	}
 }
+
+// A moving write (no lease, it carries the migration) that is refused keeps a
+// rename made after the move: the migration's file is the name the write was
+// based on, so the rename is one-sided and is taken, not dropped for the
+// winner's name.
+func TestARefusedMovingWriteKeepsTheRenameMadeAfterTheMove(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	const id, old, renamed = "K3F9QZ", "alpha-K3F9QZ.md", "beta-K3F9QZ.md"
+	if err := grace.syncer.RecordMigration(id, old, []byte(body), ""); err != nil {
+		t.Fatal(err)
+	}
+	edited := "---\ncolor: 45\ngoal: mine\n---\n"
+	if err := grace.syncer.RecordMilestone(id, renamed, []byte(edited)); err != nil {
+		t.Fatal(err)
+	}
+	putDisk(t, grace, renamed, edited)
+	putRef(t, ada, id, old, "---\ncolor: 46\n---\n")
+
+	reports, err := grace.syncer.Flush()
+	if err != nil || len(reports) != 1 || !reports[0].Merged {
+		t.Fatalf("reports %+v, %v", reports, err)
+	}
+	if got := diskFiles(t, grace); got != renamed {
+		t.Errorf("files %s, want only %s", got, renamed)
+	}
+	e, ok := grace.syncer.Box.PendingMilestone(id)
+	if !ok || e.File != renamed || !strings.Contains(e.Content, "color: 46") || !strings.Contains(e.Content, "goal: mine") {
+		t.Errorf("queued %+v (%v), want the rename and both edits", e, ok)
+	}
+	for _, c := range reports[0].Conflicts {
+		if c.Field == "name" {
+			t.Errorf("a one-sided rename was reported as a clash: %+v", c)
+		}
+	}
+}

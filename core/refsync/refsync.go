@@ -709,6 +709,11 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	} else if b, ok := milestone.BaseFor(y.Store.Root, y, e.ID); ok {
 		base = []byte(b.Content)
 	}
+	if e.Lease == "" && e.Migration != nil {
+		// A moving write has no lease, but it carries the name the file had
+		// when it moved: the name a later rename is measured against.
+		baseFile = e.Migration.File
+	}
 	all, err := milestone.LoadAll(y.Store.Root)
 	if err != nil {
 		return false, nil
@@ -753,7 +758,8 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 // the name this clone wrote, winner the name on the ref now. A rename made on
 // one side only is taken; one made on both sides differently keeps the winner's
 // name, and the local name comes back as clash to be reported; when the base
-// name is not known the winner's is kept.
+// name is not known the winner's is kept. A moving write's base name is the
+// file its migration commit carries.
 func mergedFile(base, local, winner string) (file, clash string) {
 	name := func(f string) string {
 		n, _, _ := milestone.FileIdentity(strings.TrimSuffix(f, ".md"))

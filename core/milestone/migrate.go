@@ -221,16 +221,14 @@ func idFilePath(root, id, fallback string) string {
 // AdoptOld merges what an older build wrote to its old file or old name ref
 // (old, the whole file; tip, the ref's SHA when it came from one) into the ID
 // file of the milestone with this ID, and queues the ref write. Without a
-// base (BaseFor) there is nothing to adopt. It does nothing when the old side
+// base (BaseFor) the old side is merged against an empty one. It does nothing when the old side
 // is what the base says, or when no ID file lies here. The base then becomes the old side as it is now, so
 // the same edit is merged, and reported, once.
 func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string) (adopted bool, conflicts []Conflict, err error) {
-	base, ok := BaseFor(root, rec, id)
-	if !ok {
-		// Neither recorded here nor a migration commit on the ID ref: the
-		// milestone was created with its ID, there is no old side to adopt.
-		return false, nil, nil
-	}
+	// Neither recorded here nor a migration commit on the ID ref: an empty
+	// base, so everything the old side has is merged in (the union). An old
+	// edit is adopted, never dropped.
+	base, _ := BaseFor(root, rec, id)
 	migrated := MigrateContent(old)
 	if base.Content == string(migrated) {
 		if tip != base.OldSHA {
