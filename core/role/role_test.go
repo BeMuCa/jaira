@@ -597,7 +597,10 @@ esac
 	for _, lane := range []string{"explain", "discuss"} {
 		start, typedLine := run(lane, "sonnet")
 		prompt := chatRequest(t, typedLine)
-		dir := filepath.Dir(strings.TrimSuffix(strings.TrimPrefix(typedLine, chatLead), chatTail))
+		// As spawn.sh spells it, slashes kept: filepath.Dir would turn them
+		// on Windows, where Git Bash prints /tmp/... too.
+		file := strings.TrimSuffix(strings.TrimPrefix(typedLine, chatLead), chatTail)
+		dir := file[:max(strings.LastIndex(file, "/"), 0)]
 		if !strings.HasSuffix(start, "&& claude --model 'sonnet' --add-dir '"+dir+"'") {
 			t.Errorf("%s started %q, want claude --model 'sonnet' --add-dir '%s'", lane, start, dir)
 		}
@@ -717,6 +720,20 @@ func chatRequest(t *testing.T, typed string) string {
 	file, ok2 := strings.CutSuffix(file, chatTail)
 	if !ok || !ok2 {
 		t.Fatalf("a chat tab must be typed %q<file>%q, got %q", chatLead, chatTail, typed)
+	}
+	// On Windows the script runs under Git Bash, whose mktemp prints an MSYS
+	// path (/tmp/...) that Go cannot open; Git Bash's cygpath spells it as
+	// Windows does.
+	if runtime.GOOS == "windows" && strings.HasPrefix(file, "/") {
+		bash, err := exec.LookPath("bash")
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err := exec.Command(bash, "-c", `cygpath -w "$1"`, "bash", file).Output()
+		if err != nil {
+			t.Fatalf("cygpath -w %s: %v", file, err)
+		}
+		file = strings.TrimSpace(string(out))
 	}
 	body, err := os.ReadFile(file)
 	if err != nil {
