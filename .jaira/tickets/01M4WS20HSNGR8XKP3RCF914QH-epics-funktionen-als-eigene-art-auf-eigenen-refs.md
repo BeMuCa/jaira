@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-14T08:39:27Z
-updated-at: 2026-10-14T13:11:59Z
+updated-at: 2026-10-14T13:13:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81098
 claimed-at: 2026-10-14T08:46:03Z
@@ -31,6 +31,8 @@ mode: ""
 outcome-what: "Epics: jaira epic create/add/rm/ls/show auf refs/jaira/epics/<name> (nur Ref, keine Datei), Fortschritt X von Y inkl. follows/parent-Folge-Tickets, ls --unassigned; jaira create setzt follows aus dem Ticket-Handle im Branch-Namen, --follows none schaltet ab"
 outcome-why: "Ein Teamlead sieht auf ~100 Tickets nicht, wie weit eine Funktion ist; Folge-Tickets ohne --follows fielen aus jeder Gruppierung"
 outcome-resolves: F914QH
+review-summary: "internal/cli/refs.go:289 refSubject and :305 rejectedAdvice know only tickets and milestones: an unsent or failed epic write is reported as ticket '<last six chars of the name>' ('feature' -> 'eature') with ticket advice — add the KindEpic case (key 'epic', the name; advice: the merge was not sent, it stays queued and goes out with the next command)"
+round: 2
 ---
 
 # Epics: Funktionen als eigene Art auf eigenen Refs, nicht als Ticket
@@ -77,3 +79,4 @@ outcome-resolves: F914QH
 - **2026-10-14 08:49 · Alexander Sacharov** — decision (Alex 14.10., über jaira-34, überstimmt die Worker-Entscheidung zum Milestone-Muster): Epics liegen NUR auf Refs. Keine Arbeitsdatei .jaira/epics/<name>.md auf der Platte; gelesen und geschrieben wird refs/jaira/epics/<name> direkt. Lease/Outbox/Fetch wiederverwenden, wo es passt.
 - **2026-10-14 08:57 · Alexander Sacharov** — Interface für RFTQKP steht (an jaira-rftqkp-b4 geschickt): epic.Refs = *refsync.Syncer; Load/LoadAll/Create/Assign/Count/Unassigned. Verlorenes Rennen eines Epics: Box.Flush verwirft den Eintrag, deshalb trägt outbox.Result jetzt Entry; refsync.rebaseEpic merged dreiseitig (Basis = Lease-Commit, der lokal liegt) und schreibt sofort neu, bis 3 Runden, sonst zurück in die Queue. Mutation geprüft: ohne rebaseEpic schlägt TestTwoClonesSortingIntoOneEpicBothLand fehl.
 - **2026-10-14 08:57 · Alexander Sacharov** — Pause (conversational): DoD 1-4 fertig, nicht committet; Diff und Commit-Zeile an jaira-34, warte auf Freigabe. Danach: Plan 6 (follows aus Branch-Handle in internal/cli/tickets.go um Zeile 192, '--follows none'), Plan 7 (docs/COMMANDS.md, core/release/notes/F914QH.md). jaira-rftqkp-b4 wartet auf die Commit-SHA von core/epic.
+- **2026-10-14 13:12 · Alexander Sacharov** — critique: (1) internal/cli/refs.go refSubject/rejectedAdvice fehlen KindEpic — Epic-Meldungen nennen sonst den Namen per ticket.Handle verstümmelt; fixen. Bewusst stehen gelassen: (a) core/epic dupliziert frontEnd/Bytes/Add/Remove aus core/milestone (~50 Zeilen) statt einen gemeinsamen Zeilen-Datei-Typ zu ziehen — Milestone trägt status/color und Logbook-Ablage, ein gemeinsamer Typ koppelte zwei Formate, die getrennt wachsen sollen; ParseMember ist geteilt, damit die Mitgliedszeile nicht auseinanderläuft. (b) Covered liest über link.Index.All das ganze Logbook — nur in epic-Befehlen, nie beim Board-Rendern; nötig, weil abgelegte Folge-Tickets mitzählen.
