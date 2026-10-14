@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -138,6 +137,36 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 	}
 }
 
+// followsNone is the --follows value that turns the branch default off.
+const followsNone = "none"
+
+// branchTicket is the ticket the checked-out branch is named after, and the
+// branch: work runs on one branch per ticket (feat/f914qh), so a ticket filed
+// there without --follows was found while working that one. Agents filed such
+// tickets without the link and they dropped out of every epic; reading it off
+// the branch makes the link the default rather than a discipline.
+//
+// A segment of the branch name counts when it resolves to exactly one ticket
+// on the board by its handle. On master, or on a branch naming no ticket,
+// nothing is set.
+func branchTicket(s *ticket.Store) (id, branch string) {
+	branch = (&gitrepo.Repo{Dir: s.Root}).Branch()
+	if branch == "" {
+		return "", ""
+	}
+	for _, seg := range strings.FieldsFunc(branch, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9')
+	}) {
+		if len(seg) != 6 { // a handle's length; anything else is a word
+			continue
+		}
+		if t, err := s.Load(seg); err == nil && ticket.Handle(t.ID) == strings.ToUpper(seg) {
+			return t.ID, branch
+		}
+	}
+	return "", ""
+}
+
 func newCreateCmd() *cobra.Command {
 	var (
 		title, goalV, contextV, assignee, laneID, tier, body, follows, parent string
@@ -193,8 +222,12 @@ already know it is yours; --assignee wins over it.`,
 			// reference is worse than none, because it looks like a trail exists.
 			// Load accepts an unambiguous prefix, so a handle works here, and it
 			// is normalised to the full id so the link matches on both sides.
-			followsID := ""
-			if strings.TrimSpace(follows) != "" {
+			followsID, fromBranch := "", ""
+			switch strings.TrimSpace(follows) {
+			case followsNone:
+			case "":
+				followsID, fromBranch = branchTicket(s)
+			default:
 				src, err := s.Load(follows)
 				if err != nil {
 					return err
@@ -339,6 +372,9 @@ already know it is yours; --assignee wins over it.`,
 			if g.jsonOut {
 				payload := ticketJSON(t, lanes)
 				payload["on-ref-only"] = onRefOnly
+				if fromBranch != "" {
+					payload["follows_from_branch"] = fromBranch
+				}
 				// Only when --lane went past something, so an ordinary
 				// create's payload is unchanged.
 				if len(skipped) > 0 {
@@ -359,6 +395,10 @@ already know it is yours; --assignee wins over it.`,
 				fmt.Fprintln(cmd.OutOrStdout(), n)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Created %s  %s\n", ticket.Handle(t.ID), t.Title)
+			if fromBranch != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Follows %s, from branch %s; --follows %s leaves it off\n",
+					ticket.Handle(followsID), fromBranch, followsNone)
+			}
 			// Creating straight into a later lane is a legitimate shortcut,
 			// so this says what it cost rather than refusing it: without it a
 			// ticket sat in Implementing with a placeholder for a plan and
@@ -417,7 +457,7 @@ already know it is yours; --assignee wins over it.`,
 	f.StringVar(&body, "body", "", "markdown body")
 	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
 	f.StringArrayVar(&tags, "tag", nil, "topic tag; repeat for several. Run 'jaira tags' first and reuse an existing name")
-	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from")
+	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from (default: the ticket the branch is named after; 'none' for no link)")
 	f.StringVar(&parent, "parent", "", "id of the ticket this one is a part of")
 	f.StringSliceVar(&related, "related", nil, "ticket ids this one merely has to do with")
 	f.BoolVar(&ready, "ready", false, "unused; readiness is derived from the gate")
@@ -763,30 +803,18 @@ many there are as notes_total.`,
 	return cmd
 }
 
-// briefNote is where one progress note starts: its dated, bold heading.
-// Every line up to the next one belongs to it, whatever it starts with — a
-// continuation line reading "#79 ..." or "- a list" is still the same note.
-var briefNote = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
-
 // briefNotes is how many of the newest notes a brief carries.
 const briefNotes = 4
 
 // ticketBrief is the part of a ticket the cockpit's explain and discuss chats
 // are handed in their prompt instead of reading all of it: every note and every
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
-// python3, which a Windows machine may not have (issue #79), and it splits as
-// that did: at a dated note heading only, and the fields keep its order.
+// python3, which a Windows machine may not have (issue #79); notes split where
+// ticket.Notes splits them, at a dated heading, and the fields keep its order.
 func ticketBrief(j map[string]any, body string) any {
 	notes := []string{}
-	if _, progress, ok := strings.Cut(body, "\n"+noteHeading+"\n"); ok {
-		starts := briefNote.FindAllStringIndex(progress, -1)
-		for i, at := range starts {
-			end := len(progress)
-			if i+1 < len(starts) {
-				end = starts[i+1][0]
-			}
-			notes = append(notes, strings.TrimSpace(progress[at[0]:end]))
-		}
+	for _, n := range ticket.Notes(body) {
+		notes = append(notes, n.Raw)
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {

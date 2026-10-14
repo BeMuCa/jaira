@@ -342,10 +342,14 @@ So every write also puts the ticket on a ref of its own, and a milestone —
 the file that names which tickets belong to one round of work — travels the
 same way, for the same reason: it has to reach everybody without waiting for a
 branch to be merged.
+A milestone's ref is named after its ID, a random six characters, and the
+name is only the file name in its tree: renaming one is an ordinary write on
+its one ref, so two people renaming and creating at once leave two milestones
+and never none.
 
 ```
 refs/jaira/tickets/<id>         one ref per ticket, its tree carries <id>.md
-refs/jaira/milestones/<name>    one ref per milestone, its tree carries <name>.md
+refs/jaira/milestones/<ID>      one ref per milestone, its tree carries <name>-<ID>.md
 ```
 
 Those refs belong to no branch. The default refspec does not fetch them, so a
@@ -463,7 +467,7 @@ repository on a shared drive without any of them knowing what jaira is.
 | see what exists | `ls-remote origin 'refs/jaira/*'` — the whole board, tickets and milestones, in one round trip |
 | collect it | `fetch --prune origin '+refs/jaira/*:refs/jaira/*'` — both namespaces in one refspec, or you get cards whose milestone file nobody has |
 | read a ticket without a checkout | `show refs/jaira/tickets/<id>:<id>.md` |
-| read a milestone without a checkout | `show refs/jaira/milestones/<name>:<name>.md` |
+| read a milestone without a checkout | `ls-tree --name-only refs/jaira/milestones/<ID>`, then `show refs/jaira/milestones/<ID>:<name>-<ID>.md` |
 | a ticket's history | `log refs/jaira/tickets/<id>` — every move it ever made |
 | has it landed | `rev-list -1 <branch> -- .jaira/logbook/*/<id>* .jaira/archive/<id>*` |
 | the backup branch | the same three plumbing commands, one tree with every ticket in it |
@@ -843,21 +847,33 @@ and `--since 0` lists everything.
 ```
 jaira                      open the home screen: your boards, and what each needs
 jaira board                open the board here directly
+jaira web                  the page in the browser: sort tickets into epics, read a ticket and its notes
 jaira init                 prepare a repository
 jaira update               re-apply setup after upgrading
 jaira self upgrade         replace the jaira binary with the latest release
 jaira create <title>       create a ticket
 jaira list                 list tickets
 jaira show <id>            show one ticket
+jaira links <id>           every ticket connected to this one, wherever it lives now
 jaira set <id> k=v...      set fields
+jaira tags                 the tags this board uses; read it before you tag anything
+jaira tag <id> <name>...   add tags to a ticket
+jaira milestone ls         the board's milestones; read it before you create one
+jaira milestone <cmd>      create, add, rm, set (--after: the Milestone Roadmap), rename (the name only)
+jaira epic ls              the features this board is built of, done X of Y; --unassigned the rest
+jaira epic <cmd>           create, add, rm, show — an epic lives on its own ref, not in a file
 jaira dod <id> <n>         mark a checklist item --doing / --done / --todo / --superseded
+jaira note <id> <text>     record what you worked out, so a later session can pick it up
 jaira validate             check every ticket on the board for damage
 jaira logbook <id>         file a finished ticket under today, commits stamped
+jaira logbook <milestone>  file a milestone once every ticket in it is finished
 jaira logbook              list what left the board in the last logbook-days (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
+jaira restore <file>       put an archived or logged ticket, or a filed milestone, back
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket
+jaira resume               work left in progress, with everything recorded about it
 jaira fetch                fetch the tickets travelling on their own git refs
 jaira pull <id>            take a ticket over and put it on your disk
 jaira release <id>         hand a ticket back so somebody else can take it
@@ -871,8 +887,13 @@ jaira tasks                emit the board as a task list
 jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
+jaira whoami               the identity jaira acts as, and the state of this board
 jaira share                publish the board (--undo to make it private)
 jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod (--agent copilot for Copilot)
+jaira hook print           print a Claude Code Stop-hook snippet that refuses to end a session with agentic lanes unworked
+jaira json get <path>      print one field of the JSON on stdin, for shell scripts that cannot count on jq or python3
+jaira completion <shell>   print the completion script for bash, fish, powershell or zsh
+jaira help <command>       the full help of one command, the same as <command> --help
 ```
 
 Full reference: **[docs/COMMANDS.md](docs/COMMANDS.md)**.
@@ -894,18 +915,21 @@ supply, so an agent can fix and retry without parsing prose.
 ## Keys
 
 ```
-h l ← →   lane            enter   open ticket      n   new ticket
+← →       lane            enter   open ticket      n   new ticket
 j k ↓ ↑   card            /       filter (key:value narrows to one field;
                                   spaces combine, a comma means or)
 g G       first / last    m       move ticket      ?   help
 v         compact view    x       archive          r   reload
 z         hide empty lanes        q   quit
 u         only some people's tickets (space ticks, enter applies)
+M         only some milestones' tickets (space ticks, enter applies)
+l         every ticket linked to the selected one (l or esc closes it)
+L         Milestone Roadmap: bubbles filled by done/total, arrows for what comes after what
 S         settings: lanes, the default board, days of logbook shown
 
 Compact view (v): the whole flow as steps with arrows, agents counted per step,
 an arrow lit when work just moved. ad/←→ pick a step, enter opens it full width,
-1-9 switch project.
+1-9 switch project, q/esc leave it as q leaves the board.
 
 In an opened step: jk ticket, gG first/last, hl next/previous lane (stays in
 this view), enter open ticket, q/esc/v back to the compact view.
@@ -916,12 +940,25 @@ E   edit body and checklists in $EDITOR          f   follow-up from the review
 y   copy the full ticket id                      n   follow-up beside this one
 b   open the ticket this one is blocked by       m   move it
 X   delete its file (type the handle back)       tab other pane, in the split
-jk  next / previous ticket
+jk  next / previous ticket                       l   every ticket linked to it
 ↓↑ scroll (ctrl+d/u pages) a ticket taller than the terminal
+
+On the Milestone Roadmap (L):
+←↑↓→  nearest bubble or [+]       enter  open a bubble; on a [+]: n new, c connect
+e     name, goal, predecessors     c      next colour
+x     take it off the roadmap     L esc  back to the board
+In an open milestone: ↑↓ ticket, enter opens it, b the board filtered to it, esc back.
 
 On the board list (p, and the launcher):
 x   remove a board — choose what goes, the cursor starts on No
 ```
+
+`q` goes one page back, on every page, to the same place `esc` goes. The board
+is the top page: there `q` goes back to the launcher, or quits jaira when it
+was started without one (`jaira board`), and `esc` clears the filter. The
+compact view is the board seen another way, so `q` and `esc` both leave it the
+way `q` leaves the board. In a text field `q` is a letter, and `esc` is the way
+back.
 
 Every screen is clamped to the terminal: a line wider than the window is cut
 rather than wrapped, because a wrapped line pushes everything under it down and

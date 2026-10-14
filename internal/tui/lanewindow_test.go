@@ -223,7 +223,7 @@ func TestHintBarNamesTheToggleInBothStates(t *testing.T) {
 // renderHelp names z at any width.
 func TestHelpNamesZ(t *testing.T) {
 	for _, w := range []int{40, 100, 200} {
-		m := newTestModel(t, w, 40)
+		m := newTestModel(t, w, 50)
 		m.mode = modeHelp
 		out := stripANSI(m.render())
 		if !strings.Contains(out, "z") {

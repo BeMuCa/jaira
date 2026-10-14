@@ -201,6 +201,60 @@ hand-editable. Under `--json`, `jaira tag` carries that signal as `tags_new` and
 `tags_reused`. If a name comes back new and you expected it to exist, you have
 just invented a synonym: check `jaira tags` and use the existing name.
 
+## Milestones: read the list before you start one
+
+A milestone is the set of tickets that belong to one round of work, kept in its
+own hand-editable file, `.jaira/milestones/<name>-<ID>.md`, one ticket id per line.
+The six characters after the last dash are its ID: it stays when the name changes.
+
+**Before you create one, run `jaira milestone ls`.**
+
+```bash
+jaira milestone ls --json    # id, name, colour, ticket count, goal, place on the roadmap
+```
+
+Then put tickets into the milestone already there for that round of work. Never
+start a second one under another name: "q4" and "quarter-four" on one board are
+two names for one round, and each filters to half of it — the same drift
+`jaira tags` exists to prevent. `jaira milestone create` on a name that exists
+is refused (exit 3) and points at `jaira milestone add`.
+
+```bash
+jaira milestone create <name> [id...] --goal "..."   # start one, optionally with tickets
+jaira milestone add <milestone> <id>...              # put tickets in, all in one write
+jaira milestone rm <milestone> <id>...               # take them out; the milestone stays
+jaira milestone rename <old> <new>                   # the name only; ID, ref and after: stay
+jaira list --milestone <name> --json                 # every ticket in it
+```
+
+Names are lowercase-kebab like tags, because the name is part of the file name:
+"Round One" is filed as `round-one`, and you are told so. Rename with
+`jaira milestone rename`; it changes the file name on the same ref and nothing
+else, because `after:` lines name the ID.
+
+The Milestone Roadmap (`L` on the board) shows which round comes after which.
+A milestone is on it only once it has a place:
+
+```bash
+jaira milestone create <name> --after a,b   # under a and b; the first decides the swimlane
+jaira milestone create <name> --after ""    # the top of a swimlane of its own
+jaira milestone set <name> --after a        # place one that exists, or move it
+jaira milestone set <name> --no-roadmap     # take it off the roadmap again
+```
+
+`--no-roadmap` keeps the milestone's tickets, and what came after it now comes
+after what came before it. An unknown predecessor exits 5, and an arrow that
+would close a loop exits 3 with the loop named.
+
+A milestone leaves the board only on command — emptying it with `rm` leaves it
+standing. `jaira logbook <name>` files it once every ticket in it has reached
+the terminal lane or left the board, and `jaira restore <file>` (the file name
+the logbook shows, `<name>-<ID>.md`) brings it back.
+
+A `<milestone>` is its name, its ID or `<name>-<ID>`. A command that writes
+refuses a name two milestones carry (exit 3) and names both forms; run it again
+with one of them. `jaira list --milestone <name>` is a filter and shows both.
+
 ## Before you stop, and when you start
 
 A session that ends abruptly — a limit, a crash — leaves nothing behind except

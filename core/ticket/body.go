@@ -3,6 +3,7 @@ package ticket
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -109,4 +110,55 @@ func AppendNote(d *Doc, text string, now time.Time, who string) error {
 	}
 	d.SetBody(body)
 	return nil
+}
+
+// Note is one progress note as AppendNote wrote it.
+type Note struct {
+	At     time.Time
+	Author string
+	// Text is everything after the heading, continuation lines included,
+	// verbatim: it is markdown a person wrote.
+	Text string
+	// Raw is the whole entry, heading included, as it stands in the body.
+	Raw string
+}
+
+// noteStart is where one note starts: its dated, bold heading. Every line up
+// to the next one belongs to it, whatever it starts with — a continuation
+// line reading "#79 ..." or "- a list" is still the same note.
+var noteStart = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
+
+// noteHead is the heading AppendNote writes: "- **<date> <time> · <who>** — ".
+var noteHead = regexp.MustCompile(`^- \*\*(\d{4}-\d\d-\d\d \d\d:\d\d) · (.*?)\*\* — `)
+
+// Notes reads the progress notes back out of a body, oldest first, the order
+// AppendNote adds them in. Text before the first note is not a note, and the
+// section ends at the next heading. A dated entry written by hand in another
+// shape still counts as a note; it just has no author, and its Text is Raw.
+func Notes(body string) []Note {
+	idx := strings.Index(body, NoteHeading)
+	if idx < 0 {
+		return nil
+	}
+	section := body[idx+len(NoteHeading):]
+	if next := strings.Index(section, "\n## "); next >= 0 {
+		section = section[:next]
+	}
+	starts := noteStart.FindAllStringIndex(section, -1)
+	out := make([]Note, 0, len(starts))
+	for i, at := range starts {
+		end := len(section)
+		if i+1 < len(starts) {
+			end = starts[i+1][0]
+		}
+		n := Note{Raw: strings.TrimSpace(section[at[0]:end])}
+		n.Text = n.Raw
+		if m := noteHead.FindStringSubmatchIndex(n.Raw); m != nil {
+			n.At, _ = time.Parse("2006-01-02 15:04", n.Raw[m[2]:m[3]])
+			n.Author = n.Raw[m[4]:m[5]]
+			n.Text = strings.TrimSpace(n.Raw[m[1]:])
+		}
+		out = append(out, n)
+	}
+	return out
 }

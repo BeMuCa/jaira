@@ -76,7 +76,7 @@ func command(title, body string) *exec.Cmd {
 		if path, err := exec.LookPath("notify-send"); err == nil {
 			return exec.Command(path, "-a", "jaira", title, body)
 		}
-		if isWSL() {
+		if IsWSL() {
 			if path, err := exec.LookPath("powershell.exe"); err == nil {
 				return exec.Command(path, "-NoProfile", "-Command",
 					"[reflection.assembly]::LoadWithPartialName('System.Windows.Forms')>$null;"+
@@ -89,7 +89,9 @@ func command(title, body string) *exec.Cmd {
 	return nil
 }
 
-func isWSL() bool {
+// IsWSL reports whether this linux is WSL, where the Windows side is reachable
+// for what the Linux side lacks: a notifier, a browser.
+func IsWSL() bool {
 	if os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSL_INTEROP") != "" {
 		return true
 	}

@@ -25,6 +25,30 @@ jobs:
           fetch-depth: 0
       - run: scripts/check-ticket-commits.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
 
+  # The page 'jaira web' serves is committed as a build (core/web/ui/dist):
+  # go:embed reads the disk and 'go install' has no Node. This rebuilds it from
+  # the Svelte sources and fails when the committed build is not what they make.
+  web-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: core/web/ui/package-lock.json
+      - run: npm ci
+        working-directory: core/web/ui
+      - run: npm run build
+        working-directory: core/web/ui
+      - name: The committed build matches the sources
+        run: |
+          git add -N core/web/ui/dist
+          git diff --exit-code -- core/web/ui/dist || {
+            echo "::error::core/web/ui/dist is stale: run 'npm ci && npm run build' in core/web/ui and commit dist"
+            exit 1
+          }
+
   test:
     # Tested on all three platforms because the store touches the filesystem and
     # shells out to git, both of which differ across them. WSL2's file-watch
