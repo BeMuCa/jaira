@@ -12,7 +12,6 @@ import (
 
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
-	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -40,7 +39,7 @@ const (
 // bubble it belongs to, so it survives a reload the way the bubble does.
 type layerTarget struct {
 	kind layerKind
-	name string // the bubble, or the bubble a [+] belongs to; "" for onFar
+	id   string // the bubble's milestone ID, or the bubble a [+] belongs to; "" for onFar
 }
 
 // layerStage is what the layer is doing on top of the picture.
@@ -73,10 +72,10 @@ type layerView struct {
 
 	// The milestone detail: whose it is, its ticket rows, the cursor and the
 	// first row on screen.
-	detailName string
-	rows       []memberRow
-	rowIdx     int
-	rowTop     int
+	detailID string
+	rows     []memberRow
+	rowIdx   int
+	rowTop   int
 
 	err string // why the last choice was refused, shown where it was made
 }
@@ -84,7 +83,8 @@ type layerView struct {
 // layerForm is the form behind a new milestone (name, goal) and behind e
 // (name, goal, predecessors).
 type layerForm struct {
-	edit   string // the milestone e is editing; "" for a new one
+	edit   string // the name of the milestone e is editing; "" for a new one
+	editID string // its ID
 	labels []string
 	vals   []string
 	field  int
@@ -119,7 +119,7 @@ func (m *Model) refreshLayer() {
 		return
 	}
 	if l.stage == stageDetail {
-		ms := m.milestoneNamed(l.detailName)
+		ms := m.milestoneByID(l.detailID)
 		if ms == nil {
 			// Taken off the board elsewhere: there is nothing left to list.
 			l.stage = stageLayer
@@ -130,9 +130,24 @@ func (m *Model) refreshLayer() {
 	}
 }
 
-func (m *Model) milestoneNamed(name string) *milestone.Milestone {
+// milestoneLabel is what a milestone is called on screen.
+func (m *Model) milestoneLabel(id string) string {
+	if label, ok := milestone.Labels(m.milestones)[id]; ok {
+		return label
+	}
+	return id
+}
+
+// isTwin is whether another milestone on the board has this one's name, which
+// is exactly when its label carries the ID.
+func (m *Model) isTwin(id string) bool {
+	ms := m.milestoneByID(id)
+	return ms != nil && m.milestoneLabel(id) != ms.Name
+}
+
+func (m *Model) milestoneByID(id string) *milestone.Milestone {
 	for _, ms := range m.milestones {
-		if ms.Name == name {
+		if ms.ID == id {
 			return ms
 		}
 	}
@@ -193,17 +208,17 @@ func (m *Model) keyLayer(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		l.err = ""
 		if l.sel.kind == onBubble {
-			m.openMilestoneDetail(l.sel.name)
+			m.openMilestoneDetail(l.sel.id)
 		} else {
 			l.stage = stageChoose
 		}
 	case "e":
 		if l.sel.kind == onBubble {
-			m.startLayerEdit(l.sel.name)
+			m.startLayerEdit(l.sel.id)
 		}
 	case "c":
 		if l.sel.kind == onBubble {
-			m.nextMilestoneColour(l.sel.name)
+			m.nextMilestoneColour(l.sel.id)
 		}
 	case "x":
 		if l.sel.kind == onBubble {
@@ -220,11 +235,11 @@ func (m *Model) keyLayer(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m *Model) placement(t layerTarget) []string {
 	switch t.kind {
 	case onRight:
-		if ms := m.milestoneNamed(t.name); ms != nil && len(ms.After) > 0 {
-			return []string{ms.After[0]}
+		if ms := m.milestoneByID(t.id); ms != nil && len(ms.After) > 0 {
+			return []string{milestone.SpellAsID(m.milestones, ms.After[0])}
 		}
 	case onBelow:
-		return []string{t.name}
+		return []string{t.id}
 	}
 	return []string{}
 }
@@ -233,7 +248,7 @@ func (m *Model) placement(t layerTarget) []string {
 // the dialogs behind it.
 func (m *Model) placementText(t layerTarget) string {
 	if after := m.placement(t); len(after) > 0 {
-		return "after " + after[0]
+		return "after " + m.milestoneLabel(after[0])
 	}
 	return "a swimlane of its own"
 }
@@ -257,19 +272,33 @@ func (m *Model) keyLayerChoose(s string) {
 
 // startLayerEdit opens the form behind e on a milestone: its name, its goal
 // and its predecessors as they stand.
-func (m *Model) startLayerEdit(name string) {
-	ms := m.milestoneNamed(name)
+func (m *Model) startLayerEdit(id string) {
+	ms := m.milestoneByID(id)
 	if ms == nil {
 		return
 	}
 	l := m.layer
 	l.form = layerForm{
-		edit:   name,
+		edit:   ms.Name,
+		editID: ms.ID,
 		labels: []string{"name", "goal", "after"},
-		vals:   []string{name, ms.Goal, strings.Join(ms.After, ", ")},
+		vals:   []string{ms.Name, ms.Goal, strings.Join(m.afterLabels(ms.After), ", ")},
 	}
 	l.err = ""
 	l.stage = stageForm
+}
+
+// afterLabels is a milestone's predecessors as the form shows them: by name,
+// whatever after: holds.
+func (m *Model) afterLabels(tokens []string) []string {
+	out := make([]string, len(tokens))
+	for i, tok := range tokens {
+		out[i] = tok
+		if id := milestone.Resolve(m.milestones, tok); id != "" {
+			out[i] = m.milestoneLabel(id)
+		}
+	}
+	return out
 }
 
 func (m *Model) keyLayerForm(s, text string) {
@@ -296,7 +325,7 @@ func (m *Model) keyLayerForm(s, text string) {
 // formReturn is where a closed form goes back to: e can be pressed in the
 // detail as well as on the bubble.
 func (m *Model) formReturn() layerStage {
-	if m.layer.detailName != "" && m.layer.form.edit == m.layer.detailName {
+	if m.layer.detailID != "" && m.layer.form.editID == m.layer.detailID {
 		return stageDetail
 	}
 	return stageLayer
@@ -321,11 +350,12 @@ func (m *Model) submitLayerForm() {
 		name = n
 	}
 	if f.edit == "" {
-		if err := m.createMilestone(name, f.vals[1], m.placement(l.sel)); err != nil {
+		created, err := m.createMilestone(name, f.vals[1], m.placement(l.sel))
+		if err != nil {
 			l.err = err.Error()
 			return
 		}
-		m.layerWritten(name, stageLayer)
+		m.layerWritten(created.ID, stageLayer)
 		return
 	}
 
@@ -339,28 +369,32 @@ func (m *Model) submitLayerForm() {
 	}
 	all, err := milestone.LoadAll(m.store.Root)
 	if err == nil {
-		err = milestone.CheckAfter(all, f.edit, preds)
+		_, err = milestone.ResolveRefs(all, f.editID, preds)
 	}
 	if err != nil {
 		l.err = err.Error()
 		return
 	}
+	id := f.editID
 	if name != f.edit {
-		if err := m.renameMilestone(f.edit, name); err != nil {
+		renamed, err := m.renameMilestone(f.editID, name)
+		if err != nil {
 			l.err = err.Error()
 			return
 		}
+		id = renamed.ID
 	}
-	_, err = milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
+	_, err = milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
 		all, err := milestone.LoadAll(m.store.Root)
 		if err != nil {
 			return err
 		}
-		if err := milestone.CheckAfter(all, name, preds); err != nil {
+		ids, err := milestone.ResolveRefs(all, id, preds)
+		if err != nil {
 			return err
 		}
 		ms.SetGoal(f.vals[1])
-		ms.SetAfter(preds)
+		ms.SetAfter(ids)
 		return nil
 	})
 	if err := m.recordOnly(err); err != nil {
@@ -374,75 +408,57 @@ func (m *Model) submitLayerForm() {
 		}
 		return
 	}
-	m.layerWritten(name, m.formReturn())
+	m.layerWritten(id, m.formReturn())
 }
 
 // renameMilestone renames through milestone.Rename, the path 'jaira milestone
 // rename' takes, refusing a new name that is taken the way createMilestone
 // refuses it. From then on the open form and detail are about the new name,
 // and a board narrowed to the old name stays narrowed to the milestone.
-func (m *Model) renameMilestone(from, to string) error {
-	_, err := milestone.Rename(m.store.Root, m.store, m.refSync, from, to, m.nameTaken)
+func (m *Model) renameMilestone(fromID, to string) (*milestone.Milestone, error) {
+	from := m.milestoneLabel(fromID)
+	renamed, err := milestone.Rename(m.store.Root, m.store, m.refSync, fromID, to)
 	if err := m.recordOnly(err); err != nil {
-		return err
+		return nil, err
 	}
 	l := m.layer
-	if l.detailName == from {
-		l.detailName = to
+	if l.detailID == fromID {
+		l.detailID = renamed.ID
 	}
-	if l.sel.name == from {
-		l.sel.name = to
+	if l.sel.id == fromID {
+		l.sel.id = renamed.ID
 	}
-	l.form.edit = to
+	l.form.edit, l.form.editID = to, renamed.ID
 	_, names := splitTerm(m.filter, "milestone")
 	if i := slices.Index(names, from); i >= 0 {
 		names[i] = to
 		m.setFilterTerm("milestone", names...)
 	}
-	return nil
+	return renamed, nil
 }
 
 // createMilestone writes a new milestone placed after the given names, as
 // 'jaira milestone create --goal --after' does: under the lock, with a colour
-// no other milestone uses, refusing a name that is taken — on the board, or
-// filed.
-func (m *Model) createMilestone(name, goal string, after []string) error {
+// no other milestone uses, refusing a name a milestone on the board has.
+func (m *Model) createMilestone(name, goal string, after []string) (*milestone.Milestone, error) {
 	root := m.store.Root
-	_, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
+	ms, err := milestone.Create(root, m.store, m.refSync, func(existing []*milestone.Milestone) (*milestone.Milestone, error) {
 		var ee *milestone.ExistsError
 		if err := milestone.CheckFree(root, name); errors.As(err, &ee) {
 			return nil, fmt.Errorf("milestone %q already exists — c on a [+] connects it", name)
 		} else if err != nil {
 			return nil, err
 		}
-		if err := m.nameTaken(name); err != nil {
-			return nil, err
-		}
-		if err := milestone.CheckAfter(existing, name, after); err != nil {
-			return nil, err
-		}
 		ms := milestone.New(name, milestone.AssignColour(existing, name), time.Now())
+		ids, err := milestone.ResolveRefs(existing, ms.ID, after)
+		if err != nil {
+			return nil, err
+		}
 		ms.SetGoal(goal)
-		ms.SetAfter(after)
+		ms.SetAfter(ids)
 		return ms, nil
 	})
-	return m.recordOnly(err)
-}
-
-// nameTaken refuses a name the milestone directory does not show as taken: a
-// filing in this tree's logbook or on a ref somebody else marked, or a
-// teammate's milestone on its ref that no fetch has written here yet.
-func (m *Model) nameTaken(name string) error {
-	switch where, at := m.refSync.MilestoneFiled(m.store, name); at {
-	case refsync.MilestoneFiledHere:
-		return fmt.Errorf("milestone %q has been filed into the logbook (%s) — 'jaira restore %s.md' brings it back", name, where, name)
-	case refsync.MilestoneFiledOnRef:
-		return fmt.Errorf("milestone %q has been filed in another clone; 'jaira restore %s.md', run there, brings it back", name, name)
-	}
-	if m.refSync.MilestoneOnRef(name) {
-		return fmt.Errorf("milestone %q exists on the remote but not here yet — 'jaira fetch' brings it", name)
-	}
-	return nil
+	return ms, m.recordOnly(err)
 }
 
 // recordOnly drops the one error a write may end with although it happened:
@@ -459,7 +475,7 @@ func (m *Model) recordOnly(err error) error {
 
 // layerWritten reloads after a write and puts the cursor on the milestone it
 // was about, so the change is the thing in front of the reader.
-func (m *Model) layerWritten(name string, back layerStage) {
+func (m *Model) layerWritten(id string, back layerStage) {
 	l := m.layer
 	l.err = ""
 	l.stage = back
@@ -468,7 +484,7 @@ func (m *Model) layerWritten(name string, back layerStage) {
 		return
 	}
 	if back == stageLayer {
-		l.sel = layerTarget{kind: onBubble, name: name}
+		l.sel = layerTarget{kind: onBubble, id: id}
 	}
 }
 
@@ -481,23 +497,24 @@ func (m *Model) connectable(t layerTarget) []string {
 	after := m.placement(t)
 	var out []string
 	for _, ms := range m.milestones {
-		if ms.Name == t.name {
+		if ms.ID == t.id {
 			continue
 		}
 		if len(after) == 0 {
 			if !ms.Placed {
-				out = append(out, ms.Name)
+				out = append(out, ms.ID)
 			}
 			continue
 		}
 		p := after[0]
-		if ms.Placed && slices.Contains(ms.After, p) {
+		pid := milestone.Resolve(m.milestones, p)
+		if ms.Placed && slices.ContainsFunc(ms.After, func(tok string) bool { return milestone.Resolve(m.milestones, tok) == pid }) {
 			continue
 		}
-		if milestone.CheckAfter(m.milestones, ms.Name, []string{p}) != nil {
+		if milestone.CheckAfter(m.milestones, ms.ID, []string{p}) != nil {
 			continue
 		}
-		out = append(out, ms.Name)
+		out = append(out, ms.ID)
 	}
 	return out
 }
@@ -527,19 +544,20 @@ func (m *Model) keyLayerPick(s string) {
 // not in the layer yet is placed there; one that is keeps its place and only
 // gains the arrow, because moving a bubble somebody arranged is not what
 // "connect" says.
-func (m *Model) connectMilestone(name string, after []string) {
+func (m *Model) connectMilestone(id string, after []string) {
 	l := m.layer
-	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
+	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
 		all, err := milestone.LoadAll(m.store.Root)
 		if err != nil {
 			return err
 		}
-		next := after
-		if ms.Placed {
-			next = append(slices.Clone(ms.After), after...)
-		}
-		if err := milestone.CheckAfter(all, name, after); err != nil {
+		ids, err := milestone.ResolveRefs(all, id, after)
+		if err != nil {
 			return err
+		}
+		next := ids
+		if ms.Placed {
+			next = append(slices.Clone(ms.After), ids...)
 		}
 		ms.SetAfter(next)
 		return nil
@@ -548,20 +566,20 @@ func (m *Model) connectMilestone(name string, after []string) {
 		l.err = err.Error()
 		return
 	}
-	m.layerWritten(name, stageLayer)
+	m.layerWritten(id, stageLayer)
 }
 
 // nextMilestoneColour gives the milestone the next colour of the palette that
 // no other milestone wears, so two neighbours that came out alike can be told
 // apart in a keypress or two. Once every colour is taken it is simply the next.
-func (m *Model) nextMilestoneColour(name string) {
+func (m *Model) nextMilestoneColour(id string) {
 	used := map[int]bool{}
 	for _, other := range m.milestones {
-		if other.Name != name {
+		if other.ID != id {
 			used[other.Colour] = true
 		}
 	}
-	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
+	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
 		n := len(milestone.Palette)
 		i := slices.Index(milestone.Palette, ms.Colour)
 		next := milestone.Palette[(i+1)%n]
@@ -578,14 +596,14 @@ func (m *Model) nextMilestoneColour(name string) {
 		m.notify(err.Error(), true)
 		return
 	}
-	m.layerWritten(name, stageLayer)
+	m.layerWritten(id, stageLayer)
 }
 
 func (m *Model) keyLayerRemove(s string) {
 	l := m.layer
 	switch s {
 	case "y":
-		m.removeFromLayer(l.sel.name)
+		m.removeFromLayer(l.sel.id)
 	case "n", "esc", "q":
 		l.stage = stageLayer
 	}
@@ -596,10 +614,15 @@ func (m *Model) keyLayerRemove(s string) {
 // same lock, exactly as 'jaira milestone set --no-roadmap' does: what came after
 // it now comes after what came before it. The cursor goes to the first of
 // those, so the change is the thing in front of the reader.
-func (m *Model) removeFromLayer(name string) {
+func (m *Model) removeFromLayer(id string) {
 	m.layer.stage = stageLayer
-	moved := slices.Sorted(maps.Keys(milestone.ReattachSuccessors(m.milestones, name)))
-	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, name, func(ms *milestone.Milestone) error {
+	moved := slices.SortedFunc(maps.Keys(milestone.ReattachSuccessors(m.milestones, id)), func(a, b string) int {
+		if c := strings.Compare(m.milestoneLabel(a), m.milestoneLabel(b)); c != 0 {
+			return c
+		}
+		return strings.Compare(a, b)
+	})
+	_, err := milestone.Edit(m.store.Root, m.store, m.refSync, id, func(ms *milestone.Milestone) error {
 		ms.Unplace()
 		return nil
 	})
@@ -616,13 +639,13 @@ func (m *Model) removeFromLayer(name string) {
 
 // openMilestoneDetail shows one milestone: its goal, where it sits, and its
 // tickets.
-func (m *Model) openMilestoneDetail(name string) {
-	ms := m.milestoneNamed(name)
+func (m *Model) openMilestoneDetail(id string) {
+	ms := m.milestoneByID(id)
 	if ms == nil {
 		return
 	}
 	l := m.layer
-	l.detailName = name
+	l.detailID = id
 	l.rows = m.memberRows(ms)
 	l.rowIdx, l.rowTop = 0, 0
 	l.stage = stageDetail
@@ -661,7 +684,7 @@ func (m *Model) keyMilestoneDetail(s string) {
 	switch s {
 	case "esc", "q":
 		l.stage = stageLayer
-		l.detailName = ""
+		l.detailID = ""
 	case "down", "j":
 		if l.rowIdx < n-1 {
 			l.rowIdx++
@@ -671,11 +694,11 @@ func (m *Model) keyMilestoneDetail(s string) {
 			l.rowIdx--
 		}
 	case "e":
-		m.startLayerEdit(l.detailName)
+		m.startLayerEdit(l.detailID)
 	case "b":
 		// The board narrowed to this round of work, through the one filter
 		// M and / write as well, so esc on the board takes it off again.
-		name := l.detailName
+		name := m.milestoneLabel(l.detailID)
 		m.closeLayer()
 		m.setFilterTerm("milestone", name)
 	case "enter":

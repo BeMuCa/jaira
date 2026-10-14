@@ -247,7 +247,10 @@ type Model struct {
 	// what the person just did, this one to what happened while they were
 	// doing it.
 	flashMsg string
-	flashAt  time.Time
+	// twinned is the twins the board last flashed about, so a reload that
+	// finds the same ones does not say it again.
+	twinned string
+	flashAt time.Time
 
 	// watch carries filesystem events. A watcher is more responsive than the
 	// timer, but the timer stays as a backstop because change notifications are
@@ -404,6 +407,7 @@ func (m *Model) reload() error {
 	}
 	m.milestones = all
 	m.mstones = milestone.Build(all)
+	m.flashTwins()
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
@@ -981,6 +985,28 @@ func (m *Model) readyToFile() int {
 // flash puts a line on the board without taking the screen.
 func (m *Model) flash(msg string) { m.flashMsg, m.flashAt = msg, time.Now() }
 
+// flashTwins says, once per set of twins, that two milestones share a name and
+// how to end it. The same twins found again on the next reload stay quiet.
+func (m *Model) flashTwins() {
+	twins := milestone.Twins(m.milestones)
+	var key []string
+	for _, t := range twins {
+		key = append(key, strings.Join(t.Labels, ","))
+	}
+	if k := strings.Join(key, ";"); k != m.twinned {
+		// A fetch's news is up: the twins wait for the next reload rather
+		// than replace it.
+		if len(twins) > 0 && m.flashLine() != "" {
+			return
+		}
+		m.twinned = k
+		if len(twins) > 0 {
+			t := twins[0]
+			m.flash(fmt.Sprintf("⚠ milestones named %q: rename one with %s", t.Name, t.RenameCommand()))
+		}
+	}
+}
+
 // flashLine returns what to show, or "" once it has been up long enough.
 func (m *Model) flashLine() string {
 	if m.flashMsg == "" || time.Since(m.flashAt) > flashFor {
@@ -1045,6 +1071,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
 		_ = m.reload()
 		return m, nil
@@ -1724,11 +1751,13 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 	return slots
 }
 
-// milestoneNames is the milestone picker's rows as the names they show.
+// milestoneNames is the milestone picker's rows as the labels they show: the
+// name, and <name>-<ID> where two milestones share one.
 func (m *Model) milestoneNames() []string {
+	labels := milestone.Labels(m.milestones)
 	out := make([]string, len(m.milestones))
 	for i, ms := range m.milestones {
-		out[i] = ms.Name
+		out[i] = labels[ms.ID]
 	}
 	return out
 }

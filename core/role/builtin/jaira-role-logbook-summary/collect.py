@@ -23,6 +23,7 @@ import datetime as dt
 import json
 import re
 import subprocess
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -31,7 +32,7 @@ SUBJECT = re.compile(r"^\w+\(([^)]*)\)!?:\s*(.*)$")
 
 
 def run(args, cwd):
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=False).stdout
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False).stdout
 
 
 def last_week(today):
@@ -178,4 +179,8 @@ def main():
 
 
 if __name__ == "__main__":
+    # A Windows console is cp1251 or cp1252, and an umlaut in a title would
+    # stop the script there (issue #79). The script sets it, not its caller.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     main()

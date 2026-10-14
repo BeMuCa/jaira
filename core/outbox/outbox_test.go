@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -43,12 +45,12 @@ func (f *fakeSender) Delete(id, lease string) error {
 	return nil
 }
 
-func (f *fakeSender) WriteMilestone(name string, content []byte, lease string) (string, error) {
+func (f *fakeSender) WriteMilestone(name, file string, content []byte, lease string) (string, error) {
 	f.seen[name] = lease
 	if err := f.err[name]; err != nil {
 		return "", err
 	}
-	f.wrote = append(f.wrote, "milestone/"+name+":"+string(content))
+	f.wrote = append(f.wrote, "milestone/"+name+"/"+file+":"+string(content))
 	return "sha-" + name, nil
 }
 
@@ -358,4 +360,60 @@ func TestQueueSupersedesTheEntryAnOlderBuildLeft(t *testing.T) {
 	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
 		t.Errorf("flat entry still on disk at %s", legacy)
 	}
+}
+
+// A milestone entry names the file its ref carries; one an older build queued
+// has none, and goes out under <key>.md as it always did.
+func TestAMilestoneIsSentUnderItsFileName(t *testing.T) {
+	b := box(t)
+	if err := b.QueueMilestone("ABC123", "backend-ABC123.md", outbox.OpWrite, []byte("new"), "", "ada"); err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	old := filepath.Join(b.Dir, "milestones", "q4.json")
+	if err := os.MkdirAll(filepath.Dir(old), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(old, []byte(`{"id":"q4","op":"write","ref":"refs/jaira/milestones/q4","kind":"milestones","lease":"","content":"old"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := newFake()
+	if _, err := b.Flush(f); err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	sort.Strings(f.wrote)
+	want := []string{"milestone/ABC123/backend-ABC123.md:new", "milestone/q4/q4.md:old"}
+	if !slices.Equal(f.wrote, want) {
+		t.Errorf("sent %v, want %v", f.wrote, want)
+	}
+}
+
+// An older build lists the flat level and the tickets/ and milestones/
+// folders and nothing else, and files what it finds under <key>.md. A write
+// this build queued under a milestone's ID must be in none of them, or that
+// build flushes it as a ghost milestone named after the ID.
+func TestAnIDKeyedMilestoneIsOutOfSightOfAnOlderBuild(t *testing.T) {
+	b := box(t)
+	if err := b.QueueMilestone("ABC123", "backend-ABC123.md", outbox.OpWrite, []byte("new"), "", "ada"); err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	for _, dir := range []string{b.Dir, filepath.Join(b.Dir, "tickets"), filepath.Join(b.Dir, "milestones")} {
+		des, _ := os.ReadDir(dir)
+		for _, de := range des {
+			if !de.IsDir() {
+				t.Errorf("older build would list %s", filepath.Join(dir, de.Name()))
+			}
+		}
+	}
+	if e := mustList(t, b); len(e) != 1 || e[0].ID != "ABC123" {
+		t.Errorf("this build lists %v, want the one ABC123 entry", e)
+	}
+}
+
+func mustList(t *testing.T, b *outbox.Box) []outbox.Entry {
+	t.Helper()
+	l, err := b.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return l
 }

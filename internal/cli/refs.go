@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/hook"
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/outbox"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -252,12 +254,18 @@ func flushRefs() {
 		return
 	}
 	for _, r := range reports {
-		key, name := refSubject(r.Kind, r.ID)
+		key, name := refSubject(r.Kind, r.ID, r.File)
 		switch r.Outcome {
 		case outbox.Sent:
 			// The normal case says nothing. A line on every write would be
 			// noise on the one path every command takes.
 		case outbox.Rejected:
+			if r.Merged {
+				warnRef(map[string]any{key: r.ID, "outcome": "merged", "conflicts": r.Conflicts},
+					"jaira: %s: someone else wrote it first; your edit was merged into their version and goes out with the next send%s",
+					name, mergedClashes(r.Conflicts))
+				continue
+			}
 			line := "someone else wrote it first"
 			if r.Winner != nil {
 				line = r.Winner.Describe()
@@ -281,15 +289,32 @@ func flushRefs() {
 //
 // The two kinds are not interchangeable. A ticket is addressed by a handle,
 // the last six characters of its id, which is what every other jaira message
-// prints and what the user types back. A milestone is addressed by its name,
-// and a name put through ticket.Handle comes out as its last six characters —
-// 'next-release' printed as 'elease', a word that names nothing and that no
-// command accepts.
-func refSubject(kind outbox.Kind, id string) (key, name string) {
+// prints and what the user types back. A milestone is known by its name, which
+// the file it travels under carries (<name>-<ID>.md); a name put through
+// ticket.Handle comes out as its last six characters — 'next-release' printed
+// as 'elease', a word that names nothing and that no command accepts. An entry
+// an older build queued has no file and was keyed by its name.
+func refSubject(kind outbox.Kind, id, file string) (key, name string) {
 	if kind == outbox.KindMilestone {
-		return "milestone", id
+		if file == "" {
+			return "milestone", id
+		}
+		return "milestone", milestone.FromBytes(file, nil).Name
 	}
 	return "ticket", ticket.Handle(id)
+}
+
+// mergedClashes names the fields both sides changed in a merged milestone
+// write: the winner's value was kept, and the other is in the file as a comment.
+func mergedClashes(cs []milestone.Conflict) string {
+	if len(cs) == 0 {
+		return ""
+	}
+	var fields []string
+	for _, c := range cs {
+		fields = append(fields, c.Field)
+	}
+	return "\n  both changed " + strings.Join(fields, ", ") + ": theirs is kept, yours is written into the file as a comment"
 }
 
 // rejectedAdvice says what a lost race leaves behind, which differs by kind
@@ -297,13 +322,14 @@ func refSubject(kind outbox.Kind, id string) (key, name string) {
 //
 // A ticket's local file is left alone and both sides end up on the board, so
 // the conflict is visible and resolvable there. A milestone has no card and no
-// lane: refsync.IncomingMilestones writes every ref whose content differs
-// straight over the local file, so the next fetch replaces this edit with the
-// accepted one and says nothing about it. Telling a milestone writer their
-// file is unchanged would be describing a ticket to them.
+// lane: its refused write stays queued and refsync merges it into the version
+// that won, which flushRefs reports as merged. This advice is for one that was
+// not merged this time: it is merged at the next send, or nothing of it was
+// left to send. Telling a milestone writer their file is unchanged would be
+// describing a ticket to them.
 func rejectedAdvice(kind outbox.Kind) string {
 	if kind == outbox.KindMilestone {
-		return "the remote's version wins; the next fetch replaces your file with it, so make this edit again on the fetched one"
+		return "the remote's version wins; your edit stays queued and is merged into it at the next send, unless there is nothing of it left to send"
 	}
 	return "your file is unchanged; the board shows both sides once the ref is fetched"
 }

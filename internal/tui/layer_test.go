@@ -13,13 +13,21 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
+// lid is the ID a milestone made with the old file format gets from its name.
+func lid(name string) string { return milestone.LegacyID(name) }
+
 // mkPlaced writes a milestone placed in the layer after the given names (none:
 // a swimlane top), created at the given minute so lanes and children come out
 // in a known order.
 func mkPlaced(t *testing.T, m *Model, name string, minute int, after []string, ids ...string) {
 	t.Helper()
 	ms := milestone.New(name, milestone.Palette[minute%len(milestone.Palette)], nowish().Add(time.Duration(minute)*time.Minute))
-	ms.SetAfter(after)
+	ms.ID = lid(name)
+	tokens := make([]string, len(after))
+	for i, n := range after {
+		tokens[i] = lid(n) // a predecessor named by its ID, as jaira writes it
+	}
+	ms.SetAfter(tokens)
 	for _, id := range ids {
 		ms.Add(id)
 	}
@@ -118,7 +126,7 @@ func TestLayerDrawsBubblesArrowsAndPlus(t *testing.T) {
 	}
 
 	m.key(keyDown) // onto docs: a child without children of its own
-	if m.layer.sel != (layerTarget{onBubble, "docs"}) {
+	if m.layer.sel != (layerTarget{onBubble, lid("docs")}) {
 		t.Fatalf("↓ from api must land on docs, got %+v", m.layer.sel)
 	}
 	if n := strings.Count(stripANSI(m.render()), "[+]"); n != 3 {
@@ -218,7 +226,7 @@ func TestUpOnTheTopRowStays(t *testing.T) {
 	reloadOrFail(t, m)
 	m.key(key("L"))
 	m.key(keyUp)
-	if m.layer.sel != (layerTarget{onBubble, "a"}) {
+	if m.layer.sel != (layerTarget{onBubble, lid("a")}) {
 		t.Errorf("↑ on the top row must stay put, got %+v", m.layer.sel)
 	}
 }
@@ -249,6 +257,7 @@ func TestBubbleFillColourCodes(t *testing.T) {
 		m := newTestModel(t, 120, 40)
 		m.trueColor = c.trueColor
 		ms := milestone.New("salmon", 209, nowish())
+		ms.ID = lid("salmon")
 		ms.SetAfter(nil)
 		ms.Add(titled(t, m, "Add session test harness"))
 		ms.Add(titled(t, m, "Fix session cookie dropped on 302"))
@@ -286,15 +295,15 @@ func TestLayerNavigationIsGeometric(t *testing.T) {
 		k    tea.KeyPressMsg
 		want layerTarget
 	}{
-		{keyDown, layerTarget{onBubble, "b"}},
-		{keyRight, layerTarget{onRight, "b"}},
-		{keyRight, layerTarget{onBubble, "c"}},
-		{keyDown, layerTarget{onBelow, "c"}},
-		{keyUp, layerTarget{onBubble, "c"}},
-		{keyUp, layerTarget{onBubble, "a"}},
-		{keyRight, layerTarget{onBubble, "d"}},
+		{keyDown, layerTarget{onBubble, lid("b")}},
+		{keyRight, layerTarget{onRight, lid("b")}},
+		{keyRight, layerTarget{onBubble, lid("c")}},
+		{keyDown, layerTarget{onBelow, lid("c")}},
+		{keyUp, layerTarget{onBubble, lid("c")}},
+		{keyUp, layerTarget{onBubble, lid("a")}},
+		{keyRight, layerTarget{onBubble, lid("d")}},
 		{keyRight, layerTarget{onFar, ""}},
-		{keyLeft, layerTarget{onBubble, "d"}},
+		{keyLeft, layerTarget{onBubble, lid("d")}},
 	}
 	for i, s := range steps {
 		m.key(s.k)
@@ -351,7 +360,7 @@ func TestNewMilestoneFromTheFarPlus(t *testing.T) {
 	if !ms.HasColour() {
 		t.Error("a new milestone is given a colour, as the CLI gives one")
 	}
-	if m.mode != modeLayer || m.layer.stage != stageLayer || m.layer.sel != (layerTarget{onBubble, "release-zero"}) {
+	if m.mode != modeLayer || m.layer.stage != stageLayer || m.layer.sel.kind != onBubble || m.layer.sel.id != ms.ID {
 		t.Errorf("the cursor must land on the new bubble, mode %v stage %v sel %+v", m.mode, m.layer.stage, m.layer.sel)
 	}
 }
@@ -364,31 +373,32 @@ func TestNewMilestoneBelowAndBeside(t *testing.T) {
 	m.key(key("L"))
 
 	m.key(keyDown) // the [+] under a
-	if m.layer.sel != (layerTarget{onBelow, "a"}) {
+	if m.layer.sel != (layerTarget{onBelow, lid("a")}) {
 		t.Fatalf("want the [+] under a, got %+v", m.layer.sel)
 	}
 	m.key(key("enter"))
 	m.key(key("n"))
 	typeInto(m, "b")
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "b").After; len(got) != 1 || got[0] != "a" {
+	if got := loadMilestone(t, m, "b").After; len(got) != 1 || got[0] != lid("a") {
 		t.Fatalf("the [+] under a makes a successor of a, after = %v", got)
 	}
 
 	m.key(keyRight) // b's sibling [+]
-	if m.layer.sel != (layerTarget{onRight, "b"}) {
+	if bID := loadMilestone(t, m, "b").ID; m.layer.sel != (layerTarget{onRight, bID}) {
 		t.Fatalf("want the [+] beside b, got %+v", m.layer.sel)
 	}
 	m.key(key("enter"))
 	m.key(key("n"))
 	typeInto(m, "c")
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "c").After; len(got) != 1 || got[0] != "a" {
+	if got := loadMilestone(t, m, "c").After; len(got) != 1 || got[0] != lid("a") {
 		t.Errorf("the [+] beside b makes a sibling: after a, got %v", got)
 	}
 }
 
-// A taken name is refused in the form and nothing is written.
+// A name a milestone on the board has is refused in the form and nothing is
+// written.
 func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	m := newTestModel(t, 120, 40)
 	mkMilestone(t, m, "taken", 45)
@@ -405,8 +415,8 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 		t.Error("a refused name must not touch the milestone that has it")
 	}
 
-	// A name filed into this tree's logbook stays taken: the layer asks the
-	// same question 'jaira milestone create' asks.
+	// A name filed into this tree's logbook is free: the ID tells a new
+	// milestone from the filed one, as 'jaira milestone create' says too.
 	dir := filepath.Join(m.store.LogbookDir(), "bc-20200101", ticket.MilestonesSubdir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -416,8 +426,8 @@ func TestNewMilestoneRefusesATakenName(t *testing.T) {
 	}
 	m.layer.form.vals[0] = "gone"
 	m.key(key("enter"))
-	if !strings.Contains(m.layer.err, "filed into the logbook") {
-		t.Errorf("want the filed refusal, err %q", m.layer.err)
+	if m.layer.err != "" || loadMilestone(t, m, "gone").Name != "gone" {
+		t.Errorf("a filed name must be usable again, err %q", m.layer.err)
 	}
 }
 
@@ -502,16 +512,16 @@ func TestEditRenamesAMilestone(t *testing.T) {
 	if m.layer.stage != stageLayer || m.layer.err != "" {
 		t.Fatalf("the rename must close the form, stage %v err %q", m.layer.stage, m.layer.err)
 	}
-	if _, err := os.Stat(milestone.Path(m.store.Root, "a")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(milestone.Dir(m.store.Root), "a-"+lid("a")+".md")); !os.IsNotExist(err) {
 		t.Errorf("the old file is still there: %v", err)
 	}
 	if got := loadMilestone(t, m, "first-round"); got.Goal != "new goal" || !got.Placed || len(got.After) != 0 {
 		t.Errorf("first-round must carry the goal and a's place, got goal %q placed %v after %v", got.Goal, got.Placed, got.After)
 	}
-	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != "first-round" {
-		t.Errorf("b must come after first-round, got %v", b.After)
+	if b := loadMilestone(t, m, "b"); strings.Join(b.After, ",") != lid("a") {
+		t.Errorf("b must still come after the renamed milestone by its ID, got %v", b.After)
 	}
-	if m.layer.sel != (layerTarget{kind: onBubble, name: "first-round"}) {
+	if m.layer.sel != (layerTarget{kind: onBubble, id: lid("a")}) {
 		t.Errorf("the cursor must stay on the renamed bubble, got %+v", m.layer.sel)
 	}
 	if m.filter != "milestone:first-round" {
@@ -538,14 +548,14 @@ func TestEditKeepsAHandWrittenName(t *testing.T) {
 	}
 	// The directory's own spelling, not os.Stat: a case-insensitive disk
 	// (macOS, Windows) finds Q4.md under the name q4.md.
-	entries, err := os.ReadDir(filepath.Dir(milestone.Path(m.store.Root, "Q4")))
+	entries, err := os.ReadDir(milestone.Dir(m.store.Root))
 	if err != nil {
 		t.Fatal(err)
 	}
 	var upper, lower bool
 	for _, e := range entries {
-		upper = upper || e.Name() == "Q4.md"
-		lower = lower || e.Name() == "q4.md"
+		upper = upper || strings.HasPrefix(e.Name(), "Q4-")
+		lower = lower || strings.HasPrefix(e.Name(), "q4-")
 	}
 	if !upper || lower {
 		t.Errorf("saving the goal must keep Q4.md as it is: Q4.md there %v, q4.md there %v", upper, lower)
@@ -566,11 +576,11 @@ func TestConnectExistingMilestone(t *testing.T) {
 	m.key(keyDown)      // the [+] under b
 	m.key(key("enter")) // new or connect
 	m.key(key("c"))
-	if got := strings.Join(m.layer.pick, ","); got != "loose" {
+	if got := strings.Join(m.layer.pick, ","); got != lid("loose") {
 		t.Fatalf("under b the picker offers loose alone (not b, and a would close a loop), got %q", got)
 	}
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "loose").After; len(got) != 1 || got[0] != "b" {
+	if got := loadMilestone(t, m, "loose").After; len(got) != 1 || got[0] != lid("b") {
 		t.Errorf("loose must be placed after b, got %v", got)
 	}
 }
@@ -591,7 +601,7 @@ func TestConnectPlacedMilestoneAddsAnArrow(t *testing.T) {
 	m.key(key("c"))
 	idx := -1
 	for i, n := range m.layer.pick {
-		if n == "y" {
+		if n == lid("y") {
 			idx = i
 		}
 	}
@@ -600,7 +610,7 @@ func TestConnectPlacedMilestoneAddsAnArrow(t *testing.T) {
 	}
 	m.layer.pickIdx = idx
 	m.key(key("enter"))
-	if got := loadMilestone(t, m, "y").After; len(got) != 2 || got[0] != "x" || got[1] != "b" {
+	if got := loadMilestone(t, m, "y").After; len(got) != 2 || got[0] != lid("x") || got[1] != lid("b") {
 		t.Errorf("y keeps x first and gains b, got %v", got)
 	}
 	if out := stripANSI(m.render()); !strings.Contains(out, "└") && !strings.Contains(out, "┘") {
@@ -632,7 +642,7 @@ func TestColourKeySkipsAColourInUse(t *testing.T) {
 	mkPlaced(t, m, "b", 1, nil) // Palette[1]
 	reloadOrFail(t, m)
 	m.key(key("L"))
-	if m.layer.sel != (layerTarget{onBubble, "a"}) {
+	if m.layer.sel != (layerTarget{onBubble, lid("a")}) {
 		t.Fatalf("the cursor must start on a, got %+v", m.layer.sel)
 	}
 	m.key(key("c"))
@@ -670,7 +680,7 @@ func TestRemoveReattachesSuccessors(t *testing.T) {
 		t.Errorf("b must leave the layer and keep its ticket, placed %v", b.Placed)
 	}
 	for _, n := range []string{"c", "d"} {
-		if got := loadMilestone(t, m, n).After; len(got) != 1 || got[0] != "a" {
+		if got := loadMilestone(t, m, n).After; len(got) != 1 || got[0] != lid("a") {
 			t.Errorf("%s must now come after a, got %v", n, got)
 		}
 	}
@@ -689,6 +699,7 @@ func TestMilestoneDetail(t *testing.T) {
 		t.Fatal(err)
 	}
 	ms := milestone.New("round", 45, nowish())
+	ms.ID = lid("round")
 	ms.SetGoal("the round is done")
 	ms.SetAfter(nil)
 	for _, id := range []string{todo, done, old} {
@@ -750,5 +761,95 @@ func TestArchivedTicketCountsAsTheLinkIndexSays(t *testing.T) {
 	m.key(key("enter"))
 	if out := stripANSI(m.render()); !strings.Contains(out, "Add session test harness") || strings.Count(out, "archived") != 2 {
 		t.Errorf("the detail must list both, titled, as archived:\n%s", out)
+	}
+}
+
+// Two milestones of one name are told apart on the roadmap by their ID, and
+// the milestone detail says which one it is; a single name shows alone.
+func TestRoadmapShowsNameIDsOnlyForTwins(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	for _, c := range []struct{ name, id string }{{"twin", "AAAAAA"}, {"twin", "BBBBBB"}, {"solo", "CCCCCC"}} {
+		ms := milestone.New(c.name, 45, nowish())
+		ms.ID = c.id
+		ms.SetAfter(nil)
+		if err := ms.Save(m.store.Root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	reloadOrFail(t, m)
+	m.key(key("L"))
+	out := stripANSI(m.render())
+	for _, want := range []string{"twin-AAAAAA", "twin-BBBBBB", "solo"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the roadmap lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "solo-CCCCCC") {
+		t.Errorf("a single name was shown with its ID:\n%s", out)
+	}
+}
+
+// Twins are marked where they are drawn and the board says how to end it: a
+// flash line, once, naming the rename; a board without twins shows none.
+func TestTwinnedMilestonesAreMarkedAndFlashed(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	save := func(name, id string) {
+		ms := milestone.New(name, 45, nowish())
+		ms.ID = id
+		ms.SetAfter(nil)
+		if err := ms.Save(m.store.Root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("solo", "CCCCCC")
+	reloadOrFail(t, m)
+	if m.flashLine() != "" {
+		t.Errorf("flash without twins: %q", m.flashLine())
+	}
+	save("twin", "AAAAAA")
+	save("twin", "BBBBBB")
+	reloadOrFail(t, m)
+	if line := m.flashLine(); !strings.Contains(line, "twin-AAAAAA") || !strings.Contains(line, "jaira milestone rename twin-AAAAAA") {
+		t.Errorf("the flash does not say how to resolve it: %q", line)
+	}
+	m.flashMsg = ""
+	reloadOrFail(t, m)
+	if m.flashLine() != "" {
+		t.Errorf("the same twins flashed again on a reload: %q", m.flashLine())
+	}
+	m.key(key("M"))
+	picker := stripANSI(m.render())
+	m.key(key("esc"))
+	m.key(key("L"))
+	roadmap := stripANSI(m.render())
+	for where, out := range map[string]string{"picker": picker, "roadmap": roadmap} {
+		if strings.Count(out, "⚠") < 2 {
+			t.Errorf("the %s does not mark both twins:\n%s", where, out)
+		}
+	}
+	if strings.Contains(strings.Split(roadmap, "solo")[0], "⚠solo") {
+		t.Errorf("a single name was marked")
+	}
+}
+
+func TestTwinFlashWaitsForAFetchLineStillUp(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	for _, id := range []string{"AAAAAA", "BBBBBB"} {
+		ms := milestone.New("twin", 45, nowish())
+		ms.ID = id
+		ms.SetAfter(nil)
+		if err := ms.Save(m.store.Root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m.flash("milestones updated: x")
+	reloadOrFail(t, m)
+	if m.flashLine() != "milestones updated: x" {
+		t.Fatalf("the twin flash replaced the fetch line: %q", m.flashLine())
+	}
+	m.flashMsg = ""
+	reloadOrFail(t, m)
+	if !strings.Contains(m.flashLine(), "twin-AAAAAA") {
+		t.Errorf("the twins were never flashed once the fetch line was gone: %q", m.flashLine())
 	}
 }

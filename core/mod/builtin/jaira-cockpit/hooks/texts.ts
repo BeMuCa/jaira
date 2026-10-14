@@ -52,7 +52,23 @@ export const t = {
   verdictOf: (id: string) => `Review verdict of ${id}`,
   readDecision: 'Read decision',
   decisionOf: (id: string) => `Decision on ${id}`,
-  needsHerdr: 'A chat of its own needs Herdr (HERDR_ENV=1).',
+  noSpawn: 'A chat of its own opens in a Herdr tab through spawn.sh, and none was found: run jaira roles install.',
+  noBoard: 'No jaira board here.',
+  explainAsked: (id: string) => `${id}: a subagent of this session explains the finding; read it under Read explanation`,
+  discussHere: (id: string) => `${id}: the open question is talked through in this chat`,
+  // Without Herdr the session itself is asked: the same requests spawn.sh
+  // types into a tab of its own (lane explain and discuss there) — a change to
+  // one belongs in the other. jaira runs with -C: a ticket in a worktree is
+  // "on its ref and not on your disk" anywhere else.
+  explainBySubagent: (id: string, dir: string) =>
+    `The cockpit's Explain on ${id}, without Herdr: start one subagent (Agent tool) with exactly the prompt below and do nothing on ${id} yourself. When it is done, tell me in one line that the explanation of ${id} is on the ticket, under Read explanation in the cockpit.\n\n` +
+    `Read ticket ${id} with jaira -C '${dir}' show ${id} --brief (title, goal, question, review and the latest notes). Explain the review finding on ${id} in plain words: what exactly was found, why it matters, which options there are and what the reviewer recommends. ` +
+    `Then write the same explanation onto the ticket as one note with exactly these lines, each line one part: jaira -C '${dir}' note ${id} "explain: <finding: what was found, one or two sentences>\nWarum: <why it matters, one or two sentences>\n1) <first option, one line> [give back]\n2) <second option, one line> [accept]\nEmpfehlung: <number> - <why, one sentence>" - with real line breaks in the text, two to four options with 1) 2) 3) 4) at the start of the line - the numbers the person picks by in the cockpit - and the words Warum: and Empfehlung: exactly so. ` +
+    `Each option ends in [give back] when it means giving the work back to change something, [accept] when it means accepting the ticket as it is, and no mark when it is neither. Change nothing else, commit nothing, do not move the ticket. Answer in the language the person speaks with this session.`,
+  discussInThisChat: (id: string, dir: string) =>
+    `The cockpit's Discuss on ${id}, without Herdr: ticket ${id} waits for a decision of mine. Read it with jaira -C '${dir}' show ${id} --brief (the question field and the latest notes), explain the question and the options to me in plain words and ask me. ` +
+    `When I have decided: write the decision in one sentence onto the ticket with jaira -C '${dir}' note ${id} "decision: <decision>" and clear the question with jaira -C '${dir}' set ${id} question=. If the decision means the work goes on, move the ticket back yourself, exactly so: jaira -C '${dir}' move ${id} --to in-progress (without --what/--why/--resolves: the ticket has its outcome already, and the decision is in the note). ` +
+    `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.`,
   opened: (id: string) => `${id}: opened in a Herdr tab of its own`,
   context: (k: number) => `context ${k}k`,
   cacheLeft: (min: number) => `cache ${min} min left`,

@@ -259,6 +259,10 @@ def render_md(text):
 
 
 if __name__ == "__main__":
+    # A Windows console is cp1251 or cp1252, and an umlaut in a title would
+    # stop the script there (issue #79). The script sets it, not its caller.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     cmds = {"page": (page, 2), "plan": (plan, 2), "report": (report, 5)}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds or len(sys.argv) != cmds[sys.argv[1]][1] + 2:
         print(__doc__, file=sys.stderr)

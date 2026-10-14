@@ -1,6 +1,7 @@
 package milestone
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,13 +10,13 @@ import (
 )
 
 // write puts a milestone file on disk verbatim, the way a person editing it
-// by hand would leave it.
+// by hand would leave it, under the ID file name its name gets from LegacyID.
 func write(t *testing.T, root, name, body string) {
 	t.Helper()
 	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(Path(root, name), []byte(body), 0o644); err != nil {
+	if err := os.WriteFile(testPath(root, name), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -63,7 +64,7 @@ func TestSaveKeepsHandEditsVerbatim(t *testing.T) {
 	if err := m.Save(root); err != nil {
 		t.Fatal(err)
 	}
-	back, err := os.ReadFile(Path(root, "round-one"))
+	back, err := os.ReadFile(testPath(root, "round-one"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +100,7 @@ func TestAddAndRemoveTouchOneLine(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "---\nname: round-two\ncolor: 33\n---\n\n<!-- keep me -->\n- " + idB + "\n"
-	back, err := os.ReadFile(Path(root, "round-two"))
+	back, err := os.ReadFile(testPath(root, "round-two"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +237,7 @@ func TestSetStatusTouchesOneLineOnly(t *testing.T) {
 	if got := back.Members(); len(got) != 1 || got[0] != idA {
 		t.Errorf("Members() = %v after SetStatus, want [%s]", got, idA)
 	}
-	raw, err := os.ReadFile(Path(root, "round-one"))
+	raw, err := os.ReadFile(testPath(root, "round-one"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +256,7 @@ func TestSetStatusTouchesOneLineOnly(t *testing.T) {
 	if err := back.Save(root); err != nil {
 		t.Fatal(err)
 	}
-	raw, err = os.ReadFile(Path(root, "round-one"))
+	raw, err = os.ReadFile(testPath(root, "round-one"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +290,7 @@ func TestSetStatusGivesAFileWithoutFrontmatterOne(t *testing.T) {
 	if got := back.Members(); len(got) != 1 || got[0] != idB {
 		t.Errorf("Members() = %v, want [%s]", got, idB)
 	}
-	raw, err := os.ReadFile(Path(root, "round-two"))
+	raw, err := os.ReadFile(testPath(root, "round-two"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -438,5 +439,141 @@ func TestParseNames(t *testing.T) {
 	}
 	if _, err := ParseNames("ok, ???"); err == nil {
 		t.Error("a name that does not normalize must be refused")
+	}
+}
+
+// testPath is where write puts a milestone: <name>-<LegacyID(name)>.md.
+func testPath(root, name string) string {
+	return filepath.Join(Dir(root), name+"-"+LegacyID(name)+".md")
+}
+
+func writeFile(t *testing.T, root, file, body string) {
+	t.Helper()
+	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(Dir(root), file), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A file with an ID in its name and one from before IDs sit side by side, and
+// both are read: the old one under the ID computed from its name, untouched.
+func TestLoadAllReadsIDFilesAndOldFilesAndNeverWritesWhileReading(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "backend-K3F9QZ.md", "---\ncolor: 45\n---\n")
+	writeFile(t, root, "q4.md", "---\ncolor: 46\n---\n")
+	all, err := LoadAll(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 || all[0].Name != "backend" || all[0].ID != "K3F9QZ" || all[1].Name != "q4" || all[1].ID != LegacyID("q4") {
+		t.Fatalf("LoadAll = %+v", all)
+	}
+	if all[0].FileName() != "backend-K3F9QZ.md" || all[1].FileName() != "q4.md" {
+		t.Errorf("file names %q, %q", all[0].FileName(), all[1].FileName())
+	}
+	entries, _ := os.ReadDir(Dir(root))
+	if len(entries) != 2 {
+		t.Errorf("reading changed the directory: %v", entries)
+	}
+}
+
+// Two files with one ID are one milestone: the first by file name counts.
+func TestTwoFilesWithOneIDAreOneMilestone(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "alpha-K3F9QZ.md", "---\ncolor: 45\n---\n")
+	writeFile(t, root, "beta-K3F9QZ.md", "---\ncolor: 46\n---\n")
+	all, _ := LoadAll(root)
+	if len(all) != 1 || all[0].Name != "alpha" {
+		t.Fatalf("LoadAll = %+v", all)
+	}
+}
+
+func TestLoadResolvesIDThenNameIDThenName(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "backend-K3F9QZ.md", "---\ncolor: 45\n---\n")
+	writeFile(t, root, "backend-M7P2RT.md", "---\ncolor: 46\n---\n")
+	writeFile(t, root, "ui-B4C5D6.md", "---\ncolor: 47\n---\n")
+	writeFile(t, root, "old-filed.md", "---\nstatus: filed\n---\n")
+	for key, want := range map[string]string{
+		"K3F9QZ": "backend-K3F9QZ.md", "k3f9qz": "backend-K3F9QZ.md",
+		"backend-M7P2RT": "backend-M7P2RT.md", "backend-m7p2rt": "backend-M7P2RT.md",
+		"ui": "ui-B4C5D6.md", "UI": "ui-B4C5D6.md",
+		"old-filed": "old-filed.md", // a filed milestone is loadable: restore needs it
+	} {
+		m, err := Load(root, key)
+		if err != nil || m.FileName() != want {
+			t.Errorf("Load(%q) = %v, %v; want %s", key, m, err, want)
+		}
+	}
+	// a name and the wrong ID is nothing, not the name's milestone
+	if _, err := Load(root, "ui-K3F9QZ"); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Load(ui-K3F9QZ) err = %v, want not-exist", err)
+	}
+	if _, err := Load(root, "nothing"); !errors.Is(err, os.ErrNotExist) || !os.IsNotExist(err) {
+		t.Errorf("Load(nothing) err = %v, want not-exist", err)
+	}
+	_, err := Load(root, "backend")
+	var amb *AmbiguousError
+	if !errors.As(err, &amb) || amb.Name != "backend" || strings.Join(amb.Choices, " ") != "backend-K3F9QZ backend-M7P2RT" {
+		t.Errorf("Load(backend) err = %v, want AmbiguousError naming both", err)
+	}
+}
+
+// A name on the board wins over the same name on a file that is filed.
+func TestLoadPrefersTheMilestoneOnTheBoardOverAFiledOne(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "backend-AAAAAA.md", "---\nstatus: filed\n---\n")
+	writeFile(t, root, "backend-BBBBBB.md", "---\ncolor: 45\n---\n")
+	m, err := Load(root, "backend")
+	if err != nil || m.ID != "BBBBBB" {
+		t.Fatalf("Load(backend) = %v, %v", m, err)
+	}
+}
+
+func TestFromBytesTakesNameAndIDFromTheFileName(t *testing.T) {
+	m := FromBytes("release-stages-K3F9QZ.md", []byte("---\ncolor: 45\n---\n"))
+	if m.Name != "release-stages" || m.ID != "K3F9QZ" {
+		t.Errorf("got %q %q", m.Name, m.ID)
+	}
+	if m = FromBytes("sprint-202611.md", nil); m.Name != "sprint-202611" || m.ID != LegacyID("sprint-202611") {
+		t.Errorf("got %q %q", m.Name, m.ID)
+	}
+}
+
+// A hand-named file keeps its spelling, and is found under it.
+func TestLoadFindsAHandNamedFileAsItStands(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "Q4.md", "---\ncolor: 45\n---\n")
+	if m, err := Load(root, "Q4"); err != nil || m.Name != "Q4" {
+		t.Errorf("Load(Q4) = %v, %v", m, err)
+	}
+}
+
+// Twins are the names the board holds more than once, in file order, each with
+// the labels that tell its milestones apart and the command that renames one.
+func TestTwinsListsEveryNameHeldTwice(t *testing.T) {
+	mk := func(name, id string) *Milestone {
+		m := New(name, 0, time.Now())
+		m.ID = id
+		return m
+	}
+	all := []*Milestone{mk("backend", "23G8MG"), mk("solo", "AAAAAA"), mk("backend", "4K2ZZ9"), mk("ui", "BBBBBB"), mk("ui", "CCCCCC"), mk("backend", "DDDDD1")}
+	got := Twins(all)
+	if len(got) != 2 {
+		t.Fatalf("Twins = %+v, want backend and ui", got)
+	}
+	if got[0].Name != "backend" || strings.Join(got[0].Labels, " ") != "backend-23G8MG backend-4K2ZZ9 backend-DDDDD1" {
+		t.Errorf("first twin = %+v", got[0])
+	}
+	if want := "jaira milestone rename backend-23G8MG <new-name>"; got[0].RenameCommand() != want {
+		t.Errorf("RenameCommand = %q, want %q", got[0].RenameCommand(), want)
+	}
+	if got[1].Name != "ui" {
+		t.Errorf("second twin = %+v", got[1])
+	}
+	if Twins(all[:2]) != nil || Twins(nil) != nil {
+		t.Errorf("no twins must give nil")
 	}
 }

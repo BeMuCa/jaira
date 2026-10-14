@@ -171,9 +171,10 @@ func TestAgentNoteNamesTheMilestoneCommands(t *testing.T) {
 		"`jaira milestone ls`",
 		"**Read it before you create one**",
 		"`jaira milestone create <name> [id...]`",
-		"`add`/`rm <name> <id>...`",
+		"`add`/`rm <milestone> <id>...`",
+		"`<name>-<ID>`",
 		"`rename <old> <new>`",
-		"`jaira logbook <name>`",
+		"`jaira logbook <milestone>`",
 		"`jaira milestone create|set <name> --after <a,b>`",
 		"`jaira milestone set <name> --no-roadmap`",
 	} {

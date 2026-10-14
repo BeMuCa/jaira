@@ -1,0 +1,5 @@
+- Install the new jaira binary first, then run `jaira roles install` again: spawn.sh and run-lane.sh now read JSON with `jaira json get` instead of python3, and with an older jaira on PATH spawn.sh stops with that instruction before it opens a tab.
+- On native Windows (Git Bash with Herdr for Windows), workers start again: the tab opens in the worktree through Herdr's `--cwd` and runs plain `claude`, whatever shell Herdr gives it, and a herdr.exe sends the tab into WSL only when the script itself runs in WSL.
+- If python3 is not the command for Python on your machine, set `"python": "uv run python"` (or any command) in `~/.jaira/settings.json`, or `JAIRA_PYTHON` in the environment; the acceptance and logbook-summary roles run their scripts with it, and `jaira roles list` shows which one is used.
+- Read a single field of JSON in a shell script with `jaira json get <path>` (e.g. `result.pane.pane_id`), with `--default <value>` for a path that may be missing.
+- Use `jaira show <id> --brief` for one line of JSON with a ticket's title, goal, question, review and newest four notes.

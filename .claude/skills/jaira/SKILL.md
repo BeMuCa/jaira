@@ -204,12 +204,13 @@ just invented a synonym: check `jaira tags` and use the existing name.
 ## Milestones: read the list before you start one
 
 A milestone is the set of tickets that belong to one round of work, kept in its
-own hand-editable file, `.jaira/milestones/<name>.md`, one ticket id per line.
+own hand-editable file, `.jaira/milestones/<name>-<ID>.md`, one ticket id per line.
+The six characters after the last dash are its ID: it stays when the name changes.
 
 **Before you create one, run `jaira milestone ls`.**
 
 ```bash
-jaira milestone ls --json    # name, colour, ticket count, goal, place on the roadmap
+jaira milestone ls --json    # id, name, colour, ticket count, goal, place on the roadmap
 ```
 
 Then put tickets into the milestone already there for that round of work. Never
@@ -220,16 +221,16 @@ is refused (exit 3) and points at `jaira milestone add`.
 
 ```bash
 jaira milestone create <name> [id...] --goal "..."   # start one, optionally with tickets
-jaira milestone add <name> <id>...                   # put tickets in, all in one write
-jaira milestone rm <name> <id>...                    # take them out; the milestone stays
-jaira milestone rename <old> <new>                   # file, ref and after: lines follow
+jaira milestone add <milestone> <id>...              # put tickets in, all in one write
+jaira milestone rm <milestone> <id>...               # take them out; the milestone stays
+jaira milestone rename <old> <new>                   # the name only; ID, ref and after: stay
 jaira list --milestone <name> --json                 # every ticket in it
 ```
 
-Names are lowercase-kebab like tags, because the name is also the filename:
+Names are lowercase-kebab like tags, because the name is part of the file name:
 "Round One" is filed as `round-one`, and you are told so. Rename with
-`jaira milestone rename`, never by hand: renaming the file leaves its ref
-behind, and the next `jaira fetch` writes the old file back.
+`jaira milestone rename`; it changes the file name on the same ref and nothing
+else, because `after:` lines name the ID.
 
 The Milestone Roadmap (`L` on the board) shows which round comes after which.
 A milestone is on it only once it has a place:
@@ -247,8 +248,12 @@ would close a loop exits 3 with the loop named.
 
 A milestone leaves the board only on command — emptying it with `rm` leaves it
 standing. `jaira logbook <name>` files it once every ticket in it has reached
-the terminal lane or left the board, and `jaira restore <name>.md` brings it
-back.
+the terminal lane or left the board, and `jaira restore <file>` (the file name
+the logbook shows, `<name>-<ID>.md`) brings it back.
+
+A `<milestone>` is its name, its ID or `<name>-<ID>`. A command that writes
+refuses a name two milestones carry (exit 3) and names both forms; run it again
+with one of them. `jaira list --milestone <name>` is a filter and shows both.
 
 ## Before you stop, and when you start
 

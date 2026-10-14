@@ -157,15 +157,18 @@ func gitOut(t *testing.T, dir string, args ...string) string {
 }
 
 // Filing a milestone must not take its ref down, and this is why: a ref is
-// what every other clone reads. Taken down, the name is free again and two
-// machines can plan two different milestones under one identity. Left up and
-// marked, it says "filed" to everyone who fetches — the file is not written to
-// their board, and the name stays taken.
+// what every other clone reads. Taken down, a clone that has the file would
+// never hear it was filed. Left up and marked, it says "filed" to everyone who
+// fetches — the file is not written to their board.
 func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
 	ada, grace := twoBoards(t)
 
 	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
+	}
+	filedMS, err := milestone.Load(ada, "round-one")
+	if err != nil {
+		t.Fatal(err)
 	}
 	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
 		t.Fatalf("logbook: %v\n%s", err, out)
@@ -184,11 +187,11 @@ func TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef(t *testing.T) {
 	// The ref is up and says so. Read through gitref rather than the file,
 	// because the ref is the only thing the other clone will ever see.
 	repo := &gitref.Repo{Dir: ada, Remote: "origin"}
-	content, _, err := repo.ReadMilestone("round-one")
+	file, content, _, err := repo.ReadMilestone(filedMS.ID)
 	if err != nil {
 		t.Fatalf("the ref of a filed milestone was taken down: %v", err)
 	}
-	if got := milestone.FromBytes("round-one", content); !got.Filed() {
+	if got := milestone.FromBytes(file, content); !got.Filed() {
 		t.Errorf("the ref carries status %q, want %q", got.Status, milestone.StatusFiled)
 	}
 
@@ -254,63 +257,6 @@ func TestAClonePlanningTheMilestoneLearnsItWasFiled(t *testing.T) {
 	}
 }
 
-// The door a tree walks into when the filing happened somewhere else: grace
-// never had the file, so her disk holds nothing and her logbook holds nothing
-// — the only thing that says "filed" is the ref ada left standing. The refusal
-// has to point at ada's tree, because 'jaira restore' here answers that the
-// file is not in the archive.
-func TestAMilestoneFiledOnItsRefPointsAtTheTreeThatFiledIt(t *testing.T) {
-	ada, grace := twoBoards(t)
-
-	if out, err := runAndSend(t, ada, "milestone", "create", "round-one"); err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
-	}
-	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
-		t.Fatalf("logbook: %v\n%s", err, out)
-	}
-	if out, err := runCLI(t, grace, "fetch"); err != nil {
-		t.Fatalf("grace's fetch: %v\n%s", err, out)
-	}
-	if _, err := milestone.Load(grace, "round-one"); err == nil {
-		t.Fatal("grace has the file, so this is not the ref-only state under test")
-	}
-
-	if out, err := runCLI(t, grace, "create", "something to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
-		t.Fatalf("create ticket: %v\n%s", err, out)
-	}
-	ticketID := handleFromList(t, grace, "something to group")
-	doors := map[string][]string{
-		"create": {"milestone", "create", "round-one"},
-		"add":    {"milestone", "add", "round-one", ticketID},
-		// The third door, and the one that has no file to look at: the
-		// milestone branch of 'jaira logbook' is reached through
-		// milestone.Load, so this state used to fall out of the family and
-		// answer with the ticket error instead.
-		"logbook": {"logbook", "round-one"},
-	}
-	for door, args := range doors {
-		out, err := runCLI(t, grace, args...)
-		if err == nil {
-			t.Fatalf("'%s' went through a milestone filed on its ref:\n%s", door, out)
-		}
-		for _, want := range []string{
-			gitref.MilestoneRefName("round-one"),
-			milestone.StatusFiled,
-			"jaira restore round-one.md",
-			"the tree that filed it",
-		} {
-			if !strings.Contains(err.Error(), want) {
-				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
-			}
-		}
-		// The restore it names runs in ada's tree. Claiming a logbook here
-		// would be claiming a copy grace does not have.
-		if strings.Contains(err.Error(), "into the logbook") {
-			t.Errorf("the %s refusal claims a logbook copy grace never had: %v", door, err)
-		}
-	}
-}
-
 // The tree that filed it stands in a state no other tree is in: the copy is in
 // its own logbook AND the mark is on the ref it wrote. It must be told about
 // the copy lying here, not sent to "the tree that filed it" — which is the
@@ -332,8 +278,7 @@ func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
 	ticketID := handleFromList(t, ada, "something to group")
 
 	doors := map[string][]string{
-		"create": {"milestone", "create", "round-one"},
-		"add":    {"milestone", "add", "round-one", ticketID},
+		"add": {"milestone", "add", "round-one", ticketID},
 		// Filing the same milestone twice: the copy is in this tree's
 		// logbook, so this door owes the reader the restore that runs here
 		// like the other two do.
@@ -346,7 +291,7 @@ func TestTheFilingTreeIsPointedAtItsOwnLogbook(t *testing.T) {
 		}
 		for _, want := range []string{
 			"into the logbook",
-			"jaira restore round-one.md",
+			"jaira restore round-one-",
 		} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("the %s refusal does not mention %q: %v", door, want, err)
@@ -399,7 +344,7 @@ func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
 	// And it has written nothing while waiting: a fetch that blocked only
 	// after putting the file down would pass the wait above and still lose a
 	// concurrent add's write.
-	if _, err := os.Stat(milestone.Path(grace, "round-one")); !os.IsNotExist(err) {
+	if _, err := os.Stat(milestonePath(grace, "round-one")); !os.IsNotExist(err) {
 		unlock()
 		t.Fatalf("the fetch wrote the milestone file while the lock was held (stat: %v)", err)
 	}
@@ -424,34 +369,50 @@ func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
 // takes back, and that an agent reading --json finds under the key "ticket".
 //
 // The second line matters as much: a rejected ticket keeps its local file and
-// shows both sides on the board, but a rejected milestone is overwritten by
-// the next fetch (refsync.IncomingMilestones), so the edit has to be made
-// again on the fetched file. Telling that user their file is unchanged sends
-// them away believing work is safe that is about to be discarded.
-func TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt(t *testing.T) {
+// shows both sides on the board, and a rejected milestone is merged into the
+// version that won (refsync.Flush), so the edit is neither dropped nor left for
+// the next fetch to overwrite. Telling that user their file is unchanged sends
+// them away believing something other than what happened.
+func TestARejectedMilestoneIsNamedAndSaysItWasMergedNotDropped(t *testing.T) {
 	ada, grace := twoBoards(t)
 
 	if out, err := runAndSend(t, ada, "milestone", "create", "next-release"); err != nil {
 		t.Fatalf("ada create: %v\n%s", err, out)
 	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace fetch: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "milestone", "set", "next-release", "--goal", "ada's"); err != nil {
+		t.Fatalf("ada set: %v\n%s", err, out)
+	}
 
-	// Grace never fetched, so nothing locally stops her; the ref is already
-	// taken and the write loses the race.
+	// Grace has not fetched ada's edit, so nothing locally stops her; the
+	// ref has moved and the write loses the race.
 	var stderr string
 	_, stderr = captureStdio(t, func() {
-		if out, err := runAndSend(t, grace, "milestone", "create", "next-release"); err != nil {
-			t.Fatalf("grace create: %v\n%s", err, out)
+		if out, err := runAndSend(t, grace, "milestone", "set", "next-release", "--goal", "grace's"); err != nil {
+			t.Fatalf("grace set: %v\n%s", err, out)
 		}
 	})
 
-	if !strings.Contains(stderr, "jaira: next-release was not sent") {
-		t.Errorf("the rejection does not name the milestone:\n%s", stderr)
+	if !strings.Contains(stderr, "jaira: next-release: someone else wrote it first; your edit was merged") {
+		t.Errorf("the rejection does not name the milestone and say it was merged:\n%s", stderr)
 	}
-	if !strings.Contains(stderr, "the next fetch replaces your file") {
-		t.Errorf("the rejection does not say the fetch will replace the file:\n%s", stderr)
+	if !strings.Contains(stderr, "both changed goal: theirs is kept") {
+		t.Errorf("the clash is not told:\n%s", stderr)
 	}
 	if strings.Contains(stderr, "your file is unchanged") {
 		t.Errorf("the rejection tells a milestone writer a ticket's story:\n%s", stderr)
+	}
+	// the edit is neither lost nor left for the next fetch to overwrite
+	if _, raw := alphaOf(t, grace, "next-release"); !strings.Contains(raw, "grace's") {
+		t.Errorf("grace's goal is gone from her file:\n%s", raw)
+	}
+	if _, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatal(err)
+	}
+	if _, raw := alphaOf(t, grace, "next-release"); !strings.Contains(raw, "grace's") {
+		t.Errorf("the next fetch replaced her edit:\n%s", raw)
 	}
 }
 
@@ -460,11 +421,14 @@ func TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt(t *testing.T) {
 // was already right and that the milestone branch must not change.
 func TestRefSubjectNamesEachKindTheWayItIsAddressed(t *testing.T) {
 	id := "01M2GGKMFB1XXK7V8AFW0YGWXQ"
-	if key, name := refSubject(outbox.KindTicket, id); key != "ticket" || name != ticket.Handle(id) {
+	if key, name := refSubject(outbox.KindTicket, id, ""); key != "ticket" || name != ticket.Handle(id) {
 		t.Errorf("ticket subject is (%q, %q), want (%q, %q)", key, name, "ticket", ticket.Handle(id))
 	}
-	if key, name := refSubject(outbox.KindMilestone, "next-release"); key != "milestone" || name != "next-release" {
+	if key, name := refSubject(outbox.KindMilestone, "K3F9QZ", "next-release-K3F9QZ.md"); key != "milestone" || name != "next-release" {
 		t.Errorf("milestone subject is (%q, %q), want (%q, %q)", key, name, "milestone", "next-release")
+	}
+	if key, name := refSubject(outbox.KindMilestone, "next-release", ""); key != "milestone" || name != "next-release" {
+		t.Errorf("an entry an older build queued is (%q, %q), want (%q, %q)", key, name, "milestone", "next-release")
 	}
 	if a := rejectedAdvice(outbox.KindTicket); !strings.Contains(a, "your file is unchanged") {
 		t.Errorf("the ticket advice changed: %q", a)
@@ -474,11 +438,10 @@ func TestRefSubjectNamesEachKindTheWayItIsAddressed(t *testing.T) {
 	}
 }
 
-// A rename has to reach a clone that already has the milestone: the old name
-// leaves her board and the new one arrives, with what came after it naming
-// the new name. A new ref alone would leave her both — a fetch writes refs and
-// deletes nothing — so the old ref stays up with a mark she reads. The mark
-// holds no name, so the rename can be taken back, and that reaches her too.
+// A rename has to reach a clone that already has the milestone: the file
+// arrives under its new name on the same ref and the old file, which has the
+// same ID, goes. What came after it names the ID and is not touched. Renaming
+// back reaches her the same way.
 func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 	ada, grace := twoBoards(t)
 	for _, args := range [][]string{
@@ -492,11 +455,12 @@ func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 	if out, err := runCLI(t, grace, "fetch"); err != nil {
 		t.Fatalf("grace's first fetch: %v\n%s", err, out)
 	}
-	if _, err := milestone.Load(grace, "round-one"); err != nil {
+	one, err := milestone.Load(grace, "round-one")
+	if err != nil {
 		t.Fatalf("grace has to have the milestone before it is renamed: %v", err)
 	}
 
-	onGrace := func(want, after string) {
+	onGrace := func(want string) {
 		t.Helper()
 		all, err := milestone.LoadAll(grace)
 		if err != nil {
@@ -505,8 +469,8 @@ func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 		var names []string
 		for _, ms := range all {
 			names = append(names, ms.Name)
-			if ms.Name == "round-two" && strings.Join(ms.After, ",") != after {
-				t.Errorf("grace's round-two comes after %v, want %s", ms.After, after)
+			if ms.Name == "round-two" && strings.Join(ms.After, ",") != one.ID {
+				t.Errorf("grace's round-two comes after %v, want %s", ms.After, one.ID)
 			}
 		}
 		if strings.Join(names, ",") != want {
@@ -524,7 +488,7 @@ func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 	if !strings.Contains(out, "round-one → first-round") || strings.Contains(out, "filed elsewhere") {
 		t.Errorf("the fetch must report the rename, not a filing:\n%s", out)
 	}
-	onGrace("first-round,round-two", "first-round")
+	onGrace("first-round,round-two")
 	if out, _ := runCLI(t, grace, "milestone", "ls"); strings.Contains(out, "round-one") {
 		t.Errorf("grace's 'milestone ls' still names the old name:\n%s", out)
 	}
@@ -535,47 +499,12 @@ func TestARenamedMilestoneArrivesUnderItsNewNameOnly(t *testing.T) {
 	if out, err := runCLI(t, grace, "fetch"); err != nil {
 		t.Fatalf("grace's third fetch: %v\n%s", err, out)
 	}
-	onGrace("round-one,round-two", "round-one")
+	onGrace("round-one,round-two")
 }
 
-// A name a teammate's milestone has is taken before any fetch has written it
-// here: every write's flush brings the refs, and only 'jaira fetch' writes
-// their files. Asking the disk alone, rename and create both wrote over the
-// teammate's milestone on the remote.
-func TestANameOnlyOnARefIsTakenForRenameAndCreate(t *testing.T) {
-	ada, grace := twoBoards(t)
-	if out, err := runAndSend(t, grace, "milestone", "create", "zeta", "--goal", "grace's plan"); err != nil {
-		t.Fatalf("grace's create: %v\n%s", err, out)
-	}
-	if out, err := runAndSend(t, ada, "milestone", "create", "b"); err != nil {
-		t.Fatalf("ada's create: %v\n%s", err, out)
-	}
-	if gitOut(t, ada, "for-each-ref", gitref.MilestoneRefName("zeta")) == "" {
-		t.Fatal("ada's flush must have brought grace's ref")
-	}
-	if _, err := os.Stat(milestone.Path(ada, "zeta")); !os.IsNotExist(err) {
-		t.Fatalf("zeta must not be on ada's disk yet: %v", err)
-	}
-
-	for _, args := range [][]string{{"milestone", "rename", "b", "zeta"}, {"milestone", "create", "zeta"}} {
-		_, err := runAndSend(t, ada, args...)
-		if err == nil || exitCode(err) != ExitValidation || !strings.Contains(err.Error(), "jaira fetch") {
-			t.Errorf("%v: want exit 3 sending ada to 'jaira fetch', got %v", args, err)
-		}
-	}
-	if out, err := runCLI(t, grace, "fetch"); err != nil {
-		t.Fatalf("grace's fetch: %v\n%s", err, out)
-	}
-	if zeta, err := milestone.Load(grace, "zeta"); err != nil || zeta.Goal != "grace's plan" {
-		t.Errorf("grace's zeta was overwritten: %v %+v", err, zeta)
-	}
-}
-
-// A ref moves only when the remote accepts a write, so right after a rename
-// the old name's ref still holds the milestone while its mark waits in the
-// outbox. Taking the rename back before anything was sent is not refused as
-// a teammate's milestone, and what arrives elsewhere is the milestone under
-// its old name again.
+// A rename is one write on the milestone's own ref, so renaming and renaming
+// back before anything was sent queues the same ref twice, and what arrives
+// elsewhere is the milestone under its old name again.
 func TestARenameCanBeTakenBackBeforeItsMarkIsSent(t *testing.T) {
 	ada, grace := twoBoards(t)
 	for _, args := range [][]string{
@@ -585,6 +514,10 @@ func TestARenameCanBeTakenBackBeforeItsMarkIsSent(t *testing.T) {
 		if out, err := runAndSend(t, ada, args...); err != nil {
 			t.Fatalf("%v: %v\n%s", args, err, out)
 		}
+	}
+	first, err := milestone.Load(ada, "a")
+	if err != nil {
+		t.Fatal(err)
 	}
 	// runCLI sends nothing: both renames stay in the outbox.
 	if out, err := runCLI(t, ada, "milestone", "rename", "a", "alpha"); err != nil {
@@ -609,7 +542,459 @@ func TestARenameCanBeTakenBackBeforeItsMarkIsSent(t *testing.T) {
 	if strings.Join(names, ",") != "a,b" {
 		t.Errorf("grace's board has %v, want a and b", names)
 	}
-	if b, _ := milestone.Load(grace, "b"); strings.Join(b.After, ",") != "a" {
-		t.Errorf("grace's b comes after %v, want a", b.After)
+	if b, _ := milestone.Load(grace, "b"); strings.Join(b.After, ",") != first.ID {
+		t.Errorf("grace's b comes after %v, want %s", b.After, first.ID)
 	}
+}
+
+// A new milestone lives in <name>-<ID>.md and travels on a ref named after its
+// ID alone, carrying that file: the name is nowhere in the ref's name.
+func TestAMilestoneIsFiledUnderItsIDAndTravelsOnTheIDRef(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "backend"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(ada, "backend")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !milestone.IsID(ms.ID) || filepath.Base(ms.Path(ada)) != "backend-"+ms.ID+".md" {
+		t.Fatalf("the file is %s", ms.Path(ada))
+	}
+	if refs := strings.Fields(gitOut(t, ada, "for-each-ref", "--format=%(refname)", gitref.MilestonePrefix)); len(refs) != 1 || refs[0] != gitref.MilestoneRefName(ms.ID) {
+		t.Fatalf("milestone refs %v, want only %s", refs, gitref.MilestoneRefName(ms.ID))
+	}
+	repo := &gitref.Repo{Dir: ada, Remote: "origin"}
+	file, content, _, err := repo.ReadMilestone(ms.ID)
+	if err != nil || file != ms.FileName() || string(content) != string(ms.Bytes()) {
+		t.Errorf("the ref carries %q (%v), want %q with the file's bytes", file, err, ms.FileName())
+	}
+}
+
+// A rename changes the file name on the one ref: the ID, the ref and every
+// milestone that follows it stay as they are, and exactly one ref is written.
+func TestARenameWritesOnlyTheFileNameOnTheSameRef(t *testing.T) {
+	ada, _ := twoBoards(t)
+	for _, args := range [][]string{
+		{"milestone", "create", "a", "--after", ""},
+		{"milestone", "create", "b", "--after", "a"},
+	} {
+		if out, err := runAndSend(t, ada, args...); err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+	}
+	a, _ := milestone.Load(ada, "a")
+	b, _ := milestone.Load(ada, "b")
+	before := gitOut(t, ada, "for-each-ref", "--format=%(refname) %(objectname)", gitref.MilestonePrefix)
+
+	if out, err := runAndSend(t, ada, "milestone", "rename", "a", "alpha"); err != nil {
+		t.Fatalf("rename: %v\n%s", err, out)
+	}
+	after := gitOut(t, ada, "for-each-ref", "--format=%(refname) %(objectname)", gitref.MilestonePrefix)
+	changed := 0
+	for _, line := range strings.Split(strings.TrimSpace(after), "\n") {
+		if !strings.Contains(before, line) {
+			changed++
+			if !strings.HasPrefix(line, gitref.MilestoneRefName(a.ID)+" ") {
+				t.Errorf("the rename moved %s", line)
+			}
+		}
+	}
+	if changed != 1 || strings.Count(after, "\n") != 2 {
+		t.Errorf("one ref must change and none appear:\nbefore %safter %s", before, after)
+	}
+	file, _, _, err := (&gitref.Repo{Dir: ada, Remote: "origin"}).ReadMilestone(a.ID)
+	if err != nil || file != "alpha-"+a.ID+".md" {
+		t.Errorf("the ref carries %q (%v)", file, err)
+	}
+	if got, _ := milestone.Load(ada, "b"); strings.Join(got.After, ",") != a.ID || got.FileName() != b.FileName() {
+		t.Errorf("b was touched: after %v", got.After)
+	}
+}
+
+// The first write on a board that still has files from before IDs moves them
+// all, under the lock, whatever it was asked to write.
+func TestTheFirstWriteMovesEveryOldFileToItsID(t *testing.T) {
+	dir := emptyStore(t)
+	dirMS := milestone.Dir(dir)
+	if err := os.MkdirAll(dirMS, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{
+		"q4.md": "---\ncolor: 45\nafter: []\n---\n",
+		"q5.md": "---\ncolor: 46\nafter: [q4]\n---\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dirMS, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if out, err := runCLI(t, dir, "milestone", "ls"); err != nil || !strings.Contains(out, "q4") || !strings.Contains(out, "q5") {
+		t.Fatalf("reading must work on old files: %v\n%s", err, out)
+	}
+	if entries, _ := os.ReadDir(dirMS); len(entries) != 2 || entries[0].Name() != "q4.md" {
+		t.Fatalf("reading changed the directory: %v", entries)
+	}
+	if out, err := runCLI(t, dir, "milestone", "create", "q6"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	var names []string
+	entries, _ := os.ReadDir(dirMS)
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	q6, _ := milestone.Load(dir, "q6")
+	want := "q4-" + milestone.LegacyID("q4") + ".md,q5-" + milestone.LegacyID("q5") + ".md,q6-" + q6.ID + ".md"
+	if strings.Join(names, ",") != want {
+		t.Errorf("directory %v, want %s", names, want)
+	}
+	if q5, _ := milestone.Load(dir, "q5"); strings.Join(q5.After, ",") != milestone.LegacyID("q4") {
+		t.Errorf("q5 comes after %v, want q4's ID", q5.After)
+	}
+}
+
+func oldMilestoneFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	if err := os.MkdirAll(milestone.Dir(dir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(milestone.Dir(dir), name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// The move is a write nobody asked for by name, so it is told — once, on the
+// first command that writes, and not again.
+func TestTheMoveToIDNamesIsToldOnTheFirstWriteOnly(t *testing.T) {
+	dir := emptyStore(t)
+	oldMilestoneFiles(t, dir, map[string]string{"q4.md": "---\ncolor: 45\n---\n", "q5.md": "---\ncolor: 46\n---\n"})
+
+	_, stderr := captureStdio(t, func() {
+		if out, err := runCLI(t, dir, "milestone", "create", "q6"); err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+	})
+	for _, want := range []string{"moved 2 milestone file(s) to ID names", "q4.md -> q4-" + milestone.LegacyID("q4") + ".md", "q5.md -> q5-" + milestone.LegacyID("q5") + ".md"} {
+		if !strings.Contains(stderr, want) {
+			t.Errorf("the message lacks %q:\n%s", want, stderr)
+		}
+	}
+	_, stderr = captureStdio(t, func() {
+		if out, err := runCLI(t, dir, "milestone", "create", "q7"); err != nil {
+			t.Fatalf("second create: %v\n%s", err, out)
+		}
+	})
+	if strings.Contains(stderr, "moved") {
+		t.Errorf("a second write told the move again:\n%s", stderr)
+	}
+}
+
+// Filing and restoring speak file names: the logbook keeps <name>-<ID>.md and
+// restore takes it back to the board and to its ref; an OLD <name>.md found in
+// a logbook lands as <name>-<LegacyID>.md, on its ID ref, with the move told.
+func TestLogbookAndRestoreSpeakIDFileNamesAndMigrateAnOldOne(t *testing.T) {
+	ada, _ := twoBoards(t)
+	done := mkDoneTicket(t, ada, "finished")
+	if out, err := runAndSend(t, ada, "milestone", "create", "round-one", done); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(ada, "round-one")
+	if out, err := runAndSend(t, ada, "logbook", "round-one"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	} else if !strings.Contains(out, "jaira restore "+ms.FileName()) {
+		t.Errorf("logbook names no restorable file %s:\n%s", ms.FileName(), out)
+	}
+	if out, err := runAndSend(t, ada, "restore", ms.FileName()); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	if back, err := milestone.Load(ada, "round-one"); err != nil || back.ID != ms.ID || back.Filed() {
+		t.Fatalf("restore: %v %+v", err, back)
+	}
+
+	// An old filed file in the logbook, as an old build left it.
+	folder := filepath.Join(ada, ticket.DirName, ticket.LogbookSubdir, "ada-20260101", ticket.MilestonesSubdir)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "old-one.md"), []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, stderr := captureStdio(t, func() {
+		if out, err := runAndSend(t, ada, "restore", "old-one.md"); err != nil {
+			t.Fatalf("restore old: %v\n%s", err, out)
+		}
+	})
+	id := milestone.LegacyID("old-one")
+	got, err := milestone.Load(ada, "old-one")
+	if err != nil || got.ID != id || got.FileName() != "old-one-"+id+".md" || got.Filed() {
+		t.Fatalf("restored old file: %v %+v", err, got)
+	}
+	if !strings.Contains(stderr, "old-one.md -> old-one-"+id+".md") {
+		t.Errorf("the move was not told:\n%s", stderr)
+	}
+	file, _, _, err := (&gitref.Repo{Dir: ada, Remote: "origin"}).ReadMilestone(id)
+	if err != nil || file != "old-one-"+id+".md" {
+		t.Errorf("the ID ref carries %q (%v)", file, err)
+	}
+}
+
+// aTicket files a ticket on a two-board clone and returns its handle.
+func aTicket(t *testing.T, dir string) string {
+	t.Helper()
+	if out, err := runCLI(t, dir, "create", "work to group", "--goal", "g", "--context", "c", "--dod", "d"); err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	return handleFromList(t, dir, "work to group")
+}
+
+func milestoneDirNames(t *testing.T, dir string) string {
+	t.Helper()
+	entries, err := os.ReadDir(milestone.Dir(dir))
+	if err != nil {
+		return ""
+	}
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	return strings.Join(names, ",")
+}
+
+// DoD 2: a rename and a create of the same name, made at once on two clones
+// that have not fetched, leave both milestones standing, in either order: they
+// are two refs with two IDs, and nothing needs to be settled between them.
+func TestARenameAndACreateOfTheSameNameAtOnceLoseNothing(t *testing.T) {
+	for _, renameFirst := range []bool{true, false} {
+		ada, grace := twoBoards(t)
+		if out, err := runAndSend(t, ada, "milestone", "create", "backend"); err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+		if out, err := runCLI(t, grace, "fetch"); err != nil {
+			t.Fatalf("fetch: %v\n%s", err, out)
+		}
+		backend, err := milestone.Load(ada, "backend")
+		if err != nil {
+			t.Fatal(err)
+		}
+		rename := func() {
+			if out, err := runAndSend(t, ada, "milestone", "rename", "backend", "frontend"); err != nil {
+				t.Fatalf("rename: %v\n%s", err, out)
+			}
+		}
+		create := func() {
+			if out, err := runAndSend(t, grace, "milestone", "create", "frontend"); err != nil {
+				t.Fatalf("create: %v\n%s", err, out)
+			}
+		}
+		if renameFirst {
+			rename()
+			create()
+		} else {
+			create()
+			rename()
+		}
+		for _, dir := range []string{ada, grace} {
+			if out, err := runCLI(t, dir, "fetch"); err != nil {
+				t.Fatalf("fetch: %v\n%s", err, out)
+			}
+		}
+
+		var ids [2]string
+		for i, dir := range []string{ada, grace} {
+			j := jsonCLI(t, dir, "milestone", "ls")
+			rows, _ := j["milestones"].([]any)
+			if len(rows) != 2 {
+				t.Fatalf("renameFirst=%v: %s has %d milestones, want both: %v", renameFirst, dir, len(rows), rows)
+			}
+			a, b := rows[0].(map[string]any), rows[1].(map[string]any)
+			if a["name"] != "frontend" || b["name"] != "frontend" || a["id"] == b["id"] {
+				t.Fatalf("renameFirst=%v: %s sees %v", renameFirst, dir, rows)
+			}
+			if a["id"].(string) > b["id"].(string) {
+				a, b = b, a
+			}
+			ids[i] = a["id"].(string) + "," + b["id"].(string)
+		}
+		if ids[0] != ids[1] {
+			t.Errorf("the two boards disagree on the IDs: %v", ids)
+		}
+		for _, dir := range []string{ada, grace} {
+			if names := milestoneDirNames(t, dir); strings.Count(names, "frontend-") != 2 || strings.Contains(names, "backend") {
+				t.Errorf("renameFirst=%v: %s holds %s", renameFirst, dir, names)
+			}
+		}
+		file, _, _, err := (&gitref.Repo{Dir: ada, Remote: "origin"}).ReadMilestone(backend.ID)
+		if err != nil || file != "frontend-"+backend.ID+".md" {
+			t.Errorf("the renamed milestone's ref carries %q (%v)", file, err)
+		}
+		task := aTicket(t, ada)
+		_, err = runCLI(t, ada, "milestone", "add", "frontend", task)
+		if err == nil || exitCode(err) != ExitValidation || strings.Count(err.Error(), "frontend-") < 2 {
+			t.Errorf("the name is ambiguous now and says both forms: %v", err)
+		}
+		if out, err := runCLI(t, ada, "milestone", "add", "frontend-"+backend.ID, task); err != nil {
+			t.Errorf("the name-ID form is the way out: %v\n%s", err, out)
+		}
+	}
+}
+
+// DoD 4: boards from before IDs, and a remote that has only name refs, move to
+// IDs without anybody speaking to anybody: reading never writes, the first
+// write moves every old file and pushes the ID refs, the old name refs stay on
+// the remote untouched, the other clone ends with the same bytes and no double,
+// and a name ref that turns up later is taken once and then ignored.
+func TestOldBoardsAndOldRefsMoveToIDsWithoutAgreement(t *testing.T) {
+	ada, grace := twoBoards(t)
+	remote := &gitref.Repo{Dir: ada, Remote: "origin"}
+	q4 := "---\ncolor: 45\nafter: []\n---\n\n# q4\n"
+	q5 := "---\ncolor: 46\nafter: [q4]\n---\n\n# q5\n"
+	for name, body := range map[string]string{"q4": q4, "q5": q5} {
+		if _, err := remote.WriteMilestone(name, name+".md", []byte(body), ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	nameRefs := func() string {
+		return gitOut(t, ada, "ls-remote", "origin", gitref.MilestonePrefix+"q*")
+	}
+	before := nameRefs()
+
+	// grace has old files on disk, nothing fetched: reading changes nothing
+	oldMilestoneFiles(t, grace, map[string]string{"q4.md": q4, "q5.md": q5})
+	j := jsonCLI(t, grace, "milestone", "ls")
+	rows, _ := j["milestones"].([]any)
+	if len(rows) != 2 || rows[0].(map[string]any)["id"] != milestone.LegacyID("q4") {
+		t.Fatalf("grace's ls: %v", rows)
+	}
+	if names := milestoneDirNames(t, grace); names != "q4.md,q5.md" {
+		t.Fatalf("reading wrote: %s", names)
+	}
+	if b, _ := os.ReadFile(filepath.Join(milestone.Dir(grace), "q5.md")); string(b) != q5 {
+		t.Fatal("reading changed a file")
+	}
+
+	// ada fetches the name refs, then her first write sends the ID refs
+	if out, err := runCLI(t, ada, "fetch"); err != nil {
+		t.Fatalf("ada's fetch: %v\n%s", err, out)
+	}
+	task := aTicket(t, ada)
+	if out, err := runAndSend(t, ada, "milestone", "add", "q4", task); err != nil {
+		t.Fatalf("add: %v\n%s", err, out)
+	}
+	id4, id5 := milestone.LegacyID("q4"), milestone.LegacyID("q5")
+	if want := "q4-" + id4 + ".md,q5-" + id5 + ".md"; milestoneDirNames(t, ada) != want {
+		t.Fatalf("ada holds %s, want %s", milestoneDirNames(t, ada), want)
+	}
+	for _, id := range []string{id4, id5} {
+		if _, _, _, err := remote.ReadMilestone(id); err != nil {
+			t.Errorf("the ID ref %s was not pushed: %v", id, err)
+		}
+	}
+	if nameRefs() != before {
+		t.Errorf("the old name refs changed:\nbefore %safter %s", before, nameRefs())
+	}
+
+	// grace fetches: same bytes as ada, the old files gone, no double
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fetch: %v\n%s", err, out)
+	}
+	if got := milestoneDirNames(t, grace); got != milestoneDirNames(t, ada) {
+		t.Errorf("grace holds %s, ada %s", got, milestoneDirNames(t, ada))
+	}
+	for _, f := range strings.Split(milestoneDirNames(t, ada), ",") {
+		a, _ := os.ReadFile(filepath.Join(milestone.Dir(ada), f))
+		g, _ := os.ReadFile(filepath.Join(milestone.Dir(grace), f))
+		if string(a) != string(g) {
+			t.Errorf("%s differs between the clones:\n%s\n%s", f, a, g)
+		}
+	}
+
+	// an old name ref turning up later is taken once, then ignored
+	if _, err := remote.WriteMilestone("q6", "q6.md", []byte("---\ncolor: 47\n---\n"), ""); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, grace, "fetch", "--json"); err != nil || !strings.Contains(out, "milestones_migrated") || !strings.Contains(out, "q6.md") || !strings.Contains(out, "q6-") {
+		t.Fatalf("grace's third fetch: %v\n%s", err, out)
+	}
+	flushRefs()
+	id6 := milestone.LegacyID("q6")
+	if got := milestoneDirNames(t, grace); !strings.Contains(got, "q6-"+id6+".md") || strings.Contains(got, "q6.md") {
+		t.Errorf("q6 was not taken and moved: %s", got)
+	}
+	if out, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatalf("grace's fourth fetch: %v\n%s", err, out)
+	}
+	if got := milestoneDirNames(t, grace); strings.Contains(got, "q6.md") || strings.Count(got, "q6-") != 1 {
+		t.Errorf("q6 came back or doubled: %s", got)
+	}
+}
+
+// An old <name>.md in the logbook restored beside a live milestone of the same
+// name must bring back that file's milestone, not report the live one.
+func TestRestoreOldFileBesideALiveTwinUnfilesTheRestoredOne(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "old-one"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	folder := filepath.Join(ada, ticket.DirName, ticket.LogbookSubdir, "ada-20260101", ticket.MilestonesSubdir)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "old-one.md"), []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runAndSend(t, ada, "restore", "old-one.md"); err != nil {
+		t.Fatalf("restore: %v\n%s", err, out)
+	}
+	got, err := milestone.Load(ada, milestone.LegacyID("old-one"))
+	if err != nil {
+		t.Fatalf("load restored: %v", err)
+	}
+	if got.Filed() {
+		t.Errorf("the restored milestone is still filed")
+	}
+}
+
+// Two milestones sharing a name: create's "already exists at" must name a file
+// that is there, not a name-only path no milestone has.
+func TestCreateOnATwinnedNameNamesARealFile(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "dup"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	twin := "dup-" + milestone.LegacyID("dup") + ".md"
+	if err := os.WriteFile(filepath.Join(milestone.Dir(ada), twin), []byte("---\ncolor: 45\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runAndSend(t, ada, "milestone", "create", "dup")
+	if err == nil {
+		t.Fatalf("create on a taken name succeeded:\n%s", out)
+	}
+	// The hint must be a form 'add' takes, not the name two milestones share.
+	if !strings.Contains(out+err.Error(), "milestone add <dup-") {
+		t.Errorf("hint does not spell the <name>-<ID> forms:\n%s%v", out, err)
+	}
+	entries, _ := os.ReadDir(milestone.Dir(ada))
+	found := false
+	for _, e := range entries {
+		if strings.Contains(out+err.Error(), e.Name()) {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("refusal names no file that exists (%v):\n%s%v", entries, out, err)
+	}
+}
+
+func alphaOf(t *testing.T, dir, name string) (*milestone.Milestone, string) {
+	t.Helper()
+	ms, err := milestone.Load(dir, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(ms.Path(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ms, string(b)
 }

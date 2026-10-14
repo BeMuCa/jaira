@@ -57,9 +57,12 @@ Capturing and picking work:
 - `jaira milestone ls` — the milestones this board already has, with how many
   tickets each holds. **Read it before you create one** and reuse the name that
   is already there; "q4" and "quarter-four" are two names for one round of work.
-  `jaira milestone create <name> [id...]` starts one, `add`/`rm <name> <id>...`
-  put tickets in and take them out, `rename <old> <new>` renames it everywhere,
-  and `jaira logbook <name>` files it once its tickets are finished.
+  `jaira milestone create <name> [id...]` starts one, `add`/`rm <milestone> <id>...`
+  put tickets in and take them out, `rename <old> <new>` changes only its name,
+  and `jaira logbook <milestone>` files it once its tickets are finished. A
+  milestone lives in `<name>-<ID>.md`; give a command its name, its ID or
+  `<name>-<ID>` — a command that writes refuses a name two carry (exit 3) and
+  names both forms, while `jaira list --milestone <name>` shows both.
   `jaira milestone create|set <name> --after <a,b>` places it on the Milestone
   Roadmap, and `jaira milestone set <name> --no-roadmap` takes it off again
 
