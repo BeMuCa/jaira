@@ -351,10 +351,13 @@ func (y *Syncer) Flush() ([]Report, error) {
 	}
 	reports := make([]Report, 0, len(results))
 	for _, r := range results {
+		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindEpic {
+			r = y.rebaseEpic(r)
+		}
 		rep := Report{Result: r}
 		// Only a ticket has a winner to name: the lookup parses the ref's
-		// content as a ticket, and a milestone file is not one.
-		if r.Outcome == outbox.Rejected && r.Kind != outbox.KindMilestone {
+		// content as a ticket, and a milestone or an epic file is not one.
+		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindTicket {
 			if w, err := y.winner(r.ID); err == nil {
 				rep.Winner = w
 			}

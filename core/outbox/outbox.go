@@ -48,6 +48,9 @@ const (
 	KindTicket Kind = "tickets"
 	// KindMilestone is a milestone file's ref.
 	KindMilestone Kind = "milestones"
+	// KindEpic is an epic's ref. An epic has no file on disk, so this
+	// queue is also where an unsent epic is read back from.
+	KindEpic Kind = "epics"
 )
 
 func (k Kind) or(def Kind) Kind {
@@ -130,14 +133,27 @@ func (b *Box) QueueMilestone(name string, op Op, content []byte, lease, by strin
 	return b.queueKind(KindMilestone, name, op, content, lease, by)
 }
 
-// queueKind is what both of those are.
+// QueueEpic files a pending write of an epic, under the same rules.
+func (b *Box) QueueEpic(name string, content []byte, lease, by string) error {
+	return b.queueKind(KindEpic, name, OpWrite, content, lease, by)
+}
+
+// PendingEpic returns the unsent write of one epic. It is what an epic is
+// read from while it waits: with no file on disk, the queue holds the only
+// copy of an edit made offline.
+func (b *Box) PendingEpic(name string) (Entry, bool) { return b.pendingKind(KindEpic, name) }
+
+// queueKind is what all of those are.
 func (b *Box) queueKind(kind Kind, key string, op Op, content []byte, lease, by string) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
 	ref := gitref.RefName(key)
-	if kind == KindMilestone {
+	switch kind {
+	case KindMilestone:
 		ref = gitref.MilestoneRefName(key)
+	case KindEpic:
+		ref = gitref.EpicRefName(key)
 	}
 	now := time.Now().UTC()
 	e := Entry{
@@ -215,7 +231,7 @@ func (b *Box) List() ([]Entry, error) {
 		return nil, err
 	}
 	out = append(out, flat...)
-	for _, kind := range []Kind{KindTicket, KindMilestone} {
+	for _, kind := range []Kind{KindTicket, KindMilestone, KindEpic} {
 		got, err := b.readDir(filepath.Join(b.Dir, string(kind)), kind)
 		if err != nil {
 			return nil, err
@@ -282,6 +298,7 @@ type Sender interface {
 	Write(id string, content []byte, lease string) (string, error)
 	Delete(id, lease string) error
 	WriteMilestone(name string, content []byte, lease string) (string, error)
+	WriteEpic(name string, content []byte, lease string) (string, error)
 }
 
 // Outcome is what became of one queued write during a flush.
@@ -309,6 +326,10 @@ type Result struct {
 	Op      Op
 	Outcome Outcome
 	Err     error
+	// Entry is what was queued. A rejected epic is rebased from it: the
+	// entry has been dropped by then, and its lease and content are what a
+	// three-way merge needs.
+	Entry Entry
 }
 
 // Flush sends what it can and reports each entry.
@@ -341,7 +362,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			if err := b.dropKind(kind, e.ID); err != nil {
 				return results, err
 			}
-			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
+			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr, Entry: e})
 		case errors.Is(sendErr, gitref.ErrOffline), errors.Is(sendErr, gitref.ErrNoGit):
 			results = append(results, Result{ID: e.ID, Kind: kind, Op: e.Op, Outcome: Unsent, Err: sendErr})
 			return results, nil
@@ -356,14 +377,19 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 // back as an error, which Flush reports as Failed and leaves queued: the entry
 // is unreadable, not unwanted.
 //
-// A milestone is only ever written, never deleted: no command deletes one —
-// removing a milestone is rm on its file — so there is nothing to queue.
+// A milestone or an epic is only ever written, never deleted: no command
+// deletes one, so there is nothing to queue.
 func send(s Sender, kind Kind, e Entry) error {
-	if kind == KindMilestone {
+	switch kind {
+	case KindMilestone, KindEpic:
 		if e.Op != OpWrite {
-			return fmt.Errorf("outbox: unknown milestone op %q", e.Op)
+			return fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
 		}
-		_, err := s.WriteMilestone(e.ID, []byte(e.Content), e.Lease)
+		write := s.WriteMilestone
+		if kind == KindEpic {
+			write = s.WriteEpic
+		}
+		_, err := write(e.ID, []byte(e.Content), e.Lease)
 		return err
 	}
 	switch e.Op {
