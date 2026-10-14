@@ -212,7 +212,9 @@ func (y *Syncer) RecordMigration(key, file string, migrated []byte, from string)
 
 // MigrationBase is the base the ID ref's migration commit gives: the migrated
 // content and the old ref's tip it came from. A ref without one was created
-// with its ID.
+// with its ID, or moved there by a build of this change from before the
+// migration commit existed; milestone.AdoptOld merges an old side of such a
+// milestone against an empty base.
 func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
 	if y == nil || y.Usable() != nil {
 		return milestone.Base{}, false

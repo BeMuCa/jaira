@@ -304,15 +304,6 @@ func refSubject(kind outbox.Kind, id, file string) (key, name string) {
 	return "ticket", ticket.Handle(id)
 }
 
-// rejectedAdvice says what a lost race leaves behind, which differs by kind
-// because the two are reconciled in different places.
-//
-// A ticket's local file is left alone and both sides end up on the board, so
-// the conflict is visible and resolvable there. A milestone has no card and no
-// lane: refsync.IncomingMilestones writes every ref whose content differs
-// straight over the local file, so the next fetch replaces this edit with the
-// accepted one and says nothing about it. Telling a milestone writer their
-// file is unchanged would be describing a ticket to them.
 // mergedClashes names the fields both sides changed in a merged milestone
 // write: the winner's value was kept, and the other is in the file as a comment.
 func mergedClashes(cs []milestone.Conflict) string {
@@ -326,6 +317,16 @@ func mergedClashes(cs []milestone.Conflict) string {
 	return "\n  both changed " + strings.Join(fields, ", ") + ": theirs is kept, yours is written into the file as a comment"
 }
 
+// rejectedAdvice says what a lost race leaves behind, which differs by kind
+// because the two are reconciled in different places.
+//
+// A ticket's local file is left alone and both sides end up on the board, so
+// the conflict is visible and resolvable there. A milestone has no card and no
+// lane: its refused write stays queued and refsync merges it into the version
+// that won, which flushRefs reports as merged. This advice is for one that was
+// not merged this time: it is merged at the next send, or nothing of it was
+// left to send. Telling a milestone writer their file is unchanged would be
+// describing a ticket to them.
 func rejectedAdvice(kind outbox.Kind) string {
 	if kind == outbox.KindMilestone {
 		return "the remote's version wins; your edit stays queued and is merged into it at the next send, unless there is nothing of it left to send"

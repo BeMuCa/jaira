@@ -16,10 +16,10 @@ import (
 // <name>.md and the old name ref — after this build moved it to its ID. An
 // update never makes an existing edit disappear, so what that build wrote is
 // merged into the ID milestone instead of being ignored. The merge needs the
-// state the two sides last agreed on: the Base, the migration commit on the ID ref
-// carries it for every clone, and what a clone has merged since is kept here,
-// local only: without it the same old edit would be merged again after the
-// ID side removed what it added.
+// state the two sides last agreed on: the Base, the migration commit on the ID
+// ref carries it for every clone, and what a clone has merged since is kept
+// here, local only: without it the same old edit would be merged again after
+// the ID side removed what it added.
 
 // Base is the old side of a migrated milestone as it stood when it was last
 // merged: the migrated content, and the tip of the old name ref when there was

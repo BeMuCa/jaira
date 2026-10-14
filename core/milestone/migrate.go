@@ -221,9 +221,10 @@ func idFilePath(root, id, fallback string) string {
 // AdoptOld merges what an older build wrote to its old file or old name ref
 // (old, the whole file; tip, the ref's SHA when it came from one) into the ID
 // file of the milestone with this ID, and queues the ref write. Without a
-// base (BaseFor) the old side is merged against an empty one. It does nothing when the old side
-// is what the base says, or when no ID file lies here. The base then becomes the old side as it is now, so
-// the same edit is merged, and reported, once.
+// base (BaseFor) the old side is merged against an empty one. It does nothing
+// when the old side is what the base says, or when no ID file lies here. The
+// base then becomes the old side as it is now, so the same edit is merged, and
+// reported, once.
 func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string) (adopted bool, conflicts []Conflict, err error) {
 	// Neither recorded here nor a migration commit on the ID ref: an empty
 	// base, so everything the old side has is merged in (the union). An old
@@ -267,7 +268,8 @@ func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string
 		return false, conflicts, nil
 	}
 	if err := ticket.WriteAtomic(path, merged); err != nil {
-		// Not written, so not merged: the base stays and the next run tries again.
+		// Not written, so not merged: the base stays and the next run tries
+		// again.
 		return false, conflicts, err
 	}
 	_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip})
