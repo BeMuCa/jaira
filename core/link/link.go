@@ -342,6 +342,19 @@ func (ix *Index) readAll() []*ticket.Ticket {
 	return out
 }
 
+// All returns every ticket the index can see, the filed ones read in. It is
+// what a question about descendants needs — core/epic counts follow-ups
+// through it — and like readAll it is paid for only when asked.
+func (ix *Index) All() []*ticket.Ticket {
+	if ix == nil {
+		return nil
+	}
+	return ix.readAll()
+}
+
+// Lookup resolves one id to its title, lane and place, wherever it lives.
+func (ix *Index) Lookup(id string) (Ref, bool) { return ix.lookup(id) }
+
 // Relations lists every connection of one ticket, in both directions,
 // grouped kind by kind in a fixed order so the view does not reshuffle
 // between openings.

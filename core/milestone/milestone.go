@@ -125,7 +125,7 @@ func (m *Milestone) Remove(id string) bool {
 	}
 	kept := make([]string, 0, len(m.lines))
 	for _, line := range m.lines {
-		if got, ok := parseMember(line); ok && got == id {
+		if got, ok := ParseMember(line); ok && got == id {
 			continue
 		}
 		kept = append(kept, line)
@@ -269,17 +269,19 @@ func parse(text string) *Milestone {
 			}
 			continue
 		}
-		if id, ok := parseMember(line); ok && !m.Has(id) {
+		if id, ok := ParseMember(line); ok && !m.Has(id) {
 			m.members = append(m.members, id)
 		}
 	}
 	return m
 }
 
-// parseMember reads one member line: "- <ticket id>", with anything after the
+// ParseMember reads one member line: "- <ticket id>", with anything after the
 // id — a title, a comment — ignored and kept. Only a well-formed id counts, so
 // an ordinary markdown bullet in the prose is not mistaken for a member.
-func parseMember(line string) (string, bool) {
+// core/epic reads its member lines with this too, so the two lists cannot
+// disagree about what a member line is.
+func ParseMember(line string) (string, bool) {
 	trimmed := strings.TrimSpace(line)
 	rest, ok := strings.CutPrefix(trimmed, "- ")
 	if !ok {
