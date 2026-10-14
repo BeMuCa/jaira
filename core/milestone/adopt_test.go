@@ -145,3 +145,59 @@ func TestMigrateLeavesAnOldNameThatIsTheIDFileItself(t *testing.T) {
 		t.Errorf("the old name was removed although it is the ID file: %v", err)
 	}
 }
+
+func TestAdoptWithoutABaseUnionsAndKeepsThisSideOnAClash(t *testing.T) {
+	cur := strings.Replace(adoptBase, "after: []\n", "after: []\ngoal: ours\n", 1) + "- " + idA + "\n"
+	old := strings.Replace(adoptBase, "after: []\n", "after: []\ngoal: theirs\nowner: o\n", 1) + "- " + idB + "\n"
+	got, c := adopt("", old, cur)
+	ms := FromBytes("alpha-HV9ZDB.md", []byte(got))
+	if ms.Goal != "ours" || !ms.Has(idA) || !ms.Has(idB) || !strings.Contains(got, "owner: o") {
+		t.Errorf("goal %q members %v\n%s", ms.Goal, ms.Members(), got)
+	}
+	if len(c) != 1 || c[0].Field != "goal" || c[0].Old != `"theirs"` {
+		t.Errorf("conflicts %+v", c)
+	}
+}
+
+func conflictLines(s string) []string {
+	var out []string
+	for _, l := range strings.Split(s, "\n") {
+		if strings.HasPrefix(l, "<!--") {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// The comment a clash leaves in the file is not a field and not body: it never
+// makes a later merge see a change, and a second clash on the same field
+// replaces its line instead of stacking another.
+func TestAdoptCommentIsIgnoredByLaterMergesAndNotStacked(t *testing.T) {
+	base := adoptBase
+	cur := strings.Replace(base, "after: []\n", "after: []\ngoal: ours\n", 1)
+	old1 := strings.Replace(base, "after: []\n", "after: []\ngoal: first\n", 1)
+	once, c := adopt(base, old1, cur)
+	if len(c) != 1 || len(conflictLines(once)) != 1 {
+		t.Fatalf("first clash: %v\n%s", c, once)
+	}
+	if ms := FromBytes("alpha-HV9ZDB.md", []byte(once)); ms.Goal != "ours" {
+		t.Errorf("goal %q", ms.Goal)
+	}
+	// the old side did not move: nothing to adopt, the file is untouched
+	if again, c := adopt(old1, old1, once); again != once || len(c) != 0 {
+		t.Errorf("an unchanged old side changed the file or conflicted: %v\n%s", c, again)
+	}
+	// a body only the old side changed is still taken, with the comment kept
+	body := strings.Replace(old1, "# alpha", "# alpha\n\nnew text", 1)
+	got, c := adopt(old1, body, once)
+	if len(c) != 0 || !strings.Contains(got, "new text") || len(conflictLines(got)) != 1 {
+		t.Errorf("body not taken or comment lost: %v\n%s", c, got)
+	}
+	// a second clash on the same field replaces the line
+	old2 := strings.Replace(base, "after: []\n", "after: []\ngoal: second\n", 1)
+	twice, c := adopt(old1, old2, once)
+	lines := conflictLines(twice)
+	if len(c) != 1 || len(lines) != 1 || !strings.Contains(lines[0], "second") || strings.Contains(lines[0], "first") {
+		t.Errorf("second clash stacked or kept the old value: %v\n%s", c, twice)
+	}
+}

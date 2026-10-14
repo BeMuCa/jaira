@@ -174,14 +174,21 @@ func Migrate(root string, rec Recorder) (Result, error) {
 
 // AdoptOld merges what an older build wrote to its old file or old name ref
 // (old, the whole file; tip, the ref's SHA when it came from one) into the ID
-// file of the milestone with this ID, and queues the ref write. It does nothing
-// when no base was recorded, when the old side is what the base says, or when
+// file of the milestone with this ID, and queues the ref write. Without a
+// recorded base it merges from an empty one. It does nothing when the old side is what the base says, or when
 // no ID file lies here. The base then becomes the old side as it is now, so
 // the same edit is merged, and reported, once.
 func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string) (adopted bool, conflicts []Conflict, err error) {
 	base, ok := LoadBase(root, id)
 	if !ok {
-		return false, nil, nil
+		// No base was recorded here: this clone never moved the milestone
+		// itself. The ID ref's first commit is not a base to trust — the moving
+		// write and the first edit are one commit — so the merge starts from
+		// nothing: tickets are unioned, a field either side has survives, and
+		// on a field both have and differ the ID side is kept and the old value
+		// reported. An edit is never dropped; a removal made by the older
+		// build is not seen.
+		base = Base{}
 	}
 	migrated := MigrateContent(old)
 	if base.Content == string(migrated) {

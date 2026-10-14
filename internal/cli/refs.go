@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/hook"
@@ -259,6 +260,12 @@ func flushRefs() {
 			// The normal case says nothing. A line on every write would be
 			// noise on the one path every command takes.
 		case outbox.Rejected:
+			if r.Merged {
+				warnRef(map[string]any{key: r.ID, "outcome": "merged", "conflicts": r.Conflicts},
+					"jaira: %s: someone else wrote it first; your edit was merged into their version and goes out with the next send%s",
+					name, mergedClashes(r.Conflicts))
+				continue
+			}
 			line := "someone else wrote it first"
 			if r.Winner != nil {
 				line = r.Winner.Describe()
@@ -306,6 +313,19 @@ func refSubject(kind outbox.Kind, id, file string) (key, name string) {
 // straight over the local file, so the next fetch replaces this edit with the
 // accepted one and says nothing about it. Telling a milestone writer their
 // file is unchanged would be describing a ticket to them.
+// mergedClashes names the fields both sides changed in a merged milestone
+// write: the winner's value was kept, and the other is in the file as a comment.
+func mergedClashes(cs []milestone.Conflict) string {
+	if len(cs) == 0 {
+		return ""
+	}
+	var fields []string
+	for _, c := range cs {
+		fields = append(fields, c.Field)
+	}
+	return "\n  both changed " + strings.Join(fields, ", ") + ": theirs is kept, yours is written into the file as a comment"
+}
+
 func rejectedAdvice(kind outbox.Kind) string {
 	if kind == outbox.KindMilestone {
 		return "the remote's version wins; the next fetch replaces your file with it, so make this edit again on the fetched one"

@@ -61,7 +61,8 @@ Capturing and picking work:
   put tickets in and take them out, `rename <old> <new>` changes only its name,
   and `jaira logbook <milestone>` files it once its tickets are finished. A
   milestone lives in `<name>-<ID>.md`; give a command its name, its ID or
-  `<name>-<ID>` — a name two carry exits 3 and names both forms.
+  `<name>-<ID>` — a command that writes refuses a name two carry (exit 3) and
+  names both forms, while `jaira list --milestone <name>` shows both.
   `jaira milestone create|set <name> --after <a,b>` places it on the Milestone
   Roadmap, and `jaira milestone set <name> --no-roadmap` takes it off again
 

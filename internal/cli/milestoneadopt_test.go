@@ -236,3 +236,49 @@ func TestAnOldFileBesideTheIDFileIsAdoptedNotRemoved(t *testing.T) {
 		t.Errorf("the ID ref lacks the adopted ticket:\n%s", ref)
 	}
 }
+
+// x3 clone b: a clone that never moved the milestone itself, with the older
+// build's edit in its old file and on the old name ref, while the ID ref is
+// already there. No base was ever recorded here, and the ID ref's first commit
+// is no base (the moving write and the first edit are one commit, here with
+// goal: ga), so the merge starts from nothing: the edit is kept and the ID
+// side's goal is not removed.
+func TestACloneThatNeverMigratedKeepsItsOldBuildEditsWhenTheIDRefIsAlreadyThere(t *testing.T) {
+	ada, grace, oldGrace := oldAlpha(t)
+	if out, err := runAndSend(t, ada, "milestone", "set", "alpha", "--goal", "ga"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	edited := adoptBase + "- " + adoptT1 + "\n"
+	oldGrace(edited)
+	oldMilestoneFiles(t, grace, map[string]string{"alpha.md": edited})
+
+	if out, err := runAndSend(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	ms, _ := alphaFile(t, grace)
+	if !ms.Has(adoptT1) || ms.Goal != "ga" {
+		t.Errorf("goal %q members %v, want the older build's ticket and the ID side's goal", ms.Goal, ms.Members())
+	}
+}
+
+// An edit an older build made in a clone that has the ID file but no recorded
+// base, not sent anywhere yet, is kept too.
+func TestAnUnpushedOldFileEditBesideTheIDFileWithNoBaseIsKept(t *testing.T) {
+	ada, grace := twoBoards(t)
+	oldMilestoneFiles(t, ada, map[string]string{"alpha.md": adoptBase})
+	if out, err := runAndSend(t, ada, "milestone", "set", "alpha", "--goal", "ga"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, grace, "fetch"); err != nil {
+		t.Fatalf("fetch: %v\n%s", err, out)
+	}
+	oldMilestoneFiles(t, grace, map[string]string{"alpha.md": adoptBase + "- " + adoptT1 + "\n"})
+
+	if out, err := runAndSend(t, grace, "milestone", "set", "alpha", "--goal", "gb"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	ms, _ := alphaFile(t, grace)
+	if !ms.Has(adoptT1) {
+		t.Errorf("members %v, want the old file's ticket kept", ms.Members())
+	}
+}

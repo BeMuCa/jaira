@@ -30,7 +30,10 @@ func refFetchEvery() time.Duration { return settings.Load().FetchInterval() }
 type refFetchedMsg struct {
 	arrivals   []refsync.Arrival
 	milestones refsync.MilestonesFetched
-	err        error
+	// merged names the milestones whose queued edit the remote refused and
+	// that were merged into the version that won.
+	merged []string
+	err    error
 }
 
 // newSyncer wires the board's ticket writes to the refs they travel on, with
@@ -79,12 +82,23 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 		// somebody working a whole day in the board left the team looking at
 		// yesterday's tickets — and their own accepted work came back as a
 		// card, because the ref still said what it said this morning.
-		if _, err := y.Flush(); err != nil {
+		reports, err := y.Flush()
+		if err != nil {
 			return refFetchedMsg{err: err}
+		}
+		var merged []string
+		for _, r := range reports {
+			if r.Merged {
+				name, _, _ := milestone.FileIdentity(strings.TrimSuffix(r.File, ".md"))
+				if r.File == "" {
+					name = r.ID
+				}
+				merged = append(merged, name)
+			}
 		}
 		arrivals, err := y.Incoming()
 		if err != nil || y.Store == nil {
-			return refFetchedMsg{arrivals: arrivals, err: err}
+			return refFetchedMsg{arrivals: arrivals, merged: merged, err: err}
 		}
 		// Milestones ride the same fetch, exactly as 'jaira fetch' takes them:
 		// a board that needed a command beside it to show a teammate's
@@ -94,15 +108,18 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 		if errors.As(err, &re) {
 			err = nil // written here, only the queueing failed: best effort, as in the CLI
 		}
-		return refFetchedMsg{arrivals: arrivals, milestones: ms, err: err}
+		return refFetchedMsg{arrivals: arrivals, milestones: ms, merged: merged, err: err}
 	}
 }
 
 // announceMilestones says what a fetch did to milestone files, as one line on
 // the board like arrivals. Names, not counts: a round of work you are in has
 // changed, and that is a name.
-func (m *Model) announceMilestones(f refsync.MilestonesFetched) {
+func (m *Model) announceMilestones(f refsync.MilestonesFetched, merged []string) {
 	var parts []string
+	if len(merged) > 0 {
+		parts = append(parts, "your edit of "+strings.Join(merged, ", ")+" was refused, a teammate wrote first; merged into theirs, sent next")
+	}
 	if len(f.Wrote) > 0 {
 		parts = append(parts, "milestones updated: "+strings.Join(f.Wrote, ", "))
 	}

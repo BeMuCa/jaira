@@ -369,11 +369,11 @@ func TestFetchWaitsForTheMilestoneLock(t *testing.T) {
 // takes back, and that an agent reading --json finds under the key "ticket".
 //
 // The second line matters as much: a rejected ticket keeps its local file and
-// shows both sides on the board, but a rejected milestone is overwritten by
-// the next fetch (refsync.IncomingMilestones), so the edit has to be made
-// again on the fetched file. Telling that user their file is unchanged sends
-// them away believing work is safe that is about to be discarded.
-func TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt(t *testing.T) {
+// shows both sides on the board, and a rejected milestone is merged into the
+// version that won (refsync.Flush), so the edit is neither dropped nor left for
+// the next fetch to overwrite. Telling that user their file is unchanged sends
+// them away believing something other than what happened.
+func TestARejectedMilestoneIsNamedAndSaysItWasMergedNotDropped(t *testing.T) {
 	ada, grace := twoBoards(t)
 
 	if out, err := runAndSend(t, ada, "milestone", "create", "next-release"); err != nil {
@@ -395,14 +395,24 @@ func TestARejectedMilestoneIsNamedAndSaysTheFetchWillReplaceIt(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(stderr, "jaira: next-release was not sent") {
-		t.Errorf("the rejection does not name the milestone:\n%s", stderr)
+	if !strings.Contains(stderr, "jaira: next-release: someone else wrote it first; your edit was merged") {
+		t.Errorf("the rejection does not name the milestone and say it was merged:\n%s", stderr)
 	}
-	if !strings.Contains(stderr, "the next fetch replaces your file") {
-		t.Errorf("the rejection does not say the fetch will replace the file:\n%s", stderr)
+	if !strings.Contains(stderr, "both changed goal: theirs is kept") {
+		t.Errorf("the clash is not told:\n%s", stderr)
 	}
 	if strings.Contains(stderr, "your file is unchanged") {
 		t.Errorf("the rejection tells a milestone writer a ticket's story:\n%s", stderr)
+	}
+	// the edit is neither lost nor left for the next fetch to overwrite
+	if _, raw := alphaOf(t, grace, "next-release"); !strings.Contains(raw, "grace's") {
+		t.Errorf("grace's goal is gone from her file:\n%s", raw)
+	}
+	if _, err := runCLI(t, grace, "fetch"); err != nil {
+		t.Fatal(err)
+	}
+	if _, raw := alphaOf(t, grace, "next-release"); !strings.Contains(raw, "grace's") {
+		t.Errorf("the next fetch replaced her edit:\n%s", raw)
 	}
 }
 
@@ -974,4 +984,17 @@ func TestCreateOnATwinnedNameNamesARealFile(t *testing.T) {
 	if !found {
 		t.Errorf("refusal names no file that exists (%v):\n%s%v", entries, out, err)
 	}
+}
+
+func alphaOf(t *testing.T, dir, name string) (*milestone.Milestone, string) {
+	t.Helper()
+	ms, err := milestone.Load(dir, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(ms.Path(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ms, string(b)
 }

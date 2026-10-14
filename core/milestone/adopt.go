@@ -122,12 +122,14 @@ func Adopt(name string, base, old, cur []byte, all []*Milestone) ([]byte, []Conf
 		}
 	}
 
+	notes := conflictNotes(res)
 	bp, op, cp := prose(b), prose(o), prose(c)
 	if bp != op && cp != op {
 		if cp != bp {
 			conflicts = append(conflicts, Conflict{Milestone: name, Field: "body", Old: quoteOld(op, true)})
 		} else {
 			res = withBody(res, o)
+			res.lines = append(res.lines, notes...)
 		}
 	}
 
@@ -151,13 +153,8 @@ func Adopt(name string, base, old, cur []byte, all []*Milestone) ([]byte, []Conf
 		res.Add(id)
 	}
 
-	if len(conflicts) > 0 {
-		var parts []string
-		for _, k := range conflicts {
-			parts = append(parts, k.Field+": "+k.Old)
-		}
-		res.lines = append(res.lines, "<!-- an older build changed this too and its value was not taken: "+
-			strings.ReplaceAll(strings.Join(parts, "; "), "--", "-")+" -->")
+	for _, k := range conflicts {
+		res.setConflictNote(k)
 	}
 	if bytes.Equal(res.Bytes(), c.Bytes()) {
 		return cur, nil
@@ -221,11 +218,44 @@ func prose(m *Milestone) string {
 	}
 	var kept []string
 	for _, l := range m.lines[start:] {
-		if _, member := parseMember(l); !member {
+		if _, member := parseMember(l); !member && !isConflictNote(l) {
 			kept = append(kept, l)
 		}
 	}
 	return strings.TrimSpace(strings.Join(kept, "\n"))
+}
+
+// The comment a clash leaves in the file, one line per field. It is neither a
+// field nor body: prose skips it, so it never shows up in a later comparison.
+const conflictNotePrefix = "<!-- another edit changed "
+
+func isConflictNote(line string) bool { return strings.HasPrefix(line, conflictNotePrefix) }
+
+func conflictNoteLine(c Conflict) string {
+	return conflictNotePrefix + c.Field + " too and its value was not taken: " +
+		strings.ReplaceAll(c.Old, "--", "-") + " -->"
+}
+
+func conflictNotes(m *Milestone) []string {
+	var out []string
+	for _, l := range m.lines {
+		if isConflictNote(l) {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// setConflictNote writes the line for c's field, replacing the one an earlier
+// clash on the same field left.
+func (m *Milestone) setConflictNote(c Conflict) {
+	line := conflictNoteLine(c)
+	if slices.Contains(m.lines, line) {
+		return
+	}
+	own := conflictNotePrefix + c.Field + " too "
+	m.lines = slices.DeleteFunc(slices.Clone(m.lines), func(l string) bool { return strings.HasPrefix(l, own) })
+	m.lines = append(m.lines, line)
 }
 
 // withBody is res with the lines below its frontmatter replaced by o's.

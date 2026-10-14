@@ -541,6 +541,11 @@ func (w Winner) Holds() string {
 type Report struct {
 	outbox.Result
 	Winner *Winner `json:"winner,omitempty"`
+	// Merged is set on a refused milestone write whose edit was merged into
+	// the version that won, and queued again; Conflicts are the fields both
+	// sides changed, where the winner's value was kept.
+	Merged    bool                 `json:"merged,omitempty"`
+	Conflicts []milestone.Conflict `json:"conflicts,omitempty"`
 }
 
 // Flush sends what the outbox holds and reports each entry, naming who was
@@ -578,6 +583,12 @@ func (y *Syncer) Flush() ([]Report, error) {
 	if err := y.tidyMilestoneEntries(); err != nil {
 		return nil, err
 	}
+	queued := map[string]outbox.Entry{}
+	for _, e := range mustList(y.Box) {
+		if e.Kind == outbox.KindMilestone {
+			queued[e.ID] = e
+		}
+	}
 	results, err := y.Box.Flush(y.Repo)
 	if err != nil {
 		return nil, err
@@ -585,6 +596,11 @@ func (y *Syncer) Flush() ([]Report, error) {
 	reports := make([]Report, 0, len(results))
 	for _, r := range results {
 		rep := Report{Result: r}
+		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindMilestone {
+			if e, ok := queued[r.ID]; ok {
+				rep.Merged, rep.Conflicts = y.mergeRefused(e)
+			}
+		}
 		// Only a ticket has a winner to name: the lookup parses the ref's
 		// content as a ticket, and a milestone file is not one.
 		if r.Outcome == outbox.Rejected && r.Kind != outbox.KindMilestone {
@@ -595,6 +611,53 @@ func (y *Syncer) Flush() ([]Report, error) {
 		reports = append(reports, rep)
 	}
 	return reports, nil
+}
+
+func mustList(b *outbox.Box) []outbox.Entry {
+	entries, _ := b.List()
+	return entries
+}
+
+// mergeRefused keeps the edit of a milestone write the remote refused, because
+// a teammate wrote the ref first. The flush dropped the entry, and without this
+// the next fetch would replace the file with the teammate's version: the edit
+// would be gone. It is merged into the version that won — the ref as this
+// clone has just fetched it — from the state the write was leased on, and the
+// result is written to the file and queued again, leased on the winner. A
+// field both sides changed keeps the winner's value and the other is written
+// into the file as a comment. It reports whether it merged; on any failure
+// the file is left as it is.
+func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
+	if y.Store == nil {
+		return false, nil
+	}
+	file, cur, _, err := y.Repo.ReadMilestone(e.ID)
+	if err != nil {
+		return false, nil
+	}
+	var base []byte
+	if e.Lease != "" {
+		base, _ = y.Repo.ReadMilestoneAt(e.Lease)
+	}
+	all, err := milestone.LoadAll(y.Store.Root)
+	if err != nil {
+		return false, nil
+	}
+	name := milestone.FromBytes(file, cur).Name
+	merged, conflicts := milestone.Adopt(name, base, []byte(e.Content), cur, all)
+	if bytes.Equal(merged, cur) {
+		return false, nil
+	}
+	if err := ticket.WriteAtomic(filepath.Join(milestone.Dir(y.Store.Root), file), merged); err != nil {
+		return false, nil
+	}
+	if e.File != "" && e.File != file {
+		_ = os.Remove(filepath.Join(milestone.Dir(y.Store.Root), e.File))
+	}
+	if err := y.RecordMilestone(e.ID, file, merged); err != nil {
+		return false, nil
+	}
+	return true, conflicts
 }
 
 // tidyMilestoneEntries settles the milestone writes the queue may still hold

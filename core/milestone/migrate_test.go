@@ -92,8 +92,14 @@ func TestMigrateRemovesMarksKeepsNewerTargetsAndSkipsExistingRefs(t *testing.T) 
 	if b, _ := os.ReadFile(filepath.Join(Dir(root), "both-"+LegacyID("both")+".md")); !strings.Contains(string(b), "color: 99") {
 		t.Error("the newer target was overwritten")
 	}
-	if len(rec.names) != 0 {
-		t.Errorf("recorded %v: the target existed or the ref did", rec.names)
+	// "ref" has its ref and was not queued again. "both" had an old file next
+	// to its target and no base: the target's color wins, the old one is told
+	// in a comment, and that note is the one write.
+	if len(rec.names) != 1 || rec.names[0] != LegacyID("both") {
+		t.Errorf("recorded %v: only the target that took a note is written again", rec.names)
+	}
+	if b, _ := os.ReadFile(filepath.Join(Dir(root), "both-"+LegacyID("both")+".md")); !strings.Contains(string(b), "color 45") && !strings.Contains(string(b), "color too") {
+		t.Errorf("the old value was dropped without a word:\n%s", b)
 	}
 }
 
