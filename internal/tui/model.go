@@ -59,6 +59,7 @@ const (
 	modeMilestones
 	modeLinks
 	modeUsers
+	modeLayer
 )
 
 // Model is the board's state.
@@ -78,15 +79,11 @@ type Model struct {
 	// direction a card and the filter both need and the files do not give.
 	milestones []*milestone.Milestone
 	mstones    milestone.Index
-	// msIdx is the cursor in the milestone picker, the one gesture that pulls
-	// the board down to a single round of work.
-	msIdx int
-	// users is the user picker's list, userIdx its cursor, and userPicked
-	// the names ticked in it, lower-cased. All three are built when the
-	// picker opens.
-	users      []userRow
-	userIdx    int
-	userPicked map[string]bool
+	// users is the user picker's list, built when the picker opens.
+	users []userRow
+	// pick is the cursor and the ticks of the open picker, u's or M's; see
+	// ticks.go.
+	pick tickPicker
 
 	tickets []*ticket.Ticket
 	cols    []column
@@ -169,6 +166,9 @@ type Model struct {
 	// this for each of them would list the logbook once per card.
 	index *link.Index
 
+	// layer is the open milestone layer, nil when it is closed; see layer.go.
+	layer *layerView
+
 	// links is the open link window, nil when it is closed. It holds its own
 	// rows because building them reads the logbook, which must not happen
 	// per keypress.
@@ -247,13 +247,21 @@ type Model struct {
 	// what the person just did, this one to what happened while they were
 	// doing it.
 	flashMsg string
-	flashAt  time.Time
+	// twinned is the twins the board last flashed about, so a reload that
+	// finds the same ones does not say it again.
+	twinned string
+	flashAt time.Time
 
 	// watch carries filesystem events. A watcher is more responsive than the
 	// timer, but the timer stays as a backstop because change notifications are
 	// unreliable on some filesystems, notably Windows drives mounted into WSL2.
-	watch  chan struct{}
+	// Each event names the files that changed, so only those are read again.
+	watch  chan []string
 	closer func()
+
+	// fullAt is when every ticket was last decoded from scratch; see
+	// fullReparseEvery.
+	fullAt time.Time
 
 	// thinEmpty is whether lanes holding no tickets are drawn thin on the
 	// multi-column board. Session-only, reset on every launch: nothing about
@@ -316,6 +324,10 @@ func New(s *ticket.Store) (*Model, error) {
 	// the board files the write and a command with a route sends it.
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
+	// The board lists every 2 seconds, so it is the one reader worth a cache of
+	// decoded tickets; the CLI is one-shot and never asks for it.
+	s.EnableCache()
+	m.fullAt = time.Now()
 	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
@@ -347,6 +359,8 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	s.Actor = m.me
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
+	s.EnableCache()
+	m.fullAt = time.Now()
 	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
@@ -368,10 +382,13 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 
 // reload rebuilds the whole view from disk.
 //
-// A full rescan is used rather than applying incremental changes: at any
-// plausible ticket count it is cheap, and an incremental path would be a second
-// source of truth that has to stay consistent with edits made entirely outside
-// this process (a git pull, another session, a hand edit).
+// Every list is read again, but a ticket file is only decoded again when its
+// modification time or size moved, its ref moved, or the file watcher named it
+// (see Store.EnableCache). Decoding every ticket every 2 seconds was what kept
+// an idle board at 50-80 % of a CPU core; stat-ing the files costs nothing
+// measurable. Reading from disk each time, rather than applying events to the
+// view, keeps edits made entirely outside this process (a git pull, another
+// session, a hand edit) on the same path as our own.
 func (m *Model) reload() error {
 	lanes, err := lane.Load(m.store.Root)
 	if err != nil {
@@ -390,6 +407,7 @@ func (m *Model) reload() error {
 	}
 	m.milestones = all
 	m.mstones = milestone.Build(all)
+	m.flashTwins()
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
@@ -415,6 +433,7 @@ func (m *Model) reload() error {
 	m.refMarks()
 	m.rebuild()
 	m.refreshLiveBoards()
+	m.refreshLayer()
 	return nil
 }
 
@@ -850,7 +869,8 @@ func (m *Model) Init() tea.Cmd {
 // Failure is not fatal: the periodic rescan already keeps the board correct, so a
 // platform without working notifications is merely less immediate.
 func (m *Model) startWatching() {
-	m.watch = make(chan struct{}, 1)
+	ch := make(chan []string, 1)
+	m.watch = ch
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return
@@ -862,27 +882,36 @@ func (m *Model) startWatching() {
 
 	go func() {
 		// Coalesce bursts: a git pull touches many files at once, and re-rendering
-		// per event would thrash the screen for one logical change.
-		var pending bool
+		// per event would thrash the screen for one logical change. The names
+		// collect meanwhile, so the burst arrives as one list of files.
+		pending := map[string]struct{}{}
 		debounce := time.NewTimer(time.Hour)
 		defer debounce.Stop()
 		for {
 			select {
-			case _, ok := <-w.Events:
+			case ev, ok := <-w.Events:
 				if !ok {
 					return
 				}
-				if !pending {
-					pending = true
+				if len(pending) == 0 {
 					debounce.Reset(200 * time.Millisecond)
 				}
+				pending[ev.Name] = struct{}{}
 			case <-debounce.C:
-				if pending {
-					pending = false
-					select {
-					case m.watch <- struct{}{}:
-					default:
-					}
+				if len(pending) == 0 {
+					continue
+				}
+				paths := make([]string, 0, len(pending))
+				for p := range pending {
+					paths = append(paths, p)
+				}
+				select {
+				case ch <- paths:
+					pending = map[string]struct{}{}
+				default:
+					// The board has not taken the last list yet. Keep these names
+					// and try again, rather than dropping the change.
+					debounce.Reset(200 * time.Millisecond)
 				}
 			case _, ok := <-w.Errors:
 				if !ok {
@@ -900,15 +929,15 @@ func (m *Model) Close() {
 	}
 }
 
-type changeMsg struct{}
+// changeMsg says which files the watcher saw change.
+type changeMsg struct{ paths []string }
 
-func waitForChange(ch chan struct{}) tea.Cmd {
+func waitForChange(ch chan []string) tea.Cmd {
 	if ch == nil {
 		return nil
 	}
 	return func() tea.Msg {
-		<-ch
-		return changeMsg{}
+		return changeMsg{paths: <-ch}
 	}
 }
 
@@ -956,6 +985,28 @@ func (m *Model) readyToFile() int {
 // flash puts a line on the board without taking the screen.
 func (m *Model) flash(msg string) { m.flashMsg, m.flashAt = msg, time.Now() }
 
+// flashTwins says, once per set of twins, that two milestones share a name and
+// how to end it. The same twins found again on the next reload stay quiet.
+func (m *Model) flashTwins() {
+	twins := milestone.Twins(m.milestones)
+	var key []string
+	for _, t := range twins {
+		key = append(key, strings.Join(t.Labels, ","))
+	}
+	if k := strings.Join(key, ";"); k != m.twinned {
+		// A fetch's news is up: the twins wait for the next reload rather
+		// than replace it.
+		if len(twins) > 0 && m.flashLine() != "" {
+			return
+		}
+		m.twinned = k
+		if len(twins) > 0 {
+			t := twins[0]
+			m.flash(fmt.Sprintf("⚠ milestones named %q: rename one with %s", t.Name, t.RenameCommand()))
+		}
+	}
+}
+
 // flashLine returns what to show, or "" once it has been up long enough.
 func (m *Model) flashLine() string {
 	if m.flashMsg == "" || time.Since(m.flashAt) > flashFor {
@@ -966,9 +1017,21 @@ func (m *Model) flashLine() string {
 
 type tickMsg time.Time
 
+// fullReparseEvery is how often the tick throws the ticket cache away and
+// decodes everything. The 2-second tick already sees a changed size or
+// modification time and a moved ref, and the watcher names the files it saw
+// change. What neither sees is an edit that keeps a file's size and its
+// timestamp, outside the cache's 2-second racy window (cp -p, tar, rsync -t, a
+// clock that differs on a network drive). That is rare, so this catches it late
+// and cheaply: one decode per ticket, once per interval. It also drops cache
+// entries for paths that no longer exist.
+const fullReparseEvery = 15 * time.Minute
+
 // tick drives a periodic rescan. A file watcher is more responsive, but a timer
 // is the backstop that keeps the board correct on filesystems where change
-// notifications are unreliable — notably Windows drives mounted into WSL2.
+// notifications are unreliable — notably Windows drives mounted into WSL2,
+// where a git pull would otherwise stay invisible. Each tick stats every ticket
+// file and decodes only what changed.
 func tick() tea.Cmd {
 	return tea.Tick(2*time.Second, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
@@ -989,6 +1052,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
+		if time.Since(m.fullAt) >= fullReparseEvery {
+			m.store.ForgetAll()
+			m.fullAt = time.Now()
+		}
 		// Preserve the cursor and any open pane across a background refresh.
 		_ = m.reload()
 		return m, tick()
@@ -1004,11 +1071,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
 		_ = m.reload()
 		return m, nil
 
 	case changeMsg:
+		// Only these files are read again; every other ticket comes from the cache.
+		m.store.Forget(msg.paths...)
 		_ = m.reload()
 		return m, waitForChange(m.watch)
 
@@ -1108,6 +1178,11 @@ func (m *Model) insertText(text string) {
 
 	case modeCreate, modeDelete:
 		m.input += foldToOneLine(text)
+
+	case modeLayer:
+		if l := m.layer; l != nil && l.stage == stageForm {
+			l.form.vals[l.form.field] += foldToOneLine(text)
+		}
 	}
 }
 
@@ -1199,7 +1274,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modePipeline:
-		if s == "q" || s == "ctrl+c" {
+		// The compact view is the board seen another way, not a page below it,
+		// so q and esc leave it exactly as q leaves the board: back to the
+		// launcher, or out of jaira when it was started without one.
+		if s == "q" || s == "esc" || s == "ctrl+c" {
 			m.Close()
 			return m, tea.Quit
 		}
@@ -1240,45 +1318,19 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeUsers:
-		m.keyUsers(s)
+		m.keyTicks(s, "u", m.userNames())
 		return m, nil
 
 	case modeMilestones:
-		n := len(m.milestones)
-		switch s {
-		case "esc", "M", "q":
-			m.mode = m.returnTo
-		case "j", "down":
-			if n > 0 {
-				m.msIdx = (m.msIdx + 1) % n
-			}
-		case "k", "up":
-			if n > 0 {
-				m.msIdx = (m.msIdx - 1 + n) % n
-			}
-		case "enter":
-			// The gesture writes the ordinary filter rather than carrying a
-			// second kind of narrowing beside it: one filter means esc clears
-			// this the same way it clears a typed one, and / shows what the
-			// board is currently narrowed to.
-			// Only the milestone: part: whatever else narrows the board — the
-			// people the user picker ticked, a typed word — stays.
-			if m.msIdx >= 0 && m.msIdx < n {
-				m.setFilterTerm("milestone", m.milestones[m.msIdx].Name)
-			}
-			m.mode = m.returnTo
-		case "x":
-			// Out of the milestone and back to the board, without having to
-			// remember that esc on the board does it — keeping the rest of
-			// the filter, as enter does.
-			m.setFilterTerm("milestone")
-			m.mode = m.returnTo
-		}
+		m.keyTicks(s, "M", m.milestoneNames())
 		return m, nil
 
 	case modeLinks:
 		m.keyLinks(s)
 		return m, nil
+
+	case modeLayer:
+		return m.keyLayer(k)
 
 	case modeMessage:
 		// A refused move offers its own way out. f arms the override and y takes
@@ -1366,7 +1418,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.projIdx < len(m.projects) {
 				cmd := m.switchBoard(m.projects[m.projIdx].Root)
-				m.mode = modeBoard
+				// A board that would not open says why, over this list.
+				if m.mode != modeMessage {
+					m.mode = modeBoard
+				}
 				return m, cmd
 			}
 		case "x":
@@ -1417,7 +1472,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detail = nil
 		case "n":
 			m.startFollowUp()
-		case "L":
+		case "l":
 			// The same window, over the open ticket rather than over the
 			// board. This is where it is wanted most: reading one ticket is
 			// exactly when "what else is this attached to" comes up.
@@ -1509,9 +1564,12 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		m.Close()
 		return m, tea.Quit
-	case "h", "left":
+	// The arrows alone change lanes: l opens the link window and L the
+	// milestone layer, and an h left meaning "lane left" beside them would
+	// be half of a pair whose other half now does something else.
+	case "left":
 		m.moveLane(-1)
-	case "l", "right":
+	case "right":
 		m.moveLane(1)
 	case "j", "down":
 		m.moveCard(1)
@@ -1542,23 +1600,25 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = modeLegend
 	case "M":
 		// Not m: m is move and must keep meaning that. The picker narrows the
-		// board to one round of work in one gesture, which is the whole reason
+		// board to the rounds of work ticked in it, which is the whole reason
 		// a milestone is worth having.
 		if len(m.milestones) == 0 {
 			m.notify("No milestones on this board yet.\n\nCreate one with 'jaira milestone create <name>' and add tickets to it.", false)
 		} else {
-			m.returnTo = m.mode
-			m.msIdx = 0
-			m.mode = modeMilestones
+			m.openTicks(modeMilestones, "milestone")
 		}
 	case "u":
 		// Next to the milestone picker in purpose: narrowing the board to
 		// some of the people on it, through the same one filter.
 		m.openUsers()
-	case "L":
+	case "l":
 		// Everything connected to this card, wherever the other end now
 		// lives — the board, a ref, the logbook, the archive.
 		m.openLinks()
+	case "L":
+		// The board's second view: the milestones as bubbles, what comes
+		// after what, and how far along each one is.
+		m.openLayer()
 	case "/":
 		m.mode = modeFilter
 		m.input = m.filter
@@ -1691,6 +1751,17 @@ func (m *Model) milestoneColors(t *ticket.Ticket) [cardSlots]cardSlot {
 	return slots
 }
 
+// milestoneNames is the milestone picker's rows as the labels they show: the
+// name, and <name>-<ID> where two milestones share one.
+func (m *Model) milestoneNames() []string {
+	labels := milestone.Labels(m.milestones)
+	out := make([]string, len(m.milestones))
+	for i, ms := range m.milestones {
+		out[i] = labels[ms.ID]
+	}
+	return out
+}
+
 // activeTags is every tag carried by a ticket on the board, deduplicated and
 // sorted. It reads m.tickets — every ticket the board holds, not only the
 // ones a lane happens to have on screen — so the legend does not change
@@ -1725,13 +1796,14 @@ func (m *Model) moveCard(d int) {
 // notify puts a message on screen. Dismissing it goes back to the page it was
 // raised on. A message raised by the move picker keeps the picker's own answer:
 // the picker is on its way out, and the page behind it is what the message
-// belongs to. The screens that own their own state (settings, the lane editor,
-// the default-board picker) still dismiss to the board, which is what they did
-// before this existed.
+// belongs to. The rest dismiss to the board: the legend and the u/M pickers
+// keep their own way back in returnTo, which a message over them would
+// overwrite.
 func (m *Model) notify(msg string, isErr bool) {
 	m.message, m.isErr = msg, isErr
 	switch m.mode {
-	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks:
+	case modeBoard, modePipeline, modeLaneFocus, modeDetail, modeLinks, modeLayer,
+		modeSettings, modeLanes, modeDefaultBoard, modeProjects:
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.

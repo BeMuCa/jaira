@@ -112,7 +112,10 @@ func webPush() error {
 	}
 	for _, r := range reports {
 		if r.Outcome != outbox.Sent {
-			_, name := refSubject(r.Kind, r.ID)
+			_, name := refSubject(r.Kind, r.ID, r.File)
+			if r.Merged {
+				return fmt.Errorf("%s: someone else wrote it first; the change was merged into theirs and goes out with the next send", name)
+			}
 			if r.Err != nil {
 				return fmt.Errorf("%s is %s: %v", name, r.Outcome, r.Err)
 			}

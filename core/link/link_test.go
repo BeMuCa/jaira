@@ -87,7 +87,7 @@ func TestBlockerInTheLogbookIsSatisfied(t *testing.T) {
 	if !ix.Satisfied(blocker) {
 		t.Errorf("a logbooked ticket is finished work; %s must count as satisfied", ticket.Handle(blocker))
 	}
-	ref, _ := ix.lookup(blocker)
+	ref, _ := ix.Lookup(blocker)
 	if ref.Place != PlaceLogbook {
 		t.Errorf("place = %q, want %q", ref.Place, PlaceLogbook)
 	}
@@ -258,7 +258,7 @@ func TestATicketOnlyOnARefIsNamedAsSuch(t *testing.T) {
 	}
 	ix := Build(s, lanes(t), []*ticket.Ticket{onRef})
 
-	ref, ok := ix.lookup(onRef.ID)
+	ref, ok := ix.Lookup(onRef.ID)
 	if !ok || ref.Place != PlaceRef {
 		t.Fatalf("place = %q (found %v), want %q", ref.Place, ok, PlaceRef)
 	}
@@ -281,7 +281,7 @@ func TestTheFiledCopyBeatsTheRefCopy(t *testing.T) {
 
 	ix := Build(s, lanes(t), []*ticket.Ticket{stale})
 
-	ref, _ := ix.lookup(id)
+	ref, _ := ix.Lookup(id)
 	if ref.Place != PlaceLogbook {
 		t.Errorf("place = %q, want %q — the filed copy is the live one", ref.Place, PlaceLogbook)
 	}
@@ -298,11 +298,11 @@ func TestAnUnambiguousHandleResolves(t *testing.T) {
 	id := make1(t, s, "a", "todo", nil, nil)
 
 	ix := Build(s, lanes(t), list(t, s))
-	ref, ok := ix.lookup(ticket.Handle(id))
+	ref, ok := ix.Lookup(ticket.Handle(id))
 	if !ok || ref.ID != id {
 		t.Errorf("handle %s resolved to %#v, want %s", ticket.Handle(id), ref, id)
 	}
-	if _, ok := ix.lookup("ZZZZZZ"); ok {
+	if _, ok := ix.Lookup("ZZZZZZ"); ok {
 		t.Error("a handle nothing carries must resolve to nothing")
 	}
 }

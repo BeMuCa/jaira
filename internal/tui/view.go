@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -149,6 +150,8 @@ func (m *Model) render() string {
 			return m.modalOver(m.renderLinks(), m.links.from)
 		}
 		return m.renderBoard()
+	case modeLayer:
+		return m.renderLayer()
 	case modeProjects:
 		return m.renderProjects()
 	case modeLanes:
@@ -1040,7 +1043,7 @@ func (m *Model) statusBar() string {
 	if m.glow {
 		cHint = "c plain"
 	}
-	keys := []string{"enter open", "v compact", zHint, cHint, "t tags", "u users", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
+	keys := []string{"enter open", "l links", "v compact", zHint, cHint, "t tags", "u users", "M milestones", "L roadmap", "n new", "m move", "S settings", "/ filter", "? help", "q quit"}
 	prefix := ""
 	if len(m.warnings) > 0 {
 		prefix += styWarn.Render(fmt.Sprintf("⚠ %d ", len(m.warnings)))
@@ -1095,7 +1098,7 @@ func (m *Model) renderDelete() string {
 // jk, paging) is deliberately not listed: the footer names actions, the help
 // screen teaches movement. b appears only when there is a blocker to jump to.
 func (m *Model) detailHints(t *ticket.Ticket) string {
-	hint := "e fields · E editor · y copy id · m move · n follow-up · X delete"
+	hint := "e fields · E editor · y copy id · m move · l links · n follow-up · X delete"
 	if len(t.BlockedBy) > 0 {
 		hint += " · b blocked-by"
 	}
@@ -1594,6 +1597,15 @@ func swatch(colour int) string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(strconv.Itoa(colour))).Render("■")
 }
 
+// milestoneMark is a milestone's swatch in a list, and a dim dot for one with
+// no colour or one gone since the list was built.
+func milestoneMark(ms *milestone.Milestone) string {
+	if ms == nil || !ms.HasColour() {
+		return styMeta.Render("·")
+	}
+	return swatch(ms.Colour)
+}
+
 // renderMilestones is the picker behind M: the board's rounds of work, each in
 // the colour it paints on the right edge of its cards, so the list and the
 // board read as the same thing.
@@ -1604,21 +1616,21 @@ func (m *Model) renderMilestones() string {
 	if len(m.milestones) == 0 {
 		b.WriteString(styMeta.Render("No milestones on this board.") + "\n")
 	}
+	labels := milestone.Labels(m.milestones)
 	for i, ms := range m.milestones {
 		marker := "  "
-		name := ms.Name
-		if i == m.msIdx {
+		name := labels[ms.ID]
+		if i == m.pick.idx {
 			marker = stySelected.Render("▌ ")
 			name = stySelected.Render(name)
 		}
-		mark := styMeta.Render("·")
-		if ms.HasColour() {
-			mark = swatch(ms.Colour)
-		}
 		count := styMeta.Render(fmt.Sprintf("  %d", len(ms.Members())))
-		b.WriteString(marker + mark + " " + name + count + "\n")
+		if m.isTwin(ms.ID) {
+			count += styWarn.Render(" ⚠ same name")
+		}
+		b.WriteString(marker + m.tickMark(labels[ms.ID]) + " " + milestoneMark(ms) + " " + name + count + "\n")
 	}
-	for _, l := range wrapHints([]string{"enter narrow the board to it", "x show everything again", "esc close"}, max(1, m.width)) {
+	for _, l := range wrapHints([]string{"space tick", "enter show only the ticked", "x show everything again", "esc close"}, max(1, m.width)) {
 		b.WriteString("\n" + styMeta.Render(l))
 	}
 	return b.String()
@@ -1658,22 +1670,24 @@ func (m *Model) renderHelp() string {
 		keys [][2]string
 	}{
 		{"Move around", [][2]string{
-			{"h l ← →", "previous / next lane"},
+			{"← →", "previous / next lane"},
 			{"j k ↓ ↑", "previous / next card"},
 			{"g G", "first / last card in lane"},
+			{"q", "one page back, to where esc goes; on the board: back to the launcher, or quit; in a text field q is a letter"},
 		}},
 		{"Look at things", [][2]string{
 			{"enter", "open the selected ticket"},
 			{"↓ ↑", "scroll an open ticket; jk jump to the next/previous one"},
 			{"b", "open the ticket this one is blocked by (follow the chain)"},
-			{"L", "every ticket linked to this one, logbook and archive included"},
+			{"l", "every ticket linked to this one, logbook and archive included"},
 			{"/", "filter as you type; key:value narrows to one field, spaces combine, a comma means or, \"quotes\" keep words together"},
-			{"M", "narrow the board to one milestone (x there shows everything again)"},
+			{"M", "narrow the board to some milestones: space ticks them, enter applies (x there shows everything again)"},
 			{"u", "narrow the board to some people: space ticks them, enter applies (x there shows everyone)"},
 			{"esc", "clear the filter"},
 			{"y", "copy the full ticket id (detail pane)"},
 			{"z", "draw lanes with no tickets thin (press again to widen them)"},
 			{"c", "fill the selected card in its tag's colour (press again for plain grey)"},
+			{"L", "the milestone roadmap (its keys are further down)"},
 		}},
 		{"Change things", [][2]string{
 			{"n", "create a ticket, then fill it in straight away"},
@@ -1693,6 +1707,7 @@ func (m *Model) renderHelp() string {
 		}},
 		{"Compact view", [][2]string{
 			{"v", "the whole flow at a glance, agents counted per step"},
+			{"q esc", "leave it, as q leaves the board"},
 			{"enter", "open the highlighted step: one lane, filling the screen"},
 			{"h l ← →", "in that view, next / previous lane, without leaving it"},
 			{"q esc v", "back to the compact view"},
@@ -1731,6 +1746,25 @@ func (m *Model) renderHelp() string {
 		{styOK.Render("⎙ filed 4 Oct"), "in the logbook, filed that day: read-only, 'jaira restore' brings it back"},
 	} {
 		fmt.Fprintf(&b, "  %s  %s\n", padDisplay(k[0], 11), styledWrap(styMeta, k[1], max(9, m.width-17), 15))
+	}
+	b.WriteString("\n")
+
+	// The layer is a screen of its own, so its keys follow the board's marks
+	// rather than sitting among the board's keys.
+	b.WriteString(styLaneTitle.Render("Milestone Roadmap (L)") + "\n")
+	b.WriteString(styledWrap(styMeta, "Each milestone placed on the roadmap is a bubble, filled as far as its tickets are done; "+
+		"arrows run from what comes first to what comes after.", max(20, m.width-2), 0) + "\n")
+	for _, k := range [][2]string{
+		{"← → ↑ ↓", "the nearest bubble or [+] in that direction"},
+		{"enter", "on a bubble: its goal and its tickets — enter opens one, b shows the board filtered to it, esc comes back"},
+		{"enter", "on a [+]: n a new milestone there, c connect one that exists"},
+		{"e", "edit a milestone's name, goal and what it comes after (comma-separated; empty makes it the top of a swimlane); a new name renames it everywhere"},
+		{"c", "give it the next colour no other milestone has"},
+		{"x", "take it off the roadmap, after y: its tickets stay, what came after it moves up"},
+		{"L esc q", "back to the board"},
+	} {
+		fmt.Fprintf(&b, "  %s  %s\n", styHelpKey.Render(fmt.Sprintf("%-9s", k[0])),
+			styledWrap(styMeta, k[1], max(9, m.width-15), 13))
 	}
 	b.WriteString("\n")
 

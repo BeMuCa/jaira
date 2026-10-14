@@ -82,19 +82,23 @@ const rebaseAttempts = 3
 
 // rebaseEpic answers a lost race for an epic by merging instead of dropping the
 // edit. A ticket's loser keeps its local file and the board shows both sides;
-// an epic has no local file, so the queued entry was the only copy of the edit
-// and dropping it would lose a ticket somebody sorted in. The merge keeps both
-// sides' member changes (epic.Merge) and is sent again at once.
+// an epic has no local file, so the queued entry is the only copy of the edit
+// and dropping it would lose a ticket somebody sorted in. Flush leaves it
+// queued; the merge keeps both sides' member changes (epic.Merge), is sent
+// again at once, and replaces the entry only once it is sent or requeued.
 func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
-	name, ours := r.ID, []byte(r.Entry.Content)
+	e, ok := y.Box.PendingEpic(r.ID)
+	if !ok {
+		return r
+	}
+	name, ours := r.ID, []byte(e.Content)
 	var base []byte
-	if r.Entry.Lease != "" {
-		b, err := y.Repo.ReadEpicAt(name, r.Entry.Lease)
+	if e.Lease != "" {
+		b, err := y.Repo.ReadEpicAt(name, e.Lease)
 		if err != nil {
 			// The common state is unreadable, so there is nothing to merge
-			// against; keep the edit queued rather than guess.
+			// against; the edit stays queued rather than guessed at.
 			r.Outcome, r.Err = outbox.Failed, err
-			_ = y.Box.QueueEpic(name, ours, r.Entry.Lease, r.Entry.By)
 			return r
 		}
 		base = b
@@ -109,7 +113,7 @@ func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
 		_, err = y.Repo.WriteEpic(name, merged, lease)
 		switch {
 		case err == nil:
-			r.Outcome, r.Err = outbox.Sent, nil
+			r.Outcome, r.Err = outbox.Sent, y.Box.DropEpic(name)
 			return r
 		case errors.Is(err, gitref.ErrRaceLost):
 			// Somebody wrote it again between our read and our push: their
@@ -124,8 +128,14 @@ func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
 		r.Err = err
 		break
 	}
-	// Not sent: queue what we have so the next command tries again.
-	if err := y.RecordEpic(name, ours); err != nil {
+	// Not sent: queue what we have, leased on the ref it was merged onto, so
+	// the next command tries again. The box keeps the lease of an entry that
+	// is there, so the refused one goes first, and comes back if the merge
+	// cannot be queued.
+	if err := y.Box.DropEpic(name); err != nil {
+		r.Err = err
+	} else if err := y.RecordEpic(name, ours); err != nil {
+		_ = y.Box.QueueEpic(name, []byte(e.Content), e.Lease, e.By)
 		r.Err = err
 	}
 	r.Outcome = outbox.Unsent

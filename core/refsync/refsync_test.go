@@ -882,3 +882,99 @@ func TestPullLeavesAStaleFileWithAnUnsentWriteAlone(t *testing.T) {
 		t.Error("the refused pull changed the file")
 	}
 }
+
+// A ref-only ticket whose ref has not moved is not read or decoded again, and a
+// ref that moved is.
+func TestExtraSkipsUnchangedRefs(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := fileOnRef(t, ada, "on its ref")
+
+	list := func() string {
+		out, err := ada.syncer.Extra(map[string]bool{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var titles []string
+		for _, x := range out {
+			titles = append(titles, x.Title)
+		}
+		return strings.Join(titles, ";")
+	}
+	if got := list(); got != "on its ref" {
+		t.Fatalf("first Extra = %q", got)
+	}
+	dec0, _ := ticket.Counts()
+	if got := list(); got != "on its ref" {
+		t.Fatalf("second Extra = %q", got)
+	}
+	if dec1, _ := ticket.Counts(); dec1 != dec0 {
+		t.Fatalf("an unchanged ref was decoded again: %d decodes", dec1-dec0)
+	}
+
+	content, sha, err := ada.syncer.Repo.Read(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Repo.Write(id, []byte(strings.Replace(string(content), "on its ref", "ref changed", 1)), sha); err != nil {
+		t.Fatalf("rewrite ref: %v", err)
+	}
+	if got := list(); got != "ref changed" {
+		t.Fatalf("a changed ref did not show: %q", got)
+	}
+}
+
+// A second Extra call keeps the order of the first even when one ref moved:
+// the order is by ticket id, not by which refs were re-read.
+func TestExtraKeepsOrderWhenOneRefMoved(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	a := fileOnRef(t, ada, "first on its ref")
+	b := fileOnRef(t, ada, "second on its ref")
+	if a > b {
+		a, b = b, a
+	}
+
+	list := func() []string {
+		out, err := ada.syncer.Extra(map[string]bool{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var ids []string
+		for _, x := range out {
+			ids = append(ids, x.ID)
+		}
+		return ids
+	}
+	first := list()
+	if len(first) != 2 || first[0] != a || first[1] != b {
+		t.Fatalf("first Extra = %v, want [%s %s]", first, a, b)
+	}
+
+	content, sha, err := ada.syncer.Repo.Read(a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Repo.Write(a, []byte(strings.Replace(string(content), "on its ref", "moved", 1)), sha); err != nil {
+		t.Fatalf("rewrite ref: %v", err)
+	}
+	if second := list(); len(second) != 2 || second[0] != a || second[1] != b {
+		t.Fatalf("second Extra = %v, want the same order %v", second, first)
+	}
+}
+
+// A cached ref-only ticket whose ref moves to a commit with no ticket file is
+// dropped, not served from the cache.
+func TestExtraDropsCachedTicketWhoseRefLostItsFile(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := fileOnRef(t, ada, "on its ref")
+	if out, err := ada.syncer.Extra(map[string]bool{}); err != nil || len(out) != 1 {
+		t.Fatalf("first Extra = %d tickets, err %v", len(out), err)
+	}
+
+	empty := strings.TrimSpace(run(t, ada.dir, "git", "hash-object", "-t", "tree", "/dev/null"))
+	c := strings.TrimSpace(run(t, ada.dir, "git", "commit-tree", empty, "-m", "x"))
+	run(t, ada.dir, "git", "update-ref", gitref.RefName(id), c)
+
+	if out, err := ada.syncer.Extra(map[string]bool{}); err != nil || len(out) != 0 {
+		t.Fatalf("Extra after the ref lost its file = %d tickets, err %v; want 0", len(out), err)
+	}
+}

@@ -204,7 +204,7 @@ func (ls *laneScreen) key(s string) (done bool) {
 
 	if ls.catalogueOpen {
 		switch s {
-		case "esc":
+		case "esc", "q":
 			ls.catalogueOpen = false
 		case "j", "down":
 			if ls.catalogueIdx < len(ls.catalogue)-1 {

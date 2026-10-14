@@ -108,6 +108,10 @@ type Store struct {
 	// Two files with one id is an ambiguity a person has to settle, so it is
 	// surfaced rather than resolved by read order.
 	dupIDs []string
+
+	// cache, when EnableCache was called, remembers each ticket file's decoded
+	// header between listings. A pointer, so a copied Store does not copy a mutex.
+	cache *headerCache
 }
 
 // TicketSource hands over tickets that exist for this board without a file
@@ -407,8 +411,8 @@ func (s *Store) Logbook(id, folder string) (string, error) {
 // milestone's name is chosen freely and could be spelled like a ticket file.
 // Restore has to know from where it found a file where the file belongs, and a
 // folder says that without guessing at names.
-func (s *Store) LogbookMilestone(name, folder string) (string, error) {
-	src := filepath.Join(s.MilestonesDir(), filepath.Base(name)+".md")
+func (s *Store) LogbookMilestone(file, folder string) (string, error) {
+	src := filepath.Join(s.MilestonesDir(), filepath.Base(file))
 	if _, err := os.Stat(src); err != nil {
 		return "", err
 	}
@@ -459,29 +463,49 @@ func (s *Store) logbookFolders() ([]string, error) {
 	return out, nil
 }
 
-// FiledMilestone reports whether a milestone of this name lies filed in the
-// logbook, and where, as a path relative to the repository root.
+// FiledMilestone reports whether a milestone lies filed in the logbook, and
+// where, as a path relative to the repository root, and under which file name
+// — the one 'jaira restore' takes. match is asked the base
+// name of every file there, without .md, because what a file is called is the
+// caller's to read: this package does not know that a milestone file may carry
+// an ID.
 //
 // It looks in every folder Restore looks in — including the one the logbook
-// was called before it was one — because a name Restore can still bring back
-// is a name that is still taken. A hand-rolled walk over LogbookDir alone
-// misses that older folder and hands the name out twice.
-func (s *Store) FiledMilestone(name string) (string, bool) {
+// was called before it was one — because a milestone Restore can still bring
+// back is one the commands that need it on the board should point at restore
+// for. A hand-rolled walk over LogbookDir alone misses that older folder and
+// answers "no such milestone" for it.
+func (s *Store) FiledMilestone(match func(base string) bool) (where, file string, ok bool) {
 	folders, err := s.logbookFolders()
 	if err != nil {
-		return "", false
+		return "", "", false
 	}
 	for _, folder := range folders {
 		dir := filepath.Join(folder, MilestonesSubdir)
-		if _, err := os.Stat(filepath.Join(dir, name+".md")); err != nil {
+		file := milestoneFileIn(dir, match)
+		if file == "" {
 			continue
 		}
 		if rel, err := filepath.Rel(s.Root, dir); err == nil {
-			return rel, true
+			return rel, file, true
 		}
-		return dir, true
+		return dir, file, true
 	}
-	return "", false
+	return "", "", false
+}
+
+// milestoneFileIn is the first file in dir whose base name match accepts, or "".
+func milestoneFileIn(dir string, match func(base string) bool) string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if base, ok := strings.CutSuffix(e.Name(), ".md"); ok && !e.IsDir() && match(base) {
+			return e.Name()
+		}
+	}
+	return ""
 }
 
 // LogbookFolderDay reads the day a logbook folder was filed on off its name,
@@ -980,6 +1004,16 @@ func (s *Store) readHeader(path string) (*Doc, error) {
 //
 // The probe remains where it is still correct: idOf only needs the id.
 func (s *Store) loadHeader(path string) (*Ticket, error) {
+	if s.cache != nil {
+		e, err := s.cached(path)
+		if err != nil {
+			return nil, err
+		}
+		if e.err != nil {
+			return nil, e.err
+		}
+		return e.t.Clone(), nil
+	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -1223,6 +1257,13 @@ func (s *Store) idIndex() (map[string]string, error) {
 
 // idOf reads just the id from a ticket file.
 func (s *Store) idOf(path string) (string, error) {
+	if s.cache != nil {
+		e, err := s.cached(path)
+		if err != nil {
+			return "", err
+		}
+		return e.id, e.idErr
+	}
 	d, err := s.readHeader(path)
 	if err != nil {
 		return "", err
