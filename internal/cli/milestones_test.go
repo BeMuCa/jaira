@@ -980,7 +980,7 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	if out, err := runCLI(t, dir, "milestone", "set", "solo", "--goal", "g"); err != nil {
 		t.Errorf("name: %v\n%s", err, out)
 	}
-	if out, err := runCLI(t, dir, "milestone", "rename", "ZZZZZ9", "twin"); err != nil || !strings.Contains(out, `"dup" renamed to "twin"`) {
+	if out, err := runCLI(t, dir, "milestone", "rename", "ZZZZZ9", "twin"); err != nil || !strings.Contains(out, `"dup-ZZZZZ9" renamed to "twin"`) {
 		t.Errorf("rename by ID: %v\n%s", err, out)
 	}
 	if a, _ := milestone.Load(dir, "dup"); a.ID != first.ID || len(a.Members()) != 1 || !strings.HasSuffix(a.Members()[0], two) {

@@ -365,9 +365,15 @@ board exits 5, or 3 when it was filed.`,
 				return fail(ExitUsage, "bad_milestone", "%v", err)
 			}
 
-			fromName := from
+			fromName, fromLabel := from, from
 			if old, lerr := milestone.Load(s.Root, from); lerr == nil {
-				fromName = old.Name
+				fromName, fromLabel = old.Name, old.Name
+				// <name>-<ID> where two share the name, as everywhere else.
+				if all, lerr := milestone.LoadAll(s.Root); lerr == nil {
+					if l, ok := milestone.Labels(all)[old.ID]; ok {
+						fromLabel = l
+					}
+				}
 			}
 			ms, err := milestone.Rename(s.Root, s, refs, from, to)
 			var ee *milestone.ExistsError
@@ -392,7 +398,7 @@ board exits 5, or 3 when it was filed.`,
 			if changed {
 				fmt.Fprintf(w, "Filed %q as %q.\n", args[1], to)
 			}
-			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", fromName, to, ms.Path(s.Root))
+			fmt.Fprintf(w, "Milestone %q renamed to %q: %s\n", fromLabel, to, ms.Path(s.Root))
 			return nil
 		},
 	}

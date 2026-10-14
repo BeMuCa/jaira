@@ -691,7 +691,7 @@ func (m *Model) renderLayerDialog() string {
 		f := l.form
 		title := "New milestone, " + m.placementText(l.sel)
 		if f.edit != "" {
-			title = "Edit " + f.edit
+			title = "Edit " + m.milestoneLabel(f.editID)
 		}
 		b.WriteString(styLaneTitle.Render(title) + "\n\n")
 		for i, label := range f.labels {
