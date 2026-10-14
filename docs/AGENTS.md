@@ -171,7 +171,7 @@ Reuse the milestone that is already there for that round of work — "q4" and
 "quarter-four" on one board are two names for one round, and each filters to
 half of it. `create` on a name that exists is refused (exit 3) and points at
 `jaira milestone add`. Every command takes a milestone as its name, its ID or
-`<name>-<ID>`; a name two milestones carry exits 3 and names both forms.
+`<name>-<ID>`; a command that writes (`add`, `rm`, `set`, `rename`, `jaira logbook`) refuses a name two milestones carry with exit 3 and names both forms, while `jaira list --milestone <name>` is a filter and shows both.
 
 `--after <a,b>` on `create` or `jaira milestone set` places a milestone on the
 Milestone Roadmap under those milestones (`--after ""` makes it the top of a
