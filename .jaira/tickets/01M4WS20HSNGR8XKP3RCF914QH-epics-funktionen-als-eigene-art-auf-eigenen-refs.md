@@ -1,7 +1,7 @@
 ---
 id: 01M4WS20HSNGR8XKP3RCF914QH
 title: "Epics: Funktionen als eigene Art auf eigenen Refs, nicht als Ticket"
-status: in-progress
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,11 +23,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-14T08:39:27Z
-updated-at: 2026-10-14T08:57:33Z
+updated-at: 2026-10-14T13:11:59Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81098
 claimed-at: 2026-10-14T08:46:03Z
-mode: conversational
+mode: ""
+outcome-what: "Epics: jaira epic create/add/rm/ls/show auf refs/jaira/epics/<name> (nur Ref, keine Datei), Fortschritt X von Y inkl. follows/parent-Folge-Tickets, ls --unassigned; jaira create setzt follows aus dem Ticket-Handle im Branch-Namen, --follows none schaltet ab"
+outcome-why: "Ein Teamlead sieht auf ~100 Tickets nicht, wie weit eine Funktion ist; Folge-Tickets ohne --follows fielen aus jeder Gruppierung"
+outcome-resolves: F914QH
 ---
 
 # Epics: Funktionen als eigene Art auf eigenen Refs, nicht als Ticket
@@ -42,8 +45,10 @@ mode: conversational
   proof: core/epic/epic.go:319 Assign writes only RecordEpic; TestAnEpicTravelsOnItsRefAndCountsFollowUps checks the ticket ref SHA is unchanged; TestTwoClonesSortingIntoOneEpicBothLand (lost race merged, core/refsync/epic.go rebaseEpic)
 - [x] Tickets in keinem Epic sind abfragbar (jaira epic ls --unassigned oder ähnlich), mit --json
   proof: internal/cli/epics.go:204 'jaira epic ls --unassigned [--json]', core/epic/epic.go:435 Unassigned; TestAnEpicTravelsOnItsRefAndCountsFollowUps, TestCoveredWalksFollowsAndParent
-- [ ] Ein Ticket, das während der Arbeit an einem anderen angelegt wird, bekommt --follows automatisch oder die Rolle setzt es; geklärt in brainstorm
-- [ ] Tests, docs/COMMANDS.md, Release-Note core/release/notes/<ID>.md
+- [x] Ein Ticket, das während der Arbeit an einem anderen angelegt wird, bekommt --follows automatisch oder die Rolle setzt es; geklärt in brainstorm
+  proof: internal/cli/tickets.go:153 branchTicket + --follows none; TestCreateFollowsTheTicketTheBranchIsNamedAfter
+- [x] Tests, docs/COMMANDS.md, Release-Note core/release/notes/<ID>.md
+  proof: core/epic/epic_test.go, internal/cli/epics_test.go, TestCreateFollowsTheTicketTheBranchIsNamedAfter (go test ./... exit 0); docs/COMMANDS.md jaira epic rows + create --follows; core/release/notes/F914QH.md
 
 ## Options
 
@@ -59,8 +64,8 @@ mode: conversational
 - [x] core/epic: Count (Mitglieder + follows/parent transitiv, Satisfied) und Unassigned; link.Index.All exportieren
 - [x] refsync: EpicNames/EpicContent/RecordEpic; verlorenes Rennen eines Epics im Flush dreiseitig mergen und neu senden
 - [x] cli: jaira epic create/add/rm/ls/show, ls --unassigned, --json
-- [ ] cli create: follows aus dem Branch-Handle, --follows none
-- [ ] Tests, docs/COMMANDS.md, core/release/notes/F914QH.md
+- [x] cli create: follows aus dem Branch-Handle, --follows none
+- [x] Tests, docs/COMMANDS.md, core/release/notes/F914QH.md
 
 ## Progress
 - **2026-10-14 08:46 · Alexander Sacharov** — parent session: jaira-34

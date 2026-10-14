@@ -142,6 +142,16 @@ func (r *Repo) HeadSHA() (string, error) {
 	return strings.TrimSpace(out), err
 }
 
+// Branch returns the checked-out branch's short name, or "" on a detached
+// HEAD or outside a repository.
+func (r *Repo) Branch() string {
+	out, err := r.run("symbolic-ref", "--quiet", "--short", "HEAD")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
 func shortSHA(s string) string {
 	if len(s) > 7 {
 		return s[:7]
