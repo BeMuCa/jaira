@@ -286,8 +286,11 @@ func flushRefs() {
 // 'next-release' printed as 'elease', a word that names nothing and that no
 // command accepts.
 func refSubject(kind outbox.Kind, id string) (key, name string) {
-	if kind == outbox.KindMilestone {
+	switch kind {
+	case outbox.KindMilestone:
 		return "milestone", id
+	case outbox.KindEpic:
+		return "epic", id
 	}
 	return "ticket", ticket.Handle(id)
 }
@@ -301,9 +304,15 @@ func refSubject(kind outbox.Kind, id string) (key, name string) {
 // straight over the local file, so the next fetch replaces this edit with the
 // accepted one and says nothing about it. Telling a milestone writer their
 // file is unchanged would be describing a ticket to them.
+//
+// An epic is merged rather than lost (refsync.rebaseEpic), so it reaches this
+// line only when the merge could not be sent either; the merge stays queued.
 func rejectedAdvice(kind outbox.Kind) string {
-	if kind == outbox.KindMilestone {
+	switch kind {
+	case outbox.KindMilestone:
 		return "the remote's version wins; the next fetch replaces your file with it, so make this edit again on the fetched one"
+	case outbox.KindEpic:
+		return "your change is merged onto theirs and stays queued; it goes out with your next command"
 	}
 	return "your file is unchanged; the board shows both sides once the ref is fetched"
 }

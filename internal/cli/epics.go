@@ -10,8 +10,6 @@ import (
 
 	"github.com/BeMuCa/jaira/core/epic"
 	"github.com/BeMuCa/jaira/core/gitref"
-	"github.com/BeMuCa/jaira/core/lane"
-	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -184,23 +182,6 @@ func epicRefs() epic.Refs {
 	return refs
 }
 
-// epicIndex lists the board and indexes it with the logbook, which is what an
-// epic's progress is counted against.
-func epicIndex(s *ticket.Store) (*link.Index, []*ticket.Ticket, error) {
-	lanes, err := lane.Load(s.Root)
-	if err != nil {
-		return nil, nil, err
-	}
-	all, err := s.List()
-	if err != nil {
-		var pe *ticket.PartialError
-		if !errors.As(err, &pe) {
-			return nil, nil, err
-		}
-	}
-	return link.Build(s, lanes, all), all, nil
-}
-
 func newEpicLsCmd() *cobra.Command {
 	var unassigned bool
 	cmd := &cobra.Command{
@@ -223,7 +204,7 @@ when sorting a board into features.`,
 			if err != nil {
 				return epicFail("", err)
 			}
-			ix, board, err := epicIndex(s)
+			ix, board, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
@@ -293,7 +274,7 @@ func newEpicShowCmd() *cobra.Command {
 			if err != nil {
 				return epicFail(name, err)
 			}
-			ix, _, err := epicIndex(s)
+			ix, _, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
@@ -328,16 +309,11 @@ func newEpicShowCmd() *cobra.Command {
 }
 
 func epicJSON(e *epic.Epic, p *epic.Progress) map[string]any {
-	ids := e.Members()
-	members := make([]map[string]string, 0, len(ids))
-	for _, id := range ids {
-		members = append(members, map[string]string{"id": id, "handle": ticket.Handle(id)})
-	}
 	out := map[string]any{
 		"name":        e.Name,
 		"title":       e.Title,
 		"description": e.Description,
-		"members":     members,
+		"members":     memberRefs(e.Members()),
 		"ref":         gitref.EpicRefName(e.Name),
 	}
 	if !e.CreatedAt.IsZero() {

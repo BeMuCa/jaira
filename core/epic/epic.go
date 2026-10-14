@@ -35,10 +35,10 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// LockName keys the store lock every epic write is made under. One name for
+// lockName keys the store lock every epic write is made under. One name for
 // all of them: creating an epic has to check that the name is free, and two
 // creations of one name at once must not both find it so.
-const LockName = "epics"
+const lockName = "epics"
 
 // ErrNoRefs means the board has nowhere to keep an epic: no repository or no
 // remote. Epics live on refs only, so there is no local fallback to offer.
@@ -292,7 +292,7 @@ func Create(s *ticket.Store, r Refs, name, title, description string, ids []stri
 	if r == nil {
 		return nil, ErrNoRefs
 	}
-	unlock, err := s.Lock(LockName)
+	unlock, err := s.Lock(lockName)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func Assign(s *ticket.Store, r Refs, name string, ids []string, add bool) (*Epic
 	if r == nil {
 		return nil, nil, ErrNoRefs
 	}
-	unlock, err := s.Lock(LockName)
+	unlock, err := s.Lock(lockName)
 	if err != nil {
 		return nil, nil, err
 	}

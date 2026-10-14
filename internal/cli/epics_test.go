@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/outbox"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -139,5 +140,16 @@ func TestAnEpicNeedsARemote(t *testing.T) {
 	out, err := runCLI(t, dir, "epic", "create", "feature")
 	if err == nil || !strings.Contains(out+err.Error(), "remote") {
 		t.Fatalf("create without a remote = %v\n%s; want a refusal naming the remote", err, out)
+	}
+}
+
+// An epic is addressed by its name in every message, never by the last six
+// characters a ticket handle would cut it to.
+func TestAnEpicIsReportedByItsName(t *testing.T) {
+	if key, name := refSubject(outbox.KindEpic, "feature"); key != "epic" || name != "feature" {
+		t.Errorf("refSubject = %q, %q; want epic, feature", key, name)
+	}
+	if a := rejectedAdvice(outbox.KindEpic); strings.Contains(a, "file") {
+		t.Errorf("epic advice talks about a file it does not have: %q", a)
 	}
 }
