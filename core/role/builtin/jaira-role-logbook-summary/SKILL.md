@@ -40,8 +40,14 @@ good enough to send.
 
 ## 2. Collect
 
+The Python command is this machine's, not always `python3`: on Windows that
+is often missing or the Store's stub, and `uv run python` is what there is.
+Every line below asks jaira for it — `JAIRA_PYTHON`, else `"python"` in
+`~/.jaira/settings.json`, else `python3` — and leaves the `$(...)` unquoted,
+so a command of several words works.
+
 ```bash
-python3 <this skill's folder>/collect.py --from <YYYY-MM-DD> --to <YYYY-MM-DD> [--gap 90] [--lead-in 30] [--author <email>]...
+$(jaira roles list --json | jaira json get python) <this skill's folder>/collect.py --from <YYYY-MM-DD> --to <YYYY-MM-DD> [--gap 90] [--lead-in 30] [--author <email>]...
 ```
 
 Run it in the repository whose work is being summarised. It reads git history,
@@ -113,7 +119,7 @@ Write `summary.json` beside nothing in the repository — in
 ## 4. Build and hand over
 
 ```bash
-python3 <this skill's folder>/build.py page summary.json summary.html summary.md
+$(jaira roles list --json | jaira json get python) <this skill's folder>/build.py page summary.json summary.html summary.md
 ```
 
 A refusal names the line with code in it: rewrite that line, do not work

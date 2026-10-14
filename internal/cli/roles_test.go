@@ -367,3 +367,38 @@ func TestRolesInstallHelpNamesEveryAgentsDirectories(t *testing.T) {
 		}
 	}
 }
+
+// The roles run their Python scripts with what 'roles list' names: python3
+// unless settings.json says "python", and JAIRA_PYTHON over both — on Windows
+// python3 is often missing and "uv run python" is what there is (issue #79).
+func TestRolesListReportsThePythonCommand(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	t.Setenv(settings.PythonEnv, "")
+	dir := t.TempDir()
+	python := func() string {
+		t.Helper()
+		out, err := runCLI(t, dir, "--json", "roles", "list")
+		if err != nil {
+			t.Fatalf("roles list --json: %v\n%s", err, out)
+		}
+		var p map[string]any
+		if err := json.Unmarshal([]byte(out), &p); err != nil {
+			t.Fatalf("invalid json: %v\n%s", err, out)
+		}
+		return fmt.Sprint(p["python"])
+	}
+	if got := python(); got != "python3" {
+		t.Errorf("default python = %q, want python3", got)
+	}
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"python": "uv run python"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := python(); got != "uv run python" {
+		t.Errorf("from settings.json python = %q, want uv run python", got)
+	}
+	t.Setenv(settings.PythonEnv, "py -3")
+	if got := python(); got != "py -3" {
+		t.Errorf("JAIRA_PYTHON must win: python = %q, want py -3", got)
+	}
+}

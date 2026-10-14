@@ -95,6 +95,10 @@ def page(src, out_html, out_md):
 
 
 if __name__ == "__main__":
+    # A Windows console is cp1251 or cp1252, and an umlaut in a title would
+    # stop the script there (issue #79). The script sets it, not its caller.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     if len(sys.argv) == 5 and sys.argv[1] == "page":
         page(*sys.argv[2:])
     else:

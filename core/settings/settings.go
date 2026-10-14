@@ -119,6 +119,30 @@ type Settings struct {
 	// .jaira/chat-model wins, because what a chat about the board's tickets
 	// costs is the team's choice. Read it through ChatModelFor.
 	ChatModel string `json:"chat-model,omitempty"`
+
+	// Python is the command a role runs its Python scripts with — the
+	// acceptance page, the logbook summary. A command, not a path, so
+	// "uv run python" works as well as "py -3": on Windows python3 is often
+	// missing or the Store's stub, which prints "Python" and exits 49
+	// (issue #79). Empty means python3. JAIRA_PYTHON in the environment wins
+	// over it. Read it through PythonCommand.
+	Python string `json:"python,omitempty"`
+}
+
+// PythonEnv overrides the python setting for one shell or one machine.
+const PythonEnv = "JAIRA_PYTHON"
+
+// PythonCommand returns the command roles run Python with, and where it came
+// from in words a person can read: JAIRA_PYTHON, then settings.json, else
+// python3.
+func (s Settings) PythonCommand() (cmd, source string) {
+	if v := strings.TrimSpace(os.Getenv(PythonEnv)); v != "" {
+		return v, "from " + PythonEnv
+	}
+	if v := strings.TrimSpace(s.Python); v != "" {
+		return v, "from settings.json on this machine"
+	}
+	return "python3", "the default"
 }
 
 // ChatModelChoices are the values the settings screen steps through, the

@@ -70,9 +70,11 @@ pane="$("$here/spawn.sh" ${flags[@]+"${flags[@]}"} "$slug" "$ticket" "$lane" "$r
 echo "pane $pane"
 
 board="$wt"; [ -d "$wt/.jaira" ] || board="$root"
+# JSON is read with 'jaira json get', never python3, which a Windows machine
+# may not have (issue #79).
 field() {
   (cd "$board" && jaira show "$ticket" --json 2>/dev/null) \
-    | python3 -c 'import sys,json;print(str(json.load(sys.stdin).get(sys.argv[1],"")).strip())' "$1" 2>/dev/null || true
+    | jaira json get "$1" --default "" 2>/dev/null || true
 }
 status() { field status; }
 # A worker never asks the person: it writes its question onto the ticket and
@@ -83,7 +85,7 @@ question() { field question; }
 # idle|blocked alone never returns, and the tab never closes.
 agent() {
   "$herdr" pane get "$pane" 2>/dev/null \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"].get("agent_status","-"))' 2>/dev/null || true
+    | jaira json get result.pane.agent_status --default - 2>/dev/null || true
 }
 
 deadline=$(( timeout > 0 ? SECONDS + timeout * 60 : 0 ))
@@ -132,19 +134,17 @@ while :; do
 done
 until case "$(agent)" in idle|done) true ;; *) false ;; esac; do check; sleep 10; done
 
-(cd "$board" && jaira show "$ticket" --json 2>/dev/null) | python3 -c '
-import sys, json
-d = json.load(sys.stdin)
-print("status:", d.get("status"))
-for k in ("outcome", "review", "question"):
-    if d.get(k):
-        print(k + ":", json.dumps(d[k], ensure_ascii=False)[:900])
-' || true
+shown="$(cd "$board" && jaira show "$ticket" --json 2>/dev/null)" || true
+echo "status: $(jaira json get status --default "" <<<"$shown" 2>/dev/null)"
+for k in outcome review question; do
+  v="$(jaira json get "$k" --default "" <<<"$shown" 2>/dev/null)" || v=""
+  [ -z "$v" ] || echo "$k: ${v:0:900}"
+done
 
 if [ -z "$keep" ]; then
   # The person may have closed the tab already; that is the job done, not an error.
   tab="$("$herdr" pane get "$pane" 2>/dev/null \
-    | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["pane"]["tab_id"])' 2>/dev/null || true)"
+    | jaira json get result.pane.tab_id 2>/dev/null || true)"
   if [ -n "$tab" ]; then
     "$herdr" tab close "$tab" >/dev/null
     echo "closed $pane"

@@ -1,7 +1,6 @@
 package role
 
 import (
-	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -407,7 +406,7 @@ esac
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
 	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:/tmp/cc-socks/7.sock", "ab12cd", "AB12CD", "discuss")
 	cmd.Dir = t.TempDir()
-	cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
 	}
@@ -415,7 +414,7 @@ esac
 	if err != nil {
 		t.Fatal(err)
 	}
-	line := string(got)
+	line := chatRequest(t, string(got))
 	for _, want := range []string{
 		`jaira note AB12CD "decision: `,
 		"jaira set AB12CD question=",
@@ -444,9 +443,7 @@ func TestSpawnTypesTheRoleForItsLaneName(t *testing.T) {
 	if err != nil {
 		t.Skipf("no bash on this machine: %v", err)
 	}
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skipf("no python3 on this machine: %v", err)
-	}
+	path := jairaPath(t)
 	dir := t.TempDir()
 	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
@@ -479,7 +476,7 @@ esac
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
 		cmd.Dir = t.TempDir()
-		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=")
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+path)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
 		}
@@ -489,6 +486,7 @@ esac
 		}
 		line := strings.TrimSpace(string(got))
 		if prefix, ok := strings.CutSuffix(want, " …"); ok {
+			line = chatRequest(t, line)
 			if !strings.HasPrefix(line, prefix) || strings.HasPrefix(line, "/") {
 				t.Errorf("lane %s typed %q, want a plain request starting %q", lane, line, prefix)
 			}
@@ -533,15 +531,15 @@ func TestPRFilesTheTicketsAwayBeforeThePush(t *testing.T) {
 // The cockpit's chats start on the chat-model setting and get the part of the
 // ticket they need typed in, instead of reading the whole of it; every other
 // lane starts plain claude as before. jaira and Herdr are stubs: jaira answers
-// the two calls spawn.sh makes, Herdr records what it is asked to run and type.
+// the two calls spawn.sh makes and hands 'json get' to the real one, Herdr
+// records what it is asked to run and type. What goes into the brief is
+// TestTicketBriefCarriesTheNewestNotes in internal/cli.
 func TestSpawnChatsStartOnTheChatModelWithTheirBrief(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
 		t.Skipf("no bash on this machine: %v", err)
 	}
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skipf("no python3 on this machine: %v", err)
-	}
+	path := jairaPath(t)
 	dir := t.TempDir()
 	if _, err := install(dir, false, true); err != nil {
 		t.Fatal(err)
@@ -558,22 +556,16 @@ case "$1 $2" in
   "pane send-text") printf '%s\n' "$4" > "` + typed + `" ;;
 esac
 `
-	body := "\n# T\n\n## Progress\n" +
-		"- **2026-10-01 10:00 · A** — first note\n" +
-		"- **2026-10-02 10:00 · A** — second note\n  goes on\n" +
-		"- **2026-10-03 10:00 · A** — third note\n" +
-		"- **2026-10-04 10:00 · A** — fourth note\n" +
-		"- **2026-10-05 10:00 · A** — fifth note\n"
-	show, _ := json.Marshal(map[string]any{
-		"handle": "AB12CD", "title": "T", "goal": "G", "question": "Q?",
-		"review":  map[string]string{"verdict": "V", "gaps": "a gap"},
-		"context": "LONG CONTEXT", "body": body,
-	})
+	long := "explain: " + strings.Repeat("a finding that goes on ", 200) + "END"
+	brief := `{"id":"AB12CD","title":"T","goal":"G","question":"Q?","review":{"verdict":"V","gaps":"a gap"},` +
+		`"notes_last":["- **2026-10-02 10:00 · A** — second note\n  goes on","- **2026-10-05 10:00 · A** — fifth note","` + long + `"],"notes_total":5}`
+	real := strings.SplitN(path, string(os.PathListSeparator), 2)[0]
 	jaira := `#!/usr/bin/env bash
 case "$*" in
+  "json "*) exec "` + filepath.Join(real, "jaira") + `" "$@" ;;
   "-C "*" roles list --json") printf '{"chat_model": "%s"}\n' "$(cat "` + model + `")" ;;
-  *" show AB12CD --json") cat <<'JSON'
-` + string(show) + `
+  *" show AB12CD --brief") cat <<'JSON'
+` + brief + `
 JSON
   ;;
   *) exit 1 ;;
@@ -590,10 +582,10 @@ esac
 		if err := os.WriteFile(model, []byte(chatModel), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", lane)
+		cmd := spawnOn(bash, "Linux", spawn, "--no-worktree", "ab12cd", "AB12CD", lane)
 		cmd.Dir = t.TempDir()
-		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
-			"HERDR_WORKSPACE_ID=", "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+			"HERDR_WORKSPACE_ID=", "PATH="+bin+string(os.PathListSeparator)+path)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
 		}
@@ -603,32 +595,222 @@ esac
 	}
 
 	for _, lane := range []string{"explain", "discuss"} {
-		start, prompt := run(lane, "sonnet")
-		if !strings.HasSuffix(start, "&& claude --model 'sonnet'") {
-			t.Errorf("%s started %q, want claude --model 'sonnet'", lane, start)
+		start, typedLine := run(lane, "sonnet")
+		prompt := chatRequest(t, typedLine)
+		// As spawn.sh spells it, slashes kept: filepath.Dir would turn them
+		// on Windows, where Git Bash prints /tmp/... too.
+		file := strings.TrimSuffix(strings.TrimPrefix(typedLine, chatLead), chatTail)
+		dir := file[:max(strings.LastIndex(file, "/"), 0)]
+		if !strings.HasSuffix(start, "&& claude --model 'sonnet' --add-dir '"+dir+"'") {
+			t.Errorf("%s started %q, want claude --model 'sonnet' --add-dir '%s'", lane, start, dir)
 		}
-		for _, want := range []string{`"verdict": "V"`, `"gaps": "a gap"`, `"question": "Q?"`,
-			"second note\n  goes on", "fifth note", `"notes_total": 5`} {
+		// Typed, a long request loses its middle (42C3RZ): the brief's
+		// longest note alone runs past 4000 characters, and all of it
+		// reaches the file while the tab gets one short line.
+		if len(typedLine) > 200 {
+			t.Errorf("%s typed %d characters into the tab, want one short line: %q", lane, len(typedLine), typedLine)
+		}
+		if !strings.Contains(prompt, long) || len(prompt) < 4000 {
+			t.Errorf("%s request in the file lost part of the brief (%d characters)", lane, len(prompt))
+		}
+		for _, want := range []string{`"verdict":"V"`, `"gaps":"a gap"`, `"question":"Q?"`,
+			"second note\n  goes on", "fifth note", `"notes_total":5`} {
 			if !strings.Contains(prompt, strings.ReplaceAll(want, "\n", `\n`)) {
 				t.Errorf("%s prompt lacks %q:\n%s", lane, want, prompt)
 			}
 		}
-		for _, not := range []string{"first note", "LONG CONTEXT", "(jaira show"} {
+		for _, not := range []string{"(jaira show"} {
 			if strings.Contains(prompt, not) {
 				t.Errorf("%s prompt carries %q, which it does not need:\n%s", lane, not, prompt)
 			}
 		}
-		if strings.Contains(prompt, "\n") {
-			t.Errorf("%s prompt spans lines; a newline typed into the tab sends it early:\n%s", lane, prompt)
+		if strings.Contains(typedLine, "\n") {
+			t.Errorf("%s typed line spans lines; a newline typed into the tab sends it early:\n%s", lane, typedLine)
 		}
 	}
-	if start, _ := run("explain", ""); !strings.HasSuffix(start, "&& claude") {
+	if start, _ := run("explain", ""); !strings.Contains(start, "&& claude --add-dir '") {
 		t.Errorf("no chat-model: started %q, want plain claude, the account default", start)
 	}
-	if start, _ := run("explain", "x'; rm -rf ~; '"); !strings.HasSuffix(start, "&& claude") {
+	if start, _ := run("explain", "x'; rm -rf ~; '"); !strings.Contains(start, "&& claude --add-dir '") {
 		t.Errorf("a chat-model that is no model name reached the command line: %q", start)
 	}
 	if start, prompt := run("review", "sonnet"); !strings.HasSuffix(start, "&& claude") || prompt != "/jaira-role-lane AB12CD review" {
 		t.Errorf("a lane must keep plain claude and its role: started %q, typed %q", start, prompt)
+	}
+}
+
+// A herdr.exe is the Herdr of WSL and of native Windows alike, so spawn.sh
+// tells the two apart by the machine it runs on (issue #79): in WSL the tab
+// crosses back with wsl.exe --cd; in Git Bash it starts claude where it is,
+// in the worktree as Windows spells it. uname and cygpath are stubbed, so both
+// cases run on any machine, Windows included.
+func TestSpawnStartsClaudeWhereItsShellRuns(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	for _, c := range []struct {
+		name, uname, distro, lane, wantCwd, wantStart string
+	}{
+		{"wsl", "Linux", "Ubuntu", "review", "<wt>", "wsl.exe --cd '<wt>' -- bash -lic \"claude\""},
+		// cmd and PowerShell 5.1 know no &&: --cwd puts the tab in place.
+		{"git bash", "MINGW64_NT-10.0-22631", "", "review", `C:\work\repo`, `claude`},
+		// A chat's request file is outside the worktree: claude gets its
+		// folder as Windows spells it, in the double quotes cmd and
+		// PowerShell both read.
+		{"git bash chat", "MINGW64_NT-10.0-22631", "", "explain", `C:\work\repo`, `claude --add-dir "C:\work\repo"`},
+	} {
+		bin := t.TempDir()
+		ran := filepath.Join(bin, "ran")
+		created := filepath.Join(bin, "created")
+		herdr := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") printf '%s\n' "$@" > "` + created + `"; echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane run")   printf '%s\n' "$4" > "` + ran + `" ;;
+esac
+`
+		if err := os.WriteFile(filepath.Join(bin, "herdr.exe"), []byte(herdr), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		wt := t.TempDir()
+		cmd := spawnOn(bash, c.uname, spawn, "--no-worktree", "ab12cd", "AB12CD", c.lane, wt)
+		cmd.Dir = wt
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr.exe"),
+			"HERDR_WORKSPACE_ID=", "WSL_DISTRO_NAME="+c.distro, "PATH="+bin+string(os.PathListSeparator)+path)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("%s: spawn.sh: %v\n%s", c.name, err, out)
+		}
+		r, _ := os.ReadFile(ran)
+		if got, want := strings.TrimSpace(string(r)), strings.ReplaceAll(c.wantStart, "<wt>", wt); got != want {
+			t.Errorf("%s: the tab ran %q, want %q", c.name, got, want)
+		}
+		args, _ := os.ReadFile(created)
+		if want := "--cwd\n" + strings.ReplaceAll(c.wantCwd, "<wt>", wt) + "\n"; !strings.Contains(string(args), want) {
+			t.Errorf("%s: tab create got %q, want --cwd %s", c.name, args, c.wantCwd)
+		}
+	}
+}
+
+// spawnOn runs spawn.sh in a shell whose uname answers uname and whose cygpath
+// answers C:\work\repo. They are exported functions, not stubs on PATH: on
+// Windows, Git's bash.exe puts /usr/bin ahead of any PATH it is handed, so a
+// stub there is never reached and the script sees the runner's own Git Bash.
+func spawnOn(bash, uname, spawn string, args ...string) *exec.Cmd {
+	stub := `uname() { echo '` + uname + `'; }; cygpath() { echo 'C:\work\repo'; }; export -f uname cygpath; exec "$BASH" "$@"`
+	return exec.Command(bash, append([]string{"-c", stub, "bash", spawn}, args...)...)
+}
+
+// What a chat tab is typed: one line pointing at the file its request is in.
+// The path is quoted: a %TEMP% with a space in it is one path, not two words.
+const chatLead, chatTail = `Lies die Datei "`, `" ganz und tu, was darin steht.`
+
+// chatRequest reads the request a chat tab was pointed at, and fails the test
+// when the line typed is not such a pointer.
+func chatRequest(t *testing.T, typed string) string {
+	t.Helper()
+	typed = strings.TrimSpace(typed)
+	file, ok := strings.CutPrefix(typed, chatLead)
+	file, ok2 := strings.CutSuffix(file, chatTail)
+	if !ok || !ok2 {
+		t.Fatalf("a chat tab must be typed %q<file>%q, got %q", chatLead, chatTail, typed)
+	}
+	// On Windows the script runs under Git Bash, whose mktemp prints an MSYS
+	// path (/tmp/...) that Go cannot open; Git Bash's cygpath spells it as
+	// Windows does.
+	if runtime.GOOS == "windows" && strings.HasPrefix(file, "/") {
+		bash, err := exec.LookPath("bash")
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err := exec.Command(bash, "-c", `cygpath -w "$1"`, "bash", file).Output()
+		if err != nil {
+			t.Fatalf("cygpath -w %s: %v", file, err)
+		}
+		file = strings.TrimSpace(string(out))
+	}
+	body, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(string(body))
+}
+
+// No role runs python3 by name: on Windows it is missing or the Store's stub
+// (issue #79). The scripts read JSON with 'jaira json get', a role that runs
+// a Python script asks jaira which command to run it with, and the scripts
+// write UTF-8 themselves, because a Windows console would not.
+func TestRolesNeverRunPython3ByName(t *testing.T) {
+	roles, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range roles {
+		for _, f := range r.Files {
+			body, err := File(r.ID, f)
+			if err != nil {
+				continue
+			}
+			text := string(body)
+			switch {
+			case strings.HasSuffix(f, ".sh"):
+				if strings.Contains(text, "python3 -c") || strings.Contains(text, "| python") {
+					t.Errorf("%s/%s runs python to read JSON; use jaira json get", r.ID, f)
+				}
+			case strings.HasSuffix(f, ".md"):
+				if strings.Contains(text, "python3 <") {
+					t.Errorf("%s/%s runs python3 by name; ask $(jaira roles list --json | jaira json get python)", r.ID, f)
+				}
+			case strings.HasSuffix(f, ".py"):
+				if !strings.Contains(text, `sys.stdout.reconfigure(encoding="utf-8")`) {
+					t.Errorf("%s/%s does not set its stdout to UTF-8", r.ID, f)
+				}
+			}
+		}
+	}
+}
+
+// Roles reinstalled, binary not: the jaira on PATH has no 'json get', and
+// spawn.sh would die after 'tab create' with an empty tab standing (#79). It
+// asks first and stops before Herdr is called at all.
+func TestSpawnStopsBeforeATabWhenJairaIsTooOld(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := install(dir, false, true); err != nil {
+		t.Fatal(err)
+	}
+	bin := t.TempDir()
+	called := filepath.Join(bin, "called")
+	for name, script := range map[string]string{
+		"herdr": "#!/usr/bin/env bash\necho \"$*\" >> '" + called + "'\n",
+		"jaira": "#!/usr/bin/env bash\necho 'jaira takes no arguments, received 3' >&2\nexit 2\n",
+	} {
+		if err := os.WriteFile(filepath.Join(bin, name), []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", "review")
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+		"HERDR_WORKSPACE_ID=", "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("spawn.sh went on with a jaira that has no json get:\n%s", out)
+	}
+	if !strings.Contains(string(out), "install the new jaira first") {
+		t.Errorf("spawn.sh does not say what to do:\n%s", out)
+	}
+	if b, _ := os.ReadFile(called); len(b) > 0 {
+		t.Errorf("Herdr was called before the check: %s", b)
 	}
 }
