@@ -65,7 +65,17 @@ opens the picker and narrows everything to the milestones ticked in it.
 
 A milestone leaves the board only when somebody says so: ` + "`jaira logbook <name>`" + `
 files it once all its tickets are finished, and ` + "`jaira restore <file>`" + ` — the
-file name the logbook shows — brings it back. Emptying one with ` + "`rm`" + ` leaves it standing.`,
+file name the logbook shows — brings it back. Emptying one with ` + "`rm`" + ` leaves it standing.
+
+Two milestones that share a name are warned about on stderr by every milestone
+command (--json: milestones_twins), with the rename that ends it. Nothing is
+refused for it, but a command given the bare name exits 3.`,
+		// ls says it in its own report, where --json has a field to put it in.
+		PersistentPostRun: func(cmd *cobra.Command, _ []string) {
+			if cmd.Name() != "ls" && openedStore != nil {
+				reportTwins(openedStore.Root)
+			}
+		},
 	}
 	cmd.AddCommand(
 		newMilestoneCreateCmd(),
@@ -520,6 +530,7 @@ work and each filters to half of it.`,
 				}
 				return emit(w, map[string]any{
 					"milestones": arr, "count": len(arr), "dir": milestone.Dir(s.Root),
+					"milestones_twins": twinsJSON(milestone.Twins(all)),
 				})
 			}
 			if len(all) == 0 {
@@ -543,6 +554,7 @@ work and each filters to half of it.`,
 					swatch(ms.Colour, known, colours), labels[ms.ID], value, len(ms.Members()), goal)
 			}
 			fmt.Fprintf(w, "\nFiles: %s\n", milestone.Dir(s.Root))
+			printTwins(milestone.Twins(all))
 			return nil
 		},
 	}
@@ -668,6 +680,41 @@ func migrateMilestones(s *ticket.Store) error {
 	moved, err := migrateHeld(s)
 	reportMigrated(moved)
 	return err
+}
+
+// twinsJSON is the twins as --json gives them: the name, the labels that tell
+// its milestones apart, and the command that renames one.
+func twinsJSON(twins []milestone.Twin) []map[string]any {
+	out := make([]map[string]any, 0, len(twins))
+	for _, t := range twins {
+		out = append(out, map[string]any{"name": t.Name, "labels": t.Labels, "rename": t.RenameCommand()})
+	}
+	return out
+}
+
+// printTwins is the warning for each name two milestones share, on stderr.
+func printTwins(twins []milestone.Twin) {
+	for _, t := range twins {
+		fmt.Fprintf(os.Stderr, "jaira: warning: %d milestones are named %q: %s - rename one: %s\n",
+			len(t.Labels), t.Name, strings.Join(t.Labels, ", "), t.RenameCommand())
+	}
+}
+
+// reportTwins is the warning a command that has no JSON field of its own
+// gives, on stderr in the shape the caller asked for.
+func reportTwins(root string) {
+	all, err := milestone.LoadAll(root)
+	if err != nil {
+		return
+	}
+	twins := milestone.Twins(all)
+	if g.jsonOut {
+		for _, j := range twinsJSON(twins) {
+			warnRef(map[string]any{"milestones_twins": []map[string]any{j}}, "")
+		}
+		return
+	}
+	printTwins(twins)
 }
 
 // reportMigrated tells what a migration moved. On stderr, in the shape the

@@ -55,6 +55,9 @@ the ref carries the whole ticket file, so it is readable with no checkout and
 nothing to merge. Refs are outside refs/heads, so the default refspec does not
 carry them and a teammate who does not use jaira sees none of this.
 
+Two milestones that share a name are warned about on stderr, with the rename
+that ends it (--json: milestones_twins); nothing is refused for it.
+
 A ticket newly assigned to you also raises a desktop notification, unless
 notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 		Args: noArgs(),
@@ -94,6 +97,10 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			reportConflicts(conflictMilestones)
 			departed := refs.Departed()
 			stranded := strandedHere()
+			var twins []milestone.Twin
+			if all, err := milestone.LoadAll(s.Root); err == nil {
+				twins = milestone.Twins(all)
+			}
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"arrivals": arrivals, "departed": departed, "stranded": stranded,
@@ -102,6 +109,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 					"milestones_renamed":   renamedMilestones,
 					"milestones_migrated":  strOrEmpty(migratedMilestones),
 					"milestones_conflicts": conflictsOrEmpty(conflictMilestones),
+					"milestones_twins":     twinsJSON(twins),
 				})
 			}
 			printMilestones(cmd.OutOrStdout(), openedMilestones)
@@ -109,6 +117,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			printRenamedMilestones(cmd.OutOrStdout(), renamedMilestones)
 			printMigratedMilestones(cmd.OutOrStdout(), migratedMilestones)
 			printMilestoneConflicts(cmd.OutOrStdout(), conflictMilestones)
+			printTwins(twins)
 			printArrivals(cmd.OutOrStdout(), arrivals)
 			printDeparted(cmd.OutOrStdout(), departed)
 			printStranded(cmd.OutOrStdout(), stranded)

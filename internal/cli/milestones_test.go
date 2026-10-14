@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -1008,5 +1009,67 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	}
 	if out, _ := runCLI(t, dir, "list", "--milestone", "dup"); strings.Contains(out, one) {
 		t.Errorf("list --milestone dup holds the ticket that is in twin and solo:\n%s", out)
+	}
+}
+
+// Two milestones of one name are said, once per name, on stderr by every
+// milestone command and by fetch, with the rename that ends it; --json carries
+// it as a field; a board without twins hears nothing.
+func TestTwinedMilestoneNamesAreWarnedOn(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "dup"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "create", "solo"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	_, quiet := captureStdio(t, func() { _, _ = runCLI(t, dir, "milestone", "ls") })
+	if strings.Contains(quiet, "share") {
+		t.Errorf("no twins, yet a warning: %q", quiet)
+	}
+	first, _ := milestone.Load(dir, "dup")
+	twin := filepath.Join(milestone.Dir(dir), "dup-ZZZZZ9.md")
+	if err := os.WriteFile(twin, []byte("---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{first.ID, "ZZZZZ9"}
+	sort.Strings(ids)
+	want := `jaira: warning: 2 milestones are named "dup": dup-` + ids[0] + `, dup-` + ids[1] + ` - rename one: jaira milestone rename dup-` + ids[0] + ` <new-name>`
+	for _, args := range [][]string{{"milestone", "ls"}, {"milestone", "set", "solo", "--goal", "g"}} {
+		_, stderr := captureStdio(t, func() { _, _ = runCLI(t, dir, args...) })
+		if strings.Count(stderr, "are named") != 1 || !strings.Contains(stderr, want) {
+			t.Errorf("%v: stderr = %q, want one line %q", args, stderr, want)
+		}
+	}
+	// Writing commands on the bare twinned name still refuse with exit 3.
+	if _, err := runCLI(t, dir, "milestone", "set", "dup", "--goal", "g"); err == nil || exitCode(err) != ExitValidation {
+		t.Errorf("an ambiguous set must keep refusing: %v", err)
+	}
+	var js string
+	_, stderr := captureStdio(t, func() { js, _ = runCLI(t, dir, "milestone", "ls", "--json") })
+	if !strings.Contains(js, `"milestones_twins"`) || !strings.Contains(js, "dup-ZZZZZ9") || strings.Contains(stderr, "are named") {
+		t.Errorf("--json: field missing or text on stderr\nstdout: %s\nstderr: %s", js, stderr)
+	}
+}
+
+// fetch says it too, in the foreground, and in its --json.
+func TestFetchWarnsOnTwinnedMilestoneNames(t *testing.T) {
+	ada, _ := twoBoards(t)
+	for _, f := range []string{"dup-AAAAA1.md", "dup-BBBBB2.md"} {
+		if err := os.MkdirAll(milestone.Dir(ada), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(milestone.Dir(ada), f), []byte("---\ncolor: 99\ncreated-at: 2026-10-01T10:00:00Z\n---\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var out string
+	_, stderr := captureStdio(t, func() { out, _ = runCLI(t, ada, "fetch") })
+	if !strings.Contains(stderr, "jaira milestone rename dup-AAAAA1 <new-name>") {
+		t.Errorf("fetch stderr lacks the warning: %q\n%s", stderr, out)
+	}
+	_, stderr = captureStdio(t, func() { out, _ = runCLI(t, ada, "fetch", "--json") })
+	if !strings.Contains(out, `"milestones_twins"`) || strings.Contains(stderr, "are named") {
+		t.Errorf("fetch --json: stdout %s stderr %q", out, stderr)
 	}
 }
