@@ -509,11 +509,7 @@ func resolveAll(s *ticket.Store, args []string) ([]string, error) {
 }
 
 func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
-	ids := ms.Members()
-	members := make([]map[string]string, 0, len(ids))
-	for _, id := range ids {
-		members = append(members, map[string]string{"id": id, "handle": ticket.Handle(id)})
-	}
+	members := memberRefs(ms.Members())
 	out := map[string]any{
 		"name":    ms.Name,
 		"color":   ms.Colour,
@@ -523,6 +519,16 @@ func milestoneJSON(ms *milestone.Milestone, path string) map[string]any {
 	}
 	if !ms.CreatedAt.IsZero() {
 		out["created_at"] = ms.CreatedAt.UTC().Format(time.RFC3339)
+	}
+	return out
+}
+
+// memberRefs is a member list as --json prints it, for milestones and epics
+// alike: the full id and the handle a person types back.
+func memberRefs(ids []string) []map[string]string {
+	out := make([]map[string]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, map[string]string{"id": id, "handle": ticket.Handle(id)})
 	}
 	return out
 }

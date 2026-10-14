@@ -40,20 +40,10 @@ ticket having to be edited twice.`,
 			if err != nil {
 				return err
 			}
-			lanes, err := lane.Load(s.Root)
+			ix, _, err := boardIndex(s)
 			if err != nil {
 				return err
 			}
-			all, err := s.List()
-			if err != nil {
-				// An unreadable ticket must not hide every link of the ones
-				// that are readable.
-				var pe *ticket.PartialError
-				if !errors.As(err, &pe) {
-					return err
-				}
-			}
-			ix := link.Build(s, lanes, all)
 			entries := ix.Relations(t.ID)
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), linksJSON(t, entries))
@@ -115,4 +105,22 @@ func printLinks(w io.Writer, t *ticket.Ticket, entries []link.Entry) {
 	if !any {
 		fmt.Fprintf(w, "\nnothing is linked to this ticket yet\n")
 	}
+}
+
+// boardIndex lists the board and indexes it with the logbook and the archive.
+// An unreadable ticket must not hide the ones that are readable, so a partial
+// listing is used as it is.
+func boardIndex(s *ticket.Store) (*link.Index, []*ticket.Ticket, error) {
+	lanes, err := lane.Load(s.Root)
+	if err != nil {
+		return nil, nil, err
+	}
+	all, err := s.List()
+	if err != nil {
+		var pe *ticket.PartialError
+		if !errors.As(err, &pe) {
+			return nil, nil, err
+		}
+	}
+	return link.Build(s, lanes, all), all, nil
 }
