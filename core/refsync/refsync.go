@@ -193,6 +193,37 @@ func (y *Syncer) RecordMilestone(key, file string, content []byte) error {
 	return nil
 }
 
+// RecordMigration queues a milestone's move to its ID as the commit of its own
+// the ref's base is derived from: the migrated content, and from, the old name
+// ref's tip it came from.
+func (y *Syncer) RecordMigration(key, file string, migrated []byte, from string) error {
+	if y == nil || y.Usable() != nil {
+		return nil
+	}
+	if from == "" {
+		from = "none"
+	}
+	if err := y.Box.QueueMigration(key, file, migrated, from, y.Actor); err != nil {
+		return err
+	}
+	y.dirty = true
+	return nil
+}
+
+// MigrationBase is the base the ID ref's migration commit gives: the migrated
+// content and the old ref's tip it came from. A ref without one was created
+// with its ID.
+func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
+	if y == nil || y.Usable() != nil {
+		return milestone.Base{}, false
+	}
+	content, from, err := y.Repo.ReadMigration(id)
+	if err != nil {
+		return milestone.Base{}, false
+	}
+	return milestone.Base{Content: string(content), OldSHA: from}, true
+}
+
 // IncomingMilestones writes to disk every milestone file the refs carry that
 // this working tree does not already have in the same state, and reports the
 // names it wrote.
@@ -414,7 +445,7 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 // (milestone.AdoptOld). A ref that has not moved since the base is skipped
 // without reading it again.
 func (y *Syncer) adoptOldRef(root, name, id string, content []byte, sha string) (bool, []milestone.Conflict, error) {
-	if base, ok := milestone.LoadBase(root, id); ok && sha != "" && sha == base.OldSHA {
+	if base, ok := milestone.BaseFor(root, y, id); ok && sha != "" && sha == base.OldSHA {
 		return false, nil, nil
 	}
 	return milestone.AdoptOld(root, y, id, name, content, sha)
@@ -675,7 +706,7 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 		if baseFile, base, err = y.Repo.ReadMilestoneFileAt(e.Lease); err != nil {
 			base, baseFile = nil, ""
 		}
-	} else if b, ok := milestone.LoadBase(y.Store.Root, e.ID); ok {
+	} else if b, ok := milestone.BaseFor(y.Store.Root, y, e.ID); ok {
 		base = []byte(b.Content)
 	}
 	all, err := milestone.LoadAll(y.Store.Root)

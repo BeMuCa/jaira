@@ -387,8 +387,75 @@ func (r *Repo) WriteMilestone(key, file string, content []byte, lease string) (s
 	return r.refWrite(MilestoneRefName(key), file, content, lease)
 }
 
+// MigratedFromTrailer is the message trailer of the commit that moved a
+// milestone to its ID ref: the tip of the old name ref it came from, or "none".
+const MigratedFromTrailer = "Jaira-Migrated-From"
+
+// WriteMigration is the first write of a milestone's ID ref when an older
+// milestone file moved to it: a commit of its own holding only the migrated
+// content, and in its message the old name ref it came from (from, a SHA or
+// "none"). An edit made since goes on top of it as a second commit in the same
+// push, so the migration stays readable from the ref (ReadMigration).
+func (r *Repo) WriteMigration(key, file string, migrated []byte, from, editFile string, edit []byte) (string, error) {
+	commit, err := r.commitFile(file, migrated, "", "jaira: "+strings.TrimSuffix(file, ".md")+"\n\n"+MigratedFromTrailer+": "+from)
+	if err != nil {
+		return "", err
+	}
+	if editFile != file || !bytes.Equal(edit, migrated) {
+		if commit, err = r.commitFile(editFile, edit, commit, "jaira: "+strings.TrimSuffix(editFile, ".md")); err != nil {
+			return "", err
+		}
+	}
+	return r.publish(MilestoneRefName(key), commit, "")
+}
+
+// ReadMigration is the migration commit on the ID ref: the first-parent
+// commit that carries the trailer. It returns the content that commit holds
+// and the old name ref's tip it came from ("" when there was none), and
+// ErrNoRef when the ref has no such commit, which is a milestone created with
+// its ID.
+func (r *Repo) ReadMigration(key string) (content []byte, from string, err error) {
+	sha, err := r.refSHA(MilestoneRefName(key))
+	if err != nil {
+		return nil, "", err
+	}
+	out, _, runErr := r.run("", "log", "--first-parent", "--format=%H %(trailers:key="+MigratedFromTrailer+",valueonly,separator=%x2c)", sha)
+	if runErr != nil {
+		if errors.Is(runErr, ErrNoGit) {
+			return nil, "", runErr
+		}
+		return nil, "", ErrNoRef
+	}
+	var found, via string
+	for _, line := range strings.Split(out, "\n") {
+		if c, v, ok := strings.Cut(strings.TrimSpace(line), " "); ok && strings.TrimSpace(v) != "" {
+			found, via = c, strings.TrimSpace(v)
+		}
+	}
+	if found == "" {
+		return nil, "", ErrNoRef
+	}
+	_, content, err = r.ReadMilestoneFileAt(found)
+	if err != nil {
+		return nil, "", err
+	}
+	if via == "none" {
+		via = ""
+	}
+	return content, via, nil
+}
+
 // refWrite commits one file, named entry, as the whole tree of the ref.
 func (r *Repo) refWrite(ref, entry string, content []byte, lease string) (string, error) {
+	commit, err := r.commitFile(entry, content, lease, "jaira: "+strings.TrimSuffix(entry, ".md"))
+	if err != nil {
+		return "", err
+	}
+	return r.publish(ref, commit, lease)
+}
+
+// commitFile makes a commit whose whole tree is the one file entry.
+func (r *Repo) commitFile(entry string, content []byte, parent, message string) (string, error) {
 	blob, err := r.hashObject(content)
 	if err != nil {
 		return "", err
@@ -397,14 +464,14 @@ func (r *Repo) refWrite(ref, entry string, content []byte, lease string) (string
 	if err != nil {
 		return "", err
 	}
-	args := []string{"commit-tree", tree, "-m", "jaira: " + strings.TrimSuffix(entry, ".md")}
-	if lease != "" {
-		args = append(args, "-p", lease)
+	args := []string{"commit-tree", tree, "-m", message}
+	if parent != "" {
+		args = append(args, "-p", parent)
 	}
-	commit, err := r.value(args...)
-	if err != nil {
-		return "", err
-	}
+	return r.value(args...)
+}
+
+func (r *Repo) publish(ref, commit, lease string) (string, error) {
 	if err := r.pushRefspec(ref, commit+":"+ref, lease); err != nil {
 		return "", err
 	}

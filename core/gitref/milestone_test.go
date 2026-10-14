@@ -1,6 +1,7 @@
 package gitref_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -155,5 +156,35 @@ func TestAMilestoneRefCarriesItsFileName(t *testing.T) {
 	}
 	if file, _, _, err := grace.ReadMilestone("ABC123"); err != nil || file != "y-ABC123.md" {
 		t.Errorf("after the rename read = %q, %v; want y-ABC123.md", file, err)
+	}
+}
+
+// The move to an ID is a commit of its own, even when an edit goes out in the
+// same push: a clone that fetches the ref finds the migrated content and the
+// old ref's tip in it, and an ordinary write is not mistaken for one.
+func TestMigrationIsItsOwnCommitAndIsFoundFromAnotherClone(t *testing.T) {
+	ada, grace := twoClones(t)
+	edited := milestoneFile + "- 02TEST\n"
+	if _, err := ada.WriteMigration("ABC123", "round-one-ABC123.md", []byte(milestoneFile), "deadbeef", "round-one-ABC123.md", []byte(edited)); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := grace.Fetch(); err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Fields(git(t, grace.Dir, "rev-list", "--count", "refs/jaira/milestones/ABC123")); n[0] != "2" {
+		t.Errorf("want the migration and the edit as two commits, got %v", n)
+	}
+	got, from, err := grace.ReadMigration("ABC123")
+	if err != nil || string(got) != milestoneFile || from != "deadbeef" {
+		t.Errorf("ReadMigration = %q, %q, %v", got, from, err)
+	}
+	if _, _, err := grace.ReadMigration("nothing"); err == nil {
+		t.Error("a ref that does not exist has no migration")
+	}
+	if _, err := ada.WriteMilestone("FRESH1", "fresh-FRESH1.md", []byte(milestoneFile), ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := ada.ReadMigration("FRESH1"); !errors.Is(err, gitref.ErrNoRef) {
+		t.Errorf("a milestone created with its ID has no migration commit: %v", err)
 	}
 }

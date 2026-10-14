@@ -94,9 +94,24 @@ type Entry struct {
 	// carried <key>.md.
 	File string `json:"file,omitempty"`
 
+	// Migration is set on a milestone's first write when it moves an older
+	// milestone file to its ID: what that file migrated to, and where it came
+	// from. It is sent as a commit of its own before Content, whatever edits
+	// replaced Content in the meantime.
+	Migration *Migration `json:"migration,omitempty"`
+
 	QueuedAt  time.Time `json:"queued-at"`
 	UpdatedAt time.Time `json:"updated-at"`
 	By        string    `json:"by,omitempty"`
+}
+
+// Migration is the move of an older milestone file to its ID, as the commit that
+// records it holds it.
+type Migration struct {
+	File    string `json:"file"`
+	Content string `json:"content"`
+	// From is the tip of the old name ref the file came from, "none" without one.
+	From string `json:"from"`
 }
 
 // Age is how long this write has been waiting to be sent.
@@ -150,8 +165,20 @@ func (b *Box) QueueMilestone(key, file string, op Op, content []byte, lease, by 
 	return b.queueKind(KindMilestone, key, file, op, content, lease, by)
 }
 
+// QueueMigration files the first write of a milestone's ref when it moves an
+// older file to its ID: the migrated content, and the old ref's tip (or
+// "none"), which are sent as a commit of their own. Later edits replace the
+// content and leave the migration as it is.
+func (b *Box) QueueMigration(key, file string, migrated []byte, from, by string) error {
+	return b.queue(KindMilestone, key, file, OpWrite, migrated, "", by, &Migration{File: file, Content: string(migrated), From: from})
+}
+
 // queueKind is what both of those are.
 func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, lease, by string) error {
+	return b.queue(kind, key, file, op, content, lease, by, nil)
+}
+
+func (b *Box) queue(kind Kind, key, file string, op Op, content []byte, lease, by string, mig *Migration) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
@@ -163,11 +190,14 @@ func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, leas
 	e := Entry{
 		ID: key, Op: op, Ref: ref, Kind: kind,
 		Lease: lease, Content: string(content), File: file,
-		QueuedAt: now, UpdatedAt: now, By: by,
+		QueuedAt: now, UpdatedAt: now, By: by, Migration: mig,
 	}
 	if old, ok := b.pendingKind(kind, key); ok {
 		e.Lease = old.Lease
 		e.QueuedAt = old.QueuedAt
+		if e.Migration == nil && e.Lease == "" {
+			e.Migration = old.Migration
+		}
 	}
 	path := b.path(kind, key)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -363,6 +393,12 @@ type Sender interface {
 	WriteMilestone(key, file string, content []byte, lease string) (string, error)
 }
 
+// migrationSender is a Sender that can write a milestone's migration as a
+// commit of its own (gitref.Repo.WriteMigration).
+type migrationSender interface {
+	WriteMigration(key, file string, migrated []byte, from, editFile string, edit []byte) (string, error)
+}
+
 // Outcome is what became of one queued write during a flush.
 type Outcome string
 
@@ -453,6 +489,10 @@ func send(s Sender, kind Kind, e Entry) error {
 		file := e.File
 		if file == "" {
 			file = e.ID + ".md"
+		}
+		if m, ok := s.(migrationSender); ok && e.Migration != nil && e.Lease == "" {
+			_, err := m.WriteMigration(e.ID, e.Migration.File, []byte(e.Migration.Content), e.Migration.From, file, []byte(e.Content))
+			return err
 		}
 		_, err := s.WriteMilestone(e.ID, file, []byte(e.Content), e.Lease)
 		return err

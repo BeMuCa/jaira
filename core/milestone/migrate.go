@@ -62,13 +62,42 @@ type Result struct {
 // base: the tip SHA of the old name's ref, "" when there is none.
 type oldRefTip interface{ OldRefSHA(name string) string }
 
+// migrationRecorder is a Recorder that queues the move as a commit of its own
+// (outbox.Box.QueueMigration), with the old ref's tip it came from.
+type migrationRecorder interface {
+	RecordMigration(key, file string, migrated []byte, from string) error
+	MigrationBase(id string) (Base, bool)
+}
+
+func recordMigration(rec Recorder, id, file string, migrated []byte, from string) error {
+	if m, ok := rec.(migrationRecorder); ok {
+		return m.RecordMigration(id, file, migrated, from)
+	}
+	return rec.RecordMilestone(id, file, migrated)
+}
+
+// BaseFor is the base for the milestone with this ID: the one recorded here
+// when this clone moved it or last merged an older build's edit, else the one
+// the migration commit on the ID ref gives, so a clone that never moved it
+// merges from the same state.
+func BaseFor(root string, rec Recorder, id string) (Base, bool) {
+	if b, ok := LoadBase(root, id); ok {
+		return b, true
+	}
+	if m, ok := rec.(migrationRecorder); ok {
+		return m.MigrationBase(id)
+	}
+	return Base{}, false
+}
+
 // Migrate moves every milestone file written before IDs existed to its
 // <name>-<ID>.md name, once, with the ID LegacyID computes from the old name —
 // the same on every clone, so clones that migrate without ever speaking to
 // one another agree. The caller holds the milestone lock. It returns one
 // "old.md -> new.md" per file it moved.
 //
-// Each move records a Base, the old content and the tip of the old name ref.
+// Each move records a Base, the old content and the tip of the old name ref,
+// here and as the commit of its own the ref's first write is (RecordMigration).
 // An old <name>.md that turns up beside its ID file later — an older build
 // wrote it again — is not simply removed: what it changed since the base is
 // adopted into the ID file (Adopt), and the ref write is queued. An old file
@@ -160,7 +189,7 @@ func Migrate(root string, rec Recorder) (Result, error) {
 		}
 		res.Moved = append(res.Moved, e.Name()+" -> "+target)
 		if !rec.HasMilestoneRef(id) {
-			if err := rec.RecordMilestone(id, target, migrated); err != nil {
+			if err := recordMigration(rec, id, target, migrated, tip(base)); err != nil {
 				if recErr == nil {
 					recErr = &RecordError{Name: base, Err: err}
 				}
@@ -192,20 +221,15 @@ func idFilePath(root, id, fallback string) string {
 // AdoptOld merges what an older build wrote to its old file or old name ref
 // (old, the whole file; tip, the ref's SHA when it came from one) into the ID
 // file of the milestone with this ID, and queues the ref write. Without a
-// recorded base it merges from an empty one. It does nothing when the old side is what the base says, or when
-// no ID file lies here. The base then becomes the old side as it is now, so
+// base (BaseFor) there is nothing to adopt. It does nothing when the old side
+// is what the base says, or when no ID file lies here. The base then becomes the old side as it is now, so
 // the same edit is merged, and reported, once.
 func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string) (adopted bool, conflicts []Conflict, err error) {
-	base, ok := LoadBase(root, id)
+	base, ok := BaseFor(root, rec, id)
 	if !ok {
-		// No base was recorded here: this clone never moved the milestone
-		// itself. The ID ref's first commit is not a base to trust — the moving
-		// write and the first edit are one commit — so the merge starts from
-		// nothing: tickets are unioned, a field either side has survives, and
-		// on a field both have and differ the ID side is kept and the old value
-		// reported. An edit is never dropped; a removal made by the older
-		// build is not seen.
-		base = Base{}
+		// Neither recorded here nor a migration commit on the ID ref: the
+		// milestone was created with its ID, there is no old side to adopt.
+		return false, nil, nil
 	}
 	migrated := MigrateContent(old)
 	if base.Content == string(migrated) {
