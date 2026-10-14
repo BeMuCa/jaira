@@ -126,8 +126,7 @@ func (b *Box) path(kind Kind, key string) string {
 const milestoneDir = "milestone-ids"
 
 // oldMilestonePath is the folder an older build files name-keyed milestone
-// writes in — and this build filed ID-keyed ones in before milestoneDir
-// existed. Still read; nothing new is written there.
+// writes in. Still read; nothing new is written there.
 func (b *Box) oldMilestonePath(key string) string {
 	return filepath.Join(b.Dir, string(KindMilestone), key+".json")
 }
@@ -297,31 +296,6 @@ func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
 
 // DropMilestone removes a queued write of a milestone.
 func (b *Box) DropMilestone(key string) error { return b.dropKind(KindMilestone, key) }
-
-// AdoptMilestone moves an ID-keyed write this build filed in the folder an
-// older build also lists into milestoneDir, as it is: when it was queued, its
-// lease and its file survive. Nothing to move is not an error. If the key
-// already has an entry in milestoneDir that one stands, being the newer.
-func (b *Box) AdoptMilestone(key string) error {
-	old := b.oldMilestonePath(key)
-	data, err := os.ReadFile(old)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	dst := b.path(KindMilestone, key)
-	if _, err := os.Stat(dst); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return err
-		}
-		if err := ticket.WriteAtomic(dst, data); err != nil {
-			return err
-		}
-	}
-	return os.Remove(old)
-}
 
 // RekeyMilestone replaces the write an older build queued under oldKey — a
 // milestone's name — with one under newKey, its ID, naming the file to commit.

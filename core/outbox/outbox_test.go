@@ -409,31 +409,6 @@ func TestAnIDKeyedMilestoneIsOutOfSightOfAnOlderBuild(t *testing.T) {
 	}
 }
 
-// An entry this build filed under milestones/ before the ID-keyed folder
-// existed is moved over by AdoptMilestone, keeping when it was queued, and
-// leaves milestones/ so an older build cannot flush it.
-func TestAnIDKeyedEntryInTheOldFolderIsAdopted(t *testing.T) {
-	b := box(t)
-	old := filepath.Join(b.Dir, "milestones", "ABC123.json")
-	if err := os.MkdirAll(filepath.Dir(old), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	raw := `{"id":"ABC123","op":"write","ref":"refs/jaira/milestones/ABC123","kind":"milestones","file":"backend-ABC123.md","content":"x","queued-at":"2026-01-02T03:04:05Z"}`
-	if err := os.WriteFile(old, []byte(raw), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := b.AdoptMilestone("ABC123"); err != nil {
-		t.Fatalf("adopt: %v", err)
-	}
-	if _, err := os.Stat(old); !os.IsNotExist(err) {
-		t.Errorf("entry still in milestones/")
-	}
-	list := mustList(t, b)
-	if len(list) != 1 || list[0].File != "backend-ABC123.md" || list[0].QueuedAt.Year() != 2026 {
-		t.Errorf("list = %+v, want the adopted entry with its QueuedAt", list)
-	}
-}
-
 func mustList(t *testing.T, b *outbox.Box) []outbox.Entry {
 	t.Helper()
 	l, err := b.List()
