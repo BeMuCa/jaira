@@ -81,3 +81,32 @@ func TestWebShowsEpicsAndADropTravels(t *testing.T) {
 		t.Fatalf("unknown epic: %d %s", w.Code, w.Body)
 	}
 }
+
+// A drop that does not reach the remote has to say so: the outbox keeps it,
+// Flush reports nothing wrong, and without webPush the page would show the
+// change as done while nobody else can see it.
+func TestWebPushReportsAQueuedDrop(t *testing.T) {
+	ada, _ := twoBoards(t)
+	c := createTicket(t, ada, "Loose")
+	jsonOf(t, ada, "epic", "create", "auth")
+	// Port 1 on loopback refuses at once: unreachable, without DNS or a timeout.
+	gitRun(t, ada, "remote", "set-url", "origin", "http://127.0.0.1:1/board.git")
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	r := httptest.NewRequest("POST", "/api/epics/auth/tickets", strings.NewReader(`{"id":"`+c+`"}`))
+	r.Host = "127.0.0.1:1"
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	var st web.Sync
+	if err := json.Unmarshal(w.Body.Bytes(), &st); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 200 || st.PushError == "" {
+		t.Fatalf("drop with the remote down: %d %s; want 200 with a push_error", w.Code, w.Body)
+	}
+}

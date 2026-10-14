@@ -80,6 +80,9 @@ type Server struct {
 
 	mu   sync.Mutex
 	sync Sync
+	// pushing keeps two drops in quick succession from flushing one outbox
+	// at the same time: the outbox has no lock of its own.
+	pushing sync.Mutex
 }
 
 // SyncState returns a copy of the sync record.
@@ -106,6 +109,8 @@ func (s *Server) pushNow() error {
 	if s.Push == nil {
 		return nil
 	}
+	s.pushing.Lock()
+	defer s.pushing.Unlock()
 	err := s.Push()
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/outbox"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/web"
 )
@@ -57,10 +58,7 @@ Stop it with Ctrl-C.`,
 			if refs.Usable() == nil {
 				root := s.Root
 				srv.Fetch = func() error { return fetchInChild(root) }
-				srv.Push = func() error {
-					_, err := refs.Flush()
-					return err
-				}
+				srv.Push = webPush
 			}
 			url := "http://" + l.Addr().String() + "/"
 			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: %s  (Ctrl-C to stop)\n", url)
@@ -94,6 +92,33 @@ Stop it with Ctrl-C.`,
 	cmd.Flags().IntVar(&port, "port", 0, "port on 127.0.0.1 to listen on (default: a free one)")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "print the address but do not open a browser")
 	return cmd
+}
+
+// webPush sends what a drop queued and says whether it reached the remote.
+//
+// refs.Flush alone does not: an unreachable remote is the state the outbox
+// exists for, so Flush answers it with no error and leaves the entry queued,
+// and an entry git refused is a report, not an error. A command prints those
+// reports as warnings (flushRefs); the page has nowhere to print, so every way
+// of not arriving becomes the error it shows as "push failed".
+func webPush() error {
+	reports, err := refs.Flush()
+	if err != nil {
+		return err
+	}
+	for _, r := range reports {
+		if r.Outcome != outbox.Sent {
+			_, name := refSubject(r.Kind, r.ID)
+			if r.Err != nil {
+				return fmt.Errorf("%s is %s: %v", name, r.Outcome, r.Err)
+			}
+			return fmt.Errorf("%s is %s", name, r.Outcome)
+		}
+	}
+	if queued, err := refs.Box.List(); err == nil && len(queued) > 0 {
+		return fmt.Errorf("the remote was not reached; %d change(s) wait to be sent", len(queued))
+	}
+	return nil
 }
 
 // fetchInChild runs 'jaira fetch' as its own process, exactly as the
