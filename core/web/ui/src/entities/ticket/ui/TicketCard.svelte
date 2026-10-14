@@ -1,12 +1,10 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import type { Ticket } from '../model/types';
 
-  let { ticket, draggable = false, ondragstart, children }: {
+  let { ticket, draggable = false, ondragstart }: {
     ticket: Ticket;
     draggable?: boolean;
     ondragstart?: (e: DragEvent) => void;
-    children?: Snippet;
   } = $props();
 </script>
 
@@ -14,7 +12,6 @@
   <span class="handle">{ticket.handle}</span>
   <span class="title">{ticket.title}</span>
   <span class="lane">{ticket.lane}</span>
-  {@render children?.()}
 </li>
 
 <style>

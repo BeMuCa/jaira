@@ -18,7 +18,7 @@
     <DropTarget ondropticket={(id) => onassign(epic.name, id)}>
       <article>
         <header>
-          <h3>{epic.title || epic.name}</h3>
+          <h3>{epic.title}</h3>
           <EpicProgress done={epic.done} total={epic.total} />
         </header>
         {#if epic.description}<p class="desc">{epic.description}</p>{/if}
