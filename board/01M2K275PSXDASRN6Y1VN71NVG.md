@@ -26,8 +26,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-09-15T17:36:13Z
-updated-by: Alexander Sacharov
+updated-at: 2026-10-13T12:02:08Z
+updated-by: BeMuCa
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
@@ -51,4 +51,6 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-13 12:02 · BeMuCa** — Ueberschneidung mit E70WYN (Milestone umbenennen, 2026-10-13): E70WYN nimmt einen alten Namen von anderen Klonen, indem sein Ref STEHEN bleibt und markiert wird - 'status: filed' plus neue Zeile 'renamed-to: <neu>' - derselbe Weg wie jaira logbook. Es wurde KEIN Ref-Loeschen gebaut; die delete-Frage hier bleibt offen.
+Fuer delete wichtig: ein geloeschter Ref erreicht keinen Klon, der die Datei schon hat (refsync IncomingMilestones loescht nie). Eine Marke erreicht ihn.
+Neu durch E70WYN: Milestone.HoldsName() - eine Marke mit renamed-to haelt den Namen NICHT (nichts zum Zurueckholen), eine reine filed-Marke weiter schon. Falls delete eine Marke nutzt, ist das die Stelle fuer 'Name wieder frei'.

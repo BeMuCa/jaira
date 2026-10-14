@@ -10,12 +10,12 @@ tags:
   - cli
 blocked-by: []
 related:
-  - 01M2HX55H2EPFZ8M3AFW0S1A7M
+  - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-09-15T06:49:49Z
-assignee: ""
-updated-by: Alexander Sacharov
+updated-at: 2026-10-13T20:52:01Z
+assignee: "BeMuCa"
+updated-by: BeMuCa
 context: |-
   Nach 'jaira self update' haengt jedes Board zurueck, und es haengt an drei Stellen zurueck: der erzeugte Agent-Block in CLAUDE.md und AGENTS.md, die Rollen-Prompts, und die Lanes.
 
@@ -40,6 +40,8 @@ context: |-
 - [ ] Der Aufruf ohne Schalter aendert sein Verhalten nicht still: was er heute tut, tut er weiterhin, und alles darueber hinaus wird ausdruecklich verlangt. Die Entscheidung steht begruendet im Ticket, nicht nur im Code.
 - [ ] Der Befehl sagt vor dem Schreiben, was er anfassen wuerde, und was er auslaesst weil ein Mensch es geaendert hat - wie 'jaira roles install' es schon tut.
 - [ ] Eine Zeile in core/release/NOTES.md unter ## Unreleased.
+- [ ] jaira self upgrade fuehrt danach jaira update und die Rollen-Installation an den Orten aus, an denen Rollen installiert sind (global und/oder im Projekt), und sagt, was es angefasst hat; Test
+- [ ] Sind installierte Skills (jaira, jaira-role-*) aelter als das laufende Binary, warnt jaira einmal und nennt den Befehl, der sie nachzieht; Test
 
 ## Options
 
@@ -51,4 +53,4 @@ context: |-
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-10-13 20:51 · BeMuCa** — Berk 2026-10-13: nach einem Upgrade sollen die jaira-Skills immer neu installiert werden und jaira update automatisch laufen (DoD 5 und 6). Anlass: am 13.10. war ~/.claude/skills/jaira-role-pr noch vom 06.10. und kannte das Ablegen vor dem PR nicht - Alex musste im PR #74 nachfordern. Weder git pull noch jaira update ziehen die Rollen-Skills heute nach (jaira roles install --help). Gehoert mit T8A8KM zusammen.

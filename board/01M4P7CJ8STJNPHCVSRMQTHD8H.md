@@ -1,7 +1,7 @@
 ---
 id: 01M4P7CJ8STJNPHCVSRMQTHD8H
 title: "lane-eval: erster echter Lauf und die drei offenen Luecken aus dem Review"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,9 +18,14 @@ definition-of-done: Ein echter Lauf mit einem goldenen Ticket aus dem logbook un
 tags: []
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 3d9ed26ac6b833ecb0a9373d1e62611a0c75bca5
+  - 8f5c14cea2a96bb6b2c6bd14ac436a86fff1443c
+  - 2e2b2f58bc45f119e7fcc31577465f189130eb53
+  - 279c0ba6896e1b6a330b0c99ffe7ef96510bfd8a
+  - bff0eb78b717b2648874937cfdcbe4e99e576024
 created-at: 2026-10-11T19:35:11Z
-updated-at: 2026-10-11T20:49:27Z
+updated-at: 2026-10-12T06:40:34Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-53484
 claimed-at: 2026-10-11T20:36:59Z
