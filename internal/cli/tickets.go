@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -804,30 +803,18 @@ many there are as notes_total.`,
 	return cmd
 }
 
-// briefNote is where one progress note starts: its dated, bold heading.
-// Every line up to the next one belongs to it, whatever it starts with — a
-// continuation line reading "#79 ..." or "- a list" is still the same note.
-var briefNote = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
-
 // briefNotes is how many of the newest notes a brief carries.
 const briefNotes = 4
 
 // ticketBrief is the part of a ticket the cockpit's explain and discuss chats
 // are handed in their prompt instead of reading all of it: every note and every
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
-// python3, which a Windows machine may not have (issue #79), and it splits as
-// that did: at a dated note heading only, and the fields keep its order.
+// python3, which a Windows machine may not have (issue #79); notes split where
+// ticket.Notes splits them, at a dated heading, and the fields keep its order.
 func ticketBrief(j map[string]any, body string) any {
 	notes := []string{}
-	if _, progress, ok := strings.Cut(body, "\n"+noteHeading+"\n"); ok {
-		starts := briefNote.FindAllStringIndex(progress, -1)
-		for i, at := range starts {
-			end := len(progress)
-			if i+1 < len(starts) {
-				end = starts[i+1][0]
-			}
-			notes = append(notes, strings.TrimSpace(progress[at[0]:end]))
-		}
+	for _, n := range ticket.Notes(body) {
+		notes = append(notes, n.Raw)
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {

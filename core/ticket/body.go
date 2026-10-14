@@ -119,14 +119,22 @@ type Note struct {
 	// Text is everything after the heading, continuation lines included,
 	// verbatim: it is markdown a person wrote.
 	Text string
+	// Raw is the whole entry, heading included, as it stands in the body.
+	Raw string
 }
 
-// noteStart matches the heading AppendNote writes: "- **<date> <time> · <who>** — ".
-var noteStart = regexp.MustCompile(`(?m)^- \*\*(\d{4}-\d\d-\d\d \d\d:\d\d) · (.*?)\*\* — `)
+// noteStart is where one note starts: its dated, bold heading. Every line up
+// to the next one belongs to it, whatever it starts with — a continuation
+// line reading "#79 ..." or "- a list" is still the same note.
+var noteStart = regexp.MustCompile(`(?m)^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d `)
+
+// noteHead is the heading AppendNote writes: "- **<date> <time> · <who>** — ".
+var noteHead = regexp.MustCompile(`^- \*\*(\d{4}-\d\d-\d\d \d\d:\d\d) · (.*?)\*\* — `)
 
 // Notes reads the progress notes back out of a body, oldest first, the order
-// AppendNote adds them in. A line under the heading that starts no note
-// belongs to the note above it; text before the first note is not a note.
+// AppendNote adds them in. Text before the first note is not a note, and the
+// section ends at the next heading. A dated entry written by hand in another
+// shape still counts as a note; it just has no author, and its Text is Raw.
 func Notes(body string) []Note {
 	idx := strings.Index(body, NoteHeading)
 	if idx < 0 {
@@ -136,15 +144,21 @@ func Notes(body string) []Note {
 	if next := strings.Index(section, "\n## "); next >= 0 {
 		section = section[:next]
 	}
-	starts := noteStart.FindAllStringSubmatchIndex(section, -1)
+	starts := noteStart.FindAllStringIndex(section, -1)
 	out := make([]Note, 0, len(starts))
-	for i, m := range starts {
+	for i, at := range starts {
 		end := len(section)
 		if i+1 < len(starts) {
 			end = starts[i+1][0]
 		}
-		at, _ := time.Parse("2006-01-02 15:04", section[m[2]:m[3]])
-		out = append(out, Note{At: at, Author: section[m[4]:m[5]], Text: strings.TrimSpace(section[m[1]:end])})
+		n := Note{Raw: strings.TrimSpace(section[at[0]:end])}
+		n.Text = n.Raw
+		if m := noteHead.FindStringSubmatchIndex(n.Raw); m != nil {
+			n.At, _ = time.Parse("2006-01-02 15:04", n.Raw[m[2]:m[3]])
+			n.Author = n.Raw[m[4]:m[5]]
+			n.Text = strings.TrimSpace(n.Raw[m[1]:])
+		}
+		out = append(out, n)
 	}
 	return out
 }

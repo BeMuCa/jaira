@@ -100,6 +100,12 @@ func TestNotesReadsBackWhatAppendNoteWrote(t *testing.T) {
 	if got[1].Text != "second line one\n- a list item\n```\ncode\n```" {
 		t.Errorf("second kept %q", got[1].Text)
 	}
+	if got[1].Raw != "- **2026-10-14 09:01 · Grace** — "+got[1].Text {
+		t.Errorf("raw = %q", got[1].Raw)
+	}
+	if n := Notes("## Progress\n- **2026-10-14 08:00 by hand** x\n"); len(n) != 1 || n[0].Author != "" || n[0].Text != n[0].Raw {
+		t.Errorf("a dated note in another shape = %+v; want it kept whole, without an author", n)
+	}
 	if Notes("# no progress\n") != nil {
 		t.Error("a body without Progress has notes")
 	}
