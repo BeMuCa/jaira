@@ -831,3 +831,25 @@ func TestTwinnedMilestonesAreMarkedAndFlashed(t *testing.T) {
 		t.Errorf("a single name was marked")
 	}
 }
+
+func TestTwinFlashWaitsForAFetchLineStillUp(t *testing.T) {
+	m := newTestModel(t, 200, 40)
+	for _, id := range []string{"AAAAAA", "BBBBBB"} {
+		ms := milestone.New("twin", 45, nowish())
+		ms.ID = id
+		ms.SetAfter(nil)
+		if err := ms.Save(m.store.Root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m.flash("milestones updated: x")
+	reloadOrFail(t, m)
+	if m.flashLine() != "milestones updated: x" {
+		t.Fatalf("the twin flash replaced the fetch line: %q", m.flashLine())
+	}
+	m.flashMsg = ""
+	reloadOrFail(t, m)
+	if !strings.Contains(m.flashLine(), "twin-AAAAAA") {
+		t.Errorf("the twins were never flashed once the fetch line was gone: %q", m.flashLine())
+	}
+}

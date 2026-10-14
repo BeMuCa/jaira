@@ -970,6 +970,11 @@ func (m *Model) flashTwins() {
 		key = append(key, strings.Join(t.Labels, ","))
 	}
 	if k := strings.Join(key, ";"); k != m.twinned {
+		// A fetch's news is up: the twins wait for the next reload rather
+		// than replace it.
+		if len(twins) > 0 && m.flashLine() != "" {
+			return
+		}
 		m.twinned = k
 		if len(twins) > 0 {
 			t := twins[0]
