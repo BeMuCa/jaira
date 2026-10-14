@@ -132,3 +132,57 @@ func TestMigrateMovesEveryFileDespiteARecordFailure(t *testing.T) {
 		t.Errorf("moved %v, directory %s", moved, dirNames(t, root))
 	}
 }
+
+// An older build writes its old alpha.md again after this build renamed the
+// milestone: the ID file is found by its ID, whatever its name is now, and the
+// old file is merged into it instead of becoming a second file with that ID.
+func TestMigrateMergesAnOldFileIntoAnIDFileThatWasRenamed(t *testing.T) {
+	root := t.TempDir()
+	id := LegacyID("alpha")
+	renamed := adoptBase + "- " + idA + "\n"
+	writeFile(t, root, "alpha2-"+id+".md", renamed)
+	if err := SaveBase(root, id, Base{Content: adoptBase}); err != nil {
+		t.Fatal(err)
+	}
+	writeOld(t, root, "alpha", adoptBase+"- "+idB+"\n")
+	res, err := Migrate(root, &fakeRec{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := dirNames(t, root); got != "alpha2-"+id+".md" {
+		t.Errorf("directory %s, want the renamed file only", got)
+	}
+	b, _ := os.ReadFile(filepath.Join(Dir(root), "alpha2-"+id+".md"))
+	if !strings.Contains(string(b), idA) || !strings.Contains(string(b), idB) {
+		t.Errorf("the older build's ticket was not merged:\n%s", b)
+	}
+	if len(res.Adopted) != 1 {
+		t.Errorf("adopted %v", res.Adopted)
+	}
+}
+
+// A merge that cannot be written is not marked as merged: the base stays, so
+// the next run merges it again.
+func TestAdoptOldKeepsTheBaseWhenTheMergeCannotBeWritten(t *testing.T) {
+	root := t.TempDir()
+	id := LegacyID("alpha")
+	writeFile(t, root, "alpha-"+id+".md", adoptBase)
+	if err := SaveBase(root, id, Base{Content: adoptBase, OldSHA: "one"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(Dir(root), 0o555); err != nil {
+		t.Skip(err)
+	}
+	defer os.Chmod(Dir(root), 0o755)
+	if f, err := os.Create(filepath.Join(Dir(root), "probe")); err == nil {
+		f.Close()
+		t.Skip("directory is writable despite chmod (running as root?)")
+	}
+	_, _, err := AdoptOld(root, &fakeRec{}, id, "alpha", []byte(adoptBase+"- "+idB+"\n"), "two")
+	if err == nil {
+		t.Fatal("the write should have failed")
+	}
+	if base, _ := LoadBase(root, id); base.Content != adoptBase || base.OldSHA != "one" {
+		t.Errorf("the base moved on although nothing was written: %+v", base)
+	}
+}

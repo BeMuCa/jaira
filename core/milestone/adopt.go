@@ -128,8 +128,14 @@ func Adopt(name string, base, old, cur []byte, all []*Milestone) ([]byte, []Conf
 		if cp != bp {
 			conflicts = append(conflicts, Conflict{Milestone: name, Field: "body", Old: quoteOld(op, true)})
 		} else {
+			// The body comes with the comments the old side carries; this
+			// side's own comments stay, one line per field.
 			res = withBody(res, o)
-			res.lines = append(res.lines, notes...)
+			theirs := conflictNotes(res)
+			res.lines = slices.DeleteFunc(res.lines, isConflictNote)
+			for _, l := range append(slices.Clone(notes), theirs...) {
+				res.addConflictNote(l)
+			}
 		}
 	}
 
@@ -256,6 +262,24 @@ func (m *Milestone) setConflictNote(c Conflict) {
 	own := conflictNotePrefix + c.Field + " too "
 	m.lines = slices.DeleteFunc(slices.Clone(m.lines), func(l string) bool { return strings.HasPrefix(l, own) })
 	m.lines = append(m.lines, line)
+}
+
+// NoteConflict writes the comment for c into a milestone file, replacing the
+// one an earlier clash on the same field left.
+func NoteConflict(content []byte, c Conflict) []byte {
+	m := parse(string(content))
+	m.setConflictNote(c)
+	return m.Bytes()
+}
+
+// addConflictNote appends a comment line unless the file already has one for
+// its field.
+func (m *Milestone) addConflictNote(line string) {
+	field, _, _ := strings.Cut(strings.TrimPrefix(line, conflictNotePrefix), " too ")
+	own := conflictNotePrefix + field + " too "
+	if !slices.ContainsFunc(m.lines, func(l string) bool { return strings.HasPrefix(l, own) }) {
+		m.lines = append(m.lines, line)
+	}
 }
 
 // withBody is res with the lines below its frontmatter replaced by o's.

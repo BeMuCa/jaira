@@ -5,8 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/outbox"
+	"github.com/BeMuCa/jaira/core/refsync"
 )
 
 // The ID refs of these tests are written by hand through gitref, the way
@@ -269,5 +272,78 @@ func TestAFetchKeepsALocalMilestoneEditThatIsStillQueued(t *testing.T) {
 	_, onRef, _, err := grace.syncer.Repo.ReadMilestone("K3F9QZ")
 	if err != nil || string(onRef) != edited {
 		t.Errorf("ref carries %q (%v) after the flush", onRef, err)
+	}
+}
+
+// An old-format file beside an ID ref is merged before it is removed: a fetch
+// that fails on the way leaves it for the next one.
+func TestAnOldFileIsRemovedOnlyAfterTheRefIsOnDisk(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	id := milestone.LegacyID("alpha")
+	file := "alpha-" + id + ".md"
+	putRef(t, ada, id, file, body)
+	putDisk(t, grace, "alpha.md", body+"\n- 01M2GGKMFB1XXK7V8AFW0YGWX1\n")
+	if err := os.MkdirAll(filepath.Join(milestone.Dir(grace.store.Root), file, "x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := grace.syncer.Repo.Fetch(); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := grace.syncer.IncomingMilestones(grace.store.Root); err == nil {
+		t.Fatal("writing the ID file should have failed")
+	}
+	if _, err := os.Stat(filepath.Join(milestone.Dir(grace.store.Root), "alpha.md")); err != nil {
+		t.Errorf("the old file was removed before its content was merged: %v", err)
+	}
+}
+
+// A refused milestone write is merged under the milestone lock, and a write
+// another session queues while the merge waits for it is the one that is
+// merged, not overwritten.
+func TestARefusedMilestoneMergeWaitsForTheLockAndTakesAWriteQueuedMeanwhile(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	const id, file = "K3F9QZ", "backend-K3F9QZ.md"
+	putRef(t, ada, id, file, body)
+	incoming(t, ada, grace)
+	mine := "---\ncolor: 45\ngoal: mine\n---\n"
+	putDisk(t, grace, file, mine)
+	if err := grace.syncer.RecordMilestone(id, file, []byte(mine)); err != nil {
+		t.Fatal(err)
+	}
+	lease, _ := ada.syncer.Repo.MilestoneSHA(id)
+	if _, err := ada.syncer.Repo.WriteMilestone(id, file, []byte("---\ncolor: 46\n---\n"), lease); err != nil {
+		t.Fatal(err)
+	}
+
+	unlock, err := grace.store.Lock(milestone.LockName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan []refsync.Report, 1)
+	go func() {
+		reports, _ := grace.syncer.Flush()
+		done <- reports
+	}()
+	select {
+	case <-done:
+		t.Fatal("the merge did not wait for the milestone lock")
+	case <-time.After(300 * time.Millisecond):
+	}
+	if _, ok := grace.syncer.Box.PendingMilestone(id); !ok {
+		t.Error("the refused entry was dropped before the merge replaced it")
+	}
+	newer := "---\ncolor: 45\ngoal: mine2\n---\n"
+	if err := grace.syncer.Box.QueueMilestone(id, file, outbox.OpWrite, []byte(newer), "", "grace"); err != nil {
+		t.Fatal(err)
+	}
+	putDisk(t, grace, file, newer)
+	unlock()
+	reports := <-done
+	if len(reports) != 1 || !reports[0].Merged {
+		t.Fatalf("reports %+v", reports)
+	}
+	e, ok := grace.syncer.Box.PendingMilestone(id)
+	if !ok || !strings.Contains(e.Content, "goal: mine2") || !strings.Contains(e.Content, "color: 46") {
+		t.Errorf("queued %+v (%v), want the newer write merged into the winner", e, ok)
 	}
 }

@@ -201,3 +201,25 @@ func TestAdoptCommentIsIgnoredByLaterMergesAndNotStacked(t *testing.T) {
 		t.Errorf("second clash stacked or kept the old value: %v\n%s", c, twice)
 	}
 }
+
+// A merge that takes the body from the old side, which already carries the
+// clash comments this side has too, writes each comment once.
+func TestAdoptTakingABodyFromASideWithCommentsDoesNotDoubleThem(t *testing.T) {
+	note := "<!-- another edit changed goal too and its value was not taken: \"x\" -->\n"
+	base := adoptBase + "text one\n"
+	old := adoptBase + "text two\n" + note
+	cur := base + note
+	got, _ := adopt(base, old, cur)
+	if n := strings.Count(got, note); n != 1 {
+		t.Errorf("the comment is in the file %d times:\n%s", n, got)
+	}
+	if !strings.Contains(got, "text two") {
+		t.Errorf("the old body was not taken:\n%s", got)
+	}
+	// a different comment for the same field on the old side does not stack
+	other := "<!-- another edit changed goal too and its value was not taken: \"y\" -->\n"
+	got, _ = adopt(base, adoptBase+"text two\n"+other, cur)
+	if n := strings.Count(got, "changed goal too"); n != 1 {
+		t.Errorf("%d comments for one field:\n%s", n, got)
+	}
+}

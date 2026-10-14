@@ -290,18 +290,26 @@ func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha strin
 // ReadMilestoneAt returns the milestone file the commit sha carries: the state
 // a write was leased on, which is what a refused write is merged from.
 func (r *Repo) ReadMilestoneAt(sha string) ([]byte, error) {
+	_, content, err := r.ReadMilestoneFileAt(sha)
+	return content, err
+}
+
+// ReadMilestoneFileAt is ReadMilestoneAt with the file name the commit carries
+// the milestone under.
+func (r *Repo) ReadMilestoneFileAt(sha string) (string, []byte, error) {
 	out, errb, err := r.run("", "ls-tree", "--name-only", sha)
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
-			return nil, err
+			return "", nil, err
 		}
-		return nil, fmt.Errorf("gitref: commit %s: %s", sha, strings.TrimSpace(errb))
+		return "", nil, fmt.Errorf("gitref: commit %s: %s", sha, strings.TrimSpace(errb))
 	}
 	entries := strings.Fields(out)
 	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
-		return nil, fmt.Errorf("gitref: commit %s does not carry exactly one .md file", sha)
+		return "", nil, fmt.Errorf("gitref: commit %s does not carry exactly one .md file", sha)
 	}
-	return r.readEntry(sha, sha, entries[0])
+	content, err := r.readEntry(sha, sha, entries[0])
+	return entries[0], content, err
 }
 
 // refRead reads the one file a jaira ref carries, named entry at its root. One

@@ -328,7 +328,7 @@ func mergedClashes(cs []milestone.Conflict) string {
 
 func rejectedAdvice(kind outbox.Kind) string {
 	if kind == outbox.KindMilestone {
-		return "the remote's version wins; the next fetch replaces your file with it, so make this edit again on the fetched one"
+		return "the remote's version wins; your edit stays queued and is merged into it at the next send, unless there is nothing of it left to send"
 	}
 	return "your file is unchanged; the board shows both sides once the ref is fetched"
 }

@@ -420,8 +420,13 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			}
 			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
 		case errors.Is(sendErr, gitref.ErrRaceLost):
-			if err := b.dropKind(kind, e.ID); err != nil {
-				return results, err
+			// A refused milestone write stays queued: its caller merges it into
+			// the winner and replaces it, and a failure on the way must not lose
+			// the edit.
+			if kind != KindMilestone {
+				if err := b.dropKind(kind, e.ID); err != nil {
+					return results, err
+				}
 			}
 			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Rejected, Err: sendErr})
 		case errors.Is(sendErr, gitref.ErrOffline), errors.Is(sendErr, gitref.ErrNoGit):

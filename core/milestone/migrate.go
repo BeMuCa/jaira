@@ -123,7 +123,9 @@ func Migrate(root string, rec Recorder) (Result, error) {
 		}
 		target := base + "-" + id + ".md"
 		targetPath := filepath.Join(Dir(root), target)
-		if tInfo, err := os.Stat(targetPath); err == nil {
+		// The ID file is found by its ID: it may have been renamed since, and
+		// then the old file is still its older side, never a second milestone.
+		if tInfo, err := os.Stat(idFilePath(root, id, targetPath)); err == nil {
 			if oInfo, err := os.Stat(old); err == nil && os.SameFile(oInfo, tInfo) {
 				// One file under two spellings: removing the old name would
 				// remove the milestone.
@@ -170,6 +172,21 @@ func Migrate(root string, rec Recorder) (Result, error) {
 		return res, recErr
 	}
 	return res, nil
+}
+
+// idFilePath is the path of the file in the milestone directory that carries
+// this ID in its name, whatever the name before it is, and fallback when there
+// is none.
+func idFilePath(root, id, fallback string) string {
+	entries, _ := os.ReadDir(Dir(root))
+	for _, e := range entries {
+		if b, ok := strings.CutSuffix(e.Name(), ".md"); ok && !e.IsDir() {
+			if _, got, idNamed := FileIdentity(b); idNamed && got == id {
+				return filepath.Join(Dir(root), e.Name())
+			}
+		}
+	}
+	return fallback
 }
 
 // AdoptOld merges what an older build wrote to its old file or old name ref
@@ -223,13 +240,15 @@ func AdoptOld(root string, rec Recorder, id, name string, old []byte, tip string
 		return false, nil, err
 	}
 	merged, conflicts := Adopt(name, []byte(base.Content), old, cur, all)
-	_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip})
 	if bytes.Equal(merged, cur) {
+		_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip})
 		return false, conflicts, nil
 	}
 	if err := ticket.WriteAtomic(path, merged); err != nil {
+		// Not written, so not merged: the base stays and the next run tries again.
 		return false, conflicts, err
 	}
+	_ = SaveBase(root, id, Base{Content: string(migrated), OldSHA: tip})
 	if err := rec.RecordMilestone(id, file, merged); err != nil {
 		return true, conflicts, &RecordError{Name: name, Err: err}
 	}

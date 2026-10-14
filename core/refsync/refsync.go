@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -278,14 +279,18 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		// A write of this milestone that has not been sent is newer than the
 		// ref. It goes out on the next flush under the lease it was queued
 		// with: if nobody wrote the ref since, it lands; if somebody did, the
-		// flush drops it as a lost race and the next fetch writes theirs.
+		// flush is refused and mergeRefused merges the edit into theirs.
 		if y.pendingMilestone(key, ref.Name, ref.ID) {
 			continue
 		}
 		path := filepath.Join(milestone.Dir(root), file)
 		others, hadFile := otherFilesWithID(root, ref.ID, file)
 		// A file of the old format that lies beside the ID: the older build's
-		// edits in it are merged into the ID file once the ref is on disk.
+		// edits in it are merged into the ID file once the ref is on disk, and
+		// only then is it removed — a merge that fails or a fetch that is
+		// killed leaves it where the next fetch finds it. Another file with
+		// this ID in its name carries nothing but a name, and goes as soon as
+		// the ref is on disk.
 		var oldSides [][]byte
 		for _, other := range others {
 			if !other.IDNamed {
@@ -293,12 +298,20 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 					oldSides = append(oldSides, b)
 				}
 			}
-			if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
-				return wrote, filed, renamed, conflicts, err
+		}
+		removeOthers := func(idNamed bool) error {
+			for _, other := range others {
+				if other.IDNamed != idNamed {
+					continue
+				}
+				if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
+					return err
+				}
+				if other.Name != ref.Name {
+					renamed[other.Name] = ref.Name
+				}
 			}
-			if other.Name != ref.Name {
-				renamed[other.Name] = ref.Name
-			}
+			return nil
 		}
 		adoptOld := func() error {
 			for _, b := range oldSides {
@@ -311,10 +324,13 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 				}
 				conflicts = append(conflicts, cs...)
 			}
-			return nil
+			return removeOthers(false)
 		}
 		have, haveErr := os.ReadFile(path)
 		if haveErr == nil && bytes.Equal(have, content) {
+			if err := removeOthers(true); err != nil {
+				return wrote, filed, renamed, conflicts, err
+			}
 			if err := adoptOld(); err != nil {
 				return wrote, filed, renamed, conflicts, err
 			}
@@ -328,6 +344,9 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			return wrote, filed, renamed, conflicts, err
 		}
 		if err := ticket.WriteAtomic(path, content); err != nil {
+			return wrote, filed, renamed, conflicts, err
+		}
+		if err := removeOthers(true); err != nil {
 			return wrote, filed, renamed, conflicts, err
 		}
 		if err := adoptOld(); err != nil {
@@ -619,25 +638,45 @@ func mustList(b *outbox.Box) []outbox.Entry {
 }
 
 // mergeRefused keeps the edit of a milestone write the remote refused, because
-// a teammate wrote the ref first. The flush dropped the entry, and without this
-// the next fetch would replace the file with the teammate's version: the edit
-// would be gone. It is merged into the version that won — the ref as this
-// clone has just fetched it — from the state the write was leased on, and the
-// result is written to the file and queued again, leased on the winner. A
-// field both sides changed keeps the winner's value and the other is written
-// into the file as a comment. It reports whether it merged; on any failure
-// the file is left as it is.
+// a teammate wrote the ref first. Without it the next fetch would replace the
+// file with the teammate's version: the edit would be gone. It is merged into
+// the version that won — the ref as this clone has just fetched it — from the
+// state the write was leased on (for a moving write that has no lease, the base
+// recorded when the file moved), and the result is written to the file and
+// queued again, leased on the winner. A field both sides changed keeps the
+// winner's value and the other is written into the file as a comment; the
+// file name is merged like a field (see mergedFile). It reports whether it
+// merged.
+//
+// It runs under the milestone lock every other milestone writer takes, and the
+// refused entry stays queued until the merged one replaces it (Flush keeps it);
+// a write another session queued since is the newer state and is what gets
+// merged. On any failure the file is left as it is and the entry stays queued.
 func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	if y.Store == nil {
+		_ = y.Box.DropMilestone(e.ID)
 		return false, nil
+	}
+	unlock, err := y.Store.Lock(milestone.LockName)
+	if err != nil {
+		return false, nil
+	}
+	defer unlock()
+	if now, ok := y.Box.PendingMilestone(e.ID); ok {
+		e = now
 	}
 	file, cur, _, err := y.Repo.ReadMilestone(e.ID)
 	if err != nil {
 		return false, nil
 	}
 	var base []byte
+	baseFile := ""
 	if e.Lease != "" {
-		base, _ = y.Repo.ReadMilestoneAt(e.Lease)
+		if baseFile, base, err = y.Repo.ReadMilestoneFileAt(e.Lease); err != nil {
+			base, baseFile = nil, ""
+		}
+	} else if b, ok := milestone.LoadBase(y.Store.Root, e.ID); ok {
+		base = []byte(b.Content)
 	}
 	all, err := milestone.LoadAll(y.Store.Root)
 	if err != nil {
@@ -645,19 +684,60 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	}
 	name := milestone.FromBytes(file, cur).Name
 	merged, conflicts := milestone.Adopt(name, base, []byte(e.Content), cur, all)
-	if bytes.Equal(merged, cur) {
+	chosen, clash := mergedFile(baseFile, e.File, file)
+	if clash != "" {
+		c := milestone.Conflict{Milestone: name, Field: "name", Old: strconv.Quote(clash)}
+		merged = milestone.NoteConflict(merged, c)
+		conflicts = append(conflicts, c)
+	}
+	if bytes.Equal(merged, cur) && chosen == file {
+		// Nothing of the edit is left to send: the winner already says it.
+		_ = y.Box.DropMilestone(e.ID)
 		return false, nil
 	}
-	if err := ticket.WriteAtomic(filepath.Join(milestone.Dir(y.Store.Root), file), merged); err != nil {
+	dir := milestone.Dir(y.Store.Root)
+	if err := ticket.WriteAtomic(filepath.Join(dir, chosen), merged); err != nil {
 		return false, nil
 	}
-	if e.File != "" && e.File != file {
-		_ = os.Remove(filepath.Join(milestone.Dir(y.Store.Root), e.File))
+	for _, f := range []string{file, e.File} {
+		if f != "" && f != chosen {
+			_ = os.Remove(filepath.Join(dir, f))
+		}
 	}
-	if err := y.RecordMilestone(e.ID, file, merged); err != nil {
+	// The merged write replaces the refused one. The box keeps the lease of an
+	// entry that is there, so the old one goes first, and comes back if the new
+	// one cannot be queued.
+	if err := y.Box.DropMilestone(e.ID); err != nil {
+		return false, nil
+	}
+	if err := y.RecordMilestone(e.ID, chosen, merged); err != nil {
+		_ = y.Box.QueueMilestone(e.ID, e.File, outbox.OpWrite, []byte(e.Content), e.Lease, e.By)
 		return false, nil
 	}
 	return true, conflicts
+}
+
+// mergedFile is the file name a refused write is merged under: the file name
+// is a field like the others. base is the name the write was leased on, local
+// the name this clone wrote, winner the name on the ref now. A rename made on
+// one side only is taken; one made on both sides differently keeps the winner's
+// name, and the local name comes back as clash to be reported; when the base
+// name is not known the winner's is kept.
+func mergedFile(base, local, winner string) (file, clash string) {
+	name := func(f string) string {
+		n, _, _ := milestone.FileIdentity(strings.TrimSuffix(f, ".md"))
+		return n
+	}
+	if local == "" || local == winner || base == "" {
+		return winner, ""
+	}
+	switch {
+	case winner == base:
+		return local, ""
+	case local == base:
+		return winner, ""
+	}
+	return winner, name(local)
 }
 
 // tidyMilestoneEntries settles the milestone writes the queue may still hold
