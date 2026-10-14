@@ -533,11 +533,7 @@ async function spawnScript($: EngineInterface): Promise<string[] | undefined> {
   const tail = '.claude/skills/jaira-dispatcher/scripts/spawn.sh'
   for (const dir of [board?.repo, await home($)]) {
     if (!dir) continue
-    let found = false
-    try {
-      found = await $.fs.exists(`${dir}/${tail}`)
-    } catch {}
-    if (found) return [await bash($), `${dir}/${tail}`]
+    if (await $.fs.exists(`${dir}/${tail}`).catch(() => false)) return [await bash($), `${dir}/${tail}`]
   }
   return undefined
 }
