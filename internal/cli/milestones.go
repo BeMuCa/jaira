@@ -318,11 +318,12 @@ filed milestone is refused like everywhere else.`,
 			if g.jsonOut {
 				return emit(w, milestoneJSON(ms, s.Root, nil))
 			}
+			label := milestoneLabel(s.Root, ms)
 			if string(before) == string(ms.Bytes()) {
-				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", ms.Name)
+				fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", label)
 				return nil
 			}
-			fmt.Fprintf(w, "Milestone %q updated: %s\n", ms.Name, ms.Path(s.Root))
+			fmt.Fprintf(w, "Milestone %q updated: %s\n", label, ms.Path(s.Root))
 			return nil
 		},
 	}
@@ -367,13 +368,7 @@ board exits 5, or 3 when it was filed.`,
 
 			fromName, fromLabel := from, from
 			if old, lerr := milestone.Load(s.Root, from); lerr == nil {
-				fromName, fromLabel = old.Name, old.Name
-				// <name>-<ID> where two share the name, as everywhere else.
-				if all, lerr := milestone.LoadAll(s.Root); lerr == nil {
-					if l, ok := milestone.Labels(all)[old.ID]; ok {
-						fromLabel = l
-					}
-				}
+				fromName, fromLabel = old.Name, milestoneLabel(s.Root, old)
 			}
 			ms, err := milestone.Rename(s.Root, s, refs, from, to)
 			var ee *milestone.ExistsError
@@ -481,13 +476,7 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		out["changed"] = strOrEmpty(touched)
 		return emit(w, out)
 	}
-	label := ms.Name
-	// <name>-<ID> where two share the name, as everywhere else.
-	if all, lerr := milestone.LoadAll(s.Root); lerr == nil {
-		if l, ok := milestone.Labels(all)[ms.ID]; ok {
-			label = l
-		}
-	}
+	label := milestoneLabel(s.Root, ms)
 	verb := "added to"
 	if !add {
 		verb = "removed from"
@@ -775,6 +764,17 @@ func afterIDs(root string, ms *milestone.Milestone, all []*milestone.Milestone) 
 		all, _ = milestone.LoadAll(root)
 	}
 	return milestone.SpellAsIDs(all, ms.After)
+}
+
+// milestoneLabel is what a message calls ms: its name, or <name>-<ID> where two
+// share the name, as everywhere else.
+func milestoneLabel(root string, ms *milestone.Milestone) string {
+	if all, err := milestone.LoadAll(root); err == nil {
+		if l, ok := milestone.Labels(all)[ms.ID]; ok {
+			return l
+		}
+	}
+	return ms.Name
 }
 
 // milestoneKey is a milestone argument as typed: an ID, a <name>-<ID> or a name,
