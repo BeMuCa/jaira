@@ -1,1 +1,2 @@
 - Run `jaira web` to sort tickets into epics in the browser: it opens a page on 127.0.0.1 with the tickets in no epic on the left and the epics with their progress on the right; drag a ticket onto an epic and the change is pushed, and the page fetches every minute (`--port` fixes the port, `--no-open` skips the browser).
+- In `jaira web`, click a ticket to read its goal, context, definition of done and notes, drag a ticket between epics or back to the left to move or remove it, and use `+ New epic` to start one without the terminal.

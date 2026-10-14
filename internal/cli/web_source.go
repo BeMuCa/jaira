@@ -74,21 +74,101 @@ func (w *webSource) Unassigned() ([]web.Ticket, error) {
 	return out, nil
 }
 
-// Assign puts one ticket into an epic. The page sends the full id it was
-// given, but a handle is resolved too, the way 'jaira epic add' resolves one.
-func (w *webSource) Assign(name, id string) error {
+// Ticket is one ticket opened on the page, read the way 'jaira show' reads
+// it: past the board, so a finished ticket a card links to still opens.
+func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	t, err := w.s.Load(id)
+	t, _, err := w.s.LoadAnywhere(id)
 	if err != nil {
 		if errors.Is(err, ticket.ErrNotFound) {
-			return fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
+			return web.TicketDetail{}, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
 		}
+		return web.TicketDetail{}, err
+	}
+	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Goal: t.Goal, Context: t.Context}
+	for _, it := range t.DoDItems {
+		d.DoD = append(d.DoD, web.Check{Text: it.Text, Done: it.Checked()})
+	}
+	for _, n := range ticket.Notes(t.Body) {
+		d.Notes = append(d.Notes, web.Note{At: n.At, Author: n.Author, Text: n.Text})
+	}
+	return d, nil
+}
+
+// CreateEpic starts an empty epic, the name normalised the way 'jaira epic
+// create' normalises it.
+func (w *webSource) CreateEpic(raw, title, description string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	name, _, err := epic.NormalizeName(raw)
+	if err != nil {
+		return fmt.Errorf("%w: %v", web.ErrInvalid, err)
+	}
+	_, err = epic.Create(w.s, epicRefs(), name, title, description, nil)
+	if errors.Is(err, epic.ErrExists) {
+		return fmt.Errorf("epic %s: %w", name, web.ErrExists)
+	}
+	return err
+}
+
+// Assign puts one ticket into an epic, and with from set takes it out of
+// that one: a drag from one epic onto another. The add comes first, so a
+// failure in between leaves the ticket in both epics rather than in none, and
+// the error says which of the two writes it was. The page sends the full id
+// it was given, but a handle is resolved too, the way 'jaira epic add'
+// resolves one.
+func (w *webSource) Assign(name, from, id string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	t, err := w.load(id)
+	if err != nil {
 		return err
 	}
-	_, _, err = epic.Assign(w.s, epicRefs(), name, []string{t.ID}, true)
+	if err := w.assign(name, t.ID, true); err != nil {
+		return fmt.Errorf("adding %s to %s: %w", ticket.Handle(t.ID), name, err)
+	}
+	if from == "" || from == name {
+		return nil
+	}
+	if err := w.assign(from, t.ID, false); err != nil {
+		return fmt.Errorf("%s is in %s now, but taking it out of %s failed: %w", ticket.Handle(t.ID), name, from, err)
+	}
+	return nil
+}
+
+// Unassign takes a ticket out of an epic. Only a member line can go: a
+// follow-up counts through follows: or parent: and has none to remove.
+func (w *webSource) Unassign(name, id string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	t, err := w.load(id)
+	if err != nil {
+		return err
+	}
+	if err := w.assign(name, t.ID, false); err != nil {
+		return fmt.Errorf("taking %s out of %s: %w", ticket.Handle(t.ID), name, err)
+	}
+	return nil
+}
+
+func (w *webSource) load(id string) (*ticket.Ticket, error) {
+	t, err := w.s.Load(id)
+	if errors.Is(err, ticket.ErrNotFound) {
+		return nil, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
+	}
+	return t, err
+}
+
+// assign is one write of one epic's ref through epic.Assign, the call 'jaira
+// epic add' and 'jaira epic rm' make.
+func (w *webSource) assign(name, id string, add bool) error {
+	_, changed, err := epic.Assign(w.s, epicRefs(), name, []string{id}, add)
 	if errors.Is(err, epic.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("epic %s: %w", name, web.ErrNotFound)
+		return fmt.Errorf("no epic %s: %w", name, web.ErrNotFound)
+	}
+	if err == nil && !add && len(changed) == 0 {
+		return fmt.Errorf("it is no member of %s, it counts through follows or parent: %w", name, web.ErrConflict)
 	}
 	return err
 }

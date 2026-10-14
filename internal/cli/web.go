@@ -32,7 +32,11 @@ func newWebCmd() *cobra.Command {
 		Long: `Starts a page on 127.0.0.1 and opens it in the browser. On the right are the
 epics, each with its description and how many of its tickets are done; on the
 left are the open tickets that belong to no epic. Drag a ticket onto an epic to
-put it there.
+put it there, onto another epic to move it, or back to the left to take it out;
+"+ New epic" starts one, as 'jaira epic create' does. A ticket that counts only
+because it follows a member has no line of its own and cannot be dragged.
+Click a ticket to read it: goal, context, definition of done and every note,
+rendered as markdown, without leaving the page. Nothing is edited there.
 
 There is no server: the page lives as long as this command runs, and it reads
 and writes the same refs the CLI does. A drop writes the epic's ref and pushes

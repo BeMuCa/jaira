@@ -1,21 +1,26 @@
 <script lang="ts">
   import { EpicProgress, type Epic } from '@/entities/epic';
   import { TicketCard } from '@/entities/ticket';
-  import { DropTarget } from '@/features/assign-to-epic';
+  import { DropTarget, startTicketDrag } from '@/features/assign-to-epic';
+  import { CreateEpicForm } from '@/features/create-epic';
 
-  let { epics, onassign }: {
+  let { epics, onassign, oncreate, onopen }: {
     epics: Epic[];
-    onassign: (epic: string, id: string) => void;
+    // from is the epic the ticket was dragged out of, empty from the left.
+    onassign: (epic: string, id: string, from: string) => void;
+    oncreate: (name: string, title: string, description: string) => Promise<void>;
+    onopen: (id: string) => void;
   } = $props();
 </script>
 
 <section>
   <h2>Epics <small>{epics.length}</small></h2>
+  <CreateEpicForm {oncreate} />
   {#if epics.length === 0}
-    <p class="empty">No epics yet. Start one with <code>jaira epic create</code>.</p>
+    <p class="empty">No epics yet.</p>
   {/if}
   {#each epics as epic (epic.name)}
-    <DropTarget ondropticket={(id) => onassign(epic.name, id)}>
+    <DropTarget ondropticket={(t) => t.from !== epic.name && onassign(epic.name, t.id, t.from)}>
       <article>
         <header>
           <h3>{epic.title}</h3>
@@ -26,7 +31,13 @@
           <summary>{epic.tickets.length} tickets</summary>
           <ul>
             {#each epic.tickets as ticket (ticket.id)}
-              <TicketCard {ticket} />
+              <!-- Only a member line can be dragged: a follow-up has none to move. -->
+              <TicketCard
+                {ticket}
+                {onopen}
+                draggable={ticket.direct}
+                ondragstart={ticket.direct ? (e) => startTicketDrag(e, ticket.id, epic.name) : undefined}
+              />
             {/each}
           </ul>
         </details>

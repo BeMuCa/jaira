@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { carriesTicket, droppedTicket } from '../model/drag';
+  import { carriesTicket, droppedTicket, type DraggedTicket } from '../model/drag';
 
   let { ondropticket, children }: {
-    ondropticket: (id: string) => void;
+    ondropticket: (t: DraggedTicket) => void;
     children: Snippet;
   } = $props();
 
@@ -17,10 +17,10 @@
 
   function drop(e: DragEvent) {
     over = false;
-    const id = droppedTicket(e);
-    if (!id) return;
+    const t = droppedTicket(e);
+    if (!t) return;
     e.preventDefault();
-    ondropticket(id);
+    ondropticket(t);
   }
 </script>
 

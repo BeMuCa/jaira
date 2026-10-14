@@ -20,15 +20,35 @@ type fakeSource struct {
 
 func (f *fakeSource) Epics() ([]Epic, error)        { return f.epics, f.err }
 func (f *fakeSource) Unassigned() ([]Ticket, error) { return f.unassigned, f.err }
-func (f *fakeSource) Assign(epic, id string) error {
+func (f *fakeSource) Assign(epic, from, id string) error {
 	if f.err != nil {
 		return f.err
 	}
 	if epic != "login" {
 		return fmt.Errorf("epic %q: %w", epic, ErrNotFound)
 	}
-	f.assigned = append(f.assigned, epic+"/"+id)
+	f.assigned = append(f.assigned, from+">"+epic+"/"+id)
 	return nil
+}
+func (f *fakeSource) Unassign(epic, id string) error {
+	if id == "F" {
+		return fmt.Errorf("a follow-up: %w", ErrConflict)
+	}
+	f.assigned = append(f.assigned, "-"+epic+"/"+id)
+	return nil
+}
+func (f *fakeSource) CreateEpic(name, title, description string) error {
+	if name == "login" {
+		return fmt.Errorf("epic login: %w", ErrExists)
+	}
+	f.assigned = append(f.assigned, "+"+name+"/"+title+"/"+description)
+	return nil
+}
+func (f *fakeSource) Ticket(id string) (TicketDetail, error) {
+	if id != "A" {
+		return TicketDetail{}, fmt.Errorf("ticket %s: %w", id, ErrNotFound)
+	}
+	return TicketDetail{ID: "A", Title: "Login", Notes: []Note{{Author: "ada", Text: "<script>x</script>"}}}, nil
 }
 
 func do(t *testing.T, h http.Handler, method, target, body string, hdr ...string) *httptest.ResponseRecorder {
@@ -99,7 +119,7 @@ func TestAssignWritesThenPushes(t *testing.T) {
 	if w.Code != 200 {
 		t.Fatalf("assign: %d %s", w.Code, w.Body)
 	}
-	if len(src.assigned) != 1 || src.assigned[0] != "login/B" {
+	if len(src.assigned) != 1 || src.assigned[0] != ">login/B" {
 		t.Fatalf("assigned = %v", src.assigned)
 	}
 	// The push ran after the write, and its failure is reported, not fatal.
@@ -122,6 +142,49 @@ func TestAssignErrors(t *testing.T) {
 	}
 	if w := do(t, h, "POST", "/api/epics/login/tickets", `{}`); w.Code != 400 {
 		t.Fatalf("no id: %d", w.Code)
+	}
+}
+
+// A move names the epic the ticket leaves; removing and creating each push,
+// and what does not apply answers 409, not 500.
+func TestMoveRemoveCreate(t *testing.T) {
+	src := &fakeSource{}
+	pushes := 0
+	h := (&Server{Source: src, Push: func() error { pushes++; return nil }}).Handler()
+	for _, c := range []struct {
+		method, target, body string
+		code                 int
+	}{
+		{"POST", "/api/epics/login/tickets", `{"id":"B","from":"old"}`, 200},
+		{"DELETE", "/api/epics/login/tickets/B", "", 200},
+		{"DELETE", "/api/epics/login/tickets/F", "", 409},
+		{"POST", "/api/epics", `{"name":"pay","title":"Pay","description":"d"}`, 200},
+		{"POST", "/api/epics", `{"name":"login"}`, 409},
+		{"POST", "/api/epics", `{"title":"no name"}`, 400},
+	} {
+		if w := do(t, h, c.method, c.target, c.body); w.Code != c.code {
+			t.Errorf("%s %s %s: %d %s; want %d", c.method, c.target, c.body, w.Code, w.Body, c.code)
+		}
+	}
+	want := []string{"old>login/B", "-login/B", "+pay/Pay/d"}
+	if fmt.Sprint(src.assigned) != fmt.Sprint(want) {
+		t.Errorf("writes = %v; want %v", src.assigned, want)
+	}
+	if pushes != 5 {
+		t.Errorf("pushes = %d; want one per write that reached the source", pushes)
+	}
+}
+
+// An opened ticket answers with its notes as written; rendering them safely
+// is the page's job, and the API must not alter the text.
+func TestTicketDetail(t *testing.T) {
+	h := (&Server{Source: &fakeSource{}}).Handler()
+	w := do(t, h, "GET", "/api/tickets/A", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"dod":[]`) || !strings.Contains(w.Body.String(), `\u003cscript\u003ex`) {
+		t.Fatalf("ticket: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, h, "GET", "/api/tickets/Z", ""); w.Code != 404 {
+		t.Fatalf("unknown ticket: %d", w.Code)
 	}
 }
 

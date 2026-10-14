@@ -1,4 +1,6 @@
 import { request } from '@/shared/api';
-import type { Ticket } from '../model/types';
+import type { Ticket, TicketDetail } from '../model/types';
 
 export const fetchUnassigned = () => request<Ticket[]>('/api/unassigned');
+
+export const fetchTicket = (id: string) => request<TicketDetail>(`/api/tickets/${encodeURIComponent(id)}`);

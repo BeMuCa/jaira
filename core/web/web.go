@@ -52,14 +52,44 @@ type Epic struct {
 	Tickets     []Ticket `json:"tickets"`
 }
 
+// Check is one item of a ticket's definition of done.
+type Check struct {
+	Text string `json:"text"`
+	Done bool   `json:"done"`
+}
+
+// Note is one progress note; Text is markdown as its author wrote it.
+type Note struct {
+	At     time.Time `json:"at"`
+	Author string    `json:"author"`
+	Text   string    `json:"text"`
+}
+
+// TicketDetail is what the page shows of one ticket when it is opened.
+type TicketDetail struct {
+	ID      string  `json:"id"`
+	Handle  string  `json:"handle"`
+	Title   string  `json:"title"`
+	Lane    string  `json:"lane"`
+	Goal    string  `json:"goal"`
+	Context string  `json:"context"`
+	DoD     []Check `json:"dod"`
+	Notes   []Note  `json:"notes"`
+}
+
 // Source is where the page's data comes from and where a change goes.
 //
-// Assign only records the change locally (and queues its ref); sending it is
-// Push's job, so a remote that is down never makes the drop itself fail.
+// The writes only record the change locally (and queue its ref); sending it
+// is Push's job, so a remote that is down never makes the change itself fail.
 type Source interface {
 	Epics() ([]Epic, error)
 	Unassigned() ([]Ticket, error)
-	Assign(epic, ticketID string) error
+	Ticket(id string) (TicketDetail, error)
+	CreateEpic(name, title, description string) error
+	// Assign puts a ticket into epic; with from set it takes it out of that
+	// epic as well, which is a move.
+	Assign(epic, from, ticketID string) error
+	Unassign(epic, ticketID string) error
 }
 
 // Sync is what the page says about the last round trip to the remote.
@@ -154,7 +184,10 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/epics", s.handleEpics)
 	mux.HandleFunc("GET /api/unassigned", s.handleUnassigned)
+	mux.HandleFunc("GET /api/tickets/{id}", s.handleTicket)
+	mux.HandleFunc("POST /api/epics", s.handleCreateEpic)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
+	mux.HandleFunc("DELETE /api/epics/{name}/tickets/{id}", s.handleUnassign)
 	mux.HandleFunc("GET /api/sync", s.handleSync)
 	dist, err := fs.Sub(distFS, "ui/dist")
 	if err != nil {
@@ -221,29 +254,83 @@ func (s *Server) handleUnassigned(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, tickets)
 }
 
-// ErrNotFound is what a Source wraps for an epic or ticket that does not
-// exist; the handler answers it with 404 rather than 500.
-var ErrNotFound = errors.New("not found")
+// The errors a Source wraps so the handler answers with what went wrong
+// rather than 500: no such epic or ticket, a name already taken or not
+// usable, and a change that does not apply (a follow-up has no member line
+// to take out).
+var (
+	ErrNotFound = errors.New("not found")
+	ErrExists   = errors.New("exists already")
+	ErrInvalid  = errors.New("invalid")
+	ErrConflict = errors.New("does not apply")
+)
+
+func statusOf(err error) int {
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, ErrExists), errors.Is(err, ErrConflict):
+		return http.StatusConflict
+	case errors.Is(err, ErrInvalid):
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
+}
+
+func (s *Server) handleTicket(w http.ResponseWriter, r *http.Request) {
+	t, err := s.Source.Ticket(r.PathValue("id"))
+	if err != nil {
+		writeError(w, statusOf(err), err)
+		return
+	}
+	if t.DoD == nil {
+		t.DoD = []Check{}
+	}
+	if t.Notes == nil {
+		t.Notes = []Note{}
+	}
+	writeJSON(w, http.StatusOK, t)
+}
+
+func (s *Server) handleCreateEpic(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Name        string `json:"name"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"name": "<epic name>", "title": ..., "description": ...}`))
+		return
+	}
+	s.write(w, s.Source.CreateEpic(body.Name, body.Title, body.Description))
+}
 
 func (s *Server) handleAssign(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		ID string `json:"id"`
+		ID   string `json:"id"`
+		From string `json:"from"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ID == "" {
-		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"id": "<ticket id>"}`))
+		writeError(w, http.StatusBadRequest, fmt.Errorf(`want {"id": "<ticket id>", "from": "<epic it leaves, if any>"}`))
 		return
 	}
-	if err := s.Source.Assign(r.PathValue("name"), body.ID); err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, ErrNotFound) {
-			status = http.StatusNotFound
-		}
-		writeError(w, status, err)
-		return
-	}
-	// The drop is on disk and queued whatever the push does; a failed push
-	// is reported in the sync record and retried by the next one.
+	s.write(w, s.Source.Assign(r.PathValue("name"), body.From, body.ID))
+}
+
+func (s *Server) handleUnassign(w http.ResponseWriter, r *http.Request) {
+	s.write(w, s.Source.Unassign(r.PathValue("name"), r.PathValue("id")))
+}
+
+// write answers a change. Whatever part of it was recorded is pushed even
+// when another part failed — a move whose second half failed has still
+// written its first — and a failed push is reported in the sync record and
+// retried by the next one.
+func (s *Server) write(w http.ResponseWriter, err error) {
 	s.pushNow()
+	if err != nil {
+		writeError(w, statusOf(err), err)
+		return
+	}
 	writeJSON(w, http.StatusOK, s.SyncState())
 }
 

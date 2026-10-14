@@ -3,6 +3,7 @@ package ticket
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -109,4 +110,41 @@ func AppendNote(d *Doc, text string, now time.Time, who string) error {
 	}
 	d.SetBody(body)
 	return nil
+}
+
+// Note is one progress note as AppendNote wrote it.
+type Note struct {
+	At     time.Time
+	Author string
+	// Text is everything after the heading, continuation lines included,
+	// verbatim: it is markdown a person wrote.
+	Text string
+}
+
+// noteStart matches the heading AppendNote writes: "- **<date> <time> · <who>** — ".
+var noteStart = regexp.MustCompile(`(?m)^- \*\*(\d{4}-\d\d-\d\d \d\d:\d\d) · (.*?)\*\* — `)
+
+// Notes reads the progress notes back out of a body, oldest first, the order
+// AppendNote adds them in. A line under the heading that starts no note
+// belongs to the note above it; text before the first note is not a note.
+func Notes(body string) []Note {
+	idx := strings.Index(body, NoteHeading)
+	if idx < 0 {
+		return nil
+	}
+	section := body[idx+len(NoteHeading):]
+	if next := strings.Index(section, "\n## "); next >= 0 {
+		section = section[:next]
+	}
+	starts := noteStart.FindAllStringSubmatchIndex(section, -1)
+	out := make([]Note, 0, len(starts))
+	for i, m := range starts {
+		end := len(section)
+		if i+1 < len(starts) {
+			end = starts[i+1][0]
+		}
+		at, _ := time.Parse("2006-01-02 15:04", section[m[2]:m[3]])
+		out = append(out, Note{At: at, Author: section[m[4]:m[5]], Text: strings.TrimSpace(section[m[1]:end])})
+	}
+	return out
 }
