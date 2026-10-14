@@ -82,3 +82,31 @@ func TestNewBodyWritesOneBoxPerCriterion(t *testing.T) {
 		t.Errorf("the placeholder appeared although criteria were supplied:\n%s", got)
 	}
 }
+
+// Notes reads back what AppendNote wrote, in that order, with a note that
+// runs over several lines kept whole and a section after Progress left out.
+func TestNotesReadsBackWhatAppendNoteWrote(t *testing.T) {
+	body := "# T\n\n## Progress\n\n" +
+		"- **2026-10-14 08:46 · Ada Lovelace** — first\n" +
+		"- **2026-10-14 09:01 · Grace** — second line one\n- a list item\n```\ncode\n```\n" +
+		"\n## Later\n\n- **2026-10-14 10:00 · X** — not a note\n"
+	got := Notes(body)
+	if len(got) != 2 {
+		t.Fatalf("Notes = %+v; want 2", got)
+	}
+	if got[0].Author != "Ada Lovelace" || got[0].Text != "first" || got[0].At.Format("15:04") != "08:46" {
+		t.Errorf("first = %+v", got[0])
+	}
+	if got[1].Text != "second line one\n- a list item\n```\ncode\n```" {
+		t.Errorf("second kept %q", got[1].Text)
+	}
+	if got[1].Raw != "- **2026-10-14 09:01 · Grace** — "+got[1].Text {
+		t.Errorf("raw = %q", got[1].Raw)
+	}
+	if n := Notes("## Progress\n- **2026-10-14 08:00 by hand** x\n"); len(n) != 1 || n[0].Author != "" || n[0].Text != n[0].Raw {
+		t.Errorf("a dated note in another shape = %+v; want it kept whole, without an author", n)
+	}
+	if Notes("# no progress\n") != nil {
+		t.Error("a body without Progress has notes")
+	}
+}

@@ -847,6 +847,7 @@ and `--since 0` lists everything.
 ```
 jaira                      open the home screen: your boards, and what each needs
 jaira board                open the board here directly
+jaira web                  the page in the browser: sort tickets into epics, read a ticket and its notes
 jaira init                 prepare a repository
 jaira update               re-apply setup after upgrading
 jaira self upgrade         replace the jaira binary with the latest release
