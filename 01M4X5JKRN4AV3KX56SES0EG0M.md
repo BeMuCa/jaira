@@ -1,0 +1,53 @@
+---
+id: 01M4X5JKRN4AV3KX56SES0EG0M
+title: "Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema"
+status: backlog
+ready: true
+creator: BeMuCa
+assignee: BeMuCa
+goal: "In einem Repo laufen mehrere Boards nebeneinander (z.B. backend, ui, video), jedes mit eigenen Lanes; ein Ticket gehoert genau einem Board und laeuft durch dessen Lanes"
+context: |-
+  Was heute fehlt: Ein Repo hat genau ein Board. Ein Board ist sein Lane-Ordner (.jaira/lanes/, siehe README 'A board is its lane directory'). Alle Tickets laufen durch dieselben Lanes.
+  Unsere Lanes passen fuer Software-Entwicklung (SWE). Fuer andere Arbeit passen sie nicht.
+  Berks Idee vom 14.10., seine Beispiele:
+  - UI-Board: Lanes speziell fuer UI, z.B. verlangt testing dort immer Playwright-Tests.
+  - Video-Board: Lanes fuer Ideen-Generierung, Skript, Voice-over und Schnitt.
+  - Backend-Board: z.B. fuer 'in der Datenbank fuer user eine Spalte hinzufuegen'.
+  Jedes ist ein eigenes Board. Der Teamlead verteilt Tickets darauf (eigenes Ticket), und ein jaira-worker bekommt Ticket plus Board und treibt es durch dessen Lanes.
+  Offen fuer brainstorm:
+  - wo die Boards liegen (z.B. .jaira/boards/<name>/lanes/) und wie ein Ticket sein Board traegt (Feld board:)
+  - wie TUI und Launcher mehrere Boards eines Repos zeigen
+  - wie es mit dem heutigen Einzel-Board vertraeglich bleibt (Berks Regel: ein Update darf nichts verschwinden lassen)
+  Haengt am Ticket-Schema (BGZ0SW, NFJCTK): eine Lane eines solchen Boards muss eigene Felder erklaeren koennen.
+definition-of-done: "Design als Spec unter docs/superpowers/specs/, von Berk freigegeben: Ablage der Boards, Board-Feld am Ticket, Anzeige in TUI und Launcher, Migration des heutigen Boards"
+tags: []
+blocked-by: []
+related:
+  - 01M4X5J1QRR70AM2B2JPBGZ0SW
+  - 01M11YYR0SMVCXNQPZ68NFJCTK
+commits: []
+created-at: 2026-10-14T12:18:13Z
+updated-at: 2026-10-14T12:18:13Z
+---
+
+# Ein Repo kann mehrere Boards haben, jedes mit eigenen Lanes fuer sein Thema
+
+## Definition of Done
+
+- [ ] Design als Spec unter docs/superpowers/specs/, von Berk freigegeben: Ablage der Boards, Board-Feld am Ticket, Anzeige in TUI und Launcher, Migration des heutigen Boards
+- [ ] Ein Repo mit zwei Boards (z.B. backend und ui) zeigt in der TUI jedes mit seinen eigenen Lanes; ein Ticket erscheint nur auf seinem Board; Test
+- [ ] jaira create, list, next und show nehmen ein Board (z.B. --board ui); ohne Angabe gilt das heutige Board, nichts aendert sich still; Test
+- [ ] Ein bestehendes Einzel-Board laeuft nach dem Update unveraendert weiter; Test
+- [ ] Eine Zeile in core/release/notes/<ID>.md
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+
