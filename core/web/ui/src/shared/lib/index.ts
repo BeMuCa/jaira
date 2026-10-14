@@ -1,0 +1,1 @@
+export { clock } from './time';

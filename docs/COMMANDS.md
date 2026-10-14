@@ -54,6 +54,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 |---|---|
 | `jaira` | the home screen: every board, and what each needs |
 | `jaira board` | open the board here directly |
+| `jaira web` | the review portal in the browser, for a person sorting work without an agent or the terminal board: open tickets in no epic on the left, epics with their description and `done X of Y` on the right; dragging a ticket onto an epic writes that epic's ref and pushes it. Listens on 127.0.0.1 only and answers only requests naming a loopback host. `--port <n>` fixes the port (default: a free one), `--no-open` prints the address without opening a browser. Fetches every minute while it runs and shows when it last synchronised; a push that fails stays queued for the next change. Ctrl-C stops it |
 | `jaira list` | list tickets; `--lane`, `--assignee`, `--tag`, `--milestone`, `--query`, `--actionable`. Each row carries `[DoD n/m]`, how much of the definition of done is settled |
 | `jaira show <id>` | one ticket in full; `--notes-last <n>` keeps the newest n progress notes and says how many it hid |
 | `jaira show <id> --for-lane <lane>` | the prompt and bounded input a lane's agent should get |

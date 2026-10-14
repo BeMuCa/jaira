@@ -1,0 +1,16 @@
+{
+  "name": "jaira-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "svelte": "5.57.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.1"
+  }
+}

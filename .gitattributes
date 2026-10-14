@@ -31,3 +31,9 @@ core/mod/builtin/** text eol=lf
 core/release/NOTES.md text eol=lf
 core/release/notes/**/*.md text eol=lf
 core/hook/example/*.sh text eol=lf
+
+# The page 'jaira web' serves: core/web/ui/dist is embedded, and CI diffs it
+# against a fresh build of the sources beside it. A CRLF checkout would embed
+# \r into the page and make that diff fail on a tree nobody changed, so the
+# whole front end — sources, lock file and build — is pinned.
+core/web/ui/** text eol=lf
