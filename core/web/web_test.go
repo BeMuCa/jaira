@@ -92,7 +92,7 @@ func TestAssignWritesThenPushes(t *testing.T) {
 	s := &Server{Source: src, Push: func() error {
 		order = append(order, fmt.Sprint(len(src.assigned)))
 		return pushed
-	}, Now: func() time.Time { return time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC) }}
+	}}
 	h := s.Handler()
 
 	w := do(t, h, "POST", "/api/epics/login/tickets", `{"id":"B"}`)
@@ -159,13 +159,12 @@ func TestSyncRecordsFetch(t *testing.T) {
 		return nil
 	}}
 	h := s.Handler()
-	var st Sync
-	json.Unmarshal(do(t, h, "POST", "/api/sync", "").Body.Bytes(), &st)
-	if st.LastFetch.IsZero() || st.FetchError != "" {
+	s.FetchNow()
+	if st := s.SyncState(); st.LastFetch.IsZero() || st.FetchError != "" {
 		t.Fatalf("first fetch: %+v", st)
 	}
-	json.Unmarshal(do(t, h, "POST", "/api/sync", "").Body.Bytes(), &st)
-	if st.FetchError != "offline" {
+	s.FetchNow()
+	if st := s.SyncState(); st.FetchError != "offline" {
 		t.Fatalf("second fetch: %+v", st)
 	}
 	if got := do(t, h, "GET", "/api/sync", "").Body.String(); !strings.Contains(got, "offline") {

@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { fetchEpics, type Epic } from '@/entities/epic';
   import { fetchUnassigned, type Ticket } from '@/entities/ticket';
-  import { fetchSync, syncNow, type SyncState } from '@/entities/sync';
+  import { fetchSync, type SyncState } from '@/entities/sync';
   import { assignToEpic } from '@/features/assign-to-epic';
   import { EpicList } from '@/widgets/epic-list';
   import { UnassignedList } from '@/widgets/unassigned-list';
@@ -35,15 +35,6 @@
     }
   }
 
-  async function syncAndLoad() {
-    try {
-      sync = await syncNow();
-    } catch (e) {
-      error = (e as Error).message;
-    }
-    await load();
-  }
-
   onMount(() => {
     load();
     const t = setInterval(load, REFRESH_MS);
@@ -53,7 +44,7 @@
 
 <header class="top">
   <h1>jaira</h1>
-  <SyncStatus {sync} onsync={syncAndLoad} />
+  <SyncStatus {sync} />
 </header>
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 <main>

@@ -77,18 +77,9 @@ type Server struct {
 	// queued. Either may be nil on a board with no remote.
 	Fetch func() error
 	Push  func() error
-	// Now is the clock, replaceable in tests.
-	Now func() time.Time
 
 	mu   sync.Mutex
 	sync Sync
-}
-
-func (s *Server) now() time.Time {
-	if s.Now != nil {
-		return s.Now()
-	}
-	return time.Now()
 }
 
 // SyncState returns a copy of the sync record.
@@ -107,7 +98,7 @@ func (s *Server) FetchNow() {
 	err := s.Fetch()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.sync.LastFetch = s.now()
+	s.sync.LastFetch = time.Now()
 	s.sync.FetchError = errText(err)
 }
 
@@ -118,7 +109,7 @@ func (s *Server) pushNow() error {
 	err := s.Push()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.sync.LastPush = s.now()
+	s.sync.LastPush = time.Now()
 	s.sync.PushError = errText(err)
 	return err
 }
@@ -160,7 +151,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/unassigned", s.handleUnassigned)
 	mux.HandleFunc("POST /api/epics/{name}/tickets", s.handleAssign)
 	mux.HandleFunc("GET /api/sync", s.handleSync)
-	mux.HandleFunc("POST /api/sync", s.handleSyncNow)
 	dist, err := fs.Sub(distFS, "ui/dist")
 	if err != nil {
 		panic(err)
@@ -253,11 +243,6 @@ func (s *Server) handleAssign(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSync(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, s.SyncState())
-}
-
-func (s *Server) handleSyncNow(w http.ResponseWriter, _ *http.Request) {
-	s.FetchNow()
 	writeJSON(w, http.StatusOK, s.SyncState())
 }
 

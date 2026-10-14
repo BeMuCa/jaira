@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -111,19 +112,7 @@ func fetchInChild(root string) error {
 	var stderr bytes.Buffer
 	c.Stderr = &stderr
 	if err := c.Run(); err != nil {
-		return fmt.Errorf("jaira fetch: %v: %s", err, lastLine(stderr.Bytes()))
+		return fmt.Errorf("jaira fetch: %v: %s", err, strings.TrimSpace(stderr.String()))
 	}
 	return nil
-}
-
-func lastLine(b []byte) string {
-	for len(b) > 0 && (b[len(b)-1] == '\n' || b[len(b)-1] == '\r') {
-		b = b[:len(b)-1]
-	}
-	for i := len(b) - 1; i >= 0; i-- {
-		if b[i] == '\n' {
-			return string(b[i+1:])
-		}
-	}
-	return string(b)
 }

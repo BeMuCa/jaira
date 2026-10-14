@@ -1,10 +1,10 @@
 package web
 
 import (
-	"os"
 	"os/exec"
 	"runtime"
-	"strings"
+
+	"github.com/BeMuCa/jaira/core/notify"
 )
 
 // OpenBrowser opens url in the default browser and does not wait for it.
@@ -33,7 +33,7 @@ func browserCommand(url string) *exec.Cmd {
 	}
 	// WSL counts as linux, and usually has no Linux browser: the Windows one
 	// is reached through wslview when wslu is installed, else through cmd.exe.
-	if isWSL() {
+	if notify.IsWSL() {
 		if p, err := exec.LookPath("wslview"); err == nil {
 			return exec.Command(p, url)
 		}
@@ -46,12 +46,4 @@ func browserCommand(url string) *exec.Cmd {
 		return exec.Command(p, url)
 	}
 	return nil
-}
-
-func isWSL() bool {
-	if os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSL_INTEROP") != "" {
-		return true
-	}
-	b, err := os.ReadFile("/proc/version")
-	return err == nil && strings.Contains(strings.ToLower(string(b)), "microsoft")
 }
