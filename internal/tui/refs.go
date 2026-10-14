@@ -1,12 +1,15 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/BeMuCa/jaira/core/identity"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/notify"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -25,8 +28,9 @@ func refFetchEvery() time.Duration { return settings.Load().FetchInterval() }
 // refFetchedMsg carries the result of a background fetch back into the update
 // loop.
 type refFetchedMsg struct {
-	arrivals []refsync.Arrival
-	err      error
+	arrivals   []refsync.Arrival
+	milestones refsync.MilestonesFetched
+	err        error
 }
 
 // newSyncer wires the board's ticket writes to the refs they travel on, with
@@ -79,7 +83,40 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 			return refFetchedMsg{err: err}
 		}
 		arrivals, err := y.Incoming()
-		return refFetchedMsg{arrivals: arrivals, err: err}
+		if err != nil || y.Store == nil {
+			return refFetchedMsg{arrivals: arrivals, err: err}
+		}
+		// Milestones ride the same fetch, exactly as 'jaira fetch' takes them:
+		// a board that needed a command beside it to show a teammate's
+		// milestones would not be showing the team's plan.
+		ms, err := y.FetchMilestones(y.Store)
+		var re *milestone.RecordError
+		if errors.As(err, &re) {
+			err = nil // written here, only the queueing failed: best effort, as in the CLI
+		}
+		return refFetchedMsg{arrivals: arrivals, milestones: ms, err: err}
+	}
+}
+
+// announceMilestones says what a fetch did to milestone files, as one line on
+// the board like arrivals. Names, not counts: a round of work you are in has
+// changed, and that is a name.
+func (m *Model) announceMilestones(f refsync.MilestonesFetched) {
+	var parts []string
+	if len(f.Wrote) > 0 {
+		parts = append(parts, "milestones updated: "+strings.Join(f.Wrote, ", "))
+	}
+	if len(f.Filed) > 0 {
+		parts = append(parts, "milestones filed elsewhere: "+strings.Join(f.Filed, ", "))
+	}
+	if len(f.Moved) > 0 {
+		parts = append(parts, fmt.Sprintf("moved %d milestone file(s) to ID names", len(f.Moved)))
+	}
+	if len(f.Conflicts) > 0 {
+		parts = append(parts, fmt.Sprintf("%d milestone edit(s) of an older build clashed with yours, yours kept", len(f.Conflicts)))
+	}
+	if len(parts) > 0 {
+		m.flash(strings.Join(parts, "; "))
 	}
 }
 

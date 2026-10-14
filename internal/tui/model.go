@@ -1005,6 +1005,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		m.announceMilestones(msg.milestones)
 		m.announceArrivals(msg.arrivals)
 		_ = m.reload()
 		return m, nil

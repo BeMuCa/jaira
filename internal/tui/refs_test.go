@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -70,6 +71,62 @@ func TestTheBoardSendsWhatItQueuedWithoutACommand(t *testing.T) {
 	}
 	if _, ok := y.Pending(id); ok {
 		t.Error("the write is still queued after the board ran")
+	}
+}
+
+// The board's own fetch brings in a teammate's milestone, as 'jaira fetch'
+// does, and says so on its status line: nobody should have to run a command
+// beside the board to see the team's plan.
+func TestTheBoardFetchBringsInMilestones(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	root := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(root, "home"))
+	bare := filepath.Join(root, "board.git")
+	run(t, root, "git", "init", "--bare", "--quiet", bare)
+	open := func(who string) (*ticket.Store, *refsync.Syncer, *gitref.Repo) {
+		clone := filepath.Join(root, who)
+		run(t, root, "git", "clone", "--quiet", bare, clone)
+		run(t, clone, "git", "config", "user.name", who)
+		run(t, clone, "git", "config", "user.email", who+"@example.test")
+		s, err := ticket.At(clone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Init(); err != nil {
+			t.Fatal(err)
+		}
+		s.Actor = who
+		y := refsync.New(s, "origin", who)
+		s.Recorder = y
+		s.Source = y
+		return s, y, &gitref.Repo{Dir: clone, Remote: "origin", AuthorName: who}
+	}
+	_, _, adaRepo := open("ada")
+	bobStore, bobSync, _ := open("bob")
+
+	ms := milestone.New("backend", 45, nowish())
+	ms.ID = "K3F9QZ"
+	if _, err := adaRepo.WriteMilestone(ms.ID, ms.FileName(), ms.Bytes(), ""); err != nil {
+		t.Fatal(err)
+	}
+
+	m, err := New(bobStore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := fetchRefs(bobSync)()
+	if got, ok := msg.(refFetchedMsg); !ok || got.err != nil {
+		t.Fatalf("background run: %#v", msg)
+	}
+	m.Update(msg)
+
+	if _, err := os.Stat(filepath.Join(milestone.Dir(bobStore.Root), ms.FileName())); err != nil {
+		t.Errorf("the milestone did not arrive on disk: %v", err)
+	}
+	if line := m.flashLine(); !strings.Contains(line, "milestones updated: backend") {
+		t.Errorf("status line is %q", line)
 	}
 }
 

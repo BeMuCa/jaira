@@ -353,6 +353,43 @@ func (y *Syncer) pendingMilestone(keys ...string) bool {
 	return false
 }
 
+// MilestonesFetched is what one fetch of milestones did on disk.
+type MilestonesFetched struct {
+	Wrote, Filed, Moved []string
+	Renamed             map[string]string
+	Conflicts           []milestone.Conflict
+}
+
+// FetchMilestones writes the milestone files the refs carry, then moves old
+// files to their ID names (milestone.Migrate), under the milestone lock every
+// other milestone writer takes. It is what 'jaira fetch' and the board's
+// background fetch both run: the lock is only held here, never across the
+// network round trip the caller made before.
+//
+// The error of Migrate comes back as it is, a *milestone.RecordError included:
+// the caller decides how loud a ref that could not be queued is.
+func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
+	unlock, err := s.Lock(milestone.LockName)
+	if err != nil {
+		return MilestonesFetched{}, err
+	}
+	defer unlock()
+	var out MilestonesFetched
+	out.Wrote, out.Filed, out.Renamed, out.Conflicts, err = y.IncomingMilestones(s.Root)
+	if out.Renamed == nil {
+		out.Renamed = map[string]string{}
+	}
+	if err != nil {
+		return out, err
+	}
+	// Taken in after the refs, so a name-keyed ref that only now brought an old
+	// file is moved to its ID in the same fetch.
+	res, err := milestone.Migrate(s.Root, y)
+	out.Moved = res.Moved
+	out.Conflicts = append(out.Conflicts, res.Conflicts...)
+	return out, err
+}
+
 // adoptOldRef merges what an older build wrote to an old name ref since the
 // base recorded when its milestone moved to its ID into the ID file
 // (milestone.AdoptOld). A ref that has not moved since the base is skipped

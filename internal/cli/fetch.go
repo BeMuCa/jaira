@@ -133,22 +133,8 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 // network round trip by the time we get here, and holding a store lock across
 // one would block every milestone write for the length of a fetch.
 func fetchMilestones(s *ticket.Store) (opened, filed []string, renamed map[string]string, migrated []string, conflicts []milestone.Conflict, err error) {
-	unlock, err := s.Lock(milestoneLockName)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	defer unlock()
-	opened, filed, renamed, conflicts, err = refs.IncomingMilestones(s.Root)
-	if renamed == nil {
-		renamed = map[string]string{}
-	}
-	if err != nil {
-		return opened, filed, renamed, nil, conflicts, err
-	}
-	// Taken in after the refs, so a name-keyed ref that only now brought an old
-	// file is moved to its ID in the same fetch.
-	res, err := migrateHeldResult(s)
-	return opened, filed, renamed, res.Moved, append(conflicts, res.Conflicts...), err
+	res, err := refs.FetchMilestones(s)
+	return res.Wrote, res.Filed, res.Renamed, res.Moved, res.Conflicts, warnIfRecordOnly(err)
 }
 
 // conflictsOrEmpty keeps the JSON key an array when there is nothing to tell.
