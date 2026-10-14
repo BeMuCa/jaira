@@ -1,12 +1,15 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/BeMuCa/jaira/core/identity"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/notify"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/settings"
@@ -25,8 +28,12 @@ func refFetchEvery() time.Duration { return settings.Load().FetchInterval() }
 // refFetchedMsg carries the result of a background fetch back into the update
 // loop.
 type refFetchedMsg struct {
-	arrivals []refsync.Arrival
-	err      error
+	arrivals   []refsync.Arrival
+	milestones refsync.MilestonesFetched
+	// merged names the milestones whose queued edit the remote refused and
+	// that were merged into the version that won.
+	merged []string
+	err    error
 }
 
 // newSyncer wires the board's ticket writes to the refs they travel on, with
@@ -75,11 +82,58 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 		// somebody working a whole day in the board left the team looking at
 		// yesterday's tickets — and their own accepted work came back as a
 		// card, because the ref still said what it said this morning.
-		if _, err := y.Flush(); err != nil {
+		reports, err := y.Flush()
+		if err != nil {
 			return refFetchedMsg{err: err}
 		}
+		var merged []string
+		for _, r := range reports {
+			if r.Merged {
+				name, _, _ := milestone.FileIdentity(strings.TrimSuffix(r.File, ".md"))
+				if r.File == "" {
+					name = r.ID
+				}
+				merged = append(merged, name)
+			}
+		}
 		arrivals, err := y.Incoming()
-		return refFetchedMsg{arrivals: arrivals, err: err}
+		if err != nil || y.Store == nil {
+			return refFetchedMsg{arrivals: arrivals, merged: merged, err: err}
+		}
+		// Milestones ride the same fetch, exactly as 'jaira fetch' takes them:
+		// a board that needed a command beside it to show a teammate's
+		// milestones would not be showing the team's plan.
+		ms, err := y.FetchMilestones(y.Store)
+		var re *milestone.RecordError
+		if errors.As(err, &re) {
+			err = nil // written here, only the queueing failed: best effort, as in the CLI
+		}
+		return refFetchedMsg{arrivals: arrivals, milestones: ms, merged: merged, err: err}
+	}
+}
+
+// announceMilestones says what a fetch did to milestone files, as one line on
+// the board like arrivals. Names, not counts: a round of work you are in has
+// changed, and that is a name.
+func (m *Model) announceMilestones(f refsync.MilestonesFetched, merged []string) {
+	var parts []string
+	if len(merged) > 0 {
+		parts = append(parts, "your edit of "+strings.Join(merged, ", ")+" was refused, a teammate wrote first; merged into theirs, sent next")
+	}
+	if len(f.Wrote) > 0 {
+		parts = append(parts, "milestones updated: "+strings.Join(f.Wrote, ", "))
+	}
+	if len(f.Filed) > 0 {
+		parts = append(parts, "milestones filed elsewhere: "+strings.Join(f.Filed, ", "))
+	}
+	if len(f.Moved) > 0 {
+		parts = append(parts, fmt.Sprintf("moved %d milestone file(s) to ID names", len(f.Moved)))
+	}
+	if len(f.Conflicts) > 0 {
+		parts = append(parts, fmt.Sprintf("%d milestone edit(s) of an older build clashed with yours, yours kept", len(f.Conflicts)))
+	}
+	if len(parts) > 0 {
+		m.flash(strings.Join(parts, "; "))
 	}
 }
 

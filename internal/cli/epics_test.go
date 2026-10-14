@@ -146,7 +146,7 @@ func TestAnEpicNeedsARemote(t *testing.T) {
 // An epic is addressed by its name in every message, never by the last six
 // characters a ticket handle would cut it to.
 func TestAnEpicIsReportedByItsName(t *testing.T) {
-	if key, name := refSubject(outbox.KindEpic, "feature"); key != "epic" || name != "feature" {
+	if key, name := refSubject(outbox.KindEpic, "feature", ""); key != "epic" || name != "feature" {
 		t.Errorf("refSubject = %q, %q; want epic, feature", key, name)
 	}
 	if a := rejectedAdvice(outbox.KindEpic); strings.Contains(a, "file") {

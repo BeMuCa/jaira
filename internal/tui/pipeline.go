@@ -262,7 +262,7 @@ func (m *Model) renderPipeline() string {
 	body := b.String()
 	// Wrapped, never truncated: every key stays visible however narrow the
 	// terminal is.
-	lines := wrapHints([]string{"enter open step", "1-9 switch project", "v full board", "q quit"}, max(1, m.width))
+	lines := wrapHints([]string{"enter open step", "1-9 switch project", "v full board", "q/esc quit"}, max(1, m.width))
 	for i, l := range lines {
 		lines[i] = styMeta.Render(l)
 	}

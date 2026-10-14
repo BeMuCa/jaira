@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -52,17 +54,47 @@ func linksModel(t *testing.T) (*Model, string) {
 	return m, epic
 }
 
-// L opens the window, esc closes it and puts the board back.
-func TestLOpensAndClosesTheLinkWindow(t *testing.T) {
+// l opens the window, esc closes it and puts the board back.
+func TestLinkKeyOpensAndClosesTheLinkWindow(t *testing.T) {
 	m, _ := linksModel(t)
 
-	m.key(key("L"))
+	m.key(key("l"))
 	if m.mode != modeLinks {
-		t.Fatalf("L must open the link window, mode = %v", m.mode)
+		t.Fatalf("l must open the link window, mode = %v", m.mode)
 	}
 	m.key(key("esc"))
 	if m.mode != modeBoard || m.links != nil {
 		t.Fatalf("esc must close it, mode = %v links = %v", m.mode, m.links)
+	}
+}
+
+// The keys moved for the milestone layer: the arrows change lanes on the
+// board, h and l no longer do, l opens the link window and closes it again.
+func TestBoardArrowsChangeLanesAndLOpensLinks(t *testing.T) {
+	m := newTestModel(t, 150, 32)
+	todo := laneIndex(t, m, "todo")
+	m.laneIdx, m.cardIdx = todo, 0
+
+	m.key(key("h"))
+	if m.laneIdx != todo || m.mode != modeBoard {
+		t.Fatalf("h must do nothing on the board, lane %d mode %v", m.laneIdx, m.mode)
+	}
+	m.key(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if m.laneIdx == todo {
+		t.Fatal("← must still change lanes")
+	}
+	m.key(tea.KeyPressMsg{Code: tea.KeyRight})
+	if m.laneIdx != todo {
+		t.Fatalf("→ must come back to todo, lane %d", m.laneIdx)
+	}
+
+	m.key(key("l"))
+	if m.mode != modeLinks || m.laneIdx != todo {
+		t.Fatalf("l must open the link window and leave the lane alone, mode %v lane %d", m.mode, m.laneIdx)
+	}
+	m.key(key("l"))
+	if m.mode != modeBoard {
+		t.Fatalf("l must close the link window again, mode %v", m.mode)
 	}
 }
 
@@ -71,7 +103,7 @@ func TestLOpensAndClosesTheLinkWindow(t *testing.T) {
 // that used to be invisible.
 func TestLinkWindowShowsChildrenWhereverTheyLive(t *testing.T) {
 	m, _ := linksModel(t)
-	m.key(key("L"))
+	m.key(key("l"))
 	out := m.render()
 
 	for _, want := range []string{
@@ -92,7 +124,7 @@ func TestLinkWindowShowsChildrenWhereverTheyLive(t *testing.T) {
 // j and k walk the tickets and never stop on a group heading.
 func TestLinkWindowCursorSkipsHeadings(t *testing.T) {
 	m, _ := linksModel(t)
-	m.key(key("L"))
+	m.key(key("l"))
 
 	for i := 0; i < 8; i++ {
 		if _, ok := m.links.current(); !ok {
@@ -111,7 +143,7 @@ func TestLinkWindowCursorSkipsHeadings(t *testing.T) {
 // enter on a ticket that is on the board jumps to its card.
 func TestEnterJumpsToALinkedCard(t *testing.T) {
 	m, _ := linksModel(t)
-	m.key(key("L"))
+	m.key(key("l"))
 	// The first selectable row is the first child, which is on the board.
 	e, ok := m.links.current()
 	if !ok {
@@ -130,7 +162,7 @@ func TestEnterJumpsToALinkedCard(t *testing.T) {
 // do nothing.
 func TestEnterOnAFiledTicketExplainsItself(t *testing.T) {
 	m, _ := linksModel(t)
-	m.key(key("L"))
+	m.key(key("l"))
 	for {
 		e, ok := m.links.current()
 		if !ok {
@@ -157,7 +189,7 @@ func TestEnterOnAFiledTicketExplainsItself(t *testing.T) {
 func TestLinkWindowIsDrawnOverTheBoard(t *testing.T) {
 	m, _ := linksModel(t)
 	board := m.render()
-	m.key(key("L"))
+	m.key(key("l"))
 	out := m.render()
 
 	// A lane header from the board behind, and the box's own border, on one
@@ -168,7 +200,7 @@ func TestLinkWindowIsDrawnOverTheBoard(t *testing.T) {
 		}
 	}
 	if out == board {
-		t.Error("L must change what is on screen")
+		t.Error("l must change what is on screen")
 	}
 	// And closing it puts the board back exactly as it was.
 	m.key(key("esc"))
@@ -178,9 +210,9 @@ func TestLinkWindowIsDrawnOverTheBoard(t *testing.T) {
 }
 
 // Reading one ticket is exactly when "what else is this attached to" comes
-// up, so L works in the detail pane too — and esc puts the reader back on
+// up, so l works in the detail pane too — and esc puts the reader back on
 // the ticket they were reading, not on the board.
-func TestLWorksOnAnOpenTicketAndReturnsToIt(t *testing.T) {
+func TestLinkKeyWorksOnAnOpenTicketAndReturnsToIt(t *testing.T) {
 	m, epic := linksModel(t)
 	m.key(key("enter"))
 	if m.mode != modeDetail {
@@ -188,9 +220,9 @@ func TestLWorksOnAnOpenTicketAndReturnsToIt(t *testing.T) {
 	}
 	detail := m.render()
 
-	m.key(key("L"))
+	m.key(key("l"))
 	if m.mode != modeLinks {
-		t.Fatalf("L must open the link window from the detail pane, mode = %v", m.mode)
+		t.Fatalf("l must open the link window from the detail pane, mode = %v", m.mode)
 	}
 	if m.links.subject != epic {
 		t.Errorf("the window is about the open ticket, got %s", ticket.Handle(m.links.subject))
@@ -214,7 +246,7 @@ func TestLWorksOnAnOpenTicketAndReturnsToIt(t *testing.T) {
 func TestEnterFromAnOpenTicketOpensTheLinkedTicket(t *testing.T) {
 	m, _ := linksModel(t)
 	m.key(key("enter"))
-	m.key(key("L"))
+	m.key(key("l"))
 	e, ok := m.links.current()
 	if !ok {
 		t.Fatal("nothing selected in the link window")
@@ -233,7 +265,7 @@ func TestEnterFromAnOpenTicketOpensTheLinkedTicket(t *testing.T) {
 // than dropping the reader back to the board.
 func TestRefusalInsideTheWindowKeepsIt(t *testing.T) {
 	m, _ := linksModel(t)
-	m.key(key("L"))
+	m.key(key("l"))
 	for {
 		e, ok := m.links.current()
 		if !ok {
@@ -286,7 +318,7 @@ func TestLongLinkListScrollsWithTheCursor(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.selectByID(epic.ID)
-	m.key(key("L"))
+	m.key(key("l"))
 
 	if !strings.Contains(m.render(), "more below") {
 		t.Errorf("a list longer than the box must say what is hidden\n%s", m.render())
@@ -346,7 +378,7 @@ func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
 		}
 		m.selectByID(epic)
 		m.width, m.height = 150, h
-		m.key(key("L"))
+		m.key(key("l"))
 		if got := len(groupsIn(m.links)); got < 4 {
 			t.Fatalf("the fixture must have four groups, got %d", got)
 		}
@@ -409,7 +441,7 @@ func TestTheHintLineSurvivesSeveralGroups(t *testing.T) {
 // them moved nothing and said nothing, which reads as the key being broken.
 func TestJumpingToAFilteredOutCardSaysSo(t *testing.T) {
 	m, _ := linksModel(t)
-	m.key(key("L"))
+	m.key(key("l"))
 	e, ok := m.links.current()
 	if !ok {
 		t.Fatal("nothing selected in the link window")
@@ -419,7 +451,7 @@ func TestJumpingToAFilteredOutCardSaysSo(t *testing.T) {
 	// A filter that keeps the epic and hides everything it links to.
 	m.filter = "Epic"
 	m.rebuild()
-	m.key(key("L"))
+	m.key(key("l"))
 	if m.links == nil {
 		t.Fatal("the subject is still on the board; the window must open")
 	}
