@@ -417,8 +417,13 @@ func staleCopy(t *testing.T, s0, s1, newSide string) string {
 	t.Helper()
 	ada, grace, _ := twoSides(t)
 	id := milestone.LegacyID("alpha")
-	putRef(t, ada, "alpha", "alpha.md", s0)
-	putRef(t, ada, "alpha", "alpha.md", s1)
+	first, err := ada.syncer.Repo.WriteMilestone("alpha", "alpha.md", []byte(s0), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Repo.WriteMilestone("alpha", "alpha.md", []byte(s1), first); err != nil {
+		t.Fatal(err)
+	}
 	from, err := ada.syncer.Repo.MilestoneSHA("alpha")
 	if err != nil {
 		t.Fatal(err)
