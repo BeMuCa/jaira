@@ -1,7 +1,7 @@
 ---
 id: 01M4WS2FVXC09S73WQYZRFTQKP
 title: "jaira web: lokales Review-Portal im Binary, zuerst Epics"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,16 +24,16 @@ related: []
 follows: 01M4WS20HSNGR8XKP3RCF914QH
 commits: []
 created-at: 2026-10-14T08:39:42Z
-updated-at: 2026-10-14T15:09:46Z
+updated-at: 2026-10-14T15:12:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-82065
 claimed-at: 2026-10-14T14:58:29Z
 outcome-what: "jaira web: a local review portal on 127.0.0.1 — open tickets in no epic on the left, epics with description and done X of Y on the right, drag a ticket onto an epic to write its ref and push; fetches every minute and shows the last sync. Svelte 5 + Vite in FSD, built into core/web/ui/dist and embedded; CI job web-dist checks the build matches the sources."
 outcome-why: A teamlead wants to see and sort the work by feature without an agent and without the terminal board (F914QH added the epics this page shows).
 outcome-resolves: RFTQKP
-review-summary: "core/ticket/body.go Notes is a second splitter of the Progress section beside internal/cli/tickets.go ticketBrief (briefNote regex): give ticket.Note the raw entry and let ticketBrief use ticket.Notes, split on the brief's rule (a dated bold heading), so the two cannot disagree about where a note starts"
+review-summary: "none"
 round: 6
-review-gaps: "1. The branch carries F914QH (merges 063d6b27 and b6952b9a up to 340e0825), which is not on upstream/master yet: merge F914QH's PR first, or this PR shows its whole diff too. 2. The header's 'Last sync' shows only last_fetch; a successful push after a drop does not change it (last_push is in the JSON, never shown). Cosmetic: the DoD asks for the last sync and the fetch time is that. 3. No favicon: the page logs one 404 in the browser console. 4. The drag has no automated browser test; checked here by hand in headless Chrome (playwright-core), see review-check."
+review-gaps: "core/web/ui/src/entities/ticket/index.ts exported Note and Check, and features/assign-to-epic/index.ts DraggedTicket, with no importer outside their slice - removed; dist unchanged"
 test-verdict: "pass: go vet + go test -race -count=1 ./... RC=0 after merging F914QH 340e0825; windows build ok; dist reproducible; scratch remote: online drop pushed (no push_error), drop with origin http://127.0.0.1:1 answers push_error 'the remote was not reached; 1 change(s) wait to be sent', grace sees 0 of 1 (only the sent one). Not tried: dragging in a real browser"
 review-verdict: "Matches all six DoD items; no defects found. Verified beyond the Go tests: rebuilt dist from package-lock is byte-identical to the committed one; a real HTML5 drag in headless Chrome moved a ticket into an epic and the ref arrived on the bare remote; with origin at http://127.0.0.1:1 the drop answers 200 with push_error and the next drop with a working remote sends both; a foreign Host and a foreign Origin get 403; an epic created in a second clone appeared on the page with the next minute fetch. Only open condition is the PR order behind F914QH."
 review-round: 4
@@ -59,7 +59,7 @@ review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. in a repo whose board i
 - [x] Klick auf ein Ticket öffnet eine Detailansicht (Titel, Lane, Ziel, Kontext, DoD mit Häkchen), nur lesend; Endpunkt GET /api/tickets/{id} aus denselben core-Daten wie 'jaira show --json'
   proof: core/web/web.go:280 handleTicket (GET /api/tickets/{id}); internal/cli/web_source.go:79 Ticket via Store.LoadAnywhere like 'jaira show'; widgets/ticket-details TicketDetails.svelte in a <dialog> from ReviewPage; TestTicketDetail, TestWebCreatesMovesRemovesAndOpens; headless Chrome: click opens title/lane/goal/context/DoD
 - [x] In der Detailansicht alle Notes lesbar: Markdown gerendert, je Note Datum und Autor, chronologisch, lange Verläufe eingeklappt mit 'alle anzeigen'; als FSD-Slice (entities/ticket, widgets/ticket-details)
-  proof: core/ticket/body.go:130 Notes (TestNotesReadsBackWhatAppendNoteWrote); entities/ticket/ui/NoteItem.svelte date+author, shared/lib/markdown.ts marked + raw HTML escaped + DOMPurify; TicketDetails folds all but the newest 5 behind 'Show all'; headless Chrome: <script>, onerror and javascript: links render as text/no href, window.pwned stays unset
+  proof: core/ticket/body.go:138 Notes, shared with ticketBrief (TestNotesReadsBackWhatAppendNoteWrote, TestTicketBriefCarriesTheNewestNotes); entities/ticket/ui/NoteItem.svelte date+author, shared/lib/markdown.ts marked + raw HTML escaped + DOMPurify; TicketDetails folds all but the newest 5 behind 'Show all'; headless Chrome: <script>, onerror and javascript: links render as text/no href, window.pwned stays unset
 - [x] Neues Epic auf der Seite anlegen (Name, Titel, Beschreibung), schreibt refs/jaira/epics/<name> und pusht wie 'jaira epic create'
   proof: core/web/web.go:295 handleCreateEpic (POST /api/epics, 409 exists, 400 no name); internal/cli/web_source.go:101 CreateEpic -> epic.NormalizeName + epic.Create; features/create-epic CreateEpicForm; TestWebCreatesMovesRemovesAndOpens (second clone sees pay-later after fetch)
 - [x] Ticket aus einem Epic zurück nach links ziehen nimmt es heraus ('jaira epic rm'); auf ein anderes Epic ziehen verschiebt es (raus aus dem alten, rein ins neue, beide Refs gepusht; scheitert einer, sagt die Seite welcher). Folge-Tickets ohne eigene Zeile sind nicht ziehbar und sagen warum
@@ -106,3 +106,5 @@ core/web/web.go POST /api/sync + SyncStatus "Sync now" button are outside the Do
 - **2026-10-14 14:57 · Alexander Sacharov** — Abnahme 14.10. (Alex), Nachtrag: Epics auch auf der Seite anlegen; Tickets aus einem Epic herausnehmen und zwischen Epics verschieben (DoD 9, 10).
 - **2026-10-14 14:58 · Alexander Sacharov** — decision (worker, round 2, DoD 7-10, settled from defaults): GET /api/tickets/{id} returns title, lane, goal, context, dod items (text, done), notes parsed from '## Progress' (at, author, text) via a new ticket.Notes(body) beside AppendNote. Markdown rendered in the browser with marked 18.0.14 and the output passed through DOMPurify 3.4.16 (raw HTML in a note is escaped before parsing as well, so a <script> shows as text). Notes beyond the newest 5 fold behind 'show all'. POST /api/epics {name,title,description} -> epic.Create (name normalised like the CLI, 409 if it exists). DELETE /api/epics/{name}/tickets/{id} -> epic.Assign add=false. Move = POST /api/epics/{to}/tickets {id, from}: add to the new epic first, then remove from the old one, so a failure leaves the ticket in both rather than in none; the error names which step failed; one Flush pushes both refs and webPush names a rejected ref. A follow-up (direct=false) is not draggable and its card says 'counted via follows/parent'; the server answers 409 for removing a non-member.
 - **2026-10-14 15:09 · Alexander Sacharov** — critique round 1 (round 2 of the ticket): one finding - ticket.Notes duplicates ticketBrief's note splitting in internal/cli/tickets.go; unify on ticket.Notes with a Raw field, splitting at the brief's dated heading rule. Let stand: write() pushes after a failed write too (a half move must still go out, comment says so); from==name guard in webSource.Assign is needed (add no-op then remove would drop the ticket); escaping raw HTML before DOMPurify is the ticket's 'no raw HTML' rule, not redundant.
+- **2026-10-14 15:11 · Alexander Sacharov** — critique round 2: read only d6fee7b8 - ticketBrief now takes ticket.Notes' Raw, briefNote regex gone, the brief test passes unchanged; nothing else in the round-2 diff changed. none.
+- **2026-10-14 15:12 · Alexander Sacharov** — optimize (round 2): removed three type exports nobody imports across a slice; bundle byte-identical. Looked at and kept: TicketDetail.id (the page's identity of the opened ticket), the from==name guard, escapeHTML before DOMPurify (see critique note).
