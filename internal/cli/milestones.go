@@ -481,18 +481,25 @@ func editMembers(cmd *cobra.Command, args []string, add bool) error {
 		out["changed"] = strOrEmpty(touched)
 		return emit(w, out)
 	}
+	label := ms.Name
+	// <name>-<ID> where two share the name, as everywhere else.
+	if all, lerr := milestone.LoadAll(s.Root); lerr == nil {
+		if l, ok := milestone.Labels(all)[ms.ID]; ok {
+			label = l
+		}
+	}
 	verb := "added to"
 	if !add {
 		verb = "removed from"
 	}
 	if len(touched) == 0 {
-		fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", ms.Name)
+		fmt.Fprintf(w, "Nothing to do: milestone %q is already as asked.\n", label)
 		return nil
 	}
 	for _, id := range touched {
-		fmt.Fprintf(w, "%s %s %q\n", ticket.Handle(id), verb, ms.Name)
+		fmt.Fprintf(w, "%s %s %q\n", ticket.Handle(id), verb, label)
 	}
-	fmt.Fprintf(w, "%s now holds %d ticket(s).\n", ms.Name, len(ms.Members()))
+	fmt.Fprintf(w, "%s now holds %d ticket(s).\n", label, len(ms.Members()))
 	return nil
 }
 

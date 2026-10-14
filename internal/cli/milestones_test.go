@@ -968,8 +968,11 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	}
 
 	// the three forms, upper and lower case
-	if out, err := runCLI(t, dir, "milestone", "add", "dup-ZZZZZ9", one); err != nil || !strings.Contains(out, `"dup"`) {
+	if out, err := runCLI(t, dir, "milestone", "add", "dup-ZZZZZ9", one); err != nil || !strings.Contains(out, `"dup-ZZZZZ9"`) {
 		t.Errorf("name-ID: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "milestone", "rm", "dup-ZZZZZ9", two); err != nil || !strings.Contains(out, `"dup-ZZZZZ9"`) {
+		t.Errorf("rm by name-ID names the twin by its label: %v\n%s", err, out)
 	}
 	if out, err := runCLI(t, dir, "milestone", "add", strings.ToLower(first.ID), two); err != nil {
 		t.Errorf("ID in lower case: %v\n%s", err, out)
