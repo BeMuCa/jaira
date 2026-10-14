@@ -968,10 +968,10 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	}
 
 	// the three forms, upper and lower case
-	if out, err := runCLI(t, dir, "milestone", "add", "dup-ZZZZZ9", one); err != nil || !strings.Contains(out, `"dup-ZZZZZ9"`) {
+	if out, err := runCLI(t, dir, "milestone", "add", "dup-ZZZZZ9", one, two); err != nil || !strings.Contains(out, `"dup-ZZZZZ9"`) {
 		t.Errorf("name-ID: %v\n%s", err, out)
 	}
-	if out, err := runCLI(t, dir, "milestone", "rm", "dup-ZZZZZ9", two); err != nil || !strings.Contains(out, `"dup-ZZZZZ9"`) {
+	if out, err := runCLI(t, dir, "milestone", "rm", "dup-ZZZZZ9", two); err != nil || !strings.Contains(out, `removed from "dup-ZZZZZ9"`) {
 		t.Errorf("rm by name-ID names the twin by its label: %v\n%s", err, out)
 	}
 	if out, err := runCLI(t, dir, "milestone", "add", strings.ToLower(first.ID), two); err != nil {
@@ -985,6 +985,13 @@ func TestMilestoneCommandsTakeIDNameIDAndName(t *testing.T) {
 	}
 	if out, err := runCLI(t, dir, "milestone", "set", "dup-ZZZZZ9", "--goal", "g"); err != nil || !strings.Contains(out, `Milestone "dup-ZZZZZ9" updated`) {
 		t.Errorf("set by name-ID names the twin by its label: %v\n%s", err, out)
+	}
+	// list --milestone filters: a twinned name shows both twins, name-ID one
+	if out, _ := runCLI(t, dir, "list", "--milestone", "dup"); !strings.Contains(out, one) || !strings.Contains(out, two) {
+		t.Errorf("list --milestone dup misses a twin's ticket:\n%s", out)
+	}
+	if out, _ := runCLI(t, dir, "list", "--milestone", "dup-ZZZZZ9"); !strings.Contains(out, one) || strings.Contains(out, two) {
+		t.Errorf("list --milestone dup-ZZZZZ9 is not that twin alone:\n%s", out)
 	}
 	if out, err := runCLI(t, dir, "milestone", "rename", "ZZZZZ9", "twin"); err != nil || !strings.Contains(out, `"dup-ZZZZZ9" renamed to "twin"`) {
 		t.Errorf("rename by ID: %v\n%s", err, out)
