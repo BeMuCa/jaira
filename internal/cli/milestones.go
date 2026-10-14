@@ -635,19 +635,13 @@ func recordMilestone(ms *milestone.Milestone) {
 
 // migrateHeld moves milestone files written before IDs existed to their ID
 // names, for a command that already holds the milestone lock and writes a
-// milestone outside milestone.Edit and milestone.Create (fetch, logbook,
-// restore). It returns what moved.
+// milestone outside milestone.Edit and milestone.Create (logbook, restore; a
+// fetch moves them in refs.FetchMilestones). It returns what moved.
 func migrateHeld(s *ticket.Store) ([]string, error) {
-	res, err := migrateHeldResult(s)
+	res, err := milestone.Migrate(s.Root, refs)
+	err = warnIfRecordOnly(err)
 	reportConflicts(res.Conflicts)
 	return res.Moved, err
-}
-
-// migrateHeldResult is migrateHeld with what the move adopted from an older
-// build, for the caller that reports it itself (fetch).
-func migrateHeldResult(s *ticket.Store) (milestone.Result, error) {
-	res, err := milestone.Migrate(s.Root, refs)
-	return res, warnIfRecordOnly(err)
 }
 
 // reportConflicts tells, on stderr in the shape the caller asked for, the edits

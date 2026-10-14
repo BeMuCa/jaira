@@ -287,15 +287,9 @@ func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha strin
 	return entries[0], content, sha, nil
 }
 
-// ReadMilestoneAt returns the milestone file the commit sha carries: the state
-// a write was leased on, which is what a refused write is merged from.
-func (r *Repo) ReadMilestoneAt(sha string) ([]byte, error) {
-	_, content, err := r.ReadMilestoneFileAt(sha)
-	return content, err
-}
-
-// ReadMilestoneFileAt is ReadMilestoneAt with the file name the commit carries
-// the milestone under.
+// ReadMilestoneFileAt returns the milestone file the commit sha carries, and
+// the name it carries it under: the state a write was leased on, which is what
+// a refused write is merged from.
 func (r *Repo) ReadMilestoneFileAt(sha string) (string, []byte, error) {
 	out, errb, err := r.run("", "ls-tree", "--name-only", sha)
 	if err != nil {

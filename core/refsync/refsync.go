@@ -634,7 +634,8 @@ func (y *Syncer) Flush() ([]Report, error) {
 		return nil, err
 	}
 	queued := map[string]outbox.Entry{}
-	for _, e := range mustList(y.Box) {
+	entries, _ = y.Box.List() // again: tidyMilestoneEntries may have rekeyed some
+	for _, e := range entries {
 		if e.Kind == outbox.KindMilestone {
 			queued[e.ID] = e
 		}
@@ -661,11 +662,6 @@ func (y *Syncer) Flush() ([]Report, error) {
 		reports = append(reports, rep)
 	}
 	return reports, nil
-}
-
-func mustList(b *outbox.Box) []outbox.Entry {
-	entries, _ := b.List()
-	return entries
 }
 
 // mergeRefused keeps the edit of a milestone write the remote refused, because

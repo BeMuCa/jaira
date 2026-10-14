@@ -155,14 +155,14 @@ func (b *Box) legacyPath(id string) string { return filepath.Join(b.Dir, id+".js
 // ticket. Superseding is correct rather than lossy: the entry carries the whole
 // ticket, so the newer bytes already contain everything the older ones said.
 func (b *Box) Queue(id string, op Op, content []byte, lease, by string) error {
-	return b.queueKind(KindTicket, id, "", op, content, lease, by)
+	return b.queueKind(KindTicket, id, "", op, content, lease, by, nil)
 }
 
 // QueueMilestone files a pending write of a milestone file, under the same
 // rules: whole content, the lease the remote last confirmed, superseding any
 // earlier unsent write of the same milestone.
 func (b *Box) QueueMilestone(key, file string, op Op, content []byte, lease, by string) error {
-	return b.queueKind(KindMilestone, key, file, op, content, lease, by)
+	return b.queueKind(KindMilestone, key, file, op, content, lease, by, nil)
 }
 
 // QueueMigration files the first write of a milestone's ref when it moves an
@@ -170,15 +170,11 @@ func (b *Box) QueueMilestone(key, file string, op Op, content []byte, lease, by 
 // "none"), which are sent as a commit of their own. Later edits replace the
 // content and leave the migration as it is.
 func (b *Box) QueueMigration(key, file string, migrated []byte, from, by string) error {
-	return b.queue(KindMilestone, key, file, OpWrite, migrated, "", by, &Migration{File: file, Content: string(migrated), From: from})
+	return b.queueKind(KindMilestone, key, file, OpWrite, migrated, "", by, &Migration{File: file, Content: string(migrated), From: from})
 }
 
-// queueKind is what both of those are.
-func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, lease, by string) error {
-	return b.queue(kind, key, file, op, content, lease, by, nil)
-}
-
-func (b *Box) queue(kind Kind, key, file string, op Op, content []byte, lease, by string, mig *Migration) error {
+// queueKind is what all three of those are.
+func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, lease, by string, mig *Migration) error {
 	if strings.TrimSpace(key) == "" {
 		return errors.New("outbox: no id")
 	}
