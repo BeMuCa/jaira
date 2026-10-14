@@ -29,7 +29,7 @@ func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
 // nowhere to keep epics has none, which the page shows as an empty column
 // rather than an error.
 func (w *webSource) board() ([]*ticket.Ticket, *link.Index, []*epic.Epic, error) {
-	ix, all, err := epicIndex(w.s)
+	ix, all, err := boardIndex(w.s)
 	if err != nil {
 		return nil, nil, nil, err
 	}
