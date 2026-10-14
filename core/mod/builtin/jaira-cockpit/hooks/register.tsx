@@ -144,8 +144,10 @@ async function run($: EngineInterface, argv: string[], cwd: string, timeoutMs = 
   }
 }
 
+// Native Windows often has no HOME, only USERPROFILE, and spells it with
+// backslashes: forward ones are read alike by Windows and by Git Bash.
 async function home($: EngineInterface): Promise<string> {
-  return (await $.env.get('HOME')) ?? ''
+  return ((await $.env.get('HOME')) || (await $.env.get('USERPROFILE')) || '').replaceAll('\\', '/')
 }
 
 // ── the noise filter ─────────────────────────────────────────────────────
@@ -473,7 +475,7 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
       const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
       if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${output(added)}`)
     }
-    const r = await run($, [script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
+    const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
     if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
     return say($, t.prStarted(id, branch))
   }
@@ -484,7 +486,7 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const next = nextToStart(listed.stdout, tabsOf(tabs.stdout))
   if (next === undefined) return stuck(t.nothingNext)
   const lane = dispatchLane(await settingsJson($))
-  const started = await run($, [script, next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
+  const started = await run($, [...script, next.toLowerCase(), next, lane, b.repo], b.repo, 120_000)
   if (started?.exitCode !== 0) return stuck(`spawn.sh: ${output(started).slice(-160)}`)
   await say($, [t.nextStarted(id, next), hint].filter(Boolean).join('; '))
 }
@@ -525,16 +527,32 @@ async function once($: EngineInterface, id: string, action: () => Promise<void>)
 }
 
 // The spawn.sh the roles were installed with: the project's own first, as
-// the dispatcher's run-lane.sh finds it beside itself.
-async function spawnScript($: EngineInterface): Promise<string | undefined> {
+// the dispatcher's run-lane.sh finds it beside itself. Started through bash,
+// not by its name: Windows runs no .sh by itself.
+async function spawnScript($: EngineInterface): Promise<string[] | undefined> {
   const tail = '.claude/skills/jaira-dispatcher/scripts/spawn.sh'
   for (const dir of [board?.repo, await home($)]) {
     if (!dir) continue
+    let found = false
     try {
-      if (await $.fs.exists(`${dir}/${tail}`)) return `${dir}/${tail}`
+      found = await $.fs.exists(`${dir}/${tail}`)
     } catch {}
+    if (found) return [await bash($), `${dir}/${tail}`]
   }
   return undefined
+}
+
+// On native Windows the Git Bash spawn.sh is written for: a bare `bash` there
+// is System32's, which starts WSL. Claude Code names Git Bash in
+// CLAUDE_CODE_GIT_BASH_PATH; else it sits three levels above git's exec path
+// (<Git>/mingw64/libexec/git-core -> <Git>/bin/bash.exe).
+async function bash($: EngineInterface): Promise<string> {
+  if ((await $.env.get('OS')) !== 'Windows_NT') return 'bash'
+  const named = await $.env.get('CLAUDE_CODE_GIT_BASH_PATH')
+  if (named) return named
+  const r = await run($, ['git', '--exec-path'], board?.repo ?? '.')
+  const git = r?.exitCode === 0 ? r.stdout.trim().replaceAll('\\', '/').replace(/\/[^/]+\/[^/]+\/[^/]+$/, '') : ''
+  return git ? `${git}/bin/bash.exe` : 'bash'
 }
 
 async function herdr($: EngineInterface): Promise<string | undefined> {
@@ -544,17 +562,25 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 
 // Explain a review finding, or talk an open question through, in a Herdr tab
 // of its own: the teamlead's chat is not where that conversation belongs.
+// Without Herdr this session is asked instead: Explain by a subagent, which
+// writes the same note a tab would; Discuss here, since a subagent cannot
+// talk with a person.
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void> {
-  const bin = await herdr($)
-  const script = await spawnScript($)
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
-  if (bin === undefined || script === undefined || !board) return fail($, what, t.needsHerdr)
+  if (!board) return fail($, what, t.noBoard)
   const dir = await ticketDir($, board, id)
+  if ((await herdr($)) === undefined) {
+    await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
+    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
+    return
+  }
+  const script = await spawnScript($)
+  if (script === undefined) return fail($, what, t.noSpawn)
   // A Discuss chat sends its decision to this session: its messaging socket
   // is the address SendMessage takes.
   const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
   const parent = socket ? ['--parent', `uds:${socket}`] : []
-  const r = await run($, [script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
+  const r = await run($, [...script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
   if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   chats.set(`${id}/${kind}`, await $.clock.now())
   await say($, t.opened(id))
@@ -727,7 +753,7 @@ async function giveBack($: EngineInterface, id: string, lane: string, reason: st
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-  const started = await run($, [script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+  const started = await run($, [...script, id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
   if (started?.exitCode === 0) return handedTo('new', why)
   await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
 }

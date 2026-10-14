@@ -102,7 +102,7 @@ const MESSAGE = (title: string) =>
 const WORKTREES = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
 const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 
-function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean } = {}): World {
+function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean; env?: Record<string, string> } = {}): World {
   const w: World = {
     ran: [],
     files: new Map(),
@@ -156,7 +156,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     return { value: undefined } as never
   })
   on('store.keys', () => ({ value: [...w.store.keys()] }))
-  mock.env(on, { HOME: '/home/a', ...(opts.herdr ? { HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1', CLAUDE_CODE_MESSAGING_SOCKET: '/tmp/cc-socks-1000/77.sock' } : {}) })
+  mock.env(on, opts.env ?? { HOME: '/home/a', ...(opts.herdr ? { HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1', CLAUDE_CODE_MESSAGING_SOCKET: '/tmp/cc-socks-1000/77.sock' } : {}) })
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: undefined }) as never)
   on('tool.register', () => ({ value: undefined }) as never)
@@ -220,6 +220,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show') return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '' }))
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
+    if (cmd === 'git' && args[0] === '--exec-path') return ok('C:\\Program Files\\Git\\mingw64\\libexec\\git-core\n')
     if (cmd === 'git' && args[0] === 'worktree') return ok(WORKTREES)
     const failed = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
     if (cmd === 'git' && args[0] === 'config') return w.forge ? ok(`${w.forge}\n`) : failed('')
@@ -544,7 +545,7 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'explain-K7P2QX' })).toBeUndefined()
     await ui.press({ key: 'explain-MG677R' })
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
   test('an open question shows under its ticket with Discuss', async ($, on) => {
@@ -554,7 +555,7 @@ describe('waiting for you', () => {
     expect(await ui.find({ type: 'Text', text: /\? Popup oder eigene Seite\?/ })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
-    expect(ran(w, SPAWN)[0]?.slice(0, 7)).toEqual([SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
   })
 
   test('a Discuss chat\'s decision comes back: its tab closes and the band offers it to read, once', async ($, on) => {
@@ -586,15 +587,69 @@ describe('waiting for you', () => {
     expect(await (await $.ui.mount(BAND)).find({ key: 'decision-K7P2QX' })).toBeUndefined()
   })
 
-  test('without Herdr, Explain says so instead of failing', async ($, on) => {
+  test('without Herdr, Explain asks this session for a subagent that writes the explain note', async ($, on) => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'explain-MG677R' })
-    expect(ran(w, SPAWN)).toEqual([])
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Explain MG677R failed', focus: true }])
+    expect(ran(w, 'bash')).toEqual([])
+    expect(w.opened).toEqual([])
+    expect(w.toasts).toContain('MG677R: a subagent of this session explains the finding; read it under Read explanation')
+    expect(w.submitted).toHaveLength(1)
+    const asked = w.submitted[0]!
+    expect(asked).toContain('start one subagent (Agent tool)')
+    // In the ticket's worktree, and in the shape the cockpit reads back.
+    expect(asked).toContain("jaira -C '/.worktrees/repo-mg677r' note MG677R \"explain: ")
+    expect(asked).toContain('Warum: ')
+    expect(asked).toContain('Empfehlung: ')
+    expect(asked).toContain('[give back]')
+  })
+
+  test('without Herdr, Discuss talks the question through in this chat', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'discuss-K7P2QX' })
+    expect(ran(w, 'bash')).toEqual([])
+    expect(w.opened).toEqual([])
+    expect(w.toasts).toContain('K7P2QX: the open question is talked through in this chat')
+    expect(w.submitted).toHaveLength(1)
+    const asked = w.submitted[0]!
+    expect(asked).toContain('waits for a decision of mine')
+    expect(asked).toContain("note K7P2QX \"decision: <decision>\"")
+    expect(asked).toContain('set K7P2QX question=')
+    expect(asked).not.toContain('subagent')
+  })
+
+  test('with Herdr but no spawn.sh, Explain says spawn.sh is missing', async ($, on) => {
+    const w = world(on, { herdr: true, spawn: false })
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    expect(w.submitted).toEqual([])
     const pane = await $.ui.mount(MESSAGE('Explain MG677R failed'))
-    expect(await pane.find({ type: 'Text', text: /needs Herdr/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /spawn\.sh.*jaira roles install/ })).toBeDefined()
+  })
+
+  test('on native Windows, spawn.sh is found under USERPROFILE and started by Git Bash', async ($, on) => {
+    // Native Windows has no HOME; an empty one stands for it here. The test
+    // engine takes absolute POSIX paths only, so USERPROFILE has no drive
+    // letter — its backslashes are what is turned around.
+    const home = '/Users/a/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
+    const env = { OS: 'Windows_NT', HOME: '', USERPROFILE: '\\Users\\a', HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr' }
+    const w = world(on, { herdr: true, spawn: false, env })
+    w.files.set(home, '')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    expect(ran(w, 'C:/Program Files/Git/bin/bash.exe')).toEqual([['C:/Program Files/Git/bin/bash.exe', home, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
+  test('on native Windows, CLAUDE_CODE_GIT_BASH_PATH names the bash', async ($, on) => {
+    const env = { OS: 'Windows_NT', HOME: '/repo', HERDR_ENV: '1', CLAUDE_CODE_GIT_BASH_PATH: 'D:\\Git\\bin\\bash.exe' }
+    const w = world(on, { herdr: true, env })
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    expect(ran(w, 'D:\\Git\\bin\\bash.exe', SPAWN)).toHaveLength(1)
+    expect(ran(w, 'git', '--exec-path')).toEqual([])
   })
 
   test('what the Explain chat wrote onto the ticket is read in the cockpit', async ($, on) => {
@@ -1019,7 +1074,7 @@ describe('after Accept', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-MG677R' })
   }
-  const prLane = (w: World) => ran(w, SPAWN).filter(r => r.includes('pr'))
+  const prLane = (w: World) => ran(w, 'bash', SPAWN).filter(r => r.includes('pr'))
   const failure = async ($: Test$) => {
     const pane = await $.ui.mount(MESSAGE('Next step after MG677R failed'))
     return (await pane.findAll({ type: 'Text' })).map(x => x.text).join('\n')
@@ -1035,9 +1090,9 @@ describe('after Accept', () => {
       ['gh', 'repo', 'view', 'upstream/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
       ['gh', 'pr', 'list', '--repo', 'upstream/repo', '--head', 'feat/mg677r', '--state', 'all', '--json', 'number', '@/repo'],
     ])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
     // After the move, never before it: the press accepted first.
-    const order = w.ran.map(r => r[0] === SPAWN ? 'spawn' : r.includes('--force') ? 'move' : '').filter(Boolean)
+    const order = w.ran.map(r => r[1] === SPAWN ? 'spawn' : r.includes('--force') ? 'move' : '').filter(Boolean)
     expect(order).toEqual(['move', 'spawn'])
     expect(w.opened).toEqual([])
   })
@@ -1053,7 +1108,7 @@ describe('after Accept', () => {
     expect(prLane(w)).toEqual([])
     expect(ran(w, 'jaira', 'next')).toEqual([['jaira', 'next', '--all', '--json', '@/repo']])
     // T8QS1Y has a worker tab already: never a second agent on it.
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'worker', '/repo', '@/repo']])
     expect(w.opened).toEqual([])
   })
 
@@ -1062,7 +1117,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
   })
 
   test('GitLab, by jaira.forge or by host, asks glab', async ($, on) => {
@@ -1086,7 +1141,7 @@ describe('after Accept', () => {
     expect(ran(w, 'git', 'branch')).toEqual([['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'feat/zz99zz', '@/repo']])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
   })
 
   test('two tickets on one branch: no pull request while the other is not in done, the next ticket starts, and the press says which one is missing', async ($, on) => {
@@ -1097,7 +1152,7 @@ describe('after Accept', () => {
     await press($)
     expect(ran(w, 'gh', 'pr')).toEqual([])
     expect(prLane(w)).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; no pull request for feat/mg677r yet: T8QS1Y not in done')
   })
 
@@ -1123,7 +1178,7 @@ describe('after Accept', () => {
     expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo']])
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     // Its worktree is the other ticket's: the role pushes from there.
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
   test('the branch search finds a ticket named beside others in one subject, and never a handle that only starts the same', async ($, on) => {
@@ -1141,7 +1196,7 @@ describe('after Accept', () => {
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
   test('the branch search reads subjects only: a merge commit quoting the ticket in its body is passed over', async ($, on) => {
@@ -1187,7 +1242,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
   })
 
@@ -1198,7 +1253,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(prLane(w)).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
     expect(w.opened).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; AB12CD started in a Herdr tab; pull requests not checked (gh repo view: gh: command not found)')
@@ -1211,7 +1266,7 @@ describe('after Accept', () => {
     w.next = ['AB12CD']
     await press($)
     expect(prLane(w)).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([[SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, 'ab12cd', 'AB12CD', 'dispatch', '/repo', '@/repo']])
     expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
   })
 
@@ -1231,7 +1286,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.origin = null
     await press($)
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
 
@@ -1240,7 +1295,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.origin = 'git@git.example.de:acme/repo.git'
     await press($)
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('git config jaira.forge')
   })
 
@@ -1249,7 +1304,7 @@ describe('after Accept', () => {
     w.next = ['T8QS1Y']
     w.tabs = [{ tab_id: 't9', label: 'T8QS1Y/dispatch' }]
     await press($)
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('No ticket can be started next')
   })
 
@@ -1257,7 +1312,7 @@ describe('after Accept', () => {
     const w = world(on)
     w.ahead = 3
     await press($)
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs a pull request')
   })
 
@@ -1267,7 +1322,7 @@ describe('after Accept', () => {
     w.refusals = [...w.refusals, { code: 'needs_commits', message: 'no commit names MG677R' }]
     await press($)
     expect(ran(w, 'git', 'log')).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
   })
 
   test('an agent\'s session has no Accept, so it can never open a pull request', async ($, on) => {
@@ -1346,7 +1401,7 @@ describe('give back', () => {
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
   })
 
   test('a note that fails after the move is shown with the reason typed, and the worker still gets the ticket', async ($, on) => {
@@ -1390,7 +1445,7 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to the old worker - tab alive, cache warm for 40 more min, context 80k')
   })
 
@@ -1403,10 +1458,10 @@ describe('give back', () => {
     await startSession($)
     await giveBack($, w)
     const close = w.ran.findIndex(r => r[0] === 'herdr' && r[1] === 'tab' && r[2] === 'close')
-    const spawn = w.ran.findIndex(r => r[0] === SPAWN)
+    const spawn = w.ran.findIndex(r => r[1] === SPAWN)
     expect(w.ran[close]?.[3]).toBe('w1:t9')
     expect(close).toBeLessThan(spawn)
-    expect(w.ran[spawn]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(w.ran[spawn]?.slice(0, 6)).toEqual(['bash', SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min')
   })
@@ -1421,7 +1476,7 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
-    expect(ran(w, SPAWN)[0]?.slice(0, 5)).toEqual([SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 6)).toEqual(['bash', SPAWN, 'mg677r', 'MG677R', 'worker', '/repo'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
   })
 })
@@ -1476,7 +1531,7 @@ describe('give back, the edges', () => {
     await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
     expect(await ui.find({ type: 'Text', text: "MG677R back in in-progress; no worker started (the ticket's note says why)" })).toBeDefined()
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - no Herdr in this session')
-    expect(ran(w, SPAWN)).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
   })
 })
 

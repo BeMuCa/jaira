@@ -232,6 +232,9 @@ esac
 # <explain> and <discuss> are no agent's lane at all: the cockpit mod opens
 # them for a person, a chat of its own instead of the teamlead's. They type a
 # plain request, so the tab answers the person and never works the ticket.
+# Without Herdr the cockpit asks its own session the same two requests
+# (explainBySubagent and discussInThisChat in jaira-cockpit's hooks/texts.ts):
+# a change to one belongs in the other.
 if [ "$lane" = dispatch ]; then
   prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
 elif [ "$lane" = worker ]; then
