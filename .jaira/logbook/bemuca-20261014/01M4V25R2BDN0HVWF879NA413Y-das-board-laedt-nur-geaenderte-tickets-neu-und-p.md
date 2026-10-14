@@ -1,7 +1,7 @@
 ---
 id: 01M4V25R2BDN0HVWF879NA413Y
 title: Das Board laedt nur geaenderte Tickets neu und parst jedes nur einmal
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 goal: "Ein offenes Board braucht im Leerlauf kaum CPU und friert nicht mehr ein, weil es nur liest und dekodiert, was sich geaendert hat."
@@ -19,9 +19,22 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 68d7dce25714e4245f38bd5f74caaca8e25e22ee
+  - 78d3ea4aa0716c95314274deec0d2b9525df9bdb
+  - 42ff4f2ae4dba54b9aa8d1d744440936d5008691
+  - f97c009c093054d3c5417eb50af671f0ec7741c4
+  - 29fa703826d6617d74a33c1f5c23003ef807015b
+  - 62af57a120d9d761647fcdd25b122f3c0e850485
+  - ca34d5a28016f2dac5067cefc5780dd9159496b3
+  - 3d1c6bca7e60f4fcd61774b113f60516f441111c
+  - 759cf9b6de5bbdf15e3adbf634305c8698009b89
+  - c0a514b449bef70e2cd4ce668486dd053cfd1098
+  - 516b6dfa759082d9fff81feb01da2c113a1153b8
+  - 26bf4b9c49e35e09dbbaa193d781fff6aff186cf
+  - 7da57cf77724a45cc37def12a3fff5655428f5c9
 created-at: 2026-10-13T16:40:17Z
-updated-at: 2026-10-13T22:35:10Z
+updated-at: 2026-10-14T13:36:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3239170
@@ -172,3 +185,4 @@ G. Messung DoD 4 (kein Commit). Nie jaira gegen /home/berk/git/* laufen lassen, 
 - **2026-10-13 22:11 · BeMuCa** — optimize pass 2: TestExtraDropsCachedTicketWhoseRefLostItsFile now builds its no-file ref through the package's run() instead of its own git closure. Checked it still guards the fix: with the delete at refsync.go:1152 removed it fails (Extra after the ref lost its file = 1 tickets; want 0).
 - **2026-10-13 22:19 · BeMuCa** — testing (pass 2): idle CPU over 60 s on a 34-ticket remote-less copy of /home/berk/git/jAIra, HOME/JAIRA_HOME in scratchpad, tmux, non-race builds: before 3718 ticks = 61.0 %, after 97 ticks = 1.0 %. Title via CLI (set T8A8KM) and sed hand edit both visible within 4 s. Gate: go test ./... -race -count=1 RC=0, 29 ok. Throwaway stale-ref test (pass-1 finding) passes: Extra returned 0 after ref moved to empty tree.
 - **2026-10-13 22:35 · BeMuCa** — review: independent checks beyond the tests. (1) Decode + Doc.Scalar/List/Has/Keys/Validate built from 82b2252a and from HEAD, run over 146 real ticket files and 12 edge cases: output byte-identical; lane.Load on this board's 13 lanes identical. Done because decodeBefore calls the refactored Doc helpers and cannot catch a regression in them. (2) Stress test (List/Load/Forget/ForgetAll in parallel, -race): no race in cache.go or Clone; the only race is on Store.dupIDs in idIndex (store.go:1217 vs :835), present on 82b2252a too - pre-existing, worth its own ticket. (3) /dev/null in TestExtraDropsCachedTicketWhoseRefLostItsFile not run on Windows; git compat/mingw.c maps /dev/null to nul in mingw_open, so expected fine - first windows-latest CI run decides. (4) Idle CPU 30 s, copy without remote: 56.2 % before, 2.1 % after.
+- **2026-10-14 13:36 · BeMuCa** — Abnahme: Berk am 14.10. im Chat ('Ja NA413Y ins release bitte!'). Der Agent hat den Move nach done in seinem Auftrag mit --force ausgefuehrt. Vorher korrigiert: die Release-Note behauptete 'rereads no ticket', tatsaechlich liest das Board alle 15 Minuten einmal alles neu (ForgetAll).
