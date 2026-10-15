@@ -134,7 +134,7 @@ pins (or downgrades to) an exact release.`,
 				// Not from a dev build, though: the cache exists to feed the
 				// TUI's version line, and a dev build cannot be compared to a
 				// published version at all. Writing it there would have the
-				// footer report an answer to a question this build cannot ask.
+				// version line report an answer to a question this build cannot ask.
 				if !dev {
 					_ = selfupdate.Write(selfupdate.Check{CheckedAt: now, Latest: rel.Version})
 				}
