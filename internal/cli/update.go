@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -55,6 +56,7 @@ func nudgeIfStale(s *ticket.Store) {
 
 func newUpdateCmd() *cobra.Command {
 	var agentFile string
+	var setup updateSetup
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Re-apply this repository's jaira setup",
@@ -73,11 +75,21 @@ It does not touch .gitignore. 'jaira init' makes a new board private; whether
 this board is shared is a decision already taken, and re-adding the ignore
 entry to a shared board would silently stop new tickets reaching teammates.
 
+--roles brings the roles, the cockpit mod and the jaira skill up to date in every
+skills directory that already holds the roles: this repository's and your
+personal one. Outside a board it does the personal one only. --lanes replaces
+every lane file on this board that is an older version of a lane jaira ships.
+A file you edited — one that is no version jaira ever shipped — is never
+replaced: it is named, and the command exits 3. Without --roles or --lanes only
+the jaira section is written, as before.
+
 This neither downloads anything nor upgrades the jaira binary itself; it
 brings a board's own setup up to date with whichever binary you already have
 installed.`,
 		Args: noArgs(),
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		// A named result so a skipped file can turn the exit into 3 after the notes
+		// below have printed: they return nil from two places.
+		RunE: func(cmd *cobra.Command, _ []string) (err error) {
 			switch agentFile {
 			case "", board.AgentFileAgents, board.AgentFileClaude, board.AgentFileBoth:
 			default:
@@ -87,13 +99,27 @@ installed.`,
 			updateInProgress = true
 			defer func() { updateInProgress = false }()
 			s, err := openStore()
+			if errors.Is(err, ticket.ErrNoStore) && setup.roles && !setup.lanes && agentFile == "" {
+				return updatePersonalRoles(cmd)
+			}
 			if err != nil {
 				return err
 			}
+			defer func() {
+				if err == nil && setup.skipped() {
+					err = editedError()
+				}
+			}()
 
 			previous := release.Stamped(s.StateDir())
 			notes := release.Since(previous)
 
+			if setup.lanes {
+				// Before the Load below, so the section describes the refreshed lanes.
+				if setup.laneResults, err = lane.RefreshShipped(s.Root, false); err != nil {
+					return err
+				}
+			}
 			// Re-generated with this board's current lanes: adopting a lane is
 			// exactly when the note stops matching the board.
 			boardLanes, _ := lane.Load(s.Root)
@@ -107,6 +133,11 @@ installed.`,
 			if noteErr != nil {
 				return fail(ExitError, "prepare_failed", "could not update an agent instruction file: %v", noteErr)
 			}
+			if setup.roles {
+				if setup.roleRuns, err = refreshRoles(s.Root, false); err != nil {
+					return err
+				}
+			}
 			// Stamp last: if the note had failed, the board would not actually
 			// be prepared by this version, and must not claim to be.
 			if err := release.Stamp(s.StateDir()); err != nil {
@@ -115,15 +146,22 @@ installed.`,
 
 			w := cmd.OutOrStdout()
 			if g.jsonOut {
-				return emit(w, map[string]any{
+				return emit(w, setup.json(map[string]any{
 					"root": s.Root, "version": release.Current, "previous": previous,
 					"agent_notes": notesWritten,
 					"notes":       entriesJSON(notes),
-				})
+				}))
+			}
+
+			if setup.lanes {
+				printLaneResults(w, setup.laneResults, false)
 			}
 
 			if line := announceLine(notesWritten); line != "" {
 				fmt.Fprint(w, line)
+			}
+			if setup.roles {
+				printRoleRuns(w, setup.roleRuns, s.Root, false)
 			}
 			if len(notes) == 0 {
 				fmt.Fprintf(w, "\nNothing has changed since the version that last set this board up.\n")
@@ -140,6 +178,8 @@ installed.`,
 		},
 	}
 	cmd.Flags().StringVar(&agentFile, "agent-file", "", "where the jaira section lives: agents (AGENTS.md), claude (CLAUDE.md) or both")
+	cmd.Flags().BoolVar(&setup.roles, "roles", false, "also bring the jaira skills up to date wherever they are installed: this repository's skills directory and your personal one")
+	cmd.Flags().BoolVar(&setup.lanes, "lanes", false, "also replace this board's lane files that are an older version of a lane jaira ships")
 	return cmd
 }
 
