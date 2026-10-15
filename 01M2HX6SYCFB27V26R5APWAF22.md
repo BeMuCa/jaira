@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:30:31Z
+updated-at: 2026-10-15T13:33:14Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -178,3 +178,4 @@ Bestehende Tests (statisch, kein go test): keiner bricht. roles_test 'X written'
 - install.go:120-124: Kommentar 'sit next to the go:embed directories' stimmt fuer modKey nicht. mod.Key in core/mod oder Kommentar fixen.
 - roles.go:131: updateInProgress nur zum Stummschalten gesetzt; in setupInProgress umbenennen.
 - self.go:69-79 Long: nennt den 'update --roles'-Schritt nicht. Ein Satz.
+- **2026-10-15 13:33 · BeMuCa** — Treiber zu critique 1: zurueck nach in-progress nur fuer den Textdefekt (README.md:118, Notiz-Zeile 5). Dazu, vom Treiber gefunden, gleiche Klasse: die self-upgrade-Notiz verspricht 'update --roles' gleich nach der Installation - beim Sprung von 0.5.1 auf dieses Release laeuft aber noch der self upgrade des ALTEN Binaries, der das nicht tut. Die Zeile muss sagen: ab dem naechsten Upgrade; diesmal 'jaira update --roles' selbst laufen lassen. Alle [NACHFOLGER] bleiben Nachfolger.
