@@ -26,8 +26,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T12:19:21Z
+updated-at: 2026-10-15T12:19:23Z
 updated-by: BeMuCa
+claimed-by: EE-3NX6GL3-3783128
+claimed-at: 2026-10-15T12:19:23Z
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
