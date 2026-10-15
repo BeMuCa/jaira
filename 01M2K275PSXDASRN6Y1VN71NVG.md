@@ -26,7 +26,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-15T17:35:45Z
-updated-at: 2026-10-15T13:45:31Z
+updated-at: 2026-10-15T13:45:33Z
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-3783128
 claimed-at: 2026-10-15T12:19:23Z
@@ -47,6 +47,7 @@ review-gaps: |-
   left: internal/cli/fetch.go:216 printDeletedMilestones repeats the heading-plus-names shape of printMilestones/printFiledMilestones - the file's own pattern, no shared printer exists
   left: internal/cli/logbook.go ticket loop StampCommits+Logbook instead of FileLane - settled by critique (note 12:38)
   checked, kept: appendNew (core/refsync/refsync.go:471), removeMilestoneFiles, outboxLen, incomingDeleted - grep found no existing equivalent; nothing this ticket added is uncalled, nothing it orphaned
+test-verdict: "pass: check.sh RC 0 (vet=0 build=0 gofmt=ok); Go-Tests nur kompiliert (go vet), NICHT ausgefuehrt (Berks Anordnung, Hauptsession faehrt die volle Race-Suite); DoD 1-7 verifiziert (2,3 neu geprueft, bleiben); Handtests case-b-d, case-c, case-logbook, case-l3, case-t1 (ref-only, Name frei), case-t2 (--json Exit 3) auf HEAD gelaufen"
 ---
 
 # Ein fertiger Milestone geht ins Archiv, und ein falscher laesst sich loeschen
