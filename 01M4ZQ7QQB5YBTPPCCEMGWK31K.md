@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7QQB5YBTPPCCEMGWK31K
 title: "Ein archiviertes Ticket verschwindet sofort von allen Boards, nicht erst wenn der Snapshot den Ref abraeumt"
-status: review
+status: in-progress
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -22,7 +22,7 @@ related:
   - 01M4TRC0ZE0GNWDWA1XDK6BGB0
 commits: []
 created-at: 2026-10-15T12:05:20Z
-updated-at: 2026-10-15T14:55:37Z
+updated-at: 2026-10-15T14:56:29Z
 updated-by: BeMuCa
 outcome-what: "'jaira archive' schreibt auf den Ref den Dateiinhalt plus eine Zeile 'archived: <datum> <wer>' (core/ticket/store.go Archive -> recordFiled mit Markwert; Logbook gibt '' und bleibt unmarkiert); die Datei in .jaira/archive/ bleibt byte-gleich. Store.List laesst ref-only Tickets mit dieser Zeile weg, also auch board, list, next, resume. 'jaira restore' schreibt die Datei ohne Zeile zurueck auf den Ref (nach CheckFresh; ist der Ref neuer, bleibt er stehen und restore warnt mit 'jaira pull <h>'). 'jaira pull' eines markierten Refs leert die Zeile auf dem Ref und in der Datei (refresh: nur in der Datei), damit eine Datei nie eine Marke traegt; pull sagt es. show (nur ref-only) und fetch nennen ein archiviertes Ticket 'archived', fetch meldet es nicht als 'a ticket is yours'. archive sagt bei ungetrackter Datei, dass das Committen nur den Eintrag festhaelt, bei getrackter, dass ein Branch mit der Datei es bis zum Merge zeigt. Doku (README, COMMANDS.md, Hilfen, Kommentare) und drei Release-Zeilen."
 outcome-why: "Bisher schrieb archive den unveraenderten Inhalt auf den Ref. Jeder andere Klon zeigte das Ticket weiter, bis der Snapshot-Lauf (alle 72 h) den Ref abraeumte, und das erst nach Commit und Merge der Archiv-Datei. Berk will, dass Archivieren wie create wirkt: sofort beim naechsten fetch, ohne Commit."
@@ -37,7 +37,7 @@ review-summary: |-
   Ausgabe von archive: ungetrackte Datei -> 'Every other board drops it ...; committing ... only keeps the record', getrackte -> 'a branch that has this file shows it until ... merged there'.
   Warum das das Problem loest: andere Boards lesen nur den Ref. Die Marke steht dort sofort, ohne dass die Archiv-Datei committet sein muss.
   Dazu: README, COMMANDS.md, Hilfen von archive/restore/pull, drei Release-Zeilen, Tests in core/ticket, core/refsync, internal/cli.
-round: 6
+round: 7
 review-gaps: |-
   1. FUND: Das Board (TUI) meldet ein anderswo archiviertes Ticket als deins.
   internal/tui/refs.go:157 prueft nur 'a.Mine && a.Changed'. Die CLI hat dafuer 'a.Archived != ""' bekommen (internal/cli/fetch.go:216), die TUI nicht.
