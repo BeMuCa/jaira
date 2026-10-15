@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T13:00:03Z
+updated-at: 2026-10-15T13:08:17Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -39,6 +39,7 @@ review-summary: |-
   - (T8A8KM.md:4 aus der Nachfolger-Notiz ist in a47d6d25 erledigt.)
   Frage an Berk: Pille ohne jaira self upgrade-Hinweis (Option A gebaut).
 round: 2
+review-gaps: "Gefaltet: readSeen/markSeen (internal/tui/releasenotes.go) wiederholten release.Stamped/Stamp mit anderem Dateinamen. Jetzt traegt core/release/release.go:192 readVersion und :202 writeCurrent die Datei-I/O; Stamped/Stamp (:177/:180, Signatur und Verhalten gleich) und neu NotesSeen/MarkNotesSeen (:185/:188) rufen sie. seenFile und readSeen weg; markSeen (releasenotes.go:98) behaelt nur den dev-Waechter und best effort. Kosten: openReleaseNotes (releasenotes.go:127) liest notes-seen einmal und schreibt es nur noch bei seen != release.Current (:132) statt bei jedem Board-Oeffnen; Inhalt identisch, also nicht sichtbar. Tests: core/release/release_test.go:91 TestNotesSeenIsItsOwnFileBesideTheStamp; releasenotes_test.go:194 prueft, dass ein aktuelles notes-seen beim Oeffnen nicht neu geschrieben wird; tui-Tests lesen ueber release.NotesSeen. Betrachtet und gelassen: warnNewerRelease (internal/cli/newerrelease.go) und versionLine (internal/tui/updatecheck.go) teilen schon release.Newer, versionLine braucht drei Faelle (unbekannt/neuer/aktuell), kein gemeinsamer Helfer. writeNotes (internal/cli/update.go) vs notesView.lines: Klartext vs gestylt, echt verschieden. notesView.key wiederholt die Scroll-Tasten von modeHelp (model.go:1300), aber modeHelp haengt an Model.detailScroll und der Launcher hat kein Model; Faltung waere Umbau von Bestandscode. styImportant gleicht styAsks (view.go:72) optisch, andere Bedeutung, bleibt getrennt. clipPane (view.go:1432) koennte notesView.render clippen, bringt aber '+N more' mit = sichtbare Aenderung, bleibt Nachfolger. notesView.render baut lines() bei jedem Frame neu: nur solange die Ansicht offen ist, wenige hundert Zeilen, kein Cache. page: 10 in newNotesView (releasenotes.go:27) greift nur vor dem ersten render, als Vorgabe gelassen. m.returnTo = modeBoard in openReleaseNotes ist der Nullwert, bleibt als ausdrueckliche Absicht fuer modalOver. Kein weiterer toter Code; os/filepath-Imports in releasenotes.go entfernt, weil der Umzug sie verwaiste."
 ---
 
 # Eine Pille unter der Version zeigt, dass ein neues Release da ist
