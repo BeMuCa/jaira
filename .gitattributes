@@ -44,3 +44,9 @@ core/web/ui/** text eol=lf
 core/shipped/shipped.sha256 text eol=lf
 core/role/testdata/** text eol=lf
 core/lane/testdata/** text eol=lf
+
+# The jaira skill: core/role/jaira/SKILL.md is embedded and installed beside the
+# roles, and a test holds it byte-equal to the copy this repository's own
+# sessions read. CRLF on either side would make them differ on Windows.
+core/role/jaira/SKILL.md text eol=lf
+.claude/skills/jaira/SKILL.md text eol=lf

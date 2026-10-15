@@ -646,8 +646,8 @@ about two processes interleaving.
 
 ## With Claude Code
 
-Install the skill from `.claude/skills/jaira/` and Claude will use the CLI
-directly. Optionally install `hooks/sync-tasks.sh` as a `PostToolUse` hook on the
+Install the skill with `jaira roles install` (it writes `jaira/SKILL.md`
+beside the roles) and Claude will use the CLI directly. Optionally install `hooks/sync-tasks.sh` as a `PostToolUse` hook on the
 task tools to mirror Claude's task list into the backlog.
 
 Mirrored tickets land in the backlog behind the gate. Lane movement is
@@ -680,7 +680,7 @@ and `--force` replaces it too.
 
 | Skill | What it does |
 |---|---|
-| `jaira` | Teaches the agent the CLI. Ships in `.claude/skills/jaira/`, not through `roles install`. |
+| `jaira` | Teaches the agent the CLI. Not a role, but `roles install` writes it beside them as `jaira/SKILL.md`. |
 | `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
 | `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
 | `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
