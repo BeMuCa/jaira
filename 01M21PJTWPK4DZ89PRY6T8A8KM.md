@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T12:56:45Z
+updated-at: 2026-10-15T12:57:41Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -123,3 +123,4 @@ Bewusst stehen gelassen: Luecke beim ersten Versionswechsel (Notiz 2026-10-15 12
 - CLAUDE.md:251 und AGENTS.md:204: "marks a change the reader must act on" trennt '- ! ' nicht von der Regel, dass jede Zeile schon eine Anweisung ist. Sagen, wann: eine Aenderung, nach der jaira erst nach einer Handlung wieder wie beschrieben arbeitet (Befehl in jedem Repo, geaendertes Dateiformat); sparsam.
 - core/release/notes/T8A8KM.md:4: "When a note line starts `- ! `, act on it" spricht Notiz-Autoren an; der Leser sieht '  ! <text>' in jaira update und eine fette '!'-Zeile im Board, nie '- ! '. Umschreiben: "Act on every change jaira update prints as `  ! <text>` (bold on the board): it is marked as one that needs you to do something".
 Frage an Berk (kein Rueckweg): Pille nur '^ <version>' (wie gebaut) oder dahinter gedimmt 'jaira self upgrade' in derselben Reihe? Wer nie mit Agenten arbeitet, sieht den Befehl sonst nur einmal in Release-Note-Zeile 1. Empfehlung critique: so lassen.
+- **2026-10-15 12:57 · BeMuCa** — critique-Runde 1 behoben: README, COMMANDS.md, view.go-Kommentar, Notes-Zeile 4; Commit a47d6d25
