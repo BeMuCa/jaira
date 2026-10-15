@@ -37,3 +37,10 @@ core/hook/example/*.sh text eol=lf
 # \r into the page and make that diff fail on a tree nobody changed, so the
 # whole front end — sources, lock file and build — is pinned.
 core/web/ui/** text eol=lf
+
+# The list of every shipped version of every installed file is embedded and
+# compared by hash; the fixtures the tests hold against it are older versions of
+# those files. A CRLF checkout changes every hash.
+core/shipped/shipped.sha256 text eol=lf
+core/role/testdata/** text eol=lf
+core/lane/testdata/** text eol=lf
