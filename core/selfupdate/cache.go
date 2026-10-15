@@ -164,10 +164,10 @@ func isTestBinary(exe string) bool {
 // refreshing it in the background first if it is stale.
 //
 // This is the one non-network entry point a consumer should read through
-// instead of composing Read/Stale/Write/SpawnRefresh itself — currently
-// that consumer is the TUI's persistent version indicator, not any CLI
-// command. It never blocks on the network: a stale cache gets touched and
-// handed to a detached child (see SpawnRefresh's own doc comment for why),
+// instead of composing Read/Stale/Write/SpawnRefresh itself — its consumers
+// are the TUI's version indicator and 'jaira next' / 'jaira resume'. It
+// never blocks on the network: a stale cache gets touched and handed to a
+// detached child (see SpawnRefresh's own doc comment for why),
 // and this function returns immediately with whatever was already known,
 // which may be nothing at all.
 //
