@@ -1,7 +1,7 @@
 ---
 id: 01M21PJTWPK4DZ89PRY6T8A8KM
 title: "Eine Pille unter der Version zeigt, dass ein neues Release da ist"
-status: testing
+status: review
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -21,7 +21,7 @@ blocked-by: []
 follows: 01M1KCKH0MCQ5P1BKTSHP1AE82
 commits: []
 created-at: 2026-09-08T23:45:19Z
-updated-at: 2026-10-15T13:12:27Z
+updated-at: 2026-10-15T13:31:35Z
 updated-by: BeMuCa
 related:
   - 01M2HX6SYCFB27V26R5APWAF22
@@ -30,14 +30,13 @@ outcome-why: "Berk will ohne Nachsehen merken, dass ein neues Release da ist (Ko
 outcome-resolves: "DoD 1: Pille nur bei bekanntem Cache und release.Newer(latest, Current), nicht bei gleich/aelter/unbekannt/dev - TestReleasePillOnlyForANewerKnownRelease, Handtest a; der verlangte go test ./... -race ist NICHT gelaufen (Anweisung Berk), DoD 1 bleibt bis zum Lauf in der Hauptsession offen. DoD 2: warnNewerRelease in next/resume, stdout und --json unberuehrt, plus Agent-Block-Punkt - TestNextAndResumeNameANewerReleaseOnStderr, TestAgentNoteTellsAgentsToReportANewerRelease, Handtest a. DoD 3: notesBase(current, seen, stamped) entscheidet, New() oeffnet das Popup, esc/q/enter schreibt notes-seen, danach kein Popup bis zur naechsten Version - TestNotesBase, TestPopupClosesAndStaysClosedUntilTheNextVersion, Handtest b. Bekannte Luecke: beim ersten Versionswechsel nach Auslieferung zeigt der TUI kein Popup, wenn jaira update vorher lief (notes-seen fehlt noch, der Stempel ist der Fallback); jaira update hat dieselben Notes dann gedruckt. DoD 4: release.Important, writeNotes in update.go, styImportant, Abschnitt in CLAUDE.md/AGENTS.md - TestImportantMarker, TestUpdateNotesMarkImportantLines, Handtest d. DoD 5: Taste w, Hinweiszeile 'w release notes' - TestHomeWOpensReleaseNotesNewestFirst, TestHomeHintNamesTheReleaseNotesKey, Handtest c. Alle Tests geschrieben und per go vet kompiliert, keiner ausgefuehrt."
 executed-by: sonnet
 review-summary: |-
-  Runde 2: alle DEFECTs aus Runde 1 behoben (a47d6d25), nichts Neues. README.md:79-86, docs/COMMANDS.md:131, internal/tui/view.go:233-234, core/release/notes/T8A8KM.md:4 und der Kommentar internal/cli/self.go:137 stimmen mit updatecheck.go versionLine, cli/newerrelease.go, flow.go:381, resume.go:84, update.go writeNotes und selfupdate.PollCache ueberein.
-  Offen als Nachfolger (Notiz Nachfolger:):
-  - releasenotes.go:147-150 openReleaseNotes schreibt notes-seen bei jedem Board-Oeffnen neu; markSeen nur bei seen != release.Current.
-  - releasenotes.go:99-121 readSeen/markSeen doppeln release.Stamped/Stamp; nach core/release verschieben (NotesSeen/MarkNotesSeen).
-  - releasenotes.go:82-93 notesView.render schneidet ohne Hinweis ab; bei end < len(all) "+N more" wie clipToWindow/clipPane.
-  - CLAUDE.md:251 und AGENTS.md:204: sagen, wann "- ! " gilt (Handlung noetig, bevor jaira wieder wie beschrieben arbeitet); sparsam.
-  - (T8A8KM.md:4 aus der Nachfolger-Notiz ist in a47d6d25 erledigt.)
-  Frage an Berk: Pille ohne jaira self upgrade-Hinweis (Option A gebaut).
+  Der Branch (9 Commits ab 0aefa5c1) macht fuenf Dinge:
+  1. Pille: versionLine (internal/tui/updatecheck.go:48) liefert jetzt Zeile UND Pille. Kennt der 24h-Cache ein Release, das per release.Newer neuer ist als die Binary, steht unter 'jaira X' eine blaue Pille '^ <version>' - im Boardkopf (view.go:235-238, headLines zaehlt die Zeile mit) und auf dem Launcher (home.go:368-371). Gleiche, aeltere oder unbekannte Version, dev-Build, JAIRA_NO_UPDATE_CHECK=1: keine Pille. Der alte Schwanz '... available - run: jaira self upgrade' ist weg; ein aelterer Cache meldet nicht mehr faelschlich 'available'.
+  2. Agenten: jaira next und jaira resume schreiben bei bekanntem neueren Release eine Zeile auf stderr (internal/cli/newerrelease.go:22, flow.go:381, resume.go:84); stdout und --json bleiben sauber. Der Agent-Block (core/board/announce.go:111-112) sagt: dem Nutzer sagen und jaira self upgrade nennen; CLAUDE.md/AGENTS.md sind damit neu erzeugt. next/resume lesen dafuer den Cache und stossen so auch ohne TUI den taeglichen Check an.
+  3. Popup: New() oeffnet einmal ein Modal 'What is new since <base>' (internal/tui/releasenotes.go:127). base = neue Datei notes-seen im StateDir des Boards, ohne sie der Board-Stempel. esc/q/enter schliesst und schreibt notes-seen = laufende Version; danach kein Popup bis zur naechsten Version. Lesen/Schreiben liegt in core/release (NotesSeen/MarkNotesSeen neben Stamped/Stamp).
+  4. Marker: eine Notes-Zeile '- ! text' bleibt fuer jeden Leser eine normale Zeile; release.Important (release.go:101) erkennt sie. jaira update druckt sie als '  ! text', Popup und Launcher fett orange. CLAUDE.md/AGENTS.md nennen die Markierung im Notes-Abschnitt.
+  5. Launcher: Taste w zeigt alle Release-Notes, neueste zuerst, scrollbar mit j/k; die Hinweiszeile nennt 'w release notes'.
+  Dazu README, docs/COMMANDS.md, Kommentare und sechs Zeilen in core/release/notes/T8A8KM.md. internal/cli/update.go nur writeNotes + Kommentar (wegen PWAF22).
 round: 2
 review-gaps: "Gefaltet: readSeen/markSeen (internal/tui/releasenotes.go) wiederholten release.Stamped/Stamp mit anderem Dateinamen. Jetzt traegt core/release/release.go:192 readVersion und :202 writeCurrent die Datei-I/O; Stamped/Stamp (:177/:180, Signatur und Verhalten gleich) und neu NotesSeen/MarkNotesSeen (:185/:188) rufen sie. seenFile und readSeen weg; markSeen (releasenotes.go:98) behaelt nur den dev-Waechter und best effort. Kosten: openReleaseNotes (releasenotes.go:127) liest notes-seen einmal und schreibt es nur noch bei seen != release.Current (:132) statt bei jedem Board-Oeffnen; Inhalt identisch, also nicht sichtbar. Tests: core/release/release_test.go:91 TestNotesSeenIsItsOwnFileBesideTheStamp; releasenotes_test.go:194 prueft, dass ein aktuelles notes-seen beim Oeffnen nicht neu geschrieben wird; tui-Tests lesen ueber release.NotesSeen. Betrachtet und gelassen: warnNewerRelease (internal/cli/newerrelease.go) und versionLine (internal/tui/updatecheck.go) teilen schon release.Newer, versionLine braucht drei Faelle (unbekannt/neuer/aktuell), kein gemeinsamer Helfer. writeNotes (internal/cli/update.go) vs notesView.lines: Klartext vs gestylt, echt verschieden. notesView.key wiederholt die Scroll-Tasten von modeHelp (model.go:1300), aber modeHelp haengt an Model.detailScroll und der Launcher hat kein Model; Faltung waere Umbau von Bestandscode. styImportant gleicht styAsks (view.go:72) optisch, andere Bedeutung, bleibt getrennt. clipPane (view.go:1432) koennte notesView.render clippen, bringt aber '+N more' mit = sichtbare Aenderung, bleibt Nachfolger. notesView.render baut lines() bei jedem Frame neu: nur solange die Ansicht offen ist, wenige hundert Zeilen, kein Cache. page: 10 in newNotesView (releasenotes.go:27) greift nur vor dem ersten render, als Vorgabe gelassen. m.returnTo = modeBoard in openReleaseNotes ist der Nullwert, bleibt als ausdrueckliche Absicht fuer modalOver. Kein weiterer toter Code; os/filepath-Imports in releasenotes.go entfernt, weil der Umzug sie verwaiste."
 test-verdict: "pass: gate OK (gofmt, vet, build auf 77106675), go test nicht gelaufen (Anweisung Berk); DoD 2-5 per Handtest mit 0.5.2-Binary bestaetigt (Pille Launcher+Board, stderr-Zeile next/resume, JSON sauber, Popup einmalig und notes-seen unveraendert beim Wiederoeffnen, w-Liste, ! in update und TUI), Testcode gelesen; DoD 1 nur bis zum go test -race der Hauptsession offen"
