@@ -13,7 +13,7 @@ related:
   - 01M21PJTWPK4DZ89PRY6T8A8KM
 commits: []
 created-at: 2026-09-15T06:48:56Z
-updated-at: 2026-10-15T13:12:45Z
+updated-at: 2026-10-15T13:14:38Z
 assignee: "BeMuCa"
 updated-by: BeMuCa
 context: |-
@@ -132,3 +132,11 @@ Wortlaut steht im Design (Scratchpad design.md, je Schritt). Kein '- !'-Marker -
 - **2026-10-15 12:50 · BeMuCa** — Schritt 1-2: das Manifest hat 438 Zeilen (48824 Bytes), erzeugt mit scripts/shipped-history.sh auf dem Worktree. Skript braucht bash (Prozess-Substitution), kein sh. Mod-Dateien types/index.d.ts sind im Manifest (core/mod/mod.go ueberspringt nur .claude-plugin/types, nicht types/). Die .gitattributes-Pins fuer core/role/testdata und core/lane/testdata stehen schon in Schritt 1.
 - **2026-10-15 12:57 · BeMuCa** — Step 5: dry chooseAgentFiles skips setClaudeImport when the dry removeBlock said CLAUDE.md would be deleted (file still exists in dry, real run finds none) - else preview would add an import line the write never does. Covered by 'agents, claude file deleted' case. Step 4 --done tick raced the --doing call once; retried.
 - **2026-10-15 13:08 · BeMuCa** — Step 7: existing pin test (--version --json) now stubs runUpgraded; a real exec of the 'pin-bytes' payload would put a stderr line into the combined output and break the JSON parse. Step 8: stamp is written even when nothing is behind (once per version, not once per warning); Behind also counts Written files, so a newly shipped role missing in an installed dir warns too.
+- **2026-10-15 13:14 · BeMuCa** — Schritt 11 von Hand, Scratch-Build 9.9.8/9.9.9, HOME+JAIRA_HOME im Scratchpad, Fake-Release-Server 127.0.0.1:8765.
+bare 'jaira update' exit 0: nur Block neu, Rollen/Lane-Dateien byte-gleich (sha vorher/nachher); Hints 'roles: 3 file(s) are older ... update --roles' + 'lanes: 1 lane file(s) ... update --lanes'.
+'update --roles --lanes --dry-run' exit 3: 'would update' je Lane/Projekt-Rolle/persoenliche Rolle/jaira skill, 'skipped .../jaira-role-tester/SKILL.md (edited here; --force to replace)', 'nothing was written (--dry-run)'; keine Datei geaendert, Stempel (auf 9.9.7 gesetzt) unveraendert.
+'update --roles --lanes' exit 3: 4x 'updated' (testing.md, acceptance projekt+persoenlich, jaira/SKILL.md), tester skipped+unveraendert, danach cmp == eingebettete Bytes. Zweiter Lauf: 0 updated, nur unchanged + das eine skipped, exit 3. --json: stdout gueltig, Keys roles/lanes/skipped=true.
+Warnung: skills-check entfernt, 'jaira list' 1. Lauf = genau 1 stderr-Zeile 'jaira: the jaira skills in .../.claude/skills are older than this jaira (9.9.9) — run jaira update --roles ...', 2. Lauf 0 Byte; 'list --json' stdout gueltiges JSON.
+'self upgrade' (Kopie 9.9.8 -> 9.9.9) exit 0: Binary == 9.9.9-Bytes, 'bringing your setup in step with 9.9.9: jaira update --roles', 'updated .../jaira-role-acceptance/SKILL.md', Tester skipped+unveraendert. --json: setup (Objekt) + setup_exit 3. Ausserhalb Board: 'no board here: only your personal skills directories were checked', exit 0.
+Beobachtung (kein Defekt hier): Notes-Block listet bei Fake-Version 9.9.9 alle Notes ab 0.1.0.
+Transkripte: scratchpad/pwaf22/hand/transcript-*.txt
